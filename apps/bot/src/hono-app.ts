@@ -240,9 +240,11 @@ export function buildHonoApp(): Hono<{ Bindings: Bindings }> {
       c.header("Retry-After", String(rl.retryAfter));
       return c.json({ error: "rate limited" }, 429);
     }
-    if (!safeEqual(c.req.header("x-api-key") ?? "", config.adminApiKey)) {
-      return c.json({ error: "bad api key" }, 401);
-    }
+    const adminKey = config.adminApiKey;
+      const apiKeyHeader = c.req.header("x-api-key") ?? "";
+      if (!adminKey || !apiKeyHeader || !safeEqual(apiKeyHeader, adminKey)) {
+        return c.json({ error: "bad api key" }, 401);
+      }
     await next();
   });
 
