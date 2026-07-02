@@ -348,6 +348,8 @@ async function handleForgot(request, env) {
   const body = await readJson(request);
   const email = String(body?.email || "").trim().toLowerCase();
   if (!isEmail(email)) return bad("Enter a valid email");
+  // Per-email rate limit: 3 resets per hour (prevents email bomb abuse).
+  if (!(await rateLimit(env, `forgot-email:${email}`, 3, 3600))) return bad("Too many attempts. Try again later.", 429);
   const user = await one("SELECT id, email FROM users WHERE email=$1", [email]);
   if (user) {
     const token = newToken();
