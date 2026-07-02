@@ -14,7 +14,8 @@
     "typecheck": "tsc --noEmit",
     "db:setup": "psql \"$DATABASE_URL\" -f schema.sql",
     "deploy": "wrangler deploy",
-    "demo": "tsx src/demo.ts"
+    "demo": "tsx src/demo.ts",
+    "lint": "eslint src/ --ext .ts"
   },
   "dependencies": {
     "grammy": "^1.30.0",
