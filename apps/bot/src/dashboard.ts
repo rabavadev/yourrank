@@ -445,6 +445,10 @@ const BASE_CSS = `
            color:#000; padding:10px 18px; border-radius:8px; font-weight:600; display:none; }
 `;
 
+function escHtml(s: string): string {
+  return (s ?? "").replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' } as Record<string, string>)[ch]);
+}
+
 function loginHtml(botUsername: string, devLogin: boolean): string {
   return `<!doctype html><html><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -457,7 +461,7 @@ function loginHtml(botUsername: string, devLogin: boolean): string {
   <p class="muted" style="margin-bottom:20px">Manage your bot, offers and click stats.</p>
   ${botUsername
     ? `<script async src="https://telegram.org/js/telegram-widget.js?22"
-         data-telegram-login="${botUsername}" data-size="large"
+         data-telegram-login="${escHtml(botUsername)}" data-size="large"
          data-onauth="onTgAuth(user)" data-request-access="write"></script>`
     : `<p class="muted">Telegram login isn't configured yet (set LOGIN_BOT_TOKEN + LOGIN_BOT_USERNAME).</p>`}
   ${devLogin ? `
@@ -579,25 +583,26 @@ async function load() {
   $('chart').setAttribute('viewBox','0 0 100 40');
   $('chart').innerHTML = daily.map((d,i)=>{
     const h = d.clicks/max*36;
-    return '<rect x="'+(i*w+0.5)+'" y="'+(40-h)+'" width="'+(w-1)+'" height="'+h+'" rx="0.6" fill="#f0b429"><title>'+d.day+': '+d.clicks+'</title></rect>';
+    return '<rect x="'+(i*w+0.5)+'" y="'+(40-h)+'" width="'+(w-1)+'" height="'+h+'" rx="0.6" fill="#f0b429"><title>'+esc(d.day)+': '+esc(String(d.clicks))+'</title></rect>';
   }).join('');
-  $('chartLabels').innerHTML = '<span>'+daily[0].day.slice(5)+'</span><span>'+daily[daily.length-1].day.slice(5)+'</span>';
+  $('chartLabels').innerHTML = '<span>'+esc(daily[0].day.slice(5))+'</span><span>'+esc(daily[daily.length-1].day.slice(5))+'</span>';
 
   // bots
   $('botList').innerHTML = bots.length
-    ? bots.map(b=>'<div>@'+b.username+' <span class="muted">(…'+b.token_hint+')</span> <span class="'+(b.status==='active'?'ok':'off')+'">'+b.status+'</span></div>').join('')
+    ? bots.map(b=>'<div>@'+esc(b.username)+' <span class="muted">(…'+esc(b.token_hint)+')</span> <span class="'+(b.status==='active'?'ok':'off')+'">'+esc(b.status)+'</span></div>').join('')
     : 'No bot connected yet — paste your token below.';
 
   // offers
   $('offers').innerHTML = offers.map(o=>'<tr>'+
     '<td><b>'+esc(o.casino)+'</b><br><span class="muted">'+esc(o.label)+'</span></td>'+
-    '<td>'+(o.slug?'<span class="copy" onclick="copyLink(\\''+o.slug+'\\')">/r/'+o.slug+'</span>':'–')+'</td>'+
-    '<td>'+o.clicks+'</td><td>'+o.unique_clicks+'</td>'+
+    '<td>'+(o.slug?'<span class="copy" onclick="copyLink(\\''+escJsAttr(o.slug)+'\\')">'+esc('/r/'+o.slug)+'</span>':'–')+'</td>'+
+    '<td>'+esc(String(o.clicks))+'</td><td>'+esc(String(o.unique_clicks))+'</td>'+
     '<td class="'+(o.is_active?'ok':'off')+'">'+(o.is_active?'active':'off')+'</td>'+
-    '<td><button class="ghost" onclick="toggleOffer(\\''+o.id+'\\','+(!o.is_active)+')">'+(o.is_active?'Disable':'Enable')+'</button></td>'+
+    '<td><button class="ghost" onclick="toggleOffer(\\''+escJsAttr(o.id)+'\\','+(!o.is_active)+')">'+(o.is_active?'Disable':'Enable')+'</button></td>'+
   '</tr>').join('') || '<tr><td colspan="6" class="muted">No offers yet.</td></tr>';
 }
-function esc(s){ return (s??'').replace(/[&<>"]/g, ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[ch])); }
+function esc(s){ return (s??'').replace(/[&<>"']/g, ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[ch])); }
+function escJsAttr(s){ return (s??'').replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/\n/g,'n').replace(/\r/g,'r'); }
 function copyLink(slug){ navigator.clipboard.writeText(location.origin+'/r/'+slug); toast('Link copied'); }
 async function toggleOffer(id, on){ await api('/offers/'+id,{method:'PATCH',headers:{'content-type':'application/json'},body:JSON.stringify({is_active:on})}); load(); }
 async function createOffer(){
@@ -627,8 +632,8 @@ async function loadExtras(){
   $('planInfo').innerHTML = '<b style="color:var(--accent)">'+esc(cur.label)+'</b> — up to '+cur.maxBots+' bots, '
     +cur.maxOffers+' offers'+(cur.broadcasts?', broadcasts':'')+(cur.postbacks?', postbacks':'');
   $('planButtons').innerHTML = plan.plans.filter(p=>p.starsPrice>0 && p.tier!==cur.tier).map(p=>
-    '<button onclick="upgrade(\\''+p.tier+'\\')" style="margin-right:8px">'
-    +(plan.billing_enabled?'Upgrade to '+p.label+' — ⭐'+p.starsPrice+'/30d':p.label+' (billing not enabled)')+'</button>'
+    '<button onclick="upgrade(\\''+escJsAttr(p.tier)+'\\')" style="margin-right:8px">'
+    +(plan.billing_enabled?'Upgrade to '+esc(p.label)+' — ⭐'+esc(String(p.starsPrice))+'/30d':esc(p.label)+' (billing not enabled)')+'</button>'
   ).join('');
 
   // broadcasts panel

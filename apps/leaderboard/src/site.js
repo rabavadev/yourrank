@@ -1,6 +1,6 @@
 // Site + players data helpers for the Worker.
 import { effectivePlan, PLAN_LIMITS } from "./billing.js";
-import { query, one } from "./db.js";
+import { query, one, getSql } from "./db.js";
 
 export const DEFAULT_EXTRA = {
   chips: ["Instant Withdrawals", "Crypto Native", "24/7 Support"],
@@ -181,26 +181,44 @@ export async function saveSite(env, user, payload) {
   }
   const themeJson = JSON.stringify(themeObj);
 
-  await query(
-    `UPDATE sites SET name=$1, tagline=$2, casino=$3, code=$4, cta_url=$5, prize_pool=$6, period=$7, ends_at=$8, reset_note=$9, blurb=$10, extra_json=$11::jsonb, logo_data=$12, theme_json=$13::jsonb, updated_at=now() WHERE user_id=$14`,
-    [
-      b.name ?? site.name, b.tagline ?? site.tagline, b.casino ?? site.casino, b.code ?? site.code,
-      b.ctaUrl ?? site.cta_url, b.prizePool ?? site.prize_pool, b.period ?? site.period,
-      payload.endsAt ?? site.ends_at, b.resetNote ?? site.reset_note, (payload.partner && payload.partner.blurb) ?? site.blurb,
-      extra, logoData, themeJson, uid,
-    ]
-  );
-  if (Array.isArray(payload.players)) {
-    await query("DELETE FROM players WHERE site_id=$1", [site.id]);
-    let i = 0;
-    for (const p of payload.players) {
-      if (!p || !p.name) continue;
-      await query(
-        "INSERT INTO players (id,site_id,name,wagered,prize,sort) VALUES ($1,$2,$3,$4,$5,$6)",
-        [crypto.randomUUID(), site.id, String(p.name), Number(p.wagered) || 0, Number(p.prize) || 0, i++]
-      );
+  // Wrap all write operations in a transaction so that a crash between
+  // DELETE and INSERTs cannot lose player data (DOM3-002) and batch the
+  // INSERTs to avoid N+1 queries (PERF-001).
+  await getSql().begin(async (tx) => {
+    await tx.unsafe(
+      `UPDATE sites SET name=$1, tagline=$2, casino=$3, code=$4, cta_url=$5, prize_pool=$6, period=$7, ends_at=$8, reset_note=$9, blurb=$10, extra_json=$11::jsonb, logo_data=$12, theme_json=$13::jsonb, updated_at=now() WHERE user_id=$14`,
+      [
+        b.name ?? site.name, b.tagline ?? site.tagline, b.casino ?? site.casino, b.code ?? site.code,
+        b.ctaUrl ?? site.cta_url, b.prizePool ?? site.prize_pool, b.period ?? site.period,
+        payload.endsAt ?? site.ends_at, b.resetNote ?? site.reset_note, (payload.partner && payload.partner.blurb) ?? site.blurb,
+        extra, logoData, themeJson, uid,
+      ]
+    );
+    if (Array.isArray(payload.players)) {
+      await tx.unsafe("DELETE FROM players WHERE site_id=$1", [site.id]);
+      // Batch INSERT: build a single multi-row INSERT instead of N individual queries.
+      const validPlayers = payload.players.filter((p) => p && p.name);
+      if (validPlayers.length > 0) {
+        const cols = 6; // id, site_id, name, wagered, prize, sort
+        const params = [];
+        const valueRows = [];
+        let idx = 1;
+        validPlayers.forEach((p, i) => {
+          const row = [];
+          for (let c = 0; c < cols; c++) row.push(`$${idx++}`);
+          valueRows.push(`(${row.join(",")})`);
+          params.push(
+            crypto.randomUUID(), site.id, String(p.name),
+            Number(p.wagered) || 0, Number(p.prize) || 0, i
+          );
+        });
+        await tx.unsafe(
+          `INSERT INTO players (id,site_id,name,wagered,prize,sort) VALUES ${valueRows.join(",")}`,
+          params
+        );
+      }
     }
-  }
+  });
   return { ok: true };
 }
 

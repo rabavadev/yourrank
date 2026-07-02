@@ -55,10 +55,10 @@ export const PAGES = {
 </tbody></table></div></section>
 <section id="request"><div class="wrap"><h2 class="sec">Want us to set it up for you?</h2><p class="sec-sub">Prefer we build and manage the page? Tell us about your channel and we'll handle it.</p>
 <form class="lead" id="leadForm" novalidate>
-<div><label>Your handle / channel</label><input id="l_handle" placeholder="ChuckyBTZ" required /></div>
-<div><label>Casino</label><input id="l_casino" placeholder="Stake" /></div>
-<div class="full"><label>How to reach you</label><input id="l_contact" placeholder="Discord, email or Telegram" required /></div>
-<div class="full"><label>Anything else</label><textarea id="l_note" rows="3" placeholder="Prize pool, code, roughly how many players…"></textarea></div>
+<div><label for="l_handle">Your handle / channel</label><input id="l_handle" placeholder="ChuckyBTZ" required /></div>
+<div><label for="l_casino">Casino</label><input id="l_casino" placeholder="Stake" /></div>
+<div class="full"><label for="l_contact">How to reach you</label><input id="l_contact" placeholder="Discord, email or Telegram" required /></div>
+<div class="full"><label for="l_note">Anything else</label><textarea id="l_note" rows="3" placeholder="Prize pool, code, roughly how many players…"></textarea></div>
 <div class="full"><button class="btn btn--accent" type="submit" id="l_submit">Send request</button></div>
 <div class="status" id="l_status"></div></form></div></section>
 <footer><div class="wrap" style="display:flex;justify-content:space-between;width:100%;flex-wrap:wrap;gap:12px">
@@ -140,7 +140,7 @@ export const PAGES = {
 <div class="wrap" id="app"><div class="skel" id="loading">Loading your leaderboard…</div>
 <div id="dash" hidden>
 <div class="dash-head"><div><h1>Your leaderboard</h1><p class="live-link">Live at <a id="liveLink" href="#" target="_blank">…</a></p></div><span class="label" id="planBadge">FREE PLAN</span></div>
-<div class="card"><h3>Analytics</h3><p class="card-sub">Last 30 days on your page. Views count every visit; copies and clicks are people grabbing your code or hitting Join.</p>
+<div class="card"><h2>Analytics</h2><p class="card-sub">Last 30 days on your page. Views count every visit; copies and clicks are people grabbing your code or hitting Join.</p>
 <div class="stat-tiles">
 <div class="stat-tile"><span class="stat-num" id="st_views7">–</span><span class="stat-lbl">Views · 7d</span></div>
 <div class="stat-tile"><span class="stat-num" id="st_views30">–</span><span class="stat-lbl">Views · 30d</span></div>
@@ -148,17 +148,17 @@ export const PAGES = {
 <div class="stat-tile"><span class="stat-num" id="st_clicks30">–</span><span class="stat-lbl">Join clicks · 30d</span></div></div>
 <div class="stat-chart"><div class="stat-bars" id="statBars" title="Daily views, last 14 days"></div><div class="stat-chart-lbl"><span id="statFrom"></span><span>Daily views, last 14 days</span><span>today</span></div></div>
 <p class="hint" id="statsEmpty" hidden>No views yet — share your page link in your stream panels and Discord to get it moving.</p></div>
-<div class="card"><h3>Brand & prize</h3><p class="card-sub">The headline details on your page.</p><div class="grid2">
-<div class="field"><label>Display name</label><input id="f_name" /></div>
-<div class="field"><label>Tagline</label><input id="f_tagline" placeholder="Casino streamer & Stake partner" /></div>
-<div class="field"><label>Casino</label><input id="f_casino" placeholder="Stake" /></div>
-<div class="field"><label>Referral code</label><input id="f_code" placeholder="BTZ" /></div>
-<div class="field"><label>Referral link</label><input id="f_cta" placeholder="https://stake.com/?c=BTZ" /></div>
-<div class="field"><label>Prize pool</label><input id="f_pool" placeholder="$3,500" /></div>
-<div class="field"><label>Period</label><input id="f_period" placeholder="Monthly" /></div>
-<div class="field"><label>Countdown ends (UTC)</label><input id="f_ends" type="datetime-local" /><span class="hint">When the leaderboard resets. Powers the live timer.</span></div></div>
-<div class="field"><label>Partner blurb</label><textarea id="f_blurb" rows="2" placeholder="Short pitch about the casino and your code."></textarea></div></div>
-<div class="card"><h3>Players</h3><p class="card-sub">The board auto-sorts by wagered, highest first. Prize <span class="mono">0</span> shows a dash. Names can be masked (keep the <span class="mono">***</span>). <span class="mono" id="pCount"></span></p>
+<div class="card"><h2>Brand &amp; prize</h2><p class="card-sub">The headline details on your page.</p><div class="grid2">
+<div class="field"><label for="f_name">Display name</label><input id="f_name" /></div>
+<div class="field"><label for="f_tagline">Tagline</label><input id="f_tagline" placeholder="Casino streamer & Stake partner" /></div>
+<div class="field"><label for="f_casino">Casino</label><input id="f_casino" placeholder="Stake" /></div>
+<div class="field"><label for="f_code">Referral code</label><input id="f_code" placeholder="BTZ" /></div>
+<div class="field"><label for="f_cta">Referral link</label><input id="f_cta" placeholder="https://stake.com/?c=BTZ" /></div>
+<div class="field"><label for="f_pool">Prize pool</label><input id="f_pool" placeholder="$3,500" /></div>
+<div class="field"><label for="f_period">Period</label><input id="f_period" placeholder="Monthly" /></div>
+<div class="field"><label for="f_ends">Countdown ends (UTC)</label><input id="f_ends" type="datetime-local" /><span class="hint">When the leaderboard resets. Powers the live timer.</span></div></div>
+<div class="field"><label for="f_blurb">Partner blurb</label><textarea id="f_blurb" rows="2" placeholder="Short pitch about the casino and your code."></textarea></div></div>
+<div class="card"><h2>Players</h2><p class="card-sub">The board auto-sorts by wagered, highest first. Prize <span class="mono">0</span> shows a dash. Names can be masked (keep the <span class="mono">***</span>). <span class="mono" id="pCount"></span></p>
 <table class="players"><thead><tr><th class="rank">#</th><th>Player</th><th class="ta-r">Wagered</th><th class="ta-r">Prize</th><th></th></tr></thead><tbody id="rows"></tbody></table>
 <div id="playersEmpty" class="empty" hidden>No players yet. Add your first one.</div>
 <div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn--sm" id="addRow">+ Add player</button><button class="btn btn--sm" id="importBtn" type="button">Paste from spreadsheet</button></div>
@@ -168,26 +168,26 @@ export const PAGES = {
 <div class="import-foot"><span class="hint" id="importPreview">0 players detected</span>
 <label class="hint chk"><input type="checkbox" id="importReplace" checked /> Replace current list</label>
 <button class="btn btn--sm btn--accent" id="importApply" type="button" disabled>Add to table</button></div></div></div>
-<div class="card" id="brandCard"><h3>Branding <span class="pill pill--info" style="margin-left:6px">PRO</span></h3><p class="card-sub">Your logo and page colors. Free pages use the default look.</p>
+<div class="card" id="brandCard"><h2>Branding <span class="pill pill--info" style="margin-left:6px">PRO</span></h2><p class="card-sub">Your logo and page colors. Free pages use the default look.</p>
 <div id="brandBody">
 <div class="grid2">
-<div class="field"><label>Logo</label>
+<div class="field"><label for="logoFile">Logo</label>
 <div class="logo-row"><img id="logoPreview" class="logo-preview" alt="" hidden /><input type="file" id="logoFile" accept="image/png,image/jpeg,image/webp" hidden />
 <button class="btn btn--sm" id="logoPick" type="button">Upload logo</button><button class="btn btn--sm btn--ghost" id="logoClear" type="button" hidden>Remove</button></div>
 <span class="hint">PNG, JPG or WebP. Shows in your page header and as the link preview image when your page gets shared. Square works best.</span></div>
-<div class="field"><label>Page accent colors</label>
+<div class="field"><label for="c_a">Page accent colors</label>
 <div class="color-row"><input type="color" id="c_a" value="#5ad9ff" /><input type="color" id="c_b" value="#7b8cff" /><button class="btn btn--sm btn--ghost" id="colorsReset" type="button">Reset to default</button></div>
 <span class="hint">Drives the big name gradient and buttons on your page. Save to apply.</span></div>
 </div></div>
 <div class="empty" id="brandLock" hidden>Branding is a Pro feature. <a href="#" id="brandUpgrade">Upgrade to unlock it</a>.</div></div>
-<div class="card" id="archiveCard"><h3>Past winners</h3><p class="card-sub">When a period ends, close it out: the current board is saved and shown on your page under "Past Winners". Saves your unsaved edits first.</p>
+<div class="card" id="archiveCard"><h2>Past winners</h2><p class="card-sub">When a period ends, close it out: the current board is saved and shown on your page under "Past Winners". Saves your unsaved edits first.</p>
 <div class="arch-form">
-<div class="field" style="flex:1;min-width:160px;margin:0"><label>Label</label><input id="a_label" placeholder="July 2026" /></div>
-<div class="field" style="margin:0"><label>Then</label><select id="a_clear"><option value="wagers">Reset all wagers to 0</option><option value="players">Clear the player list</option><option value="none">Keep the board as is</option></select></div>
+<div class="field" style="flex:1;min-width:160px;margin:0"><label for="a_label">Label</label><input id="a_label" placeholder="July 2026" /></div>
+<div class="field" style="margin:0"><label for="a_clear">Then</label><select id="a_clear"><option value="wagers">Reset all wagers to 0</option><option value="players">Clear the player list</option><option value="none">Keep the board as is</option></select></div>
 <button class="btn btn--accent" id="a_go" type="button" style="align-self:flex-end">Close out period</button></div>
 <div class="arch-list" id="archList"></div>
 <div class="empty" id="archEmpty" hidden>No closed-out periods yet. Your first one shows up here and on your page.</div></div>
-<div class="card" id="planCard"><h3>Plan &amp; billing</h3><p class="card-sub">Pro removes the RankUp badge from your page and raises the player limit to 50.</p>
+<div class="card" id="planCard"><h2>Plan &amp; billing</h2><p class="card-sub">Pro removes the RankUp badge from your page and raises the player limit to 50.</p>
 <div class="plan-row"><div><div class="plan-name" id="planName">Free</div><div class="hint" id="planMeta">Up to 10 players · RankUp badge on your page</div></div>
 <button class="btn btn--accent" id="goPro">Upgrade to Pro</button></div>
 <p class="hint" id="planHint">Pay with crypto (BTC, ETH, USDT and 100+ more). Pro activates automatically once the network confirms — usually a few minutes.</p></div>
@@ -203,7 +203,7 @@ analytics: `<!DOCTYPE html><html lang="en"><head>
 <div class="wrap" id="app">
 <div class="dash-head"><div><h1>Analytics</h1><p class="live-link">Performance of <a id="liveLink" href="#" target="_blank">your page</a></p></div></div>
 <div id="an" hidden>
-<div class="card"><h3>Last 30 days</h3><p class="card-sub">Views count every visit to your page. Code copies and Join clicks show real engagement.</p>
+<div class="card"><h2>Last 30 days</h2><p class="card-sub">Views count every visit to your page. Code copies and Join clicks show real engagement.</p>
 <div class="stat-tiles">
 <div class="stat-tile"><span class="stat-num" id="views7">–</span><span class="stat-lbl">Views · 7d</span></div>
 <div class="stat-tile"><span class="stat-num" id="views30">–</span><span class="stat-lbl">Views · 30d</span></div>
@@ -211,7 +211,7 @@ analytics: `<!DOCTYPE html><html lang="en"><head>
 <div class="stat-tile"><span class="stat-num" id="clicks30">–</span><span class="stat-lbl">Join clicks · 30d</span></div></div>
 <div class="stat-chart"><div class="stat-bars" id="bars" title="Daily views, last 14 days"></div><div class="stat-chart-lbl"><span id="from"></span><span>Daily views, last 14 days</span><span>today</span></div></div>
 <p class="hint" id="empty" hidden>No views yet. Share your page link in your stream panels and Discord to get it moving.</p></div>
-<div class="card"><h3>Today</h3><p class="card-sub">Live since midnight UTC.</p>
+<div class="card"><h2>Today</h2><p class="card-sub">Live since midnight UTC.</p>
 <div class="stat-tiles">
 <div class="stat-tile"><span class="stat-num" id="viewsToday">–</span><span class="stat-lbl">Views today</span></div>
 <div class="stat-tile"><span class="stat-num" id="copiesToday">–</span><span class="stat-lbl">Code copies today</span></div>
@@ -228,13 +228,13 @@ billing: `<!DOCTYPE html><html lang="en"><head>
 <div class="wrap" id="app">
 <div class="dash-head"><div><h1>Billing</h1><p class="live-link">Your RankUp plan</p></div><span class="label" id="planBadge">FREE PLAN</span></div>
 <div id="bl" hidden>
-<div class="card" id="currentCard"><h3>Current plan</h3><p class="card-sub"><span id="planLine">Free — up to 10 players, one leaderboard.</span></p>
+<div class="card" id="currentCard"><h2>Current plan</h2><p class="card-sub"><span id="planLine">Free — up to 10 players, one leaderboard.</span></p>
 <p class="hint" id="expLine" hidden></p></div>
-<div class="card" id="upgradeCard"><h3>Upgrade to Pro</h3><p class="card-sub">Up to 50 players, custom branding, themes, and analytics history.</p>
+<div class="card" id="upgradeCard"><h2>Upgrade to Pro</h2><p class="card-sub">Up to 50 players, custom branding, themes, and analytics history.</p>
 <p class="hint">$<span id="price">29</span>/31 days · pay with crypto (BTC, ETH, USDT and 100+ more). Pro activates automatically once the network confirms — usually a few minutes.</p>
 <button class="btn btn--accent" id="checkout">Upgrade to Pro — $<span id="price2">29</span></button>
 <p class="status" id="status"></p></div>
-<div class="card" id="proCard" hidden><h3>You're on Pro</h3><p class="card-sub">Thanks for supporting RankUp. Manage everything from the Leaderboard tab.</p>
+<div class="card" id="proCard" hidden><h2>You're on Pro</h2><p class="card-sub">Thanks for supporting RankUp. Manage everything from the Leaderboard tab.</p>
 <p class="hint" id="proExp"></p></div></div>
 <div class="skel" id="loading">Loading billing…</div></div>
 <script src="/assets/billing.js"></script></body></html>`,

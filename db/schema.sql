@@ -80,9 +80,11 @@ CREATE TABLE IF NOT EXISTS players (
     id       UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     site_id  UUID NOT NULL REFERENCES sites(id) ON DELETE CASCADE,
     name     TEXT NOT NULL,
-    wagered  DOUBLE PRECISION NOT NULL DEFAULT 0,
-    prize    DOUBLE PRECISION NOT NULL DEFAULT 0,
-    sort     INT NOT NULL DEFAULT 0
+    wagered  NUMERIC(15,2) NOT NULL DEFAULT 0,
+    prize    NUMERIC(15,2) NOT NULL DEFAULT 0,
+    sort     INT NOT NULL DEFAULT 0,
+    CONSTRAINT positive_wagered CHECK (wagered >= 0),
+    CONSTRAINT positive_prize   CHECK (prize   >= 0)
 );
 CREATE INDEX IF NOT EXISTS idx_players_site ON players(site_id);
 

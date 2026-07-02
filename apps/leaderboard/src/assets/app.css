@@ -1,6 +1,6 @@
 /* RankUp app shell — login, signup, dashboard. Monochrome, industrial, one accent. */
 :root{--bg:#0b0b0c;--panel:#0f0f11;--panel-2:#141417;--line:#232327;--line-2:#2e2e33;--ink:#ededf0;--ink-soft:#a3a3ab;--ink-mute:#6a6a72;--accent:#c8ff00;--accent-ink:#0b0b0c;--danger:#ff5c5c;--ok:#57d38c;--mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,monospace;--sans:"Inter",system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
-*{box-sizing:border-box}html,body{margin:0}
+*{box-sizing:border-box}*:focus-visible{outline:2px solid #f0b429;outline-offset:2px}html,body{margin:0}
 body{background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased}
 a{color:var(--ink);text-decoration:none}a:hover{color:var(--accent)}
 ::selection{background:var(--accent);color:var(--accent-ink)}
@@ -16,7 +16,7 @@ a{color:var(--ink);text-decoration:none}a:hover{color:var(--accent)}
 .field{display:flex;flex-direction:column;gap:6px;margin-bottom:16px}
 .field label{font-size:13px;color:var(--ink-soft)}
 .field input,.field select,.field textarea{font-family:var(--sans);font-size:14px;color:var(--ink);background:var(--panel);border:1px solid var(--line-2);border-radius:8px;padding:10px 12px;width:100%}
-.field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:var(--accent)}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--accent)}
 .field .hint{font-size:12px;color:var(--ink-mute)}
 .err{color:var(--danger);font-size:13px;min-height:18px;margin:4px 0}
 .auth-wrap{min-height:100vh;display:grid;grid-template-columns:1.1fr .9fr}
@@ -35,14 +35,14 @@ a{color:var(--ink);text-decoration:none}a:hover{color:var(--accent)}
 .dash-head h1{font-size:24px;letter-spacing:-.02em;margin:0}
 .live-link{font-family:var(--mono);font-size:13px;color:var(--ink-soft)}.live-link a{color:var(--accent)}
 .card{border:1px solid var(--line);border-radius:12px;background:var(--panel);padding:20px;margin-top:18px}
-.card h3{margin:0 0 2px;font-size:15px}.card .card-sub{color:var(--ink-mute);font-size:13px;margin:0 0 16px}
+.card h2{margin:0 0 2px;font-size:15px}.card .card-sub{color:var(--ink-mute);font-size:13px;margin:0 0 16px}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:0 20px}
 @media(max-width:640px){.grid2{grid-template-columns:1fr}}
 table.players{width:100%;border-collapse:collapse;font-size:14px}
 table.players th{text-align:left;font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-mute);padding:8px;border-bottom:1px solid var(--line)}
 table.players td{padding:6px 8px;border-bottom:1px solid var(--line)}
 table.players td input{background:var(--panel-2);border:1px solid var(--line);border-radius:6px;padding:7px 9px;font-size:13px;color:var(--ink);width:100%}
-table.players td input:focus{outline:none;border-color:var(--accent)}
+table.players td input:focus{border-color:var(--accent)}
 table.players td.num input{font-family:var(--mono);text-align:right}
 table.players td.rank{font-family:var(--mono);color:var(--ink-mute);width:34px}
 table.players td.act{width:34px;text-align:center}
@@ -100,7 +100,7 @@ table.admin-table td.note{max-width:260px;color:var(--ink-soft)}
 /* --- paste / import --- */
 .import{margin-top:12px;border:1px solid var(--line-2);border-radius:10px;padding:14px;background:var(--panel-2)}
 .import textarea{width:100%;font-family:var(--mono);font-size:13px;color:var(--ink);background:var(--panel);border:1px solid var(--line-2);border-radius:8px;padding:10px 12px;resize:vertical}
-.import textarea:focus{outline:none;border-color:var(--accent)}
+.import textarea:focus{border-color:var(--accent)}
 .import-foot{display:flex;align-items:center;gap:14px;margin-top:10px;flex-wrap:wrap}
 .import-foot .btn{margin-left:auto}
 .chk{display:flex;gap:6px;align-items:center;cursor:pointer}

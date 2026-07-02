@@ -115,7 +115,11 @@ export default {
     }
     if (path === "/forgot") return new Response(PAGES.forgot, { headers: SECURE_HTML });
     if (path === "/reset") return new Response(PAGES.reset, { headers: SECURE_HTML });
-    if (path === "/admin") return new Response(PAGES.admin, { headers: SECURE_HTML });
+    if (path === "/admin") {
+      const u = await currentUser(request, env);
+      if (!u || !u.is_admin) return new Response('Not found', { status: 404 });
+      return new Response(PAGES.admin, { headers: SECURE_HTML });
+    }
     if (path === "/terms") return new Response(PAGES.terms, { headers: HTML });
     if (path === "/privacy") return new Response(PAGES.privacy, { headers: HTML });
     if (path === "/responsible") return new Response(PAGES.responsible, { headers: HTML });

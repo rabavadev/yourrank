@@ -22,15 +22,15 @@ jobs:
   deploy-leaderboard:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: oven-sh/setup-bun@v2
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: oven-sh/setup-bun@735343b667d3e6bfb39c11a0c3b3a1ca0a8a8c0e
       - working-directory: apps/leaderboard
         run: bun install --frozen-lockfile
       # Regenerate src/assets_bundled.js from src/assets/ (it's committed in
       # sync, but rebuild in CI so a stale bundle can never ship).
       - working-directory: apps/leaderboard
         run: node build.js
-      - uses: cloudflare/wrangler-action@v3
+      - uses: cloudflare/wrangler-action@6d50771a405efa6ad3b959cf90f9e64ca6711e4d
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
@@ -41,12 +41,14 @@ jobs:
   deploy-bot:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: oven-sh/setup-bun@v2
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: oven-sh/setup-bun@735343b667d3e6bfb39c11a0c3b3a1ca0a8a8c0e
       - working-directory: apps/bot
         run: bun install --frozen-lockfile
+      - working-directory: apps/bot
+        run: bun run typecheck
       # wrangler bundles src/worker.ts (TS) directly; no tsc emit needed.
-      - uses: cloudflare/wrangler-action@v3
+      - uses: cloudflare/wrangler-action@6d50771a405efa6ad3b959cf90f9e64ca6711e4d
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}

@@ -17,15 +17,12 @@
     "demo": "tsx src/demo.ts"
   },
   "dependencies": {
-    "dotenv": "^16.4.5",
-    "fastify": "^4.28.1",
     "grammy": "^1.30.0",
     "hono": "^4.12.27",
     "postgres": "^3.4.9"
   },
   "devDependencies": {
     "@types/node": "^20.14.10",
-    "@types/pg": "^8.11.6",
     "tsx": "^4.16.2",
     "typescript": "^5.5.3",
     "wrangler": "^4.106.0"

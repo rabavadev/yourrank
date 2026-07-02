@@ -28,6 +28,7 @@ export async function activatePro(env, userId, days = PRO_DAYS) {
     const expiresMs = base + days * 86400000;
     // to_timestamp() takes seconds; convert ms -> s.
     await query("UPDATE users SET plan='pro', plan_expires_at=to_timestamp($1 / 1000.0), updated_at=now() WHERE id=$2", [expiresMs, userId]);
+    await query("INSERT INTO subscriptions (user_id, plan, status, provider, current_period_end) VALUES ($1, $2, 'active', 'nowpayments', to_timestamp($3 / 1000.0))", [userId, 'pro', expiresMs]);
   } else {
     // Lifetime: no expiry.
     await query("UPDATE users SET plan='pro', plan_expires_at=NULL, updated_at=now() WHERE id=$1", [userId]);

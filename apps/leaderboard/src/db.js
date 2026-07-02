@@ -7,13 +7,14 @@
 // pooler). node-pg's per-request Client was worse (each request paid a full
 // connect); node-pg's persistent Pool was middling.
 //
-// Exposes the SAME query()/one() API the rest of the app uses. index.js
+// Exposes query()/one() for reads (safe to retry) and exec()/execOne() for
+// mutations (no retry — callers must handle idempotency themselves). index.js
 // populates process.env.DATABASE_URL from env.HYPERDRIVE.connectionString at
 // the top of fetch, before any query runs.
 import postgres from "postgres";
 
 let sql = null;
-function getSql() {
+export function getSql() {
   if (!sql) {
     sql = postgres(process.env.DATABASE_URL, {
       max: 1,            // one connection per isolate; Hyperdrive pools globally
@@ -26,12 +27,16 @@ function getSql() {
   return sql;
 }
 
-/** Run a parameterized query ($1, $2, ...) and return the rows array.
+/** Run a parameterized READ query ($1, $2, ...) and return the rows array.
  *  One retry on the SAME sql instance. Hyperdrive's pooled connection
  *  occasionally throws on first use after an idle period while it re-establishes
  *  the link; a single retry lets the (now-warming) connection handle it instead
- *  of surfacing as a Cloudflare 1101. Non-idempotent callers (INSERTs) should
- *  not rely on this, but every read endpoint benefits. */
+ *  of surfacing as a Cloudflare 1101.
+ *
+ *  USE THIS FOR SELECTs ONLY. For INSERT / UPDATE / DELETE use exec() below,
+ *  which does NOT retry — if the first attempt committed but the response was
+ *  lost (network hiccup), a blind retry would duplicate the row or throw a
+ *  unique violation. */
 export async function query(text, params = []) {
   try {
     const rows = await getSql().unsafe(text, params);
@@ -45,5 +50,18 @@ export async function query(text, params = []) {
 /** Like query() but returns the first row (or undefined). */
 export async function one(text, params = []) {
   const rows = await query(text, params);
+  return rows[0];
+}
+
+/** Run a parameterized mutation (INSERT/UPDATE/DELETE). NO retry — callers
+ *  must handle idempotency themselves. */
+export async function exec(text, params = []) {
+  const rows = await getSql().unsafe(text, params);
+  return rows.map((r) => ({ ...r }));
+}
+
+/** Like exec() but returns the first row (or undefined). */
+export async function execOne(text, params = []) {
+  const rows = await exec(text, params);
   return rows[0];
 }

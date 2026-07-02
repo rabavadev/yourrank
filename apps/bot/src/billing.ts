@@ -137,6 +137,7 @@ export async function downgradeExpired(): Promise<number> {
   const rows = await query<{ id: string }>(
     `UPDATE users u SET plan = 'free', updated_at = now()
       WHERE u.plan <> 'free'
+        AND (u.plan_expires_at IS NULL OR u.plan_expires_at <= now())
         AND NOT EXISTS (
           SELECT 1 FROM subscriptions s
            WHERE s.user_id = u.id AND s.status = 'active'
