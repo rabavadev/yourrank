@@ -101,6 +101,14 @@ type DashBindings = SessionEnv & Record<string, unknown>;
 export function buildDashboard(): Hono<{ Bindings: DashBindings }> {
   const app = new Hono<{ Bindings: DashBindings }>();
 
+  // CSP header on all dashboard responses (SEC-102)
+  app.use("*", async (c, next) => {
+    await next();
+    if (!c.res.headers.has("Content-Security-Policy")) {
+      c.header("Content-Security-Policy", "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:;");
+    }
+  });
+
   // ---- auth ----
   app.post("/auth/telegram", async (c) => {
     if (!sameOrigin(c.req.raw)) return c.json({ error: "cross-origin request rejected" }, 403);
