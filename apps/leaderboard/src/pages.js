@@ -24,7 +24,7 @@ export const PAGES = {
 <meta property="og:description" content="Create your own branded leaderboard page. Track referrals, manage promo codes, and grow your audience.">
 <meta property="og:url" content="https://yourrank.site/">
 <meta property="og:type" content="website">
-<meta property="og:image" content="https://yourrank.site/assets/og-image.png">
+<!-- og:image removed: no static asset exists; add when a brand image is created -->
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="/assets/landing.css" />
