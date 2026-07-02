@@ -36,6 +36,9 @@ export async function query<T = Record<string, unknown>>(
   return rows.map((r) => ({ ...(r as Record<string, unknown>) })) as unknown as T[];
 }
 
+/** Alias for query() — use for INSERT/UPDATE/DELETE to signal intent. */
+export const exec = query;
+
 /** Like query() but returns the first row (or undefined). */
 export async function one<T = Record<string, unknown>>(
   text: string,

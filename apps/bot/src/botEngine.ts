@@ -33,10 +33,12 @@ interface OfferRow {
 // ---------------------------------------------------------------
 
 export async function getBotBySecret(secret: string): Promise<BotRow | undefined> {
+  // JOIN on users so a suspended owner's bots are automatically rejected.
   return one<BotRow>(
-    `SELECT id, owner_id, tg_bot_id, username, token_encrypted, webhook_secret, status, welcome_message
-       FROM bots
-      WHERE webhook_secret = $1`,
+    `SELECT b.id, b.owner_id, b.tg_bot_id, b.username, b.token_encrypted,
+            b.webhook_secret, b.status, b.welcome_message
+       FROM bots b JOIN users u ON u.id = b.owner_id
+      WHERE b.webhook_secret = $1 AND u.status = 'active'`,
     [secret]
   );
 }

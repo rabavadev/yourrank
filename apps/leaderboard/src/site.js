@@ -86,12 +86,16 @@ export function publicShape(site, players, archives = []) {
 export async function getPublicSite(env, slug) {
   const site = await getBySlug(env, slug);
   if (!site || !site.published) return null;
-  const owner = await one(
-    "SELECT plan, (EXTRACT(EPOCH FROM plan_expires_at) * 1000)::double precision AS plan_expires_at, status FROM users WHERE id=$1",
-    [site.user_id]
-  );
+  const [owner, players, archives] = await Promise.all([
+    one(
+      "SELECT plan, (EXTRACT(EPOCH FROM plan_expires_at) * 1000)::double precision AS plan_expires_at, status FROM users WHERE id=$1",
+      [site.user_id]
+    ),
+    getPlayers(env, site.id),
+    getArchives(env, site.id),
+  ]);
   if (owner && owner.status === "suspended") return { suspended: true };
-  return { id: site.id, data: publicShape(site, await getPlayers(env, site.id), await getArchives(env, site.id)), plan: effectivePlan(owner) };
+  return { id: site.id, data: publicShape(site, players, archives), plan: effectivePlan(owner) };
 }
 
 export async function getUserSite(env, uid) {
@@ -119,12 +123,15 @@ export async function createArchive(env, uid, { label, clear } = {}) {
   const lab = String(label || "").trim().slice(0, 60) ||
     new Date().toLocaleString("en-US", { month: "long", year: "numeric", timeZone: "UTC" });
   // snapshot_json is JSONB — pass a JSON string cast to jsonb.
-  await exec(
-    "INSERT INTO archives (id,site_id,label,snapshot_json,created_at) VALUES ($1,$2,$3,$4::jsonb,now())",
-    [crypto.randomUUID(), site.id, lab, JSON.stringify(players).slice(0, 200000)]
-  );
-  if (clear === "players") await exec("DELETE FROM players WHERE site_id=$1", [site.id]);
-  else if (clear === "wagers") await exec("UPDATE players SET wagered=0 WHERE site_id=$1", [site.id]);
+  // Wrap INSERT + DELETE/UPDATE in a transaction so a crash between them cannot lose data (BE-003/DB-003).
+  await getSql().begin(async (tx) => {
+    await tx.unsafe(
+      "INSERT INTO archives (id,site_id,label,snapshot_json,created_at) VALUES ($1,$2,$3,$4::jsonb,now())",
+      [crypto.randomUUID(), site.id, lab, JSON.stringify(players).slice(0, 200000)]
+    );
+    if (clear === "players") await tx.unsafe("DELETE FROM players WHERE site_id=$1", [site.id]);
+    else if (clear === "wagers") await tx.unsafe("UPDATE players SET wagered=0 WHERE site_id=$1", [site.id]);
+  });
   return { ok: true, label: lab };
 }
 

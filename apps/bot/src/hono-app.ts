@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import type { Update } from "grammy/types";
 import { config } from "./config.js";
-import { one, query } from "./db.js";
+import { exec, one, query } from "./db.js";
 import { encryptToken, newClickRef, newLinkSlug, newWebhookSecret, verifyHmacSha256Hex } from "./crypto.js";
 import { getBotBySecret, handleUpdateForBot } from "./botEngine.js";
 import { getMe, setWebhook } from "./telegram.js";
@@ -53,7 +53,8 @@ async function recordConversion(ownerId: string, q: PostbackQuery): Promise<void
     offerId = hit?.offer_id ?? null;
   }
 
-  await query(
+  // exec() — semantically a write/mutation, not a read query.
+  await exec(
     `INSERT INTO conversions (owner_id, offer_id, click_ref, event, amount, currency, raw)
      VALUES ($1, $2, $3, $4, $5, $6, $7)`,
     [ownerId, offerId, clickRef, event, amount, currency, JSON.stringify(q)]
@@ -88,7 +89,14 @@ export function buildHonoApp(): Hono<{ Bindings: Bindings }> {
     c.header('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
   });
 
-  app.get("/health", (c) => c.json({ ok: true }));
+  app.get("/health", async (c) => {
+    try {
+      await one('SELECT 1 AS ok');
+      return c.json({ ok: true, db: true });
+    } catch {
+      return c.json({ ok: false, db: false }, 503);
+    }
+  });
 
   // =================================================================
   // 1) TELEGRAM WEBHOOK — one endpoint for ALL bots

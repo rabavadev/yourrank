@@ -7,7 +7,7 @@ import { handleOverview, handleUsers, handleLeads, handlePayments, handleAction 
 import { sendEmail, resetEmail } from "./email.js";
 import { bumpStat, getStats } from "./stats.js";
 import { leaderboard_css, leaderboard_js, app_css, auth_js, dashboard_js, admin_js, landing_css, landing_js, analytics_js, billing_js } from "./assets_bundled.js";
-import { query, one, exec } from "./db.js";
+import { query, one, exec, getSql } from "./db.js";
 import { shellNavHtml, SHELL_NAV_CSS } from "../../../shared/shell-nav.js";
 
 const MIME = {
@@ -259,7 +259,7 @@ async function handleSignup(request, env) {
     if (password.length < 8) return bad("Password must be at least 8 characters");
     if (!slug || RESERVED.has(slug)) slug = `${slug || "site"}-${Math.random().toString(36).slice(2, 6)}`;
     const existing = await one("SELECT id FROM users WHERE email=$1", [email]);
-    if (existing) return bad("An account with that email already exists", 409);
+    if (existing) return bad("If this email isn't already registered, check your inbox to confirm.");
     let finalSlug = slug;
     for (let n = 2; ; n++) { const c = await one("SELECT id FROM sites WHERE slug=$1", [finalSlug]); if (!c) break; finalSlug = `${slug}-${n}`; }
     const { hash, salt } = await hashPassword(password);
@@ -271,8 +271,10 @@ async function handleSignup(request, env) {
   // (23505) on the slug, append a short random suffix and retry once.
   for (let attempt = 0; attempt < 3; attempt++) {
     try {
-      await exec("INSERT INTO users (id,email,password_hash,password_salt,plan,status) VALUES ($1,$2,$3,$4,$5,$6)", [userId, email, hash, salt, "free", "active"]);
-      await exec("INSERT INTO sites (id,user_id,slug,name,casino,prize_pool,period,published,extra_json) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9::jsonb)", [uuid(), userId, finalSlug, name || finalSlug, "Stake", "$0", "Monthly", true, JSON.stringify(DEFAULT_EXTRA)]);
+      await getSql().begin(async (tx) => {
+        await tx.unsafe("INSERT INTO users (id,email,password_hash,password_salt,plan,status) VALUES ($1,$2,$3,$4,$5,$6)", [userId, email, hash, salt, "free", "active"]);
+        await tx.unsafe("INSERT INTO sites (id,user_id,slug,name,casino,prize_pool,period,published,extra_json) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9::jsonb)", [uuid(), userId, finalSlug, name || finalSlug, "Stake", "$0", "Monthly", true, JSON.stringify(DEFAULT_EXTRA)]);
+      });
       break;
     } catch (e) {
       const msg = String(e?.message || e);
@@ -283,7 +285,7 @@ async function handleSignup(request, env) {
       }
       // users.email UNIQUE collision (already checked above, but concurrent) or
       // a real error: surface a clean message, never a raw 500.
-      return bad(/users_email_key|23505.*email/i.test(msg) ? "An account with that email already exists" : "Sign-up failed, please try again", 409);
+      return bad("If this email isn't already registered, check your inbox to confirm.");
     }
   }
   const token = await createSession(env, userId);
@@ -295,28 +297,33 @@ async function handleSignup(request, env) {
 }
 
 async function handleLogin(request, env) {
-  if (!(await rateLimit(env, `login:${clientIp(request)}`, 20, 600))) return bad("Too many attempts. Try again in a few minutes.", 429);
-  const body = await readJson(request);
-  if (!body) return bad("Invalid request");
-  const email = String(body.email || "").trim().toLowerCase();
-  const password = String(body.password || "");
-  if (!isEmail(email) || !password) return bad("Email and password required");
-  const user = await one("SELECT id,email,password_hash,password_salt,status FROM users WHERE email=$1", [email]);
-  if (!user || !user.password_hash) return bad("Incorrect email or password", 401);
-  const { ok, needsRehash } = await verifyPassword(password, user.password_salt, user.password_hash);
-  if (!ok) return bad("Incorrect email or password", 401);
-  if (user.status === "suspended") return bad("This account is suspended. Contact support.", 403);
-  // Lazy upgrade: if the stored hash used fewer PBKDF2 iterations than the
-  // current target, re-hash at the new count and persist — no password reset
-  // needed. Fire-and-forget so login latency isn't dominated by the rehash.
-  if (needsRehash) {
-    const { hash, salt } = await hashPassword(password);
-    exec("UPDATE users SET password_hash=$1, password_salt=$2, updated_at=now() WHERE id=$3", [hash, salt, user.id]).catch(() => {});
+    try {
+    if (!(await rateLimit(env, `login:${clientIp(request)}`, 20, 600))) return bad("Too many attempts. Try again in a few minutes.", 429);
+    const body = await readJson(request);
+    if (!body) return bad("Invalid request");
+    const email = String(body.email || "").trim().toLowerCase();
+    const password = String(body.password || "");
+    if (!isEmail(email) || !password) return bad("Email and password required");
+    const user = await one("SELECT id,email,password_hash,password_salt,status FROM users WHERE email=$1", [email]);
+    if (!user || !user.password_hash) return bad("Incorrect email or password", 401);
+    const { ok, needsRehash } = await verifyPassword(password, user.password_salt, user.password_hash);
+    if (!ok) return bad("Incorrect email or password", 401);
+    if (user.status === "suspended") return bad("This account is suspended. Contact support.", 403);
+    // Lazy upgrade: if the stored hash used fewer PBKDF2 iterations than the
+    // current target, re-hash at the new count and persist — no password reset
+    // needed. Fire-and-forget so login latency isn't dominated by the rehash.
+    if (needsRehash) {
+      const { hash, salt } = await hashPassword(password);
+      exec("UPDATE users SET password_hash=$1, password_salt=$2, updated_at=now() WHERE id=$3", [hash, salt, user.id]).catch(() => {});
+    }
+    const site = await one("SELECT slug FROM sites WHERE user_id=$1", [user.id]);
+    const token = await createSession(env, user.id);
+    return json({ ok: true, user: { id: user.id, email: user.email, slug: site?.slug || null } }, 200, { "set-cookie": cookieSet(token) });
+    } catch (e) {
+      console.error("login failed:", String(e?.message || e));
+      return bad("Login failed, please try again", 500);
+    }
   }
-  const site = await one("SELECT slug FROM sites WHERE user_id=$1", [user.id]);
-  const token = await createSession(env, user.id);
-  return json({ ok: true, user: { id: user.id, email: user.email, slug: site?.slug || null } }, 200, { "set-cookie": cookieSet(token) });
-}
 
 async function handleLogout(request, env) {
   await destroySession(env, readToken(request));
@@ -391,12 +398,13 @@ async function handleTrackCopy(request, env, ctx) {
 }
 
 async function handleGetSite(request, env) {
-  const { user, res } = await requireUser(request, env);
-  if (res) return res;
-  const s = await getUserSite(env, user.id);
-  if (!s) return bad("No site for this account", 404);
-  return json({ ok: true, slug: s.slug, published: s.published, plan: effectivePlan(user), data: s.data, archives: s.archives });
-}
+    const { user, res } = await requireUser(request, env);
+    if (res) return res;
+    if (user.status === "suspended") return bad("This account is suspended.", 403);
+    const s = await getUserSite(env, user.id);
+    if (!s) return bad("No site for this account", 404);
+    return json({ ok: true, slug: s.slug, published: s.published, plan: effectivePlan(user), data: s.data, archives: s.archives });
+  }
 
 // POST /api/site/archive — { label?, clear: "wagers"|"players"|"none" }
 async function handleArchive(request, env) {
