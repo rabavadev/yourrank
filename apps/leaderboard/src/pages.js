@@ -194,7 +194,52 @@ export const PAGES = {
 <div class="savebar"><span class="status" id="status"></span><a class="btn btn--ghost" id="viewLive" href="#" target="_blank">View live page</a><button class="btn btn--accent" id="save">Save changes</button></div></div></div>
 <script src="/assets/dashboard.js"></script></body></html>`,
 
-  admin: `<!DOCTYPE html><html lang="en"><head>
+analytics: `<!DOCTYPE html><html lang="en"><head>
+<meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Analytics · RankUp</title><link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="/assets/app.css" /><!--GM_NAV_CSS--></head><body>
+<!--GM_NAV-->
+<div class="wrap" id="app">
+<div class="dash-head"><div><h1>Analytics</h1><p class="live-link">Performance of <a id="liveLink" href="#" target="_blank">your page</a></p></div></div>
+<div id="an" hidden>
+<div class="card"><h3>Last 30 days</h3><p class="card-sub">Views count every visit to your page. Code copies and Join clicks show real engagement.</p>
+<div class="stat-tiles">
+<div class="stat-tile"><span class="stat-num" id="views7">–</span><span class="stat-lbl">Views · 7d</span></div>
+<div class="stat-tile"><span class="stat-num" id="views30">–</span><span class="stat-lbl">Views · 30d</span></div>
+<div class="stat-tile"><span class="stat-num" id="copies30">–</span><span class="stat-lbl">Code copies · 30d</span></div>
+<div class="stat-tile"><span class="stat-num" id="clicks30">–</span><span class="stat-lbl">Join clicks · 30d</span></div></div>
+<div class="stat-chart"><div class="stat-bars" id="bars" title="Daily views, last 14 days"></div><div class="stat-chart-lbl"><span id="from"></span><span>Daily views, last 14 days</span><span>today</span></div></div>
+<p class="hint" id="empty" hidden>No views yet. Share your page link in your stream panels and Discord to get it moving.</p></div>
+<div class="card"><h3>Today</h3><p class="card-sub">Live since midnight UTC.</p>
+<div class="stat-tiles">
+<div class="stat-tile"><span class="stat-num" id="viewsToday">–</span><span class="stat-lbl">Views today</span></div>
+<div class="stat-tile"><span class="stat-num" id="copiesToday">–</span><span class="stat-lbl">Code copies today</span></div>
+<div class="stat-tile"><span class="stat-num" id="clicksToday">–</span><span class="stat-lbl">Join clicks today</span></div></div></div></div>
+<div class="skel" id="loading">Loading analytics…</div></div>
+<script src="/assets/analytics.js"></script></body></html>`,
+
+billing: `<!DOCTYPE html><html lang="en"><head>
+<meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Billing · RankUp</title><link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="/assets/app.css" /><!--GM_NAV_CSS--></head><body>
+<!--GM_NAV-->
+<div class="wrap" id="app">
+<div class="dash-head"><div><h1>Billing</h1><p class="live-link">Your RankUp plan</p></div><span class="label" id="planBadge">FREE PLAN</span></div>
+<div id="bl" hidden>
+<div class="card" id="currentCard"><h3>Current plan</h3><p class="card-sub"><span id="planLine">Free — up to 10 players, one leaderboard.</span></p>
+<p class="hint" id="expLine" hidden></p></div>
+<div class="card" id="upgradeCard"><h3>Upgrade to Pro</h3><p class="card-sub">Up to 50 players, custom branding, themes, and analytics history.</p>
+<p class="hint">$<span id="price">29</span>/31 days · pay with crypto (BTC, ETH, USDT and 100+ more). Pro activates automatically once the network confirms — usually a few minutes.</p>
+<button class="btn btn--accent" id="checkout">Upgrade to Pro — $<span id="price2">29</span></button>
+<p class="status" id="status"></p></div>
+<div class="card" id="proCard" hidden><h3>You're on Pro</h3><p class="card-sub">Thanks for supporting RankUp. Manage everything from the Leaderboard tab.</p>
+<p class="hint" id="proExp"></p></div></div>
+<div class="skel" id="loading">Loading billing…</div></div>
+<script src="/assets/billing.js"></script></body></html>`,
+
+admin: `<!DOCTYPE html><html lang="en"><head>
 <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Admin · RankUp</title><link rel="preconnect" href="https://fonts.googleapis.com" />
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />

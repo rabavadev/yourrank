@@ -6,7 +6,7 @@ import { effectivePlan, PLAN_LIMITS, priceUsd, handleCheckout, handleIpn } from 
 import { handleOverview, handleUsers, handleLeads, handlePayments, handleAction } from "./admin.js";
 import { sendEmail, resetEmail } from "./email.js";
 import { bumpStat, getStats } from "./stats.js";
-import { leaderboard_css, leaderboard_js, app_css, auth_js, dashboard_js, admin_js, landing_css, landing_js } from "./assets_bundled.js";
+import { leaderboard_css, leaderboard_js, app_css, auth_js, dashboard_js, admin_js, landing_css, landing_js, analytics_js, billing_js } from "./assets_bundled.js";
 import { query, one } from "./db.js";
 import { shellNavHtml, SHELL_NAV_CSS } from "../../../shared/shell-nav.js";
 
@@ -52,6 +52,8 @@ export default {
         "/assets/admin.js": [admin_js, ".js"],
         "/assets/landing.css": [landing_css, ".css"],
         "/assets/landing.js": [landing_js, ".js"],
+        "/assets/analytics.js": [analytics_js, ".js"],
+        "/assets/billing.js": [billing_js, ".js"],
       };
       const entry = map[path];
       if (entry) return new Response(entry[0], { headers: { "content-type": MIME[entry[1]], "cache-control": "public, max-age=3600" } });
@@ -83,6 +85,32 @@ export default {
         // unauthenticated path. Retry-safe: a plain refresh re-runs the read.
         console.error("dashboard render failed:", String(e?.message || e));
         return new Response("Dashboard couldn't load right now — please refresh.", { status: 500, headers: { "content-type": "text/plain; charset=utf-8" } });
+      }
+    }
+    if (path === "/dashboard/analytics") {
+      try {
+        const user = await currentUser(request, env);
+        if (!user) return Response.redirect(new URL("/login", url), 302);
+        const html = PAGES.analytics
+          .replace("<!--GM_NAV_CSS-->", `<style>${SHELL_NAV_CSS}</style>`)
+          .replace("<!--GM_NAV-->", shellNavHtml({ activePath: "/dashboard/analytics", user }));
+        return new Response(html, { headers: SECURE_HTML });
+      } catch (e) {
+        console.error("analytics render failed:", String(e?.message || e));
+        return new Response("Analytics couldn't load right now — please refresh.", { status: 500, headers: { "content-type": "text/plain; charset=utf-8" } });
+      }
+    }
+    if (path === "/dashboard/billing") {
+      try {
+        const user = await currentUser(request, env);
+        if (!user) return Response.redirect(new URL("/login", url), 302);
+        const html = PAGES.billing
+          .replace("<!--GM_NAV_CSS-->", `<style>${SHELL_NAV_CSS}</style>`)
+          .replace("<!--GM_NAV-->", shellNavHtml({ activePath: "/dashboard/billing", user }));
+        return new Response(html, { headers: SECURE_HTML });
+      } catch (e) {
+        console.error("billing render failed:", String(e?.message || e));
+        return new Response("Billing couldn't load right now — please refresh.", { status: 500, headers: { "content-type": "text/plain; charset=utf-8" } });
       }
     }
     if (path === "/forgot") return new Response(PAGES.forgot, { headers: SECURE_HTML });
