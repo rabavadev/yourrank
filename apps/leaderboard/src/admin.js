@@ -107,7 +107,7 @@ export async function handleAction(request, env) {
       const origin = new URL(request.url).origin;
       console.error("[AUDIT]", JSON.stringify({
         ts: new Date().toISOString(), admin: admin.id, action: body.action,
-        target: target.id, email: target.email, details: { link: `${origin}/reset?token=${token}` },
+        target: target.id, email: target.email, details: "reset-link-generated",
       }));
       return ok({ link: `${origin}/reset?token=${token}`, email: target.email });
     }
