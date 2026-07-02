@@ -1,21 +1,21 @@
 {
   "name": "groupsmix-leaderboard",
   "version": "0.1.0",
-  "private": true,
-  "type": "module",
+  "devDependencies": {
+    "wrangler": "^4.106.0"
+  },
   "engines": {
     "node": ">=20"
   },
+  "private": true,
   "scripts": {
     "build": "node build.js",
     "predeploy": "node build.js",
     "deploy": "wrangler deploy",
     "dev": "wrangler dev"
   },
+  "type": "module",
   "dependencies": {
-    "pg": "^8.22.0"
-  },
-  "devDependencies": {
-    "wrangler": "^4.106.0"
+    "postgres": "^3.4.9"
   }
 }

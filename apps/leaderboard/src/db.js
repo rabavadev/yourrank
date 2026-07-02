@@ -1,43 +1,35 @@
-// Postgres data layer for the leaderboard Worker.
-// Mirrors casino-bot-platform/src/db.ts so both Workers share one API.
+// Postgres data layer for the leaderboard Worker, on postgres.js.
 //
-// The Pool is created lazily on first use so that index.js's fetch handler
-// has a chance to populate process.env.DATABASE_URL (from the Hyperdrive
-// binding) before the Pool reads the connection string.
-import pg from "pg";
-const { Pool } = pg;
+// postgres.js (Cloudflare-listed Hyperdrive driver) gave the best reliability
+// of the approaches tried: a single persistent connection per Worker isolate,
+// kept warm, with Hyperdrive doing the global pooling to Supabase's DIRECT
+// host (per Cloudflare's Supabase guide, use the direct connection, not the
+// pooler). node-pg's per-request Client was worse (each request paid a full
+// connect); node-pg's persistent Pool was middling.
+//
+// Exposes the SAME query()/one() API the rest of the app uses. index.js
+// populates process.env.DATABASE_URL from env.HYPERDRIVE.connectionString at
+// the top of fetch, before any query runs.
+import postgres from "postgres";
 
-let pool = null;
-function getPool() {
-  if (!pool) {
-    pool = new Pool({
-      connectionString: process.env.DATABASE_URL,
-      // Hyperdrive pools server-side; a Worker isolate only needs 1-2 clients
-      // at a time. Higher max spawns excess connections that race cold setup.
-      max: 2,
-      // Cold Hyperdrive connections can take >1s to establish; give them room.
-      connectionTimeoutMillis: 8000,
-      idleTimeoutMillis: 30000,
+let sql = null;
+function getSql() {
+  if (!sql) {
+    sql = postgres(process.env.DATABASE_URL, {
+      max: 1,            // one connection per isolate; Hyperdrive pools globally
+      prepare: false,    // we pass already-$n-parameterized SQL from call sites
+      idle_timeout: 20,  // keep the connection warm briefly between requests
+      connect_timeout: 30,
+      debug: false,
     });
   }
-  return pool;
+  return sql;
 }
 
-/** Run a query and return the rows array.
- *  Hyperdrive's pooled connections occasionally throw on first use while the
- *  connection is still being established (manifests as an intermittent 1101).
- *  A single retry on the SAME pool lets a different, ready client handle it.
- *  (Tearing the pool down on each failure made it worse — it lost warm clients.)
- *  Tuned pool: max 2 clients per isolate, generous connect timeout. */
+/** Run a parameterized query ($1, $2, ...) and return the rows array. */
 export async function query(text, params = []) {
-  try {
-    const res = await getPool().query(text, params);
-    return res.rows;
-  } catch (err) {
-    // Same pool, second try — a different client is likely ready by now.
-    const res = await getPool().query(text, params);
-    return res.rows;
-  }
+  const rows = await getSql().unsafe(text, params);
+  return rows.map((r) => ({ ...r }));
 }
 
 /** Like query() but returns the first row (or undefined). */

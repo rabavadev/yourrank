@@ -1,41 +1,34 @@
-import { Pool, type QueryResultRow } from "pg";
+// Postgres data layer for the bot Worker, on postgres.js.
+// Single persistent connection per isolate (Hyperdrive pools globally to
+// Supabase's direct host). Exposes the SAME query<T>()/one<T>() API.
+import postgres from "postgres";
 import { config } from "./config.js";
 
-// Lazy Pool: config.databaseUrl is populated from process.env at fetch time
-// (worker.ts sets it from the HYPERDRIVE binding), so the Pool must NOT be
-// constructed at module load. Built on first use instead.
-let pool: Pool | null = null;
-function getPool(): Pool {
-  if (!pool) {
-    pool = new Pool({
-      connectionString: config.databaseUrl,
-      max: 2,
-      connectionTimeoutMillis: 8000,
-      idleTimeoutMillis: 30000,
+let sql: ReturnType<typeof postgres> | null = null;
+function getSql(): ReturnType<typeof postgres> {
+  if (!sql) {
+    sql = postgres(config.databaseUrl, {
+      max: 1,
+      prepare: false,
+      idle_timeout: 20,
+      connect_timeout: 30,
+      debug: false,
     });
   }
-  return pool;
+  return sql;
 }
 
-/** Run a query and return the rows array.
- *  Hyperdrive's pooled connections occasionally throw on first use while the
- *  connection is still being established. A single retry on the SAME pool lets
- *  a different, ready client handle it. Tuned pool: max 2, generous timeout. */
-export async function query<T extends QueryResultRow = QueryResultRow>(
+/** Run a parameterized query ($1, $2, ...) and return the rows array. */
+export async function query<T extends Record<string, unknown> = Record<string, unknown>>(
   text: string,
   params: unknown[] = []
 ): Promise<T[]> {
-  try {
-    const res = await getPool().query<T>(text, params as any[]);
-    return res.rows;
-  } catch {
-    const res = await getPool().query<T>(text, params as any[]);
-    return res.rows;
-  }
+  const rows = (await getSql().unsafe(text, params as any[])) as unknown[];
+  return rows.map((r) => ({ ...(r as Record<string, unknown>) })) as T[];
 }
 
 /** Like query() but returns the first row (or undefined). */
-export async function one<T extends QueryResultRow = QueryResultRow>(
+export async function one<T extends Record<string, unknown> = Record<string, unknown>>(
   text: string,
   params: unknown[] = []
 ): Promise<T | undefined> {

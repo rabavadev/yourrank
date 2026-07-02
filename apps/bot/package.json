@@ -21,7 +21,7 @@
     "fastify": "^4.28.1",
     "grammy": "^1.30.0",
     "hono": "^4.12.27",
-    "pg": "^8.12.0"
+    "postgres": "^3.4.9"
   },
   "devDependencies": {
     "@types/node": "^20.14.10",

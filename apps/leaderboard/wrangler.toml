@@ -4,10 +4,10 @@ name = "groupsmix-leaderboard"
 # src/assets_bundled.js.
 main = "src/index.js"
 compatibility_date = "2024-11-01"
-# Required for the node 'pg' driver. nodejs_compat_v2 ships the complete
+# Required for the node 'pg' driver. nodejs_compat ships the complete
 # node:net / node:tls polyfills pg's socket pool needs to stay stable on
 # Workers (v1 caused intermittent connection-setup hangs / 1101s).
-compatibility_flags = ["nodejs_compat_v2"]
+compatibility_flags = ["nodejs_compat"]
 
 # This Worker owns the ROOT of the zone. The bot Worker claims the more-specific
 # /bot/*, /hook/*, /r/*, /pb/*, /billing/hook/* prefixes; more-specific wins, so
@@ -34,7 +34,7 @@ id = "26e47bcce19941839a20bd2cd5879e42"
 #       npx wrangler secret put DATABASE_URL
 [[hyperdrive]]
 binding = "HYPERDRIVE"
-id = "e0f80c9087714c50b3e35ff12abce26c"
+id = "f24c020e169848448e4ab9ca7d24ac23"
 
 [vars]
 APP_NAME = "RankUp"
