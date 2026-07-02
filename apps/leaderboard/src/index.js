@@ -6,7 +6,7 @@ import { effectivePlan, PLAN_LIMITS, priceUsd, handleCheckout, handleIpn } from 
 import { handleOverview, handleUsers, handleLeads, handlePayments, handleAction } from "./admin.js";
 import { sendEmail, resetEmail } from "./email.js";
 import { bumpStat, getStats } from "./stats.js";
-import { leaderboard_css, leaderboard_js, app_css, auth_js, dashboard_js, admin_js, landing_css, landing_js, analytics_js, billing_js } from "./assets_bundled.js";
+import { leaderboard_css, leaderboard_js, app_css, auth_js, dashboard_js, admin_js, landing_css, landing_js, analytics_js, billing_js, bot_setup_js } from "./assets_bundled.js";
 import { query, one, exec, getSql } from "./db.js";
 import { shellNavHtml, SHELL_NAV_CSS } from "../../../shared/shell-nav.js";
 
@@ -82,6 +82,7 @@ export default {
         "/assets/landing.js": [landing_js, ".js"],
         "/assets/analytics.js": [analytics_js, ".js"],
         "/assets/billing.js": [billing_js, ".js"],
+        "/assets/bot-setup.js": [bot_setup_js, ".js"],
       };
       const entry = map[path];
       if (entry) return new Response(entry[0], { headers: { "content-type": MIME[entry[1]], "cache-control": "public, max-age=300, s-maxage=3600" } });
@@ -194,6 +195,37 @@ ${entries.join("\n")}
         return new Response("Billing couldn't load right now — please refresh.", { status: 500, headers: { "content-type": "text/plain; charset=utf-8" } });
       }
     }
+    if (path === "/dashboard/bot/setup") {
+      try {
+        const user = await currentUser(request, env);
+        if (!user) return Response.redirect(new URL("/login", url), 302);
+        const html = PAGES.botSetup
+          .replace("<!--GM_NAV_CSS-->", `<style>${SHELL_NAV_CSS}</style>`)
+          .replace("<!--GM_NAV-->", shellNavHtml({ activePath: "/dashboard/bot/setup", user }));
+        return new Response(html, { headers: { ...SECURE_HTML, ...csrfHeader } });
+      } catch (e) {
+        console.error("bot setup render failed:", String(e?.message || e));
+        return new Response("Bot setup couldn't load right now — please refresh.", { status: 500, headers: { "content-type": "text/plain; charset=utf-8" } });
+      }
+    }
+    if (path === "/dashboard/setup") {
+      try {
+        const user = await currentUser(request, env);
+        if (!user) return Response.redirect(new URL("/login", url), 302);
+        // Returning user with brand.name already set → skip wizard
+        const site = await getByUser(env, user.id);
+        if (site && site.name && site.name !== site.slug) {
+          return Response.redirect(new URL("/dashboard", url), 302);
+        }
+        const html = PAGES.setup
+          .replace("<!--GM_NAV_CSS-->", `<style>${SHELL_NAV_CSS}</style>`)
+          .replace("<!--GM_NAV-->", shellNavHtml({ activePath: "/dashboard", user }));
+        return new Response(html, { headers: { ...SECURE_HTML, ...csrfHeader } });
+      } catch (e) {
+        console.error("setup render failed:", String(e?.message || e));
+        return new Response("Setup couldn't load right now — please refresh.", { status: 500, headers: { "content-type": "text/plain; charset=utf-8" } });
+      }
+    }
     if (path === "/forgot") return new Response(PAGES.forgot, { headers: { ...SECURE_HTML, ...csrfHeader } });
     if (path === "/reset") return new Response(PAGES.reset, { headers: { ...SECURE_HTML, ...csrfHeader } });
     if (path === "/admin") {
@@ -250,6 +282,9 @@ ${entries.join("\n")}
     if (path === "/api/billing/checkout" && method === "POST") return handleCheckout(request, env);
     if (path === "/api/billing/ipn" && method === "POST") return handleIpn(request, env);
 
+    // --- API: bot connect ---
+    if (path === "/api/bot/connect" && method === "POST") return handleBotConnect(request, env);
+
     // --- API: admin ---
     if (path === "/api/admin/overview" && method === "GET") return handleOverview(request, env);
     if (path === "/api/admin/users" && method === "GET") return handleUsers(request, env);
@@ -259,6 +294,15 @@ ${entries.join("\n")}
 
     // --- API: public data ---
     if (path.startsWith("/api/public/") && method === "GET") {
+      // Lightweight players-only endpoint for live polling
+      const playersMatch = path.match(/^\/api\/public\/([^/]+)\/players$/);
+      if (playersMatch) {
+        const slug = decodeURIComponent(playersMatch[1]).toLowerCase();
+        const r = await getPublicSite(env, slug);
+        if (!r || r.suspended) return bad("not found", 404);
+        const players = (r.data.players || []).slice().sort((a, b) => b.wagered - a.wagered);
+        return json({ players }, 200, { "cache-control": "public, max-age=10" });
+      }
       const slug = decodeURIComponent(path.slice("/api/public/".length)).toLowerCase();
       const r = await getPublicSite(env, slug);
       return r && !r.suspended ? json(r.data, 200, { "cache-control": "public, max-age=30" }) : bad("not found", 404);
@@ -312,13 +356,13 @@ const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "
 function notFoundPage(slug) {
   return `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Not found</title>
 <style>body{background:#0b0b0c;color:#ededf0;font-family:system-ui,sans-serif;display:grid;place-items:center;min-height:100vh;margin:0}.b{text-align:center}a{color:#c8ff00}</style></head>
-<body><div class="b"><h1>No leaderboard here</h1><p>There's no page at <b>/${esc(slug)}</b> yet.</p><p><a href="/">Back to RankUp</a></p></div></body></html>`;
+<body><div class="b"><h1>No leaderboard here</h1><p>There's no page at <b>/${esc(slug)}</b> yet.</p><p><a href="/">Back to YourRank</a></p></div></body></html>`;
 }
 
 function suspendedPage() {
   return `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Unavailable</title>
 <style>body{background:#0b0b0c;color:#ededf0;font-family:system-ui,sans-serif;display:grid;place-items:center;min-height:100vh;margin:0}.b{text-align:center}a{color:#c8ff00}</style></head>
-<body><div class="b"><h1>This page is unavailable</h1><p>The owner's account is suspended.</p><p><a href="/">RankUp</a></p></div></body></html>`;
+<body><div class="b"><h1>This page is unavailable</h1><p>The owner's account is suspended.</p><p><a href="/">YourRank</a></p></div></body></html>`;
 }
 
 async function handleSignup(request, env) {
@@ -539,9 +583,64 @@ async function handleLead(request, env) {
         method: "POST",
         headers: { "content-type": "application/json" },
         signal: AbortSignal.timeout(10_000),
-        body: JSON.stringify({ content: `New RankUp lead: ${safe(handle)} (${safe(casino)}) — ${safe(contact)}\n${safe(note)}` }),
+        body: JSON.stringify({ content: `New YourRank lead: ${safe(handle)} (${safe(casino)}) — ${safe(contact)}\n${safe(note)}` }),
       });
     } catch (err) { console.error("[leadWebhook]: webhook delivery failed", err); }
   }
   return json({ ok: true });
+}
+
+// POST /api/bot/connect — validate a Telegram bot token via getMe, then set the webhook.
+async function handleBotConnect(request, env) {
+try {
+  const { user, res } = await requireUser(request, env);
+  if (res) return res;
+  if (user.status === "suspended") return bad("This account is suspended.", 403);
+
+  const body = await readJson(request);
+  if (!body) return bad("Invalid request");
+  const token = String(body.token || "").trim();
+  // Basic format check: digits:alphanumeric
+  if (!/^\d{8,}:[A-Za-z0-9_-]{30,}$/.test(token)) return bad("That doesn't look like a valid bot token. Copy the full string from BotFather.");
+
+  if (!(await rateLimit(env, `bot-connect:${user.id}`, 5, 3600))) return bad("Too many attempts. Try again later.", 429);
+
+  // Step 1: Validate the token by calling Telegram getMe
+  let meData;
+  try {
+    const meRes = await fetch(`https://api.telegram.org/bot${token}/getMe`, {
+      signal: AbortSignal.timeout(10_000),
+    });
+    meData = await meRes.json();
+  } catch {
+    return bad("Couldn't reach Telegram. Try again in a moment.", 502);
+  }
+  if (!meData.ok) return bad("Telegram says this token is invalid. Double-check it from BotFather and try again.");
+
+  const botName = meData.result.first_name || "Bot";
+  const botUsername = meData.result.username || "";
+
+  // Step 2: Set the webhook
+  const webhookUrl = "https://chat.groupsmix.com/webhooks/telegram";
+  try {
+    const whRes = await fetch(`https://api.telegram.org/bot${token}/setWebhook`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      signal: AbortSignal.timeout(10_000),
+      body: JSON.stringify({
+        url: webhookUrl,
+        allowed_updates: ["message", "callback_query"],
+      }),
+    });
+    const whData = await whRes.json();
+    if (!whData.ok) return bad(`Webhook setup failed: ${whData.description || "unknown error"}. You may need to retry.`);
+  } catch {
+    return bad("Couldn't set the webhook. Try again in a moment.", 502);
+  }
+
+  return json({ ok: true, botName, botUsername });
+} catch (e) {
+  console.error("bot connect failed:", String(e?.message || e));
+  return bad("Something went wrong. Try again.", 500);
+}
 }
