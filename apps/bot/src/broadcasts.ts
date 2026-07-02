@@ -122,7 +122,10 @@ export async function processBroadcastBatch(batchSize = 300): Promise<boolean> {
     await sleep(MSG_INTERVAL_MS);
   }
 
-  const lastId = subs[Math.min(sent + failed, subs.length) - 1]?.tg_user_id ?? bc.cursor_tg_user_id;
+  // Always advance the cursor past the last row we fetched, even if sent+failed
+  // is 0 (e.g. a 429 on the first message stops the loop early). Without this
+  // the cursor stays put and the same batch loops forever.
+  const lastId = subs[subs.length - 1].tg_user_id;
   await query(
     `UPDATE broadcasts
         SET cursor_tg_user_id = $1,
