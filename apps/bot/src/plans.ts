@@ -87,7 +87,12 @@ export async function withPlanLimit<R>(
     // Acquire the transaction-scoped advisory lock — same userId+kind always
     // maps to the same key, serializing concurrent create attempts per user.
     await tx.query(`SELECT pg_advisory_xact_lock($1)`, [key]);
-    const plan = await getUserPlan(userId);
+    // CRITICAL: read the plan on THIS transaction's connection (tx.one), not via
+    // the module-level one(). The db pool is max:1 and begin() holds the only
+    // connection; a module-level query would queue for that same connection and
+    // deadlock (circular wait) — permanently hanging every create endpoint.
+    const planRow = await tx.one<{ plan: PlanTier }>(`SELECT plan FROM users WHERE id = $1`, [userId]);
+    const plan = PLANS[planRow?.plan ?? "free"] ?? PLANS.free;
     const table = kind === "bots" ? "bots" : "offers";
     const max = kind === "bots" ? plan.maxBots : plan.maxOffers;
     const row = await tx.one<{ n: number }>(

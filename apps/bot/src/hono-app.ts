@@ -11,6 +11,19 @@ import { billingEnabled, handleBillingUpdate, setupBillingWebhook } from "./bill
 import { withPlanLimit } from "./plans.js";
 import { rateLimit, type RateLimitKV } from "./ratelimit.js";
 
+// Constant-time string compare for secrets (webhook tokens, API keys). A plain
+// !== short-circuits on the first differing byte, leaking how close a guess is
+// via timing. safeEqual always compares the full expected length.
+function safeEqual(a: string, b: string): boolean {
+  const sa = String(a ?? "");
+  const sb = String(b ?? "");
+  let diff = sa.length ^ sb.length;
+  for (let i = 0; i < Math.max(sa.length, sb.length); i++) {
+    diff |= (sa.charCodeAt(i) ?? 0) ^ (sb.charCodeAt(i) ?? 0);
+  }
+  return diff === 0;
+}
+
 type Bindings = {
   PUBLIC_BASE_URL: string;
   TOKEN_ENC_KEY: string;
@@ -36,7 +49,7 @@ export function buildHonoApp(): Hono<{ Bindings: Bindings }> {
   // =================================================================
   app.post("/hook/:secret", async (c) => {
     const secret = c.req.param("secret");
-    if (c.req.header("x-telegram-bot-api-secret-token") !== secret) {
+    if (!safeEqual(c.req.header("x-telegram-bot-api-secret-token") ?? "", secret)) {
       return c.body(null, 401);
     }
     const row = await getBotBySecret(secret);
@@ -132,8 +145,8 @@ export function buildHonoApp(): Hono<{ Bindings: Bindings }> {
     const secret = c.req.param("secret");
     if (
       !billingEnabled() ||
-      secret !== process.env.PLATFORM_WEBHOOK_SECRET ||
-      c.req.header("x-telegram-bot-api-secret-token") !== secret
+      !safeEqual(secret, process.env.PLATFORM_WEBHOOK_SECRET ?? "") ||
+      !safeEqual(c.req.header("x-telegram-bot-api-secret-token") ?? "", secret)
     ) {
       return c.body(null, 401);
     }
@@ -156,7 +169,7 @@ export function buildHonoApp(): Hono<{ Bindings: Bindings }> {
       c.header("Retry-After", String(rl.retryAfter));
       return c.json({ error: "rate limited" }, 429);
     }
-    if (c.req.header("x-api-key") !== config.adminApiKey) {
+    if (!safeEqual(c.req.header("x-api-key") ?? "", config.adminApiKey)) {
       return c.json({ error: "bad api key" }, 401);
     }
     await next();
