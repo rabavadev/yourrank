@@ -58,7 +58,7 @@ export default {
         "/assets/billing.js": [billing_js, ".js"],
       };
       const entry = map[path];
-      if (entry) return new Response(entry[0], { headers: { "content-type": MIME[entry[1]], "cache-control": "public, max-age=3600" } });
+      if (entry) return new Response(entry[0], { headers: { "content-type": MIME[entry[1]], "cache-control": "public, max-age=31536000, immutable" } });
       return new Response("not found", { status: 404 });
     }
 

@@ -28,12 +28,17 @@ function populateEnv(env: Record<string, any>): void {
   pe.PLATFORM_WEBHOOK_SECRET = env.PLATFORM_WEBHOOK_SECRET;
 }
 
+// Cache the Hono app instance so it's built once per isolate, not per request.
+let cachedApp: any = null;
+
 export default {
   async fetch(req: Request, env: Record<string, any>): Promise<Response> {
     populateEnv(env);
-    const { buildHonoApp } = await import("./hono-app.js");
-    const app = buildHonoApp();
-    return app.fetch(req, env as any);
+    if (!cachedApp) {
+      const { buildHonoApp } = await import("./hono-app.js");
+      cachedApp = buildHonoApp();
+    }
+    return cachedApp.fetch(req, env as any);
   },
 
   // Cron Triggers (see wrangler.toml):
