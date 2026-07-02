@@ -216,7 +216,7 @@ async function loadStats(){
   if (s.last30.views===0 && s.last30.copies===0 && s.last30.clicks===0) $("statsEmpty").hidden = false;
 }
 
-$("logout").addEventListener("click", async (e)=>{ e.preventDefault(); await fetch("/api/auth/logout",{method:"POST",headers:{"x-csrf-token":getCsrf()}}); location.href="/login"; });
-$("upgrade").addEventListener("click",(e)=>{ e.preventDefault(); checkout($("goPro")); });
-$("goPro").addEventListener("click",()=>checkout($("goPro")));
+$("logout")?.addEventListener("click", async (e)=>{ e.preventDefault(); await fetch("/api/auth/logout",{method:"POST",headers:{"x-csrf-token":getCsrf()}}); location.href="/login"; });
+$("upgrade")?.addEventListener("click",(e)=>{ e.preventDefault(); checkout($("goPro")); });
+$("goPro")?.addEventListener("click",()=>checkout($("goPro")));
 init();
