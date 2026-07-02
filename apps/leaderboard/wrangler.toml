@@ -1,0 +1,46 @@
+name = "groupsmix-leaderboard"
+# Wrangler bundles from the entry module and follows its imports (including the
+# 'pg' driver, pulled in by src/db.js). Run `node build.js` first to regenerate
+# src/assets_bundled.js.
+main = "src/index.js"
+compatibility_date = "2024-11-01"
+# Required for the node 'pg' driver (uses node:* built-ins) used by src/db.js.
+compatibility_flags = ["nodejs_compat"]
+
+# This Worker owns the ROOT of the zone. The bot Worker claims the more-specific
+# /bot/*, /hook/*, /r/*, /pb/*, /billing/hook/* prefixes; more-specific wins, so
+# everything else (/, /login, /signup, /dashboard, /<slug>, /go/<slug>) lands here.
+routes = [
+  { pattern = "groupsmix.com/*", zone_name = "groupsmix.com" },
+]
+
+# --- Sessions live in KV (shared with the bot Worker), NOT in Postgres. ---
+[[kv_namespaces]]
+binding = "SESSIONS"
+id = "26e47bcce19941839a20bd2cd5879e42"
+
+# --- Postgres (Supabase) via Hyperdrive. ---
+# db.js reads process.env.DATABASE_URL, which index.js populates from
+# env.HYPERDRIVE.connectionString (falling back to the DATABASE_URL secret).
+#
+# 1. Create the Hyperdrive config pointing at the Supabase 'groupsmix' pooled
+#    connection string (port 6543, the transaction pooler):
+#       npx wrangler hyperdrive create groupsmix-pg \
+#         --connection-string="postgres://postgres.<ref>:<pw>@aws-0-<region>.pooler.supabase.com:6543/postgres"
+# 2. Paste the printed id below (replace REPLACE_WITH_HYPERDRIVE_ID).
+# 3. As a fallback for local/dev without Hyperdrive, set the secret:
+#       npx wrangler secret put DATABASE_URL
+[[hyperdrive]]
+binding = "HYPERDRIVE"
+id = "REPLACE_WITH_HYPERDRIVE_ID"
+
+[vars]
+APP_NAME = "RankUp"
+
+# --- Secrets (set via `wrangler secret put <NAME>`), NOT stored here: ---
+#   DATABASE_URL            (fallback if Hyperdrive isn't bound)
+#   NOWPAYMENTS_API_KEY
+#   NOWPAYMENTS_IPN_SECRET
+#   RESEND_API_KEY
+#   PRO_PRICE_USD           (optional; defaults to 29)
+#   LEAD_WEBHOOK_URL        (optional)

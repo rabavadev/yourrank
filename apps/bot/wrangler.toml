@@ -1,0 +1,43 @@
+name = "groupsmix-bot"
+main = "src/worker.ts"
+compatibility_date = "2025-01-01"
+compatibility_flags = ["nodejs_compat"]
+
+[vars]
+PUBLIC_BASE_URL = "https://groupsmix.com"
+
+# Serve the bot Worker under the /bot, /hook, /r, /pb, /billing prefixes on the
+# main zone. More-specific routes win, so the leaderboard Worker keeps the root.
+routes = [
+  { pattern = "groupsmix.com/bot/*",         zone_name = "groupsmix.com" },
+  { pattern = "groupsmix.com/hook/*",        zone_name = "groupsmix.com" },
+  { pattern = "groupsmix.com/r/*",           zone_name = "groupsmix.com" },
+  { pattern = "groupsmix.com/pb/*",          zone_name = "groupsmix.com" },
+  { pattern = "groupsmix.com/billing/hook/*", zone_name = "groupsmix.com" },
+]
+
+[triggers]
+# every minute: broadcast batches  |  03:00 UTC: rollup + partitions + expired plans
+crons = ["* * * * *", "0 3 * * *"]
+
+# SHARED session store — same KV namespace as the leaderboard Worker so one
+# login works across both. Bind the SAME id the leaderboard uses.
+[[kv_namespaces]]
+binding = "SESSIONS"
+id = "26e47bcce19941839a20bd2cd5879e42"
+
+# Postgres via Hyperdrive (recommended for connection pooling on Workers).
+# Create once, then paste the id:
+#   wrangler hyperdrive create groupsmix-db \
+#     --connection-string="postgresql://postgres:PASS@db.PROJECT.supabase.co:5432/postgres"
+# [[hyperdrive]]
+# binding = "HYPERDRIVE"
+# id = ""
+
+# Secrets (wrangler secret put ...):
+#   DATABASE_URL            # Supabase pooled connection string (if not using Hyperdrive)
+#   TOKEN_ENC_KEY           # 32-byte hex, encrypts streamer bot tokens
+#   ADMIN_API_KEY           # protects /bot/api/*
+#   IP_HASH_SALT            # salts hashed visitor IPs
+#   PLATFORM_BOT_TOKEN      # the GroupsMix platform bot (Telegram Stars billing)
+#   PLATFORM_WEBHOOK_SECRET # billing webhook secret
