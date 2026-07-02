@@ -1,5 +1,5 @@
 // Owner admin API. Every route requires a session whose user has is_admin=true.
-import { json, bad, ok, readJson, newToken, currentUser } from "./auth.js";
+import { json, bad, ok, readJson, newToken, currentUser, destroyAllUserSessions } from "./auth.js";
 import { activatePro } from "./billing.js";
 import { query, one } from "./db.js";
 
@@ -89,6 +89,10 @@ export async function handleAction(request, env) {
     case "suspend":
       if (target.is_admin) return bad("Can't suspend an admin");
       await query("UPDATE users SET status='suspended', updated_at=now() WHERE id=$1", [target.id]);
+      // Kill every live session immediately — don't wait for the 30-day KV TTL.
+      // The bot dashboard middleware also re-checks suspended status per request,
+      // but this closes the leaderboard side (and any other device) now.
+      await destroyAllUserSessions(env, target.id);
       return ok();
     case "unsuspend":
       await query("UPDATE users SET status='active', updated_at=now() WHERE id=$1", [target.id]);

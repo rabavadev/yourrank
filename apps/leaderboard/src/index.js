@@ -1,4 +1,4 @@
-import { hashPassword, verifyPassword, uuid, newToken, createSession, destroySession, currentUser, requireUser, isEmail, slugify, RESERVED, cookieSet, cookieClear, readToken, json, bad, ok, readJson, rateLimit, clientIp } from "./auth.js";
+import { hashPassword, verifyPassword, uuid, newToken, createSession, destroySession, destroyAllUserSessions, currentUser, requireUser, isEmail, slugify, RESERVED, cookieSet, cookieClear, readToken, json, bad, ok, readJson, rateLimit, clientIp } from "./auth.js";
 import { DEFAULT_EXTRA, getPublicSite, getUserSite, saveSite, getByUser, createArchive, deleteArchive } from "./site.js";
 import { renderLeaderboard } from "./render.js";
 import { PAGES } from "./pages.js";
@@ -292,6 +292,11 @@ async function handleReset(request, env) {
   const { hash, salt } = await hashPassword(password);
   await query("UPDATE users SET password_hash=$1, password_salt=$2, updated_at=now() WHERE id=$3", [hash, salt, userId]);
   await env.SESSIONS.delete(`reset:${token}`);
+  // Revoke EVERY other live session for this user before issuing a fresh one.
+  // Without this, a stolen session survives a victim-initiated reset for up to
+  // the 30-day KV TTL. The per-user token index in shared/session.js makes this
+  // possible without a schema change.
+  await destroyAllUserSessions(env, userId);
   const session = await createSession(env, userId);
   return json({ ok: true }, 200, { "set-cookie": cookieSet(session) });
 }

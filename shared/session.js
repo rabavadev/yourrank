@@ -62,15 +62,66 @@ export function readToken(req) {
 }
 
 // ---- create / destroy a session in shared KV ----
-// value is the bare user UUID.
+// value is the bare user UUID. We also maintain a per-user index of live
+// tokens (userSessions:<userId> -> JSON array) so a password reset or admin
+// suspend can revoke EVERY live session for that user, not just the calling
+// one. Index maintenance is best-effort: a stale entry just means an old token
+// lingers until its TTL (the status quo without an index).
+const USER_SESSIONS_PREFIX = "userSessions:";
+async function addUserSession(env, userId, token) {
+  try {
+    const key = USER_SESSIONS_PREFIX + userId;
+    const cur = await env.SESSIONS.get(key);
+    const list = cur ? JSON.parse(cur) : [];
+    if (!list.includes(token)) list.push(token);
+    await env.SESSIONS.put(key, JSON.stringify(list), { expirationTtl: SESSION_TTL_S });
+  } catch { /* best-effort index */ }
+}
+async function removeUserSession(env, userId, token) {
+  if (!userId || !token) return;
+  try {
+    const key = USER_SESSIONS_PREFIX + userId;
+    const cur = await env.SESSIONS.get(key);
+    if (!cur) return;
+    const list = JSON.parse(cur).filter((t) => t !== token);
+    await env.SESSIONS.put(key, JSON.stringify(list), { expirationTtl: SESSION_TTL_S });
+  } catch { /* best-effort index */ }
+}
+
 export async function createSession(env, userId) {
   const token = newToken();
   await env.SESSIONS.put(KV_PREFIX + token, userId, { expirationTtl: SESSION_TTL_S });
+  await addUserSession(env, userId, token);
   return token;
 }
 
 export async function destroySession(env, token) {
-  if (token) await env.SESSIONS.delete(KV_PREFIX + token);
+  if (token) {
+    const uid = await env.SESSIONS.get(KV_PREFIX + token);
+    await env.SESSIONS.delete(KV_PREFIX + token);
+    if (uid) await removeUserSession(env, uid, token);
+  }
+}
+
+/**
+ * Revoke EVERY live session for a user (password reset, admin suspend). Reads
+ * the per-user index from KV and deletes each sess:<token>, then clears the
+ * index. Safe to call when no sessions exist. Best-effort: a token created
+ * after the index was read (concurrent login) survives, but that's the same
+ * window any logout flow has.
+ */
+export async function destroyAllUserSessions(env, userId) {
+  if (!userId) return;
+  try {
+    const key = USER_SESSIONS_PREFIX + userId;
+    const cur = await env.SESSIONS.get(key);
+    if (cur) {
+      for (const t of JSON.parse(cur)) {
+        try { await env.SESSIONS.delete(KV_PREFIX + t); } catch { /* one bad token doesn't stop the rest */ }
+      }
+    }
+    await env.SESSIONS.delete(key);
+  } catch { /* best-effort */ }
 }
 
 // ---- resolve the current user's UUID (no DB read) ----

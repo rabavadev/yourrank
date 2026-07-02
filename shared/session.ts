@@ -78,14 +78,57 @@ export function readTokenFromHeader(cookieHeader: string | undefined): string | 
 }
 
 // ---- create / destroy a session in shared KV ----
+// Mirror of session.js: maintain a per-user token index so reset/suspend can
+// revoke all of a user's sessions. Index maintenance is best-effort.
+const USER_SESSIONS_PREFIX = "userSessions:";
+async function addUserSession(env: SessionEnv, userId: string, token: string): Promise<void> {
+  try {
+    const key = USER_SESSIONS_PREFIX + userId;
+    const cur = await env.SESSIONS.get(key);
+    const list: string[] = cur ? JSON.parse(cur) : [];
+    if (!list.includes(token)) list.push(token);
+    await env.SESSIONS.put(key, JSON.stringify(list), { expirationTtl: SESSION_TTL_S });
+  } catch { /* best-effort index */ }
+}
+async function removeUserSession(env: SessionEnv, userId: string, token: string): Promise<void> {
+  if (!userId || !token) return;
+  try {
+    const key = USER_SESSIONS_PREFIX + userId;
+    const cur = await env.SESSIONS.get(key);
+    if (!cur) return;
+    const list: string[] = (JSON.parse(cur) as string[]).filter((t) => t !== token);
+    await env.SESSIONS.put(key, JSON.stringify(list), { expirationTtl: SESSION_TTL_S });
+  } catch { /* best-effort index */ }
+}
+
 export async function createSession(env: SessionEnv, userId: string): Promise<string> {
   const token = newToken();
   await env.SESSIONS.put(KV_PREFIX + token, userId, { expirationTtl: SESSION_TTL_S });
+  await addUserSession(env, userId, token);
   return token;
 }
 
 export async function destroySession(env: SessionEnv, token: string | null): Promise<void> {
-  if (token) await env.SESSIONS.delete(KV_PREFIX + token);
+  if (token) {
+    const uid = await env.SESSIONS.get(KV_PREFIX + token);
+    await env.SESSIONS.delete(KV_PREFIX + token);
+    if (uid) await removeUserSession(env, uid, token);
+  }
+}
+
+/** Revoke every live session for a user (password reset, admin suspend). */
+export async function destroyAllUserSessions(env: SessionEnv, userId: string): Promise<void> {
+  if (!userId) return;
+  try {
+    const key = USER_SESSIONS_PREFIX + userId;
+    const cur = await env.SESSIONS.get(key);
+    if (cur) {
+      for (const t of JSON.parse(cur) as string[]) {
+        try { await env.SESSIONS.delete(KV_PREFIX + t); } catch { /* one bad token doesn't stop the rest */ }
+      }
+    }
+    await env.SESSIONS.delete(key);
+  } catch { /* best-effort */ }
 }
 
 // ---- resolve the current user's UUID (no DB read) ----

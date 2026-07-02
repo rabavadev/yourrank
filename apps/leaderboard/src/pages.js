@@ -81,7 +81,7 @@ export const PAGES = {
 <div class="field"><label for="password">Password</label><input id="password" name="password" type="password" autocomplete="current-password" required /></div>
 <div class="err" id="err"></div><button class="btn btn--accent" style="width:100%" type="submit" id="submit">Sign in</button></form>
 <p class="foot">No account? <a href="/signup">Create one</a> · <a href="/forgot">Forgot password?</a></p></div></main></div>
-<script>window.__MODE__="login";</script><script src="/assets/auth.js"></script></body></html>`,
+<script src="/assets/auth.js"></script></body></html>`,
 
   forgot: `<!DOCTYPE html><html lang="en"><head>
 <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -95,7 +95,7 @@ export const PAGES = {
 <form id="form" novalidate><div class="field"><label for="email">Email</label><input id="email" name="email" type="email" autocomplete="email" required /></div>
 <div class="err" id="err"></div><div class="msg" id="msg" hidden></div><button class="btn btn--accent" style="width:100%" type="submit" id="submit">Send reset link</button></form>
 <p class="foot"><a href="/login">Back to sign in</a></p></div></main></div>
-<script>window.__MODE__="forgot";</script><script src="/assets/auth.js"></script></body></html>`,
+<script src="/assets/auth.js"></script></body></html>`,
 
   reset: `<!DOCTYPE html><html lang="en"><head>
 <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -110,7 +110,7 @@ export const PAGES = {
 <span class="hint">At least 8 characters.</span></div>
 <div class="err" id="err"></div><button class="btn btn--accent" style="width:100%" type="submit" id="submit">Save & sign in</button></form>
 <p class="foot"><a href="/login">Back to sign in</a></p></div></main></div>
-<script>window.__MODE__="reset";</script><script src="/assets/auth.js"></script></body></html>`,
+<script src="/assets/auth.js"></script></body></html>`,
 
   signup: `<!DOCTYPE html><html lang="en"><head>
 <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -129,7 +129,7 @@ export const PAGES = {
 <span class="hint">At least 8 characters.</span></div>
 <div class="err" id="err"></div><button class="btn btn--accent" style="width:100%" type="submit" id="submit">Create account</button></form>
 <p class="foot">Already have one? <a href="/login">Sign in</a></p></div></main></div>
-<script>window.__MODE__="signup";</script><script src="/assets/auth.js"></script></body></html>`,
+<script src="/assets/auth.js"></script></body></html>`,
 
   dashboard: `<!DOCTYPE html><html lang="en"><head>
 <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />

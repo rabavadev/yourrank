@@ -1,5 +1,8 @@
-/* Shared logic for login / signup / forgot / reset pages. */
-const mode = window.__MODE__ || "login";
+/* Shared logic for login / signup / forgot / reset pages.
+ * Mode is derived from the URL path so no inline <script> is needed (the
+ * auth pages run under a strict CSP with script-src 'self', which blocks
+ * the previous inline window.__MODE__ assignment). */
+const mode = { "/signup": "signup", "/forgot": "forgot", "/reset": "reset" }[location.pathname] || "login";
 const form = document.getElementById("form");
 const errEl = document.getElementById("err");
 const msgEl = document.getElementById("msg");

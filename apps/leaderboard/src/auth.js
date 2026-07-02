@@ -5,6 +5,7 @@ import { one } from "./db.js";
 import {
   createSession as _createSession,
   destroySession as _destroySession,
+  destroyAllUserSessions as _destroyAllUserSessions,
   cookieSet as _cookieSet,
   cookieClear as _cookieClear,
   readTokenWithLegacy,
@@ -65,6 +66,7 @@ export const newToken = () => bytesToHex(crypto.getRandomValues(new Uint8Array(3
 // These thin wrappers keep the existing call sites in index.js unchanged.
 export const createSession = (env, userId) => _createSession(env, userId);
 export const destroySession = (env, token) => _destroySession(env, token);
+export const destroyAllUserSessions = (env, userId) => _destroyAllUserSessions(env, userId);
 export const cookieSet = (token) => _cookieSet(token);
 export const cookieClear = () => _cookieClear();
 // readToken honors a legacy rk_session cookie during the cutover grace period.
