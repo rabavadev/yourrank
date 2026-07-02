@@ -14,7 +14,7 @@ const MIME = {
   ".css": "text/css; charset=utf-8", ".js": "application/javascript; charset=utf-8",
   ".json": "application/json; charset=utf-8", ".svg": "image/svg+xml",
 };
-const HTML = { "content-type": "text/html; charset=utf-8" };
+const HTML = { "content-type": "text/html; charset=utf-8", "X-Content-Type-Options": "nosniff", "Referrer-Policy": "strict-origin-when-cross-origin" };
 // Hardened headers for the authenticated/app pages (login, signup, forgot,
 // reset, dashboard, admin). The public leaderboard keeps the plain HTML set
 // (it's intentionally iframe-able and loads Google Fonts) so we scope security
@@ -24,7 +24,7 @@ const HTML = { "content-type": "text/html; charset=utf-8" };
 const SECURE_HTML = {
   "content-type": "text/html; charset=utf-8",
   "X-Content-Type-Options": "nosniff",
-  "Referrer-Policy": "same-origin",
+  "Referrer-Policy": "strict-origin-when-cross-origin",
   "Content-Security-Policy": "default-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; script-src 'self'; connect-src 'self'; frame-ancestors 'self'",
 };
 
