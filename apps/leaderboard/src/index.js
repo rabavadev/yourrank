@@ -401,15 +401,20 @@ async function handleLogout(request, env) {
 }
 
 async function handleMe(request, env) {
-  const user = await currentUser(request, env);
-  if (!user) return json({ ok: false, user: null });
-  const site = await one("SELECT slug FROM sites WHERE user_id=$1", [user.id]);
-  return json({ ok: true, user: {
-    id: user.id, email: user.email,
-    plan: effectivePlan(user), planExpiresAt: user.plan_expires_at || 0,
-    status: user.status, isAdmin: !!user.is_admin, slug: site?.slug || null,
-    limits: { players: PLAN_LIMITS[effectivePlan(user)] }, proPrice: priceUsd(env),
-  } });
+  try {
+    const user = await currentUser(request, env);
+    if (!user) return json({ ok: false, user: null });
+    const site = await one("SELECT slug FROM sites WHERE user_id=$1", [user.id]);
+    return json({ ok: true, user: {
+      id: user.id, email: user.email,
+      plan: effectivePlan(user), planExpiresAt: user.plan_expires_at || 0,
+      status: user.status, isAdmin: !!user.is_admin, slug: site?.slug || null,
+      limits: { players: PLAN_LIMITS[effectivePlan(user)] }, proPrice: priceUsd(env),
+    } });
+  } catch (e) {
+    console.error("handleMe error:", String(e?.message || e), String(e?.stack || ""));
+    return json({ ok: false, error: "Internal error", detail: String(e?.message || e) }, 500);
+  }
 }
 
 // POST /api/auth/forgot — always answers ok; never reveals whether the account exists.

@@ -84,6 +84,7 @@ export const cookieClear = () => _cookieClear();
 // readToken honors a legacy rk_session cookie during the cutover grace period.
 // SEC-104: use shared readToken directly (legacy shim removed)
 export { readToken } from "../../../shared/session.js";
+import { readToken } from "../../../shared/session.js";
 
 // Loads the full user row from Postgres for a resolved user id.
 // TIMESTAMPTZ columns come back as epoch-ms so downstream code (effectivePlan,
@@ -102,7 +103,6 @@ const loadUser = (env, uid) =>
 // SEC-104: Resolves the current user from the shared session using the
 // standard readToken (gm_session only; legacy rk_session support removed).
 export async function currentUser(req, env) {
-  // SEC-104: legacy shim removed; use standard readToken
   const token = readToken(req);
   if (!token) return null;
   const uid = await env.SESSIONS.get(KV_PREFIX + token);
