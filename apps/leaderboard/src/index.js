@@ -1,4 +1,4 @@
-import { hashPassword, verifyPassword, uuid, newToken, createSession, destroySession, destroyAllUserSessions, currentUser, requireUser, isEmail, slugify, RESERVED, cookieSet, cookieClear, readToken, json, bad, ok, readJson, rateLimit, clientIp } from "./auth.js";
+import { hashPassword, verifyPassword, uuid, newToken, createSession, destroySession, destroyAllUserSessions, currentUser, requireUser, isEmail, slugify, RESERVED, cookieSet, cookieClear, readToken, json, bad, ok, readJson, rateLimit, clientIp, handleAccountDelete } from "./auth.js";
 import { DEFAULT_EXTRA, getPublicSite, getUserSite, saveSite, getByUser, createArchive, deleteArchive } from "./site.js";
 import { renderLeaderboard } from "./render.js";
 import { PAGES } from "./pages.js";
@@ -170,6 +170,7 @@ export default {
     if (path === "/api/auth/me" && method === "GET") return handleMe(request, env);
     if (path === "/api/auth/forgot" && method === "POST") return handleForgot(request, env);
     if (path === "/api/auth/reset" && method === "POST") return handleReset(request, env);
+      if (path === "/api/account/delete" && method === "POST") return handleAccountDelete(request, env);
 
     // --- API: site + leads ---
     if (path === "/api/site" && method === "GET") return handleGetSite(request, env);

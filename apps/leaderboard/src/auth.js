@@ -135,3 +135,28 @@ export const json = (data, status = 200, headers = {}) => new Response(JSON.stri
 export const bad = (msg, status = 400) => json({ ok: false, error: msg }, status);
 export const ok = (data = {}) => json({ ok: true, ...data });
 export const readJson = async (req) => { try { return await req.json(); } catch { return null; } };
+
+
+// POST /api/account/delete — GDPR account deletion (DB-102).
+// Requires authentication + password confirmation. Deletes the user row;
+// ON DELETE CASCADE handles cleanup of children (sites, players, offers,
+// short_links, payments, subscriptions, etc.). Destroys all sessions.
+export async function handleAccountDelete(request, env) {
+  try {
+    const user = await currentUser(request, env);
+    if (!user) return bad("unauthorized", 401);
+    if (!user.password_hash) return bad("Account deletion requires a password. Contact support.", 400);
+    const body = await readJson(request);
+    if (!body || !body.password) return bad("Password required to confirm deletion");
+    const { ok: pwOk } = await verifyPassword(body.password, user.password_salt, user.password_hash);
+    if (!pwOk) return bad("Incorrect password", 401);
+    // Delete the user row — ON DELETE CASCADE removes all child rows.
+    await exec("DELETE FROM users WHERE id=$1", [user.id]);
+    // Destroy all sessions for this user.
+    await destroyAllUserSessions(env, user.id);
+    return ok({ message: "Account deleted successfully." });
+  } catch (e) {
+    console.error("account delete failed:", String(e?.message || e));
+    return bad("Account deletion failed. Please try again.", 500);
+  }
+}

@@ -205,7 +205,7 @@ export function buildDashboard(): Hono<{ Bindings: DashBindings }> {
                 coalesce(sum(cd.clicks), 0)::int        AS clicks,
                 coalesce(sum(cd.unique_clicks), 0)::int AS unique_clicks
            FROM short_links sl
-           LEFT JOIN click_daily cd ON cd.short_link_id = sl.id
+           LEFT JOIN click_daily cd ON cd.short_link_id = sl.id AND cd.day < current_date
           GROUP BY sl.id
        ),
        today_clicks AS (
