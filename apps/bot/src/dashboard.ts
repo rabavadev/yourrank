@@ -125,7 +125,17 @@ export function buildDashboard(): Hono<{ Bindings: DashBindings }> {
 
   app.post("/auth/dev", async (c) => {
     if (process.env.ALLOW_DEV_LOGIN !== "1") return c.json({ error: "disabled" }, 403);
-    if (!sameOrigin(c.req.raw)) return c.json({ error: "cross-origin request rejected" }, 403);
+    // Dev login blindly trusts a telegram_user_id and hands back that user's
+    // session, so it is an ATO primitive if reachable. Restrict HARD:
+    //  - REQUIRE an Origin header and require it to be localhost (curl/local
+    //    dev only). sameOrigin()'s missing-Origin bypass is deliberately NOT
+    //    applied here, since that bypass is exactly how a remote attacker would
+    //    reach dev login with curl-equivalent tooling.
+    //  - Never enable ALLOW_DEV_LOGIN in production.
+    const origin = c.req.raw.headers.get("origin") ?? "";
+    const isLocal =
+      /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin);
+    if (!isLocal) return c.json({ error: "dev login is local-only" }, 403);
     const { telegram_user_id, display_name } = await c.req.json<{ telegram_user_id: number; display_name?: string }>();
     const row = (await one<{ id: string }>(
       `INSERT INTO users (telegram_user_id, display_name) VALUES ($1, $2)
