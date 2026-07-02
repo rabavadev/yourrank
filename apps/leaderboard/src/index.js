@@ -485,7 +485,7 @@ async function handleLead(request, env) {
         signal: AbortSignal.timeout(10_000),
         body: JSON.stringify({ content: `New RankUp lead: ${safe(handle)} (${safe(casino)}) — ${safe(contact)}\n${safe(note)}` }),
       });
-    } catch {}
+    } catch (err) { console.error("[leadWebhook]: webhook delivery failed", err); }
   }
   return json({ ok: true });
 }

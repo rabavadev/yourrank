@@ -128,7 +128,7 @@ export async function handleBillingUpdate(update: Update): Promise<void> {
       await tg("sendMessage", {
         chat_id: chatId,
         text: `✅ ${PLANS[tier].label} plan active for 30 days. Enjoy!`,
-      }).catch(() => {});
+      }).catch((err) => { console.error("[billing]: sendMessage confirmation failed", err); });
     }
   }
 }

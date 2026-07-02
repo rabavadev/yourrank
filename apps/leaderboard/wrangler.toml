@@ -3,7 +3,7 @@ name = "yourrank-site"
 # in src/assets/ (inlined as strings). Wrangler bundles from src/index.js and
 # follows its imports (including the 'postgres' driver).
 main = "src/index.js"
-compatibility_date = "2024-11-01"
+compatibility_date = "2025-01-01"
 # postgres.js needs the Node compat shim (process, Buffer, etc.) on Workers.
 # v1 (nodejs_compat) works; if you hit module-polyfill issues on deploy, bump
 # to nodejs_compat_v2 and a newer compatibility_date per Cloudflare's guidance.
@@ -40,7 +40,7 @@ binding = "HYPERDRIVE"
 id = "f24c020e169848448e4ab9ca7d24ac23"
 
 [vars]
-APP_NAME = "RankUp"
+APP_NAME = "YourRank"
 
 # --- Secrets (set via `wrangler secret put <NAME>`), NOT stored here: ---
 #   DATABASE_URL            (fallback if Hyperdrive isn't bound)

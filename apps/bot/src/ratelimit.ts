@@ -52,10 +52,12 @@ export async function rateLimit(
     // Refresh the TTL to the current window each hit; the key dies with the window.
     await kv.put(key, String(used), { expirationTtl: windowSec });
     return { ok: true, remaining: Math.max(0, limit - used), limit, retryAfter };
-  } catch {
+  } catch (err) {
     // Fail closed: if KV is down, deny the request rather than allowing
     // unlimited access. The admin API is still protected by its API key;
     // this just adds defense-in-depth against brute force.
+    console.error("[ratelimit]: KV operation failed, failing closed", err);
     return { ok: false, remaining: 0, limit, retryAfter: windowSec };
+  }
   }
 }

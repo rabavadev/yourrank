@@ -144,7 +144,7 @@ export function buildHonoApp(): Hono<{ Bindings: Bindings }> {
     try { ctx = (c as any).executionCtx; } catch { /* not on Workers */ }
     const bg = ctx?.waitUntil
       ? (p: Promise<unknown>) => ctx.waitUntil(p)
-      : (p: Promise<unknown>) => void p.catch(() => {});
+      : (p: Promise<unknown>) => void p.catch((err) => { console.error("[clickLog]: background logging failed", err); });
     bg(logClick(
       link.id, ip,
       c.req.header("user-agent") ?? null,

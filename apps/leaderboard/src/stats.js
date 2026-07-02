@@ -15,7 +15,7 @@ export async function bumpStat(env, siteId, field) {
        ON CONFLICT (site_id, day) DO UPDATE SET ${field} = site_stats.${field} + 1`,
       [siteId, todayUTC()]
     );
-  } catch {}
+  } catch (err) { console.error("[bumpStat]: operation failed", err); }
 }
 
 // Last 30 days of rows plus rolled-up totals for the dashboard.

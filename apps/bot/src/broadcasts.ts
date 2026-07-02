@@ -116,8 +116,8 @@ export async function processBroadcastBatch(batchSize = 300): Promise<boolean> {
       } else {
         failed++;
       }
-    } catch {
-      failed++;
+    } catch (err) {
+      failed++; console.error("[broadcast]: sendMessage failed", err);
     }
     await sleep(MSG_INTERVAL_MS);
   }
