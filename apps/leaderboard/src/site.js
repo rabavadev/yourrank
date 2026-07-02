@@ -1,6 +1,7 @@
 // Site + players data helpers for the Worker.
-import { effectivePlan, PLAN_LIMITS } from "./billing.js";
+import { effectivePlan, PLAN_LIMITS, BOARD_LIMITS } from "./billing.js";
 import { query, one, exec, getSql } from "./db.js";
+import { notifyTop3Change, notifyReset, detectTop3Changes } from "./notifications.js";
 
 export const DEFAULT_EXTRA = {
   chips: ["Instant Withdrawals", "Crypto Native", "24/7 Support"],
@@ -26,13 +27,9 @@ export const DEFAULT_EXTRA = {
 // All site columns except logo_data (base64 image, up to 180KB) — that's only
 // needed by the /logo/:slug endpoint and saveSite(), which fetch it separately.
 // PERF-004 / PERF-107: avoid SELECT * to prevent 180KB+ transfers on every page.
-const SITE_COLUMNS = "id, user_id, slug, name, tagline, casino, code, cta_url, prize_pool, period, ends_at, reset_note, blurb, extra_json, published, theme_json, updated_at";
+const SITE_COLUMNS = "id, user_id, slug, name, tagline, casino, code, cta_url, prize_pool, period, ends_at, reset_note, blurb, extra_json, published, theme_json, updated_at, custom_domain";
 
 // In-memory TTL cache for site configs (per-Worker isolate).
-// Site data rarely changes; this eliminates redundant DB queries when the same
-// site is fetched multiple times within a single isolate lifetime (e.g., from
-// the /logo, /api/public, and /<slug> handlers hitting the same site).
-// PERF-001
 const siteCache = new Map();
 const CACHE_TTL = 60_000; // 1 minute
 
@@ -40,8 +37,6 @@ function getCached(key, fetcher) {
   const entry = siteCache.get(key);
   if (entry && entry.expires > Date.now()) return entry.data;
   const data = fetcher();
-  // fetcher() returns a promise; cache it immediately (including the pending state)
-  // so concurrent requests for the same key share one in-flight query.
   siteCache.set(key, { data, expires: Date.now() + CACHE_TTL });
   return data;
 }
@@ -50,8 +45,30 @@ export function invalidateSiteCache(slugOrId) {
   siteCache.delete(slugOrId);
 }
 
+export function invalidateUserCache(uid) {
+  // Invalidate all cached entries that might be for this user
+  // Since we cache by uid for getByUser and by slug for getBySlug,
+  // we need to clear the uid key and any slug keys for this user
+  siteCache.delete(uid);
+  siteCache.delete(`user_boards:${uid}`);
+}
+
 const getBySlug = (env, slug) => getCached(slug, () => one(`SELECT ${SITE_COLUMNS} FROM sites WHERE slug=$1`, [slug]));
-const getByUser = (env, uid) => getCached(uid, () => one(`SELECT ${SITE_COLUMNS} FROM sites WHERE user_id=$1`, [uid]));
+
+// Multi-board: returns the FIRST board for a user (legacy single-board compat).
+// For new code, use getAllBoards().
+const getByUser = (env, uid) => getCached(uid, () => one(`SELECT ${SITE_COLUMNS} FROM sites WHERE user_id=$1 ORDER BY board_order ASC, created_at ASC LIMIT 1`, [uid]));
+
+// Multi-board: returns ALL boards for a user.
+export async function getAllBoards(env, uid) {
+  const rows = await query(`SELECT ${SITE_COLUMNS} FROM sites WHERE user_id=$1 ORDER BY board_order ASC, created_at ASC`, [uid]);
+  return rows || [];
+}
+
+// Multi-board: returns a specific board by site ID (only if owned by user).
+export async function getBoardById(env, uid, siteId) {
+  return one(`SELECT ${SITE_COLUMNS} FROM sites WHERE id=$1 AND user_id=$2`, [siteId, uid]);
+}
 
 async function getPlayers(env, siteId) {
   const rows = await query("SELECT name, wagered, prize FROM players WHERE site_id=$1 ORDER BY wagered DESC", [siteId]);
@@ -72,7 +89,6 @@ function parseTheme(site) {
 }
 
 function archiveShape(a) {
-  // snapshot_json is JSONB — already an array (or null). No parse.
   let top = Array.isArray(a.snapshot_json) ? a.snapshot_json : [];
   top = top.slice().sort((x, y) => (y.wagered || 0) - (x.wagered || 0)).slice(0, 3)
     .map((p) => ({ name: String(p.name || ""), wagered: Number(p.wagered) || 0, prize: Number(p.prize) || 0 }));
@@ -80,7 +96,6 @@ function archiveShape(a) {
 }
 
 async function getArchives(env, siteId, limit = 6) {
-  // created_at as epoch-ms so the frontend keeps rendering it with new Date(a.at).
   const rows = await query(
     `SELECT id, label, snapshot_json,
             (EXTRACT(EPOCH FROM created_at) * 1000)::double precision AS created_at
@@ -91,7 +106,6 @@ async function getArchives(env, siteId, limit = 6) {
 }
 
 export function publicShape(site, players, archives = [], hasLogo = false) {
-  // extra_json is JSONB — already a JS object (or null). No parse.
   const extra = (site.extra_json && typeof site.extra_json === "object") ? site.extra_json : {};
   const m = { ...DEFAULT_EXTRA, ...extra };
   const theme = parseTheme(site);
@@ -120,7 +134,6 @@ export async function getPublicSite(env, slug) {
     ),
     getPlayers(env, site.id),
     getArchives(env, site.id),
-    // Lightweight check: only fetch a boolean, not the full base64 blob.
     one("SELECT (logo_data IS NOT NULL AND logo_data != '') AS has_logo FROM sites WHERE id=$1", [site.id]),
   ]);
   if (owner && owner.status === "suspended") return { suspended: true };
@@ -134,9 +147,51 @@ export async function getUserSite(env, uid) {
     getArchives(env, site.id, 24),
     one("SELECT (logo_data IS NOT NULL AND logo_data != '') AS has_logo FROM sites WHERE id=$1", [site.id]),
   ]);
+  const extra = (site.extra_json && typeof site.extra_json === "object") ? site.extra_json : {};
   return {
-    slug: site.slug, published: !!site.published,
-    data: publicShape(site, await getPlayers(env, site.id), archives.slice(0, 6), !!logoRow?.has_logo),
+      slug: site.slug, published: !!site.published, customDomain: site.custom_domain || "",
+      data: publicShape(site, await getPlayers(env, site.id), archives.slice(0, 6), !!logoRow?.has_logo),
+    notify: {
+      discord_webhook_url: extra.discord_webhook_url || "",
+      telegram_notify: !!extra.telegram_notify,
+      telegram_chat_id: extra.telegram_chat_id || "",
+    },
+    archives: archives.map((a) => {
+      const n = Array.isArray(a.snapshot_json) ? a.snapshot_json.length : 0;
+      return { id: a.id, label: a.label, at: a.created_at, players: n };
+    }),
+  };
+}
+
+// Multi-board: return a summary list of all boards for a user.
+export async function getUserBoardsList(env, uid) {
+  const boards = await getAllBoards(env, uid);
+  return boards.map((b) => ({
+    id: b.id,
+    slug: b.slug,
+    name: b.name,
+    published: !!b.published,
+    boardOrder: b.board_order || 0,
+  }));
+}
+
+// Multi-board: get full site data for a specific board by siteId.
+export async function getUserSiteById(env, uid, siteId) {
+  const site = await getBoardById(env, uid, siteId);
+  if (!site) return null;
+  const [archives, logoRow] = await Promise.all([
+    getArchives(env, site.id, 24),
+    one("SELECT (logo_data IS NOT NULL AND logo_data != '') AS has_logo FROM sites WHERE id=$1", [site.id]),
+  ]);
+  const extra = (site.extra_json && typeof site.extra_json === "object") ? site.extra_json : {};
+  return {
+      id: site.id, slug: site.slug, published: !!site.published, customDomain: site.custom_domain || "",
+      data: publicShape(site, await getPlayers(env, site.id), archives.slice(0, 6), !!logoRow?.has_logo),
+    notify: {
+      discord_webhook_url: extra.discord_webhook_url || "",
+      telegram_notify: !!extra.telegram_notify,
+      telegram_chat_id: extra.telegram_chat_id || "",
+    },
     archives: archives.map((a) => {
       const n = Array.isArray(a.snapshot_json) ? a.snapshot_json.length : 0;
       return { id: a.id, label: a.label, at: a.created_at, players: n };
@@ -145,8 +200,9 @@ export async function getUserSite(env, uid) {
 }
 
 // Close out the current period: snapshot the board, then optionally reset it.
-export async function createArchive(env, uid, { label, clear } = {}) {
-  const site = await getByUser(env, uid);
+export async function createArchive(env, uid, { label, clear, siteId } = {}) {
+  // If siteId given, use that board; otherwise fall back to first board
+  const site = siteId ? await getBoardById(env, uid, siteId) : await getByUser(env, uid);
   if (!site) return { error: "no site" };
   const players = await getPlayers(env, site.id);
   if (!players.length) return { error: "Nothing to archive — the board is empty." };
@@ -154,8 +210,6 @@ export async function createArchive(env, uid, { label, clear } = {}) {
   if ((Number(count?.n) || 0) >= 24) return { error: "Archive limit reached (24). Delete an old one first." };
   const lab = String(label || "").trim().slice(0, 60) ||
     new Date().toLocaleString("en-US", { month: "long", year: "numeric", timeZone: "UTC" });
-  // snapshot_json is JSONB — pass a JSON string cast to jsonb.
-  // Wrap INSERT + DELETE/UPDATE in a transaction so a crash between them cannot lose data (BE-003/DB-003).
   await getSql().begin(async (tx) => {
     await tx.unsafe(
       "INSERT INTO archives (id,site_id,label,snapshot_json,created_at) VALUES ($1,$2,$3,$4::jsonb,now())",
@@ -164,6 +218,15 @@ export async function createArchive(env, uid, { label, clear } = {}) {
     if (clear === "players") await tx.unsafe("DELETE FROM players WHERE site_id=$1", [site.id]);
     else if (clear === "wagers") await tx.unsafe("UPDATE players SET wagered=0 WHERE site_id=$1", [site.id]);
   });
+  // Fire Discord webhook for leaderboard reset (Pro only).
+  try {
+    const owner = await one("SELECT plan, (EXTRACT(EPOCH FROM plan_expires_at) * 1000)::double precision AS plan_expires_at, status FROM users WHERE id=$1", [uid]);
+    if (effectivePlan(owner) === "pro") {
+      await notifyReset(env, site.id, site.name, players, lab);
+    }
+  } catch (e) {
+    console.error("[notify] reset webhook failed:", String(e?.message || e));
+  }
   return { ok: true, label: lab };
 }
 
@@ -174,9 +237,31 @@ export async function deleteArchive(env, uid, id) {
   return { ok: true };
 }
 
-export async function saveSite(env, user, payload) {
+// Multi-board: create a new board for a user.
+export async function createBoard(env, uid, { slug, name } = {}) {
+  const plan = effectivePlan(await one("SELECT plan, (EXTRACT(EPOCH FROM plan_expires_at) * 1000)::double precision AS plan_expires_at, status FROM users WHERE id=$1", [uid]));
+  const limit = BOARD_LIMITS[plan] || 1;
+  const boards = await getAllBoards(env, uid);
+  if (boards.length >= limit) {
+    return { error: `Your ${plan} plan allows up to ${limit} leaderboard${limit > 1 ? "s" : ""}. Upgrade to create more.`, code: "board_limit" };
+  }
+  // Validate slug uniqueness
+  const existing = await one("SELECT id FROM sites WHERE slug=$1", [slug]);
+  if (existing) return { error: "That URL is already taken. Pick another.", code: "slug_taken" };
+  const boardOrder = boards.length;
+  const siteId = crypto.randomUUID();
+  await exec(
+    "INSERT INTO sites (id,user_id,slug,name,casino,prize_pool,period,published,extra_json,board_order) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9::jsonb,$10)",
+    [siteId, uid, slug, name || slug, "Stake", "$0", "Monthly", true, JSON.stringify(DEFAULT_EXTRA), boardOrder]
+  );
+  invalidateUserCache(uid);
+  return { ok: true, id: siteId, slug };
+}
+
+export async function saveSite(env, user, payload, siteId) {
   const uid = typeof user === "string" ? user : user.id;
-  const site = await getByUser(env, uid);
+  // Multi-board: if siteId provided, use that board; otherwise first board
+  const site = siteId ? await getBoardById(env, uid, siteId) : await getByUser(env, uid);
   if (!site) return { error: "no site" };
   // Plan gate: player count is the paid lever.
   if (typeof user === "object" && Array.isArray(payload.players)) {
@@ -184,31 +269,32 @@ export async function saveSite(env, user, payload) {
     const count = payload.players.filter((p) => p && p.name).length;
     if (count > PLAN_LIMITS[plan]) {
       return {
-        error: plan === "pro"
-          ? `Pro allows up to ${PLAN_LIMITS.pro} players.`
-          : `Free plan allows up to ${PLAN_LIMITS.free} players. Upgrade to Pro for up to ${PLAN_LIMITS.pro}.`,
+        error: plan === "pro" || plan === "agency"
+          ? `Your plan allows up to ${PLAN_LIMITS[plan]} players.`
+          : `Your plan allows up to ${PLAN_LIMITS[plan]} players. Upgrade for more.`,
         code: "player_limit",
       };
     }
   }
   const b = payload.brand || {};
+  const existingExtra = (site.extra_json && typeof site.extra_json === "object") ? site.extra_json : {};
   const extra = JSON.stringify({
     chips: payload.chips || DEFAULT_EXTRA.chips,
     whyStats: payload.whyStats || DEFAULT_EXTRA.whyStats,
     rules: payload.rules || DEFAULT_EXTRA.rules,
     socials: payload.socials || DEFAULT_EXTRA.socials,
+    // Notification settings (Pro only) — passed through from payload
+    discord_webhook_url: payload.discord_webhook_url ?? existingExtra.discord_webhook_url ?? "",
+    telegram_notify: payload.telegram_notify ?? existingExtra.telegram_notify ?? false,
+    telegram_chat_id: payload.telegram_chat_id ?? existingExtra.telegram_chat_id ?? "",
   });
 
-  // Branding is a Pro feature; only apply when the caller is a Pro user object.
-  // logo_data stays a TEXT column. theme_json is JSONB: existing value is a JS
-  // object, new value is built here — always end up with a JSON string for the
-  // ::jsonb cast below.
   // Fetch logo_data separately since the shared query no longer includes it (PERF-004).
   const existingLogoRow = await one("SELECT logo_data FROM sites WHERE id=$1", [site.id]);
   let logoData = existingLogoRow?.logo_data ?? "";
   let themeObj = (site.theme_json && typeof site.theme_json === "object") ? site.theme_json : {};
   const br = payload.branding;
-  if (br && typeof user === "object" && effectivePlan(user) === "pro") {
+  if (br && typeof user === "object" && effectivePlan(user) !== "free") {
     if (br.logo === null) logoData = "";
     else if (typeof br.logo === "string" && br.logo) {
       if (!LOGO_RE.test(br.logo)) return { error: "Logo must be a PNG, JPG or WebP image." };
@@ -222,25 +308,65 @@ export async function saveSite(env, user, payload) {
   }
   const themeJson = JSON.stringify(themeObj);
 
-  // Wrap all write operations in a transaction so that a crash between
-  // DELETE and INSERTs cannot lose player data (DOM3-002) and batch the
-  // INSERTs to avoid N+1 queries (PERF-001).
+  // Custom domain (Pro only) — validate and sanitize
+  let customDomain = null;
+  if (typeof payload.customDomain === "string" && payload.customDomain.trim()) {
+    const plan = typeof user === "object" ? effectivePlan(user) : "free";
+    if (plan !== "pro" && plan !== "agency") return { error: "Custom domains are a Pro feature.", code: "pro_only" };
+    const dom = payload.customDomain.trim().toLowerCase().replace(/^https?:\/\//, "").replace(/\/+$/, "");
+    if (!/^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?(\.[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?)+$/.test(dom)) {
+      return { error: "Enter a valid domain name (e.g. board.mystream.com).", code: "invalid_domain" };
+    }
+    // Check if another site already owns this domain
+    const existing = await one("SELECT id, slug FROM sites WHERE custom_domain=$1 AND id!=$2", [dom, site.id]);
+    if (existing) return { error: "That domain is already in use by another site.", code: "domain_taken" };
+    customDomain = dom;
+  } else if (payload.customDomain === "" || payload.customDomain === null) {
+    // Explicit clear
+    customDomain = "";
+  }
+
+  // Invalidate cache before write
+  invalidateSiteCache(site.slug);
+  invalidateSiteCache(uid);
+  if (siteId) invalidateSiteCache(siteId);
+
+  // Snapshot old top-3 before the transaction overwrites players (for rank-change detection).
+  let oldTop3 = [];
+  if (Array.isArray(payload.players) && typeof user === "object" && effectivePlan(user) === "pro") {
+    try {
+      const oldPlayers = await getPlayers(env, site.id);
+      oldTop3 = oldPlayers.slice(0, 3).map((p) => ({ name: p.name, wagered: p.wagered }));
+    } catch {}
+  }
+
   await getSql().begin(async (tx) => {
-    await tx.unsafe(
-      `UPDATE sites SET name=$1, tagline=$2, casino=$3, code=$4, cta_url=$5, prize_pool=$6, period=$7, ends_at=$8, reset_note=$9, blurb=$10, extra_json=$11::jsonb, logo_data=$12, theme_json=$13::jsonb, updated_at=now() WHERE user_id=$14`,
-      [
-        b.name ?? site.name, b.tagline ?? site.tagline, b.casino ?? site.casino, b.code ?? site.code,
-        b.ctaUrl ?? site.cta_url, b.prizePool ?? site.prize_pool, b.period ?? site.period,
-        payload.endsAt ?? site.ends_at, b.resetNote ?? site.reset_note, (payload.partner && payload.partner.blurb) ?? site.blurb,
-        extra, logoData, themeJson, uid,
-      ]
-    );
+    if (customDomain !== null) {
+      await tx.unsafe(
+        `UPDATE sites SET name=$1, tagline=$2, casino=$3, code=$4, cta_url=$5, prize_pool=$6, period=$7, ends_at=$8, reset_note=$9, blurb=$10, extra_json=$11::jsonb, logo_data=$12, theme_json=$13::jsonb, custom_domain=$14, updated_at=now() WHERE id=$15`,
+        [
+          b.name ?? site.name, b.tagline ?? site.tagline, b.casino ?? site.casino, b.code ?? site.code,
+          b.ctaUrl ?? site.cta_url, b.prizePool ?? site.prize_pool, b.period ?? site.period,
+          payload.endsAt ?? site.ends_at, b.resetNote ?? site.reset_note, (payload.partner && payload.partner.blurb) ?? site.blurb,
+          extra, logoData, themeJson, customDomain || null, site.id,
+        ]
+      );
+    } else {
+      await tx.unsafe(
+        `UPDATE sites SET name=$1, tagline=$2, casino=$3, code=$4, cta_url=$5, prize_pool=$6, period=$7, ends_at=$8, reset_note=$9, blurb=$10, extra_json=$11::jsonb, logo_data=$12, theme_json=$13::jsonb, updated_at=now() WHERE id=$14`,
+        [
+          b.name ?? site.name, b.tagline ?? site.tagline, b.casino ?? site.casino, b.code ?? site.code,
+          b.ctaUrl ?? site.cta_url, b.prizePool ?? site.prize_pool, b.period ?? site.period,
+          payload.endsAt ?? site.ends_at, b.resetNote ?? site.reset_note, (payload.partner && payload.partner.blurb) ?? site.blurb,
+          extra, logoData, themeJson, site.id,
+        ]
+      );
+    }
     if (Array.isArray(payload.players)) {
       await tx.unsafe("DELETE FROM players WHERE site_id=$1", [site.id]);
-      // Batch INSERT: build a single multi-row INSERT instead of N individual queries.
       const validPlayers = payload.players.filter((p) => p && p.name);
       if (validPlayers.length > 0) {
-        const cols = 6; // id, site_id, name, wagered, prize, sort
+        const cols = 6;
         const params = [];
         const valueRows = [];
         let idx = 1;
@@ -260,7 +386,20 @@ export async function saveSite(env, user, payload) {
       }
     }
   });
+
+  // Pro-only: detect top-3 changes and fire notifications.
+  if (Array.isArray(payload.players) && typeof user === "object" && effectivePlan(user) === "pro") {
+    try {
+      const newSorted = payload.players.filter((p) => p && p.name).sort((a, b2) => (b2.wagered || 0) - (a.wagered || 0));
+      const top3Changes = detectTop3Changes(oldTop3, newSorted);
+      if (top3Changes.length) {
+        await notifyTop3Change(env, site.id, b.name || site.name, top3Changes);
+      }
+    } catch (e) {
+      console.error("[notify] top-3 detection failed:", String(e?.message || e));
+    }
+  }
   return { ok: true };
 }
 
-export { getByUser };
+export { getByUser, getBySlug };

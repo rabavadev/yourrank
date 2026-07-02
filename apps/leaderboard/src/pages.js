@@ -255,10 +255,10 @@ export const PAGES = {
 <button class="btn btn--accent" id="a_go" type="button" style="align-self:flex-end">Close out period</button></div>
 <div class="arch-list" id="archList"></div>
 <div class="empty" id="archEmpty" hidden>No closed-out periods yet. Your first one shows up here and on your page.</div></div>
-<div class="card" id="planCard"><h2>Plan &amp; billing</h2><p class="card-sub">Pro removes the YourRank badge, unlocks unlimited players, custom domains, and more.</p>
+<div class="card" id="planCard"><h2>Plan &amp; billing</h2><p class="card-sub">Upgrade to unlock more players, boards and features.</p>
 <div class="plan-row"><div><div class="plan-name" id="planName">Free</div><div class="hint" id="planMeta">Up to 10 players · YourRank badge on your page</div></div>
-<button class="btn btn--accent" id="goPro">Upgrade to Pro</button></div>
-<p class="hint" id="planHint">Pay with crypto (BTC, ETH, USDT and 100+ more). Pro activates automatically once the network confirms — usually a few minutes.</p></div>
+<button class="btn btn--accent" id="goPro">Upgrade</button></div>
+<p class="hint" id="planHint">Pay with crypto (BTC, ETH, USDT and 100+ more). Activates automatically once the network confirms — usually a few minutes. <a href="/dashboard/billing">See all plans</a>.</p></div>
 <div class="savebar"><span class="status" id="status"></span><a class="btn btn--ghost" id="viewLive" href="#" target="_blank">View live page</a><button class="btn btn--accent" id="save">Save changes</button></div></div></div>
 <script src="/assets/dashboard.js"></script></body></html>`,
 

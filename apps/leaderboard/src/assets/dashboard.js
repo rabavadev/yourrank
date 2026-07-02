@@ -37,6 +37,9 @@ async function init(){
   renderPlayers(d.players||[]);
   renderBranding(d.branding||{});
   renderArchives(p.archives||[]);
+  renderDomain();
+  renderNotifications(p.notify || {});
+  if (p.customDomain !== undefined) $("f_domain").value = p.customDomain || "";
   $("a_label").placeholder = new Date().toLocaleString("en-US",{month:"long",year:"numeric",timeZone:"UTC"});
   $("liveLink").textContent = location.host + "/" + SLUG; $("liveLink").href = "/" + SLUG; $("viewLive").href = "/" + SLUG;
   $("loading").hidden=true; $("dash").hidden=false;
@@ -149,6 +152,11 @@ function collect(){
     out.branding = { accentA: $("c_a").value, accentB: $("c_b").value };
     if (LOGO !== undefined) out.branding.logo = LOGO;
   }
+  // Custom domain (Pro only)
+  const domainEl = $("f_domain");
+  if (domainEl && (ME.plan === "pro" || ME.plan === "agency")) {
+    out.customDomain = domainEl.value.trim().toLowerCase();
+  }
   return out;
 }
 
@@ -212,6 +220,60 @@ $("importApply").addEventListener("click",()=>{
   $("importText").value = ""; $("importPreview").textContent = "0 players detected"; $("importApply").disabled = true; $("importPanel").hidden = true;
   $("status").textContent = `${parsed.length} imported${note} — hit Save to publish.`;
 });
+
+/* --- CSV import --- */
+function parseCsvText(text) {
+  const num = (s) => parseFloat(String(s || "").replace(/[$,\s]/g, "")) || 0;
+  // Auto-detect separator: check first non-empty line for tabs vs commas
+  const firstLine = String(text || "").split(/\r?\n/).find(l => l.trim()) || "";
+  const sep = firstLine.includes("\t") ? /\t/ : /,/;
+  return String(text || "").split(/\r?\n/).map(l => l.trim()).filter(l => l && !l.startsWith("#") && !l.startsWith("//")).map(l => {
+    const parts = l.split(sep).map(s => s.trim()).filter(s => s !== "");
+    if (!parts.length || !parts[0]) return null;
+    // Skip header row if first cell looks like "name"
+    if (parts[0].toLowerCase() === "name" || parts[0].toLowerCase() === "player") return null;
+    return { name: parts[0].slice(0, 40), wagered: num(parts[1]), prize: num(parts[2]) };
+  }).filter(Boolean);
+}
+
+$("csvImportBtn")?.addEventListener("click", () => $("csvFileInput").click());
+
+$("csvFileInput")?.addEventListener("change", () => {
+  const f = $("csvFileInput").files[0];
+  if (!f) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    const parsed = parseCsvText(reader.result);
+    if (!parsed.length) { $("status").textContent = "No players found in that CSV. Expected columns: name, wagered, prize"; return; }
+    // Show preview in the import panel textarea
+    $("importPanel").hidden = false;
+    $("importText").value = parsed.map(p => `${p.name}\t${p.wagered}\t${p.prize}`).join("\n");
+    $("importText").dispatchEvent(new Event("input"));
+    $("status").textContent = `CSV loaded: ${parsed.length} players detected. Review and click "Add to table".`;
+  };
+  reader.onerror = () => { $("status").textContent = "Couldn't read that file."; };
+  reader.readAsText(f);
+  $("csvFileInput").value = "";
+});
+
+$("csvTemplateBtn")?.addEventListener("click", () => {
+  const csv = "name,wagered,prize\nCryptoKing,152000,1500\nLuckyStar,98000,700\nDiceHero,61250,500\nSlotMaster,45000,250\nBetPro,32000,0\n";
+  const blob = new Blob([csv], { type: "text/csv" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = "yourrank-players-template.csv";
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+});
+
+/* --- custom domain (Pro) --- */
+function renderDomain(){
+  const pro = ME.plan === "pro" || ME.plan === "agency";
+  const domainBody = $("domainBody");
+  const domainLock = $("domainLock");
+  if (domainBody) domainBody.hidden = !pro;
+  if (domainLock) domainLock.hidden = pro;
+}
 
 /* --- past winners / close out --- */
 function renderArchives(list){
@@ -292,4 +354,5 @@ async function loadStats(){
 $("logout")?.addEventListener("click", async (e)=>{ e.preventDefault(); await fetch("/api/auth/logout",{method:"POST",headers:{"x-csrf-token":getCsrf()}}); location.href="/login"; });
 $("upgrade")?.addEventListener("click",(e)=>{ e.preventDefault(); checkout($("goPro")); });
 $("goPro")?.addEventListener("click",()=>checkout($("goPro")));
+$("domainUpgrade")?.addEventListener("click",(e)=>{ e.preventDefault(); checkout($("goPro")); });
 init();

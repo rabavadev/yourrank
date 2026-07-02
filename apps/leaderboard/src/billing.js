@@ -2,22 +2,89 @@
 import { json, bad, ok, uuid, requireUser, safeEqual } from "./auth.js";
 import { query, one, exec, getSql } from "./db.js";
 
-export const PLAN_LIMITS = { free: 10, pro: 50 };
-export const PRO_DAYS = 31;
-export const priceUsd = (env) => Number(env.PRO_PRICE_USD || 29);
+// 4-tier plan limits (player caps per plan)
+export const PLAN_LIMITS = { free: 10, starter: 25, pro: 9999, agency: 9999 };
+// Max boards per plan
+export const BOARD_LIMITS = { free: 1, starter: 1, pro: 3, agency: 99 };
+// Prices in USD per 31-day billing period
+export const PLAN_PRICES = { free: 0, starter: 12, pro: 29, agency: 79 };
+// Display names and feature lists for the landing page pricing table
+export const PLAN_META = {
+  free: {
+    name: "Free", price: "$0", period: "",
+    highlight: false,
+    features: [
+      "1 leaderboard",
+      "Up to 10 players",
+      "YourRank badge on your page",
+      "Basic analytics (7 days)",
+      "Live countdown & auto-sort",
+    ],
+    cta: "Start free",
+  },
+  starter: {
+    name: "Starter", price: "$12", period: "/mo",
+    highlight: false,
+    features: [
+      "1 leaderboard",
+      "Up to 25 players",
+      "No YourRank badge",
+      "Full analytics (30 days)",
+      "CSV import",
+      "Custom referral code",
+    ],
+    cta: "Start",
+  },
+  pro: {
+    name: "Pro", price: "$29", period: "/mo",
+    highlight: true,
+    features: [
+      "Up to 3 leaderboards",
+      "Unlimited players",
+      "No YourRank badge",
+      "Custom domain",
+      "OBS overlay widget",
+      "Discord webhooks",
+      "Telegram notifications",
+      "Priority support",
+    ],
+    cta: "Go Pro",
+  },
+  agency: {
+    name: "Agency", price: "$79", period: "/mo",
+    highlight: false,
+    features: [
+      "Unlimited leaderboards",
+      "Unlimited players",
+      "White-label branding",
+      "API access",
+      "Everything in Pro",
+      "Dedicated support",
+    ],
+    cta: "Contact us",
+  },
+};
 
-// A user is effectively Pro only while active and unexpired.
-// plan_expires_at is epoch-ms (see currentUser); NULL/0/falsy = no expiry.
+export const PRO_DAYS = 31;
+
+// priceUsd returns the price for the given plan tier (or the env override for pro).
+export function priceUsd(env, plan = "pro") {
+  if (plan === "pro") return Number(env.PRO_PRICE_USD || PLAN_PRICES.pro);
+  return PLAN_PRICES[plan] ?? PLAN_PRICES.pro;
+}
+
+// A user's effective plan. Plans: free < starter < pro < agency.
 export function effectivePlan(user) {
   if (!user || user.status === "suspended") return "free";
-  if (user.plan === "pro" && (!user.plan_expires_at || Number(user.plan_expires_at) > Date.now())) return "pro";
+  const plan = String(user.plan || "free").toLowerCase();
+  const expired = user.plan_expires_at && Number(user.plan_expires_at) > 0 && Number(user.plan_expires_at) <= Date.now();
+  if (expired) return "free";
+  if (["agency", "pro", "starter"].includes(plan)) return plan;
   return "free";
 }
 
-export async function activatePro(env, userId, days = PRO_DAYS, { provider, amountUsd } = {}) {
-  // plan_expires_at is TIMESTAMPTZ (NULL = lifetime / no expiry). Read it as
-  // epoch-ms so the extend-from-current-expiry math matches the old behaviour.
-  //
+export async function activatePlan(env, userId, plan, days = PRO_DAYS, { provider, amountUsd } = {}) {
+  // Extend plan subscription for the given number of days.
   // Wrapped in a transaction so that the user update, subscription insert, and
   // optional payment ledger insert are all atomic.
   return getSql().begin(async (tx) => {
@@ -27,20 +94,16 @@ export async function activatePro(env, userId, days = PRO_DAYS, { provider, amou
     );
     const u = uRows[0];
     if (!u) return false;
-    // Extend from current expiry if still Pro, otherwise from now. days<=0 => lifetime (no expiry).
     if (days > 0) {
-      const base = (u.plan === "pro" && Number(u.plan_expires_at) > Date.now()) ? Number(u.plan_expires_at) : Date.now();
+      const base = (["pro", "starter", "agency"].includes(u.plan) && Number(u.plan_expires_at) > Date.now()) ? Number(u.plan_expires_at) : Date.now();
       const expiresMs = base + days * 86400000;
-      // to_timestamp() takes seconds; convert ms -> s.
-      await tx.unsafe("UPDATE users SET plan='pro', plan_expires_at=to_timestamp($1 / 1000.0), updated_at=now() WHERE id=$2", [expiresMs, userId]);
-      await tx.unsafe("INSERT INTO subscriptions (user_id, plan, status, provider, current_period_end) VALUES ($1, $2, 'active', 'nowpayments', to_timestamp($3 / 1000.0))", [userId, 'pro', expiresMs]);
+      await tx.unsafe("UPDATE users SET plan=$1, plan_expires_at=to_timestamp($2 / 1000.0), updated_at=now() WHERE id=$3", [plan, expiresMs, userId]);
+      await tx.unsafe("INSERT INTO subscriptions (user_id, plan, status, provider, current_period_end) VALUES ($1, $2, 'active', $3, to_timestamp($4 / 1000.0))", [userId, plan, provider || 'nowpayments', expiresMs]);
     } else {
-      // Lifetime: no expiry. Create a perpetual subscription row so the
-      // nightly cron's downgradeExpired() doesn't nuke this user.
-      await tx.unsafe("UPDATE users SET plan='pro', plan_expires_at=NULL, updated_at=now() WHERE id=$1", [userId]);
-      await tx.unsafe("INSERT INTO subscriptions (user_id, plan, status, provider, current_period_end) VALUES ($1, $2, 'active', 'manual', $3::timestamptz)", [userId, 'pro', '2099-12-31T23:59:59Z']);
+      // Lifetime: no expiry.
+      await tx.unsafe("UPDATE users SET plan=$1, plan_expires_at=NULL, updated_at=now() WHERE id=$2", [plan, userId]);
+      await tx.unsafe("INSERT INTO subscriptions (user_id, plan, status, provider, current_period_end) VALUES ($1, $2, 'active', 'manual', $3::timestamptz)", [userId, plan, '2099-12-31T23:59:59Z']);
     }
-    // Optionally record a payment ledger entry (e.g. for manual admin activations).
     if (provider) {
       await tx.unsafe(
         "INSERT INTO payments (user_id,provider,amount,currency,status) VALUES ($1,$2,$3,$4,$5)",
@@ -51,17 +114,22 @@ export async function activatePro(env, userId, days = PRO_DAYS, { provider, amou
   });
 }
 
+// Backwards compat alias
+export const activatePro = (env, userId, days, opts) => activatePlan(env, userId, 'pro', days, opts);
+
 // POST /api/billing/checkout — create a NOWPayments invoice, return its hosted URL.
 export async function handleCheckout(request, env) {
   const { user, res } = await requireUser(request, env);
   if (res) return res;
   if (!env.NOWPAYMENTS_API_KEY) return bad("Payments aren't configured yet. Contact support.", 503);
   const origin = new URL(request.url).origin;
-  // The NOWPayments order_id is our external correlation key. The payments row's
-  // own id is now a Postgres UUID, so we stash the order_id in tx_ref and look it
-  // up there in the IPN (previously the order_id WAS the row id).
+  // Determine which plan to upgrade to (default: next tier up)
+  const current = effectivePlan(user);
+  const tiers = ["free", "starter", "pro", "agency"];
+  const currentIdx = tiers.indexOf(current);
+  const targetPlan = currentIdx >= 0 && currentIdx < tiers.length - 1 ? tiers[currentIdx + 1] : "pro";
+  const price = priceUsd(env, targetPlan);
   const orderId = `rk_${uuid()}`;
-  const price = priceUsd(env);
   await exec(
     "INSERT INTO payments (user_id,provider,amount,currency,status,tx_ref) VALUES ($1,$2,$3,$4,$5,$6)",
     [user.id, "nowpayments", price, "USD", "created", orderId]
@@ -76,7 +144,7 @@ export async function handleCheckout(request, env) {
         price_amount: price,
         price_currency: "usd",
         order_id: orderId,
-        order_description: `YourRank Pro — ${PRO_DAYS} days`,
+        order_description: `YourRank ${targetPlan.charAt(0).toUpperCase() + targetPlan.slice(1)} — ${PRO_DAYS} days`,
         ipn_callback_url: `${origin}/api/billing/ipn`,
         success_url: `${origin}/dashboard?upgraded=1`,
         cancel_url: `${origin}/dashboard`,
@@ -125,27 +193,19 @@ export async function handleIpn(request, env) {
   const orderId = String(body.order_id || "");
   const status = String(body.payment_status || "");
 
-  // Wrap in a transaction with FOR UPDATE to prevent TOCTOU race: two
-  // concurrent IPN webhooks could both read 'pending' and both activate.
-  // SELECT ... FOR UPDATE locks the row until COMMIT/ROLLBACK.
   const result = await getSql().begin(async (tx) => {
-    // Look up by tx_ref (the NOWPayments order_id we stored at checkout).
     const payRows = await tx.unsafe(
-      "SELECT id, user_id, status FROM payments WHERE tx_ref=$1 FOR UPDATE",
+      "SELECT id, user_id, status, amount FROM payments WHERE tx_ref=$1 FOR UPDATE",
       [orderId]
     );
     const pay = payRows[0];
     if (!pay) return { code: 404, msg: "unknown order" };
 
-    // payload_json is JSONB now — store the parsed body object, not the raw string.
     await tx.unsafe(
       "UPDATE payments SET status=$1, payload_json=$2::jsonb, updated_at=now() WHERE id=$3",
       [status, JSON.stringify(body), pay.id]
     );
 
-    // Activate exactly once, on the first transition into a paid-equivalent
-    // state. The FOR UPDATE lock ensures only one concurrent IPN can enter
-    // this block for a given payment row.
     const PAID = ["confirmed", "finished"];
     if (PAID.includes(status) && !PAID.includes(pay.status)) {
       const uRows = await tx.unsafe(
@@ -154,21 +214,28 @@ export async function handleIpn(request, env) {
       );
       const u = uRows[0];
       if (u) {
+        // Determine target plan from payment amount
+        const amt = Number(pay.amount) || 0;
+        let targetPlan = "pro";
+        if (amt >= PLAN_PRICES.agency - 1) targetPlan = "agency";
+        else if (amt >= PLAN_PRICES.pro - 1) targetPlan = "pro";
+        else if (amt >= PLAN_PRICES.starter - 1) targetPlan = "starter";
+
         if (PRO_DAYS > 0) {
-          const base = (u.plan === "pro" && Number(u.plan_expires_at) > Date.now()) ? Number(u.plan_expires_at) : Date.now();
+          const base = (["pro", "starter", "agency"].includes(u.plan) && Number(u.plan_expires_at) > Date.now()) ? Number(u.plan_expires_at) : Date.now();
           const expiresMs = base + PRO_DAYS * 86400000;
           await tx.unsafe(
-            "UPDATE users SET plan='pro', plan_expires_at=to_timestamp($1 / 1000.0), updated_at=now() WHERE id=$2",
-            [expiresMs, pay.user_id]
+            "UPDATE users SET plan=$1, plan_expires_at=to_timestamp($2 / 1000.0), updated_at=now() WHERE id=$3",
+            [targetPlan, expiresMs, pay.user_id]
           );
           await tx.unsafe(
             "INSERT INTO subscriptions (user_id, plan, status, provider, current_period_end) VALUES ($1, $2, 'active', 'nowpayments', to_timestamp($3 / 1000.0))",
-            [pay.user_id, 'pro', expiresMs]
+            [pay.user_id, targetPlan, expiresMs]
           );
         } else {
           await tx.unsafe(
-            "UPDATE users SET plan='pro', plan_expires_at=NULL, updated_at=now() WHERE id=$1",
-            [pay.user_id]
+            "UPDATE users SET plan=$1, plan_expires_at=NULL, updated_at=now() WHERE id=$2",
+            [targetPlan, pay.user_id]
           );
         }
       }

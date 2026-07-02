@@ -57,6 +57,24 @@ const SECURE_HTML = {
   "Content-Security-Policy": "default-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; script-src 'self'; connect-src 'self'; frame-ancestors 'self'",
 };
 
+// In-memory custom domain cache: host → { slug, expires }
+const CUSTOM_DOMAIN_CACHE = new Map();
+const CUSTOM_DOMAIN_TTL = 60_000; // 60 seconds
+
+async function resolveCustomDomain(env, host) {
+  const now = Date.now();
+  const cached = CUSTOM_DOMAIN_CACHE.get(host);
+  if (cached && cached.expires > now) return cached.slug;
+  try {
+    const row = await one("SELECT slug FROM sites WHERE custom_domain=$1 AND published=true AND suspended IS NOT TRUE", [host]);
+    const slug = row?.slug || null;
+    CUSTOM_DOMAIN_CACHE.set(host, { slug, expires: now + CUSTOM_DOMAIN_TTL });
+    return slug;
+  } catch {
+    return cached?.slug || null;
+  }
+}
+
 export default {
   async fetch(request, env, ctx) {
     // Populate process.env so the shared Postgres data layer (db.js) can read
@@ -69,6 +87,41 @@ export default {
     const url = new URL(request.url);
     const path = url.pathname;
     const method = request.method;
+    const host = (request.headers.get("host") || "").toLowerCase().split(":")[0];
+
+    // --- custom domain resolution ---
+    // If the Host header is not our primary domain, check if it maps to a
+    // user's custom domain. If yes, serve their leaderboard at /.
+    const IS_CUSTOM_HOST = host !== "yourrank.site" && host !== "localhost" && host !== "127.0.0.1" && !host.endsWith(".yourrank.site");
+    if (IS_CUSTOM_HOST) {
+      const customSlug = await resolveCustomDomain(env, host);
+      if (customSlug) {
+        // Serve the leaderboard as if the path were /<slug>
+        // Rewrite the URL path internally
+        url.pathname = "/" + customSlug;
+        // Only serve GET requests on custom domains (no dashboard/API)
+        if (method === "GET" && (path === "/" || path === "")) {
+          const r = await getPublicSite(env, customSlug);
+          if (!r || r.suspended) return new Response("not found", { status: 404 });
+          const pro = r.plan === "pro";
+          return new Response(
+            renderLeaderboard(r.data, {
+              watermark: !pro, homeUrl: `https://${host}`, slug: customSlug,
+              logoUrl: pro && r.data.branding?.hasLogo ? `https://${host}/logo/${customSlug}` : null,
+            }),
+            { headers: { ...HTML, "cache-control": "public, max-age=30" } }
+          );
+        }
+        if (method === "GET" && path === "/favicon.ico") {
+          return new Response('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1 1"></svg>', {
+            headers: { "content-type": "image/svg+xml", "cache-control": "public, max-age=86400" },
+          });
+        }
+        // Everything else on a custom domain → 404
+        return new Response("not found", { status: 404 });
+      }
+      // No matching custom domain — fall through to normal routing
+    }
 
     // --- static assets ---
     if (path.startsWith("/assets/")) {
@@ -377,8 +430,8 @@ ${entries.join("\n")}
       if (RESERVED.has(slug)) return new Response("not found", { status: 404 });
       const r = await getPublicSite(env, slug);
       if (!r || r.suspended) return new Response("not found", { status: 404 });
-      const pro = r.plan === "pro";
-      if (!pro) {
+      const paid = r.plan !== "free";
+      if (!paid) {
         // Upsell page for free users
         const upsell = `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>OBS Overlay — Pro Feature</title>
@@ -412,11 +465,11 @@ a{color:#c8ff00;text-decoration:none;font-weight:600}</style></head><body>
         ctx.waitUntil(bumpStat(env, r.id, "views", ref));
         respHeaders["set-cookie"] = `${viewCookieName}=1; Path=/${slug}; Max-Age=86400; SameSite=Lax; Secure`;
       }
-      const pro = r.plan === "pro";
+      const paid = r.plan !== "free";
       return new Response(
         renderLeaderboard(r.data, {
-          watermark: !pro, homeUrl: url.origin, slug,
-          logoUrl: pro && r.data.branding?.hasLogo ? `${url.origin}/logo/${slug}` : null,
+          watermark: !paid, homeUrl: url.origin, slug,
+          logoUrl: paid && r.data.branding?.hasLogo ? `${url.origin}/logo/${slug}` : null,
         }),
         { headers: respHeaders }
       );
@@ -634,7 +687,7 @@ async function handleGetSite(request, env) {
     }
     if (!s) return bad("No site for this account", 404);
     const boards = await getUserBoardsList(env, user.id);
-    return json({ ok: true, slug: s.slug, published: s.published, plan: effectivePlan(user), data: s.data, archives: s.archives, boards, siteId: s.id });
+    return json({ ok: true, slug: s.slug, published: s.published, plan: effectivePlan(user), data: s.data, notify: s.notify || {}, archives: s.archives, boards, siteId: s.id, customDomain: s.customDomain || "" });
   }
 
 async function handleListBoards(request, env) {

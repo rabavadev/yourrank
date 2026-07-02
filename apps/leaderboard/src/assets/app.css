@@ -151,3 +151,24 @@ table.admin-table td.note{max-width:260px;color:var(--ink-soft)}
 table.ref-table{width:100%;border-collapse:collapse;font-size:14px}
 table.ref-table th{text-align:left;font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-mute);padding:8px 8px;border-bottom:1px solid var(--line)}
 table.ref-table td{padding:8px 8px;border-bottom:1px solid var(--line);color:var(--ink-soft)}
+
+/* --- board switcher --- */
+.board-list{display:flex;flex-direction:column;gap:4px;margin:0}
+.board-item{display:flex;align-items:center;gap:10px;padding:10px 14px;border:1px solid var(--line-2);border-radius:8px;transition:border-color .15s,background .15s}
+.board-item:hover{border-color:var(--ink-mute)}
+.board-item--active{border-color:var(--accent);background:var(--panel-2)}
+.board-item--active:hover{border-color:var(--accent)}
+.board-slug{font-family:var(--mono);font-size:12px;color:var(--ink-mute)}
+.board-item--active .board-slug{color:var(--accent)}
+.board-name{font-size:14px;color:var(--ink);flex:1}
+.board-badge{font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;background:var(--accent);color:var(--accent-ink);padding:2px 8px;border-radius:99px}
+
+/* --- plan options (billing) --- */
+.plan-opt{display:flex;align-items:center;gap:14px;padding:14px 16px;border:1px solid var(--line-2);border-radius:8px;margin-bottom:8px;transition:border-color .15s}
+.plan-opt:hover{border-color:var(--ink-mute)}
+.plan-opt--current{border-color:var(--accent);background:var(--panel-2)}
+.plan-opt-name{font-weight:600;font-size:15px;min-width:80px}
+.plan-opt-price{font-family:var(--mono);font-size:15px;color:var(--ink-soft);flex:1}
+.plan-opt-btn{flex:0 0 auto}
+.plan-opt--current .plan-opt-btn{color:var(--ink-mute);border-color:var(--line-2);background:transparent;pointer-events:none}
+.plan-opt--disabled{opacity:.5;pointer-events:none}
