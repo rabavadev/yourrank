@@ -16,7 +16,7 @@ async function call<T>(
     method: "POST",
     headers: { "content-type": "application/json" },
     body: params ? JSON.stringify(params) : undefined,
-    signal: AbortSignal.timeout(10_000),
+    signal: AbortSignal.timeout(15_000),
   });
   const body = (await res.json()) as {
     ok: boolean;

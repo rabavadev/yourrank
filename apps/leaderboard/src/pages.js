@@ -24,10 +24,14 @@ export const PAGES = {
 <meta property="og:description" content="Create your own branded leaderboard page. Track referrals, manage promo codes, and grow your audience.">
 <meta property="og:url" content="https://yourrank.site/">
 <meta property="og:type" content="website">
-<meta property="og:image" content="https://yourrank.site/assets/og-image.png">
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="YourRank - Hosted Leaderboards for Streamers" />
+<meta name="twitter:description" content="Create your own branded leaderboard page. Track referrals, manage promo codes, and grow your audience." />
+<!-- og:image removed: no static asset exists; add when a brand image is created -->
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="/assets/landing.css" />
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"Organization","name":"RankUp","url":"https://yourrank.site","description":"Hosted leaderboard pages for casino streamers","contactPoint":{"@type":"ContactPoint","contactType":"customer service"}}</script>
 </head><body>
 <div class="wrap">
 <nav class="top"><div class="brand">Rank<b>Up</b></div>
@@ -76,7 +80,8 @@ export const PAGES = {
 
   login: `<!DOCTYPE html><html lang="en"><head>
 <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Sign in · RankUp</title><link rel="canonical" href="https://yourrank.site/login" /><link rel="preconnect" href="https://fonts.googleapis.com" />
+<title>Sign in · RankUp</title>
+<meta name="robots" content="noindex, nofollow" /><link rel="canonical" href="https://yourrank.site/login" /><link rel="preconnect" href="https://fonts.googleapis.com" />
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="/assets/app.css" /></head><body>
 <div class="auth-wrap"><aside class="auth-side"><div><div class="brand">Rank<b>Up</b></div></div>
@@ -91,7 +96,8 @@ export const PAGES = {
 
   forgot: `<!DOCTYPE html><html lang="en"><head>
 <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Reset password · RankUp</title><link rel="canonical" href="https://yourrank.site/forgot" /><link rel="preconnect" href="https://fonts.googleapis.com" />
+<title>Reset password · RankUp</title>
+<meta name="robots" content="noindex, nofollow" /><link rel="canonical" href="https://yourrank.site/forgot" /><link rel="preconnect" href="https://fonts.googleapis.com" />
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="/assets/app.css" /></head><body>
 <div class="auth-wrap"><aside class="auth-side"><div><div class="brand">Rank<b>Up</b></div></div>
@@ -105,7 +111,8 @@ export const PAGES = {
 
   reset: `<!DOCTYPE html><html lang="en"><head>
 <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>New password · RankUp</title><link rel="canonical" href="https://yourrank.site/reset" /><link rel="preconnect" href="https://fonts.googleapis.com" />
+<title>New password · RankUp</title>
+<meta name="robots" content="noindex, nofollow" /><link rel="canonical" href="https://yourrank.site/reset" /><link rel="preconnect" href="https://fonts.googleapis.com" />
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="/assets/app.css" /></head><body>
 <div class="auth-wrap"><aside class="auth-side"><div><div class="brand">Rank<b>Up</b></div></div>
@@ -120,7 +127,8 @@ export const PAGES = {
 
   signup: `<!DOCTYPE html><html lang="en"><head>
 <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Create account · RankUp</title><link rel="canonical" href="https://yourrank.site/signup" /><link rel="preconnect" href="https://fonts.googleapis.com" />
+<title>Create account · RankUp</title>
+<meta name="robots" content="noindex, nofollow" /><link rel="canonical" href="https://yourrank.site/signup" /><link rel="preconnect" href="https://fonts.googleapis.com" />
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="/assets/app.css" /></head><body>
 <div class="auth-wrap"><aside class="auth-side"><div><div class="brand">Rank<b>Up</b></div></div>
@@ -139,7 +147,8 @@ export const PAGES = {
 
   dashboard: `<!DOCTYPE html><html lang="en"><head>
 <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Dashboard · RankUp</title><link rel="canonical" href="https://yourrank.site/dashboard" /><link rel="preconnect" href="https://fonts.googleapis.com" />
+<title>Dashboard · RankUp</title>
+<meta name="robots" content="noindex, nofollow" /><link rel="canonical" href="https://yourrank.site/dashboard" /><link rel="preconnect" href="https://fonts.googleapis.com" />
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="/assets/app.css" /><!--GM_NAV_CSS--></head><body>
 <!--GM_NAV-->
@@ -202,7 +211,8 @@ export const PAGES = {
 
 analytics: `<!DOCTYPE html><html lang="en"><head>
 <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Analytics · RankUp</title><link rel="canonical" href="https://yourrank.site/dashboard/analytics" /><link rel="preconnect" href="https://fonts.googleapis.com" />
+<title>Analytics · RankUp</title>
+<meta name="robots" content="noindex, nofollow" /><link rel="canonical" href="https://yourrank.site/dashboard/analytics" /><link rel="preconnect" href="https://fonts.googleapis.com" />
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="/assets/app.css" /><!--GM_NAV_CSS--></head><body>
 <!--GM_NAV-->
@@ -227,7 +237,8 @@ analytics: `<!DOCTYPE html><html lang="en"><head>
 
 billing: `<!DOCTYPE html><html lang="en"><head>
 <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Billing · RankUp</title><link rel="canonical" href="https://yourrank.site/dashboard/billing" /><link rel="preconnect" href="https://fonts.googleapis.com" />
+<title>Billing · RankUp</title>
+<meta name="robots" content="noindex, nofollow" /><link rel="canonical" href="https://yourrank.site/dashboard/billing" /><link rel="preconnect" href="https://fonts.googleapis.com" />
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="/assets/app.css" /><!--GM_NAV_CSS--></head><body>
 <!--GM_NAV-->
@@ -247,7 +258,8 @@ billing: `<!DOCTYPE html><html lang="en"><head>
 
 admin: `<!DOCTYPE html><html lang="en"><head>
 <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Admin · RankUp</title><link rel="canonical" href="https://yourrank.site/admin" /><link rel="preconnect" href="https://fonts.googleapis.com" />
+<title>Admin · RankUp</title>
+<meta name="robots" content="noindex, nofollow" /><link rel="canonical" href="https://yourrank.site/admin" /><link rel="preconnect" href="https://fonts.googleapis.com" />
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="/assets/app.css" /></head><body>
 <header class="topbar"><div class="brand">Rank<b>Up</b> <span class="label" style="margin-left:8px">ADMIN</span></div>

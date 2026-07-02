@@ -10,7 +10,8 @@ export async function sendEmail(env, { to, subject, html, text }) {
       body: JSON.stringify({ from, to: [to], subject, html, text }),
     });
     return r.ok ? { sent: true } : { sent: false, reason: `http_${r.status}` };
-  } catch {
+  } catch (err) {
+    console.error("[email]: resend API call failed", err);
     return { sent: false, reason: "network" };
   }
 }

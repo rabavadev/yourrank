@@ -8,7 +8,7 @@ import {
   destroyAllUserSessions as _destroyAllUserSessions,
   cookieSet as _cookieSet,
   cookieClear as _cookieClear,
-  readTokenWithLegacy,
+  // SEC-104: readTokenWithLegacy removed (grace period over)
   KV_PREFIX,
 } from "../../../shared/session.js";
 // PBKDF2-SHA256 iteration count.
@@ -82,7 +82,8 @@ export const destroyAllUserSessions = (env, userId) => _destroyAllUserSessions(e
 export const cookieSet = (token) => _cookieSet(token);
 export const cookieClear = () => _cookieClear();
 // readToken honors a legacy rk_session cookie during the cutover grace period.
-export const readToken = (req) => readTokenWithLegacy(req);
+// SEC-104: use shared readToken directly (legacy shim removed)
+export { readToken } from "../../../shared/session.js";
 
 // Loads the full user row from Postgres for a resolved user id.
 // TIMESTAMPTZ columns come back as epoch-ms so downstream code (effectivePlan,
@@ -98,13 +99,11 @@ const loadUser = (env, uid) =>
     [uid]
   );
 
-// Resolves the current user from the shared session. Uses readTokenWithLegacy
-// (not the shared currentUserId, which only reads gm_session) so that during
-// the cutover grace period an old rk_session cookie still authenticates. The KV
-// prefix is identical (sess:) for both cookie names, so the same token resolves
-// the same userId regardless of which cookie carried it.
+// SEC-104: Resolves the current user from the shared session using the
+// standard readToken (gm_session only; legacy rk_session support removed).
 export async function currentUser(req, env) {
-  const token = readTokenWithLegacy(req);
+  // SEC-104: legacy shim removed; use standard readToken
+  const token = readToken(req);
   if (!token) return null;
   const uid = await env.SESSIONS.get(KV_PREFIX + token);
   if (!uid) return null;
@@ -136,3 +135,28 @@ export const json = (data, status = 200, headers = {}) => new Response(JSON.stri
 export const bad = (msg, status = 400) => json({ ok: false, error: msg }, status);
 export const ok = (data = {}) => json({ ok: true, ...data });
 export const readJson = async (req) => { try { return await req.json(); } catch { return null; } };
+
+
+// POST /api/account/delete — GDPR account deletion (DB-102).
+// Requires authentication + password confirmation. Deletes the user row;
+// ON DELETE CASCADE handles cleanup of children (sites, players, offers,
+// short_links, payments, subscriptions, etc.). Destroys all sessions.
+export async function handleAccountDelete(request, env) {
+  try {
+    const user = await currentUser(request, env);
+    if (!user) return bad("unauthorized", 401);
+    if (!user.password_hash) return bad("Account deletion requires a password. Contact support.", 400);
+    const body = await readJson(request);
+    if (!body || !body.password) return bad("Password required to confirm deletion");
+    const { ok: pwOk } = await verifyPassword(body.password, user.password_salt, user.password_hash);
+    if (!pwOk) return bad("Incorrect password", 401);
+    // Delete the user row — ON DELETE CASCADE removes all child rows.
+    await exec("DELETE FROM users WHERE id=$1", [user.id]);
+    // Destroy all sessions for this user.
+    await destroyAllUserSessions(env, user.id);
+    return ok({ message: "Account deleted successfully." });
+  } catch (e) {
+    console.error("account delete failed:", String(e?.message || e));
+    return bad("Account deletion failed. Please try again.", 500);
+  }
+}

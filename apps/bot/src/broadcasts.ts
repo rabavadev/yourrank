@@ -96,7 +96,7 @@ export async function processBroadcastBatch(batchSize = 300): Promise<boolean> {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify(payload),
-        signal: AbortSignal.timeout(10_000),
+        signal: AbortSignal.timeout(15_000),
       });
       if (res.ok) {
         sent++;
@@ -116,13 +116,16 @@ export async function processBroadcastBatch(batchSize = 300): Promise<boolean> {
       } else {
         failed++;
       }
-    } catch {
-      failed++;
+    } catch (err) {
+      failed++; console.error("[broadcast]: sendMessage failed", err);
     }
     await sleep(MSG_INTERVAL_MS);
   }
 
-  const lastId = subs[Math.min(sent + failed, subs.length) - 1]?.tg_user_id ?? bc.cursor_tg_user_id;
+  // Always advance the cursor past the last row we fetched, even if sent+failed
+  // is 0 (e.g. a 429 on the first message stops the loop early). Without this
+  // the cursor stays put and the same batch loops forever.
+  const lastId = subs[subs.length - 1].tg_user_id;
   await query(
     `UPDATE broadcasts
         SET cursor_tg_user_id = $1,
@@ -132,4 +135,8 @@ export async function processBroadcastBatch(batchSize = 300): Promise<boolean> {
     [lastId, sent, failed, bc.id]
   );
   return true;
+  } catch (err) {
+    console.error('[broadcasts] processBroadcastBatch failed:', err);
+    return false;
+  }
 }

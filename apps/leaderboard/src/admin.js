@@ -75,17 +75,15 @@ export async function handleAction(request, env) {
   switch (body.action) {
     case "pro": {
       const days = Number(body.days);
-      await activatePro(env, target.id, Number.isFinite(days) ? days : 31);
-      // Record it in the ledger so revenue/history stays honest.
-      await exec(
-        "INSERT INTO payments (user_id,provider,amount,currency,status) VALUES ($1,$2,$3,$4,$5)",
-        [target.id, "manual", Number(body.amountUsd) || 0, "USD", "manual"]
-      );
-      return ok();
+      await activatePro(env, target.id, Number.isFinite(days) ? days : 31, {
+        provider: "manual",
+        amountUsd: Number(body.amountUsd) || 0,
+      });
+      break;
     }
     case "free":
       await exec("UPDATE users SET plan='free', plan_expires_at=NULL, updated_at=now() WHERE id=$1", [target.id]);
-      return ok();
+      break;
     case "suspend":
       if (target.is_admin) return bad("Can't suspend an admin");
       await exec("UPDATE users SET status='suspended', updated_at=now() WHERE id=$1", [target.id]);
@@ -93,10 +91,10 @@ export async function handleAction(request, env) {
       // The bot dashboard middleware also re-checks suspended status per request,
       // but this closes the leaderboard side (and any other device) now.
       await destroyAllUserSessions(env, target.id);
-      return ok();
+      break;
     case "unsuspend":
       await exec("UPDATE users SET status='active', updated_at=now() WHERE id=$1", [target.id]);
-      return ok();
+      break;
     case "reset-link": {
       // Don't let one admin mint a login-as link for ANOTHER admin. The suspend
       // case already refuses admin targets; this closes the parallel path where
@@ -107,9 +105,19 @@ export async function handleAction(request, env) {
       const token = newToken();
       await env.SESSIONS.put(`reset:${token}`, target.id, { expirationTtl: 86400 }); // admin links last 24h
       const origin = new URL(request.url).origin;
+      console.error("[AUDIT]", JSON.stringify({
+        ts: new Date().toISOString(), admin: admin.id, action: body.action,
+        target: target.id, email: target.email, details: "reset-link-generated",
+      }));
       return ok({ link: `${origin}/reset?token=${token}`, email: target.email });
     }
     default:
       return bad("Unknown action");
   }
+  // Audit log for all non-early-return actions (pro, free, suspend, unsuspend).
+  console.error("[AUDIT]", JSON.stringify({
+    ts: new Date().toISOString(), admin: admin.id, action: body.action,
+    target: target.id, email: target.email, details: body.days || body.amountUsd || null,
+  }));
+  return ok();
 }

@@ -32,7 +32,7 @@ async function tg<T>(method: string, body: Record<string, unknown>): Promise<T> 
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify(body),
-    signal: AbortSignal.timeout(10_000),
+    signal: AbortSignal.timeout(15_000),
   });
   const json = (await res.json()) as { ok: boolean; result: T; description?: string };
   if (!json.ok) throw new Error(`telegram ${method}: ${json.description}`);
@@ -128,7 +128,7 @@ export async function handleBillingUpdate(update: Update): Promise<void> {
       await tg("sendMessage", {
         chat_id: chatId,
         text: `✅ ${PLANS[tier].label} plan active for 30 days. Enjoy!`,
-      }).catch(() => {});
+      }).catch((err) => { console.error("[billing]: sendMessage confirmation failed", err); });
     }
   }
 }

@@ -125,10 +125,23 @@ export async function destroyAllUserSessions(env, userId) {
 }
 
 // ---- resolve the current user's UUID (no DB read) ----
+// SEC-107: Sliding-window TTL refresh. Each time a session is resolved, the
+// KV TTL is extended (best-effort, fire-and-forget) so actively used sessions
+// stay alive. A stolen token that goes unused will expire.
 export async function currentUserId(req, env) {
   const token = readToken(req);
   if (!token) return null;
   const uid = await env.SESSIONS.get(KV_PREFIX + token);
+  if (uid) {
+    // Best-effort TTL extension — fire-and-forget, never blocks the request.
+    try {
+      env.SESSIONS.put(KV_PREFIX + token, uid, { expirationTtl: SESSION_TTL_S }).catch(() => {});
+      const idxKey = "userSessions:" + uid;
+      env.SESSIONS.get(idxKey).then((cur) => {
+        if (cur) env.SESSIONS.put(idxKey, cur, { expirationTtl: SESSION_TTL_S }).catch(() => {});
+      }).catch(() => {});
+    } catch { /* best-effort rotation */ }
+  }
   return uid || null;
 }
 
@@ -143,15 +156,5 @@ export async function currentUser(req, env, loadUser) {
   return loadUser(env, uid);
 }
 
-// ---- migration shim: accept a legacy rk_session cookie once ----
-// During the cutover, old leaderboard sessions live under the OLD cookie name
-// (rk_session) and OLD KV prefix (sess:) written by the pre-merge auth.js.
-// The KV prefix is identical (sess:), so the only difference is the cookie name.
-// This reads either cookie; call it instead of readToken during the grace period.
-export function readTokenWithLegacy(req) {
-  const fresh = readToken(req);
-  if (fresh) return fresh;
-  const c = req.headers.get("cookie") || "";
-  const m = c.match(/(?:^|;\s*)rk_session=([^;]+)/);
-  return m ? m[1] : null;
-}
+// SEC-104: Legacy rk_session cookie support removed. The migration grace
+// period is over. Only gm_session is accepted.

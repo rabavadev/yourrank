@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import type { Update } from "grammy/types";
 import { config } from "./config.js";
-import { one, query } from "./db.js";
+import { exec, one, query } from "./db.js";
 import { encryptToken, newClickRef, newLinkSlug, newWebhookSecret, verifyHmacSha256Hex } from "./crypto.js";
 import { getBotBySecret, handleUpdateForBot } from "./botEngine.js";
 import { getMe, setWebhook } from "./telegram.js";
@@ -53,7 +53,8 @@ async function recordConversion(ownerId: string, q: PostbackQuery): Promise<void
     offerId = hit?.offer_id ?? null;
   }
 
-  await query(
+  // exec() — semantically a write/mutation, not a read query.
+  await exec(
     `INSERT INTO conversions (owner_id, offer_id, click_ref, event, amount, currency, raw)
      VALUES ($1, $2, $3, $4, $5, $6, $7)`,
     [ownerId, offerId, clickRef, event, amount, currency, JSON.stringify(q)]
@@ -88,7 +89,14 @@ export function buildHonoApp(): Hono<{ Bindings: Bindings }> {
     c.header('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
   });
 
-  app.get("/health", (c) => c.json({ ok: true }));
+  app.get("/health", async (c) => {
+    try {
+      await one('SELECT 1 AS ok');
+      return c.json({ ok: true, db: true });
+    } catch {
+      return c.json({ ok: false, db: false }, 503);
+    }
+  });
 
   // =================================================================
   // 1) TELEGRAM WEBHOOK — one endpoint for ALL bots
@@ -136,7 +144,7 @@ export function buildHonoApp(): Hono<{ Bindings: Bindings }> {
     try { ctx = (c as any).executionCtx; } catch { /* not on Workers */ }
     const bg = ctx?.waitUntil
       ? (p: Promise<unknown>) => ctx.waitUntil(p)
-      : (p: Promise<unknown>) => void p.catch(() => {});
+      : (p: Promise<unknown>) => void p.catch((err) => { console.error("[clickLog]: background logging failed", err); });
     bg(logClick(
       link.id, ip,
       c.req.header("user-agent") ?? null,
@@ -232,9 +240,11 @@ export function buildHonoApp(): Hono<{ Bindings: Bindings }> {
       c.header("Retry-After", String(rl.retryAfter));
       return c.json({ error: "rate limited" }, 429);
     }
-    if (!safeEqual(c.req.header("x-api-key") ?? "", config.adminApiKey)) {
-      return c.json({ error: "bad api key" }, 401);
-    }
+    const adminKey = config.adminApiKey;
+      const apiKeyHeader = c.req.header("x-api-key") ?? "";
+      if (!adminKey || !apiKeyHeader || !safeEqual(apiKeyHeader, adminKey)) {
+        return c.json({ error: "bad api key" }, 401);
+      }
     await next();
   });
 

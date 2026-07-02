@@ -23,8 +23,35 @@ export const DEFAULT_EXTRA = {
   ],
 };
 
-const getBySlug = (env, slug) => one("SELECT * FROM sites WHERE slug=$1", [slug]);
-const getByUser = (env, uid) => one("SELECT * FROM sites WHERE user_id=$1", [uid]);
+// All site columns except logo_data (base64 image, up to 180KB) — that's only
+// needed by the /logo/:slug endpoint and saveSite(), which fetch it separately.
+// PERF-004 / PERF-107: avoid SELECT * to prevent 180KB+ transfers on every page.
+const SITE_COLUMNS = "id, user_id, slug, name, tagline, casino, code, cta_url, prize_pool, period, ends_at, reset_note, blurb, extra_json, published, theme_json, updated_at";
+
+// In-memory TTL cache for site configs (per-Worker isolate).
+// Site data rarely changes; this eliminates redundant DB queries when the same
+// site is fetched multiple times within a single isolate lifetime (e.g., from
+// the /logo, /api/public, and /<slug> handlers hitting the same site).
+// PERF-001
+const siteCache = new Map();
+const CACHE_TTL = 60_000; // 1 minute
+
+function getCached(key, fetcher) {
+  const entry = siteCache.get(key);
+  if (entry && entry.expires > Date.now()) return entry.data;
+  const data = fetcher();
+  // fetcher() returns a promise; cache it immediately (including the pending state)
+  // so concurrent requests for the same key share one in-flight query.
+  siteCache.set(key, { data, expires: Date.now() + CACHE_TTL });
+  return data;
+}
+
+export function invalidateSiteCache(slugOrId) {
+  siteCache.delete(slugOrId);
+}
+
+const getBySlug = (env, slug) => getCached(slug, () => one(`SELECT ${SITE_COLUMNS} FROM sites WHERE slug=$1`, [slug]));
+const getByUser = (env, uid) => getCached(uid, () => one(`SELECT ${SITE_COLUMNS} FROM sites WHERE user_id=$1`, [uid]));
 
 async function getPlayers(env, siteId) {
   const rows = await query("SELECT name, wagered, prize FROM players WHERE site_id=$1 ORDER BY wagered DESC", [siteId]);
@@ -63,7 +90,7 @@ async function getArchives(env, siteId, limit = 6) {
   return rows || [];
 }
 
-export function publicShape(site, players, archives = []) {
+export function publicShape(site, players, archives = [], hasLogo = false) {
   // extra_json is JSONB — already a JS object (or null). No parse.
   const extra = (site.extra_json && typeof site.extra_json === "object") ? site.extra_json : {};
   const m = { ...DEFAULT_EXTRA, ...extra };
@@ -77,7 +104,7 @@ export function publicShape(site, players, archives = []) {
     endsAt: site.ends_at,
     partner: { blurb: site.blurb, chips: m.chips },
     whyStats: m.whyStats, rules: m.rules, socials: m.socials,
-    branding: { hasLogo: !!site.logo_data, accentA: theme.accentA, accentB: theme.accentB },
+    branding: { hasLogo, accentA: theme.accentA, accentB: theme.accentB },
     pastWinners: archives.map(archiveShape),
     players: players.map((p) => ({ name: p.name, wagered: p.wagered, prize: p.prize })),
   };
@@ -86,21 +113,30 @@ export function publicShape(site, players, archives = []) {
 export async function getPublicSite(env, slug) {
   const site = await getBySlug(env, slug);
   if (!site || !site.published) return null;
-  const owner = await one(
-    "SELECT plan, (EXTRACT(EPOCH FROM plan_expires_at) * 1000)::double precision AS plan_expires_at, status FROM users WHERE id=$1",
-    [site.user_id]
-  );
+  const [owner, players, archives, logoRow] = await Promise.all([
+    one(
+      "SELECT plan, (EXTRACT(EPOCH FROM plan_expires_at) * 1000)::double precision AS plan_expires_at, status FROM users WHERE id=$1",
+      [site.user_id]
+    ),
+    getPlayers(env, site.id),
+    getArchives(env, site.id),
+    // Lightweight check: only fetch a boolean, not the full base64 blob.
+    one("SELECT (logo_data IS NOT NULL AND logo_data != '') AS has_logo FROM sites WHERE id=$1", [site.id]),
+  ]);
   if (owner && owner.status === "suspended") return { suspended: true };
-  return { id: site.id, data: publicShape(site, await getPlayers(env, site.id), await getArchives(env, site.id)), plan: effectivePlan(owner) };
+  return { id: site.id, data: publicShape(site, players, archives, !!logoRow?.has_logo), plan: effectivePlan(owner) };
 }
 
 export async function getUserSite(env, uid) {
   const site = await getByUser(env, uid);
   if (!site) return null;
-  const archives = await getArchives(env, site.id, 24);
+  const [archives, logoRow] = await Promise.all([
+    getArchives(env, site.id, 24),
+    one("SELECT (logo_data IS NOT NULL AND logo_data != '') AS has_logo FROM sites WHERE id=$1", [site.id]),
+  ]);
   return {
     slug: site.slug, published: !!site.published,
-    data: publicShape(site, await getPlayers(env, site.id), archives.slice(0, 6)),
+    data: publicShape(site, await getPlayers(env, site.id), archives.slice(0, 6), !!logoRow?.has_logo),
     archives: archives.map((a) => {
       const n = Array.isArray(a.snapshot_json) ? a.snapshot_json.length : 0;
       return { id: a.id, label: a.label, at: a.created_at, players: n };
@@ -119,12 +155,15 @@ export async function createArchive(env, uid, { label, clear } = {}) {
   const lab = String(label || "").trim().slice(0, 60) ||
     new Date().toLocaleString("en-US", { month: "long", year: "numeric", timeZone: "UTC" });
   // snapshot_json is JSONB — pass a JSON string cast to jsonb.
-  await exec(
-    "INSERT INTO archives (id,site_id,label,snapshot_json,created_at) VALUES ($1,$2,$3,$4::jsonb,now())",
-    [crypto.randomUUID(), site.id, lab, JSON.stringify(players).slice(0, 200000)]
-  );
-  if (clear === "players") await exec("DELETE FROM players WHERE site_id=$1", [site.id]);
-  else if (clear === "wagers") await exec("UPDATE players SET wagered=0 WHERE site_id=$1", [site.id]);
+  // Wrap INSERT + DELETE/UPDATE in a transaction so a crash between them cannot lose data (BE-003/DB-003).
+  await getSql().begin(async (tx) => {
+    await tx.unsafe(
+      "INSERT INTO archives (id,site_id,label,snapshot_json,created_at) VALUES ($1,$2,$3,$4::jsonb,now())",
+      [crypto.randomUUID(), site.id, lab, JSON.stringify(players).slice(0, 200000)]
+    );
+    if (clear === "players") await tx.unsafe("DELETE FROM players WHERE site_id=$1", [site.id]);
+    else if (clear === "wagers") await tx.unsafe("UPDATE players SET wagered=0 WHERE site_id=$1", [site.id]);
+  });
   return { ok: true, label: lab };
 }
 
@@ -164,7 +203,9 @@ export async function saveSite(env, user, payload) {
   // logo_data stays a TEXT column. theme_json is JSONB: existing value is a JS
   // object, new value is built here — always end up with a JSON string for the
   // ::jsonb cast below.
-  let logoData = site.logo_data ?? "";
+  // Fetch logo_data separately since the shared query no longer includes it (PERF-004).
+  const existingLogoRow = await one("SELECT logo_data FROM sites WHERE id=$1", [site.id]);
+  let logoData = existingLogoRow?.logo_data ?? "";
   let themeObj = (site.theme_json && typeof site.theme_json === "object") ? site.theme_json : {};
   const br = payload.branding;
   if (br && typeof user === "object" && effectivePlan(user) === "pro") {

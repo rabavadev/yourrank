@@ -36,7 +36,7 @@ jobs:
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           workingDirectory: apps/leaderboard
           command: deploy
-          wranglerVersion: "4"
+          wranglerVersion: "4.106.0"
 
   deploy-bot:
     runs-on: ubuntu-latest
@@ -54,4 +54,4 @@ jobs:
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           workingDirectory: apps/bot
           command: deploy
-          wranglerVersion: "4"
+          wranglerVersion: "4.106.0"

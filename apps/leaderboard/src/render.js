@@ -26,11 +26,14 @@ export function renderLeaderboard(data, opts = {}) {
 <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>${title}</title><meta name="description" content="${desc}" />
 <meta property="og:title" content="${esc(b.name)} | ${esc(b.casino || "Stake")}" /><meta property="og:description" content="${desc}" /><meta property="og:type" content="website" />
+<link rel="canonical" href="${esc(opts.homeUrl || "https://yourrank.site")}/${esc(opts.slug || "")}" />
 <meta name="twitter:card" content="summary" /><meta name="twitter:title" content="${esc(b.name)} | ${esc(b.casino || "Stake")}" /><meta name="twitter:description" content="${desc}" />${ogImage}
 <link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="/assets/leaderboard.css" />
-${themeCss}</head><body>
+${themeCss}
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"WebPage","name":${JSON.stringify(title)},"description":${JSON.stringify(desc)}}</script>
+</head><body>
 <div class="field" aria-hidden="true"></div><div class="watermarks" data-watermarks aria-hidden="true"></div>
 <header class="nav"><a class="nav-brand" href="#top">${navLogo}<span data-brand-name>${esc(b.name)}</span></a>
 <nav class="nav-links"><a href="#partner">Partner</a><a href="#board">Leaderboard</a><a href="#socials">Socials</a></nav></header>

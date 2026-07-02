@@ -38,6 +38,7 @@ import {
   type SessionEnv,
 } from "../../../shared/session.js";
 import { shellNavHtml, SHELL_NAV_CSS } from "../../../shared/shell-nav.js";
+import { rateLimit } from "./ratelimit.js";
 
 // ---------------- telegram login verification ----------------
 
@@ -101,6 +102,14 @@ type DashBindings = SessionEnv & Record<string, unknown>;
 export function buildDashboard(): Hono<{ Bindings: DashBindings }> {
   const app = new Hono<{ Bindings: DashBindings }>();
 
+  // CSP header on all dashboard responses (SEC-102)
+  app.use("*", async (c, next) => {
+    await next();
+    if (!c.res.headers.has("Content-Security-Policy")) {
+      c.header("Content-Security-Policy", "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:;");
+    }
+  });
+
   // ---- auth ----
   app.post("/auth/telegram", async (c) => {
     if (!sameOrigin(c.req.raw)) return c.json({ error: "cross-origin request rejected" }, 403);
@@ -155,6 +164,14 @@ export function buildDashboard(): Hono<{ Bindings: DashBindings }> {
 
   // ---- session-scoped API ----
   const api = new Hono<{ Bindings: DashBindings; Variables: { uid: string } }>();
+  // Rate-limit all API requests (120 req/min per IP).
+  api.use("*", async (c, next) => {
+    const ip = c.req.header("cf-connecting-ip") || "0.0.0.0";
+    const rlResult = await rateLimit(c.env.SESSIONS, `dash:${ip}`, 120, 60);
+    if (!rlResult.ok) return c.json({ error: "rate limit exceeded", retryAfter: rlResult.retryAfter }, 429);
+    await next();
+  });
+
   api.use("*", async (c, next) => {
     // CSRF: block cross-site state-changing calls that ride the session cookie.
     // GET/HEAD are safe (read-only) and skipped.
@@ -197,7 +214,7 @@ export function buildDashboard(): Hono<{ Bindings: DashBindings }> {
                 coalesce(sum(cd.clicks), 0)::int        AS clicks,
                 coalesce(sum(cd.unique_clicks), 0)::int AS unique_clicks
            FROM short_links sl
-           LEFT JOIN click_daily cd ON cd.short_link_id = sl.id
+           LEFT JOIN click_daily cd ON cd.short_link_id = sl.id AND cd.day < current_date
           GROUP BY sl.id
        ),
        today_clicks AS (

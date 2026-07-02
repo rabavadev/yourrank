@@ -14,26 +14,41 @@ export function effectivePlan(user) {
   return "free";
 }
 
-export async function activatePro(env, userId, days = PRO_DAYS) {
+export async function activatePro(env, userId, days = PRO_DAYS, { provider, amountUsd } = {}) {
   // plan_expires_at is TIMESTAMPTZ (NULL = lifetime / no expiry). Read it as
   // epoch-ms so the extend-from-current-expiry math matches the old behaviour.
-  const u = await one(
-    "SELECT plan, (EXTRACT(EPOCH FROM plan_expires_at) * 1000)::double precision AS plan_expires_at FROM users WHERE id=$1",
-    [userId]
-  );
-  if (!u) return false;
-  // Extend from current expiry if still Pro, otherwise from now. days<=0 => lifetime (no expiry).
-  if (days > 0) {
-    const base = (u.plan === "pro" && Number(u.plan_expires_at) > Date.now()) ? Number(u.plan_expires_at) : Date.now();
-    const expiresMs = base + days * 86400000;
-    // to_timestamp() takes seconds; convert ms -> s.
-    await exec("UPDATE users SET plan='pro', plan_expires_at=to_timestamp($1 / 1000.0), updated_at=now() WHERE id=$2", [expiresMs, userId]);
-    await exec("INSERT INTO subscriptions (user_id, plan, status, provider, current_period_end) VALUES ($1, $2, 'active', 'nowpayments', to_timestamp($3 / 1000.0))", [userId, 'pro', expiresMs]);
-  } else {
-    // Lifetime: no expiry.
-    await exec("UPDATE users SET plan='pro', plan_expires_at=NULL, updated_at=now() WHERE id=$1", [userId]);
-  }
-  return true;
+  //
+  // Wrapped in a transaction so that the user update, subscription insert, and
+  // optional payment ledger insert are all atomic.
+  return getSql().begin(async (tx) => {
+    const uRows = await tx.unsafe(
+      "SELECT plan, (EXTRACT(EPOCH FROM plan_expires_at) * 1000)::double precision AS plan_expires_at FROM users WHERE id=$1",
+      [userId]
+    );
+    const u = uRows[0];
+    if (!u) return false;
+    // Extend from current expiry if still Pro, otherwise from now. days<=0 => lifetime (no expiry).
+    if (days > 0) {
+      const base = (u.plan === "pro" && Number(u.plan_expires_at) > Date.now()) ? Number(u.plan_expires_at) : Date.now();
+      const expiresMs = base + days * 86400000;
+      // to_timestamp() takes seconds; convert ms -> s.
+      await tx.unsafe("UPDATE users SET plan='pro', plan_expires_at=to_timestamp($1 / 1000.0), updated_at=now() WHERE id=$2", [expiresMs, userId]);
+      await tx.unsafe("INSERT INTO subscriptions (user_id, plan, status, provider, current_period_end) VALUES ($1, $2, 'active', 'nowpayments', to_timestamp($3 / 1000.0))", [userId, 'pro', expiresMs]);
+    } else {
+      // Lifetime: no expiry. Create a perpetual subscription row so the
+      // nightly cron's downgradeExpired() doesn't nuke this user.
+      await tx.unsafe("UPDATE users SET plan='pro', plan_expires_at=NULL, updated_at=now() WHERE id=$1", [userId]);
+      await tx.unsafe("INSERT INTO subscriptions (user_id, plan, status, provider, current_period_end) VALUES ($1, $2, 'active', 'manual', $3::timestamptz)", [userId, 'pro', '2099-12-31T23:59:59Z']);
+    }
+    // Optionally record a payment ledger entry (e.g. for manual admin activations).
+    if (provider) {
+      await tx.unsafe(
+        "INSERT INTO payments (user_id,provider,amount,currency,status) VALUES ($1,$2,$3,$4,$5)",
+        [userId, provider, Number(amountUsd) || 0, "USD", "manual"]
+      );
+    }
+    return true;
+  });
 }
 
 // POST /api/billing/checkout — create a NOWPayments invoice, return its hosted URL.
