@@ -194,6 +194,12 @@ CREATE TABLE IF NOT EXISTS click_daily (
     unique_clicks  INT  NOT NULL DEFAULT 0,
     PRIMARY KEY (day, short_link_id)
 );
+-- The PK leads with `day`, but the dashboard /offers query joins on
+-- short_link_id alone (LEFT JOIN click_daily cd ON cd.short_link_id = sl.id),
+-- so it can't probe the PK and would seq-scan as the rollup grows unbounded
+-- (the nightly cron never deletes old rows). A short_link_id-leading index
+-- turns that join into index lookups.
+CREATE INDEX IF NOT EXISTS idx_click_daily_link ON click_daily (short_link_id, day);
 
 CREATE TABLE IF NOT EXISTS conversions (
     id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),

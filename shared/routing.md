@@ -1,6 +1,6 @@
 # GroupsMix — URL Map & Cloudflare Routing (two Workers, one zone)
 
-`groupsmix.com` is one Cloudflare zone with **two Workers** attached by route
+`yourrank.site` is one Cloudflare zone with **two Workers** attached by route
 pattern. Cloudflare dispatches each incoming request to exactly one Worker based
 on the **most specific matching route**. Everything else (session cookie, DB) is
 shared as described in the other specs.
@@ -44,23 +44,23 @@ leaderboard Worker take the **catch-all**.
 ### Bot Worker — `casino-bot-platform/wrangler.toml`
 ```toml
 routes = [
-  { pattern = "groupsmix.com/bot/*",         zone_name = "groupsmix.com" },
-  { pattern = "groupsmix.com/hook/*",        zone_name = "groupsmix.com" },
-  { pattern = "groupsmix.com/r/*",           zone_name = "groupsmix.com" },
-  { pattern = "groupsmix.com/pb/*",          zone_name = "groupsmix.com" },
-  { pattern = "groupsmix.com/billing/hook/*",zone_name = "groupsmix.com" },
+  { pattern = "yourrank.site/bot/*",         zone_name = "yourrank.site" },
+  { pattern = "yourrank.site/hook/*",        zone_name = "yourrank.site" },
+  { pattern = "yourrank.site/r/*",           zone_name = "yourrank.site" },
+  { pattern = "yourrank.site/pb/*",          zone_name = "yourrank.site" },
+  { pattern = "yourrank.site/billing/hook/*",zone_name = "yourrank.site" },
 ]
 ```
 
 ### Leaderboard Worker — `rankup-saas/wrangler.toml`
 ```toml
 routes = [
-  { pattern = "groupsmix.com/*",     zone_name = "groupsmix.com" },
-  { pattern = "www.groupsmix.com/*", zone_name = "groupsmix.com" },  # redirect to apex in-Worker
+  { pattern = "yourrank.site/*",     zone_name = "yourrank.site" },
+  { pattern = "www.yourrank.site/*", zone_name = "yourrank.site" },  # redirect to apex in-Worker
 ]
 ```
 
-Also add `groupsmix.com` and `www` as zone DNS + the workers routes; the apex
+Also add `yourrank.site` and `www` as zone DNS + the workers routes; the apex
 `A`/`AAAA`/`CNAME` should be proxied (orange cloud) so Workers routes apply.
 
 ---
@@ -68,23 +68,23 @@ Also add `groupsmix.com` and `www` as zone DNS + the workers routes; the apex
 ## 3. Precedence — the gotcha
 
 **Cloudflare routes are matched most-specific-first.** A request to
-`groupsmix.com/bot/dashboard` matches *both* `groupsmix.com/bot/*` (bot) and
-`groupsmix.com/*` (leaderboard). Cloudflare picks the **longer / more specific**
+`yourrank.site/bot/dashboard` matches *both* `yourrank.site/bot/*` (bot) and
+`yourrank.site/*` (leaderboard). Cloudflare picks the **longer / more specific**
 pattern → the bot Worker. The leaderboard's `/*` only wins when no bot pattern
 matches.
 
 Rules that keep this unambiguous:
-1. The leaderboard Worker owns exactly one broad pattern: `groupsmix.com/*`.
+1. The leaderboard Worker owns exactly one broad pattern: `yourrank.site/*`.
 2. Every bot path is a **distinct top-level prefix** (`/bot`, `/hook`, `/r`,
    `/pb`, `/billing/hook`) so `/prefix/*` is strictly more specific than `/*`.
-3. **Never** give the bot Worker a bare `groupsmix.com/*` — that would make
+3. **Never** give the bot Worker a bare `yourrank.site/*` — that would make
    dispatch order-dependent and non-deterministic. Only the leaderboard gets the
    wildcard.
-4. Confirm after deploy: `curl -sI https://groupsmix.com/hook/x` must hit the bot
-   Worker, `curl -sI https://groupsmix.com/anything-else` the leaderboard.
+4. Confirm after deploy: `curl -sI https://yourrank.site/hook/x` must hit the bot
+   Worker, `curl -sI https://yourrank.site/anything-else` the leaderboard.
 
 > Note: `*` in a Worker route matches across `/` (it is not a single path
-> segment). So `groupsmix.com/bot/*` covers `/bot/dashboard` **and**
+> segment). So `yourrank.site/bot/*` covers `/bot/dashboard` **and**
 > `/bot/dash/api/offers`. Good — one pattern per bot prefix suffices.
 
 ---
@@ -119,7 +119,7 @@ add: "bot", "hook", "r", "pb", "health"
 
 ## 5. Same-origin = no CORS
 
-All of the above are on `groupsmix.com`. The dashboard shell's Bot tab is a
+All of the above are on `yourrank.site`. The dashboard shell's Bot tab is a
 plain navigation from `/dashboard` → `/bot/dashboard` (same origin), and the bot
 dashboard's own client fetches to `/bot/dash/api/*` are same-origin too. **No
 CORS headers are needed anywhere.** The only cross-*Worker* boundary is which
@@ -131,14 +131,14 @@ cross-origin plumbing.
 
 ## 6. Post-deploy verification checklist
 ```
-curl -sI https://groupsmix.com/                 # -> leaderboard
-curl -sI https://groupsmix.com/dashboard        # -> leaderboard (Leaderboard tab)
-curl -sI https://groupsmix.com/some-streamer     # -> leaderboard public page
-curl -sI https://groupsmix.com/bot/dashboard    # -> bot (Bot tab)
-curl -sI https://groupsmix.com/hook/abc          # -> bot (401 without secret = correct)
-curl -sI https://groupsmix.com/r/xyz             # -> bot (302 redirect or 404)
-curl -sI https://groupsmix.com/pb/key            # -> bot
-curl -sI https://groupsmix.com/billing/hook/s    # -> bot (401 = correct)
+curl -sI https://yourrank.site/                 # -> leaderboard
+curl -sI https://yourrank.site/dashboard        # -> leaderboard (Leaderboard tab)
+curl -sI https://yourrank.site/some-streamer     # -> leaderboard public page
+curl -sI https://yourrank.site/bot/dashboard    # -> bot (Bot tab)
+curl -sI https://yourrank.site/hook/abc          # -> bot (401 without secret = correct)
+curl -sI https://yourrank.site/r/xyz             # -> bot (302 redirect or 404)
+curl -sI https://yourrank.site/pb/key            # -> bot
+curl -sI https://yourrank.site/billing/hook/s    # -> bot (401 = correct)
 ```
 Then log in on `/dashboard`, click the **Bot** tab, and confirm no second login
 is required — that proves the shared `gm_session` cookie + KV are wired right.

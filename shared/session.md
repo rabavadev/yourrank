@@ -13,7 +13,7 @@ Files: [`session.js`](./session.js) (leaderboard, JS) · [`session.ts`](./sessio
 | Thing            | Value                                                        |
 |------------------|-------------------------------------------------------------|
 | Cookie name      | `gm_session`                                                |
-| Cookie domain    | `Domain=.groupsmix.com`                                      |
+| Cookie domain    | `Domain=.yourrank.site` (env `SESSION_COOKIE_DOMAIN`; defaults to `.yourrank.site`) |
 | Cookie flags     | `Path=/; HttpOnly; Secure; SameSite=Lax`                     |
 | Token            | 32 random bytes, hex (64 chars)                              |
 | KV namespace     | `SESSIONS` — **same namespace id bound in both Workers**     |
@@ -25,11 +25,11 @@ The KV **value is just the UUID string** — no JSON, no signature, no per-Worke
 shape. Both Workers already understand "UUID → `users.id`", so whichever Worker
 reads the cookie resolves the same person. This is the whole trick.
 
-### Why `Domain=.groupsmix.com`
-The leaderboard serves `groupsmix.com/*`; the bot serves `groupsmix.com/bot/*`,
+### Why `Domain=.yourrank.site`
+The leaderboard serves `yourrank.site/*`; the bot serves `yourrank.site/bot/*`,
 `/hook/*`, `/r/*`, etc. — **same host**. A host-only cookie would already be
-sent to every path on that host, but setting an explicit `Domain=.groupsmix.com`
-also covers any future subdomain (e.g. `app.groupsmix.com`) and makes the intent
+sent to every path on that host, but setting an explicit `Domain=.yourrank.site`
+also covers any future subdomain (e.g. `app.yourrank.site`) and makes the intent
 explicit. Both Workers set the **exact same** cookie attributes so neither
 clobbers the other with a narrower cookie.
 
@@ -98,7 +98,7 @@ id      = "<the one shared namespace id>"
   `createSession` → `Set-Cookie: cookieSet(token)`. See `telegram-login.md`.
 - **Logout**: a single `/logout` (leaderboard Worker) does
   `destroySession(env, readToken(req))` then `Set-Cookie: cookieClear()`.
-  Because the cookie is `Domain=.groupsmix.com`, the cleared cookie applies
+  Because the cookie is `Domain=.yourrank.site`, the cleared cookie applies
   host-wide, so the bot side is logged out too. The nav's Logout link points at
   `/logout`.
 

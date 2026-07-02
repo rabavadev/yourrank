@@ -2,7 +2,7 @@
 
 One platform for casino streamers, merged from two products:
 
-- **Leaderboards** — hosted, editable public leaderboard page per streamer at `groupsmix.com/<slug>` (was `rankup-saas`).
+- **Leaderboards** — hosted, editable public leaderboard page per streamer at `yourrank.site/<slug>` (was `rankup-saas`).
 - **Telegram bots** — multi-tenant bot engine, promo-code delivery, tracked referral links, click/conversion analytics (was `casino-bot-platform`).
 
 **One account. One dashboard. Two products.** A streamer signs up once and manages both their leaderboard and their Telegram bot from a single dashboard, backed by one Supabase Postgres database.
@@ -21,9 +21,9 @@ groupsmix/
 │   ├── shell-nav.js / .ts   shared dashboard nav (Leaderboard | Bot | ...)
 │   ├── session.md, routing.md, telegram-login.md, dashboard-shell.md
 └── apps/
-    ├── leaderboard/         Cloudflare Worker (JS) — root of groupsmix.com
+    ├── leaderboard/         Cloudflare Worker (JS) — root of yourrank.site
     │   ├── src/             SSR pages, dashboard, password auth, NOWPayments
-    │   └── wrangler.toml    route: groupsmix.com/*
+    │   └── wrangler.toml    route: yourrank.site/*
     └── bot/                 Cloudflare Worker (TS + Hono + grammY)
         ├── src/             /hook, /r, /pb, /bot dashboard, Telegram Stars
         └── wrangler.toml    routes: /bot/*, /hook/*, /r/*, /pb/*, /billing/hook/*
@@ -32,7 +32,7 @@ groupsmix/
 ## Quick mental model
 
 ```
-                    groupsmix.com (one Cloudflare zone)
+                    yourrank.site (one Cloudflare zone)
         /*  (root) ──► Leaderboard Worker      /bot,/hook,/r,/pb ──► Bot Worker
               │                                          │
               └──────── shared gm_session (KV) ──────────┤

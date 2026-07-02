@@ -14,7 +14,7 @@ Files: [`shell-nav.js`](./shell-nav.js) (leaderboard, JS) · [`shell-nav.ts`](./
 - **No iframe.** The parent's guidance floated an iframe for the Bot tab; we
   reject it. Iframes break cookie `SameSite=Lax` expectations in some browsers,
   add scroll/focus jank, and duplicate chrome. Since both Workers are same-origin
-  (`groupsmix.com`), a full-page navigation between tabs is cleaner and cheaper.
+  (`yourrank.site`), a full-page navigation between tabs is cleaner and cheaper.
 - **No client-side SPA router** spanning two Workers — that reintroduces the
   cross-origin fetch/CORS problem the parent flagged. Each dashboard stays a
   server-rendered page; only the top nav is shared code.

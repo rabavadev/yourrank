@@ -2,7 +2,7 @@
 
 One platform for casino streamers. Two products, one account, one dashboard.
 
-- **Leaderboards** (was `rankup-saas`): hosted, editable public leaderboard page per streamer at `groupsmix.com/<slug>`.
+- **Leaderboards** (was `rankup-saas`): hosted, editable public leaderboard page per streamer at `yourrank.site/<slug>`.
 - **Telegram bots** (was `casino-bot-platform`): multi-tenant bot engine, promo-code delivery, tracked referral links, click/conversion analytics.
 
 A streamer signs up **once**. That single account owns both their leaderboard and their bot.
@@ -12,7 +12,7 @@ A streamer signs up **once**. That single account owns both their leaderboard an
 ## The picture
 
 ```
-                          groupsmix.com  (one Cloudflare zone)
+                          yourrank.site  (one Cloudflare zone)
                                   │
               ┌───────────────────┴────────────────────┐
               │ route: /,/login,/signup,/dashboard,     │ route: /bot/*, /hook/*,
@@ -30,7 +30,7 @@ A streamer signs up **once**. That single account owns both their leaderboard an
              │                                 │  - Telegram Stars     │
              │        shared KV (SESSIONS)     │  - cron: broadcasts,  │
              │        gm_session cookie        │    click rollup        │
-             │      (Domain=.groupsmix.com)    └───────────┬───────────┘
+             │      (Domain=.yourrank.site)    └───────────┬───────────┘
              │                                             │
              └──────────────────┬──────────────────────────┘
                                 ▼
@@ -58,7 +58,7 @@ A streamer signs up **once**. That single account owns both their leaderboard an
 | **Supabase (not D1)** | The bot engine relies on Postgres features D1 can't do: monthly-**partitioned** `clicks`, `count(*) FILTER`, `make_interval`, JSONB. Moving the bot to SQLite would be a downgrade and lose partitioning. So the *leaderboard* moved to Postgres instead. |
 | **Hyperdrive in front of Postgres** | Workers are serverless; opening a raw Postgres connection per request exhausts Supabase's connection cap. Hyperdrive pools + caches. Both Workers share one Hyperdrive config. |
 | **Two Workers, not one** | The two apps have opposite runtimes (plain-JS Worker vs TS+Hono+grammY) and the bot needs **cron triggers** (broadcasts, click rollup) the leaderboard doesn't. Keeping them separate avoids a risky full rewrite and lets each deploy independently. They *feel* like one app via a shared nav + shared session. |
-| **Shared session in KV** | One `gm_session` cookie scoped to `.groupsmix.com` + one shared KV namespace = log in once, both Workers recognize you. |
+| **Shared session in KV** | One `gm_session` cookie scoped to `.yourrank.site` + one shared KV namespace = log in once, both Workers recognize you. |
 
 ## The seam that makes it "one app": the `users` table
 
@@ -76,7 +76,7 @@ Everything else hangs off `user_id`: `sites`/`players`/`archives`/`site_stats` (
 
 - Cloudflare account: **Groupsmix**
 - Supabase project: **groupsmix**
-- Domain: **groupsmix.com**
+- Domain: **yourrank.site**
 - Two Workers on the one zone, routes as in the diagram.
 - Secrets (per Worker, via `wrangler secret put`): `DATABASE_URL` (or Hyperdrive binding), `TOKEN_ENC_KEY` (bot), `IP_HASH_SALT` (bot), `NOWPAYMENTS_API_KEY` + `NOWPAYMENTS_IPN_SECRET` (leaderboard), `PLATFORM_BOT_TOKEN` + `PLATFORM_WEBHOOK_SECRET` (bot billing), `RESEND_API_KEY` (optional email), `LEAD_WEBHOOK_URL` (optional).
 
