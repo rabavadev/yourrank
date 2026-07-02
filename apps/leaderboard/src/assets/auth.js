@@ -7,7 +7,7 @@ const submit = document.getElementById("submit");
 const nameInput = document.getElementById("name");
 const slugPreview = document.getElementById("slugPreview");
 function slugify(s){return String(s||"").toLowerCase().trim().replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"").slice(0,40);}
-if (nameInput && slugPreview) nameInput.addEventListener("input", () => { const s = slugify(nameInput.value); slugPreview.textContent = s ? "rankup-saas.workers.dev/" + s : "rankup-saas.workers.dev/…"; });
+if (nameInput && slugPreview) nameInput.addEventListener("input", () => { const s = slugify(nameInput.value); slugPreview.textContent = s ? "yourrank.site/" + s : "yourrank.site/…"; });
 if (mode === "login" || mode === "signup") {
   fetch("/api/auth/me").then(r => r.json()).then(d => { if (d && d.ok && d.user) location.href = "/dashboard"; }).catch(() => {});
 }
