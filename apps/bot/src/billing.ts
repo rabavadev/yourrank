@@ -1,5 +1,5 @@
 import type { Update } from "grammy/types";
-import { one, query } from "./db.js";
+import { one, query, withTransaction } from "./db.js";
 import { PLANS, type PlanTier } from "./plans.js";
 
 // ------------------------------------------------------------------
@@ -82,24 +82,48 @@ export async function handleBillingUpdate(update: Update): Promise<void> {
   // 2) Record successful payment + activate the plan.
   const sp = update.message?.successful_payment;
   if (sp) {
-    const [userId, tier] = sp.invoice_payload.split(":") as [string, PlanTier];
-    if (!PLANS[tier]) return;
+    // Re-validate the payload here too — pre_checkout runs on a different
+    // update, and we must never trust that the two came from the same client
+    // state. Guards a malformed/hostile payload before we touch the DB.
+    const parts = sp.invoice_payload.split(":");
+    if (parts.length !== 2) return;
+    const [userId, tier] = parts as [string, PlanTier];
+    if (!/^[0-9a-f-]{36}$/.test(userId) || !PLANS[tier]) return;
 
-    const sub = await one<{ id: string }>(
-      `INSERT INTO subscriptions (user_id, plan, status, provider, current_period_end)
-       VALUES ($1, $2, 'active', 'telegram_stars', now() + interval '30 days')
-       RETURNING id`,
-      [userId, tier]
-    );
-    await query(
-      `INSERT INTO payments (user_id, subscription_id, provider, amount, currency, tx_ref, status)
-       VALUES ($1, $2, 'telegram_stars', $3, 'XTR', $4, 'paid')`,
-      [userId, sub!.id, sp.total_amount, sp.telegram_payment_charge_id]
-    );
-    await query(`UPDATE users SET plan = $1, updated_at = now() WHERE id = $2`, [tier, userId]);
+    const chargeId = sp.telegram_payment_charge_id;
 
+    // Record + activate atomically. Either the subscription row, the payment
+    // ledger row, and the plan bump ALL land, or none do — no more half-paid
+    // users with no subscription (or vice-versa) on a mid-write failure.
+    //
+    // Idempotent: Telegram retries the webhook until it gets a 200, so the
+    // same successful_payment can arrive more than once. We dedupe on the
+    // payment charge id (stored in tx_ref) and no-op on a repeat.
+    const activated = await withTransaction(async (tx) => {
+      const dup = await tx.one<{ id: string }>(
+        `SELECT id FROM payments WHERE provider = 'telegram_stars' AND tx_ref = $1`,
+        [chargeId]
+      );
+      if (dup) return false; // already processed this exact payment
+
+      const sub = await tx.one<{ id: string }>(
+        `INSERT INTO subscriptions (user_id, plan, status, provider, current_period_end)
+         VALUES ($1, $2, 'active', 'telegram_stars', now() + interval '30 days')
+         RETURNING id`,
+        [userId, tier]
+      );
+      await tx.query(
+        `INSERT INTO payments (user_id, subscription_id, provider, amount, currency, tx_ref, status)
+         VALUES ($1, $2, 'telegram_stars', $3, 'XTR', $4, 'finished')`,
+        [userId, sub!.id, sp.total_amount, chargeId]
+      );
+      await tx.query(`UPDATE users SET plan = $1, updated_at = now() WHERE id = $2`, [tier, userId]);
+      return true;
+    });
+
+    // Only confirm to the user when we actually activated (not on a dup replay).
     const chatId = update.message?.chat.id;
-    if (chatId) {
+    if (chatId && activated) {
       await tg("sendMessage", {
         chat_id: chatId,
         text: `✅ ${PLANS[tier].label} plan active for 30 days. Enjoy!`,

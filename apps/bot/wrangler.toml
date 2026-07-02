@@ -26,10 +26,7 @@ crons = ["* * * * *", "0 3 * * *"]
 binding = "SESSIONS"
 id = "26e47bcce19941839a20bd2cd5879e42"
 
-# Postgres via Hyperdrive (recommended for connection pooling on Workers).
-# [[hyperdrive]]
-# binding = "HYPERDRIVE"
-# id = ""
+# Postgres via Hyperdrive (connection pooling for Workers).
 [[hyperdrive]]
 binding = "HYPERDRIVE"
 id = "f24c020e169848448e4ab9ca7d24ac23"
