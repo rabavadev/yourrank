@@ -26,7 +26,7 @@ import { config } from "./config.js";
 import { one, query } from "./db.js";
 import { encryptToken, newLinkSlug, newPostbackKey, newWebhookSecret } from "./crypto.js";
 import { getMe, setWebhook } from "./telegram.js";
-import { PLANS, checkFeature, checkLimit, getUserPlan, type PlanTier } from "./plans.js";
+import { PLANS, checkFeature, withPlanLimit, getUserPlan, type PlanTier } from "./plans.js";
 import { billingEnabled, createStarsInvoice } from "./billing.js";
 import {
   createSession,
@@ -63,6 +63,13 @@ function sameOrigin(req: Request): boolean {
   }
 }
 
+// Telegram Login widget payloads are a one-shot signed snapshot. There's no
+// server nonce, so the only replay defense is freshness: reject any payload
+// whose auth_date is older than this. 5 minutes is generous for a user
+// clicking the widget then our POST firing; 24h (the previous value) let a
+// captured payload be replayed for a full day.
+const AUTH_MAX_AGE_S = 5 * 60;
+
 async function verifyTelegramLogin(data: TgLogin, botToken: string): Promise<boolean> {
   const { hash, ...fields } = data;
   const checkString = Object.keys(fields).sort()
@@ -72,8 +79,16 @@ async function verifyTelegramLogin(data: TgLogin, botToken: string): Promise<boo
   const key = await crypto.subtle.importKey("raw", secretKey, { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
   const sig = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(checkString));
   const expected = Buffer.from(sig).toString("hex");
-  const fresh = Date.now() / 1000 - data.auth_date < 86400;
-  return expected === hash && fresh;
+  // Constant-time compare so a guessed hash can't be distinguished from a real
+  // one by response timing. (Web Crypto doesn't ship subtle timing in JS, but
+  // a plain === short-circuits on length difference, which leaks the length.)
+  const ok = expected.length === hash.length;
+  let diff = 0;
+  for (let i = 0; i < expected.length; i++) diff |= expected.charCodeAt(i) ^ (ok ? hash.charCodeAt(i) : 0);
+  const sigMatch = diff === 0;
+  // Reject stale login attempts: a captured widget payload is only good briefly.
+  const fresh = Date.now() / 1000 - Number(data.auth_date) < AUTH_MAX_AGE_S;
+  return sigMatch && fresh;
 }
 
 // ---------------- app ----------------
@@ -199,24 +214,29 @@ export function buildDashboard(): Hono<{ Bindings: DashBindings }> {
     if (!b.casino || !b.label || !b.referral_url)
       return c.json({ error: "casino, label, referral_url required" }, 400);
     try { new URL(b.referral_url); } catch { return c.json({ error: "referral_url must be a valid URL" }, 400); }
-    const limitErr = await checkLimit(c.get("uid"), "offers");
-    if (limitErr) return c.json({ error: limitErr }, 402);
-
     const uid = c.get("uid");
-    const slug = b.casino.toLowerCase().replace(/[^a-z0-9]+/g, "-");
-    const casinoRow = (await one<{ id: string }>(
-      `INSERT INTO casinos (slug, name, is_global, created_by) VALUES ($1, $2, false, $3)
-       ON CONFLICT (slug) DO UPDATE SET name = casinos.name RETURNING id`,
-      [slug, b.casino, uid]
-    ))!;
-    const offer = (await one<{ id: string }>(
-      `INSERT INTO offers (owner_id, casino_id, label, referral_url, promo_code, bonus_text)
-       VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`,
-      [uid, casinoRow.id, b.label, b.referral_url, b.promo_code ?? null, b.bonus_text ?? null]
-    ))!;
-    const linkSlug = newLinkSlug();
-    await query(`INSERT INTO short_links (offer_id, slug, source) VALUES ($1, $2, 'telegram')`, [offer.id, linkSlug]);
-    return c.json({ offer_id: offer.id, tracked_link: `${config.publicBaseUrl}/r/${linkSlug}` });
+
+    // count-check + the inserts run atomically under a per-user advisory lock
+    // so two concurrent create-offer requests can't both pass the count and
+    // both insert (TOCTOU plan-limit bypass).
+    const out = await withPlanLimit(uid, "offers", async (tx) => {
+      const slug = b.casino.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+      const casinoRow = (await tx.one<{ id: string }>(
+        `INSERT INTO casinos (slug, name, is_global, created_by) VALUES ($1, $2, false, $3)
+         ON CONFLICT (slug) DO UPDATE SET name = casinos.name RETURNING id`,
+        [slug, b.casino, uid]
+      ))!;
+      const offer = (await tx.one<{ id: string }>(
+        `INSERT INTO offers (owner_id, casino_id, label, referral_url, promo_code, bonus_text)
+         VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`,
+        [uid, casinoRow.id, b.label, b.referral_url, b.promo_code ?? null, b.bonus_text ?? null]
+      ))!;
+      const linkSlug = newLinkSlug();
+      await tx.query(`INSERT INTO short_links (offer_id, slug, source) VALUES ($1, $2, 'telegram')`, [offer.id, linkSlug]);
+      return { offer_id: offer.id, tracked_link: `${config.publicBaseUrl}/r/${linkSlug}` };
+    });
+    if ("error" in out) return c.json({ error: out.error }, 402);
+    return c.json(out.result);
   });
 
   api.patch("/offers/:id", async (c) => {
@@ -256,8 +276,8 @@ export function buildDashboard(): Hono<{ Bindings: DashBindings }> {
   api.post("/bots", async (c) => {
     const { token, welcome_message } = await c.req.json<{ token: string; welcome_message?: string }>();
     if (!token) return c.json({ error: "token required" }, 400);
-    const limitErr = await checkLimit(c.get("uid"), "bots");
-    if (limitErr) return c.json({ error: limitErr }, 402);
+    // Validate the token with Telegram BEFORE taking a DB lock/transaction —
+    // don't hold a Postgres advisory lock across an external HTTP call.
     let me;
     try { me = await getMe(token); }
     catch { return c.json({ error: "Telegram rejected that token — double-check it in @BotFather" }, 400); }
@@ -265,17 +285,24 @@ export function buildDashboard(): Hono<{ Bindings: DashBindings }> {
     const uid = c.get("uid");
     const secret = newWebhookSecret();
     const encToken = await encryptToken(token);
-    const row = (await one<{ id: string }>(
-      `INSERT INTO bots (owner_id, tg_bot_id, username, token_encrypted, token_hint, webhook_secret, status, welcome_message)
-       VALUES ($1, $2, $3, $4, $5, $6, 'active', $7)
-       ON CONFLICT (tg_bot_id) DO UPDATE
-         SET token_encrypted = EXCLUDED.token_encrypted, token_hint = EXCLUDED.token_hint,
-             webhook_secret = EXCLUDED.webhook_secret, status = 'active', updated_at = now()
-       RETURNING id`,
-      [uid, me.id, me.username, encToken, token.slice(-4), secret, welcome_message ?? null]
-    ))!;
-    await setWebhook(token, `${config.publicBaseUrl}/hook/${secret}`, secret);
-    return c.json({ bot_id: row.id, username: me.username, try_it: `https://t.me/${me.username}` });
+    // count-check + INSERT run atomically under a per-user advisory lock so two
+    // concurrent connect-bot requests can't both pass the count and both insert.
+    const out = await withPlanLimit(uid, "bots", async (tx) => {
+      const row = (await tx.one<{ id: string; username: string }>(
+        `INSERT INTO bots (owner_id, tg_bot_id, username, token_encrypted, token_hint, webhook_secret, status, welcome_message)
+         VALUES ($1, $2, $3, $4, $5, $6, 'active', $7)
+         ON CONFLICT (tg_bot_id) DO UPDATE
+           SET token_encrypted = EXCLUDED.token_encrypted, token_hint = EXCLUDED.token_hint,
+               webhook_secret = EXCLUDED.webhook_secret, status = 'active', updated_at = now()
+         RETURNING id, username`,
+        [uid, me.id, me.username, encToken, token.slice(-4), secret, welcome_message ?? null]
+      ))!;
+      return { bot_id: row.id, username: row.username, secret };
+    });
+    if ("error" in out) return c.json({ error: out.error }, 402);
+    // setWebhook AFTER the transaction commits — don't hold the lock across HTTP.
+    await setWebhook(token, `${config.publicBaseUrl}/hook/${out.result.secret}`, out.result.secret);
+    return c.json({ bot_id: out.result.bot_id, username: out.result.username, try_it: `https://t.me/${out.result.username}` });
   });
 
   // ---- plan & billing ----
@@ -575,9 +602,10 @@ async function loadExtras(){
   const [plan, bcs, convs, bots] = await Promise.all([api('/plan'), api('/broadcasts'), api('/conversions'), api('/bots')]);
   firstBotId = bots[0]?.id ?? null;
 
-  // plan panel
+  // plan panel (label comes from the server-side plan table, but escape it as
+  // defense-in-depth; the numbers are rendered raw since they're ints).
   const cur = plan.current;
-  $('planInfo').innerHTML = '<b style="color:var(--accent)">'+cur.label+'</b> — up to '+cur.maxBots+' bots, '
+  $('planInfo').innerHTML = '<b style="color:var(--accent)">'+esc(cur.label)+'</b> — up to '+cur.maxBots+' bots, '
     +cur.maxOffers+' offers'+(cur.broadcasts?', broadcasts':'')+(cur.postbacks?', postbacks':'');
   $('planButtons').innerHTML = plan.plans.filter(p=>p.starsPrice>0 && p.tier!==cur.tier).map(p=>
     '<button onclick="upgrade(\\''+p.tier+'\\')" style="margin-right:8px">'
@@ -585,13 +613,14 @@ async function loadExtras(){
   ).join('');
 
   // broadcasts panel
-  $('bcList').innerHTML = bcs.map(b=>'<tr><td>'+esc(b.body.slice(0,60))+'</td><td>'+b.status+'</td>'+
-    '<td>'+b.sent_count+'/'+(b.total_count||'?')+'</td><td>'+b.fail_count+'</td></tr>').join('')
+  $('bcList').innerHTML = bcs.map(b=>'<tr><td>'+esc(b.body.slice(0,60))+'</td><td>'+esc(b.status)+'</td>'+
+    '<td>'+esc(b.sent_count)+'/'+(b.total_count?esc(b.total_count):'?')+'</td><td>'+esc(b.fail_count)+'</td></tr>').join('')
     || '<tr><td colspan="4" class="muted">No broadcasts yet.</td></tr>';
 
-  // conversions panel
-  $('convList').innerHTML = convs.map(v=>'<tr><td>'+v.at+'</td><td>'+esc(v.event)+'</td>'+
-    '<td>'+(v.amount?v.amount+' '+v.currency:'–')+'</td><td>'+esc(v.offer||'–')+'</td></tr>').join('')
+  // conversions panel — amount/currency/at come from casino postbacks (external
+  // input), so every field is escaped, not just the event name.
+  $('convList').innerHTML = convs.map(v=>'<tr><td>'+esc(v.at)+'</td><td>'+esc(v.event)+'</td>'+
+    '<td>'+(v.amount?esc(v.amount)+' '+esc(v.currency):'–')+'</td><td>'+esc(v.offer||'–')+'</td></tr>').join('')
     || '<tr><td colspan="4" class="muted">No conversions reported yet.</td></tr>';
 }
 async function sendBroadcast(){
