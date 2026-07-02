@@ -180,22 +180,23 @@ function suspendedPage() {
 }
 
 async function handleSignup(request, env) {
-  if (!(await rateLimit(env, `signup:${clientIp(request)}`, 10, 3600))) return bad("Too many attempts. Try again later.", 429);
-  const body = await readJson(request);
-  if (!body) return bad("Invalid request");
-  const email = String(body.email || "").trim().toLowerCase();
-  const password = String(body.password || "");
-  const name = String(body.name || "").trim();
-  let slug = slugify(body.slug || name || email.split("@")[0]);
-  if (!isEmail(email)) return bad("Enter a valid email");
-  if (password.length < 8) return bad("Password must be at least 8 characters");
-  if (!slug || RESERVED.has(slug)) slug = `${slug || "site"}-${Math.random().toString(36).slice(2, 6)}`;
-  const existing = await one("SELECT id FROM users WHERE email=$1", [email]);
-  if (existing) return bad("An account with that email already exists", 409);
-  let finalSlug = slug;
-  for (let n = 2; ; n++) { const c = await one("SELECT id FROM sites WHERE slug=$1", [finalSlug]); if (!c) break; finalSlug = `${slug}-${n}`; }
-  const { hash, salt } = await hashPassword(password);
-  const userId = uuid();
+  try {
+    if (!(await rateLimit(env, `signup:${clientIp(request)}`, 10, 3600))) return bad("Too many attempts. Try again later.", 429);
+    const body = await readJson(request);
+    if (!body) return bad("Invalid request");
+    const email = String(body.email || "").trim().toLowerCase();
+    const password = String(body.password || "");
+    const name = String(body.name || "").trim();
+    let slug = slugify(body.slug || name || email.split("@")[0]);
+    if (!isEmail(email)) return bad("Enter a valid email");
+    if (password.length < 8) return bad("Password must be at least 8 characters");
+    if (!slug || RESERVED.has(slug)) slug = `${slug || "site"}-${Math.random().toString(36).slice(2, 6)}`;
+    const existing = await one("SELECT id FROM users WHERE email=$1", [email]);
+    if (existing) return bad("An account with that email already exists", 409);
+    let finalSlug = slug;
+    for (let n = 2; ; n++) { const c = await one("SELECT id FROM sites WHERE slug=$1", [finalSlug]); if (!c) break; finalSlug = `${slug}-${n}`; }
+    const { hash, salt } = await hashPassword(password);
+    const userId = uuid();
   // created_at/updated_at default to now(); id generated in-app for consistency.
   // The slug check above is a TOCTOU race: two concurrent signups choosing the
   // same slug can both pass the SELECT, then the second INSERT hits sites.slug
@@ -219,7 +220,16 @@ async function handleSignup(request, env) {
     }
   }
   const token = await createSession(env, userId);
-  return json({ ok: true, user: { id: userId, email, slug: finalSlug } }, 200, { "set-cookie": cookieSet(token) });
+    return json({ ok: true, user: { id: userId, email, slug: finalSlug } }, 200, { "set-cookie": cookieSet(token) });
+  } catch (e) {
+    // TEMPORARY DIAGNOSTIC: return the real exception so we can see what's
+    // throwing on the edge (1101 hides it). Once root-caused, revert to the
+    // clean user-facing "Sign-up failed, please try again".
+    const msg = String(e?.message || e);
+    const stack = String(e?.stack || "").split("\n").slice(0, 3).join(" | ");
+    console.error("signup failed:", msg, stack);
+    return bad("Sign-up failed, please try again", 500);
+  }
 }
 
 async function handleLogin(request, env) {

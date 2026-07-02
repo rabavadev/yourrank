@@ -11,12 +11,24 @@ import {
   readTokenWithLegacy,
   KV_PREFIX,
 } from "../../../shared/session.js";
-// PBKDF2-SHA256. OWASP 2023+ guidance is >=600,000 iterations for SHA-256; the
-// old 100,000 was below that. We version the stored hash as "<iters>$<hex>" so
-// legacy bare-hex hashes (implicitly 100k, from before this change) still
-// verify, and verifyPassword reports whether a rehash to the current count is
-// needed so login can lazily upgrade old hashes without a password reset.
-const PBKDF2_ITERATIONS = 600000;
+// PBKDF2-SHA256 iteration count.
+//
+// IMPORTANT — why this is NOT 600,000: Cloudflare Workers cap CPU time per
+// invocation. deriveBits is native but counted as CPU. 600k PBKDF2-SHA256
+// in a SINGLE deriveBits call takes well over the budget and threw `error
+// code: 1101` (uncaught exception) on /api/auth/signup — account creation
+// was completely broken. 100k is the proven-working value (the project
+// shipped with it; existing users signed up on it).
+//
+// OWASP's >=600k guidance is for a normal long-lived Node server, not a
+// CPU-capped edge function. Keeping 100k here is the honest tradeoff: a
+// working app beats an idealised number that takes the auth flow down.
+//
+// The versioned-hash + lazy-rehash infra below stays in place: if auth ever
+// moves off Workers (or Workers raises the limit), bump PBKDF2_ITERATIONS
+// and existing hashes upgrade automatically on next login. Until then the
+// target equals the legacy count so no rehash runs.
+const PBKDF2_ITERATIONS = 100000;
 const LEGACY_ITERATIONS = 100000;
 const enc = new TextEncoder();
 const bytesToHex = (b) => [...new Uint8Array(b)].map((x) => x.toString(16).padStart(2, "0")).join("");
