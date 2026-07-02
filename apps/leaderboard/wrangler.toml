@@ -40,7 +40,7 @@ binding = "HYPERDRIVE"
 id = "f24c020e169848448e4ab9ca7d24ac23"
 
 [vars]
-APP_NAME = "RankUp"
+APP_NAME = "YourRank"
 
 # --- Secrets (set via `wrangler secret put <NAME>`), NOT stored here: ---
 #   DATABASE_URL            (fallback if Hyperdrive isn't bound)
