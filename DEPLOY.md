@@ -95,3 +95,34 @@ so Stars payments flow back to the app.
 - Both Workers communicate with Supabase only as a SQL database via Hyperdrive
   (or the `DATABASE_URL` fallback). No Supabase REST API is used — the
   `SUPABASE_URL` / `SUPABASE_SERVICE_ROLES_KEY` secrets are not needed.
+
+## 7. CI auto-deploy (optional, recommended)
+
+`.github/workflows/deploy.yml` deploys both Workers to Cloudflare automatically
+on every push to `main` (and via manual "Run workflow"). You set **two** GitHub
+repo secrets once, then push-to-deploy forever:
+
+1. Create a Cloudflare API token: dash.cloudflare.com → My Profile → API Tokens
+   → Create Token → "Edit Cloudflare Workers" template → scope it to the
+   account + the `yourrank.site` zone. The "Workers Scripts: Edit" + "Account:
+   Read" permissions are required. Copy the token.
+2. Get your Cloudflare account id: your dash homepage → right sidebar →
+   "Account ID" (a 32-char hex). Not the zone id.
+
+Add both as **GitHub repo** secrets (repo → Settings → Secrets and variables →
+Actions → New repository secret) — NOT Worker secrets:
+
+| Repo secret             | Value                                  |
+|-------------------------|----------------------------------------|
+| `CLOUDFLARE_API_TOKEN`  | the token from step 1                  |
+| `CLOUDFLARE_ACCOUNT_ID` | the 32-char account id from step 2     |
+
+That's it. Worker **runtime** secrets (`ADMIN_API_KEY`, `TOKEN_ENC_KEY`,
+`PLATFORM_BOT_TOKEN`, etc.) are NOT in the repo and are NOT managed by CI —
+set them once via `wrangler secret put` (section 4); they persist on the
+Workers across every deploy. CI only ships code.
+
+Trigger a first run from repo → Actions → "Deploy" → Run workflow, or just push
+to `main`. The leaderboard job rebuilds `assets_bundled.js` then deploys; the
+bot job deploys `src/worker.ts` directly (wrangler bundles the TS).
+

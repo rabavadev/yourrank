@@ -1,0 +1,55 @@
+name: Deploy
+
+# Push to main -> deploy both Workers to Cloudflare.
+# You only set two GitHub repo secrets once (see DEPLOY.md "CI auto-deploy"):
+#   CLOUDFLARE_API_TOKEN   — Cloudflare API token (Workers Deploy + Account:Edit on the target zone)
+#   CLOUDFLARE_ACCOUNT_ID  — your Cloudflare account id (dash homepage, right sidebar)
+# Worker RUNTIME secrets (ADMIN_API_KEY, TOKEN_ENC_KEY, PLATFORM_BOT_TOKEN, …)
+# are NOT in the repo and are set once out-of-band via `wrangler secret put`;
+# they persist on the Worker across deploys, so this workflow only ships code.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: {}
+
+# Cancel a deploy superseded by a newer push (don't run two deploys at once).
+concurrency:
+  group: deploy
+  cancel-in-progress: true
+
+jobs:
+  deploy-leaderboard:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - working-directory: apps/leaderboard
+        run: bun install --frozen-lockfile
+      # Regenerate src/assets_bundled.js from src/assets/ (it's committed in
+      # sync, but rebuild in CI so a stale bundle can never ship).
+      - working-directory: apps/leaderboard
+        run: node build.js
+      - uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: apps/leaderboard
+          command: deploy
+          wranglerVersion: "4"
+
+  deploy-bot:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - working-directory: apps/bot
+        run: bun install --frozen-lockfile
+      # wrangler bundles src/worker.ts (TS) directly; no tsc emit needed.
+      - uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: apps/bot
+          command: deploy
+          wranglerVersion: "4"
