@@ -6,7 +6,8 @@ import { query } from "./db.js";
 //  2. Pre-create next month's clicks partition.
 // ------------------------------------------------------------------
 
-/** Upsert click_daily for the last 2 days (covers late-arriving rows). */
+/** Upsert click_daily for yesterday only (DB-002: exclude today to avoid
+ *  double-counting when dashboard sums click_daily + today's raw clicks). */
 export async function rollupClicks(): Promise<void> {
   await query(
     `INSERT INTO click_daily (day, short_link_id, clicks, unique_clicks)
@@ -14,11 +15,16 @@ export async function rollupClicks(): Promise<void> {
             count(*)::int,
             count(*) FILTER (WHERE is_unique)::int
        FROM clicks
-      WHERE ts >= current_date - 1
+      WHERE ts >= current_date - 1 AND ts < current_date
       GROUP BY 1, 2
      ON CONFLICT (day, short_link_id) DO UPDATE
         SET clicks = EXCLUDED.clicks,
             unique_clicks = EXCLUDED.unique_clicks`
+  );
+
+  // DB-101: Prune old click_daily rows beyond 30 days to prevent unbounded growth.
+  await query(
+    `DELETE FROM click_daily WHERE day < current_date - 30`
   );
 }
 
