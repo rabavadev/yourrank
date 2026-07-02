@@ -27,12 +27,11 @@
 // Bot lives on the bot Worker. Because they share the domain, plain <a> links
 // navigate between Workers seamlessly and the gm_session cookie rides along.
 export const NAV_LINKS = [
-    { key: "leaderboard", label: "Leaderboard", href: "/dashboard",           match: ["/dashboard"] },
-    { key: "referral",    label: "Referral",    href: "/dashboard/referral",  match: ["/dashboard/referral"] },
-    { key: "bot",         label: "Bot",         href: "/bot/dashboard",       match: ["/bot/dashboard", "/bot/dash"] },
-    { key: "analytics",   label: "Analytics",   href: "/dashboard/analytics", match: ["/dashboard/analytics"] },
-    { key: "billing",     label: "Billing",     href: "/dashboard/billing",   match: ["/dashboard/billing"] },
-  ];
+  { key: "leaderboard", label: "Leaderboard", href: "/dashboard",           match: ["/dashboard"] },
+  { key: "bot",         label: "Bot",         href: "/bot/dashboard",       match: ["/bot/dashboard", "/bot/dash"] },
+  { key: "analytics",   label: "Analytics",   href: "/dashboard/analytics", match: ["/dashboard/analytics"] },
+  { key: "billing",     label: "Billing",     href: "/dashboard/billing",   match: ["/dashboard/billing"] },
+];
 
 // Which nav key is active for a given pathname. Longest-prefix wins so that
 // /dashboard/billing does not also light up /dashboard (Leaderboard).

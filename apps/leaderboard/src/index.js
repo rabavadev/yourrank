@@ -384,77 +384,54 @@ function suspendedPage() {
 }
 
 async function handleSignup(request, env) {
+  try {
+    if (!(await rateLimit(env, `signup:${clientIp(request)}`, 10, 3600))) return bad("Too many attempts. Try again later.", 429);
+    const body = await readJson(request);
+    if (!body) return bad("Invalid request");
+    const email = String(body.email || "").trim().toLowerCase();
+    const password = String(body.password || "");
+    const name = String(body.name || "").trim();
+    let slug = slugify(body.slug || name || email.split("@")[0]);
+    if (!isEmail(email)) return bad("Enter a valid email");
+    if (password.length < 8) return bad("Password must be at least 8 characters");
+    if (!slug || RESERVED.has(slug)) slug = `${slug || "site"}-${Math.random().toString(36).slice(2, 6)}`;
+    const existing = await one("SELECT id FROM users WHERE email=$1", [email]);
+    if (existing) return bad("If this email isn't already registered, check your inbox to confirm.");
+    let finalSlug = slug;
+    for (let n = 2; ; n++) { const c = await one("SELECT id FROM sites WHERE slug=$1", [finalSlug]); if (!c) break; finalSlug = `${slug}-${n}`; }
+    const { hash, salt } = await hashPassword(password);
+    const userId = uuid();
+  // created_at/updated_at default to now(); id generated in-app for consistency.
+  // The slug check above is a TOCTOU race: two concurrent signups choosing the
+  // same slug can both pass the SELECT, then the second INSERT hits sites.slug
+  // UNIQUE and threw an unhandled 500. Wrap the inserts; on a unique violation
+  // (23505) on the slug, append a short random suffix and retry once.
+  for (let attempt = 0; attempt < 3; attempt++) {
     try {
-      if (!(await rateLimit(env, `signup:${clientIp(request)}`, 10, 3600))) return bad("Too many attempts. Try again later.", 429);
-      const body = await readJson(request);
-      if (!body) return bad("Invalid request");
-      const email = String(body.email || "").trim().toLowerCase();
-      const password = String(body.password || "");
-      const name = String(body.name || "").trim();
-      let slug = slugify(body.slug || name || email.split("@")[0]);
-      const refCode = String(body.ref || "").trim() || null;
-      if (!isEmail(email)) return bad("Enter a valid email");
-      if (password.length < 8) return bad("Password must be at least 8 characters");
-      if (!slug || RESERVED.has(slug)) slug = `${slug || "site"}-${Math.random().toString(36).slice(2, 6)}`;
-      const existing = await one("SELECT id FROM users WHERE email=$1", [email]);
-      if (existing) return bad("If this email isn't already registered, check your inbox to confirm.");
-      let finalSlug = slug;
-      for (let n = 2; ; n++) { const c = await one("SELECT id FROM sites WHERE slug=$1", [finalSlug]); if (!c) break; finalSlug = `${slug}-${n}`; }
-
-      // Resolve referral code to a referrer user (before creating the new user).
-      let referrer = null;
-      if (refCode) {
-        referrer = await one("SELECT id FROM users WHERE referral_code=$1", [refCode]);
-      }
-
-      const { hash, salt } = await hashPassword(password);
-      const userId = uuid();
-    // created_at/updated_at default to now(); id generated in-app for consistency.
-    // The slug check above is a TOCTOU race: two concurrent signups choosing the
-    // same slug can both pass the SELECT, then the second INSERT hits sites.slug
-    // UNIQUE and threw an unhandled 500. Wrap the inserts; on a unique violation
-    // (23505) on the slug, append a short random suffix and retry once.
-    for (let attempt = 0; attempt < 3; attempt++) {
-      try {
-        await getSql().begin(async (tx) => {
-          const referrerId = referrer ? referrer.id : null;
-          await tx.unsafe("INSERT INTO users (id,email,password_hash,password_salt,plan,status,referral_code,referred_by) VALUES ($1,$2,$3,$4,$5,$6,$7,$8)", [userId, email, hash, salt, "free", "active", finalSlug, referrerId]);
-          await tx.unsafe("INSERT INTO sites (id,user_id,slug,name,casino,prize_pool,period,published,extra_json) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9::jsonb)", [uuid(), userId, finalSlug, name || finalSlug, "Stake", "$0", "Monthly", true, JSON.stringify(DEFAULT_EXTRA)]);
-        });
-        break;
-      } catch (e) {
-        const msg = String(e?.message || e);
-        if (/23505/.test(msg) && attempt < 2) {
-          // unique violation — likely the slug raced; retry with a fresh suffix
-          finalSlug = `${slug}-${Math.random().toString(36).slice(2, 6)}`;
-          continue;
-        }
-        // users.email UNIQUE collision (already checked above, but concurrent) or
-        // a real error: surface a clean message, never a raw 500.
-        return bad("If this email isn't already registered, check your inbox to confirm.");
-      }
-    }
-
-    // Apply referral reward: 31 days Pro for both referrer and new user.
-    if (referrer && referrer.id !== userId) {
-      const REWARD_DAYS = 31;
-      try {
-        await exec("INSERT INTO referral_rewards (id, referrer_id, referred_id, reward_days) VALUES ($1, $2, $3, $4)", [uuid(), referrer.id, userId, REWARD_DAYS]);
-        await activatePro(env, referrer.id, REWARD_DAYS, { provider: "referral", amountUsd: 0 });
-        await activatePro(env, userId, REWARD_DAYS, { provider: "referral", amountUsd: 0 });
-      } catch (e) {
-        console.error("referral reward failed:", String(e?.message || e));
-        // Non-fatal: user still gets created, just without the bonus.
-      }
-    }
-
-    const token = await createSession(env, userId);
-      return json({ ok: true, user: { id: userId, email, slug: finalSlug } }, 200, { "set-cookie": cookieSet(token) });
+      await getSql().begin(async (tx) => {
+        await tx.unsafe("INSERT INTO users (id,email,password_hash,password_salt,plan,status) VALUES ($1,$2,$3,$4,$5,$6)", [userId, email, hash, salt, "free", "active"]);
+        await tx.unsafe("INSERT INTO sites (id,user_id,slug,name,casino,prize_pool,period,published,extra_json) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9::jsonb)", [uuid(), userId, finalSlug, name || finalSlug, "Stake", "$0", "Monthly", true, JSON.stringify(DEFAULT_EXTRA)]);
+      });
+      break;
     } catch (e) {
-      console.error("signup failed:", String(e?.message || e));
-      return bad("Sign-up failed, please try again", 500);
+      const msg = String(e?.message || e);
+      if (/23505/.test(msg) && attempt < 2) {
+        // unique violation — likely the slug raced; retry with a fresh suffix
+        finalSlug = `${slug}-${Math.random().toString(36).slice(2, 6)}`;
+        continue;
+      }
+      // users.email UNIQUE collision (already checked above, but concurrent) or
+      // a real error: surface a clean message, never a raw 500.
+      return bad("If this email isn't already registered, check your inbox to confirm.");
     }
   }
+  const token = await createSession(env, userId);
+    return json({ ok: true, user: { id: userId, email, slug: finalSlug } }, 200, { "set-cookie": cookieSet(token) });
+  } catch (e) {
+    console.error("signup failed:", String(e?.message || e));
+    return bad("Sign-up failed, please try again", 500);
+  }
+}
 
 async function handleLogin(request, env) {
     try {
@@ -681,87 +658,7 @@ try {
 
   return json({ ok: true, botName, botUsername });
 } catch (e) {
-    console.error("bot connect failed:", String(e?.message || e));
-    return bad("Something went wrong. Try again.", 500);
-  }
+  console.error("bot connect failed:", String(e?.message || e));
+  return bad("Something went wrong. Try again.", 500);
 }
-
-// GET /api/referral/code — returns the current user's referral code, URL, and stats.
-async function handleReferralCode(request, env) {
-  const { user, res } = await requireUser(request, env);
-  if (res) return res;
-  try {
-    // Ensure the user has a referral_code (backfill if somehow missing).
-    let code = user.referral_code;
-    if (!code) {
-      const site = await one("SELECT slug FROM sites WHERE user_id=$1", [user.id]);
-      code = site?.slug || user.id.slice(0, 8);
-      await exec("UPDATE users SET referral_code=$1 WHERE id=$2 AND referral_code IS NULL", [code, user.id]);
-    }
-    const origin = new URL(request.url).origin;
-    const countRow = await one("SELECT COUNT(*)::int AS count FROM referral_rewards WHERE referrer_id=$1", [user.id]);
-    const daysRow = await one("SELECT COALESCE(SUM(reward_days),0)::int AS total_days FROM referral_rewards WHERE referrer_id=$1", [user.id]);
-    return json({
-      ok: true,
-      code,
-      url: `${origin}/signup?ref=${code}`,
-      referrals_count: countRow?.count || 0,
-      rewards_earned: daysRow?.total_days || 0,
-    });
-  } catch (e) {
-    console.error("referral code error:", String(e?.message || e));
-    return bad("Couldn't load referral info.", 500);
-  }
-}
-
-// POST /api/referral/claim — apply a referral code to the current user (post-signup).
-// Body: { code: string }
-async function handleReferralClaim(request, env) {
-  const { user, res } = await requireUser(request, env);
-  if (res) return res;
-  try {
-    const body = await readJson(request);
-    const code = String(body?.code || "").trim();
-    if (!code) return bad("Missing referral code");
-
-    // Already referred?
-    if (user.referred_by) return bad("You've already used a referral code.");
-
-    const referrer = await one("SELECT id FROM users WHERE referral_code=$1", [code]);
-    if (!referrer) return bad("Invalid referral code.");
-    if (referrer.id === user.id) return bad("You can't refer yourself.");
-
-    const REWARD_DAYS = 31;
-    await exec("UPDATE users SET referred_by=$1 WHERE id=$2", [referrer.id, user.id]);
-    await exec("INSERT INTO referral_rewards (id, referrer_id, referred_id, reward_days) VALUES ($1, $2, $3, $4)", [uuid(), referrer.id, user.id, REWARD_DAYS]);
-    await activatePro(env, referrer.id, REWARD_DAYS, { provider: "referral", amountUsd: 0 });
-    await activatePro(env, user.id, REWARD_DAYS, { provider: "referral", amountUsd: 0 });
-    return json({ ok: true, message: "Referral applied! You both earned 31 days of Pro." });
-  } catch (e) {
-    console.error("referral claim error:", String(e?.message || e));
-    return bad("Couldn't apply referral code.", 500);
-  }
-}
-
-// GET /api/referral/stats — returns referral history for the dashboard.
-async function handleReferralStats(request, env) {
-  const { user, res } = await requireUser(request, env);
-  if (res) return res;
-  try {
-    const rows = await query(
-      `SELECT rr.id, rr.reward_days, rr.created_at,
-              u.email AS referred_email, s.slug AS referred_slug
-       FROM referral_rewards rr
-       JOIN users u ON u.id = rr.referred_id
-       LEFT JOIN sites s ON s.user_id = u.id
-       WHERE rr.referrer_id = $1
-       ORDER BY rr.created_at DESC
-       LIMIT 50`,
-      [user.id]
-    );
-    return json({ ok: true, referrals: rows });
-  } catch (e) {
-    console.error("referral stats error:", String(e?.message || e));
-    return bad("Couldn't load referral stats.", 500);
-  }
 }
