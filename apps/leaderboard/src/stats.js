@@ -1,5 +1,5 @@
 // Per-site daily analytics. Cheap upsert counters in Postgres — no external service.
-import { query } from "./db.js";
+import { query, exec } from "./db.js";
 const FIELDS = new Set(["views", "copies", "clicks"]);
 
 export function todayUTC() {
@@ -10,7 +10,7 @@ export function todayUTC() {
 export async function bumpStat(env, siteId, field) {
   if (!siteId || !FIELDS.has(field)) return; // field is from a fixed allow-list, safe to interpolate
   try {
-    await query(
+    await exec(
       `INSERT INTO site_stats (site_id, day, ${field}) VALUES ($1, $2, 1)
        ON CONFLICT (site_id, day) DO UPDATE SET ${field} = site_stats.${field} + 1`,
       [siteId, todayUTC()]

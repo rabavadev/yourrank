@@ -7,7 +7,7 @@ import { handleOverview, handleUsers, handleLeads, handlePayments, handleAction 
 import { sendEmail, resetEmail } from "./email.js";
 import { bumpStat, getStats } from "./stats.js";
 import { leaderboard_css, leaderboard_js, app_css, auth_js, dashboard_js, admin_js, landing_css, landing_js, analytics_js, billing_js } from "./assets_bundled.js";
-import { query, one } from "./db.js";
+import { query, one, exec } from "./db.js";
 import { shellNavHtml, SHELL_NAV_CSS } from "../../../shared/shell-nav.js";
 
 const MIME = {
@@ -58,6 +58,33 @@ export default {
       const entry = map[path];
       if (entry) return new Response(entry[0], { headers: { "content-type": MIME[entry[1]], "cache-control": "public, max-age=3600" } });
       return new Response("not found", { status: 404 });
+    }
+
+    // --- SEO: robots.txt (SEO-001) ---
+    if (path === "/robots.txt") {
+      return new Response("User-agent: *\nAllow: /\nSitemap: https://yourrank.site/sitemap.xml\n", {
+        headers: { "content-type": "text/plain; charset=utf-8", "cache-control": "public, max-age=86400" },
+      });
+    }
+
+    // --- SEO: sitemap.xml (SEO-002) ---
+    if (path === "/sitemap.xml") {
+      const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+<url><loc>https://yourrank.site/</loc></url>
+<url><loc>https://yourrank.site/login</loc></url>
+<url><loc>https://yourrank.site/signup</loc></url>
+<url><loc>https://yourrank.site/terms</loc></url>
+<url><loc>https://yourrank.site/privacy</loc></url>
+</urlset>`;
+      return new Response(sitemap, {
+        headers: { "content-type": "application/xml", "cache-control": "public, max-age=86400" },
+      });
+    }
+
+    // --- SEO: favicon.ico (SEO-006) ---
+    if (path === "/favicon.ico") {
+      return new Response(null, { status: 204 });
     }
 
     // --- pages ---
@@ -244,8 +271,8 @@ async function handleSignup(request, env) {
   // (23505) on the slug, append a short random suffix and retry once.
   for (let attempt = 0; attempt < 3; attempt++) {
     try {
-      await query("INSERT INTO users (id,email,password_hash,password_salt,plan,status) VALUES ($1,$2,$3,$4,$5,$6)", [userId, email, hash, salt, "free", "active"]);
-      await query("INSERT INTO sites (id,user_id,slug,name,casino,prize_pool,period,published,extra_json) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9::jsonb)", [uuid(), userId, finalSlug, name || finalSlug, "Stake", "$0", "Monthly", true, JSON.stringify(DEFAULT_EXTRA)]);
+      await exec("INSERT INTO users (id,email,password_hash,password_salt,plan,status) VALUES ($1,$2,$3,$4,$5,$6)", [userId, email, hash, salt, "free", "active"]);
+      await exec("INSERT INTO sites (id,user_id,slug,name,casino,prize_pool,period,published,extra_json) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9::jsonb)", [uuid(), userId, finalSlug, name || finalSlug, "Stake", "$0", "Monthly", true, JSON.stringify(DEFAULT_EXTRA)]);
       break;
     } catch (e) {
       const msg = String(e?.message || e);
@@ -262,12 +289,7 @@ async function handleSignup(request, env) {
   const token = await createSession(env, userId);
     return json({ ok: true, user: { id: userId, email, slug: finalSlug } }, 200, { "set-cookie": cookieSet(token) });
   } catch (e) {
-    // TEMPORARY DIAGNOSTIC: return the real exception so we can see what's
-    // throwing on the edge (1101 hides it). Once root-caused, revert to the
-    // clean user-facing "Sign-up failed, please try again".
-    const msg = String(e?.message || e);
-    const stack = String(e?.stack || "").split("\n").slice(0, 3).join(" | ");
-    console.error("signup failed:", msg, stack);
+    console.error("signup failed:", String(e?.message || e));
     return bad("Sign-up failed, please try again", 500);
   }
 }
@@ -289,7 +311,7 @@ async function handleLogin(request, env) {
   // needed. Fire-and-forget so login latency isn't dominated by the rehash.
   if (needsRehash) {
     const { hash, salt } = await hashPassword(password);
-    query("UPDATE users SET password_hash=$1, password_salt=$2, updated_at=now() WHERE id=$3", [hash, salt, user.id]).catch(() => {});
+    exec("UPDATE users SET password_hash=$1, password_salt=$2, updated_at=now() WHERE id=$3", [hash, salt, user.id]).catch(() => {});
   }
   const site = await one("SELECT slug FROM sites WHERE user_id=$1", [user.id]);
   const token = await createSession(env, user.id);
@@ -340,7 +362,7 @@ async function handleReset(request, env) {
   const userId = await env.SESSIONS.get(`reset:${token}`);
   if (!userId) return bad("This reset link is invalid or expired. Ask for a new one.", 400);
   const { hash, salt } = await hashPassword(password);
-  await query("UPDATE users SET password_hash=$1, password_salt=$2, updated_at=now() WHERE id=$3", [hash, salt, userId]);
+  await exec("UPDATE users SET password_hash=$1, password_salt=$2, updated_at=now() WHERE id=$3", [hash, salt, userId]);
   await env.SESSIONS.delete(`reset:${token}`);
   // Revoke EVERY other live session for this user before issuing a fresh one.
   // Without this, a stolen session survives a victim-initiated reset for up to
@@ -414,7 +436,7 @@ async function handleLead(request, env) {
   const handle = String(body.handle || "").slice(0, 120), casino = String(body.casino || "").slice(0, 60);
   const contact = String(body.contact || "").slice(0, 160), note = String(body.note || "").slice(0, 500);
   if (!handle && !contact) return bad("Tell us who you are");
-  await query("INSERT INTO leads (id,handle,casino,contact,note) VALUES ($1,$2,$3,$4,$5)", [uuid(), handle, casino, contact, note]);
+  await exec("INSERT INTO leads (id,handle,casino,contact,note) VALUES ($1,$2,$3,$4,$5)", [uuid(), handle, casino, contact, note]);
   if (env.LEAD_WEBHOOK_URL) {
     // Strip Discord/Slack mention syntax so a lead submitter can't @everyone,
     // <@&role-id>, or otherwise ping the operator's server through the webhook.
