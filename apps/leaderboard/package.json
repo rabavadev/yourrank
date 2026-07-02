@@ -2,7 +2,7 @@
   "name": "groupsmix-leaderboard",
   "version": "0.1.0",
   "devDependencies": {
-    "wrangler": "^4.106.0"
+    "wrangler": "4.106.0"
   },
   "engines": {
     "node": ">=20"
