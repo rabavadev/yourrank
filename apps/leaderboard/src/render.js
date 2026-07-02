@@ -43,7 +43,7 @@ ${themeCss}
 <section class="hero"><div class="stream-window" aria-hidden="true"><div class="sw-bar"><span class="sw-dots"><i></i><i></i><i></i></span><span class="sw-title">Kick Stream</span></div>
 <div class="sw-body"><div class="sw-live"><span class="live-dot"></span> LIVE</div><div class="sw-play"><svg viewBox="0 0 24 24" width="34" height="34" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></div><div class="sw-name" data-brand-name>${esc(b.name)}</div></div></div>
 ${heroLogo}<p class="hero-kicker">Welcome to</p><h1 class="hero-name" data-brand-name>${esc(b.name)}</h1>
-<p class="hero-sub">Join our community and compete for amazing prizes.</p>
+<p class="hero-sub"><span data-casino>${esc(b.casino || "Stake")}</span> partner · <span data-period>${esc(b.period || "Monthly")}</span> leaderboard</p>
 <div class="hero-cta"><a class="btn btn--grad" data-cta href="${esc(opts.slug ? `/go/${opts.slug}` : b.ctaUrl || "#")}" target="_blank" rel="noopener">Join <span data-casino>${esc(b.casino || "Stake")}</span></a><a class="btn btn--ghost" href="#board">Leaderboard</a></div>
 <div class="hero-timer" data-timer><p class="timer-label"><span data-pool>${esc(b.prizePool)}</span> leaderboard resets in</p>
 <div class="timer-grid" data-timer-grid><div class="tcell"><b data-t="d">--</b><span>Days</span></div><div class="tsep">:</div>

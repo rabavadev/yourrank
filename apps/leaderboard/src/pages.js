@@ -54,23 +54,20 @@ export const PAGES = {
 <div class="step"><div class="n">01</div><div><h3>Create your account</h3><p>Pick a handle. That becomes your page URL. Takes about a minute.</p></div></div>
 <div class="step"><div class="n">02</div><div><h3>Fill in your details</h3><p>Prize pool, referral code, countdown date, and your ranked players. All from one dashboard.</p></div></div>
 <div class="step"><div class="n">03</div><div><h3>Share your link</h3><p>Your page is live. Update the numbers whenever you want and they change instantly.</p></div></div>
+</div>
+<div class="steps" style="margin-top:24px">
+<div class="step"><div class="n">✦</div><div><h3>Built-in analytics</h3><p>Track views, clicks, and referrers from your dashboard. See what's working and where your traffic comes from.</p></div></div>
 </div></div></section>
 <section id="example"><div class="wrap"><h2 class="sec">A real page</h2><p class="sec-sub">This is a live leaderboard running on YourRank. Yours works the same way.</p>
-<div class="example"><div class="bar"><span>yourrank.site/chuckybtz</span><span>live</span></div>
-<iframe src="/chuckybtz" loading="lazy" title="Example leaderboard"></iframe></div></div></section>
+<div class="example"><div class="bar"><span>yourrank.site/demo</span><span>live</span></div>
+<iframe src="/demo" loading="lazy" title="Example leaderboard"></iframe></div></div></section>
 <section id="pricing"><div class="wrap"><h2 class="sec">Pricing</h2><p class="sec-sub">Start free. Upgrade when your board is pulling weight.</p>
 <table class="pricing"><thead><tr><th>Plan</th><th>Price</th><th>What you get</th><th>&nbsp;</th></tr></thead><tbody>
 <tr><td class="plan">Free</td><td class="price">$0</td><td>One hosted page, live countdown, up to 10 players. Carries a small "Powered by YourRank" badge.</td><td><a href="/signup" class="btn btn--sm">Start</a></td></tr>
 <tr class="pro-row"><td class="plan">Pro</td><td class="price">$29/mo</td><td>Up to 50 players, no YourRank badge, custom code &amp; socials, priority support. Pay with crypto.</td><td><a href="/signup" class="btn btn--sm btn--accent">Start</a></td></tr>
 </tbody></table></div></section>
-<section id="request"><div class="wrap"><h2 class="sec">Want us to set it up for you?</h2><p class="sec-sub">Prefer we build and manage the page? Tell us about your channel and we'll handle it.</p>
-<form class="lead" id="leadForm" novalidate>
-<div><label for="l_handle">Your handle / channel</label><input id="l_handle" placeholder="ChuckyBTZ" required /></div>
-<div><label for="l_casino">Casino</label><input id="l_casino" placeholder="Stake" /></div>
-<div class="full"><label for="l_contact">How to reach you</label><input id="l_contact" placeholder="Discord, email or Telegram" required /></div>
-<div class="full"><label for="l_note">Anything else</label><textarea id="l_note" rows="3" placeholder="Prize pool, code, roughly how many players…"></textarea></div>
-<div class="full"><button class="btn btn--accent" type="submit" id="l_submit">Send request</button></div>
-<div class="status" id="l_status"></div></form></div></section>
+<section id="start"><div class="wrap"><h2 class="sec">Ready to start?</h2><p class="sec-sub">Create your free page in under a minute. No credit card needed.</p>
+<div class="cta" style="text-align:center;margin:32px 0"><a href="/signup" class="btn btn--accent" style="font-size:18px;padding:16px 36px">Create your free page</a></div></div></section>
 <footer><div class="wrap" style="display:flex;justify-content:space-between;width:100%;flex-wrap:wrap;gap:12px">
 <span>© <span id="yr"></span> YourRank</span>
 <span><a href="/terms">Terms</a> · <a href="/privacy">Privacy</a> · <a href="/responsible">Responsible play</a></span>
