@@ -36,8 +36,12 @@ export async function query<T = Record<string, unknown>>(
   return rows.map((r) => ({ ...(r as Record<string, unknown>) })) as unknown as T[];
 }
 
-/** Alias for query() — use for INSERT/UPDATE/DELETE to signal intent. */
-export const exec = query;
+/** One-shot mutation — INSERT/UPDATE/DELETE.  Fails immediately on error;
+ *  the caller decides whether to retry.  Separate from query() so that
+ *  read-retry logic is never accidentally applied to writes. */
+export async function exec(text: string, params: unknown[] = []): Promise<any> {
+  return getSql().unsafe(text, params as any[]);
+}
 
 /** Like query() but returns the first row (or undefined). */
 export async function one<T = Record<string, unknown>>(
