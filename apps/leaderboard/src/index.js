@@ -1,14 +1,15 @@
 import { hashPassword, verifyPassword, uuid, newToken, createSession, destroySession, destroyAllUserSessions, currentUser, requireUser, isEmail, slugify, RESERVED, cookieSet, cookieClear, readToken, json, bad, ok, readJson, rateLimit, clientIp, handleAccountDelete } from "./auth.js";
-import { DEFAULT_EXTRA, getPublicSite, getUserSite, saveSite, getByUser, createArchive, deleteArchive } from "./site.js";
+import { DEFAULT_EXTRA, getPublicSite, getUserSite, getUserSiteById, getUserBoardsList, saveSite, getByUser, getAllBoards, createBoard, invalidateUserCache, createArchive, deleteArchive } from "./site.js";
 import { renderLeaderboard } from "./render.js";
 import { PAGES } from "./pages.js";
-import { effectivePlan, PLAN_LIMITS, priceUsd, handleCheckout, handleIpn, activatePro } from "./billing.js";
+import { effectivePlan, PLAN_LIMITS, BOARD_LIMITS, PLAN_PRICES, priceUsd, handleCheckout, handleIpn, activatePlan } from "./billing.js";
 import { handleOverview, handleUsers, handleLeads, handlePayments, handleAction } from "./admin.js";
 import { sendEmail, resetEmail } from "./email.js";
 import { bumpStat, getStats, getHeatmap, getTopReferrers } from "./stats.js";
-import { leaderboard_css, leaderboard_js, app_css, auth_js, dashboard_js, admin_js, landing_css, landing_js, analytics_js, billing_js, bot_setup_js } from "./assets_bundled.js";
+import { leaderboard_css, leaderboard_js, app_css, auth_js, dashboard_js, admin_js, landing_css, landing_js, analytics_js, billing_js, bot_setup_js, overlay_js } from "./assets_bundled.js";
 import { query, one, exec, getSql } from "./db.js";
 import { shellNavHtml, SHELL_NAV_CSS } from "../../../shared/shell-nav.js";
+import { sendDiscordWebhook, buildTop3Embed, buildResetEmbed, sendTelegramMessage } from "./notifications.js";
 
 // SEC-108: CSRF token helpers. Tokens are stored in a __csrf cookie (readable
 // by JS) and must be echoed in a X-CSRF-Token header on every state-changing
@@ -83,6 +84,7 @@ export default {
         "/assets/analytics.js": [analytics_js, ".js"],
         "/assets/billing.js": [billing_js, ".js"],
         "/assets/bot-setup.js": [bot_setup_js, ".js"],
+        "/assets/overlay.js": [overlay_js, ".js"],
       };
       const entry = map[path];
       if (entry) return new Response(entry[0], { headers: { "content-type": MIME[entry[1]], "cache-control": "public, max-age=300, s-maxage=3600" } });
@@ -272,6 +274,8 @@ ${entries.join("\n")}
     // --- API: site + leads ---
     if (path === "/api/site" && method === "GET") return handleGetSite(request, env);
     if (path === "/api/site" && method === "PUT") return handlePutSite(request, env);
+    if (path === "/api/site/list" && method === "GET") return handleListBoards(request, env);
+    if (path === "/api/site/create" && method === "POST") return handleCreateBoard(request, env);
     if (path === "/api/site/archive" && method === "POST") return handleArchive(request, env);
     if (path === "/api/site/archive/delete" && method === "POST") return handleArchiveDelete(request, env);
     if (path === "/api/site/stats" && method === "GET") return handleStats(request, env);
@@ -285,6 +289,9 @@ ${entries.join("\n")}
 
     // --- tracked Join redirect: /go/<slug> → streamer's referral URL ---
     if (path === "/api/bot/connect" && method === "POST") return handleBotConnect(request, env);
+
+    // --- API: notifications (Pro only) ---
+    if (path === "/api/site/notify/test" && method === "POST") return handleNotifyTest(request, env);
 
     // --- API: admin ---
     if (path === "/api/admin/overview" && method === "GET") return handleOverview(request, env);
@@ -362,6 +369,30 @@ ${entries.join("\n")}
       if (r.id) ctx.waitUntil(bumpStat(env, r.id, "clicks"));
       const dest = r.data?.brand?.ctaUrl;
       return Response.redirect(dest && /^https?:\/\//i.test(dest) ? dest : `${url.origin}/${slug}`, 302);
+    }
+
+    // --- OBS overlay: /<slug>/overlay ---
+    if (method === "GET" && /^\/[^/]+\/overlay$/.test(path)) {
+      const slug = decodeURIComponent(path.slice(1).split("/")[0]).toLowerCase();
+      if (RESERVED.has(slug)) return new Response("not found", { status: 404 });
+      const r = await getPublicSite(env, slug);
+      if (!r || r.suspended) return new Response("not found", { status: 404 });
+      const pro = r.plan === "pro";
+      if (!pro) {
+        // Upsell page for free users
+        const upsell = `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>OBS Overlay — Pro Feature</title>
+<style>*{margin:0;padding:0;box-sizing:border-box}body{width:320px;background:rgba(8,8,12,0.95);font-family:'Segoe UI',system-ui,sans-serif;color:#fff;padding:20px;border-radius:12px;text-align:center}
+h2{font-size:16px;margin-bottom:8px;background:linear-gradient(135deg,#c8ff00,#5ad9ff);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+p{font-size:11px;color:rgba(255,255,255,0.5);line-height:1.5}
+a{color:#c8ff00;text-decoration:none;font-weight:600}</style></head><body>
+<h2>🎬 OBS Overlay</h2>
+<p>This is a Pro feature.<br/>Upgrade at <a href="/" target="_blank">yourrank.site</a> to unlock the live stream overlay with animated rankings.</p>
+</body></html>`;
+        return new Response(upsell, { headers: { "content-type": "text/html; charset=utf-8", "cache-control": "public, max-age=300" } });
+      }
+      const overlayHtml = PAGES.overlay(r.data, { slug });
+      return new Response(overlayHtml, { headers: { "content-type": "text/html; charset=utf-8", "cache-control": "public, max-age=30" } });
     }
 
     // --- public leaderboard at /<slug> ---
@@ -504,11 +535,15 @@ async function handleMe(request, env) {
     const user = await currentUser(request, env);
     if (!user) return json({ ok: false, user: null });
     const site = await one("SELECT slug FROM sites WHERE user_id=$1", [user.id]);
+    const boards = await getUserBoardsList(env, user.id);
+    const plan = effectivePlan(user);
     return json({ ok: true, user: {
       id: user.id, email: user.email,
-      plan: effectivePlan(user), planExpiresAt: user.plan_expires_at || 0,
+      plan, planExpiresAt: user.plan_expires_at || 0,
       status: user.status, isAdmin: !!user.is_admin, slug: site?.slug || null,
-      limits: { players: PLAN_LIMITS[effectivePlan(user)] }, proPrice: priceUsd(env),
+      limits: { players: PLAN_LIMITS[plan], boards: BOARD_LIMITS[plan] },
+      proPrice: priceUsd(env, "pro"),
+      boards,
     } });
   } catch (e) {
     console.error("handleMe error:", String(e?.message || e), String(e?.stack || ""));
@@ -589,9 +624,40 @@ async function handleGetSite(request, env) {
     const { user, res } = await requireUser(request, env);
     if (res) return res;
     if (user.status === "suspended") return bad("This account is suspended.", 403);
-    const s = await getUserSite(env, user.id);
+    const url = new URL(request.url);
+    const siteId = url.searchParams.get("siteId");
+    let s;
+    if (siteId) {
+      s = await getUserSiteById(env, user.id, siteId);
+    } else {
+      s = await getUserSite(env, user.id);
+    }
     if (!s) return bad("No site for this account", 404);
-    return json({ ok: true, slug: s.slug, published: s.published, plan: effectivePlan(user), data: s.data, archives: s.archives });
+    const boards = await getUserBoardsList(env, user.id);
+    return json({ ok: true, slug: s.slug, published: s.published, plan: effectivePlan(user), data: s.data, archives: s.archives, boards, siteId: s.id });
+  }
+
+async function handleListBoards(request, env) {
+    const { user, res } = await requireUser(request, env);
+    if (res) return res;
+    if (user.status === "suspended") return bad("This account is suspended.", 403);
+    const plan = effectivePlan(user);
+    const boards = await getUserBoardsList(env, user.id);
+    return json({ ok: true, boards, limits: { boards: BOARD_LIMITS[plan], players: PLAN_LIMITS[plan] }, plan });
+  }
+
+async function handleCreateBoard(request, env) {
+    const { user, res } = await requireUser(request, env);
+    if (res) return res;
+    if (user.status === "suspended") return bad("This account is suspended.", 403);
+    if (!(await rateLimit(env, `createboard:${user.id}`, 5, 3600))) return bad("Too many requests. Try again later.", 429);
+    const body = await readJson(request);
+    if (!body) return bad("Invalid request");
+    let slug = slugify(body.slug || "");
+    if (!slug) return bad("Enter a valid slug for the board URL.");
+    const name = String(body.name || "").trim().slice(0, 80) || slug;
+    const r = await createBoard(env, user.id, { slug, name });
+    return r.error ? bad(r.error, 400) : json({ ok: true, id: r.id, slug: r.slug });
   }
 
 // POST /api/site/archive — { label?, clear: "wagers"|"players"|"none" }
@@ -702,4 +768,48 @@ try {
   console.error("bot connect failed:", String(e?.message || e));
   return bad("Something went wrong. Try again.", 500);
 }
+}
+
+// POST /api/site/notify/test — send a test Discord or Telegram notification.
+async function handleNotifyTest(request, env) {
+  const { user, res } = await requireUser(request, env);
+  if (res) return res;
+  if (user.status === "suspended") return bad("This account is suspended.", 403);
+  if (effectivePlan(user) === "free") return bad("Notifications are a Pro feature. Upgrade to unlock.", 403);
+
+  const body = await readJson(request);
+  if (!body) return bad("Invalid request");
+  const channel = String(body.channel || "").trim(); // "discord" or "telegram"
+
+  const site = await getByUser(env, user.id);
+  if (!site) return bad("No site found", 404);
+  const extra = (site.extra_json && typeof site.extra_json === "object") ? site.extra_json : {};
+
+  if (channel === "discord") {
+    const webhookUrl = String(body.webhook_url || extra.discord_webhook_url || "").trim();
+    if (!webhookUrl) return bad("No Discord webhook URL configured.");
+    if (!/^https:\/\/discord\.com\/api\/webhooks\/\d+\/.+/.test(webhookUrl) &&
+        !/^https:\/\/discordapp\.com\/api\/webhooks\/\d+\/.+/.test(webhookUrl)) {
+      return bad("That doesn't look like a valid Discord webhook URL.");
+    }
+    const embed = buildTop3Embed(site.name || "Your Site", "TestPlayer", 1, 99999);
+    embed.title = "🧪 Test Notification";
+    embed.description = "Your Discord webhook is set up correctly!";
+    embed.fields.push({ name: "Status", value: "✅ Notifications are working.", inline: false });
+    const result = await sendDiscordWebhook(webhookUrl, embed);
+    return result.ok ? json({ ok: true, message: "Test message sent to Discord!" }) : bad(result.error || "Failed to send.", 502);
+  }
+
+  if (channel === "telegram") {
+    const chatId = String(body.chat_id || extra.telegram_chat_id || "").trim();
+    if (!chatId) return bad("No Telegram chat ID configured.");
+    // Find bot token
+    const owner = await one("SELECT bot_token FROM users WHERE id=$1", [user.id]);
+    if (!owner?.bot_token) return bad("No Telegram bot connected. Set up your bot first.");
+    const text = `🧪 *Test Notification*\n\nYour Telegram notifications for *${site.name || "Your Site"}* are working!`;
+    const result = await sendTelegramMessage(owner.bot_token, chatId, text);
+    return result.ok ? json({ ok: true, message: "Test message sent to Telegram!" }) : bad(result.error || "Failed to send.", 502);
+  }
+
+  return bad("Unknown channel. Use 'discord' or 'telegram'.");
 }

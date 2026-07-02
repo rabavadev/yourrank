@@ -2,11 +2,13 @@
 // SEC-108: Read CSRF cookie and include it on state-changing requests.
 function getCsrf() { const m = document.cookie.match(/(?:^|;\s*)__csrf=([^;]+)/); return m ? m[1] : ""; }
 const $ = (id) => document.getElementById(id);
-let SLUG = null, EXTRA = {}, ME = null;
+let SLUG = null, EXTRA = {}, ME = null, ACTIVE_SITE_ID = null, BOARDS = [];
 let LOGO; // undefined = unchanged, null = remove, string = new data URI
 const DEFAULT_A = "#5ad9ff", DEFAULT_B = "#7b8cff";
 function toLocalInput(iso){ if(!iso) return ""; const d=new Date(iso); if(isNaN(d)) return ""; const p=(n)=>String(n).padStart(2,"0"); return `${d.getUTCFullYear()}-${p(d.getUTCMonth()+1)}-${p(d.getUTCDate())}T${p(d.getUTCHours())}:${p(d.getUTCMinutes())}`; }
 function fromLocalInput(v){ if(!v) return ""; return v.length===16 ? `${v}:00Z` : new Date(v).toISOString(); }
+const slugify=(s)=>String(s||"").toLowerCase().trim().replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"").slice(0,40);
+
 async function init(){
   let me; try { me = await (await fetch("/api/auth/me")).json(); } catch { me=null; }
   if (!me || !me.ok || !me.user) { location.href="/login"; return; }
@@ -14,12 +16,19 @@ async function init(){
   const emailEl = $("userEmail"); if (emailEl) emailEl.textContent = ME.email;
   if (ME.isAdmin) { const adminEl = $("adminLink"); if (adminEl) adminEl.hidden = false; }
   renderPlan();
-  const res = await fetch("/api/site"); const p = await res.json();
+  // Check URL for siteId param
+  const urlParams = new URLSearchParams(location.search);
+  const requestedSiteId = urlParams.get("board") || null;
+  const apiUrl = requestedSiteId ? `/api/site?siteId=${encodeURIComponent(requestedSiteId)}` : "/api/site";
+  const res = await fetch(apiUrl); const p = await res.json();
   if (!p.ok) {
     if (ME.isAdmin) { location.href = "/admin"; return; }
     $("loading").textContent = "Couldn't load your site."; return;
   }
-  SLUG = p.slug; const d = p.data||{}; const b = d.brand||{};
+  SLUG = p.slug; ACTIVE_SITE_ID = p.siteId || null;
+  BOARDS = p.boards || [];
+  renderBoardSwitcher();
+  const d = p.data||{}; const b = d.brand||{};
   loadStats(); // non-blocking; fills the analytics card when it lands
   EXTRA = { chips: d.partner?.chips, whyStats: d.whyStats, rules: d.rules, socials: d.socials };
   $("f_name").value=b.name||""; $("f_tagline").value=b.tagline||""; $("f_casino").value=b.casino||"Stake";
@@ -31,21 +40,75 @@ async function init(){
   $("a_label").placeholder = new Date().toLocaleString("en-US",{month:"long",year:"numeric",timeZone:"UTC"});
   $("liveLink").textContent = location.host + "/" + SLUG; $("liveLink").href = "/" + SLUG; $("viewLive").href = "/" + SLUG;
   $("loading").hidden=true; $("dash").hidden=false;
-  if (new URLSearchParams(location.search).get("upgraded")) {
+  if (urlParams.get("upgraded")) {
     $("status").textContent = "Payment received — Pro activates once the network confirms (usually minutes).";
   }
 }
+
+function renderBoardSwitcher(){
+  const list = $("boardList"); if (!list) return;
+  list.innerHTML = "";
+  BOARDS.forEach(b => {
+    const el = document.createElement("div");
+    const isActive = b.id === ACTIVE_SITE_ID;
+    el.className = "board-item" + (isActive ? " board-item--active" : "");
+    el.innerHTML = `<span class="board-slug">/${esc(b.slug)}</span><span class="board-name">${esc(b.name)}</span>${isActive ? '<span class="board-badge">editing</span>' : ''}`;
+    if (!isActive) {
+      el.style.cursor = "pointer";
+      el.addEventListener("click", () => { location.href = "/dashboard?board=" + encodeURIComponent(b.id); });
+    }
+    list.appendChild(el);
+  });
+  const countEl = $("boardCount");
+  if (countEl) {
+    const limit = ME?.limits?.boards || 1;
+    countEl.textContent = BOARDS.length + " / " + limit + " boards";
+  }
+  const newBtn = $("newBoard");
+  if (newBtn) {
+    const limit = ME?.limits?.boards || 1;
+    newBtn.hidden = BOARDS.length >= limit;
+    newBtn.onclick = () => { $("newBoardForm").hidden = false; newBtn.hidden = true; $("nb_name").focus(); };
+  }
+  const cancelBtn = $("nb_cancel");
+  if (cancelBtn) cancelBtn.onclick = () => { $("newBoardForm").hidden = true; $("newBoard").hidden = BOARDS.length >= (ME?.limits?.boards || 1); $("nb_err").textContent = ""; };
+  const createBtn = $("nb_create");
+  if (createBtn) createBtn.onclick = async () => {
+    const name = $("nb_name").value.trim();
+    let slug = $("nb_slug").value.trim() || slugify(name);
+    if (!slug) { $("nb_err").textContent = "Enter a name or slug."; return; }
+    $("nb_err").textContent = "Creating…";
+    createBtn.disabled = true;
+    try {
+      const res = await fetch("/api/site/create", { method: "POST", headers: { "content-type": "application/json", "x-csrf-token": getCsrf() }, body: JSON.stringify({ slug, name }) });
+      const d = await res.json();
+      if (res.ok && d.ok) {
+        location.href = "/dashboard?board=" + encodeURIComponent(d.id);
+      } else {
+        $("nb_err").textContent = d.error || "Creation failed.";
+        createBtn.disabled = false;
+      }
+    } catch { $("nb_err").textContent = "Network error."; createBtn.disabled = false; }
+  };
+}
+
+function esc(s) { return String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
+
 function renderPlan(){
-  const pro = ME.plan === "pro";
-  $("planBadge").textContent = (ME.plan||"free").toUpperCase() + " PLAN";
-  $("planName").textContent = pro ? "Pro" : "Free";
-  if (pro) {
+  const plan = ME.plan || "free";
+  const planNames = { free: "Free", starter: "Starter", pro: "Pro", agency: "Agency" };
+  $("planBadge").textContent = plan.toUpperCase() + " PLAN";
+  $("planName").textContent = planNames[plan] || plan;
+  if (plan === "agency" || plan === "pro") {
     const until = ME.planExpiresAt ? new Date(ME.planExpiresAt).toLocaleDateString() : null;
-    $("planMeta").textContent = until ? `Active until ${until} · up to ${ME.limits.players} players · no badge` : `Lifetime · up to ${ME.limits.players} players · no badge`;
-    $("goPro").textContent = "Extend Pro (+31 days)";
+    $("planMeta").textContent = until ? `Active until ${until} · up to ${ME.limits.players} players · no badge` : `Lifetime · up to ${ME.limits.players === 999 ? "unlimited" : ME.limits.players} players · no badge`;
+    $("goPro").textContent = "Extend " + (planNames[plan] || plan) + " (+31 days)";
+  } else if (plan === "starter") {
+    $("planMeta").textContent = `Up to ${ME.limits.players} players · no badge · CSV import`;
+    $("goPro").textContent = "Upgrade to Pro — $" + (ME.proPrice || 29) + "/mo";
   } else {
     $("planMeta").textContent = `Up to ${ME.limits.players} players · YourRank badge on your page`;
-    $("goPro").textContent = `Upgrade to Pro — $${ME.proPrice}/mo`;
+    $("goPro").textContent = `Upgrade — plans from $12/mo`;
   }
 }
 async function checkout(btn){
@@ -59,7 +122,6 @@ async function checkout(btn){
   btn.disabled = false; btn.textContent = orig;
 }
 function playerRow(p={name:"",wagered:"",prize:""}){
-  const esc=(s)=>String(s??"").replace(/[&<>"']/g,(c)=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]));
   const tr=document.createElement("tr");
   tr.innerHTML = `<td class="rank"></td><td><input class="p-name" placeholder="*****ess" value="${esc(p.name)}"></td><td class="num"><input class="p-wager" inputmode="decimal" placeholder="0" value="${esc(p.wagered)}"></td><td class="num"><input class="p-prize" inputmode="decimal" placeholder="0" value="${esc(p.prize)}"></td><td class="act"><button class="row-x" title="Remove" type="button">×</button></td>`;
   tr.querySelector(".row-x").addEventListener("click",()=>{tr.remove();renumber();toggleEmpty();});
@@ -69,12 +131,13 @@ function renderPlayers(list){ const b=$("rows"); b.innerHTML=""; list.forEach(p=
 function renumber(){
   const rows=[...$("rows").children];
   rows.forEach((tr,i)=>tr.querySelector(".rank").textContent=String(i+1).padStart(2,"0"));
-  if (ME) $("pCount").textContent = `${rows.length} / ${ME.limits.players}`;
+  if (ME) $("pCount").textContent = `${rows.length} / ${ME.limits.players === 999 ? "∞" : ME.limits.players}`;
 }
 function toggleEmpty(){ $("playersEmpty").hidden=$("rows").children.length>0; }
 $("addRow").addEventListener("click",()=>{
-  if (ME && $("rows").children.length >= ME.limits.players) {
-    $("status").textContent = ME.plan==="pro" ? `Pro allows up to ${ME.limits.players} players.` : `Free plan allows ${ME.limits.players} players. Upgrade to Pro for 50.`;
+  if (ME && $("rows").children.length >= ME.limits.players && ME.limits.players < 999) {
+    const planNames = { free: "Free", starter: "Starter", pro: "Pro" };
+    $("status").textContent = ME.plan==="pro" || ME.plan==="agency" ? `Your plan allows up to ${ME.limits.players} players.` : `${planNames[ME.plan]||"Your"} plan allows ${ME.limits.players} players. Upgrade for more.`;
     setTimeout(()=>$("status").textContent="",5000); return;
   }
   $("rows").appendChild(playerRow());renumber();toggleEmpty();
@@ -82,17 +145,17 @@ $("addRow").addEventListener("click",()=>{
 function collect(){
   const players=[...$("rows").children].map(tr=>({name:tr.querySelector(".p-name").value.trim(),wagered:parseFloat(tr.querySelector(".p-wager").value)||0,prize:parseFloat(tr.querySelector(".p-prize").value)||0})).filter(p=>p.name);
   const out = { brand:{name:$("f_name").value.trim(),tagline:$("f_tagline").value.trim(),casino:$("f_casino").value.trim()||"Stake",code:$("f_code").value.trim(),ctaUrl:$("f_cta").value.trim(),prizePool:$("f_pool").value.trim(),period:$("f_period").value.trim()||"Monthly"}, endsAt:fromLocalInput($("f_ends").value), partner:{blurb:$("f_blurb").value.trim(),chips:EXTRA.chips}, whyStats:EXTRA.whyStats, rules:EXTRA.rules, socials:EXTRA.socials, players };
-  if (ME && ME.plan === "pro") {
+  if (ME && ME.plan !== "free") {
     out.branding = { accentA: $("c_a").value, accentB: $("c_b").value };
     if (LOGO !== undefined) out.branding.logo = LOGO;
   }
   return out;
 }
 
-/* --- branding (Pro) --- */
+/* --- branding (paid) --- */
 function renderBranding(br){
-  const pro = ME.plan === "pro";
-  $("brandBody").hidden = !pro; $("brandLock").hidden = pro;
+  const paid = ME.plan !== "free";
+  $("brandBody").hidden = !paid; $("brandLock").hidden = paid;
   if (br.accentA) $("c_a").value = br.accentA;
   if (br.accentB) $("c_b").value = br.accentB;
   if (br.hasLogo) { $("logoPreview").src = "/logo/" + SLUG + "?t=" + Date.now(); $("logoPreview").hidden = false; $("logoClear").hidden = false; }
@@ -144,7 +207,7 @@ $("importApply").addEventListener("click",()=>{
   const existing = replace ? [] : [...$("rows").children].map(tr=>({name:tr.querySelector(".p-name").value.trim(),wagered:parseFloat(tr.querySelector(".p-wager").value)||0,prize:parseFloat(tr.querySelector(".p-prize").value)||0})).filter(p=>p.name);
   let all = existing.concat(parsed);
   let note = "";
-  if (ME && all.length > ME.limits.players) { note = ` (cut to your ${ME.limits.players}-player limit)`; all = all.slice(0, ME.limits.players); }
+  if (ME && ME.limits.players < 999 && all.length > ME.limits.players) { note = ` (cut to your ${ME.limits.players}-player limit)`; all = all.slice(0, ME.limits.players); }
   renderPlayers(all);
   $("importText").value = ""; $("importPreview").textContent = "0 players detected"; $("importApply").disabled = true; $("importPanel").hidden = true;
   $("status").textContent = `${parsed.length} imported${note} — hit Save to publish.`;
@@ -161,7 +224,9 @@ function renderArchives(list){
     row.querySelector(".arch-label").textContent = a.label;
     row.querySelector(".arch-del").addEventListener("click", async ()=>{
       if (!confirm(`Delete the "${a.label}" archive? It disappears from your page too.`)) return;
-      const res = await fetch("/api/site/archive/delete",{method:"POST",headers:{"content-type":"application/json","x-csrf-token":getCsrf()},body:JSON.stringify({id:a.id})});
+      const body = { id: a.id };
+      if (ACTIVE_SITE_ID) body.siteId = ACTIVE_SITE_ID;
+      const res = await fetch("/api/site/archive/delete",{method:"POST",headers:{"content-type":"application/json","x-csrf-token":getCsrf()},body:JSON.stringify(body)});
       const d = await res.json();
       if (res.ok && d.ok) { row.remove(); if(!$("archList").children.length) $("archEmpty").hidden=false; $("status").textContent="Archive deleted."; }
       else $("status").textContent = d.error || "Couldn't delete that.";
@@ -178,13 +243,17 @@ $("a_go").addEventListener("click", async ()=>{
   btn.disabled = true; btn.textContent = "Closing out…";
   try {
     // Persist any unsaved edits first so the snapshot matches what's on screen.
-    const saveRes = await fetch("/api/site",{method:"PUT",headers:{"content-type":"application/json","x-csrf-token":getCsrf()},body:JSON.stringify(collect())});
+    const savePayload = collect();
+    const saveRes = await fetch("/api/site",{method:"PUT",headers:{"content-type":"application/json","x-csrf-token":getCsrf()},body:JSON.stringify(savePayload)});
     const saved = await saveRes.json();
     if (!saveRes.ok || !saved.ok) { status.textContent = saved.error || "Couldn't save before archiving."; btn.disabled=false; btn.textContent="Close out period"; return; }
-    const res = await fetch("/api/site/archive",{method:"POST",headers:{"content-type":"application/json","x-csrf-token":getCsrf()},body:JSON.stringify({label:$("a_label").value.trim(),clear})});
+    const archiveBody = { label:$("a_label").value.trim(), clear };
+    if (ACTIVE_SITE_ID) archiveBody.siteId = ACTIVE_SITE_ID;
+    const res = await fetch("/api/site/archive",{method:"POST",headers:{"content-type":"application/json","x-csrf-token":getCsrf()},body:JSON.stringify(archiveBody)});
     const d = await res.json();
     if (res.ok && d.ok) {
-      const p = await (await fetch("/api/site")).json();
+      const apiUrl2 = ACTIVE_SITE_ID ? `/api/site?siteId=${encodeURIComponent(ACTIVE_SITE_ID)}` : "/api/site";
+      const p = await (await fetch(apiUrl2)).json();
       if (p.ok) { renderPlayers(p.data.players||[]); renderArchives(p.archives||[]); }
       $("a_label").value = "";
       status.textContent = `"${d.label}" closed out — it's on your page now.`;
@@ -194,8 +263,12 @@ $("a_go").addEventListener("click", async ()=>{
 });
 $("save").addEventListener("click", async ()=>{
   const btn=$("save"),status=$("status"); btn.disabled=true;btn.textContent="Saving…";status.textContent="";
-  try { const res=await fetch("/api/site",{method:"PUT",headers:{"content-type":"application/json","x-csrf-token":getCsrf()},body:JSON.stringify(collect())}); const d=await res.json(); if(res.ok&&d.ok) status.textContent="Saved. Your page is updated."; else status.textContent=d.error||"Save failed."; }
-  catch{ status.textContent="Network error."; }
+  try {
+    const payload = collect();
+    const res=await fetch("/api/site",{method:"PUT",headers:{"content-type":"application/json","x-csrf-token":getCsrf()},body:JSON.stringify(payload)});
+    const d=await res.json();
+    if(res.ok&&d.ok) status.textContent="Saved. Your page is updated."; else status.textContent=d.error||"Save failed.";
+  } catch{ status.textContent="Network error."; }
   btn.disabled=false;btn.textContent="Save changes"; setTimeout(()=>status.textContent="",6000);
 });
 async function loadStats(){

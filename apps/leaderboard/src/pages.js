@@ -62,10 +62,12 @@ export const PAGES = {
 <div class="example"><div class="bar"><span>yourrank.site/demo</span><span>live</span></div>
 <iframe src="/demo" loading="lazy" title="Example leaderboard"></iframe></div></div></section>
 <section id="pricing"><div class="wrap"><h2 class="sec">Pricing</h2><p class="sec-sub">Start free. Upgrade when your board is pulling weight.</p>
-<table class="pricing"><thead><tr><th>Plan</th><th>Price</th><th>What you get</th><th>&nbsp;</th></tr></thead><tbody>
-<tr><td class="plan">Free</td><td class="price">$0</td><td>One hosted page, live countdown, up to 10 players. Carries a small "Powered by YourRank" badge.</td><td><a href="/signup" class="btn btn--sm">Start</a></td></tr>
-<tr class="pro-row"><td class="plan">Pro</td><td class="price">$29/mo</td><td>Up to 50 players, no YourRank badge, custom code &amp; socials, priority support. Pay with crypto.</td><td><a href="/signup" class="btn btn--sm btn--accent">Start</a></td></tr>
-</tbody></table></div></section>
+<div class="pricing-grid">
+<div class="price-card"><div class="price-head"><h3>Free</h3><div class="price-amount">$0</div><div class="price-period">forever</div></div><ul class="price-features"><li>1 leaderboard</li><li>Up to 10 players</li><li>YourRank badge on your page</li><li>Basic analytics (7 days)</li><li>Live countdown &amp; auto-sort</li></ul><a href="/signup" class="btn btn--sm price-cta">Start free</a></div>
+<div class="price-card"><div class="price-head"><h3>Starter</h3><div class="price-amount">$12<span>/mo</span></div></div><ul class="price-features"><li>1 leaderboard</li><li>Up to 25 players</li><li>No YourRank badge</li><li>Full analytics (30 days)</li><li>CSV import</li><li>Custom referral code</li></ul><a href="/signup" class="btn btn--sm price-cta">Start</a></div>
+<div class="price-card price-card--popular"><div class="price-badge">Most Popular</div><div class="price-head"><h3>Pro</h3><div class="price-amount">$29<span>/mo</span></div></div><ul class="price-features"><li>Up to 3 leaderboards</li><li>Unlimited players</li><li>No YourRank badge</li><li>Custom domain</li><li>OBS overlay widget</li><li>Discord webhooks</li><li>Telegram notifications</li><li>Priority support</li></ul><a href="/signup" class="btn btn--sm btn--accent price-cta">Go Pro</a></div>
+<div class="price-card"><div class="price-head"><h3>Agency</h3><div class="price-amount">$79<span>/mo</span></div></div><ul class="price-features"><li>Unlimited leaderboards</li><li>Unlimited players</li><li>White-label branding</li><li>API access</li><li>Everything in Pro</li><li>Dedicated support</li></ul><a href="/signup" class="btn btn--sm price-cta">Contact us</a></div>
+</div></div></section>
 <section id="start"><div class="wrap"><h2 class="sec">Ready to start?</h2><p class="sec-sub">Create your free page in under a minute. No credit card needed.</p>
 <div class="cta" style="text-align:center;margin:32px 0"><a href="/signup" class="btn btn--accent" style="font-size:18px;padding:16px 36px">Create your free page</a></div></div></section>
 <footer><div class="wrap" style="display:flex;justify-content:space-between;width:100%;flex-wrap:wrap;gap:12px">
@@ -152,6 +154,16 @@ export const PAGES = {
 <div class="wrap" id="app"><div class="skel" id="loading">Loading your leaderboard…</div>
 <div id="dash" hidden>
 <div class="dash-head"><div><h1>Your leaderboard</h1><p class="live-link">Live at <a id="liveLink" href="#" target="_blank">…</a></p></div><span class="label" id="planBadge">FREE PLAN</span></div>
+<div class="card" id="boardSwitcher"><h2>Boards</h2><p class="card-sub">Switch between your leaderboards. <span class="hint" id="boardCount"></span></p>
+<div class="board-list" id="boardList"></div>
+<div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn--sm" id="newBoard" type="button" hidden>+ New board</button></div>
+<div id="newBoardForm" hidden style="margin-top:12px;display:flex;gap:8px;align-items:end;flex-wrap:wrap">
+<div class="field" style="flex:1;min-width:160px;margin:0"><label for="nb_name">Board name</label><input id="nb_name" placeholder="July 2026 Board" /></div>
+<div class="field" style="flex:1;min-width:160px;margin:0"><label for="nb_slug">URL slug</label><input id="nb_slug" placeholder="july-2026" /></div>
+<button class="btn btn--sm btn--accent" id="nb_create" type="button">Create</button>
+<button class="btn btn--sm btn--ghost" id="nb_cancel" type="button">Cancel</button>
+<div class="hint" id="nb_err" style="width:100%"></div>
+</div></div>
 <div class="card"><h2>Analytics</h2><p class="card-sub">Last 30 days on your page. Views count every visit; copies and clicks are people grabbing your code or hitting Join.</p>
 <div class="stat-tiles">
 <div class="stat-tile"><span class="stat-num" id="st_views7">–</span><span class="stat-lbl">Views · 7d</span></div>
@@ -173,7 +185,7 @@ export const PAGES = {
 <div class="card"><h2>Players</h2><p class="card-sub">The board auto-sorts by wagered, highest first. Prize <span class="mono">0</span> shows a dash. Names can be masked (keep the <span class="mono">***</span>). <span class="mono" id="pCount"></span></p>
 <table class="players"><thead><tr><th class="rank">#</th><th>Player</th><th class="ta-r">Wagered</th><th class="ta-r">Prize</th><th></th></tr></thead><tbody id="rows"></tbody></table>
 <div id="playersEmpty" class="empty" hidden>No players yet. Add your first one.</div>
-<div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn--sm" id="addRow">+ Add player</button><button class="btn btn--sm" id="importBtn" type="button">Paste from spreadsheet</button></div>
+<div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn--sm" id="addRow">+ Add player</button><button class="btn btn--sm" id="importBtn" type="button">Paste from spreadsheet</button><button class="btn btn--sm" id="csvImportBtn" type="button">📁 Import CSV</button><button class="btn btn--sm btn--ghost" id="csvTemplateBtn" type="button">Download template</button><input type="file" id="csvFileInput" accept=".csv,.tsv,.txt" hidden /></div>
 <div class="import" id="importPanel" hidden>
 <p class="hint" style="margin:0 0 8px">One player per line: <span class="mono">name, wagered, prize</span> — commas or tabs. Copying straight out of Excel or Google Sheets works. Prize is optional.</p>
 <textarea id="importText" rows="6" spellcheck="false" placeholder="*****ess&#9;152000&#9;1500&#10;*****y&#9;98000&#9;700&#10;*****k&#9;61250"></textarea>
@@ -192,6 +204,50 @@ export const PAGES = {
 <span class="hint">Drives the big name gradient and buttons on your page. Save to apply.</span></div>
 </div></div>
 <div class="empty" id="brandLock" hidden>Branding is a Pro feature. <a href="#" id="brandUpgrade">Upgrade to unlock it</a>.</div></div>
+<div class="card" id="overlayCard"><h2>OBS Stream Overlay <span class="pill pill--info" style="margin-left:6px">PRO</span></h2><p class="card-sub">Add a live leaderboard overlay to your stream. It auto-updates every 15 seconds with smooth rank animations.</p>
+<div id="overlayBody">
+<div class="field"><label>Overlay URL</label>
+<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+<code id="overlayUrl" style="flex:1;font-family:var(--mono);font-size:13px;background:var(--panel-2);border:1px solid var(--line-2);border-radius:8px;padding:10px 12px;word-break:break-all;min-width:0;user-select:all"></code>
+<button class="btn btn--sm btn--accent" id="overlayCopy" type="button">📋 Copy</button>
+</div>
+<span class="hint">Add this as a <b>Browser Source</b> in OBS. Set width to <b>320px</b>, height auto. Check "Shutdown source when not visible" off for live updates.</span></div>
+<div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap">
+<a class="btn btn--sm" id="overlayPreview" href="#" target="_blank">Preview overlay →</a>
+</div>
+</div>
+<div class="empty" id="overlayLock" hidden>OBS Overlay is a Pro feature. <a href="#" id="overlayUpgrade">Upgrade to unlock it</a>.</div></div>
+<div class="card" id="domainCard"><h2>Custom Domain <span class="pill pill--info" style="margin-left:6px">PRO</span></h2><p class="card-sub">Serve your leaderboard on your own domain instead of yourrank.site/yourname.</p>
+<div id="domainBody">
+<div class="field"><label for="f_domain">Your domain</label><input id="f_domain" placeholder="board.mystream.com" />
+<span class="hint">Point a <b>CNAME record</b> for your domain to <span class="mono">yourrank.site</span>. Then enter the domain here and save. Changes may take a few minutes to propagate.</span></div>
+<div id="domainStatus" class="hint" style="margin-top:8px;min-height:18px"></div>
+</div>
+<div class="empty" id="domainLock" hidden>Custom domains are a Pro feature. <a href="#" id="domainUpgrade">Upgrade to unlock it</a>.</div></div>
+<div class="card" id="notifyCard"><h2>Notifications <span class="pill pill--info" style="margin-left:6px">PRO</span></h2><p class="card-sub">Get alerted when your leaderboard resets or a player breaks into the top 3. Discord and Telegram supported.</p>
+<div id="notifyBody">
+<div class="field"><label>Events that trigger notifications</label>
+<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:4px">
+<span class="pill pill--muted">🔄 Leaderboard reset</span>
+<span class="pill pill--muted">🏆 Player enters top 3</span>
+</div></div>
+<div class="field"><label for="f_webhook">Discord webhook URL</label>
+<input id="f_webhook" placeholder="https://discord.com/api/webhooks/..." />
+<span class="hint">Create a webhook in your Discord server settings → Integrations → Webhooks. Paste the URL here.</span></div>
+<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:-8px;margin-bottom:16px">
+<button class="btn btn--sm" id="testDiscord" type="button">📨 Test Discord</button>
+<span class="hint" id="testDiscordStatus"></span>
+</div>
+<div class="field"><label for="f_tgChatId">Telegram chat/group ID</label>
+<input id="f_tgChatId" placeholder="-1001234567890" />
+<span class="hint">The chat or group ID where notifications should be sent. Use <code>/start</code> in your bot chat or add the bot to a group to get the ID.</span></div>
+<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:-8px;margin-bottom:16px">
+<label class="hint chk"><input type="checkbox" id="f_tgNotify" /> Enable Telegram notifications</label>
+<button class="btn btn--sm" id="testTelegram" type="button">📨 Test Telegram</button>
+<span class="hint" id="testTelegramStatus"></span>
+</div>
+</div>
+<div class="empty" id="notifyLock" hidden>Notifications are a Pro feature. <a href="#" id="notifyUpgrade">Upgrade to unlock them</a>.</div></div>
 <div class="card" id="archiveCard"><h2>Past winners</h2><p class="card-sub">When a period ends, close it out: the current board is saved and shown on your page under "Past Winners". Saves your unsaved edits first.</p>
 <div class="arch-form">
 <div class="field" style="flex:1;min-width:160px;margin:0"><label for="a_label">Label</label><input id="a_label" placeholder="July 2026" /></div>
@@ -199,7 +255,7 @@ export const PAGES = {
 <button class="btn btn--accent" id="a_go" type="button" style="align-self:flex-end">Close out period</button></div>
 <div class="arch-list" id="archList"></div>
 <div class="empty" id="archEmpty" hidden>No closed-out periods yet. Your first one shows up here and on your page.</div></div>
-<div class="card" id="planCard"><h2>Plan &amp; billing</h2><p class="card-sub">Pro removes the YourRank badge from your page and raises the player limit to 50.</p>
+<div class="card" id="planCard"><h2>Plan &amp; billing</h2><p class="card-sub">Pro removes the YourRank badge, unlocks unlimited players, custom domains, and more.</p>
 <div class="plan-row"><div><div class="plan-name" id="planName">Free</div><div class="hint" id="planMeta">Up to 10 players · YourRank badge on your page</div></div>
 <button class="btn btn--accent" id="goPro">Upgrade to Pro</button></div>
 <p class="hint" id="planHint">Pay with crypto (BTC, ETH, USDT and 100+ more). Pro activates automatically once the network confirms — usually a few minutes.</p></div>
@@ -249,11 +305,11 @@ billing: `<!DOCTYPE html><html lang="en"><head>
 <div id="bl" hidden>
 <div class="card" id="currentCard"><h2>Current plan</h2><p class="card-sub"><span id="planLine">Free — up to 10 players, one leaderboard.</span></p>
 <p class="hint" id="expLine" hidden></p></div>
-<div class="card" id="upgradeCard"><h2>Upgrade to Pro</h2><p class="card-sub">Up to 50 players, custom branding, themes, and analytics history.</p>
-<p class="hint">$<span id="price">29</span>/31 days · pay with crypto (BTC, ETH, USDT and 100+ more). Pro activates automatically once the network confirms — usually a few minutes.</p>
-<button class="btn btn--accent" id="checkout">Upgrade to Pro — $<span id="price2">29</span></button>
+<div class="card" id="upgradeCard"><h2>Upgrade</h2><p class="card-sub" id="upgradeSub">Choose the plan that fits your needs.</p>
+<div id="planOptions"></div>
+<p class="hint">Pay with crypto (BTC, ETH, USDT and 100+ more). Activates automatically once the network confirms — usually a few minutes.</p>
 <p class="status" id="status"></p></div>
-<div class="card" id="proCard" hidden><h2>You're on Pro</h2><p class="card-sub">Thanks for supporting YourRank. Manage everything from the Leaderboard tab.</p>
+<div class="card" id="proCard" hidden><h2>You're on <span id="currentPlanName">Pro</span></h2><p class="card-sub">Thanks for supporting YourRank. Manage everything from the Leaderboard tab.</p>
 <p class="hint" id="proExp"></p></div></div>
 <div class="skel" id="loading">Loading billing…</div></div>
 <script src="/assets/billing.js"></script></body></html>`,
@@ -492,6 +548,87 @@ location.href="/dashboard";
 updateDots();
 })();
 </script></body></html>`,
+
+  overlay: (data, opts = {}) => {
+  const b = data.brand || {};
+  const br = data.branding || {};
+  const players = (data.players || []).slice().sort((a, c) => c.wagered - a.wagered).slice(0, 5);
+  const endsAt = data.endsAt || null;
+  const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const fmt = (n) => {
+    if (n >= 1e6) return "$" + (n / 1e6).toFixed(2).replace(/\.0+$/, "") + "M";
+    if (n >= 1e3) return "$" + (n / 1e3).toFixed(1).replace(/\.0$/, "") + "k";
+    return "$" + (n || 0).toLocaleString("en-US");
+  };
+  const medal = (i) => i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : "#" + (i + 1);
+  const rows = players.map((p, i) => `<div class="ov-row" data-name="${esc(p.name)}"><span class="ov-medal">${medal(i)}</span><span class="ov-name">${esc(p.name)}</span><span class="ov-wager">${fmt(p.wagered)}</span></div>`).join("");
+  const empty = 5 - players.length;
+  const emptyRows = empty > 0 ? Array.from({ length: empty }, (_, i) => `<div class="ov-row ov-empty"><span class="ov-medal">#${players.length + i + 1}</span><span class="ov-name">—</span><span class="ov-wager">—</span></div>`).join("") : "";
+  const accentA = (br.accentA && /^#[0-9a-fA-F]{6}$/.test(br.accentA)) ? br.accentA : "#c8ff00";
+  const accentB = (br.accentB && /^#[0-9a-fA-F]{6}$/.test(br.accentB)) ? br.accentB : "#5ad9ff";
+  const dataJson = JSON.stringify({ players, endsAt }).replace(/</g, "\\u003c");
+  return `<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>${esc(b.name)} — OBS Overlay</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:320px;overflow:hidden;background:transparent;font-family:'Inter','Segoe UI',system-ui,-apple-system,sans-serif;color:#fff}
+.ov-wrap{width:320px;padding:14px 16px;background:rgba(8,8,12,0.92);border-radius:14px;border:1px solid rgba(255,255,255,0.06);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
+.ov-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.ov-brand{display:flex;flex-direction:column;gap:1px}
+.ov-brand-name{font-size:15px;font-weight:700;letter-spacing:-.02em;background:linear-gradient(135deg,${accentA},${accentB});-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;text-shadow:none}
+.ov-brand-sub{font-size:10px;color:rgba(255,255,255,0.45);text-transform:uppercase;letter-spacing:.08em}
+.ov-live{display:flex;align-items:center;gap:5px;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:${accentA}}
+.ov-live-dot{width:7px;height:7px;border-radius:50%;background:${accentA};animation:ov-pulse 1.5s ease-in-out infinite}
+@keyframes ov-pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(.8)}}
+.ov-timer{display:flex;align-items:center;justify-content:center;gap:3px;margin-bottom:12px;font-size:11px;color:rgba(255,255,255,0.5)}
+.ov-timer b{font-family:'JetBrains Mono','Fira Code',monospace;font-size:13px;font-weight:700;color:${accentA};min-width:20px;text-align:center}
+.ov-timer-sep{color:rgba(255,255,255,0.2);margin:0 1px}
+.ov-timer-label{font-size:9px;text-transform:uppercase;letter-spacing:.1em;color:rgba(255,255,255,0.3);text-align:center;margin-bottom:6px}
+.ov-timer-over{font-size:11px;color:rgba(255,255,255,0.4);font-style:italic}
+.ov-rows{display:flex;flex-direction:column;gap:4px}
+.ov-row{display:flex;align-items:center;gap:8px;padding:8px 10px;background:rgba(255,255,255,0.03);border-radius:8px;border:1px solid rgba(255,255,255,0.04);transition:transform .5s cubic-bezier(.22,1,.36,1),opacity .5s ease,background .3s ease}
+.ov-row:first-child{background:linear-gradient(135deg,rgba(200,255,0,0.08),rgba(90,217,255,0.06));border-color:rgba(200,255,0,0.12)}
+.ov-row.ov-empty{opacity:.25}
+.ov-row.ov-enter{animation:ov-slideIn .5s cubic-bezier(.22,1,.36,1) both}
+@keyframes ov-slideIn{from{opacity:0;transform:translateX(-16px)}to{opacity:1;transform:translateX(0)}}
+.ov-row.ov-moved-up{border-left:2px solid ${accentA}}
+.ov-row.ov-moved-down{border-left:2px solid rgba(255,80,80,0.6)}
+.ov-medal{font-size:16px;min-width:24px;text-align:center;flex-shrink:0}
+.ov-name{flex:1;font-size:13px;font-weight:600;letter-spacing:-.01em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-shadow:0 1px 3px rgba(0,0,0,0.5)}
+.ov-wager{font-family:'JetBrains Mono','Fira Code',monospace;font-size:12px;font-weight:600;color:${accentA};flex-shrink:0;text-shadow:0 1px 3px rgba(0,0,0,0.5)}
+.ov-footer{display:flex;align-items:center;justify-content:space-between;margin-top:10px;padding-top:8px;border-top:1px solid rgba(255,255,255,0.05)}
+.ov-footer .ov-count{font-size:9px;color:rgba(255,255,255,0.3);text-transform:uppercase;letter-spacing:.08em}
+.ov-footer .ov-powered{font-size:8px;color:rgba(255,255,255,0.15);letter-spacing:.04em}
+</style>
+</head><body>
+<div class="ov-wrap">
+<div class="ov-head">
+<div class="ov-brand">
+<span class="ov-brand-name">${esc(b.name)}</span>
+<span class="ov-brand-sub">${esc(b.casino || "Stake")} · ${esc(b.period || "Monthly")}</span>
+</div>
+<span class="ov-live"><span class="ov-live-dot"></span>LIVE</span>
+</div>
+${endsAt ? `<p class="ov-timer-label">${esc(b.prizePool || "")} resets in</p>
+<div class="ov-timer" data-ov-timer>
+<b data-ot>--</b><span class="ov-timer-sep">d</span>
+<b data-ot>--</b><span class="ov-timer-sep">:</span>
+<b data-ot>--</b><span class="ov-timer-sep">:</span>
+<b data-ot>--</b>
+</div>` : ""}
+<div class="ov-rows" id="ov-players">${rows}${emptyRows}</div>
+<div class="ov-footer">
+<span class="ov-count"><span id="ov-count">${(data.players || []).length}</span> players</span>
+<span class="ov-powered">YourRank</span>
+</div>
+</div>
+<script>window.__OVERLAY_SLUG__=${JSON.stringify(opts.slug || "")};window.__OVERLAY_DATA__=${dataJson};</script>
+<script src="/assets/overlay.js"></script>
+</body></html>`;
+},
 
   terms: legal("Terms of Service", "July 2026", `
 <h2>What YourRank is</h2>
