@@ -33,7 +33,7 @@ export const PAGES = {
 <div class="cta"><a href="/signup" class="btn btn--accent">Create your page</a><a href="#example" class="btn">See a live one</a></div>
 <p class="fine">Free to start. Your own URL from day one.</p></div>
 <div class="spec"><div class="spec-h"><span>your-page.config</span><span class="dot">● live</span></div>
-<div class="spec-row"><span>Public URL</span><span>rankup-saas.workers.dev/you</span></div>
+<div class="spec-row"><span>Public URL</span><span>yourrank.site/you</span></div>
 <div class="spec-row"><span>Prize pool</span><span>editable</span></div>
 <div class="spec-row"><span>Countdown</span><span>auto</span></div>
 <div class="spec-row"><span>Standings</span><span>sorted by wager</span></div>
@@ -46,7 +46,7 @@ export const PAGES = {
 <div class="step"><div class="n">03</div><div><h3>Share your link</h3><p>Your page is live. Update the numbers whenever you want and they change instantly.</p></div></div>
 </div></div></section>
 <section id="example"><div class="wrap"><h2 class="sec">A real page</h2><p class="sec-sub">This is a live leaderboard running on RankUp. Yours works the same way.</p>
-<div class="example"><div class="bar"><span>rankup-saas.workers.dev/chuckybtz</span><span>live</span></div>
+<div class="example"><div class="bar"><span>yourrank.site/chuckybtz</span><span>live</span></div>
 <iframe src="/chuckybtz" loading="lazy" title="Example leaderboard"></iframe></div></div></section>
 <section id="pricing"><div class="wrap"><h2 class="sec">Pricing</h2><p class="sec-sub">Start free. Upgrade when your board is pulling weight.</p>
 <table class="pricing"><thead><tr><th>Plan</th><th>Price</th><th>What you get</th><th>&nbsp;</th></tr></thead><tbody>
@@ -118,12 +118,12 @@ export const PAGES = {
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="/assets/app.css" /></head><body>
 <div class="auth-wrap"><aside class="auth-side"><div><div class="brand">Rank<b>Up</b></div></div>
-<div><h1>Launch your leaderboard in a few minutes.</h1><p>Pick a handle, fill in your prizes and players, and your page goes live at rankup-saas.workers.dev/yourname.</p></div>
+<div><h1>Launch your leaderboard in a few minutes.</h1><p>Pick a handle, fill in your prizes and players, and your page goes live at yourrank.site/yourname.</p></div>
 <div class="feat"><div>— Free to set up</div><div>— Your public URL from day one</div><div>— Upgrade to Pro when you're ready</div></div></aside>
 <main class="auth-main"><div class="auth-card"><h2>Create account</h2><p class="sub">Free. Takes a minute.</p>
 <form id="form" novalidate>
 <div class="field"><label for="name">Display name</label><input id="name" name="name" type="text" placeholder="ChuckyBTZ" autocomplete="nickname" required />
-<span class="hint">Also becomes your page URL: <span class="mono" id="slugPreview">rankup-saas.workers.dev/…</span></span></div>
+<span class="hint">Also becomes your page URL: <span class="mono" id="slugPreview">yourrank.site/…</span></span></div>
 <div class="field"><label for="email">Email</label><input id="email" name="email" type="email" autocomplete="email" required /></div>
 <div class="field"><label for="password">Password</label><input id="password" name="password" type="password" autocomplete="new-password" required />
 <span class="hint">At least 8 characters.</span></div>

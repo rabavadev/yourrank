@@ -32,9 +32,11 @@ binding = "HYPERDRIVE"
 id = "f24c020e169848448e4ab9ca7d24ac23"
 
 # Secrets (wrangler secret put ...):
-#   DATABASE_URL            # Supabase pooled connection string (if not using Hyperdrive)
+#   DATABASE_URL            # Supabase connection string (only if not using Hyperdrive)
 #   TOKEN_ENC_KEY           # 32-byte hex, encrypts streamer bot tokens
 #   ADMIN_API_KEY           # protects /bot/api/*
 #   IP_HASH_SALT            # salts hashed visitor IPs
+#   LOGIN_BOT_TOKEN         # @BotFather token for the Telegram Login widget (/bot dashboard)
+#   LOGIN_BOT_USERNAME      # the login bot's @username (the widget needs it)
 #   PLATFORM_BOT_TOKEN      # the GroupsMix platform bot (Telegram Stars billing)
 #   PLATFORM_WEBHOOK_SECRET # billing webhook secret

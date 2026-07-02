@@ -1,12 +1,12 @@
 name = "groupsmix-leaderboard"
-# Wrangler bundles from the entry module and follows its imports (including the
-# 'pg' driver, pulled in by src/db.js). Run `node build.js` first to regenerate
-# src/assets_bundled.js.
+# Build first: `node build.js` regenerates src/assets_bundled.js from the files
+# in src/assets/ (inlined as strings). Wrangler bundles from src/index.js and
+# follows its imports (including the 'postgres' driver).
 main = "src/index.js"
 compatibility_date = "2024-11-01"
-# Required for the node 'pg' driver. nodejs_compat ships the complete
-# node:net / node:tls polyfills pg's socket pool needs to stay stable on
-# Workers (v1 caused intermittent connection-setup hangs / 1101s).
+# postgres.js needs the Node compat shim (process, Buffer, etc.) on Workers.
+# v1 (nodejs_compat) works; if you hit module-polyfill issues on deploy, bump
+# to nodejs_compat_v2 and a newer compatibility_date per Cloudflare's guidance.
 compatibility_flags = ["nodejs_compat"]
 
 # This Worker owns the ROOT of the zone. The bot Worker claims the more-specific
@@ -25,11 +25,14 @@ id = "26e47bcce19941839a20bd2cd5879e42"
 # db.js reads process.env.DATABASE_URL, which index.js populates from
 # env.HYPERDRIVE.connectionString (falling back to the DATABASE_URL secret).
 #
-# 1. Create the Hyperdrive config pointing at the Supabase 'groupsmix' pooled
-#    connection string (port 6543, the transaction pooler):
+# 1. Create the Hyperdrive config pointing at the Supabase DIRECT host
+#    (NOT the pooler — Hyperdrive pools itself; using the pooler double-pools
+#    and causes connection-setup hangs). Get the direct string from
+#    Supabase → Settings → Database → Connection string → "Direct connection"
+#    (host db.<ref>.supabase.co, port 5432):
 #       npx wrangler hyperdrive create groupsmix-pg \
-#         --connection-string="postgres://postgres.<ref>:<pw>@aws-0-<region>.pooler.supabase.com:6543/postgres"
-# 2. Paste the printed id below (replace REPLACE_WITH_HYPERDRIVE_ID).
+#         --connection-string="postgresql://postgres.<ref>:<pw>@db.<ref>.supabase.co:5432/postgres"
+# 2. Paste the printed id below.
 # 3. As a fallback for local/dev without Hyperdrive, set the secret:
 #       npx wrangler secret put DATABASE_URL
 [[hyperdrive]]
@@ -43,6 +46,9 @@ APP_NAME = "RankUp"
 #   DATABASE_URL            (fallback if Hyperdrive isn't bound)
 #   NOWPAYMENTS_API_KEY
 #   NOWPAYMENTS_IPN_SECRET
-#   RESEND_API_KEY
+#   RESEND_API_KEY          (optional; transactional email — signup/lead/reset)
+#   MAIL_FROM               (required if RESEND_API_KEY is set; the From: address,
+#                            e.g. "RankUp <hey@yourrank.site>" — Resend rejects
+#                            an empty From)
 #   PRO_PRICE_USD           (optional; defaults to 29)
-#   LEAD_WEBHOOK_URL        (optional)
+#   LEAD_WEBHOOK_URL        (optional; Discord/Slack ping on a new lead)
