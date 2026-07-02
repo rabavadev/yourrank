@@ -1,7 +1,7 @@
 // Site + players data helpers for the Worker.
 import { effectivePlan, PLAN_LIMITS, BOARD_LIMITS } from "./billing.js";
 import { query, one, exec, getSql } from "./db.js";
-import { notifyTop3Change, notifyReset, detectTop3Changes } from "./notifications.js";
+import { notifyTop3Change, notifyReset, detectTop3Changes, notifySubscribedPlayers } from "./notifications.js";
 
 export const DEFAULT_EXTRA = {
   chips: ["Fast Payouts", "Crypto Friendly", "24/7 Support"],
@@ -413,6 +413,14 @@ export async function saveSite(env, user, payload, siteId) {
       }
     } catch (e) {
       console.error("[notify] top-3 detection failed:", String(e?.message || e));
+    }
+
+    // Notify subscribed players (via /subscribe) about rank changes
+    try {
+      const newPlayersSorted = payload.players.filter((p) => p && p.name);
+      await notifySubscribedPlayers(env, site.id, b.name || site.name, oldPlayers, newPlayersSorted);
+    } catch (e) {
+      console.error("[notify] player subscription notification failed:", String(e?.message || e));
     }
   }
   return { ok: true };

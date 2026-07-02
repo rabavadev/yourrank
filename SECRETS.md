@@ -88,3 +88,70 @@ On the Workers right now:
 cd apps/leaderboard   # or apps/bot
 npx wrangler secret put NOWPAYMENTS_API_KEY   # prompts, value never touches disk/git
 ```
+
+---
+
+## 5. TOKEN_ENC_KEY Rotation
+
+Bot tokens encrypted at rest use `TOKEN_ENC_KEY` (AES-256-GCM). As of the
+v1 prefix update, **all new encryptions** are prefixed with `v1:` so that a
+future key rotation can introduce `v2:` with a new key while still decrypting
+old entries.
+
+### Blob format
+
+| Version | Layout |
+|---------|--------|
+| Legacy (pre-rotation) | `[12-byte IV][ciphertext+tag]` |
+| v1 (current) | `v1:[12-byte IV][ciphertext+tag]` |
+| v2 (future) | `v2:[12-byte IV][ciphertext+tag]` |
+
+On decrypt, the prefix determines which key to use. Legacy (no prefix) falls
+back to the current key.
+
+### How to rotate the key
+
+1. Generate a new 32-byte hex key:
+   ```bash
+   openssl rand -hex 32
+   ```
+2. Set the old key aside (you'll need it to decrypt existing tokens):
+   ```bash
+   # Save old key
+   OLD_KEY=<current TOKEN_ENC_KEY value>
+   ```
+3. Set the new key on the Bot Worker:
+   ```bash
+   cd apps/bot
+   echo "<new-key-hex>" | wrangler secret put TOKEN_ENC_KEY
+   ```
+4. **Before** deploying new code that maps `v2:` to the new key, first deploy
+   the reencrypt endpoint (it already exists at `POST /api/admin/reencrypt`).
+5. Run the re-encrypt: this decrypts all tokens with the old key and
+   re-encrypts with the new key (with `v1:` prefix). **You must temporarily
+   set `TOKEN_ENC_KEY` back to the OLD key** during re-encryption, then switch
+   to the new key after:
+   ```bash
+   # Temporarily restore old key
+   echo "$OLD_KEY" | wrangler secret put TOKEN_ENC_KEY
+   # Re-encrypt all tokens
+   curl -X POST https://yourrank.site/bot/api/reencrypt \
+     -H "x-api-key: $ADMIN_API_KEY"
+   # Switch to new key
+   echo "<new-key-hex>" | wrangler secret put TOKEN_ENC_KEY
+   ```
+6. Verify bots still work: check `GET /health` and send a message to a
+   streamer's bot.
+
+### Re-encrypt endpoint
+
+`POST /api/admin/reencrypt` (requires `X-Api-Key: <ADMIN_API_KEY>`)
+
+Response:
+```json
+{ "ok": true, "total": 5, "migrated": 3, "skipped": 2, "errors": 0 }
+```
+
+- **migrated**: tokens that were re-encrypted (old prefix or no prefix).
+- **skipped**: tokens already on the current key version.
+- **errors**: tokens that failed to decrypt (wrong key or corruption).

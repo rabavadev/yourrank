@@ -186,3 +186,62 @@ export async function notifyReset(env, siteId, siteName, players, period) {
   const embed = buildResetEmbed(siteName, players, period);
   await sendDiscordWebhook(discordUrl, embed).catch(() => {});
 }
+
+// ── Player rank-change subscriptions ────────────────────────────────────
+
+/**
+ * Detect rank changes for ALL players (not just top-3) and send DMs
+ * to players who subscribed via /subscribe on the streamer's Telegram bot.
+ *
+ * @param {object} siteData — the site row (extra_json, user_id, etc.)
+ * @param {string} siteId
+ * @param {string} siteName
+ * @param {Array} oldPlayers — previous players sorted by wagered desc
+ * @param {Array} newPlayers — new players sorted by wagered desc
+ */
+export async function notifySubscribedPlayers(env, siteId, siteName, oldPlayers, newPlayers) {
+  // Build old rank map: player name → position (1-indexed)
+  const oldRankMap = new Map();
+  (oldPlayers || []).forEach((p, i) => oldRankMap.set(p.name, i + 1));
+
+  // Build new rank map
+  const newRankMap = new Map();
+  const newSorted = (newPlayers || []).slice().sort((a, b) => (b.wagered || 0) - (a.wagered || 0));
+  newSorted.forEach((p, i) => newRankMap.set(p.name, i + 1));
+
+  // Find subscribed players who changed rank
+  const subs = await query(
+    `SELECT ps.tg_user_id, ps.player_name, ps.bot_id FROM player_subscriptions ps WHERE ps.site_id = $1`,
+    [siteId]
+  );
+  if (!subs.length) return;
+
+  // Find the bot token for sending DMs (from the site owner)
+  const siteRow = await one("SELECT user_id FROM sites WHERE id=$1", [siteId]);
+  if (!siteRow) return;
+  const user = await one("SELECT bot_token FROM users WHERE id=$1", [siteRow.user_id]);
+  if (!user?.bot_token) return;
+
+  for (const sub of subs) {
+    const playerName = sub.player_name;
+    const oldRank = oldRankMap.get(playerName);
+    const newRank = newRankMap.get(playerName);
+
+    // Player not found in new list — skip
+    if (!newRank) continue;
+
+    // Player was not in old list (new entry) — notify if in top 20
+    if (!oldRank && newRank <= 20) {
+      const text = `🎉 You entered the *${siteName}* leaderboard at #${newRank}!`;
+      await sendTelegramMessage(user.bot_token, sub.tg_user_id, text).catch(() => {});
+      continue;
+    }
+
+    // Player changed rank
+    if (oldRank && newRank !== oldRank) {
+      const direction = newRank < oldRank ? "📈" : "📉";
+      const text = `${direction} You moved from #${oldRank} to #${newRank} on the *${siteName}* leaderboard!`;
+      await sendTelegramMessage(user.bot_token, sub.tg_user_id, text).catch(() => {});
+    }
+  }
+}

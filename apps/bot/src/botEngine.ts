@@ -87,10 +87,71 @@ export function wireHandlers(bot: Bot, botRow: BotRow): void {
     await sendOffers(ctx, botRow);
   });
 
+  // /subscribe <player_name> — opt into rank-change DMs on this leaderboard.
+  bot.command("subscribe", async (ctx) => {
+    const from = ctx.from;
+    if (!from || from.is_bot) return;
+
+    // Parse the player name from the command text
+    const text = ctx.message?.text ?? "";
+    const playerName = text.replace(/^\/subscribe(@\S+)?\s*/i, "").trim();
+    if (!playerName) {
+      await ctx.reply(
+        "Usage: /subscribe <your player name>\n\n" +
+        "Example: /subscribe *****ess\n\n" +
+        "This subscribes you to DMs when your rank changes on this leaderboard."
+      );
+      return;
+    }
+
+    // Find the site(s) owned by this bot's owner
+    const sites = await query<{ id: string; name: string }>(
+      `SELECT id, name FROM sites WHERE user_id = $1 AND published = true`,
+      [botRow.owner_id]
+    );
+    if (!sites.length) {
+      await ctx.reply("This bot doesn't have an active leaderboard yet.");
+      return;
+    }
+
+    // Subscribe to the first site (primary board)
+    const site = sites[0];
+    try {
+      await query(
+        `INSERT INTO player_subscriptions (bot_id, site_id, tg_user_id, player_name)
+         VALUES ($1, $2, $3, $4)
+         ON CONFLICT (bot_id, tg_user_id, site_id) DO UPDATE SET player_name = EXCLUDED.player_name`,
+        [botRow.id, site.id, from.id, playerName]
+      );
+      await ctx.reply(
+        `✅ Subscribed! You'll get a DM when "${playerName}" changes rank on the ${site.name || "leaderboard"}.\n\n` +
+        "Send /unsubscribe to stop notifications."
+      );
+    } catch (err) {
+      console.error("[subscribe]", err);
+      await ctx.reply("Something went wrong. Try again later.");
+    }
+  });
+
+  // /unsubscribe — stop receiving rank-change DMs.
+  bot.command("unsubscribe", async (ctx) => {
+    const from = ctx.from;
+    if (!from || from.is_bot) return;
+    const deleted = await query(
+      `DELETE FROM player_subscriptions WHERE bot_id = $1 AND tg_user_id = $2 RETURNING id`,
+      [botRow.id, from.id]
+    );
+    if (deleted.length) {
+      await ctx.reply("✅ Unsubscribed. You won't receive rank change notifications anymore.");
+    } else {
+      await ctx.reply("You weren't subscribed. Use /subscribe <player name> to start.");
+    }
+  });
+
   bot.on("message::bot_command", async (ctx) => {
     const text = ctx.message?.text ?? "";
     const cmd = text.split(/\s/)[0]?.replace(/^\//, "").split("@")[0]?.toLowerCase();
-    if (!cmd || ["start", "code", "codes"].includes(cmd)) return;
+    if (!cmd || ["start", "code", "codes", "subscribe", "unsubscribe"].includes(cmd)) return;
 
     const custom = await one<{ response: string | null }>(
       `SELECT response FROM bot_commands

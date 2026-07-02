@@ -1,33 +1,67 @@
 name: Deploy
 
-# Push to main -> deploy both Workers to Cloudflare.
-# You only set two GitHub repo secrets once (see DEPLOY.md "CI auto-deploy"):
-#   CLOUDFLARE_API_TOKEN   — Cloudflare API token (Workers Deploy + Account:Edit on the target zone)
-#   CLOUDFLARE_ACCOUNT_ID  — your Cloudflare account id (dash homepage, right sidebar)
-# Worker RUNTIME secrets (ADMIN_API_KEY, TOKEN_ENC_KEY, PLATFORM_BOT_TOKEN, …)
-# are NOT in the repo and are set once out-of-band via `wrangler secret put`;
-# they persist on the Worker across deploys, so this workflow only ships code.
+# Push to main -> deploy both Workers to Cloudflare, run pending DB migrations.
+# Required GitHub repo secrets:
+#   CLOUDFLARE_API_TOKEN   — Cloudflare API token
+#   CLOUDFLARE_ACCOUNT_ID  — Cloudflare account id
+#   SUPABASE_DB_URL        — Supabase direct Postgres connection string
+#                             (postgresql://postgres.PROJECT:PASS@db.PROJECT.supabase.co:5432/postgres)
 
 on:
   push:
     branches: [main]
   workflow_dispatch: {}
 
-# Cancel a deploy superseded by a newer push (don't run two deploys at once).
 concurrency:
   group: deploy
   cancel-in-progress: true
 
 jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    # Migrations run first — deploys depend on them succeeding.
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - name: Run pending migrations
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          set -euo pipefail
+          # Install psql
+          sudo apt-get update -qq && sudo apt-get install -yqq postgresql-client >/dev/null 2>&1
+
+          # Create a migrations tracking table if it doesn't exist
+          psql "$SUPABASE_DB_URL" -q -c "
+            CREATE TABLE IF NOT EXISTS _migrations (
+              filename TEXT PRIMARY KEY,
+              applied_at TIMESTAMPTZ NOT NULL DEFAULT now()
+            );
+          "
+
+          # Run each pending .sql file in order
+          APPLIED=0
+          for f in $(ls db/migrations/*.sql 2>/dev/null | sort); do
+            fname=$(basename "$f")
+            already=$(psql "$SUPABASE_DB_URL" -t -A -c "SELECT 1 FROM _migrations WHERE filename='$fname'" 2>/dev/null || true)
+            if [ "$already" = "1" ]; then
+              echo "  skip (already applied): $fname"
+              continue
+            fi
+            echo "  applying: $fname"
+            psql "$SUPABASE_DB_URL" -q -f "$f"
+            psql "$SUPABASE_DB_URL" -q -c "INSERT INTO _migrations (filename) VALUES ('$fname');"
+            APPLIED=$((APPLIED + 1))
+          done
+          echo "Migrations complete: $APPLIED applied"
+
   deploy-leaderboard:
+    needs: migrate
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
       - uses: oven-sh/setup-bun@735343b667d3e6bfb39c11a0c3b3a1ca0a8a8c0e
       - working-directory: apps/leaderboard
         run: bun install --frozen-lockfile
-      # Regenerate src/assets_bundled.js from src/assets/ (it's committed in
-      # sync, but rebuild in CI so a stale bundle can never ship).
       - working-directory: apps/leaderboard
         run: node build.js
       - uses: cloudflare/wrangler-action@6d50771a405efa6ad3b959cf90f9e64ca6711e4d
@@ -39,6 +73,7 @@ jobs:
           wranglerVersion: "4.106.0"
 
   deploy-bot:
+    needs: migrate
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
@@ -47,7 +82,6 @@ jobs:
         run: bun install --frozen-lockfile
       - working-directory: apps/bot
         run: bun run typecheck
-      # wrangler bundles src/worker.ts (TS) directly; no tsc emit needed.
       - uses: cloudflare/wrangler-action@6d50771a405efa6ad3b959cf90f9e64ca6711e4d
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
