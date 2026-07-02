@@ -27,7 +27,7 @@ export const DEFAULT_EXTRA = {
 // All site columns except logo_data (base64 image, up to 180KB) — that's only
 // needed by the /logo/:slug endpoint and saveSite(), which fetch it separately.
 // PERF-004 / PERF-107: avoid SELECT * to prevent 180KB+ transfers on every page.
-const SITE_COLUMNS = "id, user_id, slug, name, tagline, casino, code, cta_url, prize_pool, period, ends_at, reset_note, blurb, extra_json, published, theme_json, updated_at, custom_domain";
+const SITE_COLUMNS = "id, user_id, slug, name, tagline, casino, code, cta_url, prize_pool, period, ends_at, reset_note, blurb, extra_json, published, theme_json, updated_at, board_order, custom_domain";
 
 // In-memory TTL cache for site configs (per-Worker isolate).
 const siteCache = new Map();
@@ -46,9 +46,6 @@ export function invalidateSiteCache(slugOrId) {
 }
 
 export function invalidateUserCache(uid) {
-  // Invalidate all cached entries that might be for this user
-  // Since we cache by uid for getByUser and by slug for getBySlug,
-  // we need to clear the uid key and any slug keys for this user
   siteCache.delete(uid);
   siteCache.delete(`user_boards:${uid}`);
 }
@@ -56,7 +53,6 @@ export function invalidateUserCache(uid) {
 const getBySlug = (env, slug) => getCached(slug, () => one(`SELECT ${SITE_COLUMNS} FROM sites WHERE slug=$1`, [slug]));
 
 // Multi-board: returns the FIRST board for a user (legacy single-board compat).
-// For new code, use getAllBoards().
 const getByUser = (env, uid) => getCached(uid, () => one(`SELECT ${SITE_COLUMNS} FROM sites WHERE user_id=$1 ORDER BY board_order ASC, created_at ASC LIMIT 1`, [uid]));
 
 // Multi-board: returns ALL boards for a user.
@@ -143,25 +139,28 @@ export async function getPublicSite(env, slug) {
 export async function getUserSite(env, uid) {
   const site = await getByUser(env, uid);
   if (!site) return null;
-  const [archives, logoRow] = await Promise.all([
+  const [archives, logoRow, extraRow] = await Promise.all([
     getArchives(env, site.id, 24),
     one("SELECT (logo_data IS NOT NULL AND logo_data != '') AS has_logo FROM sites WHERE id=$1", [site.id]),
+    one("SELECT extra_json FROM sites WHERE id=$1", [site.id]),
   ]);
-  const extra = (site.extra_json && typeof site.extra_json === "object") ? site.extra_json : {};
+  const extra = (extraRow?.extra_json && typeof extraRow.extra_json === "object") ? extraRow.extra_json : {};
   return {
-      slug: site.slug, published: !!site.published, customDomain: site.custom_domain || "",
+      id: site.id, slug: site.slug, published: !!site.published,
       data: publicShape(site, await getPlayers(env, site.id), archives.slice(0, 6), !!logoRow?.has_logo),
-    notify: {
-      discord_webhook_url: extra.discord_webhook_url || "",
-      telegram_notify: !!extra.telegram_notify,
-      telegram_chat_id: extra.telegram_chat_id || "",
-    },
-    archives: archives.map((a) => {
-      const n = Array.isArray(a.snapshot_json) ? a.snapshot_json.length : 0;
-      return { id: a.id, label: a.label, at: a.created_at, players: n };
-    }),
-  };
-}
+      customDomain: site.custom_domain || "",
+      notify: {
+        discord_webhook_url: !!extra.discord_webhook_url,
+        telegram_bot_token: !!extra.telegram_bot_token,
+        telegram_chat_id: extra.telegram_chat_id || "",
+        telegram_notify: !!extra.telegram_notify,
+      },
+      archives: archives.map((a) => {
+        const n = Array.isArray(a.snapshot_json) ? a.snapshot_json.length : 0;
+        return { id: a.id, label: a.label, at: a.created_at, players: n };
+      }),
+    };
+  }
 
 // Multi-board: return a summary list of all boards for a user.
 export async function getUserBoardsList(env, uid) {
@@ -179,18 +178,21 @@ export async function getUserBoardsList(env, uid) {
 export async function getUserSiteById(env, uid, siteId) {
   const site = await getBoardById(env, uid, siteId);
   if (!site) return null;
-  const [archives, logoRow] = await Promise.all([
+  const [archives, logoRow, extraRow] = await Promise.all([
     getArchives(env, site.id, 24),
     one("SELECT (logo_data IS NOT NULL AND logo_data != '') AS has_logo FROM sites WHERE id=$1", [site.id]),
+    one("SELECT extra_json FROM sites WHERE id=$1", [site.id]),
   ]);
-  const extra = (site.extra_json && typeof site.extra_json === "object") ? site.extra_json : {};
+  const extra = (extraRow?.extra_json && typeof extraRow.extra_json === "object") ? extraRow.extra_json : {};
   return {
-      id: site.id, slug: site.slug, published: !!site.published, customDomain: site.custom_domain || "",
-      data: publicShape(site, await getPlayers(env, site.id), archives.slice(0, 6), !!logoRow?.has_logo),
+    id: site.id, slug: site.slug, published: !!site.published,
+    data: publicShape(site, await getPlayers(env, site.id), archives.slice(0, 6), !!logoRow?.has_logo),
+    customDomain: site.custom_domain || "",
     notify: {
-      discord_webhook_url: extra.discord_webhook_url || "",
-      telegram_notify: !!extra.telegram_notify,
+      discord_webhook_url: !!extra.discord_webhook_url,
+      telegram_bot_token: !!extra.telegram_bot_token,
       telegram_chat_id: extra.telegram_chat_id || "",
+      telegram_notify: !!extra.telegram_notify,
     },
     archives: archives.map((a) => {
       const n = Array.isArray(a.snapshot_json) ? a.snapshot_json.length : 0;
@@ -199,9 +201,28 @@ export async function getUserSiteById(env, uid, siteId) {
   };
 }
 
+// Multi-board: create a new board for a user.
+export async function createBoard(env, uid, { slug, name } = {}) {
+  const plan = effectivePlan(await one("SELECT plan, (EXTRACT(EPOCH FROM plan_expires_at) * 1000)::double precision AS plan_expires_at, status FROM users WHERE id=$1", [uid]));
+  const limit = BOARD_LIMITS[plan] || 1;
+  const boards = await getAllBoards(env, uid);
+  if (boards.length >= limit) {
+    return { error: `Your ${plan} plan allows up to ${limit} leaderboard${limit > 1 ? "s" : ""}. Upgrade to create more.`, code: "board_limit" };
+  }
+  const existing = await one("SELECT id FROM sites WHERE slug=$1", [slug]);
+  if (existing) return { error: "That URL is already taken. Pick another.", code: "slug_taken" };
+  const boardOrder = boards.length;
+  const siteId = crypto.randomUUID();
+  await exec(
+    "INSERT INTO sites (id,user_id,slug,name,casino,prize_pool,period,published,extra_json,board_order) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9::jsonb,$10)",
+    [siteId, uid, slug, name || slug, "Stake", "$0", "Monthly", true, JSON.stringify(DEFAULT_EXTRA), boardOrder]
+  );
+  invalidateUserCache(uid);
+  return { ok: true, id: siteId, slug };
+}
+
 // Close out the current period: snapshot the board, then optionally reset it.
 export async function createArchive(env, uid, { label, clear, siteId } = {}) {
-  // If siteId given, use that board; otherwise fall back to first board
   const site = siteId ? await getBoardById(env, uid, siteId) : await getByUser(env, uid);
   if (!site) return { error: "no site" };
   const players = await getPlayers(env, site.id);
@@ -218,11 +239,12 @@ export async function createArchive(env, uid, { label, clear, siteId } = {}) {
     if (clear === "players") await tx.unsafe("DELETE FROM players WHERE site_id=$1", [site.id]);
     else if (clear === "wagers") await tx.unsafe("UPDATE players SET wagered=0 WHERE site_id=$1", [site.id]);
   });
-  // Fire Discord webhook for leaderboard reset (Pro only).
+  // Send reset notification
   try {
-    const owner = await one("SELECT plan, (EXTRACT(EPOCH FROM plan_expires_at) * 1000)::double precision AS plan_expires_at, status FROM users WHERE id=$1", [uid]);
-    if (effectivePlan(owner) === "pro") {
-      await notifyReset(env, site.id, site.name, players, lab);
+    const extraRow = await one("SELECT extra_json FROM sites WHERE id=$1", [site.id]);
+    const extra = (extraRow?.extra_json && typeof extraRow.extra_json === "object") ? extraRow.extra_json : {};
+    if (extra.discord_webhook_url || (extra.telegram_bot_token && extra.telegram_chat_id && extra.telegram_notify)) {
+      await notifyReset(env, site.id, site.name || site.slug, players, lab);
     }
   } catch (e) {
     console.error("[notify] reset webhook failed:", String(e?.message || e));
@@ -237,30 +259,8 @@ export async function deleteArchive(env, uid, id) {
   return { ok: true };
 }
 
-// Multi-board: create a new board for a user.
-export async function createBoard(env, uid, { slug, name } = {}) {
-  const plan = effectivePlan(await one("SELECT plan, (EXTRACT(EPOCH FROM plan_expires_at) * 1000)::double precision AS plan_expires_at, status FROM users WHERE id=$1", [uid]));
-  const limit = BOARD_LIMITS[plan] || 1;
-  const boards = await getAllBoards(env, uid);
-  if (boards.length >= limit) {
-    return { error: `Your ${plan} plan allows up to ${limit} leaderboard${limit > 1 ? "s" : ""}. Upgrade to create more.`, code: "board_limit" };
-  }
-  // Validate slug uniqueness
-  const existing = await one("SELECT id FROM sites WHERE slug=$1", [slug]);
-  if (existing) return { error: "That URL is already taken. Pick another.", code: "slug_taken" };
-  const boardOrder = boards.length;
-  const siteId = crypto.randomUUID();
-  await exec(
-    "INSERT INTO sites (id,user_id,slug,name,casino,prize_pool,period,published,extra_json,board_order) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9::jsonb,$10)",
-    [siteId, uid, slug, name || slug, "Stake", "$0", "Monthly", true, JSON.stringify(DEFAULT_EXTRA), boardOrder]
-  );
-  invalidateUserCache(uid);
-  return { ok: true, id: siteId, slug };
-}
-
 export async function saveSite(env, user, payload, siteId) {
   const uid = typeof user === "string" ? user : user.id;
-  // Multi-board: if siteId provided, use that board; otherwise first board
   const site = siteId ? await getBoardById(env, uid, siteId) : await getByUser(env, uid);
   if (!site) return { error: "no site" };
   // Plan gate: player count is the paid lever.
@@ -277,16 +277,15 @@ export async function saveSite(env, user, payload, siteId) {
     }
   }
   const b = payload.brand || {};
-  const existingExtra = (site.extra_json && typeof site.extra_json === "object") ? site.extra_json : {};
   const extra = JSON.stringify({
     chips: payload.chips || DEFAULT_EXTRA.chips,
     whyStats: payload.whyStats || DEFAULT_EXTRA.whyStats,
     rules: payload.rules || DEFAULT_EXTRA.rules,
     socials: payload.socials || DEFAULT_EXTRA.socials,
-    // Notification settings (Pro only) — passed through from payload
-    discord_webhook_url: payload.discord_webhook_url ?? existingExtra.discord_webhook_url ?? "",
-    telegram_notify: payload.telegram_notify ?? existingExtra.telegram_notify ?? false,
-    telegram_chat_id: payload.telegram_chat_id ?? existingExtra.telegram_chat_id ?? "",
+    discord_webhook_url: payload.discord_webhook_url ?? undefined,
+    telegram_bot_token: payload.telegram_bot_token ?? undefined,
+    telegram_chat_id: payload.telegram_chat_id ?? undefined,
+    telegram_notify: payload.telegram_notify ?? undefined,
   });
 
   // Fetch logo_data separately since the shared query no longer includes it (PERF-004).
@@ -308,60 +307,25 @@ export async function saveSite(env, user, payload, siteId) {
   }
   const themeJson = JSON.stringify(themeObj);
 
-  // Custom domain (Pro only) — validate and sanitize
-  let customDomain = null;
-  if (typeof payload.customDomain === "string" && payload.customDomain.trim()) {
-    const plan = typeof user === "object" ? effectivePlan(user) : "free";
-    if (plan !== "pro" && plan !== "agency") return { error: "Custom domains are a Pro feature.", code: "pro_only" };
-    const dom = payload.customDomain.trim().toLowerCase().replace(/^https?:\/\//, "").replace(/\/+$/, "");
-    if (!/^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?(\.[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?)+$/.test(dom)) {
-      return { error: "Enter a valid domain name (e.g. board.mystream.com).", code: "invalid_domain" };
-    }
-    // Check if another site already owns this domain
-    const existing = await one("SELECT id, slug FROM sites WHERE custom_domain=$1 AND id!=$2", [dom, site.id]);
-    if (existing) return { error: "That domain is already in use by another site.", code: "domain_taken" };
-    customDomain = dom;
-  } else if (payload.customDomain === "" || payload.customDomain === null) {
-    // Explicit clear
-    customDomain = "";
-  }
-
   // Invalidate cache before write
   invalidateSiteCache(site.slug);
   invalidateSiteCache(uid);
   if (siteId) invalidateSiteCache(siteId);
 
-  // Snapshot old top-3 before the transaction overwrites players (for rank-change detection).
-  let oldTop3 = [];
-  if (Array.isArray(payload.players) && typeof user === "object" && effectivePlan(user) === "pro") {
-    try {
-      const oldPlayers = await getPlayers(env, site.id);
-      oldTop3 = oldPlayers.slice(0, 3).map((p) => ({ name: p.name, wagered: p.wagered }));
-    } catch {}
-  }
+  // Capture old top-3 for notifications
+  const oldPlayers = await getPlayers(env, site.id);
+  const oldTop3 = oldPlayers.slice().sort((a, b2) => (b2.wagered || 0) - (a.wagered || 0)).slice(0, 3);
 
   await getSql().begin(async (tx) => {
-    if (customDomain !== null) {
-      await tx.unsafe(
-        `UPDATE sites SET name=$1, tagline=$2, casino=$3, code=$4, cta_url=$5, prize_pool=$6, period=$7, ends_at=$8, reset_note=$9, blurb=$10, extra_json=$11::jsonb, logo_data=$12, theme_json=$13::jsonb, custom_domain=$14, updated_at=now() WHERE id=$15`,
-        [
-          b.name ?? site.name, b.tagline ?? site.tagline, b.casino ?? site.casino, b.code ?? site.code,
-          b.ctaUrl ?? site.cta_url, b.prizePool ?? site.prize_pool, b.period ?? site.period,
-          payload.endsAt ?? site.ends_at, b.resetNote ?? site.reset_note, (payload.partner && payload.partner.blurb) ?? site.blurb,
-          extra, logoData, themeJson, customDomain || null, site.id,
-        ]
-      );
-    } else {
-      await tx.unsafe(
-        `UPDATE sites SET name=$1, tagline=$2, casino=$3, code=$4, cta_url=$5, prize_pool=$6, period=$7, ends_at=$8, reset_note=$9, blurb=$10, extra_json=$11::jsonb, logo_data=$12, theme_json=$13::jsonb, updated_at=now() WHERE id=$14`,
-        [
-          b.name ?? site.name, b.tagline ?? site.tagline, b.casino ?? site.casino, b.code ?? site.code,
-          b.ctaUrl ?? site.cta_url, b.prizePool ?? site.prize_pool, b.period ?? site.period,
-          payload.endsAt ?? site.ends_at, b.resetNote ?? site.reset_note, (payload.partner && payload.partner.blurb) ?? site.blurb,
-          extra, logoData, themeJson, site.id,
-        ]
-      );
-    }
+    await tx.unsafe(
+      `UPDATE sites SET name=$1, tagline=$2, casino=$3, code=$4, cta_url=$5, prize_pool=$6, period=$7, ends_at=$8, reset_note=$9, blurb=$10, extra_json=$11::jsonb, logo_data=$12, theme_json=$13::jsonb, updated_at=now() WHERE id=$14`,
+      [
+        b.name ?? site.name, b.tagline ?? site.tagline, b.casino ?? site.casino, b.code ?? site.code,
+        b.ctaUrl ?? site.cta_url, b.prizePool ?? site.prize_pool, b.period ?? site.period,
+        payload.endsAt ?? site.ends_at, b.resetNote ?? site.reset_note, (payload.partner && payload.partner.blurb) ?? site.blurb,
+        extra, logoData, themeJson, site.id,
+      ]
+    );
     if (Array.isArray(payload.players)) {
       await tx.unsafe("DELETE FROM players WHERE site_id=$1", [site.id]);
       const validPlayers = payload.players.filter((p) => p && p.name);
@@ -387,8 +351,8 @@ export async function saveSite(env, user, payload, siteId) {
     }
   });
 
-  // Pro-only: detect top-3 changes and fire notifications.
-  if (Array.isArray(payload.players) && typeof user === "object" && effectivePlan(user) === "pro") {
+  // Detect top-3 changes and send notifications
+  if (Array.isArray(payload.players) && typeof user === "object" && effectivePlan(user) !== "free") {
     try {
       const newSorted = payload.players.filter((p) => p && p.name).sort((a, b2) => (b2.wagered || 0) - (a.wagered || 0));
       const top3Changes = detectTop3Changes(oldTop3, newSorted);

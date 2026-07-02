@@ -740,7 +740,7 @@ async function handlePutSite(request, env) {
   if (user.status === "suspended") return bad("This account is suspended.", 403);
   const payload = await readJson(request);
   if (!payload) return bad("Invalid request");
-  const r = await saveSite(env, user, payload);
+  const r = await saveSite(env, user, payload, payload.siteId || null);
   return r.error ? bad(r.error, 400) : json({ ok: true });
 }
 
