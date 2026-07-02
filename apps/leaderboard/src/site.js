@@ -1,6 +1,6 @@
 // Site + players data helpers for the Worker.
 import { effectivePlan, PLAN_LIMITS } from "./billing.js";
-import { query, one, getSql } from "./db.js";
+import { query, one, exec, getSql } from "./db.js";
 
 export const DEFAULT_EXTRA = {
   chips: ["Instant Withdrawals", "Crypto Native", "24/7 Support"],
@@ -119,19 +119,19 @@ export async function createArchive(env, uid, { label, clear } = {}) {
   const lab = String(label || "").trim().slice(0, 60) ||
     new Date().toLocaleString("en-US", { month: "long", year: "numeric", timeZone: "UTC" });
   // snapshot_json is JSONB — pass a JSON string cast to jsonb.
-  await query(
+  await exec(
     "INSERT INTO archives (id,site_id,label,snapshot_json,created_at) VALUES ($1,$2,$3,$4::jsonb,now())",
     [crypto.randomUUID(), site.id, lab, JSON.stringify(players).slice(0, 200000)]
   );
-  if (clear === "players") await query("DELETE FROM players WHERE site_id=$1", [site.id]);
-  else if (clear === "wagers") await query("UPDATE players SET wagered=0 WHERE site_id=$1", [site.id]);
+  if (clear === "players") await exec("DELETE FROM players WHERE site_id=$1", [site.id]);
+  else if (clear === "wagers") await exec("UPDATE players SET wagered=0 WHERE site_id=$1", [site.id]);
   return { ok: true, label: lab };
 }
 
 export async function deleteArchive(env, uid, id) {
   const site = await getByUser(env, uid);
   if (!site) return { error: "no site" };
-  await query("DELETE FROM archives WHERE id=$1 AND site_id=$2", [String(id || ""), site.id]);
+  await exec("DELETE FROM archives WHERE id=$1 AND site_id=$2", [String(id || ""), site.id]);
   return { ok: true };
 }
 

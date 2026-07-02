@@ -1,6 +1,6 @@
 // Billing: NOWPayments (crypto) + manual activation. Plan logic lives here.
 import { json, bad, ok, uuid, requireUser, safeEqual } from "./auth.js";
-import { query, one } from "./db.js";
+import { query, one, exec, getSql } from "./db.js";
 
 export const PLAN_LIMITS = { free: 10, pro: 50 };
 export const PRO_DAYS = 31;
@@ -27,11 +27,11 @@ export async function activatePro(env, userId, days = PRO_DAYS) {
     const base = (u.plan === "pro" && Number(u.plan_expires_at) > Date.now()) ? Number(u.plan_expires_at) : Date.now();
     const expiresMs = base + days * 86400000;
     // to_timestamp() takes seconds; convert ms -> s.
-    await query("UPDATE users SET plan='pro', plan_expires_at=to_timestamp($1 / 1000.0), updated_at=now() WHERE id=$2", [expiresMs, userId]);
-    await query("INSERT INTO subscriptions (user_id, plan, status, provider, current_period_end) VALUES ($1, $2, 'active', 'nowpayments', to_timestamp($3 / 1000.0))", [userId, 'pro', expiresMs]);
+    await exec("UPDATE users SET plan='pro', plan_expires_at=to_timestamp($1 / 1000.0), updated_at=now() WHERE id=$2", [expiresMs, userId]);
+    await exec("INSERT INTO subscriptions (user_id, plan, status, provider, current_period_end) VALUES ($1, $2, 'active', 'nowpayments', to_timestamp($3 / 1000.0))", [userId, 'pro', expiresMs]);
   } else {
     // Lifetime: no expiry.
-    await query("UPDATE users SET plan='pro', plan_expires_at=NULL, updated_at=now() WHERE id=$1", [userId]);
+    await exec("UPDATE users SET plan='pro', plan_expires_at=NULL, updated_at=now() WHERE id=$1", [userId]);
   }
   return true;
 }
@@ -47,7 +47,7 @@ export async function handleCheckout(request, env) {
   // up there in the IPN (previously the order_id WAS the row id).
   const orderId = `rk_${uuid()}`;
   const price = priceUsd(env);
-  await query(
+  await exec(
     "INSERT INTO payments (user_id,provider,amount,currency,status,tx_ref) VALUES ($1,$2,$3,$4,$5,$6)",
     [user.id, "nowpayments", price, "USD", "created", orderId]
   );
@@ -56,6 +56,7 @@ export async function handleCheckout(request, env) {
     const r = await fetch("https://api.nowpayments.io/v1/invoice", {
       method: "POST",
       headers: { "x-api-key": env.NOWPAYMENTS_API_KEY, "content-type": "application/json" },
+      signal: AbortSignal.timeout(10_000),
       body: JSON.stringify({
         price_amount: price,
         price_currency: "usd",
@@ -70,10 +71,10 @@ export async function handleCheckout(request, env) {
     if (!r.ok || !inv || !inv.invoice_url) inv = null;
   } catch { inv = null; }
   if (!inv) {
-    await query("UPDATE payments SET status='failed', updated_at=now() WHERE tx_ref=$1", [orderId]);
+    await exec("UPDATE payments SET status='failed', updated_at=now() WHERE tx_ref=$1", [orderId]);
     return bad("Couldn't start the payment. Try again in a minute or contact support.", 502);
   }
-  await query("UPDATE payments SET invoice_id=$1, status='waiting', updated_at=now() WHERE tx_ref=$2",
+  await exec("UPDATE payments SET invoice_id=$1, status='waiting', updated_at=now() WHERE tx_ref=$2",
     [String(inv.id || ""), orderId]);
   return ok({ url: inv.invoice_url });
 }
@@ -108,24 +109,59 @@ export async function handleIpn(request, env) {
 
   const orderId = String(body.order_id || "");
   const status = String(body.payment_status || "");
-  // Look up by tx_ref (the NOWPayments order_id we stored at checkout).
-  const pay = await one("SELECT id, user_id, status FROM payments WHERE tx_ref=$1", [orderId]);
-  if (!pay) return bad("unknown order", 404);
 
-  // payload_json is JSONB now — store the parsed body object, not the raw string.
-  await query("UPDATE payments SET status=$1, payload_json=$2::jsonb, updated_at=now() WHERE id=$3",
-    [status, JSON.stringify(body), pay.id]);
+  // Wrap in a transaction with FOR UPDATE to prevent TOCTOU race: two
+  // concurrent IPN webhooks could both read 'pending' and both activate.
+  // SELECT ... FOR UPDATE locks the row until COMMIT/ROLLBACK.
+  const result = await getSql().begin(async (tx) => {
+    // Look up by tx_ref (the NOWPayments order_id we stored at checkout).
+    const payRows = await tx.unsafe(
+      "SELECT id, user_id, status FROM payments WHERE tx_ref=$1 FOR UPDATE",
+      [orderId]
+    );
+    const pay = payRows[0];
+    if (!pay) return { code: 404, msg: "unknown order" };
 
-  // Activate exactly once, on the first transition into a paid-equivalent
-  // state. NOWPayments emits several terminal "paid" statuses: `finished` is
-  // the canonical one, but some currencies/setups settle at `confirmed` and
-  // never advance. Treating only `finished` as activation caused a money leak
-  // — a user who paid and ended at `confirmed` stayed on Free. Fix: activate on
-  // the first of {confirmed, finished} we see, but only if we haven't already
-  // activated (guarded by pay.status so a replay can't double-activate).
-  const PAID = ["confirmed", "finished"];
-  if (PAID.includes(status) && !PAID.includes(pay.status)) {
-    await activatePro(env, pay.user_id, PRO_DAYS);
-  }
+    // payload_json is JSONB now — store the parsed body object, not the raw string.
+    await tx.unsafe(
+      "UPDATE payments SET status=$1, payload_json=$2::jsonb, updated_at=now() WHERE id=$3",
+      [status, JSON.stringify(body), pay.id]
+    );
+
+    // Activate exactly once, on the first transition into a paid-equivalent
+    // state. The FOR UPDATE lock ensures only one concurrent IPN can enter
+    // this block for a given payment row.
+    const PAID = ["confirmed", "finished"];
+    if (PAID.includes(status) && !PAID.includes(pay.status)) {
+      const uRows = await tx.unsafe(
+        "SELECT plan, (EXTRACT(EPOCH FROM plan_expires_at) * 1000)::double precision AS plan_expires_at FROM users WHERE id=$1 FOR UPDATE",
+        [pay.user_id]
+      );
+      const u = uRows[0];
+      if (u) {
+        if (PRO_DAYS > 0) {
+          const base = (u.plan === "pro" && Number(u.plan_expires_at) > Date.now()) ? Number(u.plan_expires_at) : Date.now();
+          const expiresMs = base + PRO_DAYS * 86400000;
+          await tx.unsafe(
+            "UPDATE users SET plan='pro', plan_expires_at=to_timestamp($1 / 1000.0), updated_at=now() WHERE id=$2",
+            [expiresMs, pay.user_id]
+          );
+          await tx.unsafe(
+            "INSERT INTO subscriptions (user_id, plan, status, provider, current_period_end) VALUES ($1, $2, 'active', 'nowpayments', to_timestamp($3 / 1000.0))",
+            [pay.user_id, 'pro', expiresMs]
+          );
+        } else {
+          await tx.unsafe(
+            "UPDATE users SET plan='pro', plan_expires_at=NULL, updated_at=now() WHERE id=$1",
+            [pay.user_id]
+          );
+        }
+      }
+    }
+
+    return { code: 200 };
+  });
+
+  if (result.code === 404) return bad(result.msg, 404);
   return ok();
 }

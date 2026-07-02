@@ -1,9 +1,9 @@
 // Static HTML pages served by the Worker. Kept as plain template strings.
 
 // Shared shell for the legal pages — plain, readable, no fluff.
-const legal = (title, updated, body) => `<!DOCTYPE html><html lang="en"><head>
+const legal = (title, updated, body, pagePath) => `<!DOCTYPE html><html lang="en"><head>
 <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>${title} · RankUp</title><link rel="preconnect" href="https://fonts.googleapis.com" />
+<title>${title} · RankUp</title><link rel="canonical" href="https://yourrank.site/${pagePath}" /><link rel="preconnect" href="https://fonts.googleapis.com" />
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="/assets/app.css" /></head><body>
 <header class="topbar"><a class="brand" href="/">Rank<b>Up</b></a>
@@ -19,6 +19,12 @@ export const PAGES = {
 <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>RankUp — hosted leaderboards for casino streamers</title>
 <meta name="description" content="A hosted leaderboard page for your Stake/Kick community. Edit prizes, code and players from a dashboard. Your page updates instantly." />
+<link rel="canonical" href="https://yourrank.site/" />
+<meta property="og:title" content="YourRank - Hosted Leaderboards for Streamers">
+<meta property="og:description" content="Create your own branded leaderboard page. Track referrals, manage promo codes, and grow your audience.">
+<meta property="og:url" content="https://yourrank.site/">
+<meta property="og:type" content="website">
+<meta property="og:image" content="https://yourrank.site/assets/og-image.png">
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="/assets/landing.css" />
@@ -70,7 +76,7 @@ export const PAGES = {
 
   login: `<!DOCTYPE html><html lang="en"><head>
 <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Sign in · RankUp</title><link rel="preconnect" href="https://fonts.googleapis.com" />
+<title>Sign in · RankUp</title><link rel="canonical" href="https://yourrank.site/login" /><link rel="preconnect" href="https://fonts.googleapis.com" />
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="/assets/app.css" /></head><body>
 <div class="auth-wrap"><aside class="auth-side"><div><div class="brand">Rank<b>Up</b></div></div>
@@ -85,7 +91,7 @@ export const PAGES = {
 
   forgot: `<!DOCTYPE html><html lang="en"><head>
 <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Reset password · RankUp</title><link rel="preconnect" href="https://fonts.googleapis.com" />
+<title>Reset password · RankUp</title><link rel="canonical" href="https://yourrank.site/forgot" /><link rel="preconnect" href="https://fonts.googleapis.com" />
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="/assets/app.css" /></head><body>
 <div class="auth-wrap"><aside class="auth-side"><div><div class="brand">Rank<b>Up</b></div></div>
@@ -99,7 +105,7 @@ export const PAGES = {
 
   reset: `<!DOCTYPE html><html lang="en"><head>
 <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>New password · RankUp</title><link rel="preconnect" href="https://fonts.googleapis.com" />
+<title>New password · RankUp</title><link rel="canonical" href="https://yourrank.site/reset" /><link rel="preconnect" href="https://fonts.googleapis.com" />
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="/assets/app.css" /></head><body>
 <div class="auth-wrap"><aside class="auth-side"><div><div class="brand">Rank<b>Up</b></div></div>
@@ -114,7 +120,7 @@ export const PAGES = {
 
   signup: `<!DOCTYPE html><html lang="en"><head>
 <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Create account · RankUp</title><link rel="preconnect" href="https://fonts.googleapis.com" />
+<title>Create account · RankUp</title><link rel="canonical" href="https://yourrank.site/signup" /><link rel="preconnect" href="https://fonts.googleapis.com" />
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="/assets/app.css" /></head><body>
 <div class="auth-wrap"><aside class="auth-side"><div><div class="brand">Rank<b>Up</b></div></div>
@@ -133,7 +139,7 @@ export const PAGES = {
 
   dashboard: `<!DOCTYPE html><html lang="en"><head>
 <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Dashboard · RankUp</title><link rel="preconnect" href="https://fonts.googleapis.com" />
+<title>Dashboard · RankUp</title><link rel="canonical" href="https://yourrank.site/dashboard" /><link rel="preconnect" href="https://fonts.googleapis.com" />
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="/assets/app.css" /><!--GM_NAV_CSS--></head><body>
 <!--GM_NAV-->
@@ -196,7 +202,7 @@ export const PAGES = {
 
 analytics: `<!DOCTYPE html><html lang="en"><head>
 <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Analytics · RankUp</title><link rel="preconnect" href="https://fonts.googleapis.com" />
+<title>Analytics · RankUp</title><link rel="canonical" href="https://yourrank.site/dashboard/analytics" /><link rel="preconnect" href="https://fonts.googleapis.com" />
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="/assets/app.css" /><!--GM_NAV_CSS--></head><body>
 <!--GM_NAV-->
@@ -221,7 +227,7 @@ analytics: `<!DOCTYPE html><html lang="en"><head>
 
 billing: `<!DOCTYPE html><html lang="en"><head>
 <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Billing · RankUp</title><link rel="preconnect" href="https://fonts.googleapis.com" />
+<title>Billing · RankUp</title><link rel="canonical" href="https://yourrank.site/dashboard/billing" /><link rel="preconnect" href="https://fonts.googleapis.com" />
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="/assets/app.css" /><!--GM_NAV_CSS--></head><body>
 <!--GM_NAV-->
@@ -241,7 +247,7 @@ billing: `<!DOCTYPE html><html lang="en"><head>
 
 admin: `<!DOCTYPE html><html lang="en"><head>
 <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Admin · RankUp</title><link rel="preconnect" href="https://fonts.googleapis.com" />
+<title>Admin · RankUp</title><link rel="canonical" href="https://yourrank.site/admin" /><link rel="preconnect" href="https://fonts.googleapis.com" />
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="/assets/app.css" /></head><body>
 <header class="topbar"><div class="brand">Rank<b>Up</b> <span class="label" style="margin-left:8px">ADMIN</span></div>
@@ -280,7 +286,7 @@ admin: `<!DOCTYPE html><html lang="en"><head>
 <h2>Liability</h2>
 <p>RankUp is provided as-is. We work to keep pages online, but we don't guarantee uninterrupted service and we're not liable for lost revenue, lost viewers, or disputes between you and your community. Our total liability is capped at what you paid us in the last 3 months.</p>
 <h2>Contact</h2>
-<p>Questions about these terms: reach us through the contact form on the home page.</p>`),
+<p>Questions about these terms: reach us through the contact form on the home page.</p>`, "terms"),
 
   privacy: legal("Privacy Policy", "July 2026", `
 <h2>What we collect</h2>
@@ -300,7 +306,7 @@ admin: `<!DOCTYPE html><html lang="en"><head>
 <h2>Your page is public</h2>
 <p>Anything you publish on your leaderboard page is visible to anyone with the link, including player names you enter. Mask player names (like <span class="mono">*****ess</span>) if your community expects it.</p>
 <h2>Contact</h2>
-<p>Privacy questions or deletion requests: use the contact form on the home page.</p>`),
+<p>Privacy questions or deletion requests: use the contact form on the home page.</p>`, "privacy"),
 
   responsible: legal("Responsible Play", "July 2026", `
 <p><b>RankUp pages are about gambling, and gambling carries real risk.</b> The leaderboards hosted here track wagers made on third-party casino sites. RankUp itself takes no bets and pays no winnings — but if you're a viewer taking part in these communities, this page is for you.</p>
@@ -321,5 +327,5 @@ admin: `<!DOCTYPE html><html lang="en"><head>
 </ul>
 <p>Most casinos, including Stake, offer self-exclusion and loss-limit tools in account settings. Use them.</p>
 <h2>For streamers</h2>
-<p>If you run a leaderboard on RankUp: be straight with your community about the risks, honour the prizes you post, and never pressure viewers to wager. Pages that mislead their communities get suspended.</p>`),
+<p>If you run a leaderboard on RankUp: be straight with your community about the risks, honour the prizes you post, and never pressure viewers to wager. Pages that mislead their communities get suspended.</p>`, "responsible"),
 };

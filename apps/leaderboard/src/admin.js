@@ -1,7 +1,7 @@
 // Owner admin API. Every route requires a session whose user has is_admin=true.
 import { json, bad, ok, readJson, newToken, currentUser, destroyAllUserSessions } from "./auth.js";
 import { activatePro } from "./billing.js";
-import { query, one } from "./db.js";
+import { query, one, exec } from "./db.js";
 
 export async function requireAdmin(request, env) {
   const u = await currentUser(request, env);
@@ -77,25 +77,25 @@ export async function handleAction(request, env) {
       const days = Number(body.days);
       await activatePro(env, target.id, Number.isFinite(days) ? days : 31);
       // Record it in the ledger so revenue/history stays honest.
-      await query(
+      await exec(
         "INSERT INTO payments (user_id,provider,amount,currency,status) VALUES ($1,$2,$3,$4,$5)",
         [target.id, "manual", Number(body.amountUsd) || 0, "USD", "manual"]
       );
       return ok();
     }
     case "free":
-      await query("UPDATE users SET plan='free', plan_expires_at=NULL, updated_at=now() WHERE id=$1", [target.id]);
+      await exec("UPDATE users SET plan='free', plan_expires_at=NULL, updated_at=now() WHERE id=$1", [target.id]);
       return ok();
     case "suspend":
       if (target.is_admin) return bad("Can't suspend an admin");
-      await query("UPDATE users SET status='suspended', updated_at=now() WHERE id=$1", [target.id]);
+      await exec("UPDATE users SET status='suspended', updated_at=now() WHERE id=$1", [target.id]);
       // Kill every live session immediately — don't wait for the 30-day KV TTL.
       // The bot dashboard middleware also re-checks suspended status per request,
       // but this closes the leaderboard side (and any other device) now.
       await destroyAllUserSessions(env, target.id);
       return ok();
     case "unsuspend":
-      await query("UPDATE users SET status='active', updated_at=now() WHERE id=$1", [target.id]);
+      await exec("UPDATE users SET status='active', updated_at=now() WHERE id=$1", [target.id]);
       return ok();
     case "reset-link": {
       // Don't let one admin mint a login-as link for ANOTHER admin. The suspend

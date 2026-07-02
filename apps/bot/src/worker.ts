@@ -41,13 +41,55 @@ export default {
   //   0 3 * * *  — nightly: click rollup, partitions, expired plans
   async scheduled(event: { cron: string }, env: Record<string, any>, ctx: { waitUntil: (p: Promise<unknown>) => void }): Promise<void> {
     populateEnv(env);
-    if (event.cron === "0 3 * * *") {
-      const { rollupClicks, ensureNextMonthPartition } = await import("./rollup.js");
-      const { downgradeExpired } = await import("./billing.js");
-      ctx.waitUntil(Promise.all([rollupClicks(), ensureNextMonthPartition(), downgradeExpired()]));
-    } else {
-      const { processBroadcastBatch } = await import("./broadcasts.js");
-      ctx.waitUntil(processBroadcastBatch());
+    try {
+      if (event.cron === "0 3 * * *") {
+        const { rollupClicks, ensureNextMonthPartition } = await import("./rollup.js");
+        const { downgradeExpired } = await import("./billing.js");
+
+        const results = await Promise.allSettled([
+          (async () => {
+            try {
+              await rollupClicks();
+            } catch (err) {
+              console.error("[cron 0 3 * * *] rollupClicks failed:", err);
+              throw err;
+            }
+          })(),
+          (async () => {
+            try {
+              await ensureNextMonthPartition();
+            } catch (err) {
+              console.error("[cron 0 3 * * *] ensureNextMonthPartition failed:", err);
+              throw err;
+            }
+          })(),
+          (async () => {
+            try {
+              await downgradeExpired();
+            } catch (err) {
+              console.error("[cron 0 3 * * *] downgradeExpired failed:", err);
+              throw err;
+            }
+          })(),
+        ]);
+
+        // Log any rejections but don't throw — other tasks may have succeeded
+        for (const r of results) {
+          if (r.status === "rejected") {
+            console.error("[cron 0 3 * * *] one task failed:", r.reason);
+          }
+        }
+      } else {
+        // Default: broadcast batch (every minute cron)
+        const { processBroadcastBatch } = await import("./broadcasts.js");
+        ctx.waitUntil(
+          processBroadcastBatch().catch((err: unknown) => {
+            console.error(`[cron ${event.cron}] processBroadcastBatch failed:`, err);
+          }),
+        );
+      }
+    } catch (err) {
+      console.error(`[cron ${event.cron}] handler failed:`, err);
     }
   },
 };

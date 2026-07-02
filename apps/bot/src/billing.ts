@@ -32,6 +32,7 @@ async function tg<T>(method: string, body: Record<string, unknown>): Promise<T> 
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify(body),
+    signal: AbortSignal.timeout(10_000),
   });
   const json = (await res.json()) as { ok: boolean; result: T; description?: string };
   if (!json.ok) throw new Error(`telegram ${method}: ${json.description}`);
