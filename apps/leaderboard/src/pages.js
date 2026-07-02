@@ -28,6 +28,7 @@ export const PAGES = {
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="/assets/landing.css" />
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"Organization","name":"RankUp","url":"https://yourrank.site","description":"Hosted leaderboard pages for casino streamers","contactPoint":{"@type":"ContactPoint","contactType":"customer service"}}</script>
 </head><body>
 <div class="wrap">
 <nav class="top"><div class="brand">Rank<b>Up</b></div>
