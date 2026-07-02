@@ -46,6 +46,23 @@ interface TgLogin {
   photo_url?: string; auth_date: number; hash: string;
 }
 
+// ---------------- CSRF defense (same-origin check) ----------------
+// The session cookie is HttpOnly; Secure; SameSite=Lax, which already blocks
+// the cookie from riding along on cross-site POST/PATCH. This is a second,
+// tokenless layer: reject state-changing requests whose Origin isn't us.
+// Browsers always send Origin on cross-origin (and same-origin non-GET)
+// requests; a missing Origin is allowed (native clients, curl) since those
+// aren't the CSRF threat model (no ambient cookie from a victim's browser).
+function sameOrigin(req: Request): boolean {
+  const origin = req.headers.get("origin");
+  if (!origin) return true; // no browser Origin -> not a cross-site form/fetch
+  try {
+    return new URL(origin).host === new URL(config.publicBaseUrl).host;
+  } catch {
+    return false;
+  }
+}
+
 async function verifyTelegramLogin(data: TgLogin, botToken: string): Promise<boolean> {
   const { hash, ...fields } = data;
   const checkString = Object.keys(fields).sort()
@@ -71,6 +88,7 @@ export function buildDashboard(): Hono<{ Bindings: DashBindings }> {
 
   // ---- auth ----
   app.post("/auth/telegram", async (c) => {
+    if (!sameOrigin(c.req.raw)) return c.json({ error: "cross-origin request rejected" }, 403);
     const loginBotToken = process.env.LOGIN_BOT_TOKEN;
     if (!loginBotToken) return c.json({ error: "telegram login not configured" }, 501);
     const data = await c.req.json<TgLogin>();
@@ -92,6 +110,7 @@ export function buildDashboard(): Hono<{ Bindings: DashBindings }> {
 
   app.post("/auth/dev", async (c) => {
     if (process.env.ALLOW_DEV_LOGIN !== "1") return c.json({ error: "disabled" }, 403);
+    if (!sameOrigin(c.req.raw)) return c.json({ error: "cross-origin request rejected" }, 403);
     const { telegram_user_id, display_name } = await c.req.json<{ telegram_user_id: number; display_name?: string }>();
     const row = (await one<{ id: string }>(
       `INSERT INTO users (telegram_user_id, display_name) VALUES ($1, $2)
@@ -112,6 +131,11 @@ export function buildDashboard(): Hono<{ Bindings: DashBindings }> {
   // ---- session-scoped API ----
   const api = new Hono<{ Bindings: DashBindings; Variables: { uid: string } }>();
   api.use("*", async (c, next) => {
+    // CSRF: block cross-site state-changing calls that ride the session cookie.
+    // GET/HEAD are safe (read-only) and skipped.
+    if (c.req.method !== "GET" && c.req.method !== "HEAD" && !sameOrigin(c.req.raw)) {
+      return c.json({ error: "cross-origin request rejected" }, 403);
+    }
     const uid = await currentUserId(c.req.raw, c.env);
     if (!uid) return c.json({ error: "not logged in" }, 401);
     c.set("uid", uid);
@@ -127,17 +151,41 @@ export function buildDashboard(): Hono<{ Bindings: DashBindings }> {
   });
 
   api.get("/offers", async (c) => {
+    // Click totals come from the pre-aggregated click_daily rollup (the nightly
+    // cron rolls raw clicks into it), NOT a full scan of the raw partitioned
+    // clicks table — which grows unbounded and made this query slow at scale.
+    //
+    // click_daily is complete up to yesterday; today's clicks aren't rolled
+    // yet, so we add today's rows from the (small) current-day raw partition.
+    // Per-short_link totals are summed first, then joined onto offers, so the
+    // offer<->short_link fan-out never double-counts.
     return c.json(await query(
-      `SELECT o.id, o.label, ca.name AS casino, o.promo_code, o.bonus_text,
+      `WITH link_clicks AS (
+         SELECT sl.id AS short_link_id,
+                coalesce(sum(cd.clicks), 0)::int        AS clicks,
+                coalesce(sum(cd.unique_clicks), 0)::int AS unique_clicks
+           FROM short_links sl
+           LEFT JOIN click_daily cd ON cd.short_link_id = sl.id
+          GROUP BY sl.id
+       ),
+       today_clicks AS (
+         SELECT cl.short_link_id,
+                count(*)::int                                AS clicks,
+                count(*) FILTER (WHERE cl.is_unique)::int    AS unique_clicks
+           FROM clicks cl
+          WHERE cl.ts >= current_date
+          GROUP BY cl.short_link_id
+       )
+       SELECT o.id, o.label, ca.name AS casino, o.promo_code, o.bonus_text,
               o.is_active, o.priority, sl.slug,
-              count(cl.*)::int AS clicks,
-              count(cl.*) FILTER (WHERE cl.is_unique)::int AS unique_clicks
+              (coalesce(lc.clicks, 0) + coalesce(tc.clicks, 0))::int               AS clicks,
+              (coalesce(lc.unique_clicks, 0) + coalesce(tc.unique_clicks, 0))::int AS unique_clicks
          FROM offers o
          JOIN casinos ca ON ca.id = o.casino_id
          LEFT JOIN short_links sl ON sl.offer_id = o.id
-         LEFT JOIN clicks cl ON cl.short_link_id = sl.id
+         LEFT JOIN link_clicks  lc ON lc.short_link_id = sl.id
+         LEFT JOIN today_clicks tc ON tc.short_link_id = sl.id
         WHERE o.owner_id = $1
-        GROUP BY o.id, ca.name, sl.slug
         ORDER BY o.priority DESC, o.created_at DESC`,
       [c.get("uid")]
     ));

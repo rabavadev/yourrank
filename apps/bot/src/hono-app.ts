@@ -9,6 +9,7 @@ import { buildDashboard } from "./dashboard.js";
 import { logClick } from "./clicks.js";
 import { billingEnabled, handleBillingUpdate, setupBillingWebhook } from "./billing.js";
 import { checkLimit } from "./plans.js";
+import { rateLimit, type RateLimitKV } from "./ratelimit.js";
 
 type Bindings = {
   PUBLIC_BASE_URL: string;
@@ -17,7 +18,13 @@ type Bindings = {
   IP_HASH_SALT: string;
   DATABASE_URL: string;
   HYPERDRIVE?: { connectionString: string };
+  SESSIONS?: RateLimitKV; // shared KV (also used for rate limiting)
 };
+
+// Admin API abuse guard: cap attempts per IP so a leaked-endpoint brute force
+// against ADMIN_API_KEY can't run unthrottled. Generous enough for real ops use.
+const ADMIN_RL_LIMIT = 30; // requests
+const ADMIN_RL_WINDOW = 60; // seconds
 
 export function buildHonoApp(): Hono<{ Bindings: Bindings }> {
   const app = new Hono<{ Bindings: Bindings }>();
@@ -139,6 +146,16 @@ export function buildHonoApp(): Hono<{ Bindings: Bindings }> {
   // =================================================================
   const api = new Hono<{ Bindings: Bindings }>();
   api.use("*", async (c, next) => {
+    // Rate-limit by client IP BEFORE the key check, so failed attempts count
+    // too and a brute force can't fish for the key at full speed.
+    const ip = c.req.header("cf-connecting-ip") ?? "0.0.0.0";
+    const rl = await rateLimit(c.env.SESSIONS, `admin:${ip}`, ADMIN_RL_LIMIT, ADMIN_RL_WINDOW);
+    c.header("X-RateLimit-Limit", String(rl.limit));
+    c.header("X-RateLimit-Remaining", String(rl.remaining));
+    if (!rl.ok) {
+      c.header("Retry-After", String(rl.retryAfter));
+      return c.json({ error: "rate limited" }, 429);
+    }
     if (c.req.header("x-api-key") !== config.adminApiKey) {
       return c.json({ error: "bad api key" }, 401);
     }

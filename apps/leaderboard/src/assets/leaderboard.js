@@ -5,6 +5,9 @@ const money = (n) => "$" + Number(n).toLocaleString("en-US", { minimumFractionDi
 const moneyShort = (n) => "$" + Number(n).toLocaleString("en-US", { maximumFractionDigits: 0 });
 const initials = (name) => { const c = String(name).replace(/\*/g, "").trim(); return c.length >= 2 ? c.slice(0, 2).toUpperCase() : (c ? c.toUpperCase() : "★"); };
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+// Safe href: only allow http(s)/mailto/tel. Anything else (javascript:, data:,
+// vbscript:, etc.) collapses to "#". esc() handles attribute-breakout chars.
+const safeUrl = (u) => { const s = String(u ?? "").trim(); return s && /^(https?:|mailto:|tel:)/i.test(s) ? esc(s) : "#"; };
 const ord = (n) => { const s = ["th", "st", "nd", "rd"], v = n % 100; return n + (s[(v - 20) % 10] || s[v] || s[0]); };
 
 const SOCIAL_ICONS = {
@@ -28,7 +31,7 @@ function boot() {
   $$("[data-cta]").forEach((el) => { if (b.ctaUrl && !window.__SLUG__) el.href = b.ctaUrl; });
 
   const wm = $("[data-watermarks]");
-  if (wm) { let h = ""; for (let i = 0; i < 14; i++) { const t = Math.random()*100, l = Math.random()*100, s = 20+Math.random()*60, r = -20+Math.random()*40; h += `<span style="top:${t}%;left:${l}%;font-size:${s}px;transform:rotate(${r}deg)">${b.name || ""}</span>`; } wm.innerHTML = h; }
+  if (wm) { let h = ""; for (let i = 0; i < 14; i++) { const t = Math.random()*100, l = Math.random()*100, s = 20+Math.random()*60, r = -20+Math.random()*40; h += `<span style="top:${t}%;left:${l}%;font-size:${s}px;transform:rotate(${r}deg)">${esc(b.name || "")}</span>`; } wm.innerHTML = h; }
 
   const cc = $("[data-copy-code]");
   if (cc) cc.addEventListener("click", async () => { try { await navigator.clipboard.writeText(b.code || ""); cc.classList.add("copied"); const p = cc.textContent; cc.textContent = "Copied!"; setTimeout(() => { cc.classList.remove("copied"); cc.textContent = p; }, 1300); } catch (_) {}
@@ -36,21 +39,21 @@ function boot() {
 
   const p = data.partner || {};
   const blurb = $("[data-partner-blurb]"); if (blurb) blurb.textContent = p.blurb || "";
-  const chips = $("[data-chips]"); if (chips && Array.isArray(p.chips)) chips.innerHTML = p.chips.map((c) => `<li>${c}</li>`).join("");
+  const chips = $("[data-chips]"); if (chips && Array.isArray(p.chips)) chips.innerHTML = p.chips.map((c) => `<li>${esc(c)}</li>`).join("");
 
   const why = $("[data-why]");
-  if (why && Array.isArray(data.whyStats)) why.innerHTML = data.whyStats.map((s) => `<div class="why"><span class="why-big">${s.big}</span><span class="why-label">${s.label}</span>${s.sub ? `<span class="why-sub">${s.sub}</span>` : ""}</div>`).join("");
+  if (why && Array.isArray(data.whyStats)) why.innerHTML = data.whyStats.map((s) => `<div class="why"><span class="why-big">${esc(s.big)}</span><span class="why-label">${esc(s.label)}</span>${s.sub ? `<span class="why-sub">${esc(s.sub)}</span>` : ""}</div>`).join("");
 
   const players = (data.players || []).slice().sort((a, b) => b.wagered - a.wagered);
   const cnt = $("[data-count]"); if (cnt) cnt.textContent = players.length;
 
   const t3 = $("[data-top3]");
-  if (t3 && players.length >= 3) t3.innerHTML = players.slice(0, 3).map((pl, i) => { const r = i + 1; return `<div class="t3 t3--${r}"><span class="t3-medal">RANK ${String(r).padStart(2,"0")}</span><div class="t3-name">${pl.name}</div><div class="t3-wager">${money(pl.wagered)}</div><span class="t3-prize">${pl.prize ? moneyShort(pl.prize) : "—"}</span></div>`; }).join("");
+  if (t3 && players.length >= 3) t3.innerHTML = players.slice(0, 3).map((pl, i) => { const r = i + 1; return `<div class="t3 t3--${r}"><span class="t3-medal">RANK ${String(r).padStart(2,"0")}</span><div class="t3-name">${esc(pl.name)}</div><div class="t3-wager">${money(pl.wagered)}</div><span class="t3-prize">${pl.prize ? moneyShort(pl.prize) : "—"}</span></div>`; }).join("");
 
   const rows = $("[data-rows]");
-  if (rows) rows.innerHTML = players.map((pl, i) => { const r = i + 1; const prize = pl.prize ? `<span class="tr-prize has ta-r">${moneyShort(pl.prize)}</span>` : `<span class="tr-prize no ta-r">—</span>`; return `<li class="t-row" style="animation-delay:${Math.min(i*0.025,0.5)}s"><span class="tr-rank">${String(r).padStart(2,"0")}</span><span class="tr-player"><span class="tr-av">${initials(pl.name)}</span><span class="tr-name">${pl.name}</span></span><span class="tr-wager">${money(pl.wagered)}</span>${prize}</li>`; }).join("");
+  if (rows) rows.innerHTML = players.map((pl, i) => { const r = i + 1; const prize = pl.prize ? `<span class="tr-prize has ta-r">${moneyShort(pl.prize)}</span>` : `<span class="tr-prize no ta-r">—</span>`; return `<li class="t-row" style="animation-delay:${Math.min(i*0.025,0.5)}s"><span class="tr-rank">${String(r).padStart(2,"0")}</span><span class="tr-player"><span class="tr-av">${esc(initials(pl.name))}</span><span class="tr-name">${esc(pl.name)}</span></span><span class="tr-wager">${money(pl.wagered)}</span>${prize}</li>`; }).join("");
 
-  const rl = $("[data-rules]"); if (rl && Array.isArray(data.rules)) rl.innerHTML = data.rules.map((r) => `<li>${r}</li>`).join("");
+  const rl = $("[data-rules]"); if (rl && Array.isArray(data.rules)) rl.innerHTML = data.rules.map((r) => `<li>${esc(r)}</li>`).join("");
 
   // Prize breakdown — derived from the players' prize column, equal prizes grouped into rank ranges.
   const po = $("[data-payouts]");
@@ -81,7 +84,7 @@ function boot() {
   }
 
   const sc = $("[data-socials]");
-  if (sc && Array.isArray(data.socials)) sc.innerHTML = data.socials.map((s) => { const brand = (s.brand || s.name || "").toLowerCase(); const ico = SOCIAL_ICONS[brand] || SOCIAL_ICONS.discord; return `<div class="scard"><div class="scard-ico ${brand}">${ico}</div><div class="scard-name">${s.name}</div><div class="scard-handle">${s.handle || ""}</div><a class="btn btn--grad" href="${s.url || "#"}" target="_blank" rel="noopener">${s.action || "Follow"}</a></div>`; }).join("");
+  if (sc && Array.isArray(data.socials)) sc.innerHTML = data.socials.map((s) => { const brand = (s.brand || s.name || "").toLowerCase(); const ico = SOCIAL_ICONS[brand] || SOCIAL_ICONS.discord; return `<div class="scard"><div class="scard-ico ${esc(brand)}">${ico}</div><div class="scard-name">${esc(s.name)}</div><div class="scard-handle">${esc(s.handle || "")}</div><a class="btn btn--grad" href="${safeUrl(s.url)}" target="_blank" rel="noopener">${esc(s.action || "Follow")}</a></div>`; }).join("");
 
   startCountdown(data.endsAt);
 }

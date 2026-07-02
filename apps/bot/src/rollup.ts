@@ -29,6 +29,13 @@ export async function ensureNextMonthPartition(): Promise<void> {
   const to = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 2, 1));
   const iso = (d: Date) => d.toISOString().slice(0, 10);
   const name = `clicks_${from.getUTCFullYear()}_${String(from.getUTCMonth() + 1).padStart(2, "0")}`;
+  // `name` is derived entirely from the server clock, so it can't be attacker-
+  // controlled — but DDL can't be parameterized, so we assert the exact shape
+  // before interpolating. This makes the identifier injection-proof by
+  // construction even if the derivation above ever changes.
+  if (!/^clicks_\d{4}_\d{2}$/.test(name)) {
+    throw new Error(`refusing to create partition with unexpected name: ${name}`);
+  }
   await query(
     `CREATE TABLE IF NOT EXISTS ${name} PARTITION OF clicks
        FOR VALUES FROM ('${iso(from)}') TO ('${iso(to)}')`

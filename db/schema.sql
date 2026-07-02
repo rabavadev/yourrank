@@ -292,3 +292,9 @@ CREATE TABLE IF NOT EXISTS payments (
     updated_at       TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS idx_payments_user ON payments (user_id);
+-- Idempotency guard for Telegram Stars: the payment charge id is unique, so a
+-- retried billing webhook can never insert a second row (and thus never
+-- double-credit a plan). Partial so it never constrains NOWPayments rows,
+-- whose tx_ref is our own order id and follows different rules.
+CREATE UNIQUE INDEX IF NOT EXISTS uq_payments_stars_txref
+    ON payments (tx_ref) WHERE provider = 'telegram_stars';
