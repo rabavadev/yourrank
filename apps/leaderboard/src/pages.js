@@ -24,6 +24,9 @@ export const PAGES = {
 <meta property="og:description" content="Create your own branded leaderboard page. Track referrals, manage promo codes, and grow your audience.">
 <meta property="og:url" content="https://yourrank.site/">
 <meta property="og:type" content="website">
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="YourRank - Hosted Leaderboards for Streamers" />
+<meta name="twitter:description" content="Create your own branded leaderboard page. Track referrals, manage promo codes, and grow your audience." />
 <!-- og:image removed: no static asset exists; add when a brand image is created -->
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
