@@ -32,7 +32,7 @@ id = "26e47bcce19941839a20bd2cd5879e42"
 #       npx wrangler secret put DATABASE_URL
 [[hyperdrive]]
 binding = "HYPERDRIVE"
-id = "REPLACE_WITH_HYPERDRIVE_ID"
+id = "e0f80c9087714c50b3e35ff12abce26c"
 
 [vars]
 APP_NAME = "RankUp"

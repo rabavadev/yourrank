@@ -27,12 +27,12 @@ binding = "SESSIONS"
 id = "26e47bcce19941839a20bd2cd5879e42"
 
 # Postgres via Hyperdrive (recommended for connection pooling on Workers).
-# Create once, then paste the id:
-#   wrangler hyperdrive create groupsmix-db \
-#     --connection-string="postgresql://postgres:PASS@db.PROJECT.supabase.co:5432/postgres"
 # [[hyperdrive]]
 # binding = "HYPERDRIVE"
 # id = ""
+[[hyperdrive]]
+binding = "HYPERDRIVE"
+id = "e0f80c9087714c50b3e35ff12abce26c"
 
 # Secrets (wrangler secret put ...):
 #   DATABASE_URL            # Supabase pooled connection string (if not using Hyperdrive)
