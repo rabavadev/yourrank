@@ -22,7 +22,7 @@
 //  Usage (bot Worker, /bot/dashboard): identical, from shell-nav.ts.
 // ============================================================================
 
-// Canonical destinations (absolute paths on groupsmix.com). These match
+// Canonical destinations (absolute paths on yourrank.site). These match
 // routing.md. Leaderboard + Analytics + Billing live on the leaderboard Worker;
 // Bot lives on the bot Worker. Because they share the domain, plain <a> links
 // navigate between Workers seamlessly and the gm_session cookie rides along.

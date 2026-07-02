@@ -17,7 +17,7 @@
 // Session: SHARED KV-backed session (see ../../../shared/session.ts). The token
 // is a random opaque id; KV maps sess:<token> -> user UUID in the SESSIONS
 // namespace, which is bound to the SAME id as the leaderboard Worker so one
-// login works across both Workers. Cookie name gm_session, Domain=.groupsmix.com.
+// login works across both Workers. Cookie name gm_session, Domain=.yourrank.site.
 // (Replaces the old HMAC-signed stateless `sess` cookie, which could not be
 // verified cross-Worker and gave no real server-side logout.)
 // ------------------------------------------------------------------

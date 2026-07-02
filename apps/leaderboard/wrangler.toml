@@ -13,7 +13,7 @@ compatibility_flags = ["nodejs_compat"]
 # /bot/*, /hook/*, /r/*, /pb/*, /billing/hook/* prefixes; more-specific wins, so
 # everything else (/, /login, /signup, /dashboard, /<slug>, /go/<slug>) lands here.
 routes = [
-  { pattern = "groupsmix.com/*", zone_name = "groupsmix.com" },
+  { pattern = "yourrank.site/*", zone_name = "yourrank.site" },
 ]
 
 # --- Sessions live in KV (shared with the bot Worker), NOT in Postgres. ---
