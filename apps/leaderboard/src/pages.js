@@ -62,7 +62,9 @@ export const PAGES = {
 <table class="pricing"><thead><tr><th>Plan</th><th>Price</th><th>What you get</th><th>&nbsp;</th></tr></thead><tbody>
 <tr><td class="plan">Free</td><td class="price">$0</td><td>One hosted page, live countdown, up to 10 players. Carries a small "Powered by YourRank" badge.</td><td><a href="/signup" class="btn btn--sm">Start</a></td></tr>
 <tr class="pro-row"><td class="plan">Pro</td><td class="price">$29/mo</td><td>Up to 50 players, no YourRank badge, custom code &amp; socials, priority support. Pay with crypto.</td><td><a href="/signup" class="btn btn--sm btn--accent">Start</a></td></tr>
-</tbody></table></div></section>
+</tbody></table>
+<p style="text-align:center;margin-top:16px;font-size:14px;color:var(--ink-soft)">🎁 <b>Refer a friend, both get 1 month Pro free.</b> Share your referral link from the dashboard.</p>
+</div></section>
 <section id="request"><div class="wrap"><h2 class="sec">Want us to set it up for you?</h2><p class="sec-sub">Prefer we build and manage the page? Tell us about your channel and we'll handle it.</p>
 <form class="lead" id="leadForm" novalidate>
 <div><label for="l_handle">Your handle / channel</label><input id="l_handle" placeholder="ChuckyBTZ" required /></div>
@@ -255,6 +257,31 @@ billing: `<!DOCTYPE html><html lang="en"><head>
 <p class="hint" id="proExp"></p></div></div>
 <div class="skel" id="loading">Loading billing…</div></div>
 <script src="/assets/billing.js"></script></body></html>`,
+
+referral: `<!DOCTYPE html><html lang="en"><head>
+<meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Referrals · YourRank</title>
+<meta name="robots" content="noindex, nofollow" /><link rel="canonical" href="https://yourrank.site/dashboard/referral" /><link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="/assets/app.css" /><!--GM_NAV_CSS--></head><body>
+<!--GM_NAV-->
+<div class="wrap" id="app">
+<div class="dash-head"><div><h1>Referrals</h1><p class="live-link">Refer a friend, both get 1 month Pro free.</p></div></div>
+<div id="rf" hidden>
+<div class="card"><h2>Your referral link</h2><p class="card-sub">Share this link with other streamers. When they sign up, you both get 31 days of Pro.</p>
+<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+<input id="rf_link" readonly style="flex:1;min-width:200px;font-family:var(--mono);font-size:13px;background:var(--panel-2);border:1px solid var(--line-2);border-radius:8px;padding:10px 12px;color:var(--ink)" />
+<button class="btn btn--accent btn--sm" id="rf_copy" type="button">📋 Copy link</button>
+</div></div>
+<div class="card"><h2>Your stats</h2><p class="card-sub">How your referrals are doing.</p>
+<div class="stat-tiles">
+<div class="stat-tile"><span class="stat-num" id="rf_count">0</span><span class="stat-lbl">People referred</span></div>
+<div class="stat-tile"><span class="stat-num" id="rf_days">0</span><span class="stat-lbl">Pro days earned</span></div></div></div>
+<div class="card"><h2>Referral history</h2><p class="card-sub">Recent referrals who signed up with your link.</p>
+<table class="players"><thead><tr><th>Email</th><th>Their page</th><th>Reward</th><th>When</th></tr></thead><tbody id="rf_rows"></tbody></table>
+<div class="empty" id="rf_empty" hidden>No referrals yet. Share your link to get started!</div></div></div>
+<div class="skel" id="loading">Loading referrals…</div></div>
+<script src="/assets/referral.js"></script></body></html>`,
 
 botSetup: `<!DOCTYPE html><html lang="en"><head>
 <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
