@@ -5,7 +5,7 @@ import { PAGES } from "./pages.js";
 import { effectivePlan, PLAN_LIMITS, priceUsd, handleCheckout, handleIpn, activatePro } from "./billing.js";
 import { handleOverview, handleUsers, handleLeads, handlePayments, handleAction } from "./admin.js";
 import { sendEmail, resetEmail } from "./email.js";
-import { bumpStat, getStats } from "./stats.js";
+import { bumpStat, getStats, getHeatmap, getTopReferrers } from "./stats.js";
 import { leaderboard_css, leaderboard_js, app_css, auth_js, dashboard_js, admin_js, landing_css, landing_js, analytics_js, billing_js, bot_setup_js } from "./assets_bundled.js";
 import { query, one, exec, getSql } from "./db.js";
 import { shellNavHtml, SHELL_NAV_CSS } from "../../../shared/shell-nav.js";
@@ -275,6 +275,7 @@ ${entries.join("\n")}
     if (path === "/api/site/archive" && method === "POST") return handleArchive(request, env);
     if (path === "/api/site/archive/delete" && method === "POST") return handleArchiveDelete(request, env);
     if (path === "/api/site/stats" && method === "GET") return handleStats(request, env);
+    if (path === "/api/site/stats/heatmap" && method === "GET") return handleHeatmap(request, env);
     if (path === "/api/lead" && method === "POST") return handleLead(request, env);
     if (path === "/api/track/copy" && method === "POST") return handleTrackCopy(request, env, ctx);
 
@@ -331,7 +332,8 @@ ${entries.join("\n")}
       const alreadyViewed = new RegExp(`(?:^|;\\s*)${viewCookieName}=`).test(viewCookies);
       const respHeaders = { ...HTML, "cache-control": "public, max-age=30" };
       if (r.id && !alreadyViewed) {
-        ctx.waitUntil(bumpStat(env, r.id, "views"));
+        const ref = request.headers.get("referer") || request.headers.get("Referer") || "";
+        ctx.waitUntil(bumpStat(env, r.id, "views", ref));
         respHeaders["set-cookie"] = `${viewCookieName}=1; Path=/${slug}; Max-Age=86400; SameSite=Lax; Secure`;
       }
       const pro = r.plan === "pro";
@@ -515,6 +517,18 @@ async function handleStats(request, env) {
   const site = await getByUser(env, user.id);
   if (!site) return bad("no site", 404);
   return json({ ok: true, stats: await getStats(env, site.id) });
+}
+
+async function handleHeatmap(request, env) {
+  const { user, res } = await requireUser(request, env);
+  if (res) return res;
+  const site = await getByUser(env, user.id);
+  if (!site) return bad("no site", 404);
+  const [heatmap, referrers] = await Promise.all([
+    getHeatmap(env, site.id),
+    getTopReferrers(env, site.id),
+  ]);
+  return json({ ok: true, heatmap, referrers });
 }
 
 async function handleTrackCopy(request, env, ctx) {

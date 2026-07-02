@@ -6,16 +6,75 @@ export function todayUTC() {
   return new Date().toISOString().slice(0, 10);
 }
 
-// Fire-and-forget increment. Callers wrap in ctx.waitUntil so it never blocks a response.
-export async function bumpStat(env, siteId, field) {
-  if (!siteId || !FIELDS.has(field)) return; // field is from a fixed allow-list, safe to interpolate
+// Lazy-init the extra tables (hourly heatmap + referrers). Idempotent.
+let _tablesReady = false;
+async function ensureTables() {
+  if (_tablesReady) return;
   try {
+    await exec(`CREATE TABLE IF NOT EXISTS site_stats_hourly (
+      site_id UUID NOT NULL, day DATE NOT NULL, hour SMALLINT NOT NULL,
+      day_of_week SMALLINT NOT NULL, views INT NOT NULL DEFAULT 0,
+      PRIMARY KEY (site_id, day, hour)
+    )`);
+    await exec(`CREATE TABLE IF NOT EXISTS site_referrers (
+      site_id UUID NOT NULL, day DATE NOT NULL, domain TEXT NOT NULL,
+      count INT NOT NULL DEFAULT 0,
+      PRIMARY KEY (site_id, day, domain)
+    )`);
+    _tablesReady = true;
+  } catch (err) { console.error("[ensureTables]: DDL failed", err); }
+}
+
+// Extract domain from a Referer URL string.
+function extractDomain(ref) {
+  if (!ref) return null;
+  try {
+    const u = new URL(ref);
+    return u.hostname.replace(/^www\./, "").slice(0, 120);
+  } catch { return null; }
+}
+
+// Fire-and-forget increment. Callers wrap in ctx.waitUntil so it never blocks a response.
+// `refererHeader` is optional — only views pass it.
+export async function bumpStat(env, siteId, field, refererHeader) {
+  if (!siteId || !FIELDS.has(field)) return; // field is from a fixed allow-list, safe to interpolate
+  const day = todayUTC();
+  try {
+    // Main daily counter (existing behaviour).
     await exec(
       `INSERT INTO site_stats (site_id, day, ${field}) VALUES ($1, $2, 1)
        ON CONFLICT (site_id, day) DO UPDATE SET ${field} = site_stats.${field} + 1`,
-      [siteId, todayUTC()]
+      [siteId, day]
     );
   } catch (err) { console.error("[bumpStat]: operation failed", err); }
+
+  // Hourly heatmap — only for views (the most granular metric).
+  if (field === "views") {
+    try {
+      await ensureTables();
+      const now = new Date();
+      const hour = now.getUTCHours();
+      const dow = now.getUTCDay(); // 0=Sun … 6=Sat
+      await exec(
+        `INSERT INTO site_stats_hourly (site_id, day, hour, day_of_week, views) VALUES ($1, $2, $3, $4, 1)
+         ON CONFLICT (site_id, day, hour) DO UPDATE SET views = site_stats_hourly.views + 1`,
+        [siteId, day, hour, dow]
+      );
+    } catch (err) { console.error("[bumpStat/hourly]: failed", err); }
+
+    // Referrer tracking.
+    const domain = extractDomain(refererHeader);
+    if (domain) {
+      try {
+        await ensureTables();
+        await exec(
+          `INSERT INTO site_referrers (site_id, day, domain, count) VALUES ($1, $2, $3, 1)
+           ON CONFLICT (site_id, day, domain) DO UPDATE SET count = site_referrers.count + 1`,
+          [siteId, day, domain]
+        );
+      } catch (err) { console.error("[bumpStat/referrer]: failed", err); }
+    }
+  }
 }
 
 // Last 30 days of rows plus rolled-up totals for the dashboard.
@@ -43,4 +102,43 @@ export async function getStats(env, siteId) {
     last30: { views: sum(since, "views"), copies: sum(since, "copies"), clicks: sum(since, "clicks") },
     days,
   };
+}
+
+// 7x24 heatmap grid of view counts for the last 30 days.
+export async function getHeatmap(env, siteId) {
+  try {
+    await ensureTables();
+    const since = new Date(Date.now() - 29 * 86400e3).toISOString().slice(0, 10);
+    const rows = await query(
+      "SELECT day_of_week, hour, SUM(views)::int AS views FROM site_stats_hourly WHERE site_id=$1 AND day>=$2 GROUP BY day_of_week, hour",
+      [siteId, since]
+    );
+    // Build 7x24 grid (all zeros).
+    const grid = Array.from({ length: 7 }, () => Array(24).fill(0));
+    for (const r of (rows || [])) {
+      const dow = Number(r.day_of_week);
+      const hr = Number(r.hour);
+      if (dow >= 0 && dow <= 6 && hr >= 0 && hr < 24) grid[dow][hr] = Number(r.views) || 0;
+    }
+    return grid;
+  } catch (err) {
+    console.error("[getHeatmap]: failed", err);
+    return Array.from({ length: 7 }, () => Array(24).fill(0));
+  }
+}
+
+// Top 5 referrer domains for the last 30 days.
+export async function getTopReferrers(env, siteId) {
+  try {
+    await ensureTables();
+    const since = new Date(Date.now() - 29 * 86400e3).toISOString().slice(0, 10);
+    const rows = await query(
+      "SELECT domain, SUM(count)::int AS total FROM site_referrers WHERE site_id=$1 AND day>=$2 GROUP BY domain ORDER BY total DESC LIMIT 5",
+      [siteId, since]
+    );
+    return (rows || []).map(r => ({ domain: r.domain, count: Number(r.total) || 0 }));
+  } catch (err) {
+    console.error("[getTopReferrers]: failed", err);
+    return [];
+  }
 }
