@@ -70,12 +70,20 @@ export default {
   }
     if (path === "/signup" || path === "/signup.html") return new Response(PAGES.signup, { headers: SECURE_HTML });
     if (path === "/dashboard" || path === "/dashboard.html") {
-      const user = await currentUser(request, env);
-      if (!user) return Response.redirect(new URL("/login", url), 302);
-      const html = PAGES.dashboard
-        .replace("<!--GM_NAV_CSS-->", `<style>${SHELL_NAV_CSS}</style>`)
-        .replace("<!--GM_NAV-->", shellNavHtml({ activePath: "/dashboard", user }));
-      return new Response(html, { headers: SECURE_HTML });
+      try {
+        const user = await currentUser(request, env);
+        if (!user) return Response.redirect(new URL("/login", url), 302);
+        const html = PAGES.dashboard
+          .replace("<!--GM_NAV_CSS-->", `<style>${SHELL_NAV_CSS}</style>`)
+          .replace("<!--GM_NAV-->", shellNavHtml({ activePath: "/dashboard", user }));
+        return new Response(html, { headers: SECURE_HTML });
+      } catch (e) {
+        // A transient DB/Hyperdrive hiccup on currentUser used to bubble as a
+        // raw Cloudflare 1101 after the session cookie redirected past the
+        // unauthenticated path. Retry-safe: a plain refresh re-runs the read.
+        console.error("dashboard render failed:", String(e?.message || e));
+        return new Response("Dashboard couldn't load right now — please refresh.", { status: 500, headers: { "content-type": "text/plain; charset=utf-8" } });
+      }
     }
     if (path === "/forgot") return new Response(PAGES.forgot, { headers: SECURE_HTML });
     if (path === "/reset") return new Response(PAGES.reset, { headers: SECURE_HTML });

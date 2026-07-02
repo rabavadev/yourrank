@@ -26,10 +26,20 @@ function getSql() {
   return sql;
 }
 
-/** Run a parameterized query ($1, $2, ...) and return the rows array. */
+/** Run a parameterized query ($1, $2, ...) and return the rows array.
+ *  One retry on the SAME sql instance. Hyperdrive's pooled connection
+ *  occasionally throws on first use after an idle period while it re-establishes
+ *  the link; a single retry lets the (now-warming) connection handle it instead
+ *  of surfacing as a Cloudflare 1101. Non-idempotent callers (INSERTs) should
+ *  not rely on this, but every read endpoint benefits. */
 export async function query(text, params = []) {
-  const rows = await getSql().unsafe(text, params);
-  return rows.map((r) => ({ ...r }));
+  try {
+    const rows = await getSql().unsafe(text, params);
+    return rows.map((r) => ({ ...r }));
+  } catch {
+    const rows = await getSql().unsafe(text, params);
+    return rows.map((r) => ({ ...r }));
+  }
 }
 
 /** Like query() but returns the first row (or undefined). */
