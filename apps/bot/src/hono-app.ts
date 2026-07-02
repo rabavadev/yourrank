@@ -8,7 +8,7 @@ import { getMe, setWebhook } from "./telegram.js";
 import { buildDashboard } from "./dashboard.js";
 import { logClick } from "./clicks.js";
 import { billingEnabled, handleBillingUpdate, setupBillingWebhook } from "./billing.js";
-import { checkLimit } from "./plans.js";
+import { withPlanLimit } from "./plans.js";
 import { rateLimit, type RateLimitKV } from "./ratelimit.js";
 
 type Bindings = {
@@ -176,28 +176,31 @@ export function buildHonoApp(): Hono<{ Bindings: Bindings }> {
       owner_id: string; token: string; welcome_message?: string;
     }>();
     if (!owner_id || !token) return c.json({ error: "owner_id and token required" }, 400);
-    const limitErr = await checkLimit(owner_id, "bots");
-    if (limitErr) return c.json({ error: limitErr }, 402);
-
-    const me = await getMe(token);
+    // Validate the token with Telegram BEFORE taking the DB lock.
+    let me;
+    try { me = await getMe(token); }
+    catch { return c.json({ error: "Telegram rejected that token" }, 400); }
     const secret = newWebhookSecret();
     const encToken = await encryptToken(token);
 
-    const row = await one<{ id: string }>(
-      `INSERT INTO bots (owner_id, tg_bot_id, username, token_encrypted,
-                         token_hint, webhook_secret, status, welcome_message)
-       VALUES ($1, $2, $3, $4, $5, $6, 'active', $7)
-       ON CONFLICT (tg_bot_id) DO UPDATE
-         SET token_encrypted = EXCLUDED.token_encrypted,
-             token_hint = EXCLUDED.token_hint,
-             webhook_secret = EXCLUDED.webhook_secret,
-             status = 'active', updated_at = now()
-       RETURNING id`,
-      [owner_id, me.id, me.username, encToken, token.slice(-4), secret, welcome_message ?? null]
-    );
-
-    await setWebhook(token, `${config.publicBaseUrl}/hook/${secret}`, secret);
-    return c.json({ bot_id: row!.id, username: me.username, webhook: "set", try_it: `https://t.me/${me.username}` });
+    const out = await withPlanLimit(owner_id, "bots", async (tx) => {
+      const row = await tx.one<{ id: string }>(
+        `INSERT INTO bots (owner_id, tg_bot_id, username, token_encrypted,
+                           token_hint, webhook_secret, status, welcome_message)
+         VALUES ($1, $2, $3, $4, $5, $6, 'active', $7)
+         ON CONFLICT (tg_bot_id) DO UPDATE
+           SET token_encrypted = EXCLUDED.token_encrypted,
+               token_hint = EXCLUDED.token_hint,
+               webhook_secret = EXCLUDED.webhook_secret,
+               status = 'active', updated_at = now()
+         RETURNING id`,
+        [owner_id, me.id, me.username, encToken, token.slice(-4), secret, welcome_message ?? null]
+      );
+      return { bot_id: row!.id, secret };
+    });
+    if ("error" in out) return c.json({ error: out.error }, 402);
+    await setWebhook(token, `${config.publicBaseUrl}/hook/${out.result.secret}`, out.result.secret);
+    return c.json({ bot_id: out.result.bot_id, username: me.username, webhook: "set", try_it: `https://t.me/${me.username}` });
   });
 
   api.post("/offers", async (c) => {
@@ -207,30 +210,31 @@ export function buildHonoApp(): Hono<{ Bindings: Bindings }> {
     }>();
     if (!body.owner_id || !body.casino || !body.label || !body.referral_url)
       return c.json({ error: "owner_id, casino, label, referral_url required" }, 400);
-    const limitErr = await checkLimit(body.owner_id, "offers");
-    if (limitErr) return c.json({ error: limitErr }, 402);
+    try { new URL(body.referral_url); } catch { return c.json({ error: "referral_url must be a valid URL" }, 400); }
 
-    const slug = body.casino.toLowerCase().replace(/[^a-z0-9]+/g, "-");
-    const casinoRow = (await one<{ id: string }>(
-      `INSERT INTO casinos (slug, name, is_global, created_by)
-       VALUES ($1, $2, false, $3)
-       ON CONFLICT (slug) DO UPDATE SET name = casinos.name RETURNING id`,
-      [slug, body.casino, body.owner_id]
-    ))!;
-
-    const offer = (await one<{ id: string }>(
-      `INSERT INTO offers (owner_id, casino_id, label, referral_url, promo_code, bonus_text, priority)
-       VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id`,
-      [body.owner_id, casinoRow.id, body.label, body.referral_url,
-       body.promo_code ?? null, body.bonus_text ?? null, body.priority ?? 0]
-    ))!;
-
-    const linkSlug = newLinkSlug();
-    await query(
-      `INSERT INTO short_links (offer_id, slug, source) VALUES ($1, $2, 'telegram')`,
-      [offer.id, linkSlug]
-    );
-    return c.json({ offer_id: offer.id, tracked_link: `${config.publicBaseUrl}/r/${linkSlug}` });
+    const out = await withPlanLimit(body.owner_id, "offers", async (tx) => {
+      const slug = body.casino.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+      const casinoRow = (await tx.one<{ id: string }>(
+        `INSERT INTO casinos (slug, name, is_global, created_by)
+         VALUES ($1, $2, false, $3)
+         ON CONFLICT (slug) DO UPDATE SET name = casinos.name RETURNING id`,
+        [slug, body.casino, body.owner_id]
+      ))!;
+      const offer = (await tx.one<{ id: string }>(
+        `INSERT INTO offers (owner_id, casino_id, label, referral_url, promo_code, bonus_text, priority)
+         VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id`,
+        [body.owner_id, casinoRow.id, body.label, body.referral_url,
+         body.promo_code ?? null, body.bonus_text ?? null, body.priority ?? 0]
+      ))!;
+      const linkSlug = newLinkSlug();
+      await tx.query(
+        `INSERT INTO short_links (offer_id, slug, source) VALUES ($1, $2, 'telegram')`,
+        [offer.id, linkSlug]
+      );
+      return { offer_id: offer.id, tracked_link: `${config.publicBaseUrl}/r/${linkSlug}` };
+    });
+    if ("error" in out) return c.json({ error: out.error }, 402);
+    return c.json(out.result);
   });
 
   api.get("/stats", async (c) => {
