@@ -1,4 +1,4 @@
-name = "groupsmix-leaderboard"
+name = "yourrank-site"
 # Build first: `node build.js` regenerates src/assets_bundled.js from the files
 # in src/assets/ (inlined as strings). Wrangler bundles from src/index.js and
 # follows its imports (including the 'postgres' driver).
