@@ -91,14 +91,14 @@ import { readToken } from "../../../shared/session.js";
 // the /api/auth/me payload, the admin/dashboard frontends) keeps treating them
 // as numeric millisecond timestamps exactly like the old D1 INTEGER columns.
 const loadUser = (env, uid) =>
-  one(
-    `SELECT id, email, plan,
-            (EXTRACT(EPOCH FROM plan_expires_at) * 1000)::double precision AS plan_expires_at,
-            status, is_admin,
-            (EXTRACT(EPOCH FROM created_at) * 1000)::double precision AS created_at
-       FROM users WHERE id=$1`,
-    [uid]
-  );
+    one(
+      `SELECT id, email, plan,
+              (EXTRACT(EPOCH FROM plan_expires_at) * 1000)::double precision AS plan_expires_at,
+              status, is_admin, has_trial,
+              (EXTRACT(EPOCH FROM created_at) * 1000)::double precision AS created_at
+         FROM users WHERE id=$1`,
+      [uid]
+    );
 
 // SEC-104: Resolves the current user from the shared session using the
 // standard readToken (gm_session only; legacy rk_session support removed).

@@ -635,15 +635,24 @@ async function handleMe(request, env) {
     const site = await one("SELECT slug FROM sites WHERE user_id=$1", [user.id]);
     const boards = await getUserBoardsList(env, user.id);
     const plan = effectivePlan(user);
+    // Check if the most recent active subscription is from a trial
+    let isTrial = false;
+    if (plan === "pro" && user.has_trial) {
+      try {
+        const sub = await one("SELECT provider FROM subscriptions WHERE user_id=$1 ORDER BY created_at DESC LIMIT 1", [user.id]);
+        isTrial = sub?.provider === "trial";
+      } catch {}
+    }
     return json({ ok: true, user: {
-        id: user.id, email: user.email,
-        plan, planExpiresAt: user.plan_expires_at || 0,
-        status: user.status, isAdmin: !!user.is_admin, slug: site?.slug || null,
-        limits: { players: PLAN_LIMITS[plan], boards: BOARD_LIMITS[plan] },
-        proPrice: priceUsd(env, "pro"),
-        hasTrial: !!user.has_trial,
-        boards,
-      } });
+      id: user.id, email: user.email,
+      plan, planExpiresAt: user.plan_expires_at || 0,
+      status: user.status, isAdmin: !!user.is_admin, slug: site?.slug || null,
+      limits: { players: PLAN_LIMITS[plan], boards: BOARD_LIMITS[plan] },
+      proPrice: priceUsd(env, "pro"),
+      hasTrial: !!user.has_trial,
+      isTrial,
+      boards,
+    } });
   } catch (e) {
     console.error("handleMe error:", String(e?.message || e), String(e?.stack || ""));
     return json({ ok: false, error: "Internal error", detail: String(e?.message || e) }, 500);

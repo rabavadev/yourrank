@@ -1,4 +1,4 @@
-/* Billing page — show current plan + upgrade options for all 4 tiers. */
+/* Billing page — show current plan + upgrade options for all 4 tiers + trial. */
 const $ = (s) => document.getElementById(s);
 function getCsrf() { const m = document.cookie.match(/(?:^|;\s*)__csrf=([^;]+)/); return m ? m[1] : ""; }
 
@@ -31,18 +31,50 @@ function fmtExp(ms) {
     return;
   }
 
+  // Fetch user info from /api/auth/me to get has_trial flag
+  let meData = null;
+  try {
+    const mr = await fetch("/api/auth/me");
+    const md = await mr.json();
+    if (mr.ok && md.ok) meData = md.user;
+  } catch {}
+
   const plan = site.plan || "free";
   const planNames = { free: "FREE", starter: "STARTER", pro: "PRO", agency: "AGENCY" };
-  $("planBadge").textContent = (planNames[plan] || "FREE") + " PLAN";
+  const planExpiry = meData?.planExpiresAt || 0;
+  const hasTrialUsed = meData?.hasTrial || false;
+  const isTrial = meData?.isTrial || false;
+
+  // Plan badge — show trial info if on trial
+  if (isTrial && planExpiry) {
+    const daysLeft = Math.ceil((Number(planExpiry) - Date.now()) / 86400000);
+    $("planBadge").textContent = `TRIAL · ${daysLeft} day${daysLeft === 1 ? "" : "s"} left`;
+  } else {
+    $("planBadge").textContent = (planNames[plan] || "FREE") + " PLAN";
+  }
 
   const currentTier = TIERS.find(t => t.key === plan) || TIERS[0];
   $("planLine").textContent = `${currentTier.name} — ${currentTier.desc}`;
 
+  // Trial status card (when currently on trial)
+  if (isTrial && planExpiry) {
+    $("trialStatusCard").hidden = false;
+    const daysLeft = Math.ceil((Number(planExpiry) - Date.now()) / 86400000);
+    $("trialInfo").textContent = `Your Pro trial has ${daysLeft} day${daysLeft === 1 ? "" : "s"} remaining. Enjoy all Pro features until then!`;
+  }
+
+  // Trial card (for free users who haven't used trial)
+  if (plan === "free" && !hasTrialUsed) {
+    $("trialCard").hidden = false;
+  }
+
   if (plan === "pro" || plan === "agency") {
     $("upgradeCard").hidden = true;
     $("proCard").hidden = false;
-    $("currentPlanName").textContent = currentTier.name;
-    $("proExp").textContent = "Manage your leaderboard from the Leaderboard tab. Extend your subscription below.";
+    $("currentPlanName").textContent = isTrial ? "Pro (Trial)" : currentTier.name;
+    $("proExp").textContent = isTrial
+      ? "After your trial ends, upgrade to keep Pro features."
+      : "Manage your leaderboard from the Leaderboard tab. Extend your subscription below.";
     // Still show extend option
     const opts = $("planOptions");
     if (opts) {
@@ -63,7 +95,7 @@ function fmtExp(ms) {
         } else if (isCurrent) {
           const badge = document.createElement("span");
           badge.className = "plan-opt-btn";
-          badge.textContent = "Current";
+          badge.textContent = isCurrent && isTrial ? "Trial" : "Current";
           badge.style.cssText = "font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-mute)";
           el.appendChild(badge);
         }
@@ -106,6 +138,36 @@ function fmtExp(ms) {
   $("loading").hidden = true;
   $("bl").hidden = false;
 })();
+
+// Trial button handler
+const trialBtn = document.getElementById("trialBtn");
+if (trialBtn) {
+  trialBtn.addEventListener("click", async () => {
+    const status = $("trialStatus");
+    trialBtn.disabled = true;
+    trialBtn.textContent = "Starting…";
+    status.textContent = "";
+    try {
+      const r = await fetch("/api/billing/trial", {
+        method: "POST",
+        headers: { "x-csrf-token": getCsrf() },
+      });
+      const d = await r.json();
+      if (r.ok && d.ok) {
+        // Reload to reflect new plan
+        location.reload();
+        return;
+      }
+      status.textContent = d.error || "Couldn't start trial.";
+      trialBtn.disabled = false;
+      trialBtn.textContent = "Start free trial";
+    } catch {
+      status.textContent = "Network error. Try again.";
+      trialBtn.disabled = false;
+      trialBtn.textContent = "Start free trial";
+    }
+  });
+}
 
 async function startCheckout() {
   const status = $("status");
