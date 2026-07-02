@@ -4,7 +4,7 @@
 //  Byte-for-byte-behavioural port of shared/session.js. See that file's header
 //  for the full model. Summary:
 //    * Cookie name:   gm_session
-//    * Cookie domain: .groupsmix.com
+//    * Cookie domain: .yourrank.site (or SESSION_COOKIE_DOMAIN env var)
 //    * KV namespace:  SESSIONS  (SAME namespace id as the leaderboard Worker)
 //    * KV key:        sess:<token>   value: bare user UUID
 //    * TTL:           30 days
@@ -36,7 +36,12 @@ export interface SessionEnv {
 
 // ---- constants (MUST match session.js) ----
 export const COOKIE_NAME = "gm_session";
-export const COOKIE_DOMAIN = ".groupsmix.com";
+// Cookie domain is env-driven so the same code serves any zone. Default to the
+// production domain; override with SESSION_COOKIE_DOMAIN for staging/preview.
+// MUST be a host-wide domain (leading dot) so BOTH Workers (bot + leaderboard)
+// see the cookie — they share one KV session namespace across the zone.
+export const COOKIE_DOMAIN =
+  (typeof process !== "undefined" && process.env && process.env.SESSION_COOKIE_DOMAIN) || ".yourrank.site";
 export const SESSION_TTL_S = 60 * 60 * 24 * 30; // 30 days
 export const KV_PREFIX = "sess:";
 

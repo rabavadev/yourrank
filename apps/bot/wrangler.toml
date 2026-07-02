@@ -4,16 +4,16 @@ compatibility_date = "2025-01-01"
 compatibility_flags = ["nodejs_compat"]
 
 [vars]
-PUBLIC_BASE_URL = "https://groupsmix.com"
+PUBLIC_BASE_URL = "https://yourrank.site"
 
 # Serve the bot Worker under the /bot, /hook, /r, /pb, /billing prefixes on the
 # main zone. More-specific routes win, so the leaderboard Worker keeps the root.
 routes = [
-  { pattern = "groupsmix.com/bot/*",         zone_name = "groupsmix.com" },
-  { pattern = "groupsmix.com/hook/*",        zone_name = "groupsmix.com" },
-  { pattern = "groupsmix.com/r/*",           zone_name = "groupsmix.com" },
-  { pattern = "groupsmix.com/pb/*",          zone_name = "groupsmix.com" },
-  { pattern = "groupsmix.com/billing/hook/*", zone_name = "groupsmix.com" },
+  { pattern = "yourrank.site/bot/*",         zone_name = "yourrank.site" },
+  { pattern = "yourrank.site/hook/*",        zone_name = "yourrank.site" },
+  { pattern = "yourrank.site/r/*",           zone_name = "yourrank.site" },
+  { pattern = "yourrank.site/pb/*",          zone_name = "yourrank.site" },
+  { pattern = "yourrank.site/billing/hook/*", zone_name = "yourrank.site" },
 ]
 
 [triggers]

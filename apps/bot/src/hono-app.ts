@@ -263,7 +263,7 @@ export function buildHonoApp(): Hono<{ Bindings: Bindings }> {
   // =================================================================
   // 4) STREAMER DASHBOARD (Telegram Login + self-serve UI)
   //    Mounted under /bot so it never collides with the leaderboard
-  //    Worker, which owns the root of groupsmix.com. Cloudflare routes
+  //    Worker, which owns the root of yourrank.site. Cloudflare routes
   //    /bot/* to this Worker (see wrangler.toml).
   // =================================================================
   app.route("/bot", buildDashboard());
