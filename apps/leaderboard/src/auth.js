@@ -8,7 +8,7 @@ import {
   destroyAllUserSessions as _destroyAllUserSessions,
   cookieSet as _cookieSet,
   cookieClear as _cookieClear,
-  readTokenWithLegacy,
+  // SEC-104: readTokenWithLegacy removed (grace period over)
   KV_PREFIX,
 } from "../../../shared/session.js";
 // PBKDF2-SHA256 iteration count.
@@ -99,11 +99,8 @@ const loadUser = (env, uid) =>
     [uid]
   );
 
-// Resolves the current user from the shared session. Uses readTokenWithLegacy
-// (not the shared currentUserId, which only reads gm_session) so that during
-// the cutover grace period an old rk_session cookie still authenticates. The KV
-// prefix is identical (sess:) for both cookie names, so the same token resolves
-// the same userId regardless of which cookie carried it.
+// SEC-104: Resolves the current user from the shared session using the
+// standard readToken (gm_session only; legacy rk_session support removed).
 export async function currentUser(req, env) {
   // SEC-104: legacy shim removed; use standard readToken
   const token = readToken(req);

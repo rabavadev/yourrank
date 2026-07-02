@@ -309,7 +309,10 @@ async function handleLogin(request, env) {
     if (!user || !user.password_hash) return bad("Incorrect email or password", 401);
     const { ok, needsRehash } = await verifyPassword(password, user.password_salt, user.password_hash);
     if (!ok) return bad("Incorrect email or password", 401);
-    if (user.status === "suspended") return bad("This account is suspended. Contact support.", 403);
+    // BE-014: Use generic error even for suspended accounts to prevent
+    // account enumeration. Previously the suspended message confirmed the
+    // email existed, distinguishing it from a wrong-password error.
+    if (user.status === "suspended") return bad("Incorrect email or password", 403);
     // Lazy upgrade: if the stored hash used fewer PBKDF2 iterations than the
     // current target, re-hash at the new count and persist — no password reset
     // needed. Fire-and-forget so login latency isn't dominated by the rehash.
