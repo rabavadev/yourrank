@@ -14,7 +14,7 @@ const MIME = {
   ".css": "text/css; charset=utf-8", ".js": "application/javascript; charset=utf-8",
   ".json": "application/json; charset=utf-8", ".svg": "image/svg+xml",
 };
-const HTML = { "content-type": "text/html; charset=utf-8" };
+const HTML = { "content-type": "text/html; charset=utf-8", "X-Content-Type-Options": "nosniff", "Referrer-Policy": "strict-origin-when-cross-origin" };
 // Hardened headers for the authenticated/app pages (login, signup, forgot,
 // reset, dashboard, admin). The public leaderboard keeps the plain HTML set
 // (it's intentionally iframe-able and loads Google Fonts) so we scope security
@@ -25,7 +25,8 @@ const SECURE_HTML = {
   "content-type": "text/html; charset=utf-8",
   "Strict-Transport-Security": "max-age=31536000; includeSubDomains",
   "X-Content-Type-Options": "nosniff",
-  "Referrer-Policy": "same-origin",
+  "Referrer-Policy": "strict-origin-when-cross-origin",
+    "X-Frame-Options": "SAMEORIGIN",
   "Content-Security-Policy": "default-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; script-src 'self'; connect-src 'self'; frame-ancestors 'self'",
 };
 
@@ -63,29 +64,42 @@ export default {
 
     // --- SEO: robots.txt (SEO-001) ---
     if (path === "/robots.txt") {
-      return new Response("User-agent: *\nAllow: /\nSitemap: https://yourrank.site/sitemap.xml\n", {
+      return new Response("User-agent: *\nAllow: /\nDisallow: /dashboard\nDisallow: /admin\nDisallow: /auth\nDisallow: /billing\nSitemap: https://yourrank.site/sitemap.xml\n", {
         headers: { "content-type": "text/plain; charset=utf-8", "cache-control": "public, max-age=86400" },
       });
     }
 
     // --- SEO: sitemap.xml (SEO-002) ---
     if (path === "/sitemap.xml") {
-      const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
+      const origin = url.origin;
+      let entries = [
+        \`<url><loc>${origin}/</loc><priority>1.0</priority></url>\`,
+        \`<url><loc>${origin}/terms</loc><priority>0.3</priority></url>\`,
+        \`<url><loc>${origin}/privacy</loc><priority>0.3</priority></url>\`,
+        \`<url><loc>${origin}/responsible</loc><priority>0.3</priority></url>\`,
+      ];
+      try {
+        const sites = await query("SELECT slug FROM sites WHERE published=true AND suspended IS NOT TRUE");
+        for (const s of sites) {
+          entries.push(\`<url><loc>${origin}/${encodeURIComponent(s.slug)}</loc><priority>0.8</priority></url>\`);
+        }
+      } catch (e) {
+        console.error("sitemap: site query failed:", String(e?.message || e));
+      }
+      const sitemap = \`<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-<url><loc>https://yourrank.site/</loc></url>
-<url><loc>https://yourrank.site/login</loc></url>
-<url><loc>https://yourrank.site/signup</loc></url>
-<url><loc>https://yourrank.site/terms</loc></url>
-<url><loc>https://yourrank.site/privacy</loc></url>
-</urlset>`;
+${entries.join("\n")}
+</urlset>\`;
       return new Response(sitemap, {
-        headers: { "content-type": "application/xml", "cache-control": "public, max-age=86400" },
+        headers: { "content-type": "application/xml", "cache-control": "public, max-age=3600" },
       });
     }
 
     // --- SEO: favicon.ico (SEO-006) ---
     if (path === "/favicon.ico") {
-      return new Response(null, { status: 204 });
+      return new Response('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1 1"></svg>', {
+        headers: { "content-type": "image/svg+xml", "cache-control": "public, max-age=86400" },
+      });
     }
 
       // --- health check ---

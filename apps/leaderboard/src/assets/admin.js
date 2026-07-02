@@ -7,7 +7,7 @@ async function api(path, opts) {
   const res = await fetch(path, opts);
   const d = await res.json().catch(() => ({}));
   if (res.status === 401) { location.href = "/login"; throw new Error("auth"); }
-  if (res.status === 403) { document.body.innerHTML = "<p style='padding:40px;font-family:system-ui'>Not an admin account. <a href='/dashboard'>Back to dashboard</a></p>"; throw new Error("forbidden"); }
+  if (res.status === 403) { const el = document.getElementById("panel") || document.getElementById("loading") || document.querySelector(".wrap"); if (el) { el.innerHTML = "<p style='padding:24px;font-family:system-ui'>Not an admin account. <a href='/dashboard'>Back to dashboard</a></p>"; el.hidden = false; } throw new Error("forbidden"); }
   return d;
 }
 
