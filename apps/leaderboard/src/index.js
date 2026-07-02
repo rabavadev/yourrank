@@ -10,10 +10,36 @@ import { leaderboard_css, leaderboard_js, app_css, auth_js, dashboard_js, admin_
 import { query, one, exec, getSql } from "./db.js";
 import { shellNavHtml, SHELL_NAV_CSS } from "../../../shared/shell-nav.js";
 
+// SEC-108: CSRF token helpers. Tokens are stored in a __csrf cookie (readable
+// by JS) and must be echoed in a X-CSRF-Token header on every state-changing
+// POST/PUT/DELETE. SameSite=Lax already blocks cross-site POST forms, but
+// this adds defense-in-depth against XSS exfiltration.
+function generateCsrfToken() {
+  return [...crypto.getRandomValues(new Uint8Array(32))].map(b => b.toString(16).padStart(2, "0")).join("");
+}
+function csrfCookie(token) {
+  return `__csrf=${token}; Path=/; Domain=${typeof process !== "undefined" && process.env?.SESSION_COOKIE_DOMAIN || ".yourrank.site"}; Secure; SameSite=Lax; Max-Age=86400`;
+}
+function readCsrfToken(req) {
+  const c = req.headers.get("cookie") || "";
+  const m = c.match(/(?:^|;\s*)__csrf=([^;]+)/);
+  return m ? m[1] : null;
+}
+function verifyCsrf(req) {
+  const cookie = readCsrfToken(req);
+  const header = req.headers.get("x-csrf-token");
+  if (!cookie || !header) return false;
+  // Constant-time comparison
+  if (cookie.length !== header.length) return false;
+  let diff = 0;
+  for (let i = 0; i < cookie.length; i++) diff |= cookie.charCodeAt(i) ^ header.charCodeAt(i);
+  return diff === 0;
+}
+
 const MIME = {
-  ".css": "text/css; charset=utf-8", ".js": "application/javascript; charset=utf-8",
-  ".json": "application/json; charset=utf-8", ".svg": "image/svg+xml",
-};
+    ".css": "text/css; charset=utf-8", ".js": "application/javascript; charset=utf-8",
+    ".json": "application/json; charset=utf-8", ".svg": "image/svg+xml",
+  };
 const HTML = { "content-type": "text/html; charset=utf-8", "X-Content-Type-Options": "nosniff", "Referrer-Policy": "strict-origin-when-cross-origin" };
 // Hardened headers for the authenticated/app pages (login, signup, forgot,
 // reset, dashboard, admin). The public leaderboard keeps the plain HTML set
@@ -111,8 +137,13 @@ ${entries.join("\n")}
       }
 
     // --- pages ---
-    if (path === "/" || path === "/index.html") return new Response(PAGES.index, { headers: HTML });
-    if (path === "/login" || path === "/login.html") return new Response(PAGES.login, { headers: SECURE_HTML });
+    // SEC-108: Issue CSRF cookie on every page load so the JS client can
+    // echo it back as X-CSRF-Token on API calls.
+    const csrfToken = generateCsrfToken();
+    const csrfHeader = { "set-cookie": csrfCookie(csrfToken) };
+
+    if (path === "/" || path === "/index.html") return new Response(PAGES.index, { headers: { ...HTML, ...csrfHeader } });
+    if (path === "/login" || path === "/login.html") return new Response(PAGES.login, { headers: { ...SECURE_HTML, ...csrfHeader } });
   // POST /logout only (BE-003). Previously GET, which allowed CSRF via
   // <img src="/logout">. Now only POST is accepted. The in-page buttons
   // already hit POST /api/auth/logout; the nav link should use a form POST.
@@ -120,7 +151,7 @@ ${entries.join("\n")}
     await destroySession(env, readToken(request));
     return new Response(null, { status: 302, headers: { "set-cookie": cookieClear(), location: "/login" } });
   }
-    if (path === "/signup" || path === "/signup.html") return new Response(PAGES.signup, { headers: SECURE_HTML });
+    if (path === "/signup" || path === "/signup.html") return new Response(PAGES.signup, { headers: { ...SECURE_HTML, ...csrfHeader } });
     if (path === "/dashboard" || path === "/dashboard.html") {
       try {
         const user = await currentUser(request, env);
@@ -128,7 +159,7 @@ ${entries.join("\n")}
         const html = PAGES.dashboard
           .replace("<!--GM_NAV_CSS-->", `<style>${SHELL_NAV_CSS}</style>`)
           .replace("<!--GM_NAV-->", shellNavHtml({ activePath: "/dashboard", user }));
-        return new Response(html, { headers: SECURE_HTML });
+        return new Response(html, { headers: { ...SECURE_HTML, ...csrfHeader } });
       } catch (e) {
         // A transient DB/Hyperdrive hiccup on currentUser used to bubble as a
         // raw Cloudflare 1101 after the session cookie redirected past the
@@ -144,7 +175,7 @@ ${entries.join("\n")}
         const html = PAGES.analytics
           .replace("<!--GM_NAV_CSS-->", `<style>${SHELL_NAV_CSS}</style>`)
           .replace("<!--GM_NAV-->", shellNavHtml({ activePath: "/dashboard/analytics", user }));
-        return new Response(html, { headers: SECURE_HTML });
+        return new Response(html, { headers: { ...SECURE_HTML, ...csrfHeader } });
       } catch (e) {
         console.error("analytics render failed:", String(e?.message || e));
         return new Response("Analytics couldn't load right now — please refresh.", { status: 500, headers: { "content-type": "text/plain; charset=utf-8" } });
@@ -157,22 +188,22 @@ ${entries.join("\n")}
         const html = PAGES.billing
           .replace("<!--GM_NAV_CSS-->", `<style>${SHELL_NAV_CSS}</style>`)
           .replace("<!--GM_NAV-->", shellNavHtml({ activePath: "/dashboard/billing", user }));
-        return new Response(html, { headers: SECURE_HTML });
+        return new Response(html, { headers: { ...SECURE_HTML, ...csrfHeader } });
       } catch (e) {
         console.error("billing render failed:", String(e?.message || e));
         return new Response("Billing couldn't load right now — please refresh.", { status: 500, headers: { "content-type": "text/plain; charset=utf-8" } });
       }
     }
-    if (path === "/forgot") return new Response(PAGES.forgot, { headers: SECURE_HTML });
-    if (path === "/reset") return new Response(PAGES.reset, { headers: SECURE_HTML });
+    if (path === "/forgot") return new Response(PAGES.forgot, { headers: { ...SECURE_HTML, ...csrfHeader } });
+    if (path === "/reset") return new Response(PAGES.reset, { headers: { ...SECURE_HTML, ...csrfHeader } });
     if (path === "/admin") {
       const u = await currentUser(request, env);
       if (!u || !u.is_admin) return new Response('Not found', { status: 404 });
-      return new Response(PAGES.admin, { headers: SECURE_HTML });
+      return new Response(PAGES.admin, { headers: { ...SECURE_HTML, ...csrfHeader } });
     }
-    if (path === "/terms") return new Response(PAGES.terms, { headers: HTML });
-    if (path === "/privacy") return new Response(PAGES.privacy, { headers: HTML });
-    if (path === "/responsible") return new Response(PAGES.responsible, { headers: HTML });
+    if (path === "/terms") return new Response(PAGES.terms, { headers: { ...HTML, ...csrfHeader } });
+    if (path === "/privacy") return new Response(PAGES.privacy, { headers: { ...HTML, ...csrfHeader } });
+    if (path === "/responsible") return new Response(PAGES.responsible, { headers: { ...HTML, ...csrfHeader } });
 
     // --- streamer logos (uploaded via dashboard, served as real images) ---
     if (path.startsWith("/logo/") && method === "GET") {
@@ -185,13 +216,25 @@ ${entries.join("\n")}
       return new Response(bytes, { headers: { "content-type": m[1], "cache-control": "public, max-age=3600" } });
     }
 
-    // --- API: auth ---
+    // --- API: auth (CSRF-exempt: callers may not have a CSRF cookie yet) ---
     if (path === "/api/auth/signup" && method === "POST") return handleSignup(request, env);
     if (path === "/api/auth/login" && method === "POST") return handleLogin(request, env);
-    if (path === "/api/auth/logout" && method === "POST") return handleLogout(request, env);
     if (path === "/api/auth/me" && method === "GET") return handleMe(request, env);
     if (path === "/api/auth/forgot" && method === "POST") return handleForgot(request, env);
     if (path === "/api/auth/reset" && method === "POST") return handleReset(request, env);
+
+    // --- SEC-108: CSRF check for all authenticated state-changing requests ---
+    // Exemptions: signup/login/forgot/reset (no session yet), IPN (server-to-server webhook),
+    // /api/lead and /api/track/copy (public, no session), and GET/HEAD/OPTIONS (idempotent).
+    const CSRF_EXEMPT = new Set(["/api/billing/ipn", "/api/lead", "/api/track/copy"]);
+    if (["POST", "PUT", "DELETE", "PATCH"].includes(method)) {
+      if (!verifyCsrf(request) && !CSRF_EXEMPT.has(path)) {
+        return bad("CSRF validation failed. Please refresh the page.", 403);
+      }
+    }
+
+    // --- API: authenticated actions (CSRF required) ---
+    if (path === "/api/auth/logout" && method === "POST") return handleLogout(request, env);
       if (path === "/api/account/delete" && method === "POST") return handleAccountDelete(request, env);
 
     // --- API: site + leads ---

@@ -1,6 +1,7 @@
 /* Billing page — show current plan + (if free) a checkout button, (if pro) the
  * Pro card. Reuses /api/site (for plan + expiry) and /api/billing/checkout. */
 const $ = (s) => document.getElementById(s);
+function getCsrf() { const m = document.cookie.match(/(?:^|;\s*)__csrf=([^;]+)/); return m ? m[1] : ""; }
 
 const PRO_DAYS = 31;
 
@@ -47,7 +48,7 @@ function fmtExp(ms) {
     const orig = btn.textContent;
     btn.textContent = "Opening checkout…";
     try {
-      const r = await fetch("/api/billing/checkout", { method: "POST" });
+      const r = await fetch("/api/billing/checkout", { method: "POST", headers: { "x-csrf-token": getCsrf() } });
       const d = await r.json();
       if (r.ok && d.url) {
         window.location.href = d.url;

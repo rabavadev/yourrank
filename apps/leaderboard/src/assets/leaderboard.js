@@ -107,4 +107,18 @@ function startCountdown(endsAt) {
   tick(); setInterval(tick, 1000);
 }
 function nextMonthUTC() { const n = new Date(); return Date.UTC(n.getUTCFullYear(), n.getUTCMonth() + 1, 1); }
-document.addEventListener("DOMContentLoaded", boot);
+document.addEventListener("DOMContentLoaded", () => {
+  boot();
+  // A11Y-103: mobile hamburger toggle
+  const toggle = $(".nav-toggle"), links = $(".nav-links");
+  if (toggle && links) {
+    toggle.addEventListener("click", () => {
+      const open = links.classList.toggle("open");
+      toggle.setAttribute("aria-expanded", String(open));
+    });
+    // Close on link click (single-page nav)
+    links.addEventListener("click", (e) => {
+      if (e.target.closest("a")) { links.classList.remove("open"); toggle.setAttribute("aria-expanded", "false"); }
+    });
+  }
+});

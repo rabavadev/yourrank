@@ -1,4 +1,6 @@
 /* Dashboard: load the user's site, edit brand + players, save back, manage plan. */
+// SEC-108: Read CSRF cookie and include it on state-changing requests.
+function getCsrf() { const m = document.cookie.match(/(?:^|;\s*)__csrf=([^;]+)/); return m ? m[1] : ""; }
 const $ = (id) => document.getElementById(id);
 let SLUG = null, EXTRA = {}, ME = null;
 let LOGO; // undefined = unchanged, null = remove, string = new data URI
@@ -49,7 +51,7 @@ function renderPlan(){
 async function checkout(btn){
   btn.disabled = true; const orig = btn.textContent; btn.textContent = "Opening checkout…";
   try {
-    const res = await fetch("/api/billing/checkout", { method: "POST" });
+    const res = await fetch("/api/billing/checkout", { method: "POST", headers: { "x-csrf-token": getCsrf() } });
     const d = await res.json();
     if (res.ok && d.ok && d.url) { location.href = d.url; return; }
     $("status").textContent = d.error || "Couldn't start checkout.";
@@ -159,7 +161,7 @@ function renderArchives(list){
     row.querySelector(".arch-label").textContent = a.label;
     row.querySelector(".arch-del").addEventListener("click", async ()=>{
       if (!confirm(`Delete the "${a.label}" archive? It disappears from your page too.`)) return;
-      const res = await fetch("/api/site/archive/delete",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({id:a.id})});
+      const res = await fetch("/api/site/archive/delete",{method:"POST",headers:{"content-type":"application/json","x-csrf-token":getCsrf()},body:JSON.stringify({id:a.id})});
       const d = await res.json();
       if (res.ok && d.ok) { row.remove(); if(!$("archList").children.length) $("archEmpty").hidden=false; $("status").textContent="Archive deleted."; }
       else $("status").textContent = d.error || "Couldn't delete that.";
@@ -176,10 +178,10 @@ $("a_go").addEventListener("click", async ()=>{
   btn.disabled = true; btn.textContent = "Closing out…";
   try {
     // Persist any unsaved edits first so the snapshot matches what's on screen.
-    const saveRes = await fetch("/api/site",{method:"PUT",headers:{"content-type":"application/json"},body:JSON.stringify(collect())});
+    const saveRes = await fetch("/api/site",{method:"PUT",headers:{"content-type":"application/json","x-csrf-token":getCsrf()},body:JSON.stringify(collect())});
     const saved = await saveRes.json();
     if (!saveRes.ok || !saved.ok) { status.textContent = saved.error || "Couldn't save before archiving."; btn.disabled=false; btn.textContent="Close out period"; return; }
-    const res = await fetch("/api/site/archive",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({label:$("a_label").value.trim(),clear})});
+    const res = await fetch("/api/site/archive",{method:"POST",headers:{"content-type":"application/json","x-csrf-token":getCsrf()},body:JSON.stringify({label:$("a_label").value.trim(),clear})});
     const d = await res.json();
     if (res.ok && d.ok) {
       const p = await (await fetch("/api/site")).json();
@@ -192,7 +194,7 @@ $("a_go").addEventListener("click", async ()=>{
 });
 $("save").addEventListener("click", async ()=>{
   const btn=$("save"),status=$("status"); btn.disabled=true;btn.textContent="Saving…";status.textContent="";
-  try { const res=await fetch("/api/site",{method:"PUT",headers:{"content-type":"application/json"},body:JSON.stringify(collect())}); const d=await res.json(); if(res.ok&&d.ok) status.textContent="Saved. Your page is updated."; else status.textContent=d.error||"Save failed."; }
+  try { const res=await fetch("/api/site",{method:"PUT",headers:{"content-type":"application/json","x-csrf-token":getCsrf()},body:JSON.stringify(collect())}); const d=await res.json(); if(res.ok&&d.ok) status.textContent="Saved. Your page is updated."; else status.textContent=d.error||"Save failed."; }
   catch{ status.textContent="Network error."; }
   btn.disabled=false;btn.textContent="Save changes"; setTimeout(()=>status.textContent="",6000);
 });
@@ -214,7 +216,7 @@ async function loadStats(){
   if (s.last30.views===0 && s.last30.copies===0 && s.last30.clicks===0) $("statsEmpty").hidden = false;
 }
 
-$("logout").addEventListener("click", async (e)=>{ e.preventDefault(); await fetch("/api/auth/logout",{method:"POST"}); location.href="/login"; });
+$("logout").addEventListener("click", async (e)=>{ e.preventDefault(); await fetch("/api/auth/logout",{method:"POST",headers:{"x-csrf-token":getCsrf()}}); location.href="/login"; });
 $("upgrade").addEventListener("click",(e)=>{ e.preventDefault(); checkout($("goPro")); });
 $("goPro").addEventListener("click",()=>checkout($("goPro")));
 init();
