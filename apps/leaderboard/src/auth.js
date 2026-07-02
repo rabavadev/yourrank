@@ -82,7 +82,8 @@ export const destroyAllUserSessions = (env, userId) => _destroyAllUserSessions(e
 export const cookieSet = (token) => _cookieSet(token);
 export const cookieClear = () => _cookieClear();
 // readToken honors a legacy rk_session cookie during the cutover grace period.
-export const readToken = (req) => readTokenWithLegacy(req);
+// SEC-104: use shared readToken directly (legacy shim removed)
+export { readToken } from "../../../shared/session.js";
 
 // Loads the full user row from Postgres for a resolved user id.
 // TIMESTAMPTZ columns come back as epoch-ms so downstream code (effectivePlan,
@@ -104,7 +105,8 @@ const loadUser = (env, uid) =>
 // prefix is identical (sess:) for both cookie names, so the same token resolves
 // the same userId regardless of which cookie carried it.
 export async function currentUser(req, env) {
-  const token = readTokenWithLegacy(req);
+  // SEC-104: legacy shim removed; use standard readToken
+  const token = readToken(req);
   if (!token) return null;
   const uid = await env.SESSIONS.get(KV_PREFIX + token);
   if (!uid) return null;

@@ -143,15 +143,5 @@ export async function currentUser(req, env, loadUser) {
   return loadUser(env, uid);
 }
 
-// ---- migration shim: accept a legacy rk_session cookie once ----
-// During the cutover, old leaderboard sessions live under the OLD cookie name
-// (rk_session) and OLD KV prefix (sess:) written by the pre-merge auth.js.
-// The KV prefix is identical (sess:), so the only difference is the cookie name.
-// This reads either cookie; call it instead of readToken during the grace period.
-export function readTokenWithLegacy(req) {
-  const fresh = readToken(req);
-  if (fresh) return fresh;
-  const c = req.headers.get("cookie") || "";
-  const m = c.match(/(?:^|;\s*)rk_session=([^;]+)/);
-  return m ? m[1] : null;
-}
+// SEC-104: Legacy rk_session cookie support removed. The migration grace
+// period is over. Only gm_session is accepted.
