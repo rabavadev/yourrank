@@ -11,8 +11,8 @@ async function init(){
   let me; try { me = await (await fetch("/api/auth/me")).json(); } catch { me=null; }
   if (!me || !me.ok || !me.user) { location.href="/login"; return; }
   ME = me.user;
-  $("userEmail").textContent = ME.email;
-  if (ME.isAdmin) $("adminLink").hidden = false;
+  const emailEl = $("userEmail"); if (emailEl) emailEl.textContent = ME.email;
+  if (ME.isAdmin) { const adminEl = $("adminLink"); if (adminEl) adminEl.hidden = false; }
   renderPlan();
   const res = await fetch("/api/site"); const p = await res.json();
   if (!p.ok) {
