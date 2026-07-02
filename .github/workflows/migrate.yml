@@ -1,0 +1,72 @@
+name: Migrate DB
+
+# Keeps the live Supabase Postgres in sync with the repo. Runs the one-time
+# setup SQL (schema + partitions) and every migration in db/migrations/ against
+# the live database, idempotently, on every push to main (and manually).
+#
+# All SQL files are idempotent (CREATE...IF NOT EXISTS / DO $$ guards), so
+# re-running is safe and prints "already exists" notices on subsequent runs.
+#
+# One GitHub repo secret is REQUIRED (set once at repo > Settings > Secrets >
+# Actions > New repository secret):
+#   SUPABASE_DB_URL   the Supabase DIRECT connection string
+#                     (postgresql://postgres.<ref>:<pw>@db.<ref>.supabase.co:5432/postgres)
+#                     — same string you used for `wrangler hyperdrive create`.
+# Do NOT use the pooler (port 6543) string here; migrations may run DDL that the
+# transaction pooler dislikes.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "db/**"
+      - ".github/workflows/migrate.yml"
+  workflow_dispatch: {}
+
+concurrency:
+  group: db-migrate
+  cancel-in-progress: false # never cancel mid-migration; a second run could race
+
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Fail fast if SUPABASE_DB_URL secret isn't set
+        run: |
+          if [ -z "${{ secrets.SUPABASE_DB_URL }}" ]; then
+            echo "::error::SUPABASE_DB_URL repo secret is not set. See DEPLOY.md §8."
+            exit 1
+          fi
+
+      - name: Install psql (PostgreSQL client)
+        run: sudo apt-get update && sudo apt-get install -y postgresql-client
+
+      - name: Apply base schema (idempotent)
+        env:
+          PGPASSWORD: ${{ secrets.SUPABASE_DB_URL }}
+        run: psql "$SUPABASE_DB_URL" -v ON_ERROR_STOP=1 -f db/schema.sql
+
+      - name: Seed click partitions (idempotent)
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: psql "$SUPABASE_DB_URL" -v ON_ERROR_STOP=1 -f db/partitions.sql
+
+      - name: Apply numbered migrations (idempotent, in order)
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          set -e
+          shopt -s nullglob
+          for f in db/migrations/*.sql; do
+            echo "::group::Applying $f"
+            psql "$SUPABASE_DB_URL" -v ON_ERROR_STOP=1 -f "$f"
+            echo "::endgroup::"
+          done
+
+      - name: Report what indexes exist now (sanity)
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          psql "$SUPABASE_DB_URL" -c "SELECT indexname FROM pg_indexes WHERE schemaname='public' AND indexname IN ('uq_payments_stars_txref','idx_click_daily_link') ORDER BY indexname;" || true
