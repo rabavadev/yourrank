@@ -195,19 +195,6 @@ ${entries.join("\n")}
         return new Response("Billing couldn't load right now — please refresh.", { status: 500, headers: { "content-type": "text/plain; charset=utf-8" } });
       }
     }
-    if (path === "/dashboard/referral") {
-      try {
-        const user = await currentUser(request, env);
-        if (!user) return Response.redirect(new URL("/login", url), 302);
-        const html = PAGES.referral
-          .replace("<!--GM_NAV_CSS-->", `<style>${SHELL_NAV_CSS}</style>`)
-          .replace("<!--GM_NAV-->", shellNavHtml({ activePath: "/dashboard/referral", user }));
-        return new Response(html, { headers: { ...SECURE_HTML, ...csrfHeader } });
-      } catch (e) {
-        console.error("referral render failed:", String(e?.message || e));
-        return new Response("Referral page couldn't load right now — please refresh.", { status: 500, headers: { "content-type": "text/plain; charset=utf-8" } });
-      }
-    }
     if (path === "/dashboard/bot/setup") {
       try {
         const user = await currentUser(request, env);
@@ -295,12 +282,7 @@ ${entries.join("\n")}
     if (path === "/api/billing/checkout" && method === "POST") return handleCheckout(request, env);
     if (path === "/api/billing/ipn" && method === "POST") return handleIpn(request, env);
 
-    // --- API: referral program ---
-    if (path === "/api/referral/code" && method === "GET") return handleReferralCode(request, env);
-    if (path === "/api/referral/claim" && method === "POST") return handleReferralClaim(request, env);
-    if (path === "/api/referral/stats" && method === "GET") return handleReferralStats(request, env);
-
-    // --- API: bot connect ---
+    // --- tracked Join redirect: /go/<slug> → streamer's referral URL ---
     if (path === "/api/bot/connect" && method === "POST") return handleBotConnect(request, env);
 
     // --- API: admin ---

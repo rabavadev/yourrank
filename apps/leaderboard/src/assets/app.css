@@ -131,3 +131,23 @@ table.admin-table td.note{max-width:260px;color:var(--ink-soft)}
 .stat-bar:hover{opacity:1}
 .stat-chart-lbl{display:flex;justify-content:space-between;margin-top:6px;font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-mute)}
 @media (max-width:640px){.stat-tiles{grid-template-columns:repeat(2,1fr)}}
+
+/* --- chart tooltip --- */
+.stat-chart{position:relative}
+.chart-tooltip{position:absolute;bottom:100%;transform:translateY(-6px);background:var(--panel);border:1px solid var(--line-2);border-radius:8px;padding:8px 12px;font-size:12px;color:var(--ink);pointer-events:none;z-index:10;white-space:nowrap;box-shadow:0 4px 16px rgba(0,0,0,.4);line-height:1.5}
+.chart-tooltip b{color:var(--accent);font-family:var(--mono);font-size:11px;letter-spacing:.05em}
+
+/* --- activity heatmap --- */
+.heatmap-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.heatmap{display:grid;grid-template-columns:36px repeat(24,1fr);gap:2px;min-width:480px}
+.heatmap-corner{width:36px}
+.heatmap-hlabel{font-family:var(--mono);font-size:9px;letter-spacing:.06em;color:var(--ink-mute);text-align:center;padding-bottom:2px}
+.heatmap-dlabel{font-family:var(--mono);font-size:10px;letter-spacing:.06em;color:var(--ink-soft);display:flex;align-items:center;padding-right:4px}
+.heatmap-cell{aspect-ratio:1;border-radius:3px;min-width:12px;border:1px solid rgba(255,255,255,.04);cursor:default;transition:transform .1s}
+.heatmap-cell:hover{transform:scale(1.3);z-index:2}
+.heatmap-loading{color:var(--ink-mute);font-size:13px;padding:18px;text-align:center}
+
+/* --- referrer table --- */
+table.ref-table{width:100%;border-collapse:collapse;font-size:14px}
+table.ref-table th{text-align:left;font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-mute);padding:8px 8px;border-bottom:1px solid var(--line)}
+table.ref-table td{padding:8px 8px;border-bottom:1px solid var(--line);color:var(--ink-soft)}

@@ -225,13 +225,18 @@ analytics: `<!DOCTYPE html><html lang="en"><head>
 <div class="stat-tile"><span class="stat-num" id="views30">–</span><span class="stat-lbl">Views · 30d</span></div>
 <div class="stat-tile"><span class="stat-num" id="copies30">–</span><span class="stat-lbl">Code copies · 30d</span></div>
 <div class="stat-tile"><span class="stat-num" id="clicks30">–</span><span class="stat-lbl">Join clicks · 30d</span></div></div>
-<div class="stat-chart"><div class="stat-bars" id="bars" title="Daily views, last 14 days"></div><div class="stat-chart-lbl"><span id="from"></span><span>Daily views, last 14 days</span><span>today</span></div></div>
+<div class="stat-chart"><div class="stat-bars" id="bars"></div><div class="stat-chart-lbl"><span id="from"></span><span>Daily views, last 14 days</span><span>today</span></div><div class="chart-tooltip" id="chartTooltip" hidden></div></div>
 <p class="hint" id="empty" hidden>No views yet. Share your page link in your stream panels and Discord to get it moving.</p></div>
 <div class="card"><h2>Today</h2><p class="card-sub">Live since midnight UTC.</p>
 <div class="stat-tiles">
 <div class="stat-tile"><span class="stat-num" id="viewsToday">–</span><span class="stat-lbl">Views today</span></div>
 <div class="stat-tile"><span class="stat-num" id="copiesToday">–</span><span class="stat-lbl">Code copies today</span></div>
-<div class="stat-tile"><span class="stat-num" id="clicksToday">–</span><span class="stat-lbl">Join clicks today</span></div></div></div></div>
+<div class="stat-tile"><span class="stat-num" id="clicksToday">–</span><span class="stat-lbl">Join clicks today</span></div></div></div>
+<div class="card"><h2>Activity heatmap</h2><p class="card-sub">When your page gets the most traffic — day of week × hour (UTC), last 30 days. Darker green = more views.</p>
+<div class="heatmap-wrap" id="heatmapWrap"><div class="heatmap-loading">Loading…</div></div></div>
+<div class="card"><h2>Top referrers</h2><p class="card-sub">Where your visitors come from — top 5 domains in the last 30 days.</p>
+<table class="ref-table" id="refTable"><thead><tr><th>Domain</th><th class="ta-r">Views</th></tr></thead><tbody id="refBody"></tbody></table>
+<div class="empty" id="refEmpty" hidden>No referrer data yet.</div></div></div>
 <div class="skel" id="loading">Loading analytics…</div></div>
 <script src="/assets/analytics.js"></script></body></html>`,
 
