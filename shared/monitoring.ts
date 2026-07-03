@@ -5,16 +5,22 @@
 // The webhook is optional — if the env var is not set, this is a silent no-op.
 // The caller's try/catch should still console.error regardless.
 
-/**
- * Build a Discord error embed and POST it to the monitoring webhook.
- * @param {object} opts
- * @param {string} opts.webhookUrl — Discord webhook URL (from env)
- * @param {string} opts.title — embed title (e.g. "YourRank Error")
- * @param {string} opts.message — error message / stack
- * @param {string} [opts.path] — request path or cron trigger
- * @param {string} [opts.worker] — which worker ("leaderboard" | "bot")
- * @param {number} [opts.color] — embed color (default red 0xff4444)
- */
+interface ErrorEmbedOpts {
+  webhookUrl: string;
+  title?: string;
+  message: string;
+  path?: string;
+  worker?: string;
+  color?: number;
+}
+
+interface CronSummaryOpts {
+  webhookUrl: string;
+  title: string;
+  fields: Array<{ name: string; value: string; inline?: boolean }>;
+  color?: number;
+}
+
 export async function sendErrorToDiscord({
   webhookUrl,
   title = "YourRank Error",
@@ -22,7 +28,7 @@ export async function sendErrorToDiscord({
   path,
   worker,
   color = 0xff4444,
-}) {
+}: ErrorEmbedOpts): Promise<void> {
   if (!webhookUrl) return;
   const fields = [
     { name: "Error", value: `\`\`\`\n${String(message).slice(0, 900)}\n\`\`\``, inline: false },
@@ -54,20 +60,12 @@ export async function sendErrorToDiscord({
   }
 }
 
-/**
- * Build and send a cron summary embed (e.g. plan downgrade results).
- * @param {object} opts
- * @param {string} opts.webhookUrl
- * @param {string} opts.title
- * @param {Array<{name: string, value: string, inline?: boolean}>} opts.fields
- * @param {number} [opts.color] — default green
- */
 export async function sendCronSummaryToDiscord({
   webhookUrl,
   title,
   fields,
   color = 0x57f287,
-}) {
+}: CronSummaryOpts): Promise<void> {
   if (!webhookUrl) return;
   const embed = {
     title,
