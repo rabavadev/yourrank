@@ -27,7 +27,7 @@ export const DEFAULT_EXTRA = {
 // All site columns except logo_data (base64 image, up to 180KB) — that's only
 // needed by the /logo/:slug endpoint and saveSite(), which fetch it separately.
 // PERF-004 / PERF-107: avoid SELECT * to prevent 180KB+ transfers on every page.
-const SITE_COLUMNS = "id, user_id, slug, name, tagline, casino, code, cta_url, prize_pool, period, ends_at, reset_note, blurb, extra_json, published, theme_json, updated_at";
+const SITE_COLUMNS = "id, user_id, slug, name, tagline, casino, code, cta_url, prize_pool, period, ends_at, reset_note, blurb, extra_json, published, theme_json, updated_at, custom_domain, domain_status";
 
 // Two-tier cache: L1 in-memory Map (per-isolate, instant) + L2 KV (cross-isolate, 30s TTL).
 // On Cloudflare Workers, each isolate has its own L1 Map. KV ensures that after

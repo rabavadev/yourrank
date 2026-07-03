@@ -46,6 +46,7 @@ id = "f24c020e169848448e4ab9ca7d24ac23"
 
 [vars]
 APP_NAME = "YourRank"
+CF_ZONE_ID = "dd79a3ac13643b94732f2fef6ce3b1f5"
 
 # --- Secrets (set via `wrangler secret put <NAME>`), NOT stored here: ---
 #   DATABASE_URL            (fallback if Hyperdrive isn't bound)
@@ -81,9 +82,9 @@ APP_NAME = "YourRank (Staging)"
 binding = "SESSIONS"
 id = "e0b6cba066ad4168ad76629f23b5111d"
 
-# Staging Hyperdrive (points at the staging Supabase project)
+# Staging Hyperdrive — TEMPORARILY sharing production DB.
+# TODO: Create a separate staging Supabase project and point this at it.
 # Create with: npx wrangler hyperdrive create yourrank-staging-pg --connection-string="..."
-# Then paste the printed id below:
 [[env.staging.hyperdrive]]
 binding = "HYPERDRIVE"
-id = "STAGING_HYPERDRIVE_ID_HERE"
+id = "f24c020e169848448e4ab9ca7d24ac23"

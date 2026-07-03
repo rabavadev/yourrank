@@ -280,6 +280,51 @@ function renderDomain(){
   const domainLock = $("domainLock");
   if (domainBody) domainBody.hidden = !pro;
   if (domainLock) domainLock.hidden = pro;
+
+  // Domain verify button
+  const verifyBtn = $("domainVerify");
+  if (verifyBtn) {
+    verifyBtn.onclick = async () => {
+      const domain = $("f_domain").value.trim().toLowerCase();
+      if (!domain) { $("domainStatus").textContent = "Enter a domain first."; return; }
+      $("domainStatus").textContent = "Verifying…";
+      verifyBtn.disabled = true;
+      try {
+        const body = { domain };
+        if (ACTIVE_SITE_ID) body.siteId = ACTIVE_SITE_ID;
+        const res = await fetch("/api/site/domain/verify", {
+          method: "POST",
+          headers: { "content-type": "application/json", "x-csrf-token": getCsrf() },
+          body: JSON.stringify(body),
+        });
+        const d = await res.json();
+        if (d.ok) {
+          renderDomainStatus(d.status, d.message);
+        } else {
+          $("domainStatus").innerHTML = `<span style="color:#ff6b6b">${esc(d.error || "Verification failed.")}</span>`;
+        }
+      } catch {
+        $("domainStatus").innerHTML = `<span style="color:#ff6b6b">Network error.</span>`;
+      }
+      verifyBtn.disabled = false;
+    };
+  }
+}
+
+function renderDomainStatus(status, message) {
+  const el = $("domainStatus");
+  if (!el) return;
+  if (status === "active") {
+    el.innerHTML = `<span style="color:#4ade80">✅ ${esc(message || "TLS active")}</span>`;
+  } else if (status === "pending") {
+    el.innerHTML = `<span style="color:#fbbf24">⏳ ${esc(message || "TLS provisioning in progress")}</span>`;
+  } else if (status === "error") {
+    el.innerHTML = `<span style="color:#ff6b6b">❌ ${esc(message || "Error")}</span>`;
+  } else if (status === "saved") {
+    el.innerHTML = `<span style="color:#5ad9ff">💾 ${esc(message || "Domain saved")}</span>`;
+  } else {
+    el.textContent = "";
+  }
 }
 
 /* --- past winners / close out --- */
