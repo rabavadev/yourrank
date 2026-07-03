@@ -108,6 +108,7 @@ export function buildDashboard(): Hono<{ Bindings: DashBindings }> {
     if (!c.res.headers.has("Content-Security-Policy")) {
       c.header("Content-Security-Policy", "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:;");
     }
+    c.res.headers.set("Cache-Control", "no-store, no-cache, must-revalidate");
   });
 
   // ---- auth ----
@@ -431,7 +432,6 @@ export function buildDashboard(): Hono<{ Bindings: DashBindings }> {
       `SELECT display_name, email, plan FROM users WHERE id=$1`,
       [uid]
     );
-    c.header("Cache-Control", "no-store, no-cache, must-revalidate");
     return c.html(appHtml(user ?? { display_name: "", email: "", plan: "free" }));
   });
 
