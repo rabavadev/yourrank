@@ -69,3 +69,54 @@ jobs:
           workingDirectory: apps/bot
           command: deploy
           wranglerVersion: "4.106.0"
+
+  smoke-test:
+    needs: [deploy-leaderboard, deploy-bot]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Wait for Cloudflare propagation
+        run: sleep 15
+
+      - name: "Smoke: leaderboard (yourrank.site)"
+        run: |
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" -L --max-time 20 https://yourrank.site/)
+          if [ "$STATUS" != "200" ]; then
+            echo "FAIL: leaderboard returned HTTP $STATUS (expected 200)"
+            exit 1
+          fi
+          echo "OK: leaderboard HTTP $STATUS"
+
+      - name: "Smoke: bot worker + database"
+        run: |
+          # GET /r/:slug queries the DB.
+          # 404 = Worker up + DB connected (slug doesn't exist — expected).
+          # 500 = Worker up but DB is down.
+          # curl error = Worker not reachable.
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 20 https://yourrank.site/r/smoke-probe-ci)
+          if [ "$STATUS" = "404" ]; then
+            echo "OK: bot worker + DB healthy (HTTP 404 — slug not found, as expected)"
+          elif [ "$STATUS" = "500" ]; then
+            echo "FAIL: bot DB appears to be down (HTTP 500)"
+            exit 1
+          else
+            echo "FAIL: unexpected HTTP $STATUS from bot worker"
+            exit 1
+          fi
+
+      - name: "Smoke: bot dashboard"
+        run: |
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 20 https://yourrank.site/bot/dashboard)
+          if [ "$STATUS" != "200" ]; then
+            echo "FAIL: bot dashboard returned HTTP $STATUS (expected 200)"
+            exit 1
+          fi
+          echo "OK: bot dashboard HTTP $STATUS"
+
+      - name: Summarise failure
+        if: failure()
+        run: |
+          echo "==========================================="
+          echo "SMOKE TEST FAILED — deploy may be broken."
+          echo "Commit: ${{ github.sha }}"
+          echo "Check https://yourrank.site manually."
+          echo "==========================================="
