@@ -22,7 +22,7 @@ export function priceUsd(env, plan = "pro") {
 export function effectivePlan(user) {
   if (!user || user.status === "suspended") return "free";
   const plan = String(user.plan || "free").toLowerCase();
-  const expired = user.plan_expires_at && Number(user.plan_expires_at) > 0 && Number(user.plan_expires_at) <= Date.now();
+  const expired = user.plan_expires_at != null && Number(user.plan_expires_at) <= Date.now();
   if (expired) return "free";
   if (["agency", "pro", "starter"].includes(plan)) return plan;
   return "free";

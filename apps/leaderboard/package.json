@@ -12,7 +12,8 @@
     "build": "node build.js",
     "predeploy": "node build.js",
     "deploy": "wrangler deploy",
-    "dev": "wrangler dev"
+    "dev": "wrangler dev",
+    "test": "bun test"
   },
   "type": "module",
   "dependencies": {
