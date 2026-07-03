@@ -1,10 +1,10 @@
 import { hashPassword, verifyPassword, uuid, newToken, createSession, destroySession, destroyAllUserSessions, currentUser, requireUser, isEmail, slugify, RESERVED, cookieSet, cookieClear, readToken, json, bad, ok, readJson, rateLimit, clientIp, handleAccountDelete } from "./auth.js";
 import { sendErrorToDiscord } from "../../../shared/monitoring.js";
-import { DEFAULT_EXTRA, getPublicSite, getUserSite, getUserSiteById, getUserBoardsList, saveSite, getByUser, getAllBoards, createBoard, invalidateUserCache, createArchive, deleteArchive, ARCHIVE_LIMITS } from "./site.js";
+import { DEFAULT_EXTRA, getPublicSite, getUserSite, getUserSiteById, getUserBoardsList, saveSite, getByUser, getBoardById, getAllBoards, createBoard, invalidateSiteCache, invalidateUserCache, createArchive, deleteArchive, ARCHIVE_LIMITS } from "./site.js";
 import { renderLeaderboard } from "./render.js";
 import { PAGES } from "./pages.js";
 import { effectivePlan, PLAN_LIMITS, BOARD_LIMITS, PLAN_PRICES, priceUsd, handleCheckout, handleCheckoutLifetime, handleIpn, activatePlan, activatePro } from "./billing.js";
-import { handleOverview, handleUsers, handleLeads, handlePayments, handleAction } from "./admin.js";
+import { handleOverview, handleUsers, handleLeads, handlePayments, handleAction, handle2faEnable, handle2faVerify, handle2faStatus } from "./admin.js";
 import { sendEmail, resetEmail } from "./email.js";
 import { bumpStat, getStats, getHeatmap, getTopReferrers } from "./stats.js";
 import { leaderboard_css, leaderboard_js, app_css, auth_js, dashboard_js, admin_js, landing_css, landing_js, analytics_js, billing_js, bot_setup_js, overlay_js } from "./assets_bundled.js";
@@ -289,6 +289,16 @@ ${entries.join("\n")}
     if (path === "/admin") {
       const u = await currentUser(request, env);
       if (!u || !u.is_admin) return new Response('Not found', { status: 404 });
+      // Check if 2FA is required but not yet verified
+      const tfaRow = await one("SELECT totp_secret FROM users WHERE id=$1", [u.id]);
+      if (tfaRow?.totp_secret) {
+        const token = readToken(request);
+        const tfaVerified = token ? await env.SESSIONS.get(`2fa:${token}`) : null;
+        if (tfaVerified !== "1") {
+          // Show 2FA verification page instead of admin dashboard
+          return new Response(PAGES.admin2fa, { headers: { ...SECURE_HTML, ...csrfHeader } });
+        }
+      }
       return new Response(PAGES.admin, { headers: { ...SECURE_HTML, ...csrfHeader } });
     }
     if (path === "/terms") return new Response(PAGES.terms, { headers: { ...HTML, ...csrfHeader } });
@@ -360,6 +370,12 @@ ${entries.join("\n")}
     if (path === "/api/admin/leads" && method === "GET") return handleLeads(request, env);
     if (path === "/api/admin/payments" && method === "GET") return handlePayments(request, env);
     if (path === "/api/admin/action" && method === "POST") return handleAction(request, env);
+    if (path === "/api/admin/2fa/enable" && method === "POST") return handle2faEnable(request, env);
+    if (path === "/api/admin/2fa/verify" && method === "POST") return handle2faVerify(request, env);
+    if (path === "/api/admin/2fa/status" && method === "GET") return handle2faStatus(request, env);
+
+    // --- API: custom domain TLS verification (Pro only) ---
+    if (path === "/api/site/domain/verify" && method === "POST") return handleDomainVerify(request, env);
 
     // --- API: public data ---
     if (path.startsWith("/api/public/") && method === "GET") {
@@ -1045,5 +1061,139 @@ try {
 } catch (e) {
   console.error("scores API failed:", String(e?.message || e));
   return bad("Internal error.", 500);
+}
+}
+
+// POST /api/site/domain/verify — verify custom domain CNAME and provision TLS
+// via Cloudflare for SaaS custom hostnames. Pro/Agency only.
+async function handleDomainVerify(request, env) {
+try {
+  const { user, res } = await requireUser(request, env);
+  if (res) return res;
+  if (user.status === "suspended") return bad("This account is suspended.", 403);
+  const plan = effectivePlan(user);
+  if (plan !== "pro" && plan !== "agency") return bad("Custom domains are a Pro feature.", 403);
+
+  const body = await readJson(request);
+  if (!body || !body.domain) return bad("Domain required");
+  const domain = String(body.domain).trim().toLowerCase();
+  // Basic domain validation
+  if (!/^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)*\.[a-z]{2,}$/.test(domain)) {
+    return bad("Invalid domain format.");
+  }
+
+  // Get the site
+  const siteId = body.siteId || null;
+  const site = siteId ? await getBoardById(env, user.id, siteId) : await getByUser(env, user.id);
+  if (!site) return bad("No site found", 404);
+
+  const zoneId = env.CF_ZONE_ID || "dd79a3ac13643b94732f2fef6ce3b1f5";
+  const cfToken = env.CF_API_TOKEN;
+
+  if (!cfToken) {
+    // Fallback: just save the domain without TLS provisioning
+    await exec("UPDATE sites SET custom_domain=$1, updated_at=now() WHERE id=$2", [domain, site.id]);
+    return ok({ status: "saved", message: "Domain saved. TLS automation is not configured — contact support." });
+  }
+
+  // Step 1: Check if there's already a custom hostname for this domain
+  const existing = await one(
+    "SELECT custom_hostname_id, domain_status FROM sites WHERE id=$1",
+    [site.id]
+  );
+
+  if (existing?.custom_hostname_id && existing?.domain_status === "active") {
+    // Already active — check with CF to confirm
+    try {
+      const cfRes = await fetch(
+        `https://api.cloudflare.com/client/v4/zones/${zoneId}/custom_hostnames/${existing.custom_hostname_id}`,
+        {
+          headers: { "Authorization": `Bearer ${cfToken}`, "Content-Type": "application/json" },
+          signal: AbortSignal.timeout(15000),
+        }
+      );
+      const cfData = await cfRes.json();
+      if (cfData.success && cfData.result?.ssl?.status === "active") {
+        return ok({ status: "active", message: "TLS is active on your custom domain." });
+      }
+    } catch (e) {
+      console.error("[domain] CF status check failed:", String(e?.message || e));
+    }
+  }
+
+  // Step 2: If there's an existing custom_hostname_id, check its status first
+  if (existing?.custom_hostname_id) {
+    try {
+      const cfRes = await fetch(
+        `https://api.cloudflare.com/client/v4/zones/${zoneId}/custom_hostnames/${existing.custom_hostname_id}`,
+        {
+          headers: { "Authorization": `Bearer ${cfToken}`, "Content-Type": "application/json" },
+          signal: AbortSignal.timeout(15000),
+        }
+      );
+      const cfData = await cfRes.json();
+      if (cfData.success) {
+        const cfStatus = cfData.result?.ssl?.status || "pending";
+        const dbStatus = cfStatus === "active" ? "active" : cfStatus === "pending_validation" || cfStatus === "pending_issuance" ? "pending" : "pending";
+        await exec("UPDATE sites SET domain_status=$1, updated_at=now() WHERE id=$2", [dbStatus, site.id]);
+        return ok({ status: dbStatus, customHostnameId: existing.custom_hostname_id, message: dbStatus === "active" ? "TLS is active!" : "TLS provisioning in progress. This can take a few minutes." });
+      }
+    } catch (e) {
+      console.error("[domain] CF status check failed:", String(e?.message || e));
+    }
+  }
+
+  // Step 3: Create a new custom hostname via CF API
+  let cfResult;
+  try {
+    const cfRes = await fetch(
+      `https://api.cloudflare.com/client/v4/zones/${zoneId}/custom_hostnames`,
+      {
+        method: "POST",
+        headers: { "Authorization": `Bearer ${cfToken}`, "Content-Type": "application/json" },
+        signal: AbortSignal.timeout(15000),
+        body: JSON.stringify({
+          hostname: domain,
+          ssl: { method: "http", type: "dv" },
+        }),
+      }
+    );
+    cfResult = await cfRes.json();
+  } catch (e) {
+    console.error("[domain] CF create failed:", String(e?.message || e));
+    return bad("Failed to connect to Cloudflare. Try again.", 502);
+  }
+
+  if (!cfResult.success) {
+    const errMsg = cfResult.errors?.[0]?.message || "Cloudflare API error";
+    console.error("[domain] CF error:", errMsg);
+    // Save domain even if CF fails, for manual resolution
+    await exec("UPDATE sites SET custom_domain=$1, domain_status='error', updated_at=now() WHERE id=$2", [domain, site.id]);
+    return ok({ status: "error", message: errMsg });
+  }
+
+  const chId = cfResult.result?.id;
+  const chStatus = cfResult.result?.ssl?.status || "pending";
+  const dbStatus = chStatus === "active" ? "active" : "pending";
+
+  // Save domain, custom_hostname_id, and status
+  await exec(
+    "UPDATE sites SET custom_domain=$1, custom_hostname_id=$2, domain_status=$3, updated_at=now() WHERE id=$4",
+    [domain, chId, dbStatus, site.id]
+  );
+
+  invalidateSiteCache(site.slug);
+  invalidateSiteCache(user.id);
+
+  return ok({
+    status: dbStatus,
+    customHostnameId: chId,
+    message: dbStatus === "active"
+      ? "TLS is active on your custom domain!"
+      : "TLS provisioning started. Point a CNAME for your domain to yourrank.site, then check back in a few minutes.",
+  });
+} catch (e) {
+  console.error("[domain] verify failed:", String(e?.message || e));
+  return bad("Domain verification failed. Try again.", 500);
 }
 }

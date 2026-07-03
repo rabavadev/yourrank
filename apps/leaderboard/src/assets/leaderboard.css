@@ -235,6 +235,46 @@ section { width: min(var(--wrap), 100% - 2.5rem); margin-inline: auto; }
 .tr-prize { text-align: right; font-weight: 700; }
 .tr-prize.has { color: var(--cy); } .tr-prize.no { color: var(--ink-mute); font-weight: 500; }
 
+/* ---------- Find My Rank search bar ---------- */
+.find-rank-bar { display: flex; align-items: center; gap: 12px; margin-bottom: 1rem; flex-wrap: wrap; }
+.find-rank-wrap {
+  display: inline-flex; align-items: center; gap: 8px;
+  background: var(--panel); border: 1px solid var(--line); border-radius: 999px;
+  padding: 0.45rem 1rem; transition: border-color 0.2s;
+  max-width: 380px; width: 100%;
+}
+.find-rank-wrap:focus-within { border-color: var(--cy); box-shadow: 0 0 0 3px rgba(70,212,255,0.12); }
+.find-rank-icon { flex-shrink: 0; color: var(--ink-mute); cursor: pointer; transition: color 0.2s; }
+.find-rank-icon:hover { color: var(--cy); }
+.find-rank-input {
+  flex: 1; background: none; border: none; outline: none;
+  color: var(--ink); font-family: "Sora", sans-serif; font-size: 0.85rem;
+  min-width: 0;
+}
+.find-rank-input::placeholder { color: var(--ink-mute); }
+.find-rank-result {
+  font-size: 0.75rem; font-weight: 600; white-space: nowrap;
+  transition: opacity 0.3s;
+}
+.find-rank-result.found { color: var(--kick); }
+.find-rank-result.not-found { color: #ff6b6b; }
+
+/* Highlighted search result row */
+.t-row--found {
+  background: rgba(70, 212, 255, 0.1) !important;
+  box-shadow: inset 3px 0 0 var(--cy);
+  transition: background 0.3s, box-shadow 0.3s;
+}
+
+/* ---------- Gap-to-next-rank indicator ---------- */
+.tr-gap {
+  position: absolute; right: 0; bottom: -2px;
+  font-family: "JetBrains Mono", monospace; font-size: 0.62rem; font-weight: 500;
+  color: var(--ink-mute); white-space: nowrap; pointer-events: none;
+  opacity: 0.65; padding: 0 0.5rem; line-height: 1;
+}
+.t-row { position: relative; }
+
 .rules { margin-top: 1.2rem; background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 0 1.3rem; }
 .rules summary { cursor: pointer; padding: 1rem 0; font-weight: 600; color: var(--ink-soft); list-style: none; }
 .rules summary::-webkit-details-marker { display: none; }
@@ -305,6 +345,10 @@ section { width: min(var(--wrap), 100% - 2.5rem); margin-inline: auto; }
   .top3 { grid-template-columns: 1fr; }
   .t-head, .t-row { grid-template-columns: 40px 1fr 82px; }
   .tr-wager, .t-head span:nth-child(3) { display: none; }
+  .tr-gap { display: none; }
+  .find-rank-wrap { max-width: 100%; }
+  .find-rank-result { display: none; }
+  .player-count-badge { font-size: 0.6rem; padding: 0.25rem 0.55rem; }
   .social-cards { grid-template-columns: 1fr; }
   .board-head { flex-direction: column; align-items: flex-start; }
 }
@@ -340,8 +384,18 @@ section { width: min(var(--wrap), 100% - 2.5rem); margin-inline: auto; }
   background: rgba(83, 252, 24, 0.18); border-color: rgba(83, 252, 24, 0.5);
 }
 .board-title-group {
-  display: flex; align-items: center; flex-wrap: wrap; gap: 0;
-}
+    display: flex; align-items: center; flex-wrap: wrap; gap: 0;
+  }
+
+  /* Player count badge */
+  .player-count-badge {
+    display: inline-flex; align-items: center;
+    font-family: "JetBrains Mono", monospace; font-size: 0.68rem; font-weight: 700;
+    letter-spacing: 0.06em; color: var(--ink-soft);
+    background: rgba(255, 255, 255, 0.06); border: 1px solid var(--line);
+    border-radius: 999px; padding: 0.3rem 0.75rem;
+    margin-left: 0.6rem; vertical-align: middle;
+  }
 
 /* ---------- Top 3 podium enhancements ---------- */
 .t3--1 {

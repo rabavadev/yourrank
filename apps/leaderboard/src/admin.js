@@ -1,7 +1,9 @@
 // Owner admin API. Every route requires a session whose user has is_admin=true.
-import { json, bad, ok, readJson, newToken, currentUser, destroyAllUserSessions } from "./auth.js";
+import { json, bad, ok, readJson, newToken, readToken, currentUser, destroyAllUserSessions } from "./auth.js";
 import { activatePlan } from "./billing.js";
 import { query, one, exec } from "./db.js";
+import { generateSecret, verifyCode, generateOtpauthUri } from "./totp.js";
+import { encrypt, decrypt } from "./crypto.js";
 
 export async function requireAdmin(request, env) {
   const u = await currentUser(request, env);
@@ -111,4 +113,89 @@ export async function handleAction(request, env) {
     target: target.id, email: target.email, details: body.days || body.amountUsd || null,
   }));
   return ok();
+}
+
+// POST /api/admin/2fa/enable — generate a TOTP secret for the admin user.
+// Only admin users (is_admin=true) can enable 2FA.
+// Returns the otpauth:// URI for QR code rendering.
+export async function handle2faEnable(request, env) {
+  const { admin, res } = await requireAdmin(request, env);
+  if (res) return res;
+
+  // Check if 2FA is already enabled
+  const user = await one("SELECT totp_secret FROM users WHERE id=$1", [admin.id]);
+  if (user?.totp_secret) {
+    return bad("2FA is already enabled. Disable it first to re-generate.", 400);
+  }
+
+  // Need TOKEN_ENC_KEY for encryption
+  const encKey = env.TOKEN_ENC_KEY;
+  if (!encKey) {
+    console.error("[2FA] TOKEN_ENC_KEY not configured");
+    return bad("Server configuration error. Contact support.", 500);
+  }
+
+  const secret = generateSecret();
+  const encrypted = await encrypt(secret, encKey);
+  await exec("UPDATE users SET totp_secret=$1, updated_at=now() WHERE id=$2", [encrypted, admin.id]);
+
+  const uri = generateOtpauthUri(secret, admin.email);
+  return ok({ uri, secret });
+}
+
+// POST /api/admin/2fa/verify — verify a TOTP code.
+// Sets a KV flag indicating 2FA is verified for this session.
+export async function handle2faVerify(request, env) {
+  const { admin, res } = await requireAdmin(request, env);
+  if (res) return res;
+
+  const body = await readJson(request);
+  if (!body || !body.code) return bad("6-digit code required");
+  const code = String(body.code).trim();
+  if (!/^\d{6}$/.test(code)) return bad("Invalid code format");
+
+  const user = await one("SELECT totp_secret FROM users WHERE id=$1", [admin.id]);
+  if (!user?.totp_secret) return bad("2FA is not enabled", 400);
+
+  const encKey = env.TOKEN_ENC_KEY;
+  if (!encKey) return bad("Server configuration error.", 500);
+
+  let secret;
+  try {
+    secret = await decrypt(user.totp_secret, encKey);
+  } catch (e) {
+    console.error("[2FA] decrypt failed:", String(e?.message || e));
+    return bad("Failed to verify. Try again.", 500);
+  }
+
+  const valid = await verifyCode(secret, code);
+  if (!valid) return bad("Invalid code. Check your authenticator and try again.", 401);
+
+  // Mark 2FA verified in KV for this session token
+  const token = readToken(request);
+  if (token) {
+    await env.SESSIONS.put(`2fa:${token}`, "1", { expirationTtl: 86400 }); // 24h
+  }
+
+  return ok({ verified: true });
+}
+
+// GET /api/admin/2fa/status — check if 2FA is enabled and verified for the current session.
+export async function handle2faStatus(request, env) {
+  const { admin, res } = await requireAdmin(request, env);
+  if (res) return res;
+
+  const user = await one("SELECT totp_secret FROM users WHERE id=$1", [admin.id]);
+  const enabled = !!user?.totp_secret;
+
+  let verified = false;
+  if (enabled) {
+    const token = readToken(request);
+    if (token) {
+      const kv = await env.SESSIONS.get(`2fa:${token}`);
+      verified = kv === "1";
+    }
+  }
+
+  return ok({ enabled, verified });
 }

@@ -77,10 +77,9 @@ APP_NAME = "YourRank (Staging)"
 
 # Staging KV namespace (separate from production — sessions don't carry over)
 # Create with: npx wrangler kv namespace create SESSIONS --env staging
-# Then paste the printed id below:
 [[env.staging.kv_namespaces]]
 binding = "SESSIONS"
-id = "STAGING_KV_NAMESPACE_ID_HERE"
+id = "e0b6cba066ad4168ad76629f23b5111d"
 
 # Staging Hyperdrive (points at the staging Supabase project)
 # Create with: npx wrangler hyperdrive create yourrank-staging-pg --connection-string="..."

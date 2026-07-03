@@ -95,13 +95,16 @@ function initParticles() {
 // ---- Live polling ----
 let previousPlayerNames = []; // tracks ordered names from last render for rank-change detection
 
-function buildPlayerRow(pl, rank, delay) {
-  const prize = pl.prize ? `<span class="tr-prize has ta-r">${moneyShort(pl.prize)}</span>` : `<span class="tr-prize no ta-r">—</span>`;
-  return `<li class="t-row" data-position="${rank}" data-name="${esc(pl.name)}" style="animation-delay:${delay}s">
-    <span class="tr-rank">${String(rank).padStart(2, "0")}</span>
-    <span class="tr-player"><span class="tr-av">${esc(initials(pl.name))}</span><span class="tr-name">${esc(pl.name)}</span></span>
-    <span class="tr-wager">${money(pl.wagered)}</span>${prize}</li>`;
-}
+function buildPlayerRow(pl, rank, delay, gap) {
+    const prize = pl.prize ? `<span class="tr-prize has ta-r">${moneyShort(pl.prize)}</span>` : `<span class="tr-prize no ta-r">—</span>`;
+    const gapHtml = rank === 1 ? "" : (gap === 0
+      ? `<span class="tr-gap">↑ tied</span>`
+      : `<span class="tr-gap">↑ ${moneyShort(gap)} to next</span>`);
+    return `<li class="t-row" data-position="${rank}" data-name="${esc(pl.name)}" style="animation-delay:${delay}s">
+      <span class="tr-rank">${String(rank).padStart(2, "0")}</span>
+      <span class="tr-player"><span class="tr-av">${esc(initials(pl.name))}</span><span class="tr-name">${esc(pl.name)}</span></span>
+      <span class="tr-wager">${money(pl.wagered)}</span>${prize}${gapHtml}</li>`;
+  }
 
 function buildTop3Card(pl, rank) {
   return `<div class="t3 t3--${rank}"><span class="t3-medal">RANK ${String(rank).padStart(2, "0")}</span><div class="t3-name">${esc(pl.name)}</div><div class="t3-wager">${money(pl.wagered)}</div><span class="t3-prize">${pl.prize ? moneyShort(pl.prize) : "—"}</span></div>`;
@@ -126,7 +129,8 @@ function updateLeaderboard(players) {
   if (rows) {
     rows.innerHTML = sorted.map((pl, i) => {
       const rank = i + 1;
-      return buildPlayerRow(pl, rank, Math.min(i * 0.025, 0.5));
+      const gap = i === 0 ? 0 : sorted[i - 1].wagered - pl.wagered;
+      return buildPlayerRow(pl, rank, Math.min(i * 0.025, 0.5), gap);
     }).join("");
 
     // Flash rank-change indicators
@@ -228,6 +232,10 @@ function boot() {
   const players = (data.players || []).slice().sort((a, b) => b.wagered - a.wagered);
   const cnt = $("[data-count]"); if (cnt) cnt.textContent = players.length;
 
+  // Player count badge
+  const countBadge = $("[data-player-count-badge]");
+  if (countBadge) countBadge.textContent = `${players.length} player${players.length !== 1 ? "s" : ""}`;
+
   const t3 = $("[data-top3]");
   if (t3 && players.length >= 3) t3.innerHTML = players.slice(0, 3).map((pl, i) => buildTop3Card(pl, i + 1)).join("");
 
@@ -235,11 +243,15 @@ function boot() {
   if (rows) {
     rows.innerHTML = players.map((pl, i) => {
       const r = i + 1;
-      return buildPlayerRow(pl, r, Math.min(i * 0.025, 0.5));
+      const gap = i === 0 ? 0 : players[i - 1].wagered - pl.wagered;
+      return buildPlayerRow(pl, r, Math.min(i * 0.025, 0.5), gap);
     }).join("");
   }
   // Store initial ordering
   previousPlayerNames = players.map((pl) => pl.name);
+
+  // ---- Find My Rank search ----
+  initFindRank(players);
 
   const rl = $("[data-rules]"); if (rl && Array.isArray(data.rules)) rl.innerHTML = data.rules.map((r) => `<li>${esc(r)}</li>`).join("");
 
@@ -282,6 +294,57 @@ function boot() {
   // Start live polling every 30 seconds
   if (window.__SLUG__) {
     setInterval(pollPlayers, 30000);
+  }
+}
+
+// ---- Find My Rank search ----
+function initFindRank(sortedPlayers) {
+  const input = $("[data-find-rank]");
+  const resultEl = $("[data-find-result]");
+  if (!input) return;
+
+  const total = sortedPlayers.length;
+
+  function doSearch() {
+    const q = input.value.trim().toLowerCase();
+    // Clear previous highlights
+    $$(".t-row--found").forEach((r) => r.classList.remove("t-row--found"));
+    if (resultEl) resultEl.textContent = "";
+    if (!q) return;
+
+    // Find first partial match in sorted array
+    const matchIdx = sortedPlayers.findIndex((pl) => pl.name.toLowerCase().includes(q));
+    if (matchIdx === -1) {
+      if (resultEl) resultEl.textContent = "No player found with that name";
+      resultEl?.classList.remove("found");
+      resultEl?.classList.add("not-found");
+      return;
+    }
+
+    const rank = matchIdx + 1;
+    if (resultEl) {
+      resultEl.textContent = `You're #${rank} of ${total}`;
+      resultEl.classList.add("found");
+      resultEl.classList.remove("not-found");
+    }
+
+    // Highlight the matching row in the DOM and scroll to it
+    const targetRow = $(`.t-row[data-position="${rank}"]`);
+    if (targetRow) {
+      targetRow.classList.add("t-row--found");
+      targetRow.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+  }
+
+  input.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") { e.preventDefault(); doSearch(); }
+  });
+  // Also search on icon click (parent wrap click)
+  const wrap = input.closest(".find-rank-wrap");
+  if (wrap) {
+    wrap.addEventListener("click", (e) => {
+      if (e.target.closest(".find-rank-icon")) doSearch();
+    });
   }
 }
 

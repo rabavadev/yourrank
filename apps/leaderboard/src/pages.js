@@ -429,6 +429,95 @@ admin: `<!DOCTYPE html><html lang="en"><head>
 </div></div>
 <script src="/assets/admin.js"></script></body></html>`,
 
+  admin2fa: `<!DOCTYPE html><html lang="en"><head>
+<meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Verify · YourRank Admin</title>
+<meta name="robots" content="noindex, nofollow" /><link rel="canonical" href="https://yourrank.site/admin" /><link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="/assets/app.css" />
+<style>
+.tfa-wrap{max-width:400px;margin:60px auto;padding:30px 24px;text-align:center}
+.tfa-wrap h1{font-size:20px;margin:0 0 6px}
+.tfa-wrap p{color:rgba(255,255,255,0.5);font-size:13px;margin:0 0 24px}
+.tfa-wrap .code-input{font-family:var(--mono,'JetBrains Mono',monospace);font-size:28px;letter-spacing:12px;text-align:center;background:var(--panel-2,#161618);border:2px solid var(--line-2,#2a2a30);border-radius:12px;color:var(--ink,#ededf0);padding:16px;width:100%;max-width:260px;display:block;margin:0 auto 16px}
+.tfa-wrap .code-input:focus{border-color:var(--accent,#c8ff00);outline:none}
+.tfa-wrap .err{color:#ff6b6b;font-size:13px;min-height:18px;margin:8px 0}
+.tfa-wrap .btn{width:100%;max-width:260px}
+.tfa-setup{margin-top:32px;text-align:left}
+.tfa-setup h2{font-size:16px;margin:0 0 8px}
+.tfa-setup p{color:rgba(255,255,255,0.5);font-size:13px;margin:0 0 12px}
+.tfa-setup .qr-wrap{background:#fff;border-radius:12px;padding:12px;display:inline-block;margin:8px 0}
+.tfa-setup .secret-box{font-family:var(--mono,'JetBrains Mono',monospace);font-size:12px;word-break:break-all;background:var(--panel-2,#161618);border:1px solid var(--line-2,#2a2a30);border-radius:8px;padding:10px 12px;color:var(--accent,#c8ff00);margin:8px 0;display:block}
+</style></head><body>
+<header class="topbar"><div class="brand">Your<b>Rank</b> <span class="label" style="margin-left:8px">ADMIN</span></div>
+<div class="topbar-right"><a href="/dashboard" class="btn btn--sm btn--ghost">Dashboard</a><a href="#" id="logout" class="btn btn--sm btn--ghost">Sign out</a></div></header>
+<div class="wrap">
+<div class="tfa-wrap" id="tfaVerify">
+<h1>🔒 Two-Factor Authentication</h1>
+<p>Enter the 6-digit code from your authenticator app.</p>
+<input class="code-input" id="tfaCode" type="text" inputmode="numeric" maxlength="6" pattern="[0-9]{6}" placeholder="000000" autocomplete="one-time-code" autofocus />
+<div class="err" id="tfaErr"></div>
+<button class="btn btn--accent" id="tfaSubmit" type="button">Verify</button>
+</div>
+
+<div class="tfa-wrap tfa-setup" id="tfaSetup" hidden>
+<h2>Set Up Two-Factor Authentication</h2>
+<p>Scan this QR code with your authenticator app (Google Authenticator, Authy, etc.):</p>
+<div class="qr-wrap"><img id="tfaQr" alt="QR Code" width="200" height="200" /></div>
+<p>Or enter this secret manually:</p>
+<code class="secret-box" id="tfaSecret"></code>
+<p style="margin-top:16px">After scanning, enter the 6-digit code to verify setup:</p>
+<input class="code-input" id="tfaSetupCode" type="text" inputmode="numeric" maxlength="6" pattern="[0-9]{6}" placeholder="000000" autocomplete="one-time-code" />
+<div class="err" id="tfaSetupErr"></div>
+<button class="btn btn--accent" id="tfaSetupSubmit" type="button">Enable 2FA</button>
+</div>
+</div>
+<script>
+function getCsrf(){const m=document.cookie.match(/(?:^|;\\s*)__csrf=([^;]+)/);return m?m[1]:"";}
+(async function(){
+// Check 2FA status
+const res=await fetch("/api/admin/2fa/status");
+const data=await res.json();
+if(!data.ok){location.href="/login";return;}
+
+if(!data.enabled){
+// Show setup flow
+document.getElementById("tfaVerify").hidden=true;
+document.getElementById("tfaSetup").hidden=false;
+document.getElementById("tfaSetupSubmit").onclick=async()=>{
+const code=document.getElementById("tfaSetupCode").value.trim();
+if(!/^\\d{6}$/.test(code)){document.getElementById("tfaSetupErr").textContent="Enter a 6-digit code.";return;}
+document.getElementById("tfaSetupErr").textContent="";
+document.getElementById("tfaSetupSubmit").disabled=true;
+// Enable 2FA
+const enRes=await fetch("/api/admin/2fa/enable",{method:"POST",headers:{"x-csrf-token":getCsrf()}});
+const enData=await enRes.json();
+if(!enData.ok){document.getElementById("tfaSetupErr").textContent=enData.error||"Failed to enable 2FA.";document.getElementById("tfaSetupSubmit").disabled=false;return;}
+// Show QR code
+var qrUrl="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data="+encodeURIComponent(enData.uri);
+document.getElementById("tfaQr").src=qrUrl;
+document.getElementById("tfaSecret").textContent=enData.secret;
+// Verify the code
+const vRes=await fetch("/api/admin/2fa/verify",{method:"POST",headers:{"content-type":"application/json","x-csrf-token":getCsrf()},body:JSON.stringify({code})});
+const vData=await vRes.json();
+if(vData.ok&&vData.verified){location.href="/admin";}else{document.getElementById("tfaSetupErr").textContent=vData.error||"Verification failed. Try the code from your authenticator.";document.getElementById("tfaSetupSubmit").disabled=false;}
+};
+}else if(!data.verified){
+// Show verify flow
+document.getElementById("tfaSubmit").onclick=async()=>{
+const code=document.getElementById("tfaCode").value.trim();
+if(!/^\\d{6}$/.test(code)){document.getElementById("tfaErr").textContent="Enter a 6-digit code.";return;}
+document.getElementById("tfaErr").textContent="";
+document.getElementById("tfaSubmit").disabled=true;
+const vRes=await fetch("/api/admin/2fa/verify",{method:"POST",headers:{"content-type":"application/json","x-csrf-token":getCsrf()},body:JSON.stringify({code})});
+const vData=await vRes.json();
+if(vData.ok&&vData.verified){location.href="/admin";}else{document.getElementById("tfaErr").textContent=vData.error||"Invalid code.";document.getElementById("tfaSubmit").disabled=false;}
+};
+}
+})();
+document.getElementById("logout").onclick=async(e)=>{e.preventDefault();await fetch("/api/auth/logout",{method:"POST",headers:{"x-csrf-token":getCsrf()}});location.href="/login";};
+</script></body></html>`,
+
   setup: `<!DOCTYPE html><html lang="en"><head>
 <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Setup · YourRank</title>

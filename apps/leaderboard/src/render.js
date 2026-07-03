@@ -58,11 +58,13 @@ ${heroLogo}<p class="hero-kicker">Welcome to</p><h1 class="hero-name" data-brand
 <div class="pcol pcol-why"><span class="pcol-label">Why <span data-casino>${esc(b.casino || "Stake")}</span></span><div class="why-grid" data-why></div></div></div></section>
 <section id="board" class="board"><div class="board-head">
 <p class="eyebrow"><span data-pool>${esc(b.prizePool)}</span> · <span data-period>${esc(b.period || "Monthly")}</span> Leaderboard</p>
-<div class="board-title-group"><h2 class="sec-title">Standings</h2><span class="live-badge" data-live-badge><span class="live-badge-dot"></span>LIVE</span></div><div class="board-meta">
+<div class="board-title-group"><h2 class="sec-title">Standings</h2><span class="player-count-badge" data-player-count-badge></span><span class="live-badge" data-live-badge><span class="live-badge-dot"></span>LIVE</span></div><div class="board-meta">
 <span class="bm"><b class="countdown" data-countdown>--</b><span>Resets in</span></span>
 <span class="bm"><b data-count>0</b><span>Players</span></span></div></div>
 <div class="payouts" data-payouts hidden></div>
-<div class="top3" data-top3></div><div class="table"><div class="t-head"><span>#</span><span>Player</span><span class="ta-r">Wagered</span><span class="ta-r">Prize</span></div>
+<div class="top3" data-top3></div>
+<div class="find-rank-bar"><div class="find-rank-wrap"><svg class="find-rank-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/></svg><input class="find-rank-input" type="text" placeholder="Find your rank..." data-find-rank aria-label="Search for your rank" /></div><span class="find-rank-result" data-find-result></span></div>
+<div class="table"><div class="t-head"><span>#</span><span>Player</span><span class="ta-r">Wagered</span><span class="ta-r">Prize</span></div>
 <ol class="t-rows" data-rows></ol></div>
 <details class="rules"><summary>Leaderboard rules — how wager counts</summary><ol class="rules-list" data-rules></ol></details></section>
 <section id="past" class="past-sec" data-past hidden><h2 class="sec-title center">Past Winners</h2><p class="sec-sub center">Every closed-out period, on the record.</p>
