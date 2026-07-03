@@ -79,6 +79,16 @@ const ADMIN_RL_WINDOW = 60; // seconds
 export function buildHonoApp(): Hono<{ Bindings: Bindings }> {
   const app = new Hono<{ Bindings: Bindings }>();
 
+  // Global error handler — Hono's default returns text/plain "Internal Server
+  // Error" which the dashboard's api() client can't JSON-parse, producing a
+  // silent "Server error (500)" toast with no actionable message.
+  // This ensures ALL unhandled throws return {"error":"..."} JSON.
+  app.onError((err, c) => {
+    const msg = (err as any)?.message ?? String(err);
+    console.error("[unhandled error]", msg);
+    return c.json({ error: "Internal server error — please try again" }, 500);
+  });
+
   // Security headers on ALL responses.
   app.use('*', async (c, next) => {
     await next();
@@ -274,21 +284,28 @@ export function buildHonoApp(): Hono<{ Bindings: Bindings }> {
       return c.json({ error: "Server configuration error — TOKEN_ENC_KEY may be invalid" }, 500);
     }
 
-    const out = await withPlanLimit(owner_id, "bots", async (tx) => {
-      const row = await tx.one<{ id: string }>(
-        `INSERT INTO bots (owner_id, tg_bot_id, username, token_encrypted,
-                           token_hint, webhook_secret, status, welcome_message)
-         VALUES ($1, $2, $3, $4, $5, $6, 'active', $7)
-         ON CONFLICT (tg_bot_id) DO UPDATE
-           SET token_encrypted = EXCLUDED.token_encrypted,
-               token_hint = EXCLUDED.token_hint,
-               webhook_secret = EXCLUDED.webhook_secret,
-               status = 'active', updated_at = now()
-         RETURNING id`,
-        [owner_id, me.id, me.username, encToken, token.slice(-4), secret, welcome_message ?? null]
-      );
-      return { bot_id: row!.id, secret };
-    });
+    let out: { error: string } | { result: { bot_id: string; secret: string } };
+    try {
+      out = await withPlanLimit(owner_id, "bots", async (tx) => {
+        const row = await tx.one<{ id: string }>(
+          `INSERT INTO bots (owner_id, tg_bot_id, username, token_encrypted,
+                             token_hint, webhook_secret, status, welcome_message)
+           VALUES ($1, $2, $3, $4, $5, $6, 'active', $7)
+           ON CONFLICT (tg_bot_id) DO UPDATE
+             SET token_encrypted = EXCLUDED.token_encrypted,
+                 token_hint = EXCLUDED.token_hint,
+                 webhook_secret = EXCLUDED.webhook_secret,
+                 status = 'active', updated_at = now()
+           RETURNING id`,
+          [owner_id, me.id, me.username, encToken, token.slice(-4), secret, welcome_message ?? null]
+        );
+        return { bot_id: row!.id, secret };
+      });
+    } catch (err) {
+      const msg = (err as any)?.message ?? String(err);
+      console.error("[admin POST /bots] DB error:", msg);
+      return c.json({ error: "Database error — please try again in a moment" }, 500);
+    }
     if ("error" in out) return c.json({ error: out.error }, 402);
     let webhookOk = true;
     try {

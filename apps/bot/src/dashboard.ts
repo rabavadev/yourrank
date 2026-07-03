@@ -102,6 +102,14 @@ type DashBindings = SessionEnv & Record<string, unknown>;
 export function buildDashboard(): Hono<{ Bindings: DashBindings }> {
   const app = new Hono<{ Bindings: DashBindings }>();
 
+  // Global error handler — same reason as buildHonoApp: Hono's default
+  // text/plain 500 breaks the dashboard's api() JSON parse.
+  app.onError((err, c) => {
+    const msg = (err as any)?.message ?? String(err);
+    console.error("[dashboard unhandled error]", msg);
+    return c.json({ error: "Internal server error — please try again" }, 500);
+  });
+
   // CSP header on all dashboard responses (SEC-102)
   app.use("*", async (c, next) => {
     await next();
@@ -331,18 +339,25 @@ export function buildDashboard(): Hono<{ Bindings: DashBindings }> {
     }
     // count-check + INSERT run atomically under a per-user advisory lock so two
     // concurrent connect-bot requests can't both pass the count and both insert.
-    const out = await withPlanLimit(uid, "bots", async (tx) => {
-      const row = (await tx.one<{ id: string; username: string }>(
-        `INSERT INTO bots (owner_id, tg_bot_id, username, token_encrypted, token_hint, webhook_secret, status, welcome_message)
-         VALUES ($1, $2, $3, $4, $5, $6, 'active', $7)
-         ON CONFLICT (tg_bot_id) DO UPDATE
-           SET token_encrypted = EXCLUDED.token_encrypted, token_hint = EXCLUDED.token_hint,
-               webhook_secret = EXCLUDED.webhook_secret, status = 'active', updated_at = now()
-         RETURNING id, username`,
-        [uid, me.id, me.username, encToken, token.slice(-4), secret, welcome_message ?? null]
-      ))!;
-      return { bot_id: row.id, username: row.username, secret };
-    });
+    let out: { error: string } | { result: { bot_id: string; username: string; secret: string } };
+    try {
+      out = await withPlanLimit(uid, "bots", async (tx) => {
+        const row = (await tx.one<{ id: string; username: string }>(
+          `INSERT INTO bots (owner_id, tg_bot_id, username, token_encrypted, token_hint, webhook_secret, status, welcome_message)
+           VALUES ($1, $2, $3, $4, $5, $6, 'active', $7)
+           ON CONFLICT (tg_bot_id) DO UPDATE
+             SET token_encrypted = EXCLUDED.token_encrypted, token_hint = EXCLUDED.token_hint,
+                 webhook_secret = EXCLUDED.webhook_secret, status = 'active', updated_at = now()
+           RETURNING id, username`,
+          [uid, me.id, me.username, encToken, token.slice(-4), secret, welcome_message ?? null]
+        ))!;
+        return { bot_id: row.id, username: row.username, secret };
+      });
+    } catch (err) {
+      const msg = (err as any)?.message ?? String(err);
+      console.error("[POST /bots] DB error:", msg);
+      return c.json({ error: "Database error — please try again in a moment" }, 500);
+    }
     if ("error" in out) return c.json({ error: out.error }, 402);
     // setWebhook AFTER the transaction commits — don't hold the lock across HTTP.
     // The bot row is already committed at this point, so a webhook failure is
