@@ -7,11 +7,6 @@ import { config } from "./config.js";
 let sql: ReturnType<typeof postgres> | null = null;
 function getSql(): ReturnType<typeof postgres> {
   if (!sql) {
-    // config.databaseUrl is a live getter over process.env (see config.ts) and
-    // may be undefined before worker.ts has wired the Hyperdrive binding. We
-    // validate lazily here — on first DB use — so the Worker can still serve
-    // /health before any binding is read, and so a misconfiguration surfaces
-    // as a clear error instead of a confusing postgres connect failure.
     const url = config.databaseUrl;
     if (!url) throw new Error("DATABASE_URL is not configured (set the HYPERDRIVE binding or DATABASE_URL secret)");
     sql = postgres(url, {
@@ -25,27 +20,36 @@ function getSql(): ReturnType<typeof postgres> {
   return sql;
 }
 
-/** Run a parameterized query ($1, $2, ...) and return the rows array.
- *  T is unconstrained so named interfaces (BotRow, OfferRow, ...) can be used
- *  without adding an index signature. */
+function resetSql() {
+  try { if (sql) sql.end({ timeout: 1 }); } catch {}
+  sql = null;
+}
+
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
 export async function query<T = Record<string, unknown>>(
   text: string,
   params: unknown[] = []
 ): Promise<T[]> {
-  const rows = (await getSql().unsafe(text, params as any[])) as unknown[];
-  return rows.map((r) => ({ ...(r as Record<string, unknown>) })) as unknown as T[];
+  try {
+    const rows = (await getSql().unsafe(text, params as any[])) as unknown[];
+    return rows.map((r) => ({ ...(r as Record<string, unknown>) })) as unknown as T[];
+  } catch {
+    resetSql();
+    await sleep(50);
+    const rows = (await getSql().unsafe(text, params as any[])) as unknown[];
+    return rows.map((r) => ({ ...(r as Record<string, unknown>) })) as unknown as T[];
+  }
 }
 
-/** One-shot mutation — INSERT/UPDATE/DELETE.  Fails immediately on error;
- *  the caller decides whether to retry.  Separate from query() so that
- *  read-retry logic is never accidentally applied to writes. */
 export async function exec(text: string, params: unknown[] = []): Promise<any> {
   try {
     return await getSql().unsafe(text, params as any[]);
   } catch (e: any) {
     const msg = String(e?.message || e);
-    // Don't retry on constraint violations — only on connection errors
     if (/23505|23514|23503|23502|23506/.test(msg)) throw e;
+    resetSql();
+    await sleep(50);
     return await getSql().unsafe(text, params as any[]);
   }
 }

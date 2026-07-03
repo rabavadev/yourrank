@@ -27,21 +27,26 @@ export function getSql() {
   return sql;
 }
 
+/** Kill the cached sql instance so the next getSql() creates a fresh one.
+ *  Called when a query fails with a connection-level error. */
+function resetSql() {
+  try { if (sql) sql.end({ timeout: 1 }); } catch {}
+  sql = null;
+}
+
+/** Small delay to let the old connection fully close before reconnecting. */
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
 /** Run a parameterized READ query ($1, $2, ...) and return the rows array.
- *  One retry on the SAME sql instance. Hyperdrive's pooled connection
- *  occasionally throws on first use after an idle period while it re-establishes
- *  the link; a single retry lets the (now-warming) connection handle it instead
- *  of surfacing as a Cloudflare 1101.
- *
- *  USE THIS FOR SELECTs ONLY. For INSERT / UPDATE / DELETE use exec() below,
- *  which does NOT retry — if the first attempt committed but the response was
- *  lost (network hiccup), a blind retry would duplicate the row or throw a
- *  unique violation. */
+ *  Retries once with a FRESH connection if the cached one is stale. */
 export async function query(text, params = []) {
   try {
     const rows = await getSql().unsafe(text, params);
     return rows.map((r) => ({ ...r }));
-  } catch {
+  } catch (e) {
+    // Connection went stale — destroy it and retry with a fresh one
+    resetSql();
+    await sleep(50);
     const rows = await getSql().unsafe(text, params);
     return rows.map((r) => ({ ...r }));
   }
@@ -53,18 +58,19 @@ export async function one(text, params = []) {
   return rows[0];
 }
 
-/** Run a parameterized mutation (INSERT/UPDATE/DELETE). Retries once on
- *  connection errors (cold Hyperdrive) but NOT on constraint violations,
- *  so duplicate-row risk is avoided. */
+/** Run a parameterized mutation (INSERT/UPDATE/DELETE). Retries once with a
+ *  FRESH connection on connection errors, but NOT on constraint violations. */
 export async function exec(text, params = []) {
   try {
     const rows = await getSql().unsafe(text, params);
     return rows.map((r) => ({ ...r }));
   } catch (e) {
-    // Only retry on connection-level errors, not constraint violations (23505)
     const msg = String(e?.message || e);
-    if (/23505|23514|23503|23502|23506/.test(msg)) throw e; // constraint errors
-    // Connection error — retry once (the connection warms on first attempt)
+    // Don't retry on constraint violations — only on connection errors
+    if (/23505|23514|23503|23502|23506/.test(msg)) throw e;
+    // Stale connection — destroy and retry with a fresh one
+    resetSql();
+    await sleep(50);
     const rows = await getSql().unsafe(text, params);
     return rows.map((r) => ({ ...r }));
   }
