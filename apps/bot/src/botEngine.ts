@@ -3,6 +3,7 @@ import type { Update } from "grammy/types";
 import { one, query } from "./db.js";
 import { decryptToken } from "./crypto.js";
 import { config } from "./config.js";
+import { rateLimit, type RateLimitKV } from "./ratelimit.js";
 
 export interface BotRow {
   id: string;
@@ -43,7 +44,7 @@ export async function getBotBySecret(secret: string): Promise<BotRow | undefined
   );
 }
 
-export async function handleUpdateForBot(row: BotRow, update: Update): Promise<void> {
+export async function handleUpdateForBot(row: BotRow, update: Update, kv?: RateLimitKV): Promise<void> {
   const token = await decryptToken(Buffer.from(row.token_encrypted));
   const botInfo: Record<string, unknown> = {
     id: Number(row.tg_bot_id),
@@ -52,14 +53,14 @@ export async function handleUpdateForBot(row: BotRow, update: Update): Promise<v
   };
   if (row.username) botInfo.username = row.username;
   const bot = new Bot(token, { botInfo: botInfo as any });
-  wireHandlers(bot, row);
+  wireHandlers(bot, row, kv);
   await bot.handleUpdate(update);
 }
 
 // ---------------------------------------------------------------
 // Handlers — the actual bot behavior, same code for every tenant.
 // ---------------------------------------------------------------
-export function wireHandlers(bot: Bot, botRow: BotRow): void {
+export function wireHandlers(bot: Bot, botRow: BotRow, kv?: RateLimitKV): void {
   bot.use(async (ctx, next) => {
     const from = ctx.from;
     if (from && !from.is_bot) {
@@ -146,6 +147,145 @@ export function wireHandlers(bot: Bot, botRow: BotRow): void {
     } else {
       await ctx.reply("You weren't subscribed. Use /subscribe <player name> to start.");
     }
+  });
+
+  // ------------------------------------------------------------------
+  // Chat commands: !rank, !board, !leaderboard
+  // These work in GROUP chats where the bot is a member.
+  // They look up the streamer's leaderboard (via bots.owner_id -> sites)
+  // and respond with rank / top-5.
+  // ------------------------------------------------------------------
+
+  // Helper: format a number as $12,345
+  const fmtMoney = (n: number | string): string => {
+    const v = Number(n) || 0;
+    return "$" + v.toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+  };
+
+  // Helper: get the primary site for this bot's owner
+  async function getOwnerSite(): Promise<{ id: string; name: string; slug: string } | null> {
+    const site = await one<{ id: string; name: string; slug: string }>(
+      `SELECT id, name, slug FROM sites WHERE user_id = $1 AND published = true ORDER BY id ASC LIMIT 1`,
+      [botRow.owner_id]
+    );
+    return site ?? null;
+  }
+
+  // Rate limit for chat commands: 5 per minute per chat
+  const CHAT_CMD_LIMIT = 5;
+  const CHAT_CMD_WINDOW = 60; // seconds
+
+  async function chatCmdRateLimited(chatId: number): Promise<boolean> {
+    if (!kv) return false; // no KV = no rate limit
+    const result = await rateLimit(kv, `chatcmd:${chatId}`, CHAT_CMD_LIMIT, CHAT_CMD_WINDOW);
+    return !result.ok;
+  }
+
+  // !rank — show the sender's rank on the leaderboard
+  bot.on("message:text", async (ctx, next) => {
+    const text = ctx.message?.text?.trim() ?? "";
+    // Match !rank, /rank, or @botname variants — case-insensitive
+    if (!/^!rank\b/i.test(text)) return next();
+
+    // Only respond in group/supergroup chats
+    const chatType = ctx.chat?.type;
+    if (chatType !== "group" && chatType !== "supergroup") return next();
+
+    // Rate limit
+    if (await chatCmdRateLimited(ctx.chat.id)) return next();
+
+    const from = ctx.from;
+    if (!from || from.is_bot) return next();
+
+    const site = await getOwnerSite();
+    if (!site) {
+      await ctx.reply("No leaderboard linked to this chat.", {
+        reply_parameters: { message_id: ctx.message!.message_id, allow_sending_without_reply: true },
+      });
+      return;
+    }
+
+    const username = (from.username ?? "").toLowerCase().replace(/^@/, "");
+    if (!username) {
+      await ctx.reply("You need a Telegram username to use !rank. Set one in Telegram Settings → Username.", {
+        reply_parameters: { message_id: ctx.message!.message_id, allow_sending_without_reply: true },
+      });
+      return;
+    }
+
+    // Get all players sorted by wagered DESC, assign rank
+    const players = await query<{ name: string; wagered: number }>(
+      `SELECT name, wagered FROM players WHERE site_id = $1 ORDER BY wagered DESC`,
+      [site.id]
+    );
+
+    // Match by case-insensitive username against player names
+    const idx = players.findIndex(
+      (p) => p.name.toLowerCase().replace(/^@/, "") === username
+    );
+
+    if (idx === -1) {
+      await ctx.reply("You're not on this leaderboard yet. Ask the streamer to add you! 🎯", {
+        reply_parameters: { message_id: ctx.message!.message_id, allow_sending_without_reply: true },
+      });
+      return;
+    }
+
+    const rank = idx + 1;
+    const player = players[idx];
+    const displayName = site.name || "this streamer";
+    const url = config.publicBaseUrl ? `${config.publicBaseUrl}/${site.slug}` : "";
+
+    let msg = `🏆 @${username} is ranked #${rank} of ${players.length} on ${displayName}'s leaderboard! Wagered: ${fmtMoney(player.wagered)}`;
+    if (url) msg += `\n\n🔗 ${url}`;
+
+    await ctx.reply(msg, {
+      reply_parameters: { message_id: ctx.message!.message_id, allow_sending_without_reply: true },
+    });
+  });
+
+  // !board / !leaderboard — show top 5 players
+  bot.on("message:text", async (ctx, next) => {
+    const text = ctx.message?.text?.trim() ?? "";
+    if (!/^!(board|leaderboard)\b/i.test(text)) return next();
+
+    const chatType = ctx.chat?.type;
+    if (chatType !== "group" && chatType !== "supergroup") return next();
+
+    if (await chatCmdRateLimited(ctx.chat.id)) return next();
+
+    const site = await getOwnerSite();
+    if (!site) {
+      await ctx.reply("No leaderboard linked to this chat.", {
+        reply_parameters: { message_id: ctx.message!.message_id, allow_sending_without_reply: true },
+      });
+      return;
+    }
+
+    const players = await query<{ name: string; wagered: number }>(
+      `SELECT name, wagered FROM players WHERE site_id = $1 ORDER BY wagered DESC LIMIT 5`,
+      [site.id]
+    );
+
+    if (!players.length) {
+      await ctx.reply("This leaderboard is empty. Ask the streamer to add players!", {
+        reply_parameters: { message_id: ctx.message!.message_id, allow_sending_without_reply: true },
+      });
+      return;
+    }
+
+    const displayName = site.name || "Leaderboard";
+    const lines = players.map(
+      (p, i) => `${i + 1}. ${p.name} — ${fmtMoney(p.wagered)}`
+    );
+
+    const url = config.publicBaseUrl ? `${config.publicBaseUrl}/${site.slug}` : "";
+    let msg = `🏆 ${displayName}'s Leaderboard\n${lines.join("\n")}`;
+    if (url) msg += `\n\n🔗 ${url}`;
+
+    await ctx.reply(msg, {
+      reply_parameters: { message_id: ctx.message!.message_id, allow_sending_without_reply: true },
+    });
   });
 
   bot.on("message::bot_command", async (ctx) => {

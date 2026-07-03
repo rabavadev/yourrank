@@ -135,8 +135,4 @@ export async function processBroadcastBatch(batchSize = 300): Promise<boolean> {
     [lastId, sent, failed, bc.id]
   );
   return true;
-  } catch (err) {
-    console.error('[broadcasts] processBroadcastBatch failed:', err);
-    return false;
-  }
 }

@@ -59,5 +59,4 @@ export async function rateLimit(
     console.error("[ratelimit]: KV operation failed, failing closed", err);
     return { ok: false, remaining: 0, limit, retryAfter: windowSec };
   }
-  }
 }

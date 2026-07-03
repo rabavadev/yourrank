@@ -109,7 +109,7 @@ export function buildHonoApp(): Hono<{ Bindings: Bindings }> {
     const row = await getBotBySecret(secret);
     if (!row || row.status === "revoked") return c.body(null, 404);
     const update = await c.req.json<Update>();
-    await handleUpdateForBot(row, update);
+    await handleUpdateForBot(row, update, c.env.SESSIONS as RateLimitKV | undefined);
     return c.body(null, 200);
   });
 
