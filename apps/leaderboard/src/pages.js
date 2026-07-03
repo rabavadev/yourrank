@@ -81,7 +81,7 @@ export const PAGES = {
 <span>© <span id="yr"></span> YourRank</span>
 <span><a href="/terms">Terms</a> · <a href="/privacy">Privacy</a> · <a href="/responsible">Responsible play</a></span>
 <span>18+ · Gambling can be addictive. Play responsibly.</span></div></footer>
-<script src="/assets/landing.js"></script>
+<script src="/assets/landing.js?v=2"></script>
 </body></html>`,
 
   login: `<!DOCTYPE html><html lang="en"><head>
@@ -98,7 +98,7 @@ export const PAGES = {
 <div class="field"><label for="password">Password</label><input id="password" name="password" type="password" autocomplete="current-password" required /></div>
 <div class="err" id="err"></div><button class="btn btn--accent" style="width:100%" type="submit" id="submit">Sign in</button></form>
 <p class="foot">No account? <a href="/signup">Create one</a> · <a href="/forgot">Forgot password?</a></p></div></main></div>
-<script src="/assets/auth.js"></script></body></html>`,
+<script src="/assets/auth.js?v=2"></script></body></html>`,
 
   forgot: `<!DOCTYPE html><html lang="en"><head>
 <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -113,7 +113,7 @@ export const PAGES = {
 <form id="form" novalidate><div class="field"><label for="email">Email</label><input id="email" name="email" type="email" autocomplete="email" required /></div>
 <div class="err" id="err"></div><div class="msg" id="msg" hidden></div><button class="btn btn--accent" style="width:100%" type="submit" id="submit">Send reset link</button></form>
 <p class="foot"><a href="/login">Back to sign in</a></p></div></main></div>
-<script src="/assets/auth.js"></script></body></html>`,
+<script src="/assets/auth.js?v=2"></script></body></html>`,
 
   reset: `<!DOCTYPE html><html lang="en"><head>
 <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -129,7 +129,7 @@ export const PAGES = {
 <span class="hint">At least 8 characters.</span></div>
 <div class="err" id="err"></div><button class="btn btn--accent" style="width:100%" type="submit" id="submit">Save & sign in</button></form>
 <p class="foot"><a href="/login">Back to sign in</a></p></div></main></div>
-<script src="/assets/auth.js"></script></body></html>`,
+<script src="/assets/auth.js?v=2"></script></body></html>`,
 
   signup: `<!DOCTYPE html><html lang="en"><head>
 <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -149,7 +149,7 @@ export const PAGES = {
 <span class="hint">At least 8 characters.</span></div>
 <div class="err" id="err"></div><button class="btn btn--accent" style="width:100%" type="submit" id="submit">Create account</button></form>
 <p class="foot">Already have one? <a href="/login">Sign in</a></p></div></main></div>
-<script src="/assets/auth.js"></script></body></html>`,
+<script src="/assets/auth.js?v=2"></script></body></html>`,
 
   dashboard: `<!DOCTYPE html><html lang="en"><head>
 <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -270,7 +270,7 @@ export const PAGES = {
 <button class="btn btn--accent" id="goPro">Upgrade</button></div>
 <p class="hint" id="planHint">Pay with crypto (BTC, ETH, USDT and 100+ more). Activates automatically once the network confirms — usually a few minutes. <a href="/dashboard/billing">See all plans</a>.</p></div>
 <div class="savebar"><label class="hint chk" style="margin-right:auto"><input type="checkbox" id="pubToggle" checked /> Page published</label><span class="status" id="status"></span><a class="btn btn--ghost" id="viewLive" href="#" target="_blank">View live page</a><button class="btn btn--accent" id="save">Save changes</button></div></div></div>
-<script src="/assets/dashboard.js"></script></body></html>`,
+<script src="/assets/dashboard.js?v=2"></script></body></html>`,
 
 analytics: `<!DOCTYPE html><html lang="en"><head>
 <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -301,7 +301,7 @@ analytics: `<!DOCTYPE html><html lang="en"><head>
 <table class="ref-table" id="refTable"><thead><tr><th>Domain</th><th class="ta-r">Views</th></tr></thead><tbody id="refBody"></tbody></table>
 <div class="empty" id="refEmpty" hidden>No referrer data yet.</div></div></div>
 <div class="skel" id="loading">Loading analytics…</div></div>
-<script src="/assets/analytics.js"></script></body></html>`,
+<script src="/assets/analytics.js?v=2"></script></body></html>`,
 
 billing: `<!DOCTYPE html><html lang="en"><head>
 <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -335,7 +335,7 @@ billing: `<!DOCTYPE html><html lang="en"><head>
 <p class="hint" id="proExp"></p>
 <p class="hint" id="lifetimeNotice" hidden style="color:var(--accent);font-weight:600">⭐ Lifetime Pro — no expiry. You own this forever.</p></div></div>
 <div class="skel" id="loading">Loading billing…</div></div>
-<script src="/assets/billing.js"></script></body></html>`,
+<script src="/assets/billing.js?v=2"></script></body></html>`,
 
 botSetup: `<!DOCTYPE html><html lang="en"><head>
 <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -404,7 +404,7 @@ botSetup: `<!DOCTYPE html><html lang="en"><head>
 </ul></div>
 
 </div>
-<script src="/assets/bot-setup.js"></script></body></html>`,
+<script src="/assets/bot-setup.js?v=2"></script></body></html>`,
 
 admin: `<!DOCTYPE html><html lang="en"><head>
 <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -430,7 +430,7 @@ admin: `<!DOCTYPE html><html lang="en"><head>
 <div class="empty" id="payEmpty" hidden>No payments yet.</div></div>
 <p class="hint" style="margin-top:18px">Manual activation: use <b>+31d Pro</b> on any user after they pay you directly (PayPal, bank, whatever). Crypto payments through the site activate on their own. Reset links work for 24h — send them over Discord/Telegram if email isn't wired up.</p>
 </div></div>
-<script src="/assets/admin.js"></script></body></html>`,
+<script src="/assets/admin.js?v=2"></script></body></html>`,
 
   admin2fa: `<!DOCTYPE html><html lang="en"><head>
 <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -738,7 +738,7 @@ ${endsAt ? `<p class="ov-timer-label">${esc(b.prizePool || "")} resets in</p>
 </div>
 </div>
 <script>window.__OVERLAY_SLUG__=${JSON.stringify(opts.slug || "")};window.__OVERLAY_DATA__=${dataJson};</script>
-<script src="/assets/overlay.js"></script>
+<script src="/assets/overlay.js?v=2"></script>
 </body></html>`;
 },
 
