@@ -84,12 +84,12 @@ export default {
       // this must run before any DB call — mirrors the bot Worker's worker.ts.
       if (typeof globalThis.process === "undefined") globalThis.process = { env: {} };
       const pe = globalThis.process.env;
-      // Hyperdrive binding may exist in the Worker config but have a deleted
-      // backing config — accessing it can throw. Wrap in try/catch so the
-      // DATABASE_URL secret fallback still works.
+      // Prefer the direct DATABASE_URL secret over Hyperdrive — Hyperdrive's
+      // proxy has been intermittently dropping connections causing 500s.
+      // The direct Supabase connection is more reliable for this traffic level.
       let hdConn = null;
       try { hdConn = env.HYPERDRIVE?.connectionString ?? null; } catch {}
-      pe.DATABASE_URL = hdConn ?? env.DATABASE_URL;
+      pe.DATABASE_URL = env.DATABASE_URL ?? hdConn;
       globalThis.__yr_env = env; // for KV-backed cache invalidation in site.js
 
       const url = new URL(request.url);

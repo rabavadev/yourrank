@@ -17,11 +17,11 @@ function populateEnv(env: Record<string, any>): void {
     (globalThis as any).process = { env: {} };
   }
   const pe = (globalThis as any).process.env;
-  // Hyperdrive binding may exist but have a deleted backing config — wrap in
-  // try/catch so the DATABASE_URL secret fallback still works.
+  // Prefer the direct DATABASE_URL secret over Hyperdrive — Hyperdrive's
+  // proxy has been intermittently dropping connections causing 500s.
   let hdConn: string | null = null;
   try { hdConn = env.HYPERDRIVE?.connectionString ?? null; } catch {}
-  pe.DATABASE_URL = hdConn ?? env.DATABASE_URL;
+  pe.DATABASE_URL = env.DATABASE_URL ?? hdConn;
   pe.PUBLIC_BASE_URL = env.PUBLIC_BASE_URL;
   pe.TOKEN_ENC_KEY = env.TOKEN_ENC_KEY;
   pe.ADMIN_API_KEY = env.ADMIN_API_KEY;
