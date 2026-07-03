@@ -1,11 +1,11 @@
 name: Deploy
 
-# Push to main -> deploy both Workers to Cloudflare, run pending DB migrations.
+# Push to main -> run pending DB migrations via Supabase CLI, then deploy both Workers.
 # Required GitHub repo secrets:
 #   CLOUDFLARE_API_TOKEN   — Cloudflare API token
 #   CLOUDFLARE_ACCOUNT_ID  — Cloudflare account id
-#   SUPABASE_DB_URL        — Supabase direct Postgres connection string
-#                             (postgresql://postgres.PROJECT:PASS@db.PROJECT.supabase.co:5432/postgres)
+#   SUPABASE_ACCESS_TOKEN  — Supabase personal access token (for CLI auth)
+#   SUPABASE_DB_PASSWORD   — Database password (for supabase link --password)
 
 on:
   push:
@@ -19,40 +19,20 @@ concurrency:
 jobs:
   migrate:
     runs-on: ubuntu-latest
-    # Migrations run first — deploys depend on them succeeding.
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
-      - name: Run pending migrations
+
+      - name: Install Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Link project and push migrations
         env:
-          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
         run: |
-          set -euo pipefail
-          # Install psql
-          sudo apt-get update -qq && sudo apt-get install -yqq postgresql-client >/dev/null 2>&1
-
-          # Create a migrations tracking table if it doesn't exist
-          psql "$SUPABASE_DB_URL" -q -c "
-            CREATE TABLE IF NOT EXISTS _migrations (
-              filename TEXT PRIMARY KEY,
-              applied_at TIMESTAMPTZ NOT NULL DEFAULT now()
-            );
-          "
-
-          # Run each pending .sql file in order
-          APPLIED=0
-          for f in $(ls db/migrations/*.sql 2>/dev/null | sort); do
-            fname=$(basename "$f")
-            already=$(psql "$SUPABASE_DB_URL" -t -A -c "SELECT 1 FROM _migrations WHERE filename='$fname'" 2>/dev/null || true)
-            if [ "$already" = "1" ]; then
-              echo "  skip (already applied): $fname"
-              continue
-            fi
-            echo "  applying: $fname"
-            psql "$SUPABASE_DB_URL" -q -f "$f"
-            psql "$SUPABASE_DB_URL" -q -c "INSERT INTO _migrations (filename) VALUES ('$fname');"
-            APPLIED=$((APPLIED + 1))
-          done
-          echo "Migrations complete: $APPLIED applied"
+          supabase link --project-ref lygcqzjxlqbvymkfjvel --password "${{ secrets.SUPABASE_DB_PASSWORD }}"
+          supabase db push
 
   deploy-leaderboard:
     needs: migrate
