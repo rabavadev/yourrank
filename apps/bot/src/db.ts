@@ -12,7 +12,7 @@ function getSql(): ReturnType<typeof postgres> {
     sql = postgres(url, {
       max: 1,
       prepare: false,
-      idle_timeout: 20,
+      idle_timeout: 5,
       connect_timeout: 30,
       debug: false,
     });
@@ -27,31 +27,32 @@ function resetSql() {
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
+async function runWithRetry(text: string, params: unknown[]): Promise<any[]> {
+  let lastErr: any;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      const rows = await getSql().unsafe(text, params as any[]);
+      return rows.map((r: any) => ({ ...r }));
+    } catch (e: any) {
+      lastErr = e;
+      const msg = String(e?.message || e);
+      if (/23505|23514|23503|23502|23506/.test(msg)) throw e;
+      resetSql();
+      if (attempt < 2) await sleep(100 * (attempt + 1));
+    }
+  }
+  throw lastErr;
+}
+
 export async function query<T = Record<string, unknown>>(
   text: string,
   params: unknown[] = []
 ): Promise<T[]> {
-  try {
-    const rows = (await getSql().unsafe(text, params as any[])) as unknown[];
-    return rows.map((r) => ({ ...(r as Record<string, unknown>) })) as unknown as T[];
-  } catch {
-    resetSql();
-    await sleep(50);
-    const rows = (await getSql().unsafe(text, params as any[])) as unknown[];
-    return rows.map((r) => ({ ...(r as Record<string, unknown>) })) as unknown as T[];
-  }
+  return runWithRetry(text, params) as unknown as Promise<T[]>;
 }
 
 export async function exec(text: string, params: unknown[] = []): Promise<any> {
-  try {
-    return await getSql().unsafe(text, params as any[]);
-  } catch (e: any) {
-    const msg = String(e?.message || e);
-    if (/23505|23514|23503|23502|23506/.test(msg)) throw e;
-    resetSql();
-    await sleep(50);
-    return await getSql().unsafe(text, params as any[]);
-  }
+  return runWithRetry(text, params);
 }
 
 /** Like query() but returns the first row (or undefined). */
