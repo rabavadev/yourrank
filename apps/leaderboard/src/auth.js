@@ -1,5 +1,5 @@
 // Auth helpers for the Worker.
-import { one } from "./db.js";
+import { one, exec } from "./db.js";
 // SHARED cross-Worker session: same cookie (gm_session) + same SESSIONS KV as
 // the bot Worker, so one login works across both. See ../../../shared/session.js.
 import {
@@ -159,6 +159,6 @@ export async function handleAccountDelete(request, env) {
     return ok({ message: "Account deleted successfully." });
   } catch (e) {
     console.error("account delete failed:", String(e?.message || e));
-    return bad(`Account deletion failed: ${String(e?.message || e).slice(0, 100)}`, 500);
+    return bad("Account deletion failed. Please try again.", 500);
   }
 }
