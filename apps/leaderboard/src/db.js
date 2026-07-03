@@ -53,11 +53,21 @@ export async function one(text, params = []) {
   return rows[0];
 }
 
-/** Run a parameterized mutation (INSERT/UPDATE/DELETE). NO retry — callers
- *  must handle idempotency themselves. */
+/** Run a parameterized mutation (INSERT/UPDATE/DELETE). Retries once on
+ *  connection errors (cold Hyperdrive) but NOT on constraint violations,
+ *  so duplicate-row risk is avoided. */
 export async function exec(text, params = []) {
-  const rows = await getSql().unsafe(text, params);
-  return rows.map((r) => ({ ...r }));
+  try {
+    const rows = await getSql().unsafe(text, params);
+    return rows.map((r) => ({ ...r }));
+  } catch (e) {
+    // Only retry on connection-level errors, not constraint violations (23505)
+    const msg = String(e?.message || e);
+    if (/23505|23514|23503|23502|23506/.test(msg)) throw e; // constraint errors
+    // Connection error — retry once (the connection warms on first attempt)
+    const rows = await getSql().unsafe(text, params);
+    return rows.map((r) => ({ ...r }));
+  }
 }
 
 /** Like exec() but returns the first row (or undefined). */

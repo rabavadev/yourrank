@@ -40,7 +40,14 @@ export async function query<T = Record<string, unknown>>(
  *  the caller decides whether to retry.  Separate from query() so that
  *  read-retry logic is never accidentally applied to writes. */
 export async function exec(text: string, params: unknown[] = []): Promise<any> {
-  return getSql().unsafe(text, params as any[]);
+  try {
+    return await getSql().unsafe(text, params as any[]);
+  } catch (e: any) {
+    const msg = String(e?.message || e);
+    // Don't retry on constraint violations — only on connection errors
+    if (/23505|23514|23503|23502|23506/.test(msg)) throw e;
+    return await getSql().unsafe(text, params as any[]);
+  }
 }
 
 /** Like query() but returns the first row (or undefined). */
