@@ -267,7 +267,12 @@ export function buildHonoApp(): Hono<{ Bindings: Bindings }> {
     try { me = await getMe(token); }
     catch { return c.json({ error: "Telegram rejected that token" }, 400); }
     const secret = newWebhookSecret();
-    const encToken = await encryptToken(token);
+    let encToken: Buffer;
+    try { encToken = await encryptToken(token); }
+    catch (err) {
+      console.error("[admin POST /bots] encryptToken failed:", String((err as any)?.message ?? err));
+      return c.json({ error: "Server configuration error — TOKEN_ENC_KEY may be invalid" }, 500);
+    }
 
     const out = await withPlanLimit(owner_id, "bots", async (tx) => {
       const row = await tx.one<{ id: string }>(
@@ -285,8 +290,14 @@ export function buildHonoApp(): Hono<{ Bindings: Bindings }> {
       return { bot_id: row!.id, secret };
     });
     if ("error" in out) return c.json({ error: out.error }, 402);
-    await setWebhook(token, `${config.publicBaseUrl}/hook/${out.result.secret}`, out.result.secret);
-    return c.json({ bot_id: out.result.bot_id, username: me.username, webhook: "set", try_it: `https://t.me/${me.username}` });
+    let webhookOk = true;
+    try {
+      await setWebhook(token, `${config.publicBaseUrl}/hook/${out.result.secret}`, out.result.secret);
+    } catch (err) {
+      console.error("[admin POST /bots] setWebhook failed:", String((err as any)?.message ?? err));
+      webhookOk = false;
+    }
+    return c.json({ bot_id: out.result.bot_id, username: me.username, webhook: webhookOk ? "set" : "failed", try_it: `https://t.me/${me.username}` });
   });
 
   api.post("/offers", async (c) => {

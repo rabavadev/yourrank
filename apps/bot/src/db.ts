@@ -88,20 +88,41 @@ export interface Tx {
 export async function withTransaction<R>(fn: (tx: Tx) => Promise<R>): Promise<R> {
   // sql.begin reserves one connection, issues BEGIN, runs the callback, then
   // commits on resolve / rolls back on reject (and re-throws the error).
-  const result = await getSql().begin(async (sqlTx) => {
-    const tx: Tx = {
-      async query<T = Record<string, unknown>>(text: string, params: unknown[] = []) {
-        const rows = (await sqlTx.unsafe(text, params as any[])) as unknown[];
-        return rows.map((r) => ({ ...(r as Record<string, unknown>) })) as unknown as T[];
-      },
-      async one<T = Record<string, unknown>>(text: string, params: unknown[] = []): Promise<T | undefined> {
-        const rows = (await sqlTx.unsafe(text, params as any[])) as unknown[];
-        return rows[0] ? ({ ...(rows[0] as Record<string, unknown>) } as T) : undefined;
-      },
-    };
-    return fn(tx);
-  });
-  // postgres.js types begin()'s return as UnwrapPromiseArray<R>; for a plain
-  // (non-promise-array) R that resolves to R, so this cast is sound.
-  return result as unknown as R;
+  //
+  // The cached `txSql` connection can go stale between Worker requests (e.g.
+  // the Postgres server closed the idle connection). On a connection-level
+  // error we reset txSql so the next caller gets a fresh connection instead of
+  // hitting the same dead socket repeatedly.
+  try {
+    const result = await getSql().begin(async (sqlTx) => {
+      const tx: Tx = {
+        async query<T = Record<string, unknown>>(text: string, params: unknown[] = []) {
+          const rows = (await sqlTx.unsafe(text, params as any[])) as unknown[];
+          return rows.map((r) => ({ ...(r as Record<string, unknown>) })) as unknown as T[];
+        },
+        async one<T = Record<string, unknown>>(text: string, params: unknown[] = []): Promise<T | undefined> {
+          const rows = (await sqlTx.unsafe(text, params as any[])) as unknown[];
+          return rows[0] ? ({ ...(rows[0] as Record<string, unknown>) } as T) : undefined;
+        },
+      };
+      return fn(tx);
+    });
+    // postgres.js types begin()'s return as UnwrapPromiseArray<R>; for a plain
+    // (non-promise-array) R that resolves to R, so this cast is sound.
+    return result as unknown as R;
+  } catch (err) {
+    // Reset stale connection so the next withTransaction call reconnects.
+    const msg = String((err as any)?.message ?? err);
+    // Check both the structured error code (postgres.js / Node.js) and the
+    // message string so provider-specific errors don't slip through.
+    const code = String((err as any)?.code ?? "");
+    const isConnError =
+      /^(ECONNRESET|ECONNREFUSED|ENOTFOUND|ETIMEDOUT|EPIPE|ECONNABORTED)$/.test(code) ||
+      /ECONNRESET|ENOTFOUND|ETIMEDOUT|connection|socket|closed|EOF|network/i.test(msg);
+    if (isConnError) {
+      try { await txSql?.end({ timeout: 0 }); } catch {}
+      txSql = null;
+    }
+    throw err;
+  }
 }

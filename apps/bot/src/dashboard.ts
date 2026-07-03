@@ -319,7 +319,16 @@ export function buildDashboard(): Hono<{ Bindings: DashBindings }> {
 
     const uid = c.get("uid");
     const secret = newWebhookSecret();
-    const encToken = await encryptToken(token);
+    // encryptToken requires TOKEN_ENC_KEY to be a valid 32-byte hex secret.
+    // Wrap so a misconfigured key returns a clear 500 rather than an opaque
+    // Hono-default {"message":"Internal Server Error"} that the client can't
+    // distinguish from a plan-limit 402 or a Telegram error 400.
+    let encToken: Buffer;
+    try { encToken = await encryptToken(token); }
+    catch (err) {
+      console.error("[POST /bots] encryptToken failed:", String((err as any)?.message ?? err));
+      return c.json({ error: "Server configuration error — could not encrypt bot token. Contact support." }, 500);
+    }
     // count-check + INSERT run atomically under a per-user advisory lock so two
     // concurrent connect-bot requests can't both pass the count and both insert.
     const out = await withPlanLimit(uid, "bots", async (tx) => {
@@ -336,8 +345,23 @@ export function buildDashboard(): Hono<{ Bindings: DashBindings }> {
     });
     if ("error" in out) return c.json({ error: out.error }, 402);
     // setWebhook AFTER the transaction commits — don't hold the lock across HTTP.
-    await setWebhook(token, `${config.publicBaseUrl}/hook/${out.result.secret}`, out.result.secret);
-    return c.json({ bot_id: out.result.bot_id, username: out.result.username, try_it: `https://t.me/${out.result.username}` });
+    // The bot row is already committed at this point, so a webhook failure is
+    // non-fatal: the bot is connected and will work once the webhook is fixed
+    // (e.g. re-submitting the token re-registers it). Return a warning rather
+    // than a 500 that would make the dashboard show "@undefined connected".
+    let webhookWarning: string | null = null;
+    try {
+      await setWebhook(token, `${config.publicBaseUrl}/hook/${out.result.secret}`, out.result.secret);
+    } catch (err) {
+      console.error("[POST /bots] setWebhook failed:", String((err as any)?.message ?? err));
+      webhookWarning = "Bot saved — but webhook registration failed. Re-submit the token to retry, or check PUBLIC_BASE_URL config.";
+    }
+    return c.json({
+      bot_id: out.result.bot_id,
+      username: out.result.username,
+      try_it: `https://t.me/${out.result.username}`,
+      ...(webhookWarning ? { warning: webhookWarning } : {}),
+    });
   });
 
   // ---- plan & billing ----
@@ -582,7 +606,8 @@ function toast(msg) { const t=$('toast'); t.textContent=msg; t.style.display='bl
 async function api(path, opts) {
   const r = await fetch('/bot/dash/api'+path, opts);
   if (r.status === 401) { location.reload(); throw new Error('session expired'); }
-  return r.json();
+  try { return await r.json(); }
+  catch { return { error: 'Server error (' + r.status + ') — try again or contact support' }; }
 }
 async function logout() { await fetch('/bot/auth/logout',{method:'POST'}); location.reload(); }
 
@@ -636,7 +661,9 @@ async function connectBot(){
   if (!token) return toast('Paste a bot token first');
   const r = await api('/bots',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({token, welcome_message:$('botWelcome').value.trim()||undefined})});
   if (r.error) return toast(r.error);
-  $('botToken').value=''; toast('Bot @'+r.username+' connected'); load();
+  $('botToken').value='';
+  if (r.warning) { toast(r.warning); } else { toast('Bot @'+r.username+' connected'); }
+  load();
 }
 
 let firstBotId = null;
