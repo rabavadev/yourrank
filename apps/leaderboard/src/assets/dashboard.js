@@ -161,6 +161,8 @@ function collect(){
     out.branding = { accentA: $("c_a").value, accentB: $("c_b").value };
     if (LOGO !== undefined) out.branding.logo = LOGO;
   }
+  const tplEl = $("f_template");
+  if (tplEl) out.branding = { ...(out.branding || {}), template: tplEl.value };
   // Custom domain (Pro only)
   const domainEl = $("f_domain");
   if (domainEl && (ME.plan === "pro" || ME.plan === "agency")) {
@@ -170,9 +172,25 @@ function collect(){
 }
 
 /* --- branding (paid) --- */
+function ensureTemplateCard(){
+  if ($("templateCard")) return;
+  const anchor = $("brandCard");
+  if (!anchor || !anchor.parentNode) return;
+  const card = document.createElement("div");
+  card.className = "card"; card.id = "templateCard";
+  card.innerHTML = '<h2>Page template</h2><p class="card-sub">The overall look of your public page. Available on every plan.</p>' +
+    '<div class="field"><label for="f_template">Template</label><select id="f_template">' +
+    '<option value="classic">Classic \u2014 purple night, cyan gradient</option>' +
+    '<option value="midnight">Midnight Gold \u2014 black felt, molten gold</option>' +
+    '</select><span class="hint">Save to apply. Pro accent colors and logo work on top of any template.</span></div>';
+  anchor.parentNode.insertBefore(card, anchor);
+}
 function renderBranding(br){
+  ensureTemplateCard();
   const paid = ME.plan !== "free";
   $("brandBody").hidden = !paid; $("brandLock").hidden = paid;
+  const tplSel = $("f_template");
+  if (tplSel) tplSel.value = br.template || "classic";
   if (br.accentA) $("c_a").value = br.accentA;
   if (br.accentB) $("c_b").value = br.accentB;
   if (br.hasLogo) { $("logoPreview").src = "/logo/" + SLUG + "?t=" + Date.now(); $("logoPreview").hidden = false; $("logoClear").hidden = false; }

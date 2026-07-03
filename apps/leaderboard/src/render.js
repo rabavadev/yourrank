@@ -1,4 +1,5 @@
 // Server-render a streamer's leaderboard page from their data.
+import { templateCss, validTemplate } from "./templates/index.js";
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 
 const HEX = /^#[0-9a-fA-F]{6}$/;
@@ -6,6 +7,10 @@ const HEX = /^#[0-9a-fA-F]{6}$/;
 export function renderLeaderboard(data, opts = {}) {
   const b = data.brand || {};
   const br = data.branding || {};
+  // Template: which visual skin renders this page. Falls back to "classic".
+  const tpl = validTemplate(br.template);
+  const tplCssStr = templateCss(tpl);
+  const tplCss = tplCssStr ? `<style data-template="${tpl}">${tplCssStr}</style>` : "";
   // Free-plan pages carry the badge — it's how YourRank spreads.
   const badge = opts.watermark
     ? `<a class="rk-badge" href="${esc(opts.homeUrl || "/")}" target="_blank" rel="noopener">⚡ Powered by <b>YourRank</b></a>`
@@ -31,9 +36,10 @@ export function renderLeaderboard(data, opts = {}) {
 <link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="/assets/leaderboard.css" />
+${tplCss}
 ${themeCss}
 <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebPage","name":${JSON.stringify(title)},"description":${JSON.stringify(desc)}}</script>
-</head><body>
+</head><body data-template="${tpl}">
 <a class="skip-link" href="#board">Skip to leaderboard</a>
 <div class="field" aria-hidden="true"></div><div class="watermarks" data-watermarks aria-hidden="true"></div>
 <header class="nav"><a class="nav-brand" href="#top">${navLogo}<span data-brand-name>${esc(b.name)}</span></a>

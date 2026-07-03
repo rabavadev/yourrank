@@ -2,6 +2,7 @@
 import { effectivePlan, PLAN_LIMITS, BOARD_LIMITS } from "./billing.js";
 import { query, one, exec, getSql } from "./db.js";
 import { notifyTop3Change, notifyReset, detectTop3Changes, notifySubscribedPlayers } from "./notifications.js";
+import { TEMPLATE_IDS } from "./templates/index.js";
 
 export const DEFAULT_EXTRA = {
   chips: ["Fast Payouts", "Crypto Friendly", "24/7 Support"],
@@ -112,6 +113,7 @@ function parseTheme(site) {
   return {
     accentA: HEX.test(t.accentA || "") ? t.accentA : null,
     accentB: HEX.test(t.accentB || "") ? t.accentB : null,
+    template: TEMPLATE_IDS.includes(t.template) ? t.template : "classic",
   };
 }
 
@@ -148,7 +150,7 @@ export function publicShape(site, players, archives = [], hasLogo = false) {
     endsAt: site.ends_at,
     partner: { blurb: site.blurb, chips: m.chips },
     whyStats: m.whyStats, rules: m.rules, socials: m.socials,
-    branding: { hasLogo, accentA: theme.accentA, accentB: theme.accentB },
+    branding: { hasLogo, accentA: theme.accentA, accentB: theme.accentB, template: theme.template },
     pastWinners: archives.map(archiveShape),
     players: players.map((p) => ({ name: p.name, wagered: p.wagered, prize: p.prize })),
   };
@@ -335,6 +337,10 @@ export async function saveSite(env, user, payload, siteId) {
   let logoData = existingLogoRow?.logo_data ?? "";
   let themeObj = (site.theme_json && typeof site.theme_json === "object") ? site.theme_json : {};
   const br = payload.branding;
+  // Template selection is available on every plan. Whitelisted ids only.
+  if (br && typeof br.template === "string" && TEMPLATE_IDS.includes(br.template)) {
+    themeObj = { ...themeObj, template: br.template };
+  }
   if (br && typeof user === "object" && effectivePlan(user) !== "free") {
     if (br.logo === null) logoData = "";
     else if (typeof br.logo === "string" && br.logo) {
@@ -345,6 +351,7 @@ export async function saveSite(env, user, payload, siteId) {
     const t = {};
     if (HEX.test(br.accentA || "")) t.accentA = br.accentA;
     if (HEX.test(br.accentB || "")) t.accentB = br.accentB;
+    if (themeObj.template && themeObj.template !== "classic") t.template = themeObj.template;
     themeObj = t;
   }
   const themeJson = JSON.stringify(themeObj);
