@@ -619,8 +619,8 @@ async function load() {
     '<td><button class="ghost" onclick="toggleOffer(\\''+escJsAttr(o.id)+'\\','+(!o.is_active)+')">'+(o.is_active?'Disable':'Enable')+'</button></td>'+
   '</tr>').join('') || '<tr><td colspan="6" class="muted">No offers yet.</td></tr>';
 }
-function esc(s){ return (s??'').replace(/[&<>"']/g, ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[ch])); }
-function escJsAttr(s){ return (s??'').replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/\n/g,'n').replace(/\r/g,'r'); }
+function esc(s){ return (s??'').replace(/[&<>"']/g, ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch])); }
+function escJsAttr(s){ return (s??'').replace(/\\\\/g,'\\\\\\\\').replace(/'/g,"\\\\'").replace(/\\n/g,'n').replace(/\\r/g,'r'); }
 function copyLink(slug){ navigator.clipboard.writeText(location.origin+'/r/'+slug); toast('Link copied'); }
 async function toggleOffer(id, on){ await api('/offers/'+id,{method:'PATCH',headers:{'content-type':'application/json'},body:JSON.stringify({is_active:on})}); load(); }
 async function createOffer(){
