@@ -1,4 +1,4 @@
-# GroupsMix — URL Map & Cloudflare Routing (two Workers, one zone)
+# YourRank — URL Map & Cloudflare Routing (two Workers, one zone)
 
 `yourrank.site` is one Cloudflare zone with **two Workers** attached by route
 pattern. Cloudflare dispatches each incoming request to exactly one Worker based

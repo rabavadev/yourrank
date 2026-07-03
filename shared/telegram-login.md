@@ -1,4 +1,4 @@
-# GroupsMix — Telegram-login ⇄ Password account mapping
+# YourRank — Telegram-login ⇄ Password account mapping
 
 Goal: **one `users` row per real person**, regardless of whether they arrived
 via email+password (leaderboard) or via the Telegram Login Widget (bot). Same

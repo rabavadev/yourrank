@@ -1,5 +1,5 @@
 // ============================================================================
-//  GroupsMix — SHARED SESSION (bot Worker, TypeScript)
+//  YourRank — SHARED SESSION (bot Worker, TypeScript)
 //
 //  Byte-for-byte-behavioural port of shared/session.js. See that file's header
 //  for the full model. Summary:

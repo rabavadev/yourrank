@@ -186,6 +186,7 @@ export async function getUserSite(env, uid, plan) {
       id: site.id, slug: site.slug, published: !!site.published,
       data: publicShape(site, await getPlayers(env, site.id), archives.slice(0, 6), !!logoRow?.has_logo),
       customDomain: site.custom_domain || "",
+        domainStatus: site.domain_status || "pending",
       notify: {
         discord_webhook_url: !!extra.discord_webhook_url,
         telegram_bot_token: !!extra.telegram_bot_token,
@@ -226,6 +227,7 @@ export async function getUserSiteById(env, uid, siteId, plan) {
     id: site.id, slug: site.slug, published: !!site.published,
     data: publicShape(site, await getPlayers(env, site.id), archives.slice(0, 6), !!logoRow?.has_logo),
     customDomain: site.custom_domain || "",
+        domainStatus: site.domain_status || "pending",
     notify: {
       discord_webhook_url: !!extra.discord_webhook_url,
       telegram_bot_token: !!extra.telegram_bot_token,

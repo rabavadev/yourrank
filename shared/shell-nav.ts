@@ -1,5 +1,5 @@
 // ============================================================================
-//  GroupsMix — SHARED DASHBOARD SHELL / TOP NAV  (bot Worker, TypeScript)
+//  YourRank — SHARED DASHBOARD SHELL / TOP NAV  (bot Worker, TypeScript)
 //
 //  Behavioural port of shared/shell-nav.js. See that file for the full doc.
 //  Renders the same sticky header (Leaderboard | Bot | Analytics | Billing |
@@ -78,7 +78,7 @@ export function shellNavHtml(
   <div class="gm-shell-inner">
     <a class="gm-brand" href="/dashboard">
       <span class="gm-brand-mark">GM</span>
-      <span class="gm-brand-word">GroupsMix</span>
+      <span class="gm-brand-word">YourRank</span>
     </a>
     <nav class="gm-tabs">${tabs}</nav>
     <div class="gm-who">

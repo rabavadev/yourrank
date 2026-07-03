@@ -1,4 +1,4 @@
-# GroupsMix — Unified Dashboard Shell
+# YourRank — Unified Dashboard Shell
 
 Two Workers, one domain, **one dashboard feel**. The shell is a shared sticky
 header injected at the top of *both* dashboards' server-rendered HTML. Because
@@ -29,7 +29,7 @@ Files: [`shell-nav.js`](./shell-nav.js) (leaderboard, JS) · [`shell-nav.ts`](./
 Sticky top bar, 56px, containing:
 
 ```
-[GM GroupsMix]   Leaderboard  Bot  Analytics  Billing        {name}  {plan badge}  Logout
+[GM YourRank]   Leaderboard  Bot  Analytics  Billing        {name}  {plan badge}  Logout
 ```
 
 - **Brand** (`GM` lime chip + wordmark) → `/dashboard`.
@@ -82,7 +82,7 @@ async function dashboardPage(req, env, url) {
 
   const html = `<!doctype html><html><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>GroupsMix — Dashboard</title>
+<title>YourRank — Dashboard</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <style>${SHELL_NAV_CSS}${PAGE_CSS}</style></head><body>
 ${shellNavHtml({ activePath: url.pathname, user })}
@@ -110,7 +110,7 @@ app.get("/bot/dashboard", async (c) => {
 
   return c.html(`<!doctype html><html><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>GroupsMix — Bot</title>
+<title>YourRank — Bot</title>
 <style>${SHELL_NAV_CSS}${BASE_CSS}</style></head><body>
 ${shellNavHtml({ activePath: "/bot/dashboard", user })}
 <main class="gm-shell-main">

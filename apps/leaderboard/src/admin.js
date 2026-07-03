@@ -12,8 +12,26 @@ export async function requireAdmin(request, env) {
   return { admin: u, res: null };
 }
 
+// Like requireAdmin, but also checks that 2FA is verified if the admin has it enabled.
+// Used by data endpoints (overview, users, leads, payments, action).
+// The 2FA endpoints themselves use plain requireAdmin to avoid chicken-and-egg.
+export async function requireAdminWith2fa(request, env) {
+  const { admin, res } = await requireAdmin(request, env);
+  if (res) return { admin: null, res };
+  // Check if 2FA is required
+  const user = await one("SELECT totp_secret FROM users WHERE id=$1", [admin.id]);
+  if (user?.totp_secret) {
+    const token = readToken(request);
+    const tfaVerified = token ? await env.SESSIONS.get(`2fa:${token}`) : null;
+    if (tfaVerified !== "1") {
+      return { admin: null, res: bad("2fa_required", 403) };
+    }
+  }
+  return { admin, res: null };
+}
+
 export async function handleOverview(request, env) {
-  const { res } = await requireAdmin(request, env);
+  const { res } = await requireAdminWith2fa(request, env);
   if (res) return res;
   const [users, pro, leads, revenue] = await Promise.all([
     one("SELECT COUNT(*) n FROM users"),
@@ -25,7 +43,7 @@ export async function handleOverview(request, env) {
 }
 
 export async function handleUsers(request, env) {
-  const { res } = await requireAdmin(request, env);
+  const { res } = await requireAdminWith2fa(request, env);
   if (res) return res;
   const rows = await query(
     `SELECT u.id, u.email, u.plan,
@@ -42,7 +60,7 @@ export async function handleUsers(request, env) {
 }
 
 export async function handleLeads(request, env) {
-  const { res } = await requireAdmin(request, env);
+  const { res } = await requireAdminWith2fa(request, env);
   if (res) return res;
   const rows = await query(
     "SELECT id, handle, casino, contact, note, (EXTRACT(EPOCH FROM created_at) * 1000)::double precision AS created_at FROM leads ORDER BY created_at DESC LIMIT 500"
@@ -51,7 +69,7 @@ export async function handleLeads(request, env) {
 }
 
 export async function handlePayments(request, env) {
-  const { res } = await requireAdmin(request, env);
+  const { res } = await requireAdminWith2fa(request, env);
   if (res) return res;
   const rows = await query(
     `SELECT p.id, p.user_id, p.provider, p.amount AS amount_usd, p.currency, p.invoice_id, p.tx_ref, p.status,
@@ -65,7 +83,7 @@ export async function handlePayments(request, env) {
 
 // POST /api/admin/action — { userId, action: starter|pro|agency|free|suspend|unsuspend|reset-link, days?, plan? }
 export async function handleAction(request, env) {
-  const { admin, res } = await requireAdmin(request, env);
+  const { admin, res } = await requireAdminWith2fa(request, env);
   if (res) return res;
   const body = await readJson(request);
   if (!body || !body.userId || !body.action) return bad("userId and action required");

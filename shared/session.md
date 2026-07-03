@@ -1,4 +1,4 @@
-# GroupsMix — Shared Cross-Worker Session Spec
+# YourRank — Shared Cross-Worker Session Spec
 
 One session, two Workers, one domain. A user who logs in on the leaderboard
 Worker is authenticated on the bot Worker with **no second login**, and vice

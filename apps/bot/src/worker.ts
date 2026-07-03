@@ -137,10 +137,14 @@ export default {
           })(),
         ]);
 
-        // Log any rejections but don't throw — other tasks may have succeeded
+        // Log any rejections and alert via Discord — allSettled never throws
         const failures = results.filter(r => r.status === "rejected");
         if (failures.length > 0) {
-          console.error(`[cron 0 3 * * *] ${failures.length} task(s) failed`);
+          const failedTasks = ["rollupClicks", "ensureNextMonthPartition", "downgradeExpired"]
+            .filter((_, i) => results[i].status === "rejected");
+          const reasons = failures.map(f => String((f as PromiseRejectedResult).reason?.message || f.reason)).join("; ");
+          console.error(`[cron 0 3 * * *] ${failures.length} task(s) failed: ${failedTasks.join(", ")} — ${reasons}`);
+          await notifyCronFailure(env, event.cron, failedTasks.join(", "), reasons);
         } else {
           console.log(`[cron 0 3 * * *] All tasks completed successfully at ${new Date().toISOString()}`);
         }

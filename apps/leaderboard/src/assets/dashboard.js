@@ -40,6 +40,8 @@ async function init(){
   renderDomain();
   renderNotifications(p.notify || {});
   if (p.customDomain !== undefined) $("f_domain").value = p.customDomain || "";
+  // Show domain TLS status if a custom domain is set
+  if (p.customDomain && p.domainStatus) renderDomainStatus(p.domainStatus, "");
   // Published toggle
   const pubToggle = $("pubToggle");
   if (pubToggle) pubToggle.checked = p.published !== false;
