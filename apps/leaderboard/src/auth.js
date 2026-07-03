@@ -144,10 +144,13 @@ export async function handleAccountDelete(request, env) {
   try {
     const user = await currentUser(request, env);
     if (!user) return bad("unauthorized", 401);
-    if (!user.password_hash) return bad("Account deletion requires a password. Contact support.", 400);
+    // BUG-001 FIX: currentUser() → loadUser() does NOT select password_hash
+    // or password_salt. Fetch them separately here for verification.
+    const userPw = await one("SELECT password_hash, password_salt FROM users WHERE id=$1", [user.id]);
+    if (!userPw?.password_hash) return bad("Account deletion requires a password. Contact support.", 400);
     const body = await readJson(request);
     if (!body || !body.password) return bad("Password required to confirm deletion");
-    const { ok: pwOk } = await verifyPassword(body.password, user.password_salt, user.password_hash);
+    const { ok: pwOk } = await verifyPassword(body.password, userPw.password_salt, userPw.password_hash);
     if (!pwOk) return bad("Incorrect password", 401);
     // Delete the user row — ON DELETE CASCADE removes all child rows.
     await exec("DELETE FROM users WHERE id=$1", [user.id]);

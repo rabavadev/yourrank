@@ -67,7 +67,7 @@ async function resolveCustomDomain(env, host) {
   const cached = CUSTOM_DOMAIN_CACHE.get(host);
   if (cached && cached.expires > now) return cached.slug;
   try {
-    const row = await one("SELECT slug FROM sites WHERE custom_domain=$1 AND published=true AND suspended IS NOT TRUE", [host]);
+    const row = await one("SELECT s.slug FROM sites s JOIN users u ON u.id = s.user_id WHERE s.custom_domain=$1 AND s.published=true AND u.status != 'suspended'", [host]);
     const slug = row?.slug || null;
     CUSTOM_DOMAIN_CACHE.set(host, { slug, expires: now + CUSTOM_DOMAIN_TTL });
     return slug;
@@ -84,7 +84,12 @@ export default {
       // this must run before any DB call — mirrors the bot Worker's worker.ts.
       if (typeof globalThis.process === "undefined") globalThis.process = { env: {} };
       const pe = globalThis.process.env;
-      pe.DATABASE_URL = env.HYPERDRIVE?.connectionString ?? env.DATABASE_URL;
+      // Hyperdrive binding may exist in the Worker config but have a deleted
+      // backing config — accessing it can throw. Wrap in try/catch so the
+      // DATABASE_URL secret fallback still works.
+      let hdConn = null;
+      try { hdConn = env.HYPERDRIVE?.connectionString ?? null; } catch {}
+      pe.DATABASE_URL = hdConn ?? env.DATABASE_URL;
       globalThis.__yr_env = env; // for KV-backed cache invalidation in site.js
 
       const url = new URL(request.url);
@@ -164,7 +169,7 @@ export default {
         `<url><loc>${origin}/responsible</loc><priority>0.3</priority></url>`,
       ];
       try {
-        const sites = await query("SELECT slug FROM sites WHERE published=true AND suspended IS NOT TRUE");
+        const sites = await query("SELECT s.slug FROM sites s JOIN users u ON u.id = s.user_id WHERE s.published=true AND u.status != 'suspended'");
         for (const s of sites) {
           entries.push(`<url><loc>${origin}/${encodeURIComponent(s.slug)}</loc><priority>0.8</priority></url>`);
         }
@@ -536,7 +541,8 @@ a{color:#c8ff00;text-decoration:none;font-weight:600}</style></head><body>
       const r = await getPublicSite(env, slug);
       if (!r) {
         // Check if site exists but is unpublished — show Coming Soon instead of 404
-        const rawSite = await one("SELECT slug, published, suspended FROM sites WHERE slug=$1", [slug]);
+        // BUG-002 FIX: sites table has no 'suspended' column; join users to get status.
+        const rawSite = await one("SELECT s.slug, s.published, (u.status = 'suspended') AS suspended FROM sites s LEFT JOIN users u ON u.id = s.user_id WHERE s.slug=$1", [slug]);
         if (rawSite && !rawSite.published && !rawSite.suspended) {
           return new Response(comingSoonPage(slug), { status: 200, headers: HTML });
         }

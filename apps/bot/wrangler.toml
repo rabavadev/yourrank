@@ -26,10 +26,10 @@ crons = ["* * * * *", "0 3 * * *"]
 binding = "SESSIONS"
 id = "26e47bcce19941839a20bd2cd5879e42"
 
-# Postgres via Hyperdrive (connection pooling for Workers).
+# Postgres via Hyperdrive — recreated with correct username (postgres).
 [[hyperdrive]]
 binding = "HYPERDRIVE"
-id = "f24c020e169848448e4ab9ca7d24ac23"
+id = "9e5b625bfdd84cd691b44c4780bdaf13"
 
 # Secrets (wrangler secret put ...):
 #   DATABASE_URL            # Supabase connection string (only if not using Hyperdrive)

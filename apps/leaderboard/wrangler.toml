@@ -27,22 +27,10 @@ binding = "SESSIONS"
 id = "26e47bcce19941839a20bd2cd5879e42"
 
 # --- Postgres (Supabase) via Hyperdrive. ---
-# db.js reads process.env.DATABASE_URL, which index.js populates from
-# env.HYPERDRIVE.connectionString (falling back to the DATABASE_URL secret).
-#
-# 1. Create the Hyperdrive config pointing at the Supabase DIRECT host
-#    (NOT the pooler — Hyperdrive pools itself; using the pooler double-pools
-#    and causes connection-setup hangs). Get the direct string from
-#    Supabase → Settings → Database → Connection string → "Direct connection"
-#    (host db.<ref>.supabase.co, port 5432):
-#       npx wrangler hyperdrive create groupsmix-pg \
-#         --connection-string="postgresql://postgres.<ref>:<pw>@db.<ref>.supabase.co:5432/postgres"
-# 2. Paste the printed id below.
-# 3. As a fallback for local/dev without Hyperdrive, set the secret:
-#       npx wrangler secret put DATABASE_URL
+# Config recreated with correct username (postgres, not postgres.<ref>).
 [[hyperdrive]]
 binding = "HYPERDRIVE"
-id = "f24c020e169848448e4ab9ca7d24ac23"
+id = "9e5b625bfdd84cd691b44c4780bdaf13"
 
 [vars]
 APP_NAME = "YourRank"
@@ -82,9 +70,7 @@ APP_NAME = "YourRank (Staging)"
 binding = "SESSIONS"
 id = "e0b6cba066ad4168ad76629f23b5111d"
 
-# Staging Hyperdrive — TEMPORARILY sharing production DB.
-# TODO: Create a separate staging Supabase project and point this at it.
-# Create with: npx wrangler hyperdrive create yourrank-staging-pg --connection-string="..."
+# Staging Hyperdrive — sharing production Hyperdrive config for now.
 [[env.staging.hyperdrive]]
 binding = "HYPERDRIVE"
-id = "f24c020e169848448e4ab9ca7d24ac23"
+id = "9e5b625bfdd84cd691b44c4780bdaf13"
