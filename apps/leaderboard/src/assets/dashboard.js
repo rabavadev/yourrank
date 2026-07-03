@@ -1,14 +1,6 @@
 /* Dashboard: load the user's site, edit brand + players, save back, manage plan. */
 // SEC-108: Read CSRF cookie and include it on state-changing requests.
 function getCsrf() { const m = document.cookie.match(/(?:^|;\s*)__csrf=([^;]+)/); return m ? m[1] : ""; }
-window.addEventListener("error", (e) => {
-  const el = document.getElementById("loading");
-  if (el) el.textContent = "JS error: " + (e.error?.message || e.message || "unknown") + " at line " + (e.lineno || "?");
-});
-window.addEventListener("unhandledrejection", (e) => {
-  const el = document.getElementById("loading");
-  if (el) el.textContent = "Async error: " + (e.reason?.message || e.reason || "unknown");
-});
 const $ = (id) => document.getElementById(id);
 let SLUG = null, EXTRA = {}, ME = null, ACTIVE_SITE_ID = null, BOARDS = [];
 let LOGO; // undefined = unchanged, null = remove, string = new data URI
