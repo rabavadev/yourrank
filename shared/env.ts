@@ -8,14 +8,12 @@ export function populateEnv(env: Record<string, any>, options?: { setGlobalEnv?:
   }
   const pe = (globalThis as any).process.env;
   
-  // Prefer Hyperdrive over the direct DATABASE_URL secret. Hyperdrive
-  // provides connection pooling and handles TLS to the origin internally,
-  // so the Worker only needs a plain TCP connection to the local proxy.
-  // A direct DATABASE_URL to e.g. Supabase requires TLS which the postgres
-  // driver cannot always negotiate inside Workers (hangs on handshake).
+  // Prefer the direct DATABASE_URL secret over Hyperdrive — the Hyperdrive
+  // config currently has an empty password so its connection string is
+  // unusable. The direct URL includes sslmode=require for Supabase TLS.
   let hdConn: string | null = null;
   try { hdConn = env.HYPERDRIVE?.connectionString ?? null; } catch {}
-  pe.DATABASE_URL = hdConn || env.DATABASE_URL;
+  pe.DATABASE_URL = env.DATABASE_URL || hdConn;
   
   // Common bindings used by both Workers
   pe.PUBLIC_BASE_URL = env.PUBLIC_BASE_URL;
