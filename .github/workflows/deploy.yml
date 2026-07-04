@@ -46,10 +46,10 @@ jobs:
           bun-version: '1.2.15'
       - run: bun install
       - name: Audit dependencies
-        run: bun audit --audit-level moderate || true
+        run: bun audit --audit-level moderate
       - name: Run tests
         working-directory: apps/leaderboard
-        run: bun test || true
+        run: bun test
       - working-directory: apps/leaderboard
         run: bun install --frozen-lockfile
       - working-directory: apps/leaderboard
@@ -72,10 +72,10 @@ jobs:
           bun-version: '1.2.15'
       - run: bun install
       - name: Audit dependencies
-        run: bun audit --audit-level moderate || true
+        run: bun audit --audit-level moderate
       - name: Run tests
         working-directory: apps/bot
-        run: bun test || true
+        run: bun test
       - working-directory: apps/bot
         run: bun install --frozen-lockfile
       - working-directory: apps/bot
