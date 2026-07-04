@@ -60,7 +60,12 @@ jobs:
         run: bun audit --audit-level moderate
       - name: Run tests
         working-directory: apps/leaderboard
-        run: bun test
+        run: |
+          # Run each test file in isolation to prevent mock.module cross-contamination
+          for f in src/__tests__/*.test.js; do
+            echo "--- $f ---"
+            bun test "$f" || exit 1
+          done
       - working-directory: apps/leaderboard
         run: node build.js
       - uses: cloudflare/wrangler-action@ebbaa1584979971c8614a24965b4405ff95890e0
