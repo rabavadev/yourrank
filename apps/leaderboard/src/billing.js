@@ -221,9 +221,9 @@ export async function handleIpn(request, env) {
 
         // Validate that the actual paid amount meets the minimum threshold for the tier
         // Allow small rounding differences (within 1%) but reject significant underpayments
-        const tierPrice = PLAN_PRICES[targetPlan] || PLAN_PRICES.pro;
+        const tierPrice = orderId.startsWith("rk_lt_") ? 149 : (PLAN_PRICES[targetPlan] || PLAN_PRICES.pro);
         const minAccepted = tierPrice * 0.99; // Allow 1% rounding tolerance
-        if (actuallyPaid < minAccepted && !orderId.startsWith("rk_lt_")) {
+        if (actuallyPaid < minAccepted) {
           // Underpayment: don't grant the tier, just record the payment status
           console.warn(`[IPN] Underpayment for order ${orderId}: paid ${actuallyPaid}, expected ${tierPrice} for ${targetPlan}`);
           return { code: 200 };

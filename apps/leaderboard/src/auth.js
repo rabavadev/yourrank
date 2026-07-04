@@ -122,7 +122,7 @@ export async function currentUser(req, env) {
 // 
 // Rate limiting is degraded on KV errors (returns true to allow request)
 // to prevent blocking legitimate auth attempts during KV outages.
-export async function rateLimit(env, key, limit, ttlSeconds) {
+export async function rateLimit(env, key, limit, ttlSeconds, { failClosed = false } = {}) {
   try {
     const k = `rl:${key}`;
     const cur = parseInt((await env.SESSIONS.get(k)) || "0", 10);
@@ -133,7 +133,12 @@ export async function rateLimit(env, key, limit, ttlSeconds) {
     await env.SESSIONS.put(k, String(nextVal), { expirationTtl: ttlSeconds });
     return true;
   } catch (e) {
-    // Degrade gracefully on KV errors: allow the request but log the failure
+    // On KV errors: fail closed for sensitive endpoints (login, signup, reset)
+    // to preserve brute-force protection; fail open for non-critical endpoints.
+    if (failClosed) {
+      console.error("[rateLimit] KV error, FAILING CLOSED:", String(e?.message || e));
+      return false;
+    }
     console.error("[rateLimit] KV error, allowing request:", String(e?.message || e));
     return true;
   }

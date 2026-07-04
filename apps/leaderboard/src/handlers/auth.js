@@ -11,7 +11,7 @@ import { getSql, one, exec } from "../../../../shared/db.js";
 
 export async function handleSignup(request, env) {
   try {
-    if (!(await rateLimit(env, `signup:${clientIp(request)}`, 10, 3600))) return bad("Too many attempts. Try again later.", 429);
+    if (!(await rateLimit(env, `signup:${clientIp(request)}`, 10, 3600, { failClosed: true }))) return bad("Too many attempts. Try again later.", 429);
     const body = await readJson(request);
     if (!body) return bad("Invalid request");
     const email = String(body.email || "").trim().toLowerCase();
@@ -61,7 +61,7 @@ export async function handleSignup(request, env) {
 
 export async function handleLogin(request, env) {
   try {
-    if (!(await rateLimit(env, `login:${clientIp(request)}`, 20, 600))) return bad("Too many attempts. Try again in a few minutes.", 429);
+    if (!(await rateLimit(env, `login:${clientIp(request)}`, 20, 600, { failClosed: true }))) return bad("Too many attempts. Try again in a few minutes.", 429);
     const body = await readJson(request);
     if (!body) return bad("Invalid request");
     const email = String(body.email || "").trim().toLowerCase();
@@ -129,12 +129,12 @@ export async function handleMe(request, env) {
 
 // POST /api/auth/forgot — always answers ok; never reveals whether the account exists.
 export async function handleForgot(request, env) {
-  if (!(await rateLimit(env, `forgot:${clientIp(request)}`, 5, 3600))) return bad("Too many attempts. Try again later.", 429);
+  if (!(await rateLimit(env, `forgot:${clientIp(request)}`, 5, 3600, { failClosed: true }))) return bad("Too many attempts. Try again later.", 429);
   const body = await readJson(request);
   const email = String(body?.email || "").trim().toLowerCase();
   if (!isEmail(email)) return bad("Enter a valid email");
   // Per-email rate limit: 3 resets per hour (prevents email bomb abuse).
-  if (!(await rateLimit(env, `forgot-email:${email}`, 3, 3600))) return bad("Too many attempts. Try again later.", 429);
+  if (!(await rateLimit(env, `forgot-email:${email}`, 3, 3600, { failClosed: true }))) return bad("Too many attempts. Try again later.", 429);
   const user = await one("SELECT id, email FROM users WHERE email=$1", [email]);
   if (user) {
     const token = newToken();

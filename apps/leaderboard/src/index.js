@@ -194,7 +194,8 @@ export default {
 
       // --- streamer logos (uploaded via dashboard, served as real images) ---
       if (path.startsWith("/logo/") && method === "GET") {
-        const slug = decodeURIComponent(path.slice(6)).toLowerCase().replace(/\.(png|jpe?g|webp)$/, "");
+        let slug;
+        try { slug = decodeURIComponent(path.slice(6)).toLowerCase().replace(/\.(png|jpe?g|webp)$/, ""); } catch { return new Response("not found", { status: 404 }); }
         const site = await findSiteLogoData(slug);
         const m = (site?.logo_data || "").match(/^data:(image\/(?:png|jpeg|webp));base64,(.+)$/);
         if (!m) return new Response("not found", { status: 404 });
@@ -276,7 +277,8 @@ export default {
 
       // --- tracked Join redirect: /go/<slug> → streamer's referral URL ---
       if (method === "GET" && path.startsWith("/go/")) {
-        const slug = decodeURIComponent(path.slice(4).split("/")[0]).toLowerCase();
+        let slug;
+        try { slug = decodeURIComponent(path.slice(4).split("/")[0]).toLowerCase(); } catch { return new Response("not found", { status: 404 }); }
         const r = await getPublicSite(env, slug);
         if (!r || r.suspended) return Response.redirect(url.origin, 302);
         if (r.id) ctx.waitUntil(bumpStat(env, r.id, "clicks"));
@@ -286,7 +288,8 @@ export default {
 
       // --- OBS overlay: /<slug>/overlay ---
       if (method === "GET" && /^\/[^/]+\/overlay$/.test(path)) {
-        const slug = decodeURIComponent(path.slice(1).split("/")[0]).toLowerCase();
+        let slug;
+        try { slug = decodeURIComponent(path.slice(1).split("/")[0]).toLowerCase(); } catch { return new Response("not found", { status: 404 }); }
         if (RESERVED.has(slug)) return new Response("not found", { status: 404 });
         const r = await getPublicSite(env, slug);
         if (!r || r.suspended) return new Response("not found", { status: 404 });
@@ -309,7 +312,8 @@ a{color:#c8ff00;text-decoration:none;font-weight:600}</style></head><body>
 
       // --- public leaderboard at /<slug> ---
       if (method === "GET" && path.length > 1 && !path.includes(".")) {
-        const slug = decodeURIComponent(path.slice(1).split("/")[0]).toLowerCase();
+        let slug;
+        try { slug = decodeURIComponent(path.slice(1).split("/")[0]).toLowerCase(); } catch { return new Response("not found", { status: 404 }); }
         if (RESERVED.has(slug)) return new Response("not found", { status: 404 });
         const r = await getPublicSite(env, slug);
         if (!r) {

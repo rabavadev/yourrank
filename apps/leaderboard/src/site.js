@@ -65,20 +65,20 @@ async function getCached(env, key, dbFetcher) {
   return data;
 }
 
-export function invalidateSiteCache(...keys) {
+export function invalidateSiteCache(env, ...keys) {
   // Invalidate multiple cache keys (slug, uid, siteId, etc.)
   for (const key of keys) {
     siteCache.delete(key);
     // Fire-and-forget KV delete — best-effort; 30s TTL handles stale entries anyway.
-    try { globalThis.__yr_env?.SESSIONS?.delete(KV_PREFIX_SITE + key).catch(() => {}); } catch {}
+    try { env?.SESSIONS?.delete(KV_PREFIX_SITE + key).catch(() => {}); } catch {}
   }
 }
 
-export function invalidateUserCache(uid) {
+export function invalidateUserCache(env, uid) {
   siteCache.delete(uid);
   siteCache.delete(`user_boards:${uid}`);
   try {
-    const sessions = globalThis.__yr_env?.SESSIONS;
+    const sessions = env?.SESSIONS;
     if (sessions) {
       sessions.delete(KV_PREFIX_SITE + uid).catch(() => {});
       sessions.delete(KV_PREFIX_SITE + `user_boards:${uid}`).catch(() => {});
@@ -262,7 +262,7 @@ export async function createBoard(env, uid, { slug, name } = {}) {
     "INSERT INTO sites (id,user_id,slug,name,casino,prize_pool,period,published,extra_json) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9::jsonb)",
     [siteId, uid, slug, name || slug, "", "$0", "Monthly", true, JSON.stringify(DEFAULT_EXTRA)]
   );
-  invalidateUserCache(uid);
+  invalidateUserCache(env, uid);
   return { ok: true, id: siteId, slug };
 }
 
@@ -375,7 +375,7 @@ export async function saveSite(env, user, payload, siteId) {
   const themeJson = JSON.stringify(themeObj);
 
   // Invalidate cache before write (both L1 and L2 for cross-isolate consistency)
-  invalidateSiteCache(site.slug, uid, siteId);
+  invalidateSiteCache(env, site.slug, uid, siteId);
   // Also invalidate L2 KV entries explicitly with env for immediate effect
   const _kv = env?.SESSIONS;
   if (_kv) {

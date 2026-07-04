@@ -52,6 +52,17 @@ export function getSql(): ReturnType<typeof postgres> {
   return txSql;
 }
 
+// Cached instance for reads — reused across query()/one() calls instead of
+// creating and tearing down a connection on every single call.
+let readSql: ReturnType<typeof postgres> | null = null;
+
+function getReadSql(): ReturnType<typeof postgres> {
+  if (!readSql) {
+    readSql = createSql();
+  }
+  return readSql;
+}
+
 // ----------------------------------------------------------------------------
 // Retry logic
 // ----------------------------------------------------------------------------
@@ -61,7 +72,7 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 async function withRetry(text: string, params: unknown[]): Promise<any[]> {
   let lastErr: any;
   for (let attempt = 0; attempt < 3; attempt++) {
-    const sql = createSql();
+    const sql = getReadSql();
     try {
       const rows = await sql.unsafe(text, params as any[]);
       return rows.map((r: any) => ({ ...r }));
@@ -69,10 +80,17 @@ async function withRetry(text: string, params: unknown[]): Promise<any[]> {
       lastErr = e;
       const msg = String(e?.message || e);
       // Don't retry on constraint violations - these are application errors
-      if (/23505|23514|23503|23502|23506/.test(msg)) throw e;
+      if (/23505|23514|23503|23502|23P01/.test(msg)) throw e;
+      // On connection errors, reset the cached instance so the next attempt reconnects
+      const code = String((e as any)?.code ?? "");
+      const isConnError =
+        /^(ECONNRESET|ECONNREFUSED|ENOTFOUND|ETIMEDOUT|EPIPE|ECONNABORTED)$/.test(code) ||
+        /ECONNRESET|ENOTFOUND|ETIMEDOUT|connection|socket|closed|EOF|network/i.test(msg);
+      if (isConnError) {
+        try { await readSql?.end({ timeout: 0 }); } catch {}
+        readSql = null;
+      }
       if (attempt < 2) await sleep(200 * (attempt + 1));
-    } finally {
-      try { await sql.end({ timeout: 1 }); } catch {}
     }
   }
   throw lastErr;

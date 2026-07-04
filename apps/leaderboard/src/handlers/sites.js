@@ -2,7 +2,7 @@
 import { requireUser, json, bad, ok, readJson, rateLimit, slugify, clientIp } from "../auth.js";
 import { getByUser, getUserSite, getUserSiteById, getUserBoardsList, createBoard, createArchive, deleteArchive, invalidateSiteCache, invalidateUserCache, getBoardById, saveSite } from "../site.js";
 import { bumpStat, getStats, getHeatmap, getTopReferrers } from "../stats.js";
-import { effectivePlan, PLAN_LIMITS } from "../billing.js";
+import { effectivePlan, PLAN_LIMITS, BOARD_LIMITS } from "../billing.js";
 import { one, exec } from "../../../../shared/db.js";
 import { buildTop3Embed, sendDiscordWebhook, sendTelegramMessage } from "../../../../shared/notifications.js";
 
@@ -269,8 +269,8 @@ export async function handleDomainVerify(request, env) {
       [domain, chId, dbStatus, site.id]
     );
 
-    invalidateSiteCache(site.slug);
-    invalidateUserCache(user.id);
+    invalidateSiteCache(env, site.slug);
+    invalidateUserCache(env, user.id);
 
     return ok({
       status: dbStatus,
