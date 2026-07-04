@@ -664,7 +664,7 @@ updateDots();
   overlay: (data, opts = {}) => {
   const b = data.brand || {};
   const br = data.branding || {};
-  const players = (data.players || []).slice().sort((a, c) => c.wagered - a.wagered).slice(0, 5);
+  const mode = opts.mode === "marquee" ? "marquee" : "top5";
   const endsAt = data.endsAt || null;
   const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
   const fmt = (n) => {
@@ -672,13 +672,84 @@ updateDots();
     if (n >= 1e3) return "$" + (n / 1e3).toFixed(1).replace(/\.0$/, "") + "k";
     return "$" + (n || 0).toLocaleString("en-US");
   };
-  const medal = (i) => i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : "#" + (i + 1);
-  const rows = players.map((p, i) => `<div class="ov-row" data-name="${esc(p.name)}"><span class="ov-medal">${medal(i)}</span><span class="ov-name">${esc(p.name)}</span><span class="ov-wager">${fmt(p.wagered)}</span></div>`).join("");
-  const empty = 5 - players.length;
-  const emptyRows = empty > 0 ? Array.from({ length: empty }, (_, i) => `<div class="ov-row ov-empty"><span class="ov-medal">#${players.length + i + 1}</span><span class="ov-name">—</span><span class="ov-wager">—</span></div>`).join("") : "";
   const accentA = (br.accentA && /^#[0-9a-fA-F]{6}$/.test(br.accentA)) ? br.accentA : "#c8ff00";
   const accentB = (br.accentB && /^#[0-9a-fA-F]{6}$/.test(br.accentB)) ? br.accentB : "#5ad9ff";
-  const dataJson = JSON.stringify({ players, endsAt }).replace(/</g, "\\u003c");
+
+  if (mode === "marquee") {
+    // Marquee mode: all sorted players, single-card carousel. Served to a
+    // separate /assets/overlay-marquee.js for the runtime.
+    const allPlayers = (data.players || []).slice().sort((a, c) => c.wagered - a.wagered);
+    const dataJson = JSON.stringify({ players: allPlayers, endsAt }).replace(/</g, "\\u003c");
+    return `<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>${esc(b.name)} — Marquee Overlay</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:320px;overflow:hidden;background:transparent;font-family:'Inter','Segoe UI',system-ui,-apple-system,sans-serif;color:#fff}
+.ov-wrap{width:320px;padding:14px 16px;background:rgba(8,8,12,0.92);border-radius:14px;border:1px solid rgba(255,255,255,0.06);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
+.ov-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.ov-brand{display:flex;flex-direction:column;gap:1px}
+.ov-brand-name{font-size:15px;font-weight:700;letter-spacing:-.02em;background:linear-gradient(135deg,${accentA},${accentB});-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;text-shadow:none}
+.ov-brand-sub{font-size:10px;color:rgba(255,255,255,0.45);text-transform:uppercase;letter-spacing:.08em}
+.ov-live{display:flex;align-items:center;gap:5px;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:${accentA}}
+.ov-live-dot{width:7px;height:7px;border-radius:50%;background:${accentA};animation:ov-pulse 1.5s ease-in-out infinite}
+@keyframes ov-pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(.8)}}
+.ov-timer{display:flex;align-items:center;justify-content:center;gap:3px;margin-bottom:12px;font-size:11px;color:rgba(255,255,255,0.5)}
+.ov-timer b{font-family:'JetBrains Mono','Fira Code',monospace;font-size:13px;font-weight:700;color:${accentA};min-width:20px;text-align:center}
+.ov-timer-sep{color:rgba(255,255,255,0.2);margin:0 1px}
+.ov-timer-label{font-size:9px;text-transform:uppercase;letter-spacing:.1em;color:rgba(255,255,255,0.3);text-align:center;margin-bottom:6px}
+.ov-timer-over{font-size:11px;color:rgba(255,255,255,0.4);font-style:italic}
+.ov-footer{display:flex;align-items:center;justify-content:space-between;margin-top:10px;padding-top:8px;border-top:1px solid rgba(255,255,255,0.05)}
+.ov-footer .ov-count{font-size:9px;color:rgba(255,255,255,0.3);text-transform:uppercase;letter-spacing:.08em}
+.ov-footer .ov-powered{font-size:8px;color:rgba(255,255,255,0.15);letter-spacing:.04em}
+/* Marquee card */
+#ov-marquee-card{position:relative;min-height:80px;display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity 600ms ease;margin:10px 0 6px}
+.ov-marquee-medal{font-size:28px;margin-bottom:4px}
+.ov-marquee-name{font-size:18px;font-weight:700;letter-spacing:-.02em;margin-bottom:4px}
+.ov-marquee-wager{font-family:'JetBrains Mono','Fira Code',monospace;font-size:16px;font-weight:600;color:${accentA};text-shadow:0 1px 3px rgba(0,0,0,0.5)}
+.ov-marquee-position{font-size:10px;color:rgba(255,255,255,0.3);margin-top:6px}
+</style>
+</head><body>
+<div class="ov-wrap">
+<div class="ov-head">
+<div class="ov-brand">
+<span class="ov-brand-name">${esc(b.name)}</span>
+<span class="ov-brand-sub">${esc(b.casino || "Stake")} · ${esc(b.period || "Monthly")}</span>
+</div>
+<span class="ov-live"><span class="ov-live-dot"></span>LIVE</span>
+</div>
+${endsAt ? `<p class="ov-timer-label">${esc(b.prizePool || "")} resets in</p>
+<div class="ov-timer" data-ov-timer>
+<b data-ot>--</b><span class="ov-timer-sep">d</span>
+<b data-ot>--</b><span class="ov-timer-sep">:</span>
+<b data-ot>--</b><span class="ov-timer-sep">:</span>
+<b data-ot>--</b>
+</div>` : ""}
+<div id="ov-marquee-card">
+<div class="ov-marquee-medal" id="ov-marquee-medal">🥇</div>
+<div class="ov-marquee-name" id="ov-marquee-name">—</div>
+<div class="ov-marquee-wager" id="ov-marquee-wager">$0</div>
+<div class="ov-marquee-position" id="ov-marquee-position">1 / ${allPlayers.length}</div>
+</div>
+<div class="ov-footer">
+<span class="ov-count"><span id="ov-count">${allPlayers.length}</span> players</span>
+<span class="ov-powered">Marquee · YourRank</span>
+</div>
+</div>
+<script>window.__OVERLAY_SLUG__=${JSON.stringify(opts.slug || "")};window.__OVERLAY_DATA__=${dataJson};</script>
+<script src="/assets/overlay-marquee.js?v=1"></script>
+</body></html>`;
+  }
+
+  // Default top-5 mode
+  const top5 = (data.players || []).slice().sort((a, c) => c.wagered - a.wagered).slice(0, 5);
+  const medal = (i) => i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : "#" + (i + 1);
+  const rows = top5.map((p, i) => `<div class="ov-row" data-name="${esc(p.name)}"><span class="ov-medal">${medal(i)}</span><span class="ov-name">${esc(p.name)}</span><span class="ov-wager">${fmt(p.wagered)}</span></div>`).join("");
+  const empty = 5 - top5.length;
+  const emptyRows = empty > 0 ? Array.from({ length: empty }, (_, i) => `<div class="ov-row ov-empty"><span class="ov-medal">#${top5.length + i + 1}</span><span class="ov-name">—</span><span class="ov-wager">—</span></div>`).join("") : "";
+  const dataJson = JSON.stringify({ players: top5, endsAt }).replace(/</g, "\\u003c");
   return `<!DOCTYPE html>
 <html lang="en"><head>
 <meta charset="UTF-8" />
