@@ -176,7 +176,7 @@ export async function handleDomainVerify(request, env) {
     const site = siteId ? await getBoardById(env, user.id, siteId) : await getByUser(env, user.id);
     if (!site) return bad("No site found", 404);
 
-    const zoneId = env.CF_ZONE_ID || "dd79a3ac13643b94732f2fef6ce3b1f5";
+    const zoneId = env.CF_ZONE_ID;
     const cfToken = env.CF_API_TOKEN;
 
     if (!cfToken) {

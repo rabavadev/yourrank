@@ -9,6 +9,7 @@ export const MIME = {
 
 export const HTML = { 
   "content-type": "text/html; charset=utf-8", 
+  "Strict-Transport-Security": "max-age=31536000; includeSubDomains",
   "X-Content-Type-Options": "nosniff", 
   "Referrer-Policy": "strict-origin-when-cross-origin" 
 };

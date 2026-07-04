@@ -7,6 +7,9 @@ on:
   pull_request:
     branches: [main]
 
+permissions:
+  contents: read
+
 concurrency:
   group: pr-check-${{ github.head_ref }}
   cancel-in-progress: true
@@ -27,6 +30,10 @@ jobs:
 
       - name: Lint bot
         working-directory: apps/bot
+        run: bun run lint
+
+      - name: Lint leaderboard
+        working-directory: apps/leaderboard
         run: bun run lint
 
   typecheck:

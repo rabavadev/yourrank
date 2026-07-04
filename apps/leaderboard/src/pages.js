@@ -33,9 +33,15 @@ export const PAGES = {
 <link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <script type="application/ld+json">{"@context":"https://schema.org","@type":"Organization","name":"YourRank","url":"https://yourrank.site","description":"Hosted leaderboard pages for casino streamers","contactPoint":{"@type":"ContactPoint","contactType":"customer service"}}</script>
 </head><body>
+<noscript><div style="max-width:640px;margin:40px auto;padding:24px;background:#101012;border:1px solid #212125;border-radius:12px;color:#ededf0;font-family:system-ui,sans-serif;text-align:center">
+<h1 style="margin:0 0 12px;font-size:24px">YourRank</h1>
+<p style="color:#a1a1a9;margin:0 0 16px">Hosted leaderboards for casino streamers. JavaScript is required for the full experience.</p>
+<a href="/signup" style="display:inline-block;padding:11px 24px;background:#c8ff00;color:#000;font-weight:600;border-radius:8px;text-decoration:none">Create your page</a>
+</div></noscript>
 <a href="#main-content" class="sr-only" style="position:absolute;top:0;left:0;z-index:9999;padding:8px 16px;background:var(--accent,#c8ff00);color:#000;font-weight:700;text-decoration:none" onfocus="this.classList.remove('sr-only')" onblur="this.classList.add('sr-only')">Skip to content</a>
 <div class="wrap">
 <nav class="top"><div class="brand">Your<b>Rank</b></div>
+<button class="nav-toggle" aria-label="Toggle menu" aria-expanded="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button>
 <div class="links"><a href="#how">How it works</a><a href="#postbacks">Postbacks</a><a href="#pricing">Pricing</a><a href="/login">Sign in</a><a href="/signup" class="btn btn--accent">Get started</a></div></nav>
 <header class="hero" id="main-content"><div>
 <p class="label" style="margin-bottom:18px">Leaderboards for casino streamers</p>
@@ -135,7 +141,7 @@ export const PAGES = {
   <p class="foot"><a href="/login">Back to sign in</a></p></div></main></div>
   <script src="/assets/auth.js?v=2"></script></body></html>`,
 
-    signup: `
+    signup: `<!DOCTYPE html><html lang="en"><head>
 <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Create account · YourRank</title>
 <meta name="robots" content="noindex, nofollow" /><link rel="canonical" href="https://yourrank.site/signup" /><link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />

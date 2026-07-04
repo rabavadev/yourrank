@@ -48,6 +48,7 @@ ${tplCss}
 ${themeCss}
 <script type="application/ld+json">{"@context":"https://schema.org","@type":"ItemList","name":${JSON.stringify(title)},"description":${JSON.stringify(desc)},"numberOfItems":${b.players ? b.players.length : 0}}</script>
 </head><body data-template="${tpl}">
+<noscript><p style="text-align:center;padding:16px;color:#a1a1a9;background:#101012;font-family:system-ui,sans-serif">This leaderboard requires JavaScript for live updates. The data shown below may not refresh automatically.</p></noscript>
 <a class="skip-link" href="#board">Skip to leaderboard</a>
 <div class="field" aria-hidden="true"></div><div class="watermarks" data-watermarks aria-hidden="true"></div>
 <header class="nav"><a class="nav-brand" href="#top">${navLogo}<span data-brand-name>${esc(b.name)}</span></a>

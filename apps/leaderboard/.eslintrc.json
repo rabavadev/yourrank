@@ -1,0 +1,19 @@
+{
+  "env": {
+    "es2022": true,
+    "node": true,
+    "browser": true
+  },
+  "parserOptions": {
+    "ecmaVersion": 2022,
+    "sourceType": "module"
+  },
+  "extends": ["eslint:recommended"],
+  "rules": {
+    "no-empty": ["error", { "allowEmptyCatch": false }],
+    "no-unused-vars": ["warn", { "argsIgnorePattern": "^_" }],
+    "no-constant-condition": "warn",
+    "no-irregular-whitespace": "error"
+  },
+  "ignorePatterns": ["dist/", "node_modules/", "*.min.js"]
+}

@@ -109,7 +109,7 @@ export async function handleMe(request, env) {
       try {
         const sub = await one("SELECT provider FROM subscriptions WHERE user_id=$1 ORDER BY created_at DESC LIMIT 1", [user.id]);
         isTrial = sub?.provider === "trial";
-      } catch {}
+      } catch (e) { console.error("[handleMe] trial status check failed:", e); }
     }
     return json({ ok: true, user: {
       id: user.id, email: user.email,
@@ -123,7 +123,8 @@ export async function handleMe(request, env) {
     } });
   } catch (e) {
     console.error("handleMe error:", String(e?.message || e), String(e?.stack || ""));
-    return json({ ok: false, error: "Internal error", detail: String(e?.message || e) }, 500);
+    console.error("[handleMe]", e);
+    return json({ ok: false, error: "Internal error" }, 500);
   }
 }
 

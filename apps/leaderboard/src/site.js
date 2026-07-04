@@ -91,7 +91,7 @@ export function invalidateSiteCache(env, ...keys) {
   for (const key of keys) {
     siteCache.delete(key);
     // Fire-and-forget KV delete — best-effort; 30s TTL handles stale entries anyway.
-    try { env?.SESSIONS?.delete(KV_PREFIX_SITE + key).catch(() => {}); } catch {}
+    try { env?.SESSIONS?.delete(KV_PREFIX_SITE + key).catch((e) => { console.error("[site-cache] KV delete failed:", e); }); } catch (e) { console.error("[site-cache] invalidateSiteCache failed:", e); }
   }
 }
 
@@ -104,7 +104,7 @@ export function invalidateUserCache(env, uid) {
       sessions.delete(KV_PREFIX_SITE + uid).catch(() => {});
       sessions.delete(KV_PREFIX_SITE + `user_boards:${uid}`).catch(() => {});
     }
-  } catch {}
+  } catch (e) { console.error("[site-cache] invalidateUserCache KV delete failed:", e); }
 }
 
 const getBySlug = (env, slug) => getCached(env, slug, () => one(`SELECT ${SITE_COLUMNS} FROM sites WHERE slug=$1`, [slug]));
@@ -405,7 +405,7 @@ export async function saveSite(env, user, payload, siteId) {
         _kv.delete(KV_PREFIX_SITE + uid),
         siteId ? _kv.delete(KV_PREFIX_SITE + siteId) : Promise.resolve(),
       ]);
-    } catch {}
+    } catch (e) { console.error("[notify] KV cache delete failed:", e); }
   }
 
   // Capture old top-3 for notifications

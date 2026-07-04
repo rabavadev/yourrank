@@ -24,7 +24,7 @@ export async function handleBotConnect(request, env) {
         signal: AbortSignal.timeout(10_000),
       });
       meData = await meRes.json();
-    } catch {
+    } catch (e) { console.error("[bot-connect] getMe fetch failed:", e);
       return bad("Couldn't reach Telegram. Try again in a moment.", 502);
     }
     if (!meData.ok) return bad("Telegram says this token is invalid. Double-check it from BotFather and try again.");
@@ -58,7 +58,7 @@ export async function handleBotConnect(request, env) {
       });
       const whData = await whRes.json();
       if (!whData.ok) return bad(`Webhook setup failed: ${whData.description || "unknown error"}. You may need to retry.`);
-    } catch {
+    } catch (e) { console.error("[bot-connect] setWebhook fetch failed:", e);
       return bad("Couldn't set the webhook. Try again in a moment.", 502);
     }
 

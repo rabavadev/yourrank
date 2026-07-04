@@ -1,5 +1,7 @@
 /* YourRank public leaderboard — hydrates from window.__SITE_DATA__ (SSR-injected). */
    Features: live polling every 30s, rank-change flash, particle field, countdown polish. */
+const TOAST_DURATION_MS = 1300;
+const POLL_INTERVAL_MS = 30000;
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 const money = (n) => "$" + Number(n).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -219,7 +221,7 @@ function boot() {
   if (wm) { let h = ""; for (let i = 0; i < 14; i++) { const t = Math.random()*100, l = Math.random()*100, s = 20+Math.random()*60, r = -20+Math.random()*40; h += `<span style="top:${t}%;left:${l}%;font-size:${s}px;transform:rotate(${r}deg)">${esc(b.name || "")}</span>`; } wm.innerHTML = h; }
 
   const cc = $("[data-copy-code]");
-  if (cc) cc.addEventListener("click", async () => { try { await navigator.clipboard.writeText(b.code || ""); cc.classList.add("copied"); const p = cc.textContent; cc.textContent = "Copied!"; setTimeout(() => { cc.classList.remove("copied"); cc.textContent = p; }, 1300); } catch (_) {}
+  if (cc) cc.addEventListener("click", async () => { try { await navigator.clipboard.writeText(b.code || ""); cc.classList.add("copied"); const p = cc.textContent; cc.textContent = "Copied!"; setTimeout(() => { cc.classList.remove("copied"); cc.textContent = p; }, TOAST_DURATION_MS); } catch (_) {}
     try { if (window.__SLUG__) navigator.sendBeacon("/api/track/copy", new Blob([JSON.stringify({ slug: window.__SLUG__ })], { type: "application/json" })); } catch (_) {} });
 
   const p = data.partner || {};
@@ -293,7 +295,7 @@ function boot() {
 
   // Start live polling every 30 seconds
   if (window.__SLUG__) {
-    setInterval(pollPlayers, 30000);
+    setInterval(pollPlayers, POLL_INTERVAL_MS);
   }
 }
 
