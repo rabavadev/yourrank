@@ -1,4 +1,4 @@
-# GroupsMix — Deploy Runbook
+# YourRank — Deploy Runbook
 
 One-time setup, then two `wrangler deploy`s. No servers to babysit.
 
@@ -9,11 +9,11 @@ Everything runs on managed edge infra: Cloudflare Workers (stateless, auto-scale
 - Cloudflare account with `yourrank.site` added as a zone (nameservers pointed at
   Cloudflare, zone status Active). The `routes` in both `wrangler.toml` files
   will fail to deploy until this zone exists.
-- Supabase project **groupsmix** (you have this).
+- Supabase project for YourRank.
 - `wrangler` authed to the account.
 
 ## 1. Database (once)
-In the Supabase SQL editor for project **groupsmix**, run in order:
+In the Supabase SQL editor, run in order:
 1. `db/schema.sql`      — all tables, one `users` table, + the Stars idempotency index.
 2. `db/partitions.sql`  — seed current + next 2 monthly click partitions.
 
@@ -23,8 +23,8 @@ Grab the **direct** connection string from Supabase → Project Settings → Dat
 so pointing it at the Supabase pooler double-pools and causes connection hangs.
 
 ## 2. Hyperdrive (once, recommended)
-```
-wrangler hyperdrive create groupsmix-db \
+```bash
+wrangler hyperdrive create yourrank-db \
   --connection-string="postgresql://postgres.PROJECT:PASS@db.PROJECT.supabase.co:5432/postgres"
 ```
 Paste the returned id into BOTH `apps/bot/wrangler.toml` and
@@ -36,13 +36,13 @@ Both Workers must point at the **same** KV namespace id (so one login works
 across both). The id currently in both `wrangler.toml` files is
 `26e47bcce19941839a20bd2cd5879e42`. If that namespace no longer exists, create
 one and put the SAME id in both:
-```
+```bash
 wrangler kv namespace create SESSIONS
 ```
 
 ## 4. Secrets
 Leaderboard Worker (`cd apps/leaderboard`):
-```
+```bash
 wrangler secret put NOWPAYMENTS_API_KEY
 wrangler secret put NOWPAYMENTS_IPN_SECRET
 wrangler secret put RESEND_API_KEY        # optional (transactional email)
@@ -55,7 +55,7 @@ wrangler secret put PRO_PRICE_USD         # optional (defaults to 29)
 # DATABASE_URL only if NOT using Hyperdrive
 ```
 Bot Worker (`cd apps/bot`):
-```
+```bash
 wrangler secret put TOKEN_ENC_KEY         # 32-byte hex (64 hex chars); encrypts streamer bot tokens
 wrangler secret put ADMIN_API_KEY         # protects /bot/api/*
 wrangler secret put IP_HASH_SALT          # salts hashed visitor IPs
@@ -70,7 +70,7 @@ the /bot dashboard) and the **platform billing** bot (sends Stars invoices + the
 plan-active message). They must not share a token.
 
 ## 5. Deploy
-```
+```bash
 cd apps/leaderboard && node build.js && wrangler deploy    # rebuild assets_bundled.js first
 cd ../bot           && wrangler deploy
 ```
@@ -83,7 +83,7 @@ The leaderboard cookie domain comes from `SESSION_COOKIE_DOMAIN` (default
 or the login cookie is rejected and nobody can log in.
 
 ## 6. Point the platform billing bot
-```
+```bash
 curl -X POST https://yourrank.site/bot/api/billing/setup -H "x-api-key: $ADMIN_API_KEY"
 ```
 This sets the billing bot's webhook to `https://yourrank.site/billing/hook/<PLATFORM_WEBHOOK_SECRET>`
@@ -98,9 +98,9 @@ so Stars payments flow back to the app.
 
 ## 7. CI auto-deploy (optional, recommended)
 
-`.github/workflows/deploy.yml` deploys both Workers to Cloudflare automatically
-on every push to `main` (and via manual "Run workflow"). You set **two** GitHub
-repo secrets once, then push-to-deploy forever:
+`.github/workflows/deploy.yml` deploys both Workers automatically on every push
+to `main` (and via manual "Run workflow"). You set **four** GitHub repo secrets
+once, then push-to-deploy forever:
 
 1. Create a Cloudflare API token: dash.cloudflare.com → My Profile → API Tokens
    → Create Token → "Edit Cloudflare Workers" template → scope it to the
@@ -108,14 +108,18 @@ repo secrets once, then push-to-deploy forever:
    Read" permissions are required. Copy the token.
 2. Get your Cloudflare account id: your dash homepage → right sidebar →
    "Account ID" (a 32-char hex). Not the zone id.
+3. Create a Supabase personal access token for CLI auth.
+4. Use the Supabase database password for `supabase link --password`.
 
-Add both as **GitHub repo** secrets (repo → Settings → Secrets and variables →
+Add all four as **GitHub repo** secrets (repo → Settings → Secrets and variables →
 Actions → New repository secret) — NOT Worker secrets:
 
-| Repo secret             | Value                                  |
-|-------------------------|----------------------------------------|
-| `CLOUDFLARE_API_TOKEN`  | the token from step 1                  |
-| `CLOUDFLARE_ACCOUNT_ID` | the 32-char account id from step 2     |
+| Repo secret               | Value                                      |
+|---------------------------|--------------------------------------------|
+| `CLOUDFLARE_API_TOKEN`    | the token from step 1                      |
+| `CLOUDFLARE_ACCOUNT_ID`   | the 32-char account id from step 2         |
+| `SUPABASE_ACCESS_TOKEN`   | Supabase personal access token             |
+| `SUPABASE_DB_PASSWORD`    | Supabase DB password for CLI linking       |
 
 That's it. Worker **runtime** secrets (`ADMIN_API_KEY`, `TOKEN_ENC_KEY`,
 `PLATFORM_BOT_TOKEN`, etc.) are NOT in the repo and are NOT managed by CI —
@@ -124,35 +128,22 @@ Workers across every deploy. CI only ships code.
 
 Trigger a first run from repo → Actions → "Deploy" → Run workflow, or just push
 to `main`. The leaderboard job rebuilds `assets_bundled.js` then deploys; the
-bot job deploys `src/worker.ts` directly (wrangler bundles the TS).
+bot job typechecks then deploys `src/worker.ts`.
 
-## 8. Auto-migrate the database (optional, recommended)
+## 8. Staging deploy (optional)
 
-`.github/workflows/migrate.yml` keeps the live Supabase Postgres in sync with
-the repo. When you change anything under `db/` and push to `main`, it runs the
-one-time setup SQL (`db/schema.sql`, `db/partitions.sql`) and every file in
-`db/migrations/` against the live database — idempotently (everything uses
-`IF NOT EXISTS` / `DO $$` guards, so re-running is safe and just no-ops).
+`.github/workflows/staging.yml` provides a **manual-only** staging deploy for
+both Workers. Trigger it from repo → Actions → "Deploy Staging" → Run workflow.
 
-It needs **one** GitHub repo secret (set at repo → Settings → Secrets and
-variables → Actions → New repository secret):
+Before using it, finish the staging setup described in `apps/leaderboard/STAGING.md`
+and in both app `wrangler.toml` files:
+- create a separate staging Supabase project,
+- create a separate staging Hyperdrive config,
+- create a separate staging KV namespace,
+- paste the staging IDs into both `[env.staging]` sections.
 
-| Repo secret        | Value                                   |
-|--------------------|-----------------------------------------|
-| `SUPABASE_DB_URL`  | Supabase **direct** connection string   |
+Important: both app `wrangler.toml` files currently keep the staging Hyperdrive
+`id` commented out on purpose to prevent accidental production DB usage. Until
+those IDs are filled in, a staging deploy is not fully configured.
 
-Use the **direct** string (host `db.<ref>.supabase.co`, port 5432) — the same
-one you used for `wrangler hyperdrive create` — NOT the pooler (6543). DDL via
-the transaction pooler is unreliable.
-
-Get it from Supabase → Project Settings → Database → Connection string →
-"Direct connection". If it shows `[YOUR-PASSWORD]`, substitute your DB password.
-
-The two workflows are independent and complementary:
-- **Deploy** (section 7) ships the Worker **code** to Cloudflare.
-- **Migrate DB** (this section) ships the **schema** to Supabase.
-
-Both trigger on push to `main`; Migrate DB only fires when files under `db/` or
-`.github/workflows/migrate.yml` change, so it doesn't run on every code push.
-You can also trigger either manually from repo → Actions.
-
+---
