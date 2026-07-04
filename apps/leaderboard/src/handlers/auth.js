@@ -7,7 +7,7 @@ import {
   findUserByEmail, findUserByCredentials, findSiteByUserId, findUserForReset,
   findSubscriptionByUserId, createUser, createSite, updateUserPassword, findUserWithTotpSecret
 } from "../data/auth.js";
-import { getSql } from "../../../shared/db.js";
+import { getSql } from "../../../../shared/db.js";
 
 export async function handleSignup(request, env) {
   try {

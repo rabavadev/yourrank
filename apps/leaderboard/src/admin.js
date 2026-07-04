@@ -290,5 +290,3 @@ export async function handle2faDisable(request, env) {
 
   return ok({ disabled: true });
 }
-
-export { handle2faDisable };

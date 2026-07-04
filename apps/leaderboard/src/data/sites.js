@@ -1,5 +1,5 @@
 // Data access layer for site operations
-import { one } from "../../../shared/db.js";
+import { one } from "../../../../shared/db.js";
 
 export async function findSiteLogoData(slug) {
   return await one("SELECT logo_data FROM sites WHERE slug=$1", [slug]);

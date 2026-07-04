@@ -1,6 +1,6 @@
 // Custom domain resolution with in-memory caching
 // Maps custom domain hostnames to site slugs for serving leaderboards on custom domains
-import { one } from "../../../shared/db.js";
+import { one } from "../../../../shared/db.js";
 
 const CUSTOM_DOMAIN_CACHE = new Map();
 const CUSTOM_DOMAIN_TTL = 60_000; // 60 seconds

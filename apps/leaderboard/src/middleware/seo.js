@@ -1,5 +1,5 @@
 // SEO endpoints: robots.txt, sitemap.xml, favicon.ico
-import { query } from "../../../shared/db.js";
+import { query } from "../../../../shared/db.js";
 
 export function serveRobotsTxt(origin) {
   return new Response(

@@ -2,7 +2,7 @@
 import { json, bad, readJson, rateLimit } from "../auth.js";
 import { saveSite } from "../site.js";
 import { effectivePlan, PLAN_LIMITS } from "../billing.js";
-import { one } from "../../../shared/db.js";
+import { one } from "../../../../shared/db.js";
 
 // POST /api/scores — authenticated by X-Postback-Key header.
 // Validates key against sites table, checks Pro plan gate, replaces player list.

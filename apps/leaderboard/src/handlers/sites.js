@@ -3,8 +3,8 @@ import { requireUser, json, bad, ok, readJson, rateLimit, slugify, clientIp } fr
 import { getByUser, getUserSite, getUserSiteById, getUserBoardsList, createBoard, createArchive, deleteArchive, invalidateSiteCache, invalidateUserCache, getBoardById, saveSite } from "../site.js";
 import { bumpStat, getStats, getHeatmap, getTopReferrers } from "../stats.js";
 import { effectivePlan, PLAN_LIMITS } from "../billing.js";
-import { one, exec } from "../../../shared/db.js";
-import { buildTop3Embed, sendDiscordWebhook, sendTelegramMessage } from "../../../shared/notifications.js";
+import { one, exec } from "../../../../shared/db.js";
+import { buildTop3Embed, sendDiscordWebhook, sendTelegramMessage } from "../../../../shared/notifications.js";
 
 export async function handleStats(request, env) {
   const { user, res } = await requireUser(request, env);
