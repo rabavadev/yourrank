@@ -65,6 +65,29 @@ export async function activatePlan(env, userId, plan, days = PRO_DAYS, { provide
 // Backwards compat alias
 export const activatePro = (env, userId, days, opts) => activatePlan(env, userId, 'pro', days, opts);
 
+// Shared helper: create a NOWPayments invoice and return the parsed response (or null on failure).
+async function createNowPaymentsInvoice(env, { price, orderId, description, origin }) {
+  try {
+    const r = await fetch("https://api.nowpayments.io/v1/invoice", {
+      method: "POST",
+      headers: { "x-api-key": env.NOWPAYMENTS_API_KEY, "content-type": "application/json" },
+      signal: AbortSignal.timeout(10_000),
+      body: JSON.stringify({
+        price_amount: price,
+        price_currency: "usd",
+        order_id: orderId,
+        order_description: description,
+        ipn_callback_url: `${origin}/api/billing/ipn`,
+        success_url: `${origin}/dashboard?upgraded=1`,
+        cancel_url: `${origin}/dashboard`,
+      }),
+    });
+    const inv = await r.json().catch(() => null);
+    if (!r.ok || !inv || !inv.invoice_url) return null;
+    return inv;
+  } catch { return null; }
+}
+
 // POST /api/billing/checkout — create a NOWPayments invoice, return its hosted URL.
 export async function handleCheckout(request, env) {
   const { user, res } = await requireUser(request, env);
@@ -82,25 +105,12 @@ export async function handleCheckout(request, env) {
     "INSERT INTO payments (user_id,provider,amount,currency,status,tx_ref,plan_tier) VALUES ($1,$2,$3,$4,$5,$6,$7)",
     [user.id, "nowpayments", price, "USD", "created", orderId, targetPlan]
   );
-  let inv = null;
-  try {
-    const r = await fetch("https://api.nowpayments.io/v1/invoice", {
-      method: "POST",
-      headers: { "x-api-key": env.NOWPAYMENTS_API_KEY, "content-type": "application/json" },
-      signal: AbortSignal.timeout(10_000),
-      body: JSON.stringify({
-        price_amount: price,
-        price_currency: "usd",
-        order_id: orderId,
-        order_description: `YourRank ${targetPlan.charAt(0).toUpperCase() + targetPlan.slice(1)} — 30 days`,
-        ipn_callback_url: `${origin}/api/billing/ipn`,
-        success_url: `${origin}/dashboard?upgraded=1`,
-        cancel_url: `${origin}/dashboard`,
-      }),
-    });
-    inv = await r.json().catch(() => null);
-    if (!r.ok || !inv || !inv.invoice_url) inv = null;
-  } catch { inv = null; }
+  const inv = await createNowPaymentsInvoice(env, {
+    price,
+    orderId,
+    description: `YourRank ${targetPlan.charAt(0).toUpperCase() + targetPlan.slice(1)} — 30 days`,
+    origin,
+  });
   if (!inv) {
     await exec("UPDATE payments SET status='failed', updated_at=now() WHERE tx_ref=$1", [orderId]);
     return bad("Couldn't start the payment. Try again in a minute or contact support.", 502);
@@ -124,25 +134,12 @@ export async function handleCheckoutLifetime(request, env) {
     "INSERT INTO payments (user_id,provider,amount,currency,status,tx_ref,plan_tier) VALUES ($1,$2,$3,$4,$5,$6,$7)",
     [user.id, "nowpayments", price, "USD", "created", orderId, "pro"]
   );
-  let inv = null;
-  try {
-    const r = await fetch("https://api.nowpayments.io/v1/invoice", {
-      method: "POST",
-      headers: { "x-api-key": env.NOWPAYMENTS_API_KEY, "content-type": "application/json" },
-      signal: AbortSignal.timeout(10_000),
-      body: JSON.stringify({
-        price_amount: price,
-        price_currency: "usd",
-        order_id: orderId,
-        order_description: "YourRank Lifetime Pro — pay once, use forever",
-        ipn_callback_url: `${origin}/api/billing/ipn`,
-        success_url: `${origin}/dashboard?upgraded=1`,
-        cancel_url: `${origin}/dashboard`,
-      }),
-    });
-    inv = await r.json().catch(() => null);
-    if (!r.ok || !inv || !inv.invoice_url) inv = null;
-  } catch { inv = null; }
+  const inv = await createNowPaymentsInvoice(env, {
+    price,
+    orderId,
+    description: "YourRank Lifetime Pro — pay once, use forever",
+    origin,
+  });
   if (!inv) {
     await exec("UPDATE payments SET status='failed', updated_at=now() WHERE tx_ref=$1", [orderId]);
     return bad("Couldn't start the payment. Try again in a minute or contact support.", 502);

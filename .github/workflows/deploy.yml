@@ -124,6 +124,17 @@ jobs:
           fi
           echo "OK: bot dashboard HTTP $STATUS"
 
+      # REL-012: Version tagging — add git tag on successful deploy.
+      # TODO: Add git tag on successful deploy:
+      # git tag v$(jq -r .version package.json)
+      # git push origin v$(jq -r .version package.json)
+
+      # REL-013: Deploy atomicity note — Workers deploy independently.
+      # If one fails mid-deploy:
+      # 1. Check which Worker succeeded: wrangler deployments list
+      # 2. Rollback the failed one: wrangler rollback <deployment-id>
+      # 3. The shared DB schema is forward-compatible (additive migrations only)
+
       - name: Summarise failure
         if: failure()
         run: |

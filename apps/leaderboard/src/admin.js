@@ -78,21 +78,29 @@ export async function handleOverview(request, env) {
 }
 
 export async function handleUsers(request, env) {
-  const { res } = await requireAdminWith2fa(request, env);
-  if (res) return res;
-  const rows = await query(
-    `SELECT u.id, u.email, u.plan,
-            (EXTRACT(EPOCH FROM u.plan_expires_at) * 1000)::double precision AS plan_expires_at,
-            u.status, u.is_admin,
-            (EXTRACT(EPOCH FROM u.created_at) * 1000)::double precision AS created_at,
-            (SELECT COUNT(*) FROM sites s2 WHERE s2.user_id = u.id) AS board_count,
-            (SELECT s.slug FROM sites s WHERE s.user_id = u.id ORDER BY s.board_order ASC LIMIT 1) AS slug,
-            (SELECT COUNT(*) FROM players p WHERE p.site_id = (SELECT s.id FROM sites s WHERE s.user_id = u.id ORDER BY s.board_order ASC LIMIT 1)) AS player_count
-       FROM users u
-       ORDER BY u.created_at DESC LIMIT 500`
-  );
-  return ok({ users: rows || [] });
-}
+    const { res } = await requireAdminWith2fa(request, env);
+    if (res) return res;
+    const url = new URL(request.url);
+    const page = Math.max(1, Number(url.searchParams.get("page")) || 1);
+    const pageSize = 50;
+    const offset = (page - 1) * pageSize;
+    const [total, rows] = await Promise.all([
+      one("SELECT COUNT(*) n FROM users"),
+      query(
+        `SELECT u.id, u.email, u.plan,
+                (EXTRACT(EPOCH FROM u.plan_expires_at) * 1000)::double precision AS plan_expires_at,
+                u.status, u.is_admin,
+                (EXTRACT(EPOCH FROM u.created_at) * 1000)::double precision AS created_at,
+                (SELECT COUNT(*) FROM sites s2 WHERE s2.user_id = u.id) AS board_count,
+                (SELECT s.slug FROM sites s WHERE s.user_id = u.id ORDER BY s.board_order ASC LIMIT 1) AS slug,
+                (SELECT COUNT(*) FROM players p WHERE p.site_id = (SELECT s.id FROM sites s WHERE s.user_id = u.id ORDER BY s.board_order ASC LIMIT 1)) AS player_count
+           FROM users u
+           ORDER BY u.created_at DESC LIMIT $1 OFFSET $2`,
+        [pageSize, offset]
+      ),
+    ]);
+    return ok({ users: rows || [], page, pageSize, total: Number(total?.n) || 0 });
+  }
 
 export async function handleLeads(request, env) {
   const { res } = await requireAdminWith2fa(request, env);

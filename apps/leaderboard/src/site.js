@@ -38,6 +38,7 @@ const SITE_COLUMNS = "id, user_id, slug, name, tagline, casino, code, cta_url, p
 // the isolate that just wrote or recently read.
 // IMPORTANT: L1 TTL must be <= L2 TTL to prevent stale data in L1 after L2 expires.
 const siteCache = new Map();       // L1 — per-isolate, no TTL enforcement beyond what's set below
+const inflight = new Map();        // PERF-009: single-flight — prevent cache stampede on L1+L2 miss
 const L1_TTL = 25_000;             // L1 entries expire after 25s (must be <= L2_TTL)
 const L2_TTL = 30;                 // KV entries expire after 30s (seconds, for KV expirationTtl)
 const KV_PREFIX_SITE = "sitecache:";
@@ -66,15 +67,23 @@ async function getCached(env, key, dbFetcher) {
     }
   } catch { /* KV miss — fall through to DB */ }
 
-  // DB fetch
-  const data = await dbFetcher();
-  // Populate both layers
-  siteCache.set(key, { data, expires: Date.now() + L1_TTL });
-  evictOldest(siteCache, SITE_CACHE_MAX);
-  try {
-    await env.SESSIONS.put(KV_PREFIX_SITE + key, JSON.stringify(data), { expirationTtl: L2_TTL });
-  } catch { /* non-critical */ }
-  return data;
+  // DB fetch — single-flight: coalesce concurrent misses into one query
+  if (inflight.has(key)) return inflight.get(key);
+  const p = (async () => {
+    try {
+      const data = await dbFetcher();
+      siteCache.set(key, { data, expires: Date.now() + L1_TTL });
+      evictOldest(siteCache, SITE_CACHE_MAX);
+      try {
+        await env.SESSIONS.put(KV_PREFIX_SITE + key, JSON.stringify(data), { expirationTtl: L2_TTL });
+      } catch { /* non-critical */ }
+      return data;
+    } finally {
+      inflight.delete(key);
+    }
+  })();
+  inflight.set(key, p);
+  return p;
 }
 
 export function invalidateSiteCache(env, ...keys) {

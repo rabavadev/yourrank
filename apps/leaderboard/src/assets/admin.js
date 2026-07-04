@@ -34,8 +34,9 @@ document.querySelectorAll(".tab").forEach((t) => t.addEventListener("click", () 
 
 function pill(text, tone) { return `<span class="pill pill--${tone}">${esc(text)}</span>`; }
 
-async function loadUsers() {
-  const d = await api("/api/admin/users");
+async function loadUsers(page) {
+  page = page || 1;
+  const d = await api("/api/admin/users?page=" + page);
   const rows = d.users || [];
   $("usersEmpty").hidden = rows.length > 0;
   $("usersBody").innerHTML = rows.map((u) => {
@@ -58,6 +59,19 @@ ${u.status === "suspended"
 </td></tr>`;
   }).join("");
   $("usersBody").querySelectorAll("button[data-act]").forEach((b) => b.addEventListener("click", () => action(b)));
+  // Pagination UI
+  const totalPages = Math.max(1, Math.ceil((d.total || 0) / (d.pageSize || 50)));
+  const pagEl = $("usersPagination");
+  if (pagEl) {
+    if (totalPages <= 1) { pagEl.innerHTML = ""; return; }
+    const prevDis = page <= 1 ? "disabled" : "";
+    const nextDis = page >= totalPages ? "disabled" : "";
+    pagEl.innerHTML = `<span class="hint" style="margin-right:auto">${d.total || 0} users · page ${page} of ${totalPages}</span>` +
+      `<button class="btn btn--sm btn--ghost" id="pagPrev" ${prevDis}>← Previous</button>` +
+      `<button class="btn btn--sm btn--ghost" id="pagNext" ${nextDis}>Next →</button>`;
+    $("pagPrev")?.addEventListener("click", () => loadUsers(page - 1));
+    $("pagNext")?.addEventListener("click", () => loadUsers(page + 1));
+  }
 }
 
 async function action(btn) {

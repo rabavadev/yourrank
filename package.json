@@ -1,6 +1,7 @@
 {
   "name": "yourrank",
   "private": true,
+  "version": "0.2.0",
   "workspaces": ["apps/leaderboard", "apps/bot"],
   "dependencies": {
     "postgres": "^3.4.9"
