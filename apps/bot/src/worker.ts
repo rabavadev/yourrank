@@ -10,6 +10,7 @@
 // scheduled — they MUST populate the same set, or a binding set in only one
 import { sendErrorToDiscord, sendCronSummaryToDiscord } from "../../../shared/monitoring.js";
 import { populateEnv } from "../../../shared/env.js";
+import Toucan from "toucan-js";
 
 // Cache the Hono app instance so it's built once per isolate, not per request.
 let cachedApp: any = null;
@@ -46,6 +47,7 @@ async function notifyCronFailure(env: Record<string, any>, cron: string, task: s
 
 export default {
   async fetch(req: Request, env: Record<string, any>, ctx: { waitUntil: (p: Promise<unknown>) => void }): Promise<Response> {
+    const sentry = env.SENTRY_DSN ? new Toucan({ dsn: env.SENTRY_DSN, request: req, context: ctx }) : null;
     try {
       populateEnv(env);
       // Ensure current month partition exists on first request (idempotent)
@@ -67,6 +69,7 @@ export default {
       }
       return await cachedApp.fetch(req, env as any);
     } catch (err: unknown) {
+      sentry?.captureException(err);
       const errPath = (() => { try { return new URL(req.url).pathname; } catch { return "unknown"; } })();
       console.error(`[bot] unhandled error on ${errPath}:`, String((err as any)?.message || err));
       if (env.DISCORD_MONITORING_WEBHOOK) {
@@ -86,6 +89,7 @@ export default {
   //   * * * * *  — broadcast worker: one rate-limited batch per tick
   //   0 3 * * *  — nightly: click rollup, partitions, expired plans
   async scheduled(event: { cron: string }, env: Record<string, any>, ctx: { waitUntil: (p: Promise<unknown>) => void }): Promise<void> {
+    const sentry = env.SENTRY_DSN ? new Toucan({ dsn: env.SENTRY_DSN, context: ctx }) : null;
     populateEnv(env);
     try {
       if (event.cron === "0 3 * * *") {
@@ -162,6 +166,7 @@ export default {
         );
       }
     } catch (err) {
+      sentry?.captureException(err);
       await notifyCronFailure(env, event.cron, "scheduled-handler", err);
     }
   },

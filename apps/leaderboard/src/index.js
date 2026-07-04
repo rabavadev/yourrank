@@ -1,6 +1,7 @@
 import { destroySession, cookieSet, cookieClear, readToken, handleAccountDelete, requireUser, RESERVED, slugify, clientIp, rateLimit, json, bad, currentUser } from "./auth.js";
 import { sendErrorToDiscord } from "../../../shared/monitoring.js";
 import { populateEnv } from "../../../shared/env.js";
+import Toucan from "toucan-js";
 import { getPublicSite, getByUser, getAllBoards, invalidateSiteCache, invalidateUserCache } from "./site.js";
 import { renderLeaderboard } from "./render.js";
 import { PAGES } from "./pages.js";
@@ -17,9 +18,11 @@ import {
   HTML, SECURE_HTML, notFoundPage, suspendedPage, comingSoonPage
 } from "./middleware/index.js";
 import { findSiteLogoData, findSiteStatus, findUserTotpSecret } from "./data/sites.js";
+import { one } from "../../../shared/db.js";
 
 export default {
   async fetch(request, env, ctx) {
+    const sentry = env.SENTRY_DSN ? new Toucan({ dsn: env.SENTRY_DSN, request, context: ctx }) : null;
     try {
       // BE-004: Reject oversized request bodies early, before any parsing.
       // 1 MB is generous for JSON payloads (site data, auth forms, etc.)
@@ -86,10 +89,19 @@ export default {
 
       // --- health check ---
       if (path === "/health") {
-        return new Response(JSON.stringify({ status: "ok", timestamp: new Date().toISOString() }), {
-          status: 200,
-          headers: { "content-type": "application/json" },
-        });
+        try {
+          await one('SELECT 1 AS ok');
+          return new Response(JSON.stringify({ status: "ok", timestamp: new Date().toISOString(), db: true }), {
+            status: 200,
+            headers: { "content-type": "application/json" },
+          });
+        } catch (e) {
+          console.error("[health] DB probe failed:", e);
+          return new Response(JSON.stringify({ status: "ok", timestamp: new Date().toISOString(), db: false }), {
+            status: 503,
+            headers: { "content-type": "application/json" },
+          });
+        }
       }
 
       // --- pages ---
@@ -365,6 +377,7 @@ a{color:#c8ff00;text-decoration:none;font-weight:600}</style></head><body>
 
       return new Response("not found", { status: 404 });
     } catch (err) {
+      sentry?.captureException(err);
       const errPath = (() => { try { return new URL(request.url).pathname; } catch { return "unknown"; } })();
       console.error(`[leaderboard] unhandled error on ${errPath}:`, String(err?.message || err), err?.stack || "");
       // Fire-and-forget Discord monitoring webhook

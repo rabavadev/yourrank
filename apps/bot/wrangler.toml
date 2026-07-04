@@ -5,6 +5,7 @@ compatibility_flags = ["nodejs_compat"]
 
 [vars]
 PUBLIC_BASE_URL = "https://yourrank.site"
+SENTRY_DSN = ""
 
 # Serve the bot Worker under the /bot, /hook, /r, /pb, /billing prefixes on the
 # main zone. More-specific routes win, so the leaderboard Worker keeps the root.
@@ -47,6 +48,9 @@ id = "9e5b625bfdd84cd691b44c4780bdaf13"
 [env.staging]
 name = "yourrank-bot-staging"
 compatibility_date = "2025-01-01"
+
+[env.staging.triggers]
+crons = []
 compatibility_flags = ["nodejs_compat"]
 
 [env.staging.vars]

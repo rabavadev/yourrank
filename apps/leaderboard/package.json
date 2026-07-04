@@ -4,7 +4,8 @@
   "devDependencies": {
     "wrangler": "4.106.0",
     "typescript": "^5.5.3",
-    "@types/node": "^20.14.10"
+    "@types/node": "^20.14.10",
+    "eslint": "^8.57.0"
   },
   "engines": {
     "node": ">=20"
@@ -15,10 +16,12 @@
     "predeploy": "node build.js && tsc",
     "deploy": "wrangler deploy",
     "dev": "wrangler dev",
-    "test": "bun test"
+    "test": "bun test",
+    "lint": "eslint src/ --ext .js"
   },
   "type": "module",
   "dependencies": {
-    "postgres": "^3.4.9"
+    "postgres": "^3.4.9",
+    "toucan-js": "^4.0.0"
   }
 }
