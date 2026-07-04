@@ -1,29 +1,25 @@
 // Billing unit tests — effectivePlan, PLAN_LIMITS, PLAN_PRICES, priceUsd
 // Uses bun's built-in test runner. No extra dependencies.
 //
-// billing.js imports auth.js and db.js (which need a real Postgres connection),
-// so we mock those modules before any import of billing.js runs.
+// billing.js imports shared/db.js (which needs a real Postgres connection),
+// so we mock that module before any import of billing.js runs.
 
-import { mock, test, expect, describe, beforeAll, beforeEach } from "bun:test";
+import { mock, test, expect, describe } from "bun:test";
 
-// Stub the heavy dependencies so billing.js can load in a test environment.
-// billing.js imports from shared/db.js, not a local src/db.js.
-mock.module("../../../../shared/db.js", () => ({
+// Stub shared/db.js so billing.js can load in a test environment.
+// Use import.meta.resolve() to get the exact resolved URL (same pattern as auth.test.js).
+const dbUrl = import.meta.resolve("../../../../shared/db.js");
+mock.module(dbUrl, () => ({
   query: () => Promise.resolve([]),
   one: () => Promise.resolve(null),
   exec: () => Promise.resolve(),
-  getSql: () => {
-    throw new Error("getSql should not be called in unit tests");
-  },
+  getSql: () => { throw new Error("getSql should not be called in unit tests"); },
 }));
 
-// Now we can safely import billing.js
-const {
-  effectivePlan,
-  priceUsd,
-} = await import("../billing.js");
+// Now we can safely import billing.js (it imports from shared/db.js + shared/plans.js)
+const { effectivePlan, priceUsd } = await import("../billing.js");
 
-// Import plan constants directly from source (mock.module can break re-exports in bun <1.3)
+// Plan constants from shared source of truth
 const { PLAN_LIMITS, BOARD_LIMITS, PLAN_PRICES, PLAN_META } = await import("../../../../shared/plans.js");
 
 // ─── effectivePlan ────────────────────────────────────────────────────────

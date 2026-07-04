@@ -13,22 +13,11 @@ export const PLAN_META = _PM;
 export const PRO_DAYS = 30;
 
 // priceUsd returns the price for the given plan tier (or the env override for pro).
-export function priceUsd(env, plan = "pro") {
-  if (plan === "pro") return Number(env.PRO_PRICE_USD || PLAN_PRICES.pro);
-  return PLAN_PRICES[plan] ?? PLAN_PRICES.pro;
-}
-
-// A user's effective plan. Plans: free < starter < pro < agency.
-export function effectivePlan(user) {
-  if (!user || user.status === "suspended") return "free";
-  const plan = String(user.plan || "free").toLowerCase();
-  // NULL plan_expires_at is treated as expired to prevent accidental permanent grants
-  // Lifetime plans should use a far-future date (e.g., 2099-12-31) instead of NULL
-  const expired = user.plan_expires_at == null || Number(user.plan_expires_at) <= Date.now();
-  if (expired) return "free";
-  if (["agency", "pro", "starter"].includes(plan)) return plan;
-  return "free";
-}
+// priceUsd and effectivePlan are pure functions in shared/plans.js (no DB dependency).
+// Re-exported here for backward compatibility.
+import { priceUsd as _priceUsd, effectivePlan as _effectivePlan } from "../../../shared/plans.js";
+export const priceUsd = _priceUsd;
+export const effectivePlan = _effectivePlan;
 
 export async function activatePlan(env, userId, plan, days = PRO_DAYS, { provider, amountUsd } = {}) {
   // Extend plan subscription for the given number of days.

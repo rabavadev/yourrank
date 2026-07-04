@@ -80,3 +80,25 @@ exports.BOT_PLANS = {
     pro: { tier: "pro", label: "Pro", maxBots: 3, maxOffers: 50, broadcasts: true, postbacks: true, starsPrice: 2900 },
     agency: { tier: "agency", label: "Agency", maxBots: 25, maxOffers: 999, broadcasts: true, postbacks: true, starsPrice: 7900 },
 };
+
+// ── Pure helper functions (no DB dependency) ──────────────────────────────
+
+/** Price in USD for a given plan (supports PRO_PRICE_USD env override). */
+function priceUsd(env, plan) {
+  plan = plan || "pro";
+  if (plan === "pro") return Number(env.PRO_PRICE_USD || exports.PLAN_PRICES.pro);
+  return exports.PLAN_PRICES[plan] ?? exports.PLAN_PRICES.pro;
+}
+exports.priceUsd = priceUsd;
+
+/** A user's effective plan, considering suspension and expiry. */
+function effectivePlan(user) {
+  if (!user || user.status === "suspended") return "free";
+  var plan = String(user.plan || "free").toLowerCase();
+  // NULL plan_expires_at is treated as expired to prevent accidental permanent grants
+  var expired = user.plan_expires_at == null || Number(user.plan_expires_at) <= Date.now();
+  if (expired) return "free";
+  if (["agency", "pro", "starter"].includes(plan)) return plan;
+  return "free";
+}
+exports.effectivePlan = effectivePlan;
