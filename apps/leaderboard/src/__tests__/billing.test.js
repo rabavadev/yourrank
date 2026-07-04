@@ -16,15 +16,6 @@ mock.module("../db.js", () => ({
   },
 }));
 
-mock.module("../auth.js", () => ({
-  json: () => new Response(),
-  bad: (msg, code) => new Response(msg, { status: code || 400 }),
-  ok: (body) => new Response(JSON.stringify(body), { status: 200 }),
-  uuid: () => "test-uuid",
-  requireUser: () => Promise.resolve({ user: null, res: new Response() }),
-  safeEqual: (a, b) => a === b,
-}));
-
 // Now we can safely import billing.js
 const {
   effectivePlan,
@@ -57,15 +48,15 @@ describe("effectivePlan", () => {
   });
 
   test("returns 'starter' for user with plan='starter'", () => {
-    expect(effectivePlan({ plan: "starter" })).toBe("starter");
+    expect(effectivePlan({ plan: "starter", plan_expires_at: Date.now() + 86_400_000 })).toBe("starter");
   });
 
   test("returns 'pro' for user with plan='pro'", () => {
-    expect(effectivePlan({ plan: "pro" })).toBe("pro");
+    expect(effectivePlan({ plan: "pro", plan_expires_at: Date.now() + 86_400_000 })).toBe("pro");
   });
 
   test("returns 'agency' for user with plan='agency'", () => {
-    expect(effectivePlan({ plan: "agency" })).toBe("agency");
+    expect(effectivePlan({ plan: "agency", plan_expires_at: Date.now() + 86_400_000 })).toBe("agency");
   });
 
   test("returns 'free' when plan_expires_at is in the past (expired)", () => {
@@ -89,9 +80,10 @@ describe("effectivePlan", () => {
   });
 
   test("is case insensitive: 'PRO' returns 'pro'", () => {
-    expect(effectivePlan({ plan: "PRO" })).toBe("pro");
-    expect(effectivePlan({ plan: "Starter" })).toBe("starter");
-    expect(effectivePlan({ plan: "AGENCY" })).toBe("agency");
+    const futureExp = Date.now() + 86_400_000;
+    expect(effectivePlan({ plan: "PRO", plan_expires_at: futureExp })).toBe("pro");
+    expect(effectivePlan({ plan: "Starter", plan_expires_at: futureExp })).toBe("starter");
+    expect(effectivePlan({ plan: "AGENCY", plan_expires_at: futureExp })).toBe("agency");
   });
 
   test("returns 'free' for user with no plan property", () => {

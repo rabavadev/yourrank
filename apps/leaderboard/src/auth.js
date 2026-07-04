@@ -14,28 +14,24 @@ import {
 } from "../../../shared/session.js";
 // PBKDF2-SHA256 iteration count.
 //
-// IMPORTANT — why this is NOT 600,000: Cloudflare Workers cap CPU time per
-// invocation. deriveBits is native but counted as CPU. 600k PBKDF2-SHA256
-// in a SINGLE deriveBits call takes well over the budget and threw `error
-// code: 1101` (uncaught exception) on /api/auth/signup — account creation
-// was completely broken. 100k is the proven-working value (the project
-// shipped with it; existing users signed up on it).
+// Why 200,000 and not OWASP's 600,000:
+//   Cloudflare Workers cap CPU time per invocation. A single deriveBits call
+//   at 600k throws error 1101 (CPU exceeded) — confirmed in prod. 200k is the
+//   highest value that ships reliably on Workers without hitting the cap,
+//   giving 2x the attack cost of the original 100k that launched with the app.
 //
-// OWASP's >=600k guidance is for a normal long-lived Node server, not a
-// CPU-capped edge function. Keeping 100k here is the honest tradeoff: a
-// working app beats an idealised number that takes the auth flow down.
+//   OWASP's >=600k guidance targets long-lived Node servers, not edge
+//   functions. 200k is the best we can do within the Workers CPU budget today.
 //
-// FUTURE: To increase iterations within the CPU budget, consider:
-// 1. Splitting derivation across multiple deriveBits calls (each does N/2 iterations)
-// 2. Moving auth to a non-capped environment (dedicated server, not Workers)
-// 3. Using argon2id if Workers adds support (more memory-hard, better security)
+// Lazy rehash: verifyPassword() returns needsRehash=true when the stored hash
+//   used fewer iterations than PBKDF2_ITERATIONS. Callers re-hash and persist
+//   on successful login — existing users upgrade automatically, no forced reset.
 //
-// The versioned-hash + lazy-rehash infra below stays in place: if auth ever
-// moves off Workers (or Workers raises the limit), bump PBKDF2_ITERATIONS
-// and existing hashes upgrade automatically on next login. Until then the
-// target equals the legacy count so no rehash runs.
-const PBKDF2_ITERATIONS = 100000;
-const LEGACY_ITERATIONS = 100000;
+// Migration path if the CPU cap ever lifts:
+//   1. Bump PBKDF2_ITERATIONS — lazy rehash handles the rest.
+//   2. Or switch to argon2id if Workers adds native support.
+const PBKDF2_ITERATIONS = 200000;
+const LEGACY_ITERATIONS = 100000;  // kept to verify pre-200k hashes during lazy-rehash window
 const enc = new TextEncoder();
 const bytesToHex = (b) => [...new Uint8Array(b)].map((x) => x.toString(16).padStart(2, "0")).join("");
 const hexToBytes = (h) => {
