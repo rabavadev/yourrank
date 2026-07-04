@@ -1,4 +1,4 @@
-# GroupsMix
+# YourRank
 
 One platform for casino streamers, merged from two products:
 
@@ -9,8 +9,8 @@ One platform for casino streamers, merged from two products:
 
 ## Repo layout
 
-```
-groupsmix/
+```text
+yourrank/
 ├── ARCHITECTURE.md          how the two halves fit together + why
 ├── DEPLOY.md                one-time setup, then two `wrangler deploy`s
 ├── db/
@@ -31,7 +31,7 @@ groupsmix/
 
 ## Quick mental model
 
-```
+```text
                     yourrank.site (one Cloudflare zone)
         /*  (root) ──► Leaderboard Worker      /bot,/hook,/r,/pb ──► Bot Worker
               │                                          │
@@ -55,8 +55,8 @@ Start with **ARCHITECTURE.md**, then **DEPLOY.md**.
 ### Clone & Install
 
 ```bash
-git clone https://github.com/rabavadev/groupsmix.git
-cd groupsmix
+git clone https://github.com/rabavadev/yourrank.git
+cd yourrank
 bun install
 ```
 
