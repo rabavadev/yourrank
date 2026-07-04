@@ -40,6 +40,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: oven-sh/setup-bun@v2
+      - run: bun install
       - working-directory: apps/leaderboard
         run: bun install --frozen-lockfile
       - working-directory: apps/leaderboard
@@ -58,6 +59,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: oven-sh/setup-bun@v2
+      - run: bun install
       - working-directory: apps/bot
         run: bun install --frozen-lockfile
       - working-directory: apps/bot
