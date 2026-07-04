@@ -1,5 +1,5 @@
 // Centralized middleware exports
-export { generateCsrfToken, csrfCookie, readCsrfToken, verifyCsrf, CSRF_EXEMPT, shouldRequireCsrf, csrfDebugDomain } from "./csrf.js";
+export { generateCsrfToken, csrfCookie, readCsrfToken, verifyCsrf, CSRF_EXEMPT, shouldRequireCsrf } from "./csrf.js";
 export { resolveCustomDomain, isCustomHost } from "./custom-domain.js";
 export { serveStaticAsset } from "./static-assets.js";
 export { serveRobotsTxt, serveSitemapXml, serveFavicon } from "./seo.js";
