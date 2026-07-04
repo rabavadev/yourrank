@@ -52,7 +52,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
-      - uses: oven-sh/setup-bun@735343b667d3e6bfb39c11a0c3b3a1ca0a8a8c0e
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6
         with:
           bun-version: '1.2.15'
       - run: bun install --frozen-lockfile
@@ -63,7 +63,7 @@ jobs:
         run: bun test
       - working-directory: apps/leaderboard
         run: node build.js
-      - uses: cloudflare/wrangler-action@6d50771a405efa6ad3b959cf90f9e64ca6711e4d
+      - uses: cloudflare/wrangler-action@ebbaa1584979971c8614a24965b4405ff95890e0
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
@@ -76,7 +76,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
-      - uses: oven-sh/setup-bun@735343b667d3e6bfb39c11a0c3b3a1ca0a8a8c0e
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6
         with:
           bun-version: '1.2.15'
       - run: bun install --frozen-lockfile
@@ -87,7 +87,7 @@ jobs:
         run: bun test
       - working-directory: apps/bot
         run: bun run typecheck
-      - uses: cloudflare/wrangler-action@6d50771a405efa6ad3b959cf90f9e64ca6711e4d
+      - uses: cloudflare/wrangler-action@ebbaa1584979971c8614a24965b4405ff95890e0
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
