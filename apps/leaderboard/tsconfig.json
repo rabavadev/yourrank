@@ -14,5 +14,5 @@
     "removeComments": false
   },
   "include": ["../../shared"],
-  "exclude": ["node_modules", "dist", "src"]
+  "exclude": ["node_modules", "dist", "src", "../../shared/__tests__"]
 }

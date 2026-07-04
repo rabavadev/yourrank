@@ -1,13 +1,20 @@
 // Build script to compile shared TypeScript to JavaScript for the leaderboard Worker
 import { execSync } from "node:child_process";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+
+// Resolve paths relative to this script's location (repo root)
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const tsconfigPath = path.join(__dirname, "apps/leaderboard/tsconfig.json");
 
 console.log("Compiling shared TypeScript to JavaScript for leaderboard Worker...");
 
 try {
-  // Use the leaderboard app's tsconfig.json which is configured to compile shared/
-  // Note: This compiles all shared/*.ts files including the new env.ts
-  execSync("npx tsc --project apps/leaderboard/tsconfig.json", {
-    cwd: process.cwd(),
+  const cmd = process.versions?.bun
+    ? `bunx tsc --project ${tsconfigPath}`
+    : `npx tsc --project ${tsconfigPath}`;
+  execSync(cmd, {
+    cwd: __dirname,
     stdio: "inherit"
   });
   console.log("✓ All shared TypeScript files compiled successfully");

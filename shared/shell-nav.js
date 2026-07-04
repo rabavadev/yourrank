@@ -1,61 +1,62 @@
+"use strict";
 // ============================================================================
-//  YourRank — SHARED DASHBOARD SHELL / TOP NAV (JavaScript)
+//  YourRank — SHARED DASHBOARD SHELL / TOP NAV  (bot Worker, TypeScript)
 //
-//  Behavioural port of shared/shell-nav.ts. Renders the same sticky header
-//  (Leaderboard | Bot | Analytics | Billing | Logout) so the bot dashboard
-//  at /bot/dashboard feels like the same app.
+//  Behavioural port of shared/shell-nav.js. See that file for the full doc.
+//  Renders the same sticky header (Leaderboard | Bot | Analytics | Billing |
+//  Logout) so the bot dashboard at /bot/dashboard feels like the same app.
 //
-//  This is the JavaScript version compiled from shared/shell-nav.ts
-//  Used by the leaderboard Worker
+//  Usage (bot Worker dashboard.ts):
+//    import { shellNavHtml, SHELL_NAV_CSS } from "../shared/shell-nav.js";
+//    // (import path ends in .js even from .ts under NodeNext/Workers ESM)
+//    const html = `<!doctype html><html><head>...<style>${SHELL_NAV_CSS}
+//                  ${BASE_CSS}</style></head><body>
+//                  ${shellNavHtml({ activePath: "/bot/dashboard", user })}
+//                  <main class="gm-shell-main">...bot dashboard...</main>`;
 // ============================================================================
-
-export const NAV_LINKS = [
-  { key: "leaderboard", label: "Leaderboard", href: "/dashboard",           match: ["/dashboard"] },
-  { key: "bot",         label: "Bot",         href: "/bot/dashboard",       match: ["/bot/dashboard", "/bot/dash"] },
-  { key: "analytics",   label: "Analytics",   href: "/dashboard/analytics", match: ["/dashboard/analytics"] },
-  { key: "billing",     label: "Billing",     href: "/dashboard/billing",   match: ["/dashboard/billing"] },
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.SHELL_NAV_CSS = exports.NAV_LINKS = void 0;
+exports.activeKey = activeKey;
+exports.shellNavHtml = shellNavHtml;
+exports.NAV_LINKS = [
+    { key: "leaderboard", label: "Leaderboard", href: "/dashboard", match: ["/dashboard"] },
+    { key: "bot", label: "Bot", href: "/bot/dashboard", match: ["/bot/dashboard", "/bot/dash"] },
+    { key: "analytics", label: "Analytics", href: "/dashboard/analytics", match: ["/dashboard/analytics"] },
+    { key: "billing", label: "Billing", href: "/dashboard/billing", match: ["/dashboard/billing"] },
 ];
-
-export function activeKey(pathname) {
-  const p = (pathname || "/").replace(/\/+$/, "") || "/";
-  let best = null;
-  let bestLen = -1;
-  for (const link of NAV_LINKS) {
-    for (const m of link.match) {
-      if ((p === m || p.startsWith(m + "/")) && m.length > bestLen) {
-        best = link.key;
-        bestLen = m.length;
-      }
+function activeKey(pathname) {
+    const p = (pathname || "/").replace(/\/+$/, "") || "/";
+    let best = null;
+    let bestLen = -1;
+    for (const link of exports.NAV_LINKS) {
+        for (const m of link.match) {
+            if ((p === m || p.startsWith(m + "/")) && m.length > bestLen) {
+                best = link.key;
+                bestLen = m.length;
+            }
+        }
     }
-  }
-  return best;
+    return best;
 }
-
 function esc(s) {
-  return String(s ?? "").replace(/[&<>"']/g, (ch) =>
-    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[ch])
-  );
+    return String(s ?? "").replace(/[&<>"']/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[ch]));
 }
-
 function planBadge(plan) {
-  const p = String(plan || "free").toLowerCase();
-  const label = p === "agency" ? "Agency" : p === "pro" ? "Pro" : "Free";
-  const mod = p === "free" ? "gm-badge--free" : "gm-badge--paid";
-  return `<span class="gm-badge ${mod}">${label}</span>`;
+    const p = String(plan || "free").toLowerCase();
+    const label = p === "agency" ? "Agency" : p === "pro" ? "Pro" : "Free";
+    const mod = p === "free" ? "gm-badge--free" : "gm-badge--paid";
+    return `<span class="gm-badge ${mod}">${label}</span>`;
 }
-
-export function shellNavHtml(opts = {}) {
-  const active = activeKey(opts.activePath || "/");
-  const name = esc(opts.user?.display_name || opts.user?.email || "Streamer");
-  const badge = planBadge(opts.user?.plan);
-
-  const tabs = NAV_LINKS.map((l) => {
-    const isActive = l.key === active;
-    return `<a class="gm-tab${isActive ? " gm-tab--active" : ""}"` +
-      `${isActive ? ' aria-current="page"' : ""} href="${l.href}">${l.label}</a>`;
-  }).join("");
-
-  return `<header class="gm-shell-nav">
+function shellNavHtml(opts = {}) {
+    const active = activeKey(opts.activePath || "/");
+    const name = esc(opts.user?.display_name || opts.user?.email || "Streamer");
+    const badge = planBadge(opts.user?.plan);
+    const tabs = exports.NAV_LINKS.map((l) => {
+        const isActive = l.key === active;
+        return `<a class="gm-tab${isActive ? " gm-tab--active" : ""}"` +
+            `${isActive ? ' aria-current="page"' : ""} href="${l.href}">${l.label}</a>`;
+    }).join("");
+    return `<header class="gm-shell-nav">
   <div class="gm-shell-inner">
     <a class="gm-brand" href="/dashboard">
       <span class="gm-brand-mark">GM</span>
@@ -70,10 +71,9 @@ export function shellNavHtml(opts = {}) {
   </div>
 </header>`;
 }
-
-// Identical CSS to shell-nav.ts — namespaced .gm-shell-* / .gm-* so it never
+// Identical CSS to shell-nav.js — namespaced .gm-shell-* / .gm-* so it never
 // collides with the bot dashboard's own BASE_CSS.
-export const SHELL_NAV_CSS = `
+exports.SHELL_NAV_CSS = `
 :root{
   --gm-bg:#0b0b0c; --gm-panel:#0f0f11; --gm-line:#232327; --gm-line-2:#2e2e33;
   --gm-ink:#ededf0; --gm-ink-soft:#a3a3ab; --gm-ink-mute:#6a6a72;
