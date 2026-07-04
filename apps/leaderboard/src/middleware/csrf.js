@@ -7,11 +7,8 @@ export function generateCsrfToken() {
 }
 
 export function csrfCookie(token) {
-  let domain = ".yourrank.site";
-  try {
-    const envDomain = typeof process !== "undefined" && typeof process.env !== "undefined" && process.env.SESSION_COOKIE_DOMAIN;
-    if (envDomain) domain = envDomain;
-  } catch {}
+  const raw = (typeof process !== "undefined" && process.env && process.env.SESSION_COOKIE_DOMAIN) || "";
+  const domain = (raw && raw !== "undefined") ? raw : ".yourrank.site";
   return `__csrf=${token}; Path=/; Domain=${domain}; Secure; SameSite=Lax; Max-Age=86400`;
 }
 
@@ -22,7 +19,7 @@ export function csrfDebugDomain() {
     const hasEnv = hasProcess && typeof process.env !== "undefined";
     const raw = hasEnv ? process.env.SESSION_COOKIE_DOMAIN : "N/A";
     const cookie = csrfCookie("test");
-    return { hasProcess, hasEnv, rawDomain: raw, cookieHeader: cookie };
+    return { hasProcess, hasEnv, rawDomain: String(raw), rawTypeof: typeof raw, cookieHeader: cookie };
   } catch (e) {
     return { error: String(e) };
   }
