@@ -11,7 +11,7 @@ import { billingEnabled, createStarsInvoice } from "./billing.js";
 import { checkFeature, PLANS } from "./plans.js";
 import { rateLimit } from "./ratelimit.js";
 import { sameOrigin } from "./dashboard-auth.js";
-import type { SessionEnv } from "../../../shared/session.js";
+import { currentUserId, type SessionEnv } from "../../../shared/session.js";
 
 interface TgLogin {
   id: number; first_name?: string; last_name?: string; username?: string;
@@ -20,6 +20,13 @@ interface TgLogin {
 
 export function buildDashboardApi(): Hono<{ Variables: { uid: string } }> {
   const api = new Hono<{ Variables: { uid: string } }>();
+
+  // Resolve session FIRST — every subsequent middleware reads c.get("uid").
+  api.use("*", async (c, next) => {
+    const uid = await currentUserId(c.req.raw, c.env as SessionEnv);
+    if (uid) c.set("uid", uid);
+    await next();
+  });
 
   // Rate-limit all API requests (120 req/min per IP).
   api.use("*", async (c, next) => {
