@@ -164,7 +164,11 @@ export const PAGES = {
 <link rel="stylesheet" href="/assets/app.css" /><!--GM_NAV_CSS--></head><body>
 <a href="#main-content" class="sr-only" style="position:absolute;top:0;left:0;z-index:9999;padding:8px 16px;background:var(--accent,#c8ff00);color:#000;font-weight:700;text-decoration:none" onfocus="this.classList.remove('sr-only')" onblur="this.classList.add('sr-only')">Skip to content</a>
 <!--GM_NAV-->
-<div class="wrap" id="main-content"><div class="skel" id="loading">Loading your leaderboard…</div>
+<div class="wrap" id="main-content"><div id="loading" style="padding:26px 0">
+<div style="display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:18px"><div><div class="skeleton skeleton-text--lg" style="width:180px"></div><div class="skeleton skeleton-text--sm" style="width:260px;margin-top:8px"></div></div><div class="skeleton skeleton-text" style="width:90px"></div></div>
+<div class="card" style="margin-top:18px"><div class="skeleton skeleton-block" style="height:200px"></div></div>
+<div class="card" style="margin-top:18px"><div class="skeleton skeleton-block" style="height:300px"></div></div>
+</div>
 <div id="dash" hidden>
 <div class="dash-head"><div><h1>Your leaderboard</h1><p class="live-link">Live at <a id="liveLink" href="#" target="_blank">…</a></p></div><span class="label" id="planBadge">FREE PLAN</span></div>
 <div class="card" id="boardSwitcher"><h2>Boards</h2><p class="card-sub">Switch between your leaderboards. <span class="hint" id="boardCount"></span></p>
@@ -307,7 +311,11 @@ analytics: `<!DOCTYPE html><html lang="en"><head>
 <div class="card"><h2>Top referrers</h2><p class="card-sub">Where your visitors come from — top 5 domains in the last 30 days.</p>
 <table class="ref-table" id="refTable"><thead><tr><th>Domain</th><th class="ta-r">Views</th></tr></thead><tbody id="refBody"></tbody></table>
 <div class="empty" id="refEmpty" hidden>No referrer data yet.</div></div></div>
-<div class="skel" id="loading">Loading analytics…</div></div>
+<div id="loading" style="padding:26px 0">
+<div style="margin-bottom:18px"><div class="skeleton skeleton-text--lg" style="width:120px"></div><div class="skeleton skeleton-text--sm" style="width:200px;margin-top:8px"></div></div>
+<div class="card"><div class="skeleton skeleton-block" style="height:80px"></div></div>
+<div class="card" style="margin-top:18px"><div class="skeleton skeleton-block" style="height:200px"></div></div>
+</div></div>
 <script src="/assets/analytics.js?v=2"></script></body></html>`,
 
 billing: `<!DOCTYPE html><html lang="en"><head>
@@ -342,7 +350,11 @@ billing: `<!DOCTYPE html><html lang="en"><head>
 <div class="card" id="proCard" hidden><h2>You're on <span id="currentPlanName">Pro</span></h2><p class="card-sub">Thanks for supporting YourRank. Manage everything from the Leaderboard tab.</p>
 <p class="hint" id="proExp"></p>
 <p class="hint" id="lifetimeNotice" hidden style="color:var(--accent);font-weight:600">⭐ Lifetime Pro — no expiry. You own this forever.</p></div></div>
-<div class="skel" id="loading">Loading billing…</div></div>
+<div id="loading" style="padding:26px 0">
+<div style="display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:18px"><div><div class="skeleton skeleton-text--lg" style="width:100px"></div><div class="skeleton skeleton-text--sm" style="width:160px;margin-top:8px"></div></div><div class="skeleton skeleton-text" style="width:100px"></div></div>
+<div class="card"><div class="skeleton skeleton-block" style="height:60px"></div></div>
+<div class="card" style="margin-top:18px"><div class="skeleton skeleton-block" style="height:120px"></div></div>
+</div></div>
 <script src="/assets/billing.js?v=2"></script></body></html>`,
 
 botSetup: `<!DOCTYPE html><html lang="en"><head>
@@ -425,14 +437,19 @@ admin: `<!DOCTYPE html><html lang="en"><head>
 <a href="#main-content" class="sr-only" style="position:absolute;top:0;left:0;z-index:9999;padding:8px 16px;background:var(--accent,#c8ff00);color:#000;font-weight:700;text-decoration:none" onfocus="this.classList.remove('sr-only')" onblur="this.classList.add('sr-only')">Skip to content</a>
 <header class="topbar"><div class="brand">Your<b>Rank</b> <span class="label" style="margin-left:8px">ADMIN</span></div>
 <div class="topbar-right"><span class="muted" id="userEmail"></span><a href="/dashboard" class="btn btn--sm btn--ghost">Dashboard</a><a href="#" id="logout" class="btn btn--sm btn--ghost">Sign out</a></div></header>
-<div class="wrap" id="main-content"><div class="skel" id="loading">Loading…</div>
+<div class="wrap" id="main-content"><div id="loading" style="padding:26px 0">
+<div style="margin-bottom:18px"><div class="skeleton skeleton-text--lg" style="width:160px"></div><div class="skeleton skeleton-text--sm" style="width:240px;margin-top:8px"></div></div>
+<div class="stats"><div class="stat"><div class="skeleton skeleton-text" style="width:60px"></div><div class="skeleton skeleton-text--sm" style="width:50px;margin-top:6px"></div></div><div class="stat"><div class="skeleton skeleton-text" style="width:40px"></div><div class="skeleton skeleton-text--sm" style="width:40px;margin-top:6px"></div></div><div class="stat"><div class="skeleton skeleton-text" style="width:30px"></div><div class="skeleton skeleton-text--sm" style="width:50px;margin-top:6px"></div></div><div class="stat"><div class="skeleton skeleton-text" style="width:70px"></div><div class="skeleton skeleton-text--sm" style="width:80px;margin-top:6px"></div></div></div>
+<div class="card" style="margin-top:18px"><div class="skeleton skeleton-block" style="height:300px"></div></div>
+</div>
 <div id="panel" hidden>
 <div class="dash-head"><div><h1>Operator panel</h1><p class="live-link">Everything that happens on YourRank, in one place.</p></div></div>
 <div class="stats"><div class="stat"><b id="s_users">–</b><span>accounts</span></div><div class="stat"><b id="s_pro">–</b><span>on Pro</span></div><div class="stat"><b id="s_leads">–</b><span>leads</span></div><div class="stat"><b id="s_rev">–</b><span>revenue (USD)</span></div></div>
 <div class="tabs"><button class="tab is-on" data-tab="users" type="button">Users</button><button class="tab" data-tab="leads" type="button">Leads</button><button class="tab" data-tab="payments" type="button">Payments</button></div>
 <div class="tabpane" id="tab-users">
 <div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Email</th><th>Page</th><th>Plan</th><th>Status</th><th class="ta-r">Players</th><th>Joined</th><th>Actions</th></tr></thead><tbody id="usersBody"></tbody></table></div>
-<div class="empty" id="usersEmpty" hidden>No users yet.</div></div>
+<div class="empty" id="usersEmpty" hidden>No users yet.</div>
+<div id="usersPagination" style="display:flex;align-items:center;gap:12px;padding:12px 0;flex-wrap:wrap"></div></div>
 <div class="tabpane" id="tab-leads" hidden>
 <div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Handle</th><th>Casino</th><th>Contact</th><th>Note</th><th>When</th></tr></thead><tbody id="leadsBody"></tbody></table></div>
 <div class="empty" id="leadsEmpty" hidden>No leads yet. Share the landing page around.</div></div>
