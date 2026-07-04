@@ -95,4 +95,19 @@ describe("withHandler", () => {
     expect(body.url).toBe("https://example.com/test");
     expect(body.key).toBe("value");
   });
+
+  test("forwards ctx (execution context) to the inner handler", async () => {
+    const handler = withHandler(async (_req, _env, ctx) => {
+      return new Response(JSON.stringify({ ctxKey: ctx.waitUntil }), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      });
+    });
+
+    const mockCtx = { waitUntil: "present" };
+    const res = await handler(new Request("https://example.com/"), {}, mockCtx);
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.ctxKey).toBe("present");
+  });
 });
