@@ -11,7 +11,8 @@
     "forceConsistentCasingInFileNames": true,
     "allowJs": true,
     "declaration": false,
-    "removeComments": false
+    "removeComments": false,
+    "types": ["node"]
   },
   "include": ["../../shared"],
   "exclude": ["node_modules", "dist", "src", "../../shared/__tests__"]

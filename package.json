@@ -1,1 +1,1 @@
-{"dependencies":{"postgres":"^3.4.9"}}
+{"dependencies":{"postgres":"^3.4.9"},"devDependencies":{"@types/node":"^20.14.10"}}
