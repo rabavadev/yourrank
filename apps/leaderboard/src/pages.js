@@ -218,10 +218,16 @@ export const PAGES = {
 <code id="overlayUrl" style="flex:1;font-family:var(--mono);font-size:13px;background:var(--panel-2);border:1px solid var(--line-2);border-radius:8px;padding:10px 12px;word-break:break-all;min-width:0;user-select:all"></code>
 <button class="btn btn--sm btn--accent" id="overlayCopy" type="button">📋 Copy</button>
 </div>
-<span class="hint">Add this as a <b>Browser Source</b> in OBS. Set width to <b>320px</b>, height auto. Check "Shutdown source when not visible" off for live updates.</span></div>
+<span class="hint">Add this as a <b>Browser Source</b> in OBS. Set width to <b>320px</b>, height auto.</span></div>
+<div class="field" style="margin-top:8px"><label>Display mode</label>
+<div style="display:flex;gap:8px">
+<label class="chk"><input type="radio" name="ov_mode" value="top5" checked /> Top 5 — animated rankings</label>
+<label class="chk"><input type="radio" name="ov_mode" value="marquee" /> Marquee — scrolls all players</label>
+</div>
+<span class="hint" id="overlayModeHint">Shows positions 1–5 with smooth FLIP rank animations and countdown.</span></div>
 <div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap">
 <a class="btn btn--sm" id="overlayPreview" href="#" target="_blank">Preview overlay →</a>
-</div>
+</div></div>
 </div>
 <div class="empty" id="overlayLock" hidden>OBS Overlay is a Pro feature. <a href="#" id="overlayUpgrade">Upgrade to unlock it</a>.</div></div>
 <div class="card" id="domainCard"><h2>Custom Domain <span class="pill pill--info" style="margin-left:6px">PRO</span></h2><p class="card-sub">Serve your leaderboard on your own domain instead of yourrank.site/yourname.</p>

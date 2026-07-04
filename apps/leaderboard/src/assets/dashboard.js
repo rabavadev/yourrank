@@ -39,6 +39,7 @@ async function init(){
   renderArchives(p.archives||[]);
   renderDomain();
   renderNotifications(p.notify || {});
+  renderOverlay();
   if (p.customDomain !== undefined) $("f_domain").value = p.customDomain || "";
   // Show domain TLS status if a custom domain is set
   if (p.customDomain && p.domainStatus) renderDomainStatus(p.domainStatus, "");
@@ -304,6 +305,45 @@ function renderNotifications(n){
   const wh = $("f_webhook"); if (wh && n.discord_webhook_url) wh.value = ""; // boolean from API, don't expose URL
   const tg = $("f_tgNotify"); if (tg) tg.checked = !!n.telegram_notify;
   const tgChat = $("f_tgChat"); if (tgChat) tgChat.value = n.telegram_chat_id || "";
+}
+
+/* --- OBS overlay (Pro) --- */
+function renderOverlay(){
+  const paid = ME.plan === "pro" || ME.plan === "agency";
+  const body = $("overlayBody");
+  const lock = $("overlayLock");
+  const urlEl = $("overlayUrl");
+  const preview = $("overlayPreview");
+  if (body) body.hidden = !paid;
+  if (lock) lock.hidden = paid;
+  if (!paid || !SLUG) return;
+  const base = location.origin + "/" + SLUG + "/overlay";
+  function updateOverlayUrl(){
+    const mode = document.querySelector('input[name="ov_mode"]:checked');
+    const m = mode ? mode.value : "top5";
+    const url = m === "marquee" ? base + "?mode=marquee" : base;
+    if (urlEl) urlEl.textContent = url;
+    if (preview) preview.href = url;
+    const hint = $("overlayModeHint");
+    if (hint) hint.textContent = m === "marquee"
+      ? "Rotates through every player, one at a time, in rank order with fade transitions."
+      : "Shows positions 1\u20135 with smooth FLIP rank animations and countdown.";
+  }
+  // Radio change listener
+  document.querySelectorAll('input[name="ov_mode"]').forEach(el => el.addEventListener("change", updateOverlayUrl));
+  // Copy button
+  const copyBtn = $("overlayCopy");
+  if (copyBtn) copyBtn.onclick = () => {
+    if (!urlEl) return;
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(urlEl.textContent);
+      const orig = copyBtn.textContent;
+      copyBtn.textContent = "Copied!";
+      copyBtn.disabled = true;
+      setTimeout(() => { copyBtn.textContent = orig; copyBtn.disabled = false; }, 2000);
+    }
+  };
+  updateOverlayUrl();
 }
 
 function renderDomain(){
