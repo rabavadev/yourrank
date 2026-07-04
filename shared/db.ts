@@ -32,15 +32,20 @@ function getDatabaseUrl(): string {
 // ----------------------------------------------------------------------------
 
 function createSql(): ReturnType<typeof postgres> {
-  const url = getDatabaseUrl();
-  return postgres(url, {
-    max: 1,
-    prepare: false,
-    idle_timeout: 5,
-    connect_timeout: 10,
-    debug: false,
-  });
-}
+    const url = getDatabaseUrl();
+    // When connecting directly to a remote host (not through Hyperdrive's local
+    // proxy on localhost), SSL is required.  Supabase and most cloud-Postgres
+    // providers mandate TLS; Hyperdrive's in-process proxy does NOT use TLS.
+    const isLocalProxy = /@localhost[:/]|@127\.0\.0\.1[:/]/.test(url);
+    return postgres(url, {
+      max: 1,
+      prepare: false,
+      idle_timeout: 5,
+      connect_timeout: 10,
+      debug: false,
+      ...(isLocalProxy ? {} : { ssl: "require" }),
+    });
+  }
 
 // Cached instance for transactions (getSql().begin())
 let txSql: ReturnType<typeof postgres> | null = null;
