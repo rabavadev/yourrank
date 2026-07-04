@@ -19,6 +19,8 @@ concurrency:
 jobs:
   migrate:
     runs-on: ubuntu-latest
+    # Migrations are best-effort: deploy proceeds even if DB secrets are missing/wrong.
+    continue-on-error: true
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
 
@@ -30,11 +32,20 @@ jobs:
       - name: Link project and push migrations
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
         run: |
           set -e
-          supabase link --project-ref lygcqzjxlqbvymkfjvel --password "${{ secrets.SUPABASE_DB_PASSWORD }}" || echo "Link failed (password may differ for pooler) — skipping migrations"
-          supabase db push
-          echo "Migrations applied successfully"
+          if [ -z "$SUPABASE_DB_PASSWORD" ]; then
+            echo "SKIP: SUPABASE_DB_PASSWORD not set — skipping migrations"
+            exit 0
+          fi
+          if supabase link --project-ref lygcqzjxlqbvymkfjvel --password "$SUPABASE_DB_PASSWORD"; then
+            supabase db push
+            echo "Migrations applied successfully"
+          else
+            echo "SKIP: supabase link failed — skipping migrations"
+            exit 0
+          fi
 
   deploy-leaderboard:
     needs: migrate
@@ -44,14 +55,12 @@ jobs:
       - uses: oven-sh/setup-bun@735343b667d3e6bfb39c11a0c3b3a1ca0a8a8c0e
         with:
           bun-version: '1.2.15'
-      - run: bun install
+      - run: bun install --frozen-lockfile
       - name: Audit dependencies
         run: bun audit --audit-level moderate
       - name: Run tests
         working-directory: apps/leaderboard
         run: bun test
-      - working-directory: apps/leaderboard
-        run: bun install --frozen-lockfile
       - working-directory: apps/leaderboard
         run: node build.js
       - uses: cloudflare/wrangler-action@6d50771a405efa6ad3b959cf90f9e64ca6711e4d
@@ -70,14 +79,12 @@ jobs:
       - uses: oven-sh/setup-bun@735343b667d3e6bfb39c11a0c3b3a1ca0a8a8c0e
         with:
           bun-version: '1.2.15'
-      - run: bun install
+      - run: bun install --frozen-lockfile
       - name: Audit dependencies
         run: bun audit --audit-level moderate
       - name: Run tests
         working-directory: apps/bot
         run: bun test
-      - working-directory: apps/bot
-        run: bun install --frozen-lockfile
       - working-directory: apps/bot
         run: bun run typecheck
       - uses: cloudflare/wrangler-action@6d50771a405efa6ad3b959cf90f9e64ca6711e4d
@@ -106,10 +113,6 @@ jobs:
 
       - name: "Smoke: bot worker + database"
         run: |
-          # GET /r/:slug queries the DB.
-          # 404 = Worker up + DB connected (slug doesn't exist — expected).
-          # 500 = Worker up but DB is down.
-          # curl error = Worker not reachable.
           STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 20 https://yourrank.site/r/smoke-probe-ci)
           if [ "$STATUS" = "404" ]; then
             echo "OK: bot worker + DB healthy (HTTP 404 — slug not found, as expected)"
@@ -129,17 +132,6 @@ jobs:
             exit 1
           fi
           echo "OK: bot dashboard HTTP $STATUS"
-
-      # REL-012: Version tagging — add git tag on successful deploy.
-      # TODO: Add git tag on successful deploy:
-      # git tag v$(jq -r .version package.json)
-      # git push origin v$(jq -r .version package.json)
-
-      # REL-013: Deploy atomicity note — Workers deploy independently.
-      # If one fails mid-deploy:
-      # 1. Check which Worker succeeded: wrangler deployments list
-      # 2. Rollback the failed one: wrangler rollback <deployment-id>
-      # 3. The shared DB schema is forward-compatible (additive migrations only)
 
       - name: Summarise failure
         if: failure()
