@@ -7,7 +7,12 @@ export function generateCsrfToken() {
 }
 
 export function csrfCookie(token) {
-  const domain = (typeof process !== "undefined" && process.env && process.env.SESSION_COOKIE_DOMAIN) || ".yourrank.site";
+  // CSRF_FIX_V3: explicit default, no template-literal undefined
+  let domain = ".yourrank.site";
+  try {
+    const envDomain = typeof process !== "undefined" && typeof process.env !== "undefined" && process.env.SESSION_COOKIE_DOMAIN;
+    if (envDomain) domain = envDomain;
+  } catch {}
   return `__csrf=${token}; Path=/; Domain=${domain}; Secure; SameSite=Lax; Max-Age=86400`;
 }
 
