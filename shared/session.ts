@@ -1,20 +1,27 @@
 // ============================================================================
-//  YourRank — SHARED SESSION (bot Worker, TypeScript)
+//  YourRank — SHARED SESSION (canonical TypeScript source)
 //
-//  Byte-for-byte-behavioural port of shared/session.js. See that file's header
-//  for the full model. Summary:
-//    * Cookie name:   gm_session
-//    * Cookie domain: .yourrank.site (or SESSION_COOKIE_DOMAIN env var)
-//    * KV namespace:  SESSIONS  (SAME namespace id as the leaderboard Worker)
-//    * KV key:        sess:<token>   value: bare user UUID
-//    * TTL:           30 days
+//  ONE session model used identically by BOTH Workers:
+//    * Cookie name:      gm_session
+//    * Cookie domain:    .yourrank.site (or SESSION_COOKIE_DOMAIN)
+//                        every path on the same host — /bot, /hook, /r, ...)
+//    * KV namespace:     SESSIONS  (BOTH Workers bind the SAME namespace id)
+//    * KV key:           sess:<token>
+//    * KV value:         the user's UUID from the unified `users` table
+//    * TTL:              30 days
 //
-//  IMPORTANT — this REPLACES the bot Worker's old HMAC-signed stateless `sess`
-//  cookie (see dashboard.ts signSession/verifySession). Reasons:
-//    1. The leaderboard Worker cannot verify the bot's HMAC signature and
-//       vice-versa, so a stateless token is NOT cross-Worker shareable.
-//    2. A KV-backed token gives real server-side logout (delete the key) and a
-//       single shape both Workers already understand (bare UUID -> users.id).
+//  The token is 32 random bytes (hex). The KV value is the bare UUID — no JSON,
+//  no signature, no shape. Whichever Worker reads the cookie resolves the same
+//  userId, so a password login on the leaderboard tab is a valid session on the
+//  bot tab and vice-versa.
+//
+//  This is the CANONICAL source. It is compiled to .js for the leaderboard Worker.
+//  The bot Worker imports this .ts file directly.
+//
+//  NOTE: currentUser() only RESOLVES the userId to a token/uid here. It does NOT
+//  read the DB, because the leaderboard Worker's DB layer is owned by another
+//  agent and uses Supabase REST. Call currentUserId() to get the UUID, then
+//  hydrate the user row with your own data layer. loadUser is an injectable hook.
 //
 //  Both Workers MUST bind the SAME KV namespace under the name `SESSIONS` in
 //  their wrangler.toml (same `id`, different `binding` name is NOT enough — the
@@ -177,3 +184,6 @@ export async function currentUser<T>(
   if (!uid) return null;
   return loadUser(env, uid);
 }
+
+// SEC-104: Legacy rk_session cookie support removed. The migration grace
+// period is over. Only gm_session is accepted.

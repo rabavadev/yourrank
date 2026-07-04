@@ -7,3 +7,14 @@ dist/
 .env
 .env.*
 !.env.example
+# Compiled shared TypeScript (generated from .ts)
+shared/session.js
+shared/shell-nav.js
+shared/crypto.js
+shared/db.js
+shared/monitoring.js
+shared/notifications.js
+shared/env.js
+shared/plans.js
+# Auto-generated asset bundle
+apps/leaderboard/src/assets_bundled.js

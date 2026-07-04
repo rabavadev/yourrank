@@ -32,12 +32,12 @@ async function call<T>(
 /** Validates a token and returns the bot's identity. Throws on a bad token. */
 export const getMe = (token: string) => call<TgBotInfo>(token, "getMe");
 
-export const setWebhook = (token: string, url: string, secret: string) =>
+export const setWebhook = (token: string, url: string, secret: string, options?: { dropPendingUpdates?: boolean; allowedUpdates?: string[] }) =>
   call<boolean>(token, "setWebhook", {
     url,
     secret_token: secret, // Telegram echoes this back on every update
-    allowed_updates: ["message", "callback_query"],
-    drop_pending_updates: true,
+    allowed_updates: options?.allowedUpdates || ["message", "callback_query", "pre_checkout_query"],
+    drop_pending_updates: options?.dropPendingUpdates ?? true, // default true for onboarding safety
   });
 
 export const deleteWebhook = (token: string) =>

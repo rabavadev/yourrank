@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import type { Update } from "grammy/types";
 import { config } from "./config.js";
-import { exec, one, query } from "./db.js";
+import { exec, one, query } from "../../../shared/db.js";
 import { encryptToken, decryptToken, reencryptToken, isCurrentVersion, newClickRef, newLinkSlug, newWebhookSecret, verifyHmacSha256Hex } from "./crypto.js";
 import { getBotBySecret, handleUpdateForBot } from "./botEngine.js";
 import { getMe, setWebhook } from "./telegram.js";
@@ -10,6 +10,7 @@ import { logClick } from "./clicks.js";
 import { billingEnabled, handleBillingUpdate, setupBillingWebhook } from "./billing.js";
 import { withPlanLimit } from "./plans.js";
 import { rateLimit, type RateLimitKV } from "./ratelimit.js";
+import { recordConversion, type PostbackQuery } from "./conversions.js";
 
 // Constant-time string compare for secrets (webhook tokens, API keys). A plain
 // !== short-circuits on the first differing byte, leaking how close a guess is
@@ -22,43 +23,6 @@ function safeEqual(a: string, b: string): boolean {
     diff |= (sa.charCodeAt(i) ?? 0) ^ (sb.charCodeAt(i) ?? 0);
   }
   return diff === 0;
-}
-
-/**
- * Insert a conversion row from a casino postback. Shared by the legacy
- * GET|POST /pb/:key path (key in the URL, no signature) and the new signed
- * POST /pb path (key in X-Postback-Key header + HMAC in X-Postback-Signature).
- * `ownerId` is resolved by the caller; `q` is the parsed query object.
- */
-type PostbackQuery = Record<string, string | string[]>;
-async function recordConversion(ownerId: string, q: PostbackQuery): Promise<void> {
-  const first = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v);
-  const clickRef = first(q.click_ref) ?? first(q.clickid) ?? first(q.subid) ?? first(q.sub_id) ?? null;
-  const event = (first(q.event) ?? first(q.goal) ?? "deposit").toLowerCase().slice(0, 32);
-  // Clamp amount to a non-negative bounded number. Negatives / NaN / absurd
-  // values feed revenue/conversion stats and could drive affiliate payouts.
-  const rawAmt = first(q.amount) == null ? NaN : Number(first(q.amount));
-  const amount = Number.isFinite(rawAmt) && rawAmt >= 0 && rawAmt <= 1e12 ? rawAmt : null;
-  const currency = (first(q.currency) ?? "USD").toUpperCase().slice(0, 8);
-
-  // Attribute to an offer via the click ref when possible.
-  let offerId: string | null = null;
-  if (clickRef) {
-    const hit = await one<{ offer_id: string }>(
-      `SELECT sl.offer_id FROM clicks cl
-         JOIN short_links sl ON sl.id = cl.short_link_id
-        WHERE cl.click_ref = $1 LIMIT 1`,
-      [clickRef]
-    );
-    offerId = hit?.offer_id ?? null;
-  }
-
-  // exec() — semantically a write/mutation, not a read query.
-  await exec(
-    `INSERT INTO conversions (owner_id, offer_id, click_ref, event, amount, currency, raw)
-     VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-    [ownerId, offerId, clickRef, event, amount, currency, JSON.stringify(q)]
-  );
 }
 
 type Bindings = {
@@ -309,7 +273,10 @@ export function buildHonoApp(): Hono<{ Bindings: Bindings }> {
     if ("error" in out) return c.json({ error: out.error }, 402);
     let webhookOk = true;
     try {
-      await setWebhook(token, `${config.publicBaseUrl}/hook/${out.result.secret}`, out.result.secret);
+      await setWebhook(token, `${config.publicBaseUrl}/hook/${out.result.secret}`, out.result.secret, {
+        dropPendingUpdates: true, // Onboarding: drop queued updates for clean start
+        allowedUpdates: ["message", "callback_query"],
+      });
     } catch (err) {
       console.error("[admin POST /bots] setWebhook failed:", String((err as any)?.message ?? err));
       webhookOk = false;

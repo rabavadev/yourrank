@@ -1,9 +1,32 @@
 // Owner admin API. Every route requires a session whose user has is_admin=true.
-import { json, bad, ok, readJson, newToken, readToken, currentUser, destroyAllUserSessions } from "./auth.js";
+import { json, bad, ok, readJson, newToken, readToken, currentUser, destroyAllUserSessions, clientIp } from "./auth.js";
 import { activatePlan } from "./billing.js";
-import { query, one, exec } from "./db.js";
+import { query, one, exec } from "../../../shared/db.js";
 import { generateSecret, verifyCode, generateOtpauthUri } from "./totp.js";
-import { encrypt, decrypt } from "./crypto.js";
+import { encrypt, decrypt } from "../../../shared/crypto.js";
+
+// Log admin action to database for persistent audit trail
+async function logAdminAction(env, adminId, action, targetUserId = null, details = null, request = null) {
+  try {
+    const ipAddress = request ? clientIp(request) : null;
+    const userAgent = request ? request.headers.get("user-agent") : null;
+    await exec(
+      `INSERT INTO admin_audit (admin_id, target_user_id, action, details, ip_address, user_agent)
+       VALUES ($1, $2, $3, $4::jsonb, $5, $6)`,
+      [adminId, targetUserId, action, JSON.stringify(details || {}), ipAddress, userAgent]
+    );
+  } catch (e) {
+    // Degrade gracefully: log to console if DB write fails
+    console.error("[adminAudit] DB write failed:", String(e?.message || e));
+    console.error("[AUDIT fallback]", JSON.stringify({
+      ts: new Date().toISOString(),
+      admin: adminId,
+      target: targetUserId,
+      action,
+      details,
+    }));
+  }
+}
 
 export async function requireAdmin(request, env) {
   const u = await currentUser(request, env);
@@ -15,7 +38,10 @@ export async function requireAdmin(request, env) {
 // Like requireAdmin, but also checks that 2FA is verified if the admin has it enabled.
 // Used by data endpoints (overview, users, leads, payments, action).
 // The 2FA endpoints themselves use plain requireAdmin to avoid chicken-and-egg.
-export async function requireAdminWith2fa(request, env) {
+// 
+// SECURITY: 2FA verification has a 1-hour TTL to balance security and usability.
+// Sensitive actions (plan changes, reset-link generation) require fresh 2FA verification.
+export async function requireAdminWith2fa(request, env, requireFresh = false) {
   const { admin, res } = await requireAdmin(request, env);
   if (res) return { admin: null, res };
   // Check if 2FA is required
@@ -25,6 +51,10 @@ export async function requireAdminWith2fa(request, env) {
     const tfaVerified = token ? await env.SESSIONS.get(`2fa:${token}`) : null;
     if (tfaVerified !== "1") {
       return { admin: null, res: bad("2fa_required", 403) };
+    }
+    // For sensitive actions, require fresh verification (clear the flag after use)
+    if (requireFresh && token) {
+      await env.SESSIONS.delete(`2fa:${token}`);
     }
   }
   return { admin, res: null };
@@ -83,10 +113,16 @@ export async function handlePayments(request, env) {
 
 // POST /api/admin/action — { userId, action: starter|pro|agency|free|suspend|unsuspend|reset-link, days?, plan? }
 export async function handleAction(request, env) {
-  const { admin, res } = await requireAdminWith2fa(request, env);
-  if (res) return res;
+  // Sensitive actions (plan changes, reset-link) require fresh 2FA verification
   const body = await readJson(request);
   if (!body || !body.userId || !body.action) return bad("userId and action required");
+  
+  const sensitiveActions = ["starter", "pro", "agency", "free", "reset-link"];
+  const requireFresh = sensitiveActions.includes(body.action);
+  
+  const { admin, res } = await requireAdminWith2fa(request, env, requireFresh);
+  if (res) return res;
+  
   const target = await one("SELECT id, email, is_admin FROM users WHERE id=$1", [body.userId]);
   if (!target) return bad("No such user", 404);
 
@@ -117,19 +153,19 @@ export async function handleAction(request, env) {
       const token = newToken();
       await env.SESSIONS.put(`reset:${token}`, target.id, { expirationTtl: 86400 });
       const origin = new URL(request.url).origin;
-      console.error("[AUDIT]", JSON.stringify({
-        ts: new Date().toISOString(), admin: admin.id, action: body.action,
-        target: target.id, email: target.email, details: "reset-link-generated",
-      }));
+      await logAdminAction(env, admin.id, body.action, target.id, {
+        email: target.email,
+        details: "reset-link-generated",
+      }, request);
       return ok({ link: `${origin}/reset?token=${token}`, email: target.email });
     }
     default:
       return bad("Unknown action");
   }
-  console.error("[AUDIT]", JSON.stringify({
-    ts: new Date().toISOString(), admin: admin.id, action: body.action,
-    target: target.id, email: target.email, details: body.days || body.amountUsd || null,
-  }));
+  await logAdminAction(env, admin.id, body.action, target.id, {
+    email: target.email,
+    details: body.days || body.amountUsd || null,
+  }, request);
   return ok();
 }
 
@@ -156,6 +192,11 @@ export async function handle2faEnable(request, env) {
   const secret = generateSecret();
   const encrypted = await encrypt(secret, encKey);
   await exec("UPDATE users SET totp_secret=$1, updated_at=now() WHERE id=$2", [encrypted, admin.id]);
+
+  await logAdminAction(env, admin.id, "2fa_enable", admin.id, {
+    email: admin.email,
+    details: "2FA enabled for admin account",
+  }, request);
 
   const uri = generateOtpauthUri(secret, admin.email);
   return ok({ uri, secret });
@@ -192,8 +233,13 @@ export async function handle2faVerify(request, env) {
   // Mark 2FA verified in KV for this session token
   const token = readToken(request);
   if (token) {
-    await env.SESSIONS.put(`2fa:${token}`, "1", { expirationTtl: 86400 }); // 24h
+    await env.SESSIONS.put(`2fa:${token}`, "1", { expirationTtl: 3600 }); // 1 hour
   }
+
+  await logAdminAction(env, admin.id, "2fa_verify", admin.id, {
+    email: admin.email,
+    details: "2FA verification successful",
+  }, request);
 
   return ok({ verified: true });
 }
@@ -217,3 +263,32 @@ export async function handle2faStatus(request, env) {
 
   return ok({ enabled, verified });
 }
+
+// POST /api/admin/2fa/disable — disable 2FA for the admin user.
+// Requires fresh 2FA verification to prevent accidental/malicious disabling.
+export async function handle2faDisable(request, env) {
+  const { admin, res } = await requireAdminWith2fa(request, env, true); // require fresh verification
+  if (res) return res;
+
+  const user = await one("SELECT totp_secret FROM users WHERE id=$1", [admin.id]);
+  if (!user?.totp_secret) {
+    return bad("2FA is not enabled", 400);
+  }
+
+  await exec("UPDATE users SET totp_secret=NULL, updated_at=now() WHERE id=$1", [admin.id]);
+
+  // Clear 2FA verification flag from KV
+  const token = readToken(request);
+  if (token) {
+    await env.SESSIONS.delete(`2fa:${token}`);
+  }
+
+  await logAdminAction(env, admin.id, "2fa_disable", admin.id, {
+    email: admin.email,
+    details: "2FA disabled for admin account",
+  }, request);
+
+  return ok({ disabled: true });
+}
+
+export { handle2faDisable };

@@ -1,0 +1,286 @@
+// Site handlers: get, put, list, create, archive, stats, heatmap, notifications, custom domain
+import { requireUser, json, bad, ok, readJson, rateLimit, slugify, clientIp } from "../auth.js";
+import { getByUser, getUserSite, getUserSiteById, getUserBoardsList, createBoard, createArchive, deleteArchive, invalidateSiteCache, invalidateUserCache, getBoardById, saveSite } from "../site.js";
+import { bumpStat, getStats, getHeatmap, getTopReferrers } from "../stats.js";
+import { effectivePlan, PLAN_LIMITS } from "../billing.js";
+import { one, exec } from "../../../shared/db.js";
+import { buildTop3Embed, sendDiscordWebhook, sendTelegramMessage } from "../../../shared/notifications.js";
+
+export async function handleStats(request, env) {
+  const { user, res } = await requireUser(request, env);
+  if (res) return res;
+  const site = await getByUser(env, user.id);
+  if (!site) return bad("no site", 404);
+  return json({ ok: true, stats: await getStats(env, site.id) });
+}
+
+export async function handleHeatmap(request, env) {
+  const { user, res } = await requireUser(request, env);
+  if (res) return res;
+  const site = await getByUser(env, user.id);
+  if (!site) return bad("no site", 404);
+  const [heatmap, referrers] = await Promise.all([
+    getHeatmap(env, site.id),
+    getTopReferrers(env, site.id),
+  ]);
+  return json({ ok: true, heatmap, referrers });
+}
+
+export async function handleTrackCopy(request, env, ctx) {
+  const body = await readJson(request);
+  const slug = slugify(body.slug || "");
+  if (!slug) return json({ ok: true });
+  const site = await one("SELECT id FROM sites WHERE slug=$1 AND published=true", [slug]);
+  if (site) ctx.waitUntil(bumpStat(env, site.id, "copies"));
+  return json({ ok: true });
+}
+
+export async function handleGetSite(request, env) {
+  const { user, res } = await requireUser(request, env);
+  if (res) return res;
+  if (user.status === "suspended") return bad("This account is suspended.", 403);
+  const url = new URL(request.url);
+  const siteId = url.searchParams.get("siteId");
+  const plan = effectivePlan(user);
+  let s;
+  if (siteId) {
+    s = await getUserSiteById(env, user.id, siteId, plan);
+  } else {
+    s = await getUserSite(env, user.id, plan);
+  }
+  if (!s) return bad("No site for this account", 404);
+  const boards = await getUserBoardsList(env, user.id);
+  return json({ ok: true, slug: s.slug, published: s.published, plan: plan, data: s.data, notify: s.notify || {}, archives: s.archives, boards, siteId: s.id, customDomain: s.customDomain || "", domainStatus: s.domainStatus || "pending" });
+}
+
+export async function handleListBoards(request, env) {
+  const { user, res } = await requireUser(request, env);
+  if (res) return res;
+  if (user.status === "suspended") return bad("This account is suspended.", 403);
+  const plan = effectivePlan(user);
+  const boards = await getUserBoardsList(env, user.id);
+  return json({ ok: true, boards, limits: { boards: BOARD_LIMITS[plan], players: PLAN_LIMITS[plan] }, plan });
+}
+
+export async function handleCreateBoard(request, env) {
+  const { user, res } = await requireUser(request, env);
+  if (res) return res;
+  if (user.status === "suspended") return bad("This account is suspended.", 403);
+  if (!(await rateLimit(env, `createboard:${user.id}`, 5, 3600))) return bad("Too many requests. Try again later.", 429);
+  const body = await readJson(request);
+  if (!body) return bad("Invalid request");
+  let slug = slugify(body.slug || "");
+  if (!slug) return bad("Enter a valid slug for the board URL.");
+  const name = String(body.name || "").trim().slice(0, 80) || slug;
+  const r = await createBoard(env, user.id, { slug, name });
+  return r.error ? bad(r.error, 400) : json({ ok: true, id: r.id, slug: r.slug });
+}
+
+// POST /api/site/archive — { label?, clear: "wagers"|"players"|"none" }
+export async function handleArchive(request, env) {
+  const { user, res } = await requireUser(request, env);
+  if (res) return res;
+  if (user.status === "suspended") return bad("This account is suspended.", 403);
+  if (!(await rateLimit(env, `archive:${user.id}`, 10, 3600))) return bad("Too many archive actions. Try again later.", 429);
+  const body = (await readJson(request)) || {};
+  const r = await createArchive(env, user.id, { label: body.label, clear: body.clear });
+  return r.error ? bad(r.error, 400) : json({ ok: true, label: r.label });
+}
+
+// POST /api/site/archive/delete — { id }
+export async function handleArchiveDelete(request, env) {
+  const { user, res } = await requireUser(request, env);
+  if (res) return res;
+  const body = (await readJson(request)) || {};
+  if (!body.id) return bad("id required");
+  const r = await deleteArchive(env, user.id, body.id);
+  return r.error ? bad(r.error, 400) : json({ ok: true });
+}
+
+export async function handlePutSite(request, env) {
+  const { user, res } = await requireUser(request, env);
+  if (res) return res;
+  if (user.status === "suspended") return bad("This account is suspended.", 403);
+  const payload = await readJson(request);
+  if (!payload) return bad("Invalid request");
+  const r = await saveSite(env, user, payload, payload.siteId || null);
+  return r.error ? bad(r.error, 400) : json({ ok: true });
+}
+
+// POST /api/site/notify/test — send a test Discord or Telegram notification.
+export async function handleNotifyTest(request, env) {
+  const { user, res } = await requireUser(request, env);
+  if (res) return res;
+  if (user.status === "suspended") return bad("This account is suspended.", 403);
+  if (effectivePlan(user) === "free") return bad("Notifications are a Pro feature. Upgrade to unlock.", 403);
+
+  const body = await readJson(request);
+  if (!body) return bad("Invalid request");
+  const channel = String(body.channel || "").trim(); // "discord" or "telegram"
+
+  const site = await getByUser(env, user.id);
+  if (!site) return bad("No site found", 404);
+  const extra = (site.extra_json && typeof site.extra_json === "object") ? site.extra_json : {};
+
+  if (channel === "discord") {
+    const webhookUrl = String(body.webhook_url || extra.discord_webhook_url || "").trim();
+    if (!webhookUrl) return bad("No Discord webhook URL configured.");
+    if (!/^https:\/\/discord\.com\/api\/webhooks\/\d+\/.+/.test(webhookUrl) &&
+        !/^https:\/\/discordapp\.com\/api\/webhooks\/\d+\/.+/.test(webhookUrl)) {
+      return bad("That doesn't look like a valid Discord webhook URL.");
+    }
+    const embed = buildTop3Embed(site.name || "Your Site", "TestPlayer", 1, 99999);
+    embed.title = "🧪 Test Notification";
+    embed.description = "Your Discord webhook is set up correctly!";
+    embed.fields.push({ name: "Status", value: "✅ Notifications are working.", inline: false });
+    const result = await sendDiscordWebhook(webhookUrl, embed);
+    return result.ok ? json({ ok: true, message: "Test message sent to Discord!" }) : bad(result.error || "Failed to send.", 502);
+  }
+
+  if (channel === "telegram") {
+    const chatId = String(body.chat_id || extra.telegram_chat_id || "").trim();
+    if (!chatId) return bad("No Telegram chat ID configured.");
+    // Find bot token
+    const owner = await one("SELECT bot_token FROM users WHERE id=$1", [user.id]);
+    if (!owner?.bot_token) return bad("No Telegram bot connected. Set up your bot first.");
+    const text = `🧪 *Test Notification*\n\nYour Telegram notifications for *${site.name || "Your Site"}* are working!`;
+    const result = await sendTelegramMessage(owner.bot_token, chatId, text);
+    return result.ok ? json({ ok: true, message: "Test message sent to Telegram!" }) : bad(result.error || "Failed to send.", 502);
+  }
+
+  return bad("Unknown channel. Use 'discord' or 'telegram'.");
+}
+
+// POST /api/site/domain/verify — verify custom domain CNAME and provision TLS
+// via Cloudflare for SaaS custom hostnames. Pro/Agency only.
+export async function handleDomainVerify(request, env) {
+  try {
+    const { user, res } = await requireUser(request, env);
+    if (res) return res;
+    if (user.status === "suspended") return bad("This account is suspended.", 403);
+    const plan = effectivePlan(user);
+    if (plan !== "pro" && plan !== "agency") return bad("Custom domains are a Pro feature.", 403);
+
+    const body = await readJson(request);
+    if (!body || !body.domain) return bad("Domain required");
+    const domain = String(body.domain).trim().toLowerCase();
+    // Basic domain validation
+    if (!/^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)*\.[a-z]{2,}$/.test(domain)) {
+      return bad("Invalid domain format.");
+    }
+
+    // Get the site
+    const siteId = body.siteId || null;
+    const site = siteId ? await getBoardById(env, user.id, siteId) : await getByUser(env, user.id);
+    if (!site) return bad("No site found", 404);
+
+    const zoneId = env.CF_ZONE_ID || "dd79a3ac13643b94732f2fef6ce3b1f5";
+    const cfToken = env.CF_API_TOKEN;
+
+    if (!cfToken) {
+      // Fallback: just save the domain without TLS provisioning
+      await exec("UPDATE sites SET custom_domain=$1, updated_at=now() WHERE id=$2", [domain, site.id]);
+      return ok({ status: "saved", message: "Domain saved. TLS automation is not configured — contact support." });
+    }
+
+    // Step 1: Check if there's already a custom hostname for this domain
+    const existing = await one(
+      "SELECT custom_hostname_id, domain_status FROM sites WHERE id=$1",
+      [site.id]
+    );
+
+    if (existing?.custom_hostname_id && existing?.domain_status === "active") {
+      // Already active — check with CF to confirm
+      try {
+        const cfRes = await fetch(
+          `https://api.cloudflare.com/client/v4/zones/${zoneId}/custom_hostnames/${existing.custom_hostname_id}`,
+          {
+            headers: { "Authorization": `Bearer ${cfToken}`, "Content-Type": "application/json" },
+            signal: AbortSignal.timeout(15000),
+          }
+        );
+        const cfData = await cfRes.json();
+        if (cfData.success && cfData.result?.ssl?.status === "active") {
+          return ok({ status: "active", message: "TLS is active on your custom domain." });
+        }
+      } catch (e) {
+        console.error("[domain] CF status check failed:", String(e?.message || e));
+      }
+    }
+
+    // Step 2: If there's an existing custom_hostname_id, check its status first
+    if (existing?.custom_hostname_id) {
+      try {
+        const cfRes = await fetch(
+          `https://api.cloudflare.com/client/v4/zones/${zoneId}/custom_hostnames/${existing.custom_hostname_id}`,
+          {
+            headers: { "Authorization": `Bearer ${cfToken}`, "Content-Type": "application/json" },
+            signal: AbortSignal.timeout(15000),
+          }
+        );
+        const cfData = await cfRes.json();
+        if (cfData.success) {
+          const cfStatus = cfData.result?.ssl?.status || "pending";
+          const dbStatus = cfStatus === "active" ? "active" : cfStatus === "pending_validation" || cfStatus === "pending_issuance" ? "pending" : "pending";
+          await exec("UPDATE sites SET domain_status=$1, updated_at=now() WHERE id=$2", [dbStatus, site.id]);
+          return ok({ status: dbStatus, customHostnameId: existing.custom_hostname_id, message: dbStatus === "active" ? "TLS is active!" : "TLS provisioning in progress. This can take a few minutes." });
+        }
+      } catch (e) {
+        console.error("[domain] CF status check failed:", String(e?.message || e));
+      }
+    }
+
+    // Step 3: Create a new custom hostname via CF API
+    let cfResult;
+    try {
+      const cfRes = await fetch(
+        `https://api.cloudflare.com/client/v4/zones/${zoneId}/custom_hostnames`,
+        {
+          method: "POST",
+          headers: { "Authorization": `Bearer ${cfToken}`, "Content-Type": "application/json" },
+          signal: AbortSignal.timeout(15000),
+          body: JSON.stringify({
+            hostname: domain,
+            ssl: { method: "http", type: "dv" },
+          }),
+        }
+      );
+      cfResult = await cfRes.json();
+    } catch (e) {
+      console.error("[domain] CF create failed:", String(e?.message || e));
+      return bad("Failed to connect to Cloudflare. Try again.", 502);
+    }
+
+    if (!cfResult.success) {
+      const errMsg = cfResult.errors?.[0]?.message || "Cloudflare API error";
+      console.error("[domain] CF error:", errMsg);
+      // Save domain even if CF fails, for manual resolution
+      await exec("UPDATE sites SET custom_domain=$1, domain_status='error', updated_at=now() WHERE id=$2", [domain, site.id]);
+      return ok({ status: "error", message: errMsg });
+    }
+
+    const chId = cfResult.result?.id;
+    const chStatus = cfResult.result?.ssl?.status || "pending";
+    const dbStatus = chStatus === "active" ? "active" : "pending";
+
+    // Save domain, custom_hostname_id, and status
+    await exec(
+      "UPDATE sites SET custom_domain=$1, custom_hostname_id=$2, domain_status=$3, updated_at=now() WHERE id=$4",
+      [domain, chId, dbStatus, site.id]
+    );
+
+    invalidateSiteCache(site.slug);
+    invalidateUserCache(user.id);
+
+    return ok({
+      status: dbStatus,
+      customHostnameId: chId,
+      message: dbStatus === "active"
+        ? "TLS is active on your custom domain!"
+        : "TLS provisioning started. Point a CNAME for your domain to yourrank.site, then check back in a few minutes.",
+    });
+  } catch (e) {
+    console.error("[domain] verify failed:", String(e?.message || e));
+    return bad("Domain verification failed. Try again.", 500);
+  }
+}

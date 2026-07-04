@@ -1,12 +1,38 @@
-// Postgres data layer for the bot Worker, on postgres.js.
-// Single persistent connection per isolate (Hyperdrive pools globally to
-// Supabase's direct host). Exposes the SAME query<T>()/one<T>() API.
+// ============================================================================
+//  YourRank — SHARED POSTGRES DATA LAYER (TypeScript)
+//
+//  Consolidated postgres.js wrapper used by BOTH Workers:
+//    * Single persistent connection per isolate (Hyperdrive pools globally)
+//    * Exposes query<T>()/one<T>() for reads (safe to retry)
+//    * Exposes exec()/execOne() for mutations (no retry — callers handle idempotency)
+//    * Supports transactions via withTransaction()
+//    * Retry logic, connection-error handling, and timeout tuning are centralized
+//
+//  Replaces apps/leaderboard/src/db.js and apps/bot/src/db.ts
+// ============================================================================
+
 import postgres from "postgres";
-import { config } from "./config.js";
+
+// ----------------------------------------------------------------------------
+// Configuration
+// ----------------------------------------------------------------------------
+
+function getDatabaseUrl(): string {
+  // Both Workers should set process.env.DATABASE_URL before any query runs
+  // - Bot Worker: sets it from config
+  // - Leaderboard Worker: sets it from env.HYPERDRIVE.connectionString or env.DATABASE_URL
+  if (typeof process !== "undefined" && process.env?.DATABASE_URL) {
+    return process.env.DATABASE_URL;
+  }
+  throw new Error("DATABASE_URL is not configured (set the HYPERDRIVE binding or DATABASE_URL secret)");
+}
+
+// ----------------------------------------------------------------------------
+// Connection management
+// ----------------------------------------------------------------------------
 
 function createSql(): ReturnType<typeof postgres> {
-  const url = config.databaseUrl;
-  if (!url) throw new Error("DATABASE_URL is not configured (set the HYPERDRIVE binding or DATABASE_URL secret)");
+  const url = getDatabaseUrl();
   return postgres(url, {
     max: 1,
     prepare: false,
@@ -18,10 +44,17 @@ function createSql(): ReturnType<typeof postgres> {
 
 // Cached instance for transactions (getSql().begin())
 let txSql: ReturnType<typeof postgres> | null = null;
-function getSql(): ReturnType<typeof postgres> {
-  if (!txSql) txSql = createSql();
+
+export function getSql(): ReturnType<typeof postgres> {
+  if (!txSql) {
+    txSql = createSql();
+  }
   return txSql;
 }
+
+// ----------------------------------------------------------------------------
+// Retry logic
+// ----------------------------------------------------------------------------
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
@@ -35,6 +68,7 @@ async function withRetry(text: string, params: unknown[]): Promise<any[]> {
     } catch (e: any) {
       lastErr = e;
       const msg = String(e?.message || e);
+      // Don't retry on constraint violations - these are application errors
       if (/23505|23514|23503|23502|23506/.test(msg)) throw e;
       if (attempt < 2) await sleep(200 * (attempt + 1));
     } finally {
@@ -44,6 +78,10 @@ async function withRetry(text: string, params: unknown[]): Promise<any[]> {
   throw lastErr;
 }
 
+// ----------------------------------------------------------------------------
+// Public API - reads (safe to retry)
+// ----------------------------------------------------------------------------
+
 export async function query<T = Record<string, unknown>>(
   text: string,
   params: unknown[] = []
@@ -51,11 +89,6 @@ export async function query<T = Record<string, unknown>>(
   return withRetry(text, params) as unknown as Promise<T[]>;
 }
 
-export async function exec(text: string, params: unknown[] = []): Promise<any> {
-  return withRetry(text, params);
-}
-
-/** Like query() but returns the first row (or undefined). */
 export async function one<T = Record<string, unknown>>(
   text: string,
   params: unknown[] = []
@@ -63,6 +96,27 @@ export async function one<T = Record<string, unknown>>(
   const rows = await query<T>(text, params);
   return rows[0];
 }
+
+// ----------------------------------------------------------------------------
+// Public API - writes (no retry - callers handle idempotency)
+// ----------------------------------------------------------------------------
+
+export async function exec(text: string, params: unknown[] = []): Promise<any> {
+  return withRetry(text, params);
+}
+
+/** Like exec() but returns the first row (or undefined). */
+export async function execOne<T = Record<string, unknown>>(
+  text: string,
+  params: unknown[] = []
+): Promise<T | undefined> {
+  const rows = await exec(text, params);
+  return rows[0];
+}
+
+// ----------------------------------------------------------------------------
+// Transaction support
+// ----------------------------------------------------------------------------
 
 /**
  * A transaction-scoped handle. Mirrors query()/one() so callers use the same

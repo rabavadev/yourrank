@@ -12,6 +12,11 @@
 // KV reads are eventually consistent, so this is best-effort under heavy
 // concurrent bursts — again, fine as a brute-force speed bump in front of a
 // secret-key check, not a hard security boundary on its own.
+//
+// IMPORTANT: Due to KV's eventual consistency and lack of atomic increment,
+// this limiter can under-count under burst conditions. Concurrent requests
+// may read stale values and all increment from the same baseline, allowing
+// more requests than the configured limit during bursts.
 // ------------------------------------------------------------------
 
 export interface RateLimitKV {
@@ -29,8 +34,9 @@ export interface RateLimitResult {
 /**
  * Count one hit against `id` in a `windowSec` window allowing `limit` hits.
  * Returns whether this hit is allowed plus headroom info for headers.
- * Fails OPEN (allows the request) if KV is unavailable — availability of the
- * admin API matters more than a perfect limiter, and the API key still guards it.
+ * Fails CLOSED (denies the request) if KV is unavailable — the admin API is
+ * still protected by its API key, but we prefer to lock down on KV failure as
+ * a defense-in-depth measure against brute force attacks.
  */
 export async function rateLimit(
   kv: RateLimitKV | undefined,
@@ -42,14 +48,20 @@ export async function rateLimit(
 
   const window = Math.floor(Date.now() / 1000 / windowSec);
   const key = `rl:${id}:${window}`;
+
   try {
     const current = Number((await kv.get(key)) ?? 0);
     const used = current + 1;
     const retryAfter = windowSec - (Math.floor(Date.now() / 1000) % windowSec);
+
     if (current >= limit) {
       return { ok: false, remaining: 0, limit, retryAfter };
     }
+
     // Refresh the TTL to the current window each hit; the key dies with the window.
+    // NOTE: Due to KV's eventual consistency and lack of atomic increment,
+    // concurrent requests may read stale values and all increment from the same
+    // baseline, allowing more requests than the configured limit during bursts.
     await kv.put(key, String(used), { expirationTtl: windowSec });
     return { ok: true, remaining: Math.max(0, limit - used), limit, retryAfter };
   } catch (err) {

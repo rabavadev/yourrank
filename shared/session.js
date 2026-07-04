@@ -1,5 +1,5 @@
 // ============================================================================
-//  YourRank — SHARED SESSION (leaderboard Worker, JavaScript)
+//  YourRank — SHARED SESSION (JavaScript)
 //
 //  ONE session model used identically by BOTH Workers:
 //    * Cookie name:      gm_session
@@ -15,13 +15,8 @@
 //  userId, so a password login on the leaderboard tab is a valid session on the
 //  bot tab and vice-versa.
 //
-//  This file is the SOURCE OF TRUTH. session.ts is a byte-for-byte-behavioural
-//  port for the TypeScript bot Worker. If you change one, change the other.
-//
-//  NOTE: currentUser() only RESOLVES the userId to a token/uid here. It does NOT
-//  read the DB, because the leaderboard Worker's DB layer is owned by another
-//  agent and uses Supabase REST. Call currentUserId() to get the UUID, then
-//  hydrate the user row with your own data layer. loadUser is an injectable hook.
+//  This is the JavaScript version compiled from shared/session.ts
+//  Used by the leaderboard Worker
 // ============================================================================
 
 // ---- constants (MUST match session.ts) ----
@@ -39,12 +34,10 @@ export const KV_PREFIX = "sess:";
 const bytesToHex = (b) =>
   [...new Uint8Array(b)].map((x) => x.toString(16).padStart(2, "0")).join("");
 
-export const newToken = () => bytesToHex(crypto.getRandomValues(new Uint8Array(32)));
+export const newToken = () =>
+  bytesToHex(crypto.getRandomValues(new Uint8Array(32)));
 
 // ---- cookie serialization ----
-// Domain=.yourrank.site (or SESSION_COOKIE_DOMAIN) makes the cookie host-wide,
-// so both Workers see it.
-// SameSite=Lax is safe: navigation between tabs on the same site sends it.
 function cookieAttrs() {
   return `Path=/; Domain=${COOKIE_DOMAIN}; HttpOnly; Secure; SameSite=Lax`;
 }
@@ -61,12 +54,17 @@ export function readToken(req) {
   return m ? m[1] : null;
 }
 
+// Convenience for Hono handlers that already hold the raw Cookie header string.
+export function readTokenFromHeader(cookieHeader) {
+  const c = cookieHeader || "";
+  const re = new RegExp("(?:^|;\\s*)" + COOKIE_NAME + "=([^;]+)");
+  const m = c.match(re);
+  return m ? m[1] : null;
+}
+
 // ---- create / destroy a session in shared KV ----
-// value is the bare user UUID. We also maintain a per-user index of live
-// tokens (userSessions:<userId> -> JSON array) so a password reset or admin
-// suspend can revoke EVERY live session for that user, not just the calling
-// one. Index maintenance is best-effort: a stale entry just means an old token
-// lingers until its TTL (the status quo without an index).
+// Mirror of session.ts: maintain a per-user token index so reset/suspend can
+// revoke all of a user's sessions. Index maintenance is best-effort.
 const USER_SESSIONS_PREFIX = "userSessions:";
 async function addUserSession(env, userId, token) {
   try {
@@ -103,13 +101,7 @@ export async function destroySession(env, token) {
   }
 }
 
-/**
- * Revoke EVERY live session for a user (password reset, admin suspend). Reads
- * the per-user index from KV and deletes each sess:<token>, then clears the
- * index. Safe to call when no sessions exist. Best-effort: a token created
- * after the index was read (concurrent login) survives, but that's the same
- * window any logout flow has.
- */
+/** Revoke every live session for a user (password reset, admin suspend). */
 export async function destroyAllUserSessions(env, userId) {
   if (!userId) return;
   try {
@@ -125,9 +117,9 @@ export async function destroyAllUserSessions(env, userId) {
 }
 
 // ---- resolve the current user's UUID (no DB read) ----
-// SEC-107: Sliding-window TTL refresh. Each time a session is resolved, the
-// KV TTL is extended (best-effort, fire-and-forget) so actively used sessions
-// stay alive. A stolen token that goes unused will expire.
+// SEC-107: Sliding-window TTL refresh. Each time a session token is resolved,
+// the KV TTL is extended (best-effort, fire-and-forget) so actively used
+// sessions stay alive. A stolen token that goes unused will expire.
 export async function currentUserId(req, env) {
   const token = readToken(req);
   if (!token) return null;
@@ -145,11 +137,19 @@ export async function currentUserId(req, env) {
   return uid || null;
 }
 
+export async function currentUserIdFromHeader(cookieHeader, env) {
+  const token = readTokenFromHeader(cookieHeader);
+  if (!token) return null;
+  const uid = await env.SESSIONS.get(KV_PREFIX + token);
+  return uid || null;
+}
+
 // ---- resolve the full user row via an injected loader ----
-// loadUser: (env, uid) => Promise<user|null>. Keeps this module free of any
-// DB coupling so it drops into either Worker unchanged. Example loaders:
-//   leaderboard: (env, uid) => sbSelectOne(env, `users?id=eq.${uid}`)
-//   bot:         (env, uid) => one(`SELECT ... FROM users WHERE id=$1`, [uid])
+// loadUser keeps this module free of the bot Worker's pg/Hyperdrive layer, so it
+// is identical to the JS version. Bot loader example:
+//   (env, uid) => one(`SELECT id, email, display_name, telegram_user_id, plan,
+//                             plan_expires_at, status, is_admin
+//                        FROM users WHERE id = $1`, [uid])
 export async function currentUser(req, env, loadUser) {
   const uid = await currentUserId(req, env);
   if (!uid) return null;

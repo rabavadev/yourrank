@@ -93,11 +93,15 @@ export async function verifyCode(secretBase32, code) {
 
   for (let drift = -DRIFT_WINDOWS; drift <= DRIFT_WINDOWS; drift++) {
     const expected = await generateCode(secretBase32, currentCounter + drift);
-    // Constant-time comparison
-    if (expected.length !== String(code).length) continue;
+    // Constant-time comparison (no length-based early return to prevent timing leaks)
+    const codeStr = String(code);
     let diff = 0;
-    for (let i = 0; i < expected.length; i++) {
-      diff |= expected.charCodeAt(i) ^ String(code).charCodeAt(i);
+    // Compare lengths in constant-time by XORing first
+    diff |= expected.length ^ codeStr.length;
+    // Then compare each character
+    const maxLen = Math.max(expected.length, codeStr.length);
+    for (let i = 0; i < maxLen; i++) {
+      diff |= expected.charCodeAt(i) ^ codeStr.charCodeAt(i);
     }
     if (diff === 0) return true;
   }

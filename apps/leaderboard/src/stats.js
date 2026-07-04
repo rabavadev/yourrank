@@ -1,28 +1,9 @@
 // Per-site daily analytics. Cheap upsert counters in Postgres — no external service.
-import { query, exec } from "./db.js";
+import { query, exec } from "../../../shared/db.js";
 const FIELDS = new Set(["views", "copies", "clicks"]);
 
 export function todayUTC() {
   return new Date().toISOString().slice(0, 10);
-}
-
-// Lazy-init the extra tables (hourly heatmap + referrers). Idempotent.
-let _tablesReady = false;
-async function ensureTables() {
-  if (_tablesReady) return;
-  try {
-    await exec(`CREATE TABLE IF NOT EXISTS site_stats_hourly (
-      site_id UUID NOT NULL, day DATE NOT NULL, hour SMALLINT NOT NULL,
-      day_of_week SMALLINT NOT NULL, views INT NOT NULL DEFAULT 0,
-      PRIMARY KEY (site_id, day, hour)
-    )`);
-    await exec(`CREATE TABLE IF NOT EXISTS site_referrers (
-      site_id UUID NOT NULL, day DATE NOT NULL, domain TEXT NOT NULL,
-      count INT NOT NULL DEFAULT 0,
-      PRIMARY KEY (site_id, day, domain)
-    )`);
-    _tablesReady = true;
-  } catch (err) { console.error("[ensureTables]: DDL failed", err); }
 }
 
 // Extract domain from a Referer URL string.
@@ -51,7 +32,6 @@ export async function bumpStat(env, siteId, field, refererHeader) {
   // Hourly heatmap — only for views (the most granular metric).
   if (field === "views") {
     try {
-      await ensureTables();
       const now = new Date();
       const hour = now.getUTCHours();
       const dow = now.getUTCDay(); // 0=Sun … 6=Sat
@@ -66,7 +46,6 @@ export async function bumpStat(env, siteId, field, refererHeader) {
     const domain = extractDomain(refererHeader);
     if (domain) {
       try {
-        await ensureTables();
         await exec(
           `INSERT INTO site_referrers (site_id, day, domain, count) VALUES ($1, $2, $3, 1)
            ON CONFLICT (site_id, day, domain) DO UPDATE SET count = site_referrers.count + 1`,
@@ -107,7 +86,6 @@ export async function getStats(env, siteId) {
 // 7x24 heatmap grid of view counts for the last 30 days.
 export async function getHeatmap(env, siteId) {
   try {
-    await ensureTables();
     const since = new Date(Date.now() - 29 * 86400e3).toISOString().slice(0, 10);
     const rows = await query(
       "SELECT day_of_week, hour, SUM(views)::int AS views FROM site_stats_hourly WHERE site_id=$1 AND day>=$2 GROUP BY day_of_week, hour",
@@ -130,7 +108,6 @@ export async function getHeatmap(env, siteId) {
 // Top 5 referrer domains for the last 30 days.
 export async function getTopReferrers(env, siteId) {
   try {
-    await ensureTables();
     const since = new Date(Date.now() - 29 * 86400e3).toISOString().slice(0, 10);
     const rows = await query(
       "SELECT domain, SUM(count)::int AS total FROM site_referrers WHERE site_id=$1 AND day>=$2 GROUP BY domain ORDER BY total DESC LIMIT 5",

@@ -1,4 +1,4 @@
-import { one, query } from "./db.js";
+import { one, query } from "../../../shared/db.js";
 import { BOT_PLANS } from "../../../shared/plans.js";
 import type { BotPlanDef, PlanTier } from "../../../shared/plans.js";
 

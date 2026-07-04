@@ -12,7 +12,7 @@ export const PLAN_LIMITS = { free: 10, starter: 25, pro: 9999, agency: 9999 };
 /** Max boards per plan */
 export const BOARD_LIMITS = { free: 1, starter: 1, pro: 3, agency: 99 };
 
-/** Prices in USD per 31-day billing period */
+/** Prices in USD per 30-day billing period */
 export const PLAN_PRICES = { free: 0, starter: 12, pro: 29, agency: 79 };
 
 // ---- Plan metadata for landing-page pricing table ----

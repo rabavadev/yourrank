@@ -70,7 +70,13 @@ APP_NAME = "YourRank (Staging)"
 binding = "SESSIONS"
 id = "e0b6cba066ad4168ad76629f23b5111d"
 
-# Staging Hyperdrive — sharing production Hyperdrive config for now.
+# Staging Hyperdrive — CRITICAL: MUST USE SEPARATE DATABASE FROM PRODUCTION
+# Create a separate staging Hyperdrive instance and update the id below.
+# DO NOT share the production database with staging as this can destroy real user data.
+# Current id is a placeholder - replace with actual staging Hyperdrive id.
 [[env.staging.hyperdrive]]
 binding = "HYPERDRIVE"
-id = "9e5b625bfdd84cd691b44c4780bdaf13"
+# TODO: Replace with staging-specific Hyperdrive id after creating staging database
+# id = "YOUR_STAGING_HYPERDRIVE_ID_HERE"
+# TEMPORARY: Commented out to prevent accidental production DB usage
+# id = "9e5b625bfdd84cd691b44c4780bdaf13"

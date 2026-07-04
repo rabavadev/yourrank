@@ -40,3 +40,38 @@ id = "9e5b625bfdd84cd691b44c4780bdaf13"
 #   LOGIN_BOT_USERNAME      # the login bot's @username (the widget needs it)
 #   PLATFORM_BOT_TOKEN      # the YourRank platform bot (Telegram Stars billing)
 #   PLATFORM_WEBHOOK_SECRET # billing webhook secret
+
+# ---------------------------------------------------------------------------
+# Staging environment (wrangler deploy --env staging)
+# ---------------------------------------------------------------------------
+[env.staging]
+name = "yourrank-bot-staging"
+compatibility_date = "2025-01-01"
+compatibility_flags = ["nodejs_compat"]
+
+[env.staging.vars]
+PUBLIC_BASE_URL = "https://staging.yourrank.site"
+
+routes = [
+  { pattern = "staging.yourrank.site/bot/*",         zone_name = "yourrank.site" },
+  { pattern = "staging.yourrank.site/hook/*",        zone_name = "yourrank.site" },
+  { pattern = "staging.yourrank.site/r/*",           zone_name = "yourrank.site" },
+  { pattern = "staging.yourrank.site/pb/*",          zone_name = "yourrank.site" },
+  { pattern = "staging.yourrank.site/billing/hook/*", zone_name = "yourrank.site" },
+]
+
+# Staging KV namespace (separate from production — sessions don't carry over)
+# Create with: npx wrangler kv namespace create SESSIONS --env staging
+[[env.staging.kv_namespaces]]
+binding = "SESSIONS"
+id = "e0b6cba066ad4168ad76629f23b5111d"
+
+# Staging Hyperdrive — CRITICAL: MUST USE SEPARATE DATABASE FROM PRODUCTION
+# Create a separate staging Hyperdrive instance and update the id below.
+# DO NOT share the production database with staging as this can destroy real user data.
+[[env.staging.hyperdrive]]
+binding = "HYPERDRIVE"
+# TODO: Replace with staging-specific Hyperdrive id after creating staging database
+# id = "YOUR_STAGING_HYPERDRIVE_ID_HERE"
+# TEMPORARY: Commented out to prevent accidental production DB usage
+# id = "9e5b625bfdd84cd691b44c4780bdaf13"

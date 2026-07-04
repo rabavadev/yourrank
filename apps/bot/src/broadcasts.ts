@@ -1,4 +1,4 @@
-import { one, query } from "./db.js";
+import { one, query } from "../../../shared/db.js";
 import { decryptToken } from "./crypto.js";
 
 // ------------------------------------------------------------------
@@ -17,7 +17,7 @@ interface ActiveBroadcast {
   bot_id: string;
   body: string;
   buttons: unknown;
-  cursor_tg_user_id: string;
+  cursor_tg_user_id: number; // Changed from string to number for numeric comparison
   sent_count: number;
   fail_count: number;
 }
@@ -55,7 +55,7 @@ export async function processBroadcastBatch(batchSize = 300): Promise<boolean> {
   const token = await decryptToken(Buffer.from(bot.token_encrypted));
 
   // Set total on first batch.
-  if (Number(bc.cursor_tg_user_id) === 0) {
+  if (bc.cursor_tg_user_id === 0) {
     await query(
       `UPDATE broadcasts SET total_count = (
          SELECT count(*) FROM bot_subscribers
@@ -65,7 +65,7 @@ export async function processBroadcastBatch(batchSize = 300): Promise<boolean> {
     );
   }
 
-  const subs = await query<{ tg_user_id: string }>(
+  const subs = await query<{ tg_user_id: number }>(
     `SELECT tg_user_id FROM bot_subscribers
       WHERE bot_id = $1 AND NOT is_blocked AND tg_user_id > $2
       ORDER BY tg_user_id
@@ -85,7 +85,7 @@ export async function processBroadcastBatch(batchSize = 300): Promise<boolean> {
   let failed = 0;
   for (const sub of subs) {
     const payload: Record<string, unknown> = {
-      chat_id: Number(sub.tg_user_id),
+      chat_id: sub.tg_user_id, // Already numeric, no need for Number()
       text: bc.body,
       parse_mode: "Markdown",
     };

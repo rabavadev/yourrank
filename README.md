@@ -87,7 +87,7 @@ psql "$DATABASE_URL" -f db/schema.sql
 psql "$DATABASE_URL" -f db/partitions.sql
 ```
 
-Then apply any migrations in `db/migrations/` (in order).
+Then apply any migrations in `supabase/migrations/` (in timestamp order).
 
 ### Local Development
 

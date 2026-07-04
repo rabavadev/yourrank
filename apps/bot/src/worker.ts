@@ -9,29 +9,7 @@
 // read process.env, not c.env) work unchanged. Called from BOTH fetch and
 // scheduled — they MUST populate the same set, or a binding set in only one
 import { sendErrorToDiscord, sendCronSummaryToDiscord } from "../../../shared/monitoring.js";
-// handler is silently undefined in the other (this previously broke billing:
-// PLATFORM_BOT_* were set in scheduled() but not fetch(), so the Stars
-// webhook / invoice creation ran with an undefined token on every request).
-function populateEnv(env: Record<string, any>): void {
-  if (typeof (globalThis as any).process === "undefined") {
-    (globalThis as any).process = { env: {} };
-  }
-  const pe = (globalThis as any).process.env;
-  // Prefer the direct DATABASE_URL secret over Hyperdrive — Hyperdrive's
-  // proxy has been intermittently dropping connections causing 500s.
-  let hdConn: string | null = null;
-  try { hdConn = env.HYPERDRIVE?.connectionString ?? null; } catch {}
-  pe.DATABASE_URL = env.DATABASE_URL ?? hdConn;
-  pe.PUBLIC_BASE_URL = env.PUBLIC_BASE_URL;
-  pe.TOKEN_ENC_KEY = env.TOKEN_ENC_KEY;
-  pe.ADMIN_API_KEY = env.ADMIN_API_KEY;
-  pe.IP_HASH_SALT = env.IP_HASH_SALT;
-  pe.LOGIN_BOT_TOKEN = env.LOGIN_BOT_TOKEN;
-  pe.LOGIN_BOT_USERNAME = env.LOGIN_BOT_USERNAME;
-  pe.ALLOW_DEV_LOGIN = env.ALLOW_DEV_LOGIN;
-  pe.PLATFORM_BOT_TOKEN = env.PLATFORM_BOT_TOKEN;
-  pe.PLATFORM_WEBHOOK_SECRET = env.PLATFORM_WEBHOOK_SECRET;
-}
+import { populateEnv } from "../../../shared/env.js";
 
 // Cache the Hono app instance so it's built once per isolate, not per request.
 let cachedApp: any = null;
@@ -67,12 +45,25 @@ async function notifyCronFailure(env: Record<string, any>, cron: string, task: s
 }
 
 export default {
-  async fetch(req: Request, env: Record<string, any>): Promise<Response> {
+  async fetch(req: Request, env: Record<string, any>, ctx: { waitUntil: (p: Promise<unknown>) => void }): Promise<Response> {
     try {
       populateEnv(env);
+      // Ensure current month partition exists on first request (idempotent)
       if (!cachedApp) {
         const { buildHonoApp } = await import("./hono-app.js");
         cachedApp = buildHonoApp();
+        // Ensure current month partition exists on Worker startup
+        ctx.waitUntil(
+          (async () => {
+            try {
+              const { ensureCurrentMonthPartition } = await import("./rollup.js");
+              await ensureCurrentMonthPartition();
+              console.log("[startup] ensureCurrentMonthPartition completed");
+            } catch (err) {
+              console.error("[startup] ensureCurrentMonthPartition failed:", err);
+            }
+          })()
+        );
       }
       return await cachedApp.fetch(req, env as any);
     } catch (err: unknown) {
@@ -98,7 +89,7 @@ export default {
     populateEnv(env);
     try {
       if (event.cron === "0 3 * * *") {
-        const { rollupClicks, ensureNextMonthPartition } = await import("./rollup.js");
+        const { rollupClicks, ensureNextMonthPartition, ensureCurrentMonthPartition } = await import("./rollup.js");
         const { downgradeExpired } = await import("./billing.js");
 
         const results = await Promise.allSettled([
@@ -107,6 +98,14 @@ export default {
               await rollupClicks();
             } catch (err) {
               console.error("[cron 0 3 * * *] rollupClicks failed:", err);
+              throw err;
+            }
+          })(),
+          (async () => {
+            try {
+              await ensureCurrentMonthPartition();
+            } catch (err) {
+              console.error("[cron 0 3 * * *] ensureCurrentMonthPartition failed:", err);
               throw err;
             }
           })(),
@@ -145,7 +144,7 @@ export default {
         // Log any rejections and alert via Discord — allSettled never throws
         const failures = results.filter(r => r.status === "rejected");
         if (failures.length > 0) {
-          const failedTasks = ["rollupClicks", "ensureNextMonthPartition", "downgradeExpired"]
+          const failedTasks = ["rollupClicks", "ensureCurrentMonthPartition", "ensureNextMonthPartition", "downgradeExpired"]
             .filter((_, i) => results[i].status === "rejected");
           const reasons = failures.map(f => String((f as PromiseRejectedResult).reason?.message || f.reason)).join("; ");
           console.error(`[cron 0 3 * * *] ${failures.length} task(s) failed: ${failedTasks.join(", ")} — ${reasons}`);

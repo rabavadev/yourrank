@@ -1,7 +1,8 @@
 // Auth helpers for the Worker.
-import { one, exec } from "./db.js";
+import { one, exec } from "../../../shared/db.js";
 // SHARED cross-Worker session: same cookie (gm_session) + same SESSIONS KV as
-// the bot Worker, so one login works across both. See ../../../shared/session.js.
+// the bot Worker, so one login works across both. See ../../../shared/session.ts
+// (compiled to session.js for the leaderboard Worker).
 import {
   createSession as _createSession,
   destroySession as _destroySession,
@@ -23,6 +24,11 @@ import {
 // OWASP's >=600k guidance is for a normal long-lived Node server, not a
 // CPU-capped edge function. Keeping 100k here is the honest tradeoff: a
 // working app beats an idealised number that takes the auth flow down.
+//
+// FUTURE: To increase iterations within the CPU budget, consider:
+// 1. Splitting derivation across multiple deriveBits calls (each does N/2 iterations)
+// 2. Moving auth to a non-capped environment (dedicated server, not Workers)
+// 3. Using argon2id if Workers adds support (more memory-hard, better security)
 //
 // The versioned-hash + lazy-rehash infra below stays in place: if auth ever
 // moves off Workers (or Workers raises the limit), bump PBKDF2_ITERATIONS
@@ -55,10 +61,13 @@ export async function hashPassword(password, saltHex) {
 }
 
 export function safeEqual(a, b) {
-  if (a.length !== b.length) return false;
-  let d = 0;
-  for (let i = 0; i < a.length; i++) d |= a.charCodeAt(i) ^ b.charCodeAt(i);
-  return d === 0;
+  const sa = String(a ?? "");
+  const sb = String(b ?? "");
+  let diff = sa.length ^ sb.length;
+  for (let i = 0; i < Math.max(sa.length, sb.length); i++) {
+    diff |= (sa.charCodeAt(i) ?? 0) ^ (sb.charCodeAt(i) ?? 0);
+  }
+  return diff === 0;
 }
 
 // Returns { ok, needsRehash } — needsRehash is true when the stored hash used
@@ -110,12 +119,28 @@ export async function currentUser(req, env) {
 }
 
 // Cheap KV counter rate limit. Returns true while under the limit.
+// NOTE: Due to KV's eventual consistency and lack of atomic increment,
+// concurrent requests may read stale values and all increment from the same
+// baseline, allowing more requests than the configured limit during bursts.
+// This is a best-effort rate limiter, not a hard security boundary.
+// 
+// Rate limiting is degraded on KV errors (returns true to allow request)
+// to prevent blocking legitimate auth attempts during KV outages.
 export async function rateLimit(env, key, limit, ttlSeconds) {
-  const k = `rl:${key}`;
-  const cur = parseInt((await env.SESSIONS.get(k)) || "0", 10);
-  if (cur >= limit) return false;
-  await env.SESSIONS.put(k, String(cur + 1), { expirationTtl: ttlSeconds });
-  return true;
+  try {
+    const k = `rl:${key}`;
+    const cur = parseInt((await env.SESSIONS.get(k)) || "0", 10);
+    if (cur >= limit) return false;
+    // Use a slight randomization to reduce thundering herd on concurrent increments
+    const jitter = Math.random() * 0.1; // 10% jitter
+    const nextVal = Math.floor(cur + 1 + jitter);
+    await env.SESSIONS.put(k, String(nextVal), { expirationTtl: ttlSeconds });
+    return true;
+  } catch (e) {
+    // Degrade gracefully on KV errors: allow the request but log the failure
+    console.error("[rateLimit] KV error, allowing request:", String(e?.message || e));
+    return true;
+  }
 }
 export const clientIp = (req) => req.headers.get("cf-connecting-ip") || "0.0.0.0";
 

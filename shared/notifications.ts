@@ -1,17 +1,33 @@
-// Notification helpers: Discord webhooks + Telegram bot messages.
-// All notifications are Pro-gated — callers must check plan before invoking.
-import { one } from "./db.js";
-import { effectivePlan } from "./billing.js";
+// ============================================================================
+//  YourRank — SHARED NOTIFICATION HELPERS (TypeScript)
+//
+//  Consolidated notification utilities used by BOTH Workers:
+//    * Discord webhook sending
+//    * Telegram bot message sending
+//    * Top-3 change detection
+//    * Notification firing logic
+//
+//  Moves Telegram-send logic from leaderboard Worker to shared module.
+//  Telegram delivery is conceptually the bot Worker's domain, but this shared
+//  module allows both Workers to send notifications consistently.
+// ============================================================================
 
-// ── Discord ──────────────────────────────────────────────────────────────────
+import { decryptToken } from "./crypto.js";
+
+// ----------------------------------------------------------------------------
+// Discord webhook helpers
+// ----------------------------------------------------------------------------
 
 /**
  * Send a Discord webhook with an embed payload.
- * @param {string} webhookUrl — full Discord webhook URL
- * @param {object} embed — Discord embed object
+ * @param webhookUrl — full Discord webhook URL
+ * @param embed — Discord embed object
  * @returns {{ ok: boolean, error?: string }}
  */
-export async function sendDiscordWebhook(webhookUrl, embed) {
+export async function sendDiscordWebhook(
+  webhookUrl: string,
+  embed: Record<string, unknown>
+): Promise<{ ok: boolean; error?: string }> {
   if (!webhookUrl) return { ok: false, error: "No webhook URL" };
   try {
     const res = await fetch(webhookUrl, {
@@ -30,14 +46,18 @@ export async function sendDiscordWebhook(webhookUrl, embed) {
     }
     return { ok: true };
   } catch (err) {
-    return { ok: false, error: String(err?.message || err) };
+    return { ok: false, error: String((err as any)?.message || err) };
   }
 }
 
 /**
  * Build a Discord embed for a leaderboard reset event.
  */
-export function buildResetEmbed(siteName, players, period) {
+export function buildResetEmbed(
+  siteName: string,
+  players: Array<{ name: string; wagered: number; prize?: number }>,
+  period: string
+): Record<string, unknown> {
   const top3 = players.slice(0, 3);
   const fields = top3.map((p, i) => {
     const medal = ["🥇", "🥈", "🥉"][i];
@@ -60,7 +80,12 @@ export function buildResetEmbed(siteName, players, period) {
 /**
  * Build a Discord embed for a top-3 rank change event.
  */
-export function buildTop3Embed(siteName, playerName, rank, wagered) {
+export function buildTop3Embed(
+  siteName: string,
+  playerName: string,
+  rank: number,
+  wagered: number
+): Record<string, unknown> {
   const medal = ["🥇", "🥈", "🥉"][rank - 1] || "🏆";
   return {
     title: `${medal} ${playerName} just entered Top 3!`,
@@ -75,16 +100,22 @@ export function buildTop3Embed(siteName, playerName, rank, wagered) {
   };
 }
 
-// ── Telegram ─────────────────────────────────────────────────────────────────
+// ----------------------------------------------------------------------------
+// Telegram helpers
+// ----------------------------------------------------------------------------
 
 /**
  * Send a Telegram message via the Bot API.
- * @param {string} botToken — Telegram bot token
- * @param {string|number} chatId — target chat/group ID
- * @param {string} text — message text (supports Markdown)
+ * @param botToken — Telegram bot token
+ * @param chatId — target chat/group ID
+ * @param text — message text (supports Markdown)
  * @returns {{ ok: boolean, error?: string }}
  */
-export async function sendTelegramMessage(botToken, chatId, text) {
+export async function sendTelegramMessage(
+  botToken: string,
+  chatId: string | number,
+  text: string
+): Promise<{ ok: boolean; error?: string }> {
   if (!botToken || !chatId) return { ok: false, error: "Missing bot token or chat ID" };
   try {
     const res = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
@@ -98,25 +129,30 @@ export async function sendTelegramMessage(botToken, chatId, text) {
         disable_web_page_preview: true,
       }),
     });
-    const data = await res.json();
+    const data = await res.json() as { ok: boolean; description?: string };
     if (!data.ok) return { ok: false, error: data.description || "Telegram API error" };
     return { ok: true };
   } catch (err) {
-    return { ok: false, error: String(err?.message || err) };
+    return { ok: false, error: String((err as any)?.message || err) };
   }
 }
 
-// ── Top-3 change detection ───────────────────────────────────────────────────
+// ----------------------------------------------------------------------------
+// Top-3 change detection
+// ----------------------------------------------------------------------------
 
 /**
  * Compare old and new player lists and return any new top-3 entries.
- * @param {Array} oldPlayers — previous players (sorted by wagered desc)
- * @param {Array} newPlayers — new players (sorted by wagered desc)
- * @returns {Array<{ name: string, rank: number, wagered: number }>}
+ * @param oldPlayers — previous players (sorted by wagered desc)
+ * @param newPlayers — new players (sorted by wagered desc)
+ * @returns Array of top-3 changes
  */
-export function detectTop3Changes(oldPlayers, newPlayers) {
+export function detectTop3Changes(
+  oldPlayers: Array<{ name: string; wagered: number }>,
+  newPlayers: Array<{ name: string; wagered: number }>
+): Array<{ name: string; rank: number; wagered: number }> {
   const oldTop3Names = new Set((oldPlayers || []).slice(0, 3).map((p) => p.name));
-  const changes = [];
+  const changes: Array<{ name: string; rank: number; wagered: number }> = [];
   const sorted = (newPlayers || []).slice().sort((a, b) => b.wagered - a.wagered);
   for (let i = 0; i < Math.min(3, sorted.length); i++) {
     const p = sorted[i];
@@ -127,21 +163,30 @@ export function detectTop3Changes(oldPlayers, newPlayers) {
   return changes;
 }
 
-// ── Fire notifications for a site ────────────────────────────────────────────
+// ----------------------------------------------------------------------------
+// Notification firing functions
+// ----------------------------------------------------------------------------
 
 /**
  * Fire all configured notifications for a top-3 change event.
  * Reads the site's extra_json for notification config and bot token.
- * @param {object} env — Worker env (for DB access)
- * @param {string} siteId
- * @param {string} siteName
- * @param {Array} top3Changes — from detectTop3Changes()
+ * @param db — Database helpers ({ one, query })
+ * @param env — Worker env (for DB access)
+ * @param siteId
+ * @param siteName
+ * @param top3Changes — from detectTop3Changes()
  */
-export async function notifyTop3Change(env, siteId, siteName, top3Changes) {
+export async function notifyTop3Change(
+  db: { one: (sql: string, params: any[]) => Promise<any>; query: (sql: string, params: any[]) => Promise<any[]> },
+  env: any,
+  siteId: string,
+  siteName: string,
+  top3Changes: Array<{ name: string; rank: number; wagered: number }>
+): Promise<void> {
   if (!top3Changes.length) return;
 
   // Load site config + user's bot token
-  const site = await one("SELECT extra_json FROM sites WHERE id=$1", [siteId]);
+  const site = await db.one("SELECT extra_json, user_id FROM sites WHERE id=$1", [siteId]);
   if (!site) return;
   const extra = (site.extra_json && typeof site.extra_json === "object") ? site.extra_json : {};
   const discordUrl = extra.discord_webhook_url;
@@ -158,17 +203,22 @@ export async function notifyTop3Change(env, siteId, siteName, top3Changes) {
 
   // Telegram: one message listing all new top-3 entries
   if (tgEnabled && tgChatId) {
-    // Find the bot token for this site's owner
-    const siteRow = await one("SELECT user_id FROM sites WHERE id=$1", [siteId]);
-    if (siteRow) {
-      const user = await one("SELECT bot_token FROM users WHERE id=$1", [siteRow.user_id]);
-      if (user?.bot_token) {
+    // Find the bot token for this site's owner from bots table (encrypted)
+    const bot = await db.one(
+      "SELECT token_encrypted FROM bots WHERE owner_id=$1 AND status='active' LIMIT 1",
+      [site.user_id]
+    );
+    if (bot?.token_encrypted) {
+      try {
+        const botToken = await decryptToken(Buffer.from(bot.token_encrypted));
         const lines = top3Changes.map((c) => {
           const medal = ["🥇", "🥈", "🥉"][c.rank - 1] || "🏆";
           return `${medal} *${c.name}* entered #${c.rank} — $${Number(c.wagered).toLocaleString("en-US", { maximumFractionDigits: 0 })}`;
         });
         const text = `⚡ *${siteName}* — New Top 3!\n\n${lines.join("\n")}`;
-        await sendTelegramMessage(user.bot_token, tgChatId, text).catch(() => {});
+        await sendTelegramMessage(botToken, tgChatId, text).catch(() => {});
+      } catch (e) {
+        console.error("[notify] failed to decrypt bot token:", String(e?.message || e));
       }
     }
   }
@@ -177,8 +227,15 @@ export async function notifyTop3Change(env, siteId, siteName, top3Changes) {
 /**
  * Fire Discord webhook for a leaderboard reset event.
  */
-export async function notifyReset(env, siteId, siteName, players, period) {
-  const site = await one("SELECT extra_json FROM sites WHERE id=$1", [siteId]);
+export async function notifyReset(
+  db: { one: (sql: string, params: any[]) => Promise<any> },
+  env: any,
+  siteId: string,
+  siteName: string,
+  players: Array<{ name: string; wagered: number; prize?: number }>,
+  period: string
+): Promise<void> {
+  const site = await db.one("SELECT extra_json FROM sites WHERE id=$1", [siteId]);
   if (!site) return;
   const extra = (site.extra_json && typeof site.extra_json === "object") ? site.extra_json : {};
   const discordUrl = extra.discord_webhook_url;
@@ -187,19 +244,25 @@ export async function notifyReset(env, siteId, siteName, players, period) {
   await sendDiscordWebhook(discordUrl, embed).catch(() => {});
 }
 
-// ── Player rank-change subscriptions ────────────────────────────────────
-
 /**
  * Detect rank changes for ALL players (not just top-3) and send DMs
  * to players who subscribed via /subscribe on the streamer's Telegram bot.
  *
- * @param {object} siteData — the site row (extra_json, user_id, etc.)
- * @param {string} siteId
- * @param {string} siteName
- * @param {Array} oldPlayers — previous players sorted by wagered desc
- * @param {Array} newPlayers — new players sorted by wagered desc
+ * @param db — Database helpers ({ one, query })
+ * @param env — Worker env (for DB access)
+ * @param siteId
+ * @param siteName
+ * @param oldPlayers — previous players sorted by wagered desc
+ * @param newPlayers — new players sorted by wagered desc
  */
-export async function notifySubscribedPlayers(env, siteId, siteName, oldPlayers, newPlayers) {
+export async function notifySubscribedPlayers(
+  db: { one: (sql: string, params: any[]) => Promise<any>; query: (sql: string, params: any[]) => Promise<any[]> },
+  env: any,
+  siteId: string,
+  siteName: string,
+  oldPlayers: Array<{ name: string; wagered: number }>,
+  newPlayers: Array<{ name: string; wagered: number }>
+): Promise<void> {
   // Build old rank map: player name → position (1-indexed)
   const oldRankMap = new Map();
   (oldPlayers || []).forEach((p, i) => oldRankMap.set(p.name, i + 1));
@@ -210,17 +273,28 @@ export async function notifySubscribedPlayers(env, siteId, siteName, oldPlayers,
   newSorted.forEach((p, i) => newRankMap.set(p.name, i + 1));
 
   // Find subscribed players who changed rank
-  const subs = await query(
+  const subs = await db.query(
     `SELECT ps.tg_user_id, ps.player_name, ps.bot_id FROM player_subscriptions ps WHERE ps.site_id = $1`,
     [siteId]
   );
   if (!subs.length) return;
 
-  // Find the bot token for sending DMs (from the site owner)
-  const siteRow = await one("SELECT user_id FROM sites WHERE id=$1", [siteId]);
-  if (!siteRow) return;
-  const user = await one("SELECT bot_token FROM users WHERE id=$1", [siteRow.user_id]);
-  if (!user?.bot_token) return;
+  // Find the bot token for sending DMs (from the site owner's bots table)
+  const site = await db.one("SELECT user_id FROM sites WHERE id=$1", [siteId]);
+  if (!site) return;
+  const bot = await db.one(
+    "SELECT token_encrypted FROM bots WHERE owner_id=$1 AND status='active' LIMIT 1",
+    [site.user_id]
+  );
+  if (!bot?.token_encrypted) return;
+
+  let botToken: string;
+  try {
+    botToken = await decryptToken(Buffer.from(bot.token_encrypted));
+  } catch (e) {
+    console.error("[notify] failed to decrypt bot token:", String(e?.message || e));
+    return;
+  }
 
   for (const sub of subs) {
     const playerName = sub.player_name;
@@ -233,7 +307,7 @@ export async function notifySubscribedPlayers(env, siteId, siteName, oldPlayers,
     // Player was not in old list (new entry) — notify if in top 20
     if (!oldRank && newRank <= 20) {
       const text = `🎉 You entered the *${siteName}* leaderboard at #${newRank}!`;
-      await sendTelegramMessage(user.bot_token, sub.tg_user_id, text).catch(() => {});
+      await sendTelegramMessage(botToken, sub.tg_user_id, text).catch(() => {});
       continue;
     }
 
@@ -241,7 +315,7 @@ export async function notifySubscribedPlayers(env, siteId, siteName, oldPlayers,
     if (oldRank && newRank !== oldRank) {
       const direction = newRank < oldRank ? "📈" : "📉";
       const text = `${direction} You moved from #${oldRank} to #${newRank} on the *${siteName}* leaderboard!`;
-      await sendTelegramMessage(user.bot_token, sub.tg_user_id, text).catch(() => {});
+      await sendTelegramMessage(botToken, sub.tg_user_id, text).catch(() => {});
     }
   }
 }

@@ -1,6 +1,7 @@
 import type { Update } from "grammy/types";
-import { one, query, withTransaction } from "./db.js";
+import { one, query, withTransaction } from "../../../shared/db.js";
 import { PLANS, type PlanTier } from "./plans.js";
+import { setWebhook } from "./telegram.js";
 
 // ------------------------------------------------------------------
 // Telegram Stars billing.
@@ -59,10 +60,10 @@ export async function createStarsInvoice(userId: string, tier: PlanTier): Promis
 /** Point the platform bot's webhook at this deployment. */
 export async function setupBillingWebhook(publicBaseUrl: string): Promise<void> {
   const secret = process.env.PLATFORM_WEBHOOK_SECRET!;
-  await tg("setWebhook", {
-    url: `${publicBaseUrl}/billing/hook/${secret}`,
-    secret_token: secret,
-    allowed_updates: ["message", "pre_checkout_query"],
+  const token = platformToken();
+  await setWebhook(token, `${publicBaseUrl}/billing/hook/${secret}`, secret, {
+    dropPendingUpdates: false, // Don't drop billing updates
+    allowedUpdates: ["message", "pre_checkout_query"],
   });
 }
 
@@ -114,11 +115,14 @@ export async function handleBillingUpdate(update: Update): Promise<void> {
         [userId, tier]
       );
       await tx.query(
-        `INSERT INTO payments (user_id, subscription_id, provider, amount, currency, tx_ref, status)
-         VALUES ($1, $2, 'telegram_stars', $3, 'XTR', $4, 'finished')`,
-        [userId, sub!.id, sp.total_amount, chargeId]
+        `INSERT INTO payments (user_id, subscription_id, provider, amount, currency, tx_ref, status, plan_tier)
+         VALUES ($1, $2, 'telegram_stars', $3, 'XTR', $4, 'finished', $5)`,
+        [userId, sub!.id, sp.total_amount, chargeId, tier]
       );
-      await tx.query(`UPDATE users SET plan = $1, updated_at = now() WHERE id = $2`, [tier, userId]);
+      await tx.query(
+        `UPDATE users SET plan = $1, plan_expires_at = now() + interval '30 days', updated_at = now() WHERE id = $2`,
+        [tier, userId]
+      );
       return true;
     });
 

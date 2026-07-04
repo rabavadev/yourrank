@@ -1,7 +1,19 @@
-// Build: inlines asset files as string exports so the Worker is fully self-contained.
+// Build: compiles shared TypeScript to JavaScript, then inlines asset files as string exports so the Worker is fully self-contained.
 import fs from "node:fs";
 import path from "node:path";
+import { execSync } from "node:child_process";
 
+// Step 1: Compile shared TypeScript to JavaScript
+console.log("Compiling shared TypeScript...");
+try {
+  execSync("node ../../build-shared.js", { stdio: "inherit" });
+  console.log("TypeScript compilation complete");
+} catch (error) {
+  console.error("TypeScript compilation failed:", error);
+  process.exit(1);
+}
+
+// Step 2: Bundle assets
 const assetsDir = "src/assets";
 const out = "src/assets_bundled.js";
 

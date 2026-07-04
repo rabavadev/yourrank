@@ -1,0 +1,3 @@
+# This directory is for numbered migrations that should be applied after schema.sql
+# Each migration should be idempotent (use IF NOT EXISTS, DO $$ guards, etc.)
+# Migrations are applied in numeric order by the CI workflow

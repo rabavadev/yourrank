@@ -103,7 +103,10 @@ export function newWebhookSecret(): string {
 
 /** Short, url-safe slug for /r/:slug links. */
 export function newLinkSlug(): string {
-  return Buffer.from(crypto.getRandomValues(new Uint8Array(4))).toString("base64url");
+  // Increased from 4 to 8 bytes (64 bits) to prevent collisions and enumeration.
+  // 4 bytes = 32 bits (birthday bound ~65k links) - too low for public URLs.
+  // 8 bytes = 64 bits (birthday bound ~4 billion links) - sufficient for production.
+  return Buffer.from(crypto.getRandomValues(new Uint8Array(8))).toString("base64url");
 }
 
 /** Public click reference id — echoed back by casinos in postbacks. */

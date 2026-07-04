@@ -1,31 +1,14 @@
 // ============================================================================
-//  YourRank — SHARED DASHBOARD SHELL / TOP NAV  (leaderboard Worker, JS)
+//  YourRank — SHARED DASHBOARD SHELL / TOP NAV (JavaScript)
 //
-//  One header injected at the top of BOTH dashboards so the two Workers feel
-//  like one app. Renders: streamer name, plan badge, and the tab links
-//    Leaderboard | Bot | Analytics | Billing | Logout
-//  Active tab is highlighted from the current request path.
+//  Behavioural port of shared/shell-nav.ts. Renders the same sticky header
+//  (Leaderboard | Bot | Analytics | Billing | Logout) so the bot dashboard
+//  at /bot/dashboard feels like the same app.
 //
-//  Aesthetic locked to rankup-saas: near-black #0b0b0c, single lime accent
-//  #c8ff00, JetBrains Mono for labels, Inter for text. No gradients, no glass.
-//
-//  This is the SOURCE OF TRUTH. shell-nav.ts is a behavioural port for the bot
-//  Worker. Keep them in sync.
-//
-//  Usage (leaderboard Worker, /dashboard):
-//    import { shellNavHtml, SHELL_NAV_CSS } from "../shared/shell-nav.js";
-//    const html = `<!doctype html><html><head>...<style>${SHELL_NAV_CSS}
-//                  ${YOUR_PAGE_CSS}</style></head><body>
-//                  ${shellNavHtml({ activePath: url.pathname, user })}
-//                  <main class="gm-shell-main">...page...</main>`;
-//
-//  Usage (bot Worker, /bot/dashboard): identical, from shell-nav.ts.
+//  This is the JavaScript version compiled from shared/shell-nav.ts
+//  Used by the leaderboard Worker
 // ============================================================================
 
-// Canonical destinations (absolute paths on yourrank.site). These match
-// routing.md. Leaderboard + Analytics + Billing live on the leaderboard Worker;
-// Bot lives on the bot Worker. Because they share the domain, plain <a> links
-// navigate between Workers seamlessly and the gm_session cookie rides along.
 export const NAV_LINKS = [
   { key: "leaderboard", label: "Leaderboard", href: "/dashboard",           match: ["/dashboard"] },
   { key: "bot",         label: "Bot",         href: "/bot/dashboard",       match: ["/bot/dashboard", "/bot/dash"] },
@@ -33,8 +16,6 @@ export const NAV_LINKS = [
   { key: "billing",     label: "Billing",     href: "/dashboard/billing",   match: ["/dashboard/billing"] },
 ];
 
-// Which nav key is active for a given pathname. Longest-prefix wins so that
-// /dashboard/billing does not also light up /dashboard (Leaderboard).
 export function activeKey(pathname) {
   const p = (pathname || "/").replace(/\/+$/, "") || "/";
   let best = null;
@@ -50,15 +31,12 @@ export function activeKey(pathname) {
   return best;
 }
 
-// HTML-escape untrusted user strings before embedding.
 function esc(s) {
   return String(s ?? "").replace(/[&<>"']/g, (ch) =>
     ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[ch])
   );
 }
 
-// Plan badge -> label + modifier class. Plans come from the unified schema enum
-// plan_tier: 'free' | 'pro' | 'agency'.
 function planBadge(plan) {
   const p = String(plan || "free").toLowerCase();
   const label = p === "agency" ? "Agency" : p === "pro" ? "Pro" : "Free";
@@ -66,12 +44,10 @@ function planBadge(plan) {
   return `<span class="gm-badge ${mod}">${label}</span>`;
 }
 
-// Render the nav. `user` = { display_name?, email?, plan? } (bare fields from
-// the users table — either Worker's loader shape works).
-export function shellNavHtml({ activePath, user } = {}) {
-  const active = activeKey(activePath);
-  const name = esc(user?.display_name || user?.email || "Streamer");
-  const badge = planBadge(user?.plan);
+export function shellNavHtml(opts = {}) {
+  const active = activeKey(opts.activePath || "/");
+  const name = esc(opts.user?.display_name || opts.user?.email || "Streamer");
+  const badge = planBadge(opts.user?.plan);
 
   const tabs = NAV_LINKS.map((l) => {
     const isActive = l.key === active;
@@ -82,7 +58,7 @@ export function shellNavHtml({ activePath, user } = {}) {
   return `<header class="gm-shell-nav">
   <div class="gm-shell-inner">
     <a class="gm-brand" href="/dashboard">
-      <span class="gm-brand-mark">YR</span>
+      <span class="gm-brand-mark">GM</span>
       <span class="gm-brand-word">YourRank</span>
     </a>
     <nav class="gm-tabs">${tabs}</nav>
@@ -95,8 +71,8 @@ export function shellNavHtml({ activePath, user } = {}) {
 </header>`;
 }
 
-// Standalone CSS. Namespaced under .gm-shell-* so it never collides with either
-// dashboard's own styles. Reuses the exact rankup-saas palette.
+// Identical CSS to shell-nav.ts — namespaced .gm-shell-* / .gm-* so it never
+// collides with the bot dashboard's own BASE_CSS.
 export const SHELL_NAV_CSS = `
 :root{
   --gm-bg:#0b0b0c; --gm-panel:#0f0f11; --gm-line:#232327; --gm-line-2:#2e2e33;

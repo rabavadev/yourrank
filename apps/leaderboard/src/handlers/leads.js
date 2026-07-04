@@ -1,0 +1,32 @@
+// Lead submission handler
+import { json, bad, readJson, rateLimit, clientIp, uuid } from "../auth.js";
+import { exec } from "../../../shared/db.js";
+
+export async function handleLead(request, env) {
+  try {
+    if (!(await rateLimit(env, `lead:${clientIp(request)}`, 5, 3600))) return bad("Too many requests. Try again later.", 429);
+    const body = await readJson(request);
+    if (!body) return bad("Invalid request");
+    const handle = String(body.handle || "").slice(0, 120), casino = String(body.casino || "").slice(0, 60);
+    const contact = String(body.contact || "").slice(0, 160), note = String(body.note || "").slice(0, 500);
+    if (!handle && !contact) return bad("Tell us who you are");
+    await exec("INSERT INTO leads (id,handle,casino,contact,note) VALUES ($1,$2,$3,$4,$5)", [uuid(), handle, casino, contact, note]);
+    if (env.LEAD_WEBHOOK_URL) {
+      // Strip Discord/Slack mention syntax so a lead submitter can't @everyone,
+      // <@&role-id>, or otherwise ping the operator's server through the webhook.
+      const safe = (s) => String(s ?? "").replace(/@/g, "@\u200b").replace(/</g, "<\u200b");
+      try {
+        await fetch(env.LEAD_WEBHOOK_URL, {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          signal: AbortSignal.timeout(10_000),
+          body: JSON.stringify({ content: `New YourRank lead: ${safe(handle)} (${safe(casino)}) — ${safe(contact)}\n${safe(note)}` }),
+        });
+      } catch (err) { console.error("[leadWebhook]: webhook delivery failed", err); }
+    }
+    return json({ ok: true });
+  } catch (e) {
+    console.error("lead failed:", String(e?.message || e));
+    return bad("Couldn't submit right now. Please try again.", 500);
+  }
+}

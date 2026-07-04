@@ -1,6 +1,6 @@
 // Billing: NOWPayments (crypto) + manual activation. Plan logic lives here.
 import { json, bad, ok, uuid, requireUser, safeEqual } from "./auth.js";
-import { query, one, exec, getSql } from "./db.js";
+import { query, one, exec, getSql } from "../../../shared/db.js";
 
 // Plan definitions imported from shared source of truth.
 // Re-exported here for backward compatibility with any local imports.
@@ -10,7 +10,7 @@ export const BOARD_LIMITS = _BL;
 export const PLAN_PRICES = _PP;
 export const PLAN_META = _PM;
 
-export const PRO_DAYS = 31;
+export const PRO_DAYS = 30;
 
 // priceUsd returns the price for the given plan tier (or the env override for pro).
 export function priceUsd(env, plan = "pro") {
@@ -22,7 +22,9 @@ export function priceUsd(env, plan = "pro") {
 export function effectivePlan(user) {
   if (!user || user.status === "suspended") return "free";
   const plan = String(user.plan || "free").toLowerCase();
-  const expired = user.plan_expires_at != null && Number(user.plan_expires_at) <= Date.now();
+  // NULL plan_expires_at is treated as expired to prevent accidental permanent grants
+  // Lifetime plans should use a far-future date (e.g., 2099-12-31) instead of NULL
+  const expired = user.plan_expires_at == null || Number(user.plan_expires_at) <= Date.now();
   if (expired) return "free";
   if (["agency", "pro", "starter"].includes(plan)) return plan;
   return "free";
@@ -45,14 +47,15 @@ export async function activatePlan(env, userId, plan, days = PRO_DAYS, { provide
       await tx.unsafe("UPDATE users SET plan=$1, plan_expires_at=to_timestamp($2 / 1000.0), updated_at=now() WHERE id=$3", [plan, expiresMs, userId]);
       await tx.unsafe("INSERT INTO subscriptions (user_id, plan, status, provider, current_period_end) VALUES ($1, $2, 'active', $3, to_timestamp($4 / 1000.0))", [userId, plan, provider || 'nowpayments', expiresMs]);
     } else {
-      // Lifetime: no expiry.
-      await tx.unsafe("UPDATE users SET plan=$1, plan_expires_at=NULL, updated_at=now() WHERE id=$2", [plan, userId]);
+      // Lifetime: use far-future date instead of NULL for plan_expires_at
+      const lifetimeExpiry = new Date('2099-12-31T23:59:59Z').getTime();
+      await tx.unsafe("UPDATE users SET plan=$1, plan_expires_at=to_timestamp($2 / 1000.0), updated_at=now() WHERE id=$3", [plan, lifetimeExpiry, userId]);
       await tx.unsafe("INSERT INTO subscriptions (user_id, plan, status, provider, current_period_end) VALUES ($1, $2, 'active', 'manual', $3::timestamptz)", [userId, plan, '2099-12-31T23:59:59Z']);
     }
     if (provider) {
       await tx.unsafe(
-        "INSERT INTO payments (user_id,provider,amount,currency,status) VALUES ($1,$2,$3,$4,$5)",
-        [userId, provider, Number(amountUsd) || 0, "USD", "manual"]
+        "INSERT INTO payments (user_id,provider,amount,currency,status,plan_tier) VALUES ($1,$2,$3,$4,$5,$6)",
+        [userId, provider, Number(amountUsd) || 0, "USD", "manual", plan]
       );
     }
     return true;
@@ -76,8 +79,8 @@ export async function handleCheckout(request, env) {
   const price = priceUsd(env, targetPlan);
   const orderId = `rk_${uuid()}`;
   await exec(
-    "INSERT INTO payments (user_id,provider,amount,currency,status,tx_ref) VALUES ($1,$2,$3,$4,$5,$6)",
-    [user.id, "nowpayments", price, "USD", "created", orderId]
+    "INSERT INTO payments (user_id,provider,amount,currency,status,tx_ref,plan_tier) VALUES ($1,$2,$3,$4,$5,$6,$7)",
+    [user.id, "nowpayments", price, "USD", "created", orderId, targetPlan]
   );
   let inv = null;
   try {
@@ -89,7 +92,7 @@ export async function handleCheckout(request, env) {
         price_amount: price,
         price_currency: "usd",
         order_id: orderId,
-        order_description: `YourRank ${targetPlan.charAt(0).toUpperCase() + targetPlan.slice(1)} — ${PRO_DAYS} days`,
+        order_description: `YourRank ${targetPlan.charAt(0).toUpperCase() + targetPlan.slice(1)} — 30 days`,
         ipn_callback_url: `${origin}/api/billing/ipn`,
         success_url: `${origin}/dashboard?upgraded=1`,
         cancel_url: `${origin}/dashboard`,
@@ -118,8 +121,8 @@ export async function handleCheckoutLifetime(request, env) {
   const price = 149;
   const orderId = `rk_lt_${uuid()}`;
   await exec(
-    "INSERT INTO payments (user_id,provider,amount,currency,status,tx_ref) VALUES ($1,$2,$3,$4,$5,$6)",
-    [user.id, "nowpayments", price, "USD", "created", orderId]
+    "INSERT INTO payments (user_id,provider,amount,currency,status,tx_ref,plan_tier) VALUES ($1,$2,$3,$4,$5,$6,$7)",
+    [user.id, "nowpayments", price, "USD", "created", orderId, "pro"]
   );
   let inv = null;
   try {
@@ -182,11 +185,11 @@ export async function handleIpn(request, env) {
 
   const result = await getSql().begin(async (tx) => {
     const payRows = await tx.unsafe(
-      "SELECT id, user_id, status, amount FROM payments WHERE tx_ref=$1 FOR UPDATE",
+      "SELECT id, user_id, status, amount, plan_tier FROM payments WHERE tx_ref=$1 FOR UPDATE",
       [orderId]
     );
     const pay = payRows[0];
-    if (!pay) return { code: 404, msg: "unknown order" };
+    if (!pay) return { code: 200 }; // Return 200 to prevent order-id enumeration
 
     await tx.unsafe(
       "UPDATE payments SET status=$1, payload_json=$2::jsonb, updated_at=now() WHERE id=$3",
@@ -201,18 +204,37 @@ export async function handleIpn(request, env) {
       );
       const u = uRows[0];
       if (u) {
-        // Determine target plan from payment amount
-        const amt = Number(pay.amount) || 0;
-        let targetPlan = "pro";
-        if (amt >= PLAN_PRICES.agency - 1) targetPlan = "agency";
-        else if (amt >= PLAN_PRICES.pro - 1) targetPlan = "pro";
-        else if (amt >= PLAN_PRICES.starter - 1) targetPlan = "starter";
+        // Use actual paid amount from IPN body for validation
+        const actuallyPaid = Number(body.actually_paid) || Number(body.pay_amount) || 0;
+        const expectedAmount = Number(pay.amount) || 0;
 
-        // Lifetime payment ($149): activate Pro with no expiry
-        if (amt >= 148 && orderId.startsWith("rk_lt_")) {
+        // Determine target plan: prefer plan_tier column, fall back to amount-based lookup for legacy rows
+        let targetPlan = pay.plan_tier;
+        if (!targetPlan) {
+          // Legacy fallback: reverse-engineer from expected amount (not actual paid)
+          const amt = expectedAmount;
+          if (amt >= PLAN_PRICES.agency - 1) targetPlan = "agency";
+          else if (amt >= PLAN_PRICES.pro - 1) targetPlan = "pro";
+          else if (amt >= PLAN_PRICES.starter - 1) targetPlan = "starter";
+          else targetPlan = "pro";
+        }
+
+        // Validate that the actual paid amount meets the minimum threshold for the tier
+        // Allow small rounding differences (within 1%) but reject significant underpayments
+        const tierPrice = PLAN_PRICES[targetPlan] || PLAN_PRICES.pro;
+        const minAccepted = tierPrice * 0.99; // Allow 1% rounding tolerance
+        if (actuallyPaid < minAccepted && !orderId.startsWith("rk_lt_")) {
+          // Underpayment: don't grant the tier, just record the payment status
+          console.warn(`[IPN] Underpayment for order ${orderId}: paid ${actuallyPaid}, expected ${tierPrice} for ${targetPlan}`);
+          return { code: 200 };
+        }
+
+        // Lifetime payment ($149): activate Pro with far-future expiry
+        if (orderId.startsWith("rk_lt_")) {
+          const lifetimeExpiry = new Date('2099-12-31T23:59:59Z').getTime();
           await tx.unsafe(
-            "UPDATE users SET plan=$1, plan_expires_at=NULL, updated_at=now() WHERE id=$2",
-            ["pro", pay.user_id]
+            "UPDATE users SET plan=$1, plan_expires_at=to_timestamp($2 / 1000.0), updated_at=now() WHERE id=$3",
+            ["pro", lifetimeExpiry, pay.user_id]
           );
           await tx.unsafe(
             "INSERT INTO subscriptions (user_id, plan, status, provider, current_period_end) VALUES ($1, $2, 'active', 'nowpayments_lifetime', $3::timestamptz)",
@@ -230,9 +252,11 @@ export async function handleIpn(request, env) {
             [pay.user_id, targetPlan, expiresMs]
           );
         } else {
+          // PRO_DAYS = 0 shouldn't happen, but if it does, use far-future date instead of NULL
+          const lifetimeExpiry = new Date('2099-12-31T23:59:59Z').getTime();
           await tx.unsafe(
-            "UPDATE users SET plan=$1, plan_expires_at=NULL, updated_at=now() WHERE id=$2",
-            [targetPlan, pay.user_id]
+            "UPDATE users SET plan=$1, plan_expires_at=to_timestamp($2 / 1000.0), updated_at=now() WHERE id=$3",
+            [targetPlan, lifetimeExpiry, pay.user_id]
           );
         }
       }
@@ -241,6 +265,5 @@ export async function handleIpn(request, env) {
     return { code: 200 };
   });
 
-  if (result.code === 404) return bad(result.msg, 404);
   return ok();
 }

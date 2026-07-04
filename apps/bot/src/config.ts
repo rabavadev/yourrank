@@ -20,14 +20,16 @@ export const config = {
     return process.env.ADMIN_API_KEY || "";
   },
   get ipHashSalt() {
-    return process.env.IP_HASH_SALT || "";
+    const salt = process.env.IP_HASH_SALT;
+    if (!salt) throw new Error("IP_HASH_SALT is not configured (required for IP hashing)");
+    return salt;
   },
-  port: Number(process.env.PORT ?? 3000),
 };
 
 // Validate lazily — only complain when a value is actually needed and missing.
 // (Called by data-layer code on first use rather than at import time, so the
 // Worker can boot and serve /health even before bindings are read.)
+// Note: This is a Cloudflare Workers deployment (not Node), so no port config is needed.
 export function requireConfig(name: string): string {
   const v = process.env[name];
   if (!v) throw new Error(`Missing required env var: ${name}`);

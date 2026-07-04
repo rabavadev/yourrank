@@ -1,7 +1,7 @@
 // Site + players data helpers for the Worker.
 import { effectivePlan, PLAN_LIMITS, BOARD_LIMITS } from "./billing.js";
-import { query, one, exec, getSql } from "./db.js";
-import { notifyTop3Change, notifyReset, detectTop3Changes, notifySubscribedPlayers } from "./notifications.js";
+import { query, one, exec, getSql } from "../../../shared/db.js";
+import { notifyTop3Change, notifyReset, detectTop3Changes, notifySubscribedPlayers } from "../../../shared/notifications.js";
 import { TEMPLATE_IDS } from "./templates/index.js";
 
 export const DEFAULT_EXTRA = {
@@ -35,8 +35,9 @@ const SITE_COLUMNS = "id, user_id, slug, name, tagline, casino, code, cta_url, p
 // a dashboard save (which invalidates both layers), all isolates pick up the new
 // data within 30s. The L1 Map is a hot-path optimization — avoids a KV read for
 // the isolate that just wrote or recently read.
+// IMPORTANT: L1 TTL must be <= L2 TTL to prevent stale data in L1 after L2 expires.
 const siteCache = new Map();       // L1 — per-isolate, no TTL enforcement beyond what's set below
-const L1_TTL = 60_000;             // L1 entries expire after 60s
+const L1_TTL = 25_000;             // L1 entries expire after 25s (must be <= L2_TTL)
 const L2_TTL = 30;                 // KV entries expire after 30s (seconds, for KV expirationTtl)
 const KV_PREFIX_SITE = "sitecache:";
 
@@ -64,10 +65,13 @@ async function getCached(env, key, dbFetcher) {
   return data;
 }
 
-export function invalidateSiteCache(slugOrId) {
-  siteCache.delete(slugOrId);
-  // Fire-and-forget KV delete — best-effort; 30s TTL handles stale entries anyway.
-  try { globalThis.__yr_env?.SESSIONS?.delete(KV_PREFIX_SITE + slugOrId).catch(() => {}); } catch {}
+export function invalidateSiteCache(...keys) {
+  // Invalidate multiple cache keys (slug, uid, siteId, etc.)
+  for (const key of keys) {
+    siteCache.delete(key);
+    // Fire-and-forget KV delete — best-effort; 30s TTL handles stale entries anyway.
+    try { globalThis.__yr_env?.SESSIONS?.delete(KV_PREFIX_SITE + key).catch(() => {}); } catch {}
+  }
 }
 
 export function invalidateUserCache(uid) {
@@ -288,7 +292,7 @@ export async function createArchive(env, uid, { label, clear, siteId } = {}) {
     const extraRow = await one("SELECT extra_json FROM sites WHERE id=$1", [site.id]);
     const extra = (extraRow?.extra_json && typeof extraRow.extra_json === "object") ? extraRow.extra_json : {};
     if (extra.discord_webhook_url || (extra.telegram_bot_token && extra.telegram_chat_id && extra.telegram_notify)) {
-      await notifyReset(env, site.id, site.name || site.slug, players, lab);
+      await notifyReset({ one, query }, env, site.id, site.name || site.slug, players, lab);
     }
   } catch (e) {
     console.error("[notify] reset webhook failed:", String(e?.message || e));
@@ -307,6 +311,20 @@ export async function saveSite(env, user, payload, siteId) {
   const uid = typeof user === "string" ? user : user.id;
   const site = siteId ? await getBoardById(env, uid, siteId) : await getByUser(env, uid);
   if (!site) return { error: "no site" };
+  
+  // Optimistic concurrency check: if client provides expected updatedAt, verify it matches
+  if (payload.expectedUpdatedAt && site.updated_at) {
+    const clientTime = new Date(payload.expectedUpdatedAt).getTime();
+    const serverTime = new Date(site.updated_at).getTime();
+    if (clientTime !== serverTime) {
+      return { 
+        error: "This board was modified by another session. Refresh and try again.", 
+        code: "concurrency_conflict",
+        currentUpdatedAt: site.updated_at 
+      };
+    }
+  }
+  
   // Plan gate: player count is the paid lever.
   if (typeof user === "object" && Array.isArray(payload.players)) {
     const plan = effectivePlan(user);
@@ -357,9 +375,7 @@ export async function saveSite(env, user, payload, siteId) {
   const themeJson = JSON.stringify(themeObj);
 
   // Invalidate cache before write (both L1 and L2 for cross-isolate consistency)
-  invalidateSiteCache(site.slug);
-  invalidateSiteCache(uid);
-  if (siteId) invalidateSiteCache(siteId);
+  invalidateSiteCache(site.slug, uid, siteId);
   // Also invalidate L2 KV entries explicitly with env for immediate effect
   const _kv = env?.SESSIONS;
   if (_kv) {
@@ -418,7 +434,7 @@ export async function saveSite(env, user, payload, siteId) {
       const newSorted = payload.players.filter((p) => p && p.name).sort((a, b2) => (b2.wagered || 0) - (a.wagered || 0));
       const top3Changes = detectTop3Changes(oldTop3, newSorted);
       if (top3Changes.length) {
-        await notifyTop3Change(env, site.id, b.name || site.name, top3Changes);
+        await notifyTop3Change({ one, query }, env, site.id, b.name || site.name, top3Changes);
       }
     } catch (e) {
       console.error("[notify] top-3 detection failed:", String(e?.message || e));
@@ -427,12 +443,14 @@ export async function saveSite(env, user, payload, siteId) {
     // Notify subscribed players (via /subscribe) about rank changes
     try {
       const newPlayersSorted = payload.players.filter((p) => p && p.name);
-      await notifySubscribedPlayers(env, site.id, b.name || site.name, oldPlayers, newPlayersSorted);
+      await notifySubscribedPlayers({ one, query }, env, site.id, b.name || site.name, oldPlayers, newPlayersSorted);
     } catch (e) {
       console.error("[notify] player subscription notification failed:", String(e?.message || e));
     }
   }
-  return { ok: true };
+  // Return updated site data including new timestamp for optimistic concurrency
+  const updatedSite = await getBoardById(env, uid, site.id);
+  return { ok: true, updatedAt: updatedSite?.updated_at };
 }
 
 export { getByUser, getBySlug };
