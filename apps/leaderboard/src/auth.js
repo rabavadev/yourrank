@@ -105,12 +105,17 @@ const loadUser = (env, uid) =>
 // SEC-104: Resolves the current user from the shared session using the
 // standard readToken (gm_session only; legacy rk_session support removed).
 export async function currentUser(req, env) {
-  const token = readToken(req);
-  if (!token) return null;
-  const uid = await env.SESSIONS.get(KV_PREFIX + token);
-  if (!uid) return null;
-  return loadUser(env, uid);
-}
+    const token = readToken(req);
+    if (!token) return null;
+    const uid = await env.SESSIONS.get(KV_PREFIX + token);
+    if (!uid) return null;
+    // ARCH-005: Sliding-window TTL refresh — extend the session on each valid
+    // read so actively used sessions stay alive. Fire-and-forget, never blocks.
+    try {
+      env.SESSIONS.put(KV_PREFIX + token, uid, { expirationTtl: 60 * 60 * 24 * 30 }).catch(() => {});
+    } catch { /* best-effort rotation */ }
+    return loadUser(env, uid);
+  }
 
 // Cheap KV counter rate limit. Returns true while under the limit.
 // NOTE: Due to KV's eventual consistency and lack of atomic increment,

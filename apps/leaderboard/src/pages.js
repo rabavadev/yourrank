@@ -28,9 +28,9 @@ export const PAGES = {
 <meta name="twitter:title" content="YourRank - Hosted Leaderboards for Streamers" />
 <meta name="twitter:description" content="Create your own branded leaderboard page. Track referrals, manage promo codes, and grow your audience." />
 <!-- og:image removed: no static asset exists; add when a brand image is created -->
-<link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
-<link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <script type="application/ld+json">{"@context":"https://schema.org","@type":"Organization","name":"YourRank","url":"https://yourrank.site","description":"Hosted leaderboard pages for casino streamers","contactPoint":{"@type":"ContactPoint","contactType":"customer service"}}</script>
 </head><body>
 <a href="#main-content" class="sr-only" style="position:absolute;top:0;left:0;z-index:9999;padding:8px 16px;background:var(--accent,#c8ff00);color:#000;font-weight:700;text-decoration:none" onfocus="this.classList.remove('sr-only')" onblur="this.classList.add('sr-only')">Skip to content</a>
@@ -213,7 +213,7 @@ export const PAGES = {
 <button class="btn btn--sm" id="logoPick" type="button">Upload logo</button><button class="btn btn--sm btn--ghost" id="logoClear" type="button" hidden>Remove</button></div>
 <span class="hint">PNG, JPG or WebP. Shows in your page header and as the link preview image when your page gets shared. Square works best.</span></div>
 <div class="field"><label for="c_a">Page accent colors</label>
-<div class="color-row"><input type="color" id="c_a" value="#5ad9ff" /><input type="color" id="c_b" value="#7b8cff" /><button class="btn btn--sm btn--ghost" id="colorsReset" type="button">Reset to default</button></div>
+<div class="color-row"><label for="c_a" class="sr-only">Accent color start</label><input type="color" id="c_a" value="#5ad9ff" /><label for="c_b" class="sr-only">Accent color end</label><input type="color" id="c_b" value="#7b8cff" /><button class="btn btn--sm btn--ghost" id="colorsReset" type="button">Reset to default</button></div>
 <span class="hint">Drives the big name gradient and buttons on your page. Save to apply.</span></div>
 </div></div>
 <div class="empty" id="brandLock" hidden>Branding is a Pro feature. <a href="#" id="brandUpgrade">Upgrade to unlock it</a>.</div></div>
@@ -454,7 +454,7 @@ admin: `<!DOCTYPE html><html lang="en"><head>
 .tfa-wrap h1{font-size:20px;margin:0 0 6px}
 .tfa-wrap p{color:rgba(255,255,255,0.5);font-size:13px;margin:0 0 24px}
 .tfa-wrap .code-input{font-family:var(--mono,'JetBrains Mono',monospace);font-size:28px;letter-spacing:12px;text-align:center;background:var(--panel-2,#161618);border:2px solid var(--line-2,#2a2a30);border-radius:12px;color:var(--ink,#ededf0);padding:16px;width:100%;max-width:260px;display:block;margin:0 auto 16px}
-.tfa-wrap .code-input:focus{border-color:var(--accent,#c8ff00);outline:none}
+.tfa-wrap .code-input:focus{border-color:var(--accent,#c8ff00)}.tfa-wrap .code-input:focus-visible{outline:2px solid var(--accent,#c8ff00);outline-offset:2px}
 .tfa-wrap .err{color:#ff6b6b;font-size:13px;min-height:18px;margin:8px 0}
 .tfa-wrap .btn{width:100%;max-width:260px}
 .tfa-setup{margin-top:32px;text-align:left}
@@ -462,6 +462,7 @@ admin: `<!DOCTYPE html><html lang="en"><head>
 .tfa-setup p{color:rgba(255,255,255,0.5);font-size:13px;margin:0 0 12px}
 .tfa-setup .qr-wrap{background:#fff;border-radius:12px;padding:12px;display:inline-block;margin:8px 0}
 .tfa-setup .secret-box{font-family:var(--mono,'JetBrains Mono',monospace);font-size:12px;word-break:break-all;background:var(--panel-2,#161618);border:1px solid var(--line-2,#2a2a30);border-radius:8px;padding:10px 12px;color:var(--accent,#c8ff00);margin:8px 0;display:block}
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; } }
 </style></head><body>
 <a href="#main-content" class="sr-only" style="position:absolute;top:0;left:0;z-index:9999;padding:8px 16px;background:var(--accent,#c8ff00);color:#000;font-weight:700;text-decoration:none" onfocus="this.classList.remove('sr-only')" onblur="this.classList.add('sr-only')">Skip to content</a>
 <header class="topbar"><div class="brand">Your<b>Rank</b> <span class="label" style="margin-left:8px">ADMIN</span></div>
@@ -470,7 +471,7 @@ admin: `<!DOCTYPE html><html lang="en"><head>
 <div class="tfa-wrap" id="tfaVerify">
 <h1>🔒 Two-Factor Authentication</h1>
 <p>Enter the 6-digit code from your authenticator app.</p>
-<input class="code-input" id="tfaCode" type="text" inputmode="numeric" maxlength="6" pattern="[0-9]{6}" placeholder="000000" autocomplete="one-time-code" autofocus />
+<input class="code-input" id="tfaCode" type="text" inputmode="numeric" maxlength="6" pattern="[0-9]{6}" placeholder="000000" autocomplete="one-time-code" autofocus aria-label="Verification code" />
 <div class="err" id="tfaErr" role="alert" aria-live="assertive"></div>
 <button class="btn btn--accent" id="tfaSubmit" type="button">Verify</button>
 </div>
@@ -482,7 +483,7 @@ admin: `<!DOCTYPE html><html lang="en"><head>
 <p>Or enter this secret manually:</p>
 <code class="secret-box" id="tfaSecret"></code>
 <p style="margin-top:16px">After scanning, enter the 6-digit code to verify setup:</p>
-<input class="code-input" id="tfaSetupCode" type="text" inputmode="numeric" maxlength="6" pattern="[0-9]{6}" placeholder="000000" autocomplete="one-time-code" />
+<input class="code-input" id="tfaSetupCode" type="text" inputmode="numeric" maxlength="6" pattern="[0-9]{6}" placeholder="000000" autocomplete="one-time-code" aria-label="Verification code" />
 <div class="err" id="tfaSetupErr" role="alert" aria-live="assertive"></div>
 <button class="btn btn--accent" id="tfaSetupSubmit" type="button">Enable 2FA</button>
 </div>
@@ -728,6 +729,7 @@ html,body{width:320px;overflow:hidden;background:transparent;font-family:'Inter'
 .ov-footer{display:flex;align-items:center;justify-content:space-between;margin-top:10px;padding-top:8px;border-top:1px solid rgba(255,255,255,0.05)}
 .ov-footer .ov-count{font-size:9px;color:rgba(255,255,255,0.3);text-transform:uppercase;letter-spacing:.08em}
 .ov-footer .ov-powered{font-size:8px;color:rgba(255,255,255,0.15);letter-spacing:.04em}
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; } }
 </style>
 </head><body>
 <div class="ov-wrap">

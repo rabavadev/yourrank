@@ -214,8 +214,9 @@ export function wireHandlers(bot: Bot, botRow: BotRow, kv?: RateLimitKV): void {
     }
 
     // Get all players sorted by wagered DESC, assign rank
+    // DB-004: LIMIT 1000 to prevent unbounded result sets on large leaderboards
     const players = await query<{ name: string; wagered: number }>(
-      `SELECT name, wagered FROM players WHERE site_id = $1 ORDER BY wagered DESC`,
+      `SELECT name, wagered FROM players WHERE site_id = $1 ORDER BY wagered DESC LIMIT 1000`,
       [site.id]
     );
 

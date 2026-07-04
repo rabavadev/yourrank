@@ -36,6 +36,20 @@ export async function recordConversion(ownerId: string, q: PostbackQuery): Promi
     offerId = hit?.offer_id ?? null;
   }
 
+  // BE-006: Idempotency guard — check for an existing conversion with the same
+  // click_ref + event + amount to prevent duplicate postbacks from creating
+  // duplicate rows (e.g. casino retries, webhook replays).
+  if (clickRef) {
+    const existing = await one<{ id: string }>(
+      `SELECT id FROM conversions
+       WHERE owner_id = $1 AND click_ref = $2 AND event = $3
+         AND ($4::numeric IS NULL AND amount IS NULL OR amount = $4)
+       LIMIT 1`,
+      [ownerId, clickRef, event, amount]
+    );
+    if (existing) return; // Already recorded — skip silently.
+  }
+
   // exec() — semantically a write/mutation, not a read query.
   await exec(
     `INSERT INTO conversions (owner_id, offer_id, click_ref, event, amount, currency, raw)

@@ -1,5 +1,5 @@
 // Owner admin API. Every route requires a session whose user has is_admin=true.
-import { json, bad, ok, readJson, newToken, readToken, currentUser, destroyAllUserSessions, clientIp } from "./auth.js";
+import { json, bad, ok, readJson, newToken, readToken, currentUser, destroyAllUserSessions, clientIp, rateLimit } from "./auth.js";
 import { activatePlan } from "./billing.js";
 import { query, one, exec } from "../../../shared/db.js";
 import { generateSecret, verifyCode, generateOtpauthUri } from "./totp.js";
@@ -29,6 +29,11 @@ async function logAdminAction(env, adminId, action, targetUserId = null, details
 }
 
 export async function requireAdmin(request, env) {
+  // BE-007: Rate-limit admin endpoints (120 req/min per IP).
+  const ip = clientIp(request);
+  if (!(await rateLimit(env, `admin:${ip}`, 120, 60))) {
+    return { admin: null, res: bad("Too many requests. Try again later.", 429) };
+  }
   const u = await currentUser(request, env);
   if (!u) return { admin: null, res: bad("unauthorized", 401) };
   if (!u.is_admin) return { admin: null, res: bad("forbidden", 403) };

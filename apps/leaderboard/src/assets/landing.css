@@ -51,6 +51,7 @@ table.pricing tr td:last-child,table.pricing tr th:last-child{text-align:right}.
 .lead{display:grid;grid-template-columns:1fr 1fr;gap:16px 20px;max-width:640px}.lead .full{grid-column:1 / -1}
 .lead label{display:block;font-size:13px;color:var(--ink-soft);margin-bottom:6px}
 .lead input,.lead textarea{width:100%;background:var(--panel);border:1px solid var(--line-2);border-radius:8px;padding:10px 12px;color:var(--ink);font-family:var(--sans);font-size:14px}
-.lead input:focus,.lead textarea:focus{outline:none;border-color:var(--accent)}.lead .status{grid-column:1/-1;font-size:14px;color:var(--ink-mute);min-height:20px}
+.lead input:focus,.lead textarea:focus{border-color:var(--accent)}.lead input:focus-visible,.lead textarea:focus-visible{outline:2px solid var(--accent);outline-offset:2px}.lead .status{grid-column:1/-1;font-size:14px;color:var(--ink-mute);min-height:20px}
 @media(max-width:640px){.lead{grid-template-columns:1fr}}
 footer{border-top:1px solid var(--line);padding:32px 0;color:var(--ink-mute);font-size:13px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:12px}
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; } }

@@ -21,6 +21,16 @@ import { findSiteLogoData, findSiteStatus, findUserTotpSecret } from "./data/sit
 export default {
   async fetch(request, env, ctx) {
     try {
+      // BE-004: Reject oversized request bodies early, before any parsing.
+      // 1 MB is generous for JSON payloads (site data, auth forms, etc.)
+      // while blocking multi-MB abuse that could exhaust Worker memory.
+      if (request.method === "POST" || request.method === "PUT") {
+        const cl = request.headers.get("content-length");
+        if (cl && Number(cl) > 1_000_000) {
+          return new Response("payload too large", { status: 413 });
+        }
+      }
+
       // Populate process.env so the shared Postgres data layer (db.js) can read
       // the connection string. The Pool is created lazily on first query(), so
       // this must run before any DB call — mirrors the bot Worker's worker.ts.
@@ -280,10 +290,16 @@ export default {
         let slug;
         try { slug = decodeURIComponent(path.slice(4).split("/")[0]).toLowerCase(); } catch { return new Response("not found", { status: 404 }); }
         const r = await getPublicSite(env, slug);
-        if (!r || r.suspended) return Response.redirect(url.origin, 302);
+        if (!r || r.suspended) return new Response("not found", { status: 404 });
         if (r.id) ctx.waitUntil(bumpStat(env, r.id, "clicks"));
         const dest = r.data?.brand?.ctaUrl;
-        return Response.redirect(dest && /^https?:\/\//i.test(dest) ? dest : `${url.origin}/${slug}`, 302);
+        // E2E-008: Only redirect to the CTA URL if it's a valid https:// URL.
+        // If empty/null or non-https (javascript:, data:, relative paths),
+        // redirect to the board page instead of risking a redirect loop.
+        if (dest && /^https:\/\//i.test(dest)) {
+          return Response.redirect(dest, 302);
+        }
+        return Response.redirect(`${url.origin}/${slug}`, 302);
       }
 
       // --- OBS overlay: /<slug>/overlay ---

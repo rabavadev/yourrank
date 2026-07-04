@@ -161,12 +161,25 @@ async function currentUserId(req, env) {
     return uid || null;
 }
 async function currentUserIdFromHeader(cookieHeader, env) {
-    const token = readTokenFromHeader(cookieHeader);
-    if (!token)
-        return null;
-    const uid = await env.SESSIONS.get(exports.KV_PREFIX + token);
-    return uid || null;
-}
+      const token = readTokenFromHeader(cookieHeader);
+      if (!token)
+          return null;
+      const uid = await env.SESSIONS.get(exports.KV_PREFIX + token);
+      if (uid) {
+          // ARCH-005: Sliding-window TTL refresh — same pattern as currentUserId().
+          // Fire-and-forget, never blocks the request.
+          try {
+              env.SESSIONS.put(exports.KV_PREFIX + token, uid, { expirationTtl: exports.SESSION_TTL_S }).catch(() => { });
+              const idxKey = "userSessions:" + uid;
+              env.SESSIONS.get(idxKey).then((cur) => {
+                  if (cur)
+                      env.SESSIONS.put(idxKey, cur, { expirationTtl: exports.SESSION_TTL_S }).catch(() => { });
+              }).catch(() => { });
+          }
+          catch { /* best-effort rotation */ }
+      }
+      return uid || null;
+  }
 // ---- resolve the full user row via an injected loader ----
 // loadUser keeps this module free of the bot Worker's pg/Hyperdrive layer, so it
 // is identical to the JS version. Bot loader example:

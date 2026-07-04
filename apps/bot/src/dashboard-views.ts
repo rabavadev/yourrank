@@ -87,7 +87,7 @@ ${shellNavHtml({ activePath: "/bot/dashboard", user })}
     <div class="panel"><h2>Active offers</h2><div class="stat" id="totOffers">–</div></div>
   </div>
 
-  <div class="panel"><h2>Daily clicks</h2><svg id="chart" width="100%" height="120" preserveAspectRatio="none"></svg>
+  <div class="panel"><h2>Daily clicks</h2><svg id="chart" role="img" aria-label="Daily clicks chart" width="100%" height="120" preserveAspectRatio="none"></svg>
     <div id="chartLabels" class="muted" style="display:flex;justify-content:space-between;font-size:11px"></div></div>
 
   <div class="panel"><h2>Your bot</h2>

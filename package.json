@@ -1,1 +1,15 @@
-{"dependencies":{"postgres":"^3.4.9"},"devDependencies":{"@types/node":"^20.14.10"}}
+{
+  "name": "yourrank",
+  "private": true,
+  "workspaces": ["apps/leaderboard", "apps/bot"],
+  "dependencies": {
+    "postgres": "^3.4.9"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.10"
+  },
+  "scripts": {
+    "build": "cd apps/leaderboard && bun run build",
+    "build:bot": "cd apps/bot && bun run build"
+  }
+}

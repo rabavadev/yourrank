@@ -53,6 +53,18 @@ export function buildHonoApp(): Hono<{ Bindings: Bindings }> {
     return c.json({ error: "Internal server error — please try again" }, 500);
   });
 
+  // BE-004: Reject oversized request bodies early, before any parsing.
+  // 1 MB cap — generous for JSON payloads while blocking multi-MB abuse.
+  app.use('*', async (c, next) => {
+    if (c.req.method === 'POST' || c.req.method === 'PUT') {
+      const cl = c.req.header('content-length');
+      if (cl && Number(cl) > 1_000_000) {
+        return c.text('payload too large', 413);
+      }
+    }
+    await next();
+  });
+
   // Security headers on ALL responses.
   app.use('*', async (c, next) => {
     await next();

@@ -42,6 +42,7 @@ import {
 import { sameOrigin, verifyTelegramLogin } from "./dashboard-auth.js";
 import { buildDashboardApi } from "./dashboard-api.js";
 import { loginHtml, appHtml } from "./dashboard-views.js";
+import { rateLimit } from "./ratelimit.js";
 
 // ---------------- app ----------------
 
@@ -71,7 +72,12 @@ export function buildDashboard(): Hono<{ Bindings: DashBindings }> {
   });
 
   // ---- auth ----
+  // BE-005: Rate-limit the Telegram login endpoint to prevent brute-force
+  // signature forgery attempts (60 req/min per IP).
   app.post("/auth/telegram", async (c) => {
+    const ip = c.req.header("cf-connecting-ip") || "0.0.0.0";
+    const rlResult = await rateLimit(c.env.SESSIONS, `bot-dash:${ip}`, 60, 60);
+    if (!rlResult.ok) return c.json({ error: "rate limit exceeded", retryAfter: rlResult.retryAfter }, 429);
     if (!sameOrigin(c.req.raw, config.publicBaseUrl)) return c.json({ error: "cross-origin request rejected" }, 403);
     const loginBotToken = process.env.LOGIN_BOT_TOKEN;
     if (!loginBotToken) return c.json({ error: "telegram login not configured" }, 501);

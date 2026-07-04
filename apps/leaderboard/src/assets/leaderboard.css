@@ -248,9 +248,10 @@ section { width: min(var(--wrap), 100% - 2.5rem); margin-inline: auto; }
 .find-rank-icon:hover { color: var(--cy); }
 .find-rank-input {
   flex: 1; background: none; border: none; outline: none;
-  color: var(--ink); font-family: "Sora", sans-serif; font-size: 0.85rem;
-  min-width: 0;
-}
+    color: var(--ink); font-family: "Sora", sans-serif; font-size: 0.85rem;
+    min-width: 0;
+  }
+  .find-rank-input:focus-visible { outline: 2px solid var(--cy, #46d4ff); outline-offset: 2px; }
 .find-rank-input::placeholder { color: var(--ink-mute); }
 .find-rank-result {
   font-size: 0.75rem; font-weight: 600; white-space: nowrap;

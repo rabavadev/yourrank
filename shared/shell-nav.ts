@@ -129,9 +129,12 @@ export const SHELL_NAV_CSS = `
 .gm-logout:hover{color:var(--gm-ink);border-color:var(--gm-line-2);}
 .gm-shell-main{max-width:1040px;margin:0 auto;padding:22px 18px 60px;}
 @media(max-width:680px){
-  .gm-shell-inner{gap:12px;padding:0 12px;}
-  .gm-brand-word{display:none;}
-  .gm-tab{padding:18px 9px;font-size:11px;letter-spacing:.05em;}
-  .gm-who-name{display:none;}
-}
-`;
+    .gm-shell-inner{gap:12px;padding:0 12px;}
+    .gm-brand-word{display:none;}
+    .gm-tab{padding:18px 9px;font-size:11px;letter-spacing:.05em;}
+    .gm-who-name{display:none;}
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
+  }
+  `;

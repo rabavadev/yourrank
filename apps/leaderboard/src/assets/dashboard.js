@@ -146,9 +146,13 @@ function renumber(){
 function toggleEmpty(){ $("playersEmpty").hidden=$("rows").children.length>0; }
 $("addRow").addEventListener("click",()=>{
   if (ME && $("rows").children.length >= ME.limits.players && ME.limits.players < 999) {
+    // E2E-011: Use #limitMsg (next to the Add button) instead of #status
+    // (savebar) so upgrade prompts don't clobber save confirmations.
     const planNames = { free: "Free", starter: "Starter", pro: "Pro" };
-    $("status").textContent = ME.plan==="pro" || ME.plan==="agency" ? `Your plan allows up to ${ME.limits.players} players.` : `${planNames[ME.plan]||"Your"} plan allows ${ME.limits.players} players. Upgrade for more.`;
-    setTimeout(()=>$("status").textContent="",5000); return;
+    const msg = ME.plan==="pro" || ME.plan==="agency" ? `Your plan allows up to ${ME.limits.players} players.` : `${planNames[ME.plan]||"Your"} plan allows ${ME.limits.players} players. Upgrade for more.`;
+    const el = $("limitMsg") || $("status");
+    el.textContent = msg;
+    setTimeout(()=>el.textContent="",5000); return;
   }
   $("rows").appendChild(playerRow());renumber();toggleEmpty();
 });
@@ -411,6 +415,8 @@ $("a_go").addEventListener("click", async ()=>{
 });
 $("save").addEventListener("click", async ()=>{
   const btn=$("save"),status=$("status"); btn.disabled=true;btn.textContent="Saving…";status.textContent="";
+  // E2E-011: Clear limit message when saving to avoid stale upgrade prompts.
+  const limitEl = $("limitMsg"); if (limitEl) limitEl.textContent = "";
   try {
     const payload = collect();
     const res=await fetch("/api/site",{method:"PUT",headers:{"content-type":"application/json","x-csrf-token":getCsrf()},body:JSON.stringify(payload)});

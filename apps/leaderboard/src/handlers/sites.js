@@ -101,6 +101,8 @@ export async function handlePutSite(request, env) {
   const { user, res } = await requireUser(request, env);
   if (res) return res;
   if (user.status === "suspended") return bad("This account is suspended.", 403);
+  // BE-008: Rate-limit site saves (30 req/min per user) to prevent abuse.
+  if (!(await rateLimit(env, `save-site:${user.id}`, 30, 60))) return bad("Too many saves. Try again shortly.", 429);
   const payload = await readJson(request);
   if (!payload) return bad("Invalid request");
   const r = await saveSite(env, user, payload, payload.siteId || null);

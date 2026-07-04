@@ -128,45 +128,61 @@ export async function handleMe(request, env) {
 }
 
 // POST /api/auth/forgot — always answers ok; never reveals whether the account exists.
+// SEC-702: try/catch ensures reset tokens are never logged even if an unexpected
+// error occurs during the email send or KV write.
 export async function handleForgot(request, env) {
-  if (!(await rateLimit(env, `forgot:${clientIp(request)}`, 5, 3600, { failClosed: true }))) return bad("Too many attempts. Try again later.", 429);
-  const body = await readJson(request);
-  const email = String(body?.email || "").trim().toLowerCase();
-  if (!isEmail(email)) return bad("Enter a valid email");
-  // Per-email rate limit: 3 resets per hour (prevents email bomb abuse).
-  if (!(await rateLimit(env, `forgot-email:${email}`, 3, 3600, { failClosed: true }))) return bad("Too many attempts. Try again later.", 429);
-  const user = await one("SELECT id, email FROM users WHERE email=$1", [email]);
-  if (user) {
-    const token = newToken();
-    await env.SESSIONS.put(`reset:${token}`, user.id, { expirationTtl: 3600 });
-    const link = `${new URL(request.url).origin}/reset?token=${token}`;
-    const mail = resetEmail(link);
-    const result = await sendEmail(env, { to: user.email, ...mail });
-    if (!result.sent) {
-      console.error("[forgot]: email send failed", result.reason);
-      return bad("Couldn't send the reset email right now. Please try again in a few minutes or contact support.", 502);
+  try {
+    if (!(await rateLimit(env, `forgot:${clientIp(request)}`, 5, 3600, { failClosed: true }))) return bad("Too many attempts. Try again later.", 429);
+    const body = await readJson(request);
+    const email = String(body?.email || "").trim().toLowerCase();
+    if (!isEmail(email)) return bad("Enter a valid email");
+    // Per-email rate limit: 3 resets per hour (prevents email bomb abuse).
+    if (!(await rateLimit(env, `forgot-email:${email}`, 3, 3600, { failClosed: true }))) return bad("Too many attempts. Try again later.", 429);
+    const user = await one("SELECT id, email FROM users WHERE email=$1", [email]);
+    if (user) {
+      const token = newToken();
+      await env.SESSIONS.put(`reset:${token}`, user.id, { expirationTtl: 3600 });
+      const link = `${new URL(request.url).origin}/reset?token=${token}`;
+      const mail = resetEmail(link);
+      const result = await sendEmail(env, { to: user.email, ...mail });
+      if (!result.sent) {
+        // SEC-702: Log only the failure reason, never the token or link.
+        console.error("[forgot]: email send failed", result.reason);
+        return bad("Couldn't send the reset email right now. Please try again in a few minutes or contact support.", 502);
+      }
     }
+    return ok({ message: "If that account exists, a reset link is on its way." });
+  } catch (e) {
+    // SEC-702: Redact any hex tokens that may have leaked into the error message.
+    console.error("[forgot] failed:", String(e?.message || e).replace(/[a-f0-9]{32,}/gi, '[REDACTED]'));
+    return bad("Couldn't process your request. Please try again.", 500);
   }
-  return ok({ message: "If that account exists, a reset link is on its way." });
 }
 
 // POST /api/auth/reset — { token, password }
+// SEC-702: Wrap in try/catch that redacts the reset token before logging.
 export async function handleReset(request, env) {
-  const body = await readJson(request);
-  const token = String(body?.token || "");
-  const password = String(body?.password || "");
-  if (!token) return bad("Missing reset token");
-  if (password.length < 8) return bad("Password must be at least 8 characters");
-  const userId = await env.SESSIONS.get(`reset:${token}`);
-  if (!userId) return bad("This reset link is invalid or expired. Ask for a new one.", 400);
-  const { hash, salt } = await hashPassword(password);
-  await exec("UPDATE users SET password_hash=$1, password_salt=$2, updated_at=now() WHERE id=$3", [hash, salt, userId]);
-  await env.SESSIONS.delete(`reset:${token}`);
-  // Revoke EVERY other live session for this user before issuing a fresh one.
-  // Without this, a stolen session survives a victim-initiated reset for up to
-  // the 30-day KV TTL. The per-user token index in shared/session.js makes this
-  // possible without a schema change.
-  await destroyAllUserSessions(env, userId);
-  const session = await createSession(env, userId);
-  return json({ ok: true }, 200, { "set-cookie": cookieSet(session) });
+  try {
+    const body = await readJson(request);
+    const token = String(body?.token || "");
+    const password = String(body?.password || "");
+    if (!token) return bad("Missing reset token");
+    if (password.length < 8) return bad("Password must be at least 8 characters");
+    const userId = await env.SESSIONS.get(`reset:${token}`);
+    if (!userId) return bad("This reset link is invalid or expired. Ask for a new one.", 400);
+    const { hash, salt } = await hashPassword(password);
+    await exec("UPDATE users SET password_hash=$1, password_salt=$2, updated_at=now() WHERE id=$3", [hash, salt, userId]);
+    await env.SESSIONS.delete(`reset:${token}`);
+    // Revoke EVERY other live session for this user before issuing a fresh one.
+    // Without this, a stolen session survives a victim-initiated reset for up to
+    // the 30-day KV TTL. The per-user token index in shared/session.js makes this
+    // possible without a schema change.
+    await destroyAllUserSessions(env, userId);
+    const session = await createSession(env, userId);
+    return json({ ok: true }, 200, { "set-cookie": cookieSet(session) });
+  } catch (e) {
+    // SEC-702: Never log the reset token — redact it from any error context.
+    console.error("reset failed:", String(e?.message || e).replace(/[a-f0-9]{32,}/gi, '[REDACTED]'));
+    return bad("Password reset failed. Please try again.", 500);
+  }
 }

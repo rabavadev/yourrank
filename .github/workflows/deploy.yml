@@ -20,10 +20,10 @@ jobs:
   migrate:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
 
       - name: Install Supabase CLI
-        uses: supabase/setup-cli@v1
+        uses: supabase/setup-cli@ab058987d8d6c725971f6cf9d0b5c98467e30bd1
         with:
           version: 2.39.2
 
@@ -31,23 +31,27 @@ jobs:
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
         run: |
+          set -e
           supabase link --project-ref lygcqzjxlqbvymkfjvel --password "${{ secrets.SUPABASE_DB_PASSWORD }}" || echo "Link failed (password may differ for pooler) — skipping migrations"
-          supabase db push || echo "Migrations may already be applied — continuing"
+          supabase db push
+          echo "Migrations applied successfully"
 
   deploy-leaderboard:
     needs: migrate
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
       - uses: oven-sh/setup-bun@735343b667d3e6bfb39c11a0c3b3a1ca0a8a8c0e
         with:
           bun-version: '1.2.15'
       - run: bun install
+      - name: Audit dependencies
+        run: bun audit --audit-level moderate || true
       - working-directory: apps/leaderboard
         run: bun install --frozen-lockfile
       - working-directory: apps/leaderboard
         run: node build.js
-      - uses: cloudflare/wrangler-action@v3
+      - uses: cloudflare/wrangler-action@6d50771a405efa6ad3b959cf90f9e64ca6711e4d
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
@@ -59,16 +63,18 @@ jobs:
     needs: migrate
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
       - uses: oven-sh/setup-bun@735343b667d3e6bfb39c11a0c3b3a1ca0a8a8c0e
         with:
           bun-version: '1.2.15'
       - run: bun install
+      - name: Audit dependencies
+        run: bun audit --audit-level moderate || true
       - working-directory: apps/bot
         run: bun install --frozen-lockfile
       - working-directory: apps/bot
         run: bun run typecheck
-      - uses: cloudflare/wrangler-action@v3
+      - uses: cloudflare/wrangler-action@6d50771a405efa6ad3b959cf90f9e64ca6711e4d
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
