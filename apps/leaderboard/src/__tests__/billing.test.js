@@ -7,7 +7,8 @@
 import { mock, test, expect, describe, beforeAll, beforeEach } from "bun:test";
 
 // Stub the heavy dependencies so billing.js can load in a test environment.
-mock.module("../db.js", () => ({
+// billing.js imports from shared/db.js, not a local src/db.js.
+mock.module("../../../../shared/db.js", () => ({
   query: () => Promise.resolve([]),
   one: () => Promise.resolve(null),
   exec: () => Promise.resolve(),
