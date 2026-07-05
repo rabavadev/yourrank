@@ -8,7 +8,7 @@ const legal = (title, updated, body, pagePath, desc) => `<!DOCTYPE html><html la
 <link rel="canonical" href="https://yourrank.site/${pagePath}" /><link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="/assets/app.css" /></head><body>
-<a href="#main-content" class="sr-only" style="position:absolute;top:0;left:0;z-index:9999;padding:8px 16px;background:var(--accent,#c8ff00);color:#000;font-weight:700;text-decoration:none" onfocus="this.classList.remove('sr-only')" onblur="this.classList.add('sr-only')">Skip to content</a>
+<a href="#main-content" class="sr-only skip-link" onfocus="this.classList.remove('sr-only')" onblur="this.classList.add('sr-only')">Skip to content</a>
 <header class="topbar"><a class="brand" href="/">Your<b>Rank</b></a>
 <div class="topbar-right"><a href="/login" class="btn btn--sm btn--ghost">Sign in</a></div></header>
 <main class="legal" id="main-content"><h1>${title}</h1><p class="legal-updated">Last updated: ${updated}</p>
@@ -41,13 +41,13 @@ export const PAGES = {
 <p style="color:#a1a1a9;margin:0 0 16px">Hosted leaderboards for casino streamers. JavaScript is required for the full experience.</p>
 <a href="/signup" style="display:inline-block;padding:11px 24px;background:#c8ff00;color:#000;font-weight:600;border-radius:8px;text-decoration:none">Create your page</a>
 </div></noscript>
-<a href="#main-content" class="sr-only" style="position:absolute;top:0;left:0;z-index:9999;padding:8px 16px;background:var(--accent,#c8ff00);color:#000;font-weight:700;text-decoration:none" onfocus="this.classList.remove('sr-only')" onblur="this.classList.add('sr-only')">Skip to content</a>
+<a href="#main-content" class="sr-only skip-link" onfocus="this.classList.remove('sr-only')" onblur="this.classList.add('sr-only')">Skip to content</a>
 <div class="wrap">
 <nav class="top"><div class="brand">Your<b>Rank</b></div>
 <button class="nav-toggle" aria-label="Toggle menu" aria-expanded="false"><svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button>
 <div class="links"><a href="#how">How it works</a><a href="#postbacks">Postbacks</a><a href="#pricing">Pricing</a><a href="/login">Sign in</a><a href="/signup" class="btn btn--accent">Get started</a></div></nav>
 <main class="hero" id="main-content"><div>
-<p class="label" style="margin-bottom:18px">Leaderboards for casino streamers</p>
+<p class="label mb-18">Leaderboards for casino streamers</p>
 <h1>Run your leaderboard without touching code.</h1>
 <p class="lead">Your prize pool, referral code and ranked players, on a page you edit from a dashboard. Change a number, hit save, your page updates. That's it.</p>
 <div class="cta"><a href="/signup" class="btn btn--accent">Create your page</a><a href="#example" class="btn">See a live one</a></div>
@@ -65,7 +65,7 @@ export const PAGES = {
 <div class="step"><div class="n">02</div><div><h3>Fill in your details</h3><p>Prize pool, referral code, countdown date, and your ranked players. All from one dashboard.</p></div></div>
 <div class="step"><div class="n">03</div><div><h3>Share your link</h3><p>Your page is live. Update the numbers whenever you want and they change instantly.</p></div></div>
 </div>
-<div class="steps" style="margin-top:24px">
+<div class="steps mt-24">
 <div class="step"><div class="n">✦</div><div><h3>Built-in analytics</h3><p>Track views, clicks, and referrers from your dashboard. See what's working and where your traffic comes from.</p></div></div>
 </div></div></section>
 <section id="postbacks"><div class="wrap"><h2 class="sec">Track real conversions</h2><p class="sec-sub">When a casino confirms a player deposited, YourRank receives the postback and updates the leaderboard automatically. No manual updates. No guessing.</p>
@@ -100,14 +100,14 @@ export const PAGES = {
 <meta name="robots" content="noindex, nofollow" /><link rel="canonical" href="https://yourrank.site/login" /><link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="/assets/app.css" /></head><body>
-<a href="#main-content" class="sr-only" style="position:absolute;top:0;left:0;z-index:9999;padding:8px 16px;background:var(--accent,#c8ff00);color:#000;font-weight:700;text-decoration:none" onfocus="this.classList.remove('sr-only')" onblur="this.classList.add('sr-only')">Skip to content</a>
+<a href="#main-content" class="sr-only skip-link" onfocus="this.classList.remove('sr-only')" onblur="this.classList.add('sr-only')">Skip to content</a>
 <div class="auth-wrap"><aside class="auth-side"><div><div class="brand">Your<b>Rank</b></div></div>
 <div><h1>Your leaderboard, hosted and handled.</h1><p>Edit your prize pool, code and players from one dashboard. Your page updates instantly. No code, no redeploys.</p></div>
 <div class="feat"><div>— Live countdown to every reset</div><div>— Auto-sorted standings from wager</div><div>— Your own public URL</div></div></aside>
 <main class="auth-main" id="main-content"><div class="auth-card"><h2>Sign in</h2><p class="sub">Welcome back.</p>
 <form id="form" novalidate><div class="field"><label for="email">Email</label><input id="email" name="email" type="email" autocomplete="email" required /></div>
 <div class="field"><label for="password">Password</label><input id="password" name="password" type="password" autocomplete="current-password" required /></div>
-<div class="err" id="err" role="alert" aria-live="assertive"></div><button class="btn btn--accent" style="width:100%" type="submit" id="submit">Sign in</button></form>
+<div class="err" id="err" role="alert" aria-live="assertive"></div><button class="btn btn--accent w-full" type="submit" id="submit">Sign in</button></form>
 <p class="foot">No account? <a href="/signup">Create one</a> · <a href="/forgot">Forgot password?</a></p></div></main></div>
 <script src="/assets/auth.js?v=2"></script></body></html>`,
 
@@ -117,13 +117,13 @@ export const PAGES = {
 <meta name="robots" content="noindex, nofollow" /><link rel="canonical" href="https://yourrank.site/forgot" /><link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="/assets/app.css" /></head><body>
-<a href="#main-content" class="sr-only" style="position:absolute;top:0;left:0;z-index:9999;padding:8px 16px;background:var(--accent,#c8ff00);color:#000;font-weight:700;text-decoration:none" onfocus="this.classList.remove('sr-only')" onblur="this.classList.add('sr-only')">Skip to content</a>
+<a href="#main-content" class="sr-only skip-link" onfocus="this.classList.remove('sr-only')" onblur="this.classList.add('sr-only')">Skip to content</a>
 <div class="auth-wrap"><aside class="auth-side"><div><div class="brand">Your<b>Rank</b></div></div>
 <div><h1>Locked out? It happens.</h1><p>Tell us the email on your account and we'll send a reset link. If email isn't set up on this deployment yet, contact support and we'll hand you a link directly.</p></div>
 <div class="feat"></div></aside>
 <main class="auth-main" id="main-content"><div class="auth-card"><h2>Reset password</h2><p class="sub">We'll email you a link.</p>
 <form id="form" novalidate><div class="field"><label for="email">Email</label><input id="email" name="email" type="email" autocomplete="email" required /></div>
-<div class="err" id="err" role="alert" aria-live="assertive"></div><div class="msg" id="msg" hidden role="status" aria-live="polite"></div><button class="btn btn--accent" style="width:100%" type="submit" id="submit">Send reset link</button></form>
+<div class="err" id="err" role="alert" aria-live="assertive"></div><div class="msg" id="msg" hidden role="status" aria-live="polite"></div><button class="btn btn--accent w-full" type="submit" id="submit">Send reset link</button></form>
 <p class="foot"><a href="/login">Back to sign in</a></p></div></main></div>
 <script src="/assets/auth.js?v=2"></script></body></html>`,
 
@@ -133,14 +133,14 @@ export const PAGES = {
 <meta name="robots" content="noindex, nofollow" /><link rel="canonical" href="https://yourrank.site/reset" /><link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="/assets/app.css" /></head><body>
-<a href="#main-content" class="sr-only" style="position:absolute;top:0;left:0;z-index:9999;padding:8px 16px;background:var(--accent,#c8ff00);color:#000;font-weight:700;text-decoration:none" onfocus="this.classList.remove('sr-only')" onblur="this.classList.add('sr-only')">Skip to content</a>
+<a href="#main-content" class="sr-only skip-link" onfocus="this.classList.remove('sr-only')" onblur="this.classList.add('sr-only')">Skip to content</a>
 <div class="auth-wrap"><aside class="auth-side"><div><div class="brand">Your<b>Rank</b></div></div>
 <div><h1>Set a new password.</h1><p>Pick something you'll remember this time. At least 8 characters.</p></div>
 <div class="feat"></div></aside>
 <main class="auth-main" id="main-content"><div class="auth-card"><h2>New password</h2><p class="sub">Then you're straight back in.</p>
 <form id="form" novalidate><div class="field"><label for="password">New password</label><input id="password" name="password" type="password" autocomplete="new-password" required aria-describedby="pw-hint" />
 <span class="hint" id="pw-hint">At least 8 characters.</span></div>
-  <div class="err" id="err" role="alert" aria-live="assertive"></div><button class="btn btn--accent" style="width:100%" type="submit" id="submit">Save &amp; sign in</button></form>
+  <div class="err" id="err" role="alert" aria-live="assertive"></div><button class="btn btn--accent w-full" type="submit" id="submit">Save &amp; sign in</button></form>
   <p class="foot"><a href="/login">Back to sign in</a></p></div></main></div>
   <script src="/assets/auth.js?v=2"></script></body></html>`,
 
@@ -150,7 +150,7 @@ export const PAGES = {
 <meta name="robots" content="noindex, nofollow" /><link rel="canonical" href="https://yourrank.site/signup" /><link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="/assets/app.css" /></head><body>
-<a href="#main-content" class="sr-only" style="position:absolute;top:0;left:0;z-index:9999;padding:8px 16px;background:var(--accent,#c8ff00);color:#000;font-weight:700;text-decoration:none" onfocus="this.classList.remove('sr-only')" onblur="this.classList.add('sr-only')">Skip to content</a>
+<a href="#main-content" class="sr-only skip-link" onfocus="this.classList.remove('sr-only')" onblur="this.classList.add('sr-only')">Skip to content</a>
 <div class="auth-wrap"><aside class="auth-side"><div><div class="brand">Your<b>Rank</b></div></div>
 <div><h1>Launch your leaderboard in a few minutes.</h1><p>Pick a handle, fill in your prizes and players, and your page goes live at yourrank.site/yourname.</p></div>
 <div class="feat"><div>— Free to set up</div><div>— Your public URL from day one</div><div>— Upgrade to Pro when you're ready</div></div></aside>
@@ -161,7 +161,7 @@ export const PAGES = {
 <div class="field"><label for="email">Email</label><input id="email" name="email" type="email" autocomplete="email" required /></div>
 <div class="field"><label for="password">Password</label><input id="password" name="password" type="password" autocomplete="new-password" required aria-describedby="pw-hint" />
 <span class="hint" id="pw-hint">At least 8 characters.</span></div>
-  <div class="err" id="err" role="alert" aria-live="assertive"></div><button class="btn btn--accent" style="width:100%" type="submit" id="submit">Create account</button></form>
+  <div class="err" id="err" role="alert" aria-live="assertive"></div><button class="btn btn--accent w-full" type="submit" id="submit">Create account</button></form>
 <p class="foot">Already have one? <a href="/login">Sign in</a></p></div></main></div>
 <script src="/assets/auth.js?v=2"></script></body></html>`,
 
@@ -170,25 +170,25 @@ export const PAGES = {
 <title>Dashboard · YourRank</title>
 <meta name="robots" content="noindex, nofollow" /><link rel="canonical" href="https://yourrank.site/dashboard" /><link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
-<link rel="stylesheet" href="/assets/app.css" /><!--GM_NAV_CSS--></head><body>
-<a href="#main-content" class="sr-only" style="position:absolute;top:0;left:0;z-index:9999;padding:8px 16px;background:var(--accent,#c8ff00);color:#000;font-weight:700;text-decoration:none" onfocus="this.classList.remove('sr-only')" onblur="this.classList.add('sr-only')">Skip to content</a>
+<link rel="stylesheet" href="/assets/app.css" /><link rel="stylesheet" href="/assets/shell-nav.css" /></head><body>
+<a href="#main-content" class="sr-only skip-link" onfocus="this.classList.remove('sr-only')" onblur="this.classList.add('sr-only')">Skip to content</a>
 <!--GM_NAV-->
-<main class="wrap" id="main-content"><div id="loading" style="padding:26px 0">
-<div style="display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:18px"><div><div class="skeleton skeleton-text--lg" style="width:180px"></div><div class="skeleton skeleton-text--sm" style="width:260px;margin-top:8px"></div></div><div class="skeleton skeleton-text" style="width:90px"></div></div>
-<div class="card" style="margin-top:18px"><div class="skeleton skeleton-block" style="height:200px"></div></div>
-<div class="card" style="margin-top:18px"><div class="skeleton skeleton-block" style="height:300px"></div></div>
+<main class="wrap" id="main-content"><div id="loading" class="py-26">
+<div class="skel-header"><div><div class="skeleton skeleton-text--lg skel-w-180"></div><div class="skeleton skeleton-text--sm skel-w-260 mt-8"></div></div><div class="skeleton skeleton-text skel-w-90"></div></div>
+<div class="card mt-18"><div class="skeleton skeleton-block skel-h-200"></div></div>
+<div class="card mt-18"><div class="skeleton skeleton-block skel-h-300"></div></div>
 </div>
 <div id="dash" hidden>
 <div class="dash-head"><div><h1>Your leaderboard</h1><p class="live-link">Live at <a id="liveLink" href="#" target="_blank">…</a></p></div><span class="label" id="planBadge">FREE PLAN</span></div>
 <div class="card" id="boardSwitcher"><h2>Boards</h2><p class="card-sub">Switch between your leaderboards. <span class="hint" id="boardCount"></span></p>
 <div class="board-list" id="boardList"></div>
-<div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn--sm" id="newBoard" type="button" hidden>+ New board</button></div>
-<div id="newBoardForm" hidden style="margin-top:12px;display:flex;gap:8px;align-items:end;flex-wrap:wrap">
-<div class="field" style="flex:1;min-width:160px;margin:0"><label for="nb_name">Board name</label><input id="nb_name" placeholder="July 2026 Board" /></div>
-<div class="field" style="flex:1;min-width:160px;margin:0"><label for="nb_slug">URL slug</label><input id="nb_slug" placeholder="july-2026" /></div>
+<div class="mt-10 d-flex gap-8 flex-wrap"><button class="btn btn--sm" id="newBoard" type="button" hidden>+ New board</button></div>
+<div id="newBoardForm" hidden class="mt-12 d-flex gap-8 items-end flex-wrap">
+<div class="field field-flex"><label for="nb_name">Board name</label><input id="nb_name" placeholder="July 2026 Board" /></div>
+<div class="field field-flex"><label for="nb_slug">URL slug</label><input id="nb_slug" placeholder="july-2026" /></div>
 <button class="btn btn--sm btn--accent" id="nb_create" type="button">Create</button>
 <button class="btn btn--sm btn--ghost" id="nb_cancel" type="button">Cancel</button>
-<div class="hint" id="nb_err" role="alert" aria-live="assertive" style="width:100%"></div>
+<div class="hint" id="nb_err" role="alert" aria-live="assertive" class="w-full"></div>
 </div></div>
 <div class="card"><h2>Analytics</h2><p class="card-sub">Last 30 days on your page. Views count every visit; copies and clicks are people grabbing your code or hitting Join.</p>
 <div class="stat-tiles">
@@ -211,14 +211,14 @@ export const PAGES = {
 <div class="card"><h2>Players</h2><p class="card-sub">The board auto-sorts by wagered, highest first. Prize <span class="mono">0</span> shows a dash. Names can be masked (keep the <span class="mono">***</span>). <span class="mono" id="pCount"></span></p>
 <table class="players"><thead><tr><th class="rank">#</th><th>Player</th><th class="ta-r">Wagered</th><th class="ta-r">Prize</th><th></th></tr></thead><tbody id="rows"></tbody></table>
 <div id="playersEmpty" class="empty" hidden>No players yet. Add your first one.</div>
-<div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap;align-items:center"><button class="btn btn--sm" id="addRow">+ Add player</button><button class="btn btn--sm" id="importBtn" type="button">Paste from spreadsheet</button><button class="btn btn--sm" id="csvImportBtn" type="button">📁 Import CSV</button><button class="btn btn--sm btn--ghost" id="csvTemplateBtn" type="button">Download template</button><input type="file" id="csvFileInput" accept=".csv,.tsv,.txt" hidden /><span id="limitMsg" class="hint" role="status" aria-live="polite" style="margin-left:auto;color:var(--ink-mute,#999)"></span></div>
+<div class="mt-14 d-flex gap-8 flex-wrap items-center"><button class="btn btn--sm" id="addRow">+ Add player</button><button class="btn btn--sm" id="importBtn" type="button">Paste from spreadsheet</button><button class="btn btn--sm" id="csvImportBtn" type="button">📁 Import CSV</button><button class="btn btn--sm btn--ghost" id="csvTemplateBtn" type="button">Download template</button><input type="file" id="csvFileInput" accept=".csv,.tsv,.txt" hidden /><span id="limitMsg" class="hint" role="status" aria-live="polite" class="ml-auto c-muted"></span></div>
 <div class="import" id="importPanel" hidden>
-<p class="hint" style="margin:0 0 8px">One player per line: <span class="mono">name, wagered, prize</span> — commas or tabs. Copying straight out of Excel or Google Sheets works. Prize is optional.</p>
+<p class="hint mb-8">One player per line: <span class="mono">name, wagered, prize</span> — commas or tabs. Copying straight out of Excel or Google Sheets works. Prize is optional.</p>
 <textarea id="importText" rows="6" spellcheck="false" placeholder="*****ess&#9;152000&#9;1500&#10;*****y&#9;98000&#9;700&#10;*****k&#9;61250"></textarea>
 <div class="import-foot"><span class="hint" id="importPreview">0 players detected</span>
 <label class="hint chk"><input type="checkbox" id="importReplace" checked /> Replace current list</label>
 <button class="btn btn--sm btn--accent" id="importApply" type="button" disabled>Add to table</button></div></div></div>
-<div class="card" id="brandCard"><h2>Branding <span class="pill pill--info" style="margin-left:6px">PRO</span></h2><p class="card-sub">Your logo and page colors. Free pages use the default look.</p>
+<div class="card" id="brandCard"><h2>Branding <span class="pill pill--info ml-6">PRO</span></h2><p class="card-sub">Your logo and page colors. Free pages use the default look.</p>
 <div id="brandBody">
 <div class="grid2">
 <div class="field"><label for="logoFile">Logo</label>
@@ -230,47 +230,47 @@ export const PAGES = {
 <span class="hint">Drives the big name gradient and buttons on your page. Save to apply.</span></div>
 </div></div>
 <div class="empty" id="brandLock" hidden>Branding is a Pro feature. <a href="#" id="brandUpgrade">Upgrade to unlock it</a>.</div></div>
-<div class="card" id="overlayCard"><h2>OBS Stream Overlay <span class="pill pill--info" style="margin-left:6px">PRO</span></h2><p class="card-sub">Add a live leaderboard overlay to your stream. It auto-updates every 15 seconds with smooth rank animations.</p>
+<div class="card" id="overlayCard"><h2>OBS Stream Overlay <span class="pill pill--info ml-6">PRO</span></h2><p class="card-sub">Add a live leaderboard overlay to your stream. It auto-updates every 15 seconds with smooth rank animations.</p>
 <div id="overlayBody">
 <div class="field"><label>Overlay URL</label>
-<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-<code id="overlayUrl" style="flex:1;font-family:var(--mono);font-size:13px;background:var(--panel-2);border:1px solid var(--line-2);border-radius:8px;padding:10px 12px;word-break:break-all;min-width:0;user-select:all"></code>
+<div class="d-flex gap-8 items-center flex-wrap">
+<code id="overlayUrl" class="overlay-url"></code>
 <button class="btn btn--sm btn--accent" id="overlayCopy" type="button">📋 Copy</button>
 </div>
 <span class="hint">Add this as a <b>Browser Source</b> in OBS. Set width to <b>320px</b>, height auto. Check "Shutdown source when not visible" off for live updates.</span></div>
-<div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap">
+<div class="mt-14 d-flex gap-8 flex-wrap">
 <a class="btn btn--sm" id="overlayPreview" href="#" target="_blank">Preview overlay →</a>
 </div>
 </div>
 <div class="empty" id="overlayLock" hidden>OBS Overlay is a Pro feature. <a href="#" id="overlayUpgrade">Upgrade to unlock it</a>.</div></div>
-<div class="card" id="domainCard"><h2>Custom Domain <span class="pill pill--info" style="margin-left:6px">PRO</span></h2><p class="card-sub">Serve your leaderboard on your own domain instead of yourrank.site/yourname.</p>
+<div class="card" id="domainCard"><h2>Custom Domain <span class="pill pill--info ml-6">PRO</span></h2><p class="card-sub">Serve your leaderboard on your own domain instead of yourrank.site/yourname.</p>
 <div id="domainBody">
 <div class="field"><label for="f_domain">Your domain</label><input id="f_domain" placeholder="board.mystream.com" />
 <span class="hint">Point a <b>CNAME record</b> for your domain to <span class="mono">yourrank.site</span>. Then enter the domain here and click <b>Verify &amp; Provision TLS</b>.</span></div>
-<div style="margin-top:8px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+<div class="mt-8 d-flex gap-8 items-center flex-wrap">
 <button class="btn btn--sm btn--accent" id="domainVerify" type="button">Verify &amp; Provision TLS</button>
 </div>
-<div id="domainStatus" class="hint" role="status" aria-live="polite" style="margin-top:8px;min-height:18px"></div>
+<div id="domainStatus" class="hint" role="status" aria-live="polite" class="mt-8 min-h-18"></div>
 </div>
 <div class="empty" id="domainLock" hidden>Custom domains are a Pro feature. <a href="#" id="domainUpgrade">Upgrade to unlock it</a>.</div></div>
-<div class="card" id="notifyCard"><h2>Notifications <span class="pill pill--info" style="margin-left:6px">PRO</span></h2><p class="card-sub">Get alerted when your leaderboard resets or a player breaks into the top 3. Discord and Telegram supported.</p>
+<div class="card" id="notifyCard"><h2>Notifications <span class="pill pill--info ml-6">PRO</span></h2><p class="card-sub">Get alerted when your leaderboard resets or a player breaks into the top 3. Discord and Telegram supported.</p>
 <div id="notifyBody">
 <div class="field"><label>Events that trigger notifications</label>
-<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:4px">
+<div class="d-flex gap-8 flex-wrap mb-4">
 <span class="pill pill--muted">🔄 Leaderboard reset</span>
 <span class="pill pill--muted">🏆 Player enters top 3</span>
 </div></div>
 <div class="field"><label for="f_webhook">Discord webhook URL</label>
 <input id="f_webhook" placeholder="https://discord.com/api/webhooks/..." />
 <span class="hint">Create a webhook in your Discord server settings → Integrations → Webhooks. Paste the URL here.</span></div>
-<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:-8px;margin-bottom:16px">
+<div class="d-flex gap-8 items-center flex-wrap mt-n8 mb-16">
 <button class="btn btn--sm" id="testDiscord" type="button">📨 Test Discord</button>
 <span class="hint" id="testDiscordStatus" role="status" aria-live="polite"></span>
 </div>
 <div class="field"><label for="f_tgChatId">Telegram chat/group ID</label>
 <input id="f_tgChatId" placeholder="-1001234567890" />
 <span class="hint">The chat or group ID where notifications should be sent. Use <code>/start</code> in your bot chat or add the bot to a group to get the ID.</span></div>
-<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:-8px;margin-bottom:16px">
+<div class="d-flex gap-8 items-center flex-wrap mt-n8 mb-16">
 <label class="hint chk"><input type="checkbox" id="f_tgNotify" /> Enable Telegram notifications</label>
 <button class="btn btn--sm" id="testTelegram" type="button">📨 Test Telegram</button>
 <span class="hint" id="testTelegramStatus" role="status" aria-live="polite"></span>
@@ -279,16 +279,16 @@ export const PAGES = {
 <div class="empty" id="notifyLock" hidden>Notifications are a Pro feature. <a href="#" id="notifyUpgrade">Upgrade to unlock them</a>.</div></div>
 <div class="card" id="archiveCard"><h2>Past winners</h2><p class="card-sub">When a period ends, close it out: the current board is saved and shown on your page under "Past Winners". Saves your unsaved edits first.</p>
 <div class="arch-form">
-<div class="field" style="flex:1;min-width:160px;margin:0"><label for="a_label">Label</label><input id="a_label" placeholder="July 2026" /></div>
-<div class="field" style="margin:0"><label for="a_clear">Then</label><select id="a_clear"><option value="wagers">Reset all wagers to 0</option><option value="players">Clear the player list</option><option value="none">Keep the board as is</option></select></div>
-<button class="btn btn--accent" id="a_go" type="button" style="align-self:flex-end">Close out period</button></div>
+<div class="field field-flex"><label for="a_label">Label</label><input id="a_label" placeholder="July 2026" /></div>
+<div class="field m-0"><label for="a_clear">Then</label><select id="a_clear"><option value="wagers">Reset all wagers to 0</option><option value="players">Clear the player list</option><option value="none">Keep the board as is</option></select></div>
+<button class="btn btn--accent" id="a_go" type="button" class="self-end">Close out period</button></div>
 <div class="arch-list" id="archList"></div>
 <div class="empty" id="archEmpty" hidden>No closed-out periods yet. Your first one shows up here and on your page.</div></div>
 <div class="card" id="planCard"><h2>Plan &amp; billing</h2><p class="card-sub">Upgrade to unlock more players, boards and features.</p>
 <div class="plan-row"><div><div class="plan-name" id="planName">Free</div><div class="hint" id="planMeta">Up to 10 players · YourRank badge on your page</div></div>
 <button class="btn btn--accent" id="goPro">Upgrade</button></div>
 <p class="hint" id="planHint">Pay with crypto (BTC, ETH, USDT and 100+ more). Activates automatically once the network confirms — usually a few minutes. <a href="/dashboard/billing">See all plans</a>.</p></div>
-<div class="savebar"><label class="hint chk" style="margin-right:auto"><input type="checkbox" id="pubToggle" checked /> Page published</label><span class="status" id="status" role="status" aria-live="polite"></span><a class="btn btn--ghost" id="viewLive" href="#" target="_blank">View live page</a><button class="btn btn--accent" id="save">Save changes</button></div></div></main>
+<div class="savebar"><label class="hint chk mr-auto"><input type="checkbox" id="pubToggle" checked /> Page published</label><span class="status" id="status" role="status" aria-live="polite"></span><a class="btn btn--ghost" id="viewLive" href="#" target="_blank">View live page</a><button class="btn btn--accent" id="save">Save changes</button></div></div></main>
 <script src="/assets/dashboard.js?v=2"></script></body></html>`,
 
 analytics: `<!DOCTYPE html><html lang="en"><head>
@@ -296,8 +296,8 @@ analytics: `<!DOCTYPE html><html lang="en"><head>
 <title>Analytics · YourRank</title>
 <meta name="robots" content="noindex, nofollow" /><link rel="canonical" href="https://yourrank.site/dashboard/analytics" /><link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
-<link rel="stylesheet" href="/assets/app.css" /><!--GM_NAV_CSS--></head><body>
-<a href="#main-content" class="sr-only" style="position:absolute;top:0;left:0;z-index:9999;padding:8px 16px;background:var(--accent,#c8ff00);color:#000;font-weight:700;text-decoration:none" onfocus="this.classList.remove('sr-only')" onblur="this.classList.add('sr-only')">Skip to content</a>
+<link rel="stylesheet" href="/assets/app.css" /><link rel="stylesheet" href="/assets/shell-nav.css" /></head><body>
+<a href="#main-content" class="sr-only skip-link" onfocus="this.classList.remove('sr-only')" onblur="this.classList.add('sr-only')">Skip to content</a>
 <!--GM_NAV-->
 <main class="wrap" id="main-content">
 <div class="dash-head"><div><h1>Analytics</h1><p class="live-link">Performance of <a id="liveLink" href="#" target="_blank">your page</a></p></div></div>
@@ -320,10 +320,10 @@ analytics: `<!DOCTYPE html><html lang="en"><head>
 <div class="card"><h2>Top referrers</h2><p class="card-sub">Where your visitors come from — top 5 domains in the last 30 days.</p>
 <table class="ref-table" id="refTable"><thead><tr><th>Domain</th><th class="ta-r">Views</th></tr></thead><tbody id="refBody"></tbody></table>
 <div class="empty" id="refEmpty" hidden>No referrer data yet.</div></div></div>
-<div id="loading" style="padding:26px 0">
-<div style="margin-bottom:18px"><div class="skeleton skeleton-text--lg" style="width:120px"></div><div class="skeleton skeleton-text--sm" style="width:200px;margin-top:8px"></div></div>
-<div class="card"><div class="skeleton skeleton-block" style="height:80px"></div></div>
-<div class="card" style="margin-top:18px"><div class="skeleton skeleton-block" style="height:200px"></div></div>
+<div id="loading" class="py-26">
+<div class="mb-18"><div class="skeleton skeleton-text--lg skel-w-120"></div><div class="skeleton skeleton-text--sm skel-w-200 mt-8"></div></div>
+<div class="card"><div class="skeleton skeleton-block skel-h-80"></div></div>
+<div class="card mt-18"><div class="skeleton skeleton-block skel-h-200"></div></div>
 </div></main>
 <script src="/assets/analytics.js?v=2"></script></body></html>`,
 
@@ -332,8 +332,8 @@ billing: `<!DOCTYPE html><html lang="en"><head>
 <title>Billing · YourRank</title>
 <meta name="robots" content="noindex, nofollow" /><link rel="canonical" href="https://yourrank.site/dashboard/billing" /><link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
-<link rel="stylesheet" href="/assets/app.css" /><!--GM_NAV_CSS--></head><body>
-<a href="#main-content" class="sr-only" style="position:absolute;top:0;left:0;z-index:9999;padding:8px 16px;background:var(--accent,#c8ff00);color:#000;font-weight:700;text-decoration:none" onfocus="this.classList.remove('sr-only')" onblur="this.classList.add('sr-only')">Skip to content</a>
+<link rel="stylesheet" href="/assets/app.css" /><link rel="stylesheet" href="/assets/shell-nav.css" /></head><body>
+<a href="#main-content" class="sr-only skip-link" onfocus="this.classList.remove('sr-only')" onblur="this.classList.add('sr-only')">Skip to content</a>
 <!--GM_NAV-->
 <main class="wrap" id="main-content">
 <div class="dash-head"><div><h1>Billing</h1><p class="live-link">Your YourRank plan</p></div><span class="label" id="planBadge">FREE PLAN</span></div>
@@ -347,10 +347,10 @@ billing: `<!DOCTYPE html><html lang="en"><head>
 <p class="hint">After the trial ends, your plan will revert to Free. Upgrade anytime to keep Pro features.</p></div>
 <div class="card" id="upgradeCard"><h2>Upgrade</h2><p class="card-sub" id="upgradeSub">Choose the plan that fits your needs.</p>
 <div id="planOptions"></div>
-<div id="lifetimeBox" style="margin-top:16px;padding:16px;border:2px solid var(--accent);border-radius:12px;background:var(--panel-2)">
-<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
-<div><div style="font-weight:700;font-size:16px;color:var(--accent)">⚡ Lifetime Pro — $149</div>
-<div class="hint" style="margin-top:4px">Pay once, use forever. All Pro features, no monthly bills. No expiry.</div></div>
+<div id="lifetimeBox" class="lifetime-box">
+<div class="lifetime-inner">
+<div><div class="lifetime-title">⚡ Lifetime Pro — $149</div>
+<div class="hint mt-4">Pay once, use forever. All Pro features, no monthly bills. No expiry.</div></div>
 <button class="btn btn--accent" id="lifetimeBtn" type="button">Get Lifetime Pro</button>
 </div>
 <p class="status" id="lifetimeStatus" role="status" aria-live="polite"></p></div>
@@ -358,11 +358,11 @@ billing: `<!DOCTYPE html><html lang="en"><head>
 <p class="status" id="status" role="status" aria-live="polite"></p></div>
 <div class="card" id="proCard" hidden><h2>You're on <span id="currentPlanName">Pro</span></h2><p class="card-sub">Thanks for supporting YourRank. Manage everything from the Leaderboard tab.</p>
 <p class="hint" id="proExp"></p>
-<p class="hint" id="lifetimeNotice" hidden style="color:var(--accent);font-weight:600">⭐ Lifetime Pro — no expiry. You own this forever.</p></div></div>
-<div id="loading" style="padding:26px 0">
-<div style="display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:18px"><div><div class="skeleton skeleton-text--lg" style="width:100px"></div><div class="skeleton skeleton-text--sm" style="width:160px;margin-top:8px"></div></div><div class="skeleton skeleton-text" style="width:100px"></div></div>
-<div class="card"><div class="skeleton skeleton-block" style="height:60px"></div></div>
-<div class="card" style="margin-top:18px"><div class="skeleton skeleton-block" style="height:120px"></div></div>
+<p class="hint" id="lifetimeNotice" hidden class="c-accent fw-600">⭐ Lifetime Pro — no expiry. You own this forever.</p></div></div>
+<div id="loading" class="py-26">
+<div class="skel-header"><div><div class="skeleton skeleton-text--lg skel-w-100"></div><div class="skeleton skeleton-text--sm skel-w-160 mt-8"></div></div><div class="skeleton skeleton-text skel-w-100"></div></div>
+<div class="card"><div class="skeleton skeleton-block skel-h-60"></div></div>
+<div class="card mt-18"><div class="skeleton skeleton-block skel-h-120"></div></div>
 </div></main>
 <script src="/assets/billing.js?v=2"></script></body></html>`,
 
@@ -371,63 +371,63 @@ botSetup: `<!DOCTYPE html><html lang="en"><head>
 <title>Connect Telegram Bot · YourRank</title>
 <meta name="robots" content="noindex, nofollow" /><link rel="canonical" href="https://yourrank.site/dashboard/bot/setup" /><link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
-<link rel="stylesheet" href="/assets/app.css" /><!--GM_NAV_CSS--></head><body>
-<a href="#main-content" class="sr-only" style="position:absolute;top:0;left:0;z-index:9999;padding:8px 16px;background:var(--accent,#c8ff00);color:#000;font-weight:700;text-decoration:none" onfocus="this.classList.remove('sr-only')" onblur="this.classList.add('sr-only')">Skip to content</a>
+<link rel="stylesheet" href="/assets/app.css" /><link rel="stylesheet" href="/assets/shell-nav.css" /></head><body>
+<a href="#main-content" class="sr-only skip-link" onfocus="this.classList.remove('sr-only')" onblur="this.classList.add('sr-only')">Skip to content</a>
 <!--GM_NAV-->
 <main class="wrap" id="main-content">
 <div class="dash-head"><div><h1>🤖 Connect your Telegram bot</h1><p class="live-link">Walk through the 4 steps below — takes about 2 minutes.</p></div></div>
-<p style="margin:8px 0 0"><a href="/dashboard" style="color:var(--accent);font-size:14px;text-decoration:none;font-weight:600">← Back to Dashboard</a></p>
+<p class="mt-8"><a href="/dashboard" class="back-link">← Back to Dashboard</a></p>
 
 <div class="card"><h2>Step 1</h2><p class="card-sub">Open @BotFather on Telegram — it's Telegram's official bot for creating bots.</p>
-<div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
-<span style="font-size:40px">📨</span>
-<div><p style="margin:0 0 8px">Tap the button below to open a chat with BotFather. It works on mobile and desktop.</p>
+<div class="d-flex items-center gap-14 flex-wrap">
+<span class="step-icon">📨</span>
+<div><p class="mb-8">Tap the button below to open a chat with BotFather. It works on mobile and desktop.</p>
 <a class="btn btn--accent" href="https://t.me/BotFather" target="_blank" rel="noopener">Open @BotFather →</a></div>
 </div>
-<button class="btn btn--sm btn--ghost" style="margin-top:14px" data-next="step2" type="button">I've opened BotFather →</button>
+<button class="btn btn--sm btn--ghost mt-14" data-next="step2" type="button">I've opened BotFather →</button>
 </div>
 
 <div class="card" id="step2" hidden><h2>Step 2</h2><p class="card-sub">Create your bot by sending the /newbot command to BotFather.</p>
-<div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
-<span style="font-size:40px">💬</span>
-<div><p style="margin:0 0 8px">In the chat with BotFather, type:</p>
-<div style="font-family:var(--mono);background:var(--panel-2);border:1px solid var(--line-2);border-radius:8px;padding:10px 14px;margin-bottom:10px;font-size:14px">/newbot</div>
-<p style="margin:0 0 8px">BotFather will ask you for:</p>
-<ul style="color:var(--ink-soft);font-size:14px;padding-left:18px;margin:0 0 8px">
+<div class="d-flex items-center gap-14 flex-wrap">
+<span class="step-icon">💬</span>
+<div><p class="mb-8">In the chat with BotFather, type:</p>
+<div class="code-block">/newbot</div>
+<p class="mb-8">BotFather will ask you for:</p>
+<ul class="step-list">
 <li>A <b>display name</b> for your bot (e.g. "ChuckyBTZ Leaderboard")</li>
 <li>A <b>username</b> that ends in <span class="mono">bot</span> (e.g. "chuckybtz_leaderboard_bot")</li>
 </ul>
-<p style="margin:0;color:var(--ink-soft)">Just follow BotFather's prompts — it'll guide you through each step.</p></div>
+<p class="m-0 c-soft">Just follow BotFather's prompts — it'll guide you through each step.</p></div>
 </div>
-<button class="btn btn--sm btn--ghost" style="margin-top:14px" data-next="step3" type="button">I've created my bot →</button>
+<button class="btn btn--sm btn--ghost mt-14" data-next="step3" type="button">I've created my bot →</button>
 </div>
 
 <div class="card" id="step3" hidden><h2>Step 3</h2><p class="card-sub">Copy the API token BotFather gives you and paste it below.</p>
-<div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
-<span style="font-size:40px">🔑</span>
-<div><p style="margin:0 0 8px">After you create the bot, BotFather sends you a message with an <b>API token</b>. It looks like this:</p>
-<div style="font-family:var(--mono);background:var(--panel-2);border:1px solid var(--line-2);border-radius:8px;padding:10px 14px;margin-bottom:10px;font-size:13px;color:var(--ink-mute)">123456789:ABCdefGhIjKlMnOpQrStUvWxYz</div>
-<p style="margin:0 0 14px;color:var(--ink-soft)">Copy that whole string and paste it in the box below. We'll validate it and set up the webhook automatically.</p>
-<div class="field" style="margin-bottom:10px"><label for="botToken">Bot token</label><input id="botToken" placeholder="123456789:ABCdefGhIjKlMnOpQrStUvWxYz" autocomplete="off" spellcheck="false" /></div>
+<div class="d-flex items-center gap-14 flex-wrap">
+<span class="step-icon">🔑</span>
+<div><p class="mb-8">After you create the bot, BotFather sends you a message with an <b>API token</b>. It looks like this:</p>
+<div class="code-block code-block--muted">123456789:ABCdefGhIjKlMnOpQrStUvWxYz</div>
+<p class="mb-14 c-soft">Copy that whole string and paste it in the box below. We'll validate it and set up the webhook automatically.</p>
+<div class="field mb-10"><label for="botToken">Bot token</label><input id="botToken" placeholder="123456789:ABCdefGhIjKlMnOpQrStUvWxYz" autocomplete="off" spellcheck="false" /></div>
 <button class="btn btn--accent" id="connectBtn" type="button" disabled>Connect bot</button>
-<div class="hint" id="connectStatus" role="status" aria-live="polite" style="margin-top:8px;min-height:18px"></div></div>
+<div class="hint" id="connectStatus" role="status" aria-live="polite" class="mt-8 min-h-18"></div></div>
 </div>
 </div>
 
 <div class="card" id="step4" hidden><h2>Step 4</h2><p class="card-sub">🎉 Your bot is connected and ready to go!</p>
-<div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
-<span style="font-size:40px">✅</span>
-<div><p style="margin:0 0 8px">Your bot <b id="botName">bot</b> (<span class="mono" id="botUsername">@bot</span>) is now wired up. The webhook has been set — messages sent to your bot will be handled automatically.</p>
-<p style="margin:0 0 12px;color:var(--ink-soft)">You can now share your bot link with your audience. They can interact with your leaderboard directly through Telegram.</p>
-<div style="display:flex;gap:10px;flex-wrap:wrap">
+<div class="d-flex items-center gap-14 flex-wrap">
+<span class="step-icon">✅</span>
+<div><p class="mb-8">Your bot <b id="botName">bot</b> (<span class="mono" id="botUsername">@bot</span>) is now wired up. The webhook has been set — messages sent to your bot will be handled automatically.</p>
+<p class="mb-12 c-soft">You can now share your bot link with your audience. They can interact with your leaderboard directly through Telegram.</p>
+<div class="d-flex gap-10 flex-wrap">
 <a class="btn btn--accent" href="/dashboard">Back to dashboard</a>
 <a class="btn" href="/bot/dashboard" id="botDashLink">Go to bot dashboard →</a>
 </div></div>
 </div>
 </div>
 
-<div class="card" style="border-style:dashed;margin-top:24px"><h2>💡 Tips</h2><p class="card-sub">A few things to know.</p>
-<ul style="color:var(--ink-soft);font-size:14px;padding-left:18px;margin:0;line-height:1.8">
+<div class="card card--dashed mt-24"><h2>💡 Tips</h2><p class="card-sub">A few things to know.</p>
+<ul class="tips-list">
 <li>You only need to do this once — the webhook stays connected.</li>
 <li>Your bot token is sensitive. <b>Never share it publicly.</b> If you think it's been leaked, you can revoke it from BotFather and we'll reconnect.</li>
 <li>Want a custom avatar or description for your bot? Set it up in BotFather with <span class="mono">/setuserpic</span> and <span class="mono">/setdescription</span>.</li>
@@ -443,13 +443,13 @@ admin: `<!DOCTYPE html><html lang="en"><head>
 <meta name="robots" content="noindex, nofollow" /><link rel="canonical" href="https://yourrank.site/admin" /><link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="/assets/app.css" /></head><body>
-<a href="#main-content" class="sr-only" style="position:absolute;top:0;left:0;z-index:9999;padding:8px 16px;background:var(--accent,#c8ff00);color:#000;font-weight:700;text-decoration:none" onfocus="this.classList.remove('sr-only')" onblur="this.classList.add('sr-only')">Skip to content</a>
-<header class="topbar"><div class="brand">Your<b>Rank</b> <span class="label" style="margin-left:8px">ADMIN</span></div>
+<a href="#main-content" class="sr-only skip-link" onfocus="this.classList.remove('sr-only')" onblur="this.classList.add('sr-only')">Skip to content</a>
+<header class="topbar"><div class="brand">Your<b>Rank</b> <span class="label ml-8">ADMIN</span></div>
 <div class="topbar-right"><span class="muted" id="userEmail"></span><a href="/dashboard" class="btn btn--sm btn--ghost">Dashboard</a><a href="#" id="logout" class="btn btn--sm btn--ghost">Sign out</a></div></header>
-<main class="wrap" id="main-content"><div id="loading" style="padding:26px 0">
-<div style="margin-bottom:18px"><div class="skeleton skeleton-text--lg" style="width:160px"></div><div class="skeleton skeleton-text--sm" style="width:240px;margin-top:8px"></div></div>
-<div class="stats"><div class="stat"><div class="skeleton skeleton-text" style="width:60px"></div><div class="skeleton skeleton-text--sm" style="width:50px;margin-top:6px"></div></div><div class="stat"><div class="skeleton skeleton-text" style="width:40px"></div><div class="skeleton skeleton-text--sm" style="width:40px;margin-top:6px"></div></div><div class="stat"><div class="skeleton skeleton-text" style="width:30px"></div><div class="skeleton skeleton-text--sm" style="width:50px;margin-top:6px"></div></div><div class="stat"><div class="skeleton skeleton-text" style="width:70px"></div><div class="skeleton skeleton-text--sm" style="width:80px;margin-top:6px"></div></div></div>
-<div class="card" style="margin-top:18px"><div class="skeleton skeleton-block" style="height:300px"></div></div>
+<main class="wrap" id="main-content"><div id="loading" class="py-26">
+<div class="mb-18"><div class="skeleton skeleton-text--lg skel-w-160"></div><div class="skeleton skeleton-text--sm skel-w-240 mt-8"></div></div>
+<div class="stats"><div class="stat"><div class="skeleton skeleton-text skel-w-60"></div><div class="skeleton skeleton-text--sm skel-w-50 mt-6"></div></div><div class="stat"><div class="skeleton skeleton-text skel-w-40"></div><div class="skeleton skeleton-text--sm skel-w-40 mt-6"></div></div><div class="stat"><div class="skeleton skeleton-text skel-w-30"></div><div class="skeleton skeleton-text--sm skel-w-50 mt-6"></div></div><div class="stat"><div class="skeleton skeleton-text skel-w-70"></div><div class="skeleton skeleton-text--sm skel-w-80 mt-6"></div></div></div>
+<div class="card mt-18"><div class="skeleton skeleton-block skel-h-300"></div></div>
 </div>
 <div id="panel" hidden>
 <div class="dash-head"><div><h1>Operator panel</h1><p class="live-link">Everything that happens on YourRank, in one place.</p></div></div>
@@ -458,14 +458,14 @@ admin: `<!DOCTYPE html><html lang="en"><head>
 <div class="tabpane" id="tab-users" role="tabpanel">
 <div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Email</th><th>Page</th><th>Plan</th><th>Status</th><th class="ta-r">Players</th><th>Joined</th><th>Actions</th></tr></thead><tbody id="usersBody"></tbody></table></div>
 <div class="empty" id="usersEmpty" hidden>No users yet.</div>
-<div id="usersPagination" style="display:flex;align-items:center;gap:12px;padding:12px 0;flex-wrap:wrap"></div></div>
+<div id="usersPagination" class="admin-pagination"></div></div>
 <div class="tabpane" id="tab-leads" role="tabpanel" hidden>
 <div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Handle</th><th>Casino</th><th>Contact</th><th>Note</th><th>When</th></tr></thead><tbody id="leadsBody"></tbody></table></div>
 <div class="empty" id="leadsEmpty" hidden>No leads yet. Share the landing page around.</div></div>
 <div class="tabpane" id="tab-payments" role="tabpanel" hidden>
 <div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>User</th><th>Provider</th><th class="ta-r">Amount</th><th>Status</th><th>When</th></tr></thead><tbody id="payBody"></tbody></table></div>
 <div class="empty" id="payEmpty" hidden>No payments yet.</div></div>
-<p class="hint" style="margin-top:18px">Manual activation: use <b>+31d Pro</b> on any user after they pay you directly (PayPal, bank, whatever). Crypto payments through the site activate on their own. Reset links work for 24h — send them over Discord/Telegram if email isn't wired up.</p>
+<p class="hint mt-18">Manual activation: use <b>+31d Pro</b> on any user after they pay you directly (PayPal, bank, whatever). Crypto payments through the site activate on their own. Reset links work for 24h — send them over Discord/Telegram if email isn't wired up.</p>
 </div></main>
 <script src="/assets/admin.js?v=2"></script></body></html>`,
 
@@ -475,23 +475,9 @@ admin: `<!DOCTYPE html><html lang="en"><head>
 <meta name="robots" content="noindex, nofollow" /><link rel="canonical" href="https://yourrank.site/admin" /><link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="/assets/app.css" />
-<style>
-.tfa-wrap{max-width:400px;margin:60px auto;padding:30px 24px;text-align:center}
-.tfa-wrap h1{font-size:20px;margin:0 0 6px}
-.tfa-wrap p{color:rgba(255,255,255,0.5);font-size:13px;margin:0 0 24px}
-.tfa-wrap .code-input{font-family:var(--mono,'JetBrains Mono',monospace);font-size:28px;letter-spacing:12px;text-align:center;background:var(--panel-2,#161618);border:2px solid var(--line-2,#2a2a30);border-radius:12px;color:var(--ink,#ededf0);padding:16px;width:100%;max-width:260px;display:block;margin:0 auto 16px}
-.tfa-wrap .code-input:focus{border-color:var(--accent,#c8ff00)}.tfa-wrap .code-input:focus-visible{outline:2px solid var(--accent,#c8ff00);outline-offset:2px}
-.tfa-wrap .err{color:#ff6b6b;font-size:13px;min-height:18px;margin:8px 0}
-.tfa-wrap .btn{width:100%;max-width:260px}
-.tfa-setup{margin-top:32px;text-align:left}
-.tfa-setup h2{font-size:16px;margin:0 0 8px}
-.tfa-setup p{color:rgba(255,255,255,0.5);font-size:13px;margin:0 0 12px}
-.tfa-setup .qr-wrap{background:#fff;border-radius:12px;padding:12px;display:inline-block;margin:8px 0}
-.tfa-setup .secret-box{font-family:var(--mono,'JetBrains Mono',monospace);font-size:12px;word-break:break-all;background:var(--panel-2,#161618);border:1px solid var(--line-2,#2a2a30);border-radius:8px;padding:10px 12px;color:var(--accent,#c8ff00);margin:8px 0;display:block}
-@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; } }
-</style></head><body>
-<a href="#main-content" class="sr-only" style="position:absolute;top:0;left:0;z-index:9999;padding:8px 16px;background:var(--accent,#c8ff00);color:#000;font-weight:700;text-decoration:none" onfocus="this.classList.remove('sr-only')" onblur="this.classList.add('sr-only')">Skip to content</a>
-<header class="topbar"><div class="brand">Your<b>Rank</b> <span class="label" style="margin-left:8px">ADMIN</span></div>
+<link rel="stylesheet" href="/assets/admin2fa-styles.css" /></head><body>
+<a href="#main-content" class="sr-only skip-link" onfocus="this.classList.remove('sr-only')" onblur="this.classList.add('sr-only')">Skip to content</a>
+<header class="topbar"><div class="brand">Your<b>Rank</b> <span class="label ml-8">ADMIN</span></div>
 <div class="topbar-right"><a href="/dashboard" class="btn btn--sm btn--ghost">Dashboard</a><a href="#" id="logout" class="btn btn--sm btn--ghost">Sign out</a></div></header>
 <main class="wrap" id="main-content">
 <div class="tfa-wrap" id="tfaVerify">
@@ -508,7 +494,7 @@ admin: `<!DOCTYPE html><html lang="en"><head>
 <div class="qr-wrap"><img id="tfaQr" alt="QR Code" width="200" height="200" /></div>
 <p>Or enter this secret manually:</p>
 <code class="secret-box" id="tfaSecret"></code>
-<p style="margin-top:16px">After scanning, enter the 6-digit code to verify setup:</p>
+<p class="mt-16">After scanning, enter the 6-digit code to verify setup:</p>
 <label for="tfaSetupCode" class="sr-only">6-digit verification code</label><input class="code-input" id="tfaSetupCode" type="text" inputmode="numeric" maxlength="6" pattern="[0-9]{6}" placeholder="000000" autocomplete="one-time-code" aria-label="Verification code" />
 <div class="err" id="tfaSetupErr" role="alert" aria-live="assertive"></div>
 <button class="btn btn--accent" id="tfaSetupSubmit" type="button">Enable 2FA</button>
@@ -521,24 +507,9 @@ admin: `<!DOCTYPE html><html lang="en"><head>
 <title>Setup · YourRank</title>
 <meta name="robots" content="noindex, nofollow" /><link rel="canonical" href="https://yourrank.site/dashboard/setup" /><link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
-<link rel="stylesheet" href="/assets/app.css" /><!--GM_NAV_CSS-->
-<style>
-.setup-wrap{max-width:520px;margin:0 auto;padding:30px 22px 80px}
-.setup-wrap h1{font-size:22px;letter-spacing:-.02em;margin:0 0 4px}
-.setup-wrap .sub{color:var(--ink-mute);font-size:13px;margin:0 0 24px}
-.steps-ind{display:flex;gap:6px;margin-bottom:28px}
-.step-dot{width:100%;height:4px;border-radius:2px;background:var(--line-2);transition:background .2s}
-.step-dot.done{background:var(--accent)}.step-dot.active{background:var(--accent);opacity:.6}
-.wiz-step{display:none}.wiz-step.active{display:block}
-.preview-url{font-family:var(--mono);font-size:14px;color:var(--accent);background:var(--panel-2);border:1px solid var(--line);border-radius:8px;padding:10px 12px;margin-top:6px;word-break:break-all}
-.players-ta{font-family:var(--mono);font-size:13px;background:var(--panel);border:1px solid var(--line-2);border-radius:8px;padding:10px 12px;width:100%;color:var(--ink);resize:vertical}
-.players-ta:focus{border-color:var(--accent)}
-.share-box{background:var(--panel-2);border:1px solid var(--line);border-radius:10px;padding:18px;text-align:center;margin:20px 0}
-.share-box .url{font-family:var(--mono);font-size:16px;color:var(--accent);word-break:break-all;margin-bottom:14px;display:block}
-.btns-row{display:flex;gap:10px;flex-wrap:wrap;margin-top:20px}
-.err{color:var(--danger);font-size:13px;min-height:18px;margin:4px 0}
-</style><!--GM_NAV-->
-<a href="#main-content" class="sr-only" style="position:absolute;top:0;left:0;z-index:9999;padding:8px 16px;background:var(--accent,#c8ff00);color:#000;font-weight:700;text-decoration:none" onfocus="this.classList.remove('sr-only')" onblur="this.classList.add('sr-only')">Skip to content</a>
+<link rel="stylesheet" href="/assets/app.css" /><link rel="stylesheet" href="/assets/shell-nav.css" />
+<link rel="stylesheet" href="/assets/setup-styles.css" /><!--GM_NAV-->
+<a href="#main-content" class="sr-only skip-link" onfocus="this.classList.remove('sr-only')" onblur="this.classList.add('sr-only')">Skip to content</a>
 <main class="gm-shell-main" id="main-content">
 <div class="setup-wrap">
 <h1>Set up your leaderboard</h1>
@@ -577,11 +548,11 @@ admin: `<!DOCTYPE html><html lang="en"><head>
 </div>
 
 <div class="wiz-step" id="step4">
-<h2 style="font-size:18px;margin:0 0 6px">Your page is ready! 🎉</h2>
-<p style="color:var(--ink-mute);font-size:13px;margin:0 0 14px">Share this link with your community:</p>
+<h2 class="setup-complete-title">Your page is ready! 🎉</h2>
+<p class="setup-complete-sub">Share this link with your community:</p>
 <div class="share-box">
 <span class="url" id="wiz_finalUrl">yourrank.site/…</span>
-<div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
+<div class="d-flex gap-10 justify-center flex-wrap">
 <button class="btn btn--accent" id="wiz_copy" type="button">📋 Copy link</button>
 <a class="btn" id="wiz_view" href="#" target="_blank">View live page →</a>
 </div>

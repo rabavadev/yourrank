@@ -17,16 +17,16 @@ export const HTML = {
 // Hardened headers for the authenticated/app pages (login, signup, forgot,
 // reset, dashboard, admin). The public leaderboard keeps the plain HTML set
 // (it's intentionally iframe-able and loads Google Fonts) so we scope security
-// headers only to the pages that hold sessions/credentials. CSP allows inline
-// styles (the templates use <style> blocks) + Google Fonts (the auth pages load
-// them); nothing else. nosniff + Referrer-Policy are free wins everywhere.
+// headers only to the pages that hold sessions/credentials. All inline styles
+// have been extracted to external CSS files (SEC-713); style-src no longer
+// needs 'unsafe-inline'. nosniff + Referrer-Policy are free wins everywhere.
 export const SECURE_HTML = {
   "content-type": "text/html; charset=utf-8",
   "Strict-Transport-Security": "max-age=31536000; includeSubDomains",
   "X-Content-Type-Options": "nosniff",
   "Referrer-Policy": "strict-origin-when-cross-origin",
   "X-Frame-Options": "SAMEORIGIN",
-  "Content-Security-Policy": "default-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; script-src 'self'; connect-src 'self'; frame-ancestors 'self'",
+  "Content-Security-Policy": "default-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; script-src 'self'; connect-src 'self'; frame-ancestors 'self'",
 };
 
 // HTML-escape a value for interpolation into text/attribute context

@@ -66,7 +66,7 @@ function shellNavHtml(opts = {}) {
     <div class="gm-who">
       <span class="gm-who-name">${name}</span>
       ${badge}
-      <form method="POST" action="/logout" style="display:inline"><button class="gm-logout" type="submit">Logout</button></form>
+      <form method="POST" action="/logout" class="gm-logout-form"><button class="gm-logout" type="submit">Logout</button></form>
     </div>
   </div>
 </header>`;

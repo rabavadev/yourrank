@@ -8,7 +8,7 @@ import { PAGES } from "./pages.js";
 import { handleCheckout, handleCheckoutLifetime, handleIpn } from "./billing.js";
 import { handleOverview, handleUsers, handleLeads, handlePayments, handleAction, handle2faEnable, handle2faVerify, handle2faStatus } from "./admin.js";
 import { bumpStat } from "./stats.js";
-import { shellNavHtml, SHELL_NAV_CSS } from "../../../shared/shell-nav.js";
+import { shellNavHtml } from "../../../shared/shell-nav.js";
 import { findRoute } from "./routes.js";
 import {
   generateCsrfToken, csrfCookie, verifyCsrf, shouldRequireCsrf,
@@ -132,7 +132,6 @@ export default {
           const user = await currentUser(request, env);
           if (!user) return Response.redirect(new URL("/login", url), 302);
           const html = PAGES.dashboard
-            .replace("<!--GM_NAV_CSS-->", `<style>${SHELL_NAV_CSS}</style>`)
             .replace("<!--GM_NAV-->", shellNavHtml({ activePath: "/dashboard", user }));
           return new Response(html, { headers: { ...SECURE_HTML, ...csrfHeader, "cache-control": "no-store, no-cache, must-revalidate" } });
         } catch (e) {
@@ -148,7 +147,6 @@ export default {
           const user = await currentUser(request, env);
           if (!user) return Response.redirect(new URL("/login", url), 302);
           const html = PAGES.analytics
-            .replace("<!--GM_NAV_CSS-->", `<style>${SHELL_NAV_CSS}</style>`)
             .replace("<!--GM_NAV-->", shellNavHtml({ activePath: "/dashboard/analytics", user }));
           return new Response(html, { headers: { ...SECURE_HTML, ...csrfHeader, "cache-control": "no-store, no-cache, must-revalidate" } });
         } catch (e) {
@@ -161,7 +159,6 @@ export default {
           const user = await currentUser(request, env);
           if (!user) return Response.redirect(new URL("/login", url), 302);
           const html = PAGES.billing
-            .replace("<!--GM_NAV_CSS-->", `<style>${SHELL_NAV_CSS}</style>`)
             .replace("<!--GM_NAV-->", shellNavHtml({ activePath: "/dashboard/billing", user }));
           return new Response(html, { headers: { ...SECURE_HTML, ...csrfHeader, "cache-control": "no-store, no-cache, must-revalidate" } });
         } catch (e) {
@@ -174,7 +171,6 @@ export default {
           const user = await currentUser(request, env);
           if (!user) return Response.redirect(new URL("/login", url), 302);
           const html = PAGES.botSetup
-            .replace("<!--GM_NAV_CSS-->", `<style>${SHELL_NAV_CSS}</style>`)
             .replace("<!--GM_NAV-->", shellNavHtml({ activePath: "/dashboard/bot/setup", user }));
           return new Response(html, { headers: { ...SECURE_HTML, ...csrfHeader, "cache-control": "no-store, no-cache, must-revalidate" } });
         } catch (e) {
@@ -192,7 +188,6 @@ export default {
             return Response.redirect(new URL("/dashboard", url), 302);
           }
           const html = PAGES.setup
-            .replace("<!--GM_NAV_CSS-->", `<style>${SHELL_NAV_CSS}</style>`)
             .replace("<!--GM_NAV-->", shellNavHtml({ activePath: "/dashboard", user }));
           return new Response(html, { headers: { ...SECURE_HTML, ...csrfHeader, "cache-control": "no-store, no-cache, must-revalidate" } });
         } catch (e) {
