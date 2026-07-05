@@ -5,7 +5,7 @@ compatibility_flags = ["nodejs_compat"]
 
 [vars]
 PUBLIC_BASE_URL = "https://yourrank.site"
-SENTRY_DSN = ""
+# Set SENTRY_DSN via `wrangler secret put SENTRY_DSN` when ready
 
 # Serve the bot Worker under the /bot, /hook, /r, /pb, /billing prefixes on the
 # main zone. More-specific routes win, so the leaderboard Worker keeps the root.
