@@ -3,10 +3,14 @@
 //
 //  Consolidated postgres.js wrapper used by BOTH Workers:
 //    * Single persistent connection per isolate (Hyperdrive pools globally)
-//    * Exposes query<T>()/one<T>() for reads (safe to retry)
-//    * Exposes exec()/execOne() for mutations (no retry — callers handle idempotency)
+//    * Exposes query<T>()/one<T>() for reads (retries on connection errors)
+//    * Exposes exec()/execOne() for writes (NO retry — callers handle idempotency)
 //    * Supports transactions via withTransaction()
 //    * Retry logic, connection-error handling, and timeout tuning are centralized
+//
+//  QA-016: Write operations (exec/execOne) never retry automatically. Retrying
+//  a non-idempotent INSERT creates duplicate rows. Callers must handle their
+//  own idempotency (ON CONFLICT, deterministic IDs, or try/catch + dedup).
 //
 //  Replaces apps/leaderboard/src/db.js and apps/bot/src/db.ts
 // ============================================================================
@@ -118,23 +122,56 @@ export async function one<T = Record<string, unknown>>(
 }
 
 // ----------------------------------------------------------------------------
-// Public API - writes
-// Note: exec() retries ONLY on connection errors (ECONNRESET, ETIMEDOUT, etc.)
-// NOT on constraint violations (23505, etc.). Callers must ensure mutations are
-// idempotent or wrapped in transactions for safety.
+// Public API - writes (NO automatic retry)
+//
+// QA-016: exec() and execOne() execute exactly ONCE. If the connection drops
+// mid-write, the error propagates to the caller immediately. This prevents
+// duplicate rows from retried INSERTs and double-applied UPDATEs.
+//
+// Callers of INSERT/UPDATE/DELETE are responsible for their own idempotency:
+//   - Use ON CONFLICT (UPSERT) for inserts that may be retried at the app level
+//   - Wrap multi-statement mutations in withTransaction()
+//   - Use deterministic IDs (UUIDs generated client-side) where possible
+//
+// Reads (query/one) ARE safe to retry and use withRetry() above.
 // ----------------------------------------------------------------------------
 
-/** Execute a SQL write statement with automatic retry on connection errors. */
-export async function exec(text: string, params: unknown[] = []): Promise<any> {
-  return withRetry(text, params);
+/**
+ * Execute a single SQL write statement. NO retry on connection errors — the
+ * caller receives the error and decides whether to retry. On connection-level
+ * failures the cached write connection is reset so the next call reconnects.
+ */
+async function execRaw(text: string, params: unknown[]): Promise<any[]> {
+  const sql = getSql();
+  try {
+    const rows = await sql.unsafe(text, params as any[]);
+    return rows.map((r: any) => ({ ...r }));
+  } catch (e: any) {
+    // Reset stale connection so the next call gets a fresh one.
+    const msg = String(e?.message || e);
+    const code = String((e as any)?.code ?? "");
+    const isConnError =
+      /^(ECONNRESET|ECONNREFUSED|ENOTFOUND|ETIMEDOUT|EPIPE|ECONNABORTED)$/.test(code) ||
+      /ECONNRESET|ENOTFOUND|ETIMEDOUT|connection|socket|closed|EOF|network/i.test(msg);
+    if (isConnError) {
+      try { await txSql?.end({ timeout: 0 }); } catch {}
+      txSql = null;
+    }
+    throw e;
+  }
 }
 
-/** Like exec() but returns the first row (or undefined). */
+/** Execute a SQL write statement. NO automatic retry — caller handles idempotency. */
+export async function exec(text: string, params: unknown[] = []): Promise<any> {
+  return execRaw(text, params);
+}
+
+/** Like exec() but returns the first row (or undefined). NO automatic retry. */
 export async function execOne<T = Record<string, unknown>>(
   text: string,
   params: unknown[] = []
 ): Promise<T | undefined> {
-  const rows = await exec(text, params);
+  const rows = await execRaw(text, params);
   return rows[0];
 }
 
