@@ -82,7 +82,7 @@ export const PAGES = {
 <div class="price-card"><div class="price-head"><h3>Free</h3><div class="price-amount">$0</div><div class="price-period">forever</div></div><ul class="price-features"><li>1 leaderboard</li><li>Up to 10 players</li><li>YourRank badge on your page</li><li>Basic analytics (7 days)</li><li>Live countdown &amp; auto-sort</li></ul><a href="/signup" class="btn btn--sm price-cta">Start free</a></div>
 <div class="price-card"><div class="price-head"><h3>Starter</h3><div class="price-amount">$12<span>/mo</span></div></div><ul class="price-features"><li>1 leaderboard</li><li>Up to 25 players</li><li>No YourRank badge</li><li>Full analytics (30 days)</li><li>CSV import</li></ul><a href="/signup" class="btn btn--sm price-cta">Start</a></div>
 <div class="price-card price-card--popular"><div class="price-badge">Most Popular</div><div class="price-head"><h3>Pro</h3><div class="price-amount">$29<span>/mo</span></div></div><ul class="price-features"><li>Up to 3 leaderboards</li><li>Unlimited players</li><li>No YourRank badge</li><li>Custom domain</li><li>OBS overlay widget</li><li>Discord webhooks</li><li>Telegram notifications</li><li>Priority support</li></ul><a href="/signup" class="btn btn--sm btn--accent price-cta">Go Pro</a></div>
-<div class="price-card"><div class="price-head"><h3>Agency</h3><div class="price-amount">$79<span>/mo</span></div></div><ul class="price-features"><li>Unlimited leaderboards</li><li>Unlimited players</li><li>White-label branding</li><li>API access</li><li>Everything in Pro</li><li>Dedicated support</li></ul><a href="/signup" class="btn btn--sm price-cta">Contact us</a></div>
+<div class="price-card"><div class="price-head"><h3>Agency</h3><div class="price-amount">$79<span>/mo</span></div></div><ul class="price-features"><li>Unlimited leaderboards</li><li>Unlimited players</li><li>White-label branding</li><li>API access</li><li>Everything in Pro</li><li>Dedicated support</li></ul><a href="mailto:contact@yourrank.site" class="btn btn--sm price-cta">Contact us</a></div>
 <div class="price-card" style="border:2px solid #c8ff00;position:relative"><div class="price-badge" style="background:#c8ff00;color:#000">Best Value</div><div class="price-head"><h3>Lifetime Pro</h3><div class="price-amount">$149<span style="font-size:13px;font-weight:400"> one-time</span></div></div><ul class="price-features"><li>All Pro features</li><li>Pay once, use forever</li><li>No monthly bills</li><li>Up to 3 leaderboards</li><li>Unlimited players</li><li>Custom domain &amp; OBS widget</li><li>Priority support</li></ul><a href="/signup" class="btn btn--accent btn--sm price-cta">Get Lifetime Pro</a></div>
 </div></div></section>
 <section id="start"><div class="wrap"><h2 class="sec">Ready to start?</h2><p class="sec-sub">Create your free page in under a minute. No credit card needed.</p>
@@ -671,7 +671,7 @@ ${endsAt ? `<p class="ov-timer-label">${esc(b.prizePool || "")} resets in</p>
 <h2>Liability</h2>
 <p>YourRank is provided as-is. We work to keep pages online, but we don't guarantee uninterrupted service and we're not liable for lost revenue, lost viewers, or disputes between you and your community. Our total liability is capped at what you paid us in the last 3 months.</p>
 <h2>Contact</h2>
-<p>Questions about these terms: reach us through the contact form on the home page.</p>`, "terms", "YourRank terms of service. Covers accounts, content, payments, liability, and how we handle disputes."),
+<p>Questions about these terms: email us at contact@yourrank.site.</p>`, "terms", "YourRank terms of service. Covers accounts, content, payments, liability, and how we handle disputes."),
 
   privacy: legal("Privacy Policy", "July 2026", `
 <h2>What we collect</h2>
@@ -691,7 +691,7 @@ ${endsAt ? `<p class="ov-timer-label">${esc(b.prizePool || "")} resets in</p>
 <h2>Your page is public</h2>
 <p>Anything you publish on your leaderboard page is visible to anyone with the link, including player names you enter. Mask player names (like <span class="mono">*****ess</span>) if your community expects it.</p>
 <h2>Contact</h2>
-<p>Privacy questions or deletion requests: use the contact form on the home page.</p>`, "privacy", "YourRank privacy policy. We collect minimal data: email, hashed password, and your public page content. No ad trackers."),
+<p>Privacy questions or deletion requests: email us at contact@yourrank.site.</p>`, "privacy", "YourRank privacy policy. We collect minimal data: email, hashed password, and your public page content. No ad trackers."),
 
   responsible: legal("Responsible Play", "July 2026", `
 <p><b>YourRank pages are about gambling, and gambling carries real risk.</b> The leaderboards hosted here track wagers made on third-party casino sites. YourRank itself takes no bets and pays no winnings — but if you're a viewer taking part in these communities, this page is for you.</p>

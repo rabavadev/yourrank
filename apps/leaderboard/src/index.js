@@ -308,7 +308,12 @@ async function handleRequest(request, env, ctx) {
           ],
           endsAt: new Date(Date.now() + 12 * 86400000).toISOString(),
           rules: ["Wagers on Stake count towards your ranking.", "Minimum wager: $1,000.", "Leaderboard resets at the end of each month.", "Prizes credited within 48h of reset."],
-          why: ["Licensed & provably fair", "Instant deposits & withdrawals", "24/7 live support", "Exclusive VIP rewards"],
+          whyStats: [
+              { big: "Licensed", label: "Provably Fair", sub: "Verified gaming platform" },
+              { big: "Instant", label: "Deposits & Withdrawals", sub: "No waiting around" },
+              { big: "24/7", label: "Live Support", sub: "Always online" },
+              { big: "Exclusive", label: "VIP Rewards", sub: "Top-tier perks" },
+            ],
           socials: [
             { platform: "kick", url: "https://kick.com/stakedrop", label: "Follow on Kick" },
             { platform: "twitter", url: "https://x.com/stakedrop", label: "Follow on X" },

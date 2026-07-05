@@ -29,8 +29,13 @@ form.addEventListener("submit", async (e) => {
     payload = { email: document.getElementById("email").value.trim(), password: document.getElementById("password").value };
     if (mode === "signup") payload.name = nameInput.value.trim();
   }
+  if (mode === "signup") {
+    if (!payload.name || payload.name.length < 2) { errEl.textContent = "Display name must be at least 2 characters"; submit.disabled = false; submit.textContent = orig; return; }
+    if (!payload.email) { errEl.textContent = "Enter a valid email"; submit.disabled = false; submit.textContent = orig; return; }
+    if (payload.password.length < 8) { errEl.textContent = "Password must be at least 8 characters"; submit.disabled = false; submit.textContent = orig; return; }
+  }
   try {
-    const res = await fetch(endpoint, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(payload) });
+    const res = await fetch(endpoint
     const data = await res.json();
     if (!res.ok || !data.ok) { errEl.textContent = data.error || "Something went wrong."; submit.disabled = false; submit.textContent = orig; return; }
     if (mode === "forgot") {

@@ -20,6 +20,7 @@ export async function handleSignup(request, env) {
     let slug = slugify(body.slug || name || email.split("@")[0]);
     if (!isEmail(email)) return bad("Enter a valid email");
     if (password.length < 8) return bad("Password must be at least 8 characters");
+    if (!name || name.trim().length < 2) return bad("Display name must be at least 2 characters");
     if (!slug || RESERVED.has(slug)) slug = `${slug || "site"}-${Math.random().toString(36).slice(2, 6)}`;
     const existing = await findUserByEmail(email);
     if (existing) return bad("If this email isn't already registered, check your inbox to confirm.");
