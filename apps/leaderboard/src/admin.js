@@ -5,6 +5,21 @@ import { query, one, exec } from "../../../shared/db.js";
 import { generateSecret, verifyCode, generateOtpauthUri } from "./totp.js";
 import { encrypt, decrypt } from "../../../shared/crypto.js";
 
+// SEC-106: Strip sensitive tokens from audit log details before persisting.
+// Prevents reset tokens, session tokens, or TOTP secrets from being stored
+// in the admin_audit table (which could be exposed via future audit log views).
+function sanitizeAuditDetails(details) {
+  if (!details || typeof details !== "object") return details;
+  const redacted = { ...details };
+  for (const key of Object.keys(redacted)) {
+    const lk = key.toLowerCase();
+    if (lk.includes("token") || lk.includes("secret") || lk.includes("password") || lk.includes("reset") || lk === "link" || lk === "otp") {
+      redacted[key] = "[REDACTED]";
+    }
+  }
+  return redacted;
+}
+
 // Log admin action to database for persistent audit trail
 async function logAdminAction(env, adminId, action, targetUserId = null, details = null, request = null) {
   try {
@@ -13,7 +28,7 @@ async function logAdminAction(env, adminId, action, targetUserId = null, details
     await exec(
       `INSERT INTO admin_audit (admin_id, target_user_id, action, details, ip_address, user_agent)
        VALUES ($1, $2, $3, $4::jsonb, $5, $6)`,
-      [adminId, targetUserId, action, JSON.stringify(details || {}), ipAddress, userAgent]
+      [adminId, targetUserId, action, JSON.stringify(sanitizeAuditDetails(details || {})), ipAddress, userAgent]
     );
   } catch (e) {
     // Degrade gracefully: log to console if DB write fails
@@ -23,7 +38,7 @@ async function logAdminAction(env, adminId, action, targetUserId = null, details
       admin: adminId,
       target: targetUserId,
       action,
-      details,
+      details: sanitizeAuditDetails(details),
     }));
   }
 }

@@ -171,6 +171,7 @@ export const PAGES = {
 <meta name="robots" content="noindex, nofollow" /><link rel="canonical" href="https://yourrank.site/dashboard" /><link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="/assets/app.css" /><link rel="stylesheet" href="/assets/shell-nav.css" /></head><body>
+<noscript><div style="padding:24px;text-align:center;font-family:system-ui,sans-serif"><p style="font-size:18px;font-weight:600;margin:0 0 8px">YourRank requires JavaScript</p><p style="color:#a1a1a9;margin:0">Please enable JavaScript in your browser settings to use the dashboard.</p></div></noscript>
 <a href="#main-content" class="sr-only skip-link" onfocus="this.classList.remove('sr-only')" onblur="this.classList.add('sr-only')">Skip to content</a>
 <!--GM_NAV-->
 <main class="wrap" id="main-content"><div id="loading" class="py-26">
@@ -297,6 +298,7 @@ analytics: `<!DOCTYPE html><html lang="en"><head>
 <meta name="robots" content="noindex, nofollow" /><link rel="canonical" href="https://yourrank.site/dashboard/analytics" /><link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="/assets/app.css" /><link rel="stylesheet" href="/assets/shell-nav.css" /></head><body>
+<noscript><div style="padding:24px;text-align:center;font-family:system-ui,sans-serif"><p style="font-size:18px;font-weight:600;margin:0 0 8px">YourRank requires JavaScript</p><p style="color:#a1a1a9;margin:0">Please enable JavaScript in your browser settings to view analytics.</p></div></noscript>
 <a href="#main-content" class="sr-only skip-link" onfocus="this.classList.remove('sr-only')" onblur="this.classList.add('sr-only')">Skip to content</a>
 <!--GM_NAV-->
 <main class="wrap" id="main-content">
@@ -333,6 +335,7 @@ billing: `<!DOCTYPE html><html lang="en"><head>
 <meta name="robots" content="noindex, nofollow" /><link rel="canonical" href="https://yourrank.site/dashboard/billing" /><link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="/assets/app.css" /><link rel="stylesheet" href="/assets/shell-nav.css" /></head><body>
+<noscript><div style="padding:24px;text-align:center;font-family:system-ui,sans-serif"><p style="font-size:18px;font-weight:600;margin:0 0 8px">YourRank requires JavaScript</p><p style="color:#a1a1a9;margin:0">Please enable JavaScript in your browser settings to manage billing.</p></div></noscript>
 <a href="#main-content" class="sr-only skip-link" onfocus="this.classList.remove('sr-only')" onblur="this.classList.add('sr-only')">Skip to content</a>
 <!--GM_NAV-->
 <main class="wrap" id="main-content">
@@ -372,6 +375,7 @@ botSetup: `<!DOCTYPE html><html lang="en"><head>
 <meta name="robots" content="noindex, nofollow" /><link rel="canonical" href="https://yourrank.site/dashboard/bot/setup" /><link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="/assets/app.css" /><link rel="stylesheet" href="/assets/shell-nav.css" /></head><body>
+<noscript><div style="padding:24px;text-align:center;font-family:system-ui,sans-serif"><p style="font-size:18px;font-weight:600;margin:0 0 8px">YourRank requires JavaScript</p><p style="color:#a1a1a9;margin:0">Please enable JavaScript in your browser settings to set up your Telegram bot.</p></div></noscript>
 <a href="#main-content" class="sr-only skip-link" onfocus="this.classList.remove('sr-only')" onblur="this.classList.add('sr-only')">Skip to content</a>
 <!--GM_NAV-->
 <main class="wrap" id="main-content">
@@ -443,6 +447,7 @@ admin: `<!DOCTYPE html><html lang="en"><head>
 <meta name="robots" content="noindex, nofollow" /><link rel="canonical" href="https://yourrank.site/admin" /><link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="/assets/app.css" /></head><body>
+<noscript><div style="padding:24px;text-align:center;font-family:system-ui,sans-serif"><p style="font-size:18px;font-weight:600;margin:0 0 8px">YourRank Admin requires JavaScript</p><p style="color:#a1a1a9;margin:0">Please enable JavaScript in your browser settings to use the admin panel.</p></div></noscript>
 <a href="#main-content" class="sr-only skip-link" onfocus="this.classList.remove('sr-only')" onblur="this.classList.add('sr-only')">Skip to content</a>
 <header class="topbar"><div class="brand">Your<b>Rank</b> <span class="label ml-8">ADMIN</span></div>
 <div class="topbar-right"><span class="muted" id="userEmail"></span><a href="/dashboard" class="btn btn--sm btn--ghost">Dashboard</a><a href="#" id="logout" class="btn btn--sm btn--ghost">Sign out</a></div></header>
@@ -454,15 +459,15 @@ admin: `<!DOCTYPE html><html lang="en"><head>
 <div id="panel" hidden>
 <div class="dash-head"><div><h1>Operator panel</h1><p class="live-link">Everything that happens on YourRank, in one place.</p></div></div>
 <div class="stats"><div class="stat"><b id="s_users">–</b><span>accounts</span></div><div class="stat"><b id="s_pro">–</b><span>on Pro</span></div><div class="stat"><b id="s_leads">–</b><span>leads</span></div><div class="stat"><b id="s_rev">–</b><span>revenue (USD)</span></div></div>
-<div class="tabs" role="tablist"><button class="tab is-on" data-tab="users" type="button" role="tab" aria-selected="true">Users</button><button class="tab" data-tab="leads" type="button" role="tab" aria-selected="false">Leads</button><button class="tab" data-tab="payments" type="button" role="tab" aria-selected="false">Payments</button></div>
-<div class="tabpane" id="tab-users" role="tabpanel">
+<div class="tabs" role="tablist"><button class="tab is-on" id="tab-btn-users" data-tab="users" type="button" role="tab" aria-selected="true" aria-controls="tab-users">Users</button><button class="tab" id="tab-btn-leads" data-tab="leads" type="button" role="tab" aria-selected="false" aria-controls="tab-leads">Leads</button><button class="tab" id="tab-btn-payments" data-tab="payments" type="button" role="tab" aria-selected="false" aria-controls="tab-payments">Payments</button></div>
+<div class="tabpane" id="tab-users" role="tabpanel" aria-labelledby="tab-btn-users">
 <div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Email</th><th>Page</th><th>Plan</th><th>Status</th><th class="ta-r">Players</th><th>Joined</th><th>Actions</th></tr></thead><tbody id="usersBody"></tbody></table></div>
 <div class="empty" id="usersEmpty" hidden>No users yet.</div>
 <div id="usersPagination" class="admin-pagination"></div></div>
-<div class="tabpane" id="tab-leads" role="tabpanel" hidden>
+<div class="tabpane" id="tab-leads" role="tabpanel" aria-labelledby="tab-btn-leads" hidden>
 <div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Handle</th><th>Casino</th><th>Contact</th><th>Note</th><th>When</th></tr></thead><tbody id="leadsBody"></tbody></table></div>
 <div class="empty" id="leadsEmpty" hidden>No leads yet. Share the landing page around.</div></div>
-<div class="tabpane" id="tab-payments" role="tabpanel" hidden>
+<div class="tabpane" id="tab-payments" role="tabpanel" aria-labelledby="tab-btn-payments" hidden>
 <div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>User</th><th>Provider</th><th class="ta-r">Amount</th><th>Status</th><th>When</th></tr></thead><tbody id="payBody"></tbody></table></div>
 <div class="empty" id="payEmpty" hidden>No payments yet.</div></div>
 <p class="hint mt-18">Manual activation: use <b>+31d Pro</b> on any user after they pay you directly (PayPal, bank, whatever). Crypto payments through the site activate on their own. Reset links work for 24h — send them over Discord/Telegram if email isn't wired up.</p>
@@ -476,6 +481,7 @@ admin: `<!DOCTYPE html><html lang="en"><head>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="/assets/app.css" />
 <link rel="stylesheet" href="/assets/admin2fa-styles.css" /></head><body>
+<noscript><div style="padding:24px;text-align:center;font-family:system-ui,sans-serif"><p style="font-size:18px;font-weight:600;margin:0 0 8px">YourRank Admin requires JavaScript</p><p style="color:#a1a1a9;margin:0">Please enable JavaScript to verify two-factor authentication.</p></div></noscript>
 <a href="#main-content" class="sr-only skip-link" onfocus="this.classList.remove('sr-only')" onblur="this.classList.add('sr-only')">Skip to content</a>
 <header class="topbar"><div class="brand">Your<b>Rank</b> <span class="label ml-8">ADMIN</span></div>
 <div class="topbar-right"><a href="/dashboard" class="btn btn--sm btn--ghost">Dashboard</a><a href="#" id="logout" class="btn btn--sm btn--ghost">Sign out</a></div></header>
@@ -508,7 +514,9 @@ admin: `<!DOCTYPE html><html lang="en"><head>
 <meta name="robots" content="noindex, nofollow" /><link rel="canonical" href="https://yourrank.site/dashboard/setup" /><link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="/assets/app.css" /><link rel="stylesheet" href="/assets/shell-nav.css" />
-<link rel="stylesheet" href="/assets/setup-styles.css" /><!--GM_NAV-->
+<link rel="stylesheet" href="/assets/setup-styles.css" />
+<noscript><div style="padding:24px;text-align:center;font-family:system-ui,sans-serif"><p style="font-size:18px;font-weight:600;margin:0 0 8px">YourRank requires JavaScript</p><p style="color:#a1a1a9;margin:0">Please enable JavaScript in your browser settings to set up your leaderboard.</p></div></noscript>
+<!--GM_NAV-->
 <a href="#main-content" class="sr-only skip-link" onfocus="this.classList.remove('sr-only')" onblur="this.classList.add('sr-only')">Skip to content</a>
 <main class="gm-shell-main" id="main-content">
 <div class="setup-wrap">

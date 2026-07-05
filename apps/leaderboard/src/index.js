@@ -96,19 +96,28 @@ export default {
 
       // --- health check ---
       if (path === "/health") {
+        const result = { status: "ok", timestamp: new Date().toISOString() };
         try {
           await one('SELECT 1 AS ok');
-          return new Response(JSON.stringify({ status: "ok", timestamp: new Date().toISOString(), db: true }), {
-            status: 200,
-            headers: { "content-type": "application/json" },
-          });
+          result.db = true;
         } catch (e) {
           console.error("[health] DB probe failed:", e);
-          return new Response(JSON.stringify({ status: "ok", timestamp: new Date().toISOString(), db: false }), {
-            status: 503,
-            headers: { "content-type": "application/json" },
-          });
+          result.db = false;
+          result.status = "degraded";
         }
+        // Probe KV availability
+        try {
+          await env.SESSIONS.get("__health_probe__");
+          result.kv = true;
+        } catch {
+          result.kv = false;
+          result.status = result.db ? "degraded" : "down";
+        }
+        const status = result.status === "ok" ? 200 : result.status === "degraded" ? 200 : 503;
+        return new Response(JSON.stringify(result), {
+          status,
+          headers: { "content-type": "application/json", "cache-control": "no-store" },
+        });
       }
 
       // --- pages ---

@@ -28,9 +28,9 @@ async function init() {
 }
 
 document.querySelectorAll(".tab").forEach((t) => t.addEventListener("click", () => {
-  document.querySelectorAll(".tab").forEach((x) => x.classList.toggle("is-on", x === t));
-  document.querySelectorAll(".tabpane").forEach((p) => (p.hidden = p.id !== "tab-" + t.dataset.tab));
-}));
+    document.querySelectorAll(".tab").forEach((x) => { const on = x === t; x.classList.toggle("is-on", on); x.setAttribute("aria-selected", String(on)); });
+    document.querySelectorAll(".tabpane").forEach((p) => (p.hidden = p.id !== "tab-" + t.dataset.tab));
+  }));
 
 function pill(text, tone) { return `<span class="pill pill--${tone}">${esc(text)}</span>`; }
 
