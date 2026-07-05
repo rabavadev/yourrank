@@ -1,1 +1,3 @@
-CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_sites_postback_key ON sites(postback_key) WHERE postback_key IS NOT NULL;
+-- NO-OP: This migration originally targeted sites(postback_key) which doesn't exist.
+-- The index on users(postback_key) already exists from migration 20260704000009 (idx_users_postback_key).
+-- Kept as no-op to preserve migration sequence.
