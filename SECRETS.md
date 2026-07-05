@@ -27,6 +27,8 @@ These live in the encrypted vault attached to the Worker, not in the repo.
 | `MAIL_FROM` | 🟡 | Required when RESEND_API_KEY is set. From address for transactional emails (e.g. 'YourRank <hey@yourrank.site>'). |
 | `PRO_PRICE_USD` | ⚪ | Pro plan price in USD. Defaults to 29 if unset. |
 | `LEAD_WEBHOOK_URL` | ⚪ | Discord/Telegram webhook to ping on each new lead. |
+| `ENCRYPTION_KEY` | 🟡 | 64-char hex key for general-purpose encryption (e.g. postback key encryption at rest). |
+| `DISCORD_MONITORING_WEBHOOK` | ⚪ | Discord webhook for monitoring/error alerts. |
 
 ### Bot Worker (`yourrank-bot`)
 
@@ -41,6 +43,7 @@ These live in the encrypted vault attached to the Worker, not in the repo.
 | `PLATFORM_BOT_TOKEN` | 🟡 | The "YourRank" platform bot that sends Telegram Stars invoices. Required for in-app plan upgrades. |
 | `PLATFORM_WEBHOOK_SECRET` | 🟡 | Secret for the Telegram Stars pre-checkout / payment webhook. |
 | `ALLOW_DEV_LOGIN` | ⚪ | Set to `1` to enable the dev-only numeric-ID login (for testing). Never on in production. |
+| `DISCORD_MONITORING_WEBHOOK` | ⚪ | Discord webhook for monitoring/error alerts. |
 
 ### Both Workers — bindings (not secrets, set in wrangler.toml)
 

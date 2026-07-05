@@ -156,7 +156,7 @@ export const PAGES = {
 <div class="feat"><div>— Free to set up</div><div>— Your public URL from day one</div><div>— Upgrade to Pro when you're ready</div></div></aside>
 <main class="auth-main" id="main-content"><div class="auth-card"><h2>Create account</h2><p class="sub">Free. Takes a minute.</p>
 <form id="form" novalidate>
-<div class="field"><label for="name">Display name</label><input id="name" name="name" type="text" placeholder="ChuckyBTZ" autocomplete="nickname" required />
+<div class="field"><label for="name">Display name</label><input id="name" name="name" type="text" placeholder="YourName" autocomplete="nickname" required />
 <span class="hint">Also becomes your page URL: <span class="mono" id="slugPreview">yourrank.site/…</span></span></div>
 <div class="field"><label for="email">Email</label><input id="email" name="email" type="email" autocomplete="email" required /></div>
 <div class="field"><label for="password">Password</label><input id="password" name="password" type="password" autocomplete="new-password" required aria-describedby="pw-hint" />
@@ -189,7 +189,7 @@ export const PAGES = {
 <div class="field field-flex"><label for="nb_slug">URL slug</label><input id="nb_slug" placeholder="july-2026" /></div>
 <button class="btn btn--sm btn--accent" id="nb_create" type="button">Create</button>
 <button class="btn btn--sm btn--ghost" id="nb_cancel" type="button">Cancel</button>
-<div class="hint" id="nb_err" role="alert" aria-live="assertive" class="w-full"></div>
+<div class="hint w-full" id="nb_err" role="alert" aria-live="assertive"></div>
 </div></div>
 <div class="card"><h2>Analytics</h2><p class="card-sub">Last 30 days on your page. Views count every visit; copies and clicks are people grabbing your code or hitting Join.</p>
 <div class="stat-tiles">
@@ -212,7 +212,7 @@ export const PAGES = {
 <div class="card"><h2>Players</h2><p class="card-sub">The board auto-sorts by wagered, highest first. Prize <span class="mono">0</span> shows a dash. Names can be masked (keep the <span class="mono">***</span>). <span class="mono" id="pCount"></span></p>
 <table class="players"><thead><tr><th class="rank">#</th><th>Player</th><th class="ta-r">Wagered</th><th class="ta-r">Prize</th><th></th></tr></thead><tbody id="rows"></tbody></table>
 <div id="playersEmpty" class="empty" hidden>No players yet. Add your first one.</div>
-<div class="mt-14 d-flex gap-8 flex-wrap items-center"><button class="btn btn--sm" id="addRow">+ Add player</button><button class="btn btn--sm" id="importBtn" type="button">Paste from spreadsheet</button><button class="btn btn--sm" id="csvImportBtn" type="button">📁 Import CSV</button><button class="btn btn--sm btn--ghost" id="csvTemplateBtn" type="button">Download template</button><input type="file" id="csvFileInput" accept=".csv,.tsv,.txt" hidden /><span id="limitMsg" class="hint" role="status" aria-live="polite" class="ml-auto c-muted"></span></div>
+<div class="mt-14 d-flex gap-8 flex-wrap items-center"><button class="btn btn--sm" id="addRow">+ Add player</button><button class="btn btn--sm" id="importBtn" type="button">Paste from spreadsheet</button><button class="btn btn--sm" id="csvImportBtn" type="button">📁 Import CSV</button><button class="btn btn--sm btn--ghost" id="csvTemplateBtn" type="button">Download template</button><input type="file" id="csvFileInput" accept=".csv,.tsv,.txt" hidden /><span id="limitMsg" class="hint ml-auto c-muted" role="status" aria-live="polite"></span></div>
 <div class="import" id="importPanel" hidden>
 <p class="hint mb-8">One player per line: <span class="mono">name, wagered, prize</span> — commas or tabs. Copying straight out of Excel or Google Sheets works. Prize is optional.</p>
 <textarea id="importText" rows="6" spellcheck="false" placeholder="*****ess&#9;152000&#9;1500&#10;*****y&#9;98000&#9;700&#10;*****k&#9;61250"></textarea>
@@ -251,7 +251,7 @@ export const PAGES = {
 <div class="mt-8 d-flex gap-8 items-center flex-wrap">
 <button class="btn btn--sm btn--accent" id="domainVerify" type="button">Verify &amp; Provision TLS</button>
 </div>
-<div id="domainStatus" class="hint" role="status" aria-live="polite" class="mt-8 min-h-18"></div>
+<div id="domainStatus" class="hint mt-8 min-h-18" role="status" aria-live="polite"></div>
 </div>
 <div class="empty" id="domainLock" hidden>Custom domains are a Pro feature. <a href="#" id="domainUpgrade">Upgrade to unlock it</a>.</div></div>
 <div class="card" id="notifyCard"><h2>Notifications <span class="pill pill--info ml-6">PRO</span></h2><p class="card-sub">Get alerted when your leaderboard resets or a player breaks into the top 3. Discord and Telegram supported.</p>
@@ -282,7 +282,7 @@ export const PAGES = {
 <div class="arch-form">
 <div class="field field-flex"><label for="a_label">Label</label><input id="a_label" placeholder="July 2026" /></div>
 <div class="field m-0"><label for="a_clear">Then</label><select id="a_clear"><option value="wagers">Reset all wagers to 0</option><option value="players">Clear the player list</option><option value="none">Keep the board as is</option></select></div>
-<button class="btn btn--accent" id="a_go" type="button" class="self-end">Close out period</button></div>
+<button class="btn btn--accent self-end" id="a_go" type="button">Close out period</button></div>
 <div class="arch-list" id="archList"></div>
 <div class="empty" id="archEmpty" hidden>No closed-out periods yet. Your first one shows up here and on your page.</div></div>
 <div class="card" id="planCard"><h2>Plan &amp; billing</h2><p class="card-sub">Upgrade to unlock more players, boards and features.</p>
@@ -361,7 +361,7 @@ billing: `<!DOCTYPE html><html lang="en"><head>
 <p class="status" id="status" role="status" aria-live="polite"></p></div>
 <div class="card" id="proCard" hidden><h2>You're on <span id="currentPlanName">Pro</span></h2><p class="card-sub">Thanks for supporting YourRank. Manage everything from the Leaderboard tab.</p>
 <p class="hint" id="proExp"></p>
-<p class="hint" id="lifetimeNotice" hidden class="c-accent fw-600">⭐ Lifetime Pro — no expiry. You own this forever.</p></div></div>
+<p class="hint c-accent fw-600" id="lifetimeNotice" hidden>⭐ Lifetime Pro — no expiry. You own this forever.</p></div></div>
 <div id="loading" class="py-26">
 <div class="skel-header"><div><div class="skeleton skeleton-text--lg skel-w-100"></div><div class="skeleton skeleton-text--sm skel-w-160 mt-8"></div></div><div class="skeleton skeleton-text skel-w-100"></div></div>
 <div class="card"><div class="skeleton skeleton-block skel-h-60"></div></div>
@@ -398,7 +398,7 @@ botSetup: `<!DOCTYPE html><html lang="en"><head>
 <div class="code-block">/newbot</div>
 <p class="mb-8">BotFather will ask you for:</p>
 <ul class="step-list">
-<li>A <b>display name</b> for your bot (e.g. "ChuckyBTZ Leaderboard")</li>
+<li>A <b>display name</b> for your bot (e.g. "YourName Leaderboard")</li>
 <li>A <b>username</b> that ends in <span class="mono">bot</span> (e.g. "chuckybtz_leaderboard_bot")</li>
 </ul>
 <p class="m-0 c-soft">Just follow BotFather's prompts — it'll guide you through each step.</p></div>
@@ -414,7 +414,7 @@ botSetup: `<!DOCTYPE html><html lang="en"><head>
 <p class="mb-14 c-soft">Copy that whole string and paste it in the box below. We'll validate it and set up the webhook automatically.</p>
 <div class="field mb-10"><label for="botToken">Bot token</label><input id="botToken" placeholder="123456789:ABCdefGhIjKlMnOpQrStUvWxYz" autocomplete="off" spellcheck="false" /></div>
 <button class="btn btn--accent" id="connectBtn" type="button" disabled>Connect bot</button>
-<div class="hint" id="connectStatus" role="status" aria-live="polite" class="mt-8 min-h-18"></div></div>
+<div id="connectStatus" class="hint mt-8 min-h-18" role="status" aria-live="polite"></div></div>
 </div>
 </div>
 
@@ -526,7 +526,7 @@ admin: `<!DOCTYPE html><html lang="en"><head>
 
 <div class="wiz-step active" id="step1">
 <div class="field"><label for="wiz_name">Your name / handle</label>
-<input id="wiz_name" placeholder="ChuckyBTZ" autocomplete="nickname" required />
+<input id="wiz_name" placeholder="YourName" autocomplete="nickname" required />
 <span class="hint">Auto-generates your URL below.</span></div>
 <div class="field"><label for="wiz_slug">Your URL</label>
 <input id="wiz_slug" placeholder="chuckybtz" autocomplete="off" />

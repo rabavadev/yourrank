@@ -43,7 +43,7 @@ async function handleRequest(request, env, ctx) {
       request,
       context: ctx,
       environment: "production",
-      release: "yourrank@1.0.0",
+      release: `yourrank@${process.env.npm_package_version || "dev"}`,
       tags: { worker: "leaderboard" },
     }) : null;
     try {

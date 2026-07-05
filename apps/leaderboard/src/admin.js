@@ -106,14 +106,21 @@ export async function handleUsers(request, env) {
     const [total, rows] = await Promise.all([
       one("SELECT COUNT(*) n FROM users"),
       query(
-        `SELECT u.id, u.email, u.plan,
+        `WITH first_board AS (
+           SELECT DISTINCT ON (s.user_id) s.user_id, s.id AS site_id, s.slug
+           FROM sites s ORDER BY s.user_id, s.board_order ASC
+         )
+         SELECT u.id, u.email, u.plan,
                 (EXTRACT(EPOCH FROM u.plan_expires_at) * 1000)::double precision AS plan_expires_at,
                 u.status, u.is_admin,
                 (EXTRACT(EPOCH FROM u.created_at) * 1000)::double precision AS created_at,
-                (SELECT COUNT(*) FROM sites s2 WHERE s2.user_id = u.id) AS board_count,
-                (SELECT s.slug FROM sites s WHERE s.user_id = u.id ORDER BY s.board_order ASC LIMIT 1) AS slug,
-                (SELECT COUNT(*) FROM players p WHERE p.site_id = (SELECT s.id FROM sites s WHERE s.user_id = u.id ORDER BY s.board_order ASC LIMIT 1)) AS player_count
+                COALESCE(bc.board_count, 0) AS board_count,
+                fb.slug,
+                COALESCE(pc.player_count, 0) AS player_count
            FROM users u
+           LEFT JOIN (SELECT user_id, COUNT(*) AS board_count FROM sites GROUP BY user_id) bc ON bc.user_id = u.id
+           LEFT JOIN first_board fb ON fb.user_id = u.id
+           LEFT JOIN (SELECT site_id, COUNT(*) AS player_count FROM players GROUP BY site_id) pc ON pc.site_id = fb.site_id
            ORDER BY u.created_at DESC LIMIT $1 OFFSET $2`,
         [pageSize, offset]
       ),

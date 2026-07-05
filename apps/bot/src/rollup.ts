@@ -26,9 +26,10 @@ export async function rollupClicks(): Promise<void> {
               unique_clicks = EXCLUDED.unique_clicks`
     );
 
-    // DB-101: Prune old click_daily rows beyond 30 days to prevent unbounded growth.
+    // DB-101: Prune old click_daily rows beyond 90 days to prevent unbounded growth.
+    // Aligned with cleanup_old_clicks() migration function — keep in sync.
     await query(
-      `DELETE FROM click_daily WHERE day < current_date - 30`
+      `DELETE FROM click_daily WHERE day < current_date - 90`
     );
 
     // DB-101: Prune raw click partitions beyond 90 days.  These rows have

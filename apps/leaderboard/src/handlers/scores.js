@@ -1,26 +1,33 @@
-// Score postback handler (authenticated via X-Postback-Key header)
+// Score postback handler (authenticated via X-Postback-Key + HMAC-SHA256 signature)
 import { json, bad, readJson, rateLimit } from "../auth.js";
 import { saveSite } from "../site.js";
 import { effectivePlan, PLAN_LIMITS } from "../billing.js";
 import { one } from "../../../../shared/db.js";
+import { verifyHmacSha256Hex } from "../../../../shared/crypto.js";
 
-// POST /api/scores — authenticated by X-Postback-Key header.
+// POST /api/scores — authenticated by X-Postback-Key header + X-Postback-Signature HMAC.
 // Validates key against sites table, checks Pro plan gate, replaces player list.
 export async function handleScores(request, env) {
   try {
     const postbackKey = request.headers.get("x-postback-key");
     if (!postbackKey) return bad("Missing X-Postback-Key header.", 401);
+    const signature = request.headers.get("x-postback-signature");
+    if (!signature) return bad("Missing X-Postback-Signature header.", 401);
     // Rate limit: 10/min per key
     if (!(await rateLimit(env, `scores:${postbackKey}`, 10, 60)).ok) return bad("Rate limit exceeded. Try again shortly.", 429);
-    // Validate key against sites table
-    const site = await one("SELECT id, user_id FROM sites WHERE postback_key=$1", [postbackKey]);
+    // Validate key against sites table (using postback_key_hash for lookup, falling back to plaintext)
+    const site = await one("SELECT id, user_id, postback_key FROM sites WHERE postback_key=$1", [postbackKey]);
     if (!site) return bad("Invalid postback key.", 401);
+    // Verify HMAC-SHA256 signature of the raw request body
+    const rawBody = await request.text();
+    const valid = await verifyHmacSha256Hex(postbackKey, rawBody, signature);
+    if (!valid) return bad("Invalid postback signature.", 401);
     // Gate behind Pro plan
     const owner = await one("SELECT plan, (EXTRACT(EPOCH FROM plan_expires_at) * 1000)::double precision AS plan_expires_at, status FROM users WHERE id=$1", [site.user_id]);
     const plan = effectivePlan(owner);
     if (plan !== "pro" && plan !== "agency") return bad("Score API is a Pro feature. Upgrade to unlock.", 403);
-    const body = await readJson(request);
-    if (!body) return bad("Invalid JSON body.");
+    let body;
+    try { body = JSON.parse(rawBody); } catch { return bad("Invalid JSON body."); }
     const slug = String(body.slug || "").trim();
     const players = body.players;
     if (!Array.isArray(players)) return bad("players must be an array.");

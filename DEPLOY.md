@@ -34,9 +34,9 @@ wrangler hyperdrive create yourrank-db \
 Paste the returned id into `apps/bot/wrangler.toml` under `[[hyperdrive]]`
 (replace `id = "..."`).
 
-The **leaderboard Worker** connects to Postgres directly via the `DATABASE_URL`
-secret (no Hyperdrive). Set `DATABASE_URL` as a secret on the leaderboard Worker
-(see section 4 below).
+**Both Workers** connect to Postgres via Hyperdrive (see section 2 above).
+The `DATABASE_URL` secret is kept as a fallback. Set `DATABASE_URL` as a secret
+on both Workers (see section 4 below).
 
 ## 3. Shared session KV
 Both Workers must point at the **same** KV namespace id (so one login works

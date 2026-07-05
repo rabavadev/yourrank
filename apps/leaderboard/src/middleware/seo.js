@@ -29,11 +29,12 @@ export async function serveSitemapXml(origin) {
     `<url><loc>${origin}/responsible</loc><priority>0.3</priority></url>`,
   ];
   try {
-    const sites = await query("SELECT s.slug FROM sites s JOIN users u ON u.id = s.user_id WHERE s.published=true AND u.status != 'suspended'");
+    const sites = await query("SELECT s.slug, s.updated_at FROM sites s JOIN users u ON u.id = s.user_id WHERE s.published=true AND u.status != 'suspended'");
     const TEST_SLUG_RE = /^e2e[-_]|^debug[-_]|^del-|^rapid-|^login-debug|^verifyfix|^launch-verify/;
     for (const s of sites) {
       if (TEST_SLUG_RE.test(s.slug)) continue;
-      entries.push(`<url><loc>${origin}/${encodeURIComponent(s.slug)}</loc><priority>0.8</priority></url>`);
+      const lastmod = s.updated_at ? `<lastmod>${new Date(s.updated_at).toISOString().split("T")[0]}</lastmod>` : "";
+      entries.push(`<url><loc>${origin}/${encodeURIComponent(s.slug)}</loc>${lastmod}<priority>0.8</priority></url>`);
     }
   } catch (e) {
     console.error("sitemap: site query failed:", String(e?.message || e));

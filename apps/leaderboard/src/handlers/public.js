@@ -38,12 +38,15 @@ export async function handlePublicStandings(request, env, ctx) {
  * Returns lightweight players-only endpoint for live polling
  */
 export async function handlePublicPlayers(request, env, ctx) {
-  const slug = ctx.slug;
-  const r = await getPublicSite(env, slug);
-  if (!r || r.suspended) return bad("not found", 404);
-  const players = (r.data.players || []).slice().sort((a, b) => b.wagered - a.wagered);
-  return json({ players }, 200, { "cache-control": "public, max-age=10" });
-}
+    const slug = ctx.slug;
+    if (!(await rateLimit(env, `pub-players:${clientIp(request)}`, 120, 60)).ok) {
+      return bad("Rate limit exceeded. Try again shortly.", 429);
+    }
+    const r = await getPublicSite(env, slug);
+    if (!r || r.suspended) return bad("not found", 404);
+    const players = (r.data.players || []).slice().sort((a, b) => b.wagered - a.wagered);
+    return json({ players }, 200, { "cache-control": "public, max-age=10" });
+  }
 
 /**
  * Handle GET /api/public/:slug/rank?user=X
@@ -103,7 +106,10 @@ export async function handlePublicRank(request, env, ctx) {
  * Returns the full leaderboard data as JSON
  */
 export async function handlePublicData(request, env, ctx) {
-  const slug = ctx.slug;
-  const r = await getPublicSite(env, slug);
-  return r && !r.suspended ? json(r.data, 200, { "cache-control": "public, max-age=30" }) : bad("not found", 404);
-}
+    const slug = ctx.slug;
+    if (!(await rateLimit(env, `pub-data:${clientIp(request)}`, 120, 60)).ok) {
+      return bad("Rate limit exceeded. Try again shortly.", 429);
+    }
+    const r = await getPublicSite(env, slug);
+    return r && !r.suspended ? json(r.data, 200, { "cache-control": "public, max-age=30" }) : bad("not found", 404);
+  }

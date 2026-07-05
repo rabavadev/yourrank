@@ -53,7 +53,7 @@ export default {
       request: req,
       context: ctx,
       environment: "production",
-      release: "yourrank@1.0.0",
+      release: `yourrank@${process.env.npm_package_version || "dev"}`,
     }); s.setTag("worker", "bot"); return s; })() : null;
     try {
       populateEnv(env);
@@ -100,7 +100,7 @@ export default {
       dsn: env.SENTRY_DSN,
       context: ctx,
       environment: "production",
-      release: "yourrank@1.0.0",
+      release: `yourrank@${process.env.npm_package_version || "dev"}`,
     }); s.setTag("worker", "bot"); return s; })() : null;
     populateEnv(env);
     try {
