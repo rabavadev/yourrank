@@ -79,64 +79,74 @@ async function createNowPaymentsInvoice(env, { price, orderId, description, orig
 
 // POST /api/billing/checkout — create a NOWPayments invoice, return its hosted URL.
 export async function handleCheckout(request, env) {
-  const { user, res } = await requireUser(request, env);
-  if (res) return res;
-  if (!env.NOWPAYMENTS_API_KEY) return bad("Payments aren't configured yet. Contact support.", 503);
-  const origin = new URL(request.url).origin;
-  // Determine which plan to upgrade to (default: next tier up)
-  const current = effectivePlan(user);
-  if (current === "agency") return bad("You're already on the highest plan (Agency).", 400);
-  const tiers = ["free", "starter", "pro", "agency"];
-  const currentIdx = tiers.indexOf(current);
-  const targetPlan = currentIdx >= 0 && currentIdx < tiers.length - 1 ? tiers[currentIdx + 1] : "pro";
-  const price = priceUsd(env, targetPlan);
-  const orderId = `rk_${uuid()}`;
-  await exec(
-    "INSERT INTO payments (user_id,provider,amount,currency,status,tx_ref,plan_tier) VALUES ($1,$2,$3,$4,$5,$6,$7)",
-    [user.id, "nowpayments", price, "USD", "created", orderId, targetPlan]
-  );
-  const inv = await createNowPaymentsInvoice(env, {
-    price,
-    orderId,
-    description: `YourRank ${targetPlan.charAt(0).toUpperCase() + targetPlan.slice(1)} — 30 days`,
-    origin,
-  });
-  if (!inv) {
-    await exec("UPDATE payments SET status='failed', updated_at=now() WHERE tx_ref=$1", [orderId]);
-    return bad("Couldn't start the payment. Try again in a minute or contact support.", 502);
+  try {
+    const { user, res } = await requireUser(request, env);
+    if (res) return res;
+    if (!env.NOWPAYMENTS_API_KEY) return bad("Payments aren't configured yet. Contact support.", 503);
+    const origin = new URL(request.url).origin;
+    // Determine which plan to upgrade to (default: next tier up)
+    const current = effectivePlan(user);
+    if (current === "agency") return bad("You're already on the highest plan (Agency).", 400);
+    const tiers = ["free", "starter", "pro", "agency"];
+    const currentIdx = tiers.indexOf(current);
+    const targetPlan = currentIdx >= 0 && currentIdx < tiers.length - 1 ? tiers[currentIdx + 1] : "pro";
+    const price = priceUsd(env, targetPlan);
+    const orderId = `rk_${uuid()}`;
+    await exec(
+      "INSERT INTO payments (user_id,provider,amount,currency,status,tx_ref,plan_tier) VALUES ($1,$2,$3,$4,$5,$6,$7)",
+      [user.id, "nowpayments", price, "USD", "created", orderId, targetPlan]
+    );
+    const inv = await createNowPaymentsInvoice(env, {
+      price,
+      orderId,
+      description: `YourRank ${targetPlan.charAt(0).toUpperCase() + targetPlan.slice(1)} — 30 days`,
+      origin,
+    });
+    if (!inv) {
+      await exec("UPDATE payments SET status='failed', updated_at=now() WHERE tx_ref=$1", [orderId]);
+      return bad("Couldn't start the payment. Try again in a minute or contact support.", 502);
+    }
+    await exec("UPDATE payments SET invoice_id=$1, status='waiting', updated_at=now() WHERE tx_ref=$2",
+      [String(inv.id || ""), orderId]);
+    return ok({ url: inv.invoice_url });
+  } catch (e) {
+    console.error("[billing] checkout error:", e);
+    return json({ ok: false, error: "Payment processing failed. Please try again or contact support." }, 500);
   }
-  await exec("UPDATE payments SET invoice_id=$1, status='waiting', updated_at=now() WHERE tx_ref=$2",
-    [String(inv.id || ""), orderId]);
-  return ok({ url: inv.invoice_url });
 }
 
 // POST /api/billing/checkout-lifetime — create a NOWPayments invoice for $149 lifetime Pro.
 export async function handleCheckoutLifetime(request, env) {
-  const { user, res } = await requireUser(request, env);
-  if (res) return res;
-  if (!env.NOWPAYMENTS_API_KEY) return bad("Payments aren't configured yet. Contact support.", 503);
-  const current = effectivePlan(user);
-  if (current === "agency") return bad("You're already on the Agency plan.", 400);
-  const origin = new URL(request.url).origin;
-  const price = 149;
-  const orderId = `rk_lt_${uuid()}`;
-  await exec(
-    "INSERT INTO payments (user_id,provider,amount,currency,status,tx_ref,plan_tier) VALUES ($1,$2,$3,$4,$5,$6,$7)",
-    [user.id, "nowpayments", price, "USD", "created", orderId, "pro"]
-  );
-  const inv = await createNowPaymentsInvoice(env, {
-    price,
-    orderId,
-    description: "YourRank Lifetime Pro — pay once, use forever",
-    origin,
-  });
-  if (!inv) {
-    await exec("UPDATE payments SET status='failed', updated_at=now() WHERE tx_ref=$1", [orderId]);
-    return bad("Couldn't start the payment. Try again in a minute or contact support.", 502);
+  try {
+    const { user, res } = await requireUser(request, env);
+    if (res) return res;
+    if (!env.NOWPAYMENTS_API_KEY) return bad("Payments aren't configured yet. Contact support.", 503);
+    const current = effectivePlan(user);
+    if (current === "agency") return bad("You're already on the Agency plan.", 400);
+    const origin = new URL(request.url).origin;
+    const price = 149;
+    const orderId = `rk_lt_${uuid()}`;
+    await exec(
+      "INSERT INTO payments (user_id,provider,amount,currency,status,tx_ref,plan_tier) VALUES ($1,$2,$3,$4,$5,$6,$7)",
+      [user.id, "nowpayments", price, "USD", "created", orderId, "pro"]
+    );
+    const inv = await createNowPaymentsInvoice(env, {
+      price,
+      orderId,
+      description: "YourRank Lifetime Pro — pay once, use forever",
+      origin,
+    });
+    if (!inv) {
+      await exec("UPDATE payments SET status='failed', updated_at=now() WHERE tx_ref=$1", [orderId]);
+      return bad("Couldn't start the payment. Try again in a minute or contact support.", 502);
+    }
+    await exec("UPDATE payments SET invoice_id=$1, status='waiting', updated_at=now() WHERE tx_ref=$2",
+      [String(inv.id || ""), orderId]);
+    return ok({ url: inv.invoice_url });
+  } catch (e) {
+    console.error("[billing] checkout error:", e);
+    return json({ ok: false, error: "Payment processing failed. Please try again or contact support." }, 500);
   }
-  await exec("UPDATE payments SET invoice_id=$1, status='waiting', updated_at=now() WHERE tx_ref=$2",
-    [String(inv.id || ""), orderId]);
-  return ok({ url: inv.invoice_url });
 }
 
 // Recursively sort object keys — NOWPayments signs the key-sorted JSON body.

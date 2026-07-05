@@ -27,6 +27,7 @@ const mode = { "/signup": "signup", "/forgot": "forgot", "/reset": "reset" }[loc
 const form = document.getElementById("form");
 const errEl = document.getElementById("err");
 const msgEl = document.getElementById("msg");
+form.querySelectorAll("input").forEach(inp => inp.addEventListener("input", () => { if (errEl.textContent) errEl.textContent = ""; }));
 const submit = document.getElementById("submit");
 const nameInput = document.getElementById("name");
 const slugPreview = document.getElementById("slugPreview");

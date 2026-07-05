@@ -190,7 +190,7 @@ export function publicShape(site, players, archives = [], hasLogo = false) {
     },
     endsAt: site.ends_at,
     partner: { blurb: site.blurb, chips: m.chips },
-    whyStats: m.whyStats, rules: m.rules, socials: m.socials,
+    whyStats: m.whyStats, rules: m.rules, socials: (m.socials || []).filter(s => s.url && s.url !== "#" && s.url !== ""),
     branding: { hasLogo, accentA: theme.accentA, accentB: theme.accentB, template: theme.template },
     pastWinners: archives.map(archiveShape),
     players: players.map((p) => ({ name: p.name, wagered: p.wagered, prize: p.prize })),
