@@ -78,8 +78,8 @@ jobs:
           bun test --coverage 2>&1 | tee /tmp/coverage.txt || true
           COVERAGE=$(grep "All files" /tmp/coverage.txt | head -1 | awk '{gsub(/[^0-9.]/, "", $3); print $3}')
           if [ -z "$COVERAGE" ]; then
-            echo "WARNING: Could not parse coverage percentage — skipping threshold check"
-            exit 0
+            echo "::error::Could not parse coverage percentage from test output"
+            exit 1
           fi
           PASS=$(echo "$COVERAGE >= 20" | bc -l 2>/dev/null || echo "1")
           if [ "$PASS" != "1" ]; then
