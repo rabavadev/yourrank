@@ -4,7 +4,7 @@
 import { Hono } from "hono";
 import { config } from "./config.js";
 import { one, query } from "../../../shared/db.js";
-import { encryptToken, newLinkSlug, newPostbackKey, newWebhookSecret } from "../../../shared/crypto.js";
+import { encryptToken, decryptToken, newLinkSlug, newPostbackKey, newWebhookSecret } from "../../../shared/crypto.js";
 import { getMe, setWebhook } from "./telegram.js";
 import { withPlanLimit, getUserPlan, type PlanTier } from "./plans.js";
 import { billingEnabled, createStarsInvoice } from "./billing.js";
