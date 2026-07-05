@@ -103,3 +103,23 @@ export const BOT_PLANS: Record<PlanTier, BotPlanDef> = {
   pro:    { tier: "pro",    label: "Pro",    maxBots: 3,  maxOffers: 50,  broadcasts: true,  postbacks: true,  starsPrice: 2900 },
   agency: { tier: "agency", label: "Agency", maxBots: 25, maxOffers: 999, broadcasts: true,  postbacks: true,  starsPrice: 7900 },
 };
+
+// ── Pure helper functions (no DB dependency) ──────────────────────────────
+
+/** Price in USD for a given plan (supports PRO_PRICE_USD env override). */
+export function priceUsd(env: Record<string, string | undefined>, plan?: string): number {
+  plan = plan || "pro";
+  if (plan === "pro") return Number(env.PRO_PRICE_USD || PLAN_PRICES.pro);
+  return (PLAN_PRICES as Record<string, number>)[plan] ?? PLAN_PRICES.pro;
+}
+
+/** A user's effective plan, considering suspension and expiry. */
+export function effectivePlan(user: { plan?: string; status?: string; plan_expires_at?: number | null } | null | undefined): PlanTier | "free" {
+  if (!user || user.status === "suspended") return "free";
+  const plan = String(user.plan || "free").toLowerCase();
+  // NULL plan_expires_at is treated as expired to prevent accidental permanent grants
+  const expired = user.plan_expires_at == null || Number(user.plan_expires_at) <= Date.now();
+  if (expired) return "free";
+  if (["agency", "pro", "starter"].includes(plan)) return plan as PlanTier;
+  return "free";
+}
