@@ -1,5 +1,11 @@
 import { Bot, Context, InlineKeyboard } from "grammy";
 import type { Update } from "grammy/types";
+
+/** Escape user content for Telegram HTML parse_mode */
+const esc = (s: unknown): string =>
+  String(s ?? "").replace(/[&<>"']/g, (c) =>
+    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c] ?? "")
+  );
 import { one, query } from "../../../shared/db.js";
 import { decryptToken } from "../../../shared/crypto.js";
 import { config } from "./config.js";
@@ -299,7 +305,7 @@ export function wireHandlers(bot: Bot, botRow: BotRow, kv?: RateLimitKV): void {
         WHERE bot_id = $1 AND command = $2 AND is_enabled`,
       [botRow.id, cmd]
     );
-    if (custom?.response) await ctx.reply(custom.response, { parse_mode: "Markdown" });
+    if (custom?.response) await ctx.reply(esc(custom.response), { parse_mode: "HTML" });
   });
 
   bot.catch((err) => {
@@ -329,9 +335,9 @@ async function sendOffers(ctx: Context, botRow: BotRow): Promise<void> {
   }
 
   for (const offer of offers) {
-    const lines = [`*${offer.label}*`];
-    if (offer.bonus_text) lines.push(offer.bonus_text);
-    if (offer.promo_code) lines.push(`Code: \`${offer.promo_code}\``);
+    const lines = [`<b>${esc(offer.label)}</b>`];
+    if (offer.bonus_text) lines.push(esc(offer.bonus_text));
+    if (offer.promo_code) lines.push(`Code: <code>${esc(offer.promo_code)}</code>`);
 
     const trackable =
       offer.slug &&
@@ -346,6 +352,6 @@ async function sendOffers(ctx: Context, botRow: BotRow): Promise<void> {
       buttonUrl
     );
 
-    await ctx.reply(lines.join("\n"), { parse_mode: "Markdown", reply_markup: kb });
+    await ctx.reply(lines.join("\n"), { parse_mode: "HTML", reply_markup: kb });
   }
 }

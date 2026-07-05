@@ -1,6 +1,12 @@
 import { one, query } from "../../../shared/db.js";
 import { decryptToken } from "../../../shared/crypto.js";
 
+/** Escape user content for Telegram HTML parse_mode */
+const esc = (s: unknown): string =>
+  String(s ?? "").replace(/[&<>"']/g, (c) =>
+    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c] ?? "")
+  );
+
 // ------------------------------------------------------------------
 // Broadcast worker — rate-limited mass sender.
 //
@@ -87,8 +93,8 @@ export async function processBroadcastBatch(batchSize = 300): Promise<boolean> {
   for (const sub of subs) {
     const payload: Record<string, unknown> = {
       chat_id: sub.tg_user_id, // Already numeric, no need for Number()
-      text: bc.body,
-      parse_mode: "Markdown",
+      text: esc(bc.body),
+      parse_mode: "HTML",
     };
     if (bc.buttons) payload.reply_markup = { inline_keyboard: bc.buttons };
 
