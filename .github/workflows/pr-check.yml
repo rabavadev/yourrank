@@ -85,6 +85,22 @@ jobs:
             bun test "$f" || exit 1
           done
 
+      - name: Check test coverage threshold
+        working-directory: apps/leaderboard
+        run: |
+          bun test --coverage 2>&1 | tee /tmp/coverage.txt || true
+          COVERAGE=$(grep "All files" /tmp/coverage.txt | head -1 | awk '{gsub(/[^0-9.]/, "", $3); print $3}')
+          if [ -z "$COVERAGE" ]; then
+            echo "WARNING: Could not parse coverage percentage — skipping threshold check"
+            exit 0
+          fi
+          PASS=$(echo "$COVERAGE >= 20" | bc -l 2>/dev/null || echo "1")
+          if [ "$PASS" != "1" ]; then
+            echo "::error::Test coverage ${COVERAGE}% is below 20% threshold"
+            exit 1
+          fi
+          echo "OK: Test coverage ${COVERAGE}% meets 20% threshold"
+
   build:
     name: Build
     runs-on: ubuntu-latest
