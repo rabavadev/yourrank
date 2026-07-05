@@ -63,8 +63,7 @@ export function buildDashboard(): Hono<DashEnv> {
     const msg = (err as any)?.message ?? String(err);
     const stack = (err as any)?.stack ?? "";
     console.error("[dashboard unhandled error]", msg, stack);
-    // TEMP DEBUG: include error message in response to diagnose 500s
-    return c.json({ error: "Internal server error", debug: msg }, 500);
+    return c.json({ error: "Internal server error" }, 500);
   });
 
   // CSP header on all dashboard responses (SEC-102, SEC-703)
