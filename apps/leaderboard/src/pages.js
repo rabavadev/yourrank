@@ -46,7 +46,7 @@ export const PAGES = {
 <nav class="top"><div class="brand">Your<b>Rank</b></div>
 <button class="nav-toggle" aria-label="Toggle menu" aria-expanded="false"><svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button>
 <div class="links"><a href="#how">How it works</a><a href="#postbacks">Postbacks</a><a href="#pricing">Pricing</a><a href="/login">Sign in</a><a href="/signup" class="btn btn--accent">Get started</a></div></nav>
-<header class="hero" id="main-content"><div>
+<main class="hero" id="main-content"><div>
 <p class="label" style="margin-bottom:18px">Leaderboards for casino streamers</p>
 <h1>Run your leaderboard without touching code.</h1>
 <p class="lead">Your prize pool, referral code and ranked players, on a page you edit from a dashboard. Change a number, hit save, your page updates. That's it.</p>
@@ -57,7 +57,7 @@ export const PAGES = {
 <div class="spec-row"><span>Prize pool</span><span>editable</span></div>
 <div class="spec-row"><span>Countdown</span><span>auto</span></div>
 <div class="spec-row"><span>Standings</span><span>sorted by wager</span></div>
-<div class="spec-row"><span>Updates</span><span>instant</span></div></div></header>
+<div class="spec-row"><span>Updates</span><span>instant</span></div></div></main>
 </div>
 <section id="how"><div class="wrap"><h2 class="sec">How it works</h2><p class="sec-sub">Three steps. No build tools, no redeploys, nothing to host yourself.</p>
 <div class="steps">
@@ -138,8 +138,8 @@ export const PAGES = {
 <div><h1>Set a new password.</h1><p>Pick something you'll remember this time. At least 8 characters.</p></div>
 <div class="feat"></div></aside>
 <main class="auth-main" id="main-content"><div class="auth-card"><h2>New password</h2><p class="sub">Then you're straight back in.</p>
-<form id="form" novalidate><div class="field"><label for="password">New password</label><input id="password" name="password" type="password" autocomplete="new-password" required />
-<span class="hint">At least 8 characters.</span></div>
+<form id="form" novalidate><div class="field"><label for="password">New password</label><input id="password" name="password" type="password" autocomplete="new-password" required aria-describedby="pw-hint" />
+<span class="hint" id="pw-hint">At least 8 characters.</span></div>
   <div class="err" id="err" role="alert" aria-live="assertive"></div><button class="btn btn--accent" style="width:100%" type="submit" id="submit">Save &amp; sign in</button></form>
   <p class="foot"><a href="/login">Back to sign in</a></p></div></main></div>
   <script src="/assets/auth.js?v=2"></script></body></html>`,
@@ -159,8 +159,8 @@ export const PAGES = {
 <div class="field"><label for="name">Display name</label><input id="name" name="name" type="text" placeholder="ChuckyBTZ" autocomplete="nickname" required />
 <span class="hint">Also becomes your page URL: <span class="mono" id="slugPreview">yourrank.site/…</span></span></div>
 <div class="field"><label for="email">Email</label><input id="email" name="email" type="email" autocomplete="email" required /></div>
-<div class="field"><label for="password">Password</label><input id="password" name="password" type="password" autocomplete="new-password" required />
-<span class="hint">At least 8 characters.</span></div>
+<div class="field"><label for="password">Password</label><input id="password" name="password" type="password" autocomplete="new-password" required aria-describedby="pw-hint" />
+<span class="hint" id="pw-hint">At least 8 characters.</span></div>
   <div class="err" id="err" role="alert" aria-live="assertive"></div><button class="btn btn--accent" style="width:100%" type="submit" id="submit">Create account</button></form>
 <p class="foot">Already have one? <a href="/login">Sign in</a></p></div></main></div>
 <script src="/assets/auth.js?v=2"></script></body></html>`,
@@ -173,7 +173,7 @@ export const PAGES = {
 <link rel="stylesheet" href="/assets/app.css" /><!--GM_NAV_CSS--></head><body>
 <a href="#main-content" class="sr-only" style="position:absolute;top:0;left:0;z-index:9999;padding:8px 16px;background:var(--accent,#c8ff00);color:#000;font-weight:700;text-decoration:none" onfocus="this.classList.remove('sr-only')" onblur="this.classList.add('sr-only')">Skip to content</a>
 <!--GM_NAV-->
-<div class="wrap" id="main-content"><div id="loading" style="padding:26px 0">
+<main class="wrap" id="main-content"><div id="loading" style="padding:26px 0">
 <div style="display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:18px"><div><div class="skeleton skeleton-text--lg" style="width:180px"></div><div class="skeleton skeleton-text--sm" style="width:260px;margin-top:8px"></div></div><div class="skeleton skeleton-text" style="width:90px"></div></div>
 <div class="card" style="margin-top:18px"><div class="skeleton skeleton-block" style="height:200px"></div></div>
 <div class="card" style="margin-top:18px"><div class="skeleton skeleton-block" style="height:300px"></div></div>
@@ -288,7 +288,7 @@ export const PAGES = {
 <div class="plan-row"><div><div class="plan-name" id="planName">Free</div><div class="hint" id="planMeta">Up to 10 players · YourRank badge on your page</div></div>
 <button class="btn btn--accent" id="goPro">Upgrade</button></div>
 <p class="hint" id="planHint">Pay with crypto (BTC, ETH, USDT and 100+ more). Activates automatically once the network confirms — usually a few minutes. <a href="/dashboard/billing">See all plans</a>.</p></div>
-<div class="savebar"><label class="hint chk" style="margin-right:auto"><input type="checkbox" id="pubToggle" checked /> Page published</label><span class="status" id="status" role="status" aria-live="polite"></span><a class="btn btn--ghost" id="viewLive" href="#" target="_blank">View live page</a><button class="btn btn--accent" id="save">Save changes</button></div></div></div>
+<div class="savebar"><label class="hint chk" style="margin-right:auto"><input type="checkbox" id="pubToggle" checked /> Page published</label><span class="status" id="status" role="status" aria-live="polite"></span><a class="btn btn--ghost" id="viewLive" href="#" target="_blank">View live page</a><button class="btn btn--accent" id="save">Save changes</button></div></div></main>
 <script src="/assets/dashboard.js?v=2"></script></body></html>`,
 
 analytics: `<!DOCTYPE html><html lang="en"><head>
@@ -299,7 +299,7 @@ analytics: `<!DOCTYPE html><html lang="en"><head>
 <link rel="stylesheet" href="/assets/app.css" /><!--GM_NAV_CSS--></head><body>
 <a href="#main-content" class="sr-only" style="position:absolute;top:0;left:0;z-index:9999;padding:8px 16px;background:var(--accent,#c8ff00);color:#000;font-weight:700;text-decoration:none" onfocus="this.classList.remove('sr-only')" onblur="this.classList.add('sr-only')">Skip to content</a>
 <!--GM_NAV-->
-<div class="wrap" id="main-content">
+<main class="wrap" id="main-content">
 <div class="dash-head"><div><h1>Analytics</h1><p class="live-link">Performance of <a id="liveLink" href="#" target="_blank">your page</a></p></div></div>
 <div id="an" hidden>
 <div class="card"><h2>Last 30 days</h2><p class="card-sub">Views count every visit to your page. Code copies and Join clicks show real engagement.</p>
@@ -324,7 +324,7 @@ analytics: `<!DOCTYPE html><html lang="en"><head>
 <div style="margin-bottom:18px"><div class="skeleton skeleton-text--lg" style="width:120px"></div><div class="skeleton skeleton-text--sm" style="width:200px;margin-top:8px"></div></div>
 <div class="card"><div class="skeleton skeleton-block" style="height:80px"></div></div>
 <div class="card" style="margin-top:18px"><div class="skeleton skeleton-block" style="height:200px"></div></div>
-</div></div>
+</div></main>
 <script src="/assets/analytics.js?v=2"></script></body></html>`,
 
 billing: `<!DOCTYPE html><html lang="en"><head>
@@ -335,7 +335,7 @@ billing: `<!DOCTYPE html><html lang="en"><head>
 <link rel="stylesheet" href="/assets/app.css" /><!--GM_NAV_CSS--></head><body>
 <a href="#main-content" class="sr-only" style="position:absolute;top:0;left:0;z-index:9999;padding:8px 16px;background:var(--accent,#c8ff00);color:#000;font-weight:700;text-decoration:none" onfocus="this.classList.remove('sr-only')" onblur="this.classList.add('sr-only')">Skip to content</a>
 <!--GM_NAV-->
-<div class="wrap" id="main-content">
+<main class="wrap" id="main-content">
 <div class="dash-head"><div><h1>Billing</h1><p class="live-link">Your YourRank plan</p></div><span class="label" id="planBadge">FREE PLAN</span></div>
 <div id="bl" hidden>
 <div class="card" id="currentCard"><h2>Current plan</h2><p class="card-sub"><span id="planLine">Free — up to 10 players, one leaderboard.</span></p>
@@ -363,7 +363,7 @@ billing: `<!DOCTYPE html><html lang="en"><head>
 <div style="display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:18px"><div><div class="skeleton skeleton-text--lg" style="width:100px"></div><div class="skeleton skeleton-text--sm" style="width:160px;margin-top:8px"></div></div><div class="skeleton skeleton-text" style="width:100px"></div></div>
 <div class="card"><div class="skeleton skeleton-block" style="height:60px"></div></div>
 <div class="card" style="margin-top:18px"><div class="skeleton skeleton-block" style="height:120px"></div></div>
-</div></div>
+</div></main>
 <script src="/assets/billing.js?v=2"></script></body></html>`,
 
 botSetup: `<!DOCTYPE html><html lang="en"><head>
@@ -374,7 +374,7 @@ botSetup: `<!DOCTYPE html><html lang="en"><head>
 <link rel="stylesheet" href="/assets/app.css" /><!--GM_NAV_CSS--></head><body>
 <a href="#main-content" class="sr-only" style="position:absolute;top:0;left:0;z-index:9999;padding:8px 16px;background:var(--accent,#c8ff00);color:#000;font-weight:700;text-decoration:none" onfocus="this.classList.remove('sr-only')" onblur="this.classList.add('sr-only')">Skip to content</a>
 <!--GM_NAV-->
-<div class="wrap" id="main-content">
+<main class="wrap" id="main-content">
 <div class="dash-head"><div><h1>🤖 Connect your Telegram bot</h1><p class="live-link">Walk through the 4 steps below — takes about 2 minutes.</p></div></div>
 <p style="margin:8px 0 0"><a href="/dashboard" style="color:var(--accent);font-size:14px;text-decoration:none;font-weight:600">← Back to Dashboard</a></p>
 
@@ -434,7 +434,7 @@ botSetup: `<!DOCTYPE html><html lang="en"><head>
 <li>Need help? <a href="https://t.me/BotFather" target="_blank" rel="noopener">BotFather's FAQ</a> covers most questions.</li>
 </ul></div>
 
-</div>
+</main>
 <script src="/assets/bot-setup.js?v=2"></script></body></html>`,
 
 admin: `<!DOCTYPE html><html lang="en"><head>
@@ -446,7 +446,7 @@ admin: `<!DOCTYPE html><html lang="en"><head>
 <a href="#main-content" class="sr-only" style="position:absolute;top:0;left:0;z-index:9999;padding:8px 16px;background:var(--accent,#c8ff00);color:#000;font-weight:700;text-decoration:none" onfocus="this.classList.remove('sr-only')" onblur="this.classList.add('sr-only')">Skip to content</a>
 <header class="topbar"><div class="brand">Your<b>Rank</b> <span class="label" style="margin-left:8px">ADMIN</span></div>
 <div class="topbar-right"><span class="muted" id="userEmail"></span><a href="/dashboard" class="btn btn--sm btn--ghost">Dashboard</a><a href="#" id="logout" class="btn btn--sm btn--ghost">Sign out</a></div></header>
-<div class="wrap" id="main-content"><div id="loading" style="padding:26px 0">
+<main class="wrap" id="main-content"><div id="loading" style="padding:26px 0">
 <div style="margin-bottom:18px"><div class="skeleton skeleton-text--lg" style="width:160px"></div><div class="skeleton skeleton-text--sm" style="width:240px;margin-top:8px"></div></div>
 <div class="stats"><div class="stat"><div class="skeleton skeleton-text" style="width:60px"></div><div class="skeleton skeleton-text--sm" style="width:50px;margin-top:6px"></div></div><div class="stat"><div class="skeleton skeleton-text" style="width:40px"></div><div class="skeleton skeleton-text--sm" style="width:40px;margin-top:6px"></div></div><div class="stat"><div class="skeleton skeleton-text" style="width:30px"></div><div class="skeleton skeleton-text--sm" style="width:50px;margin-top:6px"></div></div><div class="stat"><div class="skeleton skeleton-text" style="width:70px"></div><div class="skeleton skeleton-text--sm" style="width:80px;margin-top:6px"></div></div></div>
 <div class="card" style="margin-top:18px"><div class="skeleton skeleton-block" style="height:300px"></div></div>
@@ -454,19 +454,19 @@ admin: `<!DOCTYPE html><html lang="en"><head>
 <div id="panel" hidden>
 <div class="dash-head"><div><h1>Operator panel</h1><p class="live-link">Everything that happens on YourRank, in one place.</p></div></div>
 <div class="stats"><div class="stat"><b id="s_users">–</b><span>accounts</span></div><div class="stat"><b id="s_pro">–</b><span>on Pro</span></div><div class="stat"><b id="s_leads">–</b><span>leads</span></div><div class="stat"><b id="s_rev">–</b><span>revenue (USD)</span></div></div>
-<div class="tabs"><button class="tab is-on" data-tab="users" type="button">Users</button><button class="tab" data-tab="leads" type="button">Leads</button><button class="tab" data-tab="payments" type="button">Payments</button></div>
-<div class="tabpane" id="tab-users">
+<div class="tabs" role="tablist"><button class="tab is-on" data-tab="users" type="button" role="tab" aria-selected="true">Users</button><button class="tab" data-tab="leads" type="button" role="tab" aria-selected="false">Leads</button><button class="tab" data-tab="payments" type="button" role="tab" aria-selected="false">Payments</button></div>
+<div class="tabpane" id="tab-users" role="tabpanel">
 <div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Email</th><th>Page</th><th>Plan</th><th>Status</th><th class="ta-r">Players</th><th>Joined</th><th>Actions</th></tr></thead><tbody id="usersBody"></tbody></table></div>
 <div class="empty" id="usersEmpty" hidden>No users yet.</div>
 <div id="usersPagination" style="display:flex;align-items:center;gap:12px;padding:12px 0;flex-wrap:wrap"></div></div>
-<div class="tabpane" id="tab-leads" hidden>
+<div class="tabpane" id="tab-leads" role="tabpanel" hidden>
 <div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Handle</th><th>Casino</th><th>Contact</th><th>Note</th><th>When</th></tr></thead><tbody id="leadsBody"></tbody></table></div>
 <div class="empty" id="leadsEmpty" hidden>No leads yet. Share the landing page around.</div></div>
-<div class="tabpane" id="tab-payments" hidden>
+<div class="tabpane" id="tab-payments" role="tabpanel" hidden>
 <div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>User</th><th>Provider</th><th class="ta-r">Amount</th><th>Status</th><th>When</th></tr></thead><tbody id="payBody"></tbody></table></div>
 <div class="empty" id="payEmpty" hidden>No payments yet.</div></div>
 <p class="hint" style="margin-top:18px">Manual activation: use <b>+31d Pro</b> on any user after they pay you directly (PayPal, bank, whatever). Crypto payments through the site activate on their own. Reset links work for 24h — send them over Discord/Telegram if email isn't wired up.</p>
-</div></div>
+</div></main>
 <script src="/assets/admin.js?v=2"></script></body></html>`,
 
   admin2fa: `<!DOCTYPE html><html lang="en"><head>
@@ -493,11 +493,11 @@ admin: `<!DOCTYPE html><html lang="en"><head>
 <a href="#main-content" class="sr-only" style="position:absolute;top:0;left:0;z-index:9999;padding:8px 16px;background:var(--accent,#c8ff00);color:#000;font-weight:700;text-decoration:none" onfocus="this.classList.remove('sr-only')" onblur="this.classList.add('sr-only')">Skip to content</a>
 <header class="topbar"><div class="brand">Your<b>Rank</b> <span class="label" style="margin-left:8px">ADMIN</span></div>
 <div class="topbar-right"><a href="/dashboard" class="btn btn--sm btn--ghost">Dashboard</a><a href="#" id="logout" class="btn btn--sm btn--ghost">Sign out</a></div></header>
-<div class="wrap" id="main-content">
+<main class="wrap" id="main-content">
 <div class="tfa-wrap" id="tfaVerify">
 <h1>🔒 Two-Factor Authentication</h1>
 <p>Enter the 6-digit code from your authenticator app.</p>
-<input class="code-input" id="tfaCode" type="text" inputmode="numeric" maxlength="6" pattern="[0-9]{6}" placeholder="000000" autocomplete="one-time-code" autofocus aria-label="Verification code" />
+<label for="tfaCode" class="sr-only">6-digit verification code</label><input class="code-input" id="tfaCode" type="text" inputmode="numeric" maxlength="6" pattern="[0-9]{6}" placeholder="000000" autocomplete="one-time-code" autofocus aria-label="Verification code" />
 <div class="err" id="tfaErr" role="alert" aria-live="assertive"></div>
 <button class="btn btn--accent" id="tfaSubmit" type="button">Verify</button>
 </div>
@@ -509,11 +509,11 @@ admin: `<!DOCTYPE html><html lang="en"><head>
 <p>Or enter this secret manually:</p>
 <code class="secret-box" id="tfaSecret"></code>
 <p style="margin-top:16px">After scanning, enter the 6-digit code to verify setup:</p>
-<input class="code-input" id="tfaSetupCode" type="text" inputmode="numeric" maxlength="6" pattern="[0-9]{6}" placeholder="000000" autocomplete="one-time-code" aria-label="Verification code" />
+<label for="tfaSetupCode" class="sr-only">6-digit verification code</label><input class="code-input" id="tfaSetupCode" type="text" inputmode="numeric" maxlength="6" pattern="[0-9]{6}" placeholder="000000" autocomplete="one-time-code" aria-label="Verification code" />
 <div class="err" id="tfaSetupErr" role="alert" aria-live="assertive"></div>
 <button class="btn btn--accent" id="tfaSetupSubmit" type="button">Enable 2FA</button>
 </div>
-</div>
+</main>
 <script src="/assets/admin2fa.js?v=2"></script></body></html>`,
 
   setup: `<!DOCTYPE html><html lang="en"><head>
@@ -539,7 +539,7 @@ admin: `<!DOCTYPE html><html lang="en"><head>
 .err{color:var(--danger);font-size:13px;min-height:18px;margin:4px 0}
 </style><!--GM_NAV-->
 <a href="#main-content" class="sr-only" style="position:absolute;top:0;left:0;z-index:9999;padding:8px 16px;background:var(--accent,#c8ff00);color:#000;font-weight:700;text-decoration:none" onfocus="this.classList.remove('sr-only')" onblur="this.classList.add('sr-only')">Skip to content</a>
-<div class="gm-shell-main" id="main-content">
+<main class="gm-shell-main" id="main-content">
 <div class="setup-wrap">
 <h1>Set up your leaderboard</h1>
 <p class="sub">Four quick steps and you're live.</p>
@@ -567,7 +567,7 @@ admin: `<!DOCTYPE html><html lang="en"><head>
 </div>
 
 <div class="wiz-step" id="step3">
-<div class="field"><label>Paste your players</label>
+<div class="field"><label for="wiz_players">Paste your players</label>
 <span class="hint">One player per line: <span class="mono">name, wagered amount</span>. Comma or tab separated. Wagered is optional (defaults to 0).</span>
 <textarea class="players-ta" id="wiz_players" rows="8" spellcheck="false" placeholder="*****ess, 152000
 *****y, 98000
@@ -591,7 +591,7 @@ admin: `<!DOCTYPE html><html lang="en"><head>
 
 <div class="err" id="wiz_err" role="alert" aria-live="assertive"></div>
 </div>
-</div>
+</main>
 <script src="/assets/setup-wizard.js?v=2"></script></body></html>`,
 
   overlay: (data, opts = {}) => {
@@ -704,7 +704,7 @@ ${endsAt ? `<p class="ov-timer-label">${esc(b.prizePool || "")} resets in</p>
 <li><b>Payments:</b> plan, amount, and payment status. Crypto payments are processed by NOWPayments — we never see or store wallet keys or card numbers.</li>
 </ul>
 <h2>Cookies</h2>
-<p>One session cookie, used to keep you signed in. No ad trackers, no analytics cookies, no third-party pixels.</p>
+<p>Two cookies: a session cookie to keep you signed in, and a CSRF token cookie for security. No ad trackers, no analytics cookies, no third-party pixels.</p>
 <h2>Who else sees data</h2>
 <p>Our infrastructure runs on Cloudflare (hosting, database). Payment processing runs through NOWPayments. That's it — we don't sell or share your data with anyone else.</p>
 <h2>How long we keep it</h2>
