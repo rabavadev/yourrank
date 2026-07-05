@@ -1,5 +1,5 @@
 import { one, query } from "../../../shared/db.js";
-import { decryptToken } from "./crypto.js";
+import { decryptToken } from "../../../shared/crypto.js";
 
 // ------------------------------------------------------------------
 // Broadcast worker — rate-limited mass sender.

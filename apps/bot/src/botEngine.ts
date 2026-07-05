@@ -1,7 +1,7 @@
 import { Bot, Context, InlineKeyboard } from "grammy";
 import type { Update } from "grammy/types";
 import { one, query } from "../../../shared/db.js";
-import { decryptToken } from "./crypto.js";
+import { decryptToken } from "../../../shared/crypto.js";
 import { config } from "./config.js";
 import { rateLimit, type RateLimitKV } from "./ratelimit.js";
 

@@ -1,5 +1,5 @@
 import { query, withTransaction } from "../../../shared/db.js";
-import { hashIp } from "./crypto.js";
+import { hashIp } from "../../../shared/crypto.js";
 
 export async function logClick(
   shortLinkId: string,
