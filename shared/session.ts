@@ -50,8 +50,10 @@ export const LEGACY_COOKIE_NAME = "sess";
 // production domain; override with SESSION_COOKIE_DOMAIN for staging/preview.
 // MUST be a host-wide domain (leading dot) so BOTH Workers (bot + leaderboard)
 // see the cookie — they share one KV session namespace across the zone.
-export const COOKIE_DOMAIN =
-  (typeof process !== "undefined" && process.env && process.env.SESSION_COOKIE_DOMAIN) || ".yourrank.site";
+export const COOKIE_DOMAIN = (() => {
+  const v = typeof process !== "undefined" && process.env && process.env.SESSION_COOKIE_DOMAIN;
+  return (v && v !== "undefined") ? v : ".yourrank.site";
+})();
 export const SESSION_TTL_S = 60 * 60 * 24 * 30; // 30 days
 export const KV_PREFIX = "sess:";
 // SEC-107: Rotate session tokens older than 24 hours. A stolen token is only

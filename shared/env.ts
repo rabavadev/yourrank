@@ -15,6 +15,8 @@ export function populateEnv(env: Record<string, any>, options?: { setGlobalEnv?:
   let hdConn: string | null = null;
   try { hdConn = env.HYPERDRIVE?.connectionString ?? null; } catch {}
   pe.DATABASE_URL = hdConn || env.DATABASE_URL;
+  // Guard against process.env coercing undefined to the string "undefined"
+  if (pe.DATABASE_URL === undefined) delete pe.DATABASE_URL;
   
   // Common bindings used by both Workers.
   // Only set values that are actually defined — process.env coerces

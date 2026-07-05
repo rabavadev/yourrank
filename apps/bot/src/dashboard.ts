@@ -74,7 +74,7 @@ export function buildDashboard(): Hono<DashEnv> {
     c.set("cspNonce", nonce);
     await next();
     if (!c.res.headers.has("Content-Security-Policy")) {
-      c.header("Content-Security-Policy", `default-src 'self'; script-src 'self' 'nonce-${nonce}' https://telegram.org; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https://telegram.org; frame-src https://telegram.org;`);
+      c.header("Content-Security-Policy", `default-src 'self'; script-src 'self' 'unsafe-inline' 'nonce-${nonce}' https://telegram.org; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https://telegram.org; frame-src https://telegram.org;`);
     }
     c.res.headers.set("Cache-Control", "no-store, no-cache, must-revalidate");
     // SEC-104: Clear legacy 'sess' cookie
@@ -98,13 +98,14 @@ export function buildDashboard(): Hono<DashEnv> {
       return c.json({ error: "bad telegram signature" }, 401);
 
     const name = [data.first_name, data.last_name].filter(Boolean).join(" ") || data.username || String(data.id);
-    const row = (await one<{ id: string }>(
+    const row = (await one<{ id: string; status: string }>(
       `INSERT INTO users (telegram_user_id, display_name)
        VALUES ($1, $2)
        ON CONFLICT (telegram_user_id) DO UPDATE SET display_name = EXCLUDED.display_name, updated_at = now()
-       RETURNING id`,
+       RETURNING id, status`,
       [data.id, name]
     ))!;
+    if (row.status === "suspended") return c.json({ error: "account suspended" }, 403);
     const token = await createSession(c.env, row.id);
     c.header("Set-Cookie", cookieSet(token));
     return c.json({ ok: true });

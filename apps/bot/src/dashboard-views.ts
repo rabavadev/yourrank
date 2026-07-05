@@ -34,9 +34,10 @@ export function loginHtml(botUsername: string, devLogin: boolean, publicBaseUrl:
   return `<!doctype html><html lang="en"><head><meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>YourRank Bot — Login</title>
+  <style>
   .center { min-height:90vh; display:flex; align-items:center; justify-content:center; }
   .card { text-align:center; max-width:380px; }
-</style></head><body>
+  </style></head><body>
 <a href="#main-content" class="sr-only" style="position:absolute;top:0;left:0;z-index:9999;padding:8px 16px;background:var(--accent,#c8ff00);color:#000;font-weight:700;text-decoration:none" onfocus="this.classList.remove('sr-only')" onblur="this.classList.add('sr-only')">Skip to content</a>
 <div class="center"><div class="panel card" id="main-content">
   <h1 style="margin-bottom:8px">🎰 Streamer Dashboard</h1>
@@ -180,7 +181,9 @@ async function load() {
     const h = d.clicks/max*36;
     return '<rect x="'+(i*w+0.5)+'" y="'+(40-h)+'" width="'+(w-1)+'" height="'+h+'" rx="0.6" fill="#f0b429"><title>'+esc(d.day)+': '+esc(String(d.clicks))+'</title></rect>';
   }).join('');
-  $('chartLabels').innerHTML = '<span>'+esc(daily[0].day.slice(5))+'</span><span>'+esc(daily[daily.length-1].day.slice(5))+'</span>';
+  $('chartLabels').innerHTML = daily.length > 0
+    ? '<span>'+esc(daily[0].day.slice(5))+'</span><span>'+esc(daily[daily.length-1].day.slice(5))+'</span>'
+    : '';
 
   // bots
   $('botList').innerHTML = bots.length

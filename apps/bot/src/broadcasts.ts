@@ -83,6 +83,7 @@ export async function processBroadcastBatch(batchSize = 300): Promise<boolean> {
 
   let sent = 0;
   let failed = 0;
+  let lastProcessedId = subs[0].tg_user_id; // Track last actually processed sub
   for (const sub of subs) {
     const payload: Record<string, unknown> = {
       chat_id: sub.tg_user_id, // Already numeric, no need for Number()
@@ -110,8 +111,9 @@ export async function processBroadcastBatch(batchSize = 300): Promise<boolean> {
         );
       } else if (res.status === 429) {
         // Rate limited — back off and stop this batch early.
+        // DON'T advance cursor past unprocessed subscribers.
         const retry = Number((await res.json().catch(() => ({})) as any)?.parameters?.retry_after ?? 3);
-        await sleep(Math.min(retry, 10) * 1000);
+        await sleep(Math.min(retry, 30) * 1000);
         break;
       } else {
         failed++;
@@ -119,20 +121,21 @@ export async function processBroadcastBatch(batchSize = 300): Promise<boolean> {
     } catch (err) {
       failed++; console.error("[broadcast]: sendMessage failed", err);
     }
+    lastProcessedId = sub.tg_user_id; // Advance only after processing
     await sleep(MSG_INTERVAL_MS);
   }
 
-  // Always advance the cursor past the last row we fetched, even if sent+failed
-  // is 0 (e.g. a 429 on the first message stops the loop early). Without this
-  // the cursor stays put and the same batch loops forever.
-  const lastId = subs[subs.length - 1].tg_user_id;
+  // Advance cursor to the last subscriber we actually processed (sent or failed),
+  // NOT to the last fetched subscriber. On 429, unprocessed subs will be retried
+  // in the next batch.
+  const cursorId = lastProcessedId;
   await query(
     `UPDATE broadcasts
         SET cursor_tg_user_id = $1,
             sent_count = sent_count + $2,
             fail_count = fail_count + $3
       WHERE id = $4`,
-    [lastId, sent, failed, bc.id]
+    [cursorId, sent, failed, bc.id]
   );
   return true;
 }

@@ -114,7 +114,10 @@ export function buildDashboardApi(): Hono<{ Variables: { uid: string } }> {
     }>();
     if (!b.casino || !b.label || !b.referral_url)
       return c.json({ error: "casino, label, referral_url required" }, 400);
-    try { new URL(b.referral_url); } catch { return c.json({ error: "referral_url must be a valid URL" }, 400); }
+    try {
+      const parsed = new URL(b.referral_url);
+      if (!/^https?:$/.test(parsed.protocol)) return c.json({ error: "referral_url must use http or https" }, 400);
+    } catch { return c.json({ error: "referral_url must be a valid URL" }, 400); }
     const uid = c.get("uid");
 
     // count-check + the inserts run atomically under a per-user advisory lock
@@ -279,6 +282,7 @@ export function buildDashboardApi(): Hono<{ Variables: { uid: string } }> {
       bot_id: string; body: string; scheduled_at?: string;
     }>();
     if (!bot_id || !body?.trim()) return c.json({ error: "bot_id and body required" }, 400);
+    if (body.trim().length > 4096) return c.json({ error: "Message too long (max 4096 chars)" }, 400);
 
     const bot = await one(`SELECT id FROM bots WHERE id = $1 AND owner_id = $2`, [bot_id, uid]);
     if (!bot) return c.json({ error: "bot not found" }, 404);
