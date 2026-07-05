@@ -1,4 +1,4 @@
-import { query, withTransaction } from "../../../shared/db.js";
+import { withTransaction } from "../../../shared/db.js";
 import { hashIp } from "../../../shared/crypto.js";
 
 export async function logClick(
@@ -12,8 +12,12 @@ export async function logClick(
 ): Promise<void> {
   try {
     const ipH = await hashIp(ip);
-    // Use advisory lock to prevent TOCTOU race in uniqueness check
-    // The lock serializes inserts for the same (short_link_id, ip_hash) pair
+    // Use advisory lock to prevent TOCTOU race in uniqueness check.
+    // The lock serializes inserts for the same (short_link_id, ip_hash) pair.
+    //
+    // PERF-105: Consolidated the uniqueness check + INSERT into a single
+    // INSERT ... SELECT NOT EXISTS(...) query, reducing the happy path from
+    // 3 round-trips (lock → SELECT EXISTS → INSERT) to 2 (lock → INSERT).
     await withTransaction(async (tx) => {
       // Acquire advisory lock for this (short_link_id, ip_hash) pair
       const lockResult = await tx.one<{ lock_acquired: boolean }>(
@@ -31,22 +35,19 @@ export async function logClick(
         return;
       }
 
-      // Lock acquired - check if this is truly unique
-      const existing = await tx.one<{ exists: boolean }>(
-        `SELECT EXISTS (
-           SELECT 1 FROM clicks
-            WHERE short_link_id = $1
-              AND ip_hash = $2
-              AND ts > now() - interval '24 hours'
-         ) AS exists`,
-        [shortLinkId, ipH]
-      );
-
-      const isUnique = !existing?.exists;
+      // Lock acquired — determine uniqueness and insert in a single query.
+      // NOT EXISTS subquery checks the same 24-hour window as before.
       await tx.query(
         `INSERT INTO clicks (short_link_id, ip_hash, country, user_agent, referer, tg_user_id, is_unique, click_ref)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
-        [shortLinkId, ipH, country, userAgent, referer, tgUserId, isUnique, clickRef]
+         SELECT $1, $2, $3, $4, $5, $6,
+                NOT EXISTS (
+                  SELECT 1 FROM clicks
+                   WHERE short_link_id = $1
+                     AND ip_hash = $2
+                     AND ts > now() - interval '24 hours'
+                ),
+                $7`,
+        [shortLinkId, ipH, country, userAgent, referer, tgUserId, clickRef]
       );
     });
   } catch (err) {
