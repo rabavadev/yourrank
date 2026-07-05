@@ -163,18 +163,20 @@ async function logout() { await fetch('/bot/auth/logout',{method:'POST'}); locat
 
 async function load() {
   const me = await api('/me');
+  if (me.error) { toast(me.error); return; }
   $('whoami').textContent = (me.display_name||'') + ' · ' + me.plan;
   const [offers, daily, bots] = await Promise.all([api('/offers'), api('/stats/daily'), api('/bots')]);
+  if (daily.error || offers.error || bots.error) { toast(daily.error || offers.error || bots.error); return; }
 
-  $('totClicks').textContent = daily.reduce((s,d)=>s+d.clicks,0);
-  $('totUnique').textContent = daily.reduce((s,d)=>s+d.unique_clicks,0);
-  $('totOffers').textContent = offers.filter(o=>o.is_active).length;
+  $('totClicks').textContent = (daily||[]).reduce((s,d)=>s+d.clicks,0);
+  $('totUnique').textContent = (daily||[]).reduce((s,d)=>s+d.unique_clicks,0);
+  $('totOffers').textContent = (offers||[]).filter(o=>o.is_active).length;
 
   // chart
-  const max = Math.max(1, ...daily.map(d=>d.clicks));
-  const w = 100/daily.length;
+  const max = Math.max(1, ...(daily||[]).map(d=>d.clicks));
+  const w = daily.length ? 100/daily.length : 10;
   $('chart').setAttribute('viewBox','0 0 100 40');
-  $('chart').innerHTML = daily.map((d,i)=>{
+  $('chart').innerHTML = (daily||[]).map((d,i)=>{
     const h = d.clicks/max*36;
     return '<rect x="'+(i*w+0.5)+'" y="'+(40-h)+'" width="'+(w-1)+'" height="'+h+'" rx="0.6" fill="#f0b429"><title>'+esc(d.day)+': '+esc(String(d.clicks))+'</title></rect>';
   }).join('');
@@ -219,26 +221,32 @@ async function connectBot(){
 let firstBotId = null;
 async function loadExtras(){
   const [plan, bcs, convs, bots] = await Promise.all([api('/plan'), api('/broadcasts'), api('/conversions'), api('/bots')]);
-  firstBotId = bots[0]?.id ?? null;
+  if (plan.error || bcs.error || convs.error || bots.error) {
+    toast(plan.error || bcs.error || convs.error || bots.error);
+    return;
+  }
+  firstBotId = (bots||[])[0]?.id ?? null;
 
   // plan panel (label comes from the server-side plan table, but escape it as
   // defense-in-depth; the numbers are rendered raw since they're ints).
-  const cur = plan.current;
-  $('planInfo').innerHTML = '<b style="color:var(--accent)">'+esc(cur.label)+'</b> — up to '+cur.maxBots+' bots, '
-    +cur.maxOffers+' offers'+(cur.broadcasts?', broadcasts':'')+(cur.postbacks?', postbacks':'');
-  $('planButtons').innerHTML = plan.plans.filter(p=>p.starsPrice>0 && p.tier!==cur.tier).map(p=>
-    '<button onclick="upgrade(\\''+escJsAttr(p.tier)+'\\')" style="margin-right:8px">'
-    +(plan.billing_enabled?'Upgrade to '+esc(p.label)+' — ⭐'+esc(String(p.starsPrice))+'/30d':esc(p.label)+' (billing not enabled)')+'</button>'
-  ).join('');
+  const cur = plan?.current;
+  if (cur) {
+    $('planInfo').innerHTML = '<b style="color:var(--accent)">'+esc(cur.label)+'</b> — up to '+cur.maxBots+' bots, '
+      +cur.maxOffers+' offers'+(cur.broadcasts?', broadcasts':'')+(cur.postbacks?', postbacks':'');
+    $('planButtons').innerHTML = (plan.plans||[]).filter(p=>p.starsPrice>0 && p.tier!==cur.tier).map(p=>
+      '<button onclick="upgrade(\\''+escJsAttr(p.tier)+'\\')" style="margin-right:8px">'
+      +(plan.billing_enabled?'Upgrade to '+esc(p.label)+' — ⭐'+esc(String(p.starsPrice))+'/30d':esc(p.label)+' (billing not enabled)')+'</button>'
+    ).join('');
+  }
 
   // broadcasts panel
-  $('bcList').innerHTML = bcs.map(b=>'<tr><td>'+esc(b.body.slice(0,60))+'</td><td>'+esc(b.status)+'</td>'+
+  $('bcList').innerHTML = (bcs||[]).map(b=>'<tr><td>'+esc(b.body.slice(0,60))+'</td><td>'+esc(b.status)+'</td>'+
     '<td>'+esc(b.sent_count)+'/'+(b.total_count?esc(b.total_count):'?')+'</td><td>'+esc(b.fail_count)+'</td></tr>').join('')
     || '<tr><td colspan="4" class="muted">No broadcasts yet.</td></tr>';
 
   // conversions panel — amount/currency/at come from casino postbacks (external
   // input), so every field is escaped, not just the event name.
-  $('convList').innerHTML = convs.map(v=>'<tr><td>'+esc(v.at)+'</td><td>'+esc(v.event)+'</td>'+
+  $('convList').innerHTML = (convs||[]).map(v=>'<tr><td>'+esc(v.at)+'</td><td>'+esc(v.event)+'</td>'+
     '<td>'+(v.amount?esc(v.amount)+' '+esc(v.currency):'–')+'</td><td>'+esc(v.offer||'–')+'</td></tr>').join('')
     || '<tr><td colspan="4" class="muted">No conversions reported yet.</td></tr>';
 }

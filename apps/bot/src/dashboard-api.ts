@@ -23,11 +23,17 @@ export function buildDashboardApi(): Hono<{ Variables: { uid: string } }> {
 
   // Resolve session FIRST — every subsequent middleware reads c.get("uid").
   // SEC-107: Use resolveSession for rotation; propagate new cookie if rotated.
+  // Wrapped in try/catch so a KV failure returns 401 instead of 500.
   api.use("*", async (c, next) => {
-    const session = await resolveSession(c.req.raw, c.env as SessionEnv);
-    if (session) {
-      c.set("uid", session.uid);
-      if (session.rotatedCookie) c.header("Set-Cookie", session.rotatedCookie);
+    try {
+      const session = await resolveSession(c.req.raw, c.env as SessionEnv);
+      if (session) {
+        c.set("uid", session.uid);
+        if (session.rotatedCookie) c.header("Set-Cookie", session.rotatedCookie);
+      }
+    } catch (err) {
+      console.error("[dashboard-api] resolveSession failed:", (err as any)?.message ?? err);
+      // Leave uid unset — the auth guard below will return 401.
     }
     await next();
   });
@@ -52,9 +58,14 @@ export function buildDashboardApi(): Hono<{ Variables: { uid: string } }> {
     // KV session lives up to 30 days and currentUserId() only resolves the token
     // -> UUID; without this, an admin-suspended streamer's existing session keeps
     // working (managing bots/offers/broadcasts) until the TTL expires.
-    const u = await one<{ status: string }>(`SELECT status FROM users WHERE id = $1`, [uid]);
-    if (!u) return c.json({ error: "not logged in" }, 401);
-    if (u.status === "suspended") return c.json({ error: "account suspended" }, 403);
+    try {
+      const u = await one<{ status: string }>(`SELECT status FROM users WHERE id = $1`, [uid]);
+      if (!u) return c.json({ error: "not logged in" }, 401);
+      if (u.status === "suspended") return c.json({ error: "account suspended" }, 403);
+    } catch (err) {
+      console.error("[dashboard-api] user status check failed:", (err as any)?.message ?? err);
+      return c.json({ error: "service temporarily unavailable" }, 503);
+    }
     await next();
   });
 
