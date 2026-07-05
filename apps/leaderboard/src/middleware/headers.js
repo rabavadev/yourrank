@@ -7,11 +7,15 @@ export const MIME = {
   ".svg": "image/svg+xml",
 };
 
-export const HTML = { 
-  "content-type": "text/html; charset=utf-8", 
+// SEC-005-v7: HTML intentionally has NO Content-Security-Policy or X-Frame-Options.
+// Public leaderboard pages MUST be iframe-embeddable (streamers embed in OBS/browser
+// sources). Authenticated pages (login, dashboard, admin) use SECURE_HTML which
+// includes frame-ancestors 'self' and a full CSP. Do NOT add frame restrictions here.
+export const HTML = {
+  "content-type": "text/html; charset=utf-8",
   "Strict-Transport-Security": "max-age=31536000; includeSubDomains",
-  "X-Content-Type-Options": "nosniff", 
-  "Referrer-Policy": "strict-origin-when-cross-origin" 
+  "X-Content-Type-Options": "nosniff",
+  "Referrer-Policy": "strict-origin-when-cross-origin"
 };
 
 // Hardened headers for the authenticated/app pages (login, signup, forgot,

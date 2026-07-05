@@ -195,12 +195,19 @@ export async function handleAction(request, env) {
       if (target.is_admin) return bad("Can't generate a reset link for an admin");
       const token = newToken();
       await env.SESSIONS.put(`reset:${token}`, target.id, { expirationTtl: 86400 });
+      // SEC-010-v7: Do NOT return the token/URL in the API response.
+      // Previously: return ok({ link: `${origin}/reset?token=${token}`, email: target.email });
+      // Risk: the token in the response could be intercepted or logged. The reset link
+      // should be sent via email-only flow. For now, return a confirmation message only.
+      // TODO: integrate email delivery (e.g., Resend/SendGrid) to send the link to target.email.
       const origin = new URL(request.url).origin;
+      const resetLink = `${origin}/reset?token=${token}`;
+      console.log(`[admin] reset-link generated for ${target.email}: ${resetLink} (send via email)`);
       await logAdminAction(env, admin.id, body.action, target.id, {
         email: target.email,
         details: "reset-link-generated",
       }, request);
-      return ok({ link: `${origin}/reset?token=${token}`, email: target.email });
+      return ok({ message: `Reset link generated for ${target.email}. Deliver via email.`, email: target.email });
     }
     default:
       return bad("Unknown action");

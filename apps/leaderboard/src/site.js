@@ -29,7 +29,8 @@ export const DEFAULT_EXTRA = {
 // All site columns except logo_data (base64 image, up to 180KB) — that's only
 // needed by the /logo/:slug endpoint and saveSite(), which fetch it separately.
 // PERF-004 / PERF-107: avoid SELECT * to prevent 180KB+ transfers on every page.
-const SITE_COLUMNS = "id, user_id, slug, name, tagline, casino, code, cta_url, prize_pool, period, ends_at, reset_note, blurb, extra_json, published, theme_json, updated_at, custom_domain, domain_status";
+// PERF-005: include has_logo as a computed column to avoid a separate re-query.
+const SITE_COLUMNS = "id, user_id, slug, name, tagline, casino, code, cta_url, prize_pool, period, ends_at, reset_note, blurb, extra_json, published, theme_json, updated_at, custom_domain, domain_status, (logo_data IS NOT NULL AND logo_data != '') AS has_logo";
 
 // Two-tier cache: L1 in-memory Map (per-isolate, instant) + L2 KV (cross-isolate, 30s TTL).
 // On Cloudflare Workers, each isolate has its own L1 Map. KV ensures that after
@@ -40,6 +41,7 @@ const SITE_COLUMNS = "id, user_id, slug, name, tagline, casino, code, cta_url, p
 const siteCache = new Map();       // L1 — per-isolate, no TTL enforcement beyond what's set below
 const inflight = new Map();        // PERF-009: single-flight — prevent cache stampede on L1+L2 miss
 const L1_TTL = 25_000;             // L1 entries expire after 25s (must be <= L2_TTL)
+const L1_MAX_ENTRY_BYTES = 50_000; // SEC-009-v7: skip L1 caching for entries > 50KB to prevent memory pressure
 const L2_TTL = 30;                 // KV entries expire after 30s (seconds, for KV expirationTtl)
 const KV_PREFIX_SITE = "sitecache:";
 const SITE_CACHE_MAX = 1000;       // PERF-005: cap L1 entries to prevent unbounded memory growth
@@ -52,6 +54,18 @@ function evictOldest(cache, max) {
   }
 }
 
+// SEC-009-v7: Estimate serialized size of a value to prevent memory pressure.
+// Skips L1 caching for entries > L1_MAX_ENTRY_BYTES (50KB). These entries still
+// go to L2 KV (which has its own limits) and the DB, just not in-memory.
+function setL1(cache, key, data, maxEntryBytes) {
+  try {
+    const size = JSON.stringify(data).length;
+    if (size > maxEntryBytes) return; // too large for L1 — rely on L2/DB
+  } catch { /* stringify failed — skip L1 */ }
+  cache.set(key, { data, expires: Date.now() + L1_TTL });
+  evictOldest(cache, SITE_CACHE_MAX);
+}
+
 async function getCached(env, key, dbFetcher) {
   // L1 check (synchronous, per-isolate)
   const entry = siteCache.get(key);
@@ -61,8 +75,7 @@ async function getCached(env, key, dbFetcher) {
   try {
     const kvRaw = await env.SESSIONS.get(KV_PREFIX_SITE + key, { type: "json" });
     if (kvRaw !== null) {
-      siteCache.set(key, { data: kvRaw, expires: Date.now() + L1_TTL });
-      evictOldest(siteCache, SITE_CACHE_MAX);
+      setL1(siteCache, key, kvRaw, L1_MAX_ENTRY_BYTES);
       return kvRaw;
     }
   } catch { /* KV miss — fall through to DB */ }
@@ -72,8 +85,7 @@ async function getCached(env, key, dbFetcher) {
   const p = (async () => {
     try {
       const data = await dbFetcher();
-      siteCache.set(key, { data, expires: Date.now() + L1_TTL });
-      evictOldest(siteCache, SITE_CACHE_MAX);
+      setL1(siteCache, key, data, L1_MAX_ENTRY_BYTES);
       try {
         await env.SESSIONS.put(KV_PREFIX_SITE + key, JSON.stringify(data), { expirationTtl: L2_TTL });
       } catch { /* non-critical */ }
@@ -184,47 +196,47 @@ export function publicShape(site, players, archives = [], hasLogo = false) {
 export async function getPublicSite(env, slug) {
     const site = await getBySlug(env, slug);
     if (!site || !site.published) return null;
-    const [owner, players, logoRow, archives] = await Promise.all([
+    // PERF-005: has_logo is now part of SITE_COLUMNS (computed from logo_data).
+    // Eliminated redundant re-query of sites table. Owner query remains separate
+    // since it's from the users table (indexed by id, ~0.1ms).
+    const [owner, players, archives] = await Promise.all([
       one(
         "SELECT plan, (EXTRACT(EPOCH FROM plan_expires_at) * 1000)::double precision AS plan_expires_at, status FROM users WHERE id=$1",
         [site.user_id]
       ),
       getPlayers(env, site.id),
-      one("SELECT (logo_data IS NOT NULL AND logo_data != '') AS has_logo FROM sites WHERE id=$1", [site.id]),
       getArchives(env, site.id, 99), // fetch all; trimmed below by plan limit
     ]);
     if (owner && owner.status === "suspended") return { suspended: true };
     const plan = effectivePlan(owner);
     const archiveLimit = ARCHIVE_LIMITS[plan] || 6;
-    return { id: site.id, data: publicShape(site, players, archives.slice(0, archiveLimit), !!logoRow?.has_logo), plan };
+    return { id: site.id, data: publicShape(site, players, archives.slice(0, archiveLimit), !!site.has_logo), plan };
   }
 
 export async function getUserSite(env, uid, plan) {
-    const site = await getByUser(env, uid);
-    if (!site) return null;
-    const archiveLimit = ARCHIVE_LIMITS[plan || "free"] || 6;
-    const [archives, logoRow] = await Promise.all([
-      getArchives(env, site.id, archiveLimit),
-      one("SELECT (logo_data IS NOT NULL AND logo_data != '') AS has_logo FROM sites WHERE id=$1", [site.id]),
-    ]);
-  const extra = (site.extra_json && typeof site.extra_json === "object") ? site.extra_json : {};
-  return {
-      id: site.id, slug: site.slug, published: !!site.published,
-      data: publicShape(site, await getPlayers(env, site.id), archives.slice(0, archiveLimit), !!logoRow?.has_logo),
-      customDomain: site.custom_domain || "",
-        domainStatus: site.domain_status || "pending",
-      notify: {
-        discord_webhook_url: !!extra.discord_webhook_url,
-        telegram_bot_token: !!extra.telegram_bot_token,
-        telegram_chat_id: extra.telegram_chat_id || "",
-        telegram_notify: !!extra.telegram_notify,
-      },
-      archives: archives.map((a) => {
-        const n = Array.isArray(a.snapshot_json) ? a.snapshot_json.length : 0;
-        return { id: a.id, label: a.label, at: a.created_at, players: n };
-      }),
-    };
-  }
+      const site = await getByUser(env, uid);
+      if (!site) return null;
+      const archiveLimit = ARCHIVE_LIMITS[plan || "free"] || 6;
+      // PERF-005: has_logo is now in SITE_COLUMNS — no separate query needed.
+      const archives = await getArchives(env, site.id, archiveLimit);
+    const extra = (site.extra_json && typeof site.extra_json === "object") ? site.extra_json : {};
+    return {
+        id: site.id, slug: site.slug, published: !!site.published,
+        data: publicShape(site, await getPlayers(env, site.id), archives.slice(0, archiveLimit), !!site.has_logo),
+        customDomain: site.custom_domain || "",
+          domainStatus: site.domain_status || "pending",
+        notify: {
+          discord_webhook_url: !!extra.discord_webhook_url,
+          telegram_bot_token: !!extra.telegram_bot_token,
+          telegram_chat_id: extra.telegram_chat_id || "",
+          telegram_notify: !!extra.telegram_notify,
+        },
+        archives: archives.map((a) => {
+          const n = Array.isArray(a.snapshot_json) ? a.snapshot_json.length : 0;
+          return { id: a.id, label: a.label, at: a.created_at, players: n };
+        }),
+      };
+    }
 
 // Multi-board: return a summary list of all boards for a user.
 export async function getUserBoardsList(env, uid) {
@@ -240,31 +252,29 @@ export async function getUserBoardsList(env, uid) {
 
 // Multi-board: get full site data for a specific board by siteId.
 export async function getUserSiteById(env, uid, siteId, plan) {
-  const site = await getBoardById(env, uid, siteId);
-  if (!site) return null;
-  const archiveLimit = ARCHIVE_LIMITS[plan || "free"] || 6;
-  const [archives, logoRow] = await Promise.all([
-    getArchives(env, site.id, archiveLimit),
-    one("SELECT (logo_data IS NOT NULL AND logo_data != '') AS has_logo FROM sites WHERE id=$1", [site.id]),
-  ]);
-const extra = (site.extra_json && typeof site.extra_json === "object") ? site.extra_json : {};
-return {
-  id: site.id, slug: site.slug, published: !!site.published,
-  data: publicShape(site, await getPlayers(env, site.id), archives.slice(0, archiveLimit), !!logoRow?.has_logo),
-    customDomain: site.custom_domain || "",
-        domainStatus: site.domain_status || "pending",
-    notify: {
-      discord_webhook_url: !!extra.discord_webhook_url,
-      telegram_bot_token: !!extra.telegram_bot_token,
-      telegram_chat_id: extra.telegram_chat_id || "",
-      telegram_notify: !!extra.telegram_notify,
-    },
-    archives: archives.map((a) => {
-      const n = Array.isArray(a.snapshot_json) ? a.snapshot_json.length : 0;
-      return { id: a.id, label: a.label, at: a.created_at, players: n };
-    }),
-  };
-}
+    const site = await getBoardById(env, uid, siteId);
+    if (!site) return null;
+    const archiveLimit = ARCHIVE_LIMITS[plan || "free"] || 6;
+    // PERF-005: has_logo is now in SITE_COLUMNS — no separate query needed.
+    const archives = await getArchives(env, site.id, archiveLimit);
+  const extra = (site.extra_json && typeof site.extra_json === "object") ? site.extra_json : {};
+  return {
+    id: site.id, slug: site.slug, published: !!site.published,
+    data: publicShape(site, await getPlayers(env, site.id), archives.slice(0, archiveLimit), !!site.has_logo),
+      customDomain: site.custom_domain || "",
+          domainStatus: site.domain_status || "pending",
+      notify: {
+        discord_webhook_url: !!extra.discord_webhook_url,
+        telegram_bot_token: !!extra.telegram_bot_token,
+        telegram_chat_id: extra.telegram_chat_id || "",
+        telegram_notify: !!extra.telegram_notify,
+      },
+      archives: archives.map((a) => {
+        const n = Array.isArray(a.snapshot_json) ? a.snapshot_json.length : 0;
+        return { id: a.id, label: a.label, at: a.created_at, players: n };
+      }),
+    };
+  }
 
 // Multi-board: create a new board for a user.
 export async function createBoard(env, uid, { slug, name } = {}) {

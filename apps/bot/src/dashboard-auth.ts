@@ -20,6 +20,15 @@ export function sameOrigin(req: Request, publicBaseUrl: string): boolean {
   // Require Origin header for state-changing methods. Browsers always send
   // Origin on cross-origin POST/PATCH. Missing Origin = non-browser client,
   // which should include its own CSRF token if it wants to make changes.
+  //
+  // SEC-008-v7: If neither Origin nor Referer is present on a state-changing
+  // request, we REJECT it (return false) unless the path is explicitly exempted.
+  // This is intentional defense-in-depth alongside the SameSite=Lax session
+  // cookie. The exempted paths (/auth/telegram, /pb/*, /billing/hook) are
+  // server-to-server callbacks or browser widget redirects that don't send
+  // Origin in all embed contexts. Risk: a non-browser attacker sending
+  // requests without Origin could still reach exempted paths, but those
+  // paths have their own auth (HMAC, Telegram signature).
   if (!origin) {
     const method = req.method.toUpperCase();
     if (method === "POST" || method === "PATCH" || method === "PUT" || method === "DELETE") {

@@ -16,6 +16,11 @@ export async function handleScores(request, env) {
     // Rate limit: 10/min per key
     if (!(await rateLimit(env, `scores:${postbackKey}`, 10, 60)).ok) return bad("Rate limit exceeded. Try again shortly.", 429);
     // Validate key against sites table (using postback_key_hash for lookup, falling back to plaintext)
+    // SEC-006-v7: Currently uses plaintext `postback_key` column for lookup. The
+    // postback_key_enc column exists (migration 20260705000005_encrypt_postback_key.sql)
+    // but this query still reads plaintext. TODO: migrate to hash-based lookup
+    // (store SHA-256(postback_key) in postback_key_hash column, lookup by hash,
+    // then verify plaintext match) so plaintext key is never stored in DB.
     const site = await one("SELECT id, user_id, postback_key FROM sites WHERE postback_key=$1", [postbackKey]);
     if (!site) return bad("Invalid postback key.", 401);
     // Verify HMAC-SHA256 signature of the raw request body
