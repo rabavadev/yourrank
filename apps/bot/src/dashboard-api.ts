@@ -193,7 +193,7 @@ export function buildDashboardApi(): Hono<{ Variables: { uid: string } }> {
     try { encToken = await encryptToken(token); }
     catch (err) {
         console.error("[POST /bots] encryptToken failed:", String((err as any)?.message ?? err));
-        return c.json({ error: "Server configuration error — could not encrypt bot token. Contact support.", _debug: String((err as any)?.message ?? err) }, 500);
+        return c.json({ error: "Server configuration error — could not encrypt bot token. Contact support." }, 500);
       }
     // count-check + INSERT run atomically under a per-user advisory lock so two
     // concurrent connect-bot requests can't both pass the count and both insert.
@@ -213,9 +213,8 @@ export function buildDashboardApi(): Hono<{ Variables: { uid: string } }> {
       });
     } catch (err) {
         const msg = (err as any)?.message ?? String(err);
-        const code = (err as any)?.code ?? "";
-        console.error("[POST /bots] DB error:", msg, code);
-        return c.json({ error: "Database error — please try again in a moment", _debug: msg, _code: code }, 500);
+        console.error("[POST /bots] DB error:", msg);
+        return c.json({ error: "Database error — please try again in a moment" }, 500);
       }
     if ("error" in out) return c.json({ error: out.error }, 402);
     // setWebhook AFTER the transaction commits — don't hold the lock across HTTP.

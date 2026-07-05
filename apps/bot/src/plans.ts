@@ -113,8 +113,11 @@ export async function withPlanLimit<R>(
 async function stableHashInt64(s: string): Promise<string> {
   const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(s));
   const view = new DataView(buf);
-  // First 8 bytes -> int64 as a string (avoids JS BigInt/serialization quirks).
+  // First 8 bytes -> signed int64 as a string (avoids JS BigInt/serialization quirks).
+  // Mask the high bit to guarantee the result fits in PostgreSQL's signed bigint
+  // range (max 2^63 - 1). Without this, values >= 2^63 overflow and pg rejects them
+  // with "value is out of range for type bigint" (error 22003).
   const lo = view.getUint32(0, false);
-  const hi = view.getUint32(4, false);
+  const hi = view.getUint32(4, false) & 0x7FFFFFFF;
   return String((BigInt(hi) << 32n) | BigInt(lo));
 }

@@ -15,7 +15,6 @@ export function populateEnv(env: Record<string, any>, options?: { setGlobalEnv?:
   let hdConn: string | null = null;
   try { hdConn = env.HYPERDRIVE?.connectionString ?? null; } catch {}
   pe.DATABASE_URL = hdConn || env.DATABASE_URL;
-  console.log("[populateEnv] DATABASE_URL source:", hdConn ? "hyperdrive" : "secret", "len:", pe.DATABASE_URL?.length ?? 0);
   
   // Common bindings used by both Workers.
   // Only set values that are actually defined — process.env coerces
