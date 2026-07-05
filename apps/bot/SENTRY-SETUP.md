@@ -14,16 +14,18 @@ bun add toucan-js
 Add the import and wrap the entry point at the very top of `src/worker.ts`:
 
 ```ts
-import Toucan from "toucan-js";
+import { Toucan } from "toucan-js";
 
 export default {
   async fetch(req: Request, env: Record<string, any>, ctx: any): Promise<Response> {
-    const sentry = new Toucan({
-      dsn: env.SENTRY_DSN,
-      context: ctx,              // waitUntil / passThroughOnException
-      request: req,              // enriches events with request data
-      environment: env.ENVIRONMENT ?? "production",
-    });
+    const sentry = env.SENTRY_DSN
+      ? new Toucan({
+          dsn: env.SENTRY_DSN,
+          context: ctx,              // waitUntil / passThroughOnException
+          request: req,              // enriches events with request data
+          environment: env.ENVIRONMENT ?? "production",
+        })
+      : null;
 
     try {
       populateEnv(env);
@@ -31,23 +33,25 @@ export default {
       const app = buildHonoApp();
       return await app.fetch(req, env as any);
     } catch (err) {
-      sentry.captureException(err);
+      sentry?.captureException(err);
       throw err;
     }
   },
 
   async scheduled(event: any, env: Record<string, any>, ctx: any): Promise<void> {
-    const sentry = new Toucan({
-      dsn: env.SENTRY_DSN,
-      context: ctx,
-      environment: env.ENVIRONMENT ?? "production",
-    });
+    const sentry = env.SENTRY_DSN
+      ? new Toucan({
+          dsn: env.SENTRY_DSN,
+          context: ctx,
+          environment: env.ENVIRONMENT ?? "production",
+        })
+      : null;
 
     try {
       populateEnv(env);
       // ... existing cron logic ...
     } catch (err) {
-      sentry.captureException(err);
+      sentry?.captureException(err);
       throw err;
     }
   },

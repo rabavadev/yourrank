@@ -85,6 +85,7 @@ export async function handleCheckout(request, env) {
   const origin = new URL(request.url).origin;
   // Determine which plan to upgrade to (default: next tier up)
   const current = effectivePlan(user);
+  if (current === "agency") return bad("You're already on the highest plan (Agency).", 400);
   const tiers = ["free", "starter", "pro", "agency"];
   const currentIdx = tiers.indexOf(current);
   const targetPlan = currentIdx >= 0 && currentIdx < tiers.length - 1 ? tiers[currentIdx + 1] : "pro";

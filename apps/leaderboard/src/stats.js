@@ -18,16 +18,30 @@ function extractDomain(ref) {
 // Fire-and-forget increment. Callers wrap in ctx.waitUntil so it never blocks a response.
 // `refererHeader` is optional — only views pass it.
 export async function bumpStat(env, siteId, field, refererHeader) {
-  if (!siteId || !FIELDS.has(field)) return; // field is from a fixed allow-list, safe to interpolate
-  const day = todayUTC();
-  try {
-    // Main daily counter (existing behaviour).
-    await exec(
-      `INSERT INTO site_stats (site_id, day, ${field}) VALUES ($1, $2, 1)
-       ON CONFLICT (site_id, day) DO UPDATE SET ${field} = site_stats.${field} + 1`,
-      [siteId, day]
-    );
-  } catch (err) { console.error("[bumpStat]: operation failed", err); }
+  if (!siteId || !FIELDS.has(field)) return;
+    const day = todayUTC();
+    try {
+      // Main daily counter — static SQL per field to prevent any SQL injection.
+      if (field === "views") {
+        await exec(
+          `INSERT INTO site_stats (site_id, day, views) VALUES ($1, $2, 1)
+           ON CONFLICT (site_id, day) DO UPDATE SET views = site_stats.views + 1`,
+          [siteId, day]
+        );
+      } else if (field === "copies") {
+        await exec(
+          `INSERT INTO site_stats (site_id, day, copies) VALUES ($1, $2, 1)
+           ON CONFLICT (site_id, day) DO UPDATE SET copies = site_stats.copies + 1`,
+          [siteId, day]
+        );
+      } else if (field === "clicks") {
+        await exec(
+          `INSERT INTO site_stats (site_id, day, clicks) VALUES ($1, $2, 1)
+           ON CONFLICT (site_id, day) DO UPDATE SET clicks = site_stats.clicks + 1`,
+          [siteId, day]
+        );
+      }
+    } catch (err) { console.error("[bumpStat]: operation failed", err); }
 
   // Hourly heatmap — only for views (the most granular metric).
   if (field === "views") {

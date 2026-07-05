@@ -120,7 +120,7 @@ export async function handleBillingUpdate(update: Update): Promise<void> {
         [userId, sub!.id, sp.total_amount, chargeId, tier]
       );
       await tx.query(
-        `UPDATE users SET plan = $1, plan_expires_at = now() + interval '30 days', updated_at = now() WHERE id = $2`,
+        `UPDATE users SET plan = $1, plan_expires_at = GREATEST(COALESCE(plan_expires_at, now()), now()) + interval '30 days', updated_at = now() WHERE id = $2`,
         [tier, userId]
       );
       return true;
