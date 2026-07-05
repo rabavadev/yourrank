@@ -24,5 +24,5 @@
 --    WHERE provider = 'telegram_stars' AND tx_ref IS NOT NULL
 --    GROUP BY tx_ref HAVING count(*) > 1;
 
-CREATE UNIQUE INDEX CONCURRENTLY IF NOT EXISTS uq_payments_stars_txref
+CREATE UNIQUE INDEX IF NOT EXISTS uq_payments_stars_txref
     ON payments (tx_ref) WHERE provider = 'telegram_stars';

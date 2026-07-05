@@ -45,6 +45,7 @@ SENTRY_DSN = ""
 #   NOWPAYMENTS_API_KEY
 #   NOWPAYMENTS_IPN_SECRET
 #   RESEND_API_KEY          (optional; transactional email — signup/lead/reset)
+#   TOKEN_ENC_KEY           # 32-byte hex, encrypts TOTP secrets for admin 2FA
 #   MAIL_FROM               (required if RESEND_API_KEY is set; the From: address,
 #                            e.g. "YourRank <hey@yourrank.site>" — Resend rejects
 #                            an empty From)

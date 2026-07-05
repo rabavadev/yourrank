@@ -24,6 +24,6 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- Add index to speed up the uniqueness check (used by the new lock-based approach)
-CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_clicks_uniqueness_check
+CREATE INDEX IF NOT EXISTS idx_clicks_uniqueness_check
     ON clicks (short_link_id, ip_hash, ts DESC)
     WHERE ts > now() - interval '24 hours';

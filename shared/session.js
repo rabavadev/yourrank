@@ -63,6 +63,7 @@ exports.cookieSet = cookieSet;
 const cookieClear = () => `${exports.COOKIE_NAME}=; ${cookieAttrs()}; Max-Age=0`;
 exports.cookieClear = cookieClear;
 // ---- read the token from a Request ----
+/** Extract the session token from the Cookie header of a Request. */
 function readToken(req) {
     const c = req.headers.get("cookie") || "";
     const re = new RegExp("(?:^|;\\s*)" + exports.COOKIE_NAME + "=([^;]+)");
@@ -104,12 +105,14 @@ async function removeUserSession(env, userId, token) {
     }
     catch { /* best-effort index */ }
 }
+/** Create a new session in KV and return the token. */
 async function createSession(env, userId) {
     const token = (0, exports.newToken)();
     await env.SESSIONS.put(exports.KV_PREFIX + token, userId, { expirationTtl: exports.SESSION_TTL_S });
     await addUserSession(env, userId, token);
     return token;
 }
+/** Delete a single session token from KV and remove it from the user index. */
 async function destroySession(env, token) {
     if (token) {
         const uid = await env.SESSIONS.get(exports.KV_PREFIX + token);
@@ -161,25 +164,25 @@ async function currentUserId(req, env) {
     return uid || null;
 }
 async function currentUserIdFromHeader(cookieHeader, env) {
-      const token = readTokenFromHeader(cookieHeader);
-      if (!token)
-          return null;
-      const uid = await env.SESSIONS.get(exports.KV_PREFIX + token);
-      if (uid) {
-          // ARCH-005: Sliding-window TTL refresh — same pattern as currentUserId().
-          // Fire-and-forget, never blocks the request.
-          try {
-              env.SESSIONS.put(exports.KV_PREFIX + token, uid, { expirationTtl: exports.SESSION_TTL_S }).catch(() => { });
-              const idxKey = "userSessions:" + uid;
-              env.SESSIONS.get(idxKey).then((cur) => {
-                  if (cur)
-                      env.SESSIONS.put(idxKey, cur, { expirationTtl: exports.SESSION_TTL_S }).catch(() => { });
-              }).catch(() => { });
-          }
-          catch { /* best-effort rotation */ }
-      }
-      return uid || null;
-  }
+    const token = readTokenFromHeader(cookieHeader);
+    if (!token)
+        return null;
+    const uid = await env.SESSIONS.get(exports.KV_PREFIX + token);
+    if (uid) {
+        // ARCH-005: Sliding-window TTL refresh — same pattern as currentUserId().
+        // Fire-and-forget, never blocks the request.
+        try {
+            env.SESSIONS.put(exports.KV_PREFIX + token, uid, { expirationTtl: exports.SESSION_TTL_S }).catch(() => { });
+            const idxKey = "userSessions:" + uid;
+            env.SESSIONS.get(idxKey).then((cur) => {
+                if (cur)
+                    env.SESSIONS.put(idxKey, cur, { expirationTtl: exports.SESSION_TTL_S }).catch(() => { });
+            }).catch(() => { });
+        }
+        catch { /* best-effort rotation */ }
+    }
+    return uid || null;
+}
 // ---- resolve the full user row via an injected loader ----
 // loadUser keeps this module free of the bot Worker's pg/Hyperdrive layer, so it
 // is identical to the JS version. Bot loader example:

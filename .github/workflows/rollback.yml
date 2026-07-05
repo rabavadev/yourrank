@@ -40,6 +40,11 @@ jobs:
 
       - run: bun install --frozen-lockfile
 
+      - name: Build leaderboard assets
+        if: inputs.worker == 'leaderboard'
+        working-directory: apps/leaderboard
+        run: node build.js
+
       - name: Rollback deploy
         working-directory: apps/${{ inputs.worker }}
         run: |
