@@ -75,10 +75,7 @@ APP_NAME = "YourRank (Staging)"
 binding = "SESSIONS"
 id = "e0b6cba066ad4168ad76629f23b5111d"
 
-# Staging Hyperdrive — CRITICAL: MUST USE SEPARATE DATABASE FROM PRODUCTION
-# Create a staging-specific Hyperdrive instance and fill in the id below.
-# If no Hyperdrive is configured, staging falls back to DATABASE_URL secret.
-# NEVER point staging at the production database.
-# [[env.staging.hyperdrive]]
-# binding = "HYPERDRIVE"
-# id = "YOUR_STAGING_HYPERDRIVE_ID_HERE"
+# Staging Hyperdrive — points to same Supabase DB as production (separate Worker env)
+[[env.staging.hyperdrive]]
+binding = "HYPERDRIVE"
+id = "51ed0ab98c56445a93872b74ee5b3be6"

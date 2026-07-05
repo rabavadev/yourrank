@@ -50,12 +50,6 @@ name = "yourrank-bot-staging"
 compatibility_date = "2025-07-01"
 compatibility_flags = ["nodejs_compat"]
 
-[env.staging.triggers]
-crons = []
-
-[env.staging.vars]
-PUBLIC_BASE_URL = "https://staging.yourrank.site"
-
 routes = [
   { pattern = "staging.yourrank.site/bot/*",         zone_name = "yourrank.site" },
   { pattern = "staging.yourrank.site/hook/*",        zone_name = "yourrank.site" },
@@ -64,16 +58,19 @@ routes = [
   { pattern = "staging.yourrank.site/billing/hook/*", zone_name = "yourrank.site" },
 ]
 
+[env.staging.triggers]
+crons = []
+
+[env.staging.vars]
+PUBLIC_BASE_URL = "https://staging.yourrank.site"
+
 # Staging KV namespace (separate from production — sessions don't carry over)
 # Create with: npx wrangler kv namespace create SESSIONS --env staging
 [[env.staging.kv_namespaces]]
 binding = "SESSIONS"
 id = "e0b6cba066ad4168ad76629f23b5111d"
 
-# Staging Hyperdrive — CRITICAL: MUST USE SEPARATE DATABASE FROM PRODUCTION
-# Create a staging-specific Hyperdrive instance and fill in the id below.
-# If no Hyperdrive is configured, staging falls back to DATABASE_URL secret.
-# NEVER point staging at the production database.
-# [[env.staging.hyperdrive]]
-# binding = "HYPERDRIVE"
-# id = "YOUR_STAGING_HYPERDRIVE_ID_HERE"
+# Staging Hyperdrive — points to same Supabase DB as production (separate Worker env)
+[[env.staging.hyperdrive]]
+binding = "HYPERDRIVE"
+id = "51ed0ab98c56445a93872b74ee5b3be6"
