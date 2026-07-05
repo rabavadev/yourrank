@@ -43,7 +43,7 @@ jobs:
             exit 1
           fi
           if supabase link --project-ref lygcqzjxlqbvymkfjvel --password "$SUPABASE_DB_PASSWORD"; then
-            supabase db push
+            supabase db push --include-all
             echo "Migrations applied successfully"
           else
             echo "::error::supabase link failed — check SUPABASE_DB_PASSWORD and project ref"
