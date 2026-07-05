@@ -136,10 +136,18 @@ export async function handleLeads(request, env) {
   if (res) return res;
   // QA-012: Audit-log admin page views
   await logAdminAction(env, admin.id, "leads", null, null, request);
-  const rows = await query(
-    "SELECT id, handle, casino, contact, note, (EXTRACT(EPOCH FROM created_at) * 1000)::double precision AS created_at FROM leads ORDER BY created_at DESC LIMIT 500"
-  );
-  return ok({ leads: rows || [] });
+  const url = new URL(request.url);
+  const page = Math.max(1, Number(url.searchParams.get("page")) || 1);
+  const pageSize = 50;
+  const offset = (page - 1) * pageSize;
+  const [rows, total] = await Promise.all([
+    query(
+      "SELECT id, handle, casino, contact, note, (EXTRACT(EPOCH FROM created_at) * 1000)::double precision AS created_at FROM leads ORDER BY created_at DESC LIMIT $1 OFFSET $2",
+      [pageSize, offset]
+    ),
+    one("SELECT COUNT(*)::int AS n FROM leads"),
+  ]);
+  return ok({ leads: rows || [], page, pageSize, total: total?.n || 0 });
 }
 
 export async function handlePayments(request, env) {
@@ -147,14 +155,22 @@ export async function handlePayments(request, env) {
   if (res) return res;
   // QA-012: Audit-log admin page views
   await logAdminAction(env, admin.id, "payments", null, null, request);
-  const rows = await query(
-    `SELECT p.id, p.user_id, p.provider, p.amount AS amount_usd, p.currency, p.invoice_id, p.tx_ref, p.status,
-            (EXTRACT(EPOCH FROM p.created_at) * 1000)::double precision AS created_at,
-            u.email
-       FROM payments p LEFT JOIN users u ON u.id = p.user_id
-       ORDER BY p.created_at DESC LIMIT 500`
-  );
-  return ok({ payments: rows || [] });
+  const url = new URL(request.url);
+  const page = Math.max(1, Number(url.searchParams.get("page")) || 1);
+  const pageSize = 50;
+  const offset = (page - 1) * pageSize;
+  const [rows, total] = await Promise.all([
+    query(
+      `SELECT p.id, p.user_id, p.provider, p.amount AS amount_usd, p.currency, p.invoice_id, p.tx_ref, p.status,
+              (EXTRACT(EPOCH FROM p.created_at) * 1000)::double precision AS created_at,
+              u.email
+         FROM payments p LEFT JOIN users u ON u.id = p.user_id
+         ORDER BY p.created_at DESC LIMIT $1 OFFSET $2`,
+      [pageSize, offset]
+    ),
+    one("SELECT COUNT(*)::int AS n FROM payments"),
+  ]);
+  return ok({ payments: rows || [], page, pageSize, total: total?.n || 0 });
 }
 
 // POST /api/admin/action — { userId, action: starter|pro|agency|free|suspend|unsuspend|reset-link, days?, plan? }

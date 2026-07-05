@@ -466,9 +466,11 @@ admin: `<!DOCTYPE html><html lang="en"><head>
 <div id="usersPagination" class="admin-pagination"></div></div>
 <div class="tabpane" id="tab-leads" role="tabpanel" aria-labelledby="tab-btn-leads" hidden>
 <div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Handle</th><th>Casino</th><th>Contact</th><th>Note</th><th>When</th></tr></thead><tbody id="leadsBody"></tbody></table></div>
+<div id="leadsPagination" class="admin-pagination"></div>
 <div class="empty" id="leadsEmpty" hidden>No leads yet. Share the landing page around.</div></div>
 <div class="tabpane" id="tab-payments" role="tabpanel" aria-labelledby="tab-btn-payments" hidden>
 <div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>User</th><th>Provider</th><th class="ta-r">Amount</th><th>Status</th><th>When</th></tr></thead><tbody id="payBody"></tbody></table></div>
+<div id="payPagination" class="admin-pagination"></div>
 <div class="empty" id="payEmpty" hidden>No payments yet.</div></div>
 <p class="hint mt-18">Manual activation: use <b>+31d Pro</b> on any user after they pay you directly (PayPal, bank, whatever). Crypto payments through the site activate on their own. Reset links work for 24h — send them over Discord/Telegram if email isn't wired up.</p>
 </div></main>

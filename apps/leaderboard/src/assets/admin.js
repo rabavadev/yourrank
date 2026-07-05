@@ -112,23 +112,40 @@ async function action(btn) {
   } catch { btn.disabled = false; }
 }
 
-async function loadLeads() {
-  const d = await api("/api/admin/leads");
+async function loadLeads(page) {
+  page = page || 1;
+  const d = await api("/api/admin/leads?page=" + page);
   const rows = d.leads || [];
   $("leadsEmpty").hidden = rows.length > 0;
   $("leadsBody").innerHTML = rows.map((l) =>
     `<tr><td>${esc(l.handle)}</td><td>${esc(l.casino)}</td><td>${esc(l.contact)}</td><td class="note">${esc(l.note)}</td><td>${when(l.created_at)}</td></tr>`
   ).join("");
+  renderPag("leadsPagination", d, page, loadLeads);
 }
 
-async function loadPayments() {
-  const d = await api("/api/admin/payments");
+async function loadPayments(page) {
+  page = page || 1;
+  const d = await api("/api/admin/payments?page=" + page);
   const rows = d.payments || [];
   $("payEmpty").hidden = rows.length > 0;
   $("payBody").innerHTML = rows.map((p) => {
     const tone = ["finished", "manual"].includes(p.status) ? "good" : ["failed", "expired", "refunded"].includes(p.status) ? "bad" : "muted";
     return `<tr><td>${esc(p.email || p.user_id)}</td><td>${esc(p.provider)}</td><td class="ta-r">$${Number(p.amount_usd).toFixed(2)}</td><td>${pill(p.status, tone)}</td><td>${when(p.created_at)}</td></tr>`;
   }).join("");
+  renderPag("payPagination", d, page, loadPayments);
+}
+
+function renderPag(containerId, data, page, loadFn) {
+  const el = $(containerId);
+  if (!el) return;
+  const totalPages = Math.max(1, Math.ceil((data.total || 0) / (data.pageSize || 50)));
+  if (totalPages <= 1) { el.innerHTML = ""; return; }
+  const prevDis = page <= 1 ? "disabled" : "";
+  const nextDis = page >= totalPages ? "disabled" : "";
+  el.innerHTML = `<span class="hint" style="margin-right:auto">${data.total || 0} items · page ${page} of ${totalPages}</span>` +
+    `<button class="btn btn--sm btn--ghost" ${prevDis} data-pag="-1">← Previous</button>` +
+    `<button class="btn btn--sm btn--ghost" ${nextDis} data-pag="1">Next →</button>`;
+  el.querySelectorAll("[data-pag]").forEach(b => b.addEventListener("click", () => loadFn(page + Number(b.dataset.pag))));
 }
 
 $("logout").addEventListener("click", async (e) => { e.preventDefault(); await fetch("/api/auth/logout", { method: "POST", headers: { "x-csrf-token": getCsrf() } }); location.href = "/login"; });
