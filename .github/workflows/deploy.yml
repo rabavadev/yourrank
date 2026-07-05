@@ -1,6 +1,8 @@
 name: Deploy
 
 # Push to main -> run pending DB migrations via Supabase CLI, then deploy both Workers.
+# If the smoke test fails after a successful deploy, the rollback job automatically
+# reverts both Workers to their previous Cloudflare deployment via `wrangler rollback`.
 # Required GitHub repo secrets:
 #   CLOUDFLARE_API_TOKEN   — Cloudflare API token
 #   CLOUDFLARE_ACCOUNT_ID  — Cloudflare account id
@@ -98,6 +100,8 @@ jobs:
     needs: migrate
     runs-on: ubuntu-latest
     environment: production
+    outputs:
+      bot-version: ${{ steps.capture-bot.outputs.version }}
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6
