@@ -162,6 +162,7 @@ export default {
         ctx.waitUntil(
           processBroadcastBatch().catch((err: unknown) => {
             console.error(`[cron ${event.cron}] processBroadcastBatch failed:`, err);
+            notifyCronFailure(env, event.cron, "processBroadcastBatch", err).catch(() => {});
           }),
         );
       }

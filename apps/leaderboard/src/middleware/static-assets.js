@@ -1,5 +1,5 @@
 // Static asset server for bundled CSS/JS files
-import { leaderboard_css, leaderboard_js, app_css, auth_js, dashboard_js, admin_js, landing_css, landing_js, analytics_js, billing_js, bot_setup_js, overlay_js } from "../assets_bundled.js";
+import { leaderboard_css, leaderboard_js, app_css, auth_js, dashboard_js, admin_js, landing_css, landing_js, analytics_js, billing_js, bot_setup_js, overlay_js, admin2fa_js, setup_wizard_js } from "../assets_bundled.js";
 
 const MIME = {
   ".css": "text/css; charset=utf-8", 
@@ -21,6 +21,8 @@ const ASSET_MAP = {
   "/assets/billing.js": [billing_js, ".js"],
   "/assets/bot-setup.js": [bot_setup_js, ".js"],
   "/assets/overlay.js": [overlay_js, ".js"],
+  "/assets/admin2fa.js": [admin2fa_js, ".js"],
+  "/assets/setup-wizard.js": [setup_wizard_js, ".js"],
 };
 
 export function serveStaticAsset(path) {

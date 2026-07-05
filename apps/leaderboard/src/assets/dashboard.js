@@ -309,7 +309,7 @@ function renderNotifications(n){
   }
   const wh = $("f_webhook"); if (wh && n.discord_webhook_url) wh.value = ""; // boolean from API, don't expose URL
   const tg = $("f_tgNotify"); if (tg) tg.checked = !!n.telegram_notify;
-  const tgChat = $("f_tgChat"); if (tgChat) tgChat.value = n.telegram_chat_id || "";
+  const tgChat = $("f_tgChatId"); if (tgChat) tgChat.value = n.telegram_chat_id || "";
 }
 
 function renderDomain(){

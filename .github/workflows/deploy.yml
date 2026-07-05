@@ -22,8 +22,6 @@ concurrency:
 jobs:
   migrate:
     runs-on: ubuntu-latest
-    # Migrations are best-effort: deploy proceeds even if DB secrets are missing/wrong.
-    continue-on-error: true
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
 

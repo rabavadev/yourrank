@@ -40,8 +40,8 @@ try{
 // Build the initial data
 const players=[];
 $("wiz_players").value.split("\n").forEach(l=>{const t=l.trim();if(t&&!t.startsWith("#")&&!t.startsWith("//"))players.push(t);});
-const body={slug,name:$("wiz_name").value.trim()||slug,casino:$("wiz_casino").value.trim()||null,period:$("wiz_period").value.trim()||null,prizePool:$("wiz_prize").value.trim()||null,refCode:$("wiz_ref").value.trim()||null,players:players.map(n=>({name:n}))};
-const res=await fetch("/api/site",{method:"POST",headers:{"content-type":"application/json","x-csrf-token":getCsrf()},body:JSON.stringify(body)});
+const body={slug,name:$("wiz_name").value.trim()||slug,casino:$("wiz_casino").value.trim()||null,period:null,prizePool:null,refCode:$("wiz_code").value.trim()||null,referralLink:$("wiz_cta").value.trim()||null,players:players.map(n=>({name:n}))};
+const res=await fetch("/api/site",{method:"PUT",headers:{"content-type":"application/json","x-csrf-token":getCsrf()},body:JSON.stringify(body)});
 const data=await res.json();
 if(!data.ok){$("wiz_err").textContent=data.error||"Failed to create page.";$("wiz_finish").disabled=false;return;}
 location.href="/dashboard";

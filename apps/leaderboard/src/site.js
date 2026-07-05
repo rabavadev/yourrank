@@ -210,7 +210,7 @@ export async function getUserSite(env, uid, plan) {
   const extra = (site.extra_json && typeof site.extra_json === "object") ? site.extra_json : {};
   return {
       id: site.id, slug: site.slug, published: !!site.published,
-      data: publicShape(site, await getPlayers(env, site.id), archives.slice(0, 6), !!logoRow?.has_logo),
+      data: publicShape(site, await getPlayers(env, site.id), archives.slice(0, archiveLimit), !!logoRow?.has_logo),
       customDomain: site.custom_domain || "",
         domainStatus: site.domain_status || "pending",
       notify: {
@@ -240,17 +240,17 @@ export async function getUserBoardsList(env, uid) {
 
 // Multi-board: get full site data for a specific board by siteId.
 export async function getUserSiteById(env, uid, siteId, plan) {
-    const site = await getBoardById(env, uid, siteId);
-    if (!site) return null;
-    const archiveLimit = ARCHIVE_LIMITS[plan || "free"] || 6;
-    const [archives, logoRow] = await Promise.all([
-      getArchives(env, site.id, archiveLimit),
-      one("SELECT (logo_data IS NOT NULL AND logo_data != '') AS has_logo FROM sites WHERE id=$1", [site.id]),
-    ]);
-  const extra = (site.extra_json && typeof site.extra_json === "object") ? site.extra_json : {};
-  return {
-    id: site.id, slug: site.slug, published: !!site.published,
-    data: publicShape(site, await getPlayers(env, site.id), archives.slice(0, 6), !!logoRow?.has_logo),
+  const site = await getBoardById(env, uid, siteId);
+  if (!site) return null;
+  const archiveLimit = ARCHIVE_LIMITS[plan || "free"] || 6;
+  const [archives, logoRow] = await Promise.all([
+    getArchives(env, site.id, archiveLimit),
+    one("SELECT (logo_data IS NOT NULL AND logo_data != '') AS has_logo FROM sites WHERE id=$1", [site.id]),
+  ]);
+const extra = (site.extra_json && typeof site.extra_json === "object") ? site.extra_json : {};
+return {
+  id: site.id, slug: site.slug, published: !!site.published,
+  data: publicShape(site, await getPlayers(env, site.id), archives.slice(0, archiveLimit), !!logoRow?.has_logo),
     customDomain: site.custom_domain || "",
         domainStatus: site.domain_status || "pending",
     notify: {
