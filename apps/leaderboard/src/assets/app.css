@@ -185,6 +185,10 @@ table.ref-table td{padding:8px 8px;border-bottom:1px solid var(--line);color:var
 .plan-opt--current .plan-opt-btn{color:var(--ink-mute);border-color:var(--line-2);background:transparent;pointer-events:none}
 .plan-opt--disabled{opacity:.5;pointer-events:none}
 
+.pw-wrap{position:relative}.pw-wrap input{padding-right:42px}
+.pw-toggle{position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--ink-mute);cursor:pointer;padding:4px;display:flex;align-items:center}
+.pw-toggle:hover{color:var(--ink)}
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
 }

@@ -2,6 +2,27 @@
  * Mode is derived from the URL path so no inline <script> is needed (the
  * auth pages run under a strict CSP with script-src 'self', which blocks
  * the previous inline window.__MODE__ assignment). */
+/* Password show/hide toggle */
+document.querySelectorAll("[data-pw-toggle]").forEach(btn => {
+  btn.addEventListener("click", () => {
+    const wrap = btn.closest(".pw-wrap");
+    const input = wrap.querySelector("input");
+    const eye = btn.querySelector("[data-eye]");
+    const eyeOff = btn.querySelector("[data-eye-off]");
+    if (input.type === "password") {
+      input.type = "text";
+      eye.hidden = true;
+      eyeOff.hidden = false;
+      btn.setAttribute("aria-label", "Hide password");
+    } else {
+      input.type = "password";
+      eye.hidden = false;
+      eyeOff.hidden = true;
+      btn.setAttribute("aria-label", "Show password");
+    }
+  });
+});
+
 const mode = { "/signup": "signup", "/forgot": "forgot", "/reset": "reset" }[location.pathname] || "login";
 const form = document.getElementById("form");
 const errEl = document.getElementById("err");
