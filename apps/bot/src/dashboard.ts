@@ -35,8 +35,10 @@ import {
   destroySession,
   cookieSet,
   cookieClear,
-  currentUserId,
+  resolveSession,
   readToken,
+  hasLegacyCookie,
+  cookieClearLegacy,
   type SessionEnv,
 } from "../../../shared/session.js";
 import { sameOrigin, verifyTelegramLogin } from "./dashboard-auth.js";
@@ -64,6 +66,8 @@ export function buildDashboard(): Hono<DashEnv> {
   });
 
   // CSP header on all dashboard responses (SEC-102, SEC-703)
+  // SEC-104: Also clear legacy 'sess' cookie on every response.
+  // SEC-107: Propagate rotated session cookies.
   app.use("*", async (c, next) => {
     const nonce = crypto.randomUUID().replace(/-/g, "");
     c.set("cspNonce", nonce);
@@ -72,6 +76,10 @@ export function buildDashboard(): Hono<DashEnv> {
       c.header("Content-Security-Policy", `default-src 'self'; script-src 'self' 'nonce-${nonce}' https://telegram.org; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https://telegram.org; frame-src https://telegram.org;`);
     }
     c.res.headers.set("Cache-Control", "no-store, no-cache, must-revalidate");
+    // SEC-104: Clear legacy 'sess' cookie
+    if (hasLegacyCookie(c.req.raw)) {
+      c.res.headers.append("Set-Cookie", cookieClearLegacy());
+    }
   });
 
   // ---- auth ----
@@ -137,7 +145,9 @@ export function buildDashboard(): Hono<DashEnv> {
 
   // ---- HTML ----
   app.get("/dashboard", async (c) => {
-    const uid = await currentUserId(c.req.raw, c.env);
+    const session = await resolveSession(c.req.raw, c.env);
+    const uid = session?.uid ?? null;
+    if (session?.rotatedCookie) c.header("Set-Cookie", session.rotatedCookie);
     const loginBotUsername = process.env.LOGIN_BOT_USERNAME ?? "";
     const devLogin = process.env.ALLOW_DEV_LOGIN === "1";
     if (!uid) return c.html(loginHtml(loginBotUsername, devLogin, config.publicBaseUrl, c.get("cspNonce")));

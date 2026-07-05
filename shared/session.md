@@ -18,12 +18,15 @@ Files: [`session.js`](./session.js) (leaderboard, JS) · [`session.ts`](./sessio
 | Token            | 32 random bytes, hex (64 chars)                              |
 | KV namespace     | `SESSIONS` — **same namespace id bound in both Workers**     |
 | KV key           | `sess:<token>`                                               |
-| KV value         | the user's **UUID** from the unified `users` table (bare)    |
+| KV value         | JSON `{ u: userId, c: createdAtMs }` (bare UUID accepted for legacy) |
 | TTL              | 30 days (`2592000` s), on the KV entry and the cookie Max-Age|
+| Rotation         | Tokens older than 24h are replaced on next read (SEC-107)    |
 
-The KV **value is just the UUID string** — no JSON, no signature, no per-Worker
-shape. Both Workers already understand "UUID → `users.id`", so whichever Worker
-reads the cookie resolves the same person. This is the whole trick.
+The KV **value is JSON** `{ u: "<userId>", c: <createdAtMs> }` — the user's UUID
+plus the session creation timestamp (SEC-107). Legacy bare-UUID values from
+before the migration are handled gracefully and rotated on first read. Both
+Workers already understand "UUID → `users.id`", so whichever Worker reads the
+cookie resolves the same person. This is the whole trick.
 
 ### Why `Domain=.yourrank.site`
 The leaderboard serves `yourrank.site/*`; the bot serves `yourrank.site/bot/*`,
@@ -47,13 +50,15 @@ already uses. **The bot Worker migrates off HMAC to this KV model.**
 ## 2. The three functions both Workers call
 
 ```
-createSession(env, userId) -> token      // put sess:<token> = userId, TTL 30d
+createSession(env, userId) -> token      // put sess:<token> = {u,c}, TTL 30d
 readToken(req)             -> token|null  // parse gm_session from Cookie header
 currentUser(req, env, loadUser) -> user|null
 ```
 
 Plus `currentUserId(req, env)` (resolve UUID without a DB read),
-`destroySession(env, token)`, `cookieSet(token)`, `cookieClear()`.
+`resolveSession(req, env)` (rotation-aware; returns `{ uid, rotatedCookie? }`),
+`destroySession(env, token)`, `cookieSet(token)`, `cookieClear()`,
+`hasLegacyCookie(req)`, `cookieClearLegacy()`.
 
 `currentUser` takes an **injected `loadUser(env, uid)`** so this module has zero
 DB coupling and drops into either Worker unchanged (leaderboard uses Supabase
@@ -119,6 +124,15 @@ the **same KV prefix**, only the cookie name differs. `session.js` exports
 re-issue a fresh `gm_session` cookie (and optionally clear `rk_session`).
 After the window, drop the legacy read.
 
+**SEC-104**: The old HMAC-signed `sess` cookie (not `rk_session`) is detected
+and cleared on every response via `hasLegacyCookie()` + `cookieClearLegacy()`.
+This runs in the main fetch handler for both Workers.
+
+**SEC-107**: Sessions are rotated when older than 24 hours. On first read of a
+legacy bare-UUID session (pre-migration), rotation happens immediately.
+The new token is issued transparently; the old token is deleted from KV and the
+per-user token index. 2FA verification flags are transferred to the new token.
+
 ---
 
 ## 6. Race conditions & correctness notes
@@ -126,8 +140,9 @@ After the window, drop the legacy read.
 1. **Same cookie, same KV, same value shape** eliminates the classic split-brain
    where one Worker writes a session the other can't read. Enforced by shipping
    ONE source module (`session.js`) and a synced port (`session.ts`).
-2. **No read-modify-write on the session** — value is immutable (just the UUID),
-   so concurrent reads across both Workers can't corrupt it.
+2. **No read-modify-write on the session** — value is immutable (UUID + creation
+   timestamp), so concurrent reads across both Workers can't corrupt it.
+   Rotation creates a NEW key and deletes the old one (no in-place mutation).
 3. **KV is eventually consistent (~seconds globally).** A freshly created session
    is readable in the same region immediately; a login on one edge then an
    instant cross-Worker request from a far edge could miss by a beat. In

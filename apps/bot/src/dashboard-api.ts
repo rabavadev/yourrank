@@ -11,7 +11,7 @@ import { billingEnabled, createStarsInvoice } from "./billing.js";
 import { checkFeature, PLANS } from "./plans.js";
 import { rateLimit } from "./ratelimit.js";
 import { sameOrigin } from "./dashboard-auth.js";
-import { currentUserId, type SessionEnv } from "../../../shared/session.js";
+import { resolveSession, type SessionEnv } from "../../../shared/session.js";
 
 interface TgLogin {
   id: number; first_name?: string; last_name?: string; username?: string;
@@ -22,9 +22,13 @@ export function buildDashboardApi(): Hono<{ Variables: { uid: string } }> {
   const api = new Hono<{ Variables: { uid: string } }>();
 
   // Resolve session FIRST — every subsequent middleware reads c.get("uid").
+  // SEC-107: Use resolveSession for rotation; propagate new cookie if rotated.
   api.use("*", async (c, next) => {
-    const uid = await currentUserId(c.req.raw, c.env as SessionEnv);
-    if (uid) c.set("uid", uid);
+    const session = await resolveSession(c.req.raw, c.env as SessionEnv);
+    if (session) {
+      c.set("uid", session.uid);
+      if (session.rotatedCookie) c.header("Set-Cookie", session.rotatedCookie);
+    }
     await next();
   });
 

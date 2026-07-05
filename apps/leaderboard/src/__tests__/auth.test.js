@@ -19,14 +19,21 @@ mock.module(dbUrl, () => ({
 }));
 
 mock.module(sessionUrl, () => ({
-  createSession:          () => Promise.resolve("mock-session-token"),
-  destroySession:         () => Promise.resolve(),
-  destroyAllUserSessions: () => Promise.resolve(),
-  cookieSet:  (t) => `gm_session=${t}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=2592000`,
-  cookieClear: ()  => "gm_session=; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=0",
-  readToken:  (_req) => null,
-  KV_PREFIX:  "session:",
-}));
+    createSession:          () => Promise.resolve("mock-session-token"),
+    destroySession:         () => Promise.resolve(),
+    destroyAllUserSessions: () => Promise.resolve(),
+    cookieSet:  (t) => `gm_session=${t}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=2592000`,
+    cookieClear: ()  => "gm_session=; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=0",
+    readToken:  (_req) => null,
+    KV_PREFIX:  "session:",
+    // SEC-104
+    hasLegacyCookie:  (_req) => false,
+    cookieClearLegacy: () => "sess=; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=0",
+    // SEC-107
+    rotateSession:      (_env, _token, userId) => Promise.resolve("mock-rotated-token"),
+    parseSessionValue:  (raw) => ({ userId: raw, createdAt: Date.now() }),
+    SESSION_ROTATE_AFTER_S: 86400,
+  }));
 
 const {
   hashPassword,

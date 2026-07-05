@@ -12,6 +12,13 @@ import {
   cookieClear as _cookieClear,
   // SEC-104: readTokenWithLegacy removed (grace period over)
   KV_PREFIX,
+  // SEC-104: legacy cookie helpers
+  hasLegacyCookie,
+  cookieClearLegacy,
+  // SEC-107: session rotation
+  rotateSession as _rotateSession,
+  parseSessionValue,
+  SESSION_ROTATE_AFTER_S,
 } from "../../../shared/session.js";
 // Why 100,000 and not OWASP's 600,000:
 //   Cloudflare Workers runtime rejects PBKDF2 iteration counts above 100,000
@@ -108,19 +115,53 @@ const loadUser = (env, uid) =>
       [uid]
     );
 
+// SEC-104: Legacy cookie detection helper — re-exported for index.js
+export { hasLegacyCookie, cookieClearLegacy };
+
 // SEC-104: Resolves the current user from the shared session using the
 // standard readToken (gm_session only; legacy rk_session support removed).
+// SEC-107: Also handles session rotation. When a session is older than 24h
+// (or is a legacy bare-UUID session), a new token is issued. The new
+// Set-Cookie header is attached to req._sessionCookies for the main handler
+// to include in the response.
 export async function currentUser(req, env) {
     const token = readToken(req);
     if (!token) return null;
-    const uid = await env.SESSIONS.get(KV_PREFIX + token);
-    if (!uid) return null;
-    // ARCH-005: Sliding-window TTL refresh — extend the session on each valid
-    // read so actively used sessions stay alive. Fire-and-forget, never blocks.
-    try {
-      env.SESSIONS.put(KV_PREFIX + token, uid, { expirationTtl: 60 * 60 * 24 * 30 }).catch(() => {});
-    } catch { /* best-effort rotation */ }
-    return loadUser(env, uid);
+    const raw = await env.SESSIONS.get(KV_PREFIX + token);
+    if (!raw) return null;
+
+    // Parse session value — handles both JSON and legacy bare UUID
+    const { userId, createdAt } = parseSessionValue(raw);
+
+    // SEC-107: Rotate if legacy bare UUID or older than 24h
+    let rotated = false;
+    const age = Date.now() - createdAt;
+    if (createdAt === 0 || age > SESSION_ROTATE_AFTER_S * 1000) {
+      try {
+        const fresh = await _rotateSession(env, token, userId);
+        const newCookie = cookieSet(fresh);
+        if (!req._sessionCookies) req._sessionCookies = [];
+        req._sessionCookies.push(newCookie);
+        rotated = true;
+      } catch {
+        // Rotation failed — still serve the request with the old session
+      }
+    }
+
+    // Sliding-window TTL refresh (only if we didn't rotate — the old entry is deleted after rotation)
+    if (!rotated) {
+      try {
+        env.SESSIONS.put(KV_PREFIX + token, raw, { expirationTtl: 60 * 60 * 24 * 30 }).catch(() => {});
+      } catch { /* best-effort */ }
+    }
+
+    // SEC-104: If the request carries a legacy 'sess' cookie, schedule it for clearing
+    if (hasLegacyCookie(req)) {
+      if (!req._sessionCookies) req._sessionCookies = [];
+      req._sessionCookies.push(cookieClearLegacy());
+    }
+
+    return loadUser(env, userId);
   }
 
 // Rate limit wrapper — delegates to the shared KV-based rate limiter.

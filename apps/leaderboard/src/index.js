@@ -1,4 +1,4 @@
-import { destroySession, cookieSet, cookieClear, readToken, handleAccountDelete, requireUser, RESERVED, slugify, clientIp, rateLimit, json, bad, currentUser } from "./auth.js";
+import { destroySession, cookieSet, cookieClear, readToken, handleAccountDelete, requireUser, RESERVED, slugify, clientIp, rateLimit, json, bad, currentUser, hasLegacyCookie, cookieClearLegacy } from "./auth.js";
 import { sendErrorToDiscord } from "../../../shared/monitoring.js";
 import { populateEnv } from "../../../shared/env.js";
 import { Toucan } from "toucan-js";
@@ -22,6 +22,22 @@ import { one } from "../../../shared/db.js";
 
 export default {
   async fetch(request, env, ctx) {
+    const response = await handleRequest(request, env, ctx);
+    // SEC-104: Clear legacy 'sess' cookie on every response (not just authenticated)
+    if (hasLegacyCookie(request)) {
+      response.headers.append("set-cookie", cookieClearLegacy());
+    }
+    // SEC-107: Propagate rotated session cookies from currentUser()
+    if (request._sessionCookies) {
+      for (const c of request._sessionCookies) {
+        response.headers.append("set-cookie", c);
+      }
+    }
+    return response;
+  }
+};
+
+async function handleRequest(request, env, ctx) {
     const sentry = env.SENTRY_DSN ? new Toucan({
       dsn: env.SENTRY_DSN,
       request,
@@ -403,5 +419,4 @@ a{color:#c8ff00;text-decoration:none;font-weight:600}</style></head><body>
       }
       return new Response("Internal Server Error", { status: 500 });
     }
-  },
-};
+}
