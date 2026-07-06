@@ -15,5 +15,5 @@
     "no-constant-condition": "warn",
     "no-irregular-whitespace": "error"
   },
-  "ignorePatterns": ["dist/", "node_modules/", "*.min.js"]
+  "ignorePatterns": ["dist/", "node_modules/", "*.min.js", "src/assets/", "src/assets_bundled.js"]
 }
