@@ -10,6 +10,7 @@ PUBLIC_BASE_URL = "https://yourrank.site"
 # Serve the bot Worker under the /bot, /hook, /r, /pb, /billing prefixes on the
 # main zone. More-specific routes win, so the leaderboard Worker keeps the root.
 routes = [
+  { pattern = "yourrank.site/bot",           zone_name = "yourrank.site" },
   { pattern = "yourrank.site/bot/*",         zone_name = "yourrank.site" },
   { pattern = "yourrank.site/hook/*",        zone_name = "yourrank.site" },
   { pattern = "yourrank.site/r/*",           zone_name = "yourrank.site" },
@@ -51,6 +52,7 @@ compatibility_date = "2025-07-01"
 compatibility_flags = ["nodejs_compat"]
 
 routes = [
+  { pattern = "staging.yourrank.site/bot",           zone_name = "yourrank.site" },
   { pattern = "staging.yourrank.site/bot/*",         zone_name = "yourrank.site" },
   { pattern = "staging.yourrank.site/hook/*",        zone_name = "yourrank.site" },
   { pattern = "staging.yourrank.site/r/*",           zone_name = "yourrank.site" },
