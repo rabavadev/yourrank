@@ -5,6 +5,7 @@ import { bumpStat, getStats, getHeatmap, getTopReferrers } from "../stats.js";
 import { effectivePlan, PLAN_LIMITS, BOARD_LIMITS } from "../billing.js";
 import { one, exec } from "../../../../shared/db.js";
 import { buildTop3Embed, sendDiscordWebhook, sendTelegramMessage } from "../../../../shared/notifications.js";
+import { decryptToken } from "../../../../shared/crypto.js";
 
 export async function handleStats(request, env) {
   const { user, res } = await requireUser(request, env);
@@ -142,11 +143,12 @@ export async function handleNotifyTest(request, env) {
   if (channel === "telegram") {
     const chatId = String(body.chat_id || extra.telegram_chat_id || "").trim();
     if (!chatId) return bad("No Telegram chat ID configured.");
-    // Find bot token
-    const owner = await one("SELECT bot_token FROM users WHERE id=$1", [user.id]);
-    if (!owner?.bot_token) return bad("No Telegram bot connected. Set up your bot first.");
+    // Find bot token — BUG-DB-008: bot_token doesn't exist on users. Tokens live in bots table (encrypted).
+    const bot = await one("SELECT token_encrypted FROM bots WHERE owner_id=$1 AND status='active' ORDER BY created_at DESC LIMIT 1", [user.id]);
+    if (!bot?.token_encrypted) return bad("No Telegram bot connected. Set up your bot first.");
+    const botToken = await decryptToken(Buffer.from(bot.token_encrypted));
     const text = `🧪 *Test Notification*\n\nYour Telegram notifications for *${site.name || "Your Site"}* are working!`;
-    const result = await sendTelegramMessage(owner.bot_token, chatId, text);
+    const result = await sendTelegramMessage(botToken, chatId, text);
     return result.ok ? json({ ok: true, message: "Test message sent to Telegram!" }) : bad(result.error || "Failed to send.", 502);
   }
 

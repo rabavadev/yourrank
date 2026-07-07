@@ -16,7 +16,8 @@ export async function handleScores(request, env) {
     // Rate limit: 10/min per key
     if (!(await rateLimit(env, `scores:${postbackKey}`, 10, 60)).ok) return bad("Rate limit exceeded. Try again shortly.", 429);
     // DB-004-v8: Single site lookup instead of two (was: SELECT id,user_id,postback_key, then SELECT full row by id)
-    const site = await one("SELECT id, user_id, postback_key, slug, name, tagline, casino, code, cta_url, prize_pool, period, ends_at, reset_note, blurb, extra_json, published, theme_json, updated_at FROM sites WHERE postback_key=$1", [postbackKey]);
+    // BUG-DB-007: postback_key lives on users table, not sites. JOIN to resolve.
+    const site = await one("SELECT s.id, s.user_id, s.slug, s.name, s.tagline, s.casino, s.code, s.cta_url, s.prize_pool, s.period, s.ends_at, s.reset_note, s.blurb, s.extra_json, s.published, s.theme_json, s.updated_at FROM sites s JOIN users u ON u.id = s.user_id WHERE u.postback_key=$1", [postbackKey]);
     if (!site) return bad("Invalid postback key.", 401);
     // Verify HMAC-SHA256 signature of the raw request body
     const rawBody = await request.text();
