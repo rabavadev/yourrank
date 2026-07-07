@@ -19,6 +19,7 @@ import {
   rotateSession as _rotateSession,
   parseSessionValue,
   SESSION_ROTATE_AFTER_S,
+  SESSION_TTL_S,
 } from "../../../shared/session.js";
 // Why 100,000 and not OWASP's 600,000:
 //   Cloudflare Workers runtime rejects PBKDF2 iteration counts above 100,000
@@ -151,7 +152,7 @@ export async function currentUser(req, env) {
     // Sliding-window TTL refresh (only if we didn't rotate — the old entry is deleted after rotation)
     if (!rotated) {
       try {
-        env.SESSIONS.put(KV_PREFIX + token, raw, { expirationTtl: 60 * 60 * 24 * 30 }).catch(e => console.error('[session] TTL refresh failed:', e?.message));
+        env.SESSIONS.put(KV_PREFIX + token, raw, { expirationTtl: SESSION_TTL_S }).catch(e => console.error('[session] TTL refresh failed:', e?.message));
       } catch { /* best-effort */ }
     }
 

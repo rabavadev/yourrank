@@ -12,6 +12,10 @@ export const PLAN_META = _PM;
 
 export const PRO_DAYS = 30;
 
+// QUALITY-007: Named timing constants (no magic numbers)
+const MS_PER_DAY = 86_400_000;               // 24 * 60 * 60 * 1000
+const MAX_SUBSCRIPTION_EXTENSION_DAYS = 365;  // Cap subscription stacking to 1 year
+
 // priceUsd returns the price for the given plan tier (or the env override for pro).
 // priceUsd and effectivePlan are pure functions in shared/plans.js (no DB dependency).
 // Re-exported here for backward compatibility.
@@ -32,10 +36,10 @@ export async function activatePlan(env, userId, plan, days = PRO_DAYS, { provide
     if (!u) return false;
     if (days > 0) {
       const base = (["pro", "starter", "agency"].includes(u.plan) && Number(u.plan_expires_at) > Date.now()) ? Number(u.plan_expires_at) : Date.now();
-      let expiresMs = base + days * 86400000;
-      // PROD-005-v8: Cap subscription extension to 365 days from now.
-      // Prevents unlimited stacking from repeated payments or bot abuse.
-      const maxExpiry = Date.now() + 365 * 86400000;
+      let expiresMs = base + days * MS_PER_DAY;
+              // PROD-005-v8: Cap subscription extension to MAX_SUBSCRIPTION_EXTENSION_DAYS from now.
+              // Prevents unlimited stacking from repeated payments or bot abuse.
+              const maxExpiry = Date.now() + MAX_SUBSCRIPTION_EXTENSION_DAYS * MS_PER_DAY;
       if (expiresMs > maxExpiry) expiresMs = maxExpiry;
       await tx.unsafe("UPDATE users SET plan=$1, plan_expires_at=to_timestamp($2 / 1000.0), updated_at=now() WHERE id=$3", [plan, expiresMs, userId]);
       await tx.unsafe("INSERT INTO subscriptions (user_id, plan, status, provider, current_period_end) VALUES ($1, $2, 'active', $3, to_timestamp($4 / 1000.0))", [userId, plan, provider || 'nowpayments', expiresMs]);
@@ -243,9 +247,9 @@ export async function handleIpn(request, env) {
           );
         } else if (PRO_DAYS > 0) {
           const base = (["pro", "starter", "agency"].includes(u.plan) && Number(u.plan_expires_at) > Date.now()) ? Number(u.plan_expires_at) : Date.now();
-          let expiresMs = base + PRO_DAYS * 86400000;
-          // PROD-005-v8: Cap subscription extension to 365 days from now
-          const maxExpiry = Date.now() + 365 * 86400000;
+          let expiresMs = base + PRO_DAYS * MS_PER_DAY;
+                      // PROD-005-v8: Cap subscription extension to MAX_SUBSCRIPTION_EXTENSION_DAYS from now
+                      const maxExpiry = Date.now() + MAX_SUBSCRIPTION_EXTENSION_DAYS * MS_PER_DAY;
           if (expiresMs > maxExpiry) expiresMs = maxExpiry;
           await tx.unsafe(
             "UPDATE users SET plan=$1, plan_expires_at=to_timestamp($2 / 1000.0), updated_at=now() WHERE id=$3",

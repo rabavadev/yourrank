@@ -197,12 +197,12 @@ export async function notifyTop3Change(
   if (discordUrl) {
     for (const change of top3Changes) {
       const embed = buildTop3Embed(siteName, change.name, change.rank, change.wagered);
-      await sendDiscordWebhook(discordUrl, embed).catch(() => {});
-    }
-  }
+      await sendDiscordWebhook(discordUrl, embed).catch((e: any) => { console.error("[notify] Discord webhook failed:", e?.message); });
+            }
+          }
 
-  // Telegram: one message listing all new top-3 entries
-  if (tgEnabled && tgChatId) {
+          // Telegram: one message listing all new top-3 entries
+          if (tgEnabled && tgChatId) {
     // Find the bot token for this site's owner from bots table (encrypted)
     const bot = await db.one(
       "SELECT token_encrypted FROM bots WHERE owner_id=$1 AND status='active' LIMIT 1",
@@ -216,9 +216,9 @@ export async function notifyTop3Change(
           return `${medal} *${c.name}* entered #${c.rank} — $${Number(c.wagered).toLocaleString("en-US", { maximumFractionDigits: 0 })}`;
         });
         const text = `⚡ *${siteName}* — New Top 3!\n\n${lines.join("\n")}`;
-        await sendTelegramMessage(botToken, tgChatId, text).catch(() => {});
-      } catch (e: any) {
-        console.error("[notify] failed to decrypt bot token:", String(e?.message || e));
+                  await sendTelegramMessage(botToken, tgChatId, text).catch((e: any) => { console.error("[notify] Telegram send failed:", e?.message); });
+                } catch (e: any) {
+                  console.error("[notify] failed to decrypt bot token:", String(e?.message || e));
       }
     }
   }
@@ -241,8 +241,8 @@ export async function notifyReset(
   const discordUrl = extra.discord_webhook_url;
   if (!discordUrl) return;
   const embed = buildResetEmbed(siteName, players, period);
-  await sendDiscordWebhook(discordUrl, embed).catch(() => {});
-}
+      await sendDiscordWebhook(discordUrl, embed).catch((e: any) => { console.error("[notify] Discord reset webhook failed:", e?.message); });
+    }
 
 /**
  * Detect rank changes for ALL players (not just top-3) and send DMs
@@ -307,15 +307,15 @@ export async function notifySubscribedPlayers(
     // Player was not in old list (new entry) — notify if in top 20
     if (!oldRank && newRank <= 20) {
       const text = `🎉 You entered the *${siteName}* leaderboard at #${newRank}!`;
-      await sendTelegramMessage(botToken, sub.tg_user_id, text).catch(() => {});
-      continue;
-    }
+              await sendTelegramMessage(botToken, sub.tg_user_id, text).catch((e: any) => { console.error("[notify] Telegram subscriber DM failed:", e?.message); });
+              continue;
+            }
 
-    // Player changed rank
-    if (oldRank && newRank !== oldRank) {
-      const direction = newRank < oldRank ? "📈" : "📉";
-      const text = `${direction} You moved from #${oldRank} to #${newRank} on the *${siteName}* leaderboard!`;
-      await sendTelegramMessage(botToken, sub.tg_user_id, text).catch(() => {});
+            // Player changed rank
+            if (oldRank && newRank !== oldRank) {
+              const direction = newRank < oldRank ? "📈" : "📉";
+              const text = `${direction} You moved from #${oldRank} to #${newRank} on the *${siteName}* leaderboard!`;
+              await sendTelegramMessage(botToken, sub.tg_user_id, text).catch((e: any) => { console.error("[notify] Telegram subscriber DM failed:", e?.message); });
     }
   }
 }

@@ -361,8 +361,11 @@ billing: `<!DOCTYPE html><html lang="en"><head>
 <p class="status" id="status" role="status" aria-live="polite"></p></div>
 <div class="card" id="proCard" hidden><h2>You're on <span id="currentPlanName">Pro</span></h2><p class="card-sub">Thanks for supporting YourRank. Manage everything from the Leaderboard tab.</p>
 <p class="hint" id="proExp"></p>
-<p class="hint c-accent fw-600" id="lifetimeNotice" hidden>⭐ Lifetime Pro — no expiry. You own this forever.</p></div></div>
-<div id="loading" class="py-26">
+<p class="hint c-accent fw-600" id="lifetimeNotice" hidden>⭐ Lifetime Pro — no expiry. You own this forever.</p></div>
+  <div class="card card--danger" id="dangerZone"><h2> Danger zone</h2><p class="card-sub">Permanently delete your account and all associated data. This action cannot be undone.</p>
+  <button class="btn btn--danger" id="deleteAccountBtn" type="button">Delete my account</button>
+  <p class="status" id="deleteStatus" role="status" aria-live="polite"></p></div></div>
+  <div id="loading" class="py-26">
 <div class="skel-header"><div><div class="skeleton skeleton-text--lg skel-w-100"></div><div class="skeleton skeleton-text--sm skel-w-160 mt-8"></div></div><div class="skeleton skeleton-text skel-w-100"></div></div>
 <div class="card"><div class="skeleton skeleton-block skel-h-60"></div></div>
 <div class="card mt-18"><div class="skeleton skeleton-block skel-h-120"></div></div>
@@ -690,7 +693,7 @@ ${endsAt ? `<p class="ov-timer-label">${esc(b.prizePool || "")} resets in</p>
 <h2>Who else sees data</h2>
 <p>Our infrastructure runs on Cloudflare (hosting, database). Payment processing runs through NOWPayments. That's it — we don't sell or share your data with anyone else.</p>
 <h2>How long we keep it</h2>
-<p>As long as your account exists. Want your account and data deleted? Contact us and we'll remove it.</p>
+<p>As long as your account exists. Want your account and data deleted? Go to <a href="/dashboard/billing">Dashboard → Billing → Danger zone</a> and click "Delete my account."</p>
 <h2>Your page is public</h2>
 <p>Anything you publish on your leaderboard page is visible to anyone with the link, including player names you enter. Mask player names (like <span class="mono">*****ess</span>) if your community expects it.</p>
 <h2>Contact</h2>

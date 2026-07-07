@@ -217,3 +217,77 @@ const lifetimeBtn = document.getElementById("lifetimeBtn");
 if (lifetimeBtn) {
   lifetimeBtn.addEventListener("click", startLifetimeCheckout);
 }
+
+// QUALITY-012: GDPR self-delete account handler
+const deleteBtn = document.getElementById("deleteAccountBtn");
+if (deleteBtn) {
+  deleteBtn.addEventListener("click", async () => {
+    const status = document.getElementById("deleteStatus");
+    const confirmed = window.confirm(
+      "Are you sure you want to permanently delete your account?\n\n" +
+      "This will remove all your data: leaderboards, players, archives, " +
+      "subscriptions, and connected bots. This cannot be undone."
+    );
+    if (!confirmed) return;
+
+    // Second confirmation with typed input for extra safety
+    const typed = window.prompt('Type "DELETE" to confirm permanent account deletion:');
+    if (typed !== "DELETE") {
+      if (status) status.textContent = "Deletion cancelled.";
+      return;
+    }
+
+    deleteBtn.disabled = true;
+    deleteBtn.textContent = "Deleting...";
+    if (status) status.textContent = "";
+
+    try {
+      // Check if user has a password (backend will tell us)
+      const r = await fetch("/api/account/delete", {
+        method: "POST",
+        credentials: "include",
+        headers: { "content-type": "application/json", "x-csrf-token": getCsrf() },
+        body: JSON.stringify({}),
+      });
+      const d = await r.json();
+
+      if (r.status === 400 && d.error && d.error.includes("Password required")) {
+        // User has a password — prompt for it
+        const password = window.prompt("Enter your password to confirm deletion:");
+        if (!password) {
+          if (status) status.textContent = "Deletion cancelled.";
+          deleteBtn.disabled = false;
+          deleteBtn.textContent = "Delete my account";
+          return;
+        }
+        const r2 = await fetch("/api/account/delete", {
+          method: "POST",
+          credentials: "include",
+          headers: { "content-type": "application/json", "x-csrf-token": getCsrf() },
+          body: JSON.stringify({ password }),
+        });
+        const d2 = await r2.json();
+        if (r2.ok && d2.ok) {
+          if (status) status.textContent = "Account deleted. Redirecting...";
+          window.location.href = "/";
+          return;
+        }
+        if (status) status.textContent = d2.error || "Deletion failed. Try again.";
+        deleteBtn.disabled = false;
+        deleteBtn.textContent = "Delete my account";
+        return;
+      }
+
+      if (r.ok && d.ok) {
+        if (status) status.textContent = "Account deleted. Redirecting...";
+        window.location.href = "/";
+        return;
+      }
+      if (status) status.textContent = d.error || "Deletion failed. Try again.";
+    } catch {
+      if (status) status.textContent = "Couldn't delete account. Try again.";
+    }
+    deleteBtn.disabled = false;
+    deleteBtn.textContent = "Delete my account";
+  });
+}

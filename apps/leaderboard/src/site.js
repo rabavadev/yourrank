@@ -113,8 +113,8 @@ export function invalidateUserCache(env, uid) {
   try {
     const sessions = env?.SESSIONS;
     if (sessions) {
-      sessions.delete(KV_PREFIX_SITE + uid).catch(() => {});
-      sessions.delete(KV_PREFIX_SITE + `user_boards:${uid}`).catch(() => {});
+      sessions.delete(KV_PREFIX_SITE + uid).catch((e) => { console.error("[site-cache] invalidateUserCache KV delete failed:", e?.message); });
+        sessions.delete(KV_PREFIX_SITE + `user_boards:${uid}`).catch((e) => { console.error("[site-cache] invalidateUserCache KV delete failed:", e?.message); });
     }
   } catch (e) { console.error("[site-cache] invalidateUserCache KV delete failed:", e); }
 }

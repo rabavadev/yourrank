@@ -5,6 +5,10 @@ import { query, one, exec } from "../../../shared/db.js";
 import { generateSecret, verifyCode, generateOtpauthUri } from "./totp.js";
 import { encrypt, decrypt } from "../../../shared/crypto.js";
 
+// QUALITY-007: Named timing constants (no magic numbers)
+const RESET_TOKEN_TTL_S = 86400;   // 24 hours — admin-initiated password reset link validity
+const TOTP_VERIFICATION_TTL_S = 3600; // 1 hour — 2FA verification session window
+
 // SEC-106: Only keep known-safe keys in audit log details before persisting.
 // Whitelist approach: any key not in the safe set is dropped. This prevents
 // reset tokens, session tokens, TOTP secrets, passwords, or any future
@@ -213,7 +217,7 @@ export async function handleAction(request, env) {
     case "reset-link": {
       if (target.is_admin) return bad("Can't generate a reset link for an admin");
       const token = newToken();
-      await env.SESSIONS.put(`reset:${token}`, target.id, { expirationTtl: 86400 });
+      await env.SESSIONS.put(`reset:${token}`, target.id, { expirationTtl: RESET_TOKEN_TTL_S });
       // SEC-010-v7: Do NOT return the token/URL in the API response.
       // Previously: return ok({ link: `${origin}/reset?token=${token}`, email: target.email });
       // Risk: the token in the response could be intercepted or logged. The reset link
@@ -309,7 +313,7 @@ export async function handle2faVerify(request, env) {
   // Mark 2FA verified in KV for this session token
   const token = readToken(request);
   if (token) {
-    await env.SESSIONS.put(`2fa:${token}`, "1", { expirationTtl: 3600 }); // 1 hour
+    await env.SESSIONS.put(`2fa:${token}`, "1", { expirationTtl: TOTP_VERIFICATION_TTL_S });
   }
 
   await logAdminAction(env, admin.id, "2fa_verify", admin.id, {

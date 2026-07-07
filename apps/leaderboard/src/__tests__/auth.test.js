@@ -33,7 +33,8 @@ mock.module(sessionUrl, () => ({
     rotateSession:      (_env, _token, userId) => Promise.resolve("mock-rotated-token"),
     parseSessionValue:  (raw) => ({ userId: raw, createdAt: Date.now() }),
     SESSION_ROTATE_AFTER_S: 86400,
-  }));
+    SESSION_TTL_S: 2592000, // 30 days
+    }));
 
 const {
   hashPassword,

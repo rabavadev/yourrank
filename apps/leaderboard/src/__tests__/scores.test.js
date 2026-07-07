@@ -42,9 +42,10 @@ mock.module(_sessionUrl, () => ({
     rotateSession:      () => Promise.resolve("mock-rotated-token"),
     parseSessionValue:  (raw) => ({ userId: raw, createdAt: Date.now() }),
     SESSION_ROTATE_AFTER_S: 86400,
-  }));
+    SESSION_TTL_S: 2592000, // 30 days
+    }));
 
-// Mock crypto.js so HMAC verification always passes in tests
+  // Mock crypto.js so HMAC verification always passes in tests
 mock.module(_cryptoUrl, () => ({
   verifyHmacSha256Hex: async () => true,
 }));
