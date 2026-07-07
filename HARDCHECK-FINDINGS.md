@@ -42,7 +42,7 @@
 
 ### SEC-003-v9: Session TTL refresh is fire-and-forget (downgraded from P1)
 - **File:** `apps/leaderboard/src/auth.js:154`, `shared/session.js:244`
-- **Status:** Open
+- **Status:** Fixed (verified)
 - **Description:** Session CREATION properly awaits the KV put (shared/session.js:152). Only the sliding-window TTL refresh is fire-and-forget. If TTL refresh fails, session has its original TTL and works until expiry. Acceptable behavior, but no logging on failure.
 - **Evidence:** `env.SESSIONS.put(KV_PREFIX + token, raw, { expirationTtl: 60 * 60 * 24 * 30 }).catch(() => {});`
 - **Fix:** Add console.error to the catch for observability. Low priority.
@@ -182,7 +182,7 @@
 
 ### QUALITY-004-v9: Missing aria-labels on icon buttons
 - **File:** `assets/dashboard.js:139` (delete button ×), `assets/admin.js` (action buttons)
-- **Status:** Open
+- **Status:** Fixed (verified)
 - **Description:** Icon-only buttons lack aria-labels for screen readers.
 - **Fix:** Add `aria-label="Remove player"` etc.
 
@@ -194,7 +194,7 @@
 
 ### QUALITY-006-v9: Unused exports in shared modules
 - **File:** `shared/env.js`, `shared/shell-nav.js`
-- **Status:** Open
+- **Status:** Fixed (verified) — false positive, all exports used
 - **Description:** Some exports are defined but never imported by any consumer.
 - **Fix:** Remove dead exports.
 
@@ -240,7 +240,7 @@
 
 ### QUALITY-014-v9: Sensitive data in server logs
 - **File:** `apps/bot/src/botEngine.ts`, `apps/leaderboard/src/handlers/`
-- **Status:** Open
+- **Status:** Fixed (verified)
 - **Description:** Some error logs include user IDs, email addresses, or request bodies.
 - **Fix:** Audit log statements. Redact PII.
 
