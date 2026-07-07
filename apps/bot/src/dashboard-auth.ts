@@ -59,7 +59,9 @@ export function sameOrigin(req: Request, publicBaseUrl: string): boolean {
 const AUTH_MAX_AGE_S = 5 * 60;
 
 export async function verifyTelegramLogin(data: TgLogin, botToken: string): Promise<boolean> {
+  if (!data || typeof data !== "object") return false;
   const { hash, ...fields } = data;
+  if (!hash || typeof hash !== "string") return false;
   
   // Build the data-check-string exactly as Telegram computes it:
   // - Sort all received fields alphabetically (excluding hash)
