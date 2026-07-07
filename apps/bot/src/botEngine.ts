@@ -2,7 +2,7 @@ import { Bot, Context, InlineKeyboard } from "grammy";
 import type { Update } from "grammy/types";
 
 /** Escape user content for Telegram HTML parse_mode */
-const esc = (s: unknown): string =>
+export const esc = (s: unknown): string =>
   String(s ?? "").replace(/[&<>"']/g, (c) =>
     ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c] ?? "")
   );

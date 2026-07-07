@@ -1,169 +1,259 @@
-// Bot engine core tests — covers command parsing, rank display, and basic flows.
-import { describe, it, expect, mock } from "bun:test";
+// Bot engine tests — tests ACTUAL exported functions, not reimplemented logic.
+// Covers: HTML escaping (botEngine), plan limits (shared/plans),
+// rate limiting (shared/ratelimit), conversion recording (conversions).
+//
+// Run: bun test src/__tests__/bot-engine.test.ts
+//   or: bun test              (from apps/bot/)
 
-// Mock database and environment
-function mockEnv(overrides = {}) {
-  return {
-    HYPERDRIVE: { connectionString: "postgresql://mock" },
-    SESSIONS: {
-      get: mock(() => Promise.resolve(null)),
-      put: mock(() => Promise.resolve()),
-      delete: mock(() => Promise.resolve()),
-    },
-    ...overrides,
-  };
-}
+import { describe, it, expect, mock, beforeEach } from "bun:test";
 
-describe("Bot Engine", () => {
-  describe("command parsing", () => {
-    it("should extract /rank command", () => {
-      const text = "/rank";
-      expect(text).toBe("/rank");
-    });
+// ── Mock DB so conversions.ts loads without a real Hyperdrive ──────────
+const dbUrl = import.meta.resolve("../../../../shared/db.js");
+const cryptoUrl = import.meta.resolve("../../../../shared/crypto.js");
 
-    it("should extract /rank with username", () => {
-      const text = "/rank @username";
-      expect(text).toBe("/rank @username");
-    });
+const mockOne = mock(() => Promise.resolve(null));
+const mockExec = mock(() => Promise.resolve(undefined));
 
-    it("should handle /start command", () => {
-      const text = "/start";
-      expect(text).toBe("/start");
-    });
-  });
-});
+mock.module(dbUrl, () => ({
+  one: (...args: any[]) => mockOne(...args),
+  exec: (...args: any[]) => mockExec(...args),
+  query: () => Promise.resolve([]),
+}));
 
-describe("Conversions", () => {
-  describe("recordConversion", () => {
-    it("should handle missing click_ref", () => {
-      const q: Record<string, string> = { event: "deposit", amount: "50" };
-      const clickRef = q.click_ref ?? q.clickid ?? q.subid ?? q.sub_id ?? null;
-      expect(clickRef).toBeNull();
-    });
+mock.module(cryptoUrl, () => ({
+  decryptToken: (enc: string) => enc,
+  encrypt: (s: string) => s,
+  decrypt: (s: string) => s,
+  verifyHmacSha256Hex: async () => true,
+}));
 
-    it("should extract click_ref from various params", () => {
-      const q1: Record<string, string> = { click_ref: "abc123" };
-      const q2: Record<string, string> = { clickid: "abc123" };
-      const q3: Record<string, string> = { subid: "abc123" };
-      const q4: Record<string, string> = { sub_id: "abc123" };
+// ── Import REAL functions after mocks are in place ─────────────────────
+import { esc } from "../botEngine.js";
+import { recordConversion } from "../conversions.js";
+import { PLAN_LIMITS, BOARD_LIMITS } from "../../../../shared/plans.js";
+import { rateLimit } from "../../../../shared/ratelimit.js";
 
-      expect(q1.click_ref ?? q1.clickid ?? q1.subid ?? q1.sub_id ?? null).toBe("abc123");
-      expect(q2.click_ref ?? q2.clickid ?? q2.subid ?? q2.sub_id ?? null).toBe("abc123");
-      expect(q3.click_ref ?? q3.clickid ?? q3.subid ?? q3.sub_id ?? null).toBe("abc123");
-      expect(q4.click_ref ?? q4.clickid ?? q4.subid ?? q4.sub_id ?? null).toBe("abc123");
-    });
-
-    it("should clamp amount to non-negative bounded number", () => {
-      const clamp = (v: unknown) => {
-        const rawAmt = v == null ? NaN : Number(v);
-        return Number.isFinite(rawAmt) && rawAmt >= 0 && rawAmt <= 1e12 ? rawAmt : null;
-      };
-
-      expect(clamp("50")).toBe(50);
-      expect(clamp("0")).toBe(0);
-      expect(clamp("-10")).toBeNull();
-      expect(clamp("abc")).toBeNull();
-      expect(clamp("999999999999999")).toBeNull(); // exceeds 1e12
-      expect(clamp(null)).toBeNull();
-    });
-
-    it("should sanitize event name", () => {
-      const sanitize = (v: string | undefined) => (v ?? "deposit").toLowerCase().slice(0, 32);
-      expect(sanitize("DEPOSIT")).toBe("deposit");
-      expect(sanitize(undefined)).toBe("deposit");
-      expect(sanitize("a".repeat(50))).toHaveLength(32);
-    });
-
-    it("should sanitize currency to uppercase 8 chars", () => {
-      const sanitize = (v: string | undefined) => (v ?? "USD").toUpperCase().slice(0, 8);
-      expect(sanitize("usd")).toBe("USD");
-      expect(sanitize(undefined)).toBe("USD");
-      expect(sanitize("abcdefghijk")).toBe("ABCDEFGH");
-    });
-  });
-});
-
-describe("Plans", () => {
-  describe("plan features", () => {
-    it("should have correct plan hierarchy", () => {
-      const plans = {
-        free: { players: 10, boards: 1, archives: 2 },
-        starter: { players: 25, boards: 1, archives: 6 },
-        pro: { players: 999, boards: 3, archives: 999 },
-        agency: { players: 999, boards: 999, archives: 999 },
-      };
-
-      expect(plans.free.players).toBeLessThan(plans.starter.players);
-      expect(plans.starter.players).toBeLessThan(plans.pro.players);
-      expect(plans.pro.boards).toBeLessThan(plans.agency.boards);
-    });
-  });
-});
-
-describe("Rate Limiting", () => {
-  it("should reject over limit", () => {
-    const limit = 5;
-    const current = 6;
-    expect(current >= limit).toBe(true);
-  });
-
-  it("should allow under limit", () => {
-    const limit = 5;
-    const current = 3;
-    expect(current >= limit).toBe(false);
-  });
-
-  it("should use jitter to reduce thundering herd", () => {
-    const jitter = Math.random() * 0.1;
-    expect(jitter).toBeGreaterThanOrEqual(0);
-    expect(jitter).toBeLessThan(0.1);
-  });
-});
-
-describe("Safe URL validation", () => {
-  const safeUrl = (u: string | null | undefined) => (/^https?:\/\//i.test(u ?? "") ? u ?? "#" : "#");
-
-  it("should allow https URLs", () => {
-    expect(safeUrl("https://example.com")).toBe("https://example.com");
-  });
-
-  it("should allow http URLs", () => {
-    expect(safeUrl("http://example.com")).toBe("http://example.com");
-  });
-
-  it("should reject javascript: URLs", () => {
-    expect(safeUrl("javascript:alert(1)")).toBe("#");
-  });
-
-  it("should reject data: URLs", () => {
-    expect(safeUrl("data:text/html,<script>alert(1)</script>")).toBe("#");
-  });
-
-  it("should reject empty/null URLs", () => {
-    expect(safeUrl("")).toBe("#");
-    expect(safeUrl(null)).toBe("#");
-    expect(safeUrl(undefined)).toBe("#");
-  });
-});
-
-describe("HTML escaping", () => {
-  const esc = (s: unknown) => String(s ?? "").replace(/[&<>"']/g, (c: string) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c] ?? ""));
-
-  it("should escape ampersands", () => {
+// ── esc: HTML-escape for Telegram parse_mode ───────────────────────────
+describe("esc (botEngine)", () => {
+  it("escapes ampersands", () => {
     expect(esc("a&b")).toBe("a&amp;b");
   });
 
-  it("should escape HTML tags", () => {
+  it("escapes HTML tags", () => {
     expect(esc("<script>alert(1)</script>")).toBe("&lt;script&gt;alert(1)&lt;/script&gt;");
   });
 
-  it("should escape quotes", () => {
+  it("escapes quotes", () => {
     expect(esc('"hello"')).toBe("&quot;hello&quot;");
     expect(esc("'hello'")).toBe("&#39;hello&#39;");
   });
 
-  it("should handle null/undefined", () => {
+  it("handles null and undefined", () => {
     expect(esc(null)).toBe("");
     expect(esc(undefined)).toBe("");
+  });
+
+  it("converts non-string values to string", () => {
+    expect(esc(42)).toBe("42");
+    expect(esc(true)).toBe("true");
+  });
+
+  it("passes clean strings through unchanged", () => {
+    expect(esc("hello world")).toBe("hello world");
+  });
+});
+
+// ── PLAN_LIMITS: real plan hierarchy from shared/plans ─────────────────
+describe("Plan limits (shared/plans)", () => {
+  it("free tier allows 10 players", () => {
+    expect(PLAN_LIMITS.free).toBe(10);
+  });
+
+  it("starter allows more players than free", () => {
+    expect(PLAN_LIMITS.starter).toBeGreaterThan(PLAN_LIMITS.free);
+  });
+
+  it("pro allows more players than starter", () => {
+    expect(PLAN_LIMITS.pro).toBeGreaterThan(PLAN_LIMITS.starter);
+  });
+
+  it("agency allows at least as many boards as pro", () => {
+    expect(BOARD_LIMITS.agency).toBeGreaterThanOrEqual(BOARD_LIMITS.pro);
+  });
+
+  it("pro allows more boards than starter", () => {
+    expect(BOARD_LIMITS.pro).toBeGreaterThan(BOARD_LIMITS.starter);
+  });
+
+  it("all plan tiers exist", () => {
+    expect(PLAN_LIMITS).toHaveProperty("free");
+    expect(PLAN_LIMITS).toHaveProperty("starter");
+    expect(PLAN_LIMITS).toHaveProperty("pro");
+    expect(PLAN_LIMITS).toHaveProperty("agency");
+  });
+});
+
+// ── rateLimit: real KV-backed rate limiter from shared/ratelimit ────────
+describe("rateLimit (shared/ratelimit)", () => {
+  // rateLimit uses windowed keys: `rl:${id}:${window}`. We use a Map-backed
+  // mock that matches any key, not a hardcoded one.
+  function mockKV() {
+    const store = new Map<string, string>();
+    return {
+      get: mock((key: string) => Promise.resolve(store.get(key) ?? null)),
+      put: mock((key: string, value: string) => { store.set(key, value); return Promise.resolve(); }),
+      store,
+    };
+  }
+
+  it("allows first request (no prior entries)", async () => {
+    const kv = mockKV();
+    const result = await rateLimit(kv, "test", 5, 60);
+    expect(result.ok).toBe(true);
+    expect(result.remaining).toBe(4);
+  });
+
+  it("denies when over limit", async () => {
+    const kv = mockKV();
+    // Pre-populate the windowed key with a value over the limit
+    const window = Math.floor(Date.now() / 1000 / 60);
+    kv.store.set(`rl:test:${window}`, "6");
+    const result = await rateLimit(kv, "test", 5, 60);
+    expect(result.ok).toBe(false);
+  });
+
+  it("allows when exactly at limit - 1", async () => {
+    const kv = mockKV();
+    const window = Math.floor(Date.now() / 1000 / 60);
+    kv.store.set(`rl:test:${window}`, "4");
+    const result = await rateLimit(kv, "test", 5, 60);
+    expect(result.ok).toBe(true);
+    expect(result.remaining).toBe(0);
+  });
+
+  it("fails closed when KV throws", async () => {
+    const kv = {
+      get: mock(() => Promise.reject(new Error("KV down"))),
+      put: mock(() => Promise.reject(new Error("KV down"))),
+    };
+    const result = await rateLimit(kv, "test", 5, 60);
+    expect(result.ok).toBe(false);
+  });
+});
+
+// ── recordConversion: real conversion recording with mocked DB ─────────
+describe("recordConversion (conversions)", () => {
+  beforeEach(() => {
+    mockOne.mockReset();
+    mockExec.mockReset();
+    mockExec.mockResolvedValue(undefined);
+  });
+
+  it("extracts click_ref from click_ref param", async () => {
+    // First call: offer lookup by click_ref → no match
+    // Second call: idempotency check → no match
+    // Third call: INSERT
+    mockOne.mockResolvedValue(null);
+
+    await recordConversion("owner-1", { click_ref: "abc123", event: "deposit", amount: "50" });
+
+    // Should have called one() twice: offer lookup + idempotency check
+    expect(mockOne).toHaveBeenCalledTimes(2);
+    // The offer lookup query should include the click_ref
+    expect(mockOne.mock.calls[0][1]).toContain("abc123");
+    // The INSERT should have been called
+    expect(mockExec).toHaveBeenCalledTimes(1);
+  });
+
+  it("extracts click_ref from clickid fallback", async () => {
+    mockOne.mockResolvedValue(null);
+    await recordConversion("owner-1", { clickid: "fallback-id", event: "deposit", amount: "50" });
+    expect(mockOne.mock.calls[0][1]).toContain("fallback-id");
+  });
+
+  it("defaults event to 'deposit' when missing", async () => {
+    mockOne.mockResolvedValue(null);
+    await recordConversion("owner-1", { click_ref: "abc" });
+    // The INSERT should use "deposit" as event
+    const insertCall = mockExec.mock.calls[0];
+    expect(insertCall[1][3]).toBe("deposit");
+  });
+
+  it("clamps negative amounts to null", async () => {
+    mockOne.mockResolvedValue(null);
+    await recordConversion("owner-1", { click_ref: "abc", amount: "-50" });
+    const insertCall = mockExec.mock.calls[0];
+    expect(insertCall[1][4]).toBeNull();
+  });
+
+  it("clamps NaN amounts to null", async () => {
+    mockOne.mockResolvedValue(null);
+    await recordConversion("owner-1", { click_ref: "abc", amount: "not-a-number" });
+    const insertCall = mockExec.mock.calls[0];
+    expect(insertCall[1][4]).toBeNull();
+  });
+
+  it("clamps amounts exceeding 1e12 to null", async () => {
+    mockOne.mockResolvedValue(null);
+    await recordConversion("owner-1", { click_ref: "abc", amount: "999999999999999" });
+    const insertCall = mockExec.mock.calls[0];
+    expect(insertCall[1][4]).toBeNull();
+  });
+
+  it("uppercases and truncates currency to 8 chars", async () => {
+    mockOne.mockResolvedValue(null);
+    await recordConversion("owner-1", { click_ref: "abc", currency: "abcdefghijk" });
+    const insertCall = mockExec.mock.calls[0];
+    expect(insertCall[1][5]).toBe("ABCDEFGH");
+  });
+
+  it("skips INSERT when idempotency check finds existing", async () => {
+    // Second call to one() (idempotency check) returns existing row
+    mockOne.mockResolvedValueOnce(null).mockResolvedValueOnce({ id: "existing-id" });
+
+    await recordConversion("owner-1", { click_ref: "abc", event: "deposit", amount: "50" });
+
+    // Should NOT have called exec (no INSERT)
+    expect(mockExec).not.toHaveBeenCalled();
+  });
+
+  it("skips offer lookup and idempotency check when no click_ref", async () => {
+    mockOne.mockResolvedValue(null);
+    await recordConversion("owner-1", { event: "deposit", amount: "50" });
+
+    // No click_ref means both offer lookup and idempotency check are skipped
+    expect(mockOne).not.toHaveBeenCalled();
+    // INSERT still fires (no idempotency fast-path without click_ref)
+    expect(mockExec).toHaveBeenCalledTimes(1);
+  });
+});
+
+// ── Safe URL validation (pattern used in dashboard-views) ──────────────
+describe("Safe URL validation", () => {
+  // This pattern is used client-side in dashboard-views.ts.
+  // Testing the regex pattern directly since the function isn't exported.
+  const safeUrl = (u: string | null | undefined) =>
+    /^https?:\/\//i.test(u ?? "") ? u ?? "#" : "#";
+
+  it("allows https URLs", () => {
+    expect(safeUrl("https://example.com")).toBe("https://example.com");
+  });
+
+  it("allows http URLs", () => {
+    expect(safeUrl("http://example.com")).toBe("http://example.com");
+  });
+
+  it("rejects javascript: URLs", () => {
+    expect(safeUrl("javascript:alert(1)")).toBe("#");
+  });
+
+  it("rejects data: URLs", () => {
+    expect(safeUrl("data:text/html,<script>alert(1)</script>")).toBe("#");
+  });
+
+  it("rejects empty/null/undefined", () => {
+    expect(safeUrl("")).toBe("#");
+    expect(safeUrl(null)).toBe("#");
+    expect(safeUrl(undefined)).toBe("#");
   });
 });
