@@ -599,7 +599,7 @@ admin: `<!DOCTYPE html><html lang="en"><head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>${esc(b.name)} — OBS Overlay</title>
-<style>
+<style nonce="${opts.nonce || ""}">
 *{margin:0;padding:0;box-sizing:border-box}
 html,body{width:320px;overflow:hidden;background:transparent;font-family:'Inter','Segoe UI',system-ui,-apple-system,sans-serif;color:#fff}
 .ov-wrap{width:320px;padding:14px 16px;background:rgba(8,8,12,0.92);border-radius:14px;border:1px solid rgba(255,255,255,0.06);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}

@@ -15,7 +15,7 @@ import {
   resolveCustomDomain, isCustomHost,
   serveStaticAsset,
   serveRobotsTxt, serveSitemapXml, serveFavicon,
-  HTML, SECURE_HTML, notFoundPage, suspendedPage, comingSoonPage
+  HTML, SECURE_HTML, notFoundPage, suspendedPage, comingSoonPage, withNonce
 } from "./middleware/index.js";
 import { findSiteLogoData, findSiteStatus, findUserTotpSecret } from "./data/sites.js";
 import { one } from "../../../shared/db.js";
@@ -66,6 +66,9 @@ async function handleRequest(request, env, ctx) {
       const path = url.pathname;
       const method = request.method === "HEAD" ? "GET" : request.method;
       const host = (request.headers.get("host") || "").toLowerCase().split(":")[0];
+      // BUG-007: Nonce for inline <style> blocks — CSP 'unsafe-inline' replaced per-request.
+      const nonce = crypto.randomUUID().replace(/-/g, "");
+      const HTML_N = withNonce(HTML, nonce);
 
       // --- custom domain resolution ---
       // If the Host header is not our primary domain, check if it maps to a
@@ -79,14 +82,14 @@ async function handleRequest(request, env, ctx) {
           // Only serve GET requests on custom domains (no dashboard/API)
           if (method === "GET" && (path === "/" || path === "")) {
             const r = await getPublicSite(env, customSlug);
-            if (!r || r.suspended) return new Response("not found", { status: 404 });
+            if (!r || r.suspended) return new Response(notFoundPage(customSlug, nonce), { status: 404, headers: HTML_N });
             const pro = r.plan === "pro";
             return new Response(
               renderLeaderboard(r.data, {
-                watermark: !pro, homeUrl: `https://${host}`, slug: customSlug,
+                watermark: !pro, homeUrl: `https://${host}`, slug: customSlug, nonce,
                 logoUrl: pro && r.data.branding?.hasLogo ? `https://${host}/logo/${customSlug}` : null,
               }),
-              { headers: { ...HTML, "cache-control": "public, max-age=30" } }
+              { headers: { ...HTML_N, "cache-control": "public, max-age=30" } }
             );
           }
           if (method === "GET" && path === "/favicon.ico") {
@@ -95,7 +98,7 @@ async function handleRequest(request, env, ctx) {
             });
           }
           // Everything else on a custom domain → 404
-          return new Response("not found", { status: 404 });
+          return new Response(notFoundPage("", nonce), { status: 404, headers: HTML_N });
         }
         // No matching custom domain — fall through to normal routing
       }
@@ -142,7 +145,7 @@ async function handleRequest(request, env, ctx) {
       const csrfToken = generateCsrfToken();
       const csrfHeader = { "set-cookie": csrfCookie(csrfToken) };
 
-      if (path === "/" || path === "/index.html") return new Response(PAGES.index, { headers: { ...HTML, ...csrfHeader } });
+      if (path === "/" || path === "/index.html") return new Response(PAGES.index, { headers: { ...HTML_N, ...csrfHeader } });
       if (path === "/login" || path === "/login.html") return new Response(PAGES.login, { headers: { ...SECURE_HTML, ...csrfHeader } });
       // POST /logout only (BE-003). Previously GET, which allowed CSRF via
       // <img src="/logout">. Now only POST is accepted. The in-page buttons
@@ -224,7 +227,7 @@ async function handleRequest(request, env, ctx) {
       if (path === "/reset") return new Response(PAGES.reset, { headers: { ...SECURE_HTML, ...csrfHeader } });
       if (path === "/admin") {
         const u = await currentUser(request, env);
-        if (!u || !u.is_admin) return new Response(notFoundPage("admin"), { status: 404, headers: HTML });
+        if (!u || !u.is_admin) return new Response(notFoundPage("admin", nonce), { status: 404, headers: HTML_N });
         // Check if 2FA is required but not yet verified
         const tfaRow = await findUserTotpSecret(u.id);
         if (tfaRow?.totp_secret) {
@@ -237,9 +240,9 @@ async function handleRequest(request, env, ctx) {
         }
         return new Response(PAGES.admin, { headers: { ...SECURE_HTML, ...csrfHeader } });
       }
-      if (path === "/terms") return new Response(PAGES.terms, { headers: { ...HTML, ...csrfHeader } });
-      if (path === "/privacy") return new Response(PAGES.privacy, { headers: { ...HTML, ...csrfHeader } });
-      if (path === "/responsible") return new Response(PAGES.responsible, { headers: { ...HTML, ...csrfHeader } });
+      if (path === "/terms") return new Response(PAGES.terms, { headers: { ...HTML_N, ...csrfHeader } });
+      if (path === "/privacy") return new Response(PAGES.privacy, { headers: { ...HTML_N, ...csrfHeader } });
+      if (path === "/responsible") return new Response(PAGES.responsible, { headers: { ...HTML_N, ...csrfHeader } });
 
       // --- streamer logos (uploaded via dashboard, served as real images) ---
       if (path.startsWith("/logo/") && method === "GET") {
@@ -331,16 +334,16 @@ async function handleRequest(request, env, ctx) {
           renderLeaderboard(demoData, {
             watermark: false, homeUrl: url.origin, slug: "demo",
           }),
-          { headers: { ...HTML, "cache-control": "public, max-age=3600" } }
+          { headers: { ...HTML_N, "cache-control": "public, max-age=3600" } }
         );
       }
 
       // --- tracked Join redirect: /go/<slug> → streamer's referral URL ---
       if (method === "GET" && path.startsWith("/go/")) {
         let slug;
-        try { slug = decodeURIComponent(path.slice(4).split("/")[0]).toLowerCase(); } catch { return new Response("not found", { status: 404 }); }
+        try { slug = decodeURIComponent(path.slice(4).split("/")[0]).toLowerCase(); } catch { return new Response(notFoundPage("", nonce), { status: 404, headers: HTML_N }); }
         const r = await getPublicSite(env, slug);
-        if (!r || r.suspended) return new Response("not found", { status: 404 });
+        if (!r || r.suspended) return new Response(notFoundPage(slug, nonce), { status: 404, headers: HTML_N });
         if (r.id) ctx.waitUntil(bumpStat(env, r.id, "clicks"));
         const dest = r.data?.brand?.ctaUrl;
         // E2E-008: Only redirect to the CTA URL if it's a valid https:// URL.
@@ -355,52 +358,52 @@ async function handleRequest(request, env, ctx) {
       // --- OBS overlay: /<slug>/overlay ---
       if (method === "GET" && /^\/[^/]+\/overlay$/.test(path)) {
         let slug;
-        try { slug = decodeURIComponent(path.slice(1).split("/")[0]).toLowerCase(); } catch { return new Response("not found", { status: 404 }); }
-        if (RESERVED.has(slug)) return new Response("not found", { status: 404 });
+        try { slug = decodeURIComponent(path.slice(1).split("/")[0]).toLowerCase(); } catch { return new Response(notFoundPage("", nonce), { status: 404, headers: HTML_N }); }
+        if (RESERVED.has(slug)) return new Response(notFoundPage(slug, nonce), { status: 404, headers: HTML_N });
         const r = await getPublicSite(env, slug);
-        if (!r || r.suspended) return new Response("not found", { status: 404 });
+        if (!r || r.suspended) return new Response(notFoundPage(slug, nonce), { status: 404, headers: HTML_N });
         const paid = r.plan !== "free";
         if (!paid) {
           // Upsell page for free users
           const upsell = `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>OBS Overlay — Pro Feature</title><style>*{margin:0;padding:0;box-sizing:border-box}body{width:320px;background:rgba(8,8,12,0.95);font-family:'Segoe UI',system-ui,sans-serif;color:#fff;padding:20px;border-radius:12px;text-align:center}
+<title>OBS Overlay — Pro Feature</title><style nonce="${nonce}">*{margin:0;padding:0;box-sizing:border-box}body{width:320px;background:rgba(8,8,12,0.95);font-family:'Segoe UI',system-ui,sans-serif;color:#fff;padding:20px;border-radius:12px;text-align:center}
 h2{font-size:16px;margin-bottom:8px;background:linear-gradient(135deg,#c8ff00,#5ad9ff);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
 p{font-size:11px;color:rgba(255,255,255,0.5);line-height:1.5}
 a{color:#c8ff00;text-decoration:none;font-weight:600}</style></head><body>
 <h2>🎬 OBS Overlay</h2>
 <p>This is a Pro feature.<br/>Upgrade at <a href="/" target="_blank">yourrank.site</a> to unlock the live stream overlay with animated rankings.</p>
 </body></html>`;
-          return new Response(upsell, { headers: { ...HTML, "cache-control": "public, max-age=300" } });
+          return new Response(upsell, { headers: { ...HTML_N, "cache-control": "public, max-age=300" } });
         }
-        const overlayHtml = PAGES.overlay(r.data, { slug });
-        return new Response(overlayHtml, { headers: { ...HTML, "cache-control": "public, max-age=30" } });
+        const overlayHtml = PAGES.overlay(r.data, { slug, nonce });
+        return new Response(overlayHtml, { headers: { ...HTML_N, "cache-control": "public, max-age=30" } });
       }
 
       // --- public leaderboard at /<slug> ---
       if (method === "GET" && path.length > 1 && !path.includes(".")) {
         let slug;
-        try { slug = decodeURIComponent(path.slice(1).split("/")[0]).toLowerCase(); } catch { return new Response("not found", { status: 404 }); }
+        try { slug = decodeURIComponent(path.slice(1).split("/")[0]).toLowerCase(); } catch { return new Response(notFoundPage("", nonce), { status: 404, headers: HTML_N }); }
         // BUG-004: Reject paths with extra segments (e.g., /slug/widget).
         // /<slug>/overlay is handled above; anything else is a 404.
-        if (path !== `/${slug}` && path !== `/${slug}/`) return new Response(notFoundPage(slug), { status: 404, headers: HTML });
-        if (RESERVED.has(slug)) return new Response("not found", { status: 404 });
+        if (path !== `/${slug}` && path !== `/${slug}/`) return new Response(notFoundPage(slug, nonce), { status: 404, headers: HTML_N });
+        if (RESERVED.has(slug)) return new Response(notFoundPage(slug, nonce), { status: 404, headers: HTML_N });
         const r = await getPublicSite(env, slug);
         if (!r) {
           // Check if site exists but is unpublished — show Coming Soon instead of 404
           // BUG-002 FIX: sites table has no 'suspended' column; join users to get status.
           const rawSite = await findSiteStatus(slug);
           if (rawSite && !rawSite.published && !rawSite.suspended) {
-            return new Response(comingSoonPage(slug), { status: 200, headers: HTML });
+            return new Response(comingSoonPage(slug, nonce), { status: 200, headers: HTML_N });
           }
-          if (rawSite && rawSite.suspended) return new Response(suspendedPage(), { status: 403, headers: HTML });
-          return new Response(notFoundPage(slug), { status: 404, headers: HTML });
+          if (rawSite && rawSite.suspended) return new Response(suspendedPage(nonce), { status: 403, headers: HTML_N });
+          return new Response(notFoundPage(slug, nonce), { status: 404, headers: HTML_N });
         }
-        if (r.suspended) return new Response(suspendedPage(), { status: 403, headers: HTML });
+        if (r.suspended) return new Response(suspendedPage(nonce), { status: 403, headers: HTML_N });
         // Only count one view per slug per browser per 24h (cookie-based cooldown).
         const viewCookieName = `__v_${slug}`;
         const viewCookies = (request.headers.get("cookie") || "");
         const alreadyViewed = new RegExp(`(?:^|;\\s*)${viewCookieName}=`).test(viewCookies);
-        const respHeaders = { ...HTML, "cache-control": "public, max-age=30" };
+        const respHeaders = { ...HTML_N, "cache-control": "public, max-age=30" };
         if (r.id && !alreadyViewed) {
           const ref = request.headers.get("referer") || request.headers.get("Referer") || "";
           ctx.waitUntil(bumpStat(env, r.id, "views", ref));
@@ -409,14 +412,14 @@ a{color:#c8ff00;text-decoration:none;font-weight:600}</style></head><body>
         const paid = r.plan !== "free";
         return new Response(
           renderLeaderboard(r.data, {
-            watermark: !paid, homeUrl: url.origin, slug,
+            watermark: !paid, homeUrl: url.origin, slug, nonce,
             logoUrl: paid && r.data.branding?.hasLogo ? `${url.origin}/logo/${slug}` : null,
           }),
           { headers: respHeaders }
         );
       }
 
-      return new Response("not found", { status: 404 });
+      return new Response(notFoundPage("", nonce), { status: 404, headers: HTML_N });
     } catch (err) {
       sentry?.captureException(err);
       const errPath = (() => { try { return new URL(request.url).pathname; } catch { return "unknown"; } })();

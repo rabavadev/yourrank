@@ -25,7 +25,7 @@ export function renderLeaderboard(data, opts = {}) {
     : "";
   // Pro theme: one gradient pair drives the page accents. Validated hex only.
   const themeCss = (!opts.watermark && HEX.test(br.accentA || "") && HEX.test(br.accentB || ""))
-    ? `<style>:root{--cy:${br.accentA};--bl:${br.accentB};--grad-name:linear-gradient(100deg,${br.accentA} 0%,${br.accentB} 100%);--grad-cta:linear-gradient(100deg,${br.accentA},${br.accentB})}</style>`
+    ? `<style nonce="${opts.nonce}">:root{--cy:${br.accentA};--bl:${br.accentB};--grad-name:linear-gradient(100deg,${br.accentA} 0%,${br.accentB} 100%);--grad-cta:linear-gradient(100deg,${br.accentA},${br.accentB})}</style>`
     : "";
   const logo = opts.logoUrl ? esc(opts.logoUrl) : null;
   const navLogo = logo ? `<img class="nav-logo" src="${logo}" alt="" />` : "";

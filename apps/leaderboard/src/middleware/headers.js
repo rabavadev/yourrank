@@ -42,20 +42,31 @@ export const SECURE_HTML = {
 // HTML-escape a value for interpolation into text/attribute context
 export const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 
-export function notFoundPage(slug) {
+// Inject nonce into CSP header, replacing 'unsafe-inline' with 'nonce-xxx'.
+// Keeps 'unsafe-inline' as fallback for old browsers (ignored when nonce present).
+export function withNonce(headers, nonce) {
+  const csp = headers["Content-Security-Policy"];
+  if (!nonce || !csp) return headers;
+  return { ...headers, "Content-Security-Policy": csp.replace(/style-src 'self' 'unsafe-inline'/, `style-src 'self' 'nonce-${nonce}'`) };
+}
+
+export function notFoundPage(slug, nonce) {
+  const n = nonce ? ` nonce="${nonce}"` : "";
   return `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Not found</title>
-<style>body{background:#0b0b0c;color:#ededf0;font-family:system-ui,sans-serif;display:grid;place-items:center;min-height:100vh;margin:0}.b{text-align:center}a{color:#c8ff00}</style></head>
+<style${n}>body{background:#0b0b0c;color:#ededf0;font-family:system-ui,sans-serif;display:grid;place-items:center;min-height:100vh;margin:0}.b{text-align:center}a{color:#c8ff00}</style></head>
 <body><div class="b"><h1>No leaderboard here</h1><p>There's no page at <b>/${esc(slug)}</b> yet.</p><p><a href="/">Back to YourRank</a></p></div></body></html>`;
 }
 
-export function suspendedPage() {
+export function suspendedPage(nonce) {
+  const n = nonce ? ` nonce="${nonce}"` : "";
   return `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Unavailable</title>
-<style>body{background:#0b0b0c;color:#ededf0;font-family:system-ui,sans-serif;display:grid;place-items:center;min-height:100vh;margin:0}.b{text-align:center}a{color:#c8ff00}</style></head>
+<style${n}>body{background:#0b0b0c;color:#ededf0;font-family:system-ui,sans-serif;display:grid;place-items:center;min-height:100vh;margin:0}.b{text-align:center}a{color:#c8ff00}</style></head>
 <body><div class="b"><h1>This page is unavailable</h1><p>The owner's account is suspended.</p><p><a href="/">YourRank</a></p></div></body></html>`;
 }
 
-export function comingSoonPage(slug) {
+export function comingSoonPage(slug, nonce) {
+  const n = nonce ? ` nonce="${nonce}"` : "";
   return `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Coming Soon</title>
-<style>body{background:#0b0b0c;color:#ededf0;font-family:system-ui,sans-serif;display:grid;place-items:center;min-height:100vh;margin:0}.b{text-align:center}a{color:#c8ff00}h1{font-size:48px;margin:0 0 12px}p{color:rgba(255,255,255,0.5);font-size:16px}</style></head>
+<style${n}>body{background:#0b0b0c;color:#ededf0;font-family:system-ui,sans-serif;display:grid;place-items:center;min-height:100vh;margin:0}.b{text-align:center}a{color:#c8ff00}h1{font-size:48px;margin:0 0 12px}p{color:rgba(255,255,255,0.5);font-size:16px}</style></head>
 <body><div class="b"><h1>🚧 Coming Soon</h1><p>This leaderboard is being set up. Check back soon!</p><p><a href="/">YourRank</a></p></div></body></html>`;
 }
