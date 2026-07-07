@@ -237,3 +237,8 @@ table.ref-table td{padding:8px 8px;border-bottom:1px solid var(--line);color:var
 .setup-complete-sub{color:var(--ink-mute);font-size:13px;margin:0 0 14px}
 .skel-w-30{width:30px}.skel-w-40{width:40px}.skel-w-50{width:50px}.skel-w-60{width:60px}.skel-w-70{width:70px}.skel-w-80{width:80px}.skel-w-90{width:90px}.skel-w-100{width:100px}.skel-w-120{width:120px}.skel-w-160{width:160px}.skel-w-180{width:180px}.skel-w-200{width:200px}.skel-w-240{width:240px}.skel-w-260{width:260px}
 .skel-h-60{height:60px}.skel-h-80{height:80px}.skel-h-120{height:120px}.skel-h-200{height:200px}.skel-h-300{height:300px}
+
+/* SEC-713: noscript fallback for authenticated pages */
+.noscript-msg{padding:24px;text-align:center;font-family:system-ui,sans-serif}
+.noscript-msg p:first-child{font-size:18px;font-weight:600;margin:0 0 8px}
+.noscript-msg p:last-child{color:var(--ink-soft,#a1a1a9);margin:0}

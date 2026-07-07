@@ -73,3 +73,10 @@ footer{border-top:1px solid var(--line);padding:32px 0;color:var(--ink-mute);fon
 .footer-wrap{display:flex;justify-content:space-between;width:100%;flex-wrap:wrap;gap:12px}
 
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; } }
+
+/* SEC-713: noscript fallback — replaces inline style="" attributes */
+.noscript-card{max-width:640px;margin:40px auto;padding:24px;background:var(--panel,#101012);border:1px solid var(--line,#212125);border-radius:12px;color:var(--ink,#ededf0);font-family:system-ui,sans-serif;text-align:center}
+.noscript-card h1{margin:0 0 12px;font-size:24px}
+.noscript-card p{color:var(--ink-soft,#a1a1a9);margin:0 0 16px}
+.noscript-card a{display:inline-block;padding:11px 24px;background:var(--accent,#c8ff00);color:var(--accent-ink,#000);font-weight:600;border-radius:8px;text-decoration:none}
+.price-amount-sub{font-size:13px;font-weight:400}

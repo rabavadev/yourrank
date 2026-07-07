@@ -102,7 +102,7 @@ function buildPlayerRow(pl, rank, delay, gap) {
     const gapHtml = rank === 1 ? "" : (gap === 0
       ? `<span class="tr-gap">↑ tied</span>`
       : `<span class="tr-gap">↑ ${moneyShort(gap)} to next</span>`);
-    return `<li class="t-row" data-position="${rank}" data-name="${esc(pl.name)}" style="animation-delay:${delay}s">
+    return `<li class="t-row" data-position="${rank}" data-name="${esc(pl.name)}" data-delay="${delay}">
       <span class="tr-rank">${String(rank).padStart(2, "0")}</span>
       <span class="tr-player"><span class="tr-av">${esc(initials(pl.name))}</span><span class="tr-name">${esc(pl.name)}</span></span>
       <span class="tr-wager">${money(pl.wagered)}</span>${prize}${gapHtml}</li>`;
@@ -133,7 +133,9 @@ function updateLeaderboard(players) {
       const rank = i + 1;
       const gap = i === 0 ? 0 : sorted[i - 1].wagered - pl.wagered;
       return buildPlayerRow(pl, rank, Math.min(i * 0.025, 0.5), gap);
-    }).join("");
+      }).join("");
+      // SEC-713: apply animation-delay via CSSOM (CSP blocks style="" attributes)
+      $$("[data-rows] [data-delay]").forEach((el) => { el.style.animationDelay = el.dataset.delay + "s"; });
 
     // Flash rank-change indicators
     const rowEls = $$("[data-rows] .t-row");
@@ -245,7 +247,7 @@ function boot() {
   $$("[data-cta]").forEach((el) => { if (b.ctaUrl && !window.__SLUG__) el.href = b.ctaUrl; });
 
   const wm = $("[data-watermarks]");
-  if (wm) { let h = ""; for (let i = 0; i < 14; i++) { const t = Math.random()*100, l = Math.random()*100, s = 20+Math.random()*60, r = -20+Math.random()*40; h += `<span style="top:${t}%;left:${l}%;font-size:${s}px;transform:rotate(${r}deg)">${esc(b.name || "")}</span>`; } wm.innerHTML = h; }
+  if (wm) { let h = ""; for (let i = 0; i < 14; i++) { const t = Math.random()*100, l = Math.random()*100, s = 20+Math.random()*60, r = -20+Math.random()*40; h += `<span data-t="${t}" data-l="${l}" data-s="${s}" data-r="${r}">${esc(b.name || "")}</span>`; } wm.innerHTML = h; wm.querySelectorAll("span").forEach((sp) => { sp.style.top = sp.dataset.t + "%"; sp.style.left = sp.dataset.l + "%"; sp.style.fontSize = sp.dataset.s + "px"; sp.style.transform = "rotate(" + sp.dataset.r + "deg)"; }); }
 
   const cc = $("[data-copy-code]");
   if (cc) cc.addEventListener("click", async () => { try { await navigator.clipboard.writeText(b.code || ""); cc.classList.add("copied"); const p = cc.textContent; cc.textContent = "Copied!"; setTimeout(() => { cc.classList.remove("copied"); cc.textContent = p; }, TOAST_DURATION_MS); } catch (_) { /* ignored */ }
@@ -276,6 +278,8 @@ function boot() {
       const gap = i === 0 ? 0 : players[i - 1].wagered - pl.wagered;
       return buildPlayerRow(pl, r, Math.min(i * 0.025, 0.5), gap);
     }).join("");
+    // SEC-713: apply animation-delay via CSSOM (CSP blocks style="" attributes)
+    $$("[data-rows] [data-delay]").forEach((el) => { el.style.animationDelay = el.dataset.delay + "s"; });
   }
   // Store initial ordering
   previousPlayerNames = players.map((pl) => pl.name);
