@@ -390,6 +390,9 @@ export function buildHonoApp(): Hono<{ Bindings: Bindings }> {
   });
 
   app.route("/api", api);
+  // Also mount under /bot/api so routes are reachable via the /bot/* CF route
+  // (CF sends /bot/api/* to this worker, but Hono only matches /api/* by default)
+  app.route("/bot/api", api);
 
   // =================================================================
   // 4) STREAMER DASHBOARD (Telegram Login + self-serve UI)

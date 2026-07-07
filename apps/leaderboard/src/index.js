@@ -406,9 +406,6 @@ a{color:#c8ff00;text-decoration:none;font-weight:600}</style></head><body>
         return new Response(overlayHtml, { headers: { ...HTML_N, "cache-control": "no-store" } });
       }
 
-      // --- /bot redirect (Cloudflare routes /bot to this worker, not the bot worker) ---
-      if (path === "/bot" || path === "/bot/") return new Response(null, { status: 302, headers: { location: "/bot/dashboard" } });
-
       // --- public leaderboard at /<slug> ---
       if (method === "GET" && path.length > 1 && !path.includes(".")) {
         let slug;
