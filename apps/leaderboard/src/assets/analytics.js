@@ -129,10 +129,7 @@ function renderReferrers(refs) {
   table.hidden = false;
   empty.hidden = true;
   body.innerHTML = refs.map(r =>
-    `<tr><td>${escHtml(r.domain)}</td><td class="ta-r" style="font-family:var(--mono)">${fmt(r.count)}</td></tr>`
+    `<tr><td>${esc(r.domain)}</td><td class="ta-r" style="font-family:var(--mono)">${fmt(r.count)}</td></tr>`
   ).join("");
 }
 
-function escHtml(s) {
-  return String(s || "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
-}

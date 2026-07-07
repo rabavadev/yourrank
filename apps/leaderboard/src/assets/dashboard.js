@@ -26,7 +26,8 @@ async function init(){
   const res = await fetch(apiUrl); const p = await res.json();
   if (!p.ok) {
     if (ME.isAdmin) { location.href = "/admin"; return; }
-    $("loading").innerHTML = '<div class="error-state"><span class="error-icon">⚠</span><p>Couldn\'t load your site.</p><button class="btn btn--sm" onclick="location.reload()">Try again</button></div>'; return;
+    $("loading").innerHTML = '<div class="error-state"><span class="error-icon">⚠</span><p>Couldn\'t load your site.</p><button class="btn btn--sm" id="retryBtn">Try again</button></div>';
+    document.getElementById("retryBtn")?.addEventListener("click", () => location.reload()); return;
   }
   SLUG = p.slug; ACTIVE_SITE_ID = p.siteId || null;
   BOARDS = p.boards || [];

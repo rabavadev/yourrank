@@ -267,7 +267,26 @@ async function handleRequest(request, env, ctx) {
         }
       }
       if (path === "/forgot") return new Response(PAGES.forgot, { headers: { ...SECURE_HTML, ...csrfHeader } });
-      if (path === "/reset") return new Response(PAGES.reset, { headers: { ...SECURE_HTML, ...csrfHeader } });
+      if (path === "/reset") {
+        // BUG-003: Don't show password form when no token is present.
+        if (!url.searchParams.get("token")) {
+          const invalidLink = `<!DOCTYPE html><html lang="en"><head>
+<meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Invalid link · YourRank</title>
+<meta name="robots" content="noindex, nofollow" />
+<link rel="stylesheet" href="/assets/app.css" /></head><body>
+<a href="#main-content" class="sr-only skip-link">Skip to content</a>
+<div class="auth-wrap"><aside class="auth-side"><div><div class="brand">Your<b>Rank</b></div></div>
+<div><h1>That link doesn't work.</h1><p>This reset link is missing, expired, or already used. Request a fresh one below.</p></div>
+<div class="feat"></div></aside>
+<main class="auth-main" id="main-content"><div class="auth-card"><h2>Invalid reset link</h2>
+<p class="sub">This link is invalid or expired.</p>
+<a class="btn btn--accent w-full" href="/forgot">Request a new link</a>
+<p class="foot"><a href="/login">Back to sign in</a></p></div></main></div></body></html>`;
+          return new Response(invalidLink, { headers: { ...SECURE_HTML, ...csrfHeader } });
+        }
+        return new Response(PAGES.reset, { headers: { ...SECURE_HTML, ...csrfHeader } });
+      }
       if (path === "/admin") {
         const u = await currentUser(request, env);
         if (!u || !u.is_admin) return new Response(notFoundPage("admin", nonce), { status: 404, headers: HTML_N });
