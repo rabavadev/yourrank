@@ -20,10 +20,10 @@ interface WindowState {
  * Each DO instance handles one rate-limit key.
  */
 export class RateLimiter {
-  private state: DurableObjectState;
+  private state: any;
   private windows: Map<string, WindowState> = new Map();
 
-  constructor(state: DurableObjectState) {
+  constructor(state: any) {
     this.state = state;
   }
 
@@ -49,7 +49,6 @@ export class RateLimiter {
 
     if (url.pathname === "/reset" && request.method === "POST") {
       this.windows.clear();
-      await this.state.storage.deleteAll();
       return new Response(JSON.stringify({ ok: true }), {
         headers: { "content-type": "application/json" },
       });

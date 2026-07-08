@@ -34,11 +34,19 @@ export async function handleTelegramLink(request, env) {
   }
 
   // Verify Telegram signature (same as bot dashboard auth)
-  const { verifyTelegramLogin } = await import("../../../../shared/telegram-login.js");
-  const isValid = await verifyTelegramLogin(
-    { id, first_name, last_name, username, photo_url, auth_date, hash },
-    env.LOGIN_BOT_TOKEN
-  );
+  // Inline Telegram Login verification (same logic as bot dashboard-auth.ts)
+  const fields = { id, first_name, last_name, username, photo_url, auth_date };
+  const checkString = Object.keys(fields).sort()
+    .filter((k) => fields[k] != null)
+    .map((k) => `${k}=${fields[k]}`)
+    .join("\n");
+  const secretKey = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(env.LOGIN_BOT_TOKEN));
+  const key = await crypto.subtle.importKey("raw", secretKey, { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
+  const sig = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(checkString));
+  const expected = Buffer.from(sig).toString("hex");
+  let diff = 0;
+  for (let i = 0; i < expected.length; i++) diff |= expected.charCodeAt(i) ^ hash.charCodeAt(i);
+  const isValid = diff === 0;
   if (!isValid) return bad("Invalid Telegram signature", 401);
 
   // Check freshness (5 minutes max)

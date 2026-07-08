@@ -16,12 +16,17 @@
 //     }),
 //   };
 
-import { Toucan } from "toucan-js";
 import { generateRequestId, createLogger } from "./request-id.js";
 import { sendErrorToDiscord } from "./monitoring.js";
 
+interface ToucanClient {
+  setTag(key: string, value: string): void;
+  setTags(tags: Record<string, string>): void;
+  captureException(err: unknown): void;
+}
+
 interface WorkerContext {
-  sentry: Toucan | null;
+  sentry: ToucanClient | null;
   log: ReturnType<typeof createLogger>;
   reqId: string;
 }
@@ -29,7 +34,7 @@ interface WorkerContext {
 type FetchHandler = (
   request: Request,
   env: Record<string, any>,
-  ctx: ExecutionContext,
+  ctx: any,
   extras: WorkerContext
 ) => Promise<Response>;
 
@@ -41,16 +46,18 @@ export function withWorkerFetch(workerName: string, handler: FetchHandler) {
   return async function fetch(
     request: Request,
     env: Record<string, any>,
-    ctx: ExecutionContext
+    ctx: any
   ): Promise<Response> {
     const reqId = generateRequestId();
     const log = createLogger(workerName, reqId);
 
     // Initialize Sentry if DSN is available
-    let sentry: Toucan | null = null;
+    let sentry: ToucanClient | null = null;
     try {
       if (env.SENTRY_DSN) {
-        sentry = new Toucan({
+        // Dynamic import to avoid bundling toucan-js in shared/ (it's an app-level dep)
+        const { Toucan } = await import("toucan-js");
+        const s = new Toucan({
           dsn: env.SENTRY_DSN,
           request,
           context: ctx,
@@ -58,6 +65,7 @@ export function withWorkerFetch(workerName: string, handler: FetchHandler) {
           release: `yourrank@${(typeof process !== "undefined" && process.env?.npm_package_version) || "dev"}`,
           tags: { worker: workerName, req_id: reqId },
         });
+        sentry = s;
       }
     } catch (sentryErr) {
       // Sentry init failure should never crash the request

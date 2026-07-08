@@ -1,42 +1,62 @@
 "use strict";
 // ------------------------------------------------------------------
-// Shared KV-backed fixed-window rate limiter.
+// Shared rate limiter for YourRank — KV or Durable Object backend.
 //
-// Used by both the leaderboard and bot Workers. Uses a KV namespace
-// (typically SESSIONS) for storage. Keys are short-lived (expirationTtl
-// = window), so the store self-cleans and there's nothing to sweep.
+// Same public API. First argument can be:
+//   - A KV namespace (legacy, direct KV access)
+//   - An env object with SESSIONS and optionally RATE_LIMITER_DO + RL_BACKEND
 //
-// Fixed-window is intentionally simple: it can allow up to ~2x the limit
-// across a window boundary, which is fine for coarse abuse/brute-force
-// protection. It is NOT a billing-accurate quota.
-//
-// KV reads are eventually consistent, so this is best-effort under heavy
-// concurrent bursts — again, fine as a brute-force speed bump.
-//
-// IMPORTANT: Due to KV's eventual consistency and lack of atomic increment,
-// this limiter can under-count under burst conditions. Concurrent requests
-// may read stale values and all increment from the same baseline, allowing
-// more requests than the configured limit during bursts.
-//
-// FAILS OPEN: this limiter is a best-effort abuse speed bump, not a hard
-// security control. If KV is unavailable — missing binding, transient error,
-// or (crucially) the daily WRITE quota being exhausted — we ALLOW the request
-// instead of denying it. A KV hiccup must never take the whole platform
-// offline (it previously did: every rate-limit check writes to KV on the
-// allowed path, so once the free-tier write quota was spent, every endpoint —
-// login, signup, bot connect, redirects, postbacks, public polling — returned
-// 429 until the quota reset). Endpoints that need real protection have their
-// own controls (per-account login lockout, HMAC-signed postbacks, admin key).
+// When RL_BACKEND=do and RATE_LIMITER_DO binding exists, uses Durable Objects.
+// Otherwise falls back to KV. Fails OPEN in all cases.
 // ------------------------------------------------------------------
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.rateLimit = rateLimit;
 /**
  * Count one hit against `id` in a `windowSec` window allowing `limit` hits.
- * Returns whether this hit is allowed plus headroom info for headers.
- * Fails OPEN (allows the request) if KV is unavailable — see file header.
+ * First argument: KV namespace OR env object (auto-detected).
+ * Fails OPEN (allows the request) if the backend is unavailable.
  */
-async function rateLimit(kv, id, limit, windowSec) {
-    // No binding — can't enforce, so allow rather than deny.
+async function rateLimit(kvOrEnv, id, limit, windowSec) {
+    // Auto-detect: if it has get/put methods, it's a KV namespace
+    if (kvOrEnv && typeof kvOrEnv.get === "function" && typeof kvOrEnv.put === "function") {
+        // KV namespace passed directly (bot Worker pattern)
+        // Check if we should still use DO by looking at globalThis (not available)
+        // In this case, stick with KV since we don't have the env reference
+        return rateLimitKV(kvOrEnv, id, limit, windowSec);
+    }
+    // Env object passed (leaderboard Worker pattern)
+    const env = kvOrEnv;
+    if (!env)
+        return { ok: true, remaining: limit, limit, retryAfter: 0 };
+    const backend = env.RL_BACKEND || "kv";
+    if (backend === "do" && env.RATE_LIMITER_DO) {
+        return rateLimitDO(env.RATE_LIMITER_DO, id, limit, windowSec);
+    }
+    return rateLimitKV(env.SESSIONS, id, limit, windowSec);
+}
+// --- Durable Object backend ---
+async function rateLimitDO(ns, id, limit, windowSec) {
+    try {
+        const doId = ns.idFromName(`rl:${id}`);
+        const stub = ns.get(doId);
+        const res = await stub.fetch("https://do/check", {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({ limit, windowSec }),
+        });
+        if (!res.ok) {
+            console.error("[rateLimit] DO returned non-ok, allowing request");
+            return { ok: true, remaining: limit, limit, retryAfter: 0 };
+        }
+        return await res.json();
+    }
+    catch (err) {
+        console.error("[rateLimit] DO error, allowing request:", String(err?.message ?? err));
+        return { ok: true, remaining: limit, limit, retryAfter: 0 };
+    }
+}
+// --- KV backend (original implementation) ---
+async function rateLimitKV(kv, id, limit, windowSec) {
     if (!kv)
         return { ok: true, remaining: limit, limit, retryAfter: 0 };
     const window = Math.floor(Date.now() / 1000 / windowSec);
@@ -47,7 +67,6 @@ async function rateLimit(kv, id, limit, windowSec) {
         current = Number((await kv.get(key)) ?? 0);
     }
     catch (err) {
-        // Read failed — we can't make a decision, so allow. Best-effort.
         console.error("[rateLimit] KV read failed, allowing request:", String(err?.message ?? err));
         return { ok: true, remaining: limit, limit, retryAfter: 0 };
     }
@@ -56,13 +75,9 @@ async function rateLimit(kv, id, limit, windowSec) {
     }
     const used = current + 1;
     try {
-        // Refresh the TTL to the current window each hit; the key dies with the window.
         await kv.put(key, String(used), { expirationTtl: windowSec });
     }
     catch (err) {
-        // Write failed (e.g. daily KV write quota exhausted). The request already
-        // passed the read check above, so ALLOW it — never flip an allowed request
-        // to denied just because we couldn't persist the incremented count.
         console.error("[rateLimit] KV write failed, allowing request (count not persisted):", String(err?.message ?? err));
     }
     return { ok: true, remaining: Math.max(0, limit - used), limit, retryAfter };

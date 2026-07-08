@@ -3,7 +3,6 @@ import { sendErrorToDiscord } from "../../../shared/monitoring.js";
 import { withWorkerFetch } from "../../../shared/with-worker.js";
 import { RateLimiter } from "../../../shared/rate-limiter-do.js";
 import { populateEnv } from "../../../shared/env.js";
-import { Toucan } from "toucan-js";
 import { getPublicSite, getByUser, getAllBoards, invalidateSiteCache, invalidateUserCache } from "./site.js";
 import { renderLeaderboard } from "./render.js";
 import { PAGES } from "./pages.js";
@@ -83,14 +82,7 @@ function demoLeaderboardData() {
 }
 
 async function handleRequest(request, env, ctx) {
-    const sentry = env.SENTRY_DSN ? new Toucan({
-      dsn: env.SENTRY_DSN,
-      request,
-      context: ctx,
-      environment: "production",
-      release: `yourrank@${process.env.npm_package_version || "dev"}`,
-      tags: { worker: "leaderboard" },
-    }) : null;
+    const sentry = null; // Sentry handled by withWorkerFetch wrapper
     try {
       // BE-004: Reject oversized request bodies early, before any parsing.
       // 1 MB is generous for JSON payloads (site data, auth forms, etc.)

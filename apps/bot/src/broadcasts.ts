@@ -78,12 +78,12 @@ export async function processBroadcastBatch(batchSize = 300): Promise<boolean> {
   let segmentWhere = '';
   if (segment === 'clicked') {
     segmentJoin = 'JOIN clicks c ON c.tg_user_id = bs.tg_user_id';
-    segmentWhere = 'AND c.created_at > now() - interval '30 days'';
+    segmentWhere = `AND c.created_at > now() - interval '30 days'`;
   } else if (segment === 'deposited') {
     segmentJoin = 'JOIN conversions cv ON cv.click_ref IN (SELECT click_ref FROM clicks WHERE tg_user_id = bs.tg_user_id)';
-    segmentWhere = 'AND cv.status IN ('confirmed', 'finished')';
+    segmentWhere = `AND cv.status IN ('confirmed', 'finished')`;
   } else if (segment === 'inactive') {
-    segmentWhere = 'AND bs.last_active_at < now() - interval '7 days'';
+    segmentWhere = `AND bs.last_active_at < now() - interval '7 days'`;
   }
 
   const subs = await query<{ tg_user_id: number }>(
