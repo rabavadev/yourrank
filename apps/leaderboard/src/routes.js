@@ -19,6 +19,7 @@ import {
 import { handleTrial } from "./handlers/billing.js";
 import { handleLead } from "./handlers/leads.js";
 import { handleBotConnect } from "./handlers/bot.js";
+import { handleBotOnboard } from "./handlers/bot-onboard.js";
 import { handleScores } from "./handlers/scores.js";
 import { handleCheckout, handleCheckoutLifetime, handleIpn } from "./billing.js";
 import {
@@ -76,6 +77,7 @@ export const ROUTES = [
   
   // Bot routes
   { path: "/api/bot/connect", method: "POST", handler: withHandler(handleBotConnect) },
+  { path: "/api/bot/onboard", method: "POST", handler: withHandler(handleBotOnboard) },
   
   // Admin routes
   { path: "/api/admin/overview", method: "GET", handler: withHandler(handleOverview) },
