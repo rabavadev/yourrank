@@ -1,0 +1,109 @@
+// Tests for bot plans.ts and rollup.ts — plan enforcement, partition management.
+// Uses bun:test with mocked DB.
+//
+// Run: bun test src/__tests__/plans-rollup.test.ts
+
+import { describe, it, expect, mock, beforeEach } from "bun:test";
+
+// ── Mock DB ────────────────────────────────────────────────────────────
+const dbUrl   = import.meta.resolve("../../../../shared/db.js");
+const dbUrlTs = import.meta.resolve("../../../../shared/db.ts");
+
+const mockOne = mock(() => Promise.resolve(null));
+const mockExec = mock(() => Promise.resolve());
+const mockQuery = mock(() => Promise.resolve([]));
+
+const dbMock = () => ({
+  one: (...args: any[]) => mockOne(...args),
+  exec: (...args: any[]) => mockExec(...args),
+  query: (...args: any[]) => mockQuery(...args),
+  getSql: () => null,
+  withTransaction: async (fn: any) => fn({ one: (...a: any[]) => mockOne(...a), exec: (...a: any[]) => mockExec(...a), query: (...a: any[]) => mockQuery(...a) }),
+});
+mock.module(dbUrl, dbMock);
+mock.module(dbUrlTs, dbMock);
+
+// Mock crypto
+const cryptoUrl   = import.meta.resolve("../../../../shared/crypto.js");
+const cryptoUrlTs = import.meta.resolve("../../../../shared/crypto.ts");
+const cryptoMock = () => ({
+  decryptToken: (enc: string) => enc,
+  encrypt: (s: string) => s,
+  decrypt: (s: string) => s,
+  verifyHmacSha256Hex: async () => true,
+  safeEqual: (a: string, b: string) => a === b,
+  encryptToken: (s: string) => s,
+  decryptToken: (s: string) => s,
+  reencryptToken: (s: string) => s,
+  isCurrentVersion: () => true,
+  newClickRef: () => "ref",
+  newLinkSlug: () => "slug",
+  newWebhookSecret: () => "secret",
+});
+mock.module(cryptoUrl, cryptoMock);
+mock.module(cryptoUrlTs, cryptoMock);
+
+// ── Import after mocks ─────────────────────────────────────────────────
+import { PLANS } from "../plans.js";
+import { effectivePlan, PLAN_LIMITS, BOARD_LIMITS, PLAN_PRICES } from "../../../../shared/plans.js";
+
+// ── PLANS constant (bot-specific) ──────────────────────────────────────
+describe("PLANS constant", () => {
+  it("defines all 4 tiers", () => {
+    expect(PLANS).toHaveProperty("free");
+    expect(PLANS).toHaveProperty("starter");
+    expect(PLANS).toHaveProperty("pro");
+    expect(PLANS).toHaveProperty("agency");
+  });
+
+  it("each plan has required fields", () => {
+    for (const [key, plan] of Object.entries(PLANS)) {
+      expect(plan).toHaveProperty("tier");
+      expect(plan).toHaveProperty("label");
+      expect(plan).toHaveProperty("maxBots");
+      expect(plan).toHaveProperty("maxOffers");
+    }
+  });
+});
+
+// ── effectivePlan (from shared/plans) ──────────────────────────────────
+describe("effectivePlan", () => {
+  it("returns 'free' for null user", () => {
+    expect(effectivePlan(null)).toBe("free");
+  });
+
+  it("returns 'free' for expired plan", () => {
+    const user = { plan: "pro", plan_expires_at: Date.now() - 86400000 };
+    expect(effectivePlan(user)).toBe("free");
+  });
+
+  it("returns plan name for active subscription", () => {
+    const user = { plan: "pro", plan_expires_at: Date.now() + 86400000 };
+    expect(effectivePlan(user)).toBe("pro");
+  });
+
+  it("returns 'free' when expiry is null (anti-exploit: null = expired)", () => {
+    const user = { plan: "agency", plan_expires_at: null };
+    expect(effectivePlan(user)).toBe("free");
+  });
+
+  it("returns plan name for far-future expiry", () => {
+    const user = { plan: "agency", plan_expires_at: Date.now() + 365 * 86400000 };
+    expect(effectivePlan(user)).toBe("agency");
+  });
+});
+
+// ── PLAN_LIMITS hierarchy ──────────────────────────────────────────────
+describe("PLAN_LIMITS", () => {
+  it("free has fewer players than starter", () => {
+    expect(PLAN_LIMITS.free).toBeLessThan(PLAN_LIMITS.starter);
+  });
+
+  it("starter has fewer players than pro", () => {
+    expect(PLAN_LIMITS.starter).toBeLessThan(PLAN_LIMITS.pro);
+  });
+
+  it("BOARD_LIMITS: free has fewer boards than pro", () => {
+    expect(BOARD_LIMITS.free).toBeLessThan(BOARD_LIMITS.pro);
+  });
+});

@@ -29,7 +29,7 @@ export async function handleHeatmap(request, env) {
 
 export async function handleTrackCopy(request, env, ctx) {
   const body = await readJson(request);
-  const slug = slugify(body.slug || "");
+  const slug = slugify(body?.slug || "");
   if (!slug) return json({ ok: true });
   const site = await one("SELECT id FROM sites WHERE slug=$1 AND published=true", [slug]);
   if (site) ctx.waitUntil(bumpStat(env, site.id, "copies"));

@@ -8,24 +8,33 @@
 import { describe, it, expect, mock, beforeEach } from "bun:test";
 
 // ── Mock DB so conversions.ts loads without a real Hyperdrive ──────────
+// Mock BOTH .js and .ts resolved URLs — bun resolves .js imports to .ts
 const dbUrl = import.meta.resolve("../../../../shared/db.js");
+const dbUrlTs = import.meta.resolve("../../../../shared/db.ts");
 const cryptoUrl = import.meta.resolve("../../../../shared/crypto.js");
+const cryptoUrlTs = import.meta.resolve("../../../../shared/crypto.ts");
 
 const mockOne = mock(() => Promise.resolve(null));
 const mockExec = mock(() => Promise.resolve(undefined));
 
-mock.module(dbUrl, () => ({
+const dbMockFactory = () => ({
   one: (...args: any[]) => mockOne(...args),
   exec: (...args: any[]) => mockExec(...args),
   query: () => Promise.resolve([]),
-}));
-
-mock.module(cryptoUrl, () => ({
+  getSql: () => null,
+  withTransaction: async (fn: any) => fn({ one: (...a: any[]) => mockOne(...a), exec: (...a: any[]) => mockExec(...a), query: () => Promise.resolve([]) }),
+});
+const cryptoMockFactory = () => ({
   decryptToken: (enc: string) => enc,
   encrypt: (s: string) => s,
   decrypt: (s: string) => s,
   verifyHmacSha256Hex: async () => true,
-}));
+});
+
+mock.module(dbUrl, dbMockFactory);
+mock.module(dbUrlTs, dbMockFactory);
+mock.module(cryptoUrl, cryptoMockFactory);
+mock.module(cryptoUrlTs, cryptoMockFactory);
 
 // ── Import REAL functions after mocks are in place ─────────────────────
 import { esc } from "../botEngine.js";
