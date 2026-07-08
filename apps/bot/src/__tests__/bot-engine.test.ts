@@ -14,8 +14,8 @@ const dbUrlTs = import.meta.resolve("../../../../shared/db.ts");
 const cryptoUrl = import.meta.resolve("../../../../shared/crypto.js");
 const cryptoUrlTs = import.meta.resolve("../../../../shared/crypto.ts");
 
-const mockOne = mock(() => Promise.resolve(null));
-const mockExec = mock(() => Promise.resolve(undefined));
+const mockOne = mock((..._args: any[]): Promise<any> => Promise.resolve(null));
+const mockExec = mock((..._args: any[]): Promise<any> => Promise.resolve(undefined));
 
 const dbMockFactory = () => ({
   one: (...args: any[]) => mockOne(...args),

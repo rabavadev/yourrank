@@ -9,9 +9,9 @@ import { describe, it, expect, mock, beforeEach } from "bun:test";
 const dbUrl   = import.meta.resolve("../../../../shared/db.js");
 const dbUrlTs = import.meta.resolve("../../../../shared/db.ts");
 
-const mockOne = mock(() => Promise.resolve(null));
-const mockExec = mock(() => Promise.resolve());
-const mockQuery = mock(() => Promise.resolve([]));
+const mockOne = mock((..._args: any[]): Promise<any> => Promise.resolve(null));
+const mockExec = mock((..._args: any[]): Promise<any> => Promise.resolve(undefined));
+const mockQuery = mock((..._args: any[]): Promise<any> => Promise.resolve([]));
 
 const dbMock = () => ({
   one: (...args: any[]) => mockOne(...args),
@@ -33,7 +33,6 @@ const cryptoMock = () => ({
   verifyHmacSha256Hex: async () => true,
   safeEqual: (a: string, b: string) => a === b,
   encryptToken: (s: string) => s,
-  decryptToken: (s: string) => s,
   reencryptToken: (s: string) => s,
   isCurrentVersion: () => true,
   newClickRef: () => "ref",
