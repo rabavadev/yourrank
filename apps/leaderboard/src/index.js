@@ -1,6 +1,6 @@
 import { destroySession, cookieSet, cookieClear, readToken, handleAccountDelete, requireUser, RESERVED, slugify, clientIp, rateLimit, json, bad, currentUser, hasLegacyCookie, cookieClearLegacy } from "./auth.js";
 import { sendErrorToDiscord } from "../../../shared/monitoring.js";
-import { generateRequestId, createLogger } from "../../../shared/request-id.js";
+import { withWorkerFetch } from "../../../shared/with-worker.js";
 import { populateEnv } from "../../../shared/env.js";
 import { Toucan } from "toucan-js";
 import { getPublicSite, getByUser, getAllBoards, invalidateSiteCache, invalidateUserCache } from "./site.js";
@@ -22,33 +22,20 @@ import { findSiteLogoData, findSiteStatus, findUserTotpSecret } from "./data/sit
 import { one } from "../../../shared/db.js";
 
 export default {
-  async fetch(request, env, ctx) {
-    const reqId = generateRequestId();
-    request._reqId = reqId;
-    // Last-resort guard: anything that escapes handleRequest (or the cookie
-    // post-processing below) must return a 500 rather than reject the fetch
-    // promise — a rejection surfaces to visitors as a raw Cloudflare 1101
-    // "Worker threw exception" page instead of our own error response.
-    try {
-      const response = await handleRequest(request, env, ctx);
-      response.headers.set("X-Request-Id", reqId);
-      // SEC-104: Clear legacy 'sess' cookie on every response (not just authenticated)
-      if (hasLegacyCookie(request)) {
-        response.headers.append("set-cookie", cookieClearLegacy());
-      }
-      // SEC-107: Propagate rotated session cookies from currentUser()
-      if (request._sessionCookies) {
-        for (const c of request._sessionCookies) {
-          response.headers.append("set-cookie", c);
-        }
-      }
-      return response;
-    } catch (err) {
-      const log = createLogger("leaderboard", reqId);
-      log.error("unhandled_fetch_error", { error: String(err?.message || err), stack: err?.stack || "" });
-      return new Response("Internal Server Error", { status: 500 });
+  fetch: withWorkerFetch("leaderboard", async (request, env, ctx) => {
+    const response = await handleRequest(request, env, ctx);
+    // SEC-104: Clear legacy 'sess' cookie on every response (not just authenticated)
+    if (hasLegacyCookie(request)) {
+      response.headers.append("set-cookie", cookieClearLegacy());
     }
-  }
+    // SEC-107: Propagate rotated session cookies from currentUser()
+    if (request._sessionCookies) {
+      for (const c of request._sessionCookies) {
+        response.headers.append("set-cookie", c);
+      }
+    }
+    return response;
+  }),
 };
 
 function demoLeaderboardData() {
@@ -177,8 +164,7 @@ async function handleRequest(request, env, ctx) {
           await one('SELECT 1 AS ok');
           result.db = true;
         } catch (e) {
-          const hlog = createLogger("leaderboard", reqId);
-          hlog.error("health_db_probe_failed", { error: String(e) });
+          console.error("[leaderboard] health_db_probe_failed:", String(e));
           result.db = false;
           result.status = "degraded";
         }
@@ -465,8 +451,7 @@ a{color:#c8ff00;text-decoration:none;font-weight:600}</style></head><body>
     } catch (err) {
       sentry?.captureException(err);
       const errPath = (() => { try { return new URL(request.url).pathname; } catch { return "unknown"; } })();
-      const errLog = createLogger("leaderboard", reqId);
-      errLog.error("unhandled_route_error", { route: errPath, error: String(err?.message || err), stack: err?.stack || "" });
+      console.error(`[leaderboard] unhandled error on ${errPath}:`, String(err?.message || err), err?.stack || "");
       // Fire-and-forget Discord monitoring webhook
       if (env.DISCORD_MONITORING_WEBHOOK) {
         ctx.waitUntil(sendErrorToDiscord({

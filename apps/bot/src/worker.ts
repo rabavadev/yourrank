@@ -9,7 +9,7 @@
 // read process.env, not c.env) work unchanged. Called from BOTH fetch and
 // scheduled — they MUST populate the same set, or a binding set in only one
 import { sendErrorToDiscord, sendCronSummaryToDiscord } from "../../../shared/monitoring.js";
-import { generateRequestId, createLogger } from "../../../shared/request-id.js";
+import { withWorkerFetch } from "../../../shared/with-worker.js";
 import { populateEnv } from "../../../shared/env.js";
 import { exec as dbExec } from "../../../shared/db.js";
 import { Toucan } from "toucan-js";
@@ -48,59 +48,27 @@ async function notifyCronFailure(env: Record<string, any>, cron: string, task: s
 }
 
 export default {
-  async fetch(req: Request, env: Record<string, any>, ctx: { waitUntil: (p: Promise<unknown>) => void }): Promise<Response> {
-    // Declared out here so the catch below can report to Sentry, but INITIALISED
-    // inside the try: if Toucan construction itself throws, we must return a 500
-    // rather than let the fetch promise reject into a Cloudflare 1101 page.
-    let sentry: Toucan | null = null;
-    try {
-      sentry = env.SENTRY_DSN ? (() => { const s = new Toucan({
-        dsn: env.SENTRY_DSN,
-        request: req,
-        context: ctx,
-        environment: "production",
-        release: `yourrank@${process.env.npm_package_version || "dev"}`,
-      }); s.setTag("worker", "bot"); return s; })() : null;
-      const reqId = generateRequestId();
-      (req as any)._reqId = reqId;
-      populateEnv(env);
-      // Ensure current month partition exists on first request (idempotent)
-      if (!cachedApp) {
-        const { buildHonoApp } = await import("./hono-app.js");
-        cachedApp = buildHonoApp();
-        // Ensure current month partition exists on Worker startup
-        ctx.waitUntil(
-          (async () => {
-            try {
-              const { ensureCurrentMonthPartition } = await import("./rollup.js");
-              await ensureCurrentMonthPartition();
-              console.log("[startup] ensureCurrentMonthPartition completed");
-            } catch (err) {
-              console.error("[startup] ensureCurrentMonthPartition failed:", err);
-            }
-          })()
-        );
-      }
-      const res = await cachedApp.fetch(req, env as any);
-      res.headers.set("X-Request-Id", reqId);
-      return res;
-    } catch (err: unknown) {
-      sentry?.captureException(err);
-      const errPath = (() => { try { return new URL(req.url).pathname; } catch { return "unknown"; } })();
-      const errLog = createLogger("bot", reqId);
-      errLog.error("unhandled_fetch_error", { route: errPath, error: String((err as any)?.message || err), stack: (err as any)?.stack || "" });
-      if (env.DISCORD_MONITORING_WEBHOOK) {
-        await sendErrorToDiscord({
-          webhookUrl: env.DISCORD_MONITORING_WEBHOOK,
-          title: "YourRank Error",
-          message: String((err as any)?.stack || (err as any)?.message || err),
-          path: errPath,
-          worker: "bot",
-        }).catch(() => {});
-      }
-      return new Response("Internal Server Error", { status: 500 });
+  fetch: withWorkerFetch("bot", async (req, env, ctx) => {
+    populateEnv(env);
+    // Ensure current month partition exists on first request (idempotent)
+    if (!cachedApp) {
+      const { buildHonoApp } = await import("./hono-app.js");
+      cachedApp = buildHonoApp();
+      // Ensure current month partition exists on Worker startup
+      ctx.waitUntil(
+        (async () => {
+          try {
+            const { ensureCurrentMonthPartition } = await import("./rollup.js");
+            await ensureCurrentMonthPartition();
+            console.log("[startup] ensureCurrentMonthPartition completed");
+          } catch (err) {
+            console.error("[startup] ensureCurrentMonthPartition failed:", err);
+          }
+        })()
+      );
     }
-  },
+    return await cachedApp.fetch(req, env as any);
+  }),
 
   // Cron Triggers (see wrangler.toml):
   //   * * * * *  — broadcast worker: one rate-limited batch per tick
