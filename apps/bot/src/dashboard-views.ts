@@ -112,6 +112,26 @@ ${shellNavHtml({ activePath: "/bot/dashboard", user })}
     </div>
   </div>
 
+  <div class="panel" id="customizePanel" style="display:none"><h2>Customize your bot</h2>
+    <p class="muted" style="margin-bottom:12px">Personalize what your bot says to viewers. Changes apply instantly — no redeploy needed.</p>
+
+    <label for="welcomeMsg" style="display:block;margin-bottom:4px;font-size:13px" class="muted">Welcome message — the reply to <code>/start</code></label>
+    <textarea id="welcomeMsg" rows="2" placeholder="Leave blank to use the default greeting"></textarea>
+    <button onclick="saveWelcome()">Save welcome message</button>
+
+    <h3 style="margin:20px 0 6px;font-size:14px">Custom commands</h3>
+    <p class="muted" style="margin-bottom:10px;font-size:13px">Add slash-commands your viewers can send (e.g. <code>/vip</code>) and the reply they'll get. Built-ins like <code>/start</code>, <code>/code</code>, <code>/subscribe</code> are reserved.</p>
+    <div class="row">
+      <label for="cmdName" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)">Command</label>
+      <input id="cmdName" placeholder="Command (e.g. vip)">
+      <label for="cmdResp" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)">Reply</label>
+      <input id="cmdResp" placeholder="Reply text viewers receive">
+    </div>
+    <button onclick="addCommand()">Add command</button>
+    <table style="margin-top:14px"><thead><tr><th>Command</th><th>Reply</th><th>Status</th><th></th></tr></thead>
+    <tbody id="cmdList"></tbody></table>
+  </div>
+
   <div class="panel"><h2>New offer</h2>
     <div class="row">
       <label for="oCasino" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)">Casino</label>
@@ -200,6 +220,16 @@ async function load() {
     ? bots.map(b=>'<div>@'+esc(b.username)+' <span class="muted">(…'+esc(b.token_hint)+')</span> <span class="'+(b.status==='active'?'ok':'off')+'">'+esc(b.status)+'</span></div>').join('')
     : 'No bot connected yet — paste your token below.';
 
+  // customization panel (targets the first connected bot)
+  custBotId = (bots||[])[0]?.id ?? null;
+  if (custBotId) {
+    $('customizePanel').style.display='';
+    $('welcomeMsg').value = (bots||[])[0].welcome_message || '';
+    loadCommands();
+  } else {
+    $('customizePanel').style.display='none';
+  }
+
   // offers
   $('offers').innerHTML = offers.map(o=>'<tr>'+
     '<td><b>'+esc(o.casino)+'</b><br><span class="muted">'+esc(o.label)+'</span></td>'+
@@ -229,6 +259,45 @@ async function connectBot(){
   $('botToken').value='';
   if (r.warning) { toast(r.warning); } else { toast('Bot @'+r.username+' connected'); }
   load();
+}
+
+// ---- bot customization: welcome message + custom commands ----
+let custBotId = null;
+async function saveWelcome(){
+  if (!custBotId) return toast('Connect a bot first');
+  const r = await api('/bots/'+custBotId,{method:'PATCH',headers:{'content-type':'application/json'},body:JSON.stringify({welcome_message:$('welcomeMsg').value.trim()||null})});
+  if (r.error) return toast(r.error);
+  toast('Welcome message saved');
+}
+async function loadCommands(){
+  if (!custBotId) return;
+  const cmds = await api('/bots/'+custBotId+'/commands');
+  if (cmds.error) return toast(cmds.error);
+  $('cmdList').innerHTML = (cmds||[]).map(c=>'<tr>'+
+    '<td>/'+esc(c.command)+'</td>'+
+    '<td class="muted">'+esc((c.response||'').slice(0,60))+'</td>'+
+    '<td class="'+(c.is_enabled?'ok':'off')+'">'+(c.is_enabled?'on':'off')+'</td>'+
+    '<td><button class="ghost" onclick="toggleCommand(\\''+escJsAttr(c.id)+'\\','+(!c.is_enabled)+')">'+(c.is_enabled?'Disable':'Enable')+'</button> '+
+        '<button class="ghost" onclick="deleteCommand(\\''+escJsAttr(c.id)+'\\')">Delete</button></td>'+
+  '</tr>').join('') || '<tr><td colspan="4" class="muted">No custom commands yet.</td></tr>';
+}
+async function addCommand(){
+  if (!custBotId) return toast('Connect a bot first');
+  const command = $('cmdName').value.trim(), response = $('cmdResp').value.trim();
+  if (!command || !response) return toast('Enter a command and a reply');
+  const r = await api('/bots/'+custBotId+'/commands',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({command, response})});
+  if (r.error) return toast(r.error);
+  $('cmdName').value=''; $('cmdResp').value=''; toast('Command saved'); loadCommands();
+}
+async function toggleCommand(id, on){
+  const r = await api('/commands/'+id,{method:'PATCH',headers:{'content-type':'application/json'},body:JSON.stringify({is_enabled:on})});
+  if (r.error) return toast(r.error);
+  loadCommands();
+}
+async function deleteCommand(id){
+  const r = await api('/commands/'+id,{method:'DELETE'});
+  if (r.error) return toast(r.error);
+  toast('Command deleted'); loadCommands();
 }
 
 let firstBotId = null;

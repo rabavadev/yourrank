@@ -17,7 +17,15 @@
 // may read stale values and all increment from the same baseline, allowing
 // more requests than the configured limit during bursts.
 //
-// FAILS CLOSED: if KV is unavailable, the request is denied.
+// FAILS OPEN: this limiter is a best-effort abuse speed bump, not a hard
+// security control. If KV is unavailable — missing binding, transient error,
+// or (crucially) the daily WRITE quota being exhausted — we ALLOW the request
+// instead of denying it. A KV hiccup must never take the whole platform
+// offline (it previously did: every rate-limit check writes to KV on the
+// allowed path, so once the free-tier write quota was spent, every endpoint —
+// login, signup, bot connect, redirects, postbacks, public polling — returned
+// 429 until the quota reset). Endpoints that need real protection have their
+// own controls (per-account login lockout, HMAC-signed postbacks, admin key).
 // ------------------------------------------------------------------
 
 export interface RateLimitKV {
@@ -35,7 +43,7 @@ export interface RateLimitResult {
 /**
  * Count one hit against `id` in a `windowSec` window allowing `limit` hits.
  * Returns whether this hit is allowed plus headroom info for headers.
- * Fails CLOSED (denies the request) if KV is unavailable.
+ * Fails OPEN (allows the request) if KV is unavailable — see file header.
  */
 export async function rateLimit(
   kv: RateLimitKV | undefined,
@@ -43,25 +51,35 @@ export async function rateLimit(
   limit: number,
   windowSec: number
 ): Promise<RateLimitResult> {
-  if (!kv) return { ok: false, remaining: 0, limit, retryAfter: windowSec };
+  // No binding — can't enforce, so allow rather than deny.
+  if (!kv) return { ok: true, remaining: limit, limit, retryAfter: 0 };
 
   const window = Math.floor(Date.now() / 1000 / windowSec);
   const key = `rl:${id}:${window}`;
+  const retryAfter = windowSec - (Math.floor(Date.now() / 1000) % windowSec);
 
+  let current: number;
   try {
-    const current = Number((await kv.get(key)) ?? 0);
-    const used = current + 1;
-    const retryAfter = windowSec - (Math.floor(Date.now() / 1000) % windowSec);
+    current = Number((await kv.get(key)) ?? 0);
+  } catch (err) {
+    // Read failed — we can't make a decision, so allow. Best-effort.
+    console.error("[rateLimit] KV read failed, allowing request:", String((err as Error)?.message ?? err));
+    return { ok: true, remaining: limit, limit, retryAfter: 0 };
+  }
 
-    if (current >= limit) {
-      return { ok: false, remaining: 0, limit, retryAfter };
-    }
+  if (current >= limit) {
+    return { ok: false, remaining: 0, limit, retryAfter };
+  }
 
+  const used = current + 1;
+  try {
     // Refresh the TTL to the current window each hit; the key dies with the window.
     await kv.put(key, String(used), { expirationTtl: windowSec });
-    return { ok: true, remaining: Math.max(0, limit - used), limit, retryAfter };
-  } catch {
-    // Fail closed: if KV is down, deny the request.
-    return { ok: false, remaining: 0, limit, retryAfter: windowSec };
+  } catch (err) {
+    // Write failed (e.g. daily KV write quota exhausted). The request already
+    // passed the read check above, so ALLOW it — never flip an allowed request
+    // to denied just because we couldn't persist the incremented count.
+    console.error("[rateLimit] KV write failed, allowing request (count not persisted):", String((err as Error)?.message ?? err));
   }
+  return { ok: true, remaining: Math.max(0, limit - used), limit, retryAfter };
 }

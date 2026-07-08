@@ -48,14 +48,18 @@ async function notifyCronFailure(env: Record<string, any>, cron: string, task: s
 
 export default {
   async fetch(req: Request, env: Record<string, any>, ctx: { waitUntil: (p: Promise<unknown>) => void }): Promise<Response> {
-    const sentry = env.SENTRY_DSN ? (() => { const s = new Toucan({
-      dsn: env.SENTRY_DSN,
-      request: req,
-      context: ctx,
-      environment: "production",
-      release: `yourrank@${process.env.npm_package_version || "dev"}`,
-    }); s.setTag("worker", "bot"); return s; })() : null;
+    // Declared out here so the catch below can report to Sentry, but INITIALISED
+    // inside the try: if Toucan construction itself throws, we must return a 500
+    // rather than let the fetch promise reject into a Cloudflare 1101 page.
+    let sentry: Toucan | null = null;
     try {
+      sentry = env.SENTRY_DSN ? (() => { const s = new Toucan({
+        dsn: env.SENTRY_DSN,
+        request: req,
+        context: ctx,
+        environment: "production",
+        release: `yourrank@${process.env.npm_package_version || "dev"}`,
+      }); s.setTag("worker", "bot"); return s; })() : null;
       populateEnv(env);
       // Ensure current month partition exists on first request (idempotent)
       if (!cachedApp) {

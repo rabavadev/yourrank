@@ -140,13 +140,22 @@ describe("rateLimit (shared/ratelimit)", () => {
     expect(result.remaining).toBe(0);
   });
 
-  it("fails closed when KV throws", async () => {
+  it("fails OPEN when KV throws (a KV outage must not take the platform down)", async () => {
     const kv = {
       get: mock(() => Promise.reject(new Error("KV down"))),
       put: mock(() => Promise.reject(new Error("KV down"))),
     };
     const result = await rateLimit(kv, "test", 5, 60);
-    expect(result.ok).toBe(false);
+    expect(result.ok).toBe(true);
+  });
+
+  it("fails OPEN when the KV write throws but the read is under limit", async () => {
+    const kv = {
+      get: mock(() => Promise.resolve(null)),
+      put: mock(() => Promise.reject(new Error("daily write quota exceeded"))),
+    };
+    const result = await rateLimit(kv, "test", 5, 60);
+    expect(result.ok).toBe(true);
   });
 });
 

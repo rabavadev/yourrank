@@ -177,7 +177,7 @@ export function buildDashboardApi(): Hono<{ Variables: { uid: string } }> {
 
   api.get("/bots", async (c) => {
     return c.json(await query(
-      `SELECT id, username, token_hint, status, created_at FROM bots WHERE owner_id = $1 ORDER BY created_at DESC`,
+      `SELECT id, username, token_hint, status, welcome_message, created_at FROM bots WHERE owner_id = $1 ORDER BY created_at DESC`,
       [c.get("uid")]
     ));
   });
@@ -248,6 +248,97 @@ export function buildDashboardApi(): Hono<{ Variables: { uid: string } }> {
       try_it: `https://t.me/${out.result.username}`,
       ...(webhookWarning ? { warning: webhookWarning } : {}),
     });
+  });
+
+  // ---- bot customization: welcome message + custom slash-commands ----
+  // These let a streamer personalize what their bot says without redeploying.
+  // The bot Worker reads bots.welcome_message (the /start reply) and the
+  // bot_commands table (custom /commands) live on each Telegram update.
+
+  // Built-in commands the engine handles itself; a custom row named the same
+  // would never fire (the engine skips these in its catch-all handler), so
+  // reject them up front with a clear message instead of silently no-op'ing.
+  const RESERVED_COMMANDS = new Set([
+    "start", "code", "codes", "subscribe", "unsubscribe", "rank", "board", "leaderboard",
+  ]);
+  // Strip a leading slash / @mention / args and lowercase, matching exactly how
+  // the bot engine derives the command name from an incoming message.
+  const normalizeCommand = (raw: string): string =>
+    (raw ?? "").trim().replace(/^\//, "").split(/[\s@]/)[0].toLowerCase();
+
+  // Update a bot's welcome message (the /start reply). Empty clears it back to
+  // the engine's default greeting.
+  api.patch("/bots/:id", async (c) => {
+    const { welcome_message } = await c.req.json<{ welcome_message?: string | null }>();
+    if (welcome_message != null && welcome_message.length > 500)
+      return c.json({ error: "welcome_message too long (max 500)" }, 400);
+    const row = await one(
+      `UPDATE bots SET welcome_message = $1, updated_at = now()
+        WHERE id = $2 AND owner_id = $3 RETURNING id, welcome_message`,
+      [welcome_message?.trim() || null, c.req.param("id"), c.get("uid")]
+    );
+    return row ? c.json(row) : c.json({ error: "bot not found" }, 404);
+  });
+
+  // List a bot's custom commands.
+  api.get("/bots/:id/commands", async (c) => {
+    const bot = await one(`SELECT id FROM bots WHERE id = $1 AND owner_id = $2`, [c.req.param("id"), c.get("uid")]);
+    if (!bot) return c.json({ error: "bot not found" }, 404);
+    return c.json(await query(
+      `SELECT id, command, response, is_enabled FROM bot_commands WHERE bot_id = $1 ORDER BY command`,
+      [c.req.param("id")]
+    ));
+  });
+
+  // Create or replace a custom command (upsert on the (bot_id, command) unique key).
+  api.post("/bots/:id/commands", async (c) => {
+    const { command, response } = await c.req.json<{ command?: string; response?: string }>();
+    const bot = await one(`SELECT id FROM bots WHERE id = $1 AND owner_id = $2`, [c.req.param("id"), c.get("uid")]);
+    if (!bot) return c.json({ error: "bot not found" }, 404);
+    const cmd = normalizeCommand(command ?? "");
+    if (!cmd) return c.json({ error: "command required" }, 400);
+    if (!/^[a-z0-9_]{1,32}$/.test(cmd))
+      return c.json({ error: "command must be 1-32 chars: letters, numbers, or underscore" }, 400);
+    if (RESERVED_COMMANDS.has(cmd))
+      return c.json({ error: `/${cmd} is a built-in command and can't be overridden` }, 400);
+    if (!response?.trim()) return c.json({ error: "response required" }, 400);
+    if (response.length > 1000) return c.json({ error: "response too long (max 1000)" }, 400);
+    const row = await one(
+      `INSERT INTO bot_commands (bot_id, command, response, is_enabled)
+         VALUES ($1, $2, $3, true)
+       ON CONFLICT (bot_id, command) DO UPDATE SET response = EXCLUDED.response, is_enabled = true
+       RETURNING id, command, response, is_enabled`,
+      [c.req.param("id"), cmd, response.trim()]
+    );
+    return c.json(row);
+  });
+
+  // Toggle or edit a command. Ownership is enforced by joining bots.owner_id.
+  api.patch("/commands/:id", async (c) => {
+    const { is_enabled, response } = await c.req.json<{ is_enabled?: boolean; response?: string }>();
+    if (response != null && (!response.trim() || response.length > 1000))
+      return c.json({ error: "response must be 1-1000 chars" }, 400);
+    const row = await one(
+      `UPDATE bot_commands bc
+          SET is_enabled = COALESCE($1, bc.is_enabled),
+              response   = COALESCE($2, bc.response)
+         FROM bots b
+        WHERE bc.id = $3 AND bc.bot_id = b.id AND b.owner_id = $4
+        RETURNING bc.id, bc.command, bc.response, bc.is_enabled`,
+      [is_enabled ?? null, response?.trim() ?? null, c.req.param("id"), c.get("uid")]
+    );
+    return row ? c.json(row) : c.json({ error: "command not found" }, 404);
+  });
+
+  // Delete a command.
+  api.delete("/commands/:id", async (c) => {
+    const row = await one(
+      `DELETE FROM bot_commands bc USING bots b
+        WHERE bc.id = $1 AND bc.bot_id = b.id AND b.owner_id = $2
+        RETURNING bc.id`,
+      [c.req.param("id"), c.get("uid")]
+    );
+    return row ? c.json({ ok: true }) : c.json({ error: "command not found" }, 404);
   });
 
   // ---- plan & billing ----

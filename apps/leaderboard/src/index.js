@@ -22,18 +22,27 @@ import { one } from "../../../shared/db.js";
 
 export default {
   async fetch(request, env, ctx) {
-    const response = await handleRequest(request, env, ctx);
-    // SEC-104: Clear legacy 'sess' cookie on every response (not just authenticated)
-    if (hasLegacyCookie(request)) {
-      response.headers.append("set-cookie", cookieClearLegacy());
-    }
-    // SEC-107: Propagate rotated session cookies from currentUser()
-    if (request._sessionCookies) {
-      for (const c of request._sessionCookies) {
-        response.headers.append("set-cookie", c);
+    // Last-resort guard: anything that escapes handleRequest (or the cookie
+    // post-processing below) must return a 500 rather than reject the fetch
+    // promise — a rejection surfaces to visitors as a raw Cloudflare 1101
+    // "Worker threw exception" page instead of our own error response.
+    try {
+      const response = await handleRequest(request, env, ctx);
+      // SEC-104: Clear legacy 'sess' cookie on every response (not just authenticated)
+      if (hasLegacyCookie(request)) {
+        response.headers.append("set-cookie", cookieClearLegacy());
       }
+      // SEC-107: Propagate rotated session cookies from currentUser()
+      if (request._sessionCookies) {
+        for (const c of request._sessionCookies) {
+          response.headers.append("set-cookie", c);
+        }
+      }
+      return response;
+    } catch (err) {
+      console.error("[leaderboard] top-level fetch error:", String(err?.message || err), err?.stack || "");
+      return new Response("Internal Server Error", { status: 500 });
     }
-    return response;
   }
 };
 
