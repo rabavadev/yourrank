@@ -134,6 +134,14 @@ describe("handleGetSite", () => {
     expect(body).toHaveProperty("data");
     expect(body).toHaveProperty("plan");
     expect(body).toHaveProperty("boards");
+    expect(body).toHaveProperty("notify");
+    expect(body).toHaveProperty("archives");
+    expect(body).toHaveProperty("siteId");
+    expect(body).toHaveProperty("customDomain");
+    expect(body).toHaveProperty("domainStatus");
+    // Verify data sub-shape matches what dashboard.js expects
+    expect(body.data).toHaveProperty("brand");
+    expect(body.data).toHaveProperty("players");
   });
 
   it("returns 401 for unauthenticated user", async () => {
@@ -165,6 +173,9 @@ describe("handleListBoards", () => {
     expect(body.limits).toHaveProperty("boards");
     expect(body.limits).toHaveProperty("players");
     expect(body).toHaveProperty("plan");
+    // Verify limits are numbers (frontend uses them for UI gating)
+    expect(typeof body.limits.boards).toBe("number");
+    expect(typeof body.limits.players).toBe("number");
   });
 });
 
