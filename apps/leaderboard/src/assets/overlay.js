@@ -9,6 +9,11 @@
   const POLL_MS = 30000; // PERF-004: aligned with leaderboard (30s), was 15s
   const TRANSITION_MS = 600;
 
+  // Theme support (Phase 7.3)
+  const THEME = _cfg?.dataset?.theme ?? "default";
+  const SPONSOR_TEXT = _cfg?.dataset?.sponsor ?? "";
+  const SPONSOR_URL = _cfg?.dataset?.sponsorUrl ?? "";
+
   // --- Format helpers ---
   function fmtMoney(n) {
     if (n >= 1e6) return "$" + (n / 1e6).toFixed(2).replace(/\.0+$/, "") + "M";
@@ -47,6 +52,19 @@
       cells[1].textContent = pad(t.h);
       cells[2].textContent = pad(t.m);
       cells[3].textContent = pad(t.s);
+    }
+  }
+
+  // Sponsor banner (Phase 7.3)
+  function renderSponsor() {
+    const el = document.querySelector("[data-ov-sponsor]");
+    if (!el) return;
+    if (!SPONSOR_TEXT) { el.style.display = "none"; return; }
+    el.style.display = "";
+    if (SPONSOR_URL) {
+      el.innerHTML = `<a href="${SPONSOR_URL}" target="_blank" rel="noopener" style="color:inherit;text-decoration:none">${SPONSOR_TEXT}</a>`;
+    } else {
+      el.textContent = SPONSOR_TEXT;
     }
   }
 
@@ -151,6 +169,11 @@
 
   // --- Init ---
   function init() {
+    // Apply theme class
+    if (THEME && THEME !== "default") {
+      document.body.classList.add("ov-theme-" + THEME);
+    }
+    renderSponsor();
     // Initial render from SSR data
     let ssr = window.__OVERLAY_DATA__;
     if (!ssr && _cfg?.dataset?.json) { try { ssr = JSON.parse(_cfg.dataset.json); } catch { /* JSON parse */ } }

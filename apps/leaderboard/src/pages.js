@@ -651,12 +651,13 @@ ${endsAt ? `<p class="ov-timer-label">${esc(b.prizePool || "")} resets in</p>
 <b data-ot>--</b>
 </div>` : ""}
 <div class="ov-rows" id="ov-players">${rows}${emptyRows}</div>
+<div class="ov-sponsor" data-ov-sponsor style="display:none;font-size:9px;text-align:center;color:rgba(255,255,255,0.4);padding:6px 0;letter-spacing:.04em"></div>
 <div class="ov-footer">
 <span class="ov-count"><span id="ov-count">${(data.players || []).length}</span> players</span>
 <span class="ov-powered">YourRank</span>
 </div>
 </div>
-<div id="ov-config" data-slug="${esc(opts.slug || "")}" data-json='${dataJson.replace(/'/g, "&#39;")}' hidden></div>
+<div id="ov-config" data-slug="${esc(opts.slug || "")}" data-theme="${esc(opts.theme || 'default')}" data-sponsor="${esc(opts.sponsor || "")}" data-sponsor-url="${esc(opts.sponsorUrl || "")}" data-json='${dataJson.replace(/'/g, "&#39;")}' hidden></div>
 <script src="/assets/overlay.js?v=3"></script>
 </body></html>`;
 },
