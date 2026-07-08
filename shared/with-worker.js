@@ -30,8 +30,11 @@ function withWorkerFetch(workerName, handler) {
 
         try {
             const response = await handler(request, env, ctx, { sentry, log, reqId });
-            response.headers.set("X-Request-Id", reqId);
-            return response;
+            // Response.redirect() creates responses with immutable headers.
+            // Clone to get mutable headers before setting X-Request-Id.
+            const mutable = new Response(response.body, response);
+            mutable.headers.set("X-Request-Id", reqId);
+            return mutable;
         } catch (err) {
             const errMsg = String(err?.message || err);
             const errStack = err?.stack || "";
