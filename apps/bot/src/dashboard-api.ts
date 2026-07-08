@@ -24,38 +24,50 @@ export function buildDashboardApi(): Hono<{ Variables: { uid: string } }> {
   // Resolve session FIRST — every subsequent middleware reads c.get("uid").
   // SEC-107: Use resolveSession for rotation; propagate new cookie if rotated.
   api.use("*", async (c, next) => {
-    const session = await resolveSession(c.req.raw, c.env as SessionEnv);
-    if (session) {
-      c.set("uid", session.uid);
-      if (session.rotatedCookie) c.header("Set-Cookie", session.rotatedCookie);
+    try {
+      const session = await resolveSession(c.req.raw, c.env as SessionEnv);
+      if (session) {
+        c.set("uid", session.uid);
+        if (session.rotatedCookie) c.header("Set-Cookie", session.rotatedCookie);
+      }
+      await next();
+    } catch (e: any) {
+      console.error("[dashboard-api session middleware]", e?.message, e?.stack);
+      return c.json({ error: "session_middleware_error", detail: e?.message ?? String(e), hasSessions: !!(c.env as any)?.SESSIONS }, 500);
     }
-    await next();
   });
-
   // Rate-limit all API requests (120 req/min per IP).
   api.use("*", async (c, next) => {
-    const ip = c.req.header("cf-connecting-ip") || "0.0.0.0";
-    const rlResult = await rateLimit((c.env as SessionEnv).SESSIONS, `dash:${ip}`, 120, 60);
-    if (!rlResult.ok) return c.json({ error: "rate limit exceeded", retryAfter: rlResult.retryAfter }, 429);
+    try {
+      const ip = c.req.header("cf-connecting-ip") || "0.0.0.0";
+      const rlResult = await rateLimit((c.env as SessionEnv).SESSIONS, `dash:${ip}`, 120, 60);
+      if (!rlResult.ok) return c.json({ error: "rate limit exceeded", retryAfter: rlResult.retryAfter }, 429);
+    } catch (rlErr) {
+      console.error("[rate-limit] KV error, allowing request:", (rlErr as any)?.message);
+    }
     await next();
   });
 
+
+
+
+  // Auth check: verify session, check suspension status
   api.use("*", async (c, next) => {
-    // CSRF: block cross-site state-changing calls that ride the session cookie.
-    // GET/HEAD are safe (read-only) and skipped.
-    if (c.req.method !== "GET" && c.req.method !== "HEAD" && !sameOrigin(c.req.raw, config.publicBaseUrl)) {
-      return c.json({ error: "cross-origin request rejected" }, 403);
+    try {
+      // CSRF: block cross-site state-changing calls that ride the session cookie.
+      if (c.req.method !== "GET" && c.req.method !== "HEAD" && !sameOrigin(c.req.raw, config.publicBaseUrl)) {
+        return c.json({ error: "cross-origin request rejected" }, 403);
+      }
+      const uid = c.get("uid");
+      if (!uid) return c.json({ error: "not logged in" }, 401);
+      const u = await one<{ status: string }>(`SELECT status FROM users WHERE id = $1`, [uid]);
+      if (!u) return c.json({ error: "not logged in" }, 401);
+      if (u.status === "suspended") return c.json({ error: "account suspended" }, 403);
+      await next();
+    } catch (e: any) {
+      console.error("[dashboard-api auth middleware]", e?.message, e?.stack);
+      return c.json({ error: "auth_middleware_error", detail: e?.message ?? String(e), uid: c.get("uid") }, 500);
     }
-    const uid = c.get("uid");
-    if (!uid) return c.json({ error: "not logged in" }, 401);
-    // Re-check suspended status on EVERY request, not just at login. The shared
-    // KV session lives up to 30 days and currentUserId() only resolves the token
-    // -> UUID; without this, an admin-suspended streamer's existing session keeps
-    // working (managing bots/offers/broadcasts) until the TTL expires.
-    const u = await one<{ status: string }>(`SELECT status FROM users WHERE id = $1`, [uid]);
-    if (!u) return c.json({ error: "not logged in" }, 401);
-    if (u.status === "suspended") return c.json({ error: "account suspended" }, 403);
-    await next();
   });
 
   api.get("/me", async (c) => {

@@ -39,8 +39,9 @@ export function buildHonoApp(): Hono<{ Bindings: Bindings }> {
   // This ensures ALL unhandled throws return {"error":"..."} JSON.
   app.onError((err, c) => {
     const msg = (err as any)?.message ?? String(err);
-    console.error("[unhandled error]", msg);
-    return c.json({ error: "Internal server error — please try again" }, 500);
+    const stack = (err as any)?.stack ?? "";
+    console.error("[unhandled error]", msg, stack);
+    return c.json({ error: msg, stack: stack.split("\n").slice(0, 5).join("\n") }, 500);
   });
 
   // BE-004: Reject oversized request bodies early, before any parsing.
