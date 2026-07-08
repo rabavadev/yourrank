@@ -21,7 +21,7 @@ export const HTML = {
   // style-src includes 'unsafe-inline' because error pages, OBS overlays, and dynamic branding
   // use <style> blocks (nonces would require per-request CSP generation — tracked for future).
   // All style="" attributes have been extracted to CSS classes (SEC-713) for maintainability.
-  "Content-Security-Policy": "default-src 'self'; script-src 'self' https://telegram.org; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self'; frame-ancestors *",
+  "Content-Security-Policy": "default-src 'self'; script-src 'self' https://telegram.org; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self'; frame-ancestors *; report-uri /api/csp-report",
 };
 
 // Hardened headers for the authenticated/app pages (login, signup, forgot,
