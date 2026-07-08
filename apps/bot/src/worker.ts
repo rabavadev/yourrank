@@ -9,6 +9,7 @@
 // read process.env, not c.env) work unchanged. Called from BOTH fetch and
 // scheduled — they MUST populate the same set, or a binding set in only one
 import { sendErrorToDiscord, sendCronSummaryToDiscord } from "../../../shared/monitoring.js";
+import { generateRequestId, createLogger } from "../../../shared/request-id.js";
 import { populateEnv } from "../../../shared/env.js";
 import { exec as dbExec } from "../../../shared/db.js";
 import { Toucan } from "toucan-js";
@@ -60,6 +61,8 @@ export default {
         environment: "production",
         release: `yourrank@${process.env.npm_package_version || "dev"}`,
       }); s.setTag("worker", "bot"); return s; })() : null;
+      const reqId = generateRequestId();
+      (req as any)._reqId = reqId;
       populateEnv(env);
       // Ensure current month partition exists on first request (idempotent)
       if (!cachedApp) {
@@ -78,11 +81,14 @@ export default {
           })()
         );
       }
-      return await cachedApp.fetch(req, env as any);
+      const res = await cachedApp.fetch(req, env as any);
+      res.headers.set("X-Request-Id", reqId);
+      return res;
     } catch (err: unknown) {
       sentry?.captureException(err);
       const errPath = (() => { try { return new URL(req.url).pathname; } catch { return "unknown"; } })();
-      console.error(`[bot] unhandled error on ${errPath}:`, String((err as any)?.message || err));
+      const errLog = createLogger("bot", reqId);
+      errLog.error("unhandled_fetch_error", { route: errPath, error: String((err as any)?.message || err), stack: (err as any)?.stack || "" });
       if (env.DISCORD_MONITORING_WEBHOOK) {
         await sendErrorToDiscord({
           webhookUrl: env.DISCORD_MONITORING_WEBHOOK,
