@@ -1,15 +1,12 @@
-"use strict";
 // Durable Object rate limiter for YourRank.
 // Replaces KV-backed rate limiting with atomic, consistent counters.
 // Each unique rate-limit key gets its own DO instance.
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.RateLimiter = void 0;
 /**
  * RateLimiter Durable Object.
  * Uses fixed-window counting with atomic in-memory state.
  * Each DO instance handles one rate-limit key.
  */
-class RateLimiter {
+export class RateLimiter {
     state;
     windows = new Map();
     constructor(state) {
@@ -62,4 +59,3 @@ class RateLimiter {
         return { ok: true, remaining: Math.max(0, limit - state.count), limit, retryAfter };
     }
 }
-exports.RateLimiter = RateLimiter;

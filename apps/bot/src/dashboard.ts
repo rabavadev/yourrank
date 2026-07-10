@@ -44,14 +44,19 @@ import {
 import { sameOrigin, verifyTelegramLogin } from "./dashboard-auth.js";
 import { buildDashboardApi } from "./dashboard-api.js";
 import { loginHtml, appHtml } from "./dashboard-views.js";
-import { rateLimit } from "./ratelimit.js";
+import { rateLimit, type RateLimitKV } from "./ratelimit.js";
 
 // ---------------- app ----------------
 
 // The Workers env is passed straight through as Hono's `c.env` (see worker.ts:
 // `app.fetch(req, env as any)`), so the env bindings declared in
 // wrangler.toml are reachable as `c.env`.
-type DashBindings = SessionEnv & Record<string, unknown>;
+type DashBindings = SessionEnv & {
+  SESSIONS?: RateLimitKV;
+  RATE_LIMITER_DO?: any;
+  RL_BACKEND?: string;
+  [key: string]: unknown;
+};
 type DashEnv = { Bindings: DashBindings; Variables: { cspNonce: string } };
 
 export function buildDashboard(): Hono<DashEnv> {
@@ -110,7 +115,7 @@ export function buildDashboard(): Hono<DashEnv> {
     ))!;
     if (row.status === "suspended") return c.json({ error: "account suspended" }, 403);
     const token = await createSession(c.env, row.id);
-    c.header("Set-Cookie", cookieSet(token));
+    c.header("Set-Cookie", cookieSet(token, c.env));
     return c.json({ ok: true });
   });
 
@@ -134,13 +139,13 @@ export function buildDashboard(): Hono<DashEnv> {
       [telegram_user_id, display_name ?? `dev-${telegram_user_id}`]
     ))!;
     const token = await createSession(c.env, row.id);
-    c.header("Set-Cookie", cookieSet(token));
+    c.header("Set-Cookie", cookieSet(token, c.env));
     return c.json({ ok: true });
   });
 
   app.post("/auth/logout", async (c) => {
     await destroySession(c.env, readToken(c.req.raw));
-    c.header("Set-Cookie", cookieClear());
+    c.header("Set-Cookie", cookieClear(c.env));
     return c.json({ ok: true });
   });
 

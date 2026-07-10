@@ -33,6 +33,7 @@ import { one, exec, query } from "./db.js";
 // set by populateEnv() in both Workers.
 export interface SessionEnv {
   SESSION_COOKIE_DOMAIN?: string;
+  ENVIRONMENT?: string;
   HYPERDRIVE?: unknown;         // kept for type compat, not used
 }
 
@@ -94,13 +95,15 @@ export function cookieDomain(env: SessionEnv): string {
 /** Return a Set-Cookie header string that stores `token`. */
 export function cookieSet(token: string, env?: SessionEnv): string {
   const domain = env ? cookieDomain(env) : ".yourrank.site";
-  return `${COOKIE_NAME}=${encodeURIComponent(token)}; HttpOnly; Secure; SameSite=Lax; Domain=${domain}; Path=/; Max-Age=${SESSION_TTL_S}`;
+  const secure = env?.ENVIRONMENT === "development" ? "" : "Secure; ";
+  return `${COOKIE_NAME}=${encodeURIComponent(token)}; HttpOnly; ${secure}SameSite=Lax; Domain=${domain}; Path=/; Max-Age=${SESSION_TTL_S}`;
 }
 
 /** Return a Set-Cookie header string that clears the session. */
 export function cookieClear(env?: SessionEnv): string {
   const domain = env ? cookieDomain(env) : ".yourrank.site";
-  return `${COOKIE_NAME}=; HttpOnly; Secure; SameSite=Lax; Domain=${domain}; Path=/; Max-Age=0`;
+  const secure = env?.ENVIRONMENT === "development" ? "" : "Secure; ";
+  return `${COOKIE_NAME}=; HttpOnly; ${secure}SameSite=Lax; Domain=${domain}; Path=/; Max-Age=0`;
 }
 
 // ---------------------------------------------------------------------------
@@ -120,7 +123,7 @@ export async function createSession(env: SessionEnv, userId: string): Promise<st
 }
 
 /** Delete one session.  Used during logout. */
-export async function destroySession(env: SessionEnv, token: string): Promise<void> {
+export async function destroySession(env: SessionEnv, token: string | null): Promise<void> {
   if (!token) return;
   await exec("DELETE FROM sessions WHERE token = $1", [token]);
 }
@@ -140,7 +143,9 @@ export async function destroyAllUserSessions(env: SessionEnv, userId: string): P
 
 interface ResolveResult {
   userId: string | null;
+  uid: string | null;      // alias for bot dashboard
   cookie: string | null;   // Set-Cookie header if rotation happened
+  rotatedCookie: string | null; // alias for bot dashboard
 }
 
 /**
@@ -154,17 +159,18 @@ interface ResolveResult {
  */
 export async function resolveSession(req: Request, env: SessionEnv): Promise<ResolveResult> {
   const token = readToken(req);
-  if (!token) return { userId: null, cookie: null };
+  if (!token) return { userId: null, uid: null, cookie: null, rotatedCookie: null };
 
   // Read session from DB
   const row = await query(
     "SELECT user_id, created_at, extract(epoch FROM now() - created_at)::int AS age FROM sessions WHERE token = $1 AND expires_at > now()",
     [token]
   );
-  if (!row || row.length === 0) return { userId: null, cookie: null };
+  if (!row || row.length === 0) return { userId: null, uid: null, cookie: null, rotatedCookie: null };
 
-  const { user_id, age } = row[0];
-  const userId = user_id as string;
+  const user_id = row[0].user_id as string;
+  const age = Number(row[0].age || 0);
+  const userId = user_id;
 
   // SEC-107: Rotate if session is older than threshold
   if (age > SESSION_ROTATE_AFTER_S) {
@@ -175,7 +181,8 @@ export async function resolveSession(req: Request, env: SessionEnv): Promise<Res
         "UPDATE sessions SET token = $1, created_at = now(), expires_at = now() + make_interval(secs => $2) WHERE token = $3",
         [newToken, SESSION_TTL_S, token]
       );
-      return { userId, cookie: cookieSet(newToken, env) };
+      const setCookie = cookieSet(newToken, env);
+      return { userId, uid: userId, cookie: setCookie, rotatedCookie: setCookie };
     } catch {
       // Rotation failed — still serve the request with the old token
       console.error("[session] rotation failed, serving with old token");
@@ -188,7 +195,7 @@ export async function resolveSession(req: Request, env: SessionEnv): Promise<Res
     [SESSION_TTL_S, token]
   ).catch(e => console.error("[session] TTL refresh failed:", e?.message));
 
-  return { userId, cookie: null };
+  return { userId, uid: userId, cookie: null, rotatedCookie: null };
 }
 
 /**
@@ -220,11 +227,11 @@ export async function currentUserId(req: Request, env: SessionEnv): Promise<stri
 
 export async function loadUser(env: SessionEnv, userId: string): Promise<UserRecord | null> {
   try {
-    return await one<UserRecord>(
+    return (await one<UserRecord>(
       `SELECT id, email, slug, plan, plan_expires_at, status, is_admin
          FROM users WHERE id = $1`,
       [userId]
-    );
+    )) ?? null;
   } catch (e) {
     console.error("[session] loadUser failed:", (e as Error)?.message ?? e);
     return null;

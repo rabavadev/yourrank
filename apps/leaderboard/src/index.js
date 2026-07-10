@@ -181,7 +181,7 @@ async function handleRequest(request, env, ctx) {
       // already hit POST /api/auth/logout; the nav link should use a form POST.
       if ((path === "/logout" || path === "/logout.html") && method === "POST") {
         await destroySession(env, readToken(request));
-        return new Response(null, { status: 302, headers: { "set-cookie": cookieClear(), location: "/login" } });
+        return new Response(null, { status: 302, headers: { "set-cookie": cookieClear(env), location: "/login" } });
       }
       if (path === "/signup" || path === "/signup.html") return new Response(PAGES.signup, { headers: { ...SECURE_HTML, ...csrfHeader } });
       if (path === "/dashboard" || path === "/dashboard.html") {

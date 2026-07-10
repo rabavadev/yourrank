@@ -1,4 +1,4 @@
-import { getSql, one, exec } from "../../../../shared/db.js";
+import { withTransaction, one, exec } from "../../../../shared/db.js";
 // Authentication handlers for signup, login, logout, password reset
 import { hashPassword, verifyPassword, uuid, newToken, createSession, destroySession, destroyAllUserSessions, currentUser, isEmail, slugify, RESERVED, cookieSet, cookieClear, readToken, json, bad, ok, readJson, rateLimit, clientIp } from "../auth.js";
 import { trackActivation } from "../../../../shared/activation-funnel.js";
@@ -36,7 +36,7 @@ export async function handleSignup(request, env) {
     // (23505) on the slug, append a short random suffix and retry once.
     for (let attempt = 0; attempt < 3; attempt++) {
       try {
-        await getSql().begin(async (tx) => {
+        await withTransaction(async (tx) => {
           await createUser(tx, userId, email, hash, salt);
           await createSite(tx, uuid(), userId, finalSlug, name || finalSlug, DEFAULT_EXTRA);
         });
@@ -55,7 +55,7 @@ export async function handleSignup(request, env) {
     }
     const token = await createSession(env, userId);
     trackActivation("leaderboard", userId, "signup", { email });
-    return json({ ok: true, user: { id: userId, email, slug: finalSlug } }, 200, { "set-cookie": cookieSet(token) });
+    return json({ ok: true, user: { id: userId, email, slug: finalSlug } }, 200, { "set-cookie": cookieSet(token, env) });
   } catch (e) {
     console.error("signup failed:", String(e?.message || e));
     return bad("Sign-up failed, please try again", 500);
@@ -106,7 +106,7 @@ export async function handleLogin(request, env) {
       one("SELECT slug FROM sites WHERE user_id=$1", [user.id]),
       createSession(env, user.id),
     ]);
-    return json({ ok: true, user: { id: user.id, email: user.email, slug: site?.slug || null } }, 200, { "set-cookie": cookieSet(token) });
+    return json({ ok: true, user: { id: user.id, email: user.email, slug: site?.slug || null } }, 200, { "set-cookie": cookieSet(token, env) });
   } catch (e) {
     console.error("login failed:", String(e?.message || e));
     return bad("Login failed, please try again", 500);
@@ -115,7 +115,7 @@ export async function handleLogin(request, env) {
 
 export async function handleLogout(request, env) {
   await destroySession(env, readToken(request));
-  return json({ ok: true }, 200, { "set-cookie": cookieClear() });
+  return json({ ok: true }, 200, { "set-cookie": cookieClear(env) });
 }
 
 export async function handleMe(request, env) {
@@ -203,7 +203,7 @@ export async function handleReset(request, env) {
     // possible without a schema change.
     await destroyAllUserSessions(env, userId);
     const session = await createSession(env, userId);
-    return json({ ok: true }, 200, { "set-cookie": cookieSet(session) });
+    return json({ ok: true }, 200, { "set-cookie": cookieSet(session, env) });
   } catch (e) {
     // SEC-702: Never log the reset token — redact it from any error context.
     console.error("reset failed:", String(e?.message || e).replace(/[a-f0-9]{32,}/gi, '[REDACTED]'));

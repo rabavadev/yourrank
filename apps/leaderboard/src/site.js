@@ -1,6 +1,6 @@
 // Site + players data helpers for the Worker.
 import { effectivePlan, PLAN_LIMITS, BOARD_LIMITS } from "./billing.js";
-import { query, one, exec, getSql } from "../../../shared/db.js";
+import { query, one, exec, withTransaction } from "../../../shared/db.js";
 import { notifyTop3Change, notifyReset, detectTop3Changes, notifySubscribedPlayers } from "../../../shared/notifications.js";
 import { TEMPLATE_IDS } from "./templates/index.js";
 import { RESERVED } from "./auth.js";
@@ -286,7 +286,7 @@ export async function createArchive(env, uid, { label, clear, siteId } = {}) {
   // statement so two concurrent archive-creation requests can't both pass
   // the count check and exceed the plan limit.
   let limitReached = false;
-  await getSql().begin(async (tx) => {
+  await withTransaction(async (tx) => {
     if (maxArchives < 999) {
       const rows = await tx.unsafe(
         `INSERT INTO archives (id,site_id,label,snapshot_json,created_at)
@@ -411,7 +411,7 @@ export async function saveSite(env, user, payload, siteId) {
   const oldPlayers = await getPlayers(env, site.id);
   const oldTop3 = oldPlayers.slice().sort((a, b2) => (b2.wagered || 0) - (a.wagered || 0)).slice(0, 3);
 
-  await getSql().begin(async (tx) => {
+  await withTransaction(async (tx) => {
     // QA-004: Lock the site row to serialize concurrent saves on the same
     // board. Without this, two concurrent saveSite() calls could interleave
     // their DELETE + INSERT players, leaving orphaned or missing rows.
