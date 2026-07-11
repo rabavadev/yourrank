@@ -1,0 +1,31 @@
+# Devin environment blueprint for rabavadev/yourrank
+# https://docs.devin.ai/onboard-devin/environment-yaml
+initialize: |
+  # Install Bun (used for install, build, lint, and test)
+  export BUN_INSTALL=/home/ubuntu/.bun
+  curl -fsSL https://bun.sh/install | bash
+  echo 'export PATH="/home/ubuntu/.bun/bin:$PATH"' >> $ENVRC
+maintenance: |
+  # Install workspace dependencies
+  bun install --frozen-lockfile
+knowledge:
+  - name: lint
+    contents: |
+      (cd apps/leaderboard && bun run lint)
+      (cd apps/bot && bun run lint)
+  - name: test
+    contents: |
+      (cd apps/leaderboard && bun test)
+      (cd apps/bot && bun test)
+  - name: build
+    contents: |
+      (cd apps/leaderboard && bun run build)
+      (cd apps/bot && bun run build)
+  - name: typecheck
+    contents: |
+      (cd apps/bot && bun run typecheck)
+  - name: notes
+    contents: |
+      # Local wrangler dev/deploy requires Node 22; this box uses bun for build/test/lint.
+      # Run supabase db push for new migrations before deploying.
+      # Set SUPPORT_EMAIL and MAIL_FROM in Cloudflare secrets before launch.
