@@ -26,27 +26,39 @@ pcount.textContent=lines.length+" player"+(lines.length===1?"":"s")+" detected";
 });
 
 // Nav buttons
-$("wiz1next").onclick=()=>{if(!slugify(nameIn.value)&&!slugIn.value.trim()){$("wiz_err").textContent="Enter your name or a custom slug.";return;}if(!slugIn.value.trim()){slugIn.value=slugify(nameIn.value);}slug=slugify(slugIn.value);if(!slug){$("wiz_err").textContent="Invalid slug \u2014 letters, numbers, dashes only.";return;}$("wiz_err").textContent="";showStep(2);};
+$("wiz1next").onclick=()=>{if(!slugify(nameIn.value)&&!slugIn.value.trim()){$("wiz_err").textContent="Enter your name or a custom URL.";return;}if(!slugIn.value.trim()){slugIn.value=slugify(nameIn.value);}slug=slugify(slugIn.value);if(!slug){$("wiz_err").textContent="Invalid URL — letters, numbers, dashes only.";return;}$("wiz_err").textContent="";showStep(2);};
 $("wiz2next").onclick=()=>{$("wiz_err").textContent="";showStep(3);};
 $("wiz2back").onclick=()=>{$("wiz_err").textContent="";showStep(1);};
 $("wiz3next").onclick=()=>{$("wiz_err").textContent="";$("wiz_finalUrl").textContent="yourrank.site/"+slug;$("wiz_view").href=origin+"/"+slug;showStep(4);};
 $("wiz3back").onclick=()=>{$("wiz_err").textContent="";showStep(2);};
+$("wiz4back").onclick=()=>{$("wiz_err").textContent="";showStep(3);};
+
+// Copy link
+const copyBtn=$("wiz_copy");
+if(copyBtn){
+  copyBtn.onclick=async()=>{
+    try{await navigator.clipboard.writeText("https://yourrank.site/"+slug);copyBtn.textContent="Copied!";setTimeout(()=>copyBtn.textContent="\ud83d\udccb Copy link",1500);}catch{copyBtn.textContent="Copy failed";setTimeout(()=>copyBtn.textContent="\ud83d\udccb Copy link",1500);}
+  };
+}
 
 // Finish: create the site
-$("wiz_finish").onclick=async()=>{
-$("wiz_finish").disabled=true;
-$("wiz_err").textContent="";
-try{
-// Build the initial data
-const players=[];
-$("wiz_players").value.split("\n").forEach(l=>{const t=l.trim();if(t&&!t.startsWith("#")&&!t.startsWith("//"))players.push(t);});
-const body={slug,name:$("wiz_name").value.trim()||slug,casino:$("wiz_casino").value.trim()||null,period:null,prizePool:null,refCode:$("wiz_code").value.trim()||null,referralLink:$("wiz_cta").value.trim()||null,players:players.map(n=>({name:n}))};
-const res=await fetch("/api/site",{method:"PUT",headers:{"content-type":"application/json","x-csrf-token":getCsrf()},body:JSON.stringify(body)});
-const data=await res.json();
-if(!data.ok){$("wiz_err").textContent=data.error||"Failed to create page.";$("wiz_finish").disabled=false;return;}
-location.href="/dashboard";
-}catch(e){$("wiz_err").textContent="Network error. Try again.";$("wiz_finish").disabled=false;}
-};
+const finishBtn=$("wiz_finish");
+if(finishBtn){
+  finishBtn.onclick=async()=>{
+    finishBtn.disabled=true;
+    finishBtn.textContent="Creating...";
+    $("wiz_err").textContent="";
+    try{
+      const players=[];
+      $("wiz_players").value.split("\n").forEach(l=>{const t=l.trim();if(t&&!t.startsWith("#")&&!t.startsWith("//"))players.push(t);});
+      const body={slug,name:$("wiz_name").value.trim()||slug,casino:$("wiz_casino").value.trim()||null,period:null,prizePool:null,refCode:$("wiz_code").value.trim()||null,referralLink:$("wiz_cta").value.trim()||null,players:players.map(n=>({name:n}))};
+      const res=await fetch("/api/site",{method:"PUT",headers:{"content-type":"application/json","x-csrf-token":getCsrf()},body:JSON.stringify(body)});
+      const data=await res.json();
+      if(!data.ok){$("wiz_err").textContent=data.error||"Failed to create page.";finishBtn.disabled=false;finishBtn.textContent="Go to dashboard";return;}
+      location.href="/dashboard";
+    }catch(e){$("wiz_err").textContent="Network error. Try again.";finishBtn.disabled=false;finishBtn.textContent="Go to dashboard";}
+  };
+}
 
 function getCsrf(){const m=document.cookie.match(/(?:^|;\s*)__csrf=([^;]+)/);return m?m[1]:"";}
 })();

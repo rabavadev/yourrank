@@ -14,22 +14,23 @@ import {
 import {
   handleStats, handleHeatmap, handleTrackCopy, handleGetSite, handleListBoards,
   handleCreateBoard, handleArchive, handleArchiveDelete, handlePutSite,
-  handleNotifyTest, handleDomainVerify
+  handleNotifyTest, handleDomainVerify, handleExportStats
 } from "./handlers/sites.js";
 import { handleTrial } from "./handlers/billing.js";
 import { handleLead } from "./handlers/leads.js";
 import { handleBotConnect } from "./handlers/bot.js";
 import { handleBotOnboard } from "./handlers/bot-onboard.js";
 import { handleAttribution, handleAttributionExport } from "./handlers/attribution.js";
+import { handleContact } from "./handlers/contact.js";
 import { handleCspReport } from "./handlers/csp-report.js";
 import { handleScores } from "./handlers/scores.js";
-import { handleCheckout, handleCheckoutLifetime, handleIpn } from "./billing.js";
+import { handleCheckout, handleCheckoutLifetime, handleIpn, handleCancel } from "./billing.js";
 import {
   handleOverview, handleUsers, handleLeads, handlePayments, handleAction,
   handle2faEnable, handle2faVerify, handle2faStatus, handle2faDisable
 } from "./admin.js";
 import {
-  handlePublicStandings, handlePublicPlayers, handlePublicRank, handlePublicData
+  handlePublicStandings, handlePublicPlayers, handlePublicRank, handlePublicData, handlePublicStats
 } from "./handlers/public.js";
 
 export const ROUTES = [
@@ -55,6 +56,7 @@ export const ROUTES = [
   { path: "/api/site/create", method: "POST", handler: withHandler(handleCreateBoard) },
   { path: "/api/site/archive", method: "POST", handler: withHandler(handleArchive) },
   { path: "/api/site/archive/delete", method: "POST", handler: withHandler(handleArchiveDelete) },
+  { path: "/api/site/stats/export", method: "GET", handler: withHandler(handleExportStats) },
   { path: "/api/site/stats", method: "GET", handler: withHandler(handleStats) },
   { path: "/api/site/stats/heatmap", method: "GET", handler: withHandler(handleHeatmap) },
   { path: "/api/site/notify/test", method: "POST", handler: withHandler(handleNotifyTest) },
@@ -62,6 +64,7 @@ export const ROUTES = [
   
   // Public routes (CSRF-exempt)
   { path: "/api/lead", method: "POST", handler: withHandler(handleLead) },
+  { path: "/api/contact", method: "POST", handler: withHandler(handleContact) },
   { path: "/api/track/copy", method: "POST", handler: withHandler(handleTrackCopy) },
   { path: "/api/scores", method: "POST", handler: withHandler(handleScores) },
   
@@ -69,12 +72,14 @@ export const ROUTES = [
   { path: "/api/public/:slug/standings", method: "GET", handler: withHandler(handlePublicStandings) },
   { path: "/api/public/:slug/players", method: "GET", handler: withHandler(handlePublicPlayers) },
   { path: "/api/public/:slug/rank", method: "GET", handler: withHandler(handlePublicRank) },
+  { path: "/api/public/:slug/stats", method: "GET", handler: withHandler(handlePublicStats) },
   { path: "/api/public/:slug", method: "GET", handler: withHandler(handlePublicData) },
   
   // Billing routes
   { path: "/api/billing/checkout", method: "POST", handler: withHandler(handleCheckout) },
   { path: "/api/billing/checkout-lifetime", method: "POST", handler: withHandler(handleCheckoutLifetime) },
   { path: "/api/billing/trial", method: "POST", handler: withHandler(handleTrial) },
+  { path: "/api/billing/cancel", method: "POST", handler: withHandler(handleCancel) },
   { path: "/api/billing/ipn", method: "POST", handler: withHandler(handleIpn) },
   
   // Bot routes

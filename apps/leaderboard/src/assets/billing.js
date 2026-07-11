@@ -68,12 +68,38 @@ function fmtExp(ms) {
     $("trialCard").hidden = false;
   }
 
+  const isLifetime = !planExpiry || Number(planExpiry) === 0 || Number(planExpiry) > new Date("2099-01-01T00:00:00Z").getTime();
+  const isPaid = plan !== "free";
+
+  if (isPaid && !isTrial && !isLifetime) {
+    $("cancelBox").hidden = false;
+    $("cancelBtn").onclick = async () => {
+      if (!window.confirm("Cancel your paid subscription? You'll be downgraded to Free immediately.")) return;
+      const status = $("cancelStatus");
+      const btn = $("cancelBtn");
+      btn.disabled = true;
+      status.textContent = "Cancelling...";
+      try {
+        const r = await fetch("/api/billing/cancel", { method: "POST", credentials: "include", headers: { "x-csrf-token": getCsrf() } });
+        const d = await r.json();
+        if (r.ok && d.ok) {
+          status.textContent = d.message;
+          location.reload();
+        } else {
+          status.textContent = d.error || "Could not cancel.";
+          btn.disabled = false;
+        }
+      } catch {
+        status.textContent = "Network error. Try again.";
+        btn.disabled = false;
+      }
+    };
+  }
+
   if (plan === "pro" || plan === "agency") {
     $("upgradeCard").hidden = true;
     $("proCard").hidden = false;
     $("currentPlanName").textContent = isTrial ? "Pro (Trial)" : currentTier.name;
-    // Check if lifetime (no expiry)
-    const isLifetime = !planExpiry || Number(planExpiry) === 0;
     if (isLifetime && !isTrial) {
       $("lifetimeNotice").hidden = false;
       $("proExp").textContent = "";

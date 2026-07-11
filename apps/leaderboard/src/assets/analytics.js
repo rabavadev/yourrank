@@ -77,6 +77,37 @@ const DAYS_SHORT = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
   // --- Heatmap + Referrers (loaded after main stats render) ---
   loadHeatmapAndReferrers();
+
+  // Export CSV
+  const exportBtn = $("exportBtn");
+  if (exportBtn) {
+    exportBtn.addEventListener("click", async () => {
+      exportBtn.disabled = true;
+      const status = $("exportStatus");
+      status.textContent = "Preparing export...";
+      try {
+        const r = await fetch("/api/site/stats/export", { credentials: "include" });
+        if (r.ok) {
+          const blob = await r.blob();
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = "yourrank-stats.csv";
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+          URL.revokeObjectURL(url);
+          status.textContent = "Export downloaded.";
+        } else {
+          status.textContent = "Could not export. Try again.";
+        }
+      } catch {
+        status.textContent = "Network error. Try again.";
+      } finally {
+        exportBtn.disabled = false;
+      }
+    });
+  }
 })();
 
 async function loadHeatmapAndReferrers() {

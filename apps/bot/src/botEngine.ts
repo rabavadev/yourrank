@@ -90,6 +90,29 @@ export function wireHandlers(bot: Bot, botRow: BotRow, env?: any): void {
     await ctx.reply(welcome);
   });
 
+  bot.command("help", async (ctx) => {
+    await ctx.reply(
+      "<b>Available commands</b>\n\n" +
+      "/code — get bonus codes and referral links\n" +
+      "/subscribe &lt;player name&gt; — get DMs when your rank changes\n" +
+      "/unsubscribe — stop rank-change DMs\n" +
+      "/support — contact the YourRank team\n" +
+      "/help — show this list",
+      { parse_mode: "HTML" }
+    );
+  });
+
+  bot.command("support", async (ctx) => {
+    await ctx.reply(
+      "Need help?\n\n" +
+      "1. Visit the dashboard: https://yourrank.site/dashboard\n" +
+      "2. Email us: contact@yourrank.site\n" +
+      "3. Use the contact form: https://yourrank.site/contact\n\n" +
+      "For account or billing issues, include your registered email so we can find you faster.",
+      { parse_mode: "HTML" }
+    );
+  });
+
   bot.command(["code", "codes"], async (ctx) => {
     await sendOffers(ctx, botRow);
   });

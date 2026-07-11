@@ -321,7 +321,10 @@ analytics: `<!DOCTYPE html><html lang="en"><head>
 <div class="heatmap-wrap" id="heatmapWrap"><div class="heatmap-loading">Loading…</div></div></div>
 <div class="card"><h2>Top referrers</h2><p class="card-sub">Where your visitors come from — top 5 domains in the last 30 days.</p>
 <table class="ref-table" id="refTable"><thead><tr><th>Domain</th><th class="ta-r">Views</th></tr></thead><tbody id="refBody"></tbody></table>
-<div class="empty" id="refEmpty" hidden>No referrer data yet.</div></div></div>
+<div class="empty" id="refEmpty" hidden>No referrer data yet.</div></div>
+<div class="card"><h2>Export</h2><p class="card-sub">Download a CSV of your page views, code copies, and join clicks for the last 30 days.</p>
+<button class="btn btn--accent" id="exportBtn" type="button">Export CSV</button>
+<p class="status" id="exportStatus" role="status" aria-live="polite"></p></div></div>
 <div id="loading" class="py-26">
 <div class="mb-18"><div class="skeleton skeleton-text--lg skel-w-120"></div><div class="skeleton skeleton-text--sm skel-w-200 mt-8"></div></div>
 <div class="card"><div class="skeleton skeleton-block skel-h-80"></div></div>
@@ -342,7 +345,10 @@ billing: `<!DOCTYPE html><html lang="en"><head>
 <div class="dash-head"><div><h1>Billing</h1><p class="live-link">Your YourRank plan</p></div><span class="label" id="planBadge">FREE PLAN</span></div>
 <div id="bl" hidden>
 <div class="card" id="currentCard"><h2>Current plan</h2><p class="card-sub"><span id="planLine">Free — up to 10 players, one leaderboard.</span></p>
-<p class="hint" id="expLine" hidden></p></div>
+<p class="hint" id="expLine" hidden></p>
+<div id="cancelBox" class="mt-18" hidden><p class="hint">Paid subscription? You can cancel it at any time. You'll keep features until the end of the current billing period.</p>
+<button class="btn btn--danger" id="cancelBtn" type="button">Cancel subscription</button>
+<p class="status" id="cancelStatus" role="status" aria-live="polite"></p></div></div>
 <div class="card" id="trialCard" hidden><h2>Try Pro free for 7 days</h2><p class="card-sub">Experience all Pro features — unlimited players, custom domain, OBS overlay, notifications — with no commitment.</p>
 <button class="btn btn--accent" id="trialBtn" type="button">Start free trial</button>
 <p class="status" id="trialStatus" role="status" aria-live="polite"></p></div>
@@ -720,4 +726,116 @@ ${endsAt ? `<p class="ov-timer-label">${esc(b.prizePool || "")} resets in</p>
 <p>Most casinos, including Stake, offer self-exclusion and loss-limit tools in account settings. Use them.</p>
 <h2>For streamers</h2>
 <p>If you run a leaderboard on YourRank: be straight with your community about the risks, honour the prizes you post, and never pressure viewers to wager. Pages that mislead their communities get suspended.</p>`, "responsible", "Responsible play guidelines for YourRank users and viewers. Gambling carries real risk — know the limits and find help resources."),
+
+  refund: legal("Refund & Cancellation Policy", "July 2026", `
+<p><b>Free plan</b> — YourRank can be used free of charge, forever. No payment or credit card is required to create a page and test the service.</p>
+<h2>Subscriptions</h2>
+<p>Paid subscriptions are billed in advance. If you upgrade and change your mind, you can cancel at any time from your dashboard. After cancelling, you keep your paid features until the end of the current billing period. We do not offer partial refunds for unused days.</p>
+<h2>Crypto payments</h2>
+<p>Payments made in cryptocurrency are non-refundable because of blockchain irreversibility. Make sure the selected plan and amount are correct before sending any transaction.</p>
+<h2>Lifetime plans</h2>
+<p>Lifetime plans are a one-time purchase. They are non-refundable because they include immediate, permanent access to Pro features.</p>
+<h2>Failed or duplicate charges</h2>
+<p>If a charge was duplicated by mistake, contact us within 14 days and we will review the transaction. Approved duplicate charges are refunded to the original wallet or payment method.</p>
+<h2>How to cancel</h2>
+<p>Visit <a href="/dashboard/billing">/dashboard/billing</a> and choose "Cancel subscription". Your page will downgrade to the Free plan at the end of the billing period.</p>
+<h2>Contact</h2>
+<p>Questions about billing or refunds: <a href="/contact">contact us</a> or email contact@yourrank.site.</p>`, "refund", "YourRank refund and cancellation policy. Crypto payments are non-refundable; subscriptions can be cancelled at any time."),
+
+  cookies: legal("Cookie Policy", "July 2026", `
+<p>YourRank uses cookies and similar technologies to keep you signed in, remember your preferences, and understand how our pages are used. This policy explains what we use and how you can control it.</p>
+<h2>Essential cookies</h2>
+<p>These are required for the site to work. They include your session cookie (<code>yr_session</code>) and CSRF token cookie (<code>__csrf</code>). We do not use them for advertising or tracking you across the web.</p>
+<h2>Analytics and performance</h2>
+<p>We collect aggregated page views and referrers for your own leaderboard analytics. No third-party analytics trackers (Google Analytics, Meta Pixel, etc.) are loaded on YourRank pages.</p>
+<h2>Your choices</h2>
+<p>You can clear cookies through your browser settings at any time. If you disable cookies, you will be signed out and some dashboard features may not work.</p>
+<h2>Contact</h2>
+<p>Questions about this policy: email contact@yourrank.site.</p>`, "cookies", "YourRank cookie policy. Explains essential cookies, analytics, and how to manage your choices."),
+
+  contact: `<!DOCTYPE html><html lang="en"><head>
+<meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Contact · YourRank</title>
+<meta name="description" content="Get in touch with the YourRank team. Questions, feedback, and support." />
+<link rel="canonical" href="https://yourrank.site/contact" /><link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="/assets/app.css" /></head><body>
+<a href="#main-content" class="sr-only skip-link">Skip to content</a>
+<header class="topbar"><a class="brand" href="/">Your<b>Rank</b></a>
+<div class="topbar-right"><a href="/login" class="btn btn--sm btn--ghost">Sign in</a></div></header>
+<main class="wrap" id="main-content" style="max-width:620px;padding:48px 24px">
+<h1>Contact</h1>
+<p class="sub">Questions, feedback, or billing issue? Send us a message and we'll reply by email.</p>
+<form id="contactForm" class="card">
+<div class="field"><label for="c_name">Name</label><input id="c_name" name="name" type="text" autocomplete="name" required maxlength="120" /></div>
+<div class="field"><label for="c_email">Email</label><input id="c_email" name="email" type="email" autocomplete="email" required maxlength="254" /></div>
+<div class="field"><label for="c_subject">Subject</label><input id="c_subject" name="subject" type="text" maxlength="120" placeholder="What is this about?" /></div>
+<div class="field"><label for="c_message">Message</label><textarea id="c_message" name="message" rows="6" required minlength="10" maxlength="4000" placeholder="Tell us what's going on..."></textarea></div>
+<div class="err" id="c_err" role="alert" aria-live="assertive"></div>
+<button class="btn btn--accent w-full" type="submit" id="c_submit">Send message</button>
+<p class="hint" id="c_success" hidden style="color:var(--accent)">Message received. We'll reply by email.</p>
+</form>
+<p class="hint" style="margin-top:24px">You can also email <a href="mailto:contact@yourrank.site">contact@yourrank.site</a> directly.</p>
+</main>
+<footer class="wrap footer-wrap" style="margin-top:48px">
+<span>© <span id="yr"></span> YourRank</span>
+<span><a href="/terms">Terms</a> · <a href="/privacy">Privacy</a> · <a href="/refund">Refunds</a> · <a href="/responsible">Responsible play</a></span>
+</footer>
+<script src="/assets/contact.js"></script></body></html>`,
+
+  pricing: `<!DOCTYPE html><html lang="en"><head>
+<meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Pricing · YourRank</title>
+<meta name="description" content="YourRank pricing and plans. Free forever, Starter, Pro, Agency, and Lifetime." />
+<link rel="canonical" href="https://yourrank.site/pricing" />
+<meta property="og:title" content="YourRank Pricing">
+<meta property="og:description" content="Free, Starter, Pro, Agency and Lifetime plans for casino streamer leaderboards.">
+<meta name="twitter:card" content="summary_large_image" />
+<link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="/assets/landing.css" />
+</head><body>
+<a href="#main-content" class="sr-only skip-link">Skip to content</a>
+<nav class="top" style="max-width:1080px;margin:0 auto;padding:0 24px"><div class="brand">Your<b>Rank</b></div>
+<div class="links"><a href="/">Home</a><a href="/#how">How it works</a><a href="/contact">Contact</a><a href="/login">Sign in</a><a href="/signup" class="btn btn--accent">Get started</a></div></nav>
+<main class="wrap" id="main-content" style="padding:48px 24px 24px">
+<h1 style="font-size:clamp(32px,5vw,52px);line-height:1.05;letter-spacing:-.03em;margin:0 0 12px;max-width:18ch">Simple pricing for streamers.</h1>
+<p class="lead" style="max-width:58ch">Start free. Upgrade when your board is pulling weight. No hidden fees, no credit card required to try.</p>
+<div class="pricing-grid" style="margin-top:32px">
+<div class="price-card"><div class="price-head"><h3>Free</h3><div class="price-amount">$0</div><div class="price-period">forever</div></div><ul class="price-features"><li>1 leaderboard</li><li>Up to 10 players</li><li>YourRank badge on your page</li><li>Basic analytics (7 days)</li><li>Live countdown &amp; auto-sort</li></ul><a href="/signup" class="btn btn--sm price-cta">Start free</a></div>
+<div class="price-card"><div class="price-head"><h3>Starter</h3><div class="price-amount">$12<span>/mo</span></div></div><ul class="price-features"><li>1 leaderboard</li><li>Up to 25 players</li><li>No YourRank badge</li><li>Full analytics (30 days)</li><li>CSV import</li></ul><a href="/signup" class="btn btn--sm price-cta">Start</a></div>
+<div class="price-card price-card--popular"><div class="price-badge">Most Popular</div><div class="price-head"><h3>Pro</h3><div class="price-amount">$29<span>/mo</span></div></div><ul class="price-features"><li>Up to 3 leaderboards</li><li>Unlimited players</li><li>No YourRank badge</li><li>Custom domain</li><li>OBS overlay widget</li><li>Discord webhooks</li><li>Telegram notifications</li><li>Priority support</li></ul><a href="/signup" class="btn btn--sm btn--accent price-cta">Go Pro</a></div>
+<div class="price-card"><div class="price-head"><h3>Agency</h3><div class="price-amount">$79<span>/mo</span></div></div><ul class="price-features"><li>Unlimited leaderboards</li><li>Unlimited players</li><li>White-label branding</li><li>API access</li><li>Everything in Pro</li><li>Dedicated support</li></ul><a href="/contact" class="btn btn--sm price-cta">Contact us</a></div>
+<div class="price-card price-card--lifetime"><div class="price-badge price-badge--lifetime">Best Value</div><div class="price-head"><h3>Lifetime Pro</h3><div class="price-amount">$149<span class="price-amount-sub"> one-time</span></div></div><ul class="price-features"><li>All Pro features</li><li>Pay once, use forever</li><li>No monthly bills</li><li>Up to 3 leaderboards</li><li>Unlimited players</li><li>Custom domain &amp; OBS widget</li><li>Priority support</li></ul><a href="/signup" class="btn btn--accent btn--sm price-cta">Get Lifetime Pro</a></div>
+</div>
+
+<h2 class="sec" style="margin-top:64px">Compare plans</h2>
+<table class="pricing" style="margin-top:24px">
+<thead><tr><th>Feature</th><th>Free</th><th>Starter</th><th>Pro</th><th>Agency</th></tr></thead>
+<tbody>
+<tr><td>Leaderboards</td><td>1</td><td>1</td><td>3</td><td>Unlimited</td></tr>
+<tr><td>Players</td><td>10</td><td>25</td><td>Unlimited</td><td>Unlimited</td></tr>
+<tr><td>Custom domain</td><td>—</td><td>—</td><td>✓</td><td>✓</td></tr>
+<tr><td>OBS overlay</td><td>—</td><td>—</td><td>✓</td><td>✓</td></tr>
+<tr><td>Postback tracking</td><td>Basic</td><td>Basic</td><td>Advanced</td><td>Advanced</td></tr>
+<tr><td>API access</td><td>—</td><td>—</td><td>—</td><td>✓</td></tr>
+<tr class="pro-row"><td>Price</td><td>$0</td><td>$12/mo</td><td>$29/mo</td><td>$79/mo</td></tr>
+</tbody>
+</table>
+
+<h2 class="sec" style="margin-top:64px">Frequently asked questions</h2>
+<div class="steps" style="margin-top:24px">
+<div class="step"><div class="n">?</div><div><h3>Can I cancel any time?</h3><p>Yes. Cancel from <a href="/dashboard/billing">/dashboard/billing</a> and your page keeps paid features until the end of the billing period.</p></div></div>
+<div class="step"><div class="n">?</div><div><h3>Is there a free trial?</h3><p>Free plan is the trial — you can use it for as long as you want. Upgrade when you need more players or features.</p></div></div>
+<div class="step"><div class="n">?</div><div><h3>What payment methods do you accept?</h3><p>Crypto (BTC, ETH, USDT and 100+ more) through our payment processor. We are working on adding credit card checkout.</p></div></div>
+<div class="step"><div class="n">?</div><div><h3>Do you offer refunds?</h3><p>Subscriptions keep working until the end of the period and are not partially refunded. Crypto and lifetime purchases are non-refundable. See <a href="/refund">/refund</a>.</p></div></div>
+</div>
+
+<div class="cta cta-wrap" style="margin-top:64px;text-align:center"><a href="/signup" class="btn btn--accent btn--cta-lg">Create your free page</a></div>
+</main>
+<footer><div class="wrap footer-wrap">
+<span>© <span id="yr"></span> YourRank</span>
+<span><a href="/terms">Terms</a> · <a href="/privacy">Privacy</a> · <a href="/refund">Refunds</a> · <a href="/responsible">Responsible play</a></span>
+</div></footer>
+<script src="/assets/landing.js"></script></body></html>`,
 };

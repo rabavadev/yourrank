@@ -81,6 +81,11 @@ function demoLeaderboardData() {
   };
 }
 
+function addCookieConsent(html) {
+  if (typeof html !== "string") return html;
+  return html.replace(/<\/body>\s*<\/html>\s*$/i, '<script src="/assets/cookie-consent.js" defer></script></body></html>');
+}
+
 async function handleRequest(request, env, ctx) {
     const sentry = null; // Sentry handled by withWorkerFetch wrapper
     try {
@@ -174,8 +179,8 @@ async function handleRequest(request, env, ctx) {
       const csrfToken = generateCsrfToken();
       const csrfHeader = { "set-cookie": csrfCookie(csrfToken) };
 
-      if (path === "/" || path === "/index.html") return new Response(PAGES.index, { headers: { ...HTML_N, ...csrfHeader } });
-      if (path === "/login" || path === "/login.html") return new Response(PAGES.login, { headers: { ...SECURE_HTML, ...csrfHeader } });
+      if (path === "/" || path === "/index.html") return new Response(addCookieConsent(PAGES.index), { headers: { ...HTML_N, ...csrfHeader } });
+      if (path === "/login" || path === "/login.html") return new Response(addCookieConsent(PAGES.login), { headers: { ...SECURE_HTML, ...csrfHeader } });
       // POST /logout only (BE-003). Previously GET, which allowed CSRF via
       // <img src="/logout">. Now only POST is accepted. The in-page buttons
       // already hit POST /api/auth/logout; the nav link should use a form POST.
@@ -183,13 +188,13 @@ async function handleRequest(request, env, ctx) {
         await destroySession(env, readToken(request));
         return new Response(null, { status: 302, headers: { "set-cookie": cookieClear(env), location: "/login" } });
       }
-      if (path === "/signup" || path === "/signup.html") return new Response(PAGES.signup, { headers: { ...SECURE_HTML, ...csrfHeader } });
+      if (path === "/signup" || path === "/signup.html") return new Response(addCookieConsent(PAGES.signup), { headers: { ...SECURE_HTML, ...csrfHeader } });
       if (path === "/dashboard" || path === "/dashboard.html") {
         try {
           const user = await currentUser(request, env);
           if (!user) return Response.redirect(new URL("/login", url), 302);
-          const html = PAGES.dashboard
-            .replace("<!--GM_NAV-->", shellNavHtml({ activePath: "/dashboard", user }));
+          const html = addCookieConsent(PAGES.dashboard
+            .replace("<!--GM_NAV-->", shellNavHtml({ activePath: "/dashboard", user })));
           return new Response(html, { headers: { ...SECURE_HTML, ...csrfHeader, "cache-control": "no-store, no-cache, must-revalidate" } });
         } catch (e) {
           // A transient DB/Hyperdrive hiccup on currentUser used to bubble as a
@@ -203,8 +208,8 @@ async function handleRequest(request, env, ctx) {
         try {
           const user = await currentUser(request, env);
           if (!user) return Response.redirect(new URL("/login", url), 302);
-          const html = PAGES.analytics
-            .replace("<!--GM_NAV-->", shellNavHtml({ activePath: "/dashboard/analytics", user }));
+          const html = addCookieConsent(PAGES.analytics
+            .replace("<!--GM_NAV-->", shellNavHtml({ activePath: "/dashboard/analytics", user })));
           return new Response(html, { headers: { ...SECURE_HTML, ...csrfHeader, "cache-control": "no-store, no-cache, must-revalidate" } });
         } catch (e) {
           console.error("analytics render failed:", String(e?.message || e));
@@ -215,8 +220,8 @@ async function handleRequest(request, env, ctx) {
         try {
           const user = await currentUser(request, env);
           if (!user) return Response.redirect(new URL("/login", url), 302);
-          const html = PAGES.billing
-            .replace("<!--GM_NAV-->", shellNavHtml({ activePath: "/dashboard/billing", user }));
+          const html = addCookieConsent(PAGES.billing
+            .replace("<!--GM_NAV-->", shellNavHtml({ activePath: "/dashboard/billing", user })));
           return new Response(html, { headers: { ...SECURE_HTML, ...csrfHeader, "cache-control": "no-store, no-cache, must-revalidate" } });
         } catch (e) {
           console.error("billing render failed:", String(e?.message || e));
@@ -227,8 +232,8 @@ async function handleRequest(request, env, ctx) {
         try {
           const user = await currentUser(request, env);
           if (!user) return Response.redirect(new URL("/login", url), 302);
-          const html = PAGES.botSetup
-            .replace("<!--GM_NAV-->", shellNavHtml({ activePath: "/dashboard/bot/setup", user }));
+          const html = addCookieConsent(PAGES.botSetup
+            .replace("<!--GM_NAV-->", shellNavHtml({ activePath: "/dashboard/bot/setup", user })));
           return new Response(html, { headers: { ...SECURE_HTML, ...csrfHeader, "cache-control": "no-store, no-cache, must-revalidate" } });
         } catch (e) {
           console.error("bot setup render failed:", String(e?.message || e));
@@ -244,15 +249,15 @@ async function handleRequest(request, env, ctx) {
           if (site && site.name && site.name !== site.slug) {
             return Response.redirect(new URL("/dashboard", url), 302);
           }
-          const html = PAGES.setup
-            .replace("<!--GM_NAV-->", shellNavHtml({ activePath: "/dashboard", user }));
+          const html = addCookieConsent(PAGES.setup
+            .replace("<!--GM_NAV-->", shellNavHtml({ activePath: "/dashboard", user })));
           return new Response(html, { headers: { ...SECURE_HTML, ...csrfHeader, "cache-control": "no-store, no-cache, must-revalidate" } });
         } catch (e) {
           console.error("setup render failed:", String(e?.message || e));
           return new Response("Setup couldn't load right now — please refresh.", { status: 500, headers: { "content-type": "text/plain; charset=utf-8" } });
         }
       }
-      if (path === "/forgot") return new Response(PAGES.forgot, { headers: { ...SECURE_HTML, ...csrfHeader } });
+      if (path === "/forgot") return new Response(addCookieConsent(PAGES.forgot), { headers: { ...SECURE_HTML, ...csrfHeader } });
       if (path === "/reset") {
         // BUG-003: Don't show password form when no token is present.
         if (!url.searchParams.get("token")) {
@@ -269,9 +274,9 @@ async function handleRequest(request, env, ctx) {
 <p class="sub">This link is invalid or expired.</p>
 <a class="btn btn--accent w-full" href="/forgot">Request a new link</a>
 <p class="foot"><a href="/login">Back to sign in</a></p></div></main></div></body></html>`;
-          return new Response(invalidLink, { headers: { ...SECURE_HTML, ...csrfHeader } });
+          return new Response(addCookieConsent(invalidLink), { headers: { ...SECURE_HTML, ...csrfHeader } });
         }
-        return new Response(PAGES.reset, { headers: { ...SECURE_HTML, ...csrfHeader } });
+        return new Response(addCookieConsent(PAGES.reset), { headers: { ...SECURE_HTML, ...csrfHeader } });
       }
       if (path === "/admin") {
         const u = await currentUser(request, env);
@@ -284,14 +289,19 @@ async function handleRequest(request, env, ctx) {
           const tfaVerified = tfaRow2?.twofa_verified ? "1" : null;
           if (tfaVerified !== "1") {
             // Show 2FA verification page instead of admin dashboard
-            return new Response(PAGES.admin2fa, { headers: { ...SECURE_HTML, ...csrfHeader } });
+            return new Response(addCookieConsent(PAGES.admin2fa), { headers: { ...SECURE_HTML, ...csrfHeader } });
           }
         }
-        return new Response(PAGES.admin, { headers: { ...SECURE_HTML, ...csrfHeader } });
+        return new Response(addCookieConsent(PAGES.admin), { headers: { ...SECURE_HTML, ...csrfHeader } });
       }
-      if (path === "/terms") return new Response(PAGES.terms, { headers: { ...HTML_N, ...csrfHeader } });
-      if (path === "/privacy") return new Response(PAGES.privacy, { headers: { ...HTML_N, ...csrfHeader } });
-      if (path === "/responsible") return new Response(PAGES.responsible, { headers: { ...HTML_N, ...csrfHeader } });
+      if (path === "/terms") return new Response(addCookieConsent(PAGES.terms), { headers: { ...HTML_N, ...csrfHeader } });
+      if (path === "/privacy") return new Response(addCookieConsent(PAGES.privacy), { headers: { ...HTML_N, ...csrfHeader } });
+      if (path === "/responsible") return new Response(addCookieConsent(PAGES.responsible), { headers: { ...HTML_N, ...csrfHeader } });
+      if (path === "/refund") return new Response(addCookieConsent(PAGES.refund), { headers: { ...HTML_N, ...csrfHeader } });
+      if (path === "/contact") return new Response(addCookieConsent(PAGES.contact), { headers: { ...HTML_N, ...csrfHeader } });
+      if (path === "/pricing" || path === "/pricing.html") return new Response(addCookieConsent(PAGES.pricing), { headers: { ...HTML_N, ...csrfHeader } });
+      if (path === "/cookies" || path === "/cookies.html") return new Response(addCookieConsent(PAGES.cookies), { headers: { ...HTML_N, ...csrfHeader } });
+
 
       // --- streamer logos (uploaded via dashboard, served as real images) ---
       if (path.startsWith("/logo/") && method === "GET") {

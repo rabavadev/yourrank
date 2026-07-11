@@ -15,6 +15,23 @@ export async function handleStats(request, env) {
   return json({ ok: true, stats: await getStats(env, site.id) });
 }
 
+export async function handleExportStats(request, env) {
+  const { user, res } = await requireUser(request, env);
+  if (res) return res;
+  const site = await getByUser(env, user.id);
+  if (!site) return bad("no site", 404);
+  const stats = await getStats(env, site.id);
+  const rows = (stats?.days || []).map((d) => [d.day, d.views, d.copies, d.clicks].join(","));
+  const csv = "Day,Views,Copies,Clicks\n" + rows.join("\n") + "\n";
+  const summary = `Summary,Views,Copies,Clicks\nToday,${stats?.today?.views || 0},${stats?.today?.copies || 0},${stats?.today?.clicks || 0}\nLast 7 days,${stats?.last7?.views || 0},${stats?.last7?.copies || 0},${stats?.last7?.clicks || 0}\nLast 30 days,${stats?.last30?.views || 0},${stats?.last30?.copies || 0},${stats?.last30?.clicks || 0}\n`;
+  return new Response(summary + csv, {
+    headers: {
+      "content-type": "text/csv",
+      "content-disposition": `attachment; filename=yourrank-stats-${site.slug}.csv`,
+    },
+  });
+}
+
 export async function handleHeatmap(request, env) {
   const { user, res } = await requireUser(request, env);
   if (res) return res;

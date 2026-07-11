@@ -1,5 +1,6 @@
 // Public API handlers for leaderboard data access
 import { getPublicSite } from "../site.js";
+import { getStats } from "../stats.js";
 import { rateLimit, clientIp, json, bad } from "../auth.js";
 
 /**
@@ -133,6 +134,33 @@ export async function handlePublicData(request, env, ctx) {
     return r && !r.suspended ? json(r.data, 200, { "cache-control": "public, max-age=30" }) : bad("not found", 404);
   } catch (e) {
     console.error("[public/data]", String(e?.message || e));
+    return bad("Something went wrong. Try again.", 500);
+  }
+}
+
+/**
+ * Handle GET /api/public/:slug/stats
+ * Public stats page for publishers/streamers to share.
+ * Returns summary counts and a 14-day views series.
+ */
+export async function handlePublicStats(request, env, ctx) {
+  try {
+    const slug = ctx.slug;
+    if (!(await rateLimit(env, `pub-stats:${clientIp(request)}`, 60, 60)).ok) {
+      return bad("Rate limit exceeded. Try again shortly.", 429);
+    }
+    const r = await getPublicSite(env, slug);
+    if (!r || r.suspended) return bad("not found", 404);
+    const stats = await getStats(env, r.id);
+    return json({
+      slug,
+      name: r.data.brand?.name || slug,
+      playerCount: r.data.players?.length || 0,
+      summary: stats ? { last7: stats.last7, last30: stats.last30, today: stats.today } : { last7: {}, last30: {}, today: {} },
+      days: stats?.days || [],
+    }, 200, { "cache-control": "public, max-age=60" });
+  } catch (e) {
+    console.error("[public/stats]", String(e?.message || e));
     return bad("Something went wrong. Try again.", 500);
   }
 }
