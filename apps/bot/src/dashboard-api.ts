@@ -9,28 +9,34 @@ import { getMe, setWebhook } from "./telegram.js";
 import { withPlanLimit, getUserPlan, type PlanTier } from "./plans.js";
 import { billingEnabled, createStarsInvoice } from "./billing.js";
 import { checkFeature, PLANS } from "./plans.js";
-import { rateLimit, type RateLimitEnv } from "./ratelimit.js";
+import { rateLimit } from "./ratelimit.js";
 import { sameOrigin } from "./dashboard-auth.js";
 import { resolveSession, type SessionEnv } from "../../../shared/session.js";
+import { type RateLimitKV } from "./ratelimit.js";
+
+type DashApiBindings = SessionEnv & {
+  SESSIONS?: RateLimitKV;
+  RATE_LIMITER_DO?: any;
+  RL_BACKEND?: string;
+  [key: string]: unknown;
+};
 
 interface TgLogin {
   id: number; first_name?: string; last_name?: string; username?: string;
   photo_url?: string; auth_date: number; hash: string;
 }
 
-type DashboardBindings = SessionEnv & RateLimitEnv & Record<string, unknown>;
-
-export function buildDashboardApi(): Hono<{ Bindings: DashboardBindings; Variables: { uid: string } }> {
-  const api = new Hono<{ Bindings: DashboardBindings; Variables: { uid: string } }>();
+export function buildDashboardApi(): Hono<{ Bindings: DashApiBindings; Variables: { uid: string } }> {
+  const api = new Hono<{ Bindings: DashApiBindings; Variables: { uid: string } }>();
 
   // Resolve session FIRST — every subsequent middleware reads c.get("uid").
   // SEC-107: Use resolveSession for rotation; propagate new cookie if rotated.
   api.use("*", async (c, next) => {
     try {
       const session = await resolveSession(c.req.raw, c.env as SessionEnv);
-      if (session.userId) {
-        c.set("uid", session.userId);
-        if (session.cookie) c.header("Set-Cookie", session.cookie);
+      if (session) {
+        c.set("uid", session.uid ?? "");
+        if (session.rotatedCookie) c.header("Set-Cookie", session.rotatedCookie);
       }
       await next();
     } catch (e: any) {

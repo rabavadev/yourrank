@@ -1,4 +1,3 @@
-"use strict";
 // ------------------------------------------------------------------
 // Shared rate limiter for YourRank — KV or Durable Object backend.
 //
@@ -9,14 +8,12 @@
 // When RL_BACKEND=do and RATE_LIMITER_DO binding exists, uses Durable Objects.
 // Otherwise falls back to KV. Fails OPEN in all cases.
 // ------------------------------------------------------------------
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.rateLimit = rateLimit;
 /**
  * Count one hit against `id` in a `windowSec` window allowing `limit` hits.
  * First argument: KV namespace OR env object (auto-detected).
  * Fails OPEN (allows the request) if the backend is unavailable.
  */
-async function rateLimit(kvOrEnv, id, limit, windowSec) {
+export async function rateLimit(kvOrEnv, id, limit, windowSec) {
     // Auto-detect: if it has get/put methods, it's a KV namespace
     if (kvOrEnv && typeof kvOrEnv.get === "function" && typeof kvOrEnv.put === "function") {
         // KV namespace passed directly (bot Worker pattern)

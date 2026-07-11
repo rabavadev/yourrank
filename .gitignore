@@ -22,3 +22,4 @@ shared/plans.js
 # what was tested locally. Verify via `bun run build` before deploying.
 apps/leaderboard/src/assets_bundled.js
 .local/
+supabase/.temp/

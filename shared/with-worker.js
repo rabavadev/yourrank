@@ -1,18 +1,15 @@
-"use strict";
 // Shared entry-point wrapper for YourRank Workers.
 // Wraps fetch/scheduled handlers to guarantee:
 //   1. Request ID generated and echoed as X-Request-Id
 //   2. Sentry (Toucan) initialized if DSN present
 //   3. All errors caught, reported to Sentry + Discord, and returned as 500
 //   4. Structured JSON logging on every error
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.withWorkerFetch = withWorkerFetch;
-const request_id_js_1 = require("./request-id.js");
-const monitoring_js_1 = require("./monitoring.js");
-function withWorkerFetch(workerName, handler) {
+import { generateRequestId, createLogger } from "./request-id.js";
+import { sendErrorToDiscord } from "./monitoring.js";
+export function withWorkerFetch(workerName, handler) {
     return async function fetch(request, env, ctx) {
-        const reqId = (0, request_id_js_1.generateRequestId)();
-        const log = (0, request_id_js_1.createLogger)(workerName, reqId);
+        const reqId = generateRequestId();
+        const log = createLogger(workerName, reqId);
         let sentry = null;
         try {
             if (env.SENTRY_DSN) {
@@ -53,7 +50,7 @@ function withWorkerFetch(workerName, handler) {
                 }
             })();
             if (env.DISCORD_MONITORING_WEBHOOK) {
-                ctx.waitUntil((0, monitoring_js_1.sendErrorToDiscord)({
+                ctx.waitUntil(sendErrorToDiscord({
                     webhookUrl: env.DISCORD_MONITORING_WEBHOOK,
                     title: `${workerName} Error`,
                     message: errStack || errMsg,

@@ -45,6 +45,25 @@ const sessMock = () => ({
   cookieClearLegacy2: () => "gm_session=",
   SESSION_ROTATE_AFTER_S: 86400,
   SESSION_TTL_S: 2592000,
+  // SEC-107: shared session module now resolves via resolveSession + loadUser
+  resolveSession: (req) => {
+    const cookie = req?.headers?.get?.("cookie") || "";
+    const m = cookie.match(/yr_session=([^;]+)/);
+    return Promise.resolve({
+      userId: m ? m[1] : null,
+      uid: m ? m[1] : null,
+      cookie: null,
+      rotatedCookie: null,
+    });
+  },
+  loadUser: (env, userId) => Promise.resolve({
+    id: userId,
+    email: "test@test.com",
+    plan: "free",
+    plan_expires_at: null,
+    status: "active",
+    is_admin: false,
+  }),
 });
 
 mock.module(dbUrl, dbMock);

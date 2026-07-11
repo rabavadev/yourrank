@@ -83,8 +83,8 @@ export const newToken = () => bytesToHex(crypto.getRandomValues(new Uint8Array(3
 export const createSession = (env, userId) => _createSession(env, userId);
 export const destroySession = (env, token) => _destroySession(env, token);
 export const destroyAllUserSessions = (env, userId) => _destroyAllUserSessions(env, userId);
-export const cookieSet = (token) => _cookieSet(token);
-export const cookieClear = () => _cookieClear();
+export const cookieSet = (token, env) => _cookieSet(token, env);
+export const cookieClear = (env) => _cookieClear(env);
 
 // SEC-104: Legacy cookie detection helper — re-exported for index.js
 export { hasLegacyCookie, cookieClearLegacy };

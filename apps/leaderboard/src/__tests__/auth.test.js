@@ -25,12 +25,18 @@ mock.module(sessionUrl, () => ({
     cookieSet:  (t) => `yr_session=${t}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=2592000`,
     cookieClear: ()  => "yr_session=; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=0",
     readToken:  (_req) => null,
-    // SEC-107
-    resolveSession:       () => Promise.resolve({ userId: null, cookie: null }),
-    loadUser:             () => Promise.resolve(null),
+    KV_PREFIX:  "session:",
     // SEC-104
     hasLegacyCookie:  (_req) => false,
     cookieClearLegacy: () => "sess=; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=0",
+    // SEC-107: shared session module now resolves via resolveSession + loadUser
+    resolveSession: (_req) => Promise.resolve({
+      userId: null,
+      uid: null,
+      cookie: null,
+      rotatedCookie: null,
+    }),
+    loadUser: (_env, userId) => Promise.resolve(null),
     SESSION_ROTATE_AFTER_S: 86400,
     SESSION_TTL_S: 2592000, // 30 days
     }));

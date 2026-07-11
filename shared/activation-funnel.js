@@ -1,16 +1,12 @@
-"use strict";
 // Activation funnel tracking (Phase 5.3)
 // Instruments: signup → bot connected → first tracked click
 // Surfaces drop-off at each stage.
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.trackActivation = trackActivation;
-exports.getFunnelMetrics = getFunnelMetrics;
 /**
  * Track an activation funnel event.
  * Logs structured JSON for observability (Workers Logs / Logpush).
  * Can be extended to write to a analytics store if needed.
  */
-function trackActivation(worker, userId, stage, metadata) {
+export function trackActivation(worker, userId, stage, metadata) {
     const event = {
         userId,
         stage,
@@ -29,7 +25,7 @@ function trackActivation(worker, userId, stage, metadata) {
  * Query activation funnel metrics from the database.
  * Returns counts at each stage for a given time period.
  */
-async function getFunnelMetrics(sql, daysBack = 30) {
+export async function getFunnelMetrics(sql, daysBack = 30) {
     const rows = await sql.unsafe(`
     SELECT
       (SELECT COUNT(*) FROM users WHERE created_at > now() - interval '${daysBack} days') as signups,

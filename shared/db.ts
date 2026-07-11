@@ -2,7 +2,9 @@
 //  YourRank — SHARED POSTGRES DATA LAYER (TypeScript)
 //
 //  Consolidated postgres.js wrapper used by BOTH Workers:
-//    * Single persistent connection per isolate (Hyperdrive pools globally)
+//    * New postgres client per request (Cloudflare Workers cannot reuse I/O
+//      objects created in a different request context). Hyperdrive pools the
+//      underlying DB connections, so per-request clients are still fast.
 //    * Exposes query<T>()/one<T>() for reads (retries on connection errors)
 //    * Exposes exec()/execOne() for writes (NO retry — callers handle idempotency)
 //    * Supports transactions via withTransaction()
@@ -36,68 +38,35 @@ function getDatabaseUrl(): string {
 // ----------------------------------------------------------------------------
 
 function createSql(): ReturnType<typeof postgres> {
-    const url = getDatabaseUrl();
-    return postgres(url, {
-      max: 1,
-      prepare: false,
-      idle_timeout: 5,
-      connect_timeout: 10,
-      debug: false,
-    });
-  }
-
-// Cached instance for transactions (getSql().begin())
-let txSql: ReturnType<typeof postgres> | null = null;
-
-export function getSql(): ReturnType<typeof postgres> {
-  if (!txSql) {
-    txSql = createSql();
-  }
-  return txSql;
+  const url = getDatabaseUrl();
+  return postgres(url, {
+    max: 1,
+    prepare: false,
+    idle_timeout: 5,
+    connect_timeout: 10,
+    debug: false,
+  });
 }
 
-// Cached instance for reads — reused across query()/one() calls instead of
-// creating and tearing down a connection on every single call.
-let readSql: ReturnType<typeof postgres> | null = null;
-
-function getReadSql(): ReturnType<typeof postgres> {
-  if (!readSql) {
-    readSql = createSql();
-  }
-  return readSql;
+// Deprecated helper; creates a new sql client. Callers are responsible for
+// calling sql.end() when done. Prefer withTransaction() for transactions.
+export function getSql(): ReturnType<typeof postgres> {
+  return createSql();
 }
 
 // ----------------------------------------------------------------------------
-// Retry logic
+// Retry / error helpers
 // ----------------------------------------------------------------------------
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
-async function withRetry(text: string, params: unknown[]): Promise<any[]> {
-  let lastErr: any;
-  for (let attempt = 0; attempt < 3; attempt++) {
-    const sql = getReadSql();
-    try {
-      const rows = await sql.unsafe(text, params as any[]);
-      return rows.map((r: any) => ({ ...r }));
-    } catch (e: any) {
-      lastErr = e;
-      const msg = String(e?.message || e);
-      // Don't retry on constraint violations - these are application errors
-      if (/23505|23514|23503|23502|23P01/.test(msg)) throw e;
-      // On connection errors, reset the cached instance so the next attempt reconnects
-      const code = String((e as any)?.code ?? "");
-      const isConnError =
-        /^(ECONNRESET|ECONNREFUSED|ENOTFOUND|ETIMEDOUT|EPIPE|ECONNABORTED)$/.test(code) ||
-        /ECONNRESET|ENOTFOUND|ETIMEDOUT|connection|socket|closed|EOF|network/i.test(msg);
-      if (isConnError) {
-        try { await readSql?.end({ timeout: 0 }); } catch {}
-        readSql = null;
-      }
-      if (attempt < 2) await sleep(200 * (attempt + 1));
-    }
-  }
-  throw lastErr;
+function isConnError(e: any): boolean {
+  const code = String(e?.code ?? "");
+  const msg = String(e?.message || e);
+  return (
+    /^(ECONNRESET|ECONNREFUSED|ENOTFOUND|ETIMEDOUT|EPIPE|ECONNABORTED)$/.test(code) ||
+    /ECONNRESET|ENOTFOUND|ETIMEDOUT|connection|socket|closed|EOF|network/i.test(msg)
+  );
 }
 
 // ----------------------------------------------------------------------------
@@ -109,7 +78,23 @@ export async function query<T = Record<string, unknown>>(
   text: string,
   params: unknown[] = []
 ): Promise<T[]> {
-  return withRetry(text, params) as unknown as Promise<T[]>;
+  let lastErr: any;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const sql = createSql();
+    try {
+      const rows = await sql.unsafe(text, params as any[]);
+      return rows.map((r: any) => ({ ...r })) as unknown as T[];
+    } catch (e: any) {
+      lastErr = e;
+      const msg = String(e?.message || e);
+      // Don't retry on constraint violations - these are application errors
+      if (/23505|23514|23503|23502|23P01/.test(msg)) throw e;
+      if (attempt < 2) await sleep(200 * (attempt + 1));
+    } finally {
+      await sql.end({ timeout: 0 }).catch(() => {});
+    }
+  }
+  throw lastErr;
 }
 
 /** Execute a SQL read query and return the first row, or undefined if no rows. */
@@ -133,47 +118,20 @@ export async function one<T = Record<string, unknown>>(
 //   - Wrap multi-statement mutations in withTransaction()
 //   - Use deterministic IDs (UUIDs generated client-side) where possible
 //
-// Reads (query/one) ARE safe to retry and use withRetry() above.
+// Reads (query/one) ARE safe to retry and use query() above.
 // ----------------------------------------------------------------------------
 
-/**
- * Execute a single SQL write statement. NO retry on connection errors — the
- * caller receives the error and decides whether to retry. On connection-level
- * failures the cached write connection is reset so the next call reconnects.
- */
-async function execRaw(text: string, params: unknown[]): Promise<any[]> {
-  const sql = getSql();
+/** Execute a single SQL write statement. NO retry on connection errors. */
+export async function exec(text: string, params: unknown[] = []): Promise<any> {
+  const sql = createSql();
   try {
     const rows = await sql.unsafe(text, params as any[]);
     return rows.map((r: any) => ({ ...r }));
   } catch (e: any) {
-    // Reset stale connection so the next call gets a fresh one.
-    const msg = String(e?.message || e);
-    const code = String((e as any)?.code ?? "");
-    const isConnError =
-      /^(ECONNRESET|ECONNREFUSED|ENOTFOUND|ETIMEDOUT|EPIPE|ECONNABORTED)$/.test(code) ||
-      /ECONNRESET|ENOTFOUND|ETIMEDOUT|connection|socket|closed|EOF|network/i.test(msg);
-    if (isConnError) {
-      try { await txSql?.end({ timeout: 0 }); } catch {}
-      txSql = null;
-    }
     throw e;
+  } finally {
+    await sql.end({ timeout: 0 }).catch(() => {});
   }
-}
-
-/** Execute a SQL write statement. NO automatic retry — caller handles idempotency. */
-export async function exec(text: string, params: unknown[] = []): Promise<any> {
-  return execRaw(text, params);
-}
-
-/** Like exec() but returns the first row (or undefined). NO automatic retry.
- *  NOTE: currently unused — retained for future write-RETURNING queries. */
-async function execOne<T = Record<string, unknown>>(
-  text: string,
-  params: unknown[] = []
-): Promise<T | undefined> {
-  const rows = await execRaw(text, params);
-  return rows[0];
 }
 
 // ----------------------------------------------------------------------------
@@ -188,6 +146,7 @@ async function execOne<T = Record<string, unknown>>(
 export interface Tx {
   query<T = Record<string, unknown>>(text: string, params?: unknown[]): Promise<T[]>;
   one<T = Record<string, unknown>>(text: string, params?: unknown[]): Promise<T | undefined>;
+  unsafe(text: string, params?: unknown[]): Promise<any[]>;
 }
 
 /**
@@ -198,18 +157,16 @@ export interface Tx {
  *
  * Note: no in-band retry here (unlike query()). A retry mid-transaction would
  * be unsafe — the caller must decide whether re-running the whole unit is OK.
- * With max:1, sql.begin reserves the single warm connection; within one Worker
- * isolate that is fine because a request's writes are sequential.
  */
 export async function withTransaction<R>(fn: (tx: Tx) => Promise<R>): Promise<R> {
   // Retry up to 3 times on connection-level errors (dropped Hyperdrive connections,
   // ECONNRESET, etc.). Unlike query() which retries each statement independently,
   // we only retry the INITIAL connection attempt — once BEGIN is issued and fn()
-  // starts running, any error propagates immediately (retrying mid-transaction
-  // would re-run side effects the caller hasn't made idempotent).
+  // starts running, any error propagates immediately.
   for (let attempt = 0; attempt < 3; attempt++) {
+    const sql = createSql();
     try {
-      const result = await getSql().begin(async (sqlTx: any) => {
+      const result = await sql.begin(async (sqlTx: any) => {
         const tx: Tx = {
           async query<T = Record<string, unknown>>(text: string, params: unknown[] = []) {
             const rows = (await sqlTx.unsafe(text, params as any[])) as unknown[];
@@ -219,28 +176,22 @@ export async function withTransaction<R>(fn: (tx: Tx) => Promise<R>): Promise<R>
             const rows = (await sqlTx.unsafe(text, params as any[])) as unknown[];
             return rows[0] ? ({ ...(rows[0] as Record<string, unknown>) } as T) : undefined;
           },
+          async unsafe(text: string, params: unknown[] = []) {
+            const rows = (await sqlTx.unsafe(text, params as any[])) as any[];
+            return rows.map((r) => ({ ...r }));
+          },
         };
         return fn(tx);
       });
-      // postgres.js types begin()'s return as UnwrapPromiseArray<R>; for a plain
-      // (non-promise-array) R that resolves to R, so this cast is sound.
       return result as unknown as R;
     } catch (err) {
-      // Reset stale connection so the next attempt reconnects.
-      const msg = String((err as any)?.message ?? err);
-      const code = String((err as any)?.code ?? "");
-      const isConnError =
-        /^(ECONNRESET|ECONNREFUSED|ENOTFOUND|ETIMEDOUT|EPIPE|ECONNABORTED)$/.test(code) ||
-        /ECONNRESET|ENOTFOUND|ETIMEDOUT|connection|socket|closed|EOF|network/i.test(msg);
-      if (isConnError) {
-        try { await txSql?.end({ timeout: 0 }); } catch {}
-        txSql = null;
-        if (attempt < 2) {
-          await sleep(200 * (attempt + 1));
-          continue;
-        }
+      if (isConnError(err) && attempt < 2) {
+        await sleep(200 * (attempt + 1));
+        continue;
       }
       throw err;
+    } finally {
+      await sql.end({ timeout: 0 }).catch(() => {});
     }
   }
   // TypeScript requires a return here; the loop always throws or returns above.
