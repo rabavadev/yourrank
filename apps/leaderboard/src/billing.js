@@ -1,6 +1,6 @@
 // Billing: NOWPayments (crypto) + manual activation. Plan logic lives here.
 import { json, bad, ok, uuid, requireUser, safeEqual } from "./auth.js";
-import { query, one, exec, getSql } from "../../../shared/db.js";
+import { exec, withTransaction } from "../../../shared/db.js";
 
 // Plan definitions imported from shared source of truth.
 // Re-exported here for backward compatibility with any local imports.
@@ -27,7 +27,7 @@ export async function activatePlan(env, userId, plan, days = PRO_DAYS, { provide
   // Extend plan subscription for the given number of days.
   // Wrapped in a transaction so that the user update, subscription insert, and
   // optional payment ledger insert are all atomic.
-  return getSql().begin(async (tx) => {
+  return withTransaction(async (tx) => {
     const uRows = await tx.unsafe(
       "SELECT plan, (EXTRACT(EPOCH FROM plan_expires_at) * 1000)::double precision AS plan_expires_at FROM users WHERE id=$1",
       [userId]
@@ -188,7 +188,7 @@ export async function handleIpn(request, env) {
   const orderId = String(body.order_id || "");
   const status = String(body.payment_status || "");
 
-  const result = await getSql().begin(async (tx) => {
+  await withTransaction(async (tx) => {
     const payRows = await tx.unsafe(
       "SELECT id, user_id, status, amount, plan_tier FROM payments WHERE tx_ref=$1 FOR UPDATE",
       [orderId]

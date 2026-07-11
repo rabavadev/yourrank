@@ -46,8 +46,8 @@ export function withWorkerFetch(workerName: string, handler: FetchHandler) {
           context: ctx,
           environment: env.ENVIRONMENT || "production",
           release: `yourrank@${(typeof process !== "undefined" && process.env?.npm_package_version) || "dev"}`,
-          tags: { worker: workerName, req_id: reqId },
         });
+        s.setTags({ worker: workerName, req_id: reqId });
         sentry = s;
       }
     } catch (sentryErr) {

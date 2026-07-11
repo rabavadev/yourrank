@@ -29,9 +29,14 @@ mock.module(sessionUrl, () => ({
     // SEC-104
     hasLegacyCookie:  (_req) => false,
     cookieClearLegacy: () => "sess=; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=0",
-    // SEC-107
-    rotateSession:      (_env, _token, userId) => Promise.resolve("mock-rotated-token"),
-    parseSessionValue:  (raw) => ({ userId: raw, createdAt: Date.now() }),
+    // SEC-107: shared session module now resolves via resolveSession + loadUser
+    resolveSession: (_req) => Promise.resolve({
+      userId: null,
+      uid: null,
+      cookie: null,
+      rotatedCookie: null,
+    }),
+    loadUser: (_env, userId) => Promise.resolve(null),
     SESSION_ROTATE_AFTER_S: 86400,
     SESSION_TTL_S: 2592000, // 30 days
     }));
