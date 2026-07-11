@@ -451,24 +451,20 @@ export function buildDashboardApi(): Hono<{ Bindings: DashApiBindings; Variables
     const uid = c.get("uid");
     const gateErr = await checkFeature(uid, "postbacks");
     if (gateErr) return c.json({ error: gateErr }, 402);
-    const existing = await one<{ postback_key_enc: Buffer | null; postback_key: string | null }>(
-      `SELECT postback_key_enc, postback_key FROM users WHERE id = $1`, [uid]
+    const existing = await one<{ postback_key: string | null }>(
+      `SELECT postback_key FROM users WHERE id = $1`, [uid]
     );
-    let key: string;
-    if (existing?.postback_key_enc) {
-      // Decrypt the encrypted key
-      key = await decryptToken(Buffer.from(existing.postback_key_enc));
-    } else if (existing?.postback_key) {
-      // Legacy plaintext key — encrypt it now (lazy migration)
-      key = existing.postback_key;
-      const enc = await encryptToken(key);
-      await query(`UPDATE users SET postback_key_enc = $1 WHERE id = $2`, [enc, uid]);
-    } else {
-      // New key — generate, encrypt, and store both the plaintext (for lookup
-      // in /pb/:key) and the encrypted version (for secure reveal in the UI)
-      key = newPostbackKey();
-      const enc = await encryptToken(key);
-      await query(`UPDATE users SET postback_key = $1, postback_key_enc = $2 WHERE id = $3`, [key, enc, uid]);
+    let key = existing?.postback_key;
+    if (!key) {
+      for (let i = 0; i < 3; i++) {
+        key = newPostbackKey();
+        try {
+          await query(`UPDATE users SET postback_key = $1, updated_at = now() WHERE id = $2`, [key, uid]);
+          break;
+        } catch (e) {
+          if (i >= 2) throw e;
+        }
+      }
     }
     return c.json({ postback_url: `${config.publicBaseUrl}/pb/${key}` });
   });

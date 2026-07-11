@@ -1,13 +1,15 @@
 // Outbound email via Resend. Degrades to a silent no-op when no key is set —
 // password reset then falls back to admin-generated links from /admin.
-export async function sendEmail(env, { to, subject, html, text }) {
+export async function sendEmail(env, { to, subject, html, text, from }) {
   if (!env.RESEND_API_KEY) return { sent: false, reason: "not_configured" };
-  const from = env.MAIL_FROM || "YourRank <onboarding@resend.dev>";
+  const supportEmail = env.SUPPORT_EMAIL || "contact@yourrank.site";
+  const fromAddr = from || supportEmail || env.MAIL_FROM || "YourRank <onboarding@resend.dev>";
+  const toAddr = String(to).match(/<([^>]+)>/g)?.map((m) => m.slice(1, -1)).pop() || String(to).trim();
   try {
     const r = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: { authorization: `Bearer ${env.RESEND_API_KEY}`, "content-type": "application/json" },
-      body: JSON.stringify({ from, to: [to], subject, html, text }),
+      body: JSON.stringify({ from: fromAddr, to: [toAddr], subject, html, text }),
     });
     return r.ok ? { sent: true } : { sent: false, reason: `http_${r.status}` };
   } catch (err) {

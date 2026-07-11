@@ -74,7 +74,7 @@ function fmtExp(ms) {
   if (isPaid && !isTrial && !isLifetime) {
     $("cancelBox").hidden = false;
     $("cancelBtn").onclick = async () => {
-      if (!window.confirm("Cancel your paid subscription? You'll be downgraded to Free immediately.")) return;
+      if (!window.confirm("Cancel your paid subscription? You'll keep Pro features until the end of your current billing period.")) return;
       const status = $("cancelStatus");
       const btn = $("cancelBtn");
       btn.disabled = true;

@@ -1,4 +1,4 @@
-/* Operator panel: users, leads, payments, actions. */
+/* Operator panel: users, leads, payments, support, actions. */
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const when = (ms) => { if (!ms) return "–"; const d = new Date(Number(ms)); return d.toLocaleDateString() + " " + d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }); };
@@ -23,8 +23,12 @@ async function init() {
   const [ov] = await Promise.all([api("/api/admin/overview")]); // 403s here for non-admins
   $("s_users").textContent = ov.users; $("s_pro").textContent = ov.pro;
   $("s_leads").textContent = ov.leads; $("s_rev").textContent = "$" + Number(ov.revenue || 0).toLocaleString();
-  await Promise.all([loadUsers(), loadLeads(), loadPayments()]);
+  await Promise.all([loadUsers(), loadLeads(), loadPayments(), loadSupport()]);
   $("loading").hidden = true; $("panel").hidden = false;
+}
+
+function pill(text, tone) {
+  return `<span class="pill pill--${tone || "muted"}">${esc(text)}</span>`;
 }
 
 document.querySelectorAll(".tab").forEach((t) => t.addEventListener("click", () => {
@@ -45,20 +49,25 @@ document.querySelectorAll(".tab").forEach((t) => t.addEventListener("click", () 
     if (next) { e.preventDefault(); next.click(); next.focus(); }
   });
 
-  function pill(text, tone)
-
 async function loadUsers(page) {
   page = page || 1;
   const d = await api("/api/admin/users?page=" + page);
   const rows = d.users || [];
   $("usersEmpty").hidden = rows.length > 0;
   $("usersBody").innerHTML = rows.map((u) => {
-    const proLive = u.plan === "pro" && (!u.plan_expires_at || Number(u.plan_expires_at) > Date.now());
-    const planTxt = proLive ? (u.plan_expires_at ? "pro · until " + new Date(Number(u.plan_expires_at)).toLocaleDateString() : "pro · lifetime") : "free";
+    const plan = String(u.plan || "free").toLowerCase();
+    const paid = ["agency", "pro", "starter"].includes(plan) && u.plan_expires_at && Number(u.plan_expires_at) > Date.now();
+    let planTxt = "free";
+    if (paid) {
+      planTxt = plan + " · until " + when(u.plan_expires_at);
+      if (Number(u.plan_expires_at) > new Date("2099-01-01T00:00:00Z").getTime()) {
+        planTxt = plan + " · lifetime";
+      }
+    }
     return `<tr>
 <td>${esc(u.email)}${u.is_admin ? " " + pill("admin", "info") : ""}</td>
 <td>${u.slug ? `<a href="/${esc(u.slug)}" target="_blank">/${esc(u.slug)}</a>` : "–"}</td>
-<td>${pill(planTxt, proLive ? "good" : "muted")}</td>
+<td>${pill(planTxt, paid ? "good" : "muted")}</td>
 <td>${pill(u.status, u.status === "active" ? "good" : "bad")}</td>
 <td class="ta-r">${u.player_count ?? 0}</td>
 <td>${when(u.created_at)}</td>
@@ -72,7 +81,6 @@ ${u.status === "suspended"
 </td></tr>`;
   }).join("");
   $("usersBody").querySelectorAll("button[data-act]").forEach((b) => b.addEventListener("click", () => action(b)));
-  // Pagination UI
   const totalPages = Math.max(1, Math.ceil((d.total || 0) / (d.pageSize || 50)));
   const pagEl = $("usersPagination");
   if (pagEl) {
@@ -101,8 +109,7 @@ async function action(btn) {
     const d = await api("/api/admin/action", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
     if (!d.ok) { alert(d.error || "Failed"); btn.disabled = false; return; }
     if (act === "reset-link") {
-      try { await navigator.clipboard.writeText(d.link); } catch { /* clipboard unavailable */ }
-      prompt(`Reset link for ${d.email} (valid 24h, copied to clipboard):`, d.link);
+      alert(d.message || "Reset link generated. Deliver it via email.");
       btn.disabled = false;
       return;
     }
@@ -134,6 +141,72 @@ async function loadPayments(page) {
   }).join("");
   renderPag("payPagination", d, page, loadPayments);
 }
+
+let supportMessages = {};
+let supportPage = 1;
+
+async function loadSupport(page, status) {
+  page = page || 1;
+  supportPage = page;
+  const statusFilter = status || $("supportFilter").value || "all";
+  const d = await api(`/api/admin/support?status=${encodeURIComponent(statusFilter)}&page=${page}`);
+  const rows = d.messages || [];
+  supportMessages = Object.fromEntries(rows.map((m) => [m.id, m]));
+  $("supportEmpty").hidden = rows.length > 0;
+  $("supportBody").innerHTML = rows.map((m) =>
+    `<tr>
+      <td>${when(m.created_at)}</td>
+      <td>${esc(m.name)}<br><small class="muted">${esc(m.email)}</small></td>
+      <td>${esc(m.subject)}</td>
+      <td>${pill(m.replied_at ? "replied" : "pending", m.replied_at ? "good" : "muted")}</td>
+      <td><button class="btn btn--xs" data-reply="${m.id}">${m.replied_at ? "View" : "Reply"}</button></td>
+    </tr>`
+  ).join("");
+  $("supportBody").querySelectorAll("button[data-reply]").forEach((b) => b.addEventListener("click", () => openReply(b.dataset.reply)));
+  renderPag("supportPagination", d, page, loadSupport);
+}
+
+function openReply(id) {
+  const m = supportMessages[id];
+  if (!m) return;
+  $("replyId").value = m.id;
+  $("replyToEmail").textContent = m.email;
+  $("replySubject").textContent = m.subject;
+  $("replyMessage").textContent = m.message;
+  $("replyText").value = m.reply || "";
+  $("replyStatus").textContent = "";
+  $("replyCancel").hidden = false;
+  $("supportReplyCard").hidden = false;
+  $("supportReplyCard").scrollIntoView({ behavior: "smooth" });
+}
+
+async function submitReply(e) {
+  e.preventDefault();
+  const id = $("replyId").value;
+  const reply = $("replyText").value.trim();
+  if (!reply) return;
+  const btn = e.submitter;
+  btn.disabled = true;
+  $("replyStatus").textContent = "Sending...";
+  try {
+    const d = await api("/api/admin/support/reply", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ id, reply }) });
+    if (!d.ok) {
+      $("replyStatus").textContent = d.error || "Failed to send reply.";
+      btn.disabled = false;
+      return;
+    }
+    $("replyStatus").textContent = "Reply sent" + (d.emailSent ? " by email" : " (email not configured)") + ".";
+    await loadSupport(supportPage);
+    setTimeout(() => { $("supportReplyCard").hidden = true; $("replyText").value = ""; }, 1500);
+  } catch {
+    $("replyStatus").textContent = "Network error. Try again.";
+    btn.disabled = false;
+  }
+}
+
+$("replyForm")?.addEventListener("submit", submitReply);
+$("replyCancel")?.addEventListener("click", () => { $("supportReplyCard").hidden = true; });
+$("supportFilter")?.addEventListener("change", () => loadSupport(1, $("supportFilter").value));
 
 function renderPag(containerId, data, page, loadFn) {
   const el = $(containerId);
