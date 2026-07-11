@@ -276,15 +276,21 @@ export async function handleIpn(request, env) {
   return ok();
 }
 
-// Cancel the current paid subscription and downgrade to Free.
-// Sets plan to 'free' and expiry to now, so effectivePlan returns free immediately.
+// Cancel the current paid subscription but keep the paid plan until plan_expires_at.
+// effectivePlan will return free once the existing billing period expires.
 export async function handleCancel(request, env) {
   const { user, res } = await requireUser(request, env);
   if (!user) return res;
+  if (effectivePlan(user) === "free") return bad("No active paid subscription to cancel.");
   try {
-    await exec("UPDATE users SET plan=$1, plan_expires_at=now(), updated_at=now() WHERE id=$2", ["free", user.id]);
-    await exec("INSERT INTO subscriptions (user_id, plan, status, provider, current_period_end) VALUES ($1, $2, 'cancelled', 'manual', now())", [user.id, user.plan || "free"]);
-    return ok({ message: "Subscription cancelled. You have been downgraded to Free." });
+    const currentPeriodEnd = user.plan_expires_at
+      ? new Date(Number(user.plan_expires_at)).toISOString()
+      : null;
+    await exec(
+      "INSERT INTO subscriptions (user_id, plan, status, provider, current_period_end) VALUES ($1, $2, 'canceled', 'manual', $3)",
+      [user.id, user.plan || "free", currentPeriodEnd]
+    );
+    return ok({ message: "Subscription cancelled. You will keep Pro features until the end of your current billing period." });
   } catch (err) {
     console.error("[handleCancel] failed:", err);
     return bad("Could not cancel subscription. Please try again or contact support.", 500);

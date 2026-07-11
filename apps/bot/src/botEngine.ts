@@ -103,10 +103,11 @@ export function wireHandlers(bot: Bot, botRow: BotRow, env?: any): void {
   });
 
   bot.command("support", async (ctx) => {
+    const supportEmail = (typeof process !== "undefined" && process.env?.SUPPORT_EMAIL) || "contact@yourrank.site";
     await ctx.reply(
       "Need help?\n\n" +
       "1. Visit the dashboard: https://yourrank.site/dashboard\n" +
-      "2. Email us: contact@yourrank.site\n" +
+      `2. Email us: ${esc(supportEmail)}\n` +
       "3. Use the contact form: https://yourrank.site/contact\n\n" +
       "For account or billing issues, include your registered email so we can find you faster.",
       { parse_mode: "HTML" }

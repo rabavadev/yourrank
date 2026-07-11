@@ -30,6 +30,7 @@ export const NAV_LINKS: NavLink[] = [
   { key: "leaderboard", label: "Leaderboard", href: "/dashboard",           match: ["/dashboard"] },
   { key: "bot",         label: "Bot",         href: "/bot/dashboard",       match: ["/bot/dashboard", "/bot/dash"] },
   { key: "analytics",   label: "Analytics",   href: "/dashboard/analytics", match: ["/dashboard/analytics"] },
+  { key: "attribution", label: "Attribution", href: "/dashboard/attribution", match: ["/dashboard/attribution"] },
   { key: "billing",     label: "Billing",     href: "/dashboard/billing",   match: ["/dashboard/billing"] },
 ];
 
@@ -56,7 +57,7 @@ function esc(s: unknown): string {
 
 function planBadge(plan?: string | null): string {
   const p = String(plan || "free").toLowerCase();
-  const label = p === "agency" ? "Agency" : p === "pro" ? "Pro" : "Free";
+  const label = p === "agency" ? "Agency" : p === "pro" ? "Pro" : p === "starter" ? "Starter" : "Free";
   const mod = p === "free" ? "gm-badge--free" : "gm-badge--paid";
   return `<span class="gm-badge ${mod}">${label}</span>`;
 }

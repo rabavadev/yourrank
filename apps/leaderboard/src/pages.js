@@ -50,7 +50,7 @@ export const PAGES = {
 <p class="label mb-18">Leaderboards for casino streamers</p>
 <h1>Run your leaderboard without touching code.</h1>
 <p class="lead">Your prize pool, referral code and ranked players, on a page you edit from a dashboard. Change a number, hit save, your page updates. That's it.</p>
-<div class="cta"><a href="/signup" class="btn btn--accent">Create your page</a><a href="#example" class="btn">See a live one</a></div>
+<div class="cta"><a href="/signup" class="btn btn--accent">Create your page</a><a href="/demo" class="btn">Try a demo</a></div>
 <p class="fine">Free to start. Your own URL from day one.</p></div>
 <div class="spec"><div class="spec-h"><span>your-page.config</span><span class="dot">● live</span></div>
 <div class="spec-row"><span>Public URL</span><span>yourrank.site/you</span></div>
@@ -378,6 +378,50 @@ billing: `<!DOCTYPE html><html lang="en"><head>
 </div></main>
 <script src="/assets/billing.js?v=2"></script></body></html>`,
 
+attribution: `<!DOCTYPE html><html lang="en"><head>
+<meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Attribution · YourRank</title>
+<meta name="robots" content="noindex, nofollow" /><link rel="canonical" href="https://yourrank.site/dashboard/attribution" /><link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="/assets/app.css" /><link rel="stylesheet" href="/assets/shell-nav.css" /></head><body>
+<noscript><div class="noscript-msg"><p>YourRank requires JavaScript</p><p>Please enable JavaScript in your browser settings to view attribution.</p></div></noscript>
+<!--GM_NAV-->
+<a href="#main-content" class="sr-only skip-link">Skip to content</a>
+<main class="wrap" id="main-content">
+<div id="loading" class="py-26">
+<div class="skel-header"><div><div class="skeleton skeleton-text--lg skel-w-100"></div><div class="skeleton skeleton-text--sm skel-w-160 mt-8"></div></div><div class="skeleton skeleton-text skel-w-100"></div></div>
+<div class="card"><div class="skeleton skeleton-block skel-h-60"></div></div>
+<div class="card mt-18"><div class="skeleton skeleton-block skel-h-120"></div></div>
+</div>
+<div id="panel" hidden>
+<div class="dash-head"><div><h1>Attribution</h1><p class="live-link">Track clicks, conversions, and revenue from your offers.</p></div><div class="range" style="display:flex;align-items:center;gap:12px;flex-wrap:wrap"><select id="daysRange" class="select" style="padding:8px 10px;border-radius:6px;border:1px solid var(--line-2);background:var(--panel);color:var(--ink);font-size:13px;min-width:140px">
+<option value="7">Last 7 days</option>
+<option value="30" selected>Last 30 days</option>
+<option value="90">Last 90 days</option>
+</select><a href="/api/attribution/export" class="btn btn--sm btn--ghost" id="exportBtn">Export CSV</a></div></div>
+<div class="postback-wrap" id="postbackCard" hidden style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:14px;border:1px solid var(--line-2);border-radius:10px;background:var(--panel-2);margin-top:18px">
+<div class="postback-url" id="postbackUrl" style="font-family:var(--mono);font-size:13px;word-break:break-all;flex:1;color:var(--ink)"></div>
+<button class="btn btn--sm" id="copyPostback" type="button">Copy</button>
+<p class="hint" style="margin-top:8px;flex-basis:100%">Casinos send conversions here. Add <code>?click_ref=REF</code> to the offer link and pass the same ref in the postback.</p>
+</div>
+<div class="postback-upgrade" id="postbackUpgrade" hidden style="padding:14px;border:1px solid var(--line-2);border-radius:10px;background:var(--panel-2);margin-top:18px;text-align:center">
+<p class="card-sub">Postback tracking is included with Pro and Agency plans.</p>
+<a href="/dashboard/billing" class="btn btn--sm btn--accent">Upgrade to Pro</a>
+</div>
+<div class="stats" id="summary" style="margin-top:18px">
+<div class="stat"><b id="s_clicks">–</b><span>clicks</span></div>
+<div class="stat"><b id="s_unique">–</b><span>unique visitors</span></div>
+<div class="stat"><b id="s_conversions">–</b><span>conversions</span></div>
+<div class="stat"><b id="s_revenue">–</b><span>revenue</span></div>
+<div class="stat"><b id="s_depositors">–</b><span>depositors</span></div>
+</div>
+<div class="card mt-18">
+<div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Offer</th><th>Casino</th><th class="ta-r">Clicks</th><th class="ta-r">Unique</th><th class="ta-r">Conversions</th><th class="ta-r">Revenue</th><th class="ta-r">Depositors</th></tr></thead><tbody id="offersBody"></tbody></table></div>
+<div class="empty" id="offersEmpty" hidden>No offers or data yet.</div>
+</div>
+</div></main>
+<script src="/assets/attribution.js?v=1"></script></body></html>`,
+
 botSetup: `<!DOCTYPE html><html lang="en"><head>
 <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Connect Telegram Bot · YourRank</title>
@@ -468,7 +512,7 @@ admin: `<!DOCTYPE html><html lang="en"><head>
 <div id="panel" hidden>
 <div class="dash-head"><div><h1>Operator panel</h1><p class="live-link">Everything that happens on YourRank, in one place.</p></div></div>
 <div class="stats"><div class="stat"><b id="s_users">–</b><span>accounts</span></div><div class="stat"><b id="s_pro">–</b><span>on Pro</span></div><div class="stat"><b id="s_leads">–</b><span>leads</span></div><div class="stat"><b id="s_rev">–</b><span>revenue (USD)</span></div></div>
-<div class="tabs" role="tablist"><button class="tab is-on" id="tab-btn-users" data-tab="users" type="button" role="tab" aria-selected="true" aria-controls="tab-users">Users</button><button class="tab" id="tab-btn-leads" data-tab="leads" type="button" role="tab" aria-selected="false" aria-controls="tab-leads">Leads</button><button class="tab" id="tab-btn-payments" data-tab="payments" type="button" role="tab" aria-selected="false" aria-controls="tab-payments">Payments</button></div>
+<div class="tabs" role="tablist"><button class="tab is-on" id="tab-btn-users" data-tab="users" type="button" role="tab" aria-selected="true" aria-controls="tab-users">Users</button><button class="tab" id="tab-btn-leads" data-tab="leads" type="button" role="tab" aria-selected="false" aria-controls="tab-leads">Leads</button><button class="tab" id="tab-btn-payments" data-tab="payments" type="button" role="tab" aria-selected="false" aria-controls="tab-payments">Payments</button><button class="tab" id="tab-btn-support" data-tab="support" type="button" role="tab" aria-selected="false" aria-controls="tab-support">Support</button></div>
 <div class="tabpane" id="tab-users" role="tabpanel" aria-labelledby="tab-btn-users">
 <div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Email</th><th>Page</th><th>Plan</th><th>Status</th><th class="ta-r">Players</th><th>Joined</th><th>Actions</th></tr></thead><tbody id="usersBody"></tbody></table></div>
 <div class="empty" id="usersEmpty" hidden>No users yet.</div>
@@ -481,9 +525,36 @@ admin: `<!DOCTYPE html><html lang="en"><head>
 <div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>User</th><th>Provider</th><th class="ta-r">Amount</th><th>Status</th><th>When</th></tr></thead><tbody id="payBody"></tbody></table></div>
 <div id="payPagination" class="admin-pagination"></div>
 <div class="empty" id="payEmpty" hidden>No payments yet.</div></div>
+<div class="tabpane" id="tab-support" role="tabpanel" aria-labelledby="tab-btn-support" hidden>
+<div class="card" style="margin-bottom:18px">
+<label for="supportFilter" class="sr-only">Filter support messages</label>
+<select id="supportFilter" class="select" style="min-width:160px;padding:8px 10px;border-radius:6px;border:1px solid var(--line-2);background:var(--panel);color:var(--ink);font-size:13px">
+<option value="all">All</option>
+<option value="pending">Pending</option>
+<option value="replied">Replied</option>
+</select></div>
+<div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>When</th><th>User</th><th>Subject</th><th>Status</th><th></th></tr></thead><tbody id="supportBody"></tbody></table></div>
+<div id="supportPagination" class="admin-pagination"></div>
+<div class="empty" id="supportEmpty" hidden>No support messages yet.</div>
+<div class="card mt-18" id="supportReplyCard" hidden>
+<h2>Reply</h2>
+<p class="card-sub">To <b id="replyToEmail"></b> · <span id="replySubject"></span></p>
+<p class="hint" id="replyMessage" style="white-space:pre-wrap"></p>
+<form id="replyForm">
+<input type="hidden" id="replyId" />
+<label for="replyText" class="sr-only">Reply</label>
+<textarea id="replyText" class="textarea" rows="6" placeholder="Type your reply here…" required style="width:100%;padding:10px 12px;border:1px solid var(--line-2);border-radius:8px;background:var(--panel);color:var(--ink);font-size:14px;min-height:120px"></textarea>
+<p class="status" id="replyStatus" role="status" aria-live="polite"></p>
+<div class="btns-row" style="display:flex;justify-content:flex-end;gap:12px;margin-top:12px">
+<button class="btn btn--ghost" type="button" id="replyCancel">Cancel</button>
+<button class="btn btn--accent" type="submit">Send reply</button>
+</div>
+</form>
+</div>
+</div>
 <p class="hint mt-18">Manual activation: use <b>+31d Pro</b> on any user after they pay you directly (PayPal, bank, whatever). Crypto payments through the site activate on their own. Reset links work for 24h — send them over Discord/Telegram if email isn't wired up.</p>
 </div></main>
-<script src="/assets/admin.js?v=2"></script></body></html>`,
+<script src="/assets/admin.js?v=3"></script></body></html>`,
 
   admin2fa: `<!DOCTYPE html><html lang="en"><head>
 <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />

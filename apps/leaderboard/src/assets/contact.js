@@ -5,7 +5,7 @@ const success = document.getElementById("c_success");
 const submit = document.getElementById("c_submit");
 
 function getCsrf() {
-  const m = document.cookie.match(/(?:^|;\\s*)__csrf=([^;]+)/);
+  const m = document.cookie.match(/(?:^|;\s*)__csrf=([^;]+)/);
   return m ? decodeURIComponent(m[1]) : "";
 }
 

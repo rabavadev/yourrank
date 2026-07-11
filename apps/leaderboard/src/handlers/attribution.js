@@ -1,146 +1,195 @@
-// Attribution dashboard handler (Phase 7.1)
-// Shows "you drove $X in deposits / N depositors" with per-offer breakdowns.
+// Attribution analytics and casino postback endpoint.
+import { json, bad, ok, requireUser, rateLimit } from "../auth.js";
+import { one, exec, query } from "../../../../shared/db.js";
+import { newPostbackKey, verifyHmacSha256Hex } from "../../../../shared/crypto.js";
+import { recordConversion } from "../../../../shared/conversions.js";
+import { effectivePlan } from "../billing.js";
 
-import { requireUser, json, bad, rateLimit } from "../auth.js";
-import { query, one } from "../../../../shared/db.js";
+const MAX_DAYS = 365;
 
-/**
- * GET /api/attribution?days=30
- * Returns attribution metrics for the current user's boards.
- */
-export async function handleAttribution(request, env) {
-  const { user, res } = await requireUser(request, env);
-  if (res) return res;
-
-  const url = new URL(request.url);
-  const days = Math.min(Math.max(Number(url.searchParams.get("days")) || 30, 1), 365);
-
-  if (!(await rateLimit(env, `attribution:${user.id}`, 30, 60)).ok) {
-    return bad("Rate limit exceeded. Try again shortly.", 429);
-  }
-
-  // Get all boards for this user
-  const boards = await query(
-    `SELECT id, slug, name FROM sites WHERE user_id = $1 AND status = 'active'`,
-    [user.id]
-  );
-
-  if (boards.length === 0) {
-    return json({
-      ok: true,
-      days,
-      summary: { clicks: 0, conversions: 0, revenue: 0, depositors: 0 },
-      boards: [],
-    });
-  }
-
-  const boardIds = boards.map((b) => b.id);
-
-  // Aggregate clicks per board
-  const clickRows = await query(
-    `SELECT sl.slug, COUNT(c.id) as clicks, COUNT(DISTINCT c.ip_hash) as unique_visitors
-     FROM clicks c
-     JOIN short_links sl ON sl.id = c.short_link_id
-     WHERE sl.slug = ANY($1)
-       AND c.created_at > now() - interval '${days} days'
-     GROUP BY sl.slug`,
-    [boards.map((b) => b.slug)]
-  );
-
-  // Aggregate conversions per board
-  const conversionRows = await query(
-    `SELECT sl.slug, COUNT(cv.id) as conversions, COALESCE(SUM(cv.amount), 0) as revenue, COUNT(DISTINCT cv.click_ref) as depositors
-     FROM conversions cv
-     JOIN short_links sl ON sl.id = cv.short_link_id
-     WHERE sl.slug = ANY($1)
-       AND cv.created_at > now() - interval '${days} days'
-       AND cv.status IN ('confirmed', 'finished')
-     GROUP BY sl.slug`,
-    [boards.map((b) => b.slug)]
-  );
-
-  // Merge data
-  const boardData = boards.map((board) => {
-    const clicks = clickRows.find((c) => c.slug === board.slug);
-    const conversions = conversionRows.find((cv) => cv.slug === board.slug);
-    return {
-      slug: board.slug,
-      name: board.name,
-      clicks: Number(clicks?.clicks) || 0,
-      uniqueVisitors: Number(clicks?.unique_visitors) || 0,
-      conversions: Number(conversions?.conversions) || 0,
-      revenue: Number(conversions?.revenue) || 0,
-      depositors: Number(conversions?.depositors) || 0,
-    };
-  });
-
-  const summary = boardData.reduce(
-    (acc, b) => ({
-      clicks: acc.clicks + b.clicks,
-      conversions: acc.conversions + b.conversions,
-      revenue: acc.revenue + b.revenue,
-      depositors: acc.depositors + b.depositors,
-    }),
-    { clicks: 0, conversions: 0, revenue: 0, depositors: 0 }
-  );
-
-  return json({ ok: true, days, summary, boards: boardData });
+function getDays(url) {
+  const raw = Number(url.searchParams.get("days"));
+  return Math.min(MAX_DAYS, Math.max(1, Number.isFinite(raw) ? raw : 30));
 }
 
-/**
- * GET /api/attribution/export?days=30
- * CSV export of attribution data.
- */
+async function getAttributionRows(env, userId, days) {
+  const rows = await query(
+    `SELECT
+       o.id,
+       o.label,
+       COALESCE(c.name, '–') AS casino,
+       o.is_active,
+       COALESCE(ca.clicks, 0) AS clicks,
+       COALESCE(ca.unique_visitors, 0) AS unique_visitors,
+       COALESCE(co.conversions, 0) AS conversions,
+       COALESCE(co.revenue, 0) AS revenue,
+       COALESCE(co.depositors, 0) AS depositors
+     FROM offers o
+     LEFT JOIN casinos c ON c.id = o.casino_id
+     LEFT JOIN (
+       SELECT sl.offer_id,
+              COUNT(*) AS clicks,
+              COUNT(DISTINCT cl.ip_hash) AS unique_visitors
+         FROM clicks cl
+         JOIN short_links sl ON sl.id = cl.short_link_id
+        WHERE cl.ts > now() - ($2::text || ' days')::interval
+        GROUP BY sl.offer_id
+     ) ca ON ca.offer_id = o.id
+     LEFT JOIN (
+       SELECT cv.offer_id,
+              COUNT(*) AS conversions,
+              COALESCE(SUM(cv.amount), 0) AS revenue,
+              COUNT(DISTINCT cv.click_ref) AS depositors
+         FROM conversions cv
+        WHERE cv.owner_id = $1
+          AND cv.ts > now() - ($2::text || ' days')::interval
+        GROUP BY cv.offer_id
+     ) co ON co.offer_id = o.id
+     WHERE o.owner_id = $1
+     ORDER BY co.revenue DESC NULLS LAST, ca.clicks DESC NULLS LAST, o.label ASC`,
+    [userId, days]
+  );
+  return rows.map((r) => ({
+    id: r.id,
+    label: r.label,
+    casino: r.casino,
+    isActive: r.is_active,
+    clicks: Number(r.clicks) || 0,
+    uniqueVisitors: Number(r.unique_visitors) || 0,
+    conversions: Number(r.conversions) || 0,
+    revenue: Number(r.revenue) || 0,
+    depositors: Number(r.depositors) || 0,
+  }));
+}
+
+// GET /api/attribution — per-offer clicks, conversions, revenue, and postback URL.
+export async function handleAttribution(request, env) {
+  const { user, res } = await requireUser(request, env);
+  if (!user) return res;
+  if (!(await rateLimit(env, `attribution:${user.id}`, 120, 60)).ok) {
+    return bad("Too many requests. Try again later.", 429);
+  }
+  const url = new URL(request.url);
+  const days = getDays(url);
+
+  let key = (await one("SELECT postback_key FROM users WHERE id = $1", [user.id]))?.postback_key;
+  if (!key && effectivePlan(user) !== "free") {
+    for (let i = 0; i < 3; i++) {
+      key = newPostbackKey();
+      try {
+        await exec("UPDATE users SET postback_key = $1, updated_at = now() WHERE id = $2", [key, user.id]);
+        break;
+      } catch (e) {
+        if (i >= 2) throw e;
+      }
+    }
+  }
+  const postbackUrl = key ? `${url.origin}/api/postback?key=${encodeURIComponent(key)}` : null;
+
+  const offers = await getAttributionRows(env, user.id, days);
+  const summary = offers.reduce((s, o) => {
+    s.clicks += o.clicks;
+    s.uniqueVisitors += o.uniqueVisitors;
+    s.conversions += o.conversions;
+    s.revenue += o.revenue;
+    s.depositors += o.depositors;
+    return s;
+  }, { clicks: 0, uniqueVisitors: 0, conversions: 0, revenue: 0, depositors: 0 });
+
+  return json({ ok: true, days, summary, postbackUrl, offers });
+}
+
+// GET /api/attribution/export — CSV download of the same data.
 export async function handleAttributionExport(request, env) {
   const { user, res } = await requireUser(request, env);
-  if (res) return res;
+  if (!user) return res;
+  if (!(await rateLimit(env, `attribution-export:${user.id}`, 30, 60)).ok) {
+    return bad("Too many requests. Try again later.", 429);
+  }
+  const days = getDays(new URL(request.url));
+  const offers = await getAttributionRows(env, user.id, days);
 
+  const escapeCsv = (s) => {
+    const str = String(s ?? "");
+    if (/[",\n\r]/.test(str)) return `"${str.replace(/"/g, '""')}"`;
+    return str;
+  };
+  const header = ["Offer", "Casino", "Clicks", "Unique Visitors", "Conversions", "Revenue", "Depositors"];
+  const lines = [header.join(",")];
+  for (const o of offers) {
+    lines.push([
+      escapeCsv(o.label),
+      escapeCsv(o.casino),
+      escapeCsv(o.clicks),
+      escapeCsv(o.uniqueVisitors),
+      escapeCsv(o.conversions),
+      escapeCsv(o.revenue.toFixed(2)),
+      escapeCsv(o.depositors),
+    ].join(","));
+  }
+  const csv = lines.join("\n") + "\n";
+  const filename = `attribution-${days}d-${new Date().toISOString().slice(0, 10)}.csv`;
+  return new Response(csv, {
+    headers: {
+      "content-type": "text/csv; charset=utf-8",
+      "content-disposition": `attachment; filename="${filename}"`,
+    },
+  });
+}
+
+// POST /api/postback — receive casino conversion postbacks.
+export async function handlePostback(request, env) {
   const url = new URL(request.url);
-  const days = Math.min(Math.max(Number(url.searchParams.get("days")) || 30, 1), 365);
-
-  const boards = await query(
-    `SELECT id, slug, name FROM sites WHERE user_id = $1 AND status = 'active'`,
-    [user.id]
-  );
-
-  if (boards.length === 0) {
-    return new Response("Board,Clicks,Unique Visitors,Conversions,Revenue,Depositors\n", {
-      headers: { "content-type": "text/csv", "content-disposition": "attachment; filename=attribution.csv" },
-    });
+  const key = url.searchParams.get("key") || request.headers.get("x-postback-key");
+  if (!key) return bad("Missing postback key.", 400);
+  if (!(await rateLimit(env, `pb:${key}`, 60, 60)).ok) {
+    return bad("Too many requests. Try again later.", 429);
   }
 
-  const clickRows = await query(
-    `SELECT sl.slug, COUNT(c.id) as clicks, COUNT(DISTINCT c.ip_hash) as unique_visitors
-     FROM clicks c JOIN short_links sl ON sl.id = c.short_link_id
-     WHERE sl.slug = ANY($1) AND c.created_at > now() - interval '${days} days'
-     GROUP BY sl.slug`,
-    [boards.map((b) => b.slug)]
+  const owner = await one(
+    "SELECT id, postback_key FROM users WHERE postback_key = $1",
+    [key]
   );
+  if (!owner) return bad("Unknown postback key.", 404);
 
-  const conversionRows = await query(
-    `SELECT sl.slug, COUNT(cv.id) as conversions, COALESCE(SUM(cv.amount), 0) as revenue, COUNT(DISTINCT cv.click_ref) as depositors
-     FROM conversions cv JOIN short_links sl ON sl.id = cv.short_link_id
-     WHERE sl.slug = ANY($1) AND cv.created_at > now() - interval '${days} days'
-       AND cv.status IN ('confirmed', 'finished')
-     GROUP BY sl.slug`,
-    [boards.map((b) => b.slug)]
-  );
+  const sig = request.headers.get("x-postback-signature");
+  if (sig) {
+    const qs = url.search.slice(1);
+    if (!(await verifyHmacSha256Hex(owner.postback_key, qs, sig))) {
+      return bad("Bad signature.", 401);
+    }
+  }
 
-  const rows = boards.map((board) => {
-    const clicks = clickRows.find((c) => c.slug === board.slug);
-    const conversions = conversionRows.find((cv) => cv.slug === board.slug);
-    return [
-      board.name || board.slug,
-      Number(clicks?.clicks) || 0,
-      Number(clicks?.unique_visitors) || 0,
-      Number(conversions?.conversions) || 0,
-      (Number(conversions?.revenue) || 0).toFixed(2),
-      Number(conversions?.depositors) || 0,
-    ].join(",");
-  });
+  const clone = request.clone();
+  const bodyText = await clone.text();
+  const contentType = request.headers.get("content-type") || "";
 
-  const csv = "Board,Clicks,Unique Visitors,Conversions,Revenue,Depositors\n" + rows.join("\n") + "\n";
-  return new Response(csv, {
-    headers: { "content-type": "text/csv", "content-disposition": `attachment; filename=attribution-${days}d.csv` },
-  });
+  const out = {};
+  const add = (k, v) => {
+    if (v === null || v === undefined) return;
+    if (out[k] === undefined) { out[k] = v; }
+    else if (Array.isArray(out[k])) { out[k].push(v); }
+    else { out[k] = [out[k], v]; }
+  };
+
+  // Process body first, then query string, so body values win.
+  if (bodyText) {
+    if (contentType.includes("application/json")) {
+      try {
+        const body = JSON.parse(bodyText);
+        for (const [k, v] of Object.entries(body)) {
+          if (Array.isArray(v)) v.forEach((x) => add(k, String(x)));
+          else if (v !== null && v !== undefined) add(k, String(v));
+        }
+      } catch { /* ignore malformed JSON */ }
+    } else if (contentType.includes("application/x-www-form-urlencoded")) {
+      for (const [k, v] of new URLSearchParams(bodyText)) add(k, v);
+    }
+  }
+  for (const [k, v] of url.searchParams) add(k, v);
+
+  delete out.key;
+  delete out.signature;
+  await recordConversion(owner.id, out);
+  return ok();
 }

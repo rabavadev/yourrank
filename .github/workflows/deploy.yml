@@ -180,6 +180,24 @@ jobs:
           fi
           echo "OK: leaderboard HTTP $STATUS"
 
+      - name: "Smoke: pricing page"
+        run: |
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" -L --max-time 20 https://yourrank.site/pricing)
+          if [ "$STATUS" != "200" ]; then
+            echo "FAIL: pricing returned HTTP $STATUS (expected 200)"
+            exit 1
+          fi
+          echo "OK: pricing HTTP $STATUS"
+
+      - name: "Smoke: contact page"
+        run: |
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" -L --max-time 20 https://yourrank.site/contact)
+          if [ "$STATUS" != "200" ]; then
+            echo "FAIL: contact returned HTTP $STATUS (expected 200)"
+            exit 1
+          fi
+          echo "OK: contact HTTP $STATUS"
+
       - name: "Smoke: bot worker + database"
         run: |
           STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 20 https://yourrank.site/r/smoke-probe-ci)

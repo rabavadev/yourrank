@@ -20,13 +20,14 @@ import { handleTrial } from "./handlers/billing.js";
 import { handleLead } from "./handlers/leads.js";
 import { handleBotConnect } from "./handlers/bot.js";
 import { handleBotOnboard } from "./handlers/bot-onboard.js";
-import { handleAttribution, handleAttributionExport } from "./handlers/attribution.js";
+import { handleAttribution, handleAttributionExport, handlePostback } from "./handlers/attribution.js";
 import { handleContact } from "./handlers/contact.js";
 import { handleCspReport } from "./handlers/csp-report.js";
 import { handleScores } from "./handlers/scores.js";
 import { handleCheckout, handleCheckoutLifetime, handleIpn, handleCancel } from "./billing.js";
 import {
   handleOverview, handleUsers, handleLeads, handlePayments, handleAction,
+  handleSupportMessages, handleSupportReply,
   handle2faEnable, handle2faVerify, handle2faStatus, handle2faDisable
 } from "./admin.js";
 import {
@@ -89,6 +90,7 @@ export const ROUTES = [
   // Attribution
   { path: "/api/attribution", method: "GET", handler: withHandler(handleAttribution) },
   { path: "/api/attribution/export", method: "GET", handler: withHandler(handleAttributionExport) },
+  { path: "/api/postback", method: "POST", handler: withHandler(handlePostback) },
   
   // CSP violation reporting
   { path: "/api/csp-report", method: "POST", handler: withHandler(handleCspReport) },
@@ -98,6 +100,8 @@ export const ROUTES = [
   { path: "/api/admin/users", method: "GET", handler: withHandler(handleUsers) },
   { path: "/api/admin/leads", method: "GET", handler: withHandler(handleLeads) },
   { path: "/api/admin/payments", method: "GET", handler: withHandler(handlePayments) },
+  { path: "/api/admin/support", method: "GET", handler: withHandler(handleSupportMessages) },
+  { path: "/api/admin/support/reply", method: "POST", handler: withHandler(handleSupportReply) },
   { path: "/api/admin/action", method: "POST", handler: withHandler(handleAction) },
   { path: "/api/admin/2fa/enable", method: "POST", handler: withHandler(handle2faEnable) },
   { path: "/api/admin/2fa/verify", method: "POST", handler: withHandler(handle2faVerify) },

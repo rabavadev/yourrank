@@ -83,6 +83,8 @@ function demoLeaderboardData() {
 
 function addCookieConsent(html) {
   if (typeof html !== "string") return html;
+  const supportEmail = (typeof process !== "undefined" && process.env?.SUPPORT_EMAIL) || "contact@yourrank.site";
+  html = html.replace(/contact@yourrank\.site/g, supportEmail);
   return html.replace(/<\/body>\s*<\/html>\s*$/i, '<script src="/assets/cookie-consent.js" defer></script></body></html>');
 }
 
@@ -226,6 +228,18 @@ async function handleRequest(request, env, ctx) {
         } catch (e) {
           console.error("billing render failed:", String(e?.message || e));
           return new Response("Billing couldn't load right now — please refresh.", { status: 500, headers: { "content-type": "text/plain; charset=utf-8" } });
+        }
+      }
+      if (path === "/dashboard/attribution") {
+        try {
+          const user = await currentUser(request, env);
+          if (!user) return Response.redirect(new URL("/login", url), 302);
+          const html = addCookieConsent(PAGES.attribution
+            .replace("<!--GM_NAV-->", shellNavHtml({ activePath: "/dashboard/attribution", user })));
+          return new Response(html, { headers: { ...SECURE_HTML, ...csrfHeader, "cache-control": "no-store, no-cache, must-revalidate" } });
+        } catch (e) {
+          console.error("attribution render failed:", String(e?.message || e));
+          return new Response("Attribution couldn't load right now — please refresh.", { status: 500, headers: { "content-type": "text/plain; charset=utf-8" } });
         }
       }
       if (path === "/dashboard/bot/setup") {

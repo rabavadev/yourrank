@@ -11,7 +11,7 @@ import { billingEnabled, handleBillingUpdate, setupBillingWebhook } from "./bill
 import { withPlanLimit } from "./plans.js";
 import { rateLimit, type RateLimitKV } from "./ratelimit.js";
 import { createQueueProducer, type QueueEvent } from "../../../shared/queue-producer.js";
-import { recordConversion, type PostbackQuery } from "./conversions.js";
+import { recordConversion, type PostbackQuery } from "../../../shared/conversions.js";
 
 type Bindings = {
   PUBLIC_BASE_URL: string;
@@ -179,8 +179,8 @@ export function buildHonoApp(): Hono<{ Bindings: Bindings }> {
     const rl = await rateLimit(c.env, `pb:${key}`, 120, 60);
     if (!rl.ok) { c.header("Retry-After", String(rl.retryAfter)); return c.json({ error: "rate limited" }, 429); }
 
-    const owner = await one<{ id: string; postback_key: string; postback_key_enc: Buffer | null }>(
-      `SELECT id, postback_key, postback_key_enc FROM users WHERE postback_key = $1`,
+    const owner = await one<{ id: string; postback_key: string }>(
+      `SELECT id, postback_key FROM users WHERE postback_key = $1`,
       [key]
     );
     if (!owner) return c.json({ error: "unknown key" }, 404);

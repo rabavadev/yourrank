@@ -1,6 +1,7 @@
 // Owner admin API. Every route requires a session whose user has is_admin=true.
 import { json, bad, ok, readJson, newToken, readToken, currentUser, destroyAllUserSessions, clientIp, rateLimit } from "./auth.js";
 import { activatePlan } from "./billing.js";
+import { sendEmail } from "./email.js";
 import { query, one, exec } from "../../../shared/db.js";
 import { generateSecret, verifyCode, generateOtpauthUri } from "./totp.js";
 import { encrypt, decrypt } from "../../../shared/crypto.js";
@@ -17,6 +18,7 @@ const AUDIT_SAFE_KEYS = new Set([
   "email", "plan", "slug", "action", "details", "ip", "amount",
   "provider", "label", "board_name", "board_id", "boards", "players",
   "old_plan", "new_plan", "expires_at", "reason", "disabled", "message",
+  "subject", "messageId",
 ]);
 function sanitizeAuditDetails(details) {
   if (!details || typeof details !== "object") return details;
@@ -95,7 +97,7 @@ export async function handleOverview(request, env) {
   await logAdminAction(env, admin.id, "overview", null, null, request);
   const [users, pro, leads, revenue] = await Promise.all([
     one("SELECT COUNT(*) n FROM users"),
-    one("SELECT COUNT(*) n FROM users WHERE plan IN ('pro','agency','starter') AND status!='suspended'"),
+    one("SELECT COUNT(*) n FROM users WHERE plan IN ('pro','agency','starter','lifetime') AND status!='suspended'"),
     one("SELECT COUNT(*) n FROM leads"),
     one("SELECT COALESCE(SUM(amount),0) n FROM payments WHERE status IN ('finished','manual')"),
   ]);
@@ -239,6 +241,69 @@ export async function handleAction(request, env) {
     details: body.days || body.amountUsd || null,
   }, request);
   return ok();
+}
+
+// GET /api/admin/support — list support messages for the admin inbox.
+export async function handleSupportMessages(request, env) {
+  const { admin, res } = await requireAdminWith2fa(request, env);
+  if (res) return res;
+  const url = new URL(request.url);
+  const status = url.searchParams.get("status") || "all";
+  const page = Math.max(1, Number(url.searchParams.get("page")) || 1);
+  const pageSize = 50;
+  const offset = (page - 1) * pageSize;
+  const args = [pageSize, offset];
+  const where =
+    status === "pending" ? "WHERE reply IS NULL" :
+    status === "replied" ? "WHERE reply IS NOT NULL" : "";
+  const [total, rows] = await Promise.all([
+    one(`SELECT COUNT(*) n FROM support_messages ${where}`),
+    query(
+      `SELECT id, name, email, subject, message, reply,
+              (EXTRACT(EPOCH FROM created_at) * 1000)::double precision AS created_at,
+              (EXTRACT(EPOCH FROM replied_at) * 1000)::double precision AS replied_at
+         FROM support_messages
+         ${where}
+         ORDER BY created_at DESC LIMIT $1 OFFSET $2`,
+      args
+    ),
+  ]);
+  return ok({ messages: rows || [], page, pageSize, total: Number(total?.n) || 0 });
+}
+
+// POST /api/admin/support/reply — reply to a support message and email the user.
+export async function handleSupportReply(request, env) {
+  const { admin, res } = await requireAdminWith2fa(request, env);
+  if (res) return res;
+  const body = await readJson(request);
+  if (!body?.id || typeof body.reply !== "string" || body.reply.trim().length < 1) {
+    return bad("Message ID and reply are required.");
+  }
+  const m = await one(
+    "SELECT id, name, email, subject, message FROM support_messages WHERE id = $1",
+    [body.id]
+  );
+  if (!m) return bad("Message not found.", 404);
+  await exec(
+    "UPDATE support_messages SET reply = $1, replied_at = now() WHERE id = $2",
+    [body.reply.trim(), m.id]
+  );
+  const emailResult = await sendEmail(env, {
+    to: m.email,
+    subject: `Re: ${m.subject}`,
+    text: `Hi ${m.name},\n\n${body.reply.trim()}\n\n---\nOriginal message:\n${m.message}`,
+    html: `<p>Hi ${m.name},</p><p>${esc(body.reply.trim()).replace(/\n/g, "<br>")}</p><hr><p><b>Original message:</b></p><pre style="white-space:pre-wrap">${esc(m.message)}</pre>`,
+  });
+  await logAdminAction(env, admin.id, "support_reply", null, {
+    messageId: m.id,
+    email: m.email,
+    subject: m.subject,
+  }, request);
+  return ok({ emailSent: emailResult.sent });
+}
+
+function esc(s) {
+  return String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 }
 
 // POST /api/admin/2fa/enable — generate a TOTP secret for the admin user.
