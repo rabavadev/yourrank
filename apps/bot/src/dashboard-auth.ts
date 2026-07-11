@@ -45,7 +45,15 @@ export function sameOrigin(req: Request, publicBaseUrl: string): boolean {
     return true; // GET/HEAD/OPTIONS are safe (no state change)
   }
   try {
-    return new URL(origin).host === new URL(publicBaseUrl).host;
+    const originHost = new URL(origin).host;
+    if (originHost === new URL(publicBaseUrl).host) return true;
+    // Fallback: also allow the origin to match the request's Host header. This
+    // makes local dev and preview deployments work without relaxing the public
+    // base URL check, while still rejecting cross-site requests (where Origin
+    // host != Host header).
+    const host = req.headers.get("host") || "";
+    if (originHost === host) return true;
+    return false;
   } catch {
     return false;
   }

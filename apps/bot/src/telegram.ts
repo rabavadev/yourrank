@@ -42,3 +42,17 @@ export const setWebhook = (token: string, url: string, secret: string, options?:
 
 export const deleteWebhook = (token: string) =>
   call<boolean>(token, "deleteWebhook");
+
+export interface WebhookInfo {
+  url?: string;
+  has_custom_certificate?: boolean;
+  pending_update_count?: number;
+  last_error_date?: number;
+  last_error_message?: string;
+  max_connections?: number;
+  ip_address?: string;
+  allowed_updates?: string[];
+}
+
+/** Returns the bot's current webhook info from Telegram Bot API. */
+export const getWebhookInfo = (token: string) => call<WebhookInfo>(token, "getWebhookInfo");

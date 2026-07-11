@@ -57,7 +57,7 @@ type DashBindings = SessionEnv & {
   RL_BACKEND?: string;
   [key: string]: unknown;
 };
-type DashEnv = { Bindings: DashBindings };
+type DashEnv = { Bindings: DashBindings; Variables: { cspNonce: string } };
 
 export function buildDashboard(): Hono<DashEnv> {
   const app = new Hono<DashEnv>();
@@ -75,13 +75,13 @@ export function buildDashboard(): Hono<DashEnv> {
   // SEC-104: Also clear legacy 'sess' cookie on every response.
   // SEC-107: Propagate rotated session cookies.
   app.use("*", async (c, next) => {
+    const nonce = crypto.randomUUID().replace(/-/g, "");
+    c.set("cspNonce", nonce);
     await next();
     if (!c.res.headers.has("Content-Security-Policy")) {
-      // SEC-002-v8: script-src 'unsafe-inline' is required because the dashboard uses
-      // inline event handlers (onclick) and inline <script> tags. Dropping it makes
-      // buttons like "Connect bot" appear static (clicks do nothing). Nonce-only CSP
-      // does not cover inline event handlers, so we keep 'unsafe-inline' here.
-      c.header("Content-Security-Policy", `default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://telegram.org; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https://telegram.org; frame-src https://telegram.org https://oauth.telegram.org;`);
+      // SEC-002-v8: nonce-only script-src; inline event handlers removed from HTML.
+      // 'unsafe-eval' is kept for the Telegram Login widget's internal callback dispatch.
+      c.header("Content-Security-Policy", `default-src 'self'; script-src 'self' 'nonce-${nonce}' 'unsafe-eval' https://telegram.org; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https://telegram.org; frame-src https://telegram.org https://oauth.telegram.org;`);
       // SEC-002-v7: style-src 'unsafe-inline' is intentional — dashboard-views.ts uses
       // inline styles. Removing it would break the dashboard UI. TODO: extract inline
       // styles to an external CSS file so 'unsafe-inline' can be dropped from style-src.
@@ -148,7 +148,10 @@ export function buildDashboard(): Hono<DashEnv> {
   app.post("/auth/logout", async (c) => {
     await destroySession(c.env, readToken(c.req.raw));
     c.header("Set-Cookie", cookieClear(c.env));
-    return c.json({ ok: true });
+    // JSON for the dashboard JS client; HTML redirect for the shared nav form.
+    const accept = c.req.header("accept") || "";
+    if (accept.includes("application/json")) return c.json({ ok: true });
+    return c.redirect("/bot/dashboard");
   });
 
   // ---- session-scoped API ----
@@ -162,13 +165,13 @@ export function buildDashboard(): Hono<DashEnv> {
     if (session?.rotatedCookie) c.header("Set-Cookie", session.rotatedCookie);
     const loginBotUsername = process.env.LOGIN_BOT_USERNAME ?? "";
     const devLogin = process.env.ALLOW_DEV_LOGIN === "1";
-    if (!uid) return c.html(loginHtml(loginBotUsername, devLogin));
+    if (!uid) return c.html(loginHtml(loginBotUsername, devLogin, c.get("cspNonce")));
     // Fetch the user row for the shared nav (name + plan badge).
     const user = await one<{ display_name: string; email: string; plan: string }>(
       `SELECT display_name, email, plan FROM users WHERE id=$1`,
       [uid]
     );
-    return c.html(appHtml(user ?? { display_name: "", email: "", plan: "free" }, config.publicBaseUrl));
+    return c.html(appHtml(user ?? { display_name: "", email: "", plan: "free" }, config.publicBaseUrl, c.get("cspNonce")));
   });
 
   return app;

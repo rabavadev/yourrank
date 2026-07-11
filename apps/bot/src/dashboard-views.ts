@@ -24,13 +24,14 @@ const BASE_CSS = `
   .stat { font-size:28px; font-weight:700; } .copy { cursor:pointer; text-decoration:underline dotted; }
   #toast { position:fixed; bottom:20px; left:50%; transform:translateX(-50%); background:var(--accent);
            color:#000; padding:10px 18px; border-radius:8px; font-weight:600; display:none; }
+  button:disabled, .copy:disabled { opacity:0.6; cursor:not-allowed; }
 `;
 
 function escHtml(s: string): string {
   return (s ?? "").replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' } as Record<string, string>)[ch]);
 }
 
-export function loginHtml(botUsername: string, devLogin: boolean): string {
+export function loginHtml(botUsername: string, devLogin: boolean, nonce?: string): string {
   return `<!doctype html><html lang="en"><head><meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>YourRank Bot — Login</title>
@@ -47,49 +48,63 @@ export function loginHtml(botUsername: string, devLogin: boolean): string {
            font:600 14px/1 inherit; cursor:pointer; }
   .center { min-height:90vh; display:flex; align-items:center; justify-content:center; }
   .card { text-align:center; max-width:380px; }
+  .sr-only { position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0); }
   </style></head><body>
-<a href="#main-content" class="sr-only" style="position:absolute;top:0;left:0;z-index:9999;padding:8px 16px;background:var(--accent,#c8ff00);color:#000;font-weight:700;text-decoration:none" onfocus="this.classList.remove('sr-only')" onblur="this.classList.add('sr-only')">Skip to content</a>
+<a href="#main-content" class="sr-only" style="position:absolute;top:0;left:0;z-index:9999;padding:8px 16px;background:var(--accent,#c8ff00);color:#000;font-weight:700;text-decoration:none">Skip to content</a>
 <div class="center"><div class="panel card" id="main-content">
   <h1 style="margin-bottom:8px">🎰 Streamer Dashboard</h1>
   <p class="muted" style="margin-bottom:20px">Manage your bot, offers and click stats.</p>
   ${botUsername
-    ? `<script async src="https://telegram.org/js/telegram-widget.js?22"
+    ? `<script${nonce ? ` nonce="${nonce}"` : ""} async src="https://telegram.org/js/telegram-widget.js?22"
          data-telegram-login="${escHtml(botUsername)}" data-size="large"
-         data-onauth="onTgAuth(user)" data-request-access="write"></script>`
+         data-onauth="onTgAuth" data-request-access="write"></script>`
     : `<p class="muted">Telegram login isn't configured yet (set LOGIN_BOT_TOKEN + LOGIN_BOT_USERNAME).</p>`}
   ${devLogin ? `
   <div style="margin-top:24px;border-top:1px solid var(--border);padding-top:16px">
     <p class="muted" style="margin-bottom:8px">Dev login</p>
     <label for="devid" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)">Telegram User ID</label>
     <input id="devid" type="number" placeholder="Telegram user id">
-    <button onclick="devLogin()">Enter</button>
+    <button data-action="devLogin" type="button">Enter</button>
   </div>` : ""}
 </div></div>
-<script>
+<script${nonce ? ` nonce="${nonce}"` : ""}>
 async function onTgAuth(user) {
   const r = await fetch('/bot/auth/telegram', {method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(user)});
   if (r.ok) location.reload(); else alert('Login failed: ' + (await r.json()).error);
 }
-async function devLogin() {
+window.onTgAuth = onTgAuth;
+async function devLogin(btn) {
   const id = Number(document.getElementById('devid').value);
   if (!id) return;
+  if (btn) { btn.disabled = true; btn.textContent = 'Entering…'; }
   const r = await fetch('/bot/auth/dev', {method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({telegram_user_id:id})});
   if (r.ok) location.reload(); else alert('Failed');
 }
+const skip = document.querySelector('.sr-only');
+if (skip) {
+  skip.addEventListener('focus', () => skip.classList.remove('sr-only'));
+  skip.addEventListener('blur', () => skip.classList.add('sr-only'));
+}
+document.addEventListener('click', (e) => {
+  const target = e.target.closest('[data-action]');
+  if (!target) return;
+  const action = target.dataset.action;
+  if (action === 'devLogin') { e.preventDefault(); devLogin(target); }
+});
 </script></body></html>`;
 }
 
-export function appHtml(user: { display_name: string; email: string; plan: string }, publicBaseUrl: string): string {
+export function appHtml(user: { display_name: string; email: string; plan: string }, publicBaseUrl: string, nonce?: string): string {
   return `<!doctype html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Streamer Dashboard</title><style>${SHELL_NAV_CSS}${BASE_CSS}</style></head><body>
-<a href="#main-content" class="sr-only" style="position:absolute;top:0;left:0;z-index:9999;padding:8px 16px;background:var(--accent,#c8ff00);color:#000;font-weight:700;text-decoration:none" onfocus="this.classList.remove('sr-only')" onblur="this.classList.add('sr-only')">Skip to content</a>
-${shellNavHtml({ activePath: "/bot/dashboard", user })}
+<a href="#main-content" class="sr-only" style="position:absolute;top:0;left:0;z-index:9999;padding:8px 16px;background:var(--accent,#c8ff00);color:#000;font-weight:700;text-decoration:none">Skip to content</a>
+${shellNavHtml({ activePath: "/bot/dashboard", user, logoutAction: "/bot/auth/logout" })}
 <div class="wrap" id="main-content">
   <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
     <h1>🎰 Streamer Dashboard</h1>
     <div><span id="whoami" class="muted"></span>
-    <button class="ghost" onclick="logout()" style="margin-left:10px">Log out</button></div>
+    <button class="ghost" data-action="logout" type="button" style="margin-left:10px">Log out</button></div>
   </div>
 
   <div class="row">
@@ -108,7 +123,7 @@ ${shellNavHtml({ activePath: "/bot/dashboard", user })}
       <input id="botToken" placeholder="Paste bot token from @BotFather (123456:ABC-...)">
       <label for="botWelcome" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)">Welcome Message</label>
       <input id="botWelcome" placeholder="Welcome message (optional)">
-      <button onclick="connectBot()">Connect bot</button>
+      <button data-action="connectBot" type="button">Connect bot</button>
     </div>
   </div>
 
@@ -117,7 +132,7 @@ ${shellNavHtml({ activePath: "/bot/dashboard", user })}
 
     <label for="welcomeMsg" style="display:block;margin-bottom:4px;font-size:13px" class="muted">Welcome message — the reply to <code>/start</code></label>
     <textarea id="welcomeMsg" rows="2" placeholder="Leave blank to use the default greeting"></textarea>
-    <button onclick="saveWelcome()">Save welcome message</button>
+    <button data-action="saveWelcome" type="button">Save welcome message</button>
 
     <h3 style="margin:20px 0 6px;font-size:14px">Custom commands</h3>
     <p class="muted" style="margin-bottom:10px;font-size:13px">Add slash-commands your viewers can send (e.g. <code>/vip</code>) and the reply they'll get. Built-ins like <code>/start</code>, <code>/code</code>, <code>/subscribe</code> are reserved.</p>
@@ -127,7 +142,7 @@ ${shellNavHtml({ activePath: "/bot/dashboard", user })}
       <label for="cmdResp" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)">Reply</label>
       <input id="cmdResp" placeholder="Reply text viewers receive">
     </div>
-    <button onclick="addCommand()">Add command</button>
+    <button data-action="addCommand" type="button">Add command</button>
     <table style="margin-top:14px"><thead><tr><th>Command</th><th>Reply</th><th>Status</th><th></th></tr></thead>
     <tbody id="cmdList"></tbody></table>
   </div>
@@ -147,7 +162,7 @@ ${shellNavHtml({ activePath: "/bot/dashboard", user })}
       <label for="oBonus" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)">Bonus Text</label>
       <input id="oBonus" placeholder="Bonus text shown in bot (optional)">
     </div>
-    <button onclick="createOffer()">Create offer</button>
+    <button data-action="createOffer" type="button">Create offer</button>
   </div>
 
   <div class="panel"><h2>Offers</h2>
@@ -159,7 +174,7 @@ ${shellNavHtml({ activePath: "/bot/dashboard", user })}
     <div id="bcGate" class="muted" style="display:none;margin-bottom:10px"></div>
     <label for="bcBody" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)">Message</label>
     <textarea id="bcBody" rows="3" placeholder="Message to all your bot's subscribers (Markdown supported)"></textarea>
-    <button onclick="sendBroadcast()">Send broadcast</button>
+    <button data-action="sendBroadcast" type="button">Send broadcast</button>
     <table style="margin-top:14px"><thead><tr><th>Message</th><th>Status</th><th>Sent</th><th>Failed</th></tr></thead>
     <tbody id="bcList"></tbody></table>
   </div>
@@ -169,8 +184,8 @@ ${shellNavHtml({ activePath: "/bot/dashboard", user })}
       <code>{click_ref}</code> anywhere in your affiliate URL to attribute deposits to clicks.</p>
     <p class="muted" style="margin-bottom:10px;font-size:12px">Your network supports request signing? Use <code>POST ${publicBaseUrl}/pb</code> with headers
       <code>X-Postback-Key</code> (your key, below) + <code>X-Postback-Signature</code> (hex HMAC-SHA256 of the query string, keyed by that same key). It's the secure option — the key never rides the URL and the signature blocks tampering.</p>
-    <div style="margin-bottom:10px"><button class="ghost" onclick="revealPostback()">Show my postback URL</button>
-      <span id="pbUrl" class="copy" style="margin-left:8px"></span></div>
+    <div style="margin-bottom:10px"><button class="ghost" data-action="revealPostback" type="button">Show my postback URL</button>
+      <span id="pbUrl" class="copy" style="margin-left:8px" data-action="copyPostback" data-url=""></span></div>
     <table><thead><tr><th>When</th><th>Event</th><th>Amount</th><th>Offer</th></tr></thead>
     <tbody id="convList"></tbody></table>
   </div>
@@ -181,7 +196,7 @@ ${shellNavHtml({ activePath: "/bot/dashboard", user })}
   </div>
 </div>
 <div id="toast" role="status" aria-live="polite"></div>
-<script>
+<script${nonce ? ` nonce="${nonce}"` : ""}>
 const $ = (id) => document.getElementById(id);
 function toast(msg) { const t=$('toast'); t.textContent=msg; t.style.display='block'; setTimeout(()=>t.style.display='none',2500); }
 async function api(path, opts) {
@@ -190,12 +205,19 @@ async function api(path, opts) {
   try { return await r.json(); }
   catch { return { error: 'Server error (' + r.status + ') — try again or contact support' }; }
 }
-async function logout() { await fetch('/bot/auth/logout',{method:'POST'}); location.reload(); }
+async function logout(btn) {
+  if (btn) { btn.disabled = true; if (btn.textContent) btn.textContent = 'Logging out…'; }
+  await fetch('/bot/auth/logout',{method:'POST',headers:{'Accept':'application/json'}});
+  location.reload();
+}
+
+// Track a running "submit" to prevent double clicks on network delay.
+let submitting = false;
 
 async function load() {
   const me = await api('/me');
   if (me.error) { toast(me.error); return; }
-  $('whoami').textContent = (me.display_name||'') + ' · ' + me.plan;
+  $('whoami').textContent = (me.display_name||'') + ' · ' + (me.plan || 'free');
   const [offers, daily, bots] = await Promise.all([api('/offers'), api('/stats/daily'), api('/bots')]);
   if (daily.error || offers.error || bots.error) { toast(daily.error || offers.error || bots.error); return; }
 
@@ -217,7 +239,8 @@ async function load() {
 
   // bots
   $('botList').innerHTML = bots.length
-    ? bots.map(b=>'<div>@'+esc(b.username)+' <span class="muted">(…'+esc(b.token_hint)+')</span> <span class="'+(b.status==='active'?'ok':'off')+'">'+esc(b.status)+'</span></div>').join('')
+    ? bots.map(b=>'<div>@'+esc(b.username)+' <span class="muted">(…'+esc(b.token_hint)+')</span> <span class="'+(b.status==='active'?'ok':'off')+'">'+esc(b.status)+'</span> '+
+        '<button class="ghost" data-action="checkHealth" data-id="'+esc(b.id)+'" type="button">Check health</button></div>').join('')
     : 'No bot connected yet — paste your token below.';
 
   // customization panel (targets the first connected bot)
@@ -233,41 +256,57 @@ async function load() {
   // offers
   $('offers').innerHTML = offers.map(o=>'<tr>'+
     '<td><b>'+esc(o.casino)+'</b><br><span class="muted">'+esc(o.label)+'</span></td>'+
-    '<td>'+(o.slug?'<span class="copy" onclick="copyLink(\\''+escJsAttr(o.slug)+'\\')">'+esc('/r/'+o.slug)+'</span>':'–')+'</td>'+
+    '<td>'+(o.slug?'<span class="copy" data-action="copyLink" data-slug="'+esc(o.slug)+'">'+esc('/r/'+o.slug)+'</span>':'–')+'</td>'+
     '<td>'+esc(String(o.clicks))+'</td><td>'+esc(String(o.unique_clicks))+'</td>'+
     '<td class="'+(o.is_active?'ok':'off')+'">'+(o.is_active?'active':'off')+'</td>'+
-    '<td><button class="ghost" onclick="toggleOffer(\\''+escJsAttr(o.id)+'\\','+(!o.is_active)+')">'+(o.is_active?'Disable':'Enable')+'</button></td>'+
+    '<td><button class="ghost" data-action="toggleOffer" data-id="'+esc(o.id)+'" data-active="'+(!o.is_active)+'">'+(o.is_active?'Disable':'Enable')+'</button></td>'+
   '</tr>').join('') || '<tr><td colspan="6" class="muted">No offers yet.</td></tr>';
 }
 function esc(s){ return (s??'').replace(/[&<>"']/g, ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch])); }
-function escJsAttr(s){ return (s??'').replace(/\\\\/g,'\\\\\\\\').replace(/'/g,"\\\\'").replace(/\\n/g,'\\\\n').replace(/\\r/g,'\\\\r'); }
-function copyLink(slug){ navigator.clipboard.writeText(location.origin+'/r/'+slug); toast('Link copied'); }
-async function toggleOffer(id, on){ await api('/offers/'+id,{method:'PATCH',headers:{'content-type':'application/json'},body:JSON.stringify({is_active:on})}); load(); }
-async function createOffer(){
+async function copyLink(target){ navigator.clipboard.writeText(location.origin+'/r/'+target.dataset.slug); toast('Link copied'); }
+async function toggleOffer(target){
+  const on = target.dataset.active === 'true';
+  setLoading(target);
+  await api('/offers/'+target.dataset.id,{method:'PATCH',headers:{'content-type':'application/json'},body:JSON.stringify({is_active:on})});
+  load();
+}
+async function createOffer(btn){
   const body = { casino:$('oCasino').value.trim(), label:$('oLabel').value.trim(), referral_url:$('oUrl').value.trim(),
                  promo_code:$('oCode').value.trim()||undefined, bonus_text:$('oBonus').value.trim()||undefined };
   const r = await api('/offers',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)});
-  if (r.error) return toast(r.error);
+  if (r.error) { restoreBtn(btn); return toast(r.error); }
   ['oCasino','oLabel','oUrl','oCode','oBonus'].forEach(id=>$(id).value='');
-  toast('Offer created'); load();
+  toast('Offer created'); restoreBtn(btn); load();
 }
-async function connectBot(){
+async function connectBot(btn){
   const token = $('botToken').value.trim();
   if (!token) return toast('Paste a bot token first');
+  setLoading(btn, 'Connecting…');
   const r = await api('/bots',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({token, welcome_message:$('botWelcome').value.trim()||undefined})});
-  if (r.error) return toast(r.error);
+  if (r.error) { restoreBtn(btn); return toast(r.error); }
   $('botToken').value='';
   if (r.warning) { toast(r.warning); } else { toast('Bot @'+r.username+' connected'); }
-  load();
+  restoreBtn(btn); load();
+}
+async function checkHealth(target){
+  setLoading(target, 'Checking…');
+  const r = await api('/bots/'+target.dataset.id+'/health');
+  if (r.error) { restoreBtn(target); return toast(r.error); }
+  const msg = r.configured
+    ? 'Webhook configured: ' + r.url + ' ('+r.pending_updates+' pending)'
+    : 'Webhook not set: ' + (r.url || 'none') + ' ('+r.pending_updates+' pending)';
+  toast(msg + (r.last_error ? ' | Error: ' + r.last_error : ''));
+  restoreBtn(target);
 }
 
-// ---- bot customization: welcome message + custom commands ----
+// ---- bot customization: welcome message + custom slash-commands ----
 let custBotId = null;
-async function saveWelcome(){
+async function saveWelcome(btn){
   if (!custBotId) return toast('Connect a bot first');
+  setLoading(btn, 'Saving…');
   const r = await api('/bots/'+custBotId,{method:'PATCH',headers:{'content-type':'application/json'},body:JSON.stringify({welcome_message:$('welcomeMsg').value.trim()||null})});
-  if (r.error) return toast(r.error);
-  toast('Welcome message saved');
+  if (r.error) { restoreBtn(btn); return toast(r.error); }
+  toast('Welcome message saved'); restoreBtn(btn);
 }
 async function loadCommands(){
   if (!custBotId) return;
@@ -277,26 +316,30 @@ async function loadCommands(){
     '<td>/'+esc(c.command)+'</td>'+
     '<td class="muted">'+esc((c.response||'').slice(0,60))+'</td>'+
     '<td class="'+(c.is_enabled?'ok':'off')+'">'+(c.is_enabled?'on':'off')+'</td>'+
-    '<td><button class="ghost" onclick="toggleCommand(\\''+escJsAttr(c.id)+'\\','+(!c.is_enabled)+')">'+(c.is_enabled?'Disable':'Enable')+'</button> '+
-        '<button class="ghost" onclick="deleteCommand(\\''+escJsAttr(c.id)+'\\')">Delete</button></td>'+
+    '<td><button class="ghost" data-action="toggleCommand" data-id="'+esc(c.id)+'" data-active="'+(!c.is_enabled)+'">'+(c.is_enabled?'Disable':'Enable')+'</button> '+
+        '<button class="ghost" data-action="deleteCommand" data-id="'+esc(c.id)+'">Delete</button></td>'+
   '</tr>').join('') || '<tr><td colspan="4" class="muted">No custom commands yet.</td></tr>';
 }
-async function addCommand(){
+async function addCommand(btn){
   if (!custBotId) return toast('Connect a bot first');
   const command = $('cmdName').value.trim(), response = $('cmdResp').value.trim();
   if (!command || !response) return toast('Enter a command and a reply');
+  setLoading(btn, 'Adding…');
   const r = await api('/bots/'+custBotId+'/commands',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({command, response})});
-  if (r.error) return toast(r.error);
-  $('cmdName').value=''; $('cmdResp').value=''; toast('Command saved'); loadCommands();
+  if (r.error) { restoreBtn(btn); return toast(r.error); }
+  $('cmdName').value=''; $('cmdResp').value=''; toast('Command saved'); restoreBtn(btn); loadCommands();
 }
-async function toggleCommand(id, on){
-  const r = await api('/commands/'+id,{method:'PATCH',headers:{'content-type':'application/json'},body:JSON.stringify({is_enabled:on})});
-  if (r.error) return toast(r.error);
+async function toggleCommand(target){
+  const on = target.dataset.active === 'true';
+  setLoading(target);
+  const r = await api('/commands/'+target.dataset.id,{method:'PATCH',headers:{'content-type':'application/json'},body:JSON.stringify({is_enabled:on})});
+  if (r.error) { return toast(r.error); }
   loadCommands();
 }
-async function deleteCommand(id){
-  const r = await api('/commands/'+id,{method:'DELETE'});
-  if (r.error) return toast(r.error);
+async function deleteCommand(target){
+  setLoading(target, 'Deleting…');
+  const r = await api('/commands/'+target.dataset.id,{method:'DELETE'});
+  if (r.error) { return toast(r.error); }
   toast('Command deleted'); loadCommands();
 }
 
@@ -309,14 +352,12 @@ async function loadExtras(){
   }
   firstBotId = (bots||[])[0]?.id ?? null;
 
-  // plan panel (label comes from the server-side plan table, but escape it as
-  // defense-in-depth; the numbers are rendered raw since they're ints).
   const cur = plan?.current;
   if (cur) {
     $('planInfo').innerHTML = '<b style="color:var(--accent)">'+esc(cur.label)+'</b> — up to '+cur.maxBots+' bots, '
       +cur.maxOffers+' offers'+(cur.broadcasts?', broadcasts':'')+(cur.postbacks?', postbacks':'');
     $('planButtons').innerHTML = (plan.plans||[]).filter(p=>p.starsPrice>0 && p.tier!==cur.tier).map(p=>
-      '<button onclick="upgrade(\\''+escJsAttr(p.tier)+'\\')" style="margin-right:8px">'
+      '<button data-action="upgrade" data-tier="'+esc(p.tier)+'" style="margin-right:8px" type="button">'
       +(plan.billing_enabled?'Upgrade to '+esc(p.label)+' — ⭐'+esc(String(p.starsPrice))+'/30d':esc(p.label)+' (billing not enabled)')+'</button>'
     ).join('');
   }
@@ -326,32 +367,95 @@ async function loadExtras(){
     '<td>'+esc(b.sent_count)+'/'+(b.total_count?esc(b.total_count):'?')+'</td><td>'+esc(b.fail_count)+'</td></tr>').join('')
     || '<tr><td colspan="4" class="muted">No broadcasts yet.</td></tr>';
 
-  // conversions panel — amount/currency/at come from casino postbacks (external
-  // input), so every field is escaped, not just the event name.
+  // conversions panel
   $('convList').innerHTML = (convs||[]).map(v=>'<tr><td>'+esc(v.at)+'</td><td>'+esc(v.event)+'</td>'+
     '<td>'+(v.amount?esc(v.amount)+' '+esc(v.currency):'–')+'</td><td>'+esc(v.offer||'–')+'</td></tr>').join('')
     || '<tr><td colspan="4" class="muted">No conversions reported yet.</td></tr>';
 }
-async function sendBroadcast(){
+async function sendBroadcast(btn){
   const body = $('bcBody').value.trim();
   if (!body) return toast('Write a message first');
   if (!firstBotId) return toast('Connect a bot first');
+  setLoading(btn, 'Sending…');
   const r = await api('/broadcasts',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({bot_id:firstBotId, body})});
-  if (r.error) return toast(r.error);
-  $('bcBody').value=''; toast('Broadcast queued'); loadExtras();
+  if (r.error) { restoreBtn(btn); return toast(r.error); }
+  $('bcBody').value=''; toast('Broadcast queued'); restoreBtn(btn); loadExtras();
 }
-async function revealPostback(){
+async function revealPostback(btn){
+  setLoading(btn, 'Revealing…');
   const r = await api('/postback-key',{method:'POST'});
-  if (r.error) return toast(r.error);
-  $('pbUrl').textContent = r.postback_url + '?event=deposit&amount=50&click_ref=XXX';
-  $('pbUrl').onclick = ()=>{ navigator.clipboard.writeText(r.postback_url); toast('Postback URL copied'); };
+  if (r.error) { restoreBtn(btn); return toast(r.error); }
+  const pb = $('pbUrl');
+  pb.textContent = r.postback_url + '?event=deposit&amount=50&click_ref=XXX';
+  pb.dataset.url = r.postback_url;
+  toast('Postback URL revealed'); restoreBtn(btn);
 }
-async function upgrade(tier){
-  const r = await api('/billing/checkout',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({plan:tier})});
-  if (r.error) return toast(r.error);
+async function copyPostback(target){
+  const url = target.dataset.url;
+  if (!url) return toast('Show the postback URL first');
+  navigator.clipboard.writeText(url);
+  toast('Postback URL copied');
+}
+async function upgrade(target){
+  setLoading(target, 'Loading…');
+  const r = await api('/billing/checkout',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({plan:target.dataset.tier})});
+  if (r.error) { restoreBtn(target); return toast(r.error); }
   window.open(r.invoice_link, '_blank');
+  restoreBtn(target);
 }
+
+function setLoading(el, text = 'Loading…') {
+  if (el.disabled !== undefined) el.disabled = true;
+  const original = el.textContent;
+  el.textContent = text;
+  el.dataset.originalText = original;
+}
+function restoreBtn(el) {
+  if (el.disabled !== undefined) el.disabled = false;
+  if (el.dataset.originalText) el.textContent = el.dataset.originalText;
+}
+
 load(); loadExtras();
+
+async function handleAction(e) {
+  const target = e.target.closest('[data-action]');
+  if (!target) return;
+  const action = target.dataset.action;
+  if (submitting && action !== 'copyLink' && action !== 'copyPostback') return;
+  submitting = true;
+  try {
+    if (action === 'logout') { e.preventDefault(); await logout(target); }
+    else if (action === 'connectBot') { e.preventDefault(); await connectBot(target); }
+    else if (action === 'checkHealth') { e.preventDefault(); await checkHealth(target); }
+    else if (action === 'createOffer') { e.preventDefault(); await createOffer(target); }
+    else if (action === 'addCommand') { e.preventDefault(); await addCommand(target); }
+    else if (action === 'saveWelcome') { e.preventDefault(); await saveWelcome(target); }
+    else if (action === 'sendBroadcast') { e.preventDefault(); await sendBroadcast(target); }
+    else if (action === 'revealPostback') { e.preventDefault(); await revealPostback(target); }
+    else if (action === 'copyPostback') { e.preventDefault(); await copyPostback(target); }
+    else if (action === 'copyLink') { e.preventDefault(); await copyLink(target); }
+    else if (action === 'toggleOffer') { e.preventDefault(); await toggleOffer(target); }
+    else if (action === 'toggleCommand') { e.preventDefault(); await toggleCommand(target); }
+    else if (action === 'deleteCommand') { e.preventDefault(); await deleteCommand(target); }
+    else if (action === 'upgrade') { e.preventDefault(); await upgrade(target); }
+  } catch (err) {
+    console.error('[dashboard action]', action, err);
+    toast('Something went wrong — please reload');
+  } finally {
+    submitting = false;
+  }
+}
+
+document.addEventListener('click', handleAction);
+const logoutForm = document.querySelector('.gm-logout-form');
+if (logoutForm) {
+  logoutForm.addEventListener('submit', (e) => { e.preventDefault(); logout(e.submitter); });
+}
+const skip = document.querySelector('.sr-only');
+if (skip) {
+  skip.addEventListener('focus', () => skip.classList.remove('sr-only'));
+  skip.addEventListener('blur', () => skip.classList.add('sr-only'));
+}
 window.addEventListener('error', () => {
   const bl = $('botList'); if (bl) bl.textContent = 'Something went wrong. Please reload the page.';
   const pi = $('planInfo'); if (pi) pi.textContent = 'Something went wrong. Please reload the page.';

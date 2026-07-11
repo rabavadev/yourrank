@@ -5,7 +5,7 @@ import { Hono } from "hono";
 import { config } from "./config.js";
 import { one, query } from "../../../shared/db.js";
 import { encryptToken, decryptToken, newLinkSlug, newPostbackKey, newWebhookSecret } from "../../../shared/crypto.js";
-import { getMe, setWebhook } from "./telegram.js";
+import { getMe, setWebhook, getWebhookInfo } from "./telegram.js";
 import { withPlanLimit, getUserPlan, type PlanTier } from "./plans.js";
 import { billingEnabled, createStarsInvoice } from "./billing.js";
 import { checkFeature, PLANS } from "./plans.js";
@@ -200,6 +200,38 @@ export function buildDashboardApi(): Hono<{ Bindings: DashApiBindings; Variables
       `SELECT id, username, token_hint, status, welcome_message, created_at FROM bots WHERE owner_id = $1 ORDER BY created_at DESC`,
       [c.get("uid")]
     ));
+  });
+
+  // Returns the bot's current webhook status from Telegram.
+  // Useful for diagnosing why a connected bot isn't receiving messages.
+  api.get("/bots/:id/health", async (c) => {
+    const bot = await one<{ token_encrypted: Buffer; webhook_secret: string }>(
+      `SELECT token_encrypted, webhook_secret FROM bots WHERE id = $1 AND owner_id = $2`,
+      [c.req.param("id"), c.get("uid")]
+    );
+    if (!bot) return c.json({ error: "not found" }, 404);
+    let token: string;
+    try { token = await decryptToken(bot.token_encrypted); }
+    catch (err) {
+      console.error("[GET /bots/:id/health] decrypt failed:", String((err as any)?.message ?? err));
+      return c.json({ error: "could not decrypt bot token" }, 500);
+    }
+    try {
+      const info = await getWebhookInfo(token);
+      const expected = `${config.publicBaseUrl}/hook/${bot.webhook_secret}`;
+      const configured = info.url === expected;
+      return c.json({
+        ok: true,
+        configured,
+        url: info.url || null,
+        pending_updates: info.pending_update_count ?? 0,
+        last_error: info.last_error_message || null,
+      });
+    } catch (err) {
+      const msg = String((err as any)?.message ?? err);
+      console.error("[GET /bots/:id/health] getWebhookInfo failed:", msg);
+      return c.json({ ok: false, error: msg }, 500);
+    }
   });
 
   api.post("/bots", async (c) => {

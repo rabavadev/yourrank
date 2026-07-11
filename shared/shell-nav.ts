@@ -62,7 +62,7 @@ function planBadge(plan?: string | null): string {
 }
 
 export function shellNavHtml(
-  opts: { activePath?: string; user?: ShellUser } = {}
+  opts: { activePath?: string; user?: ShellUser; logoutAction?: string } = {}
 ): string {
   const active = activeKey(opts.activePath || "/");
   const name = esc(opts.user?.display_name || opts.user?.email || "Streamer");
@@ -84,7 +84,7 @@ export function shellNavHtml(
     <div class="gm-who">
       <span class="gm-who-name">${name}</span>
       ${badge}
-      <form method="POST" action="/logout" class="gm-logout-form"><button class="gm-logout" type="submit">Logout</button></form>
+      <form method="POST" action="${esc(opts.logoutAction || "/logout")}" class="gm-logout-form"><button class="gm-logout" type="submit">Logout</button></form>
     </div>
   </div>
 </header>`;
