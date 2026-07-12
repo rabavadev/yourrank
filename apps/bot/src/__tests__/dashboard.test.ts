@@ -202,6 +202,11 @@ describe("buildDashboard", () => {
     expect(html).toContain('data-action="disconnectBot"');
     expect(html).toContain('data-action="reconnectBot"');
     expect(html).not.toContain("onclick=");
+
+    const csp = res.headers.get("content-security-policy") || "";
+    const m = csp.match(/nonce-([a-f0-9]+)/);
+    expect(m).toBeTruthy();
+    expect(html).toContain(`nonce="${m![1]}"`);
   });
 
   it("POST /dash/api/bots connects a bot and returns its info", async () => {
