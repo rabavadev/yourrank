@@ -17,6 +17,11 @@ knowledge:
     contents: |
       (cd apps/leaderboard && bun test)
       (cd apps/bot && bun test)
+  - name: e2e
+    contents: |
+      # Requires live deployment. Defaults to production; override with E2E_BASE_URL.
+      # Optional: E2E_TELEGRAM_BOT_TOKEN to connect and test a real Telegram bot.
+      (cd e2e && bun run test)
   - name: build
     contents: |
       (cd apps/leaderboard && bun run build)

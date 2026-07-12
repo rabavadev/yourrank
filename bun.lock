@@ -47,6 +47,14 @@
         "wrangler": "4.106.0",
       },
     },
+    "e2e": {
+      "name": "yourrank-e2e",
+      "version": "0.1.0",
+      "devDependencies": {
+        "bun-types": "^1.3.14",
+        "typescript": "^5.5.3",
+      },
+    },
   },
   "packages": {
     "@cloudflare/kv-asset-handler": ["@cloudflare/kv-asset-handler@0.5.0", "", {}, "sha512-jxQYkj8dSIzc0cD6cMMNdOc1UVjqSqu8BZdor5s8cGjW2I8BjODt/kWPVdY+u9zj3ms75Q5qaZgnxUad83+eAg=="],
@@ -492,6 +500,8 @@
     "youch-core": ["youch-core@0.3.3", "", { "dependencies": { "@poppinss/exception": "^1.2.2", "error-stack-parser-es": "^1.0.5" } }, "sha512-ho7XuGjLaJ2hWHoK8yFnsUGy2Y5uDpqSTq1FkHLK4/oqKtyUU1AFbOOxY4IpC9f0fTLjwYbslUz0Po5BpD1wrA=="],
 
     "yourrank-bot": ["yourrank-bot@workspace:apps/bot"],
+
+    "yourrank-e2e": ["yourrank-e2e@workspace:e2e"],
 
     "yourrank-leaderboard": ["yourrank-leaderboard@workspace:apps/leaderboard"],
 

@@ -49,7 +49,11 @@ export async function handleTrackCopy(request, env, ctx) {
   const slug = slugify(body?.slug || "");
   if (!slug) return json({ ok: true });
   const site = await one("SELECT id FROM sites WHERE slug=$1 AND published=true", [slug]);
-  if (site) ctx.waitUntil(bumpStat(env, site.id, "copies"));
+  if (site) {
+    const p = bumpStat(env, site.id, "copies");
+    if (ctx && typeof ctx.waitUntil === "function") ctx.waitUntil(p);
+    else p.catch(() => {});
+  }
   return json({ ok: true });
 }
 
