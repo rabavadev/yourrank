@@ -266,8 +266,14 @@ export function buildDashboardApi(): Hono<{ Bindings: DashApiBindings; Variables
           `INSERT INTO bots (owner_id, tg_bot_id, username, token_encrypted, token_hint, webhook_secret, status, welcome_message)
            VALUES ($1, $2, $3, $4, $5, $6, 'active', $7)
            ON CONFLICT (tg_bot_id) DO UPDATE
-             SET token_encrypted = EXCLUDED.token_encrypted, token_hint = EXCLUDED.token_hint,
-                 webhook_secret = EXCLUDED.webhook_secret, status = 'active', updated_at = now()
+             SET owner_id = EXCLUDED.owner_id,
+                 username = EXCLUDED.username,
+                 token_encrypted = EXCLUDED.token_encrypted,
+                 token_hint = EXCLUDED.token_hint,
+                 webhook_secret = EXCLUDED.webhook_secret,
+                 status = 'active',
+                 welcome_message = COALESCE(EXCLUDED.welcome_message, bots.welcome_message),
+                 updated_at = now()
            RETURNING id, username`,
           [uid, me.id, me.username, encToken, token.slice(-4), secret, welcome_message ?? null]
         ))!;
