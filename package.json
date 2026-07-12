@@ -2,7 +2,7 @@
   "name": "yourrank",
   "private": true,
   "version": "0.2.0",
-  "workspaces": ["apps/leaderboard", "apps/bot", "apps/monitor"],
+  "workspaces": ["apps/leaderboard", "apps/bot", "apps/monitor", "e2e"],
   "dependencies": {
     "postgres": "3.4.9"
   },
@@ -16,6 +16,7 @@
   },
   "scripts": {
     "build": "cd apps/leaderboard && bun run build",
-    "build:bot": "cd apps/bot && bun run build"
+    "build:bot": "cd apps/bot && bun run build",
+    "e2e": "cd e2e && bun run test"
   }
 }
