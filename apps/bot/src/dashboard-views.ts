@@ -27,7 +27,6 @@ const BASE_CSS = `
   #toast { position:fixed; bottom:20px; left:50%; transform:translateX(-50%); background:var(--accent);
            color:#000; padding:10px 18px; border-radius:8px; font-weight:600; display:none; }
   button:disabled, .copy:disabled { opacity:0.6; cursor:not-allowed; }
-  [data-page] { display:none; }
   .subnav { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:20px; border-bottom:1px solid var(--border); padding-bottom:12px; }
   .subnav a { color:var(--dim); text-decoration:none; padding:6px 10px; border-radius:6px; font-size:13px; }
   .subnav a:hover { color:var(--fg); }
