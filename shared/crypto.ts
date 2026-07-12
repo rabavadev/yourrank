@@ -16,7 +16,11 @@
 
 function getTokenEncKey(): Buffer {
   if (typeof process !== "undefined" && process.env?.TOKEN_ENC_KEY) {
-    return Buffer.from(process.env.TOKEN_ENC_KEY, "hex");
+    const hex = process.env.TOKEN_ENC_KEY;
+    if (hex.length !== 64) {
+      throw new Error(`TOKEN_ENC_KEY must be 64 hex characters (32 bytes), got ${hex.length}`);
+    }
+    return Buffer.from(hex, "hex");
   }
   throw new Error("TOKEN_ENC_KEY is not configured (must be set by worker.ts before crypto operations)");
 }
@@ -74,8 +78,9 @@ async function getKey(): Promise<CryptoKey> {
  * Resolve which CryptoKey to use for decryption based on the key version
  * prefix embedded in the blob. Legacy blobs (no prefix) use the current key.
  */
-async function getKeyForBlob(blob: Buffer): Promise<{ key: CryptoKey; offset: number }> {
-  const asString = blob.toString("latin1");
+async function getKeyForBlob(blob: Buffer | Uint8Array): Promise<{ key: CryptoKey; offset: number }> {
+  const b = Buffer.from(blob as Buffer);
+  const asString = b.toString("latin1");
   if (asString.startsWith("v1:")) {
     return { key: await getKey(), offset: 3 };
   }
@@ -103,10 +108,11 @@ export async function encryptToken(plaintext: string): Promise<Buffer> {
  * Decrypt a hex-encoded blob produced by encryptToken().
  * Supports v1: prefix and legacy (no prefix) blobs.
  */
-export async function decryptToken(blob: Buffer): Promise<string> {
-  const { key, offset } = await getKeyForBlob(blob);
-  const iv = new Uint8Array(blob.subarray(offset, offset + 12));
-  const ct = new Uint8Array(blob.subarray(offset + 12));
+export async function decryptToken(blob: Buffer | Uint8Array): Promise<string> {
+  const b = Buffer.from(blob as Buffer);
+  const { key, offset } = await getKeyForBlob(b);
+  const iv = new Uint8Array(b.subarray(offset, offset + 12));
+  const ct = new Uint8Array(b.subarray(offset + 12));
   const decrypted = await crypto.subtle.decrypt(
     { name: "AES-GCM", iv },
     key,
@@ -126,8 +132,8 @@ export async function reencryptToken(blob: Buffer): Promise<Buffer> {
 }
 
 /** Check if a token blob already has the current key version prefix. */
-export function isCurrentVersion(blob: Buffer): boolean {
-  const asString = blob.toString("latin1");
+export function isCurrentVersion(blob: Buffer | Uint8Array): boolean {
+  const asString = Buffer.from(blob as Buffer).toString("latin1");
   return asString.startsWith(VERSION_PREFIX);
 }
 
