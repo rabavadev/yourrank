@@ -202,6 +202,10 @@ function toast(msg) { const t=$('toast'); t.textContent=msg; t.style.display='bl
 async function api(path, opts) {
   const r = await fetch('/bot/dash/api'+path, opts);
   if (r.status === 401) { location.reload(); throw new Error('session expired'); }
+  if (!r.ok) {
+    try { const data = await r.json(); if (data && data.error) return data; } catch {}
+    return { error: 'Server error (' + r.status + ') — try again or contact support' };
+  }
   try { return await r.json(); }
   catch { return { error: 'Server error (' + r.status + ') — try again or contact support' }; }
 }
@@ -267,8 +271,9 @@ async function copyLink(target){ navigator.clipboard.writeText(location.origin+'
 async function toggleOffer(target){
   const on = target.dataset.active === 'true';
   setLoading(target);
-  await api('/offers/'+target.dataset.id,{method:'PATCH',headers:{'content-type':'application/json'},body:JSON.stringify({is_active:on})});
-  load();
+  const r = await api('/offers/'+target.dataset.id,{method:'PATCH',headers:{'content-type':'application/json'},body:JSON.stringify({is_active:on})});
+  if (r.error) { restoreBtn(target); return toast(r.error); }
+  restoreBtn(target); load();
 }
 async function createOffer(btn){
   const body = { casino:$('oCasino').value.trim(), label:$('oLabel').value.trim(), referral_url:$('oUrl').value.trim(),
@@ -333,14 +338,14 @@ async function toggleCommand(target){
   const on = target.dataset.active === 'true';
   setLoading(target);
   const r = await api('/commands/'+target.dataset.id,{method:'PATCH',headers:{'content-type':'application/json'},body:JSON.stringify({is_enabled:on})});
-  if (r.error) { return toast(r.error); }
-  loadCommands();
+  if (r.error) { restoreBtn(target); return toast(r.error); }
+  restoreBtn(target); loadCommands();
 }
 async function deleteCommand(target){
   setLoading(target, 'Deleting…');
   const r = await api('/commands/'+target.dataset.id,{method:'DELETE'});
-  if (r.error) { return toast(r.error); }
-  toast('Command deleted'); loadCommands();
+  if (r.error) { restoreBtn(target); return toast(r.error); }
+  toast('Command deleted'); restoreBtn(target); loadCommands();
 }
 
 let firstBotId = null;
@@ -443,6 +448,7 @@ async function handleAction(e) {
     toast('Something went wrong — please reload');
   } finally {
     submitting = false;
+    restoreBtn(target);
   }
 }
 
