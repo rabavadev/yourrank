@@ -258,8 +258,9 @@ async function load() {
       }).join('')
     : 'No bot connected yet — paste your token below.';
 
-  // customization panel (targets the first connected bot)
-  custBotId = (bots||[])[0]?.id ?? null;
+  // broadcast/customization target the first connected bot
+  firstBotId = (bots||[])[0]?.id ?? null;
+  custBotId = firstBotId;
   if (custBotId) {
     $('customizePanel').style.display='';
     $('welcomeMsg').value = (bots||[])[0].welcome_message || '';
@@ -381,7 +382,8 @@ async function loadExtras(){
     toast(plan.error || bcs.error || convs.error || bots.error);
     return;
   }
-  firstBotId = (bots||[])[0]?.id ?? null;
+  // Don't overwrite a bot id if a stale /bots response returns empty after a connect/reconnect.
+  firstBotId = (bots||[])[0]?.id ?? firstBotId;
 
   const cur = plan?.current;
   if (cur) {
