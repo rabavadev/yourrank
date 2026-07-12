@@ -56,3 +56,13 @@ export interface WebhookInfo {
 
 /** Returns the bot's current webhook info from Telegram Bot API. */
 export const getWebhookInfo = (token: string) => call<WebhookInfo>(token, "getWebhookInfo");
+
+export interface TgMessage {
+  message_id: number;
+  chat: { id: number };
+}
+
+/** Sends a text message to a specific chat. */
+export const sendMessage = (token: string, chatId: number, text: string) =>
+  call<TgMessage>(token, "sendMessage", { chat_id: chatId, text, parse_mode: "Markdown" });
+

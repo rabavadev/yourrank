@@ -159,20 +159,26 @@ export function buildDashboard(): Hono<DashEnv> {
   app.route("/dash/api", api);
 
   // ---- HTML ----
-  app.get("/dashboard", async (c) => {
+  const dashboardPage = async (c: any, page: string) => {
     const session = await resolveSession(c.req.raw, c.env as any);
     const uid = session?.uid ?? null;
     if (session?.rotatedCookie) c.header("Set-Cookie", session.rotatedCookie);
     const loginBotUsername = process.env.LOGIN_BOT_USERNAME ?? "";
     const devLogin = process.env.ALLOW_DEV_LOGIN === "1";
     if (!uid) return c.html(loginHtml(loginBotUsername, devLogin, c.get("cspNonce")));
-    // Fetch the user row for the shared nav (name + plan badge).
     const user = await one<{ display_name: string; email: string; plan: string }>(
       `SELECT display_name, email, plan FROM users WHERE id=$1`,
       [uid]
     );
-    return c.html(appHtml(user ?? { display_name: "", email: "", plan: "free" }, config.publicBaseUrl, c.get("cspNonce")));
-  });
+    return c.html(appHtml(user ?? { display_name: "", email: "", plan: "free" }, config.publicBaseUrl, c.get("cspNonce"), page));
+  };
+
+  app.get("/dashboard", (c) => dashboardPage(c, "overview"));
+  app.get("/bots", (c) => dashboardPage(c, "bots"));
+  app.get("/offers", (c) => dashboardPage(c, "offers"));
+  app.get("/commands", (c) => dashboardPage(c, "commands"));
+  app.get("/broadcasts", (c) => dashboardPage(c, "broadcasts"));
+  app.get("/settings", (c) => dashboardPage(c, "settings"));
 
   return app;
 }
