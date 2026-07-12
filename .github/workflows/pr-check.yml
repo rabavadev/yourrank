@@ -57,6 +57,10 @@ jobs:
         working-directory: apps/leaderboard
         run: bunx tsc --noEmit
 
+      - name: Typecheck monitor
+        working-directory: apps/monitor
+        run: bun run typecheck
+
   test:
     name: Test
     runs-on: ubuntu-latest
@@ -84,6 +88,10 @@ jobs:
             echo "--- $f ---"
             bun test "$f" || exit 1
           done
+
+      - name: Run monitor tests
+        working-directory: apps/monitor
+        run: bun run test
 
       - name: Check test coverage threshold
         working-directory: apps/leaderboard

@@ -2,7 +2,7 @@
   "name": "yourrank",
   "private": true,
   "version": "0.2.0",
-  "workspaces": ["apps/leaderboard", "apps/bot"],
+  "workspaces": ["apps/leaderboard", "apps/bot", "apps/monitor"],
   "dependencies": {
     "postgres": "3.4.9"
   },
