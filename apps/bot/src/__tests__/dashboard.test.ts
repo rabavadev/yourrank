@@ -160,7 +160,7 @@ describe("buildDashboard", () => {
     });
     const res = await app.fetch(req, {} as any);
     expect(res.status).toBe(200);
-    const body = await res.json();
+    const body = await res.json() as any;
     expect(body.ok).toBe(true);
     expect(res.headers.get("set-cookie")).toContain("yr_session");
   });
@@ -172,7 +172,7 @@ describe("buildDashboard", () => {
     });
     const res = await app.fetch(req, {} as any);
     expect(res.status).toBe(200);
-    const body = await res.json();
+    const body = await res.json() as any;
     expect(body.ok).toBe(true);
     expect(res.headers.get("set-cookie")).toContain("yr_session");
   });
@@ -222,7 +222,7 @@ describe("buildDashboard", () => {
     });
     const res = await app.fetch(req, {} as any);
     expect(res.status).toBe(200);
-    const body = await res.json();
+    const body = await res.json() as any;
     expect(body.username).toBe("testbot");
     expect(body.try_it).toBe("https://t.me/testbot");
   });
@@ -241,7 +241,7 @@ describe("buildDashboard", () => {
     });
     const res = await app.fetch(req, {} as any);
     expect(res.status).toBe(200);
-    const body = await res.json();
+    const body = await res.json() as any;
     expect(body.ok).toBe(true);
     expect(body.configured).toBe(true);
     expect(body.url).toBe("https://yourrank.site/hook/secret");
