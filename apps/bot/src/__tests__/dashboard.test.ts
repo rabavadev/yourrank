@@ -43,6 +43,7 @@ const telegramMock = () => ({
   setWebhook: () => Promise.resolve(true),
   deleteWebhook: () => Promise.resolve(true),
   getWebhookInfo: () => Promise.resolve({ url: "https://yourrank.site/hook/secret", pending_update_count: 0 }),
+  sendMessage: () => Promise.resolve({ message_id: 1, chat: { id: 123456 } }),
 });
 
 mock.module(dbUrl, dbMock);
@@ -262,7 +263,7 @@ describe("buildDashboard", () => {
     });
     const res = await app.fetch(req, {} as any);
     expect(res.status).toBe(200);
-    const body = await res.json();
+    const body = (await res.json()) as any;
     expect(body.ok).toBe(true);
     expect(body.webhook_removed).toBe(true);
   });
@@ -282,8 +283,61 @@ describe("buildDashboard", () => {
     });
     const res = await app.fetch(req, {} as any);
     expect(res.status).toBe(200);
-    const body = await res.json();
+    const body = (await res.json()) as any;
     expect(body.ok).toBe(true);
     expect(body.username).toBe("testbot");
+  });
+
+  it("DELETE /dash/api/bots/:id permanently deletes the bot", async () => {
+    mockOne.mockImplementation((sql: string) => {
+      if (sql.includes("SELECT status FROM users")) return Promise.resolve({ status: "active" });
+      if (sql.includes("SELECT id, token_encrypted, status FROM bots")) {
+        return Promise.resolve({ id: "b-1", token_encrypted: "enc:123456:ABC-DEF", status: "active" });
+      }
+      return Promise.resolve(null);
+    });
+    mockExec.mockImplementation(() => Promise.resolve([{ id: "b-1" }]));
+    const req = new Request("http://localhost:8787/dash/api/bots/b-1", {
+      method: "DELETE",
+      headers: { origin: "https://yourrank.site", cookie: "yr_session=token123" },
+    });
+    const res = await app.fetch(req, {} as any);
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as any;
+    expect(body.ok).toBe(true);
+  });
+
+  it("POST /dash/api/bots/:id/test-message sends a Telegram DM", async () => {
+    mockOne.mockImplementation((sql: string) => {
+      if (sql.includes("SELECT status FROM users")) return Promise.resolve({ status: "active" });
+      if (sql.includes("SELECT token_encrypted FROM bots")) return Promise.resolve({ token_encrypted: "enc:123456:ABC-DEF" });
+      return Promise.resolve(null);
+    });
+    const req = new Request("http://localhost:8787/dash/api/bots/b-1/test-message", {
+      method: "POST",
+      headers: { "content-type": "application/json", origin: "https://yourrank.site", cookie: "yr_session=token123" },
+      body: JSON.stringify({ chat_id: 123456, text: "Hello from dashboard" }),
+    });
+    const res = await app.fetch(req, {} as any);
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as any;
+    expect(body.ok).toBe(true);
+    expect(body.message_id).toBe(1);
+  });
+
+  it("DELETE /dash/api/broadcasts/:id cancels a scheduled broadcast", async () => {
+    mockOne.mockImplementation((sql: string) => {
+      if (sql.includes("SELECT status FROM users")) return Promise.resolve({ status: "active" });
+      return Promise.resolve(null);
+    });
+    mockExec.mockImplementation(() => Promise.resolve([{ id: "bc-1" }]));
+    const req = new Request("http://localhost:8787/dash/api/broadcasts/bc-1", {
+      method: "DELETE",
+      headers: { origin: "https://yourrank.site", cookie: "yr_session=token123" },
+    });
+    const res = await app.fetch(req, {} as any);
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as any;
+    expect(body.ok).toBe(true);
   });
 });

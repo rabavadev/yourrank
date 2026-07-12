@@ -3,9 +3,9 @@
 
 import { Hono } from "hono";
 import { config } from "./config.js";
-import { one, query } from "../../../shared/db.js";
+import { one, query, exec } from "../../../shared/db.js";
 import { encryptToken, decryptToken, newLinkSlug, newPostbackKey, newWebhookSecret } from "../../../shared/crypto.js";
-import { getMe, setWebhook, deleteWebhook, getWebhookInfo } from "./telegram.js";
+import { getMe, setWebhook, deleteWebhook, getWebhookInfo, sendMessage } from "./telegram.js";
 import { withPlanLimit, getUserPlan, type PlanTier } from "./plans.js";
 import { billingEnabled, createStarsInvoice } from "./billing.js";
 import { checkFeature, PLANS } from "./plans.js";
@@ -312,6 +312,65 @@ export function buildDashboardApi(): Hono<{ Bindings: DashApiBindings; Variables
     return c.json({ ok: true, bot_id: row.id, username: row.username, try_it: `https://t.me/${row.username}` });
   });
 
+  // Permanently delete a bot. Remove the webhook first so Telegram stops
+  // sending updates to a secret that no longer exists in our DB.
+  api.delete("/bots/:id", async (c) => {
+    const bot = await one<{ id: string; token_encrypted: Buffer; status: string }>(
+      `SELECT id, token_encrypted, status FROM bots WHERE id = $1 AND owner_id = $2`,
+      [c.req.param("id"), c.get("uid")]
+    );
+    if (!bot) return c.json({ error: "bot not found" }, 404);
+
+    let token: string;
+    try { token = await decryptToken(bot.token_encrypted); }
+    catch (err) {
+      console.error("[DELETE /bots/:id] decrypt failed:", String((err as any)?.message ?? err));
+      return c.json({ error: "Could not decrypt stored bot token. Delete it manually in @BotFather and reconnect with a fresh token." }, 500);
+    }
+
+    if (bot.status === "active") {
+      try { await deleteWebhook(token); }
+      catch (err) { console.error("[DELETE /bots/:id] deleteWebhook failed:", String((err as any)?.message ?? err)); }
+    }
+
+    const deleted = await exec(
+      `DELETE FROM bots WHERE id = $1 AND owner_id = $2 RETURNING id`,
+      [bot.id, c.get("uid")]
+    );
+    if (!deleted || deleted.length === 0) return c.json({ error: "bot not found" }, 404);
+    return c.json({ ok: true });
+  });
+
+  // Send a test DM to verify the bot token works and the user can receive it.
+  api.post("/bots/:id/test-message", async (c) => {
+    const { chat_id, text } = await c.req.json<{ chat_id?: number; text?: string }>();
+    if (!chat_id || typeof chat_id !== "number") return c.json({ error: "chat_id (number) required" }, 400);
+    if (!text?.trim()) return c.json({ error: "text required" }, 400);
+    if (text.length > 4096) return c.json({ error: "text too long (max 4096)" }, 400);
+
+    const bot = await one<{ token_encrypted: Buffer }>(
+      `SELECT token_encrypted FROM bots WHERE id = $1 AND owner_id = $2`,
+      [c.req.param("id"), c.get("uid")]
+    );
+    if (!bot) return c.json({ error: "bot not found" }, 404);
+
+    let token: string;
+    try { token = await decryptToken(bot.token_encrypted); }
+    catch (err) {
+      console.error("[POST /bots/:id/test-message] decrypt failed:", String((err as any)?.message ?? err));
+      return c.json({ error: "Could not decrypt stored bot token" }, 500);
+    }
+
+    try {
+      const result = await sendMessage(token, chat_id, text.trim());
+      return c.json({ ok: true, message_id: result.message_id });
+    } catch (err) {
+      const msg = String((err as any)?.message ?? err);
+      console.error("[POST /bots/:id/test-message] sendMessage failed:", msg);
+      return c.json({ error: msg }, 500);
+    }
+  });
+
   api.post("/bots", async (c) => {
     const { token, welcome_message } = await c.req.json<{ token: string; welcome_message?: string }>();
     if (!token) return c.json({ error: "token required" }, 400);
@@ -532,6 +591,21 @@ export function buildDashboardApi(): Hono<{ Bindings: DashApiBindings; Variables
       [bot_id, body.trim(), scheduled_at ?? null]
     );
     return c.json(row);
+  });
+
+  // Cancel a scheduled broadcast. Already sent/delivered broadcasts can't be
+  // cancelled; the cron processor will skip rows with status = 'cancelled'.
+  api.delete("/broadcasts/:id", async (c) => {
+    const result = await exec(
+      `UPDATE broadcasts b
+          SET status = 'cancelled', updated_at = now()
+         FROM bots bo
+        WHERE b.id = $1 AND b.bot_id = bo.id AND bo.owner_id = $2 AND b.status = 'scheduled'
+        RETURNING b.id`,
+      [c.req.param("id"), c.get("uid")]
+    );
+    if (!result || result.length === 0) return c.json({ error: "broadcast not found or already sent" }, 404);
+    return c.json({ ok: true });
   });
 
   // ---- postbacks ----

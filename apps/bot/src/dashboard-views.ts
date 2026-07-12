@@ -8,14 +8,16 @@ const BASE_CSS = `
           --accent:#f0b429; --green:#3fb950; --red:#f85149; }
   * { box-sizing:border-box; margin:0; }
   body { background:var(--bg); color:var(--fg); font:15px/1.5 -apple-system,'Segoe UI',Roboto,sans-serif; }
-  .wrap { max-width:960px; margin:0 auto; padding:24px 16px; }
+  .wrap { max-width:1040px; margin:0 auto; padding:24px 16px; }
   .panel { background:var(--panel); border:1px solid var(--border); border-radius:10px; padding:20px; margin-bottom:20px; }
   h1 { font-size:20px; } h2 { font-size:16px; margin-bottom:12px; color:var(--accent); }
-  input, textarea { width:100%; background:var(--bg); color:var(--fg); border:1px solid var(--border);
+  input, textarea, select { width:100%; background:var(--bg); color:var(--fg); border:1px solid var(--border);
           border-radius:6px; padding:8px 10px; margin-bottom:10px; font:inherit; }
+  select { cursor:pointer; }
   button { background:var(--accent); color:#000; border:0; border-radius:6px; padding:8px 16px;
            font:600 14px/1 inherit; cursor:pointer; }
   button.ghost { background:transparent; color:var(--dim); border:1px solid var(--border); }
+  button.danger { background:transparent; color:var(--red); border:1px solid var(--red); }
   table { width:100%; border-collapse:collapse; font-size:14px; }
   th, td { text-align:left; padding:8px 10px; border-bottom:1px solid var(--border); }
   th { color:var(--dim); font-weight:500; }
@@ -25,6 +27,17 @@ const BASE_CSS = `
   #toast { position:fixed; bottom:20px; left:50%; transform:translateX(-50%); background:var(--accent);
            color:#000; padding:10px 18px; border-radius:8px; font-weight:600; display:none; }
   button:disabled, .copy:disabled { opacity:0.6; cursor:not-allowed; }
+  [data-page] { display:none; }
+  .subnav { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:20px; border-bottom:1px solid var(--border); padding-bottom:12px; }
+  .subnav a { color:var(--dim); text-decoration:none; padding:6px 10px; border-radius:6px; font-size:13px; }
+  .subnav a:hover { color:var(--fg); }
+  .subnav a.active { background:var(--panel); color:var(--accent); border:1px solid var(--border); }
+  .bot-card { display:flex; justify-content:space-between; align-items:flex-start; gap:12px; flex-wrap:wrap; margin-bottom:12px;
+              padding:12px; border:1px solid var(--border); border-radius:8px; }
+  .bot-card .meta { flex:1; min-width:180px; }
+  .bot-card .actions { display:flex; gap:8px; flex-wrap:wrap; }
+  .bot-card button { padding:6px 12px; font-size:13px; }
+  .code { font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:12px; background:var(--bg); padding:2px 6px; border-radius:4px; }
 `;
 
 function escHtml(s: string): string {
@@ -94,29 +107,55 @@ document.addEventListener('click', (e) => {
 </script></body></html>`;
 }
 
-export function appHtml(user: { display_name: string; email: string; plan: string }, publicBaseUrl: string, nonce?: string): string {
+const pageLinks = [
+  { key: "overview", label: "Overview", href: "/bot/dashboard" },
+  { key: "bots", label: "Bots", href: "/bot/bots" },
+  { key: "offers", label: "Offers", href: "/bot/offers" },
+  { key: "commands", label: "Commands", href: "/bot/commands" },
+  { key: "broadcasts", label: "Broadcasts", href: "/bot/broadcasts" },
+  { key: "settings", label: "Settings", href: "/bot/settings" },
+];
+
+function subNav(active: string): string {
+  return `<nav class="subnav" aria-label="Bot dashboard navigation">` +
+    pageLinks.map(p =>
+      `<a href="${escHtml(p.href)}" class="${p.key === active ? 'active' : ''}">${escHtml(p.label)}</a>`
+    ).join("") +
+    `</nav>`;
+}
+
+export function appHtml(
+  user: { display_name: string; email: string; plan: string },
+  publicBaseUrl: string,
+  nonce?: string,
+  page = "overview"
+): string {
   return `<!doctype html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Streamer Dashboard</title><style>${SHELL_NAV_CSS}${BASE_CSS}</style></head><body>
+<title>Streamer Dashboard</title><style>${SHELL_NAV_CSS}${BASE_CSS}</style></head><body data-page="${page}">
 <a href="#main-content" class="sr-only" style="position:absolute;top:0;left:0;z-index:9999;padding:8px 16px;background:var(--accent,#c8ff00);color:#000;font-weight:700;text-decoration:none">Skip to content</a>
-${shellNavHtml({ activePath: "/bot/dashboard", user, logoutAction: "/bot/auth/logout" })}
+${shellNavHtml({ activePath: "/bot" + (page === "overview" ? "/dashboard" : "/" + page), user, logoutAction: "/bot/auth/logout" })}
 <div class="wrap" id="main-content">
-  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
-    <h1>🎰 Streamer Dashboard</h1>
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:12px">
+    <h1>🎰 Bot Dashboard</h1>
     <div><span id="whoami" class="muted"></span>
     <button class="ghost" data-action="logout" type="button" style="margin-left:10px">Log out</button></div>
   </div>
 
-  <div class="row">
+  ${subNav(page)}
+
+  <!-- Overview stats -->
+  <div class="row" data-page="overview">
     <div class="panel"><h2>Clicks (14d)</h2><div class="stat" id="totClicks">–</div></div>
     <div class="panel"><h2>Unique (14d)</h2><div class="stat" id="totUnique">–</div></div>
     <div class="panel"><h2>Active offers</h2><div class="stat" id="totOffers">–</div></div>
   </div>
 
-  <div class="panel"><h2>Daily clicks</h2><svg id="chart" role="img" aria-label="Daily clicks chart" width="100%" height="120" preserveAspectRatio="none"></svg>
+  <div class="panel" data-page="overview"><h2>Daily clicks</h2><svg id="chart" role="img" aria-label="Daily clicks chart" width="100%" height="120" preserveAspectRatio="none"></svg>
     <div id="chartLabels" class="muted" style="display:flex;justify-content:space-between;font-size:11px"></div></div>
 
-  <div class="panel"><h2>Your bot</h2>
+  <!-- Bot list + connect (overview, bots) -->
+  <div class="panel" data-page="overview bots"><h2>Your bots</h2>
     <div id="botList" class="muted">Loading…</div>
     <div style="margin-top:12px">
       <label for="botToken" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)">Bot Token</label>
@@ -127,8 +166,10 @@ ${shellNavHtml({ activePath: "/bot/dashboard", user, logoutAction: "/bot/auth/lo
     </div>
   </div>
 
-  <div class="panel" id="customizePanel" style="display:none"><h2>Customize your bot</h2>
-    <p class="muted" style="margin-bottom:12px">Personalize what your bot says to viewers. Changes apply instantly — no redeploy needed.</p>
+  <!-- Customization (overview, bots, commands) -->
+  <div class="panel" data-page="overview bots commands" id="customizePanel">
+    <h2>Customize <select id="botSelect" style="width:auto;min-width:160px;display:inline-block;margin-left:8px"></select></h2>
+    <p class="muted" style="margin-bottom:12px">Personalize what the selected bot says to viewers. Changes apply instantly — no redeploy needed.</p>
 
     <label for="welcomeMsg" style="display:block;margin-bottom:4px;font-size:13px" class="muted">Welcome message — the reply to <code>/start</code></label>
     <textarea id="welcomeMsg" rows="2" placeholder="Leave blank to use the default greeting"></textarea>
@@ -147,7 +188,8 @@ ${shellNavHtml({ activePath: "/bot/dashboard", user, logoutAction: "/bot/auth/lo
     <tbody id="cmdList"></tbody></table>
   </div>
 
-  <div class="panel"><h2>New offer</h2>
+  <!-- Offers (overview, offers) -->
+  <div class="panel" data-page="overview offers"><h2>New offer</h2>
     <div class="row">
       <label for="oCasino" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)">Casino</label>
       <input id="oCasino" placeholder="Casino (e.g. Stake)">
@@ -165,21 +207,25 @@ ${shellNavHtml({ activePath: "/bot/dashboard", user, logoutAction: "/bot/auth/lo
     <button data-action="createOffer" type="button">Create offer</button>
   </div>
 
-  <div class="panel"><h2>Offers</h2>
+  <div class="panel" data-page="overview offers"><h2>Offers</h2>
     <table><thead><tr><th>Offer</th><th>Link</th><th>Clicks</th><th>Unique</th><th>Status</th><th></th></tr></thead>
     <tbody id="offers"></tbody></table>
   </div>
 
-  <div class="panel"><h2>Broadcast to subscribers</h2>
-    <div id="bcGate" class="muted" style="display:none;margin-bottom:10px"></div>
+  <!-- Broadcasts (overview, broadcasts) -->
+  <div class="panel" data-page="overview broadcasts"><h2>Broadcast to subscribers</h2>
+    <div id="bcGate" class="muted" style="margin-bottom:10px"></div>
+    <label for="bcBotSelect" style="display:block;font-size:13px" class="muted">From bot</label>
+    <select id="bcBotSelect" style="max-width:300px"><option value="">Loading bots…</option></select>
     <label for="bcBody" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)">Message</label>
     <textarea id="bcBody" rows="3" placeholder="Message to all your bot's subscribers (Markdown supported)"></textarea>
     <button data-action="sendBroadcast" type="button">Send broadcast</button>
-    <table style="margin-top:14px"><thead><tr><th>Message</th><th>Status</th><th>Sent</th><th>Failed</th></tr></thead>
+    <table style="margin-top:14px"><thead><tr><th>Message</th><th>Bot</th><th>Status</th><th>Sent</th><th>Failed</th><th></th></tr></thead>
     <tbody id="bcList"></tbody></table>
   </div>
 
-  <div class="panel"><h2>Conversions (postbacks)</h2>
+  <!-- Settings (overview, settings) -->
+  <div class="panel" data-page="overview settings"><h2>Conversions (postbacks)</h2>
     <p class="muted" style="margin-bottom:10px">Give your affiliate manager this postback URL and add
       <code>{click_ref}</code> anywhere in your affiliate URL to attribute deposits to clicks.</p>
     <p class="muted" style="margin-bottom:10px;font-size:12px">Your network supports request signing? Use <code>POST ${publicBaseUrl}/pb</code> with headers
@@ -190,7 +236,7 @@ ${shellNavHtml({ activePath: "/bot/dashboard", user, logoutAction: "/bot/auth/lo
     <tbody id="convList"></tbody></table>
   </div>
 
-  <div class="panel"><h2>Plan</h2>
+  <div class="panel" data-page="overview settings"><h2>Plan</h2>
     <div id="planInfo" class="muted">Loading…</div>
     <div id="planButtons" style="margin-top:12px"></div>
   </div>
@@ -198,6 +244,8 @@ ${shellNavHtml({ activePath: "/bot/dashboard", user, logoutAction: "/bot/auth/lo
 <div id="toast" role="status" aria-live="polite"></div>
 <script${nonce ? ` nonce="${nonce}"` : ""}>
 const $ = (id) => document.getElementById(id);
+const setText = (id, v) => { const el = $(id); if (el) el.textContent = v; };
+const setHtml = (id, v) => { const el = $(id); if (el) el.innerHTML = v; };
 function toast(msg) { const t=$('toast'); t.textContent=msg; t.style.display='block'; setTimeout(()=>t.style.display='none',2500); }
 async function api(path, opts) {
   const r = await fetch('/bot/dash/api'+path, opts);
@@ -215,70 +263,153 @@ async function logout(btn) {
   location.reload();
 }
 
-// Track a running "submit" to prevent double clicks on network delay.
 let submitting = false;
+const page = document.body.dataset.page || 'overview';
+let __lastBots = [];
+
+function showPage(p) {
+  document.querySelectorAll('[data-page]').forEach(el => {
+    const pages = (el.dataset.page || '').split(' ').filter(Boolean);
+    el.style.display = pages.includes(p) ? '' : 'none';
+  });
+}
+showPage(page);
+
+function esc(s){ return (s??'').replace(/[&<>"']/g, ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch])); }
+
+let firstBotId = null;
+let custBotId = null;
 
 async function load() {
   const me = await api('/me');
   if (me.error) { toast(me.error); return; }
-  $('whoami').textContent = (me.display_name||'') + ' · ' + (me.plan || 'free');
+  setText('whoami', (me.display_name||'') + ' · ' + (me.plan || 'free'));
+
   const [offers, daily, bots] = await Promise.all([api('/offers'), api('/stats/daily'), api('/bots')]);
+  __lastBots = bots || [];
   if (daily.error || offers.error || bots.error) { toast(daily.error || offers.error || bots.error); return; }
 
-  $('totClicks').textContent = (daily||[]).reduce((s,d)=>s+d.clicks,0);
-  $('totUnique').textContent = (daily||[]).reduce((s,d)=>s+d.unique_clicks,0);
-  $('totOffers').textContent = (offers||[]).filter(o=>o.is_active).length;
+  showPage(page);
 
-  // chart
-  const max = Math.max(1, ...(daily||[]).map(d=>d.clicks));
-  const w = daily.length ? 100/daily.length : 10;
-  $('chart').setAttribute('viewBox','0 0 100 40');
-  $('chart').innerHTML = (daily||[]).map((d,i)=>{
-    const h = d.clicks/max*36;
-    return '<rect x="'+(i*w+0.5)+'" y="'+(40-h)+'" width="'+(w-1)+'" height="'+h+'" rx="0.6" fill="#f0b429"><title>'+esc(d.day)+': '+esc(String(d.clicks))+'</title></rect>';
-  }).join('');
-  $('chartLabels').innerHTML = daily.length > 0
-    ? '<span>'+esc(daily[0].day.slice(5))+'</span><span>'+esc(daily[daily.length-1].day.slice(5))+'</span>'
-    : '';
+  // overview stats
+  if (page === 'overview') {
+    setText('totClicks', (daily||[]).reduce((s,d)=>s+d.clicks,0));
+    setText('totUnique', (daily||[]).reduce((s,d)=>s+d.unique_clicks,0));
+    setText('totOffers', (offers||[]).filter(o=>o.is_active).length);
 
-  // bots
-  $('botList').innerHTML = bots.length
-    ? bots.map(b => {
-        const statusClass = b.status === 'active' ? 'ok' : 'off';
-        const statusText = b.status === 'active' ? 'active' : (b.status === 'revoked' ? 'disconnected' : b.status);
-        return '<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:10px">'+
-          '<div><a href="https://t.me/'+esc(b.username)+'" target="_blank" rel="noopener">@'+esc(b.username)+'</a> '+
-          '<span class="muted">(…'+esc(b.token_hint)+')</span> <span class="'+statusClass+'">'+esc(statusText)+'</span></div>'+
-          '<div>'+
-            '<button class="ghost" data-action="checkHealth" data-id="'+esc(b.id)+'" type="button">Check health</button> '+
-            '<button class="ghost" data-action="reconnectBot" data-id="'+esc(b.id)+'" type="button">Reconnect</button>'+
-            (b.status === 'active' ? ' <button class="ghost" data-action="disconnectBot" data-id="'+esc(b.id)+'" type="button">Disconnect</button>' : '')+
-          '</div>'+
-        '</div>';
-      }).join('')
-    : 'No bot connected yet — paste your token below.';
+    const max = Math.max(1, ...(daily||[]).map(d=>d.clicks));
+    const w = daily.length ? 100/daily.length : 10;
+    const chart = $('chart');
+    if (chart) {
+      chart.setAttribute('viewBox','0 0 100 40');
+      chart.innerHTML = (daily||[]).map((d,i)=>{
+        const h = d.clicks/max*36;
+        return '<rect x="'+(i*w+0.5)+'" y="'+(40-h)+'" width="'+(w-1)+'" height="'+h+'" rx="0.6" fill="#f0b429"><title>'+esc(d.day)+': '+esc(String(d.clicks))+'</title></rect>';
+      }).join('');
+    }
+    setHtml('chartLabels', daily.length > 0
+      ? '<span>'+esc(daily[0].day.slice(5))+'</span><span>'+esc(daily[daily.length-1].day.slice(5))+'</span>'
+      : '');
+  }
 
-  // broadcast/customization target the first connected bot
+  // bot list
+  const botList = $('botList');
+  if (botList) {
+    botList.innerHTML = bots.length
+      ? bots.map(b => {
+          const statusClass = b.status === 'active' ? 'ok' : 'off';
+          const statusText = b.status === 'active' ? 'active' : (b.status === 'revoked' ? 'disconnected' : b.status);
+          const isActive = b.status === 'active';
+          return '<div class="bot-card">'+
+            '<div class="meta"><a href="https://t.me/'+esc(b.username)+'" target="_blank" rel="noopener">@'+esc(b.username)+'</a> '+
+            '<span class="muted">(…'+esc(b.token_hint)+')</span> <span class="'+statusClass+'">'+esc(statusText)+'</span></div>'+
+            '<div class="actions">'+
+              '<button class="ghost" data-action="checkHealth" data-id="'+esc(b.id)+'" type="button">Check health</button>'+
+              '<button class="ghost" data-action="reconnectBot" data-id="'+esc(b.id)+'" type="button">Reconnect</button>'+
+              (isActive ? '<button class="ghost" data-action="disconnectBot" data-id="'+esc(b.id)+'" type="button">Disconnect</button>' : '')+
+              '<button class="ghost" data-action="selectBot" data-id="'+esc(b.id)+'" type="button">Select</button>'+
+              (page === 'bots' ? '<button class="ghost" data-action="testMessage" data-id="'+esc(b.id)+'" type="button">Test message</button>' : '')+
+              (page === 'bots' ? '<button class="danger" data-action="deleteBot" data-id="'+esc(b.id)+'" type="button">Delete</button>' : '')+
+            '</div>'+
+          '</div>';
+        }).join('')
+      : 'No bot connected yet — paste your token below.';
+  }
+
+  // bot select dropdowns
+  const botSelect = $('botSelect');
+  const bcBotSelect = $('bcBotSelect');
+  const botOptions = (bots||[]).map(b => '<option value="'+esc(b.id)+'">@'+esc(b.username)+' ('+esc(b.status)+')</option>').join('');
+  if (botSelect) { botSelect.innerHTML = botOptions || '<option value="">No bots</option>'; }
+  if (bcBotSelect) { bcBotSelect.innerHTML = botOptions || '<option value="">No bots</option>'; }
+
   firstBotId = (bots||[])[0]?.id ?? null;
-  custBotId = firstBotId;
-  if (custBotId) {
-    $('customizePanel').style.display='';
-    $('welcomeMsg').value = (bots||[])[0].welcome_message || '';
-    loadCommands();
-  } else {
-    $('customizePanel').style.display='none';
+  if (!custBotId && firstBotId) custBotId = firstBotId;
+  if (botSelect && custBotId) botSelect.value = custBotId;
+  if (bcBotSelect && firstBotId) bcBotSelect.value = firstBotId;
+
+  // customize panel (only on pages that show it)
+  if ($('customizePanel') && (page === 'overview' || page === 'bots' || page === 'commands')) {
+    if (custBotId) {
+      const bot = (bots||[]).find(b => b.id === custBotId) || (bots||[])[0];
+      if (bot) {
+        $('customizePanel').style.display='';
+        const welcome = $('welcomeMsg'); if (welcome) welcome.value = bot.welcome_message || '';
+        loadCommands();
+      }
+    } else {
+      $('customizePanel').style.display='none';
+    }
   }
 
   // offers
-  $('offers').innerHTML = offers.map(o=>'<tr>'+
-    '<td><b>'+esc(o.casino)+'</b><br><span class="muted">'+esc(o.label)+'</span></td>'+
-    '<td>'+(o.slug?'<span class="copy" data-action="copyLink" data-slug="'+esc(o.slug)+'">'+esc('/r/'+o.slug)+'</span>':'–')+'</td>'+
-    '<td>'+esc(String(o.clicks))+'</td><td>'+esc(String(o.unique_clicks))+'</td>'+
-    '<td class="'+(o.is_active?'ok':'off')+'">'+(o.is_active?'active':'off')+'</td>'+
-    '<td><button class="ghost" data-action="toggleOffer" data-id="'+esc(o.id)+'" data-active="'+(!o.is_active)+'">'+(o.is_active?'Disable':'Enable')+'</button></td>'+
-  '</tr>').join('') || '<tr><td colspan="6" class="muted">No offers yet.</td></tr>';
+  const offersEl = $('offers');
+  if (offersEl) {
+    offersEl.innerHTML = offers.map(o=>'<tr>'+
+      '<td><b>'+esc(o.casino)+'</b><br><span class="muted">'+esc(o.label)+'</span></td>'+
+      '<td>'+(o.slug?'<span class="copy" data-action="copyLink" data-slug="'+esc(o.slug)+'">'+esc('/r/'+o.slug)+'</span>':'–')+'</td>'+
+      '<td>'+esc(String(o.clicks))+'</td><td>'+esc(String(o.unique_clicks))+'</td>'+
+      '<td class="'+(o.is_active?'ok':'off')+'">'+(o.is_active?'active':'off')+'</td>'+
+      '<td><button class="ghost" data-action="toggleOffer" data-id="'+esc(o.id)+'" data-active="'+(!o.is_active)+'">'+(o.is_active?'Disable':'Enable')+'</button></td>'+
+    '</tr>').join('') || '<tr><td colspan="6" class="muted">No offers yet.</td></tr>';
+  }
 }
-function esc(s){ return (s??'').replace(/[&<>"']/g, ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch])); }
+
+async function loadExtras(){
+  const [plan, bcs, convs] = await Promise.all([api('/plan'), api('/broadcasts'), api('/conversions')]);
+  if (plan.error || bcs.error || convs.error) {
+    toast(plan.error || bcs.error || convs.error);
+    return;
+  }
+
+  const cur = plan?.current;
+  if (cur) {
+    const planInfo = $('planInfo');
+    if (planInfo) planInfo.innerHTML = '<b style="color:var(--accent)">'+esc(cur.label)+'</b> — up to '+cur.maxBots+' bots, '
+      +cur.maxOffers+' offers'+(cur.broadcasts?', broadcasts':'')+(cur.postbacks?', postbacks':'');
+    const planButtons = $('planButtons');
+    if (planButtons) planButtons.innerHTML = (plan.plans||[]).filter(p=>p.starsPrice>0 && p.tier!==cur.tier).map(p=>
+      '<button data-action="upgrade" data-tier="'+esc(p.tier)+'" style="margin-right:8px" type="button">'
+      +(plan.billing_enabled?'Upgrade to '+esc(p.label)+' — ⭐'+esc(String(p.starsPrice))+'/30d':esc(p.label)+' (billing not enabled)')+'</button>'
+    ).join('');
+  }
+
+  const bcList = $('bcList');
+  if (bcList) {
+    bcList.innerHTML = (bcs||[]).map(b=>'<tr><td>'+esc(b.body.slice(0,60))+'</td><td>'+esc(b.bot_username||'–')+'</td><td>'+esc(b.status)+'</td>'+
+      '<td>'+esc(b.sent_count)+'/'+(b.total_count?esc(b.total_count):'?')+'</td><td>'+esc(b.fail_count)+'</td>'+
+      '<td>'+(b.status==='scheduled'?'<button class="ghost" data-action="cancelBroadcast" data-id="'+esc(b.id)+'" type="button">Cancel</button>':'')+'</td></tr>').join('')
+      || '<tr><td colspan="6" class="muted">No broadcasts yet.</td></tr>';
+  }
+
+  const convList = $('convList');
+  if (convList) {
+    convList.innerHTML = (convs||[]).map(v=>'<tr><td>'+esc(v.at)+'</td><td>'+esc(v.event)+'</td>'+
+      '<td>'+(v.amount?esc(v.amount)+' '+esc(v.currency):'–')+'</td><td>'+esc(v.offer||'–')+'</td></tr>').join('')
+      || '<tr><td colspan="4" class="muted">No conversions reported yet.</td></tr>';
+  }
+}
+
 async function copyLink(target){ navigator.clipboard.writeText(location.origin+'/r/'+target.dataset.slug); toast('Link copied'); }
 async function toggleOffer(target){
   const on = target.dataset.active === 'true';
@@ -330,11 +461,42 @@ async function reconnectBot(btn){
   toast('Bot @'+r.username+' reconnected');
   restoreBtn(btn); load();
 }
+async function deleteBot(btn){
+  if (!confirm('Permanently delete this bot? This cannot be undone.')) return;
+  setLoading(btn, 'Deleting…');
+  const r = await api('/bots/'+btn.dataset.id,{method:'DELETE'});
+  if (r.error) { restoreBtn(btn); return toast(r.error); }
+  toast('Bot deleted');
+  restoreBtn(btn); load();
+}
+async function testMessage(btn){
+  const chatId = Number(prompt('Enter your Telegram chat ID (send /start to @userinfobot to get it):'));
+  if (!chatId || isNaN(chatId)) return toast('Enter a valid chat ID');
+  const text = prompt('Message to send from the bot:');
+  if (!text || !text.trim()) return toast('Enter a message');
+  setLoading(btn, 'Sending…');
+  const r = await api('/bots/'+btn.dataset.id+'/test-message',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({chat_id:chatId,text:text.trim()})});
+  if (r.error) { restoreBtn(btn); return toast(r.error); }
+  toast('Test message sent');
+  restoreBtn(btn);
+}
+
+function selectBotById(id){
+  const bot = __lastBots.find(b => b.id === id);
+  if (bot) { custBotId = id; }
+  const botSelect = $('botSelect');
+  if (botSelect && id) botSelect.value = id;
+  if ($('customizePanel')) {
+    $('customizePanel').style.display = id ? '' : 'none';
+    const welcome = $('welcomeMsg');
+    if (welcome) welcome.value = bot?.welcome_message || '';
+    loadCommands();
+  }
+}
 
 // ---- bot customization: welcome message + custom slash-commands ----
-let custBotId = null;
 async function saveWelcome(btn){
-  if (!custBotId) return toast('Connect a bot first');
+  if (!custBotId) return toast('Select a bot first');
   setLoading(btn, 'Saving…');
   const r = await api('/bots/'+custBotId,{method:'PATCH',headers:{'content-type':'application/json'},body:JSON.stringify({welcome_message:$('welcomeMsg').value.trim()||null})});
   if (r.error) { restoreBtn(btn); return toast(r.error); }
@@ -344,16 +506,17 @@ async function loadCommands(){
   if (!custBotId) return;
   const cmds = await api('/bots/'+custBotId+'/commands');
   if (cmds.error) return toast(cmds.error);
-  $('cmdList').innerHTML = (cmds||[]).map(c=>'<tr>'+
+  const cmdList = $('cmdList');
+  if (cmdList) cmdList.innerHTML = (cmds||[]).map(c=>'<tr>'+
     '<td>/'+esc(c.command)+'</td>'+
     '<td class="muted">'+esc((c.response||'').slice(0,60))+'</td>'+
     '<td class="'+(c.is_enabled?'ok':'off')+'">'+(c.is_enabled?'on':'off')+'</td>'+
-    '<td><button class="ghost" data-action="toggleCommand" data-id="'+esc(c.id)+'" data-active="'+(!c.is_enabled)+'">'+(c.is_enabled?'Disable':'Enable')+'</button> '+
-        '<button class="ghost" data-action="deleteCommand" data-id="'+esc(c.id)+'">Delete</button></td>'+
+    '<td><button class="ghost" data-action="toggleCommand" data-id="'+esc(c.id)+'" data-active="'+(!c.is_enabled)+'">'+(c.is_enabled?'Disable':'Enable')+'</button> '
+        +'<button class="ghost" data-action="deleteCommand" data-id="'+esc(c.id)+'">Delete</button></td>'+
   '</tr>').join('') || '<tr><td colspan="4" class="muted">No custom commands yet.</td></tr>';
 }
 async function addCommand(btn){
-  if (!custBotId) return toast('Connect a bot first');
+  if (!custBotId) return toast('Select a bot first');
   const command = $('cmdName').value.trim(), response = $('cmdResp').value.trim();
   if (!command || !response) return toast('Enter a command and a reply');
   setLoading(btn, 'Adding…');
@@ -375,52 +538,30 @@ async function deleteCommand(target){
   toast('Command deleted'); restoreBtn(target); loadCommands();
 }
 
-let firstBotId = null;
-async function loadExtras(){
-  const [plan, bcs, convs, bots] = await Promise.all([api('/plan'), api('/broadcasts'), api('/conversions'), api('/bots')]);
-  if (plan.error || bcs.error || convs.error || bots.error) {
-    toast(plan.error || bcs.error || convs.error || bots.error);
-    return;
-  }
-  // Don't overwrite a bot id if a stale /bots response returns empty after a connect/reconnect.
-  firstBotId = (bots||[])[0]?.id ?? firstBotId;
-
-  const cur = plan?.current;
-  if (cur) {
-    $('planInfo').innerHTML = '<b style="color:var(--accent)">'+esc(cur.label)+'</b> — up to '+cur.maxBots+' bots, '
-      +cur.maxOffers+' offers'+(cur.broadcasts?', broadcasts':'')+(cur.postbacks?', postbacks':'');
-    $('planButtons').innerHTML = (plan.plans||[]).filter(p=>p.starsPrice>0 && p.tier!==cur.tier).map(p=>
-      '<button data-action="upgrade" data-tier="'+esc(p.tier)+'" style="margin-right:8px" type="button">'
-      +(plan.billing_enabled?'Upgrade to '+esc(p.label)+' — ⭐'+esc(String(p.starsPrice))+'/30d':esc(p.label)+' (billing not enabled)')+'</button>'
-    ).join('');
-  }
-
-  // broadcasts panel
-  $('bcList').innerHTML = (bcs||[]).map(b=>'<tr><td>'+esc(b.body.slice(0,60))+'</td><td>'+esc(b.status)+'</td>'+
-    '<td>'+esc(b.sent_count)+'/'+(b.total_count?esc(b.total_count):'?')+'</td><td>'+esc(b.fail_count)+'</td></tr>').join('')
-    || '<tr><td colspan="4" class="muted">No broadcasts yet.</td></tr>';
-
-  // conversions panel
-  $('convList').innerHTML = (convs||[]).map(v=>'<tr><td>'+esc(v.at)+'</td><td>'+esc(v.event)+'</td>'+
-    '<td>'+(v.amount?esc(v.amount)+' '+esc(v.currency):'–')+'</td><td>'+esc(v.offer||'–')+'</td></tr>').join('')
-    || '<tr><td colspan="4" class="muted">No conversions reported yet.</td></tr>';
-}
 async function sendBroadcast(btn){
   const body = $('bcBody').value.trim();
   if (!body) return toast('Write a message first');
-  if (!firstBotId) return toast('Connect a bot first');
+  const botSelect = $('bcBotSelect');
+  const botId = botSelect?.value || firstBotId;
+  if (!botId) return toast('Select a bot first');
   setLoading(btn, 'Sending…');
-  const r = await api('/broadcasts',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({bot_id:firstBotId, body})});
+  const r = await api('/broadcasts',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({bot_id:botId, body})});
   if (r.error) { restoreBtn(btn); return toast(r.error); }
   $('bcBody').value=''; toast('Broadcast queued'); restoreBtn(btn); loadExtras();
+}
+async function cancelBroadcast(btn){
+  if (!confirm('Cancel this scheduled broadcast?')) return;
+  setLoading(btn, 'Cancelling…');
+  const r = await api('/broadcasts/'+btn.dataset.id,{method:'DELETE'});
+  if (r.error) { restoreBtn(btn); return toast(r.error); }
+  toast('Broadcast cancelled'); restoreBtn(btn); loadExtras();
 }
 async function revealPostback(btn){
   setLoading(btn, 'Revealing…');
   const r = await api('/postback-key',{method:'POST'});
   if (r.error) { restoreBtn(btn); return toast(r.error); }
   const pb = $('pbUrl');
-  pb.textContent = r.postback_url + '?event=deposit&amount=50&click_ref=XXX';
-  pb.dataset.url = r.postback_url;
+  if (pb) { pb.textContent = r.postback_url + '?event=deposit&amount=50&click_ref=XXX'; pb.dataset.url = r.postback_url; }
   toast('Postback URL revealed'); restoreBtn(btn);
 }
 async function copyPostback(target){
@@ -462,10 +603,14 @@ async function handleAction(e) {
     else if (action === 'checkHealth') { e.preventDefault(); await checkHealth(target); }
     else if (action === 'disconnectBot') { e.preventDefault(); await disconnectBot(target); }
     else if (action === 'reconnectBot') { e.preventDefault(); await reconnectBot(target); }
+    else if (action === 'deleteBot') { e.preventDefault(); await deleteBot(target); }
+    else if (action === 'testMessage') { e.preventDefault(); await testMessage(target); }
+    else if (action === 'selectBot') { e.preventDefault(); selectBotById(target.dataset.id); }
     else if (action === 'createOffer') { e.preventDefault(); await createOffer(target); }
     else if (action === 'addCommand') { e.preventDefault(); await addCommand(target); }
     else if (action === 'saveWelcome') { e.preventDefault(); await saveWelcome(target); }
     else if (action === 'sendBroadcast') { e.preventDefault(); await sendBroadcast(target); }
+    else if (action === 'cancelBroadcast') { e.preventDefault(); await cancelBroadcast(target); }
     else if (action === 'revealPostback') { e.preventDefault(); await revealPostback(target); }
     else if (action === 'copyPostback') { e.preventDefault(); await copyPostback(target); }
     else if (action === 'copyLink') { e.preventDefault(); await copyLink(target); }
@@ -492,6 +637,11 @@ if (skip) {
   skip.addEventListener('focus', () => skip.classList.remove('sr-only'));
   skip.addEventListener('blur', () => skip.classList.add('sr-only'));
 }
+const botSelect = $('botSelect');
+if (botSelect) botSelect.addEventListener('change', (e) => { selectBotById((e.target as HTMLSelectElement).value); });
+const bcBotSelect = $('bcBotSelect');
+if (bcBotSelect) bcBotSelect.addEventListener('change', (e) => { firstBotId = (e.target as HTMLSelectElement).value; });
+
 window.addEventListener('error', () => {
   const bl = $('botList'); if (bl) bl.textContent = 'Something went wrong. Please reload the page.';
   const pi = $('planInfo'); if (pi) pi.textContent = 'Something went wrong. Please reload the page.';
@@ -500,5 +650,6 @@ window.addEventListener('unhandledrejection', () => {
   const pi = $('planInfo'); if (pi) pi.textContent = 'Something went wrong. Please reload the page.';
   const bl = $('botList'); if (bl) bl.textContent = 'Something went wrong. Please reload the page.';
 });
+
 </script></body></html>`;
 }
