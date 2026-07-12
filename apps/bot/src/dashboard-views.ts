@@ -637,9 +637,9 @@ if (skip) {
   skip.addEventListener('blur', () => skip.classList.add('sr-only'));
 }
 const botSelect = $('botSelect');
-if (botSelect) botSelect.addEventListener('change', (e) => { selectBotById((e.target as HTMLSelectElement).value); });
+if (botSelect) botSelect.addEventListener('change', (e) => { selectBotById(e.target.value); });
 const bcBotSelect = $('bcBotSelect');
-if (bcBotSelect) bcBotSelect.addEventListener('change', (e) => { firstBotId = (e.target as HTMLSelectElement).value; });
+if (bcBotSelect) bcBotSelect.addEventListener('change', (e) => { firstBotId = e.target.value; });
 
 window.addEventListener('error', () => {
   const bl = $('botList'); if (bl) bl.textContent = 'Something went wrong. Please reload the page.';
