@@ -150,7 +150,7 @@ export async function encrypt(plaintext: string, hexKey: string): Promise<string
   const iv = crypto.getRandomValues(new Uint8Array(12));
   const key = await crypto.subtle.importKey(
     "raw",
-    hexToBytes(hexKey) as Uint8Array<ArrayBuffer>,
+    hexToBytes(hexKey),
     "AES-GCM",
     false,
     ["encrypt", "decrypt"]
@@ -187,7 +187,7 @@ export async function decrypt(blobHex: string, hexKey: string): Promise<string> 
   const ct = bytes.slice(offset + 12);
   const key = await crypto.subtle.importKey(
     "raw",
-    hexToBytes(hexKey) as Uint8Array<ArrayBuffer>,
+    hexToBytes(hexKey),
     "AES-GCM",
     false,
     ["encrypt", "decrypt"]

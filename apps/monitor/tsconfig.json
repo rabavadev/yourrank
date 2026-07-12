@@ -9,7 +9,7 @@
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
-    "types": ["bun-types", "@cloudflare/workers-types"]
+    "types": ["@cloudflare/workers-types"]
   },
   "include": ["src"],
   "exclude": ["src/__tests__"]

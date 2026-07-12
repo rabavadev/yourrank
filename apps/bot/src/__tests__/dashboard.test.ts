@@ -262,7 +262,7 @@ describe("buildDashboard", () => {
     });
     const res = await app.fetch(req, {} as any);
     expect(res.status).toBe(200);
-    const body = await res.json();
+    const body = await res.json() as any;
     expect(body.ok).toBe(true);
     expect(body.webhook_removed).toBe(true);
   });
@@ -282,7 +282,7 @@ describe("buildDashboard", () => {
     });
     const res = await app.fetch(req, {} as any);
     expect(res.status).toBe(200);
-    const body = await res.json();
+    const body = await res.json() as any;
     expect(body.ok).toBe(true);
     expect(body.username).toBe("testbot");
   });
