@@ -42,6 +42,7 @@ test_route_body() {
   resp=$(curl -s -o /dev/null -w "%{http_code}|%{time_total}" \
     -X "$method" "$url" \
     -H "Content-Type: application/json" \
+    -H "Accept: application/json" \
     -H "User-Agent: YourRank-Test/1.0" \
     -d "$body" 2>&1)
 
