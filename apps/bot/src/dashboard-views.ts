@@ -281,7 +281,6 @@ async function load() {
   setText('whoami', (me.display_name||'') + ' · ' + (me.plan || 'free'));
 
   const [offers, daily, bots] = await Promise.all([api('/offers'), api('/stats/daily'), api('/bots')]);
-  __lastBots = bots || [];
   if (daily.error || offers.error || bots.error) { toast(daily.error || offers.error || bots.error); return; }
 
   showPage(page);
@@ -307,55 +306,7 @@ async function load() {
       : '');
   }
 
-  // bot list
-  const botList = $('botList');
-  if (botList) {
-    botList.innerHTML = bots.length
-      ? bots.map(b => {
-          const statusClass = b.status === 'active' ? 'ok' : 'off';
-          const statusText = b.status === 'active' ? 'active' : (b.status === 'revoked' ? 'disconnected' : b.status);
-          const isActive = b.status === 'active';
-          return '<div class="bot-card">'+
-            '<div class="meta"><a href="https://t.me/'+esc(b.username)+'" target="_blank" rel="noopener">@'+esc(b.username)+'</a> '+
-            '<span class="muted">(…'+esc(b.token_hint)+')</span> <span class="'+statusClass+'">'+esc(statusText)+'</span></div>'+
-            '<div class="actions">'+
-              '<button class="ghost" data-action="checkHealth" data-id="'+esc(b.id)+'" type="button">Check health</button>'+
-              '<button class="ghost" data-action="reconnectBot" data-id="'+esc(b.id)+'" type="button">Reconnect</button>'+
-              (isActive ? '<button class="ghost" data-action="disconnectBot" data-id="'+esc(b.id)+'" type="button">Disconnect</button>' : '')+
-              '<button class="ghost" data-action="selectBot" data-id="'+esc(b.id)+'" type="button">Select</button>'+
-              (page === 'bots' ? '<button class="ghost" data-action="testMessage" data-id="'+esc(b.id)+'" type="button">Test message</button>' : '')+
-              (page === 'bots' ? '<button class="danger" data-action="deleteBot" data-id="'+esc(b.id)+'" type="button">Delete</button>' : '')+
-            '</div>'+
-          '</div>';
-        }).join('')
-      : 'No bot connected yet — paste your token below.';
-  }
-
-  // bot select dropdowns
-  const botSelect = $('botSelect');
-  const bcBotSelect = $('bcBotSelect');
-  const botOptions = (bots||[]).map(b => '<option value="'+esc(b.id)+'">@'+esc(b.username)+' ('+esc(b.status)+')</option>').join('');
-  if (botSelect) { botSelect.innerHTML = botOptions || '<option value="">No bots</option>'; }
-  if (bcBotSelect) { bcBotSelect.innerHTML = botOptions || '<option value="">No bots</option>'; }
-
-  firstBotId = (bots||[])[0]?.id ?? null;
-  if (!custBotId && firstBotId) custBotId = firstBotId;
-  if (botSelect && custBotId) botSelect.value = custBotId;
-  if (bcBotSelect && firstBotId) bcBotSelect.value = firstBotId;
-
-  // customize panel (only on pages that show it)
-  if ($('customizePanel') && (page === 'overview' || page === 'bots' || page === 'commands')) {
-    if (custBotId) {
-      const bot = (bots||[]).find(b => b.id === custBotId) || (bots||[])[0];
-      if (bot) {
-        $('customizePanel').style.display='';
-        const welcome = $('welcomeMsg'); if (welcome) welcome.value = bot.welcome_message || '';
-        loadCommands();
-      }
-    } else {
-      $('customizePanel').style.display='none';
-    }
-  }
+  renderBots(bots);
 
   // offers
   const offersEl = $('offers');
@@ -447,14 +398,16 @@ async function disconnectBot(btn){
   const r = await api('/bots/'+btn.dataset.id+'/disconnect',{method:'POST'});
   if (r.error) { restoreBtn(btn); return toast(r.error); }
   toast(r.webhook_removed ? 'Bot disconnected' : 'Bot disconnected, but the Telegram webhook could not be removed. Delete it manually in @BotFather if needed.');
-  restoreBtn(btn); load();
+  const bot = __lastBots.find(b => b.id === btn.dataset.id); if (bot) bot.status = 'revoked';
+  restoreBtn(btn); renderBots(__lastBots, false);
 }
 async function reconnectBot(btn){
   setLoading(btn, 'Reconnecting…');
   const r = await api('/bots/'+btn.dataset.id+'/reconnect',{method:'POST'});
   if (r.error) { restoreBtn(btn); return toast(r.error); }
   toast('Bot @'+r.username+' reconnected');
-  restoreBtn(btn); load();
+  const bot = __lastBots.find(b => b.id === btn.dataset.id); if (bot) bot.status = 'active';
+  restoreBtn(btn); renderBots(__lastBots, false);
 }
 async function deleteBot(btn){
   if (!confirm('Permanently delete this bot? This cannot be undone.')) return;
@@ -462,7 +415,7 @@ async function deleteBot(btn){
   const r = await api('/bots/'+btn.dataset.id,{method:'DELETE'});
   if (r.error) { restoreBtn(btn); return toast(r.error); }
   toast('Bot deleted');
-  restoreBtn(btn); load();
+  restoreBtn(btn); renderBots(__lastBots.filter(b => b.id !== btn.dataset.id), false);
 }
 async function testMessage(btn){
   const chatId = Number(prompt('Enter your Telegram chat ID (send /start to @userinfobot to get it):'));
@@ -474,6 +427,62 @@ async function testMessage(btn){
   if (r.error) { restoreBtn(btn); return toast(r.error); }
   toast('Test message sent');
   restoreBtn(btn);
+}
+
+// Render the bot list + select dropdowns from the given bots array. Kept
+// separate from load() so mutation handlers can re-render immediately from the
+// authoritative mutation response instead of an immediate (stale) re-read.
+function renderBots(bots, loadCmds = true){
+  bots = bots || [];
+  __lastBots = bots;
+  const botList = $('botList');
+  if (botList) {
+    botList.innerHTML = bots.length
+      ? bots.map(b => {
+          const statusClass = b.status === 'active' ? 'ok' : 'off';
+          const statusText = b.status === 'active' ? 'active' : (b.status === 'revoked' ? 'disconnected' : b.status);
+          const isActive = b.status === 'active';
+          return '<div class="bot-card">'+
+            '<div class="meta"><a href="https://t.me/'+esc(b.username)+'" target="_blank" rel="noopener">@'+esc(b.username)+'</a> '+
+            '<span class="muted">(…'+esc(b.token_hint)+')</span> <span class="'+statusClass+'">'+esc(statusText)+'</span></div>'+
+            '<div class="actions">'+
+              '<button class="ghost" data-action="checkHealth" data-id="'+esc(b.id)+'" type="button">Check health</button>'+
+              '<button class="ghost" data-action="reconnectBot" data-id="'+esc(b.id)+'" type="button">Reconnect</button>'+
+              (isActive ? '<button class="ghost" data-action="disconnectBot" data-id="'+esc(b.id)+'" type="button">Disconnect</button>' : '')+
+              '<button class="ghost" data-action="selectBot" data-id="'+esc(b.id)+'" type="button">Select</button>'+
+              (page === 'bots' ? '<button class="ghost" data-action="testMessage" data-id="'+esc(b.id)+'" type="button">Test message</button>' : '')+
+              (page === 'bots' ? '<button class="danger" data-action="deleteBot" data-id="'+esc(b.id)+'" type="button">Delete</button>' : '')+
+            '</div>'+
+          '</div>';
+        }).join('')
+      : 'No bot connected yet — paste your token below.';
+  }
+
+  const botSelect = $('botSelect');
+  const bcBotSelect = $('bcBotSelect');
+  const botOptions = bots.map(b => '<option value="'+esc(b.id)+'">@'+esc(b.username)+' ('+esc(b.status)+')</option>').join('');
+  if (botSelect) { botSelect.innerHTML = botOptions || '<option value="">No bots</option>'; }
+  if (bcBotSelect) { bcBotSelect.innerHTML = botOptions || '<option value="">No bots</option>'; }
+
+  firstBotId = bots[0]?.id ?? null;
+  if ((!custBotId || !bots.some(b => b.id === custBotId)) && firstBotId) custBotId = firstBotId;
+  if (!bots.length) custBotId = null;
+  if (botSelect && custBotId) botSelect.value = custBotId;
+  if (bcBotSelect && firstBotId) bcBotSelect.value = firstBotId;
+
+  // customize panel (only on pages that show it)
+  if ($('customizePanel') && (page === 'overview' || page === 'bots' || page === 'commands')) {
+    if (custBotId) {
+      const bot = bots.find(b => b.id === custBotId) || bots[0];
+      if (bot) {
+        $('customizePanel').style.display='';
+        const welcome = $('welcomeMsg'); if (welcome) welcome.value = bot.welcome_message || '';
+        if (loadCmds) loadCommands();
+      }
+    } else {
+      $('customizePanel').style.display='none';
+    }
+  }
 }
 
 function selectBotById(id){
@@ -497,18 +506,27 @@ async function saveWelcome(btn){
   if (r.error) { restoreBtn(btn); return toast(r.error); }
   toast('Welcome message saved'); restoreBtn(btn);
 }
-async function loadCommands(){
-  if (!custBotId) return;
-  const cmds = await api('/bots/'+custBotId+'/commands');
-  if (cmds.error) return toast(cmds.error);
+let __commands = [];
+// Render the custom-commands table from client state. Mutation handlers update
+// __commands from their authoritative response and re-render, so the table is
+// correct immediately (an immediate re-read can lag behind the write).
+function renderCommands(){
   const cmdList = $('cmdList');
-  if (cmdList) cmdList.innerHTML = (cmds||[]).map(c=>'<tr>'+
+  if (!cmdList) return;
+  cmdList.innerHTML = (__commands||[]).map(c=>'<tr>'+
     '<td>/'+esc(c.command)+'</td>'+
     '<td class="muted">'+esc((c.response||'').slice(0,60))+'</td>'+
     '<td class="'+(c.is_enabled?'ok':'off')+'">'+(c.is_enabled?'on':'off')+'</td>'+
     '<td><button class="ghost" data-action="toggleCommand" data-id="'+esc(c.id)+'" data-active="'+(!c.is_enabled)+'">'+(c.is_enabled?'Disable':'Enable')+'</button> '
         +'<button class="ghost" data-action="deleteCommand" data-id="'+esc(c.id)+'">Delete</button></td>'+
   '</tr>').join('') || '<tr><td colspan="4" class="muted">No custom commands yet.</td></tr>';
+}
+async function loadCommands(){
+  if (!custBotId) return;
+  const cmds = await api('/bots/'+custBotId+'/commands');
+  if (cmds.error) return toast(cmds.error);
+  __commands = cmds || [];
+  renderCommands();
 }
 async function addCommand(btn){
   if (!custBotId) return toast('Select a bot first');
@@ -517,20 +535,29 @@ async function addCommand(btn){
   setLoading(btn, 'Adding…');
   const r = await api('/bots/'+custBotId+'/commands',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({command, response})});
   if (r.error) { restoreBtn(btn); return toast(r.error); }
-  $('cmdName').value=''; $('cmdResp').value=''; toast('Command saved'); restoreBtn(btn); loadCommands();
+  const i = __commands.findIndex(c => c.id === r.id || c.command === r.command);
+  if (i >= 0) __commands[i] = r; else __commands.push(r);
+  __commands.sort((a,b)=>a.command.localeCompare(b.command));
+  renderCommands();
+  $('cmdName').value=''; $('cmdResp').value=''; toast('Command saved'); restoreBtn(btn);
 }
 async function toggleCommand(target){
   const on = target.dataset.active === 'true';
   setLoading(target);
   const r = await api('/commands/'+target.dataset.id,{method:'PATCH',headers:{'content-type':'application/json'},body:JSON.stringify({is_enabled:on})});
   if (r.error) { restoreBtn(target); return toast(r.error); }
-  restoreBtn(target); loadCommands();
+  const i = __commands.findIndex(c => c.id === target.dataset.id);
+  if (i >= 0) __commands[i] = r;
+  renderCommands();
+  restoreBtn(target);
 }
 async function deleteCommand(target){
   setLoading(target, 'Deleting…');
   const r = await api('/commands/'+target.dataset.id,{method:'DELETE'});
   if (r.error) { restoreBtn(target); return toast(r.error); }
-  toast('Command deleted'); restoreBtn(target); loadCommands();
+  __commands = __commands.filter(c => c.id !== target.dataset.id);
+  renderCommands();
+  toast('Command deleted'); restoreBtn(target);
 }
 
 async function sendBroadcast(btn){
