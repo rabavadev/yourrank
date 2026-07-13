@@ -1,0 +1,43 @@
+// Static asset caching: assets must revalidate (ETag + no-cache) so a deploy
+// that changes a CSS/JS file reaches returning users immediately instead of
+// being masked by a long max-age cache.
+
+import { describe, it, expect } from "bun:test";
+import { serveStaticAsset } from "../middleware/static-assets.js";
+
+const reqWith = (headers = {}) => new Request("https://test.com/assets/app.css", { headers });
+
+describe("serveStaticAsset caching", () => {
+  it("serves a known asset with a revalidating cache policy and an ETag", async () => {
+    const res = serveStaticAsset("/assets/app.css", reqWith());
+    expect(res.status).toBe(200);
+    const cc = res.headers.get("cache-control") || "";
+    expect(cc).toMatch(/no-cache/);
+    expect(cc).not.toMatch(/max-age=\s*(?!0)\d/); // no long max-age
+    expect(res.headers.get("etag")).toBeTruthy();
+    expect(res.headers.get("content-type")).toMatch(/text\/css/);
+  });
+
+  it("returns 304 when If-None-Match matches the current ETag", async () => {
+    const first = serveStaticAsset("/assets/app.css", reqWith());
+    const etag = first.headers.get("etag");
+    const res = serveStaticAsset("/assets/app.css", reqWith({ "if-none-match": etag }));
+    expect(res.status).toBe(304);
+  });
+
+  it("returns full content (200) when If-None-Match is stale", async () => {
+    const res = serveStaticAsset("/assets/app.css", reqWith({ "if-none-match": '"stale-etag"' }));
+    expect(res.status).toBe(200);
+    expect((await res.text()).length).toBeGreaterThan(0);
+  });
+
+  it("gives different assets different ETags", () => {
+    const a = serveStaticAsset("/assets/app.css", reqWith()).headers.get("etag");
+    const b = serveStaticAsset("/assets/dashboard.js", reqWith()).headers.get("etag");
+    expect(a).not.toBe(b);
+  });
+
+  it("404s an unknown asset", () => {
+    expect(serveStaticAsset("/assets/nope.css", reqWith()).status).toBe(404);
+  });
+});

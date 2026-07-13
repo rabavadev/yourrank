@@ -330,9 +330,10 @@ async function loadExtras(){
 
   const cur = plan?.current;
   if (cur) {
+    const plur = (n, w) => n + ' ' + w + (n === 1 ? '' : 's');
     const planInfo = $('planInfo');
-    if (planInfo) planInfo.innerHTML = '<b style="color:var(--accent)">'+esc(cur.label)+'</b> — up to '+cur.maxBots+' bots, '
-      +cur.maxOffers+' offers'+(cur.broadcasts?', broadcasts':'')+(cur.postbacks?', postbacks':'');
+    if (planInfo) planInfo.innerHTML = '<b style="color:var(--accent)">'+esc(cur.label)+'</b> — up to '+plur(cur.maxBots, 'bot')+', '
+      +plur(cur.maxOffers, 'offer')+(cur.broadcasts?', broadcasts':'')+(cur.postbacks?', postbacks':'');
     const planButtons = $('planButtons');
     if (planButtons) planButtons.innerHTML = (plan.plans||[]).filter(p=>p.starsPrice>0 && p.tier!==cur.tier).map(p=>
       '<button data-action="upgrade" data-tier="'+esc(p.tier)+'" style="margin-right:8px" type="button">'
