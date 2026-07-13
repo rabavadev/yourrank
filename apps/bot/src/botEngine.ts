@@ -10,6 +10,7 @@ import { one, query } from "../../../shared/db.js";
 import { decryptToken } from "../../../shared/crypto.js";
 import { config } from "./config.js";
 import { rateLimit, type RateLimitKV } from "./ratelimit.js";
+import { setMyCommands } from "./telegram.js";
 
 export interface BotRow {
   id: string;
@@ -83,35 +84,104 @@ export function wireHandlers(bot: Bot, botRow: BotRow, env?: any): void {
     await next();
   });
 
-  bot.command("start", async (ctx) => {
-    const welcome =
-      botRow.welcome_message ??
-      "Welcome! Send /code to get my current bonus codes and links.";
-    await ctx.reply(welcome);
-  });
-
-  bot.command("help", async (ctx) => {
-    await ctx.reply(
-      "<b>Available commands</b>\n\n" +
-      "/code — get bonus codes and referral links\n" +
-      "/subscribe &lt;player name&gt; — get DMs when your rank changes\n" +
-      "/unsubscribe — stop rank-change DMs\n" +
-      "/support — contact the YourRank team\n" +
-      "/help — show this list",
-      { parse_mode: "HTML" }
+  // ---- Tappable menu (inline buttons) --------------------------------
+  // Viewers tap buttons instead of memorising slash-commands. The same set
+  // of actions is registered with Telegram (syncMyCommands) so they also show
+  // in the native "Menu" button next to the chat input.
+  async function buildMenuKeyboard(): Promise<InlineKeyboard> {
+    const kb = new InlineKeyboard()
+      .text("🎁 Bonus codes", "m:code").text("🏆 Leaderboard", "m:board").row()
+      .text("🔔 Subscribe", "m:sub").text("❓ Help", "m:help").row()
+      .text("💬 Support", "m:support");
+    const customs = await query<{ command: string }>(
+      `SELECT command FROM bot_commands WHERE bot_id = $1 AND is_enabled ORDER BY command`,
+      [botRow.id]
     );
-  });
+    customs.forEach((c, i) => {
+      if (i % 2 === 0) kb.row();
+      kb.text("/" + c.command, "m:c:" + c.command);
+    });
+    return kb;
+  }
 
-  bot.command("support", async (ctx) => {
+  async function sendMenu(ctx: Context, intro: string): Promise<void> {
+    await ctx.reply(intro, { reply_markup: await buildMenuKeyboard() });
+  }
+
+  const helpText = (): string =>
+    "<b>Available commands</b>\n\n" +
+    "/menu — open the tappable menu\n" +
+    "/code — get bonus codes and referral links\n" +
+    "/subscribe &lt;player name&gt; — get DMs when your rank changes\n" +
+    "/unsubscribe — stop rank-change DMs\n" +
+    "/support — contact the YourRank team\n" +
+    "/help — show this list";
+
+  const supportText = (): string => {
     const supportEmail = (typeof process !== "undefined" && process.env?.SUPPORT_EMAIL) || "contact@yourrank.site";
-    await ctx.reply(
-      "Need help?\n\n" +
+    return "Need help?\n\n" +
       "1. Visit the dashboard: https://yourrank.site/dashboard\n" +
       `2. Email us: ${esc(supportEmail)}\n` +
       "3. Use the contact form: https://yourrank.site/contact\n\n" +
-      "For account or billing issues, include your registered email so we can find you faster.",
-      { parse_mode: "HTML" }
+      "For account or billing issues, include your registered email so we can find you faster.";
+  };
+
+  const subscribeUsageText = (): string =>
+    "Usage: /subscribe <your player name>\n\n" +
+    "This subscribes you to DMs when your rank changes on this leaderboard.";
+
+  // Send the top-5 leaderboard in any chat (used by /start menu "Leaderboard").
+  async function sendLeaderboardTop(ctx: Context): Promise<void> {
+    const site = await getOwnerSite();
+    if (!site) { await ctx.reply("This bot doesn't have an active leaderboard yet."); return; }
+    const players = await query<{ name: string; wagered: number }>(
+      `SELECT name, wagered FROM players WHERE site_id = $1 ORDER BY wagered DESC LIMIT 5`,
+      [site.id]
     );
+    if (!players.length) { await ctx.reply("This leaderboard is empty. Ask the streamer to add players!"); return; }
+    const lines = players.map((p, i) => `${i + 1}. ${p.name} — ${fmtMoney(p.wagered)}`);
+    const url = config.publicBaseUrl ? `${config.publicBaseUrl}/${site.slug}` : "";
+    let msg = `🏆 ${site.name || "Leaderboard"}'s Leaderboard\n${lines.join("\n")}`;
+    if (url) msg += `\n\n🔗 ${url}`;
+    await ctx.reply(msg);
+  }
+
+  bot.command("start", async (ctx) => {
+    const welcome = botRow.welcome_message ?? "Welcome! Tap a button below to get started.";
+    await sendMenu(ctx, welcome);
+  });
+
+  bot.command("menu", async (ctx) => {
+    await sendMenu(ctx, "📋 Menu — tap an option below:");
+  });
+
+  bot.command("help", async (ctx) => {
+    await ctx.reply(helpText(), { parse_mode: "HTML" });
+  });
+
+  bot.command("support", async (ctx) => {
+    await ctx.reply(supportText(), { parse_mode: "HTML" });
+  });
+
+  // Menu button taps arrive as callback queries — run the same action the
+  // matching slash-command would.
+  bot.on("callback_query:data", async (ctx) => {
+    const data = ctx.callbackQuery.data ?? "";
+    await ctx.answerCallbackQuery();
+    if (data === "m:code") { await sendOffers(ctx, botRow); return; }
+    if (data === "m:board") { await sendLeaderboardTop(ctx); return; }
+    if (data === "m:sub") { await ctx.reply(subscribeUsageText()); return; }
+    if (data === "m:help") { await ctx.reply(helpText(), { parse_mode: "HTML" }); return; }
+    if (data === "m:support") { await ctx.reply(supportText(), { parse_mode: "HTML" }); return; }
+    if (data.startsWith("m:c:")) {
+      const cmd = data.slice(4);
+      const custom = await one<{ response: string | null }>(
+        `SELECT response FROM bot_commands WHERE bot_id = $1 AND command = $2 AND is_enabled`,
+        [botRow.id, cmd]
+      );
+      if (custom?.response) await ctx.reply(esc(custom.response), { parse_mode: "HTML" });
+      else await ctx.reply("That option is no longer available.");
+    }
   });
 
   bot.command(["code", "codes"], async (ctx) => {
@@ -127,11 +197,7 @@ export function wireHandlers(bot: Bot, botRow: BotRow, env?: any): void {
     const text = ctx.message?.text ?? "";
     const playerName = text.replace(/^\/subscribe(@\S+)?\s*/i, "").trim();
     if (!playerName) {
-      await ctx.reply(
-        "Usage: /subscribe <your player name>\n\n" +
-        "Example: /subscribe *****ess\n\n" +
-        "This subscribes you to DMs when your rank changes on this leaderboard."
-      );
+      await ctx.reply(subscribeUsageText());
       return;
     }
 
@@ -335,6 +401,47 @@ export function wireHandlers(bot: Bot, botRow: BotRow, env?: any): void {
   bot.catch((err) => {
     console.error(`[bot ${botRow.username ?? botRow.id}]`, err.error);
   });
+}
+
+// Built-in commands surfaced in Telegram's native "Menu" button; the
+// streamer's enabled custom commands are appended.
+const BUILTIN_MENU_COMMANDS = [
+  { command: "menu", description: "Show the menu" },
+  { command: "code", description: "Get bonus codes & links" },
+  { command: "subscribe", description: "Get DMs when your rank changes" },
+  { command: "unsubscribe", description: "Stop rank-change DMs" },
+  { command: "help", description: "Show help" },
+  { command: "support", description: "Contact support" },
+];
+
+// Register a bot's command list with Telegram so the native "Menu" button
+// lists both built-ins and the streamer's custom commands. Callers treat
+// failures as non-fatal.
+export async function syncMyCommands(token: string, botId: string): Promise<void> {
+  const customs = await query<{ command: string; response: string }>(
+    `SELECT command, response FROM bot_commands WHERE bot_id = $1 AND is_enabled ORDER BY command`,
+    [botId]
+  );
+  const commands = [
+    ...BUILTIN_MENU_COMMANDS,
+    ...customs.map((c) => ({
+      command: c.command,
+      description: (c.response || "").replace(/\s+/g, " ").trim().slice(0, 256) || "Custom command",
+    })),
+  ];
+  await setMyCommands(token, commands);
+}
+
+// Look up and decrypt an active bot's stored token, then sync its command
+// list. Used by the dashboard when custom commands change.
+export async function syncMyCommandsForBot(botId: string): Promise<void> {
+  const row = await one<{ token_encrypted: Buffer }>(
+    `SELECT token_encrypted FROM bots WHERE id = $1 AND status = 'active'`,
+    [botId]
+  );
+  if (!row) return;
+  const token = await decryptToken(Buffer.from(row.token_encrypted));
+  await syncMyCommands(token, botId);
 }
 
 async function sendOffers(ctx: Context, botRow: BotRow): Promise<void> {

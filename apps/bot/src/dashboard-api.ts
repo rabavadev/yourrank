@@ -6,6 +6,7 @@ import { config } from "./config.js";
 import { one, query, exec } from "../../../shared/db.js";
 import { encryptToken, decryptToken, newLinkSlug, newPostbackKey, newWebhookSecret } from "../../../shared/crypto.js";
 import { getMe, setWebhook, deleteWebhook, getWebhookInfo, sendMessage } from "./telegram.js";
+import { syncMyCommands, syncMyCommandsForBot } from "./botEngine.js";
 import { withPlanLimit, getUserPlan, type PlanTier } from "./plans.js";
 import { billingEnabled, createStarsInvoice } from "./billing.js";
 import { checkFeature, PLANS } from "./plans.js";
@@ -309,6 +310,8 @@ export function buildDashboardApi(): Hono<{ Bindings: DashApiBindings; Variables
       [me.username, me.id, bot.id]
     );
     if (!row) return c.json({ error: "bot not found" }, 404);
+    try { await syncMyCommands(token, row.id); }
+    catch (err) { console.error("[POST /bots/:id/reconnect] setMyCommands failed:", String((err as any)?.message ?? err)); }
     return c.json({ ok: true, bot_id: row.id, username: row.username, try_it: `https://t.me/${row.username}` });
   });
 
@@ -441,6 +444,9 @@ export function buildDashboardApi(): Hono<{ Bindings: DashApiBindings; Variables
       console.error("[POST /bots] setWebhook failed:", String((err as any)?.message ?? err));
       webhookWarning = "Bot saved — but webhook registration failed. Click Reconnect on the bot card to retry, or check PUBLIC_BASE_URL config.";
     }
+    // Populate Telegram's native "Menu" button. Non-fatal.
+    try { await syncMyCommands(token, out.result.bot_id); }
+    catch (err) { console.error("[POST /bots] setMyCommands failed:", String((err as any)?.message ?? err)); }
     return c.json({
       bot_id: out.result.bot_id,
       username: out.result.username,
@@ -458,8 +464,15 @@ export function buildDashboardApi(): Hono<{ Bindings: DashApiBindings; Variables
   // would never fire (the engine skips these in its catch-all handler), so
   // reject them up front with a clear message instead of silently no-op'ing.
   const RESERVED_COMMANDS = new Set([
-    "start", "code", "codes", "subscribe", "unsubscribe", "rank", "board", "leaderboard",
+    "start", "menu", "help", "support", "code", "codes", "subscribe", "unsubscribe", "rank", "board", "leaderboard",
   ]);
+
+  // Re-register the bot's Telegram command menu after a custom-command change.
+  // Best-effort: a Telegram failure must not fail the dashboard request.
+  const resyncCommands = async (botId: string) => {
+    try { await syncMyCommandsForBot(botId); }
+    catch (err) { console.error("[commands] setMyCommands sync failed:", String((err as any)?.message ?? err)); }
+  };
   // Strip a leading slash / @mention / args and lowercase, matching exactly how
   // the bot engine derives the command name from an incoming message.
   const normalizeCommand = (raw: string): string =>
@@ -509,6 +522,7 @@ export function buildDashboardApi(): Hono<{ Bindings: DashApiBindings; Variables
        RETURNING id, command, response, is_enabled`,
       [c.req.param("id"), cmd, response.trim()]
     );
+    await resyncCommands(c.req.param("id"));
     return c.json(row);
   });
 
@@ -523,9 +537,10 @@ export function buildDashboardApi(): Hono<{ Bindings: DashApiBindings; Variables
               response   = COALESCE($2, bc.response)
          FROM bots b
         WHERE bc.id = $3 AND bc.bot_id = b.id AND b.owner_id = $4
-        RETURNING bc.id, bc.command, bc.response, bc.is_enabled`,
+        RETURNING bc.id, bc.bot_id, bc.command, bc.response, bc.is_enabled`,
       [is_enabled ?? null, response?.trim() ?? null, c.req.param("id"), c.get("uid")]
-    );
+    ) as { id: string; bot_id: string; command: string; response: string; is_enabled: boolean } | undefined;
+    if (row) await resyncCommands(row.bot_id);
     return row ? c.json(row) : c.json({ error: "command not found" }, 404);
   });
 

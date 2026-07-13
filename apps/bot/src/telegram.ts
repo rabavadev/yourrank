@@ -43,6 +43,19 @@ export const setWebhook = (token: string, url: string, secret: string, options?:
 export const deleteWebhook = (token: string) =>
   call<boolean>(token, "deleteWebhook");
 
+export interface BotCommandSpec {
+  command: string;
+  description: string;
+}
+
+/**
+ * Registers the bot's command list with Telegram. This populates the native
+ * "Menu" button shown next to the chat input, so viewers can browse and tap
+ * commands instead of remembering them.
+ */
+export const setMyCommands = (token: string, commands: BotCommandSpec[]) =>
+  call<boolean>(token, "setMyCommands", { commands });
+
 export interface WebhookInfo {
   url?: string;
   has_custom_certificate?: boolean;
