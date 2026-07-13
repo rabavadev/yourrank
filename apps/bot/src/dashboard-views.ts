@@ -149,7 +149,7 @@ ${shellNavHtml({ activePath: "/bot" + (page === "overview" ? "/dashboard" : "/" 
   <!-- Bot list + connect (overview, bots) -->
   <div class="panel" data-page="overview bots"><h2>Your bots</h2>
     <div id="botList" class="muted">Loading…</div>
-    <div style="margin-top:12px">
+    <div id="connectForm" style="margin-top:12px">
       <label for="botToken" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)">Bot Token</label>
       <div style="display:flex;gap:6px;align-items:center">
         <input id="botToken" type="password" autocomplete="off" placeholder="Paste bot token from @BotFather (123456:ABC-...)" style="flex:1">
@@ -161,9 +161,24 @@ ${shellNavHtml({ activePath: "/bot" + (page === "overview" ? "/dashboard" : "/" 
     </div>
   </div>
 
+  <!-- Test message (bots) -->
+  <div class="panel" data-page="bots" id="testMsgPanel" style="display:none">
+    <h2>Send a test message</h2>
+    <p class="muted" style="margin-bottom:12px;font-size:13px">Send a one-off message from <b id="tmBotName">your bot</b> to confirm it works. Get your chat ID by sending <code>/start</code> to <a href="https://t.me/userinfobot" target="_blank" rel="noopener">@userinfobot</a>.</p>
+    <div class="row">
+      <label for="tmChatId" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)">Chat ID</label>
+      <input id="tmChatId" inputmode="numeric" placeholder="Your Telegram chat ID (e.g. 123456789)">
+      <label for="tmText" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)">Message</label>
+      <input id="tmText" placeholder="Message to send">
+    </div>
+    <button data-action="sendTestMessage" type="button">Send test message</button>
+    <button class="ghost" data-action="cancelTestMessage" type="button">Cancel</button>
+  </div>
+
   <!-- Customization (overview, bots, commands) -->
   <div class="panel" data-page="overview bots commands" id="customizePanel">
-    <h2>Customize <select id="botSelect" style="width:auto;min-width:160px;display:inline-block;margin-left:8px"></select></h2>
+    <h2>Customize <select id="botSelect" style="width:auto;min-width:160px;display:inline-block;margin-left:8px"><option>Loading…</option></select></h2>
+    <div id="custDisabledNote" class="muted" style="display:none;margin-bottom:12px;color:var(--accent)">This bot is disconnected — reconnect it to customize.</div>
     <p class="muted" style="margin-bottom:12px">Personalize what the selected bot says to viewers. Changes apply instantly — no redeploy needed.</p>
 
     <label for="welcomeMsg" style="display:block;margin-bottom:4px;font-size:13px" class="muted">Welcome message — the reply to <code>/start</code></label>
@@ -180,7 +195,7 @@ ${shellNavHtml({ activePath: "/bot" + (page === "overview" ? "/dashboard" : "/" 
     </div>
     <button data-action="addCommand" type="button">Add command</button>
     <table style="margin-top:14px"><thead><tr><th>Command</th><th>Reply</th><th>Status</th><th></th></tr></thead>
-    <tbody id="cmdList"></tbody></table>
+    <tbody id="cmdList"><tr><td colspan="4" class="muted">Loading…</td></tr></tbody></table>
   </div>
 
   <!-- Offers (overview, offers) -->
@@ -204,7 +219,7 @@ ${shellNavHtml({ activePath: "/bot" + (page === "overview" ? "/dashboard" : "/" 
 
   <div class="panel" data-page="overview offers"><h2>Offers</h2>
     <table><thead><tr><th>Offer</th><th>Link</th><th>Clicks</th><th>Unique</th><th>Status</th><th></th></tr></thead>
-    <tbody id="offers"></tbody></table>
+    <tbody id="offers"><tr><td colspan="6" class="muted">Loading…</td></tr></tbody></table>
   </div>
 
   <!-- Broadcasts (overview, broadcasts) -->
@@ -261,6 +276,9 @@ async function logout(btn) {
 let submitting = false;
 const page = document.body.dataset.page || 'overview';
 let __lastBots = [];
+let __offers = [];
+let __maxBots = Infinity;
+let __testBotId = null;
 
 function showPage(p) {
   document.querySelectorAll('[data-page]').forEach(el => {
@@ -308,17 +326,23 @@ async function load() {
 
   renderBots(bots);
 
-  // offers
+  __offers = offers || [];
+  renderOffers();
+}
+
+// Render the offers table from client state. Mutation handlers update __offers
+// from their authoritative result and re-render, so the table reflects changes
+// immediately without a re-fetch (which can read stale data after a write).
+function renderOffers(){
   const offersEl = $('offers');
-  if (offersEl) {
-    offersEl.innerHTML = offers.map(o=>'<tr>'+
-      '<td><b>'+esc(o.casino)+'</b><br><span class="muted">'+esc(o.label)+'</span></td>'+
-      '<td>'+(o.slug?'<span class="copy" data-action="copyLink" data-slug="'+esc(o.slug)+'">'+esc('/r/'+o.slug)+'</span>':'–')+'</td>'+
-      '<td>'+esc(String(o.clicks))+'</td><td>'+esc(String(o.unique_clicks))+'</td>'+
-      '<td class="'+(o.is_active?'ok':'off')+'">'+(o.is_active?'active':'off')+'</td>'+
-      '<td><button class="ghost" data-action="toggleOffer" data-id="'+esc(o.id)+'" data-active="'+(!o.is_active)+'">'+(o.is_active?'Disable':'Enable')+'</button></td>'+
-    '</tr>').join('') || '<tr><td colspan="6" class="muted">No offers yet.</td></tr>';
-  }
+  if (!offersEl) return;
+  offersEl.innerHTML = (__offers||[]).map(o=>'<tr>'+
+    '<td><b>'+esc(o.casino)+'</b><br><span class="muted">'+esc(o.label)+'</span></td>'+
+    '<td>'+(o.slug?'<span class="copy" data-action="copyLink" data-slug="'+esc(o.slug)+'" title="Copy tracked link">'+esc('/r/'+o.slug)+'</span> <button class="ghost" data-action="copyLink" data-slug="'+esc(o.slug)+'" type="button" aria-label="Copy link" style="padding:2px 8px;font-size:12px">Copy</button>':'–')+'</td>'+
+    '<td>'+esc(String(o.clicks))+'</td><td>'+esc(String(o.unique_clicks))+'</td>'+
+    '<td class="'+(o.is_active?'ok':'off')+'">'+(o.is_active?'active':'off')+'</td>'+
+    '<td><button class="ghost" data-action="toggleOffer" data-id="'+esc(o.id)+'" data-active="'+(!o.is_active)+'">'+(o.is_active?'Disable':'Enable')+'</button></td>'+
+  '</tr>').join('') || '<tr><td colspan="6" class="muted">No offers yet.</td></tr>';
 }
 
 async function loadExtras(){
@@ -334,6 +358,11 @@ async function loadExtras(){
     const planInfo = $('planInfo');
     if (planInfo) planInfo.innerHTML = '<b style="color:var(--accent)">'+esc(cur.label)+'</b> — up to '+plur(cur.maxBots, 'bot')+', '
       +plur(cur.maxOffers, 'offer')+(cur.broadcasts?', broadcasts':'')+(cur.postbacks?', postbacks':'');
+    if (typeof cur.maxBots === 'number') {
+      __maxBots = cur.maxBots;
+      const cf = $('connectForm');
+      if (cf) cf.style.display = (__lastBots.filter(b => b.status === 'active').length >= __maxBots) ? 'none' : '';
+    }
     const planButtons = $('planButtons');
     if (planButtons) planButtons.innerHTML = (plan.plans||[]).filter(p=>p.starsPrice>0 && p.tier!==cur.tier).map(p=>
       '<button data-action="upgrade" data-tier="'+esc(p.tier)+'" style="margin-right:8px" type="button">'
@@ -363,7 +392,10 @@ async function toggleOffer(target){
   setLoading(target);
   const r = await api('/offers/'+target.dataset.id,{method:'PATCH',headers:{'content-type':'application/json'},body:JSON.stringify({is_active:on})});
   if (r.error) { restoreBtn(target); return toast(r.error); }
-  restoreBtn(target); load();
+  const o = __offers.find(x => x.id === target.dataset.id);
+  if (o) o.is_active = (r.is_active !== undefined ? r.is_active : on);
+  renderOffers();
+  restoreBtn(target);
 }
 async function createOffer(btn){
   const body = { casino:$('oCasino').value.trim(), label:$('oLabel').value.trim(), referral_url:$('oUrl').value.trim(),
@@ -418,16 +450,29 @@ async function deleteBot(btn){
   toast('Bot deleted');
   restoreBtn(btn); renderBots(__lastBots.filter(b => b.id !== btn.dataset.id), false);
 }
-async function testMessage(btn){
-  const chatId = Number(prompt('Enter your Telegram chat ID (send /start to @userinfobot to get it):'));
-  if (!chatId || isNaN(chatId)) return toast('Enter a valid chat ID');
-  const text = prompt('Message to send from the bot:');
-  if (!text || !text.trim()) return toast('Enter a message');
+function testMessage(target){
+  __testBotId = target.dataset.id;
+  const bot = __lastBots.find(b => b.id === __testBotId);
+  const name = $('tmBotName'); if (name) name.textContent = bot ? '@'+bot.username : 'your bot';
+  const panel = $('testMsgPanel'); if (panel) panel.style.display = '';
+  const ci = $('tmChatId'); if (ci) ci.focus();
+}
+function cancelTestMessage(){
+  const panel = $('testMsgPanel'); if (panel) panel.style.display = 'none';
+  const ci = $('tmChatId'); if (ci) ci.value = '';
+  const tx = $('tmText'); if (tx) tx.value = '';
+  __testBotId = null;
+}
+async function sendTestMessage(btn){
+  const chatId = Number(($('tmChatId').value || '').trim());
+  if (!chatId || isNaN(chatId)) return toast('Enter a valid numeric chat ID');
+  const text = ($('tmText').value || '').trim();
+  if (!text) return toast('Enter a message');
   setLoading(btn, 'Sending…');
-  const r = await api('/bots/'+btn.dataset.id+'/test-message',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({chat_id:chatId,text:text.trim()})});
+  const r = await api('/bots/'+__testBotId+'/test-message',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({chat_id:chatId,text})});
   if (r.error) { restoreBtn(btn); return toast(r.error); }
   toast('Test message sent');
-  restoreBtn(btn);
+  restoreBtn(btn); cancelTestMessage();
 }
 
 // Render the bot list + select dropdowns from the given bots array. Kept
@@ -447,11 +492,11 @@ function renderBots(bots, loadCmds = true){
             '<div class="meta"><a href="https://t.me/'+esc(b.username)+'" target="_blank" rel="noopener">@'+esc(b.username)+'</a> '+
             '<span class="muted">(…'+esc(b.token_hint)+')</span> <span class="'+statusClass+'">'+esc(statusText)+'</span></div>'+
             '<div class="actions">'+
-              '<button class="ghost" data-action="checkHealth" data-id="'+esc(b.id)+'" type="button">Check health</button>'+
-              '<button class="ghost" data-action="reconnectBot" data-id="'+esc(b.id)+'" type="button">Reconnect</button>'+
-              (isActive ? '<button class="ghost" data-action="disconnectBot" data-id="'+esc(b.id)+'" type="button">Disconnect</button>' : '')+
-              '<button class="ghost" data-action="selectBot" data-id="'+esc(b.id)+'" type="button">Select</button>'+
-              (page === 'bots' ? '<button class="ghost" data-action="testMessage" data-id="'+esc(b.id)+'" type="button">Test message</button>' : '')+
+              (isActive ? '<button class="ghost" data-action="checkHealth" data-id="'+esc(b.id)+'" type="button">Check health</button>' : '')+
+              (isActive ? '<button class="ghost" data-action="disconnectBot" data-id="'+esc(b.id)+'" type="button">Disconnect</button>'
+                        : '<button class="ghost" data-action="reconnectBot" data-id="'+esc(b.id)+'" type="button">Reconnect</button>')+
+              (isActive ? '<button class="ghost" data-action="selectBot" data-id="'+esc(b.id)+'" type="button">Select</button>' : '')+
+              (isActive && page === 'bots' ? '<button class="ghost" data-action="testMessage" data-id="'+esc(b.id)+'" type="button">Test message</button>' : '')+
               (page === 'bots' ? '<button class="danger" data-action="deleteBot" data-id="'+esc(b.id)+'" type="button">Delete</button>' : '')+
             '</div>'+
           '</div>';
@@ -471,19 +516,33 @@ function renderBots(bots, loadCmds = true){
   if (botSelect && custBotId) botSelect.value = custBotId;
   if (bcBotSelect && firstBotId) bcBotSelect.value = firstBotId;
 
+  // Hide the connect form once the plan's active-bot slots are full.
+  const cf = $('connectForm');
+  if (cf) cf.style.display = (bots.filter(b => b.status === 'active').length >= __maxBots) ? 'none' : '';
+
   // customize panel (only on pages that show it)
   if ($('customizePanel') && (page === 'overview' || page === 'bots' || page === 'commands')) {
-    if (custBotId) {
-      const bot = bots.find(b => b.id === custBotId) || bots[0];
-      if (bot) {
-        $('customizePanel').style.display='';
-        const welcome = $('welcomeMsg'); if (welcome) welcome.value = bot.welcome_message || '';
-        if (loadCmds) loadCommands();
-      }
+    const bot = custBotId ? (bots.find(b => b.id === custBotId) || bots[0]) : null;
+    if (bot) {
+      $('customizePanel').style.display='';
+      applyCustomizeState(bot);
+      if (loadCmds) loadCommands();
     } else {
       $('customizePanel').style.display='none';
     }
   }
+}
+
+// A disconnected bot can't be customized — reflect that by disabling the
+// welcome/command inputs and showing a hint, instead of silently accepting
+// edits that won't apply until the bot is reconnected.
+function applyCustomizeState(bot){
+  const active = bot.status === 'active';
+  const note = $('custDisabledNote'); if (note) note.style.display = active ? 'none' : '';
+  const welcome = $('welcomeMsg'); if (welcome) welcome.value = bot.welcome_message || '';
+  ['welcomeMsg','cmdName','cmdResp'].forEach(id => { const el = $(id); if (el) el.disabled = !active; });
+  const panel = $('customizePanel');
+  if (panel) panel.querySelectorAll('[data-action="saveWelcome"],[data-action="addCommand"]').forEach(b => { b.disabled = !active; });
 }
 
 function selectBotById(id){
@@ -493,8 +552,7 @@ function selectBotById(id){
   if (botSelect && id) botSelect.value = id;
   if ($('customizePanel')) {
     $('customizePanel').style.display = id ? '' : 'none';
-    const welcome = $('welcomeMsg');
-    if (welcome) welcome.value = bot?.welcome_message || '';
+    if (bot) applyCustomizeState(bot);
     loadCommands();
   }
 }
@@ -635,7 +693,8 @@ async function handleAction(e) {
   submitting = true;
   // Show a loading state on the clicked control for every network-backed action.
   // Pure client-side actions (copy, local bot selection) don't need it.
-  const NO_LOADING = action === 'copyLink' || action === 'copyPostback' || action === 'selectBot';
+  const NO_LOADING = action === 'copyLink' || action === 'copyPostback' || action === 'selectBot'
+    || action === 'testMessage' || action === 'cancelTestMessage';
   if (!NO_LOADING) setLoading(target);
   try {
     if (action === 'logout') { e.preventDefault(); await logout(target); }
@@ -644,7 +703,9 @@ async function handleAction(e) {
     else if (action === 'disconnectBot') { e.preventDefault(); await disconnectBot(target); }
     else if (action === 'reconnectBot') { e.preventDefault(); await reconnectBot(target); }
     else if (action === 'deleteBot') { e.preventDefault(); await deleteBot(target); }
-    else if (action === 'testMessage') { e.preventDefault(); await testMessage(target); }
+    else if (action === 'testMessage') { e.preventDefault(); testMessage(target); }
+    else if (action === 'sendTestMessage') { e.preventDefault(); await sendTestMessage(target); }
+    else if (action === 'cancelTestMessage') { e.preventDefault(); cancelTestMessage(); }
     else if (action === 'selectBot') { e.preventDefault(); selectBotById(target.dataset.id); }
     else if (action === 'createOffer') { e.preventDefault(); await createOffer(target); }
     else if (action === 'addCommand') { e.preventDefault(); await addCommand(target); }
