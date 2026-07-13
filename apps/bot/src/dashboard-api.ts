@@ -196,6 +196,29 @@ export function buildDashboardApi(): Hono<{ Bindings: DashApiBindings; Variables
     ));
   });
 
+  // Subscriber totals + deep-link attribution (where subscribers came from).
+  api.get("/stats/subscribers", async (c) => {
+    const uid = c.get("uid");
+    const totals = await one<{ total: number; active: number; new_7d: number; new_30d: number }>(
+      `SELECT count(*)::int AS total,
+              count(*) FILTER (WHERE NOT bs.is_blocked)::int AS active,
+              count(*) FILTER (WHERE bs.first_seen > now() - interval '7 days')::int AS new_7d,
+              count(*) FILTER (WHERE bs.first_seen > now() - interval '30 days')::int AS new_30d
+         FROM bot_subscribers bs JOIN bots b ON b.id = bs.bot_id
+        WHERE b.owner_id = $1`,
+      [uid]
+    );
+    const sources = await query<{ source: string; count: number }>(
+      `SELECT coalesce(nullif(bs.source, ''), 'direct') AS source, count(*)::int AS count
+         FROM bot_subscribers bs JOIN bots b ON b.id = bs.bot_id
+        WHERE b.owner_id = $1
+        GROUP BY coalesce(nullif(bs.source, ''), 'direct')
+        ORDER BY count DESC, source ASC LIMIT 10`,
+      [uid]
+    );
+    return c.json({ totals: totals ?? { total: 0, active: 0, new_7d: 0, new_30d: 0 }, sources });
+  });
+
   api.get("/bots", async (c) => {
     return c.json(await query(
       `SELECT id, username, token_hint, status, welcome_message, created_at FROM bots WHERE owner_id = $1 ORDER BY created_at DESC`,

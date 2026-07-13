@@ -111,6 +111,29 @@ describe("bot commands", () => {
     expect(vipBtn.callback_data).toBe("m:c:vip");
   });
 
+  it("/start with a deep-link payload records the source (first-touch)", async () => {
+    const calls: any[] = [];
+    mockQuery.mockImplementation((sql: string, params: any[]) => { calls.push([sql, params]); return Promise.resolve([]); });
+    const bot = makeBot({ id: "b-1", owner_id: "u-1", welcome_message: "Hi" });
+    capturePayloads(bot);
+
+    await bot.handleUpdate(cmdUpdate("start", "twitch") as any);
+    const attr = calls.find(([sql]) => /SET source/.test(sql));
+    expect(attr).toBeTruthy();
+    expect(attr[1]).toContain("twitch");
+  });
+
+  it("/subscribe on a free-plan bot warns that DMs are a paid feature", async () => {
+    mockQuery.mockImplementation((sql: string) =>
+      /FROM sites/.test(sql) ? Promise.resolve([{ id: "s-1", name: "My Board" }]) : Promise.resolve([]));
+    // one() returns null → getUserPlan falls back to the free tier.
+    const bot = makeBot({ id: "b-1", owner_id: "u-1", welcome_message: "Hi" });
+    const replies = captureReplies(bot);
+
+    await bot.handleUpdate(cmdUpdate("subscribe", "Ace") as any);
+    expect(replies[replies.length - 1][1]).toContain("paid feature");
+  });
+
   it("tapping a custom-command menu button replies with its response", async () => {
     mockQuery.mockImplementation(() => Promise.resolve([]));
     const bot = makeBot({ id: "b-1", owner_id: "u-1", welcome_message: "Hi" });
@@ -127,6 +150,21 @@ describe("bot commands", () => {
     expect(replies[0][1]).toContain("no longer available");
   });
 });
+
+function cmdUpdate(cmd: string, arg = "") {
+  const text = arg ? "/" + cmd + " " + arg : "/" + cmd;
+  return {
+    update_id: 1,
+    message: {
+      message_id: 1,
+      from: { id: 42, is_bot: false, first_name: "User" },
+      chat: { id: 42, type: "private" },
+      date: Math.floor(Date.now() / 1000),
+      text,
+      entities: [{ type: "bot_command", offset: 0, length: cmd.length + 1 }],
+    },
+  };
+}
 
 function capturePayloads(bot: Bot) {
   const payloads: any[] = [];

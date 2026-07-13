@@ -11,6 +11,7 @@ import { decryptToken } from "../../../shared/crypto.js";
 import { config } from "./config.js";
 import { rateLimit, type RateLimitKV } from "./ratelimit.js";
 import { setMyCommands } from "./telegram.js";
+import { getUserPlan } from "./plans.js";
 
 export interface BotRow {
   id: string;
@@ -147,6 +148,17 @@ export function wireHandlers(bot: Bot, botRow: BotRow, env?: any): void {
   }
 
   bot.command("start", async (ctx) => {
+    // Deep-link attribution: t.me/<bot>?start=<source> arrives as ctx.match.
+    // Record it first-touch (only if not already set) so re-/start-ing keeps
+    // the original source. Sanitised to a short, safe token.
+    const payload = String(ctx.match ?? "").trim().slice(0, 64).replace(/[^A-Za-z0-9_.:-]/g, "");
+    if (payload && ctx.from?.id) {
+      await query(
+        `UPDATE bot_subscribers SET source = $1
+          WHERE bot_id = $2 AND tg_user_id = $3 AND source IS NULL`,
+        [payload, botRow.id, ctx.from.id]
+      ).catch((e) => console.error("[start] attribution update failed:", String((e as any)?.message ?? e)));
+    }
     const welcome = botRow.welcome_message ?? "Welcome! Tap a button below to get started.";
     await sendMenu(ctx, welcome);
   });
@@ -220,9 +232,17 @@ export function wireHandlers(bot: Bot, botRow: BotRow, env?: any): void {
          ON CONFLICT (bot_id, tg_user_id, site_id) DO UPDATE SET player_name = EXCLUDED.player_name`,
         [botRow.id, site.id, from.id, playerName]
       );
+      // Rank-change DMs only fire on paid plans (see leaderboard save path).
+      // Be honest on Free so viewers don't expect DMs that never arrive.
+      let paid = false;
+      try { paid = (await getUserPlan(botRow.owner_id)).tier !== "free"; }
+      catch (e) { console.error("[subscribe] plan lookup failed:", String((e as any)?.message ?? e)); }
       await ctx.reply(
-        `✅ Subscribed! You'll get a DM when "${playerName}" changes rank on the ${site.name || "leaderboard"}.\n\n` +
-        "Send /unsubscribe to stop notifications."
+        paid
+          ? `✅ Subscribed! You'll get a DM when "${playerName}" changes rank on the ${site.name || "leaderboard"}.\n\n` +
+            "Send /unsubscribe to stop notifications."
+          : `✅ Saved! I'll watch "${playerName}" on the ${site.name || "leaderboard"}.\n\n` +
+            "Heads up: automatic rank-change DMs are a paid feature this streamer hasn't enabled yet, so you may not get alerts. Send /unsubscribe to stop."
       );
     } catch (err) {
       console.error("[subscribe]", err);

@@ -141,10 +141,18 @@ ${shellNavHtml({ activePath: "/bot" + (page === "overview" ? "/dashboard" : "/" 
     <div class="panel"><h2>Clicks (14d)</h2><div class="stat" id="totClicks">–</div></div>
     <div class="panel"><h2>Unique (14d)</h2><div class="stat" id="totUnique">–</div></div>
     <div class="panel"><h2>Active offers</h2><div class="stat" id="totOffers">–</div></div>
+    <div class="panel"><h2>Subscribers</h2><div class="stat" id="totSubs">–</div><div class="muted" id="subsNew" style="font-size:12px"></div></div>
   </div>
 
   <div class="panel" data-page="overview"><h2>Daily clicks</h2><svg id="chart" role="img" aria-label="Daily clicks chart" width="100%" height="120" preserveAspectRatio="none"></svg>
     <div id="chartLabels" class="muted" style="display:flex;justify-content:space-between;font-size:11px"></div></div>
+
+  <!-- Subscriber attribution (overview) -->
+  <div class="panel" data-page="overview"><h2>Where subscribers came from</h2>
+    <p class="muted" style="font-size:13px;margin-bottom:10px">Share a deep link like <code id="deepLinkExample">t.me/&lt;yourbot&gt;?start=twitch</code> in your bio, stream, or posts — anyone who taps it and starts your bot is tagged with that source, so you can see which channel drives subscribers. <b>direct</b> = started the bot without a link.</p>
+    <table><thead><tr><th>Source</th><th style="text-align:right">Subscribers</th></tr></thead>
+    <tbody id="subSources"><tr><td colspan="2" class="muted">Loading…</td></tr></tbody></table>
+  </div>
 
   <!-- Bot list + connect (overview, bots) -->
   <div class="panel" data-page="overview bots"><h2>Your bots</h2>
@@ -326,8 +334,25 @@ async function load() {
 
   renderBots(bots);
 
+  if (page === 'overview') loadSubscribers(bots);
+
   __offers = offers || [];
   renderOffers();
+}
+
+// Subscriber totals + deep-link attribution (overview only).
+async function loadSubscribers(bots){
+  const s = await api('/stats/subscribers');
+  if (!s || s.error) return;
+  const t = s.totals || {};
+  setText('totSubs', t.active ?? 0);
+  setText('subsNew', (t.new_7d ?? 0) + ' new in 7d');
+  const rows = (s.sources || []);
+  setHtml('subSources', rows.length
+    ? rows.map(r=>'<tr><td>'+esc(r.source)+'</td><td style="text-align:right">'+esc(String(r.count))+'</td></tr>').join('')
+    : '<tr><td colspan="2" class="muted">No subscribers yet.</td></tr>');
+  const active = (bots || []).find(b=>b.status==='active' && b.username);
+  if (active) setText('deepLinkExample', 't.me/'+active.username+'?start=twitch');
 }
 
 // Render the offers table from client state. Mutation handlers update __offers
