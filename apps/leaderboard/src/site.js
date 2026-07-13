@@ -375,6 +375,14 @@ export async function saveSite(env, user, payload, siteId) {
     }
   }
   const b = payload.brand || {};
+  // Validate the referral/CTA link server-side (the client only rejects it at
+  // render time via safeUrl). A non-empty value must be a valid http(s) URL.
+  if (b.ctaUrl != null && String(b.ctaUrl).trim() !== "") {
+    const cta = String(b.ctaUrl).trim();
+    let ctaOk = false;
+    try { ctaOk = /^https?:$/.test(new URL(cta).protocol); } catch { ctaOk = false; }
+    if (!ctaOk) return { error: "Referral link must be a valid http:// or https:// URL.", code: "invalid_cta" };
+  }
   // Keep the top-level site name in sync with brand.name (dashboard sends both).
   const siteName = String(payload.name ?? b.name ?? site.name).trim().slice(0, 80) || site.name;
   const extra = JSON.stringify({

@@ -574,14 +574,17 @@ async function upgrade(target){
 }
 
 function setLoading(el, text = 'Loading…') {
+  if (!el) return;
   if (el.disabled !== undefined) el.disabled = true;
-  const original = el.textContent;
+  // Capture the original label only once so repeated setLoading calls (e.g. a
+  // central call plus an action-specific 'Connecting…') don't clobber it.
+  if (el.dataset.originalText === undefined) el.dataset.originalText = el.textContent;
   el.textContent = text;
-  el.dataset.originalText = original;
 }
 function restoreBtn(el) {
+  if (!el) return;
   if (el.disabled !== undefined) el.disabled = false;
-  if (el.dataset.originalText) el.textContent = el.dataset.originalText;
+  if (el.dataset.originalText !== undefined) { el.textContent = el.dataset.originalText; delete el.dataset.originalText; }
 }
 
 load(); loadExtras();
@@ -602,6 +605,10 @@ async function handleAction(e) {
   if (action === 'toggleToken') { e.preventDefault(); toggleToken(target); return; }
   if (submitting && action !== 'copyLink' && action !== 'copyPostback') return;
   submitting = true;
+  // Show a loading state on the clicked control for every network-backed action.
+  // Pure client-side actions (copy, local bot selection) don't need it.
+  const NO_LOADING = action === 'copyLink' || action === 'copyPostback' || action === 'selectBot';
+  if (!NO_LOADING) setLoading(target);
   try {
     if (action === 'logout') { e.preventDefault(); await logout(target); }
     else if (action === 'connectBot') { e.preventDefault(); await connectBot(target); }
