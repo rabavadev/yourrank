@@ -149,7 +149,7 @@ async function handleRequest(request, env, ctx) {
 
       // --- static assets ---
       if (path.startsWith("/assets/")) {
-        return serveStaticAsset(path);
+        return serveStaticAsset(path, request);
       }
 
       // --- SEO endpoints ---
