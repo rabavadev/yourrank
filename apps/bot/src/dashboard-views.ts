@@ -62,7 +62,6 @@ export function loginHtml(botUsername: string, devLogin: boolean, nonce?: string
   .card { text-align:center; max-width:380px; }
   .sr-only { position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0); }
   </style></head><body>
-<a href="#main-content" class="sr-only" style="position:absolute;top:0;left:0;z-index:9999;padding:8px 16px;background:var(--accent,#c8ff00);color:#000;font-weight:700;text-decoration:none">Skip to content</a>
 <div class="center"><div class="panel card" id="main-content">
   <h1 style="margin-bottom:8px">🎰 Streamer Dashboard</h1>
   <p class="muted" style="margin-bottom:20px">Manage your bot, offers and click stats.</p>
@@ -91,11 +90,6 @@ async function devLogin(btn) {
   if (btn) { btn.disabled = true; btn.textContent = 'Entering…'; }
   const r = await fetch('/bot/auth/dev', {method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({telegram_user_id:id})});
   if (r.ok) location.reload(); else alert('Failed');
-}
-const skip = document.querySelector('.sr-only');
-if (skip) {
-  skip.addEventListener('focus', () => skip.classList.remove('sr-only'));
-  skip.addEventListener('blur', () => skip.classList.add('sr-only'));
 }
 document.addEventListener('click', (e) => {
   const target = e.target.closest('[data-action]');
@@ -132,7 +126,6 @@ export function appHtml(
   return `<!doctype html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Streamer Dashboard</title><style>${SHELL_NAV_CSS}${BASE_CSS}</style></head><body data-page="${page}">
-<a href="#main-content" class="sr-only" style="position:absolute;top:0;left:0;z-index:9999;padding:8px 16px;background:var(--accent,#c8ff00);color:#000;font-weight:700;text-decoration:none">Skip to content</a>
 ${shellNavHtml({ activePath: "/bot" + (page === "overview" ? "/dashboard" : "/" + page), user, logoutAction: "/bot/auth/logout" })}
 <div class="wrap" id="main-content">
   <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:12px">
@@ -630,11 +623,6 @@ document.addEventListener('click', handleAction);
 const logoutForm = document.querySelector('.gm-logout-form');
 if (logoutForm) {
   logoutForm.addEventListener('submit', (e) => { e.preventDefault(); logout(e.submitter); });
-}
-const skip = document.querySelector('.sr-only');
-if (skip) {
-  skip.addEventListener('focus', () => skip.classList.remove('sr-only'));
-  skip.addEventListener('blur', () => skip.classList.add('sr-only'));
 }
 const botSelect = $('botSelect');
 if (botSelect) botSelect.addEventListener('change', (e) => { selectBotById(e.target.value); });
