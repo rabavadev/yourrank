@@ -330,6 +330,30 @@ describe("buildDashboard", () => {
     expect(body.message_id).toBe(1);
   });
 
+  it("GET /dash/api/broadcasts/audience returns the reachable subscriber count", async () => {
+    mockOne.mockImplementation((sql: string) => {
+      if (sql.includes("SELECT status FROM users")) return Promise.resolve({ status: "active" });
+      if (sql.includes("FROM bot_subscribers")) return Promise.resolve({ count: 42 });
+      return Promise.resolve(null);
+    });
+    const req = new Request("http://localhost:8787/dash/api/broadcasts/audience?bot_id=b-1", {
+      headers: { cookie: "yr_session=token123" },
+    });
+    const res = await app.fetch(req, {} as any);
+    expect(res.status).toBe(200);
+    expect(((await res.json()) as any).count).toBe(42);
+  });
+
+  it("GET /dash/api/broadcasts/audience requires bot_id", async () => {
+    mockOne.mockImplementation((sql: string) =>
+      sql.includes("SELECT status FROM users") ? Promise.resolve({ status: "active" }) : Promise.resolve(null));
+    const req = new Request("http://localhost:8787/dash/api/broadcasts/audience", {
+      headers: { cookie: "yr_session=token123" },
+    });
+    const res = await app.fetch(req, {} as any);
+    expect(res.status).toBe(400);
+  });
+
   it("DELETE /dash/api/broadcasts/:id cancels a scheduled broadcast", async () => {
     mockOne.mockImplementation((sql: string) => {
       if (sql.includes("SELECT status FROM users")) return Promise.resolve({ status: "active" });

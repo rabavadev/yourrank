@@ -237,7 +237,14 @@ ${shellNavHtml({ activePath: "/bot" + (page === "overview" ? "/dashboard" : "/" 
     <select id="bcBotSelect" style="max-width:300px"><option value="">Loading bots…</option></select>
     <label for="bcBody" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)">Message</label>
     <textarea id="bcBody" rows="3" placeholder="Message to all your bot's subscribers (Markdown supported)"></textarea>
-    <button data-action="sendBroadcast" type="button">Send broadcast</button>
+    <div id="bcAudience" class="muted" style="font-size:13px;margin:2px 0 10px" aria-live="polite">This will send to <b>–</b> subscribers.</div>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+      <button data-action="sendBroadcast" type="button">Send broadcast</button>
+      <span class="muted" style="font-size:13px">or send a test copy to</span>
+      <input id="bcTestChat" inputmode="numeric" placeholder="your chat ID" style="max-width:150px">
+      <button class="ghost" data-action="testBroadcast" type="button">Send test</button>
+    </div>
+    <p class="muted" style="font-size:12px;margin-top:6px">Get your chat ID by sending <code>/start</code> to <a href="https://t.me/userinfobot" target="_blank" rel="noopener">@userinfobot</a>. A broadcast can't be undone once it sends.</p>
     <table style="margin-top:14px"><thead><tr><th>Message</th><th>Bot</th><th>Status</th><th>Sent</th><th>Failed</th><th></th></tr></thead>
     <tbody id="bcList"></tbody></table>
   </div>
@@ -540,6 +547,7 @@ function renderBots(bots, loadCmds = true){
   if (!bots.length) custBotId = null;
   if (botSelect && custBotId) botSelect.value = custBotId;
   if (bcBotSelect && firstBotId) bcBotSelect.value = firstBotId;
+  if (bcBotSelect) updateAudience();
 
   // Hide the connect form once the plan's active-bot slots are full.
   const cf = $('connectForm');
@@ -644,16 +652,47 @@ async function deleteCommand(target){
   toast('Command deleted'); restoreBtn(target);
 }
 
+let __bcAudience = null;
+// Show how many subscribers the selected bot would reach, so the streamer
+// knows the blast size before committing.
+async function updateAudience(){
+  const el = $('bcAudience');
+  if (!el) return;
+  const botId = $('bcBotSelect')?.value || firstBotId;
+  if (!botId) { __bcAudience = null; el.innerHTML = 'Select a bot to see how many subscribers it will reach.'; return; }
+  const r = await api('/broadcasts/audience?bot_id='+encodeURIComponent(botId));
+  if (!r || r.error) { __bcAudience = null; return; }
+  __bcAudience = r.count;
+  el.innerHTML = 'This will send to <b>'+esc(String(r.count))+'</b> subscriber'+(r.count===1?'':'s')+'.';
+}
 async function sendBroadcast(btn){
   const body = $('bcBody').value.trim();
   if (!body) return toast('Write a message first');
   const botSelect = $('bcBotSelect');
   const botId = botSelect?.value || firstBotId;
   if (!botId) return toast('Select a bot first');
+  const n = __bcAudience;
+  const who = (typeof n === 'number') ? n + ' subscriber' + (n===1?'':'s') : 'all subscribers';
+  if (typeof n === 'number' && n === 0) return toast("This bot has no subscribers yet — nobody would receive it.");
+  if (!confirm('Send this broadcast to '+who+"? This can't be undone.")) return;
   setLoading(btn, 'Sending…');
   const r = await api('/broadcasts',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({bot_id:botId, body})});
   if (r.error) { restoreBtn(btn); return toast(r.error); }
   $('bcBody').value=''; toast('Broadcast queued'); restoreBtn(btn); loadExtras();
+}
+// Send a single test copy of the broadcast to one chat ID before blasting.
+async function testBroadcast(btn){
+  const body = $('bcBody').value.trim();
+  if (!body) return toast('Write a message first');
+  const botId = $('bcBotSelect')?.value || firstBotId;
+  if (!botId) return toast('Select a bot first');
+  const chatId = Number(($('bcTestChat')?.value || '').trim());
+  if (!chatId) return toast('Enter your chat ID to send a test');
+  setLoading(btn, 'Sending…');
+  const r = await api('/bots/'+botId+'/test-message',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({chat_id:chatId, text:body})});
+  restoreBtn(btn);
+  if (r.error) return toast(r.error);
+  toast('Test sent — check that chat');
 }
 async function cancelBroadcast(btn){
   if (!confirm('Cancel this scheduled broadcast?')) return;
@@ -736,6 +775,7 @@ async function handleAction(e) {
     else if (action === 'addCommand') { e.preventDefault(); await addCommand(target); }
     else if (action === 'saveWelcome') { e.preventDefault(); await saveWelcome(target); }
     else if (action === 'sendBroadcast') { e.preventDefault(); await sendBroadcast(target); }
+    else if (action === 'testBroadcast') { e.preventDefault(); await testBroadcast(target); }
     else if (action === 'cancelBroadcast') { e.preventDefault(); await cancelBroadcast(target); }
     else if (action === 'revealPostback') { e.preventDefault(); await revealPostback(target); }
     else if (action === 'copyPostback') { e.preventDefault(); await copyPostback(target); }
@@ -761,7 +801,7 @@ if (logoutForm) {
 const botSelect = $('botSelect');
 if (botSelect) botSelect.addEventListener('change', (e) => { selectBotById(e.target.value); });
 const bcBotSelect = $('bcBotSelect');
-if (bcBotSelect) bcBotSelect.addEventListener('change', (e) => { firstBotId = e.target.value; });
+if (bcBotSelect) bcBotSelect.addEventListener('change', (e) => { firstBotId = e.target.value; updateAudience(); });
 
 window.addEventListener('error', () => {
   const bl = $('botList'); if (bl) bl.textContent = 'Something went wrong. Please reload the page.';

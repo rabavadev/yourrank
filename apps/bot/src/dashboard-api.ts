@@ -608,6 +608,21 @@ export function buildDashboardApi(): Hono<{ Bindings: DashApiBindings; Variables
     ));
   });
 
+  // How many subscribers a broadcast would reach (active, non-blocked),
+  // so the UI can warn before sending to the whole list.
+  api.get("/broadcasts/audience", async (c) => {
+    const uid = c.get("uid");
+    const botId = c.req.query("bot_id");
+    if (!botId) return c.json({ error: "bot_id required" }, 400);
+    const row = await one<{ count: number }>(
+      `SELECT count(*)::int AS count
+         FROM bot_subscribers bs JOIN bots b ON b.id = bs.bot_id
+        WHERE b.id = $1 AND b.owner_id = $2 AND NOT bs.is_blocked`,
+      [botId, uid]
+    );
+    return c.json({ count: row?.count ?? 0 });
+  });
+
   api.post("/broadcasts", async (c) => {
     const uid = c.get("uid");
     const gateErr = await checkFeature(uid, "broadcasts");
