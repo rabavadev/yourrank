@@ -36,8 +36,12 @@ export async function serveSitemapXml(origin, env) {
   try {
     // PERF-001: LIMIT 5000 prevents unbounded result sets (more than enough for any
     // reasonable leaderboard count). The sitemap spec caps at 50k URLs anyway.
-    const sites = await query("SELECT s.slug, s.updated_at FROM sites s JOIN users u ON u.id = s.user_id WHERE s.published=true AND u.status != 'suspended' LIMIT 5000");
-    const TEST_SLUG_RE = /^e2e[-_]|^debug[-_]|^del-|^rapid-|^login-debug|^verifyfix|^launch-verify|^devintest|^audittest|^invalid-|^test[-_]/;
+    // Only index boards that actually have players — an empty board renders as
+    // "$0 / 0 players" and is worthless (and often a test/throwaway account).
+    // This is the general gate; the regex below is a belt-and-suspenders filter
+    // for obvious test slugs that somehow slipped in with content.
+    const sites = await query("SELECT s.slug, s.updated_at FROM sites s JOIN users u ON u.id = s.user_id WHERE s.published=true AND u.status != 'suspended' AND EXISTS (SELECT 1 FROM players p WHERE p.site_id = s.id) LIMIT 5000");
+    const TEST_SLUG_RE = /^e2e[-_]|^debug|^del-|^rapid-|^login-debug|^verifyfix|^launch-verify|^devin|^audit|^smoketest|^bugtest|^test|^zfefz/;
     for (const s of sites) {
       if (TEST_SLUG_RE.test(s.slug)) continue;
       const lastmod = s.updated_at ? `<lastmod>${new Date(s.updated_at).toISOString().split("T")[0]}</lastmod>` : "";

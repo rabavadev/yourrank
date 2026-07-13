@@ -118,3 +118,39 @@ describe("saveSite referral/CTA URL validation", () => {
     expect(r.code).not.toBe("invalid_cta");
   });
 });
+
+describe("saveSite customDomain / slug handling", () => {
+  const SITE = { id: "site-1", slug: "x", user_id: "user-1", cta_url: "", published: true, updated_at: null };
+  beforeEach(() => { mockOne.mockReset(); mockQuery.mockReset(); mockExec.mockReset(); });
+
+  it("does NOT reject a round-tripped customDomain field", async () => {
+    mockOne.mockResolvedValue(SITE);
+    const r = await saveSite(mockEnv(), USER_ROW, { customDomain: "foo.example.com" }, "site-1");
+    expect(r.error).toBeUndefined();
+    expect(r.ok).toBe(true);
+  });
+
+  it("rejects renaming the slug to a reserved word", async () => {
+    mockOne.mockResolvedValueOnce(SITE); // getBoardById
+    const r = await saveSite(mockEnv(), USER_ROW, { slug: "dashboard" }, "site-1");
+    expect(r.code).toBe("slug_reserved");
+  });
+
+  it("rejects renaming the slug to one already taken", async () => {
+    mockOne
+      .mockResolvedValueOnce(SITE)                 // getBoardById
+      .mockResolvedValueOnce({ id: "other-site" }); // slug uniqueness check
+    const r = await saveSite(mockEnv(), USER_ROW, { slug: "taken" }, "site-1");
+    expect(r.code).toBe("slug_taken");
+  });
+
+  it("applies a valid slug rename and returns the new slug", async () => {
+    mockOne
+      .mockResolvedValueOnce(SITE)                       // getBoardById
+      .mockResolvedValueOnce(null)                       // slug uniqueness check → free
+      .mockResolvedValue({ ...SITE, slug: "newhandle" }); // updatedSite reads
+    const r = await saveSite(mockEnv(), USER_ROW, { slug: "NewHandle" }, "site-1");
+    expect(r.error).toBeUndefined();
+    expect(r.slug).toBe("newhandle");
+  });
+});

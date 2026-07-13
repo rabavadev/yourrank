@@ -82,7 +82,7 @@ export const PAGES = {
 <div class="price-card"><div class="price-head"><h3>Free</h3><div class="price-amount">$0</div><div class="price-period">forever</div></div><ul class="price-features"><li>1 leaderboard</li><li>Up to 10 players</li><li>YourRank badge on your page</li><li>Basic analytics (7 days)</li><li>Live countdown &amp; auto-sort</li></ul><a href="/signup" class="btn btn--sm price-cta">Start free</a></div>
 <div class="price-card"><div class="price-head"><h3>Starter</h3><div class="price-amount">$12<span>/mo</span></div></div><ul class="price-features"><li>1 leaderboard</li><li>Up to 25 players</li><li>No YourRank badge</li><li>Full analytics (30 days)</li><li>CSV import</li></ul><a href="/signup" class="btn btn--sm price-cta">Start</a></div>
 <div class="price-card price-card--popular"><div class="price-badge">Most Popular</div><div class="price-head"><h3>Pro</h3><div class="price-amount">$29<span>/mo</span></div></div><ul class="price-features"><li>Up to 3 leaderboards</li><li>Unlimited players</li><li>No YourRank badge</li><li>Custom domain</li><li>OBS overlay widget</li><li>Discord webhooks</li><li>Telegram notifications</li><li>Priority support</li></ul><a href="/signup" class="btn btn--sm btn--accent price-cta">Go Pro</a></div>
-<div class="price-card"><div class="price-head"><h3>Agency</h3><div class="price-amount">$79<span>/mo</span></div></div><ul class="price-features"><li>Unlimited leaderboards</li><li>Unlimited players</li><li>White-label branding</li><li>API access</li><li>Everything in Pro</li><li>Dedicated support</li></ul><a href="mailto:contact@yourrank.site" class="btn btn--sm price-cta">Contact us</a></div>
+<div class="price-card"><div class="price-head"><h3>Agency</h3><div class="price-amount">$79<span>/mo</span></div></div><ul class="price-features"><li>Unlimited leaderboards</li><li>Unlimited players</li><li>White-label branding</li><li>API access</li><li>Everything in Pro</li><li>Dedicated support</li></ul><a href="/contact" class="btn btn--sm price-cta">Contact us</a></div>
 <div class="price-card price-card--lifetime"><div class="price-badge price-badge--lifetime">Best Value</div><div class="price-head"><h3>Lifetime Pro</h3><div class="price-amount">$149<span class="price-amount-sub"> one-time</span></div></div><ul class="price-features"><li>All Pro features</li><li>Pay once, use forever</li><li>No monthly bills</li><li>Up to 3 leaderboards</li><li>Unlimited players</li><li>Custom domain &amp; OBS widget</li><li>Priority support</li></ul><a href="/signup" class="btn btn--accent btn--sm price-cta">Get Lifetime Pro</a></div>
 </div></div></section>
 <section id="start"><div class="wrap"><h2 class="sec">Ready to start?</h2><p class="sec-sub">Create your free page in under a minute. No credit card needed.</p>
@@ -290,7 +290,7 @@ export const PAGES = {
 <button class="btn btn--accent" id="goPro">Upgrade</button></div>
 <p class="hint" id="planHint">Pay with crypto (BTC, ETH, USDT and 100+ more). Activates automatically once the network confirms — usually a few minutes. <a href="/dashboard/billing">See all plans</a>.</p></div>
 <div class="savebar"><label class="hint chk mr-auto"><input type="checkbox" id="pubToggle" checked /> Page published</label><span class="status" id="status" role="status" aria-live="polite"></span><a class="btn btn--ghost" id="viewLive" href="#" target="_blank">View live page</a><button class="btn btn--accent" id="save">Save changes</button></div></div></main>
-<script src="/assets/dashboard.js?v=2"></script></body></html>`,
+<script src="/assets/dashboard.js?v=3"></script></body></html>`,
 
 analytics: `<!DOCTYPE html><html lang="en"><head>
 <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -376,7 +376,7 @@ billing: `<!DOCTYPE html><html lang="en"><head>
 <div class="card"><div class="skeleton skeleton-block skel-h-60"></div></div>
 <div class="card mt-18"><div class="skeleton skeleton-block skel-h-120"></div></div>
 </div></main>
-<script src="/assets/billing.js?v=2"></script></body></html>`,
+<script src="/assets/billing.js?v=3"></script></body></html>`,
 
 attribution: `<!DOCTYPE html><html lang="en"><head>
 <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -654,7 +654,7 @@ admin: `<!DOCTYPE html><html lang="en"><head>
 <div class="err" id="wiz_err" role="alert" aria-live="assertive"></div>
 </div>
 </main>
-<script src="/assets/setup-wizard.js?v=2"></script></body></html>`,
+<script src="/assets/setup-wizard.js?v=3"></script></body></html>`,
 
   overlay: (data, opts = {}) => {
   const b = data.brand || {};
@@ -897,7 +897,7 @@ ${endsAt ? `<p class="ov-timer-label">${esc(b.prizePool || "")} resets in</p>
 <h2 class="sec" style="margin-top:64px">Frequently asked questions</h2>
 <div class="steps" style="margin-top:24px">
 <div class="step"><div class="n">?</div><div><h3>Can I cancel any time?</h3><p>Yes. Cancel from <a href="/dashboard/billing">/dashboard/billing</a> and your page keeps paid features until the end of the billing period.</p></div></div>
-<div class="step"><div class="n">?</div><div><h3>Is there a free trial?</h3><p>Free plan is the trial — you can use it for as long as you want. Upgrade when you need more players or features.</p></div></div>
+<div class="step"><div class="n">?</div><div><h3>Is there a free trial?</h3><p>Two ways: the Free plan never expires — use it as long as you like — and you can also start a 7-day free Pro trial from <a href="/dashboard/billing">/dashboard/billing</a> to test every Pro feature before you pay.</p></div></div>
 <div class="step"><div class="n">?</div><div><h3>What payment methods do you accept?</h3><p>Crypto (BTC, ETH, USDT and 100+ more) through our payment processor. We are working on adding credit card checkout.</p></div></div>
 <div class="step"><div class="n">?</div><div><h3>Do you offer refunds?</h3><p>Subscriptions keep working until the end of the period and are not partially refunded. Crypto and lifetime purchases are non-refundable. See <a href="/refund">/refund</a>.</p></div></div>
 </div>

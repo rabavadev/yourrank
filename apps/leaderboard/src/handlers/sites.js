@@ -134,7 +134,7 @@ export async function handlePutSite(request, env) {
   const payload = await readJson(request);
   if (!payload) return bad("Invalid request");
   const r = await saveSite(env, user, payload, payload.siteId || null);
-  return r.error ? bad(r.error, 400) : json({ ok: true, updatedAt: r.updatedAt });
+  return r.error ? bad(r.error, 400) : json({ ok: true, updatedAt: r.updatedAt, slug: r.slug });
 }
 
 // DELETE /api/site — { siteId }

@@ -125,14 +125,16 @@ export async function handleMe(request, env) {
     const site = await one("SELECT slug FROM sites WHERE user_id=$1", [user.id]);
     const boards = await getUserBoardsList(env, user.id);
     const plan = effectivePlan(user);
-    // Check if the most recent active subscription is from a trial
+    // Inspect the most recent subscription row for trial + cancellation state so
+    // the billing UI can reflect "cancelled — Pro until X" instead of looking
+    // identical to an active subscription after a cancel.
     let isTrial = false;
-    if (plan === "pro" && user.has_trial) {
-      try {
-        const sub = await one("SELECT provider FROM subscriptions WHERE user_id=$1 ORDER BY created_at DESC LIMIT 1", [user.id]);
-        isTrial = sub?.provider === "trial";
-      } catch (e) { console.error("[handleMe] trial status check failed:", e); }
-    }
+    let subscriptionStatus = null;
+    try {
+      const sub = await one("SELECT provider, status FROM subscriptions WHERE user_id=$1 ORDER BY created_at DESC LIMIT 1", [user.id]);
+      subscriptionStatus = sub?.status || null;
+      if (plan === "pro" && user.has_trial) isTrial = sub?.provider === "trial";
+    } catch (e) { console.error("[handleMe] subscription status check failed:", e); }
     return json({ ok: true, user: {
       id: user.id, email: user.email,
       plan, planExpiresAt: user.plan_expires_at || 0,
@@ -141,6 +143,7 @@ export async function handleMe(request, env) {
       proPrice: priceUsd(env, "pro"),
       hasTrial: !!user.has_trial,
       isTrial,
+      subscriptionStatus,
       boards,
     } });
   } catch (e) {

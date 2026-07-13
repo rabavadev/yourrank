@@ -25,11 +25,51 @@ const lines=pta.value.split("\n").filter(l=>{const t=l.trim();return t&&!t.start
 pcount.textContent=lines.length+" player"+(lines.length===1?"":"s")+" detected";
 });
 
+// Parse the players textarea: "name, wagered" per line, comma/tab separated.
+function parsePlayers(){
+  const out=[];
+  $("wiz_players").value.split("\n").forEach(l=>{
+    const t=l.trim();
+    if(!t||t.startsWith("#")||t.startsWith("//"))return;
+    const parts=t.split(/[,\t]/).map(s=>s.trim());
+    const name=parts[0];
+    if(!name)return;
+    const wagered=parts[1]?(parseFloat(parts[1].replace(/[^0-9.]/g,""))||0):0;
+    out.push({name,wagered});
+  });
+  return out;
+}
+
 // Nav buttons
 $("wiz1next").onclick=()=>{if(!slugify(nameIn.value)&&!slugIn.value.trim()){$("wiz_err").textContent="Enter your name or a custom URL.";return;}if(!slugIn.value.trim()){slugIn.value=slugify(nameIn.value);}slug=slugify(slugIn.value);if(!slug){$("wiz_err").textContent="Invalid URL — letters, numbers, dashes only.";return;}$("wiz_err").textContent="";showStep(2);};
 $("wiz2next").onclick=()=>{$("wiz_err").textContent="";showStep(3);};
 $("wiz2back").onclick=()=>{$("wiz_err").textContent="";showStep(1);};
-$("wiz3next").onclick=()=>{$("wiz_err").textContent="";$("wiz_finalUrl").textContent="yourrank.site/"+slug;$("wiz_view").href=origin+"/"+slug;showStep(4);};
+// Persist the page here (not on the final button) so the "ready" screen only
+// appears once the board is actually saved and reflects the real slug.
+const wiz3next=$("wiz3next");
+wiz3next.onclick=async()=>{
+  $("wiz_err").textContent="";
+  wiz3next.disabled=true;
+  const prev=wiz3next.textContent;
+  wiz3next.textContent="Saving…";
+  try{
+    const name=$("wiz_name").value.trim()||slug;
+    const body={
+      slug,
+      name,
+      brand:{name,casino:$("wiz_casino").value.trim()||"Stake",code:$("wiz_code").value.trim(),ctaUrl:$("wiz_cta").value.trim()},
+      players:parsePlayers(),
+    };
+    const res=await fetch("/api/site",{method:"PUT",headers:{"content-type":"application/json","x-csrf-token":getCsrf()},body:JSON.stringify(body)});
+    const data=await res.json().catch(()=>({}));
+    if(!res.ok||!data.ok){$("wiz_err").textContent=data.error||"Failed to save your page. Try again.";wiz3next.disabled=false;wiz3next.textContent=prev;return;}
+    if(data.slug)slug=data.slug;
+    $("wiz_finalUrl").textContent="yourrank.site/"+slug;
+    $("wiz_view").href=origin+"/"+slug;
+    wiz3next.disabled=false;wiz3next.textContent=prev;
+    showStep(4);
+  }catch(e){$("wiz_err").textContent="Network error. Try again.";wiz3next.disabled=false;wiz3next.textContent=prev;}
+};
 $("wiz3back").onclick=()=>{$("wiz_err").textContent="";showStep(2);};
 $("wiz4back").onclick=()=>{$("wiz_err").textContent="";showStep(3);};
 
@@ -41,23 +81,10 @@ if(copyBtn){
   };
 }
 
-// Finish: create the site
+// Finish: the page was already saved at step 3, so just head to the dashboard.
 const finishBtn=$("wiz_finish");
 if(finishBtn){
-  finishBtn.onclick=async()=>{
-    finishBtn.disabled=true;
-    finishBtn.textContent="Creating...";
-    $("wiz_err").textContent="";
-    try{
-      const players=[];
-      $("wiz_players").value.split("\n").forEach(l=>{const t=l.trim();if(t&&!t.startsWith("#")&&!t.startsWith("//"))players.push(t);});
-      const body={slug,name:$("wiz_name").value.trim()||slug,casino:$("wiz_casino").value.trim()||null,period:null,prizePool:null,refCode:$("wiz_code").value.trim()||null,referralLink:$("wiz_cta").value.trim()||null,players:players.map(n=>({name:n}))};
-      const res=await fetch("/api/site",{method:"PUT",headers:{"content-type":"application/json","x-csrf-token":getCsrf()},body:JSON.stringify(body)});
-      const data=await res.json();
-      if(!data.ok){$("wiz_err").textContent=data.error||"Failed to create page.";finishBtn.disabled=false;finishBtn.textContent="Go to dashboard";return;}
-      location.href="/dashboard";
-    }catch(e){$("wiz_err").textContent="Network error. Try again.";finishBtn.disabled=false;finishBtn.textContent="Go to dashboard";}
-  };
+  finishBtn.onclick=()=>{location.href="/dashboard";};
 }
 
 function getCsrf(){const m=document.cookie.match(/(?:^|;\s*)__csrf=([^;]+)/);return m?m[1]:"";}

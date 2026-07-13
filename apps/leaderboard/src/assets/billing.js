@@ -71,29 +71,44 @@ function fmtExp(ms) {
   const isLifetime = !planExpiry || Number(planExpiry) === 0 || Number(planExpiry) > new Date("2099-01-01T00:00:00Z").getTime();
   const isPaid = plan !== "free";
 
+  const isCanceled = meData?.subscriptionStatus === "canceled";
+  const untilStr = planExpiry ? new Date(Number(planExpiry)).toUTCString().slice(5, 16) : null;
   if (isPaid && !isTrial && !isLifetime) {
     $("cancelBox").hidden = false;
-    $("cancelBtn").onclick = async () => {
-      if (!window.confirm("Cancel your paid subscription? You'll keep Pro features until the end of your current billing period.")) return;
-      const status = $("cancelStatus");
-      const btn = $("cancelBtn");
-      btn.disabled = true;
-      status.textContent = "Cancelling...";
-      try {
-        const r = await fetch("/api/billing/cancel", { method: "POST", credentials: "include", headers: { "x-csrf-token": getCsrf() } });
-        const d = await r.json();
-        if (r.ok && d.ok) {
-          status.textContent = d.message;
-          location.reload();
-        } else {
-          status.textContent = d.error || "Could not cancel.";
+    if (isCanceled) {
+      // Already cancelled — show status instead of an actionable button so the
+      // page doesn't look identical to an active subscription.
+      $("cancelBtn").hidden = true;
+      $("cancelStatus").textContent = untilStr
+        ? `Subscription cancelled. You'll keep ${currentTier.name} features until ${untilStr}, then revert to Free.`
+        : `Subscription cancelled. You'll keep ${currentTier.name} features until the end of your current billing period.`;
+    } else {
+      $("cancelBtn").onclick = async () => {
+        if (!window.confirm("Cancel your paid subscription? You'll keep Pro features until the end of your current billing period.")) return;
+        const status = $("cancelStatus");
+        const btn = $("cancelBtn");
+        btn.disabled = true;
+        status.textContent = "Cancelling...";
+        try {
+          const r = await fetch("/api/billing/cancel", { method: "POST", credentials: "include", headers: { "x-csrf-token": getCsrf() } });
+          const d = await r.json();
+          if (r.ok && d.ok) {
+            // Update in place (no reload) so the confirmation isn't lost and the
+            // now-invalid Cancel button disappears.
+            btn.hidden = true;
+            status.textContent = untilStr
+              ? `Subscription cancelled. You'll keep ${currentTier.name} features until ${untilStr}, then revert to Free.`
+              : d.message;
+          } else {
+            status.textContent = d.error || "Could not cancel.";
+            btn.disabled = false;
+          }
+        } catch {
+          status.textContent = "Network error. Try again.";
           btn.disabled = false;
         }
-      } catch {
-        status.textContent = "Network error. Try again.";
-        btn.disabled = false;
-      }
-    };
+      };
+    }
   }
 
   if (plan === "pro" || plan === "agency") {
