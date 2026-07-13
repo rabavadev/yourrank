@@ -465,7 +465,7 @@ botSetup: `<!DOCTYPE html><html lang="en"><head>
 <div><p class="mb-8">After you create the bot, BotFather sends you a message with an <b>API token</b>. It looks like this:</p>
 <div class="code-block code-block--muted">123456789:ABCdefGhIjKlMnOpQrStUvWxYz</div>
 <p class="mb-14 c-soft">Copy that whole string and paste it in the box below. We'll validate it and set up the webhook automatically.</p>
-<div class="field mb-10"><label for="botToken">Bot token</label><input id="botToken" placeholder="123456789:ABCdefGhIjKlMnOpQrStUvWxYz" autocomplete="off" spellcheck="false" /></div>
+<div class="field mb-10"><label for="botToken">Bot token</label><div class="pw-wrap"><input id="botToken" type="password" placeholder="123456789:ABCdefGhIjKlMnOpQrStUvWxYz" autocomplete="off" spellcheck="false" /><button type="button" class="pw-toggle" id="tokenToggle" aria-label="Show token">Show</button></div></div>
 <button class="btn btn--accent" id="connectBtn" type="button" disabled>Connect bot</button>
 <div id="connectStatus" class="hint mt-8 min-h-18" role="status" aria-live="polite"></div></div>
 </div>

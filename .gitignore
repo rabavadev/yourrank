@@ -2,6 +2,7 @@ node_modules/
 dist/
 .dev.vars
 .wrangler/
+bun.lockb
 *.log
 .DS_Store
 .env

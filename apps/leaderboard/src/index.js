@@ -16,7 +16,7 @@ import {
   resolveCustomDomain, isCustomHost,
   serveStaticAsset,
   serveRobotsTxt, serveSitemapXml, serveFavicon,
-  HTML, SECURE_HTML, notFoundPage, suspendedPage, comingSoonPage, withNonce
+  HTML, SECURE_HTML, notFoundPage, suspendedPage, withNonce
 } from "./middleware/index.js";
 import { findSiteLogoData, findSiteStatus, findUserTotpSecret } from "./data/sites.js";
 import { one } from "../../../shared/db.js";
@@ -427,12 +427,9 @@ a{color:#c8ff00;text-decoration:none;font-weight:600}</style></head><body>
         if (RESERVED.has(slug)) return new Response(notFoundPage(slug, nonce), { status: 404, headers: HTML_N });
         const r = await getPublicSite(env, slug);
         if (!r) {
-          // Check if site exists but is unpublished — show Coming Soon instead of 404
+          // Check if site exists but is unpublished — return 404 with noindex
           // BUG-002 FIX: sites table has no 'suspended' column; join users to get status.
           const rawSite = await findSiteStatus(slug);
-          if (rawSite && !rawSite.published && !rawSite.suspended) {
-            return new Response(comingSoonPage(slug, nonce), { status: 200, headers: HTML_N });
-          }
           if (rawSite && rawSite.suspended) return new Response(suspendedPage(nonce), { status: 403, headers: HTML_N });
           return new Response(notFoundPage(slug, nonce), { status: 404, headers: HTML_N });
         }

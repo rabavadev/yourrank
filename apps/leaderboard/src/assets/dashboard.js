@@ -70,11 +70,13 @@ function renderBoardSwitcher(){
     el.className = "board-item" + (isActive ? " board-item--active" : "");
     el.setAttribute("role", "button");
     el.setAttribute("tabindex", "0");
-    el.innerHTML = `<span class="board-slug">/${esc(b.slug)}</span><span class="board-name">${esc(b.name)}</span>${isActive ? '<span class="board-badge">editing</span>' : ''}`;
+    el.innerHTML = `<span class="board-slug">/${esc(b.slug)}</span><span class="board-name">${esc(b.name)}</span>${isActive ? '<span class="board-badge">editing</span>' : '<span class="board-actions"><button class="btn btn--sm" data-action="setActive" title="Set as active board" type="button">★</button><button class="btn btn--sm" data-action="delete" title="Delete board" type="button">×</button></span>'}`;
     if (!isActive) {
       el.style.cursor = "pointer";
-      el.addEventListener("click", () => { location.href = "/dashboard?board=" + encodeURIComponent(b.id); });
+      el.addEventListener("click", (e) => { if (e.target.closest('[data-action]')) return; location.href = "/dashboard?board=" + encodeURIComponent(b.id); });
       el.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); el.click(); } });
+      el.querySelector('[data-action="setActive"]')?.addEventListener("click", (e) => { e.stopPropagation(); setActiveBoard(b.id); });
+      el.querySelector('[data-action="delete"]')?.addEventListener("click", (e) => { e.stopPropagation(); deleteBoard(b.id); });
     }
     list.appendChild(el);
   });
@@ -111,6 +113,48 @@ function renderBoardSwitcher(){
   };
 }
 
+async function deleteBoard(siteId) {
+  const board = BOARDS.find(b => b.id === siteId);
+  if (!board) return;
+  if (!window.confirm(`Delete board /${board.slug}? This cannot be undone.`)) return;
+  try {
+    const res = await fetch("/api/site", {
+      method: "DELETE",
+      credentials: "include",
+      headers: { "content-type": "application/json", "x-csrf-token": getCsrf() },
+      body: JSON.stringify({ siteId })
+    }).then(guardAuth);
+    const d = await res.json();
+    if (res.ok && d.ok) {
+      BOARDS = BOARDS.filter(b => b.id !== siteId);
+      if (siteId === ACTIVE_SITE_ID) { location.href = "/dashboard"; return; }
+      renderBoardSwitcher();
+      $("status").textContent = "Board deleted.";
+    } else {
+      $("status").textContent = d.error || "Could not delete board.";
+    }
+  } catch { $("status").textContent = "Network error."; }
+}
+
+async function setActiveBoard(siteId) {
+  try {
+    const res = await fetch("/api/site/active", {
+      method: "POST",
+      credentials: "include",
+      headers: { "content-type": "application/json", "x-csrf-token": getCsrf() },
+      body: JSON.stringify({ siteId })
+    }).then(guardAuth);
+    const d = await res.json();
+    if (res.ok && d.ok) {
+      ACTIVE_SITE_ID = siteId;
+      renderBoardSwitcher();
+      $("status").textContent = "Active board updated.";
+    } else {
+      $("status").textContent = d.error || "Could not set active board.";
+    }
+  } catch { $("status").textContent = "Network error."; }
+}
+
 function esc(s) { return String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
 
 function renderPlan(){
@@ -135,7 +179,7 @@ async function checkout(btn){
   if (checkingOut) return; checkingOut = true;
   btn.disabled = true; const orig = btn.textContent; btn.textContent = "Opening checkout…";
   try {
-    const res = await fetch("/api/billing/checkout", { method: "POST", credentials: "include", headers: { "x-csrf-token": getCsrf() } }).then(guardAuth);
+    const res = await fetch("/api/billing/checkout", { method: "POST", credentials: "include", headers: { "content-type": "application/json", "x-csrf-token": getCsrf() }, body: JSON.stringify({ plan: "pro" }) }).then(guardAuth);
     const d = await res.json();
     if (res.ok && d.ok && d.url) { location.href = d.url; return; }
     $("status").textContent = d.error || "Couldn't start checkout.";
@@ -169,7 +213,8 @@ $("addRow").addEventListener("click",()=>{
 });
 function collect(){
   const players=[...$("rows").children].map(tr=>({name:tr.querySelector(".p-name").value.trim(),wagered:parseFloat(tr.querySelector(".p-wager").value)||0,prize:parseFloat(tr.querySelector(".p-prize").value)||0})).filter(p=>p.name);
-  const out = { brand:{name:$("f_name").value.trim(),tagline:$("f_tagline").value.trim(),casino:$("f_casino").value.trim()||"Stake",code:$("f_code").value.trim(),ctaUrl:$("f_cta").value.trim(),prizePool:$("f_pool").value.trim(),period:$("f_period").value.trim()||"Monthly"}, endsAt:fromLocalInput($("f_ends").value), partner:{blurb:$("f_blurb").value.trim(),chips:EXTRA.chips}, whyStats:EXTRA.whyStats, rules:EXTRA.rules, socials:EXTRA.socials, players };
+  const brandName = $("f_name").value.trim();
+  const out = { name: brandName, brand:{name:brandName,tagline:$("f_tagline").value.trim(),casino:$("f_casino").value.trim()||"Stake",code:$("f_code").value.trim(),ctaUrl:$("f_cta").value.trim(),prizePool:$("f_pool").value.trim(),period:$("f_period").value.trim()||"Monthly"}, endsAt:fromLocalInput($("f_ends").value), partner:{blurb:$("f_blurb").value.trim(),chips:EXTRA.chips}, whyStats:EXTRA.whyStats, rules:EXTRA.rules, socials:EXTRA.socials, players };
   // Include published state from toggle
   const pubToggle = $("pubToggle");
   if (pubToggle) out.published = pubToggle.checked;
@@ -440,14 +485,15 @@ $("save").addEventListener("click", async ()=>{
     const payload = collect();
     const res=await fetch("/api/site",{method:"PUT",credentials:"include",headers:{"content-type":"application/json","x-csrf-token":getCsrf()},body:JSON.stringify(payload)}).then(guardAuth);
     const d=await res.json();
-    if(res.ok&&d.ok){ status.textContent="Saved. Your page is updated."; _dirty=false; } else status.textContent=d.error||"Save failed.";
+    if(res.ok&&d.ok){ status.textContent="Saved. Your page is updated."; _dirty=false; const active = BOARDS.find(b => b.id === ACTIVE_SITE_ID); if (active) active.name = payload.name; renderBoardSwitcher(); } else status.textContent=d.error||"Save failed.";
   } catch{ status.textContent="Network error."; }
   btn.disabled=false;btn.textContent="Save changes";
   // FE-004: Only auto-clear success messages; errors stay until next action.
   if(status.textContent==="Saved. Your page is updated.") setTimeout(()=>{ if(status.textContent==="Saved. Your page is updated.") status.textContent=""; },6000);
 });
 async function loadStats(){
-  let s; try { const r = await fetch("/api/site/stats"); const d = await r.json(); if(!r.ok||!d.ok) return; s = d.stats; } catch { return; }
+  const statsUrl = ACTIVE_SITE_ID ? `/api/site/stats?siteId=${encodeURIComponent(ACTIVE_SITE_ID)}` : "/api/site/stats";
+  let s; try { const r = await fetch(statsUrl); const d = await r.json(); if(!r.ok||!d.ok) return; s = d.stats; } catch { return; }
   const fmt = (n)=> n>=10000 ? (n/1000).toFixed(1).replace(/\.0$/,"")+"k" : String(n);
   $("st_views7").textContent = fmt(s.last7.views);
   $("st_views30").textContent = fmt(s.last30.views);

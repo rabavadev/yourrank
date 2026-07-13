@@ -123,7 +123,7 @@ function fmtExp(ms) {
           const btn = document.createElement("button");
           btn.className = "btn btn--sm btn--accent plan-opt-btn";
           btn.textContent = `Upgrade to ${t.name}`;
-          btn.onclick = () => startCheckout();
+          btn.onclick = () => startCheckout(t.key);
           el.appendChild(btn);
         } else if (isCurrent) {
           const badge = document.createElement("span");
@@ -151,7 +151,7 @@ function fmtExp(ms) {
           btn.className = "btn btn--sm btn--accent plan-opt-btn";
           btn.textContent = t.price === 0 ? "Current" : `Upgrade to ${t.name}`;
           if (t.price > 0) {
-            btn.onclick = () => startCheckout();
+            btn.onclick = () => startCheckout(t.key);
           } else {
             btn.disabled = true;
           }
@@ -203,11 +203,16 @@ if (trialBtn) {
   });
 }
 
-async function startCheckout() {
+async function startCheckout(planKey) {
   const status = $("status");
   status.textContent = "Opening checkout…";
   try {
-    const r = await fetch("/api/billing/checkout", { method: "POST", credentials: "include", headers: { "x-csrf-token": getCsrf() } });
+    const r = await fetch("/api/billing/checkout", {
+      method: "POST",
+      credentials: "include",
+      headers: { "content-type": "application/json", "x-csrf-token": getCsrf() },
+      body: JSON.stringify({ plan: planKey || "pro" })
+    });
     const d = await r.json();
     if (r.ok && d.url) {
       window.location.href = d.url;
@@ -315,5 +320,15 @@ if (deleteBtn) {
     }
     deleteBtn.disabled = false;
     deleteBtn.textContent = "Delete my account";
+  });
+}
+
+// Logout with CSRF
+const logoutBtn = document.getElementById("logout");
+if (logoutBtn) {
+  logoutBtn.addEventListener("click", async (e) => {
+    e.preventDefault();
+    await fetch("/api/auth/logout", { method: "POST", credentials: "include", headers: { "x-csrf-token": getCsrf() } });
+    location.href = "/login";
   });
 }

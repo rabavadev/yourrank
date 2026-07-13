@@ -26,6 +26,7 @@ document.querySelectorAll("[data-pw-toggle]").forEach(btn => {
 const mode = { "/signup": "signup", "/forgot": "forgot", "/reset": "reset" }[location.pathname] || "login";
 const form = document.getElementById("form");
 const errEl = document.getElementById("err");
+function getCsrf() { const m = document.cookie.match(/(?:^|;\s*)__csrf=([^;]+)/); return m ? m[1] : ""; }
 const msgEl = document.getElementById("msg");
 // BUG-003: If reset page has no token, show error instead of a form that will fail
 if (mode === "reset" && !new URLSearchParams(location.search).get("token")) {
@@ -67,7 +68,7 @@ form.addEventListener("submit", async (e) => {
     if (payload.password.length < 8) { errEl.textContent = "Password must be at least 8 characters"; submit.disabled = false; submit.textContent = orig; return; }
   }
   try {
-    const res = await fetch(endpoint, { method: "POST", credentials: "include", headers: { "content-type": "application/json" }, body: JSON.stringify(payload) });
+    const res = await fetch(endpoint, { method: "POST", credentials: "include", headers: { "content-type": "application/json", "x-csrf-token": getCsrf() }, body: JSON.stringify(payload) });
     const data = await res.json();
     if (!res.ok || !data.ok) { errEl.textContent = data.error || "Something went wrong."; submit.disabled = false; submit.textContent = orig; return; }
     if (mode === "forgot") {

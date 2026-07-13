@@ -7,7 +7,7 @@ const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "
 const safeUrl = (u) => {
   const s = String(u ?? "").trim();
   if (!/^https:\/\//i.test(s)) return "#";
-  return s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  return encodeURI(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 };
 
 const HEX = /^#[0-9a-fA-F]{6}$/;
@@ -30,6 +30,7 @@ export function renderLeaderboard(data, opts = {}) {
   const logo = opts.logoUrl ? esc(opts.logoUrl) : null;
   const navLogo = logo ? `<img class="nav-logo" src="${logo}" alt="" />` : "";
   const heroLogo = logo ? `<img class="hero-logo" src="${logo}" alt="${esc(b.name)} logo" />` : "";
+  const canonicalUrl = `${esc(opts.homeUrl || "https://yourrank.site")}/${esc(opts.slug || "")}`;
   const ogImage = logo ? `<meta property="og:image" content="${logo}" /><meta name="twitter:image" content="${logo}" />` : `<meta property="og:image" content="https://yourrank.site/og-image.png" /><meta name="twitter:image" content="https://yourrank.site/og-image.png" />`;
   const title = `${esc(b.name)} | ${esc(b.casino || "Stake")} Leaderboard`;
   const desc = `${esc(b.name)} x ${esc(b.casino || "Stake")}. Use code ${esc(b.code)} and compete in the ${esc(b.prizePool)} ${esc((b.period || "monthly").toLowerCase())} leaderboard.`;
@@ -39,7 +40,8 @@ export function renderLeaderboard(data, opts = {}) {
 <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>${title}</title><meta name="description" content="${desc}" />
 <meta property="og:title" content="${esc(b.name)} | ${esc(b.casino || "Stake")}" /><meta property="og:description" content="${desc}" /><meta property="og:type" content="website" />
-<link rel="canonical" href="${esc(opts.homeUrl || "https://yourrank.site")}/${esc(opts.slug || "")}" />
+<link rel="canonical" href="${canonicalUrl}" />
+<meta property="og:url" content="${canonicalUrl}" />
 <meta name="twitter:card" content="summary" /><meta name="twitter:title" content="${esc(b.name)} | ${esc(b.casino || "Stake")}" /><meta name="twitter:description" content="${desc}" />${ogImage}
 <link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" media="print" data-async />
@@ -48,7 +50,7 @@ export function renderLeaderboard(data, opts = {}) {
 <link rel="stylesheet" href="/assets/leaderboard.css" />
 ${tplCss}
 ${themeCss}
-<script nonce="${opts.nonce}" type="application/ld+json">{"@context":"https://schema.org","@type":"ItemList","name":${JSON.stringify(title)},"description":${JSON.stringify(desc)},"numberOfItems":${b.players ? b.players.length : 0}}</script>
+<script nonce="${opts.nonce}" type="application/ld+json">{"@context":"https://schema.org","@type":"ItemList","name":${JSON.stringify(title)},"description":${JSON.stringify(desc)},"numberOfItems":${data.players ? data.players.length : 0}}</script>
 </head><body data-template="${tpl}">
 <noscript><p class="noscript-noscroll">This leaderboard requires JavaScript for live updates. The data shown below may not refresh automatically.</p></noscript>
 <a class="skip-link" href="#board">Skip to leaderboard</a>

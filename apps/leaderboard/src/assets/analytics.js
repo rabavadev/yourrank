@@ -1,15 +1,20 @@
 /* Analytics page — load stats, render bar chart with tooltips, heatmap, and top referrers. */
 const $ = (s) => document.getElementById(s);
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+function getCsrf() { const m = document.cookie.match(/(?:^|;\s*)__csrf=([^;]+)/); return m ? m[1] : ""; }
 
 function fmt(n) { return n >= 10000 ? (n / 1000).toFixed(1).replace(/\.0$/, "") + "k" : String(n); }
 
 const DAYS_SHORT = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
+const urlParams = new URLSearchParams(location.search);
+const boardId = urlParams.get("board");
+const siteIdParam = boardId ? "?siteId=" + encodeURIComponent(boardId) : "";
+
 (async function load() {
   // Live link + page meta from /api/site.
   try {
-    const r = await fetch("/api/site");
+    const r = await fetch("/api/site" + siteIdParam);
     const d = await r.json();
     if (r.ok && d.ok && d.slug) {
       const live = $("liveLink");
@@ -20,7 +25,7 @@ const DAYS_SHORT = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
   let s;
   try {
-    const r = await fetch("/api/site/stats");
+    const r = await fetch("/api/site/stats" + siteIdParam);
     const d = await r.json();
     if (!r.ok || !d.ok) { $("loading").hidden = true; return; }
     s = d.stats;
@@ -86,7 +91,7 @@ const DAYS_SHORT = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
       const status = $("exportStatus");
       status.textContent = "Preparing export...";
       try {
-        const r = await fetch("/api/site/stats/export", { credentials: "include" });
+        const r = await fetch("/api/site/stats/export" + siteIdParam, { credentials: "include" });
         if (r.ok) {
           const blob = await r.blob();
           const url = URL.createObjectURL(blob);
@@ -112,7 +117,7 @@ const DAYS_SHORT = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
 async function loadHeatmapAndReferrers() {
   try {
-    const r = await fetch("/api/site/stats/heatmap");
+    const r = await fetch("/api/site/stats/heatmap" + siteIdParam);
     const d = await r.json();
     if (!r.ok || !d.ok) return;
     renderHeatmap(d.heatmap);
@@ -163,4 +168,10 @@ function renderReferrers(refs) {
     `<tr><td>${esc(r.domain)}</td><td class="ta-r" style="font-family:var(--mono)">${fmt(r.count)}</td></tr>`
   ).join("");
 }
+
+document.getElementById("logout")?.addEventListener("click", async (e) => {
+  e.preventDefault();
+  await fetch("/api/auth/logout", { method: "POST", credentials: "include", headers: { "x-csrf-token": getCsrf() } });
+  location.href = "/login";
+});
 

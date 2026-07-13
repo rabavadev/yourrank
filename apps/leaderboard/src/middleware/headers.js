@@ -21,7 +21,7 @@ export const HTML = {
   // style-src includes 'unsafe-inline' because error pages, OBS overlays, and dynamic branding
   // use <style> blocks (nonces would require per-request CSP generation — tracked for future).
   // All style="" attributes have been extracted to CSS classes (SEC-713) for maintainability.
-  "Content-Security-Policy": "default-src 'self'; script-src 'self' https://telegram.org; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self'; frame-ancestors *; report-uri /api/csp-report",
+  "Content-Security-Policy": "default-src 'self'; script-src 'self' https://telegram.org https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://cloudflareinsights.com; frame-ancestors *; report-uri /api/csp-report",
 };
 
 // Hardened headers for the authenticated/app pages (login, signup, forgot,
@@ -36,7 +36,7 @@ export const SECURE_HTML = {
   "X-Content-Type-Options": "nosniff",
   "Referrer-Policy": "strict-origin-when-cross-origin",
   "X-Frame-Options": "SAMEORIGIN",
-  "Content-Security-Policy": "default-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; script-src 'self' https://telegram.org; connect-src 'self' https://telegram.org; frame-src https://telegram.org; frame-ancestors 'self'",
+  "Content-Security-Policy": "default-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; script-src 'self' https://telegram.org https://static.cloudflareinsights.com; connect-src 'self' https://telegram.org https://cloudflareinsights.com; frame-src https://telegram.org; frame-ancestors 'self'",
 };
 
 // HTML-escape a value for interpolation into text/attribute context
@@ -55,21 +55,15 @@ export function withNonce(headers, nonce) {
 
 export function notFoundPage(slug, nonce) {
   const n = nonce ? ` nonce="${nonce}"` : "";
-  return `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Not found</title>
+  return `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex, nofollow"><title>Not found</title>
 <style${n}>body{background:#0b0b0c;color:#ededf0;font-family:system-ui,sans-serif;display:grid;place-items:center;min-height:100vh;margin:0}.b{text-align:center}a{color:#c8ff00}</style></head>
 <body><div class="b"><h1>No leaderboard here</h1><p>There's no page at <b>/${esc(slug)}</b> yet.</p><p><a href="/">Back to YourRank</a></p></div><script src="/assets/cookie-consent.js" defer></script></body></html>`;
 }
 
 export function suspendedPage(nonce) {
   const n = nonce ? ` nonce="${nonce}"` : "";
-  return `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Unavailable</title>
+  return `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex, nofollow"><title>Unavailable</title>
 <style${n}>body{background:#0b0b0c;color:#ededf0;font-family:system-ui,sans-serif;display:grid;place-items:center;min-height:100vh;margin:0}.b{text-align:center}a{color:#c8ff00}</style></head>
 <body><div class="b"><h1>This page is unavailable</h1><p>The owner's account is suspended.</p><p><a href="/">YourRank</a></p></div><script src="/assets/cookie-consent.js" defer></script></body></html>`;
 }
 
-export function comingSoonPage(slug, nonce) {
-  const n = nonce ? ` nonce="${nonce}"` : "";
-  return `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Coming Soon</title>
-<style${n}>body{background:#0b0b0c;color:#ededf0;font-family:system-ui,sans-serif;display:grid;place-items:center;min-height:100vh;margin:0}.b{text-align:center}a{color:#c8ff00}h1{font-size:48px;margin:0 0 12px}p{color:rgba(255,255,255,0.5);font-size:16px}</style></head>
-<body><div class="b"><h1>🚧 Coming Soon</h1><p>This leaderboard is being set up. Check back soon!</p><p><a href="/">YourRank</a></p></div><script src="/assets/cookie-consent.js" defer></script></body></html>`;
-}

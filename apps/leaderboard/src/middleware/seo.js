@@ -37,7 +37,7 @@ export async function serveSitemapXml(origin, env) {
     // PERF-001: LIMIT 5000 prevents unbounded result sets (more than enough for any
     // reasonable leaderboard count). The sitemap spec caps at 50k URLs anyway.
     const sites = await query("SELECT s.slug, s.updated_at FROM sites s JOIN users u ON u.id = s.user_id WHERE s.published=true AND u.status != 'suspended' LIMIT 5000");
-    const TEST_SLUG_RE = /^e2e[-_]|^debug[-_]|^del-|^rapid-|^login-debug|^verifyfix|^launch-verify/;
+    const TEST_SLUG_RE = /^e2e[-_]|^debug[-_]|^del-|^rapid-|^login-debug|^verifyfix|^launch-verify|^devintest|^audittest|^invalid-|^test[-_]/;
     for (const s of sites) {
       if (TEST_SLUG_RE.test(s.slug)) continue;
       const lastmod = s.updated_at ? `<lastmod>${new Date(s.updated_at).toISOString().split("T")[0]}</lastmod>` : "";

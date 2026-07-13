@@ -2,6 +2,9 @@
 const $ = (id) => document.getElementById(id);
 const money = (n) => (n == null ? "$0.00" : `$${Number(n).toFixed(2)}`);
 const fmt = (n) => (n == null ? "0" : Number(n).toLocaleString());
+const urlParams = new URLSearchParams(location.search);
+const boardId = urlParams.get("board");
+function getCsrf() { const m = document.cookie.match(/(?:^|;\s*)__csrf=([^;]+)/); return m ? m[1] : ""; }
 
 async function api(path, opts) {
   const res = await fetch(path, { ...opts, credentials: "include" });
@@ -29,6 +32,7 @@ async function load() {
   try {
     const apiUrl = new URL("/api/attribution", location.origin);
     apiUrl.searchParams.set("days", String(days));
+    if (boardId) apiUrl.searchParams.set("siteId", boardId);
     const data = await api(apiUrl.toString());
 
     $("s_clicks").textContent = fmt(data.summary?.clicks);
@@ -64,6 +68,7 @@ async function load() {
 
     const exportUrl = new URL("/api/attribution/export", location.origin);
     exportUrl.searchParams.set("days", String(days));
+    if (boardId) exportUrl.searchParams.set("siteId", boardId);
     $("exportBtn").href = exportUrl.toString();
   } catch (e) {
     $("offersEmpty").hidden = false;
@@ -81,6 +86,12 @@ $("copyPostback").addEventListener("click", async () => {
   } catch {
     prompt("Copy this URL:", url);
   }
+});
+
+document.getElementById("logout")?.addEventListener("click", async (e) => {
+  e.preventDefault();
+  await fetch("/api/auth/logout", { method: "POST", credentials: "include", headers: { "x-csrf-token": getCsrf() } });
+  location.href = "/login";
 });
 
 $("loading").hidden = true;

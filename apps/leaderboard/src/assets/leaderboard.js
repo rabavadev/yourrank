@@ -10,7 +10,7 @@ const initials = (name) => { const c = String(name).replace(/\*/g, "").trim(); r
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 // Safe href: only allow http(s)/mailto/tel. Anything else (javascript:, data:,
 // vbscript:, etc.) collapses to "#". esc() handles attribute-breakout chars.
-const safeUrl = (u) => { const s = String(u ?? "").trim(); return s && /^(https?:|mailto:|tel:)/i.test(s) ? esc(s) : "#"; };
+const safeUrl = (u) => { const s = String(u ?? "").trim(); return s && /^(https?:|mailto:|tel:)/i.test(s) ? esc(encodeURI(s)) : "#"; };
 const ord = (n) => { const s = ["th", "st", "nd", "rd"], v = n % 100; return n + (s[(v - 20) % 10] || s[v] || s[0]); };
 
 const SOCIAL_ICONS = {
@@ -347,7 +347,7 @@ function initFindRank(sortedPlayers) {
     if (!q) return;
 
     // Find first partial match in sorted array
-    const matchIdx = sortedPlayers.findIndex((pl) => pl.name.toLowerCase().includes(q));
+    const matchIdx = sortedPlayers.findIndex((pl) => String(pl.name || "").toLowerCase().includes(q));
     if (matchIdx === -1) {
       if (resultEl) resultEl.textContent = "No player found with that name";
       resultEl?.classList.remove("found");

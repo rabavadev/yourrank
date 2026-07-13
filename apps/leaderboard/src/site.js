@@ -88,8 +88,8 @@ export function invalidateUserCache(env, uid) {
 
 const getBySlug = (env, slug) => getCached(env, slug, () => one(`SELECT ${SITE_COLUMNS} FROM sites WHERE slug=$1`, [slug]));
 
-// Multi-board: returns the FIRST board for a user (legacy single-board compat).
-const getByUser = (env, uid) => getCached(env, uid, () => one(`SELECT ${SITE_COLUMNS} FROM sites WHERE user_id=$1 ORDER BY id ASC LIMIT 1`, [uid]));
+// Multi-board: returns the ACTIVE board for a user (or the first board if none set).
+const getByUser = (env, uid) => getCached(env, uid, () => one(`SELECT ${SITE_COLUMNS} FROM sites WHERE user_id=$1 ORDER BY CASE WHEN id=(SELECT active_site_id FROM users WHERE id=$1) THEN 0 ELSE 1 END, id ASC LIMIT 1`, [uid]));
 
 // Multi-board: returns ALL boards for a user.
 export async function getAllBoards(env, uid) {
@@ -265,6 +265,8 @@ export async function createBoard(env, uid, { slug, name } = {}) {
     "INSERT INTO sites (id,user_id,slug,name,casino,prize_pool,period,published,extra_json) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9::jsonb)",
     [siteId, uid, slug, name || slug, "", "$0", "Monthly", true, JSON.stringify(DEFAULT_EXTRA)]
   );
+  // If the user has no active board, make the new one active.
+  await exec("UPDATE users SET active_site_id=$1, updated_at=now() WHERE id=$2 AND active_site_id IS NULL", [siteId, uid]);
   invalidateUserCache(env, uid);
   return { ok: true, id: siteId, slug };
 }
@@ -340,6 +342,11 @@ export async function saveSite(env, user, payload, siteId) {
   const uid = typeof user === "string" ? user : user.id;
   const site = siteId ? await getBoardById(env, uid, siteId) : await getByUser(env, uid);
   if (!site) return { error: "no site" };
+  // Immutable site fields must be changed through dedicated endpoints.
+  const immutable = new Set(["slug", "id", "user_id", "custom_domain", "customDomain"]);
+  for (const key of Object.keys(payload || {})) {
+    if (immutable.has(key)) return { error: `${key} cannot be updated via this endpoint.`, code: "immutable_field" };
+  }
   
   // Optimistic concurrency check: if client provides expected updatedAt, verify it matches
   if (payload.expectedUpdatedAt && site.updated_at) {
@@ -368,6 +375,8 @@ export async function saveSite(env, user, payload, siteId) {
     }
   }
   const b = payload.brand || {};
+  // Keep the top-level site name in sync with brand.name (dashboard sends both).
+  const siteName = String(payload.name ?? b.name ?? site.name).trim().slice(0, 80) || site.name;
   const extra = JSON.stringify({
     chips: payload.chips || DEFAULT_EXTRA.chips,
     whyStats: payload.whyStats || DEFAULT_EXTRA.whyStats,
@@ -421,7 +430,7 @@ export async function saveSite(env, user, payload, siteId) {
     await tx.unsafe(
       `UPDATE sites SET name=$1, tagline=$2, casino=$3, code=$4, cta_url=$5, prize_pool=$6, period=$7, ends_at=$8, reset_note=$9, blurb=$10, extra_json=$11::jsonb, logo_data=$12, theme_json=$13::jsonb, published=$14, updated_at=now() WHERE id=$15`,
       [
-        b.name ?? site.name, b.tagline ?? site.tagline, b.casino ?? site.casino, b.code ?? site.code,
+        siteName, b.tagline ?? site.tagline, b.casino ?? site.casino, b.code ?? site.code,
         b.ctaUrl ?? site.cta_url, b.prizePool ?? site.prize_pool, b.period ?? site.period,
         endsAtVal, b.resetNote ?? site.reset_note, (payload.partner && payload.partner.blurb) ?? site.blurb,
         extra, logoData, themeJson, publishedVal, site.id,
@@ -458,7 +467,7 @@ export async function saveSite(env, user, payload, siteId) {
       const newSorted = payload.players.filter((p) => p && p.name).sort((a, b2) => (b2.wagered || 0) - (a.wagered || 0));
       const top3Changes = detectTop3Changes(oldTop3, newSorted);
       if (top3Changes.length) {
-        await notifyTop3Change({ one, query }, env, site.id, b.name || site.name, top3Changes);
+        await notifyTop3Change({ one, query }, env, site.id, siteName, top3Changes);
       }
     } catch (e) {
       console.error("[notify] top-3 detection failed:", String(e?.message || e));
@@ -467,7 +476,7 @@ export async function saveSite(env, user, payload, siteId) {
     // Notify subscribed players (via /subscribe) about rank changes
     try {
       const newPlayersSorted = payload.players.filter((p) => p && p.name);
-      await notifySubscribedPlayers({ one, query }, env, site.id, b.name || site.name, oldPlayers, newPlayersSorted);
+      await notifySubscribedPlayers({ one, query }, env, site.id, siteName, oldPlayers, newPlayersSorted);
     } catch (e) {
       console.error("[notify] player subscription notification failed:", String(e?.message || e));
     }
@@ -475,6 +484,34 @@ export async function saveSite(env, user, payload, siteId) {
   // Return updated site data including new timestamp for optimistic concurrency
   const updatedSite = await getBoardById(env, uid, site.id);
   return { ok: true, updatedAt: updatedSite?.updated_at };
+}
+
+export async function deleteBoard(env, uid, siteId) {
+  const site = await getBoardById(env, uid, siteId);
+  if (!site) return { error: "no site" };
+  const boards = await getAllBoards(env, uid);
+  if (boards.length <= 1) {
+    return { error: "You must keep at least one board. Create a new board before deleting this one.", code: "last_board" };
+  }
+  await withTransaction(async (tx) => {
+    const fallback = boards.find((b) => b.id !== siteId)?.id || null;
+    await tx.unsafe("UPDATE users SET active_site_id=$1, updated_at=now() WHERE id=$2", [fallback, uid]);
+    // Manual cleanup: these tables do not have ON DELETE CASCADE FKs.
+    await tx.unsafe("DELETE FROM site_stats_hourly WHERE site_id=$1", [siteId]);
+    await tx.unsafe("DELETE FROM site_referrers WHERE site_id=$1", [siteId]);
+    await tx.unsafe("DELETE FROM sites WHERE id=$1 AND user_id=$2", [siteId, uid]);
+  });
+  invalidateSiteCache(env, site.slug, uid, siteId);
+  invalidateUserCache(env, uid);
+  return { ok: true };
+}
+
+export async function setActiveBoard(env, uid, siteId) {
+  const site = await getBoardById(env, uid, siteId);
+  if (!site) return { error: "no site" };
+  await exec("UPDATE users SET active_site_id=$1, updated_at=now() WHERE id=$2", [siteId, uid]);
+  invalidateUserCache(env, uid);
+  return { ok: true };
 }
 
 export { getByUser, getBySlug };

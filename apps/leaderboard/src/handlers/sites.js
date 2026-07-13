@@ -1,6 +1,6 @@
 // Site handlers: get, put, list, create, archive, stats, heatmap, notifications, custom domain
 import { requireUser, json, bad, ok, readJson, rateLimit, slugify, clientIp } from "../auth.js";
-import { getByUser, getUserSite, getUserSiteById, getUserBoardsList, createBoard, createArchive, deleteArchive, invalidateSiteCache, invalidateUserCache, getBoardById, saveSite } from "../site.js";
+import { getByUser, getUserSite, getUserSiteById, getUserBoardsList, createBoard, createArchive, deleteArchive, deleteBoard, setActiveBoard, invalidateSiteCache, invalidateUserCache, getBoardById, saveSite } from "../site.js";
 import { bumpStat, getStats, getHeatmap, getTopReferrers } from "../stats.js";
 import { effectivePlan, PLAN_LIMITS, BOARD_LIMITS } from "../billing.js";
 import { one, exec } from "../../../../shared/db.js";
@@ -10,7 +10,9 @@ import { decryptToken } from "../../../../shared/crypto.js";
 export async function handleStats(request, env) {
   const { user, res } = await requireUser(request, env);
   if (res) return res;
-  const site = await getByUser(env, user.id);
+  const url = new URL(request.url);
+  const siteId = url.searchParams.get("siteId");
+  const site = siteId ? await getBoardById(env, user.id, siteId) : await getByUser(env, user.id);
   if (!site) return bad("no site", 404);
   return json({ ok: true, stats: await getStats(env, site.id) });
 }
@@ -18,7 +20,9 @@ export async function handleStats(request, env) {
 export async function handleExportStats(request, env) {
   const { user, res } = await requireUser(request, env);
   if (res) return res;
-  const site = await getByUser(env, user.id);
+  const url = new URL(request.url);
+  const siteId = url.searchParams.get("siteId");
+  const site = siteId ? await getBoardById(env, user.id, siteId) : await getByUser(env, user.id);
   if (!site) return bad("no site", 404);
   const stats = await getStats(env, site.id);
   const rows = (stats?.days || []).map((d) => [d.day, d.views, d.copies, d.clicks].join(","));
@@ -35,7 +39,9 @@ export async function handleExportStats(request, env) {
 export async function handleHeatmap(request, env) {
   const { user, res } = await requireUser(request, env);
   if (res) return res;
-  const site = await getByUser(env, user.id);
+  const url = new URL(request.url);
+  const siteId = url.searchParams.get("siteId");
+  const site = siteId ? await getBoardById(env, user.id, siteId) : await getByUser(env, user.id);
   if (!site) return bad("no site", 404);
   const [heatmap, referrers] = await Promise.all([
     getHeatmap(env, site.id),
@@ -128,6 +134,30 @@ export async function handlePutSite(request, env) {
   const payload = await readJson(request);
   if (!payload) return bad("Invalid request");
   const r = await saveSite(env, user, payload, payload.siteId || null);
+  return r.error ? bad(r.error, 400) : json({ ok: true, updatedAt: r.updatedAt });
+}
+
+// DELETE /api/site — { siteId }
+export async function handleDeleteSite(request, env) {
+  const { user, res } = await requireUser(request, env);
+  if (res) return res;
+  if (user.status === "suspended") return bad("This account is suspended.", 403);
+  if (!(await rateLimit(env, `delete-site:${user.id}`, 10, 60)).ok) return bad("Too many delete actions. Try again later.", 429);
+  const body = await readJson(request);
+  if (!body || !body.siteId) return bad("siteId required");
+  const r = await deleteBoard(env, user.id, body.siteId);
+  return r.error ? bad(r.error, 400) : json({ ok: true });
+}
+
+// POST /api/site/active — { siteId }
+export async function handleSetActive(request, env) {
+  const { user, res } = await requireUser(request, env);
+  if (res) return res;
+  if (user.status === "suspended") return bad("This account is suspended.", 403);
+  if (!(await rateLimit(env, `set-active:${user.id}`, 30, 60)).ok) return bad("Too many requests. Try again later.", 429);
+  const body = await readJson(request);
+  if (!body || !body.siteId) return bad("siteId required");
+  const r = await setActiveBoard(env, user.id, body.siteId);
   return r.error ? bad(r.error, 400) : json({ ok: true });
 }
 
@@ -176,6 +206,30 @@ export async function handleNotifyTest(request, env) {
   return bad("Unknown channel. Use 'discord' or 'telegram'.");
 }
 
+// Verify that the domain has a CNAME record pointing to yourrank.site.
+async function verifyCnameToYourrank(domain) {
+  try {
+    const res = await fetch(
+      `https://cloudflare-dns.com/dns-query?name=${encodeURIComponent(domain)}&type=CNAME`,
+      {
+        headers: { accept: "application/dns-json" },
+        signal: AbortSignal.timeout(10000),
+      }
+    );
+    if (!res.ok) return false;
+    const data = await res.json();
+    const answers = Array.isArray(data?.Answer) ? data.Answer : [];
+    return answers.some((a) => {
+      if (a.type !== 5) return false;
+      const target = String(a.data || "").toLowerCase().replace(/\.$/, "");
+      return target === "yourrank.site" || target.endsWith(".yourrank.site");
+    });
+  } catch (e) {
+    console.error("[domain] DNS lookup failed:", String(e?.message || e));
+    return false;
+  }
+}
+
 // POST /api/site/domain/verify — verify custom domain CNAME and provision TLS
 // via Cloudflare for SaaS custom hostnames. Pro/Agency only.
 export async function handleDomainVerify(request, env) {
@@ -192,6 +246,12 @@ export async function handleDomainVerify(request, env) {
     // Basic domain validation
     if (!/^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)*\.[a-z]{2,}$/.test(domain)) {
       return bad("Invalid domain format.");
+    }
+
+    // Verify DNS CNAME before saving or provisioning.
+    const hasCname = await verifyCnameToYourrank(domain);
+    if (!hasCname) {
+      return bad("We couldn't find a CNAME record for this domain pointing to yourrank.site. Add the CNAME first, then verify.", 400);
     }
 
     // Get the site

@@ -1,5 +1,5 @@
 // Billing: NOWPayments (crypto) + manual activation. Plan logic lives here.
-import { json, bad, ok, uuid, requireUser, safeEqual } from "./auth.js";
+import { json, bad, ok, uuid, requireUser, safeEqual, readJson } from "./auth.js";
 import { exec, withTransaction } from "../../../shared/db.js";
 
 // Plan definitions imported from shared source of truth.
@@ -97,7 +97,16 @@ export async function handleCheckout(request, env) {
     if (current === "agency") return bad("You're already on the highest plan (Agency).", 400);
     const tiers = ["free", "starter", "pro", "agency"];
     const currentIdx = tiers.indexOf(current);
-    const targetPlan = currentIdx >= 0 && currentIdx < tiers.length - 1 ? tiers[currentIdx + 1] : "pro";
+    const requestedPlan = String((await readJson(request))?.plan || "").trim().toLowerCase();
+    let targetPlan;
+    if (["starter", "pro", "agency"].includes(requestedPlan)) {
+      if (tiers.indexOf(requestedPlan) <= currentIdx) {
+        return bad("You already have this plan or a higher one.", 400);
+      }
+      targetPlan = requestedPlan;
+    } else {
+      targetPlan = currentIdx >= 0 && currentIdx < tiers.length - 1 ? tiers[currentIdx + 1] : "pro";
+    }
     const price = priceUsd(env, targetPlan);
     const orderId = `rk_${uuid()}`;
     await exec(
