@@ -98,6 +98,11 @@ export async function handleCheckout(request, env) {
     const tiers = ["free", "starter", "pro", "agency"];
     const currentIdx = tiers.indexOf(current);
     const requestedPlan = String((await readJson(request))?.plan || "").trim().toLowerCase();
+    // Reject an explicitly-provided plan that isn't a known paid tier. An empty
+    // plan is allowed and defaults to the next tier up (backward compatibility).
+    if (requestedPlan && !["starter", "pro", "agency"].includes(requestedPlan)) {
+      return bad("Unknown plan. Choose Starter, Pro, or Agency.", 400);
+    }
     let targetPlan;
     if (["starter", "pro", "agency"].includes(requestedPlan)) {
       if (tiers.indexOf(requestedPlan) <= currentIdx) {

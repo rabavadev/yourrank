@@ -151,7 +151,10 @@ ${shellNavHtml({ activePath: "/bot" + (page === "overview" ? "/dashboard" : "/" 
     <div id="botList" class="muted">Loading…</div>
     <div style="margin-top:12px">
       <label for="botToken" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)">Bot Token</label>
-      <input id="botToken" placeholder="Paste bot token from @BotFather (123456:ABC-...)">
+      <div style="display:flex;gap:6px;align-items:center">
+        <input id="botToken" type="password" autocomplete="off" placeholder="Paste bot token from @BotFather (123456:ABC-...)" style="flex:1">
+        <button class="ghost" data-action="toggleToken" type="button" aria-label="Show token">Show</button>
+      </div>
       <label for="botWelcome" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)">Welcome Message</label>
       <input id="botWelcome" placeholder="Welcome message (optional)">
       <button data-action="connectBot" type="button">Connect bot</button>
@@ -189,7 +192,7 @@ ${shellNavHtml({ activePath: "/bot" + (page === "overview" ? "/dashboard" : "/" 
       <input id="oLabel" placeholder="Label (e.g. 200% deposit bonus)">
     </div>
     <label for="oUrl" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)">Affiliate URL</label>
-    <input id="oUrl" placeholder="Your affiliate URL (https://...)">
+    <input id="oUrl" type="url" inputmode="url" placeholder="Your affiliate URL (https://...)">
     <div class="row">
       <label for="oCode" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)">Promo Code</label>
       <input id="oCode" placeholder="Promo code (optional)">
@@ -571,24 +574,41 @@ async function upgrade(target){
 }
 
 function setLoading(el, text = 'Loading…') {
+  if (!el) return;
   if (el.disabled !== undefined) el.disabled = true;
-  const original = el.textContent;
+  // Capture the original label only once so repeated setLoading calls (e.g. a
+  // central call plus an action-specific 'Connecting…') don't clobber it.
+  if (el.dataset.originalText === undefined) el.dataset.originalText = el.textContent;
   el.textContent = text;
-  el.dataset.originalText = original;
 }
 function restoreBtn(el) {
+  if (!el) return;
   if (el.disabled !== undefined) el.disabled = false;
-  if (el.dataset.originalText) el.textContent = el.dataset.originalText;
+  if (el.dataset.originalText !== undefined) { el.textContent = el.dataset.originalText; delete el.dataset.originalText; }
 }
 
 load(); loadExtras();
+
+function toggleToken(btn) {
+  const input = document.getElementById('botToken');
+  if (!input) return;
+  const show = input.type === 'password';
+  input.type = show ? 'text' : 'password';
+  btn.textContent = show ? 'Hide' : 'Show';
+  btn.setAttribute('aria-label', show ? 'Hide token' : 'Show token');
+}
 
 async function handleAction(e) {
   const target = e.target.closest('[data-action]');
   if (!target) return;
   const action = target.dataset.action;
+  if (action === 'toggleToken') { e.preventDefault(); toggleToken(target); return; }
   if (submitting && action !== 'copyLink' && action !== 'copyPostback') return;
   submitting = true;
+  // Show a loading state on the clicked control for every network-backed action.
+  // Pure client-side actions (copy, local bot selection) don't need it.
+  const NO_LOADING = action === 'copyLink' || action === 'copyPostback' || action === 'selectBot';
+  if (!NO_LOADING) setLoading(target);
   try {
     if (action === 'logout') { e.preventDefault(); await logout(target); }
     else if (action === 'connectBot') { e.preventDefault(); await connectBot(target); }

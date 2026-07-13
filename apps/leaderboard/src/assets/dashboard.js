@@ -188,7 +188,7 @@ async function checkout(btn){
 }
 function playerRow(p={name:"",wagered:"",prize:""}){
   const tr=document.createElement("tr");
-  tr.innerHTML = `<td class="rank"></td><td><input class="p-name" placeholder="*****ess" value="${esc(p.name)}"></td><td class="num"><input class="p-wager" inputmode="decimal" placeholder="0" value="${esc(p.wagered)}"></td><td class="num"><input class="p-prize" inputmode="decimal" placeholder="0" value="${esc(p.prize)}"></td><td class="act"><button class="row-x" title="Remove" aria-label="Remove player" type="button">×</button></td>`;
+  tr.innerHTML = `<td class="rank"></td><td><input class="p-name" placeholder="Player name" value="${esc(p.name)}"></td><td class="num"><input class="p-wager" inputmode="decimal" placeholder="0" value="${esc(p.wagered)}"></td><td class="num"><input class="p-prize" inputmode="decimal" placeholder="0" value="${esc(p.prize)}"></td><td class="act"><button class="row-x" title="Remove" aria-label="Remove player" type="button">×</button></td>`;
   tr.querySelector(".row-x").addEventListener("click",()=>{tr.remove();renumber();toggleEmpty();});
   return tr;
 }
