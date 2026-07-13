@@ -375,6 +375,11 @@ async function handleRequest(request, env, ctx) {
       if (method === "GET" && path.startsWith("/go/")) {
         let slug;
         try { slug = decodeURIComponent(path.slice(4).split("/")[0]).toLowerCase(); } catch { return new Response(notFoundPage("", nonce), { status: 404, headers: HTML_N }); }
+        // Demo board has no DB row — mirror the demo overlay special-case so the
+        // "Join Stake" CTA on /demo (embedded on the homepage) isn't a dead 404.
+        if (slug === "demo") {
+          return Response.redirect(demoLeaderboardData().brand.ctaUrl, 302);
+        }
         const r = await getPublicSite(env, slug);
         if (!r || r.suspended) return new Response(notFoundPage(slug, nonce), { status: 404, headers: HTML_N });
         if (r.id) ctx.waitUntil(bumpStat(env, r.id, "clicks"));

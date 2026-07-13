@@ -3,7 +3,7 @@ import { effectivePlan, PLAN_LIMITS, BOARD_LIMITS } from "./billing.js";
 import { query, one, exec, withTransaction } from "../../../shared/db.js";
 import { notifyTop3Change, notifyReset, detectTop3Changes, notifySubscribedPlayers } from "../../../shared/notifications.js";
 import { TEMPLATE_IDS } from "./templates/index.js";
-import { RESERVED } from "./auth.js";
+import { RESERVED, slugify } from "./auth.js";
 
 export const DEFAULT_EXTRA = {
   chips: ["Fast Payouts", "Crypto Friendly", "24/7 Support"],
@@ -342,10 +342,24 @@ export async function saveSite(env, user, payload, siteId) {
   const uid = typeof user === "string" ? user : user.id;
   const site = siteId ? await getBoardById(env, uid, siteId) : await getByUser(env, uid);
   if (!site) return { error: "no site" };
-  // Immutable site fields must be changed through dedicated endpoints.
-  const immutable = new Set(["slug", "id", "user_id", "custom_domain", "customDomain"]);
-  for (const key of Object.keys(payload || {})) {
-    if (immutable.has(key)) return { error: `${key} cannot be updated via this endpoint.`, code: "immutable_field" };
+  // Internal / dedicated-endpoint fields are silently ignored rather than
+  // rejecting the whole save: the dashboard and setup wizard round-trip fields
+  // like `customDomain` (managed via /api/site/domain) straight back from the
+  // load response, and a hard reject broke every save that included them.
+  // `slug` is the one exception we act on — see the guarded rename below.
+  // The custom domain is provisioned through its own verify/TLS endpoint.
+
+  // Onboarding lets a streamer pick their handle after signup. Allow a validated
+  // slug rename here (reserved + uniqueness checked); ignore a no-op or blank.
+  let slugRename = null;
+  if (payload.slug != null) {
+    const next = slugify(payload.slug);
+    if (next && next !== site.slug) {
+      if (RESERVED.has(next)) return { error: "That URL is reserved. Pick another.", code: "slug_reserved" };
+      const taken = await one("SELECT id FROM sites WHERE slug=$1", [next]);
+      if (taken && taken.id !== site.id) return { error: "That URL is already taken. Pick another.", code: "slug_taken" };
+      slugRename = next;
+    }
   }
   
   // Optimistic concurrency check: if client provides expected updatedAt, verify it matches
@@ -422,6 +436,7 @@ export async function saveSite(env, user, payload, siteId) {
 
   // Invalidate cache before write (both L1 and L2 for cross-isolate consistency)
   invalidateSiteCache(env, site.slug, uid, siteId);
+  if (slugRename) invalidateSiteCache(env, slugRename);
   // L1-only cache invalidated above.
 
   // Capture old top-3 for notifications
@@ -435,10 +450,11 @@ export async function saveSite(env, user, payload, siteId) {
     await tx.unsafe("SELECT id FROM sites WHERE id=$1 FOR UPDATE", [site.id]);
     const publishedVal = typeof payload.published === "boolean" ? payload.published : site.published;
     const endsAtVal = normalizeEndsAt(payload.endsAt, site.ends_at);
+    const slugVal = slugRename || site.slug;
     await tx.unsafe(
-      `UPDATE sites SET name=$1, tagline=$2, casino=$3, code=$4, cta_url=$5, prize_pool=$6, period=$7, ends_at=$8, reset_note=$9, blurb=$10, extra_json=$11::jsonb, logo_data=$12, theme_json=$13::jsonb, published=$14, updated_at=now() WHERE id=$15`,
+      `UPDATE sites SET slug=$1, name=$2, tagline=$3, casino=$4, code=$5, cta_url=$6, prize_pool=$7, period=$8, ends_at=$9, reset_note=$10, blurb=$11, extra_json=$12::jsonb, logo_data=$13, theme_json=$14::jsonb, published=$15, updated_at=now() WHERE id=$16`,
       [
-        siteName, b.tagline ?? site.tagline, b.casino ?? site.casino, b.code ?? site.code,
+        slugVal, siteName, b.tagline ?? site.tagline, b.casino ?? site.casino, b.code ?? site.code,
         b.ctaUrl ?? site.cta_url, b.prizePool ?? site.prize_pool, b.period ?? site.period,
         endsAtVal, b.resetNote ?? site.reset_note, (payload.partner && payload.partner.blurb) ?? site.blurb,
         extra, logoData, themeJson, publishedVal, site.id,
@@ -491,7 +507,7 @@ export async function saveSite(env, user, payload, siteId) {
   }
   // Return updated site data including new timestamp for optimistic concurrency
   const updatedSite = await getBoardById(env, uid, site.id);
-  return { ok: true, updatedAt: updatedSite?.updated_at };
+  return { ok: true, updatedAt: updatedSite?.updated_at, slug: updatedSite?.slug || slugRename || site.slug };
 }
 
 export async function deleteBoard(env, uid, siteId) {

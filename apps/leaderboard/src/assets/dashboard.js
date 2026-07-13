@@ -42,6 +42,7 @@ async function init(){
   renderBranding(d.branding||{});
   renderArchives(p.archives||[]);
   renderDomain();
+  renderOverlay();
   renderNotifications(p.notify || {});
   if (p.customDomain !== undefined) $("f_domain").value = p.customDomain || "";
   // Show domain TLS status if a custom domain is set
@@ -164,7 +165,9 @@ function renderPlan(){
   $("planName").textContent = planNames[plan] || plan;
   if (plan === "agency" || plan === "pro") {
     const until = ME.planExpiresAt ? new Date(ME.planExpiresAt).toLocaleDateString() : null;
-    $("planMeta").textContent = until ? `Active until ${until} · up to ${ME.limits.players} players · no badge` : `Lifetime · up to ${ME.limits.players === 999 ? "unlimited" : ME.limits.players} players · no badge`;
+    // Pro/Agency player cap is 9999 — marketed as "unlimited"; keep the wording consistent.
+    const playersLabel = ME.limits.players >= 9999 ? "unlimited players" : `up to ${ME.limits.players} players`;
+    $("planMeta").textContent = until ? `Active until ${until} · ${playersLabel} · no badge` : `Lifetime · ${playersLabel} · no badge`;
     $("goPro").textContent = "Extend " + (planNames[plan] || plan) + " (+31 days)";
   } else if (plan === "starter") {
     $("planMeta").textContent = `Up to ${ME.limits.players} players · no badge · CSV import`;
@@ -225,11 +228,8 @@ function collect(){
   }
   const tplEl = $("f_template");
   if (tplEl) out.branding = { ...(out.branding || {}), template: tplEl.value };
-  // Custom domain (Pro only)
-  const domainEl = $("f_domain");
-  if (domainEl && (ME.plan === "pro" || ME.plan === "agency")) {
-    out.customDomain = domainEl.value.trim().toLowerCase();
-  }
+  // Custom domain is provisioned through its own Verify & Provision TLS endpoint
+  // (/api/site/domain), so it is intentionally not part of the general save.
   out.notify = {
     discord_webhook_url: $("f_webhook")?.value.trim() || null,
     telegram_chat_id: $("f_tgChatId")?.value.trim() || null,
@@ -373,6 +373,28 @@ function renderNotifications(n){
   const wh = $("f_webhook"); if (wh && n.discord_webhook_url) { wh.value = ""; wh.placeholder = "Webhook configured ✓ (enter new URL to change)"; }
   const tg = $("f_tgNotify"); if (tg) tg.checked = !!n.telegram_notify;
   const tgChat = $("f_tgChatId"); if (tgChat) tgChat.value = n.telegram_chat_id || "";
+}
+
+function renderOverlay(){
+  const pro = ME.plan === "pro" || ME.plan === "agency";
+  const body = $("overlayBody"), lock = $("overlayLock");
+  if (body) body.hidden = !pro;
+  if (lock) lock.hidden = pro;
+  if (!pro) return;
+  const overlayUrl = location.origin + "/" + SLUG + "/overlay";
+  const urlEl = $("overlayUrl");
+  if (urlEl) urlEl.textContent = overlayUrl;
+  const preview = $("overlayPreview");
+  if (preview) preview.href = overlayUrl;
+  const copy = $("overlayCopy");
+  if (copy && !copy._wired) {
+    copy._wired = true;
+    copy.addEventListener("click", async () => {
+      try { await navigator.clipboard.writeText(overlayUrl); copy.textContent = "Copied!"; }
+      catch { copy.textContent = "Copy failed"; }
+      setTimeout(() => { copy.textContent = "📋 Copy"; }, 1500);
+    });
+  }
 }
 
 function renderDomain(){

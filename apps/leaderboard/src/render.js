@@ -31,7 +31,10 @@ export function renderLeaderboard(data, opts = {}) {
   const navLogo = logo ? `<img class="nav-logo" src="${logo}" alt="" />` : "";
   const heroLogo = logo ? `<img class="hero-logo" src="${logo}" alt="${esc(b.name)} logo" />` : "";
   const canonicalUrl = `${esc(opts.homeUrl || "https://yourrank.site")}/${esc(opts.slug || "")}`;
-  const ogImage = logo ? `<meta property="og:image" content="${logo}" /><meta name="twitter:image" content="${logo}" />` : `<meta property="og:image" content="https://yourrank.site/og-image.png" /><meta name="twitter:image" content="https://yourrank.site/og-image.png" />`;
+  // Only advertise an og:image when the board actually has a logo. The previous
+  // fallback pointed at /og-image.png, which doesn't exist (404) — a broken
+  // preview image is worse than none, so omit the tag entirely when absent.
+  const ogImage = logo ? `<meta property="og:image" content="${logo}" /><meta name="twitter:image" content="${logo}" />` : "";
   const title = `${esc(b.name)} | ${esc(b.casino || "Stake")} Leaderboard`;
   const desc = `${esc(b.name)} x ${esc(b.casino || "Stake")}. Use code ${esc(b.code)} and compete in the ${esc(b.prizePool)} ${esc((b.period || "monthly").toLowerCase())} leaderboard.`;
   const dataJson = JSON.stringify(data).replace(/</g, "\\u003c");
