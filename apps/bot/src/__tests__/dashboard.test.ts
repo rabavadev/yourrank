@@ -125,6 +125,17 @@ describe("dashboard views", () => {
     expect(html).not.toContain("onfocus=");
     expect(html).not.toContain("onblur=");
   });
+
+  it("keeps the test-message form hidden until a bot is selected", () => {
+    const html = appHtml(
+      { display_name: "Test", email: "test@example.com", plan: "free" },
+      "https://yourrank.site",
+      "nonce123",
+      "bots"
+    );
+    expect(html).toContain('id="testMsgPanel" hidden');
+    expect(html).toContain("if (!__testBotId) return toast('Select a bot first')");
+  });
 });
 
 // ── Dashboard route integration tests ─────────────────────────────────

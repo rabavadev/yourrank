@@ -261,7 +261,7 @@ ${sideNav(page, user)}
   </div>
 
   <!-- Test message (bots) -->
-  <div class="panel" data-page="bots" id="testMsgPanel" style="display:none">
+  <div class="panel" data-page="bots" id="testMsgPanel" hidden>
     <h2>Send a test message</h2>
     <p class="muted" style="margin-bottom:12px;font-size:13px">Send a one-off message from <b id="tmBotName">your bot</b> to confirm it works. Get your chat ID by sending <code>/start</code> to <a href="https://t.me/userinfobot" target="_blank" rel="noopener">@userinfobot</a>.</p>
     <div class="row">
@@ -616,16 +616,17 @@ function testMessage(target){
   __testBotId = target.dataset.id;
   const bot = __lastBots.find(b => b.id === __testBotId);
   const name = $('tmBotName'); if (name) name.textContent = bot ? '@'+bot.username : 'your bot';
-  const panel = $('testMsgPanel'); if (panel) panel.style.display = '';
+  const panel = $('testMsgPanel'); if (panel) panel.hidden = false;
   const ci = $('tmChatId'); if (ci) ci.focus();
 }
 function cancelTestMessage(){
-  const panel = $('testMsgPanel'); if (panel) panel.style.display = 'none';
+  const panel = $('testMsgPanel'); if (panel) panel.hidden = true;
   const ci = $('tmChatId'); if (ci) ci.value = '';
   const tx = $('tmText'); if (tx) tx.value = '';
   __testBotId = null;
 }
 async function sendTestMessage(btn){
+  if (!__testBotId) return toast('Select a bot first');
   const chatId = Number(($('tmChatId').value || '').trim());
   if (!chatId || isNaN(chatId)) return toast('Enter a valid numeric chat ID');
   const text = ($('tmText').value || '').trim();
