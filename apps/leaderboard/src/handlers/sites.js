@@ -102,7 +102,9 @@ export async function handleCreateBoard(request, env) {
   if (!slug) return bad("Enter a valid slug for the board URL.");
   const name = String(body.name || "").trim().slice(0, 80) || slug;
   const r = await createBoard(env, user.id, { slug, name });
-  return r.error ? bad(r.error, 400) : json({ ok: true, id: r.id, slug: r.slug });
+  return r.error
+    ? json({ ok: false, error: r.error, code: r.code || "create_failed" }, 400)
+    : json({ ok: true, id: r.id, slug: r.slug });
 }
 
 // POST /api/site/archive — { label?, clear: "wagers"|"players"|"none" }

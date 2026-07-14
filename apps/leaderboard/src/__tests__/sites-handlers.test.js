@@ -19,6 +19,10 @@ const mockUpdateSiteTheme = mock(() => Promise.resolve({
   ok: true,
   branding: { template: "neon", accentA: null, accentB: null },
 }));
+const mockCreateBoard = mock(() => Promise.resolve({
+  error: "Your free plan allows up to 1 leaderboard. Upgrade to create more.",
+  code: "board_limit",
+}));
 
 const dbMock = () => ({
   one: (...args) => mockOne(...args),
@@ -73,6 +77,7 @@ const siteMock = () => ({
   invalidateSiteCache: () => {},
   invalidateUserCache: () => {},
   updateSiteTheme: (...args) => mockUpdateSiteTheme(...args),
+  createBoard: (...args) => mockCreateBoard(...args),
 });
 mock.module(siteUrl, siteMock);
 mock.module(siteUrlTs, siteMock);
@@ -92,7 +97,9 @@ mock.module(dataSitesUrlTs, () => ({
 }));
 
 // ── Import after mocks ─────────────────────────────────────────────────
-import { handleGetSite, handleListBoards, handlePutTheme, handleStats, handleTrackCopy } from "../handlers/sites.js";
+import {
+  handleCreateBoard, handleGetSite, handleListBoards, handlePutTheme, handleStats, handleTrackCopy
+} from "../handlers/sites.js";
 
 // Session value matching parseSessionValue format: {"u":"user-1","c":<timestamp>}
 const SESSION_VALUE = JSON.stringify({ u: "user-1", c: Date.now() });
@@ -183,6 +190,32 @@ describe("handlePutTheme", () => {
       branding: { template: "neon", accentA: null, accentB: null },
     });
     expect(mockUpdateSiteTheme).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("handleCreateBoard", () => {
+  beforeEach(() => {
+    mockOne.mockReset();
+    mockCreateBoard.mockReset();
+    mockCreateBoard.mockResolvedValue({
+      error: "Your free plan allows up to 1 leaderboard. Upgrade to create more.",
+      code: "board_limit",
+    });
+  });
+
+  it("preserves the board-limit code for dashboard upsells", async () => {
+    mockOne.mockResolvedValueOnce(USER_ROW);
+    const res = await handleCreateBoard(req("https://test.com/api/site/create", "POST", {
+      name: "Sponsor board",
+      slug: "sponsor-board",
+    }), mockEnv());
+    expect(res.status).toBe(400);
+    const body = await res.json();
+    expect(body).toEqual({
+      ok: false,
+      error: "Your free plan allows up to 1 leaderboard. Upgrade to create more.",
+      code: "board_limit",
+    });
   });
 });
 

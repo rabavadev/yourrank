@@ -93,11 +93,29 @@ function renderBoardSwitcher(){
   const newBtn = $("newBoard");
   if (newBtn) {
     const limit = ME?.limits?.boards || 1;
-    newBtn.hidden = BOARDS.length >= limit;
-    newBtn.onclick = () => { $("newBoardForm").hidden = false; newBtn.hidden = true; $("nb_name").focus(); };
+    const atLimit = BOARDS.length >= limit;
+    newBtn.hidden = false;
+    newBtn.classList.toggle("btn--ghost", atLimit);
+    newBtn.title = atLimit ? "Plan limit reached — see upgrade options" : "";
+    newBtn.setAttribute("aria-expanded", "false");
+    newBtn.setAttribute("aria-controls", atLimit ? "boardLimitUpsell" : "newBoardForm");
+    if (!atLimit) hideBoardLimitUpsell();
+    newBtn.onclick = () => {
+      if (atLimit) { showBoardLimitUpsell(); return; }
+      hideBoardLimitUpsell();
+      $("newBoardForm").hidden = false;
+      newBtn.hidden = true;
+      newBtn.setAttribute("aria-expanded", "true");
+      $("nb_name").focus();
+    };
   }
   const cancelBtn = $("nb_cancel");
-  if (cancelBtn) cancelBtn.onclick = () => { $("newBoardForm").hidden = true; $("newBoard").hidden = BOARDS.length >= (ME?.limits?.boards || 1); $("nb_err").textContent = ""; };
+  if (cancelBtn) cancelBtn.onclick = () => {
+    $("newBoardForm").hidden = true;
+    $("newBoard").hidden = false;
+    $("newBoard").setAttribute("aria-expanded", "false");
+    $("nb_err").textContent = "";
+  };
   const createBtn = $("nb_create");
   if (createBtn) createBtn.onclick = async () => {
     const name = $("nb_name").value.trim();
@@ -110,12 +128,63 @@ function renderBoardSwitcher(){
       const d = await res.json();
       if (res.ok && d.ok) {
         location.href = "/dashboard?board=" + encodeURIComponent(d.id);
+      } else if (d.code === "board_limit") {
+        $("newBoardForm").hidden = true;
+        newBtn.hidden = false;
+        showBoardLimitUpsell();
+        createBtn.disabled = false;
       } else {
         $("nb_err").textContent = d.error || "Creation failed.";
         createBtn.disabled = false;
       }
     } catch { $("nb_err").textContent = "Network error."; createBtn.disabled = false; }
   };
+}
+
+function boardLimitOffer(){
+  const plan = ME?.plan || "free";
+  const limit = ME?.limits?.boards || 1;
+  if (plan === "agency") {
+    return {
+      title: `You've reached ${limit} boards`,
+      text: "Need a higher limit? Contact support and tell us how many boards your team manages.",
+      cta: "Contact support",
+      href: "/contact?type=support&area=billing&return=/dashboard",
+    };
+  }
+  if (plan === "pro") {
+    return {
+      title: `You've reached ${limit} boards`,
+      text: "Agency supports up to 99 independent leaderboards.",
+      cta: "View Agency plan",
+      href: "/dashboard/billing",
+    };
+  }
+  const planName = plan === "starter" ? "Starter" : "Free";
+  return {
+    title: "Need another leaderboard?",
+    text: `${planName} includes ${limit} board. Pro unlocks up to 3 independent boards.`,
+    cta: "Upgrade to Pro",
+    href: "/dashboard/billing",
+  };
+}
+
+function showBoardLimitUpsell(){
+  const panel = $("boardLimitUpsell");
+  if (!panel) return;
+  const offer = boardLimitOffer();
+  $("boardLimitTitle").textContent = offer.title;
+  $("boardLimitText").textContent = offer.text;
+  $("boardLimitCta").textContent = offer.cta;
+  $("boardLimitCta").href = offer.href;
+  panel.hidden = false;
+  $("newBoard")?.setAttribute("aria-expanded", "true");
+  $("boardLimitCta")?.focus();
+}
+
+function hideBoardLimitUpsell(){
+  const panel = $("boardLimitUpsell");
+  if (panel) panel.hidden = true;
 }
 
 async function deleteBoard(siteId) {

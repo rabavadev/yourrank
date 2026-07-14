@@ -213,6 +213,10 @@ export const PAGES = {
 <div class="card" id="boardSwitcher"><h2>Boards</h2><p class="card-sub">Switch between your leaderboards. <span class="hint" id="boardCount"></span></p>
 <div class="board-list" id="boardList"></div>
 <div class="mt-10 d-flex gap-8 flex-wrap"><button class="btn btn--sm" id="newBoard" type="button" hidden>+ New board</button></div>
+<div class="board-upsell" id="boardLimitUpsell" role="status" hidden>
+<div><b id="boardLimitTitle">Need another leaderboard?</b><p class="hint" id="boardLimitText"></p></div>
+<a class="btn btn--sm btn--accent" id="boardLimitCta" href="/dashboard/billing">Upgrade plan</a>
+</div>
 <div id="newBoardForm" hidden class="mt-12 d-flex gap-8 items-end flex-wrap">
 <div class="field field-flex"><label for="nb_name">Board name</label><input id="nb_name" placeholder="July 2026 Board" /></div>
 <div class="field field-flex"><label for="nb_slug">URL slug</label><input id="nb_slug" placeholder="july-2026" /></div>
