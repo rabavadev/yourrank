@@ -3,7 +3,7 @@
 //
 // Run: bun test src/__tests__/plans-rollup.test.ts
 
-import { describe, it, expect, mock, beforeEach } from "bun:test";
+import { describe, it, expect, mock } from "bun:test";
 
 // ── Mock DB ────────────────────────────────────────────────────────────
 const dbUrl   = import.meta.resolve("../../../../shared/db.js");
@@ -14,11 +14,11 @@ const mockExec = mock((..._args: any[]): Promise<any> => Promise.resolve(undefin
 const mockQuery = mock((..._args: any[]): Promise<any> => Promise.resolve([]));
 
 const dbMock = () => ({
-  one: (...args: any[]) => mockOne(...args),
-  exec: (...args: any[]) => mockExec(...args),
-  query: (...args: any[]) => mockQuery(...args),
+  one: (..._args: any[]) => mockOne(..._args),
+  exec: (..._args: any[]) => mockExec(..._args),
+  query: (..._args: any[]) => mockQuery(..._args),
   getSql: () => null,
-  withTransaction: async (fn: any) => fn({ one: (...a: any[]) => mockOne(...a), exec: (...a: any[]) => mockExec(...a), query: (...a: any[]) => mockQuery(...a) }),
+  withTransaction: async (fn: any) => fn({ one: (..._a: any[]) => mockOne(..._a), exec: (..._a: any[]) => mockExec(..._a), query: (..._a: any[]) => mockQuery(..._a) }),
 });
 mock.module(dbUrl, dbMock);
 mock.module(dbUrlTs, dbMock);
@@ -44,7 +44,7 @@ mock.module(cryptoUrlTs, cryptoMock);
 
 // ── Import after mocks ─────────────────────────────────────────────────
 import { PLANS } from "../plans.js";
-import { effectivePlan, PLAN_LIMITS, BOARD_LIMITS, PLAN_PRICES } from "../../../../shared/plans.js";
+import { effectivePlan, PLAN_LIMITS, BOARD_LIMITS } from "../../../../shared/plans.js";
 
 // ── PLANS constant (bot-specific) ──────────────────────────────────────
 describe("PLANS constant", () => {
@@ -56,7 +56,7 @@ describe("PLANS constant", () => {
   });
 
   it("each plan has required fields", () => {
-    for (const [key, plan] of Object.entries(PLANS)) {
+    for (const [, plan] of Object.entries(PLANS)) {
       expect(plan).toHaveProperty("tier");
       expect(plan).toHaveProperty("label");
       expect(plan).toHaveProperty("maxBots");

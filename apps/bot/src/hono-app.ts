@@ -2,7 +2,7 @@ import { Hono } from "hono";
 import type { Update } from "grammy/types";
 import { config } from "./config.js";
 import { exec, one, query } from "../../../shared/db.js";
-import { safeEqual, encryptToken, decryptToken, reencryptToken, isCurrentVersion, newClickRef, newLinkSlug, newWebhookSecret, verifyHmacSha256Hex } from "../../../shared/crypto.js";
+import { safeEqual, encryptToken, reencryptToken, isCurrentVersion, newClickRef, newLinkSlug, newWebhookSecret, verifyHmacSha256Hex } from "../../../shared/crypto.js";
 import { getBotBySecret, handleUpdateForBot } from "./botEngine.js";
 import { getMe, setWebhook } from "./telegram.js";
 import { buildDashboard } from "./dashboard.js";

@@ -1,5 +1,5 @@
 import type { Update } from "grammy/types";
-import { one, query, withTransaction } from "../../../shared/db.js";
+import { query, withTransaction } from "../../../shared/db.js";
 import { PLANS, type PlanTier } from "./plans.js";
 import { setWebhook } from "./telegram.js";
 

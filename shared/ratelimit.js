@@ -14,11 +14,11 @@
 // ------------------------------------------------------------------
 function isFailOpen(env) {
     if (!env || typeof env !== "object")
-        return true;
+        return false;
     const v = env.RL_FAIL_OPEN;
     if (v === undefined || v === null)
-        return true;
-    return String(v).toLowerCase() !== "false";
+        return false;
+    return String(v).toLowerCase() === "true";
 }
 function logRateLimitFailure(backend, error, failOpen, id, limit, windowSec) {
     const level = failOpen ? "warn" : "error";

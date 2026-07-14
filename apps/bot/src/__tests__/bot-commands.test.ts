@@ -11,11 +11,11 @@ const cryptoUrlTs = import.meta.resolve("../../../../shared/crypto.ts");
 const mockQuery = mock<(...args: any[]) => Promise<any>>(() => Promise.resolve([]));
 
 const dbMock = () => ({
-  one: (...args: any[]) => Promise.resolve(null),
-  exec: (...args: any[]) => Promise.resolve(undefined),
-  query: (...args: any[]) => mockQuery(...args),
+  one: (..._args: any[]) => Promise.resolve(null),
+  exec: (..._args: any[]) => Promise.resolve(undefined),
+  query: (..._args: any[]) => mockQuery(..._args),
   getSql: () => null,
-  withTransaction: async (fn: any) => fn({ one: (...a: any[]) => Promise.resolve(null), exec: (...a: any[]) => Promise.resolve(undefined), query: (...a: any[]) => mockQuery(...a) }),
+  withTransaction: async (fn: any) => fn({ one: (..._a: any[]) => Promise.resolve(null), exec: (..._a: any[]) => Promise.resolve(undefined), query: (..._a: any[]) => mockQuery(..._a) }),
 });
 
 const cryptoMock = () => ({

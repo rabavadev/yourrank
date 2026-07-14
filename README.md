@@ -16,7 +16,7 @@ yourrank/
 ├── supabase/
 │   └── migrations/          SQL migrations (applied via `supabase db push`)
 ├── shared/                  code + specs shared by both Workers
-│   ├── session.js / .ts     ONE cross-Worker session (gm_session + shared KV)
+│   ├── session.js / .ts     ONE cross-Worker session (yr_session + Postgres sessions)
 │   ├── shell-nav.js / .ts   shared dashboard nav (Leaderboard | Bot | ...)
 │   ├── session.md, routing.md, telegram-login.md, dashboard-shell.md
 └── apps/

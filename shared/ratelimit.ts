@@ -46,10 +46,10 @@ export interface RateLimitEnv {
 }
 
 function isFailOpen(env: RateLimitEnv | undefined): boolean {
-  if (!env || typeof env !== "object") return true;
+  if (!env || typeof env !== "object") return false;
   const v = env.RL_FAIL_OPEN;
-  if (v === undefined || v === null) return true;
-  return String(v).toLowerCase() !== "false";
+  if (v === undefined || v === null) return false;
+  return String(v).toLowerCase() === "true";
 }
 
 function logRateLimitFailure(

@@ -14,6 +14,7 @@
 // `meta` is the object passed by withWorkerFetch: { sentry, log, reqId }.
 
 import { bad } from "../auth.js";
+import { getLogger } from "../../../../shared/request-id.js";
 
 /**
  * @template {(request: Request, env: object, ctx?: object, meta?: object) => Promise<Response>} T
@@ -27,14 +28,9 @@ export function withHandler(fn) {
     } catch (err) {
       // Log with enough context to locate the failure without leaking internals.
       const label = fn.name || "anonymous";
-      const log = meta?.log;
+      const log = meta?.log || getLogger();
       const logContext = { handler: label, req_id: meta?.reqId };
-      if (log && typeof log.error === "function") {
-        log.error("unhandled_error", { error: String(err?.message || err), stack: err?.stack, ...logContext });
-      } else {
-        console.error(`[handler:${label}] unhandled error:`, String(err?.message || err), logContext);
-      }
-      if (err?.stack) console.error(err.stack);
+      log.error("unhandled_error", { error: String(err?.message || err), stack: err?.stack, ...logContext });
       return bad("Internal server error. Please try again.", 500);
     }
   };

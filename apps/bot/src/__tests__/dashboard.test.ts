@@ -58,6 +58,8 @@ import { buildDashboard } from "../dashboard.js";
 import { sameOrigin } from "../dashboard-auth.js";
 import { loginHtml, appHtml } from "../dashboard-views.js";
 
+const testEnv = { RL_FAIL_OPEN: "true" } as any;
+
 function resetMocks() {
   mockOne.mockImplementation(() => Promise.resolve(null));
   mockExec.mockImplementation(() => Promise.resolve(undefined));
@@ -156,7 +158,7 @@ describe("buildDashboard", () => {
 
   it("GET /dashboard returns the login page when not authenticated", async () => {
     const req = new Request("http://localhost:8787/dashboard");
-    const res = await app.fetch(req, {} as any);
+    const res = await app.fetch(req, testEnv);
     expect(res.status).toBe(200);
     const html = await res.text();
     expect(html).toContain('data-action="devLogin"');
@@ -174,7 +176,7 @@ describe("buildDashboard", () => {
       headers: { "content-type": "application/json", origin: "http://localhost:8787" },
       body: JSON.stringify({ telegram_user_id: 123456 }),
     });
-    const res = await app.fetch(req, {} as any);
+    const res = await app.fetch(req, testEnv);
     expect(res.status).toBe(200);
     const body = await res.json() as any;
     expect(body.ok).toBe(true);
@@ -186,7 +188,7 @@ describe("buildDashboard", () => {
       method: "POST",
       headers: { accept: "application/json" },
     });
-    const res = await app.fetch(req, {} as any);
+    const res = await app.fetch(req, testEnv);
     expect(res.status).toBe(200);
     const body = await res.json() as any;
     expect(body.ok).toBe(true);
@@ -195,7 +197,7 @@ describe("buildDashboard", () => {
 
   it("POST /auth/logout redirects to /bot/dashboard for form/logout button submission", async () => {
     const req = new Request("http://localhost:8787/auth/logout", { method: "POST" });
-    const res = await app.fetch(req, {} as any);
+    const res = await app.fetch(req, testEnv);
     expect(res.status).toBe(302);
     expect(res.headers.get("location")).toBe("/bot/dashboard");
   });
@@ -208,7 +210,7 @@ describe("buildDashboard", () => {
     const req = new Request("http://localhost:8787/dashboard", {
       headers: { cookie: "yr_session=token123" },
     });
-    const res = await app.fetch(req, {} as any);
+    const res = await app.fetch(req, testEnv);
     expect(res.status).toBe(200);
     const html = await res.text();
     expect(html).toContain('data-action="connectBot"');
@@ -241,7 +243,7 @@ describe("buildDashboard", () => {
       },
       body: JSON.stringify({ token: "123456:ABC-DEF" }),
     });
-    const res = await app.fetch(req, {} as any);
+    const res = await app.fetch(req, testEnv);
     expect(res.status).toBe(200);
     const body = await res.json() as any;
     expect(body.username).toBe("testbot");
@@ -260,7 +262,7 @@ describe("buildDashboard", () => {
     const req = new Request("http://localhost:8787/dash/api/bots/b-1/health", {
       headers: { cookie: "yr_session=token123" },
     });
-    const res = await app.fetch(req, {} as any);
+    const res = await app.fetch(req, testEnv);
     expect(res.status).toBe(200);
     const body = await res.json() as any;
     expect(body.ok).toBe(true);
@@ -281,7 +283,7 @@ describe("buildDashboard", () => {
       method: "POST",
       headers: { origin: "https://yourrank.site", cookie: "yr_session=token123" },
     });
-    const res = await app.fetch(req, {} as any);
+    const res = await app.fetch(req, testEnv);
     expect(res.status).toBe(200);
     const body = (await res.json()) as any;
     expect(body.ok).toBe(true);
@@ -301,7 +303,7 @@ describe("buildDashboard", () => {
       method: "POST",
       headers: { origin: "https://yourrank.site", cookie: "yr_session=token123" },
     });
-    const res = await app.fetch(req, {} as any);
+    const res = await app.fetch(req, testEnv);
     expect(res.status).toBe(200);
     const body = (await res.json()) as any;
     expect(body.ok).toBe(true);
@@ -321,7 +323,7 @@ describe("buildDashboard", () => {
       method: "DELETE",
       headers: { origin: "https://yourrank.site", cookie: "yr_session=token123" },
     });
-    const res = await app.fetch(req, {} as any);
+    const res = await app.fetch(req, testEnv);
     expect(res.status).toBe(200);
     const body = (await res.json()) as any;
     expect(body.ok).toBe(true);
@@ -338,7 +340,7 @@ describe("buildDashboard", () => {
       headers: { "content-type": "application/json", origin: "https://yourrank.site", cookie: "yr_session=token123" },
       body: JSON.stringify({ chat_id: 123456, text: "Hello from dashboard" }),
     });
-    const res = await app.fetch(req, {} as any);
+    const res = await app.fetch(req, testEnv);
     expect(res.status).toBe(200);
     const body = (await res.json()) as any;
     expect(body.ok).toBe(true);
@@ -354,7 +356,7 @@ describe("buildDashboard", () => {
     const req = new Request("http://localhost:8787/dash/api/broadcasts/audience?bot_id=b-1", {
       headers: { cookie: "yr_session=token123" },
     });
-    const res = await app.fetch(req, {} as any);
+    const res = await app.fetch(req, testEnv);
     expect(res.status).toBe(200);
     expect(((await res.json()) as any).count).toBe(42);
   });
@@ -365,7 +367,7 @@ describe("buildDashboard", () => {
     const req = new Request("http://localhost:8787/dash/api/broadcasts/audience", {
       headers: { cookie: "yr_session=token123" },
     });
-    const res = await app.fetch(req, {} as any);
+    const res = await app.fetch(req, testEnv);
     expect(res.status).toBe(400);
   });
 
@@ -379,7 +381,7 @@ describe("buildDashboard", () => {
       method: "DELETE",
       headers: { origin: "https://yourrank.site", cookie: "yr_session=token123" },
     });
-    const res = await app.fetch(req, {} as any);
+    const res = await app.fetch(req, testEnv);
     expect(res.status).toBe(200);
     const body = (await res.json()) as any;
     expect(body.ok).toBe(true);
