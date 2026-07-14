@@ -2,10 +2,10 @@
 //  YourRank — SHARED RATE LIMITER (real executable tests)
 //
 //  Regression coverage for the "rate limited forever" platform outage: the
-//  limiter used to FAIL CLOSED, so once Cloudflare KV started erroring (e.g.
-//  the daily write quota was exhausted) every rate-limited endpoint returned
-//  429 until the quota reset. It now FAILS OPEN — a KV problem degrades to
-//  "no rate limiting" instead of a full outage.
+//  limiter now FAILS CLOSED by default (RL_FAIL_OPEN unset or false), so a
+//  KV/backend problem blocks requests until it recovers. Operators can still
+//  opt into fail-open for a specific call by passing RL_FAIL_OPEN=true, or
+//  by calling rateLimit with a direct KV object (legacy/test path).
 // ============================================================================
 
 import { describe, it, expect } from 'bun:test';
@@ -24,7 +24,7 @@ function workingKV(): RateLimitKV {
 }
 
 // KV whose reads work but whose WRITES always throw — models the free-tier
-// daily write-quota-exhausted state that caused the outage.
+// daily write-quota-exhausted state.
 function writeFailKV(): RateLimitKV {
   const store = new Map<string, string>();
   return {
@@ -56,24 +56,42 @@ describe('rateLimit', () => {
     expect(over.remaining).toBe(0);
   });
 
-  it('FAILS OPEN when KV is undefined (no binding)', async () => {
+  it('FAILS CLOSED when no env/RL_FAIL_OPEN is provided', async () => {
     const r = await rateLimit(undefined, 'anything', 5, 60);
+    expect(r.ok).toBe(false);
+  });
+
+  it('FAILS OPEN when RL_FAIL_OPEN=true', async () => {
+    const r = await rateLimit({ RL_FAIL_OPEN: 'true' } as any, 'anything', 5, 60);
     expect(r.ok).toBe(true);
   });
 
-  it('FAILS OPEN when the KV write throws (write quota exhausted)', async () => {
-    const kv = writeFailKV();
+  it('FAILS OPEN when the KV write throws if RL_FAIL_OPEN=true', async () => {
+    const env = { SESSIONS: writeFailKV(), RL_FAIL_OPEN: 'true' } as any;
     // Every call reads 0 (nothing ever persists) and the put throws — but the
     // request must still be allowed, not denied.
     for (let i = 0; i < 10; i++) {
-      const r = await rateLimit(kv, 'quota-test', 3, 60);
+      const r = await rateLimit(env, 'quota-test', 3, 60);
       expect(r.ok).toBe(true);
     }
   });
 
-  it('FAILS OPEN when the KV read throws', async () => {
-    const r = await rateLimit(readFailKV(), 'read-fail', 5, 60);
+  it('FAILS CLOSED when the KV write throws without RL_FAIL_OPEN', async () => {
+    const env = { SESSIONS: writeFailKV() } as any;
+    const r = await rateLimit(env, 'quota-test-closed', 3, 60);
+    expect(r.ok).toBe(false);
+  });
+
+  it('FAILS OPEN when the KV read throws if RL_FAIL_OPEN=true', async () => {
+    const env = { SESSIONS: readFailKV(), RL_FAIL_OPEN: 'true' } as any;
+    const r = await rateLimit(env, 'read-fail', 5, 60);
     expect(r.ok).toBe(true);
+  });
+
+  it('FAILS CLOSED when the KV read throws without RL_FAIL_OPEN', async () => {
+    const env = { SESSIONS: readFailKV() } as any;
+    const r = await rateLimit(env, 'read-fail-closed', 5, 60);
+    expect(r.ok).toBe(false);
   });
 
   it('reports remaining headroom while healthy', async () => {
