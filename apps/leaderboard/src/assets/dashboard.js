@@ -34,6 +34,8 @@ async function init(){
   BOARDS = p.boards || [];
   TEMPLATE_CATALOG = Array.isArray(p.templates) ? p.templates : [];
   renderBoardSwitcher();
+  renderSidebarBoardSwitcher();
+  renderBoardsPage();
   const d = p.data||{}; const b = d.brand||{};
   loadStats(); // non-blocking; fills the analytics card when it lands
   EXTRA = { chips: d.partner?.chips, whyStats: d.whyStats, rules: d.rules, socials: d.socials };
@@ -56,6 +58,8 @@ async function init(){
   $("liveLink").textContent = location.host + "/" + SLUG; $("liveLink").href = "/" + SLUG; $("viewLive").href = "/" + SLUG;
   $("loading").hidden=true; $("dash").hidden=false;
   setupShell();
+  const initialNav = new URLSearchParams(location.search).get("nav");
+  if (initialNav && document.querySelector(`section[data-page="${initialNav}"]`)) navTo(initialNav);
   renderOverviewSummary();
   // FE-002-v9: track unsaved changes
   $("dash").addEventListener("input", ()=>{ _dirty = true; });
@@ -75,7 +79,8 @@ function renderBoardSwitcher(){
     el.className = "board-item" + (isActive ? " board-item--active" : "");
     el.setAttribute("role", "button");
     el.setAttribute("tabindex", "0");
-    el.innerHTML = `<span class="board-slug">/${esc(b.slug)}</span><span class="board-name">${esc(b.name)}</span>${isActive ? '<span class="board-badge">editing</span>' : '<span class="board-actions"><button class="btn btn--sm" data-action="setActive" title="Set as active board" type="button">★</button><button class="btn btn--sm" data-action="delete" title="Delete board" type="button">×</button></span>'}`;
+    const sponsor = [b.casino, b.code].filter(Boolean).join(" · ");
+    el.innerHTML = `<div class="board-info"><div class="board-row-top"><span class="board-slug">/${esc(b.slug)}</span><span class="board-name">${esc(b.name)}</span></div>${sponsor ? `<div class="board-sponsor">${esc(sponsor)}</div>` : ""}</div>${isActive ? '<span class="board-badge">editing</span>' : '<span class="board-actions"><button class="btn btn--sm" data-action="setActive" title="Set as active board" type="button">★</button><button class="btn btn--sm" data-action="delete" title="Delete board" type="button">×</button></span>'}`;
     if (!isActive) {
       el.style.cursor = "pointer";
       el.addEventListener("click", (e) => { if (e.target.closest('[data-action]')) return; location.href = "/dashboard?board=" + encodeURIComponent(b.id); });
@@ -124,7 +129,9 @@ function renderBoardSwitcher(){
     $("nb_err").textContent = "Creating…";
     createBtn.disabled = true;
     try {
-      const res = await fetch("/api/site/create", { method: "POST", credentials: "include", headers: { "content-type": "application/json", "x-csrf-token": getCsrf() }, body: JSON.stringify({ slug, name }) });
+      const casino = $("nb_casino").value.trim();
+      const code = $("nb_code").value.trim();
+      const res = await fetch("/api/site/create", { method: "POST", credentials: "include", headers: { "content-type": "application/json", "x-csrf-token": getCsrf() }, body: JSON.stringify({ slug, name, casino, code }) });
       const d = await res.json();
       if (res.ok && d.ok) {
         location.href = "/dashboard?board=" + encodeURIComponent(d.id);
@@ -203,6 +210,8 @@ async function deleteBoard(siteId) {
       BOARDS = BOARDS.filter(b => b.id !== siteId);
       if (siteId === ACTIVE_SITE_ID) { location.href = "/dashboard"; return; }
       renderBoardSwitcher();
+      renderSidebarBoardSwitcher();
+      renderBoardsPage();
       $("status").textContent = "Board deleted.";
     } else {
       $("status").textContent = d.error || "Could not delete board.";
@@ -222,11 +231,109 @@ async function setActiveBoard(siteId) {
     if (res.ok && d.ok) {
       ACTIVE_SITE_ID = siteId;
       renderBoardSwitcher();
+      renderSidebarBoardSwitcher();
       $("status").textContent = "Active board updated.";
     } else {
       $("status").textContent = d.error || "Could not set active board.";
     }
   } catch { $("status").textContent = "Network error."; }
+}
+
+function openNewBoardForm() {
+  navTo("overview");
+  const newBtn = $("newBoard");
+  if (newBtn && !newBtn.hidden) newBtn.click();
+}
+
+async function duplicateBoard(siteId) {
+  const board = BOARDS.find(b => b.id === siteId);
+  if (!board) return;
+  if (!window.confirm(`Duplicate /${board.slug}? This creates an unpublished copy with the same design and players.`)) return;
+  try {
+    const res = await fetch("/api/site/duplicate", {
+      method: "POST",
+      credentials: "include",
+      headers: { "content-type": "application/json", "x-csrf-token": getCsrf() },
+      body: JSON.stringify({ siteId })
+    }).then(guardAuth);
+    const d = await res.json();
+    if (res.ok && d.ok) {
+      location.href = "/dashboard?board=" + encodeURIComponent(d.id);
+    } else if (d.code === "board_limit") {
+      showBoardLimitUpsell();
+    } else {
+      $("status").textContent = d.error || "Could not duplicate board.";
+    }
+  } catch { $("status").textContent = "Network error."; }
+}
+
+function renderSidebarBoardSwitcher() {
+  const nameEl = $("activeBoardName");
+  const metaEl = $("activeBoardMeta");
+  const sel = $("sidebarBoardSelect");
+  const manage = $("manageBoardsBtn");
+  const newBtn = $("newBoardSidebar");
+  if (nameEl) nameEl.textContent = BOARDS.find(b => b.id === ACTIVE_SITE_ID)?.name || "…";
+  if (metaEl) {
+    const active = BOARDS.find(b => b.id === ACTIVE_SITE_ID);
+    if (active) {
+      const parts = [`/${active.slug}`, active.casino, active.code].filter(Boolean);
+      metaEl.textContent = parts.join(" · ");
+    } else {
+      metaEl.textContent = "";
+    }
+  }
+  if (sel) {
+    sel.innerHTML = "";
+    if (!BOARDS.length) {
+      const opt = document.createElement("option");
+      opt.textContent = "No boards";
+      opt.value = "";
+      sel.appendChild(opt);
+      sel.disabled = true;
+    } else {
+      BOARDS.forEach(b => {
+        const opt = document.createElement("option");
+        opt.value = b.id;
+        opt.textContent = `${b.name} /${b.slug}`;
+        opt.selected = b.id === ACTIVE_SITE_ID;
+        sel.appendChild(opt);
+      });
+      sel.disabled = false;
+      sel.onchange = () => {
+        const id = sel.value;
+        if (id && id !== ACTIVE_SITE_ID) location.href = "/dashboard?board=" + encodeURIComponent(id);
+      };
+    }
+  }
+  if (manage) manage.onclick = () => navTo("boards");
+  if (newBtn) newBtn.onclick = openNewBoardForm;
+}
+
+function renderBoardsPage() {
+  const body = $("boardsBody");
+  const empty = $("boardsEmpty");
+  const addBtn = $("addBoardFromBoards");
+  if (!body) return;
+  body.innerHTML = "";
+  if (!BOARDS.length) {
+    if (empty) empty.hidden = false;
+  } else {
+    if (empty) empty.hidden = true;
+    BOARDS.forEach(b => {
+      const tr = document.createElement("tr");
+      const isActive = b.id === ACTIVE_SITE_ID;
+      const tpl = TEMPLATE_CATALOG.find(t => t.id === (b.template || "classic"));
+      const statusClass = b.published ? "pill--good" : "pill--muted";
+      const statusText = b.published ? "Published" : "Draft";
+      tr.innerHTML = `<td><a class="board-table-name${isActive ? ' board-table-name--active' : ''}" href="/dashboard?board=${encodeURIComponent(b.id)}">${esc(b.name)}${isActive ? '<span class="board-table-badge">editing</span>' : ''}</a></td><td>${esc(b.casino || "")}${b.code ? `<span class="mono"> · ${esc(b.code)}</span>` : ""}</td><td><a class="mono" href="/${esc(b.slug)}" target="_blank">/${esc(b.slug)}</a></td><td>${b.players || 0}</td><td>${esc(tpl ? tpl.name : (b.template || "classic"))}</td><td><span class="pill ${statusClass}">${statusText}</span></td><td class="ta-r"><button class="btn btn--xs btn--ghost" data-action="edit" type="button">Edit</button><button class="btn btn--xs" data-action="dup" type="button">Duplicate</button><button class="btn btn--xs btn--danger" data-action="del" type="button">Delete</button></td>`;
+      tr.querySelector('[data-action="edit"]')?.addEventListener("click", () => { location.href = "/dashboard?board=" + encodeURIComponent(b.id); });
+      tr.querySelector('[data-action="dup"]')?.addEventListener("click", () => { duplicateBoard(b.id); });
+      tr.querySelector('[data-action="del"]')?.addEventListener("click", () => { deleteBoard(b.id); });
+      body.appendChild(tr);
+    });
+  }
+  if (addBtn) addBtn.onclick = openNewBoardForm;
 }
 
 function esc(s) { return String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
@@ -391,7 +498,11 @@ async function saveTheme(template, accentA, accentB, label){
       CURRENT_BRANDING.accentA = accentA;
       CURRENT_BRANDING.accentB = accentB;
     }
+    const active = BOARDS.find(b => b.id === ACTIVE_SITE_ID);
+    if (active) active.template = template;
     updateThemeSelection();
+    renderSidebarBoardSwitcher();
+    renderBoardsPage();
     if (status) status.textContent = `${label || currentTemplate()?.name || "Design"} applied to /${SLUG}.`;
   } catch {
     if (status) status.textContent = "Network error. Try again.";
@@ -661,7 +772,7 @@ $("save").addEventListener("click", async ()=>{
     const payload = collect();
     const res=await fetch("/api/site",{method:"PUT",credentials:"include",headers:{"content-type":"application/json","x-csrf-token":getCsrf()},body:JSON.stringify(payload)}).then(guardAuth);
     const d=await res.json();
-    if(res.ok&&d.ok){ status.textContent="Saved. Your page is updated."; _dirty=false; const active = BOARDS.find(b => b.id === ACTIVE_SITE_ID); if (active) active.name = payload.name; renderBoardSwitcher(); } else status.textContent=d.error||"Save failed.";
+    if(res.ok&&d.ok){ status.textContent="Saved. Your page is updated."; _dirty=false; const active = BOARDS.find(b => b.id === ACTIVE_SITE_ID); if (active) { active.name = payload.name; active.casino = payload.brand?.casino || active.casino; active.code = payload.brand?.code || active.code; } renderBoardSwitcher(); renderSidebarBoardSwitcher(); renderBoardsPage(); } else status.textContent=d.error||"Save failed.";
   } catch{ status.textContent="Network error."; }
   btn.disabled=false;btn.textContent="Save changes";
   // FE-004: Only auto-clear success messages; errors stay until next action.

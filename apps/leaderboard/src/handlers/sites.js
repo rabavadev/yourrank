@@ -1,6 +1,6 @@
 // Site handlers: get, put, list, create, archive, stats, heatmap, notifications, custom domain
 import { requireUser, json, bad, ok, readJson, rateLimit, slugify, clientIp } from "../auth.js";
-import { getByUser, getUserSite, getUserSiteById, getUserBoardsList, createBoard, createArchive, deleteArchive, deleteBoard, setActiveBoard, updateSiteTheme, invalidateSiteCache, invalidateUserCache, getBoardById, saveSite, fromJsonb } from "../site.js";
+import { getByUser, getUserSite, getUserSiteById, getUserBoardsList, createBoard, duplicateBoard, createArchive, deleteArchive, deleteBoard, setActiveBoard, updateSiteTheme, invalidateSiteCache, invalidateUserCache, getBoardById, saveSite, fromJsonb } from "../site.js";
 import { bumpStat, getStats, getHeatmap, getTopReferrers } from "../stats.js";
 import { effectivePlan, PLAN_LIMITS, BOARD_LIMITS } from "../billing.js";
 import { templateCatalog } from "../templates/index.js";
@@ -173,6 +173,18 @@ export async function handleSetActive(request, env) {
   if (!body || !body.siteId) return bad("siteId required");
   const r = await setActiveBoard(env, user.id, body.siteId);
   return r.error ? bad(r.error, 400) : json({ ok: true });
+}
+
+// POST /api/site/duplicate — { siteId }
+export async function handleDuplicateBoard(request, env) {
+  const { user, res } = await requireUser(request, env);
+  if (res) return res;
+  if (user.status === "suspended") return bad("This account is suspended.", 403);
+  if (!(await rateLimit(env, `duplicate-board:${user.id}`, 10, 3600)).ok) return bad("Too many duplicate actions. Try again later.", 429);
+  const body = await readJson(request);
+  if (!body || !body.siteId) return bad("siteId required");
+  const r = await duplicateBoard(env, user.id, body.siteId);
+  return r.error ? bad(r.error, 400) : json({ ok: true, id: r.id, slug: r.slug });
 }
 
 // POST /api/site/notify/test — send a test Discord or Telegram notification.

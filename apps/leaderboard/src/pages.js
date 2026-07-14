@@ -184,8 +184,21 @@ export const PAGES = {
 <div id="dash" hidden>
 <div class="lb-shell">
 <aside class="lb-side" id="lbSide" aria-label="Dashboard sections">
+<div class="lb-side-head">
+<div class="lb-side-board">
+<span class="label" id="activeBoardLabel">Editing board</span>
+<div class="lb-active-name" id="activeBoardName">…</div>
+<div class="lb-active-meta" id="activeBoardMeta"></div>
+<div class="lb-board-row">
+<select class="lb-board-select" id="sidebarBoardSelect" aria-label="Switch board"></select>
+<button class="btn btn--sm lb-board-new" id="newBoardSidebar" type="button" title="New board" aria-label="New board">+</button>
+</div>
+<button class="lb-linkbtn lb-board-manage" id="manageBoardsBtn" type="button">Manage boards</button>
+</div>
+</div>
 <span class="lb-side-grp">Manage</span>
 <button class="lb-nav is-on" type="button" data-nav="overview"><span class="lb-nav-ic" aria-hidden="true">◱</span>Overview</button>
+<button class="lb-nav" type="button" data-nav="boards"><span class="lb-nav-ic" aria-hidden="true">☰</span>Boards</button>
 <button class="lb-nav" type="button" data-nav="board"><span class="lb-nav-ic" aria-hidden="true">🏆</span>Prize &amp; players</button>
 <button class="lb-nav" type="button" data-nav="design"><span class="lb-nav-ic" aria-hidden="true">🎨</span>Design</button>
 <span class="lb-side-grp">Grow</span>
@@ -218,12 +231,26 @@ export const PAGES = {
 <a class="btn btn--sm btn--accent" id="boardLimitCta" href="/dashboard/billing">Upgrade plan</a>
 </div>
 <div id="newBoardForm" hidden class="mt-12 d-flex gap-8 items-end flex-wrap">
-<div class="field field-flex"><label for="nb_name">Board name</label><input id="nb_name" placeholder="July 2026 Board" /></div>
-<div class="field field-flex"><label for="nb_slug">URL slug</label><input id="nb_slug" placeholder="july-2026" /></div>
+<div class="field field-flex"><label for="nb_name">Board name</label><input id="nb_name" placeholder="Stake July 2026" /></div>
+<div class="field field-flex"><label for="nb_slug">URL slug</label><input id="nb_slug" placeholder="stake-july-2026" /></div>
+<div class="field field-flex"><label for="nb_casino">Casino</label><input id="nb_casino" placeholder="Stake" /></div>
+<div class="field field-flex"><label for="nb_code">Referral code</label><input id="nb_code" placeholder="BTZ" /></div>
 <button class="btn btn--sm btn--accent" id="nb_create" type="button">Create</button>
 <button class="btn btn--sm btn--ghost" id="nb_cancel" type="button">Cancel</button>
 <div class="hint w-full" id="nb_err" role="alert" aria-live="assertive"></div>
 </div></div>
+</section>
+<section class="lb-page" data-page="boards">
+<div class="lb-phead"><button class="lb-menu" type="button" aria-label="Show sections" data-menu>☰</button><div><h1>Boards</h1><p class="lb-psub">All your sponsor leaderboards</p></div><button class="btn btn--sm" id="addBoardFromBoards" type="button">+ New board</button></div>
+<div class="card">
+<div class="board-table-wrap">
+<table class="board-table">
+<thead><tr><th>Board</th><th>Sponsor</th><th>URL</th><th>Players</th><th>Template</th><th>Status</th><th class="ta-r">Actions</th></tr></thead>
+<tbody id="boardsBody"></tbody>
+</table>
+</div>
+<div id="boardsEmpty" class="empty" hidden>No boards yet. Create one to get started.</div>
+</div>
 </section>
 <section class="lb-page" data-page="growth">
 <div class="lb-phead"><button class="lb-menu" type="button" aria-label="Show sections" data-menu>☰</button><div><h1>Analytics</h1><p class="lb-psub">How your page is performing</p></div></div>

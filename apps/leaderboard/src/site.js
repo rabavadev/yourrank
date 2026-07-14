@@ -240,14 +240,28 @@ export async function getUserSite(env, uid, plan) {
 
 // Multi-board: return a summary list of all boards for a user.
 export async function getUserBoardsList(env, uid) {
-  const boards = await getAllBoards(env, uid);
-  return boards.map((b) => ({
-    id: b.id,
-    slug: b.slug,
-    name: b.name,
-    published: !!b.published,
-    boardOrder: b.board_order || 0,
-  }));
+  const rows = await query(
+    `SELECT s.id, s.slug, s.name, s.casino, s.code, s.published, s.board_order, s.theme_json,
+            (SELECT COUNT(*) FROM players p WHERE p.site_id = s.id) AS player_count
+       FROM sites s
+      WHERE s.user_id=$1
+      ORDER BY s.board_order ASC, s.id ASC`,
+    [uid]
+  );
+  return (rows || []).map((b) => {
+    const theme = parseTheme(b);
+    return {
+      id: b.id,
+      slug: b.slug,
+      name: b.name,
+      casino: b.casino || "",
+      code: b.code || "",
+      published: !!b.published,
+      players: Number(b.player_count) || 0,
+      template: theme.template,
+      boardOrder: b.board_order || 0,
+    };
+  });
 }
 
 // Multi-board: get full site data for a specific board by siteId.
@@ -279,7 +293,7 @@ export async function getUserSiteById(env, uid, siteId, plan) {
   }
 
 // Multi-board: create a new board for a user.
-export async function createBoard(env, uid, { slug, name } = {}) {
+export async function createBoard(env, uid, { slug, name, casino = "", code = "" } = {}) {
   const plan = effectivePlan(await one("SELECT plan, (EXTRACT(EPOCH FROM plan_expires_at) * 1000)::double precision AS plan_expires_at, status FROM users WHERE id=$1", [uid]));
   const limit = BOARD_LIMITS[plan] || 1;
   const boards = await getAllBoards(env, uid);
@@ -291,14 +305,80 @@ export async function createBoard(env, uid, { slug, name } = {}) {
   // BIZ-004: Reject reserved slugs (api, login, dashboard, bot, etc.)
   if (RESERVED.has(slug)) return { error: "That URL is reserved and cannot be used.", code: "slug_reserved" };
   const siteId = crypto.randomUUID();
+  const cleanCasino = String(casino || "").trim().slice(0, 40);
+  const cleanCode = String(code || "").trim().slice(0, 40);
+  const themeObj = { template: "classic" };
   await exec(
-    "INSERT INTO sites (id,user_id,slug,name,casino,prize_pool,period,published,extra_json) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9::jsonb)",
-    [siteId, uid, slug, name || slug, "", "$0", "Monthly", true, DEFAULT_EXTRA]
+    "INSERT INTO sites (id,user_id,slug,name,casino,code,prize_pool,period,published,extra_json,theme_json) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10::jsonb,$11::jsonb)",
+    [siteId, uid, slug, name || slug, cleanCasino, cleanCode, "$0", "Monthly", true, DEFAULT_EXTRA, themeObj]
   );
   // If the user has no active board, make the new one active.
   await exec("UPDATE users SET active_site_id=$1, updated_at=now() WHERE id=$2 AND active_site_id IS NULL", [siteId, uid]);
   invalidateUserCache(env, uid);
   return { ok: true, id: siteId, slug };
+}
+
+// Generate a unique slug for a duplicated board by appending -copy, -copy-2, etc.
+async function uniqueSlug(env, base) {
+  let candidate = slugify(`${base}-copy`);
+  let counter = 2;
+  while (await one("SELECT id FROM sites WHERE slug=$1", [candidate])) {
+    candidate = slugify(`${base}-copy-${counter}`);
+    counter++;
+    if (counter > 99) {
+      candidate = slugify(`${base}-copy-${crypto.randomUUID().slice(0, 8)}`);
+      break;
+    }
+  }
+  return candidate;
+}
+
+// Multi-board: duplicate an existing board (design + players) for the next sponsor.
+export async function duplicateBoard(env, uid, siteId) {
+  const source = await getBoardById(env, uid, siteId);
+  if (!source) return { error: "no site" };
+  const owner = await one("SELECT plan, (EXTRACT(EPOCH FROM plan_expires_at) * 1000)::double precision AS plan_expires_at, status FROM users WHERE id=$1", [uid]);
+  const plan = effectivePlan(owner);
+  const limit = BOARD_LIMITS[plan] || 1;
+  const boards = await getAllBoards(env, uid);
+  if (boards.length >= limit) {
+    return { error: `Your ${plan} plan allows up to ${limit} leaderboard${limit > 1 ? "s" : ""}. Upgrade to create more.`, code: "board_limit" };
+  }
+  const newSlug = await uniqueSlug(env, source.slug);
+  const newId = crypto.randomUUID();
+  const players = await getPlayers(env, siteId);
+  const rawTheme = fromJsonb(source.theme_json);
+  const theme = (rawTheme && typeof rawTheme === "object") ? rawTheme : {};
+  const rawExtra = fromJsonb(source.extra_json);
+  const extra = (rawExtra && typeof rawExtra === "object") ? rawExtra : {};
+  const logoRow = await one("SELECT logo_data FROM sites WHERE id=$1", [siteId]);
+  const logoData = logoRow?.logo_data || "";
+  const boardOrder = (source.board_order || 0) + 1;
+
+  await withTransaction(async (tx) => {
+    await tx.unsafe(
+      `INSERT INTO sites (id,user_id,slug,name,tagline,casino,code,cta_url,prize_pool,period,ends_at,reset_note,blurb,published,extra_json,logo_data,theme_json,board_order)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15::jsonb,$16,$17::jsonb,$18)`,
+      [newId, uid, newSlug, `${source.name} (copy)`.slice(0, 80), source.tagline, source.casino, source.code, source.cta_url, source.prize_pool, source.period, source.ends_at, source.reset_note, source.blurb, false, extra, logoData, theme, boardOrder]
+    );
+    if (players.length) {
+      const valueRows = [];
+      const params = [];
+      let idx = 1;
+      players.forEach((p, i) => {
+        const row = [];
+        for (let c = 0; c < 6; c++) row.push(`$${idx++}`);
+        valueRows.push(`(${row.join(",")})`);
+        params.push(crypto.randomUUID(), newId, p.name, p.wagered, p.prize, i);
+      });
+      await tx.unsafe(
+        `INSERT INTO players (id,site_id,name,wagered,prize,sort) VALUES ${valueRows.join(",")}`,
+        params
+      );
+    }
+  });
+  invalidateUserCache(env, uid);
+  return { ok: true, id: newId, slug: newSlug };
 }
 
 // Close out the current period: snapshot the board, then optionally reset it.
