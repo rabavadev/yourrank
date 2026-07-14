@@ -55,15 +55,16 @@ async function init(){
   const pubToggle = $("pubToggle");
   if (pubToggle) pubToggle.checked = p.published !== false;
   $("a_label").placeholder = new Date().toLocaleString("en-US",{month:"long",year:"numeric",timeZone:"UTC"});
-  $("liveLink").textContent = location.host + "/" + SLUG; $("liveLink").href = "/" + SLUG; $("viewLive").href = "/" + SLUG;
+  $("liveLink").textContent = location.host + "/" + SLUG; $("liveLink").href = "/" + SLUG;
   $("loading").hidden=true; $("dash").hidden=false;
   setupShell();
   const initialNav = new URLSearchParams(location.search).get("nav");
   if (initialNav && document.querySelector(`section[data-page="${initialNav}"]`)) navTo(initialNav);
   renderOverviewSummary();
   // FE-002-v9: track unsaved changes
-  $("dash").addEventListener("input", ()=>{ _dirty = true; });
-  $("dash").addEventListener("change", ()=>{ _dirty = true; });
+  const markDirty = () => { _dirty = true; const sb = $("savebar"); if (sb) sb.hidden = false; };
+  $("dash").addEventListener("input", markDirty);
+  $("dash").addEventListener("change", markDirty);
   window.addEventListener("beforeunload", (e)=>{ if(_dirty){ e.preventDefault(); e.returnValue=""; } });
   if (urlParams.get("upgraded")) {
     $("status").textContent = "Payment received — Pro activates once the network confirms (usually minutes).";
@@ -71,29 +72,31 @@ async function init(){
 }
 
 function renderBoardSwitcher(){
-  const list = $("boardList"); if (!list) return;
-  list.innerHTML = "";
-  BOARDS.forEach(b => {
-    const el = document.createElement("div");
-    const isActive = b.id === ACTIVE_SITE_ID;
-    el.className = "board-item" + (isActive ? " board-item--active" : "");
-    el.setAttribute("role", "button");
-    el.setAttribute("tabindex", "0");
-    const sponsor = [b.casino, b.code].filter(Boolean).join(" · ");
-    el.innerHTML = `<div class="board-info"><div class="board-row-top"><span class="board-slug">/${esc(b.slug)}</span><span class="board-name">${esc(b.name)}</span></div>${sponsor ? `<div class="board-sponsor">${esc(sponsor)}</div>` : ""}</div>${isActive ? '<span class="board-badge">editing</span>' : '<span class="board-actions"><button class="btn btn--sm" data-action="setActive" title="Set as active board" type="button">★</button><button class="btn btn--sm" data-action="delete" title="Delete board" type="button">×</button></span>'}`;
-    if (!isActive) {
-      el.style.cursor = "pointer";
-      el.addEventListener("click", (e) => { if (e.target.closest('[data-action]')) return; location.href = "/dashboard?board=" + encodeURIComponent(b.id); });
-      el.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); el.click(); } });
-      el.querySelector('[data-action="setActive"]')?.addEventListener("click", (e) => { e.stopPropagation(); setActiveBoard(b.id); });
-      el.querySelector('[data-action="delete"]')?.addEventListener("click", (e) => { e.stopPropagation(); deleteBoard(b.id); });
+  const list = $("boardList");
+  if (list) {
+    list.innerHTML = "";
+    BOARDS.forEach(b => {
+      const el = document.createElement("div");
+      const isActive = b.id === ACTIVE_SITE_ID;
+      el.className = "board-item" + (isActive ? " board-item--active" : "");
+      el.setAttribute("role", "button");
+      el.setAttribute("tabindex", "0");
+      const sponsor = [b.casino, b.code].filter(Boolean).join(" · ");
+      el.innerHTML = `<div class="board-info"><div class="board-row-top"><span class="board-slug">/${esc(b.slug)}</span><span class="board-name">${esc(b.name)}</span></div>${sponsor ? `<div class="board-sponsor">${esc(sponsor)}</div>` : ""}</div>${isActive ? '<span class="board-badge">editing</span>' : '<span class="board-actions"><button class="btn btn--sm" data-action="setActive" title="Set as active board" type="button">★</button><button class="btn btn--sm" data-action="delete" title="Delete board" type="button">×</button></span>'}`;
+      if (!isActive) {
+        el.style.cursor = "pointer";
+        el.addEventListener("click", (e) => { if (e.target.closest('[data-action]')) return; location.href = "/dashboard?board=" + encodeURIComponent(b.id); });
+        el.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); el.click(); } });
+        el.querySelector('[data-action="setActive"]')?.addEventListener("click", (e) => { e.stopPropagation(); setActiveBoard(b.id); });
+        el.querySelector('[data-action="delete"]')?.addEventListener("click", (e) => { e.stopPropagation(); deleteBoard(b.id); });
+      }
+      list.appendChild(el);
+    });
+    const countEl = $("boardCount");
+    if (countEl) {
+      const limit = ME?.limits?.boards || 1;
+      countEl.textContent = BOARDS.length + " / " + limit + " boards";
     }
-    list.appendChild(el);
-  });
-  const countEl = $("boardCount");
-  if (countEl) {
-    const limit = ME?.limits?.boards || 1;
-    countEl.textContent = BOARDS.length + " / " + limit + " boards";
   }
   const newBtn = $("newBoard");
   if (newBtn) {
@@ -240,7 +243,6 @@ async function setActiveBoard(siteId) {
 }
 
 function openNewBoardForm() {
-  navTo("overview");
   const newBtn = $("newBoard");
   if (newBtn && !newBtn.hidden) newBtn.click();
 }
@@ -272,10 +274,9 @@ function renderSidebarBoardSwitcher() {
   const metaEl = $("activeBoardMeta");
   const sel = $("sidebarBoardSelect");
   const manage = $("manageBoardsBtn");
-  const newBtn = $("newBoardSidebar");
-  if (nameEl) nameEl.textContent = BOARDS.find(b => b.id === ACTIVE_SITE_ID)?.name || "…";
+  const active = BOARDS.find(b => b.id === ACTIVE_SITE_ID);
+  if (nameEl) nameEl.textContent = active?.name || "…";
   if (metaEl) {
-    const active = BOARDS.find(b => b.id === ACTIVE_SITE_ID);
     if (active) {
       const parts = [`/${active.slug}`, active.casino, active.code].filter(Boolean);
       metaEl.textContent = parts.join(" · ");
@@ -307,7 +308,6 @@ function renderSidebarBoardSwitcher() {
     }
   }
   if (manage) manage.onclick = () => navTo("boards");
-  if (newBtn) newBtn.onclick = openNewBoardForm;
 }
 
 function renderBoardsPage() {
@@ -772,7 +772,7 @@ $("save").addEventListener("click", async ()=>{
     const payload = collect();
     const res=await fetch("/api/site",{method:"PUT",credentials:"include",headers:{"content-type":"application/json","x-csrf-token":getCsrf()},body:JSON.stringify(payload)}).then(guardAuth);
     const d=await res.json();
-    if(res.ok&&d.ok){ status.textContent="Saved. Your page is updated."; _dirty=false; const active = BOARDS.find(b => b.id === ACTIVE_SITE_ID); if (active) { active.name = payload.name; active.casino = payload.brand?.casino || active.casino; active.code = payload.brand?.code || active.code; } renderBoardSwitcher(); renderSidebarBoardSwitcher(); renderBoardsPage(); } else status.textContent=d.error||"Save failed.";
+    if(res.ok&&d.ok){ status.textContent="Saved. Your page is updated."; _dirty=false; const sb=$("savebar"); if(sb) sb.hidden=true; const active = BOARDS.find(b => b.id === ACTIVE_SITE_ID); if (active) { active.name = payload.name; active.casino = payload.brand?.casino || active.casino; active.code = payload.brand?.code || active.code; } renderBoardSwitcher(); renderSidebarBoardSwitcher(); renderBoardsPage(); } else status.textContent=d.error||"Save failed.";
   } catch{ status.textContent="Network error."; }
   btn.disabled=false;btn.textContent="Save changes";
   // FE-004: Only auto-clear success messages; errors stay until next action.
