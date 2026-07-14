@@ -60,8 +60,13 @@ table.players td.rank{font-family:var(--mono);color:var(--ink-mute);width:34px}
 table.players td.act{width:34px;text-align:center}
 .row-x{color:var(--ink-mute);cursor:pointer;border:none;background:none;font-size:16px;line-height:1}.row-x:hover{color:var(--danger)}
 .empty{color:var(--ink-mute);font-size:13px;padding:14px 8px;text-align:center;border:1px dashed var(--line-2);border-radius:8px}
-.savebar{position:sticky;bottom:0;margin-top:22px;padding:14px 0;background:linear-gradient(180deg,transparent,var(--bg) 40%);display:flex;align-items:center;gap:14px;justify-content:flex-end}
-.savebar .status{font-size:13px;color:var(--ink-mute);margin-right:auto}
+/* Floating toast for status messages */
+.toast{position:fixed;top:16px;right:16px;z-index:60;max-width:320px;padding:10px 14px;border-radius:8px;background:var(--panel);border:1px solid var(--line);box-shadow:0 10px 30px rgba(0,0,0,.4);font-size:13px;color:var(--ink);transition:opacity .2s,transform .2s;opacity:1;transform:translateY(0)}
+.toast:empty{opacity:0;pointer-events:none;transform:translateY(-10px)}
+/* Floating save chip; shown only when there are unsaved changes */
+.savebar{position:fixed;right:22px;bottom:22px;z-index:50;display:inline-flex;align-items:center;gap:12px;padding:10px 16px;border-radius:999px;background:color-mix(in srgb,var(--panel) 95%,transparent);backdrop-filter:blur(8px);border:1px solid var(--line);box-shadow:0 8px 28px rgba(0,0,0,.35);transition:opacity .2s,transform .2s;opacity:1;transform:translateY(0)}
+.savebar[hidden]{display:none}
+.savebar-hint{font-size:13px;color:var(--ink-mute)}
 .skel{color:var(--ink-mute);padding:40px;text-align:center}
 
 /* --- skeleton loading placeholders --- */
@@ -413,9 +418,14 @@ table.ref-table td{padding:8px 8px;border-bottom:1px solid var(--line);color:var
 .lb-step-t::before{content:"\25CB  ";color:var(--ink-mute)}
 .lb-step.is-done .lb-step-t::before{content:"\2713  ";color:var(--ok)}
 .lb-step-d{font-size:12px;color:var(--ink-soft)}
-/* savebar becomes a fixed action bar under the shell */
-.savebar{position:fixed;left:0;right:0;bottom:0;margin:0;padding:12px 22px;background:color-mix(in srgb,var(--panel) 92%,transparent);backdrop-filter:blur(8px);border-top:1px solid var(--line);z-index:40}
-.lb-main{padding-bottom:72px}
+/* Compact new-board form and publish toggle live in the sidebar */
+.lb-board-form{padding:12px;border-top:1px solid var(--line);background:var(--panel-2)}
+.lb-board-form .field-flex{flex-direction:column;align-items:stretch;gap:4px;margin-bottom:8px}
+.lb-board-form .field-flex label{flex:auto;font-size:12px}
+.lb-board-form .field-flex input{padding:6px 8px;font-size:12px}
+.lb-board-form-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:4px}
+.lb-board-pub{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--ink-soft);margin:2px 0 8px}
+.lb-board-pub input{margin:0}
 @media(max-width:860px){
   .lb-shell{display:block}
   .lb-side{position:fixed;left:0;top:0;bottom:0;z-index:70;flex-basis:auto;width:250px;max-height:none;border-radius:0;border-right:1px solid var(--line);transform:translateX(-105%);transition:transform .2s ease;box-shadow:2px 0 24px rgba(0,0,0,.5)}
@@ -428,11 +438,13 @@ table.ref-table td{padding:8px 8px;border-bottom:1px solid var(--line);color:var
 @media(max-width:860px){.lb-backdrop{display:none}.lb-backdrop.is-open{display:block}}
 
 /* Sidebar board switcher */
-.lb-side-head{padding:16px;border-bottom:1px solid var(--line);background:var(--panel-2);margin-bottom:8px}
-.lb-side-board{display:flex;flex-direction:column;gap:6px}
+.lb-side-head{padding:14px;background:var(--panel-2);border-bottom:1px solid var(--line);margin-bottom:6px}
+.lb-side-board{display:flex;flex-direction:column;gap:4px}
 .lb-side-board .label{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-mute)}
 .lb-active-name{font-weight:700;font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.lb-active-meta{font-size:12px;color:var(--ink-soft);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lb-active-meta{font-size:12px;color:var(--ink-soft);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:2px}
+.lb-board-pub{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--ink-soft);margin:2px 0 8px}
+.lb-board-pub input{margin:0}
 .lb-board-row{display:flex;gap:8px;align-items:center}
 .lb-board-select{flex:1;min-width:0;background:var(--panel);border:1px solid var(--line);border-radius:6px;color:var(--ink);font-size:13px;padding:6px 8px}
 .lb-board-new{flex-shrink:0;padding:6px 10px}
@@ -472,4 +484,6 @@ table.ref-table td{padding:8px 8px;border-bottom:1px solid var(--line);color:var
   .board-table .ta-r{display:flex;gap:6px;justify-content:flex-end}
   .field-flex{flex-direction:column;align-items:stretch;gap:4px}
   .field-flex label{flex:auto}
+  .savebar{right:12px;bottom:12px}
+  .toast{left:12px;right:12px;max-width:none}
 }

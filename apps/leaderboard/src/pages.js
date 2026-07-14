@@ -182,18 +182,31 @@ export const PAGES = {
 <div class="card mt-18"><div class="skeleton skeleton-block skel-h-300"></div></div>
 </div>
 <div id="dash" hidden>
+<div class="toast" id="status" role="status" aria-live="polite"></div>
 <div class="lb-shell">
 <aside class="lb-side" id="lbSide" aria-label="Dashboard sections">
 <div class="lb-side-head">
 <div class="lb-side-board">
-<span class="label" id="activeBoardLabel">Editing board</span>
+<span class="label" id="activeBoardLabel">Active board</span>
 <div class="lb-active-name" id="activeBoardName">…</div>
 <div class="lb-active-meta" id="activeBoardMeta"></div>
+<label class="lb-board-pub hint chk"><input type="checkbox" id="pubToggle" checked /> Published</label>
 <div class="lb-board-row">
 <select class="lb-board-select" id="sidebarBoardSelect" aria-label="Switch board"></select>
-<button class="btn btn--sm lb-board-new" id="newBoardSidebar" type="button" title="New board" aria-label="New board">+</button>
+<button class="btn btn--sm lb-board-new" id="newBoard" type="button" title="New board" aria-label="New board">+</button>
 </div>
 <button class="lb-linkbtn lb-board-manage" id="manageBoardsBtn" type="button">Manage boards</button>
+<div class="board-upsell" id="boardLimitUpsell" role="status" hidden>
+<div><b id="boardLimitTitle">Need another leaderboard?</b><p class="hint" id="boardLimitText"></p></div>
+<a class="btn btn--sm btn--accent" id="boardLimitCta" href="/dashboard/billing">Upgrade plan</a>
+</div>
+<div class="lb-board-form" id="newBoardForm" hidden>
+<div class="field field-flex"><label for="nb_name">Board name</label><input id="nb_name" placeholder="Stake July 2026" /></div>
+<div class="field field-flex"><label for="nb_slug">URL slug</label><input id="nb_slug" placeholder="stake-july-2026" /></div>
+<div class="field field-flex"><label for="nb_casino">Casino</label><input id="nb_casino" placeholder="Stake" /></div>
+<div class="field field-flex"><label for="nb_code">Referral code</label><input id="nb_code" placeholder="BTZ" /></div>
+<div class="lb-board-form-actions"><button class="btn btn--sm btn--accent" id="nb_create" type="button">Create</button><button class="btn btn--sm btn--ghost" id="nb_cancel" type="button">Cancel</button><div class="hint w-full" id="nb_err" role="alert" aria-live="assertive"></div></div>
+</div>
 </div>
 </div>
 <span class="lb-side-grp">Manage</span>
@@ -223,22 +236,7 @@ export const PAGES = {
 <div class="lb-step" id="ov_step_players"><span class="lb-step-n">Step 2</span><span class="lb-step-t">Add players</span><span class="lb-step-d">Add or import your ranked list.</span></div>
 <div class="lb-step" id="ov_step_share"><span class="lb-step-n">Step 3</span><span class="lb-step-t">Share your link</span><span class="lb-step-d">Drop your page URL in your stream panels and Discord.</span></div>
 </div></div>
-<div class="card" id="boardSwitcher"><h2>Boards</h2><p class="card-sub">Switch between your leaderboards. <span class="hint" id="boardCount"></span></p>
-<div class="board-list" id="boardList"></div>
-<div class="mt-10 d-flex gap-8 flex-wrap"><button class="btn btn--sm" id="newBoard" type="button" hidden>+ New board</button></div>
-<div class="board-upsell" id="boardLimitUpsell" role="status" hidden>
-<div><b id="boardLimitTitle">Need another leaderboard?</b><p class="hint" id="boardLimitText"></p></div>
-<a class="btn btn--sm btn--accent" id="boardLimitCta" href="/dashboard/billing">Upgrade plan</a>
-</div>
-<div id="newBoardForm" hidden class="mt-12 d-flex gap-8 items-end flex-wrap">
-<div class="field field-flex"><label for="nb_name">Board name</label><input id="nb_name" placeholder="Stake July 2026" /></div>
-<div class="field field-flex"><label for="nb_slug">URL slug</label><input id="nb_slug" placeholder="stake-july-2026" /></div>
-<div class="field field-flex"><label for="nb_casino">Casino</label><input id="nb_casino" placeholder="Stake" /></div>
-<div class="field field-flex"><label for="nb_code">Referral code</label><input id="nb_code" placeholder="BTZ" /></div>
-<button class="btn btn--sm btn--accent" id="nb_create" type="button">Create</button>
-<button class="btn btn--sm btn--ghost" id="nb_cancel" type="button">Cancel</button>
-<div class="hint w-full" id="nb_err" role="alert" aria-live="assertive"></div>
-</div></div>
+
 </section>
 <section class="lb-page" data-page="boards">
 <div class="lb-phead"><button class="lb-menu" type="button" aria-label="Show sections" data-menu>☰</button><div><h1>Boards</h1><p class="lb-psub">All your sponsor leaderboards</p></div><button class="btn btn--sm" id="addBoardFromBoards" type="button">+ New board</button></div>
@@ -374,7 +372,7 @@ export const PAGES = {
 </section>
 </div>
 </div>
-<div class="savebar"><label class="hint chk mr-auto"><input type="checkbox" id="pubToggle" checked /> Page published</label><span class="status" id="status" role="status" aria-live="polite"></span><a class="btn btn--ghost" id="viewLive" href="#" target="_blank">View live page</a><button class="btn btn--accent" id="save">Save changes</button></div></div></main>
+<div class="savebar" id="savebar" hidden><span class="savebar-hint">Unsaved changes</span><button class="btn btn--accent" id="save" type="button">Save changes</button></div></div></main>
 <script src="/assets/dashboard.js?v=3"></script></body></html>`,
 
 analytics: `<!DOCTYPE html><html lang="en"><head>
