@@ -33,7 +33,8 @@ export function withWorkerFetch(workerName: string, handler: FetchHandler) {
     env: Record<string, any>,
     ctx: any
   ): Promise<Response> {
-    const reqId = generateRequestId();
+    const incomingReqId = request.headers.get("x-request-id");
+    const reqId = incomingReqId || generateRequestId();
     const log = createLogger(workerName, reqId);
 
     let sentry: ToucanClient | null = null;

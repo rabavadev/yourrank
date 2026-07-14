@@ -6,7 +6,11 @@
 //   - An env object with SESSIONS and optionally RATE_LIMITER_DO + RL_BACKEND
 //
 // When RL_BACKEND=do and RATE_LIMITER_DO binding exists, uses Durable Objects.
-// Otherwise falls back to KV. Fails OPEN in all cases.
+// Otherwise falls back to KV.
+//
+// Backend failures are logged and are FAIL-OPEN by default so a broken rate
+// limiter cannot take the site down. Set RL_FAIL_OPEN=false (wrangler.toml
+// var or env secret) to harden critical paths and fail-closed instead.
 // ------------------------------------------------------------------
 
 export interface RateLimitKV {
@@ -38,12 +42,58 @@ export interface RateLimitEnv {
   SESSIONS?: RateLimitKV;
   RATE_LIMITER_DO?: DurableObjectNamespace;
   RL_BACKEND?: string;
+  RL_FAIL_OPEN?: string;
+}
+
+function isFailOpen(env: RateLimitEnv | undefined): boolean {
+  if (!env || typeof env !== "object") return true;
+  const v = env.RL_FAIL_OPEN;
+  if (v === undefined || v === null) return true;
+  return String(v).toLowerCase() !== "false";
+}
+
+function logRateLimitFailure(
+  backend: string,
+  error: unknown,
+  failOpen: boolean,
+  id: string,
+  limit: number,
+  windowSec: number
+): void {
+  const level = failOpen ? "warn" : "error";
+  const message = error instanceof Error ? error.message : String(error ?? "unknown");
+  console.error(
+    JSON.stringify({
+      level,
+      ctx: "rateLimit",
+      backend,
+      fail_open: failOpen,
+      action: failOpen ? "allow_request" : "block_request",
+      id,
+      limit,
+      windowSec,
+      error: message,
+      ts: new Date().toISOString(),
+    })
+  );
+}
+
+function failOpenResult(
+  limit: number,
+  windowSec: number,
+  failOpen: boolean
+): RateLimitResult {
+  if (failOpen) {
+    return { ok: true, remaining: limit, limit, retryAfter: 0 };
+  }
+  return { ok: false, remaining: 0, limit, retryAfter: windowSec };
 }
 
 /**
  * Count one hit against `id` in a `windowSec` window allowing `limit` hits.
  * First argument: KV namespace OR env object (auto-detected).
- * Fails OPEN (allows the request) if the backend is unavailable.
+ * Backend failures are logged. RL_FAIL_OPEN controls whether the request is
+ * allowed (default) or blocked when the backend is unavailable.
  */
 export async function rateLimit(
   kvOrEnv: RateLimitKV | RateLimitEnv | undefined,
@@ -52,25 +102,35 @@ export async function rateLimit(
   windowSec: number
 ): Promise<RateLimitResult> {
   // Auto-detect: if it has get/put methods, it's a KV namespace
-  if (kvOrEnv && typeof (kvOrEnv as RateLimitKV).get === "function" && typeof (kvOrEnv as RateLimitKV).put === "function") {
-    // KV namespace passed directly (bot Worker pattern)
-    // Check if we should still use DO by looking at globalThis (not available)
-    // In this case, stick with KV since we don't have the env reference
-    return rateLimitKV(kvOrEnv as RateLimitKV, id, limit, windowSec);
+  if (
+    kvOrEnv &&
+    typeof (kvOrEnv as RateLimitKV).get === "function" &&
+    typeof (kvOrEnv as RateLimitKV).put === "function"
+  ) {
+    // KV namespace passed directly (bot Worker pattern); no env to read RL_FAIL_OPEN from.
+    return rateLimitKV(kvOrEnv as RateLimitKV, id, limit, windowSec, true);
   }
 
   // Env object passed (leaderboard Worker pattern)
   const env = kvOrEnv as RateLimitEnv | undefined;
-  if (!env) return { ok: true, remaining: limit, limit, retryAfter: 0 };
+  const failOpen = isFailOpen(env);
+
+  if (!env) {
+    logRateLimitFailure("none", "no env provided", failOpen, id, limit, windowSec);
+    return failOpenResult(limit, windowSec, failOpen);
+  }
 
   const backend = env.RL_BACKEND || "kv";
   if (backend === "do" && env.RATE_LIMITER_DO) {
-    return rateLimitDO(env.RATE_LIMITER_DO, id, limit, windowSec);
+    return rateLimitDO(env.RATE_LIMITER_DO, id, limit, windowSec, failOpen);
   }
 
-  // KV removed — fail open if no DO and no SESSIONS binding
-  if (!env.SESSIONS) return { ok: true, remaining: limit, limit, retryAfter: 0 };
-  return rateLimitKV(env.SESSIONS, id, limit, windowSec);
+  // No DO configured; fall back to SESSIONS KV.
+  if (!env.SESSIONS) {
+    logRateLimitFailure("none", "no SESSIONS KV binding", failOpen, id, limit, windowSec);
+    return failOpenResult(limit, windowSec, failOpen);
+  }
+  return rateLimitKV(env.SESSIONS, id, limit, windowSec, failOpen);
 }
 
 // --- Durable Object backend ---
@@ -79,7 +139,8 @@ async function rateLimitDO(
   ns: DurableObjectNamespace,
   id: string,
   limit: number,
-  windowSec: number
+  windowSec: number,
+  failOpen: boolean
 ): Promise<RateLimitResult> {
   try {
     const doId = ns.idFromName(`rl:${id}`);
@@ -91,14 +152,14 @@ async function rateLimitDO(
     });
 
     if (!res.ok) {
-      console.error("[rateLimit] DO returned non-ok, allowing request");
-      return { ok: true, remaining: limit, limit, retryAfter: 0 };
+      logRateLimitFailure("do", `DO returned ${res.status}`, failOpen, id, limit, windowSec);
+      return failOpenResult(limit, windowSec, failOpen);
     }
 
-    return await res.json() as RateLimitResult;
+    return (await res.json()) as RateLimitResult;
   } catch (err) {
-    console.error("[rateLimit] DO error, allowing request:", String((err as Error)?.message ?? err));
-    return { ok: true, remaining: limit, limit, retryAfter: 0 };
+    logRateLimitFailure("do", err, failOpen, id, limit, windowSec);
+    return failOpenResult(limit, windowSec, failOpen);
   }
 }
 
@@ -108,9 +169,13 @@ async function rateLimitKV(
   kv: RateLimitKV | undefined,
   id: string,
   limit: number,
-  windowSec: number
+  windowSec: number,
+  failOpen: boolean
 ): Promise<RateLimitResult> {
-  if (!kv) return { ok: true, remaining: limit, limit, retryAfter: 0 };
+  if (!kv) {
+    logRateLimitFailure("kv", "no KV binding", failOpen, id, limit, windowSec);
+    return failOpenResult(limit, windowSec, failOpen);
+  }
 
   const window = Math.floor(Date.now() / 1000 / windowSec);
   const key = `rl:${id}:${window}`;
@@ -120,8 +185,8 @@ async function rateLimitKV(
   try {
     current = Number((await kv.get(key)) ?? 0);
   } catch (err) {
-    console.error("[rateLimit] KV read failed, allowing request:", String((err as Error)?.message ?? err));
-    return { ok: true, remaining: limit, limit, retryAfter: 0 };
+    logRateLimitFailure("kv", err, failOpen, id, limit, windowSec);
+    return failOpenResult(limit, windowSec, failOpen);
   }
 
   if (current >= limit) {
@@ -132,7 +197,12 @@ async function rateLimitKV(
   try {
     await kv.put(key, String(used), { expirationTtl: windowSec });
   } catch (err) {
-    console.error("[rateLimit] KV write failed, allowing request (count not persisted):", String((err as Error)?.message ?? err));
+    logRateLimitFailure("kv", err, failOpen, id, limit, windowSec);
+    // If we cannot persist the count, fail-closed users block; fail-open users
+    // allow but have already been warned. Either way we cannot return a reliable
+    // remaining count, so return the conservative result for the chosen mode.
+    return failOpenResult(limit, windowSec, failOpen);
   }
+
   return { ok: true, remaining: Math.max(0, limit - used), limit, retryAfter };
 }

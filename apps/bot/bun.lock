@@ -3,7 +3,7 @@
   "configVersion": 1,
   "workspaces": {
     "": {
-      "name": "casino-bot-platform",
+      "name": "yourrank-bot",
       "dependencies": {
         "grammy": "^1.30.0",
         "hono": "^4.12.27",

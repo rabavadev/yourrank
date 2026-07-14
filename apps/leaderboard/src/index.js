@@ -90,8 +90,8 @@ function addCookieConsent(html) {
   return html.replace(/<\/body>\s*<\/html>\s*$/i, '<script src="/assets/cookie-consent.js" defer></script></body></html>');
 }
 
-async function handleRequest(request, env, ctx) {
-    const sentry = null; // Sentry handled by withWorkerFetch wrapper
+async function handleRequest(request, env, ctx, meta) {
+    const { log: workerLog, reqId } = meta || {};
     try {
       // BE-004: Reject oversized request bodies early, before any parsing.
       // 1 MB is generous for JSON payloads (site data, auth forms, etc.)
@@ -172,7 +172,8 @@ async function handleRequest(request, env, ctx) {
           await one('SELECT 1 AS ok');
           result.db = true;
         } catch (e) {
-          console.error("[leaderboard] health_db_probe_failed:", String(e));
+          if (workerLog) workerLog.warn("health_db_probe_failed", { error: String(e) });
+          else console.error("[leaderboard] health_db_probe_failed:", String(e));
           result.db = false;
           result.status = "degraded";
         }
@@ -204,13 +205,14 @@ async function handleRequest(request, env, ctx) {
           const user = await currentUser(request, env);
           if (!user) return Response.redirect(new URL("/login", url), 302);
           const html = addCookieConsent(PAGES.dashboard
-            .replace("<!--GM_NAV-->", shellNavHtml({ activePath: "/dashboard", user })));
+            .replace("<!--GM_NAV-->", shellNavHtml({ activePath: "/dashboard", user }))
+            .replace("{{REQ_ID}}", reqId || ""));
           return new Response(html, { headers: { ...SECURE_HTML, ...csrfHeader, "cache-control": "no-store, no-cache, must-revalidate" } });
         } catch (e) {
           // A transient DB/Hyperdrive hiccup on currentUser used to bubble as a
           // raw Cloudflare 1101 after the session cookie redirected past the
           // unauthenticated path. Retry-safe: a plain refresh re-runs the read.
-          console.error("dashboard render failed:", String(e?.message || e));
+          if (workerLog) workerLog.error("dashboard_render_failed", { error: String(e?.message || e) }); else console.error("dashboard render failed:", String(e?.message || e));
           return new Response("Dashboard couldn't load right now — please refresh.", { status: 500, headers: { "content-type": "text/plain; charset=utf-8" } });
         }
       }
@@ -218,7 +220,7 @@ async function handleRequest(request, env, ctx) {
         try {
           return await handleDashboardPreview(request, env, nonce);
         } catch (e) {
-          console.error("template preview failed:", String(e?.message || e));
+          if (workerLog) workerLog.error("template_preview_failed", { error: String(e?.message || e) }); else console.error("template preview failed:", String(e?.message || e));
           return new Response("Preview couldn't load.", { status: 500 });
         }
       }
@@ -230,7 +232,7 @@ async function handleRequest(request, env, ctx) {
             .replace("<!--GM_NAV-->", shellNavHtml({ activePath: "/dashboard/analytics", user })));
           return new Response(html, { headers: { ...SECURE_HTML, ...csrfHeader, "cache-control": "no-store, no-cache, must-revalidate" } });
         } catch (e) {
-          console.error("analytics render failed:", String(e?.message || e));
+          if (workerLog) workerLog.error("analytics_render_failed", { error: String(e?.message || e) }); else console.error("analytics render failed:", String(e?.message || e));
           return new Response("Analytics couldn't load right now — please refresh.", { status: 500, headers: { "content-type": "text/plain; charset=utf-8" } });
         }
       }
@@ -242,7 +244,7 @@ async function handleRequest(request, env, ctx) {
             .replace("<!--GM_NAV-->", shellNavHtml({ activePath: "/dashboard/billing", user })));
           return new Response(html, { headers: { ...SECURE_HTML, ...csrfHeader, "cache-control": "no-store, no-cache, must-revalidate" } });
         } catch (e) {
-          console.error("billing render failed:", String(e?.message || e));
+          if (workerLog) workerLog.error("billing_render_failed", { error: String(e?.message || e) }); else console.error("billing render failed:", String(e?.message || e));
           return new Response("Billing couldn't load right now — please refresh.", { status: 500, headers: { "content-type": "text/plain; charset=utf-8" } });
         }
       }
@@ -254,7 +256,7 @@ async function handleRequest(request, env, ctx) {
             .replace("<!--GM_NAV-->", shellNavHtml({ activePath: "/dashboard/attribution", user })));
           return new Response(html, { headers: { ...SECURE_HTML, ...csrfHeader, "cache-control": "no-store, no-cache, must-revalidate" } });
         } catch (e) {
-          console.error("attribution render failed:", String(e?.message || e));
+          if (workerLog) workerLog.error("attribution_render_failed", { error: String(e?.message || e) }); else console.error("attribution render failed:", String(e?.message || e));
           return new Response("Attribution couldn't load right now — please refresh.", { status: 500, headers: { "content-type": "text/plain; charset=utf-8" } });
         }
       }
@@ -266,7 +268,7 @@ async function handleRequest(request, env, ctx) {
             .replace("<!--GM_NAV-->", shellNavHtml({ activePath: "/dashboard/bot/setup", user })));
           return new Response(html, { headers: { ...SECURE_HTML, ...csrfHeader, "cache-control": "no-store, no-cache, must-revalidate" } });
         } catch (e) {
-          console.error("bot setup render failed:", String(e?.message || e));
+          if (workerLog) workerLog.error("bot_setup_render_failed", { error: String(e?.message || e) }); else console.error("bot setup render failed:", String(e?.message || e));
           return new Response("Bot setup couldn't load right now — please refresh.", { status: 500, headers: { "content-type": "text/plain; charset=utf-8" } });
         }
       }
@@ -283,7 +285,7 @@ async function handleRequest(request, env, ctx) {
             .replace("<!--GM_NAV-->", shellNavHtml({ activePath: "/dashboard", user })));
           return new Response(html, { headers: { ...SECURE_HTML, ...csrfHeader, "cache-control": "no-store, no-cache, must-revalidate" } });
         } catch (e) {
-          console.error("setup render failed:", String(e?.message || e));
+          if (workerLog) workerLog.error("setup_render_failed", { error: String(e?.message || e) }); else console.error("setup render failed:", String(e?.message || e));
           return new Response("Setup couldn't load right now — please refresh.", { status: 500, headers: { "content-type": "text/plain; charset=utf-8" } });
         }
       }
@@ -361,8 +363,8 @@ async function handleRequest(request, env, ctx) {
             return bad("CSRF validation failed. Please refresh the page.", 403);
           }
         }
-        // Pass route context (like slug) to the handler
-        return route.handler(request, env, { slug: route.slug });
+        // Pass route context (like slug) and worker metadata (log, reqId) to the handler
+        return route.handler(request, env, { slug: route.slug }, meta);
       }
 
       // Handle account delete separately (still in auth.js)
@@ -477,9 +479,9 @@ a{color:#c8ff00;text-decoration:none;font-weight:600}</style></head><body>
 
       return new Response(notFoundPage("", nonce), { status: 404, headers: HTML_N });
     } catch (err) {
-      sentry?.captureException(err);
       const errPath = (() => { try { return new URL(request.url).pathname; } catch { return "unknown"; } })();
-      console.error(`[leaderboard] unhandled error on ${errPath}:`, String(err?.message || err), err?.stack || "");
+      if (workerLog) workerLog.error("unhandled_error", { error: String(err?.message || err), stack: err?.stack, path: errPath });
+      else console.error(`[leaderboard] unhandled error on ${errPath}:`, String(err?.message || err), err?.stack || "");
       // Fire-and-forget Discord monitoring webhook
       if (env.DISCORD_MONITORING_WEBHOOK) {
         ctx.waitUntil(sendErrorToDiscord({

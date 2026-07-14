@@ -5,6 +5,15 @@ initialize: |
   export BUN_INSTALL=/home/ubuntu/.bun
   curl -fsSL https://bun.sh/install | bash
   echo 'export PATH="/home/ubuntu/.bun/bin:$PATH"' >> $ENVRC
+
+  # Install Node 22 (required for `wrangler dev` / `wrangler deploy`)
+  export NVM_DIR=/home/ubuntu/.nvm
+  curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.0/install.sh | bash
+  source "$NVM_DIR/nvm.sh"
+  nvm install 22
+  nvm alias default 22
+  echo 'export NVM_DIR="/home/ubuntu/.nvm"' >> $ENVRC
+  echo '[ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh" && nvm use 22 >/dev/null 2>&1' >> $ENVRC
 maintenance: |
   # Install workspace dependencies
   bun install --frozen-lockfile
@@ -31,6 +40,7 @@ knowledge:
       (cd apps/bot && bun run typecheck)
   - name: notes
     contents: |
-      # Local wrangler dev/deploy requires Node 22; this box uses bun for build/test/lint.
+      # Local wrangler dev needs Node 22, `docker compose up -d`, and
+      # CLOUDFLARE_HYPERDRIVE_LOCAL_CONNECTION_STRING_HYPERDRIVE in .dev.vars.
       # Run supabase db push for new migrations before deploying.
       # Set SUPPORT_EMAIL and MAIL_FROM in Cloudflare secrets before launch.

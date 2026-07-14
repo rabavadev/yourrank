@@ -9,12 +9,26 @@ let CURRENT_BRANDING = { template: "classic", accentA: null, accentB: null };
 let THEME_SAVING = false;
 let LOGO; // undefined = unchanged, null = remove, string = new data URI
 let _dirty = false; // FE-002-v9: track unsaved changes for beforeunload warning
+const pageReqId = document.querySelector('meta[name="request-id"]')?.content || "";
+function logError(context, err, extra = {}) {
+  const reqId = pageReqId || `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+  const payload = { level: "error", context, message: err?.message || String(err), stack: err?.stack, req_id: reqId, extra: { url: location.href, ...extra } };
+  console.error(JSON.stringify({ ...payload, ctx: "dashboard" }));
+  try {
+    fetch("/api/log", {
+      method: "POST",
+      credentials: "include",
+      headers: { "content-type": "application/json", "x-csrf-token": getCsrf(), "x-request-id": reqId },
+      body: JSON.stringify(payload)
+    }).catch(() => {});
+  } catch {}
+}
 function toLocalInput(iso){ if(!iso) return ""; const d=new Date(iso); if(isNaN(d)) return ""; const p=(n)=>String(n).padStart(2,"0"); return `${d.getUTCFullYear()}-${p(d.getUTCMonth()+1)}-${p(d.getUTCDate())}T${p(d.getUTCHours())}:${p(d.getUTCMinutes())}`; }
 function fromLocalInput(v){ if(!v) return ""; const d = new Date(v); return isNaN(d) ? "" : d.toISOString(); }
 const slugify=(s)=>String(s||"").toLowerCase().trim().replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"").slice(0,40);
 
 async function init(){
-  let me; try { me = await (await fetch("/api/auth/me")).json(); } catch { me=null; }
+  let me; try { me = await (await fetch("/api/auth/me")).json(); } catch (err) { logError("auth/me", err); me=null; }
   if (!me || !me.ok || !me.user) { location.href="/login"; return; }
   ME = me.user;
   const emailEl = $("userEmail"); if (emailEl) emailEl.textContent = ME.email;
@@ -147,7 +161,7 @@ function renderBoardSwitcher(){
         $("nb_err").textContent = d.error || "Creation failed.";
         createBtn.disabled = false;
       }
-    } catch { $("nb_err").textContent = "Network error."; createBtn.disabled = false; }
+    } catch (err) { logError("new-board", err); $("nb_err").textContent = "Network error."; createBtn.disabled = false; }
   };
 }
 
@@ -219,7 +233,7 @@ async function deleteBoard(siteId) {
     } else {
       $("status").textContent = d.error || "Could not delete board.";
     }
-  } catch { $("status").textContent = "Network error."; }
+  } catch (err) { logError("delete-board", err); $("status").textContent = "Network error."; }
 }
 
 async function setActiveBoard(siteId) {
@@ -239,7 +253,7 @@ async function setActiveBoard(siteId) {
     } else {
       $("status").textContent = d.error || "Could not set active board.";
     }
-  } catch { $("status").textContent = "Network error."; }
+  } catch (err) { logError("set-active-board", err); $("status").textContent = "Network error."; }
 }
 
 function openNewBoardForm() {
@@ -266,7 +280,7 @@ async function duplicateBoard(siteId) {
     } else {
       $("status").textContent = d.error || "Could not duplicate board.";
     }
-  } catch { $("status").textContent = "Network error."; }
+  } catch (err) { logError("duplicate-board", err); $("status").textContent = "Network error."; }
 }
 
 function renderSidebarBoardSwitcher() {
@@ -366,7 +380,7 @@ async function checkout(btn){
     const d = await res.json();
     if (res.ok && d.ok && d.url) { location.href = d.url; return; }
     $("status").textContent = d.error || "Couldn't start checkout.";
-  } catch { $("status").textContent = "Network error."; }
+  } catch (err) { logError("checkout", err); $("status").textContent = "Network error."; }
   btn.disabled = false; btn.textContent = orig; checkingOut = false;
 }
 function playerRow(p={name:"",wagered:"",prize:""}){
@@ -504,7 +518,8 @@ async function saveTheme(template, accentA, accentB, label){
     renderSidebarBoardSwitcher();
     renderBoardsPage();
     if (status) status.textContent = `${label || currentTemplate()?.name || "Design"} applied to /${SLUG}.`;
-  } catch {
+  } catch (err) {
+    logError("apply-design", err);
     if (status) status.textContent = "Network error. Try again.";
   } finally {
     THEME_SAVING = false;
@@ -656,7 +671,7 @@ function renderOverlay(){
     copy._wired = true;
     copy.addEventListener("click", async () => {
       try { await navigator.clipboard.writeText(overlayUrl); copy.textContent = "Copied!"; }
-      catch { copy.textContent = "Copy failed"; }
+      catch (err) { logError("copy-overlay", err); copy.textContent = "Copy failed"; }
       setTimeout(() => { copy.textContent = "📋 Copy"; }, 1500);
     });
   }
@@ -692,7 +707,8 @@ function renderDomain(){
         } else {
           $("domainStatus").innerHTML = `<span class="domain-error">${esc(d.error || "Verification failed.")}</span>`;
         }
-      } catch {
+      } catch (err) {
+        logError("domain-verify", err);
         $("domainStatus").innerHTML = `<span class="domain-error">Network error.</span>`;
       }
       verifyBtn.disabled = false;
@@ -761,7 +777,7 @@ $("a_go").addEventListener("click", async ()=>{
       $("a_label").value = "";
       status.textContent = `"${d.label}" closed out — it's on your page now.`;
     } else status.textContent = d.error || "Couldn't close out the period.";
-  } catch { status.textContent = "Network error."; }
+  } catch (err) { logError("archive", err); status.textContent = "Network error."; }
   btn.disabled = false; btn.textContent = "Close out period";
 });
 $("save").addEventListener("click", async ()=>{
@@ -773,14 +789,14 @@ $("save").addEventListener("click", async ()=>{
     const res=await fetch("/api/site",{method:"PUT",credentials:"include",headers:{"content-type":"application/json","x-csrf-token":getCsrf()},body:JSON.stringify(payload)}).then(guardAuth);
     const d=await res.json();
     if(res.ok&&d.ok){ status.textContent="Saved. Your page is updated."; _dirty=false; const sb=$("savebar"); if(sb) sb.hidden=true; const active = BOARDS.find(b => b.id === ACTIVE_SITE_ID); if (active) { active.name = payload.name; active.casino = payload.brand?.casino || active.casino; active.code = payload.brand?.code || active.code; } renderBoardSwitcher(); renderSidebarBoardSwitcher(); renderBoardsPage(); } else status.textContent=d.error||"Save failed.";
-  } catch{ status.textContent="Network error."; }
+  } catch(err){ logError("save", err); status.textContent="Network error."; }
   btn.disabled=false;btn.textContent="Save changes";
   // FE-004: Only auto-clear success messages; errors stay until next action.
   if(status.textContent==="Saved. Your page is updated.") setTimeout(()=>{ if(status.textContent==="Saved. Your page is updated.") status.textContent=""; },6000);
 });
 async function loadStats(){
   const statsUrl = ACTIVE_SITE_ID ? `/api/site/stats?siteId=${encodeURIComponent(ACTIVE_SITE_ID)}` : "/api/site/stats";
-  let s; try { const r = await fetch(statsUrl); const d = await r.json(); if(!r.ok||!d.ok) return; s = d.stats; } catch { return; }
+  let s; try { const r = await fetch(statsUrl); const d = await r.json(); if(!r.ok||!d.ok) return; s = d.stats; } catch (err) { logError("load-stats", err); return; }
   const fmt = (n)=> n>=10000 ? (n/1000).toFixed(1).replace(/\.0$/,"")+"k" : String(n);
   $("st_views7").textContent = fmt(s.last7.views);
   $("st_views30").textContent = fmt(s.last30.views);

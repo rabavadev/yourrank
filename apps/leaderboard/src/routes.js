@@ -23,6 +23,7 @@ import { handleBotOnboard } from "./handlers/bot-onboard.js";
 import { handleAttribution, handleAttributionExport, handlePostback } from "./handlers/attribution.js";
 import { handleContact } from "./handlers/contact.js";
 import { handleCspReport } from "./handlers/csp-report.js";
+import { handleLog } from "./handlers/log.js";
 import { handleScores } from "./handlers/scores.js";
 import { handleCheckout, handleCheckoutLifetime, handleIpn, handleCancel } from "./billing.js";
 import {
@@ -98,6 +99,9 @@ export const ROUTES = [
   
   // CSP violation reporting
   { path: "/api/csp-report", method: "POST", handler: withHandler(handleCspReport) },
+
+  // Client-side error reporting
+  { path: "/api/log", method: "POST", handler: withHandler(handleLog) },
   
   // Admin routes
   { path: "/api/admin/overview", method: "GET", handler: withHandler(handleOverview) },

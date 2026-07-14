@@ -14,7 +14,7 @@ shared as described in the other specs.
 |-------------------------|-------------------------------------------|
 | `/`                     | landing page                              |
 | `/login`, `/signup`     | auth screens (password; Telegram link too)|
-| `/logout`               | destroy `gm_session`, clear cookie        |
+| `/logout`               | destroy `yr_session`, clear legacy cookies |
 | `/dashboard`            | unified dashboard — **Leaderboard tab**   |
 | `/dashboard/analytics`  | Analytics tab                             |
 | `/dashboard/billing`    | Billing tab (NOWPayments)                 |
@@ -141,5 +141,6 @@ curl -sI https://yourrank.site/pb/key            # -> bot
 curl -sI https://yourrank.site/billing/hook/s    # -> bot (401 = correct)
 ```
 Then log in on `/dashboard`, click the **Bot** tab, and confirm no second login
-is required — that proves the shared `gm_session` cookie + KV are wired right.
+is required — that proves the shared `yr_session` cookie + Postgres `sessions`
+table are wired right.
 ```

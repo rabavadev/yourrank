@@ -25,24 +25,29 @@ Grab the **direct** connection string from Supabase → Project Settings → Dat
 **Do not use the pooler (port 6543)** with Hyperdrive — Hyperdrive pools itself,
 so pointing it at the Supabase pooler double-pools and causes connection hangs.
 
-## 2. Hyperdrive (once, bot Worker only)
-The **bot Worker** uses Hyperdrive for connection pooling to Supabase Postgres:
+## 2. Hyperdrive (both Workers)
+Both Workers use Hyperdrive to pool connections to Supabase Postgres.
+Create one Hyperdrive config and paste the returned id into **both**
+`apps/leaderboard/wrangler.toml` and `apps/bot/wrangler.toml` under `[[hyperdrive]]`
+(replace `id = "..."`):
+
 ```
 wrangler hyperdrive create yourrank-db \
   --connection-string="postgresql://postgres.PROJECT:PASS@db.PROJECT.supabase.co:5432/postgres"
 ```
-Paste the returned id into `apps/bot/wrangler.toml` under `[[hyperdrive]]`
-(replace `id = "..."`).
 
-**Both Workers** connect to Postgres via Hyperdrive (see section 2 above).
-The `DATABASE_URL` secret is kept as a fallback. Set `DATABASE_URL` as a secret
-on both Workers (see section 4 below).
+The `DATABASE_URL` secret is kept as a fallback if Hyperdrive is removed or
+for local development. Set it on both Workers if you are not using Hyperdrive
+(see section 4 below).
 
-## 3. Shared session KV
-Both Workers must point at the **same** KV namespace id (so one login works
-across both). The id currently in both `wrangler.toml` files is
-`26e47bcce19941839a20bd2cd5879e42`. If that namespace no longer exists, create
-one and put the SAME id in both:
+## 3. Shared session storage (Postgres)
+Sessions live in the `sessions` table in Postgres. A single `yr_session`
+cookie is set `Domain=.yourrank.site` so a login on either Worker works on the
+other. No shared KV is needed for sessions.
+
+The `SESSIONS` KV namespace is still bound for a legacy rate-limit fallback;
+ensure both Workers bind the same `SESSIONS` id (`26e47bcce19941839a20bd2cd5879e42`)
+if you keep that fallback enabled:
 ```
 wrangler kv namespace create SESSIONS
 ```

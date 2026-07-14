@@ -12,21 +12,18 @@ Files: [`session.js`](./session.js) (leaderboard, JS) · [`session.ts`](./sessio
 
 | Thing            | Value                                                        |
 |------------------|-------------------------------------------------------------|
-| Cookie name      | `gm_session`                                                |
+| Cookie name      | `yr_session`                                                 |
 | Cookie domain    | `Domain=.yourrank.site` (env `SESSION_COOKIE_DOMAIN`; defaults to `.yourrank.site`) |
 | Cookie flags     | `Path=/; HttpOnly; Secure; SameSite=Lax`                     |
 | Token            | 32 random bytes, hex (64 chars)                              |
-| KV namespace     | `SESSIONS` — **same namespace id bound in both Workers**     |
-| KV key           | `sess:<token>`                                               |
-| KV value         | JSON `{ u: userId, c: createdAtMs }` (bare UUID accepted for legacy) |
-| TTL              | 30 days (`2592000` s), on the KV entry and the cookie Max-Age|
+| Storage          | Postgres `sessions` table (replaces the old `SESSIONS` KV)   |
+| Row              | `{ token, user_id, created_at, expires_at, twofa_verified }` |
+| TTL              | 30 days (`2592000` s) on the cookie Max-Age; row expiry enforced by `expires_at` |
 | Rotation         | Tokens older than 24h are replaced on next read (SEC-107)    |
 
-The KV **value is JSON** `{ u: "<userId>", c: <createdAtMs> }` — the user's UUID
-plus the session creation timestamp (SEC-107). Legacy bare-UUID values from
-before the migration are handled gracefully and rotated on first read. Both
-Workers already understand "UUID → `users.id`", so whichever Worker reads the
-cookie resolves the same person. This is the whole trick.
+The sessions table stores `token`, `user_id`, `created_at`, `expires_at`, and
+`twofa_verified`. Both Workers query the same Postgres database, so whichever
+Worker validates the cookie resolves the same person. This is the whole trick.
 
 ### Why `Domain=.yourrank.site`
 The leaderboard serves `yourrank.site/*`; the bot serves `yourrank.site/bot/*`,
@@ -36,22 +33,21 @@ also covers any future subdomain (e.g. `app.yourrank.site`) and makes the intent
 explicit. Both Workers set the **exact same** cookie attributes so neither
 clobbers the other with a narrower cookie.
 
-### Why KV, not a signed stateless token
-The bot Worker today uses an HMAC-signed stateless cookie (`sess`, key
-`TOKEN_ENC_KEY`, see `dashboard.ts`). That **cannot** be shared: the leaderboard
-Worker can't verify the bot's HMAC and vice-versa unless they share the secret
-and the exact encoding — fragile, and it gives no real server-side logout.
-A KV-backed opaque token is verifiable by any Worker that binds the namespace,
-supports instant revoke (delete the key), and is the shape the leaderboard
-already uses. **The bot Worker migrates off HMAC to this KV model.**
+### Why Postgres, not a signed stateless token
+A signed stateless token (`sess`, key `TOKEN_ENC_KEY`) **cannot** be shared:
+the leaderboard Worker can't verify the bot's HMAC and vice-versa unless they
+share the secret and the exact encoding — fragile, and it gives no real
+server-side logout. A Postgres-backed opaque token is verifiable by any Worker
+that can query the database, supports instant revoke (delete the row), and
+uses the same table the leaderboard already uses.
 
 ---
 
 ## 2. The three functions both Workers call
 
 ```
-createSession(env, userId) -> token      // put sess:<token> = {u,c}, TTL 30d
-readToken(req)             -> token|null  // parse gm_session from Cookie header
+createSession(env, userId) -> token      // insert into sessions table, 30 d expiry
+readToken(req)             -> token|null  // parse yr_session from Cookie header
 currentUser(req, env, loadUser) -> user|null
 ```
 
@@ -77,20 +73,25 @@ const user = await currentUser(req, env, (env, uid) =>
 
 ---
 
-## 3. wrangler.toml — both Workers bind the SAME namespace
+## 3. wrangler.toml — Hyperdrive and the sessions table
 
-Create ONE KV namespace and paste its **id** into **both** `wrangler.toml`:
+Both Workers must bind the **same** Hyperdrive config (or `DATABASE_URL`
+fallback) so they talk to the same Postgres database:
 
 ```toml
 # leaderboard/wrangler.toml  AND  bot/wrangler.toml — identical block
-[[kv_namespaces]]
-binding = "SESSIONS"
-id      = "<the one shared namespace id>"
+[[hyperdrive]]
+binding = "HYPERDRIVE"
+id      = "<the one shared hyperdrive id>"
 ```
 
-> The `binding` name must be `SESSIONS` in both; the `id` must be the exact same
-> namespace. A different id = two isolated stores = broken cross-Worker auth.
-> This is the #1 setup mistake — verify the id matches character-for-character.
+> The `binding` name must be `HYPERDRIVE` in both; the `id` must be the exact
+> same Hyperdrive. A different id = two isolated databases = broken
+> cross-Worker auth. This is the #1 setup mistake — verify the id matches
+> character-for-character.
+
+The `SESSIONS` KV namespace is only used as a legacy rate-limit fallback and
+does not store sessions anymore.
 
 ---
 
@@ -114,15 +115,15 @@ id      = "<the one shared namespace id>"
 Keep the leaderboard's existing `hashPassword` / `verifyPassword` (they are
 correct and DB-agnostic). Only the **session** functions change: swap the old
 `createSession` / `readToken` / `currentUser` from `auth.js` for the ones in
-`shared/session.js`. The cookie name changes `rk_session` → `gm_session`.
+`shared/session.js`. The current cookie name is `yr_session`.
 
 ### Migration grace period
 Existing users hold an `rk_session` cookie whose KV entry is `sess:<token>` —
 the **same KV prefix**, only the cookie name differs. `session.js` exports
-`readTokenWithLegacy(req)` which reads `gm_session` first, then falls back to
-`rk_session`. Use it for ~30 days after cutover, and on any legacy hit,
-re-issue a fresh `gm_session` cookie (and optionally clear `rk_session`).
-After the window, drop the legacy read.
+`readTokenWithLegacy(req)` reads `yr_session` first, then falls back to the
+legacy `gm_session` and `rk_session` cookies. Use it for ~30 days after cutover,
+and on any legacy hit, re-issue a fresh `yr_session` cookie. After the window,
+drop the legacy read.
 
 **SEC-104**: The old HMAC-signed `sess` cookie (not `rk_session`) is detected
 and cleared on every response via `hasLegacyCookie()` + `cookieClearLegacy()`.

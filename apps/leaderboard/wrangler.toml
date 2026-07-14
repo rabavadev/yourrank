@@ -33,7 +33,8 @@ id = "9e5b625bfdd84cd691b44c4780bdaf13"
 [vars]
 APP_NAME = "YourRank"
 CF_ZONE_ID = "dd79a3ac13643b94732f2fef6ce3b1f5"
-RL_BACKEND = "do"  # Change to "do" to use Durable Objects for rate limiting
+RL_BACKEND = "do"  # Change to "kv" to use KV for rate limiting
+# RL_FAIL_OPEN = "false"  # Set to "false" to block requests when the rate-limit backend is down. Default is "true" (fail-open).
 # Set SENTRY_DSN via `wrangler secret put SENTRY_DSN` when ready
 
 # --- Secrets (set via `wrangler secret put <NAME>`), NOT stored here: ---

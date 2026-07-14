@@ -8,7 +8,8 @@ import { generateRequestId, createLogger } from "./request-id.js";
 import { sendErrorToDiscord } from "./monitoring.js";
 export function withWorkerFetch(workerName, handler) {
     return async function fetch(request, env, ctx) {
-        const reqId = generateRequestId();
+        const incomingReqId = request.headers.get("x-request-id");
+        const reqId = incomingReqId || generateRequestId();
         const log = createLogger(workerName, reqId);
         let sentry = null;
         try {

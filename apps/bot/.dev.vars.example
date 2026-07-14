@@ -1,0 +1,23 @@
+# Local dev values — copy to .dev.vars and fill in secrets.
+# These are read by `wrangler dev` (not committed).
+
+# Hyperdrive local connection string. Start the container first:
+#   docker compose up -d
+CLOUDFLARE_HYPERDRIVE_LOCAL_CONNECTION_STRING_HYPERDRIVE=postgresql://postgres:postgres@localhost:5432/yourrank
+
+# Fallback if Hyperdrive is removed or not bound:
+DATABASE_URL=postgresql://postgres:postgres@localhost:5432/yourrank
+
+# Bot secrets (leave blank to disable the feature; ADMIN_API_KEY/IP_HASH_SALT
+# are required for most bot endpoints):
+TOKEN_ENC_KEY=
+ADMIN_API_KEY=
+IP_HASH_SALT=
+LOGIN_BOT_TOKEN=
+LOGIN_BOT_USERNAME=
+PLATFORM_BOT_TOKEN=
+PLATFORM_WEBHOOK_SECRET=
+ALLOW_DEV_LOGIN=
+DISCORD_MONITORING_WEBHOOK=
+SENTRY_DSN=
+SESSION_COOKIE_DOMAIN=.yourrank.site

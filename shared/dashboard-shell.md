@@ -2,7 +2,7 @@
 
 Two Workers, one domain, **one dashboard feel**. The shell is a shared sticky
 header injected at the top of *both* dashboards' server-rendered HTML. Because
-the Workers share the domain and the `gm_session` cookie, plain `<a>` links
+the Workers share the domain and the `yr_session` cookie, plain `<a>` links
 navigate between them with no re-auth — it reads as a single app.
 
 Files: [`shell-nav.js`](./shell-nav.js) (leaderboard, JS) · [`shell-nav.ts`](./shell-nav.ts) (bot, TS). Identical output.

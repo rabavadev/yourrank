@@ -3,7 +3,7 @@
   "configVersion": 1,
   "workspaces": {
     "": {
-      "name": "groupsmix-leaderboard",
+      "name": "yourrank-leaderboard",
       "dependencies": {
         "postgres": "^3.4.9",
       },

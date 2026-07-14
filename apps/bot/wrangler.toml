@@ -5,7 +5,8 @@ compatibility_flags = ["nodejs_compat"]
 
 [vars]
 PUBLIC_BASE_URL = "https://yourrank.site"
-RL_BACKEND = "do"  # Change to "do" to use Durable Objects for rate limiting
+RL_BACKEND = "do"  # Change to "kv" to use KV for rate limiting
+# RL_FAIL_OPEN = "false"  # Set to "false" to block requests when the rate-limit backend is down. Default is "true" (fail-open).
 # Set SENTRY_DSN via `wrangler secret put SENTRY_DSN` when ready
 
 # Serve the bot Worker under the /bot, /hook, /r, /pb, /billing prefixes on the
