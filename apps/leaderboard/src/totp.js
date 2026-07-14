@@ -7,14 +7,6 @@ const TOTP_DIGITS = 6;
 const TOTP_ALGO = "SHA-1";   // RFC 6238 default
 const DRIFT_WINDOWS = 1;     // allow ±1 window
 
-const bytesToHex = (b) =>
-  [...new Uint8Array(b)].map((x) => x.toString(16).padStart(2, "0")).join("");
-const hexToBytes = (h) => {
-  const o = new Uint8Array(h.length / 2);
-  for (let i = 0; i < o.length; i++) o[i] = parseInt(h.substr(i * 2, 2), 16);
-  return o;
-};
-
 // Base32 decode (RFC 4648) — used for TOTP secrets
 const BASE32_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
 function base32Decode(str) {

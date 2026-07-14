@@ -8,7 +8,7 @@ import { json } from "../auth.js";
  * Receives CSP violation reports from browsers.
  * Logs structured JSON for monitoring/alerting.
  */
-export async function handleCspReport(request, env) {
+export async function handleCspReport(request, _env) {
   try {
     const body = await request.text();
     let report;

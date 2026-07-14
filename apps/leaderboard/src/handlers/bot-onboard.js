@@ -1,7 +1,7 @@
 // One-paste bot onboarding handler (Phase 5.2)
 // Streamlined flow: paste token → validate → create bot → set webhook → generate link
 
-import { requireUser, json, bad, readJson, rateLimit, slugify } from "../auth.js";
+import { requireUser, json, bad, readJson, rateLimit } from "../auth.js";
 import { trackActivation } from "../../../../shared/activation-funnel.js";
 import { one, query } from "../../../../shared/db.js";
 import { randomBytes } from "node:crypto";

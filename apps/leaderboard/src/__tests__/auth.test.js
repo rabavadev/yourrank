@@ -36,7 +36,7 @@ mock.module(sessionUrl, () => ({
       cookie: null,
       rotatedCookie: null,
     }),
-    loadUser: (_env, userId) => Promise.resolve(null),
+    loadUser: (_env, _userId) => Promise.resolve(null),
     SESSION_ROTATE_AFTER_S: 86400,
     SESSION_TTL_S: 2592000, // 30 days
     }));

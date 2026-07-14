@@ -1,5 +1,5 @@
 // Score postback handler (authenticated via X-Postback-Key + HMAC-SHA256 signature)
-import { json, bad, readJson, rateLimit } from "../auth.js";
+import { json, bad, rateLimit } from "../auth.js";
 import { saveSite } from "../site.js";
 import { effectivePlan, PLAN_LIMITS } from "../billing.js";
 import { one } from "../../../../shared/db.js";
@@ -29,7 +29,6 @@ export async function handleScores(request, env) {
     if (plan !== "pro" && plan !== "agency") return bad("Score API is a Pro feature. Upgrade to unlock.", 403);
     let body;
     try { body = JSON.parse(rawBody); } catch { return bad("Invalid JSON body."); }
-    const slug = String(body.slug || "").trim();
     const players = body.players;
     if (!Array.isArray(players)) return bad("players must be an array.");
     // Plan gate: player count
