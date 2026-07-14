@@ -118,10 +118,14 @@ function fmtExp(ms) {
     if (isLifetime && !isTrial) {
       $("lifetimeNotice").hidden = false;
       $("proExp").textContent = "";
+    } else if (isTrial) {
+      const end = planExpiry ? new Date(Number(planExpiry)).toUTCString().slice(5, 16) : null;
+      const daysLeft = planExpiry ? Math.max(0, Math.ceil((Number(planExpiry) - Date.now()) / 86400000)) : null;
+      $("proExp").textContent = end
+        ? `Your Pro trial ends ${end}${daysLeft != null ? ` (${daysLeft} day${daysLeft === 1 ? "" : "s"} left)` : ""}. After that your plan reverts to Free — upgrade any time to keep Pro.`
+        : "After your trial ends, your plan reverts to Free. Upgrade any time to keep Pro.";
     } else {
-      $("proExp").textContent = isTrial
-        ? "After your trial ends, upgrade to keep Pro features."
-        : "Manage your leaderboard from the Leaderboard tab. Extend your subscription below.";
+      $("proExp").textContent = fmtExp(planExpiry);
     }
     // Still show extend option
     const opts = $("planOptions");

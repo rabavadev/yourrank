@@ -238,7 +238,7 @@ function boot() {
   const b = data.brand || {};
   $$("[data-brand-name]").forEach((el) => (el.textContent = b.name || ""));
   $$("[data-code]").forEach((el) => (el.textContent = b.code || ""));
-  $$("[data-casino]").forEach((el) => (el.textContent = b.casino || "Stake"));
+  $$("[data-casino]").forEach((el) => (el.textContent = b.casino || ""));
   $$("[data-pool]").forEach((el) => (el.textContent = b.prizePool || ""));
   $$("[data-period]").forEach((el) => (el.textContent = b.period || "Monthly"));
   const tg = $("[data-tagline]"); if (tg) tg.textContent = b.tagline || "";

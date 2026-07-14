@@ -11,6 +11,7 @@ import { handleOverview, handleUsers, handleLeads, handlePayments, handleAction,
 import { bumpStat } from "./stats.js";
 import { shellNavHtml } from "../../../shared/shell-nav.js";
 import { findRoute } from "./routes.js";
+import { OG_IMAGE_PNG_BASE64 } from "./og-image.js";
 import {
   generateCsrfToken, csrfCookie, verifyCsrf, shouldRequireCsrf,
   resolveCustomDomain, isCustomHost,
@@ -156,6 +157,12 @@ async function handleRequest(request, env, ctx) {
       if (path === "/robots.txt") return serveRobotsTxt(url.origin);
       if (path === "/sitemap.xml") return await serveSitemapXml(url.origin, env);
       if (path === "/favicon.ico") return serveFavicon();
+      // Brand social-share image (og:image). Decoded from the inlined base64 so
+      // shares of the homepage/pricing/unbranded boards don't render blank.
+      if (method === "GET" && path === "/og.png") {
+        const bytes = Uint8Array.from(atob(OG_IMAGE_PNG_BASE64), (c) => c.charCodeAt(0));
+        return new Response(bytes, { headers: { "content-type": "image/png", "cache-control": "public, max-age=86400" } });
+      }
 
       // --- health check ---
       if (path === "/health") {

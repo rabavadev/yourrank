@@ -5,14 +5,14 @@ import { notifyTop3Change, notifyReset, detectTop3Changes, notifySubscribedPlaye
 import { TEMPLATE_IDS } from "./templates/index.js";
 import { RESERVED, slugify } from "./auth.js";
 
+// NOTE: chips + whyStats intentionally start empty. They render casino perks
+// ("Deposit Bonus", "Instant Rakeback", …) that a brand-new owner never entered,
+// which published fabricated partner claims on every unconfigured page. Owners
+// add their own via the dashboard; the public renderer hides these sections when
+// they're empty. rules stays populated — it's generic, honest wager mechanics.
 export const DEFAULT_EXTRA = {
-  chips: ["Fast Payouts", "Crypto Friendly", "24/7 Support"],
-  whyStats: [
-    { big: "Deposit", label: "Bonus", sub: "Match on your first deposit" },
-    { big: "Instant", label: "Rakeback", sub: "Automatic on every bet" },
-    { big: "3,500+", label: "Slots", sub: "Full game library" },
-    { big: "Instant", label: "Withdraw", sub: "Crypto-native payouts" },
-  ],
+  chips: [],
+  whyStats: [],
   rules: [
     "Games with RTP of 98% or lower count 100% of wagered amount",
     "Games with RTP above 98% count 50% of wagered amount",

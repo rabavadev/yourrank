@@ -36,7 +36,10 @@
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
-html { scroll-behavior: smooth; }
+/* overflow-x:hidden on <html> too: body-only clipping doesn't stop the
+   document element from scrolling sideways when a fixed decorative layer
+   (the watermarks) paints past the viewport on phones. */
+html { scroll-behavior: smooth; overflow-x: hidden; max-width: 100%; }
 
 body {
   font-family: "Sora", system-ui, sans-serif;
@@ -45,6 +48,7 @@ body {
   line-height: 1.55;
   -webkit-font-smoothing: antialiased;
   overflow-x: hidden;
+  max-width: 100%;
   position: relative;
 }
 ::selection { background: var(--bl); color: #fff; }

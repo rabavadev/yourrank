@@ -30,7 +30,8 @@ export const PAGES = {
 <meta name="twitter:card" content="summary_large_image" />
 <meta name="twitter:title" content="YourRank - Hosted Leaderboards for Streamers" />
 <meta name="twitter:description" content="Create your own branded leaderboard page. Track referrals, manage promo codes, and grow your audience." />
-<!-- og:image removed: no static asset exists; add when a brand image is created -->
+<meta property="og:image" content="https://yourrank.site/og.png" />
+<meta name="twitter:image" content="https://yourrank.site/og.png" />
 <link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="/assets/landing.css" />
@@ -77,19 +78,20 @@ export const PAGES = {
 <section id="example"><div class="wrap"><h2 class="sec">A real page</h2><p class="sec-sub">This is a live leaderboard running on YourRank. Yours works the same way.</p>
 <div class="example"><div class="bar"><span>yourrank.site/demo</span><span>live</span></div>
 <iframe src="/demo" loading="lazy" title="Example leaderboard"></iframe></div></div></section>
-<section id="pricing"><div class="wrap"><h2 class="sec">Pricing</h2><p class="sec-sub">Start free. Upgrade when your board is pulling weight.</p>
+<section id="pricing"><div class="wrap"><h2 class="sec">Pricing</h2><p class="sec-sub">Start free. Upgrade when your board is pulling weight. Try Pro free for 7 days — paid plans billed in crypto.</p>
 <div class="pricing-grid">
 <div class="price-card"><div class="price-head"><h3>Free</h3><div class="price-amount">$0</div><div class="price-period">forever</div></div><ul class="price-features"><li>1 leaderboard</li><li>Up to 10 players</li><li>YourRank badge on your page</li><li>Basic analytics (7 days)</li><li>Live countdown &amp; auto-sort</li></ul><a href="/signup" class="btn btn--sm price-cta">Start free</a></div>
 <div class="price-card"><div class="price-head"><h3>Starter</h3><div class="price-amount">$12<span>/mo</span></div></div><ul class="price-features"><li>1 leaderboard</li><li>Up to 25 players</li><li>No YourRank badge</li><li>Full analytics (30 days)</li><li>CSV import</li></ul><a href="/signup" class="btn btn--sm price-cta">Start</a></div>
 <div class="price-card price-card--popular"><div class="price-badge">Most Popular</div><div class="price-head"><h3>Pro</h3><div class="price-amount">$29<span>/mo</span></div></div><ul class="price-features"><li>Up to 3 leaderboards</li><li>Unlimited players</li><li>No YourRank badge</li><li>Custom domain</li><li>OBS overlay widget</li><li>Discord webhooks</li><li>Telegram notifications</li><li>Priority support</li></ul><a href="/signup" class="btn btn--sm btn--accent price-cta">Go Pro</a></div>
 <div class="price-card"><div class="price-head"><h3>Agency</h3><div class="price-amount">$79<span>/mo</span></div></div><ul class="price-features"><li>Unlimited leaderboards</li><li>Unlimited players</li><li>White-label branding</li><li>API access</li><li>Everything in Pro</li><li>Dedicated support</li></ul><a href="/contact" class="btn btn--sm price-cta">Contact us</a></div>
 <div class="price-card price-card--lifetime"><div class="price-badge price-badge--lifetime">Best Value</div><div class="price-head"><h3>Lifetime Pro</h3><div class="price-amount">$149<span class="price-amount-sub"> one-time</span></div></div><ul class="price-features"><li>All Pro features</li><li>Pay once, use forever</li><li>No monthly bills</li><li>Up to 3 leaderboards</li><li>Unlimited players</li><li>Custom domain &amp; OBS widget</li><li>Priority support</li></ul><a href="/signup" class="btn btn--accent btn--sm price-cta">Get Lifetime Pro</a></div>
-</div></div></section>
+</div>
+<p class="sec-sub" style="margin-top:20px"><a href="/pricing">Compare every plan &amp; feature →</a></p></div></section>
 <section id="start"><div class="wrap"><h2 class="sec">Ready to start?</h2><p class="sec-sub">Create your free page in under a minute. No credit card needed.</p>
 <div class="cta cta-wrap"><a href="/signup" class="btn btn--accent btn--cta-lg">Create your free page</a></div></div></section>
 <footer><div class="wrap footer-wrap">
 <span>© <span id="yr"></span> YourRank</span>
-<span><a href="/terms">Terms</a> · <a href="/privacy">Privacy</a> · <a href="/responsible">Responsible play</a></span>
+<span><a href="/terms">Terms</a> · <a href="/privacy">Privacy</a> · <a href="/refund">Refunds</a> · <a href="/cookies">Cookies</a> · <a href="/responsible">Responsible play</a></span>
 <span>18+ · Gambling can be addictive. Play responsibly.</span></div></footer>
 <script src="/assets/landing.js?v=2"></script>
 </body></html>`,
@@ -119,7 +121,7 @@ export const PAGES = {
 <link rel="stylesheet" href="/assets/app.css" /></head><body>
 <a href="#main-content" class="sr-only skip-link">Skip to content</a>
 <div class="auth-wrap"><aside class="auth-side"><div><div class="brand">Your<b>Rank</b></div></div>
-<div><h1>Locked out? It happens.</h1><p>Tell us the email on your account and we'll send a reset link. If email isn't set up on this deployment yet, contact support and we'll hand you a link directly.</p></div>
+<div><h1>Locked out? It happens.</h1><p>Tell us the email on your account and we'll send a reset link. It's valid for one hour — check your spam folder if it doesn't arrive within a few minutes.</p></div>
 <div class="feat"></div></aside>
 <main class="auth-main" id="main-content"><div class="auth-card"><h2>Reset password</h2><p class="sub">We'll email you a link.</p>
 <form id="form" method="POST" action="/api/auth/forgot" novalidate><div class="field"><label for="email">Email</label><input id="email" name="email" type="email" autocomplete="email" required /></div>
@@ -829,14 +831,14 @@ ${endsAt ? `<p class="ov-timer-label">${esc(b.prizePool || "")} resets in</p>
   terms: legal("Terms of Service", "July 2026", `
 <h2>What YourRank is</h2>
 <p>YourRank hosts leaderboard pages for streamers and their communities. You get a dashboard to edit your page's content — prize pool, referral code, player standings — and we serve that page at a public URL. That's the whole service.</p>
-<p><b>YourRank is not a casino.</b> No wagering, betting or gambling happens on this platform. Leaderboard standings are entered by the page owner. Prizes shown on any page are offered and paid by that page's owner, not by YourRank.</p>
+<p><b>YourRank is not a casino.</b> No wagering, betting or gambling happens on this platform. Leaderboard standings are provided by the page owner — entered manually or updated automatically from the casino postbacks they configure. Prizes shown on any page are offered and paid by that page's owner, not by YourRank.</p>
 <h2>Your account</h2>
-<p>You need to be at least 18 to use YourRank. You're responsible for keeping your password safe and for everything published on your page. One account, one page.</p>
+<p>You need to be at least 18 to use YourRank. You're responsible for keeping your password safe and for everything published on your page. One account per person. How many leaderboards you can run depends on your plan — Free and Starter include one, Pro up to three, and Agency unlimited.</p>
 <h2>Your content</h2>
 <p>Everything you put on your page — names, numbers, links, images — is yours, and so is the responsibility for it. Don't publish anything illegal, misleading (fake prizes you don't pay out), or that infringes someone else's rights. Don't impersonate other streamers or brands.</p>
 <p>If your page promotes a gambling referral, you're responsible for complying with the laws and platform rules that apply to you and your audience.</p>
 <h2>Payments</h2>
-<p>Pro is a paid plan billed per 31-day period, paid in cryptocurrency or arranged directly with us. Payments are final once confirmed — if something goes wrong with a payment, contact us and we'll sort it out fairly. If Pro lapses, your page stays live on the Free plan (player limit and badge apply again).</p>
+<p>Paid plans — Starter, Pro, Agency, and one-time Lifetime Pro — are billed in advance and paid in cryptocurrency through our payment processor, NOWPayments (BTC, ETH, USDT and 100+ more). Monthly plans renew every 31 days until you cancel. Before paying, you can start a one-time 7-day free Pro trial. Crypto payments are final once confirmed and non-refundable due to blockchain irreversibility — see our <a href="/refund">refund policy</a>. Cancel any time from your dashboard and you keep paid features until the end of the billing period, after which your page reverts to the Free plan (player limit and badge apply again).</p>
 <h2>What we can do</h2>
 <p>We can suspend pages or accounts that break these terms, harm other users, or expose us to legal risk. We'll be reasonable about it. We may change prices or features with notice.</p>
 <h2>Liability</h2>
@@ -937,7 +939,7 @@ ${endsAt ? `<p class="ov-timer-label">${esc(b.prizePool || "")} resets in</p>
 </main>
 <footer class="wrap footer-wrap" style="margin-top:48px">
 <span>© <span id="yr"></span> YourRank</span>
-<span><a href="/terms">Terms</a> · <a href="/privacy">Privacy</a> · <a href="/refund">Refunds</a> · <a href="/responsible">Responsible play</a></span>
+<span><a href="/terms">Terms</a> · <a href="/privacy">Privacy</a> · <a href="/refund">Refunds</a> · <a href="/cookies">Cookies</a> · <a href="/responsible">Responsible play</a></span>
 </footer>
 <script src="/assets/contact.js"></script></body></html>`,
 
@@ -948,7 +950,9 @@ ${endsAt ? `<p class="ov-timer-label">${esc(b.prizePool || "")} resets in</p>
 <link rel="canonical" href="https://yourrank.site/pricing" />
 <meta property="og:title" content="YourRank Pricing">
 <meta property="og:description" content="Free, Starter, Pro, Agency and Lifetime plans for casino streamer leaderboards.">
+<meta property="og:image" content="https://yourrank.site/og.png" />
 <meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:image" content="https://yourrank.site/og.png" />
 <link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="/assets/landing.css" />
@@ -959,6 +963,7 @@ ${endsAt ? `<p class="ov-timer-label">${esc(b.prizePool || "")} resets in</p>
 <main class="wrap" id="main-content" style="padding:48px 24px 24px">
 <h1 style="font-size:clamp(32px,5vw,52px);line-height:1.05;letter-spacing:-.03em;margin:0 0 12px;max-width:18ch">Simple pricing for streamers.</h1>
 <p class="lead" style="max-width:58ch">Start free. Upgrade when your board is pulling weight. No hidden fees, no credit card required to try.</p>
+<p class="lead" style="max-width:58ch;font-size:15px;color:var(--muted,#9aa0aa);margin-top:8px">Try every Pro feature with a <strong>7-day free Pro trial</strong> — no payment up front. Paid plans are billed in <strong>crypto</strong> (BTC, ETH, USDT and 100+ more) and activate automatically once the network confirms.</p>
 <div class="pricing-grid" style="margin-top:32px">
 <div class="price-card"><div class="price-head"><h3>Free</h3><div class="price-amount">$0</div><div class="price-period">forever</div></div><ul class="price-features"><li>1 leaderboard</li><li>Up to 10 players</li><li>YourRank badge on your page</li><li>Basic analytics (7 days)</li><li>Live countdown &amp; auto-sort</li></ul><a href="/signup" class="btn btn--sm price-cta">Start free</a></div>
 <div class="price-card"><div class="price-head"><h3>Starter</h3><div class="price-amount">$12<span>/mo</span></div></div><ul class="price-features"><li>1 leaderboard</li><li>Up to 25 players</li><li>No YourRank badge</li><li>Full analytics (30 days)</li><li>CSV import</li></ul><a href="/signup" class="btn btn--sm price-cta">Start</a></div>
@@ -968,7 +973,8 @@ ${endsAt ? `<p class="ov-timer-label">${esc(b.prizePool || "")} resets in</p>
 </div>
 
 <h2 class="sec" style="margin-top:64px">Compare plans</h2>
-<table class="pricing" style="margin-top:24px">
+<div class="table-scroll" role="region" aria-label="Plan comparison" tabindex="0" style="margin-top:24px;overflow-x:auto;-webkit-overflow-scrolling:touch">
+<table class="pricing" style="min-width:520px">
 <thead><tr><th>Feature</th><th>Free</th><th>Starter</th><th>Pro</th><th>Agency</th></tr></thead>
 <tbody>
 <tr><td>Leaderboards</td><td>1</td><td>1</td><td>3</td><td>Unlimited</td></tr>
@@ -980,6 +986,7 @@ ${endsAt ? `<p class="ov-timer-label">${esc(b.prizePool || "")} resets in</p>
 <tr class="pro-row"><td>Price</td><td>$0</td><td>$12/mo</td><td>$29/mo</td><td>$79/mo</td></tr>
 </tbody>
 </table>
+</div>
 
 <h2 class="sec" style="margin-top:64px">Frequently asked questions</h2>
 <div class="steps" style="margin-top:24px">
@@ -993,7 +1000,7 @@ ${endsAt ? `<p class="ov-timer-label">${esc(b.prizePool || "")} resets in</p>
 </main>
 <footer><div class="wrap footer-wrap">
 <span>© <span id="yr"></span> YourRank</span>
-<span><a href="/terms">Terms</a> · <a href="/privacy">Privacy</a> · <a href="/refund">Refunds</a> · <a href="/responsible">Responsible play</a></span>
+<span><a href="/terms">Terms</a> · <a href="/privacy">Privacy</a> · <a href="/refund">Refunds</a> · <a href="/cookies">Cookies</a> · <a href="/responsible">Responsible play</a></span>
 </div></footer>
 <script src="/assets/landing.js"></script></body></html>`,
 };
