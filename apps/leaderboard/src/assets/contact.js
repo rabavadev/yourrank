@@ -19,6 +19,15 @@ const requestedType = params.get("type");
 const requestedArea = params.get("area");
 const requestedReturn = params.get("return");
 const allowedAreas = new Set(["dashboard", "leaderboard", "bot", "analytics", "attribution", "billing"]);
+const allowedReturnTargets = new Map([
+  ["dashboard", "/dashboard"],
+  ["leaderboard", "/leaderboard"],
+  ["bot", "/bot"],
+  ["analytics", "/analytics"],
+  ["attribution", "/attribution"],
+  ["billing", "/billing"],
+  ["home", "/"],
+]);
 
 function applyContext() {
   const type = requestedType === "feedback" ? "feedback" : "support";
@@ -38,8 +47,9 @@ function applyContext() {
       ? "Share an idea, frustration, or feature request..."
       : "Describe the problem and what you expected to happen...";
   }
-  if (requestedReturn && requestedReturn.startsWith("/") && !requestedReturn.startsWith("//") && back && backWrap) {
-    back.href = requestedReturn;
+  const safeReturn = allowedReturnTargets.get(requestedReturn || "");
+  if (safeReturn && back && backWrap) {
+    back.href = safeReturn;
     backWrap.hidden = false;
   }
 }
