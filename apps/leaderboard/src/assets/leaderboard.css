@@ -80,6 +80,30 @@ section { width: min(var(--wrap), 100% - 2.5rem); margin-inline: auto; }
 .nav-links a { color: var(--ink-soft); text-decoration: none; font-size: 0.9rem; font-weight: 500; transition: color 0.2s; }
 .nav-links a:hover { color: var(--ink); }
 
+/* ---------- Board tabs (multi-sponsor hub) ---------- */
+.board-tabs {
+  position: sticky; top: 0; z-index: 40;
+  background: color-mix(in srgb, var(--bg) 88%, transparent);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--line);
+}
+.board-tabs-inner {
+  width: min(var(--wrap), 100% - 2.5rem); margin-inline: auto;
+  display: flex; gap: 0.4rem; overflow-x: auto; scrollbar-width: none;
+  padding: 0.5rem 0;
+}
+.board-tabs-inner::-webkit-scrollbar { display: none; }
+.board-tab {
+  flex: 0 0 auto; text-decoration: none; white-space: nowrap;
+  color: var(--ink-soft); font-size: 0.85rem; font-weight: 600;
+  padding: 0.5rem 0.95rem; border-radius: 99px;
+  border: 1px solid var(--line-2); transition: color 0.2s, border-color 0.2s, background 0.2s;
+}
+.board-tab:hover { color: var(--ink); border-color: var(--ink-mute); }
+.board-tab--active {
+  color: #fff; border-color: transparent; background: var(--grad-cta);
+}
+
 /* ---------- Buttons ---------- */
 .btn {
   display: inline-flex; align-items: center; justify-content: center; gap: 0.4rem;

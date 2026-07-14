@@ -40,6 +40,16 @@ body[data-preview] .top3{margin-bottom:14px}
   const themeCss = (!opts.watermark && HEX.test(br.accentA || "") && HEX.test(br.accentB || ""))
     ? `<style nonce="${opts.nonce}">:root{--cy:${br.accentA};--bl:${br.accentB};--grad-name:linear-gradient(100deg,${br.accentA} 0%,${br.accentB} 100%);--grad-cta:linear-gradient(100deg,${br.accentA},${br.accentB})}</style>`
     : "";
+  // Public hub: when the streamer runs more than one published board (e.g. one
+  // per sponsor), render a tab strip so viewers can switch between them. Links
+  // are relative to the primary domain, so they only render off custom domains.
+  const boards = Array.isArray(opts.boards) ? opts.boards : [];
+  const boardTabs = boards.length > 1
+    ? `<nav class="board-tabs" aria-label="Leaderboards"><div class="board-tabs-inner">${boards.map((bd) => {
+        const active = bd.slug === opts.slug;
+        return `<a class="board-tab${active ? " board-tab--active" : ""}"${active ? ' aria-current="page"' : ""} href="/${esc(bd.slug)}">${esc(bd.name)}</a>`;
+      }).join("")}</div></nav>`
+    : "";
   const logo = opts.logoUrl ? esc(opts.logoUrl) : null;
   const navLogo = logo ? `<img class="nav-logo" src="${logo}" alt="" />` : "";
   const heroLogo = logo ? `<img class="hero-logo" src="${logo}" alt="${esc(b.name)} logo" />` : "";
@@ -103,6 +113,7 @@ ${previewCss}
 <header class="nav"><a class="nav-brand" href="#top">${navLogo}<span data-brand-name>${esc(b.name)}</span></a>
 <button class="nav-toggle" aria-label="Toggle navigation" aria-expanded="false"><svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button>
 <nav class="nav-links" aria-label="Page sections">${hasPartner ? `<a href="#partner">Partner</a>` : ""}<a href="#board">Leaderboard</a>${socials.length ? `<a href="#socials">Socials</a>` : ""}</nav></header>
+${boardTabs}
 <main id="top">
 <section class="hero"><div class="stream-window" aria-hidden="true"><div class="sw-bar"><span class="sw-dots"><i></i><i></i><i></i></span><span class="sw-title">Kick Stream</span></div>
 <div class="sw-body"><div class="sw-live"><span class="live-dot"></span> LIVE</div><div class="sw-play"><svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" width="34" height="34" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></div><div class="sw-name" data-brand-name>${esc(b.name)}</div></div></div>

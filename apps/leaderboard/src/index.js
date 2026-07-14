@@ -468,7 +468,7 @@ a{color:#c8ff00;text-decoration:none;font-weight:600}</style></head><body>
         const paid = r.plan !== "free";
         return new Response(
           renderLeaderboard(r.data, {
-            watermark: !paid, homeUrl: url.origin, slug, nonce,
+            watermark: !paid, homeUrl: url.origin, slug, nonce, boards: r.boards,
             logoUrl: paid && r.data.branding?.hasLogo ? `${url.origin}/logo/${slug}` : null,
           }),
           { headers: respHeaders }

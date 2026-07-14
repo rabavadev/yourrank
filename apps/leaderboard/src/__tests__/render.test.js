@@ -53,3 +53,29 @@ describe("renderLeaderboard — configured board", () => {
     expect(html).toContain("<title>BigStreamer | Stake Leaderboard</title>");
   });
 });
+
+describe("renderLeaderboard — multi-board hub tabs", () => {
+  const boards = [
+    { slug: "sponsora", name: "Sponsor A" },
+    { slug: "sponsorb", name: "Sponsor B" },
+    { slug: "sponsorc", name: "Sponsor C" },
+  ];
+
+  test("renders a tab per published board with the current one active", () => {
+    const html = renderLeaderboard(configured, { slug: "sponsorb", nonce: "n", boards });
+    expect(html).toContain('class="board-tabs"');
+    expect(html).toContain('href="/sponsora"');
+    expect(html).toContain('href="/sponsorc"');
+    expect(html).toContain('board-tab board-tab--active" aria-current="page" href="/sponsorb"');
+  });
+
+  test("omits the tab strip when the streamer has a single board", () => {
+    const html = renderLeaderboard(configured, { slug: "sponsora", nonce: "n", boards: [boards[0]] });
+    expect(html).not.toContain('class="board-tabs"');
+  });
+
+  test("omits the tab strip when no boards are passed (e.g. custom domain)", () => {
+    const html = renderLeaderboard(configured, { slug: "big", nonce: "n" });
+    expect(html).not.toContain('class="board-tabs"');
+  });
+});

@@ -102,6 +102,16 @@ export async function getBoardById(env, uid, siteId) {
   return one(`SELECT ${SITE_COLUMNS} FROM sites WHERE id=$1 AND user_id=$2`, [siteId, uid]);
 }
 
+// Public "hub": the owner's published boards, so a visitor on one board's page
+// can tab across to the streamer's other sponsor leaderboards.
+async function getPublicBoards(env, uid) {
+  const rows = await query(
+    "SELECT slug, name FROM sites WHERE user_id=$1 AND published=true ORDER BY board_order ASC, id ASC",
+    [uid]
+  );
+  return (rows || []).map((r) => ({ slug: r.slug, name: r.name || r.slug }));
+}
+
 async function getPlayers(env, siteId) {
   const rows = await query("SELECT name, wagered, prize FROM players WHERE site_id=$1 ORDER BY wagered DESC", [siteId]);
   return rows || [];
@@ -193,11 +203,12 @@ export async function getPublicSite(env, slug) {
     if (owner && owner.status === "suspended") return { suspended: true };
     const plan = effectivePlan(owner);
     const archiveLimit = ARCHIVE_LIMITS[plan] || 6;
-    const [players, archives] = await Promise.all([
+    const [players, archives, boards] = await Promise.all([
       getPlayers(env, site.id),
       getArchives(env, site.id, archiveLimit), // DB-003-v8: fetch only what plan allows
+      getPublicBoards(env, site.user_id),
     ]);
-    return { id: site.id, data: publicShape(site, players, archives, !!site.has_logo), plan };
+    return { id: site.id, data: publicShape(site, players, archives, !!site.has_logo), plan, boards };
   }
 
 export async function getUserSite(env, uid, plan) {
