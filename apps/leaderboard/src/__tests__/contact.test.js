@@ -43,6 +43,30 @@ describe("handleContact", () => {
     expect(mockExec).toHaveBeenCalled();
   });
 
+  it("labels contextual feedback for the admin support inbox", async () => {
+    const res = await handleContact(postReq({
+      name: "Test",
+      email: "test@example.com",
+      kind: "feedback",
+      context: "bot",
+      subject: "Broadcast flow",
+      message: "The broadcast flow needs a clearer confirmation.",
+    }), mockEnv);
+    expect(res.status).toBe(200);
+    expect(mockExec.mock.calls[0][1][2]).toBe("[Feedback · Bot] Broadcast flow");
+  });
+
+  it("rejects unknown message types and contexts", async () => {
+    const badType = await handleContact(postReq({
+      name: "Test", email: "test@example.com", kind: "sales", message: "Please contact me about this."
+    }), mockEnv);
+    expect(badType.status).toBe(400);
+    const badContext = await handleContact(postReq({
+      name: "Test", email: "test@example.com", context: "admin", message: "Please contact me about this."
+    }), mockEnv);
+    expect(badContext.status).toBe(400);
+  });
+
   it("rejects missing name", async () => {
     const res = await handleContact(postReq({ name: "", email: "test@example.com", message: "Hello there." }), mockEnv);
     expect(res.status).toBe(400);

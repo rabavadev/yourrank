@@ -136,7 +136,7 @@ export async function handleMe(request, env) {
       if (plan === "pro" && user.has_trial) isTrial = sub?.provider === "trial";
     } catch (e) { console.error("[handleMe] subscription status check failed:", e); }
     return json({ ok: true, user: {
-      id: user.id, email: user.email,
+      id: user.id, email: user.email, displayName: user.display_name || null,
       plan, planExpiresAt: user.plan_expires_at || 0,
       status: user.status, isAdmin: !!user.is_admin, slug: site?.slug || null,
       limits: { players: PLAN_LIMITS[plan], boards: BOARD_LIMITS[plan] },

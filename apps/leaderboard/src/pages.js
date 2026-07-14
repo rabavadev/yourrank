@@ -931,17 +931,20 @@ ${endsAt ? `<p class="ov-timer-label">${esc(b.prizePool || "")} resets in</p>
 <header class="topbar"><a class="brand" href="/">Your<b>Rank</b></a>
 <div class="topbar-right"><a href="/login" class="btn btn--sm btn--ghost">Sign in</a></div></header>
 <main class="wrap" id="main-content" style="max-width:620px;padding:48px 24px">
-<h1>Contact</h1>
-<p class="sub">Questions, feedback, or billing issue? Send us a message and we'll reply by email.</p>
+<h1 id="contactTitle">Contact</h1>
+<p class="sub" id="contactIntro">Questions, feedback, or billing issue? Send us a message and we'll reply by email.</p>
 <form id="contactForm" class="card">
 <div class="field"><label for="c_name">Name</label><input id="c_name" name="name" type="text" autocomplete="name" required maxlength="120" /></div>
 <div class="field"><label for="c_email">Email</label><input id="c_email" name="email" type="email" autocomplete="email" required maxlength="254" /></div>
+<div class="field"><label for="c_kind">Message type</label><select id="c_kind" name="kind"><option value="support">Contact support</option><option value="feedback">Give product feedback</option></select></div>
 <div class="field"><label for="c_subject">Subject</label><input id="c_subject" name="subject" type="text" maxlength="120" placeholder="What is this about?" /></div>
+<input id="c_context" name="context" type="hidden" />
 <div class="field"><label for="c_message">Message</label><textarea id="c_message" name="message" rows="6" required minlength="10" maxlength="4000" placeholder="Tell us what's going on..."></textarea></div>
 <div class="err" id="c_err" role="alert" aria-live="assertive"></div>
 <button class="btn btn--accent w-full" type="submit" id="c_submit">Send message</button>
 <p class="hint" id="c_success" hidden style="color:var(--accent)">Message received. We'll reply by email.</p>
 </form>
+<p class="hint" id="c_back_wrap" hidden style="margin-top:18px"><a id="c_back" href="/dashboard">← Back to dashboard</a></p>
 <p class="hint" style="margin-top:24px">You can also email <a href="mailto:contact@yourrank.site">contact@yourrank.site</a> directly.</p>
 </main>
 <footer class="wrap footer-wrap" style="margin-top:48px">

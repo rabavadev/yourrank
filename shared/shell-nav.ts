@@ -68,6 +68,9 @@ export function shellNavHtml(
   const active = activeKey(opts.activePath || "/");
   const name = esc(opts.user?.display_name || opts.user?.email || "Streamer");
   const badge = planBadge(opts.user?.plan);
+  const area = encodeURIComponent(active || "dashboard");
+  const returnTo = encodeURIComponent(opts.activePath || "/dashboard");
+  const helpQuery = `area=${area}&amp;return=${returnTo}`;
 
   const tabs = NAV_LINKS.map((l) => {
     const isActive = l.key === active;
@@ -88,7 +91,11 @@ export function shellNavHtml(
       <form method="POST" action="${esc(opts.logoutAction || "/logout")}" class="gm-logout-form"><button class="gm-logout" type="submit">Logout</button></form>
     </div>
   </div>
-</header>`;
+</header>
+<nav class="gm-help" aria-label="Help and feedback">
+  <a class="gm-help-link" href="/contact?type=feedback&amp;${helpQuery}">Give feedback</a>
+  <a class="gm-help-link gm-help-link--support" href="/contact?type=support&amp;${helpQuery}">Contact support</a>
+</nav>`;
 }
 
 // Identical CSS to shell-nav.js — namespaced .gm-shell-* / .gm-* so it never
@@ -129,11 +136,21 @@ export const SHELL_NAV_CSS = `
   padding:6px 10px;border:1px solid var(--gm-line-2);border-radius:7px;transition:color .15s,border-color .15s;}
 .gm-logout:hover{color:var(--gm-ink);border-color:var(--gm-line-2);}
 .gm-shell-main{max-width:1040px;margin:0 auto;padding:22px 18px 60px;}
+.gm-help{position:fixed;right:18px;bottom:78px;z-index:45;display:flex;gap:7px;
+  padding:6px;border:1px solid var(--gm-line-2);border-radius:10px;background:var(--gm-panel);
+  box-shadow:0 10px 30px rgba(0,0,0,.35);}
+.gm-help-link{font-family:var(--gm-mono);font-size:10px;letter-spacing:.06em;
+  text-transform:uppercase;color:var(--gm-ink-soft);text-decoration:none;padding:7px 9px;
+  border:1px solid var(--gm-line-2);border-radius:7px;white-space:nowrap;}
+.gm-help-link:hover{color:var(--gm-ink);border-color:var(--gm-ink-mute);}
+.gm-help-link--support{color:var(--gm-accent-ink);background:var(--gm-accent);border-color:var(--gm-accent);}
+.gm-help-link--support:hover{color:var(--gm-accent-ink);border-color:var(--gm-accent);}
 @media(max-width:680px){
     .gm-shell-inner{gap:12px;padding:0 12px;}
     .gm-brand-word{display:none;}
     .gm-tab{padding:18px 9px;font-size:11px;letter-spacing:.05em;}
     .gm-who-name{display:none;}
+    .gm-help{right:12px;bottom:76px;}
   }
   @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }

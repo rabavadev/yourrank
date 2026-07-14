@@ -3,6 +3,57 @@ const form = document.getElementById("contactForm");
 const err = document.getElementById("c_err");
 const success = document.getElementById("c_success");
 const submit = document.getElementById("c_submit");
+const kind = document.getElementById("c_kind");
+const context = document.getElementById("c_context");
+const title = document.getElementById("contactTitle");
+const intro = document.getElementById("contactIntro");
+const nameInput = document.getElementById("c_name");
+const emailInput = document.getElementById("c_email");
+const subjectInput = document.getElementById("c_subject");
+const messageInput = document.getElementById("c_message");
+const backWrap = document.getElementById("c_back_wrap");
+const back = document.getElementById("c_back");
+
+const params = new URLSearchParams(location.search);
+const requestedType = params.get("type");
+const requestedArea = params.get("area");
+const requestedReturn = params.get("return");
+const allowedAreas = new Set(["dashboard", "leaderboard", "bot", "analytics", "attribution", "billing"]);
+
+function applyContext() {
+  const type = requestedType === "feedback" ? "feedback" : "support";
+  if (kind) kind.value = type;
+  if (context) context.value = allowedAreas.has(requestedArea) ? requestedArea : "";
+  if (title) title.textContent = type === "feedback" ? "Give feedback" : "Contact support";
+  if (intro) {
+    intro.textContent = type === "feedback"
+      ? "Tell us what would make YourRank better. Every message reaches the product team."
+      : "Tell us what went wrong or what you need help with. We'll reply by email.";
+  }
+  if (subjectInput) {
+    subjectInput.placeholder = type === "feedback" ? "What could be better?" : "What do you need help with?";
+  }
+  if (messageInput) {
+    messageInput.placeholder = type === "feedback"
+      ? "Share an idea, frustration, or feature request..."
+      : "Describe the problem and what you expected to happen...";
+  }
+  if (requestedReturn && requestedReturn.startsWith("/") && !requestedReturn.startsWith("//") && back && backWrap) {
+    back.href = requestedReturn;
+    backWrap.hidden = false;
+  }
+}
+
+applyContext();
+
+fetch("/api/auth/me")
+  .then((res) => res.ok ? res.json() : null)
+  .then((body) => {
+    if (!body?.user) return;
+    if (nameInput && !nameInput.value && body.user.displayName) nameInput.value = body.user.displayName;
+    if (emailInput && !emailInput.value) emailInput.value = body.user.email || "";
+  })
+  .catch(() => {});
 
 function getCsrf() {
   const m = document.cookie.match(/(?:^|;\s*)__csrf=([^;]+)/);
@@ -35,6 +86,7 @@ if (form) {
         success.hidden = false;
         success.textContent = body.message || "Message received. We'll reply by email.";
         form.reset();
+        applyContext();
       } else {
         err.textContent = body.error || "Something went wrong. Try again.";
       }

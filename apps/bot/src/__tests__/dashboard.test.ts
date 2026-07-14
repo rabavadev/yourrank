@@ -120,6 +120,10 @@ describe("dashboard views", () => {
     expect(html).toContain('data-action="createOffer"');
     expect(html).toContain('data-action="sendBroadcast"');
     expect(html).toContain('data-action="checkHealth"');
+    expect(html).toContain("/contact?type=feedback&amp;");
+    expect(html).toContain("/contact?type=support&amp;");
+    expect(html).toContain("Give feedback");
+    expect(html).toContain("Contact support");
     expect(html).toContain('nonce="nonce123"');
     expect(html).not.toContain("onclick=");
     expect(html).not.toContain("onfocus=");

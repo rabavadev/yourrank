@@ -6,6 +6,15 @@ import { exec } from "../../../../shared/db.js";
 
 const MAX_LEN = 4000;
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const KIND_LABELS = { support: "Support", feedback: "Feedback" };
+const CONTEXT_LABELS = {
+  dashboard: "Dashboard",
+  leaderboard: "Leaderboard",
+  bot: "Bot",
+  analytics: "Analytics",
+  attribution: "Attribution",
+  billing: "Billing",
+};
 
 export async function handleContact(request, env) {
   // Rate-limit by IP: 3 submissions per 5 minutes.
@@ -25,16 +34,27 @@ export async function handleContact(request, env) {
   const email = String(body?.email || "").trim().toLowerCase();
   const subject = String(body?.subject || "").trim();
   const message = String(body?.message || "").trim();
+  const kind = String(body?.kind || "").trim().toLowerCase();
+  const context = String(body?.context || "").trim().toLowerCase();
 
   if (!name || name.length > 120) return bad("Name is required (max 120 characters).", 400);
   if (!email || !EMAIL_RE.test(email) || email.length > 254) return bad("A valid email is required.", 400);
+  if (subject.length > 120) return bad("Subject must be 120 characters or fewer.", 400);
   if (!message || message.length < 10 || message.length > MAX_LEN) return bad("Message must be between 10 and 4000 characters.", 400);
+  if (kind && !KIND_LABELS[kind]) return bad("Choose a valid message type.", 400);
+  if (context && !CONTEXT_LABELS[context]) return bad("Choose a valid message context.", 400);
+
+  const defaultSubject = kind === "feedback" ? "Product feedback" : "Contact form";
+  const category = kind
+    ? `${KIND_LABELS[kind]}${context ? ` · ${CONTEXT_LABELS[context]}` : ""}`
+    : "";
+  const storedSubject = `${category ? `[${category}] ` : ""}${subject || defaultSubject}`;
 
   try {
     await exec(
       `INSERT INTO support_messages (name, email, subject, message, ip_hash)
        VALUES ($1, $2, $3, $4, $5)`,
-      [name, email, subject || "Contact form", message, await hashIp(ip)]
+      [name, email, storedSubject, message, await hashIp(ip)]
     );
   } catch (err) {
     console.error("[contact] failed to store message:", err);
@@ -44,11 +64,11 @@ export async function handleContact(request, env) {
   const supportEmail = env.SUPPORT_EMAIL || "contact@yourrank.site";
   await sendEmail(env, {
     to: supportEmail,
-    subject: `[YourRank] ${subject || "Contact form"} from ${name}`,
-    text: `Name: ${name}\nEmail: ${email}\nSubject: ${subject || "Contact form"}\n\n${message}`,
+    subject: `[YourRank] ${storedSubject} from ${name}`,
+    text: `Name: ${name}\nEmail: ${email}\nSubject: ${storedSubject}\n\n${message}`,
     html: `<p><b>Name:</b> ${esc(name)}</p>
 <p><b>Email:</b> ${esc(email)}</p>
-<p><b>Subject:</b> ${esc(subject || "Contact form")}</p>
+<p><b>Subject:</b> ${esc(storedSubject)}</p>
 <pre style="white-space:pre-wrap">${esc(message)}</pre>`,
   });
 
