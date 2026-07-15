@@ -18,15 +18,16 @@ export async function handleSignup(request, env) {
     const email = String(body.email || "").trim().toLowerCase();
     const password = String(body.password || "");
     const name = String(body.name || "").trim();
-    let slug = slugify(body.slug || name || email.split("@")[0]);
+    const defaultName = name || email.split("@")[0] || "my-board";
+    let slug = slugify(body.slug || defaultName);
     if (!isEmail(email)) return bad("Enter a valid email");
     if (password.length < 8) return bad("Password must be at least 8 characters");
-    if (!name || name.trim().length < 2) return bad("Display name must be at least 2 characters");
     if (!slug || RESERVED.has(slug)) slug = `${slug || "site"}-${Math.random().toString(36).slice(2, 6)}`;
     const existing = await findUserByEmail(email);
     if (existing) return bad("If this email isn't already registered, check your inbox to confirm.");
     let finalSlug = slug;
     for (let n = 2; ; n++) { const c = await findSiteBySlug(finalSlug); if (!c) break; finalSlug = `${slug}-${n}`; }
+    const displayName = name || defaultName;
     const { hash, salt } = await hashPassword(password);
     const userId = uuid();
     // created_at/updated_at default to now(); id generated in-app for consistency.
@@ -38,7 +39,7 @@ export async function handleSignup(request, env) {
       try {
         await withTransaction(async (tx) => {
           await createUser(tx, userId, email, hash, salt);
-          await createSite(tx, uuid(), userId, finalSlug, name || finalSlug, DEFAULT_EXTRA);
+          await createSite(tx, uuid(), userId, finalSlug, displayName, DEFAULT_EXTRA);
         });
         break;
       } catch (e) {
