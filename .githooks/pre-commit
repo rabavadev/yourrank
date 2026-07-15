@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+# Repo pre-commit hook. Auto-enabled by the root `prepare` script
+# (git config core.hooksPath .githooks). Runs the fast checks that CI also
+# enforces so failures are caught before they reach a PR.
+set -euo pipefail
+
+root="$(git rev-parse --show-toplevel)"
+cd "$root"
+
+echo "[pre-commit] lint"
+bun run lint
+
+echo "[pre-commit] typecheck"
+bun run typecheck
+
+echo "[pre-commit] OK"
