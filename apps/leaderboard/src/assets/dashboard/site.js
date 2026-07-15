@@ -13,7 +13,7 @@ export function renderPlan() {
     const until = state.ME.planExpiresAt ? new Date(state.ME.planExpiresAt).toLocaleDateString() : null;
     const playersLabel = state.ME.limits.players >= 9999 ? "unlimited players" : `up to ${state.ME.limits.players} players`;
     $("planMeta").textContent = until ? `Active until ${until} · ${playersLabel} · no badge` : `Lifetime · ${playersLabel} · no badge`;
-    $("goPro").textContent = "Extend " + (planNames[plan] || plan) + " (+31 days)";
+    $("goPro").textContent = "Extend " + (planNames[plan] || plan) + " (+30 days)";
   } else if (plan === "starter") {
     $("planMeta").textContent = `Up to ${state.ME.limits.players} players · no badge · CSV import`;
     $("goPro").textContent = "Upgrade to Pro — $" + (state.ME.proPrice || 29) + "/mo";

@@ -1,6 +1,6 @@
 // Owner admin API. Every route requires a session whose user has is_admin=true.
 import { json, bad, ok, readJson, newToken, readToken, currentUser, destroyAllUserSessions, clientIp, rateLimit } from "./auth.js";
-import { activatePlan } from "./billing.js";
+import { activatePlan, PRO_DAYS } from "./billing.js";
 import { sendEmail, resetEmail } from "./email.js";
 import { query, one, exec } from "../../../shared/db.js";
 import { logAudit } from "../../../shared/audit.js";
@@ -220,7 +220,7 @@ export async function handleAction(request, env) {
     case "pro":
     case "agency": {
       const days = Number(body.days);
-      await activatePlan(env, target.id, body.action, Number.isFinite(days) ? days : 31, {
+      await activatePlan(env, target.id, body.action, Number.isFinite(days) ? days : PRO_DAYS, {
         provider: "manual",
         amountUsd: Number(body.amountUsd) || 0,
       });
