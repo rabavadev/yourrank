@@ -422,8 +422,11 @@ async function handleRequest(request, env, ctx, meta) {
             return bad("CSRF validation failed. Please refresh the page.", 403);
           }
         }
-        // Pass route context (like slug) and worker metadata (log, reqId) to the handler
-        const response = await route.handler(request, env, { slug: route.slug }, meta);
+        // Pass route context (slug + a durable waitUntil bound to the real
+        // ExecutionContext so handlers can defer work past the response) and
+        // worker metadata (log, reqId) to the handler.
+        const routeCtx = { slug: route.slug, waitUntil: (p) => ctx.waitUntil(p) };
+        const response = await route.handler(request, env, routeCtx, meta);
         return withPublicApiCors(response, path);
       }
 

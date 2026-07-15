@@ -86,10 +86,10 @@ export function createLogger(worker: string, reqId: string, env?: LoggerEnv): Lo
   const logger: Logger = {
     reqId,
     worker,
-    info: (msg, extra) => log({ level: "info", worker, req_id: reqId, msg, ...extra }, env),
-    warn: (msg, extra) => log({ level: "warn", worker, req_id: reqId, msg, ...extra }, env),
-    error: (msg, extra) => log({ level: "error", worker, req_id: reqId, msg, ...extra }, env),
-    debug: (msg, extra) => log({ level: "debug", worker, req_id: reqId, msg, ...extra }, env),
+    info: (msg, extra) => log({ ...extra, level: "info", worker, req_id: reqId, msg }, env),
+    warn: (msg, extra) => log({ ...extra, level: "warn", worker, req_id: reqId, msg }, env),
+    error: (msg, extra) => log({ ...extra, level: "error", worker, req_id: reqId, msg }, env),
+    debug: (msg, extra) => log({ ...extra, level: "debug", worker, req_id: reqId, msg }, env),
   };
   return logger;
 }

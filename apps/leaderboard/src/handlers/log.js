@@ -24,6 +24,7 @@ export async function handleLog(request, env, ctx, meta) {
   if (!message) return bad("message is required", 400);
 
   const payload = {
+    ...extra,
     ctx: "client_log",
     level,
     client_context: context,
@@ -34,7 +35,6 @@ export async function handleLog(request, env, ctx, meta) {
     ip,
     url: extra?.url,
     user_agent: request.headers.get("user-agent") || undefined,
-    ...extra,
   };
 
   if (log && typeof log[level] === "function") {
