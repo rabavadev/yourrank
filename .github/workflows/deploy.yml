@@ -76,7 +76,7 @@ jobs:
         working-directory: apps/leaderboard
         run: |
           set -o pipefail
-          bun test --coverage 2>&1 | tee /tmp/coverage.txt
+          bun test --coverage --max-concurrency 1 2>&1 | tee /tmp/coverage.txt
           COVERAGE=$(grep "All files" /tmp/coverage.txt | head -1 | awk -F'|' '{gsub(/[^0-9.]/, "", $3); print $3}')
           if [ -z "$COVERAGE" ]; then
             echo "::error::Could not parse coverage percentage from test output"
