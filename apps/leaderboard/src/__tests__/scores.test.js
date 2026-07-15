@@ -143,6 +143,21 @@ describe("handleScores — auth", () => {
     const res = await handleScores(req, makeEnv());
     expect(res.status).toBe(401);
   });
+
+  test("missing board slug or siteId returns 400", async () => {
+    const req = makeRequest({ headers: { "x-postback-key": "key" }, body: { players: [] } });
+    const res = await handleScores(req, makeEnv());
+    expect(res.status).toBe(400);
+    const body = await res.json();
+    expect(body.error).toContain("slug");
+  });
+
+  test("non-matching board slug returns 401", async () => {
+    _siteRow = null;
+    const req = makeRequest({ headers: { "x-postback-key": "key" }, body: { slug: "wrong-slug", players: [] } });
+    const res = await handleScores(req, makeEnv());
+    expect(res.status).toBe(401);
+  });
 });
 
 describe("handleScores — plan gate", () => {

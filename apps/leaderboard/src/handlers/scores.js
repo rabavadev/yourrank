@@ -16,20 +16,23 @@ export async function handleScores(request, env) {
     // Rate limit: 10/min per key
     const rl = await rateLimit(env, `scores:${postbackKey}`, 10, 60);
     if (!rl.ok) return bad("Rate limit exceeded. Try again shortly.", 429, rateLimitHeaders(rl));
-    // DB-004-v8: Single site lookup instead of two (was: SELECT id,user_id,postback_key, then SELECT full row by id)
-    // BUG-DB-007: postback_key lives on users table, not sites. JOIN to resolve.
-    const site = await one("SELECT s.id, s.user_id, s.slug, s.name, s.tagline, s.casino, s.code, s.cta_url, s.prize_pool, s.period, s.ends_at, s.reset_note, s.blurb, s.extra_json, s.published, s.theme_json, s.updated_at FROM sites s JOIN users u ON u.id = s.user_id WHERE u.postback_key=$1", [postbackKey]);
-    if (!site) return bad("Invalid postback key.", 401);
-    // Verify HMAC-SHA256 signature of the raw request body
+    // Verify HMAC-SHA256 signature of the raw request body before parsing or lookup.
     const rawBody = await request.text();
     const valid = await verifyHmacSha256Hex(postbackKey, rawBody, signature);
     if (!valid) return bad("Invalid postback signature.", 401);
+    let body;
+    try { body = JSON.parse(rawBody); } catch { return bad("Invalid JSON body."); }
+    // H-03: A user-level postback key can own many boards. Require an explicit
+    // board reference (slug or siteId, in body or X-Postback-Site header).
+    const boardRef = body.slug || body.siteId || request.headers.get("x-postback-site");
+    if (!boardRef || typeof boardRef !== "string") return bad("Missing board slug or siteId. Use body.slug, body.siteId, or X-Postback-Site header.", 400);
+    // BUG-DB-007: postback_key lives on users table, not sites. JOIN to resolve.
+    const site = await one("SELECT s.id, s.user_id, s.slug, s.name, s.tagline, s.casino, s.code, s.cta_url, s.prize_pool, s.period, s.ends_at, s.reset_note, s.blurb, s.extra_json, s.published, s.theme_json, s.updated_at FROM sites s JOIN users u ON u.id = s.user_id WHERE u.postback_key=$1 AND (s.slug=$2 OR s.id::text=$2)", [postbackKey, boardRef]);
+    if (!site) return bad("Invalid postback key or board reference.", 401);
     // Gate behind Pro plan
     const owner = await one("SELECT id, plan, (EXTRACT(EPOCH FROM plan_expires_at) * 1000)::double precision AS plan_expires_at, status FROM users WHERE id=$1", [site.user_id]);
     const plan = effectivePlan(owner);
     if (plan !== "pro" && plan !== "agency") return bad("Score API is a Pro feature. Upgrade to unlock.", 403);
-    let body;
-    try { body = JSON.parse(rawBody); } catch { return bad("Invalid JSON body."); }
     const players = body.players;
     if (!Array.isArray(players)) return bad("players must be an array.");
     // Plan gate: player count
