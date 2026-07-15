@@ -97,7 +97,10 @@ jobs:
         working-directory: apps/leaderboard
         run: |
           set -o pipefail
-          bun test --coverage --max-concurrency 1 2>&1 | tee /tmp/coverage.txt
+          # audit-validation uses process-global module mocks and is already run
+          # in isolation above; loading it with other files corrupts their mocks.
+          mapfile -t COVERAGE_FILES < <(find src/__tests__ -name '*.test.js' ! -name 'audit-validation.test.js' -print | sort)
+          bun test --coverage "${COVERAGE_FILES[@]}" 2>&1 | tee /tmp/coverage.txt
           COVERAGE=$(grep "All files" /tmp/coverage.txt | head -1 | awk -F'|' '{gsub(/[^0-9.]/, "", $3); print $3}')
           if [ -z "$COVERAGE" ]; then
             echo "::error::Could not parse coverage percentage from test output"
