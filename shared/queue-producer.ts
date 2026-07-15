@@ -2,67 +2,94 @@
 // Enqueues click, conversion, and analytics events to Cloudflare Queues
 // instead of writing to Postgres inline.
 
-import type { PostbackQuery } from "./conversions.js";
+import { z } from "zod";
 
-export interface ClickEvent {
-  type: "click";
-  shortLinkId: string;
-  ip: string;
-  userAgent: string | null;
-  referer: string | null;
-  country: string | null;
-  tgUserId: number | null;
-  clickRef: string;
-  timestamp: number;
+const id = z.string().min(1).max(128);
+const label = z.string().max(256);
+const timestamp = z.number().int().nonnegative();
+
+const clickEventSchema = z.object({
+  type: z.literal("click"),
+  shortLinkId: id,
+  ipHash: z.string().regex(/^[a-f0-9]{64}$/),
+  tgUserId: z.number().int().positive().safe().nullable(),
+  clickRef: z.string().min(1).max(128),
+  timestamp,
+}).strict();
+
+const conversionEventSchema = z.object({
+  type: z.literal("conversion"),
+  ownerId: id,
+  query: z.record(z.union([z.string(), z.array(z.string())])),
+  timestamp,
+}).strict();
+
+const bumpEventSchema = z.object({
+  type: z.literal("bump"),
+  siteId: id,
+  field: z.enum(["views", "copies", "clicks"]),
+  referer: z.string().max(2_048).nullable(),
+  timestamp,
+}).strict();
+
+const top3NotifyEventSchema = z.object({
+  type: z.literal("notify"),
+  kind: z.literal("top3"),
+  siteId: id,
+  siteName: label,
+  changes: z.array(z.object({
+    name: label,
+    rank: z.number().int().positive(),
+    wagered: z.number().finite(),
+  }).strict()).max(3),
+}).strict();
+
+const resetNotifyEventSchema = z.object({
+  type: z.literal("notify"),
+  kind: z.literal("reset"),
+  siteId: id,
+  siteName: label,
+  players: z.array(z.object({
+    name: label,
+    wagered: z.number().finite(),
+    prize: z.number().finite().optional(),
+  }).strict()).max(10_000),
+  period: z.string().max(64),
+}).strict();
+
+const playerRankNotifyEventSchema = z.object({
+  type: z.literal("notify"),
+  kind: z.literal("player-rank"),
+  siteId: id,
+  siteName: label,
+  playerName: label,
+  oldRank: z.number().int().positive().nullable(),
+  newRank: z.number().int().positive(),
+  botId: id,
+  tgUserId: z.number().int().positive().safe(),
+}).strict();
+
+export const queueEventSchema = z.union([
+  clickEventSchema,
+  conversionEventSchema,
+  bumpEventSchema,
+  top3NotifyEventSchema,
+  resetNotifyEventSchema,
+  playerRankNotifyEventSchema,
+]);
+
+export type QueueEvent = z.infer<typeof queueEventSchema>;
+export type ClickEvent = z.infer<typeof clickEventSchema>;
+export type ConversionEvent = z.infer<typeof conversionEventSchema>;
+export type BumpEvent = z.infer<typeof bumpEventSchema>;
+export type NotifyEvent =
+  | z.infer<typeof top3NotifyEventSchema>
+  | z.infer<typeof resetNotifyEventSchema>
+  | z.infer<typeof playerRankNotifyEventSchema>;
+
+export function parseQueueEvent(input: unknown): QueueEvent {
+  return queueEventSchema.parse(input);
 }
-
-export interface ConversionEvent {
-  type: "conversion";
-  ownerId: string;
-  query: PostbackQuery;
-  timestamp: number;
-}
-
-export interface BumpEvent {
-  type: "bump";
-  siteId: string;
-  field: "views" | "copies" | "clicks";
-  referer: string | null;
-  timestamp: number;
-}
-
-export interface Top3NotifyEvent {
-  type: "notify";
-  kind: "top3";
-  siteId: string;
-  siteName: string;
-  changes: Array<{ name: string; rank: number; wagered: number }>;
-}
-
-export interface ResetNotifyEvent {
-  type: "notify";
-  kind: "reset";
-  siteId: string;
-  siteName: string;
-  players: Array<{ name: string; wagered: number; prize?: number }>;
-  period: string;
-}
-
-export interface PlayerRankNotifyEvent {
-  type: "notify";
-  kind: "player-rank";
-  siteId: string;
-  siteName: string;
-  playerName: string;
-  oldRank: number | null;
-  newRank: number;
-  botId: string;
-  tgUserId: number;
-}
-
-export type NotifyEvent = Top3NotifyEvent | ResetNotifyEvent | PlayerRankNotifyEvent;
-
-export type QueueEvent = ClickEvent | ConversionEvent | BumpEvent | NotifyEvent;
 
 interface QueueProducer {
   send(message: QueueEvent): Promise<void>;

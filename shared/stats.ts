@@ -68,5 +68,6 @@ export async function bumpStat(siteId: string, field: string, refererHeader?: st
     });
   } catch (err) {
     console.error("[bumpStat]: operation failed", err);
+    throw err;
   }
 }

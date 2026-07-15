@@ -2,9 +2,9 @@
 import { withTransaction } from "./db.js";
 import { hashIp } from "./crypto.js";
 
-export async function logClick(
+async function insertClick(
   shortLinkId: string,
-  ip: string,
+  ipH: Buffer,
   userAgent: string | null,
   referer: string | null,
   country: string | null,
@@ -12,7 +12,6 @@ export async function logClick(
   clickRef: string | null = null
 ): Promise<void> {
   try {
-    const ipH = await hashIp(ip);
     await withTransaction(async (tx) => {
       const lockResult = await tx.one<{ lock_acquired: boolean }>(
         `SELECT acquire_click_uniqueness_lock($1, $2) AS lock_acquired`,
@@ -43,5 +42,38 @@ export async function logClick(
     });
   } catch (err) {
     console.error("[clicks] click log failed:", err);
+    throw err;
   }
+}
+
+export async function logClick(
+  shortLinkId: string,
+  ip: string,
+  userAgent: string | null,
+  referer: string | null,
+  country: string | null,
+  tgUserId: number | null,
+  clickRef: string | null = null
+): Promise<void> {
+  await insertClick(
+    shortLinkId,
+    await hashIp(ip),
+    userAgent,
+    referer,
+    country,
+    tgUserId,
+    clickRef
+  );
+}
+
+export async function logMinimizedClick(
+  shortLinkId: string,
+  ipHash: string,
+  tgUserId: number | null,
+  clickRef: string
+): Promise<void> {
+  if (!/^[a-f0-9]{64}$/.test(ipHash)) {
+    throw new Error("invalid click IP hash");
+  }
+  await insertClick(shortLinkId, Buffer.from(ipHash, "hex"), null, null, null, tgUserId, clickRef);
 }

@@ -12,12 +12,8 @@ queue = "yourrank-events"
 max_batch_size = 50
 max_batch_timeout = 5
 max_retries = 3
-# TODO: create a dead-letter queue via `wrangler queues create yourrank-events-dlq`
-# once Cloudflare supports auto-creation or it has been provisioned manually.
+dead_letter_queue = "yourrank-events-dlq"
 
 [[hyperdrive]]
 binding = "HYPERDRIVE"
 id = "9e5b625bfdd84cd691b44c4780bdaf13"
-
-[vars]
-IP_HASH_SALT = ""
