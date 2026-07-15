@@ -39,6 +39,9 @@ export function withWorkerFetch(workerName, handler) {
                 // Clone to get mutable headers before setting X-Request-Id.
                 const mutable = new Response(response.body, response);
                 mutable.headers.set("X-Request-Id", reqId);
+                if (request.url.startsWith("https://")) {
+                    mutable.headers.set("Strict-Transport-Security", "max-age=31536000; includeSubDomains; preload");
+                }
                 return mutable;
             }
             catch (err) {
@@ -63,9 +66,13 @@ export function withWorkerFetch(workerName, handler) {
                         worker: workerName,
                     }));
                 }
+                const errHeaders = { "X-Request-Id": reqId };
+                if (request.url.startsWith("https://")) {
+                    errHeaders["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains; preload";
+                }
                 return new Response("Internal Server Error", {
                     status: 500,
-                    headers: { "X-Request-Id": reqId },
+                    headers: errHeaders,
                 });
             }
         });

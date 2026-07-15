@@ -21,22 +21,22 @@ export const HTML = {
   // style-src includes 'unsafe-inline' because error pages, OBS overlays, and dynamic branding
   // use <style> blocks (nonces would require per-request CSP generation — tracked for future).
   // All style="" attributes have been extracted to CSS classes (SEC-713) for maintainability.
-  "Content-Security-Policy": "default-src 'self'; script-src 'self' https://telegram.org https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://cloudflareinsights.com; frame-ancestors *; report-uri /api/csp-report",
+  "Content-Security-Policy": "default-src 'self'; script-src 'self' https://telegram.org https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://cloudflareinsights.com; frame-ancestors *; base-uri 'none'; form-action 'self'; upgrade-insecure-requests; report-uri /api/csp-report",
 };
 
 // Hardened headers for the authenticated/app pages (login, signup, forgot,
 // reset, dashboard, admin). The public leaderboard keeps the plain HTML set
 // (it's intentionally iframe-able and loads Google Fonts) so we scope security
-// headers only to the pages that hold sessions/credentials. All inline styles
-// have been extracted to external CSS files (SEC-713); style-src no longer
-// needs 'unsafe-inline'. nosniff + Referrer-Policy are free wins everywhere.
+// headers only to the pages that hold sessions/credentials. All inline scripts
+// are external; style-src still allows 'unsafe-inline' because a few dynamic UI
+// elements (progress bars, dashboard widgets) set inline styles via JS/templates.
 export const SECURE_HTML = {
   "content-type": "text/html; charset=utf-8",
   "Strict-Transport-Security": "max-age=31536000; includeSubDomains",
   "X-Content-Type-Options": "nosniff",
   "Referrer-Policy": "strict-origin-when-cross-origin",
   "X-Frame-Options": "SAMEORIGIN",
-  "Content-Security-Policy": "default-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; script-src 'self' https://telegram.org https://static.cloudflareinsights.com; connect-src 'self' https://telegram.org https://cloudflareinsights.com; frame-src 'self' https://telegram.org; frame-ancestors 'self'",
+  "Content-Security-Policy": "default-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; script-src 'self'; connect-src 'self'; frame-src 'self'; frame-ancestors 'self'; base-uri 'none'; form-action 'self'; upgrade-insecure-requests",
 };
 
 // HTML-escape a value for interpolation into text/attribute context

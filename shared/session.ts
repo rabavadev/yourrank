@@ -11,7 +11,7 @@
 //  process.env.DATABASE_URL is available for the shared db.js module.
 //
 //  Cookie: httpOnly, Secure, SameSite=Lax, Domain=.yourrank.site, Path=/
-//  Token:  32-hex-char (16 random bytes), rotated after 24h.
+//  Token:  64-hex-char (32 random bytes), rotated after 24h.
 //
 //  SEC-107: Tokens are rotated when older than SESSION_ROTATE_AFTER_S (24 h)
 //  or on first read of a legacy bare-UUID session.  The rotation returns a
@@ -211,16 +211,17 @@ export async function resolveSession(req: Request, env: SessionEnv): Promise<Res
   const age = Number(row[0].age || 0);
   const userId = user_id;
 
-  // SEC-107: Rotate if session is older than threshold
+  // SEC-107: Rotate if session is older than threshold. Use the same 32-byte
+  // token format as new sessions instead of a shorter UUID.
   if (age > SESSION_ROTATE_AFTER_S) {
     try {
-      const newToken = crypto.randomUUID().replace(/-/g, "");
+      const rotated = newToken();
       // Atomic swap: update the existing row's token and reset created_at
       await exec(
         "UPDATE sessions SET token = $1, created_at = now(), expires_at = now() + make_interval(secs => $2) WHERE token = $3",
-        [newToken, SESSION_TTL_S, token]
+        [rotated, SESSION_TTL_S, token]
       );
-      const setCookie = cookieSet(newToken, env);
+      const setCookie = cookieSet(rotated, env);
       return { userId, uid: userId, cookie: setCookie, rotatedCookie: setCookie };
     } catch {
       // Rotation failed — still serve the request with the old token
