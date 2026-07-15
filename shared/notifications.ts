@@ -15,6 +15,17 @@
 import { decryptToken } from "./crypto.js";
 
 // ----------------------------------------------------------------------------
+// Telegram Markdown escaping
+// ----------------------------------------------------------------------------
+
+const TG_MD_RESERVED = /([_*[\]()~`>#+\-=|{}.!\\])/g;
+
+/** Escape a string for Telegram Markdown message content. */
+export function escapeTgMarkdown(text: string | number | null | undefined): string {
+  return String(text ?? "").replace(TG_MD_RESERVED, "\\$1");
+}
+
+// ----------------------------------------------------------------------------
 // Discord webhook helpers
 // ----------------------------------------------------------------------------
 
