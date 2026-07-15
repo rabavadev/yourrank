@@ -26,6 +26,7 @@ const dbMock = () => ({
 const cryptoMock = () => ({
   encryptToken: (s: string) => `enc:${s}`,
   decryptToken: (enc: Buffer | string) => enc.toString().replace("enc:", ""),
+  hashToken: async (s: string) => "hash:" + s,
   encrypt: (s: string) => s,
   decrypt: (s: string) => s,
   verifyHmacSha256Hex: async () => true,

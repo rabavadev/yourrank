@@ -28,7 +28,7 @@ DELETE FROM players WHERE normalized_name = '';
 -- 5. Deduplicate legacy players that share a site + normalized name.
 --    The earliest row (by id) survives; wagered/prize are summed, sort keeps min.
 WITH keepers AS (
-  SELECT min(id) AS keep_id,
+  SELECT (array_agg(id ORDER BY id))[1] AS keep_id,
          site_id,
          normalized_name,
          sum(wagered) AS sum_wagered,
