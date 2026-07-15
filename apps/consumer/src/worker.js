@@ -1,39 +1,32 @@
 // Cloudflare Queue consumer for YourRank.
 //
 // Processes click, conversion, analytics (bump), and notification events durably
-// off the request thread. Each event handler is idempotent so retries and
-// reordered deliveries are safe.
+// off the request thread. Failed messages are retried and routed to the DLQ.
 import { one, query } from "../../../shared/db.js";
 import { recordConversion } from "../../../shared/conversions.js";
-import { logClick } from "../../../shared/clicks.js";
+import { logMinimizedClick } from "../../../shared/clicks.js";
 import { bumpStat } from "../../../shared/stats.js";
 import { dispatchNotifyEvent } from "../../../shared/notifications.js";
+import { parseQueueEvent } from "../../../shared/queue-producer.js";
 
 const db = { one, query };
 
 function setProcessEnv(env) {
   const dbUrl = env.HYPERDRIVE?.connectionString || env.DATABASE_URL;
   if (dbUrl) process.env.DATABASE_URL = dbUrl;
-  if (env.IP_HASH_SALT) process.env.IP_HASH_SALT = env.IP_HASH_SALT;
   if (env.PUBLIC_BASE_URL) process.env.PUBLIC_BASE_URL = env.PUBLIC_BASE_URL;
 }
 
-async function handleEvent(body, tokenCache) {
-  if (!body || typeof body !== "object") {
-    console.warn("[consumer] ignoring non-object message body:", body);
-    return;
-  }
+async function handleEvent(input, tokenCache) {
+  const body = parseQueueEvent(input);
 
   switch (body.type) {
     case "click": {
-      await logClick(
+      await logMinimizedClick(
         body.shortLinkId,
-        body.ip,
-        body.userAgent ?? null,
-        body.referer ?? null,
-        body.country ?? null,
+        body.ipHash,
         body.tgUserId ?? null,
-        body.clickRef ?? null
+        body.clickRef
       );
       break;
     }
@@ -50,7 +43,7 @@ async function handleEvent(body, tokenCache) {
       break;
     }
     default: {
-      console.warn("[consumer] unknown event type:", body.type);
+      throw new Error(`unsupported queue event: ${body.type}`);
     }
   }
 }
@@ -61,11 +54,24 @@ export default {
     const tokenCache = new Map();
 
     for (const msg of batch.messages) {
+      const startedAt = Date.now();
       try {
         await handleEvent(msg.body, tokenCache);
         msg.ack();
+        console.log(JSON.stringify({
+          event: "queue_message_processed",
+          message_id: msg.id,
+          message_type: msg.body?.type ?? "unknown",
+          duration_ms: Date.now() - startedAt,
+        }));
       } catch (err) {
-        console.error("[consumer] failed to process message", msg.id, err);
+        console.error(JSON.stringify({
+          event: "queue_message_failed",
+          message_id: msg.id,
+          message_type: msg.body?.type ?? "unknown",
+          duration_ms: Date.now() - startedAt,
+          error: err instanceof Error ? err.message : String(err),
+        }));
         msg.retry();
       }
     }

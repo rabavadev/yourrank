@@ -168,6 +168,12 @@ export async function sendTelegramMessage(
   }
 }
 
+function requireDelivery(channel: string, result: { ok: boolean; error?: string }): void {
+  if (!result.ok) {
+    throw new Error(`${channel} delivery failed: ${result.error || "unknown error"}`);
+  }
+}
+
 // ----------------------------------------------------------------------------
 // Top-3 change detection
 // ----------------------------------------------------------------------------
@@ -230,7 +236,7 @@ export async function notifyTop3Change(
   if (discordUrl) {
     for (const change of top3Changes) {
       const embed = buildTop3Embed(siteName, change.name, change.rank, change.wagered);
-      await sendDiscordWebhook(discordUrl, embed).catch((e: any) => { console.error("[notify] Discord webhook failed:", e?.message); });
+      requireDelivery("Discord", await sendDiscordWebhook(discordUrl, embed));
     }
   }
 
@@ -242,17 +248,19 @@ export async function notifyTop3Change(
       [site.user_id]
     );
     if (bot?.token_encrypted) {
+      let botToken: string;
       try {
-        const botToken = await decryptToken(Buffer.from(bot.token_encrypted));
-        const lines = top3Changes.map((c) => {
-          const medal = ["🥇", "🥈", "🥉"][c.rank - 1] || "🏆";
-          return `${medal} *${c.name}* entered #${c.rank} — $${Number(c.wagered).toLocaleString("en-US", { maximumFractionDigits: 0 })}`;
-        });
-        const text = `⚡ *${siteName}* — New Top 3!\n\n${lines.join("\n")}`;
-        await sendTelegramMessage(botToken, tgChatId, text).catch((e: any) => { console.error("[notify] Telegram send failed:", e?.message); });
+        botToken = await decryptToken(Buffer.from(bot.token_encrypted));
       } catch (e: any) {
         console.error("[notify] failed to decrypt bot token:", String(e?.message || e));
+        throw e;
       }
+      const lines = top3Changes.map((c) => {
+        const medal = ["🥇", "🥈", "🥉"][c.rank - 1] || "🏆";
+        return `${medal} *${escapeTgMarkdown(c.name)}* entered #${c.rank} — $${Number(c.wagered).toLocaleString("en-US", { maximumFractionDigits: 0 })}`;
+      });
+      const text = `⚡ *${escapeTgMarkdown(siteName)}* — New Top 3!\n\n${lines.join("\n")}`;
+      requireDelivery("Telegram", await sendTelegramMessage(botToken, tgChatId, text));
     }
   }
 }
@@ -274,7 +282,7 @@ export async function notifyReset(
   const discordUrl = await decryptCredential(site.discord_webhook_url_enc);
   if (!discordUrl) return;
   const embed = buildResetEmbed(siteName, players, period);
-  await sendDiscordWebhook(discordUrl, embed).catch((e: any) => { console.error("[notify] Discord reset webhook failed:", e?.message); });
+  requireDelivery("Discord", await sendDiscordWebhook(discordUrl, embed));
 }
 
 /**
@@ -340,14 +348,11 @@ export async function sendPlayerRankNotification(
       tokenCache.set(msg.botId, botToken);
     } catch (e: any) {
       console.error("[notify] failed to decrypt bot token:", String(e?.message || e));
-      tokenCache.set(msg.botId, "");
-      return;
+      throw e;
     }
   }
   if (!botToken) return;
-  await sendTelegramMessage(botToken, msg.tgUserId, text).catch((e: any) => {
-    console.error("[notify] Telegram subscriber DM failed:", e?.message);
-  });
+  requireDelivery("Telegram", await sendTelegramMessage(botToken, msg.tgUserId, text));
 }
 
 export async function notifySubscribedPlayers(
@@ -422,6 +427,6 @@ export async function dispatchNotifyEvent(
       }, tokenCache);
       break;
     default:
-      console.warn("[notify] unknown notify event kind:", (event as any).kind);
+      throw new Error("unknown notify event kind");
   }
 }

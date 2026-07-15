@@ -306,7 +306,7 @@ jobs:
   # Cloudflare deployment — no manual intervention needed.
   # -----------------------------------------------------------------
   rollback:
-    needs: [deploy-leaderboard, deploy-bot, smoke-test]
+    needs: [deploy-leaderboard, deploy-bot, deploy-consumer, smoke-test]
     if: always() && needs.smoke-test.result == 'failure'
     runs-on: ubuntu-latest
     environment: production
@@ -331,6 +331,15 @@ jobs:
           command: rollback
           wranglerVersion: "4.106.0"
 
+      - name: Rollback consumer worker
+        uses: cloudflare/wrangler-action@ebbaa1584979971c8614a24965b4405ff95890e0
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: apps/consumer
+          command: rollback
+          wranglerVersion: "4.106.0"
+
       - name: Verify rollback health
         run: |
           echo "Waiting 15s for Cloudflare propagation…"
@@ -349,7 +358,7 @@ jobs:
           echo "==========================================="
           echo "AUTO-ROLLBACK EXECUTED"
           echo "Smoke test failed on commit: ${{ github.sha }}"
-          echo "Both Workers reverted to previous deployment."
+          echo "Leaderboard, bot, and consumer Workers reverted to previous deployments."
           echo "Pre-deploy leaderboard version: ${{ needs.deploy-leaderboard.outputs.lb-version || 'unknown' }}"
           echo "Pre-deploy bot version:         ${{ needs.deploy-bot.outputs.bot-version || 'unknown' }}"
           echo "Verify: https://yourrank.site"

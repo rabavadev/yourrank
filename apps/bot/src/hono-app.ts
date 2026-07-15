@@ -2,11 +2,11 @@ import { Hono } from "hono";
 import type { Update } from "grammy/types";
 import { config } from "./config.js";
 import { exec, one, query } from "../../../shared/db.js";
-import { safeEqual, encryptToken, reencryptToken, isCurrentVersion, newClickRef, newLinkSlug, newWebhookSecret, verifyHmacSha256Hex } from "../../../shared/crypto.js";
+import { safeEqual, encryptToken, reencryptToken, isCurrentVersion, hashIp, newClickRef, newLinkSlug, newWebhookSecret, verifyHmacSha256Hex } from "../../../shared/crypto.js";
 import { getBotBySecret, handleUpdateForBot } from "./botEngine.js";
 import { getMe, setWebhook } from "./telegram.js";
 import { buildDashboard } from "./dashboard.js";
-import { logClick } from "./clicks.js";
+import { logMinimizedClick } from "./clicks.js";
 import { billingEnabled, handleBillingUpdate, setupBillingWebhook } from "./billing.js";
 import { withPlanLimit } from "./plans.js";
 import { rateLimit, type RateLimitKV } from "./ratelimit.js";
@@ -146,11 +146,11 @@ export function buildHonoApp(): Hono<{ Bindings: Bindings }> {
 
     const u = c.req.query("u");
     const tgUserId = u && /^\d+$/.test(u) ? Number(u) : null;
-    const country = c.req.header("cf-ipcountry") ?? null;
 
     // Click reference:
     // can echo it back via postback ({click_ref} or {click_id}).
     const ref = newClickRef();
+    const ipHash = (await hashIp(ip)).toString("hex");
     const destination = link.referral_url
       .replaceAll("{click_ref}", ref)
       .replaceAll("{click_id}", ref);
@@ -160,7 +160,7 @@ export function buildHonoApp(): Hono<{ Bindings: Bindings }> {
       c.env.EVENTS_QUEUE,
       async (event: QueueEvent) => {
         if (event.type === "click") {
-          await logClick(event.shortLinkId, event.ip, event.userAgent, event.referer, event.country, event.tgUserId, event.clickRef);
+          await logMinimizedClick(event.shortLinkId, event.ipHash, event.tgUserId, event.clickRef);
         }
       }
     );
@@ -172,10 +172,7 @@ export function buildHonoApp(): Hono<{ Bindings: Bindings }> {
     bg(queueProducer.send({
       type: "click",
       shortLinkId: link.id,
-      ip,
-      userAgent: c.req.header("user-agent") ?? null,
-      referer: c.req.header("referer") ?? null,
-      country,
+      ipHash,
       tgUserId,
       clickRef: ref,
       timestamp: Date.now(),
