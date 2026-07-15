@@ -8,16 +8,13 @@
 import { describe, it, expect, mock } from "bun:test";
 
 const bundleUrl = import.meta.resolve("../assets_bundled.js");
-const NAMES = [
-  "leaderboard_css", "leaderboard_js", "app_css", "auth_js", "dashboard_js",
-  "admin_js", "landing_css", "landing_js", "analytics_js", "billing_js",
-  "attribution_js", "bot_setup_js", "overlay_js", "admin2fa_js", "setup_wizard_js",
-  "admin2fa_styles_css", "setup_styles_css", "shell_nav_css", "qrcode_js",
-  "contact_js", "cookie_consent_js",
-];
-mock.module(bundleUrl, () =>
-  Object.fromEntries(NAMES.map((n) => [n, `/* ${n} */ .x{}`]))
-);
+
+mock.module(bundleUrl, () => ({
+  ASSETS: {
+    "/assets/app.css": ["/* app.css */ .x{}", ".css"],
+    "/assets/dashboard.js": ["/* dashboard.js */ console.log(1)", ".js"],
+  },
+}));
 
 const { serveStaticAsset } = await import("../middleware/static-assets.js");
 
