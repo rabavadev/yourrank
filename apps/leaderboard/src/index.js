@@ -1,4 +1,4 @@
-import { destroySession, cookieClear, readToken, handleAccountDelete, RESERVED, bad, currentUser, hasLegacyCookie, cookieClearLegacy } from "./auth.js";
+import { destroySession, cookieClear, readToken, handleAccountDelete, RESERVED, bad, currentUser, hasLegacyCookie, cookieClearLegacy, rateLimit, clientIp } from "./auth.js";
 import { sendErrorToDiscord } from "../../../shared/monitoring.js";
 import { withWorkerFetch } from "../../../shared/with-worker.js";
 import { RateLimiter } from "../../../shared/rate-limiter-do.js";
@@ -20,6 +20,7 @@ import {
 } from "./middleware/index.js";
 import { findSiteLogoData, findSiteStatus, findUserTotpSecret } from "./data/sites.js";
 import { one } from "../../../shared/db.js";
+import { hashToken } from "../../../shared/crypto.js";
 import { handleDashboardPreview } from "./handlers/preview.js";
 
 export default {
@@ -316,7 +317,8 @@ async function handleRequest(request, env, ctx, meta) {
         const tfaRow = await findUserTotpSecret(u.id);
         if (tfaRow?.totp_secret) {
           const token = readToken(request);
-          const tfaRow2 = token ? await one("SELECT twofa_verified FROM sessions WHERE token=$1", [token]) : null;
+          const tokenHash = token ? await hashToken(token) : null;
+          const tfaRow2 = tokenHash ? await one("SELECT twofa_verified FROM sessions WHERE token=$1", [tokenHash]) : null;
           const tfaVerified = tfaRow2?.twofa_verified ? "1" : null;
           if (tfaVerified !== "1") {
             // Show 2FA verification page instead of admin dashboard
@@ -390,6 +392,8 @@ async function handleRequest(request, env, ctx, meta) {
 
       // --- tracked Join redirect: /go/<slug> → streamer's referral URL ---
       if (method === "GET" && path.startsWith("/go/")) {
+        const ip = clientIp(request);
+        if (!(await rateLimit(env, `go:${ip}`, 120, 60)).ok) return new Response("Too many requests", { status: 429, headers: HTML_N });
         let slug;
         try { slug = decodeURIComponent(path.slice(4).split("/")[0]).toLowerCase(); } catch { return new Response(notFoundPage("", nonce), { status: 404, headers: HTML_N }); }
         // Demo board has no DB row — mirror the demo overlay special-case so the

@@ -535,15 +535,17 @@ export async function saveSite(env, user, payload, siteId, request = null) {
   }
   // Keep the top-level site name in sync with brand.name (dashboard sends both).
   const siteName = String(payload.name ?? b.name ?? site.name).trim().slice(0, 80) || site.name;
+  const existingExtra = fromJsonb(site.extra_json) || {};
+  const notify = payload.notify || {};
   const extra = {
-    chips: payload.chips || DEFAULT_EXTRA.chips,
-    whyStats: payload.whyStats || DEFAULT_EXTRA.whyStats,
-    rules: payload.rules || DEFAULT_EXTRA.rules,
-    socials: payload.socials || DEFAULT_EXTRA.socials,
-    discord_webhook_url: payload.discord_webhook_url ?? undefined,
-    telegram_bot_token: payload.telegram_bot_token ?? undefined,
-    telegram_chat_id: payload.telegram_chat_id ?? undefined,
-    telegram_notify: payload.telegram_notify ?? undefined,
+    chips: payload.chips ?? existingExtra.chips ?? DEFAULT_EXTRA.chips,
+    whyStats: payload.whyStats ?? existingExtra.whyStats ?? DEFAULT_EXTRA.whyStats,
+    rules: payload.rules ?? existingExtra.rules ?? DEFAULT_EXTRA.rules,
+    socials: payload.socials ?? existingExtra.socials ?? DEFAULT_EXTRA.socials,
+    discord_webhook_url: (notify.discord_webhook_url ?? existingExtra.discord_webhook_url) || undefined,
+    telegram_bot_token: existingExtra.telegram_bot_token || undefined,
+    telegram_chat_id: (notify.telegram_chat_id ?? existingExtra.telegram_chat_id) || undefined,
+    telegram_notify: notify.telegram_notify ?? existingExtra.telegram_notify ?? undefined,
   };
 
   // Fetch logo_data separately since the shared query no longer includes it (PERF-004).

@@ -247,6 +247,13 @@ export async function hashIp(ip: string): Promise<Buffer> {
   return Buffer.from(hash as ArrayBuffer);
 }
 
+/** One-way hash for bearer tokens (sessions, password resets). */
+export async function hashToken(token: string): Promise<string> {
+  const data = new TextEncoder().encode(token);
+  const hash = await crypto.subtle.digest("SHA-256", data);
+  return bytesToHex(new Uint8Array(hash as ArrayBuffer));
+}
+
 /** Routing id + Telegram secret header value. */
 export function newWebhookSecret(): string {
   return Buffer.from(crypto.getRandomValues(new Uint8Array(24))).toString("hex");

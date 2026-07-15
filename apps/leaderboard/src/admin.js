@@ -1,11 +1,11 @@
 // Owner admin API. Every route requires a session whose user has is_admin=true.
 import { json, bad, ok, readJson, newToken, readToken, currentUser, destroyAllUserSessions, clientIp, rateLimit } from "./auth.js";
 import { activatePlan } from "./billing.js";
-import { sendEmail } from "./email.js";
+import { sendEmail, resetEmail } from "./email.js";
 import { query, one, exec } from "../../../shared/db.js";
 import { logAudit } from "../../../shared/audit.js";
 import { generateSecret, verifyCode, generateOtpauthUri } from "./totp.js";
-import { encrypt, decrypt } from "../../../shared/crypto.js";
+import { encrypt, decrypt, hashToken } from "../../../shared/crypto.js";
 import { listFeatureFlags, setFeatureFlag, setUserFeatureOverride } from "../../../shared/features.js";
 
 // QUALITY-007: Named timing constants (no magic numbers)
@@ -48,14 +48,15 @@ export async function requireAdminWith2fa(request, env, requireFresh = false) {
   const user = await one("SELECT totp_secret FROM users WHERE id=$1", [admin.id]);
   if (user?.totp_secret) {
     const token = readToken(request);
-    const tfaRow = token ? await one("SELECT twofa_verified FROM sessions WHERE token=$1", [token]) : null;
+    const tokenHash = token ? await hashToken(token) : null;
+    const tfaRow = tokenHash ? await one("SELECT twofa_verified FROM sessions WHERE token=$1", [tokenHash]) : null;
     const tfaVerified = tfaRow?.twofa_verified ? "1" : null;
     if (tfaVerified !== "1") {
       return { admin: null, res: bad("2fa_required", 403) };
     }
     // For sensitive actions, require fresh verification (clear the flag after use)
-    if (requireFresh && token) {
-      await exec("UPDATE sessions SET twofa_verified=false WHERE token=$1", [token]);
+    if (requireFresh && tokenHash) {
+      await exec("UPDATE sessions SET twofa_verified=false WHERE token=$1", [tokenHash]);
     }
   }
   return { admin, res: null };
@@ -190,19 +191,27 @@ export async function handleAction(request, env) {
       break;
     case "reset-link": {
       if (target.is_admin) return bad("Can't generate a reset link for an admin");
+      // H-22: do not generate an undeliverable reset token. Email is the only
+      // allowed delivery channel for admin-initiated reset links.
+      if (!env.RESEND_API_KEY) return bad("Email provider is not configured. Reset links cannot be delivered securely.", 503);
+      await exec("DELETE FROM password_resets WHERE user_id=$1 AND expires_at > now()", [target.id]);
       const token = newToken();
-      await exec("INSERT INTO password_resets (token, user_id, expires_at) VALUES ($1, $2, now() + make_interval(secs => $3)) ON CONFLICT (token) DO UPDATE SET user_id=$2, expires_at=now() + make_interval(secs => $3)", [token, target.id, RESET_TOKEN_TTL_S]);
-      // SEC-010-v7: Do NOT return the token/URL in the API response.
-      // Previously: return ok({ link: `${origin}/reset?token=${token}`, email: target.email });
-      // Risk: the token in the response could be intercepted or logged. The reset link
-      // should be sent via email-only flow. For now, return a confirmation message only.
-      // TODO: integrate email delivery (e.g., Resend/SendGrid) to send the link to target.email.
-      console.log(`[admin] reset-link generated for ${target.email.replace(/(.).+(@)/, "$1***$2")}: (token redacted) (send via email)`);
+      const tokenHash = await hashToken(token);
+      await exec("INSERT INTO password_resets (token, user_id, expires_at) VALUES ($1, $2, now() + make_interval(secs => $3)) ON CONFLICT (token) DO UPDATE SET user_id=$2, expires_at=now() + make_interval(secs => $3)", [tokenHash, target.id, RESET_TOKEN_TTL_S]);
+      const link = `${new URL(request.url).origin}/reset?token=${token}`;
+      const mail = resetEmail(link);
+      const result = await sendEmail(env, { to: target.email, ...mail });
+      if (!result.sent) {
+        // If delivery fails, revoke the token so it cannot later be used.
+        await exec("DELETE FROM password_resets WHERE token=$1", [tokenHash]);
+        console.error("[admin] reset-link send failed", result.reason, "for", target.email.replace(/(.).+(@)/, "$1***$2"));
+        return bad("Failed to send reset email. The link has been revoked.", 500);
+      }
       await logAdminAction(env, admin.id, body.action, target.id, {
         email: target.email,
-        details: "reset-link-generated",
+        details: "reset-link-sent",
       }, request);
-      return ok({ message: `Reset link generated for ${target.email}. Deliver via email.`, email: target.email });
+      return ok({ message: `Reset link sent to ${target.email}.`, email: target.email });
     }
     default:
       return bad("Unknown action");
@@ -350,7 +359,8 @@ export async function handle2faVerify(request, env) {
   // Mark 2FA verified in KV for this session token
   const token = readToken(request);
   if (token) {
-    await exec("UPDATE sessions SET twofa_verified=true WHERE token=$1", [token]);
+    const tokenHash = await hashToken(token);
+    await exec("UPDATE sessions SET twofa_verified=true WHERE token=$1", [tokenHash]);
   }
 
   await logAdminAction(env, admin.id, "2fa_verify", admin.id, {
@@ -373,7 +383,8 @@ export async function handle2faStatus(request, env) {
   if (enabled) {
     const token = readToken(request);
     if (token) {
-      const tfaRow2 = await one("SELECT twofa_verified FROM sessions WHERE token=$1", [token]);
+      const tokenHash = await hashToken(token);
+      const tfaRow2 = await one("SELECT twofa_verified FROM sessions WHERE token=$1", [tokenHash]);
       verified = !!tfaRow2?.twofa_verified;
     }
   }
@@ -397,7 +408,8 @@ export async function handle2faDisable(request, env) {
   // Clear 2FA verification flag from KV
   const token = readToken(request);
   if (token) {
-    await exec("UPDATE sessions SET twofa_verified=false WHERE token=$1", [token]);
+    const tokenHash = await hashToken(token);
+    await exec("UPDATE sessions SET twofa_verified=false WHERE token=$1", [tokenHash]);
   }
 
   await logAdminAction(env, admin.id, "2fa_disable", admin.id, {

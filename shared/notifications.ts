@@ -15,6 +15,17 @@
 import { decryptToken } from "./crypto.js";
 
 // ----------------------------------------------------------------------------
+// Telegram Markdown escaping
+// ----------------------------------------------------------------------------
+
+const TG_MD_RESERVED = /([_*[\]()~`>#+\-=|{}.!\\])/g;
+
+/** Escape a string for Telegram Markdown message content. */
+export function escapeTgMarkdown(text: string | number | null | undefined): string {
+  return String(text ?? "").replace(TG_MD_RESERVED, "\\$1");
+}
+
+// ----------------------------------------------------------------------------
 // Discord webhook helpers
 // ----------------------------------------------------------------------------
 
@@ -211,11 +222,12 @@ export async function notifyTop3Change(
     if (bot?.token_encrypted) {
       try {
         const botToken = await decryptToken(Buffer.from(bot.token_encrypted));
+        const safeSiteName = escapeTgMarkdown(siteName);
         const lines = top3Changes.map((c) => {
           const medal = ["🥇", "🥈", "🥉"][c.rank - 1] || "🏆";
-          return `${medal} *${c.name}* entered #${c.rank} — $${Number(c.wagered).toLocaleString("en-US", { maximumFractionDigits: 0 })}`;
+          return `${medal} *${escapeTgMarkdown(c.name)}* entered #${c.rank} — $${Number(c.wagered).toLocaleString("en-US", { maximumFractionDigits: 0 })}`;
         });
-        const text = `⚡ *${siteName}* — New Top 3!\n\n${lines.join("\n")}`;
+        const text = `⚡ *${safeSiteName}* — New Top 3!\n\n${lines.join("\n")}`;
                   await sendTelegramMessage(botToken, tgChatId, text).catch((e: any) => { console.error("[notify] Telegram send failed:", e?.message); });
                 } catch (e: any) {
                   console.error("[notify] failed to decrypt bot token:", String(e?.message || e));
@@ -305,8 +317,9 @@ export async function notifySubscribedPlayers(
     if (!newRank) continue;
 
     // Player was not in old list (new entry) — notify if in top 20
+    const safeSiteName = escapeTgMarkdown(siteName);
     if (!oldRank && newRank <= 20) {
-      const text = `🎉 You entered the *${siteName}* leaderboard at #${newRank}!`;
+      const text = `🎉 You entered the *${safeSiteName}* leaderboard at #${newRank}!`;
               await sendTelegramMessage(botToken, sub.tg_user_id, text).catch((e: any) => { console.error("[notify] Telegram subscriber DM failed:", e?.message); });
               continue;
             }
@@ -314,7 +327,7 @@ export async function notifySubscribedPlayers(
             // Player changed rank
             if (oldRank && newRank !== oldRank) {
               const direction = newRank < oldRank ? "📈" : "📉";
-              const text = `${direction} You moved from #${oldRank} to #${newRank} on the *${siteName}* leaderboard!`;
+              const text = `${direction} You moved from #${oldRank} to #${newRank} on the *${safeSiteName}* leaderboard!`;
               await sendTelegramMessage(botToken, sub.tg_user_id, text).catch((e: any) => { console.error("[notify] Telegram subscriber DM failed:", e?.message); });
     }
   }

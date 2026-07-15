@@ -12,6 +12,7 @@
 //
 //  Cookie: httpOnly, Secure, SameSite=Lax, Domain=.yourrank.site, Path=/
 //  Token:  64-hex-char (32 random bytes), rotated after 24h.
+//  Storage: only SHA-256(token) is stored; the cookie carries the raw token.
 //
 //  SEC-107: Tokens are rotated when older than SESSION_ROTATE_AFTER_S (24 h)
 //  or on first read of a legacy bare-UUID session.  The rotation returns a
@@ -23,6 +24,7 @@
 // ============================================================================
 
 import { one, exec, query } from "./db.js";
+import { hashToken } from "./crypto.js";
 
 // ---------------------------------------------------------------------------
 //  Types
@@ -148,11 +150,12 @@ export async function createSession(env: SessionEnv, userId: string): Promise<st
     await env.SESSIONS.put(KV_PREFIX + token, JSON.stringify({ u: userId, c: Date.now() }));
     return token;
   }
+  const tokenHash = await hashToken(token);
   await exec(
     `INSERT INTO sessions (token, user_id, created_at, expires_at)
      VALUES ($1, $2, now(), now() + make_interval(secs => $3))
      ON CONFLICT (token) DO NOTHING`,
-    [token, userId, SESSION_TTL_S]
+    [tokenHash, userId, SESSION_TTL_S]
   );
   return token;
 }
@@ -164,7 +167,8 @@ export async function destroySession(env: SessionEnv, token: string | null): Pro
     await env.SESSIONS.delete(KV_PREFIX + token);
     return;
   }
-  await exec("DELETE FROM sessions WHERE token = $1", [token]);
+  const tokenHash = await hashToken(token);
+  await exec("DELETE FROM sessions WHERE token = $1", [tokenHash]);
 }
 
 /**
@@ -199,11 +203,12 @@ interface ResolveResult {
 export async function resolveSession(req: Request, env: SessionEnv): Promise<ResolveResult> {
   const token = readToken(req);
   if (!token) return { userId: null, uid: null, cookie: null, rotatedCookie: null };
+  const tokenHash = await hashToken(token);
 
   // Read session from DB
   const row = await query(
     "SELECT user_id, created_at, extract(epoch FROM now() - created_at)::int AS age FROM sessions WHERE token = $1 AND expires_at > now()",
-    [token]
+    [tokenHash]
   );
   if (!row || row.length === 0) return { userId: null, uid: null, cookie: null, rotatedCookie: null };
 
@@ -216,13 +221,19 @@ export async function resolveSession(req: Request, env: SessionEnv): Promise<Res
   if (age > SESSION_ROTATE_AFTER_S) {
     try {
       const rotated = newToken();
-      // Atomic swap: update the existing row's token and reset created_at
-      await exec(
-        "UPDATE sessions SET token = $1, created_at = now(), expires_at = now() + make_interval(secs => $2) WHERE token = $3",
-        [rotated, SESSION_TTL_S, token]
+      const rotatedHash = await hashToken(rotated);
+      // Atomic swap: update the existing row's token and reset created_at.
+      // RETURNING id lets us detect the race where another request already rotated.
+      const updated = await exec(
+        "UPDATE sessions SET token = $1, created_at = now(), expires_at = now() + make_interval(secs => $2) WHERE token = $3 RETURNING id",
+        [rotatedHash, SESSION_TTL_S, tokenHash]
       );
-      const setCookie = cookieSet(rotated, env);
-      return { userId, uid: userId, cookie: setCookie, rotatedCookie: setCookie };
+      if (!updated || updated.length === 0) {
+        console.warn("[session] rotation race lost, serving with old token");
+      } else {
+        const setCookie = cookieSet(rotated, env);
+        return { userId, uid: userId, cookie: setCookie, rotatedCookie: setCookie };
+      }
     } catch {
       // Rotation failed — still serve the request with the old token
       console.error("[session] rotation failed, serving with old token");
@@ -232,7 +243,7 @@ export async function resolveSession(req: Request, env: SessionEnv): Promise<Res
   // Sliding-window TTL refresh (if we didn't rotate)
   exec(
     "UPDATE sessions SET expires_at = now() + make_interval(secs => $1) WHERE token = $2",
-    [SESSION_TTL_S, token]
+    [SESSION_TTL_S, tokenHash]
   ).catch(e => console.error("[session] TTL refresh failed:", e?.message));
 
   return { userId, uid: userId, cookie: null, rotatedCookie: null };
@@ -245,17 +256,18 @@ export async function resolveSession(req: Request, env: SessionEnv): Promise<Res
 export async function currentUserId(req: Request, env: SessionEnv): Promise<string | null> {
   const token = readToken(req);
   if (!token) return null;
+  const tokenHash = await hashToken(token);
 
   const row = await query(
     "SELECT user_id FROM sessions WHERE token = $1 AND expires_at > now()",
-    [token]
+    [tokenHash]
   );
   if (!row || row.length === 0) return null;
 
   // Sliding-window TTL refresh
   exec(
     "UPDATE sessions SET expires_at = now() + make_interval(secs => $1) WHERE token = $2",
-    [SESSION_TTL_S, token]
+    [SESSION_TTL_S, tokenHash]
   ).catch(e => console.error("[session] TTL refresh failed:", e?.message));
 
   return row[0].user_id as string;

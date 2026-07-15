@@ -1,5 +1,5 @@
 // Site handlers: get, put, list, create, archive, stats, heatmap, notifications, custom domain
-import { requireUser, json, bad, ok, readJson, rateLimit, slugify } from "../auth.js";
+import { requireUser, json, bad, ok, readJson, rateLimit, slugify, clientIp } from "../auth.js";
 import { getByUser, getUserSite, getUserSiteById, getUserBoardsList, createBoard, duplicateBoard, createArchive, deleteArchive, deleteBoard, setActiveBoard, updateSiteTheme, invalidateSiteCache, invalidateUserCache, getBoardById, saveSite, fromJsonb } from "../site.js";
 import { bumpStat, getStats, getHeatmap, getTopReferrers } from "../stats.js";
 import { effectivePlan, PLAN_LIMITS, BOARD_LIMITS } from "../billing.js";
@@ -53,9 +53,12 @@ export async function handleHeatmap(request, env) {
 }
 
 export async function handleTrackCopy(request, env, ctx) {
+  const ip = clientIp(request);
+  if (!(await rateLimit(env, `copy:${ip}`, 60, 60)).ok) return json({ ok: false, error: "Too many requests." }, 429);
   const body = await readJson(request);
   const slug = slugify(body?.slug || "");
   if (!slug) return json({ ok: true });
+  if (!(await rateLimit(env, `copy:${slug}:${ip}`, 20, 60)).ok) return json({ ok: false, error: "Too many requests." }, 429);
   const site = await one("SELECT id FROM sites WHERE slug=$1 AND published=true", [slug]);
   if (site) {
     const p = bumpStat(env, site.id, "copies");
