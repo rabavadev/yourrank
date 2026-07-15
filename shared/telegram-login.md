@@ -4,7 +4,7 @@ Goal: **one `users` row per real person**, regardless of whether they arrived
 via email+password (leaderboard) or via the Telegram Login Widget (bot). Same
 email = same person. A password user can link Telegram; a Telegram user can add
 an email+password. Either path ends up authenticated by the one shared session
-(`gm_session`, see `session.md`).
+(`yr_session`, see `session.md`).
 
 The unified `users` row carries both credential sets:
 
@@ -49,7 +49,7 @@ ON CONFLICT (telegram_user_id) DO UPDATE
 RETURNING id;
 ```
 
-Then `createSession(env, id)` and set `gm_session`. This is exactly the bot's
+Then `createSession(env, id)` and set `yr_session`. This is exactly the bot's
 current upsert (`hono-app`/`dashboard.ts`) — kept as-is.
 
 > A brand-new Telegram user has `email = NULL`. They can add email+password

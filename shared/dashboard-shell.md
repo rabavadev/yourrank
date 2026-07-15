@@ -126,8 +126,8 @@ Notes for the bot side:
 - The bot dashboard's client fetches change from `/dash/api/*` to
   `/bot/dash/api/*` (see `routing.md`) so they stay on the bot Worker.
 - Its old `/auth/logout` (which cleared the `sess` cookie) is superseded by the
-  shell's `/logout` on the leaderboard Worker, which clears `gm_session`
-  host-wide. The bot Worker can drop its own logout route.
+  shell's `/logout` on the leaderboard Worker, which clears `yr_session` and any
+  legacy cookies host-wide. The bot Worker can drop its own logout route.
 
 ---
 

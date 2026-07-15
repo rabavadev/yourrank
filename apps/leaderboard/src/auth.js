@@ -11,7 +11,6 @@ import {
   cookieClear as _cookieClear,
   // SEC-107: session resolution (DB-backed, handles rotation + TTL refresh)
   resolveSession as _resolveSession,
-  loadUser as _loadUser,
   // SEC-104: legacy cookie helpers
   hasLegacyCookie,
   cookieClearLegacy,

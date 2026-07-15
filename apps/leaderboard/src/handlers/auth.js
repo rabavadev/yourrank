@@ -6,8 +6,7 @@ import { DEFAULT_EXTRA, getUserBoardsList } from "../site.js";
 import { sendEmail, resetEmail } from "../email.js";
 import { effectivePlan, PLAN_LIMITS, BOARD_LIMITS, priceUsd } from "../billing.js";
 import {
-  findUserByEmail, findUserByCredentials, findSiteByUserId, findSiteBySlug, findUserForReset,
-  findSubscriptionByUserId, createUser, createSite, updateUserPassword, findUserWithTotpSecret
+  findUserByEmail, findSiteBySlug, createUser, createSite
 } from "../data/auth.js";
 
 export async function handleSignup(request, env) {

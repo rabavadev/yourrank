@@ -1,5 +1,5 @@
 // Per-site daily analytics. Cheap upsert counters in Postgres — no external service.
-import { query, exec, withTransaction } from "../../../shared/db.js";
+import { query, withTransaction } from "../../../shared/db.js";
 const FIELDS = new Set(["views", "copies", "clicks"]);
 
 export function todayUTC() {

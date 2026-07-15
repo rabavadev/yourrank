@@ -28,7 +28,7 @@ function postReq(body) {
   });
 }
 
-const mockEnv = {};
+const mockEnv = { RL_FAIL_OPEN: "true" }; // tests run without a KV backend
 
 describe("handleContact", () => {
   beforeEach(() => {

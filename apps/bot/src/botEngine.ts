@@ -9,7 +9,7 @@ export const esc = (s: unknown): string =>
 import { one, query } from "../../../shared/db.js";
 import { decryptToken } from "../../../shared/crypto.js";
 import { config } from "./config.js";
-import { rateLimit, type RateLimitKV } from "./ratelimit.js";
+import { rateLimit } from "./ratelimit.js";
 import { setMyCommands } from "./telegram.js";
 import { getUserPlan } from "./plans.js";
 

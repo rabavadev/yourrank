@@ -8,7 +8,7 @@
 // Copy every binding the app reads onto process.env so shared modules (which
 // read process.env, not c.env) work unchanged. Called from BOTH fetch and
 // scheduled — they MUST populate the same set, or a binding set in only one
-import { sendErrorToDiscord, sendCronSummaryToDiscord } from "../../../shared/monitoring.js";
+import { sendCronSummaryToDiscord } from "../../../shared/monitoring.js";
 import { withWorkerFetch } from "../../../shared/with-worker.js";
 import { RateLimiter } from "../../../shared/rate-limiter-do.js";
 import { populateEnv } from "../../../shared/env.js";

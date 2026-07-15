@@ -5,7 +5,7 @@
 // Run: bun test src/__tests__/public-handlers.test.js
 //   or: bun test   (from apps/leaderboard/)
 
-import { describe, it, expect, mock, beforeEach } from "bun:test";
+import { describe, it, expect, mock } from "bun:test";
 
 // ── Mock shared modules ────────────────────────────────────────────────
 const dbUrl    = import.meta.resolve("../../../../shared/db.js");
@@ -46,7 +46,7 @@ const sessMock = () => ({
     cookie: null,
     rotatedCookie: null,
   }),
-  loadUser: (_env, userId) => Promise.resolve(null),
+  loadUser: (_env, _userId) => Promise.resolve(null),
   SESSION_ROTATE_AFTER_S: 86400,
   SESSION_TTL_S: 2592000,
 });

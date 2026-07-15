@@ -18,7 +18,7 @@ export function serveRobotsTxt(origin) {
 let sitemapCache = { xml: null, ts: 0 };
 const SITEMAP_TTL = 300_000; // 5 minutes L1 TTL
 
-export async function serveSitemapXml(origin, env) {
+export async function serveSitemapXml(origin, _env) {
   // L1: in-memory cache (instant, per-isolate)
   if (sitemapCache.xml && Date.now() - sitemapCache.ts < SITEMAP_TTL) {
     return new Response(sitemapCache.xml, {

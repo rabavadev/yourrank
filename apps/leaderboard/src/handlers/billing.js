@@ -1,5 +1,5 @@
 // Billing handlers: trial activation
-import { requireUser, json, bad, readJson, rateLimit } from "../auth.js";
+import { requireUser, json, bad } from "../auth.js";
 import { activatePro, effectivePlan } from "../billing.js";
 import { exec } from "../../../../shared/db.js";
 

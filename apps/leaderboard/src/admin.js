@@ -8,7 +8,6 @@ import { encrypt, decrypt } from "../../../shared/crypto.js";
 
 // QUALITY-007: Named timing constants (no magic numbers)
 const RESET_TOKEN_TTL_S = 86400;   // 24 hours — admin-initiated password reset link validity
-const TOTP_VERIFICATION_TTL_S = 3600; // 1 hour — 2FA verification session window
 
 // SEC-106: Only keep known-safe keys in audit log details before persisting.
 // Whitelist approach: any key not in the safe set is dropped. This prevents
@@ -245,7 +244,7 @@ export async function handleAction(request, env) {
 
 // GET /api/admin/support — list support messages for the admin inbox.
 export async function handleSupportMessages(request, env) {
-  const { admin, res } = await requireAdminWith2fa(request, env);
+  const { res } = await requireAdminWith2fa(request, env);
   if (res) return res;
   const url = new URL(request.url);
   const status = url.searchParams.get("status") || "all";
