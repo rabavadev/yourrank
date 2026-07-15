@@ -2,7 +2,7 @@
 // revocation, and replay-guard deduplication.
 
 import { one, exec } from "./db.js";
-import { hashToken, newPostbackKey } from "./crypto.js";
+import { hashToken, newPostbackKey, safeEqual } from "./crypto.js";
 import { encrypt, decrypt } from "./crypto.js";
 
 const DEFAULT_TTL_S = 24 * 60 * 60;
@@ -166,3 +166,5 @@ export async function computeReplayHash(payload: Record<string, string | string[
   const buf = await crypto.subtle.digest("SHA-256", enc);
   return Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, "0")).join("");
 }
+
+export { safeEqual };
