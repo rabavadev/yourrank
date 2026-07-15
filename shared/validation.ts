@@ -45,15 +45,19 @@ const playerItemSchema = z
     wagered: optionalNumber(1e15),
     prize: optionalNumber(1e15),
   })
-  .passthrough();
+  .strict();
 
 const socialItemSchema = z
   .object({
     platform: z.string().max(40).optional(),
+    name: z.string().max(80).optional(),
+    handle: z.string().max(200).optional(),
+    action: z.string().max(80).optional(),
+    brand: z.string().max(40).optional(),
     url: z.string().max(500).optional(),
     label: z.string().max(200).optional(),
   })
-  .passthrough();
+  .strict();
 
 const whyStatItemSchema = z
   .object({
@@ -61,7 +65,7 @@ const whyStatItemSchema = z
     label: z.string().max(200).optional(),
     sub: z.string().max(200).optional(),
   })
-  .passthrough();
+  .strict();
 
 const jsonbLike = z
   .union([z.string().max(50_000), z.record(z.unknown()), z.array(z.unknown())])
@@ -78,13 +82,14 @@ const brandSchema = z
     period: z.string().max(50).optional(),
     resetNote: z.string().max(500).optional(),
   })
-  .passthrough();
+  .strict();
 
 const partnerSchema = z
   .object({
     blurb: z.string().max(2000).optional(),
+    chips: z.array(z.string().max(100)).max(20).optional(),
   })
-  .passthrough();
+  .strict();
 
 const brandingSchema = z
   .object({
@@ -93,7 +98,15 @@ const brandingSchema = z
     accentA: z.string().max(8).optional(),
     accentB: z.string().max(8).optional(),
   })
-  .passthrough();
+  .strict();
+
+const notifySchema = z
+  .object({
+    discord_webhook_url: z.union([z.string().max(500), z.null()]).optional(),
+    telegram_chat_id: z.union([z.string().max(100), z.null()]).optional(),
+    telegram_notify: z.boolean().optional(),
+  })
+  .strict();
 
 // ---------------------------------------------------------------------------
 // Per-handler request-body schemas
@@ -107,33 +120,33 @@ export const handlerSchemas: Record<string, ZodSchema<any>> = {
       name: z.string().trim().min(2).max(80),
       slug: z.string().trim().max(80).optional().or(z.literal("").optional()),
     })
-    .passthrough(),
+    .strict(),
 
   handleLogin: z
     .object({
       email: z.string().email().max(254),
       password: z.string().min(1).max(128),
     })
-    .passthrough(),
+    .strict(),
 
   handleForgot: z
     .object({
       email: z.string().email().max(254),
     })
-    .passthrough(),
+    .strict(),
 
   handleReset: z
     .object({
       token: z.string().min(1).max(128),
       password: z.string().min(8).max(128),
     })
-    .passthrough(),
+    .strict(),
 
   handleAccountDelete: z
     .object({
       password: z.string().min(1).max(128),
     })
-    .passthrough(),
+    .strict(),
 
   handleTelegramLink: z
     .object({
@@ -145,13 +158,13 @@ export const handlerSchemas: Record<string, ZodSchema<any>> = {
       username: optionalString(100),
       photo_url: optionalString(500),
     })
-    .passthrough(),
+    .strict(),
 
   handleTrackCopy: z
     .object({
       slug: z.string().max(80).optional().or(z.literal("").optional()),
     })
-    .passthrough(),
+    .strict(),
 
   handleCreateBoard: z
     .object({
@@ -160,7 +173,7 @@ export const handlerSchemas: Record<string, ZodSchema<any>> = {
       casino: optionalTrimmedString(100),
       code: optionalTrimmedString(100),
     })
-    .passthrough(),
+    .strict(),
 
   handleArchive: z
     .object({
@@ -168,13 +181,14 @@ export const handlerSchemas: Record<string, ZodSchema<any>> = {
       clear: z.enum(["wagers", "players", "none"]).optional().or(z.literal("").optional()),
       siteId: optionalUuid(),
     })
-    .passthrough(),
+    .strict(),
 
   handleArchiveDelete: z
     .object({
       id: z.string().uuid(),
+      siteId: optionalUuid(),
     })
-    .passthrough(),
+    .strict(),
 
   handlePutSite: z
     .object({
@@ -189,6 +203,7 @@ export const handlerSchemas: Record<string, ZodSchema<any>> = {
       brand: brandSchema.optional(),
       partner: partnerSchema.optional(),
       branding: brandingSchema.optional(),
+      notify: notifySchema.optional(),
       players: z
         .array(playerItemSchema)
         .max(9999)
@@ -212,14 +227,11 @@ export const handlerSchemas: Record<string, ZodSchema<any>> = {
       socials: z.array(socialItemSchema).max(20).optional(),
       rules: z.array(z.union([z.string().max(500), socialItemSchema, whyStatItemSchema])).max(40).optional(),
       whyStats: z.array(whyStatItemSchema).max(20).optional(),
+      chips: z.array(z.string().max(100)).max(20).optional(),
       extraJson: jsonbLike,
       themeJson: jsonbLike,
-      discord_webhook_url: optionalString(500),
-      telegram_bot_token: optionalString(200),
-      telegram_chat_id: optionalString(100),
-      telegram_notify: z.boolean().optional(),
     })
-    .passthrough(),
+    .strict(),
 
   handlePutTheme: z
     .object({
@@ -228,25 +240,25 @@ export const handlerSchemas: Record<string, ZodSchema<any>> = {
       accentA: z.string().max(8).optional().or(z.literal("").optional()),
       accentB: z.string().max(8).optional().or(z.literal("").optional()),
     })
-    .passthrough(),
+    .strict(),
 
   handleDeleteSite: z
     .object({
       siteId: z.string().uuid(),
     })
-    .passthrough(),
+    .strict(),
 
   handleSetActive: z
     .object({
       siteId: z.string().uuid(),
     })
-    .passthrough(),
+    .strict(),
 
   handleDuplicateBoard: z
     .object({
       siteId: z.string().uuid(),
     })
-    .passthrough(),
+    .strict(),
 
   handleNotifyTest: z
     .object({
@@ -254,14 +266,14 @@ export const handlerSchemas: Record<string, ZodSchema<any>> = {
       webhook_url: optionalString(500),
       chat_id: optionalString(100),
     })
-    .passthrough(),
+    .strict(),
 
   handleDomainVerify: z
     .object({
       domain: z.string().trim().min(3).max(253),
       siteId: optionalUuid(),
     })
-    .passthrough(),
+    .strict(),
 
   handleLead: z
     .object({
@@ -270,7 +282,7 @@ export const handlerSchemas: Record<string, ZodSchema<any>> = {
       contact: z.string().max(160).optional().or(z.literal("").optional()),
       note: z.string().max(MAX_MEDIUM_TEXT).optional().or(z.literal("").optional()),
     })
-    .passthrough(),
+    .strict(),
 
   handleContact: z
     .object({
@@ -284,13 +296,13 @@ export const handlerSchemas: Record<string, ZodSchema<any>> = {
         .optional()
         .or(z.literal("").optional()),
     })
-    .passthrough(),
+    .strict(),
 
   handleCheckout: z
     .object({
       plan: z.string().max(20).optional().or(z.literal("").optional()),
     })
-    .passthrough(),
+    .strict(),
 
   handleAction: z
     .object({
@@ -300,20 +312,20 @@ export const handlerSchemas: Record<string, ZodSchema<any>> = {
       amountUsd: optionalNumber(1e9),
       plan: z.string().max(20).optional(),
     })
-    .passthrough(),
+    .strict(),
 
   handleSupportReply: z
     .object({
       id: z.string().uuid(),
       reply: z.string().trim().min(1).max(MAX_LONG_TEXT),
     })
-    .passthrough(),
+    .strict(),
 
   handle2faVerify: z
     .object({
       code: z.string().regex(/^\d{6}$/).max(6),
     })
-    .passthrough(),
+    .strict(),
 
   handleLog: z
     .object({
@@ -324,7 +336,7 @@ export const handlerSchemas: Record<string, ZodSchema<any>> = {
       req_id: z.string().max(64).optional().or(z.literal("").optional()),
       extra: z.record(z.unknown()).optional(),
     })
-    .passthrough(),
+    .strict(),
 };
 
 // ---------------------------------------------------------------------------

@@ -9,56 +9,56 @@ export const offerCreateSchema = z.object({
   referral_url: z.string().url().max(2048),
   promo_code: z.string().max(100).optional(),
   bonus_text: z.string().max(500).optional(),
-}).passthrough();
+}).strict();
 
 export const offerToggleSchema = z.object({
   is_active: z.boolean(),
-}).passthrough();
+}).strict();
 
 export const botCreateSchema = z.object({
   token: z.string().min(10).max(200),
   welcome_message: z.string().max(500).optional(),
-}).passthrough();
+}).strict();
 
 export const botWelcomeSchema = z.object({
   welcome_message: z.string().max(500).optional().nullable(),
-}).passthrough();
+}).strict();
 
 export const testMessageSchema = z.object({
   chat_id: z.number().int().positive(),
   text: z.string().min(1).max(4096),
-}).passthrough();
+}).strict();
 
 export const commandCreateSchema = z.object({
   command: z.string().min(1).max(50),
   response: z.string().min(1).max(1000),
-}).passthrough();
+}).strict();
 
 export const commandUpdateSchema = z.object({
   is_enabled: z.boolean().optional(),
   response: z.string().min(1).max(1000).optional(),
-}).passthrough();
+}).strict();
 
 export const broadcastSchema = z.object({
   bot_id: z.string().uuid(),
   body: z.string().min(1).max(4096),
   scheduled_at: z.string().datetime().optional().nullable(),
-}).passthrough();
+}).strict();
 
 export const checkoutSchema = z.object({
   plan: z.enum(["starter", "pro", "agency"]),
-}).passthrough();
+}).strict();
 
 export const adminUserSchema = z.object({
   email: z.string().email().max(254).optional(),
   display_name: z.string().max(80).optional(),
-}).passthrough();
+}).strict();
 
 export const adminBotSchema = z.object({
   owner_id: z.string().uuid(),
   token: z.string().min(10).max(200),
   welcome_message: z.string().max(500).optional(),
-}).passthrough();
+}).strict();
 
 export const adminOfferSchema = z.object({
   owner_id: z.string().uuid(),
@@ -68,7 +68,7 @@ export const adminOfferSchema = z.object({
   promo_code: z.string().max(100).optional(),
   bonus_text: z.string().max(500).optional(),
   priority: z.coerce.number().int().min(0).optional(),
-}).passthrough();
+}).strict();
 
 function friendly(error: z.ZodError): string {
   return error.issues.slice(0, 3).map((i) => `${i.path.join(".") || "request"}: ${i.message}`).join("; ");

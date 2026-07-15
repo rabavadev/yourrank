@@ -651,7 +651,7 @@ export async function saveSite(env, user, payload, siteId, request = null) {
   // are encrypted at rest), not inside extra_json. Strip any legacy copies so
   // they cannot leak through public-shape or future code that reads extra_json.
   const extra = {
-    chips: payload.chips ?? existingExtra.chips ?? DEFAULT_EXTRA.chips,
+    chips: payload.partner?.chips ?? payload.chips ?? existingExtra.chips ?? DEFAULT_EXTRA.chips,
     whyStats: payload.whyStats ?? existingExtra.whyStats ?? DEFAULT_EXTRA.whyStats,
     rules: payload.rules ?? existingExtra.rules ?? DEFAULT_EXTRA.rules,
     socials: payload.socials ?? existingExtra.socials ?? DEFAULT_EXTRA.socials,

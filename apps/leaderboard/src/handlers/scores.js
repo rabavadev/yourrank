@@ -5,6 +5,38 @@ import { effectivePlan, PLAN_LIMITS } from "../billing.js";
 import { one } from "../../../../shared/db.js";
 import { verifyHmacSha256Hex } from "../../../../shared/crypto.js";
 import { findPostbackOwner, computeReplayHash, recordReplayHash } from "../../../../shared/postback.js";
+import { z } from "../../../../shared/validation.js";
+
+const scoreNumber = z
+  .union([z.number(), z.string()])
+  .transform((value) => Number(value))
+  .pipe(z.number().finite().min(0).max(1e15));
+
+const scoreBodySchema = z
+  .object({
+    slug: z.string().trim().min(1).max(80).optional(),
+    siteId: z.string().uuid().optional(),
+    players: z.array(z.object({
+      name: z.string().trim().min(1).max(80),
+      wagered: scoreNumber.optional(),
+      prize: scoreNumber.optional(),
+    }).strict()).max(9999),
+  })
+  .strict()
+  .superRefine((body, ctx) => {
+    const seen = new Set();
+    for (const [index, player] of body.players.entries()) {
+      const normalized = player.name.toLowerCase().replace(/\s+/g, " ");
+      if (seen.has(normalized)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: `Duplicate player name: ${player.name}`,
+          path: ["players", index, "name"],
+        });
+      }
+      seen.add(normalized);
+    }
+  });
 
 // POST /api/scores — authenticated by X-Postback-Key header + X-Postback-Signature HMAC.
 // Validates key against sites table, checks Pro plan gate, replaces player list.
@@ -30,8 +62,14 @@ export async function handleScores(request, env) {
       return bad("Duplicate postback.", 409);
     }
 
-    let body;
-    try { body = JSON.parse(rawBody); } catch { return bad("Invalid JSON body."); }
+    let raw;
+    try { raw = JSON.parse(rawBody); } catch { return bad("Invalid JSON body."); }
+    const parsed = scoreBodySchema.safeParse(raw);
+    if (!parsed.success) {
+      const issue = parsed.error.issues[0];
+      return bad(`${issue.path.join(".") || "request"}: ${issue.message}`);
+    }
+    const body = parsed.data;
     // H-03: A user-level postback key can own many boards. Require an explicit
     // board reference (slug or siteId, in body or X-Postback-Site header).
     const boardRef = body.slug || body.siteId || request.headers.get("x-postback-site");
@@ -43,9 +81,8 @@ export async function handleScores(request, env) {
     const plan = effectivePlan(owner);
     if (plan !== "pro" && plan !== "agency") return bad("The signed score API requires a Pro or Agency plan.", 403);
     const players = body.players;
-    if (!Array.isArray(players)) return bad("players must be an array.");
     // Plan gate: player count
-    const validPlayers = players.filter(p => p && p.name);
+    const validPlayers = players;
     if (validPlayers.length > PLAN_LIMITS[plan]) return bad(`Your plan allows up to ${PLAN_LIMITS[plan]} players.`, 400);
     // Reuse saveSite with just the players update — pass minimal payload
     const user = owner;

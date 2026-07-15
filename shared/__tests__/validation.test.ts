@@ -52,15 +52,58 @@ describe("validateJson", () => {
     expect(result.ok).toBe(false);
   });
 
-  test("preserves unknown keys with passthrough", async () => {
+  test("rejects unknown request fields", async () => {
     const request = new Request("http://test/api/site", {
       method: "PUT",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ siteId: "a1b2c3d4-e5f6-7890-abcd-ef1234567890", customFutureFlag: true }),
     });
     const result = await validateJson(request, handlerSchemas.handlePutSite);
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error).toContain("Unrecognized key");
+  });
+
+  test("accepts the dashboard board-save contract", async () => {
+    const request = new Request("http://test/api/site", {
+      method: "PUT",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        siteId: "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+        name: "Board",
+        brand: {
+          name: "Board",
+          tagline: "Monthly race",
+          casino: "Example",
+          code: "RANK",
+          ctaUrl: "https://example.com/ref",
+          prizePool: "$1,000",
+          period: "Monthly",
+        },
+        partner: {
+          blurb: "Official partner",
+          chips: ["Fast payouts"],
+        },
+        whyStats: [{ big: "24/7", label: "Support", sub: "Always available" }],
+        rules: ["One account per player"],
+        socials: [{
+          name: "Discord",
+          handle: "Join the community",
+          action: "Join",
+          url: "https://discord.example/invite",
+          brand: "discord",
+        }],
+        players: [{ name: "Player", wagered: 10, prize: 1 }],
+        branding: { template: "classic", accentA: "#123456", accentB: "#abcdef" },
+        notify: {
+          discord_webhook_url: null,
+          telegram_chat_id: null,
+          telegram_notify: false,
+        },
+      }),
+    });
+
+    const result = await validateJson(request, handlerSchemas.handlePutSite);
     expect(result.ok).toBe(true);
-    if (result.ok) expect(result.data.customFutureFlag).toBe(true);
   });
 
   test("validates array lengths on board saves", async () => {

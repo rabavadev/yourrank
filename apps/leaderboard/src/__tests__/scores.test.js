@@ -262,17 +262,47 @@ describe("handleScores — payload validation", () => {
     expect(body.players).toBe(2);
   });
 
-  test("players without a name are filtered out", async () => {
+  test("players without a name are rejected", async () => {
     const players = [
       { name: "Alice", wagered: 1000 },
-      { wagered: 500 },           // no name — filtered
-      { name: "", wagered: 200 }, // empty name — filtered
+      { wagered: 500 },
     ];
     const req = makeRequest({ headers: { "x-postback-key": "key" }, body: { slug: "test", players } });
     const res = await handleScores(req, makeEnv());
-    expect(res.status).toBe(200);
-    const body = await res.json();
-    expect(body.players).toBe(1); // only Alice
+    expect(res.status).toBe(400);
+  });
+
+  test("unknown request fields are rejected", async () => {
+    const req = makeRequest({
+      headers: { "x-postback-key": "key" },
+      body: { slug: "test", players: [], ownerId: "unexpected" },
+    });
+    const res = await handleScores(req, makeEnv());
+    expect(res.status).toBe(400);
+  });
+
+  test("unknown player fields are rejected", async () => {
+    const req = makeRequest({
+      headers: { "x-postback-key": "key" },
+      body: { slug: "test", players: [{ name: "Player", wagered: 100, admin: true }] },
+    });
+    const res = await handleScores(req, makeEnv());
+    expect(res.status).toBe(400);
+  });
+
+  test("duplicate normalized player names are rejected", async () => {
+    const req = makeRequest({
+      headers: { "x-postback-key": "key" },
+      body: {
+        slug: "test",
+        players: [
+          { name: "Player One", wagered: 100 },
+          { name: " player   one ", wagered: 50 },
+        ],
+      },
+    });
+    const res = await handleScores(req, makeEnv());
+    expect(res.status).toBe(400);
   });
 
   test("saveSite error is surfaced as 400", async () => {
