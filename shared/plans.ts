@@ -58,7 +58,7 @@ export const PLAN_META: Record<PlanTier, {
     highlight: true,
     features: [
       "Up to 3 leaderboards",
-      "Unlimited players",
+      "Up to 9,999 players",
       "No YourRank badge",
       "Custom domain",
       "OBS overlay widget",
@@ -72,10 +72,10 @@ export const PLAN_META: Record<PlanTier, {
     name: "Agency", price: "$79", period: "/30 days",
     highlight: false,
     features: [
-      "Unlimited leaderboards",
-      "Unlimited players",
+      "Up to 99 leaderboards",
+      "Up to 9,999 players per board",
       "White-label branding",
-      "API access",
+      "Signed score API",
       "Everything in Pro",
       "Dedicated support",
     ],

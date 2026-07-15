@@ -2,17 +2,12 @@
 // Serves an OpenAPI 3.1 JSON spec for the public leaderboard API.
 import { json } from "../auth.js";
 
-const cors = {
-  "access-control-allow-origin": "*",
-  "access-control-allow-methods": "GET, POST, OPTIONS",
-};
-
 const spec = {
   openapi: "3.1.0",
   info: {
     title: "YourRank Public API",
     version: "1.0.0",
-    description: "Public leaderboard, rank, stats, score postback, lead and contact endpoints.",
+    description: "Read-only leaderboard endpoints are public on every plan. The signed score API requires an active Pro or Agency plan.",
     contact: { url: "https://yourrank.site" },
   },
   servers: [{ url: "https://yourrank.site", description: "Production" }],
@@ -94,6 +89,8 @@ const spec = {
                 type: "object",
                 required: ["players"],
                 properties: {
+                  slug: { type: "string", description: "Target board slug. Required unless `siteId` or `X-Postback-Site` is provided." },
+                  siteId: { type: "string", format: "uuid", description: "Target board ID. Required unless `slug` or `X-Postback-Site` is provided." },
                   players: {
                     type: "array",
                     items: { $ref: "#/components/schemas/Player" },
@@ -109,61 +106,6 @@ const spec = {
           400: { description: "Validation error." },
           401: { description: "Missing or invalid postback key/signature." },
           403: { description: "Not on a Pro/Agency plan." },
-          429: { $ref: "#/components/responses/RateLimit" },
-        },
-      },
-    },
-    "/api/lead": {
-      post: {
-        summary: "Submit a sales lead",
-        requestBody: {
-          required: true,
-          content: {
-            "application/json": {
-              schema: {
-                type: "object",
-                properties: {
-                  handle: { type: "string", maxLength: 120 },
-                  casino: { type: "string", maxLength: 60 },
-                  contact: { type: "string", maxLength: 160 },
-                  note: { type: "string", maxLength: 500 },
-                },
-              },
-            },
-          },
-        },
-        responses: {
-          200: { description: "Lead accepted", content: { "application/json": { schema: { type: "object", properties: { ok: { type: "boolean" } } } } } },
-          400: { description: "Invalid or empty submission." },
-          429: { $ref: "#/components/responses/RateLimit" },
-        },
-      },
-    },
-    "/api/contact": {
-      post: {
-        summary: "Contact/support form",
-        requestBody: {
-          required: true,
-          content: {
-            "application/json": {
-              schema: {
-                type: "object",
-                required: ["name", "email", "message"],
-                properties: {
-                  name: { type: "string", maxLength: 120 },
-                  email: { type: "string", format: "email", maxLength: 254 },
-                  subject: { type: "string", maxLength: 120 },
-                  message: { type: "string", minLength: 10, maxLength: 4000 },
-                  kind: { type: "string", enum: ["support", "feedback"] },
-                  context: { type: "string", enum: ["dashboard", "leaderboard", "bot", "analytics", "attribution", "billing"] },
-                },
-              },
-            },
-          },
-        },
-        responses: {
-          200: { description: "Message received", content: { "application/json": { schema: { type: "object", properties: { ok: { type: "boolean" }, message: { type: "string" } } } } } },
-          400: { description: "Validation error." },
           429: { $ref: "#/components/responses/RateLimit" },
         },
       },
@@ -238,16 +180,10 @@ const spec = {
   },
 };
 
-export async function handleApiDocs(request) {
-  if (request.method === "OPTIONS") {
-    return new Response(null, { status: 204, headers: cors });
-  }
-  return json(spec, 200, cors);
+export async function handleApiDocs() {
+  return json(spec);
 }
 
-export async function handleOpenApiJson(request) {
-  if (request.method === "OPTIONS") {
-    return new Response(null, { status: 204, headers: cors });
-  }
-  return json(spec, 200, { ...cors, "cache-control": "public, max-age=300" });
+export async function handleOpenApiJson() {
+  return json(spec, 200, { "cache-control": "public, max-age=300" });
 }
