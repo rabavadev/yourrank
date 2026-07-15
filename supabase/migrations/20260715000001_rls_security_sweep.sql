@@ -7,6 +7,10 @@
 -- the Supabase service role and application users never access Postgres via
 -- PostgREST, the safe default is: enable RLS, then grant the service role
 -- full access through a per-table policy.
+--
+-- This migration is idempotent: it skips tables that do not exist (some may
+-- have been dropped by later migrations or may not be present in all
+-- environments) and only creates policies that are not already present.
 
 DO $$
 DECLARE
@@ -19,7 +23,12 @@ DECLARE
   ];
 BEGIN
   FOREACH t IN ARRAY tables LOOP
-    EXECUTE format('ALTER TABLE %I ENABLE ROW LEVEL SECURITY', t);
+    -- Skip tables that do not exist in this environment.
+    IF to_regclass('public.' || t) IS NULL THEN
+      CONTINUE;
+    END IF;
+
+    EXECUTE format('ALTER TABLE IF EXISTS %I ENABLE ROW LEVEL SECURITY', t);
 
     IF NOT EXISTS (
       SELECT 1 FROM pg_policies
@@ -34,8 +43,3 @@ BEGIN
     END IF;
   END LOOP;
 END $$;
-
-COMMENT ON TABLE sessions IS 'Authenticated sessions; RLS enabled with service-role-only access.';
-COMMENT ON TABLE password_resets IS 'Password reset tokens; RLS enabled with service-role-only access.';
-COMMENT ON TABLE support_messages IS 'User support tickets; RLS enabled with service-role-only access.';
-COMMENT ON TABLE referral_rewards IS 'Referral reward metadata; RLS enabled with service-role-only access.';
