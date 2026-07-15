@@ -154,13 +154,11 @@ export const PAGES = {
 <link rel="stylesheet" href="/assets/app.css" /></head><body>
 <a href="#main-content" class="sr-only skip-link">Skip to content</a>
 <div class="auth-wrap"><aside class="auth-side"><div><div class="brand">Your<b>Rank</b></div></div>
-<div><h1>Launch your leaderboard in a few minutes.</h1><p>Pick a handle, fill in your prizes and players, and your page goes live at yourrank.site/yourname.</p></div>
-<div class="feat"><div>— Free to set up</div><div>— Your public URL from day one</div><div>— Upgrade to Pro when you're ready</div></div></aside>
-<main class="auth-main" id="main-content"><div class="auth-card"><h2>Create account</h2><p class="sub">Free. Takes a minute.</p>
+<div><h1>Your leaderboard, live in seconds.</h1><p>One email, one password, and your page is ready. You can rename it once you're in.</p></div>
+<div class="feat"><div>Free to set up · upgrade when you are ready</div></div></aside>
+<main class="auth-main" id="main-content"><div class="auth-card"><h2>Create account</h2><p class="sub">Free. Takes 30 seconds.</p>
 <form id="form" method="POST" action="/api/auth/signup" novalidate>
-<div class="field"><label for="name">Display name</label><input id="name" name="name" type="text" placeholder="YourName" autocomplete="nickname" required />
-<span class="hint">Also becomes your page URL: <span class="mono" id="slugPreview">yourrank.site/…</span></span></div>
-<div class="field"><label for="email">Email</label><input id="email" name="email" type="email" autocomplete="email" required /></div>
+<div class="field"><label for="email">Email</label><input id="email" name="email" type="email" autocomplete="email" required aria-describedby="email-tip" /><span class="hint" id="email-tip">Your page URL is auto-generated from your email address; change it anytime in settings.</span></div>
 <div class="field"><label for="password">Password</label><div class="pw-wrap"><input id="password" name="password" type="password" autocomplete="new-password" required minlength="8" aria-describedby="pw-hint" /><button type="button" class="pw-toggle" data-pw-toggle aria-label="Show password"><svg data-eye width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg><svg data-eye-off width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" hidden><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg></button></div>
   <span class="hint" id="pw-hint">At least 8 characters.</span></div>
   <div class="err" id="err" role="alert" aria-live="assertive"></div><button class="btn btn--accent w-full" type="submit" id="submit">Create account</button></form>

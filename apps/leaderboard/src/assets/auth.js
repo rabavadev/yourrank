@@ -60,10 +60,9 @@ form.addEventListener("submit", async (e) => {
     payload = { token, password: document.getElementById("password").value };
   } else {
     payload = { email: document.getElementById("email").value.trim(), password: document.getElementById("password").value };
-    if (mode === "signup") payload.name = nameInput.value.trim();
+    if (mode === "signup" && nameInput) payload.name = nameInput.value.trim();
   }
   if (mode === "signup") {
-    if (!payload.name || payload.name.length < 2) { errEl.textContent = "Display name must be at least 2 characters"; submit.disabled = false; submit.textContent = orig; return; }
     if (!payload.email) { errEl.textContent = "Enter a valid email"; submit.disabled = false; submit.textContent = orig; return; }
     if (payload.password.length < 8) { errEl.textContent = "Password must be at least 8 characters"; submit.disabled = false; submit.textContent = orig; return; }
   }
