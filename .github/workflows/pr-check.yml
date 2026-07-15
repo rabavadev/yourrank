@@ -96,18 +96,18 @@ jobs:
       - name: Check test coverage threshold
         working-directory: apps/leaderboard
         run: |
-          bun test --coverage 2>&1 | tee /tmp/coverage.txt || true
+          set -o pipefail
+          bun test --coverage 2>&1 | tee /tmp/coverage.txt
           COVERAGE=$(grep "All files" /tmp/coverage.txt | head -1 | awk -F'|' '{gsub(/[^0-9.]/, "", $3); print $3}')
           if [ -z "$COVERAGE" ]; then
-            echo "WARNING: Could not parse coverage percentage — skipping threshold check"
-            exit 0
-          fi
-          PASS=$(echo "$COVERAGE >= 20" | bc -l 2>/dev/null || echo "1")
-          if [ "$PASS" != "1" ]; then
-            echo "::error::Test coverage ${COVERAGE}% is below 20% threshold"
+            echo "::error::Could not parse coverage percentage from test output"
             exit 1
           fi
-          echo "OK: Test coverage ${COVERAGE}% meets 20% threshold"
+          if ! awk -v coverage="$COVERAGE" 'BEGIN { exit !(coverage >= 60) }'; then
+            echo "::error::Test coverage ${COVERAGE}% is below 60% threshold"
+            exit 1
+          fi
+          echo "OK: Test coverage ${COVERAGE}% meets 60% threshold"
 
   build:
     name: Build

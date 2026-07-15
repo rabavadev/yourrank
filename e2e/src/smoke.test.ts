@@ -1,7 +1,20 @@
-import { describe, it, expect, beforeAll } from "bun:test";
+import { describe, it, expect, beforeAll, afterAll } from "bun:test";
 import { Client, hmacSha256, randomId } from "./client.js";
 
-const BASE_URL = process.env.E2E_BASE_URL || "https://yourrank.site";
+const rawBaseUrl = process.env.E2E_BASE_URL?.trim();
+if (!rawBaseUrl) {
+  throw new Error("E2E_BASE_URL is required and must point to an isolated non-production environment.");
+}
+
+const parsedBaseUrl = new URL(rawBaseUrl);
+if (parsedBaseUrl.hostname === "yourrank.site" || parsedBaseUrl.hostname === "www.yourrank.site") {
+  throw new Error("Refusing to run mutating E2E tests against production.");
+}
+if (process.env.E2E_ALLOW_MUTATIONS !== "1") {
+  throw new Error("Set E2E_ALLOW_MUTATIONS=1 after confirming E2E_BASE_URL is isolated from production.");
+}
+
+const BASE_URL = parsedBaseUrl.origin;
 const TELEGRAM_BOT_TOKEN = process.env.E2E_TELEGRAM_BOT_TOKEN || "";
 
 const id = randomId();
@@ -16,6 +29,7 @@ let postbackKey: string;
 let offerSlug: string;
 let botId: string;
 let botSecret: string | undefined;
+let accountCreated = false;
 
 describe("YourRank E2E smoke", () => {
   beforeAll(async () => {
@@ -25,6 +39,7 @@ describe("YourRank E2E smoke", () => {
     if (!signup.json?.ok) {
       throw new Error(`signup failed: ${signup.status} ${signup.body}`);
     }
+    accountCreated = true;
     primarySlug = signup.json.user.slug;
 
     // Load CSRF cookie from a page response.
@@ -39,6 +54,27 @@ describe("YourRank E2E smoke", () => {
     const trial = await client.post("/api/billing/trial", {});
     if (!trial.json?.ok) {
       throw new Error(`trial failed: ${trial.status} ${trial.body}`);
+    }
+  });
+
+  afterAll(async () => {
+    if (!accountCreated) return;
+
+    const failures: string[] = [];
+    if (botId) {
+      const botCleanup = await client.delete(`/bot/dash/api/bots/${botId}`);
+      if (!botCleanup.json?.ok) {
+        failures.push(`bot cleanup failed: ${botCleanup.status} ${botCleanup.body}`);
+      }
+    }
+
+    const accountCleanup = await client.post("/api/account/delete", { password });
+    if (!accountCleanup.json?.ok) {
+      failures.push(`account cleanup failed: ${accountCleanup.status} ${accountCleanup.body}`);
+    }
+
+    if (failures.length) {
+      throw new Error(failures.join("\n"));
     }
   });
 
