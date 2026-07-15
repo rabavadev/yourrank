@@ -3,6 +3,47 @@
 
 import { shellNavHtml, SHELL_NAV_CSS } from "../../../shared/shell-nav.js";
 
+const STYLE_ATTR_CSS = `
+/* ---- inline style migration (M-02) ---- */
+.hidden { display: none; }
+.sr-only { position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0); }
+.style-1 { margin-bottom:8px }
+.style-2 { margin-bottom:20px }
+.style-3 { margin-top:24px;border-top:1px solid var(--border);padding-top:16px }
+.style-4 { display:flex;align-items:center;gap:12px }
+.style-5 { margin-bottom:18px }
+.style-6 { font-size:12px }
+.style-7 { display:flex;justify-content:space-between;font-size:11px }
+.style-8 { text-align:right }
+.style-9 { font-size:12px;margin-top:10px }
+.style-10 { margin-top:12px }
+.style-11 { display:flex;gap:6px;align-items:center }
+.style-12 { flex:1 }
+.style-13 { margin-bottom:12px;font-size:13px }
+.style-14 { width:auto;min-width:160px;display:inline-block;margin-left:8px }
+.style-15 { margin-bottom:12px;color:var(--accent) }
+.style-16 { margin-bottom:12px }
+.style-17 { display:block;margin-bottom:4px;font-size:13px }
+.style-18 { margin:20px 0 6px;font-size:14px }
+.style-19 { margin-bottom:10px;font-size:13px }
+.style-20 { margin-top:14px }
+.style-21 { margin-bottom:10px }
+.style-22 { display:block;font-size:13px }
+.style-23 { max-width:300px }
+.style-24 { font-size:13px;margin:2px 0 10px }
+.style-25 { display:flex;gap:8px;align-items:center;flex-wrap:wrap }
+.style-26 { font-size:13px }
+.style-27 { max-width:150px }
+.style-28 { font-size:12px;margin-top:6px }
+.style-29 { margin-bottom:10px;font-size:12px }
+.style-30 { margin-left:8px }
+.style-31 { margin-left:12px }
+.style-32 { margin-left:6px;color:#b91c1c }
+.style-33 { padding:2px 8px;font-size:12px }
+.style-34 { color:var(--accent) }
+.style-35 { margin-right:8px }
+`;
+
 const BASE_CSS = `
   :root { --bg:#0d1117; --panel:#161b22; --panel-2:#1b222b; --border:#2a313a; --border-2:#3a434f;
           --fg:#e9eef4; --dim:#9aa4b0; --mute:#6e7681;
@@ -47,7 +88,7 @@ const BASE_CSS = `
   .row { display:flex; gap:14px; flex-wrap:wrap; } .row > * { flex:1; min-width:220px; }
   .stat { font-size:28px; font-weight:700; } .copy { cursor:pointer; text-decoration:underline dotted; }
   #toast { position:fixed; bottom:20px; left:50%; transform:translateX(-50%); background:var(--accent);
-           color:var(--accent-ink); padding:10px 18px; border-radius:8px; font-weight:600; display:none; }
+           color:var(--accent-ink); padding:10px 18px; border-radius:8px; font-weight:600; }
   button:disabled, .copy:disabled { opacity:0.6; cursor:not-allowed; }
 
   /* ---- KPI cards (overview) ---- */
@@ -113,7 +154,8 @@ export function loginHtml(botUsername: string, devLogin: boolean, nonce?: string
   return `<!doctype html><html lang="en"><head><meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>YourRank Bot — Login</title>
-  <style>
+  <style${nonce ? ` nonce="${nonce}"` : ""}>
+  ${STYLE_ATTR_CSS}
   :root { --bg:#0d1117; --panel:#161b22; --border:#30363d; --fg:#e6edf3; --dim:#8b949e;
           --accent:#f0b429; }
   * { box-sizing:border-box; margin:0; }
@@ -129,17 +171,17 @@ export function loginHtml(botUsername: string, devLogin: boolean, nonce?: string
   .sr-only { position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0); }
   </style></head><body>
 <div class="center"><div class="panel card" id="main-content">
-  <h1 style="margin-bottom:8px">🎰 Streamer Dashboard</h1>
-  <p class="muted" style="margin-bottom:20px">Manage your bot, offers and click stats.</p>
+  <h1 class="style-1">🎰 Streamer Dashboard</h1>
+  <p class="muted style-2">Manage your bot, offers and click stats.</p>
   ${botUsername
     ? `<script${nonce ? ` nonce="${nonce}"` : ""} async src="https://telegram.org/js/telegram-widget.js?22"
          data-telegram-login="${escHtml(botUsername)}" data-size="large"
          data-onauth="onTgAuth" data-request-access="write"></script>`
     : `<p class="muted">Telegram login isn't configured yet (set LOGIN_BOT_TOKEN + LOGIN_BOT_USERNAME).</p>`}
   ${devLogin ? `
-  <div style="margin-top:24px;border-top:1px solid var(--border);padding-top:16px">
-    <p class="muted" style="margin-bottom:8px">Dev login</p>
-    <label for="devid" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)">Telegram User ID</label>
+  <div class="style-3">
+    <p class="muted style-1">Dev login</p>
+    <label class="sr-only" for="devid">Telegram User ID</label>
     <input id="devid" type="number" placeholder="Telegram user id">
     <button data-action="devLogin" type="button">Enter</button>
   </div>` : ""}
@@ -190,7 +232,7 @@ function sideNav(active: string, user: { display_name: string; plan: string }): 
 
 function pageHead(active: string): string {
   const p = pageLinks.find(l => l.key === active) || pageLinks[0];
-  return `<div class="pagehead"><div style="display:flex;align-items:center;gap:12px">
+  return `<div class="pagehead"><div class="style-4">
     <button class="menu-btn" id="menuBtn" type="button" aria-label="Open menu">\u2630</button>
     <div><h1>${escHtml(p.label)}</h1><p>${escHtml(p.sub)}</p></div></div></div>`;
 }
@@ -203,13 +245,13 @@ export function appHtml(
 ): string {
   return `<!doctype html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Streamer Dashboard</title><style>${SHELL_NAV_CSS}${BASE_CSS}</style></head><body data-page="${page}">
+<title>Streamer Dashboard</title><style nonce="${nonce}">${SHELL_NAV_CSS}${BASE_CSS}</style></head><body data-page="${page}">
 ${shellNavHtml({ activePath: "/bot" + (page === "overview" ? "/dashboard" : "/" + page), user, logoutAction: "/bot/auth/logout" })}
 <div class="shell">
 ${sideNav(page, user)}
 <div class="main"><div class="wrap" id="main-content">
   ${pageHead(page)}
-  <span id="whoami" class="muted" style="display:none"></span>
+  <span id="whoami" class="muted hidden"></span>
 
   <!-- Overview stats -->
   <div class="kpis" data-page="overview">
@@ -219,18 +261,18 @@ ${sideNav(page, user)}
     <div class="kpi"><div class="lbl">Active offers</div><div class="stat" id="totOffers">–</div><div class="sub" id="offersSub"></div></div>
   </div>
 
-  <div class="grid2" data-page="overview" style="margin-bottom:18px">
-    <div class="panel"><div class="cardhd"><h2>Daily clicks</h2><span class="muted" style="font-size:12px">14 days</span></div>
+  <div class="grid2 style-5" data-page="overview">
+    <div class="panel"><div class="cardhd"><h2>Daily clicks</h2><span class="muted style-6">14 days</span></div>
       <svg id="chart" role="img" aria-label="Daily clicks chart" width="100%" height="120" preserveAspectRatio="none"></svg>
-      <div id="chartLabels" class="muted" style="display:flex;justify-content:space-between;font-size:11px"></div></div>
+      <div id="chartLabels" class="muted style-7"></div></div>
     <div class="panel"><div class="cardhd"><h2>Where subscribers came from</h2></div>
-      <table><thead><tr><th>Source</th><th style="text-align:right">Subscribers</th></tr></thead>
+      <table><thead><tr><th>Source</th><th class="style-8">Subscribers</th></tr></thead>
       <tbody id="subSources"><tr><td colspan="2" class="muted">Loading…</td></tr></tbody></table>
-      <p class="muted" style="font-size:12px;margin-top:10px">Share <code id="deepLinkExample">t.me/&lt;yourbot&gt;?start=twitch</code> to tag a source. <b>direct</b> = no link.</p>
+      <p class="muted style-9">Share <code id="deepLinkExample">t.me/&lt;yourbot&gt;?start=twitch</code> to tag a source. <b>direct</b> = no link.</p>
     </div>
   </div>
 
-  <div class="grid2" data-page="overview" style="margin-bottom:18px">
+  <div class="grid2 style-5" data-page="overview">
     <div class="panel"><div class="cardhd"><h2>Your bots</h2><a href="/bot/bots">Manage →</a></div>
       <div id="ovBots" class="muted">Loading…</div></div>
     <div class="panel"><div class="cardhd"><h2>Top offers</h2><a href="/bot/offers">All offers →</a></div>
@@ -248,13 +290,13 @@ ${sideNav(page, user)}
   <!-- Bot list + connect (bots) -->
   <div class="panel" data-page="bots"><h2>Your bots</h2>
     <div id="botList" class="muted">Loading…</div>
-    <div id="connectForm" style="margin-top:12px">
-      <label for="botToken" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)">Bot Token</label>
-      <div style="display:flex;gap:6px;align-items:center">
-        <input id="botToken" type="password" autocomplete="off" placeholder="Paste bot token from @BotFather (123456:ABC-...)" style="flex:1">
+    <div class="style-10" id="connectForm">
+      <label class="sr-only" for="botToken">Bot Token</label>
+      <div class="style-11">
+        <input class="style-12" id="botToken" type="password" autocomplete="off" placeholder="Paste bot token from @BotFather (123456:ABC-...)">
         <button class="ghost" data-action="toggleToken" type="button" aria-label="Show token">Show</button>
       </div>
-      <label for="botWelcome" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)">Welcome Message</label>
+      <label class="sr-only" for="botWelcome">Welcome Message</label>
       <input id="botWelcome" placeholder="Welcome message (optional)">
       <button data-action="connectBot" type="button">Connect bot</button>
     </div>
@@ -263,11 +305,11 @@ ${sideNav(page, user)}
   <!-- Test message (bots) -->
   <div class="panel" data-page="bots" id="testMsgPanel" hidden>
     <h2>Send a test message</h2>
-    <p class="muted" style="margin-bottom:12px;font-size:13px">Send a one-off message from <b id="tmBotName">your bot</b> to confirm it works. Get your chat ID by sending <code>/start</code> to <a href="https://t.me/userinfobot" target="_blank" rel="noopener">@userinfobot</a>.</p>
+    <p class="muted style-13">Send a one-off message from <b id="tmBotName">your bot</b> to confirm it works. Get your chat ID by sending <code>/start</code> to <a href="https://t.me/userinfobot" target="_blank" rel="noopener">@userinfobot</a>.</p>
     <div class="row">
-      <label for="tmChatId" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)">Chat ID</label>
+      <label class="sr-only" for="tmChatId">Chat ID</label>
       <input id="tmChatId" inputmode="numeric" placeholder="Your Telegram chat ID (e.g. 123456789)">
-      <label for="tmText" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)">Message</label>
+      <label class="sr-only" for="tmText">Message</label>
       <input id="tmText" placeholder="Message to send">
     </div>
     <button data-action="sendTestMessage" type="button">Send test message</button>
@@ -276,41 +318,41 @@ ${sideNav(page, user)}
 
   <!-- Customization (bots, commands) -->
   <div class="panel" data-page="bots commands" id="customizePanel">
-    <h2>Customize <select id="botSelect" style="width:auto;min-width:160px;display:inline-block;margin-left:8px"><option>Loading…</option></select></h2>
-    <div id="custDisabledNote" class="muted" style="display:none;margin-bottom:12px;color:var(--accent)">This bot is disconnected — reconnect it to customize.</div>
-    <p class="muted" style="margin-bottom:12px">Personalize what the selected bot says to viewers. Changes apply instantly — no redeploy needed.</p>
+    <h2>Customize <select class="style-14" id="botSelect"><option>Loading…</option></select></h2>
+    <div id="custDisabledNote" class="muted style-15 hidden">This bot is disconnected — reconnect it to customize.</div>
+    <p class="muted style-16">Personalize what the selected bot says to viewers. Changes apply instantly — no redeploy needed.</p>
 
-    <label for="welcomeMsg" style="display:block;margin-bottom:4px;font-size:13px" class="muted">Welcome message — the reply to <code>/start</code></label>
+    <label for="welcomeMsg" class="muted style-17">Welcome message — the reply to <code>/start</code></label>
     <textarea id="welcomeMsg" rows="2" placeholder="Leave blank to use the default greeting"></textarea>
     <button data-action="saveWelcome" type="button">Save welcome message</button>
 
-    <h3 style="margin:20px 0 6px;font-size:14px">Custom commands</h3>
-    <p class="muted" style="margin-bottom:10px;font-size:13px">Add slash-commands your viewers can send (e.g. <code>/vip</code>) and the reply they'll get. Built-ins like <code>/start</code>, <code>/code</code>, <code>/subscribe</code> are reserved.</p>
+    <h3 class="style-18">Custom commands</h3>
+    <p class="muted style-19">Add slash-commands your viewers can send (e.g. <code>/vip</code>) and the reply they'll get. Built-ins like <code>/start</code>, <code>/code</code>, <code>/subscribe</code> are reserved.</p>
     <div class="row">
-      <label for="cmdName" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)">Command</label>
+      <label class="sr-only" for="cmdName">Command</label>
       <input id="cmdName" placeholder="Command (e.g. vip)">
-      <label for="cmdResp" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)">Reply</label>
+      <label class="sr-only" for="cmdResp">Reply</label>
       <input id="cmdResp" placeholder="Reply text viewers receive">
     </div>
     <button data-action="addCommand" type="button">Add command</button>
-    <table style="margin-top:14px"><thead><tr><th>Command</th><th>Reply</th><th>Status</th><th></th></tr></thead>
+    <table class="style-20"><thead><tr><th>Command</th><th>Reply</th><th>Status</th><th></th></tr></thead>
     <tbody id="cmdList"><tr><td colspan="4" class="muted">Loading…</td></tr></tbody></table>
   </div>
 
   <!-- Offers (offers) -->
   <div class="panel" data-page="offers"><h2>New offer</h2>
     <div class="row">
-      <label for="oCasino" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)">Casino</label>
+      <label class="sr-only" for="oCasino">Casino</label>
       <input id="oCasino" placeholder="Casino (e.g. Stake)">
-      <label for="oLabel" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)">Label</label>
+      <label class="sr-only" for="oLabel">Label</label>
       <input id="oLabel" placeholder="Label (e.g. 200% deposit bonus)">
     </div>
-    <label for="oUrl" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)">Affiliate URL</label>
+    <label class="sr-only" for="oUrl">Affiliate URL</label>
     <input id="oUrl" type="url" inputmode="url" placeholder="Your affiliate URL (https://...)">
     <div class="row">
-      <label for="oCode" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)">Promo Code</label>
+      <label class="sr-only" for="oCode">Promo Code</label>
       <input id="oCode" placeholder="Promo code (optional)">
-      <label for="oBonus" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)">Bonus Text</label>
+      <label class="sr-only" for="oBonus">Bonus Text</label>
       <input id="oBonus" placeholder="Bonus text shown in bot (optional)">
     </div>
     <button data-action="createOffer" type="button">Create offer</button>
@@ -323,48 +365,48 @@ ${sideNav(page, user)}
 
   <!-- Broadcasts (broadcasts) -->
   <div class="panel" data-page="broadcasts"><h2>Broadcast to subscribers</h2>
-    <div id="bcGate" class="muted" style="margin-bottom:10px"></div>
-    <label for="bcBotSelect" style="display:block;font-size:13px" class="muted">From bot</label>
-    <select id="bcBotSelect" style="max-width:300px"><option value="">Loading bots…</option></select>
-    <label for="bcBody" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)">Message</label>
+    <div id="bcGate" class="muted style-21"></div>
+    <label for="bcBotSelect" class="muted style-22">From bot</label>
+    <select class="style-23" id="bcBotSelect"><option value="">Loading bots…</option></select>
+    <label class="sr-only" for="bcBody">Message</label>
     <textarea id="bcBody" rows="3" placeholder="Message to all your bot's subscribers (Markdown supported)"></textarea>
-    <div id="bcAudience" class="muted" style="font-size:13px;margin:2px 0 10px" aria-live="polite">This will send to <b>–</b> subscribers.</div>
-    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+    <div id="bcAudience" class="muted style-24" aria-live="polite">This will send to <b>–</b> subscribers.</div>
+    <div class="style-25">
       <button data-action="sendBroadcast" type="button">Send broadcast</button>
-      <span class="muted" style="font-size:13px">or send a test copy to</span>
-      <input id="bcTestChat" inputmode="numeric" placeholder="your chat ID" style="max-width:150px">
+      <span class="muted style-26">or send a test copy to</span>
+      <input class="style-27" id="bcTestChat" inputmode="numeric" placeholder="your chat ID">
       <button class="ghost" data-action="testBroadcast" type="button">Send test</button>
     </div>
-    <p class="muted" style="font-size:12px;margin-top:6px">Get your chat ID by sending <code>/start</code> to <a href="https://t.me/userinfobot" target="_blank" rel="noopener">@userinfobot</a>. A broadcast can't be undone once it sends.</p>
-    <table style="margin-top:14px"><thead><tr><th>Message</th><th>Bot</th><th>Status</th><th>Sent</th><th>Failed</th><th></th></tr></thead>
+    <p class="muted style-28">Get your chat ID by sending <code>/start</code> to <a href="https://t.me/userinfobot" target="_blank" rel="noopener">@userinfobot</a>. A broadcast can't be undone once it sends.</p>
+    <table class="style-20"><thead><tr><th>Message</th><th>Bot</th><th>Status</th><th>Sent</th><th>Failed</th><th></th></tr></thead>
     <tbody id="bcList"></tbody></table>
   </div>
 
   <!-- Settings (settings) -->
   <div class="panel" data-page="settings"><h2>Conversions (postbacks)</h2>
-    <p class="muted" style="margin-bottom:10px">Give your affiliate manager this postback URL and add
+    <p class="muted style-21">Give your affiliate manager this postback URL and add
       <code>{click_ref}</code> anywhere in your affiliate URL to attribute deposits to clicks.</p>
-    <p class="muted" style="margin-bottom:10px;font-size:12px">Your network supports request signing? Use <code>POST ${publicBaseUrl}/pb</code> with headers
+    <p class="muted style-29">Your network supports request signing? Use <code>POST ${publicBaseUrl}/pb</code> with headers
       <code>X-Postback-Key</code> (your key, below) + <code>X-Postback-Signature</code> (hex HMAC-SHA256 of the query string, keyed by that same key). It's the secure option — the key never rides the URL and the signature blocks tampering.</p>
-    <div style="margin-bottom:10px"><button class="ghost" data-action="revealPostback" type="button">Show my postback URL</button>
-      <span id="pbUrl" class="copy" style="margin-left:8px" data-action="copyPostback" data-url=""></span>
-      <button class="ghost" data-action="rotatePostback" type="button" style="margin-left:12px">Rotate key</button>
-      <button class="ghost" data-action="revokePostback" type="button" style="margin-left:6px;color:#b91c1c">Revoke key</button></div>
+    <div class="style-21"><button class="ghost" data-action="revealPostback" type="button">Show my postback URL</button>
+      <span id="pbUrl" class="copy style-30" data-action="copyPostback" data-url=""></span>
+      <button class="ghost style-31" data-action="rotatePostback" type="button">Rotate key</button>
+      <button class="ghost style-32" data-action="revokePostback" type="button">Revoke key</button></div>
     <table><thead><tr><th>When</th><th>Event</th><th>Amount</th><th>Offer</th></tr></thead>
     <tbody id="convList"></tbody></table>
   </div>
 
   <div class="panel" data-page="settings"><h2>Plan</h2>
     <div id="planInfo" class="muted">Loading…</div>
-    <div id="planButtons" style="margin-top:12px"></div>
+    <div class="style-10" id="planButtons"></div>
   </div>
 </div></div></div>
-<div id="toast" role="status" aria-live="polite"></div>
+<div id="toast" class="hidden" role="status" aria-live="polite"></div>
 <script${nonce ? ` nonce="${nonce}"` : ""}>
 const $ = (id) => document.getElementById(id);
 const setText = (id, v) => { const el = $(id); if (el) el.textContent = v; };
 const setHtml = (id, v) => { const el = $(id); if (el) el.innerHTML = v; };
-function toast(msg) { const t=$('toast'); t.textContent=msg; t.style.display='block'; setTimeout(()=>t.style.display='none',2500); }
+function toast(msg) { const t=$('toast'); t.textContent=msg; t.classList.remove('hidden'); setTimeout(()=>t.classList.add('hidden'),2500); }
 async function api(path, opts) {
   const r = await fetch('/bot/dash/api'+path, opts);
   if (r.status === 401) { location.reload(); throw new Error('session expired'); }
@@ -391,7 +433,7 @@ let __testBotId = null;
 function showPage(p) {
   document.querySelectorAll('[data-page]').forEach(el => {
     const pages = (el.dataset.page || '').split(' ').filter(Boolean);
-    el.style.display = pages.includes(p) ? '' : 'none';
+    el.classList.toggle('hidden', !pages.includes(p));
   });
 }
 showPage(page);
@@ -458,7 +500,7 @@ function renderOverviewSummary(bots, offers){
             '<div class="ds">'+(on?'webhook active':'disconnected')+'</div></div>'+
             '<span class="badge '+(on?'on':'off')+'">'+(on?'active':'off')+'</span></div>';
         }).join('')
-      : '<p class="muted" style="font-size:13px">No bot connected yet. <a href="/bot/bots">Connect one →</a></p>';
+      : '<p class="muted style-26">No bot connected yet. <a href="/bot/bots">Connect one →</a></p>';
   }
   const oo = $('ovOffers');
   if (oo) {
@@ -470,7 +512,7 @@ function renderOverviewSummary(bots, offers){
             '<div class="ds">'+esc(o.label||'')+' · '+esc(String(o.clicks||0))+' clicks</div></div>'+
             '<span class="badge '+(on?'on':'off')+'">'+(on?'active':'off')+'</span></div>';
         }).join('')
-      : '<p class="muted" style="font-size:13px">No offers yet. <a href="/bot/offers">Create one →</a></p>';
+      : '<p class="muted style-26">No offers yet. <a href="/bot/offers">Create one →</a></p>';
   }
   markStep('stepBot', (bots||[]).some(b=>b.status==='active'));
   markStep('stepOffer', (offers||[]).length > 0);
@@ -486,7 +528,7 @@ async function loadSubscribers(bots){
   setText('subsNew', (t.new_7d ?? 0) > 0 ? '+' + (t.new_7d ?? 0) + ' new in 7d' : 'no new in 7d');
   const rows = (s.sources || []);
   setHtml('subSources', rows.length
-    ? rows.map(r=>'<tr><td>'+esc(r.source)+'</td><td style="text-align:right">'+esc(String(r.count))+'</td></tr>').join('')
+    ? rows.map(r=>'<tr><td>'+esc(r.source)+'</td><td class="style-8">'+esc(String(r.count))+'</td></tr>').join('')
     : '<tr><td colspan="2" class="muted">No subscribers yet.</td></tr>');
   const active = (bots || []).find(b=>b.status==='active' && b.username);
   if (active) setText('deepLinkExample', 't.me/'+active.username+'?start=twitch');
@@ -500,7 +542,7 @@ function renderOffers(){
   if (!offersEl) return;
   offersEl.innerHTML = (__offers||[]).map(o=>'<tr>'+
     '<td><b>'+esc(o.casino)+'</b><br><span class="muted">'+esc(o.label)+'</span></td>'+
-    '<td>'+(o.slug?'<span class="copy" data-action="copyLink" data-slug="'+esc(o.slug)+'" title="Copy tracked link">'+esc('/r/'+o.slug)+'</span> <button class="ghost" data-action="copyLink" data-slug="'+esc(o.slug)+'" type="button" aria-label="Copy link" style="padding:2px 8px;font-size:12px">Copy</button>':'–')+'</td>'+
+    '<td>'+(o.slug?'<span class="copy" data-action="copyLink" data-slug="'+esc(o.slug)+'" title="Copy tracked link">'+esc('/r/'+o.slug)+'</span> <button class="ghost style-33" data-action="copyLink" data-slug="'+esc(o.slug)+'" type="button" aria-label="Copy link">Copy</button>':'–')+'</td>'+
     '<td>'+esc(String(o.clicks))+'</td><td>'+esc(String(o.unique_clicks))+'</td>'+
     '<td class="'+(o.is_active?'ok':'off')+'">'+(o.is_active?'active':'off')+'</td>'+
     '<td><button class="ghost" data-action="toggleOffer" data-id="'+esc(o.id)+'" data-active="'+(!o.is_active)+'">'+(o.is_active?'Disable':'Enable')+'</button></td>'+
@@ -518,16 +560,16 @@ async function loadExtras(){
   if (cur) {
     const plur = (n, w) => n + ' ' + w + (n === 1 ? '' : 's');
     const planInfo = $('planInfo');
-    if (planInfo) planInfo.innerHTML = '<b style="color:var(--accent)">'+esc(cur.label)+'</b> — up to '+plur(cur.maxBots, 'bot')+', '
+    if (planInfo) planInfo.innerHTML = '<b class="style-34">'+esc(cur.label)+'</b> — up to '+plur(cur.maxBots, 'bot')+', '
       +plur(cur.maxOffers, 'offer')+(cur.broadcasts?', broadcasts':'')+(cur.postbacks?', postbacks':'');
     if (typeof cur.maxBots === 'number') {
       __maxBots = cur.maxBots;
       const cf = $('connectForm');
-      if (cf) cf.style.display = (__lastBots.filter(b => b.status === 'active').length >= __maxBots) ? 'none' : '';
+      if (cf) cf.classList.toggle('hidden', __lastBots.filter(b => b.status === 'active').length >= __maxBots);
     }
     const planButtons = $('planButtons');
     if (planButtons) planButtons.innerHTML = (plan.plans||[]).filter(p=>p.starsPrice>0 && p.tier!==cur.tier).map(p=>
-      '<button data-action="upgrade" data-tier="'+esc(p.tier)+'" style="margin-right:8px" type="button">'
+      '<button class="style-35" data-action="upgrade" data-tier="'+esc(p.tier)+'" type="button">'
       +(plan.billing_enabled?'Upgrade to '+esc(p.label)+' — ⭐'+esc(String(p.starsPrice))+'/30d':esc(p.label)+' (billing not enabled)')+'</button>'
     ).join('');
   }
@@ -684,17 +726,17 @@ function renderBots(bots, loadCmds = true){
 
   // Hide the connect form once the plan's active-bot slots are full.
   const cf = $('connectForm');
-  if (cf) cf.style.display = (bots.filter(b => b.status === 'active').length >= __maxBots) ? 'none' : '';
+  if (cf) cf.classList.toggle('hidden', bots.filter(b => b.status === 'active').length >= __maxBots);
 
   // customize panel (only on pages that show it)
   if ($('customizePanel') && (page === 'bots' || page === 'commands')) {
     const bot = custBotId ? (bots.find(b => b.id === custBotId) || bots[0]) : null;
     if (bot) {
-      $('customizePanel').style.display='';
+      $('customizePanel').classList.remove('hidden');
       applyCustomizeState(bot);
       if (loadCmds) loadCommands();
     } else {
-      $('customizePanel').style.display='none';
+      $('customizePanel').classList.add('hidden');
     }
   }
 }
@@ -704,7 +746,7 @@ function renderBots(bots, loadCmds = true){
 // edits that won't apply until the bot is reconnected.
 function applyCustomizeState(bot){
   const active = bot.status === 'active';
-  const note = $('custDisabledNote'); if (note) note.style.display = active ? 'none' : '';
+  const note = $('custDisabledNote'); if (note) note.classList.toggle('hidden', active);
   const welcome = $('welcomeMsg'); if (welcome) welcome.value = bot.welcome_message || '';
   ['welcomeMsg','cmdName','cmdResp'].forEach(id => { const el = $(id); if (el) el.disabled = !active; });
   const panel = $('customizePanel');
@@ -717,7 +759,7 @@ function selectBotById(id){
   const botSelect = $('botSelect');
   if (botSelect && id) botSelect.value = id;
   if ($('customizePanel')) {
-    $('customizePanel').style.display = id ? '' : 'none';
+    $('customizePanel').classList.toggle('hidden', !id);
     if (bot) applyCustomizeState(bot);
     loadCommands();
   }
