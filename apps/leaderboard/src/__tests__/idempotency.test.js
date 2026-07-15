@@ -21,6 +21,7 @@ mock.module("../../../shared/db.js", () => ({
   query: mock(async () => []),
   one: mock(async () => null),
   exec: mock(async () => {}),
+  withTransaction: async (fn) => fn({ one: async () => null, exec: async () => {}, query: async () => [] }),
 }));
 
 // Mock auth module

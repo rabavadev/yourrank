@@ -13,6 +13,7 @@ mock.module(_dbUrl, () => ({
   one: () => Promise.resolve(null),
   exec: () => Promise.resolve(),
   getSql: () => { throw new Error("getSql should not be called in unit tests"); },
+  withTransaction: async (fn) => fn({ one: () => Promise.resolve(null), exec: () => Promise.resolve(), query: () => Promise.resolve([]) }),
 }));
 
 const {
