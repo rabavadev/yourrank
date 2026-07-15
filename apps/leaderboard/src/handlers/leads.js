@@ -1,10 +1,11 @@
 // Lead submission handler
-import { json, bad, readJson, rateLimit, clientIp, uuid } from "../auth.js";
+import { json, bad, readJson, rateLimitHeaders, rateLimit, clientIp, uuid } from "../auth.js";
 import { exec } from "../../../../shared/db.js";
 
 export async function handleLead(request, env) {
   try {
-    if (!(await rateLimit(env, `lead:${clientIp(request)}`, 5, 3600)).ok) return bad("Too many requests. Try again later.", 429);
+    const rl = await rateLimit(env, `lead:${clientIp(request)}`, 5, 3600);
+    if (!rl.ok) return bad("Too many requests. Try again later.", 429, rateLimitHeaders(rl));
     const body = await readJson(request);
     if (!body) return bad("Invalid request");
     const handle = String(body.handle || "").slice(0, 120), casino = String(body.casino || "").slice(0, 60);
@@ -24,7 +25,7 @@ export async function handleLead(request, env) {
         });
       } catch (err) { console.error("[leadWebhook]: webhook delivery failed", err); }
     }
-    return json({ ok: true });
+    return json({ ok: true }, 200, rateLimitHeaders(rl));
   } catch (e) {
     console.error("lead failed:", String(e?.message || e));
     return bad("Couldn't submit right now. Please try again.", 500);

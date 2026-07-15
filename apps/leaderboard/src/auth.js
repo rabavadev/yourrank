@@ -141,8 +141,14 @@ export function slugify(s) {
 }
 export const RESERVED = new Set(["api", "assets", "login", "signup", "logout", "dashboard", "admin", "account", "billing", "favicon", "robots", "sitemap", "index", "forgot", "reset", "terms", "privacy", "responsible", "logo", "go", "stats", "bot", "hook", "r", "pb", "health"]);
 export const json = (data, status = 200, headers = {}) => new Response(JSON.stringify(data), { status, headers: { "content-type": "application/json; charset=utf-8", ...headers } });
-export const bad = (msg, status = 400) => json({ ok: false, error: msg }, status);
+export const bad = (msg, status = 400, headers = {}) => json({ ok: false, error: msg }, status, headers);
 export const ok = (data = {}) => json({ ok: true, ...data });
+
+export function rateLimitHeaders(rl) {
+  const h = { "X-RateLimit-Limit": String(rl.limit), "X-RateLimit-Remaining": String(rl.remaining) };
+  if (rl.retryAfter > 0) h["Retry-After"] = String(rl.retryAfter);
+  return h;
+}
 export const readJson = async (req) => {
   if (req.validatedBody !== undefined) return req.validatedBody;
   try { return await req.json(); } catch { return null; }

@@ -1,6 +1,6 @@
 // Public contact/support form handler.
 // Stores the message and emails the support inbox when RESEND_API_KEY is set.
-import { json, bad, clientIp, rateLimit, readJson } from "../auth.js";
+import { json, bad, rateLimitHeaders, clientIp, rateLimit, readJson } from "../auth.js";
 import { sendEmail } from "../email.js";
 import { exec } from "../../../../shared/db.js";
 
@@ -19,9 +19,8 @@ const CONTEXT_LABELS = {
 export async function handleContact(request, env) {
   // Rate-limit by IP: 3 submissions per 5 minutes.
   const ip = clientIp(request);
-  if (!(await rateLimit(env, `contact:${ip}`, 3, 300)).ok) {
-    return bad("Too many messages. Please wait a few minutes.", 429);
-  }
+  const rl = await rateLimit(env, `contact:${ip}`, 3, 300);
+  if (!rl.ok) return bad("Too many messages. Please wait a few minutes.", 429, rateLimitHeaders(rl));
 
   const body = await readJson(request);
   if (!body) return bad("Invalid JSON.", 400);
@@ -68,7 +67,7 @@ export async function handleContact(request, env) {
 <pre style="white-space:pre-wrap">${esc(message)}</pre>`,
   });
 
-  return json({ ok: true, message: "Message received. We'll reply by email." });
+  return json({ ok: true, message: "Message received. We'll reply by email." }, 200, rateLimitHeaders(rl));
 }
 
 async function hashIp(ip) {

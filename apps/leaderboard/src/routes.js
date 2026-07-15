@@ -25,6 +25,7 @@ import { handleContact } from "./handlers/contact.js";
 import { handleCspReport } from "./handlers/csp-report.js";
 import { handleLog } from "./handlers/log.js";
 import { handleScores } from "./handlers/scores.js";
+import { handleApiDocs, handleOpenApiJson } from "./handlers/docs.js";
 import { handleCheckout, handleCheckoutLifetime, handleIpn, handleCancel } from "./billing.js";
 import {
   handleOverview, handleUsers, handleLeads, handlePayments, handleAction,
@@ -76,6 +77,8 @@ export const ROUTES = [
   { path: "/api/scores", method: "POST", handler: withHandler(handleScores) },
   
   // Public API routes (CSRF-exempt)
+  { path: "/api/docs", method: "GET", handler: withHandler(handleApiDocs) },
+  { path: "/api/openapi.json", method: "GET", handler: withHandler(handleOpenApiJson) },
   { path: "/api/public/:slug/standings", method: "GET", handler: withHandler(handlePublicStandings) },
   { path: "/api/public/:slug/players", method: "GET", handler: withHandler(handlePublicPlayers) },
   { path: "/api/public/:slug/rank", method: "GET", handler: withHandler(handlePublicRank) },

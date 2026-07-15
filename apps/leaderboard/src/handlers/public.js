@@ -1,7 +1,7 @@
 // Public API handlers for leaderboard data access
 import { getPublicSite } from "../site.js";
 import { getStats } from "../stats.js";
-import { rateLimit, clientIp, json, bad } from "../auth.js";
+import { rateLimit, rateLimitHeaders, clientIp, json, bad } from "../auth.js";
 
 /**
  * Handle GET /api/public/:slug/standings
@@ -10,9 +10,8 @@ import { rateLimit, clientIp, json, bad } from "../auth.js";
 export async function handlePublicStandings(request, env, ctx) {
   try {
     const slug = ctx.slug;
-    if (!(await rateLimit(env, `pub-standings:${clientIp(request)}`, 100, 60)).ok) {
-      return bad("Rate limit exceeded. Try again shortly.", 429);
-    }
+    const rl = await rateLimit(env, `pub-standings:${clientIp(request)}`, 100, 60);
+    if (!rl.ok) return bad("Rate limit exceeded. Try again shortly.", 429, rateLimitHeaders(rl));
     const r = await getPublicSite(env, slug);
     if (!r || r.suspended) return bad("not found", 404);
     const d = r.data;
@@ -32,7 +31,7 @@ export async function handlePublicStandings(request, env, ctx) {
       prizePool: d.brand?.prizePool || "$0",
       players,
       countdown,
-    }, 200, { "cache-control": "public, max-age=30" });
+    }, 200, { "cache-control": "public, max-age=30", ...rateLimitHeaders(rl) });
   } catch (e) {
     console.error("[public/standings]", String(e?.message || e));
     return bad("Something went wrong. Try again.", 500);
@@ -46,13 +45,12 @@ export async function handlePublicStandings(request, env, ctx) {
 export async function handlePublicPlayers(request, env, ctx) {
   try {
     const slug = ctx.slug;
-    if (!(await rateLimit(env, `pub-players:${clientIp(request)}`, 120, 60)).ok) {
-      return bad("Rate limit exceeded. Try again shortly.", 429);
-    }
+    const rl = await rateLimit(env, `pub-players:${clientIp(request)}`, 120, 60);
+    if (!rl.ok) return bad("Rate limit exceeded. Try again shortly.", 429, rateLimitHeaders(rl));
     const r = await getPublicSite(env, slug);
     if (!r || r.suspended) return bad("not found", 404);
     const players = (r.data.players || []).slice().sort((a, b) => b.wagered - a.wagered);
-    return json({ players }, 200, { "cache-control": "public, max-age=10" });
+    return json({ players }, 200, { "cache-control": "public, max-age=10", ...rateLimitHeaders(rl) });
   } catch (e) {
     console.error("[public/players]", String(e?.message || e));
     return bad("Something went wrong. Try again.", 500);
@@ -67,23 +65,25 @@ export async function handlePublicRank(request, env, ctx) {
   try {
     const slug = ctx.slug;
     const userParam = new URL(request.url).searchParams.get("user") || "";
+    const rl = await rateLimit(env, `pub-rank:${clientIp(request)}`, 60, 60);
+    const rankHeaders = { "content-type": "text/plain; charset=utf-8", ...rateLimitHeaders(rl) };
     if (!userParam) {
       return new Response("Usage: /api/public/:slug/rank?user=NAME", {
         status: 400,
-        headers: { "content-type": "text/plain; charset=utf-8", "cache-control": "public, max-age=30" }
+        headers: { ...rankHeaders, "cache-control": "public, max-age=30" }
       });
     }
-    if (!(await rateLimit(env, `pub-rank:${clientIp(request)}`, 60, 60)).ok) {
+    if (!rl.ok) {
       return new Response("Rate limit exceeded.", {
         status: 429,
-        headers: { "content-type": "text/plain; charset=utf-8" }
+        headers: rankHeaders
       });
     }
     const r = await getPublicSite(env, slug);
     if (!r || r.suspended) {
       return new Response("Leaderboard not found.", {
         status: 404,
-        headers: { "content-type": "text/plain; charset=utf-8", "cache-control": "public, max-age=30" }
+        headers: { ...rankHeaders, "cache-control": "public, max-age=30" }
       });
     }
     const sorted = (r.data.players || []).slice().sort((a, b) => (b.wagered || 0) - (a.wagered || 0));
@@ -91,7 +91,7 @@ export async function handlePublicRank(request, env, ctx) {
     const idx = sorted.findIndex(p => String(p.name || "").toLowerCase().replace(/^\*+/, "").includes(matchUser));
     if (idx === -1) {
       return new Response(`${userParam} is not on ${r.data.brand?.name || slug}'s leaderboard yet.`, {
-        headers: { "content-type": "text/plain; charset=utf-8", "cache-control": "public, max-age=30" }
+        headers: { ...rankHeaders, "cache-control": "public, max-age=30" }
       });
     }
     const player = sorted[idx];
@@ -109,7 +109,7 @@ export async function handlePublicRank(request, env, ctx) {
       ? `${player.name} is #1 of ${total} on ${name}'s leaderboard! 🏆 ${wagered} wagered`
       : `${player.name} is #${rank} of ${total} on ${name}'s leaderboard. ${wagered} wagered${gap}`;
     return new Response(text, {
-      headers: { "content-type": "text/plain; charset=utf-8", "cache-control": "public, max-age=30" }
+      headers: { ...rankHeaders, "cache-control": "public, max-age=30" }
     });
   } catch (e) {
     console.error("[public/rank]", String(e?.message || e));
@@ -127,11 +127,10 @@ export async function handlePublicRank(request, env, ctx) {
 export async function handlePublicData(request, env, ctx) {
   try {
     const slug = ctx.slug;
-    if (!(await rateLimit(env, `pub-data:${clientIp(request)}`, 120, 60)).ok) {
-      return bad("Rate limit exceeded. Try again shortly.", 429);
-    }
+    const rl = await rateLimit(env, `pub-data:${clientIp(request)}`, 120, 60);
+    if (!rl.ok) return bad("Rate limit exceeded. Try again shortly.", 429, rateLimitHeaders(rl));
     const r = await getPublicSite(env, slug);
-    return r && !r.suspended ? json(r.data, 200, { "cache-control": "public, max-age=30" }) : bad("not found", 404);
+    return r && !r.suspended ? json(r.data, 200, { "cache-control": "public, max-age=30", ...rateLimitHeaders(rl) }) : bad("not found", 404);
   } catch (e) {
     console.error("[public/data]", String(e?.message || e));
     return bad("Something went wrong. Try again.", 500);
@@ -146,9 +145,8 @@ export async function handlePublicData(request, env, ctx) {
 export async function handlePublicStats(request, env, ctx) {
   try {
     const slug = ctx.slug;
-    if (!(await rateLimit(env, `pub-stats:${clientIp(request)}`, 60, 60)).ok) {
-      return bad("Rate limit exceeded. Try again shortly.", 429);
-    }
+    const rl = await rateLimit(env, `pub-stats:${clientIp(request)}`, 60, 60);
+    if (!rl.ok) return bad("Rate limit exceeded. Try again shortly.", 429, rateLimitHeaders(rl));
     const r = await getPublicSite(env, slug);
     if (!r || r.suspended) return bad("not found", 404);
     const stats = await getStats(env, r.id);
@@ -158,7 +156,7 @@ export async function handlePublicStats(request, env, ctx) {
       playerCount: r.data.players?.length || 0,
       summary: stats ? { last7: stats.last7, last30: stats.last30, today: stats.today } : { last7: {}, last30: {}, today: {} },
       days: stats?.days || [],
-    }, 200, { "cache-control": "public, max-age=60" });
+    }, 200, { "cache-control": "public, max-age=60", ...rateLimitHeaders(rl) });
   } catch (e) {
     console.error("[public/stats]", String(e?.message || e));
     return bad("Something went wrong. Try again.", 500);
