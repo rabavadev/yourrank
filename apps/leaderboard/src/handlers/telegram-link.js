@@ -10,8 +10,8 @@ import { query, one } from "../../../../shared/db.js";
  * Link a Telegram identity to the current user's account.
  * Body: { id, first_name, last_name, username, photo_url, auth_date, hash }
  *
- * Verifies the Telegram Login widget payload, then links the telegram_id
- * to the current user. If the telegram_id is already linked to another
+ * Verifies the Telegram Login widget payload, then links telegram_user_id
+ * to the current user. If the Telegram ID is already linked to another
  * account, returns an error.
  */
 export async function handleTelegramLink(request, env) {
@@ -51,12 +51,13 @@ export async function handleTelegramLink(request, env) {
     return bad("Telegram auth payload expired or future-dated");
   }
 
-  const telegramId = Number(id);
+  const telegramUserId = Number(id);
+  const displayName = [first_name, last_name].filter(Boolean).join(" ") || username || `tg-${telegramUserId}`;
 
   // Check if this Telegram ID is already linked to another user
   const existing = await one(
-    "SELECT id, email FROM users WHERE telegram_id = $1",
-    [telegramId]
+    "SELECT id, email FROM users WHERE telegram_user_id = $1",
+    [telegramUserId]
   );
 
   if (existing && existing.id !== user.id) {
@@ -64,26 +65,26 @@ export async function handleTelegramLink(request, env) {
   }
 
   if (existing && existing.id === user.id) {
-    // Already linked to this user — update username
+    // Already linked to this user — refresh profile metadata
     await query(
-      "UPDATE users SET telegram_username = $1, updated_at = now() WHERE id = $2",
-      [username || null, user.id]
+      "UPDATE users SET telegram_username = $1, display_name = COALESCE(display_name, $2), updated_at = now() WHERE id = $3",
+      [username || null, displayName, user.id]
     );
     return json({ ok: true, linked: true, message: "Telegram account already linked" });
   }
 
   // Link Telegram identity to this user
   await query(
-    `UPDATE users 
-     SET telegram_id = $1, telegram_username = $2, telegram_linked_at = now(), updated_at = now()
-     WHERE id = $3`,
-    [telegramId, username || null, user.id]
+    `UPDATE users
+     SET telegram_user_id = $1, telegram_username = $2, display_name = COALESCE(display_name, $3), telegram_linked_at = now(), updated_at = now()
+     WHERE id = $4`,
+    [telegramUserId, username || null, displayName, user.id]
   );
 
   return json({
     ok: true,
     linked: true,
-    telegram_id: telegramId,
+    telegram_user_id: telegramUserId,
     telegram_username: username || null,
   });
 }
@@ -97,8 +98,8 @@ export async function handleTelegramUnlink(request, env) {
   if (res) return res;
 
   await query(
-    `UPDATE users 
-     SET telegram_id = NULL, telegram_username = NULL, telegram_linked_at = NULL, updated_at = now()
+    `UPDATE users
+     SET telegram_user_id = NULL, telegram_username = NULL, telegram_linked_at = NULL, updated_at = now()
      WHERE id = $1`,
     [user.id]
   );
@@ -116,8 +117,8 @@ export async function handleTelegramStatus(request, env) {
 
   return json({
     ok: true,
-    linked: !!user.telegram_id,
-    telegram_id: user.telegram_id || null,
+    linked: !!user.telegram_user_id,
+    telegram_user_id: user.telegram_user_id || null,
     telegram_username: user.telegram_username || null,
   });
 }

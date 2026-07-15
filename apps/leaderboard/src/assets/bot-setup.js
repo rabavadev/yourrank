@@ -41,67 +41,17 @@ if (tokenToggle) {
   });
 }
 
-// Connect bot
-connectBtn.addEventListener("click", async () => {
-  const token = tokenInput.value.trim();
-  if (!token) return;
-
+// Bot setup is handled by the bot Worker dashboard; disable the old leaderboard
+// connect flow and point users to the authoritative UI (C-06).
+if (connectBtn) {
   connectBtn.disabled = true;
-  connectBtn.textContent = "Connecting…";
-  statusEl.textContent = "";
-  statusEl.className = "hint";
-
-  try {
-    const res = await fetch("/api/bot/connect", {
-      method: "POST",
-      headers: { "content-type": "application/json", "x-csrf-token": getCsrf() },
-      body: JSON.stringify({ token }),
-    });
-    const data = await res.json();
-
-    if (res.ok && data.ok) {
-      statusEl.textContent = "✅ Connected! Webhook is live.";
-      statusEl.className = "msg";
-      step4.hidden = false;
-      if (data.botName) botNameEl.textContent = data.botName;
-      if (data.botUsername) botUsernameEl.textContent = "@" + data.botUsername;
-      step4.scrollIntoView({ behavior: "smooth", block: "start" });
-      connectBtn.textContent = "Connected ✓";
-      connectBtn.disabled = true;
-      tokenInput.disabled = true;
-      // E2E-013: Show "Change bot" link so user can reconnect a different bot
-      let changeLink = document.getElementById("changeBotLink");
-      if (!changeLink) {
-        changeLink = document.createElement("a");
-        changeLink.id = "changeBotLink";
-        changeLink.href = "#";
-        changeLink.textContent = "Change bot";
-        changeLink.className = "change-bot-link";
-        connectBtn.parentNode.insertBefore(changeLink, connectBtn.nextSibling);
-      }
-      changeLink.hidden = false;
-      changeLink.onclick = (e) => {
-        e.preventDefault();
-        connectBtn.disabled = false;
-        connectBtn.textContent = "Connect bot";
-        tokenInput.value = "";
-        tokenInput.disabled = false;
-        statusEl.textContent = "";
-        statusEl.className = "hint";
-        step4.hidden = true;
-        changeLink.hidden = true;
-        tokenInput.focus();
-      };
-    } else {
-      statusEl.textContent = data.error || "Connection failed. Check the token and try again.";
-      statusEl.className = "err";
-      connectBtn.textContent = "Connect bot";
-      connectBtn.disabled = false;
-    }
-  } catch {
-    statusEl.textContent = "Network error. Try again.";
-    statusEl.className = "err";
-    connectBtn.textContent = "Connect bot";
-    connectBtn.disabled = false;
-  }
-});
+  connectBtn.textContent = "Use Bot Dashboard";
+  connectBtn.addEventListener("click", () => {
+    location.href = "/bot/dashboard";
+  });
+}
+if (tokenInput) tokenInput.disabled = true;
+if (statusEl) {
+  statusEl.textContent = "Bot setup has moved to the Bot Dashboard.";
+  statusEl.className = "msg";
+}

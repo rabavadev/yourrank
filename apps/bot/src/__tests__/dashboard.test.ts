@@ -293,8 +293,8 @@ describe("buildDashboard", () => {
   it("POST /dash/api/bots/:id/reconnect reactivates the bot", async () => {
     mockOne.mockImplementation((sql: string) => {
       if (sql.includes("SELECT status FROM users")) return Promise.resolve({ status: "active" });
-      if (sql.includes("SELECT id, token_encrypted, webhook_secret FROM bots")) {
-        return Promise.resolve({ id: "b-1", token_encrypted: "enc:123456:ABC-DEF", webhook_secret: "secret" });
+      if (sql.includes("SELECT id, token_encrypted, webhook_secret")) {
+        return Promise.resolve({ id: "b-1", token_encrypted: "enc:123456:ABC-DEF", webhook_secret: "secret", status: "active" });
       }
       if (sql.includes("UPDATE bots SET status = 'active'")) return Promise.resolve({ id: "b-1", username: "testbot" });
       return Promise.resolve(null);
