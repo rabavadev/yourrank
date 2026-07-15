@@ -113,6 +113,72 @@ export function priceUsd(env: Record<string, string | undefined>, plan?: string)
   return (PLAN_PRICES as Record<string, number>)[plan] ?? PLAN_PRICES.pro;
 }
 
+export const PLAN_TIERS: PlanTier[] = ["free", "starter", "pro", "agency"];
+
+export function tierIndex(tier: PlanTier | string): number {
+  return PLAN_TIERS.indexOf(tier as PlanTier);
+}
+
+const MS_PER_DAY = 86_400_000;
+
+/**
+ * Compute a new expiry timestamp that credits the remaining value of the current
+ * paid plan when upgrading to a higher-priced tier.
+ *
+ * The caller charges the full target-plan price for `periodDays`. Any unused value
+ * of the current paid plan is converted into extra days at the target plan's
+ * daily rate and added to the new period. The result is capped at
+ * `maxExtensionDays` from `nowMs` to prevent abuse from repeated payments.
+ *
+ * If the target tier is not an upgrade, the current paid expiry is preserved and
+ * the new `periodDays` are added from that point, ensuring the user does not lose
+ * time they already paid for.
+ */
+export function computeProratedExpiry(args: {
+  nowMs: number;
+  currentPlan: PlanTier | string;
+  currentExpiryMs?: number | string | null;
+  targetPlan: PlanTier;
+  periodDays: number;
+  prices: Record<string, number>;
+  maxExtensionDays: number;
+}): number {
+  const { nowMs, currentPlan, currentExpiryMs, targetPlan, periodDays, prices, maxExtensionDays } = args;
+  const targetPrice = Number(prices[targetPlan]) || 0;
+  const targetDaily = targetPrice / periodDays;
+  const currentPlanStr = String(currentPlan || "free").toLowerCase();
+  const currentIsPaid = ["starter", "pro", "agency"].includes(currentPlanStr);
+
+  let baseMs = nowMs;
+  let creditMs = 0;
+
+  if (currentIsPaid && currentExpiryMs && Number(currentExpiryMs) > nowMs) {
+    const currentIndex = tierIndex(currentPlanStr);
+    const targetIndex = tierIndex(targetPlan);
+    const remainingMs = Number(currentExpiryMs) - nowMs;
+
+    if (targetIndex > currentIndex) {
+      // Upgrade: credit remaining value at the current tier's daily rate,
+      // converted to days at the (more expensive) target tier's daily rate.
+      const currentPrice = Number(prices[currentPlanStr]) || 0;
+      const currentDaily = currentPrice / periodDays;
+      if (currentDaily > 0 && targetDaily > 0) {
+        const creditDays = (remainingMs / MS_PER_DAY) * (currentDaily / targetDaily);
+        creditMs = Math.round(creditDays * MS_PER_DAY);
+      }
+    } else {
+      // Same tier or downgrade: do not consume remaining paid time.
+      baseMs = Number(currentExpiryMs);
+    }
+  }
+
+  const maxMs = nowMs + maxExtensionDays * MS_PER_DAY;
+  if (targetDaily <= 0) {
+    return Math.min(Math.max(baseMs, nowMs), maxMs);
+  }
+  return Math.min(baseMs + periodDays * MS_PER_DAY + creditMs, maxMs);
+}
+
 /** A user's effective plan, considering suspension and expiry. */
 export function effectivePlan(user: { plan?: string; status?: string; plan_expires_at?: number | null } | null | undefined): PlanTier | "free" {
   if (!user || user.status === "suspended") return "free";

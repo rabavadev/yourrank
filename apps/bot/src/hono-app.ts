@@ -12,6 +12,7 @@ import { withPlanLimit } from "./plans.js";
 import { rateLimit, type RateLimitKV } from "./ratelimit.js";
 import { createQueueProducer, type QueueEvent } from "../../../shared/queue-producer.js";
 import { recordConversion, type PostbackQuery } from "../../../shared/conversions.js";
+import { findPostbackOwner, computeReplayHash, recordReplayHash } from "../../../shared/postback.js";
 import { validatedBody, adminUserSchema, adminBotSchema, adminOfferSchema } from "./validation.js";
 
 type Bindings = {
@@ -206,23 +207,21 @@ export function buildHonoApp(): Hono<{ Bindings: Bindings }> {
     const rl = await rateLimit(c.env, `pb:${key}`, 120, 60);
     if (!rl.ok) { c.header("Retry-After", String(rl.retryAfter)); return c.json({ error: "rate limited" }, 429); }
 
-    const owner = await one<{ id: string; postback_key: string }>(
-      `SELECT id, postback_key FROM users WHERE postback_key = $1`,
-      [key]
-    );
+    // H-04: postback keys now live in postback_keys with revocation/expiry and
+    // are looked up by hash. The plaintext key from the request is used for
+    // HMAC verification, then a per-user replay hash blocks exact replays.
+    const owner = await findPostbackOwner(key);
     if (!owner) return c.json({ error: "unknown key" }, 404);
 
-    // HMAC is over the EXACT query string the casino sent. Hono exposes it via
-    // c.req.url's search portion. This binds the signature to the params, so a
-    // logged request can't be tampered with (e.g. bump amount/click_ref).
     const qs = new URL(c.req.url).search.slice(1); // without the leading '?'
-    // Use the plaintext key for HMAC verification (same value, just also stored encrypted)
-    const valid = await verifyHmacSha256Hex(owner.postback_key, qs, sig);
+    const valid = await verifyHmacSha256Hex(key, qs, sig);
     if (!valid) return c.json({ error: "bad signature" }, 401);
 
-    // Queue the conversion for durable processing instead of doing the DB write
-    // inline. If the queue is not bound or the enqueue fails, fall back to the
-    // direct write so the postback still succeeds.
+    const replayHash = await computeReplayHash(c.req.query());
+    if (!(await recordReplayHash(owner.userId, replayHash))) {
+      return c.json({ error: "duplicate postback" }, 409);
+    }
+
     const conversionQueue = createQueueProducer(
       c.env.EVENTS_QUEUE,
       async (event: QueueEvent) => {
@@ -233,7 +232,7 @@ export function buildHonoApp(): Hono<{ Bindings: Bindings }> {
     );
     await conversionQueue.send({
       type: "conversion",
-      ownerId: owner.id,
+      ownerId: owner.userId,
       query: c.req.query() as PostbackQuery,
       timestamp: Date.now(),
     });
@@ -251,8 +250,14 @@ export function buildHonoApp(): Hono<{ Bindings: Bindings }> {
     c.header("Sunset", "2026-10-01");
     c.header("Link", '</pb>; rel="successor-version"');
 
-    const owner = await one<{ id: string }>(`SELECT id FROM users WHERE postback_key = $1`, [key]);
+    // H-04: lookup by key hash in postback_keys; key can be revoked/rotated.
+    const owner = await findPostbackOwner(key);
     if (!owner) return c.json({ error: "unknown key" }, 404);
+
+    const replayHash = await computeReplayHash(c.req.query());
+    if (!(await recordReplayHash(owner.userId, replayHash))) {
+      return c.json({ error: "duplicate postback" }, 409);
+    }
 
     const conversionQueue = createQueueProducer(
       c.env.EVENTS_QUEUE,
@@ -264,7 +269,7 @@ export function buildHonoApp(): Hono<{ Bindings: Bindings }> {
     );
     await conversionQueue.send({
       type: "conversion",
-      ownerId: owner.id,
+      ownerId: owner.userId,
       query: c.req.query() as PostbackQuery,
       timestamp: Date.now(),
     });

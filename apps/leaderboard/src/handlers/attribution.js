@@ -1,7 +1,8 @@
 // Attribution analytics and casino postback endpoint.
 import { json, bad, ok, requireUser, rateLimit } from "../auth.js";
-import { one, exec, query } from "../../../../shared/db.js";
-import { newPostbackKey, verifyHmacSha256Hex } from "../../../../shared/crypto.js";
+import { query } from "../../../../shared/db.js";
+import { verifyHmacSha256Hex } from "../../../../shared/crypto.js";
+import { getActivePostbackKey, createPostbackKey, revokePostbackKeys, findPostbackOwner, computeReplayHash, recordReplayHash } from "../../../../shared/postback.js";
 import { recordConversion } from "../../../../shared/conversions.js";
 import { effectivePlan } from "../billing.js";
 
@@ -72,17 +73,11 @@ export async function handleAttribution(request, env) {
   const url = new URL(request.url);
   const days = getDays(url);
 
-  let key = (await one("SELECT postback_key FROM users WHERE id = $1", [user.id]))?.postback_key;
-  if (!key && effectivePlan(user) !== "free") {
-    for (let i = 0; i < 3; i++) {
-      key = newPostbackKey();
-      try {
-        await exec("UPDATE users SET postback_key = $1, updated_at = now() WHERE id = $2", [key, user.id]);
-        break;
-      } catch (e) {
-        if (i >= 2) throw e;
-      }
-    }
+  // H-04: active postback key is read from postback_keys; if none exists, create
+  // one for paid plans. Revocation/rotation is exposed under /api/attribution.
+  let key = effectivePlan(user) !== "free" ? await getActivePostbackKey(user.id) : null;
+  if (effectivePlan(user) !== "free" && !key) {
+    key = await createPostbackKey(user.id, { label: "leaderboard-attribution" });
   }
   const postbackUrl = key ? `${url.origin}/api/postback?key=${encodeURIComponent(key)}` : null;
 
@@ -137,6 +132,27 @@ export async function handleAttributionExport(request, env) {
   });
 }
 
+// POST /api/attribution/rotate-key — create a new postback key and revoke active ones.
+export async function handleRotatePostbackKey(request, env) {
+  const { user, res } = await requireUser(request, env);
+  if (!user) return res;
+  if (effectivePlan(user) === "free") return bad("Postbacks require a paid plan.", 402);
+  if (!(await rateLimit(env, `rotate-pb:${user.id}`, 10, 60)).ok) {
+    return bad("Too many rotations. Try again later.", 429);
+  }
+  const key = await createPostbackKey(user.id, { label: "leaderboard-attribution", revokeOthers: true });
+  const url = new URL(request.url);
+  return json({ ok: true, postbackUrl: `${url.origin}/api/postback?key=${encodeURIComponent(key)}` });
+}
+
+// DELETE /api/attribution/postback-key — revoke all active postback keys.
+export async function handleRevokePostbackKey(request, env) {
+  const { user, res } = await requireUser(request, env);
+  if (!user) return res;
+  await revokePostbackKeys(user.id);
+  return json({ ok: true });
+}
+
 // POST /api/postback — receive casino conversion postbacks.
 export async function handlePostback(request, env) {
   const url = new URL(request.url);
@@ -146,16 +162,14 @@ export async function handlePostback(request, env) {
     return bad("Too many requests. Try again later.", 429);
   }
 
-  const owner = await one(
-    "SELECT id, postback_key FROM users WHERE postback_key = $1",
-    [key]
-  );
+  // H-04: lookup by key hash, then reject exact replays and support revocation.
+  const owner = await findPostbackOwner(key);
   if (!owner) return bad("Unknown postback key.", 404);
 
   const sig = request.headers.get("x-postback-signature");
   if (sig) {
     const qs = url.search.slice(1);
-    if (!(await verifyHmacSha256Hex(owner.postback_key, qs, sig))) {
+    if (!(await verifyHmacSha256Hex(key, qs, sig))) {
       return bad("Bad signature.", 401);
     }
   }
@@ -163,6 +177,13 @@ export async function handlePostback(request, env) {
   const clone = request.clone();
   const bodyText = await clone.text();
   const contentType = request.headers.get("content-type") || "";
+
+  const replayInputs = Object.fromEntries(url.searchParams.entries());
+  if (bodyText) replayInputs.body = bodyText;
+  const replayHash = await computeReplayHash(replayInputs);
+  if (!(await recordReplayHash(owner.userId, replayHash))) {
+    return bad("Duplicate postback.", 409);
+  }
 
   const out = {};
   const add = (k, v) => {
@@ -190,6 +211,6 @@ export async function handlePostback(request, env) {
 
   delete out.key;
   delete out.signature;
-  await recordConversion(owner.id, out);
+  await recordConversion(owner.userId, out);
   return ok();
 }

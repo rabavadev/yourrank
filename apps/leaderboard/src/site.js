@@ -6,6 +6,7 @@ import { TEMPLATE_IDS } from "./templates/index.js";
 import { RESERVED, slugify } from "./auth.js";
 import { logAudit } from "../../../shared/audit.js";
 import { createQueueProducer } from "../../../shared/queue-producer.js";
+import { encrypt } from "../../../shared/crypto.js";
 
 function normalizePlayerName(name) {
   // C-07 / H-17: stable, case-insensitive, whitespace-collapsed identity.
@@ -14,6 +15,14 @@ function normalizePlayerName(name) {
     .toLowerCase()
     .replace(/\s+/g, " ");
 }
+
+function getTokenEncKey() {
+  const hex = (typeof process !== "undefined" && process.env?.TOKEN_ENC_KEY) || "";
+  if (hex.length !== 64) throw new Error("TOKEN_ENC_KEY must be 64 hex characters (32 bytes)");
+  return hex;
+}
+
+const DISCORD_WEBHOOK_RE = /^https:\/\/(discord\.com|discordapp\.com)\/api\/webhooks\/\d+\/.+/;
 
 function createNotifyQueue(env) {
   return createQueueProducer(
@@ -51,7 +60,7 @@ export const DEFAULT_EXTRA = {
 // needed by the /logo/:slug endpoint and saveSite(), which fetch it separately.
 // PERF-004 / PERF-107: avoid SELECT * to prevent 180KB+ transfers on every page.
 // PERF-005: include has_logo as a computed column to avoid a separate re-query.
-const SITE_COLUMNS = "id, user_id, slug, name, tagline, casino, code, cta_url, prize_pool, period, ends_at, reset_note, blurb, extra_json, published, theme_json, updated_at, custom_domain, domain_status, (logo_data IS NOT NULL AND logo_data != '') AS has_logo";
+const SITE_COLUMNS = "id, user_id, slug, name, tagline, casino, code, cta_url, prize_pool, period, ends_at, reset_note, blurb, extra_json, published, theme_json, updated_at, custom_domain, domain_status, discord_webhook_url_enc, telegram_chat_id, telegram_notify, (logo_data IS NOT NULL AND logo_data != '') AS has_logo";
 
 // L1 in-memory cache (per-isolate). No L2 KV — sessions moved to Postgres.
 const siteCache = new Map();
@@ -297,8 +306,6 @@ export async function getUserSite(env, uid, plan) {
       const archiveLimit = ARCHIVE_LIMITS[plan || "free"] || 6;
       // PERF-005: has_logo is now in SITE_COLUMNS — no separate query needed.
       const archives = await getArchives(env, site.id, archiveLimit);
-    const rawExtra = fromJsonb(site.extra_json);
-    const extra = (rawExtra && typeof rawExtra === "object") ? rawExtra : {};
     return {
         id: site.id, slug: site.slug, published: !!site.published,
         updatedAt: site.updated_at,
@@ -306,10 +313,10 @@ export async function getUserSite(env, uid, plan) {
         customDomain: site.custom_domain || "",
           domainStatus: site.domain_status || "pending",
         notify: {
-          discord_webhook_url: !!extra.discord_webhook_url,
-          telegram_bot_token: !!extra.telegram_bot_token,
-          telegram_chat_id: extra.telegram_chat_id || "",
-          telegram_notify: !!extra.telegram_notify,
+          discord_webhook_url: !!site.discord_webhook_url_enc,
+          telegram_bot_token: false,
+          telegram_chat_id: site.telegram_chat_id || "",
+          telegram_notify: !!site.telegram_notify,
         },
         archives: archives.map((a) => {
           const snap = fromJsonb(a.snapshot_json);
@@ -352,8 +359,6 @@ export async function getUserSiteById(env, uid, siteId, plan) {
     const archiveLimit = ARCHIVE_LIMITS[plan || "free"] || 6;
     // PERF-005: has_logo is now in SITE_COLUMNS — no separate query needed.
     const archives = await getArchives(env, site.id, archiveLimit);
-  const rawExtra = fromJsonb(site.extra_json);
-  const extra = (rawExtra && typeof rawExtra === "object") ? rawExtra : {};
   return {
     id: site.id, slug: site.slug, published: !!site.published,
     updatedAt: site.updated_at,
@@ -361,10 +366,10 @@ export async function getUserSiteById(env, uid, siteId, plan) {
       customDomain: site.custom_domain || "",
           domainStatus: site.domain_status || "pending",
       notify: {
-        discord_webhook_url: !!extra.discord_webhook_url,
-        telegram_bot_token: !!extra.telegram_bot_token,
-        telegram_chat_id: extra.telegram_chat_id || "",
-        telegram_notify: !!extra.telegram_notify,
+        discord_webhook_url: !!site.discord_webhook_url_enc,
+        telegram_bot_token: false,
+        telegram_chat_id: site.telegram_chat_id || "",
+        telegram_notify: !!site.telegram_notify,
       },
       archives: archives.map((a) => {
         const snap = fromJsonb(a.snapshot_json);
@@ -526,9 +531,7 @@ export async function createArchive(env, uid, { label, clear, siteId } = {}, req
   });
   // Enqueue reset notification so outbound calls don't block the request.
   try {
-    const rawNotify = fromJsonb(site.extra_json);
-    const extra = (rawNotify && typeof rawNotify === "object") ? rawNotify : {};
-    if (extra.discord_webhook_url || (extra.telegram_bot_token && extra.telegram_chat_id && extra.telegram_notify)) {
+    if (site.discord_webhook_url_enc || (site.telegram_notify && site.telegram_chat_id)) {
       const notifyQueue = createNotifyQueue(env);
       await notifyQueue.send({
         type: "notify",
@@ -643,16 +646,32 @@ export async function saveSite(env, user, payload, siteId, request = null) {
   const siteName = String(payload.name ?? b.name ?? site.name).trim().slice(0, 80) || site.name;
   const existingExtra = fromJsonb(site.extra_json) || {};
   const notify = payload.notify || {};
+
+  // H-25: notification credentials live in dedicated columns (and Discord URLs
+  // are encrypted at rest), not inside extra_json. Strip any legacy copies so
+  // they cannot leak through public-shape or future code that reads extra_json.
   const extra = {
     chips: payload.chips ?? existingExtra.chips ?? DEFAULT_EXTRA.chips,
     whyStats: payload.whyStats ?? existingExtra.whyStats ?? DEFAULT_EXTRA.whyStats,
     rules: payload.rules ?? existingExtra.rules ?? DEFAULT_EXTRA.rules,
     socials: payload.socials ?? existingExtra.socials ?? DEFAULT_EXTRA.socials,
-    discord_webhook_url: (notify.discord_webhook_url ?? existingExtra.discord_webhook_url) || undefined,
-    telegram_bot_token: existingExtra.telegram_bot_token || undefined,
-    telegram_chat_id: (notify.telegram_chat_id ?? existingExtra.telegram_chat_id) || undefined,
-    telegram_notify: notify.telegram_notify ?? existingExtra.telegram_notify ?? undefined,
   };
+
+  let discordWebhookUrlEnc = site.discord_webhook_url_enc;
+  if (notify.discord_webhook_url !== undefined && notify.discord_webhook_url !== null) {
+    const url = String(notify.discord_webhook_url).trim();
+    if (url === "") {
+      discordWebhookUrlEnc = null;
+    } else {
+      if (!DISCORD_WEBHOOK_RE.test(url)) return { error: "That doesn't look like a valid Discord webhook URL.", code: "invalid_webhook" };
+      discordWebhookUrlEnc = await encrypt(url, getTokenEncKey());
+    }
+  }
+
+  const telegramChatId = notify.telegram_chat_id !== undefined && notify.telegram_chat_id !== null
+    ? String(notify.telegram_chat_id).trim() || null
+    : site.telegram_chat_id;
+  const telegramNotify = notify.telegram_notify !== undefined ? !!notify.telegram_notify : !!site.telegram_notify;
 
   // Fetch logo_data separately since the shared query no longer includes it (PERF-004).
   const existingLogoRow = await one("SELECT logo_data FROM sites WHERE id=$1", [site.id]);
@@ -713,12 +732,12 @@ export async function saveSite(env, user, payload, siteId, request = null) {
     const endsAtVal = normalizeEndsAt(payload.endsAt, site.ends_at);
     const slugVal = slugRename || site.slug;
     await tx.unsafe(
-      `UPDATE sites SET slug=$1, name=$2, tagline=$3, casino=$4, code=$5, cta_url=$6, prize_pool=$7, period=$8, ends_at=$9, reset_note=$10, blurb=$11, extra_json=$12::jsonb, logo_data=$13, theme_json=$14::jsonb, published=$15, updated_at=now() WHERE id=$16`,
+      `UPDATE sites SET slug=$1, name=$2, tagline=$3, casino=$4, code=$5, cta_url=$6, prize_pool=$7, period=$8, ends_at=$9, reset_note=$10, blurb=$11, extra_json=$12::jsonb, logo_data=$13, theme_json=$14::jsonb, published=$15, discord_webhook_url_enc=$16, telegram_chat_id=$17, telegram_notify=$18, updated_at=now() WHERE id=$19`,
       [
         slugVal, siteName, b.tagline ?? site.tagline, b.casino ?? site.casino, b.code ?? site.code,
         b.ctaUrl ?? site.cta_url, b.prizePool ?? site.prize_pool, b.period ?? site.period,
         endsAtVal, b.resetNote ?? site.reset_note, (payload.partner && payload.partner.blurb) ?? site.blurb,
-        extra, logoData, themeJson, publishedVal, site.id,
+        extra, logoData, themeJson, publishedVal, discordWebhookUrlEnc, telegramChatId, telegramNotify, site.id,
       ]
     );
 

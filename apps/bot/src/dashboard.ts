@@ -79,12 +79,8 @@ export function buildDashboard(): Hono<DashEnv> {
     c.set("cspNonce", nonce);
     await next();
     if (!c.res.headers.has("Content-Security-Policy")) {
-      // SEC-002-v8: nonce-only script-src; inline event handlers removed from HTML.
-      // 'unsafe-eval' is kept for the Telegram Login widget's internal callback dispatch.
-      c.header("Content-Security-Policy", `default-src 'self'; script-src 'self' 'nonce-${nonce}' 'unsafe-eval' https://telegram.org; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https://telegram.org; frame-src https://telegram.org https://oauth.telegram.org;`);
-      // SEC-002-v7: style-src 'unsafe-inline' is intentional — dashboard-views.ts uses
-      // inline styles. Removing it would break the dashboard UI. TODO: extract inline
-      // styles to an external CSS file so 'unsafe-inline' can be dropped from style-src.
+      // M-02: nonce-only script-src and style-src. No 'unsafe-eval' or 'unsafe-inline'.
+      c.header("Content-Security-Policy", `default-src 'self'; script-src 'self' 'nonce-${nonce}' https://telegram.org; style-src 'self' 'nonce-${nonce}'; img-src 'self' data: https:; connect-src 'self' https://telegram.org; frame-src https://telegram.org https://oauth.telegram.org;`);
     }
     c.res.headers.set("Cache-Control", "no-store, no-cache, must-revalidate");
     // SEC-104: Clear legacy 'sess' cookie

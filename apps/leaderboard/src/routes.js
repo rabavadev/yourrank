@@ -18,7 +18,7 @@ import {
 } from "./handlers/sites.js";
 import { handleTrial } from "./handlers/billing.js";
 import { handleLead } from "./handlers/leads.js";
-import { handleAttribution, handleAttributionExport, handlePostback } from "./handlers/attribution.js";
+import { handleAttribution, handleAttributionExport, handlePostback, handleRotatePostbackKey, handleRevokePostbackKey } from "./handlers/attribution.js";
 import { handleContact } from "./handlers/contact.js";
 import { handleCspReport } from "./handlers/csp-report.js";
 import { handleLog } from "./handlers/log.js";
@@ -95,6 +95,8 @@ export const ROUTES = [
   // Attribution
   { path: "/api/attribution", method: "GET", handler: withHandler(handleAttribution) },
   { path: "/api/attribution/export", method: "GET", handler: withHandler(handleAttributionExport) },
+  { path: "/api/attribution/rotate-key", method: "POST", handler: withHandler(handleRotatePostbackKey) },
+  { path: "/api/attribution/postback-key", method: "DELETE", handler: withHandler(handleRevokePostbackKey) },
   { path: "/api/postback", method: "POST", handler: withHandler(handlePostback) },
   
   // CSP violation reporting

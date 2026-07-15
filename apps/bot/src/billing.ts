@@ -2,6 +2,7 @@ import type { Update } from "grammy/types";
 import { query, withTransaction } from "../../../shared/db.js";
 import { logProviderEvent } from "../../../shared/provider-events.js";
 import { PLANS, type PlanTier } from "./plans.js";
+import { computeProratedExpiry } from "../../../shared/plans.js";
 import { setWebhook } from "./telegram.js";
 
 // ------------------------------------------------------------------
@@ -22,6 +23,7 @@ import { setWebhook } from "./telegram.js";
 // ------------------------------------------------------------------
 
 const API = "https://api.telegram.org";
+const MS_PER_DAY = 86_400_000;
 
 function platformToken(): string {
   const t = process.env.PLATFORM_BOT_TOKEN;
@@ -128,42 +130,60 @@ export async function handleBillingUpdate(update: Update): Promise<void> {
         tx_ref: chargeId,
         payload_json: sp,
       });
-      if (!eventInserted) return false;
+      if (!eventInserted) return { activated: false };
 
       const dup = await tx.one<{ id: string }>(
         `SELECT id FROM payments WHERE provider = 'telegram_stars' AND tx_ref = $1`,
         [chargeId]
       );
-      if (dup) return false; // already processed this exact payment
+      if (dup) return { activated: false }; // already processed this exact payment
+
+      // H-23: fetch current plan/expiry and compute a prorated expiry. The user
+      // pays the full target-plan Stars price for 30 days; any remaining value of
+      // the current paid plan is converted into extra days at the target rate.
+      const userRow = await tx.one<{ plan: string; plan_expires_at: string | null }>(
+        `SELECT plan, plan_expires_at FROM users WHERE id = $1 FOR UPDATE`,
+        [userId]
+      );
+      const prices: Record<string, number> = {};
+      for (const t of Object.keys(PLANS) as PlanTier[]) prices[t] = PLANS[t].starsPrice;
+      const expiresMs = computeProratedExpiry({
+        nowMs: Date.now(),
+        currentPlan: userRow?.plan ?? "free",
+        currentExpiryMs: userRow?.plan_expires_at ? new Date(userRow.plan_expires_at).getTime() : null,
+        targetPlan: tier,
+        periodDays: 30,
+        prices,
+        maxExtensionDays: 365,
+      });
+      const expiresIso = new Date(expiresMs).toISOString();
 
       const sub = await tx.one<{ id: string }>(
         `INSERT INTO subscriptions (user_id, plan, status, provider, current_period_end)
-         VALUES ($1, $2, 'active', 'telegram_stars', now() + interval '30 days')
+         VALUES ($1, $2, 'active', 'telegram_stars', $3::timestamptz)
          RETURNING id`,
-        [userId, tier]
+        [userId, tier, expiresIso]
       );
       await tx.query(
         `INSERT INTO payments (user_id, subscription_id, provider, amount, currency, tx_ref, status, plan_tier)
          VALUES ($1, $2, 'telegram_stars', $3, 'XTR', $4, 'finished', $5)`,
         [userId, sub!.id, plan.starsPrice, chargeId, tier]
       );
-      // PROD-005-v8: Cap subscription extension to 365 days from now
       await tx.query(
-        `UPDATE users SET plan = $1, plan_expires_at = LEAST(
-          GREATEST(COALESCE(plan_expires_at, now()), now()) + interval '30 days',
-          now() + interval '365 days'
-        ), updated_at = now() WHERE id = $2`,
-        [tier, userId]
+        `UPDATE users SET plan = $1, plan_expires_at = to_timestamp($2 / 1000.0), updated_at = now() WHERE id = $3`,
+        [tier, expiresMs, userId]
       );
-      return true;
+      return { activated: true, expiresMs };
     });
 
     // Only confirm to the user when we actually activated (not on a dup replay).
     const chatId = update.message?.chat.id;
-    if (chatId && activated) {
+    const expiresMs = activated?.expiresMs;
+    if (chatId && expiresMs) {
+      const days = Math.max(1, Math.round((expiresMs - Date.now()) / MS_PER_DAY));
       await tg("sendMessage", {
         chat_id: chatId,
-        text: `✅ ${plan.label} plan active for 30 days. Enjoy!`,
+        text: `✅ ${plan.label} plan active for ${days} day${days === 1 ? "" : "s"}. Enjoy!`,
       }).catch((err) => { console.error("[billing]: sendMessage confirmation failed", err); });
     }
   }

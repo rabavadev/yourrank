@@ -12,7 +12,27 @@
 //  module allows both Workers to send notifications consistently.
 // ============================================================================
 
-import { decryptToken } from "./crypto.js";
+import { decryptToken, decrypt } from "./crypto.js";
+
+// ----------------------------------------------------------------------------
+// Encryption helper for notification credentials stored as hex ciphertext.
+// ----------------------------------------------------------------------------
+
+function getEncKey(): string {
+  const hex = (typeof process !== "undefined" && process.env?.TOKEN_ENC_KEY) || "";
+  if (hex.length !== 64) throw new Error("TOKEN_ENC_KEY must be 64 hex characters (32 bytes)");
+  return hex;
+}
+
+async function decryptCredential(blobHex: string | null | undefined): Promise<string | null> {
+  if (!blobHex) return null;
+  try {
+    return await decrypt(blobHex, getEncKey());
+  } catch {
+    // Legacy or unencrypted value (e.g. migration copy); return as-is.
+    return blobHex;
+  }
+}
 
 // ----------------------------------------------------------------------------
 // Telegram Markdown escaping
@@ -196,24 +216,26 @@ export async function notifyTop3Change(
 ): Promise<void> {
   if (!top3Changes.length) return;
 
-  // Load site config + user's bot token
-  const site = await db.one("SELECT extra_json, user_id FROM sites WHERE id=$1", [siteId]);
+  // H-25: notification credentials now live in dedicated columns.
+  const site = await db.one(
+    "SELECT discord_webhook_url_enc, telegram_chat_id, telegram_notify, user_id FROM sites WHERE id=$1",
+    [siteId]
+  );
   if (!site) return;
-  const extra = (site.extra_json && typeof site.extra_json === "object") ? site.extra_json : {};
-  const discordUrl = extra.discord_webhook_url;
-  const tgEnabled = extra.telegram_notify;
-  const tgChatId = extra.telegram_chat_id;
+  const discordUrl = await decryptCredential(site.discord_webhook_url_enc);
+  const tgEnabled = site.telegram_notify;
+  const tgChatId = site.telegram_chat_id;
 
   // Discord: one embed per new top-3 player
   if (discordUrl) {
     for (const change of top3Changes) {
       const embed = buildTop3Embed(siteName, change.name, change.rank, change.wagered);
       await sendDiscordWebhook(discordUrl, embed).catch((e: any) => { console.error("[notify] Discord webhook failed:", e?.message); });
-            }
-          }
+    }
+  }
 
-          // Telegram: one message listing all new top-3 entries
-          if (tgEnabled && tgChatId) {
+  // Telegram: one message listing all new top-3 entries
+  if (tgEnabled && tgChatId) {
     // Find the bot token for this site's owner from bots table (encrypted)
     const bot = await db.one(
       "SELECT token_encrypted FROM bots WHERE owner_id=$1 AND status='active' LIMIT 1",
@@ -227,9 +249,9 @@ export async function notifyTop3Change(
           return `${medal} *${c.name}* entered #${c.rank} — $${Number(c.wagered).toLocaleString("en-US", { maximumFractionDigits: 0 })}`;
         });
         const text = `⚡ *${siteName}* — New Top 3!\n\n${lines.join("\n")}`;
-                  await sendTelegramMessage(botToken, tgChatId, text).catch((e: any) => { console.error("[notify] Telegram send failed:", e?.message); });
-                } catch (e: any) {
-                  console.error("[notify] failed to decrypt bot token:", String(e?.message || e));
+        await sendTelegramMessage(botToken, tgChatId, text).catch((e: any) => { console.error("[notify] Telegram send failed:", e?.message); });
+      } catch (e: any) {
+        console.error("[notify] failed to decrypt bot token:", String(e?.message || e));
       }
     }
   }
@@ -246,14 +268,14 @@ export async function notifyReset(
   players: Array<{ name: string; wagered: number; prize?: number }>,
   period: string
 ): Promise<void> {
-  const site = await db.one("SELECT extra_json FROM sites WHERE id=$1", [siteId]);
+  // H-25: Discord webhook URL now lives in a dedicated encrypted column.
+  const site = await db.one("SELECT discord_webhook_url_enc FROM sites WHERE id=$1", [siteId]);
   if (!site) return;
-  const extra = (site.extra_json && typeof site.extra_json === "object") ? site.extra_json : {};
-  const discordUrl = extra.discord_webhook_url;
+  const discordUrl = await decryptCredential(site.discord_webhook_url_enc);
   if (!discordUrl) return;
   const embed = buildResetEmbed(siteName, players, period);
-      await sendDiscordWebhook(discordUrl, embed).catch((e: any) => { console.error("[notify] Discord reset webhook failed:", e?.message); });
-    }
+  await sendDiscordWebhook(discordUrl, embed).catch((e: any) => { console.error("[notify] Discord reset webhook failed:", e?.message); });
+}
 
 /**
  * Detect rank changes for ALL players (not just top-3) and send DMs

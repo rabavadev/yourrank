@@ -6,7 +6,7 @@ import { logProviderEvent } from "../../../shared/provider-events.js";
 
 // Plan definitions imported from shared source of truth.
 // Re-exported here for backward compatibility with any local imports.
-import { PLAN_LIMITS as _PL, BOARD_LIMITS as _BL, PLAN_PRICES as _PP, PLAN_META as _PM } from "../../../shared/plans.js";
+import { PLAN_LIMITS as _PL, BOARD_LIMITS as _BL, PLAN_PRICES as _PP, PLAN_META as _PM, computeProratedExpiry as _computeProratedExpiry } from "../../../shared/plans.js";
 export const PLAN_LIMITS = _PL;
 export const BOARD_LIMITS = _BL;
 export const PLAN_PRICES = _PP;
@@ -15,7 +15,6 @@ export const PLAN_META = _PM;
 export const PRO_DAYS = 30;
 
 // QUALITY-007: Named timing constants (no magic numbers)
-const MS_PER_DAY = 86_400_000;               // 24 * 60 * 60 * 1000
 const MAX_SUBSCRIPTION_EXTENSION_DAYS = 365;  // Cap subscription stacking to 1 year
 
 // priceUsd returns the price for the given plan tier (or the env override for pro).
@@ -43,12 +42,19 @@ export async function activatePlan(env, userId, plan, days = PRO_DAYS, { provide
     if (consumeTrial && u.has_trial) return false;
 
     if (days > 0) {
-      const base = (["pro", "starter", "agency"].includes(u.plan) && Number(u.plan_expires_at) > Date.now()) ? Number(u.plan_expires_at) : Date.now();
-      let expiresMs = base + days * MS_PER_DAY;
-              // PROD-005-v8: Cap subscription extension to MAX_SUBSCRIPTION_EXTENSION_DAYS from now.
-              // Prevents unlimited stacking from repeated payments or bot abuse.
-              const maxExpiry = Date.now() + MAX_SUBSCRIPTION_EXTENSION_DAYS * MS_PER_DAY;
-      if (expiresMs > maxExpiry) expiresMs = maxExpiry;
+      // H-23: prorate upgrades. The user pays the full target-plan price for the
+      // new period; any unused value of the current paid plan is converted into
+      // extra days at the target tier's daily rate and capped at one year out.
+      const prices = { ...PLAN_PRICES, pro: priceUsd(env, "pro") };
+      const expiresMs = _computeProratedExpiry({
+        nowMs: Date.now(),
+        currentPlan: u.plan,
+        currentExpiryMs: u.plan_expires_at,
+        targetPlan: plan,
+        periodDays: days,
+        prices,
+        maxExtensionDays: MAX_SUBSCRIPTION_EXTENSION_DAYS,
+      });
 
       const updated = await tx.unsafe(
         `UPDATE users SET plan=$1, plan_expires_at=to_timestamp($2 / 1000.0), updated_at=now() ${consumeTrial ? ", has_trial=TRUE " : ""}WHERE id=$3${consumeTrial ? " AND has_trial=FALSE" : ""} RETURNING id`,
@@ -318,11 +324,17 @@ export async function handleIpn(request, env) {
           );
           return { code: 200, paid: true, paymentId: pay.id, userId: pay.user_id, amount: paidUsd, plan: "pro", orderId, lifetime: true };
         } else if (PRO_DAYS > 0) {
-          const base = (["pro", "starter", "agency"].includes(u.plan) && Number(u.plan_expires_at) > Date.now()) ? Number(u.plan_expires_at) : Date.now();
-          let expiresMs = base + PRO_DAYS * MS_PER_DAY;
-                      // PROD-005-v8: Cap subscription extension to MAX_SUBSCRIPTION_EXTENSION_DAYS from now
-                      const maxExpiry = Date.now() + MAX_SUBSCRIPTION_EXTENSION_DAYS * MS_PER_DAY;
-          if (expiresMs > maxExpiry) expiresMs = maxExpiry;
+          // H-23: prorate upgrades from the remaining value of the current paid plan.
+          const prices = { ...PLAN_PRICES, pro: priceUsd(env, "pro") };
+          const expiresMs = _computeProratedExpiry({
+            nowMs: Date.now(),
+            currentPlan: u.plan,
+            currentExpiryMs: Number(u.plan_expires_at),
+            targetPlan,
+            periodDays: PRO_DAYS,
+            prices,
+            maxExtensionDays: MAX_SUBSCRIPTION_EXTENSION_DAYS,
+          });
           await tx.unsafe(
             "UPDATE users SET plan=$1, plan_expires_at=to_timestamp($2 / 1000.0), updated_at=now() WHERE id=$3",
             [targetPlan, expiresMs, pay.user_id]

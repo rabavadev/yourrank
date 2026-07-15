@@ -1,13 +1,24 @@
 // Site handlers: get, put, list, create, archive, stats, heatmap, notifications, custom domain
 import { requireUser, json, bad, ok, readJson, rateLimit, slugify, clientIp } from "../auth.js";
-import { getByUser, getUserSite, getUserSiteById, getUserBoardsList, createBoard, duplicateBoard, createArchive, deleteArchive, deleteBoard, setActiveBoard, updateSiteTheme, invalidateSiteCache, invalidateUserCache, getBoardById, saveSite, fromJsonb } from "../site.js";
+import { getByUser, getUserSite, getUserSiteById, getUserBoardsList, createBoard, duplicateBoard, createArchive, deleteArchive, deleteBoard, setActiveBoard, updateSiteTheme, invalidateSiteCache, invalidateUserCache, getBoardById, saveSite } from "../site.js";
 import { bumpStat, getStats, getHeatmap, getTopReferrers } from "../stats.js";
 import { effectivePlan, PLAN_LIMITS, BOARD_LIMITS } from "../billing.js";
 import { templateCatalog } from "../templates/index.js";
 import { one, exec } from "../../../../shared/db.js";
 import { logAudit } from "../../../../shared/audit.js";
 import { buildTop3Embed, sendDiscordWebhook, sendTelegramMessage } from "../../../../shared/notifications.js";
-import { decryptToken } from "../../../../shared/crypto.js";
+import { decryptToken, decrypt } from "../../../../shared/crypto.js";
+
+function getTokenEncKey() {
+  const hex = (typeof process !== "undefined" && process.env?.TOKEN_ENC_KEY) || "";
+  if (hex.length !== 64) throw new Error("TOKEN_ENC_KEY must be 64 hex characters (32 bytes)");
+  return hex;
+}
+
+async function decryptCredential(blobHex) {
+  if (!blobHex) return null;
+  try { return await decrypt(blobHex, getTokenEncKey()); } catch { return blobHex; }
+}
 import { createQueueProducer } from "../../../../shared/queue-producer.js";
 
 export async function handleStats(request, env) {
@@ -224,11 +235,12 @@ export async function handleNotifyTest(request, env) {
 
   const site = await getByUser(env, user.id);
   if (!site) return bad("No site found", 404);
-  const rawExtra = fromJsonb(site.extra_json);
-  const extra = (rawExtra && typeof rawExtra === "object") ? rawExtra : {};
 
   if (channel === "discord") {
-    const webhookUrl = String(body.webhook_url || extra.discord_webhook_url || "").trim();
+    let webhookUrl = body.webhook_url ? String(body.webhook_url).trim() : null;
+    if (!webhookUrl) {
+      try { webhookUrl = await decryptCredential(site.discord_webhook_url_enc); } catch { webhookUrl = null; }
+    }
     if (!webhookUrl) return bad("No Discord webhook URL configured.");
     if (!/^https:\/\/discord\.com\/api\/webhooks\/\d+\/.+/.test(webhookUrl) &&
         !/^https:\/\/discordapp\.com\/api\/webhooks\/\d+\/.+/.test(webhookUrl)) {
@@ -243,7 +255,7 @@ export async function handleNotifyTest(request, env) {
   }
 
   if (channel === "telegram") {
-    const chatId = String(body.chat_id || extra.telegram_chat_id || "").trim();
+    const chatId = String(body.chat_id || site.telegram_chat_id || "").trim();
     if (!chatId) return bad("No Telegram chat ID configured.");
     // Find bot token — BUG-DB-008: bot_token doesn't exist on users. Tokens live in bots table (encrypted).
     const bot = await one("SELECT token_encrypted FROM bots WHERE owner_id=$1 AND status='active' ORDER BY created_at DESC LIMIT 1", [user.id]);
