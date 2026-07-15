@@ -5,6 +5,7 @@ import { bumpStat, getStats, getHeatmap, getTopReferrers } from "../stats.js";
 import { effectivePlan, PLAN_LIMITS, BOARD_LIMITS } from "../billing.js";
 import { templateCatalog } from "../templates/index.js";
 import { one, exec } from "../../../../shared/db.js";
+import { logAudit } from "../../../../shared/audit.js";
 import { buildTop3Embed, sendDiscordWebhook, sendTelegramMessage } from "../../../../shared/notifications.js";
 import { decryptToken } from "../../../../shared/crypto.js";
 
@@ -101,7 +102,7 @@ export async function handleCreateBoard(request, env) {
   let slug = slugify(body.slug || "");
   if (!slug) return bad("Enter a valid slug for the board URL.");
   const name = String(body.name || "").trim().slice(0, 80) || slug;
-  const r = await createBoard(env, user.id, { slug, name });
+  const r = await createBoard(env, user.id, { slug, name, casino: body.casino, code: body.code }, request);
   return r.error
     ? json({ ok: false, error: r.error, code: r.code || "create_failed" }, 400)
     : json({ ok: true, id: r.id, slug: r.slug });
@@ -114,7 +115,7 @@ export async function handleArchive(request, env) {
   if (user.status === "suspended") return bad("This account is suspended.", 403);
   if (!(await rateLimit(env, `archive:${user.id}`, 10, 3600)).ok) return bad("Too many archive actions. Try again later.", 429);
   const body = (await readJson(request)) || {};
-  const r = await createArchive(env, user.id, { label: body.label, clear: body.clear });
+  const r = await createArchive(env, user.id, { label: body.label, clear: body.clear, siteId: body.siteId }, request);
   return r.error ? bad(r.error, 400) : json({ ok: true, label: r.label });
 }
 
@@ -124,7 +125,18 @@ export async function handleArchiveDelete(request, env) {
   if (res) return res;
   const body = (await readJson(request)) || {};
   if (!body.id) return bad("id required");
+  const site = await getByUser(env, user.id);
   const r = await deleteArchive(env, user.id, body.id);
+  if (!r.error) {
+    await logAudit({
+      actorId: user.id,
+      action: "archive_delete",
+      entityType: "site",
+      entityId: site?.id || body.id,
+      request,
+      details: { board_id: site?.id || null, board_slug: site?.slug || null, archive_id: body.id },
+    });
+  }
   return r.error ? bad(r.error, 400) : json({ ok: true });
 }
 
@@ -136,7 +148,7 @@ export async function handlePutSite(request, env) {
   if (!(await rateLimit(env, `save-site:${user.id}`, 30, 60)).ok) return bad("Too many saves. Try again shortly.", 429);
   const payload = await readJson(request);
   if (!payload) return bad("Invalid request");
-  const r = await saveSite(env, user, payload, payload.siteId || null);
+  const r = await saveSite(env, user, payload, payload.siteId || null, request);
   return r.error ? bad(r.error, 400) : json({ ok: true, updatedAt: r.updatedAt, slug: r.slug });
 }
 
@@ -147,7 +159,7 @@ export async function handlePutTheme(request, env) {
   if (!(await rateLimit(env, `save-theme:${user.id}`, 30, 60)).ok) return bad("Too many theme changes. Try again shortly.", 429);
   const payload = await readJson(request);
   if (!payload) return bad("Invalid request");
-  const r = await updateSiteTheme(env, user, payload);
+  const r = await updateSiteTheme(env, user, payload, request);
   return r.error ? bad(r.error, 400) : json({ ok: true, branding: r.branding });
 }
 
@@ -159,7 +171,7 @@ export async function handleDeleteSite(request, env) {
   if (!(await rateLimit(env, `delete-site:${user.id}`, 10, 60)).ok) return bad("Too many delete actions. Try again later.", 429);
   const body = await readJson(request);
   if (!body || !body.siteId) return bad("siteId required");
-  const r = await deleteBoard(env, user.id, body.siteId);
+  const r = await deleteBoard(env, user.id, body.siteId, request);
   return r.error ? bad(r.error, 400) : json({ ok: true });
 }
 
@@ -171,7 +183,7 @@ export async function handleSetActive(request, env) {
   if (!(await rateLimit(env, `set-active:${user.id}`, 30, 60)).ok) return bad("Too many requests. Try again later.", 429);
   const body = await readJson(request);
   if (!body || !body.siteId) return bad("siteId required");
-  const r = await setActiveBoard(env, user.id, body.siteId);
+  const r = await setActiveBoard(env, user.id, body.siteId, request);
   return r.error ? bad(r.error, 400) : json({ ok: true });
 }
 
@@ -183,7 +195,7 @@ export async function handleDuplicateBoard(request, env) {
   if (!(await rateLimit(env, `duplicate-board:${user.id}`, 10, 3600)).ok) return bad("Too many duplicate actions. Try again later.", 429);
   const body = await readJson(request);
   if (!body || !body.siteId) return bad("siteId required");
-  const r = await duplicateBoard(env, user.id, body.siteId);
+  const r = await duplicateBoard(env, user.id, body.siteId, request);
   return r.error ? bad(r.error, 400) : json({ ok: true, id: r.id, slug: r.slug });
 }
 

@@ -3,52 +3,23 @@ import { json, bad, ok, readJson, newToken, readToken, currentUser, destroyAllUs
 import { activatePlan } from "./billing.js";
 import { sendEmail } from "./email.js";
 import { query, one, exec } from "../../../shared/db.js";
+import { logAudit } from "../../../shared/audit.js";
 import { generateSecret, verifyCode, generateOtpauthUri } from "./totp.js";
 import { encrypt, decrypt } from "../../../shared/crypto.js";
 
 // QUALITY-007: Named timing constants (no magic numbers)
 const RESET_TOKEN_TTL_S = 86400;   // 24 hours — admin-initiated password reset link validity
 
-// SEC-106: Only keep known-safe keys in audit log details before persisting.
-// Whitelist approach: any key not in the safe set is dropped. This prevents
-// reset tokens, session tokens, TOTP secrets, passwords, or any future
-// sensitive field from leaking into the admin_audit table.
-const AUDIT_SAFE_KEYS = new Set([
-  "email", "plan", "slug", "action", "details", "ip", "amount",
-  "provider", "label", "board_name", "board_id", "boards", "players",
-  "old_plan", "new_plan", "expires_at", "reason", "disabled", "message",
-  "subject", "messageId",
-]);
-function sanitizeAuditDetails(details) {
-  if (!details || typeof details !== "object") return details;
-  const safe = {};
-  for (const [k, v] of Object.entries(details)) {
-    if (AUDIT_SAFE_KEYS.has(k)) safe[k] = v;
-  }
-  return safe;
-}
-
-// Log admin action to database for persistent audit trail
+// Log admin action to the unified audit_log table for persistent audit trail.
 async function logAdminAction(env, adminId, action, targetUserId = null, details = null, request = null) {
-  try {
-    const ipAddress = request ? clientIp(request) : null;
-    const userAgent = request ? request.headers.get("user-agent") : null;
-    await exec(
-      `INSERT INTO admin_audit (admin_id, target_user_id, action, details, ip_address, user_agent)
-       VALUES ($1, $2, $3, $4::jsonb, $5, $6)`,
-      [adminId, targetUserId, action, sanitizeAuditDetails(details || {}), ipAddress, userAgent]
-    );
-  } catch (e) {
-    // Degrade gracefully: log to console if DB write fails
-    console.error("[adminAudit] DB write failed:", String(e?.message || e));
-    console.error("[AUDIT fallback]", JSON.stringify({
-      ts: new Date().toISOString(),
-      admin: adminId,
-      target: targetUserId,
-      action,
-      details: sanitizeAuditDetails(details),
-    }));
-  }
+  await logAudit({
+    actorId: adminId,
+    action,
+    entityType: "admin",
+    entityId: targetUserId || adminId,
+    request,
+    details: details || {},
+  });
 }
 
 export async function requireAdmin(request, env) {

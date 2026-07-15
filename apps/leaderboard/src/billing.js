@@ -1,6 +1,7 @@
 // Billing: NOWPayments (crypto) + manual activation. Plan logic lives here.
 import { json, bad, ok, uuid, requireUser, safeEqual, readJson } from "./auth.js";
 import { exec, withTransaction } from "../../../shared/db.js";
+import { logAudit } from "../../../shared/audit.js";
 
 // Plan definitions imported from shared source of truth.
 // Re-exported here for backward compatibility with any local imports.
@@ -118,6 +119,14 @@ export async function handleCheckout(request, env) {
       "INSERT INTO payments (user_id,provider,amount,currency,status,tx_ref,plan_tier) VALUES ($1,$2,$3,$4,$5,$6,$7)",
       [user.id, "nowpayments", price, "USD", "created", orderId, targetPlan]
     );
+    await logAudit({
+      actorId: user.id,
+      action: "payment_checkout",
+      entityType: "payment",
+      entityId: orderId,
+      request,
+      details: { provider: "nowpayments", amount: price, currency: "USD", plan: targetPlan, status: "created" },
+    });
     const inv = await createNowPaymentsInvoice(env, {
       price,
       orderId,
@@ -152,6 +161,14 @@ export async function handleCheckoutLifetime(request, env) {
       "INSERT INTO payments (user_id,provider,amount,currency,status,tx_ref,plan_tier) VALUES ($1,$2,$3,$4,$5,$6,$7)",
       [user.id, "nowpayments", price, "USD", "created", orderId, "pro"]
     );
+    await logAudit({
+      actorId: user.id,
+      action: "payment_checkout",
+      entityType: "payment",
+      entityId: orderId,
+      request,
+      details: { provider: "nowpayments", amount: price, currency: "USD", plan: "pro", status: "created", lifetime: true },
+    });
     const inv = await createNowPaymentsInvoice(env, {
       price,
       orderId,
@@ -202,13 +219,13 @@ export async function handleIpn(request, env) {
   const orderId = String(body.order_id || "");
   const status = String(body.payment_status || "");
 
-  await withTransaction(async (tx) => {
+  const ipnResult = await withTransaction(async (tx) => {
     const payRows = await tx.unsafe(
       "SELECT id, user_id, status, amount, plan_tier FROM payments WHERE tx_ref=$1 FOR UPDATE",
       [orderId]
     );
     const pay = payRows[0];
-    if (!pay) return { code: 200 }; // Return 200 to prevent order-id enumeration
+    if (!pay) return { code: 200, paid: false }; // Return 200 to prevent order-id enumeration
 
     await tx.unsafe(
       "UPDATE payments SET status=$1, payload_json=$2::jsonb, updated_at=now() WHERE id=$3",
@@ -245,7 +262,7 @@ export async function handleIpn(request, env) {
         if (actuallyPaid < minAccepted) {
           // Underpayment: don't grant the tier, just record the payment status
           console.warn(`[IPN] Underpayment for order ${orderId}: paid ${actuallyPaid}, expected ${tierPrice} for ${targetPlan}`);
-          return { code: 200 };
+          return { code: 200, paid: false, underpaid: true, paymentId: pay.id, userId: pay.user_id, amount: actuallyPaid, plan: targetPlan, orderId };
         }
 
         // Lifetime payment ($149): activate Pro with far-future expiry
@@ -259,6 +276,7 @@ export async function handleIpn(request, env) {
             "INSERT INTO subscriptions (user_id, plan, status, provider, current_period_end) VALUES ($1, $2, 'active', 'nowpayments_lifetime', $3::timestamptz)",
             [pay.user_id, "pro", "2099-12-31T23:59:59Z"]
           );
+          return { code: 200, paid: true, paymentId: pay.id, userId: pay.user_id, amount: actuallyPaid, plan: "pro", orderId, lifetime: true };
         } else if (PRO_DAYS > 0) {
           const base = (["pro", "starter", "agency"].includes(u.plan) && Number(u.plan_expires_at) > Date.now()) ? Number(u.plan_expires_at) : Date.now();
           let expiresMs = base + PRO_DAYS * MS_PER_DAY;
@@ -273,6 +291,7 @@ export async function handleIpn(request, env) {
             "INSERT INTO subscriptions (user_id, plan, status, provider, current_period_end) VALUES ($1, $2, 'active', 'nowpayments', to_timestamp($3 / 1000.0))",
             [pay.user_id, targetPlan, expiresMs]
           );
+          return { code: 200, paid: true, paymentId: pay.id, userId: pay.user_id, amount: actuallyPaid, plan: targetPlan, orderId };
         } else {
           // PRO_DAYS = 0 shouldn't happen, but if it does, use far-future date instead of NULL
           const lifetimeExpiry = new Date('2099-12-31T23:59:59Z').getTime();
@@ -280,12 +299,24 @@ export async function handleIpn(request, env) {
             "UPDATE users SET plan=$1, plan_expires_at=to_timestamp($2 / 1000.0), updated_at=now() WHERE id=$3",
             [targetPlan, lifetimeExpiry, pay.user_id]
           );
+          return { code: 200, paid: true, paymentId: pay.id, userId: pay.user_id, amount: actuallyPaid, plan: targetPlan, orderId };
         }
       }
     }
 
-    return { code: 200 };
+    return { code: 200, paid: false };
   });
+
+  if (ipnResult?.paid) {
+    await logAudit({
+      actorId: ipnResult.userId,
+      action: "payment_paid",
+      entityType: "payment",
+      entityId: ipnResult.paymentId,
+      request,
+      details: { order_id: ipnResult.orderId, amount: ipnResult.amount, plan: ipnResult.plan, lifetime: !!ipnResult.lifetime, provider: "nowpayments" },
+    });
+  }
 
   return ok();
 }
@@ -304,6 +335,14 @@ export async function handleCancel(request, env) {
       "INSERT INTO subscriptions (user_id, plan, status, provider, current_period_end) VALUES ($1, $2, 'canceled', 'manual', $3)",
       [user.id, user.plan || "free", currentPeriodEnd]
     );
+    await logAudit({
+      actorId: user.id,
+      action: "subscription_cancel",
+      entityType: "subscription",
+      entityId: user.id,
+      request,
+      details: { plan: user.plan || "free", current_period_end: currentPeriodEnd, provider: "manual" },
+    });
     return ok({ message: "Subscription cancelled. You will keep Pro features until the end of your current billing period." });
   } catch (err) {
     console.error("[handleCancel] failed:", err);

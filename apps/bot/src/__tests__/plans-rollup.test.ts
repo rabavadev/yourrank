@@ -28,16 +28,22 @@ const cryptoUrl   = import.meta.resolve("../../../../shared/crypto.js");
 const cryptoUrlTs = import.meta.resolve("../../../../shared/crypto.ts");
 const cryptoMock = () => ({
   decryptToken: (enc: string) => enc,
+  encryptToken: (s: string) => s,
+  reencryptToken: (s: string) => s,
   encrypt: (s: string) => s,
   decrypt: (s: string) => s,
   verifyHmacSha256Hex: async () => true,
   safeEqual: (a: string, b: string) => a === b,
-  encryptToken: (s: string) => s,
-  reencryptToken: (s: string) => s,
   isCurrentVersion: () => true,
   newClickRef: () => "ref",
   newLinkSlug: () => "slug",
   newWebhookSecret: () => "secret",
+  newPostbackKey: () => "pbkey",
+  bytesToHex: (bytes: Uint8Array) =>
+    Array.from(bytes).map((b) => b.toString(16).padStart(2, "0")).join(""),
+  hexToBytes: (hex: string) =>
+    new Uint8Array(hex.match(/.{1,2}/g)?.map((b) => parseInt(b, 16)) || []),
+  hashIp: async (ip: string) => Buffer.from(ip),
 });
 mock.module(cryptoUrl, cryptoMock);
 mock.module(cryptoUrlTs, cryptoMock);

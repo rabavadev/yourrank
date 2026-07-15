@@ -19,7 +19,23 @@ const dbMock = () => ({
 });
 
 const cryptoMock = () => ({
-  decryptToken: () => "test-token",
+  decryptToken: (enc: string) => enc,
+  encryptToken: (s: string) => s,
+  reencryptToken: (s: string) => s,
+  encrypt: (s: string) => s,
+  decrypt: (s: string) => s,
+  verifyHmacSha256Hex: async () => true,
+  safeEqual: (a: string, b: string) => a === b,
+  isCurrentVersion: () => true,
+  newClickRef: () => "ref",
+  newLinkSlug: () => "slug",
+  newWebhookSecret: () => "secret",
+  newPostbackKey: () => "pbkey",
+  bytesToHex: (bytes: Uint8Array) =>
+    Array.from(bytes).map((b) => b.toString(16).padStart(2, "0")).join(""),
+  hexToBytes: (hex: string) =>
+    new Uint8Array(hex.match(/.{1,2}/g)?.map((b) => parseInt(b, 16)) || []),
+  hashIp: async (ip: string) => Buffer.from(ip),
 });
 
 mock.module(dbUrl, dbMock);

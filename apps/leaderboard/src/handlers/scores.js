@@ -41,7 +41,7 @@ export async function handleScores(request, env) {
       partner: { blurb: site.blurb },
       players: validPlayers.map(p => ({ name: String(p.name).slice(0, 40), wagered: Number(p.wagered) || 0, prize: Number(p.prize) || 0 })),
     };
-    const r = await saveSite(env, user, savePayload, site.id);
+    const r = await saveSite(env, user, savePayload, site.id, request);
     return r.error ? bad(r.error, 400) : json({ ok: true, players: validPlayers.length });
   } catch (e) {
     console.error("scores API failed:", String(e?.message || e));

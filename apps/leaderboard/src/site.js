@@ -4,6 +4,7 @@ import { query, one, exec, withTransaction } from "../../../shared/db.js";
 import { notifyTop3Change, notifyReset, detectTop3Changes, notifySubscribedPlayers } from "../../../shared/notifications.js";
 import { TEMPLATE_IDS } from "./templates/index.js";
 import { RESERVED, slugify } from "./auth.js";
+import { logAudit } from "../../../shared/audit.js";
 
 // NOTE: chips + whyStats intentionally start empty. They render casino perks
 // ("Deposit Bonus", "Instant Rakeback", …) that a brand-new owner never entered,
@@ -293,7 +294,7 @@ export async function getUserSiteById(env, uid, siteId, plan) {
   }
 
 // Multi-board: create a new board for a user.
-export async function createBoard(env, uid, { slug, name, casino = "", code = "" } = {}) {
+export async function createBoard(env, uid, { slug, name, casino = "", code = "" } = {}, request = null) {
   const plan = effectivePlan(await one("SELECT plan, (EXTRACT(EPOCH FROM plan_expires_at) * 1000)::double precision AS plan_expires_at, status FROM users WHERE id=$1", [uid]));
   const limit = BOARD_LIMITS[plan] || 1;
   const boards = await getAllBoards(env, uid);
@@ -315,6 +316,14 @@ export async function createBoard(env, uid, { slug, name, casino = "", code = ""
   // If the user has no active board, make the new one active.
   await exec("UPDATE users SET active_site_id=$1, updated_at=now() WHERE id=$2 AND active_site_id IS NULL", [siteId, uid]);
   invalidateUserCache(env, uid);
+  await logAudit({
+    actorId: uid,
+    action: "board_create",
+    entityType: "site",
+    entityId: siteId,
+    request,
+    details: { board_id: siteId, board_slug: slug, name: name || slug, casino: cleanCasino, code: cleanCode },
+  });
   return { ok: true, id: siteId, slug };
 }
 
@@ -334,7 +343,7 @@ async function uniqueSlug(env, base) {
 }
 
 // Multi-board: duplicate an existing board (design + players) for the next sponsor.
-export async function duplicateBoard(env, uid, siteId) {
+export async function duplicateBoard(env, uid, siteId, request = null) {
   const source = await getBoardById(env, uid, siteId);
   if (!source) return { error: "no site" };
   const owner = await one("SELECT plan, (EXTRACT(EPOCH FROM plan_expires_at) * 1000)::double precision AS plan_expires_at, status FROM users WHERE id=$1", [uid]);
@@ -378,11 +387,19 @@ export async function duplicateBoard(env, uid, siteId) {
     }
   });
   invalidateUserCache(env, uid);
+  await logAudit({
+    actorId: uid,
+    action: "board_duplicate",
+    entityType: "site",
+    entityId: newId,
+    request,
+    details: { board_id: newId, board_slug: newSlug, source_site_id: siteId, source_board_slug: source.slug },
+  });
   return { ok: true, id: newId, slug: newSlug };
 }
 
 // Close out the current period: snapshot the board, then optionally reset it.
-export async function createArchive(env, uid, { label, clear, siteId } = {}) {
+export async function createArchive(env, uid, { label, clear, siteId } = {}, request = null) {
     const site = siteId ? await getBoardById(env, uid, siteId) : await getByUser(env, uid);
     if (!site) return { error: "no site" };
     const players = await getPlayers(env, site.id);
@@ -418,6 +435,14 @@ export async function createArchive(env, uid, { label, clear, siteId } = {}) {
     else if (clear === "wagers") await tx.unsafe("UPDATE players SET wagered=0 WHERE site_id=$1", [site.id]);
   });
   if (limitReached) return { error: `Archive limit reached (${maxArchives}). Delete an old one first. Upgrade for more.` };
+  await logAudit({
+    actorId: uid,
+    action: "archive_create",
+    entityType: "site",
+    entityId: site.id,
+    request,
+    details: { board_id: site.id, board_slug: site.slug, archive_label: lab, clear: clear || null },
+  });
   // Send reset notification
   try {
     const rawNotify = fromJsonb(site.extra_json);
@@ -449,7 +474,7 @@ export function normalizeEndsAt(incoming, existing) {
   return trimmed || null;
 }
 
-export async function saveSite(env, user, payload, siteId) {
+export async function saveSite(env, user, payload, siteId, request = null) {
   const uid = typeof user === "string" ? user : user.id;
   const site = siteId ? await getBoardById(env, uid, siteId) : await getByUser(env, uid);
   if (!site) return { error: "no site" };
@@ -619,10 +644,44 @@ export async function saveSite(env, user, payload, siteId) {
   }
   // Return updated site data including new timestamp for optimistic concurrency
   const updatedSite = await getBoardById(env, uid, site.id);
+
+  // Build a concise list of what changed for the audit log
+  const changes = [];
+  if (slugRename) changes.push("slug");
+  if (siteName !== site.name) changes.push("name");
+  if (typeof payload.published === "boolean" && payload.published !== !!site.published) changes.push(payload.published ? "publish" : "unpublish");
+  if (Array.isArray(payload.players)) changes.push(`players:${payload.players.filter((p) => p && p.name).length}`);
+  const oldTheme = rawThemeObj && typeof rawThemeObj === "object" ? rawThemeObj : {};
+  if (payload.branding) {
+    const hadLogo = !!existingLogoRow?.logo_data;
+    const hasLogo = !!logoData;
+    if (br && br.logo !== undefined && hadLogo !== hasLogo) changes.push("logo");
+    if (br && br.accentA && br.accentA !== (oldTheme.accentA || "")) changes.push("accentA");
+    if (br && br.accentB && br.accentB !== (oldTheme.accentB || "")) changes.push("accentB");
+    if (br && br.template && br.template !== (oldTheme.template || "classic")) changes.push("template");
+  }
+  if (payload.endsAt !== undefined) changes.push("ends_at");
+  if (payload.customDomain !== undefined) changes.push("custom_domain");
+
+  await logAudit({
+    actorId: uid,
+    action: "board_update",
+    entityType: "site",
+    entityId: site.id,
+    request,
+    details: {
+      board_id: site.id,
+      board_slug: slugRename || site.slug,
+      slug_rename: slugRename || null,
+      old_slug: slugRename ? site.slug : null,
+      changes,
+    },
+  });
+
   return { ok: true, updatedAt: updatedSite?.updated_at, slug: updatedSite?.slug || slugRename || site.slug };
 }
 
-export async function deleteBoard(env, uid, siteId) {
+export async function deleteBoard(env, uid, siteId, request = null) {
   const site = await getBoardById(env, uid, siteId);
   if (!site) return { error: "no site" };
   const boards = await getAllBoards(env, uid);
@@ -639,18 +698,34 @@ export async function deleteBoard(env, uid, siteId) {
   });
   invalidateSiteCache(env, site.slug, uid, siteId);
   invalidateUserCache(env, uid);
+  await logAudit({
+    actorId: uid,
+    action: "board_delete",
+    entityType: "site",
+    entityId: siteId,
+    request,
+    details: { board_id: siteId, board_slug: site.slug, remaining_boards: boards.length - 1 },
+  });
   return { ok: true };
 }
 
-export async function setActiveBoard(env, uid, siteId) {
+export async function setActiveBoard(env, uid, siteId, request = null) {
   const site = await getBoardById(env, uid, siteId);
   if (!site) return { error: "no site" };
   await exec("UPDATE users SET active_site_id=$1, updated_at=now() WHERE id=$2", [siteId, uid]);
   invalidateUserCache(env, uid);
+  await logAudit({
+    actorId: uid,
+    action: "board_set_active",
+    entityType: "site",
+    entityId: siteId,
+    request,
+    details: { board_id: siteId, board_slug: site.slug },
+  });
   return { ok: true };
 }
 
-export async function updateSiteTheme(env, user, payload = {}) {
+export async function updateSiteTheme(env, user, payload = {}, request = null) {
   const site = payload.siteId
     ? await getBoardById(env, user.id, payload.siteId)
     : await getByUser(env, user.id);
@@ -677,6 +752,14 @@ export async function updateSiteTheme(env, user, payload = {}) {
   );
   invalidateSiteCache(env, site.slug, user.id, site.id);
   invalidateUserCache(env, user.id);
+  await logAudit({
+    actorId: user.id,
+    action: "theme_update",
+    entityType: "site",
+    entityId: site.id,
+    request,
+    details: { board_id: site.id, board_slug: site.slug, template: theme.template, accentA: theme.accentA, accentB: theme.accentB },
+  });
   return {
     ok: true,
     branding: {
