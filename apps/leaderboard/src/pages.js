@@ -208,8 +208,9 @@ export const PAGES = {
 </div>
 </div>
 </div>
+<button class="lb-side-close" type="button" aria-label="Close navigation" data-close-side>×</button>
 <span class="lb-side-grp">Manage</span>
-<button class="lb-nav is-on" type="button" data-nav="overview"><span class="lb-nav-ic" aria-hidden="true">◱</span>Overview</button>
+<button class="lb-nav is-on" type="button" data-nav="overview" aria-current="page"><span class="lb-nav-ic" aria-hidden="true">◱</span>Overview</button>
 <button class="lb-nav" type="button" data-nav="boards"><span class="lb-nav-ic" aria-hidden="true">☰</span>Boards</button>
 <button class="lb-nav" type="button" data-nav="board"><span class="lb-nav-ic" aria-hidden="true">🏆</span>Prize &amp; players</button>
 <button class="lb-nav" type="button" data-nav="design"><span class="lb-nav-ic" aria-hidden="true">🎨</span>Design</button>
@@ -221,7 +222,7 @@ export const PAGES = {
 </aside>
 <div class="lb-main">
 <section class="lb-page is-on" data-page="overview">
-<div class="lb-phead"><button class="lb-menu" id="lbMenu" type="button" aria-label="Show sections">☰</button><div><h1>Overview</h1><p class="lb-psub">Your leaderboard at a glance</p></div></div>
+<div class="lb-phead"><button class="lb-menu" id="lbMenu" type="button" aria-label="Show sections" aria-expanded="false" aria-controls="lbSide">☰</button><div><h1 tabindex="-1">Overview</h1><p class="lb-psub">Your leaderboard at a glance</p></div></div>
 <div class="stat-tiles">
 <div class="stat-tile"><span class="stat-num" id="ov_pool">–</span><span class="stat-lbl">Prize pool</span></div>
 <div class="stat-tile"><span class="stat-num" id="ov_players">–</span><span class="stat-lbl">Players</span></div>
@@ -238,7 +239,7 @@ export const PAGES = {
 
 </section>
 <section class="lb-page" data-page="boards">
-<div class="lb-phead"><button class="lb-menu" type="button" aria-label="Show sections" data-menu>☰</button><div><h1>Boards</h1><p class="lb-psub">All your sponsor leaderboards</p></div><button class="btn btn--sm" id="addBoardFromBoards" type="button">+ New board</button></div>
+<div class="lb-phead"><button class="lb-menu" type="button" aria-label="Show sections" data-menu aria-expanded="false" aria-controls="lbSide">☰</button><div><h1 tabindex="-1">Boards</h1><p class="lb-psub">All your sponsor leaderboards</p></div><button class="btn btn--sm" id="addBoardFromBoards" type="button">+ New board</button></div>
 <div class="card">
 <div class="board-table-wrap">
 <table class="board-table">
@@ -250,7 +251,7 @@ export const PAGES = {
 </div>
 </section>
 <section class="lb-page" data-page="growth">
-<div class="lb-phead"><button class="lb-menu" type="button" aria-label="Show sections" data-menu>☰</button><div><h1>Analytics</h1><p class="lb-psub">How your page is performing</p></div></div>
+<div class="lb-phead"><button class="lb-menu" type="button" aria-label="Show sections" data-menu aria-expanded="false" aria-controls="lbSide">☰</button><div><h1 tabindex="-1">Analytics</h1><p class="lb-psub">How your page is performing</p></div></div>
 <div class="card"><p class="card-sub">Last 30 days on your page. Views count every visit; copies and clicks are people grabbing your code or hitting Join.</p>
 <div class="stat-tiles">
 <div class="stat-tile"><span class="stat-num" id="st_views7">–</span><span class="stat-lbl">Views · 7d</span></div>
@@ -261,7 +262,7 @@ export const PAGES = {
 <p class="hint" id="statsEmpty" hidden>No views yet — share your page link in your stream panels and Discord to get it moving.</p></div>
 </section>
 <section class="lb-page" data-page="board">
-<div class="lb-phead"><button class="lb-menu" type="button" aria-label="Show sections" data-menu>☰</button><div><h1>Prize &amp; players</h1><p class="lb-psub">The daily job — headline details and your ranked list</p></div></div>
+<div class="lb-phead"><button class="lb-menu" type="button" aria-label="Show sections" data-menu aria-expanded="false" aria-controls="lbSide">☰</button><div><h1 tabindex="-1">Prize &amp; players</h1><p class="lb-psub">The daily job — headline details and your ranked list</p></div></div>
 <div class="card"><h2>Brand &amp; prize</h2><p class="card-sub">The headline details on your page.</p><div class="grid2">
 <div class="field"><label for="f_name">Display name</label><input id="f_name" /></div>
 <div class="field"><label for="f_tagline">Tagline</label><input id="f_tagline" placeholder="Casino streamer & Stake partner" /></div>
@@ -284,7 +285,7 @@ export const PAGES = {
 <button class="btn btn--sm btn--accent" id="importApply" type="button" disabled>Add to table</button></div></div></div>
 </section>
 <section class="lb-page" data-page="design">
-<div class="lb-phead"><button class="lb-menu" type="button" aria-label="Show sections" data-menu>☰</button><div><h1>Design</h1><p class="lb-psub">How your public page looks</p></div></div>
+<div class="lb-phead"><button class="lb-menu" type="button" aria-label="Show sections" data-menu aria-expanded="false" aria-controls="lbSide">☰</button><div><h1 tabindex="-1">Design</h1><p class="lb-psub">How your public page looks</p></div></div>
 <div class="card" id="templateCard"><h2>Page template</h2><p class="card-sub">Live previews use this board's real name, prize pool and players. Click a design to publish it instantly.</p>
 <input type="hidden" id="f_template" value="classic" />
 <div class="template-grid" id="templateGallery" aria-label="Page templates"></div>
@@ -306,7 +307,7 @@ export const PAGES = {
 <div class="empty" id="brandLock" hidden>Branding is a Pro feature. <a href="#" id="brandUpgrade">Upgrade to unlock it</a>.</div></div>
 </section>
 <section class="lb-page" data-page="integrations">
-<div class="lb-phead"><button class="lb-menu" type="button" aria-label="Show sections" data-menu>☰</button><div><h1>Integrations</h1><p class="lb-psub">Overlay, domain and alerts — connect and check status in one place</p></div></div>
+<div class="lb-phead"><button class="lb-menu" type="button" aria-label="Show sections" data-menu aria-expanded="false" aria-controls="lbSide">☰</button><div><h1 tabindex="-1">Integrations</h1><p class="lb-psub">Overlay, domain and alerts — connect and check status in one place</p></div></div>
 <div class="card" id="overlayCard"><h2>OBS Stream Overlay <span class="pill pill--info ml-6">PRO</span></h2><p class="card-sub">Add a live leaderboard overlay to your stream. It auto-updates every 15 seconds with smooth rank animations.</p>
 <div id="overlayBody">
 <div class="field"><label>Overlay URL</label>
@@ -356,7 +357,7 @@ export const PAGES = {
 <div class="empty" id="notifyLock" hidden>Notifications are a Pro feature. <a href="#" id="notifyUpgrade">Upgrade to unlock them</a>.</div></div>
 </section>
 <section class="lb-page" data-page="manage">
-<div class="lb-phead"><button class="lb-menu" type="button" aria-label="Show sections" data-menu>☰</button><div><h1>Periods &amp; plan</h1><p class="lb-psub">Close out a period and manage your plan</p></div></div>
+<div class="lb-phead"><button class="lb-menu" type="button" aria-label="Show sections" data-menu aria-expanded="false" aria-controls="lbSide">☰</button><div><h1 tabindex="-1">Periods &amp; plan</h1><p class="lb-psub">Close out a period and manage your plan</p></div></div>
 <div class="card" id="archiveCard"><h2>Past winners</h2><p class="card-sub">When a period ends, close it out: the current board is saved and shown on your page under "Past Winners". Saves your unsaved edits first.</p>
 <div class="arch-form">
 <div class="field field-flex"><label for="a_label">Label</label><input id="a_label" placeholder="July 2026" /></div>
