@@ -120,15 +120,41 @@ function addCookieConsent(html) {
   return html.replace(/<\/body>\s*<\/html>\s*$/i, '<script src="/assets/cookie-consent.js" defer></script></body></html>');
 }
 
+const MAX_BODY_BYTES = 1_000_000;
+const MUTATING_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
+
+async function bodyExceedsLimit(request, maxBytes) {
+  const cl = request.headers.get("content-length");
+  if (cl && Number(cl) > maxBytes) return true;
+  if (!request.body) return false;
+  // H-18: Content-Length can be absent (chunked encoding) or lie. Read a clone
+  // of the stream up to the limit so oversized chunked bodies are rejected too.
+  const clone = request.clone();
+  const reader = clone.body.getReader();
+  try {
+    let total = 0;
+    // eslint-disable-next-line no-constant-condition
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      total += value ? value.length : 0;
+      if (total > maxBytes) return true;
+    }
+  } finally {
+    reader.releaseLock();
+  }
+  return false;
+}
+
 async function handleRequest(request, env, ctx, meta) {
     const { log: workerLog, reqId } = meta || {};
     try {
-      // BE-004: Reject oversized request bodies early, before any parsing.
-      // 1 MB is generous for JSON payloads (site data, auth forms, etc.)
-      // while blocking multi-MB abuse that could exhaust Worker memory.
-      if (request.method === "POST" || request.method === "PUT") {
-        const cl = request.headers.get("content-length");
-        if (cl && Number(cl) > 1_000_000) {
+      // BE-004 / H-18: Reject oversized request bodies early, before any parsing.
+      // 1 MB is generous for JSON payloads (site data, auth forms, etc.) while
+      // blocking multi-MB abuse. Applies to all state-changing methods and checks
+      // chunked bodies by consuming a clone of the stream up to the limit.
+      if (MUTATING_METHODS.has(request.method)) {
+        if (await bodyExceedsLimit(request, MAX_BODY_BYTES)) {
           return new Response("payload too large", { status: 413 });
         }
       }

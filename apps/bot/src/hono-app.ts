@@ -35,6 +35,32 @@ const ADMIN_RL_LIMIT = 30; // requests
 const ADMIN_RL_WINDOW = 60; // seconds
 
 const HSTS_MAX_AGE = 31536000; // 1 year
+const MAX_BODY_BYTES = 1_000_000;
+const MUTATING_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
+
+async function bodyExceedsLimit(req: Request, maxBytes: number): Promise<boolean> {
+  const cl = req.headers.get("content-length");
+  if (cl && Number(cl) > maxBytes) return true;
+  if (!req.body) return false;
+  // H-18: Content-Length can be absent (chunked encoding) or lie. Read a clone
+  // of the stream up to the limit so oversized chunked bodies are rejected too.
+  const clone = req.clone();
+  if (!clone.body) return false;
+  const reader = clone.body.getReader();
+  try {
+    let total = 0;
+    // eslint-disable-next-line no-constant-condition
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      total += value ? value.length : 0;
+      if (total > maxBytes) return true;
+    }
+  } finally {
+    reader.releaseLock();
+  }
+  return false;
+}
 
 export function buildHonoApp(): Hono<{ Bindings: Bindings }> {
   const app = new Hono<{ Bindings: Bindings }>();
@@ -51,18 +77,15 @@ export function buildHonoApp(): Hono<{ Bindings: Bindings }> {
     return c.json({ error: isDev ? msg : "Internal Server Error" }, 500);
   });
 
-  // BE-004: Reject oversized request bodies early, before any parsing.
+  // BE-004 / H-18: Reject oversized request bodies early, before any parsing.
   // 1 MB cap — generous for JSON payloads while blocking multi-MB abuse.
-  // Body size guard — check content-length for bounded requests, and rely on
-  // Cloudflare Workers' built-in body size limit (100MB) for chunked encoding.
+  // Applies to all state-changing methods and checks chunked bodies by reading
+  // a clone of the stream up to the limit.
   app.use('*', async (c, next) => {
-    if (c.req.method === 'POST' || c.req.method === 'PUT') {
-      const cl = c.req.header('content-length');
-      if (cl && Number(cl) > 1_000_000) {
+    if (MUTATING_METHODS.has(c.req.method)) {
+      if (await bodyExceedsLimit(c.req.raw, MAX_BODY_BYTES)) {
         return c.text('payload too large', 413);
       }
-      // For chunked encoding (no content-length), we can't pre-check size.
-      // Cloudflare Workers enforce a100MB body limit upstream.
     }
     await next();
   });
