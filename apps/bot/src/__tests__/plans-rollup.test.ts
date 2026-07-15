@@ -29,6 +29,7 @@ const cryptoUrlTs = import.meta.resolve("../../../../shared/crypto.ts");
 const cryptoMock = () => ({
   decryptToken: (enc: string) => enc,
   encryptToken: (s: string) => s,
+  hashToken: async (s: string) => "hash:" + s,
   reencryptToken: (s: string) => s,
   encrypt: (s: string) => s,
   decrypt: (s: string) => s,
