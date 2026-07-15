@@ -8,6 +8,7 @@ import { one, exec } from "../../../../shared/db.js";
 import { logAudit } from "../../../../shared/audit.js";
 import { buildTop3Embed, sendDiscordWebhook, sendTelegramMessage } from "../../../../shared/notifications.js";
 import { decryptToken, decrypt } from "../../../../shared/crypto.js";
+import { invalidateCustomDomain } from "../middleware/custom-domain.js";
 
 function getTokenEncKey() {
   const hex = (typeof process !== "undefined" && process.env?.TOKEN_ENC_KEY) || "";
@@ -341,6 +342,7 @@ export async function handleDomainVerify(request, env) {
       );
       invalidateSiteCache(env, site.slug);
       invalidateUserCache(env, user.id);
+      invalidateCustomDomain(existing?.custom_domain);
       return ok({ status: "removed", message: "Custom domain removed." });
     }
 
@@ -361,6 +363,7 @@ export async function handleDomainVerify(request, env) {
       await exec("UPDATE sites SET custom_domain=$1, custom_hostname_id=NULL, domain_status='pending', updated_at=now() WHERE id=$2", [domain, site.id]);
       invalidateSiteCache(env, site.slug);
       invalidateUserCache(env, user.id);
+      invalidateCustomDomain(domain);
       return ok({ status: "saved", message: "Domain saved. TLS automation is not configured — contact support." });
     }
 
@@ -436,6 +439,7 @@ export async function handleDomainVerify(request, env) {
       await exec("UPDATE sites SET custom_domain=$1, custom_hostname_id=NULL, domain_status='error', updated_at=now() WHERE id=$2", [domain, site.id]);
       invalidateSiteCache(env, site.slug);
       invalidateUserCache(env, user.id);
+      invalidateCustomDomain(existing?.custom_domain, domain);
       return ok({ status: "error", message: errMsg });
     }
 
@@ -451,6 +455,7 @@ export async function handleDomainVerify(request, env) {
 
     invalidateSiteCache(env, site.slug);
     invalidateUserCache(env, user.id);
+    invalidateCustomDomain(existing?.custom_domain, domain);
 
     return ok({
       status: dbStatus,
