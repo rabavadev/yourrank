@@ -1,6 +1,6 @@
 // Public contact/support form handler.
 // Stores the message and emails the support inbox when RESEND_API_KEY is set.
-import { json, bad, clientIp, rateLimit } from "../auth.js";
+import { json, bad, clientIp, rateLimit, readJson } from "../auth.js";
 import { sendEmail } from "../email.js";
 import { exec } from "../../../../shared/db.js";
 
@@ -23,12 +23,8 @@ export async function handleContact(request, env) {
     return bad("Too many messages. Please wait a few minutes.", 429);
   }
 
-  let body;
-  try {
-    body = await request.json();
-  } catch {
-    return bad("Invalid JSON.", 400);
-  }
+  const body = await readJson(request);
+  if (!body) return bad("Invalid JSON.", 400);
 
   const name = String(body?.name || "").trim();
   const email = String(body?.email || "").trim().toLowerCase();
