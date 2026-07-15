@@ -373,7 +373,7 @@ export const PAGES = {
 </div>
 </div>
 <div class="savebar" id="savebar" hidden><span class="savebar-hint">Unsaved changes</span><button class="btn btn--accent" id="save" type="button">Save changes</button></div></div></main>
-<script src="/assets/dashboard.js?v=3"></script></body></html>`,
+<script src="/assets/dashboard.js?v=4" type="module"></script></body></html>`,
 
 analytics: `<!DOCTYPE html><html lang="en"><head>
 <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
