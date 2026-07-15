@@ -571,62 +571,98 @@ $("colorsReset").addEventListener("click",()=>{ const preset=currentTemplate()?.
 $("brandUpgrade").addEventListener("click",(e)=>{ e.preventDefault(); checkout($("goPro")); });
 
 /* --- paste / import --- */
-function parseImport(text){
-  const num = (s)=>parseFloat(String(s||"").replace(/[$,\s]/g,""))||0;
-  return String(text||"").split(/\r?\n/).map(l=>l.trim()).filter(Boolean).map(l=>{
-    const parts = l.split(/\t|,|;/).map(s=>s.trim()).filter(s=>s!=="");
-    if (!parts.length || !parts[0]) return null;
-    return { name: parts[0].slice(0,40), wagered: num(parts[1]), prize: num(parts[2]) };
-  }).filter(Boolean);
+const NAME_RE = /^[\p{L}\p{N}\p{P}\p{S}\s]+$/u;
+function sanitizeImportName(s){
+  let n = String(s || "").replace(/[\x00-\x1f\x7f]/g, "").trim();
+  // Strip surrounding quotes if present (basic CSV paste)
+  n = n.replace(/^"+/, "").replace(/"+$/, "");
+  n = n.replace(/[^\p{L}\p{N}\p{P}\p{S}\s]/gu, "").trim();
+  return n.length > 40 ? n.slice(0, 40) : n;
+}
+function parseImportAmount(s){
+  const raw = String(s || "").replace(/[$,\s]/g, "");
+  if (raw === "") return 0;
+  const n = parseFloat(raw);
+  if (Number.isNaN(n) || !Number.isFinite(n) || n < 0) return null;
+  return n;
+}
+function parseImportText(text, source="text"){
+  const lines = String(text || "").replace(/^\uFEFF/, "").split(/\r?\n/).map(l => l.trim()).filter(l => l && !l.startsWith("#") && !l.startsWith("//"));
+  if (!lines.length) return { rows: [], errors: ["No data found."], source };
+  const first = lines[0];
+  const sep = first.includes("\t") ? /\t/ : first.includes(",") ? /,/ : first.includes(";") ? /;/ : /\t|,|;/;
+  const headerParts = first.split(sep).map(s => s.trim().toLowerCase().replace(/^"+|"+$/g, ""));
+  const hasHeader = ["name", "player", "username"].includes(headerParts[0]);
+  const dataLines = hasHeader ? lines.slice(1) : lines;
+  const rows = [], errors = [];
+  const seen = new Set();
+  dataLines.forEach((line, idx) => {
+    const parts = line.split(sep).map(s => s.trim().replace(/^"+|"+$/g, ""));
+    if (!parts[0]) return;
+    const name = sanitizeImportName(parts[0]);
+    if (!name) { errors.push(`Row ${idx + 1}: missing name`); return; }
+    const key = name.toLowerCase();
+    if (seen.has(key)) { errors.push(`Row ${idx + 1}: duplicate "${name}"`); return; }
+    seen.add(key);
+    const wagered = parseImportAmount(parts[1]);
+    if (wagered === null) { errors.push(`Row ${idx + 1}: invalid wagered for "${name}"`); return; }
+    const prize = parseImportAmount(parts[2]);
+    if (prize === null) { errors.push(`Row ${idx + 1}: invalid prize for "${name}"`); return; }
+    rows.push({ name, wagered, prize });
+  });
+  return { rows, errors, source };
+}
+function formatImportSummary(result, imported, skipped, capped){
+  const parts = [];
+  if (imported) parts.push(`${imported} imported`);
+  if (capped) parts.push(`${capped} cut by plan limit`);
+  if (skipped) parts.push(`${skipped} skipped`);
+  let msg = parts.join(" · ");
+  if (result.errors.length) msg += (msg ? " — " : "") + result.errors.slice(0, 3).join("; ");
+  return msg || "Nothing to import";
 }
 $("importBtn").addEventListener("click",()=>{ const p=$("importPanel"); p.hidden=!p.hidden; if(!p.hidden) $("importText").focus(); });
 $("importText").addEventListener("input",()=>{
-  const n = parseImport($("importText").value).length;
-  $("importPreview").textContent = n + (n===1?" player":" players") + " detected";
+  const result = parseImportText($("importText").value, "paste");
+  const n = result.rows.length;
+  const err = result.errors.length ? ` (${result.errors.length} problem${result.errors.length===1?"":"s"})` : "";
+  $("importPreview").textContent = n + (n===1?" player":" players") + " detected" + err;
   $("importApply").disabled = n===0;
 });
 $("importApply").addEventListener("click",()=>{
-  let parsed = parseImport($("importText").value);
-  if (!parsed.length) return;
+  const result = parseImportText($("importText").value, "paste");
+  if (!result.rows.length) {
+    $("status").textContent = result.errors.length ? result.errors[0] : "No players to import.";
+    return;
+  }
   const replace = $("importReplace").checked;
   const existing = replace ? [] : [...$("rows").children].map(tr=>({name:tr.querySelector(".p-name").value.trim(),wagered:parseFloat(tr.querySelector(".p-wager").value)||0,prize:parseFloat(tr.querySelector(".p-prize").value)||0})).filter(p=>p.name);
-  let all = existing.concat(parsed);
-  let note = "";
-  if (ME && ME.limits.players < 999 && all.length > ME.limits.players) { note = ` (cut to your ${ME.limits.players}-player limit)`; all = all.slice(0, ME.limits.players); }
+  const limit = ME?.limits?.players || 9999;
+  let remaining = Math.max(0, limit - existing.length);
+  const parsed = result.rows.slice(0, remaining);
+  const all = existing.concat(parsed);
+  const cut = result.rows.length - parsed.length;
   renderPlayers(all);
   $("importText").value = ""; $("importPreview").textContent = "0 players detected"; $("importApply").disabled = true; $("importPanel").hidden = true;
-  $("status").textContent = `${parsed.length} imported${note} — hit Save to publish.`;
+  $("status").textContent = formatImportSummary(result, parsed.length, result.rows.length - parsed.length + (result.errors.length ? `${result.errors.length} invalid` : ""), cut) + " — hit Save to publish.";
 });
 
 /* --- CSV import --- */
-function parseCsvText(text) {
-  const num = (s) => parseFloat(String(s || "").replace(/[$,\s]/g, "")) || 0;
-  // Auto-detect separator: check first non-empty line for tabs vs commas
-  const firstLine = String(text || "").split(/\r?\n/).find(l => l.trim()) || "";
-  const sep = firstLine.includes("\t") ? /\t/ : /,/;
-  return String(text || "").split(/\r?\n/).map(l => l.trim()).filter(l => l && !l.startsWith("#") && !l.startsWith("//")).map(l => {
-    const parts = l.split(sep).map(s => s.trim()).filter(s => s !== "");
-    if (!parts.length || !parts[0]) return null;
-    // Skip header row if first cell looks like "name"
-    if (parts[0].toLowerCase() === "name" || parts[0].toLowerCase() === "player") return null;
-    return { name: parts[0].slice(0, 40), wagered: num(parts[1]), prize: num(parts[2]) };
-  }).filter(Boolean);
-}
-
 $("csvImportBtn")?.addEventListener("click", () => $("csvFileInput").click());
 
 $("csvFileInput")?.addEventListener("change", () => {
   const f = $("csvFileInput").files[0];
   if (!f) return;
+  if (f.size > 2 * 1024 * 1024) { $("status").textContent = "CSV too large. Keep it under 2 MB."; $("csvFileInput").value = ""; return; }
   const reader = new FileReader();
   reader.onload = () => {
-    const parsed = parseCsvText(reader.result);
-    if (!parsed.length) { $("status").textContent = "No players found in that CSV. Expected columns: name, wagered, prize"; return; }
+    const result = parseImportText(reader.result, "csv");
+    if (!result.rows.length) { $("status").textContent = "No players found in that CSV. Expected columns: name, wagered, prize"; return; }
     // Show preview in the import panel textarea
     $("importPanel").hidden = false;
-    $("importText").value = parsed.map(p => `${p.name}\t${p.wagered}\t${p.prize}`).join("\n");
+    $("importText").value = result.rows.map(p => `${p.name}\t${p.wagered}\t${p.prize}`).join("\n");
     $("importText").dispatchEvent(new Event("input"));
-    $("status").textContent = `CSV loaded: ${parsed.length} players detected. Review and click "Add to table".`;
+    $("status").textContent = `CSV loaded: ${result.rows.length} valid player${result.rows.length===1?"":"s"}${result.errors.length ? `, ${result.errors.length} problem${result.errors.length===1?"":"s"}` : ""}. Review and click "Add to table".`;
   };
   reader.onerror = () => { $("status").textContent = "Couldn't read that file."; };
   reader.readAsText(f);
