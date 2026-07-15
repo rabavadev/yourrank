@@ -29,7 +29,8 @@ import { handleCheckout, handleCheckoutLifetime, handleIpn, handleCancel } from 
 import {
   handleOverview, handleUsers, handleLeads, handlePayments, handleAction,
   handleSupportMessages, handleSupportReply,
-  handle2faEnable, handle2faVerify, handle2faStatus, handle2faDisable
+  handle2faEnable, handle2faVerify, handle2faStatus, handle2faDisable,
+  handleFeatureFlags, handleFeatureFlagOverride
 } from "./admin.js";
 import {
   handlePublicStandings, handlePublicPlayers, handlePublicRank, handlePublicData, handlePublicStats
@@ -111,6 +112,9 @@ export const ROUTES = [
   { path: "/api/admin/support", method: "GET", handler: withHandler(handleSupportMessages) },
   { path: "/api/admin/support/reply", method: "POST", handler: withHandler(handleSupportReply) },
   { path: "/api/admin/action", method: "POST", handler: withHandler(handleAction) },
+  { path: "/api/admin/features", method: "GET", handler: withHandler(handleFeatureFlags) },
+  { path: "/api/admin/features", method: "POST", handler: withHandler(handleFeatureFlags) },
+  { path: "/api/admin/features/override", method: "POST", handler: withHandler(handleFeatureFlagOverride) },
   { path: "/api/admin/2fa/enable", method: "POST", handler: withHandler(handle2faEnable) },
   { path: "/api/admin/2fa/verify", method: "POST", handler: withHandler(handle2faVerify) },
   { path: "/api/admin/2fa/status", method: "GET", handler: withHandler(handle2faStatus) },

@@ -6,6 +6,7 @@ import { query, one, exec } from "../../../shared/db.js";
 import { logAudit } from "../../../shared/audit.js";
 import { generateSecret, verifyCode, generateOtpauthUri } from "./totp.js";
 import { encrypt, decrypt } from "../../../shared/crypto.js";
+import { listFeatureFlags, setFeatureFlag, setUserFeatureOverride } from "../../../shared/features.js";
 
 // QUALITY-007: Named timing constants (no magic numbers)
 const RESET_TOKEN_TTL_S = 86400;   // 24 hours — admin-initiated password reset link validity
@@ -405,4 +406,44 @@ export async function handle2faDisable(request, env) {
   }, request);
 
   return ok({ disabled: true });
+}
+
+// GET /api/admin/features — list global feature flags.
+// POST /api/admin/features — create or update a global feature flag.
+export async function handleFeatureFlags(request, env) {
+  const { admin, res } = await requireAdminWith2fa(request, env);
+  if (res) return res;
+
+  if (request.method === "GET") {
+    const flags = await listFeatureFlags();
+    return ok({ flags });
+  }
+
+  const body = await readJson(request);
+  if (!body || typeof body !== "object") return bad("Invalid body", 400);
+  const key = String(body.key ?? "").trim();
+  if (!key) return bad("key is required", 400);
+  const flag = await setFeatureFlag(key, {
+    name: body.name,
+    description: body.description,
+    defaultValue: body.defaultValue,
+  });
+  await logAdminAction(env, admin.id, "feature_flag_set", null, { key, name: flag.name, defaultValue: flag.defaultValue }, request);
+  return ok(flag);
+}
+
+// POST /api/admin/features/override — set or clear a per-user feature override.
+export async function handleFeatureFlagOverride(request, env) {
+  const { admin, res } = await requireAdminWith2fa(request, env);
+  if (res) return res;
+
+  const body = await readJson(request);
+  if (!body || typeof body !== "object") return bad("Invalid body", 400);
+  const userId = String(body.userId ?? "").trim();
+  const featureKey = String(body.featureKey ?? "").trim();
+  if (!userId || !featureKey) return bad("userId and featureKey required", 400);
+  const enabled = body.enabled === null ? null : Boolean(body.enabled);
+  await setUserFeatureOverride(userId, featureKey, enabled);
+  await logAdminAction(env, admin.id, "feature_flag_override", userId, { featureKey, enabled }, request);
+  return ok({ userId, featureKey, enabled });
 }

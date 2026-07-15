@@ -6,6 +6,7 @@ function guardAuth(res) { if (res.status === 401) { location.href = "/login"; th
 const $ = (id) => document.getElementById(id);
 let SLUG = null, EXTRA = {}, ME = null, ACTIVE_SITE_ID = null, BOARDS = [], TEMPLATE_CATALOG = [];
 let CURRENT_BRANDING = { template: "classic", accentA: null, accentB: null };
+const featureEnabled = (key) => Array.isArray(ME?.features) && ME.features.includes(key);
 let THEME_SAVING = false;
 let LOGO; // undefined = unchanged, null = remove, string = new data URI
 let _dirty = false; // FE-002-v9: track unsaved changes for beforeunload warning

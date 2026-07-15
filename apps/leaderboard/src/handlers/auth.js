@@ -5,6 +5,7 @@ import { trackActivation } from "../../../../shared/activation-funnel.js";
 import { DEFAULT_EXTRA, getUserBoardsList } from "../site.js";
 import { sendEmail, resetEmail } from "../email.js";
 import { effectivePlan, PLAN_LIMITS, BOARD_LIMITS, priceUsd } from "../billing.js";
+import { getEnabledFeatureKeys } from "../../../../shared/features.js";
 import {
   findUserByEmail, findSiteBySlug, createUser, createSite
 } from "../data/auth.js";
@@ -101,11 +102,12 @@ export async function handleLogin(request, env) {
       exec("UPDATE users SET password_hash=$1, password_salt=$2, updated_at=now() WHERE id=$3", [hash, salt, user.id]).catch(() => {});
     }
     // PERF-003-v8: Parallelize site lookup + session creation (were sequential)
-    const [site, token] = await Promise.all([
+    const [site, token, features] = await Promise.all([
       one("SELECT slug FROM sites WHERE user_id=$1", [user.id]),
       createSession(env, user.id),
+      getEnabledFeatureKeys(user.id),
     ]);
-    return json({ ok: true, user: { id: user.id, email: user.email, slug: site?.slug || null } }, 200, { "set-cookie": cookieSet(token, env) });
+    return json({ ok: true, user: { id: user.id, email: user.email, slug: site?.slug || null, features } }, 200, { "set-cookie": cookieSet(token, env) });
   } catch (e) {
     console.error("login failed:", String(e?.message || e));
     return bad("Login failed, please try again", 500);
@@ -134,6 +136,7 @@ export async function handleMe(request, env) {
       subscriptionStatus = sub?.status || null;
       if (plan === "pro" && user.has_trial) isTrial = sub?.provider === "trial";
     } catch (e) { console.error("[handleMe] subscription status check failed:", e); }
+    const features = await getEnabledFeatureKeys(user.id);
     return json({ ok: true, user: {
       id: user.id, email: user.email, displayName: user.display_name || null,
       plan, planExpiresAt: user.plan_expires_at || 0,
@@ -144,6 +147,7 @@ export async function handleMe(request, env) {
       isTrial,
       subscriptionStatus,
       boards,
+      features,
     } });
   } catch (e) {
     console.error("handleMe error:", String(e?.message || e), String(e?.stack || ""));
