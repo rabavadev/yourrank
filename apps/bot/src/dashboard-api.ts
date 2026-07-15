@@ -5,7 +5,12 @@ import { Hono } from "hono";
 import { config } from "./config.js";
 import { one, query, exec } from "../../../shared/db.js";
 import { encryptToken, decryptToken, newLinkSlug, newWebhookSecret } from "../../../shared/crypto.js";
-import { getActivePostbackKey, createPostbackKey, revokePostbackKeys } from "../../../shared/postback.js";
+import {
+  POSTBACK_SUNSET,
+  createPostbackKey,
+  getActivePostbackKey,
+  revokePostbackKeys,
+} from "../../../shared/postback.js";
 import { getMe, setWebhook, deleteWebhook, getWebhookInfo, sendMessage } from "./telegram.js";
 import { syncMyCommands, syncMyCommandsForBot } from "./botEngine.js";
 import { withPlanLimit, getUserPlan } from "./plans.js";
@@ -687,7 +692,13 @@ export function buildDashboardApi(): Hono<{ Bindings: DashApiBindings; Variables
     // H-04: read or create the active postback key from postback_keys.
     let key = await getActivePostbackKey(uid);
     if (!key) key = await createPostbackKey(uid, { label: "bot-dashboard" });
-    return c.json({ postback_url: `${config.publicBaseUrl}/pb/${key}` });
+    return c.json({
+      signed_endpoint: `${config.publicBaseUrl}/pb`,
+      postback_key: key,
+      signature: "hex HMAC-SHA256 of the raw query string, keyed by postback_key",
+      legacy_postback_url: `${config.publicBaseUrl}/pb/${key}`,
+      legacy_sunset: POSTBACK_SUNSET,
+    });
   });
 
   api.post("/postback-key/rotate", async (c) => {
@@ -696,7 +707,13 @@ export function buildDashboardApi(): Hono<{ Bindings: DashApiBindings; Variables
     if (gateErr) return c.json({ error: gateErr }, 402);
 
     const key = await createPostbackKey(uid, { label: "bot-dashboard", revokeOthers: true });
-    return c.json({ postback_url: `${config.publicBaseUrl}/pb/${key}` });
+    return c.json({
+      signed_endpoint: `${config.publicBaseUrl}/pb`,
+      postback_key: key,
+      signature: "hex HMAC-SHA256 of the raw query string, keyed by postback_key",
+      legacy_postback_url: `${config.publicBaseUrl}/pb/${key}`,
+      legacy_sunset: POSTBACK_SUNSET,
+    });
   });
 
   api.delete("/postback-key", async (c) => {

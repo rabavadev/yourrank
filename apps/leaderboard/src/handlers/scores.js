@@ -4,7 +4,12 @@ import { saveSite } from "../site.js";
 import { effectivePlan, PLAN_LIMITS } from "../billing.js";
 import { one } from "../../../../shared/db.js";
 import { verifyHmacSha256Hex } from "../../../../shared/crypto.js";
-import { findPostbackOwner, computeReplayHash, recordReplayHash } from "../../../../shared/postback.js";
+import {
+  computeReplayHash,
+  findPostbackOwner,
+  logPostbackIntake,
+  recordReplayHash,
+} from "../../../../shared/postback.js";
 import { z } from "../../../../shared/validation.js";
 
 const scoreNumber = z
@@ -37,7 +42,6 @@ const scoreBodySchema = z
       seen.add(normalized);
     }
   });
-
 // POST /api/scores — authenticated by X-Postback-Key header + X-Postback-Signature HMAC.
 // Validates key against sites table, checks Pro plan gate, replaces player list.
 export async function handleScores(request, env) {
@@ -55,8 +59,9 @@ export async function handleScores(request, env) {
     if (!valid) return bad("Invalid postback signature.", 401);
 
     // H-04: resolve the key owner from postback_keys, then block exact replays.
-    const keyOwner = await findPostbackOwner(postbackKey);
+    const keyOwner = await findPostbackOwner(postbackKey, "signed");
     if (!keyOwner) return bad("Invalid postback key or board reference.", 401);
+    logPostbackIntake("scores_signed", keyOwner, true);
     const replayHash = await computeReplayHash({ body: rawBody });
     if (!(await recordReplayHash(keyOwner.userId, replayHash))) {
       return bad("Duplicate postback.", 409);

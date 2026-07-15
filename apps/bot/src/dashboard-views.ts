@@ -384,11 +384,11 @@ ${sideNav(page, user)}
 
   <!-- Settings (settings) -->
   <div class="panel" data-page="settings"><h2>Conversions (postbacks)</h2>
-    <p class="muted style-21">Give your affiliate manager this postback URL and add
+    <p class="muted style-21">Give your affiliate manager the signed endpoint and key below, and add
       <code>{click_ref}</code> anywhere in your affiliate URL to attribute deposits to clicks.</p>
-    <p class="muted style-29">Your network supports request signing? Use <code>POST ${publicBaseUrl}/pb</code> with headers
+    <p class="muted style-29">Use <code>POST ${publicBaseUrl}/pb</code> with headers
       <code>X-Postback-Key</code> (your key, below) + <code>X-Postback-Signature</code> (hex HMAC-SHA256 of the query string, keyed by that same key). It's the secure option — the key never rides the URL and the signature blocks tampering.</p>
-    <div class="style-21"><button class="ghost" data-action="revealPostback" type="button">Show my postback URL</button>
+    <div class="style-21"><button class="ghost" data-action="revealPostback" type="button">Show signed postback setup</button>
       <span id="pbUrl" class="copy style-30" data-action="copyPostback" data-url=""></span>
       <button class="ghost style-31" data-action="rotatePostback" type="button">Rotate key</button>
       <button class="ghost style-32" data-action="revokePostback" type="button">Revoke key</button></div>
@@ -881,8 +881,11 @@ async function revealPostback(btn){
   const r = await api('/postback-key',{method:'POST'});
   if (r.error) { restoreBtn(btn); return toast(r.error); }
   const pb = $('pbUrl');
-  if (pb) { pb.textContent = r.postback_url + '?event=deposit&amount=50&click_ref=XXX'; pb.dataset.url = r.postback_url; }
-  toast('Postback URL revealed'); restoreBtn(btn);
+  if (pb) {
+    pb.textContent = 'POST '+r.signed_endpoint+' · X-Postback-Key: '+r.postback_key;
+    pb.dataset.url = 'POST '+r.signed_endpoint+'\\nX-Postback-Key: '+r.postback_key+'\\nX-Postback-Signature: HMAC-SHA256(query, key)';
+  }
+  toast('Signed postback setup revealed'); restoreBtn(btn);
 }
 async function rotatePostback(btn){
   if (!confirm('Rotate your postback key? The old key will stop working immediately.')) return;
@@ -890,7 +893,10 @@ async function rotatePostback(btn){
   const r = await api('/postback-key/rotate',{method:'POST'});
   if (r.error) { restoreBtn(btn); return toast(r.error); }
   const pb = $('pbUrl');
-  if (pb) { pb.textContent = r.postback_url + '?event=deposit&amount=50&click_ref=XXX'; pb.dataset.url = r.postback_url; }
+  if (pb) {
+    pb.textContent = 'POST '+r.signed_endpoint+' · X-Postback-Key: '+r.postback_key;
+    pb.dataset.url = 'POST '+r.signed_endpoint+'\\nX-Postback-Key: '+r.postback_key+'\\nX-Postback-Signature: HMAC-SHA256(query, key)';
+  }
   toast('Postback key rotated'); restoreBtn(btn);
 }
 async function revokePostback(btn){
@@ -903,9 +909,9 @@ async function revokePostback(btn){
 }
 async function copyPostback(target){
   const url = target.dataset.url;
-  if (!url) return toast('Show the postback URL first');
+  if (!url) return toast('Show the signed postback setup first');
   navigator.clipboard.writeText(url);
-  toast('Postback URL copied');
+  toast('Signed postback setup copied');
 }
 async function upgrade(target){
   setLoading(target, 'Loading…');

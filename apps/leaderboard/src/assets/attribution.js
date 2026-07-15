@@ -57,8 +57,10 @@ async function load() {
       tbody.append(tr);
     }
 
-    if (data.postbackUrl) {
-      $("postbackUrl").textContent = data.postbackUrl;
+    if (data.postback) {
+      const setup = `POST ${data.postback.signedEndpoint}\nX-Postback-Key: ${data.postback.key}\nX-Postback-Signature: HMAC-SHA256(query, key)`;
+      $("postbackUrl").textContent = `POST ${data.postback.signedEndpoint} · X-Postback-Key: ${data.postback.key}`;
+      $("postbackUrl").dataset.setup = setup;
       $("postbackCard").hidden = false;
       $("postbackUpgrade").hidden = true;
     } else {
@@ -78,13 +80,13 @@ async function load() {
 
 $("daysRange").addEventListener("change", load);
 $("copyPostback").addEventListener("click", async () => {
-  const url = $("postbackUrl").textContent;
+  const setup = $("postbackUrl").dataset.setup;
   try {
-    await navigator.clipboard.writeText(url);
+    await navigator.clipboard.writeText(setup);
     $("copyPostback").textContent = "Copied";
     setTimeout(() => $("copyPostback").textContent = "Copy", 2000);
   } catch {
-    prompt("Copy this URL:", url);
+    prompt("Copy this signed postback setup:", setup);
   }
 });
 

@@ -527,7 +527,7 @@ attribution: `<!DOCTYPE html><html lang="en"><head>
 <div class="postback-wrap" id="postbackCard" hidden style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:14px;border:1px solid var(--line-2);border-radius:10px;background:var(--panel-2);margin-top:18px">
 <div class="postback-url" id="postbackUrl" style="font-family:var(--mono);font-size:13px;word-break:break-all;flex:1;color:var(--ink)"></div>
 <button class="btn btn--sm" id="copyPostback" type="button">Copy</button>
-<p class="hint" style="margin-top:8px;flex-basis:100%">Casinos send conversions here. Add <code>?click_ref=REF</code> to the offer link and pass the same ref in the postback.</p>
+<p class="hint" style="margin-top:8px;flex-basis:100%">Casinos send conversions with the key and HMAC signature in headers. Add <code>?click_ref=REF</code> to the offer link and pass the same ref in the signed postback query.</p>
 </div>
 <div class="postback-upgrade" id="postbackUpgrade" hidden style="padding:14px;border:1px solid var(--line-2);border-radius:10px;background:var(--panel-2);margin-top:18px;text-align:center">
 <p class="card-sub">Postback tracking is included with Pro and Agency plans.</p>
