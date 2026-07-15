@@ -45,6 +45,7 @@ import { sameOrigin, verifyTelegramLogin } from "./dashboard-auth.js";
 import { buildDashboardApi } from "./dashboard-api.js";
 import { loginHtml, appHtml } from "./dashboard-views.js";
 import { rateLimit, type RateLimitKV } from "./ratelimit.js";
+import { errMessage } from "./errors.js";
 
 // ---------------- app ----------------
 
@@ -65,8 +66,8 @@ export function buildDashboard(): Hono<DashEnv> {
   // Global error handler — same reason as buildHonoApp: Hono's default
   // text/plain 500 breaks the dashboard's api() JSON parse.
   app.onError((err, c) => {
-    const msg = (err as any)?.message ?? String(err);
-    const stack = (err as any)?.stack ?? "";
+    const msg = errMessage(err);
+    const stack = err instanceof Error ? err.stack ?? "" : "";
     console.error("[dashboard unhandled error]", msg, stack);
     return c.json({ error: msg, stack: stack.split("\n").slice(0, 5).join("\n") }, 500);
   });

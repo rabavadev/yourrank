@@ -16,6 +16,7 @@ import { sameOrigin } from "./dashboard-auth.js";
 import { resolveSession, type SessionEnv } from "../../../shared/session.js";
 import { type RateLimitKV } from "./ratelimit.js";
 import { validatedBody, offerCreateSchema, offerToggleSchema, botCreateSchema, botWelcomeSchema, testMessageSchema, commandCreateSchema, commandUpdateSchema, broadcastSchema, checkoutSchema } from "./validation.js";
+import { errMessage } from "./errors.js";
 
 type DashApiBindings = SessionEnv & {
   SESSIONS?: RateLimitKV;
@@ -49,7 +50,7 @@ export function buildDashboardApi(): Hono<{ Bindings: DashApiBindings; Variables
       const rlResult = await rateLimit(c.env, `dash:${ip}`, 120, 60);
       if (!rlResult.ok) return c.json({ error: "rate limit exceeded", retryAfter: rlResult.retryAfter }, 429);
     } catch (rlErr) {
-      console.error("[rate-limit] KV error, allowing request:", (rlErr as any)?.message);
+      console.error("[rate-limit] KV error, allowing request:", errMessage(rlErr));
     }
     await next();
   });
@@ -227,7 +228,7 @@ export function buildDashboardApi(): Hono<{ Bindings: DashApiBindings; Variables
     let token: string;
     try { token = await decryptToken(bot.token_encrypted); }
     catch (err) {
-      console.error("[GET /bots/:id/health] decrypt failed:", String((err as any)?.message ?? err));
+      console.error("[GET /bots/:id/health] decrypt failed:", errMessage(err));
       return c.json({ error: "could not decrypt bot token" }, 500);
     }
     try {
@@ -242,7 +243,7 @@ export function buildDashboardApi(): Hono<{ Bindings: DashApiBindings; Variables
         last_error: info.last_error_message || null,
       });
     } catch (err) {
-      const msg = String((err as any)?.message ?? err);
+      const msg = errMessage(err);
       console.error("[GET /bots/:id/health] getWebhookInfo failed:", msg);
       return c.json({ ok: false, error: msg }, 500);
     }
@@ -261,7 +262,7 @@ export function buildDashboardApi(): Hono<{ Bindings: DashApiBindings; Variables
     let token: string;
     try { token = await decryptToken(bot.token_encrypted); }
     catch (err) {
-      console.error("[POST /bots/:id/disconnect] decrypt failed:", String((err as any)?.message ?? err));
+      console.error("[POST /bots/:id/disconnect] decrypt failed:", errMessage(err));
       return c.json({ error: "Could not decrypt stored bot token. Disconnect it manually in @BotFather, then reconnect with a fresh token." }, 500);
     }
 
@@ -270,7 +271,7 @@ export function buildDashboardApi(): Hono<{ Bindings: DashApiBindings; Variables
       await deleteWebhook(token);
       webhookRemoved = true;
     } catch (err) {
-      console.error("[POST /bots/:id/disconnect] deleteWebhook failed:", String((err as any)?.message ?? err));
+      console.error("[POST /bots/:id/disconnect] deleteWebhook failed:", errMessage(err));
     }
 
     const row = await one<{ id: string }>(
@@ -307,14 +308,14 @@ export function buildDashboardApi(): Hono<{ Bindings: DashApiBindings; Variables
     let token: string;
     try { token = await decryptToken(bot.token_encrypted); }
     catch (err) {
-      console.error("[POST /bots/:id/reconnect] decrypt failed:", String((err as any)?.message ?? err));
+      console.error("[POST /bots/:id/reconnect] decrypt failed:", errMessage(err));
       return c.json({ error: "Could not decrypt stored bot token. Paste the token again to reconnect." }, 500);
     }
 
     let me;
     try { me = await getMe(token); }
     catch (err) {
-      const msg = String((err as any)?.message ?? err);
+      const msg = errMessage(err);
       console.error("[POST /bots/:id/reconnect] getMe failed:", msg);
       return c.json({ error: "Telegram rejected the stored token. It may have been regenerated in @BotFather. Paste the new token to reconnect." }, 400);
     }
@@ -326,7 +327,7 @@ export function buildDashboardApi(): Hono<{ Bindings: DashApiBindings; Variables
         allowedUpdates: ["message", "callback_query"],
       });
     } catch (err) {
-      const msg = String((err as any)?.message ?? err);
+      const msg = errMessage(err);
       console.error("[POST /bots/:id/reconnect] setWebhook failed:", msg);
       return c.json({ error: "Telegram could not set the webhook. Check that PUBLIC_BASE_URL is correct and reachable from the internet." }, 500);
     }
@@ -337,7 +338,7 @@ export function buildDashboardApi(): Hono<{ Bindings: DashApiBindings; Variables
     );
     if (!row) return c.json({ error: "bot not found" }, 404);
     try { await syncMyCommands(token, row.id); }
-    catch (err) { console.error("[POST /bots/:id/reconnect] setMyCommands failed:", String((err as any)?.message ?? err)); }
+    catch (err) { console.error("[POST /bots/:id/reconnect] setMyCommands failed:", errMessage(err)); }
     return c.json({ ok: true, bot_id: row.id, username: row.username, try_it: `https://t.me/${row.username}` });
   });
 
@@ -353,13 +354,13 @@ export function buildDashboardApi(): Hono<{ Bindings: DashApiBindings; Variables
     let token: string;
     try { token = await decryptToken(bot.token_encrypted); }
     catch (err) {
-      console.error("[DELETE /bots/:id] decrypt failed:", String((err as any)?.message ?? err));
+      console.error("[DELETE /bots/:id] decrypt failed:", errMessage(err));
       return c.json({ error: "Could not decrypt stored bot token. Delete it manually in @BotFather and reconnect with a fresh token." }, 500);
     }
 
     if (bot.status === "active") {
       try { await deleteWebhook(token); }
-      catch (err) { console.error("[DELETE /bots/:id] deleteWebhook failed:", String((err as any)?.message ?? err)); }
+      catch (err) { console.error("[DELETE /bots/:id] deleteWebhook failed:", errMessage(err)); }
     }
 
     const deleted = await exec(
@@ -385,7 +386,7 @@ export function buildDashboardApi(): Hono<{ Bindings: DashApiBindings; Variables
     let token: string;
     try { token = await decryptToken(bot.token_encrypted); }
     catch (err) {
-      console.error("[POST /bots/:id/test-message] decrypt failed:", String((err as any)?.message ?? err));
+      console.error("[POST /bots/:id/test-message] decrypt failed:", errMessage(err));
       return c.json({ error: "Could not decrypt stored bot token" }, 500);
     }
 
@@ -393,7 +394,7 @@ export function buildDashboardApi(): Hono<{ Bindings: DashApiBindings; Variables
       const result = await sendMessage(token, chat_id, text.trim());
       return c.json({ ok: true, message_id: result.message_id });
     } catch (err) {
-      const msg = String((err as any)?.message ?? err);
+      const msg = errMessage(err);
       console.error("[POST /bots/:id/test-message] sendMessage failed:", msg);
       return c.json({ error: msg }, 500);
     }
@@ -408,7 +409,7 @@ export function buildDashboardApi(): Hono<{ Bindings: DashApiBindings; Variables
     let me;
     try { me = await getMe(token); }
     catch (err) {
-      const msg = String((err as any)?.message ?? err);
+      const msg = errMessage(err);
       console.error("[POST /bots] getMe failed:", msg);
       return c.json({ error: "Telegram rejected that token — double-check it in @BotFather" }, 400);
     }
@@ -422,7 +423,7 @@ export function buildDashboardApi(): Hono<{ Bindings: DashApiBindings; Variables
     let encToken: Buffer;
     try { encToken = await encryptToken(token); }
     catch (err) {
-        console.error("[POST /bots] encryptToken failed:", String((err as any)?.message ?? err));
+        console.error("[POST /bots] encryptToken failed:", errMessage(err));
         return c.json({ error: "Server configuration error — could not encrypt bot token. Contact support." }, 500);
       }
     // count-check + INSERT run atomically under a per-user advisory lock so two
@@ -448,7 +449,7 @@ export function buildDashboardApi(): Hono<{ Bindings: DashApiBindings; Variables
         return { bot_id: row.id, username: row.username, secret };
       });
     } catch (err) {
-        const msg = (err as any)?.message ?? String(err);
+        const msg = errMessage(err);
         console.error("[POST /bots] DB error:", msg);
         return c.json({ error: "Database error — please try again in a moment" }, 500);
       }
@@ -462,7 +463,7 @@ export function buildDashboardApi(): Hono<{ Bindings: DashApiBindings; Variables
         allowedUpdates: ["message", "callback_query"],
       });
     } catch (err) {
-      const msg = String((err as any)?.message ?? err);
+      const msg = errMessage(err);
       console.error("[POST /bots] setWebhook failed:", msg);
       return c.json({ error: "Telegram could not set the webhook. The bot is saved as pending; click Reconnect to retry once your PUBLIC_BASE_URL is reachable." }, 502);
     }
@@ -474,13 +475,13 @@ export function buildDashboardApi(): Hono<{ Bindings: DashApiBindings; Variables
         [out.result.bot_id, uid]
       );
     } catch (err) {
-      const msg = String((err as any)?.message ?? err);
+      const msg = errMessage(err);
       console.error("[POST /bots] activation failed:", msg);
       return c.json({ error: "Webhook set, but we could not activate the bot record." }, 500);
     }
 
     try { await syncMyCommands(token, out.result.bot_id); }
-    catch (err) { console.error("[POST /bots] setMyCommands failed:", String((err as any)?.message ?? err)); }
+    catch (err) { console.error("[POST /bots] setMyCommands failed:", errMessage(err)); }
     return c.json({
       bot_id: out.result.bot_id,
       username: out.result.username,
@@ -504,7 +505,7 @@ export function buildDashboardApi(): Hono<{ Bindings: DashApiBindings; Variables
   // Best-effort: a Telegram failure must not fail the dashboard request.
   const resyncCommands = async (botId: string) => {
     try { await syncMyCommandsForBot(botId); }
-    catch (err) { console.error("[commands] setMyCommands sync failed:", String((err as any)?.message ?? err)); }
+    catch (err) { console.error("[commands] setMyCommands sync failed:", errMessage(err)); }
   };
   // Strip a leading slash / @mention / args and lowercase, matching exactly how
   // the bot engine derives the command name from an incoming message.

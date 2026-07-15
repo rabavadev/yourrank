@@ -12,6 +12,7 @@ import { config } from "./config.js";
 import { rateLimit } from "./ratelimit.js";
 import { setMyCommands } from "./telegram.js";
 import { getUserPlan } from "./plans.js";
+import { errMessage } from "./errors.js";
 
 export interface BotRow {
   id: string;
@@ -157,7 +158,7 @@ export function wireHandlers(bot: Bot, botRow: BotRow, env?: any): void {
         `UPDATE bot_subscribers SET source = $1
           WHERE bot_id = $2 AND tg_user_id = $3 AND source IS NULL`,
         [payload, botRow.id, ctx.from.id]
-      ).catch((e) => console.error("[start] attribution update failed:", String((e as any)?.message ?? e)));
+      ).catch((e) => console.error("[start] attribution update failed:", errMessage(e)));
     }
     const welcome = botRow.welcome_message ?? "Welcome! Tap a button below to get started.";
     await sendMenu(ctx, welcome);
@@ -236,7 +237,7 @@ export function wireHandlers(bot: Bot, botRow: BotRow, env?: any): void {
       // Be honest on Free so viewers don't expect DMs that never arrive.
       let paid = false;
       try { paid = (await getUserPlan(botRow.owner_id)).tier !== "free"; }
-      catch (e) { console.error("[subscribe] plan lookup failed:", String((e as any)?.message ?? e)); }
+      catch (e) { console.error("[subscribe] plan lookup failed:", errMessage(e)); }
       await ctx.reply(
         paid
           ? `✅ Subscribed! You'll get a DM when "${playerName}" changes rank on the ${site.name || "leaderboard"}.\n\n` +
