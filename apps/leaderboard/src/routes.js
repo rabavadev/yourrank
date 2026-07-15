@@ -18,8 +18,6 @@ import {
 } from "./handlers/sites.js";
 import { handleTrial } from "./handlers/billing.js";
 import { handleLead } from "./handlers/leads.js";
-import { handleBotConnect } from "./handlers/bot.js";
-import { handleBotOnboard } from "./handlers/bot-onboard.js";
 import { handleAttribution, handleAttributionExport, handlePostback } from "./handlers/attribution.js";
 import { handleContact } from "./handlers/contact.js";
 import { handleCspReport } from "./handlers/csp-report.js";
@@ -92,10 +90,8 @@ export const ROUTES = [
   { path: "/api/billing/cancel", method: "POST", handler: withHandler(handleCancel) },
   { path: "/api/billing/ipn", method: "POST", handler: withHandler(handleIpn) },
   
-  // Bot routes
-  { path: "/api/bot/connect", method: "POST", handler: withHandler(handleBotConnect) },
-  { path: "/api/bot/onboard", method: "POST", handler: withHandler(handleBotOnboard) },
-  
+  // Bot lifecycle is owned by the bot Worker; obsolete leaderboard routes removed (C-06).
+
   // Attribution
   { path: "/api/attribution", method: "GET", handler: withHandler(handleAttribution) },
   { path: "/api/attribution/export", method: "GET", handler: withHandler(handleAttributionExport) },

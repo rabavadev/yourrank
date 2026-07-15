@@ -267,18 +267,6 @@ export const handlerSchemas: Record<string, ZodSchema<any>> = {
     })
     .passthrough(),
 
-  handleBotConnect: z
-    .object({
-      token: z.string().min(10).max(120),
-    })
-    .passthrough(),
-
-  handleBotOnboard: z
-    .object({
-      token: z.string().min(10).max(120),
-    })
-    .passthrough(),
-
   handleCheckout: z
     .object({
       plan: z.string().max(20).optional().or(z.literal("").optional()),

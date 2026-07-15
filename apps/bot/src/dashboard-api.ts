@@ -284,11 +284,24 @@ export function buildDashboardApi(): Hono<{ Bindings: DashApiBindings; Variables
   // Useful when the dashboard shows the bot disconnected or after a webhook
   // failure during the initial token setup.
   api.post("/bots/:id/reconnect", async (c) => {
-    const bot = await one<{ id: string; token_encrypted: Buffer; webhook_secret: string }>(
-      `SELECT id, token_encrypted, webhook_secret FROM bots WHERE id = $1 AND owner_id = $2`,
-      [c.req.param("id"), c.get("uid")]
+    const uid = c.get("uid");
+    const bot = await one<{ id: string; token_encrypted: Buffer; webhook_secret: string; status: string }>(
+      `SELECT id, token_encrypted, webhook_secret, status FROM bots WHERE id = $1 AND owner_id = $2`,
+      [c.req.param("id"), uid]
     );
     if (!bot) return c.json({ error: "bot not found" }, 404);
+
+    // H-20: reconnecting a revoked bot must not bypass the active-bot quota.
+    if (bot.status === "revoked") {
+      const plan = await getUserPlan(uid);
+      const cnt = await one<{ n: number }>(
+        `SELECT count(*)::int AS n FROM bots WHERE owner_id = $1 AND status <> 'revoked' AND id <> $2`,
+        [uid, bot.id]
+      );
+      if ((cnt?.n ?? 0) >= plan.maxBots) {
+        return c.json({ error: `Your ${plan.label} plan allows ${plan.maxBots} bots. Upgrade or remove an active bot first.` }, 402);
+      }
+    }
 
     let token: string;
     try { token = await decryptToken(bot.token_encrypted); }
@@ -418,14 +431,14 @@ export function buildDashboardApi(): Hono<{ Bindings: DashApiBindings; Variables
       out = await withPlanLimit(uid, "bots", async (tx) => {
         const row = (await tx.one<{ id: string; username: string }>(
           `INSERT INTO bots (owner_id, tg_bot_id, username, token_encrypted, token_hint, webhook_secret, status, welcome_message)
-           VALUES ($1, $2, $3, $4, $5, $6, 'active', $7)
+           VALUES ($1, $2, $3, $4, $5, $6, 'pending', $7)
            ON CONFLICT (tg_bot_id) DO UPDATE
              SET owner_id = EXCLUDED.owner_id,
                  username = EXCLUDED.username,
                  token_encrypted = EXCLUDED.token_encrypted,
                  token_hint = EXCLUDED.token_hint,
                  webhook_secret = EXCLUDED.webhook_secret,
-                 status = 'active',
+                 status = 'pending',
                  welcome_message = COALESCE(EXCLUDED.welcome_message, bots.welcome_message),
                  updated_at = now()
            RETURNING id, username`,
@@ -439,29 +452,38 @@ export function buildDashboardApi(): Hono<{ Bindings: DashApiBindings; Variables
         return c.json({ error: "Database error — please try again in a moment" }, 500);
       }
     if ("error" in out) return c.json({ error: out.error }, 402);
-    // setWebhook AFTER the transaction commits — don't hold the lock across HTTP.
-    // The bot row is already committed at this point, so a webhook failure is
-    // non-fatal: the bot is connected and will work once the webhook is fixed
-    // (e.g. re-submitting the token re-registers it). Return a warning rather
-    // than a 500 that would make the dashboard show "@undefined connected".
-    let webhookWarning: string | null = null;
+    // H-20: set the Telegram webhook before marking the bot active. Only activate
+    // once Telegram confirms the webhook is set, so a failed setWebhook never
+    // leaves an active row that will not receive updates.
     try {
       await setWebhook(token, `${config.publicBaseUrl}/hook/${out.result.secret}`, out.result.secret, {
         dropPendingUpdates: true, // Onboarding: drop queued updates for clean start
         allowedUpdates: ["message", "callback_query"],
       });
     } catch (err) {
-      console.error("[POST /bots] setWebhook failed:", String((err as any)?.message ?? err));
-      webhookWarning = "Bot saved — but webhook registration failed. Click Reconnect on the bot card to retry, or check PUBLIC_BASE_URL config.";
+      const msg = String((err as any)?.message ?? err);
+      console.error("[POST /bots] setWebhook failed:", msg);
+      return c.json({ error: "Telegram could not set the webhook. The bot is saved as pending; click Reconnect to retry once your PUBLIC_BASE_URL is reachable." }, 502);
     }
-    // Populate Telegram's native "Menu" button. Non-fatal.
+
+    // Webhook confirmed - activate the bot and install commands.
+    try {
+      await one(
+        `UPDATE bots SET status = 'active', updated_at = now() WHERE id = $1 AND owner_id = $2`,
+        [out.result.bot_id, uid]
+      );
+    } catch (err) {
+      const msg = String((err as any)?.message ?? err);
+      console.error("[POST /bots] activation failed:", msg);
+      return c.json({ error: "Webhook set, but we could not activate the bot record." }, 500);
+    }
+
     try { await syncMyCommands(token, out.result.bot_id); }
     catch (err) { console.error("[POST /bots] setMyCommands failed:", String((err as any)?.message ?? err)); }
     return c.json({
       bot_id: out.result.bot_id,
       username: out.result.username,
       try_it: `https://t.me/${out.result.username}`,
-      ...(webhookWarning ? { warning: webhookWarning } : {}),
     });
   });
 
