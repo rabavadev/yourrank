@@ -123,6 +123,8 @@ describe("dashboard views", () => {
     expect(html).toContain('data-action="createOffer"');
     expect(html).toContain('data-action="sendBroadcast"');
     expect(html).toContain('data-action="checkHealth"');
+    expect(html).toContain("Show signed postback setup");
+    expect(html).toContain("X-Postback-Signature");
     expect(html).toContain("/contact?type=feedback&amp;");
     expect(html).toContain("/contact?type=support&amp;");
     expect(html).toContain(">Feedback</a>");

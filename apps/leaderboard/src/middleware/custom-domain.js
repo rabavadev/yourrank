@@ -3,6 +3,9 @@
 import { one } from "../../../../shared/db.js";
 import { PLATFORM_HOST } from "../constants.js";
 
+// Per-isolate L1 cache. Invalidation (invalidateCustomDomain) only clears the
+// current isolate; other live isolates keep a stale mapping until the 60s TTL
+// expires. That bound is acceptable for domain routing.
 const CUSTOM_DOMAIN_CACHE = new Map();
 const CUSTOM_DOMAIN_TTL = 60_000; // 60 seconds
 const CUSTOM_DOMAIN_MAX = 1000;   // PERF-005: cap entries to prevent unbounded memory growth
@@ -23,6 +26,14 @@ export async function resolveCustomDomain(env, host) {
     return slug;
   } catch {
     return cached?.slug || null;
+  }
+}
+
+// Drop cached hostname→slug mappings after a domain is added, changed, or
+// removed so the mutating isolate stops routing on the old value immediately.
+export function invalidateCustomDomain(...hosts) {
+  for (const host of hosts) {
+    if (host) CUSTOM_DOMAIN_CACHE.delete(String(host).toLowerCase());
   }
 }
 

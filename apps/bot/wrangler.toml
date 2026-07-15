@@ -7,6 +7,7 @@ compatibility_flags = ["nodejs_compat"]
 PUBLIC_BASE_URL = "https://yourrank.site"
 RL_BACKEND = "do"  # Change to "kv" to use KV for rate limiting
 RL_FAIL_OPEN = "false"  # Block requests when the rate-limit backend is down (fail-closed).
+POSTBACK_UNSIGNED_ENABLED = "true"  # Set false at the documented sunset after usage review.
 # Set SENTRY_DSN via `wrangler secret put SENTRY_DSN` when ready
 
 # Serve the bot Worker under the /bot, /hook, /r, /pb, /billing prefixes on the
@@ -71,6 +72,7 @@ crons = []
 
 [env.staging.vars]
 PUBLIC_BASE_URL = "https://staging.yourrank.site"
+POSTBACK_UNSIGNED_ENABLED = "true"
 
 
 # Staging Hyperdrive — points to same Supabase DB as production (separate Worker env)

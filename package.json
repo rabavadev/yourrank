@@ -18,6 +18,10 @@
   "scripts": {
     "build": "cd apps/leaderboard && bun run build",
     "build:bot": "cd apps/bot && bun run build",
-    "e2e": "cd e2e && bun run test"
+    "e2e": "cd e2e && bun run test",
+    "lint": "(cd apps/bot && bun run lint) && (cd apps/leaderboard && bun run lint)",
+    "typecheck": "(cd apps/bot && bun run typecheck) && (cd apps/leaderboard && bunx tsc --noEmit) && (cd apps/monitor && bun run typecheck)",
+    "test": "bun test shared/__tests__/ && (cd apps/bot && bun test) && (cd apps/leaderboard && for f in src/__tests__/*.test.js; do bun test \"$f\" || exit 1; done) && (cd apps/monitor && bun run test)",
+    "prepare": "git config core.hooksPath .githooks || true"
   }
 }

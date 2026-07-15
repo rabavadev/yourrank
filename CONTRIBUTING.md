@@ -24,19 +24,27 @@ cd apps/leaderboard && bun run dev
 - Leaderboard: JavaScript (.js), ESLint with eslint:recommended
 - Shared modules: TypeScript (.ts) with compiled .js output
 
-## Testing
+## Checks
+
+The root scripts mirror exactly what CI enforces, so run them before pushing:
 
 ```bash
-bun test                    # all tests
-bun test apps/bot           # bot only
-bun test apps/leaderboard   # leaderboard only
+bun run lint        # eslint: bot + leaderboard
+bun run typecheck   # tsc: bot + leaderboard + monitor
+bun run test        # shared + bot + leaderboard (per-file) + monitor
 ```
+
+Note: leaderboard tests must be run per file (as `bun run test` and CI both do) —
+`bun test` on the whole directory corrupts process-global module mocks.
+
+A pre-commit hook (in `.githooks/`, auto-enabled by `bun install` via the
+`prepare` script) runs `lint` + `typecheck` on every commit.
 
 ## Pull Requests
 
 1. Create a feature branch
 2. Make your changes
-3. Run `bun test` and `bun run lint`
+3. Run `bun run lint`, `bun run typecheck`, and `bun run test`
 4. Open a PR against main
 
 ## Database Migrations

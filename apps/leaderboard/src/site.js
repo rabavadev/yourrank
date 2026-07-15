@@ -698,10 +698,10 @@ export async function saveSite(env, user, payload, siteId, request = null) {
   }
   const themeJson = themeObj;
 
-  // Invalidate cache before write (both L1 and L2 for cross-isolate consistency)
+  // Invalidate this isolate's L1 cache before writing. There is no L2/KV, so
+  // other live isolates keep stale entries until the 25s TTL expires.
   invalidateSiteCache(env, site.slug, uid, siteId);
   if (slugRename) invalidateSiteCache(env, slugRename);
-  // L1-only cache invalidated above.
 
   // Capture old top-3 for notifications
   const oldPlayers = await getPlayers(env, site.id);

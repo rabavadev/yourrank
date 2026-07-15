@@ -52,13 +52,16 @@ export async function getFunnelMetrics(
   firstConversion: number;
   conversionRate: string;
 }> {
+  // Coerce to a non-negative integer and bind as a parameter — never interpolate
+  // it into the SQL text — so this stays injection-safe if ever wired to input.
+  const days = Math.max(0, Math.floor(Number(daysBack) || 0));
   const rows = await sql.unsafe(`
     SELECT
-      (SELECT COUNT(*) FROM users WHERE created_at > now() - interval '${daysBack} days') as signups,
-      (SELECT COUNT(DISTINCT u.id) FROM users u JOIN bots b ON b.owner_id = u.id WHERE u.created_at > now() - interval '${daysBack} days') as bot_connected,
-      (SELECT COUNT(DISTINCT u.id) FROM users u JOIN sites s ON s.user_id = u.id JOIN clicks c ON c.site_id = s.id WHERE u.created_at > now() - interval '${daysBack} days') as first_click,
-      (SELECT COUNT(DISTINCT u.id) FROM users u JOIN payments p ON p.user_id = u.id WHERE u.created_at > now() - interval '${daysBack} days') as first_conversion
-  `);
+      (SELECT COUNT(*) FROM users WHERE created_at > now() - make_interval(days => $1)) as signups,
+      (SELECT COUNT(DISTINCT u.id) FROM users u JOIN bots b ON b.owner_id = u.id WHERE u.created_at > now() - make_interval(days => $1)) as bot_connected,
+      (SELECT COUNT(DISTINCT u.id) FROM users u JOIN sites s ON s.user_id = u.id JOIN clicks c ON c.site_id = s.id WHERE u.created_at > now() - make_interval(days => $1)) as first_click,
+      (SELECT COUNT(DISTINCT u.id) FROM users u JOIN payments p ON p.user_id = u.id WHERE u.created_at > now() - make_interval(days => $1)) as first_conversion
+  `, [days]);
 
   const row = rows[0] as Record<string, string>;
   const signups = Number(row.signups) || 0;

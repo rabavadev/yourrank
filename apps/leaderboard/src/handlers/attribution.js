@@ -1,8 +1,18 @@
 // Attribution analytics and casino postback endpoint.
-import { json, bad, ok, requireUser, rateLimit } from "../auth.js";
+import { json, bad, requireUser, rateLimit } from "../auth.js";
 import { query } from "../../../../shared/db.js";
 import { verifyHmacSha256Hex } from "../../../../shared/crypto.js";
-import { getActivePostbackKey, createPostbackKey, revokePostbackKeys, findPostbackOwner, computeReplayHash, recordReplayHash } from "../../../../shared/postback.js";
+import {
+  POSTBACK_SUNSET,
+  computeReplayHash,
+  createPostbackKey,
+  findPostbackOwner,
+  getActivePostbackKey,
+  logPostbackIntake,
+  recordReplayHash,
+  revokePostbackKeys,
+  unsignedPostbacksEnabled,
+} from "../../../../shared/postback.js";
 import { recordConversion } from "../../../../shared/conversions.js";
 import { effectivePlan } from "../billing.js";
 
@@ -79,7 +89,13 @@ export async function handleAttribution(request, env) {
   if (effectivePlan(user) !== "free" && !key) {
     key = await createPostbackKey(user.id, { label: "leaderboard-attribution" });
   }
-  const postbackUrl = key ? `${url.origin}/api/postback?key=${encodeURIComponent(key)}` : null;
+  const postback = key ? {
+    signedEndpoint: `${url.origin}/api/postback`,
+    key,
+    signature: "hex HMAC-SHA256 of the raw query string, keyed by key",
+    legacyUrl: `${url.origin}/api/postback?key=${encodeURIComponent(key)}`,
+    legacySunset: POSTBACK_SUNSET,
+  } : null;
 
   const offers = await getAttributionRows(env, user.id, days);
   const summary = offers.reduce((s, o) => {
@@ -91,7 +107,7 @@ export async function handleAttribution(request, env) {
     return s;
   }, { clicks: 0, uniqueVisitors: 0, conversions: 0, revenue: 0, depositors: 0 });
 
-  return json({ ok: true, days, summary, postbackUrl, offers });
+  return json({ ok: true, days, summary, postback, offers });
 }
 
 // GET /api/attribution/export — CSV download of the same data.
@@ -142,7 +158,16 @@ export async function handleRotatePostbackKey(request, env) {
   }
   const key = await createPostbackKey(user.id, { label: "leaderboard-attribution", revokeOthers: true });
   const url = new URL(request.url);
-  return json({ ok: true, postbackUrl: `${url.origin}/api/postback?key=${encodeURIComponent(key)}` });
+  return json({
+    ok: true,
+    postback: {
+      signedEndpoint: `${url.origin}/api/postback`,
+      key,
+      signature: "hex HMAC-SHA256 of the raw query string, keyed by key",
+      legacyUrl: `${url.origin}/api/postback?key=${encodeURIComponent(key)}`,
+      legacySunset: POSTBACK_SUNSET,
+    },
+  });
 }
 
 // DELETE /api/attribution/postback-key — revoke all active postback keys.
@@ -162,17 +187,32 @@ export async function handlePostback(request, env) {
     return bad("Too many requests. Try again later.", 429);
   }
 
-  // H-04: lookup by key hash, then reject exact replays and support revocation.
-  const owner = await findPostbackOwner(key);
-  if (!owner) return bad("Unknown postback key.", 404);
-
   const sig = request.headers.get("x-postback-signature");
+  const unsigned = !sig;
+  const legacyHeaders = unsigned ? {
+    Deprecation: "true",
+    Sunset: POSTBACK_SUNSET,
+    Link: '</api/postback>; rel="successor-version"',
+  } : undefined;
+  if (unsigned && !unsignedPostbacksEnabled(env.POSTBACK_UNSIGNED_ENABLED)) {
+    return json({
+      error: "Unsigned postbacks are no longer accepted.",
+      successor: "/api/postback",
+      sunset: POSTBACK_SUNSET,
+    }, 410, legacyHeaders);
+  }
+
   if (sig) {
     const qs = url.search.slice(1);
     if (!(await verifyHmacSha256Hex(key, qs, sig))) {
       return bad("Bad signature.", 401);
     }
   }
+
+  // H-04: lookup by key hash, then reject exact replays and support revocation.
+  const owner = await findPostbackOwner(key, unsigned ? "unsigned" : "signed");
+  if (!owner) return bad("Unknown postback key.", 404, legacyHeaders);
+  logPostbackIntake(unsigned ? "api_postback_unsigned" : "pb_signed", owner, !unsigned);
 
   const clone = request.clone();
   const bodyText = await clone.text();
@@ -212,5 +252,5 @@ export async function handlePostback(request, env) {
   delete out.key;
   delete out.signature;
   await recordConversion(owner.userId, out);
-  return ok();
+  return json({ ok: true }, 200, legacyHeaders);
 }

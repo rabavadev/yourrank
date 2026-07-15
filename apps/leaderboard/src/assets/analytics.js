@@ -43,8 +43,10 @@ function renderFunnel(v, c, k) {
   $("fViews").textContent = fmt(v);
   $("fCopies").textContent = fmt(c);
   $("fClicks").textContent = fmt(k);
+  // Both stage percentages and their bars are expressed as a share of views so
+  // the funnel shrinks consistently; stage-to-stage drop-off is shown below.
   $("fCopiesPct").textContent = pctStr(pct(c, v));
-  $("fClicksPct").textContent = pctStr(pct(k, c)); // conversion from previous stage
+  $("fClicksPct").textContent = pctStr(pct(k, v));
   // Bar widths eased so small stages stay legible; exact figures shown as text.
   const ease = (part, whole) => Math.round(Math.pow(pct(part, whole) / 100, 0.55) * 100);
   const setBar = (el, w) => {

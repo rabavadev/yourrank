@@ -64,8 +64,17 @@ mock.module(_cryptoUrl, () => ({
   hashIp: async (ip) => ip,
 }));
 
+// Include the full postback API so later tests in the same process (e.g. the
+// coverage run that loads every file together) don't see a partial module —
+// bun:test mock.module state can persist across files.
 mock.module(_postbackUrl, () => ({
-  findPostbackOwner: async () => _siteRow ? { userId: _siteRow.user_id } : null,
+  POSTBACK_SUNSET: "2026-10-01",
+  unsignedPostbacksEnabled: (value) => value !== "false" && value !== "0",
+  findPostbackOwner: async () => _siteRow ? { id: "key-id", userId: _siteRow.user_id } : null,
+  logPostbackIntake: () => {},
+  getActivePostbackKey: async () => null,
+  createPostbackKey: async () => "pbkey",
+  revokePostbackKeys: async () => 0,
   computeReplayHash: async () => "replay-hash",
   recordReplayHash: async () => true,
 }));
