@@ -9,6 +9,7 @@ import { mock, test, expect, describe, beforeEach, beforeAll, afterAll, jest } f
 const _sessionUrl   = import.meta.resolve("../../../../shared/session.js");
 const _dbUrl        = import.meta.resolve("../../../../shared/db.js");
 const _cryptoUrl    = import.meta.resolve("../../../../shared/crypto.js");
+const _postbackUrl  = import.meta.resolve("../../../../shared/postback.js");
 
 // ── shared state that individual tests can override ────────────────────────
 let _rateLimitCount = 0;
@@ -19,7 +20,7 @@ let _saveSiteResult = {};
 
 mock.module(_dbUrl, () => ({
   one: (sql, _params) => {
-    if (sql.includes("postback_key"))       return Promise.resolve(_siteRow);
+    if (sql.includes("FROM sites") && sql.includes("s.user_id")) return Promise.resolve(_siteRow);
     if (sql.includes("plan_expires_at"))    return Promise.resolve(_ownerRow);
     if (sql.includes("SELECT id, slug, name")) return Promise.resolve(_existingSiteRow);
     return Promise.resolve(null);
@@ -57,8 +58,16 @@ mock.module(_cryptoUrl, () => ({
   isCurrentVersion: () => true,
   newClickRef: () => "ref",
   newLinkSlug: () => "slug",
+  newPostbackKey: () => "pbkey",
   newWebhookSecret: () => "secret",
+  hashToken: async (s) => "hash:" + s,
   hashIp: async (ip) => ip,
+}));
+
+mock.module(_postbackUrl, () => ({
+  findPostbackOwner: async () => _siteRow ? { userId: _siteRow.user_id } : null,
+  computeReplayHash: async () => "replay-hash",
+  recordReplayHash: async () => true,
 }));
 
 mock.module("../site.js", () => ({
@@ -121,6 +130,14 @@ function makeEnv() {
 // ── tests ─────────────────────────────────────────────────────────────────
 
 describe("handleScores — auth", () => {
+  beforeEach(() => {
+    _siteRow = site();
+    _ownerRow = proOwner();
+    _existingSiteRow = existingSite();
+    _saveSiteResult = {};
+    _rateLimitCount = 0;
+  });
+
   test("missing X-Postback-Key returns 401", async () => {
     const req = makeRequest({ body: { slug: "test", players: [] } });
     const res = await handleScores(req, makeEnv());

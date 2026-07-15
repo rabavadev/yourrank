@@ -347,7 +347,9 @@ ${sideNav(page, user)}
     <p class="muted" style="margin-bottom:10px;font-size:12px">Your network supports request signing? Use <code>POST ${publicBaseUrl}/pb</code> with headers
       <code>X-Postback-Key</code> (your key, below) + <code>X-Postback-Signature</code> (hex HMAC-SHA256 of the query string, keyed by that same key). It's the secure option — the key never rides the URL and the signature blocks tampering.</p>
     <div style="margin-bottom:10px"><button class="ghost" data-action="revealPostback" type="button">Show my postback URL</button>
-      <span id="pbUrl" class="copy" style="margin-left:8px" data-action="copyPostback" data-url=""></span></div>
+      <span id="pbUrl" class="copy" style="margin-left:8px" data-action="copyPostback" data-url=""></span>
+      <button class="ghost" data-action="rotatePostback" type="button" style="margin-left:12px">Rotate key</button>
+      <button class="ghost" data-action="revokePostback" type="button" style="margin-left:6px;color:#b91c1c">Revoke key</button></div>
     <table><thead><tr><th>When</th><th>Event</th><th>Amount</th><th>Offer</th></tr></thead>
     <tbody id="convList"></tbody></table>
   </div>
@@ -840,6 +842,23 @@ async function revealPostback(btn){
   if (pb) { pb.textContent = r.postback_url + '?event=deposit&amount=50&click_ref=XXX'; pb.dataset.url = r.postback_url; }
   toast('Postback URL revealed'); restoreBtn(btn);
 }
+async function rotatePostback(btn){
+  if (!confirm('Rotate your postback key? The old key will stop working immediately.')) return;
+  setLoading(btn, 'Rotating…');
+  const r = await api('/postback-key/rotate',{method:'POST'});
+  if (r.error) { restoreBtn(btn); return toast(r.error); }
+  const pb = $('pbUrl');
+  if (pb) { pb.textContent = r.postback_url + '?event=deposit&amount=50&click_ref=XXX'; pb.dataset.url = r.postback_url; }
+  toast('Postback key rotated'); restoreBtn(btn);
+}
+async function revokePostback(btn){
+  if (!confirm('Revoke your postback key? Existing casino integrations will stop receiving conversions.')) return;
+  setLoading(btn, 'Revoking…');
+  const r = await api('/postback-key',{method:'DELETE'});
+  if (r.error) { restoreBtn(btn); return toast(r.error); }
+  const pb = $('pbUrl'); if (pb) { pb.textContent = ''; pb.dataset.url = ''; }
+  toast('Postback key revoked'); restoreBtn(btn);
+}
 async function copyPostback(target){
   const url = target.dataset.url;
   if (!url) return toast('Show the postback URL first');
@@ -909,6 +928,8 @@ async function handleAction(e) {
     else if (action === 'testBroadcast') { e.preventDefault(); await testBroadcast(target); }
     else if (action === 'cancelBroadcast') { e.preventDefault(); await cancelBroadcast(target); }
     else if (action === 'revealPostback') { e.preventDefault(); await revealPostback(target); }
+    else if (action === 'rotatePostback') { e.preventDefault(); await rotatePostback(target); }
+    else if (action === 'revokePostback') { e.preventDefault(); await revokePostback(target); }
     else if (action === 'copyPostback') { e.preventDefault(); await copyPostback(target); }
     else if (action === 'copyLink') { e.preventDefault(); await copyLink(target); }
     else if (action === 'toggleOffer') { e.preventDefault(); await toggleOffer(target); }

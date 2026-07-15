@@ -4,7 +4,8 @@
 import { Hono } from "hono";
 import { config } from "./config.js";
 import { one, query, exec } from "../../../shared/db.js";
-import { encryptToken, decryptToken, newLinkSlug, newPostbackKey, newWebhookSecret } from "../../../shared/crypto.js";
+import { encryptToken, decryptToken, newLinkSlug, newWebhookSecret } from "../../../shared/crypto.js";
+import { getActivePostbackKey, createPostbackKey, revokePostbackKeys } from "../../../shared/postback.js";
 import { getMe, setWebhook, deleteWebhook, getWebhookInfo, sendMessage } from "./telegram.js";
 import { syncMyCommands, syncMyCommandsForBot } from "./botEngine.js";
 import { withPlanLimit, getUserPlan } from "./plans.js";
@@ -682,22 +683,26 @@ export function buildDashboardApi(): Hono<{ Bindings: DashApiBindings; Variables
     const uid = c.get("uid");
     const gateErr = await checkFeature(uid, "postbacks");
     if (gateErr) return c.json({ error: gateErr }, 402);
-    const existing = await one<{ postback_key: string | null }>(
-      `SELECT postback_key FROM users WHERE id = $1`, [uid]
-    );
-    let key = existing?.postback_key;
-    if (!key) {
-      for (let i = 0; i < 3; i++) {
-        key = newPostbackKey();
-        try {
-          await query(`UPDATE users SET postback_key = $1, updated_at = now() WHERE id = $2`, [key, uid]);
-          break;
-        } catch (e) {
-          if (i >= 2) throw e;
-        }
-      }
-    }
+
+    // H-04: read or create the active postback key from postback_keys.
+    let key = await getActivePostbackKey(uid);
+    if (!key) key = await createPostbackKey(uid, { label: "bot-dashboard" });
     return c.json({ postback_url: `${config.publicBaseUrl}/pb/${key}` });
+  });
+
+  api.post("/postback-key/rotate", async (c) => {
+    const uid = c.get("uid");
+    const gateErr = await checkFeature(uid, "postbacks");
+    if (gateErr) return c.json({ error: gateErr }, 402);
+
+    const key = await createPostbackKey(uid, { label: "bot-dashboard", revokeOthers: true });
+    return c.json({ postback_url: `${config.publicBaseUrl}/pb/${key}` });
+  });
+
+  api.delete("/postback-key", async (c) => {
+    const uid = c.get("uid");
+    await revokePostbackKeys(uid);
+    return c.json({ ok: true });
   });
 
   api.get("/conversions", async (c) => {

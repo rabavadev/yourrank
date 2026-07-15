@@ -4,6 +4,7 @@ import { saveSite } from "../site.js";
 import { effectivePlan, PLAN_LIMITS } from "../billing.js";
 import { one } from "../../../../shared/db.js";
 import { verifyHmacSha256Hex } from "../../../../shared/crypto.js";
+import { findPostbackOwner, computeReplayHash, recordReplayHash } from "../../../../shared/postback.js";
 
 // POST /api/scores — authenticated by X-Postback-Key header + X-Postback-Signature HMAC.
 // Validates key against sites table, checks Pro plan gate, replaces player list.
@@ -20,14 +21,22 @@ export async function handleScores(request, env) {
     const rawBody = await request.text();
     const valid = await verifyHmacSha256Hex(postbackKey, rawBody, signature);
     if (!valid) return bad("Invalid postback signature.", 401);
+
+    // H-04: resolve the key owner from postback_keys, then block exact replays.
+    const keyOwner = await findPostbackOwner(postbackKey);
+    if (!keyOwner) return bad("Invalid postback key or board reference.", 401);
+    const replayHash = await computeReplayHash({ body: rawBody });
+    if (!(await recordReplayHash(keyOwner.userId, replayHash))) {
+      return bad("Duplicate postback.", 409);
+    }
+
     let body;
     try { body = JSON.parse(rawBody); } catch { return bad("Invalid JSON body."); }
     // H-03: A user-level postback key can own many boards. Require an explicit
     // board reference (slug or siteId, in body or X-Postback-Site header).
     const boardRef = body.slug || body.siteId || request.headers.get("x-postback-site");
     if (!boardRef || typeof boardRef !== "string") return bad("Missing board slug or siteId. Use body.slug, body.siteId, or X-Postback-Site header.", 400);
-    // BUG-DB-007: postback_key lives on users table, not sites. JOIN to resolve.
-    const site = await one("SELECT s.id, s.user_id, s.slug, s.name, s.tagline, s.casino, s.code, s.cta_url, s.prize_pool, s.period, s.ends_at, s.reset_note, s.blurb, s.extra_json, s.published, s.theme_json, s.updated_at FROM sites s JOIN users u ON u.id = s.user_id WHERE u.postback_key=$1 AND (s.slug=$2 OR s.id::text=$2)", [postbackKey, boardRef]);
+    const site = await one("SELECT s.id, s.user_id, s.slug, s.name, s.tagline, s.casino, s.code, s.cta_url, s.prize_pool, s.period, s.ends_at, s.reset_note, s.blurb, s.extra_json, s.published, s.theme_json, s.updated_at FROM sites s WHERE s.user_id=$1 AND (s.slug=$2 OR s.id::text=$2)", [keyOwner.userId, boardRef]);
     if (!site) return bad("Invalid postback key or board reference.", 401);
     // Gate behind Pro plan
     const owner = await one("SELECT id, plan, (EXTRACT(EPOCH FROM plan_expires_at) * 1000)::double precision AS plan_expires_at, status FROM users WHERE id=$1", [site.user_id]);
