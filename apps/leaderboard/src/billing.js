@@ -2,6 +2,7 @@
 import { json, bad, ok, uuid, requireUser, safeEqual, readJson } from "./auth.js";
 import { exec, withTransaction } from "../../../shared/db.js";
 import { logAudit } from "../../../shared/audit.js";
+import { logProviderEvent } from "../../../shared/provider-events.js";
 
 // Plan definitions imported from shared source of truth.
 // Re-exported here for backward compatibility with any local imports.
@@ -24,17 +25,23 @@ import { priceUsd as _priceUsd, effectivePlan as _effectivePlan } from "../../..
 export const priceUsd = _priceUsd;
 export const effectivePlan = _effectivePlan;
 
-export async function activatePlan(env, userId, plan, days = PRO_DAYS, { provider, amountUsd } = {}) {
+export async function activatePlan(env, userId, plan, days = PRO_DAYS, { provider, amountUsd, consumeTrial = false } = {}) {
   // Extend plan subscription for the given number of days.
   // Wrapped in a transaction so that the user update, subscription insert, and
   // optional payment ledger insert are all atomic.
+  //
+  // When consumeTrial is true, the caller is starting a free trial: the
+  // has_trial flag is flipped inside the same transaction so a mid-write
+  // failure cannot permanently consume the trial without granting access.
   return withTransaction(async (tx) => {
     const uRows = await tx.unsafe(
-      "SELECT plan, (EXTRACT(EPOCH FROM plan_expires_at) * 1000)::double precision AS plan_expires_at FROM users WHERE id=$1",
+      "SELECT plan, has_trial, (EXTRACT(EPOCH FROM plan_expires_at) * 1000)::double precision AS plan_expires_at FROM users WHERE id=$1",
       [userId]
     );
     const u = uRows[0];
     if (!u) return false;
+    if (consumeTrial && u.has_trial) return false;
+
     if (days > 0) {
       const base = (["pro", "starter", "agency"].includes(u.plan) && Number(u.plan_expires_at) > Date.now()) ? Number(u.plan_expires_at) : Date.now();
       let expiresMs = base + days * MS_PER_DAY;
@@ -42,12 +49,23 @@ export async function activatePlan(env, userId, plan, days = PRO_DAYS, { provide
               // Prevents unlimited stacking from repeated payments or bot abuse.
               const maxExpiry = Date.now() + MAX_SUBSCRIPTION_EXTENSION_DAYS * MS_PER_DAY;
       if (expiresMs > maxExpiry) expiresMs = maxExpiry;
-      await tx.unsafe("UPDATE users SET plan=$1, plan_expires_at=to_timestamp($2 / 1000.0), updated_at=now() WHERE id=$3", [plan, expiresMs, userId]);
+
+      const updated = await tx.unsafe(
+        `UPDATE users SET plan=$1, plan_expires_at=to_timestamp($2 / 1000.0), updated_at=now() ${consumeTrial ? ", has_trial=TRUE " : ""}WHERE id=$3${consumeTrial ? " AND has_trial=FALSE" : ""} RETURNING id`,
+        [plan, expiresMs, userId]
+      );
+      if (!updated || updated.length === 0) return false;
+
       await tx.unsafe("INSERT INTO subscriptions (user_id, plan, status, provider, current_period_end) VALUES ($1, $2, 'active', $3, to_timestamp($4 / 1000.0))", [userId, plan, provider || 'nowpayments', expiresMs]);
     } else {
       // Lifetime: use far-future date instead of NULL for plan_expires_at
       const lifetimeExpiry = new Date('2099-12-31T23:59:59Z').getTime();
-      await tx.unsafe("UPDATE users SET plan=$1, plan_expires_at=to_timestamp($2 / 1000.0), updated_at=now() WHERE id=$3", [plan, lifetimeExpiry, userId]);
+      const updated = await tx.unsafe(
+        `UPDATE users SET plan=$1, plan_expires_at=to_timestamp($2 / 1000.0), updated_at=now() ${consumeTrial ? ", has_trial=TRUE " : ""}WHERE id=$3${consumeTrial ? " AND has_trial=FALSE" : ""} RETURNING id`,
+        [plan, lifetimeExpiry, userId]
+      );
+      if (!updated || updated.length === 0) return false;
+
       await tx.unsafe("INSERT INTO subscriptions (user_id, plan, status, provider, current_period_end) VALUES ($1, $2, 'active', 'manual', $3::timestamptz)", [userId, plan, '2099-12-31T23:59:59Z']);
     }
     if (provider) {
@@ -218,8 +236,22 @@ export async function handleIpn(request, env) {
 
   const orderId = String(body.order_id || "");
   const status = String(body.payment_status || "");
+  const providerReference = String(body.payment_id || orderId || "");
 
   const ipnResult = await withTransaction(async (tx) => {
+    // Deduplicate and record the callback before touching mutable state.
+    const eventInserted = await logProviderEvent(tx, {
+      provider: "nowpayments",
+      provider_reference: providerReference,
+      event_kind: "ipn",
+      status,
+      tx_ref: orderId || null,
+      payload_json: body,
+    });
+    if (!eventInserted) {
+      return { code: 200, paid: false, duplicate: true };
+    }
+
     const payRows = await tx.unsafe(
       "SELECT id, user_id, status, amount, plan_tier FROM payments WHERE tx_ref=$1 FOR UPDATE",
       [orderId]
@@ -240,8 +272,12 @@ export async function handleIpn(request, env) {
       );
       const u = uRows[0];
       if (u) {
-        // Use actual paid amount from IPN body for validation
-        const actuallyPaid = Number(body.actually_paid) || Number(body.pay_amount) || 0;
+        // The invoice is created in USD, so the authoritative paid amount for
+        // entitlement validation is price_amount when price_currency is USD.
+        // actually_paid / pay_amount / outcome_amount are in the settlement
+        // cryptocurrency and must not be compared to a USD plan price.
+        const priceCurrency = String(body.price_currency || "").toUpperCase();
+        const paidUsd = priceCurrency === "USD" ? Number(body.price_amount) : NaN;
         const expectedAmount = Number(pay.amount) || 0;
 
         // Determine target plan: prefer plan_tier column, fall back to amount-based lookup for legacy rows
@@ -255,14 +291,18 @@ export async function handleIpn(request, env) {
           else targetPlan = "pro";
         }
 
-        // Validate that the actual paid amount meets the minimum threshold for the tier
+        const expectedUsd = orderId.startsWith("rk_lt_")
+          ? 149
+          : (expectedAmount || priceUsd(env, targetPlan) || PLAN_PRICES.pro);
+
+        // Validate that the provider-confirmed USD amount meets the minimum threshold for the tier.
         // Allow small rounding differences (within 1%) but reject significant underpayments
-        const tierPrice = orderId.startsWith("rk_lt_") ? 149 : (PLAN_PRICES[targetPlan] || PLAN_PRICES.pro);
-        const minAccepted = tierPrice * 0.99; // Allow 1% rounding tolerance
-        if (actuallyPaid < minAccepted) {
-          // Underpayment: don't grant the tier, just record the payment status
-          console.warn(`[IPN] Underpayment for order ${orderId}: paid ${actuallyPaid}, expected ${tierPrice} for ${targetPlan}`);
-          return { code: 200, paid: false, underpaid: true, paymentId: pay.id, userId: pay.user_id, amount: actuallyPaid, plan: targetPlan, orderId };
+        // or a missing/unexpected price_currency.
+        const minAccepted = expectedUsd * 0.99; // Allow 1% rounding tolerance
+        if (Number.isNaN(paidUsd) || paidUsd < minAccepted) {
+          // Underpayment or unexpected settlement currency: don't grant the tier, just record the payment status
+          console.warn(`[IPN] Underpayment or currency mismatch for order ${orderId}: paidUsd=${paidUsd} priceCurrency=${priceCurrency}, expected ${expectedUsd} for ${targetPlan}`);
+          return { code: 200, paid: false, underpaid: true, paymentId: pay.id, userId: pay.user_id, amount: paidUsd, expected: expectedUsd, plan: targetPlan, orderId };
         }
 
         // Lifetime payment ($149): activate Pro with far-future expiry
@@ -276,7 +316,7 @@ export async function handleIpn(request, env) {
             "INSERT INTO subscriptions (user_id, plan, status, provider, current_period_end) VALUES ($1, $2, 'active', 'nowpayments_lifetime', $3::timestamptz)",
             [pay.user_id, "pro", "2099-12-31T23:59:59Z"]
           );
-          return { code: 200, paid: true, paymentId: pay.id, userId: pay.user_id, amount: actuallyPaid, plan: "pro", orderId, lifetime: true };
+          return { code: 200, paid: true, paymentId: pay.id, userId: pay.user_id, amount: paidUsd, plan: "pro", orderId, lifetime: true };
         } else if (PRO_DAYS > 0) {
           const base = (["pro", "starter", "agency"].includes(u.plan) && Number(u.plan_expires_at) > Date.now()) ? Number(u.plan_expires_at) : Date.now();
           let expiresMs = base + PRO_DAYS * MS_PER_DAY;
@@ -291,7 +331,7 @@ export async function handleIpn(request, env) {
             "INSERT INTO subscriptions (user_id, plan, status, provider, current_period_end) VALUES ($1, $2, 'active', 'nowpayments', to_timestamp($3 / 1000.0))",
             [pay.user_id, targetPlan, expiresMs]
           );
-          return { code: 200, paid: true, paymentId: pay.id, userId: pay.user_id, amount: actuallyPaid, plan: targetPlan, orderId };
+          return { code: 200, paid: true, paymentId: pay.id, userId: pay.user_id, amount: paidUsd, plan: targetPlan, orderId };
         } else {
           // PRO_DAYS = 0 shouldn't happen, but if it does, use far-future date instead of NULL
           const lifetimeExpiry = new Date('2099-12-31T23:59:59Z').getTime();
@@ -299,7 +339,7 @@ export async function handleIpn(request, env) {
             "UPDATE users SET plan=$1, plan_expires_at=to_timestamp($2 / 1000.0), updated_at=now() WHERE id=$3",
             [targetPlan, lifetimeExpiry, pay.user_id]
           );
-          return { code: 200, paid: true, paymentId: pay.id, userId: pay.user_id, amount: actuallyPaid, plan: targetPlan, orderId };
+          return { code: 200, paid: true, paymentId: pay.id, userId: pay.user_id, amount: paidUsd, plan: targetPlan, orderId };
         }
       }
     }

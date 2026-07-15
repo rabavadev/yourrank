@@ -267,12 +267,14 @@ export interface PlayerRankMessage {
 
 function buildPlayerRankText(siteName: string, playerName: string, oldRank: number | null, newRank: number): string | null {
   if (!newRank) return null;
+  const safeSite = escapeTgMarkdown(siteName);
+  const safePlayer = escapeTgMarkdown(playerName);
   if (oldRank === null && newRank <= 20) {
-    return `🎉 *${playerName}* entered the *${siteName}* leaderboard at #${newRank}!`;
+    return `🎉 *${safePlayer}* entered the *${safeSite}* leaderboard at #${newRank}!`;
   }
   if (oldRank !== null && oldRank !== newRank) {
     const direction = newRank < oldRank ? "📈" : "📉";
-    return `${direction} *${playerName}* moved from #${oldRank} to #${newRank} on the *${siteName}* leaderboard!`;
+    return `${direction} *${safePlayer}* moved from #${oldRank} to #${newRank} on the *${safeSite}* leaderboard!`;
   }
   return null;
 }

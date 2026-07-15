@@ -1,5 +1,6 @@
 import type { Update } from "grammy/types";
 import { query, withTransaction } from "../../../shared/db.js";
+import { logProviderEvent } from "../../../shared/provider-events.js";
 import { PLANS, type PlanTier } from "./plans.js";
 import { setWebhook } from "./telegram.js";
 
@@ -72,11 +73,20 @@ export async function handleBillingUpdate(update: Update): Promise<void> {
   // 1) Approve checkout (must answer within 10s or the payment fails).
   if (update.pre_checkout_query) {
     const q = update.pre_checkout_query;
-    const valid = /^[0-9a-f-]{36}:(pro|agency)$/.test(q.invoice_payload);
+    const payloadParts = String(q.invoice_payload || "").split(":");
+    const payloadOk = payloadParts.length === 2 && /^[0-9a-f-]{36}$/.test(payloadParts[0]);
+    const tier = (payloadOk ? payloadParts[1] : undefined) as PlanTier | undefined;
+    const plan = tier ? PLANS[tier] : undefined;
+    const valid =
+      payloadOk &&
+      Boolean(plan) &&
+      q.currency === "XTR" &&
+      Number(q.total_amount) === plan!.starsPrice;
+
     await tg("answerPreCheckoutQuery", {
       pre_checkout_query_id: q.id,
       ok: valid,
-      ...(valid ? {} : { error_message: "Invalid purchase payload. Please retry from the dashboard." }),
+      ...(valid ? {} : { error_message: "Invalid purchase payload or amount. Please retry from the dashboard." }),
     });
     return;
   }
@@ -87,10 +97,16 @@ export async function handleBillingUpdate(update: Update): Promise<void> {
     // Re-validate the payload here too — pre_checkout runs on a different
     // update, and we must never trust that the two came from the same client
     // state. Guards a malformed/hostile payload before we touch the DB.
-    const parts = sp.invoice_payload.split(":");
+    const parts = String(sp.invoice_payload || "").split(":");
     if (parts.length !== 2) return;
     const [userId, tier] = parts as [string, PlanTier];
     if (!/^[0-9a-f-]{36}$/.test(userId) || !PLANS[tier]) return;
+
+    const plan = PLANS[tier];
+    if (sp.currency !== "XTR" || Number(sp.total_amount) !== plan.starsPrice) {
+      console.error(`[billing] Stars payment mismatch: user=${userId} tier=${tier} currency=${sp.currency} amount=${sp.total_amount} expected=${plan.starsPrice}`);
+      return;
+    }
 
     const chargeId = sp.telegram_payment_charge_id;
 
@@ -102,6 +118,18 @@ export async function handleBillingUpdate(update: Update): Promise<void> {
     // same successful_payment can arrive more than once. We dedupe on the
     // payment charge id (stored in tx_ref) and no-op on a repeat.
     const activated = await withTransaction(async (tx) => {
+      // Record the callback first; a duplicate charge id is a no-op before we
+      // touch mutable state.
+      const eventInserted = await logProviderEvent(tx, {
+        provider: "telegram_stars",
+        provider_reference: chargeId,
+        event_kind: "successful_payment",
+        status: "finished",
+        tx_ref: chargeId,
+        payload_json: sp,
+      });
+      if (!eventInserted) return false;
+
       const dup = await tx.one<{ id: string }>(
         `SELECT id FROM payments WHERE provider = 'telegram_stars' AND tx_ref = $1`,
         [chargeId]
@@ -117,7 +145,7 @@ export async function handleBillingUpdate(update: Update): Promise<void> {
       await tx.query(
         `INSERT INTO payments (user_id, subscription_id, provider, amount, currency, tx_ref, status, plan_tier)
          VALUES ($1, $2, 'telegram_stars', $3, 'XTR', $4, 'finished', $5)`,
-        [userId, sub!.id, sp.total_amount, chargeId, tier]
+        [userId, sub!.id, plan.starsPrice, chargeId, tier]
       );
       // PROD-005-v8: Cap subscription extension to 365 days from now
       await tx.query(
@@ -135,7 +163,7 @@ export async function handleBillingUpdate(update: Update): Promise<void> {
     if (chatId && activated) {
       await tg("sendMessage", {
         chat_id: chatId,
-        text: `✅ ${PLANS[tier].label} plan active for 30 days. Enjoy!`,
+        text: `✅ ${plan.label} plan active for 30 days. Enjoy!`,
       }).catch((err) => { console.error("[billing]: sendMessage confirmation failed", err); });
     }
   }

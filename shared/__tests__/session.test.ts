@@ -49,8 +49,9 @@ const dbMock = () => ({
       if (row) {
         sessions.delete(oldToken);
         sessions.set(newToken, { ...row, created_at: new Date().toISOString(), age: 0 });
+        return [{ id: 1 }];
       }
-      return;
+      return [];
     }
     // TTL refresh updates are no-ops in the mock
     return;
@@ -78,6 +79,8 @@ const {
   resolveSession, currentUserId, loadUser, resolveUser, currentUser,
 } = sessionModule;
 
+import { hashToken } from '../crypto.js';
+
 const mockEnv = (): SessionEnv => ({});
 
 const setUser = (id = 'user-1'): UserRecord => {
@@ -86,8 +89,9 @@ const setUser = (id = 'user-1'): UserRecord => {
   return u;
 };
 
-const setSession = (token: string, userId: string, age = 0) => {
-  sessions.set(token, { user_id: userId, created_at: new Date(Date.now() - age * 1000).toISOString(), age });
+const setSession = async (token: string, userId: string, age = 0) => {
+  const tokenHash = await hashToken(token);
+  sessions.set(tokenHash, { user_id: userId, created_at: new Date(Date.now() - age * 1000).toISOString(), age });
 };
 
 // ============================================================================
@@ -239,8 +243,9 @@ describe('createSession', () => {
   it('stores the session in the mock DB', async () => {
     setUser('user-1');
     const token = await createSession(mockEnv(), 'user-1');
-    expect(sessions.has(token)).toBe(true);
-    expect(sessions.get(token)?.user_id).toBe('user-1');
+    const tokenHash = await hashToken(token);
+    expect(sessions.has(tokenHash)).toBe(true);
+    expect(sessions.get(tokenHash)?.user_id).toBe('user-1');
   });
 });
 
@@ -250,9 +255,10 @@ describe('destroySession', () => {
   it('removes the session from the mock DB', async () => {
     setUser('user-1');
     const token = await createSession(mockEnv(), 'user-1');
-    expect(sessions.has(token)).toBe(true);
+    const tokenHash = await hashToken(token);
+    expect(sessions.has(tokenHash)).toBe(true);
     await destroySession(mockEnv(), token);
-    expect(sessions.has(token)).toBe(false);
+    expect(sessions.has(tokenHash)).toBe(false);
   });
 
   it('handles null token gracefully', async () => {
@@ -293,7 +299,7 @@ describe('resolveSession', () => {
 
   it('returns the userId for a valid session', async () => {
     setUser('user-1');
-    setSession('tok123', 'user-1', 0);
+    await setSession('tok123', 'user-1', 0);
     const req = new Request('https://example.com', { headers: { Cookie: 'yr_session=tok123' } });
     const result = await resolveSession(req, mockEnv());
     expect(result.userId).toBe('user-1');
@@ -302,13 +308,14 @@ describe('resolveSession', () => {
 
   it('returns a rotation cookie when the session is older than threshold', async () => {
     setUser('user-1');
-    setSession('oldtok', 'user-1', SESSION_ROTATE_AFTER_S + 1);
+    await setSession('oldtok', 'user-1', SESSION_ROTATE_AFTER_S + 1);
     const req = new Request('https://example.com', { headers: { Cookie: 'yr_session=oldtok' } });
     const result = await resolveSession(req, mockEnv());
     expect(result.userId).toBe('user-1');
     expect(result.cookie).not.toBeNull();
     expect(result.cookie).toContain('yr_session=');
-    expect(sessions.has('oldtok')).toBe(false);
+    const oldHash = await hashToken('oldtok');
+    expect(sessions.has(oldHash)).toBe(false);
   });
 });
 
@@ -317,7 +324,7 @@ describe('currentUserId', () => {
 
   it('returns the user ID for a valid session', async () => {
     setUser('user-1');
-    setSession('tok123', 'user-1', 0);
+    await setSession('tok123', 'user-1', 0);
     const req = new Request('https://example.com', { headers: { Cookie: 'yr_session=tok123' } });
     expect(await currentUserId(req, mockEnv())).toBe('user-1');
   });
@@ -347,7 +354,7 @@ describe('resolveUser', () => {
 
   it('returns the user and no cookie for a valid session', async () => {
     const u = setUser('user-1');
-    setSession('tok123', 'user-1', 0);
+    await setSession('tok123', 'user-1', 0);
     const req = new Request('https://example.com', { headers: { Cookie: 'yr_session=tok123' } });
     const result = await resolveUser(req, mockEnv());
     expect(result.user).toEqual(u);
@@ -367,7 +374,7 @@ describe('currentUser', () => {
 
   it('returns the user record for a valid session', async () => {
     const u = setUser('user-1');
-    setSession('tok123', 'user-1', 0);
+    await setSession('tok123', 'user-1', 0);
     const req = new Request('https://example.com', { headers: { Cookie: 'yr_session=tok123' } });
     expect(await currentUser(req, mockEnv())).toEqual(u);
   });

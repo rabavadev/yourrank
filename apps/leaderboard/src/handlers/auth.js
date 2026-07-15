@@ -1,6 +1,7 @@
 import { withTransaction, one, exec } from "../../../../shared/db.js";
 // Authentication handlers for signup, login, logout, password reset
 import { hashPassword, verifyPassword, uuid, newToken, createSession, destroySession, destroyAllUserSessions, currentUser, isEmail, slugify, RESERVED, cookieSet, cookieClear, readToken, json, bad, ok, readJson, rateLimit, clientIp } from "../auth.js";
+import { hashToken } from "../../../../shared/crypto.js";
 import { trackActivation } from "../../../../shared/activation-funnel.js";
 import { DEFAULT_EXTRA, getUserBoardsList } from "../site.js";
 import { sendEmail, resetEmail } from "../email.js";
@@ -169,17 +170,25 @@ export async function handleForgot(request, env) {
     // Per-email rate limit: 3 resets per hour (prevents email bomb abuse).
     if (!(await rateLimit(env, `forgot-email:${email}`, 3, 3600)).ok) return bad("Too many attempts. Try again later.", 429);
     const user = await one("SELECT id, email FROM users WHERE email=$1", [email]);
-    if (user) {
+    if (user && env.RESEND_API_KEY) {
+      // H-09: invalidate any earlier unexpired reset token before creating a new one.
+      await exec("DELETE FROM password_resets WHERE user_id=$1 AND expires_at > now()", [user.id]);
       const token = newToken();
-      await exec("INSERT INTO password_resets (token, user_id, expires_at) VALUES ($1, $2, now() + INTERVAL '1 hour') ON CONFLICT (token) DO UPDATE SET user_id=$2, expires_at=now() + INTERVAL '1 hour'", [token, user.id]);
+      const tokenHash = await hashToken(token);
+      await exec("INSERT INTO password_resets (token, user_id, expires_at) VALUES ($1, $2, now() + INTERVAL '1 hour') ON CONFLICT (token) DO UPDATE SET user_id=$2, expires_at=now() + INTERVAL '1 hour'", [tokenHash, user.id]);
       const link = `${new URL(request.url).origin}/reset?token=${token}`;
       const mail = resetEmail(link);
       const result = await sendEmail(env, { to: user.email, ...mail });
       if (!result.sent) {
         // SEC-702: Log only the failure reason, never the token or link.
-        // BUG-001 fix: still return success to prevent email enumeration.
+        // If the email can't be delivered, the token is useless; revoke it.
+        await exec("DELETE FROM password_resets WHERE token=$1", [tokenHash]);
         console.error("[forgot]: email send failed", result.reason);
       }
+    } else if (user && !env.RESEND_API_KEY) {
+      // No email provider configured; skip generating a token so we never leave an
+      // undeliverable, active reset token in the table.
+      console.warn("[forgot] no email provider configured; reset not generated for", email);
     }
     return ok({ message: "If that account exists, a reset link is on its way." });
   } catch (e) {
@@ -198,12 +207,16 @@ export async function handleReset(request, env) {
     const password = String(body?.password || "");
     if (!token) return bad("Missing reset token");
     if (password.length < 8) return bad("Password must be at least 8 characters");
-    const resetRow = await one("SELECT user_id FROM password_resets WHERE token=$1 AND expires_at > now()", [token]);
+    const tokenHash = await hashToken(token);
+    const resetRow = await one("SELECT user_id FROM password_resets WHERE token=$1 AND expires_at > now()", [tokenHash]);
     const userId = resetRow?.user_id ?? null;
     if (!userId) return bad("This reset link is invalid or expired. Ask for a new one.", 400);
     const { hash, salt } = await hashPassword(password);
-    await exec("UPDATE users SET password_hash=$1, password_salt=$2, updated_at=now() WHERE id=$3", [hash, salt, userId]);
-    await exec("DELETE FROM password_resets WHERE token=$1", [token]);
+    // H-09: update password + delete reset token atomically.
+    await withTransaction(async (tx) => {
+      await tx.exec("UPDATE users SET password_hash=$1, password_salt=$2, updated_at=now() WHERE id=$3", [hash, salt, userId]);
+      await tx.exec("DELETE FROM password_resets WHERE token=$1", [tokenHash]);
+    });
     // Revoke EVERY other live session for this user before issuing a fresh one.
     // Without this, a stolen session survives a victim-initiated reset for up to
     // the 30-day KV TTL. The per-user token index in shared/session.js makes this

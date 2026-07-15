@@ -20,6 +20,7 @@ type Bindings = {
   ADMIN_API_KEY: string;
   IP_HASH_SALT: string;
   DATABASE_URL: string;
+  ENVIRONMENT?: string;
   HYPERDRIVE?: { connectionString: string };
   SESSIONS?: RateLimitKV;
   RATE_LIMITER_DO?: any;
@@ -43,10 +44,11 @@ export function buildHonoApp(): Hono<{ Bindings: Bindings }> {
   // silent "Server error (500)" toast with no actionable message.
   // This ensures ALL unhandled throws return {"error":"..."} JSON.
   app.onError((err, c) => {
+    const isDev = c.env?.ENVIRONMENT === "development" || c.env?.ENVIRONMENT === "local";
     const msg = (err as any)?.message ?? String(err);
     const stack = (err as any)?.stack ?? "";
     console.error("[unhandled error]", msg, stack);
-    return c.json({ error: msg, stack: stack.split("\n").slice(0, 5).join("\n") }, 500);
+    return c.json({ error: isDev ? msg : "Internal Server Error" }, 500);
   });
 
   // BE-004: Reject oversized request bodies early, before any parsing.

@@ -106,7 +106,7 @@ const BASE_CSS = `
 `;
 
 function escHtml(s: string): string {
-  return (s ?? "").replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' } as Record<string, string>)[ch]);
+  return String(s ?? "").replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' } as Record<string, string>)[ch]);
 }
 
 export function loginHtml(botUsername: string, devLogin: boolean, nonce?: string): string {
@@ -394,7 +394,7 @@ function showPage(p) {
 }
 showPage(page);
 
-function esc(s){ return (s??'').replace(/[&<>"']/g, ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch])); }
+function esc(s){ return String(s??'').replace(/[&<>"']/g, ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch])); }
 
 let firstBotId = null;
 let custBotId = null;
