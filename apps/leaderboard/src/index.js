@@ -19,6 +19,7 @@ import {
   serveRobotsTxt, serveSitemapXml, serveFavicon,
   HTML, SECURE_HTML, notFoundPage, suspendedPage, withNonce
 } from "./middleware/index.js";
+import { handlePublicApiPreflight, withPublicApiCors } from "./middleware/public-api.js";
 import { findSiteLogoData, findSiteStatus, findUserTotpSecret } from "./data/sites.js";
 import { detectImageMime } from "./site.js";
 import { one } from "../../../shared/db.js";
@@ -407,6 +408,11 @@ async function handleRequest(request, env, ctx, meta) {
       }
 
       // --- API routing ---
+      if (method === "OPTIONS") {
+        const preflight = handlePublicApiPreflight(path);
+        if (preflight) return preflight;
+      }
+
       // Route table lookup for all API endpoints
       const route = findRoute(path, method);
       if (route) {
@@ -417,7 +423,8 @@ async function handleRequest(request, env, ctx, meta) {
           }
         }
         // Pass route context (like slug) and worker metadata (log, reqId) to the handler
-        return route.handler(request, env, { slug: route.slug }, meta);
+        const response = await route.handler(request, env, { slug: route.slug }, meta);
+        return withPublicApiCors(response, path);
       }
 
       // Handle account delete separately (still in auth.js)

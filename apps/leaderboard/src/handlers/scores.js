@@ -41,7 +41,7 @@ export async function handleScores(request, env) {
     // Gate behind Pro plan
     const owner = await one("SELECT id, plan, (EXTRACT(EPOCH FROM plan_expires_at) * 1000)::double precision AS plan_expires_at, status FROM users WHERE id=$1", [site.user_id]);
     const plan = effectivePlan(owner);
-    if (plan !== "pro" && plan !== "agency") return bad("Score API is a Pro feature. Upgrade to unlock.", 403);
+    if (plan !== "pro" && plan !== "agency") return bad("The signed score API requires a Pro or Agency plan.", 403);
     const players = body.players;
     if (!Array.isArray(players)) return bad("players must be an array.");
     // Plan gate: player count

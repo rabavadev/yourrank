@@ -5,8 +5,8 @@ function getCsrf() { const m = document.cookie.match(/(?:^|;\s*)__csrf=([^;]+)/)
 const TIERS = [
   { key: "free", name: "Free", price: 0, priceStr: "$0", desc: "Up to 10 players · 1 leaderboard · YourRank badge" },
   { key: "starter", name: "Starter", price: 12, priceStr: "$12/mo", desc: "Up to 25 players · 1 leaderboard · no badge · CSV import" },
-  { key: "pro", name: "Pro", price: 29, priceStr: "$29/mo", desc: "Unlimited players · up to 3 boards · custom domain · OBS widget · Discord/Telegram" },
-  { key: "agency", name: "Agency", price: 79, priceStr: "$79/mo", desc: "Unlimited everything · white-label · API access" },
+  { key: "pro", name: "Pro", price: 29, priceStr: "$29/mo", desc: "Up to 9,999 players · up to 3 boards · custom domain · OBS widget · signed score API" },
+  { key: "agency", name: "Agency", price: 79, priceStr: "$79/mo", desc: "Up to 99 boards · up to 9,999 players each · white-label · signed score API" },
 ];
 
 const PLAN_ORDER = ["free", "starter", "pro", "agency"];
