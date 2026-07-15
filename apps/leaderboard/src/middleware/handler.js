@@ -15,6 +15,9 @@
 
 import { bad } from "../auth.js";
 import { getLogger } from "../../../../shared/request-id.js";
+import { handlerSchemas, validateJson } from "../../../../shared/validation.js";
+
+const VALIDATE_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
 
 /**
  * @template {(request: Request, env: object, ctx?: object, meta?: object) => Promise<Response>} T
@@ -24,6 +27,13 @@ import { getLogger } from "../../../../shared/request-id.js";
 export function withHandler(fn) {
   return async function handlerWrapper(request, env, ctx, meta) {
     try {
+      const label = fn.name || "anonymous";
+      const schema = handlerSchemas[label];
+      if (schema && VALIDATE_METHODS.has(request.method)) {
+        const result = await validateJson(request, schema);
+        if (!result.ok) return bad(result.error, 400);
+        request.validatedBody = result.data;
+      }
       return await fn(request, env, ctx, meta);
     } catch (err) {
       // Log with enough context to locate the failure without leaking internals.

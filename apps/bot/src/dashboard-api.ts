@@ -7,13 +7,14 @@ import { one, query, exec } from "../../../shared/db.js";
 import { encryptToken, decryptToken, newLinkSlug, newPostbackKey, newWebhookSecret } from "../../../shared/crypto.js";
 import { getMe, setWebhook, deleteWebhook, getWebhookInfo, sendMessage } from "./telegram.js";
 import { syncMyCommands, syncMyCommandsForBot } from "./botEngine.js";
-import { withPlanLimit, getUserPlan, type PlanTier } from "./plans.js";
+import { withPlanLimit, getUserPlan } from "./plans.js";
 import { billingEnabled, createStarsInvoice } from "./billing.js";
 import { checkFeature, PLANS } from "./plans.js";
 import { rateLimit } from "./ratelimit.js";
 import { sameOrigin } from "./dashboard-auth.js";
 import { resolveSession, type SessionEnv } from "../../../shared/session.js";
 import { type RateLimitKV } from "./ratelimit.js";
+import { validatedBody, offerCreateSchema, offerToggleSchema, botCreateSchema, botWelcomeSchema, testMessageSchema, commandCreateSchema, commandUpdateSchema, broadcastSchema, checkoutSchema } from "./validation.js";
 
 type DashApiBindings = SessionEnv & {
   SESSIONS?: RateLimitKV;
@@ -124,17 +125,8 @@ export function buildDashboardApi(): Hono<{ Bindings: DashApiBindings; Variables
   });
 
   api.post("/offers", async (c) => {
-    const b = await c.req.json<{
-      casino: string; label: string; referral_url: string;
-      promo_code?: string; bonus_text?: string;
-    }>();
-    if (!b.casino || !b.label || !b.referral_url)
-      return c.json({ error: "casino, label, referral_url required" }, 400);
-    if (b.casino.length > 100) return c.json({ error: "casino name too long (max 100)" }, 400);
-    if (b.label.length > 200) return c.json({ error: "label too long (max 200)" }, 400);
-    if (b.referral_url.length > 2048) return c.json({ error: "referral_url too long (max 2048)" }, 400);
-    if (b.bonus_text && b.bonus_text.length > 500) return c.json({ error: "bonus_text too long (max 500)" }, 400);
-    if (b.promo_code && b.promo_code.length > 100) return c.json({ error: "promo_code too long (max 100)" }, 400);
+    const b = await validatedBody(c, offerCreateSchema);
+    if (b instanceof Response) return b;
     try {
       const parsed = new URL(b.referral_url);
       if (!/^https?:$/.test(parsed.protocol)) return c.json({ error: "referral_url must use http or https" }, 400);
@@ -165,7 +157,9 @@ export function buildDashboardApi(): Hono<{ Bindings: DashApiBindings; Variables
   });
 
   api.patch("/offers/:id", async (c) => {
-    const { is_active } = await c.req.json<{ is_active: boolean }>();
+    const parsed = await validatedBody(c, offerToggleSchema);
+    if (parsed instanceof Response) return parsed;
+    const { is_active } = parsed;
     const row = await one(
       `UPDATE offers SET is_active = $1, updated_at = now()
         WHERE id = $2 AND owner_id = $3 RETURNING id, is_active`,
@@ -364,10 +358,9 @@ export function buildDashboardApi(): Hono<{ Bindings: DashApiBindings; Variables
 
   // Send a test DM to verify the bot token works and the user can receive it.
   api.post("/bots/:id/test-message", async (c) => {
-    const { chat_id, text } = await c.req.json<{ chat_id?: number; text?: string }>();
-    if (!chat_id || typeof chat_id !== "number") return c.json({ error: "chat_id (number) required" }, 400);
-    if (!text?.trim()) return c.json({ error: "text required" }, 400);
-    if (text.length > 4096) return c.json({ error: "text too long (max 4096)" }, 400);
+    const parsed = await validatedBody(c, testMessageSchema);
+    if (parsed instanceof Response) return parsed;
+    const { chat_id, text } = parsed;
 
     const bot = await one<{ token_encrypted: Buffer }>(
       `SELECT token_encrypted FROM bots WHERE id = $1 AND owner_id = $2`,
@@ -393,10 +386,9 @@ export function buildDashboardApi(): Hono<{ Bindings: DashApiBindings; Variables
   });
 
   api.post("/bots", async (c) => {
-    const { token, welcome_message } = await c.req.json<{ token: string; welcome_message?: string }>();
-    if (!token) return c.json({ error: "token required" }, 400);
-    if (token.length > 200) return c.json({ error: "token too long" }, 400);
-    if (welcome_message && welcome_message.length > 500) return c.json({ error: "welcome_message too long (max 500)" }, 400);
+    const parsed = await validatedBody(c, botCreateSchema);
+    if (parsed instanceof Response) return parsed;
+    const { token, welcome_message } = parsed;
     // Validate the token with Telegram BEFORE taking a DB lock/transaction —
     // don't hold a Postgres advisory lock across an external HTTP call.
     let me;
@@ -499,7 +491,9 @@ export function buildDashboardApi(): Hono<{ Bindings: DashApiBindings; Variables
   // Update a bot's welcome message (the /start reply). Empty clears it back to
   // the engine's default greeting.
   api.patch("/bots/:id", async (c) => {
-    const { welcome_message } = await c.req.json<{ welcome_message?: string | null }>();
+    const parsed = await validatedBody(c, botWelcomeSchema);
+    if (parsed instanceof Response) return parsed;
+    const { welcome_message } = parsed;
     if (welcome_message != null && welcome_message.length > 500)
       return c.json({ error: "welcome_message too long (max 500)" }, 400);
     const row = await one(
@@ -522,7 +516,9 @@ export function buildDashboardApi(): Hono<{ Bindings: DashApiBindings; Variables
 
   // Create or replace a custom command (upsert on the (bot_id, command) unique key).
   api.post("/bots/:id/commands", async (c) => {
-    const { command, response } = await c.req.json<{ command?: string; response?: string }>();
+    const parsed = await validatedBody(c, commandCreateSchema);
+    if (parsed instanceof Response) return parsed;
+    const { command, response } = parsed;
     const bot = await one(`SELECT id FROM bots WHERE id = $1 AND owner_id = $2`, [c.req.param("id"), c.get("uid")]);
     if (!bot) return c.json({ error: "bot not found" }, 404);
     const cmd = normalizeCommand(command ?? "");
@@ -546,7 +542,9 @@ export function buildDashboardApi(): Hono<{ Bindings: DashApiBindings; Variables
 
   // Toggle or edit a command. Ownership is enforced by joining bots.owner_id.
   api.patch("/commands/:id", async (c) => {
-    const { is_enabled, response } = await c.req.json<{ is_enabled?: boolean; response?: string }>();
+    const parsed = await validatedBody(c, commandUpdateSchema);
+    if (parsed instanceof Response) return parsed;
+    const { is_enabled, response } = parsed;
     if (response != null && (!response.trim() || response.length > 1000))
       return c.json({ error: "response must be 1-1000 chars" }, 400);
     const row = await one(
@@ -585,7 +583,9 @@ export function buildDashboardApi(): Hono<{ Bindings: DashApiBindings; Variables
 
   api.post("/billing/checkout", async (c) => {
     if (!billingEnabled()) return c.json({ error: "billing not configured on this deployment" }, 400);
-    const { plan } = await c.req.json<{ plan: PlanTier }>();
+    const parsed = await validatedBody(c, checkoutSchema);
+    if (parsed instanceof Response) return parsed;
+    const { plan } = parsed;
     if (!PLANS[plan] || PLANS[plan].starsPrice <= 0) return c.json({ error: "invalid plan" }, 400);
     const link = await createStarsInvoice(c.get("uid"), plan);
     return c.json({ invoice_link: link });
@@ -623,11 +623,10 @@ export function buildDashboardApi(): Hono<{ Bindings: DashApiBindings; Variables
     const gateErr = await checkFeature(uid, "broadcasts");
     if (gateErr) return c.json({ error: gateErr }, 402);
 
-    const { bot_id, body, scheduled_at } = await c.req.json<{
-      bot_id: string; body: string; scheduled_at?: string;
-    }>();
-    if (!bot_id || !body?.trim()) return c.json({ error: "bot_id and body required" }, 400);
-    if (body.trim().length > 4096) return c.json({ error: "Message too long (max 4096 chars)" }, 400);
+    const parsed = await validatedBody(c, broadcastSchema);
+    if (parsed instanceof Response) return parsed;
+    const { bot_id, body: broadcastBody, scheduled_at } = parsed;
+    const body = broadcastBody.trim();
 
     const bot = await one(`SELECT id FROM bots WHERE id = $1 AND owner_id = $2`, [bot_id, uid]);
     if (!bot) return c.json({ error: "bot not found" }, 404);

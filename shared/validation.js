@@ -1,0 +1,305 @@
+// Shared Zod schemas and validation helpers for the leaderboard and bot Workers.
+// Schemas are keyed by handler function name so the leaderboard withHandler wrapper
+// can validate request bodies without touching every handler.
+import { z } from "zod";
+const MAX_SHORT_TEXT = 200;
+const MAX_MEDIUM_TEXT = 500;
+const MAX_LONG_TEXT = 4000;
+const MAX_LOGO_BASE64 = 300_000;
+// ---------------------------------------------------------------------------
+// Primitive helpers
+// ---------------------------------------------------------------------------
+function optionalString(max) {
+    return z.string().max(max ?? MAX_SHORT_TEXT).optional();
+}
+function optionalTrimmedString(max) {
+    return z.string().trim().max(max ?? MAX_SHORT_TEXT).optional();
+}
+function optionalUuid() {
+    return z.string().uuid().optional().or(z.literal("").optional());
+}
+// Accepts a string/number and coerces to a number, defaulting to undefined.
+const optionalNumber = (max = Number.MAX_SAFE_INTEGER) => z.union([z.number(), z.string()])
+    .optional()
+    .transform((v) => (v === "" || v === undefined || v === null ? undefined : Number(v)))
+    .pipe(z.number().min(0).max(max).optional());
+// Accepts ISO date strings or numbers.
+const optionalDateString = () => z.string().max(64).optional();
+// ---------------------------------------------------------------------------
+// Reusable object fragments
+// ---------------------------------------------------------------------------
+const playerItemSchema = z
+    .object({
+    name: z.string().max(80).optional(),
+    wagered: optionalNumber(1e15),
+    prize: optionalNumber(1e15),
+})
+    .passthrough();
+const socialItemSchema = z
+    .object({
+    platform: z.string().max(40).optional(),
+    url: z.string().max(500).optional(),
+    label: z.string().max(200).optional(),
+})
+    .passthrough();
+const whyStatItemSchema = z
+    .object({
+    big: z.string().max(100).optional(),
+    label: z.string().max(200).optional(),
+    sub: z.string().max(200).optional(),
+})
+    .passthrough();
+const jsonbLike = z
+    .union([z.string().max(50_000), z.record(z.unknown()), z.array(z.unknown())])
+    .optional();
+const brandSchema = z
+    .object({
+    name: z.string().max(80).optional(),
+    tagline: z.string().max(200).optional(),
+    casino: z.string().max(100).optional(),
+    code: z.string().max(100).optional(),
+    ctaUrl: z.string().max(500).optional(),
+    prizePool: z.string().max(100).optional(),
+    period: z.string().max(50).optional(),
+    resetNote: z.string().max(500).optional(),
+})
+    .passthrough();
+const partnerSchema = z
+    .object({
+    blurb: z.string().max(2000).optional(),
+})
+    .passthrough();
+const brandingSchema = z
+    .object({
+    template: z.string().max(50).optional(),
+    logo: z.union([z.string().max(MAX_LOGO_BASE64), z.null()]).optional(),
+    accentA: z.string().max(8).optional(),
+    accentB: z.string().max(8).optional(),
+})
+    .passthrough();
+// ---------------------------------------------------------------------------
+// Per-handler request-body schemas
+// ---------------------------------------------------------------------------
+export const handlerSchemas = {
+    handleSignup: z
+        .object({
+        email: z.string().email().max(254),
+        password: z.string().min(8).max(128),
+        name: z.string().trim().min(2).max(80),
+        slug: z.string().trim().max(80).optional().or(z.literal("").optional()),
+    })
+        .passthrough(),
+    handleLogin: z
+        .object({
+        email: z.string().email().max(254),
+        password: z.string().min(1).max(128),
+    })
+        .passthrough(),
+    handleForgot: z
+        .object({
+        email: z.string().email().max(254),
+    })
+        .passthrough(),
+    handleReset: z
+        .object({
+        token: z.string().min(1).max(128),
+        password: z.string().min(8).max(128),
+    })
+        .passthrough(),
+    handleAccountDelete: z
+        .object({
+        password: z.string().min(1).max(128),
+    })
+        .passthrough(),
+    handleTelegramLink: z
+        .object({
+        id: z.union([z.string(), z.number()]),
+        hash: z.string().min(1).max(128),
+        auth_date: z.union([z.string(), z.number()]),
+        first_name: optionalString(100),
+        last_name: optionalString(100),
+        username: optionalString(100),
+        photo_url: optionalString(500),
+    })
+        .passthrough(),
+    handleTrackCopy: z
+        .object({
+        slug: z.string().max(80).optional().or(z.literal("").optional()),
+    })
+        .passthrough(),
+    handleCreateBoard: z
+        .object({
+        slug: z.string().trim().max(80),
+        name: z.string().trim().max(80).optional().or(z.literal("").optional()),
+        casino: optionalTrimmedString(100),
+        code: optionalTrimmedString(100),
+    })
+        .passthrough(),
+    handleArchive: z
+        .object({
+        label: optionalTrimmedString(200),
+        clear: z.enum(["wagers", "players", "none"]).optional().or(z.literal("").optional()),
+        siteId: optionalUuid(),
+    })
+        .passthrough(),
+    handleArchiveDelete: z
+        .object({
+        id: z.string().uuid(),
+    })
+        .passthrough(),
+    handlePutSite: z
+        .object({
+        siteId: optionalUuid(),
+        slug: z.string().trim().max(80).optional(),
+        name: z.string().trim().max(80).optional(),
+        published: z.boolean().optional(),
+        endsAt: optionalDateString(),
+        expectedUpdatedAt: optionalDateString(),
+        customDomain: z.string().max(253).optional().or(z.literal("").optional()),
+        removeLogo: z.boolean().optional(),
+        brand: brandSchema.optional(),
+        partner: partnerSchema.optional(),
+        branding: brandingSchema.optional(),
+        players: z.array(playerItemSchema).max(5000).optional(),
+        socials: z.array(socialItemSchema).max(20).optional(),
+        rules: z.array(z.union([z.string().max(500), socialItemSchema, whyStatItemSchema])).max(40).optional(),
+        whyStats: z.array(whyStatItemSchema).max(20).optional(),
+        extraJson: jsonbLike,
+        themeJson: jsonbLike,
+        discord_webhook_url: optionalString(500),
+        telegram_bot_token: optionalString(200),
+        telegram_chat_id: optionalString(100),
+        telegram_notify: z.boolean().optional(),
+    })
+        .passthrough(),
+    handlePutTheme: z
+        .object({
+        siteId: optionalUuid(),
+        template: z.string().max(50),
+        accentA: z.string().max(8).optional().or(z.literal("").optional()),
+        accentB: z.string().max(8).optional().or(z.literal("").optional()),
+    })
+        .passthrough(),
+    handleDeleteSite: z
+        .object({
+        siteId: z.string().uuid(),
+    })
+        .passthrough(),
+    handleSetActive: z
+        .object({
+        siteId: z.string().uuid(),
+    })
+        .passthrough(),
+    handleDuplicateBoard: z
+        .object({
+        siteId: z.string().uuid(),
+    })
+        .passthrough(),
+    handleNotifyTest: z
+        .object({
+        channel: z.enum(["discord", "telegram"]),
+        webhook_url: optionalString(500),
+        chat_id: optionalString(100),
+    })
+        .passthrough(),
+    handleDomainVerify: z
+        .object({
+        domain: z.string().trim().min(3).max(253),
+        siteId: optionalUuid(),
+    })
+        .passthrough(),
+    handleLead: z
+        .object({
+        handle: z.string().max(120).optional().or(z.literal("").optional()),
+        casino: z.string().max(60).optional().or(z.literal("").optional()),
+        contact: z.string().max(160).optional().or(z.literal("").optional()),
+        note: z.string().max(MAX_MEDIUM_TEXT).optional().or(z.literal("").optional()),
+    })
+        .passthrough(),
+    handleContact: z
+        .object({
+        name: z.string().trim().min(1).max(120),
+        email: z.string().email().max(254),
+        subject: z.string().max(120).optional().or(z.literal("").optional()),
+        message: z.string().trim().min(10).max(MAX_LONG_TEXT),
+        kind: z.enum(["support", "feedback"]).optional().or(z.literal("").optional()),
+        context: z
+            .enum(["dashboard", "leaderboard", "bot", "analytics", "attribution", "billing"])
+            .optional()
+            .or(z.literal("").optional()),
+    })
+        .passthrough(),
+    handleBotConnect: z
+        .object({
+        token: z.string().min(10).max(120),
+    })
+        .passthrough(),
+    handleBotOnboard: z
+        .object({
+        token: z.string().min(10).max(120),
+    })
+        .passthrough(),
+    handleCheckout: z
+        .object({
+        plan: z.string().max(20).optional().or(z.literal("").optional()),
+    })
+        .passthrough(),
+    handleAction: z
+        .object({
+        userId: z.string().uuid(),
+        action: z.enum(["starter", "pro", "agency", "free", "suspend", "unsuspend", "reset-link"]),
+        days: optionalNumber(3650),
+        amountUsd: optionalNumber(1e9),
+        plan: z.string().max(20).optional(),
+    })
+        .passthrough(),
+    handleSupportReply: z
+        .object({
+        id: z.string().uuid(),
+        reply: z.string().trim().min(1).max(MAX_LONG_TEXT),
+    })
+        .passthrough(),
+    handle2faVerify: z
+        .object({
+        code: z.string().regex(/^\d{6}$/).max(6),
+    })
+        .passthrough(),
+    handleLog: z
+        .object({
+        level: z.enum(["error", "warn", "info"]).optional(),
+        context: z.string().max(80).optional(),
+        message: z.string().min(1).max(MAX_LONG_TEXT),
+        stack: z.string().max(10_000).optional().or(z.literal("").optional()),
+        req_id: z.string().max(64).optional().or(z.literal("").optional()),
+        extra: z.record(z.unknown()).optional(),
+    })
+        .passthrough(),
+};
+// ---------------------------------------------------------------------------
+// Validation helpers
+// ---------------------------------------------------------------------------
+function friendlyError(error) {
+    const issues = error.issues.slice(0, 3).map((i) => {
+        const path = i.path.length ? i.path.join(".") : "request";
+        return `${path}: ${i.message}`;
+    });
+    return issues.length ? issues.join("; ") : "Invalid request";
+}
+export async function validateJson(request, schema) {
+    let raw;
+    try {
+        raw = await request.json();
+    }
+    catch {
+        return { ok: false, error: "Invalid JSON body" };
+    }
+    const parsed = schema.safeParse(raw);
+    if (!parsed.success) {
+        return { ok: false, error: friendlyError(parsed.error) };
+    }
+    return { ok: true, data: parsed.data };
+}
+export function formatValidationError(error) {
+    return friendlyError(error);
+}
+export { z };

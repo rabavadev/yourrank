@@ -4,7 +4,8 @@
   "version": "0.2.0",
   "workspaces": ["apps/leaderboard", "apps/bot", "apps/monitor", "e2e"],
   "dependencies": {
-    "postgres": "3.4.9"
+    "postgres": "3.4.9",
+    "zod": "3.25.76"
   },
   "devDependencies": {
     "@types/node": "^20.14.10",

@@ -2,7 +2,7 @@
 // Allows users to link their Telegram account to their existing email/password account.
 // After linking, the bot dashboard can use the main session.
 
-import { json, bad, requireUser } from "../auth.js";
+import { json, bad, requireUser, readJson } from "../auth.js";
 import { query, one } from "../../../../shared/db.js";
 
 /**
@@ -20,12 +20,8 @@ export async function handleTelegramLink(request, env) {
 
   if (!env.LOGIN_BOT_TOKEN) return bad("Telegram linking not configured", 503);
 
-  let body;
-  try {
-    body = await request.json();
-  } catch {
-    return bad("Invalid JSON body");
-  }
+  const body = await readJson(request);
+  if (!body) return bad("Invalid JSON body");
 
   const { id, first_name, last_name, username, photo_url, auth_date, hash } = body;
 

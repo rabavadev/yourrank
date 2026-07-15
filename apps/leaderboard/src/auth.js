@@ -143,7 +143,10 @@ export const RESERVED = new Set(["api", "assets", "login", "signup", "logout", "
 export const json = (data, status = 200, headers = {}) => new Response(JSON.stringify(data), { status, headers: { "content-type": "application/json; charset=utf-8", ...headers } });
 export const bad = (msg, status = 400) => json({ ok: false, error: msg }, status);
 export const ok = (data = {}) => json({ ok: true, ...data });
-export const readJson = async (req) => { try { return await req.json(); } catch { return null; } };
+export const readJson = async (req) => {
+  if (req.validatedBody !== undefined) return req.validatedBody;
+  try { return await req.json(); } catch { return null; }
+};
 
 
 // POST /api/account/delete — GDPR account deletion (DB-102).

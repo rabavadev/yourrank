@@ -12,6 +12,7 @@ import { withPlanLimit } from "./plans.js";
 import { rateLimit, type RateLimitKV } from "./ratelimit.js";
 import { createQueueProducer, type QueueEvent } from "../../../shared/queue-producer.js";
 import { recordConversion, type PostbackQuery } from "../../../shared/conversions.js";
+import { validatedBody, adminUserSchema, adminBotSchema, adminOfferSchema } from "./validation.js";
 
 type Bindings = {
   PUBLIC_BASE_URL: string;
@@ -255,7 +256,8 @@ export function buildHonoApp(): Hono<{ Bindings: Bindings }> {
   });
 
   api.post("/users", async (c) => {
-    const body = await c.req.json<{ email?: string; display_name?: string }>();
+    const body = await validatedBody(c, adminUserSchema);
+    if (body instanceof Response) return body;
     return c.json(await one(
       `INSERT INTO users (email, display_name) VALUES ($1, $2)
        RETURNING id, email, display_name`,
@@ -264,10 +266,9 @@ export function buildHonoApp(): Hono<{ Bindings: Bindings }> {
   });
 
   api.post("/bots", async (c) => {
-    const { owner_id, token, welcome_message } = await c.req.json<{
-      owner_id: string; token: string; welcome_message?: string;
-    }>();
-    if (!owner_id || !token) return c.json({ error: "owner_id and token required" }, 400);
+    const parsed = await validatedBody(c, adminBotSchema);
+    if (parsed instanceof Response) return parsed;
+    const { owner_id, token, welcome_message } = parsed;
     // Validate the token with Telegram BEFORE taking the DB lock.
     let me;
     try { me = await getMe(token); }
@@ -321,12 +322,8 @@ export function buildHonoApp(): Hono<{ Bindings: Bindings }> {
   });
 
   api.post("/offers", async (c) => {
-    const body = await c.req.json<{
-      owner_id: string; casino: string; label: string; referral_url: string;
-      promo_code?: string; bonus_text?: string; priority?: number;
-    }>();
-    if (!body.owner_id || !body.casino || !body.label || !body.referral_url)
-      return c.json({ error: "owner_id, casino, label, referral_url required" }, 400);
+    const body = await validatedBody(c, adminOfferSchema);
+    if (body instanceof Response) return body;
     try { new URL(body.referral_url); } catch { return c.json({ error: "referral_url must be a valid URL" }, 400); }
 
     const out = await withPlanLimit(body.owner_id, "offers", async (tx) => {
