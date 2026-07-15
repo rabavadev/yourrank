@@ -65,7 +65,8 @@ mock.module(_cryptoUrl, () => ({
 }));
 
 mock.module(_postbackUrl, () => ({
-  findPostbackOwner: async () => _siteRow ? { userId: _siteRow.user_id } : null,
+  findPostbackOwner: async () => _siteRow ? { id: "key-id", userId: _siteRow.user_id } : null,
+  logPostbackIntake: () => {},
   computeReplayHash: async () => "replay-hash",
   recordReplayHash: async () => true,
 }));

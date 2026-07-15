@@ -18,17 +18,23 @@ This document tracks legacy compatibility paths that still exist in the codebase
 
 ---
 
-### 2. Unsigned GET /pb/:key Postback Path
-**Location:** `apps/bot/src/handlers/postback.ts`
+### 2. Unsigned Casino Postback Paths
+**Locations:**
+- `apps/bot/src/hono-app.ts` — `GET|POST /pb/:key`
+- `apps/leaderboard/src/handlers/attribution.js` — unsigned `POST /api/postback`
 
-**Description:** The system accepts unsigned POST requests to `/pb/:key` for casino postbacks. Casinos that don't support HMAC-SHA256 signing can use this path. The signed path is `POST /pb` with `X-Postback-Signature` header.
+**Description:** The system accepts legacy requests with a key in the URL and no HMAC signature. Casinos that don't support HMAC-SHA256 signing can temporarily use these paths. The preferred paths use `X-Postback-Key` and `X-Postback-Signature` headers.
 
 **Migration Path:**
 - Encourage all casino integrations to migrate to signed postbacks
 - Signed postbacks provide better security and prevent spoofing
-- Plan: Remove after Q3 2026 (allows 12 months for casino partner migration)
+- New dashboard integrations show the signed setup by default
+- Legacy responses include `Deprecation`, `Sunset`, and successor `Link` headers
+- Signed and unsigned usage is measured separately per key
+- `POSTBACK_UNSIGNED_ENABLED=false` makes both unsigned paths return `410 Gone`
+- Plan: disable on 2026-10-01 after usage and affected-account review
 
-**Removal Timeline:** Q3 2026
+**Removal Timeline:** 2026-10-01
 
 ---
 

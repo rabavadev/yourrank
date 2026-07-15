@@ -9,6 +9,29 @@ const DEFAULT_TTL_S = 24 * 60 * 60;
 const KEY_TTL_S = 365 * 24 * 60 * 60;
 
 export interface PostbackOwner { id: string; userId: string; }
+export type PostbackUsage = "signed" | "unsigned";
+
+export const POSTBACK_SUNSET = "2026-10-01";
+
+export function unsignedPostbacksEnabled(value?: string): boolean {
+  return value !== "false" && value !== "0";
+}
+
+export function logPostbackIntake(
+  path: "pb_legacy" | "api_postback_unsigned" | "pb_signed" | "scores_signed",
+  owner: PostbackOwner,
+  signed: boolean
+): void {
+  console.info(JSON.stringify({
+    level: "info",
+    event: "postback_intake",
+    path,
+    signed,
+    owner_id: owner.userId,
+    key_id: owner.id,
+    ts: new Date().toISOString(),
+  }));
+}
 
 async function hashPostbackKey(key: string): Promise<string> { return hashToken(key); }
 
@@ -18,7 +41,10 @@ async function getEncKey(): Promise<string> {
   return hex;
 }
 
-export async function findPostbackOwner(key: string): Promise<PostbackOwner | null> {
+export async function findPostbackOwner(
+  key: string,
+  usage?: PostbackUsage
+): Promise<PostbackOwner | null> {
   const hash = await hashPostbackKey(key);
   const row = await one<{ id: string; user_id: string }>(
     `SELECT id, user_id FROM postback_keys
@@ -29,7 +55,22 @@ export async function findPostbackOwner(key: string): Promise<PostbackOwner | nu
     [hash]
   );
   if (!row) return null;
-  exec("UPDATE postback_keys SET last_used_at = now() WHERE id = $1", [row.id]).catch(() => {});
+  await exec(
+    `UPDATE postback_keys
+        SET last_used_at = now(),
+            last_signed_used_at = CASE WHEN $2 = 'signed' THEN now() ELSE last_signed_used_at END,
+            last_unsigned_used_at = CASE WHEN $2 = 'unsigned' THEN now() ELSE last_unsigned_used_at END
+      WHERE id = $1`,
+    [row.id, usage || null]
+  ).catch((error) => {
+    console.error(JSON.stringify({
+      level: "error",
+      event: "postback_usage_update_failed",
+      key_id: row.id,
+      error: String(error?.message || error),
+      ts: new Date().toISOString(),
+    }));
+  });
   return { id: row.id, userId: row.user_id as string };
 }
 

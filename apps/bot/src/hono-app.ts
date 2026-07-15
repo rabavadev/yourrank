@@ -12,7 +12,14 @@ import { withPlanLimit } from "./plans.js";
 import { rateLimit, type RateLimitKV } from "./ratelimit.js";
 import { createQueueProducer, type QueueEvent } from "../../../shared/queue-producer.js";
 import { recordConversion, type PostbackQuery } from "../../../shared/conversions.js";
-import { findPostbackOwner, computeReplayHash, recordReplayHash } from "../../../shared/postback.js";
+import {
+  POSTBACK_SUNSET,
+  computeReplayHash,
+  findPostbackOwner,
+  logPostbackIntake,
+  recordReplayHash,
+  unsignedPostbacksEnabled,
+} from "../../../shared/postback.js";
 import { validatedBody, adminUserSchema, adminBotSchema, adminOfferSchema } from "./validation.js";
 
 type Bindings = {
@@ -28,6 +35,7 @@ type Bindings = {
   RL_BACKEND?: string;
   EVENTS_QUEUE?: { send: (message: unknown) => Promise<void> };
   DISCORD_MONITORING_WEBHOOK?: string;
+  POSTBACK_UNSIGNED_ENABLED?: string;
 };
 
 // Admin API abuse guard: cap attempts per IP so a leaked-endpoint brute force
@@ -204,15 +212,15 @@ export function buildHonoApp(): Hono<{ Bindings: Bindings }> {
     const rl = await rateLimit(c.env, `pb:${key}`, 120, 60);
     if (!rl.ok) { c.header("Retry-After", String(rl.retryAfter)); return c.json({ error: "rate limited" }, 429); }
 
-    // H-04: postback keys now live in postback_keys with revocation/expiry and
-    // are looked up by hash. The plaintext key from the request is used for
-    // HMAC verification, then a per-user replay hash blocks exact replays.
-    const owner = await findPostbackOwner(key);
-    if (!owner) return c.json({ error: "unknown key" }, 404);
-
     const qs = new URL(c.req.url).search.slice(1); // without the leading '?'
     const valid = await verifyHmacSha256Hex(key, qs, sig);
     if (!valid) return c.json({ error: "bad signature" }, 401);
+
+    // H-04: postback keys now live in postback_keys with revocation/expiry and
+    // are looked up by hash. A per-user replay hash blocks exact replays.
+    const owner = await findPostbackOwner(key, "signed");
+    if (!owner) return c.json({ error: "unknown key" }, 404);
+    logPostbackIntake("pb_signed", owner, true);
 
     const replayHash = await computeReplayHash(c.req.query());
     if (!(await recordReplayHash(owner.userId, replayHash))) {
@@ -244,12 +252,20 @@ export function buildHonoApp(): Hono<{ Bindings: Bindings }> {
     const rl = await rateLimit(c.env, `pb:${key}`, 30, 60);
     if (!rl.ok) { c.header("Retry-After", String(rl.retryAfter)); return c.json({ error: "rate limited" }, 429); }
     c.header("Deprecation", "true");
-    c.header("Sunset", "2026-10-01");
+    c.header("Sunset", POSTBACK_SUNSET);
     c.header("Link", '</pb>; rel="successor-version"');
+    if (!unsignedPostbacksEnabled(c.env.POSTBACK_UNSIGNED_ENABLED)) {
+      return c.json({
+        error: "unsigned postbacks are no longer accepted",
+        successor: "/pb",
+        sunset: POSTBACK_SUNSET,
+      }, 410);
+    }
 
     // H-04: lookup by key hash in postback_keys; key can be revoked/rotated.
-    const owner = await findPostbackOwner(key);
+    const owner = await findPostbackOwner(key, "unsigned");
     if (!owner) return c.json({ error: "unknown key" }, 404);
+    logPostbackIntake("pb_legacy", owner, false);
 
     const replayHash = await computeReplayHash(c.req.query());
     if (!(await recordReplayHash(owner.userId, replayHash))) {
