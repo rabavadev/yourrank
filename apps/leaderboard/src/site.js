@@ -7,6 +7,14 @@ import { RESERVED, slugify } from "./auth.js";
 import { logAudit } from "../../../shared/audit.js";
 import { createQueueProducer } from "../../../shared/queue-producer.js";
 
+function normalizePlayerName(name) {
+  // C-07 / H-17: stable, case-insensitive, whitespace-collapsed identity.
+  return String(name ?? "")
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, " ");
+}
+
 function createNotifyQueue(env) {
   return createQueueProducer(
     env.EVENTS_QUEUE,
@@ -234,6 +242,7 @@ export async function getUserSite(env, uid, plan) {
     const extra = (rawExtra && typeof rawExtra === "object") ? rawExtra : {};
     return {
         id: site.id, slug: site.slug, published: !!site.published,
+        updatedAt: site.updated_at,
         data: publicShape(site, await getPlayers(env, site.id), archives.slice(0, archiveLimit), !!site.has_logo),
         customDomain: site.custom_domain || "",
           domainStatus: site.domain_status || "pending",
@@ -288,6 +297,7 @@ export async function getUserSiteById(env, uid, siteId, plan) {
   const extra = (rawExtra && typeof rawExtra === "object") ? rawExtra : {};
   return {
     id: site.id, slug: site.slug, published: !!site.published,
+    updatedAt: site.updated_at,
     data: publicShape(site, await getPlayers(env, site.id), archives.slice(0, archiveLimit), !!site.has_logo),
       customDomain: site.custom_domain || "",
           domainStatus: site.domain_status || "pending",
@@ -534,14 +544,31 @@ export async function saveSite(env, user, payload, siteId, request = null) {
   // Plan gate: player count is the paid lever.
   if (typeof user === "object" && Array.isArray(payload.players)) {
     const plan = effectivePlan(user);
-    const count = payload.players.filter((p) => p && p.name).length;
-    if (count > PLAN_LIMITS[plan]) {
+    const validPlayersForLimit = payload.players.filter((p) => p && p.name && normalizePlayerName(p.name) !== "");
+    if (validPlayersForLimit.length > PLAN_LIMITS[plan]) {
       return {
         error: plan === "pro" || plan === "agency"
           ? `Your plan allows up to ${PLAN_LIMITS[plan]} players.`
           : `Your plan allows up to ${PLAN_LIMITS[plan]} players. Upgrade for more.`,
         code: "player_limit",
       };
+    }
+  }
+
+  // H-17: reject duplicate player names and whitespace-only names before they
+  // reach the database, using the same normalization as the upsert path.
+  if (Array.isArray(payload.players)) {
+    const seen = new Set();
+    for (const p of payload.players) {
+      if (!p || !p.name) continue;
+      const norm = normalizePlayerName(p.name);
+      if (norm === "") {
+        return { error: `Player name cannot be empty.`, code: "invalid_player_name" };
+      }
+      if (seen.has(norm)) {
+        return { error: `Duplicate player name: ${p.name}`, code: "duplicate_player" };
+      }
+      seen.add(norm);
     }
   }
   const b = payload.brand || {};
@@ -600,11 +627,27 @@ export async function saveSite(env, user, payload, siteId, request = null) {
   const oldPlayers = await getPlayers(env, site.id);
   const oldTop3 = oldPlayers.slice().sort((a, b2) => (b2.wagered || 0) - (a.wagered || 0)).slice(0, 3);
 
-  await withTransaction(async (tx) => {
-    // QA-004: Lock the site row to serialize concurrent saves on the same
-    // board. Without this, two concurrent saveSite() calls could interleave
-    // their DELETE + INSERT players, leaving orphaned or missing rows.
-    await tx.unsafe("SELECT id FROM sites WHERE id=$1 FOR UPDATE", [site.id]);
+  const txResult = await withTransaction(async (tx) => {
+    // QA-004 / C-07: Lock the site row and re-read updated_at inside the same
+    // transaction so the optimistic concurrency check is authoritative.
+    const locked = await tx.one(
+      `SELECT id, slug, name, tagline, casino, code, cta_url, prize_pool, period, ends_at, reset_note, blurb, extra_json, published, theme_json, updated_at FROM sites WHERE id=$1 FOR UPDATE`,
+      [site.id]
+    );
+    if (!locked) throw new Error("site not found");
+
+    if (payload.expectedUpdatedAt) {
+      const clientTime = new Date(payload.expectedUpdatedAt).getTime();
+      const serverTime = new Date(locked.updated_at).getTime();
+      if (clientTime !== serverTime) {
+        return {
+          error: "This board was modified by another session. Refresh and try again.",
+          code: "concurrency_conflict",
+          currentUpdatedAt: locked.updated_at,
+        };
+      }
+    }
+
     const publishedVal = typeof payload.published === "boolean" ? payload.published : site.published;
     const endsAtVal = normalizeEndsAt(payload.endsAt, site.ends_at);
     const slugVal = slugRename || site.slug;
@@ -617,11 +660,19 @@ export async function saveSite(env, user, payload, siteId, request = null) {
         extra, logoData, themeJson, publishedVal, site.id,
       ]
     );
+
     if (Array.isArray(payload.players)) {
-      await tx.unsafe("DELETE FROM players WHERE site_id=$1", [site.id]);
-      const validPlayers = payload.players.filter((p) => p && p.name);
+      const validPlayers = payload.players.filter((p) => p && p.name && normalizePlayerName(p.name) !== "");
+      // C-07: delete only players whose stable normalized name is not in the
+      // new payload; upsert the rest instead of replacing every row.
       if (validPlayers.length > 0) {
-        const cols = 6;
+        const keepNames = validPlayers.map((p) => normalizePlayerName(p.name));
+        await tx.unsafe("DELETE FROM players WHERE site_id=$1 AND normalized_name <> ALL($2::text[])", [site.id, keepNames]);
+      } else {
+        await tx.unsafe("DELETE FROM players WHERE site_id=$1", [site.id]);
+      }
+      if (validPlayers.length > 0) {
+        const cols = 8;
         const params = [];
         const valueRows = [];
         let idx = 1;
@@ -630,17 +681,27 @@ export async function saveSite(env, user, payload, siteId, request = null) {
           for (let c = 0; c < cols; c++) row.push(`$${idx++}`);
           valueRows.push(`(${row.join(",")})`);
           params.push(
-            crypto.randomUUID(), site.id, String(p.name),
-            Number(p.wagered) || 0, Number(p.prize) || 0, i
+            crypto.randomUUID(), site.id, String(p.name).slice(0, 80), normalizePlayerName(p.name),
+            Number(p.wagered) || 0, Number(p.prize) || 0, i, 1
           );
         });
         await tx.unsafe(
-          `INSERT INTO players (id,site_id,name,wagered,prize,sort) VALUES ${valueRows.join(",")}`,
+          `INSERT INTO players (id, site_id, name, normalized_name, wagered, prize, sort, version) VALUES ${valueRows.join(",")}
+           ON CONFLICT (site_id, normalized_name) DO UPDATE
+           SET name = EXCLUDED.name,
+               wagered = EXCLUDED.wagered,
+               prize = EXCLUDED.prize,
+               sort = EXCLUDED.sort,
+               updated_at = now(),
+               version = players.version + 1
+           RETURNING id, name, wagered, prize, sort, version`,
           params
         );
       }
     }
+    return { ok: true };
   });
+  if (txResult.error) return txResult;
 
   // Detect top-3 / rank changes and enqueue notifications for the consumer to
   // deliver. This keeps outbound Telegram/Discord calls off the saveSite request

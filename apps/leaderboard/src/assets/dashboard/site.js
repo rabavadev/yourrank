@@ -69,6 +69,7 @@ export function collect() {
   const pubToggle = $("pubToggle");
   if (pubToggle) out.published = pubToggle.checked;
   if (state.ACTIVE_SITE_ID) out.siteId = state.ACTIVE_SITE_ID;
+  if (state.SITE_UPDATED_AT) out.expectedUpdatedAt = state.SITE_UPDATED_AT;
   if (state.ME && state.ME.plan !== "free") {
     out.branding = { accentA: $("c_a").value, accentB: $("c_b").value };
     if (state.LOGO !== undefined) out.branding.logo = state.LOGO;
@@ -376,6 +377,7 @@ $("save").addEventListener("click", async () => {
     if (res.ok && d.ok) {
       status.textContent = "Saved. Your page is updated.";
       state._dirty = false;
+      if (d.updatedAt) state.SITE_UPDATED_AT = d.updatedAt;
       const sb = $("savebar"); if (sb) sb.hidden = true;
       const active = state.BOARDS.find((b) => b.id === state.ACTIVE_SITE_ID);
       if (active) { active.name = payload.name; active.casino = payload.brand?.casino || active.casino; active.code = payload.brand?.code || active.code; }

@@ -41,7 +41,7 @@ const optionalDateString = () => z.string().max(64).optional();
 
 const playerItemSchema = z
   .object({
-    name: z.string().max(80).optional(),
+    name: z.string().trim().min(1).max(80).optional(),
     wagered: optionalNumber(1e15),
     prize: optionalNumber(1e15),
   })
@@ -189,7 +189,26 @@ export const handlerSchemas: Record<string, ZodSchema<any>> = {
       brand: brandSchema.optional(),
       partner: partnerSchema.optional(),
       branding: brandingSchema.optional(),
-      players: z.array(playerItemSchema).max(5000).optional(),
+      players: z
+        .array(playerItemSchema)
+        .max(9999)
+        .optional()
+        .superRefine((items, ctx) => {
+          if (!Array.isArray(items)) return;
+          const seen = new Set<string>();
+          for (const [i, p] of items.entries()) {
+            const norm = String(p?.name || "").trim().toLowerCase().replace(/\s+/g, " ");
+            if (!norm) continue;
+            if (seen.has(norm)) {
+              ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                message: `Duplicate player name: ${p.name}`,
+                path: [i, "name"],
+              });
+            }
+            seen.add(norm);
+          }
+        }),
       socials: z.array(socialItemSchema).max(20).optional(),
       rules: z.array(z.union([z.string().max(500), socialItemSchema, whyStatItemSchema])).max(40).optional(),
       whyStats: z.array(whyStatItemSchema).max(20).optional(),

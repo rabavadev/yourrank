@@ -192,13 +192,19 @@ function updateLeaderboard(players) {
 }
 
 let pollFailCount = 0;
+let lastEtag = "";
 
 async function pollPlayers() {
     const slug = window.__SLUG__;
     if (!slug || slug === "demo") return;
     try {
-      const resp = await fetch(`/api/public/${encodeURIComponent(slug)}/players`);
+      const url = `/api/public/${encodeURIComponent(slug)}/players?limit=100`;
+      const headers = lastEtag ? { "If-None-Match": lastEtag } : {};
+      const resp = await fetch(url, { headers });
+      if (resp.status === 304) { pollFailCount = 0; return; }
       if (!resp.ok) { onPollFail(); return; }
+      const etag = resp.headers.get("etag");
+      if (etag) lastEtag = etag;
       const json = await resp.json();
       if (json.players && Array.isArray(json.players)) {
         pollFailCount = 0;

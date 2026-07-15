@@ -4,6 +4,7 @@ export const state = {
   EXTRA: {},
   ME: null,
   ACTIVE_SITE_ID: null,
+  SITE_UPDATED_AT: null,
   BOARDS: [],
   TEMPLATE_CATALOG: [],
   CURRENT_BRANDING: { template: "classic", accentA: null, accentB: null },

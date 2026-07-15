@@ -2,6 +2,7 @@
 import { getPublicSite } from "../site.js";
 import { getStats } from "../stats.js";
 import { rateLimit, rateLimitHeaders, clientIp, json, bad } from "../auth.js";
+import { one } from "../../../../shared/db.js";
 
 /**
  * Handle GET /api/public/:slug/standings
@@ -49,8 +50,25 @@ export async function handlePublicPlayers(request, env, ctx) {
     if (!rl.ok) return bad("Rate limit exceeded. Try again shortly.", 429, rateLimitHeaders(rl));
     const r = await getPublicSite(env, slug);
     if (!r || r.suspended) return bad("not found", 404);
-    const players = (r.data.players || []).slice().sort((a, b) => b.wagered - a.wagered);
-    return json({ players }, 200, { "cache-control": "public, max-age=10", ...rateLimitHeaders(rl) });
+    const url = new URL(request.url);
+    const limit = Math.min(9999, Math.max(0, Number(url.searchParams.get("limit")) || 0)) || undefined;
+
+    // C-11 / M-13: cheap ETag based on the most recent player mutation. This lets
+    // the client skip DOM churn and the server skip serializing unchanged boards.
+    const version = await one(
+      "SELECT max(updated_at) AS m, count(*)::int AS c FROM players WHERE site_id=$1",
+      [r.id]
+    );
+    const maxTs = version?.m ? new Date(version.m).toISOString() : "0";
+    const etag = `W/"${slug}-${maxTs}-${version?.c || 0}${limit ? `-l${limit}` : ""}"`;
+    const ifNoneMatch = request.headers.get("if-none-match");
+    if (ifNoneMatch === etag) {
+      return new Response(null, { status: 304, headers: { "cache-control": "public, max-age=10", etag, ...rateLimitHeaders(rl) } });
+    }
+
+    let players = (r.data.players || []).slice().sort((a, b) => b.wagered - a.wagered);
+    if (limit && players.length > limit) players = players.slice(0, limit);
+    return json({ players }, 200, { "cache-control": "public, max-age=10", etag, ...rateLimitHeaders(rl) });
   } catch (e) {
     console.error("[public/players]", String(e?.message || e));
     return bad("Something went wrong. Try again.", 500);
@@ -87,8 +105,9 @@ export async function handlePublicRank(request, env, ctx) {
       });
     }
     const sorted = (r.data.players || []).slice().sort((a, b) => (b.wagered || 0) - (a.wagered || 0));
-    const matchUser = userParam.toLowerCase().replace(/^@/, "");
-    const idx = sorted.findIndex(p => String(p.name || "").toLowerCase().replace(/^\*+/, "").includes(matchUser));
+    const matchUser = userParam.toLowerCase().replace(/^@/, "").replace(/\s+/g, " ").trim();
+    const normalizeForRank = (n) => String(n || "").toLowerCase().replace(/^\*+/, "").replace(/\s+/g, " ").trim();
+    const idx = sorted.findIndex(p => normalizeForRank(p.name) === matchUser);
     if (idx === -1) {
       return new Response(`${userParam} is not on ${r.data.brand?.name || slug}'s leaderboard yet.`, {
         headers: { ...rankHeaders, "cache-control": "public, max-age=30" }
