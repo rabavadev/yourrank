@@ -169,6 +169,7 @@ export function loginHtml(botUsername: string, devLogin: boolean, nonce?: string
   .center { min-height:90vh; display:flex; align-items:center; justify-content:center; }
   .card { text-align:center; max-width:380px; }
   .sr-only { position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0); }
+  .err { color:#f85149; margin-top:12px; }
   </style></head><body>
 <div class="center"><div class="panel card" id="main-content">
   <h1 class="style-1">🎰 Streamer Dashboard</h1>
@@ -185,11 +186,19 @@ export function loginHtml(botUsername: string, devLogin: boolean, nonce?: string
     <input id="devid" type="number" placeholder="Telegram user id">
     <button data-action="devLogin" type="button">Enter</button>
   </div>` : ""}
+  <p id="loginMsg" class="err" role="alert" aria-live="assertive" hidden></p>
 </div></div>
 <script${nonce ? ` nonce="${nonce}"` : ""}>
+function showLoginError(msg) {
+  const el = document.getElementById('loginMsg');
+  if (el) { el.textContent = msg; el.hidden = false; }
+}
 async function onTgAuth(user) {
   const r = await fetch('/bot/auth/telegram', {method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(user)});
-  if (r.ok) location.reload(); else alert('Login failed: ' + (await r.json()).error);
+  if (r.ok) { location.reload(); return; }
+  let msg = 'Login failed.';
+  try { msg = 'Login failed: ' + (await r.json()).error; } catch { /* non-JSON response */ }
+  showLoginError(msg);
 }
 window.onTgAuth = onTgAuth;
 async function devLogin(btn) {
@@ -197,7 +206,9 @@ async function devLogin(btn) {
   if (!id) return;
   if (btn) { btn.disabled = true; btn.textContent = 'Entering…'; }
   const r = await fetch('/bot/auth/dev', {method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({telegram_user_id:id})});
-  if (r.ok) location.reload(); else alert('Failed');
+  if (r.ok) { location.reload(); return; }
+  showLoginError('Login failed. Check the ID and try again.');
+  if (btn) { btn.disabled = false; btn.textContent = 'Enter'; }
 }
 document.addEventListener('click', (e) => {
   const target = e.target.closest('[data-action]');
