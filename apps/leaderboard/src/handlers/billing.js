@@ -1,7 +1,6 @@
 // Billing handlers: trial activation
 import { requireUser, json, bad } from "../auth.js";
 import { activatePro, effectivePlan } from "../billing.js";
-import { exec } from "../../../../shared/db.js";
 import { logAudit } from "../../../../shared/audit.js";
 
 // POST /api/billing/trial — start a free 7-day Pro trial (one-time per user).
@@ -18,14 +17,11 @@ export async function handleTrial(request, env) {
     const current = effectivePlan(user);
     if (current !== "free") return bad("You're already on a paid plan.", 400);
 
-    // PROD-006-v8: Atomic has_trial flip — UPDATE ... WHERE has_trial=FALSE
-    // prevents concurrent double-grant (race condition where two requests
-    // both pass the has_trial check before either writes).
-    const { rowCount } = await exec("UPDATE users SET has_trial=TRUE, updated_at=now() WHERE id=$1 AND has_trial=FALSE", [user.id]);
-    if (rowCount === 0) return bad("You've already used your free trial.", 400);
-
-    // Activate 7-day Pro trial
-    await activatePro(env, user.id, 7, { provider: "trial" });
+    // Activate 7-day Pro trial and consume the trial flag in the same
+    // transaction. If the transaction fails, the user can retry because
+    // has_trial was not committed separately first.
+    const activated = await activatePro(env, user.id, 7, { provider: "trial", consumeTrial: true });
+    if (!activated) return bad("You've already used your free trial or the activation failed.", 400);
 
     await logAudit({
       actorId: user.id,

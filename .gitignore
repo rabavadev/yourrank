@@ -18,6 +18,7 @@ shared/notifications.js
 shared/env.js
 shared/plans.js
 shared/conversions.js
+shared/provider-events.js
 # Auto-generated asset bundle
 # REL-007: This file is gitignored because it's too large to track. The
 # deployed version (bundled at build time) could theoretically differ from

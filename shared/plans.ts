@@ -17,7 +17,7 @@ export const BOARD_LIMITS: Record<PlanTier, number> = {
   free: 1, starter: 1, pro: 3, agency: 99,
 };
 
-/** Prices in USD per 31-day billing period */
+/** Prices in USD per 30-day access period (no auto-renewal) */
 export const PLAN_PRICES: Record<PlanTier, number> = {
   free: 0, starter: 12, pro: 29, agency: 79,
 };
@@ -41,7 +41,7 @@ export const PLAN_META: Record<PlanTier, {
     cta: "Start free",
   },
   starter: {
-    name: "Starter", price: "$12", period: "/mo",
+    name: "Starter", price: "$12", period: "/30 days",
     highlight: false,
     features: [
       "1 leaderboard",
@@ -54,7 +54,7 @@ export const PLAN_META: Record<PlanTier, {
     cta: "Start",
   },
   pro: {
-    name: "Pro", price: "$29", period: "/mo",
+    name: "Pro", price: "$29", period: "/30 days",
     highlight: true,
     features: [
       "Up to 3 leaderboards",
@@ -69,7 +69,7 @@ export const PLAN_META: Record<PlanTier, {
     cta: "Go Pro",
   },
   agency: {
-    name: "Agency", price: "$79", period: "/mo",
+    name: "Agency", price: "$79", period: "/30 days",
     highlight: false,
     features: [
       "Unlimited leaderboards",
