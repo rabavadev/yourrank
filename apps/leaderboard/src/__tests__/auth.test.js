@@ -16,6 +16,8 @@ mock.module(dbUrl, () => ({
   one:   () => Promise.resolve(null),
   exec:  () => Promise.resolve(),
   query: () => Promise.resolve([]),
+  getSql: () => { throw new Error("getSql should not be called in auth unit tests"); },
+  withTransaction: async (fn) => fn({ one: () => Promise.resolve(null), exec: () => Promise.resolve(), query: () => Promise.resolve([]) }),
 }));
 
 mock.module(sessionUrl, () => ({
