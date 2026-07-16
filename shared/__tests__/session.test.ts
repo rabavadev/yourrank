@@ -207,6 +207,30 @@ describe('readToken', () => {
     const req = new Request('https://example.com', { headers: { Cookie: '' } });
     expect(readToken(req)).toBeNull();
   });
+
+  it('ignores gm_session after LEGACY_GM_SESSION_CUTOFF has passed', () => {
+    const previous = process.env.LEGACY_GM_SESSION_CUTOFF;
+    try {
+      process.env.LEGACY_GM_SESSION_CUTOFF = '2000-01-01T00:00:00Z';
+      const req = new Request('https://example.com', { headers: { Cookie: 'gm_session=legacytoken' } });
+      expect(readToken(req)).toBeNull();
+    } finally {
+      if (previous === undefined) delete process.env.LEGACY_GM_SESSION_CUTOFF;
+      else process.env.LEGACY_GM_SESSION_CUTOFF = previous;
+    }
+  });
+
+  it('still falls back to gm_session before LEGACY_GM_SESSION_CUTOFF', () => {
+    const previous = process.env.LEGACY_GM_SESSION_CUTOFF;
+    try {
+      process.env.LEGACY_GM_SESSION_CUTOFF = '2099-12-31T23:59:59Z';
+      const req = new Request('https://example.com', { headers: { Cookie: 'gm_session=legacytoken' } });
+      expect(readToken(req)).toBe('legacytoken');
+    } finally {
+      if (previous === undefined) delete process.env.LEGACY_GM_SESSION_CUTOFF;
+      else process.env.LEGACY_GM_SESSION_CUTOFF = previous;
+    }
+  });
 });
 
 describe('hasLegacyCookie', () => {

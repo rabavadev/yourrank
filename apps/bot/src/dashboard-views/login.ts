@@ -64,7 +64,8 @@ export function loginHtml(botUsername: string, devLogin: boolean, nonce?: string
   .sr-only { position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0); }
   .err { color:#f85149; margin-top:12px; }
   </style></head><body>
-<div class="center"><div class="panel card" id="main-content">
+<a href="#main-content" class="sr-only skip-link">Skip to content</a>
+<main class="center" id="main-content"><div class="panel card">
   <h1 class="style-1">🎰 Streamer Dashboard</h1>
   <p class="muted style-2">Manage your bot, offers and click stats.</p>
   ${botUsername
@@ -80,7 +81,7 @@ export function loginHtml(botUsername: string, devLogin: boolean, nonce?: string
     <button data-action="devLogin" type="button">Enter</button>
   </div>` : ""}
   <p id="loginMsg" class="err" role="alert" aria-live="assertive" hidden></p>
-</div></div>
+</div></main>
 <script${nonce ? ` nonce="${nonce}"` : ""}>
 function showLoginError(msg) {
   const el = document.getElementById('loginMsg');
