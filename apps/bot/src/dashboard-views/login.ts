@@ -37,7 +37,7 @@ const STYLE_ATTR_CSS = `
 .style-29 { margin-bottom:10px;font-size:12px }
 .style-30 { margin-left:8px }
 .style-31 { margin-left:12px }
-.style-32 { margin-left:6px;color:#b91c1c }
+.style-32 { margin-left:6px;color:var(--red) }
 .style-33 { padding:2px 8px;font-size:12px }
 .style-34 { color:var(--accent) }
 .style-35 { margin-right:8px }

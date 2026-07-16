@@ -40,6 +40,8 @@ function createNotifyQueue(env) {
 // which published fabricated partner claims on every unconfigured page. Owners
 // add their own via the dashboard; the public renderer hides these sections when
 // they're empty. rules stays populated — it's generic, honest wager mechanics.
+export const VALID_PERIODS = ["Weekly", "Monthly", "Season"];
+
 export const DEFAULT_EXTRA = {
   chips: [],
   whyStats: [],
@@ -731,11 +733,14 @@ export async function saveSite(env, user, payload, siteId, request = null) {
     const publishedVal = typeof payload.published === "boolean" ? payload.published : site.published;
     const endsAtVal = normalizeEndsAt(payload.endsAt, site.ends_at);
     const slugVal = slugRename || site.slug;
+    const periodVal = VALID_PERIODS.includes(String(b.period || "Monthly").trim())
+      ? String(b.period || "Monthly").trim()
+      : (site.period || "Monthly");
     await tx.unsafe(
       `UPDATE sites SET slug=$1, name=$2, tagline=$3, casino=$4, code=$5, cta_url=$6, prize_pool=$7, period=$8, ends_at=$9, reset_note=$10, blurb=$11, extra_json=$12::jsonb, logo_data=$13, theme_json=$14::jsonb, published=$15, discord_webhook_url_enc=$16, telegram_chat_id=$17, telegram_notify=$18, updated_at=now() WHERE id=$19`,
       [
         slugVal, siteName, b.tagline ?? site.tagline, b.casino ?? site.casino, b.code ?? site.code,
-        b.ctaUrl ?? site.cta_url, b.prizePool ?? site.prize_pool, b.period ?? site.period,
+        b.ctaUrl ?? site.cta_url, b.prizePool ?? site.prize_pool, periodVal,
         endsAtVal, b.resetNote ?? site.reset_note, (payload.partner && payload.partner.blurb) ?? site.blurb,
         extra, logoData, themeJson, publishedVal, discordWebhookUrlEnc, telegramChatId, telegramNotify, site.id,
       ]

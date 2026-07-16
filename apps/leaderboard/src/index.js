@@ -354,6 +354,18 @@ async function handleRequest(request, env, ctx, meta) {
           return new Response("Setup couldn't load right now — please refresh.", { status: 500, headers: { "content-type": "text/plain; charset=utf-8" } });
         }
       }
+      if (path === "/dashboard/security") {
+        try {
+          const user = await currentUser(request, env);
+          if (!user) return Response.redirect(new URL("/login", url), 302);
+          const html = addCookieConsent(PAGES.security
+            .replace("<!--GM_NAV-->", shellNavHtml({ activePath: "/dashboard/security", user })));
+          return new Response(html, { headers: { ...SECURE_HTML, ...csrfHeader, "cache-control": "no-store, no-cache, must-revalidate" } });
+        } catch (e) {
+          if (workerLog) workerLog.error("security_render_failed", { error: String(e?.message || e) }); else console.error("security render failed:", String(e?.message || e));
+          return new Response("Security page couldn't load right now — please refresh.", { status: 500, headers: { "content-type": "text/plain; charset=utf-8" } });
+        }
+      }
       if (path === "/forgot") return new Response(addCookieConsent(PAGES.forgot), { headers: { ...SECURE_HTML, ...csrfHeader } });
       if (path === "/reset") {
         // BUG-003: Don't show password form when no token is present.

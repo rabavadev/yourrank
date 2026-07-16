@@ -43,6 +43,9 @@ CF_ZONE_ID = "dd79a3ac13643b94732f2fef6ce3b1f5"
 RL_BACKEND = "do"  # Change to "kv" to use KV for rate limiting
 RL_FAIL_OPEN = "false"  # Block requests when the rate-limit backend is down (fail-closed).
 POSTBACK_UNSIGNED_ENABLED = "true"  # Set false at the documented sunset after usage review.
+# Production session cookie is scoped to the apex domain so it is shared across
+# subdomains, but isolated from staging by the staging value below.
+SESSION_COOKIE_DOMAIN = ".yourrank.site"
 # Set SENTRY_DSN via `wrangler secret put SENTRY_DSN` when ready
 
 # --- Secrets (set via `wrangler secret put <NAME>`), NOT stored here: ---
@@ -74,6 +77,8 @@ routes = [
 [env.staging.vars]
 APP_NAME = "YourRank (Staging)"
 POSTBACK_UNSIGNED_ENABLED = "true"
+# Staging cookies must not be visible to the production apex domain.
+SESSION_COOKIE_DOMAIN = ".staging.yourrank.site"
 
 
 [[env.staging.durable_objects.bindings]]

@@ -1,4 +1,4 @@
-import { query } from "../../../shared/db.js";
+import { query, exec } from "../../../shared/db.js";
 
 // ------------------------------------------------------------------
 // Nightly maintenance (Cron Trigger, once a day):
@@ -37,9 +37,31 @@ export async function rollupClicks(): Promise<void> {
     await query(
       `DELETE FROM clicks WHERE ts < now() - interval '90 days'`
     );
+
+    await pruneOldClickPartitions();
   } catch (err) {
     console.error("[rollup] rollupClicks failed:", err);
     throw err;
+  }
+}
+
+async function pruneOldClickPartitions(): Promise<void> {
+  // Click partitions older than the 90-day retention window can be detached as
+  // tables; raw rows in those months have already been removed above and the
+  // dashboard queries click_daily, not the raw partition.
+  const rows = await query<{ name: string }>(
+    `SELECT inhrelid::regclass::text AS name
+       FROM pg_inherits
+      WHERE inhparent = 'clicks'::regclass
+        AND inhrelid::regclass::text ~ '^clicks_\\d{4}_\\d{2}$'
+        AND to_date(split_part(inhrelid::regclass::text, '_', 2) || '-' ||
+                    split_part(inhrelid::regclass::text, '_', 3) || '-01',
+                    'YYYY-MM-DD') + interval '1 month' < current_date - interval '90 days'`
+  );
+  for (const { name } of rows) {
+    if (!/^clicks_\d{4}_\d{2}$/.test(name)) continue;
+    await exec(`DROP TABLE IF EXISTS ${name}`);
+    console.log(`[rollup] dropped old click partition ${name}`);
   }
 }
 

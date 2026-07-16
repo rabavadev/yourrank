@@ -95,7 +95,7 @@ const BOT_STYLE_ATTR_CSS = `
 .style-29 { margin-bottom:10px;font-size:12px }
 .style-30 { margin-left:8px }
 .style-31 { margin-left:12px }
-.style-32 { margin-left:6px;color:#b91c1c }
+.style-32 { margin-left:6px;color:var(--red) }
 .style-33 { padding:2px 8px;font-size:12px }
 .style-34 { color:var(--accent) }
 .style-35 { margin-right:8px }
@@ -118,7 +118,7 @@ const BOT_BASE_CSS = `
   .side .snav a .ic { width:17px; text-align:center; opacity:.85; }
   .side .snav a:hover { background:var(--panel); color:var(--fg); }
   .side .snav a.active { background:var(--panel); color:var(--fg); box-shadow:inset 2px 0 0 var(--accent); }
-  .side .sfoot { margin-top:auto; border-top:1px solid var(--border); padding-top:12px; font-size:12px; color:var(--mute); }
+  .side .sfoot { margin-top:auto; border-top:1px solid var(--border); padding-top:12px; font-size:12px; color:var(--dim); }
   .side .sfoot .nm { color:var(--fg); font-weight:600; }
   .side .sfoot button { margin-top:10px; width:100%; }
   .main { flex:1; min-width:0; }
@@ -166,7 +166,7 @@ const BOT_BASE_CSS = `
   .kpi { background:var(--panel); border:1px solid var(--border); border-radius:12px; padding:15px 16px; }
   .kpi .lbl { font-size:12px; color:var(--dim); }
   .kpi .stat { font:700 30px/1.1 var(--mono); letter-spacing:-.02em; margin-top:6px; }
-  .kpi .sub { font-size:12px; color:var(--mute); margin-top:5px; min-height:16px; }
+  .kpi .sub { font-size:12px; color:var(--dim); margin-top:5px; min-height:16px; }
   .kpi .sub .up { color:var(--green); }
 
   /* ---- two-column content grid ---- */
@@ -189,7 +189,7 @@ const BOT_BASE_CSS = `
   /* ---- setup checklist (overview) ---- */
   .steps { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; }
   .step { border:1px solid var(--border); border-radius:10px; padding:12px; }
-  .step .n { font-size:11px; color:var(--mute); font-family:var(--mono); }
+  .step .n { font-size:11px; color:var(--dim); font-family:var(--mono); }
   .step .t { font-weight:600; font-size:14px; margin:3px 0; }
   .step .d { font-size:12px; color:var(--dim); }
   .step.done { opacity:.55; }

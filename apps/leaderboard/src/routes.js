@@ -9,6 +9,9 @@ import {
   handleSignup, handleLogin, handleLogout, handleMe, handleForgot, handleReset
 } from "./handlers/auth.js";
 import {
+  handleChangePassword, handleListSessions, handleRevokeOtherSessions, handleExportData
+} from "./handlers/security.js";
+import {
   handleTelegramLink, handleTelegramUnlink, handleTelegramStatus
 } from "./handlers/telegram-link.js";
 import {
@@ -45,6 +48,12 @@ export const ROUTES = [
   
   // Authenticated auth routes (CSRF required)
   { path: "/api/auth/logout", method: "POST", handler: withHandler(handleLogout) },
+  { path: "/api/auth/change-password", method: "POST", handler: withHandler(handleChangePassword) },
+  { path: "/api/auth/sessions", method: "GET", handler: withHandler(handleListSessions) },
+  { path: "/api/auth/sessions/revoke-others", method: "POST", handler: withHandler(handleRevokeOtherSessions) },
+
+  // Data export
+  { path: "/api/account/export", method: "GET", handler: withHandler(handleExportData) },
   
   // Telegram identity linking
   { path: "/api/auth/telegram/link", method: "POST", handler: withHandler(handleTelegramLink) },
