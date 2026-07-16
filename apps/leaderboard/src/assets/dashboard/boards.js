@@ -14,7 +14,7 @@ export function renderBoardSwitcher() {
       el.setAttribute("role", "button");
       el.setAttribute("tabindex", "0");
       const sponsor = [b.casino, b.code].filter(Boolean).join(" · ");
-      el.innerHTML = `<div class="board-info"><div class="board-row-top"><span class="board-slug">/${esc(b.slug)}</span><span class="board-name">${esc(b.name)}</span></div>${sponsor ? `<div class="board-sponsor">${esc(sponsor)}</div>` : ""}</div>${isActive ? '<span class="board-badge">editing</span>' : '<span class="board-actions"><button class="btn btn--sm" data-action="setActive" title="Set as active board" type="button">★</button><button class="btn btn--sm" data-action="delete" title="Delete board" type="button">×</button></span>'}`;
+      el.innerHTML = `<div class="board-info"><div class="board-row-top"><span class="board-slug">/${esc(b.slug)}</span><span class="board-name">${esc(b.name)}</span></div>${sponsor ? `<div class="board-sponsor">${esc(sponsor)}</div>` : ""}</div>${isActive ? '<span class="board-badge">editing</span>' : '<span class="board-actions"><button class="btn btn--sm" data-action="setActive" title="Set as active board" aria-label="Set as active board" type="button">★</button><button class="btn btn--sm" data-action="delete" title="Delete board" aria-label="Delete board" type="button">×</button></span>'}`;
       if (!isActive) {
         el.style.cursor = "pointer";
         el.addEventListener("click", (e) => { if (e.target.closest('[data-action]')) return; location.href = "/dashboard?board=" + encodeURIComponent(b.id); });
