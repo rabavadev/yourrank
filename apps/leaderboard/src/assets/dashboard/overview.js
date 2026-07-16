@@ -1,6 +1,19 @@
 // Overview page summary tiles / top players / setup checklist.
-import { $, esc, fmtMoney, currentPlayers, resetsIn } from "./utils.js";
+import { $, esc, fmtMoney, currentPlayers, resetsIn, logError } from "./utils.js";
 import { state } from "./state.js";
+
+export function wireOverviewQuickActions() {
+  const btn = $("ov_copyLink");
+  if (!btn || btn._wired) return;
+  btn._wired = true;
+  const label = btn.querySelector(".lb-qa-t");
+  btn.addEventListener("click", async () => {
+    const url = location.origin + "/" + state.SLUG;
+    try { await navigator.clipboard.writeText(url); if (label) label.textContent = "Copied!"; }
+    catch (err) { logError("copy-live-link", err); if (label) label.textContent = "Copy failed"; }
+    setTimeout(() => { if (label) label.textContent = "Copy your page link"; }, 1500);
+  });
+}
 
 export function renderOverviewSummary() {
   if (!$("ov_pool")) return;

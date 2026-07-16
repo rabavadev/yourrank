@@ -216,13 +216,20 @@ export const PAGES = {
 <button class="lb-nav" type="button" data-nav="design"><span class="lb-nav-ic" aria-hidden="true">🎨</span>Design</button>
 <span class="lb-side-grp">Grow</span>
 <button class="lb-nav" type="button" data-nav="growth"><span class="lb-nav-ic" aria-hidden="true">📈</span>Analytics</button>
-<button class="lb-nav" type="button" data-nav="integrations"><span class="lb-nav-ic" aria-hidden="true">🔌</span>Integrations</button>
+<span class="lb-side-grp">Advanced</span>
+<button class="lb-nav" type="button" data-nav="integrations"><span class="lb-nav-ic" aria-hidden="true">🔌</span>Overlay &amp; domain</button>
 <button class="lb-nav" type="button" data-nav="manage"><span class="lb-nav-ic" aria-hidden="true">⚙</span>Periods &amp; plan</button>
 <div class="lb-side-foot"><span class="label">Editing</span><p class="live-link"><a id="liveLink" href="#" target="_blank">…</a></p><span class="label" id="planBadge">FREE PLAN</span></div>
 </aside>
 <div class="lb-main">
 <section class="lb-page is-on" data-page="overview">
 <div class="lb-phead"><button class="lb-menu" id="lbMenu" type="button" aria-label="Show sections" aria-expanded="false" aria-controls="lbSide">☰</button><div><h1 tabindex="-1">Overview</h1><p class="lb-psub">Your leaderboard at a glance</p></div></div>
+<div class="lb-qa" aria-label="Quick actions">
+<button type="button" data-jump="board"><span class="lb-qa-t">Add players</span><span class="lb-qa-d">Type them in or paste from a spreadsheet</span></button>
+<button type="button" data-jump="board"><span class="lb-qa-t">Set the prize</span><span class="lb-qa-d">Prize pool, casino and your code</span></button>
+<button type="button" data-jump="design"><span class="lb-qa-t">Pick a design</span><span class="lb-qa-d">One click publishes it</span></button>
+<button type="button" id="ov_copyLink"><span class="lb-qa-t">Copy your page link</span><span class="lb-qa-d">Share it anywhere</span></button>
+</div>
 <div class="stat-tiles">
 <div class="stat-tile"><span class="stat-num" id="ov_pool">–</span><span class="stat-lbl">Prize pool</span></div>
 <div class="stat-tile"><span class="stat-num" id="ov_players">–</span><span class="stat-lbl">Players</span></div>
@@ -307,7 +314,7 @@ export const PAGES = {
 <div class="empty" id="brandLock" hidden>Branding is a Pro feature. <a href="#" id="brandUpgrade">Upgrade to unlock it</a>.</div></div>
 </section>
 <section class="lb-page" data-page="integrations">
-<div class="lb-phead"><button class="lb-menu" type="button" aria-label="Show sections" data-menu aria-expanded="false" aria-controls="lbSide">☰</button><div><h1 tabindex="-1">Integrations</h1><p class="lb-psub">Overlay, domain and alerts — connect and check status in one place</p></div></div>
+<div class="lb-phead"><button class="lb-menu" type="button" aria-label="Show sections" data-menu aria-expanded="false" aria-controls="lbSide">☰</button><div><h1 tabindex="-1">Overlay &amp; domain</h1><p class="lb-psub">Extras for your stream and site — overlay, your own domain, and alerts</p></div></div>
 <div class="card" id="overlayCard"><h2>OBS Stream Overlay <span class="pill pill--info ml-6">PRO</span></h2><p class="card-sub">Add a live leaderboard overlay to your stream. It auto-updates every 15 seconds with smooth rank animations.</p>
 <div id="overlayBody">
 <div class="field"><label>Overlay URL</label>
