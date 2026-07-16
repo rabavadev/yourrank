@@ -5,7 +5,7 @@ import { shellNavHtml, SHELL_NAV_CSS } from "../../../shared/shell-nav.js";
 
 const STYLE_ATTR_CSS = `
 /* ---- inline style migration (M-02) ---- */
-.hidden { display: none; }
+.hidden { display: none !important; }
 .sr-only { position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0); }
 .style-1 { margin-bottom:8px }
 .style-2 { margin-bottom:20px }
@@ -91,6 +91,19 @@ const BASE_CSS = `
            color:var(--accent-ink); padding:10px 18px; border-radius:8px; font-weight:600; }
   button:disabled, .copy:disabled { opacity:0.6; cursor:not-allowed; }
 
+  /* ---- quick actions (overview) ---- */
+  .qa { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:16px; }
+  .qa a { display:flex; flex-direction:column; gap:4px; padding:12px 16px; border:1px solid var(--border);
+          border-radius:12px; background:var(--panel); text-decoration:none; }
+  .qa a:hover { border-color:var(--accent); }
+  .qa .t { color:var(--fg); font-weight:600; font-size:14px; }
+  .qa .d { color:var(--dim); font-size:12px; }
+
+  /* ---- advanced disclosure ---- */
+  details.adv { border:1px solid var(--border); border-radius:8px; padding:8px 12px; margin:12px 0; }
+  details.adv summary { cursor:pointer; color:var(--dim); font-size:13px; }
+  details.adv[open] summary { margin-bottom:8px; }
+
   /* ---- KPI cards (overview) ---- */
   .kpis { display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-bottom:18px; }
   .kpi { background:var(--panel); border:1px solid var(--border); border-radius:12px; padding:15px 16px; }
@@ -140,6 +153,7 @@ const BASE_CSS = `
     .menu-btn { display:inline-grid; place-items:center; width:36px; height:36px; border-radius:8px;
                 border:1px solid var(--border-2); background:transparent; color:var(--fg); padding:0; }
     .kpis { grid-template-columns:1fr 1fr; }
+    .qa { grid-template-columns:1fr 1fr; }
     .grid2 { grid-template-columns:1fr; }
     .steps { grid-template-columns:1fr; }
     .wrap { padding:16px 14px 48px; }
@@ -222,10 +236,10 @@ document.addEventListener('click', (e) => {
 const pageLinks = [
   { key: "overview", label: "Overview", href: "/bot/dashboard", ic: "\u25F1", sub: "Your bot at a glance — last 14 days" },
   { key: "bots", label: "Bots", href: "/bot/bots", ic: "\u{1F916}", sub: "Connect and customize your Telegram bots" },
-  { key: "offers", label: "Offers", href: "/bot/offers", ic: "\u{1F381}", sub: "Casino offers and tracked links" },
-  { key: "commands", label: "Commands", href: "/bot/commands", ic: "\u2318", sub: "Custom slash-commands your viewers can send" },
-  { key: "broadcasts", label: "Broadcasts", href: "/bot/broadcasts", ic: "\u{1F4E3}", sub: "Message all your subscribers" },
-  { key: "settings", label: "Settings", href: "/bot/settings", ic: "\u2699", sub: "Conversions, postbacks and plan" },
+  { key: "offers", label: "Offers", href: "/bot/offers", ic: "\u{1F381}", sub: "Your casino links \u2014 clicks are tracked automatically" },
+  { key: "commands", label: "Commands", href: "/bot/commands", ic: "\u2318", sub: "Replies your bot sends when viewers type /something" },
+  { key: "broadcasts", label: "Broadcasts", href: "/bot/broadcasts", ic: "\u{1F4E3}", sub: "Send a message to everyone who follows your bot" },
+  { key: "settings", label: "Settings", href: "/bot/settings", ic: "\u2699", sub: "Deposit tracking and your plan" },
 ];
 
 function sideNav(active: string, user: { display_name: string; plan: string }): string {
@@ -256,13 +270,21 @@ export function appHtml(
 ): string {
   return `<!doctype html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Streamer Dashboard</title><style nonce="${nonce}">${SHELL_NAV_CSS}${BASE_CSS}</style></head><body data-page="${page}">
+<title>Streamer Dashboard</title><style nonce="${nonce}">${STYLE_ATTR_CSS}${SHELL_NAV_CSS}${BASE_CSS}</style></head><body data-page="${page}">
 ${shellNavHtml({ activePath: "/bot" + (page === "overview" ? "/dashboard" : "/" + page), user, logoutAction: "/bot/auth/logout" })}
 <div class="shell">
 ${sideNav(page, user)}
 <div class="main"><div class="wrap" id="main-content">
   ${pageHead(page)}
   <span id="whoami" class="muted hidden"></span>
+
+  <!-- Quick actions (overview) -->
+  <div class="qa" data-page="overview" aria-label="Quick actions">
+    <a href="/bot/bots"><span class="t">Connect your bot</span><span class="d">Paste one code, done</span></a>
+    <a href="/bot/offers"><span class="t">Add a casino offer</span><span class="d">Get a link you can share</span></a>
+    <a href="/bot/broadcasts"><span class="t">Message your subscribers</span><span class="d">One message to everyone</span></a>
+    <a href="/bot/commands"><span class="t">Change what your bot says</span><span class="d">Greeting and replies</span></a>
+  </div>
 
   <!-- Overview stats -->
   <div class="kpis" data-page="overview">
@@ -294,7 +316,7 @@ ${sideNav(page, user)}
     <div class="steps" id="ovSetup">
       <div class="step" id="stepBot"><div class="n">STEP 1</div><div class="t">Connect a bot</div><div class="d">Add your Telegram bot token in <a href="/bot/bots">Bots</a>.</div></div>
       <div class="step" id="stepOffer"><div class="n">STEP 2</div><div class="t">Create an offer</div><div class="d">Add a casino offer with a tracked link in <a href="/bot/offers">Offers</a>.</div></div>
-      <div class="step" id="stepPb"><div class="n">STEP 3</div><div class="t">Set up postbacks</div><div class="d">Attribute deposits to clicks in <a href="/bot/settings">Settings</a>.</div></div>
+      <div class="step" id="stepPb"><div class="n">STEP 3</div><div class="t">Track deposits</div><div class="d">See which clicks turn into deposits \u2014 set it up in <a href="/bot/settings">Settings</a>.</div></div>
     </div>
   </div>
 
@@ -394,15 +416,18 @@ ${sideNav(page, user)}
   </div>
 
   <!-- Settings (settings) -->
-  <div class="panel" data-page="settings"><h2>Conversions (postbacks)</h2>
-    <p class="muted style-21">Give your affiliate manager the signed endpoint and key below, and add
-      <code>{click_ref}</code> anywhere in your affiliate URL to attribute deposits to clicks.</p>
+  <div class="panel" data-page="settings"><h2>Deposit tracking</h2>
+    <p class="muted style-21">See which of your clicks turn into real deposits. You don't need to do anything technical —
+      send the setup details below to your affiliate manager and they'll connect it for you.</p>
+    <details class="adv"><summary>Setup details for your affiliate manager (technical)</summary>
+    <p class="muted style-21">Add <code>{click_ref}</code> anywhere in the affiliate URL to attribute deposits to clicks.</p>
     <p class="muted style-29">Use <code>POST ${publicBaseUrl}/pb</code> with headers
       <code>X-Postback-Key</code> (your key, below) + <code>X-Postback-Signature</code> (hex HMAC-SHA256 of the query string, keyed by that same key). It's the secure option — the key never rides the URL and the signature blocks tampering.</p>
     <div class="style-21"><button class="ghost" data-action="revealPostback" type="button">Show signed postback setup</button>
       <span id="pbUrl" class="copy style-30" data-action="copyPostback" data-url=""></span>
       <button class="ghost style-31" data-action="rotatePostback" type="button">Rotate key</button>
       <button class="ghost style-32" data-action="revokePostback" type="button">Revoke key</button></div>
+    </details>
     <table><thead><tr><th>When</th><th>Event</th><th>Amount</th><th>Offer</th></tr></thead>
     <tbody id="convList"></tbody></table>
   </div>

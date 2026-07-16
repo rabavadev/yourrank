@@ -145,6 +145,21 @@ describe("dashboard views", () => {
     expect(html).toContain('id="testMsgPanel" hidden');
     expect(html).toContain("if (!__testBotId) return toast('Select a bot first')");
   });
+
+  it("appHtml renders each page with its own page key and includes the .hidden rule", () => {
+    for (const page of ["overview", "bots", "offers", "commands", "broadcasts", "settings"]) {
+      const html = appHtml(
+        { display_name: "Test", email: "test@example.com", plan: "free" },
+        "https://yourrank.site",
+        "nonce123",
+        page
+      );
+      expect(html).toContain(`<body data-page="${page}">`);
+      // Without this rule showPage() cannot hide other pages' sections and
+      // every route renders the same stacked UI.
+      expect(html).toContain(".hidden { display: none !important; }");
+    }
+  });
 });
 
 // ── Dashboard route integration tests ─────────────────────────────────
