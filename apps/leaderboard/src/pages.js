@@ -1,3 +1,5 @@
+import { leaderboardPageHtml } from "../../../shared/page-shell.js";
+
 // Static HTML pages served by the Worker. Kept as plain template strings.
 
 // Shared shell for the legal pages — plain, readable, no fluff.
@@ -167,17 +169,13 @@ export const PAGES = {
 <p class="foot">Already have one? <a href="/login">Sign in</a></p></div></main></div>
 <script src="/assets/auth.js?v=2"></script></body></html>`,
 
-  dashboard: `<!DOCTYPE html><html lang="en"><head>
-<meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Dashboard · YourRank</title>
-<meta name="request-id" content="{{REQ_ID}}" />
-<meta name="robots" content="noindex, nofollow" /><link rel="canonical" href="https://yourrank.site/dashboard" /><link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
-<link rel="stylesheet" href="/assets/app.css" /><link rel="stylesheet" href="/assets/shell-nav.css" /></head><body>
-<noscript><div class="noscript-msg"><p>YourRank requires JavaScript</p><p>Please enable JavaScript in your browser settings to use the dashboard.</p></div></noscript>
-<a href="#main-content" class="sr-only skip-link">Skip to content</a>
-<!--GM_NAV-->
-<main class="wrap" id="main-content"><div id="loading" class="py-26">
+  dashboard: leaderboardPageHtml({
+  title: "Dashboard · YourRank",
+  canonical: "https://yourrank.site/dashboard",
+  reqId: "{{REQ_ID}}",
+  noscript: "<p>YourRank requires JavaScript</p><p>Please enable JavaScript in your browser settings to use the dashboard.</p>",
+  scripts: ['<script src="/assets/dashboard.js?v=4" type="module"></script>'],
+  content: `<div id="loading" class="py-26">
 <div class="skel-header"><div><div class="skeleton skeleton-text--lg skel-w-180"></div><div class="skeleton skeleton-text--sm skel-w-260 mt-8"></div></div><div class="skeleton skeleton-text skel-w-90"></div></div>
 <div class="card mt-18"><div class="skeleton skeleton-block skel-h-200"></div></div>
 <div class="card mt-18"><div class="skeleton skeleton-block skel-h-300"></div></div>
@@ -381,20 +379,16 @@ export const PAGES = {
 </section>
 </div>
 </div>
-<div class="savebar" id="savebar" hidden><span class="savebar-hint">Unsaved changes</span><button class="btn btn--accent" id="save" type="button">Save changes</button></div></div></main>
-<script src="/assets/dashboard.js?v=4" type="module"></script></body></html>`,
+<div class="savebar" id="savebar" hidden><span class="savebar-hint">Unsaved changes</span><button class="btn btn--accent" id="save" type="button">Save changes</button></div></div>`
+}),
 
-analytics: `<!DOCTYPE html><html lang="en"><head>
-<meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Analytics · YourRank</title>
-<meta name="robots" content="noindex, nofollow" /><link rel="canonical" href="https://yourrank.site/dashboard/analytics" /><link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
-<link rel="stylesheet" href="/assets/app.css" /><link rel="stylesheet" href="/assets/shell-nav.css" /></head><body>
-<noscript><div class="noscript-msg"><p>YourRank requires JavaScript</p><p>Please enable JavaScript in your browser settings to view analytics.</p></div></noscript>
-<a href="#main-content" class="sr-only skip-link">Skip to content</a>
-<!--GM_NAV-->
-<main class="wrap an-wrap" id="main-content">
-<div class="an-head"><div><div class="an-eyebrow" id="anEyebrow">your page</div><h1 class="an-title">Analytics</h1><p class="an-sub">How your page turns visits into engagement — last 30 days · <a id="liveLink" href="#" target="_blank">view page</a></p></div></div>
+analytics: leaderboardPageHtml({
+  title: "Analytics · YourRank",
+  canonical: "https://yourrank.site/dashboard/analytics",
+  mainClass: "wrap an-wrap",
+  noscript: "<p>YourRank requires JavaScript</p><p>Please enable JavaScript in your browser settings to view analytics.</p>",
+  scripts: ['<script src="/assets/analytics.js?v=3"></script>'],
+  content: `<div class="an-head"><div><div class="an-eyebrow" id="anEyebrow">your page</div><h1 class="an-title">Analytics</h1><p class="an-sub">How your page turns visits into engagement — last 30 days · <a id="liveLink" href="#" target="_blank">view page</a></p></div></div>
 
 <div id="an" hidden>
 <div class="an-hero">
@@ -462,21 +456,15 @@ analytics: `<!DOCTYPE html><html lang="en"><head>
 <section class="an-card"><div class="skeleton skeleton-text--sm skel-w-120 mb-18"></div><div class="skeleton skeleton-block skel-h-200"></div></section>
 <section class="an-card"><div class="skeleton skeleton-text--sm skel-w-100 mb-18"></div><div class="skeleton skeleton-text mb-18"></div><div class="skeleton skeleton-text skel-w-60 mb-18"></div><div class="skeleton skeleton-text skel-w-40"></div></section>
 </div>
-</div>
-</main>
-<script src="/assets/analytics.js?v=3"></script></body></html>`,
+</div>`
+}),
 
-billing: `<!DOCTYPE html><html lang="en"><head>
-<meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Billing · YourRank</title>
-<meta name="robots" content="noindex, nofollow" /><link rel="canonical" href="https://yourrank.site/dashboard/billing" /><link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
-<link rel="stylesheet" href="/assets/app.css" /><link rel="stylesheet" href="/assets/shell-nav.css" /></head><body>
-<noscript><div class="noscript-msg"><p>YourRank requires JavaScript</p><p>Please enable JavaScript in your browser settings to manage billing.</p></div></noscript>
-<a href="#main-content" class="sr-only skip-link">Skip to content</a>
-<!--GM_NAV-->
-<main class="wrap" id="main-content">
-<div class="dash-head"><div><h1>Billing</h1><p class="live-link">Your YourRank plan</p></div><span class="label" id="planBadge">FREE PLAN</span></div>
+billing: leaderboardPageHtml({
+  title: "Billing · YourRank",
+  canonical: "https://yourrank.site/dashboard/billing",
+  noscript: "<p>YourRank requires JavaScript</p><p>Please enable JavaScript in your browser settings to manage billing.</p>",
+  scripts: ['<script src="/assets/billing.js?v=3"></script>'],
+  content: `<div class="dash-head"><div><h1>Billing</h1><p class="live-link">Your YourRank plan</p></div><span class="label" id="planBadge">FREE PLAN</span></div>
 <div id="bl" hidden>
 <div class="card" id="currentCard"><h2>Current plan</h2><p class="card-sub"><span id="planLine">Free — up to 10 players, one leaderboard.</span></p>
 <p class="hint" id="expLine" hidden></p>
@@ -509,20 +497,15 @@ billing: `<!DOCTYPE html><html lang="en"><head>
 <div class="skel-header"><div><div class="skeleton skeleton-text--lg skel-w-100"></div><div class="skeleton skeleton-text--sm skel-w-160 mt-8"></div></div><div class="skeleton skeleton-text skel-w-100"></div></div>
 <div class="card"><div class="skeleton skeleton-block skel-h-60"></div></div>
 <div class="card mt-18"><div class="skeleton skeleton-block skel-h-120"></div></div>
-</div></main>
-<script src="/assets/billing.js?v=3"></script></body></html>`,
+</div>`
+}),
 
-attribution: `<!DOCTYPE html><html lang="en"><head>
-<meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Attribution · YourRank</title>
-<meta name="robots" content="noindex, nofollow" /><link rel="canonical" href="https://yourrank.site/dashboard/attribution" /><link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
-<link rel="stylesheet" href="/assets/app.css" /><link rel="stylesheet" href="/assets/shell-nav.css" /></head><body>
-<noscript><div class="noscript-msg"><p>YourRank requires JavaScript</p><p>Please enable JavaScript in your browser settings to view attribution.</p></div></noscript>
-<!--GM_NAV-->
-<a href="#main-content" class="sr-only skip-link">Skip to content</a>
-<main class="wrap" id="main-content">
-<div id="loading" class="py-26">
+attribution: leaderboardPageHtml({
+  title: "Attribution · YourRank",
+  canonical: "https://yourrank.site/dashboard/attribution",
+  noscript: "<p>YourRank requires JavaScript</p><p>Please enable JavaScript in your browser settings to view attribution.</p>",
+  scripts: ['<script src="/assets/attribution.js?v=1"></script>'],
+  content: `<div id="loading" class="py-26">
 <div class="skel-header"><div><div class="skeleton skeleton-text--lg skel-w-100"></div><div class="skeleton skeleton-text--sm skel-w-160 mt-8"></div></div><div class="skeleton skeleton-text skel-w-100"></div></div>
 <div class="card"><div class="skeleton skeleton-block skel-h-60"></div></div>
 <div class="card mt-18"><div class="skeleton skeleton-block skel-h-120"></div></div>
@@ -553,20 +536,15 @@ attribution: `<!DOCTYPE html><html lang="en"><head>
 <div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Offer</th><th>Casino</th><th class="ta-r">Clicks</th><th class="ta-r">Unique</th><th class="ta-r">Conversions</th><th class="ta-r">Revenue</th><th class="ta-r">Depositors</th></tr></thead><tbody id="offersBody"></tbody></table></div>
 <div class="empty" id="offersEmpty" hidden>No offers or data yet.</div>
 </div>
-</div></main>
-<script src="/assets/attribution.js?v=1"></script></body></html>`,
+</div>`
+}),
 
-botSetup: `<!DOCTYPE html><html lang="en"><head>
-<meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Connect Telegram Bot · YourRank</title>
-<meta name="robots" content="noindex, nofollow" /><link rel="canonical" href="https://yourrank.site/dashboard/bot/setup" /><link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
-<link rel="stylesheet" href="/assets/app.css" /><link rel="stylesheet" href="/assets/shell-nav.css" /></head><body>
-<noscript><div class="noscript-msg"><p>YourRank requires JavaScript</p><p>Please enable JavaScript in your browser settings to set up your Telegram bot.</p></div></noscript>
-<a href="#main-content" class="sr-only skip-link">Skip to content</a>
-<!--GM_NAV-->
-<main class="wrap" id="main-content">
-<div class="dash-head"><div><h1>🤖 Connect your Telegram bot</h1><p class="live-link">Walk through the 4 steps below — takes about 2 minutes.</p></div></div>
+botSetup: leaderboardPageHtml({
+  title: "Connect Telegram Bot · YourRank",
+  canonical: "https://yourrank.site/dashboard/bot/setup",
+  noscript: "<p>YourRank requires JavaScript</p><p>Please enable JavaScript in your browser settings to set up your Telegram bot.</p>",
+  scripts: ['<script src="/assets/bot-setup.js?v=2"></script>'],
+  content: `<div class="dash-head"><div><h1>🤖 Connect your Telegram bot</h1><p class="live-link">Walk through the 4 steps below — takes about 2 minutes.</p></div></div>
 <p class="mt-8"><a href="/dashboard" class="back-link">← Back to Dashboard</a></p>
 
 <div class="card"><h2>Step 1</h2><p class="card-sub">Open @BotFather on Telegram — it's Telegram's official bot for creating bots.</p>
@@ -623,10 +601,8 @@ botSetup: `<!DOCTYPE html><html lang="en"><head>
 <li>Your bot token is sensitive. <b>Never share it publicly.</b> If you think it's been leaked, you can revoke it from BotFather and we'll reconnect.</li>
 <li>Want a custom avatar or description for your bot? Set it up in BotFather with <span class="mono">/setuserpic</span> and <span class="mono">/setdescription</span>.</li>
 <li>Need help? <a href="https://t.me/BotFather" target="_blank" rel="noopener">BotFather's FAQ</a> covers most questions.</li>
-</ul></div>
-
-</main>
-<script src="/assets/bot-setup.js?v=2"></script></body></html>`,
+</ul></div>`
+}),
 
 admin: `<!DOCTYPE html><html lang="en"><head>
 <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -742,18 +718,14 @@ admin: `<!DOCTYPE html><html lang="en"><head>
 <script src="/assets/qrcode.js"></script>
 <script src="/assets/admin2fa.js?v=3"></script></body></html>`,
 
-  setup: `<!DOCTYPE html><html lang="en"><head>
-<meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Setup · YourRank</title>
-<meta name="robots" content="noindex, nofollow" /><link rel="canonical" href="https://yourrank.site/dashboard/setup" /><link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
-<link rel="stylesheet" href="/assets/app.css" /><link rel="stylesheet" href="/assets/shell-nav.css" />
-<link rel="stylesheet" href="/assets/setup-styles.css" />
-<noscript><div class="noscript-msg"><p>YourRank requires JavaScript</p><p>Please enable JavaScript in your browser settings to set up your leaderboard.</p></div></noscript>
-<!--GM_NAV-->
-<a href="#main-content" class="sr-only skip-link">Skip to content</a>
-<main class="gm-shell-main" id="main-content">
-<div class="setup-wrap">
+  setup: leaderboardPageHtml({
+  title: "Setup · YourRank",
+  canonical: "https://yourrank.site/dashboard/setup",
+  mainClass: "gm-shell-main",
+  styles: ["/assets/app.css","/assets/shell-nav.css","/assets/setup-styles.css"],
+  noscript: "<p>YourRank requires JavaScript</p><p>Please enable JavaScript in your browser settings to set up your leaderboard.</p>",
+  scripts: ['<script src="/assets/setup-wizard.js?v=3"></script>'],
+  content: `<div class="setup-wrap">
 <h1>Set up your leaderboard</h1>
 <p class="sub">Four quick steps and you're live.</p>
 <div class="steps-ind" id="stepsInd"></div>
@@ -803,9 +775,8 @@ admin: `<!DOCTYPE html><html lang="en"><head>
 </div>
 
 <div class="err" id="wiz_err" role="alert" aria-live="assertive"></div>
-</div>
-</main>
-<script src="/assets/setup-wizard.js?v=3"></script></body></html>`,
+</div>`
+}),
 
   overlay: (data, opts = {}) => {
   const b = data.brand || {};
