@@ -91,10 +91,19 @@ export function hasLegacyCookie(req: Request): boolean {
 }
 
 
+function legacyGmSessionEnabled(): boolean {
+  const env = (typeof (globalThis as any).process !== "undefined") ? (globalThis as any).process.env : {};
+  const cutoff = env?.LEGACY_GM_SESSION_CUTOFF;
+  if (!cutoff) return true;
+  const cutoffMs = Date.parse(cutoff);
+  return Number.isNaN(cutoffMs) || Date.now() <= cutoffMs;
+}
+
 export function readTokenFromHeader(cookieHeader: string | undefined | null): string | null {
   if (!cookieHeader) return null;
-  // Try the canonical name first, then the legacy alias (gm_session).
-  for (const name of [COOKIE_NAME, LEGACY_COOKIE_NAME2]) {
+  const names = [COOKIE_NAME];
+  if (legacyGmSessionEnabled()) names.push(LEGACY_COOKIE_NAME2);
+  for (const name of names) {
     const m = cookieHeader.match(new RegExp(`(?:^|;\\s*)${name}=([^;]+)`));
     if (m) return decodeURIComponent(m[1]);
   }

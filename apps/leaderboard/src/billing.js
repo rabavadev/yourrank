@@ -24,6 +24,15 @@ import { priceUsd as _priceUsd, effectivePlan as _effectivePlan } from "../../..
 export const priceUsd = _priceUsd;
 export const effectivePlan = _effectivePlan;
 
+// Returns true if the legacy plan_tier IS NULL fallback is still allowed.
+// Set LEGACY_PLAN_TIER_CUTOFF to an ISO date to schedule removing the fallback.
+function legacyPlanTierEnabled() {
+  const cutoff = typeof process !== "undefined" && process.env?.LEGACY_PLAN_TIER_CUTOFF;
+  if (!cutoff) return true;
+  const cutoffMs = Date.parse(cutoff);
+  return Number.isNaN(cutoffMs) || Date.now() <= cutoffMs;
+}
+
 export async function activatePlan(env, userId, plan, days = PRO_DAYS, { provider, amountUsd, consumeTrial = false } = {}) {
   // Extend plan subscription for the given number of days.
   // Wrapped in a transaction so that the user update, subscription insert, and
@@ -289,6 +298,10 @@ export async function handleIpn(request, env) {
         // Determine target plan: prefer plan_tier column, fall back to amount-based lookup for legacy rows
         let targetPlan = pay.plan_tier;
         if (!targetPlan) {
+          if (!legacyPlanTierEnabled()) {
+            console.warn(`[IPN] order ${orderId} has no plan_tier and legacy fallback has passed its cutoff`);
+            return { code: 200, paid: false, missingPlanTier: true, paymentId: pay.id, userId: pay.user_id, orderId };
+          }
           // Legacy fallback: reverse-engineer from expected amount (not actual paid)
           const amt = expectedAmount;
           if (amt >= PLAN_PRICES.agency - 1) targetPlan = "agency";
