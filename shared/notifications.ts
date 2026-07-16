@@ -13,6 +13,7 @@
 // ============================================================================
 
 import { decryptToken, decrypt } from "./crypto.js";
+import { errMessage } from "./errors.js";
 
 // ----------------------------------------------------------------------------
 // Encryption helper for notification credentials stored as hex ciphertext.
@@ -77,7 +78,7 @@ export async function sendDiscordWebhook(
     }
     return { ok: true };
   } catch (err) {
-    return { ok: false, error: String((err as any)?.message || err) };
+    return { ok: false, error: errMessage(err) };
   }
 }
 
@@ -164,7 +165,7 @@ export async function sendTelegramMessage(
     if (!data.ok) return { ok: false, error: data.description || "Telegram API error" };
     return { ok: true };
   } catch (err) {
-    return { ok: false, error: String((err as any)?.message || err) };
+    return { ok: false, error: errMessage(err) };
   }
 }
 
@@ -251,8 +252,8 @@ export async function notifyTop3Change(
       let botToken: string;
       try {
         botToken = await decryptToken(Buffer.from(bot.token_encrypted));
-      } catch (e: any) {
-        console.error("[notify] failed to decrypt bot token:", String(e?.message || e));
+      } catch (e) {
+        console.error("[notify] failed to decrypt bot token:", errMessage(e));
         throw e;
       }
       const lines = top3Changes.map((c) => {
@@ -346,8 +347,8 @@ export async function sendPlayerRankNotification(
     try {
       botToken = await decryptToken(Buffer.from(bot.token_encrypted));
       tokenCache.set(msg.botId, botToken);
-    } catch (e: any) {
-      console.error("[notify] failed to decrypt bot token:", String(e?.message || e));
+    } catch (e) {
+      console.error("[notify] failed to decrypt bot token:", errMessage(e));
       throw e;
     }
   }

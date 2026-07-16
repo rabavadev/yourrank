@@ -4,6 +4,7 @@
 
 import { exec } from "./db.js";
 import { getLogger } from "./request-id.js";
+import { errMessage } from "./errors.js";
 
 export interface AuditEntry {
   actorId?: string | null;
@@ -100,7 +101,7 @@ export async function logAudit(entry: AuditEntry): Promise<void> {
   } catch (err) {
     const logger = getLogger();
     logger.error("audit_log_insert_failed", {
-      error: String((err as any)?.message || err),
+      error: errMessage(err),
       action,
       entityType,
       entityId,

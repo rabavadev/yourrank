@@ -7,6 +7,7 @@
 
 import { generateRequestId, createLogger, installConsoleRedirect, runWithLogger } from "./request-id.js";
 import { sendErrorToDiscord } from "./monitoring.js";
+import { errMessage, errStack } from "./errors.js";
 
 // One-time install: raw console.* inside a request context now flow through
 // the request-scoped logger with levels and sampling.
@@ -71,11 +72,11 @@ export function withWorkerFetch(workerName: string, handler: FetchHandler) {
         }
         return mutable;
       } catch (err: unknown) {
-        const errMsg = String((err as any)?.message || err);
-        const errStack = (err as any)?.stack || "";
+        const errMsg = errMessage(err);
+        const stack = errStack(err);
 
         sentry?.captureException(err);
-        log.error("unhandled_error", { error: errMsg, stack: errStack });
+        log.error("unhandled_error", { error: errMsg, stack });
 
         const errPath = (() => {
           try { return new URL(request.url).pathname; } catch { return "unknown"; }
@@ -85,7 +86,7 @@ export function withWorkerFetch(workerName: string, handler: FetchHandler) {
             sendErrorToDiscord({
               webhookUrl: env.DISCORD_MONITORING_WEBHOOK,
               title: `${workerName} Error`,
-              message: errStack || errMsg,
+              message: stack || errMsg,
               path: errPath,
               worker: workerName,
             })
