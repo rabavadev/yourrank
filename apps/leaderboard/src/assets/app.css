@@ -167,6 +167,14 @@ table.admin-table td.note{max-width:260px;color:var(--ink-soft)}
 .arch-row .hint{margin-left:auto}
 .arch-del{flex:none}
 
+/* Overview quick actions */
+.lb-qa{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px}
+.lb-qa button{display:flex;flex-direction:column;gap:3px;text-align:left;padding:12px 14px;border:1px solid var(--line);border-radius:10px;background:var(--panel-2);cursor:pointer;font:inherit;color:inherit}
+.lb-qa button:hover{border-color:var(--accent)}
+.lb-qa-t{font-weight:600;font-size:14px}
+.lb-qa-d{font-size:12px;color:var(--ink-mute)}
+@media (max-width:640px){.lb-qa{grid-template-columns:1fr 1fr}}
+
 /* Analytics card */
 .stat-tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px}
 .stat-tile{border:1px solid var(--line);border-radius:10px;background:var(--panel-2);padding:12px 14px;display:flex;flex-direction:column;gap:2px}
