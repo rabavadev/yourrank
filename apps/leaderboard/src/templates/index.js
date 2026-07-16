@@ -164,7 +164,7 @@ export const TEMPLATES = {
   quest: {
     id: "quest",
     name: "Quest Light",
-    description: "Light, friendly podium board with big avatars and a clean list.",
+    description: "Light app-style page: compact header with info chips, standings first.",
     css: QUEST_CSS,
     presets: [
       { id: "sky", name: "Sky", accentA: "#2f6bff", accentB: "#00b3a4" },
@@ -175,7 +175,7 @@ export const TEMPLATES = {
   vault: {
     id: "vault",
     name: "Prize Vault",
-    description: "Dark casino board with a boxed prize-pool countdown and gold podium.",
+    description: "Split hero with a boxed prize-pool race card, stat strip, gold podium.",
     css: VAULT_CSS,
     presets: [
       { id: "gold", name: "Gold", accentA: "#ffd15c", accentB: "#f0a93a" },
@@ -186,7 +186,7 @@ export const TEMPLATES = {
   tournament: {
     id: "tournament",
     name: "Tournament",
-    description: "Big centered countdown, trophy cards for the top 3, numbered list.",
+    description: "Countdown-first: a giant race clock hero, trophy top 3, numbered list.",
     css: TOURNAMENT_CSS,
     presets: [
       { id: "signal", name: "Signal", accentA: "#4fc3f7", accentB: "#3b82f6" },
@@ -197,7 +197,7 @@ export const TEMPLATES = {
   champion: {
     id: "champion",
     name: "Champion Stage",
-    description: "A raised pedestal podium with medal chips and a compact list.",
+    description: "Broadcast banner hero with prize facts, then a stepped pedestal stage.",
     css: CHAMPION_CSS,
     presets: [
       { id: "gold", name: "Gold", accentA: "#f4c85a", accentB: "#f0972f" },
@@ -208,7 +208,7 @@ export const TEMPLATES = {
   terminal: {
     id: "terminal",
     name: "Terminal",
-    description: "Monospace green-on-black trading terminal with bracketed ranks.",
+    description: "The whole board inside a terminal window: prompt lines, dense table.",
     css: TERMINAL_CSS,
     presets: [
       { id: "matrix", name: "Matrix", accentA: "#39d98a", accentB: "#2fae6e" },
@@ -219,7 +219,7 @@ export const TEMPLATES = {
   rewards: {
     id: "rewards",
     name: "Rewards",
-    description: "Reward-app pedestals with prize pills over a violet gradient.",
+    description: "One centered treasure card holds prize, clock and CTA; pedestals below.",
     css: REWARDS_CSS,
     presets: [
       { id: "violet", name: "Violet", accentA: "#7c5cff", accentB: "#4aa0ff" },
@@ -230,7 +230,7 @@ export const TEMPLATES = {
   amber: {
     id: "amber",
     name: "Amber Arena",
-    description: "Dark board with a single warm amber accent and a raised podium.",
+    description: "Two-column: sticky rail with prize, clock and code; standings beside it.",
     css: AMBER_CSS,
     presets: [
       { id: "amber", name: "Amber", accentA: "#ffb84d", accentB: "#ff8a1e" },
@@ -241,7 +241,7 @@ export const TEMPLATES = {
   copper: {
     id: "copper",
     name: "Copper Glow",
-    description: "Warm copper gradient with large top-3 avatars and a calm table.",
+    description: "Winners' gallery: the podium is the hero centerpiece, quiet ledger below.",
     css: COPPER_CSS,
     presets: [
       { id: "copper", name: "Copper", accentA: "#f0a95a", accentB: "#d1702a" },

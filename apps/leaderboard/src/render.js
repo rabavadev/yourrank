@@ -12,6 +12,255 @@ const safeUrl = (u) => {
 
 const HEX = /^#[0-9a-fA-F]{6}$/;
 
+// ---------------------------------------------------------------------------
+// Page composition. Every template shares the same client contract (each
+// data-* hook appears exactly once per page for single-element hooks like
+// data-rows/data-top3/data-timer-grid/data-countdown/data-count), but the
+// reference-based templates each get their OWN page structure: a different
+// hero, prize/countdown treatment, section order and framing. buildParts()
+// produces the shared, escaped building blocks; composeMain() assembles them
+// per template. The default composition preserves the classic page exactly.
+// ---------------------------------------------------------------------------
+function buildParts(c) {
+  const { b, hasCasino, casino, period, pool, hasCta, ctaHref, hasPartner, hasCode, code, blurb, whyStats, socials } = c;
+  const name = esc(b.name);
+  const streamWindow = `<div class="stream-window" aria-hidden="true"><div class="sw-bar"><span class="sw-dots"><i></i><i></i><i></i></span><span class="sw-title">Kick Stream</span></div>
+<div class="sw-body"><div class="sw-live"><span class="live-dot"></span> LIVE</div><div class="sw-play"><svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" width="34" height="34" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></div><div class="sw-name" data-brand-name>${name}</div></div></div>`;
+  const ctaBtn = (label, cls = "btn btn--grad") => hasCta ? `<a class="${cls}" data-cta href="${ctaHref}" target="_blank" rel="noopener">${label}</a>` : "";
+  const joinLabel = hasCasino ? `Join <span data-casino>${esc(casino)}</span>` : "Join now";
+  const timerGrid = `<div class="timer-grid" data-timer-grid><div class="tcell"><b data-t="d">--</b><span>Days</span></div><div class="tsep">:</div>
+<div class="tcell"><b data-t="h">--</b><span>Hours</span></div><div class="tsep">:</div>
+<div class="tcell"><b data-t="m">--</b><span>Mins</span></div><div class="tsep">:</div>
+<div class="tcell"><b data-t="s">--</b><span>Secs</span></div></div>`;
+  const partnerPanel = hasPartner ? `<section id="partner" class="panel">${hasCasino ? `<div class="panel-badge">Official Partner</div>` : ""}<div class="panel-grid">
+<div class="pcol pcol-about"><p class="pcol-blurb" data-partner-blurb>${esc(blurb)}</p><ul class="chips" data-chips></ul></div>
+${hasCode ? `<div class="pcol pcol-code"><span class="pcol-label">Exclusive Code</span><div class="code-box"><span class="code-val" data-code>${esc(code)}</span></div>
+<button class="btn btn--full btn--code" data-copy-code>Copy Code</button><span class="sr-only" data-copy-status aria-live="polite"></span>
+${hasCta ? `<a class="btn btn--full btn--grad" data-cta href="${ctaHref}" target="_blank" rel="noopener">${hasCasino ? `Join us on <span data-casino>${esc(casino)}</span>` : "Join now"}</a>` : ""}</div>` : ""}
+${whyStats.length ? `<div class="pcol pcol-why"><span class="pcol-label">Why ${hasCasino ? `<span data-casino>${esc(casino)}</span>` : "us"}</span><div class="why-grid" data-why></div></div>` : ""}</div></section>` : "";
+  const announce = `<div class="sr-only" aria-live="polite" id="lb-announce"></div>`;
+  const payouts = `<div class="payouts" data-payouts hidden></div>`;
+  const top3 = `<div class="top3" data-top3></div>`;
+  const findRank = `<div class="find-rank-bar"><div class="find-rank-wrap"><button type="button" aria-label="Search" class="find-rank-icon"><svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/></svg></button><input class="find-rank-input" type="text" placeholder="Find your rank..." data-find-rank aria-label="Search for your rank" /></div><span class="find-rank-result" data-find-result></span></div>`;
+  const table = `<div class="table"><div class="t-head"><span>#</span><span>Player</span><span class="ta-r">Wagered</span><span class="ta-r">Prize</span></div>
+<ol class="t-rows" data-rows></ol></div>`;
+  const rules = `<details class="rules"><summary>Leaderboard rules — how wager counts</summary><ol class="rules-list" data-rules></ol></details>`;
+  const pastSec = `<section id="past" class="past-sec" data-past hidden><h2 class="sec-title center">Past Winners</h2><p class="sec-sub center">Every closed-out period, on the record.</p>
+<div class="past-grid" data-past-grid></div></section>`;
+  const socialsSec = socials.length ? `<section id="socials" class="socials-sec"><h2 class="sec-title center">Join the Socials</h2><p class="sec-sub center">More giveaways and promotions across every platform.</p>
+<div class="social-cards" data-socials></div></section>` : "";
+  const titleGroup = `<div class="board-title-group"><h2 class="sec-title">Standings</h2><span class="player-count-badge" data-player-count-badge></span><span class="live-badge" data-live-badge><span class="live-badge-dot"></span>LIVE</span></div>`;
+  const poolSpan = pool ? `<span data-pool>${esc(pool)}</span>` : `<span data-pool></span>`;
+  const periodSpan = `<span data-period>${esc(period)}</span>`;
+  return { ...c, name, streamWindow, ctaBtn, joinLabel, timerGrid, partnerPanel, announce, payouts, top3, findRank, table, rules, pastSec, socialsSec, titleGroup, poolSpan, periodSpan };
+}
+
+// The classic page: stream-window hero, partner panel, board, past, socials.
+function composeDefault(p) {
+  const { name, heroLogo, hasCasino, casino, period, pool, ctaBtn, joinLabel, timerGrid } = p;
+  return `<section class="hero">${p.streamWindow}
+${heroLogo}<p class="hero-kicker">Welcome to</p><h1 class="hero-name" data-brand-name>${name}</h1>
+<p class="hero-sub">${hasCasino ? `<span data-casino>${esc(casino)}</span> partner · ` : ""}<span data-period>${esc(period)}</span> leaderboard</p>
+<div class="hero-cta">${ctaBtn(joinLabel)}<a class="btn btn--ghost" href="#board">Leaderboard</a></div>
+<div class="hero-timer" data-timer><p class="timer-label">${pool ? `<span data-pool>${esc(pool)}</span> leaderboard resets in` : "Leaderboard resets in"}</p>
+${timerGrid}</div></section>
+${p.partnerPanel}
+${p.announce}<section id="board" class="board"><div class="board-head">
+<p class="eyebrow">${pool ? `<span data-pool>${esc(pool)}</span> · ` : ""}<span data-period>${esc(period)}</span> Leaderboard</p>
+${p.titleGroup}<div class="board-meta">
+<span class="bm"><b class="countdown" data-countdown>--</b><span>Resets in</span></span>
+<span class="bm"><b data-count>0</b><span>Players</span></span></div></div>
+${p.payouts}
+${p.top3}
+${p.findRank}
+${p.table}
+${p.rules}</section>
+${p.pastSec}
+${p.socialsSec}`;
+}
+
+// quest — app-style: compact centered header with info chips, standings first,
+// partner content demoted below the board.
+function composeQuest(p) {
+  return `<section class="hero hero--app">${p.heroLogo}<h1 class="hero-name" data-brand-name>${p.name}</h1>
+<p class="hero-sub">${p.hasCasino ? `<span data-casino>${esc(p.casino)}</span> partner · ` : ""}${p.periodSpan} leaderboard</p>
+<div class="app-chips"><span class="app-chip app-chip--pool">🏆 ${p.poolSpan}</span><span class="app-chip">⏳ <b class="countdown" data-countdown>--</b></span><span class="app-chip"><b data-count>0</b> players</span></div>
+<div class="hero-cta">${p.ctaBtn(p.joinLabel)}</div>
+<div class="hero-timer" data-timer hidden>${p.timerGrid}</div></section>
+${p.announce}<section id="board" class="board"><div class="board-head board-head--center">
+${p.titleGroup}</div>
+${p.payouts}
+${p.top3}
+${p.findRank}
+${p.table}
+${p.rules}</section>
+${p.partnerPanel}
+${p.pastSec}
+${p.socialsSec}`;
+}
+
+// vault — split hero: pitch on the left, a boxed prize-pool + race-countdown
+// card on the right, then a stat strip. Matches the approved casino mockup.
+function composeVault(p) {
+  return `<section class="hero hero--split"><div class="split-grid">
+<div class="split-copy">${p.heroLogo}<p class="hero-kicker">${p.hasCasino ? `<span data-casino>${esc(p.casino)}</span> partner board` : "Wager race"}</p><h1 class="hero-name" data-brand-name>${p.name}</h1>
+<p class="hero-sub">${p.periodSpan} wager race — climb the board, take the prizes.</p>
+<div class="hero-cta">${p.ctaBtn(p.joinLabel)}<a class="btn btn--ghost" href="#board">Standings</a></div></div>
+<div class="prize-card"><span class="prize-card-label">Prize pool</span><b class="prize-card-pool">${p.poolSpan}</b>
+<div class="hero-timer" data-timer><p class="timer-label">Race ends in</p>
+${p.timerGrid}</div></div></div>
+<div class="stat-strip"><div class="ss"><span class="ss-label">Players</span><b class="ss-val" data-count>0</b></div><div class="ss"><span class="ss-label">Period</span><b class="ss-val">${p.periodSpan}</b></div><div class="ss"><span class="ss-label">Status</span><b class="ss-val"><span class="live-badge" data-live-badge><span class="live-badge-dot"></span>LIVE</span></b></div></div></section>
+${p.announce}<section id="board" class="board"><div class="board-head board-head--center">
+<div class="board-title-group"><h2 class="sec-title">Standings</h2><span class="player-count-badge" data-player-count-badge></span></div></div>
+${p.payouts}
+${p.top3}
+${p.findRank}
+${p.table}
+${p.rules}</section>
+${p.partnerPanel}
+${p.pastSec}
+${p.socialsSec}`;
+}
+
+// tournament — the countdown IS the hero: giant race clock front and center,
+// prize pool as the supporting line.
+function composeTournament(p) {
+  return `<section class="hero hero--clock">${p.heroLogo}<p class="hero-kicker" data-brand-name>${p.name}</p>
+<h1 class="clock-title">Race ends in</h1>
+<div class="hero-timer" data-timer>${p.timerGrid}</div>
+<p class="clock-sub">${p.poolSpan} prize pool · ${p.periodSpan} race · <b data-count>0</b> players</p>
+<div class="hero-cta">${p.ctaBtn(p.joinLabel)}<a class="btn btn--ghost" href="#board">Standings</a></div></section>
+${p.announce}<section id="board" class="board"><div class="board-head board-head--center">
+${p.titleGroup}</div>
+${p.payouts}
+${p.top3}
+${p.findRank}
+${p.table}
+${p.rules}</section>
+${p.partnerPanel}
+${p.pastSec}
+${p.socialsSec}`;
+}
+
+// champion — broadcast-banner hero: identity left, prize + clock right, then
+// straight into the pedestal stage. Partner panel demoted below the board.
+function composeChampion(p) {
+  return `<section class="hero hero--banner"><div class="banner-grid">
+<div class="banner-id">${p.heroLogo}<h1 class="hero-name" data-brand-name>${p.name}</h1>
+<p class="hero-sub">${p.hasCasino ? `<span data-casino>${esc(p.casino)}</span> partner · ` : ""}${p.periodSpan} leaderboard</p></div>
+<div class="banner-facts"><div class="bf"><span class="bf-label">Prize pool</span><b class="bf-val">${p.poolSpan}</b></div>
+<div class="bf"><span class="bf-label">Ends in</span><b class="bf-val countdown" data-countdown>--</b></div>
+<div class="bf"><span class="bf-label">Players</span><b class="bf-val" data-count>0</b></div>
+${p.ctaBtn(p.joinLabel)}</div></div>
+<div class="hero-timer" data-timer hidden>${p.timerGrid}</div></section>
+${p.announce}<section id="board" class="board"><div class="board-head board-head--center">
+${p.titleGroup}</div>
+${p.payouts}
+${p.top3}
+${p.findRank}
+${p.table}
+${p.rules}</section>
+${p.partnerPanel}
+${p.pastSec}
+${p.socialsSec}`;
+}
+
+// terminal — the whole board lives inside one terminal window: title bar,
+// prompt-style status lines, dense table. No marketing hero at all.
+function composeTerminal(p) {
+  return `<div class="term-window"><div class="term-bar"><span class="term-dots"><i></i><i></i><i></i></span><span class="term-title">~/leaderboard — <span data-brand-name>${p.name}</span></span></div>
+<div class="term-body"><section class="hero hero--term"><p class="term-line"><span class="term-prompt">$</span> race --period ${p.periodSpan}${p.pool ? ` --pool ${p.poolSpan}` : `${p.poolSpan}`}</p>
+<p class="term-line term-line--dim">resets_in <b class="countdown" data-countdown>--</b> · players <b data-count>0</b> · <span class="live-badge" data-live-badge><span class="live-badge-dot"></span>LIVE</span></p>
+<div class="hero-cta">${p.ctaBtn(`&gt; ${p.hasCasino ? `join <span data-casino>${esc(p.casino)}</span>` : "join now"}`, "btn btn--term")}</div>
+<div class="hero-timer" data-timer hidden>${p.timerGrid}</div></section>
+${p.announce}<section id="board" class="board"><div class="board-head"><h2 class="sec-title"><span class="term-prompt">$</span> standings</h2><span class="player-count-badge" data-player-count-badge></span></div>
+${p.payouts}
+${p.top3}
+${p.findRank}
+${p.table}
+${p.rules}</section></div></div>
+${p.partnerPanel}
+${p.pastSec}
+${p.socialsSec}`;
+}
+
+// rewards — one centered treasure card: prize pool + race clock + CTA in a
+// single hero card, then podium and standings.
+function composeRewards(p) {
+  return `<section class="hero hero--card">${p.heroLogo}<h1 class="hero-name" data-brand-name>${p.name}</h1>
+<p class="hero-sub">${p.hasCasino ? `<span data-casino>${esc(p.casino)}</span> partner · ` : ""}${p.periodSpan} rewards race</p>
+<div class="reward-card"><span class="reward-label">🎁 Prize pool</span><b class="reward-pool">${p.poolSpan}</b>
+<div class="hero-timer" data-timer><p class="timer-label">Ends in</p>
+${p.timerGrid}</div>
+${p.ctaBtn(p.joinLabel, "btn btn--grad btn--full")}</div></section>
+${p.announce}<section id="board" class="board"><div class="board-head board-head--center">
+${p.titleGroup}</div>
+${p.payouts}
+${p.top3}
+${p.findRank}
+${p.table}
+${p.rules}</section>
+${p.partnerPanel}
+${p.pastSec}
+${p.socialsSec}`;
+}
+
+// amber — command-rail layout: a sticky left rail carries the identity,
+// prize, clock and partner code; standings own the right column.
+function composeAmber(p) {
+  return `<div class="rail-layout"><aside class="rail"><section class="hero hero--rail">${p.heroLogo}<h1 class="hero-name" data-brand-name>${p.name}</h1>
+<p class="hero-sub">${p.hasCasino ? `<span data-casino>${esc(p.casino)}</span> partner · ` : ""}${p.periodSpan} race</p>
+<div class="rail-fact"><span class="rail-label">Prize pool</span><b class="rail-val">${p.poolSpan}</b></div>
+<div class="rail-fact"><span class="rail-label">Resets in</span><b class="rail-val countdown" data-countdown>--</b></div>
+<div class="rail-fact"><span class="rail-label">Players</span><b class="rail-val" data-count>0</b></div>
+<div class="hero-cta">${p.ctaBtn(p.joinLabel, "btn btn--grad btn--full")}</div>
+<div class="hero-timer" data-timer hidden>${p.timerGrid}</div></section>
+${p.partnerPanel}</aside>
+<div class="rail-main">${p.announce}<section id="board" class="board"><div class="board-head">
+${p.titleGroup}</div>
+${p.payouts}
+${p.top3}
+${p.findRank}
+${p.table}
+${p.rules}</section></div></div>
+${p.pastSec}
+${p.socialsSec}`;
+}
+
+// copper — winners' gallery: the top-3 podium lives inside the hero as the
+// page's centerpiece; the table below is a quiet "top users" ledger.
+function composeCopper(p) {
+  return `<section class="hero hero--gallery">${p.heroLogo}<p class="hero-kicker">${p.periodSpan} champions</p><h1 class="hero-name" data-brand-name>${p.name}</h1>
+<p class="hero-sub">${p.poolSpan} prize pool · resets in <b class="countdown" data-countdown>--</b></p>
+${p.top3}
+<div class="hero-cta">${p.ctaBtn(p.joinLabel)}</div>
+<div class="hero-timer" data-timer hidden>${p.timerGrid}</div></section>
+${p.announce}<section id="board" class="board"><div class="board-head">
+<div class="board-title-group"><h2 class="sec-title">Top players</h2><span class="player-count-badge" data-player-count-badge></span><span class="live-badge" data-live-badge><span class="live-badge-dot"></span>LIVE</span></div></div>
+${p.payouts}
+${p.findRank}
+${p.table}
+${p.rules}</section>
+${p.partnerPanel}
+${p.pastSec}
+${p.socialsSec}`;
+}
+
+const COMPOSERS = {
+  quest: composeQuest,
+  vault: composeVault,
+  tournament: composeTournament,
+  champion: composeChampion,
+  terminal: composeTerminal,
+  rewards: composeRewards,
+  amber: composeAmber,
+  copper: composeCopper,
+};
+
+function composeMain(tpl, parts) {
+  return (COMPOSERS[tpl] || composeDefault)(parts);
+}
+
 export function renderLeaderboard(data, opts = {}) {
   const b = data.brand || {};
   const br = data.branding || {};
@@ -115,37 +364,7 @@ ${previewCss}
 <nav class="nav-links" aria-label="Page sections">${hasPartner ? `<a href="#partner">Partner</a>` : ""}<a href="#board">Leaderboard</a>${socials.length ? `<a href="#socials">Socials</a>` : ""}</nav></header>
 ${boardTabs}
 <main id="top">
-<section class="hero"><div class="stream-window" aria-hidden="true"><div class="sw-bar"><span class="sw-dots"><i></i><i></i><i></i></span><span class="sw-title">Kick Stream</span></div>
-<div class="sw-body"><div class="sw-live"><span class="live-dot"></span> LIVE</div><div class="sw-play"><svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" width="34" height="34" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></div><div class="sw-name" data-brand-name>${esc(b.name)}</div></div></div>
-${heroLogo}<p class="hero-kicker">Welcome to</p><h1 class="hero-name" data-brand-name>${esc(b.name)}</h1>
-<p class="hero-sub">${hasCasino ? `<span data-casino>${esc(casino)}</span> partner · ` : ""}<span data-period>${esc(period)}</span> leaderboard</p>
-<div class="hero-cta">${hasCta ? `<a class="btn btn--grad" data-cta href="${ctaHref}" target="_blank" rel="noopener">${hasCasino ? `Join <span data-casino>${esc(casino)}</span>` : "Join now"}</a>` : ""}<a class="btn btn--ghost" href="#board">Leaderboard</a></div>
-<div class="hero-timer" data-timer><p class="timer-label">${pool ? `<span data-pool>${esc(pool)}</span> leaderboard resets in` : "Leaderboard resets in"}</p>
-<div class="timer-grid" data-timer-grid><div class="tcell"><b data-t="d">--</b><span>Days</span></div><div class="tsep">:</div>
-<div class="tcell"><b data-t="h">--</b><span>Hours</span></div><div class="tsep">:</div>
-<div class="tcell"><b data-t="m">--</b><span>Mins</span></div><div class="tsep">:</div>
-<div class="tcell"><b data-t="s">--</b><span>Secs</span></div></div></div></section>
-${hasPartner ? `<section id="partner" class="panel">${hasCasino ? `<div class="panel-badge">Official Partner</div>` : ""}<div class="panel-grid">
-<div class="pcol pcol-about"><p class="pcol-blurb" data-partner-blurb>${esc(blurb)}</p><ul class="chips" data-chips></ul></div>
-${hasCode ? `<div class="pcol pcol-code"><span class="pcol-label">Exclusive Code</span><div class="code-box"><span class="code-val" data-code>${esc(code)}</span></div>
-<button class="btn btn--full btn--code" data-copy-code>Copy Code</button><span class="sr-only" data-copy-status aria-live="polite"></span>
-${hasCta ? `<a class="btn btn--full btn--grad" data-cta href="${ctaHref}" target="_blank" rel="noopener">${hasCasino ? `Join us on <span data-casino>${esc(casino)}</span>` : "Join now"}</a>` : ""}</div>` : ""}
-${whyStats.length ? `<div class="pcol pcol-why"><span class="pcol-label">Why ${hasCasino ? `<span data-casino>${esc(casino)}</span>` : "us"}</span><div class="why-grid" data-why></div></div>` : ""}</div></section>` : ""}
-<div class="sr-only" aria-live="polite" id="lb-announce"></div><section id="board" class="board"><div class="board-head">
-<p class="eyebrow">${pool ? `<span data-pool>${esc(pool)}</span> · ` : ""}<span data-period>${esc(period)}</span> Leaderboard</p>
-<div class="board-title-group"><h2 class="sec-title">Standings</h2><span class="player-count-badge" data-player-count-badge></span><span class="live-badge" data-live-badge><span class="live-badge-dot"></span>LIVE</span></div><div class="board-meta">
-<span class="bm"><b class="countdown" data-countdown>--</b><span>Resets in</span></span>
-<span class="bm"><b data-count>0</b><span>Players</span></span></div></div>
-<div class="payouts" data-payouts hidden></div>
-<div class="top3" data-top3></div>
-<div class="find-rank-bar"><div class="find-rank-wrap"><button type="button" aria-label="Search" class="find-rank-icon"><svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/></svg></button><input class="find-rank-input" type="text" placeholder="Find your rank..." data-find-rank aria-label="Search for your rank" /></div><span class="find-rank-result" data-find-result></span></div>
-<div class="table"><div class="t-head"><span>#</span><span>Player</span><span class="ta-r">Wagered</span><span class="ta-r">Prize</span></div>
-<ol class="t-rows" data-rows></ol></div>
-<details class="rules"><summary>Leaderboard rules — how wager counts</summary><ol class="rules-list" data-rules></ol></details></section>
-<section id="past" class="past-sec" data-past hidden><h2 class="sec-title center">Past Winners</h2><p class="sec-sub center">Every closed-out period, on the record.</p>
-<div class="past-grid" data-past-grid></div></section>
-${socials.length ? `<section id="socials" class="socials-sec"><h2 class="sec-title center">Join the Socials</h2><p class="sec-sub center">More giveaways and promotions across every platform.</p>
-<div class="social-cards" data-socials></div></section>` : ""}</main>
+${composeMain(tpl, buildParts({ b, esc, heroLogo, hasCasino, casino, period, pool, hasCta, ctaHref, hasPartner, hasCode, code, blurb, whyStats, socials }))}</main>
 <footer class="ftr"><div class="ftr-id"><span class="ftr-name" data-brand-name>${esc(b.name)}</span><span class="ftr-tag" data-tagline>${esc(b.tagline)}</span></div>
 <p class="ftr-fine">18+ only. Gambling can be addictive. Please play responsibly. BeGambleAware.org${hasCasino ? ` · ${esc(b.name)} is not affiliated with ${esc(casino)}.` : "."}</p>
 <p class="ftr-copy">© <span data-year></span> <span data-brand-name>${esc(b.name)}</span>. All rights reserved.</p></footer>
