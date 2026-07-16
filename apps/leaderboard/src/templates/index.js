@@ -2,8 +2,10 @@
 // All templates share the SAME markup and data-* hooks, so leaderboard.js
 // (countdown, rows, top3, socials, postback live updates) works unchanged.
 // Most templates are colour/typography skins; the "layout" templates
-// (podium/broadcast/cards/arena) additionally rearrange the shared blocks via
-// CSS grid/flex for genuinely different page compositions.
+// (podium/broadcast/cards/arena) and the reference-based set
+// (quest/vault/tournament/champion/terminal/rewards/amber/copper) additionally
+// rearrange the shared blocks via CSS grid/flex for genuinely different page
+// compositions.
 // The chosen template id is stored in sites.theme_json.template and reaches
 // the renderer via data.branding.template.
 import { MIDNIGHT_CSS } from "./midnight.js";
@@ -17,6 +19,14 @@ import { PODIUM_CSS } from "./podium.js";
 import { BROADCAST_CSS } from "./broadcast.js";
 import { CARDS_CSS } from "./cards.js";
 import { ARENA_CSS } from "./arena.js";
+import { QUEST_CSS } from "./quest.js";
+import { VAULT_CSS } from "./vault.js";
+import { TOURNAMENT_CSS } from "./tournament.js";
+import { CHAMPION_CSS } from "./champion.js";
+import { TERMINAL_CSS } from "./terminal.js";
+import { REWARDS_CSS } from "./rewards.js";
+import { AMBER_CSS } from "./amber.js";
+import { COPPER_CSS } from "./copper.js";
 
 export const TEMPLATES = {
   classic: {
@@ -149,6 +159,94 @@ export const TEMPLATES = {
       { id: "lime", name: "Lime", accentA: "#cdff1f", accentB: "#72ff3d" },
       { id: "redline", name: "Redline", accentA: "#ff3b3b", accentB: "#ff7a1a" },
       { id: "ice", name: "Ice", accentA: "#7de8ff", accentB: "#4c68ff" },
+    ],
+  },
+  quest: {
+    id: "quest",
+    name: "Quest Light",
+    description: "Light, friendly podium board with big avatars and a clean list.",
+    css: QUEST_CSS,
+    presets: [
+      { id: "sky", name: "Sky", accentA: "#2f6bff", accentB: "#00b3a4" },
+      { id: "grape", name: "Grape", accentA: "#7c5cff", accentB: "#ff5fae" },
+      { id: "leaf", name: "Leaf", accentA: "#10b981", accentB: "#2f6bff" },
+    ],
+  },
+  vault: {
+    id: "vault",
+    name: "Prize Vault",
+    description: "Dark casino board with a boxed prize-pool countdown and gold podium.",
+    css: VAULT_CSS,
+    presets: [
+      { id: "gold", name: "Gold", accentA: "#ffd15c", accentB: "#f0a93a" },
+      { id: "emerald", name: "Emerald", accentA: "#4bd48a", accentB: "#2f9d67" },
+      { id: "ruby", name: "Ruby", accentA: "#ff8aa0", accentB: "#d92f5a" },
+    ],
+  },
+  tournament: {
+    id: "tournament",
+    name: "Tournament",
+    description: "Big centered countdown, trophy cards for the top 3, numbered list.",
+    css: TOURNAMENT_CSS,
+    presets: [
+      { id: "signal", name: "Signal", accentA: "#4fc3f7", accentB: "#3b82f6" },
+      { id: "lime", name: "Lime", accentA: "#a3e635", accentB: "#22c55e" },
+      { id: "flare", name: "Flare", accentA: "#ff9f43", accentB: "#ff5f6d" },
+    ],
+  },
+  champion: {
+    id: "champion",
+    name: "Champion Stage",
+    description: "A raised pedestal podium with medal chips and a compact list.",
+    css: CHAMPION_CSS,
+    presets: [
+      { id: "gold", name: "Gold", accentA: "#f4c85a", accentB: "#f0972f" },
+      { id: "violet", name: "Violet", accentA: "#8b6bff", accentB: "#42e6ff" },
+      { id: "mint", name: "Mint", accentA: "#42e6a4", accentB: "#16a6d9" },
+    ],
+  },
+  terminal: {
+    id: "terminal",
+    name: "Terminal",
+    description: "Monospace green-on-black trading terminal with bracketed ranks.",
+    css: TERMINAL_CSS,
+    presets: [
+      { id: "matrix", name: "Matrix", accentA: "#39d98a", accentB: "#2fae6e" },
+      { id: "amber", name: "Amber", accentA: "#e8c14c", accentB: "#c8871c" },
+      { id: "ice", name: "Ice", accentA: "#5ad9ff", accentB: "#3b82f6" },
+    ],
+  },
+  rewards: {
+    id: "rewards",
+    name: "Rewards",
+    description: "Reward-app pedestals with prize pills over a violet gradient.",
+    css: REWARDS_CSS,
+    presets: [
+      { id: "violet", name: "Violet", accentA: "#7c5cff", accentB: "#4aa0ff" },
+      { id: "sunset", name: "Sunset", accentA: "#ff7a59", accentB: "#ff4d9d" },
+      { id: "reef", name: "Reef", accentA: "#42e6ff", accentB: "#7c5cff" },
+    ],
+  },
+  amber: {
+    id: "amber",
+    name: "Amber Arena",
+    description: "Dark board with a single warm amber accent and a raised podium.",
+    css: AMBER_CSS,
+    presets: [
+      { id: "amber", name: "Amber", accentA: "#ffb84d", accentB: "#ff8a1e" },
+      { id: "ember", name: "Ember", accentA: "#ff6a4d", accentB: "#ffb347" },
+      { id: "sun", name: "Sun", accentA: "#ffd15c", accentB: "#ff9f43" },
+    ],
+  },
+  copper: {
+    id: "copper",
+    name: "Copper Glow",
+    description: "Warm copper gradient with large top-3 avatars and a calm table.",
+    css: COPPER_CSS,
+    presets: [
+      { id: "copper", name: "Copper", accentA: "#f0a95a", accentB: "#d1702a" },
+      { id: "rose", name: "Rose", accentA: "#ff9a8b", accentB: "#d1702a" },
+      { id: "brass", name: "Brass", accentA: "#f0b45a", accentB: "#b8862c" },
     ],
   },
 };
