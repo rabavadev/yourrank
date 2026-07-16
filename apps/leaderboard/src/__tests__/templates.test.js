@@ -23,8 +23,8 @@ const DATA = {
 };
 
 describe("template catalog", () => {
-  it("offers eight registry-driven templates with curated presets", () => {
-    expect(TEMPLATE_IDS).toHaveLength(8);
+  it("offers twelve registry-driven templates with curated presets", () => {
+    expect(TEMPLATE_IDS).toHaveLength(12);
     for (const id of TEMPLATE_IDS) {
       expect(TEMPLATES[id].presets.length).toBeGreaterThanOrEqual(3);
       expect(TEMPLATES[id].presets.every((preset) => /^#[0-9a-f]{6}$/i.test(preset.accentA) && /^#[0-9a-f]{6}$/i.test(preset.accentB))).toBe(true);
@@ -33,7 +33,7 @@ describe("template catalog", () => {
 
   it("exposes client metadata without sending template CSS", () => {
     const catalog = templateCatalog();
-    expect(catalog).toHaveLength(8);
+    expect(catalog).toHaveLength(12);
     expect(catalog.every((template) => !Object.hasOwn(template, "css"))).toBe(true);
     expect(catalog.map((template) => template.id)).toEqual(TEMPLATE_IDS);
   });

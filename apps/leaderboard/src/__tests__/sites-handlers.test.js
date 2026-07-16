@@ -152,7 +152,7 @@ describe("handleGetSite", () => {
     expect(body).toHaveProperty("siteId");
     expect(body).toHaveProperty("customDomain");
     expect(body).toHaveProperty("domainStatus");
-    expect(body.templates).toHaveLength(8);
+    expect(body.templates).toHaveLength(12);
     expect(body.templates.every((template) => !Object.hasOwn(template, "css"))).toBe(true);
     // Verify data sub-shape matches what dashboard.js expects
     expect(body.data).toHaveProperty("brand");

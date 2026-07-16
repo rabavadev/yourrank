@@ -262,6 +262,10 @@ section { width: min(var(--wrap), 100% - 2.5rem); margin-inline: auto; }
 .tr-wager { text-align: right; font-family: "JetBrains Mono"; font-size: 0.85rem; color: var(--ink-soft); }
 .tr-prize { text-align: right; font-weight: 700; }
 .tr-prize.has { color: var(--cy); } .tr-prize.no { color: var(--ink-mute); font-weight: 500; }
+/* Layout-template extras — hidden by default so only templates that opt in
+   (podium/cards big-card avatar, arena wager bar) render them. */
+.tr-bar { display: none; }
+.t3-av { display: none; }
 
 /* ---------- Find My Rank search bar ---------- */
 .find-rank-bar { display: flex; align-items: center; gap: 12px; margin-bottom: 1rem; flex-wrap: wrap; }

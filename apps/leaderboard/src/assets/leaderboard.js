@@ -102,14 +102,26 @@ function buildPlayerRow(pl, rank, delay, gap) {
     const gapHtml = rank === 1 ? "" : (gap === 0
       ? `<span class="tr-gap">↑ tied</span>`
       : `<span class="tr-gap">↑ ${moneyShort(gap)} to next</span>`);
-    return `<li class="t-row" data-position="${rank}" data-name="${esc(pl.name)}" data-delay="${delay}">
+    return `<li class="t-row" data-position="${rank}" data-name="${esc(pl.name)}" data-wagered="${Number(pl.wagered) || 0}" data-delay="${delay}">
       <span class="tr-rank">${String(rank).padStart(2, "0")}</span>
       <span class="tr-player"><span class="tr-av">${esc(initials(pl.name))}</span><span class="tr-name">${esc(pl.name)}</span></span>
-      <span class="tr-wager">${money(pl.wagered)}</span>${prize}${gapHtml}</li>`;
+      <span class="tr-wager">${money(pl.wagered)}</span>${prize}${gapHtml}<span class="tr-bar" aria-hidden="true"><i></i></span></li>`;
   }
 
 function buildTop3Card(pl, rank) {
-  return `<div class="t3 t3--${rank}"><span class="t3-medal">RANK ${String(rank).padStart(2, "0")}</span><div class="t3-name">${esc(pl.name)}</div><div class="t3-wager">${money(pl.wagered)}</div><span class="t3-prize">${pl.prize ? moneyShort(pl.prize) : "—"}</span></div>`;
+  return `<div class="t3 t3--${rank}"><span class="t3-medal">RANK ${String(rank).padStart(2, "0")}</span><span class="t3-av" aria-hidden="true">${esc(initials(pl.name))}</span><div class="t3-name">${esc(pl.name)}</div><div class="t3-wager">${money(pl.wagered)}</div><span class="t3-prize">${pl.prize ? moneyShort(pl.prize) : "—"}</span></div>`;
+}
+
+// Set each row's --pct to its wager share of the leader, so layouts that draw a
+// wager bar (e.g. the "arena" template) can size it without inline styles (CSP
+// blocks style="" attributes; CSSOM writes are allowed).
+function applyRowBars(sorted) {
+  const max = sorted.length ? Number(sorted[0].wagered) || 0 : 0;
+  $$("[data-rows] .t-row").forEach((el) => {
+    const w = Number(el.dataset.wagered) || 0;
+    const pct = max > 0 ? Math.max(4, Math.round((w / max) * 100)) : 0;
+    el.style.setProperty("--pct", pct + "%");
+  });
 }
 
 function updateLeaderboard(players) {
@@ -136,6 +148,7 @@ function updateLeaderboard(players) {
       }).join("");
       // SEC-713: apply animation-delay via CSSOM (CSP blocks style="" attributes)
       $$("[data-rows] [data-delay]").forEach((el) => { el.style.animationDelay = el.dataset.delay + "s"; });
+    applyRowBars(sorted);
 
     // Flash rank-change indicators
     const rowEls = $$("[data-rows] .t-row");
@@ -286,6 +299,7 @@ function boot() {
     }).join("");
     // SEC-713: apply animation-delay via CSSOM (CSP blocks style="" attributes)
     $$("[data-rows] [data-delay]").forEach((el) => { el.style.animationDelay = el.dataset.delay + "s"; });
+    applyRowBars(players);
   }
   // Store initial ordering
   previousPlayerNames = players.map((pl) => pl.name);

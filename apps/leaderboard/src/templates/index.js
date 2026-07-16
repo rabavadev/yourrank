@@ -1,7 +1,9 @@
-// Registry of public-page templates. Each template is a CSS "skin" layered on
-// top of /assets/leaderboard.css. Every template keeps the SAME markup and
-// data-* hooks, so leaderboard.js (countdown, rows, top3, socials, postback
-// live updates) works unchanged regardless of the selected template.
+// Registry of public-page templates, layered on top of /assets/leaderboard.css.
+// All templates share the SAME markup and data-* hooks, so leaderboard.js
+// (countdown, rows, top3, socials, postback live updates) works unchanged.
+// Most templates are colour/typography skins; the "layout" templates
+// (podium/broadcast/cards/arena) additionally rearrange the shared blocks via
+// CSS grid/flex for genuinely different page compositions.
 // The chosen template id is stored in sites.theme_json.template and reaches
 // the renderer via data.branding.template.
 import { MIDNIGHT_CSS } from "./midnight.js";
@@ -11,6 +13,10 @@ import { SPONSOR_CSS } from "./sponsor.js";
 import { ESPORTS_CSS } from "./esports.js";
 import { ROYALE_CSS } from "./royale.js";
 import { OCEAN_CSS } from "./ocean.js";
+import { PODIUM_CSS } from "./podium.js";
+import { BROADCAST_CSS } from "./broadcast.js";
+import { CARDS_CSS } from "./cards.js";
+import { ARENA_CSS } from "./arena.js";
 
 export const TEMPLATES = {
   classic: {
@@ -99,6 +105,50 @@ export const TEMPLATES = {
       { id: "current", name: "Current", accentA: "#51dbff", accentB: "#4776ff" },
       { id: "lagoon", name: "Lagoon", accentA: "#4fffd2", accentB: "#1697d5" },
       { id: "arctic", name: "Arctic", accentA: "#d8fbff", accentB: "#68a4ff" },
+    ],
+  },
+  podium: {
+    id: "podium",
+    name: "Podium Spotlight",
+    description: "A raised winner podium up top; the ranked list starts at #4.",
+    css: PODIUM_CSS,
+    presets: [
+      { id: "violet", name: "Violet", accentA: "#8b6bff", accentB: "#42e6ff" },
+      { id: "sunset", name: "Sunset", accentA: "#ff7a59", accentB: "#ff4d9d" },
+      { id: "gold", name: "Gold", accentA: "#ffd15c", accentB: "#ff9f43" },
+    ],
+  },
+  broadcast: {
+    id: "broadcast",
+    name: "Split Broadcast",
+    description: "Sticky stream + brand rail on the left, full standings on the right.",
+    css: BROADCAST_CSS,
+    presets: [
+      { id: "signal", name: "Signal", accentA: "#3b82ff", accentB: "#38e1c6" },
+      { id: "ember", name: "Ember", accentA: "#ff5f6d", accentB: "#ffc371" },
+      { id: "aurora", name: "Aurora", accentA: "#7b61ff", accentB: "#42e6ff" },
+    ],
+  },
+  cards: {
+    id: "cards",
+    name: "Card Grid",
+    description: "Top 3 as big cards, everyone else as a responsive grid of player cards.",
+    css: CARDS_CSS,
+    presets: [
+      { id: "blossom", name: "Blossom", accentA: "#ff5fae", accentB: "#ffb347" },
+      { id: "grape", name: "Grape", accentA: "#a855f7", accentB: "#ff5fae" },
+      { id: "reef", name: "Reef", accentA: "#42e6ff", accentB: "#ff5fae" },
+    ],
+  },
+  arena: {
+    id: "arena",
+    name: "Neon Arena",
+    description: "Angular esports rows with wager bars showing the gap to the leader.",
+    css: ARENA_CSS,
+    presets: [
+      { id: "lime", name: "Lime", accentA: "#cdff1f", accentB: "#72ff3d" },
+      { id: "redline", name: "Redline", accentA: "#ff3b3b", accentB: "#ff7a1a" },
+      { id: "ice", name: "Ice", accentA: "#7de8ff", accentB: "#4c68ff" },
     ],
   },
 };
