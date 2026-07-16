@@ -8,6 +8,7 @@ import { one, exec } from "../../../../shared/db.js";
 import { logAudit } from "../../../../shared/audit.js";
 import { buildTop3Embed, sendDiscordWebhook, sendTelegramMessage } from "../../../../shared/notifications.js";
 import { decryptToken, decrypt } from "../../../../shared/crypto.js";
+import { PLATFORM_HOST } from "../constants.js";
 import { invalidateCustomDomain } from "../middleware/custom-domain.js";
 
 function getTokenEncKey() {
@@ -270,7 +271,7 @@ export async function handleNotifyTest(request, env) {
   return bad("Unknown channel. Use 'discord' or 'telegram'.");
 }
 
-// Verify that the domain has a CNAME record pointing to yourrank.site.
+// Verify that the domain has a CNAME record pointing to the platform host.
 async function verifyCnameToYourrank(domain) {
   try {
     const res = await fetch(
@@ -286,7 +287,7 @@ async function verifyCnameToYourrank(domain) {
     return answers.some((a) => {
       if (a.type !== 5) return false;
       const target = String(a.data || "").toLowerCase().replace(/\.$/, "");
-      return target === "yourrank.site" || target.endsWith(".yourrank.site");
+      return target === PLATFORM_HOST || target.endsWith(`.${PLATFORM_HOST}`);
     });
   } catch (e) {
     console.error("[domain] DNS lookup failed:", String(e?.message || e));
@@ -355,7 +356,7 @@ export async function handleDomainVerify(request, env) {
     // Verify DNS CNAME before saving or provisioning.
     const hasCname = await verifyCnameToYourrank(domain);
     if (!hasCname) {
-      return bad("We couldn't find a CNAME record for this domain pointing to yourrank.site. Add the CNAME first, then verify.", 400);
+      return bad(`We couldn't find a CNAME record for this domain pointing to ${PLATFORM_HOST}. Add the CNAME first, then verify.`, 400);
     }
 
     if (!cfToken) {
@@ -462,7 +463,7 @@ export async function handleDomainVerify(request, env) {
       customHostnameId: chId,
       message: dbStatus === "active"
         ? "TLS is active on your custom domain!"
-        : "TLS provisioning started. Point a CNAME for your domain to yourrank.site, then check back in a few minutes.",
+        : `TLS provisioning started. Point a CNAME for your domain to ${PLATFORM_HOST}, then check back in a few minutes.`,
     });
   } catch (e) {
     console.error("[domain] verify failed:", String(e?.message || e));

@@ -1,6 +1,7 @@
 // Custom domain resolution with in-memory caching
 // Maps custom domain hostnames to site slugs for serving leaderboards on custom domains
 import { one } from "../../../../shared/db.js";
+import { PLATFORM_HOST } from "../constants.js";
 
 // Per-isolate L1 cache. Invalidation (invalidateCustomDomain) only clears the
 // current isolate; other live isolates keep a stale mapping until the 60s TTL
@@ -37,5 +38,5 @@ export function invalidateCustomDomain(...hosts) {
 }
 
 export function isCustomHost(host) {
-  return host !== "yourrank.site" && host !== "localhost" && host !== "127.0.0.1" && !host.endsWith(".yourrank.site");
+  return host !== PLATFORM_HOST && host !== "localhost" && host !== "127.0.0.1" && !host.endsWith(`.${PLATFORM_HOST}`);
 }
