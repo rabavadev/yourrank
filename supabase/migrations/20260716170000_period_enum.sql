@@ -10,7 +10,7 @@ UPDATE public.sites
      ELSE 'Monthly'
    END
  WHERE period IS NULL
-    OR lower(trim(period)) NOT IN ('weekly', 'monthly', 'season');
+    OR period NOT IN ('Weekly', 'Monthly', 'Season');
 
 -- Existing default already is 'Monthly'; make the allowed values explicit for
 -- downstream query planning and dashboard filters.
