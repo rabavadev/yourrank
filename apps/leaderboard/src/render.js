@@ -14,6 +14,30 @@ const safeUrl = (u) => {
 
 const HEX = /^#[0-9a-fA-F]{6}$/;
 
+const shareCss = `
+.share-sec{padding:24px 4vw;max-width:var(--wrap,1140px);margin:0 auto;text-align:center;border-top:1px solid var(--line,rgba(150,120,220,.3))}
+.share-title{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-mute,#9a9aa2);margin:0 0 12px}
+.share-btns{display:inline-flex;flex-wrap:wrap;gap:10px;justify-content:center}
+.share-btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:40px;padding:8px 16px;border-radius:8px;border:1px solid var(--line,rgba(150,120,220,.3));background:var(--panel-2,#141417);color:var(--ink,#ededf0);font-size:14px;font-weight:600;text-decoration:none;cursor:pointer;transition:border-color .15s,transform .05s}
+.share-btn:hover{border-color:var(--accent,#c8ff00);color:var(--accent,#c8ff00)}
+.share-btn:active{transform:translateY(1px)}
+`;
+
+function shareSection(pageUrl, name) {
+  const u = encodeURIComponent(pageUrl);
+  const text = encodeURIComponent(`Check out ${name} leaderboard`);
+  const safe = (s) => String(s).replace(/"/g, "&quot;").replace(/</g, "&lt;");
+  return `<section class="share-sec" aria-label="Share this board">
+<h3 class="share-title">Share this board</h3>
+<div class="share-btns">
+  <button class="share-btn" data-share="copy" data-url="${safe(pageUrl)}" type="button">Copy link</button>
+  <a class="share-btn" href="https://twitter.com/intent/tweet?url=${u}&text=${text}" target="_blank" rel="noopener">𝕏</a>
+  <a class="share-btn" href="https://t.me/share/url?url=${u}&text=${text}" target="_blank" rel="noopener">Telegram</a>
+  <a class="share-btn" href="https://api.whatsapp.com/send?text=${text}%20${u}" target="_blank" rel="noopener">WhatsApp</a>
+</div>
+</section>`;
+}
+
 // ---------------------------------------------------------------------------
 // Page composition. Every template shares the same client contract (each
 // data-* hook appears exactly once per page for single-element hooks like
@@ -279,7 +303,7 @@ export function renderLeaderboard(data, opts = {}) {
 html{background:var(--bg)}body[data-preview]{min-width:1100px;overflow:hidden}
 body[data-preview] .nav,body[data-preview] .field,body[data-preview] .watermarks,body[data-preview] .stream-window,
 body[data-preview] .panel,body[data-preview] .find-rank-bar,body[data-preview] .rules,body[data-preview] .past-sec,
-body[data-preview] .socials-sec,body[data-preview] .ftr,body[data-preview] .rk-badge{display:none!important}
+body[data-preview] .socials-sec,body[data-preview] .ftr,body[data-preview] .rk-badge,body[data-preview] .share-sec{display:none!important}
 body[data-preview] .hero{min-height:350px;padding:58px 4vw 24px}
 body[data-preview] .hero-name{font-size:88px}
 body[data-preview] .hero-sub{margin:.65rem auto 1rem}
@@ -309,8 +333,10 @@ body[data-preview] .top3{margin-bottom:14px}
   const logo = opts.logoUrl ? esc(opts.logoUrl) : null;
   const navLogo = logo ? `<img class="nav-logo" src="${logo}" alt="" />` : "";
   const heroLogo = logo ? `<img class="hero-logo" src="${logo}" alt="${esc(b.name)} logo" />` : "";
-  const canonicalUrl = `${esc(opts.homeUrl || "https://yourrank.site")}/${esc(opts.slug || "")}`;
   const isCustomDomain = !!opts.isCustomDomain;
+  const home = String(opts.homeUrl || "https://yourrank.site").replace(/\/$/, "");
+  const pageUrl = isCustomDomain ? home : `${home}/${esc(opts.slug || "")}`;
+  const canonicalUrl = esc(pageUrl);
   const legalHref = (page) => isCustomDomain ? `/${page}` : `/${esc(opts.slug || "")}/${page}`;
 
   // A brand-new board has no casino/code/prize configured yet. Rendering the
@@ -344,8 +370,9 @@ body[data-preview] .top3{margin-bottom:14px}
 
   // Homepage/brand fallback preview image (1200×630). Served by the Worker at
   // /og.png so shares don't render blank. A board's own logo still wins.
-  const ogFallback = `${esc(opts.homeUrl || "https://yourrank.site")}/og.png`;
+  const ogFallback = `${esc(home)}/og.png`;
   const ogImageUrl = logo || ogFallback;
+  const shareHtml = shareSection(pageUrl, b.name || "Leaderboard");
   const ogImage = `<meta property="og:image" content="${ogImageUrl}" /><meta name="twitter:image" content="${ogImageUrl}" />`;
   const twitterCard = logo ? "summary_large_image" : "summary";
   const title = hasCasino ? `${esc(b.name)} | ${esc(casino)} Leaderboard` : `${esc(b.name)} — Leaderboard`;
@@ -387,6 +414,7 @@ ${tplCss}
 ${themeCss}
 ${sectionCss}
 ${previewCss}
+<style nonce="${opts.nonce}">${shareCss}</style>
 <script nonce="${opts.nonce}" type="application/ld+json">{"@context":"https://schema.org","@type":"ItemList","name":${JSON.stringify(title)},"description":${JSON.stringify(desc)},"numberOfItems":${data.players ? data.players.length : 0}}</script>
 </head><body data-template="${tpl}"${opts.preview ? " data-preview" : ""}${opts.demo ? " data-demo" : ""} ${sectionAttrs}>
 <noscript><p class="noscript-noscroll">This leaderboard requires JavaScript for live updates. The data shown below may not refresh automatically.</p></noscript>
@@ -400,6 +428,7 @@ ${fullPage ? "" : `<div class="field" aria-hidden="true"></div><div class="water
 ${boardTabs}
 <main id="top">
 ${composeMain(tpl, buildParts({ b, esc, heroLogo, hasCasino, casino, period, pool, hasCta, ctaHref, hasPartner, hasCode, code, blurb, whyStats, socials }), textOverrides)}</main>
+${shareHtml}
 ${fullPageFooter}
 ${fullPage ? "" : `<footer class="ftr"><div class="ftr-id"><span class="ftr-name" data-brand-name>${esc(b.name)}</span><span class="ftr-tag" data-tagline>${esc(b.tagline)}</span></div>
 <p class="ftr-fine">18+ only. Gambling can be addictive. Please play responsibly. BeGambleAware.org${hasCasino ? ` · ${esc(b.name)} is not affiliated with ${esc(casino)}.` : "."}</p>
