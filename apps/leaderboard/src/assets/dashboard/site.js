@@ -17,41 +17,140 @@ export const DEFAULT_SECTIONS = {
   payouts: true,
 };
 
-export function renderPlan() {
-  const plan = state.ME.plan || "free";
-  const planNames = { free: "Free", starter: "Starter", pro: "Pro", agency: "Agency" };
-  $("planBadge").textContent = plan.toUpperCase() + " PLAN";
-  $("planName").textContent = planNames[plan] || plan;
-  if (plan === "agency" || plan === "pro") {
-    const until = state.ME.planExpiresAt ? new Date(state.ME.planExpiresAt).toLocaleDateString() : null;
-    const playersLabel = state.ME.limits.players >= 9999 ? "unlimited players" : `up to ${state.ME.limits.players} players`;
-    $("planMeta").textContent = until ? `Active until ${until} · ${playersLabel} · no badge` : `Lifetime · ${playersLabel} · no badge`;
-    $("goPro").textContent = "Extend " + (planNames[plan] || plan) + " (+30 days)";
-  } else if (plan === "starter") {
-    $("planMeta").textContent = `Up to ${state.ME.limits.players} players · no badge · CSV import`;
-    $("goPro").textContent = "Upgrade to Pro — $" + (state.ME.proPrice || 29) + "/mo";
-  } else {
-    $("planMeta").textContent = `Up to ${state.ME.limits.players} players · YourRank badge on your page`;
-    $("goPro").textContent = `Upgrade — plans from $12/mo`;
-  }
+const PLAN_ORDER = ["free", "starter", "pro", "agency"];
+const LIFETIME_KEY = "lifetime";
+
+function isLifetime() {
+  const exp = state.ME?.planExpiresAt;
+  return !exp || Number(exp) === 0 || Number(exp) > new Date("2099-01-01T00:00:00Z").getTime();
+}
+
+function planDefs() {
+  const proPrice = state.ME?.proPrice || 29;
+  return [
+    { key: "free", name: "Free", price: 0, priceStr: "$0", period: "", note: "forever", features: ["1 leaderboard", "Up to 10 players", "YourRank badge", "Basic analytics (7 days)", "Live countdown"] },
+    { key: "starter", name: "Starter", price: 12, priceStr: "$12", period: "/30 days", note: "", features: ["1 leaderboard", "Up to 25 players", "CSV import", "Full analytics (30 days)", "No YourRank badge"] },
+    { key: "pro", name: "Pro", price: proPrice, priceStr: `$${proPrice}`, period: "/30 days", note: "Most popular", features: ["Up to 3 leaderboards", "Up to 9,999 players", "Custom domain", "OBS overlay", "Discord + Telegram alerts"] },
+    { key: "agency", name: "Agency", price: 79, priceStr: "$79", period: "/30 days", note: "", features: ["Up to 99 leaderboards", "White-label branding", "Signed score API", "Dedicated support"] },
+    { key: "lifetime", name: "Lifetime Pro", price: 149, priceStr: "$149", period: "", note: "one-time", features: ["All Pro features", "Pay once, use forever", "No monthly bills"] },
+  ];
 }
 
 let checkingOut = false;
-export async function checkout(btn) {
+let startingTrial = false;
+
+async function startTrial(btn) {
+  if (!btn || startingTrial) return;
+  startingTrial = true;
+  const orig = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = "Starting…";
+  const status = $("trialStatus") || $("status");
+  try {
+    const res = await fetch("/api/billing/trial", { method: "POST", credentials: "include", headers: { "x-csrf-token": getCsrf() } }).then(guardAuth);
+    const d = await res.json();
+    if (res.ok && d.ok) { location.reload(); return; }
+    status.textContent = d.error || "Couldn't start trial.";
+  } catch (err) { logError("trial", err); status.textContent = "Network error."; }
+  btn.disabled = false;
+  btn.textContent = orig;
+  startingTrial = false;
+}
+
+export async function checkout(planOrBtn, btnRef) {
+  const planKey = typeof planOrBtn === "string" ? planOrBtn : (planOrBtn?.dataset?.plan || "pro");
+  const btn = typeof planOrBtn === "object" ? planOrBtn : btnRef;
   if (checkingOut) return;
   checkingOut = true;
-  btn.disabled = true;
-  const orig = btn.textContent;
-  btn.textContent = "Opening checkout…";
+  let orig = "";
+  if (btn) { orig = btn.textContent; btn.disabled = true; btn.textContent = "Opening checkout…"; }
   try {
-    const res = await fetch("/api/billing/checkout", { method: "POST", credentials: "include", headers: { "content-type": "application/json", "x-csrf-token": getCsrf() }, body: JSON.stringify({ plan: "pro" }) }).then(guardAuth);
+    const isLifetime = planKey === LIFETIME_KEY;
+    const endpoint = isLifetime ? "/api/billing/checkout-lifetime" : "/api/billing/checkout";
+    const headers = { "x-csrf-token": getCsrf() };
+    const body = isLifetime ? undefined : JSON.stringify({ plan: planKey });
+    if (!isLifetime) headers["content-type"] = "application/json";
+    const res = await fetch(endpoint, { method: "POST", credentials: "include", headers, body }).then(guardAuth);
     const d = await res.json();
     if (res.ok && d.ok && d.url) { location.href = d.url; return; }
     $("status").textContent = d.error || "Couldn't start checkout.";
   } catch (err) { logError("checkout", err); $("status").textContent = "Network error."; }
-  btn.disabled = false;
-  btn.textContent = orig;
+  if (btn) { btn.disabled = false; btn.textContent = orig; }
   checkingOut = false;
+}
+
+function renderPlanCard(p, isCurrent, isLower, cta, accent) {
+  const classes = ["plan-card"];
+  if (isCurrent) classes.push("plan-card--current");
+  if (p.note === "Most popular") classes.push("plan-card--popular");
+  const disabled = isCurrent || isLower ? "disabled" : "";
+  const btnClass = accent ? "btn btn--sm btn--accent plan-card-cta" : "btn btn--sm plan-card-cta";
+  const note = p.note ? `<span class="plan-card-note">${esc(p.note)}</span>` : "";
+  const list = p.features.map((f) => `<li>${esc(f)}</li>`).join("");
+  return `<div class="${classes.join(" ")}"><div class="plan-card-head"><div class="plan-card-name">${esc(p.name)}${note}</div><div class="plan-card-price">${esc(p.priceStr)}<span>${esc(p.period)}</span></div></div><ul class="plan-card-features">${list}</ul><button class="${btnClass}" data-plan="${esc(p.key)}" ${disabled}>${esc(cta)}</button></div>`;
+}
+
+export function renderPlan() {
+  const plan = state.ME.plan || "free";
+  const isTrial = state.ME.isTrial;
+  const lifetime = isLifetime();
+  const planNames = { free: "Free", starter: "Starter", pro: "Pro", agency: "Agency" };
+  const currentName = lifetime ? "Lifetime Pro" : (planNames[plan] || plan);
+  const expiry = state.ME.planExpiresAt;
+  const until = expiry && !lifetime ? `Active until ${new Date(Number(expiry)).toLocaleDateString()}` : (lifetime ? "No expiry" : "");
+
+  const summary = $("planSummary");
+  if (summary) {
+    summary.innerHTML = `<div class="plan-summary-row"><span class="plan-summary-label">Current plan</span><span class="plan-summary-value">${esc(currentName)}${isTrial ? " (Trial)" : ""}</span></div>${until ? `<div class="plan-summary-row"><span class="plan-summary-label">Expires</span><span class="plan-summary-value">${esc(until)}</span></div>` : ""}`;
+  }
+
+  const grid = $("planGrid");
+  if (grid) {
+    const currentIdx = PLAN_ORDER.indexOf(plan);
+    grid.innerHTML = planDefs().map((p) => {
+      if (p.key === LIFETIME_KEY) {
+        const isCurrent = lifetime;
+        const cta = isCurrent ? "Current plan" : "Get Lifetime Pro";
+        return renderPlanCard(p, isCurrent, false, cta, !isCurrent);
+      }
+      const pIdx = PLAN_ORDER.indexOf(p.key);
+      const isCurrent = p.key === plan && !lifetime;
+      const isLower = pIdx < currentIdx;
+      let cta, accent = false;
+      if (isCurrent) {
+        cta = isTrial ? "Current (trial)" : "Current plan";
+      } else if (isLower) {
+        cta = "Included";
+      } else {
+        cta = p.key === "free" ? "Current" : `Upgrade to ${p.name}`;
+        accent = true;
+      }
+      return renderPlanCard(p, isCurrent, isLower, cta, accent && !isCurrent);
+    }).join("");
+    grid.querySelectorAll("button[data-plan]").forEach((btn) => {
+      btn.addEventListener("click", () => checkout(btn.dataset.plan, btn));
+    });
+  }
+
+  const trialEl = $("planTrial");
+  if (trialEl) {
+    if (plan === "free" && !state.ME.hasTrial) {
+      trialEl.hidden = false;
+      const trialBtn = $("trialBtn");
+      if (trialBtn && !trialBtn._wired) {
+        trialBtn._wired = true;
+        trialBtn.addEventListener("click", () => startTrial(trialBtn));
+      }
+    } else {
+      trialEl.hidden = true;
+    }
+  }
+
+  // Backfill legacy single-plan elements if they still exist
+  if ($("planBadge")) $("planBadge").textContent = (lifetime ? "Lifetime" : plan).toUpperCase() + " PLAN";
+  if ($("planName")) $("planName").textContent = currentName + (isTrial ? " (Trial)" : "");
+  if ($("planMeta")) $("planMeta").textContent = until || `Up to ${state.ME.limits.players} players`;
+  if ($("goPro")) $("goPro").textContent = lifetime ? "Lifetime active" : (plan === "free" ? "Upgrade — plans from $12/mo" : `Extend ${currentName} (+30 days)`);
 }
 
 export function collect() {
@@ -253,7 +352,7 @@ $("logoFile").addEventListener("change", () => {
 });
 $("applyCustomColors").addEventListener("click", () => saveTheme(state.CURRENT_BRANDING.template, $("c_a").value, $("c_b").value, "Custom colors"));
 $("colorsReset").addEventListener("click", () => { const preset = currentTemplate()?.presets?.[0]; if (preset) saveTheme(state.CURRENT_BRANDING.template, preset.accentA, preset.accentB, preset.name); });
-$("brandUpgrade").addEventListener("click", (e) => { e.preventDefault(); checkout($("goPro")); });
+$("brandUpgrade").addEventListener("click", (e) => { e.preventDefault(); checkout("pro", e.target); });
 
 export function renderNotifications(n) {
   const paid = state.ME.plan !== "free";
@@ -586,10 +685,10 @@ export async function loadStats() {
 }
 
 $("logout")?.addEventListener("click", async (e) => { e.preventDefault(); await fetch("/api/auth/logout", { method: "POST", credentials: "include", headers: { "x-csrf-token": getCsrf() } }); location.href = "/login"; });
-$("upgrade")?.addEventListener("click", (e) => { e.preventDefault(); checkout($("goPro")); });
-$("goPro")?.addEventListener("click", () => checkout($("goPro")));
-$("domainUpgrade")?.addEventListener("click", (e) => { e.preventDefault(); checkout($("goPro")); });
-$("overlayUpgrade")?.addEventListener("click", (e) => { e.preventDefault(); checkout($("goPro")); });
+$("upgrade")?.addEventListener("click", (e) => { e.preventDefault(); checkout("pro", e.target); });
+$("goPro")?.addEventListener("click", (e) => { e.preventDefault(); checkout("pro", e.target); });
+$("domainUpgrade")?.addEventListener("click", (e) => { e.preventDefault(); checkout("pro", e.target); });
+$("overlayUpgrade")?.addEventListener("click", (e) => { e.preventDefault(); checkout("pro", e.target); });
 $("testDiscord")?.addEventListener("click", async () => {
   const s = $("testDiscordStatus"); if (s) s.textContent = "Sending…";
   try {

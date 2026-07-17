@@ -212,10 +212,11 @@ export const dashboardPage = leaderboardPageHtml({
 <button class="btn btn--accent self-end" id="a_go" type="button">Close out period</button></div>
 <div class="arch-list" id="archList"></div>
 <div class="empty" id="archEmpty" hidden>No closed-out periods yet. Your first one shows up here and on your page.</div></div>
-<div class="card" id="planCard"><h2>Plan &amp; billing</h2><p class="card-sub">Upgrade to unlock more players, boards and features.</p>
-<div class="plan-row"><div><div class="plan-name" id="planName">Free</div><div class="hint" id="planMeta">Up to 10 players · YourRank badge on your page</div></div>
-<button class="btn btn--accent" id="goPro">Upgrade</button></div>
-<p class="hint" id="planHint">Pay with crypto (BTC, ETH, USDT and 100+ more). Activates automatically once the network confirms — usually a few minutes. <a href="/dashboard/billing">See all plans</a>.</p></div>
+<div class="card" id="planCard"><h2>Plan &amp; billing</h2><p class="card-sub">Pick the plan that fits your stream, or start a free Pro trial.</p>
+<div class="plan-summary" id="planSummary"></div>
+<div class="plan-grid" id="planGrid"></div>
+<div class="plan-trial" id="planTrial" hidden><p class="hint">Not ready to pay? Try every Pro feature free for 7 days.</p><button class="btn btn--accent" id="trialBtn" type="button">Start free Pro trial</button><p class="status" id="trialStatus" role="status" aria-live="polite"></p></div>
+<p class="hint" id="planHint">Paid plans are billed in crypto (BTC, ETH, USDT and 100+ more) and activate automatically once the network confirms. <a href="/dashboard/billing">See billing details →</a></p></div>
 </section>
 </div>
 </div>
