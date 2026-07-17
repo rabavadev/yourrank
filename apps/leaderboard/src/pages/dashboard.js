@@ -61,7 +61,9 @@ export const dashboardPage = leaderboardPageHtml({
 <button type="button" data-jump="board"><span class="lb-qa-t">Set the prize</span><span class="lb-qa-d">Prize pool, casino and your code</span></button>
 <button type="button" data-jump="design"><span class="lb-qa-t">Pick a design</span><span class="lb-qa-d">One click publishes it</span></button>
 <button type="button" id="ov_copyLink"><span class="lb-qa-t">Copy your page link</span><span class="lb-qa-d">Share it anywhere</span></button>
+<a class="lb-qa" href="/demo" target="_blank"><span class="lb-qa-t">View demo</span><span class="lb-qa-d">See a live example board</span></a>
 </div>
+<div class="card"><h2>Your leaderboard works without Telegram</h2><p class="card-sub">The web page is the core channel. A Telegram bot is optional and just gives viewers another way to interact.</p><div class="d-flex gap-10 flex-wrap"><a class="btn btn--sm" href="/dashboard/bot/setup">Connect a bot (optional)</a><a class="btn btn--sm btn--ghost" href="/demo" target="_blank">View demo</a></div></div>
 <div class="stat-tiles">
 <div class="stat-tile"><span class="stat-num" id="ov_pool">–</span><span class="stat-lbl">Prize pool</span></div>
 <div class="stat-tile"><span class="stat-num" id="ov_players">–</span><span class="stat-lbl">Players</span></div>
@@ -178,7 +180,7 @@ export const dashboardPage = leaderboardPageHtml({
 <div id="domainStatus" class="hint mt-8 min-h-18" role="status" aria-live="polite"></div>
 </div>
 <div class="empty" id="domainLock" hidden>Custom domains are a Pro feature. <a href="#" id="domainUpgrade">Upgrade to unlock it</a>.</div></div>
-<div class="card" id="notifyCard"><h2>Notifications <span class="pill pill--info ml-6">PRO</span></h2><p class="card-sub">Get alerted when your leaderboard resets or a player breaks into the top 3. Discord and Telegram supported.</p>
+<div class="card" id="notifyCard"><h2>Notifications <span class="pill pill--info ml-6">PRO</span></h2><p class="card-sub">Optional alerts when your leaderboard resets or a player breaks into the top 3. Discord and Telegram supported — the leaderboard itself works without either.</p>
 <div id="notifyBody">
 <div class="field"><label>Events that trigger notifications</label>
 <div class="d-flex gap-8 flex-wrap mb-4">

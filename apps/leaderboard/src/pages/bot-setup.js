@@ -6,7 +6,7 @@ export const botSetupPage = leaderboardPageHtml({
   canonical: "https://yourrank.site/dashboard/bot/setup",
   noscript: "<p>YourRank requires JavaScript</p><p>Please enable JavaScript in your browser settings to set up your Telegram bot.</p>",
   scripts: ['<script src="/assets/bot-setup.js?v=2"></script>'],
-  content: `<div class="dash-head"><div><h1>🤖 Connect your Telegram bot</h1><p class="live-link">Walk through the 4 steps below — takes about 2 minutes.</p></div></div>
+  content: `<div class="dash-head"><div><h1>🤖 Connect your Telegram bot (optional)</h1><p class="live-link">Your leaderboard works without a bot — this is just an extra channel for your audience.</p></div></div>
 <p class="mt-8"><a href="/dashboard" class="back-link">← Back to Dashboard</a></p>
 
 <div class="card"><h2>Step 1</h2><p class="card-sub">Open @BotFather on Telegram — it's Telegram's official bot for creating bots.</p>
