@@ -274,7 +274,7 @@ function archiveShape(a) {
 // Plan-aware archive limits
 export const ARCHIVE_LIMITS = { free: 6, starter: 6, pro: 24, agency: 999 };
 
-async function getArchives(env, siteId, limit = 6) {
+export async function getArchives(env, siteId, limit = 6) {
     const rows = await query(
       `SELECT id, label, snapshot_json,
               (EXTRACT(EPOCH FROM created_at) * 1000)::double precision AS created_at

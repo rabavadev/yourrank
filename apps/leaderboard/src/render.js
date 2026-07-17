@@ -397,6 +397,7 @@ body[data-sections-countdown="false"] .countdown,
 body[data-sections-cta="false"] .hero-cta,
 body[data-sections-payouts="false"] .payouts { display: none !important; }
 </style>`;
+  const profileLinkCss = `<style nonce="${opts.nonce}">.yr-profile-link{color:inherit;text-decoration:none;cursor:pointer}.yr-profile-link:hover{text-decoration:underline;opacity:.85}</style>`;
   return `<!DOCTYPE html>
 <html lang="en"><head>
 <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -412,6 +413,7 @@ body[data-sections-payouts="false"] .payouts { display: none !important; }
 ${fullPage ? "" : `<link rel="stylesheet" href="/assets/leaderboard.css" />`}
 ${tplCss}
 ${themeCss}
+${profileLinkCss}
 ${sectionCss}
 ${previewCss}
 <style nonce="${opts.nonce}">${shareCss}</style>
@@ -513,6 +515,104 @@ ${fontLink}${cssLink}${templateStyle}
 <a class="skip-link" href="#main-content">Skip to content</a>
 ${header}
 <main class="${fullPage ? "legal-page__wrap" : "legal"}" id="main-content"><h1>${esc(title)}</h1><p class="${fullPage ? "legal-page__updated" : "legal-updated"}">Last updated: ${new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })}</p>${bodyHtml}<a class="${fullPage ? "legal-page__back" : ""}" href="${homeHref}">← Back to ${esc(b.name || "leaderboard")}</a></main>
+${footer}
+</body></html>`;
+}
+
+function fmtCurrency(n) {
+  const v = Number(n) || 0;
+  return v.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
+}
+
+function fmtNumber(n) {
+  return Number(n || 0).toLocaleString("en-US");
+}
+
+function playerBackHref(opts) {
+  return opts.isCustomDomain ? "/" : `/${esc(opts.slug || "")}`;
+}
+
+export function renderPlayerProfile(data, player, history, opts) {
+  const b = data.brand || {};
+  const br = data.branding || {};
+  const tpl = br.template || "classic";
+  const fullPage = CASINO_FULL.has(tpl);
+  const logo = opts.logoUrl ? esc(opts.logoUrl) : null;
+  const navLogo = logo ? `<img class="nav-logo" src="${logo}" alt="" />` : "";
+  const homeHref = opts.isCustomDomain ? "/" : `/${esc(opts.slug || "")}`;
+  const profileHref = (name) => opts.isCustomDomain ? `/player/${encodeURIComponent(name)}` : `/${esc(opts.slug || "")}/player/${encodeURIComponent(name)}`;
+  const backHref = playerBackHref(opts);
+  const frameStyles = fullPage ? frameCss(tpl) : "";
+  const templateStyle = frameStyles ? `<style nonce="${opts.nonce}" data-template="${tpl}">${frameStyles}</style>` : "";
+  const fontLink = fullPage
+    ? `<link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin /><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet" />`
+    : `<link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin /><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />`;
+  const cssLink = fullPage ? "" : `<link rel="stylesheet" href="/assets/app.css" />`;
+  const legalHref = (page) => opts.isCustomDomain ? `/${page}` : `/${esc(opts.slug || "")}/${page}`;
+  const header = fullPage
+    ? `<header class="site-header--full"><a class="site-header--full__brand" href="${homeHref}">${navLogo}<span data-brand-name>${esc(b.name)}</span></a><nav class="site-header--full__nav" aria-label="Page sections"><a href="${homeHref}">Leaderboard</a><a href="${legalHref("terms")}">Terms</a><a href="${legalHref("privacy")}">Privacy</a></nav></header>`
+    : `<header class="topbar"><a class="brand" href="${homeHref}">${esc(b.name || "YourRank")}</a></header>`;
+  const footer = fullPage
+    ? `<footer class="site-footer--full"><div class="site-footer--full__brand" data-brand-name>${esc(b.name)}</div><div class="site-footer--full__tag" data-tagline>${esc(b.tagline)}</div><p class="site-footer--full__fine">18+ only. Gambling can be addictive. Please play responsibly. BeGambleAware.org.</p><p class="site-footer--full__copy">© ${new Date().getFullYear()} <span data-brand-name>${esc(b.name)}</span>. All rights reserved.</p></footer>`
+    : `<footer class="ftr"><div class="ftr-id"><span class="ftr-name" data-brand-name>${esc(b.name)}</span><span class="ftr-tag" data-tagline>${esc(b.tagline)}</span></div><p class="ftr-fine">18+ only. Gambling can be addictive. Please play responsibly. BeGambleAware.org.</p><p class="ftr-copy">© ${new Date().getFullYear()} <span data-brand-name>${esc(b.name)}</span>. All rights reserved.</p></footer>`;
+  const pageTitle = `${esc(player.name)} · ${esc(b.name || "YourRank")}`;
+  const canonical = `${esc(opts.homeUrl || "https://yourrank.site")}${profileHref(player.name)}`;
+
+  const stats = [
+    { label: "Wagered", value: fmtCurrency(player.wagered) },
+    { label: "Prize", value: fmtCurrency(player.prize) },
+    { label: "Score", value: fmtNumber(player.score) },
+    { label: "Hands", value: fmtNumber(player.hands) },
+    { label: "Net profit", value: fmtCurrency(player.netProfit) },
+    { label: "Win rate", value: `${fmtNumber(player.winRate)}%` },
+    { label: "Change", value: player.change > 0 ? `+${fmtNumber(player.change)}` : fmtNumber(player.change) },
+  ];
+  const statsHtml = stats.map((s) => `<div class="pp-stat"><span class="pp-stat-val">${esc(s.value)}</span><span class="pp-stat-label">${esc(s.label)}</span></div>`).join("");
+
+  const historyHtml = history.length
+    ? `<table class="pp-history"><thead><tr><th>Period</th><th>Rank</th><th>Wagered</th><th>Prize</th></tr></thead><tbody>${history.map((h) => `<tr><td>${esc(h.label)}</td><td>#${fmtNumber(h.rank)}</td><td>${fmtCurrency(h.wagered)}</td><td>${fmtCurrency(h.prize)}</td></tr>`).join("")}</tbody></table>`
+    : `<p class="pp-empty">No archived history yet. This page will show past rankings once the streamer closes out a leaderboard period.</p>`;
+
+  const profileStyle = `<style nonce="${opts.nonce}">
+.pp-wrap{max-width:760px;margin:0 auto;padding:32px 24px}
+.pp-card{background:var(--panel,#13131a);border:1px solid var(--line-2,rgba(150,120,220,.2));border-radius:16px;padding:28px;margin-bottom:20px}
+.pp-title{font-size:clamp(28px,4vw,44px);font-weight:800;letter-spacing:-.02em;margin:0 0 6px}
+.pp-rank{display:inline-block;background:var(--accent,#c8ff00);color:#000;font-weight:700;padding:6px 14px;border-radius:999px;font-size:13px}
+.pp-stats{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:14px;margin-top:22px}
+.pp-stat{background:var(--panel-2,#1a1a22);border:1px solid var(--line,rgba(150,120,220,.15));border-radius:10px;padding:14px}
+.pp-stat-val{display:block;font-size:18px;font-weight:700;margin-bottom:4px}
+.pp-stat-label{display:block;font-size:12px;color:var(--ink-soft,#9a94b8)}
+.pp-history{width:100%;border-collapse:collapse;font-size:14px}
+.pp-history th,.pp-history td{padding:10px 8px;border-bottom:1px solid var(--line-2,rgba(150,120,220,.2));text-align:left}
+.pp-history th{color:var(--ink-soft,#9a94b8);font-weight:600}
+.pp-empty{color:var(--ink-soft,#9a94b8);font-size:14px}
+.pp-back{display:inline-block;margin-top:18px;color:var(--ink-soft,#9a94b8);text-decoration:none}
+.pp-back:hover{color:var(--ink,#ededf0)}
+</style>`;
+
+  return `<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>${pageTitle}</title><meta name="description" content="${esc(player.name)} profile on ${esc(b.name || "YourRank")}." />
+<link rel="canonical" href="${canonical}" />
+${fontLink}${cssLink}${templateStyle}${profileStyle}
+</head><body data-template="${tpl}" class="${fullPage ? "legal-page" : "legal"}">
+<a class="skip-link" href="#main-content">Skip to content</a>
+${header}
+<main class="${fullPage ? "legal-page__wrap" : "legal"}" id="main-content">
+<div class="pp-wrap">
+  <div class="pp-card">
+    <h1 class="pp-title">${esc(player.name)}</h1>
+    <span class="pp-rank">Rank #${fmtNumber(player.rank)}</span>
+    <div class="pp-stats">${statsHtml}</div>
+  </div>
+  <div class="pp-card">
+    <h2 class="sec-title">History</h2>
+    ${historyHtml}
+  </div>
+  <a class="pp-back" href="${backHref}">← Back to ${esc(b.name || "leaderboard")}</a>
+</div>
+</main>
 ${footer}
 </body></html>`;
 }

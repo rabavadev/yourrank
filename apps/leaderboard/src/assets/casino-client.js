@@ -1,6 +1,7 @@
 // Client-side top-3 / row builders for full-page casino designs.
 (function () {
-  const yr = () => window.__yr || { esc: (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])), moneyShort: (n) => "$" + Number(n).toLocaleString("en-US", {maximumFractionDigits:0}), money: (n) => "$" + Number(n).toLocaleString("en-US", {minimumFractionDigits:2, maximumFractionDigits:2}) };
+  const yr = () => window.__yr || { playerHref: (name) => { const slug = window.__SLUG__ || ""; return slug ? `/${encodeURIComponent(slug)}/player/${encodeURIComponent(name)}` : `/player/${encodeURIComponent(name)}`; }, esc: (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])), moneyShort: (n) => "$" + Number(n).toLocaleString("en-US", {maximumFractionDigits:0}), money: (n) => "$" + Number(n).toLocaleString("en-US", {minimumFractionDigits:2, maximumFractionDigits:2}) };
+  const linkName = (n) => `<a class="yr-profile-link" href="${yr().playerHref(n)}">${yr().esc(n)}</a>`;
   const fmtScore = (n) => Number(n).toLocaleString("en-US", {maximumFractionDigits:0});
   const wordInitials = (name) => {
     const parts = String(name).split(/[\s_]+/).filter(Boolean);
@@ -11,7 +12,7 @@
   const maxWagered = () => { const ps = (window.__SITE_DATA__?.players || []); return ps.length ? Math.max(...ps.map((p) => Number(p.wagered) || 0)) : 1; };
 
   function top3Arcade(pl, rank) {
-    const name = yr().esc(pl.name);
+    const name = linkName(pl.name);
     const score = fmtScore(pl.wagered);
     const initials = wordInitials(pl.name);
     if (rank === 1) return `<div class="flex flex-col items-center relative w-[38%] max-w-[240px] transform -translate-y-4 md:-translate-y-8"><div class="absolute inset-0 bg-[#FF00FF] blur-[40px] opacity-30 animate-pulse pointer-events-none"></div><div class="text-4xl md:text-5xl mb-3 z-10 relative">🏆</div><div class="w-full bg-gradient-to-b from-[#FF00FF] to-[#800080] p-4 md:p-6 flex flex-col items-center border-[4px] border-[#FF00FF] shadow-[0_0_25px_rgba(255,0,255,0.6),inset_0_0_15px_rgba(0,0,0,0.5)] relative z-10"><div class="absolute -top-3 -right-3 text-2xl animate-bounce">💥</div><div class="absolute -top-2 -left-2 text-xl animate-bounce [animation-delay:0.3s]">🎮</div><div class="w-16 h-16 md:w-20 md:h-20 bg-black flex items-center justify-center text-[#FF00FF] text-base md:text-xl mb-4 border-[4px] border-[#FF00FF] shadow-[0_0_10px_#FF00FF] [font-family:'Press_Start_2P',_system-ui]">${initials}</div><div class="text-center w-full"><div class="text-white text-[10px] md:text-[12px] truncate w-full [font-family:'Press_Start_2P',_system-ui]">${name}</div><div class="text-[#FFD700] text-[12px] md:text-sm mt-2 tabular-nums drop-shadow-[0_0_5px_#FFD700] [font-family:'Press_Start_2P',_system-ui]">${score}</div></div></div><div class="h-20 w-full bg-gradient-to-b from-[#800080] to-[#330033] border-x-[4px] border-b-[4px] border-[#4D004D] flex items-center justify-center relative z-10 shadow-[0_10px_0_#000000]"><span class="text-[#FF00FF] text-2xl opacity-90 drop-shadow-[0_0_8px_#FF00FF] [font-family:'Press_Start_2P',_system-ui]">${rank}</span></div></div>`;
@@ -21,7 +22,7 @@
   }
 
   function rowArcade(pl, rank, delay, gap) {
-    const name = yr().esc(pl.name);
+    const name = linkName(pl.name);
     const score = fmtScore(pl.wagered);
     const rankStr = rank;
     const upSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-trending-up w-3 h-3" aria-hidden="true"><path d="M16 7h6v6" /><path d="m22 7-8.5 8.5-5-5L2 17" /></svg>`;
@@ -31,7 +32,7 @@
   }
 
   function top3Candy(pl, rank) {
-    const name = yr().esc(pl.name);
+    const name = linkName(pl.name);
     const score = fmtScore(pl.wagered);
     const initials = wordInitials(pl.name);
     if (rank === 1) return `<div class="flex flex-col items-center relative w-[38%] max-w-[240px] z-20 transform -translate-y-6 md:-translate-y-10"><div class="absolute inset-0 bg-[#FFE500] blur-[50px] opacity-50 rounded-full animate-pulse pointer-events-none"></div><div class="absolute -top-14 -right-8 text-5xl animate-bounce [animation-duration:3s]">🍭</div><div class="text-6xl md:text-8xl mb-3 filter drop-shadow-lg z-10 relative">🍭</div><div class="w-full bg-gradient-to-b from-[#FFE500] to-[#FFC400] rounded-[2.5rem] p-5 md:p-6 flex flex-col items-center shadow-[0_20px_40px_rgba(255,229,0,0.5)] border-[5px] border-white relative z-10"><div class="absolute -top-4 -right-4 text-4xl animate-bounce">✨</div><div class="absolute -top-2 -left-3 text-3xl animate-bounce [animation-delay:0.3s]">🪙</div><div class="w-20 h-20 md:w-28 md:h-28 bg-white rounded-full flex items-center justify-center text-[#FFC400] text-3xl md:text-5xl shadow-[inset_0_5px_10px_rgba(0,0,0,0.1)] mb-4 border-[5px] border-[#FFE500]/50 [font-family:'Fredoka_One',_cursive]">${initials}</div><div class="text-center w-full"><div class="text-[#FF1493] text-base md:text-2xl truncate w-full drop-shadow-sm [font-family:'Fredoka_One',_cursive]">${name}</div><div class="text-white font-black text-lg md:text-3xl mt-1 tabular-nums drop-shadow-[0_3px_0_#FF9100]">${score}</div></div></div><div class="h-20 w-full bg-[#FF9100] rounded-b-[2.5rem] shadow-xl border-x-[5px] border-b-[5px] border-white flex items-center justify-center relative z-[0] -mt-8 pt-8"><span class="text-white font-bold text-4xl opacity-90 [font-family:'Fredoka_One',_cursive]">${rank}</span></div></div>`;
@@ -41,7 +42,7 @@
   }
 
   function rowCandy(pl, rank, delay, gap) {
-    const name = yr().esc(pl.name);
+    const name = linkName(pl.name);
     const score = fmtScore(pl.wagered);
     const rankStr = rank;
     const upSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-trending-up w-3 h-3" aria-hidden="true"><path d="M16 7h6v6" /><path d="m22 7-8.5 8.5-5-5L2 17" /></svg>`;
@@ -51,7 +52,7 @@
   }
 
   function top3Fun(pl, rank) {
-    const name = yr().esc(pl.name);
+    const name = linkName(pl.name);
     const score = fmtScore(pl.wagered);
     const initials = wordInitials(pl.name);
     if (rank === 1) return `<div class="flex flex-col items-center relative w-1/3 max-w-[240px] z-20 transform -translate-y-4 md:-translate-y-8"><div class="absolute inset-0 bg-[#FBBF24] blur-[40px] opacity-40 rounded-full animate-pulse pointer-events-none"></div><div class="text-5xl md:text-7xl mb-2 filter drop-shadow-lg z-10 relative">👑</div><div class="w-full bg-gradient-to-b from-[#FBBF24] to-[#F59E0B] rounded-t-2xl rounded-b-lg p-4 md:p-6 flex flex-col items-center shadow-[0_15px_30px_rgba(0,0,0,0.6)] border-4 border-[#FEF08A] relative z-10"><div class="absolute -top-3 -right-3 text-3xl animate-bounce">✨</div><div class="absolute -top-2 -left-2 text-2xl animate-bounce [animation-delay:0.3s]">🪙</div><div class="w-20 h-20 md:w-28 md:h-28 bg-white rounded-full flex items-center justify-center text-[#D97706] text-3xl md:text-4xl shadow-[inset_0_4px_10px_rgba(0,0,0,0.2)] mb-4 border-4 border-white/40 [font-family:'Fredoka_One',_cursive]">${initials}</div><div class="text-center w-full"><div class="text-black text-base md:text-2xl truncate w-full [font-family:'Fredoka_One',_cursive]">${name}</div><div class="text-white font-black text-lg md:text-2xl mt-1 tabular-nums drop-shadow-[0_2px_2px_rgba(0,0,0,0.5)]">${score}</div></div></div><div class="h-20 w-full bg-gradient-to-b from-[#D97706] to-[#92400E] rounded-b-xl shadow-lg border-x-4 border-b-4 border-[#B45309] flex items-center justify-center relative z-10"><span class="text-[#FEF08A] font-bold text-4xl opacity-50 [font-family:'Fredoka_One',_cursive]">${rank}</span></div></div>`;
@@ -61,7 +62,7 @@
   }
 
   function rowFun(pl, rank, delay, gap) {
-    const name = yr().esc(pl.name);
+    const name = linkName(pl.name);
     const score = fmtScore(pl.wagered);
     const rankStr = rank;
     const upSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-trending-up w-3 h-3" aria-hidden="true"><path d="M16 7h6v6" /><path d="m22 7-8.5 8.5-5-5L2 17" /></svg>`;
@@ -71,7 +72,7 @@
   }
 
   function top3Space(pl, rank) {
-    const name = yr().esc(pl.name);
+    const name = linkName(pl.name);
     const score = fmtScore(pl.wagered);
     const initials = wordInitials(pl.name);
     if (rank === 1) return `<div class="flex flex-col items-center relative w-1/3 max-w-[240px] z-20 transform -translate-y-4 md:-translate-y-8 hover:-translate-y-10 transition-transform duration-300"><div class="absolute inset-0 bg-[#FFFBEB] blur-[60px] opacity-20 rounded-full animate-pulse pointer-events-none"></div><div class="text-5xl md:text-6xl mb-4 filter drop-shadow-[0_0_20px_#FFFBEB] z-10 relative animate-[pulse_2s_ease-in-out_infinite]">🌟</div><div class="w-full bg-[#1E1B4B] rounded-t-xl rounded-b-md p-4 md:p-6 flex flex-col items-center shadow-[0_0_30px_#FFFBEB] border-2 border-[#FFFBEB] relative z-10 overflow-hidden group cursor-pointer"><div class="absolute inset-0 bg-gradient-to-b from-[#FFFBEB]/20 to-transparent pointer-events-none group-hover:from-[#FFFBEB]/40 transition-colors"></div><div class="relative mb-4"><div class="absolute inset-[-10px] rounded-full border border-[#FFFBEB]/50 animate-[spin_4s_linear_infinite] border-t-transparent z-0"></div><div class="absolute inset-[-18px] rounded-full border border-[#FFFBEB]/30 animate-[spin_6s_linear_infinite_reverse] border-b-transparent z-0"></div><div class="w-16 h-16 md:w-20 md:h-20 bg-[#080B1A] rounded-full flex items-center justify-center text-[#FFFBEB] text-2xl md:text-3xl shadow-[0_0_20px_#FFFBEB] border-2 border-[#FFFBEB] relative z-10 [font-family:'Orbitron',_sans-serif] [font-weight:900]">${initials}</div></div><div class="text-center w-full z-10"><div class="text-white text-[12px] md:text-base truncate w-full tracking-widest text-shadow-sm [font-family:'Orbitron',_sans-serif] [font-weight:700]">${name}</div><div class="text-[#FFFBEB] font-black text-lg md:text-2xl mt-1 tabular-nums drop-shadow-[0_0_8px_#FFFBEB] [font-family:'Inter',_sans-serif]">${score}</div></div></div><div class="h-16 w-full bg-[#2E285C] rounded-b-lg shadow-lg border-x-2 border-b-2 border-[#FFFBEB]/50 flex items-center justify-center relative z-10"><span class="text-[#FFFBEB] font-black text-3xl opacity-90 drop-shadow-[0_0_10px_#FFFBEB] [font-family:'Orbitron',_sans-serif]">${rank}</span></div></div>`;
@@ -81,7 +82,7 @@
   }
 
   function rowSpace(pl, rank, delay, gap) {
-    const name = yr().esc(pl.name);
+    const name = linkName(pl.name);
     const score = fmtScore(pl.wagered);
     const rankStr = rank;
     const upSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-trending-up w-3 h-3" aria-hidden="true"><path d="M16 7h6v6" /><path d="m22 7-8.5 8.5-5-5L2 17" /></svg>`;
@@ -91,7 +92,7 @@
   }
 
   function top3Tropical(pl, rank) {
-    const name = yr().esc(pl.name);
+    const name = linkName(pl.name);
     const score = fmtScore(pl.wagered);
     const initials = wordInitials(pl.name);
     if (rank === 1) return `<div class="flex flex-col items-center relative w-1/3 max-w-[240px] z-20 transform -translate-y-4 md:-translate-y-8"><div class="absolute inset-0 bg-[#FFE66D] blur-[40px] opacity-40 rounded-full animate-pulse pointer-events-none"></div><div class="text-5xl md:text-7xl mb-2 filter drop-shadow-lg z-10 relative">🏆</div><div class="w-full bg-gradient-to-b from-[#FFE66D] to-[#FBBF24] rounded-t-full rounded-b-[24px] p-4 md:p-6 flex flex-col items-center shadow-[0_15px_30px_rgba(0,0,0,0.4)] border-4 border-[#FFE66D]/80 relative z-10"><div class="absolute -top-3 -right-3 text-3xl animate-bounce">🍍</div><div class="absolute -top-2 -left-2 text-2xl animate-bounce [animation-delay:0.3s]">🥥</div><div class="w-20 h-20 md:w-28 md:h-28 bg-white rounded-full flex items-center justify-center text-[#D97706] text-3xl md:text-4xl shadow-[inset_0_4px_10px_rgba(0,0,0,0.1)] mb-4 border-4 border-white/40 [font-family:'Pacifico',_cursive]">${initials}</div><div class="text-center w-full"><div class="text-[#92400E] text-lg md:text-2xl truncate w-full [font-family:'Pacifico',_cursive]">${name}</div><div class="text-white font-black text-lg md:text-2xl mt-1 tabular-nums drop-shadow-[0_2px_2px_rgba(0,0,0,0.3)] [font-family:'Inter',_sans-serif]">${score}</div></div></div><div class="h-20 w-full bg-gradient-to-b from-[#F59E0B] to-[#D97706] rounded-b-3xl shadow-lg border-x-4 border-b-4 border-[#B45309] flex items-center justify-center relative z-0 -mt-6 pt-6"><span class="text-[#FEF08A] font-bold text-4xl opacity-50 [font-family:'Inter',_sans-serif]">${rank}</span></div></div>`;
@@ -101,7 +102,7 @@
   }
 
   function rowTropical(pl, rank, delay, gap) {
-    const name = yr().esc(pl.name);
+    const name = linkName(pl.name);
     const score = fmtScore(pl.wagered);
     const rankStr = rank;
     const upSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-trending-up w-3 h-3" aria-hidden="true"><path d="M16 7h6v6" /><path d="m22 7-8.5 8.5-5-5L2 17" /></svg>`;
@@ -111,7 +112,7 @@
   }
 
   function top3Underwater(pl, rank) {
-    const name = yr().esc(pl.name);
+    const name = linkName(pl.name);
     const score = fmtScore(pl.wagered);
     const initials = wordInitials(pl.name);
     if (rank === 1) return `<div class="flex flex-col items-center relative w-1/3 max-w-[240px] z-20 transform -translate-y-4 md:-translate-y-8"><div class="absolute inset-0 bg-[#FF6B9D] blur-[50px] opacity-30 rounded-full animate-pulse pointer-events-none"></div><div class="text-5xl md:text-7xl mb-2 filter drop-shadow-[0_0_20px_#FF6B9D] z-10 relative">🦑</div><div class="w-full bg-[#001F2D]/90 backdrop-blur-md rounded-t-2xl rounded-b-lg p-4 md:p-6 flex flex-col items-center shadow-[0_0_30px_rgba(255,107,157,0.6)] border-2 border-[#FF6B9D] relative z-10"><div class="absolute -top-3 -right-3 text-3xl animate-bounce">🫧</div><div class="absolute -top-2 -left-2 text-2xl animate-bounce [animation-delay:0.3s]">🐠</div><div class="w-20 h-20 md:w-28 md:h-28 bg-[#0D0D2B] rounded-full flex items-center justify-center text-[#FF6B9D] text-3xl md:text-4xl shadow-[0_0_20px_inset_#FF6B9D] mb-4 border-2 border-[#FF6B9D]/60 [font-family:'Baloo_2',_cursive] [font-weight:800]">${initials}</div><div class="text-center w-full"><div class="text-white text-base md:text-2xl truncate w-full [font-family:'Baloo_2',_cursive] [font-weight:800] [text-shadow:0_0_10px_rgba(255,255,255,0.5)]">${name}</div><div class="text-[#FF6B9D] font-black text-lg md:text-2xl mt-1 tabular-nums drop-shadow-[0_0_10px_#FF6B9D] [font-family:'Inter',_sans-serif]">${score}</div></div></div><div class="h-20 w-full bg-[#001824] rounded-b-xl shadow-lg border-x-2 border-b-2 border-[#FF6B9D]/50 flex items-center justify-center relative z-10 overflow-hidden"><div class="absolute inset-0 bg-gradient-to-t from-[#FF6B9D]/20 to-transparent"></div><span class="text-[#FF6B9D] font-bold text-4xl opacity-90 drop-shadow-[0_0_15px_#FF6B9D] [font-family:'Baloo_2',_cursive]">${rank}</span></div></div>`;
@@ -121,7 +122,7 @@
   }
 
   function rowUnderwater(pl, rank, delay, gap) {
-    const name = yr().esc(pl.name);
+    const name = linkName(pl.name);
     const score = fmtScore(pl.wagered);
     const rankStr = rank;
     const upSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-trending-up w-3 h-3" aria-hidden="true"><path d="M16 7h6v6" /><path d="m22 7-8.5 8.5-5-5L2 17" /></svg>`;
@@ -133,7 +134,7 @@
   function top3Vip(pl, rank) { return ""; }
 
   function rowVip(pl, rank, delay, gap) {
-    const name = yr().esc(pl.name);
+    const name = linkName(pl.name);
     const score = yr().moneyShort(pl.wagered);
     const rankStr = String(rank).padStart(2, '0');
     const arrowUp = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-arrow-up w-3 h-3 text-[#C9A84C]" aria-hidden="true"><path d="m5 12 7-7 7 7" /><path d="M12 19V5" /></svg>`;
@@ -148,7 +149,7 @@
   }
 
   function top3Western(pl, rank) {
-    const name = yr().esc(pl.name);
+    const name = linkName(pl.name);
     const score = fmtScore(pl.wagered);
     const initials = wordInitials(pl.name);
     if (rank === 1) return `<div class="flex flex-col items-center relative w-1/3 max-w-[240px] z-20 transform -translate-y-4 md:-translate-y-8"><div class="absolute inset-0 bg-[#F5A623] blur-[50px] opacity-30 rounded-full animate-pulse pointer-events-none"></div><div class="text-5xl md:text-7xl mb-2 filter drop-shadow-[0_4px_4px_rgba(0,0,0,0.5)] z-10 relative">🏆</div><div class="w-full bg-gradient-to-b from-[#EEDC9A] to-[#C8A951] rounded-t-lg rounded-b-md p-4 md:p-6 flex flex-col items-center shadow-[0_15px_30px_rgba(0,0,0,0.9)] border-4 border-[#F5A623] relative z-10"><div class="absolute -top-4 -right-4 text-3xl animate-bounce">🤠</div><div class="absolute -top-3 -left-3 text-2xl animate-bounce [animation-delay:0.3s]">🪙</div><div class="w-20 h-20 md:w-28 md:h-28 bg-[#1A0A00] rounded-full flex items-center justify-center text-[#F5A623] text-3xl md:text-4xl shadow-[inset_0_4px_10px_rgba(0,0,0,0.5)] mb-4 border-4 border-[#F5A623] [font-family:'Rye',_serif]">${initials}</div><div class="text-center w-full"><div class="text-[#1A0A00] text-base md:text-2xl truncate w-full [font-family:'Rye',_serif]">${name}</div><div class="text-[#C0392B] font-black text-lg md:text-2xl mt-1 tabular-nums drop-shadow-[0_1px_1px_rgba(255,255,255,0.5)] font-['Inter']">${score}</div></div></div><div class="h-20 w-full bg-gradient-to-b from-[#F5A623] to-[#B87A11] rounded-b-xl shadow-lg border-x-4 border-b-4 border-[#8A5A0A] flex items-center justify-center relative z-10"><span class="text-[#1A0A00] font-bold text-4xl opacity-50 [font-family:'Rye',_serif]">${rank}</span></div></div>`;
@@ -158,7 +159,7 @@
   }
 
   function rowWestern(pl, rank, delay, gap) {
-    const name = yr().esc(pl.name);
+    const name = linkName(pl.name);
     const score = fmtScore(pl.wagered);
     const rankStr = rank;
     const upSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-trending-up w-3 h-3" aria-hidden="true"><path d="M16 7h6v6" /><path d="m22 7-8.5 8.5-5-5L2 17" /></svg>`;
@@ -168,7 +169,7 @@
   }
 
   function rowPro(pl, rank, delay, gap) {
-    const name = yr().esc(pl.name);
+    const name = linkName(pl.name);
     const score = fmtScore(pl.score || pl.wagered || 0);
     const hands = fmtScore(pl.hands || 0);
     const netProfit = Number(pl.netProfit) || (Number(pl.prize) - Number(pl.wagered)) || 0;
@@ -214,7 +215,7 @@
   }
 
   function rowLeaderboardV2(pl, rank, delay, gap) {
-    const name = yr().esc(pl.name);
+    const name = linkName(pl.name);
     const scoreNum = Number(pl.score) || Number(pl.wagered) || 0;
     const score = fmtScore(scoreNum);
     const maxScore = Math.max(1, ...((window.__SITE_DATA__?.players || []).map((p) => Number(p.score || p.wagered) || 0)));
@@ -244,7 +245,7 @@
   }
 
   function top3Leaderboard(pl, rank) {
-    const name = yr().esc(pl.name);
+    const name = linkName(pl.name);
     const scoreNum = Number(pl.score) || Number(pl.wagered) || 0;
     const score = fmtScore(scoreNum);
     const winRate = (Number(pl.winRate) || 0).toFixed(1);
@@ -256,7 +257,7 @@
   }
 
   function rowLeaderboard(pl, rank, _delay, _gap) {
-    const name = yr().esc(pl.name);
+    const name = linkName(pl.name);
     const scoreNum = Number(pl.score) || Number(pl.wagered) || 0;
     const score = fmtScore(scoreNum);
     const winRate = (Number(pl.winRate) || 0).toFixed(1);

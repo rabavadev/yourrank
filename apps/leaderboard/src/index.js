@@ -3,8 +3,8 @@ import { sendErrorToDiscord } from "../../../shared/monitoring.js";
 import { withWorkerFetch } from "../../../shared/with-worker.js";
 import { RateLimiter } from "../../../shared/rate-limiter-do.js";
 import { populateEnv } from "../../../shared/env.js";
-import { getPublicSite, getByUser } from "./site.js";
-import { renderLeaderboard, renderLegalPage } from "./render.js";
+import { getPublicSite, getByUser, getArchives, ARCHIVE_LIMITS } from "./site.js";
+import { renderLeaderboard, renderLegalPage, renderPlayerProfile } from "./render.js";
 import { PAGES } from "./pages.js";
 import { bumpStat } from "./stats.js";
 import { createQueueProducer } from "../../../shared/queue-producer.js";
@@ -38,6 +38,30 @@ function enqueueBump(env, ctx, siteId, field, referer = null) {
   );
   const p = producer.send({ type: "bump", siteId, field, referer, timestamp: Date.now() });
   ctx.waitUntil(p);
+}
+
+function findProfilePlayer(data, rawName) {
+  const name = decodeURIComponent(rawName).trim();
+  const players = (data.players || []).slice().sort((a, b) => (Number(b.wagered) || 0) - (Number(a.wagered) || 0));
+  const idx = players.findIndex((p) => String(p.name || "").toLowerCase() === name.toLowerCase());
+  if (idx === -1) return null;
+  return { player: players[idx], rank: idx + 1 };
+}
+
+async function buildPlayerHistory(env, siteId, rawName, plan) {
+  const name = decodeURIComponent(rawName).trim().toLowerCase();
+  const archives = await getArchives(env, siteId, ARCHIVE_LIMITS[plan] || 6);
+  const out = [];
+  for (const a of archives) {
+    const snap = Array.isArray(a.snapshot_json) ? a.snapshot_json : [];
+    const sorted = snap.slice().sort((x, y) => (Number(y.wagered) || 0) - (Number(x.wagered) || 0));
+    const idx = sorted.findIndex((p) => String(p.name || "").toLowerCase() === name);
+    if (idx !== -1) {
+      const p = sorted[idx];
+      out.push({ label: a.label || "Archived", at: a.created_at, rank: idx + 1, wagered: p.wagered || 0, prize: p.prize || 0 });
+    }
+  }
+  return out;
 }
 
 async function serveLogo(request, path) {
@@ -216,6 +240,22 @@ async function handleRequest(request, env, ctx, meta) {
             const page = path.slice(1);
             return new Response(
               renderLegalPage(r.data, page, {
+                nonce, slug: customSlug, homeUrl: `https://${host}`, isCustomDomain: true,
+                logoUrl: paid && r.data.branding?.hasLogo ? `https://${host}/logo/${customSlug}` : null,
+              }),
+              { headers: { ...HTML_N, "cache-control": "no-store" } }
+            );
+          }
+          if (method === "GET" && path.startsWith("/player/")) {
+            const r = await getPublicSite(env, customSlug);
+            if (!r || r.suspended) return new Response(notFoundPage(customSlug, nonce), { status: 404, headers: HTML_N });
+            const playerName = path.slice(8).split("/")[0];
+            const profile = findProfilePlayer(r.data, playerName);
+            if (!profile) return new Response(notFoundPage(customSlug, nonce), { status: 404, headers: HTML_N });
+            const history = await buildPlayerHistory(env, r.id, playerName, r.plan);
+            const paid = r.plan === "pro" || r.plan === "agency";
+            return new Response(
+              renderPlayerProfile(r.data, { ...profile.player, rank: profile.rank }, history, {
                 nonce, slug: customSlug, homeUrl: `https://${host}`, isCustomDomain: true,
                 logoUrl: paid && r.data.branding?.hasLogo ? `https://${host}/logo/${customSlug}` : null,
               }),
@@ -542,6 +582,27 @@ a{color:#c8ff00;text-decoration:none;font-weight:600}</style></head><body>
         const paid = r.plan !== "free";
         return new Response(
           renderLegalPage(r.data, page, {
+            nonce, slug, homeUrl: url.origin, isCustomDomain: false,
+            logoUrl: paid && r.data.branding?.hasLogo ? `${url.origin}/logo/${slug}` : null,
+          }),
+          { headers: { ...HTML_N, "cache-control": "no-store" } }
+        );
+      }
+
+      // --- per-player profile pages at /<slug>/player/<name> ---
+      if (method === "GET" && /^\/[^/]+\/player\/.+/.test(path)) {
+        let slug;
+        try { slug = decodeURIComponent(path.slice(1).split("/")[0]).toLowerCase(); } catch { return new Response(notFoundPage("", nonce), { status: 404, headers: HTML_N }); }
+        if (RESERVED.has(slug)) return new Response(notFoundPage(slug, nonce), { status: 404, headers: HTML_N });
+        const r = await getPublicSite(env, slug);
+        if (!r || r.suspended) return new Response(notFoundPage(slug, nonce), { status: 404, headers: HTML_N });
+        const playerName = path.split("/").slice(2).join("/");
+        const profile = findProfilePlayer(r.data, playerName);
+        if (!profile) return new Response(notFoundPage(slug, nonce), { status: 404, headers: HTML_N });
+        const history = await buildPlayerHistory(env, r.id, playerName, r.plan);
+        const paid = r.plan !== "free";
+        return new Response(
+          renderPlayerProfile(r.data, { ...profile.player, rank: profile.rank }, history, {
             nonce, slug, homeUrl: url.origin, isCustomDomain: false,
             logoUrl: paid && r.data.branding?.hasLogo ? `${url.origin}/logo/${slug}` : null,
           }),

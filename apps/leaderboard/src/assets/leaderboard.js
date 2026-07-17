@@ -12,6 +12,7 @@ const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "
 // vbscript:, etc.) collapses to "#". esc() handles attribute-breakout chars.
 const safeUrl = (u) => { const s = String(u ?? "").trim(); return s && /^(https?:|mailto:|tel:)/i.test(s) ? esc(encodeURI(s)) : "#"; };
 const ord = (n) => { const s = ["th", "st", "nd", "rd"], v = n % 100; return n + (s[(v - 20) % 10] || s[v] || s[0]); };
+const playerHref = (name) => { const slug = window.__SLUG__ || ""; return slug ? `/${encodeURIComponent(slug)}/player/${encodeURIComponent(name)}` : `/player/${encodeURIComponent(name)}`; };
 
 const SOCIAL_ICONS = {
   discord: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M20.3 4.4A19.8 19.8 0 0 0 15.4 3l-.3.5c1.7.4 2.9 1 4 1.7a13.5 13.5 0 0 0-11.4 0c1.1-.7 2.5-1.4 4.1-1.7L11.6 3A19.8 19.8 0 0 0 6.7 4.4C3.6 9 2.8 13.5 3.2 17.9a19.9 19.9 0 0 0 6 3l.8-1.3c-.7-.3-1.4-.6-2-1l.5-.4a14.2 14.2 0 0 0 12.2 0l.5.4c-.6.4-1.3.7-2 1l.8 1.3a19.8 19.8 0 0 0 6-3c.5-5.1-.8-9.6-3.6-13.5ZM9.5 15.3c-1 0-1.8-.9-1.8-2s.8-2 1.8-2 1.8.9 1.8 2-.8 2-1.8 2Zm5 0c-1 0-1.8-.9-1.8-2s.8-2 1.8-2 1.8.9 1.8 2-.8 2-1.8 2Z"/></svg>',
@@ -107,12 +108,12 @@ function buildPlayerRow(pl, rank, delay, gap) {
       : `<span class="tr-gap" aria-hidden="true">↑ ${moneyShort(gap)} to next</span>`);
     return `<div class="t-row" role="row" data-position="${rank}" data-name="${esc(pl.name)}" data-wagered="${Number(pl.wagered) || 0}" data-delay="${delay}">
       <span class="tr-rank" role="cell">${String(rank).padStart(2, "0")}</span>
-      <span class="tr-player" role="cell"><span class="tr-av" aria-hidden="true">${esc(initials(pl.name))}</span><span class="tr-name">${esc(pl.name)}</span></span>
+      <span class="tr-player" role="cell"><span class="tr-av" aria-hidden="true">${esc(initials(pl.name))}</span><a class="tr-name" href="${playerHref(pl.name)}">${esc(pl.name)}</a></span>
       <span class="tr-wager" role="cell"><span class="w-lg">${money(pl.wagered)}</span><span class="w-sm">${moneyShort(pl.wagered)}</span></span>${prize}${gapHtml}<span class="tr-bar" aria-hidden="true"><i></i></span></div>`;
   }
 
 function buildTop3Card(pl, rank) {
-  return `<div class="t3 t3--${rank}"><span class="t3-medal">RANK ${String(rank).padStart(2, "0")}</span><span class="t3-av" aria-hidden="true">${esc(initials(pl.name))}</span><div class="t3-name">${esc(pl.name)}</div><div class="t3-wager">${money(pl.wagered)}</div><span class="t3-prize">${pl.prize ? moneyShort(pl.prize) : "—"}</span></div>`;
+  return `<div class="t3 t3--${rank}"><span class="t3-medal">RANK ${String(rank).padStart(2, "0")}</span><span class="t3-av" aria-hidden="true">${esc(initials(pl.name))}</span><a class="t3-name" href="${playerHref(pl.name)}">${esc(pl.name)}</a><div class="t3-wager">${money(pl.wagered)}</div><span class="t3-prize">${pl.prize ? moneyShort(pl.prize) : "—"}</span></div>`;
 }
 
 // Expose helpers to per-template builder scripts loaded before this file.
