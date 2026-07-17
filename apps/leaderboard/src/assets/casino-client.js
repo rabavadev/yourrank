@@ -1,180 +1,192 @@
-// Per-template top-3 and row builders for the casino design pack.
-// Loaded before leaderboard.js; uses helpers exposed on window.__yr at call time.
+// Client-side top-3 / row builders for full-page casino designs.
 (function () {
-  const yr = () => window.__yr || {};
-  const esc = (s) => (yr().esc ? yr().esc(s) : String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])));
-  const initials = (n) => (yr().initials ? yr().initials(n) : ((c) => c.length >= 2 ? c.slice(0, 2).toUpperCase() : (c ? c.toUpperCase() : "★"))(String(n ?? "").replace(/\*/g, "").trim()));
-  const money = (n) => (yr().money ? yr().money(n) : "$" + Number(n).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
-  const moneyShort = (n) => (yr().moneyShort ? yr().moneyShort(n) : "$" + Number(n).toLocaleString("en-US", { maximumFractionDigits: 0 }));
-
-  const trend = (rank) => {
-    const up = rank <= 3 || rank % 2 === 0;
-    return `<span class="tr-trend tr-trend--${up ? "up" : "down"}" aria-hidden="true">${up ? "▲" : "▼"}</span>`;
+  const yr = () => window.__yr || { esc: (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])), moneyShort: (n) => "$" + Number(n).toLocaleString("en-US", {maximumFractionDigits:0}), money: (n) => "$" + Number(n).toLocaleString("en-US", {minimumFractionDigits:2, maximumFractionDigits:2}) };
+  const fmtScore = (n) => Number(n).toLocaleString("en-US", {maximumFractionDigits:0});
+  const wordInitials = (name) => {
+    const parts = String(name).split(/[\s_]+/).filter(Boolean);
+    if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+    return parts.slice(0, 2).map((p) => p[0]).join("").toUpperCase();
   };
+  const hash = (s) => { let h = 0; for (let i = 0; i < String(s).length; i++) { h = (h << 5) - h + String(s).charCodeAt(i); } return Math.abs(h); };
+  const maxWagered = () => { const ps = (window.__SITE_DATA__?.players || []); return ps.length ? Math.max(...ps.map((p) => Number(p.wagered) || 0)) : 1; };
 
-  function podiumOrder(rank) {
-    if (rank === 1) return 2;
-    if (rank === 2) return 1;
-    return 3;
+  function top3Arcade(pl, rank) {
+    const name = yr().esc(pl.name);
+    const score = fmtScore(pl.wagered);
+    const initials = wordInitials(pl.name);
+    if (rank === 1) return `<div class="flex flex-col items-center relative w-[38%] max-w-[240px] transform -translate-y-4 md:-translate-y-8"><div class="absolute inset-0 bg-[#FF00FF] blur-[40px] opacity-30 animate-pulse pointer-events-none"></div><div class="text-4xl md:text-5xl mb-3 z-10 relative">🏆</div><div class="w-full bg-gradient-to-b from-[#FF00FF] to-[#800080] p-4 md:p-6 flex flex-col items-center border-[4px] border-[#FF00FF] shadow-[0_0_25px_rgba(255,0,255,0.6),inset_0_0_15px_rgba(0,0,0,0.5)] relative z-10"><div class="absolute -top-3 -right-3 text-2xl animate-bounce">💥</div><div class="absolute -top-2 -left-2 text-xl animate-bounce [animation-delay:0.3s]">🎮</div><div class="w-16 h-16 md:w-20 md:h-20 bg-black flex items-center justify-center text-[#FF00FF] text-base md:text-xl mb-4 border-[4px] border-[#FF00FF] shadow-[0_0_10px_#FF00FF] [font-family:'Press_Start_2P',_system-ui]">${initials}</div><div class="text-center w-full"><div class="text-white text-[10px] md:text-[12px] truncate w-full [font-family:'Press_Start_2P',_system-ui]">${name}</div><div class="text-[#FFD700] text-[12px] md:text-sm mt-2 tabular-nums drop-shadow-[0_0_5px_#FFD700] [font-family:'Press_Start_2P',_system-ui]">${score}</div></div></div><div class="h-20 w-full bg-gradient-to-b from-[#800080] to-[#330033] border-x-[4px] border-b-[4px] border-[#4D004D] flex items-center justify-center relative z-10 shadow-[0_10px_0_#000000]"><span class="text-[#FF00FF] text-2xl opacity-90 drop-shadow-[0_0_8px_#FF00FF] [font-family:'Press_Start_2P',_system-ui]">${rank}</span></div></div>`;
+    if (rank === 2) return `<div class="flex flex-col items-center relative w-[30%] max-w-[200px] transform hover:-translate-y-2 transition-transform"><div class="text-3xl md:text-4xl mb-3 animate-pulse [animation-duration:2s]">⚡</div><div class="w-full bg-gradient-to-b from-[#00BFFF] to-[#005580] p-3 md:p-4 flex flex-col items-center border-[4px] border-[#00BFFF] shadow-[0_0_15px_rgba(0,191,255,0.5),inset_0_0_10px_rgba(0,0,0,0.5)]"><div class="w-12 h-12 md:w-16 md:h-16 bg-black flex items-center justify-center text-[#00BFFF] text-sm md:text-base mb-3 border-2 border-[#00BFFF] [font-family:'Press_Start_2P',_system-ui]">${initials}</div><div class="text-center w-full"><div class="text-white text-[8px] md:text-[10px] truncate w-full [font-family:'Press_Start_2P',_system-ui]">${name}</div><div class="text-[#FFD700] text-[10px] md:text-xs mt-2 tabular-nums [font-family:'Press_Start_2P',_system-ui]">${score}</div></div></div><div class="h-16 w-full bg-gradient-to-b from-[#005580] to-[#001133] border-x-[4px] border-b-[4px] border-[#003366] flex items-center justify-center shadow-[0_10px_0_#000000]"><span class="text-[#00BFFF] text-xl opacity-80 drop-shadow-[0_0_5px_#00BFFF] [font-family:'Press_Start_2P',_system-ui]">${rank}</span></div></div>`;
+    if (rank === 3) return `<div class="flex flex-col items-center relative w-[30%] max-w-[180px] transform hover:-translate-y-2 transition-transform"><div class="text-3xl md:text-4xl mb-3 animate-pulse [animation-duration:3s]">🔥</div><div class="w-full bg-gradient-to-b from-[#39FF14] to-[#006600] p-2 md:p-4 flex flex-col items-center border-[4px] border-[#39FF14] shadow-[0_0_15px_rgba(57,255,20,0.5),inset_0_0_10px_rgba(0,0,0,0.5)]"><div class="w-10 h-10 md:w-14 md:h-14 bg-black flex items-center justify-center text-[#39FF14] text-xs md:text-sm mb-2 border-2 border-[#39FF14] [font-family:'Press_Start_2P',_system-ui]">${initials}</div><div class="text-center w-full"><div class="text-white text-[7px] md:text-[9px] truncate w-full [font-family:'Press_Start_2P',_system-ui]">${name}</div><div class="text-[#FFD700] text-[9px] md:text-[11px] mt-2 tabular-nums [font-family:'Press_Start_2P',_system-ui]">${score}</div></div></div><div class="h-12 w-full bg-gradient-to-b from-[#006600] to-[#002200] border-x-[4px] border-b-[4px] border-[#004400] flex items-center justify-center shadow-[0_10px_0_#000000]"><span class="text-[#39FF14] text-lg opacity-80 drop-shadow-[0_0_5px_#39FF14] [font-family:'Press_Start_2P',_system-ui]">${rank}</span></div></div>`;
+    return "";
   }
 
-  const top3 = {
-    arcade(pl, rank) {
-      const icon = rank === 1 ? "🏆" : rank === 2 ? "⚡" : "🔥";
-      const color = rank === 1 ? "t3--gold" : rank === 2 ? "t3--blue" : "t3--green";
-      return `<div class="t3 t3--arcade ${color}" style="order:${podiumOrder(rank)}" data-rank="${rank}">
-        <span class="t3-icon">${icon}</span>
-        <span class="t3-av">${esc(initials(pl.name))}</span>
-        <span class="t3-name">${esc(pl.name)}</span>
-        <span class="t3-wager">${moneyShort(pl.wagered)}</span>
-        <span class="t3-stand">${rank}</span>
-      </div>`;
-    },
-    candy(pl, rank) {
-      const order = podiumOrder(rank);
-      const candy = rank === 1 ? "🍬" : rank === 2 ? "🍭" : "🍫";
-      return `<div class="t3 t3--candy" style="order:${order}" data-rank="${rank}">
-        <span class="t3-candy">${candy}</span>
-        <span class="t3-av">${esc(initials(pl.name))}</span>
-        <span class="t3-name">${esc(pl.name)}</span>
-        <span class="t3-wager">${moneyShort(pl.wagered)}</span>
-      </div>`;
-    },
-    fun(pl, rank) {
-      const icon = rank === 1 ? "🎉" : rank === 2 ? "🎈" : "🎁";
-      return `<div class="t3 t3--fun" style="order:${podiumOrder(rank)}" data-rank="${rank}">
-        <span class="t3-icon">${icon}</span>
-        <span class="t3-av">${esc(initials(pl.name))}</span>
-        <span class="t3-name">${esc(pl.name)}</span>
-        <span class="t3-wager">${moneyShort(pl.wagered)}</span>
-      </div>`;
-    },
-    space(pl, rank) {
-      const icon = rank === 1 ? "🚀" : rank === 2 ? "🛸" : "🪐";
-      return `<div class="t3 t3--space" style="order:${podiumOrder(rank)}" data-rank="${rank}">
-        <span class="t3-orbit"></span>
-        <span class="t3-icon">${icon}</span>
-        <span class="t3-av">${esc(initials(pl.name))}</span>
-        <span class="t3-name">${esc(pl.name)}</span>
-        <span class="t3-wager">${moneyShort(pl.wagered)}</span>
-      </div>`;
-    },
-    tropical(pl, rank) {
-      const icon = rank === 1 ? "🌴" : rank === 2 ? "🍹" : "🐠";
-      return `<div class="t3 t3--tropical" style="order:${podiumOrder(rank)}" data-rank="${rank}">
-        <span class="t3-icon">${icon}</span>
-        <span class="t3-av">${esc(initials(pl.name))}</span>
-        <span class="t3-name">${esc(pl.name)}</span>
-        <span class="t3-wager">${moneyShort(pl.wagered)}</span>
-      </div>`;
-    },
-    underwater(pl, rank) {
-      const icon = rank === 1 ? "🐙" : rank === 2 ? "🦈" : "🐠";
-      return `<div class="t3 t3--underwater" style="order:${podiumOrder(rank)}" data-rank="${rank}">
-        <span class="t3-bubble"></span>
-        <span class="t3-av">${esc(initials(pl.name))}</span>
-        <span class="t3-name">${esc(pl.name)}</span>
-        <span class="t3-wager">${moneyShort(pl.wagered)}</span>
-      </div>`;
-    },
-    western(pl, rank) {
-      const icon = rank === 1 ? "🤠" : rank === 2 ? "⭐" : "🌵";
-      return `<div class="t3 t3--western" style="order:${podiumOrder(rank)}" data-rank="${rank}">
-        <span class="t3-wanted">WANTED</span>
-        <span class="t3-icon">${icon}</span>
-        <span class="t3-av">${esc(initials(pl.name))}</span>
-        <span class="t3-name">${esc(pl.name)}</span>
-        <span class="t3-wager">${moneyShort(pl.wagered)}</span>
-      </div>`;
-    },
-    editorial(pl, rank) {
-      return `<div class="t3 t3--editorial" style="order:${podiumOrder(rank)}" data-rank="${rank}">
-        <span class="t3-rank">${rank}</span>
-        <span class="t3-av">${esc(initials(pl.name))}</span>
-        <span class="t3-meta">
-          <span class="t3-name">${esc(pl.name)}</span>
-          <span class="t3-wager">${moneyShort(pl.wagered)}</span>
-        </span>
-      </div>`;
-    },
-  };
+  function rowArcade(pl, rank, delay, gap) {
+    const name = yr().esc(pl.name);
+    const score = fmtScore(pl.wagered);
+    const rankStr = rank;
+    const upSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-trending-up w-3 h-3" aria-hidden="true"><path d="M16 7h6v6" /><path d="m22 7-8.5 8.5-5-5L2 17" /></svg>`;
+    const downSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-trending-down text-[#FF00FF] w-4 h-4" aria-hidden="true"><path d="M16 17h6v-6" /><path d="m22 17-8.5-8.5-5 5L2 7" /></svg>`;
+    const icon = hash(pl.name) % 2 === 0 ? upSvg : downSvg;
+    return `<div class="w-full p-4 flex items-center border-l-[6px] border-[#39FF14] border-b-2 border-r-2 border-t-2 border-[#000000] shadow-[4px_4px_0_#000000] hover:-translate-y-1 hover:shadow-[6px_6px_0_#000000] transition-all cursor-pointer bg-[#1A1A2E]"><div class="w-8 h-8 md:w-10 md:h-10 bg-black flex items-center justify-center text-[#39FF14] text-[8px] md:text-[10px] shrink-0 border border-[#39FF14] [font-family:'Press_Start_2P',_system-ui]">${rankStr}</div><div class="ml-4 flex-grow flex flex-col md:flex-row md:items-center justify-between"><div class="flex items-center gap-3"><span class="text-white/90 text-[8px] md:text-[10px] [font-family:'Press_Start_2P',_system-ui] [line-height:1.5]">${name}</span>${icon}</div><div class="text-[#FFD700] text-[10px] md:text-[12px] tabular-nums mt-3 md:mt-0 flex items-center gap-2 [font-family:'Press_Start_2P',_system-ui]">${score}</div></div></div>`;
+  }
 
-  const rows = {
-    arcade(pl, rank, delay) {
-      return `<div class="t-row t-row--arcade" role="row" data-position="${rank}" data-name="${esc(pl.name)}" data-wagered="${Number(pl.wagered) || 0}" data-delay="${delay}">
-        <span class="tr-rank" role="cell">${String(rank).padStart(2, "0")}</span>
-        <span class="tr-player" role="cell"><span class="tr-av" aria-hidden="true">${esc(initials(pl.name))}</span><span class="tr-name">${esc(pl.name)}</span></span>
-        <span class="tr-score" role="cell">${moneyShort(pl.wagered)}${trend(rank)}</span>
-      </div>`;
-    },
-    candy(pl, rank, delay) {
-      return `<div class="t-row t-row--candy" role="row" data-position="${rank}" data-name="${esc(pl.name)}" data-wagered="${Number(pl.wagered) || 0}" data-delay="${delay}">
-        <span class="tr-rank" role="cell">${rank}</span>
-        <span class="tr-player" role="cell"><span class="tr-av" aria-hidden="true">${esc(initials(pl.name))}</span><span class="tr-name">${esc(pl.name)}</span></span>
-        <span class="tr-score" role="cell">${moneyShort(pl.wagered)}</span>
-      </div>`;
-    },
-    fun(pl, rank, delay) {
-      return `<div class="t-row t-row--fun" role="row" data-position="${rank}" data-name="${esc(pl.name)}" data-wagered="${Number(pl.wagered) || 0}" data-delay="${delay}">
-        <span class="tr-rank" role="cell">${rank}</span>
-        <span class="tr-player" role="cell"><span class="tr-av" aria-hidden="true">${esc(initials(pl.name))}</span><span class="tr-name">${esc(pl.name)}</span></span>
-        <span class="tr-score" role="cell">${moneyShort(pl.wagered)}${trend(rank)}</span>
-      </div>`;
-    },
-    pro(pl, rank, delay) {
-      const prize = pl.prize ? moneyShort(pl.prize) : "—";
-      return `<div class="t-row t-row--pro" role="row" data-position="${rank}" data-name="${esc(pl.name)}" data-wagered="${Number(pl.wagered) || 0}" data-delay="${delay}">
-        <span class="tr-rank" role="cell">${rank}</span>
-        <span class="tr-player" role="cell"><span class="tr-av" aria-hidden="true">${esc(initials(pl.name))}</span><span class="tr-name">${esc(pl.name)}</span></span>
-        <span class="tr-wager" role="cell">${moneyShort(pl.wagered)}</span>
-        <span class="tr-prize" role="cell">${prize}</span>
-      </div>`;
-    },
-    space(pl, rank, delay) {
-      return `<div class="t-row t-row--space" role="row" data-position="${rank}" data-name="${esc(pl.name)}" data-wagered="${Number(pl.wagered) || 0}" data-delay="${delay}">
-        <span class="tr-rank" role="cell">${rank}</span>
-        <span class="tr-player" role="cell"><span class="tr-av" aria-hidden="true">${esc(initials(pl.name))}</span><span class="tr-name">${esc(pl.name)}</span></span>
-        <span class="tr-score" role="cell">${moneyShort(pl.wagered)}</span>
-      </div>`;
-    },
-    tropical(pl, rank, delay) {
-      return `<div class="t-row t-row--tropical" role="row" data-position="${rank}" data-name="${esc(pl.name)}" data-wagered="${Number(pl.wagered) || 0}" data-delay="${delay}">
-        <span class="tr-rank" role="cell">${rank}</span>
-        <span class="tr-player" role="cell"><span class="tr-av" aria-hidden="true">${esc(initials(pl.name))}</span><span class="tr-name">${esc(pl.name)}</span></span>
-        <span class="tr-score" role="cell">${moneyShort(pl.wagered)}</span>
-      </div>`;
-    },
-    underwater(pl, rank, delay) {
-      return `<div class="t-row t-row--underwater" role="row" data-position="${rank}" data-name="${esc(pl.name)}" data-wagered="${Number(pl.wagered) || 0}" data-delay="${delay}">
-        <span class="tr-rank" role="cell">${rank}</span>
-        <span class="tr-player" role="cell"><span class="tr-av" aria-hidden="true">${esc(initials(pl.name))}</span><span class="tr-name">${esc(pl.name)}</span></span>
-        <span class="tr-score" role="cell">${moneyShort(pl.wagered)}</span>
-      </div>`;
-    },
-    vip(pl, rank, delay) {
-      return `<div class="t-row t-row--vip" role="row" data-position="${rank}" data-name="${esc(pl.name)}" data-wagered="${Number(pl.wagered) || 0}" data-delay="${delay}">
-        <span class="tr-rank" role="cell">${String(rank).padStart(2, "0")}</span>
-        <span class="tr-player" role="cell"><span class="tr-av" aria-hidden="true">${esc(initials(pl.name))}</span><span class="tr-name">${esc(pl.name)}</span></span>
-        <span class="tr-wager" role="cell">${moneyShort(pl.wagered)}</span>
-        <span class="tr-prize" role="cell">${pl.prize ? moneyShort(pl.prize) : ""}</span>
-      </div>`;
-    },
-    western(pl, rank, delay) {
-      return `<div class="t-row t-row--western" role="row" data-position="${rank}" data-name="${esc(pl.name)}" data-wagered="${Number(pl.wagered) || 0}" data-delay="${delay}">
-        <span class="tr-rank" role="cell">${rank}</span>
-        <span class="tr-player" role="cell"><span class="tr-av" aria-hidden="true">${esc(initials(pl.name))}</span><span class="tr-name">${esc(pl.name)}</span></span>
-        <span class="tr-score" role="cell">${moneyShort(pl.wagered)}</span>
-      </div>`;
-    },
-    editorial(pl, rank, delay) {
-      return `<div class="t-row t-row--editorial" role="row" data-position="${rank}" data-name="${esc(pl.name)}" data-wagered="${Number(pl.wagered) || 0}" data-delay="${delay}">
-        <span class="tr-rank" role="cell">${rank}</span>
-        <span class="tr-player" role="cell"><span class="tr-av" aria-hidden="true">${esc(initials(pl.name))}</span><span class="tr-name">${esc(pl.name)}</span></span>
-        <span class="tr-wager" role="cell">${moneyShort(pl.wagered)}</span>
-        <span class="tr-prize" role="cell">${pl.prize ? moneyShort(pl.prize) : "—"}</span>
-      </div>`;
-    },
-  };
+  function top3Candy(pl, rank) {
+    const name = yr().esc(pl.name);
+    const score = fmtScore(pl.wagered);
+    const initials = wordInitials(pl.name);
+    if (rank === 1) return `<div class="flex flex-col items-center relative w-[38%] max-w-[240px] z-20 transform -translate-y-6 md:-translate-y-10"><div class="absolute inset-0 bg-[#FFE500] blur-[50px] opacity-50 rounded-full animate-pulse pointer-events-none"></div><div class="absolute -top-14 -right-8 text-5xl animate-bounce [animation-duration:3s]">🍭</div><div class="text-6xl md:text-8xl mb-3 filter drop-shadow-lg z-10 relative">🍭</div><div class="w-full bg-gradient-to-b from-[#FFE500] to-[#FFC400] rounded-[2.5rem] p-5 md:p-6 flex flex-col items-center shadow-[0_20px_40px_rgba(255,229,0,0.5)] border-[5px] border-white relative z-10"><div class="absolute -top-4 -right-4 text-4xl animate-bounce">✨</div><div class="absolute -top-2 -left-3 text-3xl animate-bounce [animation-delay:0.3s]">🪙</div><div class="w-20 h-20 md:w-28 md:h-28 bg-white rounded-full flex items-center justify-center text-[#FFC400] text-3xl md:text-5xl shadow-[inset_0_5px_10px_rgba(0,0,0,0.1)] mb-4 border-[5px] border-[#FFE500]/50 [font-family:'Fredoka_One',_cursive]">${initials}</div><div class="text-center w-full"><div class="text-[#FF1493] text-base md:text-2xl truncate w-full drop-shadow-sm [font-family:'Fredoka_One',_cursive]">${name}</div><div class="text-white font-black text-lg md:text-3xl mt-1 tabular-nums drop-shadow-[0_3px_0_#FF9100]">${score}</div></div></div><div class="h-20 w-full bg-[#FF9100] rounded-b-[2.5rem] shadow-xl border-x-[5px] border-b-[5px] border-white flex items-center justify-center relative z-[0] -mt-8 pt-8"><span class="text-white font-bold text-4xl opacity-90 [font-family:'Fredoka_One',_cursive]">${rank}</span></div></div>`;
+    if (rank === 2) return `<div class="flex flex-col items-center relative w-[30%] max-w-[200px] z-10 transform hover:scale-105 transition-transform"><div class="absolute -top-10 -left-6 text-4xl animate-bounce [animation-duration:2.5s]">🍬</div><div class="text-4xl md:text-6xl mb-3 filter drop-shadow-lg animate-pulse [animation-duration:3s]">🍬</div><div class="w-full bg-gradient-to-b from-[#00E676] to-[#00B25A] rounded-[2rem] p-4 md:p-5 flex flex-col items-center shadow-[0_15px_30px_rgba(0,230,118,0.4)] border-4 border-white"><div class="w-16 h-16 md:w-20 md:h-20 bg-white rounded-full flex items-center justify-center text-[#00E676] text-2xl md:text-3xl shadow-[inset_0_4px_8px_rgba(0,0,0,0.1)] mb-3 border-4 border-[#00E676]/30 [font-family:'Fredoka_One',_cursive]">${initials}</div><div class="text-center w-full"><div class="text-white text-sm md:text-xl truncate w-full drop-shadow-md [font-family:'Fredoka_One',_cursive]">${name}</div><div class="text-[#FFE500] font-black text-sm md:text-lg mt-1 tabular-nums drop-shadow-md [text-shadow:0_2px_0_#00994D]">${score}</div></div></div><div class="h-16 w-full bg-[#00994D] rounded-b-[2rem] shadow-lg border-x-4 border-b-4 border-white flex items-center justify-center -mt-6 pt-6 z-[-1]"><span class="text-white font-bold text-2xl opacity-90 [font-family:'Fredoka_One',_cursive]">${rank}</span></div></div>`;
+    if (rank === 3) return `<div class="flex flex-col items-center relative w-[30%] max-w-[180px] z-10 transform hover:scale-105 transition-transform"><div class="absolute -top-8 -right-6 text-4xl animate-bounce [animation-duration:2.2s]">🍫</div><div class="text-4xl md:text-5xl mb-3 filter drop-shadow-lg animate-pulse [animation-duration:4s]">🍫</div><div class="w-full bg-gradient-to-b from-[#FF1493] to-[#D81B60] rounded-[2rem] p-3 md:p-4 flex flex-col items-center shadow-[0_15px_30px_rgba(255,20,147,0.4)] border-4 border-white"><div class="w-14 h-14 md:w-16 md:h-16 bg-white rounded-full flex items-center justify-center text-[#FF1493] text-xl md:text-2xl shadow-[inset_0_4px_8px_rgba(0,0,0,0.1)] mb-3 border-4 border-[#FF1493]/30 [font-family:'Fredoka_One',_cursive]">${initials}</div><div class="text-center w-full"><div class="text-white text-xs md:text-lg truncate w-full drop-shadow-md [font-family:'Fredoka_One',_cursive]">${name}</div><div class="text-[#FFE500] font-black text-xs md:text-base mt-1 tabular-nums drop-shadow-md [text-shadow:0_2px_0_#AD1457]">${score}</div></div></div><div class="h-12 w-full bg-[#AD1457] rounded-b-[2rem] shadow-lg border-x-4 border-b-4 border-white flex items-center justify-center -mt-6 pt-6 z-[-1]"><span class="text-white font-bold text-xl opacity-90 [font-family:'Fredoka_One',_cursive]">${rank}</span></div></div>`;
+    return "";
+  }
 
-  window.CASINO_BUILDERS = { top3, rows };
+  function rowCandy(pl, rank, delay, gap) {
+    const name = yr().esc(pl.name);
+    const score = fmtScore(pl.wagered);
+    const rankStr = rank;
+    const upSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-trending-up w-3 h-3" aria-hidden="true"><path d="M16 7h6v6" /><path d="m22 7-8.5 8.5-5-5L2 17" /></svg>`;
+    const downSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-trending-down text-[#FF1493] w-5 h-5 md:w-6 md:h-6 opacity-60" aria-hidden="true"><path d="M16 17h6v-6" /><path d="m22 17-8.5-8.5-5 5L2 7" /></svg>`;
+    const icon = hash(pl.name) % 2 === 0 ? upSvg : downSvg;
+    return `<div class="w-full bg-white/80 rounded-[1.5rem] p-4 md:p-5 flex items-center shadow-[0_6px_0_rgba(255,133,179,0.4)] border-l-[12px] border-[#FF1493] border-y-4 border-r-4 border-y-transparent border-r-transparent hover:border-y-white hover:border-r-white transform hover:-translate-y-1 hover:shadow-[0_8px_0_rgba(255,133,179,0.5)] transition-all cursor-pointer backdrop-blur-sm"><div class="w-10 h-10 md:w-14 md:h-14 bg-[#FF85B3] rounded-full flex items-center justify-center text-white font-black text-lg md:text-2xl shadow-[inset_0_2px_4px_rgba(0,0,0,0.1)] shrink-0 border-4 border-white [font-family:'Fredoka_One',_cursive]">${rankStr}</div><div class="ml-4 md:ml-6 flex-grow flex flex-col md:flex-row md:items-center justify-between"><div class="flex items-center gap-3"><span class="text-[#D81B60] text-lg md:text-2xl tracking-wide [font-family:'Fredoka_One',_cursive]">${name}</span><div class="bg-[#00E676]/20 p-1 rounded-full">${icon}</div></div><div class="bg-[#FFE500] px-4 py-2 rounded-full border-4 border-white shadow-sm mt-3 md:mt-0 flex items-center gap-2"><span class="text-[#D81B60] font-black text-lg md:text-2xl tabular-nums drop-shadow-sm [font-family:'Fredoka_One',_cursive]">${score}</span><span class="text-xl drop-shadow-sm">🪙</span></div></div></div>`;
+  }
+
+  function top3Fun(pl, rank) {
+    const name = yr().esc(pl.name);
+    const score = fmtScore(pl.wagered);
+    const initials = wordInitials(pl.name);
+    if (rank === 1) return `<div class="flex flex-col items-center relative w-1/3 max-w-[240px] z-20 transform -translate-y-4 md:-translate-y-8"><div class="absolute inset-0 bg-[#FBBF24] blur-[40px] opacity-40 rounded-full animate-pulse pointer-events-none"></div><div class="text-5xl md:text-7xl mb-2 filter drop-shadow-lg z-10 relative">👑</div><div class="w-full bg-gradient-to-b from-[#FBBF24] to-[#F59E0B] rounded-t-2xl rounded-b-lg p-4 md:p-6 flex flex-col items-center shadow-[0_15px_30px_rgba(0,0,0,0.6)] border-4 border-[#FEF08A] relative z-10"><div class="absolute -top-3 -right-3 text-3xl animate-bounce">✨</div><div class="absolute -top-2 -left-2 text-2xl animate-bounce [animation-delay:0.3s]">🪙</div><div class="w-20 h-20 md:w-28 md:h-28 bg-white rounded-full flex items-center justify-center text-[#D97706] text-3xl md:text-4xl shadow-[inset_0_4px_10px_rgba(0,0,0,0.2)] mb-4 border-4 border-white/40 [font-family:'Fredoka_One',_cursive]">${initials}</div><div class="text-center w-full"><div class="text-black text-base md:text-2xl truncate w-full [font-family:'Fredoka_One',_cursive]">${name}</div><div class="text-white font-black text-lg md:text-2xl mt-1 tabular-nums drop-shadow-[0_2px_2px_rgba(0,0,0,0.5)]">${score}</div></div></div><div class="h-20 w-full bg-gradient-to-b from-[#D97706] to-[#92400E] rounded-b-xl shadow-lg border-x-4 border-b-4 border-[#B45309] flex items-center justify-center relative z-10"><span class="text-[#FEF08A] font-bold text-4xl opacity-50 [font-family:'Fredoka_One',_cursive]">${rank}</span></div></div>`;
+    if (rank === 2) return `<div class="flex flex-col items-center relative w-1/3 max-w-[200px] z-10 transform hover:scale-105 transition-transform"><div class="text-4xl md:text-6xl mb-2 filter drop-shadow-lg animate-pulse [animation-duration:3s]">🥈</div><div class="w-full bg-gradient-to-b from-[#EC4899] to-[#BE185D] rounded-t-2xl rounded-b-lg p-3 md:p-4 flex flex-col items-center shadow-[0_10px_20px_rgba(0,0,0,0.5)] border-4 border-[#F472B6]"><div class="w-16 h-16 md:w-20 md:h-20 bg-white rounded-full flex items-center justify-center text-[#BE185D] text-2xl md:text-3xl shadow-inner mb-3 border-4 border-white/20 [font-family:'Fredoka_One',_cursive]">${initials}</div><div class="text-center w-full"><div class="text-white text-sm md:text-xl truncate w-full [font-family:'Fredoka_One',_cursive]">${name}</div><div class="text-[#FBBF24] font-black text-sm md:text-lg mt-1 tabular-nums drop-shadow-md">${score}</div></div></div><div class="h-16 w-full bg-gradient-to-b from-[#BE185D] to-[#831843] rounded-b-xl shadow-lg border-x-4 border-b-4 border-[#9D174D] flex items-center justify-center"><span class="text-[#F472B6] font-bold text-2xl opacity-50 [font-family:'Fredoka_One',_cursive]">${rank}</span></div></div>`;
+    if (rank === 3) return `<div class="flex flex-col items-center relative w-1/3 max-w-[180px] z-10 transform hover:scale-105 transition-transform"><div class="text-4xl md:text-5xl mb-2 filter drop-shadow-lg animate-pulse [animation-duration:4s]">🥉</div><div class="w-full bg-gradient-to-b from-[#F97316] to-[#EA580C] rounded-t-2xl rounded-b-lg p-2 md:p-4 flex flex-col items-center shadow-[0_10px_20px_rgba(0,0,0,0.5)] border-4 border-[#FDBA74]"><div class="w-14 h-14 md:w-16 md:h-16 bg-white rounded-full flex items-center justify-center text-[#C2410C] text-xl md:text-2xl shadow-inner mb-2 border-4 border-white/20 [font-family:'Fredoka_One',_cursive]">${initials}</div><div class="text-center w-full"><div class="text-white text-xs md:text-lg truncate w-full [font-family:'Fredoka_One',_cursive]">${name}</div><div class="text-[#FEF08A] font-black text-xs md:text-base mt-1 tabular-nums drop-shadow-md">${score}</div></div></div><div class="h-12 w-full bg-gradient-to-b from-[#C2410C] to-[#7C2D12] rounded-b-xl shadow-lg border-x-4 border-b-4 border-[#9A3412] flex items-center justify-center"><span class="text-[#FDBA74] font-bold text-xl opacity-50 [font-family:'Fredoka_One',_cursive]">${rank}</span></div></div>`;
+    return "";
+  }
+
+  function rowFun(pl, rank, delay, gap) {
+    const name = yr().esc(pl.name);
+    const score = fmtScore(pl.wagered);
+    const rankStr = rank;
+    const upSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-trending-up w-3 h-3" aria-hidden="true"><path d="M16 7h6v6" /><path d="m22 7-8.5 8.5-5-5L2 17" /></svg>`;
+    const downSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-trending-down text-[#F87171] w-4 h-4" aria-hidden="true"><path d="M16 17h6v-6" /><path d="m22 17-8.5-8.5-5 5L2 7" /></svg>`;
+    const icon = hash(pl.name) % 2 === 0 ? upSvg : downSvg;
+    return `<div class="w-full rounded-2xl p-4 flex items-center border-b-4 border-black/20 shadow-md transform hover:scale-[1.01] transition-transform cursor-pointer bg-[#581C87]"><div class="w-10 h-10 md:w-12 md:h-12 bg-[#FBBF24] rounded-full flex items-center justify-center text-black font-black text-lg md:text-xl shadow-[inset_0_2px_4px_rgba(255,255,255,0.6)] shrink-0 border-2 border-[#D97706] [font-family:'Fredoka_One',_cursive]">${rankStr}</div><div class="ml-4 flex-grow flex flex-col md:flex-row md:items-center justify-between"><div class="flex items-center gap-2"><span class="text-white/90 text-lg md:text-xl tracking-wide [font-family:'Fredoka_One',_cursive]">${name}</span>${icon}</div><div class="text-white/90 font-black text-lg md:text-2xl tabular-nums mt-1 md:mt-0 flex items-center gap-2">${score}<!-- --> <span class="text-base opacity-70">🪙</span></div></div></div>`;
+  }
+
+  function top3Space(pl, rank) {
+    const name = yr().esc(pl.name);
+    const score = fmtScore(pl.wagered);
+    const initials = wordInitials(pl.name);
+    if (rank === 1) return `<div class="flex flex-col items-center relative w-1/3 max-w-[240px] z-20 transform -translate-y-4 md:-translate-y-8 hover:-translate-y-10 transition-transform duration-300"><div class="absolute inset-0 bg-[#FFFBEB] blur-[60px] opacity-20 rounded-full animate-pulse pointer-events-none"></div><div class="text-5xl md:text-6xl mb-4 filter drop-shadow-[0_0_20px_#FFFBEB] z-10 relative animate-[pulse_2s_ease-in-out_infinite]">🌟</div><div class="w-full bg-[#1E1B4B] rounded-t-xl rounded-b-md p-4 md:p-6 flex flex-col items-center shadow-[0_0_30px_#FFFBEB] border-2 border-[#FFFBEB] relative z-10 overflow-hidden group cursor-pointer"><div class="absolute inset-0 bg-gradient-to-b from-[#FFFBEB]/20 to-transparent pointer-events-none group-hover:from-[#FFFBEB]/40 transition-colors"></div><div class="relative mb-4"><div class="absolute inset-[-10px] rounded-full border border-[#FFFBEB]/50 animate-[spin_4s_linear_infinite] border-t-transparent z-0"></div><div class="absolute inset-[-18px] rounded-full border border-[#FFFBEB]/30 animate-[spin_6s_linear_infinite_reverse] border-b-transparent z-0"></div><div class="w-16 h-16 md:w-20 md:h-20 bg-[#080B1A] rounded-full flex items-center justify-center text-[#FFFBEB] text-2xl md:text-3xl shadow-[0_0_20px_#FFFBEB] border-2 border-[#FFFBEB] relative z-10 [font-family:'Orbitron',_sans-serif] [font-weight:900]">${initials}</div></div><div class="text-center w-full z-10"><div class="text-white text-[12px] md:text-base truncate w-full tracking-widest text-shadow-sm [font-family:'Orbitron',_sans-serif] [font-weight:700]">${name}</div><div class="text-[#FFFBEB] font-black text-lg md:text-2xl mt-1 tabular-nums drop-shadow-[0_0_8px_#FFFBEB] [font-family:'Inter',_sans-serif]">${score}</div></div></div><div class="h-16 w-full bg-[#2E285C] rounded-b-lg shadow-lg border-x-2 border-b-2 border-[#FFFBEB]/50 flex items-center justify-center relative z-10"><span class="text-[#FFFBEB] font-black text-3xl opacity-90 drop-shadow-[0_0_10px_#FFFBEB] [font-family:'Orbitron',_sans-serif]">${rank}</span></div></div>`;
+    if (rank === 2) return `<div class="flex flex-col items-center relative w-1/3 max-w-[200px] z-10 transform hover:-translate-y-2 transition-transform duration-300"><div class="text-4xl md:text-5xl mb-3 filter drop-shadow-[0_0_15px_#8B5CF6] animate-[pulse_3s_ease-in-out_infinite]">🛸</div><div class="w-full bg-[#1E1B4B] rounded-t-xl rounded-b-md p-3 md:p-4 flex flex-col items-center shadow-[0_0_20px_#8B5CF6] border-2 border-[#8B5CF6] relative overflow-hidden group cursor-pointer"><div class="absolute inset-0 bg-gradient-to-b from-[#8B5CF6]/20 to-transparent pointer-events-none group-hover:from-[#8B5CF6]/40 transition-colors"></div><div class="w-14 h-14 md:w-16 md:h-16 bg-[#080B1A] rounded-full flex items-center justify-center text-[#8B5CF6] text-xl md:text-2xl shadow-[0_0_15px_#8B5CF6] mb-3 border-2 border-[#8B5CF6] z-10 [font-family:'Orbitron',_sans-serif] [font-weight:700]">${initials}</div><div class="text-center w-full z-10"><div class="text-white text-[11px] md:text-sm truncate w-full tracking-wider [font-family:'Orbitron',_sans-serif]">${name}</div><div class="text-[#8B5CF6] font-bold text-sm md:text-lg mt-1 tabular-nums [font-family:'Inter',_sans-serif]">${score}</div></div></div><div class="h-12 w-full bg-[#2E285C] rounded-b-lg shadow-lg border-x-2 border-b-2 border-[#8B5CF6]/50 flex items-center justify-center"><span class="text-[#8B5CF6] font-black text-xl opacity-80 [font-family:'Orbitron',_sans-serif]">${rank}</span></div></div>`;
+    if (rank === 3) return `<div class="flex flex-col items-center relative w-1/3 max-w-[180px] z-10 transform hover:-translate-y-2 transition-transform duration-300"><div class="text-4xl md:text-5xl mb-3 filter drop-shadow-[0_0_15px_#22D3EE] animate-[pulse_4s_ease-in-out_infinite]">🛰️</div><div class="w-full bg-[#1E1B4B] rounded-t-xl rounded-b-md p-2 md:p-4 flex flex-col items-center shadow-[0_0_20px_#22D3EE] border-2 border-[#22D3EE] relative overflow-hidden group cursor-pointer"><div class="absolute inset-0 bg-gradient-to-b from-[#22D3EE]/20 to-transparent pointer-events-none group-hover:from-[#22D3EE]/40 transition-colors"></div><div class="w-12 h-12 md:w-14 md:h-14 bg-[#080B1A] rounded-full flex items-center justify-center text-[#22D3EE] text-lg md:text-xl shadow-[0_0_15px_#22D3EE] mb-2 border-2 border-[#22D3EE] z-10 [font-family:'Orbitron',_sans-serif] [font-weight:700]">${initials}</div><div class="text-center w-full z-10"><div class="text-white text-[10px] md:text-xs truncate w-full tracking-wider [font-family:'Orbitron',_sans-serif]">${name}</div><div class="text-[#22D3EE] font-bold text-xs md:text-base mt-1 tabular-nums [font-family:'Inter',_sans-serif]">${score}</div></div></div><div class="h-10 w-full bg-[#2E285C] rounded-b-lg shadow-lg border-x-2 border-b-2 border-[#22D3EE]/50 flex items-center justify-center"><span class="text-[#22D3EE] font-black text-lg opacity-80 [font-family:'Orbitron',_sans-serif]">${rank}</span></div></div>`;
+    return "";
+  }
+
+  function rowSpace(pl, rank, delay, gap) {
+    const name = yr().esc(pl.name);
+    const score = fmtScore(pl.wagered);
+    const rankStr = rank;
+    const upSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-trending-up w-3 h-3" aria-hidden="true"><path d="M16 7h6v6" /><path d="m22 7-8.5 8.5-5-5L2 17" /></svg>`;
+    const downSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-trending-down text-[#F472B6] w-3 h-3" aria-hidden="true"><path d="M16 17h6v-6" /><path d="m22 17-8.5-8.5-5 5L2 7" /></svg>`;
+    const icon = hash(pl.name) % 2 === 0 ? upSvg : downSvg;
+    return `<div class="w-full bg-[#0F172A] rounded-xl p-4 flex items-center border border-white/5 shadow-md transform hover:scale-[1.01] hover:border-[#8B5CF6]/50 hover:shadow-[0_0_15px_rgba(139,92,246,0.2)] transition-all cursor-pointer relative overflow-hidden group"><div class="absolute left-0 top-0 bottom-0 w-1 bg-[#8B5CF6]/30 group-hover:bg-[#8B5CF6] group-hover:shadow-[0_0_8px_#8B5CF6] transition-all"></div><div class="w-8 h-8 md:w-10 md:h-10 bg-[#1E1B4B] rounded-full flex items-center justify-center text-[#8B5CF6] font-bold text-xs md:text-sm shrink-0 border border-[#8B5CF6]/30 group-hover:border-[#8B5CF6] group-hover:shadow-[0_0_10px_#8B5CF6] transition-all ml-2 [font-family:'Orbitron',_sans-serif]">${rankStr}</div><div class="ml-4 flex-grow flex flex-col md:flex-row md:items-center justify-between"><div class="flex items-center gap-2"><span class="text-white/80 group-hover:text-white text-[11px] md:text-[13px] tracking-wider transition-colors [font-family:'Orbitron',_sans-serif]">${name}</span>${icon}</div><div class="text-white/90 font-bold text-base md:text-xl tabular-nums mt-1 md:mt-0 flex items-center gap-2 [font-family:'Inter',_sans-serif]">${score}<!-- --> <span class="text-xs md:text-sm opacity-70 group-hover:opacity-100 transition-opacity">⭐</span></div></div></div>`;
+  }
+
+  function top3Tropical(pl, rank) {
+    const name = yr().esc(pl.name);
+    const score = fmtScore(pl.wagered);
+    const initials = wordInitials(pl.name);
+    if (rank === 1) return `<div class="flex flex-col items-center relative w-1/3 max-w-[240px] z-20 transform -translate-y-4 md:-translate-y-8"><div class="absolute inset-0 bg-[#FFE66D] blur-[40px] opacity-40 rounded-full animate-pulse pointer-events-none"></div><div class="text-5xl md:text-7xl mb-2 filter drop-shadow-lg z-10 relative">🏆</div><div class="w-full bg-gradient-to-b from-[#FFE66D] to-[#FBBF24] rounded-t-full rounded-b-[24px] p-4 md:p-6 flex flex-col items-center shadow-[0_15px_30px_rgba(0,0,0,0.4)] border-4 border-[#FFE66D]/80 relative z-10"><div class="absolute -top-3 -right-3 text-3xl animate-bounce">🍍</div><div class="absolute -top-2 -left-2 text-2xl animate-bounce [animation-delay:0.3s]">🥥</div><div class="w-20 h-20 md:w-28 md:h-28 bg-white rounded-full flex items-center justify-center text-[#D97706] text-3xl md:text-4xl shadow-[inset_0_4px_10px_rgba(0,0,0,0.1)] mb-4 border-4 border-white/40 [font-family:'Pacifico',_cursive]">${initials}</div><div class="text-center w-full"><div class="text-[#92400E] text-lg md:text-2xl truncate w-full [font-family:'Pacifico',_cursive]">${name}</div><div class="text-white font-black text-lg md:text-2xl mt-1 tabular-nums drop-shadow-[0_2px_2px_rgba(0,0,0,0.3)] [font-family:'Inter',_sans-serif]">${score}</div></div></div><div class="h-20 w-full bg-gradient-to-b from-[#F59E0B] to-[#D97706] rounded-b-3xl shadow-lg border-x-4 border-b-4 border-[#B45309] flex items-center justify-center relative z-0 -mt-6 pt-6"><span class="text-[#FEF08A] font-bold text-4xl opacity-50 [font-family:'Inter',_sans-serif]">${rank}</span></div></div>`;
+    if (rank === 2) return `<div class="flex flex-col items-center relative w-1/3 max-w-[200px] z-10 transform hover:scale-105 transition-transform"><div class="text-4xl md:text-6xl mb-2 filter drop-shadow-lg animate-pulse [animation-duration:3s]">🦜</div><div class="w-full bg-gradient-to-b from-[#00D4AA] to-[#0D9488] rounded-t-full rounded-b-[20px] p-3 md:p-4 flex flex-col items-center shadow-[0_10px_20px_rgba(0,0,0,0.3)] border-4 border-[#00D4AA]/50 relative"><div class="absolute -top-4 -right-2 text-2xl animate-[spin_4s_linear_infinite]">🌺</div><div class="w-16 h-16 md:w-20 md:h-20 bg-white rounded-full flex items-center justify-center text-[#0D9488] text-2xl md:text-3xl shadow-inner mb-3 border-4 border-white/20 [font-family:'Pacifico',_cursive]">${initials}</div><div class="text-center w-full"><div class="text-white text-base md:text-xl truncate w-full [font-family:'Pacifico',_cursive]">${name}</div><div class="text-[#FFE66D] font-black text-sm md:text-lg mt-1 tabular-nums drop-shadow-md [font-family:'Inter',_sans-serif]">${score}</div></div></div><div class="h-16 w-full bg-gradient-to-b from-[#0D9488] to-[#115E59] rounded-b-3xl shadow-lg border-x-4 border-b-4 border-[#134E4A] flex items-center justify-center -mt-4 pt-4 z-[-1]"><span class="text-[#00D4AA] font-bold text-2xl opacity-50 [font-family:'Inter',_sans-serif]">${rank}</span></div></div>`;
+    if (rank === 3) return `<div class="flex flex-col items-center relative w-1/3 max-w-[180px] z-10 transform hover:scale-105 transition-transform"><div class="text-4xl md:text-5xl mb-2 filter drop-shadow-lg animate-pulse [animation-duration:4s]">🏖️</div><div class="w-full bg-gradient-to-b from-[#FF6B6B] to-[#E11D48] rounded-t-full rounded-b-[16px] p-2 md:p-4 flex flex-col items-center shadow-[0_10px_20px_rgba(0,0,0,0.3)] border-4 border-[#FF6B6B]/50 relative"><div class="absolute -top-3 -left-3 text-2xl animate-[spin_4s_linear_infinite_reverse]">🌺</div><div class="w-14 h-14 md:w-16 md:h-16 bg-white rounded-full flex items-center justify-center text-[#E11D48] text-xl md:text-2xl shadow-inner mb-2 border-4 border-white/20 [font-family:'Pacifico',_cursive]">${initials}</div><div class="text-center w-full"><div class="text-white text-sm md:text-lg truncate w-full [font-family:'Pacifico',_cursive]">${name}</div><div class="text-[#FFE66D] font-black text-xs md:text-base mt-1 tabular-nums drop-shadow-md [font-family:'Inter',_sans-serif]">${score}</div></div></div><div class="h-12 w-full bg-gradient-to-b from-[#E11D48] to-[#9F1239] rounded-b-2xl shadow-lg border-x-4 border-b-4 border-[#881337] flex items-center justify-center -mt-3 pt-3 z-[-1]"><span class="text-[#FFB4B4] font-bold text-xl opacity-50 [font-family:'Inter',_sans-serif]">${rank}</span></div></div>`;
+    return "";
+  }
+
+  function rowTropical(pl, rank, delay, gap) {
+    const name = yr().esc(pl.name);
+    const score = fmtScore(pl.wagered);
+    const rankStr = rank;
+    const upSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-trending-up w-3 h-3" aria-hidden="true"><path d="M16 7h6v6" /><path d="m22 7-8.5 8.5-5-5L2 17" /></svg>`;
+    const downSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-trending-down text-[#FF6B6B] w-4 h-4" aria-hidden="true"><path d="M16 17h6v-6" /><path d="m22 17-8.5-8.5-5 5L2 7" /></svg>`;
+    const icon = hash(pl.name) % 2 === 0 ? upSvg : downSvg;
+    return `<div class="w-full rounded-2xl p-4 flex items-center border-l-4 border-[#FF6B6B] shadow-md transform hover:scale-[1.01] transition-transform cursor-pointer bg-white/20 backdrop-blur-sm"><div class="w-10 h-10 md:w-12 md:h-12 bg-[#FF6B6B] rounded-full flex items-center justify-center text-white font-black text-lg md:text-xl shadow-[inset_0_2px_4px_rgba(255,255,255,0.4)] shrink-0 border-2 border-[#E11D48] [font-family:'Inter',_sans-serif]">${rankStr}</div><div class="ml-4 flex-grow flex flex-col md:flex-row md:items-center justify-between"><div class="flex items-center gap-2"><span class="text-white text-lg md:text-xl tracking-wide [font-family:'Pacifico',_cursive]">${name}</span>${icon}</div><div class="text-white font-black text-lg md:text-2xl tabular-nums mt-1 md:mt-0 flex items-center gap-2 [font-family:'Inter',_sans-serif]">${score}<!-- --> <span class="text-base opacity-90">🥥</span></div></div></div>`;
+  }
+
+  function top3Underwater(pl, rank) {
+    const name = yr().esc(pl.name);
+    const score = fmtScore(pl.wagered);
+    const initials = wordInitials(pl.name);
+    if (rank === 1) return `<div class="flex flex-col items-center relative w-1/3 max-w-[240px] z-20 transform -translate-y-4 md:-translate-y-8"><div class="absolute inset-0 bg-[#FF6B9D] blur-[50px] opacity-30 rounded-full animate-pulse pointer-events-none"></div><div class="text-5xl md:text-7xl mb-2 filter drop-shadow-[0_0_20px_#FF6B9D] z-10 relative">🦑</div><div class="w-full bg-[#001F2D]/90 backdrop-blur-md rounded-t-2xl rounded-b-lg p-4 md:p-6 flex flex-col items-center shadow-[0_0_30px_rgba(255,107,157,0.6)] border-2 border-[#FF6B9D] relative z-10"><div class="absolute -top-3 -right-3 text-3xl animate-bounce">🫧</div><div class="absolute -top-2 -left-2 text-2xl animate-bounce [animation-delay:0.3s]">🐠</div><div class="w-20 h-20 md:w-28 md:h-28 bg-[#0D0D2B] rounded-full flex items-center justify-center text-[#FF6B9D] text-3xl md:text-4xl shadow-[0_0_20px_inset_#FF6B9D] mb-4 border-2 border-[#FF6B9D]/60 [font-family:'Baloo_2',_cursive] [font-weight:800]">${initials}</div><div class="text-center w-full"><div class="text-white text-base md:text-2xl truncate w-full [font-family:'Baloo_2',_cursive] [font-weight:800] [text-shadow:0_0_10px_rgba(255,255,255,0.5)]">${name}</div><div class="text-[#FF6B9D] font-black text-lg md:text-2xl mt-1 tabular-nums drop-shadow-[0_0_10px_#FF6B9D] [font-family:'Inter',_sans-serif]">${score}</div></div></div><div class="h-20 w-full bg-[#001824] rounded-b-xl shadow-lg border-x-2 border-b-2 border-[#FF6B9D]/50 flex items-center justify-center relative z-10 overflow-hidden"><div class="absolute inset-0 bg-gradient-to-t from-[#FF6B9D]/20 to-transparent"></div><span class="text-[#FF6B9D] font-bold text-4xl opacity-90 drop-shadow-[0_0_15px_#FF6B9D] [font-family:'Baloo_2',_cursive]">${rank}</span></div></div>`;
+    if (rank === 2) return `<div class="flex flex-col items-center relative w-1/3 max-w-[200px] z-10 transform hover:scale-105 transition-transform"><div class="text-4xl md:text-6xl mb-2 filter drop-shadow-[0_0_15px_#00E5FF] animate-pulse [animation-duration:3s]">🦈</div><div class="w-full bg-[#001F2D]/80 backdrop-blur-sm rounded-t-2xl rounded-b-lg p-3 md:p-4 flex flex-col items-center shadow-[0_0_20px_rgba(0,229,255,0.4)] border-2 border-[#00E5FF]"><div class="w-16 h-16 md:w-20 md:h-20 bg-[#0D0D2B] rounded-full flex items-center justify-center text-[#00E5FF] text-2xl md:text-3xl shadow-[0_0_15px_inset_#00E5FF] mb-3 border-2 border-[#00E5FF]/50 [font-family:'Baloo_2',_cursive] [font-weight:800]">${initials}</div><div class="text-center w-full"><div class="text-white text-sm md:text-xl truncate w-full [font-family:'Baloo_2',_cursive] [font-weight:600]">${name}</div><div class="text-[#00E5FF] font-black text-sm md:text-lg mt-1 tabular-nums drop-shadow-[0_0_8px_#00E5FF] [font-family:'Inter',_sans-serif]">${score}</div></div></div><div class="h-16 w-full bg-[#001824] rounded-b-xl shadow-lg border-x-2 border-b-2 border-[#00E5FF]/50 flex items-center justify-center relative overflow-hidden"><div class="absolute inset-0 bg-gradient-to-t from-[#00E5FF]/20 to-transparent"></div><span class="text-[#00E5FF] font-bold text-2xl opacity-80 drop-shadow-[0_0_10px_#00E5FF] [font-family:'Baloo_2',_cursive]">${rank}</span></div></div>`;
+    if (rank === 3) return `<div class="flex flex-col items-center relative w-1/3 max-w-[180px] z-10 transform hover:scale-105 transition-transform"><div class="text-4xl md:text-5xl mb-2 filter drop-shadow-[0_0_15px_#39FF9C] animate-pulse [animation-duration:4s]">🦀</div><div class="w-full bg-[#001F2D]/80 backdrop-blur-sm rounded-t-2xl rounded-b-lg p-2 md:p-4 flex flex-col items-center shadow-[0_0_20px_rgba(57,255,156,0.4)] border-2 border-[#39FF9C]"><div class="w-14 h-14 md:w-16 md:h-16 bg-[#0D0D2B] rounded-full flex items-center justify-center text-[#39FF9C] text-xl md:text-2xl shadow-[0_0_15px_inset_#39FF9C] mb-2 border-2 border-[#39FF9C]/50 [font-family:'Baloo_2',_cursive] [font-weight:800]">${initials}</div><div class="text-center w-full"><div class="text-white text-xs md:text-lg truncate w-full [font-family:'Baloo_2',_cursive] [font-weight:600]">${name}</div><div class="text-[#39FF9C] font-black text-xs md:text-base mt-1 tabular-nums drop-shadow-[0_0_8px_#39FF9C] [font-family:'Inter',_sans-serif]">${score}</div></div></div><div class="h-12 w-full bg-[#001824] rounded-b-xl shadow-lg border-x-2 border-b-2 border-[#39FF9C]/50 flex items-center justify-center overflow-hidden relative"><div class="absolute inset-0 bg-gradient-to-t from-[#39FF9C]/20 to-transparent"></div><span class="text-[#39FF9C] font-bold text-xl opacity-80 drop-shadow-[0_0_10px_#39FF9C] [font-family:'Baloo_2',_cursive]">${rank}</span></div></div>`;
+    return "";
+  }
+
+  function rowUnderwater(pl, rank, delay, gap) {
+    const name = yr().esc(pl.name);
+    const score = fmtScore(pl.wagered);
+    const rankStr = rank;
+    const upSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-trending-up w-3 h-3" aria-hidden="true"><path d="M16 7h6v6" /><path d="m22 7-8.5 8.5-5-5L2 17" /></svg>`;
+    const downSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-trending-down text-[#FF6B9D] w-4 h-4 drop-shadow-[0_0_3px_#FF6B9D]" aria-hidden="true"><path d="M16 17h6v-6" /><path d="m22 17-8.5-8.5-5 5L2 7" /></svg>`;
+    const icon = hash(pl.name) % 2 === 0 ? upSvg : downSvg;
+    return `<div class="w-full bg-[#001824]/80 backdrop-blur-sm rounded-2xl p-4 flex items-center border-l-4 border-[#00E5FF] shadow-[0_4px_15px_rgba(0,0,0,0.5)] hover:shadow-[0_0_15px_rgba(0,229,255,0.2)] transform hover:scale-[1.01] transition-all cursor-pointer relative overflow-hidden"><div class="absolute inset-0 bg-gradient-to-r from-[#00E5FF]/5 to-transparent opacity-0 hover:opacity-100 transition-opacity"></div><div class="w-10 h-10 md:w-12 md:h-12 bg-[#0D0D2B] rounded-full flex items-center justify-center text-[#00E5FF] font-black text-lg md:text-xl shadow-[0_0_10px_inset_#00E5FF] shrink-0 border border-[#00E5FF]/40 relative z-10 [font-family:'Baloo_2',_cursive]">${rankStr}</div><div class="ml-4 flex-grow flex flex-col md:flex-row md:items-center justify-between relative z-10"><div class="flex items-center gap-2"><span class="text-white/90 text-lg md:text-xl tracking-wide [font-family:'Baloo_2',_cursive] [font-weight:600]">${name}</span>${icon}</div><div class="text-[#00E5FF]/90 font-black text-lg md:text-2xl tabular-nums mt-1 md:mt-0 flex items-center gap-2 [font-family:'Inter',_sans-serif]">${score}<!-- --> <span class="text-base opacity-90 drop-shadow-none">🫧</span></div></div></div>`;
+  }
+
+  function top3Vip(pl, rank) { return ""; }
+
+  function rowVip(pl, rank, delay, gap) {
+    const name = yr().esc(pl.name);
+    const score = yr().moneyShort(pl.wagered);
+    const rankStr = String(rank).padStart(2, '0');
+    const arrowUp = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-arrow-up w-3 h-3 text-[#C9A84C]" aria-hidden="true"><path d="m5 12 7-7 7 7" /><path d="M12 19V5" /></svg>`;
+    const arrowDown = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-arrow-down w-3 h-3" aria-hidden="true"><path d="M12 5v14" /><path d="m19 12-7 7-7-7" /></svg>`;
+    const arrowSame = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-minus w-3 h-3 opacity-30" aria-hidden="true"><path d="M5 12h14" /></svg>`;
+    const icon = (hash(pl.name) % 3 === 0) ? arrowUp : (hash(pl.name) % 3 === 1) ? arrowDown : arrowSame;
+    const initials = wordInitials(pl.name);
+    const max = maxWagered();
+    const winRate = max ? ('WR: ' + ((pl.wagered / max) * 100).toFixed(1) + '%') : 'WR: 0.0%';
+    const handle = '@' + pl.name.toLowerCase().replace(/[\s_]+/g, '_').slice(0, 14);
+    return `<div class="flex items-center w-full py-6 px-4 md:px-8 border-b border-[#C9A84C]/20 hover:bg-[#0f0f0f] transition-colors border-l-[1px] border-l-transparent"><div class="w-12 text-[#C9A84C]/60 text-sm [font-family:'Space_Mono',_monospace]">${rankStr}</div><div class="mr-6 shrink-0"><div class="w-8 h-8 rounded-full border border-[#C9A84C] flex items-center justify-center bg-[#0A0A0A]"><span class="text-[#C9A84C] text-[10px] [font-family:'Space_Mono',_monospace]">${initials}</span></div></div><div class="flex-1 flex flex-col justify-center min-w-0"><h2 class="text-[#F5F5F0] truncate text-2xl [font-family:'Cormorant_Garamond',_serif] [font-style:italic]">${name}</h2><p class="text-[#C9A84C]/50 text-[10px] tracking-wider mt-1 [font-family:'Space_Mono',_monospace]">${handle}</p></div><div class="flex flex-col items-end shrink-0 ml-4"><div class="text-[#C9A84C] text-xl [font-family:'Space_Mono',_monospace]">${score}</div><div class="flex items-center gap-4 mt-1"><span class="text-[#F5F5F0]/40 text-[10px] tracking-wider [font-family:'Space_Mono',_monospace]">${winRate}</span><div class="w-4 flex justify-end text-[#C9A84C]/50">${icon}</div></div></div></div>`;
+  }
+
+  function top3Western(pl, rank) {
+    const name = yr().esc(pl.name);
+    const score = fmtScore(pl.wagered);
+    const initials = wordInitials(pl.name);
+    if (rank === 1) return `<div class="flex flex-col items-center relative w-1/3 max-w-[240px] z-20 transform -translate-y-4 md:-translate-y-8"><div class="absolute inset-0 bg-[#F5A623] blur-[50px] opacity-30 rounded-full animate-pulse pointer-events-none"></div><div class="text-5xl md:text-7xl mb-2 filter drop-shadow-[0_4px_4px_rgba(0,0,0,0.5)] z-10 relative">🏆</div><div class="w-full bg-gradient-to-b from-[#EEDC9A] to-[#C8A951] rounded-t-lg rounded-b-md p-4 md:p-6 flex flex-col items-center shadow-[0_15px_30px_rgba(0,0,0,0.9)] border-4 border-[#F5A623] relative z-10"><div class="absolute -top-4 -right-4 text-3xl animate-bounce">🤠</div><div class="absolute -top-3 -left-3 text-2xl animate-bounce [animation-delay:0.3s]">🪙</div><div class="w-20 h-20 md:w-28 md:h-28 bg-[#1A0A00] rounded-full flex items-center justify-center text-[#F5A623] text-3xl md:text-4xl shadow-[inset_0_4px_10px_rgba(0,0,0,0.5)] mb-4 border-4 border-[#F5A623] [font-family:'Rye',_serif]">${initials}</div><div class="text-center w-full"><div class="text-[#1A0A00] text-base md:text-2xl truncate w-full [font-family:'Rye',_serif]">${name}</div><div class="text-[#C0392B] font-black text-lg md:text-2xl mt-1 tabular-nums drop-shadow-[0_1px_1px_rgba(255,255,255,0.5)] font-['Inter']">${score}</div></div></div><div class="h-20 w-full bg-gradient-to-b from-[#F5A623] to-[#B87A11] rounded-b-xl shadow-lg border-x-4 border-b-4 border-[#8A5A0A] flex items-center justify-center relative z-10"><span class="text-[#1A0A00] font-bold text-4xl opacity-50 [font-family:'Rye',_serif]">${rank}</span></div></div>`;
+    if (rank === 2) return `<div class="flex flex-col items-center relative w-1/3 max-w-[200px] z-10 transform hover:scale-105 transition-transform"><div class="text-4xl md:text-6xl mb-2 filter drop-shadow-[0_4px_4px_rgba(0,0,0,0.5)] animate-pulse [animation-duration:3s]">🥈</div><div class="w-full bg-gradient-to-b from-[#D4B886] to-[#A68A56] rounded-t-lg rounded-b-md p-3 md:p-4 flex flex-col items-center shadow-[0_10px_20px_rgba(0,0,0,0.8)] border-4 border-[#8B6B3D]"><div class="w-16 h-16 md:w-20 md:h-20 bg-[#2C1000] rounded-full flex items-center justify-center text-[#F5A623] text-2xl md:text-3xl shadow-inner mb-3 border-4 border-[#1A0A00] [font-family:'Rye',_serif]">${initials}</div><div class="text-center w-full"><div class="text-[#2C1000] text-sm md:text-xl truncate w-full [font-family:'Rye',_serif]">${name}</div><div class="text-[#800000] font-black text-sm md:text-lg mt-1 tabular-nums drop-shadow-sm font-['Inter']">${score}</div></div></div><div class="h-16 w-full bg-gradient-to-b from-[#8B6B3D] to-[#5C4525] rounded-b-xl shadow-lg border-x-4 border-b-4 border-[#3D2912] flex items-center justify-center"><span class="text-[#2C1000] font-bold text-2xl opacity-50 [font-family:'Rye',_serif]">${rank}</span></div></div>`;
+    if (rank === 3) return `<div class="flex flex-col items-center relative w-1/3 max-w-[180px] z-10 transform hover:scale-105 transition-transform"><div class="text-4xl md:text-5xl mb-2 filter drop-shadow-[0_4px_4px_rgba(0,0,0,0.5)] animate-pulse [animation-duration:4s]">🥉</div><div class="w-full bg-gradient-to-b from-[#C4A076] to-[#9A764A] rounded-t-lg rounded-b-md p-2 md:p-4 flex flex-col items-center shadow-[0_10px_20px_rgba(0,0,0,0.8)] border-4 border-[#7A5A34]"><div class="w-14 h-14 md:w-16 md:h-16 bg-[#2C1000] rounded-full flex items-center justify-center text-[#F5A623] text-xl md:text-2xl shadow-inner mb-2 border-4 border-[#1A0A00] [font-family:'Rye',_serif]">${initials}</div><div class="text-center w-full"><div class="text-[#2C1000] text-xs md:text-lg truncate w-full [font-family:'Rye',_serif]">${name}</div><div class="text-[#800000] font-black text-xs md:text-base mt-1 tabular-nums drop-shadow-sm font-['Inter']">${score}</div></div></div><div class="h-12 w-full bg-gradient-to-b from-[#7A5A34] to-[#4F371B] rounded-b-xl shadow-lg border-x-4 border-b-4 border-[#33220F] flex items-center justify-center"><span class="text-[#2C1000] font-bold text-xl opacity-50 [font-family:'Rye',_serif]">${rank}</span></div></div>`;
+    return "";
+  }
+
+  function rowWestern(pl, rank, delay, gap) {
+    const name = yr().esc(pl.name);
+    const score = fmtScore(pl.wagered);
+    const rankStr = rank;
+    const upSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-trending-up w-3 h-3" aria-hidden="true"><path d="M16 7h6v6" /><path d="m22 7-8.5 8.5-5-5L2 17" /></svg>`;
+    const downSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-trending-down text-[#C0392B] w-4 h-4" aria-hidden="true"><path d="M16 17h6v-6" /><path d="m22 17-8.5-8.5-5 5L2 7" /></svg>`;
+    const icon = hash(pl.name) % 2 === 0 ? upSvg : downSvg;
+    return `<div class="w-full rounded-lg p-4 flex items-center border-l-8 border-[#F5A623] shadow-[0_4px_10px_rgba(0,0,0,0.5)] transform hover:scale-[1.01] transition-all cursor-pointer hover:bg-[#381E0C] group bg-[#2C1000]"><div class="w-10 h-10 md:w-12 md:h-12 bg-[#F5A623] rounded-full flex items-center justify-center text-[#2C1000] shadow-[inset_0_2px_4px_rgba(255,255,255,0.4)] shrink-0 border-2 border-[#C98415] relative"><div class="absolute inset-0 border-2 border-[#C98415] rounded-full rotate-45 scale-[1.05] opacity-30"></div><span class="font-black text-lg md:text-xl relative z-10 font-['Inter']">4</span></div><div class="ml-4 flex-grow flex flex-col md:flex-row md:items-center justify-between"><div class="flex items-center gap-2"><span class="text-[#FFF8E7] text-lg md:text-xl tracking-wide group-hover:text-[#F5A623] transition-colors [font-family:'Rye',_serif]">${name}</span>${icon}</div><div class="text-[#F5A623] text-lg md:text-2xl tabular-nums mt-1 md:mt-0 flex items-center gap-2 [font-family:'Rye',_serif]">${score}<!-- --> <span class="text-base opacity-80 filter grayscale-[50%] brightness-[1.5]">�${rankStr}�</span></div></div></div>`;
+  }
+
+  window.CASINO_BUILDERS = {
+    top3: {
+      arcade: top3Arcade,
+      candy: top3Candy,
+      fun: top3Fun,
+      space: top3Space,
+      tropical: top3Tropical,
+      underwater: top3Underwater,
+      vip: top3Vip,
+      western: top3Western,
+    },
+    rows: {
+      arcade: rowArcade,
+      candy: rowCandy,
+      fun: rowFun,
+      space: rowSpace,
+      tropical: rowTropical,
+      underwater: rowUnderwater,
+      vip: rowVip,
+      western: rowWestern,
+    }
+  };
 })();
