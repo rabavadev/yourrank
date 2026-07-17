@@ -20,14 +20,22 @@ export const NEON_CSS = `
 }
 body{font-family:"Space Grotesk","Sora",system-ui,sans-serif}
 .field{background:
-  linear-gradient(rgba(0,255,209,.035) 1px,transparent 1px),
-  linear-gradient(90deg,rgba(255,44,208,.03) 1px,transparent 1px),
-  radial-gradient(900px 520px at 50% -10%,rgba(0,255,209,.14),transparent 62%),
-  linear-gradient(180deg,#070417,var(--bg));background-size:54px 54px,54px 54px,auto,auto}
+  linear-gradient(rgba(0,255,209,.08) 1px,transparent 1px),
+  linear-gradient(90deg,rgba(0,255,209,.08) 1px,transparent 1px),
+  radial-gradient(1100px 640px at 50% 118%,rgba(255,44,208,.24),transparent 58%),
+  radial-gradient(1000px 560px at 50% -8%,rgba(0,255,209,.18),transparent 60%),
+  linear-gradient(180deg,#070417,var(--bg));
+  background-size:44px 44px,44px 44px,auto,auto,auto}
 .hero-kicker,.eyebrow,.pcol-label{text-transform:uppercase;letter-spacing:.22em}
 .hero-name{text-transform:uppercase;letter-spacing:.01em;text-shadow:0 0 42px rgba(0,255,209,.18)}
 .btn,.panel,.board,.table,.t3{box-shadow:0 0 0 1px rgba(0,255,209,.05),0 0 30px rgba(255,44,208,.05)}
 .btn--grad{color:#02110e}
 .timer-grid,.code-box{box-shadow:inset 0 0 24px rgba(0,255,209,.06)}
 .t-head{background:linear-gradient(90deg,rgba(0,255,209,.07),rgba(255,44,208,.07))}
+/* signature: neon-outlined rows + glowing rule */
+.table{border:1px solid var(--line-2);box-shadow:0 0 40px -12px rgba(0,255,209,.4),inset 0 0 0 1px rgba(255,44,208,.05)}
+.t-row{border-left:2px solid transparent;transition:border-color .15s,background .15s}
+.t-row:hover{border-left-color:var(--cy);background:rgba(0,255,209,.05)}
+.t-row[data-position="1"]{border-left-color:var(--bl);background:linear-gradient(90deg,rgba(255,44,208,.12),transparent 70%)}
+.sec-title{text-shadow:0 0 24px rgba(0,255,209,.5)}
 `;
