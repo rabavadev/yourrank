@@ -26,10 +26,10 @@ export const MIDNIGHT_CSS = `
 body{font-family:"Space Grotesk","Sora",system-ui,sans-serif}
 ::selection{background:#f0c24b;color:#1a1206}
 .field{background:
-  radial-gradient(1100px 620px at 50% -12%,var(--violet-1) 0%,transparent 62%),
-  radial-gradient(820px 520px at 85% 8%,rgba(240,194,75,.10) 0%,transparent 55%),
-  radial-gradient(700px 500px at 12% 22%,rgba(240,194,75,.05) 0%,transparent 55%),
-  linear-gradient(180deg,var(--violet-2) 0%,var(--bg) 55%)}
+  radial-gradient(1200px 700px at 50% -18%,rgba(240,194,75,.22) 0%,transparent 58%),
+  repeating-linear-gradient(45deg,rgba(240,194,75,.045) 0 1px,transparent 1px 26px),
+  repeating-linear-gradient(-45deg,rgba(240,194,75,.045) 0 1px,transparent 1px 26px),
+  radial-gradient(130% 110% at 50% 0%,#0f0c05 0%,var(--bg) 62%)}
 .nav{border-bottom:1px solid var(--line)}
 .hero-kicker{color:var(--gold);text-transform:uppercase;letter-spacing:.22em;font-size:.78rem}
 .hero-name{text-transform:uppercase;letter-spacing:.03em}
@@ -38,4 +38,11 @@ body{font-family:"Space Grotesk","Sora",system-ui,sans-serif}
 .tcell b{color:var(--gold)}
 .panel,.board{box-shadow:0 0 0 1px var(--line),0 30px 80px rgba(0,0,0,.5)}
 .t-head{border-bottom:1px solid var(--line-2)}
+/* signature: gilded VIP framing */
+.sec-title{position:relative;display:inline-block}
+.board .sec-title::after{content:"";position:absolute;left:0;right:0;bottom:-8px;height:2px;background:var(--grad-name)}
+.table{border:1px solid var(--line-2);border-radius:var(--radius)}
+.t-row{border-bottom:1px solid rgba(240,194,75,.10)}
+.t-row[data-position="1"]{background:linear-gradient(90deg,rgba(240,194,75,.12),transparent 70%)}
+.t3--1{box-shadow:0 0 60px -18px var(--gold)}
 `;

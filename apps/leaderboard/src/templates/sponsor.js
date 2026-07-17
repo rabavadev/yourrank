@@ -20,9 +20,10 @@ export const SPONSOR_CSS = `
 }
 body{font-family:"Sora",system-ui,sans-serif}
 .field{background:
-  radial-gradient(900px 540px at 75% -8%,rgba(255,77,77,.16),transparent 62%),
-  linear-gradient(135deg,transparent 0 70%,rgba(255,255,255,.018) 70% 71%,transparent 71%),
-  linear-gradient(180deg,var(--violet-2),var(--bg))}
+  linear-gradient(115deg,rgba(255,77,77,.16) 0 30%,transparent 30% 100%),
+  linear-gradient(115deg,transparent 0 30%,rgba(255,159,67,.05) 30% 31%,transparent 31%),
+  repeating-linear-gradient(0deg,rgba(255,255,255,.014) 0 1px,transparent 1px 3px),
+  linear-gradient(180deg,#12161d 0%,var(--bg) 70%)}
 .nav{border-bottom:1px solid var(--line)}
 .hero-kicker,.eyebrow,.pcol-label{text-transform:uppercase;letter-spacing:.19em}
 .hero-name{letter-spacing:-.04em}
@@ -32,4 +33,12 @@ body{font-family:"Sora",system-ui,sans-serif}
 .panel-badge{border-radius:4px;color:#fff}
 .t-head{border-left:4px solid var(--cy)}
 .t3--1{border-top:3px solid var(--gold)}
+/* signature: left-aligned campaign header + ticker rule */
+.hero{text-align:left}
+.hero .stream-window{margin-left:0}
+.hero-sub{margin-left:0;margin-right:0}
+.hero-cta{justify-content:flex-start}
+.hero-timer{margin-left:0}
+.hero-name::after{content:"";display:block;width:96px;height:4px;margin-top:14px;background:var(--grad-cta)}
+.board-head{border-left:4px solid var(--cy);padding-left:16px}
 `;
