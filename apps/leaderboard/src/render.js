@@ -625,3 +625,57 @@ ${header}
 ${footer}
 </body></html>`;
 }
+
+export function renderEmbed(data, opts) {
+  const br = (data && data.brand) || {};
+  const players = Array.isArray(data.players) ? data.players.slice().sort((a, b) => (b.wagered || 0) - (a.wagered || 0)) : [];
+  const top3 = players.slice(0, 3);
+  const rest = players.slice(3);
+  const accent = br.accentA && br.accentB
+    ? `:root{--accent-start:${br.accentA};--accent-end:${br.accentB}}`
+    : ":root{--accent-start:#c8ff00;--accent-end:#5ad9ff}}";
+  const top3Html = top3.length
+    ? `<div class="embed-top3">${top3.map((p, i) => {
+        const medal = ["🥇", "🥈", "🥉"][i] || "";
+        return `<div class="embed-top3-card"><span class="embed-medal">${medal}</span><span class="embed-name">${esc(p.name)}</span><span class="embed-wagered">${fmtCurrency(p.wagered)}</span><span class="embed-prize">${fmtCurrency(p.prize)}</span></div>`;
+      }).join("")}</div>`
+    : "";
+  const rowsHtml = rest.length
+    ? `<table class="embed-rows"><thead><tr><th>#</th><th>Player</th><th>Wagered</th><th>Prize</th></tr></thead><tbody>${rest.map((p, i) => `<tr><td class="embed-rank">${i + 4}</td><td class="embed-name">${esc(p.name)}</td><td class="embed-wagered">${fmtCurrency(p.wagered)}</td><td class="embed-prize">${fmtCurrency(p.prize)}</td></tr>`).join("")}</tbody></table>`
+    : "";
+  const endsAt = data.endsAt ? `<p class="embed-ends">Resets ${new Date(data.endsAt).toUTCString()}</p>` : "";
+  return `<!DOCTYPE html><html lang="en"><head>
+<meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta http-equiv="refresh" content="60" />
+<title>${esc(br.name || opts.slug)}</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;padding:12px;font-family:Inter,system-ui,sans-serif;background:#0b0b12;color:#ededf0}
+.embed-wrap{max-width:520px;margin:0 auto;border:1px solid rgba(150,120,220,.25);border-radius:12px;background:#13131a;overflow:hidden}
+.embed-head{padding:14px 16px;background:linear-gradient(100deg,var(--accent-start),var(--accent-end));color:#000}
+.embed-title{font-size:18px;font-weight:800;margin:0 0 4px}
+.embed-meta{font-size:12px;opacity:.8;margin:0}
+.embed-top3{display:flex;gap:8px;padding:12px;justify-content:center;background:#0f0f16}
+.embed-top3-card{flex:1;min-width:0;text-align:center;padding:10px 6px;border-radius:8px;background:#1a1a22;border:1px solid rgba(150,120,220,.15)}
+.embed-medal{display:block;font-size:20px;margin-bottom:4px}
+.embed-name{display:block;font-weight:700;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:6px}
+.embed-wagered,.embed-prize{display:block;font-size:11px}
+.embed-prize{color:var(--accent-start)}
+.embed-rows{width:100%;border-collapse:collapse;font-size:13px}
+.embed-rows th{text-align:left;padding:8px 12px;background:#1a1a22;color:#9a94b8;font-weight:600;border-bottom:1px solid rgba(150,120,220,.15)}
+.embed-rows td{padding:8px 12px;border-bottom:1px solid rgba(150,120,220,.1)}
+.embed-rank{width:28px;color:#9a94b8}
+.embed-name{max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.embed-wagered,.embed-prize{text-align:right;font-variant-numeric:tabular-nums}
+.embed-prize{color:var(--accent-start)}
+.embed-ends{padding:10px 12px;font-size:11px;color:#9a94b8;text-align:center;margin:0;border-top:1px solid rgba(150,120,220,.15)}
+.empty{padding:40px 12px;text-align:center;color:#9a94b8}
+</style><style nonce="${opts.nonce}">${accent}</style></head><body>
+<div class="embed-wrap">
+<div class="embed-head"><h1 class="embed-title">${esc(br.name || opts.slug)}</h1><p class="embed-meta">${esc(br.period || "")} · ${esc(br.prizePool || "")}</p></div>
+${top3.length ? top3Html : '<p class="empty">No players yet.</p>'}
+${rowsHtml}
+${endsAt}
+</div>
+</body></html>`;
+}
