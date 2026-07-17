@@ -119,6 +119,7 @@ function buildTop3Card(pl, rank) {
 window.__yr = { money, moneyShort, esc, initials, ord };
 
 function currentTemplate() { return document.body?.dataset?.template || "classic"; }
+function isCasinoFull() { return !!((window.CASINO_BUILDERS || {}).top3 || {})[currentTemplate()]; }
 function buildTop3(pl, rank) {
   const fn = (window.CASINO_BUILDERS?.top3 || {})[currentTemplate()];
   return fn ? fn(pl, rank) : buildTop3Card(pl, rank);
@@ -157,9 +158,10 @@ function updateLeaderboard(players) {
 
   const rows = $("[data-rows]");
   if (rows) {
-    rows.innerHTML = sorted.map((pl, i) => {
-      const rank = i + 1;
-      const gap = i === 0 ? 0 : sorted[i - 1].wagered - pl.wagered;
+    const startIndex = (t3 && isCasinoFull()) ? 3 : 0;
+    rows.innerHTML = sorted.slice(startIndex).map((pl, i) => {
+      const rank = i + 1 + startIndex;
+      const gap = i === 0 ? 0 : sorted[i - 1 + startIndex].wagered - pl.wagered;
       return buildRow(pl, rank, Math.min(i * 0.025, 0.5), gap);
       }).join("");
       // SEC-713: apply animation-delay via CSSOM (CSP blocks style="" attributes)
@@ -308,9 +310,10 @@ function boot() {
 
   const rows = $("[data-rows]");
   if (rows) {
-    rows.innerHTML = players.map((pl, i) => {
-      const r = i + 1;
-      const gap = i === 0 ? 0 : players[i - 1].wagered - pl.wagered;
+    const startIndex = (t3 && isCasinoFull()) ? 3 : 0;
+    rows.innerHTML = players.slice(startIndex).map((pl, i) => {
+      const r = i + 1 + startIndex;
+      const gap = i === 0 ? 0 : players[i - 1 + startIndex].wagered - pl.wagered;
       return buildRow(pl, r, Math.min(i * 0.025, 0.5), gap);
     }).join("");
     // SEC-713: apply animation-delay via CSSOM (CSP blocks style="" attributes)

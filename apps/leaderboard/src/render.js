@@ -369,7 +369,7 @@ body[data-sections-payouts="false"] .payouts { display: none !important; }
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@500;700&family=Press+Start+2P&family=Fredoka+One&family=Orbitron:wght@400;700;900&family=Pacifico&family=Baloo+2:wght@400;600;800&family=Cormorant+Garamond:wght@400;600;700&family=Rye&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" media="print" data-async />
 <script nonce="${opts.nonce}">document.querySelector('link[data-async]').onload=function(){this.media='all'};</script>
 <noscript><link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@500;700&family=Press+Start+2P&family=Fredoka+One&family=Orbitron:wght@400;700;900&family=Pacifico&family=Baloo+2:wght@400;600;800&family=Cormorant+Garamond:wght@400;600;700&family=Rye&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" /></noscript>
-<link rel="stylesheet" href="/assets/leaderboard.css" />
+${fullPage ? "" : `<link rel="stylesheet" href="/assets/leaderboard.css" />`}
 ${tplCss}
 ${themeCss}
 ${sectionCss}
