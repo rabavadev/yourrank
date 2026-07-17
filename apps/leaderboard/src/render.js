@@ -402,7 +402,7 @@ ${boardTabs}
 ${composeMain(tpl, buildParts({ b, esc, heroLogo, hasCasino, casino, period, pool, hasCta, ctaHref, hasPartner, hasCode, code, blurb, whyStats, socials }), textOverrides)}</main>
 ${fullPageFooter}
 ${fullPage ? "" : `<footer class="ftr"><div class="ftr-id"><span class="ftr-name" data-brand-name>${esc(b.name)}</span><span class="ftr-tag" data-tagline>${esc(b.tagline)}</span></div>
-<p class="ftr-fine">18+ only. Gambling can be addictive. Please play responsibly. BeGambleAware.org${hasCasino ? ` · ${esc(b.name)} is not affiliated with ${esc(casino)}.` : "."}</p>
+<p class="ftr-fine">${hasCasino ? `18+ only. Gambling can be addictive. Please play responsibly. BeGambleAware.org · ${esc(b.name)} is not affiliated with ${esc(casino)}.` : `18+ only. Compete responsibly. BeGambleAware.org.`}</p>
 <p class="ftr-copy">© <span data-year></span> <span data-brand-name>${esc(b.name)}</span>. All rights reserved.</p></footer>`}
 ${badge}${fullPage ? `<script src="/assets/casino-client.js" nonce="${opts.nonce}"></script>` : ""}<script nonce="${opts.nonce}">window.__SITE_DATA__=${dataJson};window.__SLUG__=${JSON.stringify(opts.slug || "")};</script><script src="/assets/leaderboard.js"></script>
 </body></html>`;

@@ -22,6 +22,7 @@ import { TERMINAL_CSS } from "./terminal.js";
 import { REWARDS_CSS } from "./rewards.js";
 import { AMBER_CSS } from "./amber.js";
 import { COPPER_CSS } from "./copper.js";
+import { ESPORTS_CSS } from "./esports.js";
 import { CASINO_TEMPLATES } from "./casino.js";
 
 export const TEMPLATES = {
@@ -188,6 +189,17 @@ export const TEMPLATES = {
       { id: "copper", name: "Copper", accentA: "#f0a95a", accentB: "#d1702a" },
       { id: "rose", name: "Rose", accentA: "#ff9a8b", accentB: "#d1702a" },
       { id: "brass", name: "Brass", accentA: "#f0b45a", accentB: "#b8862c" },
+    ],
+  },
+  esports: {
+    id: "esports",
+    name: "Esports",
+    description: "Non-casino tournament page with a neon-green cyber-arena look and team-style ranks.",
+    css: ESPORTS_CSS,
+    presets: [
+      { id: "lime", name: "Lime", accentA: "#cdff1f", accentB: "#72ff3d" },
+      { id: "ice", name: "Ice", accentA: "#5ad9ff", accentB: "#3b82f6" },
+      { id: "ember", name: "Ember", accentA: "#ff5f6d", accentB: "#ff9f43" },
     ],
   },
   ...CASINO_TEMPLATES,
