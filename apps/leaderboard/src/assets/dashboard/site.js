@@ -714,7 +714,7 @@ $("overlayUpgrade")?.addEventListener("click", (e) => { e.preventDefault(); chec
 $("testDiscord")?.addEventListener("click", async () => {
   const s = $("testDiscordStatus"); if (s) s.textContent = "Sending…";
   try {
-    const r = await fetch("/api/site/notify/test", { method: "POST", credentials: "include", headers: { "content-type": "application/json", "x-csrf-token": getCsrf() }, body: JSON.stringify({ channel: "discord" }) });
+    const r = await fetch("/api/site/notify/test", { method: "POST", credentials: "include", headers: { "content-type": "application/json", "x-csrf-token": getCsrf() }, body: JSON.stringify({ channel: "discord", webhook_url: $("f_webhook")?.value.trim() || undefined }) });
     const d = await r.json();
     if (s) s.textContent = d.ok ? "✅ Sent!" : (d.error || "Failed");
   } catch (e) { if (s) s.textContent = "Network error."; }
@@ -722,7 +722,7 @@ $("testDiscord")?.addEventListener("click", async () => {
 $("testTelegram")?.addEventListener("click", async () => {
   const s = $("testTelegramStatus"); if (s) s.textContent = "Sending…";
   try {
-    const r = await fetch("/api/site/notify/test", { method: "POST", credentials: "include", headers: { "content-type": "application/json", "x-csrf-token": getCsrf() }, body: JSON.stringify({ channel: "telegram" }) });
+    const r = await fetch("/api/site/notify/test", { method: "POST", credentials: "include", headers: { "content-type": "application/json", "x-csrf-token": getCsrf() }, body: JSON.stringify({ channel: "telegram", chat_id: $("f_tgChatId")?.value.trim() || undefined }) });
     const d = await r.json();
     if (s) s.textContent = d.ok ? "✅ Sent!" : (d.error || "Failed");
   } catch (e) { if (s) s.textContent = "Network error."; }

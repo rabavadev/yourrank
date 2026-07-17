@@ -50,6 +50,7 @@ export const dashboardPage = leaderboardPageHtml({
 <button class="lb-nav" type="button" data-nav="growth"><span class="lb-nav-ic" aria-hidden="true">📈</span>Analytics</button>
 <span class="lb-side-grp">Advanced</span>
 <button class="lb-nav" type="button" data-nav="integrations"><span class="lb-nav-ic" aria-hidden="true">🔌</span>Overlay &amp; domain</button>
+<button class="lb-nav" type="button" data-nav="notifications"><span class="lb-nav-ic" aria-hidden="true">🔔</span>Notifications</button>
 <button class="lb-nav" type="button" data-nav="manage"><span class="lb-nav-ic" aria-hidden="true">⚙</span>Periods &amp; plan</button>
 <div class="lb-side-foot"><span class="label">Editing</span><p class="live-link"><a id="liveLink" href="#" target="_blank">…</a></p><span class="label" id="planBadge">FREE PLAN</span></div>
 </aside>
@@ -156,7 +157,7 @@ export const dashboardPage = leaderboardPageHtml({
 <div class="socials-editor" id="socialsList"></div></div>
 </section>
 <section class="lb-page" data-page="integrations">
-<div class="lb-phead"><button class="lb-menu" type="button" aria-label="Show sections" data-menu aria-expanded="false" aria-controls="lbSide">☰</button><div><h1 tabindex="-1">Overlay &amp; domain</h1><p class="lb-psub">Extras for your stream and site — overlay, your own domain, and alerts</p></div></div>
+<div class="lb-phead"><button class="lb-menu" type="button" aria-label="Show sections" data-menu aria-expanded="false" aria-controls="lbSide">☰</button><div><h1 tabindex="-1">Overlay &amp; domain</h1><p class="lb-psub">Extras for your stream and site — overlay and your own domain</p></div></div>
 <div class="card" id="overlayCard"><h2>OBS Stream Overlay <span class="pill pill--info ml-6">PRO</span></h2><p class="card-sub">Add a live leaderboard overlay to your stream. It auto-updates every 15 seconds with smooth rank animations.</p>
 <div id="overlayBody">
 <div class="field"><label>Overlay URL</label>
@@ -180,6 +181,9 @@ export const dashboardPage = leaderboardPageHtml({
 <div id="domainStatus" class="hint mt-8 min-h-18" role="status" aria-live="polite"></div>
 </div>
 <div class="empty" id="domainLock" hidden>Custom domains are a Pro feature. <a href="#" id="domainUpgrade">Upgrade to unlock it</a>.</div></div>
+</section>
+<section class="lb-page" data-page="notifications">
+<div class="lb-phead"><button class="lb-menu" type="button" aria-label="Show sections" data-menu aria-expanded="false" aria-controls="lbSide">☰</button><div><h1 tabindex="-1">Notifications</h1><p class="lb-psub">Discord and Telegram alerts for your leaderboard</p></div></div>
 <div class="card" id="notifyCard"><h2>Notifications <span class="pill pill--info ml-6">PRO</span></h2><p class="card-sub">Optional alerts when your leaderboard resets or a player breaks into the top 3. Discord and Telegram supported — the leaderboard itself works without either.</p>
 <div id="notifyBody">
 <div class="field"><label>Events that trigger notifications</label>
