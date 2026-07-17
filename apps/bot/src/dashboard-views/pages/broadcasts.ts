@@ -8,6 +8,18 @@ export function broadcastsPanel(): string {
     <label class="sr-only" for="bcBody">Message</label>
     <textarea id="bcBody" rows="3" placeholder="Message to all your bot's subscribers — use {name} to include the subscriber's first name (HTML supported)"></textarea>
     <div id="bcAudience" class="muted style-24" aria-live="polite">This will send to <b>–</b> subscribers.</div>
+    <div id="bcPreview" class="bc-preview" hidden>
+      <div class="bc-preview-card">
+        <h3>Preview broadcast</h3>
+        <p>This will send to <b id="bcPreviewCount">–</b> subscribers.</p>
+        <div class="bc-preview-msg" id="bcPreviewBody"></div>
+        <div class="bc-preview-img" id="bcPreviewImg" hidden></div>
+        <div class="bc-preview-actions">
+          <button class="ghost" data-action="closeBroadcastPreview" type="button">Cancel</button>
+          <button data-action="confirmBroadcast" type="button">Send broadcast</button>
+        </div>
+      </div>
+    </div>
     <div class="style-25">
       <button data-action="sendBroadcast" type="button">Send broadcast</button>
       <span class="muted style-26">or send a test copy to</span>

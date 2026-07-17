@@ -414,12 +414,16 @@ section { width: min(var(--wrap), 100% - 2.5rem); margin-inline: auto; }
   /* U-5/M-1: keep the find-your-rank result visible on mobile (was display:none) */
   .find-rank-result { display: block; width: 100%; margin-top: 0.4rem; }
   /* M-1: sticky search so the highest-value interaction stays reachable */
+  .find-rank-bar, .board-tabs { transition: transform .22s ease; will-change: transform; }
   .find-rank-bar {
     position: sticky; top: 3rem; z-index: 30;
     background: color-mix(in srgb, var(--bg) 92%, transparent);
     backdrop-filter: blur(8px);
     padding: 0.6rem 0; margin-inline: -0.2rem;
   }
+  /* U-3: hide sticky headers on mobile while scrolling down to free viewport */
+  .scrolled-down .board-tabs { transform: translateY(-100%); }
+  .scrolled-down .find-rank-bar { transform: translateY(calc(-100% - 3rem)); }
   .player-count-badge { font-size: 0.6rem; padding: 0.25rem 0.55rem; }
   .social-cards { grid-template-columns: 1fr; }
   .board-head { flex-direction: column; align-items: flex-start; }

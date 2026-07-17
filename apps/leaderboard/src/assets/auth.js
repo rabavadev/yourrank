@@ -63,7 +63,7 @@ form.querySelectorAll("input").forEach(inp => inp.addEventListener("input", () =
   if (inp.id) clearFieldError(inp.id);
 }));
 
-/* Live password strength meter (signup only) */
+/* Live password strength meter + requirement checklist (signup only) */
 function passwordScore(v) {
   if (v.length < 8) return 0;
   let s = 1;
@@ -75,17 +75,33 @@ function passwordScore(v) {
 const STRENGTH_LABELS = ["", "Weak", "Fair", "Good", "Strong"];
 const pwInput = document.getElementById("password");
 const pwMeter = document.getElementById("pwMeter");
-if (mode === "signup" && pwInput && pwMeter) {
+const pwReqs = document.getElementById("pwReqs");
+function updatePasswordFeedback(v) {
+  const hasLen = v.length >= 8;
+  const hasCase = /[a-z]/.test(v) && /[A-Z]/.test(v);
+  const hasNum = /\d/.test(v);
+  const hasSpecial = /[^A-Za-z0-9]/.test(v);
+  if (pwReqs) {
+    const set = (key, ok) => {
+      const el = pwReqs.querySelector('[data-req="' + key + '"]');
+      if (el) el.classList.toggle("met", ok);
+    };
+    set("len", hasLen);
+    set("case", hasCase);
+    set("num", hasNum);
+    set("special", hasSpecial);
+  }
+  if (!pwMeter) return;
+  if (!v) { pwMeter.hidden = true; return; }
+  pwMeter.hidden = false;
+  const score = hasLen ? passwordScore(v) : 1;
   const bar = pwMeter.querySelector(".pw-meter-bar");
   const label = pwMeter.querySelector("[data-pw-strength]");
-  pwInput.addEventListener("input", () => {
-    const v = pwInput.value;
-    if (!v) { pwMeter.hidden = true; return; }
-    pwMeter.hidden = false;
-    const score = v.length < 8 ? 1 : passwordScore(v);
-    if (bar) bar.className = "pw-meter-bar s" + score;
-    if (label) label.textContent = v.length < 8 ? "At least 8 characters" : STRENGTH_LABELS[score];
-  });
+  if (bar) bar.className = "pw-meter-bar s" + score;
+  if (label) label.textContent = !hasLen ? "At least 8 characters" : STRENGTH_LABELS[score];
+}
+if (mode === "signup" && pwInput) {
+  pwInput.addEventListener("input", () => updatePasswordFeedback(pwInput.value));
 }
 
 const submit = document.getElementById("submit");

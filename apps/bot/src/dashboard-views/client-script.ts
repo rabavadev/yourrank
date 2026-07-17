@@ -477,21 +477,32 @@ async function updateAudience(){
   __bcAudience = r.count;
   el.innerHTML = 'This will send to <b>'+esc(String(r.count))+'</b> subscriber'+(r.count===1?'':'s')+'.';
 }
-async function sendBroadcast(btn){
+function openBroadcastPreview(){
   const body = $('bcBody').value.trim();
   if (!body) return toast('Write a message first');
-  const botSelect = $('bcBotSelect');
-  const botId = botSelect?.value || firstBotId;
+  const botId = $('bcBotSelect')?.value || firstBotId;
   if (!botId) return toast('Select a bot first');
   const n = __bcAudience;
-  const who = (typeof n === 'number') ? n + ' subscriber' + (n===1?'':'s') : 'all subscribers';
   if (typeof n === 'number' && n === 0) return toast("This bot has no subscribers yet — nobody would receive it.");
-  if (!confirm('Send this broadcast to '+who+"? This can't be undone.")) return;
+  const countEl = $('bcPreviewCount');
+  const bodyEl = $('bcPreviewBody');
+  if (countEl) countEl.innerHTML = esc(String(n ?? '–'));
+  if (bodyEl) bodyEl.innerHTML = esc(body).split('{name}').join('<b>{name}</b>');
+  const preview = $('bcPreview'); if (preview) preview.hidden = false;
+}
+function closeBroadcastPreview(){
+  const preview = $('bcPreview'); if (preview) preview.hidden = true;
+}
+async function confirmSendBroadcast(btn){
+  const body = $('bcBody').value.trim();
+  const botId = $('bcBotSelect')?.value || firstBotId;
+  if (!botId || !body) return;
   setLoading(btn, 'Sending…');
   const r = await api('/broadcasts',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({bot_id:botId, body})});
   if (r.error) { restoreBtn(btn); return toast(r.error); }
-  $('bcBody').value=''; toast('Broadcast queued'); restoreBtn(btn); loadExtras();
+  $('bcBody').value=''; closeBroadcastPreview(); toast('Broadcast queued'); restoreBtn(btn); loadExtras();
 }
+async function sendBroadcast(btn){ openBroadcastPreview(); }
 // Send a single test copy of the broadcast to one chat ID before blasting.
 async function testBroadcast(btn){
   const body = $('bcBody').value.trim();
@@ -593,7 +604,8 @@ async function handleAction(e) {
   // Show a loading state on the clicked control for every network-backed action.
   // Pure client-side actions (copy, local bot selection) don't need it.
   const NO_LOADING = action === 'copyLink' || action === 'copyPostback' || action === 'selectBot'
-    || action === 'testMessage' || action === 'cancelTestMessage';
+    || action === 'testMessage' || action === 'cancelTestMessage'
+    || action === 'sendBroadcast' || action === 'closeBroadcastPreview';
   if (!NO_LOADING) setLoading(target);
   try {
     if (action === 'logout') { e.preventDefault(); await logout(target); }
@@ -611,7 +623,9 @@ async function handleAction(e) {
     else if (action === 'addCommandButton') { e.preventDefault(); addCommandButton(target); }
     else if (action === 'removeCommandButton') { e.preventDefault(); removeCommandButton(target); }
     else if (action === 'saveWelcome') { e.preventDefault(); await saveWelcome(target); }
-    else if (action === 'sendBroadcast') { e.preventDefault(); await sendBroadcast(target); }
+    else if (action === 'sendBroadcast') { e.preventDefault(); openBroadcastPreview(); }
+    else if (action === 'confirmBroadcast') { e.preventDefault(); await confirmSendBroadcast(target); }
+    else if (action === 'closeBroadcastPreview') { e.preventDefault(); closeBroadcastPreview(); }
     else if (action === 'testBroadcast') { e.preventDefault(); await testBroadcast(target); }
     else if (action === 'cancelBroadcast') { e.preventDefault(); await cancelBroadcast(target); }
     else if (action === 'revealPostback') { e.preventDefault(); await revealPostback(target); }

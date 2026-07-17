@@ -494,4 +494,14 @@ document.addEventListener("DOMContentLoaded", () => {
       if (e.target.closest("a")) { links.classList.remove("open"); toggle.setAttribute("aria-expanded", "false"); }
     });
   }
+  // U-3: hide sticky mobile headers (board tabs + search) when scrolling down, show when up
+  const isMobile = () => window.matchMedia("(max-width: 600px)").matches;
+  let lastY = 0;
+  window.addEventListener("scroll", () => {
+    if (!isMobile()) return;
+    const y = window.scrollY;
+    const goingDown = y > lastY && y > 50;
+    document.body.classList.toggle("scrolled-down", goingDown);
+    lastY = y;
+  }, { passive: true });
 });

@@ -26,6 +26,11 @@ a{color:var(--ink);text-decoration:none}a:hover{color:var(--accent)}
 .cookie-banner a{color:var(--accent);text-decoration:underline}
 .cookie-banner span{max-width:calc(100% - 120px)}
 @media(max-width:560px){.cookie-banner{flex-direction:column;align-items:flex-start}.cookie-banner span{max-width:100%}}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.7);display:flex;align-items:center;justify-content:center;padding:18px;z-index:200}
+.modal-card{width:100%;max-width:420px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:22px;box-shadow:var(--shadow-lg)}
+.modal-card h3{margin:0 0 8px}
+.modal-card p{color:var(--ink-soft);margin:0 0 18px}
+.modal-card .status{margin-top:12px}
 .field .hint{font-size:12px;color:var(--ink-mute)}
 .err{color:var(--danger);font-size:13px;min-height:18px;margin:4px 0}
 .auth-wrap{min-height:100vh;display:grid;grid-template-columns:1.1fr .9fr}
@@ -59,6 +64,11 @@ a{color:var(--ink);text-decoration:none}a:hover{color:var(--accent)}
 .pw-meter-bar.s3{width:75%;background:#f5d423}
 .pw-meter-bar.s4{width:100%;background:var(--ok)}
 .pw-meter-label{font-size:12px;color:var(--ink-mute);margin-top:5px}
+.pw-reqs{list-style:none;margin:8px 0 0;padding:0;font-size:12px;color:var(--ink-mute);display:grid;grid-template-columns:1fr 1fr;gap:4px 8px}
+.pw-req{display:flex;align-items:center;gap:6px}
+.pw-req::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--line-2);transition:background .15s}
+.pw-req.met{color:var(--ok)}
+.pw-req.met::before{background:var(--ok)}
 @media(max-width:820px){.auth-wrap{grid-template-columns:1fr}.auth-side{display:none}.auth-brand-m{display:block;margin:0 0 22px;font-weight:800;letter-spacing:-.02em;font-size:20px;color:var(--ink)}.auth-brand-m b{color:var(--accent)}}
 .wrap{max-width:1280px;margin:0 auto;padding:26px 28px 80px}
 .dash-head{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:6px}
@@ -80,7 +90,7 @@ table.players td input:focus{border-color:var(--accent)}
 table.players td.num input{font-family:var(--mono);text-align:right}
 table.players td.rank{font-family:var(--mono);color:var(--ink-mute);width:34px}
 table.players td.act{width:34px;text-align:center}
-.row-x{color:var(--ink-mute);cursor:pointer;border:none;background:none;font-size:16px;line-height:1;min-width:32px;min-height:32px;display:inline-flex;align-items:center;justify-content:center;border-radius:6px}.row-x:hover{color:var(--danger)}
+.row-x{color:var(--ink-mute);cursor:pointer;border:none;background:none;font-size:16px;line-height:1;min-width:var(--tap);min-height:var(--tap);display:inline-flex;align-items:center;justify-content:center;border-radius:6px}.row-x:hover{color:var(--danger)}
 .empty{color:var(--ink-mute);font-size:13px;padding:14px 8px;text-align:center;border:1px dashed var(--line-2);border-radius:8px}
 /* Floating toast for status messages */
 .toast{position:fixed;top:16px;right:16px;z-index:60;max-width:320px;padding:10px 14px;border-radius:8px;background:var(--panel);border:1px solid var(--line);box-shadow:0 10px 30px rgba(0,0,0,.4);font-size:13px;color:var(--ink);transition:opacity .2s,transform .2s;opacity:1;transform:translateY(0)}
@@ -125,7 +135,7 @@ table.admin-table td a{color:var(--accent)}
 table.admin-table td.note{max-width:260px;color:var(--ink-soft)}
 .ta-r{text-align:right}
 .actions{display:flex;gap:6px;flex-wrap:wrap}
-.btn--xs{padding:6px 10px;font-size:12px;border-radius:6px;min-height:32px}
+.btn--xs{padding:6px 10px;font-size:12px;border-radius:6px;min-height:var(--tap)}
 .pill{display:inline-block;font-family:var(--mono);font-size:11px;padding:2px 8px;border-radius:99px;border:1px solid var(--line-2)}
 .pill--good{color:var(--ok);border-color:#1e3a2b}
 .pill--bad{color:var(--danger);border-color:#3a2222}
@@ -605,4 +615,10 @@ table.ref-table td{padding:8px 8px;border-bottom:1px solid var(--line);color:var
   .field-flex label{flex:auto}
   .savebar{right:12px;bottom:12px}
   .toast{left:12px;right:12px;max-width:none}
+}
+
+/* Respect system light/dark preference on the operator dashboard */
+html{color-scheme:dark light}
+@media (prefers-color-scheme: light){
+  :root{--bg:#ffffff;--panel:#f7f7f9;--panel-2:#eef0f4;--line:#e4e5ea;--line-2:#d8dae0;--ink:#111114;--ink-soft:#4e4f57;--ink-mute:#6b6c75;--accent:#7fb300;--accent-ink:#0b0b0c;--danger:#d93025;--ok:#1e8e3e}
 }

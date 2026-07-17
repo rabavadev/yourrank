@@ -86,7 +86,9 @@ export function shellNavHtml(
       <span class="gm-brand-mark">YR</span>
       <span class="gm-brand-word">YourRank</span>
     </a>
-    <nav class="gm-tabs" aria-label="Dashboard">${tabs}</nav>
+    <div class="gm-tabs-wrap">
+      <nav class="gm-tabs" aria-label="Dashboard">${tabs}</nav>
+    </div>
     <div class="gm-who">
       <a class="gm-help-link" href="/contact?type=feedback&amp;${helpQuery}">Feedback</a>
       <a class="gm-help-link gm-help-link--support" href="/dashboard/support">Support</a>
@@ -117,6 +119,8 @@ export const SHELL_NAV_CSS = `
 .gm-brand-word{font-family:var(--gm-mono);font-size:14px;letter-spacing:.02em;
   color:var(--gm-ink);}
 .gm-shell-inner{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:22px;}
+.gm-tabs-wrap{position:relative;min-width:0;overflow:hidden;}
+.gm-tabs-wrap::after{content:"";position:absolute;right:0;top:0;bottom:0;width:24px;background:linear-gradient(to right, transparent, var(--gm-bg));pointer-events:none;opacity:0;transition:opacity .2s;}
 .gm-tabs{display:flex;align-items:center;gap:2px;min-width:0;overflow-x:auto;
   -webkit-overflow-scrolling:touch;scrollbar-width:none;-ms-overflow-style:none;
   flex-wrap:nowrap;}
@@ -151,8 +155,14 @@ export const SHELL_NAV_CSS = `
     .gm-tab{padding:18px 9px;font-size:11px;letter-spacing:.05em;}
     .gm-who-name{display:none;}
     .gm-who .gm-help-link:not(.gm-help-link--support){display:none;}
+    .gm-tabs-wrap::after{opacity:1;}
+    .gm-tabs{padding-right:24px;}
   }
   @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
   }
+html{color-scheme:dark light}
+@media (prefers-color-scheme: light){
+  :root{--gm-bg:#ffffff;--gm-panel:#f7f7f9;--gm-line:#e4e5ea;--gm-line-2:#d8dae0;--gm-ink:#111114;--gm-ink-soft:#4e4f57;--gm-ink-mute:#6b6c75;--gm-accent:#7fb300;--gm-accent-ink:#0b0b0c}
+}
   `;

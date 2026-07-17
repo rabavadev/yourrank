@@ -34,7 +34,21 @@ export const billingPage = leaderboardPageHtml({
 <p class="hint c-accent fw-600" id="lifetimeNotice" hidden>⭐ Lifetime Pro — no expiry. You own this forever.</p></div>
   <div class="card card--danger" id="dangerZone"><h2> Danger zone</h2><p class="card-sub">Permanently delete your account and all associated data. This action cannot be undone.</p>
   <button class="btn btn--danger" id="deleteAccountBtn" type="button">Delete my account</button>
-  <p class="status" id="deleteStatus" role="status" aria-live="polite"></p></div></div>
+  <p class="status" id="deleteStatus" role="status" aria-live="polite"></p>
+  <div class="modal" id="deleteModal" hidden>
+    <div class="modal-card">
+      <h3>Delete your account?</h3>
+      <p>This will remove all your data — leaderboards, players, archives, subscriptions, and connected bots. This cannot be undone.</p>
+      <div class="field"><label for="deleteConfirm">Type <b>DELETE</b> to confirm</label><input id="deleteConfirm" autocomplete="off" placeholder="DELETE" /></div>
+      <div class="field" id="deletePasswordWrap" hidden><label for="deletePassword">Enter your password</label><input id="deletePassword" type="password" autocomplete="current-password" placeholder="Password" /></div>
+      <div class="d-flex gap-10 flex-wrap">
+        <button class="btn btn--danger" id="deleteConfirmBtn" type="button">Delete my account</button>
+        <button class="btn btn--ghost" id="deleteCancelBtn" type="button">Cancel</button>
+      </div>
+      <p class="status" id="deleteModalStatus" role="status" aria-live="polite"></p>
+    </div>
+  </div>
+  </div></div>
   <div id="loading" class="py-26">
 <div class="skel-header"><div><div class="skeleton skeleton-text--lg skel-w-100"></div><div class="skeleton skeleton-text--sm skel-w-160 mt-8"></div></div><div class="skeleton skeleton-text skel-w-100"></div></div>
 <div class="card"><div class="skeleton skeleton-block skel-h-60"></div></div>
