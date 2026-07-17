@@ -115,6 +115,19 @@ function buildTop3Card(pl, rank) {
   return `<div class="t3 t3--${rank}"><span class="t3-medal">RANK ${String(rank).padStart(2, "0")}</span><span class="t3-av" aria-hidden="true">${esc(initials(pl.name))}</span><div class="t3-name">${esc(pl.name)}</div><div class="t3-wager">${money(pl.wagered)}</div><span class="t3-prize">${pl.prize ? moneyShort(pl.prize) : "—"}</span></div>`;
 }
 
+// Expose helpers to per-template builder scripts loaded before this file.
+window.__yr = { money, moneyShort, esc, initials, ord };
+
+function currentTemplate() { return document.body?.dataset?.template || "classic"; }
+function buildTop3(pl, rank) {
+  const fn = (window.CASINO_BUILDERS?.top3 || {})[currentTemplate()];
+  return fn ? fn(pl, rank) : buildTop3Card(pl, rank);
+}
+function buildRow(pl, rank, delay, gap) {
+  const fn = (window.CASINO_BUILDERS?.rows || {})[currentTemplate()];
+  return fn ? fn(pl, rank, delay, gap) : buildPlayerRow(pl, rank, delay, gap);
+}
+
 // Set each row's --pct to its wager share of the leader, so layouts that draw a
 // wager bar (e.g. the "arena" template) can size it without inline styles (CSP
 // blocks style="" attributes; CSSOM writes are allowed).
@@ -135,7 +148,7 @@ function updateLeaderboard(players) {
   // Update top 3
   const t3 = $("[data-top3]");
   if (t3 && sorted.length >= 3) {
-    t3.innerHTML = sorted.slice(0, 3).map((pl, i) => buildTop3Card(pl, i + 1)).join("");
+    t3.innerHTML = sorted.slice(0, 3).map((pl, i) => buildTop3(pl, i + 1)).join("");
   }
 
   // Build new name→rank map for rank-change detection
@@ -147,7 +160,7 @@ function updateLeaderboard(players) {
     rows.innerHTML = sorted.map((pl, i) => {
       const rank = i + 1;
       const gap = i === 0 ? 0 : sorted[i - 1].wagered - pl.wagered;
-      return buildPlayerRow(pl, rank, Math.min(i * 0.025, 0.5), gap);
+      return buildRow(pl, rank, Math.min(i * 0.025, 0.5), gap);
       }).join("");
       // SEC-713: apply animation-delay via CSSOM (CSP blocks style="" attributes)
       $$("[data-rows] [data-delay]").forEach((el) => { el.style.animationDelay = el.dataset.delay + "s"; });
@@ -291,14 +304,14 @@ function boot() {
   if (countBadge) countBadge.textContent = `${players.length} player${players.length !== 1 ? "s" : ""}`;
 
   const t3 = $("[data-top3]");
-  if (t3 && players.length >= 3) t3.innerHTML = players.slice(0, 3).map((pl, i) => buildTop3Card(pl, i + 1)).join("");
+  if (t3 && players.length >= 3) t3.innerHTML = players.slice(0, 3).map((pl, i) => buildTop3(pl, i + 1)).join("");
 
   const rows = $("[data-rows]");
   if (rows) {
     rows.innerHTML = players.map((pl, i) => {
       const r = i + 1;
       const gap = i === 0 ? 0 : players[i - 1].wagered - pl.wagered;
-      return buildPlayerRow(pl, r, Math.min(i * 0.025, 0.5), gap);
+      return buildRow(pl, r, Math.min(i * 0.025, 0.5), gap);
     }).join("");
     // SEC-713: apply animation-delay via CSSOM (CSP blocks style="" attributes)
     $$("[data-rows] [data-delay]").forEach((el) => { el.style.animationDelay = el.dataset.delay + "s"; });
