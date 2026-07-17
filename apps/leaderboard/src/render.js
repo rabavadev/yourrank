@@ -310,6 +310,8 @@ body[data-preview] .top3{margin-bottom:14px}
   const navLogo = logo ? `<img class="nav-logo" src="${logo}" alt="" />` : "";
   const heroLogo = logo ? `<img class="hero-logo" src="${logo}" alt="${esc(b.name)} logo" />` : "";
   const canonicalUrl = `${esc(opts.homeUrl || "https://yourrank.site")}/${esc(opts.slug || "")}`;
+  const isCustomDomain = !!opts.isCustomDomain;
+  const legalHref = (page) => isCustomDomain ? `/${page}` : `/${esc(opts.slug || "")}/${page}`;
 
   // A brand-new board has no casino/code/prize configured yet. Rendering the
   // "Official Partner" badge, casino perks and an empty code box on an
@@ -334,10 +336,10 @@ body[data-preview] .top3{margin-bottom:14px}
   const hasPartner = hasCasino || hasCode || !!blurb || chips.length > 0 || whyStats.length > 0;
 
   const fullPageHeader = fullPage
-    ? `<header class="site-header--full"><a class="site-header--full__brand" href="#top">${navLogo}<span data-brand-name>${esc(b.name)}</span></a><nav class="site-header--full__nav" aria-label="Page sections"><a href="#top">Leaderboard</a><a href="/terms">Terms</a><a href="/privacy">Privacy</a><a href="/responsible">Responsible</a></nav></header>`
+    ? `<header class="site-header--full"><a class="site-header--full__brand" href="#top">${navLogo}<span data-brand-name>${esc(b.name)}</span></a><nav class="site-header--full__nav" aria-label="Page sections"><a href="#top">Leaderboard</a><a href="${legalHref("terms")}">Terms</a><a href="${legalHref("privacy")}">Privacy</a><a href="${legalHref("responsible")}">Responsible</a></nav></header>`
     : "";
   const fullPageFooter = fullPage
-    ? `<footer class="site-footer--full"><div class="site-footer--full__brand" data-brand-name>${esc(b.name)}</div><div class="site-footer--full__tag" data-tagline>${esc(b.tagline)}</div><p class="site-footer--full__fine">18+ only. Gambling can be addictive. Please play responsibly. BeGambleAware.org${hasCasino ? ` · ${esc(b.name)} is not affiliated with ${esc(casino)}.` : "."}</p><div class="site-footer--full__links"><a href="/terms">Terms</a><a href="/privacy">Privacy</a><a href="/responsible">Responsible</a><a href="/cookies">Cookies</a><a href="/refund">Refund</a><a href="/contact">Contact</a></div><p class="site-footer--full__copy">© <span data-year></span> <span data-brand-name>${esc(b.name)}</span>. All rights reserved.</p></footer>`
+    ? `<footer class="site-footer--full"><div class="site-footer--full__brand" data-brand-name>${esc(b.name)}</div><div class="site-footer--full__tag" data-tagline>${esc(b.tagline)}</div><p class="site-footer--full__fine">18+ only. Gambling can be addictive. Please play responsibly. BeGambleAware.org${hasCasino ? ` · ${esc(b.name)} is not affiliated with ${esc(casino)}.` : "."}</p><div class="site-footer--full__links"><a href="${legalHref("terms")}">Terms</a><a href="${legalHref("privacy")}">Privacy</a><a href="${legalHref("responsible")}">Responsible</a><a href="${legalHref("cookies")}">Cookies</a><a href="${legalHref("refund")}">Refund</a><a href="${legalHref("contact")}">Contact</a></div><p class="site-footer--full__copy">© <span data-year></span> <span data-brand-name>${esc(b.name)}</span>. All rights reserved.</p></footer>`
     : "";
 
   // Homepage/brand fallback preview image (1200×630). Served by the Worker at
@@ -403,5 +405,85 @@ ${fullPage ? "" : `<footer class="ftr"><div class="ftr-id"><span class="ftr-name
 <p class="ftr-fine">18+ only. Gambling can be addictive. Please play responsibly. BeGambleAware.org${hasCasino ? ` · ${esc(b.name)} is not affiliated with ${esc(casino)}.` : "."}</p>
 <p class="ftr-copy">© <span data-year></span> <span data-brand-name>${esc(b.name)}</span>. All rights reserved.</p></footer>`}
 ${badge}${fullPage ? `<script src="/assets/casino-client.js" nonce="${opts.nonce}"></script>` : ""}<script nonce="${opts.nonce}">window.__SITE_DATA__=${dataJson};window.__SLUG__=${JSON.stringify(opts.slug || "")};</script><script src="/assets/leaderboard.js"></script>
+</body></html>`;
+}
+
+const LEGAL_TITLES = {
+  terms: "Terms of Service",
+  privacy: "Privacy Policy",
+  responsible: "Responsible Gaming",
+  cookies: "Cookie Policy",
+  refund: "Refund & Cancellation Policy",
+  contact: "Contact",
+};
+
+function defaultLegalBody(page, brand) {
+  const name = esc(brand || "This leaderboard");
+  switch (page) {
+    case "terms":
+      return `<h2>Terms of Service</h2><p>Welcome to the ${name} leaderboard page. By viewing or participating you agree to these terms.</p><p>${name} is responsible for the rules, prizes, and player standings shown here. YourRank provides the hosting platform only and does not operate any gambling or wagering services.</p><p>You must be 18 or older to participate. ${name} may update these terms at any time. For questions, use the Contact page.</p>`;
+    case "privacy":
+      return `<h2>Privacy Policy</h2><p>${name} values your privacy. This page collects only the information needed to display the leaderboard, such as player names and scores.</p><p>Public pages are visible to anyone with the link. Do not share personal information you do not want made public.</p><p>We use essential cookies and basic analytics to keep the service running. You can contact ${name} through the Contact page for data questions.</p>`;
+    case "responsible":
+      return `<h2>Responsible Gaming</h2><p>${name} encourages responsible play. Gambling can be addictive and should be enjoyed in moderation.</p><p>If you or someone you know needs help, visit BeGambleAware.org or contact a local responsible-gaming helpline.</p><p>This page is intended for adults 18 and older only.</p>`;
+    case "cookies":
+      return `<h2>Cookie Policy</h2><p>${name} uses cookies and similar technologies to provide the leaderboard service and to understand how visitors use the page.</p><p>Essential cookies are required for the page to function. Analytics cookies help us improve the experience. You can adjust your browser settings to manage cookies.</p>`;
+    case "refund":
+      return `<h2>Refund & Cancellation Policy</h2><p>${name} sets its own refund policy for any prizes, subscriptions, or promotions offered through this page.</p><p>If you have questions about a specific prize or payment, please contact ${name} through the Contact page. YourRank subscription payments made in cryptocurrency are final once confirmed on the blockchain.</p>`;
+    case "contact":
+      return `<h2>Contact</h2><p>For questions about this leaderboard, its rules, or prizes, please reach out to ${name} directly through the social channels shown on the leaderboard.</p><p>For platform issues with YourRank, email contact@yourrank.site.</p>`;
+    default:
+      return `<p>Legal page for ${name}.</p>`;
+  }
+}
+
+function formatLegalText(text) {
+  const raw = String(text || "").trim();
+  if (!raw) return "";
+  return raw
+    .split(/\n\n+/)
+    .map((p) => `<p>${esc(p).split(/\n/).join("<br>")}</p>`)
+    .join("\n");
+}
+
+export function renderLegalPage(data, page, opts) {
+  const b = data.brand || {};
+  const br = data.branding || {};
+  const tpl = br.template || "classic";
+  const fullPage = CASINO_FULL.has(tpl);
+  const logo = opts.logoUrl ? esc(opts.logoUrl) : null;
+  const navLogo = logo ? `<img class="nav-logo" src="${logo}" alt="" />` : "";
+  const isCustomDomain = !!opts.isCustomDomain;
+  const homeHref = isCustomDomain ? "/" : `/${esc(opts.slug || "")}`;
+  const legalHref = (p) => isCustomDomain ? `/${p}` : `/${esc(opts.slug || "")}/${p}`;
+  const title = LEGAL_TITLES[page] || page;
+  const customBody = formatLegalText(data.legal?.[page]);
+  const bodyHtml = customBody || defaultLegalBody(page, b.name);
+  const pageTitle = `${esc(title)} · ${esc(b.name || "YourRank")}`;
+  const frameStyles = fullPage ? frameCss(tpl) : "";
+  const templateStyle = frameStyles ? `<style nonce="${opts.nonce}" data-template="${tpl}">${frameStyles}</style>` : "";
+  const fontLink = fullPage
+    ? `<link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin /><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet" />`
+    : `<link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin /><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />`;
+  const cssLink = fullPage ? "" : `<link rel="stylesheet" href="/assets/app.css" />`;
+  const canonical = `${esc(opts.homeUrl || "https://yourrank.site")}${legalHref(page)}`;
+  const header = fullPage
+    ? `<header class="site-header--full"><a class="site-header--full__brand" href="${homeHref}">${navLogo}<span data-brand-name>${esc(b.name)}</span></a><nav class="site-header--full__nav" aria-label="Page sections"><a href="${homeHref}">Leaderboard</a><a href="${legalHref("terms")}">Terms</a><a href="${legalHref("privacy")}">Privacy</a><a href="${legalHref("responsible")}">Responsible</a></nav></header>`
+    : `<header class="topbar"><a class="brand" href="${homeHref}">${esc(b.name || "YourRank")}</a></header>`;
+  const footer = fullPage
+    ? `<footer class="site-footer--full"><div class="site-footer--full__brand" data-brand-name>${esc(b.name)}</div><div class="site-footer--full__tag" data-tagline>${esc(b.tagline)}</div><p class="site-footer--full__fine">18+ only. Gambling can be addictive. Please play responsibly. BeGambleAware.org.</p><div class="site-footer--full__links"><a href="${legalHref("terms")}">Terms</a><a href="${legalHref("privacy")}">Privacy</a><a href="${legalHref("responsible")}">Responsible</a><a href="${legalHref("cookies")}">Cookies</a><a href="${legalHref("refund")}">Refund</a><a href="${legalHref("contact")}">Contact</a></div><p class="site-footer--full__copy">© ${new Date().getFullYear()} <span data-brand-name>${esc(b.name)}</span>. All rights reserved.</p></footer>`
+    : `<footer class="ftr"><div class="ftr-id"><span class="ftr-name" data-brand-name>${esc(b.name)}</span><span class="ftr-tag" data-tagline>${esc(b.tagline)}</span></div><p class="ftr-fine">18+ only. Gambling can be addictive. Please play responsibly. BeGambleAware.org.</p><p class="ftr-copy">© ${new Date().getFullYear()} <span data-brand-name>${esc(b.name)}</span>. All rights reserved.</p></footer>`;
+  const bodyClass = fullPage ? `legal-page` : "legal";
+  return `<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>${pageTitle}</title><meta name="description" content="${esc(title)} for ${esc(b.name || "YourRank")}." />
+<link rel="canonical" href="${canonical}" />
+${fontLink}${cssLink}${templateStyle}
+</head><body data-template="${tpl}" class="${bodyClass}">
+<a class="skip-link" href="#main-content">Skip to content</a>
+${header}
+<main class="${fullPage ? "legal-page__wrap" : "legal"}" id="main-content"><h1>${esc(title)}</h1><p class="${fullPage ? "legal-page__updated" : "legal-updated"}">Last updated: ${new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })}</p>${bodyHtml}<a class="${fullPage ? "legal-page__back" : ""}" href="${homeHref}">← Back to ${esc(b.name || "leaderboard")}</a></main>
+${footer}
 </body></html>`;
 }

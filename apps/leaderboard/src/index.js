@@ -4,9 +4,8 @@ import { withWorkerFetch } from "../../../shared/with-worker.js";
 import { RateLimiter } from "../../../shared/rate-limiter-do.js";
 import { populateEnv } from "../../../shared/env.js";
 import { getPublicSite, getByUser } from "./site.js";
-import { renderLeaderboard } from "./render.js";
+import { renderLeaderboard, renderLegalPage } from "./render.js";
 import { PAGES } from "./pages.js";
-
 import { bumpStat } from "./stats.js";
 import { createQueueProducer } from "../../../shared/queue-producer.js";
 import { shellNavHtml } from "../../../shared/shell-nav.js";
@@ -25,6 +24,8 @@ import { detectImageMime } from "./site.js";
 import { one } from "../../../shared/db.js";
 import { hashToken } from "../../../shared/crypto.js";
 import { handleDashboardPreview } from "./handlers/preview.js";
+
+const LEGAL_PAGES = new Set(["terms", "privacy", "responsible", "cookies", "refund", "contact"]);
 
 function enqueueBump(env, ctx, siteId, field, referer = null) {
   const producer = createQueueProducer(
@@ -197,7 +198,7 @@ async function handleRequest(request, env, ctx, meta) {
             const paid = r.plan === "pro" || r.plan === "agency";
             return new Response(
               renderLeaderboard(r.data, {
-                watermark: !paid, homeUrl: `https://${host}`, slug: customSlug, nonce,
+                watermark: !paid, homeUrl: `https://${host}`, slug: customSlug, nonce, isCustomDomain: true,
                 logoUrl: paid && r.data.branding?.hasLogo ? `https://${host}/logo/${customSlug}` : null,
               }),
               { headers: { ...HTML_N, "cache-control": "no-store" } }
@@ -207,6 +208,19 @@ async function handleRequest(request, env, ctx, meta) {
             return new Response('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1 1"></svg>', {
               headers: { "content-type": "image/svg+xml", "cache-control": "public, max-age=86400" },
             });
+          }
+          if (method === "GET" && LEGAL_PAGES.has(path.slice(1))) {
+            const r = await getPublicSite(env, customSlug);
+            if (!r || r.suspended) return new Response(notFoundPage(customSlug, nonce), { status: 404, headers: HTML_N });
+            const paid = r.plan === "pro" || r.plan === "agency";
+            const page = path.slice(1);
+            return new Response(
+              renderLegalPage(r.data, page, {
+                nonce, slug: customSlug, homeUrl: `https://${host}`, isCustomDomain: true,
+                logoUrl: paid && r.data.branding?.hasLogo ? `https://${host}/logo/${customSlug}` : null,
+              }),
+              { headers: { ...HTML_N, "cache-control": "no-store" } }
+            );
           }
           // Everything else on a custom domain → 404
           return new Response(notFoundPage("", nonce), { status: 404, headers: HTML_N });
@@ -517,6 +531,24 @@ a{color:#c8ff00;text-decoration:none;font-weight:600}</style></head><body>
         return new Response(overlayHtml, { headers: { ...HTML_N, "cache-control": "no-store" } });
       }
 
+      // --- per-site legal pages at /<slug>/<legal> ---
+      if (method === "GET" && /^\/[^/]+\/(terms|privacy|responsible|cookies|refund|contact)$/.test(path)) {
+        let slug;
+        try { slug = decodeURIComponent(path.slice(1).split("/")[0]).toLowerCase(); } catch { return new Response(notFoundPage("", nonce), { status: 404, headers: HTML_N }); }
+        if (RESERVED.has(slug)) return new Response(notFoundPage(slug, nonce), { status: 404, headers: HTML_N });
+        const page = path.split("/").pop();
+        const r = await getPublicSite(env, slug);
+        if (!r || r.suspended) return new Response(notFoundPage(slug, nonce), { status: 404, headers: HTML_N });
+        const paid = r.plan !== "free";
+        return new Response(
+          renderLegalPage(r.data, page, {
+            nonce, slug, homeUrl: url.origin, isCustomDomain: false,
+            logoUrl: paid && r.data.branding?.hasLogo ? `${url.origin}/logo/${slug}` : null,
+          }),
+          { headers: { ...HTML_N, "cache-control": "no-store" } }
+        );
+      }
+
       // --- public leaderboard at /<slug> ---
       if (method === "GET" && path.length > 1 && !path.includes(".")) {
         let slug;
@@ -547,7 +579,7 @@ a{color:#c8ff00;text-decoration:none;font-weight:600}</style></head><body>
         const paid = r.plan !== "free";
         return new Response(
           renderLeaderboard(r.data, {
-            watermark: !paid, homeUrl: url.origin, slug, nonce, boards: r.boards,
+            watermark: !paid, homeUrl: url.origin, slug, nonce, boards: r.boards, isCustomDomain: false,
             logoUrl: paid && r.data.branding?.hasLogo ? `${url.origin}/logo/${slug}` : null,
           }),
           { headers: respHeaders }

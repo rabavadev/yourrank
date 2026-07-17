@@ -148,6 +148,8 @@ export const dashboardPage = leaderboardPageHtml({
 <div class="sections-editor" id="sectionsList"></div></div>
 <div class="card" id="textCard"><h2>Template text</h2><p class="card-sub">Change the copy inside your selected design. Keys with an empty value fall back to the default.</p>
 <div class="text-editor" id="textList"></div></div>
+<div class="card" id="legalCard"><h2>Legal pages</h2><p class="card-sub">Set your own Terms, Privacy, and other legal copy. Empty fields use defaults and the footer links go to your own /terms, /privacy, etc.</p>
+<div class="legal-editor" id="legalList"></div></div>
 <div class="card" id="socialsCard"><h2>Social links</h2><p class="card-sub">Add the links to your channels. Turn a network <b>on</b> to show it in the “Join the Socials” section of your public page; turn it <b>off</b> to hide it. Links with the toggle on but no URL stay hidden.</p>
 <div class="socials-editor" id="socialsList"></div></div>
 </section>

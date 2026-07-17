@@ -104,7 +104,17 @@ body[data-template="${tpl}"] .site-footer--full__tag{display:block;font-size:.85
 body[data-template="${tpl}"] .site-footer--full__fine,body[data-template="${tpl}"] .site-footer--full__copy{color:${c.muted};font-size:.78rem;line-height:1.6;margin:.5rem 0}
 body[data-template="${tpl}"] .site-footer--full__links{margin:1rem 0}
 body[data-template="${tpl}"] .site-footer--full__links a{color:${c.accent};text-decoration:none;margin:0 .75rem;font-size:.875rem;font-weight:600}
-body[data-template="${tpl}"] .site-footer--full__links a:hover{color:${c.hover}}`;
+body[data-template="${tpl}"] .site-footer--full__links a:hover{color:${c.hover}}
+body[data-template="${tpl}"] .legal-page{min-height:100vh;display:flex;flex-direction:column}
+body[data-template="${tpl}"] .legal-page__wrap{flex:1;max-width:720px;margin:0 auto;padding:2.5rem 1.5rem 4rem;color:${c.text};font-family:'Inter',system-ui,sans-serif;line-height:1.65}
+body[data-template="${tpl}"] .legal-page__wrap h1{font-size:2rem;margin:0 0 .25rem;letter-spacing:-.02em}
+body[data-template="${tpl}"] .legal-page__wrap h2{font-size:1.1rem;margin:1.75rem 0 .5rem}
+body[data-template="${tpl}"] .legal-page__wrap p{margin:.75rem 0;color:${c.muted}}
+body[data-template="${tpl}"] .legal-page__wrap a{color:${c.accent}}
+body[data-template="${tpl}"] .legal-page__wrap a:hover{color:${c.hover}}
+body[data-template="${tpl}"] .legal-page__updated{font-size:.85rem;color:${c.muted};margin-bottom:1.5rem}
+body[data-template="${tpl}"] .legal-page__back{display:inline-flex;align-items:center;gap:.5rem;margin-top:2rem;color:${c.accent};text-decoration:none;font-weight:600}
+body[data-template="${tpl}"] .legal-page__back:hover{color:${c.hover}}`;
 }
 
 const METAS = {

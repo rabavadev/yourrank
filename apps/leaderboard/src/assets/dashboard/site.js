@@ -79,6 +79,14 @@ export function collect() {
     socials: state.EXTRA.socials,
     sections: state.EXTRA.sections,
     players,
+    legal: {
+      terms: ($("f_legal_terms")?.value || "").trim(),
+      privacy: ($("f_legal_privacy")?.value || "").trim(),
+      responsible: ($("f_legal_responsible")?.value || "").trim(),
+      cookies: ($("f_legal_cookies")?.value || "").trim(),
+      refund: ($("f_legal_refund")?.value || "").trim(),
+      contact: ($("f_legal_contact")?.value || "").trim(),
+    },
   };
   const pubToggle = $("pubToggle");
   if (pubToggle) out.published = pubToggle.checked;
@@ -374,6 +382,21 @@ export function renderTemplateText() {
   list.addEventListener("input", collectTemplateText);
   list.addEventListener("change", collectTemplateText);
   collectTemplateText();
+}
+
+export function renderLegal() {
+  const list = $("legalList");
+  if (!list) return;
+  const legal = state.EXTRA?.legal || {};
+  const pages = [
+    { key: "terms", label: "Terms of Service" },
+    { key: "privacy", label: "Privacy Policy" },
+    { key: "responsible", label: "Responsible Gaming" },
+    { key: "cookies", label: "Cookie Policy" },
+    { key: "refund", label: "Refund Policy" },
+    { key: "contact", label: "Contact" },
+  ];
+  list.innerHTML = pages.map((p) => `<div class="field"><label for="f_legal_${p.key}">${esc(p.label)}</label><textarea id="f_legal_${p.key}" rows="4" placeholder="Leave blank to use the default legal text.">${esc(legal[p.key] || "")}</textarea></div>`).join("");
 }
 
 export function renderOverlay() {

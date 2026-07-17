@@ -68,6 +68,14 @@ export const DEFAULT_EXTRA = {
     cta: true,
     payouts: true,
   },
+  legal: {
+    terms: "",
+    privacy: "",
+    responsible: "",
+    cookies: "",
+    refund: "",
+    contact: "",
+  },
 };
 
 // All site columns except logo_data (base64 image, up to 180KB) — that's only
@@ -303,6 +311,7 @@ export function publicShape(site, players, archives = [], hasLogo = false) {
       change: p.change,
     })),
     sections: m.sections || DEFAULT_EXTRA.sections,
+    legal: m.legal || DEFAULT_EXTRA.legal,
   };
 }
 
@@ -681,12 +690,21 @@ export async function saveSite(env, user, payload, siteId, request = null) {
   // are encrypted at rest), not inside extra_json. Strip any legacy copies so
   // they cannot leak through public-shape or future code that reads extra_json.
   const incomingSections = payload.sections && typeof payload.sections === "object" ? payload.sections : {};
+  const incomingLegal = payload.legal && typeof payload.legal === "object" ? payload.legal : {};
+  const existingLegal = existingExtra.legal || {};
+  const legalDefaults = DEFAULT_EXTRA.legal;
+  const legal = {};
+  for (const k of Object.keys(legalDefaults)) {
+    const v = incomingLegal[k] !== undefined ? incomingLegal[k] : existingLegal[k];
+    legal[k] = typeof v === "string" ? v.trim() : (legalDefaults[k] || "");
+  }
   const extra = {
     chips: payload.partner?.chips ?? payload.chips ?? existingExtra.chips ?? DEFAULT_EXTRA.chips,
     whyStats: payload.whyStats ?? existingExtra.whyStats ?? DEFAULT_EXTRA.whyStats,
     rules: payload.rules ?? existingExtra.rules ?? DEFAULT_EXTRA.rules,
     socials: payload.socials ?? existingExtra.socials ?? DEFAULT_EXTRA.socials,
     sections: { ...(existingExtra.sections || DEFAULT_EXTRA.sections), ...incomingSections },
+    legal,
   };
 
   let discordWebhookUrlEnc = site.discord_webhook_url_enc;

@@ -4,7 +4,7 @@ import { state } from "./dashboard/state.js";
 import { navTo, setupShell } from "./dashboard/shell.js";
 import { renderBoardSwitcher, renderSidebarBoardSwitcher, renderBoardsPage } from "./dashboard/boards.js";
 import { renderPlayers } from "./dashboard/players.js";
-import { loadStats, renderArchives, renderBranding, renderDomain, renderDomainStatus, renderNotifications, renderOverlay, renderPlan, renderSections, renderSocials, renderTemplateText } from "./dashboard/site.js";
+import { loadStats, renderArchives, renderBranding, renderDomain, renderDomainStatus, renderLegal, renderNotifications, renderOverlay, renderPlan, renderSections, renderSocials, renderTemplateText } from "./dashboard/site.js";
 import { renderOverviewSummary, wireOverviewQuickActions } from "./dashboard/overview.js";
 
 async function init() {
@@ -38,7 +38,7 @@ async function init() {
   const d = p.data || {};
   const b = d.brand || {};
   loadStats();
-  state.EXTRA = { chips: d.partner?.chips, whyStats: d.whyStats, rules: d.rules, socials: p.socials || d.socials || [], sections: d.sections, text: (d.branding && d.branding.text) || {} };
+  state.EXTRA = { chips: d.partner?.chips, whyStats: d.whyStats, rules: d.rules, socials: p.socials || d.socials || [], sections: d.sections, text: (d.branding && d.branding.text) || {}, legal: d.legal || {} };
   $("f_name").value = b.name || "";
   $("f_tagline").value = b.tagline || "";
   $("f_casino").value = b.casino || "Stake";
@@ -57,6 +57,7 @@ async function init() {
   renderSocials();
   renderSections();
   renderTemplateText();
+  renderLegal();
   if (p.customDomain !== undefined) $("f_domain").value = p.customDomain || "";
   if (p.customDomain && p.domainStatus) renderDomainStatus(p.domainStatus, "");
   const pubToggle = $("pubToggle");
