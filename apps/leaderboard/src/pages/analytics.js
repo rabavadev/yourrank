@@ -18,7 +18,9 @@ export const analyticsPage = leaderboardPageHtml({
 <div class="an-drop" id="dropCopies"></div>
 <div class="an-fstage" data-tone="mid"><div class="an-frow"><span class="an-fname">Code copies</span><span class="an-fmeta"><span class="an-fval" id="fCopies">–</span><span class="an-fpct" id="fCopiesPct">–</span></span></div><div class="an-fbar"><span id="fCopiesBar" style="width:0"></span></div></div>
 <div class="an-drop" id="dropClicks"></div>
-<div class="an-fstage" data-tone="win"><div class="an-frow"><span class="an-fname">Join clicks</span><span class="an-fmeta"><span class="an-fval" id="fClicks">–</span><span class="an-fpct" id="fClicksPct">–</span></span></div><div class="an-fbar"><span id="fClicksBar" style="width:0"></span></div></div>
+<div class="an-fstage" data-tone="mid"><div class="an-frow"><span class="an-fname">Join clicks</span><span class="an-fmeta"><span class="an-fval" id="fClicks">–</span><span class="an-fpct" id="fClicksPct">–</span></span></div><div class="an-fbar"><span id="fClicksBar" style="width:0"></span></div></div>
+<div class="an-drop" id="dropConversions"></div>
+<div class="an-fstage" data-tone="win"><div class="an-frow"><span class="an-fname">Conversions</span><span class="an-fmeta"><span class="an-fval" id="fConversions">–</span><span class="an-fpct" id="fConversionsPct">–</span></span></div><div class="an-fbar"><span id="fConversionsBar" style="width:0"></span></div></div>
 </div>
 </section>
 <section class="an-card an-card--lg">
@@ -27,6 +29,8 @@ export const analyticsPage = leaderboardPageHtml({
 <div class="an-metric-sub"><span>Page views · 30d</span><span class="num" id="pmViews30">–</span></div>
 <div class="an-metric-sub"><span>Code copies · 30d</span><span class="num" id="pmCopies30">–</span></div>
 <div class="an-metric-sub"><span>Views today</span><span class="num" id="pmViewsToday">–</span></div>
+<div class="an-metric-sub"><span>Conversions · 30d</span><span class="num" id="pmConversions30">–</span></div>
+<div class="an-metric-sub"><span>Revenue · 30d</span><span class="num" id="pmRevenue30">–</span></div>
 </section>
 </div>
 
@@ -40,6 +44,22 @@ export const analyticsPage = leaderboardPageHtml({
 <div class="an-card-head"><div><h2 class="an-sec">Top referrers</h2><p class="an-note">Where visitors came from · 30d.</p></div></div>
 <div class="an-src" id="refList"></div>
 <p class="an-note an-empty-inline" id="refEmpty" hidden>No referrer data yet.</p>
+</section>
+</div>
+
+<div class="an-row2">
+<section class="an-card">
+<div class="an-card-head"><div><h2 class="an-sec">Audience</h2><p class="an-note">New vs returning viewers · 30d.</p></div></div>
+<div class="stat-tiles" style="margin:0">
+<div class="stat-tile"><span class="stat-num" id="audNew">–</span><span class="stat-lbl">New</span></div>
+<div class="stat-tile"><span class="stat-num" id="audReturning">–</span><span class="stat-lbl">Returning</span></div>
+<div class="stat-tile"><span class="stat-num" id="audSessions">–</span><span class="stat-lbl">Sessions</span></div>
+</div>
+</section>
+<section class="an-card">
+<div class="an-card-head"><div><h2 class="an-sec">Scroll depth</h2><p class="an-note">How far people scroll · 30d.</p></div></div>
+<div class="an-scroll" id="scrollWrap"></div>
+<p class="an-note an-empty-inline" id="scrollEmpty" hidden>No scroll data yet.</p>
 </section>
 </div>
 

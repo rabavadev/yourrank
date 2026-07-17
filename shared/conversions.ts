@@ -41,8 +41,8 @@ function extractPlayerName(q: PostbackQuery): string | null {
  * C-02: Conversion amounts are idempotently projected onto `players` using the
  * same normalized-name identity as saveSite, so postbacks actually update ranks.
  */
-export async function recordConversion(ownerId: string, q: PostbackQuery): Promise<void> {
-  const clickRef = first(q.click_ref) ?? first(q.clickid) ?? first(q.subid) ?? first(q.sub_id) ?? null;
+export async function recordConversion(ownerId: string, q: PostbackQuery, siteId?: string | null): Promise<void> {
+  const clickRef = first(q.yr_click) ?? first(q.click_ref) ?? first(q.clickid) ?? first(q.subid) ?? first(q.sub_id) ?? null;
   const event = (first(q.event) ?? first(q.goal) ?? "deposit").toLowerCase().slice(0, 32);
   const rawAmt = first(q.amount) == null ? NaN : Number(first(q.amount));
   const amount = Number.isFinite(rawAmt) && rawAmt >= 0 && rawAmt <= 1e12 ? rawAmt : null;
@@ -82,10 +82,10 @@ export async function recordConversion(ownerId: string, q: PostbackQuery): Promi
     if ("signature" in raw) delete raw.signature;
 
     await tx.unsafe(
-      `INSERT INTO conversions (owner_id, offer_id, click_ref, event, amount, currency, raw, player_name, player_normalized)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+      `INSERT INTO conversions (owner_id, offer_id, click_ref, event, amount, currency, raw, player_name, player_normalized, site_id)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
        ON CONFLICT DO NOTHING`,
-      [ownerId, offerId, clickRef, event, amount, currency, JSON.stringify(raw), playerName, playerNormalized]
+      [ownerId, offerId, clickRef, event, amount, currency, JSON.stringify(raw), playerName, playerNormalized, siteId ?? null]
     );
 
     if (playerNormalized) {
@@ -101,7 +101,7 @@ export async function recordConversion(ownerId: string, q: PostbackQuery): Promi
           LIMIT 1`,
         [clickRef, playerNormalized]
       );
-      const targetSiteId: string | null = siteHit?.site_id ?? null;
+      const resolvedSiteId: string | null = siteId ?? siteHit?.site_id ?? null;
 
       const upsert = await tx.unsafe(
         `WITH ins AS (
@@ -117,7 +117,7 @@ export async function recordConversion(ownerId: string, q: PostbackQuery): Promi
            RETURNING site_id
          )
          UPDATE sites SET updated_at = now() WHERE id IN (SELECT site_id FROM ins)`,
-        [ownerId, playerName, playerNormalized, amount ?? 0, targetSiteId]
+        [ownerId, playerName, playerNormalized, amount ?? 0, resolvedSiteId]
       );
       // `upsert` result is not needed; the side effect is the projection.
       void upsert;

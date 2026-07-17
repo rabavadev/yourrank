@@ -22,21 +22,21 @@ import { handlePublicApiPreflight, withPublicApiCors } from "./middleware/public
 import { findSiteLogoData, findSiteStatus, findUserTotpSecret } from "./data/sites.js";
 import { detectImageMime } from "./site.js";
 import { one } from "../../../shared/db.js";
-import { hashToken } from "../../../shared/crypto.js";
+import { hashToken, newClickRef } from "../../../shared/crypto.js";
 import { handleDashboardPreview } from "./handlers/preview.js";
 
 const LEGAL_PAGES = new Set(["terms", "privacy", "responsible", "cookies", "refund", "contact"]);
 
-function enqueueBump(env, ctx, siteId, field, referer = null) {
+function enqueueBump(env, ctx, siteId, field, referer = null, visitorHash = null) {
   const producer = createQueueProducer(
     env.EVENTS_QUEUE,
     async (event) => {
       if (event.type === "bump") {
-        await bumpStat(event.siteId, event.field, event.referer);
+        await bumpStat(event.siteId, event.field, event.referer, event.visitorHash);
       }
     }
   );
-  const p = producer.send({ type: "bump", siteId, field, referer, timestamp: Date.now() });
+  const p = producer.send({ type: "bump", siteId, field, referer, visitorHash, timestamp: Date.now() });
   ctx.waitUntil(p);
 }
 
@@ -543,13 +543,22 @@ async function handleRequest(request, env, ctx, meta) {
         }
         const r = await getPublicSite(env, slug);
         if (!r || r.suspended) return new Response(notFoundPage(slug, nonce), { status: 404, headers: HTML_N });
-        if (r.id) enqueueBump(env, ctx, r.id, "clicks");
+        const clickRef = newClickRef();
+        if (r.id && r.userId) {
+          await one(
+            "INSERT INTO site_clicks (click_ref, site_id, owner_id, cta_url) VALUES ($1, $2, $3, $4)",
+            [clickRef, r.id, r.userId, r.data?.brand?.ctaUrl || null]
+          );
+          if (r.id) enqueueBump(env, ctx, r.id, "clicks");
+        }
         const dest = r.data?.brand?.ctaUrl;
         // E2E-008: Only redirect to the CTA URL if it's a valid https:// URL.
         // If empty/null or non-https (javascript:, data:, relative paths),
         // redirect to the board page instead of risking a redirect loop.
         if (dest && /^https:\/\//i.test(dest)) {
-          return Response.redirect(dest, 302);
+          const destUrl = new URL(dest);
+          destUrl.searchParams.set("yr_click", clickRef);
+          return Response.redirect(destUrl.toString(), 302);
         }
         return Response.redirect(`${url.origin}/${slug}`, 302);
       }
@@ -639,15 +648,28 @@ a{color:#c8ff00;text-decoration:none;font-weight:600}</style></head><body>
           return new Response(notFoundPage(slug, nonce), { status: 404, headers: HTML_N });
         }
         if (r.suspended) return new Response(suspendedPage(nonce), { status: 403, headers: HTML_N });
+        // Stable visitor token for new-vs-returning analytics. 1-year cookie, hashed before DB storage.
+        const respHeaders = new Headers({ ...HTML_N, "cache-control": "no-store" });
+        let visitorHash = null;
+        const cookies = request.headers.get("cookie") || "";
+        let vid = "";
+        for (const c of cookies.split(";")) {
+          const [k, v] = c.trim().split("=");
+          if (k === "yr_vid") { vid = decodeURIComponent(v || ""); break; }
+        }
+        if (!vid) {
+          vid = crypto.randomUUID();
+          respHeaders.append("set-cookie", `yr_vid=${vid}; Path=/; Max-Age=31536000; SameSite=Lax; Secure`);
+        }
+        if (vid && r.id) visitorHash = await hashToken(`${vid}:${r.id}`);
+
         // Only count one view per slug per browser per 24h (cookie-based cooldown).
         const viewCookieName = `__v_${slug}`;
-        const viewCookies = (request.headers.get("cookie") || "");
-        const alreadyViewed = new RegExp(`(?:^|;\\s*)${viewCookieName}=`).test(viewCookies);
-        const respHeaders = { ...HTML_N, "cache-control": "no-store" };
+        const alreadyViewed = new RegExp(`(?:^|;\\s*)${viewCookieName}=`).test(cookies);
         if (r.id && !alreadyViewed) {
           const ref = request.headers.get("referer") || request.headers.get("Referer") || "";
-          enqueueBump(env, ctx, r.id, "views", ref);
-          respHeaders["set-cookie"] = `${viewCookieName}=1; Path=/${slug}; Max-Age=86400; SameSite=Lax; Secure`;
+          enqueueBump(env, ctx, r.id, "views", ref, visitorHash);
+          respHeaders.append("set-cookie", `${viewCookieName}=1; Path=/${slug}; Max-Age=86400; SameSite=Lax; Secure`);
         }
         const paid = r.plan !== "free";
         return new Response(

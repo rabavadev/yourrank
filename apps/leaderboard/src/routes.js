@@ -15,7 +15,7 @@ import {
   handleTelegramLink, handleTelegramUnlink, handleTelegramStatus
 } from "./handlers/telegram-link.js";
 import {
-  handleStats, handleHeatmap, handleTrackCopy, handleGetSite, handleListBoards,
+  handleStats, handleHeatmap, handleTrackCopy, handleTrackScroll, handleGetSite, handleListBoards,
   handleCreateBoard, handleDuplicateBoard, handleArchive, handleArchiveDelete, handlePutSite,
   handlePutTheme, handleDeleteSite, handleSetActive, handleNotifyTest, handleDomainVerify, handleExportStats,
   handleExportPlayers
@@ -87,6 +87,7 @@ export const ROUTES = [
   { path: "/api/support", method: "POST", handler: withHandler(handleCreateTicket) },
   { path: "/api/support/:id", method: "GET", handler: withHandler(handleGetTicket) },
   { path: "/api/track/copy", method: "POST", handler: withHandler(handleTrackCopy) },
+  { path: "/api/track/scroll", method: "POST", handler: withHandler(handleTrackScroll) },
   { path: "/api/scores", method: "POST", handler: withHandler(handleScores) },
   
   // Public API routes (CSRF-exempt)

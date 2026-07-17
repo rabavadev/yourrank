@@ -22,13 +22,20 @@ export interface BumpParams {
   siteId: string;
   field: "views" | "copies" | "clicks";
   referer?: string | null;
+  visitorHash?: string | null;
+  clickRef?: string | null;
 }
 
 /**
  * Fire-and-forget increment for daily site stats, hourly heatmap, and referrer
  * tracking. Idempotent on retries because the upserts use ON CONFLICT.
  */
-export async function bumpStat(siteId: string, field: string, refererHeader?: string | null): Promise<void> {
+export async function bumpStat(
+  siteId: string,
+  field: string,
+  refererHeader?: string | null,
+  visitorHash?: string | null
+): Promise<void> {
   if (!siteId || !FIELDS.has(field)) return;
   const day = todayUTC();
   const viewsInc = field === "views" ? 1 : 0;
@@ -62,6 +69,20 @@ export async function bumpStat(siteId: string, field: string, refererHeader?: st
             `INSERT INTO site_referrers (site_id, day, domain, count) VALUES ($1, $2, $3, 1)
              ON CONFLICT (site_id, day, domain) DO UPDATE SET count = site_referrers.count + 1`,
             [siteId, day, domain]
+          );
+        }
+
+        if (visitorHash) {
+          await tx.query(
+            `INSERT INTO site_visitors (site_id, visitor_hash, first_seen, last_seen, sessions)
+             VALUES ($1, $2, now(), now(), 1)
+             ON CONFLICT (site_id, visitor_hash) DO UPDATE SET
+               last_seen = now(),
+               sessions = site_visitors.sessions + CASE
+                 WHEN site_visitors.last_seen < now() - interval '30 minutes' THEN 1
+                 ELSE 0
+               END`,
+            [siteId, visitorHash]
           );
         }
       }

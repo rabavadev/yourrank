@@ -334,7 +334,7 @@ export async function getPublicSite(env, slug) {
       getArchives(env, site.id, archiveLimit), // DB-003-v8: fetch only what plan allows
       getPublicBoards(env, site.user_id),
     ]);
-    return { id: site.id, data: publicShape(site, players, archives, !!site.has_logo), plan, boards };
+    return { id: site.id, userId: site.user_id, data: publicShape(site, players, archives, !!site.has_logo), plan, boards };
   }
 
 export async function getUserSite(env, uid, plan) {

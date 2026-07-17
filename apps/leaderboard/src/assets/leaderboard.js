@@ -504,4 +504,27 @@ document.addEventListener("DOMContentLoaded", () => {
     document.body.classList.toggle("scrolled-down", goingDown);
     lastY = y;
   }, { passive: true });
+
+  // Track max scroll depth and send once per page session.
+  let maxScroll = 0;
+  let scrollSent = false;
+  function sendScroll() {
+    if (scrollSent || !window.__SLUG__) return;
+    scrollSent = true;
+    const depth = Math.max(0, Math.min(100, Math.round(maxScroll)));
+    const payload = JSON.stringify({ slug: window.__SLUG__, depth });
+    try {
+      if (navigator.sendBeacon) {
+        navigator.sendBeacon("/api/track/scroll", new Blob([payload], { type: "application/json" }));
+      } else {
+        fetch("/api/track/scroll", { method: "POST", body: payload, headers: { "content-type": "application/json" }, keepalive: true }).catch(() => {});
+      }
+    } catch {}
+  }
+  window.addEventListener("scroll", () => {
+    const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+    if (docHeight > 0) maxScroll = Math.max(maxScroll, (window.scrollY / docHeight) * 100);
+  }, { passive: true });
+  window.addEventListener("pagehide", sendScroll);
+  document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") sendScroll(); });
 });

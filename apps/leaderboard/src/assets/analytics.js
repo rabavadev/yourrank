@@ -39,14 +39,16 @@ function svgLine(values, w, h, id) {
   </svg>`;
 }
 
-function renderFunnel(v, c, k) {
+function renderFunnel(v, c, k, conv, revenue) {
   $("fViews").textContent = fmt(v);
   $("fCopies").textContent = fmt(c);
   $("fClicks").textContent = fmt(k);
+  $("fConversions").textContent = fmt(conv);
   // Both stage percentages and their bars are expressed as a share of views so
   // the funnel shrinks consistently; stage-to-stage drop-off is shown below.
   $("fCopiesPct").textContent = pctStr(pct(c, v));
   $("fClicksPct").textContent = pctStr(pct(k, v));
+  $("fConversionsPct").textContent = pctStr(pct(conv, v));
   // Bar widths eased so small stages stay legible; exact figures shown as text.
   const ease = (part, whole) => Math.round(Math.pow(pct(part, whole) / 100, 0.55) * 100);
   const setBar = (el, w) => {
@@ -56,9 +58,13 @@ function renderFunnel(v, c, k) {
   };
   setBar($("fCopiesBar"), ease(c, v));
   setBar($("fClicksBar"), ease(k, v));
+  setBar($("fConversionsBar"), ease(conv, v));
   $("dropCopies").innerHTML = `↓ <b>${pctStr(100 - pct(c, v))}</b> left without copying your code`;
   $("dropClicks").innerHTML = c > 0
     ? `↓ <b>${pctStr(100 - pct(k, c))}</b> copied but didn't click Join`
+    : "";
+  $("dropConversions").innerHTML = k > 0
+    ? `↓ <b>${pctStr(100 - pct(conv, k))}</b> clicked but didn't convert`
     : "";
 }
 
@@ -103,19 +109,23 @@ function renderDelta(days) {
   }
 
   const v30 = s.last30.views, c30 = s.last30.copies, k30 = s.last30.clicks;
+  const conv30 = s.last30.conversions || 0;
+  const rev30 = s.last30.revenue || 0;
 
   // Empty state: nothing tracked yet.
-  if (v30 === 0 && c30 === 0 && k30 === 0) {
+  if (v30 === 0 && c30 === 0 && k30 === 0 && conv30 === 0) {
     $("loading").hidden = true;
     $("empty").hidden = false;
     return;
   }
 
-  renderFunnel(v30, c30, k30);
+  renderFunnel(v30, c30, k30, conv30, rev30);
   $("pmBig").textContent = fmt(k30);
   $("pmViews30").textContent = fmt(v30);
   $("pmCopies30").textContent = fmt(c30);
   $("pmViewsToday").textContent = fmt(s.today.views);
+  $("pmConversions30").textContent = fmt(conv30);
+  $("pmRevenue30").textContent = "$" + fmt(rev30);
 
   const days = s.days || [];
   renderDelta(days);
@@ -132,6 +142,8 @@ function renderDelta(days) {
   $("loading").hidden = true;
   $("an").hidden = false;
 
+  renderAudience(s.visitors);
+  renderScroll(s.scrollDepth);
   loadHeatmapAndReferrers();
 
   const exportBtn = $("exportBtn");
@@ -210,6 +222,34 @@ function renderReferrers(refs) {
     const w = Math.round((r.count / max) * 100);
     const share = pctStr(pct(r.count, total));
     return `<div class="an-srow"><div class="an-sr-top"><span class="an-sr-name">${esc(r.domain)}</span><span class="an-sr-v">${fmt(r.count)} · ${share}</span></div><div class="an-sr-track"><i style="width:${w}%"></i></div></div>`;
+  }).join("");
+}
+
+function renderAudience(visitors) {
+  const v = visitors || {};
+  $("audNew").textContent = fmt(v.new || 0);
+  $("audReturning").textContent = fmt(v.returning || 0);
+  $("audSessions").textContent = fmt(v.sessions || 0);
+}
+
+function renderScroll(scrollDepth) {
+  const wrap = $("scrollWrap");
+  const empty = $("scrollEmpty");
+  const buckets = [25, 50, 75, 100];
+  const values = buckets.map((b) => Number(scrollDepth?.[b]) || 0);
+  const total = values.reduce((a, n) => a + n, 0);
+  if (total === 0) {
+    wrap.innerHTML = "";
+    empty.hidden = false;
+    return;
+  }
+  empty.hidden = true;
+  const max = Math.max(1, ...values);
+  wrap.innerHTML = buckets.map((b, i) => {
+    const val = values[i];
+    const w = Math.round((val / max) * 100);
+    const label = b === 100 ? "100%" : `≤ ${b}%`;
+    return `<div class="an-srow"><div class="an-sr-top"><span class="an-sr-name">${label}</span><span class="an-sr-v">${fmt(val)}</span></div><div class="an-sr-track"><i style="width:${w}%"></i></div></div>`;
   }).join("");
 }
 
