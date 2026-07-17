@@ -1,7 +1,12 @@
 // Client-side top-3 / row builders for full-page casino designs.
 (function () {
   const yr = () => window.__yr || { playerHref: (name) => { const slug = window.__SLUG__ || ""; return slug ? `/${encodeURIComponent(slug)}/player/${encodeURIComponent(name)}` : `/player/${encodeURIComponent(name)}`; }, esc: (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])), moneyShort: (n) => "$" + Number(n).toLocaleString("en-US", {maximumFractionDigits:0}), money: (n) => "$" + Number(n).toLocaleString("en-US", {minimumFractionDigits:2, maximumFractionDigits:2}) };
-  const linkName = (n) => `<a class="yr-profile-link" href="${yr().playerHref(n)}">${yr().esc(n)}</a>`;
+  const streakFor = (n) => (window.__SITE_DATA__?.players || []).find((p) => p.name === n)?.streak || 0;
+  const linkName = (n) => {
+    const streak = streakFor(n);
+    const badge = streak >= 2 ? `<span class="yr-streak" style="margin-left:.3rem;font-size:.75rem;color:#ff7a00;font-weight:700;white-space:nowrap" title="${streak} consecutive #1 finishes" aria-label="${streak} streak">🔥${streak}</span>` : "";
+    return `<a class="yr-profile-link" href="${yr().playerHref(n)}">${yr().esc(n)}${badge}</a>`;
+  };
   const fmtScore = (n) => Number(n).toLocaleString("en-US", {maximumFractionDigits:0});
   const wordInitials = (name) => {
     const parts = String(name).split(/[\s_]+/).filter(Boolean);
