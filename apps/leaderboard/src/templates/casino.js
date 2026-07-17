@@ -74,6 +74,39 @@ const PRESETS = {
   ],
 };
 
+const FRAME_COLORS = {
+  arcade: { bg: "#0D0D1A", text: "#FFFFFF", accent: "#39FF14", muted: "rgba(255,255,255,0.6)", hover: "#FFFFFF" },
+  candy: { bg: "#FF85B3", text: "#FFFFFF", accent: "#FFE500", muted: "rgba(255,255,255,0.7)", hover: "#FFFFFF" },
+  fun: { bg: "#6B21A8", text: "#FFFFFF", accent: "#FBBF24", muted: "rgba(255,255,255,0.7)", hover: "#FFFFFF" },
+  space: { bg: "#080B1A", text: "#FFFFFF", accent: "#8B5CF6", muted: "rgba(255,255,255,0.6)", hover: "#FFFFFF" },
+  tropical: { bg: "#FF6B35", text: "#FFFFFF", accent: "#00D4AA", muted: "rgba(255,255,255,0.7)", hover: "#FFFFFF" },
+  underwater: { bg: "#003344", text: "#E0F7FA", accent: "#00E5FF", muted: "rgba(224,247,250,0.7)", hover: "#FFFFFF" },
+  vip: { bg: "#0A0A0A", text: "#F5F5F0", accent: "#C9A84C", muted: "rgba(245,245,240,0.6)", hover: "#FFFFFF" },
+  western: { bg: "#3D1A00", text: "#FFF8E7", accent: "#F5A623", muted: "rgba(245,248,231,0.6)", hover: "#FFFFFF" },
+  pro: { bg: "#0D1A0F", text: "#E5E5E5", accent: "#22C55E", muted: "#6B7280", hover: "#FFFFFF" },
+  leaderboardV2: { bg: "#FAF7F2", text: "#000000", accent: "#C41E3A", muted: "rgba(0,0,0,0.6)", hover: "#000000" },
+  leaderboard: { bg: "#020617", text: "#F8FAFC", accent: "#38bdf8", muted: "#94A3B8", hover: "#FFFFFF" },
+};
+
+export function frameCss(tpl) {
+  const c = FRAME_COLORS[tpl];
+  if (!c) return "";
+  const s = (hex) => `${hex}40`;
+  return `body[data-template="${tpl}"]{background-color:${c.bg}}
+body[data-template="${tpl}"] .site-header--full{background-color:${c.bg};color:${c.text};border-bottom:1px solid ${s(c.accent)};display:flex;justify-content:space-between;align-items:center;padding:1rem 1.5rem;font-family:'Inter',system-ui,sans-serif;position:relative;z-index:999}
+body[data-template="${tpl}"] .site-header--full__brand{display:flex;align-items:center;gap:.75rem;font-weight:800;font-size:1.1rem;text-decoration:none;color:${c.text}}
+body[data-template="${tpl}"] .site-header--full__brand img{height:28px;width:auto;border-radius:6px}
+body[data-template="${tpl}"] .site-header--full__nav a{color:${c.accent};text-decoration:none;margin-left:1.25rem;font-size:.875rem;font-weight:600}
+body[data-template="${tpl}"] .site-header--full__nav a:hover{color:${c.hover}}
+body[data-template="${tpl}"] .site-footer--full{background-color:${c.bg};color:${c.text};border-top:1px solid ${s(c.accent)};padding:2rem 1.5rem;text-align:center;position:relative;z-index:10}
+body[data-template="${tpl}"] .site-footer--full__brand{display:block;font-weight:800;font-size:1.2rem;margin-bottom:.25rem}
+body[data-template="${tpl}"] .site-footer--full__tag{display:block;font-size:.85rem;color:${c.muted};margin-bottom:1rem}
+body[data-template="${tpl}"] .site-footer--full__fine,body[data-template="${tpl}"] .site-footer--full__copy{color:${c.muted};font-size:.78rem;line-height:1.6;margin:.5rem 0}
+body[data-template="${tpl}"] .site-footer--full__links{margin:1rem 0}
+body[data-template="${tpl}"] .site-footer--full__links a{color:${c.accent};text-decoration:none;margin:0 .75rem;font-size:.875rem;font-weight:600}
+body[data-template="${tpl}"] .site-footer--full__links a:hover{color:${c.hover}}`;
+}
+
 const METAS = {
   arcade: { name: "Casino Arcade", description: "Retro 8-bit arcade: neon grid, pixel font, and glowing blocks." },
   candy: { name: "Casino Candy", description: "Sweet candy theme with soft pinks, yellows, and a bouncy vibe." },

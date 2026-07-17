@@ -1,7 +1,7 @@
 // Server-render a streamer's leaderboard page from their data.
 import { templateCss, validTemplate } from "./templates/index.js";
 import { DEFAULT_EXTRA } from "./site.js";
-import { applyCasinoText, CASINO_COMPOSERS, CASINO_FULL } from "./templates/casino.js";
+import { applyCasinoText, CASINO_COMPOSERS, CASINO_FULL, frameCss } from "./templates/casino.js";
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 // E2E-009: Sanitize user-supplied URLs for href attributes.
 // Only allows https:// URLs (rejects http://, javascript:, data:, vbscript:).
@@ -271,9 +271,10 @@ export function renderLeaderboard(data, opts = {}) {
   const br = data.branding || {};
   // Template: which visual skin renders this page. Falls back to "classic".
   const tpl = validTemplate(br.template);
-  const tplCssStr = templateCss(tpl);
-  const tplCss = tplCssStr ? `<style nonce="${opts.nonce}" data-template="${tpl}">${tplCssStr}</style>` : "";
   const fullPage = CASINO_FULL.has(tpl);
+  const frameCssStr = fullPage ? frameCss(tpl) : "";
+  const tplCssStr = templateCss(tpl) + frameCssStr;
+  const tplCss = tplCssStr ? `<style nonce="${opts.nonce}" data-template="${tpl}">${tplCssStr}</style>` : "";
   const previewCss = opts.preview ? `<style nonce="${opts.nonce}">
 html{background:var(--bg)}body[data-preview]{min-width:1100px;overflow:hidden}
 body[data-preview] .nav,body[data-preview] .field,body[data-preview] .watermarks,body[data-preview] .stream-window,
@@ -332,6 +333,13 @@ body[data-preview] .top3{margin-bottom:14px}
   const hasCta = !!(b.ctaUrl) || hasCasino || hasCode;
   const hasPartner = hasCasino || hasCode || !!blurb || chips.length > 0 || whyStats.length > 0;
 
+  const fullPageHeader = fullPage
+    ? `<header class="site-header--full"><a class="site-header--full__brand" href="#top">${navLogo}<span data-brand-name>${esc(b.name)}</span></a><nav class="site-header--full__nav" aria-label="Page sections"><a href="#top">Leaderboard</a><a href="/terms">Terms</a><a href="/privacy">Privacy</a><a href="/responsible">Responsible</a></nav></header>`
+    : "";
+  const fullPageFooter = fullPage
+    ? `<footer class="site-footer--full"><div class="site-footer--full__brand" data-brand-name>${esc(b.name)}</div><div class="site-footer--full__tag" data-tagline>${esc(b.tagline)}</div><p class="site-footer--full__fine">18+ only. Gambling can be addictive. Please play responsibly. BeGambleAware.org${hasCasino ? ` · ${esc(b.name)} is not affiliated with ${esc(casino)}.` : "."}</p><div class="site-footer--full__links"><a href="/terms">Terms</a><a href="/privacy">Privacy</a><a href="/responsible">Responsible</a><a href="/cookies">Cookies</a><a href="/refund">Refund</a><a href="/contact">Contact</a></div><p class="site-footer--full__copy">© <span data-year></span> <span data-brand-name>${esc(b.name)}</span>. All rights reserved.</p></footer>`
+    : "";
+
   // Homepage/brand fallback preview image (1200×630). Served by the Worker at
   // /og.png so shares don't render blank. A board's own logo still wins.
   const ogFallback = `${esc(opts.homeUrl || "https://yourrank.site")}/og.png`;
@@ -382,6 +390,7 @@ ${previewCss}
 <noscript><p class="noscript-noscroll">This leaderboard requires JavaScript for live updates. The data shown below may not refresh automatically.</p></noscript>
 ${opts.demo ? `<div class="demo-bar" role="region" aria-label="Demo notice"><span class="demo-bar-txt">You're viewing a live <b>YourRank</b> demo board.</span><a class="demo-bar-cta" href="${esc(`${opts.homeUrl || ""}/signup`)}" target="_top">Create your free page →</a><a class="demo-bar-home" href="${esc(opts.homeUrl || "/")}" target="_top">Back to YourRank</a></div>` : ""}
 <a class="skip-link" href="#board">Skip to leaderboard</a>
+${fullPageHeader}
 ${fullPage ? "" : `<div class="field" aria-hidden="true"></div><div class="watermarks" data-watermarks aria-hidden="true"></div>
 <header class="nav"><a class="nav-brand" href="#top">${navLogo}<span data-brand-name>${esc(b.name)}</span></a>
 <button class="nav-toggle" aria-label="Toggle navigation" aria-expanded="false"><svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button>
@@ -389,6 +398,7 @@ ${fullPage ? "" : `<div class="field" aria-hidden="true"></div><div class="water
 ${boardTabs}
 <main id="top">
 ${composeMain(tpl, buildParts({ b, esc, heroLogo, hasCasino, casino, period, pool, hasCta, ctaHref, hasPartner, hasCode, code, blurb, whyStats, socials }), textOverrides)}</main>
+${fullPageFooter}
 ${fullPage ? "" : `<footer class="ftr"><div class="ftr-id"><span class="ftr-name" data-brand-name>${esc(b.name)}</span><span class="ftr-tag" data-tagline>${esc(b.tagline)}</span></div>
 <p class="ftr-fine">18+ only. Gambling can be addictive. Please play responsibly. BeGambleAware.org${hasCasino ? ` · ${esc(b.name)} is not affiliated with ${esc(casino)}.` : "."}</p>
 <p class="ftr-copy">© <span data-year></span> <span data-brand-name>${esc(b.name)}</span>. All rights reserved.</p></footer>`}
