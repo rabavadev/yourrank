@@ -10,7 +10,7 @@ export const setupPage = leaderboardPageHtml({
   scripts: ['<script src="/assets/setup-wizard.js?v=3"></script>'],
   content: `<div class="setup-wrap">
 <h1>Set up your leaderboard</h1>
-<p class="sub">Four quick steps and you're live.</p>
+<p class="sub">Four quick steps and you're live. <a href="/demo" target="_blank">See a live demo first →</a></p>
 <div class="steps-ind" id="stepsInd"></div>
 
 <div class="wiz-step active" id="step1">
@@ -40,7 +40,7 @@ export const setupPage = leaderboardPageHtml({
 <textarea class="players-ta" id="wiz_players" rows="8" spellcheck="false" placeholder="*****ess, 152000
 *****y, 98000
 *****k, 61250"></textarea>
-<span class="hint" id="wiz_pcount">0 players detected</span></div>
+<div class="d-flex gap-10 items-center flex-wrap"><span class="hint" id="wiz_pcount">0 players detected</span><button class="btn btn--sm btn--ghost" id="wiz_sample" type="button">Load sample players</button></div></div>
 <div class="btns-row"><button class="btn" id="wiz3back" type="button">← Back</button><button class="btn btn--accent" id="wiz3next" type="button">Next →</button></div>
 </div>
 

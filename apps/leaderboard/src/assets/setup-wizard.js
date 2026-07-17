@@ -20,10 +20,18 @@ slugIn.addEventListener("input",()=>{userEditedSlug=true;const s=slugify(slugIn.
 
 // Step 3: player count
 const pta=$("wiz_players"), pcount=$("wiz_pcount");
-pta.addEventListener("input",()=>{
+function countPlayers(){
 const lines=pta.value.split("\n").filter(l=>{const t=l.trim();return t&&!t.startsWith("#")&&!t.startsWith("//");});
 pcount.textContent=lines.length+" player"+(lines.length===1?"":"s")+" detected";
-});
+}
+pta.addEventListener("input",countPlayers);
+const sampleBtn=$("wiz_sample");
+if(sampleBtn){
+  sampleBtn.addEventListener("click",()=>{
+    pta.value="Dragon7, 245000\nLuckyAce, 189500\nHighRollerX, 132000\nNightOwl, 98000\nCasinoKing, 61000";
+    countPlayers();
+  });
+}
 
 // Parse the players textarea: "name, wagered" per line, comma/tab separated.
 function parsePlayers(){
