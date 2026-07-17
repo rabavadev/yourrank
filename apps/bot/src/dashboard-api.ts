@@ -115,19 +115,36 @@ export function buildDashboardApi(): Hono<{ Bindings: DashApiBindings; Variables
            FROM clicks cl
           WHERE cl.ts >= current_date
           GROUP BY cl.short_link_id
+       ),
+       offer_conversions AS (
+         SELECT c.offer_id,
+                count(*)::int AS conversions
+           FROM conversions c
+          WHERE c.owner_id = $1
+          GROUP BY c.offer_id
        )
        SELECT o.id, o.label, ca.name AS casino, o.promo_code, o.bonus_text,
               o.is_active, o.priority, sl.slug,
               (coalesce(lc.clicks, 0) + coalesce(tc.clicks, 0))::int               AS clicks,
-              (coalesce(lc.unique_clicks, 0) + coalesce(tc.unique_clicks, 0))::int AS unique_clicks
+              (coalesce(lc.unique_clicks, 0) + coalesce(tc.unique_clicks, 0))::int AS unique_clicks,
+              coalesce(conv.conversions, 0)::int                                       AS conversions,
+              CASE WHEN (coalesce(lc.clicks, 0) + coalesce(tc.clicks, 0)) > 0
+                   THEN round(((coalesce(lc.unique_clicks, 0) + coalesce(tc.unique_clicks, 0))::numeric) / (coalesce(lc.clicks, 0) + coalesce(tc.clicks, 0)), 3)::float
+                   ELSE 0
+              END AS ctr,
+              CASE WHEN (coalesce(lc.unique_clicks, 0) + coalesce(tc.unique_clicks, 0)) > 0
+                   THEN round((coalesce(conv.conversions, 0)::numeric) / (coalesce(lc.unique_clicks, 0) + coalesce(tc.unique_clicks, 0)), 3)::float
+                   ELSE 0
+              END AS cr
          FROM offers o
          JOIN casinos ca ON ca.id = o.casino_id
          LEFT JOIN short_links sl ON sl.offer_id = o.id
          LEFT JOIN link_clicks  lc ON lc.short_link_id = sl.id
          LEFT JOIN today_clicks tc ON tc.short_link_id = sl.id
-        WHERE o.owner_id = $1
+         LEFT JOIN offer_conversions conv ON conv.offer_id = o.id
+        WHERE o.owner_id = $2
         ORDER BY o.priority DESC, o.created_at DESC`,
-      [c.get("uid")]
+      [c.get("uid"), c.get("uid")]
     ));
   });
 

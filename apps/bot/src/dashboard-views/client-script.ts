@@ -105,8 +105,9 @@ function renderOverviewSummary(bots, offers){
     oo.innerHTML = top.length
       ? top.map(o=>{
           const on = o.is_active;
+          const cr = o.cr != null ? ((o.cr)*100).toFixed(1) : '0.0';
           return '<div class="lrow"><div class="l"><div class="nm">'+esc(o.casino)+'</div>'+
-            '<div class="ds">'+esc(o.label||'')+' · '+esc(String(o.clicks||0))+' clicks</div></div>'+
+            '<div class="ds">'+esc(o.label||'')+' · '+esc(String(o.clicks||0))+' clicks · '+esc(String(o.conversions||0))+' conv · '+esc(cr)+'% CR</div></div>'+
             '<span class="badge '+(on?'on':'off')+'">'+(on?'active':'off')+'</span></div>';
         }).join('')
       : '<p class="muted style-26">No offers yet. <a href="/bot/offers">Create one →</a></p>';
@@ -137,13 +138,18 @@ async function loadSubscribers(bots){
 function renderOffers(){
   const offersEl = $('offers');
   if (!offersEl) return;
-  offersEl.innerHTML = (__offers||[]).map(o=>'<tr>'+
+  offersEl.innerHTML = (__offers||[]).map(o=>{
+    const ctr = o.ctr != null ? ((o.ctr)*100).toFixed(1) : '0.0';
+    const cr = o.cr != null ? ((o.cr)*100).toFixed(1) : '0.0';
+    return '<tr>'+
     '<td><b>'+esc(o.casino)+'</b><br><span class="muted">'+esc(o.label)+'</span></td>'+
     '<td>'+(o.slug?'<span class="copy" data-action="copyLink" data-slug="'+esc(o.slug)+'" title="Copy tracked link">'+esc('/r/'+o.slug)+'</span> <button class="ghost style-33" data-action="copyLink" data-slug="'+esc(o.slug)+'" type="button" aria-label="Copy link">Copy</button>':'–')+'</td>'+
     '<td>'+esc(String(o.clicks))+'</td><td>'+esc(String(o.unique_clicks))+'</td>'+
+    '<td>'+esc(ctr)+'%</td><td>'+esc(cr)+'%</td><td>'+esc(String(o.conversions||0))+'</td>'+
     '<td class="'+(o.is_active?'ok':'off')+'">'+(o.is_active?'active':'off')+'</td>'+
     '<td><button class="ghost" data-action="toggleOffer" data-id="'+esc(o.id)+'" data-active="'+(!o.is_active)+'">'+(o.is_active?'Disable':'Enable')+'</button></td>'+
-  '</tr>').join('') || '<tr><td colspan="6" class="muted">No offers yet.</td></tr>';
+  '</tr>';
+  }).join('') || '<tr><td colspan="9" class="muted">No offers yet.</td></tr>';
 }
 
 async function loadExtras(){

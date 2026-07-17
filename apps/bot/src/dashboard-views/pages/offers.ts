@@ -20,7 +20,7 @@ export function offersPanel(): string {
   </div>
 
   <div class="panel" data-page="offers"><h2>Offers</h2>
-    <table><thead><tr><th>Offer</th><th>Link</th><th>Clicks</th><th>Unique</th><th>Status</th><th><span class="sr-only">Actions</span></th></tr></thead>
-    <tbody id="offers"><tr><td colspan="6" class="muted">Loading…</td></tr></tbody></table>
+    <table><thead><tr><th>Offer</th><th>Link</th><th>Clicks</th><th>Unique</th><th>CTR</th><th>CR</th><th>Conv.</th><th>Status</th><th><span class="sr-only">Actions</span></th></tr></thead>
+    <tbody id="offers"><tr><td colspan="9" class="muted">Loading…</td></tr></tbody></table>
   </div>`;
 }
