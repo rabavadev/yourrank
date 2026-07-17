@@ -462,8 +462,8 @@ section { width: min(var(--wrap), 100% - 2.5rem); margin-inline: auto; }
   min-height: var(--tap, 44px); display: inline-flex; align-items: center;
 }
 .tr-name:hover { color: var(--primary); text-decoration: underline; }
-.tr-wager { font-family: var(--font-mono); font-size: 1rem; font-weight: 700; color: var(--ink); }
-.tr-wager .w-sm { display: none; }
+.yr-streak { margin-left: 0.35rem; font-size: 0.78rem; color: #ff7a00; font-weight: 700; white-space: nowrap; }
+.tr-wager { font-family: var(--font-mono); font-size: 1rem; font-weight: 700; color: var(--ink); }.tr-wager .w-sm { display: none; }
 .tr-prize { font-family: var(--font-mono); font-weight: 700; font-size: 0.95rem; }
 .tr-prize.has { color: var(--green); text-shadow: 0 0 8px rgba(74, 225, 118, 0.4); }
 .tr-prize.no { color: var(--ink-mute); font-weight: 400; }
