@@ -4,6 +4,7 @@ import {
   composeArcade,
   composeCandy,
   composeFun,
+  composeLeaderboard,
   composeLeaderboardV2,
   composePro,
   composeSpace,
@@ -66,6 +67,11 @@ const PRESETS = {
     { id: "ink", name: "Ink", accentA: "#000000", accentB: "#FAF7F2" },
     { id: "gold", name: "Gold", accentA: "#B8860B", accentB: "#FAF7F2" },
   ],
+  leaderboard: [
+    { id: "dark", name: "Dark", accentA: "#38bdf8", accentB: "#020617" },
+    { id: "void", name: "Void", accentA: "#8B5CF6", accentB: "#020617" },
+    { id: "ember", name: "Ember", accentA: "#F59E0B", accentB: "#020617" },
+  ],
 };
 
 const METAS = {
@@ -79,6 +85,7 @@ const METAS = {
   western: { name: "Casino Western", description: "Wild west saloon board with wood grain, gold, and sheriff stars." },
   pro: { name: "Casino Pro", description: "Poker-style data table with hands, win-rate bars, and net-profit deltas." },
   leaderboardV2: { name: "Editorial Standings", description: "Magazine-style light leaderboard with serif headlines and score bars." },
+  leaderboard: { name: "Cyber Standings", description: "Dark shadcn podium and list with animated cards and glow effects." },
 };
 
 export const CASINO_TEMPLATES = Object.fromEntries(
@@ -106,6 +113,7 @@ export const CASINO_COMPOSERS = {
   western: composeWestern,
   pro: composePro,
   leaderboardV2: composeLeaderboardV2,
+  leaderboard: composeLeaderboard,
 };
 
 export const CASINO_FULL = new Set(Object.keys(CASINO_COMPOSERS));

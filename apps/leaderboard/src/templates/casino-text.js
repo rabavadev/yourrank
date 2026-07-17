@@ -94,5 +94,18 @@ export const CASINO_TEXT_DEFAULTS = {
     "win_rate_label": "Win Rate",
     "rankings_update": "Rankings update every 5 minutes.",
     "page_counter": "01 / 12"
+  },
+  "leaderboard": {
+    "title_start": "Global ",
+    "title_accent": "Rankings",
+    "tab_today": "Today",
+    "tab_week": "This Week",
+    "tab_alltime": "All Time",
+    "col_rank": "Rank",
+    "col_player": "Player",
+    "col_winrate": "Win Rate",
+    "col_status": "Status",
+    "col_score": "Score",
+    "load_more": "Load More Players"
   }
 };
