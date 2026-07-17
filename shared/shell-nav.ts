@@ -32,6 +32,7 @@ export const NAV_LINKS: NavLink[] = [
   { key: "analytics",   label: "Analytics",   href: "/dashboard/analytics", match: ["/dashboard/analytics"] },
   { key: "attribution", label: "Attribution", href: "/dashboard/attribution", match: ["/dashboard/attribution"] },
   { key: "billing",     label: "Billing",     href: "/dashboard/billing",   match: ["/dashboard/billing"] },
+  { key: "support",     label: "Support",     href: "/dashboard/support",   match: ["/dashboard/support"] },
   { key: "security",    label: "Security",    href: "/dashboard/security",  match: ["/dashboard/security"] },
 ];
 
@@ -88,7 +89,7 @@ export function shellNavHtml(
     <nav class="gm-tabs" aria-label="Dashboard">${tabs}</nav>
     <div class="gm-who">
       <a class="gm-help-link" href="/contact?type=feedback&amp;${helpQuery}">Feedback</a>
-      <a class="gm-help-link gm-help-link--support" href="/contact?type=support&amp;${helpQuery}">Support</a>
+      <a class="gm-help-link gm-help-link--support" href="/dashboard/support">Support</a>
       <span class="gm-who-name">${name}</span>
       ${badge}
       <form method="POST" action="${esc(opts.logoutAction || "/logout")}" class="gm-logout-form"><button class="gm-logout" type="submit">Logout</button></form>

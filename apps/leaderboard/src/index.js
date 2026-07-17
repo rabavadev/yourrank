@@ -408,6 +408,18 @@ async function handleRequest(request, env, ctx, meta) {
           return new Response("Setup couldn't load right now — please refresh.", { status: 500, headers: { "content-type": "text/plain; charset=utf-8" } });
         }
       }
+      if (path === "/dashboard/support") {
+        try {
+          const user = await currentUser(request, env);
+          if (!user) return Response.redirect(new URL("/login", url), 302);
+          const html = addCookieConsent(PAGES.support
+            .replace("<!--GM_NAV-->", shellNavHtml({ activePath: "/dashboard/support", user })));
+          return new Response(html, { headers: { ...SECURE_HTML, ...csrfHeader, "cache-control": "no-store, no-cache, must-revalidate" } });
+        } catch (e) {
+          if (workerLog) workerLog.error("support_render_failed", { error: String(e?.message || e) }); else console.error("support render failed:", String(e?.message || e));
+          return new Response("Support page couldn't load right now — please refresh.", { status: 500, headers: { "content-type": "text/plain; charset=utf-8" } });
+        }
+      }
       if (path === "/dashboard/security") {
         try {
           const user = await currentUser(request, env);

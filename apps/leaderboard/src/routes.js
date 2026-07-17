@@ -24,6 +24,7 @@ import { handleTrial } from "./handlers/billing.js";
 import { handleLead } from "./handlers/leads.js";
 import { handleAttribution, handleAttributionExport, handlePostback, handleRotatePostbackKey, handleRevokePostbackKey } from "./handlers/attribution.js";
 import { handleContact } from "./handlers/contact.js";
+import { handleListTickets, handleGetTicket, handleCreateTicket } from "./handlers/support.js";
 import { handleCspReport } from "./handlers/csp-report.js";
 import { handleLog } from "./handlers/log.js";
 import { handleScores } from "./handlers/scores.js";
@@ -82,6 +83,9 @@ export const ROUTES = [
   // Public routes (CSRF-exempt)
   { path: "/api/lead", method: "POST", handler: withHandler(handleLead) },
   { path: "/api/contact", method: "POST", handler: withHandler(handleContact) },
+  { path: "/api/support", method: "GET", handler: withHandler(handleListTickets) },
+  { path: "/api/support", method: "POST", handler: withHandler(handleCreateTicket) },
+  { path: "/api/support/:id", method: "GET", handler: withHandler(handleGetTicket) },
   { path: "/api/track/copy", method: "POST", handler: withHandler(handleTrackCopy) },
   { path: "/api/scores", method: "POST", handler: withHandler(handleScores) },
   
@@ -142,17 +146,19 @@ export function findRoute(path, method) {
   const exactMatch = ROUTES.find(route => route.path === path && route.method === effectiveMethod);
   if (exactMatch) return exactMatch;
   
-  // Then try pattern matching for routes with :slug parameters
-  const patternMatch = ROUTES.find(route => {
+  // Then try pattern matching for routes with :slug or :id parameters
+  const patternMatch = ROUTES.find((route) => {
     if (route.method !== effectiveMethod) return false;
-    const routePattern = route.path.replace(/:slug/g, '[^/]+');
+    const routePattern = route.path.replace(/:slug|:id/g, "([^/]+)");
     const regex = new RegExp(`^${routePattern}$`);
     return regex.test(path);
   });
-  
+
   if (patternMatch) {
-    // Extract the slug from the path
-    const slug = path.match(/\/api\/public\/([^/]+)/)?.[1];
+    // Extract the first path parameter (slug or id) from the path
+    const routePattern = patternMatch.path.replace(/:slug|:id/g, "([^/]+)");
+    const match = path.match(new RegExp(`^${routePattern}$`));
+    const slug = match?.[1];
     return { ...patternMatch, slug };
   }
   

@@ -22,6 +22,7 @@ import { refundPage } from "./pages/refund.js";
 import { cookiesPage } from "./pages/cookies.js";
 import { contactPage } from "./pages/contact.js";
 import { pricingPage } from "./pages/pricing.js";
+import { supportPage } from "./pages/support.js";
 
 export const PAGES = {
   index: landingPage,
@@ -46,4 +47,5 @@ export const PAGES = {
   cookies: cookiesPage,
   contact: contactPage,
   pricing: pricingPage,
+  support: supportPage,
 };
