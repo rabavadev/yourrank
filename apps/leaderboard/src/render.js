@@ -625,3 +625,78 @@ ${header}
 ${footer}
 </body></html>`;
 }
+
+export function renderHallOfFame(data, opts) {
+  const b = data.brand || {};
+  const br = data.branding || {};
+  const tpl = br.template || "classic";
+  const fullPage = CASINO_FULL.has(tpl);
+  const logo = opts.logoUrl ? esc(opts.logoUrl) : null;
+  const navLogo = logo ? `<img class="nav-logo" src="${logo}" alt="" />` : "";
+  const isCustomDomain = !!opts.isCustomDomain;
+  const homeHref = isCustomDomain ? "/" : `/${esc(opts.slug || "")}`;
+  const legalHref = (p) => isCustomDomain ? `/${p}` : `/${esc(opts.slug || "")}/${p}`;
+  const frameStyles = fullPage ? frameCss(tpl) : "";
+  const templateStyle = frameStyles ? `<style nonce="${opts.nonce}" data-template="${tpl}">${frameStyles}</style>` : "";
+  const fontLink = fullPage
+    ? `<link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin /><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet" />`
+    : `<link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin /><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />`;
+  const cssLink = fullPage ? "" : `<link rel="stylesheet" href="/assets/app.css" />`;
+  const canonical = `${esc(opts.homeUrl || "https://yourrank.site")}${isCustomDomain ? "/hall-of-fame" : `/${esc(opts.slug || "")}/hall-of-fame`}`;
+  const header = fullPage
+    ? `<header class="site-header--full"><a class="site-header--full__brand" href="${homeHref}">${navLogo}<span data-brand-name>${esc(b.name)}</span></a><nav class="site-header--full__nav" aria-label="Page sections"><a href="${homeHref}">Leaderboard</a><a href="${legalHref("terms")}">Terms</a><a href="${legalHref("privacy")}">Privacy</a></nav></header>`
+    : `<header class="topbar"><a class="brand" href="${homeHref}">${esc(b.name || "YourRank")}</a></header>`;
+  const footer = fullPage
+    ? `<footer class="site-footer--full"><div class="site-footer--full__brand" data-brand-name>${esc(b.name)}</div><div class="site-footer--full__tag" data-tagline>${esc(b.tagline)}</div><p class="site-footer--full__fine">${footerDisclaimer(!!b.casino, b.name, b.casino)}</p><div class="site-footer--full__links"><a href="${legalHref("terms")}">Terms</a><a href="${legalHref("privacy")}">Privacy</a><a href="${legalHref("responsible")}">Responsible</a><a href="${legalHref("cookies")}">Cookies</a><a href="${legalHref("refund")}">Refund</a><a href="${legalHref("contact")}">Contact</a></div><p class="site-footer--full__copy">© ${new Date().getFullYear()} <span data-brand-name>${esc(b.name)}</span>. All rights reserved.</p></footer>`
+    : `<footer class="ftr"><div class="ftr-id"><span class="ftr-name" data-brand-name>${esc(b.name)}</span><span class="ftr-tag" data-tagline>${esc(b.tagline)}</span></div><p class="ftr-fine">${footerDisclaimer(!!b.casino, b.name, b.casino)}</p><p class="ftr-copy">© ${new Date().getFullYear()} <span data-brand-name>${esc(b.name)}</span>. All rights reserved.</p></footer>`;
+
+  const past = Array.isArray(data.pastWinners) ? data.pastWinners : [];
+  const medals = ["gold", "silver", "bronze"];
+  const cards = past.map((a) => `<div class="hof-card"><div class="hof-label">${esc(a.label)} <span class="hof-date">${new Date(a.at).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" })}</span></div><ol class="hof-list">${
+    (a.top || []).map((p, i) => `<li class="hof-row"><span class="hof-rank ${medals[i] || ""}">${i + 1}</span><span class="hof-name">${esc(p.name)}</span><span class="hof-val">${fmtCurrency(p.prize || p.wagered || 0)}</span></li>`).join("")
+  }</ol></div>`).join("");
+  const body = past.length
+    ? `<div class="hof-grid">${cards}</div>`
+    : `<p class="hof-empty">No closed-out periods yet. The streamer can close out a period from the dashboard to build the Hall of Fame.</p>`;
+
+  const hofStyle = `<style nonce="${opts.nonce}">
+.hof-wrap{max-width:1100px;margin:0 auto;padding:40px 24px}
+.hof-title{font-size:clamp(32px,5vw,48px);font-weight:800;letter-spacing:-.03em;margin:0 0 8px}
+.hof-sub{color:var(--ink-soft,#9a94b8);margin:0 0 32px}
+.hof-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px}
+.hof-card{background:var(--panel,#13131a);border:1px solid var(--line-2,rgba(150,120,220,.2));border-radius:12px;padding:18px}
+.hof-label{font-family:"JetBrains Mono",monospace;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-soft,#9a94b8);border-bottom:1px solid var(--line-2,rgba(150,120,220,.2));padding-bottom:10px;margin-bottom:10px;display:flex;justify-content:space-between;gap:8px}
+.hof-date{font-weight:400;text-transform:none;font-family:Inter,sans-serif;letter-spacing:0}
+.hof-list{list-style:none;margin:0;padding:0}
+.hof-row{display:flex;align-items:center;gap:10px;padding:7px 0;font-size:15px}
+.hof-rank{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:12px;background:var(--panel-2,#1a1a22);color:var(--ink,#ededf0)}
+.hof-rank.gold{background:linear-gradient(135deg,#ffd700,#ffaa00);color:#000}
+.hof-rank.silver{background:linear-gradient(135deg,#e0e0e0,#b0b0b0);color:#000}
+.hof-rank.bronze{background:linear-gradient(135deg,#cd7f32,#a0522d);color:#fff}
+.hof-name{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hof-val{font-family:"JetBrains Mono",monospace;color:var(--gold,#ffd700);font-weight:700}
+.hof-empty{color:var(--ink-soft,#9a94b8);padding:24px 0}
+.hof-back{display:inline-block;margin-top:24px;color:var(--ink-soft,#9a94b8);text-decoration:none}
+.hof-back:hover{color:var(--ink,#ededf0)}
+</style>`;
+
+  return `<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>${esc(b.name || "YourRank")} — Hall of Fame</title><meta name="description" content="Past winners and closed-out periods for ${esc(b.name || "YourRank")}." />
+<link rel="canonical" href="${canonical}" />
+${fontLink}${cssLink}${templateStyle}${hofStyle}
+</head><body data-template="${tpl}" class="${fullPage ? "legal-page" : "legal"}">
+<a class="skip-link" href="#main-content">Skip to content</a>
+${header}
+<main class="${fullPage ? "legal-page__wrap" : "legal"}" id="main-content">
+<div class="hof-wrap">
+  <h1 class="hof-title">Hall of Fame</h1>
+  <p class="hof-sub">Every closed-out period, on the record.</p>
+  ${body}
+  <a class="hof-back" href="${homeHref}">← Back to ${esc(b.name || "leaderboard")}</a>
+</div>
+</main>
+${footer}
+</body></html>`;
+}
