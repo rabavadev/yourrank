@@ -117,7 +117,7 @@ export const handlerSchemas: Record<string, ZodSchema<any>> = {
     .object({
       email: z.string().email().max(254),
       password: z.string().min(8).max(128),
-      name: z.string().trim().min(2).max(80),
+      name: z.string().trim().min(2).max(80).optional(),
       slug: z.string().trim().max(80).optional().or(z.literal("").optional()),
     })
     .strict(),
