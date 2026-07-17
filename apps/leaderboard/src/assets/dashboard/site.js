@@ -573,13 +573,22 @@ export async function loadStats() {
   const ov7 = $("ov_views7"); if (ov7) ov7.textContent = fmt(s.last7.views);
   const ovBars = $("ov_bars");
   if (ovBars) {
+    const ovMax = Math.max(1, ...days.map((x) => x.views + x.copies + x.clicks));
     ovBars.innerHTML = days.map((x) => {
-      const h = Math.max(2, Math.round((x.views / max) * 100));
+      const total = x.views + x.copies + x.clicks;
+      const h = Math.max(2, Math.round((total / ovMax) * 100));
       const nice = new Date(x.day + "T00:00:00Z").toUTCString().slice(5, 11);
-      return `<div class="stat-bar" style="height:${h}%" title="${nice}: ${x.views} views"></div>`;
+      const tip = `${nice}: ${x.views} views, ${x.copies} copies, ${x.clicks} clicks`;
+      if (!total) return `<div class="stat-bar is-empty" style="height:2%" title="${tip}"></div>`;
+      const seg = (v, c) => {
+        const pct = Math.max(1, Math.round((v / total) * 100));
+        return v ? `<div class="stat-bar-seg ${c}" style="height:${pct}%"></div>` : "";
+      };
+      return `<div class="stat-bar is-stacked" style="height:${h}%" title="${tip}">${seg(x.views, "views")}${seg(x.copies, "copies")}${seg(x.clicks, "clicks")}</div>`;
     }).join("");
     if (days.length) $("ov_barsFrom").textContent = new Date(days[0].day + "T00:00:00Z").toUTCString().slice(5, 11);
-    if (!days.length || s.last30.views === 0) $("ov_barsEmpty").hidden = false;
+    const ovBarsEmpty = $("ov_barsEmpty");
+    if (ovBarsEmpty) ovBarsEmpty.hidden = days.length > 0 && (s.last30.views + s.last30.copies + s.last30.clicks) > 0;
   }
   const shareStep = $("ov_step_share");
   if (shareStep && s.last7.views > 0) shareStep.classList.add("is-done");
