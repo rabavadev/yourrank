@@ -12,7 +12,18 @@ export const billingPage = leaderboardPageHtml({
 <p class="hint" id="expLine" hidden></p>
 <div id="cancelBox" class="mt-18" hidden><p class="hint">Paid subscription? You can cancel it at any time. You'll keep features until the end of the current billing period.</p>
 <button class="btn btn--danger" id="cancelBtn" type="button">Cancel subscription</button>
-<p class="status" id="cancelStatus" role="status" aria-live="polite"></p></div></div>
+<p class="status" id="cancelStatus" role="status" aria-live="polite"></p>
+<div class="modal" id="cancelModal" hidden>
+  <div class="modal-card">
+    <h3>Cancel your subscription?</h3>
+    <p>You'll keep Pro features until the end of your current billing period, then your plan will revert to Free.</p>
+    <div class="d-flex gap-10 flex-wrap">
+      <button class="btn btn--danger" id="cancelConfirmBtn" type="button">Yes, cancel</button>
+      <button class="btn btn--ghost" id="cancelCancelBtn" type="button">Keep my plan</button>
+    </div>
+    <p class="status" id="cancelModalStatus" role="status" aria-live="polite"></p>
+  </div>
+</div></div></div>
 <div class="card" id="trialCard" hidden><h2>Try Pro free for 7 days</h2><p class="card-sub">Experience all Pro features — unlimited players, custom domain, OBS overlay, notifications — with no commitment.</p>
 <button class="btn btn--accent" id="trialBtn" type="button">Start free trial</button>
 <p class="status" id="trialStatus" role="status" aria-live="polite"></p></div>
