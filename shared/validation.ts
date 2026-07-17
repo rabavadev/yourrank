@@ -56,6 +56,7 @@ const socialItemSchema = z
     brand: z.string().max(40).optional(),
     url: z.string().max(500).optional(),
     label: z.string().max(200).optional(),
+    enabled: z.boolean().optional(),
   })
   .strict();
 

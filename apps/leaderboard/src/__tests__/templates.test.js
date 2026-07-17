@@ -91,4 +91,16 @@ describe("theme_json / extra_json persistence (BUG: double-encoded JSONB)", () =
     const shaped = publicShape({ ...SITE, theme_json: {}, extra_json: extra }, []);
     expect(shaped.socials).toEqual([{ label: "X", url: "https://x.com/a" }]);
   });
+
+  it("hides disabled socials and those without a real url from the public page", () => {
+    const socials = [
+      { brand: "x", name: "X", url: "https://x.com/a", enabled: true },
+      { brand: "kick", name: "Kick", url: "https://kick.com/a", enabled: false },
+      { brand: "discord", name: "Discord", url: "", enabled: true },
+      { brand: "twitch", name: "Twitch", url: "#", enabled: true },
+      { brand: "telegram", name: "Telegram", url: "https://t.me/a", enabled: true },
+    ];
+    const shaped = publicShape({ ...SITE, theme_json: {}, extra_json: { socials } }, []);
+    expect(shaped.socials.map((s) => s.brand)).toEqual(["x", "telegram"]);
+  });
 });

@@ -242,6 +242,48 @@ export function renderNotifications(n) {
   const tgChat = $("f_tgChatId"); if (tgChat) tgChat.value = n.telegram_chat_id || "";
 }
 
+const SOCIAL_CATALOG = [
+  { brand: "discord", name: "Discord", action: "Join", handle: "Join the community", placeholder: "https://discord.gg/yourserver" },
+  { brand: "kick", name: "Kick", action: "Follow", handle: "Watch live", placeholder: "https://kick.com/yourname" },
+  { brand: "twitch", name: "Twitch", action: "Follow", handle: "Watch live", placeholder: "https://twitch.tv/yourname" },
+  { brand: "x", name: "X (Twitter)", action: "Follow", handle: "Latest updates", placeholder: "https://x.com/yourname" },
+  { brand: "youtube", name: "YouTube", action: "Subscribe", handle: "Watch videos", placeholder: "https://youtube.com/@yourname" },
+  { brand: "instagram", name: "Instagram", action: "Follow", handle: "Follow along", placeholder: "https://instagram.com/yourname" },
+  { brand: "telegram", name: "Telegram", action: "Join", handle: "Join the channel", placeholder: "https://t.me/yourchannel" },
+];
+
+// Read the current editor rows back into state.EXTRA.socials so a save picks them up.
+function collectSocials() {
+  const list = $("socialsList");
+  if (!list) return;
+  state.EXTRA.socials = SOCIAL_CATALOG.map((c) => {
+    const row = list.querySelector(`[data-social="${c.brand}"]`);
+    const url = row ? row.querySelector(".social-url").value.trim() : "";
+    const enabled = row ? row.querySelector(".social-toggle").checked : false;
+    return { name: c.name, brand: c.brand, handle: c.handle, action: c.action, url, enabled };
+  });
+}
+
+export function renderSocials() {
+  const list = $("socialsList");
+  if (!list) return;
+  const existing = Array.isArray(state.EXTRA?.socials) ? state.EXTRA.socials : [];
+  const byBrand = new Map(existing.map((s) => [String(s.brand || s.name || "").toLowerCase(), s]));
+  list.innerHTML = SOCIAL_CATALOG.map((c) => {
+    const cur = byBrand.get(c.brand) || {};
+    const url = cur.url && cur.url !== "#" ? cur.url : "";
+    const enabled = cur.enabled !== undefined ? !!cur.enabled : !!url;
+    return `<div class="social-row" data-social="${esc(c.brand)}">
+<label class="social-name" for="social_${esc(c.brand)}">${esc(c.name)}</label>
+<input id="social_${esc(c.brand)}" class="social-url" type="url" inputmode="url" placeholder="${esc(c.placeholder)}" value="${esc(url)}" />
+<label class="switch" title="Show on public page"><input type="checkbox" class="social-toggle" ${enabled ? "checked" : ""} /><span class="switch-track"></span></label>
+</div>`;
+  }).join("");
+  list.addEventListener("input", collectSocials);
+  list.addEventListener("change", collectSocials);
+  collectSocials();
+}
+
 export function renderOverlay() {
   const pro = state.ME.plan === "pro" || state.ME.plan === "agency";
   const body = $("overlayBody"), lock = $("overlayLock");
