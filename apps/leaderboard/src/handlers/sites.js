@@ -4,7 +4,7 @@ import { getByUser, getUserSite, getUserSiteById, getUserBoardsList, createBoard
 import { bumpStat, getStats, getHeatmap, getTopReferrers } from "../stats.js";
 import { effectivePlan, PLAN_LIMITS, BOARD_LIMITS } from "../billing.js";
 import { templateCatalog } from "../templates/index.js";
-import { one, exec } from "../../../../shared/db.js";
+import { one, exec, query } from "../../../../shared/db.js";
 import { logAudit } from "../../../../shared/audit.js";
 import { buildTop3Embed, sendDiscordWebhook, sendTelegramMessage } from "../../../../shared/notifications.js";
 import { decryptToken, decrypt } from "../../../../shared/crypto.js";
@@ -48,6 +48,38 @@ export async function handleExportStats(request, env) {
     headers: {
       "content-type": "text/csv",
       "content-disposition": `attachment; filename=yourrank-stats-${site.slug}.csv`,
+    },
+  });
+}
+
+export async function handleExportPlayers(request, env) {
+  const { user, res } = await requireUser(request, env);
+  if (res) return res;
+  if (user.status === "suspended") return bad("This account is suspended.", 403);
+  const url = new URL(request.url);
+  const siteId = url.searchParams.get("siteId");
+  const site = siteId ? await getBoardById(env, user.id, siteId) : await getByUser(env, user.id);
+  if (!site) return bad("no site", 404);
+  const rows = await query(
+    "SELECT name, wagered, prize, score, hands, net_profit, win_rate, change FROM players WHERE site_id=$1 ORDER BY sort ASC",
+    [site.id]
+  );
+  const header = "name,wagered,prize,score,hands,net_profit,win_rate,change\n";
+  const body = (rows || []).map((p) => [
+    JSON.stringify(String(p.name)),
+    p.wagered,
+    p.prize,
+    p.score ?? "",
+    p.hands ?? "",
+    p.net_profit ?? "",
+    p.win_rate ?? "",
+    p.change ?? "",
+  ].join(",")).join("\n") + (rows?.length ? "\n" : "");
+  const csv = header + body;
+  return new Response(csv, {
+    headers: {
+      "content-type": "text/csv",
+      "content-disposition": `attachment; filename=yourrank-players-${site.slug}.csv`,
     },
   });
 }

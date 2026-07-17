@@ -210,3 +210,29 @@ $("csvTemplateBtn")?.addEventListener("click", () => {
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
 });
+
+$("csvExportBtn")?.addEventListener("click", async () => {
+  try {
+    const apiUrl = state.ACTIVE_SITE_ID ? `/api/site/players/export?siteId=${encodeURIComponent(state.ACTIVE_SITE_ID)}` : "/api/site/players/export";
+    const res = await fetch(apiUrl, { credentials: "include" });
+    if (!res.ok) {
+      const d = await res.json().catch(() => ({}));
+      $("status").textContent = d.error || "Could not export players.";
+      return;
+    }
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    const slug = (state.SLUG || "board").replace(/[^a-z0-9-]/gi, "-");
+    a.download = `yourrank-players-${slug}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    $("status").textContent = "Players exported.";
+  } catch (err) {
+    logError("csvExport", err);
+    $("status").textContent = "Network error.";
+  }
+});

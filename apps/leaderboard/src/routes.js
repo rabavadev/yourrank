@@ -17,7 +17,8 @@ import {
 import {
   handleStats, handleHeatmap, handleTrackCopy, handleGetSite, handleListBoards,
   handleCreateBoard, handleDuplicateBoard, handleArchive, handleArchiveDelete, handlePutSite,
-  handlePutTheme, handleDeleteSite, handleSetActive, handleNotifyTest, handleDomainVerify, handleExportStats
+  handlePutTheme, handleDeleteSite, handleSetActive, handleNotifyTest, handleDomainVerify, handleExportStats,
+  handleExportPlayers
 } from "./handlers/sites.js";
 import { handleTrial } from "./handlers/billing.js";
 import { handleLead } from "./handlers/leads.js";
@@ -72,6 +73,7 @@ export const ROUTES = [
   { path: "/api/site/archive/delete", method: "POST", handler: withHandler(handleArchiveDelete) },
   { path: "/api/site/active", method: "POST", handler: withHandler(handleSetActive) },
   { path: "/api/site/stats/export", method: "GET", handler: withHandler(handleExportStats) },
+  { path: "/api/site/players/export", method: "GET", handler: withHandler(handleExportPlayers) },
   { path: "/api/site/stats", method: "GET", handler: withHandler(handleStats) },
   { path: "/api/site/stats/heatmap", method: "GET", handler: withHandler(handleHeatmap) },
   { path: "/api/site/notify/test", method: "POST", handler: withHandler(handleNotifyTest) },
