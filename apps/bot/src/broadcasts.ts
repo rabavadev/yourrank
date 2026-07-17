@@ -86,8 +86,8 @@ export async function processBroadcastBatch(batchSize = 300): Promise<boolean> {
     segmentWhere = `AND bs.last_active_at < now() - interval '7 days'`;
   }
 
-  const subs = await query<{ tg_user_id: number }>(
-    `SELECT DISTINCT bs.tg_user_id FROM bot_subscribers bs
+  const subs = await query<{ tg_user_id: number; first_name: string | null; tg_username: string | null }>(
+    `SELECT DISTINCT bs.tg_user_id, bs.first_name, bs.tg_username FROM bot_subscribers bs
       ${segmentJoin}
       WHERE bs.bot_id = $1 AND NOT bs.is_blocked AND bs.tg_user_id > $2
       ${segmentWhere}
@@ -108,9 +108,11 @@ export async function processBroadcastBatch(batchSize = 300): Promise<boolean> {
   let failed = 0;
   let lastProcessedId = subs[0].tg_user_id; // Track last actually processed sub
   for (const sub of subs) {
+    const firstName = sub.first_name || sub.tg_username || "there";
+    const personalized = esc(bc.body).replace(/\{name\}/g, esc(firstName));
     const payload: Record<string, unknown> = {
       chat_id: sub.tg_user_id, // Already numeric, no need for Number()
-      text: esc(bc.body),
+      text: personalized,
       parse_mode: "HTML",
     };
     if (bc.buttons) payload.reply_markup = { inline_keyboard: bc.buttons };
