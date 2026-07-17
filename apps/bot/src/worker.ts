@@ -145,12 +145,23 @@ export default {
               // Non-critical — don't fail the whole cron batch
             }
           })(),
+          // Onboarding email sequence: Day 0 (welcome), Day 3 (bot/offers), Day 7 (upgrade)
+          (async () => {
+            try {
+              const { sendPendingOnboardingEmails } = await import("../../../shared/email.js");
+              const { sent, skipped } = await sendPendingOnboardingEmails(env);
+              console.log(`[cron 0 3 * * *] onboarding emails: ${sent} sent, ${skipped} skipped`);
+            } catch (err) {
+              console.error("[cron 0 3 * * *] onboarding emails failed:", err);
+              throw err;
+            }
+          })(),
         ]);
 
         // Log any rejections and alert via Discord — allSettled never throws
         const failures = results.filter(r => r.status === "rejected");
         if (failures.length > 0) {
-          const failedTasks = ["rollupClicks", "ensureCurrentMonthPartition", "ensureNextMonthPartition", "downgradeExpired", "cleanupOldClicks"]
+          const failedTasks = ["rollupClicks", "ensureCurrentMonthPartition", "ensureNextMonthPartition", "downgradeExpired", "cleanupOldClicks", "onboardingEmails"]
             .filter((_, i) => results[i].status === "rejected");
           const reasons = failures.map(f => String((f as PromiseRejectedResult).reason?.message || f.reason)).join("; ");
           console.error(`[cron 0 3 * * *] ${failures.length} task(s) failed: ${failedTasks.join(", ")} — ${reasons}`);

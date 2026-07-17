@@ -4,14 +4,14 @@ import { hashPassword, verifyPassword, uuid, newToken, createSession, destroySes
 import { hashToken } from "../../../../shared/crypto.js";
 import { trackActivation } from "../../../../shared/activation-funnel.js";
 import { DEFAULT_EXTRA, getUserBoardsList } from "../site.js";
-import { sendEmail, resetEmail } from "../email.js";
+import { sendEmail, resetEmail, sendOnboardingEmail } from "../email.js";
 import { effectivePlan, PLAN_LIMITS, BOARD_LIMITS, priceUsd } from "../billing.js";
 import { getEnabledFeatureKeys } from "../../../../shared/features.js";
 import {
   findUserByEmail, findSiteBySlug, createUser, createSite
 } from "../data/auth.js";
 
-export async function handleSignup(request, env) {
+export async function handleSignup(request, env, ctx) {
   try {
     if (!(await rateLimit(env, `signup:${clientIp(request)}`, 10, 3600)).ok) return bad("Too many attempts. Try again later.", 429);
     const body = await readJson(request);
@@ -56,6 +56,9 @@ export async function handleSignup(request, env) {
       }
     }
     const token = await createSession(env, userId);
+    const origin = new URL(request.url).origin;
+    const onboardingPromise = sendOnboardingEmail(env, 0, { id: userId, email, display_name: displayName, slug: finalSlug, origin });
+    if (ctx?.waitUntil) ctx.waitUntil(onboardingPromise.catch((err) => console.error("[signup] onboarding day 0 failed:", err)));
     trackActivation("leaderboard", userId, "signup", { email });
     return json({ ok: true, user: { id: userId, email, slug: finalSlug } }, 200, { "set-cookie": cookieSet(token, env) });
   } catch (e) {
