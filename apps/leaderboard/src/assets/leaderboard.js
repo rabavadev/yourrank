@@ -308,6 +308,16 @@ function boot() {
     try { const cs = document.querySelector("[data-copy-status]"); if(cs) cs.textContent = "Code copied to clipboard"; } catch (_) { /* ignored */ }
     try { if (window.__SLUG__) navigator.sendBeacon("/api/track/copy", new Blob([JSON.stringify({ slug: window.__SLUG__ })], { type: "application/json" })); } catch (_) { /* ignored */ } });
 
+  const sc = $("[data-share='copy']");
+  if (sc) sc.addEventListener("click", async () => {
+    try {
+      await navigator.clipboard.writeText(sc.dataset.url || location.href);
+      const p = sc.textContent;
+      sc.textContent = "Copied!";
+      setTimeout(() => { sc.textContent = p; }, TOAST_DURATION_MS);
+    } catch (_) { /* ignored */ }
+  });
+
   const p = data.partner || {};
   const blurb = $("[data-partner-blurb]"); if (blurb) blurb.textContent = p.blurb || "";
   const chips = $("[data-chips]"); if (chips && Array.isArray(p.chips)) chips.innerHTML = p.chips.map((c) => `<li>${esc(c)}</li>`).join("");
