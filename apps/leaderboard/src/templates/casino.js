@@ -1,5 +1,6 @@
 // Casino design pack — ten playful, distinct leaderboard skins.
 // Each skin is a full CSS layer over the shared leaderboard markup.
+import { composePro, composeVIP, composeEditorial, PRO_CSS, VIP_CSS, EDITORIAL_CSS } from "./casino-full.js";
 
 const BASE = `
 :root{
@@ -155,35 +156,13 @@ body{font-family:var(--font)}
   pro: make(
     "pro",
     "Casino Pro",
-    "Dark green poker terminal with monospace stats and clean lines.",
+    "Full-page poker terminal with stats grid and clean data table.",
     [
       { id: "felt", name: "Felt", accentA: "#22c55e", accentB: "#15803d" },
       { id: "tournament", name: "Tournament", accentA: "#f59e0b", accentB: "#22c55e" },
       { id: "midnight", name: "Midnight", accentA: "#86efac", accentB: "#166534" },
     ],
-    `
-:root{--font:"Space Mono",monospace;--bg:#0D1A0F;--panel:#1A2E1C;--panel-2:#223a23;--line:rgba(34,197,94,.18);--line-2:rgba(34,197,94,.32);--ink:#e5e5e5;--ink-soft:#86efac;--ink-mute:#4ade80;--cy:#22c55e;--bl:#16a34a;--grad-name:linear-gradient(100deg,#22c55e 0%,#86efac 100%);--grad-cta:linear-gradient(100deg,#22c55e,#86efac);--gold:#f59e0b;--radius:2px;--radius-sm:2px}
-body{font-family:var(--font)}
-.field{background:radial-gradient(900px 500px at 50% -10%,rgba(34,197,94,.10),transparent 60%),linear-gradient(180deg,#142b17,#0D1A0F)}
-.hero{padding-top:3rem}
-.hero-name{text-transform:uppercase;letter-spacing:.12em;color:var(--cy)}
-.hero-sub{color:var(--ink-mute)}
-.btn{border:1px solid var(--cy);background:transparent;color:var(--cy);border-radius:0}
-.btn--grad{background:var(--cy);color:#0D1A0F}
-.top3{grid-template-columns:repeat(3,1fr);align-items:stretch}
-.t3{border:1px solid var(--line);border-radius:0;background:#112211}
-.t3--1{border-color:var(--gold);background:#1a331a}
-.t3-av{border-radius:0;background:#0D1A0F;color:var(--cy);border:1px solid var(--line)}
-.t3-name{text-transform:uppercase;letter-spacing:.05em;font-size:.8rem}
-.t3-wager{color:var(--cy)}
-.t-head{font-size:.6rem;letter-spacing:.15em;border:0;background:#142b17}
-.t-row{font-size:.85rem;border-bottom:1px dashed var(--line)}
-.t-row:hover{background:rgba(34,197,94,.08)}
-.tr-av{border-radius:0;background:#0D1A0F;color:var(--cy)}
-.tr-prize.has{color:var(--gold)}
-.find-rank-input{font-family:var(--font);border-radius:0}
-.panel,.rules,.past-card,.scard{border-radius:0;border:1px solid var(--line);background:#1A2E1C}
-    `
+    PRO_CSS
   ),
   space: make(
     "space",
@@ -282,33 +261,13 @@ body{font-family:var(--font)}
   vip: make(
     "vip",
     "Casino VIP",
-    "Black and gold members list: elegant serif names and monospace ranks.",
+    "Full-page black-and-gold members list with elegant serif type.",
     [
       { id: "gold", name: "Gold", accentA: "#C9A84C", accentB: "#F5F5F0" },
       { id: "platinum", name: "Platinum", accentA: "#E5E7EB", accentB: "#C9A84C" },
       { id: "obsidian", name: "Obsidian", accentA: "#1A1A1A", accentB: "#C9A84C" },
     ],
-    `
-:root{--font:"Cormorant Garamond",serif;--bg:#0A0A0A;--panel:#111111;--panel-2:#1A1A1A;--line:rgba(201,168,76,.2);--line-2:rgba(201,168,76,.35);--ink:#F5F5F0;--ink-soft:#B0A080;--ink-mute:#7A6A4E;--cy:#C9A84C;--bl:#C9A84C;--grad-name:linear-gradient(100deg,#C9A84C 0%,#F5F5F0 100%);--grad-cta:linear-gradient(100deg,#C9A84C,#F5F5F0);--gold:#C9A84C;--radius:0;--radius-sm:0}
-body{font-family:var(--font)}
-.field{background:linear-gradient(180deg,#111,#0A0A0A)}
-.hero{padding-top:5rem}
-.hero-name{text-transform:uppercase;letter-spacing:.2em;font-style:italic;font-weight:700}
-.hero-sub{font-family:"Space Mono",monospace;letter-spacing:.15em;text-transform:uppercase;font-size:.75rem}
-.btn{border:1px solid #C9A84C;background:transparent;color:#C9A84C;border-radius:0;font-family:"Space Mono",monospace;text-transform:uppercase;letter-spacing:.1em}
-.btn--grad{background:#C9A84C;color:#0A0A0F}
-.top3{display:none}
-.board{padding-top:2rem}
-.t-head{font-family:"Space Mono",monospace;text-transform:uppercase;letter-spacing:.15em;font-size:.6rem;background:transparent;border-bottom:1px solid var(--line)}
-.t-row{padding:1.4rem 0;border-bottom:1px solid var(--line)}
-.t-row:hover{background:rgba(201,168,76,.05)}
-.tr-av{border-radius:50%;background:#0A0A0A;border:1px solid #C9A84C;color:#C9A84C;font-family:"Space Mono",monospace}
-.tr-name{font-size:1.25rem;font-style:italic}
-.tr-wager,.tr-prize{font-family:"Space Mono",monospace}
-.tr-prize.has{color:#C9A84C}
-.find-rank-input{font-family:"Space Mono",monospace;border-radius:0;background:#111;border:1px solid var(--line)}
-.panel,.rules,.past-card,.scard{border-radius:0;border:1px solid var(--line);background:#111}
-    `
+    VIP_CSS
   ),
   western: make(
     "western",
@@ -346,33 +305,20 @@ body{font-family:var(--font)}
   editorial: make(
     "editorial",
     "Ranked Editorial",
-    "Dark, modern esports editorial with large type and glass cards.",
+    "Full-page dark esports editorial with its own podium and glass list.",
     [
       { id: "indigo", name: "Indigo", accentA: "#6366f1", accentB: "#8b5cf6" },
       { id: "rose", name: "Rose", accentA: "#f43f5e", accentB: "#fb7185" },
       { id: "emerald", name: "Emerald", accentA: "#10b981", accentB: "#34d399" },
     ],
-    `
-:root{--font:"Sora",system-ui,sans-serif;--bg:#0B0B10;--panel:#151520;--panel-2:#1e1e2d;--line:rgba(255,255,255,.08);--line-2:rgba(255,255,255,.15);--ink:#f1f1f4;--ink-soft:#a1a1aa;--ink-mute:#71717a;--cy:#6366f1;--bl:#8b5cf6;--grad-name:linear-gradient(100deg,#6366f1 0%,#8b5cf6 100%);--grad-cta:linear-gradient(100deg,#6366f1,#8b5cf6);--gold:#fbbf24;--radius:16px;--radius-sm:12px}
-body{font-family:var(--font)}
-.field{background:radial-gradient(900px 500px at 20% -10%,rgba(99,102,241,.12),transparent 60%),radial-gradient(600px 400px at 80% 20%,rgba(139,92,246,.10),transparent 55%),linear-gradient(180deg,#151520,#0B0B10)}
-.hero{padding-top:4rem}
-.hero-name{font-size:clamp(2.6rem,5.5vw,4rem);letter-spacing:-.04em;font-weight:800;background:linear-gradient(100deg,#fff,#a1a1aa);-webkit-background-clip:text;background-clip:text;color:transparent}
-.btn{border-radius:10px;background:#6366f1;color:#fff;font-weight:700}
-.btn--grad{background:linear-gradient(100deg,#6366f1,#8b5cf6)}
-.top3{gap:18px}
-.t3{background:linear-gradient(180deg,#1e1e2d,#151520);border:1px solid rgba(255,255,255,.08);border-radius:20px;box-shadow:0 24px 60px -40px rgba(0,0,0,.5);backdrop-filter:blur(10px)}
-.t3--1{border-color:rgba(251,191,36,.4);box-shadow:0 28px 70px -40px rgba(251,191,36,.2)}
-.t3--2{border-color:rgba(255,255,255,.12)}
-.t3--3{border-color:rgba(249,115,22,.35)}
-.t3-av{border-radius:50%;background:linear-gradient(135deg,#6366f1,#8b5cf6)}
-.t3--1 .t3-av{background:linear-gradient(135deg,#fbbf24,#f59e0b)}
-.t3--2 .t3-av{background:linear-gradient(135deg,#e2e8f0,#94a3b8)}
-.t3--3 .t3-av{background:linear-gradient(135deg,#fdba74,#f97316)}
-.t-head{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:10px}
-.t-row{border-bottom:1px solid rgba(255,255,255,.06);border-radius:12px}
-.t-row:hover{background:rgba(255,255,255,.04)}
-.panel,.rules,.past-card,.scard{background:#151520;border:1px solid rgba(255,255,255,.08);border-radius:var(--radius)}
-    `
+    EDITORIAL_CSS
   ),
 };
+
+export const CASINO_COMPOSERS = {
+  pro: composePro,
+  vip: composeVIP,
+  editorial: composeEditorial,
+};
+
+export const CASINO_FULL = new Set(["pro", "vip", "editorial"]);
