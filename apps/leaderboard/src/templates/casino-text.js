@@ -84,5 +84,15 @@ export const CASINO_TEXT_DEFAULTS = {
     "score": "SCORE",
     "delta": "Δ",
     "data_refreshes": "DATA REFRESHES EVERY 30S · SHOWING SEASON 14 RESULTS · ALL FIGURES IN USD"
+  },
+  "leaderboardV2": {
+    "standings": "Standings",
+    "subtitle": "Season 14 · Week 32 · Updated Live",
+    "today": "Today",
+    "this_week": "This Week",
+    "all_time": "All Time",
+    "win_rate_label": "Win Rate",
+    "rankings_update": "Rankings update every 5 minutes.",
+    "page_counter": "01 / 12"
   }
 };

@@ -122,12 +122,19 @@ function currentTemplate() { return document.body?.dataset?.template || "classic
 function isCasinoFull() { return !!((window.CASINO_BUILDERS || {}).top3 || {})[currentTemplate()]; }
 
 // CASINO-STYLE: full-page templates ship data-style-* attributes for dynamic
-// per-player values (win-rate bars, gradients, score bars) because the strict
-// CSP blocks inline style="..." attributes. Apply them via CSSOM after render.
+// per-player values (win-rate bars, gradients, score bars, animation-delay, etc.)
+// because the strict CSP blocks inline style="..." attributes. Apply them via
+// CSSOM after render.
 function hydrateStyles() {
-  $$("[data-style-width]").forEach((el) => { el.style.width = el.dataset.styleWidth; el.removeAttribute("data-style-width"); });
-  $$("[data-style-bg]").forEach((el) => { el.style.background = el.dataset.styleBg; el.removeAttribute("data-style-bg"); });
-  $$("[data-style-bgcolor]").forEach((el) => { el.style.backgroundColor = el.dataset.styleBgcolor; el.removeAttribute("data-style-bgcolor"); });
+  for (const el of $$("[data-style]")) {
+    for (const key of Object.keys(el.dataset)) {
+      if (!key.startsWith("style")) continue;
+      let cssProp = key.slice(5);
+      cssProp = cssProp[0].toLowerCase() + cssProp.slice(1);
+      el.style[cssProp] = el.dataset[key];
+      delete el.dataset[key];
+    }
+  }
 }
 function buildTop3(pl, rank) {
   const fn = (window.CASINO_BUILDERS?.top3 || {})[currentTemplate()];
