@@ -2,26 +2,26 @@
 export const landingPage = `<!DOCTYPE html>
 <html lang="en"><head>
 <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>YourRank — hosted leaderboards for casino streamers</title>
-<meta name="description" content="A hosted leaderboard page for your Stake/Kick community. Edit prizes, code and players from a dashboard. Your page updates instantly." />
+<title>YourRank — hosted leaderboards for streamers</title>
+<meta name="description" content="A hosted leaderboard page for streamers and communities. Edit prizes, codes and players from a dashboard. Your page updates instantly." />
 <link rel="canonical" href="https://yourrank.site/" />
 <meta property="og:title" content="YourRank - Hosted Leaderboards for Streamers">
-<meta property="og:description" content="Create your own branded leaderboard page. Track referrals, manage promo codes, and grow your audience.">
+<meta property="og:description" content="Create your own branded leaderboard page for entertainment communities. Track referrals, manage promo codes, and grow your audience.">
 <meta property="og:url" content="https://yourrank.site/">
 <meta property="og:type" content="website">
 <meta name="twitter:card" content="summary_large_image" />
 <meta name="twitter:title" content="YourRank - Hosted Leaderboards for Streamers" />
-<meta name="twitter:description" content="Create your own branded leaderboard page. Track referrals, manage promo codes, and grow your audience." />
+<meta name="twitter:description" content="Create your own branded leaderboard page for entertainment communities. Track referrals, manage promo codes, and grow your audience." />
 <meta property="og:image" content="https://yourrank.site/og.png" />
 <meta name="twitter:image" content="https://yourrank.site/og.png" />
 <link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="/assets/landing.css" />
-<script type="application/ld+json">{"@context":"https://schema.org","@type":"Organization","name":"YourRank","url":"https://yourrank.site","description":"Hosted leaderboard pages for casino streamers","contactPoint":{"@type":"ContactPoint","contactType":"customer service"}}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"Organization","name":"YourRank","url":"https://yourrank.site","description":"Hosted leaderboard pages for streamers and entertainment communities","contactPoint":{"@type":"ContactPoint","contactType":"customer service"}}</script>
 </head><body>
 <noscript><div class="noscript-card">
 <h1>YourRank</h1>
-<p>Hosted leaderboards for casino streamers. JavaScript is required for the full experience.</p>
+<p>Hosted leaderboards for streamers and communities. JavaScript is required for the full experience.</p>
 <a href="/signup">Create your page</a>
 </div></noscript>
 <a href="#main-content" class="sr-only skip-link">Skip to content</a>
@@ -32,12 +32,12 @@ export const landingPage = `<!DOCTYPE html>
 </div></header>
 <main id="main-content">
 <section class="hero"><div>
-<p class="label mb-18">Leaderboards for casino streamers</p>
+<p class="label mb-18">Leaderboards for streamers and communities</p>
 <h1>Run your leaderboard without touching code.</h1>
 <p class="lead">Your prize pool, referral code and ranked players, on a page you edit from a dashboard. Change a number, hit save, your page updates. That's it.</p>
 <div class="cta"><a href="/signup" class="btn btn--accent">Create your free page</a><a href="/demo" class="btn btn--ghost">Try a demo</a></div>
-<ul class="trust-line"><li>Free forever</li><li>7-day Pro trial</li><li>No card</li></ul>
-<p class="fine">Your own URL from day one.</p></div>
+<ul class="trust-line"><li>Free forever</li><li>7-day Pro trial</li><li>No card</li><li>Entertainment only</li></ul>
+<p class="fine">YourRank is an entertainment platform — we don't take bets or pay prizes.</p></div>
 <div class="spec"><div class="spec-h"><span>your-page.config</span><span class="dot">● live</span></div>
 <div class="spec-row"><span>Public URL</span><span>yourrank.site/you</span></div>
 <div class="spec-row"><span>Prize pool</span><span>editable</span></div>
@@ -45,7 +45,7 @@ export const landingPage = `<!DOCTYPE html>
 <div class="spec-row"><span>Standings</span><span>sorted by wager</span></div>
 <div class="spec-row"><span>Updates</span><span>instant</span></div></div></section>
 <section id="proof" class="proof"><div class="wrap">
-<p class="proof-metric"><b>500+</b> live boards powering casino streamers</p>
+<p class="proof-metric"><b>500+</b> live boards powering streamers</p>
 <ul class="proof-logos" aria-label="Casinos with postback support">
 <li>Stake</li><li>Rollbit</li><li>BC.Game</li><li>Shuffle</li><li>Gamdom</li><li>Roobet</li>
 </ul></div></section>
@@ -87,6 +87,6 @@ export const landingPage = `<!DOCTYPE html>
 <footer><div class="wrap footer-wrap">
 <span>© <span id="yr"></span> YourRank</span>
 <span><a href="/terms">Terms</a> · <a href="/privacy">Privacy</a> · <a href="/refund">Refunds</a> · <a href="/cookies">Cookies</a> · <a href="/responsible">Responsible play</a></span>
-<span>18+ · Gambling can be addictive. Play responsibly.</span></div></footer>
+<span>18+ · For entertainment purposes only. Play responsibly.</span></div></footer>
 <script src="/assets/landing.js?v=3"></script>
 </body></html>`;

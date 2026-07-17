@@ -290,6 +290,14 @@ function composeMain(tpl, parts, text) {
   return html;
 }
 
+function footerDisclaimer(hasCasino, name, casino) {
+  const base = "18+ only. For entertainment purposes only.";
+  const gambling = hasCasino ? " Gambling can be addictive. Please play responsibly. BeGambleAware.org." : "";
+  const affiliate = hasCasino && name && casino ? ` ${esc(name)} is not affiliated with ${esc(casino)}.` : "";
+  const nonCasino = !hasCasino ? " Play responsibly." : "";
+  return `${base}${gambling}${nonCasino}${affiliate}`;
+}
+
 export function renderLeaderboard(data, opts = {}) {
   const b = data.brand || {};
   const br = data.branding || {};
@@ -365,7 +373,7 @@ body[data-preview] .top3{margin-bottom:14px}
     ? `<header class="site-header--full"><a class="site-header--full__brand" href="#top">${navLogo}<span data-brand-name>${esc(b.name)}</span></a><nav class="site-header--full__nav" aria-label="Page sections"><a href="#top">Leaderboard</a><a href="${legalHref("terms")}">Terms</a><a href="${legalHref("privacy")}">Privacy</a><a href="${legalHref("responsible")}">Responsible</a></nav></header>`
     : "";
   const fullPageFooter = fullPage
-    ? `<footer class="site-footer--full"><div class="site-footer--full__brand" data-brand-name>${esc(b.name)}</div><div class="site-footer--full__tag" data-tagline>${esc(b.tagline)}</div><p class="site-footer--full__fine">18+ only. Gambling can be addictive. Please play responsibly. BeGambleAware.org${hasCasino ? ` · ${esc(b.name)} is not affiliated with ${esc(casino)}.` : "."}</p><div class="site-footer--full__links"><a href="${legalHref("terms")}">Terms</a><a href="${legalHref("privacy")}">Privacy</a><a href="${legalHref("responsible")}">Responsible</a><a href="${legalHref("cookies")}">Cookies</a><a href="${legalHref("refund")}">Refund</a><a href="${legalHref("contact")}">Contact</a></div><p class="site-footer--full__copy">© <span data-year></span> <span data-brand-name>${esc(b.name)}</span>. All rights reserved.</p></footer>`
+    ? `<footer class="site-footer--full"><div class="site-footer--full__brand" data-brand-name>${esc(b.name)}</div><div class="site-footer--full__tag" data-tagline>${esc(b.tagline)}</div><p class="site-footer--full__fine">${footerDisclaimer(hasCasino, b.name, casino)}</p><div class="site-footer--full__links"><a href="${legalHref("terms")}">Terms</a><a href="${legalHref("privacy")}">Privacy</a><a href="${legalHref("responsible")}">Responsible</a><a href="${legalHref("cookies")}">Cookies</a><a href="${legalHref("refund")}">Refund</a><a href="${legalHref("contact")}">Contact</a></div><p class="site-footer--full__copy">© <span data-year></span> <span data-brand-name>${esc(b.name)}</span>. All rights reserved.</p></footer>`
     : "";
 
   // Homepage/brand fallback preview image (1200×630). Served by the Worker at
@@ -433,7 +441,7 @@ ${composeMain(tpl, buildParts({ b, esc, heroLogo, hasCasino, casino, period, poo
 ${shareHtml}
 ${fullPageFooter}
 ${fullPage ? "" : `<footer class="ftr"><div class="ftr-id"><span class="ftr-name" data-brand-name>${esc(b.name)}</span><span class="ftr-tag" data-tagline>${esc(b.tagline)}</span></div>
-<p class="ftr-fine">${hasCasino ? `18+ only. Gambling can be addictive. Please play responsibly. BeGambleAware.org · ${esc(b.name)} is not affiliated with ${esc(casino)}.` : `18+ only. Compete responsibly. BeGambleAware.org.`}</p>
+<p class="ftr-fine">${footerDisclaimer(hasCasino, b.name, casino)}</p>
 <p class="ftr-copy">© <span data-year></span> <span data-brand-name>${esc(b.name)}</span>. All rights reserved.</p></footer>`}
 ${badge}${fullPage ? `<script src="/assets/casino-client.js" nonce="${opts.nonce}"></script>` : ""}<script nonce="${opts.nonce}">window.__SITE_DATA__=${dataJson};window.__SLUG__=${JSON.stringify(opts.slug || "")};</script><script src="/assets/leaderboard.js"></script>
 </body></html>`;
@@ -456,7 +464,7 @@ function defaultLegalBody(page, brand) {
     case "privacy":
       return `<h2>Privacy Policy</h2><p>${name} values your privacy. This page collects only the information needed to display the leaderboard, such as player names and scores.</p><p>Public pages are visible to anyone with the link. Do not share personal information you do not want made public.</p><p>We use essential cookies and basic analytics to keep the service running. You can contact ${name} through the Contact page for data questions.</p>`;
     case "responsible":
-      return `<h2>Responsible Gaming</h2><p>${name} encourages responsible play. Gambling can be addictive and should be enjoyed in moderation.</p><p>If you or someone you know needs help, visit BeGambleAware.org or contact a local responsible-gaming helpline.</p><p>This page is intended for adults 18 and older only.</p>`;
+      return `<h2>Responsible Gaming</h2><p>${name} is provided for entertainment purposes only. Gambling can be addictive and should be enjoyed in moderation, never as a source of income.</p><p>If you or someone you know needs help, reach out to a local responsible-gaming organisation:</p><ul><li><a href="https://www.begambleaware.org" target="_blank" rel="noopener">BeGambleAware</a> — UK advice and support</li><li><a href="https://www.loketkansspel.nl" target="_blank" rel="noopener">Loket Kansspel</a> — Netherlands (in Dutch)</li><li><a href="https://www.connexontario.ca" target="_blank" rel="noopener">ConnexOntario</a> — Canada</li><li><a href="https://www.gamblingtherapy.org" target="_blank" rel="noopener">Gambling Therapy</a> — international, multilingual</li></ul><p>This page is intended for adults 18 and older only.</p>`;
     case "cookies":
       return `<h2>Cookie Policy</h2><p>${name} uses cookies and similar technologies to provide the leaderboard service and to understand how visitors use the page.</p><p>Essential cookies are required for the page to function. Analytics cookies help us improve the experience. You can adjust your browser settings to manage cookies.</p>`;
     case "refund":
@@ -501,9 +509,10 @@ export function renderLegalPage(data, page, opts) {
   const header = fullPage
     ? `<header class="site-header--full"><a class="site-header--full__brand" href="${homeHref}">${navLogo}<span data-brand-name>${esc(b.name)}</span></a><nav class="site-header--full__nav" aria-label="Page sections"><a href="${homeHref}">Leaderboard</a><a href="${legalHref("terms")}">Terms</a><a href="${legalHref("privacy")}">Privacy</a><a href="${legalHref("responsible")}">Responsible</a></nav></header>`
     : `<header class="topbar"><a class="brand" href="${homeHref}">${esc(b.name || "YourRank")}</a></header>`;
+  const legalHasCasino = !!b.casino;
   const footer = fullPage
-    ? `<footer class="site-footer--full"><div class="site-footer--full__brand" data-brand-name>${esc(b.name)}</div><div class="site-footer--full__tag" data-tagline>${esc(b.tagline)}</div><p class="site-footer--full__fine">18+ only. Gambling can be addictive. Please play responsibly. BeGambleAware.org.</p><div class="site-footer--full__links"><a href="${legalHref("terms")}">Terms</a><a href="${legalHref("privacy")}">Privacy</a><a href="${legalHref("responsible")}">Responsible</a><a href="${legalHref("cookies")}">Cookies</a><a href="${legalHref("refund")}">Refund</a><a href="${legalHref("contact")}">Contact</a></div><p class="site-footer--full__copy">© ${new Date().getFullYear()} <span data-brand-name>${esc(b.name)}</span>. All rights reserved.</p></footer>`
-    : `<footer class="ftr"><div class="ftr-id"><span class="ftr-name" data-brand-name>${esc(b.name)}</span><span class="ftr-tag" data-tagline>${esc(b.tagline)}</span></div><p class="ftr-fine">18+ only. Gambling can be addictive. Please play responsibly. BeGambleAware.org.</p><p class="ftr-copy">© ${new Date().getFullYear()} <span data-brand-name>${esc(b.name)}</span>. All rights reserved.</p></footer>`;
+    ? `<footer class="site-footer--full"><div class="site-footer--full__brand" data-brand-name>${esc(b.name)}</div><div class="site-footer--full__tag" data-tagline>${esc(b.tagline)}</div><p class="site-footer--full__fine">${footerDisclaimer(legalHasCasino, b.name, b.casino)}</p><div class="site-footer--full__links"><a href="${legalHref("terms")}">Terms</a><a href="${legalHref("privacy")}">Privacy</a><a href="${legalHref("responsible")}">Responsible</a><a href="${legalHref("cookies")}">Cookies</a><a href="${legalHref("refund")}">Refund</a><a href="${legalHref("contact")}">Contact</a></div><p class="site-footer--full__copy">© ${new Date().getFullYear()} <span data-brand-name>${esc(b.name)}</span>. All rights reserved.</p></footer>`
+    : `<footer class="ftr"><div class="ftr-id"><span class="ftr-name" data-brand-name>${esc(b.name)}</span><span class="ftr-tag" data-tagline>${esc(b.tagline)}</span></div><p class="ftr-fine">${footerDisclaimer(legalHasCasino, b.name, b.casino)}</p><p class="ftr-copy">© ${new Date().getFullYear()} <span data-brand-name>${esc(b.name)}</span>. All rights reserved.</p></footer>`;
   const bodyClass = fullPage ? `legal-page` : "legal";
   return `<!DOCTYPE html>
 <html lang="en"><head>

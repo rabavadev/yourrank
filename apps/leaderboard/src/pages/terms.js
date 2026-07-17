@@ -3,13 +3,13 @@ import { legal } from "./legal-helper.js";
 // terms page
 export const termsPage = legal("Terms of Service", "July 2026", `
 <h2>What YourRank is</h2>
-<p>YourRank hosts leaderboard pages for streamers and their communities. You get a dashboard to edit your page's content — prize pool, referral code, player standings — and we serve that page at a public URL. That's the whole service.</p>
-<p><b>YourRank is not a casino.</b> No wagering, betting or gambling happens on this platform. Leaderboard standings are provided by the page owner — entered manually or updated automatically from the casino postbacks they configure. Prizes shown on any page are offered and paid by that page's owner, not by YourRank.</p>
+<p>YourRank is a software platform that lets streamers and community managers create and host leaderboard pages. You get a dashboard to edit your page's content — prize pool, referral code, player standings — and we serve that page at a public URL. That's the whole service.</p>
+<p><b>YourRank is not a casino, bookmaker, or gambling operator.</b> No wagering, betting or gambling happens on this platform. The platform is intended for entertainment, community engagement, and fan recognition only. Leaderboard standings are provided by the page owner — entered manually or updated automatically from third-party postbacks they configure. Prizes shown on any page are offered and paid by that page's owner, not by YourRank.</p>
 <h2>Your account</h2>
 <p>You need to be at least 18 to use YourRank. You're responsible for keeping your password safe and for everything published on your page. One account per person. How many leaderboards you can run depends on your plan — Free and Starter include one, Pro up to three, and Agency unlimited.</p>
-<h2>Your content</h2>
+<h2>Your content and compliance</h2>
 <p>Everything you put on your page — names, numbers, links, images — is yours, and so is the responsibility for it. Don't publish anything illegal, misleading (fake prizes you don't pay out), or that infringes someone else's rights. Don't impersonate other streamers or brands.</p>
-<p>If your page promotes a gambling referral, you're responsible for complying with the laws and platform rules that apply to you and your audience.</p>
+<p>If your page promotes or references gambling, you are solely responsible for ensuring it complies with the laws, licensing, and platform rules that apply to you, your audience, and the jurisdictions you operate in. We encourage operating in regulated markets such as the United Kingdom, the Netherlands, and Canada where appropriate safeguards exist.</p>
 <h2>Payments</h2>
 <p>Paid plans — Starter, Pro, Agency (30-day fixed-term access), and one-time Lifetime Pro — are paid in cryptocurrency through our payment processor, NOWPayments (BTC, ETH, USDT and 100+ more). Access does not auto-renew; purchase another 30-day period before expiry to keep features. Before paying, you can start a one-time 7-day free Pro trial. Crypto payments are final once confirmed and non-refundable due to blockchain irreversibility — see our <a href="/refund">refund policy</a>. Your paid features last until the end of the purchased period, after which your page reverts to the Free plan (player limit and badge apply again).</p>
 <h2>What we can do</h2>
