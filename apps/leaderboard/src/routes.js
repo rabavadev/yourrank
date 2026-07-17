@@ -21,6 +21,7 @@ import {
   handleExportPlayers
 } from "./handlers/sites.js";
 import { handleTrial } from "./handlers/billing.js";
+import { handleReferrals } from "./handlers/referrals.js";
 import { handleLead } from "./handlers/leads.js";
 import { handleAttribution, handleAttributionExport, handlePostback, handleRotatePostbackKey, handleRevokePostbackKey } from "./handlers/attribution.js";
 import { handleContact } from "./handlers/contact.js";
@@ -98,6 +99,9 @@ export const ROUTES = [
   { path: "/api/public/:slug/stats", method: "GET", handler: withHandler(handlePublicStats) },
   { path: "/api/public/:slug", method: "GET", handler: withHandler(handlePublicData) },
   
+  // Referrals
+  { path: "/api/referrals", method: "GET", handler: withHandler(handleReferrals) },
+
   // Billing routes
   { path: "/api/billing/checkout", method: "POST", handler: withHandler(handleCheckout) },
   { path: "/api/billing/checkout-lifetime", method: "POST", handler: withHandler(handleCheckoutLifetime) },

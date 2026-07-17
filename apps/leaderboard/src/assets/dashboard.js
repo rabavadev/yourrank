@@ -6,6 +6,7 @@ import { renderBoardSwitcher, renderSidebarBoardSwitcher, renderBoardsPage } fro
 import { renderPlayers } from "./dashboard/players.js";
 import { loadStats, renderArchives, renderBranding, renderDomain, renderDomainStatus, renderLegal, renderNotifications, renderOverlay, renderPlan, renderSections, renderSocials, renderTemplateText } from "./dashboard/site.js";
 import { renderOverviewSummary, wireOverviewQuickActions } from "./dashboard/overview.js";
+import { renderReferrals } from "./dashboard/referrals.js";
 
 async function init() {
   let me;
@@ -72,6 +73,7 @@ async function init() {
   if (initialNav && document.querySelector(`section[data-page="${initialNav}"]`)) navTo(initialNav);
   renderOverviewSummary();
   wireOverviewQuickActions();
+  renderReferrals();
 
   const markDirty = () => { state._dirty = true; const sb = $("savebar"); if (sb) sb.hidden = false; };
   $("dash").addEventListener("input", markDirty);

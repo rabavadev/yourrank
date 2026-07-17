@@ -1,6 +1,6 @@
 import { withTransaction, one, exec } from "../../../../shared/db.js";
 // Authentication handlers for signup, login, logout, password reset
-import { hashPassword, verifyPassword, uuid, newToken, createSession, destroySession, destroyAllUserSessions, currentUser, isEmail, slugify, RESERVED, cookieSet, cookieClear, readToken, json, bad, ok, readJson, rateLimit, clientIp } from "../auth.js";
+import { hashPassword, verifyPassword, uuid, newToken, createSession, destroySession, destroyAllUserSessions, currentUser, isEmail, slugify, RESERVED, cookieSet, cookieClear, readToken, json, bad, ok, readJson, rateLimit, clientIp, generateUniqueReferralCode } from "../auth.js";
 import { hashToken } from "../../../../shared/crypto.js";
 import { trackActivation } from "../../../../shared/activation-funnel.js";
 import { DEFAULT_EXTRA, getUserBoardsList } from "../site.js";
@@ -8,8 +8,37 @@ import { sendEmail, resetEmail, sendOnboardingEmail } from "../email.js";
 import { effectivePlan, PLAN_LIMITS, BOARD_LIMITS, priceUsd } from "../billing.js";
 import { getEnabledFeatureKeys } from "../../../../shared/features.js";
 import {
-  findUserByEmail, findSiteBySlug, createUser, createSite
+  findUserByEmail, findSiteBySlug, findUserByReferralCode, createUser, createSite
 } from "../data/auth.js";
+
+const REFERRAL_REWARD_DAYS = 31;
+const REFERRAL_MAX_EXTENSION_DAYS = 365;
+
+async function applyReferralReward(referrerId, referredId) {
+  if (!referrerId || !referredId || referrerId === referredId) return;
+  const referrer = await one(
+    "SELECT plan, (EXTRACT(EPOCH FROM plan_expires_at) * 1000)::double precision AS plan_expires_at FROM users WHERE id=$1",
+    [referrerId]
+  );
+  if (!referrer) return;
+  if (effectivePlan(referrer) === "lifetime") return;
+  const now = Date.now();
+  const currentExpiry = Number(referrer.plan_expires_at) || now;
+  const base = currentExpiry > now ? currentExpiry : now;
+  const maxMs = now + REFERRAL_MAX_EXTENSION_DAYS * 86400000;
+  const newExpiry = Math.min(base + REFERRAL_REWARD_DAYS * 86400000, maxMs);
+  const newPlan = referrer.plan === "agency" ? "agency" : "pro";
+  await withTransaction(async (tx) => {
+    await tx.unsafe(
+      "INSERT INTO referral_rewards (referrer_id, referred_id, reward_days) VALUES ($1, $2, $3) ON CONFLICT (referred_id) DO NOTHING",
+      [referrerId, referredId, REFERRAL_REWARD_DAYS]
+    );
+    await tx.unsafe(
+      "UPDATE users SET plan=$1, plan_expires_at=to_timestamp($2 / 1000.0), updated_at=now() WHERE id=$3",
+      [newPlan, newExpiry, referrerId]
+    );
+  });
+}
 
 export async function handleSignup(request, env, ctx) {
   try {
@@ -19,6 +48,7 @@ export async function handleSignup(request, env, ctx) {
     const email = String(body.email || "").trim().toLowerCase();
     const password = String(body.password || "");
     const name = String(body.name || "").trim();
+    const refCode = String(body.ref || "").trim().toLowerCase();
     const defaultName = name || email.split("@")[0] || "my-board";
     let slug = slugify(body.slug || defaultName);
     if (!isEmail(email)) return bad("Enter a valid email");
@@ -31,23 +61,37 @@ export async function handleSignup(request, env, ctx) {
     const displayName = name || defaultName;
     const { hash, salt } = await hashPassword(password);
     const userId = uuid();
+
+    let referrerId = null;
+    if (refCode) {
+      const referrer = await findUserByReferralCode(refCode);
+      if (referrer) referrerId = referrer.id;
+    }
+
     // created_at/updated_at default to now(); id generated in-app for consistency.
     // The slug check above is a TOCTOU race: two concurrent signups choosing the
     // same slug can both pass the SELECT, then the second INSERT hits sites.slug
     // UNIQUE and threw an unhandled 500. Wrap the inserts; on a unique violation
-    // (23505) on the slug, append a short random suffix and retry once.
+    // (23505) on the slug or referral_code, regenerate and retry once.
+    let referralCode = await generateUniqueReferralCode();
+    let created = false;
     for (let attempt = 0; attempt < 3; attempt++) {
       try {
         await withTransaction(async (tx) => {
-          await createUser(tx, userId, email, hash, salt);
+          await createUser(tx, userId, email, hash, salt, referralCode, referrerId);
           await createSite(tx, uuid(), userId, finalSlug, displayName, DEFAULT_EXTRA);
         });
+        created = true;
         break;
       } catch (e) {
         const msg = String(e?.message || e);
         if (/23505/.test(msg) && attempt < 2) {
-          // unique violation — likely the slug raced; retry with a fresh suffix
-          finalSlug = `${slug}-${Math.random().toString(36).slice(2, 6)}`;
+          if (/referral_code/i.test(msg)) {
+            referralCode = await generateUniqueReferralCode();
+          } else {
+            // unique violation — likely the slug raced; retry with a fresh suffix
+            finalSlug = `${slug}-${Math.random().toString(36).slice(2, 6)}`;
+          }
           continue;
         }
         // users.email UNIQUE collision (already checked above, but concurrent) or
@@ -55,11 +99,19 @@ export async function handleSignup(request, env, ctx) {
         return bad("If this email isn't already registered, check your inbox to confirm.");
       }
     }
+    if (!created) return bad("Sign-up failed, please try again", 500);
+
+    if (referrerId) {
+      const rewardPromise = applyReferralReward(referrerId, userId).catch((err) => console.error("[signup] referral reward failed:", err));
+      if (ctx?.waitUntil) ctx.waitUntil(rewardPromise);
+      else rewardPromise.catch(() => {});
+    }
+
     const token = await createSession(env, userId);
     const origin = new URL(request.url).origin;
     const onboardingPromise = sendOnboardingEmail(env, 0, { id: userId, email, display_name: displayName, slug: finalSlug, origin });
     if (ctx?.waitUntil) ctx.waitUntil(onboardingPromise.catch((err) => console.error("[signup] onboarding day 0 failed:", err)));
-    trackActivation("leaderboard", userId, "signup", { email });
+    trackActivation("leaderboard", userId, "signup", { email, referred: !!referrerId });
     return json({ ok: true, user: { id: userId, email, slug: finalSlug } }, 200, { "set-cookie": cookieSet(token, env) });
   } catch (e) {
     console.error("signup failed:", String(e?.message || e));
@@ -153,6 +205,7 @@ export async function handleMe(request, env) {
       subscriptionStatus,
       boards,
       features,
+      referralCode: user.referral_code || null,
     } });
   } catch (e) {
     console.error("handleMe error:", String(e?.message || e), String(e?.stack || ""));

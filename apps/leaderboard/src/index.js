@@ -554,6 +554,14 @@ async function handleRequest(request, env, ctx, meta) {
         return Response.redirect(`${url.origin}/${slug}`, 302);
       }
 
+      // --- referral redirect: /ref/<code> → /signup?ref=<code> ---
+      if (method === "GET" && path.startsWith("/ref/")) {
+        let code;
+        try { code = decodeURIComponent(path.slice(5).split("/")[0]); } catch { return new Response(notFoundPage("", nonce), { status: 404, headers: HTML_N }); }
+        if (!code) return new Response(notFoundPage("", nonce), { status: 404, headers: HTML_N });
+        return Response.redirect(`${url.origin}/signup?ref=${encodeURIComponent(code)}`, 302);
+      }
+
       // --- OBS overlay: /<slug>/overlay ---
       if (method === "GET" && /^\/[^/]+\/overlay$/.test(path)) {
         let slug;

@@ -48,6 +48,7 @@ export const dashboardPage = leaderboardPageHtml({
 <button class="lb-nav" type="button" data-nav="design"><span class="lb-nav-ic" aria-hidden="true">🎨</span>Design</button>
 <span class="lb-side-grp">Grow</span>
 <button class="lb-nav" type="button" data-nav="growth"><span class="lb-nav-ic" aria-hidden="true">📈</span>Analytics</button>
+<button class="lb-nav" type="button" data-nav="referrals"><span class="lb-nav-ic" aria-hidden="true">🎁</span>Referrals</button>
 <span class="lb-side-grp">Advanced</span>
 <button class="lb-nav" type="button" data-nav="integrations"><span class="lb-nav-ic" aria-hidden="true">🔌</span>Overlay &amp; domain</button>
 <button class="lb-nav" type="button" data-nav="manage"><span class="lb-nav-ic" aria-hidden="true">⚙</span>Periods &amp; plan</button>
@@ -101,6 +102,20 @@ export const dashboardPage = leaderboardPageHtml({
 <div class="stat-tile"><span class="stat-num" id="st_clicks30">–</span><span class="stat-lbl">Join clicks · 30d</span></div></div>
 <div class="stat-chart"><div class="stat-bars" id="statBars" title="Daily views, last 14 days"></div><div class="stat-chart-lbl"><span id="statFrom"></span><span>Daily views, last 14 days</span><span>today</span></div></div>
 <p class="hint" id="statsEmpty" hidden>No views yet — share your page link in your stream panels and Discord to get it moving.</p></div>
+</section>
+<section class="lb-page" data-page="referrals">
+<div class="lb-phead"><button class="lb-menu" type="button" aria-label="Show sections" data-menu aria-expanded="false" aria-controls="lbSide">☰</button><div><h1 tabindex="-1">Referrals</h1><p class="lb-psub">Invite other streamers, earn free Pro time</p></div></div>
+<div class="card" id="refCard">
+<h2>Your referral link</h2>
+<p class="card-sub">Share this link. Every new user who signs up through it adds 31 days of Pro to your account.</p>
+<div class="d-flex gap-8 flex-wrap items-center" style="margin-top:12px"><input id="refLink" class="field" readonly style="flex:1;min-width:220px" value="…" /><button class="btn btn--accent" id="refCopy" type="button">Copy link</button></div>
+<div class="stat-tiles" style="margin-top:18px">
+<div class="stat-tile"><span class="stat-num" id="refCount">–</span><span class="stat-lbl">People signed up</span></div>
+<div class="stat-tile"><span class="stat-num" id="refDays">–</span><span class="stat-lbl">Free days earned</span></div>
+<div class="stat-tile"><span class="stat-num" id="refSaved">–</span><span class="stat-lbl">Value earned ($)</span></div>
+</div>
+<p class="status" id="refStatus" role="status" aria-live="polite"></p>
+</div>
 </section>
 <section class="lb-page" data-page="board">
 <div class="lb-phead"><button class="lb-menu" type="button" aria-label="Show sections" data-menu aria-expanded="false" aria-controls="lbSide">☰</button><div><h1 tabindex="-1">Prize &amp; players</h1><p class="lb-psub">The daily job — headline details and your ranked list</p></div></div>

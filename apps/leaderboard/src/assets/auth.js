@@ -135,6 +135,8 @@ form.addEventListener("submit", async (e) => {
   } else {
     payload = { email: document.getElementById("email").value.trim(), password: document.getElementById("password").value };
     if (mode === "signup" && nameInput) payload.name = nameInput.value.trim();
+    const ref = new URLSearchParams(location.search).get("ref");
+    if (mode === "signup" && ref) payload.ref = ref;
   }
   if (mode === "login" || mode === "signup") {
     clearAllFieldErrors();
