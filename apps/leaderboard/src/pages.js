@@ -23,9 +23,11 @@ import { cookiesPage } from "./pages/cookies.js";
 import { contactPage } from "./pages/contact.js";
 import { pricingPage } from "./pages/pricing.js";
 import { supportPage } from "./pages/support.js";
+import { docsPage } from "./pages/docs.js";
 
 export const PAGES = {
   index: landingPage,
+  docs: docsPage,
   login: loginPage,
   forgot: forgotPage,
   reset: resetPage,
