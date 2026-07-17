@@ -202,4 +202,5 @@ export const templateCatalog = () => TEMPLATE_IDS.map((id) => ({
   name: TEMPLATES[id].name,
   description: TEMPLATES[id].description,
   presets: TEMPLATES[id].presets,
+  textDefaults: TEMPLATES[id].textDefaults || {},
 }));

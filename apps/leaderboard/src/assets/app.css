@@ -178,6 +178,18 @@ table.admin-table td.note{max-width:260px;color:var(--ink-soft)}
 .section-row:last-child{border-bottom:none}
 .section-name{font-weight:600;font-size:14px;color:var(--ink)}
 
+/* --- template text editor --- */
+.text-editor{display:flex;flex-direction:column;gap:10px;margin-top:6px}
+.text-row{display:grid;grid-template-columns:160px 1fr;align-items:center;gap:12px}
+.text-label{font-weight:600;font-size:14px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.text-value{width:100%;font-size:14px;color:var(--ink);background:var(--panel);border:1px solid var(--line-2);border-radius:8px;padding:9px 12px;min-height:var(--tap)}
+.text-value:focus{border-color:var(--accent);outline:none}
+@media(max-width:560px){
+  .text-row{grid-template-columns:1fr}
+  .text-label{grid-row:1}
+  .text-value{grid-row:2}
+}
+
 /* --- branding --- */
 .logo-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .logo-preview{width:44px;height:44px;object-fit:contain;border-radius:8px;border:1px solid var(--line-2);background:var(--panel-2)}

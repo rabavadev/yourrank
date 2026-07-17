@@ -11,6 +11,7 @@ import {
   composeWestern,
   CASINO_FULL_CSS,
 } from "./casino-full.js";
+import { CASINO_TEXT_DEFAULTS } from "./casino-text.js";
 
 const PRESETS = {
   arcade: [
@@ -75,6 +76,7 @@ export const CASINO_TEMPLATES = Object.fromEntries(
       description: METAS[id].description,
       css: CASINO_FULL_CSS[id],
       presets: PRESETS[id],
+      textDefaults: CASINO_TEXT_DEFAULTS[id] || {},
     },
   ])
 );
@@ -91,3 +93,21 @@ export const CASINO_COMPOSERS = {
 };
 
 export const CASINO_FULL = new Set(Object.keys(CASINO_COMPOSERS));
+
+export { CASINO_TEXT_DEFAULTS };
+
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+// Replace default text strings in a full-page template with streamer overrides.
+export function applyCasinoText(html, templateId, overrides = {}) {
+  const defaults = CASINO_TEXT_DEFAULTS[templateId] || {};
+  const keys = Object.keys(defaults).sort((a, b) => (defaults[b]?.length || 0) - (defaults[a]?.length || 0));
+  for (const key of keys) {
+    const original = defaults[key];
+    const replacement = overrides[key];
+    if (replacement !== undefined && replacement !== original) {
+      html = html.split(original).join(esc(replacement));
+    }
+  }
+  return html;
+}

@@ -90,6 +90,8 @@ export function collect() {
   }
   const tplEl = $("f_template");
   if (tplEl) out.branding = { ...(out.branding || {}), template: tplEl.value };
+  collectTemplateText();
+  if (state.EXTRA.text && Object.keys(state.EXTRA.text).length) out.branding = { ...(out.branding || {}), text: state.EXTRA.text };
   out.notify = {
     discord_webhook_url: $("f_webhook")?.value.trim() || null,
     telegram_chat_id: $("f_tgChatId")?.value.trim() || null,
@@ -186,6 +188,7 @@ export async function saveTheme(template, accentA, accentB, label) {
     const active = state.BOARDS.find((b) => b.id === state.ACTIVE_SITE_ID);
     if (active) active.template = template;
     updateThemeSelection();
+    renderTemplateText();
     renderSidebarBoardSwitcher();
     renderBoardsPage();
     if (status) status.textContent = `${label || currentTemplate()?.name || "Design"} applied to /${state.SLUG}.`;
@@ -334,6 +337,43 @@ export function renderSections() {
   list.addEventListener("input", collectSections);
   list.addEventListener("change", collectSections);
   collectSections();
+}
+
+export function collectTemplateText() {
+  const list = $("textList");
+  if (!list) return;
+  const text = {};
+  for (const row of list.querySelectorAll("[data-text-key]")) {
+    const key = row.dataset.textKey;
+    const val = row.querySelector(".text-value")?.value ?? "";
+    if (val.trim()) text[key] = val.trim();
+  }
+  state.EXTRA.text = text;
+}
+
+export function renderTemplateText() {
+  const list = $("textList");
+  if (!list) return;
+  const template = currentTemplate();
+  const defaults = template?.textDefaults || {};
+  const current = state.EXTRA?.text || {};
+  const keys = Object.keys(defaults);
+  if (!keys.length) {
+    list.innerHTML = `<p class="hint">This design does not have editable text slots.</p>`;
+    return;
+  }
+  list.innerHTML = keys.map((key) => {
+    const def = defaults[key];
+    const val = current[key] ?? "";
+    const label = key.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+    return `<div class="text-row" data-text-key="${esc(key)}">
+<label class="text-label" for="text_${esc(key)}">${esc(label)}</label>
+<input id="text_${esc(key)}" class="text-value" type="text" placeholder="${esc(def)}" value="${esc(val)}" />
+</div>`;
+  }).join("");
+  list.addEventListener("input", collectTemplateText);
+  list.addEventListener("change", collectTemplateText);
+  collectTemplateText();
 }
 
 export function renderOverlay() {

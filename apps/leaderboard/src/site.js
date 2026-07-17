@@ -248,6 +248,7 @@ function parseTheme(site) {
     accentA: HEX.test(t.accentA || "") ? t.accentA : null,
     accentB: HEX.test(t.accentB || "") ? t.accentB : null,
     template: TEMPLATE_IDS.includes(t.template) ? t.template : "classic",
+    text: (t.text && typeof t.text === "object") ? t.text : {},
   };
 }
 
@@ -286,7 +287,7 @@ export function publicShape(site, players, archives = [], hasLogo = false) {
     endsAt: site.ends_at,
     partner: { blurb: site.blurb, chips: m.chips },
     whyStats: m.whyStats, rules: m.rules, socials: (m.socials || []).filter(s => s.enabled !== false && s.url && s.url !== "#" && s.url !== ""),
-    branding: { hasLogo, accentA: theme.accentA, accentB: theme.accentB, template: theme.template },
+    branding: { hasLogo, accentA: theme.accentA, accentB: theme.accentB, template: theme.template, text: theme.text },
     pastWinners: archives.map(archiveShape),
     players: players.map((p) => ({ name: p.name, wagered: p.wagered, prize: p.prize })),
     sections: m.sections || DEFAULT_EXTRA.sections,
@@ -709,11 +710,15 @@ export async function saveSite(env, user, payload, siteId, request = null) {
       if (validated.error) return { error: validated.error, code: "invalid_logo" };
       logoData = validated.dataUri;
     }
-    const t = {};
+    const t = { text: themeObj.text };
     if (HEX.test(br.accentA || "")) t.accentA = br.accentA;
     if (HEX.test(br.accentB || "")) t.accentB = br.accentB;
     if (themeObj.template && themeObj.template !== "classic") t.template = themeObj.template;
     themeObj = t;
+  }
+  // Streamer-editable template text is available on every plan.
+  if (br && br.text && typeof br.text === "object") {
+    themeObj = { ...themeObj, text: br.text };
   }
   const themeJson = themeObj;
 

@@ -1,7 +1,7 @@
 // Server-render a streamer's leaderboard page from their data.
 import { templateCss, validTemplate } from "./templates/index.js";
 import { DEFAULT_EXTRA } from "./site.js";
-import { CASINO_COMPOSERS, CASINO_FULL } from "./templates/casino.js";
+import { applyCasinoText, CASINO_COMPOSERS, CASINO_FULL } from "./templates/casino.js";
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 // E2E-009: Sanitize user-supplied URLs for href attributes.
 // Only allows https:// URLs (rejects http://, javascript:, data:, vbscript:).
@@ -260,8 +260,10 @@ const COMPOSERS = {
   ...CASINO_COMPOSERS,
 };
 
-function composeMain(tpl, parts) {
-  return (COMPOSERS[tpl] || composeDefault)(parts);
+function composeMain(tpl, parts, text) {
+  let html = (COMPOSERS[tpl] || composeDefault)(parts);
+  if (CASINO_FULL.has(tpl)) html = applyCasinoText(html, tpl, text);
+  return html;
 }
 
 export function renderLeaderboard(data, opts = {}) {
@@ -343,6 +345,7 @@ body[data-preview] .top3{margin-bottom:14px}
     : `${esc(b.name)}'s ${esc(period.toLowerCase())} leaderboard${pool ? ` — compete for the ${esc(pool)} prize pool` : ""}.`;
   const dataJson = JSON.stringify(data).replace(/</g, "\\u003c");
   const sections = { ...DEFAULT_EXTRA.sections, ...(data.sections || {}) };
+  const textOverrides = (br && br.text) || {};
   const sectionAttrs = Object.entries(sections).map(([k, v]) => `data-sections-${k}="${String(v)}"`).join(" ");
   const sectionCss = `<style nonce="${opts.nonce}">
 body[data-sections-hero="false"] .hero,
@@ -385,7 +388,7 @@ ${fullPage ? "" : `<div class="field" aria-hidden="true"></div><div class="water
 <nav class="nav-links" aria-label="Page sections">${hasPartner ? `<a href="#partner">Partner</a>` : ""}<a href="#board">Leaderboard</a>${socials.length ? `<a href="#socials">Socials</a>` : ""}</nav></header>`}
 ${boardTabs}
 <main id="top">
-${composeMain(tpl, buildParts({ b, esc, heroLogo, hasCasino, casino, period, pool, hasCta, ctaHref, hasPartner, hasCode, code, blurb, whyStats, socials }))}</main>
+${composeMain(tpl, buildParts({ b, esc, heroLogo, hasCasino, casino, period, pool, hasCta, ctaHref, hasPartner, hasCode, code, blurb, whyStats, socials }), textOverrides)}</main>
 ${fullPage ? "" : `<footer class="ftr"><div class="ftr-id"><span class="ftr-name" data-brand-name>${esc(b.name)}</span><span class="ftr-tag" data-tagline>${esc(b.tagline)}</span></div>
 <p class="ftr-fine">18+ only. Gambling can be addictive. Please play responsibly. BeGambleAware.org${hasCasino ? ` · ${esc(b.name)} is not affiliated with ${esc(casino)}.` : "."}</p>
 <p class="ftr-copy">© <span data-year></span> <span data-brand-name>${esc(b.name)}</span>. All rights reserved.</p></footer>`}
