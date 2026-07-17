@@ -273,7 +273,7 @@ export function publicShape(site, players, archives = [], hasLogo = false) {
     },
     endsAt: site.ends_at,
     partner: { blurb: site.blurb, chips: m.chips },
-    whyStats: m.whyStats, rules: m.rules, socials: (m.socials || []).filter(s => s.url && s.url !== "#" && s.url !== ""),
+    whyStats: m.whyStats, rules: m.rules, socials: (m.socials || []).filter(s => s.enabled !== false && s.url && s.url !== "#" && s.url !== ""),
     branding: { hasLogo, accentA: theme.accentA, accentB: theme.accentB, template: theme.template },
     pastWinners: archives.map(archiveShape),
     players: players.map((p) => ({ name: p.name, wagered: p.wagered, prize: p.prize })),
@@ -312,6 +312,7 @@ export async function getUserSite(env, uid, plan) {
         id: site.id, slug: site.slug, published: !!site.published,
         updatedAt: site.updated_at,
         data: publicShape(site, await getPlayers(env, site.id), archives.slice(0, archiveLimit), !!site.has_logo),
+        socials: (fromJsonb(site.extra_json)?.socials) ?? DEFAULT_EXTRA.socials,
         customDomain: site.custom_domain || "",
           domainStatus: site.domain_status || "pending",
         notify: {
@@ -365,6 +366,7 @@ export async function getUserSiteById(env, uid, siteId, plan) {
     id: site.id, slug: site.slug, published: !!site.published,
     updatedAt: site.updated_at,
     data: publicShape(site, await getPlayers(env, site.id), archives.slice(0, archiveLimit), !!site.has_logo),
+    socials: (fromJsonb(site.extra_json)?.socials) ?? DEFAULT_EXTRA.socials,
       customDomain: site.custom_domain || "",
           domainStatus: site.domain_status || "pending",
       notify: {

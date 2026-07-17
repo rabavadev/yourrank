@@ -27,6 +27,9 @@
   --kick:    #53fc18;
   --twitch:  #9146ff;
   --x:       #1d1d1f;
+  --youtube: #ff0000;
+  --instagram: #e1306c;
+  --telegram: #229ed9;
   --gold:    #ffcb45;
 
   --radius: 20px;
@@ -330,6 +333,8 @@ section { width: min(var(--wrap), 100% - 2.5rem); margin-inline: auto; }
 .scard-ico svg { width: 26px; height: 26px; }
 .scard-ico.discord { background: var(--discord); } .scard-ico.kick { background: var(--kick); color: #04240a; }
 .scard-ico.twitch { background: var(--twitch); } .scard-ico.x { background: var(--x); border: 1px solid var(--line-2); }
+.scard-ico.youtube { background: var(--youtube); } .scard-ico.instagram { background: var(--instagram); }
+.scard-ico.telegram { background: var(--telegram); }
 .scard-name { font-weight: 700; font-size: 1.1rem; }
 .scard-handle { font-size: 0.82rem; color: var(--ink-mute); margin: 0.15rem 0 1rem; }
 .scard .btn { width: 100%; }

@@ -105,7 +105,7 @@ export async function handleGetSite(request, env) {
   }
   if (!s) return bad("No site for this account", 404);
   const boards = await getUserBoardsList(env, user.id);
-  return json({ ok: true, slug: s.slug, published: s.published, plan: plan, data: s.data, notify: s.notify || {}, archives: s.archives, boards, siteId: s.id, customDomain: s.customDomain || "", domainStatus: s.domainStatus || "pending", templates: templateCatalog() });
+  return json({ ok: true, slug: s.slug, published: s.published, plan: plan, data: s.data, socials: s.socials, notify: s.notify || {}, archives: s.archives, boards, siteId: s.id, customDomain: s.customDomain || "", domainStatus: s.domainStatus || "pending", templates: templateCatalog() });
 }
 
 export async function handleListBoards(request, env) {
