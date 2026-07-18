@@ -39,10 +39,6 @@ function isPro() {
   return plan === "pro" || plan === "agency" || plan === "lifetime" || isLifetime();
 }
 
-function isPro() {
-  return state.ME?.plan === "pro" || state.ME?.plan === "agency" || isLifetime();
-}
-
 function planDefs() {
   const proPrice = state.ME?.proPrice || 29;
   return [
