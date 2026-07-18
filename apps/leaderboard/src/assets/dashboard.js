@@ -130,12 +130,23 @@ async function init() {
   }
 }
 
+function isBoardSetup(p) {
+  const d = p.data || {};
+  const b = d.brand || {};
+  const players = d.players || [];
+  const o = p.onboarding || {};
+  const brandDone = o.brand || !!(b.name && b.casino);
+  const playersDone = o.players || players.length > 0;
+  const sharedDone = o.shared || p.published !== false;
+  return brandDone && playersDone && sharedDone;
+}
+
 function renderDraftBanner(p) {
   const banner = $("draftBanner");
   if (!banner) return;
   const activeId = p.siteId || state.ACTIVE_SITE_ID;
   const active = (p.boards || []).find((b) => b.id === activeId && b.isDraft);
-  if (!active) { banner.hidden = true; return; }
+  if (!active || isBoardSetup(p)) { banner.hidden = true; return; }
   banner.hidden = false;
   $("draftName").textContent = active.name || active.slug || "this board";
   $("draftResume").href = `/setup?resume=${encodeURIComponent(active.slug)}`;

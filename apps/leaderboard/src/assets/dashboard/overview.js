@@ -46,14 +46,17 @@ export function renderOverviewSummary() {
     if (topEmpty) topEmpty.hidden = sorted.length > 0;
   }
   const o = state.ONBOARDING || {};
-  $("ov_step_brand")?.classList.toggle("is-done", o.brand);
-  $("ov_step_players")?.classList.toggle("is-done", o.players);
-  $("ov_step_share")?.classList.toggle("is-done", o.shared);
+  const brandDone = o.brand || !!($("f_name")?.value.trim() && $("f_casino")?.value.trim());
+  const playersDone = o.players || players.length > 0;
+  const sharedDone = o.shared || state.PUBLISHED;
+  $("ov_step_brand")?.classList.toggle("is-done", brandDone);
+  $("ov_step_players")?.classList.toggle("is-done", playersDone);
+  $("ov_step_share")?.classList.toggle("is-done", sharedDone);
   $("ov_step_bot")?.classList.toggle("is-done", o.botConnected);
   $("ov_step_postback")?.classList.toggle("is-done", o.postback);
   $("ov_step_postback")?.classList.toggle("is-locked", o.isFree);
 
-  const setupComplete = !!(o.brand && o.players && (o.shared || state.PUBLISHED));
+  const setupComplete = !!(brandDone && playersDone && sharedDone);
   const qa = $("ovQuickActions");
   const telegram = $("ovTelegramCard");
   const steps = $("ovSetupSteps");
