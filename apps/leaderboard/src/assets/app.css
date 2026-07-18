@@ -91,6 +91,8 @@ table.players td.num input{font-family:var(--mono);text-align:right}
 table.players td.rank{font-family:var(--mono);color:var(--ink-mute);width:34px}
 table.players td.act{width:34px;text-align:center}
 .row-x{color:var(--ink-mute);cursor:pointer;border:none;background:none;font-size:16px;line-height:1;min-width:var(--tap);min-height:var(--tap);display:inline-flex;align-items:center;justify-content:center;border-radius:6px}.row-x:hover{color:var(--danger)}
+.limit-widget{display:inline-flex;align-items:center;gap:8px;margin-left:8px;flex-wrap:wrap}.limit-bar{width:120px;height:8px;background:var(--line);border-radius:4px;overflow:hidden}.limit-fill{height:100%;background:var(--accent);width:0;transition:width .2s ease}.limit-fill.limit-warning{background:var(--danger)}
+.limit-hint{font-size:12px;color:var(--ink-mute);white-space:nowrap}
 .empty{color:var(--ink-mute);font-size:13px;padding:14px 8px;text-align:center;border:1px dashed var(--line-2);border-radius:8px}
 /* Floating toast for status messages */
 .toast{position:fixed;top:16px;right:16px;z-index:60;max-width:320px;padding:10px 14px;border-radius:8px;background:var(--panel);border:1px solid var(--line);box-shadow:0 10px 30px rgba(0,0,0,.4);font-size:13px;color:var(--ink);transition:opacity .2s,transform .2s;opacity:1;transform:translateY(0)}

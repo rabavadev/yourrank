@@ -29,7 +29,21 @@ export function renderPlayers(list) {
 export function renumber() {
   const rows = [...$("rows").children];
   rows.forEach((tr, i) => tr.querySelector(".rank").textContent = String(i + 1).padStart(2, "0"));
-  if (state.ME) $("pCount").textContent = `${rows.length} / ${state.ME.limits.players === 999 ? "∞" : state.ME.limits.players}`;
+  const n = rows.length;
+  const limit = state.ME?.limits?.players ?? 25;
+  const unlimited = limit >= 999;
+  const pCount = $("pCount");
+  if (pCount) pCount.textContent = unlimited ? `${n} player${n === 1 ? "" : "s"}` : `${n} / ${limit} players`;
+  const fill = $("limitFill");
+  if (fill) {
+    const pct = unlimited ? 0 : Math.min(100, Math.round((n / limit) * 100));
+    fill.style.width = `${pct}%`;
+    fill.classList.toggle("limit-warning", !unlimited && n >= limit);
+  }
+  const hint = $("limitHint");
+  if (hint) hint.textContent = unlimited ? "Unlimited" : (n >= limit ? "Limit reached" : (n >= Math.floor(limit * 0.8) ? "Approaching limit" : ""));
+  const upgrade = $("playerLimitUpgrade");
+  if (upgrade) upgrade.hidden = unlimited || n < Math.max(1, Math.floor(limit * 0.8));
 }
 
 export function toggleEmpty() {
