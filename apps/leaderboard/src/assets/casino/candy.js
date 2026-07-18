@@ -4,7 +4,13 @@ const playerHref = (name) => { const slug = window.__SLUG__ || ""; return slug ?
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const moneyShort = (n) => "$" + Number(n).toLocaleString("en-US", {maximumFractionDigits:0});
 const money = (n) => "$" + Number(n).toLocaleString("en-US", {minimumFractionDigits:2, maximumFractionDigits:2});
-const linkName = (n) => `<a class="yr-profile-link" href="${playerHref(n)}">${esc(n)}</a>`;
+const streakFor = (n) => (window.__SITE_DATA__?.players || []).find((p) => p.name === n)?.streak || 0;
+const streakBadge = (streak) => streak >= 2 ? `<span class="yr-streak" style="margin-left:.3rem;font-size:.75rem;color:#ff7a00;font-weight:700;white-space:nowrap" title="${streak} consecutive #1 finishes" aria-label="${streak} streak">🔥${streak}</span>` : "";
+const linkName = (n) => {
+  const streak = streakFor(n);
+  const badge = streakBadge(streak);
+  return `<a class="yr-profile-link" href="${playerHref(n)}">${esc(n)}${badge}</a>`;
+};
 const fmtScore = (n) => Number(n).toLocaleString("en-US", {maximumFractionDigits:0});
 const wordInitials = (name) => { const parts = String(name).split(/[\s_]+/).filter(Boolean); if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase(); return parts.slice(0, 2).map((p) => p[0]).join("").toUpperCase(); };
 const hash = (s) => { let h = 0; for (let i = 0; i < String(s).length; i++) { h = (h << 5) - h + String(s).charCodeAt(i); } return Math.abs(h); };

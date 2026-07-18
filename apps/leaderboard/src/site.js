@@ -335,6 +335,21 @@ function archiveShape(a) {
   return { label: a.label, at: a.created_at, top };
 }
 
+function playerStreak(player, currentRank, archives) {
+  if (currentRank !== 0) return 0;
+  const name = normalizePlayerName(player.name);
+  let streak = 1;
+  for (const a of archives) {
+    const snap = fromJsonb(a.snapshot_json);
+    const list = Array.isArray(snap) ? snap : [];
+    const sorted = list.slice().sort((x, y) => (Number(y.wagered) || 0) - (Number(x.wagered) || 0));
+    const idx = sorted.findIndex((p) => normalizePlayerName(p.name) === name);
+    if (idx === 0) streak++;
+    else break;
+  }
+  return streak;
+}
+
 // Plan-aware archive limits
 export const ARCHIVE_LIMITS = { free: 6, starter: 6, pro: 24, agency: 999 };
 
@@ -371,7 +386,7 @@ export function publicShape(site, players, archives = [], hasLogo = false) {
     whyStats: m.whyStats, rules: m.rules, socials: (m.socials || []).filter(s => s.enabled !== false && s.url && s.url !== "#" && s.url !== ""),
     branding: { hasLogo, accentA: theme.accentA, accentB: theme.accentB, template: theme.template, text: theme.text, font: theme.font },
     pastWinners: archives.map(archiveShape),
-    players: players.map((p) => ({
+    players: players.map((p, i) => ({
       name: p.name,
       wagered: p.wagered,
       prize: p.prize,
@@ -380,6 +395,7 @@ export function publicShape(site, players, archives = [], hasLogo = false) {
       netProfit: p.net_profit,
       winRate: p.win_rate,
       change: p.change,
+      streak: playerStreak(p, i, archives),
     })),
     sections: m.sections || DEFAULT_EXTRA.sections,
     legal: m.legal || DEFAULT_EXTRA.legal,

@@ -108,6 +108,10 @@ function initParticles() {
 // ---- Live polling ----
 let previousPlayerNames = []; // tracks ordered names from last render for rank-change detection
 
+function streakBadge(streak) {
+  return streak >= 2 ? `<span class="yr-streak" style="margin-left:.35rem;font-size:.78rem;color:#ff7a00;font-weight:700;white-space:nowrap" title="${streak} consecutive #1 finishes" aria-label="${streak} streak">🔥${streak}</span>` : "";
+}
+
 function buildPlayerRow(pl, rank, delay, gap) {
     const prize = pl.prize ? `<span class="tr-prize has ta-r" role="cell">${moneyPrize(pl.prize)}</span>` : `<span class="tr-prize no ta-r" role="cell">—</span>`;
     const gapHtml = rank === 1 ? "" : (gap === 0
@@ -115,12 +119,12 @@ function buildPlayerRow(pl, rank, delay, gap) {
       : `<span class="tr-gap" aria-hidden="true">↑ ${moneyShort(gap)} to next</span>`);
     return `<div class="t-row" role="row" data-position="${rank}" data-name="${esc(pl.name)}" data-wagered="${Number(pl.wagered) || 0}" data-delay="${delay}">
       <span class="tr-rank" role="cell">${String(rank).padStart(2, "0")}</span>
-      <span class="tr-player" role="cell"><span class="tr-av" aria-hidden="true">${esc(initials(pl.name))}</span><a class="tr-name" href="${playerHref(pl.name)}">${esc(pl.name)}</a></span>
+      <span class="tr-player" role="cell"><span class="tr-av" aria-hidden="true">${esc(initials(pl.name))}</span><a class="tr-name" href="${playerHref(pl.name)}">${esc(pl.name)}</a>${streakBadge(pl.streak)}</span>
       <span class="tr-wager" role="cell"><span class="w-lg">${money(pl.wagered)}</span><span class="w-sm">${moneyShort(pl.wagered)}</span></span>${prize}${gapHtml}<span class="tr-bar" aria-hidden="true"><i></i></span></div>`;
   }
 
 function buildTop3Card(pl, rank) {
-  return `<div class="t3 t3--${rank}"><span class="t3-medal">RANK ${String(rank).padStart(2, "0")}</span><span class="t3-av" aria-hidden="true">${esc(initials(pl.name))}</span><a class="t3-name" href="${playerHref(pl.name)}">${esc(pl.name)}</a><div class="t3-wager">${money(pl.wagered)}</div><span class="t3-prize">${pl.prize ? moneyPrize(pl.prize) : "—"}</span></div>`;
+  return `<div class="t3 t3--${rank}"><span class="t3-medal">RANK ${String(rank).padStart(2, "0")}</span><span class="t3-av" aria-hidden="true">${esc(initials(pl.name))}</span><a class="t3-name" href="${playerHref(pl.name)}">${esc(pl.name)}</a>${streakBadge(pl.streak)}<div class="t3-wager">${money(pl.wagered)}</div><span class="t3-prize">${pl.prize ? moneyPrize(pl.prize) : "—"}</span></div>`;
 }
 
 // Expose helpers to per-template builder scripts loaded before this file.
