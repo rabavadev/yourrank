@@ -2,7 +2,7 @@
 import { $, esc, fromLocalInput, getCsrf, guardAuth, logError, toLocalInput } from "./utils.js";
 import { state } from "./state.js";
 import { renderBoardSwitcher, renderBoardsPage, renderSidebarBoardSwitcher } from "./boards.js";
-import { renderPlayers, renumber, toggleEmpty } from "./players.js";
+import { applyPlayerFieldVisibility, renderPlayers, renumber, toggleEmpty } from "./players.js";
 
 export const DEFAULT_SECTIONS = {
   hero: true,
@@ -195,6 +195,7 @@ export function collect() {
     rules: state.EXTRA.rules,
     socials: state.EXTRA.socials,
     sections: state.EXTRA.sections,
+    playerFields: state.EXTRA.playerFields,
     players,
     legal: {
       terms: ($("f_legal_terms")?.value || "").trim(),
@@ -278,7 +279,7 @@ function renderColorPresets() {
     button.setAttribute("aria-pressed", String(active));
     button.innerHTML = `<span class="preset-swatch"><i data-color="${esc(preset.accentA)}"></i><i data-color="${esc(preset.accentB)}"></i></span><span>${esc(preset.name)}</span>`;
     button.querySelectorAll("[data-color]").forEach((swatch) => { swatch.style.background = swatch.dataset.color; });
-    button.addEventListener("click", () => saveTheme(template.id, preset.accentA, preset.accentB, preset.name));
+    button.addEventListener("click", () => applyTheme(template.id, preset.accentA, preset.accentB, preset.name));
     list.appendChild(button);
   });
 }
@@ -301,50 +302,37 @@ function updateThemeSelection() {
   updateDesignPreview();
 }
 
-export async function saveTheme(template, accentA, accentB, label) {
-  if (state.THEME_SAVING) return;
-  state.THEME_SAVING = true;
-  const status = $("templateStatus");
-  if (status) status.textContent = "Applying…";
-  document.querySelectorAll(".template-card button,.preset-btn,#applyCustomColors,#colorsReset").forEach((button) => { button.disabled = true; });
-  const body = { siteId: state.ACTIVE_SITE_ID, template };
-  if (state.ME.plan !== "free" && accentA && accentB) { body.accentA = accentA; body.accentB = accentB; }
-  try {
-    const res = await fetch("/api/site/theme", {
-      method: "POST",
-      credentials: "include",
-      headers: { "content-type": "application/json", "x-csrf-token": getCsrf() },
-      body: JSON.stringify(body),
-    }).then(guardAuth);
-    const data = await res.json();
-    if (!res.ok || !data.ok) {
-      if (status) status.textContent = data.error || "Could not apply that design.";
-      return;
-    }
-    state.CURRENT_BRANDING = { ...state.CURRENT_BRANDING, ...data.branding, template };
-    if (state.ME.plan !== "free" && accentA && accentB) {
-      state.CURRENT_BRANDING.accentA = accentA;
-      state.CURRENT_BRANDING.accentB = accentB;
-    }
-    const active = state.BOARDS.find((b) => b.id === state.ACTIVE_SITE_ID);
-    if (active) active.template = template;
-    updateThemeSelection();
-    renderTemplateText();
-    renderSidebarBoardSwitcher();
-    renderBoardsPage();
-    if (status) status.textContent = `${label || currentTemplate()?.name || "Design"} applied to /${state.SLUG}.`;
-  } catch (err) {
-    logError("apply-design", err);
-    if (status) status.textContent = "Network error. Try again.";
-  } finally {
-    state.THEME_SAVING = false;
-    document.querySelectorAll(".template-card button,.preset-btn,#applyCustomColors,#colorsReset").forEach((button) => { button.disabled = false; });
+function markDirty() {
+  state._dirty = true;
+  const sb = $("savebar");
+  if (sb) sb.hidden = false;
+}
+
+export function applyTheme(template, accentA, accentB, label) {
+  state.CURRENT_BRANDING = { ...state.CURRENT_BRANDING, template };
+  if (state.ME.plan !== "free" && accentA && accentB) {
+    state.CURRENT_BRANDING.accentA = accentA;
+    state.CURRENT_BRANDING.accentB = accentB;
   }
+  const tplEl = $("f_template"); if (tplEl) tplEl.value = template;
+  if (state.ME.plan !== "free" && accentA && accentB) {
+    $("c_a").value = accentA;
+    $("c_b").value = accentB;
+  }
+  const active = state.BOARDS.find((b) => b.id === state.ACTIVE_SITE_ID);
+  if (active) active.template = template;
+  updateThemeSelection();
+  renderTemplateText();
+  renderSidebarBoardSwitcher();
+  renderBoardsPage();
+  const status = $("templateStatus");
+  if (status) status.textContent = `${label || currentTemplate()?.name || "Design"} selected — click Save changes to publish.`;
+  markDirty();
 }
 
 function applyTemplate(template) {
   const preset = template.presets?.[0];
-  saveTheme(template.id, preset?.accentA, preset?.accentB, template.name);
+  applyTheme(template.id, preset?.accentA, preset?.accentB, template.name);
 }
 
 export function renderBranding(br) {
@@ -395,8 +383,8 @@ $("logoFile").addEventListener("change", () => {
   img.src = URL.createObjectURL(f);
   $("logoFile").value = "";
 });
-$("applyCustomColors").addEventListener("click", () => saveTheme(state.CURRENT_BRANDING.template, $("c_a").value, $("c_b").value, "Custom colors"));
-$("colorsReset").addEventListener("click", () => { const preset = currentTemplate()?.presets?.[0]; if (preset) saveTheme(state.CURRENT_BRANDING.template, preset.accentA, preset.accentB, preset.name); });
+$("applyCustomColors").addEventListener("click", () => applyTheme(state.CURRENT_BRANDING.template, $("c_a").value, $("c_b").value, "Custom colors"));
+$("colorsReset").addEventListener("click", () => { const preset = currentTemplate()?.presets?.[0]; if (preset) applyTheme(state.CURRENT_BRANDING.template, preset.accentA, preset.accentB, preset.name); });
 $("brandUpgrade").addEventListener("click", (e) => { e.preventDefault(); checkout("pro", e.target); });
 
 export function renderNotifications(n) {
@@ -494,6 +482,40 @@ export function renderSections() {
   list.addEventListener("input", collectSections);
   list.addEventListener("change", collectSections);
   collectSections();
+}
+
+const DEFAULT_PLAYER_FIELDS = {
+  score: { label: "Score", col: "col-score" },
+  hands: { label: "Hands", col: "col-hands" },
+  netProfit: { label: "Net profit", col: "col-net" },
+  winRate: { label: "Win rate", col: "col-win" },
+  change: { label: "Change", col: "col-change" },
+};
+
+function collectPlayerFields() {
+  const list = $("playerFieldsList");
+  if (!list) return;
+  const current = { ...(state.EXTRA?.playerFields || {}) };
+  for (const row of list.querySelectorAll("[data-field]")) {
+    const key = row.dataset.field;
+    current[key] = row.querySelector(".field-toggle")?.checked ?? true;
+  }
+  state.EXTRA.playerFields = current;
+  applyPlayerFieldVisibility(current);
+  markDirty();
+}
+
+export function renderPlayerFields() {
+  const list = $("playerFieldsList");
+  if (!list) return;
+  const current = { ...DEFAULT_PLAYER_FIELDS, ...(state.EXTRA?.playerFields || {}) };
+  list.innerHTML = Object.entries(DEFAULT_PLAYER_FIELDS).map(([key, meta]) => `<div class="section-row" data-field="${esc(key)}">
+<span class="section-name">${esc(meta.label)}</span>
+<label class="switch" title="Show in player table"><input type="checkbox" class="field-toggle" ${current[key] !== false ? "checked" : ""} /><span class="switch-track"></span></label>
+</div>`).join("");
+  list.addEventListener("input", collectPlayerFields);
+  list.addEventListener("change", collectPlayerFields);
+  collectPlayerFields();
 }
 
 export function collectTemplateText() {
