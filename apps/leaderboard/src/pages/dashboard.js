@@ -165,6 +165,7 @@ export const dashboardPage = leaderboardPageHtml({
 <details class="advanced-colors"><summary>Advanced custom colors</summary>
 <div class="color-row"><label for="c_a" class="sr-only">Accent color start</label><input type="color" id="c_a" value="#5ad9ff" /><label for="c_b" class="sr-only">Accent color end</label><input type="color" id="c_b" value="#7b8cff" /><button class="btn btn--sm btn--ghost" id="applyCustomColors" type="button">Apply colors</button><button class="btn btn--sm btn--ghost" id="colorsReset" type="button">Template default</button></div>
 </details></div>
+<div class="field"><label for="f_font">Font</label><select id="f_font"><option value="Inter">Inter — Default</option><option value="Oswald">Oswald — Bold & Sporty</option><option value="Playfair Display">Playfair Display — Premium & Elegant</option><option value="Rajdhani">Rajdhani — Techy & Esports</option><option value="Bebas Neue">Bebas Neue — Impact & Hype</option></select><span class="hint">Changes the personality of your public page text.</span></div>
 </div></div>
 <div class="empty" id="brandLock" hidden>Branding is a Pro feature. <a href="#" id="brandUpgrade">Upgrade to unlock it</a>.</div></div>
 <div class="card" id="sectionsCard"><h2>Sections <span class="pill pill--info ml-6">PRO</span></h2><p class="card-sub">Choose what appears on your public page. Turn sections off to build a leaner layout.</p>

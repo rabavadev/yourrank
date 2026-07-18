@@ -88,12 +88,12 @@ const FRAME_COLORS = {
   leaderboard: { bg: "#020617", text: "#F8FAFC", accent: "#38bdf8", muted: "#94A3B8", hover: "#FFFFFF" },
 };
 
-export function frameCss(tpl) {
+export function frameCss(tpl, font = "Inter") {
   const c = FRAME_COLORS[tpl];
   if (!c) return "";
   const s = (hex) => `${hex}40`;
   return `body[data-template="${tpl}"]{background-color:${c.bg}}
-body[data-template="${tpl}"] .site-header--full{background-color:${c.bg};color:${c.text};border-bottom:1px solid ${s(c.accent)};display:flex;justify-content:space-between;align-items:center;padding:1rem 1.5rem;font-family:'Inter',system-ui,sans-serif;position:relative;z-index:999}
+body[data-template="${tpl}"] .site-header--full{background-color:${c.bg};color:${c.text};border-bottom:1px solid ${s(c.accent)};display:flex;justify-content:space-between;align-items:center;padding:1rem 1.5rem;font-family:${font},system-ui,sans-serif;position:relative;z-index:999}
 body[data-template="${tpl}"] .site-header--full__brand{display:flex;align-items:center;gap:.75rem;font-weight:800;font-size:1.1rem;text-decoration:none;color:${c.text}}
 body[data-template="${tpl}"] .site-header--full__brand img{height:28px;width:auto;border-radius:6px}
 body[data-template="${tpl}"] .site-header--full__nav a{color:${c.accent};text-decoration:none;margin-left:1.25rem;font-size:.875rem;font-weight:600}
@@ -106,7 +106,7 @@ body[data-template="${tpl}"] .site-footer--full__links{margin:1rem 0}
 body[data-template="${tpl}"] .site-footer--full__links a{color:${c.accent};text-decoration:none;margin:0 .75rem;font-size:.875rem;font-weight:600}
 body[data-template="${tpl}"] .site-footer--full__links a:hover{color:${c.hover}}
 body[data-template="${tpl}"] .legal-page{min-height:100vh;display:flex;flex-direction:column}
-body[data-template="${tpl}"] .legal-page__wrap{flex:1;max-width:720px;margin:0 auto;padding:2.5rem 1.5rem 4rem;color:${c.text};font-family:'Inter',system-ui,sans-serif;line-height:1.65}
+body[data-template="${tpl}"] .legal-page__wrap{flex:1;max-width:720px;margin:0 auto;padding:2.5rem 1.5rem 4rem;color:${c.text};font-family:${font},system-ui,sans-serif;line-height:1.65}
 body[data-template="${tpl}"] .legal-page__wrap h1{font-size:2rem;margin:0 0 .25rem;letter-spacing:-.02em}
 body[data-template="${tpl}"] .legal-page__wrap h2{font-size:1.1rem;margin:1.75rem 0 .5rem}
 body[data-template="${tpl}"] .legal-page__wrap p{margin:.75rem 0;color:${c.muted}}

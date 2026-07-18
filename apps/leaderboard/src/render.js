@@ -1,6 +1,6 @@
 // Server-render a streamer's leaderboard page from their data.
 import { templateCss, validTemplate } from "./templates/index.js";
-import { DEFAULT_EXTRA } from "./site.js";
+import { DEFAULT_EXTRA, FONT_FAMILIES } from "./site.js";
 import { applyCasinoText, CASINO_COMPOSERS, CASINO_FULL, frameCss } from "./templates/casino.js";
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 // E2E-009: Sanitize user-supplied URLs for href attributes.
@@ -14,6 +14,12 @@ const safeUrl = (u) => {
 
 const HEX = /^#[0-9a-fA-F]{6}$/;
 const LOGO_WIDTHS = [64, 128, 256, 512];
+const GOOGLE_FONTS_LINK = `<link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin /><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Oswald:wght@400;500;600;700&family=Playfair+Display:wght@400;500;600;700;800;900&family=Rajdhani:wght@400;500;600;700&family=Bebas+Neue&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />`;
+const FONT_BASE_STYLE = `:root{--yr-font:FAMILY;--yr-font-fallback:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",sans-serif}body{font-family:var(--yr-font),var(--yr-font-fallback)}.font-sans{font-family:var(--yr-font),ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",sans-serif}`;
+function fontCss(br, nonce) {
+  const family = FONT_FAMILIES[br?.font] || FONT_FAMILIES.Inter;
+  return `<style nonce="${nonce}">${FONT_BASE_STYLE.replace("FAMILY", family)}</style>`;
+}
 
 function logoSrcSet(baseUrl) {
   if (!baseUrl) return "";
@@ -311,7 +317,7 @@ export function renderLeaderboard(data, opts = {}) {
   // Template: which visual skin renders this page. Falls back to "classic".
   const tpl = validTemplate(br.template);
   const fullPage = CASINO_FULL.has(tpl);
-  const frameCssStr = fullPage ? frameCss(tpl) : "";
+  const frameCssStr = fullPage ? frameCss(tpl, FONT_FAMILIES[br.font] || FONT_FAMILIES.Inter) : "";
   const tplCssStr = templateCss(tpl) + frameCssStr;
   const tplCss = tplCssStr ? `<style nonce="${opts.nonce}" data-template="${tpl}">${tplCssStr}</style>` : "";
   const previewCss = opts.preview ? `<style nonce="${opts.nonce}">
@@ -423,15 +429,16 @@ body[data-sections-payouts="false"] .payouts { display: none !important; }
 <meta property="og:url" content="${canonicalUrl}" />
 <meta name="twitter:card" content="${twitterCard}" /><meta name="twitter:title" content="${ogTitle}" /><meta name="twitter:description" content="${desc}" />${ogImage}
 <link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@500;700&family=Press+Start+2P&family=Fredoka+One&family=Orbitron:wght@400;700;900&family=Pacifico&family=Baloo+2:wght@400;600;800&family=Cormorant+Garamond:wght@400;600;700&family=Rye&family=Space+Mono:wght@400;700&family=Playfair+Display:wght@400;600;700;800;900&family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet" media="print" data-async />
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@500;700&family=Press+Start+2P&family=Fredoka+One&family=Orbitron:wght@400;700;900&family=Pacifico&family=Baloo+2:wght@400;600;800&family=Cormorant+Garamond:wght@400;600;700&family=Rye&family=Space+Mono:wght@400;700&family=Playfair+Display:wght@400;600;700;800;900&family=Inter:wght@400;600;700;800;900&family=Oswald:wght@400;600;700&family=Rajdhani:wght@400;600;700&family=Bebas+Neue&display=swap" rel="stylesheet" media="print" data-async />
 <script nonce="${opts.nonce}">document.querySelector('link[data-async]').onload=function(){this.media='all'};</script>
-<noscript><link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@500;700&family=Press+Start+2P&family=Fredoka+One&family=Orbitron:wght@400;700;900&family=Pacifico&family=Baloo+2:wght@400;600;800&family=Cormorant+Garamond:wght@400;600;700&family=Rye&family=Space+Mono:wght@400;700&family=Playfair+Display:wght@400;600;700;800;900&family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet" /></noscript>
+<noscript><link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@500;700&family=Press+Start+2P&family=Fredoka+One&family=Orbitron:wght@400;700;900&family=Pacifico&family=Baloo+2:wght@400;600;800&family=Cormorant+Garamond:wght@400;600;700&family=Rye&family=Space+Mono:wght@400;700&family=Playfair+Display:wght@400;600;700;800;900&family=Inter:wght@400;600;700;800;900&family=Oswald:wght@400;600;700&family=Rajdhani:wght@400;600;700&family=Bebas+Neue&display=swap" rel="stylesheet" /></noscript>
 ${fullPage ? "" : `<link rel="stylesheet" href="/assets/leaderboard.css" />`}
 ${tplCss}
 ${themeCss}
 ${profileLinkCss}
 ${sectionCss}
 ${previewCss}
+${fontCss(br, opts.nonce)}
 <style nonce="${opts.nonce}">${shareCss}</style>
 <script nonce="${opts.nonce}" type="application/ld+json">{"@context":"https://schema.org","@type":"ItemList","name":${JSON.stringify(title)},"description":${JSON.stringify(desc)},"numberOfItems":${data.players ? data.players.length : 0}}</script>
 </head><body data-template="${tpl}"${opts.preview ? " data-preview" : ""}${opts.demo ? " data-demo" : ""} ${sectionAttrs}>
@@ -509,16 +516,15 @@ export function renderLegalPage(data, page, opts) {
   const isDefaultLegal = !customBody;
   const bodyHtml = customBody || defaultLegalBody(page, b.name);
   const pageTitle = `${esc(title)} · ${esc(b.name || "YourRank")}`;
-  const frameStyles = fullPage ? frameCss(tpl) : "";
+  const frameStyles = fullPage ? frameCss(tpl, FONT_FAMILIES[br.font] || FONT_FAMILIES.Inter) : "";
   const legalNoticeCss = isDefaultLegal ? `.legal-notice{display:flex;align-items:flex-start;gap:10px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.16);border-radius:10px;padding:14px 16px;margin-bottom:22px;font-size:13px;color:rgba(255,255,255,.85)}.legal-notice b{color:var(--accent,#c8ff00)}.legal-notice a{color:var(--accent,#c8ff00);text-decoration:underline}` : "";
   const templateStyle = (frameStyles || legalNoticeCss) ? `<style nonce="${opts.nonce}" data-template="${tpl}">${frameStyles}${legalNoticeCss}</style>` : "";
   const platformBase = esc(opts.homeUrl || "https://yourrank.site").replace(/\/$/, "");
   const legalNotice = isDefaultLegal ? `<div class="legal-notice"><b>⚠️ Legal pages not configured</b> — ${esc(b.name || "this page")} is currently showing YourRank platform terms. You can also read the platform <a href="${platformBase}/terms">Terms of Service</a>, <a href="${platformBase}/privacy">Privacy Policy</a>, and <a href="${platformBase}/responsible">Responsible Play</a> guidelines.</div>` : "";
-  const fontLink = fullPage
-    ? `<link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin /><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet" />`
-    : `<link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin /><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />`;
+  const fontLink = GOOGLE_FONTS_LINK;
   const cssLink = fullPage ? "" : `<link rel="stylesheet" href="/assets/app.css" />`;
   const canonical = `${esc(opts.homeUrl || "https://yourrank.site")}${legalHref(page)}`;
+  const fontStyle = fontCss(br, opts.nonce);
   const header = fullPage
     ? `<header class="site-header--full"><a class="site-header--full__brand" href="${homeHref}">${navLogo}<span data-brand-name>${esc(b.name)}</span></a><nav class="site-header--full__nav" aria-label="Page sections"><a href="${homeHref}">Leaderboard</a><a href="${legalHref("terms")}">Terms</a><a href="${legalHref("privacy")}">Privacy</a><a href="${legalHref("responsible")}">Responsible</a></nav></header>`
     : `<header class="topbar"><a class="brand" href="${homeHref}">${esc(b.name || "YourRank")}</a></header>`;
@@ -532,7 +538,7 @@ export function renderLegalPage(data, page, opts) {
 <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>${pageTitle}</title><meta name="description" content="${esc(title)} for ${esc(b.name || "YourRank")}." />
 <link rel="canonical" href="${canonical}" />
-${fontLink}${cssLink}${templateStyle}
+${fontLink}${cssLink}${templateStyle}${fontStyle}
 </head><body data-template="${tpl}" class="${bodyClass}">
 <a class="skip-link" href="#main-content">Skip to content</a>
 ${header}
@@ -565,11 +571,10 @@ export function renderPlayerProfile(data, player, history, opts) {
   const homeHref = opts.isCustomDomain ? "/" : `/${esc(opts.slug || "")}`;
   const profileHref = (name) => opts.isCustomDomain ? `/player/${encodeURIComponent(name)}` : `/${esc(opts.slug || "")}/player/${encodeURIComponent(name)}`;
   const backHref = playerBackHref(opts);
-  const frameStyles = fullPage ? frameCss(tpl) : "";
+  const frameStyles = fullPage ? frameCss(tpl, FONT_FAMILIES[br.font] || FONT_FAMILIES.Inter) : "";
   const templateStyle = frameStyles ? `<style nonce="${opts.nonce}" data-template="${tpl}">${frameStyles}</style>` : "";
-  const fontLink = fullPage
-    ? `<link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin /><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet" />`
-    : `<link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin /><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />`;
+  const fontLink = GOOGLE_FONTS_LINK;
+  const fontStyle = fontCss(br, opts.nonce);
   const cssLink = fullPage ? "" : `<link rel="stylesheet" href="/assets/app.css" />`;
   const legalHref = (page) => opts.isCustomDomain ? `/${page}` : `/${esc(opts.slug || "")}/${page}`;
   const header = fullPage
@@ -618,7 +623,7 @@ export function renderPlayerProfile(data, player, history, opts) {
 <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>${pageTitle}</title><meta name="description" content="${esc(player.name)} profile on ${esc(b.name || "YourRank")}." />
 <link rel="canonical" href="${canonical}" />
-${fontLink}${cssLink}${templateStyle}${profileStyle}
+${fontLink}${cssLink}${templateStyle}${profileStyle}${fontStyle}
 </head><body data-template="${tpl}" class="${fullPage ? "legal-page" : "legal"}">
 <a class="skip-link" href="#main-content">Skip to content</a>
 ${header}
@@ -650,11 +655,10 @@ export function renderHallOfFame(data, opts) {
   const isCustomDomain = !!opts.isCustomDomain;
   const homeHref = isCustomDomain ? "/" : `/${esc(opts.slug || "")}`;
   const legalHref = (p) => isCustomDomain ? `/${p}` : `/${esc(opts.slug || "")}/${p}`;
-  const frameStyles = fullPage ? frameCss(tpl) : "";
+  const frameStyles = fullPage ? frameCss(tpl, FONT_FAMILIES[br.font] || FONT_FAMILIES.Inter) : "";
   const templateStyle = frameStyles ? `<style nonce="${opts.nonce}" data-template="${tpl}">${frameStyles}</style>` : "";
-  const fontLink = fullPage
-    ? `<link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin /><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet" />`
-    : `<link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin /><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />`;
+  const fontLink = GOOGLE_FONTS_LINK;
+  const fontStyle = fontCss(br, opts.nonce);
   const cssLink = fullPage ? "" : `<link rel="stylesheet" href="/assets/app.css" />`;
   const canonical = `${esc(opts.homeUrl || "https://yourrank.site")}${isCustomDomain ? "/hall-of-fame" : `/${esc(opts.slug || "")}/hall-of-fame`}`;
   const header = fullPage
@@ -699,7 +703,7 @@ export function renderHallOfFame(data, opts) {
 <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>${esc(b.name || "YourRank")} — Hall of Fame</title><meta name="description" content="Past winners and closed-out periods for ${esc(b.name || "YourRank")}." />
 <link rel="canonical" href="${canonical}" />
-${fontLink}${cssLink}${templateStyle}${hofStyle}
+${fontLink}${cssLink}${templateStyle}${hofStyle}${fontStyle}
 </head><body data-template="${tpl}" class="${fullPage ? "legal-page" : "legal"}">
 <a class="skip-link" href="#main-content">Skip to content</a>
 ${header}

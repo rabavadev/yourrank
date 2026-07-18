@@ -1,6 +1,6 @@
 import { currentUser } from "../auth.js";
 import { effectivePlan } from "../billing.js";
-import { getUserSiteById } from "../site.js";
+import { getUserSiteById, FONT_KEYS } from "../site.js";
 import { renderLeaderboard } from "../render.js";
 import { SECURE_HTML, withNonce } from "../middleware/headers.js";
 import { validTemplate } from "../templates/index.js";
@@ -20,10 +20,14 @@ export async function handleDashboardPreview(request, env, nonce) {
   const template = validTemplate(url.searchParams.get("template"));
   const accentA = url.searchParams.get("accentA");
   const accentB = url.searchParams.get("accentB");
+  const font = url.searchParams.get("font");
   const branding = { ...site.data.branding, template };
   if (plan !== "free" && HEX.test(accentA || "") && HEX.test(accentB || "")) {
     branding.accentA = accentA;
     branding.accentB = accentB;
+  }
+  if (plan !== "free" && FONT_KEYS.includes(font || "")) {
+    branding.font = font;
   }
   const watermark = plan === "free" ? true : (site.data.sections?.poweredBy === true);
   const html = renderLeaderboard({ ...site.data, branding }, {
