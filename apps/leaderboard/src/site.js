@@ -289,16 +289,33 @@ export const FONT_FAMILIES = {
 };
 export const FONT_KEYS = Object.keys(FONT_FAMILIES);
 
+const DEFAULT_PRIZES = {
+  prizePoolLabel: "Prize pool",
+  countdownLabel: "",
+  currency: "$",
+  hidePrizeAmounts: false,
+  payoutsLabel: "Payouts",
+};
+
 function parseTheme(site) {
   const raw = fromJsonb(site.theme_json);
   const t = (raw && typeof raw === "object") ? raw : {};
   const font = FONT_KEYS.includes(t.font) ? t.font : "Inter";
+  const rawPrizes = (t.prizes && typeof t.prizes === "object") ? t.prizes : {};
+  const prizes = {
+    prizePoolLabel: String(rawPrizes.prizePoolLabel || DEFAULT_PRIZES.prizePoolLabel).slice(0, 40),
+    countdownLabel: String(rawPrizes.countdownLabel || DEFAULT_PRIZES.countdownLabel).slice(0, 40),
+    currency: String(rawPrizes.currency || DEFAULT_PRIZES.currency).slice(0, 6),
+    hidePrizeAmounts: rawPrizes.hidePrizeAmounts === true,
+    payoutsLabel: String(rawPrizes.payoutsLabel || DEFAULT_PRIZES.payoutsLabel).slice(0, 40),
+  };
   return {
     accentA: HEX.test(t.accentA || "") ? t.accentA : null,
     accentB: HEX.test(t.accentB || "") ? t.accentB : null,
     template: TEMPLATE_IDS.includes(t.template) ? t.template : "classic",
     text: (t.text && typeof t.text === "object") ? t.text : {},
     font,
+    prizes,
   };
 }
 
@@ -328,12 +345,19 @@ export function publicShape(site, players, archives = [], hasLogo = false) {
   const extra = (rawExtra && typeof rawExtra === "object") ? rawExtra : {};
   const m = { ...DEFAULT_EXTRA, ...extra };
   const theme = parseTheme(site);
+  const brand = {
+    name: site.name, tagline: site.tagline, code: site.code,
+    prizePool: site.prize_pool, period: site.period, casino: site.casino,
+    ctaUrl: site.cta_url, resetNote: site.reset_note,
+    currency: theme.prizes.currency,
+    hidePrizeAmounts: theme.prizes.hidePrizeAmounts,
+    prizePoolLabel: theme.prizes.prizePoolLabel,
+    countdownLabel: theme.prizes.countdownLabel,
+    payoutsLabel: theme.prizes.payoutsLabel,
+  };
   return {
-    brand: {
-      name: site.name, tagline: site.tagline, code: site.code,
-      prizePool: site.prize_pool, period: site.period, casino: site.casino,
-      ctaUrl: site.cta_url, resetNote: site.reset_note,
-    },
+    brand,
+    prizes: { ...theme.prizes },
     endsAt: site.ends_at,
     partner: { blurb: site.blurb, chips: m.chips },
     whyStats: m.whyStats, rules: m.rules, socials: (m.socials || []).filter(s => s.enabled !== false && s.url && s.url !== "#" && s.url !== ""),
@@ -646,8 +670,13 @@ export function normalizeEndsAt(incoming, existing) {
   return trimmed || null;
 }
 
+function isProPlan(plan) {
+  return plan === "pro" || plan === "agency" || plan === "lifetime";
+}
+
 export async function saveSite(env, user, payload, siteId, request = null) {
   const uid = typeof user === "string" ? user : user.id;
+  const plan = typeof user === "object" ? effectivePlan(user) : "free";
   const site = siteId ? await getBoardById(env, uid, siteId) : await getByUser(env, uid);
   if (!site) return { error: "no site" };
   // Internal / dedicated-endpoint fields are silently ignored rather than
@@ -785,7 +814,7 @@ export async function saveSite(env, user, payload, siteId, request = null) {
   if (br && typeof br.template === "string" && TEMPLATE_IDS.includes(br.template)) {
     themeObj = { ...themeObj, template: br.template };
   }
-  if (br && typeof user === "object" && effectivePlan(user) !== "free") {
+  if (br && typeof user === "object" && plan !== "free") {
     if (br.logo === null) logoData = "";
     else if ((typeof br.logo === "string" && br.logo) || (br.logo && typeof br.logo === "object")) {
       const validated = validateLogoData(br.logo);
@@ -797,6 +826,15 @@ export async function saveSite(env, user, payload, siteId, request = null) {
     if (HEX.test(br.accentB || "")) t.accentB = br.accentB;
     if (themeObj.template && themeObj.template !== "classic") t.template = themeObj.template;
     if (FONT_KEYS.includes(br.font || "")) t.font = br.font;
+    if (isProPlan(plan) && br.prizes && typeof br.prizes === "object") {
+      t.prizes = {
+        prizePoolLabel: String(br.prizes.prizePoolLabel || DEFAULT_PRIZES.prizePoolLabel).slice(0, 40),
+        countdownLabel: String(br.prizes.countdownLabel || DEFAULT_PRIZES.countdownLabel).slice(0, 40),
+        currency: String(br.prizes.currency || DEFAULT_PRIZES.currency).slice(0, 6),
+        hidePrizeAmounts: br.prizes.hidePrizeAmounts === true,
+        payoutsLabel: String(br.prizes.payoutsLabel || DEFAULT_PRIZES.payoutsLabel).slice(0, 40),
+      };
+    }
     themeObj = t;
   }
   // Streamer-editable template text is available on every plan.
@@ -1057,6 +1095,15 @@ export async function updateSiteTheme(env, user, payload = {}, request = null) {
   }
   if (plan !== "free" && payload.font && FONT_KEYS.includes(payload.font)) {
     theme.font = payload.font;
+  }
+  if (isProPlan(plan) && payload.prizes && typeof payload.prizes === "object") {
+    theme.prizes = {
+      prizePoolLabel: String(payload.prizes.prizePoolLabel || DEFAULT_PRIZES.prizePoolLabel).slice(0, 40),
+      countdownLabel: String(payload.prizes.countdownLabel || DEFAULT_PRIZES.countdownLabel).slice(0, 40),
+      currency: String(payload.prizes.currency || DEFAULT_PRIZES.currency).slice(0, 6),
+      hidePrizeAmounts: payload.prizes.hidePrizeAmounts === true,
+      payoutsLabel: String(payload.prizes.payoutsLabel || DEFAULT_PRIZES.payoutsLabel).slice(0, 40),
+    };
   }
 
   await exec(
