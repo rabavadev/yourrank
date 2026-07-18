@@ -36,8 +36,6 @@ export function renderOverviewSummary() {
   const cap = state.ME && state.ME.limits.players < 999 ? " / " + state.ME.limits.players : "";
   $("ov_players").textContent = players.length + cap;
   $("ov_resets").textContent = resetsIn();
-  const boardNameEl = $("overviewBoardName");
-  if (boardNameEl) boardNameEl.textContent = boardName === "—" ? "" : boardName;
   const top = $("ov_top");
   const topEmpty = $("ov_topEmpty");
   if (top) {
