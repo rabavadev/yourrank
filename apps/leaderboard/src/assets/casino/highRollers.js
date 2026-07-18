@@ -59,7 +59,8 @@
     const isFirst = rank === 1;
     const cls = rank === 1 ? "first" : rank === 2 ? "second" : "third";
     const crown = isFirst ? `<div class="hr-podium-crown">${CROWN_ICON}</div>` : "";
-    return `<div class="hr-podium-card ${cls}">${crown}<div class="hr-podium-avatar" data-styleBackground="${grad}">${esc(inits)}</div><div class="hr-podium-rank">${rank}</div><div class="hr-podium-name">${esc(pl.name)}</div><div class="hr-podium-meta">Win rate ${wr}%</div><div class="hr-podium-value hr-display">${moneyCompact(total)}</div><div class="hr-podium-label">Total winnings</div></div>`;
+    const meta = wr > 0 ? `<div class="hr-podium-meta">Win rate ${wr}%</div>` : "";
+    return `<div class="hr-podium-card ${cls}">${crown}<div class="hr-podium-avatar" data-styleBackground="${grad}">${esc(inits)}</div><div class="hr-podium-rank">${rank}</div><div class="hr-podium-name">${esc(pl.name)}</div>${meta}<div class="hr-podium-value hr-display">${moneyCompact(total)}</div><div class="hr-podium-label">Total winnings</div></div>`;
   }
 
   function rowHighRollers(pl, rank, delay) {
@@ -89,7 +90,7 @@
       </div>
       <div class="hr-td text-right hr-display hr-gold-text">${moneyCompact(total)}</div>
       <div class="hr-td text-right">${big ? moneyCompact(big) : "—"}</div>
-      <div class="hr-td text-right"><span class="hr-streak">${FLAME_ICON}${st}</span></div>
+      <div class="hr-td text-right"><span class="hr-streak">${FLAME_ICON}${st || "—"}</span></div>
       <div class="hr-td text-center"><span class="hr-trend ${trendCls}">${trendSvg}</span></div>
     </div>`;
   }

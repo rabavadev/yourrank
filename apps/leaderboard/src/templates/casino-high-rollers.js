@@ -140,7 +140,17 @@ body[data-template="highRollers"] .hr-empty { padding: 3rem; text-align: center;
 body[data-template="highRollers"] .hr-empty[hidden] { display: none; }
 body[data-template="highRollers"] .skip-link { position: absolute; top: 0; left: 0; transform: translateY(-120%); transition: transform .2s ease; background: var(--hr-gold); color: #080b14; }
 body[data-template="highRollers"] .skip-link:focus { transform: translateY(0); }
-@media (max-width: 900px) { body[data-template="highRollers"] .hr-thead, body[data-template="highRollers"] .hr-row { grid-template-columns: 60px 1.5fr 100px 120px 120px 70px 70px; } }
+body[data-template="highRollers"] .hr-table[data-has-winrate="false"] .hr-thead, body[data-template="highRollers"] .hr-table[data-has-winrate="false"] .hr-row { grid-template-columns: 70px 1.5fr 150px 150px 90px 90px; }
+body[data-template="highRollers"] .hr-table[data-has-streak="false"] .hr-thead, body[data-template="highRollers"] .hr-table[data-has-streak="false"] .hr-row { grid-template-columns: 70px 1.5fr 120px 150px 150px 90px; }
+body[data-template="highRollers"] .hr-table[data-has-winrate="false"][data-has-streak="false"] .hr-thead, body[data-template="highRollers"] .hr-table[data-has-winrate="false"][data-has-streak="false"] .hr-row { grid-template-columns: 70px 1.5fr 150px 150px 90px; }
+body[data-template="highRollers"] .hr-table[data-has-winrate="false"] .hr-thead .hr-th:nth-child(3), body[data-template="highRollers"] .hr-table[data-has-winrate="false"] .hr-row .hr-td:nth-child(3) { display: none; }
+body[data-template="highRollers"] .hr-table[data-has-streak="false"] .hr-thead .hr-th:nth-child(6), body[data-template="highRollers"] .hr-table[data-has-streak="false"] .hr-row .hr-td:nth-child(6) { display: none; }
+@media (max-width: 900px) {
+body[data-template="highRollers"] .hr-thead, body[data-template="highRollers"] .hr-row { grid-template-columns: 60px 1.5fr 100px 120px 120px 70px 70px; }
+body[data-template="highRollers"] .hr-table[data-has-winrate="false"] .hr-thead, body[data-template="highRollers"] .hr-table[data-has-winrate="false"] .hr-row { grid-template-columns: 60px 1.5fr 120px 120px 70px 70px; }
+body[data-template="highRollers"] .hr-table[data-has-streak="false"] .hr-thead, body[data-template="highRollers"] .hr-table[data-has-streak="false"] .hr-row { grid-template-columns: 60px 1.5fr 100px 120px 120px 70px; }
+body[data-template="highRollers"] .hr-table[data-has-winrate="false"][data-has-streak="false"] .hr-thead, body[data-template="highRollers"] .hr-table[data-has-winrate="false"][data-has-streak="false"] .hr-row { grid-template-columns: 60px 1.5fr 120px 120px 70px; }
+}
 `;
 
 export function composeHighRollers(p) {
@@ -153,7 +163,13 @@ export function composeHighRollers(p) {
   const players = (p.players || []).slice().sort((a, b) => (Number(b.score || b.wagered) || 0) - (Number(a.score || a.wagered) || 0));
   const active = players.length;
   const hotStreak = active ? Math.max(...players.map((x) => Number(x.hands) || 0)) : 0;
-  const hotDisplay = hotStreak ? `${hotStreak} Wins` : "—";
+  const hasStreak = active && players.some((x) => (Number(x.hands) || 0) > 0);
+  const hasWinRate = active && players.some((x) => (Number(x.winRate) || 0) > 0);
+  const hotDisplay = hasStreak ? `${hotStreak} Wins` : "—";
+  const biggest = active ? Math.max(...players.map((x) => Number(x.prize) || 0)) : 0;
+  const biggestDisplay = biggest ? moneyCompact(biggest) : "—";
+  const statLabel = hasStreak ? "Hot Streak" : "Biggest Win";
+  const statValue = hasStreak ? hotDisplay : biggestDisplay;
 
   const tabs = periods.map((t) => `<button type="button" class="hr-tab ${t === periodActive ? "is-active" : ""}">${esc(t)}</button>`).join("");
 
@@ -179,7 +195,7 @@ export function composeHighRollers(p) {
       </div>
       <div class="hr-stat-card">
         <div class="hr-stat-icon purple">${FLAME_ICON}</div>
-        <div><div class="hr-stat-label">Hot Streak</div><div class="hr-stat-value hr-display purple">${esc(hotDisplay)}</div></div>
+        <div><div class="hr-stat-label">${esc(statLabel)}</div><div class="hr-stat-value hr-display purple">${esc(statValue)}</div></div>
       </div>
       <div class="hr-stat-card">
         <div class="hr-stat-icon green">${TRENDING_ICON}</div>
@@ -197,7 +213,7 @@ export function composeHighRollers(p) {
     </div>
     <div class="hr-table-wrap">
       <div class="hr-scroll">
-        <div class="hr-table" role="table" aria-label="Leaderboard standings">
+        <div class="hr-table" role="table" aria-label="Leaderboard standings" data-has-winrate="${hasWinRate}" data-has-streak="${hasStreak}">
           <div class="hr-thead" role="row">
             <div class="hr-th" role="columnheader">Rank</div>
             <div class="hr-th" role="columnheader">Player</div>
