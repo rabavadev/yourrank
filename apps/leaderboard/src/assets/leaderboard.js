@@ -134,10 +134,12 @@ function isCasinoFull() { return !!((window.CASINO_BUILDERS || {}).top3 || {})[c
 // because the strict CSP blocks inline style="..." attributes. Apply them via
 // CSSOM after render.
 function hydrateStyles() {
-  for (const el of $$("[data-style]")) {
+  const styleAttrs = ["data-style", "data-style-background", "data-style-background-image", "data-style-background-color", "data-style-width", "data-style-animation-delay", "data-style-left"];
+  for (const el of $$(styleAttrs.map((a) => `[${a}]`).join(", "))) {
     for (const key of Object.keys(el.dataset)) {
       if (!key.startsWith("style")) continue;
       let cssProp = key.slice(5);
+      if (!cssProp) continue;
       cssProp = cssProp[0].toLowerCase() + cssProp.slice(1);
       el.style[cssProp] = el.dataset[key];
       delete el.dataset[key];
@@ -172,7 +174,7 @@ function updateLeaderboard(players) {
 
   // Update top 3
   const t3 = $("[data-top3]");
-  if (t3 && sorted.length >= 3) {
+  if (t3 && sorted.length >= 1) {
     t3.innerHTML = sorted.slice(0, 3).map((pl, i) => buildTop3(pl, i + 1)).join("");
   }
 
@@ -342,7 +344,7 @@ function boot() {
   if (countBadge) countBadge.textContent = `${players.length} player${players.length !== 1 ? "s" : ""}`;
 
   const t3 = $("[data-top3]");
-  if (t3 && players.length >= 3) t3.innerHTML = players.slice(0, 3).map((pl, i) => buildTop3(pl, i + 1)).join("");
+  if (t3 && players.length >= 1) t3.innerHTML = players.slice(0, 3).map((pl, i) => buildTop3(pl, i + 1)).join("");
 
   const rows = $("[data-rows]");
   if (rows) {
