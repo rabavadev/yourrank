@@ -64,6 +64,16 @@ async function init() {
   if (p.customDomain && p.domainStatus) renderDomainStatus(p.domainStatus, "");
   const pubToggle = $("pubToggle");
   if (pubToggle) pubToggle.checked = p.published !== false;
+  const arToggle = $("f_auto_reset");
+  const arClear = $("f_auto_reset_clear");
+  if (arToggle) {
+    arToggle.checked = !!(p.autoReset && p.autoReset.enabled);
+    if (arClear) {
+      arClear.value = (p.autoReset && p.autoReset.clear) || "wagers";
+      arClear.disabled = !arToggle.checked;
+    }
+    arToggle.addEventListener("change", () => { if (arClear) arClear.disabled = !arToggle.checked; });
+  }
   $("a_label").placeholder = new Date().toLocaleString("en-US", { month: "long", year: "numeric", timeZone: "UTC" });
   $("liveLink").textContent = location.host + "/" + state.SLUG;
   $("liveLink").href = "/" + state.SLUG;

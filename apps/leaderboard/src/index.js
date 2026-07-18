@@ -7,6 +7,7 @@ import { getPublicSite, getByUser, getArchives, ARCHIVE_LIMITS } from "./site.js
 import { renderLeaderboard, renderLegalPage, renderPlayerProfile, renderHallOfFame } from "./render.js";
 import { PAGES } from "./pages.js";
 import { bumpStat } from "./stats.js";
+import { runAutoReset } from "./auto-reset.js";
 import { createQueueProducer } from "../../../shared/queue-producer.js";
 import { shellNavHtml } from "../../../shared/shell-nav.js";
 import { findRoute } from "./routes.js";
@@ -110,7 +111,36 @@ export default {
     }
     return response;
   }),
+
+  scheduled: handleScheduled,
 };
+
+async function handleScheduled(event, env, ctx) {
+  populateEnv(env, { setGlobalEnv: true });
+  if (event.cron === "*/5 * * * *") {
+    ctx.waitUntil(
+      runAutoReset(env).catch((err) => {
+        console.error("[scheduled] auto-reset failed:", err);
+        if (env.DISCORD_MONITORING_WEBHOOK) {
+          ctx.waitUntil(
+            fetch(env.DISCORD_MONITORING_WEBHOOK, {
+              method: "POST",
+              headers: { "content-type": "application/json" },
+              body: JSON.stringify({
+                embeds: [{
+                  title: "⚠️ Auto-reset scheduler failed",
+                  description: `\`\`\`\n${String(err?.message || err).slice(0, 1800)}\n\`\`\``,
+                  color: 0xff4444,
+                  timestamp: new Date().toISOString(),
+                }],
+              }),
+            }).catch(() => {})
+          );
+        }
+      })
+    );
+  }
+}
 
 function demoLeaderboardData() {
   return {

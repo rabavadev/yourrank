@@ -82,7 +82,7 @@ export const DEFAULT_EXTRA = {
 // needed by the /logo/:slug endpoint and saveSite(), which fetch it separately.
 // PERF-004 / PERF-107: avoid SELECT * to prevent 180KB+ transfers on every page.
 // PERF-005: include has_logo as a computed column to avoid a separate re-query.
-const SITE_COLUMNS = "id, user_id, slug, name, tagline, casino, code, cta_url, prize_pool, period, ends_at, reset_note, blurb, extra_json, published, theme_json, updated_at, custom_domain, domain_status, discord_webhook_url_enc, telegram_chat_id, telegram_notify, (logo_data IS NOT NULL AND logo_data != '') AS has_logo";
+const SITE_COLUMNS = "id, user_id, slug, name, tagline, casino, code, cta_url, prize_pool, period, ends_at, reset_note, blurb, extra_json, published, theme_json, updated_at, custom_domain, domain_status, discord_webhook_url_enc, telegram_chat_id, telegram_notify, auto_reset_enabled, auto_reset_clear, auto_reset_last_run_at, (logo_data IS NOT NULL AND logo_data != '') AS has_logo";
 
 // L1 in-memory cache (per-isolate). No L2 KV — sessions moved to Postgres.
 const siteCache = new Map();
@@ -373,6 +373,7 @@ export async function getUserSite(env, uid, plan) {
     return {
         id: site.id, slug: site.slug, published: !!site.published,
         updatedAt: site.updated_at,
+        autoReset: { enabled: !!site.auto_reset_enabled, clear: site.auto_reset_clear || "wagers" },
         data: publicShape(site, await getPlayers(env, site.id), archives.slice(0, archiveLimit), !!site.has_logo),
         socials: (fromJsonb(site.extra_json)?.socials) ?? DEFAULT_EXTRA.socials,
         customDomain: site.custom_domain || "",
@@ -427,6 +428,7 @@ export async function getUserSiteById(env, uid, siteId, plan) {
   return {
     id: site.id, slug: site.slug, published: !!site.published,
     updatedAt: site.updated_at,
+    autoReset: { enabled: !!site.auto_reset_enabled, clear: site.auto_reset_clear || "wagers" },
     data: publicShape(site, await getPlayers(env, site.id), archives.slice(0, archiveLimit), !!site.has_logo),
     socials: (fromJsonb(site.extra_json)?.socials) ?? DEFAULT_EXTRA.socials,
       customDomain: site.custom_domain || "",
@@ -750,6 +752,13 @@ export async function saveSite(env, user, payload, siteId, request = null) {
     : site.telegram_chat_id;
   const telegramNotify = notify.telegram_notify !== undefined ? !!notify.telegram_notify : !!site.telegram_notify;
 
+  // Auto-reset scheduler controls
+  const autoReset = payload.autoReset && typeof payload.autoReset === "object" ? payload.autoReset : {};
+  const autoResetEnabled = typeof autoReset.enabled === "boolean" ? autoReset.enabled : !!site.auto_reset_enabled;
+  const autoResetClear = ["wagers", "players", "none"].includes(String(autoReset.clear).trim())
+    ? String(autoReset.clear).trim()
+    : (site.auto_reset_clear || "wagers");
+
   // Fetch logo_data separately since the shared query no longer includes it (PERF-004).
   const existingLogoRow = await one("SELECT logo_data FROM sites WHERE id=$1", [site.id]);
   let logoData = existingLogoRow?.logo_data ?? "";
@@ -816,12 +825,13 @@ export async function saveSite(env, user, payload, siteId, request = null) {
       ? String(b.period || "Monthly").trim()
       : (site.period || "Monthly");
     await tx.unsafe(
-      `UPDATE sites SET slug=$1, name=$2, tagline=$3, casino=$4, code=$5, cta_url=$6, prize_pool=$7, period=$8, ends_at=$9, reset_note=$10, blurb=$11, extra_json=$12::jsonb, logo_data=$13, theme_json=$14::jsonb, published=$15, discord_webhook_url_enc=$16, telegram_chat_id=$17, telegram_notify=$18, updated_at=now() WHERE id=$19`,
+      `UPDATE sites SET slug=$1, name=$2, tagline=$3, casino=$4, code=$5, cta_url=$6, prize_pool=$7, period=$8, ends_at=$9, reset_note=$10, blurb=$11, extra_json=$12::jsonb, logo_data=$13, theme_json=$14::jsonb, published=$15, discord_webhook_url_enc=$16, telegram_chat_id=$17, telegram_notify=$18, auto_reset_enabled=$19, auto_reset_clear=$20, updated_at=now() WHERE id=$21`,
       [
         slugVal, siteName, b.tagline ?? site.tagline, b.casino ?? site.casino, b.code ?? site.code,
         b.ctaUrl ?? site.cta_url, b.prizePool ?? site.prize_pool, periodVal,
         endsAtVal, b.resetNote ?? site.reset_note, (payload.partner && payload.partner.blurb) ?? site.blurb,
-        extra, logoData, themeJson, publishedVal, discordWebhookUrlEnc, telegramChatId, telegramNotify, site.id,
+        extra, logoData, themeJson, publishedVal, discordWebhookUrlEnc, telegramChatId, telegramNotify,
+        autoResetEnabled, autoResetClear, site.id,
       ]
     );
 
