@@ -6,8 +6,8 @@ export const cookiesPage = legal("Cookie Policy", "July 2026", `
 <h2>Essential cookies</h2>
 <p>These are required for the site to work. They include your session cookie (<code>yr_session</code>) and CSRF token cookie (<code>__csrf</code>). We do not use them for advertising or tracking you across the web.</p>
 <h2>Analytics and performance</h2>
-<p>We collect aggregated page views and referrers for your own leaderboard analytics. No third-party analytics trackers (Google Analytics, Meta Pixel, etc.) are loaded on YourRank pages.</p>
+<p>With your consent, we collect aggregated page views, referrers, and scroll depth for your own leaderboard analytics. No third-party analytics trackers (Google Analytics, Meta Pixel, etc.) are loaded on YourRank pages.</p>
 <h2>Your choices</h2>
-<p>You can clear cookies through your browser settings at any time. If you disable cookies, you will be signed out and some dashboard features may not work.</p>
+<p>When you first visit, you can choose to accept only essential cookies or all cookies. You can change this at any time by clearing the <code>yr_consent</code> localStorage entry and refreshing the page. If you disable cookies entirely, you will be signed out and some dashboard features may not work.</p>
 <h2>Contact</h2>
 <p>Questions about this policy: email contact@yourrank.site.</p>`, "cookies", "YourRank cookie policy. Explains essential cookies, analytics, and how to manage your choices.");

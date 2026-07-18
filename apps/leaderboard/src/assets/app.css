@@ -24,8 +24,9 @@ a{color:var(--ink);text-decoration:none}a:hover{color:var(--accent)}
 .field input:user-invalid,.field textarea:user-invalid{border-color:var(--danger,#ef4444)}
 .cookie-banner{position:fixed;bottom:0;left:0;right:0;background:var(--panel);border-top:1px solid var(--line);padding:14px 22px;display:flex;align-items:center;justify-content:space-between;gap:16px;z-index:100;font-size:14px;color:var(--ink-soft)}
 .cookie-banner a{color:var(--accent);text-decoration:underline}
-.cookie-banner span{max-width:calc(100% - 120px)}
-@media(max-width:560px){.cookie-banner{flex-direction:column;align-items:flex-start}.cookie-banner span{max-width:100%}}
+.cookie-banner span{max-width:calc(100% - 230px)}
+.cookie-banner-actions{display:flex;gap:10px;flex:0 0 auto}
+@media(max-width:560px){.cookie-banner{flex-direction:column;align-items:flex-start;gap:12px}.cookie-banner span{max-width:100%}.cookie-banner-actions{align-self:flex-end}}
 .modal{position:fixed;inset:0;background:rgba(0,0,0,.7);display:flex;align-items:center;justify-content:center;padding:18px;z-index:200}
 .modal-card{width:100%;max-width:420px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:22px;box-shadow:var(--shadow-lg)}
 .modal-card h3{margin:0 0 8px}
