@@ -1,6 +1,6 @@
 // Server-render a streamer's leaderboard page from their data.
 import { templateCss, validTemplate } from "./templates/index.js";
-import { DEFAULT_EXTRA } from "./site.js";
+import { DEFAULT_EXTRA, FONT_FAMILIES } from "./site.js";
 import { applyCasinoText, CASINO_COMPOSERS, CASINO_FULL, frameCss } from "./templates/casino.js";
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 // E2E-009: Sanitize user-supplied URLs for href attributes.
@@ -14,6 +14,12 @@ const safeUrl = (u) => {
 
 const HEX = /^#[0-9a-fA-F]{6}$/;
 const LOGO_WIDTHS = [64, 128, 256, 512];
+const GOOGLE_FONTS_LINK = `<link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin /><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Oswald:wght@400;500;600;700&family=Playfair+Display:wght@400;500;600;700;800;900&family=Rajdhani:wght@400;500;600;700&family=Bebas+Neue&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />`;
+const FONT_BASE_STYLE = `:root{--yr-font:FAMILY;--yr-font-fallback:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",sans-serif}body{font-family:var(--yr-font),var(--yr-font-fallback)}.font-sans{font-family:var(--yr-font),ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",sans-serif}`;
+function fontCss(br, nonce) {
+  const family = FONT_FAMILIES[br?.font] || FONT_FAMILIES.Inter;
+  return `<style nonce="${nonce}">${FONT_BASE_STYLE.replace("FAMILY", family)}</style>`;
+}
 
 function logoSrcSet(baseUrl) {
   if (!baseUrl) return "";
@@ -55,8 +61,14 @@ function shareSection(pageUrl, name) {
 // per template. The default composition preserves the classic page exactly.
 // ---------------------------------------------------------------------------
 function buildParts(c) {
-  const { b, hasCasino, casino, period, pool, hasCta, ctaHref, hasPartner, hasCode, code, blurb, whyStats, socials } = c;
+  const { b, hasCasino, casino, period, pool, hasCta, ctaHref, hasPartner, hasCode, code, blurb, whyStats, socials, prizes, currency, hidePrizeAmounts } = c;
   const name = esc(b.name);
+  const cur = String(currency || b.currency || "$").slice(0, 6);
+  const hidePrizes = hidePrizeAmounts || b.hidePrizeAmounts || false;
+  const prizePoolLabel = esc((prizes && prizes.prizePoolLabel) || b.prizePoolLabel || "Prize pool");
+  const countdownLabelValue = String((prizes && prizes.countdownLabel) || b.countdownLabel || "").slice(0, 40);
+  const payoutsLabel = esc((prizes && prizes.payoutsLabel) || b.payoutsLabel || "Payouts");
+  const countdownLabel = countdownLabelValue || null;
   const streamWindow = `<div class="stream-window" aria-hidden="true"><div class="sw-bar"><span class="sw-dots"><i></i><i></i><i></i></span><span class="sw-title">Kick Stream</span></div>
 <div class="sw-body"><div class="sw-live"><span class="live-dot"></span> LIVE</div><div class="sw-play"><svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" width="34" height="34" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></div><div class="sw-name" data-brand-name>${name}</div></div></div>`;
   const ctaBtn = (label, cls = "btn btn--grad") => hasCta ? `<a class="${cls}" data-cta href="${ctaHref}" target="_blank" rel="noopener">${label}</a>` : "";
@@ -72,8 +84,6 @@ ${hasCode ? `<div class="pcol pcol-code"><span class="pcol-label">Exclusive Code
 ${hasCta ? `<a class="btn btn--full btn--grad" data-cta href="${ctaHref}" target="_blank" rel="noopener">${hasCasino ? `Join us on <span data-casino>${esc(casino)}</span>` : "Join now"}</a>` : ""}</div>` : ""}
 ${whyStats.length ? `<div class="pcol pcol-why"><span class="pcol-label">Why ${hasCasino ? `<span data-casino>${esc(casino)}</span>` : "us"}</span><div class="why-grid" data-why></div></div>` : ""}</div></section>` : "";
   const announce = `<div class="sr-only" aria-live="polite" id="lb-announce"></div>`;
-  const payouts = `<div class="payouts" data-payouts hidden></div>`;
-  const top3 = `<div class="top3" data-top3></div>`;
   const findRank = `<div class="find-rank-bar"><div class="find-rank-wrap"><button type="button" aria-label="Search" class="find-rank-icon"><svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/></svg></button><input class="find-rank-input" type="text" placeholder="Find your rank..." data-find-rank aria-label="Search for your rank" /></div><span class="find-rank-result" data-find-result role="status" aria-live="polite"></span></div>`;
   const table = `<div class="table" role="table" aria-label="Leaderboard standings"><div class="t-head" role="row"><span role="columnheader">#</span><span role="columnheader">Player</span><span class="ta-r" role="columnheader">Wagered</span><span class="ta-r" role="columnheader">Prize</span></div>
 <div class="t-rows" role="rowgroup" data-rows></div></div>`;
@@ -83,9 +93,11 @@ ${whyStats.length ? `<div class="pcol pcol-why"><span class="pcol-label">Why ${h
   const socialsSec = socials.length ? `<section id="socials" class="socials-sec"><h2 class="sec-title center">Join the Socials</h2><p class="sec-sub center">More giveaways and promotions across every platform.</p>
 <div class="social-cards" data-socials></div></section>` : "";
   const titleGroup = `<div class="board-title-group"><h2 class="sec-title">Standings</h2><span class="player-count-badge" data-player-count-badge></span><span class="live-badge" data-live-badge><span class="live-badge-dot"></span>LIVE</span></div>`;
-  const poolSpan = pool ? `<span data-pool>${esc(pool)}</span>` : `<span data-pool></span>`;
+  const poolSpan = hidePrizes ? '<span data-pool hidden></span>' : (pool ? `<span data-pool>${esc(pool)}</span>` : `<span data-pool></span>`);
   const periodSpan = `<span data-period>${esc(period)}</span>`;
-  return { ...c, name, streamWindow, ctaBtn, joinLabel, timerGrid, partnerPanel, announce, payouts, top3, findRank, table, rules, pastSec, socialsSec, titleGroup, poolSpan, periodSpan };
+  const payouts = hidePrizes ? `<div class="payouts" data-payouts hidden data-hide-prizes></div>` : `<div class="payouts" data-payouts hidden></div>`;
+  const top3 = `<div class="top3" data-top3 data-hide-prizes="${hidePrizes ? "true" : "false"}"></div>`;
+  return { ...c, name, streamWindow, ctaBtn, joinLabel, timerGrid, partnerPanel, announce, payouts, top3, findRank, table, rules, pastSec, socialsSec, titleGroup, poolSpan, periodSpan, cur, hidePrizes, prizePoolLabel, countdownLabel, payoutsLabel };
 }
 
 // The classic page: stream-window hero, partner panel, board, past, socials.
@@ -101,7 +113,7 @@ ${p.partnerPanel}
 ${p.announce}<section id="board" class="board"><div class="board-head">
 <p class="eyebrow">${pool ? `<span data-pool>${esc(pool)}</span> · ` : ""}<span data-period>${esc(period)}</span> Leaderboard</p>
 ${p.titleGroup}<div class="board-meta">
-<span class="bm"><b class="countdown" data-countdown>--</b><span>Resets in</span></span>
+<span class="bm"><b class="countdown" data-countdown>--</b><span>${esc(p.countdownLabel || "Resets in")}</span></span>
 <span class="bm"><b data-count>0</b><span>Players</span></span></div></div>
 ${p.payouts}
 ${p.top3}
@@ -117,7 +129,7 @@ ${p.socialsSec}`;
 function composeQuest(p) {
   return `<section class="hero hero--app">${p.heroLogo}<h1 class="hero-name" data-brand-name>${p.name}</h1>
 <p class="hero-sub">${p.hasCasino ? `<span data-casino>${esc(p.casino)}</span> partner · ` : ""}${p.periodSpan} leaderboard</p>
-<div class="app-chips"><span class="app-chip app-chip--pool">🏆 ${p.poolSpan}</span><span class="app-chip">⏳ <b class="countdown" data-countdown>--</b></span><span class="app-chip"><b data-count>0</b> players</span></div>
+<div class="app-chips">${p.hidePrizes ? "" : `<span class="app-chip app-chip--pool">🏆 ${p.poolSpan}</span>`}<span class="app-chip">⏳ <b class="countdown" data-countdown>--</b></span><span class="app-chip"><b data-count>0</b> players</span></div>
 <div class="hero-cta">${p.ctaBtn(p.joinLabel)}</div>
 <div class="hero-timer" data-timer hidden>${p.timerGrid}</div></section>
 ${p.announce}<section id="board" class="board"><div class="board-head board-head--center">
@@ -139,8 +151,8 @@ function composeVault(p) {
 <div class="split-copy">${p.heroLogo}<p class="hero-kicker">${p.hasCasino ? `<span data-casino>${esc(p.casino)}</span> partner board` : "Wager race"}</p><h1 class="hero-name" data-brand-name>${p.name}</h1>
 <p class="hero-sub">${p.periodSpan} wager race — climb the board, take the prizes.</p>
 <div class="hero-cta">${p.ctaBtn(p.joinLabel)}<a class="btn btn--ghost" href="#board">Standings</a></div></div>
-<div class="prize-card"><span class="prize-card-label">Prize pool</span><b class="prize-card-pool">${p.poolSpan}</b>
-<div class="hero-timer" data-timer><p class="timer-label">Race ends in</p>
+<div class="prize-card"><span class="prize-card-label">${esc(p.prizePoolLabel || "Prize pool")}</span><b class="prize-card-pool">${p.poolSpan}</b>
+<div class="hero-timer" data-timer><p class="timer-label">${esc(p.countdownLabel || "Race ends in")}</p>
 ${p.timerGrid}</div></div></div>
 <div class="stat-strip"><div class="ss"><span class="ss-label">Players</span><b class="ss-val" data-count>0</b></div><div class="ss"><span class="ss-label">Period</span><b class="ss-val">${p.periodSpan}</b></div><div class="ss"><span class="ss-label">Status</span><b class="ss-val"><span class="live-badge" data-live-badge><span class="live-badge-dot"></span>LIVE</span></b></div></div></section>
 ${p.announce}<section id="board" class="board"><div class="board-head board-head--center">
@@ -159,9 +171,9 @@ ${p.socialsSec}`;
 // prize pool as the supporting line.
 function composeTournament(p) {
   return `<section class="hero hero--clock">${p.heroLogo}<p class="hero-kicker" data-brand-name>${p.name}</p>
-<h1 class="clock-title">Race ends in</h1>
+<h1 class="clock-title">${esc(p.countdownLabel || "Race ends in")}</h1>
 <div class="hero-timer" data-timer>${p.timerGrid}</div>
-<p class="clock-sub">${p.poolSpan} prize pool · ${p.periodSpan} race · <b data-count>0</b> players</p>
+<p class="clock-sub">${p.hidePrizes ? `${p.periodSpan} race` : `${p.poolSpan} ${esc((p.prizePoolLabel || "Prize pool").toLowerCase())} · ${p.periodSpan} race`} · <b data-count>0</b> players</p>
 <div class="hero-cta">${p.ctaBtn(p.joinLabel)}<a class="btn btn--ghost" href="#board">Standings</a></div></section>
 ${p.announce}<section id="board" class="board"><div class="board-head board-head--center">
 ${p.titleGroup}</div>
@@ -181,8 +193,8 @@ function composeChampion(p) {
   return `<section class="hero hero--banner"><div class="banner-grid">
 <div class="banner-id">${p.heroLogo}<h1 class="hero-name" data-brand-name>${p.name}</h1>
 <p class="hero-sub">${p.hasCasino ? `<span data-casino>${esc(p.casino)}</span> partner · ` : ""}${p.periodSpan} leaderboard</p></div>
-<div class="banner-facts"><div class="bf"><span class="bf-label">Prize pool</span><b class="bf-val">${p.poolSpan}</b></div>
-<div class="bf"><span class="bf-label">Ends in</span><b class="bf-val countdown" data-countdown>--</b></div>
+<div class="banner-facts"><div class="bf"><span class="bf-label">${esc(p.prizePoolLabel || "Prize pool")}</span><b class="bf-val">${p.poolSpan}</b></div>
+<div class="bf"><span class="bf-label">${esc(p.countdownLabel || "Ends in")}</span><b class="bf-val countdown" data-countdown>--</b></div>
 <div class="bf"><span class="bf-label">Players</span><b class="bf-val" data-count>0</b></div>
 ${p.ctaBtn(p.joinLabel)}</div></div>
 <div class="hero-timer" data-timer hidden>${p.timerGrid}</div></section>
@@ -222,8 +234,8 @@ ${p.socialsSec}`;
 function composeRewards(p) {
   return `<section class="hero hero--card">${p.heroLogo}<h1 class="hero-name" data-brand-name>${p.name}</h1>
 <p class="hero-sub">${p.hasCasino ? `<span data-casino>${esc(p.casino)}</span> partner · ` : ""}${p.periodSpan} rewards race</p>
-<div class="reward-card"><span class="reward-label">🎁 Prize pool</span><b class="reward-pool">${p.poolSpan}</b>
-<div class="hero-timer" data-timer><p class="timer-label">Ends in</p>
+<div class="reward-card"><span class="reward-label">🎁 ${esc(p.prizePoolLabel || "Prize pool")}</span><b class="reward-pool">${p.poolSpan}</b>
+<div class="hero-timer" data-timer><p class="timer-label">${esc(p.countdownLabel || "Ends in")}</p>
 ${p.timerGrid}</div>
 ${p.ctaBtn(p.joinLabel, "btn btn--grad btn--full")}</div></section>
 ${p.announce}<section id="board" class="board"><div class="board-head board-head--center">
@@ -243,8 +255,8 @@ ${p.socialsSec}`;
 function composeAmber(p) {
   return `<div class="rail-layout"><aside class="rail"><section class="hero hero--rail">${p.heroLogo}<h1 class="hero-name" data-brand-name>${p.name}</h1>
 <p class="hero-sub">${p.hasCasino ? `<span data-casino>${esc(p.casino)}</span> partner · ` : ""}${p.periodSpan} race</p>
-<div class="rail-fact"><span class="rail-label">Prize pool</span><b class="rail-val">${p.poolSpan}</b></div>
-<div class="rail-fact"><span class="rail-label">Resets in</span><b class="rail-val countdown" data-countdown>--</b></div>
+<div class="rail-fact"><span class="rail-label">${esc(p.prizePoolLabel || "Prize pool")}</span><b class="rail-val">${p.poolSpan}</b></div>
+<div class="rail-fact"><span class="rail-label">${esc(p.countdownLabel || "Resets in")}</span><b class="rail-val countdown" data-countdown>--</b></div>
 <div class="rail-fact"><span class="rail-label">Players</span><b class="rail-val" data-count>0</b></div>
 <div class="hero-cta">${p.ctaBtn(p.joinLabel, "btn btn--grad btn--full")}</div>
 <div class="hero-timer" data-timer hidden>${p.timerGrid}</div></section>
@@ -264,7 +276,7 @@ ${p.socialsSec}`;
 // page's centerpiece; the table below is a quiet "top users" ledger.
 function composeCopper(p) {
   return `<section class="hero hero--gallery">${p.heroLogo}<p class="hero-kicker">${p.periodSpan} champions</p><h1 class="hero-name" data-brand-name>${p.name}</h1>
-<p class="hero-sub">${p.poolSpan} prize pool · resets in <b class="countdown" data-countdown>--</b></p>
+<p class="hero-sub">${p.hidePrizes ? "" : `${p.poolSpan} ${esc((p.prizePoolLabel || "prize pool").toLowerCase())} · `}${esc(p.countdownLabel || "resets in")} <b class="countdown" data-countdown>--</b></p>
 ${p.top3}
 <div class="hero-cta">${p.ctaBtn(p.joinLabel)}</div>
 <div class="hero-timer" data-timer hidden>${p.timerGrid}</div></section>
@@ -311,7 +323,7 @@ export function renderLeaderboard(data, opts = {}) {
   // Template: which visual skin renders this page. Falls back to "classic".
   const tpl = validTemplate(br.template);
   const fullPage = CASINO_FULL.has(tpl);
-  const frameCssStr = fullPage ? frameCss(tpl) : "";
+  const frameCssStr = fullPage ? frameCss(tpl, FONT_FAMILIES[br.font] || FONT_FAMILIES.Inter) : "";
   const tplCssStr = templateCss(tpl) + frameCssStr;
   const tplCss = tplCssStr ? `<style nonce="${opts.nonce}" data-template="${tpl}">${tplCssStr}</style>` : "";
   const previewCss = opts.preview ? `<style nonce="${opts.nonce}">
@@ -423,15 +435,16 @@ body[data-sections-payouts="false"] .payouts { display: none !important; }
 <meta property="og:url" content="${canonicalUrl}" />
 <meta name="twitter:card" content="${twitterCard}" /><meta name="twitter:title" content="${ogTitle}" /><meta name="twitter:description" content="${desc}" />${ogImage}
 <link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@500;700&family=Press+Start+2P&family=Fredoka+One&family=Orbitron:wght@400;700;900&family=Pacifico&family=Baloo+2:wght@400;600;800&family=Cormorant+Garamond:wght@400;600;700&family=Rye&family=Space+Mono:wght@400;700&family=Playfair+Display:wght@400;600;700;800;900&family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet" media="print" data-async />
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@500;700&family=Press+Start+2P&family=Fredoka+One&family=Orbitron:wght@400;700;900&family=Pacifico&family=Baloo+2:wght@400;600;800&family=Cormorant+Garamond:wght@400;600;700&family=Rye&family=Space+Mono:wght@400;700&family=Playfair+Display:wght@400;600;700;800;900&family=Inter:wght@400;600;700;800;900&family=Oswald:wght@400;600;700&family=Rajdhani:wght@400;600;700&family=Bebas+Neue&display=swap" rel="stylesheet" media="print" data-async />
 <script nonce="${opts.nonce}">document.querySelector('link[data-async]').onload=function(){this.media='all'};</script>
-<noscript><link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@500;700&family=Press+Start+2P&family=Fredoka+One&family=Orbitron:wght@400;700;900&family=Pacifico&family=Baloo+2:wght@400;600;800&family=Cormorant+Garamond:wght@400;600;700&family=Rye&family=Space+Mono:wght@400;700&family=Playfair+Display:wght@400;600;700;800;900&family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet" /></noscript>
+<noscript><link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@500;700&family=Press+Start+2P&family=Fredoka+One&family=Orbitron:wght@400;700;900&family=Pacifico&family=Baloo+2:wght@400;600;800&family=Cormorant+Garamond:wght@400;600;700&family=Rye&family=Space+Mono:wght@400;700&family=Playfair+Display:wght@400;600;700;800;900&family=Inter:wght@400;600;700;800;900&family=Oswald:wght@400;600;700&family=Rajdhani:wght@400;600;700&family=Bebas+Neue&display=swap" rel="stylesheet" /></noscript>
 ${fullPage ? "" : `<link rel="stylesheet" href="/assets/leaderboard.css" />`}
 ${tplCss}
 ${themeCss}
 ${profileLinkCss}
 ${sectionCss}
 ${previewCss}
+${fontCss(br, opts.nonce)}
 <style nonce="${opts.nonce}">${shareCss}</style>
 <script nonce="${opts.nonce}" type="application/ld+json">{"@context":"https://schema.org","@type":"ItemList","name":${JSON.stringify(title)},"description":${JSON.stringify(desc)},"numberOfItems":${data.players ? data.players.length : 0}}</script>
 </head><body data-template="${tpl}"${opts.preview ? " data-preview" : ""}${opts.demo ? " data-demo" : ""} ${sectionAttrs}>
@@ -445,7 +458,7 @@ ${fullPage ? "" : `<div class="field" aria-hidden="true"></div><div class="water
 <nav class="nav-links" aria-label="Page sections">${hasPartner ? `<a href="#partner">Partner</a>` : ""}<a href="#board">Leaderboard</a>${socials.length ? `<a href="#socials">Socials</a>` : ""}</nav></header>`}
 ${boardTabs}
 <main id="top">
-${composeMain(tpl, buildParts({ b, esc, heroLogo, hasCasino, casino, period, pool, hasCta, ctaHref, hasPartner, hasCode, code, blurb, whyStats, socials }), textOverrides)}</main>
+${composeMain(tpl, buildParts({ b, esc, heroLogo, hasCasino, casino, period, pool, hasCta, ctaHref, hasPartner, hasCode, code, blurb, whyStats, socials, prizes: data.prizes, currency: data.brand?.currency, hidePrizeAmounts: data.brand?.hidePrizeAmounts }), textOverrides)}</main>
 ${shareHtml}
 ${fullPageFooter}
 ${fullPage ? "" : `<footer class="ftr"><div class="ftr-id"><span class="ftr-name" data-brand-name>${esc(b.name)}</span><span class="ftr-tag" data-tagline>${esc(b.tagline)}</span></div>
@@ -509,16 +522,15 @@ export function renderLegalPage(data, page, opts) {
   const isDefaultLegal = !customBody;
   const bodyHtml = customBody || defaultLegalBody(page, b.name);
   const pageTitle = `${esc(title)} · ${esc(b.name || "YourRank")}`;
-  const frameStyles = fullPage ? frameCss(tpl) : "";
+  const frameStyles = fullPage ? frameCss(tpl, FONT_FAMILIES[br.font] || FONT_FAMILIES.Inter) : "";
   const legalNoticeCss = isDefaultLegal ? `.legal-notice{display:flex;align-items:flex-start;gap:10px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.16);border-radius:10px;padding:14px 16px;margin-bottom:22px;font-size:13px;color:rgba(255,255,255,.85)}.legal-notice b{color:var(--accent,#c8ff00)}.legal-notice a{color:var(--accent,#c8ff00);text-decoration:underline}` : "";
   const templateStyle = (frameStyles || legalNoticeCss) ? `<style nonce="${opts.nonce}" data-template="${tpl}">${frameStyles}${legalNoticeCss}</style>` : "";
   const platformBase = esc(opts.homeUrl || "https://yourrank.site").replace(/\/$/, "");
   const legalNotice = isDefaultLegal ? `<div class="legal-notice"><b>⚠️ Legal pages not configured</b> — ${esc(b.name || "this page")} is currently showing YourRank platform terms. You can also read the platform <a href="${platformBase}/terms">Terms of Service</a>, <a href="${platformBase}/privacy">Privacy Policy</a>, and <a href="${platformBase}/responsible">Responsible Play</a> guidelines.</div>` : "";
-  const fontLink = fullPage
-    ? `<link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin /><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet" />`
-    : `<link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin /><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />`;
+  const fontLink = GOOGLE_FONTS_LINK;
   const cssLink = fullPage ? "" : `<link rel="stylesheet" href="/assets/app.css" />`;
   const canonical = `${esc(opts.homeUrl || "https://yourrank.site")}${legalHref(page)}`;
+  const fontStyle = fontCss(br, opts.nonce);
   const header = fullPage
     ? `<header class="site-header--full"><a class="site-header--full__brand" href="${homeHref}">${navLogo}<span data-brand-name>${esc(b.name)}</span></a><nav class="site-header--full__nav" aria-label="Page sections"><a href="${homeHref}">Leaderboard</a><a href="${legalHref("terms")}">Terms</a><a href="${legalHref("privacy")}">Privacy</a><a href="${legalHref("responsible")}">Responsible</a></nav></header>`
     : `<header class="topbar"><a class="brand" href="${homeHref}">${esc(b.name || "YourRank")}</a></header>`;
@@ -532,7 +544,7 @@ export function renderLegalPage(data, page, opts) {
 <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>${pageTitle}</title><meta name="description" content="${esc(title)} for ${esc(b.name || "YourRank")}." />
 <link rel="canonical" href="${canonical}" />
-${fontLink}${cssLink}${templateStyle}
+${fontLink}${cssLink}${templateStyle}${fontStyle}
 </head><body data-template="${tpl}" class="${bodyClass}">
 <a class="skip-link" href="#main-content">Skip to content</a>
 ${header}
@@ -541,9 +553,11 @@ ${footer}
 </body></html>`;
 }
 
-function fmtCurrency(n) {
+function fmtCurrency(n, data = {}, isPrize = false) {
+  if (isPrize && data.brand?.hidePrizeAmounts) return "—";
   const v = Number(n) || 0;
-  return v.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
+  const sym = String(data.brand?.currency || data.prizes?.currency || "$").slice(0, 6);
+  return sym + v.toLocaleString("en-US", { maximumFractionDigits: 0 });
 }
 
 function fmtNumber(n) {
@@ -565,11 +579,10 @@ export function renderPlayerProfile(data, player, history, opts) {
   const homeHref = opts.isCustomDomain ? "/" : `/${esc(opts.slug || "")}`;
   const profileHref = (name) => opts.isCustomDomain ? `/player/${encodeURIComponent(name)}` : `/${esc(opts.slug || "")}/player/${encodeURIComponent(name)}`;
   const backHref = playerBackHref(opts);
-  const frameStyles = fullPage ? frameCss(tpl) : "";
+  const frameStyles = fullPage ? frameCss(tpl, FONT_FAMILIES[br.font] || FONT_FAMILIES.Inter) : "";
   const templateStyle = frameStyles ? `<style nonce="${opts.nonce}" data-template="${tpl}">${frameStyles}</style>` : "";
-  const fontLink = fullPage
-    ? `<link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin /><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet" />`
-    : `<link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin /><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />`;
+  const fontLink = GOOGLE_FONTS_LINK;
+  const fontStyle = fontCss(br, opts.nonce);
   const cssLink = fullPage ? "" : `<link rel="stylesheet" href="/assets/app.css" />`;
   const legalHref = (page) => opts.isCustomDomain ? `/${page}` : `/${esc(opts.slug || "")}/${page}`;
   const header = fullPage
@@ -582,18 +595,18 @@ export function renderPlayerProfile(data, player, history, opts) {
   const canonical = `${esc(opts.homeUrl || "https://yourrank.site")}${profileHref(player.name)}`;
 
   const stats = [
-    { label: "Wagered", value: fmtCurrency(player.wagered) },
-    { label: "Prize", value: fmtCurrency(player.prize) },
+    { label: "Wagered", value: fmtCurrency(player.wagered, data) },
+    { label: "Prize", value: fmtCurrency(player.prize, data, true) },
     { label: "Score", value: fmtNumber(player.score) },
     { label: "Hands", value: fmtNumber(player.hands) },
-    { label: "Net profit", value: fmtCurrency(player.netProfit) },
+    { label: "Net profit", value: fmtCurrency(player.netProfit, data) },
     { label: "Win rate", value: `${fmtNumber(player.winRate)}%` },
     { label: "Change", value: player.change > 0 ? `+${fmtNumber(player.change)}` : fmtNumber(player.change) },
   ];
   const statsHtml = stats.map((s) => `<div class="pp-stat"><span class="pp-stat-val">${esc(s.value)}</span><span class="pp-stat-label">${esc(s.label)}</span></div>`).join("");
 
   const historyHtml = history.length
-    ? `<table class="pp-history"><thead><tr><th>Period</th><th>Rank</th><th>Wagered</th><th>Prize</th></tr></thead><tbody>${history.map((h) => `<tr><td>${esc(h.label)}</td><td>#${fmtNumber(h.rank)}</td><td>${fmtCurrency(h.wagered)}</td><td>${fmtCurrency(h.prize)}</td></tr>`).join("")}</tbody></table>`
+    ? `<table class="pp-history"><thead><tr><th>Period</th><th>Rank</th><th>Wagered</th><th>Prize</th></tr></thead><tbody>${history.map((h) => `<tr><td>${esc(h.label)}</td><td>#${fmtNumber(h.rank)}</td><td>${fmtCurrency(h.wagered, data)}</td><td>${fmtCurrency(h.prize, data, true)}</td></tr>`).join("")}</tbody></table>`
     : `<p class="pp-empty">No archived history yet. This page will show past rankings once the streamer closes out a leaderboard period.</p>`;
 
   const profileStyle = `<style nonce="${opts.nonce}">
@@ -618,7 +631,7 @@ export function renderPlayerProfile(data, player, history, opts) {
 <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>${pageTitle}</title><meta name="description" content="${esc(player.name)} profile on ${esc(b.name || "YourRank")}." />
 <link rel="canonical" href="${canonical}" />
-${fontLink}${cssLink}${templateStyle}${profileStyle}
+${fontLink}${cssLink}${templateStyle}${profileStyle}${fontStyle}
 </head><body data-template="${tpl}" class="${fullPage ? "legal-page" : "legal"}">
 <a class="skip-link" href="#main-content">Skip to content</a>
 ${header}
@@ -650,11 +663,10 @@ export function renderHallOfFame(data, opts) {
   const isCustomDomain = !!opts.isCustomDomain;
   const homeHref = isCustomDomain ? "/" : `/${esc(opts.slug || "")}`;
   const legalHref = (p) => isCustomDomain ? `/${p}` : `/${esc(opts.slug || "")}/${p}`;
-  const frameStyles = fullPage ? frameCss(tpl) : "";
+  const frameStyles = fullPage ? frameCss(tpl, FONT_FAMILIES[br.font] || FONT_FAMILIES.Inter) : "";
   const templateStyle = frameStyles ? `<style nonce="${opts.nonce}" data-template="${tpl}">${frameStyles}</style>` : "";
-  const fontLink = fullPage
-    ? `<link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin /><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet" />`
-    : `<link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin /><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />`;
+  const fontLink = GOOGLE_FONTS_LINK;
+  const fontStyle = fontCss(br, opts.nonce);
   const cssLink = fullPage ? "" : `<link rel="stylesheet" href="/assets/app.css" />`;
   const canonical = `${esc(opts.homeUrl || "https://yourrank.site")}${isCustomDomain ? "/hall-of-fame" : `/${esc(opts.slug || "")}/hall-of-fame`}`;
   const header = fullPage
@@ -667,7 +679,7 @@ export function renderHallOfFame(data, opts) {
   const past = Array.isArray(data.pastWinners) ? data.pastWinners : [];
   const medals = ["gold", "silver", "bronze"];
   const cards = past.map((a) => `<div class="hof-card"><div class="hof-label">${esc(a.label)} <span class="hof-date">${new Date(a.at).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" })}</span></div><ol class="hof-list">${
-    (a.top || []).map((p, i) => `<li class="hof-row"><span class="hof-rank ${medals[i] || ""}">${i + 1}</span><span class="hof-name">${esc(p.name)}</span><span class="hof-val">${fmtCurrency(p.prize || p.wagered || 0)}</span></li>`).join("")
+    (a.top || []).map((p, i) => `<li class="hof-row"><span class="hof-rank ${medals[i] || ""}">${i + 1}</span><span class="hof-name">${esc(p.name)}</span><span class="hof-val">${fmtCurrency(p.prize || p.wagered || 0, data, true)}</span></li>`).join("")
   }</ol></div>`).join("");
   const body = past.length
     ? `<div class="hof-grid">${cards}</div>`
@@ -699,7 +711,7 @@ export function renderHallOfFame(data, opts) {
 <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>${esc(b.name || "YourRank")} — Hall of Fame</title><meta name="description" content="Past winners and closed-out periods for ${esc(b.name || "YourRank")}." />
 <link rel="canonical" href="${canonical}" />
-${fontLink}${cssLink}${templateStyle}${hofStyle}
+${fontLink}${cssLink}${templateStyle}${hofStyle}${fontStyle}
 </head><body data-template="${tpl}" class="${fullPage ? "legal-page" : "legal"}">
 <a class="skip-link" href="#main-content">Skip to content</a>
 ${header}

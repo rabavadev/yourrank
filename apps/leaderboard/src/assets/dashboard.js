@@ -4,7 +4,7 @@ import { state } from "./dashboard/state.js";
 import { navTo, setupShell } from "./dashboard/shell.js";
 import { renderBoardSwitcher, renderSidebarBoardSwitcher, renderBoardsPage } from "./dashboard/boards.js";
 import { renderPlayers } from "./dashboard/players.js";
-import { loadStats, renderArchives, renderBranding, renderDomain, renderDomainStatus, renderLegal, renderNotifications, renderOverlay, renderPlan, renderPlayerFields, renderSections, renderSocials, renderTemplateText } from "./dashboard/site.js";
+import { loadStats, renderArchives, renderBranding, renderDomain, renderDomainStatus, renderLegal, renderNotifications, renderOverlay, renderPlan, renderPlayerFields, renderPrizes, renderSections, renderSocials, renderTemplateText } from "./dashboard/site.js";
 import { renderOverviewSummary, wireOverviewQuickActions } from "./dashboard/overview.js";
 import { renderReferrals } from "./dashboard/referrals.js";
 
@@ -54,6 +54,7 @@ async function init() {
   renderPlayers(d.players || []);
   renderPlayerFields();
   renderBranding(d.branding || {});
+  renderPrizes(d.prizes || d.branding?.prizes || {});
   renderArchives(p.archives || []);
   renderDomain();
   renderOverlay();

@@ -6,8 +6,13 @@ const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 const consentAllowsAnalytics = () => {
   try { return localStorage.getItem("yr_consent") === "all" || document.cookie.includes("yr_consent=all"); } catch { return false; }
 };
-const money = (n) => "$" + Number(n).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-const moneyShort = (n) => "$" + Number(n).toLocaleString("en-US", { maximumFractionDigits: 0 });
+const siteBrand = () => (typeof window !== "undefined" ? (window.__SITE_DATA__ || {}).brand || {} : {});
+const sitePrizes = () => (typeof window !== "undefined" ? (window.__SITE_DATA__ || {}).prizes || {} : {});
+const currencySymbol = () => String(siteBrand().currency || "$").slice(0, 6);
+const hidePrizeAmounts = () => !!siteBrand().hidePrizeAmounts;
+const money = (n) => currencySymbol() + Number(n).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const moneyShort = (n) => currencySymbol() + Number(n).toLocaleString("en-US", { maximumFractionDigits: 0 });
+const moneyPrize = (n) => hidePrizeAmounts() ? "—" : moneyShort(n);
 const initials = (name) => { const c = String(name).replace(/\*/g, "").trim(); return c.length >= 2 ? c.slice(0, 2).toUpperCase() : (c ? c.toUpperCase() : "★"); };
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 // Safe href: only allow http(s)/mailto/tel. Anything else (javascript:, data:,
@@ -104,7 +109,7 @@ function initParticles() {
 let previousPlayerNames = []; // tracks ordered names from last render for rank-change detection
 
 function buildPlayerRow(pl, rank, delay, gap) {
-    const prize = pl.prize ? `<span class="tr-prize has ta-r" role="cell">${moneyShort(pl.prize)}</span>` : `<span class="tr-prize no ta-r" role="cell">—</span>`;
+    const prize = pl.prize ? `<span class="tr-prize has ta-r" role="cell">${moneyPrize(pl.prize)}</span>` : `<span class="tr-prize no ta-r" role="cell">—</span>`;
     const gapHtml = rank === 1 ? "" : (gap === 0
       ? `<span class="tr-gap" aria-hidden="true">↑ tied</span>`
       : `<span class="tr-gap" aria-hidden="true">↑ ${moneyShort(gap)} to next</span>`);
@@ -115,11 +120,11 @@ function buildPlayerRow(pl, rank, delay, gap) {
   }
 
 function buildTop3Card(pl, rank) {
-  return `<div class="t3 t3--${rank}"><span class="t3-medal">RANK ${String(rank).padStart(2, "0")}</span><span class="t3-av" aria-hidden="true">${esc(initials(pl.name))}</span><a class="t3-name" href="${playerHref(pl.name)}">${esc(pl.name)}</a><div class="t3-wager">${money(pl.wagered)}</div><span class="t3-prize">${pl.prize ? moneyShort(pl.prize) : "—"}</span></div>`;
+  return `<div class="t3 t3--${rank}"><span class="t3-medal">RANK ${String(rank).padStart(2, "0")}</span><span class="t3-av" aria-hidden="true">${esc(initials(pl.name))}</span><a class="t3-name" href="${playerHref(pl.name)}">${esc(pl.name)}</a><div class="t3-wager">${money(pl.wagered)}</div><span class="t3-prize">${pl.prize ? moneyPrize(pl.prize) : "—"}</span></div>`;
 }
 
 // Expose helpers to per-template builder scripts loaded before this file.
-window.__yr = { money, moneyShort, esc, initials, ord };
+window.__yr = { money, moneyShort, moneyPrize, esc, initials, ord };
 
 function currentTemplate() { return document.body?.dataset?.template || "classic"; }
 function isCasinoFull() { return !!((window.CASINO_BUILDERS || {}).top3 || {})[currentTemplate()]; }
@@ -219,7 +224,7 @@ function updateLeaderboard(players) {
 
   // Update payouts
   const po = $("[data-payouts]");
-  if (po) {
+  if (po && !hidePrizeAmounts()) {
     const winners = sorted.map((pl, idx) => ({ rank: idx + 1, prize: pl.prize })).filter((w) => w.prize > 0);
     if (winners.length) {
       const groups = [];
@@ -228,8 +233,9 @@ function updateLeaderboard(players) {
         if (last && last.prize === w.prize && last.to === w.rank - 1) last.to = w.rank;
         else groups.push({ from: w.rank, to: w.rank, prize: w.prize });
       });
-      po.innerHTML = `<span class="pay-label">Payouts</span>` + groups.map((g) =>
-        `<span class="pay"><b>${g.from === g.to ? ord(g.from) : `${ord(g.from)}–${ord(g.to)}`}</b>${moneyShort(g.prize)}</span>`).join("");
+      const payoutsLabel = esc(sitePrizes().payoutsLabel || siteBrand().payoutsLabel || "Payouts");
+      po.innerHTML = `<span class="pay-label">${payoutsLabel}</span>` + groups.map((g) =>
+        `<span class="pay"><b>${g.from === g.to ? ord(g.from) : `${ord(g.from)}–${ord(g.to)}`}</b>${moneyPrize(g.prize)}</span>`).join("");
       po.hidden = false;
     }
   }
@@ -293,7 +299,10 @@ function boot() {
   $$("[data-brand-name]").forEach((el) => (el.textContent = b.name || ""));
   $$("[data-code]").forEach((el) => (el.textContent = b.code || ""));
   $$("[data-casino]").forEach((el) => (el.textContent = b.casino || ""));
-  $$("[data-pool]").forEach((el) => (el.textContent = b.prizePool || ""));
+  $$("[data-pool]").forEach((el) => {
+    if (b.hidePrizeAmounts) { el.textContent = ""; el.hidden = true; }
+    else { el.textContent = b.prizePool || ""; el.hidden = false; }
+  });
   $$("[data-period]").forEach((el) => (el.textContent = b.period || "Monthly"));
   const tg = $("[data-tagline]"); if (tg) tg.textContent = b.tagline || "";
   const yr = $("[data-year]"); if (yr) yr.textContent = new Date().getFullYear();
@@ -358,7 +367,7 @@ function boot() {
 
   // Prize breakdown — derived from the players' prize column, equal prizes grouped into rank ranges.
   const po = $("[data-payouts]");
-  if (po) {
+  if (po && !hidePrizeAmounts()) {
     const winners = players.map((pl, idx) => ({ rank: idx + 1, prize: pl.prize })).filter((w) => w.prize > 0);
     if (winners.length) {
       const groups = [];
@@ -367,8 +376,9 @@ function boot() {
         if (last && last.prize === w.prize && last.to === w.rank - 1) last.to = w.rank;
         else groups.push({ from: w.rank, to: w.rank, prize: w.prize });
       });
-      po.innerHTML = `<span class="pay-label">Payouts</span>` + groups.map((g) =>
-        `<span class="pay"><b>${g.from === g.to ? ord(g.from) : `${ord(g.from)}–${ord(g.to)}`}</b>${moneyShort(g.prize)}</span>`).join("");
+      const payoutsLabel = esc(data.prizes?.payoutsLabel || data.brand?.payoutsLabel || "Payouts");
+      po.innerHTML = `<span class="pay-label">${payoutsLabel}</span>` + groups.map((g) =>
+        `<span class="pay"><b>${g.from === g.to ? ord(g.from) : `${ord(g.from)}–${ord(g.to)}`}</b>${moneyPrize(g.prize)}</span>`).join("");
       po.hidden = false;
     }
   }
@@ -379,7 +389,7 @@ function boot() {
   if (pastSec && pastGrid && pw.length) {
     const medals = ["gold", "silver", "bronze"];
     pastGrid.innerHTML = pw.map((a) => `<div class="past-card"><div class="past-label">${esc(a.label)}</div><ol class="past-list">${
-      (a.top || []).map((p, i) => `<li class="past-row"><span class="past-rank ${medals[i] || ""}">${i + 1}</span><span class="past-name">${esc(p.name)}</span><span class="past-val">${p.prize ? moneyShort(p.prize) : money(p.wagered)}</span></li>`).join("")
+      (a.top || []).map((p, i) => `<li class="past-row"><span class="past-rank ${medals[i] || ""}">${i + 1}</span><span class="past-name">${esc(p.name)}</span><span class="past-val">${hidePrizeAmounts() ? "—" : (p.prize ? moneyShort(p.prize) : money(p.wagered))}</span></li>`).join("")
     }</ol></div>`).join("");
     pastSec.hidden = false;
   }
