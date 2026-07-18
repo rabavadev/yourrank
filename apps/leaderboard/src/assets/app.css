@@ -92,6 +92,25 @@ table.players td.num input{font-family:var(--mono);text-align:right}
 table.players td.rank{font-family:var(--mono);color:var(--ink-mute);width:34px}
 table.players td.act{width:34px;text-align:center}
 .row-x{color:var(--ink-mute);cursor:pointer;border:none;background:none;font-size:16px;line-height:1;min-width:var(--tap);min-height:var(--tap);display:inline-flex;align-items:center;justify-content:center;border-radius:6px}.row-x:hover{color:var(--danger)}
+.player-toolbar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:0 0 12px}
+.player-search{max-width:220px;background:var(--panel-2);border:1px solid var(--line);border-radius:8px;padding:7px 10px;color:var(--ink);font-size:13px}
+.player-bulk{display:flex;gap:8px;align-items:center}
+.player-bulk[hidden]{display:none}
+table.players th.sel{width:32px;padding:6px 4px;text-align:center}
+table.players td.sel{text-align:center}
+table.players td.sel input{margin:0}
+table.players th.sortable{cursor:default}
+.sort-ind{color:var(--accent);font-size:12px;margin-left:4px}
+.col-menu{position:relative;width:auto;white-space:nowrap}
+.dropdown{position:relative;display:inline-block}
+.dropdown-menu{position:absolute;top:calc(100% + 6px);right:0;z-index:20;min-width:180px;background:var(--panel);border:1px solid var(--line-2);border-radius:10px;box-shadow:0 10px 30px rgba(0,0,0,.4);padding:6px 0;display:flex;flex-direction:column}
+.dropdown-menu[hidden]{display:none}
+.dropdown-item{background:none;border:none;color:var(--ink);text-align:left;padding:8px 14px;font-size:13px;cursor:pointer;display:flex;align-items:center;gap:8px}
+.dropdown-item:hover{background:var(--panel-2)}
+.dropdown-divider{height:1px;background:var(--line);margin:6px 0}
+#colMenu.dropdown-menu{padding:10px 12px;min-width:140px}
+#colMenu .dropdown-item{padding:6px 0}
+#colMenu input[type=checkbox]{margin-right:6px}
 .limit-widget{display:inline-flex;align-items:center;gap:8px;margin-left:8px;flex-wrap:wrap}.limit-bar{width:120px;height:8px;background:var(--line);border-radius:4px;overflow:hidden}.limit-fill{height:100%;background:var(--accent);width:0;transition:width .2s ease}.limit-fill.limit-warning{background:var(--danger)}
 .limit-hint{font-size:12px;color:var(--ink-mute);white-space:nowrap}
 .empty{color:var(--ink-mute);font-size:13px;padding:14px 8px;text-align:center;border:1px dashed var(--line-2);border-radius:8px}

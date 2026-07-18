@@ -344,6 +344,7 @@ function markDirty() {
   const sb = $("savebar");
   if (sb) sb.hidden = false;
 }
+state.markDirty = markDirty;
 
 export function applyTheme(template, accentA, accentB, label, font = null) {
   const selectedFont = font || $("f_font")?.value || state.CURRENT_BRANDING?.font || "Inter";

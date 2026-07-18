@@ -4,7 +4,8 @@ import { state } from "./state.js";
 
 export function playerRow(p = { name: "", wagered: "", prize: "", score: "", hands: "", netProfit: "", winRate: "", change: "" }) {
   const tr = document.createElement("tr");
-  tr.innerHTML = `<td class="rank"></td>
+  tr.innerHTML = `<td class="sel"><input type="checkbox" class="row-sel" title="Select" aria-label="Select player" /></td>
+    <td class="rank"></td>
     <td><input class="p-name" placeholder="Player name" value="${esc(p.name)}"></td>
     <td class="num"><input class="p-wager" inputmode="decimal" placeholder="0" value="${esc(p.wagered)}"></td>
     <td class="num"><input class="p-prize" inputmode="decimal" placeholder="0" value="${esc(p.prize)}"></td>
@@ -25,6 +26,14 @@ const FIELD_COLS = {
   winRate: "col-win",
   change: "col-change",
 };
+const FIELD_LABELS = { score: "Score", hands: "Hands", netProfit: "Net profit", winRate: "Win rate", change: "Change" };
+
+function syncColumnDropdown(fields) {
+  const merged = { ...state.EXTRA?.playerFields, ...(fields || {}) };
+  $("colMenu")?.querySelectorAll("[data-col]").forEach((cb) => {
+    cb.checked = merged[cb.dataset.col] !== false;
+  });
+}
 
 export function applyPlayerFieldVisibility(fields) {
   const table = $("rows")?.closest("table");
@@ -33,6 +42,7 @@ export function applyPlayerFieldVisibility(fields) {
     const shown = merged[key] !== false;
     table?.querySelectorAll(`.${cls}`).forEach((el) => { el.hidden = !shown; });
   }
+  syncColumnDropdown(merged);
 }
 
 export function renderPlayers(list) {
@@ -224,9 +234,16 @@ export function formatImportSummary(result, imported, skipped, capped) {
   return msg || "Nothing to import";
 }
 
-$("importBtn").addEventListener("click", () => {
+$("importMenuBtn")?.addEventListener("click", () => {
+  const menu = $("importMenu");
+  if (menu) menu.hidden = !menu.hidden;
+});
+
+$("importPasteBtn")?.addEventListener("click", () => {
+  $("importMenu").hidden = true;
   const p = $("importPanel");
   p.hidden = !p.hidden;
+  $("gsheetPanel").hidden = true;
   if (!p.hidden) $("importText").focus();
 });
 
@@ -276,7 +293,7 @@ $("importApply").addEventListener("click", () => {
   $("status").textContent = formatImportSummary(result, parsed.length, result.rows.length - parsed.length + (result.errors.length ? `${result.errors.length} invalid` : ""), cut) + " — hit Save to publish.";
 });
 
-$("csvImportBtn")?.addEventListener("click", () => $("csvFileInput").click());
+$("csvImportBtn")?.addEventListener("click", () => { $("importMenu").hidden = true; $("csvFileInput").click(); });
 
 $("csvFileInput")?.addEventListener("change", () => {
   const f = $("csvFileInput").files[0];
@@ -297,6 +314,7 @@ $("csvFileInput")?.addEventListener("change", () => {
 });
 
 $("csvTemplateBtn")?.addEventListener("click", () => {
+  $("importMenu").hidden = true;
   const csv = "name,wagered,prize\nCryptoKing,152000,1500\nLuckyStar,98000,700\nDiceHero,61250,500\nSlotMaster,45000,250\nBetPro,32000,0\n";
   const blob = new Blob([csv], { type: "text/csv" });
   const url = URL.createObjectURL(blob);
@@ -349,6 +367,7 @@ function parseGSheetUrl(raw) {
 }
 
 $("gsheetBtn")?.addEventListener("click", () => {
+  $("importMenu").hidden = true;
   const p = $("gsheetPanel");
   p.hidden = !p.hidden;
   if (!p.hidden) $("importPanel").hidden = true;
@@ -376,3 +395,99 @@ $("gsheetFetch")?.addEventListener("click", async () => {
     status.textContent = "Could not fetch the sheet. Try File → Share → Publish to web, or download as CSV.";
   }
 });
+
+// --- Search, bulk selection, and column visibility ---
+function getVisibleRows() {
+  const rows = [...$("rows").children];
+  return rows.filter((tr) => !tr.hidden && tr.style.display !== "none");
+}
+
+function updateBulkActions() {
+  const any = $("rows")?.querySelector(".row-sel:checked");
+  const bar = $("bulkActions");
+  if (bar) bar.hidden = !any;
+}
+
+$("selectAll")?.addEventListener("change", () => {
+  const checked = $("selectAll").checked;
+  for (const row of getVisibleRows()) {
+    const cb = row.querySelector(".row-sel");
+    if (cb) cb.checked = checked;
+  }
+  updateBulkActions();
+});
+
+$("rows")?.addEventListener("change", (e) => {
+  if (e.target && e.target.classList && e.target.classList.contains("row-sel")) {
+    updateBulkActions();
+    const visible = getVisibleRows();
+    const checked = visible.filter((tr) => tr.querySelector(".row-sel")?.checked).length;
+    $("selectAll").checked = checked > 0 && checked === visible.length;
+  }
+});
+
+$("bulkDelete")?.addEventListener("click", () => {
+  const rows = [...$("rows").children];
+  let removed = 0;
+  for (const row of rows) {
+    if (row.querySelector(".row-sel")?.checked) { row.remove(); removed++; }
+  }
+  if (removed) {
+    renumber(); toggleEmpty();
+    state.markDirty?.();
+    $("status").textContent = `${removed} player${removed === 1 ? "" : "s"} removed.`;
+  }
+});
+
+$("bulkClearWager")?.addEventListener("click", () => {
+  let cleared = 0;
+  for (const row of $("rows").children) {
+    if (row.querySelector(".row-sel")?.checked) {
+      const input = row.querySelector(".p-wager");
+      if (input && input.value !== "0") { input.value = "0"; cleared++; }
+    }
+  }
+  if (cleared) {
+    sortRows();
+    state.markDirty?.();
+    $("status").textContent = `${cleared} wager${cleared === 1 ? "" : "s"} cleared.`;
+  }
+});
+
+$("playerSearch")?.addEventListener("input", () => {
+  const q = $("playerSearch").value.trim().toLowerCase();
+  for (const row of $("rows").children) {
+    const name = row.querySelector(".p-name")?.value.toLowerCase() || "";
+    const hide = q && !name.includes(q);
+    row.hidden = hide;
+    if (hide) row.querySelector(".row-sel") && (row.querySelector(".row-sel").checked = false);
+  }
+  $("selectAll").checked = false;
+  updateBulkActions();
+  renumber();
+});
+
+$("colDropdownBtn")?.addEventListener("click", (e) => {
+  e.stopPropagation();
+  const menu = $("colMenu");
+  if (menu) menu.hidden = !menu.hidden;
+});
+
+$("colMenu")?.addEventListener("change", (e) => {
+  if (e.target && e.target.dataset && e.target.dataset.col) {
+    const fields = { ...(state.EXTRA?.playerFields || {}) };
+    fields[e.target.dataset.col] = e.target.checked;
+    state.EXTRA.playerFields = fields;
+    applyPlayerFieldVisibility(fields);
+    state.markDirty?.();
+  }
+});
+
+// Close dropdowns when clicking outside
+document.addEventListener("click", (e) => {
+  if (!e.target.closest("#importMenu, #importMenuBtn")) $("importMenu").hidden = true;
+  if (!e.target.closest("#colMenu, #colDropdownBtn")) $("colMenu").hidden = true;
+});
+
+// Initialize column dropdown state once the DOM is ready.
+document.addEventListener("DOMContentLoaded", () => applyPlayerFieldVisibility());
