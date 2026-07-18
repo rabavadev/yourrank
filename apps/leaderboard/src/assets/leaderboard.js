@@ -1,7 +1,6 @@
 /* YourRank public leaderboard — hydrates from window.__SITE_DATA__ (SSR-injected).
-   Features: live polling every 30s, rank-change flash, particle field, countdown polish. */
+   Features: live SSE updates, rank-change flash, particle field, countdown polish. */
 const TOAST_DURATION_MS = 1300;
-const POLL_INTERVAL_MS = 30000;
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 const money = (n) => "$" + Number(n).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -240,38 +239,15 @@ function updateLeaderboard(players) {
   }
 }
 
-let pollFailCount = 0;
-let lastEtag = "";
+let streamFailures = 0;
+let streamTimer = null;
 
-async function pollPlayers() {
-    const slug = window.__SLUG__;
-    if (!slug || slug === "demo") return;
-    try {
-      const url = `/api/public/${encodeURIComponent(slug)}/players?limit=100`;
-      const headers = lastEtag ? { "If-None-Match": lastEtag } : {};
-      const resp = await fetch(url, { headers });
-      if (resp.status === 304) { pollFailCount = 0; return; }
-      if (!resp.ok) { onPollFail(); return; }
-      const etag = resp.headers.get("etag");
-      if (etag) lastEtag = etag;
-      const json = await resp.json();
-      if (json.players && Array.isArray(json.players)) {
-        pollFailCount = 0;
-        hidePollBanner();
-        updateLeaderboard(json.players);
-        const ann = document.getElementById("lb-announce"); if(ann) ann.textContent = "Leaderboard updated.";
-      }
-    } catch (_) {
-      onPollFail();
-    }
-  }
-
-function onPollFail() {
-  pollFailCount++;
-  if (pollFailCount >= 3) showPollBanner();
+function onStreamFail() {
+  streamFailures++;
+  if (streamFailures >= 3) showStreamBanner();
 }
 
-function showPollBanner() {
+function showStreamBanner() {
   let banner = document.getElementById("lb-poll-banner");
   if (banner) return;
   banner = document.createElement("div");
@@ -283,9 +259,29 @@ function showPollBanner() {
   document.body.appendChild(banner);
 }
 
-function hidePollBanner() {
+function hideStreamBanner() {
   const banner = document.getElementById("lb-poll-banner");
   if (banner) banner.remove();
+}
+
+function connectStream() {
+  const slug = window.__SLUG__;
+  if (!slug || slug === "demo") return;
+  if (typeof EventSource === "undefined") return;
+  if (streamTimer) clearTimeout(streamTimer);
+  const es = new EventSource(`/api/public/${encodeURIComponent(slug)}/stream`);
+  es.onmessage = (e) => {
+    try {
+      const data = JSON.parse(e.data);
+      if (data.players && Array.isArray(data.players)) {
+        streamFailures = 0;
+        hideStreamBanner();
+        updateLeaderboard(data.players);
+        const ann = document.getElementById("lb-announce"); if (ann) ann.textContent = "Leaderboard updated.";
+      }
+    } catch (_) { onStreamFail(); }
+  };
+  es.onerror = () => { onStreamFail(); };
 }
 
 function boot() {
@@ -393,9 +389,9 @@ function boot() {
   // Initialize particle effect
   initParticles();
 
-  // Start live polling every 30 seconds
+  // Start live SSE stream
   if (window.__SLUG__) {
-    setInterval(pollPlayers, POLL_INTERVAL_MS);
+    connectStream();
   }
 }
 

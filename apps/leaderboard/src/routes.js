@@ -16,7 +16,7 @@ import {
 } from "./handlers/telegram-link.js";
 import {
   handleStats, handleHeatmap, handleTrackCopy, handleTrackScroll, handleGetSite, handleListBoards,
-  handleCreateBoard, handleDuplicateBoard, handleArchive, handleArchiveDelete, handlePutSite,
+  handleCreateBoard, handleDuplicateBoard, handleArchive, handleArchiveDelete, handleRestoreArchive, handlePutSite,
   handlePutTheme, handleDeleteSite, handleSetActive, handleNotifyTest, handleDomainVerify, handleExportStats,
   handleExportPlayers
 } from "./handlers/sites.js";
@@ -38,7 +38,7 @@ import {
   handleFeatureFlags, handleFeatureFlagOverride
 } from "./admin.js";
 import {
-  handlePublicStandings, handlePublicPlayers, handlePublicRank, handlePublicData, handlePublicStats
+  handlePublicStandings, handlePublicPlayers, handlePublicStream, handlePublicRank, handlePublicData, handlePublicStats
 } from "./handlers/public.js";
 
 export const ROUTES = [
@@ -73,6 +73,7 @@ export const ROUTES = [
   { path: "/api/site/duplicate", method: "POST", handler: withHandler(handleDuplicateBoard) },
   { path: "/api/site/archive", method: "POST", handler: withHandler(handleArchive) },
   { path: "/api/site/archive/delete", method: "POST", handler: withHandler(handleArchiveDelete) },
+  { path: "/api/site/archive/restore", method: "POST", handler: withHandler(handleRestoreArchive) },
   { path: "/api/site/active", method: "POST", handler: withHandler(handleSetActive) },
   { path: "/api/site/stats/export", method: "GET", handler: withHandler(handleExportStats) },
   { path: "/api/site/players/export", method: "GET", handler: withHandler(handleExportPlayers) },
@@ -96,6 +97,7 @@ export const ROUTES = [
   { path: "/api/openapi.json", method: "GET", handler: withHandler(handleOpenApiJson) },
   { path: "/api/public/:slug/standings", method: "GET", handler: withHandler(handlePublicStandings) },
   { path: "/api/public/:slug/players", method: "GET", handler: withHandler(handlePublicPlayers) },
+  { path: "/api/public/:slug/stream", method: "GET", handler: withHandler(handlePublicStream) },
   { path: "/api/public/:slug/rank", method: "GET", handler: withHandler(handlePublicRank) },
   { path: "/api/public/:slug/stats", method: "GET", handler: withHandler(handlePublicStats) },
   { path: "/api/public/:slug", method: "GET", handler: withHandler(handlePublicData) },

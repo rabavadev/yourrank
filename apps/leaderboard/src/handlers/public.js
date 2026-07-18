@@ -76,6 +76,57 @@ export async function handlePublicPlayers(request, env, ctx) {
 }
 
 /**
+ * Handle GET /api/public/:slug/stream
+ * Server-Sent Events for live leaderboard updates (replaces 30s polling).
+ */
+export async function handlePublicStream(request, env, ctx) {
+  try {
+    const slug = ctx.slug;
+    const rl = await rateLimit(env, `pub-stream:${clientIp(request)}`, 60, 60);
+    if (!rl.ok) return bad("Rate limit exceeded. Try again shortly.", 429, rateLimitHeaders(rl));
+    const r = await getPublicSite(env, slug);
+    if (!r || r.suspended) return bad("not found", 404);
+    const siteId = r.id;
+    let lastTs = "";
+    let closed = false;
+    const enc = new TextEncoder();
+    const send = async (controller) => {
+      try {
+        const v = await one("SELECT max(updated_at) AS m FROM players WHERE site_id=$1", [siteId]);
+        const newTs = v?.m ? new Date(v.m).toISOString() : "0";
+        if (newTs !== lastTs) {
+          lastTs = newTs;
+          const data = await getPublicSite(env, slug);
+          if (!data || data.suspended) { controller.close(); return; }
+          const payload = JSON.stringify({ players: data.data.players, updatedAt: newTs });
+          controller.enqueue(enc.encode(`data: ${payload}\n\n`));
+        }
+      } catch (e) {
+        console.error("[public/stream] tick", String(e?.message || e));
+      }
+      if (!closed) setTimeout(() => send(controller), 4000);
+    };
+    const stream = new ReadableStream({
+      async start(controller) {
+        await send(controller);
+      },
+      cancel() { closed = true; }
+    });
+    return new Response(stream, {
+      headers: {
+        "content-type": "text/event-stream; charset=utf-8",
+        "cache-control": "no-cache",
+        "connection": "keep-alive",
+        ...rateLimitHeaders(rl),
+      },
+    });
+  } catch (e) {
+    console.error("[public/stream]", String(e?.message || e));
+    return bad("Something went wrong. Try again.", 500);
+  }
+}
+
+/**
  * Handle GET /api/public/:slug/rank?user=X
  * Returns plain-text rank lookup for Nightbot / Streamlabs custom commands
  */
