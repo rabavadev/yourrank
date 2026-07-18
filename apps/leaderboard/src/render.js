@@ -714,3 +714,123 @@ ${header}
 ${footer}
 </body></html>`;
 }
+
+export function renderStreamerProfile(data, opts) {
+  const b = data.brand || {};
+  const br = data.branding || {};
+  const tpl = br.template || "classic";
+  const fullPage = CASINO_FULL.has(tpl);
+  const logo = opts.logoUrl ? esc(opts.logoUrl) : null;
+  const navLogo = logo ? `<img class="nav-logo" src="${logo}" alt="" />` : "";
+  const homeHref = opts.isCustomDomain ? "/" : `/${esc(opts.slug || "")}`;
+  const profileHref = opts.isCustomDomain ? "/profile" : `/${esc(opts.slug || "")}/profile`;
+  const boardHref = (slug) => opts.isCustomDomain ? `https://yourrank.site/${esc(slug)}` : `/${esc(slug)}`;
+  const frameStyles = fullPage ? frameCss(tpl) : "";
+  const templateStyle = frameStyles ? `<style nonce="${opts.nonce}" data-template="${tpl}">${frameStyles}</style>` : "";
+  const fontLink = fullPage
+    ? `<link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin /><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet" />`
+    : `<link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin /><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />`;
+  const cssLink = fullPage ? "" : `<link rel="stylesheet" href="/assets/app.css" />`;
+  const legalHref = (page) => opts.isCustomDomain ? `/${page}` : `/${esc(opts.slug || "")}/${page}`;
+  const header = fullPage
+    ? `<header class="site-header--full"><a class="site-header--full__brand" href="${homeHref}">${navLogo}<span data-brand-name>${esc(b.name)}</span></a><nav class="site-header--full__nav" aria-label="Page sections"><a href="${homeHref}">Leaderboard</a><a href="${legalHref("terms")}">Terms</a><a href="${legalHref("privacy")}">Privacy</a></nav></header>`
+    : `<header class="topbar"><a class="brand" href="${homeHref}">${esc(b.name || "YourRank")}</a></header>`;
+  const footer = fullPage
+    ? `<footer class="site-footer--full"><div class="site-footer--full__brand" data-brand-name>${esc(b.name)}</div><div class="site-footer--full__tag" data-tagline>${esc(b.tagline)}</div><p class="site-footer--full__fine">18+ only. Gambling can be addictive. Please play responsibly. BeGambleAware.org.</p><p class="site-footer--full__copy">© ${new Date().getFullYear()} <span data-brand-name>${esc(b.name)}</span>. All rights reserved.</p></footer>`
+    : `<footer class="ftr"><div class="ftr-id"><span class="ftr-name" data-brand-name>${esc(b.name)}</span><span class="ftr-tag" data-tagline>${esc(b.tagline)}</span></div><p class="ftr-fine">18+ only. Gambling can be addictive. Please play responsibly. BeGambleAware.org.</p><p class="ftr-copy">© ${new Date().getFullYear()} <span data-brand-name>${esc(b.name)}</span>. All rights reserved.</p></footer>`;
+
+  const socials = (data.socials || []).filter((s) => s.enabled !== false && s.url && s.url !== "#" && s.url !== "");
+  const socialIcons = {
+    twitch: `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M4 2 3 6v13h4v3h3l3-3h4l5-5V2H4Zm16 10-3 3h-4l-3 3v-3H7V4h13v8Zm-3-6h-2v5h2V6Zm-5 0h-2v5h2V6Z"/></svg>`,
+    kick: `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 3h5v5h2V6h2V4h2V3h4v6h-2v2h-2v2h2v2h2v6h-4v-1h-2v-2h-2v-2H8v5H3V3Z"/></svg>`,
+    youtube: `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M23 7.5a3 3 0 0 0-2.1-2.1C19 4.9 12 4.9 12 4.9s-7 0-8.9.5A3 3 0 0 0 1 7.5 31 31 0 0 0 .5 12 31 31 0 0 0 1 16.5a3 3 0 0 0 2.1 2.1c1.9.5 8.9.5 8.9.5s7 0 8.9-.5a3 3 0 0 0 2.1-2.1 31 31 0 0 0 .5-4.5 31 31 0 0 0-.5-4.5ZM9.8 15.3V8.7l5.7 3.3-5.7 3.3Z"/></svg>`,
+    telegram: `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M21.9 4.3 18.7 19.4c-.2 1-.9 1.3-1.8.8l-4.9-3.6-2.4 2.3c-.3.3-.5.5-1 .5l.3-4.9L18 6.1c.4-.3-.1-.5-.6-.2L6.6 12.7l-4.7-1.5c-1-.3-1-.9.2-1.4L20.6 3c.9-.3 1.6.2 1.3 1.3Z"/></svg>`,
+    instagram: `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.2c3.2 0 3.6 0 4.9.1 1.2.1 1.8.3 2.2.4.6.2 1 .5 1.4.9.4.4.7.8.9 1.4.2.4.4 1 .4 2.2.1 1.3.1 1.7.1 4.9s0 3.6-.1 4.9c-.1 1.2-.3 1.8-.4 2.2-.2.6-.5 1-.9 1.4-.4.4-.8.7-1.4.9-.4.2-1 .4-2.2.4-1.3.1-1.7.1-4.9.1s-3.6 0-4.9-.1c-1.2-.1-1.8-.3-2.2-.4-.6-.2-1-.5-1.4-.9-.4-.4-.7-.8-.9-1.4-.2-.4-.4-1-.4-2.2C2.2 15.6 2.2 15.2 2.2 12s0-3.6.1-4.9c.1-1.2.3-1.8.4-2.2.2-.6.5-1 .9-1.4.4-.4.8-.7 1.4-.9.4-.2 1-.4 2.2-.4C8.4 2.2 8.8 2.2 12 2.2Zm0 3.2A6.6 6.6 0 1 0 18.6 12 6.6 6.6 0 0 0 12 5.4Zm0 10.9A4.3 4.3 0 1 1 16.3 12 4.3 4.3 0 0 1 12 16.3Zm6.8-11.2a1.5 1.5 0 1 1-1.5-1.5 1.5 1.5 0 0 1 1.5 1.5Z"/></svg>`,
+    x: `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M18.9 2h3.3l-7.2 8.3L23.5 22h-6.6l-5.2-6.8L5.7 22H2.4l7.7-8.8L1.9 2h6.8l4.7 6.2L18.9 2Zm-1.2 18h1.8L7.1 3.9H5.2L17.7 20Z"/></svg>`,
+    discord: `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M20.3 4.5A16.8 16.8 0 0 0 15.9 3c-.2.4-.4.8-.5 1.2a15.6 15.6 0 0 0-4.8 0c-.2-.4-.3-.8-.5-1.2a16.8 16.8 0 0 0-4.4 1.5C.5 10 .2 15 1.1 19.9c2.5 1.9 4.9 3 7.3 3.3.6-.8 1.1-1.7 1.5-2.6-.8-.3-1.6-.7-2.3-1.2l.6-.5a11.7 11.7 0 0 0 10.1 0l.6.5c-.7.5-1.5.9-2.3 1.2.4.9.9 1.8 1.5 2.6 2.4-.3 4.8-1.4 7.3-3.3.9-4.9.5-9.9-2.7-15.4ZM8.7 16.5c-1.1 0-2-1-2-2.3s.9-2.3 2-2.3 2 1 2 2.3-.9 2.3-2 2.3Zm6.6 0c-1.1 0-2-1-2-2.3s.9-2.3 2-2.3 2 1 2 2.3-.9 2.3-2 2.3Z"/></svg>`,
+  };
+  const socialsHtml = socials.length
+    ? `<div class="sp-socials">${socials.map((s) => {
+        const icon = socialIcons[s.brand] || socialIcons.x;
+        const label = esc(s.name || s.brand || "Link");
+        return `<a class="sp-social" href="${safeUrl(s.url)}" target="_blank" rel="noopener">${icon}<span>${label}</span></a>`;
+      }).join("")}</div>`
+    : `<p class="sp-empty">No channel links yet.</p>`;
+
+  const boards = (opts.boards || []).filter((b) => b.slug && b.name);
+  const boardsHtml = boards.length
+    ? `<ul class="sp-boards">${boards.map((b) => `<li><a href="${boardHref(b.slug)}">${esc(b.name || b.slug)}</a><span>/${esc(b.slug)}</span></li>`).join("")}</ul>`
+    : `<p class="sp-empty">No public leaderboards yet.</p>`;
+
+  const archives = (data.pastWinners || []).slice(0, 10);
+  const archivesHtml = archives.length
+    ? `<ul class="sp-archives">${archives.map((a) => `<li><span>${esc(a.label || "Past board")}</span><span>${a.players || 0} players</span></li>`).join("")}</ul>`
+    : `<p class="sp-empty">No past boards yet.</p>`;
+
+  const botCta = opts.botUsername
+    ? `<div class="sp-cta"><p>Get leaderboard updates in Telegram.</p><a class="btn" href="https://t.me/${esc(opts.botUsername)}" target="_blank" rel="noopener">Subscribe to @${esc(opts.botUsername)}</a></div>`
+    : "";
+
+  const pageTitle = `${esc(b.name || "YourRank")} · Streamer profile`;
+  const canonical = `${esc(opts.homeUrl || "https://yourrank.site")}${profileHref}`;
+  const profileStyle = `<style nonce="${opts.nonce}">
+.sp-wrap{max-width:800px;margin:0 auto;padding:32px 24px}
+.sp-hero{display:flex;align-items:center;gap:20px;margin-bottom:28px}
+.sp-hero img{width:80px;height:80px;border-radius:16px;object-fit:cover;background:var(--panel-2,#1a1a22)}
+.sp-hero h1{font-size:clamp(28px,4vw,44px);font-weight:800;margin:0 0 4px}
+.sp-hero p{margin:0;color:var(--ink-mute,#9a94b8)}
+.sp-sec{margin-bottom:28px}
+.sp-sec h2{font-size:18px;font-weight:700;margin:0 0 12px}
+.sp-socials{display:flex;flex-wrap:wrap;gap:12px}
+.sp-social{display:inline-flex;align-items:center;gap:10px;padding:12px 16px;border-radius:10px;background:var(--panel-2,#1a1a22);border:1px solid var(--line,rgba(150,120,220,.15));color:var(--ink,#ededf0);text-decoration:none;font-weight:600}
+.sp-social:hover{border-color:var(--accent,#c8ff00);color:var(--accent,#c8ff00)}
+.sp-social svg{width:22px;height:22px}
+.sp-boards,.sp-archives{list-style:none;padding:0;margin:0;display:grid;gap:10px}
+.sp-boards li,.sp-archives li{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border-radius:10px;background:var(--panel-2,#1a1a22);border:1px solid var(--line,rgba(150,120,220,.15))}
+.sp-boards a{color:var(--ink,#ededf0);text-decoration:none;font-weight:600}
+.sp-boards a:hover{color:var(--accent,#c8ff00)}
+.sp-boards span{font-size:12px;color:var(--ink-mute,#9a94b8)}
+.sp-archives span:first-child{font-weight:600}
+.sp-archives span:last-child{font-size:12px;color:var(--ink-mute,#9a94b8)}
+.sp-empty{color:var(--ink-mute,#9a94b8);font-size:14px}
+.sp-cta{margin-top:28px;padding:18px;border-radius:12px;background:linear-gradient(135deg,rgba(200,255,0,.1),rgba(90,217,255,.1));border:1px solid var(--line,rgba(150,120,220,.2));display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.sp-cta p{margin:0;font-weight:600}
+.sp-cta .btn{display:inline-flex;align-items:center;justify-content:center;min-height:40px;padding:10px 18px;border-radius:8px;background:var(--accent,#c8ff00);color:#000;font-weight:700;text-decoration:none}
+</style>`;
+
+  return `<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>${pageTitle}</title><meta name="description" content="${esc(b.tagline || b.name || "YourRank")} streamer profile." />
+<link rel="canonical" href="${canonical}" />
+${fontLink}${cssLink}${templateStyle}${profileStyle}
+</head><body data-template="${tpl}" class="${fullPage ? "legal-page" : "legal"}">
+<a class="skip-link" href="#main-content">Skip to content</a>
+${header}
+<main class="${fullPage ? "legal-page__wrap" : "legal"}" id="main-content">
+<div class="sp-wrap">
+  <div class="sp-hero">
+    ${logo ? `<img src="${logo}" alt="" />` : ""}
+    <div>
+      <h1 data-brand-name>${esc(b.name || "Streamer")}</h1>
+      <p data-tagline>${esc(b.tagline || b.casino || "")}</p>
+    </div>
+  </div>
+  <section class="sp-sec" aria-label="Channel links">
+    <h2>Channels</h2>
+    ${socialsHtml}
+  </section>
+  <section class="sp-sec" aria-label="Leaderboards">
+    <h2>Current boards</h2>
+    ${boardsHtml}
+  </section>
+  <section class="sp-sec" aria-label="Past boards">
+    <h2>Past boards</h2>
+    ${archivesHtml}
+  </section>
+  ${botCta}
+</div>
+</main>
+${footer}
+</body></html>`;
+}

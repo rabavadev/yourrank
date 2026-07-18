@@ -4,7 +4,7 @@ import { withWorkerFetch } from "../../../shared/with-worker.js";
 import { RateLimiter } from "../../../shared/rate-limiter-do.js";
 import { populateEnv } from "../../../shared/env.js";
 import { getPublicSite, getByUser, getArchives, ARCHIVE_LIMITS } from "./site.js";
-import { renderLeaderboard, renderLegalPage, renderPlayerProfile, renderHallOfFame } from "./render.js";
+import { renderLeaderboard, renderLegalPage, renderPlayerProfile, renderHallOfFame, renderStreamerProfile } from "./render.js";
 import { PAGES } from "./pages.js";
 import { bumpStat } from "./stats.js";
 import { runAutoReset } from "./auto-reset.js";
@@ -312,6 +312,19 @@ async function handleRequest(request, env, ctx, meta) {
               renderPlayerProfile(r.data, { ...profile.player, rank: profile.rank }, history, {
                 nonce, slug: customSlug, homeUrl: `https://${host}`, isCustomDomain: true,
                 logoUrl: paid && r.data.branding?.hasLogo ? `https://${host}/logo/${customSlug}` : null,
+              }),
+              { headers: { ...HTML_N, "cache-control": "no-store" } }
+            );
+          }
+          if (method === "GET" && path === "/profile") {
+            const r = await getPublicSite(env, customSlug);
+            if (!r || r.suspended) return new Response(notFoundPage(customSlug, nonce), { status: 404, headers: HTML_N });
+            const paid = r.plan === "pro" || r.plan === "agency";
+            return new Response(
+              renderStreamerProfile(r.data, {
+                nonce, slug: customSlug, homeUrl: `https://${host}`, isCustomDomain: true,
+                logoUrl: paid && r.data.branding?.hasLogo ? `https://${host}/logo/${customSlug}` : null,
+                boards: r.boards, botUsername: r.botUsername,
               }),
               { headers: { ...HTML_N, "cache-control": "no-store" } }
             );
@@ -706,6 +719,24 @@ a{color:#c8ff00;text-decoration:none;font-weight:600}</style></head><body>
           renderPlayerProfile(r.data, { ...profile.player, rank: profile.rank }, history, {
             nonce, slug, homeUrl: url.origin, isCustomDomain: false,
             logoUrl: paid && r.data.branding?.hasLogo ? `${url.origin}/logo/${slug}` : null,
+          }),
+          { headers: { ...HTML_N, "cache-control": "no-store" } }
+        );
+      }
+
+      // --- streamer profile pages at /<slug>/profile ---
+      if (method === "GET" && /^\/[^/]+\/profile$/.test(path)) {
+        let slug;
+        try { slug = decodeURIComponent(path.slice(1).split("/")[0]).toLowerCase(); } catch { return new Response(notFoundPage("", nonce), { status: 404, headers: HTML_N }); }
+        if (RESERVED.has(slug)) return new Response(notFoundPage(slug, nonce), { status: 404, headers: HTML_N });
+        const r = await getPublicSite(env, slug);
+        if (!r || r.suspended) return new Response(notFoundPage(slug, nonce), { status: 404, headers: HTML_N });
+        const paid = r.plan !== "free";
+        return new Response(
+          renderStreamerProfile(r.data, {
+            nonce, slug, homeUrl: url.origin, isCustomDomain: false,
+            logoUrl: paid && r.data.branding?.hasLogo ? `${url.origin}/logo/${slug}` : null,
+            boards: r.boards, botUsername: r.botUsername,
           }),
           { headers: { ...HTML_N, "cache-control": "no-store" } }
         );

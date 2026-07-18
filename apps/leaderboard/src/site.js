@@ -54,6 +54,7 @@ export const DEFAULT_EXTRA = {
     { name: "Discord", handle: "Join the community", action: "Join", url: "#", brand: "discord" },
     { name: "Kick", handle: "Watch live", action: "Follow", url: "#", brand: "kick" },
     { name: "Twitch", handle: "Watch live", action: "Follow", url: "#", brand: "twitch" },
+    { name: "YouTube", handle: "Watch videos", action: "Subscribe", url: "#", brand: "youtube" },
     { name: "X", handle: "Latest updates", action: "Follow", url: "#", brand: "x" },
   ],
   sections: {
@@ -357,12 +358,13 @@ export async function getPublicSite(env, slug) {
     if (owner && owner.status === "suspended") return { suspended: true };
     const plan = effectivePlan(owner);
     const archiveLimit = ARCHIVE_LIMITS[plan] || 6;
-    const [players, archives, boards] = await Promise.all([
+    const [players, archives, boards, bot] = await Promise.all([
       getPlayers(env, site.id),
       getArchives(env, site.id, archiveLimit), // DB-003-v8: fetch only what plan allows
       getPublicBoards(env, site.user_id),
+      one("SELECT username FROM bots WHERE owner_id=$1 LIMIT 1", [site.user_id]),
     ]);
-    return { id: site.id, userId: site.user_id, data: publicShape(site, players, archives, !!site.has_logo), plan, boards };
+    return { id: site.id, userId: site.user_id, data: publicShape(site, players, archives, !!site.has_logo), plan, boards, botUsername: bot?.username || null };
   }
 
 export async function getUserSite(env, uid, plan) {
