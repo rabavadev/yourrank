@@ -19,10 +19,15 @@ export const DEFAULT_SECTIONS = {
 
 const PLAN_ORDER = ["free", "starter", "pro", "agency"];
 const LIFETIME_KEY = "lifetime";
+const DEFAULT_PRIZES = { prizePoolLabel: "Prize pool", payoutsLabel: "Payouts", countdownLabel: "", currency: "$", hidePrizeAmounts: false };
 
 function isLifetime() {
   const exp = state.ME?.planExpiresAt;
   return !exp || Number(exp) === 0 || Number(exp) > new Date("2099-01-01T00:00:00Z").getTime();
+}
+function isPro() {
+  const plan = state.ME?.plan;
+  return plan === "pro" || plan === "agency" || plan === "lifetime" || isLifetime();
 }
 
 function planDefs() {
@@ -208,6 +213,18 @@ export function collect() {
     out.branding = { accentA: $("c_a").value, accentB: $("c_b").value };
     if (state.LOGO !== undefined) out.branding.logo = state.LOGO;
   }
+  if (isPro()) {
+    out.branding = {
+      ...(out.branding || {}),
+      prizes: {
+        prizePoolLabel: $("f_prizePoolLabel")?.value.trim() || DEFAULT_PRIZES.prizePoolLabel,
+        payoutsLabel: $("f_payoutsLabel")?.value.trim() || DEFAULT_PRIZES.payoutsLabel,
+        countdownLabel: $("f_countdownLabel")?.value.trim() || "",
+        currency: $("f_currency")?.value.trim() || DEFAULT_PRIZES.currency,
+        hidePrizeAmounts: $("f_hidePrizeAmounts")?.checked || false,
+      },
+    };
+  }
   const tplEl = $("f_template");
   if (tplEl) out.branding = { ...(out.branding || {}), template: tplEl.value };
   collectTemplateText();
@@ -337,6 +354,22 @@ export function renderBranding(br) {
   $("brandLock").hidden = paid;
   updateThemeSelection();
   if (br.hasLogo) { $("logoPreview").src = "/logo/" + state.SLUG + "?t=" + Date.now(); $("logoPreview").hidden = false; $("logoClear").hidden = false; }
+}
+
+export function renderPrizes(prizes = {}) {
+  const p = { ...DEFAULT_PRIZES, ...prizes };
+  const body = $("prizesBody"), lock = $("prizesLock");
+  if (body) body.hidden = !isPro();
+  if (lock) lock.hidden = isPro();
+  if (!isPro()) {
+    lock?.addEventListener("click", (e) => { if (e.target.id === "prizesUpgrade") { e.preventDefault(); checkout("pro", e.target); } });
+    return;
+  }
+  $("f_prizePoolLabel").value = p.prizePoolLabel || "";
+  $("f_payoutsLabel").value = p.payoutsLabel || "";
+  $("f_countdownLabel").value = p.countdownLabel || "";
+  $("f_currency").value = p.currency || "$";
+  $("f_hidePrizeAmounts").checked = !!p.hidePrizeAmounts;
 }
 
 $("logoPick").setAttribute("aria-label", "Upload logo");
