@@ -69,6 +69,13 @@ export const DEFAULT_EXTRA = {
     payouts: true,
     poweredBy: false,
   },
+  playerFields: {
+    score: true,
+    hands: true,
+    netProfit: true,
+    winRate: true,
+    change: true,
+  },
   legal: {
     terms: "",
     privacy: "",
@@ -340,6 +347,7 @@ export function publicShape(site, players, archives = [], hasLogo = false) {
     })),
     sections: m.sections || DEFAULT_EXTRA.sections,
     legal: m.legal || DEFAULT_EXTRA.legal,
+    playerFields: { ...DEFAULT_EXTRA.playerFields, ...(m.playerFields || {}) },
   };
 }
 
@@ -732,6 +740,13 @@ export async function saveSite(env, user, payload, siteId, request = null) {
     const v = incomingLegal[k] !== undefined ? incomingLegal[k] : existingLegal[k];
     legal[k] = typeof v === "string" ? v.trim() : (legalDefaults[k] || "");
   }
+  const incomingFields = payload.playerFields && typeof payload.playerFields === "object" ? payload.playerFields : {};
+  const existingFields = existingExtra.playerFields || {};
+  const playerFields = {};
+  for (const k of Object.keys(DEFAULT_EXTRA.playerFields)) {
+    const v = incomingFields[k] !== undefined ? incomingFields[k] : existingFields[k];
+    playerFields[k] = !!v;
+  }
   const extra = {
     chips: payload.partner?.chips ?? payload.chips ?? existingExtra.chips ?? DEFAULT_EXTRA.chips,
     whyStats: payload.whyStats ?? existingExtra.whyStats ?? DEFAULT_EXTRA.whyStats,
@@ -739,6 +754,7 @@ export async function saveSite(env, user, payload, siteId, request = null) {
     socials: payload.socials ?? existingExtra.socials ?? DEFAULT_EXTRA.socials,
     sections: { ...(existingExtra.sections || DEFAULT_EXTRA.sections), ...incomingSections },
     legal,
+    playerFields,
   };
 
   let discordWebhookUrlEnc = site.discord_webhook_url_enc;

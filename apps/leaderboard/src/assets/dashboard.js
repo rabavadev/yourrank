@@ -4,7 +4,7 @@ import { state } from "./dashboard/state.js";
 import { navTo, setupShell } from "./dashboard/shell.js";
 import { renderBoardSwitcher, renderSidebarBoardSwitcher, renderBoardsPage } from "./dashboard/boards.js";
 import { renderPlayers } from "./dashboard/players.js";
-import { loadStats, renderArchives, renderBranding, renderDomain, renderDomainStatus, renderLegal, renderNotifications, renderOverlay, renderPlan, renderSections, renderSocials, renderTemplateText } from "./dashboard/site.js";
+import { loadStats, renderArchives, renderBranding, renderDomain, renderDomainStatus, renderLegal, renderNotifications, renderOverlay, renderPlan, renderPlayerFields, renderSections, renderSocials, renderTemplateText } from "./dashboard/site.js";
 import { renderOverviewSummary, wireOverviewQuickActions } from "./dashboard/overview.js";
 import { renderReferrals } from "./dashboard/referrals.js";
 
@@ -40,7 +40,7 @@ async function init() {
   const d = p.data || {};
   const b = d.brand || {};
   loadStats();
-  state.EXTRA = { chips: d.partner?.chips, whyStats: d.whyStats, rules: d.rules, socials: p.socials || d.socials || [], sections: d.sections, text: (d.branding && d.branding.text) || {}, legal: d.legal || {} };
+  state.EXTRA = { chips: d.partner?.chips, whyStats: d.whyStats, rules: d.rules, socials: p.socials || d.socials || [], sections: d.sections, playerFields: d.playerFields || {}, text: (d.branding && d.branding.text) || {}, legal: d.legal || {} };
   $("f_name").value = b.name || "";
   $("f_tagline").value = b.tagline || "";
   $("f_casino").value = b.casino || "";
@@ -51,6 +51,7 @@ async function init() {
   $("f_ends").value = toLocalInput(d.endsAt);
   $("f_blurb").value = d.partner?.blurb || "";
   renderPlayers(d.players || []);
+  renderPlayerFields();
   renderBranding(d.branding || {});
   renderArchives(p.archives || []);
   renderDomain();
