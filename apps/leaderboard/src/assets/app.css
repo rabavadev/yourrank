@@ -621,7 +621,7 @@ table.ref-table td{padding:8px 8px;border-bottom:1px solid var(--line);color:var
 @media(max-width:860px){.lb-backdrop{display:none}.lb-backdrop.is-open{display:block}}
 
 /* Sidebar board switcher */
-.lb-side-head{position:relative;padding:14px 14px 14px 10px;background:var(--panel-2);border-bottom:1px solid var(--line);margin-bottom:6px}
+.lb-side-head{position:relative;padding:14px 14px 14px 10px;background:var(--bg);border-bottom:1px solid var(--line);margin-bottom:6px}
 .lb-side-board{display:flex;flex-direction:column;gap:4px}
 .lb-side-board .label{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-mute)}
 .lb-active-name{font-weight:700;font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
