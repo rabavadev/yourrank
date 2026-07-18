@@ -82,7 +82,7 @@ export const DEFAULT_EXTRA = {
 // needed by the /logo/:slug endpoint and saveSite(), which fetch it separately.
 // PERF-004 / PERF-107: avoid SELECT * to prevent 180KB+ transfers on every page.
 // PERF-005: include has_logo as a computed column to avoid a separate re-query.
-const SITE_COLUMNS = "id, user_id, slug, name, tagline, casino, code, cta_url, prize_pool, period, ends_at, reset_note, blurb, extra_json, published, theme_json, updated_at, custom_domain, domain_status, discord_webhook_url_enc, telegram_chat_id, telegram_notify, (logo_data IS NOT NULL AND logo_data != '') AS has_logo";
+const SITE_COLUMNS = "id, user_id, slug, name, tagline, casino, code, cta_url, prize_pool, period, ends_at, reset_note, blurb, extra_json, published, is_draft, theme_json, updated_at, custom_domain, domain_status, discord_webhook_url_enc, telegram_chat_id, telegram_notify, (logo_data IS NOT NULL AND logo_data != '') AS has_logo";
 
 // L1 in-memory cache (per-isolate). No L2 KV — sessions moved to Postgres.
 const siteCache = new Map();
@@ -372,6 +372,7 @@ export async function getUserSite(env, uid, plan) {
       const archives = await getArchives(env, site.id, archiveLimit);
     return {
         id: site.id, slug: site.slug, published: !!site.published,
+        isDraft: !!site.is_draft,
         updatedAt: site.updated_at,
         data: publicShape(site, await getPlayers(env, site.id), archives.slice(0, archiveLimit), !!site.has_logo),
         socials: (fromJsonb(site.extra_json)?.socials) ?? DEFAULT_EXTRA.socials,
@@ -394,7 +395,7 @@ export async function getUserSite(env, uid, plan) {
 // Multi-board: return a summary list of all boards for a user.
 export async function getUserBoardsList(env, uid) {
   const rows = await query(
-    `SELECT s.id, s.slug, s.name, s.casino, s.code, s.published, s.board_order, s.theme_json,
+    `SELECT s.id, s.slug, s.name, s.casino, s.code, s.published, s.is_draft, s.board_order, s.theme_json,
             (SELECT COUNT(*) FROM players p WHERE p.site_id = s.id) AS player_count
        FROM sites s
       WHERE s.user_id=$1
@@ -410,6 +411,7 @@ export async function getUserBoardsList(env, uid) {
       casino: b.casino || "",
       code: b.code || "",
       published: !!b.published,
+      isDraft: !!b.is_draft,
       players: Number(b.player_count) || 0,
       template: theme.template,
       boardOrder: b.board_order || 0,
@@ -426,6 +428,7 @@ export async function getUserSiteById(env, uid, siteId, plan) {
     const archives = await getArchives(env, site.id, archiveLimit);
   return {
     id: site.id, slug: site.slug, published: !!site.published,
+    isDraft: !!site.is_draft,
     updatedAt: site.updated_at,
     data: publicShape(site, await getPlayers(env, site.id), archives.slice(0, archiveLimit), !!site.has_logo),
     socials: (fromJsonb(site.extra_json)?.socials) ?? DEFAULT_EXTRA.socials,
@@ -462,8 +465,8 @@ export async function createBoard(env, uid, { slug, name, casino = "", code = ""
   const cleanCode = String(code || "").trim().slice(0, 40);
   const themeObj = { template: "classic" };
   await exec(
-    "INSERT INTO sites (id,user_id,slug,name,casino,code,prize_pool,period,published,extra_json,theme_json) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10::jsonb,$11::jsonb)",
-    [siteId, uid, slug, name || slug, cleanCasino, cleanCode, "$0", "Monthly", true, DEFAULT_EXTRA, themeObj]
+    "INSERT INTO sites (id,user_id,slug,name,casino,code,prize_pool,period,published,is_draft,extra_json,theme_json) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11::jsonb,$12::jsonb)",
+    [siteId, uid, slug, name || slug, cleanCasino, cleanCode, "$0", "Monthly", true, false, DEFAULT_EXTRA, themeObj]
   );
   // If the user has no active board, make the new one active.
   await exec("UPDATE users SET active_site_id=$1, updated_at=now() WHERE id=$2 AND active_site_id IS NULL", [siteId, uid]);
@@ -518,9 +521,9 @@ export async function duplicateBoard(env, uid, siteId, request = null) {
 
   await withTransaction(async (tx) => {
     await tx.unsafe(
-      `INSERT INTO sites (id,user_id,slug,name,tagline,casino,code,cta_url,prize_pool,period,ends_at,reset_note,blurb,published,extra_json,logo_data,theme_json,board_order)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15::jsonb,$16,$17::jsonb,$18)`,
-      [newId, uid, newSlug, `${source.name} (copy)`.slice(0, 80), source.tagline, source.casino, source.code, source.cta_url, source.prize_pool, source.period, source.ends_at, source.reset_note, source.blurb, false, extra, logoData, theme, boardOrder]
+      `INSERT INTO sites (id,user_id,slug,name,tagline,casino,code,cta_url,prize_pool,period,ends_at,reset_note,blurb,published,is_draft,extra_json,logo_data,theme_json,board_order)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16::jsonb,$17,$18::jsonb,$19)`,
+      [newId, uid, newSlug, `${source.name} (copy)`.slice(0, 80), source.tagline, source.casino, source.code, source.cta_url, source.prize_pool, source.period, source.ends_at, source.reset_note, source.blurb, false, false, extra, logoData, theme, boardOrder]
     );
     if (players.length) {
       const valueRows = [];
@@ -810,18 +813,19 @@ export async function saveSite(env, user, payload, siteId, request = null) {
     }
 
     const publishedVal = typeof payload.published === "boolean" ? payload.published : site.published;
+    const isDraftVal = typeof payload.isDraft === "boolean" ? payload.isDraft : site.is_draft;
     const endsAtVal = normalizeEndsAt(payload.endsAt, site.ends_at);
     const slugVal = slugRename || site.slug;
     const periodVal = VALID_PERIODS.includes(String(b.period || "Monthly").trim())
       ? String(b.period || "Monthly").trim()
       : (site.period || "Monthly");
     await tx.unsafe(
-      `UPDATE sites SET slug=$1, name=$2, tagline=$3, casino=$4, code=$5, cta_url=$6, prize_pool=$7, period=$8, ends_at=$9, reset_note=$10, blurb=$11, extra_json=$12::jsonb, logo_data=$13, theme_json=$14::jsonb, published=$15, discord_webhook_url_enc=$16, telegram_chat_id=$17, telegram_notify=$18, updated_at=now() WHERE id=$19`,
+      `UPDATE sites SET slug=$1, name=$2, tagline=$3, casino=$4, code=$5, cta_url=$6, prize_pool=$7, period=$8, ends_at=$9, reset_note=$10, blurb=$11, extra_json=$12::jsonb, logo_data=$13, theme_json=$14::jsonb, published=$15, is_draft=$16, discord_webhook_url_enc=$17, telegram_chat_id=$18, telegram_notify=$19, updated_at=now() WHERE id=$20`,
       [
         slugVal, siteName, b.tagline ?? site.tagline, b.casino ?? site.casino, b.code ?? site.code,
         b.ctaUrl ?? site.cta_url, b.prizePool ?? site.prize_pool, periodVal,
         endsAtVal, b.resetNote ?? site.reset_note, (payload.partner && payload.partner.blurb) ?? site.blurb,
-        extra, logoData, themeJson, publishedVal, discordWebhookUrlEnc, telegramChatId, telegramNotify, site.id,
+        extra, logoData, themeJson, publishedVal, isDraftVal, discordWebhookUrlEnc, telegramChatId, telegramNotify, site.id,
       ]
     );
 

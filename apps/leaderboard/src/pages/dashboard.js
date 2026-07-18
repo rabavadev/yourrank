@@ -58,6 +58,7 @@ export const dashboardPage = leaderboardPageHtml({
 <div class="lb-main">
 <section class="lb-page is-on" data-page="overview">
 <div class="lb-phead"><button class="lb-menu" id="lbMenu" type="button" aria-label="Show sections" aria-expanded="false" aria-controls="lbSide">☰</button><div><h1 tabindex="-1">Overview</h1><p class="lb-psub">Your leaderboard at a glance</p></div></div>
+<div class="card card--danger" id="draftBanner" hidden><h2>Finish setup</h2><p class="card-sub">You started the setup wizard but didn't finish <b id="draftName">this board</b>. Complete it now or mark it done.</p><div class="d-flex gap-10 flex-wrap"><a class="btn btn--sm btn--accent" id="draftResume" href="/setup">Resume setup →</a><button class="btn btn--sm btn--ghost" id="draftDone" type="button">Mark as done</button></div></div>
 <div class="lb-qa" aria-label="Quick actions">
 <button type="button" data-jump="board"><span class="lb-qa-t">Add players</span><span class="lb-qa-d">Type them in or paste from a spreadsheet</span></button>
 <button type="button" data-jump="board"><span class="lb-qa-t">Set the prize</span><span class="lb-qa-d">Prize pool, casino and your code</span></button>
