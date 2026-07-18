@@ -217,6 +217,12 @@ export function collect() {
     telegram_chat_id: $("f_tgChatId")?.value.trim() || null,
     telegram_notify: $("f_tgNotify")?.checked || false,
   };
+  const arToggle = $("f_auto_reset");
+  const arClear = $("f_auto_reset_clear");
+  out.autoReset = {
+    enabled: !!(arToggle && arToggle.checked),
+    clear: arClear && !arClear.disabled ? arClear.value : "wagers",
+  };
   return out;
 }
 
