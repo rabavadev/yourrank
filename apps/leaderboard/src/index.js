@@ -498,9 +498,11 @@ async function handleRequest(request, env, ctx, meta) {
           if (site && site.name && site.name !== site.slug) {
             return Response.redirect(new URL("/dashboard", url), 302);
           }
+          const nonce = crypto.randomUUID();
           const html = addCookieConsent(PAGES.setup
-            .replace("<!--GM_NAV-->", shellNavHtml({ activePath: "/dashboard", user })));
-          return new Response(html, { headers: { ...SECURE_HTML, ...csrfHeader, "cache-control": "no-store, no-cache, must-revalidate" } });
+            .replace("<!--GM_NAV-->", shellNavHtml({ activePath: "/dashboard", user }))
+            .replace(/__NONCE__/g, nonce));
+          return new Response(html, { headers: { ...withNonce(SECURE_HTML, nonce), ...csrfHeader, "cache-control": "no-store, no-cache, must-revalidate" } });
         } catch (e) {
           if (workerLog) workerLog.error("setup_render_failed", { error: String(e?.message || e) }); else console.error("setup render failed:", String(e?.message || e));
           return new Response("Setup couldn't load right now — please refresh.", { status: 500, headers: { "content-type": "text/plain; charset=utf-8" } });

@@ -369,22 +369,6 @@ export function applyTheme(template, accentA, accentB, label, font = null) {
   if (status) status.textContent = `${label || currentTemplate()?.name || "Design"} selected — click Save changes to publish.`;
   markDirty();
 }
-  }
-  const tplEl = $("f_template"); if (tplEl) tplEl.value = template;
-  if (state.ME.plan !== "free" && accentA && accentB) {
-    $("c_a").value = accentA;
-    $("c_b").value = accentB;
-  }
-  const active = state.BOARDS.find((b) => b.id === state.ACTIVE_SITE_ID);
-  if (active) active.template = template;
-  updateThemeSelection();
-  renderTemplateText();
-  renderSidebarBoardSwitcher();
-  renderBoardsPage();
-  const status = $("templateStatus");
-  if (status) status.textContent = `${label || currentTemplate()?.name || "Design"} selected — click Save changes to publish.`;
-  markDirty();
-}
 
 function applyTemplate(template) {
   const preset = template.presets?.[0];

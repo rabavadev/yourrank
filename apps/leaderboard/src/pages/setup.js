@@ -1,4 +1,7 @@
 import { leaderboardPageHtml } from "../../../../shared/page-shell.js";
+import { templateCatalog } from "../templates/index.js";
+
+const TEMPLATES_JSON = JSON.stringify(templateCatalog());
 
 // setup page
 export const setupPage = leaderboardPageHtml({
@@ -7,7 +10,7 @@ export const setupPage = leaderboardPageHtml({
   mainClass: "gm-shell-main",
   styles: ["/assets/app.css","/assets/shell-nav.css","/assets/setup-styles.css"],
   noscript: "<p>YourRank requires JavaScript</p><p>Please enable JavaScript in your browser settings to set up your leaderboard.</p>",
-  scripts: ['<script src="/assets/setup-wizard.js?v=3"></script>'],
+  scripts: [`<script nonce="__NONCE__">window.__TEMPLATE_CATALOG__=${TEMPLATES_JSON};</script><script src="/assets/setup-wizard.js?v=4"></script>`],
   content: `<div class="setup-wrap">
 <h1>Set up your leaderboard</h1>
 <p class="sub">Four quick steps and you're live. <a href="/demo" target="_blank">See a live demo first →</a></p>
@@ -45,6 +48,13 @@ export const setupPage = leaderboardPageHtml({
 </div>
 
 <div class="wiz-step" id="step4">
+<h2 class="setup-complete-title">Choose a template</h2>
+<p class="setup-complete-sub">Pick the look for your leaderboard. Your players stay the same.</p>
+<div class="template-grid" id="wiz_templates"></div>
+<div class="btns-row"><button class="btn" id="wiz4back" type="button">← Back</button><button class="btn btn--accent" id="wiz4next" type="button" disabled>Next →</button></div>
+</div>
+
+<div class="wiz-step" id="step5">
 <h2 class="setup-complete-title">Your page is ready! 🎉</h2>
 <p class="setup-complete-sub">Share this link with your community:</p>
 <div class="share-box">
@@ -54,7 +64,7 @@ export const setupPage = leaderboardPageHtml({
 <a class="btn" id="wiz_view" href="#" target="_blank">View live page →</a>
 </div>
 </div>
-<div class="btns-row"><button class="btn" id="wiz4back" type="button">← Back</button><button class="btn btn--accent" id="wiz_finish" type="button">Go to dashboard</button></div>
+<div class="btns-row"><button class="btn" id="wiz5back" type="button">← Back</button><button class="btn btn--accent" id="wiz_finish" type="button">Go to dashboard</button></div>
 </div>
 
 <div class="err" id="wiz_err" role="alert" aria-live="assertive"></div>

@@ -283,7 +283,7 @@ export async function handlePutSite(request, env) {
   const payload = await readJson(request);
   if (!payload) return bad("Invalid request");
   const r = await saveSite(env, user, payload, payload.siteId || null, request);
-  return r.error ? bad(r.error, 400) : json({ ok: true, updatedAt: r.updatedAt, slug: r.slug });
+  return r.error ? bad(r.error, 400) : json({ ok: true, updatedAt: r.updatedAt, slug: r.slug, siteId: r.siteId });
 }
 
 // POST /api/site/finish — mark the wizard-created board as finished.
@@ -294,7 +294,7 @@ export async function handleFinishSetup(request, env) {
   if (!(await rateLimit(env, `finish-setup:${user.id}`, 10, 60)).ok) return bad("Too many requests. Try again shortly.", 429);
   const payload = await readJson(request) || {};
   const r = await saveSite(env, user, { isDraft: false }, payload.siteId || null, request);
-  return r.error ? bad(r.error, 400) : json({ ok: true, updatedAt: r.updatedAt, slug: r.slug });
+  return r.error ? bad(r.error, 400) : json({ ok: true, updatedAt: r.updatedAt, slug: r.slug, siteId: r.siteId });
 }
 
 export async function handlePutTheme(request, env) {

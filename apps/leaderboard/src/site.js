@@ -1065,7 +1065,7 @@ export async function saveSite(env, user, payload, siteId, request = null) {
     },
   });
 
-  return { ok: true, updatedAt: updatedSite?.updated_at, slug: updatedSite?.slug || slugRename || site.slug };
+  return { ok: true, updatedAt: updatedSite?.updated_at, slug: updatedSite?.slug || slugRename || site.slug, siteId: updatedSite?.id || site.id };
 }
 
 export async function deleteBoard(env, uid, siteId, request = null) {
