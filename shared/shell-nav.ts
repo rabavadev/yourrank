@@ -156,7 +156,7 @@ export const SHELL_NAV_CSS = `
 .gm-profile-trigger{color:var(--gm-ink);}
 .gm-profile-chevron{color:var(--gm-ink-mute);font-size:10px;transition:transform .15s;}
 .gm-profile[open] .gm-profile-chevron{transform:rotate(180deg);}
-.gm-profile-menu{position:absolute;right:0;top:calc(100% + 8px);min-width:190px;background:var(--gm-panel);border:1px solid var(--gm-line);border-radius:10px;padding:6px;display:flex;flex-direction:column;gap:2px;box-shadow:0 10px 30px rgba(0,0,0,.4);z-index:100;}
+.gm-profile-menu{position:absolute;left:0;right:auto;top:calc(100% + 8px);min-width:190px;width:max-content;max-width:calc(100vw - 24px);background:var(--gm-panel);border:1px solid var(--gm-line-2);border-radius:10px;padding:6px;display:flex;flex-direction:column;gap:2px;box-shadow:0 12px 40px rgba(0,0,0,.5);z-index:200;}
 .gm-profile-link{font-family:var(--gm-sans);font-size:13px;color:var(--gm-ink-soft);text-decoration:none;padding:8px 10px;border-radius:7px;white-space:nowrap;}
 .gm-profile-link:hover{color:var(--gm-ink);background:var(--gm-line);}
 .gm-profile-link--accent{color:var(--gm-accent);}

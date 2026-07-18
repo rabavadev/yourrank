@@ -100,8 +100,6 @@ async function init() {
   const liveUrl = "/" + state.SLUG;
   const liveLink = $("liveLink");
   if (liveLink) { liveLink.href = liveUrl; liveLink.title = location.host + liveUrl; }
-  const overviewViewLive = $("overviewViewLive");
-  if (overviewViewLive) overviewViewLive.href = liveUrl;
   const embedCode = `<iframe src="https://${location.host}/${state.SLUG}/embed" width="100%" height="640" frameborder="0" loading="lazy" title="${esc(state.SLUG)} leaderboard"></iframe>`;
   const embedTextarea = $("embedCode");
   if (embedTextarea) embedTextarea.value = embedCode;

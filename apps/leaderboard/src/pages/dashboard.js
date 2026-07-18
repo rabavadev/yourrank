@@ -57,7 +57,7 @@ export const dashboardPage = leaderboardPageHtml({
 </aside>
 <div class="lb-main">
 <section class="lb-page is-on" data-page="overview">
-<div class="lb-phead"><button class="lb-menu" id="lbMenu" type="button" aria-label="Show sections" aria-expanded="false" aria-controls="lbSide">☰</button><div class="lb-phead-text"><h1 tabindex="-1">Overview</h1><p class="lb-psub">Your leaderboard at a glance</p><div class="lb-board-name" id="overviewBoardName">…</div></div><div class="lb-phead-actions"><a class="btn btn--sm btn--accent" id="overviewViewLive" href="#" target="_blank">View live board ↗</a><button class="btn btn--sm" id="overviewCopyLink" type="button">Copy link</button></div></div>
+<div class="lb-phead"><button class="lb-menu" id="lbMenu" type="button" aria-label="Show sections" aria-expanded="false" aria-controls="lbSide">☰</button><div class="lb-phead-text"><h1 tabindex="-1">Overview</h1><p class="lb-psub">Your leaderboard at a glance</p><div class="lb-board-name" id="overviewBoardName">…</div></div><div class="lb-phead-actions"><button class="btn btn--sm" id="overviewCopyLink" type="button">Copy link</button></div></div>
 <div class="card card--danger" id="draftBanner" hidden><h2>Finish setup</h2><p class="card-sub">You started the setup wizard but didn't finish <b id="draftName">this board</b>. Complete it now or mark it done.</p><div class="d-flex gap-10 flex-wrap"><a class="btn btn--sm btn--accent" id="draftResume" href="/setup">Resume setup →</a><button class="btn btn--sm btn--ghost" id="draftDone" type="button">Mark as done</button></div></div>
 <div class="stat-tiles">
 <div class="stat-tile"><span class="stat-num" id="ov_board">–</span><span class="stat-lbl">Board</span></div>
