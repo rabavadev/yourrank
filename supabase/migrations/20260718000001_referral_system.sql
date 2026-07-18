@@ -31,4 +31,13 @@ FROM ranked r
 WHERE u.id = r.id;
 
 -- Add the unique constraint only after backfilling unique values.
-ALTER TABLE users ADD CONSTRAINT IF NOT EXISTS users_referral_code_key UNIQUE (referral_code);
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint
+    WHERE conname = 'users_referral_code_key'
+      AND conrelid = 'public.users'::regclass
+  ) THEN
+    ALTER TABLE users ADD CONSTRAINT users_referral_code_key UNIQUE (referral_code);
+  END IF;
+END $$;
