@@ -36,6 +36,47 @@ export function toggleEmpty() {
   $("playersEmpty").hidden = $("rows").children.length > 0;
 }
 
+// Live re-sort the player table as wagered numbers change, with a tiny
+// FLIP-style translate animation so the operator sees the row move.
+let sortTimer;
+function sortRows() {
+  const rowsEl = $("rows");
+  if (!rowsEl) return;
+  const before = new Map();
+  for (const row of rowsEl.children) before.set(row, row.getBoundingClientRect().top);
+  const rowsArr = [...rowsEl.children];
+  rowsArr.sort((a, b) => {
+    const wa = parseFloat(a.querySelector(".p-wager").value) || 0;
+    const wb = parseFloat(b.querySelector(".p-wager").value) || 0;
+    if (wb !== wa) return wb - wa;
+    const pa = parseFloat(a.querySelector(".p-prize").value) || 0;
+    const pb = parseFloat(b.querySelector(".p-prize").value) || 0;
+    return pb - pa;
+  });
+  rowsArr.forEach((row) => rowsEl.appendChild(row));
+  renumber();
+  const after = new Map();
+  for (const row of rowsArr) after.set(row, row.getBoundingClientRect().top);
+  for (const row of rowsArr) {
+    const dy = (before.get(row) || after.get(row) || 0) - (after.get(row) || before.get(row) || 0);
+    if (dy) { row.style.transform = `translateY(${dy}px)`; row.style.transition = "none"; }
+  }
+  requestAnimationFrame(() => {
+    for (const row of rowsArr) { row.style.transition = "transform 0.2s ease"; row.style.transform = ""; }
+  });
+}
+
+function onSortableInput() {
+  clearTimeout(sortTimer);
+  sortTimer = setTimeout(sortRows, 200);
+}
+
+$("rows").addEventListener("input", (e) => {
+  if (e.target && e.target.classList && (e.target.classList.contains("p-wager") || e.target.classList.contains("p-prize"))) {
+    onSortableInput();
+  }
+});
+
 $("addRow").addEventListener("click", () => {
   if (state.ME && $("rows").children.length >= state.ME.limits.players && state.ME.limits.players < 999) {
     const planNames = { free: "Free", starter: "Starter", pro: "Pro" };
