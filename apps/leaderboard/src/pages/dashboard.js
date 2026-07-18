@@ -164,8 +164,9 @@ export const dashboardPage = leaderboardPageHtml({
 </details></div>
 </div></div>
 <div class="empty" id="brandLock" hidden>Branding is a Pro feature. <a href="#" id="brandUpgrade">Upgrade to unlock it</a>.</div></div>
-<div class="card" id="sectionsCard"><h2>Sections</h2><p class="card-sub">Choose what appears on your public page. Turn sections off to build a leaner layout.</p>
-<div class="sections-editor" id="sectionsList"></div></div>
+<div class="card" id="sectionsCard"><h2>Sections <span class="pill pill--info ml-6">PRO</span></h2><p class="card-sub">Choose what appears on your public page. Turn sections off to build a leaner layout.</p>
+<div id="sectionsBody"><div class="sections-editor" id="sectionsList"></div></div>
+<div class="empty" id="sectionsLock" hidden>Section controls are a Pro feature. <a href="#" id="sectionsUpgrade">Upgrade to unlock it</a>.</div></div>
 <div class="card" id="textCard"><h2>Template text</h2><p class="card-sub">Change the copy inside your selected design. Keys with an empty value fall back to the default.</p>
 <div class="text-editor" id="textList"></div></div>
 <div class="card" id="legalCard"><h2>Legal pages</h2><p class="card-sub">Set your own Terms, Privacy, and other legal copy. Empty fields use defaults and the footer links go to your own /terms, /privacy, etc.</p>

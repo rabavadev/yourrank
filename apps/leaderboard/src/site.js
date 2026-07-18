@@ -67,6 +67,7 @@ export const DEFAULT_EXTRA = {
     countdown: true,
     cta: true,
     payouts: true,
+    poweredBy: false,
   },
   legal: {
     terms: "",
