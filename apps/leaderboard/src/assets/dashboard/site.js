@@ -29,10 +29,10 @@ function planDefs() {
   const proPrice = state.ME?.proPrice || 29;
   return [
     { key: "free", name: "Free", price: 0, priceStr: "$0", period: "", note: "forever", features: ["1 leaderboard", "Up to 10 players", "YourRank badge", "Basic analytics (7 days)", "Live countdown"] },
-    { key: "starter", name: "Starter", price: 12, priceStr: "$12", period: "/30 days", note: "", features: ["1 leaderboard", "Up to 25 players", "CSV import", "Full analytics (30 days)", "No YourRank badge"] },
-    { key: "pro", name: "Pro", price: proPrice, priceStr: `$${proPrice}`, period: "/30 days", note: "Most popular", features: ["Up to 3 leaderboards", "Up to 9,999 players", "Custom domain", "OBS overlay", "Discord + Telegram alerts"] },
-    { key: "agency", name: "Agency", price: 79, priceStr: "$79", period: "/30 days", note: "", features: ["Up to 99 leaderboards", "White-label branding", "Signed score API", "Dedicated support"] },
-    { key: "lifetime", name: "Lifetime Pro", price: 149, priceStr: "$149", period: "", note: "one-time", features: ["All Pro features", "Pay once, use forever", "No monthly bills"] },
+    { key: "starter", name: "Starter", price: 12, priceStr: "$12", period: "/30 days", note: "", features: ["1 leaderboard", "Up to 25 players", "CSV import", "Full analytics (30 days)", "Font choice", "Custom accent colors", "Logo"] },
+    { key: "pro", name: "Pro", price: proPrice, priceStr: `$${proPrice}`, period: "/30 days", note: "Most popular", features: ["Up to 3 leaderboards", "Up to 9,999 players", "Custom domain", "OBS overlay", "Discord + Telegram alerts", "Section controls", "Prize & countdown customization", "Remove YourRank badge"] },
+    { key: "agency", name: "Agency", price: 79, priceStr: "$79", period: "/30 days", note: "", features: ["Up to 99 leaderboards", "White-label branding", "Signed score API", "Dedicated support", "Custom CSS", "Remove YourRank badge"] },
+    { key: "lifetime", name: "Lifetime Pro", price: 149, priceStr: "$149", period: "", note: "one-time", features: ["All Pro + Agency features", "Pay once, use forever", "No monthly bills"] },
   ];
 }
 
@@ -278,12 +278,22 @@ function renderColorPresets() {
   });
 }
 
+function updateDesignPreview() {
+  const iframe = $("designPreview");
+  if (!iframe || !state.ACTIVE_SITE_ID) return;
+  const tpl = state.CURRENT_BRANDING.template || currentTemplate()?.id || "classic";
+  const accentA = state.CURRENT_BRANDING.accentA || "";
+  const accentB = state.CURRENT_BRANDING.accentB || "";
+  iframe.src = previewUrl(tpl, accentA, accentB);
+}
+
 function updateThemeSelection() {
   const tpl = $("f_template"); if (tpl) tpl.value = state.CURRENT_BRANDING.template;
   if (state.CURRENT_BRANDING.accentA) $("c_a").value = state.CURRENT_BRANDING.accentA;
   if (state.CURRENT_BRANDING.accentB) $("c_b").value = state.CURRENT_BRANDING.accentB;
   renderTemplateGallery();
   renderColorPresets();
+  updateDesignPreview();
 }
 
 export async function saveTheme(template, accentA, accentB, label) {

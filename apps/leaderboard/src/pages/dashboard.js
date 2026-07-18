@@ -146,6 +146,8 @@ export const dashboardPage = leaderboardPageHtml({
 </section>
 <section class="lb-page" data-page="design">
 <div class="lb-phead"><button class="lb-menu" type="button" aria-label="Show sections" data-menu aria-expanded="false" aria-controls="lbSide">☰</button><div><h1 tabindex="-1">Design</h1><p class="lb-psub">How your public page looks</p></div></div>
+<div class="design-grid">
+<div class="design-controls">
 <div class="card" id="templateCard"><h2>Page template</h2><p class="card-sub">Live previews use this board's real name, prize pool and players. Click a design to publish it instantly.</p>
 <input type="hidden" id="f_template" value="classic" />
 <div class="template-grid" id="templateGallery" aria-label="Page templates"></div>
@@ -173,6 +175,11 @@ export const dashboardPage = leaderboardPageHtml({
 <div class="legal-editor" id="legalList"></div></div>
 <div class="card" id="socialsCard"><h2>Social links</h2><p class="card-sub">Add the links to your channels. Turn a network <b>on</b> to show it in the “Join the Socials” section of your public page; turn it <b>off</b> to hide it. Links with the toggle on but no URL stay hidden.</p>
 <div class="socials-editor" id="socialsList"></div></div>
+</div>
+<div class="design-preview">
+<div class="card"><h2>Live preview</h2><p class="card-sub">Your public page updates here as you change the design. Save to publish it.</p><div class="preview-frame-wrap"><iframe id="designPreview" src="" loading="eager" title="Live preview"></iframe></div></div>
+</div>
+</div>
 </section>
 <section class="lb-page" data-page="integrations">
 <div class="lb-phead"><button class="lb-menu" type="button" aria-label="Show sections" data-menu aria-expanded="false" aria-controls="lbSide">☰</button><div><h1 tabindex="-1">Overlay &amp; domain</h1><p class="lb-psub">Extras for your stream and site — overlay and your own domain</p></div></div>
