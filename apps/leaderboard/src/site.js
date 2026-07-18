@@ -279,6 +279,11 @@ export function fromJsonb(value) {
   return value;
 }
 
+function sanitizeCustomCss(css) {
+  if (typeof css !== "string") return "";
+  return css.replace(/<\/style/gi, "/* </style */").slice(0, 10000);
+}
+
 function parseTheme(site) {
   const raw = fromJsonb(site.theme_json);
   const t = (raw && typeof raw === "object") ? raw : {};
@@ -287,6 +292,7 @@ function parseTheme(site) {
     accentB: HEX.test(t.accentB || "") ? t.accentB : null,
     template: TEMPLATE_IDS.includes(t.template) ? t.template : "classic",
     text: (t.text && typeof t.text === "object") ? t.text : {},
+    customCss: sanitizeCustomCss(t.customCss),
   };
 }
 
@@ -325,7 +331,7 @@ export function publicShape(site, players, archives = [], hasLogo = false) {
     endsAt: site.ends_at,
     partner: { blurb: site.blurb, chips: m.chips },
     whyStats: m.whyStats, rules: m.rules, socials: (m.socials || []).filter(s => s.enabled !== false && s.url && s.url !== "#" && s.url !== ""),
-    branding: { hasLogo, accentA: theme.accentA, accentB: theme.accentB, template: theme.template, text: theme.text },
+    branding: { hasLogo, accentA: theme.accentA, accentB: theme.accentB, template: theme.template, text: theme.text, customCss: theme.customCss },
     pastWinners: archives.map(archiveShape),
     players: players.map((p) => ({
       name: p.name,
@@ -767,10 +773,16 @@ export async function saveSite(env, user, payload, siteId, request = null) {
       if (validated.error) return { error: validated.error, code: "invalid_logo" };
       logoData = validated.dataUri;
     }
-    const t = { text: themeObj.text };
-    if (HEX.test(br.accentA || "")) t.accentA = br.accentA;
-    if (HEX.test(br.accentB || "")) t.accentB = br.accentB;
-    if (themeObj.template && themeObj.template !== "classic") t.template = themeObj.template;
+    const plan = effectivePlan(user);
+    const t = { ...themeObj };
+    if (HEX.test(br.accentA || "")) t.accentA = br.accentA; else delete t.accentA;
+    if (HEX.test(br.accentB || "")) t.accentB = br.accentB; else delete t.accentB;
+    if (br.template && TEMPLATE_IDS.includes(br.template)) t.template = br.template; else if (t.template === "classic") delete t.template;
+    if (plan === "agency" || plan === "lifetime") {
+      t.customCss = sanitizeCustomCss(br.customCss ?? t.customCss ?? "");
+    } else {
+      delete t.customCss;
+    }
     themeObj = t;
   }
   // Streamer-editable template text is available on every plan.
@@ -1027,6 +1039,9 @@ export async function updateSiteTheme(env, user, payload = {}, request = null) {
     }
     theme.accentA = payload.accentA;
     theme.accentB = payload.accentB;
+  }
+  if ((plan === "agency" || plan === "lifetime") && payload.customCss !== undefined) {
+    theme.customCss = sanitizeCustomCss(payload.customCss);
   }
 
   await exec(

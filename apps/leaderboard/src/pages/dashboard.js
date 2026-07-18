@@ -198,6 +198,11 @@ export const dashboardPage = leaderboardPageHtml({
 <div id="domainStatus" class="hint mt-8 min-h-18" role="status" aria-live="polite"></div>
 </div>
 <div class="empty" id="domainLock" hidden>Custom domains are a Pro feature. <a href="#" id="domainUpgrade">Upgrade to unlock it</a>.</div></div>
+<div class="card" id="cssCard"><h2>Custom CSS <span class="pill pill--info ml-6">AGENCY</span></h2><p class="card-sub">Advanced white-label control. Write your own CSS — it is injected last so it overrides the template styles.</p>
+<div id="cssBody">
+<div class="field"><label for="f_customCss">Custom stylesheet</label><textarea id="f_customCss" rows="10" placeholder="/* e.g. body { background: #000; } */" spellcheck="false"></textarea><span class="hint">Max 10,000 characters. <code>&lt;/style&gt;</code> tags are escaped for safety.</span></div>
+</div>
+<div class="empty" id="cssLock" hidden>Custom CSS is an Agency feature. <a href="#" id="cssUpgrade">Upgrade to unlock it</a>.</div></div>
 </section>
 <section class="lb-page" data-page="notifications">
 <div class="lb-phead"><button class="lb-menu" type="button" aria-label="Show sections" data-menu aria-expanded="false" aria-controls="lbSide">☰</button><div><h1 tabindex="-1">Notifications</h1><p class="lb-psub">Discord and Telegram alerts for your leaderboard</p></div></div>

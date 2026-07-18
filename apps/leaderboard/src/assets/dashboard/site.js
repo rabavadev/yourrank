@@ -24,6 +24,10 @@ function isLifetime() {
   const exp = state.ME?.planExpiresAt;
   return !exp || Number(exp) === 0 || Number(exp) > new Date("2099-01-01T00:00:00Z").getTime();
 }
+function isAgency() {
+  const plan = state.ME?.plan;
+  return plan === "agency" || plan === "lifetime" || isLifetime();
+}
 
 function planDefs() {
   const proPrice = state.ME?.proPrice || 29;
@@ -208,6 +212,9 @@ export function collect() {
     out.branding = { accentA: $("c_a").value, accentB: $("c_b").value };
     if (state.LOGO !== undefined) out.branding.logo = state.LOGO;
   }
+  if (isAgency()) {
+    out.branding = { ...(out.branding || {}), customCss: $("f_customCss")?.value || "" };
+  }
   const tplEl = $("f_template");
   if (tplEl) out.branding = { ...(out.branding || {}), template: tplEl.value };
   collectTemplateText();
@@ -337,6 +344,18 @@ export function renderBranding(br) {
   $("brandLock").hidden = paid;
   updateThemeSelection();
   if (br.hasLogo) { $("logoPreview").src = "/logo/" + state.SLUG + "?t=" + Date.now(); $("logoPreview").hidden = false; $("logoClear").hidden = false; }
+}
+
+export function renderCustomCss(br) {
+  const agency = isAgency();
+  $("cssBody").hidden = !agency;
+  $("cssLock").hidden = agency;
+  if (!agency) {
+    const up = $("cssUpgrade");
+    if (up && !up._wired) { up._wired = true; up.addEventListener("click", (e) => { e.preventDefault(); checkout("agency", e.target); }); }
+    return;
+  }
+  $("f_customCss").value = br.customCss || "";
 }
 
 $("logoPick").setAttribute("aria-label", "Upload logo");
