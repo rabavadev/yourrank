@@ -41,9 +41,9 @@ export async function handleExportStats(request, env) {
   const site = siteId ? await getBoardById(env, user.id, siteId) : await getByUser(env, user.id);
   if (!site) return bad("no site", 404);
   const stats = await getStats(env, site.id);
-  const rows = (stats?.days || []).map((d) => [d.day, d.views, d.copies, d.clicks].join(","));
-  const csv = "Day,Views,Copies,Clicks\n" + rows.join("\n") + "\n";
-  const summary = `Summary,Views,Copies,Clicks\nToday,${stats?.today?.views || 0},${stats?.today?.copies || 0},${stats?.today?.clicks || 0}\nLast 7 days,${stats?.last7?.views || 0},${stats?.last7?.copies || 0},${stats?.last7?.clicks || 0}\nLast 30 days,${stats?.last30?.views || 0},${stats?.last30?.copies || 0},${stats?.last30?.clicks || 0}\n`;
+  const rows = (stats?.days || []).map((d) => [d.day, d.views, d.copies, d.clicks, d.conversions || 0, d.revenue || 0].join(","));
+  const csv = "Day,Views,Copies,Clicks,Conversions,Revenue\n" + rows.join("\n") + "\n";
+  const summary = `Summary,Views,Copies,Clicks,Conversions,Revenue\nToday,${stats?.today?.views || 0},${stats?.today?.copies || 0},${stats?.today?.clicks || 0},${stats?.today?.conversions || 0},${stats?.today?.revenue || 0}\nLast 7 days,${stats?.last7?.views || 0},${stats?.last7?.copies || 0},${stats?.last7?.clicks || 0},${stats?.last7?.conversions || 0},${stats?.last7?.revenue || 0}\nLast 30 days,${stats?.last30?.views || 0},${stats?.last30?.copies || 0},${stats?.last30?.clicks || 0},${stats?.last30?.conversions || 0},${stats?.last30?.revenue || 0}\n`;
   return new Response(summary + csv, {
     headers: {
       "content-type": "text/csv",
@@ -119,6 +119,25 @@ export async function handleTrackCopy(request, env, ctx) {
     if (ctx && typeof ctx.waitUntil === "function") ctx.waitUntil(p);
     else p.catch((err) => { console.error("[trackCopy] copy enqueue failed:", err); });
   }
+  return json({ ok: true });
+}
+
+export async function handleTrackScroll(request, env) {
+  const ip = clientIp(request);
+  if (!(await rateLimit(env, `scroll:${ip}`, 120, 60)).ok) return json({ ok: false, error: "Too many requests." }, 429);
+  const body = await readJson(request);
+  const slug = slugify(body?.slug || "");
+  const depth = Number(body?.depth);
+  if (!slug || !Number.isFinite(depth)) return json({ ok: true });
+  if (depth <= 0) return json({ ok: true });
+  const site = await one("SELECT id FROM sites WHERE slug=$1 AND published=true", [slug]);
+  if (!site) return json({ ok: true });
+  const bucket = Math.max(0, Math.min(100, Math.ceil(depth / 25) * 25));
+  await query(
+    `INSERT INTO site_scroll_depth (site_id, day, bucket, count) VALUES ($1, CURRENT_DATE, $2, 1)
+     ON CONFLICT (site_id, day, bucket) DO UPDATE SET count = site_scroll_depth.count + 1`,
+    [site.id, bucket]
+  );
   return json({ ok: true });
 }
 

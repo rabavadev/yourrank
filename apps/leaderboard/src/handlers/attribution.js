@@ -1,6 +1,6 @@
 // Attribution analytics and casino postback endpoint.
 import { json, bad, requireUser, rateLimit } from "../auth.js";
-import { query } from "../../../../shared/db.js";
+import { one, query } from "../../../../shared/db.js";
 import { verifyHmacSha256Hex } from "../../../../shared/crypto.js";
 import {
   POSTBACK_SUNSET,
@@ -251,6 +251,22 @@ export async function handlePostback(request, env) {
 
   delete out.key;
   delete out.signature;
-  await recordConversion(owner.userId, out);
+
+  // Link postback to the leaderboard CTA click when yr_click is echoed back.
+  let siteId = null;
+  const rawClickRef = out.yr_click;
+  const clickRef = Array.isArray(rawClickRef) ? rawClickRef[0] : rawClickRef;
+  if (clickRef) {
+    const click = await one(
+      "SELECT site_id, owner_id FROM site_clicks WHERE click_ref=$1",
+      [clickRef]
+    );
+    if (click && click.owner_id === owner.userId) {
+      siteId = click.site_id;
+      await one("UPDATE site_clicks SET converted_at=now() WHERE click_ref=$1", [clickRef]);
+    }
+  }
+
+  await recordConversion(owner.userId, out, siteId);
   return json({ ok: true }, 200, legacyHeaders);
 }
