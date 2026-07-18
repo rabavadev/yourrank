@@ -555,8 +555,8 @@ table.ref-table td{padding:8px 8px;border-bottom:1px solid var(--line);color:var
 
 /* ===== Dashboard shell: sidebar + focused pages (leaderboard editor) ===== */
 .lb-shell{display:flex;gap:22px;align-items:flex-start}
-.lb-side{position:sticky;top:78px;flex:0 0 200px;display:flex;flex-direction:column;gap:2px;padding:6px 6px 6px 18px;border:1px solid var(--line);border-radius:12px;background:var(--panel);max-height:calc(100vh - 100px);overflow-y:auto;scrollbar-width:none;-ms-overflow-style:none}
-.lb-side::-webkit-scrollbar{display:none}
+.lb-side{position:sticky;top:78px;flex:0 0 200px;display:flex;flex-direction:column;gap:2px;padding:6px 6px 6px 18px;border:1px solid var(--line);border-radius:12px;background:var(--panel);max-height:calc(100vh - 100px);overflow-y:auto;scrollbar-width:none;-ms-overflow-style:none;scrollbar-color:transparent transparent}
+.lb-side::-webkit-scrollbar{width:0;height:0;display:none;background:transparent}
 .lb-side-grp{font-family:var(--mono);font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-mute);padding:12px 10px 4px;opacity:.7}
 .lb-nav{display:flex;align-items:center;gap:10px;width:100%;text-align:left;background:transparent;border:0;color:var(--ink-soft);font:600 14px var(--sans);padding:9px 10px;border-radius:8px;cursor:pointer;transition:background .12s,color .12s}
 .lb-nav:hover{background:var(--panel-2);color:var(--ink)}
