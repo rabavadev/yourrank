@@ -8,14 +8,31 @@ export function playerRow(p = { name: "", wagered: "", prize: "", score: "", han
     <td><input class="p-name" placeholder="Player name" value="${esc(p.name)}"></td>
     <td class="num"><input class="p-wager" inputmode="decimal" placeholder="0" value="${esc(p.wagered)}"></td>
     <td class="num"><input class="p-prize" inputmode="decimal" placeholder="0" value="${esc(p.prize)}"></td>
-    <td class="num"><input class="p-score" inputmode="decimal" placeholder="0" value="${esc(p.score)}"></td>
-    <td class="num"><input class="p-hands" inputmode="decimal" placeholder="0" value="${esc(p.hands)}"></td>
-    <td class="num"><input class="p-net-profit" inputmode="decimal" placeholder="0" value="${esc(p.netProfit)}"></td>
-    <td class="num"><input class="p-win-rate" inputmode="decimal" placeholder="0" value="${esc(p.winRate)}"></td>
-    <td class="num"><input class="p-change" inputmode="decimal" placeholder="0" value="${esc(p.change)}"></td>
+    <td class="num col-score" hidden><input class="p-score" inputmode="decimal" placeholder="0" value="${esc(p.score)}"></td>
+    <td class="num col-hands" hidden><input class="p-hands" inputmode="decimal" placeholder="0" value="${esc(p.hands)}"></td>
+    <td class="num col-net" hidden><input class="p-net-profit" inputmode="decimal" placeholder="0" value="${esc(p.netProfit)}"></td>
+    <td class="num col-win" hidden><input class="p-win-rate" inputmode="decimal" placeholder="0" value="${esc(p.winRate)}"></td>
+    <td class="num col-change" hidden><input class="p-change" inputmode="decimal" placeholder="0" value="${esc(p.change)}"></td>
     <td class="act"><button class="row-x" title="Remove" aria-label="Remove player" type="button">×</button></td>`;
   tr.querySelector(".row-x").addEventListener("click", () => { tr.remove(); renumber(); toggleEmpty(); });
   return tr;
+}
+
+const FIELD_COLS = {
+  score: "col-score",
+  hands: "col-hands",
+  netProfit: "col-net",
+  winRate: "col-win",
+  change: "col-change",
+};
+
+export function applyPlayerFieldVisibility(fields) {
+  const table = $("rows")?.closest("table");
+  const merged = { ...state.EXTRA?.playerFields, ...(fields || {}) };
+  for (const [key, cls] of Object.entries(FIELD_COLS)) {
+    const shown = merged[key] !== false;
+    table?.querySelectorAll(`.${cls}`).forEach((el) => { el.hidden = !shown; });
+  }
 }
 
 export function renderPlayers(list) {
@@ -24,6 +41,7 @@ export function renderPlayers(list) {
   list.forEach((p) => b.appendChild(playerRow(p)));
   renumber();
   toggleEmpty();
+  applyPlayerFieldVisibility();
 }
 
 export function renumber() {
@@ -105,6 +123,7 @@ $("addRow").addEventListener("click", () => {
   $("rows").appendChild(playerRow());
   renumber();
   toggleEmpty();
+  applyPlayerFieldVisibility();
 });
 
 const NAME_RE = /^[\p{L}\p{N}\p{P}\p{S}\s]+$/u;

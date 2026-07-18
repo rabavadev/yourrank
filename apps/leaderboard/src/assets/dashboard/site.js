@@ -2,7 +2,7 @@
 import { $, esc, fromLocalInput, getCsrf, guardAuth, logError, toLocalInput } from "./utils.js";
 import { state } from "./state.js";
 import { renderBoardSwitcher, renderBoardsPage, renderSidebarBoardSwitcher } from "./boards.js";
-import { renderPlayers, renumber, toggleEmpty } from "./players.js";
+import { applyPlayerFieldVisibility, renderPlayers, renumber, toggleEmpty } from "./players.js";
 
 export const DEFAULT_SECTIONS = {
   hero: true,
@@ -195,6 +195,7 @@ export function collect() {
     rules: state.EXTRA.rules,
     socials: state.EXTRA.socials,
     sections: state.EXTRA.sections,
+    playerFields: state.EXTRA.playerFields,
     players,
     legal: {
       terms: ($("f_legal_terms")?.value || "").trim(),
@@ -481,6 +482,40 @@ export function renderSections() {
   list.addEventListener("input", collectSections);
   list.addEventListener("change", collectSections);
   collectSections();
+}
+
+const DEFAULT_PLAYER_FIELDS = {
+  score: { label: "Score", col: "col-score" },
+  hands: { label: "Hands", col: "col-hands" },
+  netProfit: { label: "Net profit", col: "col-net" },
+  winRate: { label: "Win rate", col: "col-win" },
+  change: { label: "Change", col: "col-change" },
+};
+
+function collectPlayerFields() {
+  const list = $("playerFieldsList");
+  if (!list) return;
+  const current = { ...(state.EXTRA?.playerFields || {}) };
+  for (const row of list.querySelectorAll("[data-field]")) {
+    const key = row.dataset.field;
+    current[key] = row.querySelector(".field-toggle")?.checked ?? true;
+  }
+  state.EXTRA.playerFields = current;
+  applyPlayerFieldVisibility(current);
+  markDirty();
+}
+
+export function renderPlayerFields() {
+  const list = $("playerFieldsList");
+  if (!list) return;
+  const current = { ...DEFAULT_PLAYER_FIELDS, ...(state.EXTRA?.playerFields || {}) };
+  list.innerHTML = Object.entries(DEFAULT_PLAYER_FIELDS).map(([key, meta]) => `<div class="section-row" data-field="${esc(key)}">
+<span class="section-name">${esc(meta.label)}</span>
+<label class="switch" title="Show in player table"><input type="checkbox" class="field-toggle" ${current[key] !== false ? "checked" : ""} /><span class="switch-track"></span></label>
+</div>`).join("");
+  list.addEventListener("input", collectPlayerFields);
+  list.addEventListener("change", collectPlayerFields);
+  collectPlayerFields();
 }
 
 export function collectTemplateText() {
