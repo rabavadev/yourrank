@@ -11,7 +11,7 @@ export const privacyPage = legal("Privacy Policy", "July 2026", `
 <li><b>Payments:</b> plan, amount, and payment status. Crypto payments are processed by NOWPayments and Telegram Star payments are processed by Telegram — we never see or store wallet keys, card numbers, or Telegram account credentials.</li>
 </ul>
 <h2>Cookies</h2>
-<p>Two cookies: a session cookie to keep you signed in, and a CSRF token cookie for security. No ad trackers, no analytics cookies, no third-party pixels.</p>
+<p>Essential cookies keep you signed in and secure your dashboard actions. With your consent, we also set analytics cookies to count page views and understand how visitors interact with leaderboards. You can choose to accept only essential cookies via the banner on your first visit. We never load third-party ad trackers or pixels.</p>
 <h2>Who else sees data</h2>
 <p>Our infrastructure runs on Cloudflare (hosting, database). Payment processing runs through NOWPayments. That's it — we don't sell or share your data with anyone else.</p>
 <h2>How long we keep it</h2>

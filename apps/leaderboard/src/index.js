@@ -728,27 +728,33 @@ a{color:#c8ff00;text-decoration:none;font-weight:600}</style></head><body>
         }
         if (r.suspended) return new Response(suspendedPage(nonce), { status: 403, headers: HTML_N });
         // Stable visitor token for new-vs-returning analytics. 1-year cookie, hashed before DB storage.
+        // Only set analytics cookies when the user has explicitly opted in via the cookie banner.
         const respHeaders = new Headers({ ...HTML_N, "cache-control": "no-store" });
         let visitorHash = null;
         const cookies = request.headers.get("cookie") || "";
         let vid = "";
+        let consent = "";
         for (const c of cookies.split(";")) {
           const [k, v] = c.trim().split("=");
-          if (k === "yr_vid") { vid = decodeURIComponent(v || ""); break; }
+          if (k === "yr_vid") { vid = decodeURIComponent(v || ""); }
+          if (k === "yr_consent") { consent = decodeURIComponent(v || ""); }
         }
-        if (!vid) {
-          vid = crypto.randomUUID();
-          respHeaders.append("set-cookie", `yr_vid=${vid}; Path=/; Max-Age=31536000; SameSite=Lax; Secure`);
-        }
-        if (vid && r.id) visitorHash = await hashToken(`${vid}:${r.id}`);
+        const analyticsAllowed = consent === "all";
+        if (analyticsAllowed) {
+          if (!vid) {
+            vid = crypto.randomUUID();
+            respHeaders.append("set-cookie", `yr_vid=${vid}; Path=/; Max-Age=31536000; SameSite=Lax; Secure`);
+          }
+          if (vid && r.id) visitorHash = await hashToken(`${vid}:${r.id}`);
 
-        // Only count one view per slug per browser per 24h (cookie-based cooldown).
-        const viewCookieName = `__v_${slug}`;
-        const alreadyViewed = new RegExp(`(?:^|;\\s*)${viewCookieName}=`).test(cookies);
-        if (r.id && !alreadyViewed) {
-          const ref = request.headers.get("referer") || request.headers.get("Referer") || "";
-          enqueueBump(env, ctx, r.id, "views", ref, visitorHash);
-          respHeaders.append("set-cookie", `${viewCookieName}=1; Path=/${slug}; Max-Age=86400; SameSite=Lax; Secure`);
+          // Only count one view per slug per browser per 24h (cookie-based cooldown).
+          const viewCookieName = `__v_${slug}`;
+          const alreadyViewed = new RegExp(`(?:^|;\\s*)${viewCookieName}=`).test(cookies);
+          if (r.id && !alreadyViewed) {
+            const ref = request.headers.get("referer") || request.headers.get("Referer") || "";
+            enqueueBump(env, ctx, r.id, "views", ref, visitorHash);
+            respHeaders.append("set-cookie", `${viewCookieName}=1; Path=/${slug}; Max-Age=86400; SameSite=Lax; Secure`);
+          }
         }
         const paid = r.plan !== "free";
         return new Response(

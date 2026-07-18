@@ -4,6 +4,9 @@ const TOAST_DURATION_MS = 1300;
 const POLL_INTERVAL_MS = 30000;
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const consentAllowsAnalytics = () => {
+  try { return localStorage.getItem("yr_consent") === "all" || document.cookie.includes("yr_consent=all"); } catch { return false; }
+};
 const money = (n) => "$" + Number(n).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const moneyShort = (n) => "$" + Number(n).toLocaleString("en-US", { maximumFractionDigits: 0 });
 const initials = (name) => { const c = String(name).replace(/\*/g, "").trim(); return c.length >= 2 ? c.slice(0, 2).toUpperCase() : (c ? c.toUpperCase() : "★"); };
@@ -307,7 +310,7 @@ function boot() {
   const cc = $("[data-copy-code]");
   if (cc) cc.addEventListener("click", async () => { try { await navigator.clipboard.writeText(b.code || ""); cc.classList.add("copied"); const p = cc.textContent; cc.textContent = "Copied!"; setTimeout(() => { cc.classList.remove("copied"); cc.textContent = p; }, TOAST_DURATION_MS); } catch (_) { /* ignored */ }
     try { const cs = document.querySelector("[data-copy-status]"); if(cs) cs.textContent = "Code copied to clipboard"; } catch (_) { /* ignored */ }
-    try { if (window.__SLUG__) navigator.sendBeacon("/api/track/copy", new Blob([JSON.stringify({ slug: window.__SLUG__ })], { type: "application/json" })); } catch (_) { /* ignored */ } });
+    try { if (window.__SLUG__ && consentAllowsAnalytics()) navigator.sendBeacon("/api/track/copy", new Blob([JSON.stringify({ slug: window.__SLUG__ })], { type: "application/json" })); } catch (_) { /* ignored */ } });
 
   const sc = $("[data-share='copy']");
   if (sc) sc.addEventListener("click", async () => {
@@ -505,11 +508,11 @@ document.addEventListener("DOMContentLoaded", () => {
     lastY = y;
   }, { passive: true });
 
-  // Track max scroll depth and send once per page session.
+  // Track max scroll depth and send once per page session (only with analytics consent).
   let maxScroll = 0;
   let scrollSent = false;
   function sendScroll() {
-    if (scrollSent || !window.__SLUG__) return;
+    if (scrollSent || !window.__SLUG__ || !consentAllowsAnalytics()) return;
     scrollSent = true;
     const depth = Math.max(0, Math.min(100, Math.round(maxScroll)));
     const payload = JSON.stringify({ slug: window.__SLUG__, depth });
