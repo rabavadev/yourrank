@@ -174,7 +174,7 @@ async function getPublicBoards(env, uid) {
   return (rows || []).map((r) => ({ slug: r.slug, name: r.name || r.slug }));
 }
 
-async function getPlayers(env, siteId) {
+export async function getPlayers(env, siteId) {
   const rows = await query(
     "SELECT name, wagered, prize, score, hands, net_profit, win_rate, change FROM players WHERE site_id=$1 ORDER BY wagered DESC",
     [siteId]
