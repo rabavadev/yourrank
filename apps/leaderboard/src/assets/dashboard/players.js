@@ -126,6 +126,30 @@ $("addRow").addEventListener("click", () => {
   applyPlayerFieldVisibility();
 });
 
+function addQuickRow() {
+  const name = $("qa_name").value.trim();
+  if (!name) return;
+  if (state.ME && $("rows").children.length >= state.ME.limits.players && state.ME.limits.players < 999) {
+    const el = $("limitMsg") || $("status");
+    el.textContent = "Player limit reached. Upgrade to add more.";
+    setTimeout(() => el.textContent = "", 5000);
+    return;
+  }
+  const wagered = parseFloat($("qa_wager").value.replace(/[$,\s]/g, "")) || 0;
+  const prize = parseFloat($("qa_prize").value.replace(/[$,\s]/g, "")) || 0;
+  $("rows").appendChild(playerRow({ name, wagered, prize }));
+  $("qa_name").value = "";
+  $("qa_wager").value = "";
+  $("qa_prize").value = "";
+  renumber();
+  toggleEmpty();
+}
+
+$("qa_add")?.addEventListener("click", addQuickRow);
+$("qa_name")?.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); $("qa_wager")?.focus(); } });
+$("qa_wager")?.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); $("qa_prize")?.focus(); } });
+$("qa_prize")?.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); addQuickRow(); $("qa_name")?.focus(); } });
+
 const NAME_RE = /^[\p{L}\p{N}\p{P}\p{S}\s]+$/u;
 
 export function sanitizeImportName(s) {
