@@ -38,7 +38,7 @@ const shareCss = `
 
 function shareSection(pageUrl, name) {
   const u = encodeURIComponent(pageUrl);
-  const text = encodeURIComponent(`Check out ${name} leaderboard`);
+  const text = encodeURIComponent(`Check out ${name}`);
   const safe = (s) => String(s).replace(/"/g, "&quot;").replace(/</g, "&lt;");
   return `<section class="share-sec" aria-label="Share this board">
 <h3 class="share-title">Share this board</h3>
@@ -49,6 +49,10 @@ function shareSection(pageUrl, name) {
   <a class="share-btn" href="https://api.whatsapp.com/send?text=${text}%20${u}" target="_blank" rel="noopener">WhatsApp</a>
 </div>
 </section>`;
+}
+
+function shareScriptNonce(nonce) {
+  return `<script nonce="${nonce}">document.addEventListener("DOMContentLoaded",function(){document.querySelectorAll("[data-share='copy']").forEach(function(btn){btn.addEventListener("click",async function(){try{await navigator.clipboard.writeText(btn.dataset.url||location.href);var p=btn.textContent;btn.textContent="Copied!";setTimeout(function(){btn.textContent=p},1300)}catch(e){}})});});</script>`;
 }
 
 // ---------------------------------------------------------------------------
@@ -631,7 +635,7 @@ export function renderPlayerProfile(data, player, history, opts) {
 <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>${pageTitle}</title><meta name="description" content="${esc(player.name)} profile on ${esc(b.name || "YourRank")}." />
 <link rel="canonical" href="${canonical}" />
-${fontLink}${cssLink}${templateStyle}${profileStyle}${fontStyle}
+${fontLink}${cssLink}${templateStyle}${profileStyle}${shareCss}${fontStyle}
 </head><body data-template="${tpl}" class="${fullPage ? "legal-page" : "legal"}">
 <a class="skip-link" href="#main-content">Skip to content</a>
 ${header}
@@ -646,10 +650,12 @@ ${header}
     <h2 class="sec-title">History</h2>
     ${historyHtml}
   </div>
+  ${shareSection(canonical, player.name)}
   <a class="pp-back" href="${backHref}">← Back to ${esc(b.name || "leaderboard")}</a>
 </div>
 </main>
 ${footer}
+${shareScriptNonce(opts.nonce)}
 </body></html>`;
 }
 
@@ -815,7 +821,7 @@ export function renderStreamerProfile(data, opts) {
 <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>${pageTitle}</title><meta name="description" content="${esc(b.tagline || b.name || "YourRank")} streamer profile." />
 <link rel="canonical" href="${canonical}" />
-${fontLink}${cssLink}${templateStyle}${profileStyle}
+${fontLink}${cssLink}${templateStyle}${profileStyle}${shareCss}
 </head><body data-template="${tpl}" class="${fullPage ? "legal-page" : "legal"}">
 <a class="skip-link" href="#main-content">Skip to content</a>
 ${header}
@@ -840,10 +846,12 @@ ${header}
     <h2>Past boards</h2>
     ${archivesHtml}
   </section>
+  ${shareSection(canonical, b.name || "this streamer")}
   ${botCta}
 </div>
 </main>
 ${footer}
+${shareScriptNonce(opts.nonce)}
 </body></html>`;
 }
 
