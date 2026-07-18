@@ -31,6 +31,11 @@ const optionalNumber = (max = Number.MAX_SAFE_INTEGER) =>
     .optional()
     .transform((v) => (v === "" || v === undefined || v === null ? undefined : Number(v)))
     .pipe(z.number().min(0).max(max).optional());
+const optionalSignedNumber = (max = Number.MAX_SAFE_INTEGER) =>
+  z.union([z.number(), z.string()])
+    .optional()
+    .transform((v) => (v === "" || v === undefined || v === null ? undefined : Number(v)))
+    .pipe(z.number().max(max).optional());
 
 // Accepts ISO date strings or numbers.
 const optionalDateString = () => z.string().max(64).optional();
@@ -44,6 +49,11 @@ const playerItemSchema = z
     name: z.string().trim().min(1).max(80).optional(),
     wagered: optionalNumber(1e15),
     prize: optionalNumber(1e15),
+    score: optionalNumber(1e15),
+    hands: optionalNumber(1e15),
+    netProfit: optionalSignedNumber(1e15),
+    winRate: optionalNumber(1e15),
+    change: optionalSignedNumber(1e15),
   })
   .strict();
 
@@ -92,12 +102,26 @@ const partnerSchema = z
   })
   .strict();
 
+const prizesSchema = z
+  .object({
+    prizePoolLabel: z.string().max(40).optional(),
+    countdownLabel: z.string().max(40).optional(),
+    currency: z.string().max(6).optional(),
+    hidePrizeAmounts: z.boolean().optional(),
+    payoutsLabel: z.string().max(40).optional(),
+  })
+  .strict()
+  .optional();
+const textSchema = z.record(z.string().max(MAX_MEDIUM_TEXT)).optional();
 const brandingSchema = z
   .object({
     template: z.string().max(50).optional(),
     logo: z.union([z.string().max(MAX_LOGO_BASE64), z.null()]).optional(),
     accentA: z.string().max(8).optional(),
     accentB: z.string().max(8).optional(),
+    font: z.string().max(50).optional(),
+    text: textSchema,
+    prizes: prizesSchema,
   })
   .strict();
 
@@ -229,6 +253,16 @@ export const handlerSchemas: Record<string, ZodSchema<any>> = {
       rules: z.array(z.union([z.string().max(500), socialItemSchema, whyStatItemSchema])).max(40).optional(),
       whyStats: z.array(whyStatItemSchema).max(20).optional(),
       chips: z.array(z.string().max(100)).max(20).optional(),
+      sections: z.record(z.boolean()).optional(),
+      playerFields: z.record(z.boolean()).optional(),
+      legal: z.record(z.string().max(MAX_LONG_TEXT)).optional(),
+      passwordProtected: z.boolean().optional(),
+      autoReset: z
+        .object({
+          enabled: z.boolean().optional(),
+          clear: z.enum(["wagers", "players", "none"]).optional(),
+        })
+        .optional(),
       extraJson: jsonbLike,
       themeJson: jsonbLike,
     })
