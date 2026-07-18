@@ -4,7 +4,7 @@ import { withWorkerFetch } from "../../../shared/with-worker.js";
 import { RateLimiter } from "../../../shared/rate-limiter-do.js";
 import { populateEnv } from "../../../shared/env.js";
 import { getPublicSite, getByUser, getArchives, ARCHIVE_LIMITS } from "./site.js";
-import { renderLeaderboard, renderLegalPage, renderPlayerProfile, renderHallOfFame, renderStreamerProfile } from "./render.js";
+import { renderEmbed, renderHallOfFame, renderLeaderboard, renderLegalPage, renderPlayerProfile, renderStreamerProfile } from "./render.js";
 import { PAGES } from "./pages.js";
 import { bumpStat } from "./stats.js";
 import { runAutoReset } from "./auto-reset.js";
@@ -328,6 +328,11 @@ async function handleRequest(request, env, ctx, meta) {
               }),
               { headers: { ...HTML_N, "cache-control": "no-store" } }
             );
+          }
+          if (method === "GET" && path === "/embed") {
+            const r = await getPublicSite(env, customSlug);
+            if (!r || r.suspended) return new Response(notFoundPage(customSlug, nonce), { status: 404, headers: HTML_N });
+            return new Response(renderEmbed(r.data, { nonce, slug: customSlug, isCustomDomain: true }), { headers: { ...HTML_N, "cache-control": "no-store" } });
           }
           // Everything else on a custom domain → 404
           return new Response(notFoundPage("", nonce), { status: 404, headers: HTML_N });
@@ -685,6 +690,15 @@ a{color:#c8ff00;text-decoration:none;font-weight:600}</style></head><body>
         );
       }
 
+      // --- embed widget: /<slug>/embed ---
+      if (method === "GET" && /^\/[^/]+\/embed$/.test(path)) {
+        let slug;
+        try { slug = decodeURIComponent(path.slice(1).split("/")[0]).toLowerCase(); } catch { return new Response(notFoundPage("", nonce), { status: 404, headers: HTML_N }); }
+        if (RESERVED.has(slug)) return new Response(notFoundPage(slug, nonce), { status: 404, headers: HTML_N });
+        const r = await getPublicSite(env, slug);
+        if (!r || r.suspended) return new Response(notFoundPage(slug, nonce), { status: 404, headers: HTML_N });
+        return new Response(renderEmbed(r.data, { nonce, slug, isCustomDomain: false }), { headers: { ...HTML_N, "cache-control": "no-store" } });
+      }
       // --- per-site legal pages at /<slug>/<legal> ---
       if (method === "GET" && /^\/[^/]+\/(terms|privacy|responsible|cookies|refund|contact)$/.test(path)) {
         let slug;

@@ -1,5 +1,5 @@
 // Dashboard entry point. Coordinates data loading and initial render across modules.
-import { $, getCsrf, logError, toLocalInput } from "./dashboard/utils.js";
+import { $, esc, getCsrf, logError, toLocalInput } from "./dashboard/utils.js";
 import { state } from "./dashboard/state.js";
 import { navTo, setupShell } from "./dashboard/shell.js";
 import { renderBoardSwitcher, renderSidebarBoardSwitcher, renderBoardsPage } from "./dashboard/boards.js";
@@ -79,6 +79,16 @@ async function init() {
   $("a_label").placeholder = new Date().toLocaleString("en-US", { month: "long", year: "numeric", timeZone: "UTC" });
   $("liveLink").textContent = location.host + "/" + state.SLUG;
   $("liveLink").href = "/" + state.SLUG;
+  const embedCode = `<iframe src="https://${location.host}/${state.SLUG}/embed" width="100%" height="640" frameborder="0" loading="lazy" title="${esc(state.SLUG)} leaderboard"></iframe>`;
+  const embedTextarea = $("embedCode");
+  if (embedTextarea) embedTextarea.value = embedCode;
+  const embedPreview = $("embedPreview");
+  if (embedPreview) { embedPreview.href = `/${state.SLUG}/embed`; embedPreview.target = "_blank"; }
+  $("copyEmbed")?.addEventListener("click", () => {
+    if (!embedTextarea) return;
+    embedTextarea.select();
+    navigator.clipboard.writeText(embedTextarea.value).catch(() => {});
+  });
   $("loading").hidden = true;
   $("dash").hidden = false;
   setupShell();

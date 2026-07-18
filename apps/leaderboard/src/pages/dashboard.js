@@ -106,6 +106,9 @@ export const dashboardPage = leaderboardPageHtml({
 <div class="stat-tile"><span class="stat-num" id="st_clicks30">–</span><span class="stat-lbl">Join clicks · 30d</span></div></div>
 <div class="stat-chart"><div class="stat-bars" id="statBars" title="Daily views, last 14 days"></div><div class="stat-chart-lbl"><span id="statFrom"></span><span>Daily views, last 14 days</span><span>today</span></div></div>
 <p class="hint" id="statsEmpty" hidden>No views yet — share your page link in your stream panels and Discord to get it moving.</p></div>
+<div class="card"><h2>Embed widget</h2><p class="card-sub">Copy this one-line iframe into your site, OBS browser source, or any stream panel. It auto-refreshes every 60 seconds.</p>
+<div class="field"><textarea id="embedCode" rows="3" readonly style="font-family:var(--mono);font-size:13px"></textarea></div>
+<div class="d-flex gap-8"><button class="btn btn--sm" id="copyEmbed" type="button">Copy code</button><a class="btn btn--sm btn--ghost" id="embedPreview" href="#" target="_blank">Preview</a></div></div>
 </section>
 <section class="lb-page" data-page="referrals">
 <div class="lb-phead"><button class="lb-menu" type="button" aria-label="Show sections" data-menu aria-expanded="false" aria-controls="lbSide">☰</button><div><h1 tabindex="-1">Referrals</h1><p class="lb-psub">Invite other streamers, earn free Pro time</p></div></div>
