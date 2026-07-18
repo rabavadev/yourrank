@@ -649,8 +649,17 @@ table.ref-table td{padding:8px 8px;border-bottom:1px solid var(--line);color:var
 /* Live preview panel on the Design page */
 .design-grid{display:grid;grid-template-columns:1fr 440px;gap:20px;align-items:start}
 .design-preview{position:sticky;top:14px}
-.design-preview .preview-frame-wrap{border:1px solid var(--line);border-radius:12px;overflow:auto;background:#000;line-height:0}
-.design-preview iframe{width:1100px;height:680px;border:none;background:transparent}
+.preview-devices{display:flex;gap:8px;margin-bottom:12px}
+.preview-device.is-active{background:var(--accent);color:#000;border-color:var(--accent)}
+.design-preview .preview-frame-wrap{border:1px solid var(--line);border-radius:12px;overflow:auto;background:#000;line-height:0;display:flex;justify-content:center}
+.design-preview iframe{width:1100px;height:680px;border:none;background:transparent;transition:width .2s ease}
+.pro-accordion{border:1px solid var(--line-2);border-radius:12px;background:var(--panel);margin-bottom:16px}
+.pro-accordion__summary{cursor:pointer;padding:14px 16px;display:flex;flex-direction:column;gap:4px;list-style:none}
+.pro-accordion__summary::-webkit-details-marker{display:none}
+.pro-accordion__summary::marker{display:none}
+.pro-accordion__title{font-weight:800;font-size:17px;display:flex;align-items:center;gap:8px}
+.pro-accordion__body{padding:0 12px 12px}
+.pro-accordion .card{margin:12px 0}
 @media(max-width:1100px){
   .design-grid{grid-template-columns:1fr}
   .design-preview{position:static}

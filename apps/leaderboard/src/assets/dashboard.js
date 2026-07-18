@@ -63,6 +63,17 @@ async function init() {
   renderSections();
   renderTemplateText();
   renderLegal();
+  const proAccordion = $("proAccordion");
+  if (proAccordion) proAccordion.open = state.ME.plan !== "free";
+  document.querySelectorAll(".preview-device").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const iframe = $("designPreview");
+      if (!iframe) return;
+      document.querySelectorAll(".preview-device").forEach((b) => b.classList.remove("is-active"));
+      btn.classList.add("is-active");
+      iframe.style.width = btn.dataset.width || "100%";
+    });
+  });
   if (p.customDomain !== undefined) $("f_domain").value = p.customDomain || "";
   if (p.customDomain && p.domainStatus) renderDomainStatus(p.domainStatus, "");
   const pubToggle = $("pubToggle");
@@ -111,8 +122,8 @@ async function init() {
 function renderDraftBanner(p) {
   const banner = $("draftBanner");
   if (!banner) return;
-  const draftBoards = (p.boards || []).filter((b) => b.isDraft);
-  const active = draftBoards.find((b) => b.id === (p.siteId || state.ACTIVE_SITE_ID)) || draftBoards[0];
+  const activeId = p.siteId || state.ACTIVE_SITE_ID;
+  const active = (p.boards || []).find((b) => b.id === activeId && b.isDraft);
   if (!active) { banner.hidden = true; return; }
   banner.hidden = false;
   $("draftName").textContent = active.name || active.slug || "this board";

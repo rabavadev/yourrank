@@ -78,7 +78,7 @@ export const dashboardPage = leaderboardPageHtml({
 <div class="card"><h2>Finish setup</h2><p class="card-sub">A few steps to a page worth sharing.</p><div class="lb-steps" id="ov_steps">
 <div class="lb-step" id="ov_step_brand"><span class="lb-step-n">Step 1</span><span class="lb-step-t">Brand &amp; prize</span><span class="lb-step-d">Set your name, code and prize in <button class="lb-linkbtn" type="button" data-jump="board">Prize &amp; players</button>.</span></div>
 <div class="lb-step" id="ov_step_players"><span class="lb-step-n">Step 2</span><span class="lb-step-t">Add players</span><span class="lb-step-d">Add or import your ranked list.</span></div>
-<div class="lb-step" id="ov_step_bot"><span class="lb-step-n">Step 3</span><span class="lb-step-t">Connect the bot</span><span class="lb-step-d"><a class="lb-linkbtn" href="/dashboard/bot/setup">Connect your Telegram bot</a> so viewers can subscribe and get alerts.</span></div>
+<div class="lb-step" id="ov_step_bot"><span class="lb-step-n">Step 3</span><span class="lb-step-t">Connect the bot <span class="pill pill--muted">Optional</span></span><span class="lb-step-d"><a class="lb-linkbtn" href="/dashboard/bot/setup">Connect your Telegram bot</a> so viewers can subscribe and get alerts.</span></div>
 <div class="lb-step" id="ov_step_share"><span class="lb-step-n">Step 4</span><span class="lb-step-t">Share your leaderboard link</span><span class="lb-step-d">Publish your page, then drop your URL in stream panels and Discord.</span></div>
 <div class="lb-step" id="ov_step_postback"><span class="lb-step-n">Step 5</span><span class="lb-step-t">Add postback tracking</span><span class="lb-step-d"><a class="lb-linkbtn" href="/dashboard/attribution">Set up casino postbacks</a> to see which viewers convert into depositors.</span></div>
 </div></div>
@@ -165,6 +165,12 @@ export const dashboardPage = leaderboardPageHtml({
 <input type="hidden" id="f_template" value="classic" />
 <div class="template-grid" id="templateGallery" aria-label="Page templates"></div>
 <p class="hint template-status" id="templateStatus" role="status" aria-live="polite"></p></div>
+<details class="pro-accordion" id="proAccordion">
+<summary class="pro-accordion__summary">
+<span class="pro-accordion__title">Pro features<span class="pill pill--info ml-6">PRO</span></span>
+<span class="hint">Branding, sections, prize customization</span>
+</summary>
+<div class="pro-accordion__body">
 <div class="card" id="brandCard"><h2>Branding <span class="pill pill--info ml-6">PRO</span></h2><p class="card-sub">Your logo and page colors. Free pages use the default look.</p>
 <div id="brandBody">
 <div class="grid2">
@@ -195,6 +201,8 @@ export const dashboardPage = leaderboardPageHtml({
 <label class="hint chk"><input type="checkbox" id="f_hidePrizeAmounts" /> Hide prize amounts on the public page</label>
 </div>
 <div class="empty" id="prizesLock" hidden>Prize customization is a Pro feature. <a href="#" id="prizesUpgrade">Upgrade to unlock it</a>.</div></div>
+</div>
+</details>
 <div class="card" id="textCard"><h2>Template text</h2><p class="card-sub">Change the copy inside your selected design. Keys with an empty value fall back to the default.</p>
 <div class="text-editor" id="textList"></div></div>
 <div class="card" id="legalCard"><h2>Legal pages</h2><p class="card-sub">Set your own Terms, Privacy, and other legal copy. Empty fields use defaults and the footer links go to your own /terms, /privacy, etc.</p>
@@ -203,7 +211,9 @@ export const dashboardPage = leaderboardPageHtml({
 <div class="socials-editor" id="socialsList"></div></div>
 </div>
 <div class="design-preview">
-<div class="card"><h2>Live preview</h2><p class="card-sub">Your public page updates here as you change the design. Save to publish it.</p><div class="preview-frame-wrap"><iframe id="designPreview" src="" loading="eager" title="Live preview"></iframe></div></div>
+<div class="card"><h2>Live preview</h2><p class="card-sub">Your public page updates here as you change the design. Save to publish it.</p>
+<div class="preview-devices"><button class="btn btn--xs btn--ghost preview-device is-active" data-width="100%" type="button">🖥 Desktop</button><button class="btn btn--xs btn--ghost preview-device" data-width="390px" type="button">📱 Mobile</button></div>
+<div class="preview-frame-wrap"><iframe id="designPreview" src="" loading="eager" title="Live preview"></iframe></div></div>
 </div>
 </div>
 </section>
