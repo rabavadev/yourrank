@@ -556,6 +556,10 @@ function collectPlayerFields() {
   }
   state.EXTRA.playerFields = current;
   applyPlayerFieldVisibility(current);
+}
+
+function onPlayerFieldChange() {
+  collectPlayerFields();
   markDirty();
 }
 
@@ -567,8 +571,8 @@ export function renderPlayerFields() {
 <span class="section-name">${esc(meta.label)}</span>
 <label class="switch" title="Show in player table"><input type="checkbox" class="field-toggle" ${current[key] !== false ? "checked" : ""} /><span class="switch-track"></span></label>
 </div>`).join("");
-  list.addEventListener("input", collectPlayerFields);
-  list.addEventListener("change", collectPlayerFields);
+  list.addEventListener("input", onPlayerFieldChange);
+  list.addEventListener("change", onPlayerFieldChange);
   collectPlayerFields();
 }
 

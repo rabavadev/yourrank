@@ -151,7 +151,9 @@ export function invalidateUserCache(env, uid) {
 export const getBySlug = (env, slug) => getCached(env, slug, () => one(`SELECT ${SITE_COLUMNS} FROM sites WHERE slug=$1`, [slug]));
 
 // Multi-board: returns the ACTIVE board for a user (or the first board if none set).
-const getByUser = (env, uid) => getCached(env, uid, () => one(`SELECT ${SITE_COLUMNS} FROM sites WHERE user_id=$1 ORDER BY CASE WHEN id=(SELECT active_site_id FROM users WHERE id=$1) THEN 0 ELSE 1 END, id ASC LIMIT 1`, [uid]));
+// Not cached: the dashboard reads this on every load and must see the latest saves
+// immediately, even when the request hits a different worker isolate.
+const getByUser = (env, uid) => one(`SELECT ${SITE_COLUMNS} FROM sites WHERE user_id=$1 ORDER BY CASE WHEN id=(SELECT active_site_id FROM users WHERE id=$1) THEN 0 ELSE 1 END, id ASC LIMIT 1`, [uid]);
 
 // Multi-board: returns ALL boards for a user.
 export async function getAllBoards(env, uid) {

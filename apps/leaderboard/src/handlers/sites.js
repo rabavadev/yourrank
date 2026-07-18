@@ -175,7 +175,7 @@ export async function handleGetSite(request, env) {
   if (!s) return bad("No site for this account", 404);
   const boards = await getUserBoardsList(env, user.id);
   const onboarding = await onboardingForSite(env, s, user.id, plan);
-  return json({ ok: true, slug: s.slug, published: s.published, plan: plan, data: s.data, socials: s.socials, notify: s.notify || {}, archives: s.archives, boards, siteId: s.id, customDomain: s.customDomain || "", domainStatus: s.domainStatus || "pending", onboarding, templates: templateCatalog() });
+  return json({ ok: true, slug: s.slug, published: s.published, plan: plan, data: s.data, socials: s.socials, notify: s.notify || {}, archives: s.archives, boards, siteId: s.id, customDomain: s.customDomain || "", domainStatus: s.domainStatus || "pending", onboarding, templates: templateCatalog() }, 200, { "cache-control": "no-store, no-cache, must-revalidate" });
 }
 
 export async function handleListBoards(request, env) {
