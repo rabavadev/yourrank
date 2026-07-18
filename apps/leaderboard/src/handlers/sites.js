@@ -1,6 +1,6 @@
 // Site handlers: get, put, list, create, archive, stats, heatmap, notifications, custom domain
 import { requireUser, json, bad, ok, readJson, rateLimit, slugify, clientIp } from "../auth.js";
-import { getByUser, getUserSite, getUserSiteById, getUserBoardsList, createBoard, duplicateBoard, createArchive, deleteArchive, deleteBoard, setActiveBoard, updateSiteTheme, invalidateSiteCache, invalidateUserCache, getBoardById, saveSite } from "../site.js";
+import { getByUser, getUserSite, getUserSiteById, getUserBoardsList, createBoard, duplicateBoard, createArchive, deleteArchive, deleteBoard, setActiveBoard, updateSiteTheme, invalidateSiteCache, invalidateUserCache, getBoardById, saveSite, fromJsonb } from "../site.js";
 import { bumpStat, getStats, getHeatmap, getTopReferrers } from "../stats.js";
 import { effectivePlan, PLAN_LIMITS, BOARD_LIMITS } from "../billing.js";
 import { templateCatalog } from "../templates/index.js";
@@ -234,6 +234,44 @@ export async function handleArchiveDelete(request, env) {
     });
   }
   return r.error ? bad(r.error, 400) : json({ ok: true });
+}
+
+// POST /api/site/archive/restore — { archiveId, siteId? }
+export async function handleRestoreArchive(request, env) {
+  const { user, res } = await requireUser(request, env);
+  if (res) return res;
+  if (user.status === "suspended") return bad("This account is suspended.", 403);
+  if (!(await rateLimit(env, `archive-restore:${user.id}`, 10, 3600)).ok) return bad("Too many restore actions. Try again later.", 429);
+  const body = (await readJson(request)) || {};
+  if (!body.archiveId) return bad("archiveId required");
+  const site = body.siteId ? await getBoardById(env, user.id, body.siteId) : await getByUser(env, user.id);
+  if (!site) return bad("no site");
+  const archive = await one("SELECT snapshot_json FROM archives WHERE id=$1 AND site_id=$2", [body.archiveId, site.id]);
+  if (!archive) return bad("Archive not found.");
+  const snap = fromJsonb(archive.snapshot_json) || [];
+  if (!snap.length) return bad("Archive is empty.");
+  const players = snap.map((p) => ({
+    name: String(p.name || "").slice(0, 80),
+    wagered: Number(p.wagered) || 0,
+    prize: Number(p.prize) || 0,
+    score: p.score ?? undefined,
+    hands: p.hands ?? undefined,
+    netProfit: p.net_profit ?? p.netProfit ?? undefined,
+    winRate: p.win_rate ?? p.winRate ?? undefined,
+    change: p.change ?? undefined,
+  })).filter((p) => p.name);
+  if (!players.length) return bad("No valid players in archive.");
+  const r = await saveSite(env, user, { players, siteId: site.id }, site.id, request);
+  if (r.error) return bad(r.error, 400);
+  await logAudit({
+    actorId: user.id,
+    action: "archive_restore",
+    entityType: "site",
+    entityId: site.id,
+    request,
+    details: { board_id: site.id, board_slug: site.slug, archive_id: body.archiveId, players: players.length },
+  });
+  return json({ ok: true, players: players.length });
 }
 
 export async function handlePutSite(request, env) {
