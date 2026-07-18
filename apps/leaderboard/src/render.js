@@ -412,6 +412,8 @@ body[data-preview] .top3{margin-bottom:14px}
   const sections = { ...DEFAULT_EXTRA.sections, ...(data.sections || {}) };
   const textOverrides = (br && br.text) || {};
   const sectionAttrs = Object.entries(sections).map(([k, v]) => `data-sections-${k}="${String(v)}"`).join(" ");
+  const customCss = (data.branding?.customCss || "");
+  const customCssStyle = customCss ? `<style nonce="${opts.nonce}" data-custom-css>${customCss}</style>` : "";
   const sectionCss = `<style nonce="${opts.nonce}">
 body[data-sections-hero="false"] .hero,
 body[data-sections-top3="false"] .top3,
@@ -441,6 +443,7 @@ body[data-sections-payouts="false"] .payouts { display: none !important; }
 ${fullPage ? "" : `<link rel="stylesheet" href="/assets/leaderboard.css" />`}
 ${tplCss}
 ${themeCss}
+${customCssStyle}
 ${profileLinkCss}
 ${sectionCss}
 ${previewCss}
@@ -527,6 +530,8 @@ export function renderLegalPage(data, page, opts) {
   const templateStyle = (frameStyles || legalNoticeCss) ? `<style nonce="${opts.nonce}" data-template="${tpl}">${frameStyles}${legalNoticeCss}</style>` : "";
   const platformBase = esc(opts.homeUrl || "https://yourrank.site").replace(/\/$/, "");
   const legalNotice = isDefaultLegal ? `<div class="legal-notice"><b>⚠️ Legal pages not configured</b> — ${esc(b.name || "this page")} is currently showing YourRank platform terms. You can also read the platform <a href="${platformBase}/terms">Terms of Service</a>, <a href="${platformBase}/privacy">Privacy Policy</a>, and <a href="${platformBase}/responsible">Responsible Play</a> guidelines.</div>` : "";
+  const customCss = (data.branding?.customCss || "");
+  const customCssStyle = customCss ? `<style nonce="${opts.nonce}" data-custom-css>${customCss}</style>` : "";
   const fontLink = GOOGLE_FONTS_LINK;
   const cssLink = fullPage ? "" : `<link rel="stylesheet" href="/assets/app.css" />`;
   const canonical = `${esc(opts.homeUrl || "https://yourrank.site")}${legalHref(page)}`;
@@ -544,7 +549,7 @@ export function renderLegalPage(data, page, opts) {
 <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>${pageTitle}</title><meta name="description" content="${esc(title)} for ${esc(b.name || "YourRank")}." />
 <link rel="canonical" href="${canonical}" />
-${fontLink}${cssLink}${templateStyle}${fontStyle}
+${fontLink}${cssLink}${templateStyle}${fontStyle}${customCssStyle}
 </head><body data-template="${tpl}" class="${bodyClass}">
 <a class="skip-link" href="#main-content">Skip to content</a>
 ${header}
@@ -581,6 +586,8 @@ export function renderPlayerProfile(data, player, history, opts) {
   const backHref = playerBackHref(opts);
   const frameStyles = fullPage ? frameCss(tpl, FONT_FAMILIES[br.font] || FONT_FAMILIES.Inter) : "";
   const templateStyle = frameStyles ? `<style nonce="${opts.nonce}" data-template="${tpl}">${frameStyles}</style>` : "";
+  const customCss = (data.branding?.customCss || "");
+  const customCssStyle = customCss ? `<style nonce="${opts.nonce}" data-custom-css>${customCss}</style>` : "";
   const fontLink = GOOGLE_FONTS_LINK;
   const fontStyle = fontCss(br, opts.nonce);
   const cssLink = fullPage ? "" : `<link rel="stylesheet" href="/assets/app.css" />`;
@@ -631,7 +638,7 @@ export function renderPlayerProfile(data, player, history, opts) {
 <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>${pageTitle}</title><meta name="description" content="${esc(player.name)} profile on ${esc(b.name || "YourRank")}." />
 <link rel="canonical" href="${canonical}" />
-${fontLink}${cssLink}${templateStyle}${profileStyle}${fontStyle}
+${fontLink}${cssLink}${templateStyle}${fontStyle}${profileStyle}${customCssStyle}
 </head><body data-template="${tpl}" class="${fullPage ? "legal-page" : "legal"}">
 <a class="skip-link" href="#main-content">Skip to content</a>
 ${header}
@@ -665,6 +672,8 @@ export function renderHallOfFame(data, opts) {
   const legalHref = (p) => isCustomDomain ? `/${p}` : `/${esc(opts.slug || "")}/${p}`;
   const frameStyles = fullPage ? frameCss(tpl, FONT_FAMILIES[br.font] || FONT_FAMILIES.Inter) : "";
   const templateStyle = frameStyles ? `<style nonce="${opts.nonce}" data-template="${tpl}">${frameStyles}</style>` : "";
+  const customCss = (data.branding?.customCss || "");
+  const customCssStyle = customCss ? `<style nonce="${opts.nonce}" data-custom-css>${customCss}</style>` : "";
   const fontLink = GOOGLE_FONTS_LINK;
   const fontStyle = fontCss(br, opts.nonce);
   const cssLink = fullPage ? "" : `<link rel="stylesheet" href="/assets/app.css" />`;
@@ -711,7 +720,7 @@ export function renderHallOfFame(data, opts) {
 <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>${esc(b.name || "YourRank")} — Hall of Fame</title><meta name="description" content="Past winners and closed-out periods for ${esc(b.name || "YourRank")}." />
 <link rel="canonical" href="${canonical}" />
-${fontLink}${cssLink}${templateStyle}${hofStyle}${fontStyle}
+${fontLink}${cssLink}${templateStyle}${fontStyle}${hofStyle}${customCssStyle}
 </head><body data-template="${tpl}" class="${fullPage ? "legal-page" : "legal"}">
 <a class="skip-link" href="#main-content">Skip to content</a>
 ${header}

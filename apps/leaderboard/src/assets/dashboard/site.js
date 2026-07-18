@@ -39,8 +39,9 @@ function isPro() {
   return plan === "pro" || plan === "agency" || plan === "lifetime" || isLifetime();
 }
 
-function isPro() {
-  return state.ME?.plan === "pro" || state.ME?.plan === "agency" || isLifetime();
+function isAgency() {
+  const plan = state.ME?.plan;
+  return plan === "agency" || plan === "lifetime" || isLifetime();
 }
 
 function planDefs() {
@@ -238,6 +239,9 @@ export function collect() {
       },
     };
   }
+  if (isAgency()) {
+    out.branding = { ...(out.branding || {}), customCss: $("f_customCss")?.value || "" };
+  }
   const tplEl = $("f_template");
   if (tplEl) out.branding = { ...(out.branding || {}), template: tplEl.value };
   collectTemplateText();
@@ -407,6 +411,17 @@ export function renderPrizes(prizes = {}) {
   $("f_hidePrizeAmounts").checked = !!p.hidePrizeAmounts;
 }
 
+export function renderCustomCss(br) {
+  const agency = isAgency();
+  $("cssBody").hidden = !agency;
+  $("cssLock").hidden = agency;
+  if (!agency) {
+    const up = $("cssUpgrade");
+    if (up && !up._wired) { up._wired = true; up.addEventListener("click", (e) => { e.preventDefault(); checkout("agency", e.target); }); }
+    return;
+  }
+  $("f_customCss").value = br.customCss || "";
+}
 $("logoPick").setAttribute("aria-label", "Upload logo");
 $("logoPick").addEventListener("click", () => $("logoFile").click());
 $("logoClear").setAttribute("aria-label", "Remove logo");
