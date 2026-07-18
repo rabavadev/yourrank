@@ -25,8 +25,9 @@ export async function handleDashboardPreview(request, env, nonce) {
     branding.accentA = accentA;
     branding.accentB = accentB;
   }
+  const watermark = plan === "free" ? true : (site.data.sections?.poweredBy === true);
   const html = renderLeaderboard({ ...site.data, branding }, {
-    watermark: plan === "free",
+    watermark,
     homeUrl: url.origin,
     slug: "",
     nonce,

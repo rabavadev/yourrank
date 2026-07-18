@@ -260,10 +260,11 @@ async function handleRequest(request, env, ctx, meta) {
           if (method === "GET" && (path === "/" || path === "")) {
             const r = await getPublicSite(env, customSlug);
             if (!r || r.suspended) return new Response(notFoundPage(customSlug, nonce), { status: 404, headers: HTML_N });
-            const paid = r.plan === "pro" || r.plan === "agency";
+            const paid = r.plan !== "free";
+            const watermark = !paid ? true : (r.data.sections?.poweredBy === true);
             return new Response(
               renderLeaderboard(r.data, {
-                watermark: !paid, homeUrl: `https://${host}`, slug: customSlug, nonce, isCustomDomain: true,
+                watermark, homeUrl: `https://${host}`, slug: customSlug, nonce, isCustomDomain: true,
                 logoUrl: paid && r.data.branding?.hasLogo ? `https://${host}/logo/${customSlug}` : null,
               }),
               { headers: { ...HTML_N, "cache-control": "no-store" } }
@@ -757,9 +758,10 @@ a{color:#c8ff00;text-decoration:none;font-weight:600}</style></head><body>
           }
         }
         const paid = r.plan !== "free";
+        const watermark = !paid ? true : (r.data.sections?.poweredBy === true);
         return new Response(
           renderLeaderboard(r.data, {
-            watermark: !paid, homeUrl: url.origin, slug, nonce, boards: r.boards, isCustomDomain: false,
+            watermark, homeUrl: url.origin, slug, nonce, boards: r.boards, isCustomDomain: false,
             logoUrl: paid && r.data.branding?.hasLogo ? `${url.origin}/logo/${slug}` : null,
           }),
           { headers: respHeaders }

@@ -15,6 +15,7 @@ export const DEFAULT_SECTIONS = {
   countdown: true,
   cta: true,
   payouts: true,
+  poweredBy: false,
 };
 
 const PLAN_ORDER = ["free", "starter", "pro", "agency"];
@@ -23,6 +24,10 @@ const LIFETIME_KEY = "lifetime";
 function isLifetime() {
   const exp = state.ME?.planExpiresAt;
   return !exp || Number(exp) === 0 || Number(exp) > new Date("2099-01-01T00:00:00Z").getTime();
+}
+
+function isPro() {
+  return state.ME?.plan === "pro" || state.ME?.plan === "agency" || isLifetime();
 }
 
 function planDefs() {
@@ -449,16 +454,11 @@ export function renderSocials() {
 }
 
 const SECTIONS_CATALOG = [
-  { key: "hero", label: "Hero header" },
-  { key: "top3", label: "Top 3 podium" },
-  { key: "search", label: "Find my rank search" },
-  { key: "payouts", label: "Prize payout strip" },
-  { key: "countdown", label: "Countdown timer" },
-  { key: "cta", label: "Join CTA button" },
-  { key: "rules", label: "Rules section" },
-  { key: "partner", label: "Partner panel" },
-  { key: "socials", label: "Social links" },
-  { key: "pastWinners", label: "Past winners" },
+  { key: "payouts", label: "Show Prize Pool" },
+  { key: "countdown", label: "Show Countdown Timer" },
+  { key: "rules", label: "Show Rules Section" },
+  { key: "socials", label: "Show Social Links" },
+  { key: "poweredBy", label: "Show 'Powered by YourRank' badge" },
 ];
 
 function collectSections() {
@@ -475,7 +475,17 @@ function collectSections() {
 
 export function renderSections() {
   const list = $("sectionsList");
-  if (!list) return;
+  const body = $("sectionsBody");
+  const lock = $("sectionsLock");
+  if (list) {
+    list.innerHTML = "";
+    list.removeEventListener("input", collectSections);
+    list.removeEventListener("change", collectSections);
+  }
+  if (body) body.hidden = !isPro();
+  if (lock) lock.hidden = isPro();
+  if (lock && !isPro()) lock.addEventListener("click", (e) => { if (e.target.id === "sectionsUpgrade") { e.preventDefault(); checkout("pro", e.target); } });
+  if (!list || !isPro()) return;
   const current = { ...DEFAULT_SECTIONS, ...(state.EXTRA?.sections || {}) };
   list.innerHTML = SECTIONS_CATALOG.map((s) => `<div class="section-row" data-section="${esc(s.key)}">
 <span class="section-name">${esc(s.label)}</span>
