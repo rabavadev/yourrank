@@ -559,7 +559,7 @@ table.ref-table td{padding:8px 8px;border-bottom:1px solid var(--line);color:var
 .lb-side-grp{font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-mute);padding:12px 10px 4px}
 .lb-nav{display:flex;align-items:center;gap:10px;width:100%;text-align:left;background:transparent;border:0;color:var(--ink-soft);font:500 14px var(--sans);padding:9px 10px;border-radius:8px;cursor:pointer;transition:background .12s,color .12s}
 .lb-nav:hover{background:var(--panel-2);color:var(--ink)}
-.lb-nav.is-on{background:rgba(200,255,0,.05);color:var(--ink);box-shadow:inset 2px 0 0 var(--accent);font-weight:600}
+.lb-nav.is-on{color:var(--ink);border-left:2px solid var(--accent);padding-left:8px;font-weight:600}
 .lb-nav-ic{width:18px;text-align:center;font-size:14px;flex:0 0 auto}
 .lb-side-foot{margin-top:8px;padding:12px 10px 6px;border-top:1px solid var(--line);display:flex;flex-direction:column;gap:10px}
 .lb-live-btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;width:100%;text-decoration:none}

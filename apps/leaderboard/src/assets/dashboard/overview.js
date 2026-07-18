@@ -31,7 +31,8 @@ export function renderOverviewSummary() {
   const players = currentPlayers();
   const boardName = $("f_name")?.value.trim() || "—";
   $("ov_board").textContent = boardName;
-  $("ov_prize").textContent = $("f_pool")?.value.trim() || "—";
+  const rawPrize = ($("f_pool")?.value || "").replace(/[^0-9.]/g, "");
+  $("ov_prize").textContent = rawPrize ? "$" + fmtMoney(Number(rawPrize)) : "—";
   const cap = state.ME && state.ME.limits.players < 999 ? " / " + state.ME.limits.players : "";
   $("ov_players").textContent = players.length + cap;
   $("ov_resets").textContent = resetsIn();
