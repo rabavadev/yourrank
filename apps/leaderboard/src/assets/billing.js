@@ -83,31 +83,37 @@ function fmtExp(ms) {
         ? `Subscription cancelled. You'll keep ${currentTier.name} features until ${untilStr}, then revert to Free.`
         : `Subscription cancelled. You'll keep ${currentTier.name} features until the end of your current billing period.`;
     } else {
-      $("cancelBtn").onclick = async () => {
-        if (!window.confirm("Cancel your paid subscription? You'll keep Pro features until the end of your current billing period.")) return;
+      const cancelModal = $("cancelModal");
+      const cancelConfirmBtn = $("cancelConfirmBtn");
+      const cancelCancelBtn = $("cancelCancelBtn");
+      const cancelModalStatus = $("cancelModalStatus");
+      const closeCancelModal = () => { if (cancelModal) cancelModal.hidden = true; if (cancelModalStatus) cancelModalStatus.textContent = ""; };
+      $("cancelBtn").addEventListener("click", () => { if (cancelModal) cancelModal.hidden = false; if (cancelModalStatus) cancelModalStatus.textContent = ""; });
+      if (cancelCancelBtn) cancelCancelBtn.addEventListener("click", closeCancelModal);
+      if (cancelConfirmBtn) cancelConfirmBtn.addEventListener("click", async () => {
         const status = $("cancelStatus");
         const btn = $("cancelBtn");
-        btn.disabled = true;
-        status.textContent = "Cancelling...";
+        if (cancelConfirmBtn) cancelConfirmBtn.disabled = true;
+        if (cancelModalStatus) cancelModalStatus.textContent = "Cancelling...";
         try {
           const r = await fetch("/api/billing/cancel", { method: "POST", credentials: "include", headers: { "x-csrf-token": getCsrf() } });
           const d = await r.json();
           if (r.ok && d.ok) {
-            // Update in place (no reload) so the confirmation isn't lost and the
-            // now-invalid Cancel button disappears.
+            closeCancelModal();
             btn.hidden = true;
             status.textContent = untilStr
               ? `Subscription cancelled. You'll keep ${currentTier.name} features until ${untilStr}, then revert to Free.`
               : d.message;
           } else {
-            status.textContent = d.error || "Could not cancel.";
-            btn.disabled = false;
+            if (cancelModalStatus) cancelModalStatus.textContent = d.error || "Could not cancel.";
+            if (cancelConfirmBtn) cancelConfirmBtn.disabled = false;
           }
         } catch {
-          status.textContent = "Network error. Try again.";
-          btn.disabled = false;
+          if (cancelModalStatus) cancelModalStatus.textContent = "Network error. Try again.";
+          if (cancelConfirmBtn) cancelConfirmBtn.disabled = false;
         }
-      };
+      });
+      if (cancelModal) cancelModal.addEventListener("click", (e) => { if (e.target === cancelModal) closeCancelModal(); });
     }
   }
 
