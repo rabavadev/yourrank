@@ -77,6 +77,13 @@ async function init() {
     }
     arToggle.addEventListener("change", () => { if (arClear) arClear.disabled = !arToggle.checked; });
   }
+  const pwEnabled = $("f_password_enabled");
+  const pwInput = $("f_password");
+  if (pwEnabled) {
+    pwEnabled.checked = !!p.passwordProtected;
+    if (pwInput) pwInput.disabled = !pwEnabled.checked;
+    pwEnabled.addEventListener("change", () => { if (pwInput) pwInput.disabled = !pwEnabled.checked; });
+  }
   $("a_label").placeholder = new Date().toLocaleString("en-US", { month: "long", year: "numeric", timeZone: "UTC" });
   $("liveLink").textContent = location.host + "/" + state.SLUG;
   $("liveLink").href = "/" + state.SLUG;

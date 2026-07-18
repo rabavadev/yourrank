@@ -221,6 +221,15 @@ export function collect() {
   };
   const pubToggle = $("pubToggle");
   if (pubToggle) out.published = pubToggle.checked;
+  const pwEnabled = $("f_password_enabled");
+  const pwInput = $("f_password");
+  if (pwEnabled) {
+    if (pwEnabled.checked) {
+      if (pwInput && pwInput.value.trim()) out.password = pwInput.value.trim();
+    } else {
+      out.passwordProtected = false;
+    }
+  }
   if (state.ACTIVE_SITE_ID) out.siteId = state.ACTIVE_SITE_ID;
   if (state.SITE_UPDATED_AT) out.expectedUpdatedAt = state.SITE_UPDATED_AT;
   if (state.ME && state.ME.plan !== "free") {

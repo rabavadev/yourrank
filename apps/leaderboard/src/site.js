@@ -3,10 +3,11 @@ import { effectivePlan, PLAN_LIMITS, BOARD_LIMITS } from "./billing.js";
 import { query, one, exec, withTransaction } from "../../../shared/db.js";
 import { detectTop3Changes, dispatchNotifyEvent } from "../../../shared/notifications.js";
 import { TEMPLATE_IDS } from "./templates/index.js";
-import { RESERVED, slugify } from "./auth.js";
+import { RESERVED, slugify, hashPassword } from "./auth.js";
 import { logAudit } from "../../../shared/audit.js";
 import { createQueueProducer } from "../../../shared/queue-producer.js";
 import { encrypt } from "../../../shared/crypto.js";
+import { verifyBoardPasswordCookie } from "./board-password.js";
 
 function normalizePlayerName(name) {
   // C-07 / H-17: stable, case-insensitive, whitespace-collapsed identity.
@@ -91,7 +92,7 @@ export const DEFAULT_EXTRA = {
 // needed by the /logo/:slug endpoint and saveSite(), which fetch it separately.
 // PERF-004 / PERF-107: avoid SELECT * to prevent 180KB+ transfers on every page.
 // PERF-005: include has_logo as a computed column to avoid a separate re-query.
-const SITE_COLUMNS = "id, user_id, slug, name, tagline, casino, code, cta_url, prize_pool, period, ends_at, reset_note, blurb, extra_json, published, is_draft, theme_json, updated_at, custom_domain, domain_status, discord_webhook_url_enc, telegram_chat_id, telegram_notify, auto_reset_enabled, auto_reset_clear, auto_reset_last_run_at, (logo_data IS NOT NULL AND logo_data != '') AS has_logo";
+const SITE_COLUMNS = "id, user_id, slug, name, tagline, casino, code, cta_url, prize_pool, period, ends_at, reset_note, blurb, extra_json, published, is_draft, theme_json, updated_at, custom_domain, domain_status, discord_webhook_url_enc, telegram_chat_id, telegram_notify, auto_reset_enabled, auto_reset_clear, auto_reset_last_run_at, password_hash, password_salt, (logo_data IS NOT NULL AND logo_data != '') AS has_logo";
 
 // L1 in-memory cache (per-isolate). No L2 KV — sessions moved to Postgres.
 const siteCache = new Map();
@@ -147,7 +148,7 @@ export function invalidateUserCache(env, uid) {
   siteCache.delete(`user_boards:${uid}`);
 }
 
-const getBySlug = (env, slug) => getCached(env, slug, () => one(`SELECT ${SITE_COLUMNS} FROM sites WHERE slug=$1`, [slug]));
+export const getBySlug = (env, slug) => getCached(env, slug, () => one(`SELECT ${SITE_COLUMNS} FROM sites WHERE slug=$1`, [slug]));
 
 // Multi-board: returns the ACTIVE board for a user (or the first board if none set).
 const getByUser = (env, uid) => getCached(env, uid, () => one(`SELECT ${SITE_COLUMNS} FROM sites WHERE user_id=$1 ORDER BY CASE WHEN id=(SELECT active_site_id FROM users WHERE id=$1) THEN 0 ELSE 1 END, id ASC LIMIT 1`, [uid]));
@@ -387,9 +388,12 @@ export function publicShape(site, players, archives = [], hasLogo = false) {
   };
 }
 
-export async function getPublicSite(env, slug) {
+export async function getPublicSite(env, slug, request = null) {
     const site = await getBySlug(env, slug);
     if (!site || !site.published) return null;
+    if (site.password_hash && !(request && await verifyBoardPasswordCookie(request, site))) {
+      return { requiresPassword: true, id: site.id, slug: site.slug, name: site.name };
+    }
     // PERF-005: has_logo is now part of SITE_COLUMNS (computed from logo_data).
     // Eliminated redundant re-query of sites table. Owner query remains separate
     // since it's from the users table (indexed by id, ~0.1ms).
@@ -419,6 +423,7 @@ export async function getUserSite(env, uid, plan) {
     return {
         id: site.id, slug: site.slug, published: !!site.published,
         isDraft: !!site.is_draft,
+        passwordProtected: !!site.password_hash,
         updatedAt: site.updated_at,
         autoReset: { enabled: !!site.auto_reset_enabled, clear: site.auto_reset_clear || "wagers" },
         data: publicShape(site, await getPlayers(env, site.id), archives.slice(0, archiveLimit), !!site.has_logo),
@@ -825,6 +830,18 @@ export async function saveSite(env, user, payload, siteId, request = null) {
     ? String(autoReset.clear).trim()
     : (site.auto_reset_clear || "wagers");
 
+  // Password-protected board. passwordProtected=false clears the hash; a non-empty password sets it.
+  let passwordHash = site.password_hash;
+  let passwordSalt = site.password_salt;
+  if (payload.passwordProtected === false || payload.password === null || payload.password === "") {
+    passwordHash = null;
+    passwordSalt = null;
+  } else if (typeof payload.password === "string" && payload.password.trim()) {
+    const hashed = await hashPassword(payload.password.trim());
+    passwordHash = hashed.hash;
+    passwordSalt = hashed.salt;
+  }
+
   // Fetch logo_data separately since the shared query no longer includes it (PERF-004).
   const existingLogoRow = await one("SELECT logo_data FROM sites WHERE id=$1", [site.id]);
   let logoData = existingLogoRow?.logo_data ?? "";
@@ -902,13 +919,13 @@ export async function saveSite(env, user, payload, siteId, request = null) {
       ? String(b.period || "Monthly").trim()
       : (site.period || "Monthly");
     await tx.unsafe(
-      `UPDATE sites SET slug=$1, name=$2, tagline=$3, casino=$4, code=$5, cta_url=$6, prize_pool=$7, period=$8, ends_at=$9, reset_note=$10, blurb=$11, extra_json=$12::jsonb, logo_data=$13, theme_json=$14::jsonb, published=$15, is_draft=$16, discord_webhook_url_enc=$17, telegram_chat_id=$18, telegram_notify=$19, auto_reset_enabled=$20, auto_reset_clear=$21, updated_at=now() WHERE id=$22`,
+      `UPDATE sites SET slug=$1, name=$2, tagline=$3, casino=$4, code=$5, cta_url=$6, prize_pool=$7, period=$8, ends_at=$9, reset_note=$10, blurb=$11, extra_json=$12::jsonb, logo_data=$13, theme_json=$14::jsonb, published=$15, is_draft=$16, discord_webhook_url_enc=$17, telegram_chat_id=$18, telegram_notify=$19, auto_reset_enabled=$20, auto_reset_clear=$21, password_hash=$22, password_salt=$23, updated_at=now() WHERE id=$24`,
       [
         slugVal, siteName, b.tagline ?? site.tagline, b.casino ?? site.casino, b.code ?? site.code,
         b.ctaUrl ?? site.cta_url, b.prizePool ?? site.prize_pool, periodVal,
         endsAtVal, b.resetNote ?? site.reset_note, (payload.partner && payload.partner.blurb) ?? site.blurb,
         extra, logoData, themeJson, publishedVal, isDraftVal, discordWebhookUrlEnc, telegramChatId, telegramNotify,
-        autoResetEnabled, autoResetClear, site.id,
+        autoResetEnabled, autoResetClear, passwordHash, passwordSalt, site.id,
       ]
     );
 
@@ -1153,4 +1170,4 @@ export async function updateSiteTheme(env, user, payload = {}, request = null) {
   };
 }
 
-export { getByUser, getBySlug };
+export { getByUser };

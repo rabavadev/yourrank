@@ -900,3 +900,36 @@ ${endsAt}
 </div>
 </body></html>`;
 }
+export function renderPasswordGate(site, opts, error = "") {
+  const name = esc(site.name || "Private board");
+  const slug = esc(site.slug || "");
+  const action = opts.isCustomDomain ? "/password" : `/${slug}/password`;
+  return `<!DOCTYPE html><html lang="en"><head>
+<meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>${name} · Password required</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="/assets/app.css" />
+<style nonce="${opts.nonce}">
+.pw-wrap{max-width:420px;margin:0 auto;padding:80px 24px;text-align:center}
+.pw-title{font-size:clamp(26px,4vw,36px);font-weight:800;letter-spacing:-.03em;margin:0 0 8px}
+.pw-sub{color:var(--ink-soft,#9a94b8);margin:0 0 32px}
+.pw-form{background:var(--panel,#13131a);border:1px solid var(--line-2,rgba(150,120,220,.2));border-radius:14px;padding:24px;display:flex;flex-direction:column;gap:16px}
+.pw-form label{text-align:left;color:var(--ink-soft,#9a94b8);font-size:14px}
+.pw-form input{width:100%;padding:12px;border:1px solid var(--line-2,rgba(150,120,220,.2));border-radius:8px;background:var(--panel-2,#1a1a22);color:var(--ink,#ededf0);font-size:15px}
+.pw-form button{padding:12px;border:none;border-radius:8px;background:var(--accent,#c8ff00);color:#000;font-weight:700;cursor:pointer}
+.pw-error{color:#ff6b6b;font-size:14px;margin-top:-8px}
+</style></head><body>
+<a class="skip-link" href="#main-content">Skip to content</a>
+<header class="topbar"><a class="brand" href="/">Your<b>Rank</b></a></header>
+<main class="pw-wrap" id="main-content">
+<h1 class="pw-title">${name}</h1>
+<p class="pw-sub">This leaderboard is private. Enter the password to continue.</p>
+<form class="pw-form" method="POST" action="${action}">
+${error ? `<p class="pw-error">${esc(error)}</p>` : ""}
+<label for="board-password">Password</label>
+<input id="board-password" name="password" type="password" placeholder="Password" required autocomplete="off" />
+<button type="submit">Unlock</button>
+</form>
+</main></body></html>`;
+}
