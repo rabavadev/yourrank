@@ -17,7 +17,7 @@ import {
 import {
   handleStats, handleHeatmap, handleTrackCopy, handleTrackScroll, handleGetSite, handleListBoards,
   handleCreateBoard, handleDuplicateBoard, handleArchive, handleArchiveDelete, handleRestoreArchive, handlePutSite,
-  handlePutTheme, handleDeleteSite, handleSetActive, handleNotifyTest, handleDomainVerify, handleExportStats,
+  handleFinishSetup, handlePutTheme, handleDeleteSite, handleSetActive, handleNotifyTest, handleDomainVerify, handleExportStats,
   handleExportPlayers
 } from "./handlers/sites.js";
 import { handleTrial } from "./handlers/billing.js";
@@ -66,6 +66,7 @@ export const ROUTES = [
   // Site routes
   { path: "/api/site", method: "GET", handler: withHandler(handleGetSite) },
   { path: "/api/site", method: "PUT", handler: withHandler(handlePutSite) },
+  { path: "/api/site/finish", method: "POST", handler: withHandler(handleFinishSetup) },
   { path: "/api/site/theme", method: "POST", handler: withHandler(handlePutTheme) },
   { path: "/api/site", method: "DELETE", handler: withHandler(handleDeleteSite) },
   { path: "/api/site/list", method: "GET", handler: withHandler(handleListBoards) },

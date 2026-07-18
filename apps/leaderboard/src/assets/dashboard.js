@@ -1,5 +1,5 @@
 // Dashboard entry point. Coordinates data loading and initial render across modules.
-import { $, logError, toLocalInput } from "./dashboard/utils.js";
+import { $, getCsrf, logError, toLocalInput } from "./dashboard/utils.js";
 import { state } from "./dashboard/state.js";
 import { navTo, setupShell } from "./dashboard/shell.js";
 import { renderBoardSwitcher, renderSidebarBoardSwitcher, renderBoardsPage } from "./dashboard/boards.js";
@@ -37,6 +37,7 @@ async function init() {
   renderBoardSwitcher();
   renderSidebarBoardSwitcher();
   renderBoardsPage();
+  renderDraftBanner(p);
   const d = p.data || {};
   const b = d.brand || {};
   loadStats();
@@ -92,6 +93,28 @@ async function init() {
   window.addEventListener("beforeunload", (e) => { if (state._dirty) { e.preventDefault(); e.returnValue = ""; } });
   if (urlParams.get("upgraded")) {
     $("status").textContent = "Payment received — Pro activates once the network confirms (usually minutes).";
+  }
+}
+
+function renderDraftBanner(p) {
+  const banner = $("draftBanner");
+  if (!banner) return;
+  const draftBoards = (p.boards || []).filter((b) => b.isDraft);
+  const active = draftBoards.find((b) => b.id === (p.siteId || state.ACTIVE_SITE_ID)) || draftBoards[0];
+  if (!active) { banner.hidden = true; return; }
+  banner.hidden = false;
+  $("draftName").textContent = active.name || active.slug || "this board";
+  $("draftResume").href = `/setup?resume=${encodeURIComponent(active.slug)}`;
+  const doneBtn = $("draftDone");
+  if (doneBtn) {
+    doneBtn.onclick = async () => {
+      doneBtn.disabled = true;
+      try {
+        const res = await fetch("/api/site/finish", { method: "POST", credentials: "include", headers: { "content-type": "application/json", "x-csrf-token": getCsrf() }, body: JSON.stringify({ siteId: active.id }) });
+        if (!res.ok) { const d = await res.json().catch(() => ({})); $("status").textContent = d.error || "Could not mark as done."; doneBtn.disabled = false; return; }
+        banner.hidden = true;
+      } catch (e) { $("status").textContent = "Network error"; doneBtn.disabled = false; }
+    };
   }
 }
 

@@ -67,6 +67,7 @@ wiz3next.onclick=async()=>{
       name,
       brand:{name,casino:$("wiz_casino").value.trim(),code:$("wiz_code").value.trim(),ctaUrl:$("wiz_cta").value.trim()},
       players:parsePlayers(),
+      isDraft:true,
     };
     const res=await fetch("/api/site",{method:"PUT",headers:{"content-type":"application/json","x-csrf-token":getCsrf()},body:JSON.stringify(body)});
     const data=await res.json().catch(()=>({}));
@@ -92,8 +93,44 @@ if(copyBtn){
 // Finish: the page was already saved at step 3, so just head to the dashboard.
 const finishBtn=$("wiz_finish");
 if(finishBtn){
-  finishBtn.onclick=()=>{location.href="/dashboard";};
+  finishBtn.onclick=async()=>{
+    finishBtn.disabled=true;
+    try{
+      const res=await fetch("/api/site/finish",{method:"POST",headers:{"content-type":"application/json","x-csrf-token":getCsrf()},body:JSON.stringify({})});
+      if(!res.ok){const d=await res.json().catch(()=>({}));$("wiz_err").textContent=d.error||"Could not finish setup.";finishBtn.disabled=false;return;}
+    }catch(e){$("wiz_err").textContent="Network error. Try again.";finishBtn.disabled=false;return;}
+    location.href="/dashboard";
+  };
 }
 
 function getCsrf(){const m=document.cookie.match(/(?:^|;\s*)__csrf=([^;]+)/);return m?m[1]:"";}
+
+// Resume an unfinished wizard board: prefill the current board data.
+async function loadResume(){
+  const params=new URLSearchParams(location.search);
+  const resume=params.get("resume");
+  if(!resume)return;
+  try{
+    const res=await fetch("/api/site",{credentials:"include"});
+    const d=await res.json().catch(()=>({}));
+    if(!d.ok||!d.data)return;
+    const s=d.data.data||{};
+    const b=s.brand||{};
+    nameIn.value=b.name||"";
+    const sSlug=d.data.slug||"";
+    slugIn.value=sSlug;
+    userEditedSlug=true;
+    preview.textContent=sSlug?"yourrank.site/"+sSlug:"yourrank.site/…";
+    if($("wiz_casino"))$("wiz_casino").value=b.casino||"";
+    if($("wiz_code"))$("wiz_code").value=b.code||"";
+    if($("wiz_cta"))$("wiz_cta").value=b.ctaUrl||"";
+    const pta=$("wiz_players");
+    if(pta && s.players && s.players.length){
+      pta.value=s.players.map((p)=>p.name+", "+(p.wagered||0)).join("\n");
+      countPlayers();
+    }
+    slug=slugify(sSlug);
+  }catch(e){}
+}
+loadResume();
 })();
