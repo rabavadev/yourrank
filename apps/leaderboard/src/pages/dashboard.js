@@ -148,7 +148,7 @@ export const dashboardPage = leaderboardPageHtml({
 <div class="lb-phead"><button class="lb-menu" type="button" aria-label="Show sections" data-menu aria-expanded="false" aria-controls="lbSide">☰</button><div><h1 tabindex="-1">Design</h1><p class="lb-psub">How your public page looks</p></div></div>
 <div class="design-grid">
 <div class="design-controls">
-<div class="card" id="templateCard"><h2>Page template</h2><p class="card-sub">Live previews use this board's real name, prize pool and players. Click a design to publish it instantly.</p>
+<div class="card" id="templateCard"><h2>Page template</h2><p class="card-sub">Live previews use this board's real name, prize pool and players. Click a design to select it, then hit Save changes to publish.</p>
 <input type="hidden" id="f_template" value="classic" />
 <div class="template-grid" id="templateGallery" aria-label="Page templates"></div>
 <p class="hint template-status" id="templateStatus" role="status" aria-live="polite"></p></div>
