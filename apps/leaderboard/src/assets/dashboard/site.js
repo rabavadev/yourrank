@@ -2,7 +2,7 @@
 import { $, esc, fromLocalInput, getCsrf, guardAuth, logError, toLocalInput } from "./utils.js";
 import { state } from "./state.js";
 import { renderBoardSwitcher, renderBoardsPage, renderSidebarBoardSwitcher } from "./boards.js";
-import { renderPlayers } from "./players.js";
+import { renderPlayers, renumber, toggleEmpty } from "./players.js";
 
 export const DEFAULT_SECTIONS = {
   hero: true,
@@ -605,8 +605,21 @@ export function renderArchives(list) {
   list.forEach((a) => {
     const row = document.createElement("div"); row.className = "arch-row";
     const when = new Date(a.at).toLocaleDateString();
-    row.innerHTML = `<span class="arch-label"></span><span class="hint">${a.players} players · closed ${when}</span><button class="btn btn--xs btn--ghost arch-del" type="button">Delete</button>`;
+    row.innerHTML = `<span class="arch-label"></span><span class="hint">${a.players} players · closed ${when}</span><button class="btn btn--xs btn--ghost arch-restore" type="button">Restore</button><button class="btn btn--xs btn--ghost arch-del" type="button">Delete</button>`;
     row.querySelector(".arch-label").textContent = a.label;
+    row.querySelector(".arch-restore").addEventListener("click", async () => {
+      if (!confirm(`Restore players from "${a.label}"? This will replace the current player list. Save changes to publish.`)) return;
+      const body = { archiveId: a.id };
+      if (state.ACTIVE_SITE_ID) body.siteId = state.ACTIVE_SITE_ID;
+      const res = await fetch("/api/site/archive/restore", { method: "POST", credentials: "include", headers: { "content-type": "application/json", "x-csrf-token": getCsrf() }, body: JSON.stringify(body) });
+      const d = await res.json().catch(() => ({}));
+      if (res.ok && d.ok) {
+        const apiUrl = state.ACTIVE_SITE_ID ? `/api/site?siteId=${encodeURIComponent(state.ACTIVE_SITE_ID)}` : "/api/site";
+        const p = await (await fetch(apiUrl)).json();
+        if (p.ok) { renderPlayers(p.data.players || []); renumber(); toggleEmpty(); }
+        $("status").textContent = `Restored ${d.players || a.players} players from "${a.label}". Save to publish.`;
+      } else $("status").textContent = d.error || "Couldn't restore that.";
+    });
     row.querySelector(".arch-del").addEventListener("click", async () => {
       if (!confirm(`Delete the "${a.label}" archive? It disappears from your page too.`)) return;
       const body = { id: a.id };

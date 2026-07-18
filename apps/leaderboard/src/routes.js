@@ -16,7 +16,7 @@ import {
 } from "./handlers/telegram-link.js";
 import {
   handleStats, handleHeatmap, handleTrackCopy, handleTrackScroll, handleGetSite, handleListBoards,
-  handleCreateBoard, handleDuplicateBoard, handleArchive, handleArchiveDelete, handlePutSite,
+  handleCreateBoard, handleDuplicateBoard, handleArchive, handleArchiveDelete, handleRestoreArchive, handlePutSite,
   handlePutTheme, handleDeleteSite, handleSetActive, handleNotifyTest, handleDomainVerify, handleExportStats,
   handleExportPlayers
 } from "./handlers/sites.js";
@@ -73,6 +73,7 @@ export const ROUTES = [
   { path: "/api/site/duplicate", method: "POST", handler: withHandler(handleDuplicateBoard) },
   { path: "/api/site/archive", method: "POST", handler: withHandler(handleArchive) },
   { path: "/api/site/archive/delete", method: "POST", handler: withHandler(handleArchiveDelete) },
+  { path: "/api/site/archive/restore", method: "POST", handler: withHandler(handleRestoreArchive) },
   { path: "/api/site/active", method: "POST", handler: withHandler(handleSetActive) },
   { path: "/api/site/stats/export", method: "GET", handler: withHandler(handleExportStats) },
   { path: "/api/site/players/export", method: "GET", handler: withHandler(handleExportPlayers) },
