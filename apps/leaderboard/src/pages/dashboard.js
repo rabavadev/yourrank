@@ -133,15 +133,23 @@ export const dashboardPage = leaderboardPageHtml({
 <div class="field"><label for="f_ends">Countdown ends (UTC)</label><input id="f_ends" type="datetime-local" /><span class="hint">When the leaderboard resets. Powers the live timer.</span></div></div>
 <div class="field"><label for="f_blurb">Partner blurb</label><textarea id="f_blurb" rows="2" placeholder="Short pitch about the casino and your code."></textarea></div></div>
 <div class="card"><h2>Players</h2><p class="card-sub">The board auto-sorts by wagered, highest first. Prize <span class="mono">0</span> shows a dash. Names can be masked (keep the <span class="mono">***</span>). <span class="mono" id="pCount"></span></p>
-<div class="players-wrap"><table class="players"><thead><tr><th class="rank">#</th><th>Player</th><th class="ta-r">Wagered</th><th class="ta-r">Prize</th><th class="ta-r">Score</th><th class="ta-r">Hands</th><th class="ta-r">Net profit</th><th class="ta-r">Win rate</th><th class="ta-r">Change</th><th></th></tr></thead><tbody id="rows"></tbody></table></div>
+<div class="players-wrap"><table class="players"><thead><tr><th class="rank">#</th><th>Player</th><th class="ta-r">Wagered</th><th class="ta-r">Prize</th><th class="ta-r">Score</th><th class="ta-r">Hands</th><th class="ta-r">Net profit</th><th class="ta-r">Win rate</th><th class="ta-r">Change</th><th></th></tr></thead><tbody id="rows"></tbody><tfoot id="quickAdd"><tr><td></td><td><input id="qa_name" class="p-name" placeholder="New player" /></td><td class="num"><input id="qa_wager" inputmode="decimal" placeholder="0" /></td><td class="num"><input id="qa_prize" inputmode="decimal" placeholder="0" /></td><td></td><td></td><td></td><td></td><td></td><td class="act"><button class="btn btn--sm" id="qa_add" type="button">+ Add</button></td></tr></tfoot></table></div>
 <div id="playersEmpty" class="empty" hidden>No players yet. Add your first one.</div>
-<div class="mt-14 d-flex gap-8 flex-wrap items-center"><button class="btn btn--sm" id="addRow">+ Add player</button><button class="btn btn--sm" id="importBtn" type="button">Paste from spreadsheet</button><button class="btn btn--sm" id="csvImportBtn" type="button">📁 Import CSV</button><button class="btn btn--sm btn--ghost" id="csvTemplateBtn" type="button">Download template</button><button class="btn btn--sm btn--ghost" id="csvExportBtn" type="button">📤 Export CSV</button><input type="file" id="csvFileInput" accept=".csv,.tsv,.txt" hidden /><span id="limitMsg" class="hint ml-auto c-muted" role="status" aria-live="polite"></span></div>
+<div class="mt-14 d-flex gap-8 flex-wrap items-center"><button class="btn btn--sm" id="addRow">+ Add player</button><button class="btn btn--sm" id="importBtn" type="button">Paste from spreadsheet</button><button class="btn btn--sm" id="csvImportBtn" type="button">📁 Import CSV</button><button class="btn btn--sm" id="gsheetBtn" type="button">Import from Google Sheets</button><button class="btn btn--sm btn--ghost" id="csvTemplateBtn" type="button">Download template</button><button class="btn btn--sm btn--ghost" id="csvExportBtn" type="button">📤 Export CSV</button><input type="file" id="csvFileInput" accept=".csv,.tsv,.txt" hidden /><span id="limitMsg" class="hint ml-auto c-muted" role="status" aria-live="polite"></span></div>
 <div class="import" id="importPanel" hidden>
 <p class="hint mb-8">One player per line: <span class="mono">name, wagered, prize, score, hands, net profit, win rate, change</span> — commas or tabs. Extra columns are optional. Copying straight out of Excel or Google Sheets works.</p>
 <textarea id="importText" rows="6" spellcheck="false" placeholder="*****ess&#9;152000&#9;1500&#10;*****y&#9;98000&#9;700&#10;*****k&#9;61250"></textarea>
 <div class="import-foot"><span class="hint" id="importPreview">0 players detected</span>
 <label class="hint chk"><input type="checkbox" id="importReplace" checked /> Replace current list</label>
-<button class="btn btn--sm btn--accent" id="importApply" type="button" disabled>Add to table</button></div></div></div>
+<button class="btn btn--sm btn--accent" id="importApply" type="button" disabled>Add to table</button></div></div>
+<div class="import" id="gsheetPanel" hidden>
+<p class="hint mb-8">Paste a Google Sheets URL. Public / “Publish to web” sheets work best; private sheets may be blocked by Google’s CORS.</p>
+<div class="d-flex gap-8 flex-wrap">
+<input type="text" id="gsheetUrl" style="flex:1" placeholder="https://docs.google.com/spreadsheets/d/..." />
+<button class="btn btn--sm btn--accent" id="gsheetFetch" type="button">Fetch CSV</button>
+</div>
+<p class="hint mt-8" id="gsheetStatus"></p>
+</div></div>
 </section>
 <section class="lb-page" data-page="design">
 <div class="lb-phead"><button class="lb-menu" type="button" aria-label="Show sections" data-menu aria-expanded="false" aria-controls="lbSide">☰</button><div><h1 tabindex="-1">Design</h1><p class="lb-psub">How your public page looks</p></div></div>
