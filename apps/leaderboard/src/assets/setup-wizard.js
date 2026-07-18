@@ -50,7 +50,7 @@ function parsePlayers(){
 
 // Nav buttons
 $("wiz1next").onclick=()=>{if(!slugify(nameIn.value)&&!slugIn.value.trim()){$("wiz_err").textContent="Enter your name or a custom URL.";return;}if(!slugIn.value.trim()){slugIn.value=slugify(nameIn.value);}slug=slugify(slugIn.value);if(!slug){$("wiz_err").textContent="Invalid URL — letters, numbers, dashes only.";return;}$("wiz_err").textContent="";showStep(2);};
-$("wiz2next").onclick=()=>{$("wiz_err").textContent="";showStep(3);};
+$("wiz2next").onclick=()=>{if(!$("wiz_casino").value.trim()){$("wiz_err").textContent="Enter a casino name.";return;}$("wiz_err").textContent="";showStep(3);};
 $("wiz2back").onclick=()=>{$("wiz_err").textContent="";showStep(1);};
 // Persist the page here (not on the final button) so the "ready" screen only
 // appears once the board is actually saved and reflects the real slug.
@@ -65,7 +65,7 @@ wiz3next.onclick=async()=>{
     const body={
       slug,
       name,
-      brand:{name,casino:$("wiz_casino").value.trim()||"Stake",code:$("wiz_code").value.trim(),ctaUrl:$("wiz_cta").value.trim()},
+      brand:{name,casino:$("wiz_casino").value.trim(),code:$("wiz_code").value.trim(),ctaUrl:$("wiz_cta").value.trim()},
       players:parsePlayers(),
     };
     const res=await fetch("/api/site",{method:"PUT",headers:{"content-type":"application/json","x-csrf-token":getCsrf()},body:JSON.stringify(body)});

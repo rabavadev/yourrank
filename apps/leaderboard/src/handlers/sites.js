@@ -197,6 +197,7 @@ export async function handleCreateBoard(request, env) {
   let slug = slugify(body.slug || "");
   if (!slug) return bad("Enter a valid slug for the board URL.");
   const name = String(body.name || "").trim().slice(0, 80) || slug;
+  if (body.casino !== undefined && !String(body.casino).trim()) return bad("Casino name is required.", 400);
   const r = await createBoard(env, user.id, { slug, name, casino: body.casino, code: body.code }, request);
   return r.error
     ? json({ ok: false, error: r.error, code: r.code || "create_failed" }, 400)

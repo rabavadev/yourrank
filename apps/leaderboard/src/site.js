@@ -702,6 +702,10 @@ export async function saveSite(env, user, payload, siteId, request = null) {
     }
   }
   const b = payload.brand || {};
+  // Require a non-empty casino name when the brand section is being saved.
+  if (b.casino !== undefined && !String(b.casino).trim()) {
+    return { error: "Casino name is required.", code: "missing_casino" };
+  }
   // Validate the referral/CTA link server-side (the client only rejects it at
   // render time via safeUrl). A non-empty value must be a valid http(s) URL.
   if (b.ctaUrl != null && String(b.ctaUrl).trim() !== "") {

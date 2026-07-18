@@ -43,7 +43,7 @@ async function init() {
   state.EXTRA = { chips: d.partner?.chips, whyStats: d.whyStats, rules: d.rules, socials: p.socials || d.socials || [], sections: d.sections, text: (d.branding && d.branding.text) || {}, legal: d.legal || {} };
   $("f_name").value = b.name || "";
   $("f_tagline").value = b.tagline || "";
-  $("f_casino").value = b.casino || "Stake";
+  $("f_casino").value = b.casino || "";
   $("f_code").value = b.code || "";
   $("f_cta").value = b.ctaUrl || "";
   $("f_pool").value = b.prizePool || "";

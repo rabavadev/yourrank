@@ -61,10 +61,11 @@ export function renderBoardSwitcher() {
     const name = $("nb_name").value.trim();
     let slug = $("nb_slug").value.trim() || slugify(name);
     if (!slug) { $("nb_err").textContent = "Enter a name or slug."; return; }
+    const casino = $("nb_casino").value.trim();
+    if (!casino) { $("nb_err").textContent = "Enter a casino name."; return; }
     $("nb_err").textContent = "Creating…";
     createBtn.disabled = true;
     try {
-      const casino = $("nb_casino").value.trim();
       const code = $("nb_code").value.trim();
       const res = await fetch("/api/site/create", { method: "POST", credentials: "include", headers: { "content-type": "application/json", "x-csrf-token": getCsrf() }, body: JSON.stringify({ slug, name, casino, code }) });
       const d = await res.json();

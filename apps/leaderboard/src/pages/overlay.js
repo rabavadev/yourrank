@@ -59,7 +59,7 @@ html,body{width:320px;overflow:hidden;background:transparent;font-family:'Inter'
 <div class="ov-head">
 <div class="ov-brand">
 <span class="ov-brand-name">${esc(b.name)}</span>
-<span class="ov-brand-sub">${esc(b.casino || "Stake")} · ${esc(b.period || "Monthly")}</span>
+<span class="ov-brand-sub">${esc(b.casino || "")}${b.casino && b.period ? " · " : ""}${esc(b.casino ? (b.period || "Monthly") : "")}</span>
 </div>
 <span class="ov-live"><span class="ov-live-dot"></span>LIVE</span>
 </div>

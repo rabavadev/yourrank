@@ -26,7 +26,7 @@ export const setupPage = leaderboardPageHtml({
 
 <div class="wiz-step" id="step2">
 <div class="field"><label for="wiz_casino">Casino name</label>
-<input id="wiz_casino" placeholder="Stake" /></div>
+<input id="wiz_casino" placeholder="e.g. Stake" required /></div>
 <div class="field"><label for="wiz_code">Referral code</label>
 <input id="wiz_code" placeholder="BTZ" /></div>
 <div class="field"><label for="wiz_cta">Referral link</label>
