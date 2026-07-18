@@ -114,9 +114,9 @@ so Stars payments flow back to the app.
 
 ## 7. CI auto-deploy (optional, recommended)
 
-`.github/workflows/deploy.yml` deploys both Workers to Cloudflare automatically
-on every push to `main` (and via manual "Run workflow"). You set **two** GitHub
-repo secrets once, then push-to-deploy forever:
+`.github/workflows/deploy.yml` deploys both Workers automatically on every push
+to `main` (and via manual "Run workflow"). You set **four** GitHub repo secrets
+once, then push-to-deploy forever:
 
 1. Create a Cloudflare API token: dash.cloudflare.com → My Profile → API Tokens
    → Create Token → "Edit Cloudflare Workers" template → scope it to the
@@ -124,14 +124,18 @@ repo secrets once, then push-to-deploy forever:
    Read" permissions are required. Copy the token.
 2. Get your Cloudflare account id: your dash homepage → right sidebar →
    "Account ID" (a 32-char hex). Not the zone id.
+3. Create a Supabase personal access token for CLI auth.
+4. Use the Supabase database password for `supabase link --password`.
 
-Add both as **GitHub repo** secrets (repo → Settings → Secrets and variables →
+Add all four as **GitHub repo** secrets (repo → Settings → Secrets and variables →
 Actions → New repository secret) — NOT Worker secrets:
 
-| Repo secret             | Value                                  |
-|-------------------------|----------------------------------------|
-| `CLOUDFLARE_API_TOKEN`  | the token from step 1                  |
-| `CLOUDFLARE_ACCOUNT_ID` | the 32-char account id from step 2     |
+| Repo secret               | Value                                      |
+|---------------------------|--------------------------------------------|
+| `CLOUDFLARE_API_TOKEN`    | the token from step 1                      |
+| `CLOUDFLARE_ACCOUNT_ID`   | the 32-char account id from step 2         |
+| `SUPABASE_ACCESS_TOKEN`   | Supabase personal access token             |
+| `SUPABASE_DB_PASSWORD`    | Supabase DB password for CLI linking       |
 
 That's it. Worker **runtime** secrets (`ADMIN_API_KEY`, `TOKEN_ENC_KEY`,
 `PLATFORM_BOT_TOKEN`, etc.) are NOT in the repo and are NOT managed by CI —
@@ -140,7 +144,7 @@ Workers across every deploy. CI only ships code.
 
 Trigger a first run from repo → Actions → "Deploy" → Run workflow, or just push
 to `main`. The leaderboard job rebuilds `assets_bundled.js` then deploys; the
-bot job deploys `src/worker.ts` directly (wrangler bundles the TS).
+bot job typechecks then deploys `src/worker.ts`.
 
 ## 8. Auto-migrate the database (optional, recommended)
 
@@ -166,3 +170,18 @@ The two phases are:
 
 Both trigger on push to `main`. You can also trigger manually from repo → Actions.
 
+## 8. Staging deploy (optional)
+
+`.github/workflows/staging.yml` provides a **manual-only** staging deploy for
+both Workers. Trigger it from repo → Actions → "Deploy Staging" → Run workflow.
+
+Before using it, finish the staging setup described in `apps/leaderboard/STAGING.md`
+and in both app `wrangler.toml` files:
+- create a separate staging Supabase project,
+- create a separate staging Hyperdrive config,
+- create a separate staging KV namespace,
+- paste the staging IDs into both `[env.staging]` sections.
+
+Important: both app `wrangler.toml` files currently keep the staging Hyperdrive
+`id` commented out on purpose to prevent accidental production DB usage. Until
+those IDs are filled in, a staging deploy is not fully configured.
