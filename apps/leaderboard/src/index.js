@@ -499,6 +499,7 @@ async function handleRequest(request, env, ctx, meta) {
       if (path === "/responsible") return new Response(addCookieConsent(PAGES.responsible), { headers: { ...HTML_N, ...csrfHeader } });
       if (path === "/refund") return new Response(addCookieConsent(PAGES.refund), { headers: { ...HTML_N, ...csrfHeader } });
       if (path === "/contact") return new Response(addCookieConsent(PAGES.contact), { headers: { ...HTML_N, ...csrfHeader } });
+      if (path === "/docs") return new Response(addCookieConsent(PAGES.docs), { headers: { ...HTML_N, ...csrfHeader } });
       if (path === "/pricing" || path === "/pricing.html") return new Response(addCookieConsent(PAGES.pricing), { headers: { ...HTML_N, ...csrfHeader } });
       if (path === "/cookies" || path === "/cookies.html") return new Response(addCookieConsent(PAGES.cookies), { headers: { ...HTML_N, ...csrfHeader } });
 
