@@ -310,3 +310,45 @@ $("csvExportBtn")?.addEventListener("click", async () => {
     $("status").textContent = "Network error.";
   }
 });
+
+function parseGSheetUrl(raw) {
+  try {
+    const url = new URL(raw.trim());
+    const pub = url.pathname.match(/\/spreadsheets\/d\/e\/([a-zA-Z0-9_-]+)\//);
+    if (pub) return `https://docs.google.com/spreadsheets/d/e/${pub[1]}/pub?output=csv&single=true`;
+    const m = url.pathname.match(/\/spreadsheets\/d\/([a-zA-Z0-9_-]+)\//);
+    if (!m) return null;
+    const id = m[1];
+    const gid = url.searchParams.get("gid") || "0";
+    return `https://docs.google.com/spreadsheets/d/${id}/export?format=csv&id=${id}&gid=${gid}`;
+  } catch { return null; }
+}
+
+$("gsheetBtn")?.addEventListener("click", () => {
+  const p = $("gsheetPanel");
+  p.hidden = !p.hidden;
+  if (!p.hidden) $("importPanel").hidden = true;
+});
+
+$("gsheetFetch")?.addEventListener("click", async () => {
+  const raw = $("gsheetUrl").value.trim();
+  const status = $("gsheetStatus");
+  const csvUrl = parseGSheetUrl(raw);
+  if (!csvUrl) { status.textContent = "Paste a valid Google Sheets URL."; return; }
+  status.textContent = "Fetching…";
+  try {
+    const res = await fetch(csvUrl, { credentials: "omit", mode: "cors" });
+    if (!res.ok) { status.textContent = `Google returned ${res.status}. Make the sheet public or use CSV import.`; return; }
+    const text = await res.text();
+    const result = parseImportText(text, "gsheet");
+    if (!result.rows.length) { status.textContent = result.errors.length ? result.errors[0] : "No players found. Expected: name, wagered, prize, ..."; return; }
+    $("gsheetPanel").hidden = true;
+    $("importPanel").hidden = false;
+    $("importText").value = result.rows.map((p) => [p.name, p.wagered, p.prize, p.score ?? "", p.hands ?? "", p.netProfit ?? "", p.winRate ?? "", p.change ?? ""].join("\t")).join("\n");
+    $("importText").dispatchEvent(new Event("input"));
+    status.textContent = `Loaded ${result.rows.length} player${result.rows.length === 1 ? "" : "s"} from Google Sheets. Review and click “Add to table”.`;
+  } catch (err) {
+    logError("gsheetFetch", err);
+    status.textContent = "Could not fetch the sheet. Try File → Share → Publish to web, or download as CSV.";
+  }
+});

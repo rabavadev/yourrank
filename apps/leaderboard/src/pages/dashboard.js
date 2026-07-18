@@ -137,13 +137,21 @@ export const dashboardPage = leaderboardPageHtml({
 <div class="card"><h2>Players</h2><p class="card-sub">The board auto-sorts by wagered, highest first. Prize <span class="mono">0</span> shows a dash. Names can be masked (keep the <span class="mono">***</span>). <span class="limit-widget" id="limitWidget"><span id="pCount" class="limit-hint"></span><span class="limit-bar"><span class="limit-fill" id="limitFill"></span></span><span class="limit-hint" id="limitHint"></span><a class="btn btn--sm btn--accent" id="playerLimitUpgrade" href="/dashboard/billing">Upgrade</a></span></p>
 <div class="players-wrap"><table class="players"><thead><tr><th class="rank">#</th><th>Player</th><th class="ta-r">Wagered</th><th class="ta-r">Prize</th><th class="ta-r col-score" hidden>Score</th><th class="ta-r col-hands" hidden>Hands</th><th class="ta-r col-net" hidden>Net profit</th><th class="ta-r col-win" hidden>Win rate</th><th class="ta-r col-change" hidden>Change</th><th></th></tr></thead><tbody id="rows"></tbody></table></div>
 <div id="playersEmpty" class="empty" hidden>No players yet. Add your first one.</div>
-<div class="mt-14 d-flex gap-8 flex-wrap items-center"><button class="btn btn--sm" id="addRow">+ Add player</button><button class="btn btn--sm" id="importBtn" type="button">Paste from spreadsheet</button><button class="btn btn--sm" id="csvImportBtn" type="button">📁 Import CSV</button><button class="btn btn--sm btn--ghost" id="csvTemplateBtn" type="button">Download template</button><button class="btn btn--sm btn--ghost" id="csvExportBtn" type="button">📤 Export CSV</button><input type="file" id="csvFileInput" accept=".csv,.tsv,.txt" hidden /><span id="limitMsg" class="hint ml-auto c-muted" role="status" aria-live="polite"></span></div>
+<div class="mt-14 d-flex gap-8 flex-wrap items-center"><button class="btn btn--sm" id="addRow">+ Add player</button><button class="btn btn--sm" id="importBtn" type="button">Paste from spreadsheet</button><button class="btn btn--sm" id="csvImportBtn" type="button">📁 Import CSV</button><button class="btn btn--sm" id="gsheetBtn" type="button">Import from Google Sheets</button><button class="btn btn--sm btn--ghost" id="csvTemplateBtn" type="button">Download template</button><button class="btn btn--sm btn--ghost" id="csvExportBtn" type="button">📤 Export CSV</button><input type="file" id="csvFileInput" accept=".csv,.tsv,.txt" hidden /><span id="limitMsg" class="hint ml-auto c-muted" role="status" aria-live="polite"></span></div>
 <div class="import" id="importPanel" hidden>
 <p class="hint mb-8">One player per line: <span class="mono">name, wagered, prize, score, hands, net profit, win rate, change</span> — commas or tabs. Extra columns are optional. Copying straight out of Excel or Google Sheets works.</p>
 <textarea id="importText" rows="6" spellcheck="false" placeholder="*****ess&#9;152000&#9;1500&#10;*****y&#9;98000&#9;700&#10;*****k&#9;61250"></textarea>
 <div class="import-foot"><span class="hint" id="importPreview">0 players detected</span>
 <label class="hint chk"><input type="checkbox" id="importReplace" checked /> Replace current list</label>
-<button class="btn btn--sm btn--accent" id="importApply" type="button" disabled>Add to table</button></div></div></div>
+<button class="btn btn--sm btn--accent" id="importApply" type="button" disabled>Add to table</button></div></div>
+<div class="import" id="gsheetPanel" hidden>
+<p class="hint mb-8">Paste a Google Sheets URL. Public / “Publish to web” sheets work best; private sheets may be blocked by Google’s CORS.</p>
+<div class="d-flex gap-8 flex-wrap">
+<input type="text" id="gsheetUrl" style="flex:1" placeholder="https://docs.google.com/spreadsheets/d/..." />
+<button class="btn btn--sm btn--accent" id="gsheetFetch" type="button">Fetch CSV</button>
+</div>
+<p class="hint mt-8" id="gsheetStatus"></p>
+</div></div>
 <div class="card" id="playerFieldsCard"><h2>Player columns</h2><p class="card-sub">Choose which extra columns show on the dashboard player table and on supported public templates.</p><div class="section-list" id="playerFieldsList"></div></div>
 </section>
 <section class="lb-page" data-page="design">
