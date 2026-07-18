@@ -179,9 +179,12 @@ async function loadExtras(){
 
   const bcList = $('bcList');
   if (bcList) {
-    bcList.innerHTML = (bcs||[]).map(b=>'<tr><td>'+esc(b.body.slice(0,60))+'</td><td>'+esc(b.bot_username||'–')+'</td><td>'+esc(b.status)+'</td>'+
+    bcList.innerHTML = (bcs||[]).map(b=>{
+      const bodyPreview = esc(b.body.slice(0,60)) + (b.body.length>60?'…':'') + (b.media_url ? ' (image)' : '');
+      return '<tr><td>'+bodyPreview+'</td><td>'+esc(b.bot_username||'–')+'</td><td>'+esc(b.status)+'</td>'+
       '<td>'+esc(b.sent_count)+'/'+(b.total_count?esc(b.total_count):'?')+'</td><td>'+esc(b.fail_count)+'</td>'+
-      '<td>'+(b.status==='scheduled'?'<button class="ghost" data-action="cancelBroadcast" data-id="'+esc(b.id)+'" type="button">Cancel</button>':'')+'</td></tr>').join('')
+      '<td>'+(b.status==='scheduled'?'<button class="ghost" data-action="cancelBroadcast" data-id="'+esc(b.id)+'" type="button">Cancel</button>':'')+'</td></tr>';
+    }).join('')
       || '<tr><td colspan="6" class="muted">No broadcasts yet.</td></tr>';
   }
 
@@ -498,9 +501,10 @@ async function confirmSendBroadcast(btn){
   const botId = $('bcBotSelect')?.value || firstBotId;
   if (!botId || !body) return;
   setLoading(btn, 'Sending…');
-  const r = await api('/broadcasts',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({bot_id:botId, body})});
+  const mediaUrl = ($('bcImage')?.value || '').trim() || null;
+  const r = await api('/broadcasts',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({bot_id:botId, body, media_url: mediaUrl})});
   if (r.error) { restoreBtn(btn); return toast(r.error); }
-  $('bcBody').value=''; closeBroadcastPreview(); toast('Broadcast queued'); restoreBtn(btn); loadExtras();
+  $('bcBody').value=''; if ($('bcImage')) $('bcImage').value=''; closeBroadcastPreview(); toast('Broadcast queued'); restoreBtn(btn); loadExtras();
 }
 async function sendBroadcast(btn){ openBroadcastPreview(); }
 // Send a single test copy of the broadcast to one chat ID before blasting.
@@ -512,7 +516,8 @@ async function testBroadcast(btn){
   const chatId = Number(($('bcTestChat')?.value || '').trim());
   if (!chatId) return toast('Enter your chat ID to send a test');
   setLoading(btn, 'Sending…');
-  const r = await api('/bots/'+botId+'/test-message',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({chat_id:chatId, text:body})});
+  const imageUrl = ($('bcImage')?.value || '').trim() || null;
+  const r = await api('/bots/'+botId+'/test-message',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({chat_id:chatId, text:body, image_url: imageUrl})});
   restoreBtn(btn);
   if (r.error) return toast(r.error);
   toast('Test sent — check that chat');

@@ -27,6 +27,7 @@ export const botWelcomeSchema = z.object({
 export const testMessageSchema = z.object({
   chat_id: z.number().int().positive(),
   text: z.string().min(1).max(4096),
+  image_url: z.string().url().max(2048).optional().nullable(),
 }).strict();
 
 const commandButtonSchema = z.object({
@@ -50,6 +51,7 @@ export const broadcastSchema = z.object({
   bot_id: z.string().uuid(),
   body: z.string().min(1).max(4096),
   scheduled_at: z.string().datetime().optional().nullable(),
+  media_url: z.string().url().max(2048).optional().nullable(),
 }).strict();
 
 export const checkoutSchema = z.object({

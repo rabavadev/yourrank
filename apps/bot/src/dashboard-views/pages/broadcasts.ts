@@ -7,6 +7,8 @@ export function broadcastsPanel(): string {
     <select class="style-23" id="bcBotSelect"><option value="">Loading bots…</option></select>
     <label class="sr-only" for="bcBody">Message</label>
     <textarea id="bcBody" rows="3" placeholder="Message to all your bot's subscribers — use {name} to include the subscriber's first name (HTML supported)"></textarea>
+    <label class="sr-only" for="bcImage">Image URL</label>
+    <input id="bcImage" type="url" placeholder="Image URL (optional) — shown above the message" />
     <div id="bcAudience" class="muted style-24" aria-live="polite">This will send to <b>–</b> subscribers.</div>
     <div id="bcPreview" class="bc-preview" hidden>
       <div class="bc-preview-card">

@@ -22,6 +22,7 @@ interface ActiveBroadcast {
   id: string;
   bot_id: string;
   body: string;
+  media_url: string | null;
   buttons: unknown;
   cursor_tg_user_id: number; // Changed from string to number for numeric comparison
   sent_count: number;
@@ -46,7 +47,7 @@ export async function processBroadcastBatch(batchSize = 300): Promise<boolean> {
          LIMIT 1
          FOR UPDATE SKIP LOCKED
       )
-      RETURNING id, bot_id, body, buttons, cursor_tg_user_id, sent_count, fail_count`
+      RETURNING id, bot_id, body, media_url, buttons, cursor_tg_user_id, sent_count, fail_count`
   );
   if (!bc) return false;
 
@@ -110,15 +111,24 @@ export async function processBroadcastBatch(batchSize = 300): Promise<boolean> {
   for (const sub of subs) {
     const firstName = sub.first_name || sub.tg_username || "there";
     const personalized = esc(bc.body).replace(/\{name\}/g, esc(firstName));
-    const payload: Record<string, unknown> = {
-      chat_id: sub.tg_user_id, // Already numeric, no need for Number()
-      text: personalized,
-      parse_mode: "HTML",
-    };
+    const hasMedia = !!bc.media_url;
+    const payload: Record<string, unknown> = hasMedia
+      ? {
+          chat_id: sub.tg_user_id, // Already numeric, no need for Number()
+          photo: bc.media_url,
+          caption: personalized,
+          parse_mode: "HTML",
+        }
+      : {
+          chat_id: sub.tg_user_id, // Already numeric, no need for Number()
+          text: personalized,
+          parse_mode: "HTML",
+        };
     if (bc.buttons) payload.reply_markup = { inline_keyboard: bc.buttons };
 
+    const method = hasMedia ? "sendPhoto" : "sendMessage";
     try {
-      const res = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+      const res = await fetch(`https://api.telegram.org/bot${token}/${method}`, {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify(payload),

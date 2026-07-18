@@ -11,7 +11,7 @@ import {
   getActivePostbackKey,
   revokePostbackKeys,
 } from "../../../shared/postback.js";
-import { getMe, setWebhook, deleteWebhook, getWebhookInfo, sendMessage } from "./telegram.js";
+import { getMe, setWebhook, deleteWebhook, getWebhookInfo, sendMessage, sendPhoto } from "./telegram.js";
 import { syncMyCommands, syncMyCommandsForBot } from "./botEngine.js";
 import { withPlanLimit, getUserPlan } from "./plans.js";
 import { billingEnabled, createStarsInvoice } from "./billing.js";
@@ -397,7 +397,7 @@ export function buildDashboardApi(): Hono<{ Bindings: DashApiBindings; Variables
   api.post("/bots/:id/test-message", async (c) => {
     const parsed = await validatedBody(c, testMessageSchema);
     if (parsed instanceof Response) return parsed;
-    const { chat_id, text } = parsed;
+    const { chat_id, text, image_url } = parsed;
 
     const bot = await one<{ token_encrypted: Buffer }>(
       `SELECT token_encrypted FROM bots WHERE id = $1 AND owner_id = $2`,
@@ -413,11 +413,13 @@ export function buildDashboardApi(): Hono<{ Bindings: DashApiBindings; Variables
     }
 
     try {
-      const result = await sendMessage(token, chat_id, text.trim());
+      const result = image_url
+        ? await sendPhoto(token, chat_id, image_url, text.trim())
+        : await sendMessage(token, chat_id, text.trim());
       return c.json({ ok: true, message_id: result.message_id });
     } catch (err) {
       const msg = errMessage(err);
-      console.error("[POST /bots/:id/test-message] sendMessage failed:", msg);
+      console.error("[POST /bots/:id/test-message] send failed:", msg);
       return c.json({ error: msg }, 500);
     }
   });
@@ -643,7 +645,7 @@ export function buildDashboardApi(): Hono<{ Bindings: DashApiBindings; Variables
   // ---- broadcasts ----
   api.get("/broadcasts", async (c) => {
     return c.json(await query(
-      `SELECT b.id, b.body, b.status, b.scheduled_at, b.sent_at,
+      `SELECT b.id, b.body, b.media_url, b.status, b.scheduled_at, b.sent_at,
               b.total_count, b.sent_count, b.fail_count, bo.username AS bot_username
          FROM broadcasts b JOIN bots bo ON bo.id = b.bot_id
         WHERE bo.owner_id = $1
@@ -674,17 +676,17 @@ export function buildDashboardApi(): Hono<{ Bindings: DashApiBindings; Variables
 
     const parsed = await validatedBody(c, broadcastSchema);
     if (parsed instanceof Response) return parsed;
-    const { bot_id, body: broadcastBody, scheduled_at } = parsed;
+    const { bot_id, body: broadcastBody, scheduled_at, media_url } = parsed;
     const body = broadcastBody.trim();
 
     const bot = await one(`SELECT id FROM bots WHERE id = $1 AND owner_id = $2`, [bot_id, uid]);
     if (!bot) return c.json({ error: "bot not found" }, 404);
 
     const row = await one(
-      `INSERT INTO broadcasts (bot_id, body, status, scheduled_at)
-       VALUES ($1, $2, 'scheduled', $3)
+      `INSERT INTO broadcasts (bot_id, body, media_url, status, scheduled_at)
+       VALUES ($1, $2, $3, 'scheduled', $4)
        RETURNING id, status`,
-      [bot_id, body.trim(), scheduled_at ?? null]
+      [bot_id, body.trim(), media_url ?? null, scheduled_at ?? null]
     );
     return c.json(row);
   });

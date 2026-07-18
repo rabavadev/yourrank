@@ -79,3 +79,7 @@ export interface TgMessage {
 export const sendMessage = (token: string, chatId: number, text: string) =>
   call<TgMessage>(token, "sendMessage", { chat_id: chatId, text, parse_mode: "Markdown" });
 
+/** Sends a photo to a specific chat. Caption uses HTML parse_mode for broadcasts. */
+export const sendPhoto = (token: string, chatId: number, photo: string, caption: string) =>
+  call<TgMessage>(token, "sendPhoto", { chat_id: chatId, photo, caption, parse_mode: "HTML" });
+
