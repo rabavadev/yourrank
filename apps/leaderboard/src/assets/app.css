@@ -667,7 +667,8 @@ table.ref-table td{padding:8px 8px;border-bottom:1px solid var(--line);color:var
 
 /* Live preview panel on the Design page */
 .design-grid{display:grid;grid-template-columns:1fr 440px;gap:20px;align-items:start}
-.design-preview{position:sticky;top:14px}
+.design-grid>*{min-width:0}
+.design-preview{position:sticky;top:14px;overflow:hidden}
 .preview-devices{display:flex;gap:8px;margin-bottom:12px}
 .preview-device.is-active{background:var(--accent);color:#000;border-color:var(--accent)}
 .design-preview .preview-frame-wrap{border:1px solid var(--line);border-radius:12px;overflow:auto;background:#000;line-height:0;display:flex;justify-content:center}
