@@ -137,6 +137,9 @@ body[data-template="highRollers"] .hr-trend.down { color: var(--hr-danger); back
 body[data-template="highRollers"] .hr-trend.same { color: var(--hr-muted); background: rgba(255,255,255,0.05); }
 body[data-template="highRollers"] .hr-gold-text { color: var(--hr-gold); text-shadow: 0 0 14px rgba(201,168,76,0.25); }
 body[data-template="highRollers"] .hr-empty { padding: 3rem; text-align: center; color: var(--hr-muted); }
+body[data-template="highRollers"] .hr-empty[hidden] { display: none; }
+body[data-template="highRollers"] .skip-link { position: absolute; top: 0; left: 0; transform: translateY(-120%); transition: transform .2s ease; background: var(--hr-gold); color: #080b14; }
+body[data-template="highRollers"] .skip-link:focus { transform: translateY(0); }
 @media (max-width: 900px) { body[data-template="highRollers"] .hr-thead, body[data-template="highRollers"] .hr-row { grid-template-columns: 60px 1.5fr 100px 120px 120px 70px 70px; } }
 `;
 
@@ -208,7 +211,7 @@ export function composeHighRollers(p) {
         </div>
       </div>
     </div>
-    <div class="hr-empty" data-empty style="display:none">No players found.</div>
+    <div class="hr-empty" data-empty hidden>No players found.</div>
   </div>
 </section>
 </div>`;
