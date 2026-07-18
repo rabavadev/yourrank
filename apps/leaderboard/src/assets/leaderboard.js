@@ -319,13 +319,13 @@ function boot() {
     try { const cs = document.querySelector("[data-copy-status]"); if(cs) cs.textContent = "Code copied to clipboard"; } catch (_) { /* ignored */ }
     try { if (window.__SLUG__ && consentAllowsAnalytics()) navigator.sendBeacon("/api/track/copy", new Blob([JSON.stringify({ slug: window.__SLUG__ })], { type: "application/json" })); } catch (_) { /* ignored */ } });
 
-  const sc = $("[data-share='copy']");
-  if (sc) sc.addEventListener("click", async () => {
+  const shareBtn = $("[data-share='copy']");
+  if (shareBtn) shareBtn.addEventListener("click", async () => {
     try {
-      await navigator.clipboard.writeText(sc.dataset.url || location.href);
-      const p = sc.textContent;
-      sc.textContent = "Copied!";
-      setTimeout(() => { sc.textContent = p; }, TOAST_DURATION_MS);
+      await navigator.clipboard.writeText(shareBtn.dataset.url || location.href);
+      const prevText = shareBtn.textContent;
+      shareBtn.textContent = "Copied!";
+      setTimeout(() => { shareBtn.textContent = prevText; }, TOAST_DURATION_MS);
     } catch (_) { /* ignored */ }
   });
 
@@ -396,8 +396,8 @@ function boot() {
     pastSec.hidden = false;
   }
 
-  const sc = $("[data-socials]");
-  if (sc && Array.isArray(data.socials)) sc.innerHTML = data.socials.map((s) => { const brand = (s.brand || s.name || "").toLowerCase(); const ico = SOCIAL_ICONS[brand] || SOCIAL_ICONS.discord; return `<div class="scard"><div class="scard-ico ${esc(brand)}">${ico}</div><div class="scard-name">${esc(s.name)}</div><div class="scard-handle">${esc(s.handle || "")}</div><a class="btn btn--grad" href="${safeUrl(s.url)}" target="_blank" rel="noopener">${esc(s.action || "Follow")}</a></div>`; }).join("");
+  const socialsEl = $("[data-socials]");
+  if (socialsEl && Array.isArray(data.socials)) socialsEl.innerHTML = data.socials.map((s) => { const brand = (s.brand || s.name || "").toLowerCase(); const ico = SOCIAL_ICONS[brand] || SOCIAL_ICONS.discord; return `<div class="scard"><div class="scard-ico ${esc(brand)}">${ico}</div><div class="scard-name">${esc(s.name)}</div><div class="scard-handle">${esc(s.handle || "")}</div><a class="btn btn--grad" href="${safeUrl(s.url)}" target="_blank" rel="noopener">${esc(s.action || "Follow")}</a></div>`; }).join("");
 
   startCountdown(data.endsAt);
 
