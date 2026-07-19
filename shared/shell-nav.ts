@@ -95,14 +95,14 @@ export function shellNavHtml(
       <details class="gm-profile">
         <summary class="gm-profile-trigger" aria-haspopup="true" aria-label="Account menu">
           <span class="gm-who-id"><span class="gm-who-name">${name}</span>${badge}</span>
-          <span class="gm-profile-chevron" aria-hidden="true">▾</span>
+          <span class="gm-profile-chevron" aria-hidden="true">▼</span>
         </summary>
         <div class="gm-profile-menu">
-          <a class="gm-profile-link" href="/dashboard/billing">Billing</a>
-          <a class="gm-profile-link" href="/dashboard/attribution">Attribution</a>
-          <a class="gm-profile-link" href="/dashboard/security">Security</a>
-          <a class="gm-profile-link" href="/dashboard/support">Support</a>
-          <a class="gm-profile-link gm-profile-link--accent" href="/contact?type=feedback&amp;${helpQuery}">Feedback</a>
+          <a class="gm-profile-link" href="/dashboard/billing"><span class="gm-profile-ic">💳</span>Billing</a>
+          <a class="gm-profile-link" href="/dashboard/attribution"><span class="gm-profile-ic">🔗</span>Attribution</a>
+          <a class="gm-profile-link" href="/dashboard/security"><span class="gm-profile-ic">🔒</span>Security</a>
+          <a class="gm-profile-link" href="/dashboard/support"><span class="gm-profile-ic">❓</span>Support</a>
+          <a class="gm-profile-link gm-profile-link--accent" href="/contact?type=feedback&amp;${helpQuery}"><span class="gm-profile-ic">💬</span>Feedback</a>
           <form method="POST" action="${esc(opts.logoutAction || "/logout")}" class="gm-logout-form"><button class="gm-logout" type="submit">Logout</button></form>
         </div>
       </details>
@@ -152,13 +152,15 @@ export const SHELL_NAV_CSS = `
 .gm-badge--free{color:var(--gm-ink-mute);}
 .gm-badge--paid{color:var(--gm-accent);border-color:#3a4218;}
 .gm-profile{position:relative;min-width:0;}
-.gm-profile > summary{list-style:none;display:flex;align-items:center;gap:10px;cursor:pointer;padding:4px 0;}
+.gm-profile > summary{list-style:none;display:flex;align-items:center;gap:10px;cursor:pointer;padding:4px 8px;border-radius:8px;transition:background .15s;}
+.gm-profile > summary:hover{background:var(--gm-line);}
 .gm-profile > summary::-webkit-details-marker{display:none;}
 .gm-profile-trigger{color:var(--gm-ink);}
-.gm-profile-chevron{color:var(--gm-ink-mute);font-size:10px;transition:transform .15s;}
+.gm-profile-chevron{color:var(--gm-ink-soft);font-size:12px;line-height:1;transition:transform .15s;}
 .gm-profile[open] .gm-profile-chevron{transform:rotate(180deg);}
 .gm-profile-menu{position:absolute;right:0;left:auto;top:calc(100% + 10px);min-width:190px;width:max-content;max-width:calc(100vw - 40px);background:var(--gm-panel);border:1px solid var(--gm-line-2);border-radius:10px;padding:6px;display:flex;flex-direction:column;gap:2px;box-shadow:0 16px 48px rgba(0,0,0,.55);z-index:200;}
-.gm-profile-link{font-family:var(--gm-sans);font-size:13px;color:var(--gm-ink-soft);text-decoration:none;padding:8px 10px;border-radius:7px;white-space:nowrap;}
+.gm-profile-link{font-family:var(--gm-sans);font-size:13px;color:var(--gm-ink-soft);text-decoration:none;padding:8px 10px;border-radius:7px;white-space:nowrap;display:flex;align-items:center;gap:10px;}
+.gm-profile-ic{display:inline-flex;align-items:center;justify-content:center;width:18px;font-size:13px;flex:0 0 auto;}
 .gm-profile-link:hover{color:var(--gm-ink);background:var(--gm-line);}
 .gm-profile-link--accent{color:var(--gm-accent);}
 .gm-profile .gm-logout-form{padding:6px 10px;}
