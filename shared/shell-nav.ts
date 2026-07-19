@@ -95,7 +95,7 @@ export function shellNavHtml(
       <details class="gm-profile">
         <summary class="gm-profile-trigger" aria-haspopup="true" aria-label="Account menu">
           <span class="gm-who-id"><span class="gm-who-name">${name}</span>${badge}</span>
-          <span class="gm-profile-chevron" aria-hidden="true">▼</span>
+          <span class="gm-profile-chevron" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg></span>
         </summary>
         <div class="gm-profile-menu">
           <a class="gm-profile-link" href="/dashboard/billing"><span class="gm-profile-ic">💳</span>Billing</a>
@@ -152,11 +152,11 @@ export const SHELL_NAV_CSS = `
 .gm-badge--free{color:var(--gm-ink-mute);}
 .gm-badge--paid{color:var(--gm-accent);border-color:#3a4218;}
 .gm-profile{position:relative;min-width:0;}
-.gm-profile > summary{list-style:none;display:flex;align-items:center;gap:10px;cursor:pointer;padding:4px 8px;border-radius:8px;transition:background .15s;}
-.gm-profile > summary:hover{background:var(--gm-line);}
+.gm-profile > summary{list-style:none;display:inline-flex;align-items:center;gap:8px;cursor:pointer;padding:6px 10px;border-radius:10px;border:1px solid var(--gm-line-2);background:transparent;transition:background .15s,border-color .15s;user-select:none;}
+.gm-profile > summary:hover{background:var(--gm-line);border-color:var(--gm-line-2);}
 .gm-profile > summary::-webkit-details-marker{display:none;}
 .gm-profile-trigger{color:var(--gm-ink);}
-.gm-profile-chevron{color:var(--gm-ink-soft);font-size:12px;line-height:1;transition:transform .15s;}
+.gm-profile-chevron{display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;color:var(--gm-ink-soft);transition:transform .2s,color .2s;}
 .gm-profile[open] .gm-profile-chevron{transform:rotate(180deg);}
 .gm-profile-menu{position:absolute;right:0;left:auto;top:calc(100% + 10px);min-width:190px;width:max-content;max-width:calc(100vw - 40px);background:var(--gm-panel);border:1px solid var(--gm-line-2);border-radius:10px;padding:6px;display:flex;flex-direction:column;gap:2px;box-shadow:0 16px 48px rgba(0,0,0,.55);z-index:200;}
 .gm-profile-link{font-family:var(--gm-sans);font-size:13px;color:var(--gm-ink-soft);text-decoration:none;padding:8px 10px;border-radius:7px;white-space:nowrap;display:flex;align-items:center;gap:10px;}
