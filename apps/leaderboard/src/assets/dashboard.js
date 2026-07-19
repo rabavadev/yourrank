@@ -213,8 +213,8 @@ async function init() {
       }
     }
   });
-  $("dash").addEventListener("input", markDirty);
-  $("dash").addEventListener("change", markDirty);
+  $("dash").addEventListener("input", (e) => { markDirty(); updateDesignPreview(); });
+  $("dash").addEventListener("change", (e) => { markDirty(); updateDesignPreview(); });
   window.addEventListener("beforeunload", (e) => { if (state._dirty) { e.preventDefault(); e.returnValue = ""; } });
   if (urlParams.get("upgraded")) {
     $("status").textContent = "Payment received — Pro activates once the network confirms (usually minutes).";

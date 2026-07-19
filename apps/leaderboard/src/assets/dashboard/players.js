@@ -15,7 +15,7 @@ export function playerRow(p = { name: "", wagered: "", prize: "", score: "", han
     <td class="num col-win" hidden><input class="p-win-rate" inputmode="decimal" placeholder="0" value="${esc(p.winRate)}"></td>
     <td class="num col-change" hidden><input class="p-change" inputmode="decimal" placeholder="0" value="${esc(p.change)}"></td>
     <td class="act"><button class="row-x" title="Remove" aria-label="Remove player" type="button">×</button></td>`;
-  tr.querySelector(".row-x").addEventListener("click", () => { tr.remove(); renumber(); toggleEmpty(); });
+  tr.querySelector(".row-x").addEventListener("click", () => { tr.remove(); renumber(); toggleEmpty(); $("rows")?.dispatchEvent(new Event("change", { bubbles: true })); });
   return tr;
 }
 
@@ -134,6 +134,7 @@ $("addRow").addEventListener("click", () => {
   renumber();
   toggleEmpty();
   applyPlayerFieldVisibility();
+  $("rows")?.dispatchEvent(new Event("change", { bubbles: true }));
 });
 
 function addQuickRow() {
@@ -153,6 +154,7 @@ function addQuickRow() {
   $("qa_prize").value = "";
   renumber();
   toggleEmpty();
+  $("rows")?.dispatchEvent(new Event("change", { bubbles: true }));
 }
 
 $("qa_add")?.addEventListener("click", addQuickRow);
@@ -291,6 +293,7 @@ $("importApply").addEventListener("click", () => {
   $("importApply").disabled = true;
   $("importPanel").hidden = true;
   $("status").textContent = formatImportSummary(result, parsed.length, result.rows.length - parsed.length + (result.errors.length ? `${result.errors.length} invalid` : ""), cut) + " — hit Save to publish.";
+  $("rows")?.dispatchEvent(new Event("change", { bubbles: true }));
 });
 
 $("csvImportBtn")?.addEventListener("click", () => { $("importMenu").hidden = true; $("csvFileInput").click(); });
@@ -436,6 +439,7 @@ $("bulkDelete")?.addEventListener("click", () => {
     renumber(); toggleEmpty();
     state.markDirty?.();
     $("status").textContent = `${removed} player${removed === 1 ? "" : "s"} removed.`;
+    $("rows")?.dispatchEvent(new Event("change", { bubbles: true }));
   }
 });
 
@@ -450,7 +454,8 @@ $("bulkClearWager")?.addEventListener("click", () => {
   if (cleared) {
     sortRows();
     state.markDirty?.();
-    $("status").textContent = `${cleared} wager${cleared === 1 ? "" : "s"} cleared.`;
+    $("status").textContent = `Cleared wager for ${cleared} player${cleared === 1 ? "" : "s"}.`;
+    $("rows")?.dispatchEvent(new Event("change", { bubbles: true }));
   }
 });
 
