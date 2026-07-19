@@ -72,20 +72,19 @@ async function init() {
     const active = document.querySelector(".preview-device.is-active");
     const width = parseInt(active?.dataset.width || "1100", 10) || 1100;
     const maxWidth = wrap.clientWidth;
-    const scale = Math.min(1, maxWidth / width);
-    iframe.style.width = width + "px";
-    wrap.style.setProperty("--preview-scale", String(scale));
+    const maxHeight = Math.min(900, Math.floor(window.innerHeight * 0.75));
     const doc = iframe.contentDocument;
+    let contentHeight = 680;
     if (doc && doc.readyState === "complete" && doc.documentElement) {
       const html = doc.documentElement;
       const body = doc.body;
-      const contentHeight = Math.max(680, html.scrollHeight, body ? body.scrollHeight : 0, html.offsetHeight, body ? body.offsetHeight : 0);
-      iframe.style.height = contentHeight + "px";
-      wrap.style.height = Math.ceil(contentHeight * scale) + "px";
-    } else {
-      iframe.style.height = "680px";
-      wrap.style.height = "calc(680px * " + scale + ")";
+      contentHeight = Math.max(680, html.scrollHeight, body ? body.scrollHeight : 0, html.offsetHeight, body ? body.offsetHeight : 0);
     }
+    const scale = Math.min(1, maxWidth / width, maxHeight / contentHeight);
+    iframe.style.width = width + "px";
+    iframe.style.height = contentHeight + "px";
+    wrap.style.setProperty("--preview-scale", String(scale));
+    wrap.style.height = Math.ceil(contentHeight * scale) + "px";
   }
   const iframe = $("designPreview");
   if (iframe) iframe.addEventListener("load", fitDesignPreview);
