@@ -135,9 +135,14 @@ export const dashboardPage = leaderboardPageHtml({
   </form>
   <button class="btn btn--sm" id="hudCopyObs" type="button" style="white-space:nowrap;border-color:var(--accent);color:var(--accent)">📋 Copy OBS Link</button>
 </div>
+<div class="editor-tabs" id="editorTabs" role="tablist" aria-label="Editor sections">
+<button class="editor-tab is-active" type="button" role="tab" aria-selected="true" data-egroup="data">General &amp; data</button>
+<button class="editor-tab" type="button" role="tab" aria-selected="false" data-egroup="appearance">Appearance</button>
+<button class="editor-tab" type="button" role="tab" aria-selected="false" data-egroup="share">Embed &amp; share</button>
+</div>
 <div class="design-grid">
 <div class="design-controls">
-<div class="card"><h2>Brand &amp; prize</h2><p class="card-sub">The headline details on your page.</p><div class="grid2">
+<div class="card" data-egroup="data"><h2>Brand &amp; prize</h2><p class="card-sub">The headline details on your page.</p><div class="grid2">
 <div class="field"><label for="f_name">Display name</label><input id="f_name" /></div>
 <div class="field"><label for="f_tagline">Tagline</label><input id="f_tagline" placeholder="Casino streamer & Stake partner" /></div>
 <div class="field"><label for="f_casino">Casino</label><input id="f_casino" placeholder="e.g. Stake" required /></div>
@@ -149,7 +154,7 @@ export const dashboardPage = leaderboardPageHtml({
 <div class="field" style="grid-column:1/-1"><label class="chk"><input type="checkbox" id="f_auto_reset" /> Auto-reset when countdown ends</label><select id="f_auto_reset_clear" disabled style="margin-top:8px"><option value="wagers">Reset wagers to 0</option><option value="players">Clear all players</option><option value="none">Keep board as-is</option></select><span class="hint">Archives the finished period and extends the end date by one period automatically.</span></div>
 <div class="field" style="grid-column:1/-1"><label class="chk"><input type="checkbox" id="f_password_enabled" /> Password-protect this board</label><input id="f_password" type="password" placeholder="Leave blank to keep current password" disabled style="margin-top:8px" /><span class="hint">Visitors must enter this password before seeing the leaderboard or using the public API.</span></div></div>
 <div class="field"><label for="f_blurb">Partner blurb</label><textarea id="f_blurb" rows="2" placeholder="Short pitch about the casino and your code."></textarea></div></div>
-<div class="card"><h2>Players</h2><p class="card-sub">The board auto-sorts by wagered, highest first. Prize <span class="mono">0</span> shows a dash. Names can be masked (keep the <span class="mono">***</span>). <span class="limit-widget" id="limitWidget"><span id="pCount" class="limit-hint"></span><span class="limit-bar"><span class="limit-fill" id="limitFill"></span></span><span class="limit-hint" id="limitHint"></span><a class="btn btn--sm btn--accent" id="playerLimitUpgrade" href="/dashboard/billing">Upgrade</a></span></p>
+<div class="card" data-egroup="data"><h2>Players</h2><p class="card-sub">The board auto-sorts by wagered, highest first. Prize <span class="mono">0</span> shows a dash. Names can be masked (keep the <span class="mono">***</span>). <span class="limit-widget" id="limitWidget"><span id="pCount" class="limit-hint"></span><span class="limit-bar"><span class="limit-fill" id="limitFill"></span></span><span class="limit-hint" id="limitHint"></span><a class="btn btn--sm btn--accent" id="playerLimitUpgrade" href="/dashboard/billing">Upgrade</a></span></p>
 <div class="player-toolbar">
   <input type="search" id="playerSearch" class="player-search" placeholder="Find player..." autocomplete="off" />
   <div class="player-bulk" id="bulkActions" hidden>
@@ -174,8 +179,8 @@ export const dashboardPage = leaderboardPageHtml({
 </div>
 <p class="hint mt-8" id="gsheetStatus"></p>
 </div></div>
-<div class="card" id="playerFieldsCard"><h2>Player columns</h2><p class="card-sub">Choose which extra columns show on the dashboard player table and on supported public templates.</p><div class="section-list" id="playerFieldsList"></div></div>
-<div class="card" id="templateCard"><h2>Page design</h2><p class="card-sub">Pick a design; the preview on the right uses your real players.</p>
+<div class="card" data-egroup="data" id="playerFieldsCard"><h2>Player columns</h2><p class="card-sub">Choose which extra columns show on the dashboard player table and on supported public templates.</p><div class="section-list" id="playerFieldsList"></div></div>
+<div class="card" data-egroup="appearance" id="templateCard"><h2>Page design</h2><p class="card-sub">Pick a design; the preview on the right uses your real players.</p>
 <div class="template-tabs" id="templateTabs" role="tablist" aria-label="Template categories"></div>
 <div class="template-vibe-filters" id="templateVibeFilters" role="group" aria-label="Casino vibes" hidden></div>
 <input type="hidden" id="f_template" value="classic" />
@@ -184,7 +189,7 @@ export const dashboardPage = leaderboardPageHtml({
 <div class="template-grid" id="templateGallery" aria-label="Page templates"></div>
 </div>
 <p class="hint template-status" id="templateStatus" role="status" aria-live="polite"></p></div>
-<details class="pro-accordion" id="proAccordion">
+<details class="pro-accordion" data-egroup="appearance" id="proAccordion">
 <summary class="pro-accordion__summary">
 <span class="pro-accordion__title">Pro features<span class="pill pill--info ml-6">PRO</span></span>
 <span class="hint">Branding, sections, prize customization</span>
@@ -222,11 +227,11 @@ export const dashboardPage = leaderboardPageHtml({
 <div class="empty" id="prizesLock" hidden>Prize customization is a Pro feature. <a href="#" id="prizesUpgrade">Upgrade to unlock it</a>.</div></div>
 </div>
 </details>
-<div class="card" id="textCard"><h2>Template text</h2><p class="card-sub">Change the copy inside your selected design. Keys with an empty value fall back to the default.</p>
+<div class="card" data-egroup="appearance" id="textCard"><h2>Template text</h2><p class="card-sub">Change the copy inside your selected design. Keys with an empty value fall back to the default.</p>
 <div class="text-editor" id="textList"></div></div>
-<div class="card" id="legalCard"><h2>Legal pages</h2><p class="card-sub">Set your own Terms, Privacy, and other legal copy. Empty fields use defaults and the footer links go to your own /terms, /privacy, etc.</p>
+<div class="card" data-egroup="share" id="legalCard"><h2>Legal pages</h2><p class="card-sub">Set your own Terms, Privacy, and other legal copy. Empty fields use defaults and the footer links go to your own /terms, /privacy, etc.</p>
 <div class="legal-editor" id="legalList"></div></div>
-<div class="card" id="socialsCard"><h2>Social links</h2><p class="card-sub">Add the links to your channels. Turn a network <b>on</b> to show it in the “Join the Socials” section of your public page; turn it <b>off</b> to hide it. Links with the toggle on but no URL stay hidden.</p>
+<div class="card" data-egroup="appearance" id="socialsCard"><h2>Social links</h2><p class="card-sub">Add the links to your channels. Turn a network <b>on</b> to show it in the “Join the Socials” section of your public page; turn it <b>off</b> to hide it. Links with the toggle on but no URL stay hidden.</p>
 <div class="socials-editor" id="socialsList"></div></div>
 </div>
 <div class="design-preview">

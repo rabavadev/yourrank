@@ -42,9 +42,44 @@ export function closeDrawer(focusMenu = true) {
   }
 }
 
+// Editor sub-navigation: group the endless controls column into tabs
+// (General & data / Appearance / Embed & share) so the form isn't one long scroll.
+export function setupEditorTabs() {
+  const tabs = document.getElementById("editorTabs");
+  if (!tabs || tabs._wired) return;
+  tabs._wired = true;
+  const controls = document.querySelector(".design-controls");
+  const buttons = [...tabs.querySelectorAll(".editor-tab")];
+  function show(group) {
+    buttons.forEach((b) => {
+      const on = b.dataset.egroup === group;
+      b.classList.toggle("is-active", on);
+      b.setAttribute("aria-selected", String(on));
+    });
+    if (controls) {
+      controls.querySelectorAll("[data-egroup]").forEach((el) => {
+        el.hidden = el.dataset.egroup !== group;
+      });
+    }
+    // The preview measures off the visible column height; re-fit after toggling.
+    if (typeof state.fitDesignPreview === "function") setTimeout(state.fitDesignPreview, 0);
+  }
+  buttons.forEach((b) => b.addEventListener("click", () => show(b.dataset.egroup)));
+  tabs.addEventListener("keydown", (e) => {
+    const i = buttons.indexOf(document.activeElement);
+    if (i === -1) return;
+    let next;
+    if (e.key === "ArrowRight") next = buttons[(i + 1) % buttons.length];
+    else if (e.key === "ArrowLeft") next = buttons[(i - 1 + buttons.length) % buttons.length];
+    if (next) { e.preventDefault(); next.click(); next.focus(); }
+  });
+  show("data");
+}
+
 export function setupShell() {
   if (setupShell._done) return;
   setupShell._done = true;
+  setupEditorTabs();
   let backdrop = document.querySelector(".lb-backdrop");
   if (!backdrop) {
     backdrop = document.createElement("div");

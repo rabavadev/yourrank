@@ -4623,8 +4623,46 @@ video {
     line-height: 1.75rem;
   }
 }
+
+/* --- YourRank redesign supplements (utilities missing from the generated dump) --- */
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+.focus\\:not-sr-only:focus{position:static;width:auto;height:auto;padding:0;margin:0;overflow:visible;clip:auto;white-space:normal}
+.focus\\:absolute:focus{position:absolute}
+.focus\\:z-50:focus{z-index:50}
+.focus\\:top-3:focus{top:.75rem}
+.focus\\:left-3:focus{left:.75rem}
+.focus\\:px-4:focus{padding-left:1rem;padding-right:1rem}
+.focus\\:py-2:focus{padding-top:.5rem;padding-bottom:.5rem}
+.focus\\:rounded-lg:focus{border-radius:.5rem}
+.focus\\:bg-white:focus{background-color:#fff}
+.focus\\:text-\\[\\#4C1D95\\]:focus{color:#4C1D95}
+.focus\\:font-bold:focus{font-weight:700}
+.min-h-\\[44px\\]{min-height:44px}
+.px-5{padding-left:1.25rem;padding-right:1.25rem}
+.px-3\\.5{padding-left:.875rem;padding-right:.875rem}
+.py-1\\.5{padding-top:.375rem;padding-bottom:.375rem}
+.gap-2\\.5{gap:.625rem}
+.gap-1\\.5{gap:.375rem}
+.h-1\\.5{height:.375rem}
+.h-2\\.5{height:.625rem}
+.w-2\\.5{width:.625rem}
+.mb-2\\.5{margin-bottom:.625rem}
+.mt-1\\.5{margin-top:.375rem}
+.order-1{order:1}.order-2{order:2}.order-3{order:3}
+.items-end{align-items:flex-end}
+.min-w-0{min-width:0}
+.flex-grow{flex-grow:1}
+.tabular-nums{font-variant-numeric:tabular-nums}
+.animate-ping{animation:yr-ping 1.4s cubic-bezier(0,0,.2,1) infinite}
+@keyframes yr-ping{75%,100%{transform:scale(2);opacity:0}}
+@media (min-width:768px){.md\\:px-7{padding-left:1.75rem;padding-right:1.75rem}.md\\:w-18{width:4.5rem}.md\\:h-18{height:4.5rem}}
+.hover\\:scale-\\[1\\.008\\]:hover{transform:scale(1.008)}
+.focus-visible\\:outline:focus-visible{outline-style:solid}
+.focus-visible\\:outline-2:focus-visible{outline-width:2px}
+.focus-visible\\:outline-white:focus-visible{outline-color:#fff}
+@media (prefers-reduced-motion:reduce){.animate-ping,.animate-pulse,.animate-bounce{animation:none!important}}
 `;
-export function composeFun(_p) { return `<div class="min-h-screen bg-[#6B21A8] text-white font-sans overflow-x-hidden flex flex-col items-center pb-20 selection:bg-[#EC4899] selection:text-white"><div class="w-full relative bg-[#4C1D95] shadow-2xl shadow-black/50 border-b-[6px] border-[#FBBF24]"><div class="absolute inset-0 opacity-20 bg-[repeating-linear-gradient(45deg,#000,#000_15px,transparent_15px,transparent_30px)] pointer-events-none"></div><div class="relative z-10 max-w-4xl mx-auto px-4 py-8 md:py-12 flex flex-col items-center text-center"><div class="flex items-center gap-2 md:gap-4 mb-2"><span class="text-4xl md:text-6xl animate-bounce">🎰</span><h1 class="text-5xl md:text-7xl tracking-wide text-[#FBBF24] drop-shadow-[0_4px_4px_rgba(0,0,0,0.8)] [font-family:'Fredoka_One',_cursive]">TOP WINNERS</h1><span class="text-4xl md:text-6xl animate-bounce [animation-delay:0.2s]">🎰</span></div><p class="text-[#EC4899] text-xl md:text-2xl font-bold tracking-wider mt-2 mb-8 drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)]">Drop coins. Climb the board. 🪙✨</p><div class="flex gap-2 bg-[#581C87] p-1.5 rounded-full border-2 border-[#FBBF24]/30 shadow-inner"><button class="px-6 py-2 rounded-full font-bold text-sm md:text-base transition-all text-white/80 hover:text-white hover:bg-white/10 [font-family:'Fredoka_One',_cursive]">HOURLY</button><button class="px-6 py-2 rounded-full font-bold text-sm md:text-base transition-all bg-[#FBBF24] text-black shadow-[0_0_15px_rgba(251,191,36,0.6)] scale-105 [font-family:'Fredoka_One',_cursive]">TODAY</button><button class="px-6 py-2 rounded-full font-bold text-sm md:text-base transition-all text-white/80 hover:text-white hover:bg-white/10 [font-family:'Fredoka_One',_cursive]">ALL TIME</button></div></div></div><div class="max-w-4xl w-full px-4 mt-12 md:mt-16 flex flex-col items-center"><div data-top3=""></div><div data-rows=""></div><div class="mt-12 mb-8 text-center"><p class="text-[#FBBF24] text-xl md:text-2xl tracking-wide animate-pulse [font-family:'Fredoka_One',_cursive]">🎉 Updated Live · Play More to Climb! 🎉</p></div></div></div>`; }
+export function composeFun(_p) { return `<div class="min-h-screen bg-[#2E0F52] text-white font-sans overflow-x-hidden flex flex-col items-center pb-16 selection:bg-[#EC4899] selection:text-white"><a href="#fun-board" class="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:top-3 focus:left-3 focus:px-4 focus:py-2 focus:rounded-lg focus:bg-white focus:text-[#4C1D95] focus:font-bold">Skip to leaderboard</a><div class="w-full relative bg-[#3B1370] shadow-2xl shadow-black/50 border-b-4 border-[#FBBF24]"><div class="absolute inset-0 opacity-[0.06] bg-[repeating-linear-gradient(45deg,#000,#000_15px,transparent_15px,transparent_30px)] pointer-events-none"></div><div class="relative z-10 max-w-3xl mx-auto px-4 py-7 md:py-9 flex flex-col items-center text-center"><div class="flex items-center gap-3 mb-1"><svg viewBox="0 0 24 24" width="40" height="40" fill="none" class="drop-shadow-[0_3px_3px_rgba(0,0,0,0.7)]" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="3" fill="#FBBF24"/><rect x="6" y="7" width="3" height="6" rx="1" fill="#4C1D95"/><rect x="10.5" y="7" width="3" height="6" rx="1" fill="#4C1D95"/><rect x="15" y="7" width="3" height="6" rx="1" fill="#4C1D95"/><rect x="6" y="15.5" width="12" height="2" rx="1" fill="#4C1D95"/></svg><h1 class="text-4xl md:text-6xl tracking-wide text-[#FBBF24] drop-shadow-[0_3px_3px_rgba(0,0,0,0.85)] [font-family:'Fredoka_One',_cursive]">TOP WINNERS</h1></div><p class="text-[#FBD5E8] text-base md:text-xl font-bold tracking-wide mt-1 mb-6 drop-shadow-[0_2px_2px_rgba(0,0,0,0.85)]">Drop coins. Climb the board.</p><div class="flex gap-1.5 bg-[#28104A] p-1.5 rounded-full border-2 border-[#FBBF24]/30 shadow-inner" role="tablist" aria-label="Time range"><button role="tab" aria-selected="false" class="min-h-[44px] px-5 md:px-7 rounded-full font-bold text-sm md:text-base transition-all text-white/75 hover:text-white hover:bg-white/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-white [font-family:'Fredoka_One',_cursive]">HOURLY</button><button role="tab" aria-selected="true" class="min-h-[44px] px-5 md:px-7 rounded-full font-bold text-sm md:text-base transition-all bg-[#FBBF24] text-[#3B0764] shadow-[0_0_16px_rgba(251,191,36,0.55)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-white [font-family:'Fredoka_One',_cursive]">TODAY</button><button role="tab" aria-selected="false" class="min-h-[44px] px-5 md:px-7 rounded-full font-bold text-sm md:text-base transition-all text-white/75 hover:text-white hover:bg-white/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-white [font-family:'Fredoka_One',_cursive]">ALL TIME</button></div><div class="mt-5 inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#28104A] border border-[#FBBF24]/25"><span class="relative flex h-2.5 w-2.5"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#4ADE80] opacity-75"></span><span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-[#4ADE80]"></span></span><span class="text-[#4ADE80] text-xs font-bold tracking-widest uppercase [font-family:'Fredoka_One',_cursive]">Updated Live</span></div></div></div><div id="fun-board" class="max-w-3xl w-full px-4 mt-8 flex flex-col items-center gap-6"><div data-top3="" class="w-full flex items-end justify-center gap-3 md:gap-4"></div><div data-rows="" class="w-full flex flex-col gap-2.5"></div></div></div>`; }
 const SPACE_CSS = `*, ::before, ::after {
   --tw-border-spacing-x: 0;
   --tw-border-spacing-y: 0;
