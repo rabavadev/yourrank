@@ -466,7 +466,7 @@ ${fontCss(br, opts.nonce)}
 </head><body data-template="${tpl}"${opts.preview ? ` data-preview style="--preview-min-width:${opts.previewDevice === "mobile" ? 390 : 1100}px"` : ""}${opts.demo ? " data-demo" : ""} ${sectionAttrs}>
 <noscript><p class="noscript-noscroll">This leaderboard requires JavaScript for live updates. The data shown below may not refresh automatically.</p></noscript>
 ${opts.demo ? `<div class="demo-bar" role="region" aria-label="Demo notice"><span class="demo-bar-txt">You're viewing a live <b>YourRank</b> demo board.</span><a class="demo-bar-cta" href="${esc(`${opts.homeUrl || ""}/signup`)}" target="_top">Create your free page →</a><a class="demo-bar-home" href="${esc(opts.homeUrl || "/")}" target="_top">Back to YourRank</a></div>` : ""}
-<a class="skip-link" href="#board">Skip to leaderboard</a>
+
 ${fullPageHeader}
 ${fullPage ? "" : `<div class="field" aria-hidden="true"></div><div class="watermarks" data-watermarks aria-hidden="true"></div>
 <header class="nav"><a class="nav-brand" href="#top">${navLogo}<span data-brand-name>${esc(b.name)}</span></a>
@@ -563,7 +563,7 @@ export function renderLegalPage(data, page, opts) {
 <link rel="canonical" href="${canonical}" />
 ${fontLink}${cssLink}${templateStyle}${fontStyle}
 </head><body data-template="${tpl}" class="${bodyClass}">
-<a class="skip-link" href="#main-content">Skip to content</a>
+
 ${header}
 <main class="${fullPage ? "legal-page__wrap" : "legal"}" id="main-content"><h1>${esc(title)}</h1><p class="${fullPage ? "legal-page__updated" : "legal-updated"}">Last updated: ${new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })}</p>${legalNotice}${bodyHtml}<a class="${fullPage ? "legal-page__back" : ""}" href="${homeHref}">← Back to ${esc(b.name || "leaderboard")}</a></main>
 ${footer}
@@ -650,7 +650,7 @@ export function renderPlayerProfile(data, player, history, opts) {
 <link rel="canonical" href="${canonical}" />
 ${fontLink}${cssLink}${templateStyle}${profileStyle}${shareCss}${fontStyle}
 </head><body data-template="${tpl}" class="${fullPage ? "legal-page" : "legal"}">
-<a class="skip-link" href="#main-content">Skip to content</a>
+
 ${header}
 <main class="${fullPage ? "legal-page__wrap" : "legal"}" id="main-content">
 <div class="pp-wrap">
@@ -732,7 +732,7 @@ export function renderHallOfFame(data, opts) {
 <link rel="canonical" href="${canonical}" />
 ${fontLink}${cssLink}${templateStyle}${hofStyle}${fontStyle}
 </head><body data-template="${tpl}" class="${fullPage ? "legal-page" : "legal"}">
-<a class="skip-link" href="#main-content">Skip to content</a>
+
 ${header}
 <main class="${fullPage ? "legal-page__wrap" : "legal"}" id="main-content">
 <div class="hof-wrap">
@@ -836,7 +836,7 @@ export function renderStreamerProfile(data, opts) {
 <link rel="canonical" href="${canonical}" />
 ${fontLink}${cssLink}${templateStyle}${profileStyle}${shareCss}
 </head><body data-template="${tpl}" class="${fullPage ? "legal-page" : "legal"}">
-<a class="skip-link" href="#main-content">Skip to content</a>
+
 ${header}
 <main class="${fullPage ? "legal-page__wrap" : "legal"}" id="main-content">
 <div class="sp-wrap">
@@ -941,7 +941,7 @@ export function renderPasswordGate(site, opts, error = "") {
 .pw-form button{padding:12px;border:none;border-radius:8px;background:var(--accent,#c8ff00);color:#000;font-weight:700;cursor:pointer}
 .pw-error{color:#ff6b6b;font-size:14px;margin-top:-8px}
 </style></head><body>
-<a class="skip-link" href="#main-content">Skip to content</a>
+
 <header class="topbar"><a class="brand" href="/">Your<b>Rank</b></a></header>
 <main class="pw-wrap" id="main-content">
 <h1 class="pw-title">${name}</h1>
