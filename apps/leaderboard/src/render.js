@@ -430,6 +430,18 @@ body[data-sections-cta="false"] .hero-cta,
 body[data-sections-payouts="false"] .payouts { display: none !important; }
 </style>`;
   const profileLinkCss = `<style nonce="${opts.nonce}">.yr-profile-link{color:inherit;text-decoration:none;cursor:pointer}.yr-profile-link:hover{text-decoration:underline;opacity:.85}</style>`;
+  const previewScript = opts.preview ? `<script nonce="${opts.nonce}">
+document.addEventListener("click", (e) => {
+  const row = e.target.closest("tr, .player-card, .player-row");
+  if (!row) return;
+  const nameEl = row.querySelector(".p-name, [data-player-name], .embed-name, .standings-name, .stand-name");
+  if (nameEl) {
+    const name = nameEl.textContent.trim();
+    if (name) window.parent.postMessage({ type: "yr_click_player", name }, "*");
+  }
+});
+</script>` : "";
+
   return `<!DOCTYPE html>
 <html lang="en"><head>
 <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -469,6 +481,7 @@ ${fullPage ? "" : `<footer class="ftr"><div class="ftr-id"><span class="ftr-name
 <p class="ftr-fine">${footerDisclaimer(hasCasino, b.name, casino)}</p>
 <p class="ftr-copy">© <span data-year></span> <span data-brand-name>${esc(b.name)}</span>. All rights reserved.</p></footer>`}
 ${badge}${fullPage ? `<script src="/assets/casino/${tpl}.js" nonce="${opts.nonce}"></script>` : ""}<script nonce="${opts.nonce}">window.__SITE_DATA__=${dataJson};window.__SLUG__=${JSON.stringify(opts.slug || "")};</script><script src="/assets/leaderboard.js"></script>
+${previewScript}
 </body></html>`;
 }
 

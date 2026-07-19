@@ -1,11 +1,10 @@
 // Dashboard entry point. Coordinates data loading and initial render across modules.
-import { $, esc, getCsrf, logError, toLocalInput } from "./dashboard/utils.js";
+import { $, esc, getCsrf, logError, toLocalInput, fmtMoney, currentPlayers, resetsIn } from "./dashboard/utils.js";
 import { state } from "./dashboard/state.js";
 import { navTo, setupShell } from "./dashboard/shell.js";
 import { renderBoardSwitcher, renderSidebarBoardSwitcher, renderBoardsPage } from "./dashboard/boards.js";
 import { renderPlayers } from "./dashboard/players.js";
 import { loadStats, renderArchives, renderBranding, renderDomain, renderDomainStatus, renderLegal, renderNotifications, renderOverlay, renderPlan, renderPlayerFields, renderPrizes, renderSections, renderSocials, renderTemplateText, updateDesignPreview } from "./dashboard/site.js";
-import { renderOverviewSummary, wireOverviewQuickActions } from "./dashboard/overview.js";
 import { renderReferrals } from "./dashboard/referrals.js";
 
 async function init() {
@@ -83,7 +82,8 @@ async function init() {
     }
     const scale = cw / deviceWidth;
     const scaledHeight = contentHeight * scale;
-    const maxHeight = Math.min(720, Math.floor(window.innerHeight * 0.75));
+    const isEditing = frame.closest(".design-grid")?.classList.contains("is-editing");
+    const maxHeight = Math.min(isEditing ? 900 : 720, Math.floor(window.innerHeight * (isEditing ? 0.85 : 0.75)));
     const frameHeight = Math.min(scaledHeight, maxHeight);
     stage.style.width = deviceWidth + "px";
     stage.style.height = contentHeight + "px";
@@ -167,14 +167,52 @@ async function init() {
   // Smart landing: returning, set-up users go straight to the Editor (the daily job).
   // Brand-new boards still land on Overview so the setup checklist is front and center.
   const initialNav = new URLSearchParams(location.search).get("nav");
-  const landing = initialNav || (isBoardSetup(p) ? "board" : "overview");
+  const landing = initialNav || "board";
   if (document.querySelector(`section[data-page="${landing}"]`)) navTo(landing);
   if (document.querySelector('section[data-page="board"].is-on')) fitDesignPreview();
-  renderOverviewSummary();
-  wireOverviewQuickActions();
-  renderReferrals();
 
-  const markDirty = () => { state._dirty = true; const sb = $("savebar"); if (sb) sb.hidden = false; };
+  renderReferrals();
+  wireStreamerHud();
+  renderHUD();
+  
+  const settingsModal = $("settingsModal");
+  $("openSettings")?.addEventListener("click", () => settingsModal?.showModal());
+  $("closeSettings")?.addEventListener("click", () => settingsModal?.close());
+  settingsModal?.addEventListener("click", (e) => { if (e.target === settingsModal) settingsModal.close(); });
+
+  const markDirty = () => { state._dirty = true; const sb = $("savebar"); if (sb) sb.hidden = false; renderHUD(); };
+
+  window.addEventListener("message", (e) => {
+    if (e.data?.type === "yr_edit_request") {
+      const { key, value, extra } = e.data;
+      if (value !== undefined) {
+        // Brand fields: update the form input directly
+        const el = document.getElementById(key);
+        if (el) {
+          el.value = value;
+          el.dispatchEvent(new Event("input"));
+        } else if (key === "player_name" && extra) {
+          // Find the player row by name and update
+          const rows = [...$("rows").children];
+          const row = rows.find(tr => tr.querySelector(".p-name")?.value.trim() === extra);
+          if (row) { row.querySelector(".p-name").value = value; markDirty(); updateDesignPreview(); }
+        } else if (key === "player_wager" && extra) {
+          // Find the player row by name and update wager
+          const rows = [...$("rows").children];
+          const row = rows.find(tr => tr.querySelector(".p-name")?.value.trim() === extra);
+          if (row) { row.querySelector(".p-wager").value = value.replace(/[^0-9.]/g, ""); markDirty(); updateDesignPreview(); }
+        }
+      } else {
+        // Fallback: open the settings modal and focus the relevant field
+        settingsModal?.showModal();
+        const el = document.getElementById(key);
+        if (el) {
+          el.focus();
+          el.select?.();
+        }
+      }
+    }
+  });
   $("dash").addEventListener("input", markDirty);
   $("dash").addEventListener("change", markDirty);
   window.addEventListener("beforeunload", (e) => { if (state._dirty) { e.preventDefault(); e.returnValue = ""; } });
@@ -214,6 +252,94 @@ function renderDraftBanner(p) {
       } catch (e) { $("status").textContent = "Network error"; doneBtn.disabled = false; }
     };
   }
+  }
+}
+
+function wireStreamerHud() {
+  const form = document.getElementById("hudQuickAdd");
+  const addBtn = document.getElementById("hudAddBtn");
+  const copyObs = document.getElementById("hudCopyObs");
+
+  if (form) {
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const name = document.getElementById("hudName").value;
+      const amount = document.getElementById("hudAmount").value;
+      if (!name || !state.ACTIVE_SITE_ID) return;
+
+      addBtn.disabled = true;
+      addBtn.textContent = "Updating...";
+      try {
+        const res = await fetch(`/api/sites/${state.ACTIVE_SITE_ID}/quick-add`, {
+          method: "POST",
+          headers: { "content-type": "application/json", "x-csrf-token": getCsrf() },
+          body: JSON.stringify({ name, amount })
+        });
+        if (res.ok) {
+          // Immediately reload page to show updated table/preview
+          location.reload();
+        } else {
+          const d = await res.json().catch(() => ({}));
+          alert(d.error || "Failed to update player");
+          addBtn.disabled = false;
+          addBtn.textContent = "Update";
+        }
+      } catch (err) {
+        alert("Network error");
+        addBtn.disabled = false;
+        addBtn.textContent = "Update";
+      }
+    });
+  }
+
+  if (copyObs) {
+    copyObs.addEventListener("click", () => {
+      navigator.clipboard.writeText(location.origin + "/" + state.SLUG + "/overlay").then(() => {
+        copyObs.textContent = "✓ Copied";
+        setTimeout(() => { copyObs.textContent = "📋 Copy OBS Link"; }, 2000);
+      });
+    });
+  }
+
+  window.addEventListener("message", (e) => {
+    if (e.data?.type === "yr_click_player") {
+      const name = e.data.name;
+      const rows = document.getElementById("rows")?.querySelectorAll("tr");
+      if (!rows) return;
+      for (const row of rows) {
+        const input = row.querySelector(".p-name");
+        if (input && input.value.trim() === name) {
+          // Found it. Highlight and focus.
+          row.style.animation = "none";
+          // Trigger a quick highlight flash
+          setTimeout(() => {
+            row.style.animation = "bg-flash 1s ease-out";
+            const wagerInput = row.querySelector(".p-wager");
+            if (wagerInput) {
+              wagerInput.focus();
+              wagerInput.select();
+            } else {
+              input.focus();
+            }
+          }, 10);
+          row.scrollIntoView({ behavior: "smooth", block: "center" });
+          break;
+        }
+      }
+    }
+  });
+}
+
+function renderHUD() {
+  const boardName = $("f_name")?.value.trim() || "—";
+  const rawPrize = ($("f_pool")?.value || "").replace(/[^0-9.]/g, "");
+  const players = currentPlayers();
+  const cap = state.ME && state.ME.limits.players < 999 ? " / " + state.ME.limits.players : "";
+  
+  if ($("ov_board")) $("ov_board").textContent = boardName;
+  if ($("ov_prize")) $("ov_prize").textContent = rawPrize ? "$" + fmtMoney(Number(rawPrize)) : "—";
+  if ($("ov_players")) $("ov_players").textContent = players.length + cap;
+  if ($("ov_resets")) $("ov_resets").textContent = resetsIn();
 }
 
 init();
