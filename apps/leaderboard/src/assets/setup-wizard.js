@@ -29,7 +29,7 @@ pta.addEventListener("input",countPlayers);
 const sampleBtn=$("wiz_sample");
 if(sampleBtn){
   sampleBtn.addEventListener("click",()=>{
-    pta.value="Dragon7, 245000\nLuckyAce, 189500\nHighRollerX, 132000\nNightOwl, 98000\nCasinoKing, 61000";
+    pta.value="*****on7, 245000\n*****ace, 189500\n*****olX, 132000\n*****wl, 98000\n*****ing, 61000";
     countPlayers();
   });
 }
@@ -120,6 +120,9 @@ wiz3next.onclick=async()=>{
   }catch(e){$("wiz_err").textContent="Network error. Try again.";wiz3next.disabled=false;wiz3next.textContent=prev;}
 };
 $("wiz3back").onclick=()=>{$("wiz_err").textContent="";showStep(2);};
+const wiz3skip=$("wiz3skip");
+if(wiz3skip){wiz3skip.onclick=()=>{pta.value="";countPlayers();wiz3next.click();};}
+
 $("wiz4back").onclick=()=>{$("wiz_err").textContent="";showStep(3);};
 
 const wiz4next=$("wiz4next");

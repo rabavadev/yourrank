@@ -338,7 +338,13 @@ function updateThemeSelection() {
   updateDesignPreview();
 }
 
+function _beforeUnloadGuard(e) {
+  e.preventDefault();
+  return (e.returnValue = "");
+}
+
 function markDirty() {
+  if (!state._dirty) window.addEventListener("beforeunload", _beforeUnloadGuard);
   state._dirty = true;
   const sb = $("savebar");
   if (sb) sb.hidden = false;
@@ -779,6 +785,7 @@ $("save").addEventListener("click", async () => {
     if (res.ok && d.ok) {
       status.textContent = "Saved. Your page is updated.";
       state._dirty = false;
+      window.removeEventListener("beforeunload", _beforeUnloadGuard);
       if (d.updatedAt) state.SITE_UPDATED_AT = d.updatedAt;
       const sb = $("savebar"); if (sb) sb.hidden = true;
       const active = state.BOARDS.find((b) => b.id === state.ACTIVE_SITE_ID);
