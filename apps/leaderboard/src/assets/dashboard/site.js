@@ -287,7 +287,7 @@ function renderTemplateGallery() {
     const card = document.createElement("article");
     card.className = "template-card" + (selected ? " is-selected" : "");
     card.dataset.template = template.id;
-    card.innerHTML = `<div class="template-preview"><iframe loading="lazy" tabindex="-1" aria-hidden="true" title="${esc(template.name)} preview"></iframe></div><div class="template-meta"><div><b>${esc(template.name)}</b><span>${esc(template.description)}</span></div><button class="btn btn--sm ${selected ? "btn--accent" : "btn--ghost"}" type="button" aria-pressed="${selected}">${selected ? "Applied" : "Apply"}</button></div>`;
+    card.innerHTML = `<div class="template-preview"><iframe loading="lazy" tabindex="-1" aria-hidden="true" title="${esc(template.name)} preview"></iframe></div><div class="template-meta"><div><b>${esc(template.name)}</b><span>${esc(template.description)}</span></div><button class="btn btn--sm ${selected ? "btn--accent" : ""}" type="button" aria-pressed="${selected}">${selected ? "Applied" : "Apply"}</button></div>`;
     const iframe = card.querySelector("iframe");
     iframe.src = previewUrl(template.id, accentA, accentB, font);
     const apply = () => applyTemplate(template);

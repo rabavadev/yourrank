@@ -170,7 +170,7 @@ export const dashboardPage = leaderboardPageHtml({
 <div class="lb-phead"><button class="lb-menu" type="button" aria-label="Show sections" data-menu aria-expanded="false" aria-controls="lbSide">☰</button><div><h1 tabindex="-1">Design</h1><p class="lb-psub">How your public page looks</p></div></div>
 <div class="design-grid">
 <div class="design-controls">
-<div class="card" id="templateCard"><h2>Page template</h2><p class="card-sub">Live previews use this board's real name, prize pool and players. Click a design to select it, then hit Save changes to publish.</p>
+<div class="card" id="templateCard"><h2>Page template</h2><p class="card-sub">Pick a design; the preview uses your real players.</p>
 <input type="hidden" id="f_template" value="classic" />
 <div class="template-grid" id="templateGallery" aria-label="Page templates"></div>
 <p class="hint template-status" id="templateStatus" role="status" aria-live="polite"></p></div>
@@ -220,8 +220,8 @@ export const dashboardPage = leaderboardPageHtml({
 <div class="socials-editor" id="socialsList"></div></div>
 </div>
 <div class="design-preview">
-<div class="card"><h2>Live preview</h2><p class="card-sub">Your public page updates here as you change the design. Save to publish it.</p>
-<div class="preview-devices"><button class="btn btn--xs btn--ghost preview-device is-active" data-width="100%" type="button">🖥 Desktop</button><button class="btn btn--xs btn--ghost preview-device" data-width="390px" type="button">📱 Mobile</button></div>
+<div class="card"><h2>Live preview</h2><p class="card-sub">Your public page updates as you edit.</p>
+<div class="preview-devices"><button class="btn btn--xs preview-device is-active" data-width="1100" type="button">🖥 Desktop</button><button class="btn btn--xs preview-device" data-width="390" type="button">📱 Mobile</button></div>
 <div class="preview-frame-wrap"><iframe id="designPreview" src="" loading="eager" title="Live preview"></iframe></div></div>
 </div>
 </div>

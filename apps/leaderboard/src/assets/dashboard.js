@@ -65,15 +65,26 @@ async function init() {
   renderLegal();
   const proAccordion = $("proAccordion");
   if (proAccordion) proAccordion.open = state.ME.plan !== "free";
+  function fitDesignPreview() {
+    const iframe = $("designPreview");
+    const wrap = iframe?.parentElement;
+    if (!iframe || !wrap) return;
+    const active = document.querySelector(".preview-device.is-active");
+    const width = parseInt(active?.dataset.width || "1100", 10) || 1100;
+    const maxWidth = wrap.clientWidth;
+    const scale = Math.min(1, maxWidth / width);
+    iframe.style.width = width + "px";
+    wrap.style.setProperty("--preview-scale", String(scale));
+  }
   document.querySelectorAll(".preview-device").forEach((btn) => {
     btn.addEventListener("click", () => {
-      const iframe = $("designPreview");
-      if (!iframe) return;
       document.querySelectorAll(".preview-device").forEach((b) => b.classList.remove("is-active"));
       btn.classList.add("is-active");
-      iframe.style.width = btn.dataset.width || "100%";
+      fitDesignPreview();
     });
   });
+  fitDesignPreview();
+  window.addEventListener("resize", fitDesignPreview);
   if (p.customDomain !== undefined) $("f_domain").value = p.customDomain || "";
   if (p.customDomain && p.domainStatus) renderDomainStatus(p.domainStatus, "");
   const pubToggle = $("pubToggle");
