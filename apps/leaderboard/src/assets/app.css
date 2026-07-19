@@ -274,6 +274,9 @@ table.admin-table td.note{max-width:260px;color:var(--ink-soft)}
 .template-meta>div{display:flex;min-width:0;flex-direction:column;gap:2px}
 .template-meta b{font-size:14px}
 .template-meta span{color:var(--ink-mute);font-size:12px;line-height:1.35}
+.template-card .template-meta button{background:transparent;border:1px solid var(--accent);color:var(--accent)}
+.template-card .template-meta button:hover{background:rgba(204,255,0,.08)}
+.template-card.is-selected .template-meta button{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
 .template-status{min-height:18px;margin-top:12px}
 .preset-list{display:flex;flex-wrap:wrap;gap:8px}
 .preset-btn{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--line-2);border-radius:9px;background:var(--panel-2);color:var(--ink-soft);font:600 12px var(--sans);padding:7px 10px;cursor:pointer}
@@ -680,7 +683,7 @@ table.ref-table td{padding:8px 8px;border-bottom:1px solid var(--line);color:var
 .preview-devices{display:flex;gap:8px;margin-bottom:12px}
 .preview-device{-webkit-appearance:none;appearance:none;border:1px solid var(--line-2);background:var(--panel-2);color:var(--ink-soft);border-radius:8px;padding:6px 10px;font-size:12px;font-weight:600;cursor:pointer;min-height:var(--tap);display:inline-flex;align-items:center;gap:6px;transition:background .15s,color .15s,border-color .15s}
 .preview-device:hover:not(.is-active){color:var(--ink);border-color:var(--ink-mute);background:var(--panel-2)}
-.preview-device.is-active{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.preview-device.is-active{background:rgba(204,255,0,.08);color:var(--accent);border-color:var(--accent)}
 .design-preview .preview-frame-wrap{border:1px solid var(--line);border-radius:12px;overflow:hidden;background:#000;line-height:0;display:flex;justify-content:flex-start;align-items:flex-start;height:calc(680px * var(--preview-scale,0.4));transition:height .2s ease}
 .design-preview iframe{width:1100px;height:680px;border:none;background:transparent;transform:scale(var(--preview-scale,0.4));transform-origin:top left;transition:transform .2s ease,width .2s ease}
 .pro-accordion{border:1px solid var(--line-2);border-radius:12px;background:var(--panel);margin-bottom:16px}

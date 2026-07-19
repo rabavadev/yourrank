@@ -75,7 +75,20 @@ async function init() {
     const scale = Math.min(1, maxWidth / width);
     iframe.style.width = width + "px";
     wrap.style.setProperty("--preview-scale", String(scale));
+    const doc = iframe.contentDocument;
+    if (doc && doc.readyState === "complete" && doc.documentElement) {
+      const html = doc.documentElement;
+      const body = doc.body;
+      const contentHeight = Math.max(680, html.scrollHeight, body ? body.scrollHeight : 0, html.offsetHeight, body ? body.offsetHeight : 0);
+      iframe.style.height = contentHeight + "px";
+      wrap.style.height = Math.ceil(contentHeight * scale) + "px";
+    } else {
+      iframe.style.height = "680px";
+      wrap.style.height = "calc(680px * " + scale + ")";
+    }
   }
+  const iframe = $("designPreview");
+  if (iframe) iframe.addEventListener("load", fitDesignPreview);
   document.querySelectorAll(".preview-device").forEach((btn) => {
     btn.addEventListener("click", () => {
       document.querySelectorAll(".preview-device").forEach((b) => b.classList.remove("is-active"));
