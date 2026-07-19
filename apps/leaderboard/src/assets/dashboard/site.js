@@ -275,27 +275,183 @@ function previewUrl(template, accentA, accentB, font, device = "desktop") {
   return "/dashboard/preview?" + params.toString();
 }
 
+/* ---- Gallery state ---- */
+let _activeCategoryTab = "casino";
+let _activeCasinoVibe = "all";
+
+const CASINO_IDS = new Set([
+  "arcade","candy","fun","space","tropical","underwater",
+  "vip","western","pro","leaderboardV2","leaderboard","highRollers",
+]);
+
+const VIBE_LABELS = { all: "All styles", luxury: "✦ Luxury", retro: "◈ Retro", dark: "▣ Dark", fun: "★ Fun" };
+
+const VIBE_ACCENT = {
+  luxury:  { color: "#c9a84c", bg: "rgba(201,168,76,.12)" },
+  retro:   { color: "#39FF14", bg: "rgba(57,255,20,.10)" },
+  dark:    { color: "#8b5cf6", bg: "rgba(139,92,246,.12)" },
+  fun:     { color: "#FF1493", bg: "rgba(255,20,147,.10)" },
+};
+
+function _isCasino(t) { return CASINO_IDS.has(t.id); }
+
+function _renderTabBar() {
+  const bar = $("templateTabs");
+  if (!bar) return;
+  const tabs = [
+    { id: "casino", label: "✦ Casino", tip: "Casino-themed designs" },
+    { id: "all",    label: "All templates", tip: "Browse every design" },
+    { id: "other",  label: "Classic & More", tip: "Non-casino designs" },
+  ];
+  bar.innerHTML = tabs.map(({ id, label, tip }) => {
+    const active = id === _activeCategoryTab;
+    return `<button class="template-tab-btn${active ? " is-active" : ""}" data-tab="${esc(id)}" role="tab" aria-selected="${active}" title="${esc(tip)}" type="button">${esc(label)}</button>`;
+  }).join("");
+  bar.querySelectorAll("[data-tab]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      _activeCategoryTab = btn.dataset.tab;
+      _activeCasinoVibe = "all";
+      renderTemplateGallery();
+    });
+  });
+}
+
+function _renderVibeFilters(templates) {
+  const el = $("templateVibeFilters");
+  if (!el) return;
+  const vibes = ["all", ...new Set(templates.map((t) => t.vibe).filter(Boolean))];
+  el.hidden = false;
+  el.innerHTML = vibes.map((v) => {
+    const active = v === _activeCasinoVibe;
+    const accent = VIBE_ACCENT[v];
+    const style = active && accent ? `style="color:${accent.color};border-color:${accent.color};background:${accent.bg}"` : "";
+    return `<button class="template-vibe-btn${active ? " is-active" : ""}" data-vibe="${esc(v)}" type="button" ${style}>${esc(VIBE_LABELS[v] || v)}</button>`;
+  }).join("");
+  el.querySelectorAll("[data-vibe]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      _activeCasinoVibe = btn.dataset.vibe;
+      renderTemplateGallery();
+    });
+  });
+}
+
+function _buildCard(template, featured = false) {
+  const selected = template.id === state.CURRENT_BRANDING.template;
+  const defaultPreset = template.presets?.[0] || {};
+  const accentA = selected && state.CURRENT_BRANDING.accentA ? state.CURRENT_BRANDING.accentA : defaultPreset.accentA;
+  const accentB = selected && state.CURRENT_BRANDING.accentB ? state.CURRENT_BRANDING.accentB : defaultPreset.accentB;
+  const font = state.CURRENT_BRANDING.font || "Inter";
+  const isCasinoCard = _isCasino(template);
+  const isPaid = state.ME?.plan !== "free";
+
+  const card = document.createElement("article");
+  card.className = [
+    featured ? "template-featured-card" : "template-card",
+    selected ? "is-selected" : "",
+    isCasinoCard ? "is-casino" : "",
+    template.featured && isCasinoCard ? "is-featured" : "",
+  ].filter(Boolean).join(" ");
+  card.dataset.template = template.id;
+
+  // Badges
+  const badges = [];
+  if (isCasinoCard) badges.push(`<span class="template-badge template-badge--casino">Casino</span>`);
+  if (template.featured && isCasinoCard) badges.push(`<span class="template-badge template-badge--featured">Featured</span>`);
+  if (template.vibe && isCasinoCard) {
+    const vc = VIBE_ACCENT[template.vibe];
+    const vstyle = vc ? `style="color:${vc.color};border-color:${vc.color};background:${vc.bg}"` : "";
+    badges.push(`<span class="template-badge template-badge--vibe" ${vstyle}>${esc(VIBE_LABELS[template.vibe] || template.vibe)}</span>`);
+  }
+
+  // Color swatches — inline presets for casino cards
+  let presetsHtml = "";
+  if (isCasinoCard && template.presets?.length) {
+    const swatches = template.presets.map((p) => {
+      const activeSwatch = selected
+        && p.accentA?.toLowerCase() === (state.CURRENT_BRANDING.accentA || "").toLowerCase()
+        && p.accentB?.toLowerCase() === (state.CURRENT_BRANDING.accentB || "").toLowerCase();
+      return `<button class="template-preset-btn${activeSwatch ? " is-active" : ""}" data-accent-a="${esc(p.accentA)}" data-accent-b="${esc(p.accentB)}" data-preset-name="${esc(p.name)}" type="button" title="${esc(p.name)}"${!isPaid ? ' data-free="1"' : ""}><span class="template-preset-swatch" style="--sa:${esc(p.accentA)};--sb:${esc(p.accentB)}"></span><span class="template-preset-label">${esc(p.name)}</span></button>`;
+    }).join("");
+    presetsHtml = `<div class="template-presets">${swatches}</div>`;
+  }
+
+  card.innerHTML = `
+<div class="template-preview"><iframe loading="lazy" tabindex="-1" aria-hidden="true" title="${esc(template.name)} preview"></iframe></div>
+<div class="template-card-body">
+${badges.length ? `<div class="template-badge-row">${badges.join("")}</div>` : ""}
+<div class="template-meta"><div class="template-meta-text"><b>${esc(template.name)}</b><span>${esc(template.description)}</span></div><button class="btn btn--sm${selected ? " btn--accent" : ""} template-apply-btn" type="button" aria-pressed="${selected}">${selected ? "✓ Applied" : "Apply"}</button></div>
+${presetsHtml}
+</div>`;
+
+  const iframe = card.querySelector("iframe");
+  iframe.src = previewUrl(template.id, accentA, accentB, font, "desktop");
+
+  // Apply on preview click or button click
+  const applyDefault = () => applyTemplate(template);
+  card.querySelector(".template-apply-btn").addEventListener("click", applyDefault);
+  card.querySelector(".template-preview").addEventListener("click", applyDefault);
+
+  // Swatch click — applies template + color in one gesture
+  card.querySelectorAll(".template-preset-btn").forEach((btn) => {
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      if (!isPaid && btn.dataset.free) {
+        const status = $("templateStatus") || $("status");
+        if (status) status.textContent = "Custom colors are a Pro feature — upgrade to unlock all palettes.";
+        // Still apply the template with default colors
+        applyTemplate(template);
+        return;
+      }
+      applyTheme(template.id, btn.dataset.accentA, btn.dataset.accentB, btn.dataset.presetName);
+    });
+  });
+
+  return card;
+}
+
+function _renderFeaturedStrip(templates) {
+  const strip = $("templateFeatured");
+  if (!strip) return;
+  const featured = templates.filter((t) => t.featured && _isCasino(t));
+  if (!featured.length) { strip.hidden = true; return; }
+  strip.hidden = false;
+  strip.innerHTML = `<div class="template-featured-label">✦ Featured designs</div><div class="template-featured-scroll">`;
+  const scroll = strip.querySelector(".template-featured-scroll");
+  featured.forEach((t) => scroll.appendChild(_buildCard(t, true)));
+  strip.appendChild(scroll);
+}
+
 function renderTemplateGallery() {
   const gallery = $("templateGallery");
   if (!gallery) return;
+
+  _renderTabBar();
+
+  // Determine template set for this tab
+  let templates = state.TEMPLATE_CATALOG;
+  const vibeEl = $("templateVibeFilters");
+
+  if (_activeCategoryTab === "casino") {
+    templates = state.TEMPLATE_CATALOG.filter(_isCasino);
+    _renderVibeFilters(templates);
+    _renderFeaturedStrip(templates);
+    if (_activeCasinoVibe !== "all") {
+      templates = templates.filter((t) => t.vibe === _activeCasinoVibe);
+    }
+  } else if (_activeCategoryTab === "other") {
+    templates = state.TEMPLATE_CATALOG.filter((t) => !_isCasino(t));
+    if (vibeEl) vibeEl.hidden = true;
+    const strip = $("templateFeatured");
+    if (strip) strip.hidden = true;
+  } else {
+    // all
+    if (vibeEl) vibeEl.hidden = true;
+    const strip = $("templateFeatured");
+    if (strip) strip.hidden = true;
+  }
+
   gallery.innerHTML = "";
-  state.TEMPLATE_CATALOG.forEach((template) => {
-    const selected = template.id === state.CURRENT_BRANDING.template;
-    const defaultPreset = template.presets?.[0] || {};
-    const accentA = selected && state.CURRENT_BRANDING.accentA ? state.CURRENT_BRANDING.accentA : defaultPreset.accentA;
-    const accentB = selected && state.CURRENT_BRANDING.accentB ? state.CURRENT_BRANDING.accentB : defaultPreset.accentB;
-    const font = state.CURRENT_BRANDING.font || "Inter";
-    const card = document.createElement("article");
-    card.className = "template-card" + (selected ? " is-selected" : "");
-    card.dataset.template = template.id;
-    card.innerHTML = `<div class="template-preview"><iframe loading="lazy" tabindex="-1" aria-hidden="true" title="${esc(template.name)} preview"></iframe></div><div class="template-meta"><div><b>${esc(template.name)}</b><span>${esc(template.description)}</span></div><button class="btn btn--sm ${selected ? "btn--accent" : ""}" type="button" aria-pressed="${selected}">${selected ? "Applied" : "Apply"}</button></div>`;
-    const iframe = card.querySelector("iframe");
-    iframe.src = previewUrl(template.id, accentA, accentB, font, "desktop");
-    const apply = () => applyTemplate(template);
-    card.querySelector("button").addEventListener("click", apply);
-    card.querySelector(".template-preview").addEventListener("click", apply);
-    gallery.appendChild(card);
-  });
+  templates.forEach((template) => gallery.appendChild(_buildCard(template, false)));
 }
 
 function renderColorPresets() {
@@ -317,15 +473,45 @@ function renderColorPresets() {
   });
 }
 
+let _previewAbort = null;
+let _previewTimeout = null;
+
 export function updateDesignPreview() {
   const iframe = $("designPreview");
   if (!iframe || !state.ACTIVE_SITE_ID) return;
+
   const tpl = state.CURRENT_BRANDING.template || currentTemplate()?.id || "classic";
-  const accentA = state.CURRENT_BRANDING.accentA || "";
-  const accentB = state.CURRENT_BRANDING.accentB || "";
   const active = document.querySelector(".preview-tab.is-active");
   const device = active?.dataset.device || "desktop";
-  iframe.src = previewUrl(tpl, accentA, accentB, null, device);
+
+  // Build full URL for POST target
+  const params = new URLSearchParams({ board: state.ACTIVE_SITE_ID, template: tpl, device });
+  const url = "/dashboard/preview?" + params.toString();
+
+  // Debounce the live preview update (300ms) to avoid spamming the backend
+  clearTimeout(_previewTimeout);
+  _previewTimeout = setTimeout(async () => {
+    if (_previewAbort) _previewAbort.abort();
+    _previewAbort = new AbortController();
+
+    try {
+      // collect() returns the current draft state of the board
+      const draft = collect();
+      const res = await fetch(url, {
+        method: "POST",
+        headers: { "content-type": "application/json", "x-csrf-token": getCsrf() },
+        body: JSON.stringify(draft),
+        signal: _previewAbort.signal
+      });
+      if (res.ok) {
+        const html = await res.text();
+        iframe.srcdoc = html;
+        iframe.removeAttribute("src");
+      }
+    } catch (e) {
+      if (e.name !== "AbortError") console.error("Preview render failed", e);
+    }
+  }, 300);
 }
 
 function updateThemeSelection() {
@@ -348,6 +534,7 @@ function markDirty() {
   state._dirty = true;
   const sb = $("savebar");
   if (sb) sb.hidden = false;
+  updateDesignPreview();
 }
 state.markDirty = markDirty;
 

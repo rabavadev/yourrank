@@ -433,7 +433,7 @@ async function handleRequest(request, env, ctx, meta) {
           return new Response("Dashboard couldn't load right now — please refresh.", { status: 500, headers: { "content-type": "text/plain; charset=utf-8" } });
         }
       }
-      if (path === "/dashboard/preview" && method === "GET") {
+      if (path === "/dashboard/preview" && (method === "GET" || method === "POST")) {
         try {
           return await handleDashboardPreview(request, env, nonce);
         } catch (e) {

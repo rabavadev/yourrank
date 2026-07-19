@@ -29,6 +29,7 @@ import { handleListTickets, handleGetTicket, handleCreateTicket } from "./handle
 import { handleCspReport } from "./handlers/csp-report.js";
 import { handleLog } from "./handlers/log.js";
 import { handleScores } from "./handlers/scores.js";
+import { handleQuickAdd } from "./handlers/quick-add.js";
 import { handleApiDocs, handleOpenApiJson } from "./handlers/docs.js";
 import { handleCheckout, handleCheckoutLifetime, handleIpn, handleCancel } from "./billing.js";
 import {
@@ -73,6 +74,7 @@ export const ROUTES = [
   { path: "/api/site/create", method: "POST", handler: withHandler(handleCreateBoard) },
   { path: "/api/site/duplicate", method: "POST", handler: withHandler(handleDuplicateBoard) },
   { path: "/api/site/archive", method: "POST", handler: withHandler(handleArchive) },
+  { path: "/api/sites/:id/quick-add", method: "POST", handler: withHandler(handleQuickAdd) },
   { path: "/api/site/archive/delete", method: "POST", handler: withHandler(handleArchiveDelete) },
   { path: "/api/site/archive/restore", method: "POST", handler: withHandler(handleRestoreArchive) },
   { path: "/api/site/active", method: "POST", handler: withHandler(handleSetActive) },

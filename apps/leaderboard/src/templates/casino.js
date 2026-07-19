@@ -125,18 +125,18 @@ body[data-template="${tpl}"] .legal-page__back:hover{color:${c.hover}}`;
 }
 
 const METAS = {
-  arcade: { name: "Casino Arcade", description: "Retro 8-bit arcade: neon grid, pixel font, and glowing blocks." },
-  candy: { name: "Casino Candy", description: "Sweet candy theme with soft pinks, yellows, and a bouncy vibe." },
-  fun: { name: "Casino Fun", description: "Bold purple and gold party energy with rounded cards." },
-  space: { name: "Casino Space", description: "Deep galaxy rankings with Orbitron type and starfield glows." },
-  tropical: { name: "Casino Tropical", description: "Sunset-to-ocean gradients with a breezy script header." },
-  underwater: { name: "Casino Underwater", description: "Deep-sea leaderboard with cyan, pink, and bubbly edges." },
-  vip: { name: "Casino VIP", description: "Full-page black-and-gold members list with elegant serif type." },
-  western: { name: "Casino Western", description: "Wild west saloon board with wood grain, gold, and sheriff stars." },
-  pro: { name: "Casino Pro", description: "Poker-style data table with hands, win-rate bars, and net-profit deltas." },
-  leaderboardV2: { name: "Editorial Standings", description: "Magazine-style light leaderboard with serif headlines and score bars." },
-  leaderboard: { name: "Cyber Standings", description: "Dark shadcn podium and list with animated cards and glow effects." },
-  highRollers: { name: "High Rollers", description: "Luxury dark casino leaderboard with hero, stats cards, podium and full standings." },
+  arcade:        { name: "Casino Arcade",       description: "Retro 8-bit arcade: neon grid, pixel font, and glowing blocks.",                    vibe: "retro",   featured: true  },
+  candy:         { name: "Casino Candy",        description: "Sweet candy theme with soft pinks, yellows, and a bouncy vibe.",                    vibe: "fun",     featured: false },
+  fun:           { name: "Casino Fun",          description: "Bold purple and gold party energy with rounded cards.",                              vibe: "fun",     featured: false },
+  space:         { name: "Casino Space",        description: "Deep galaxy rankings with Orbitron type and starfield glows.",                       vibe: "retro",   featured: true  },
+  tropical:      { name: "Casino Tropical",     description: "Sunset-to-ocean gradients with a breezy script header.",                            vibe: "fun",     featured: false },
+  underwater:    { name: "Casino Underwater",   description: "Deep-sea leaderboard with cyan, pink, and bubbly edges.",                           vibe: "fun",     featured: false },
+  vip:           { name: "Casino VIP",          description: "Full-page black-and-gold members list with elegant serif type.",                     vibe: "luxury",  featured: true  },
+  western:       { name: "Casino Western",      description: "Wild west saloon board with wood grain, gold, and sheriff stars.",                   vibe: "dark",    featured: false },
+  pro:           { name: "Casino Pro",          description: "Poker-style data table with hands, win-rate bars, and net-profit deltas.",           vibe: "dark",    featured: false },
+  leaderboardV2: { name: "Editorial Standings", description: "Magazine-style light leaderboard with serif headlines and score bars.",              vibe: "fun",     featured: false },
+  leaderboard:   { name: "Cyber Standings",     description: "Dark shadcn podium and list with animated cards and glow effects.",                 vibe: "dark",    featured: false },
+  highRollers:   { name: "High Rollers",        description: "Luxury dark casino leaderboard with hero, stats cards, podium and full standings.", vibe: "luxury",  featured: true  },
 };
 
 const CASINO_FULL_CSS = { ...BASE_CASINO_CSS, highRollers: HIGH_ROLLERS_CSS };
@@ -148,6 +148,8 @@ export const CASINO_TEMPLATES = Object.fromEntries(
       id,
       name: METAS[id].name,
       description: METAS[id].description,
+      vibe: METAS[id].vibe,
+      featured: METAS[id].featured,
       css: CASINO_FULL_CSS[id],
       presets: PRESETS[id],
       textDefaults: CASINO_TEXT_DEFAULTS[id] || {},
