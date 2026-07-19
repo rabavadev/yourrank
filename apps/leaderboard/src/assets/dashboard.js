@@ -1,10 +1,11 @@
 // Dashboard entry point. Coordinates data loading and initial render across modules.
-import { $, esc, getCsrf, logError, toLocalInput, fmtMoney, currentPlayers, resetsIn } from "./dashboard/utils.js";
+import { $, esc, getCsrf, logError, toLocalInput } from "./dashboard/utils.js";
 import { state } from "./dashboard/state.js";
 import { navTo, setupShell } from "./dashboard/shell.js";
 import { renderBoardSwitcher, renderSidebarBoardSwitcher, renderBoardsPage } from "./dashboard/boards.js";
 import { renderPlayers } from "./dashboard/players.js";
 import { loadStats, renderArchives, renderBranding, renderDomain, renderDomainStatus, renderLegal, renderNotifications, renderOverlay, renderPlan, renderPlayerFields, renderPrizes, renderSections, renderSocials, renderTemplateText, updateDesignPreview } from "./dashboard/site.js";
+import { renderOverviewSummary, wireOverviewQuickActions } from "./dashboard/overview.js";
 import { renderReferrals } from "./dashboard/referrals.js";
 
 async function init() {
@@ -82,8 +83,7 @@ async function init() {
     }
     const scale = cw / deviceWidth;
     const scaledHeight = contentHeight * scale;
-    const isEditing = frame.closest(".design-grid")?.classList.contains("is-editing");
-    const maxHeight = Math.min(isEditing ? 900 : 720, Math.floor(window.innerHeight * (isEditing ? 0.85 : 0.75)));
+    const maxHeight = Math.min(720, Math.floor(window.innerHeight * 0.75));
     const frameHeight = Math.min(scaledHeight, maxHeight);
     stage.style.width = deviceWidth + "px";
     stage.style.height = contentHeight + "px";
@@ -167,20 +167,16 @@ async function init() {
   // Smart landing: returning, set-up users go straight to the Editor (the daily job).
   // Brand-new boards still land on Overview so the setup checklist is front and center.
   const initialNav = new URLSearchParams(location.search).get("nav");
-  const landing = initialNav || "board";
+  const landing = initialNav || (isBoardSetup(p) ? "board" : "overview");
   if (document.querySelector(`section[data-page="${landing}"]`)) navTo(landing);
   if (document.querySelector('section[data-page="board"].is-on')) fitDesignPreview();
 
+  renderOverviewSummary();
+  wireOverviewQuickActions();
   renderReferrals();
   wireStreamerHud();
-  renderHUD();
-  
-  const settingsModal = $("settingsModal");
-  $("openSettings")?.addEventListener("click", () => settingsModal?.showModal());
-  $("closeSettings")?.addEventListener("click", () => settingsModal?.close());
-  settingsModal?.addEventListener("click", (e) => { if (e.target === settingsModal) settingsModal.close(); });
 
-  const markDirty = () => { state._dirty = true; const sb = $("savebar"); if (sb) sb.hidden = false; renderHUD(); };
+  const markDirty = () => { state._dirty = true; const sb = $("savebar"); if (sb) sb.hidden = false; renderOverviewSummary(); };
 
   window.addEventListener("message", (e) => {
     if (e.data?.type === "yr_edit_request") {
@@ -203,10 +199,10 @@ async function init() {
           if (row) { row.querySelector(".p-wager").value = value.replace(/[^0-9.]/g, ""); markDirty(); updateDesignPreview(); }
         }
       } else {
-        // Fallback: open the settings modal and focus the relevant field
-        settingsModal?.showModal();
+        // Fallback: scroll to and focus the relevant field in the settings panel
         const el = document.getElementById(key);
         if (el) {
+          el.scrollIntoView({ behavior: "smooth", block: "center" });
           el.focus();
           el.select?.();
         }
@@ -327,18 +323,6 @@ function wireStreamerHud() {
       }
     }
   });
-}
-
-function renderHUD() {
-  const boardName = $("f_name")?.value.trim() || "—";
-  const rawPrize = ($("f_pool")?.value || "").replace(/[^0-9.]/g, "");
-  const players = currentPlayers();
-  const cap = state.ME && state.ME.limits.players < 999 ? " / " + state.ME.limits.players : "";
-  
-  if ($("ov_board")) $("ov_board").textContent = boardName;
-  if ($("ov_prize")) $("ov_prize").textContent = rawPrize ? "$" + fmtMoney(Number(rawPrize)) : "—";
-  if ($("ov_players")) $("ov_players").textContent = players.length + cap;
-  if ($("ov_resets")) $("ov_resets").textContent = resetsIn();
 }
 
 init();
