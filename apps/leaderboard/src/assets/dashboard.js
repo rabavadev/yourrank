@@ -83,8 +83,9 @@ async function init() {
       fitDesignPreview();
     });
   });
-  fitDesignPreview();
   window.addEventListener("resize", fitDesignPreview);
+  const designNav = document.querySelector('[data-nav="design"]');
+  if (designNav) designNav.addEventListener("click", () => setTimeout(fitDesignPreview, 0));
   if (p.customDomain !== undefined) $("f_domain").value = p.customDomain || "";
   if (p.customDomain && p.domainStatus) renderDomainStatus(p.domainStatus, "");
   const pubToggle = $("pubToggle");
@@ -126,6 +127,7 @@ async function init() {
   setupShell();
   const initialNav = new URLSearchParams(location.search).get("nav");
   if (initialNav && document.querySelector(`section[data-page="${initialNav}"]`)) navTo(initialNav);
+  if (document.querySelector('section[data-page="design"].is-on')) fitDesignPreview();
   renderOverviewSummary();
   wireOverviewQuickActions();
   renderReferrals();
