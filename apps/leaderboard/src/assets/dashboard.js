@@ -260,6 +260,8 @@ function wireStreamerHud() {
   const copyObs = document.getElementById("hudCopyObs");
 
   if (form) {
+    form.addEventListener("input", (e) => e.stopPropagation());
+    form.addEventListener("change", (e) => e.stopPropagation());
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
       const name = document.getElementById("hudName").value;
@@ -275,8 +277,23 @@ function wireStreamerHud() {
           body: JSON.stringify({ name, amount })
         });
         if (res.ok) {
-          // Immediately reload page to show updated table/preview
-          location.reload();
+          const pRes = await fetch(`/api/site?siteId=${encodeURIComponent(state.ACTIVE_SITE_ID)}`);
+          const p = await pRes.json();
+          if (p.ok && p.data && p.data.players) {
+            renderPlayers(p.data.players);
+            updateDesignPreview();
+            renderHUD();
+          }
+          document.getElementById("hudName").value = "";
+          document.getElementById("hudAmount").value = "";
+          const origColor = addBtn.style.backgroundColor || "";
+          addBtn.style.backgroundColor = "var(--success, #10b981)";
+          addBtn.textContent = "✓ Updated";
+          setTimeout(() => {
+            addBtn.disabled = false;
+            addBtn.style.backgroundColor = origColor;
+            addBtn.textContent = "Update";
+          }, 1500);
         } else {
           const d = await res.json().catch(() => ({}));
           alert(d.error || "Failed to update player");
