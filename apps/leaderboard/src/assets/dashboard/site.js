@@ -323,7 +323,34 @@ function updateDesignPreview() {
   const accentA = state.CURRENT_BRANDING.accentA || "";
   const accentB = state.CURRENT_BRANDING.accentB || "";
   iframe.src = previewUrl(tpl, accentA, accentB);
+  applyPreviewScale();
 }
+
+let _previewTargetW = 1100;
+
+function applyPreviewScale() {
+  const wrap = document.querySelector(".design-preview .preview-frame-wrap");
+  const iframe = $("designPreview");
+  if (!wrap || !iframe) return;
+  const available = wrap.clientWidth || 400;
+  const scale = Math.min(1, available / _previewTargetW);
+  iframe.style.width = _previewTargetW + "px";
+  iframe.style.height = "680px";
+  wrap.style.setProperty("--preview-scale", scale.toFixed(4));
+  wrap.style.height = Math.round(680 * scale) + "px";
+}
+
+(function setupPreviewDevices() {
+  document.querySelectorAll(".preview-device").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll(".preview-device").forEach((b) => b.classList.remove("is-active"));
+      btn.classList.add("is-active");
+      _previewTargetW = parseInt(btn.dataset.width, 10) || 1100;
+      applyPreviewScale();
+    });
+  });
+  window.addEventListener("resize", applyPreviewScale, { passive: true });
+})();
 
 function updateThemeSelection() {
   const tpl = $("f_template"); if (tpl) tpl.value = state.CURRENT_BRANDING.template;

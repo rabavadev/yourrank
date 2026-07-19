@@ -684,7 +684,7 @@ table.ref-table td{padding:8px 8px;border-bottom:1px solid var(--line);color:var
 .preview-device{-webkit-appearance:none;appearance:none;border:1px solid var(--line-2);background:var(--panel-2);color:var(--ink-soft);border-radius:8px;padding:6px 10px;font-size:12px;font-weight:600;cursor:pointer;min-height:var(--tap);display:inline-flex;align-items:center;gap:6px;transition:background .15s,color .15s,border-color .15s}
 .preview-device:hover:not(.is-active){color:var(--ink);border-color:var(--ink-mute);background:var(--panel-2)}
 .preview-device.is-active{background:rgba(204,255,0,.08);color:var(--accent);border-color:var(--accent)}
-.design-preview .preview-frame-wrap{border:1px solid var(--line);border-radius:12px;overflow:hidden;background:#000;line-height:0;display:flex;justify-content:center;align-items:flex-start;max-height:min(75vh,900px);transition:height .2s ease}
+.design-preview .preview-frame-wrap{border:1px solid var(--line);border-radius:12px;overflow:hidden;background:#000;line-height:0;display:flex;justify-content:center;align-items:flex-start;height:calc(680px * var(--preview-scale, 0.4));min-height:120px;max-height:min(70vh,680px);transition:height .2s ease}
 .design-preview iframe{width:1100px;height:680px;border:none;background:transparent;transform:scale(var(--preview-scale,0.4));transform-origin:top center;transition:transform .2s ease,width .2s ease,height .2s ease}
 .pro-accordion{border:1px solid var(--line-2);border-radius:12px;background:var(--panel);margin-bottom:16px}
 .pro-accordion__summary{cursor:pointer;padding:14px 16px;display:flex;flex-direction:column;gap:4px;list-style:none}
@@ -692,7 +692,11 @@ table.ref-table td{padding:8px 8px;border-bottom:1px solid var(--line);color:var
 .pro-accordion__summary::marker{display:none}
 .pro-accordion__title{font-weight:800;font-size:17px;display:flex;align-items:center;gap:8px}
 .pro-accordion__body{padding:0 12px 12px}
-.pro-accordion .card{margin:12px 0}
+.pro-accordion .card{margin:12px 0;border:1px solid var(--line)}
+/* Design page: restore visual separation between left-column sections */
+.design-controls{display:flex;flex-direction:column;gap:16px}
+.lb-main .design-controls>.card{border:1px solid var(--line);margin:0}
+.lb-main .design-controls>.pro-accordion{margin:0}
 @media(max-width:1100px){
   .design-grid{grid-template-columns:1fr}
   .design-preview{position:static}
