@@ -1,17 +1,13 @@
-// Casino design pack — eight full-page, structurally distinct leaderboard designs.
+// Casino design pack — five full-page, structurally distinct leaderboard designs.
 // Each design owns its own header, hero, list and footer markup; nothing is shared.
+// Removed 7 broken/duplicate templates (tropical, underwater, western, vip, pro,
+// leaderboardV2, leaderboard) that overlapped with CSS-skin templates and had
+// broken layouts (no t-row hooks, fixed w-1/3 podiums, hardcoded stats, inert tabs).
 import {
   composeArcade,
   composeCandy,
   composeFun,
-  composeLeaderboard,
-  composeLeaderboardV2,
-  composePro,
   composeSpace,
-  composeTropical,
-  composeUnderwater,
-  composeVip,
-  composeWestern,
   CASINO_FULL_CSS as BASE_CASINO_CSS,
 } from "./casino-full.js";
 import { composeHighRollers, HIGH_ROLLERS_CSS } from "./casino-high-rollers.js";
@@ -38,41 +34,6 @@ const PRESETS = {
     { id: "cyan", name: "Cyan", accentA: "#22D3EE", accentB: "#3B82F6" },
     { id: "stellar", name: "Stellar", accentA: "#FFFBEB", accentB: "#F59E0B" },
   ],
-  tropical: [
-    { id: "sunset", name: "Sunset", accentA: "#FF6B35", accentB: "#00D4AA" },
-    { id: "coral", name: "Coral", accentA: "#FFE66D", accentB: "#FF6B6B" },
-    { id: "teal", name: "Teal", accentA: "#00D4AA", accentB: "#0D7377" },
-  ],
-  underwater: [
-    { id: "deep", name: "Deep", accentA: "#00E5FF", accentB: "#FF6B9D" },
-    { id: "reef", name: "Reef", accentA: "#39FF9C", accentB: "#00E5FF" },
-    { id: "abyss", name: "Abyss", accentA: "#003344", accentB: "#00E5FF" },
-  ],
-  vip: [
-    { id: "gold", name: "Gold", accentA: "#C9A84C", accentB: "#F5F5F0" },
-    { id: "platinum", name: "Platinum", accentA: "#E5E7EB", accentB: "#C9A84C" },
-    { id: "obsidian", name: "Obsidian", accentA: "#1A1A1A", accentB: "#C9A84C" },
-  ],
-  western: [
-    { id: "saloon", name: "Saloon", accentA: "#F5A623", accentB: "#C0392B" },
-    { id: "dust", name: "Dust", accentA: "#D4B886", accentB: "#8B6B3D" },
-    { id: "whiskey", name: "Whiskey", accentA: "#8B4513", accentB: "#F5A623" },
-  ],
-  pro: [
-    { id: "green", name: "Green", accentA: "#22C55E", accentB: "#0D1A0F" },
-    { id: "amber", name: "Amber", accentA: "#F59E0B", accentB: "#0D1A0F" },
-    { id: "mono", name: "Mono", accentA: "#E5E5E5", accentB: "#0D1A0F" },
-  ],
-  leaderboardV2: [
-    { id: "cream", name: "Cream", accentA: "#C41E3A", accentB: "#FAF7F2" },
-    { id: "ink", name: "Ink", accentA: "#000000", accentB: "#FAF7F2" },
-    { id: "gold", name: "Gold", accentA: "#B8860B", accentB: "#FAF7F2" },
-  ],
-  leaderboard: [
-    { id: "dark", name: "Dark", accentA: "#38bdf8", accentB: "#020617" },
-    { id: "void", name: "Void", accentA: "#8B5CF6", accentB: "#020617" },
-    { id: "ember", name: "Ember", accentA: "#F59E0B", accentB: "#020617" },
-  ],
   highRollers: [
     { id: "gold", name: "Gold", accentA: "#c9a84c", accentB: "#8b5cf6" },
     { id: "midnight", name: "Midnight", accentA: "#5b8def", accentB: "#080b14" },
@@ -85,13 +46,6 @@ const FRAME_COLORS = {
   candy: { bg: "#FF85B3", text: "#FFFFFF", accent: "#FFE500", muted: "rgba(255,255,255,0.7)", hover: "#FFFFFF" },
   fun: { bg: "#6B21A8", text: "#FFFFFF", accent: "#FBBF24", muted: "rgba(255,255,255,0.7)", hover: "#FFFFFF" },
   space: { bg: "#080B1A", text: "#FFFFFF", accent: "#8B5CF6", muted: "rgba(255,255,255,0.6)", hover: "#FFFFFF" },
-  tropical: { bg: "#FF6B35", text: "#FFFFFF", accent: "#00D4AA", muted: "rgba(255,255,255,0.7)", hover: "#FFFFFF" },
-  underwater: { bg: "#003344", text: "#E0F7FA", accent: "#00E5FF", muted: "rgba(224,247,250,0.7)", hover: "#FFFFFF" },
-  vip: { bg: "#0A0A0A", text: "#F5F5F0", accent: "#C9A84C", muted: "rgba(245,245,240,0.6)", hover: "#FFFFFF" },
-  western: { bg: "#3D1A00", text: "#FFF8E7", accent: "#F5A623", muted: "rgba(245,248,231,0.6)", hover: "#FFFFFF" },
-  pro: { bg: "#0D1A0F", text: "#E5E5E5", accent: "#22C55E", muted: "#6B7280", hover: "#FFFFFF" },
-  leaderboardV2: { bg: "#FAF7F2", text: "#000000", accent: "#C41E3A", muted: "rgba(0,0,0,0.6)", hover: "#000000" },
-  leaderboard: { bg: "#020617", text: "#F8FAFC", accent: "#38bdf8", muted: "#94A3B8", hover: "#FFFFFF" },
   highRollers: { bg: "#080b14", text: "#f0f0f5", accent: "#c9a84c", muted: "rgba(240,240,245,0.65)", hover: "#ffffff" },
 };
 
@@ -129,13 +83,6 @@ const METAS = {
   candy:         { name: "Casino Candy",        description: "Sweet candy theme with soft pinks, yellows, and a bouncy vibe.",                    vibe: "fun",     featured: false },
   fun:           { name: "Casino Fun",          description: "Bold purple and gold party energy with rounded cards.",                              vibe: "fun",     featured: false },
   space:         { name: "Casino Space",        description: "Deep galaxy rankings with Orbitron type and starfield glows.",                       vibe: "retro",   featured: true  },
-  tropical:      { name: "Casino Tropical",     description: "Sunset-to-ocean gradients with a breezy script header.",                            vibe: "fun",     featured: false },
-  underwater:    { name: "Casino Underwater",   description: "Deep-sea leaderboard with cyan, pink, and bubbly edges.",                           vibe: "fun",     featured: false },
-  vip:           { name: "Casino VIP",          description: "Full-page black-and-gold members list with elegant serif type.",                     vibe: "luxury",  featured: true  },
-  western:       { name: "Casino Western",      description: "Wild west saloon board with wood grain, gold, and sheriff stars.",                   vibe: "dark",    featured: false },
-  pro:           { name: "Casino Pro",          description: "Poker-style data table with hands, win-rate bars, and net-profit deltas.",           vibe: "dark",    featured: false },
-  leaderboardV2: { name: "Editorial Standings", description: "Magazine-style light leaderboard with serif headlines and score bars.",              vibe: "fun",     featured: false },
-  leaderboard:   { name: "Cyber Standings",     description: "Dark shadcn podium and list with animated cards and glow effects.",                 vibe: "dark",    featured: false },
   highRollers:   { name: "High Rollers",        description: "Luxury dark casino leaderboard with hero, stats cards, podium and full standings.", vibe: "luxury",  featured: true  },
 };
 
@@ -162,13 +109,6 @@ export const CASINO_COMPOSERS = {
   candy: composeCandy,
   fun: composeFun,
   space: composeSpace,
-  tropical: composeTropical,
-  underwater: composeUnderwater,
-  vip: composeVip,
-  western: composeWestern,
-  pro: composePro,
-  leaderboardV2: composeLeaderboardV2,
-  leaderboard: composeLeaderboard,
   highRollers: composeHighRollers,
 };
 
