@@ -67,9 +67,9 @@ describe("hashPassword", () => {
     expect(hash).toMatch(/^\d+\$/);
   });
 
-  test("uses 100000 iterations (current target)", async () => {
+  test("uses 300000 iterations (current target)", async () => {
     const { hash } = await hashPassword("mypassword");
-    expect(hash.startsWith("100000$")).toBe(true);
+    expect(hash.startsWith("300000$")).toBe(true);
   });
 
   test("salt is a 32-char hex string (16 bytes)", async () => {
@@ -115,7 +115,7 @@ describe("verifyPassword", () => {
     expect(ok).toBe(false);
   });
 
-  test("needsRehash is false for current iteration count (100000)", async () => {
+  test("needsRehash is false for current iteration count (300000)", async () => {
     const { salt, hash } = await hashPassword("password");
     const { needsRehash } = await verifyPassword("password", salt, hash);
     expect(needsRehash).toBe(false);
@@ -143,7 +143,7 @@ describe("verifyPassword", () => {
 
   test("needsRehash is true for bare-hex (pre-versioned) legacy hash", async () => {
     // Bare-hex hashes predate the versioned format — treated as LEGACY_ITERATIONS (100k).
-    // Since current target is also 100k, bare-hex won't trigger needsRehash.
+    // Since current target is 300k, bare-hex now triggers needsRehash.
     // This test verifies bare-hex is parsed correctly and verified.
     const fixedSalt = "deadbeefdeadbeefdeadbeefdeadbeef";
     const saltBytes = Uint8Array.from({ length: 16 }, (_, i) =>
@@ -159,8 +159,8 @@ describe("verifyPassword", () => {
 
     const { ok, needsRehash } = await verifyPassword("pw", fixedSalt, bareHex);
     expect(ok).toBe(true);
-    // Bare-hex at 100k matches current target, so no rehash needed
-    expect(needsRehash).toBe(false);
+    // Bare-hex at 100k is below the 300k target, so a rehash is needed
+    expect(needsRehash).toBe(true);
   });
 
   test("empty password does not match a real hash", async () => {
