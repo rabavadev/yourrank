@@ -2,6 +2,33 @@
 const $ = (s) => document.getElementById(s);
 function getCsrf() { const m = document.cookie.match(/(?:^|;\s*)__csrf=([^;]+)/); return m ? m[1] : ""; }
 
+function trapFocus(modalEl, closeFn) {
+  const focusable = modalEl.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
+  if (focusable.length === 0) return;
+  const first = focusable[0];
+  const last = focusable[focusable.length - 1];
+  first.focus();
+  const handleKeydown = (e) => {
+    if (e.key === "Escape") { e.preventDefault(); closeFn(); return; }
+    if (e.key === "Tab") {
+      if (e.shiftKey) {
+        if (document.activeElement === first) { e.preventDefault(); last.focus(); }
+      } else {
+        if (document.activeElement === last) { e.preventDefault(); first.focus(); }
+      }
+    }
+  };
+  modalEl._focusTrap = handleKeydown;
+  modalEl.addEventListener("keydown", handleKeydown);
+}
+
+function untrapFocus(modalEl) {
+  if (modalEl && modalEl._focusTrap) {
+    modalEl.removeEventListener("keydown", modalEl._focusTrap);
+    modalEl._focusTrap = null;
+  }
+}
+
 const TIERS = [
   { key: "free", name: "Free", price: 0, priceStr: "$0", desc: "Up to 10 players · 1 leaderboard · YourRank badge" },
   { key: "starter", name: "Starter", price: 12, priceStr: "$12/mo", desc: "Up to 25 players · 1 leaderboard · no badge · CSV import" },
@@ -87,8 +114,8 @@ function fmtExp(ms) {
       const cancelConfirmBtn = $("cancelConfirmBtn");
       const cancelCancelBtn = $("cancelCancelBtn");
       const cancelModalStatus = $("cancelModalStatus");
-      const closeCancelModal = () => { if (cancelModal) cancelModal.hidden = true; if (cancelModalStatus) cancelModalStatus.textContent = ""; };
-      $("cancelBtn").addEventListener("click", () => { if (cancelModal) cancelModal.hidden = false; if (cancelModalStatus) cancelModalStatus.textContent = ""; });
+      const closeCancelModal = () => { if (cancelModal) { cancelModal.hidden = true; untrapFocus(cancelModal); } if (cancelModalStatus) cancelModalStatus.textContent = ""; };
+      $("cancelBtn").addEventListener("click", () => { if (cancelModal) { cancelModal.hidden = false; trapFocus(cancelModal, closeCancelModal); } if (cancelModalStatus) cancelModalStatus.textContent = ""; });
       if (cancelCancelBtn) cancelCancelBtn.addEventListener("click", closeCancelModal);
       if (cancelConfirmBtn) cancelConfirmBtn.addEventListener("click", async () => {
         const status = $("cancelStatus");
@@ -299,6 +326,7 @@ const status = $("deleteStatus");
 
 function closeDeleteModal() {
   if (deleteModal) deleteModal.hidden = true;
+  untrapFocus(deleteModal);
   if (deleteConfirm) deleteConfirm.value = "";
   if (deletePassword) deletePassword.value = "";
   if (deletePasswordWrap) deletePasswordWrap.hidden = true;
@@ -313,7 +341,7 @@ if (deleteBtn && deleteModal) {
     if (deletePassword) deletePassword.value = "";
     if (deleteModalStatus) deleteModalStatus.textContent = "";
     deleteModal.hidden = false;
-    deleteConfirm?.focus();
+    trapFocus(deleteModal, closeDeleteModal);
   });
 }
 

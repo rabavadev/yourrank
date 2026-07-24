@@ -1,5 +1,5 @@
 // Auth helpers for the Worker.
-import { one, exec } from "../../../shared/db.js";
+import { one, withTransaction } from "../../../shared/db.js";
 import { rateLimit as kvRateLimit } from "../../../shared/ratelimit.js";
 // SHARED cross-Worker session: same cookie (yr_session) + same Postgres
 // sessions table as the bot Worker. See ../../../shared/session.ts
@@ -181,7 +181,6 @@ export const readJson = async (req) => {
 };
 
 
-// POST /api/account/delete — GDPR account deletion (DB-102).
 export async function handleAccountDelete(request, env) {
     try {
       const user = await currentUser(request, env);
@@ -193,9 +192,14 @@ export async function handleAccountDelete(request, env) {
         const { ok: pwOk } = await verifyPassword(body.password, userPw.password_salt, userPw.password_hash);
         if (!pwOk) return bad("Incorrect password", 401);
       }
-      await exec("DELETE FROM users WHERE id=$1", [user.id]);
-      await destroyAllUserSessions(env, user.id);
-      return ok({ message: "Account deleted successfully." });
+      
+      await withTransaction(async (tx) => {
+        await tx.unsafe("DELETE FROM users WHERE id=$1", [user.id]);
+      });
+      
+      return json({ ok: true, message: "Account deleted successfully." }, 200, {
+        "Set-Cookie": cookieClear(env)
+      });
   } catch (e) {
     console.error("account delete failed:", String(e?.message || e));
     return bad("Account deletion failed. Please try again.", 500);

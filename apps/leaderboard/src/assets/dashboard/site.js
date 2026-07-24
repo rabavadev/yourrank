@@ -141,9 +141,13 @@ export function renderPlan() {
       }
       return renderPlanCard(p, isCurrent, isLower, cta, accent && !isCurrent);
     }).join("");
-    grid.querySelectorAll("button[data-plan]").forEach((btn) => {
-      btn.addEventListener("click", () => checkout(btn.dataset.plan, btn));
-    });
+    if (!grid._wired) {
+      grid.addEventListener("click", (e) => {
+        const btn = e.target.closest("button[data-plan]");
+        if (btn) checkout(btn.dataset.plan, btn);
+      });
+      grid._wired = true;
+    }
   }
 
   const trialEl = $("planTrial");

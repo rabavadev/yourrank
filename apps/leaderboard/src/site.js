@@ -608,42 +608,57 @@ export async function duplicateBoard(env, uid, siteId, request = null) {
   return { ok: true, id: newId, slug: newSlug };
 }
 
-// Close out the current period: snapshot the board, then optionally reset it.
 export async function createArchive(env, uid, { label, clear, siteId } = {}, request = null) {
     const site = siteId ? await getBoardById(env, uid, siteId) : await getByUser(env, uid);
     if (!site) return { error: "no site" };
-    const players = await getPlayers(env, site.id);
-    if (!players.length) return { error: "Nothing to archive — the board is empty." };
+    
     const owner = await one("SELECT plan, (EXTRACT(EPOCH FROM plan_expires_at) * 1000)::double precision AS plan_expires_at, status FROM users WHERE id=$1", [uid]);
     const plan = effectivePlan(owner);
     const maxArchives = ARCHIVE_LIMITS[plan] || 6;
   const lab = String(label || "").trim().slice(0, 60) ||
     new Date().toLocaleString("en-US", { month: "long", year: "numeric", timeZone: "UTC" });
   const archiveId = crypto.randomUUID();
-  const snapshotJson = players;
+  
   // QA-005: Atomic limit check — the count + INSERT happen in a single
   // statement so two concurrent archive-creation requests can't both pass
   // the count check and exceed the plan limit.
   let limitReached = false;
+  let emptyBoard = false;
+  let finalPlayers = [];
+  
   await withTransaction(async (tx) => {
+    // Read players inside the transaction so the snapshot and clear are consistent
+    const rows = await tx.unsafe(
+      "SELECT name, wagered, prize, score, hands, net_profit, win_rate, change FROM players WHERE site_id=$1 ORDER BY wagered DESC",
+      [site.id]
+    );
+    const players = rows || [];
+    if (!players.length) {
+      emptyBoard = true;
+      return;
+    }
+    finalPlayers = players;
+    
     if (maxArchives < 999) {
-      const rows = await tx.unsafe(
+      const inserted = await tx.unsafe(
         `INSERT INTO archives (id,site_id,label,snapshot_json,created_at)
          SELECT $1,$2,$3,$4::jsonb,now()
            WHERE (SELECT COUNT(*) FROM archives WHERE site_id=$2) < $5
          RETURNING id`,
-        [archiveId, site.id, lab, snapshotJson, maxArchives]
+        [archiveId, site.id, lab, players, maxArchives]
       );
-      if (!rows || rows.length === 0) { limitReached = true; return; }
+      if (!inserted || inserted.length === 0) { limitReached = true; return; }
     } else {
       await tx.unsafe(
         "INSERT INTO archives (id,site_id,label,snapshot_json,created_at) VALUES ($1,$2,$3,$4::jsonb,now())",
-        [archiveId, site.id, lab, snapshotJson]
+        [archiveId, site.id, lab, players]
       );
     }
     if (clear === "players") await tx.unsafe("DELETE FROM players WHERE site_id=$1", [site.id]);
     else if (clear === "wagers") await tx.unsafe("UPDATE players SET wagered=0 WHERE site_id=$1", [site.id]);
   });
+
+  if (emptyBoard) return { error: "Nothing to archive — the board is empty." };
   if (limitReached) return { error: `Archive limit reached (${maxArchives}). Delete an old one first. Upgrade for more.` };
   await logAudit({
     actorId: uid,
@@ -662,7 +677,7 @@ export async function createArchive(env, uid, { label, clear, siteId } = {}, req
         kind: "reset",
         siteId: site.id,
         siteName: site.name || site.slug,
-        players,
+        players: finalPlayers,
         period: lab,
       });
     }

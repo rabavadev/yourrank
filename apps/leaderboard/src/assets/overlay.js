@@ -142,17 +142,27 @@
   // --- SSE live updates ---
   let streamFailures = 0;
 
+  let streamEs = null;
   function connectStream() {
     if (!SLUG || typeof EventSource === "undefined") return;
-    const es = new EventSource("/api/public/" + encodeURIComponent(SLUG) + "/stream");
-    es.onmessage = (e) => {
+    if (streamEs) { streamEs.close(); streamEs = null; }
+    streamEs = new EventSource("/api/public/" + encodeURIComponent(SLUG) + "/stream");
+    streamEs.onmessage = (e) => {
       try {
         const data = JSON.parse(e.data);
         if (data.players) { streamFailures = 0; renderPlayers(data.players); }
       } catch { streamFailures++; }
     };
-    es.onerror = () => { streamFailures++; };
+    streamEs.onerror = () => { streamFailures++; };
   }
+
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden) {
+      if (streamEs) { streamEs.close(); streamEs = null; }
+    } else {
+      connectStream();
+    }
+  });
 
   // --- Init ---
   function init() {

@@ -67,7 +67,7 @@ function shareScriptNonce(nonce) {
 function buildParts(c) {
   const { b, hasCasino, casino, period, pool, hasCta, ctaHref, hasPartner, hasCode, code, blurb, whyStats, socials, prizes, currency, hidePrizeAmounts, players: rawPlayers } = c;
   const name = esc(b.name);
-  const cur = String(currency || b.currency || "$").slice(0, 6);
+  const cur = esc(String(currency || b.currency || "$").slice(0, 6));
   const hidePrizes = hidePrizeAmounts || b.hidePrizeAmounts || false;
   const prizePoolLabel = esc((prizes && prizes.prizePoolLabel) || b.prizePoolLabel || "Prize pool");
   const countdownLabelValue = String((prizes && prizes.countdownLabel) || b.countdownLabel || "").slice(0, 40);
@@ -95,7 +95,7 @@ ${whyStats.length ? `<div class="pcol pcol-why"><span class="pcol-label">Why ${h
   const sortedPlayers = Array.isArray(rawPlayers) ? rawPlayers.slice().sort((a, b) => (b.wagered || 0) - (a.wagered || 0)) : [];
   const playerCount = sortedPlayers.length;
   const sCount = String(playerCount);
-  const cur2 = String(currency || b.currency || "$").slice(0, 6);
+  const cur2 = esc(String(currency || b.currency || "$").slice(0, 6));
   const initials = (name) => { const parts = String(name || "").trim().split(/\s+/); return (parts[0]?.[0] || "?") + (parts[1]?.[0] || ""); };
   const moneyS = (n) => cur2 + (Number(n) || 0).toLocaleString("en-US", { maximumFractionDigits: 0 });
   const moneyShortS = (n) => { const v = Number(n) || 0; if (v >= 1e6) return cur2 + (v / 1e6).toFixed(1) + "M"; if (v >= 1e3) return cur2 + (v / 1e3).toFixed(1) + "K"; return cur2 + v; };
@@ -598,7 +598,7 @@ ${footer}
 function fmtCurrency(n, data = {}, isPrize = false) {
   if (isPrize && data.brand?.hidePrizeAmounts) return "—";
   const v = Number(n) || 0;
-  const sym = String(data.brand?.currency || data.prizes?.currency || "$").slice(0, 6);
+  const sym = esc(String(data.brand?.currency || data.prizes?.currency || "$").slice(0, 6));
   return sym + v.toLocaleString("en-US", { maximumFractionDigits: 0 });
 }
 

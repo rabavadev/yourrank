@@ -65,13 +65,7 @@ jobs:
       - name: Audit dependencies
         run: bun audit --audit-level moderate
       - name: Run tests
-        working-directory: apps/leaderboard
-        run: |
-          # Run each test file in isolation to prevent mock.module cross-contamination
-          for f in src/__tests__/*.test.js; do
-            echo "--- $f ---"
-            bun test "$f" || exit 1
-          done
+        run: bun run test
       - name: Syntax-check client assets
         working-directory: apps/leaderboard
         run: |
@@ -152,8 +146,7 @@ jobs:
       - name: Audit dependencies
         run: bun audit --audit-level moderate
       - name: Run tests
-        working-directory: apps/bot
-        run: bun test
+        run: bun run test
       - working-directory: apps/bot
         run: bun run typecheck
       - name: Build shared TypeScript
@@ -330,7 +323,7 @@ jobs:
   # -----------------------------------------------------------------
   rollback:
     needs: [deploy-leaderboard, deploy-bot, deploy-consumer, smoke-test]
-    if: always() && needs.smoke-test.result == 'failure'
+    if: always() && (needs.smoke-test.result == 'failure' || contains(needs.*.result, 'failure'))
     runs-on: ubuntu-latest
     environment: production
     steps:

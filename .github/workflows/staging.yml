@@ -26,13 +26,7 @@ jobs:
       - name: Audit dependencies
         run: bun audit --audit-level moderate
       - name: Run tests
-        working-directory: apps/leaderboard
-        run: |
-          # Run each test file in isolation to prevent mock.module cross-contamination
-          for f in src/__tests__/*.test.js; do
-            echo "--- $f ---"
-            bun test "$f" || exit 1
-          done
+        run: bun run test
       - working-directory: apps/leaderboard
         run: node build.js
       - uses: cloudflare/wrangler-action@ebbaa1584979971c8614a24965b4405ff95890e0
@@ -56,8 +50,7 @@ jobs:
       - name: Audit dependencies
         run: bun audit --audit-level moderate
       - name: Run tests
-        working-directory: apps/bot
-        run: bun test
+        run: bun run test
       - working-directory: apps/bot
         run: bun run typecheck
       - uses: cloudflare/wrangler-action@ebbaa1584979971c8614a24965b4405ff95890e0
@@ -76,24 +69,23 @@ jobs:
         run: sleep 15
 
       - name: "Smoke: staging health"
-        continue-on-error: true
         run: |
           STATUS=$(curl -s -o /dev/null -w "%{http_code}" -L --max-time 20 https://staging.yourrank.site/ || true)
           if [ "$STATUS" = "200" ]; then
             echo "OK: staging.yourrank.site is live (HTTP $STATUS)"
           else
             echo "WARNING: staging.yourrank.site returned HTTP $STATUS — staging may not be configured yet"
-            echo "This is expected if staging DNS and Hyperdrive are not set up."
+            exit 1
           fi
 
       - name: "Smoke: staging dashboard"
-        continue-on-error: true
         run: |
           STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 20 https://staging.yourrank.site/bot/dashboard || true)
           if [ "$STATUS" = "200" ]; then
             echo "OK: staging dashboard HTTP $STATUS"
           else
             echo "WARNING: staging dashboard returned HTTP $STATUS"
+            exit 1
           fi
 
       - name: Staging deploy summary
@@ -102,7 +94,5 @@ jobs:
           echo "==========================================="
           echo "STAGING DEPLOY COMPLETE"
           echo "Commit: ${{ github.sha }}"
-          echo "Note: staging smoke tests use continue-on-error"
-          echo "because staging infra (DNS, Hyperdrive) may not"
-          echo "be configured yet."
+          echo "==========================================="
           echo "==========================================="
