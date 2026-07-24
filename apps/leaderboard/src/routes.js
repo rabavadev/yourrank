@@ -1,5 +1,6 @@
-// Route table: maps HTTP paths and methods to handler functions
-// This centralizes routing logic and separates it from handler implementations
+// Route table: maps HTTP paths and methods to handler functions.
+// Consumed by router.js, which registers each entry on the Hono app.
+// (:slug/:id are Hono path params, read via c.req.param() in router.js.)
 
 // withHandler wraps every route in a safety-net try/catch so an unexpected
 // throw never kills the Worker invocation without a response.
@@ -147,30 +148,3 @@ export const ROUTES = [
   { path: "/api/admin/2fa/status", method: "GET", handler: withHandler(handle2faStatus) },
   { path: "/api/admin/2fa/disable", method: "POST", handler: withHandler(handle2faDisable) },
 ];
-
-export function findRoute(path, method) {
-  // HEAD requests should use GET route handlers (HTTP spec: same headers, no body)
-  const effectiveMethod = method === "HEAD" ? "GET" : method;
-
-  // First try exact match
-  const exactMatch = ROUTES.find(route => route.path === path && route.method === effectiveMethod);
-  if (exactMatch) return exactMatch;
-  
-  // Then try pattern matching for routes with :slug or :id parameters
-  const patternMatch = ROUTES.find((route) => {
-    if (route.method !== effectiveMethod) return false;
-    const routePattern = route.path.replace(/:slug|:id/g, "([^/]+)");
-    const regex = new RegExp(`^${routePattern}$`);
-    return regex.test(path);
-  });
-
-  if (patternMatch) {
-    // Extract the first path parameter (slug or id) from the path
-    const routePattern = patternMatch.path.replace(/:slug|:id/g, "([^/]+)");
-    const match = path.match(new RegExp(`^${routePattern}$`));
-    const slug = match?.[1];
-    return { ...patternMatch, slug };
-  }
-  
-  return null;
-}

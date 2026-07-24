@@ -184,7 +184,7 @@ function updateLeaderboard(players) {
 
   const rows = $("[data-rows]");
   if (rows) {
-    const startIndex = (t3 && isCasinoFull()) ? 3 : 0;
+    const startIndex = t3 ? 3 : 0;
     rows.innerHTML = sorted.slice(startIndex).map((pl, i) => {
       const rank = i + 1 + startIndex;
       const gap = i === 0 ? 0 : sorted[i - 1 + startIndex].wagered - pl.wagered;
@@ -348,7 +348,7 @@ function boot() {
 
   const rows = $("[data-rows]");
   if (rows) {
-    const startIndex = (t3 && isCasinoFull()) ? 3 : 0;
+    const startIndex = t3 ? 3 : 0;
     rows.innerHTML = players.slice(startIndex).map((pl, i) => {
       const r = i + 1 + startIndex;
       const gap = i === 0 ? 0 : players[i - 1 + startIndex].wagered - pl.wagered;

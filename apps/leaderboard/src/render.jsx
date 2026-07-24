@@ -1,3 +1,4 @@
+/** @jsxImportSource hono/jsx */
 // Server-render a streamer's leaderboard page from their data.
 import { templateCss, validTemplate } from "./templates/index.js";
 import { DEFAULT_EXTRA, FONT_FAMILIES } from "./site.js";
@@ -132,68 +133,149 @@ ${whyStats.length ? `<div class="pcol pcol-why"><span class="pcol-label">Why ${h
 // The classic page: stream-window hero, partner panel, board, past, socials.
 function composeDefault(p) {
   const { name, heroLogo, hasCasino, casino, period, pool, ctaBtn, joinLabel, timerGrid } = p;
-  return `<section class="hero">${p.streamWindow}
-${heroLogo}<p class="hero-kicker">Welcome to</p><h1 class="hero-name" data-brand-name>${name}</h1>
-<p class="hero-sub">${hasCasino ? `<span data-casino>${esc(casino)}</span> partner · ` : ""}<span data-period>${esc(period)}</span> leaderboard</p>
-<div class="hero-cta">${ctaBtn(joinLabel)}<a class="btn btn--ghost" href="#board">Leaderboard</a></div>
-<div class="hero-timer" data-timer><p class="timer-label">${pool ? `<span data-pool>${esc(pool)}</span> leaderboard resets in` : "Leaderboard resets in"}</p>
-${timerGrid}</div></section>
-${p.partnerPanel}
-${p.announce}<section id="board" class="board"><div class="board-head">
-<p class="eyebrow">${pool ? `<span data-pool>${esc(pool)}</span> · ` : ""}<span data-period>${esc(period)}</span> Leaderboard</p>
-${p.titleGroup}<div class="board-meta">
-<span class="bm"><b class="countdown" data-countdown>--</b><span>${esc(p.countdownLabel || "Resets in")}</span></span>
-<span class="bm"><b data-count>${p.sCount}</b><span>Players</span></span></div></div>
-${p.payouts}
-${p.top3}
-${p.findRank}
-${p.table}
-${p.rules}</section>
-${p.pastSec}
-${p.socialsSec}`;
+  return (
+    <>
+      <section class="hero">
+        <div dangerouslySetInnerHTML={{ __html: p.streamWindow }} />
+        <div dangerouslySetInnerHTML={{ __html: heroLogo }} />
+        <p class="hero-kicker">Welcome to</p>
+        <h1 class="hero-name" data-brand-name>{name}</h1>
+        <p class="hero-sub">
+          {hasCasino ? <><span data-casino>{casino}</span> partner · </> : ""}
+          <span data-period>{period}</span> leaderboard
+        </p>
+        <div class="hero-cta">
+          <div dangerouslySetInnerHTML={{ __html: ctaBtn(joinLabel) }} />
+          <a class="btn btn--ghost" href="#board">Leaderboard</a>
+        </div>
+        <div class="hero-timer" data-timer>
+          <p class="timer-label">
+            {pool ? <><span data-pool>{pool}</span> leaderboard resets in</> : "Leaderboard resets in"}
+          </p>
+          <div dangerouslySetInnerHTML={{ __html: timerGrid }} />
+        </div>
+      </section>
+      <div dangerouslySetInnerHTML={{ __html: p.partnerPanel }} />
+      <div dangerouslySetInnerHTML={{ __html: p.announce }} />
+      <section id="board" class="board">
+        <div class="board-head">
+          <p class="eyebrow">
+            {pool ? <><span data-pool>{pool}</span> · </> : ""}
+            <span data-period>{period}</span> Leaderboard
+          </p>
+          <div dangerouslySetInnerHTML={{ __html: p.titleGroup }} />
+          <div class="board-meta">
+            <span class="bm"><b class="countdown" data-countdown>--</b><span>{p.countdownLabel || "Resets in"}</span></span>
+            <span class="bm"><b data-count>{p.sCount}</b><span>Players</span></span>
+          </div>
+        </div>
+        <div dangerouslySetInnerHTML={{ __html: p.payouts }} />
+        <div dangerouslySetInnerHTML={{ __html: p.top3 }} />
+        <div dangerouslySetInnerHTML={{ __html: p.findRank }} />
+        <div dangerouslySetInnerHTML={{ __html: p.table }} />
+        <div dangerouslySetInnerHTML={{ __html: p.rules }} />
+      </section>
+      <div dangerouslySetInnerHTML={{ __html: p.pastSec }} />
+      <div dangerouslySetInnerHTML={{ __html: p.socialsSec }} />
+    </>
+  );
 }
 
 // quest — app-style: compact centered header with info chips, standings first,
 // partner content demoted below the board.
 function composeQuest(p) {
-  return `<section class="hero hero--app">${p.heroLogo}<h1 class="hero-name" data-brand-name>${p.name}</h1>
-<p class="hero-sub">${p.hasCasino ? `<span data-casino>${esc(p.casino)}</span> partner · ` : ""}${p.periodSpan} leaderboard</p>
-<div class="app-chips">${p.hidePrizes ? "" : `<span class="app-chip app-chip--pool">🏆 ${p.poolSpan}</span>`}<span class="app-chip">⏳ <b class="countdown" data-countdown>--</b></span><span class="app-chip"><b data-count>${p.sCount}</b> players</span></div>
-<div class="hero-cta">${p.ctaBtn(p.joinLabel)}</div>
-<div class="hero-timer" data-timer hidden>${p.timerGrid}</div></section>
-${p.announce}<section id="board" class="board"><div class="board-head board-head--center">
-${p.titleGroup}</div>
-${p.payouts}
-${p.top3}
-${p.findRank}
-${p.table}
-${p.rules}</section>
-${p.partnerPanel}
-${p.pastSec}
-${p.socialsSec}`;
+  return (
+    <>
+      <section class="hero hero--app">
+        <div dangerouslySetInnerHTML={{ __html: p.heroLogo }} />
+        <h1 class="hero-name" data-brand-name>{p.name}</h1>
+        <p class="hero-sub">
+          {p.hasCasino ? <><span data-casino>{p.casino}</span> partner · </> : ""}
+          <span dangerouslySetInnerHTML={{ __html: p.periodSpan }} /> leaderboard
+        </p>
+        <div class="app-chips">
+          {p.hidePrizes ? "" : <span class="app-chip app-chip--pool">🏆 <span dangerouslySetInnerHTML={{ __html: p.poolSpan }} /></span>}
+          <span class="app-chip">⏳ <b class="countdown" data-countdown>--</b></span>
+          <span class="app-chip"><b data-count>{p.sCount}</b> players</span>
+        </div>
+        <div class="hero-cta">
+          <div dangerouslySetInnerHTML={{ __html: p.ctaBtn(p.joinLabel) }} />
+        </div>
+        <div class="hero-timer" data-timer hidden>
+          <div dangerouslySetInnerHTML={{ __html: p.timerGrid }} />
+        </div>
+      </section>
+      <div dangerouslySetInnerHTML={{ __html: p.announce }} />
+      <section id="board" class="board">
+        <div class="board-head board-head--center">
+          <div dangerouslySetInnerHTML={{ __html: p.titleGroup }} />
+        </div>
+        <div dangerouslySetInnerHTML={{ __html: p.payouts }} />
+        <div dangerouslySetInnerHTML={{ __html: p.top3 }} />
+        <div dangerouslySetInnerHTML={{ __html: p.findRank }} />
+        <div dangerouslySetInnerHTML={{ __html: p.table }} />
+        <div dangerouslySetInnerHTML={{ __html: p.rules }} />
+      </section>
+      <div dangerouslySetInnerHTML={{ __html: p.partnerPanel }} />
+      <div dangerouslySetInnerHTML={{ __html: p.pastSec }} />
+      <div dangerouslySetInnerHTML={{ __html: p.socialsSec }} />
+    </>
+  );
 }
 
 // vault — split hero: pitch on the left, a boxed prize-pool + race-countdown
 // card on the right, then a stat strip. Matches the approved casino mockup.
 function composeVault(p) {
-  return `<section class="hero hero--split"><div class="split-grid">
-<div class="split-copy">${p.heroLogo}<p class="hero-kicker">${p.hasCasino ? `<span data-casino>${esc(p.casino)}</span> partner board` : "Wager race"}</p><h1 class="hero-name" data-brand-name>${p.name}</h1>
-<p class="hero-sub">${p.periodSpan} wager race — climb the board, take the prizes.</p>
-<div class="hero-cta">${p.ctaBtn(p.joinLabel)}<a class="btn btn--ghost" href="#board">Standings</a></div></div>
-<div class="prize-card"><span class="prize-card-label">${esc(p.prizePoolLabel || "Prize pool")}</span><b class="prize-card-pool">${p.poolSpan}</b>
-<div class="hero-timer" data-timer><p class="timer-label">${esc(p.countdownLabel || "Race ends in")}</p>
-${p.timerGrid}</div></div></div>
-<div class="stat-strip"><div class="ss"><span class="ss-label">Players</span><b class="ss-val" data-count>${p.sCount}</b></div><div class="ss"><span class="ss-label">Period</span><b class="ss-val">${p.periodSpan}</b></div><div class="ss"><span class="ss-label">Status</span><b class="ss-val"><span class="live-badge" data-live-badge><span class="live-badge-dot"></span>LIVE</span></b></div></div></section>
-${p.announce}<section id="board" class="board"><div class="board-head board-head--center">
-<div class="board-title-group"><h2 class="sec-title">Standings</h2><span class="player-count-badge" data-player-count-badge></span></div></div>
-${p.payouts}
-${p.top3}
-${p.findRank}
-${p.table}
-${p.rules}</section>
-${p.partnerPanel}
-${p.pastSec}
-${p.socialsSec}`;
+  return (
+    <>
+      <section class="hero hero--split">
+        <div class="split-grid">
+          <div class="split-copy">
+            <div dangerouslySetInnerHTML={{ __html: p.heroLogo }} />
+            <p class="hero-kicker">
+              {p.hasCasino ? <><span data-casino>{p.casino}</span> partner board</> : "Wager race"}
+            </p>
+            <h1 class="hero-name" data-brand-name>{p.name}</h1>
+            <p class="hero-sub"><span dangerouslySetInnerHTML={{ __html: p.periodSpan }} /> wager race — climb the board, take the prizes.</p>
+            <div class="hero-cta">
+              <div dangerouslySetInnerHTML={{ __html: p.ctaBtn(p.joinLabel) }} />
+              <a class="btn btn--ghost" href="#board">Standings</a>
+            </div>
+          </div>
+          <div class="prize-card">
+            <span class="prize-card-label">{p.prizePoolLabel || "Prize pool"}</span>
+            <b class="prize-card-pool"><span dangerouslySetInnerHTML={{ __html: p.poolSpan }} /></b>
+            <div class="hero-timer" data-timer>
+              <p class="timer-label">{p.countdownLabel || "Race ends in"}</p>
+              <div dangerouslySetInnerHTML={{ __html: p.timerGrid }} />
+            </div>
+          </div>
+        </div>
+        <div class="stat-strip">
+          <div class="ss"><span class="ss-label">Players</span><b class="ss-val" data-count>{p.sCount}</b></div>
+          <div class="ss"><span class="ss-label">Period</span><b class="ss-val"><span dangerouslySetInnerHTML={{ __html: p.periodSpan }} /></b></div>
+          <div class="ss"><span class="ss-label">Status</span><b class="ss-val"><span class="live-badge" data-live-badge><span class="live-badge-dot"></span>LIVE</span></b></div>
+        </div>
+      </section>
+      <div dangerouslySetInnerHTML={{ __html: p.announce }} />
+      <section id="board" class="board">
+        <div class="board-head board-head--center">
+          <div class="board-title-group">
+            <h2 class="sec-title">Standings</h2>
+            <span class="player-count-badge" data-player-count-badge></span>
+          </div>
+        </div>
+        <div dangerouslySetInnerHTML={{ __html: p.payouts }} />
+        <div dangerouslySetInnerHTML={{ __html: p.top3 }} />
+        <div dangerouslySetInnerHTML={{ __html: p.findRank }} />
+        <div dangerouslySetInnerHTML={{ __html: p.table }} />
+        <div dangerouslySetInnerHTML={{ __html: p.rules }} />
+      </section>
+      <div dangerouslySetInnerHTML={{ __html: p.partnerPanel }} />
+      <div dangerouslySetInnerHTML={{ __html: p.pastSec }} />
+      <div dangerouslySetInnerHTML={{ __html: p.socialsSec }} />
+    </>
+  );
 }
 
 // tournament — the countdown IS the hero: giant race clock front and center,
@@ -332,8 +414,11 @@ const COMPOSERS = {
   ...CASINO_COMPOSERS,
 };
 
-function composeMain(tpl, parts, text) {
-  let html = (COMPOSERS[tpl] || composeDefault)(parts);
+async function composeMain(tpl, parts, text) {
+  let result = (COMPOSERS[tpl] || composeDefault)(parts);
+  if (result instanceof Promise) result = await result;
+  let html = (typeof result === "string") ? result : result.toString();
+  if (html instanceof Promise) html = await html;
   if (CASINO_FULL.has(tpl)) html = applyCasinoText(html, tpl, text);
   return html;
 }
@@ -346,7 +431,7 @@ function footerDisclaimer(hasCasino, name, casino) {
   return `${base}${gambling}${nonCasino}${affiliate}`;
 }
 
-export function renderLeaderboard(data, opts = {}) {
+export async function renderLeaderboard(data, opts = {}) {
   const b = data.brand || {};
   const br = data.branding || {};
   // Template: which visual skin renders this page. Falls back to "classic".
@@ -467,6 +552,8 @@ document.addEventListener("click", (e) => {
 });
 </script>` : "";
 
+  const mainHtml = await composeMain(tpl, buildParts({ b, esc, heroLogo, hasCasino, casino, period, pool, hasCta, ctaHref, hasPartner, hasCode, code, blurb, whyStats, socials, prizes: data.prizes, currency: data.brand?.currency, hidePrizeAmounts: data.brand?.hidePrizeAmounts, players: data.players }), textOverrides);
+  
   return `<!DOCTYPE html>
 <html lang="en"><head>
 <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -499,7 +586,7 @@ ${fullPage ? "" : `<div class="field" aria-hidden="true"></div><div class="water
 <nav class="nav-links" aria-label="Page sections">${hasPartner ? `<a href="#partner">Partner</a>` : ""}<a href="#board">Leaderboard</a>${socials.length ? `<a href="#socials">Socials</a>` : ""}</nav></header>`}
 ${boardTabs}
 <main id="top">
-${composeMain(tpl, buildParts({ b, esc, heroLogo, hasCasino, casino, period, pool, hasCta, ctaHref, hasPartner, hasCode, code, blurb, whyStats, socials, prizes: data.prizes, currency: data.brand?.currency, hidePrizeAmounts: data.brand?.hidePrizeAmounts, players: data.players }), textOverrides)}</main>
+${mainHtml}</main>
 ${shareHtml}
 ${fullPageFooter}
 ${fullPage ? "" : `<footer class="ftr"><div class="ftr-id"><span class="ftr-name" data-brand-name>${esc(b.name)}</span><span class="ftr-tag" data-tagline>${esc(b.tagline)}</span></div>

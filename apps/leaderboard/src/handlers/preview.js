@@ -1,7 +1,7 @@
 import { currentUser } from "../auth.js";
 import { effectivePlan } from "../billing.js";
 import { getUserSiteById, FONT_KEYS } from "../site.js";
-import { renderLeaderboard } from "../render.js";
+import { renderLeaderboard } from "../render.jsx";
 import { SECURE_HTML, withNonce } from "../middleware/headers.js";
 import { validTemplate } from "../templates/index.js";
 
@@ -38,7 +38,7 @@ export async function handleDashboardPreview(request, env, nonce) {
     branding.font = font;
   }
   const watermark = plan === "free" ? true : (mergedData.sections?.poweredBy === true);
-  let html = renderLeaderboard({ ...mergedData, branding }, {
+  let html = await renderLeaderboard({ ...mergedData, branding }, {
     watermark,
     homeUrl: url.origin,
     slug: "",

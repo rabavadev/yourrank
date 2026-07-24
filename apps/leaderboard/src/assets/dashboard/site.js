@@ -1,5 +1,5 @@
 // Site editing: plan, branding/theme, save, archive, domain, overlay, notifications.
-import { $, esc, fromLocalInput, getCsrf, guardAuth, logError, toLocalInput } from "./utils.js";
+import { $, esc, fromLocalInput, getCsrf, guardAuth, logError, toLocalInput, parseAmount } from "./utils.js";
 import { state } from "./state.js";
 import { renderBoardSwitcher, renderBoardsPage, renderSidebarBoardSwitcher } from "./boards.js";
 import { applyPlayerFieldVisibility, renderPlayers, renumber, toggleEmpty } from "./players.js";
@@ -171,19 +171,19 @@ export function collect() {
   const players = [...$("rows").children].map((tr) => {
     const p = {
       name: tr.querySelector(".p-name").value.trim(),
-      wagered: parseFloat(tr.querySelector(".p-wager").value) || 0,
-      prize: parseFloat(tr.querySelector(".p-prize").value) || 0,
+      wagered: parseAmount(tr.querySelector(".p-wager").value),
+      prize: parseAmount(tr.querySelector(".p-prize").value),
     };
     const score = tr.querySelector(".p-score").value.trim();
     const hands = tr.querySelector(".p-hands").value.trim();
     const netProfit = tr.querySelector(".p-net-profit").value.trim();
     const winRate = tr.querySelector(".p-win-rate").value.trim();
     const change = tr.querySelector(".p-change").value.trim();
-    if (score) p.score = parseFloat(score);
-    if (hands) p.hands = parseFloat(hands);
-    if (netProfit) p.netProfit = parseFloat(netProfit);
-    if (winRate) p.winRate = parseFloat(winRate);
-    if (change) p.change = parseFloat(change);
+    if (score) p.score = parseAmount(score);
+    if (hands) p.hands = parseAmount(hands);
+    if (netProfit) p.netProfit = parseAmount(netProfit);
+    if (winRate) p.winRate = parseAmount(winRate);
+    if (change) p.change = parseAmount(change);
     return p;
   }).filter((p) => p.name);
   const brandName = $("f_name").value.trim();
@@ -934,27 +934,47 @@ export function renderArchives(list) {
     const when = new Date(a.at).toLocaleDateString();
     row.innerHTML = `<span class="arch-label"></span><span class="hint">${a.players} players · closed ${when}</span><button class="btn btn--xs btn--ghost arch-restore" type="button">Restore</button><button class="btn btn--xs btn--ghost arch-del" type="button">Delete</button>`;
     row.querySelector(".arch-label").textContent = a.label;
-    row.querySelector(".arch-restore").addEventListener("click", async () => {
+    row.querySelector(".arch-restore").addEventListener("click", async (e) => {
       if (!confirm(`Restore players from "${a.label}"? This will replace the current player list. Save changes to publish.`)) return;
-      const body = { archiveId: a.id };
-      if (state.ACTIVE_SITE_ID) body.siteId = state.ACTIVE_SITE_ID;
-      const res = await fetch("/api/site/archive/restore", { method: "POST", credentials: "include", headers: { "content-type": "application/json", "x-csrf-token": getCsrf() }, body: JSON.stringify(body) });
-      const d = await res.json().catch(() => ({}));
-      if (res.ok && d.ok) {
-        const apiUrl = state.ACTIVE_SITE_ID ? `/api/site?siteId=${encodeURIComponent(state.ACTIVE_SITE_ID)}` : "/api/site";
-        const p = await (await fetch(apiUrl)).json();
-        if (p.ok) { renderPlayers(p.data.players || []); renumber(); toggleEmpty(); }
-        $("status").textContent = `Restored ${d.players || a.players} players from "${a.label}". Save to publish.`;
-      } else $("status").textContent = d.error || "Couldn't restore that.";
+      const btn = e.target;
+      const orig = btn.textContent;
+      btn.disabled = true;
+      btn.textContent = "Restoring…";
+      try {
+        const body = { archiveId: a.id };
+        if (state.ACTIVE_SITE_ID) body.siteId = state.ACTIVE_SITE_ID;
+        const res = await fetch("/api/site/archive/restore", { method: "POST", credentials: "include", headers: { "content-type": "application/json", "x-csrf-token": getCsrf() }, body: JSON.stringify(body) });
+        const d = await res.json().catch(() => ({}));
+        if (res.ok && d.ok) {
+          const apiUrl = state.ACTIVE_SITE_ID ? `/api/site?siteId=${encodeURIComponent(state.ACTIVE_SITE_ID)}` : "/api/site";
+          const p = await (await fetch(apiUrl)).json();
+          if (p.ok) { renderPlayers(p.data.players || []); renumber(); toggleEmpty(); }
+          $("status").textContent = `Restored ${d.players || a.players} players from "${a.label}". Save to publish.`;
+        } else $("status").textContent = d.error || "Couldn't restore that.";
+      } finally {
+        btn.disabled = false;
+        btn.textContent = orig;
+      }
     });
-    row.querySelector(".arch-del").addEventListener("click", async () => {
+    row.querySelector(".arch-del").addEventListener("click", async (e) => {
       if (!confirm(`Delete the "${a.label}" archive? It disappears from your page too.`)) return;
-      const body = { id: a.id };
-      if (state.ACTIVE_SITE_ID) body.siteId = state.ACTIVE_SITE_ID;
-      const res = await fetch("/api/site/archive/delete", { method: "POST", credentials: "include", headers: { "content-type": "application/json", "x-csrf-token": getCsrf() }, body: JSON.stringify(body) });
-      const d = await res.json();
-      if (res.ok && d.ok) { row.remove(); if (!$("archList").children.length) $("archEmpty").hidden = false; $("status").textContent = "Archive deleted."; }
-      else $("status").textContent = d.error || "Couldn't delete that.";
+      const btn = e.target;
+      const orig = btn.textContent;
+      btn.disabled = true;
+      btn.textContent = "Deleting…";
+      try {
+        const body = { id: a.id };
+        if (state.ACTIVE_SITE_ID) body.siteId = state.ACTIVE_SITE_ID;
+        const res = await fetch("/api/site/archive/delete", { method: "POST", credentials: "include", headers: { "content-type": "application/json", "x-csrf-token": getCsrf() }, body: JSON.stringify(body) });
+        const d = await res.json();
+        if (res.ok && d.ok) { row.remove(); if (!$("archList").children.length) $("archEmpty").hidden = false; $("status").textContent = "Archive deleted."; }
+        else $("status").textContent = d.error || "Couldn't delete that.";
+      } finally {
+        if (document.body.contains(btn)) {
+          btn.disabled = false;
+          btn.textContent = orig;
+        }
+      }
     });
     box.appendChild(row);
   });

@@ -1,11 +1,11 @@
 // Aggregator: per-page modules re-exported as PAGES
 
 import { landingPage } from "./pages/landing.js";
-import { loginPage } from "./pages/login.js";
+import { LoginPage } from "./pages/login.jsx";
 import { forgotPage } from "./pages/forgot.js";
 import { resetPage } from "./pages/reset.js";
 import { signupPage } from "./pages/signup.js";
-import { dashboardPage } from "./pages/dashboard.js";
+import { dashboardConfig, DashboardContent } from "./pages/dashboard.jsx";
 import { analyticsPage } from "./pages/analytics.js";
 import { billingPage } from "./pages/billing.js";
 import { attributionPage } from "./pages/attribution.js";
@@ -28,11 +28,11 @@ import { docsPage } from "./pages/docs.js";
 export const PAGES = {
   index: landingPage,
   docs: docsPage,
-  login: loginPage,
+  login: { Component: LoginPage },
   forgot: forgotPage,
   reset: resetPage,
   signup: signupPage,
-  dashboard: dashboardPage,
+  dashboard: { config: dashboardConfig, Component: DashboardContent },
   analytics: analyticsPage,
   billing: billingPage,
   attribution: attributionPage,

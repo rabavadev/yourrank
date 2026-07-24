@@ -1,5 +1,5 @@
 // Player table, CSV/paste import, and row management.
-import { $, esc, logError } from "./utils.js";
+import { $, esc, logError, parseAmount } from "./utils.js";
 import { state } from "./state.js";
 
 export function playerRow(p = { name: "", wagered: "", prize: "", score: "", hands: "", netProfit: "", winRate: "", change: "" }) {
@@ -15,7 +15,7 @@ export function playerRow(p = { name: "", wagered: "", prize: "", score: "", han
     <td class="num col-win" hidden><input class="p-win-rate" inputmode="decimal" placeholder="0" value="${esc(p.winRate)}"></td>
     <td class="num col-change" hidden><input class="p-change" inputmode="decimal" placeholder="0" value="${esc(p.change)}"></td>
     <td class="act"><button class="row-x" title="Remove" aria-label="Remove player" type="button">×</button></td>`;
-  tr.querySelector(".row-x").addEventListener("click", () => { tr.remove(); renumber(); toggleEmpty(); });
+  tr.querySelector(".row-x").addEventListener("click", () => { tr.remove(); renumber(); toggleEmpty(); syncSelectAll(); });
   return tr;
 }
 
@@ -48,10 +48,13 @@ export function applyPlayerFieldVisibility(fields) {
 export function renderPlayers(list) {
   const b = $("rows");
   b.innerHTML = "";
-  list.forEach((p) => b.appendChild(playerRow(p)));
+  const frag = document.createDocumentFragment();
+  list.forEach((p) => frag.appendChild(playerRow(p)));
+  b.appendChild(frag);
   renumber();
   toggleEmpty();
   applyPlayerFieldVisibility();
+  syncSelectAll();
 }
 
 export function renumber() {
@@ -88,15 +91,41 @@ function sortRows() {
   for (const row of rowsEl.children) before.set(row, row.getBoundingClientRect().top);
   const rowsArr = [...rowsEl.children];
   rowsArr.sort((a, b) => {
-    const wa = parseFloat(a.querySelector(".p-wager").value) || 0;
-    const wb = parseFloat(b.querySelector(".p-wager").value) || 0;
+    const wa = parseAmount(a.querySelector(".p-wager").value);
+    const wb = parseAmount(b.querySelector(".p-wager").value);
     if (wb !== wa) return wb - wa;
-    const pa = parseFloat(a.querySelector(".p-prize").value) || 0;
-    const pb = parseFloat(b.querySelector(".p-prize").value) || 0;
+    const pa = parseAmount(a.querySelector(".p-prize").value);
+    const pb = parseAmount(b.querySelector(".p-prize").value);
     return pb - pa;
   });
+  
+  let isSorted = true;
+  for (let i = 0; i < rowsArr.length; i++) {
+    if (rowsArr[i] !== rowsEl.children[i]) { isSorted = false; break; }
+  }
+  if (isSorted) return;
+
+  const activeEl = document.activeElement;
+  let activeData = null;
+  if (activeEl && rowsEl.contains(activeEl)) {
+    const tr = activeEl.closest("tr");
+    activeData = { tr, cls: activeEl.className.split(" ")[0] };
+  }
+
   rowsArr.forEach((row) => rowsEl.appendChild(row));
   renumber();
+
+  if (activeData && activeData.tr) {
+    const input = activeData.tr.querySelector("." + activeData.cls);
+    if (input) {
+      input.focus();
+      // Restore cursor position if it's an input
+      if (typeof input.selectionStart === "number") {
+        const len = input.value.length;
+        input.setSelectionRange(len, len);
+      }
+    }
+  }
   const after = new Map();
   for (const row of rowsArr) after.set(row, row.getBoundingClientRect().top);
   for (const row of rowsArr) {
@@ -159,6 +188,52 @@ $("qa_add")?.addEventListener("click", addQuickRow);
 $("qa_name")?.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); $("qa_wager")?.focus(); } });
 $("qa_wager")?.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); $("qa_prize")?.focus(); } });
 $("qa_prize")?.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); addQuickRow(); $("qa_name")?.focus(); } });
+
+$("hudQuickAdd")?.addEventListener("submit", (e) => {
+  e.preventDefault();
+  const name = $("hudName").value.trim();
+  const amountRaw = $("hudAmount").value.trim();
+  if (!name || !amountRaw) return;
+
+  const isAddition = amountRaw.startsWith("+");
+  const isSubtraction = amountRaw.startsWith("-");
+  const amount = parseAmount(amountRaw);
+
+  let found = false;
+  const nameLower = name.toLowerCase();
+  [...$("rows").children].forEach(row => {
+    const pName = row.querySelector(".p-name").value.trim();
+    if (pName.toLowerCase() === nameLower) {
+      found = true;
+      const wagerInput = row.querySelector(".p-wager");
+      const currentWager = parseAmount(wagerInput.value);
+      if (isAddition || isSubtraction) {
+         wagerInput.value = (isSubtraction ? currentWager - amount : currentWager + amount);
+      } else {
+         wagerInput.value = amount;
+      }
+      wagerInput.dispatchEvent(new Event("input", { bubbles: true }));
+    }
+  });
+
+  if (!found) {
+    if (state.ME && $("rows").children.length >= state.ME.limits.players && state.ME.limits.players < 999) {
+      const el = $("status");
+      if (el) el.textContent = "Player limit reached. Upgrade to add more.";
+      return;
+    }
+    const wagered = isSubtraction ? 0 : amount;
+    $("rows").appendChild(playerRow({ name, wagered, prize: 0 }));
+    renumber();
+    toggleEmpty();
+    applyPlayerFieldVisibility();
+    $("rows").lastElementChild.querySelector(".p-wager").dispatchEvent(new Event("input", { bubbles: true }));
+  }
+
+  $("hudName").value = "";
+  $("hudAmount").value = "";
+  $("hudName").focus();
+});
 
 const NAME_RE = /^[\p{L}\p{N}\p{P}\p{S}\s]+$/u;
 
@@ -432,6 +507,14 @@ function getVisibleRows() {
   return rows.filter((tr) => !tr.hidden && tr.style.display !== "none");
 }
 
+export function syncSelectAll() {
+  updateBulkActions();
+  const visible = getVisibleRows();
+  const checked = visible.filter((tr) => tr.querySelector(".row-sel")?.checked).length;
+  const selectAll = $("selectAll");
+  if (selectAll) selectAll.checked = checked > 0 && checked === visible.length;
+}
+
 function updateBulkActions() {
   const any = $("rows")?.querySelector(".row-sel:checked");
   const bar = $("bulkActions");
@@ -449,10 +532,7 @@ $("selectAll")?.addEventListener("change", () => {
 
 $("rows")?.addEventListener("change", (e) => {
   if (e.target && e.target.classList && e.target.classList.contains("row-sel")) {
-    updateBulkActions();
-    const visible = getVisibleRows();
-    const checked = visible.filter((tr) => tr.querySelector(".row-sel")?.checked).length;
-    $("selectAll").checked = checked > 0 && checked === visible.length;
+    syncSelectAll();
   }
 });
 
@@ -463,7 +543,7 @@ $("bulkDelete")?.addEventListener("click", () => {
     if (row.querySelector(".row-sel")?.checked) { row.remove(); removed++; }
   }
   if (removed) {
-    renumber(); toggleEmpty();
+    renumber(); toggleEmpty(); syncSelectAll();
     state.markDirty?.();
     $("status").textContent = `${removed} player${removed === 1 ? "" : "s"} removed.`;
   }
