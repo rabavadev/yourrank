@@ -196,6 +196,9 @@ export async function handleAccountDelete(request, env) {
       await withTransaction(async (tx) => {
         await tx.unsafe("DELETE FROM users WHERE id=$1", [user.id]);
       });
+      // Destroy all sessions (other devices/tabs) — don't leave orphaned
+      // sessions for a deleted user.
+      await destroyAllUserSessions(env, user.id);
       
       return json({ ok: true, message: "Account deleted successfully." }, 200, {
         "Set-Cookie": cookieClear(env)

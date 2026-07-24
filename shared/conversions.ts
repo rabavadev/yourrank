@@ -83,6 +83,8 @@ export async function recordConversion(ownerId: string, q: PostbackQuery, siteId
       return;
     }
 
+    let resolvedSiteId: string | null = siteId ?? null;
+
     if (playerNormalized) {
       // C-02: Try to map this conversion to the site the original click came
       // from via the player subscription. If we cannot, fall back to all sites
@@ -96,7 +98,7 @@ export async function recordConversion(ownerId: string, q: PostbackQuery, siteId
           LIMIT 1`,
         [clickRef, playerNormalized]
       );
-      const resolvedSiteId: string | null = siteId ?? siteHit?.site_id ?? null;
+      resolvedSiteId = siteId ?? siteHit?.site_id ?? null;
 
       const upsert = await tx.unsafe(
         `WITH ins AS (
@@ -116,17 +118,23 @@ export async function recordConversion(ownerId: string, q: PostbackQuery, siteId
       );
       // `upsert` result is not needed; the side effect is the projection.
       void upsert;
+    }
 
-      if (resolvedSiteId) {
-        await tx.unsafe(
-          `INSERT INTO site_stats (site_id, day, conversions, revenue)
-           VALUES ($1, (now() AT TIME ZONE 'UTC')::date, 1, $2::numeric)
-           ON CONFLICT (site_id, day) DO UPDATE SET
-             conversions = site_stats.conversions + 1,
-             revenue = site_stats.revenue + $2::numeric`,
-          [resolvedSiteId, amount ?? 0]
-        );
-      }
+    // Update site_stats conversions/revenue for this conversion. This must
+    // happen regardless of whether a player name was provided, because the
+    // dashboard reads conversion counts from site_stats (not the conversions
+    // table). resolvedSiteId is the caller's siteId (if provided) or the
+    // player-subscription lookup result (if a player was named). Without
+    // either, we cannot attribute the conversion to a specific site.
+    if (resolvedSiteId) {
+      await tx.unsafe(
+        `INSERT INTO site_stats (site_id, day, conversions, revenue)
+         VALUES ($1, (now() AT TIME ZONE 'UTC')::date, 1, $2::numeric)
+         ON CONFLICT (site_id, day) DO UPDATE SET
+           conversions = site_stats.conversions + 1,
+           revenue = site_stats.revenue + $2::numeric`,
+        [resolvedSiteId, amount ?? 0]
+      );
     }
   });
 }
