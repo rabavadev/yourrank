@@ -1,13 +1,14 @@
-import { leaderboardPageHtml } from "../../../../shared/page-shell.js";
-
-// dashboard page
-export const dashboardPage = leaderboardPageHtml({
+/** @jsxImportSource hono/jsx */
+export const dashboardConfig = {
   title: "Dashboard · YourRank",
   canonical: "https://yourrank.site/dashboard",
-  reqId: "{{REQ_ID}}",
-  noscript: "<p>YourRank requires JavaScript</p><p>Please enable JavaScript in your browser settings to use the dashboard.</p>",
   scripts: ['<script src="/assets/dashboard.js?v=4" type="module"></script>'],
-  content: `<div id="loading" class="py-26">
+};
+
+export function DashboardContent() {
+  return (
+    <>
+      <div id="loading" class="py-26">
 <div class="skel-header"><div><div class="skeleton skeleton-text--lg skel-w-180"></div><div class="skeleton skeleton-text--sm skel-w-260 mt-8"></div></div><div class="skeleton skeleton-text skel-w-90"></div></div>
 <div class="card mt-18"><div class="skeleton skeleton-block skel-h-200"></div></div>
 <div class="card mt-18"><div class="skeleton skeleton-block skel-h-300"></div></div>
@@ -315,6 +316,9 @@ export const dashboardPage = leaderboardPageHtml({
 <p class="hint" id="planHint">Paid plans are billed in crypto (BTC, ETH, USDT and 100+ more) and activate automatically once the network confirms. <a href="/dashboard/billing">See billing details →</a></p></div>
 </section>
 </div>
-</div>
-<div class="savebar" id="savebar" hidden><span class="savebar-hint">Unsaved changes</span><button class="btn btn--accent" id="save" type="button">Save changes</button></div></div>`
-});
+      </div>
+      <div class="savebar" id="savebar" hidden><span class="savebar-hint">Unsaved changes</span><button class="btn btn--accent" id="save" type="button">Save changes</button></div>
+      </div>
+    </>
+  );
+}

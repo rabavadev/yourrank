@@ -1,20 +1,21 @@
-import { destroySession, cookieClear, readToken, handleAccountDelete, RESERVED, bad, currentUser, hasLegacyCookie, cookieClearLegacy, rateLimit, clientIp } from "./auth.js";
+import { destroySession, cookieClear, readToken, RESERVED, bad, currentUser, hasLegacyCookie, cookieClearLegacy, rateLimit, clientIp } from "./auth.js";
 import { sendErrorToDiscord } from "../../../shared/monitoring.js";
 import { withWorkerFetch } from "../../../shared/with-worker.js";
 import { RateLimiter } from "../../../shared/rate-limiter-do.js";
 import { populateEnv } from "../../../shared/env.js";
 import { getPublicSite, getByUser, getBySlug, getArchives, ARCHIVE_LIMITS } from "./site.js";
-import { renderEmbed, renderHallOfFame, renderLeaderboard, renderLegalPage, renderPasswordGate, renderPlayerProfile, renderStreamerProfile } from "./render.js";
+import { renderEmbed, renderHallOfFame, renderLeaderboard, renderLegalPage, renderPasswordGate, renderPlayerProfile, renderStreamerProfile } from "./render.jsx";
 import { verifyBoardPassword, issueBoardPasswordToken, boardPasswordSetCookieHeader } from "./board-password.js";
-import { PAGES } from "./pages.js";
+import { PAGES } from "./pages.jsx";
+import { leaderboardPageHtml } from "../../../shared/page-shell.js";
 import { bumpStat } from "./stats.js";
 import { runAutoReset } from "./auto-reset.js";
 import { createQueueProducer } from "../../../shared/queue-producer.js";
 import { shellNavHtml } from "../../../shared/shell-nav.js";
-import { findRoute } from "./routes.js";
+import apiApp from "./router.js";
 import { OG_IMAGE_PNG_BASE64 } from "./og-image.js";
 import {
-  generateCsrfToken, csrfCookie, verifyCsrf, shouldRequireCsrf,
+  generateCsrfToken, csrfCookie,
   resolveCustomDomain, isCustomHost,
   serveStaticAsset,
   serveRobotsTxt, serveSitemapXml, serveFavicon,
@@ -241,7 +242,7 @@ async function handleRequest(request, env, ctx, meta) {
             const paid = r.plan !== "free";
             const watermark = !paid ? true : (r.data.sections?.poweredBy === true);
             return new Response(
-              renderLeaderboard(r.data, {
+              await renderLeaderboard(r.data, {
                 watermark, homeUrl: `https://${host}`, slug: customSlug, nonce, isCustomDomain: true,
                 logoUrl: paid && r.data.branding?.hasLogo ? `https://${host}/logo/${customSlug}` : null,
               }),
@@ -359,14 +360,37 @@ async function handleRequest(request, env, ctx, meta) {
         });
       }
 
+      // --- helper for rendering strings or JSX pages ---
+      const renderHtmlPage = async (pageObj, { reqId, activePath, user } = {}) => {
+        if (typeof pageObj === "string") {
+          let result = pageObj;
+          if (activePath && user) result = result.replace("<!--GM_NAV-->", shellNavHtml({ activePath, user }));
+          if (reqId) result = result.replace("{{REQ_ID}}", reqId);
+          return result;
+        }
+        
+        if (pageObj.Component) {
+          let node = pageObj.Component({ reqId, user });
+          if (node instanceof Promise) node = await node;
+          const content = node.toString();
+          if (pageObj.config) {
+            let result = leaderboardPageHtml({ ...pageObj.config, content });
+            if (activePath && user) result = result.replace("<!--GM_NAV-->", shellNavHtml({ activePath, user }));
+            if (reqId) result = result.replace("{{REQ_ID}}", reqId);
+            return result;
+          }
+          return content;
+        }
+      }
+
       // --- pages ---
       // SEC-108: Issue CSRF cookie on every page load so the JS client can
       // echo it back as X-CSRF-Token on API calls.
       const csrfToken = generateCsrfToken();
       const csrfHeader = { "set-cookie": csrfCookie(csrfToken) };
 
-      if (path === "/" || path === "/index.html") return new Response(addCookieConsent(PAGES.index), { headers: { ...HTML_N, ...csrfHeader } });
-      if (path === "/login" || path === "/login.html") return new Response(addCookieConsent(PAGES.login), { headers: { ...SECURE_HTML, ...csrfHeader } });
+      if (path === "/" || path === "/index.html") return new Response(addCookieConsent(await renderHtmlPage(PAGES.index)), { headers: { ...HTML_N, ...csrfHeader } });
+      if (path === "/login" || path === "/login.html") return new Response(addCookieConsent(await renderHtmlPage(PAGES.login)), { headers: { ...SECURE_HTML, ...csrfHeader } });
       // POST /logout only (BE-003). Previously GET, which allowed CSRF via
       // <img src="/logout">. Now only POST is accepted. The in-page buttons
       // already hit POST /api/auth/logout; the nav link should use a form POST.
@@ -374,14 +398,16 @@ async function handleRequest(request, env, ctx, meta) {
         await destroySession(env, readToken(request));
         return new Response(null, { status: 302, headers: { "set-cookie": cookieClear(env), location: "/login" } });
       }
-      if (path === "/signup" || path === "/signup.html") return new Response(addCookieConsent(PAGES.signup), { headers: { ...SECURE_HTML, ...csrfHeader } });
+      if (path === "/signup" || path === "/signup.html") return new Response(addCookieConsent(await renderHtmlPage(PAGES.signup)), { headers: { ...SECURE_HTML, ...csrfHeader } });
       if (path === "/dashboard" || path === "/dashboard.html") {
         try {
           const user = await currentUser(request, env);
           if (!user) return Response.redirect(new URL("/login", url), 302);
-          const html = addCookieConsent(PAGES.dashboard
-            .replace("<!--GM_NAV-->", shellNavHtml({ activePath: "/dashboard", user }))
-            .replace("{{REQ_ID}}", reqId || ""));
+          const html = addCookieConsent(await renderHtmlPage(PAGES.dashboard, {
+            activePath: "/dashboard",
+            user,
+            reqId: reqId || ""
+          }));
           return new Response(html, { headers: { ...SECURE_HTML, ...csrfHeader, "cache-control": "no-store, no-cache, must-revalidate" } });
         } catch (e) {
           // A transient DB/Hyperdrive hiccup on currentUser used to bubble as a
@@ -490,7 +516,7 @@ async function handleRequest(request, env, ctx, meta) {
           return new Response("Security page couldn't load right now — please refresh.", { status: 500, headers: { "content-type": "text/plain; charset=utf-8" } });
         }
       }
-      if (path === "/forgot") return new Response(addCookieConsent(PAGES.forgot), { headers: { ...SECURE_HTML, ...csrfHeader } });
+      if (path === "/forgot") return new Response(addCookieConsent(await renderHtmlPage(PAGES.forgot)), { headers: { ...SECURE_HTML, ...csrfHeader } });
       if (path === "/reset") {
         // BUG-003: Don't show password form when no token is present.
         if (!url.searchParams.get("token")) {
@@ -509,7 +535,7 @@ async function handleRequest(request, env, ctx, meta) {
 <p class="foot"><a href="/login">Back to sign in</a></p></div></main></div></body></html>`;
           return new Response(addCookieConsent(invalidLink), { headers: { ...SECURE_HTML, ...csrfHeader } });
         }
-        return new Response(addCookieConsent(PAGES.reset), { headers: { ...SECURE_HTML, ...csrfHeader } });
+        return new Response(addCookieConsent(await renderHtmlPage(PAGES.reset)), { headers: { ...SECURE_HTML, ...csrfHeader } });
       }
       if (path === "/admin") {
         const u = await currentUser(request, env);
@@ -518,25 +544,25 @@ async function handleRequest(request, env, ctx, meta) {
         // to the 2FA setup page; enrolled admins must have a fresh session flag.
         const tfaRow = await findUserTotpSecret(u.id);
         if (!tfaRow?.totp_secret) {
-          return new Response(addCookieConsent(PAGES.admin2fa), { headers: { ...SECURE_HTML, ...csrfHeader } });
+          return new Response(addCookieConsent(await renderHtmlPage(PAGES.admin2fa)), { headers: { ...SECURE_HTML, ...csrfHeader } });
         }
         const token = readToken(request);
         const tokenHash = token ? await hashToken(token) : null;
         const tfaRow2 = tokenHash ? await one("SELECT twofa_verified_at FROM sessions WHERE token=$1", [tokenHash]) : null;
         if (!tfaRow2?.twofa_verified_at) {
           // Show 2FA verification page instead of admin dashboard
-          return new Response(addCookieConsent(PAGES.admin2fa), { headers: { ...SECURE_HTML, ...csrfHeader } });
+          return new Response(addCookieConsent(await renderHtmlPage(PAGES.admin2fa)), { headers: { ...SECURE_HTML, ...csrfHeader } });
         }
-        return new Response(addCookieConsent(PAGES.admin), { headers: { ...SECURE_HTML, ...csrfHeader } });
+        return new Response(addCookieConsent(await renderHtmlPage(PAGES.admin)), { headers: { ...SECURE_HTML, ...csrfHeader } });
       }
-      if (path === "/terms") return new Response(addCookieConsent(PAGES.terms), { headers: { ...HTML_N, ...csrfHeader } });
-      if (path === "/privacy") return new Response(addCookieConsent(PAGES.privacy), { headers: { ...HTML_N, ...csrfHeader } });
-      if (path === "/responsible") return new Response(addCookieConsent(PAGES.responsible), { headers: { ...HTML_N, ...csrfHeader } });
-      if (path === "/refund") return new Response(addCookieConsent(PAGES.refund), { headers: { ...HTML_N, ...csrfHeader } });
-      if (path === "/contact") return new Response(addCookieConsent(PAGES.contact), { headers: { ...HTML_N, ...csrfHeader } });
-      if (path === "/docs") return new Response(addCookieConsent(PAGES.docs), { headers: { ...HTML_N, ...csrfHeader } });
-      if (path === "/pricing" || path === "/pricing.html") return new Response(addCookieConsent(PAGES.pricing), { headers: { ...HTML_N, ...csrfHeader } });
-      if (path === "/cookies" || path === "/cookies.html") return new Response(addCookieConsent(PAGES.cookies), { headers: { ...HTML_N, ...csrfHeader } });
+      if (path === "/terms") return new Response(addCookieConsent(await renderHtmlPage(PAGES.terms)), { headers: { ...HTML_N, ...csrfHeader } });
+      if (path === "/privacy") return new Response(addCookieConsent(await renderHtmlPage(PAGES.privacy)), { headers: { ...HTML_N, ...csrfHeader } });
+      if (path === "/responsible") return new Response(addCookieConsent(await renderHtmlPage(PAGES.responsible)), { headers: { ...HTML_N, ...csrfHeader } });
+      if (path === "/refund") return new Response(addCookieConsent(await renderHtmlPage(PAGES.refund)), { headers: { ...HTML_N, ...csrfHeader } });
+      if (path === "/contact") return new Response(addCookieConsent(await renderHtmlPage(PAGES.contact)), { headers: { ...HTML_N, ...csrfHeader } });
+      if (path === "/docs") return new Response(addCookieConsent(await renderHtmlPage(PAGES.docs)), { headers: { ...HTML_N, ...csrfHeader } });
+      if (path === "/pricing" || path === "/pricing.html") return new Response(addCookieConsent(await renderHtmlPage(PAGES.pricing)), { headers: { ...HTML_N, ...csrfHeader } });
+      if (path === "/cookies" || path === "/cookies.html") return new Response(addCookieConsent(await renderHtmlPage(PAGES.cookies)), { headers: { ...HTML_N, ...csrfHeader } });
 
 
       // --- streamer logos (uploaded via dashboard, served as real images) ---
@@ -550,31 +576,15 @@ async function handleRequest(request, env, ctx, meta) {
         if (preflight) return preflight;
       }
 
-      // Route table lookup for all API endpoints
-      const route = findRoute(path, method);
-      if (route) {
-        // Check CSRF for state-changing requests (except exempted paths)
-        if (shouldRequireCsrf(method, path)) {
-          if (!verifyCsrf(request)) {
-            return bad("CSRF validation failed. Please refresh the page.", 403);
-          }
+      // Pass all /api/ endpoints to Hono router
+      if (path.startsWith("/api/")) {
+        const apiResponse = await apiApp.fetch(request, { workerContext: { request, env, ctx, meta } }, ctx);
+        // Return the handler's response, INCLUDING a legitimate 404 it produced.
+        // Only fall through to page routing when no API route matched at all,
+        // which the router tags with the x-no-api-route sentinel header.
+        if (!(apiResponse.status === 404 && apiResponse.headers.get("x-no-api-route") === "1")) {
+          return apiResponse;
         }
-        // Pass route context (slug + a durable waitUntil bound to the real
-        // ExecutionContext so handlers can defer work past the response) and
-        // worker metadata (log, reqId) to the handler.
-        const routeCtx = { slug: route.slug, waitUntil: (p) => ctx.waitUntil(p) };
-        const response = await route.handler(request, env, routeCtx, meta);
-        return withPublicApiCors(response, path);
-      }
-
-      // Handle account delete separately (still in auth.js)
-      if (path === "/api/account/delete" && method === "POST") {
-        if (shouldRequireCsrf(method, path)) {
-          if (!verifyCsrf(request)) {
-            return bad("CSRF validation failed. Please refresh the page.", 403);
-          }
-        }
-        return handleAccountDelete(request, env);
       }
 
 
@@ -587,7 +597,7 @@ async function handleRequest(request, env, ctx, meta) {
       // --- permanent demo leaderboard (always works, no DB needed) ---
       if (method === "GET" && path === "/demo") {
         return new Response(
-          renderLeaderboard(demoLeaderboardData(), {
+          await renderLeaderboard(demoLeaderboardData(), {
             watermark: false, homeUrl: url.origin, slug: "demo", nonce, demo: true,
           }),
           { headers: { ...HTML_N, "cache-control": "no-store" } }
@@ -823,7 +833,7 @@ a{color:#c8ff00;text-decoration:none;font-weight:600}</style></head><body>
         const paid = r.plan !== "free";
         const watermark = !paid ? true : (r.data.sections?.poweredBy === true);
         return new Response(
-          renderLeaderboard(r.data, {
+          await renderLeaderboard(r.data, {
             watermark, homeUrl: url.origin, slug, nonce, boards: r.boards, isCustomDomain: false,
             logoUrl: paid && r.data.branding?.hasLogo ? `${url.origin}/logo/${slug}` : null,
           }),

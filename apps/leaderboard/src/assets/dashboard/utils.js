@@ -70,11 +70,18 @@ export function fmtMoney(n) {
   return n ? n.toLocaleString("en-US", { maximumFractionDigits: 0 }) : "0";
 }
 
+export function parseAmount(str) {
+  const raw = String(str || "").replace(/[$,\s]/g, "");
+  if (raw === "") return 0;
+  const n = parseFloat(raw);
+  return (Number.isNaN(n) || !Number.isFinite(n) || n < 0) ? 0 : n;
+}
+
 export function currentPlayers() {
   return [...$("rows").children].map((tr) => ({
     name: tr.querySelector(".p-name").value.trim(),
-    wagered: parseFloat(tr.querySelector(".p-wager").value) || 0,
-    prize: parseFloat(tr.querySelector(".p-prize").value) || 0,
+    wagered: parseAmount(tr.querySelector(".p-wager").value),
+    prize: parseAmount(tr.querySelector(".p-prize").value),
   })).filter((p) => p.name);
 }
 
