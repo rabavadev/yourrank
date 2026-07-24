@@ -332,7 +332,23 @@ function boot() {
   $$("[data-cta]").forEach((el) => { if (b.ctaUrl && !window.__SLUG__) el.href = b.ctaUrl; });
 
   const wm = $("[data-watermarks]");
-  if (wm) { let h = ""; for (let i = 0; i < 14; i++) { const t = Math.random()*100, l = Math.random()*100, s = 20+Math.random()*60, r = -20+Math.random()*40; h += `<span data-t="${t}" data-l="${l}" data-s="${s}" data-r="${r}">${esc(b.name || "")}</span>`; } wm.innerHTML = h; wm.querySelectorAll("span").forEach((sp) => { sp.style.top = sp.dataset.t + "%"; sp.style.left = sp.dataset.l + "%"; sp.style.fontSize = sp.dataset.s + "px"; sp.style.transform = "rotate(" + sp.dataset.r + "deg)"; }); }
+  if (wm) {
+    let h = "";
+    for (let i = 0; i < 6; i++) {
+      let t, l, s, r;
+      // Keep watermarks out of the central content area so they don't fight with
+      // the hero text, buttons, or leaderboard.
+      do {
+        t = 5 + Math.random() * 90;
+        l = 5 + Math.random() * 90;
+        s = 16 + Math.random() * 24;
+        r = -20 + Math.random() * 40;
+      } while (t > 35 && t < 65 && l > 35 && l < 65);
+      h += `<span data-t="${t}" data-l="${l}" data-s="${s}" data-r="${r}">${esc(b.name || "")}</span>`;
+    }
+    wm.innerHTML = h;
+    wm.querySelectorAll("span").forEach((sp) => { sp.style.top = sp.dataset.t + "%"; sp.style.left = sp.dataset.l + "%"; sp.style.fontSize = sp.dataset.s + "px"; sp.style.transform = "rotate(" + sp.dataset.r + "deg)"; });
+  }
 
   const cc = $("[data-copy-code]");
   if (cc) cc.addEventListener("click", async () => { try { await navigator.clipboard.writeText(b.code || ""); cc.classList.add("copied"); const p = cc.textContent; cc.textContent = "Copied!"; setTimeout(() => { cc.classList.remove("copied"); cc.textContent = p; }, TOAST_DURATION_MS); } catch (_) { /* ignored */ }

@@ -66,7 +66,7 @@ function shareScriptNonce(nonce) {
 // per template. The default composition preserves the classic page exactly.
 // ---------------------------------------------------------------------------
 function buildParts(c) {
-  const { b, hasCasino, casino, period, pool, hasCta, ctaHref, hasPartner, hasCode, code, blurb, whyStats, socials, prizes, currency, hidePrizeAmounts, players: rawPlayers, slug = "", isCustomDomain = false } = c;
+  const { b, hasCasino, casino, period, pool, hasCta, ctaHref, hasPartner, hasCode, code, blurb, chips = [], whyStats, socials, prizes, currency, hidePrizeAmounts, players: rawPlayers, slug = "", isCustomDomain = false } = c;
   const name = esc(b.name);
   const cur = esc(String(currency || b.currency || "$").slice(0, 6));
   const hidePrizes = hidePrizeAmounts || b.hidePrizeAmounts || false;
@@ -82,8 +82,10 @@ function buildParts(c) {
 <div class="tcell"><b data-t="h">--</b><span>Hours</span></div><div class="tsep">:</div>
 <div class="tcell"><b data-t="m">--</b><span>Mins</span></div><div class="tsep">:</div>
 <div class="tcell"><b data-t="s">--</b><span>Secs</span></div></div>`;
-  const partnerPanel = hasPartner ? `<section id="partner" class="panel">${hasCasino ? `<div class="panel-badge">Official Partner</div>` : ""}<div class="panel-grid">
-<div class="pcol pcol-about"><p class="pcol-blurb" data-partner-blurb>${esc(blurb)}</p><ul class="chips" data-chips></ul></div>
+  const hasBlurbCol = !!blurb || chips.length > 0;
+  const panelCols = (hasBlurbCol ? 1 : 0) + (hasCode ? 1 : 0) + (whyStats.length ? 1 : 0);
+  const partnerPanel = hasPartner ? `<section id="partner" class="panel">${hasCasino ? `<div class="panel-badge">Official Partner</div>` : ""}<div class="panel-grid panel-grid--${panelCols}">
+${hasBlurbCol ? `<div class="pcol pcol-about">${blurb ? `<p class="pcol-blurb" data-partner-blurb>${esc(blurb)}</p>` : ""}${chips.length ? `<ul class="chips" data-chips>${chips.map((chip) => `<li>${esc(chip)}</li>`).join("")}</ul>` : `<ul class="chips" data-chips></ul>`}</div>` : ""}
 ${hasCode ? `<div class="pcol pcol-code"><span class="pcol-label">Exclusive Code</span><div class="code-box"><span class="code-val" data-code>${esc(code)}</span></div>
 <button class="btn btn--full btn--code" data-copy-code>Copy Code</button><span class="sr-only" data-copy-status aria-live="polite"></span>
 ${hasCta ? `<a class="btn btn--full btn--grad" data-cta href="${ctaHref}" target="_blank" rel="noopener">${hasCasino ? `Join us on <span data-casino>${esc(casino)}</span>` : "Join now"}</a>` : ""}</div>` : ""}
@@ -492,7 +494,7 @@ body[data-preview] .top3{margin-bottom:14px}
   const code = (b.code || "").trim();
   const pool = (b.prizePool || "").trim();
   const period = (b.period || "Monthly");
-  const blurb = ((data.partner && data.partner.blurb) || "").trim();
+  const blurb = ((data.partner && data.partner.blurb) || b.blurb || "").trim();
   const whyStats = Array.isArray(data.whyStats) ? data.whyStats : [];
   const socials = Array.isArray(data.socials) ? data.socials : [];
   const chips = Array.isArray(data.partner?.chips) ? data.partner.chips : [];
@@ -556,7 +558,7 @@ document.addEventListener("click", (e) => {
 });
 </script>` : "";
 
-  const mainHtml = await composeMain(tpl, buildParts({ b, esc, heroLogo, hasCasino, casino, period, pool, hasCta, ctaHref, hasPartner, hasCode, code, blurb, whyStats, socials, prizes: data.prizes, currency: data.brand?.currency, hidePrizeAmounts: data.brand?.hidePrizeAmounts, players: data.players, slug: opts.slug || "", isCustomDomain: !!opts.isCustomDomain }), textOverrides);
+  const mainHtml = await composeMain(tpl, buildParts({ b, esc, heroLogo, hasCasino, casino, period, pool, hasCta, ctaHref, hasPartner, hasCode, code, blurb, chips, whyStats, socials, prizes: data.prizes, currency: data.brand?.currency, hidePrizeAmounts: data.brand?.hidePrizeAmounts, players: data.players, slug: opts.slug || "", isCustomDomain: !!opts.isCustomDomain }), textOverrides);
   
   return `<!DOCTYPE html>
 <html lang="en"><head>
