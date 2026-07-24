@@ -1,5 +1,5 @@
 import { requireUser, json, bad, readJson, rateLimit } from "../auth.js";
-import { getBoardById, saveSite } from "../site.js";
+import { getBoardById, getPlayers, saveSite } from "../site.js";
 import { logAudit } from "../../../../shared/audit.js";
 
 // POST /api/sites/:id/quick-add
@@ -30,7 +30,18 @@ export async function handleQuickAdd(request, env) {
   const site = await getBoardById(env, user.id, siteId);
   if (!site) return bad("Board not found", 404);
 
-  const players = site.data.players || [];
+  // getBoardById returns the raw sites row; players live in the players table.
+  const rows = await getPlayers(env, site.id);
+  const players = (rows || []).map((p) => ({
+    name: p.name,
+    wagered: p.wagered,
+    prize: p.prize,
+    score: p.score,
+    hands: p.hands,
+    netProfit: p.net_profit,
+    winRate: p.win_rate,
+    change: p.change,
+  }));
   
   // Find or create player
   const searchName = payload.name.trim().toLowerCase();

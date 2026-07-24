@@ -23,6 +23,14 @@ const mockCreateBoard = mock(() => Promise.resolve({
   error: "Your free plan allows up to 1 leaderboard. Upgrade to create more.",
   code: "board_limit",
 }));
+const mockGetBoardById = mock(() => Promise.resolve({
+  id: "site-1", slug: "testboard", published: true, user_id: "user-1",
+  extra_json: "{}",
+}));
+const mockGetPlayers = mock(() => Promise.resolve([
+  { name: "Alice", wagered: 100, prize: 0, score: 100, hands: 0, net_profit: 0, win_rate: 0, change: 0 },
+]));
+const mockSaveSite = mock(() => Promise.resolve({ ok: true }));
 
 const dbMock = () => ({
   one: (...args) => mockOne(...args),
@@ -74,6 +82,9 @@ const siteMock = () => ({
   getAllBoards: mock(() => Promise.resolve([
     { id: "site-1", slug: "testboard", published: true, name: "Test" }
   ])),
+  getBoardById: (...args) => mockGetBoardById(...args),
+  getPlayers: (...args) => mockGetPlayers(...args),
+  saveSite: (...args) => mockSaveSite(...args),
   invalidateSiteCache: () => {},
   invalidateUserCache: () => {},
   updateSiteTheme: (...args) => mockUpdateSiteTheme(...args),
@@ -100,6 +111,7 @@ mock.module(dataSitesUrlTs, () => ({
 import {
   handleCreateBoard, handleGetSite, handleListBoards, handlePutTheme, handleStats, handleTrackCopy
 } from "../handlers/sites.js";
+import { handleQuickAdd } from "../handlers/quick-add.js";
 
 // Session value matching parseSessionValue format: {"u":"user-1","c":<timestamp>}
 const SESSION_VALUE = JSON.stringify({ u: "user-1", c: Date.now() });
@@ -290,5 +302,50 @@ describe("handleTrackCopy", () => {
     expect(res.status).toBe(200);
     const body = await res.json();
     expect(body).toHaveProperty("ok", true);
+  });
+});
+
+// ── handleQuickAdd ───────────────────────────────────────────────────────
+describe("handleQuickAdd", () => {
+  beforeEach(() => {
+    mockOne.mockReset();
+    mockOne.mockResolvedValueOnce(USER_ROW); // loadUser
+    mockGetBoardById.mockReset();
+    mockGetBoardById.mockResolvedValue({ id: "site-1", slug: "testboard", published: true, user_id: "user-1", extra_json: "{}" });
+    mockGetPlayers.mockReset();
+    mockGetPlayers.mockResolvedValue([
+      { name: "Alice", wagered: 100, prize: 0, score: 100, hands: 0, net_profit: 0, win_rate: 0, change: 0 },
+    ]);
+    mockSaveSite.mockReset();
+    mockSaveSite.mockResolvedValue({ ok: true });
+  });
+
+  it("adds a new player using camelCase players from the players table", async () => {
+    const env = mockEnv();
+    const request = req("https://test.com/api/sites/site-1/quick-add", "POST", { name: "Bob", amount: 50 });
+    const res = await handleQuickAdd(request, env);
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.ok).toBe(true);
+    expect(Array.isArray(body.players)).toBe(true);
+    expect(body.players.some((p) => p.name === "Bob")).toBe(true);
+    expect(mockSaveSite).toHaveBeenCalled();
+    const payload = mockSaveSite.mock.calls[0][2];
+    expect(payload.siteId).toBe("site-1");
+    expect(payload.players[0]).toMatchObject({
+      name: "Alice", wagered: 100, netProfit: 0, winRate: 0,
+    });
+    expect(payload.players[1]).toMatchObject({
+      name: "Bob", wagered: 50,
+    });
+  });
+
+  it("updates an existing player by name", async () => {
+    const env = mockEnv();
+    const request = req("https://test.com/api/sites/site-1/quick-add", "POST", { name: "Alice", amount: 25 });
+    const res = await handleQuickAdd(request, env);
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.players[0].wagered).toBe(125);
   });
 });

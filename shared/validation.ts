@@ -221,6 +221,7 @@ export const handlerSchemas: Record<string, ZodSchema<any>> = {
       slug: z.string().trim().max(80).optional(),
       name: z.string().trim().max(80).optional(),
       published: z.boolean().optional(),
+      isDraft: z.boolean().optional(),
       endsAt: optionalDateString(),
       expectedUpdatedAt: optionalDateString(),
       customDomain: z.string().max(253).optional().or(z.literal("").optional()),
@@ -257,6 +258,7 @@ export const handlerSchemas: Record<string, ZodSchema<any>> = {
       playerFields: z.record(z.boolean()).optional(),
       legal: z.record(z.string().max(MAX_LONG_TEXT)).optional(),
       passwordProtected: z.boolean().optional(),
+      password: z.string().max(100).optional(),
       autoReset: z
         .object({
           enabled: z.boolean().optional(),

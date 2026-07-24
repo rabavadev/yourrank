@@ -95,7 +95,7 @@ function fmtExp(ms) {
     $("trialCard").hidden = false;
   }
 
-  const isLifetime = !planExpiry || Number(planExpiry) === 0 || Number(planExpiry) > new Date("2099-01-01T00:00:00Z").getTime();
+  const isLifetime = Number(planExpiry) > new Date("2099-01-01T00:00:00Z").getTime();
   const isPaid = plan !== "free";
 
   const isCanceled = meData?.subscriptionStatus === "canceled";

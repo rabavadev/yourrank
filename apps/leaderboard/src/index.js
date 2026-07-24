@@ -731,7 +731,7 @@ a{color:#c8ff00;text-decoration:none;font-weight:600}</style></head><body>
           return new Response(renderPasswordGate(r, { nonce, isCustomDomain: false }), { headers: { ...HTML_N, "cache-control": "no-store" } });
         }
         if (!r || r.suspended) return new Response(notFoundPage(slug, nonce), { status: 404, headers: HTML_N });
-        const playerName = path.split("/").slice(2).join("/");
+        const playerName = path.split("/").slice(3).join("/");
         const profile = findProfilePlayer(r.data, playerName);
         if (!profile) return new Response(notFoundPage(slug, nonce), { status: 404, headers: HTML_N });
         const history = await buildPlayerHistory(env, r.id, playerName, r.plan);

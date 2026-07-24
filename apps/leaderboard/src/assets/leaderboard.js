@@ -19,7 +19,11 @@ const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "
 // vbscript:, etc.) collapses to "#". esc() handles attribute-breakout chars.
 const safeUrl = (u) => { const s = String(u ?? "").trim(); return s && /^(https?:|mailto:|tel:)/i.test(s) ? esc(encodeURI(s)) : "#"; };
 const ord = (n) => { const s = ["th", "st", "nd", "rd"], v = n % 100; return n + (s[(v - 20) % 10] || s[v] || s[0]); };
-const playerHref = (name) => { const slug = window.__SLUG__ || ""; return slug ? `/${encodeURIComponent(slug)}/player/${encodeURIComponent(name)}` : `/player/${encodeURIComponent(name)}`; };
+const playerHref = (name) => {
+  if (typeof window !== "undefined" && window.__IS_CUSTOM_DOMAIN__) return `/player/${encodeURIComponent(name)}`;
+  const slug = (typeof window !== "undefined" && window.__SLUG__) || "";
+  return slug ? `/${encodeURIComponent(slug)}/player/${encodeURIComponent(name)}` : `/player/${encodeURIComponent(name)}`;
+};
 
 const SOCIAL_ICONS = {
   discord: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M20.3 4.4A19.8 19.8 0 0 0 15.4 3l-.3.5c1.7.4 2.9 1 4 1.7a13.5 13.5 0 0 0-11.4 0c1.1-.7 2.5-1.4 4.1-1.7L11.6 3A19.8 19.8 0 0 0 6.7 4.4C3.6 9 2.8 13.5 3.2 17.9a19.9 19.9 0 0 0 6 3l.8-1.3c-.7-.3-1.4-.6-2-1l.5-.4a14.2 14.2 0 0 0 12.2 0l.5.4c-.6.4-1.3.7-2 1l.8 1.3a19.8 19.8 0 0 0 6-3c.5-5.1-.8-9.6-3.6-13.5ZM9.5 15.3c-1 0-1.8-.9-1.8-2s.8-2 1.8-2 1.8.9 1.8 2-.8 2-1.8 2Zm5 0c-1 0-1.8-.9-1.8-2s.8-2 1.8-2 1.8.9 1.8 2-.8 2-1.8 2Z"/></svg>',
@@ -125,7 +129,7 @@ function buildPlayerRow(pl, rank, delay, gap) {
   }
 
 function buildTop3Card(pl, rank) {
-  return `<div class="t3 t3--${rank}"><span class="t3-medal">RANK ${String(rank).padStart(2, "0")}</span><span class="t3-av" aria-hidden="true">${esc(initials(pl.name))}</span><a class="t3-name" href="${playerHref(pl.name)}">${esc(pl.name)}</a><div class="t3-wager">${money(pl.wagered)}</div><span class="t3-prize">${pl.prize ? moneyPrize(pl.prize) : "—"}</span></div>`;
+  return `<div class="t3 t3--${rank}" data-name="${esc(pl.name)}"><span class="t3-medal">RANK ${String(rank).padStart(2, "0")}</span><span class="t3-av" aria-hidden="true">${esc(initials(pl.name))}</span><a class="t3-name" href="${playerHref(pl.name)}">${esc(pl.name)}</a><div class="t3-wager">${money(pl.wagered)}</div><span class="t3-prize">${pl.prize ? moneyPrize(pl.prize) : "—"}</span></div>`;
 }
 
 // Expose helpers to per-template builder scripts loaded before this file.
@@ -413,7 +417,16 @@ function boot() {
   }
 
   const socialsEl = $("[data-socials]");
-  if (socialsEl && Array.isArray(data.socials)) socialsEl.innerHTML = data.socials.map((s) => { const brand = (s.brand || s.name || "").toLowerCase(); const ico = SOCIAL_ICONS[brand] || SOCIAL_ICONS.discord; return `<div class="scard"><div class="scard-ico ${esc(brand)}">${ico}</div><div class="scard-name">${esc(s.name)}</div><div class="scard-handle">${esc(s.handle || "")}</div><a class="btn btn--grad" href="${safeUrl(s.url)}" target="_blank" rel="noopener">${esc(s.action || "Follow")}</a></div>`; }).join("");
+  if (socialsEl && Array.isArray(data.socials)) socialsEl.innerHTML = data.socials.map((s) => {
+    const brand = (s.brand || s.name || "").toLowerCase();
+    const ico = SOCIAL_ICONS[brand] || SOCIAL_ICONS.discord;
+    const href = safeUrl(s.url);
+    const action = esc(s.action || "Follow");
+    const cta = href !== "#"
+      ? `<a class="btn btn--grad" href="${href}" target="_blank" rel="noopener">${action}</a>`
+      : `<span class="btn btn--grad" aria-disabled="true">${action}</span>`;
+    return `<div class="scard"><div class="scard-ico ${esc(brand)}">${ico}</div><div class="scard-name">${esc(s.name)}</div><div class="scard-handle">${esc(s.handle || "")}</div>${cta}</div>`;
+  }).join("");
 
   startCountdown(data.endsAt);
 
@@ -434,37 +447,58 @@ function initFindRank(sortedPlayers) {
 
   const total = sortedPlayers.length;
 
+  function playerName(el) {
+    return (el.dataset.name || el.querySelector(".t3-name, .tr-name")?.textContent || "").toLowerCase();
+  }
+
   function doSearch() {
     const q = input.value.trim().toLowerCase();
-    // Clear previous highlights
-    $$(".t-row--found").forEach((r) => r.classList.remove("t-row--found"));
+    const rows = $$("[data-rows] .t-row");
+    const top3 = $$(".t3");
+
+    // Clear previous highlights/filtering
+    rows.forEach((r) => { r.classList.remove("t-row--found", "find-filtered"); });
+    top3.forEach((el) => { el.classList.remove("t-row--found", "find-filtered"); });
     if (resultEl) resultEl.textContent = "";
+
     if (!q) return;
 
-    // Find first partial match in sorted array
-    const matchIdx = sortedPlayers.findIndex((pl) => String(pl.name || "").toLowerCase().includes(q));
-    if (matchIdx === -1) {
+    let matchCount = 0;
+    let firstMatch = null;
+
+    const filter = (el) => {
+      const name = playerName(el);
+      if (name.includes(q)) {
+        el.classList.remove("find-filtered");
+        el.classList.add("t-row--found");
+        matchCount++;
+        if (!firstMatch) firstMatch = el;
+      } else {
+        el.classList.add("find-filtered");
+        el.classList.remove("t-row--found");
+      }
+    };
+
+    rows.forEach(filter);
+    top3.forEach(filter);
+
+    if (matchCount === 0) {
       if (resultEl) resultEl.textContent = "No player found with that name";
       resultEl?.classList.remove("found");
       resultEl?.classList.add("not-found");
       return;
     }
 
-    const rank = matchIdx + 1;
+    const rank = firstMatch?.dataset.position || "1";
     if (resultEl) {
-      resultEl.textContent = `You're #${rank} of ${total}`;
+      resultEl.textContent = `${matchCount} player${matchCount === 1 ? "" : "s"} found · first at #${rank}`;
       resultEl.classList.add("found");
       resultEl.classList.remove("not-found");
     }
-
-    // Highlight the matching row in the DOM and scroll to it
-    const targetRow = $(`.t-row[data-position="${rank}"]`);
-    if (targetRow) {
-      targetRow.classList.add("t-row--found");
-      targetRow.scrollIntoView({ behavior: "smooth", block: "center" });
-    }
+    firstMatch?.scrollIntoView({ behavior: "smooth", block: "center" });
   }
 
+  input.addEventListener("input", doSearch);
   input.addEventListener("keydown", (e) => {
     if (e.key === "Enter") { e.preventDefault(); doSearch(); }
   });

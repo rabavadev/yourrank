@@ -270,8 +270,8 @@ export async function handleReset(request, env) {
     const { hash, salt } = await hashPassword(password);
     // H-09: update password + delete reset token atomically.
     await withTransaction(async (tx) => {
-      await tx.exec("UPDATE users SET password_hash=$1, password_salt=$2, updated_at=now() WHERE id=$3", [hash, salt, userId]);
-      await tx.exec("DELETE FROM password_resets WHERE token=$1", [tokenHash]);
+      await tx.unsafe("UPDATE users SET password_hash=$1, password_salt=$2, updated_at=now() WHERE id=$3", [hash, salt, userId]);
+      await tx.unsafe("DELETE FROM password_resets WHERE token=$1", [tokenHash]);
     });
     // Revoke EVERY other live session for this user before issuing a fresh one.
     // Without this, a stolen session survives a victim-initiated reset for up to

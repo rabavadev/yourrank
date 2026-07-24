@@ -306,6 +306,10 @@ section { width: min(var(--wrap), 100% - 2.5rem); margin-inline: auto; }
   transition: background 0.3s, box-shadow 0.3s;
 }
 
+/* Find-rank filtering: hide non-matching rows/cards */
+.t-row.find-filtered,
+.t3.find-filtered { display: none !important; }
+
 /* ---------- Gap-to-next-rank indicator ---------- */
 .tr-gap {
   position: absolute; right: 0; bottom: -2px;

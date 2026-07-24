@@ -66,7 +66,7 @@ function shareScriptNonce(nonce) {
 // per template. The default composition preserves the classic page exactly.
 // ---------------------------------------------------------------------------
 function buildParts(c) {
-  const { b, hasCasino, casino, period, pool, hasCta, ctaHref, hasPartner, hasCode, code, blurb, whyStats, socials, prizes, currency, hidePrizeAmounts, players: rawPlayers } = c;
+  const { b, hasCasino, casino, period, pool, hasCta, ctaHref, hasPartner, hasCode, code, blurb, whyStats, socials, prizes, currency, hidePrizeAmounts, players: rawPlayers, slug = "", isCustomDomain = false } = c;
   const name = esc(b.name);
   const cur = esc(String(currency || b.currency || "$").slice(0, 6));
   const hidePrizes = hidePrizeAmounts || b.hidePrizeAmounts || false;
@@ -101,17 +101,19 @@ ${whyStats.length ? `<div class="pcol pcol-why"><span class="pcol-label">Why ${h
   const moneyS = (n) => cur2 + (Number(n) || 0).toLocaleString("en-US", { maximumFractionDigits: 0 });
   const moneyShortS = (n) => { const v = Number(n) || 0; if (v >= 1e6) return cur2 + (v / 1e6).toFixed(1) + "M"; if (v >= 1e3) return cur2 + (v / 1e3).toFixed(1) + "K"; return cur2 + v; };
   const moneyPrizeS = (n) => { if (hidePrizes) return "—"; return moneyS(n); };
-  const playerHrefS = "#"; // placeholder — leaderboard.js replaces with real links on hydration
+  const playerHrefS = (name) => isCustomDomain
+    ? `/player/${encodeURIComponent(name)}`
+    : `/${encodeURIComponent(slug)}/player/${encodeURIComponent(name)}`;
   const top3Srv = sortedPlayers.slice(0, 3).map((pl, i) => {
     const rank = i + 1;
-    return `<div class="t3 t3--${rank}"><span class="t3-medal">RANK ${String(rank).padStart(2, "0")}</span><span class="t3-av" aria-hidden="true">${esc(initials(pl.name))}</span><a class="t3-name" href="${playerHrefS}">${esc(pl.name)}</a><div class="t3-wager">${moneyS(pl.wagered)}</div><span class="t3-prize">${pl.prize ? moneyPrizeS(pl.prize) : "—"}</span></div>`;
+    return `<div class="t3 t3--${rank}" data-name="${esc(pl.name)}"><span class="t3-medal">RANK ${String(rank).padStart(2, "0")}</span><span class="t3-av" aria-hidden="true">${esc(initials(pl.name))}</span><a class="t3-name" href="${playerHrefS(pl.name)}">${esc(pl.name)}</a><div class="t3-wager">${moneyS(pl.wagered)}</div><span class="t3-prize">${pl.prize ? moneyPrizeS(pl.prize) : "—"}</span></div>`;
   }).join("");
   const rowsSrv = sortedPlayers.slice(3).map((pl, i) => {
     const rank = i + 4;
     const prize = pl.prize ? `<span class="tr-prize has ta-r" role="cell">${moneyPrizeS(pl.prize)}</span>` : `<span class="tr-prize no ta-r" role="cell">—</span>`;
     return `<div class="t-row" role="row" data-position="${rank}" data-name="${esc(pl.name)}" data-wagered="${Number(pl.wagered) || 0}">
       <span class="tr-rank" role="cell">${String(rank).padStart(2, "0")}</span>
-      <span class="tr-player" role="cell"><span class="tr-av" aria-hidden="true">${esc(initials(pl.name))}</span><a class="tr-name" href="${playerHrefS}">${esc(pl.name)}</a></span>
+      <span class="tr-player" role="cell"><span class="tr-av" aria-hidden="true">${esc(initials(pl.name))}</span><a class="tr-name" href="${playerHrefS(pl.name)}">${esc(pl.name)}</a></span>
       <span class="tr-wager" role="cell"><span class="w-lg">${moneyS(pl.wagered)}</span><span class="w-sm">${moneyShortS(pl.wagered)}</span></span>${prize}<span class="tr-bar" aria-hidden="true"><i></i></span></div>`;
   }).join("");
 
@@ -524,6 +526,8 @@ body[data-preview] .top3{margin-bottom:14px}
     : `${esc(b.name)}'s ${esc(period.toLowerCase())} leaderboard${pool ? ` — compete for the ${esc(pool)} prize pool` : ""}.`;
   const dataJson = JSON.stringify(data).replace(/</g, "\\u003c");
   const sections = { ...DEFAULT_EXTRA.sections, ...(data.sections || {}) };
+  // Surface enabled socials even if the section toggle was accidentally off.
+  if (socials.length > 0 && sections.socials === false) sections.socials = true;
   const textOverrides = (br && br.text) || {};
   const sectionAttrs = Object.entries(sections).map(([k, v]) => `data-sections-${k}="${String(v)}"`).join(" ");
   const sectionCss = `<style nonce="${opts.nonce}">
@@ -552,7 +556,7 @@ document.addEventListener("click", (e) => {
 });
 </script>` : "";
 
-  const mainHtml = await composeMain(tpl, buildParts({ b, esc, heroLogo, hasCasino, casino, period, pool, hasCta, ctaHref, hasPartner, hasCode, code, blurb, whyStats, socials, prizes: data.prizes, currency: data.brand?.currency, hidePrizeAmounts: data.brand?.hidePrizeAmounts, players: data.players }), textOverrides);
+  const mainHtml = await composeMain(tpl, buildParts({ b, esc, heroLogo, hasCasino, casino, period, pool, hasCta, ctaHref, hasPartner, hasCode, code, blurb, whyStats, socials, prizes: data.prizes, currency: data.brand?.currency, hidePrizeAmounts: data.brand?.hidePrizeAmounts, players: data.players, slug: opts.slug || "", isCustomDomain: !!opts.isCustomDomain }), textOverrides);
   
   return `<!DOCTYPE html>
 <html lang="en"><head>
@@ -592,7 +596,7 @@ ${fullPageFooter}
 ${fullPage ? "" : `<footer class="ftr"><div class="ftr-id"><span class="ftr-name" data-brand-name>${esc(b.name)}</span><span class="ftr-tag" data-tagline>${esc(b.tagline)}</span></div>
 <p class="ftr-fine">${footerDisclaimer(hasCasino, b.name, casino)}</p>
 <p class="ftr-copy">© <span data-year></span> <span data-brand-name>${esc(b.name)}</span>. All rights reserved.</p></footer>`}
-${badge}${fullPage ? `<script src="/assets/casino/${tpl}.js" nonce="${opts.nonce}"></script>` : ""}<script nonce="${opts.nonce}">window.__SITE_DATA__=${dataJson};window.__SLUG__=${JSON.stringify(opts.slug || "")};</script><script src="/assets/leaderboard.js"></script>
+${badge}${fullPage ? `<script src="/assets/casino/${tpl}.js" nonce="${opts.nonce}"></script>` : ""}<script nonce="${opts.nonce}">window.__SITE_DATA__=${dataJson};window.__SLUG__=${JSON.stringify(opts.slug || "")};window.__IS_CUSTOM_DOMAIN__=${JSON.stringify(!!opts.isCustomDomain)};</script><script src="/assets/leaderboard.js"></script>
 ${previewScript}
 </body></html>`;
 }
@@ -882,7 +886,7 @@ export function renderStreamerProfile(data, opts) {
     ? `<footer class="site-footer--full"><div class="site-footer--full__brand" data-brand-name>${esc(b.name)}</div><div class="site-footer--full__tag" data-tagline>${esc(b.tagline)}</div><p class="site-footer--full__fine">18+ only. Gambling can be addictive. Please play responsibly. BeGambleAware.org.</p><p class="site-footer--full__copy">© ${new Date().getFullYear()} <span data-brand-name>${esc(b.name)}</span>. All rights reserved.</p></footer>`
     : `<footer class="ftr"><div class="ftr-id"><span class="ftr-name" data-brand-name>${esc(b.name)}</span><span class="ftr-tag" data-tagline>${esc(b.tagline)}</span></div><p class="ftr-fine">18+ only. Gambling can be addictive. Please play responsibly. BeGambleAware.org.</p><p class="ftr-copy">© ${new Date().getFullYear()} <span data-brand-name>${esc(b.name)}</span>. All rights reserved.</p></footer>`;
 
-  const socials = (data.socials || []).filter((s) => s.enabled !== false && s.url && s.url !== "#" && s.url !== "");
+  const socials = (data.socials || []).filter((s) => s.enabled !== false);
   const socialIcons = {
     twitch: `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M4 2 3 6v13h4v3h3l3-3h4l5-5V2H4Zm16 10-3 3h-4l-3 3v-3H7V4h13v8Zm-3-6h-2v5h2V6Zm-5 0h-2v5h2V6Z"/></svg>`,
     kick: `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 3h5v5h2V6h2V4h2V3h4v6h-2v2h-2v2h2v2h2v6h-4v-1h-2v-2h-2v-2H8v5H3V3Z"/></svg>`,
@@ -896,7 +900,11 @@ export function renderStreamerProfile(data, opts) {
     ? `<div class="sp-socials">${socials.map((s) => {
         const icon = socialIcons[s.brand] || socialIcons.x;
         const label = esc(s.name || s.brand || "Link");
-        return `<a class="sp-social" href="${safeUrl(s.url)}" target="_blank" rel="noopener">${icon}<span>${label}</span></a>`;
+        const href = safeUrl(s.url);
+        if (href === "#") {
+          return `<span class="sp-social" aria-disabled="true">${icon}<span>${label}</span></span>`;
+        }
+        return `<a class="sp-social" href="${href}" target="_blank" rel="noopener">${icon}<span>${label}</span></a>`;
       }).join("")}</div>`
     : `<p class="sp-empty">No channel links yet.</p>`;
 

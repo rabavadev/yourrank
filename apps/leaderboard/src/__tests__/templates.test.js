@@ -106,7 +106,7 @@ describe("theme_json / extra_json persistence (BUG: double-encoded JSONB)", asyn
     expect(shaped.socials).toEqual([{ label: "X", url: "https://x.com/a" }]);
   });
 
-  it("hides disabled socials and those without a real url from the public page", async () => {
+  it("hides disabled socials and surfaces enabled socials even without a real url", async () => {
     const socials = [
       { brand: "x", name: "X", url: "https://x.com/a", enabled: true },
       { brand: "kick", name: "Kick", url: "https://kick.com/a", enabled: false },
@@ -115,6 +115,6 @@ describe("theme_json / extra_json persistence (BUG: double-encoded JSONB)", asyn
       { brand: "telegram", name: "Telegram", url: "https://t.me/a", enabled: true },
     ];
     const shaped = publicShape({ ...SITE, theme_json: {}, extra_json: { socials } }, []);
-    expect(shaped.socials.map((s) => s.brand)).toEqual(["x", "telegram"]);
+    expect(shaped.socials.map((s) => s.brand)).toEqual(["x", "discord", "twitch", "telegram"]);
   });
 });

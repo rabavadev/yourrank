@@ -1,6 +1,10 @@
 // Granular cookie consent banner for GDPR/CCPA/ePrivacy compliance.
 // Sets both localStorage and a first-party cookie so the backend can read it.
 (function () {
+  // Keep the shell footer year current even if the server-rendered year is stale.
+  const footerCopy = document.querySelector(".gm-shell-footer-copy");
+  if (footerCopy) footerCopy.textContent = "© " + new Date().getFullYear() + " YourRank";
+
   const KEY = "yr_consent";
   const COOKIE_MAX_AGE = 365 * 24 * 60 * 60;
 

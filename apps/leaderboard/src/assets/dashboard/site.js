@@ -32,7 +32,7 @@ const DEFAULT_PRIZES = { prizePoolLabel: "Prize pool", payoutsLabel: "Payouts", 
 
 function isLifetime() {
   const exp = state.ME?.planExpiresAt;
-  return !exp || Number(exp) === 0 || Number(exp) > new Date("2099-01-01T00:00:00Z").getTime();
+  return Number(exp) > new Date("2099-01-01T00:00:00Z").getTime();
 }
 function isPro() {
   const plan = state.ME?.plan;
