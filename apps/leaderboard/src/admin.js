@@ -320,7 +320,7 @@ export async function handleSupportReply(request, env) {
     to: m.email,
     subject: `Re: ${m.subject}`,
     text: `Hi ${m.name},\n\n${body.reply.trim()}\n\n---\nOriginal message:\n${m.message}`,
-    html: `<p>Hi ${m.name},</p><p>${esc(body.reply.trim()).replace(/\n/g, "<br>")}</p><hr><p><b>Original message:</b></p><pre style="white-space:pre-wrap">${esc(m.message)}</pre>`,
+    html: `<p>Hi ${esc(m.name)},</p><p>${esc(body.reply.trim()).replace(/\n/g, "<br>")}</p><hr><p><b>Original message:</b></p><pre style="white-space:pre-wrap">${esc(m.message)}</pre>`,
   });
   await logAdminAction(env, admin.id, "support_reply", null, {
     messageId: m.id,

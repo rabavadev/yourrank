@@ -13,9 +13,9 @@ export const billingPage = leaderboardPageHtml({
 <div id="cancelBox" class="mt-18" hidden><p class="hint">Paid subscription? You can cancel it at any time. You'll keep features until the end of the current billing period.</p>
 <button class="btn btn--danger" id="cancelBtn" type="button">Cancel subscription</button>
 <p class="status" id="cancelStatus" role="status" aria-live="polite"></p>
-<div class="modal" id="cancelModal" hidden>
+<div class="modal" id="cancelModal" role="dialog" aria-modal="true" aria-labelledby="cancelModalTitle" hidden>
   <div class="modal-card">
-    <h3>Cancel your subscription?</h3>
+    <h3 id="cancelModalTitle">Cancel your subscription?</h3>
     <p>You'll keep Pro features until the end of your current billing period, then your plan will revert to Free.</p>
     <div class="d-flex gap-10 flex-wrap">
       <button class="btn btn--danger" id="cancelConfirmBtn" type="button">Yes, cancel</button>
@@ -46,9 +46,9 @@ export const billingPage = leaderboardPageHtml({
   <div class="card card--danger" id="dangerZone"><h2> Danger zone</h2><p class="card-sub">Permanently delete your account and all associated data. This action cannot be undone.</p>
   <button class="btn btn--danger" id="deleteAccountBtn" type="button">Delete my account</button>
   <p class="status" id="deleteStatus" role="status" aria-live="polite"></p>
-  <div class="modal" id="deleteModal" hidden>
+  <div class="modal" id="deleteModal" role="dialog" aria-modal="true" aria-labelledby="deleteModalTitle" hidden>
     <div class="modal-card">
-      <h3>Delete your account?</h3>
+      <h3 id="deleteModalTitle">Delete your account?</h3>
       <p>This will remove all your data — leaderboards, players, archives, subscriptions, and connected bots. This cannot be undone.</p>
       <div class="field"><label for="deleteConfirm">Type <b>DELETE</b> to confirm</label><input id="deleteConfirm" autocomplete="off" placeholder="DELETE" /></div>
       <div class="field" id="deletePasswordWrap" hidden><label for="deletePassword">Enter your password</label><input id="deletePassword" type="password" autocomplete="current-password" placeholder="Password" /></div>

@@ -45,6 +45,7 @@ function initParticles() {
   const ctx = canvas.getContext("2d");
 
   let w, h;
+  let animId;
   const particles = [];
   const PARTICLE_COUNT = 40;
 
@@ -100,9 +101,13 @@ function initParticles() {
       ctx.fillStyle = `rgba(140, 120, 255, ${p.alpha})`;
       ctx.fill();
     }
-    requestAnimationFrame(draw);
+    animId = requestAnimationFrame(draw);
   }
   draw();
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden) cancelAnimationFrame(animId);
+    else { cancelAnimationFrame(animId); draw(); }
+  });
 }
 
 // ---- Live polling ----
@@ -250,6 +255,8 @@ function updateLeaderboard(players) {
   }
 }
 
+let streamEs = null;
+
 let streamFailures = 0;
 let streamTimer = null;
 
@@ -280,8 +287,9 @@ function connectStream() {
   if (!slug || slug === "demo") return;
   if (typeof EventSource === "undefined") return;
   if (streamTimer) clearTimeout(streamTimer);
-  const es = new EventSource(`/api/public/${encodeURIComponent(slug)}/stream`);
-  es.onmessage = (e) => {
+  if (streamEs) { streamEs.close(); streamEs = null; }
+  streamEs = new EventSource(`/api/public/${encodeURIComponent(slug)}/stream`);
+  streamEs.onmessage = (e) => {
     try {
       const data = JSON.parse(e.data);
       if (data.players && Array.isArray(data.players)) {
@@ -292,8 +300,16 @@ function connectStream() {
       }
     } catch (_) { onStreamFail(); }
   };
-  es.onerror = () => { onStreamFail(); };
+  streamEs.onerror = () => { onStreamFail(); };
 }
+
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden) {
+    if (streamEs) { streamEs.close(); streamEs = null; }
+  } else {
+    connectStream();
+  }
+});
 
 function boot() {
   const data = window.__SITE_DATA__ || {};

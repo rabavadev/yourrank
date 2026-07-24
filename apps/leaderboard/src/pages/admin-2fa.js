@@ -23,7 +23,7 @@ export const admin2faPage = `<!DOCTYPE html><html lang="en"><head>
 <div class="tfa-wrap tfa-setup" id="tfaSetup" hidden>
 <h2>Set Up Two-Factor Authentication</h2>
 <p>Scan this QR code with your authenticator app (Google Authenticator, Authy, etc.):</p>
-<div class="qr-wrap"><img id="tfaQr" alt="QR Code" width="200" height="200" /></div>
+<div class="qr-wrap"><img id="tfaQr" alt="QR Code for 2FA setup with Google Authenticator" width="200" height="200" /></div>
 <p>Or enter this secret manually:</p>
 <code class="secret-box" id="tfaSecret"></code>
 <p class="mt-16">After scanning, enter the 6-digit code to verify setup:</p>

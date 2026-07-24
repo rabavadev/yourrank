@@ -88,7 +88,8 @@ SESSION_COOKIE_DOMAIN = ".staging.yourrank.site"
 name = "RATE_LIMITER_DO"
 class_name = "RateLimiter"
 
-# Staging Hyperdrive — points to same Supabase DB as production (separate Worker env)
+# Staging Hyperdrive — points to a dedicated staging Supabase DB.
+# TODO: Replace placeholder with actual staging Hyperdrive ID before flipping staging infra.
 [[env.staging.hyperdrive]]
 binding = "HYPERDRIVE"
-id = "51ed0ab98c56445a93872b74ee5b3be6"
+id = "STAGING_HYPERDRIVE_ID_PLACEHOLDER"

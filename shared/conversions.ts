@@ -64,29 +64,26 @@ export async function recordConversion(ownerId: string, q: PostbackQuery, siteId
       offerId = hit?.offer_id ?? null;
     }
 
-    // Idempotency guard inside the transaction so the projection is atomic
-    // with the insert and a retry cannot double-apply a conversion.
-    if (clickRef) {
-      const existing = await tx.one<{ id: string }>(
-        `SELECT id FROM conversions
-         WHERE owner_id = $1 AND click_ref = $2 AND event = $3
-           AND (($4::numeric IS NULL AND amount IS NULL) OR amount = $4)
-         LIMIT 1`,
-        [ownerId, clickRef, event, amount]
-      );
-      if (existing) return;
-    }
-
     const raw: Record<string, unknown> = { ...q };
     if ("key" in raw) delete raw.key;
     if ("signature" in raw) delete raw.signature;
 
-    await tx.unsafe(
+    // Use INSERT ... ON CONFLICT DO NOTHING RETURNING id to handle idempotency.
+    // This replaces the unsafe read-then-insert flow and ensures only the winning insert proceeds.
+    const inserted = await tx.unsafe(
       `INSERT INTO conversions (owner_id, offer_id, click_ref, event, amount, currency, raw, player_name, player_normalized, site_id)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-       ON CONFLICT DO NOTHING`,
+       ON CONFLICT DO NOTHING
+       RETURNING id`,
       [ownerId, offerId, clickRef, event, amount, currency, JSON.stringify(raw), playerName, playerNormalized, siteId ?? null]
     );
+
+    if (inserted.length === 0) {
+      // Another concurrent request inserted it first, or it already exists.
+      return;
+    }
+
+    let resolvedSiteId: string | null = siteId ?? null;
 
     if (playerNormalized) {
       // C-02: Try to map this conversion to the site the original click came
@@ -101,7 +98,7 @@ export async function recordConversion(ownerId: string, q: PostbackQuery, siteId
           LIMIT 1`,
         [clickRef, playerNormalized]
       );
-      const resolvedSiteId: string | null = siteId ?? siteHit?.site_id ?? null;
+      resolvedSiteId = siteId ?? siteHit?.site_id ?? null;
 
       const upsert = await tx.unsafe(
         `WITH ins AS (
@@ -121,6 +118,23 @@ export async function recordConversion(ownerId: string, q: PostbackQuery, siteId
       );
       // `upsert` result is not needed; the side effect is the projection.
       void upsert;
+    }
+
+    // Update site_stats conversions/revenue for this conversion. This must
+    // happen regardless of whether a player name was provided, because the
+    // dashboard reads conversion counts from site_stats (not the conversions
+    // table). resolvedSiteId is the caller's siteId (if provided) or the
+    // player-subscription lookup result (if a player was named). Without
+    // either, we cannot attribute the conversion to a specific site.
+    if (resolvedSiteId) {
+      await tx.unsafe(
+        `INSERT INTO site_stats (site_id, day, conversions, revenue)
+         VALUES ($1, (now() AT TIME ZONE 'UTC')::date, 1, $2::numeric)
+         ON CONFLICT (site_id, day) DO UPDATE SET
+           conversions = site_stats.conversions + 1,
+           revenue = site_stats.revenue + $2::numeric`,
+        [resolvedSiteId, amount ?? 0]
+      );
     }
   });
 }

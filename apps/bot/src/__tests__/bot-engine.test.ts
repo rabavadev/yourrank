@@ -16,17 +16,19 @@ const cryptoUrlTs = import.meta.resolve("../../../../shared/crypto.ts");
 
 const mockOne = mock((..._args: any[]): Promise<any> => Promise.resolve(null));
 const mockExec = mock((..._args: any[]): Promise<any> => Promise.resolve(undefined));
+const mockUnsafe = mock((..._args: any[]): Promise<any[]> => Promise.resolve([{ id: "new-id" }]));
 
 const dbMockFactory = () => ({
   one: (...args: any[]) => mockOne(...args),
   exec: (...args: any[]) => mockExec(...args),
+  unsafe: (...args: any[]) => mockUnsafe(...args),
   query: () => Promise.resolve([]),
   getSql: () => null,
   withTransaction: async (fn: any) =>
     fn({
       one: (...a: any[]) => mockOne(...a),
       exec: (...a: any[]) => mockExec(...a),
-      unsafe: (...a: any[]) => mockExec(...a),
+      unsafe: (...a: any[]) => mockUnsafe(...a),
       query: () => Promise.resolve([]),
     }),
 });
@@ -184,23 +186,23 @@ describe("recordConversion (conversions)", () => {
   beforeEach(() => {
     mockOne.mockReset();
     mockExec.mockReset();
-    mockExec.mockResolvedValue(undefined);
+    mockUnsafe.mockReset();
+    mockUnsafe.mockResolvedValue([{ id: "new-id" }]);
   });
 
   it("extracts click_ref from click_ref param", async () => {
-    // First call: offer lookup by click_ref → no match
-    // Second call: idempotency check → no match
-    // Third call: INSERT
+    // First call: offer lookup by click_ref
+    // (Idempotency is now handled in the INSERT)
     mockOne.mockResolvedValue(null);
 
     await recordConversion("owner-1", { click_ref: "abc123", event: "deposit", amount: "50" });
 
-    // Should have called one() twice: offer lookup + idempotency check
-    expect(mockOne).toHaveBeenCalledTimes(2);
+    // Should have called one() once: offer lookup
+    expect(mockOne).toHaveBeenCalledTimes(1);
     // The offer lookup query should include the click_ref
     expect(mockOne.mock.calls[0][1]).toContain("abc123");
     // The INSERT should have been called
-    expect(mockExec).toHaveBeenCalledTimes(1);
+    expect(mockUnsafe).toHaveBeenCalledTimes(1);
   });
 
   it("extracts click_ref from clickid fallback", async () => {
@@ -213,56 +215,57 @@ describe("recordConversion (conversions)", () => {
     mockOne.mockResolvedValue(null);
     await recordConversion("owner-1", { click_ref: "abc" });
     // The INSERT should use "deposit" as event
-    const insertCall = mockExec.mock.calls[0];
+    const insertCall = mockUnsafe.mock.calls[0];
     expect(insertCall[1][3]).toBe("deposit");
   });
 
   it("clamps negative amounts to null", async () => {
     mockOne.mockResolvedValue(null);
     await recordConversion("owner-1", { click_ref: "abc", amount: "-50" });
-    const insertCall = mockExec.mock.calls[0];
+    const insertCall = mockUnsafe.mock.calls[0];
     expect(insertCall[1][4]).toBeNull();
   });
 
   it("clamps NaN amounts to null", async () => {
     mockOne.mockResolvedValue(null);
     await recordConversion("owner-1", { click_ref: "abc", amount: "not-a-number" });
-    const insertCall = mockExec.mock.calls[0];
+    const insertCall = mockUnsafe.mock.calls[0];
     expect(insertCall[1][4]).toBeNull();
   });
 
   it("clamps amounts exceeding 1e12 to null", async () => {
     mockOne.mockResolvedValue(null);
     await recordConversion("owner-1", { click_ref: "abc", amount: "999999999999999" });
-    const insertCall = mockExec.mock.calls[0];
+    const insertCall = mockUnsafe.mock.calls[0];
     expect(insertCall[1][4]).toBeNull();
   });
 
   it("uppercases and truncates currency to 8 chars", async () => {
     mockOne.mockResolvedValue(null);
     await recordConversion("owner-1", { click_ref: "abc", currency: "abcdefghijk" });
-    const insertCall = mockExec.mock.calls[0];
+    const insertCall = mockUnsafe.mock.calls[0];
     expect(insertCall[1][5]).toBe("ABCDEFGH");
   });
 
-  it("skips INSERT when idempotency check finds existing", async () => {
-    // Second call to one() (idempotency check) returns existing row
-    mockOne.mockResolvedValueOnce(null).mockResolvedValueOnce({ id: "existing-id" });
+  it("skips player projection when conversion insert loses the race", async () => {
+    // tx.unsafe returning [] means the ON CONFLICT DO NOTHING clause dropped the insert
+    mockUnsafe.mockResolvedValueOnce([]);
 
-    await recordConversion("owner-1", { click_ref: "abc", event: "deposit", amount: "50" });
+    await recordConversion("owner-1", { click_ref: "abc", event: "deposit", amount: "50", player: "bob" });
 
-    // Should NOT have called exec (no INSERT)
-    expect(mockExec).not.toHaveBeenCalled();
+    // The INSERT fired but returned no rows
+    expect(mockUnsafe).toHaveBeenCalledTimes(1);
+    // If projection happened, mockUnsafe would have been called a second time
   });
 
-  it("skips offer lookup and idempotency check when no click_ref", async () => {
+  it("skips offer lookup when no click_ref", async () => {
     mockOne.mockResolvedValue(null);
     await recordConversion("owner-1", { event: "deposit", amount: "50" });
 
-    // No click_ref means both offer lookup and idempotency check are skipped
+    // No click_ref means offer lookup is skipped
     expect(mockOne).not.toHaveBeenCalled();
-    // INSERT still fires (no idempotency fast-path without click_ref)
-    expect(mockExec).toHaveBeenCalledTimes(1);
+    // INSERT still fires
+    expect(mockUnsafe).toHaveBeenCalledTimes(1);
   });
 });
 
