@@ -1,3 +1,4 @@
+/** @jsxRuntime automatic */
 /** @jsxImportSource hono/jsx */
 // Server-render a streamer's leaderboard page from their data.
 import { templateCss, validTemplate } from "./templates/index.js";

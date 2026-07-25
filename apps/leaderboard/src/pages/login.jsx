@@ -1,3 +1,4 @@
+/** @jsxRuntime automatic */
 /** @jsxImportSource hono/jsx */
 
 export function LoginPage() {
