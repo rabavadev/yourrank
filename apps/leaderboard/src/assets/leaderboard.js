@@ -138,6 +138,17 @@ window.__yr = { money, moneyShort, moneyPrize, esc, initials, ord };
 function currentTemplate() { return document.body?.dataset?.template || "classic"; }
 function isCasinoFull() { return !!((window.CASINO_BUILDERS || {}).top3 || {})[currentTemplate()]; }
 
+// Full-page casino templates ship empty <div data-top3/data-rows> containers and
+// rely on per-template builder markup. Make sure the containers lay out correctly
+// when the composer did not give them a class.
+function prepareCasinoContainers() {
+  if (!isCasinoFull()) return;
+  const t3 = $("[data-top3]");
+  if (t3 && !t3.className.trim()) t3.className = "flex flex-wrap justify-center gap-4 w-full";
+  const rows = $("[data-rows]");
+  if (rows && !rows.className.trim()) rows.className = "flex flex-col gap-4 w-full max-w-4xl";
+}
+
 // CASINO-STYLE: full-page templates ship data-style-* attributes for dynamic
 // per-player values (win-rate bars, gradients, score bars, animation-delay, etc.)
 // because the strict CSP blocks inline style="..." attributes. Apply them via
@@ -316,6 +327,7 @@ document.addEventListener("visibilitychange", () => {
 });
 
 function boot() {
+  prepareCasinoContainers();
   const data = window.__SITE_DATA__ || {};
   const b = data.brand || {};
   $$("[data-brand-name]").forEach((el) => (el.textContent = b.name || ""));

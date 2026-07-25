@@ -127,11 +127,12 @@ ${whyStats.length ? `<div class="pcol pcol-why"><span class="pcol-label">Why ${h
   const socialsSec = socials.length ? `<section id="socials" class="socials-sec"><h2 class="sec-title center">Join the Socials</h2><p class="sec-sub center">More giveaways and promotions across every platform.</p>
 <div class="social-cards" data-socials></div></section>` : "";
   const titleGroup = `<div class="board-title-group"><h2 class="sec-title">Standings</h2><span class="player-count-badge" data-player-count-badge>${sCount} players</span><span class="live-badge" data-live-badge><span class="live-badge-dot"></span>LIVE</span></div>`;
-  const poolSpan = hidePrizes ? '<span data-pool hidden></span>' : (pool ? `<span data-pool>${esc(pool)}</span>` : `<span data-pool></span>`);
+  const hasPool = !!pool;
+  const poolSpan = hidePrizes ? '<span data-pool hidden></span>' : (hasPool ? `<span data-pool>${esc(pool)}</span>` : `<span data-pool hidden></span>`);
   const periodSpan = `<span data-period>${esc(period)}</span>`;
   const payouts = hidePrizes ? `<div class="payouts" data-payouts hidden data-hide-prizes></div>` : `<div class="payouts" data-payouts hidden></div>`;
   const top3 = `<div class="top3" data-top3 data-hide-prizes="${hidePrizes ? "true" : "false"}">${top3Srv}</div>`;
-  return { ...c, name, streamWindow, ctaBtn, joinLabel, timerGrid, partnerPanel, announce, payouts, top3, findRank, table, rules, pastSec, socialsSec, titleGroup, poolSpan, periodSpan, cur, hidePrizes, prizePoolLabel, countdownLabel, payoutsLabel, sCount };
+  return { ...c, name, streamWindow, ctaBtn, joinLabel, timerGrid, partnerPanel, announce, payouts, top3, findRank, table, rules, pastSec, socialsSec, titleGroup, poolSpan, periodSpan, cur, hidePrizes, hasPool, pool, prizePoolLabel, countdownLabel, payoutsLabel, sCount };
 }
 
 // The classic page: stream-window hero, partner panel, board, past, socials.
@@ -198,7 +199,7 @@ function composeQuest(p) {
           <span dangerouslySetInnerHTML={{ __html: p.periodSpan }} /> leaderboard
         </p>
         <div class="app-chips">
-          {p.hidePrizes ? "" : <span class="app-chip app-chip--pool">🏆 <span dangerouslySetInnerHTML={{ __html: p.poolSpan }} /></span>}
+          {p.hidePrizes || !p.hasPool ? "" : <span class="app-chip app-chip--pool">🏆 <span dangerouslySetInnerHTML={{ __html: p.poolSpan }} /></span>}
           <span class="app-chip">⏳ <b class="countdown" data-countdown>--</b></span>
           <span class="app-chip"><b data-count>{p.sCount}</b> players</span>
         </div>
@@ -247,8 +248,7 @@ function composeVault(p) {
             </div>
           </div>
           <div class="prize-card">
-            <span class="prize-card-label">{p.prizePoolLabel || "Prize pool"}</span>
-            <b class="prize-card-pool"><span dangerouslySetInnerHTML={{ __html: p.poolSpan }} /></b>
+            {p.hasPool ? <><span class="prize-card-label">{p.prizePoolLabel || "Prize pool"}</span><b class="prize-card-pool"><span dangerouslySetInnerHTML={{ __html: p.poolSpan }} /></b></> : ""}
             <div class="hero-timer" data-timer>
               <p class="timer-label">{p.countdownLabel || "Race ends in"}</p>
               <div dangerouslySetInnerHTML={{ __html: p.timerGrid }} />
@@ -288,7 +288,7 @@ function composeTournament(p) {
   return `<section class="hero hero--clock">${p.heroLogo}<p class="hero-kicker" data-brand-name>${p.name}</p>
 <h1 class="clock-title">${esc(p.countdownLabel || "Race ends in")}</h1>
 <div class="hero-timer" data-timer>${p.timerGrid}</div>
-<p class="clock-sub">${p.hidePrizes ? `${p.periodSpan} race` : `${p.poolSpan} ${esc((p.prizePoolLabel || "Prize pool").toLowerCase())} · ${p.periodSpan} race`} · <b data-count>${p.sCount}</b> players</p>
+<p class="clock-sub">${p.hidePrizes || !p.hasPool ? `${p.periodSpan} race` : `${p.poolSpan} ${esc((p.prizePoolLabel || "Prize pool").toLowerCase())} · ${p.periodSpan} race`} · <b data-count>${p.sCount}</b> players</p>
 <div class="hero-cta">${p.ctaBtn(p.joinLabel)}<a class="btn btn--ghost" href="#board">Standings</a></div></section>
 ${p.announce}<section id="board" class="board"><div class="board-head board-head--center">
 ${p.titleGroup}</div>
@@ -308,7 +308,7 @@ function composeChampion(p) {
   return `<section class="hero hero--banner"><div class="banner-grid">
 <div class="banner-id">${p.heroLogo}<h1 class="hero-name" data-brand-name>${p.name}</h1>
 <p class="hero-sub">${p.hasCasino ? `<span data-casino>${esc(p.casino)}</span> partner · ` : ""}${p.periodSpan} leaderboard</p></div>
-<div class="banner-facts"><div class="bf"><span class="bf-label">${esc(p.prizePoolLabel || "Prize pool")}</span><b class="bf-val">${p.poolSpan}</b></div>
+<div class="banner-facts">${p.hasPool ? `<div class="bf"><span class="bf-label">${esc(p.prizePoolLabel || "Prize pool")}</span><b class="bf-val">${p.poolSpan}</b></div>` : ""}
 <div class="bf"><span class="bf-label">${esc(p.countdownLabel || "Ends in")}</span><b class="bf-val countdown" data-countdown>--</b></div>
 <div class="bf"><span class="bf-label">Players</span><b class="bf-val" data-count>${p.sCount}</b></div>
 ${p.ctaBtn(p.joinLabel)}</div></div>
@@ -329,7 +329,7 @@ ${p.socialsSec}`;
 // prompt-style status lines, dense table. No marketing hero at all.
 function composeTerminal(p) {
   return `<div class="term-window"><div class="term-bar"><span class="term-dots"><i></i><i></i><i></i></span><span class="term-title">~/leaderboard — <span data-brand-name>${p.name}</span></span></div>
-<div class="term-body"><section class="hero hero--term"><p class="term-line"><span class="term-prompt">$</span> race --period ${p.periodSpan}${p.pool ? ` --pool ${p.poolSpan}` : `${p.poolSpan}`}</p>
+<div class="term-body"><section class="hero hero--term"><p class="term-line"><span class="term-prompt">$</span> race --period ${p.periodSpan}${p.hasPool ? ` --pool ${p.poolSpan}` : ""}</p>
 <p class="term-line term-line--dim">resets_in <b class="countdown" data-countdown>--</b> · players <b data-count>${p.sCount}</b> · <span class="live-badge" data-live-badge><span class="live-badge-dot"></span>LIVE</span></p>
 <div class="hero-cta">${p.ctaBtn(`&gt; ${p.hasCasino ? `join <span data-casino>${esc(p.casino)}</span>` : "join now"}`, "btn btn--term")}</div>
 <div class="hero-timer" data-timer hidden>${p.timerGrid}</div></section>
@@ -349,7 +349,7 @@ ${p.socialsSec}`;
 function composeRewards(p) {
   return `<section class="hero hero--card">${p.heroLogo}<h1 class="hero-name" data-brand-name>${p.name}</h1>
 <p class="hero-sub">${p.hasCasino ? `<span data-casino>${esc(p.casino)}</span> partner · ` : ""}${p.periodSpan} rewards race</p>
-<div class="reward-card"><span class="reward-label">🎁 ${esc(p.prizePoolLabel || "Prize pool")}</span><b class="reward-pool">${p.poolSpan}</b>
+<div class="reward-card">${p.hasPool ? `<span class="reward-label">🎁 ${esc(p.prizePoolLabel || "Prize pool")}</span><b class="reward-pool">${p.poolSpan}</b>` : ""}
 <div class="hero-timer" data-timer><p class="timer-label">${esc(p.countdownLabel || "Ends in")}</p>
 ${p.timerGrid}</div>
 ${p.ctaBtn(p.joinLabel, "btn btn--grad btn--full")}</div></section>
@@ -370,7 +370,7 @@ ${p.socialsSec}`;
 function composeAmber(p) {
   return `<div class="rail-layout"><aside class="rail"><section class="hero hero--rail">${p.heroLogo}<h1 class="hero-name" data-brand-name>${p.name}</h1>
 <p class="hero-sub">${p.hasCasino ? `<span data-casino>${esc(p.casino)}</span> partner · ` : ""}${p.periodSpan} race</p>
-<div class="rail-fact"><span class="rail-label">${esc(p.prizePoolLabel || "Prize pool")}</span><b class="rail-val">${p.poolSpan}</b></div>
+${p.hasPool ? `<div class="rail-fact"><span class="rail-label">${esc(p.prizePoolLabel || "Prize pool")}</span><b class="rail-val">${p.poolSpan}</b></div>` : ""}
 <div class="rail-fact"><span class="rail-label">${esc(p.countdownLabel || "Resets in")}</span><b class="rail-val countdown" data-countdown>--</b></div>
 <div class="rail-fact"><span class="rail-label">Players</span><b class="rail-val" data-count>${p.sCount}</b></div>
 <div class="hero-cta">${p.ctaBtn(p.joinLabel, "btn btn--grad btn--full")}</div>
@@ -391,7 +391,7 @@ ${p.socialsSec}`;
 // page's centerpiece; the table below is a quiet "top users" ledger.
 function composeCopper(p) {
   return `<section class="hero hero--gallery">${p.heroLogo}<p class="hero-kicker">${p.periodSpan} champions</p><h1 class="hero-name" data-brand-name>${p.name}</h1>
-<p class="hero-sub">${p.hidePrizes ? "" : `${p.poolSpan} ${esc((p.prizePoolLabel || "prize pool").toLowerCase())} · `}${esc(p.countdownLabel || "resets in")} <b class="countdown" data-countdown>--</b></p>
+<p class="hero-sub">${p.hidePrizes || !p.hasPool ? "" : `${p.poolSpan} ${esc((p.prizePoolLabel || "prize pool").toLowerCase())} · `}${esc(p.countdownLabel || "resets in")} <b class="countdown" data-countdown>--</b></p>
 ${p.top3}
 <div class="hero-cta">${p.ctaBtn(p.joinLabel)}</div>
 <div class="hero-timer" data-timer hidden>${p.timerGrid}</div></section>

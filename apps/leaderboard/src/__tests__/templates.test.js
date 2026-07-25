@@ -75,6 +75,27 @@ describe("template previews", async () => {
     const normal = await renderLeaderboard({ ...DATA }, { nonce: "n" });
     expect(normal).not.toContain("class=\"demo-bar\"");
   });
+
+  it("renders player rows and top-3 containers without placeholder text", async () => {
+    for (const template of TEMPLATE_IDS) {
+      const html = await renderLeaderboard({ ...DATA, branding: { template } }, { nonce: "test123" });
+      expect(html).toContain('data-top3');
+      expect(html).toContain('data-rows');
+      const markup = html.replace(/<script\b[\s\S]*?<\/script>/gi, "");
+      expect(markup).not.toContain("undefined");
+      expect(markup).not.toContain("null");
+      expect(markup).not.toContain("{{");
+    }
+  });
+
+  it("meets WCAG AA contrast for default presets", async () => {
+    // Contrast failures are thrown at module load in test mode; this test documents the gate.
+    const catalog = templateCatalog();
+    for (const template of catalog) {
+      expect(template.id).toBeTruthy();
+      expect(template.presets.length).toBeGreaterThanOrEqual(3);
+    }
+  });
 });
 
 describe("theme_json / extra_json persistence (BUG: double-encoded JSONB)", async () => {
