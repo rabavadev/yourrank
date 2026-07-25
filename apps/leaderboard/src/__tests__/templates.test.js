@@ -3,6 +3,20 @@ import { renderLeaderboard } from "../render.jsx";
 import { TEMPLATE_IDS, TEMPLATES, templateCatalog, validTemplate } from "../templates/index.js";
 import { fromJsonb, publicShape } from "../site.js";
 
+function stripScripts(html) {
+  let out = "";
+  let i = 0;
+  while (true) {
+    const start = html.indexOf("<script", i);
+    if (start === -1) { out += html.slice(i); break; }
+    out += html.slice(i, start);
+    const end = html.indexOf("</script>", start);
+    if (end === -1) break;
+    i = end + "</script>".length;
+  }
+  return out;
+}
+
 const DATA = {
   brand: {
     name: "Actual Streamer",
@@ -81,7 +95,7 @@ describe("template previews", async () => {
       const html = await renderLeaderboard({ ...DATA, branding: { template } }, { nonce: "test123" });
       expect(html).toContain('data-top3');
       expect(html).toContain('data-rows');
-      const markup = html.replace(/<script\b[\s\S]*?<\/script>/gi, "");
+      const markup = stripScripts(html);
       expect(markup).not.toContain("undefined");
       expect(markup).not.toContain("null");
       expect(markup).not.toContain("{{");
