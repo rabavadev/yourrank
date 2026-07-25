@@ -111,7 +111,7 @@ export function renderPlan() {
   const planNames = { free: "Free", starter: "Starter", pro: "Pro", agency: "Agency" };
   const currentName = lifetime ? "Lifetime Pro" : (planNames[plan] || plan);
   const expiry = state.ME.planExpiresAt;
-  const until = expiry && !lifetime ? `Active until ${new Date(Number(expiry)).toLocaleDateString()}` : (lifetime ? "No expiry" : "");
+  const until = expiry && Number(expiry) > 0 && !lifetime ? `Active until ${new Date(Number(expiry)).toLocaleDateString()}` : (lifetime ? "No expiry" : "");
 
   const summary = $("planSummary");
   if (summary) {
@@ -280,12 +280,11 @@ function previewUrl(template, accentA, accentB, font, device = "desktop") {
 }
 
 /* ---- Gallery state ---- */
-let _activeCategoryTab = "casino";
+let _activeCategoryTab = "all";
 let _activeCasinoVibe = "all";
 
 const CASINO_IDS = new Set([
-  "arcade","candy","fun","space","tropical","underwater",
-  "vip","western","pro","leaderboardV2","leaderboard","highRollers",
+  "arcade","candy","fun","space","highRollers",
 ]);
 
 const VIBE_LABELS = { all: "All styles", luxury: "✦ Luxury", retro: "◈ Retro", dark: "▣ Dark", fun: "★ Fun" };
@@ -303,9 +302,9 @@ function _renderTabBar() {
   const bar = $("templateTabs");
   if (!bar) return;
   const tabs = [
-    { id: "casino", label: "✦ Casino", tip: "Casino-themed designs" },
     { id: "all",    label: "All templates", tip: "Browse every design" },
     { id: "other",  label: "Classic & More", tip: "Non-casino designs" },
+    { id: "casino", label: "✦ Casino", tip: "Casino-themed designs" },
   ];
   bar.innerHTML = tabs.map(({ id, label, tip }) => {
     const active = id === _activeCategoryTab;

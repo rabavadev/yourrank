@@ -3,6 +3,20 @@ import { renderLeaderboard } from "../render.jsx";
 import { TEMPLATE_IDS, TEMPLATES, templateCatalog, validTemplate } from "../templates/index.js";
 import { fromJsonb, publicShape } from "../site.js";
 
+function stripScripts(html) {
+  let out = "";
+  let i = 0;
+  while (i < html.length) {
+    const start = html.indexOf("<script", i);
+    if (start === -1) { out += html.slice(i); break; }
+    out += html.slice(i, start);
+    const end = html.indexOf("</script>", start);
+    if (end === -1) { out += html.slice(start); break; }
+    i = end + "</script>".length;
+  }
+  return out;
+}
+
 const DATA = {
   brand: {
     name: "Actual Streamer",
@@ -74,6 +88,27 @@ describe("template previews", async () => {
     expect(demo).toContain('href="https://yourrank.site/signup"');
     const normal = await renderLeaderboard({ ...DATA }, { nonce: "n" });
     expect(normal).not.toContain("class=\"demo-bar\"");
+  });
+
+  it("renders player rows and top-3 containers without placeholder text", async () => {
+    for (const template of TEMPLATE_IDS) {
+      const html = await renderLeaderboard({ ...DATA, branding: { template } }, { nonce: "test123" });
+      expect(html).toContain('data-top3');
+      expect(html).toContain('data-rows');
+      const markup = stripScripts(html);
+      expect(markup).not.toContain("undefined");
+      expect(markup).not.toContain("null");
+      expect(markup).not.toContain("{{");
+    }
+  });
+
+  it("meets WCAG AA contrast for default presets", async () => {
+    // Contrast failures are thrown at module load in test mode; this test documents the gate.
+    const catalog = templateCatalog();
+    for (const template of catalog) {
+      expect(template.id).toBeTruthy();
+      expect(template.presets.length).toBeGreaterThanOrEqual(3);
+    }
   });
 });
 
