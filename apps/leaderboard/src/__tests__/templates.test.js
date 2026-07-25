@@ -6,12 +6,12 @@ import { fromJsonb, publicShape } from "../site.js";
 function stripScripts(html) {
   let out = "";
   let i = 0;
-  while (true) {
+  while (i < html.length) {
     const start = html.indexOf("<script", i);
     if (start === -1) { out += html.slice(i); break; }
     out += html.slice(i, start);
     const end = html.indexOf("</script>", start);
-    if (end === -1) break;
+    if (end === -1) { out += html.slice(start); break; }
     i = end + "</script>".length;
   }
   return out;
