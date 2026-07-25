@@ -1,3 +1,4 @@
+/** @jsxRuntime automatic */
 /** @jsxImportSource hono/jsx */
 export const dashboardConfig = {
   title: "Dashboard · YourRank",
