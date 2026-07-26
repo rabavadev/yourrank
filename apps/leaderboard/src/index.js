@@ -610,10 +610,10 @@ async function handleRequest(request, env, ctx, meta) {
         if (!(await rateLimit(env, `go:${ip}`, 120, 60)).ok) return new Response("Too many requests", { status: 429, headers: HTML_N });
         let slug;
         try { slug = decodeURIComponent(path.slice(4).split("/")[0]).toLowerCase(); } catch { return new Response(notFoundPage("", nonce), { status: 404, headers: HTML_N }); }
-        // Demo board has no DB row — mirror the demo overlay special-case so the
-        // "Join Stake" CTA on /demo (embedded on the homepage) isn't a dead 404.
+        // Demo board has no DB row — send demo clicks to signup so the homepage CTA
+        // isn't a dead 404.
         if (slug === "demo") {
-          return Response.redirect(demoLeaderboardData().brand.ctaUrl, 302);
+          return Response.redirect(`${url.origin}/signup`, 302);
         }
         const clickRef = newClickRef();
         const r = await getPublicSite(env, slug, request);

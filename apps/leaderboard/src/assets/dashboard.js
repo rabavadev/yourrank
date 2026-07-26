@@ -224,7 +224,7 @@ function isBoardSetup(p) {
   const b = d.brand || {};
   const players = d.players || [];
   const o = p.onboarding || {};
-  const brandDone = o.brand || !!(b.name && b.casino);
+  const brandDone = o.brand || !!b.name;
   const playersDone = o.players || players.length > 0;
   const sharedDone = o.shared || p.published !== false;
   return brandDone && playersDone && sharedDone;

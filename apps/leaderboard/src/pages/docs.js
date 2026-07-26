@@ -25,14 +25,14 @@ const body = `
 <pre><code class="docs-lang">curl https://yourrank.site/api/public/demo/standings</code></pre>
 <pre><code class="docs-json">{
   "slug": "demo",
-  "name": "StakeDrop",
-  "casino": "Stake",
+  "name": "Demo Race",
+  "casino": "",
   "period": "Monthly",
-  "prizePool": "$5,000",
+  "prizePool": "$500",
   "players": [
-    { "name": "Crypto*****99", "wagered": 287400, "prize": 1500, "position": 1 },
-    { "name": "StakeWhale", "wagered": 214800, "prize": 1000, "position": 2 },
-    { "name": "DiceKing", "wagered": 189200, "prize": 750, "position": 3 }
+    { "name": "Alex", "wagered": 9500, "prize": 250, "position": 1 },
+    { "name": "Bree", "wagered": 7200, "prize": 150, "position": 2 },
+    { "name": "Casey", "wagered": 5400, "prize": 100, "position": 3 }
   ]
 }</code></pre>
 
@@ -43,9 +43,9 @@ console.log(data.players[0].name);</code></pre>
 
 <h2>Chat bot commands</h2>
 <p><b>Nightbot</b> rank lookup:</p>
-<pre><code class="docs-lang">!rank $(customapi https://yourrank.site/api/public/demo/rank?user=Crypto*****99)</code></pre>
+<pre><code class="docs-lang">!rank $(customapi https://yourrank.site/api/public/demo/rank?user=Alex)</code></pre>
 <p><b>Streamlabs</b> rank lookup:</p>
-<pre><code class="docs-lang">!rank $(readapi https://yourrank.site/api/public/demo/rank?user=Crypto*****99)</code></pre>
+<pre><code class="docs-lang">!rank $(readapi https://yourrank.site/api/public/demo/rank?user=Alex)</code></pre>
 
 <h2>Score postback (Pro/Agency only)</h2>
 <p>Push updated player lists from your own backend. Requires <code>X-Postback-Key</code> and an HMAC-SHA256 signature of the raw request body in <code>X-Postback-Signature</code>.</p>

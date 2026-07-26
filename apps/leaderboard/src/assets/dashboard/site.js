@@ -196,7 +196,7 @@ export function collect() {
     brand: {
       name: brandName,
       tagline: $("f_tagline").value.trim(),
-      casino: $("f_casino").value.trim() || "Stake",
+      casino: $("f_casino").value.trim(),
       code: $("f_code").value.trim(),
       ctaUrl: $("f_cta").value.trim(),
       prizePool: $("f_pool").value.trim(),

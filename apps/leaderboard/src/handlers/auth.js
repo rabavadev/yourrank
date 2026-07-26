@@ -3,7 +3,7 @@ import { withTransaction, one, exec } from "../../../../shared/db.js";
 import { hashPassword, verifyPassword, uuid, newToken, createSession, destroySession, destroyAllUserSessions, currentUser, isEmail, slugify, RESERVED, cookieSet, cookieClear, readToken, json, bad, ok, readJson, rateLimit, clientIp, generateUniqueReferralCode } from "../auth.js";
 import { hashToken } from "../../../../shared/crypto.js";
 import { trackActivation } from "../../../../shared/activation-funnel.js";
-import { DEFAULT_EXTRA, getUserBoardsList } from "../site.js";
+import { DEFAULT_EXTRA, getUserBoardsList, seedSamplePlayers } from "../site.js";
 import { sendEmail, resetEmail, sendOnboardingEmail } from "../email.js";
 import { effectivePlan, PLAN_LIMITS, BOARD_LIMITS, priceUsd } from "../billing.js";
 import { getEnabledFeatureKeys } from "../../../../shared/features.js";
@@ -79,7 +79,9 @@ export async function handleSignup(request, env, ctx) {
       try {
         await withTransaction(async (tx) => {
           await createUser(tx, userId, email, hash, salt, referralCode, referrerId);
-          await createSite(tx, uuid(), userId, finalSlug, displayName, DEFAULT_EXTRA);
+          const siteId = uuid();
+          await createSite(tx, siteId, userId, finalSlug, displayName, DEFAULT_EXTRA);
+          await seedSamplePlayers(tx, siteId);
         });
         created = true;
         break;

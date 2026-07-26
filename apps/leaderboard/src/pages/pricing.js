@@ -5,7 +5,7 @@ export const pricingPage = `<!DOCTYPE html><html lang="en"><head>
 <meta name="description" content="YourRank pricing and plans. Free forever, Starter, Pro, Agency, and Lifetime." />
 <link rel="canonical" href="https://yourrank.site/pricing" />
 <meta property="og:title" content="YourRank Pricing">
-<meta property="og:description" content="Free, Starter, Pro, Agency and Lifetime plans for casino streamer leaderboards.">
+<meta property="og:description" content="Free, Starter, Pro, Agency and Lifetime plans for streamer and community leaderboards.">
 <meta property="og:image" content="https://yourrank.site/og.png" />
 <meta name="twitter:card" content="summary_large_image" />
 <meta name="twitter:image" content="https://yourrank.site/og.png" />
