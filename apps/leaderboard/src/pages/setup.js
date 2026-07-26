@@ -28,21 +28,21 @@ export const setupPage = leaderboardPageHtml({
 </div>
 
 <div class="wiz-step" id="step2">
-<div class="field"><label for="wiz_casino">Casino name</label>
-<input id="wiz_casino" placeholder="e.g. Stake" required /></div>
-<div class="field"><label for="wiz_code">Referral code <span class="hint" style="font-weight:400">(optional)</span></label>
-<input id="wiz_code" placeholder="BTZ" /></div>
-<div class="field"><label for="wiz_cta">Referral link <span class="hint" style="font-weight:400">(optional)</span></label>
-<input id="wiz_cta" placeholder="https://stake.com/?c=BTZ" /></div>
+<div class="field"><label for="wiz_casino">Sponsor / prize source <span class="hint" style="font-weight:400">(optional)</span></label>
+<input id="wiz_casino" placeholder="Your brand or sponsor" /></div>
+<div class="field"><label for="wiz_code">Referral or promo code <span class="hint" style="font-weight:400">(optional)</span></label>
+<input id="wiz_code" placeholder="OPTIONAL" /></div>
+<div class="field"><label for="wiz_cta">Sponsor link <span class="hint" style="font-weight:400">(optional)</span></label>
+<input id="wiz_cta" placeholder="https://example.com" /></div>
 <div class="btns-row"><button class="btn" id="wiz2back" type="button">← Back</button><button class="btn btn--accent" id="wiz2next" type="button">Next →</button></div>
 </div>
 
 <div class="wiz-step" id="step3">
 <div class="field"><label for="wiz_players">Paste your players</label>
 <span class="hint">One player per line: <span class="mono">name, wagered amount</span>. Comma or tab separated. Wagered is optional (defaults to 0).</span>
-<textarea class="players-ta" id="wiz_players" rows="8" spellcheck="false" placeholder="*****ess, 152000
-*****y, 98000
-*****k, 61250"></textarea>
+<textarea class="players-ta" id="wiz_players" rows="8" spellcheck="false" placeholder="Alex, 9500
+Bree, 7200
+Casey, 5400"></textarea>
 <div class="d-flex gap-10 items-center flex-wrap"><span class="hint" id="wiz_pcount">0 players detected</span><button class="btn btn--sm btn--ghost" id="wiz_sample" type="button">Load sample players</button></div></div>
 <div class="btns-row"><button class="btn" id="wiz3back" type="button">← Back</button><button class="btn btn--ghost" id="wiz3skip" type="button">Skip, add later</button><button class="btn btn--accent" id="wiz3next" type="button">Publish my page →</button></div>
 </div>
@@ -60,7 +60,7 @@ export const setupPage = leaderboardPageHtml({
 <p class="hint" style="text-align:center;margin-top:22px;margin-bottom:10px">Next, in your dashboard you can:</p>
 <div class="d-flex gap-10 flex-wrap" style="justify-content:center;margin-bottom:18px">
 <div class="card" style="flex:1;min-width:140px;max-width:190px;padding:14px 12px;text-align:center">
-<div class="setup-nextic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"/></svg></div><b style="font-size:13px;display:block;margin-bottom:3px">Auto-update it</b><span class="hint" style="font-size:12px">Connect casino postbacks</span>
+<div class="setup-nextic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"/></svg></div><b style="font-size:13px;display:block;margin-bottom:3px">Auto-update it</b><span class="hint" style="font-size:12px">Connect a feed or API postback</span>
 </div>
 <div class="card" style="flex:1;min-width:140px;max-width:190px;padding:14px 12px;text-align:center">
 <div class="setup-nextic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v18"/><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 9h18"/><path d="M3 15h18"/></svg></div><b style="font-size:13px;display:block;margin-bottom:3px">Change the design</b><span class="hint" style="font-size:12px">Templates, colors &amp; fonts</span>

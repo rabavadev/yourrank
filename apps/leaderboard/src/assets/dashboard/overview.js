@@ -45,7 +45,7 @@ export function renderOverviewSummary() {
     if (topEmpty) topEmpty.hidden = sorted.length > 0;
   }
   const o = state.ONBOARDING || {};
-  const brandDone = o.brand || !!($("f_name")?.value.trim() && $("f_casino")?.value.trim());
+  const brandDone = o.brand || !!$("f_name")?.value.trim();
   const playersDone = o.players || players.length > 0;
   const sharedDone = o.shared || state.PUBLISHED;
   $("ov_step_brand")?.classList.toggle("is-done", brandDone);

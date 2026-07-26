@@ -165,7 +165,7 @@ form.addEventListener("submit", async (e) => {
       if (["starter", "pro"].includes(p)) location.href = `/dashboard/billing?plan=${encodeURIComponent(p)}`;
       else if (p === "lifetime") location.href = "/dashboard/billing?plan=lifetime";
       else if (p === "agency") location.href = "/contact?plan=agency";
-      else location.href = "/dashboard/setup";
+      else location.href = "/dashboard";
     } else {
       location.href = "/dashboard";
     }

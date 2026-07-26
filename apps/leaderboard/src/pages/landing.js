@@ -45,29 +45,29 @@ export const landingPage = `<!DOCTYPE html>
 <div class="spec-row"><span>Standings</span><span>sorted by wager</span></div>
 <div class="spec-row"><span>Updates</span><span>instant</span></div></div></section>
 <section id="proof" class="proof"><div class="wrap">
-<p class="proof-metric"><b>500+</b> live boards powering streamers</p>
-<ul class="proof-logos" aria-label="Casinos with postback support">
-<li>Stake</li><li>Rollbit</li><li>BC.Game</li><li>Shuffle</li><li>Gamdom</li><li>Roobet</li>
+<p class="proof-metric"><b>Your page, your rules</b> — one dashboard, live everywhere.</p>
+<ul class="proof-logos" aria-label="Use cases">
+<li>Streamers</li><li>Creators</li><li>Discord communities</li><li>Affiliate races</li>
 </ul></div></section>
 <section id="how"><div class="wrap"><h2 class="sec">How it works</h2><p class="sec-sub">Three steps. No build tools, no redeploys, nothing to host yourself.</p>
 <div class="steps">
 <div class="step"><div class="n">01</div><div><h3>Create your account</h3><p>Pick a handle. That becomes your page URL. Takes about a minute.</p></div></div>
-<div class="step"><div class="n">02</div><div><h3>Fill in your details</h3><p>Prize pool, referral code, countdown date, and your ranked players. All from one dashboard.</p></div></div>
+<div class="step"><div class="n">02</div><div><h3>Customise your race</h3><p>Prize pool, countdown date, and your ranked players. All from one dashboard. A sample board is created for you.</p></div></div>
 <div class="step"><div class="n">03</div><div><h3>Share your link</h3><p>Your page is live. Update the numbers whenever you want and they change instantly.</p></div></div>
 </div></div></section>
-<section id="postbacks"><div class="wrap"><h2 class="sec">Track real conversions</h2><p class="sec-sub">When a casino confirms a player deposited, YourRank receives the postback and updates the leaderboard automatically. No manual updates. No guessing.</p>
+<section id="postbacks"><div class="wrap"><h2 class="sec">Track real engagement</h2><p class="sec-sub">When your score source pushes an update, YourRank receives it and refreshes the board automatically. No manual updates. No guessing.</p>
 <div class="steps">
-<div class="step"><div class="n n--ico"><svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg></div><div><h3>Automatic updates</h3><p>Postbacks from the casino push real deposit data straight into your leaderboard. Your standings stay accurate without you lifting a finger.</p></div></div>
-<div class="step"><div class="n n--ico"><svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 2v6M15 2v6M6 8h12v3a6 6 0 01-12 0V8zM12 17v5"/></svg></div><div><h3>Works with any postback-enabled casino</h3><p>Stake, Rollbit, BC.Game, and any other casino that supports postback URLs. Just plug in your YourRank postback URL and the data flows in.</p></div></div>
-<div class="step"><div class="n n--ico"><svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></div><div><h3>No spreadsheets, no copy-paste</h3><p>Forget manually updating player wagers. The postback system does it in real time — confirmed deposits, verified conversions, zero human error.</p></div></div>
+<div class="step"><div class="n n--ico"><svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg></div><div><h3>Automatic updates</h3><p>Post scores from your own backend, a Google Sheet, or an external feed. Your standings stay accurate without you lifting a finger.</p></div></div>
+<div class="step"><div class="n n--ico"><svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 2v6M15 2v6M6 8h12v3a6 6 0 01-12 0V8zM12 17v5"/></svg></div><div><h3>Works with any data source</h3><p>Any service that can call a URL or export a CSV can feed YourRank. No lock-in to a single provider.</p></div></div>
+<div class="step"><div class="n n--ico"><svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></div><div><h3>No spreadsheets, no copy-paste</h3><p>Forget manually updating player scores. The postback system does it in real time — one source of truth, zero human error.</p></div></div>
 <div class="step"><div class="n n--ico"><svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></div><div><h3>Built-in analytics</h3><p>Track views, clicks, and referrers from your dashboard. See what's working and where your traffic comes from.</p></div></div>
 </div></div></section>
 <section id="example"><div class="wrap"><h2 class="sec">A real page</h2><p class="sec-sub">This is a live leaderboard running on YourRank. Yours works the same way.</p>
 <div class="example"><div class="bar"><span>yourrank.site/demo</span><span>live</span></div>
 <iframe src="/demo" loading="lazy" title="Example leaderboard"></iframe></div></div></section>
-<section id="testimonial" class="testimonial"><div class="wrap">
-<figure class="quote"><blockquote>"Set up my board in minutes and the postbacks just work. My viewers actually check the standings now — it's the first tool that paid for itself."</blockquote>
-<figcaption><span class="quote-who">Jesse R.</span><span class="quote-handle">@jesseplays · 42k followers</span></figcaption></figure>
+<section id="trust" class="testimonial"><div class="wrap">
+<figure class="quote"><blockquote>"Start free, no card required, and no made-up numbers on your page. YourRank gives you a clean leaderboard you actually control."</blockquote>
+<figcaption><span class="quote-who">YourRank</span><span class="quote-handle">Built for streamers and communities</span></figcaption></figure>
 </div></section>
 <section id="pricing"><div class="wrap"><h2 class="sec">Pricing</h2><p class="sec-sub">Start free. Upgrade when your board is pulling weight. Try Pro free for 7 days — paid plans billed in crypto.</p>
 <div class="pricing-grid pricing-grid--4">
@@ -86,7 +86,7 @@ export const landingPage = `<!DOCTYPE html>
 <div class="mobile-cta"><a href="/signup" class="btn btn--accent">Create your free page</a></div>
 <footer class="ftr ftr--platform"><div class="wrap">
 <div class="ftr-top">
-  <div class="ftr-brand"><a class="brand" href="/">Your<b>Rank</b></a><p>Leaderboards for streamers & communities</p></div>
+  <div class="ftr-brand"><a class="brand" href="/">Your<b>Rank</b></a><p>Leaderboards for streamers &amp; communities</p></div>
   <div class="ftr-cols">
     <div class="ftr-col"><b>Product</b><a href="/#how">How it works</a><a href="/pricing">Pricing</a><a href="/docs">API Docs</a><a href="/contact">Contact</a></div>
     <div class="ftr-col"><b>Legal</b><a href="/terms">Terms of Service</a><a href="/privacy">Privacy Policy</a><a href="/cookies">Cookie Policy</a><a href="/refund">Refund Policy</a><a href="/responsible">Responsible Play</a></div>

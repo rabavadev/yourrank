@@ -32,7 +32,7 @@ pta.addEventListener("input",countPlayers);
 const sampleBtn=$("wiz_sample");
 if(sampleBtn){
   sampleBtn.addEventListener("click",()=>{
-    pta.value="*****on7, 245000\n*****ace, 189500\n*****olX, 132000\n*****wl, 98000\n*****ing, 61000";
+    pta.value="Alex, 9500\nBree, 7200\nCasey, 5400\nDrew, 3100\nEllis, 1800";
     countPlayers();
   });
 }
@@ -54,7 +54,7 @@ function parsePlayers(){
 
 // Nav buttons
 $("wiz1next").onclick=()=>{if(!slugify(nameIn.value)&&!slugIn.value.trim()){$("wiz_err").textContent="Enter your name or a custom URL.";return;}if(!slugIn.value.trim()){slugIn.value=slugify(nameIn.value);}slug=slugify(slugIn.value);if(!slug){$("wiz_err").textContent="Invalid URL — letters, numbers, dashes only.";return;}$("wiz_err").textContent="";showStep(2);};
-$("wiz2next").onclick=()=>{if(!$("wiz_casino").value.trim()){$("wiz_err").textContent="Enter a casino name.";return;}$("wiz_err").textContent="";showStep(3);};
+$("wiz2next").onclick=()=>{$("wiz_err").textContent="";showStep(3);};
 $("wiz2back").onclick=()=>{$("wiz_err").textContent="";showStep(1);};
 // Persist the page here (not on the final button) so the "ready" screen only
 // appears once the board is actually saved and reflects the real slug.

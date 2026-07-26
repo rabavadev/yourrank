@@ -40,23 +40,23 @@ function createNotifyQueue(env) {
 // ("Deposit Bonus", "Instant Rakeback", …) that a brand-new owner never entered,
 // which published fabricated partner claims on every unconfigured page. Owners
 // add their own via the dashboard; the public renderer hides these sections when
-// they're empty. rules stays populated — it's generic, honest wager mechanics.
+// they're empty. Socials start disabled so a fresh page doesn't advertise fake links.
 export const VALID_PERIODS = ["Weekly", "Monthly", "Season"];
 
 export const DEFAULT_EXTRA = {
   chips: [],
   whyStats: [],
   rules: [
-    "Games with RTP of 98% or lower count 100% of wagered amount",
-    "Games with RTP above 98% count 50% of wagered amount",
-    "Accounts that were suspended or self-excluded are not eligible",
+    "Leaderboard resets automatically each period.",
+    "Scores update instantly when posted via the dashboard or API.",
+    "Prizes are set by the board owner and displayed for entertainment.",
   ],
   socials: [
-    { name: "Discord", handle: "Join the community", action: "Join", url: "#", brand: "discord" },
-    { name: "Kick", handle: "Watch live", action: "Follow", url: "#", brand: "kick" },
-    { name: "Twitch", handle: "Watch live", action: "Follow", url: "#", brand: "twitch" },
-    { name: "YouTube", handle: "Watch videos", action: "Subscribe", url: "#", brand: "youtube" },
-    { name: "X", handle: "Latest updates", action: "Follow", url: "#", brand: "x" },
+    { name: "Discord", handle: "Join the community", action: "Join", url: "#", brand: "discord", enabled: false },
+    { name: "Kick", handle: "Watch live", action: "Follow", url: "#", brand: "kick", enabled: false },
+    { name: "Twitch", handle: "Watch live", action: "Follow", url: "#", brand: "twitch", enabled: false },
+    { name: "YouTube", handle: "Watch videos", action: "Subscribe", url: "#", brand: "youtube", enabled: false },
+    { name: "X", handle: "Latest updates", action: "Follow", url: "#", brand: "x", enabled: false },
   ],
   sections: {
     hero: true,
@@ -537,6 +537,40 @@ export async function createBoard(env, uid, { slug, name, casino = "", code = ""
   return { ok: true, id: siteId, slug };
 }
 
+// Seed a freshly-created board with sample players so the dashboard and public page
+// are never empty. Uses generic names/prizes and a short countdown.
+export async function seedSamplePlayers(tx, siteId) {
+  const endsAt = new Date(Date.now() + 7 * 86400000).toISOString();
+  await tx.unsafe(
+    "UPDATE sites SET prize_pool=$1, ends_at=$2, is_draft=false, published=true WHERE id=$3",
+    ["$500", endsAt, siteId]
+  );
+  const players = [
+    { name: "Alex", wagered: 9500, prize: 250 },
+    { name: "Bree", wagered: 7200, prize: 150 },
+    { name: "Casey", wagered: 5400, prize: 100 },
+    { name: "Drew", wagered: 3100, prize: 0 },
+    { name: "Ellis", wagered: 1800, prize: 0 },
+  ];
+  const valueRows = [];
+  const params = [];
+  let idx = 1;
+  const cols = 13;
+  players.forEach((p, i) => {
+    const row = [];
+    for (let c = 0; c < cols; c++) row.push(`$${idx++}`);
+    valueRows.push(`(${row.join(",")})`);
+    params.push(
+      crypto.randomUUID(), siteId, p.name, normalizePlayerName(p.name),
+      p.wagered, p.prize, i, 1, p.wagered, 0, 0, 0, 0
+    );
+  });
+  await tx.unsafe(
+    `INSERT INTO players (id, site_id, name, normalized_name, wagered, prize, sort, version, score, hands, net_profit, win_rate, change) VALUES ${valueRows.join(",")}`,
+    params
+  );
+}
+
 // Generate a unique slug for a duplicated board by appending -copy, -copy-2, etc.
 async function uniqueSlug(env, base) {
   let candidate = slugify(`${base}-copy`);
@@ -586,12 +620,15 @@ export async function duplicateBoard(env, uid, siteId, request = null) {
       let idx = 1;
       players.forEach((p, i) => {
         const row = [];
-        for (let c = 0; c < 6; c++) row.push(`$${idx++}`);
+        for (let c = 0; c < 13; c++) row.push(`$${idx++}`);
         valueRows.push(`(${row.join(",")})`);
-        params.push(crypto.randomUUID(), newId, p.name, p.wagered, p.prize, i);
+        params.push(
+          crypto.randomUUID(), newId, p.name, normalizePlayerName(p.name),
+          p.wagered, p.prize, i, 1, p.wagered, 0, 0, 0, 0
+        );
       });
       await tx.unsafe(
-        `INSERT INTO players (id,site_id,name,wagered,prize,sort) VALUES ${valueRows.join(",")}`,
+        `INSERT INTO players (id, site_id, name, normalized_name, wagered, prize, sort, version, score, hands, net_profit, win_rate, change) VALUES ${valueRows.join(",")}`,
         params
       );
     }
@@ -778,10 +815,6 @@ export async function saveSite(env, user, payload, siteId, request = null) {
     }
   }
   const b = payload.brand || {};
-  // Require a non-empty casino name when the brand section is being saved.
-  if (b.casino !== undefined && !String(b.casino).trim()) {
-    return { error: "Casino name is required.", code: "missing_casino" };
-  }
   // Validate the referral/CTA link server-side (the client only rejects it at
   // render time via safeUrl). A non-empty value must be a valid http(s) URL.
   if (b.ctaUrl != null && String(b.ctaUrl).trim() !== "") {

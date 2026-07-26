@@ -34,10 +34,10 @@ export function DashboardContent() {
 <a class="btn btn--sm btn--accent" id="boardLimitCta" href="/dashboard/billing">Upgrade plan</a>
 </div>
 <div class="lb-board-form" id="newBoardForm" hidden>
-<div class="field field-flex"><label for="nb_name">Board name</label><input id="nb_name" placeholder="Stake July 2026" /></div>
-<div class="field field-flex"><label for="nb_slug">URL slug</label><input id="nb_slug" placeholder="stake-july-2026" /></div>
-<div class="field field-flex"><label for="nb_casino">Casino</label><input id="nb_casino" placeholder="e.g. Stake" required /></div>
-<div class="field field-flex"><label for="nb_code">Referral code</label><input id="nb_code" placeholder="BTZ" /></div>
+<div class="field field-flex"><label for="nb_name">Board name</label><input id="nb_name" placeholder="Summer Race 2026" /></div>
+<div class="field field-flex"><label for="nb_slug">URL slug</label><input id="nb_slug" placeholder="summer-race-2026" /></div>
+<div class="field field-flex"><label for="nb_casino">Sponsor / prize source</label><input id="nb_casino" placeholder="Your brand or sponsor" /></div>
+<div class="field field-flex"><label for="nb_code">Referral or promo code</label><input id="nb_code" placeholder="OPTIONAL" /></div>
 <div class="lb-board-form-actions"><button class="btn btn--sm btn--accent" id="nb_create" type="button">Create</button><button class="btn btn--sm btn--ghost" id="nb_cancel" type="button">Cancel</button><div class="hint w-full" id="nb_err" role="alert" aria-live="assertive"></div></div>
 </div>
 </div>
@@ -148,16 +148,16 @@ export function DashboardContent() {
 <div class="design-controls">
 <div class="card" data-egroup="data"><h2>Brand &amp; prize</h2><p class="card-sub">The headline details on your page.</p><div class="grid2">
 <div class="field"><label for="f_name">Display name</label><input id="f_name" /></div>
-<div class="field"><label for="f_tagline">Tagline</label><input id="f_tagline" placeholder="Casino streamer & Stake partner" /></div>
-<div class="field"><label for="f_casino">Casino</label><input id="f_casino" placeholder="e.g. Stake" required /></div>
-<div class="field"><label for="f_code">Referral code</label><input id="f_code" placeholder="BTZ" /></div>
-<div class="field"><label for="f_cta">Referral link</label><input id="f_cta" placeholder="https://stake.com/?c=BTZ" /></div>
-<div class="field"><label for="f_pool">Prize pool</label><input id="f_pool" placeholder="$3,500" /></div>
+<div class="field"><label for="f_tagline">Tagline</label><input id="f_tagline" placeholder="Stream community leaderboard" /></div>
+<div class="field"><label for="f_casino">Sponsor / prize source</label><input id="f_casino" placeholder="Your brand or sponsor" /></div>
+<div class="field"><label for="f_code">Referral or promo code</label><input id="f_code" placeholder="OPTIONAL" /></div>
+<div class="field"><label for="f_cta">Sponsor link</label><input id="f_cta" placeholder="https://example.com" /></div>
+<div class="field"><label for="f_pool">Prize pool</label><input id="f_pool" placeholder="$500" /></div>
 <div class="field"><label for="f_period">Period</label><select id="f_period"><option>Weekly</option><option selected>Monthly</option><option>Season</option></select></div>
 <div class="field"><label for="f_ends">Countdown ends</label><input id="f_ends" type="datetime-local" /><span class="hint" id="f_ends_hint">When the leaderboard resets, in your local time. Powers the live timer.</span></div>
 <div class="field" style="grid-column:1/-1"><label class="chk"><input type="checkbox" id="f_auto_reset" /> Auto-reset when countdown ends</label><select id="f_auto_reset_clear" disabled style="margin-top:8px"><option value="wagers">Reset wagers to 0</option><option value="players">Clear all players</option><option value="none">Keep board as-is</option></select><span class="hint">Archives the finished period and extends the end date by one period automatically.</span></div>
 <div class="field" style="grid-column:1/-1"><label class="chk"><input type="checkbox" id="f_password_enabled" /> Password-protect this board</label><input id="f_password" type="password" placeholder="Leave blank to keep current password" disabled style="margin-top:8px" /><span class="hint">Visitors must enter this password before seeing the leaderboard or using the public API.</span></div></div>
-<div class="field"><label for="f_blurb">Partner blurb</label><textarea id="f_blurb" rows="2" placeholder="Short pitch about the casino and your code."></textarea></div></div>
+<div class="field"><label for="f_blurb">Partner blurb</label><textarea id="f_blurb" rows="2" placeholder="Short pitch about the sponsor and your code (optional)."></textarea></div></div>
 <div class="card" data-egroup="data"><h2>Players</h2><p class="card-sub">The board auto-sorts by wagered, highest first. Prize <span class="mono">0</span> shows a dash. Names can be masked (keep the <span class="mono">***</span>). <span class="limit-widget" id="limitWidget"><span id="pCount" class="limit-hint"></span><span class="limit-bar"><span class="limit-fill" id="limitFill"></span></span><span class="limit-hint" id="limitHint"></span><a class="btn btn--sm btn--accent" id="playerLimitUpgrade" href="/dashboard/billing">Upgrade</a></span></p>
 <div class="player-toolbar">
   <input type="search" id="playerSearch" class="player-search" placeholder="Find player..." autocomplete="off" />
