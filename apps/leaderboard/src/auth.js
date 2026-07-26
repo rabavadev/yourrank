@@ -33,7 +33,10 @@ const hex = (buf) => [...buf].map(b => b.toString(16).padStart(2, '0')).join('')
 const bytesToHex = hex;
 
 // Password hashing (PBKDF2-SHA256) and constant-time comparison.
-const PBKDF2_ITERATIONS = 300000;
+// Cloudflare Workers' crypto.subtle.deriveBits supports at most 100k PBKDF2
+// iterations; values above that throw "Pbkdf2 failed: iteration counts above
+// 100000 are not supported". This must stay <= 100k for signup/login/reset to work.
+const PBKDF2_ITERATIONS = 100000;
 const LEGACY_ITERATIONS = 100000;
 const enc = new TextEncoder();
 const _bytesToHex = (b) => [...new Uint8Array(b)].map((x) => x.toString(16).padStart(2, "0")).join("");
