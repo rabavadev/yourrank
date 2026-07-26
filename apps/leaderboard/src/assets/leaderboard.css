@@ -231,14 +231,14 @@ section { width: min(var(--wrap), 100% - 2.5rem); margin-inline: auto; }
 
 /* ---------- Leaderboard ---------- */
 .board { padding: 4rem 0 3rem; }
-.board-head { display: flex; align-items: flex-end; justify-content: space-between; flex-wrap: wrap; gap: 1rem; margin-bottom: 2rem; }
+.board-head { display: flex; align-items: flex-end; justify-content: space-between; flex-wrap: wrap; gap: 1rem; margin: 0 auto 2rem; max-width: 760px; }
 .board-meta { display: flex; gap: 1.5rem; }
 .bm { display: flex; flex-direction: column; align-items: flex-end; }
 .bm b { font-weight: 800; font-size: 1.3rem; }
 .bm span { font-size: 0.7rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-mute); }
 .countdown { font-family: "JetBrains Mono", monospace; }
 
-.top3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.9rem; margin-bottom: 1.2rem; }
+.top3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.9rem; margin: 0 auto 1.2rem; max-width: 760px; }
 .t3 {
   position: relative; background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius-sm);
   padding: 1.3rem 1.1rem; text-align: center; overflow: hidden;
@@ -249,30 +249,33 @@ section { width: min(var(--wrap), 100% - 2.5rem); margin-inline: auto; }
 .t3--2 { animation-delay: 0s; } .t3--3 { animation-delay: 0.2s; }
 .t3-medal { font-family: "JetBrains Mono"; font-weight: 700; font-size: 0.75rem; letter-spacing: 0.1em; color: var(--ink-mute); }
 .t3--1 .t3-medal { color: var(--gold); }
-.t3-name { display: block; font-weight: 700; font-size: 1.05rem; margin: 0.5rem 0 0.3rem; word-break: break-all; color: inherit; text-decoration: none; min-height: var(--tap,44px); display:flex; align-items:center; }
+.t3-name { display: block; font-weight: 700; font-size: 1.05rem; margin: 0.5rem 0 0.3rem; word-break: break-all; color: inherit; text-decoration: none; min-height: var(--tap,44px); display:flex; align-items:center; justify-content:center; }
 .t3-name:hover { color: var(--accent, #c8ff00); text-decoration: underline; }
 .t3-wager { font-family: "JetBrains Mono"; font-size: 0.82rem; color: var(--ink-soft); }
 .t3-prize { display: inline-block; margin-top: 0.7rem; font-weight: 800; font-size: 1.2rem; padding: 0.15rem 0.8rem; border-radius: 8px; background: rgba(255,255,255,0.05); }
 .t3--1 .t3-prize { color: var(--gold); background: rgba(255,203,69,0.12); }
 .t3--2 .t3-prize, .t3--3 .t3-prize { color: var(--cy); }
 
-.table { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; }
+.table { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; text-align: center; max-width: 760px; margin-inline: auto; }
 .t-head, .t-row { display: grid; grid-template-columns: 56px 1fr 150px 100px; align-items: center; gap: 0.5rem; padding: 0.8rem 1.4rem; }
 .t-head { background: rgba(255,255,255,0.03); border-bottom: 1px solid var(--line); font-size: 0.7rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-mute); font-weight: 600; }
 .ta-r { text-align: right; }
+.table .ta-r,
+.table .tr-wager,
+.table .tr-prize { text-align: center; }
 .t-rows { list-style: none; }
 .t-row { border-bottom: 1px solid var(--line); transition: background 0.15s; opacity: 0; animation: fade 0.4s ease forwards; }
 .t-row:last-child { border-bottom: none; }
 .t-row:hover { background: rgba(255,255,255,0.03); }
 @keyframes fade { to { opacity: 1; } }
 .tr-rank { font-weight: 800; color: var(--ink-mute); }
-.tr-player { display: flex; align-items: center; gap: 0.6rem; min-width: 0; }
+.tr-player { display: flex; align-items: center; justify-content: center; gap: 0.6rem; min-width: 0; }
 .tr-av { width: 28px; height: 28px; border-radius: 50%; flex-shrink: 0; display: grid; place-items: center; font-size: 0.72rem; font-weight: 700; background: rgba(120,90,255,0.2); border: 1px solid var(--line-2); }
 .tr-name { font-weight: 600; font-size: 0.92rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: inherit; text-decoration: none; min-height: var(--tap,44px); display:inline-flex; align-items:center; }
 .tr-name:hover { color: var(--accent, #c8ff00); text-decoration: underline; }
-.tr-wager { text-align: right; font-family: "JetBrains Mono"; font-size: 0.85rem; color: var(--ink-soft); }
+.tr-wager { text-align: center; font-family: "JetBrains Mono"; font-size: 0.85rem; color: var(--ink-soft); }
 .tr-wager .w-sm { display: none; }
-.tr-prize { text-align: right; font-weight: 700; }
+.tr-prize { text-align: center; font-weight: 700; }
 .tr-prize.has { color: var(--cy); } .tr-prize.no { color: var(--ink-mute); font-weight: 500; }
 /* Layout-template extras — hidden by default so only templates that opt in
    (podium/cards big-card avatar, arena wager bar) render them. */
@@ -280,7 +283,7 @@ section { width: min(var(--wrap), 100% - 2.5rem); margin-inline: auto; }
 .t3-av { display: none; }
 
 /* ---------- Find My Rank search bar ---------- */
-.find-rank-bar { display: flex; align-items: center; gap: 12px; margin-bottom: 1rem; flex-wrap: wrap; }
+.find-rank-bar { display: flex; align-items: center; justify-content: center; gap: 12px; margin: 0 auto 1rem; flex-wrap: wrap; max-width: 760px; }
 .find-rank-wrap {
   display: inline-flex; align-items: center; gap: 8px;
   background: var(--panel); border: 1px solid var(--line); border-radius: 999px;
@@ -317,12 +320,12 @@ section { width: min(var(--wrap), 100% - 2.5rem); margin-inline: auto; }
 
 /* ---------- Gap-to-next-rank indicator ---------- */
 .tr-gap {
-  position: absolute; right: 0; bottom: -2px;
+  position: absolute; left: 50%; bottom: 0.35rem; transform: translateX(-50%);
   font-family: "JetBrains Mono", monospace; font-size: 0.75rem; font-weight: 500;
   color: var(--ink-soft); white-space: nowrap; pointer-events: none;
   opacity: 0.9; padding: 0 0.5rem; line-height: 1;
 }
-.t-row { position: relative; }
+.t-row { position: relative; padding-bottom: 1.4rem; }
 
 /* Referral banner shown on /demo (C2) — return path + convert CTA */
 .demo-bar {
@@ -342,7 +345,7 @@ section { width: min(var(--wrap), 100% - 2.5rem); margin-inline: auto; }
 .demo-bar-home { color: var(--ink-soft); text-decoration: underline; font-size: 0.85rem; }
 .demo-bar-home:hover { color: var(--ink); }
 
-.rules { margin-top: 1.2rem; background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 0 1.3rem; }
+.rules { margin: 1.2rem auto 0; background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 0 1.3rem; max-width: 760px; }
 .rules summary { cursor: pointer; padding: 1rem 0; font-weight: 600; color: var(--ink-soft); list-style: none; }
 .rules summary::-webkit-details-marker { display: none; }
 .rules summary::before { content: "＋ "; color: var(--cy); }
@@ -556,7 +559,7 @@ section { width: min(var(--wrap), 100% - 2.5rem); margin-inline: auto; }
 .hero-logo { height: 72px; width: auto; max-width: 200px; border-radius: 16px; margin: 0 auto 16px; display: block; box-shadow: 0 8px 32px rgba(0,0,0,0.45); }
 
 /* ---------- Prize breakdown strip ---------- */
-.payouts { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 0 0 18px; }
+.payouts { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 8px; margin: 0 auto 18px; max-width: 760px; }
 .pay-label { font-family: "JetBrains Mono", monospace; font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--ink-mute); margin-right: 4px; }
 .pay { display: inline-flex; align-items: center; gap: 7px; font-family: "JetBrains Mono", monospace; font-size: 13px; color: var(--ink); background: var(--panel); border: 1px solid var(--line); border-radius: 99px; padding: 6px 13px; }
 .pay b { color: var(--gold); font-weight: 700; }
