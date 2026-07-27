@@ -58,7 +58,12 @@ export function DashboardContent() {
 <div class="lb-side-foot"><a class="btn btn--sm btn--accent lb-live-btn" id="liveLink" href="#" target="_blank" rel="noopener noreferrer">View live board ↗</a><span class="label" id="planBadge">FREE PLAN</span></div>
 </aside>
 <div class="lb-main">
-
+<div id="analyticsHud" class="hud-row" style="display: flex; gap: 20px; padding: 16px 24px; background: var(--panel); border-bottom: 1px solid var(--line); position: sticky; top: 0; z-index: 10;">
+  <div class="hud-stat"><span class="hud-lbl" style="font-size: 0.75rem; color: var(--ink-mute); text-transform: uppercase; letter-spacing: 0.1em;">Views</span><div class="hud-val" id="hud_views" style="font-weight: 600; font-size: 1.25rem;">–</div></div>
+  <div class="hud-stat"><span class="hud-lbl" style="font-size: 0.75rem; color: var(--ink-mute); text-transform: uppercase; letter-spacing: 0.1em;">Clicks</span><div class="hud-val" id="hud_clicks" style="font-weight: 600; font-size: 1.25rem;">–</div></div>
+  <div class="hud-stat"><span class="hud-lbl" style="font-size: 0.75rem; color: var(--ink-mute); text-transform: uppercase; letter-spacing: 0.1em;">CTR</span><div class="hud-val" id="hud_ctr" style="font-weight: 600; font-size: 1.25rem;">–</div></div>
+  <div class="hud-stat"><span class="hud-lbl" style="font-size: 0.75rem; color: var(--ink-mute); text-transform: uppercase; letter-spacing: 0.1em;">Signups</span><div class="hud-val" id="hud_signups" style="font-weight: 600; font-size: 1.25rem;">–</div></div>
+</div>
 <section class="lb-page" data-page="overview">
 <div class="lb-phead"><button class="lb-menu" id="lbMenu" type="button" aria-label="Show sections" aria-expanded="false" aria-controls="lbSide">☰</button><div class="lb-phead-text"><h1 tabindex="-1">Overview</h1><p class="lb-psub">Your leaderboard at a glance</p></div><div class="lb-phead-actions"><button class="btn btn--sm" id="overviewCopyLink" type="button">Copy link</button></div></div>
 <div class="card card--danger" id="draftBanner" hidden><h2>Pick up where you left off</h2><p class="card-sub">You started the setup wizard for <b id="draftName">this board</b> but didn't finish. Jump back into the guided flow, or switch to editing it here.</p><div class="d-flex gap-10 flex-wrap"><a class="btn btn--sm btn--accent" id="draftResume" href="/dashboard/setup">Resume wizard →</a><button class="btn btn--sm btn--ghost" id="draftDone" type="button">Edit here instead</button></div></div>

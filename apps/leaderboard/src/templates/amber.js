@@ -58,9 +58,9 @@ body{font-family:"Sora",system-ui,sans-serif}
 .t3--1{border-color:rgba(255,184,77,.45)}
 .t3--1 .t3-wager{color:var(--gold)}
 .t3-prize{display:none}
-body:not([data-preview]) .t-row[data-position="1"],
-body:not([data-preview]) .t-row[data-position="2"],
-body:not([data-preview]) .t-row[data-position="3"]{display:none}
+.t-row[data-position="1"],
+.t-row[data-position="2"],
+.t-row[data-position="3"]{display:none}
 .tr-av{border-radius:9px;background:rgba(255,159,46,.16);color:var(--gold);border-color:transparent}
 .t-row:hover{background:rgba(255,159,46,.06)}
 .tr-prize.has{color:var(--gold)}

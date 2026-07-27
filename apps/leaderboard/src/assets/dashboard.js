@@ -213,6 +213,21 @@ async function init() {
   });
   $("dash").addEventListener("input", markDirty);
   $("dash").addEventListener("change", markDirty);
+
+  // Keyboard shortcut system (Hook at dashboard mount)
+  document.addEventListener("keydown", (e) => {
+    // Ctrl+S / Cmd+S: Save
+    if ((e.ctrlKey || e.metaKey) && e.key === "s") {
+      e.preventDefault();
+      const saveBtn = document.getElementById("save");
+      if (saveBtn && !saveBtn.disabled && !saveBtn.hidden) saveBtn.click();
+    }
+    // Escape: Close drawer
+    if (e.key === "Escape") {
+      import("./dashboard/shell.js").then(m => m.closeDrawer(false));
+    }
+  });
+
   window.addEventListener("beforeunload", (e) => { if (state._dirty) { e.preventDefault(); e.returnValue = ""; } });
   if (urlParams.get("upgraded")) {
     $("status").textContent = "Payment received — Pro activates once the network confirms (usually minutes).";

@@ -49,7 +49,7 @@ export async function handleDashboardPreview(request, env, nonce) {
   });
 
   if (device === "desktop") {
-    const editableSelectors = "[data-brand-name], [data-casino], .hr-brand-title, .hr-brand-sub, .hr-stat-value, .hr-podium-name, .hr-podium-value, .tr-name, .tr-wager, .tr-prize, .bf-val, .reward-pool, .hero-name, .hero-sub, .clock-sub";
+    const editableSelectors = "[data-brand-name], [data-casino], .hr-brand-title, .hr-brand-sub, .hr-stat-value, .hr-podium-name, .hr-podium-value, .tr-name, .tr-wager, .tr-prize, .t3-name, .t3-wager, .t3-prize, .bf-val, .reward-pool, .hero-name, .hero-sub, .clock-sub";
     html = html.replace('</head>', `<style nonce="${nonce}">
       ${editableSelectors} { cursor: text; transition: outline 0.15s ease, outline-offset 0.15s ease; }
       ${editableSelectors.split(", ").map(s => s + ":hover").join(", ")} { outline: 2px dashed rgba(200,255,0,0.4); outline-offset: 3px; border-radius: 4px; }
@@ -112,6 +112,16 @@ export async function handleDashboardPreview(request, env, nonce) {
               finishEditing();
             }
           });
+        }
+      });
+      
+      window.addEventListener("message", (e) => {
+        if (e.data?.type === "yr_preview_update") {
+          const parser = new DOMParser();
+          const newDoc = parser.parseFromString(e.data.html, "text/html");
+          document.body.innerHTML = newDoc.body.innerHTML;
+          // Note: any <style> changes in head can be updated here if needed,
+          // but replacing body is enough for live text/player edits.
         }
       });
     </script></body>`);

@@ -1,5 +1,5 @@
 // Board switcher, creation, duplication, deletion, and the board list page.
-import { $, esc, guardAuth, getCsrf, logError, slugify } from "./utils.js";
+import { $, esc, getCsrf, guardAuth, logError, slugify, showConfirmModal, showToast } from "./utils.js";
 import { state } from "./state.js";
 import { navTo } from "./shell.js";
 
@@ -133,7 +133,7 @@ function hideBoardLimitUpsell() {
 export async function deleteBoard(siteId) {
   const board = state.BOARDS.find((b) => b.id === siteId);
   if (!board) return;
-  if (!window.confirm(`Delete board /${board.slug}? This cannot be undone.`)) return;
+  if (!await showConfirmModal("Delete board", `Delete board /${board.slug}? This cannot be undone.`, "Delete", true)) return;
   try {
     const res = await fetch("/api/site", {
       method: "DELETE",
@@ -184,7 +184,7 @@ export function openNewBoardForm() {
 export async function duplicateBoard(siteId) {
   const board = state.BOARDS.find((b) => b.id === siteId);
   if (!board) return;
-  if (!window.confirm(`Duplicate /${board.slug}? This creates an unpublished copy with the same design and players.`)) return;
+  if (!await showConfirmModal("Duplicate board", `Duplicate /${board.slug}? This creates an unpublished copy with the same design and players.`, "Duplicate", false)) return;
   try {
     const res = await fetch("/api/site/duplicate", {
       method: "POST",
