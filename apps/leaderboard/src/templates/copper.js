@@ -46,9 +46,9 @@ body{font-family:"Sora",system-ui,sans-serif}
 .t3--1 .t3-wager{color:var(--gold)}
 /* Quiet ledger below */
 .board{padding-top:.4rem}
-body:not([data-preview]) .t-row[data-position="1"],
-body:not([data-preview]) .t-row[data-position="2"],
-body:not([data-preview]) .t-row[data-position="3"]{display:none}
+.t-row[data-position="1"],
+.t-row[data-position="2"],
+.t-row[data-position="3"]{display:none}
 .tr-av{border-radius:50%;background:rgba(240,169,90,.16);color:var(--gold);border-color:transparent}
 .t-row:hover{background:rgba(240,169,90,.05)}
 .tr-prize.has{color:var(--gold)}

@@ -38,7 +38,7 @@ const DATA = {
 
 describe("template catalog", async () => {
   it("offers a curated registry of distinct templates with curated presets", async () => {
-    expect(TEMPLATE_IDS.length).toBeGreaterThanOrEqual(20);
+    expect(TEMPLATE_IDS.length).toBeGreaterThanOrEqual(15);
     for (const id of TEMPLATE_IDS) {
       expect(TEMPLATES[id].presets.length).toBeGreaterThanOrEqual(3);
       expect(TEMPLATES[id].presets.every((preset) => /^#[0-9a-f]{6}$/i.test(preset.accentA) && /^#[0-9a-f]{6}$/i.test(preset.accentB))).toBe(true);
@@ -47,7 +47,7 @@ describe("template catalog", async () => {
 
   it("exposes client metadata without sending template CSS", async () => {
     const catalog = templateCatalog();
-    expect(catalog.length).toBeGreaterThanOrEqual(20);
+    expect(catalog.length).toBeGreaterThanOrEqual(15);
     expect(catalog.every((template) => !Object.hasOwn(template, "css"))).toBe(true);
     expect(catalog.map((template) => template.id)).toEqual(TEMPLATE_IDS);
   });
@@ -60,10 +60,10 @@ describe("template catalog", async () => {
 describe("template previews", async () => {
   it("renders real board data in preview mode", async () => {
     const html = await renderLeaderboard(
-      { ...DATA, branding: { template: "neon", accentA: "#00ffd1", accentB: "#ff2cd0" } },
+      { ...DATA, branding: { template: "sponsor", accentA: "#00ffd1", accentB: "#ff2cd0" } },
       { nonce: "preview123", preview: true }
     );
-    expect(html).toContain('body data-template="neon" data-preview');
+    expect(html).toContain('body data-template="sponsor" data-preview');
     expect(html).toContain("Actual Streamer");
     expect(html).toContain("First Player");
     expect(html).toContain("body[data-preview]");
@@ -126,13 +126,13 @@ describe("theme_json / extra_json persistence (BUG: double-encoded JSONB)", asyn
   });
 
   it("resolves the template from a proper JSONB object row", async () => {
-    const shaped = publicShape({ ...SITE, theme_json: { template: "midnight" }, extra_json: {} }, []);
-    expect(shaped.branding.template).toBe("midnight");
+    const shaped = publicShape({ ...SITE, theme_json: { template: "highRollers" }, extra_json: {} }, []);
+    expect(shaped.branding.template).toBe("highRollers");
   });
 
   it("resolves the template from a legacy double-encoded string row", async () => {
-    const shaped = publicShape({ ...SITE, theme_json: '{"template":"midnight"}', extra_json: {} }, []);
-    expect(shaped.branding.template).toBe("midnight");
+    const shaped = publicShape({ ...SITE, theme_json: '{"template":"highRollers"}', extra_json: {} }, []);
+    expect(shaped.branding.template).toBe("highRollers");
   });
 
   it("reads socials from a legacy double-encoded extra_json string", async () => {

@@ -140,7 +140,7 @@ describe("updateSiteTheme validation and plan behavior", () => {
     mockOne.mockResolvedValueOnce(SITE);
     const r = await updateSiteTheme(mockEnv(), USER_ROW, {
       siteId: "site-1",
-      template: "neon",
+      template: "sponsor",
       accentA: "#00ffd1",
       accentB: "#ff2cd0",
     });
@@ -149,7 +149,7 @@ describe("updateSiteTheme validation and plan behavior", () => {
     // stores it as a real JSONB object rather than a double-encoded string.
     const savedTheme = mockExec.mock.calls[0][1][0];
     expect(savedTheme).toEqual({
-      template: "neon",
+      template: "sponsor",
       accentA: "#111111",
       accentB: "#222222",
     });
@@ -160,7 +160,7 @@ describe("updateSiteTheme validation and plan behavior", () => {
     const paidUser = { ...USER_ROW, plan: "pro", plan_expires_at: Date.now() + 86_400_000 };
     const invalid = await updateSiteTheme(mockEnv(), paidUser, {
       siteId: "site-1",
-      template: "neon",
+      template: "sponsor",
       accentA: "red",
       accentB: "#ff2cd0",
     });
@@ -170,14 +170,14 @@ describe("updateSiteTheme validation and plan behavior", () => {
     mockOne.mockResolvedValueOnce(SITE);
     const valid = await updateSiteTheme(mockEnv(), paidUser, {
       siteId: "site-1",
-      template: "neon",
+      template: "sponsor",
       accentA: "#00ffd1",
       accentB: "#ff2cd0",
     });
     expect(valid.ok).toBe(true);
     const savedTheme = mockExec.mock.calls[0][1][0];
     expect(savedTheme).toEqual({
-      template: "neon",
+      template: "sponsor",
       accentA: "#00ffd1",
       accentB: "#ff2cd0",
     });

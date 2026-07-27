@@ -52,9 +52,9 @@ body{font-family:"Sora",system-ui,sans-serif}
 .t3--2 .t3-medal::before{content:"🥈 "}
 .t3--3 .t3-medal::before{content:"🥉 "}
 .t3--1 .t3-wager{color:var(--gold)}
-body:not([data-preview]) .t-row[data-position="1"],
-body:not([data-preview]) .t-row[data-position="2"],
-body:not([data-preview]) .t-row[data-position="3"]{display:none}
+.t-row[data-position="1"],
+.t-row[data-position="2"],
+.t-row[data-position="3"]{display:none}
 .t-head{background:#eaf0ff;color:#2f6bff}
 .t-row{border-bottom:1px solid var(--line)}
 .t-row:hover{background:#f5f8ff}

@@ -28,6 +28,66 @@ export function logError(context, err, extra = {}) {
   } catch {}
 }
 
+export function showToast(message, type = "error") {
+  const el = document.getElementById("status");
+  if (!el) return;
+  el.textContent = message;
+  el.className = "toast"; // reset classes
+  if (type) el.classList.add(`toast--${type}`);
+  el.hidden = false;
+  // Automatically hide after 4 seconds
+  clearTimeout(el._toastTimeout);
+  el._toastTimeout = setTimeout(() => {
+    el.hidden = true;
+  }, 4000);
+}
+
+export function showConfirmModal(title, body, confirmText = "Confirm", isDanger = false) {
+  return new Promise((resolve) => {
+    const modal = document.createElement("div");
+    modal.className = "modal";
+    const card = document.createElement("div");
+    card.className = "modal-card";
+    const h3 = document.createElement("h3");
+    h3.textContent = title;
+    const p = document.createElement("p");
+    p.textContent = body;
+    
+    const actions = document.createElement("div");
+    actions.style.display = "flex";
+    actions.style.gap = "10px";
+    actions.style.justifyContent = "flex-end";
+    
+    const cancel = document.createElement("button");
+    cancel.className = "btn btn--sm btn--ghost";
+    cancel.type = "button";
+    cancel.textContent = "Cancel";
+    
+    const confirm = document.createElement("button");
+    confirm.className = `btn btn--sm ${isDanger ? 'btn--danger' : 'btn--accent'}`;
+    confirm.type = "button";
+    confirm.textContent = confirmText;
+    
+    actions.appendChild(cancel);
+    actions.appendChild(confirm);
+    card.appendChild(h3);
+    card.appendChild(p);
+    card.appendChild(actions);
+    modal.appendChild(card);
+    
+    const close = (val) => {
+      document.body.removeChild(modal);
+      resolve(val);
+    };
+    
+    cancel.onclick = () => close(false);
+    confirm.onclick = () => close(true);
+    
+    document.body.appendChild(modal);
+    confirm.focus();
+  });
+}
+
 // Fill a <input type="datetime-local"> with the wall-clock time in the user's
 // OWN timezone. fromLocalInput() parses the field back as local time, so both
 // sides must agree — using UTC getters here (as before) shifted the countdown

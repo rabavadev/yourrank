@@ -1,4 +1,4 @@
-import { destroySession, cookieClear, readToken, RESERVED, bad, currentUser, hasLegacyCookie, cookieClearLegacy, rateLimit, clientIp } from "./auth.js";
+import { destroySession, cookieClear, readToken, RESERVED, currentUser, hasLegacyCookie, cookieClearLegacy, rateLimit, clientIp } from "./auth.js";
 import { sendErrorToDiscord } from "../../../shared/monitoring.js";
 import { withWorkerFetch } from "../../../shared/with-worker.js";
 import { RateLimiter } from "../../../shared/rate-limiter-do.js";
@@ -21,7 +21,7 @@ import {
   serveRobotsTxt, serveSitemapXml, serveFavicon,
   HTML, SECURE_HTML, notFoundPage, suspendedPage, withNonce
 } from "./middleware/index.js";
-import { handlePublicApiPreflight, withPublicApiCors } from "./middleware/public-api.js";
+import { handlePublicApiPreflight } from "./middleware/public-api.js";
 import { findSiteLogoData, findSiteStatus, findUserTotpSecret } from "./data/sites.js";
 import { detectImageMime } from "./site.js";
 import { one } from "../../../shared/db.js";

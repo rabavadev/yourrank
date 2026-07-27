@@ -54,9 +54,9 @@ body{font-family:"Space Grotesk","Sora",system-ui,sans-serif}
 .t3--3 .t3-av{background:linear-gradient(180deg,#e6b98d,#cf9160);box-shadow:0 0 0 3px rgba(207,145,96,.25)}
 .t3--1 .t3-prize{color:var(--gold);background:rgba(255,209,92,.14)}
 .t3--2 .t3-prize,.t3--3 .t3-prize{color:var(--ink)}
-body:not([data-preview]) .t-row[data-position="1"],
-body:not([data-preview]) .t-row[data-position="2"],
-body:not([data-preview]) .t-row[data-position="3"]{display:none}
+.t-row[data-position="1"],
+.t-row[data-position="2"],
+.t-row[data-position="3"]{display:none}
 .tr-av{background:rgba(255,209,92,.14);border-color:transparent;color:var(--gold);border-radius:10px}
 .tr-prize.has{color:var(--gold)}
 @media (max-width:900px){.split-grid{grid-template-columns:1fr}.hero--split{text-align:center}.hero--split .hero-cta{justify-content:center}.hero--split .hero-sub{margin:.8rem auto 1.6rem}.stat-strip{grid-template-columns:1fr}}

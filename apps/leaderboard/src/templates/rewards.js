@@ -47,9 +47,9 @@ body{font-family:"Sora",system-ui,sans-serif}
 .t3--3 .t3-av{background:linear-gradient(180deg,#e6b98d,#cf9160);color:#1e1940}
 .t3-prize{background:rgba(124,92,255,.16);color:var(--ink)}
 .t3--1 .t3-prize{background:rgba(255,209,92,.16);color:var(--gold)}
-body:not([data-preview]) .t-row[data-position="1"],
-body:not([data-preview]) .t-row[data-position="2"],
-body:not([data-preview]) .t-row[data-position="3"]{display:none}
+.t-row[data-position="1"],
+.t-row[data-position="2"],
+.t-row[data-position="3"]{display:none}
 .tr-av{border-radius:50%;background:rgba(124,92,255,.2);color:#cabfff;border-color:transparent}
 .tr-prize.has{color:var(--gold);background:rgba(255,209,92,.12);border-radius:999px;padding:.14rem .6rem}
 .t-row:hover{background:rgba(124,92,255,.07)}

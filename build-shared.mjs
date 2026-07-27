@@ -10,12 +10,16 @@ const tsconfigPath = path.join(__dirname, "apps/leaderboard/tsconfig.json");
 
 // Find tsc: workspace-local first, then hoisted root (bun workspaces hoist bins)
 function findTsc() {
-  const candidates = [
+  const exts = process.platform === "win32" ? ["", ".exe", ".bunx", ".cmd"] : ["", ".bunx"];
+  const bases = [
     path.join(__dirname, "apps/leaderboard/node_modules/.bin/tsc"),
     path.join(__dirname, "node_modules/.bin/tsc"),
   ];
-  for (const p of candidates) {
-    if (fs.existsSync(p)) return p;
+  for (const base of bases) {
+    for (const ext of exts) {
+      const p = base + ext;
+      if (fs.existsSync(p)) return p;
+    }
   }
   return null;
 }

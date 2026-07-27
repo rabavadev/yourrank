@@ -1,5 +1,5 @@
 // Site editing: plan, branding/theme, save, archive, domain, overlay, notifications.
-import { $, esc, fromLocalInput, getCsrf, guardAuth, logError, toLocalInput, parseAmount } from "./utils.js";
+import { $, esc, fromLocalInput, getCsrf, guardAuth, logError, toLocalInput, parseAmount, showToast, showConfirmModal } from "./utils.js";
 import { state } from "./state.js";
 import { renderBoardSwitcher, renderBoardsPage, renderSidebarBoardSwitcher } from "./boards.js";
 import { applyPlayerFieldVisibility, renderPlayers, renumber, toggleEmpty } from "./players.js";
@@ -212,11 +212,17 @@ export function collect() {
     players,
     legal: {
       terms: ($("f_legal_terms")?.value || "").trim(),
+      termsEnabled: $("f_legal_terms_enabled")?.checked ?? true,
       privacy: ($("f_legal_privacy")?.value || "").trim(),
+      privacyEnabled: $("f_legal_privacy_enabled")?.checked ?? true,
       responsible: ($("f_legal_responsible")?.value || "").trim(),
+      responsibleEnabled: $("f_legal_responsible_enabled")?.checked ?? true,
       cookies: ($("f_legal_cookies")?.value || "").trim(),
+      cookiesEnabled: $("f_legal_cookies_enabled")?.checked ?? true,
       refund: ($("f_legal_refund")?.value || "").trim(),
+      refundEnabled: $("f_legal_refund_enabled")?.checked ?? true,
       contact: ($("f_legal_contact")?.value || "").trim(),
+      contactEnabled: $("f_legal_contact_enabled")?.checked ?? true,
     },
   };
   const pubToggle = $("pubToggle");
@@ -479,7 +485,8 @@ function renderTemplateGallery() {
   }
 
   gallery.innerHTML = "";
-  templates.forEach((template) => gallery.appendChild(_buildCard(template, false)));
+  const gridTemplates = _activeCategoryTab === "casino" ? templates.filter((t) => !t.featured) : templates;
+  gridTemplates.forEach((template) => gallery.appendChild(_buildCard(template, false)));
 }
 
 function renderColorPresets() {
@@ -533,8 +540,12 @@ export function updateDesignPreview() {
       });
       if (res.ok) {
         const html = await res.text();
-        iframe.srcdoc = html;
-        iframe.removeAttribute("src");
+        if (iframe.hasAttribute("srcdoc") && iframe.contentWindow) {
+          iframe.contentWindow.postMessage({ type: "yr_preview_update", html }, "*");
+        } else {
+          iframe.srcdoc = html;
+          iframe.removeAttribute("src");
+        }
       }
     } catch (e) {
       if (e.name !== "AbortError") console.error("Preview render failed", e);
@@ -849,7 +860,16 @@ export function renderLegal() {
     { key: "refund", label: "Refund Policy" },
     { key: "contact", label: "Contact" },
   ];
-  list.innerHTML = pages.map((p) => `<div class="field"><label for="f_legal_${p.key}">${esc(p.label)}</label><textarea id="f_legal_${p.key}" rows="4" placeholder="Leave blank to use the default legal text.">${esc(legal[p.key] || "")}</textarea></div>`).join("");
+  list.innerHTML = pages.map((p) => {
+    const enabled = legal[`${p.key}Enabled`] !== false;
+    return `<div class="field" style="margin-bottom: 24px;">
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+  <label for="f_legal_${p.key}" style="margin-bottom: 0;">${esc(p.label)}</label>
+  <label class="switch"><input type="checkbox" id="f_legal_${p.key}_enabled"${enabled ? " checked" : ""}><span class="switch-track"></span></label>
+</div>
+<textarea id="f_legal_${p.key}" rows="4" placeholder="Leave blank to use the default legal text.">${esc(legal[p.key] || "")}</textarea>
+</div>`;
+  }).join("");
 }
 
 export function renderOverlay() {
@@ -1059,6 +1079,13 @@ export async function loadStats() {
   }).join("");
   if (days.length) $("statFrom").textContent = new Date(days[0].day + "T00:00:00Z").toUTCString().slice(5, 11);
   if (s.last30.views === 0 && s.last30.copies === 0 && s.last30.clicks === 0) $("statsEmpty").hidden = false;
+  
+  // Populate HUD
+  const hV = $("hud_views"); if (hV) hV.textContent = fmt(s.last30.views);
+  const hC = $("hud_clicks"); if (hC) hC.textContent = fmt(s.last30.clicks);
+  const hCtr = $("hud_ctr"); if (hCtr) hCtr.textContent = (s.last30.views ? ((s.last30.clicks / s.last30.views) * 100).toFixed(1) : "0.0") + "%";
+  const hS = $("hud_signups"); if (hS) hS.textContent = fmt(s.last30.copies); // Using copies as signups proxy
+
   const ov7 = $("ov_views7"); if (ov7) ov7.textContent = fmt(s.last7.views);
   const ovBars = $("ov_bars");
   if (ovBars) {

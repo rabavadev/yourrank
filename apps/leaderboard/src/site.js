@@ -79,12 +79,12 @@ export const DEFAULT_EXTRA = {
     change: true,
   },
   legal: {
-    terms: "",
-    privacy: "",
-    responsible: "",
-    cookies: "",
-    refund: "",
-    contact: "",
+    terms: "", termsEnabled: true,
+    privacy: "", privacyEnabled: true,
+    responsible: "", responsibleEnabled: true,
+    cookies: "", cookiesEnabled: true,
+    refund: "", refundEnabled: true,
+    contact: "", contactEnabled: true,
   },
 };
 

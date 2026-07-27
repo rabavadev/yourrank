@@ -56,9 +56,9 @@ body{font-family:"Sora",system-ui,sans-serif}
 .t3--1 .t3-wager{color:var(--gold)}
 /* Table sits flush against the stage */
 .table{border-top:2px solid var(--line-2)}
-body:not([data-preview]) .t-row[data-position="1"],
-body:not([data-preview]) .t-row[data-position="2"],
-body:not([data-preview]) .t-row[data-position="3"]{display:none}
+.t-row[data-position="1"],
+.t-row[data-position="2"],
+.t-row[data-position="3"]{display:none}
 .tr-av{border-radius:10px;background:rgba(244,200,90,.14);color:var(--gold);border-color:transparent}
 .tr-prize.has{color:var(--gold)}
 @media (max-width:900px){.banner-grid{grid-template-columns:1fr}.bf{text-align:left}}
