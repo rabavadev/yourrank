@@ -276,6 +276,20 @@ export const PAGES = {
             </div>
 
             <div class="yr-section">
+              <h2>Visible columns</h2>
+              <p>Choose which stats show on your public leaderboard.</p>
+              <div class="card">
+                <div class="yr-col-toggles">
+                  <div class="yr-col-row"><span>Wagered</span><label class="yr-toggle"><input type="checkbox" id="col_wagered" checked /><span class="yr-toggle-slider"></span></label></div>
+                  <div class="yr-col-row"><span>Prize</span><label class="yr-toggle"><input type="checkbox" id="col_prize" checked /><span class="yr-toggle-slider"></span></label></div>
+                  <div class="yr-col-row"><span>Net profit</span><label class="yr-toggle"><input type="checkbox" id="col_profit" /><span class="yr-toggle-slider"></span></label></div>
+                  <div class="yr-col-row"><span>Win rate</span><label class="yr-toggle"><input type="checkbox" id="col_winrate" /><span class="yr-toggle-slider"></span></label></div>
+                  <div class="yr-col-row"><span>Change</span><label class="yr-toggle"><input type="checkbox" id="col_change" checked /><span class="yr-toggle-slider"></span></label></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="yr-section">
               <h2>Past winners / close-out</h2>
               <p>When a period ends, close it out: the current board is saved and shown on your page under "Past Winners". Saves your unsaved edits first.</p>
               <div class="card">
@@ -316,6 +330,19 @@ export const PAGES = {
                 </div>
                 <div class="empty" id="brandLock" hidden>Branding is a Pro feature. <a href="#" id="brandUpgrade">Upgrade to unlock it</a>.</div>
               </div>
+            </div>
+
+            <div class="yr-section">
+              <h2>Pro features <span class="pill pill--info" style="margin-left:6px">PRO</span></h2>
+              <p>Custom branding, custom sections &amp; prize customization — upgrade to unlock.</p>
+              <div class="card yr-pro-card">
+                <div class="yr-pro-ico">🔒</div>
+                <div class="yr-pro-body">
+                  <h3>Custom branding &amp; sections</h3>
+                  <p>Replace the YourRank badge, add sponsor banners, and customize every section with your own copy and colors.</p>
+                </div>
+              </div>
+              <button class="btn btn--accent yr-upgrade-btn" id="proUpgrade" type="button">Upgrade to Pro</button>
             </div>
           </div>
 

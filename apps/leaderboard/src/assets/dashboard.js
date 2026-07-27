@@ -515,6 +515,7 @@ $("logout")?.addEventListener("click", async (e)=>{ e.preventDefault(); await fe
 $("upgrade")?.addEventListener("click",(e)=>{ e.preventDefault(); checkout($("goPro")); });
 $("goPro")?.addEventListener("click",()=>checkout($("goPro")));
 $("domainUpgrade")?.addEventListener("click",(e)=>{ e.preventDefault(); checkout($("goPro")); });
+$("proUpgrade")?.addEventListener("click",(e)=>{ e.preventDefault(); checkout($("goPro")); });
 
 /* --- tab switching (new dashboard layout) --- */
 function setupTabs() {

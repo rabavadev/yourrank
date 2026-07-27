@@ -280,6 +280,28 @@ table.ref-table td{padding:8px 8px;border-bottom:1px solid var(--line);color:var
 
 .yr-players-toolbar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
 
+/* visible columns toggles */
+.yr-col-toggles{display:flex;flex-direction:column}
+.yr-col-row{display:flex;align-items:center;justify-content:space-between;padding:11px 0;border-bottom:1px solid var(--line)}
+.yr-col-row:last-child{border-bottom:none}
+.yr-col-row span{font-size:14px;color:var(--ink)}
+
+/* toggle switch */
+.yr-toggle{position:relative;display:inline-block;width:40px;height:22px;flex:0 0 auto}
+.yr-toggle input{opacity:0;width:0;height:0}
+.yr-toggle-slider{position:absolute;cursor:pointer;top:0;left:0;right:0;bottom:0;background:var(--line-2);border-radius:34px;transition:.3s}
+.yr-toggle-slider:before{position:absolute;content:"";height:16px;width:16px;left:3px;bottom:3px;background:var(--ink-mute);border-radius:50%;transition:.3s}
+.yr-toggle input:checked + .yr-toggle-slider{background:rgba(200,255,0,.15)}
+.yr-toggle input:checked + .yr-toggle-slider:before{transform:translateX(18px);background:var(--accent)}
+
+/* pro features card */
+.yr-pro-card{display:flex;align-items:flex-start;gap:14px;opacity:.7}
+.yr-pro-ico{width:36px;height:36px;border-radius:10px;background:var(--panel);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;font-size:16px;flex:0 0 auto}
+.yr-pro-body h3{font-size:14px;color:var(--ink);margin:0 0 4px;font-weight:500}
+.yr-pro-body p{font-size:13px;color:var(--ink-mute);margin:0;line-height:1.5}
+.yr-upgrade-btn{width:100%;margin-top:12px;border:1px solid var(--accent);color:var(--accent);background:transparent}
+.yr-upgrade-btn:hover{background:var(--accent);color:var(--accent-ink)}
+
 /* responsive */
 @media(max-width:900px){
   .yr-sidebar{display:none}
