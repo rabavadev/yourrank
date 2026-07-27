@@ -710,25 +710,37 @@ function collectSocials() {
   });
 }
 
-export function renderSocials() {
-  const list = $("socialsList");
-  if (!list) return;
-  const existing = Array.isArray(state.EXTRA?.socials) ? state.EXTRA.socials : [];
-  const byBrand = new Map(existing.map((s) => [String(s.brand || s.name || "").toLowerCase(), s]));
-  list.innerHTML = SOCIAL_CATALOG.map((c) => {
-    const cur = byBrand.get(c.brand) || {};
-    const url = cur.url && cur.url !== "#" ? cur.url : "";
-    const enabled = cur.enabled !== undefined ? !!cur.enabled : !!url;
-    return `<div class="social-row" data-social="${esc(c.brand)}">
-<label class="social-name" for="social_${esc(c.brand)}">${esc(c.name)}</label>
-<input id="social_${esc(c.brand)}" class="social-url" type="url" inputmode="url" placeholder="${esc(c.placeholder)}" value="${esc(url)}" />
-<label class="switch" title="Show on public page"><input type="checkbox" class="social-toggle" ${enabled ? "checked" : ""} /><span class="switch-track"></span></label>
+const SOCIAL_ICONS = {
+    discord: `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M20.317 4.492c-1.53-.69-3.17-1.2-4.885-1.49a.075.075 0 0 0-.079.036c-.21.369-.444.85-.608 1.23a18.566 18.566 0 0 0-5.487 0 12.36 12.36 0 0 0-.617-1.23A.077.077 0 0 0 8.562 3c-1.714.29-3.354.8-4.885 1.491a.07.07 0 0 0-.032.027C.533 9.093-.32 13.555.099 17.961a.08.08 0 0 0 .031.055 20.03 20.03 0 0 0 5.993 2.98.078.078 0 0 0 .084-.026c.462-.62.874-1.275 1.226-1.963.021-.04.001-.088-.041-.104a13.201 13.201 0 0 1-1.872-.878.075.075 0 0 1-.008-.125c.126-.093.252-.19.372-.287a.075.075 0 0 1 .078-.01c3.927 1.764 8.18 1.764 12.061 0a.075.075 0 0 1 .079.009c.12.098.245.195.372.288a.075.075 0 0 1-.006.125c-.598.344-1.22.635-1.873.877a.075.075 0 0 0-.041.105c.36.687.772 1.341 1.225 1.962a.077.077 0 0 0 .084.028 19.963 19.963 0 0 0 6.002-2.981.076.076 0 0 0 .032-.054c.5-5.094-.838-9.52-3.549-13.442a.06.06 0 0 0-.031-.028z"/></svg>`,
+    kick: `<span style="font-weight:900;font-size:18px">K</span>`,
+    twitch: `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M11.571 4.714h1.715v5.143H11.57zm4.715 0H18v5.143h-1.714zM6 0L1.714 4.286v15.428h5.143V24l4.286-4.286h3.428L22.286 12V0zm14.571 11.143l-3.428 3.428h-3.429l-3 3v-3H6.857V1.714h13.714z"/></svg>`,
+    x: `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>`,
+    youtube: `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>`,
+    instagram: `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 1 0 0 12.324 6.162 6.162 0 0 0 0-12.324zM12 16a4 4 0 1 1 0-8 4 4 0 0 1 0 8zm6.406-11.845a1.44 1.44 0 1 0 0 2.881 1.44 1.44 0 0 0 0-2.881z"/></svg>`,
+    telegram: `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.479.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/></svg>`,
+  };
+
+  export function renderSocials() {
+    const list = $("socialsList");
+    if (!list) return;
+    const existing = Array.isArray(state.EXTRA?.socials) ? state.EXTRA.socials : [];
+    const byBrand = new Map(existing.map((s) => [String(s.brand || s.name || "").toLowerCase(), s]));
+    list.innerHTML = SOCIAL_CATALOG.map((c) => {
+      const cur = byBrand.get(c.brand) || {};
+      const url = cur.url && cur.url !== "#" ? cur.url : "";
+      const enabled = cur.enabled !== undefined ? !!cur.enabled : !!url;
+      const icon = SOCIAL_ICONS[c.brand] || `<span style="font-weight:700;font-size:14px">${esc(c.name[0])}</span>`;
+      return `<div class="social-row-brand" data-social="${esc(c.brand)}">
+<div class="social-brand-icon social-brand-icon--${esc(c.brand)}">${icon}</div>
+<div><span class="social-name">${esc(c.name)}</span><span class="social-handle">${esc(c.handle)}</span>
+<input id="social_${esc(c.brand)}" class="social-url" type="url" inputmode="url" placeholder="${esc(c.placeholder)}" value="${esc(url)}" /></div>
+<label class="yr-toggle" title="Show on public page"><input type="checkbox" class="social-toggle" ${enabled ? "checked" : ""} /><span class="yr-slider"></span></label>
 </div>`;
-  }).join("");
-  list.addEventListener("input", collectSocials);
-  list.addEventListener("change", collectSocials);
-  collectSocials();
-}
+    }).join("");
+    list.addEventListener("input", collectSocials);
+    list.addEventListener("change", collectSocials);
+    collectSocials();
+  }
 
 const SECTIONS_CATALOG = [
   { key: "payouts", label: "Show Prize Pool" },
@@ -1056,15 +1068,106 @@ $("save").addEventListener("click", async () => {
   if (status.textContent === "Saved. Your page is updated.") setTimeout(() => { if (status.textContent === "Saved. Your page is updated.") status.textContent = ""; }, 6000);
 });
 
-export async function loadStats() {
-  const statsUrl = state.ACTIVE_SITE_ID ? `/api/site/stats?siteId=${encodeURIComponent(state.ACTIVE_SITE_ID)}` : "/api/site/stats";
-  let s;
-  try {
-    const r = await fetch(statsUrl);
-    const d = await r.json();
-    if (!r.ok || !d.ok) return;
-    s = d.stats;
-  } catch (err) { logError("load-stats", err); return; }
+export function renderEmbedShare() {
+    const slug = state.SLUG;
+    if (!slug) return;
+    const origin = location.origin;
+    const publicUrl = origin + "/" + slug;
+
+    // Public link
+    const pubLink = $("embedPublicLink");
+    if (pubLink) pubLink.textContent = publicUrl;
+    const pubCopy = $("embedPublicCopy");
+    if (pubCopy && !pubCopy._wired) {
+      pubCopy._wired = true;
+      pubCopy.addEventListener("click", async () => {
+        try { await navigator.clipboard.writeText(publicUrl); pubCopy.querySelector("svg + *")?.remove(); } catch {}
+        const span = document.createElement("span"); span.textContent = " Copied!";
+        pubCopy.appendChild(span);
+        setTimeout(() => span.remove(), 1500);
+      });
+    }
+
+    // OBS URL
+    const obsUrl = origin + "/" + slug + "/overlay";
+    const obsLink = $("embedObsUrl");
+    if (obsLink) obsLink.textContent = obsUrl;
+    const obsCopy = $("embedObsCopy");
+    if (obsCopy && !obsCopy._wired) {
+      obsCopy._wired = true;
+      obsCopy.addEventListener("click", async () => {
+        try { await navigator.clipboard.writeText(obsUrl); obsCopy.querySelector("svg + *")?.remove(); } catch {}
+        const span = document.createElement("span"); span.textContent = " Copied!";
+        obsCopy.appendChild(span);
+        setTimeout(() => span.remove(), 1500);
+      });
+    }
+
+    // Embed code
+    const embedCode = `<iframe src="${origin}/${slug}/embed" width="100%" height="600" frameborder="0"></iframe>`;
+    const embedInline = $("embedCodeInline");
+    if (embedInline) embedInline.textContent = embedCode;
+    const embedCopy = $("embedCodeCopy");
+    if (embedCopy && !embedCopy._wired) {
+      embedCopy._wired = true;
+      embedCopy.addEventListener("click", async () => {
+        try { await navigator.clipboard.writeText(embedCode); embedCopy.textContent = "Copied!"; embedCopy.classList.add("is-copied"); } catch {}
+        setTimeout(() => { embedCopy.textContent = "Copy"; embedCopy.classList.remove("is-copied"); }, 1500);
+      });
+    }
+
+    // Embed options: transparent + hide branding
+    const transparentCb = $("embedTransparent");
+    const brandingCb = $("embedHideBranding");
+    const updateEmbedCode = () => {
+      let src = `${origin}/${slug}/embed`;
+      const params = [];
+      if (transparentCb?.checked) params.push("transparent=1");
+      if (brandingCb?.checked) params.push("noBrand=1");
+      if (params.length) src += "?" + params.join("&");
+      const code = `<iframe src="${src}" width="100%" height="600" frameborder="0"></iframe>`;
+      if (embedInline) embedInline.textContent = code;
+    };
+    if (transparentCb && !transparentCb._wired) { transparentCb._wired = true; transparentCb.addEventListener("change", updateEmbedCode); }
+    if (brandingCb && !brandingCb._wired) { brandingCb._wired = true; brandingCb.addEventListener("change", updateEmbedCode); }
+
+    // Social share cards
+    const shareUrl = encodeURIComponent(publicUrl);
+    const shareText = encodeURIComponent("Check out my leaderboard!");
+    const shareX = $("shareX");
+    if (shareX && !shareX._wired) { shareX._wired = true; shareX.addEventListener("click", () => window.open(`https://twitter.com/intent/tweet?url=${shareUrl}&text=${shareText}`, "_blank")); }
+    const shareDiscord = $("shareDiscord");
+    if (shareDiscord && !shareDiscord._wired) { shareDiscord._wired = true; shareDiscord.addEventListener("click", () => window.open(`https://discord.com/channels/@me`, "_blank")); }
+    const shareTwitch = $("shareTwitch");
+    if (shareTwitch && !shareTwitch._wired) { shareTwitch._wired = true; shareTwitch.addEventListener("click", () => window.open(`https://dashboard.twitch.tv`, "_blank")); }
+    const shareCopy = $("shareCopy");
+    if (shareCopy && !shareCopy._wired) {
+      shareCopy._wired = true;
+      shareCopy.addEventListener("click", async () => {
+        try { await navigator.clipboard.writeText(publicUrl); shareCopy.querySelector("svg + *")?.remove(); } catch {}
+        const span = document.createElement("span"); span.textContent = " Copied!";
+        shareCopy.appendChild(span);
+        setTimeout(() => span.remove(), 1500);
+      });
+    }
+
+    // API access (unlock for Pro)
+    const apiEl = $("apiAccess");
+    if (apiEl) {
+      const pro = state.ME?.plan === "pro" || state.ME?.plan === "agency";
+      apiEl.classList.toggle("locked", !pro);
+    }
+  }
+
+  export async function loadStats() {
+      const statsUrl = state.ACTIVE_SITE_ID ? `/api/site/stats?siteId=${encodeURIComponent(state.ACTIVE_SITE_ID)}` : "/api/site/stats";
+      let s;
+      try {
+        const r = await fetch(statsUrl);
+        const d = await r.json();
+        if (!r.ok || !d.ok) return null;
+        s = d.stats;
+      } catch (err) { logError("load-stats", err); return null; }
   const fmt = (n) => n >= 10000 ? (n / 1000).toFixed(1).replace(/\.0$/, "") + "k" : String(n);
   $("st_views7").textContent = fmt(s.last7.views);
   $("st_views30").textContent = fmt(s.last30.views);
@@ -1108,6 +1211,7 @@ export async function loadStats() {
   }
   const shareStep = $("ov_step_share");
   if (shareStep && s.last7.views > 0) shareStep.classList.add("is-done");
+  return s;
 }
 
 $("logout")?.addEventListener("click", async (e) => { e.preventDefault(); await fetch("/api/auth/logout", { method: "POST", credentials: "include", headers: { "x-csrf-token": getCsrf() } }); location.href = "/login"; });
