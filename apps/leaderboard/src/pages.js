@@ -158,125 +158,406 @@ export const PAGES = {
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="/assets/app.css" /><!--GM_NAV_CSS--></head><body>
 <!--GM_NAV-->
-<div class="wrap" id="app"><div class="skel" id="loading">Loading your leaderboard…</div>
+<div class="skel" id="loading">Loading your leaderboard…</div>
 <div id="dash" hidden>
-<div class="dash-head"><div><h1>Your leaderboard</h1><p class="live-link">Live at <a id="liveLink" href="#" target="_blank">…</a></p></div><span class="label" id="planBadge">FREE PLAN</span></div>
-<div class="card" id="boardSwitcher"><h2>Boards</h2><p class="card-sub">Switch between your leaderboards. <span class="hint" id="boardCount"></span></p>
-<div class="board-list" id="boardList"></div>
-<div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn--sm" id="newBoard" type="button" hidden>+ New board</button></div>
-<div id="newBoardForm" hidden style="margin-top:12px;display:flex;gap:8px;align-items:end;flex-wrap:wrap">
-<div class="field" style="flex:1;min-width:160px;margin:0"><label for="nb_name">Board name</label><input id="nb_name" placeholder="July 2026 Board" /></div>
-<div class="field" style="flex:1;min-width:160px;margin:0"><label for="nb_slug">URL slug</label><input id="nb_slug" placeholder="july-2026" /></div>
-<button class="btn btn--sm btn--accent" id="nb_create" type="button">Create</button>
-<button class="btn btn--sm btn--ghost" id="nb_cancel" type="button">Cancel</button>
-<div class="hint" id="nb_err" style="width:100%"></div>
-</div></div>
-<div class="card"><h2>Analytics</h2><p class="card-sub">Last 30 days on your page. Views count every visit; copies and clicks are people grabbing your code or hitting Join.</p>
-<div class="stat-tiles">
-<div class="stat-tile"><span class="stat-num" id="st_views7">–</span><span class="stat-lbl">Views · 7d</span></div>
-<div class="stat-tile"><span class="stat-num" id="st_views30">–</span><span class="stat-lbl">Views · 30d</span></div>
-<div class="stat-tile"><span class="stat-num" id="st_copies30">–</span><span class="stat-lbl">Code copies · 30d</span></div>
-<div class="stat-tile"><span class="stat-num" id="st_clicks30">–</span><span class="stat-lbl">Join clicks · 30d</span></div></div>
-<div class="stat-chart"><div class="stat-bars" id="statBars" title="Daily views, last 14 days"></div><div class="stat-chart-lbl"><span id="statFrom"></span><span>Daily views, last 14 days</span><span>today</span></div></div>
-<p class="hint" id="statsEmpty" hidden>No views yet — share your page link in your stream panels and Discord to get it moving.</p></div>
-<div class="card"><h2>Brand &amp; prize</h2><p class="card-sub">The headline details on your page.</p><div class="grid2">
-<div class="field"><label for="f_name">Display name</label><input id="f_name" /></div>
-<div class="field"><label for="f_tagline">Tagline</label><input id="f_tagline" placeholder="Casino streamer & Stake partner" /></div>
-<div class="field"><label for="f_casino">Casino</label><input id="f_casino" placeholder="Stake" /></div>
-<div class="field"><label for="f_code">Referral code</label><input id="f_code" placeholder="BTZ" /></div>
-<div class="field"><label for="f_cta">Referral link</label><input id="f_cta" placeholder="https://stake.com/?c=BTZ" /></div>
-<div class="field"><label for="f_pool">Prize pool</label><input id="f_pool" placeholder="$3,500" /></div>
-<div class="field"><label for="f_period">Period</label><input id="f_period" placeholder="Monthly" /></div>
-<div class="field"><label for="f_ends">Countdown ends (UTC)</label><input id="f_ends" type="datetime-local" /><span class="hint">When the leaderboard resets. Powers the live timer.</span></div></div>
-<div class="field"><label for="f_blurb">Partner blurb</label><textarea id="f_blurb" rows="2" placeholder="Short pitch about the casino and your code."></textarea></div></div>
-<div class="card"><h2>Players</h2><p class="card-sub">The board auto-sorts by wagered, highest first. Prize <span class="mono">0</span> shows a dash. Names can be masked (keep the <span class="mono">***</span>). <span class="mono" id="pCount"></span></p>
-<table class="players"><thead><tr><th class="rank">#</th><th>Player</th><th class="ta-r">Wagered</th><th class="ta-r">Prize</th><th></th></tr></thead><tbody id="rows"></tbody></table>
-<div id="playersEmpty" class="empty" hidden>No players yet. Add your first one.</div>
-<div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn--sm" id="addRow">+ Add player</button><button class="btn btn--sm" id="importBtn" type="button">Paste from spreadsheet</button><button class="btn btn--sm" id="csvImportBtn" type="button">📁 Import CSV</button><button class="btn btn--sm btn--ghost" id="csvTemplateBtn" type="button">Download template</button><input type="file" id="csvFileInput" accept=".csv,.tsv,.txt" hidden /></div>
-<div class="import" id="importPanel" hidden>
-<p class="hint" style="margin:0 0 8px">One player per line: <span class="mono">name, wagered, prize</span> — commas or tabs. Copying straight out of Excel or Google Sheets works. Prize is optional.</p>
-<textarea id="importText" rows="6" spellcheck="false" placeholder="*****ess&#9;152000&#9;1500&#10;*****y&#9;98000&#9;700&#10;*****k&#9;61250"></textarea>
-<div class="import-foot"><span class="hint" id="importPreview">0 players detected</span>
-<label class="hint chk"><input type="checkbox" id="importReplace" checked /> Replace current list</label>
-<button class="btn btn--sm btn--accent" id="importApply" type="button" disabled>Add to table</button></div></div></div>
-<div class="card" id="brandCard"><h2>Branding <span class="pill pill--info" style="margin-left:6px">PRO</span></h2><p class="card-sub">Your logo and page colors. Free pages use the default look.</p>
-<div id="brandBody">
-<div class="grid2">
-<div class="field"><label for="logoFile">Logo</label>
-<div class="logo-row"><img id="logoPreview" class="logo-preview" alt="" hidden /><input type="file" id="logoFile" accept="image/png,image/jpeg,image/webp" hidden />
-<button class="btn btn--sm" id="logoPick" type="button">Upload logo</button><button class="btn btn--sm btn--ghost" id="logoClear" type="button" hidden>Remove</button></div>
-<span class="hint">PNG, JPG or WebP. Shows in your page header and as the link preview image when your page gets shared. Square works best.</span></div>
-<div class="field"><label for="c_a">Page accent colors</label>
-<div class="color-row"><input type="color" id="c_a" value="#5ad9ff" /><input type="color" id="c_b" value="#7b8cff" /><button class="btn btn--sm btn--ghost" id="colorsReset" type="button">Reset to default</button></div>
-<span class="hint">Drives the big name gradient and buttons on your page. Save to apply.</span></div>
-</div></div>
-<div class="empty" id="brandLock" hidden>Branding is a Pro feature. <a href="#" id="brandUpgrade">Upgrade to unlock it</a>.</div></div>
-<div class="card" id="overlayCard"><h2>OBS Stream Overlay <span class="pill pill--info" style="margin-left:6px">PRO</span></h2><p class="card-sub">Add a live leaderboard overlay to your stream. It auto-updates every 15 seconds with smooth rank animations.</p>
-<div id="overlayBody">
-<div class="field"><label>Overlay URL</label>
-<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-<code id="overlayUrl" style="flex:1;font-family:var(--mono);font-size:13px;background:var(--panel-2);border:1px solid var(--line-2);border-radius:8px;padding:10px 12px;word-break:break-all;min-width:0;user-select:all"></code>
-<button class="btn btn--sm btn--accent" id="overlayCopy" type="button">📋 Copy</button>
+  <div class="yr-dash-layout">
+    <!-- ============ SIDEBAR ============ -->
+    <aside class="yr-sidebar">
+      <div class="yr-sb-section">
+        <p class="yr-sb-label">Active board</p>
+        <div class="yr-sb-board">
+          <div class="yr-sb-board-name" id="sbBoardName">—</div>
+          <div class="yr-sb-board-slug" id="sbBoardSlug">/…</div>
+          <div class="yr-sb-board-status"><span class="yr-sb-dot" id="sbPubDot"></span><span id="sbPubText">Published</span></div>
+        </div>
+        <div class="yr-sb-board-list" id="boardList"></div>
+        <span class="hint" id="boardCount"></span>
+        <div class="yr-sb-board-switch">
+          <button class="btn btn--sm" id="newBoard" type="button" hidden>+ New board</button>
+        </div>
+        <div id="newBoardForm" hidden class="yr-sb-newform">
+          <div class="field"><label for="nb_name">Board name</label><input id="nb_name" placeholder="July 2026 Board" /></div>
+          <div class="field"><label for="nb_slug">URL slug</label><input id="nb_slug" placeholder="july-2026" /></div>
+          <div style="display:flex;gap:6px"><button class="btn btn--sm btn--accent" id="nb_create" type="button">Create</button><button class="btn btn--sm btn--ghost" id="nb_cancel" type="button">Cancel</button></div>
+          <div class="hint" id="nb_err"></div>
+        </div>
+      </div>
+
+      <div class="yr-sb-section">
+        <p class="yr-sb-label">Board</p>
+        <a class="yr-sb-link yr-sb-link--active" href="/dashboard"><span class="yr-sb-ico">✎</span>Editor</a>
+        <a class="yr-sb-link" href="/dashboard/overview"><span class="yr-sb-ico">◎</span>Overview</a>
+      </div>
+
+      <div class="yr-sb-section">
+        <p class="yr-sb-label">Automate</p>
+        <a class="yr-sb-link" href="/dashboard/analytics"><span class="yr-sb-ico">📡</span>Analytics</a>
+      </div>
+
+      <div class="yr-sb-section">
+        <p class="yr-sb-label">Plan</p>
+        <a class="yr-sb-link" href="/dashboard/billing"><span class="yr-sb-ico">◈</span>Plan &amp; billing</a>
+      </div>
+
+      <div class="yr-sb-foot">
+        <label class="yr-sb-pub chk"><input type="checkbox" id="pubToggle" checked /> Page published</label>
+        <a class="yr-sb-view-live" id="viewLive" href="#" target="_blank">↗ View live board</a>
+        <div class="yr-sb-plan">
+          <span class="yr-sb-plan-badge" id="planBadge">FREE PLAN</span>
+          <span class="yr-sb-plan-name" id="planName">Free</span>
+          <span class="yr-sb-plan-meta" id="planMeta">Up to 10 players</span>
+          <button class="btn btn--sm btn--accent" id="goPro" type="button" style="margin-top:6px">Upgrade</button>
+        </div>
+      </div>
+    </aside>
+
+    <!-- ============ MAIN ============ -->
+    <main class="yr-dash-main">
+      <div class="yr-dash-head">
+        <div>
+          <h1>Editor</h1>
+          <p class="yr-head-sub">Live at <a id="liveLink" href="#" target="_blank">…</a></p>
+        </div>
+        <div class="yr-dash-head-right">
+          <span class="yr-dash-status" id="status"></span>
+          <button class="btn btn--accent" id="save">Save changes</button>
+        </div>
+      </div>
+
+      <div class="yr-tabs">
+        <button class="yr-tab yr-tab--active" type="button" data-panel="panel-general">General &amp; data</button>
+        <button class="yr-tab" type="button" data-panel="panel-appearance">Appearance</button>
+        <button class="yr-tab" type="button" data-panel="panel-embed">Embed &amp; share</button>
+        <button class="yr-tab" type="button" data-panel="panel-legal">Legal pages</button>
+      </div>
+
+      <div class="yr-dash-content">
+        <div class="yr-dash-form">
+
+          <!-- ===== TAB 1: General & data ===== -->
+          <div class="yr-tab-panel yr-tab-panel--active" id="panel-general">
+            <div class="yr-section">
+              <h2>Brand &amp; prize</h2>
+              <p>The headline details on your page.</p>
+              <div class="card">
+                <div class="yr-grid2">
+                  <div class="field"><label for="f_name">Display name</label><input id="f_name" /></div>
+                  <div class="field"><label for="f_tagline">Tagline</label><input id="f_tagline" placeholder="Casino streamer & Stake partner" /></div>
+                  <div class="field"><label for="f_casino">Casino</label><input id="f_casino" placeholder="Stake" /></div>
+                  <div class="field"><label for="f_code">Referral code</label><input id="f_code" placeholder="BTZ" /></div>
+                  <div class="field"><label for="f_cta">Referral link</label><input id="f_cta" placeholder="https://stake.com/?c=BTZ" /></div>
+                  <div class="field"><label for="f_pool">Prize pool</label><input id="f_pool" placeholder="$3,500" /></div>
+                  <div class="field"><label for="f_period">Period</label><input id="f_period" placeholder="Monthly" /></div>
+                  <div class="field"><label for="f_ends">Countdown ends (UTC)</label><input id="f_ends" type="datetime-local" /><span class="hint">When the leaderboard resets. Powers the live timer.</span></div>
+                </div>
+                <div class="field"><label for="f_blurb">Partner blurb</label><textarea id="f_blurb" rows="2" placeholder="Short pitch about the casino and your code."></textarea></div>
+              </div>
+            </div>
+
+            <div class="yr-section">
+              <h2>Players</h2>
+              <p>The board auto-sorts by wagered, highest first. Prize <span class="mono">0</span> shows a dash. <span class="mono" id="pCount"></span></p>
+              <div class="yr-players-toolbar">
+                <button class="btn btn--sm" id="addRow">+ Add player</button>
+                <button class="btn btn--sm" id="importBtn" type="button">Paste from spreadsheet</button>
+                <button class="btn btn--sm" id="csvImportBtn" type="button">📁 Import CSV</button>
+                <button class="btn btn--sm btn--ghost" id="csvTemplateBtn" type="button">Download template</button>
+                <input type="file" id="csvFileInput" accept=".csv,.tsv,.txt" hidden />
+              </div>
+              <table class="players"><thead><tr><th class="rank">#</th><th>Player</th><th class="ta-r">Wagered</th><th class="ta-r">Prize</th><th></th></tr></thead><tbody id="rows"></tbody></table>
+              <div id="playersEmpty" class="empty" hidden>No players yet. Add your first one.</div>
+              <div class="import" id="importPanel" hidden>
+                <p class="hint" style="margin:0 0 8px">One player per line: <span class="mono">name, wagered, prize</span> — commas or tabs. Prize is optional.</p>
+                <textarea id="importText" rows="6" spellcheck="false" placeholder="*****ess&#9;152000&#9;1500&#10;*****y&#9;98000&#9;700"></textarea>
+                <div class="import-foot"><span class="hint" id="importPreview">0 players detected</span>
+                <label class="hint chk"><input type="checkbox" id="importReplace" checked /> Replace current list</label>
+                <button class="btn btn--sm btn--accent" id="importApply" type="button" disabled>Add to table</button></div>
+              </div>
+            </div>
+
+            <div class="yr-section">
+              <h2>Past winners / close-out</h2>
+              <p>When a period ends, close it out: the current board is saved and shown on your page under "Past Winners". Saves your unsaved edits first.</p>
+              <div class="card">
+                <div class="arch-form">
+                  <div class="field" style="flex:1;min-width:160px;margin:0"><label for="a_label">Label</label><input id="a_label" placeholder="July 2026" /></div>
+                  <div class="field" style="margin:0"><label for="a_clear">Then</label><select id="a_clear"><option value="wagers">Reset all wagers to 0</option><option value="players">Clear the player list</option><option value="none">Keep the board as is</option></select></div>
+                  <button class="btn btn--accent" id="a_go" type="button" style="align-self:flex-end">Close out period</button>
+                </div>
+                <div class="arch-list" id="archList"></div>
+                <div class="empty" id="archEmpty" hidden>No closed-out periods yet.</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ===== TAB 2: Appearance ===== -->
+          <div class="yr-tab-panel" id="panel-appearance" hidden>
+            <div class="yr-section">
+              <h2>Page template</h2>
+              <p>The overall look of your public page. Available on every plan. Save to apply.</p>
+              <input type="hidden" id="f_template" value="classic" />
+              <div class="yr-tpl-grid" id="tplGrid"></div>
+            </div>
+
+            <div class="yr-section">
+              <h2>Branding <span class="pill pill--info" style="margin-left:6px">PRO</span></h2>
+              <p>Your logo and page colors. Free pages use the default look.</p>
+              <div class="card" id="brandCard">
+                <div id="brandBody">
+                  <div class="yr-grid2">
+                    <div class="field"><label for="logoFile">Logo</label>
+                    <div class="logo-row"><img id="logoPreview" class="logo-preview" alt="" hidden /><input type="file" id="logoFile" accept="image/png,image/jpeg,image/webp" hidden />
+                    <button class="btn btn--sm" id="logoPick" type="button">Upload logo</button><button class="btn btn--sm btn--ghost" id="logoClear" type="button" hidden>Remove</button></div>
+                    <span class="hint">PNG, JPG or WebP. Shows in your page header and link preview. Square works best.</span></div>
+                    <div class="field"><label for="c_a">Page accent colors</label>
+                    <div class="color-row"><input type="color" id="c_a" value="#5ad9ff" /><input type="color" id="c_b" value="#7b8cff" /><button class="btn btn--sm btn--ghost" id="colorsReset" type="button">Reset to default</button></div>
+                    <span class="hint">Drives the big name gradient and buttons. Save to apply.</span></div>
+                  </div>
+                </div>
+                <div class="empty" id="brandLock" hidden>Branding is a Pro feature. <a href="#" id="brandUpgrade">Upgrade to unlock it</a>.</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ===== TAB 3: Embed & share ===== -->
+          <div class="yr-tab-panel" id="panel-embed" hidden>
+            <div class="yr-section">
+              <h2>Public link</h2>
+              <p>Share this URL with your community. Your page is live the moment you publish.</p>
+              <div class="card">
+                <div class="yr-link-row">
+                  <a class="yr-link-display" id="liveLinkShare" href="#" target="_blank">yourrank.site/…</a>
+                  <button class="btn btn--sm btn--accent" id="linkCopy" type="button">📋 Copy</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="yr-section">
+              <h2>OBS Stream Overlay <span class="pill pill--info" style="margin-left:6px">PRO</span></h2>
+              <p>Add a live leaderboard overlay to your stream. Auto-updates every 15 seconds with smooth rank animations.</p>
+              <div class="card" id="overlayCard">
+                <div id="overlayBody">
+                  <div class="field"><label>Overlay URL</label>
+                  <div class="yr-link-row">
+                    <code id="overlayUrl" class="yr-link-display"></code>
+                    <button class="btn btn--sm btn--accent" id="overlayCopy" type="button">📋 Copy</button>
+                  </div>
+                  <span class="hint">Add this as a <b>Browser Source</b> in OBS. Set width to <b>320px</b>, height auto.</span></div>
+                  <div class="field" style="margin-top:8px"><label>Display mode</label>
+                  <div style="display:flex;gap:8px;flex-wrap:wrap">
+                    <label class="chk"><input type="radio" name="ov_mode" value="top5" checked /> Top 5 — animated rankings</label>
+                    <label class="chk"><input type="radio" name="ov_mode" value="marquee" /> Marquee — scrolls all players</label>
+                  </div>
+                  <span class="hint" id="overlayModeHint">Shows positions 1–5 with smooth FLIP rank animations and countdown.</span></div>
+                  <div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap">
+                    <a class="btn btn--sm" id="overlayPreview" href="#" target="_blank">Preview overlay →</a>
+                  </div>
+                </div>
+                <div class="empty" id="overlayLock" hidden>OBS Overlay is a Pro feature. <a href="#" id="overlayUpgrade">Upgrade to unlock it</a>.</div>
+              </div>
+            </div>
+
+            <div class="yr-section">
+              <h2>Custom Domain <span class="pill pill--info" style="margin-left:6px">PRO</span></h2>
+              <p>Serve your leaderboard on your own domain instead of yourrank.site/yourname.</p>
+              <div class="card" id="domainCard">
+                <div id="domainBody">
+                  <div class="field"><label for="f_domain">Your domain</label><input id="f_domain" placeholder="board.mystream.com" />
+                  <span class="hint">Point a <b>CNAME record</b> for your domain to <span class="mono">yourrank.site</span>. Then enter the domain and click <b>Verify &amp; Provision TLS</b>.</span></div>
+                  <div style="margin-top:8px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+                    <button class="btn btn--sm btn--accent" id="domainVerify" type="button">Verify &amp; Provision TLS</button>
+                  </div>
+                  <div id="domainStatus" class="hint" style="margin-top:8px;min-height:18px"></div>
+                </div>
+                <div class="empty" id="domainLock" hidden>Custom domains are a Pro feature. <a href="#" id="domainUpgrade">Upgrade to unlock it</a>.</div>
+              </div>
+            </div>
+
+            <div class="yr-section">
+              <h2>Notifications <span class="pill pill--info" style="margin-left:6px">PRO</span></h2>
+              <p>Get alerted when your leaderboard resets or a player breaks into the top 3. Discord and Telegram supported.</p>
+              <div class="card" id="notifyCard">
+                <div id="notifyBody">
+                  <div class="field"><label>Events</label>
+                  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:4px">
+                    <span class="pill pill--muted">🔄 Leaderboard reset</span>
+                    <span class="pill pill--muted">🏆 Player enters top 3</span>
+                  </div></div>
+                  <div class="field"><label for="f_webhook">Discord webhook URL</label>
+                  <input id="f_webhook" placeholder="https://discord.com/api/webhooks/..." />
+                  <span class="hint">Create a webhook in Discord → Integrations → Webhooks. Paste the URL here.</span></div>
+                  <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:-8px;margin-bottom:16px">
+                    <button class="btn btn--sm" id="testDiscord" type="button">📨 Test Discord</button>
+                    <span class="hint" id="testDiscordStatus"></span>
+                  </div>
+                  <div class="field"><label for="f_tgChatId">Telegram chat/group ID</label>
+                  <input id="f_tgChatId" placeholder="-1001234567890" />
+                  <span class="hint">The chat or group ID for notifications.</span></div>
+                  <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:-8px;margin-bottom:16px">
+                    <label class="hint chk"><input type="checkbox" id="f_tgNotify" /> Enable Telegram notifications</label>
+                    <button class="btn btn--sm" id="testTelegram" type="button">📨 Test Telegram</button>
+                    <span class="hint" id="testTelegramStatus"></span>
+                  </div>
+                </div>
+                <div class="empty" id="notifyLock" hidden>Notifications are a Pro feature. <a href="#" id="notifyUpgrade">Upgrade to unlock them</a>.</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ===== TAB 4: Legal pages ===== -->
+          <div class="yr-tab-panel" id="panel-legal" hidden>
+            <div class="yr-section">
+              <h2>Legal pages</h2>
+              <p>YourRank includes default legal pages on every board. They're linked in your page footer automatically.</p>
+              <div class="yr-info-box">
+                <span class="yr-info-ico">📄</span>
+                <div>
+                  <h3>Terms, Privacy &amp; Responsible play</h3>
+                  <p>Standard legal pages are included by default. Review them at <a href="/terms" target="_blank">/terms</a>, <a href="/privacy" target="_blank">/privacy</a>, and <a href="/responsible" target="_blank">/responsible</a>.</p>
+                </div>
+              </div>
+              <div class="yr-info-box" style="margin-top:12px">
+                <span class="yr-info-ico">⚙</span>
+                <div>
+                  <h3>Custom legal pages</h3>
+                  <p>Custom per-board legal pages are coming soon. For now, the default YourRank legal pages cover your board.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div><!-- /.yr-dash-form -->
+
+        <!-- ============ LIVE PREVIEW PANEL ============ -->
+        <div class="yr-preview-panel">
+          <div class="yr-preview-sticky">
+            <span class="yr-preview-label">Live preview</span>
+            <div class="yr-preview-mock"><iframe id="previewFrame" src="about:blank" title="Live preview"></iframe></div>
+            <div class="yr-preview-stats">
+              <div class="yr-preview-stat"><span class="stat-num" id="st_views7">–</span><span class="stat-lbl">Views · 7d</span></div>
+              <div class="yr-preview-stat"><span class="stat-num" id="st_copies30">–</span><span class="stat-lbl">Copies · 30d</span></div>
+            </div>
+            <div style="display:none">
+              <div class="stat-bars" id="statBars"></div>
+              <span id="statFrom"></span>
+              <span id="st_views30">–</span><span id="st_clicks30">–</span>
+              <p id="statsEmpty" hidden></p>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /.yr-dash-content -->
+    </main>
+  </div><!-- /.yr-dash-layout -->
+  <!-- hidden stubs referenced by dashboard.js (guarded, kept for safety) -->
+  <span id="userEmail" hidden></span><a id="adminLink" href="/admin" hidden>Admin</a>
+  <a id="logout" href="#" hidden></a><a id="upgrade" href="#" hidden></a>
+</div><!-- /#dash -->
+<script src="/assets/dashboard.js?v=3"></script></body></html>`,
+
+  overview: `<!DOCTYPE html><html lang="en"><head>
+<meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Overview · YourRank</title>
+<meta name="robots" content="noindex, nofollow" /><link rel="canonical" href="https://yourrank.site/dashboard/overview" /><link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="/assets/app.css" /><!--GM_NAV_CSS--></head><body>
+<!--GM_NAV-->
+<div class="skel" id="ovLoading">Loading overview…</div>
+<div id="ovDash" hidden>
+  <div class="yr-dash-layout">
+    <aside class="yr-sidebar">
+      <div class="yr-sb-section">
+        <p class="yr-sb-label">Active board</p>
+        <div class="yr-sb-board">
+          <div class="yr-sb-board-name" id="ovBoardName">—</div>
+          <div class="yr-sb-board-slug" id="ovBoardSlug">/…</div>
+          <div class="yr-sb-board-status"><span class="yr-sb-dot"></span><span id="ovPubText">Published</span></div>
+        </div>
+      </div>
+      <div class="yr-sb-section">
+        <p class="yr-sb-label">Board</p>
+        <a class="yr-sb-link" href="/dashboard"><span class="yr-sb-ico">✎</span>Editor</a>
+        <a class="yr-sb-link yr-sb-link--active" href="/dashboard/overview"><span class="yr-sb-ico">◎</span>Overview</a>
+      </div>
+      <div class="yr-sb-section">
+        <p class="yr-sb-label">Automate</p>
+        <a class="yr-sb-link" href="/dashboard/analytics"><span class="yr-sb-ico">📡</span>Analytics</a>
+      </div>
+      <div class="yr-sb-section">
+        <p class="yr-sb-label">Plan</p>
+        <a class="yr-sb-link" href="/dashboard/billing"><span class="yr-sb-ico">◈</span>Plan &amp; billing</a>
+      </div>
+      <div class="yr-sb-foot">
+        <a class="yr-sb-view-live" id="ovViewLive" href="#" target="_blank">↗ View live board</a>
+        <div class="yr-sb-plan">
+          <span class="yr-sb-plan-badge" id="ovPlanBadge">FREE PLAN</span>
+          <span class="yr-sb-plan-name" id="ovPlanName">Free</span>
+        </div>
+      </div>
+    </aside>
+
+    <main class="yr-dash-main">
+      <div class="yr-dash-head">
+        <div><h1>Overview</h1><p class="yr-head-sub" id="ovLiveLink">yourrank.site/…</p></div>
+      </div>
+
+      <div class="yr-dash-content" style="flex-direction:row">
+        <div class="yr-dash-form" style="max-width:none">
+          <div class="yr-section">
+            <h2>Board stats</h2>
+            <p>At-a-glance numbers for your active board.</p>
+            <div class="stat-tiles">
+              <div class="stat-tile"><span class="stat-num" id="ovBoardNameStat">—</span><span class="stat-lbl">Board name</span></div>
+              <div class="stat-tile"><span class="stat-num" id="ovPool">—</span><span class="stat-lbl">Prize pool</span></div>
+              <div class="stat-tile"><span class="stat-num" id="ovPlayers">—</span><span class="stat-lbl">Players</span></div>
+              <div class="stat-tile"><span class="stat-num" id="st_views7">–</span><span class="stat-lbl">Views · 7d</span></div>
+              <div class="stat-tile"><span class="stat-num" id="ovResets">—</span><span class="stat-lbl">Resets in</span></div>
+            </div>
+          </div>
+
+          <div class="yr-section">
+            <h2>Activity</h2>
+            <p>Daily views, last 14 days.</p>
+            <div class="card">
+              <div class="stat-chart"><div class="stat-bars" id="statBars"></div><div class="stat-chart-lbl"><span id="statFrom"></span><span>Daily views, last 14 days</span><span>today</span></div></div>
+              <p class="hint" id="statsEmpty" hidden>No views yet — share your page link to get it moving.</p>
+              <div style="display:none"><span id="st_views30">–</span><span id="st_copies30">–</span><span id="st_clicks30">–</span></div>
+            </div>
+          </div>
+
+          <div class="yr-section">
+            <h2>Top players</h2>
+            <p>Your current standings, top 5 by wagered.</p>
+            <div class="card">
+              <table class="players"><thead><tr><th class="rank">#</th><th>Player</th><th class="ta-r">Wagered</th></tr></thead><tbody id="ovTopPlayers"></tbody></table>
+              <div class="empty" id="ovTopEmpty" hidden>No players yet.</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="yr-preview-panel">
+          <div class="yr-preview-sticky">
+            <span class="yr-preview-label">Board status</span>
+            <div class="card" style="margin-top:0">
+              <h2 style="margin:0 0 8px">Status</h2>
+              <div id="ovStatusBox" style="display:flex;flex-direction:column;gap:8px;font-size:13px;color:var(--ink-soft)">
+                <div style="display:flex;justify-content:space-between"><span>Published</span><span id="ovPubStatus">—</span></div>
+                <div style="display:flex;justify-content:space-between"><span>Players</span><span id="ovPlayerStatus">—</span></div>
+                <div style="display:flex;justify-content:space-between"><span>Resets</span><span id="ovResetStatus">—</span></div>
+              </div>
+            </div>
+            <div class="card" style="margin-top:14px">
+              <h2 style="margin:0 0 8px">Your plan</h2>
+              <div class="plan-row"><div><div class="plan-name" id="ovPlanName2">Free</div><div class="hint" id="ovPlanMeta">Up to 10 players</div></div></div>
+              <a class="btn btn--accent btn--sm" href="/dashboard/billing" style="margin-top:10px;display:inline-flex">Manage plan</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
 </div>
-<span class="hint">Add this as a <b>Browser Source</b> in OBS. Set width to <b>320px</b>, height auto.</span></div>
-<div class="field" style="margin-top:8px"><label>Display mode</label>
-<div style="display:flex;gap:8px">
-<label class="chk"><input type="radio" name="ov_mode" value="top5" checked /> Top 5 — animated rankings</label>
-<label class="chk"><input type="radio" name="ov_mode" value="marquee" /> Marquee — scrolls all players</label>
-</div>
-<span class="hint" id="overlayModeHint">Shows positions 1–5 with smooth FLIP rank animations and countdown.</span></div>
-<div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap">
-<a class="btn btn--sm" id="overlayPreview" href="#" target="_blank">Preview overlay →</a>
-</div></div>
-</div>
-<div class="empty" id="overlayLock" hidden>OBS Overlay is a Pro feature. <a href="#" id="overlayUpgrade">Upgrade to unlock it</a>.</div></div>
-<div class="card" id="domainCard"><h2>Custom Domain <span class="pill pill--info" style="margin-left:6px">PRO</span></h2><p class="card-sub">Serve your leaderboard on your own domain instead of yourrank.site/yourname.</p>
-<div id="domainBody">
-<div class="field"><label for="f_domain">Your domain</label><input id="f_domain" placeholder="board.mystream.com" />
-<span class="hint">Point a <b>CNAME record</b> for your domain to <span class="mono">yourrank.site</span>. Then enter the domain here and click <b>Verify &amp; Provision TLS</b>.</span></div>
-<div style="margin-top:8px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-<button class="btn btn--sm btn--accent" id="domainVerify" type="button">Verify &amp; Provision TLS</button>
-</div>
-<div id="domainStatus" class="hint" style="margin-top:8px;min-height:18px"></div>
-</div>
-<div class="empty" id="domainLock" hidden>Custom domains are a Pro feature. <a href="#" id="domainUpgrade">Upgrade to unlock it</a>.</div></div>
-<div class="card" id="notifyCard"><h2>Notifications <span class="pill pill--info" style="margin-left:6px">PRO</span></h2><p class="card-sub">Get alerted when your leaderboard resets or a player breaks into the top 3. Discord and Telegram supported.</p>
-<div id="notifyBody">
-<div class="field"><label>Events that trigger notifications</label>
-<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:4px">
-<span class="pill pill--muted">🔄 Leaderboard reset</span>
-<span class="pill pill--muted">🏆 Player enters top 3</span>
-</div></div>
-<div class="field"><label for="f_webhook">Discord webhook URL</label>
-<input id="f_webhook" placeholder="https://discord.com/api/webhooks/..." />
-<span class="hint">Create a webhook in your Discord server settings → Integrations → Webhooks. Paste the URL here.</span></div>
-<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:-8px;margin-bottom:16px">
-<button class="btn btn--sm" id="testDiscord" type="button">📨 Test Discord</button>
-<span class="hint" id="testDiscordStatus"></span>
-</div>
-<div class="field"><label for="f_tgChatId">Telegram chat/group ID</label>
-<input id="f_tgChatId" placeholder="-1001234567890" />
-<span class="hint">The chat or group ID where notifications should be sent. Use <code>/start</code> in your bot chat or add the bot to a group to get the ID.</span></div>
-<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:-8px;margin-bottom:16px">
-<label class="hint chk"><input type="checkbox" id="f_tgNotify" /> Enable Telegram notifications</label>
-<button class="btn btn--sm" id="testTelegram" type="button">📨 Test Telegram</button>
-<span class="hint" id="testTelegramStatus"></span>
-</div>
-</div>
-<div class="empty" id="notifyLock" hidden>Notifications are a Pro feature. <a href="#" id="notifyUpgrade">Upgrade to unlock them</a>.</div></div>
-<div class="card" id="archiveCard"><h2>Past winners</h2><p class="card-sub">When a period ends, close it out: the current board is saved and shown on your page under "Past Winners". Saves your unsaved edits first.</p>
-<div class="arch-form">
-<div class="field" style="flex:1;min-width:160px;margin:0"><label for="a_label">Label</label><input id="a_label" placeholder="July 2026" /></div>
-<div class="field" style="margin:0"><label for="a_clear">Then</label><select id="a_clear"><option value="wagers">Reset all wagers to 0</option><option value="players">Clear the player list</option><option value="none">Keep the board as is</option></select></div>
-<button class="btn btn--accent" id="a_go" type="button" style="align-self:flex-end">Close out period</button></div>
-<div class="arch-list" id="archList"></div>
-<div class="empty" id="archEmpty" hidden>No closed-out periods yet. Your first one shows up here and on your page.</div></div>
-<div class="card" id="planCard"><h2>Plan &amp; billing</h2><p class="card-sub">Upgrade to unlock more players, boards and features.</p>
-<div class="plan-row"><div><div class="plan-name" id="planName">Free</div><div class="hint" id="planMeta">Up to 10 players · YourRank badge on your page</div></div>
-<button class="btn btn--accent" id="goPro">Upgrade</button></div>
-<p class="hint" id="planHint">Pay with crypto (BTC, ETH, USDT and 100+ more). Activates automatically once the network confirms — usually a few minutes. <a href="/dashboard/billing">See all plans</a>.</p></div>
-<div class="savebar"><label class="hint chk" style="margin-right:auto"><input type="checkbox" id="pubToggle" checked /> Page published</label><span class="status" id="status"></span><a class="btn btn--ghost" id="viewLive" href="#" target="_blank">View live page</a><button class="btn btn--accent" id="save">Save changes</button></div></div></div>
-<script src="/assets/dashboard.js?v=2"></script></body></html>`,
+<script src="/assets/overview.js?v=1"></script></body></html>`,
 
 analytics: `<!DOCTYPE html><html lang="en"><head>
 <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />

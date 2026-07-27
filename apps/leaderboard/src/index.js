@@ -7,7 +7,7 @@ import { effectivePlan, PLAN_LIMITS, BOARD_LIMITS, PLAN_PRICES, priceUsd, handle
 import { handleOverview, handleUsers, handleLeads, handlePayments, handleAction, handle2faEnable, handle2faVerify, handle2faStatus } from "./admin.js";
 import { sendEmail, resetEmail } from "./email.js";
 import { bumpStat, getStats, getHeatmap, getTopReferrers } from "./stats.js";
-import { leaderboard_css, leaderboard_js, app_css, auth_js, dashboard_js, admin_js, landing_css, landing_js, analytics_js, billing_js, bot_setup_js, overlay_js, overlay_marquee_js } from "./assets_bundled.js";
+import { leaderboard_css, leaderboard_js, app_css, auth_js, dashboard_js, admin_js, landing_css, landing_js, analytics_js, billing_js, bot_setup_js, overlay_js, overlay_marquee_js, overview_js } from "./assets_bundled.js";
 import { query, one, exec, getSql } from "./db.js";
 import { shellNavHtml, SHELL_NAV_CSS } from "../../../shared/shell-nav.js";
 import { sendDiscordWebhook, buildTop3Embed, buildResetEmbed, sendTelegramMessage } from "./notifications.js";
@@ -147,6 +147,7 @@ export default {
         "/assets/bot-setup.js": [bot_setup_js, ".js"],
         "/assets/overlay.js": [overlay_js, ".js"],
         "/assets/overlay-marquee.js": [overlay_marquee_js, ".js"],
+        "/assets/overview.js": [overview_js, ".js"],
       };
       const entry = map[path];
       if (entry) return new Response(entry[0], { headers: { "content-type": MIME[entry[1]], "cache-control": "public, max-age=300, s-maxage=3600" } });
@@ -244,6 +245,19 @@ ${entries.join("\n")}
       } catch (e) {
         console.error("analytics render failed:", String(e?.message || e));
         return new Response("Analytics couldn't load right now — please refresh.", { status: 500, headers: { "content-type": "text/plain; charset=utf-8" } });
+      }
+    }
+    if (path === "/dashboard/overview") {
+      try {
+        const user = await currentUser(request, env);
+        if (!user) return Response.redirect(new URL("/login", url), 302);
+        const html = PAGES.overview
+          .replace("<!--GM_NAV_CSS-->", `<style>${SHELL_NAV_CSS}</style>`)
+          .replace("<!--GM_NAV-->", shellNavHtml({ activePath: "/dashboard/overview", user }));
+        return new Response(html, { headers: { ...SECURE_HTML, ...csrfHeader, "cache-control": "no-store, no-cache, must-revalidate" } });
+      } catch (e) {
+        console.error("overview render failed:", String(e?.message || e));
+        return new Response("Overview couldn't load right now — please refresh.", { status: 500, headers: { "content-type": "text/plain; charset=utf-8" } });
       }
     }
     if (path === "/dashboard/billing") {

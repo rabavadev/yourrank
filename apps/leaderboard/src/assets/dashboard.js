@@ -48,6 +48,21 @@ async function init(){
   if (pubToggle) pubToggle.checked = p.published !== false;
   $("a_label").placeholder = new Date().toLocaleString("en-US",{month:"long",year:"numeric",timeZone:"UTC"});
   $("liveLink").textContent = location.host + "/" + SLUG; $("liveLink").href = "/" + SLUG; $("viewLive").href = "/" + SLUG;
+  // Live preview iframe
+  const pf = $("previewFrame"); if (pf) pf.src = "/" + SLUG;
+  // Public link share box
+  const share = $("liveLinkShare"); if (share) { share.textContent = location.host + "/" + SLUG; share.href = "/" + SLUG; }
+  // Sidebar board info
+  const sbName = $("sbBoardName"); if (sbName) sbName.textContent = (d.brand && d.brand.name) || SLUG;
+  const sbSlug = $("sbBoardSlug"); if (sbSlug) sbSlug.textContent = "/" + SLUG;
+  const pubDot = $("sbPubDot"); const pubText = $("sbPubText");
+  if (pubDot && pubText) {
+    const published = p.published !== false;
+    pubDot.className = "yr-sb-dot" + (published ? "" : " yr-sb-dot--off");
+    pubText.textContent = published ? "Published" : "Unpublished";
+  }
+  setupTabs();
+  setupLinkCopy();
   $("loading").hidden=true; $("dash").hidden=false;
   if (urlParams.get("upgraded")) {
     $("status").textContent = "Payment received — Pro activates once the network confirms (usually minutes).";
@@ -173,25 +188,46 @@ function collect(){
 }
 
 /* --- branding (paid) --- */
-function ensureTemplateCard(){
-  if ($("templateCard")) return;
-  const anchor = $("brandCard");
-  if (!anchor || !anchor.parentNode) return;
-  const card = document.createElement("div");
-  card.className = "card"; card.id = "templateCard";
-  card.innerHTML = '<h2>Page template</h2><p class="card-sub">The overall look of your public page. Available on every plan.</p>' +
-    '<div class="field"><label for="f_template">Template</label><select id="f_template">' +
-    '<option value="classic">Classic \u2014 purple night, cyan gradient</option>' +
-    '<option value="midnight">Midnight Gold \u2014 black felt, molten gold</option>' +
-    '</select><span class="hint">Save to apply. Pro accent colors and logo work on top of any template.</span></div>';
-  anchor.parentNode.insertBefore(card, anchor);
+// Template definitions for the visual template picker grid (#tplGrid).
+// Only `classic` and `midnight` map to real backend templates; the rest are
+// visual previews that fall back to classic until implemented.
+const TEMPLATES = [
+  { id: "classic",  name: "Classic",        desc: "Purple night, cyan glow",      realTemplate: "classic",  previewClass: "yr-tpl-prev-classic" },
+  { id: "midnight", name: "Midnight Gold",  desc: "Black felt, molten gold",      realTemplate: "midnight", previewClass: "yr-tpl-prev-midnight" },
+  { id: "neon",     name: "Neon Casino",    desc: "Cyber night, high contrast",   realTemplate: "classic",  previewClass: "yr-tpl-prev-neon" },
+  { id: "podium",   name: "Podium Spotlight", desc: "Raised podium",              realTemplate: "classic",  previewClass: "yr-tpl-prev-podium" },
+  { id: "split",    name: "Split Broadcast", desc: "Brand rail + standings",      realTemplate: "classic",  previewClass: "yr-tpl-prev-split" },
+  { id: "cards",    name: "Card Grid",      desc: "Top 3 as cards",               realTemplate: "classic",  previewClass: "yr-tpl-prev-cards" },
+];
+function renderTemplateGrid(selectedId) {
+  const grid = $("tplGrid"); if (!grid) return;
+  const real = TEMPLATES.find(t => t.id === selectedId)?.realTemplate || "classic";
+  grid.innerHTML = TEMPLATES.map(t => {
+    const isSel = t.id === selectedId;
+    return `<div class="yr-tpl-card${isSel ? " yr-tpl-card--selected" : ""}" data-tpl="${t.id}" data-real="${t.realTemplate}">
+      <div class="yr-tpl-card-preview ${t.previewClass}"><span class="yr-tpl-apply">${isSel ? "Selected" : "Use"}</span></div>
+      <div class="yr-tpl-card-info"><div class="yr-tpl-card-name">${esc(t.name)}</div><div class="yr-tpl-card-desc">${esc(t.desc)}</div></div>
+    </div>`;
+  }).join("");
+  grid.querySelectorAll(".yr-tpl-card").forEach(card => {
+    card.addEventListener("click", () => {
+      const id = card.dataset.tpl;
+      const realTpl = card.dataset.real;
+      const hidden = $("f_template"); if (hidden) hidden.value = realTpl;
+      renderTemplateGrid(id);
+      $("status").textContent = "Template set to " + TEMPLATES.find(t => t.id === id).name + " — hit Save to apply.";
+    });
+  });
 }
 function renderBranding(br){
-  ensureTemplateCard();
   const paid = ME.plan !== "free";
   $("brandBody").hidden = !paid; $("brandLock").hidden = paid;
-  const tplSel = $("f_template");
-  if (tplSel) tplSel.value = br.template || "classic";
+  const tplVal = br.template || "classic";
+  const hidden = $("f_template"); if (hidden) hidden.value = tplVal;
+  // Match the hidden value to a visual card id. For non-classic/midnight
+  // values stored in DB, default the visual selection to classic.
+  const visualId = TEMPLATES.find(t => t.realTemplate === tplVal)?.id || tplVal;
+  renderTemplateGrid(visualId);
   if (br.accentA) $("c_a").value = br.accentA;
   if (br.accentB) $("c_b").value = br.accentB;
   if (br.hasLogo) { $("logoPreview").src = "/logo/" + SLUG + "?t=" + Date.now(); $("logoPreview").hidden = false; $("logoClear").hidden = false; }
@@ -479,4 +515,32 @@ $("logout")?.addEventListener("click", async (e)=>{ e.preventDefault(); await fe
 $("upgrade")?.addEventListener("click",(e)=>{ e.preventDefault(); checkout($("goPro")); });
 $("goPro")?.addEventListener("click",()=>checkout($("goPro")));
 $("domainUpgrade")?.addEventListener("click",(e)=>{ e.preventDefault(); checkout($("goPro")); });
+
+/* --- tab switching (new dashboard layout) --- */
+function setupTabs() {
+  document.querySelectorAll(".yr-tab").forEach(tab => {
+    tab.addEventListener("click", () => {
+      const target = tab.dataset.panel;
+      if (!target) return;
+      document.querySelectorAll(".yr-tab").forEach(t => t.classList.remove("yr-tab--active"));
+      tab.classList.add("yr-tab--active");
+      document.querySelectorAll(".yr-tab-panel").forEach(panel => {
+        const isTarget = panel.id === target;
+        panel.classList.toggle("yr-tab-panel--active", isTarget);
+        panel.hidden = !isTarget;
+      });
+    });
+  });
+}
+
+/* --- public link copy button --- */
+function setupLinkCopy() {
+  const btn = $("linkCopy"); if (!btn) return;
+  btn.addEventListener("click", async () => {
+    const url = location.origin + "/" + SLUG;
+    try { await navigator.clipboard.writeText(url); const orig = btn.textContent; btn.textContent = "✓ Copied!"; setTimeout(() => btn.textContent = orig, 2000); }
+    catch { btn.textContent = "Copy failed"; setTimeout(() => btn.textContent = "📋 Copy", 2000); }
+  });
+}
+
 init();
