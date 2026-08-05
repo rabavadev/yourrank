@@ -838,7 +838,9 @@ export async function saveSite(env, user, payload, siteId, request = null) {
   const legal = {};
   for (const k of Object.keys(legalDefaults)) {
     const v = incomingLegal[k] !== undefined ? incomingLegal[k] : existingLegal[k];
-    legal[k] = typeof v === "string" ? v.trim() : (legalDefaults[k] || "");
+    // *Enabled flags are booleans, page bodies are strings. Preserve both
+    // (the old coercion turned a saved `false` back into the default `true`).
+    legal[k] = typeof v === "boolean" ? v : (typeof v === "string" ? v.trim() : (legalDefaults[k] ?? ""));
   }
   const incomingFields = payload.playerFields && typeof payload.playerFields === "object" ? payload.playerFields : {};
   const existingFields = existingExtra.playerFields || {};
