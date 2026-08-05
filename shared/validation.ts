@@ -256,7 +256,7 @@ export const handlerSchemas: Record<string, ZodSchema<any>> = {
       chips: z.array(z.string().max(100)).max(20).optional(),
       sections: z.record(z.boolean()).optional(),
       playerFields: z.record(z.boolean()).optional(),
-      legal: z.record(z.string().max(MAX_LONG_TEXT)).optional(),
+      legal: z.record(z.union([z.string().max(MAX_LONG_TEXT), z.boolean()])).optional(),
       passwordProtected: z.boolean().optional(),
       password: z.string().max(100).optional(),
       autoReset: z
