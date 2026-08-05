@@ -285,65 +285,6 @@ function previewUrl(template, accentA, accentB, font, device = "desktop") {
   return "/dashboard/preview?" + params.toString();
 }
 
-/* ---- Gallery state ---- */
-let _activeCategoryTab = "all";
-let _activeCasinoVibe = "all";
-
-const CASINO_IDS = new Set([
-  "arcade","candy","fun","space","highRollers",
-]);
-
-const VIBE_LABELS = { all: "All styles", luxury: "✦ Luxury", retro: "◈ Retro", dark: "▣ Dark", fun: "★ Fun" };
-
-const VIBE_ACCENT = {
-  luxury:  { color: "#c9a84c", bg: "rgba(201,168,76,.12)" },
-  retro:   { color: "#39FF14", bg: "rgba(57,255,20,.10)" },
-  dark:    { color: "#8b5cf6", bg: "rgba(139,92,246,.12)" },
-  fun:     { color: "#FF1493", bg: "rgba(255,20,147,.10)" },
-};
-
-function _isCasino(t) { return CASINO_IDS.has(t.id); }
-
-function _renderTabBar() {
-  const bar = $("templateTabs");
-  if (!bar) return;
-  const tabs = [
-    { id: "all",    label: "All templates", tip: "Browse every design" },
-    { id: "other",  label: "Classic & More", tip: "Non-casino designs" },
-    { id: "casino", label: "✦ Casino", tip: "Casino-themed designs" },
-  ];
-  bar.innerHTML = tabs.map(({ id, label, tip }) => {
-    const active = id === _activeCategoryTab;
-    return `<button class="template-tab-btn${active ? " is-active" : ""}" data-tab="${esc(id)}" role="tab" aria-selected="${active}" title="${esc(tip)}" type="button">${esc(label)}</button>`;
-  }).join("");
-  bar.querySelectorAll("[data-tab]").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      _activeCategoryTab = btn.dataset.tab;
-      _activeCasinoVibe = "all";
-      renderTemplateGallery();
-    });
-  });
-}
-
-function _renderVibeFilters(templates) {
-  const el = $("templateVibeFilters");
-  if (!el) return;
-  const vibes = ["all", ...new Set(templates.map((t) => t.vibe).filter(Boolean))];
-  el.hidden = false;
-  el.innerHTML = vibes.map((v) => {
-    const active = v === _activeCasinoVibe;
-    const accent = VIBE_ACCENT[v];
-    const style = active && accent ? `style="color:${accent.color};border-color:${accent.color};background:${accent.bg}"` : "";
-    return `<button class="template-vibe-btn${active ? " is-active" : ""}" data-vibe="${esc(v)}" type="button" ${style}>${esc(VIBE_LABELS[v] || v)}</button>`;
-  }).join("");
-  el.querySelectorAll("[data-vibe]").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      _activeCasinoVibe = btn.dataset.vibe;
-      renderTemplateGallery();
-    });
-  });
-}
-
 // Lazily boot template-preview iframes only when their card scrolls into view.
 // The gallery can hold ~25 templates; booting every iframe at once (even with
 // loading="lazy", which is unreliable for in-page galleries) causes real jank.
@@ -369,37 +310,24 @@ function _observePreview(iframe, url) {
   obs.observe(iframe);
 }
 
-function _buildCard(template, featured = false) {
+function _buildCard(template) {
   const selected = template.id === state.CURRENT_BRANDING.template;
   const defaultPreset = template.presets?.[0] || {};
   const accentA = selected && state.CURRENT_BRANDING.accentA ? state.CURRENT_BRANDING.accentA : defaultPreset.accentA;
   const accentB = selected && state.CURRENT_BRANDING.accentB ? state.CURRENT_BRANDING.accentB : defaultPreset.accentB;
   const font = state.CURRENT_BRANDING.font || "Inter";
-  const isCasinoCard = _isCasino(template);
   const isPaid = state.ME?.plan !== "free";
 
   const card = document.createElement("article");
-  card.className = [
-    featured ? "template-featured-card" : "template-card",
-    selected ? "is-selected" : "",
-    isCasinoCard ? "is-casino" : "",
-    template.featured && isCasinoCard ? "is-featured" : "",
-  ].filter(Boolean).join(" ");
+  card.className = ["template-card", selected ? "is-selected" : ""].filter(Boolean).join(" ");
   card.dataset.template = template.id;
 
   // Badges
   const badges = [];
-  if (isCasinoCard) badges.push(`<span class="template-badge template-badge--casino">Casino</span>`);
-  if (template.featured && isCasinoCard) badges.push(`<span class="template-badge template-badge--featured">Featured</span>`);
-  if (template.vibe && isCasinoCard) {
-    const vc = VIBE_ACCENT[template.vibe];
-    const vstyle = vc ? `style="color:${vc.color};border-color:${vc.color};background:${vc.bg}"` : "";
-    badges.push(`<span class="template-badge template-badge--vibe" ${vstyle}>${esc(VIBE_LABELS[template.vibe] || template.vibe)}</span>`);
-  }
 
-  // Color swatches — inline presets for casino cards
+  // Color swatches — inline presets
   let presetsHtml = "";
-  if (isCasinoCard && template.presets?.length) {
+  if (template.presets?.length) {
     const swatches = template.presets.map((p) => {
       const activeSwatch = selected
         && p.accentA?.toLowerCase() === (state.CURRENT_BRANDING.accentA || "").toLowerCase()
@@ -443,50 +371,11 @@ ${presetsHtml}
   return card;
 }
 
-function _renderFeaturedStrip(templates) {
-  const strip = $("templateFeatured");
-  if (!strip) return;
-  const featured = templates.filter((t) => t.featured && _isCasino(t));
-  if (!featured.length) { strip.hidden = true; return; }
-  strip.hidden = false;
-  strip.innerHTML = `<div class="template-featured-label">✦ Featured designs</div><div class="template-featured-scroll">`;
-  const scroll = strip.querySelector(".template-featured-scroll");
-  featured.forEach((t) => scroll.appendChild(_buildCard(t, true)));
-  strip.appendChild(scroll);
-}
-
 function renderTemplateGallery() {
   const gallery = $("templateGallery");
   if (!gallery) return;
-
-  _renderTabBar();
-
-  // Determine template set for this tab
-  let templates = state.TEMPLATE_CATALOG;
-  const vibeEl = $("templateVibeFilters");
-
-  if (_activeCategoryTab === "casino") {
-    templates = state.TEMPLATE_CATALOG.filter(_isCasino);
-    _renderVibeFilters(templates);
-    _renderFeaturedStrip(templates);
-    if (_activeCasinoVibe !== "all") {
-      templates = templates.filter((t) => t.vibe === _activeCasinoVibe);
-    }
-  } else if (_activeCategoryTab === "other") {
-    templates = state.TEMPLATE_CATALOG.filter((t) => !_isCasino(t));
-    if (vibeEl) vibeEl.hidden = true;
-    const strip = $("templateFeatured");
-    if (strip) strip.hidden = true;
-  } else {
-    // all
-    if (vibeEl) vibeEl.hidden = true;
-    const strip = $("templateFeatured");
-    if (strip) strip.hidden = true;
-  }
-
   gallery.innerHTML = "";
-  const gridTemplates = _activeCategoryTab === "casino" ? templates.filter((t) => !t.featured) : templates;
-  gridTemplates.forEach((template) => gallery.appendChild(_buildCard(template, false)));
+  state.TEMPLATE_CATALOG.forEach((template) => gallery.appendChild(_buildCard(template)));
 }
 
 function renderColorPresets() {

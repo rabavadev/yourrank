@@ -5,14 +5,9 @@
  * Two sources of colour:
  *   1. CSS-skin templates (apps/leaderboard/src/templates/*.js) — colours live in
  *      CSS custom properties + literal declarations layered over leaderboard.css.
- *   2. casino-full.js / casino-high-rollers.js — bespoke Tailwind, colours live in
- *      arbitrary-value utilities like text-[#FBD5E8] and bg-[#3B1370], grouped by
- *      compose* function block.
- *
  * We can't fully resolve cascade statically, so this is a HEURISTIC linter:
- * within each Tailwind element's class list we pair the nearest text-[#hex]
- * with the nearest bg-[#hex] / from-[#hex] / to-[#hex] and flag ratios < floor.
- * For CSS skins we pair each --ink* foreground var against --bg/--panel* bg vars.
+ * for each template we pair every --ink* foreground var against --bg/--panel*
+ * background vars and flag ratios under the WCAG AA floor.
  * Output is a work order, not gospel — every flag gets file+line+context.
  */
 import { readFileSync, readdirSync } from "node:fs";
@@ -106,51 +101,6 @@ function record(file, line, fg, bg, ratio, floor, ctx) {
   failures.push({ file, line, fg, bg, ratio: ratio.toFixed(2), floor, suggestion, ctx });
 }
 
-// ---- Tailwind arbitrary-value pass (casino-full + high-rollers) ----
-const TW_FILES = ["casino-full.js", "casino-high-rollers.js"];
-// Skip selection: prefixed colors (selection:text-[#hex] / selection:bg-[#hex])
-// — they are CSS pseudo-element styles, not normal text/bg pairs.
-const reText = /(?<!selection:)text-\[(#[0-9a-fA-F]{3,6})\]/;
-const reBg = /(?<!selection:)(?:bg|from|to|via)-\[(#[0-9a-fA-F]{3,6})\]/;
-// large-text heuristic: any of these size classes present on the element
-const reLarge = /text-(?:xl|2xl|3xl|4xl|5xl|6xl|7xl|8xl|9xl)\b|text-\[[3-9]\d?rem\]|text-\[[2-9]\d?px\]/;
-
-// walk one compose* block, maintaining a stack of ancestor backgrounds so a
-// text-[#hex] with no local bg is scored against the nearest ancestor bg.
-function auditTailwind(file) {
-  const abs = join(TEMPLATES, file);
-  let src;
-  try { src = readFileSync(abs, "utf8"); } catch { return; }
-  const lines = src.split("\n");
-  // group by compose block for context-scoped bg inheritance
-  lines.forEach((lineStr, idx) => {
-    // tokenise into <tag ...> and </tag> to track nesting on this line
-    const tokens = lineStr.match(/<\/?[a-zA-Z][^>]*>/g) || [];
-    let bgStack = [];
-    for (const tok of tokens) {
-      if (tok.startsWith("</")) { bgStack.pop(); continue; }
-      const selfClose = tok.endsWith("/>");
-      const cm = tok.match(/class="([^"]*)"/);
-      const cls = cm ? cm[1] : "";
-      const bm = cls.match(reBg);
-      const localBg = bm ? bm[1] : null;
-      const effBg = localBg || bgStack[bgStack.length - 1] || null;
-      const tm = cls.match(reText);
-      if (tm && effBg) {
-        const fg = tm[1], bg = effBg;
-        const fgRgb = hexToRgb(fg), bgRgb = hexToRgb(bg);
-        if (fgRgb && bgRgb && fg.toLowerCase() !== bg.toLowerCase()) {
-          const ratio = contrast(fgRgb, bgRgb);
-          const floor = reLarge.test(cls) ? AA_LARGE : AA_NORMAL;
-          if (ratio < floor) record(file, idx + 1, fg, bg, ratio, floor, cls.slice(0, 64));
-        }
-      }
-      // push/replace ancestor bg
-      if (!selfClose) bgStack.push(localBg || bgStack[bgStack.length - 1] || null);
-    }
-  });
-}
-
 // ---- CSS-var skin pass ----
 function auditSkin(file) {
   const abs = join(TEMPLATES, file);
@@ -174,10 +124,7 @@ function auditSkin(file) {
 }
 
 const all = readdirSync(TEMPLATES).filter((f) => f.endsWith(".js") && f !== "index.js");
-for (const f of all) {
-  if (TW_FILES.includes(f)) auditTailwind(f);
-  else auditSkin(f);
-}
+for (const f of all) auditSkin(f);
 
 // ---- report ----
 if (failures.length === 0) {

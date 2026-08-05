@@ -3,7 +3,6 @@
 // Server-render a streamer's leaderboard page from their data.
 import { templateCss, validTemplate } from "./templates/index.js";
 import { DEFAULT_EXTRA, FONT_FAMILIES } from "./site.js";
-import { applyCasinoText, CASINO_COMPOSERS, CASINO_FULL, frameCss } from "./templates/casino.js";
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 // E2E-009: Sanitize user-supplied URLs for href attributes.
 // Only allows https:// URLs (rejects http://, javascript:, data:, vbscript:).
@@ -206,245 +205,11 @@ function composeDefault(p) {
   );
 }
 
-// quest Ã¢â‚¬â€ app-style: compact centered header with info chips, standings first,
-// partner content demoted below the board.
-function composeQuest(p) {
-  return (
-    <>
-      <section class="hero hero--app">
-        <div dangerouslySetInnerHTML={{ __html: p.heroLogo }} />
-        <h1 class="hero-name" data-brand-name>{p.name}</h1>
-        <p class="hero-sub">
-          {p.hasCasino ? <><span data-casino>{p.casino}</span> partner Ã‚Â· </> : ""}
-          <span dangerouslySetInnerHTML={{ __html: p.periodSpan }} /> leaderboard
-        </p>
-        <div class="app-chips">
-          {p.hidePrizes || !p.hasPool ? "" : <span class="app-chip app-chip--pool">Ã°Å¸Ââ€  <span dangerouslySetInnerHTML={{ __html: p.poolSpan }} /></span>}
-          <span class="app-chip">Ã¢ÂÂ³ <b class="countdown" data-countdown>--</b></span>
-          <span class="app-chip"><b data-count>{p.sCount}</b> players</span>
-        </div>
-        <div class="hero-cta">
-          <div dangerouslySetInnerHTML={{ __html: p.ctaBtn(p.joinLabel) }} />
-        </div>
-        <div class="hero-timer" data-timer hidden>
-          <div dangerouslySetInnerHTML={{ __html: p.timerGrid }} />
-        </div>
-      </section>
-      <div dangerouslySetInnerHTML={{ __html: p.announce }} />
-      <section id="board" class="board">
-        <div class="board-head board-head--center">
-          <div dangerouslySetInnerHTML={{ __html: p.titleGroup }} />
-        </div>
-        <div dangerouslySetInnerHTML={{ __html: p.payouts }} />
-        <div dangerouslySetInnerHTML={{ __html: p.top3 }} />
-        <div dangerouslySetInnerHTML={{ __html: p.findRank }} />
-        <div dangerouslySetInnerHTML={{ __html: p.table }} />
-        <div dangerouslySetInnerHTML={{ __html: p.rules }} />
-      </section>
-      <div dangerouslySetInnerHTML={{ __html: p.partnerPanel }} />
-      <div dangerouslySetInnerHTML={{ __html: p.pastSec }} />
-      <div dangerouslySetInnerHTML={{ __html: p.socialsSec }} />
-    </>
-  );
-}
 
-// vault Ã¢â‚¬â€ split hero: pitch on the left, a boxed prize-pool + race-countdown
-// card on the right, then a stat strip. Matches the approved casino mockup.
-function composeVault(p) {
-  return (
-    <>
-      <section class="hero hero--split">
-        <div class="split-grid">
-          <div class="split-copy">
-            <div dangerouslySetInnerHTML={{ __html: p.heroLogo }} />
-            <p class="hero-kicker">
-              {p.hasCasino ? <><span data-casino>{p.casino}</span> partner board</> : "Wager race"}
-            </p>
-            <h1 class="hero-name" data-brand-name>{p.name}</h1>
-            <p class="hero-sub"><span dangerouslySetInnerHTML={{ __html: p.periodSpan }} /> wager race Ã¢â‚¬â€ climb the board, take the prizes.</p>
-            <div class="hero-cta">
-              <div dangerouslySetInnerHTML={{ __html: p.ctaBtn(p.joinLabel) }} />
-              <a class="btn btn--ghost" href="#board">Standings</a>
-            </div>
-          </div>
-          <div class="prize-card">
-            {p.hasPool ? <><span class="prize-card-label">{p.prizePoolLabel || "Prize pool"}</span><b class="prize-card-pool"><span dangerouslySetInnerHTML={{ __html: p.poolSpan }} /></b></> : ""}
-            <div class="hero-timer" data-timer>
-              <p class="timer-label">{p.countdownLabel || "Race ends in"}</p>
-              <div dangerouslySetInnerHTML={{ __html: p.timerGrid }} />
-            </div>
-          </div>
-        </div>
-        <div class="stat-strip">
-          <div class="ss"><span class="ss-label">Players</span><b class="ss-val" data-count>{p.sCount}</b></div>
-          <div class="ss"><span class="ss-label">Period</span><b class="ss-val"><span dangerouslySetInnerHTML={{ __html: p.periodSpan }} /></b></div>
-          <div class="ss"><span class="ss-label">Status</span><b class="ss-val"><span class="live-badge" data-live-badge><span class="live-badge-dot"></span>LIVE</span></b></div>
-        </div>
-      </section>
-      <div dangerouslySetInnerHTML={{ __html: p.announce }} />
-      <section id="board" class="board">
-        <div class="board-head board-head--center">
-          <div class="board-title-group">
-            <h2 class="sec-title">Standings</h2>
-            <span class="player-count-badge" data-player-count-badge></span>
-          </div>
-        </div>
-        <div dangerouslySetInnerHTML={{ __html: p.payouts }} />
-        <div dangerouslySetInnerHTML={{ __html: p.top3 }} />
-        <div dangerouslySetInnerHTML={{ __html: p.findRank }} />
-        <div dangerouslySetInnerHTML={{ __html: p.table }} />
-        <div dangerouslySetInnerHTML={{ __html: p.rules }} />
-      </section>
-      <div dangerouslySetInnerHTML={{ __html: p.partnerPanel }} />
-      <div dangerouslySetInnerHTML={{ __html: p.pastSec }} />
-      <div dangerouslySetInnerHTML={{ __html: p.socialsSec }} />
-    </>
-  );
-}
-
-// tournament Ã¢â‚¬â€ the countdown IS the hero: giant race clock front and center,
-// prize pool as the supporting line.
-function composeTournament(p) {
-  return `<section class="hero hero--clock">${p.heroLogo}<p class="hero-kicker" data-brand-name>${p.name}</p>
-<h1 class="clock-title">${esc(p.countdownLabel || "Race ends in")}</h1>
-<div class="hero-timer" data-timer>${p.timerGrid}</div>
-<p class="clock-sub">${p.hidePrizes || !p.hasPool ? `${p.periodSpan} race` : `${p.poolSpan} ${esc((p.prizePoolLabel || "Prize pool").toLowerCase())} Ã‚Â· ${p.periodSpan} race`} Ã‚Â· <b data-count>${p.sCount}</b> players</p>
-<div class="hero-cta">${p.ctaBtn(p.joinLabel)}<a class="btn btn--ghost" href="#board">Standings</a></div></section>
-${p.announce}<section id="board" class="board"><div class="board-head board-head--center">
-${p.titleGroup}</div>
-${p.payouts}
-${p.top3}
-${p.findRank}
-${p.table}
-${p.rules}</section>
-${p.partnerPanel}
-${p.pastSec}
-${p.socialsSec}`;
-}
-
-// champion Ã¢â‚¬â€ broadcast-banner hero: identity left, prize + clock right, then
-// straight into the pedestal stage. Partner panel demoted below the board.
-function composeChampion(p) {
-  return `<section class="hero hero--banner"><div class="banner-grid">
-<div class="banner-id">${p.heroLogo}<h1 class="hero-name" data-brand-name>${p.name}</h1>
-<p class="hero-sub">${p.hasCasino ? `<span data-casino>${esc(p.casino)}</span> partner Ã‚Â· ` : ""}${p.periodSpan} leaderboard</p></div>
-<div class="banner-facts">${p.hasPool ? `<div class="bf"><span class="bf-label">${esc(p.prizePoolLabel || "Prize pool")}</span><b class="bf-val">${p.poolSpan}</b></div>` : ""}
-<div class="bf"><span class="bf-label">${esc(p.countdownLabel || "Ends in")}</span><b class="bf-val countdown" data-countdown>--</b></div>
-<div class="bf"><span class="bf-label">Players</span><b class="bf-val" data-count>${p.sCount}</b></div>
-${p.ctaBtn(p.joinLabel)}</div></div>
-<div class="hero-timer" data-timer hidden>${p.timerGrid}</div></section>
-${p.announce}<section id="board" class="board"><div class="board-head board-head--center">
-${p.titleGroup}</div>
-${p.payouts}
-${p.top3}
-${p.findRank}
-${p.table}
-${p.rules}</section>
-${p.partnerPanel}
-${p.pastSec}
-${p.socialsSec}`;
-}
-
-// terminal Ã¢â‚¬â€ the whole board lives inside one terminal window: title bar,
-// prompt-style status lines, dense table. No marketing hero at all.
-function composeTerminal(p) {
-  return `<div class="term-window"><div class="term-bar"><span class="term-dots"><i></i><i></i><i></i></span><span class="term-title">~/leaderboard Ã¢â‚¬â€ <span data-brand-name>${p.name}</span></span></div>
-<div class="term-body"><section class="hero hero--term"><p class="term-line"><span class="term-prompt">$</span> race --period ${p.periodSpan}${p.hasPool ? ` --pool ${p.poolSpan}` : ""}</p>
-<p class="term-line term-line--dim">resets_in <b class="countdown" data-countdown>--</b> Ã‚Â· players <b data-count>${p.sCount}</b> Ã‚Â· <span class="live-badge" data-live-badge><span class="live-badge-dot"></span>LIVE</span></p>
-<div class="hero-cta">${p.ctaBtn(`&gt; ${p.hasCasino ? `join <span data-casino>${esc(p.casino)}</span>` : "join now"}`, "btn btn--term")}</div>
-<div class="hero-timer" data-timer hidden>${p.timerGrid}</div></section>
-${p.announce}<section id="board" class="board"><div class="board-head"><h2 class="sec-title"><span class="term-prompt">$</span> standings</h2><span class="player-count-badge" data-player-count-badge></span></div>
-${p.payouts}
-${p.top3}
-${p.findRank}
-${p.table}
-${p.rules}</section></div></div>
-${p.partnerPanel}
-${p.pastSec}
-${p.socialsSec}`;
-}
-
-// rewards Ã¢â‚¬â€ one centered treasure card: prize pool + race clock + CTA in a
-// single hero card, then podium and standings.
-function composeRewards(p) {
-  return `<section class="hero hero--card">${p.heroLogo}<h1 class="hero-name" data-brand-name>${p.name}</h1>
-<p class="hero-sub">${p.hasCasino ? `<span data-casino>${esc(p.casino)}</span> partner Ã‚Â· ` : ""}${p.periodSpan} rewards race</p>
-<div class="reward-card">${p.hasPool ? `<span class="reward-label">Ã°Å¸Å½Â ${esc(p.prizePoolLabel || "Prize pool")}</span><b class="reward-pool">${p.poolSpan}</b>` : ""}
-<div class="hero-timer" data-timer><p class="timer-label">${esc(p.countdownLabel || "Ends in")}</p>
-${p.timerGrid}</div>
-${p.ctaBtn(p.joinLabel, "btn btn--grad btn--full")}</div></section>
-${p.announce}<section id="board" class="board"><div class="board-head board-head--center">
-${p.titleGroup}</div>
-${p.payouts}
-${p.top3}
-${p.findRank}
-${p.table}
-${p.rules}</section>
-${p.partnerPanel}
-${p.pastSec}
-${p.socialsSec}`;
-}
-
-// amber Ã¢â‚¬â€ command-rail layout: a sticky left rail carries the identity,
-// prize, clock and partner code; standings own the right column.
-function composeAmber(p) {
-  return `<div class="rail-layout"><aside class="rail"><section class="hero hero--rail">${p.heroLogo}<h1 class="hero-name" data-brand-name>${p.name}</h1>
-<p class="hero-sub">${p.hasCasino ? `<span data-casino>${esc(p.casino)}</span> partner Ã‚Â· ` : ""}${p.periodSpan} race</p>
-${p.hasPool ? `<div class="rail-fact"><span class="rail-label">${esc(p.prizePoolLabel || "Prize pool")}</span><b class="rail-val">${p.poolSpan}</b></div>` : ""}
-<div class="rail-fact"><span class="rail-label">${esc(p.countdownLabel || "Resets in")}</span><b class="rail-val countdown" data-countdown>--</b></div>
-<div class="rail-fact"><span class="rail-label">Players</span><b class="rail-val" data-count>${p.sCount}</b></div>
-<div class="hero-cta">${p.ctaBtn(p.joinLabel, "btn btn--grad btn--full")}</div>
-<div class="hero-timer" data-timer hidden>${p.timerGrid}</div></section>
-${p.partnerPanel}</aside>
-<div class="rail-main">${p.announce}<section id="board" class="board"><div class="board-head">
-${p.titleGroup}</div>
-${p.payouts}
-${p.top3}
-${p.findRank}
-${p.table}
-${p.rules}</section></div></div>
-${p.pastSec}
-${p.socialsSec}`;
-}
-
-// copper Ã¢â‚¬â€ winners' gallery: the top-3 podium lives inside the hero as the
-// page's centerpiece; the table below is a quiet "top users" ledger.
-function composeCopper(p) {
-  return `<section class="hero hero--gallery">${p.heroLogo}<p class="hero-kicker">${p.periodSpan} champions</p><h1 class="hero-name" data-brand-name>${p.name}</h1>
-<p class="hero-sub">${p.hidePrizes || !p.hasPool ? "" : `${p.poolSpan} ${esc((p.prizePoolLabel || "prize pool").toLowerCase())} Ã‚Â· `}${esc(p.countdownLabel || "resets in")} <b class="countdown" data-countdown>--</b></p>
-${p.top3}
-<div class="hero-cta">${p.ctaBtn(p.joinLabel)}</div>
-<div class="hero-timer" data-timer hidden>${p.timerGrid}</div></section>
-${p.announce}<section id="board" class="board"><div class="board-head">
-<div class="board-title-group"><h2 class="sec-title">Top players</h2><span class="player-count-badge" data-player-count-badge></span><span class="live-badge" data-live-badge><span class="live-badge-dot"></span>LIVE</span></div></div>
-${p.payouts}
-${p.findRank}
-${p.table}
-${p.rules}</section>
-${p.partnerPanel}
-${p.pastSec}
-${p.socialsSec}`;
-}
-
-const COMPOSERS = {
-  quest: composeQuest,
-  vault: composeVault,
-  tournament: composeTournament,
-  champion: composeChampion,
-  terminal: composeTerminal,
-  rewards: composeRewards,
-  amber: composeAmber,
-  copper: composeCopper,
-  ...CASINO_COMPOSERS,
-};
-
+// Single template for now: every page uses the classic composition.
 async function composeMain(tpl, parts, text) {
-  let result = (COMPOSERS[tpl] || composeDefault)(parts);
-  if (result instanceof Promise) result = await result;
-  let html = (typeof result === "string") ? result : result.toString();
-  if (html instanceof Promise) html = await html;
-  if (CASINO_FULL.has(tpl)) html = applyCasinoText(html, tpl, text);
-  return html;
+  const result = composeDefault(parts);
+  return (typeof result === "string") ? result : result.toString();
 }
 
 function footerDisclaimer(hasCasino, name, casino) {
@@ -460,9 +225,7 @@ export async function renderLeaderboard(data, opts = {}) {
   const br = data.branding || {};
   // Template: which visual skin renders this page. Falls back to "classic".
   const tpl = validTemplate(br.template);
-  const fullPage = CASINO_FULL.has(tpl);
-  const frameCssStr = fullPage ? frameCss(tpl, FONT_FAMILIES[br.font] || FONT_FAMILIES.Inter) : "";
-  const tplCssStr = templateCss(tpl) + frameCssStr;
+  const tplCssStr = templateCss(tpl);
   const tplCss = tplCssStr ? `<style nonce="${opts.nonce}" data-template="${tpl}">${tplCssStr}</style>` : "";
   const previewCss = opts.preview ? `<style nonce="${opts.nonce}">
 html{background:var(--bg)}body[data-preview]{min-width:var(--preview-min-width,1100px);overflow:hidden}
@@ -527,12 +290,6 @@ body[data-preview] .top3{margin-bottom:14px}
   const hasCta = !!(b.ctaUrl) || hasCasino || hasCode;
   const hasPartner = hasCasino || hasCode || !!blurb || chips.length > 0 || whyStats.length > 0;
 
-  const fullPageHeader = fullPage
-    ? `<header class="site-header--full"><a class="site-header--full__brand" href="#top">${navLogo}<span data-brand-name>${esc(b.name)}</span></a><nav class="site-header--full__nav" aria-label="Page sections"><a href="#top">Leaderboard</a>${renderLegalLinks(data, legalHref, ["terms", "privacy", "responsible"])}</nav></header>`
-    : "";
-  const fullPageFooter = fullPage
-    ? `<footer class="site-footer--full"><div class="site-footer--full__brand" data-brand-name>${esc(b.name)}</div><div class="site-footer--full__tag" data-tagline>${esc(b.tagline)}</div><p class="site-footer--full__fine">${footerDisclaimer(hasCasino, b.name, casino)}</p><div class="site-footer--full__links">${renderLegalLinks(data, legalHref, ["terms", "privacy", "responsible"])}<a href="${legalHref("cookies")}">Cookies</a><a href="${legalHref("refund")}">Refund</a><a href="${legalHref("contact")}">Contact</a></div><p class="site-footer--full__copy">Ã‚Â© <span data-year></span> <span data-brand-name>${esc(b.name)}</span>. All rights reserved.</p></footer>`
-    : "";
 
   // Homepage/brand fallback preview image (1200Ãƒâ€”630). Served by the Worker at
   // /og.png so shares don't render blank. A board's own logo still wins.
@@ -592,7 +349,7 @@ document.addEventListener("click", (e) => {
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@500;700&family=Press+Start+2P&family=Fredoka+One&family=Orbitron:wght@400;700;900&family=Pacifico&family=Baloo+2:wght@400;600;800&family=Cormorant+Garamond:wght@400;600;700&family=Rye&family=Space+Mono:wght@400;700&family=Playfair+Display:wght@400;600;700;800;900&family=Inter:wght@400;600;700;800;900&family=Oswald:wght@400;600;700&family=Rajdhani:wght@400;600;700&family=Bebas+Neue&display=swap" rel="stylesheet" media="print" data-async />
 <script nonce="${opts.nonce}">document.querySelector('link[data-async]').onload=function(){this.media='all'};</script>
 <noscript><link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@500;700&family=Press+Start+2P&family=Fredoka+One&family=Orbitron:wght@400;700;900&family=Pacifico&family=Baloo+2:wght@400;600;800&family=Cormorant+Garamond:wght@400;600;700&family=Rye&family=Space+Mono:wght@400;700&family=Playfair+Display:wght@400;600;700;800;900&family=Inter:wght@400;600;700;800;900&family=Oswald:wght@400;600;700&family=Rajdhani:wght@400;600;700&family=Bebas+Neue&display=swap" rel="stylesheet" /></noscript>
-${fullPage ? "" : `<link rel="stylesheet" href="/assets/leaderboard.css" />`}
+<link rel="stylesheet" href="/assets/leaderboard.css" />
 ${tplCss}
 ${themeCss}
 ${profileLinkCss}
@@ -605,17 +362,15 @@ ${fontCss(br, opts.nonce)}
 <noscript><p class="noscript-noscroll">This leaderboard requires JavaScript for live updates. The data shown below may not refresh automatically.</p></noscript>
 ${opts.demo ? `<div class="demo-bar" role="region" aria-label="Demo notice"><span class="demo-bar-txt">You're viewing a live <b>YourRank</b> demo board.</span><a class="demo-bar-cta" href="${esc(`${opts.homeUrl || ""}/signup`)}" target="_top">Create your free page Ã¢â€ â€™</a><a class="demo-bar-home" href="${esc(opts.homeUrl || "/")}" target="_top">Back to YourRank</a></div>` : ""}
 <a class="skip-link" href="#board">Skip to leaderboard</a>
-${fullPageHeader}
-${fullPage ? "" : `<div class="field" aria-hidden="true"></div><div class="watermarks" data-watermarks aria-hidden="true"></div>
+<div class="field" aria-hidden="true"></div><div class="watermarks" data-watermarks aria-hidden="true"></div>
 <header class="nav"><a class="nav-brand" href="#top">${navLogo}<span data-brand-name>${esc(b.name)}</span></a>
 <button class="nav-toggle" aria-label="Toggle navigation" aria-expanded="false"><svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button>
-<nav class="nav-links" aria-label="Page sections">${hasPartner ? `<a href="#partner">Partner</a>` : ""}<a href="#board">Leaderboard</a>${socials.length ? `<a href="#socials">Socials</a>` : ""}</nav></header>`}
+<nav class="nav-links" aria-label="Page sections">${hasPartner ? `<a href="#partner">Partner</a>` : ""}<a href="#board">Leaderboard</a>${socials.length ? `<a href="#socials">Socials</a>` : ""}</nav></header>
 ${boardTabs}
 <main id="top">
 ${mainHtml}</main>
 ${shareHtml}
-${fullPageFooter}
-${fullPage ? "" : `<footer class="ftr-premium">
+<footer class="ftr-premium">
   <div class="ftr-premium-bg"></div>
   <div class="ftr-premium-inner">
     <div class="ftr-premium-main">
@@ -643,8 +398,8 @@ ${fullPage ? "" : `<footer class="ftr-premium">
       <p class="ftr-premium-copy">Ã‚Â© <span data-year></span> <span data-brand-name>${esc(b.name)}</span>. All rights reserved.</p>
     </div>
   </div>
-</footer>`}
-${badge}${fullPage ? `<script src="/assets/casino/${tpl}.js" nonce="${opts.nonce}"></script>` : ""}<script nonce="${opts.nonce}">window.__SITE_DATA__=${dataJson};window.__SLUG__=${JSON.stringify(opts.slug || "")};window.__IS_CUSTOM_DOMAIN__=${JSON.stringify(!!opts.isCustomDomain)};</script><script src="/assets/leaderboard.js" nonce="${opts.nonce}"></script>
+</footer>
+${badge}<script nonce="${opts.nonce}">window.__SITE_DATA__=${dataJson};window.__SLUG__=${JSON.stringify(opts.slug || "")};window.__IS_CUSTOM_DOMAIN__=${JSON.stringify(!!opts.isCustomDomain)};</script><script src="/assets/leaderboard.js" nonce="${opts.nonce}"></script>
 ${previewScript}
 </body></html>`;
 }
@@ -691,7 +446,6 @@ export function renderLegalPage(data, page, opts) {
   const b = data.brand || {};
   const br = data.branding || {};
   const tpl = br.template || "classic";
-  const fullPage = CASINO_FULL.has(tpl);
   const logo = opts.logoUrl ? esc(opts.logoUrl) : null;
   const logoSet = logoSrcSet(opts.logoUrl);
   const navLogo = logo ? `<img class="nav-logo" src="${logo}" srcset="${logoSet}" sizes="64px" alt="" />` : "";
@@ -703,33 +457,28 @@ export function renderLegalPage(data, page, opts) {
   const isDefaultLegal = !customBody;
   const bodyHtml = customBody || defaultLegalBody(page, b.name);
   const pageTitle = `${esc(title)} Ã‚Â· ${esc(b.name || "YourRank")}`;
-  const frameStyles = fullPage ? frameCss(tpl, FONT_FAMILIES[br.font] || FONT_FAMILIES.Inter) : "";
   const legalNoticeCss = isDefaultLegal ? `.legal-notice{display:flex;align-items:flex-start;gap:10px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.16);border-radius:10px;padding:14px 16px;margin-bottom:22px;font-size:13px;color:rgba(255,255,255,.85)}.legal-notice b{color:var(--accent,#c8ff00)}.legal-notice a{color:var(--accent,#c8ff00);text-decoration:underline}` : "";
-  const templateStyle = (frameStyles || legalNoticeCss) ? `<style nonce="${opts.nonce}" data-template="${tpl}">${frameStyles}${legalNoticeCss}</style>` : "";
+  const templateStyle = legalNoticeCss ? `<style nonce="${opts.nonce}">${legalNoticeCss}</style>` : "";
   const platformBase = esc(opts.homeUrl || "https://yourrank.site").replace(/\/$/, "");
   const legalNotice = isDefaultLegal ? `<div class="legal-notice"><b>Ã¢Å¡Â Ã¯Â¸Â Legal pages not configured</b> Ã¢â‚¬â€ ${esc(b.name || "this page")} is currently showing YourRank platform terms. You can also read the platform <a href="${platformBase}/terms">Terms of Service</a>, <a href="${platformBase}/privacy">Privacy Policy</a>, and <a href="${platformBase}/responsible">Responsible Play</a> guidelines.</div>` : "";
   const fontLink = GOOGLE_FONTS_LINK;
-  const cssLink = fullPage ? "" : `<link rel="stylesheet" href="/assets/app.css" />`;
+  const cssLink = `<link rel="stylesheet" href="/assets/app.css" />`;
   const canonical = `${esc(opts.homeUrl || "https://yourrank.site")}${legalHref(page)}`;
   const fontStyle = fontCss(br, opts.nonce);
-  const header = fullPage
-    ? `<header class="site-header--full"><a class="site-header--full__brand" href="${homeHref}">${navLogo}<span data-brand-name>${esc(b.name)}</span></a><nav class="site-header--full__nav" aria-label="Page sections"><a href="${homeHref}">Leaderboard</a>${renderLegalLinks(data, legalHref, ["terms", "privacy", "responsible"])}</nav></header>`
-    : `<header class="topbar"><a class="brand" href="${homeHref}">${esc(b.name || "YourRank")}</a></header>`;
+  const header = `<header class="topbar"><a class="brand" href="${homeHref}">${esc(b.name || "YourRank")}</a></header>`;
   const legalHasCasino = !!b.casino;
-  const footer = fullPage
-    ? `<footer class="site-footer--full"><div class="site-footer--full__brand" data-brand-name>${esc(b.name)}</div><div class="site-footer--full__tag" data-tagline>${esc(b.tagline)}</div><p class="site-footer--full__fine">${footerDisclaimer(legalHasCasino, b.name, b.casino)}</p><div class="site-footer--full__links">${renderLegalLinks(data, legalHref, ["terms", "privacy", "responsible"])}<a href="${legalHref("cookies")}">Cookies</a><a href="${legalHref("refund")}">Refund</a><a href="${legalHref("contact")}">Contact</a></div><p class="site-footer--full__copy">Ã‚Â© ${new Date().getFullYear()} <span data-brand-name>${esc(b.name)}</span>. All rights reserved.</p></footer>`
-    : `<footer class="ftr ftr--board"><div class="ftr-inner"><div class="ftr-brand-col"><div class="ftr-id"><span class="ftr-name" data-brand-name>${esc(b.name)}</span><span class="ftr-tag" data-tagline>${esc(b.tagline)}</span></div><p class="ftr-fine">${footerDisclaimer(legalHasCasino, b.name, b.casino)}</p></div><div class="ftr-links-col"><span class="ftr-links-title">Legal</span><div class="ftr-links">${renderLegalLinks(data, legalHref, ["terms", "privacy", "responsible"])}<a href="${legalHref("cookies")}">Cookies</a><a href="${legalHref("refund")}">Refund</a><a href="${legalHref("contact")}">Contact</a></div></div></div><div class="ftr-bottom"><p class="ftr-copy">Ã‚Â© ${new Date().getFullYear()} <span data-brand-name>${esc(b.name)}</span>. All rights reserved.</p></div></footer>`;
-  const bodyClass = fullPage ? `legal-page` : "legal";
+  const footer = `<footer class="ftr ftr--board"><div class="ftr-inner"><div class="ftr-brand-col"><div class="ftr-id"><span class="ftr-name" data-brand-name>${esc(b.name)}</span><span class="ftr-tag" data-tagline>${esc(b.tagline)}</span></div><p class="ftr-fine">${footerDisclaimer(legalHasCasino, b.name, b.casino)}</p></div><div class="ftr-links-col"><span class="ftr-links-title">Legal</span><div class="ftr-links">${renderLegalLinks(data, legalHref, ["terms", "privacy", "responsible"])}<a href="${legalHref("cookies")}">Cookies</a><a href="${legalHref("refund")}">Refund</a><a href="${legalHref("contact")}">Contact</a></div></div></div><div class="ftr-bottom"><p class="ftr-copy">Ã‚Â© ${new Date().getFullYear()} <span data-brand-name>${esc(b.name)}</span>. All rights reserved.</p></div></footer>`;
+  const bodyClass = "legal";
   return `<!DOCTYPE html>
 <html lang="en"><head>
 <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>${pageTitle}</title><meta name="description" content="${esc(title)} for ${esc(b.name || "YourRank")}." />
 <link rel="canonical" href="${canonical}" />
-${fontLink}${cssLink}${templateStyle}${fontStyle}
+${fontLink}${cssLink}${fontStyle}
 </head><body data-template="${tpl}" class="${bodyClass}">
 <a class="skip-link" href="#main-content">Skip to content</a>
 ${header}
-<main class="${fullPage ? "legal-page__wrap" : "legal"}" id="main-content"><h1>${esc(title)}</h1><p class="${fullPage ? "legal-page__updated" : "legal-updated"}">Last updated: ${new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })}</p>${legalNotice}${bodyHtml}<a class="${fullPage ? "legal-page__back" : ""}" href="${homeHref}">Ã¢â€ Â Back to ${esc(b.name || "leaderboard")}</a></main>
+<main class="${"legal"}" id="main-content"><h1>${esc(title)}</h1><p class="${"legal-updated"}">Last updated: ${new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })}</p>${legalNotice}${bodyHtml}<a class="${""}" href="${homeHref}">Ã¢â€ Â Back to ${esc(b.name || "leaderboard")}</a></main>
 ${footer}
 </body></html>`;
 }
@@ -753,25 +502,18 @@ export function renderPlayerProfile(data, player, history, opts) {
   const b = data.brand || {};
   const br = data.branding || {};
   const tpl = br.template || "classic";
-  const fullPage = CASINO_FULL.has(tpl);
   const logo = opts.logoUrl ? esc(opts.logoUrl) : null;
   const logoSet = logoSrcSet(opts.logoUrl);
   const navLogo = logo ? `<img class="nav-logo" src="${logo}" srcset="${logoSet}" sizes="64px" alt="" />` : "";
   const homeHref = opts.isCustomDomain ? "/" : `/${esc(opts.slug || "")}`;
   const profileHref = (name) => opts.isCustomDomain ? `/player/${encodeURIComponent(name)}` : `/${esc(opts.slug || "")}/player/${encodeURIComponent(name)}`;
   const backHref = playerBackHref(opts);
-  const frameStyles = fullPage ? frameCss(tpl, FONT_FAMILIES[br.font] || FONT_FAMILIES.Inter) : "";
-  const templateStyle = frameStyles ? `<style nonce="${opts.nonce}" data-template="${tpl}">${frameStyles}</style>` : "";
   const fontLink = GOOGLE_FONTS_LINK;
   const fontStyle = fontCss(br, opts.nonce);
-  const cssLink = fullPage ? "" : `<link rel="stylesheet" href="/assets/app.css" />`;
+  const cssLink = `<link rel="stylesheet" href="/assets/app.css" />`;
   const legalHref = (page) => opts.isCustomDomain ? `/${page}` : `/${esc(opts.slug || "")}/${page}`;
-  const header = fullPage
-    ? `<header class="site-header--full"><a class="site-header--full__brand" href="${homeHref}">${navLogo}<span data-brand-name>${esc(b.name)}</span></a><nav class="site-header--full__nav" aria-label="Page sections"><a href="${homeHref}">Leaderboard</a>${renderLegalLinks(data, legalHref, ["terms", "privacy"])}</nav></header>`
-    : `<header class="topbar"><a class="brand" href="${homeHref}">${esc(b.name || "YourRank")}</a></header>`;
-  const footer = fullPage
-    ? `<footer class="site-footer--full"><div class="site-footer--full__brand" data-brand-name>${esc(b.name)}</div><div class="site-footer--full__tag" data-tagline>${esc(b.tagline)}</div><p class="site-footer--full__fine">18+ only. Gambling can be addictive. Please play responsibly. BeGambleAware.org.</p><p class="site-footer--full__copy">Ã‚Â© ${new Date().getFullYear()} <span data-brand-name>${esc(b.name)}</span>. All rights reserved.</p></footer>`
-    : `<footer class="ftr ftr--board"><div class="ftr-inner"><div class="ftr-brand-col"><div class="ftr-id"><span class="ftr-name" data-brand-name>${esc(b.name)}</span><span class="ftr-tag" data-tagline>${esc(b.tagline)}</span></div><p class="ftr-fine">18+ only. Gambling can be addictive. Please play responsibly. BeGambleAware.org.</p></div><div class="ftr-links-col"><span class="ftr-links-title">Legal</span><div class="ftr-links">${renderLegalLinks(data, legalHref, ["terms", "privacy", "responsible"])}<a href="${legalHref("cookies")}">Cookies</a><a href="${legalHref("refund")}">Refund</a><a href="${legalHref("contact")}">Contact</a></div></div></div><div class="ftr-bottom"><p class="ftr-copy">Ã‚Â© ${new Date().getFullYear()} <span data-brand-name>${esc(b.name)}</span>. All rights reserved.</p></div></footer>`;
+  const header = `<header class="topbar"><a class="brand" href="${homeHref}">${esc(b.name || "YourRank")}</a></header>`;
+  const footer = `<footer class="ftr ftr--board"><div class="ftr-inner"><div class="ftr-brand-col"><div class="ftr-id"><span class="ftr-name" data-brand-name>${esc(b.name)}</span><span class="ftr-tag" data-tagline>${esc(b.tagline)}</span></div><p class="ftr-fine">18+ only. Gambling can be addictive. Please play responsibly. BeGambleAware.org.</p></div><div class="ftr-links-col"><span class="ftr-links-title">Legal</span><div class="ftr-links">${renderLegalLinks(data, legalHref, ["terms", "privacy", "responsible"])}<a href="${legalHref("cookies")}">Cookies</a><a href="${legalHref("refund")}">Refund</a><a href="${legalHref("contact")}">Contact</a></div></div></div><div class="ftr-bottom"><p class="ftr-copy">Ã‚Â© ${new Date().getFullYear()} <span data-brand-name>${esc(b.name)}</span>. All rights reserved.</p></div></footer>`;
   const pageTitle = `${esc(player.name)} Ã‚Â· ${esc(b.name || "YourRank")}`;
   const canonical = `${esc(opts.homeUrl || "https://yourrank.site")}${profileHref(player.name)}`;
 
@@ -812,11 +554,11 @@ export function renderPlayerProfile(data, player, history, opts) {
 <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>${pageTitle}</title><meta name="description" content="${esc(player.name)} profile on ${esc(b.name || "YourRank")}." />
 <link rel="canonical" href="${canonical}" />
-${fontLink}${cssLink}${templateStyle}${profileStyle}${shareCss}${fontStyle}
-</head><body data-template="${tpl}" class="${fullPage ? "legal-page" : "legal"}">
+${fontLink}${cssLink}${profileStyle}${shareCss}${fontStyle}
+</head><body data-template="${tpl}" class="${"legal"}">
 <a class="skip-link" href="#main-content">Skip to content</a>
 ${header}
-<main class="${fullPage ? "legal-page__wrap" : "legal"}" id="main-content">
+<main class="${"legal"}" id="main-content">
 <div class="pp-wrap">
   <div class="pp-card">
     <h1 class="pp-title">${esc(player.name)}</h1>
@@ -840,24 +582,17 @@ export function renderHallOfFame(data, opts) {
   const b = data.brand || {};
   const br = data.branding || {};
   const tpl = br.template || "classic";
-  const fullPage = CASINO_FULL.has(tpl);
   const logo = opts.logoUrl ? esc(opts.logoUrl) : null;
   const navLogo = logo ? `<img class="nav-logo" src="${logo}" alt="" />` : "";
   const isCustomDomain = !!opts.isCustomDomain;
   const homeHref = isCustomDomain ? "/" : `/${esc(opts.slug || "")}`;
   const legalHref = (p) => isCustomDomain ? `/${p}` : `/${esc(opts.slug || "")}/${p}`;
-  const frameStyles = fullPage ? frameCss(tpl, FONT_FAMILIES[br.font] || FONT_FAMILIES.Inter) : "";
-  const templateStyle = frameStyles ? `<style nonce="${opts.nonce}" data-template="${tpl}">${frameStyles}</style>` : "";
   const fontLink = GOOGLE_FONTS_LINK;
   const fontStyle = fontCss(br, opts.nonce);
-  const cssLink = fullPage ? "" : `<link rel="stylesheet" href="/assets/app.css" />`;
+  const cssLink = `<link rel="stylesheet" href="/assets/app.css" />`;
   const canonical = `${esc(opts.homeUrl || "https://yourrank.site")}${isCustomDomain ? "/hall-of-fame" : `/${esc(opts.slug || "")}/hall-of-fame`}`;
-  const header = fullPage
-    ? `<header class="site-header--full"><a class="site-header--full__brand" href="${homeHref}">${navLogo}<span data-brand-name>${esc(b.name)}</span></a><nav class="site-header--full__nav" aria-label="Page sections"><a href="${homeHref}">Leaderboard</a>${renderLegalLinks(data, legalHref, ["terms", "privacy"])}</nav></header>`
-    : `<header class="topbar"><a class="brand" href="${homeHref}">${esc(b.name || "YourRank")}</a></header>`;
-  const footer = fullPage
-    ? `<footer class="site-footer--full"><div class="site-footer--full__brand" data-brand-name>${esc(b.name)}</div><div class="site-footer--full__tag" data-tagline>${esc(b.tagline)}</div><p class="site-footer--full__fine">${footerDisclaimer(!!b.casino, b.name, b.casino)}</p><div class="site-footer--full__links">${renderLegalLinks(data, legalHref, ["terms", "privacy", "responsible"])}<a href="${legalHref("cookies")}">Cookies</a><a href="${legalHref("refund")}">Refund</a><a href="${legalHref("contact")}">Contact</a></div><p class="site-footer--full__copy">Ã‚Â© ${new Date().getFullYear()} <span data-brand-name>${esc(b.name)}</span>. All rights reserved.</p></footer>`
-    : `<footer class="ftr ftr--board"><div class="ftr-inner"><div class="ftr-brand-col"><div class="ftr-id"><span class="ftr-name" data-brand-name>${esc(b.name)}</span><span class="ftr-tag" data-tagline>${esc(b.tagline)}</span></div><p class="ftr-fine">${footerDisclaimer(!!b.casino, b.name, b.casino)}</p></div><div class="ftr-links-col"><span class="ftr-links-title">Legal</span><div class="ftr-links">${renderLegalLinks(data, legalHref, ["terms", "privacy", "responsible"])}<a href="${legalHref("cookies")}">Cookies</a><a href="${legalHref("refund")}">Refund</a><a href="${legalHref("contact")}">Contact</a></div></div></div><div class="ftr-bottom"><p class="ftr-copy">Ã‚Â© ${new Date().getFullYear()} <span data-brand-name>${esc(b.name)}</span>. All rights reserved.</p></div></footer>`;
+  const header = `<header class="topbar"><a class="brand" href="${homeHref}">${esc(b.name || "YourRank")}</a></header>`;
+  const footer = `<footer class="ftr ftr--board"><div class="ftr-inner"><div class="ftr-brand-col"><div class="ftr-id"><span class="ftr-name" data-brand-name>${esc(b.name)}</span><span class="ftr-tag" data-tagline>${esc(b.tagline)}</span></div><p class="ftr-fine">${footerDisclaimer(!!b.casino, b.name, b.casino)}</p></div><div class="ftr-links-col"><span class="ftr-links-title">Legal</span><div class="ftr-links">${renderLegalLinks(data, legalHref, ["terms", "privacy", "responsible"])}<a href="${legalHref("cookies")}">Cookies</a><a href="${legalHref("refund")}">Refund</a><a href="${legalHref("contact")}">Contact</a></div></div></div><div class="ftr-bottom"><p class="ftr-copy">Ã‚Â© ${new Date().getFullYear()} <span data-brand-name>${esc(b.name)}</span>. All rights reserved.</p></div></footer>`;
 
   const past = Array.isArray(data.pastWinners) ? data.pastWinners : [];
   const medals = ["gold", "silver", "bronze"];
@@ -894,11 +629,11 @@ export function renderHallOfFame(data, opts) {
 <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>${esc(b.name || "YourRank")} Ã¢â‚¬â€ Hall of Fame</title><meta name="description" content="Past winners and closed-out periods for ${esc(b.name || "YourRank")}." />
 <link rel="canonical" href="${canonical}" />
-${fontLink}${cssLink}${templateStyle}${hofStyle}${fontStyle}
-</head><body data-template="${tpl}" class="${fullPage ? "legal-page" : "legal"}">
+${fontLink}${cssLink}${hofStyle}${fontStyle}
+</head><body data-template="${tpl}" class="${"legal"}">
 <a class="skip-link" href="#main-content">Skip to content</a>
 ${header}
-<main class="${fullPage ? "legal-page__wrap" : "legal"}" id="main-content">
+<main class="${"legal"}" id="main-content">
 <div class="hof-wrap">
   <h1 class="hof-title">Hall of Fame</h1>
   <p class="hof-sub">Every closed-out period, on the record.</p>
@@ -914,25 +649,16 @@ export function renderStreamerProfile(data, opts) {
   const b = data.brand || {};
   const br = data.branding || {};
   const tpl = br.template || "classic";
-  const fullPage = CASINO_FULL.has(tpl);
   const logo = opts.logoUrl ? esc(opts.logoUrl) : null;
   const navLogo = logo ? `<img class="nav-logo" src="${logo}" alt="" />` : "";
   const homeHref = opts.isCustomDomain ? "/" : `/${esc(opts.slug || "")}`;
   const profileHref = opts.isCustomDomain ? "/profile" : `/${esc(opts.slug || "")}/profile`;
   const boardHref = (slug) => opts.isCustomDomain ? `https://yourrank.site/${esc(slug)}` : `/${esc(slug)}`;
-  const frameStyles = fullPage ? frameCss(tpl) : "";
-  const templateStyle = frameStyles ? `<style nonce="${opts.nonce}" data-template="${tpl}">${frameStyles}</style>` : "";
-  const fontLink = fullPage
-    ? `<link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin /><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet" />`
-    : `<link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin /><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />`;
-  const cssLink = fullPage ? "" : `<link rel="stylesheet" href="/assets/app.css" />`;
+  const fontLink = `<link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin /><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />`;
+  const cssLink = `<link rel="stylesheet" href="/assets/app.css" />`;
   const legalHref = (page) => opts.isCustomDomain ? `/${page}` : `/${esc(opts.slug || "")}/${page}`;
-  const header = fullPage
-    ? `<header class="site-header--full"><a class="site-header--full__brand" href="${homeHref}">${navLogo}<span data-brand-name>${esc(b.name)}</span></a><nav class="site-header--full__nav" aria-label="Page sections"><a href="${homeHref}">Leaderboard</a>${renderLegalLinks(data, legalHref, ["terms", "privacy"])}</nav></header>`
-    : `<header class="topbar"><a class="brand" href="${homeHref}">${esc(b.name || "YourRank")}</a></header>`;
-  const footer = fullPage
-    ? `<footer class="site-footer--full"><div class="site-footer--full__brand" data-brand-name>${esc(b.name)}</div><div class="site-footer--full__tag" data-tagline>${esc(b.tagline)}</div><p class="site-footer--full__fine">18+ only. Gambling can be addictive. Please play responsibly. BeGambleAware.org.</p><p class="site-footer--full__copy">Ã‚Â© ${new Date().getFullYear()} <span data-brand-name>${esc(b.name)}</span>. All rights reserved.</p></footer>`
-    : `<footer class="ftr ftr--board"><div class="ftr-inner"><div class="ftr-brand-col"><div class="ftr-id"><span class="ftr-name" data-brand-name>${esc(b.name)}</span><span class="ftr-tag" data-tagline>${esc(b.tagline)}</span></div><p class="ftr-fine">18+ only. Gambling can be addictive. Please play responsibly. BeGambleAware.org.</p></div><div class="ftr-links-col"><span class="ftr-links-title">Legal</span><div class="ftr-links">${renderLegalLinks(data, legalHref, ["terms", "privacy", "responsible"])}<a href="${legalHref("cookies")}">Cookies</a><a href="${legalHref("refund")}">Refund</a><a href="${legalHref("contact")}">Contact</a></div></div></div><div class="ftr-bottom"><p class="ftr-copy">Ã‚Â© ${new Date().getFullYear()} <span data-brand-name>${esc(b.name)}</span>. All rights reserved.</p></div></footer>`;
+  const header = `<header class="topbar"><a class="brand" href="${homeHref}">${esc(b.name || "YourRank")}</a></header>`;
+  const footer = `<footer class="ftr ftr--board"><div class="ftr-inner"><div class="ftr-brand-col"><div class="ftr-id"><span class="ftr-name" data-brand-name>${esc(b.name)}</span><span class="ftr-tag" data-tagline>${esc(b.tagline)}</span></div><p class="ftr-fine">18+ only. Gambling can be addictive. Please play responsibly. BeGambleAware.org.</p></div><div class="ftr-links-col"><span class="ftr-links-title">Legal</span><div class="ftr-links">${renderLegalLinks(data, legalHref, ["terms", "privacy", "responsible"])}<a href="${legalHref("cookies")}">Cookies</a><a href="${legalHref("refund")}">Refund</a><a href="${legalHref("contact")}">Contact</a></div></div></div><div class="ftr-bottom"><p class="ftr-copy">Ã‚Â© ${new Date().getFullYear()} <span data-brand-name>${esc(b.name)}</span>. All rights reserved.</p></div></footer>`;
 
   const socials = (data.socials || []).filter((s) => s.enabled !== false);
   const socialIcons = {
@@ -1002,11 +728,11 @@ export function renderStreamerProfile(data, opts) {
 <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>${pageTitle}</title><meta name="description" content="${esc(b.tagline || b.name || "YourRank")} streamer profile." />
 <link rel="canonical" href="${canonical}" />
-${fontLink}${cssLink}${templateStyle}${profileStyle}${shareCss}
-</head><body data-template="${tpl}" class="${fullPage ? "legal-page" : "legal"}">
+${fontLink}${cssLink}${profileStyle}${shareCss}
+</head><body data-template="${tpl}" class="${"legal"}">
 <a class="skip-link" href="#main-content">Skip to content</a>
 ${header}
-<main class="${fullPage ? "legal-page__wrap" : "legal"}" id="main-content">
+<main class="${"legal"}" id="main-content">
 <div class="sp-wrap">
   <div class="sp-hero">
     ${logo ? `<img src="${logo}" alt="" />` : ""}
@@ -1122,5 +848,3 @@ ${error ? `<p class="pw-error">${esc(error)}</p>` : ""}
 </form>
 </main></body></html>`;
 }
-
-

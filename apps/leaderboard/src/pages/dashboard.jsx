@@ -193,11 +193,8 @@ export function DashboardContent() {
 </div></div>
 <div class="card" data-egroup="data" id="playerFieldsCard"><h2>Player columns</h2><p class="card-sub">Choose which extra columns show on the dashboard player table and on supported public templates.</p><div class="section-list" id="playerFieldsList"></div></div>
 <div class="card" data-egroup="appearance" id="templateCard"><h2>Page design</h2><p class="card-sub">Pick a design; the preview on the right uses your real players.</p>
-<div class="template-tabs" id="templateTabs" role="tablist" aria-label="Template categories"></div>
-<div class="template-vibe-filters" id="templateVibeFilters" role="group" aria-label="Casino vibes" hidden></div>
 <input type="hidden" id="f_template" value="classic" />
 <div class="template-gallery-wrap" id="templateGalleryWrap">
-<div class="template-featured" id="templateFeatured" hidden></div>
 <div class="template-grid" id="templateGallery" aria-label="Page templates"></div>
 </div>
 <p class="hint template-status" id="templateStatus" role="status" aria-live="polite"></p></div>

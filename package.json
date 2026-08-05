@@ -2,7 +2,12 @@
   "name": "yourrank",
   "private": true,
   "version": "0.2.0",
-  "workspaces": ["apps/leaderboard", "apps/bot", "apps/monitor", "e2e"],
+  "workspaces": [
+    "apps/leaderboard",
+    "apps/bot",
+    "apps/monitor",
+    "e2e"
+  ],
   "dependencies": {
     "postgres": "3.4.9",
     "zod": "3.25.76"
@@ -23,5 +28,9 @@
     "typecheck": "(cd apps/bot && bun run typecheck) && (cd apps/leaderboard && bunx tsc --noEmit) && (cd apps/monitor && bun run typecheck)",
     "test": "bun run scripts/test.mjs",
     "prepare": "git config core.hooksPath .githooks || true"
+  },
+  "overrides": {
+    "undici": ">=7.29.0",
+    "brace-expansion": ">=5.0.9"
   }
 }
