@@ -129,7 +129,7 @@ function buildPlayerRow(pl, rank, delay, gap) {
   }
 
 function buildTop3Card(pl, rank) {
-  return `<div class="t3 t3--${rank}" data-name="${esc(pl.name)}"><span class="t3-medal">RANK ${String(rank).padStart(2, "0")}</span><span class="t3-av" aria-hidden="true">${esc(initials(pl.name))}</span><a class="t3-name" href="${playerHref(pl.name)}">${esc(pl.name)}</a><div class="t3-wager">${money(pl.wagered)}</div><span class="t3-prize">${pl.prize ? moneyPrize(pl.prize) : "—"}</span></div>`;
+  return `<div class="t3 t3--${rank}" data-name="${esc(pl.name)}"><div class="t3-av-wrap"><span class="t3-av" aria-hidden="true">${esc(initials(pl.name))}</span><span class="t3-medal">${rank}</span></div><a class="t3-name" href="${playerHref(pl.name)}">${esc(pl.name)}</a><span class="t3-prize">${pl.prize ? moneyPrize(pl.prize) : "—"}</span><div class="t3-wager-box"><span class="t3-wager-label">Total Wager</span><span class="t3-wager">${money(pl.wagered)}</span></div></div>`;
 }
 
 // data-style-* attributes carry dynamic per-player values
