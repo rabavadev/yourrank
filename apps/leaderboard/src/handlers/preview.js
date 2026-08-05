@@ -49,7 +49,7 @@ export async function handleDashboardPreview(request, env, nonce) {
   });
 
   if (device === "desktop") {
-    const editableSelectors = "[data-brand-name], [data-casino], .hr-brand-title, .hr-brand-sub, .hr-stat-value, .hr-podium-name, .hr-podium-value, .tr-name, .tr-wager, .tr-prize, .t3-name, .t3-wager, .t3-prize, .bf-val, .reward-pool, .hero-name, .hero-sub, .clock-sub";
+    const editableSelectors = "[data-brand-name], [data-casino], .hero-name, .hero-sub, .clock-sub";
     html = html.replace('</head>', `<style nonce="${nonce}">
       ${editableSelectors} { cursor: text; transition: outline 0.15s ease, outline-offset 0.15s ease; }
       ${editableSelectors.split(", ").map(s => s + ":hover").join(", ")} { outline: 2px dashed rgba(200,255,0,0.4); outline-offset: 3px; border-radius: 4px; }
@@ -89,12 +89,10 @@ export async function handleDashboardPreview(request, env, nonce) {
               let key = null;
               let extra = null;
               
-              if (el.matches("[data-brand-name], .hr-brand-title, .hero-name")) key = "f_name";
-              else if (el.matches(".hr-brand-sub, .hero-sub")) key = "f_tagline";
+              if (el.matches("[data-brand-name], .hero-name")) key = "f_name";
+              else if (el.matches(".hero-sub")) key = "f_tagline";
               else if (el.matches("[data-casino]")) key = "f_casino";
-              else if (el.matches(".hr-stat-value, .reward-pool, .bf-val, .clock-sub")) key = "f_pool";
-              else if (el.matches(".hr-podium-name, .tr-name, .t3-name")) { key = "player_name"; extra = originalText.trim(); }
-              else if (el.matches(".hr-podium-value, .tr-wager, .t3-wager")) { key = "player_wager"; extra = el.closest("[data-name]")?.dataset.name || el.closest(".hr-podium-card")?.querySelector(".hr-podium-name")?.textContent.trim() || el.closest(".t3")?.querySelector(".t3-name")?.textContent.trim() || ""; }
+              else if (el.matches(".clock-sub")) key = "f_pool";
               
               if (key) {
                 window.parent.postMessage({ type: "yr_edit_request", key, value: newText, extra }, "*");

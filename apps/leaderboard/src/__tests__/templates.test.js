@@ -37,8 +37,8 @@ const DATA = {
 };
 
 describe("template catalog", async () => {
-  it("offers a curated registry of distinct templates with curated presets", async () => {
-    expect(TEMPLATE_IDS.length).toBeGreaterThanOrEqual(15);
+  it("offers the single canonical template with curated presets", async () => {
+    expect(TEMPLATE_IDS).toEqual(["classic"]);
     for (const id of TEMPLATE_IDS) {
       expect(TEMPLATES[id].presets.length).toBeGreaterThanOrEqual(3);
       expect(TEMPLATES[id].presets.every((preset) => /^#[0-9a-f]{6}$/i.test(preset.accentA) && /^#[0-9a-f]{6}$/i.test(preset.accentB))).toBe(true);
@@ -47,7 +47,7 @@ describe("template catalog", async () => {
 
   it("exposes client metadata without sending template CSS", async () => {
     const catalog = templateCatalog();
-    expect(catalog.length).toBeGreaterThanOrEqual(15);
+    expect(catalog.length).toBe(1);
     expect(catalog.every((template) => !Object.hasOwn(template, "css"))).toBe(true);
     expect(catalog.map((template) => template.id)).toEqual(TEMPLATE_IDS);
   });
@@ -60,16 +60,16 @@ describe("template catalog", async () => {
 describe("template previews", async () => {
   it("renders real board data in preview mode", async () => {
     const html = await renderLeaderboard(
-      { ...DATA, branding: { template: "sponsor", accentA: "#00ffd1", accentB: "#ff2cd0" } },
+      { ...DATA, branding: { template: "classic", accentA: "#00ffd1", accentB: "#ff2cd0" } },
       { nonce: "preview123", preview: true }
     );
-    expect(html).toContain('body data-template="sponsor" data-preview');
+    expect(html).toContain('body data-template="classic" data-preview');
     expect(html).toContain("Actual Streamer");
     expect(html).toContain("First Player");
     expect(html).toContain("body[data-preview]");
   });
 
-  it("renders every registered skin", async () => {
+  it("renders every registered template", async () => {
     for (const template of TEMPLATE_IDS) {
       const html = await renderLeaderboard({ ...DATA, branding: { template } }, { nonce: "test123" });
       expect(html).toContain(`body data-template="${template}"`);
@@ -126,13 +126,13 @@ describe("theme_json / extra_json persistence (BUG: double-encoded JSONB)", asyn
   });
 
   it("resolves the template from a proper JSONB object row", async () => {
-    const shaped = publicShape({ ...SITE, theme_json: { template: "highRollers" }, extra_json: {} }, []);
-    expect(shaped.branding.template).toBe("highRollers");
+    const shaped = publicShape({ ...SITE, theme_json: { template: "classic" }, extra_json: {} }, []);
+    expect(shaped.branding.template).toBe("classic");
   });
 
   it("resolves the template from a legacy double-encoded string row", async () => {
-    const shaped = publicShape({ ...SITE, theme_json: '{"template":"highRollers"}', extra_json: {} }, []);
-    expect(shaped.branding.template).toBe("highRollers");
+    const shaped = publicShape({ ...SITE, theme_json: '{"template":"classic"}', extra_json: {} }, []);
+    expect(shaped.branding.template).toBe("classic");
   });
 
   it("reads socials from a legacy double-encoded extra_json string", async () => {

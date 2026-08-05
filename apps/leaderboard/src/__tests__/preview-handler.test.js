@@ -44,7 +44,7 @@ describe("handleDashboardPreview", () => {
   it("requires an authenticated dashboard session", async () => {
     mockCurrentUser.mockResolvedValueOnce(null);
     const res = await handleDashboardPreview(
-      new Request("https://test.com/dashboard/preview?board=site-1&template=sponsor"),
+      new Request("https://test.com/dashboard/preview?board=site-1&template=classic"),
       {},
       "nonce123"
     );
@@ -55,7 +55,7 @@ describe("handleDashboardPreview", () => {
   it("returns 404 when the requested board is not owned by the user", async () => {
     mockGetUserSiteById.mockResolvedValueOnce(null);
     const res = await handleDashboardPreview(
-      new Request("https://test.com/dashboard/preview?board=other-site&template=sponsor"),
+      new Request("https://test.com/dashboard/preview?board=other-site&template=classic"),
       {},
       "nonce123"
     );
@@ -65,13 +65,13 @@ describe("handleDashboardPreview", () => {
 
   it("overrides preview theme data without mutating stored board data", async () => {
     const res = await handleDashboardPreview(
-      new Request("https://test.com/dashboard/preview?board=site-1&template=sponsor&accentA=%2300ffd1&accentB=%23ff2cd0"),
+      new Request("https://test.com/dashboard/preview?board=site-1&template=classic&accentA=%2300ffd1&accentB=%23ff2cd0"),
       {},
       "nonce123"
     );
     const html = await res.text();
     expect(res.status).toBe(200);
-    expect(html).toContain('body data-template="sponsor" data-preview');
+    expect(html).toContain('body data-template="classic" data-preview');
     expect(html).toContain("--cy:#00ffd1");
     expect(html).toContain("Actual Player");
     expect(SITE.data.branding).toEqual({
