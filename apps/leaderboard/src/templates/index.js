@@ -8,7 +8,7 @@ export const TEMPLATES = {
   classic: {
     id: "classic",
     name: "Classic",
-    description: "Purple night with a clean cyan glow.",
+    description: "High-Stakes Kinetic: obsidian glass with a glowing neon podium.",
     css: "",
     presets: [
       { id: "purplenight", name: "Purple Night", accentA: "#06b6d4", accentB: "#a855f7" },
