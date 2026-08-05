@@ -34,7 +34,7 @@ function renderLegalSidebar(data, legalHref) {
 
 const HEX = /^#[0-9a-fA-F]{6}$/;
 const LOGO_WIDTHS = [64, 128, 256, 512];
-const GOOGLE_FONTS_LINK = `<link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin /><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Oswald:wght@400;500;600;700&family=Playfair+Display:wght@400;500;600;700;800;900&family=Rajdhani:wght@400;500;600;700&family=Bebas+Neue&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />`;
+const GOOGLE_FONTS_LINK = `<link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin /><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Montserrat:wght@400;700;800;900&family=Oswald:wght@400;500;600;700&family=Playfair+Display:wght@400;500;600;700;800;900&family=Rajdhani:wght@400;500;600;700&family=Bebas+Neue&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />`;
 const FONT_BASE_STYLE = `:root{--yr-font:FAMILY;--yr-font-fallback:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",sans-serif}body{font-family:var(--yr-font),var(--yr-font-fallback)}.font-sans{font-family:var(--yr-font),ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",sans-serif}`;
 function fontCss(br, nonce) {
   const family = FONT_FAMILIES[br?.font] || FONT_FAMILIES.Inter;
@@ -48,7 +48,7 @@ function logoSrcSet(baseUrl) {
 }
 
 const shareCss = `
-.share-sec{padding:24px 4vw;max-width:var(--wrap,1140px);margin:0 auto;text-align:center;border-top:1px solid var(--line,rgba(150,120,220,.3))}
+.share-sec{padding:24px 4vw;max-width:var(--wrap,1200px);margin:0 auto;text-align:center}
 .share-title{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-mute,#9a9aa2);margin:0 0 12px}
 .share-btns{display:inline-flex;flex-wrap:wrap;gap:10px;justify-content:center}
 .share-btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:40px;padding:8px 16px;border-radius:8px;border:1px solid var(--line,rgba(150,120,220,.3));background:var(--panel-2,#141417);color:var(--ink,#ededf0);font-size:14px;font-weight:600;text-decoration:none;cursor:pointer;transition:border-color .15s,transform .05s}
@@ -64,7 +64,7 @@ function shareSection(pageUrl, name) {
 <h3 class="share-title">Share this board</h3>
 <div class="share-btns">
   <button class="share-btn" data-share="copy" data-url="${safe(pageUrl)}" type="button">Copy link</button>
-  <a class="share-btn" href="https://twitter.com/intent/tweet?url=${u}&text=${text}" target="_blank" rel="noopener">Ã°Ââ€¢Â</a>
+  <a class="share-btn" href="https://twitter.com/intent/tweet?url=${u}&text=${text}" target="_blank" rel="noopener">𝕏</a>
   <a class="share-btn" href="https://t.me/share/url?url=${u}&text=${text}" target="_blank" rel="noopener">Telegram</a>
   <a class="share-btn" href="https://api.whatsapp.com/send?text=${text}%20${u}" target="_blank" rel="noopener">WhatsApp</a>
 </div>
@@ -121,17 +121,17 @@ ${whyStats.length ? `<div class="pcol pcol-why"><span class="pcol-label">Why ${h
   const initials = (name) => { const parts = String(name || "").trim().split(/\s+/); return (parts[0]?.[0] || "?") + (parts[1]?.[0] || ""); };
   const moneyS = (n) => cur2 + (Number(n) || 0).toLocaleString("en-US", { maximumFractionDigits: 0 });
   const moneyShortS = (n) => { const v = Number(n) || 0; if (v >= 1e6) return cur2 + (v / 1e6).toFixed(1) + "M"; if (v >= 1e3) return cur2 + (v / 1e3).toFixed(1) + "K"; return cur2 + v; };
-  const moneyPrizeS = (n) => { if (hidePrizes) return "Ã¢â‚¬â€"; return moneyS(n); };
+  const moneyPrizeS = (n) => { if (hidePrizes) return "—"; return moneyS(n); };
   const playerHrefS = (name) => isCustomDomain
     ? `/player/${encodeURIComponent(name)}`
     : `/${encodeURIComponent(slug)}/player/${encodeURIComponent(name)}`;
   const top3Srv = sortedPlayers.slice(0, 3).map((pl, i) => {
     const rank = i + 1;
-    return `<div class="t3 t3--${rank}" data-name="${esc(pl.name)}"><span class="t3-medal">RANK ${String(rank).padStart(2, "0")}</span><span class="t3-av" aria-hidden="true">${esc(initials(pl.name))}</span><a class="t3-name" href="${playerHrefS(pl.name)}">${esc(pl.name)}</a><div class="t3-wager">${moneyS(pl.wagered)}</div><span class="t3-prize">${pl.prize ? moneyPrizeS(pl.prize) : "Ã¢â‚¬â€"}</span></div>`;
+    return `<div class="t3 t3--${rank}" data-name="${esc(pl.name)}"><div class="t3-av-wrap"><span class="t3-av" aria-hidden="true">${esc(initials(pl.name))}</span><span class="t3-medal">${rank}</span></div><a class="t3-name" href="${playerHrefS(pl.name)}">${esc(pl.name)}</a><span class="t3-prize">${pl.prize ? moneyPrizeS(pl.prize) : "—"}</span><div class="t3-wager-box"><span class="t3-wager-label">Total Wager</span><span class="t3-wager">${moneyS(pl.wagered)}</span></div></div>`;
   }).join("");
   const rowsSrv = sortedPlayers.slice(3).map((pl, i) => {
     const rank = i + 4;
-    const prize = pl.prize ? `<span class="tr-prize has ta-r" role="cell">${moneyPrizeS(pl.prize)}</span>` : `<span class="tr-prize no ta-r" role="cell">Ã¢â‚¬â€</span>`;
+    const prize = pl.prize ? `<span class="tr-prize has ta-r" role="cell">${moneyPrizeS(pl.prize)}</span>` : `<span class="tr-prize no ta-r" role="cell">—</span>`;
     return `<div class="t-row" role="row" data-position="${rank}" data-name="${esc(pl.name)}" data-wagered="${Number(pl.wagered) || 0}">
       <span class="tr-rank" role="cell">${String(rank).padStart(2, "0")}</span>
       <span class="tr-player" role="cell"><span class="tr-av" aria-hidden="true">${esc(initials(pl.name))}</span><a class="tr-name" href="${playerHrefS(pl.name)}">${esc(pl.name)}</a></span>
@@ -140,7 +140,7 @@ ${whyStats.length ? `<div class="pcol pcol-why"><span class="pcol-label">Why ${h
 
   const table = `<div class="table" role="table" aria-label="Leaderboard standings"><div class="t-head" role="row"><span role="columnheader">#</span><span role="columnheader">Player</span><span class="ta-r" role="columnheader">Wagered</span><span class="ta-r" role="columnheader">Prize</span></div>
 <div class="t-rows" role="rowgroup" data-rows>${rowsSrv}</div></div>`;
-  const rules = `<details class="rules"><summary>Leaderboard rules Ã¢â‚¬â€ how wager counts</summary><ol class="rules-list" data-rules></ol></details>`;
+  const rules = `<details class="rules"><summary>Leaderboard rules — how wager counts</summary><ol class="rules-list" data-rules></ol></details>`;
   const pastSec = `<section id="past" class="past-sec" data-past hidden><h2 class="sec-title center">Past Winners</h2><p class="sec-sub center">Every closed-out period, on the record.</p>
 <div class="past-grid" data-past-grid></div></section>`;
   const socialsSec = socials.length ? `<section id="socials" class="socials-sec"><h2 class="sec-title center">Join the Socials</h2><p class="sec-sub center">More giveaways and promotions across every platform.</p>
@@ -165,7 +165,7 @@ function composeDefault(p) {
         <p class="hero-kicker">Welcome to</p>
         <h1 class="hero-name" data-brand-name>{name}</h1>
         <p class="hero-sub">
-          {hasCasino ? <><span data-casino>{casino}</span> partner Ã‚Â· </> : ""}
+          {hasCasino ? <><span data-casino>{casino}</span> partner · </> : ""}
           <span data-period>{period}</span> leaderboard
         </p>
         <div class="hero-cta">
@@ -184,7 +184,7 @@ function composeDefault(p) {
       <section id="board" class="board">
         <div class="board-head">
           <p class="eyebrow">
-            {pool ? <><span data-pool>{pool}</span> Ã‚Â· </> : ""}
+            {pool ? <><span data-pool>{pool}</span> · </> : ""}
             <span data-period>{period}</span> Leaderboard
           </p>
           <div dangerouslySetInnerHTML={{ __html: p.titleGroup }} />
@@ -240,9 +240,9 @@ body[data-preview] .board{width:92%;padding:28px 0 50px}
 body[data-preview] .board-head{margin-bottom:18px}
 body[data-preview] .top3{margin-bottom:14px}
 </style>` : "";
-  // Free-plan pages carry the badge Ã¢â‚¬â€ it's how YourRank spreads.
+  // Free-plan pages carry the badge — it's how YourRank spreads.
   const badge = opts.watermark
-    ? `<aside aria-label="YourRank branding"><a class="rk-badge" href="${esc(opts.homeUrl || "/")}" target="_blank" rel="noopener">Ã¢Å¡Â¡ Powered by <b>YourRank</b></a></aside>`
+    ? `<aside aria-label="YourRank branding"><a class="rk-badge" href="${esc(opts.homeUrl || "/")}" target="_blank" rel="noopener">⚡ Powered by <b>YourRank</b></a></aside>`
     : "";
   // Pro theme: one gradient pair drives the page accents. Validated hex only.
   const themeCss = (!opts.watermark && HEX.test(br.accentA || "") && HEX.test(br.accentB || ""))
@@ -270,7 +270,7 @@ body[data-preview] .top3{margin-bottom:14px}
 
   // A brand-new board has no casino/code/prize configured yet. Rendering the
   // "Official Partner" badge, casino perks and an empty code box on an
-  // unconfigured page publishes claims the owner never made Ã¢â‚¬â€ a trust/legal
+  // unconfigured page publishes claims the owner never made — a trust/legal
   // problem. Gate every partner-specific element on real configuration and fall
   // back to neutral, honest copy until the owner fills things in.
   const casino = (b.casino || "").trim();
@@ -286,12 +286,12 @@ body[data-preview] .top3{margin-bottom:14px}
   const ctaHref = opts.slug ? esc(`/go/${opts.slug}`) : safeUrl(b.ctaUrl);
   // Only surface a "Join" CTA when the owner actually configured a referral
   // destination (a casino, a code, or an explicit CTA URL). Otherwise /go/<slug>
-  // just loops back to the same page Ã¢â‚¬â€ a dead-end button on a fresh board.
+  // just loops back to the same page — a dead-end button on a fresh board.
   const hasCta = !!(b.ctaUrl) || hasCasino || hasCode;
   const hasPartner = hasCasino || hasCode || !!blurb || chips.length > 0 || whyStats.length > 0;
 
 
-  // Homepage/brand fallback preview image (1200Ãƒâ€”630). Served by the Worker at
+  // Homepage/brand fallback preview image (1200×630). Served by the Worker at
   // /og.png so shares don't render blank. A board's own logo still wins.
   const ogFallback = `${esc(home)}/og.png`;
   const ogImageUrl = logo || ogFallback;
@@ -346,9 +346,9 @@ document.addEventListener("click", (e) => {
 <meta property="og:url" content="${canonicalUrl}" />
 <meta name="twitter:card" content="${twitterCard}" /><meta name="twitter:title" content="${ogTitle}" /><meta name="twitter:description" content="${desc}" />${ogImage}
 <link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@500;700&family=Press+Start+2P&family=Fredoka+One&family=Orbitron:wght@400;700;900&family=Pacifico&family=Baloo+2:wght@400;600;800&family=Cormorant+Garamond:wght@400;600;700&family=Rye&family=Space+Mono:wght@400;700&family=Playfair+Display:wght@400;600;700;800;900&family=Inter:wght@400;600;700;800;900&family=Oswald:wght@400;600;700&family=Rajdhani:wght@400;600;700&family=Bebas+Neue&display=swap" rel="stylesheet" media="print" data-async />
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@500;700&family=Press+Start+2P&family=Fredoka+One&family=Orbitron:wght@400;700;900&family=Pacifico&family=Baloo+2:wght@400;600;800&family=Cormorant+Garamond:wght@400;600;700&family=Rye&family=Space+Mono:wght@400;700&family=Montserrat:wght@400;700;800;900&family=Playfair+Display:wght@400;600;700;800;900&family=Inter:wght@400;600;700;800;900&family=Oswald:wght@400;600;700&family=Rajdhani:wght@400;600;700&family=Bebas+Neue&display=swap" rel="stylesheet" media="print" data-async />
 <script nonce="${opts.nonce}">document.querySelector('link[data-async]').onload=function(){this.media='all'};</script>
-<noscript><link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@500;700&family=Press+Start+2P&family=Fredoka+One&family=Orbitron:wght@400;700;900&family=Pacifico&family=Baloo+2:wght@400;600;800&family=Cormorant+Garamond:wght@400;600;700&family=Rye&family=Space+Mono:wght@400;700&family=Playfair+Display:wght@400;600;700;800;900&family=Inter:wght@400;600;700;800;900&family=Oswald:wght@400;600;700&family=Rajdhani:wght@400;600;700&family=Bebas+Neue&display=swap" rel="stylesheet" /></noscript>
+<noscript><link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@500;700&family=Press+Start+2P&family=Fredoka+One&family=Orbitron:wght@400;700;900&family=Pacifico&family=Baloo+2:wght@400;600;800&family=Cormorant+Garamond:wght@400;600;700&family=Rye&family=Space+Mono:wght@400;700&family=Montserrat:wght@400;700;800;900&family=Playfair+Display:wght@400;600;700;800;900&family=Inter:wght@400;600;700;800;900&family=Oswald:wght@400;600;700&family=Rajdhani:wght@400;600;700&family=Bebas+Neue&display=swap" rel="stylesheet" /></noscript>
 <link rel="stylesheet" href="/assets/leaderboard.css" />
 ${tplCss}
 ${themeCss}
@@ -360,7 +360,7 @@ ${fontCss(br, opts.nonce)}
 <script nonce="${opts.nonce}" type="application/ld+json">{"@context":"https://schema.org","@type":"ItemList","name":${JSON.stringify(title)},"description":${JSON.stringify(desc)},"numberOfItems":${data.players ? data.players.length : 0}}</script>
 </head><body data-template="${tpl}"${opts.preview ? ` data-preview style="--preview-min-width:${opts.previewDevice === "mobile" ? 390 : 1100}px"` : ""}${opts.demo ? " data-demo" : ""} ${sectionAttrs}>
 <noscript><p class="noscript-noscroll">This leaderboard requires JavaScript for live updates. The data shown below may not refresh automatically.</p></noscript>
-${opts.demo ? `<div class="demo-bar" role="region" aria-label="Demo notice"><span class="demo-bar-txt">You're viewing a live <b>YourRank</b> demo board.</span><a class="demo-bar-cta" href="${esc(`${opts.homeUrl || ""}/signup`)}" target="_top">Create your free page Ã¢â€ â€™</a><a class="demo-bar-home" href="${esc(opts.homeUrl || "/")}" target="_top">Back to YourRank</a></div>` : ""}
+${opts.demo ? `<div class="demo-bar" role="region" aria-label="Demo notice"><span class="demo-bar-txt">You're viewing a live <b>YourRank</b> demo board.</span><a class="demo-bar-cta" href="${esc(`${opts.homeUrl || ""}/signup`)}" target="_top">Create your free page →</a><a class="demo-bar-home" href="${esc(opts.homeUrl || "/")}" target="_top">Back to YourRank</a></div>` : ""}
 <a class="skip-link" href="#board">Skip to leaderboard</a>
 <div class="field" aria-hidden="true"></div><div class="watermarks" data-watermarks aria-hidden="true"></div>
 <header class="nav"><a class="nav-brand" href="#top">${navLogo}<span data-brand-name>${esc(b.name)}</span></a>
@@ -395,7 +395,7 @@ ${shareHtml}
       </div>
     </div>
     <div class="ftr-premium-bottom">
-      <p class="ftr-premium-copy">Ã‚Â© <span data-year></span> <span data-brand-name>${esc(b.name)}</span>. All rights reserved.</p>
+      <p class="ftr-premium-copy">© <span data-year></span> <span data-brand-name>${esc(b.name)}</span>. All rights reserved.</p>
     </div>
   </div>
 </footer>
@@ -421,7 +421,7 @@ function defaultLegalBody(page, brand) {
     case "privacy":
       return `<h2>Privacy Policy</h2><p>${name} values your privacy. This page collects only the information needed to display the leaderboard, such as player names and scores.</p><p>Public pages are visible to anyone with the link. Do not share personal information you do not want made public.</p><p>We use essential cookies and basic analytics to keep the service running. You can contact ${name} through the Contact page for data questions.</p>`;
     case "responsible":
-      return `<h2>Responsible Gaming</h2><p>${name} is provided for entertainment purposes only. Gambling can be addictive and should be enjoyed in moderation, never as a source of income.</p><p>If you or someone you know needs help, reach out to a local responsible-gaming organisation:</p><ul><li><a href="https://www.begambleaware.org" target="_blank" rel="noopener">BeGambleAware</a> Ã¢â‚¬â€ UK advice and support</li><li><a href="https://www.loketkansspel.nl" target="_blank" rel="noopener">Loket Kansspel</a> Ã¢â‚¬â€ Netherlands (in Dutch)</li><li><a href="https://www.connexontario.ca" target="_blank" rel="noopener">ConnexOntario</a> Ã¢â‚¬â€ Canada</li><li><a href="https://www.gamblingtherapy.org" target="_blank" rel="noopener">Gambling Therapy</a> Ã¢â‚¬â€ international, multilingual</li></ul><p>This page is intended for adults 18 and older only.</p>`;
+      return `<h2>Responsible Gaming</h2><p>${name} is provided for entertainment purposes only. Gambling can be addictive and should be enjoyed in moderation, never as a source of income.</p><p>If you or someone you know needs help, reach out to a local responsible-gaming organisation:</p><ul><li><a href="https://www.begambleaware.org" target="_blank" rel="noopener">BeGambleAware</a> — UK advice and support</li><li><a href="https://www.loketkansspel.nl" target="_blank" rel="noopener">Loket Kansspel</a> — Netherlands (in Dutch)</li><li><a href="https://www.connexontario.ca" target="_blank" rel="noopener">ConnexOntario</a> — Canada</li><li><a href="https://www.gamblingtherapy.org" target="_blank" rel="noopener">Gambling Therapy</a> — international, multilingual</li></ul><p>This page is intended for adults 18 and older only.</p>`;
     case "cookies":
       return `<h2>Cookie Policy</h2><p>${name} uses cookies and similar technologies to provide the leaderboard service and to understand how visitors use the page.</p><p>Essential cookies are required for the page to function. Analytics cookies help us improve the experience. You can adjust your browser settings to manage cookies.</p>`;
     case "refund":
@@ -456,18 +456,18 @@ export function renderLegalPage(data, page, opts) {
   const customBody = formatLegalText(data.legal?.[page]);
   const isDefaultLegal = !customBody;
   const bodyHtml = customBody || defaultLegalBody(page, b.name);
-  const pageTitle = `${esc(title)} Ã‚Â· ${esc(b.name || "YourRank")}`;
+  const pageTitle = `${esc(title)} · ${esc(b.name || "YourRank")}`;
   const legalNoticeCss = isDefaultLegal ? `.legal-notice{display:flex;align-items:flex-start;gap:10px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.16);border-radius:10px;padding:14px 16px;margin-bottom:22px;font-size:13px;color:rgba(255,255,255,.85)}.legal-notice b{color:var(--accent,#c8ff00)}.legal-notice a{color:var(--accent,#c8ff00);text-decoration:underline}` : "";
   const templateStyle = legalNoticeCss ? `<style nonce="${opts.nonce}">${legalNoticeCss}</style>` : "";
   const platformBase = esc(opts.homeUrl || "https://yourrank.site").replace(/\/$/, "");
-  const legalNotice = isDefaultLegal ? `<div class="legal-notice"><b>Ã¢Å¡Â Ã¯Â¸Â Legal pages not configured</b> Ã¢â‚¬â€ ${esc(b.name || "this page")} is currently showing YourRank platform terms. You can also read the platform <a href="${platformBase}/terms">Terms of Service</a>, <a href="${platformBase}/privacy">Privacy Policy</a>, and <a href="${platformBase}/responsible">Responsible Play</a> guidelines.</div>` : "";
+  const legalNotice = isDefaultLegal ? `<div class="legal-notice"><b>⚠️ Legal pages not configured</b> — ${esc(b.name || "this page")} is currently showing YourRank platform terms. You can also read the platform <a href="${platformBase}/terms">Terms of Service</a>, <a href="${platformBase}/privacy">Privacy Policy</a>, and <a href="${platformBase}/responsible">Responsible Play</a> guidelines.</div>` : "";
   const fontLink = GOOGLE_FONTS_LINK;
   const cssLink = `<link rel="stylesheet" href="/assets/app.css" />`;
   const canonical = `${esc(opts.homeUrl || "https://yourrank.site")}${legalHref(page)}`;
   const fontStyle = fontCss(br, opts.nonce);
   const header = `<header class="topbar"><a class="brand" href="${homeHref}">${esc(b.name || "YourRank")}</a></header>`;
   const legalHasCasino = !!b.casino;
-  const footer = `<footer class="ftr ftr--board"><div class="ftr-inner"><div class="ftr-brand-col"><div class="ftr-id"><span class="ftr-name" data-brand-name>${esc(b.name)}</span><span class="ftr-tag" data-tagline>${esc(b.tagline)}</span></div><p class="ftr-fine">${footerDisclaimer(legalHasCasino, b.name, b.casino)}</p></div><div class="ftr-links-col"><span class="ftr-links-title">Legal</span><div class="ftr-links">${renderLegalLinks(data, legalHref, ["terms", "privacy", "responsible"])}<a href="${legalHref("cookies")}">Cookies</a><a href="${legalHref("refund")}">Refund</a><a href="${legalHref("contact")}">Contact</a></div></div></div><div class="ftr-bottom"><p class="ftr-copy">Ã‚Â© ${new Date().getFullYear()} <span data-brand-name>${esc(b.name)}</span>. All rights reserved.</p></div></footer>`;
+  const footer = `<footer class="ftr ftr--board"><div class="ftr-inner"><div class="ftr-brand-col"><div class="ftr-id"><span class="ftr-name" data-brand-name>${esc(b.name)}</span><span class="ftr-tag" data-tagline>${esc(b.tagline)}</span></div><p class="ftr-fine">${footerDisclaimer(legalHasCasino, b.name, b.casino)}</p></div><div class="ftr-links-col"><span class="ftr-links-title">Legal</span><div class="ftr-links">${renderLegalLinks(data, legalHref, ["terms", "privacy", "responsible"])}<a href="${legalHref("cookies")}">Cookies</a><a href="${legalHref("refund")}">Refund</a><a href="${legalHref("contact")}">Contact</a></div></div></div><div class="ftr-bottom"><p class="ftr-copy">© ${new Date().getFullYear()} <span data-brand-name>${esc(b.name)}</span>. All rights reserved.</p></div></footer>`;
   const bodyClass = "legal";
   return `<!DOCTYPE html>
 <html lang="en"><head>
@@ -478,13 +478,13 @@ ${fontLink}${cssLink}${fontStyle}
 </head><body data-template="${tpl}" class="${bodyClass}">
 <a class="skip-link" href="#main-content">Skip to content</a>
 ${header}
-<main class="${"legal"}" id="main-content"><h1>${esc(title)}</h1><p class="${"legal-updated"}">Last updated: ${new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })}</p>${legalNotice}${bodyHtml}<a class="${""}" href="${homeHref}">Ã¢â€ Â Back to ${esc(b.name || "leaderboard")}</a></main>
+<main class="${"legal"}" id="main-content"><h1>${esc(title)}</h1><p class="${"legal-updated"}">Last updated: ${new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })}</p>${legalNotice}${bodyHtml}<a class="${""}" href="${homeHref}">← Back to ${esc(b.name || "leaderboard")}</a></main>
 ${footer}
 </body></html>`;
 }
 
 function fmtCurrency(n, data = {}, isPrize = false) {
-  if (isPrize && data.brand?.hidePrizeAmounts) return "Ã¢â‚¬â€";
+  if (isPrize && data.brand?.hidePrizeAmounts) return "—";
   const v = Number(n) || 0;
   const sym = esc(String(data.brand?.currency || data.prizes?.currency || "$").slice(0, 6));
   return sym + v.toLocaleString("en-US", { maximumFractionDigits: 0 });
@@ -513,8 +513,8 @@ export function renderPlayerProfile(data, player, history, opts) {
   const cssLink = `<link rel="stylesheet" href="/assets/app.css" />`;
   const legalHref = (page) => opts.isCustomDomain ? `/${page}` : `/${esc(opts.slug || "")}/${page}`;
   const header = `<header class="topbar"><a class="brand" href="${homeHref}">${esc(b.name || "YourRank")}</a></header>`;
-  const footer = `<footer class="ftr ftr--board"><div class="ftr-inner"><div class="ftr-brand-col"><div class="ftr-id"><span class="ftr-name" data-brand-name>${esc(b.name)}</span><span class="ftr-tag" data-tagline>${esc(b.tagline)}</span></div><p class="ftr-fine">18+ only. Gambling can be addictive. Please play responsibly. BeGambleAware.org.</p></div><div class="ftr-links-col"><span class="ftr-links-title">Legal</span><div class="ftr-links">${renderLegalLinks(data, legalHref, ["terms", "privacy", "responsible"])}<a href="${legalHref("cookies")}">Cookies</a><a href="${legalHref("refund")}">Refund</a><a href="${legalHref("contact")}">Contact</a></div></div></div><div class="ftr-bottom"><p class="ftr-copy">Ã‚Â© ${new Date().getFullYear()} <span data-brand-name>${esc(b.name)}</span>. All rights reserved.</p></div></footer>`;
-  const pageTitle = `${esc(player.name)} Ã‚Â· ${esc(b.name || "YourRank")}`;
+  const footer = `<footer class="ftr ftr--board"><div class="ftr-inner"><div class="ftr-brand-col"><div class="ftr-id"><span class="ftr-name" data-brand-name>${esc(b.name)}</span><span class="ftr-tag" data-tagline>${esc(b.tagline)}</span></div><p class="ftr-fine">18+ only. Gambling can be addictive. Please play responsibly. BeGambleAware.org.</p></div><div class="ftr-links-col"><span class="ftr-links-title">Legal</span><div class="ftr-links">${renderLegalLinks(data, legalHref, ["terms", "privacy", "responsible"])}<a href="${legalHref("cookies")}">Cookies</a><a href="${legalHref("refund")}">Refund</a><a href="${legalHref("contact")}">Contact</a></div></div></div><div class="ftr-bottom"><p class="ftr-copy">© ${new Date().getFullYear()} <span data-brand-name>${esc(b.name)}</span>. All rights reserved.</p></div></footer>`;
+  const pageTitle = `${esc(player.name)} · ${esc(b.name || "YourRank")}`;
   const canonical = `${esc(opts.homeUrl || "https://yourrank.site")}${profileHref(player.name)}`;
 
   const stats = [
@@ -570,7 +570,7 @@ ${header}
     ${historyHtml}
   </div>
   ${shareSection(canonical, player.name)}
-  <a class="pp-back" href="${backHref}">Ã¢â€ Â Back to ${esc(b.name || "leaderboard")}</a>
+  <a class="pp-back" href="${backHref}">← Back to ${esc(b.name || "leaderboard")}</a>
 </div>
 </main>
 ${footer}
@@ -592,7 +592,7 @@ export function renderHallOfFame(data, opts) {
   const cssLink = `<link rel="stylesheet" href="/assets/app.css" />`;
   const canonical = `${esc(opts.homeUrl || "https://yourrank.site")}${isCustomDomain ? "/hall-of-fame" : `/${esc(opts.slug || "")}/hall-of-fame`}`;
   const header = `<header class="topbar"><a class="brand" href="${homeHref}">${esc(b.name || "YourRank")}</a></header>`;
-  const footer = `<footer class="ftr ftr--board"><div class="ftr-inner"><div class="ftr-brand-col"><div class="ftr-id"><span class="ftr-name" data-brand-name>${esc(b.name)}</span><span class="ftr-tag" data-tagline>${esc(b.tagline)}</span></div><p class="ftr-fine">${footerDisclaimer(!!b.casino, b.name, b.casino)}</p></div><div class="ftr-links-col"><span class="ftr-links-title">Legal</span><div class="ftr-links">${renderLegalLinks(data, legalHref, ["terms", "privacy", "responsible"])}<a href="${legalHref("cookies")}">Cookies</a><a href="${legalHref("refund")}">Refund</a><a href="${legalHref("contact")}">Contact</a></div></div></div><div class="ftr-bottom"><p class="ftr-copy">Ã‚Â© ${new Date().getFullYear()} <span data-brand-name>${esc(b.name)}</span>. All rights reserved.</p></div></footer>`;
+  const footer = `<footer class="ftr ftr--board"><div class="ftr-inner"><div class="ftr-brand-col"><div class="ftr-id"><span class="ftr-name" data-brand-name>${esc(b.name)}</span><span class="ftr-tag" data-tagline>${esc(b.tagline)}</span></div><p class="ftr-fine">${footerDisclaimer(!!b.casino, b.name, b.casino)}</p></div><div class="ftr-links-col"><span class="ftr-links-title">Legal</span><div class="ftr-links">${renderLegalLinks(data, legalHref, ["terms", "privacy", "responsible"])}<a href="${legalHref("cookies")}">Cookies</a><a href="${legalHref("refund")}">Refund</a><a href="${legalHref("contact")}">Contact</a></div></div></div><div class="ftr-bottom"><p class="ftr-copy">© ${new Date().getFullYear()} <span data-brand-name>${esc(b.name)}</span>. All rights reserved.</p></div></footer>`;
 
   const past = Array.isArray(data.pastWinners) ? data.pastWinners : [];
   const medals = ["gold", "silver", "bronze"];
@@ -627,7 +627,7 @@ export function renderHallOfFame(data, opts) {
   return `<!DOCTYPE html>
 <html lang="en"><head>
 <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>${esc(b.name || "YourRank")} Ã¢â‚¬â€ Hall of Fame</title><meta name="description" content="Past winners and closed-out periods for ${esc(b.name || "YourRank")}." />
+<title>${esc(b.name || "YourRank")} — Hall of Fame</title><meta name="description" content="Past winners and closed-out periods for ${esc(b.name || "YourRank")}." />
 <link rel="canonical" href="${canonical}" />
 ${fontLink}${cssLink}${hofStyle}${fontStyle}
 </head><body data-template="${tpl}" class="${"legal"}">
@@ -638,7 +638,7 @@ ${header}
   <h1 class="hof-title">Hall of Fame</h1>
   <p class="hof-sub">Every closed-out period, on the record.</p>
   ${body}
-  <a class="hof-back" href="${homeHref}">Ã¢â€ Â Back to ${esc(b.name || "leaderboard")}</a>
+  <a class="hof-back" href="${homeHref}">← Back to ${esc(b.name || "leaderboard")}</a>
 </div>
 </main>
 ${footer}
@@ -658,7 +658,7 @@ export function renderStreamerProfile(data, opts) {
   const cssLink = `<link rel="stylesheet" href="/assets/app.css" />`;
   const legalHref = (page) => opts.isCustomDomain ? `/${page}` : `/${esc(opts.slug || "")}/${page}`;
   const header = `<header class="topbar"><a class="brand" href="${homeHref}">${esc(b.name || "YourRank")}</a></header>`;
-  const footer = `<footer class="ftr ftr--board"><div class="ftr-inner"><div class="ftr-brand-col"><div class="ftr-id"><span class="ftr-name" data-brand-name>${esc(b.name)}</span><span class="ftr-tag" data-tagline>${esc(b.tagline)}</span></div><p class="ftr-fine">18+ only. Gambling can be addictive. Please play responsibly. BeGambleAware.org.</p></div><div class="ftr-links-col"><span class="ftr-links-title">Legal</span><div class="ftr-links">${renderLegalLinks(data, legalHref, ["terms", "privacy", "responsible"])}<a href="${legalHref("cookies")}">Cookies</a><a href="${legalHref("refund")}">Refund</a><a href="${legalHref("contact")}">Contact</a></div></div></div><div class="ftr-bottom"><p class="ftr-copy">Ã‚Â© ${new Date().getFullYear()} <span data-brand-name>${esc(b.name)}</span>. All rights reserved.</p></div></footer>`;
+  const footer = `<footer class="ftr ftr--board"><div class="ftr-inner"><div class="ftr-brand-col"><div class="ftr-id"><span class="ftr-name" data-brand-name>${esc(b.name)}</span><span class="ftr-tag" data-tagline>${esc(b.tagline)}</span></div><p class="ftr-fine">18+ only. Gambling can be addictive. Please play responsibly. BeGambleAware.org.</p></div><div class="ftr-links-col"><span class="ftr-links-title">Legal</span><div class="ftr-links">${renderLegalLinks(data, legalHref, ["terms", "privacy", "responsible"])}<a href="${legalHref("cookies")}">Cookies</a><a href="${legalHref("refund")}">Refund</a><a href="${legalHref("contact")}">Contact</a></div></div></div><div class="ftr-bottom"><p class="ftr-copy">© ${new Date().getFullYear()} <span data-brand-name>${esc(b.name)}</span>. All rights reserved.</p></div></footer>`;
 
   const socials = (data.socials || []).filter((s) => s.enabled !== false);
   const socialIcons = {
@@ -696,7 +696,7 @@ export function renderStreamerProfile(data, opts) {
     ? `<div class="sp-cta"><p>Get leaderboard updates in Telegram.</p><a class="btn" href="https://t.me/${esc(opts.botUsername)}" target="_blank" rel="noopener">Subscribe to @${esc(opts.botUsername)}</a></div>`
     : "";
 
-  const pageTitle = `${esc(b.name || "YourRank")} Ã‚Â· Streamer profile`;
+  const pageTitle = `${esc(b.name || "YourRank")} · Streamer profile`;
   const canonical = `${esc(opts.homeUrl || "https://yourrank.site")}${profileHref}`;
   const profileStyle = `<style nonce="${opts.nonce}">
 .sp-wrap{max-width:800px;margin:0 auto;padding:32px 24px}
@@ -772,7 +772,7 @@ export function renderEmbed(data, opts) {
     : ":root{--accent-start:#c8ff00;--accent-end:#5ad9ff}}";
   const top3Html = top3.length
     ? `<div class="embed-top3">${top3.map((p, i) => {
-        const medal = ["Ã°Å¸Â¥â€¡", "Ã°Å¸Â¥Ë†", "Ã°Å¸Â¥â€°"][i] || "";
+        const medal = ["🥇", "🥈", "🥉"][i] || "";
         return `<div class="embed-top3-card"><span class="embed-medal">${medal}</span><span class="embed-name">${esc(p.name)}</span><span class="embed-wagered">${fmtCurrency(p.wagered)}</span><span class="embed-prize">${fmtCurrency(p.prize)}</span></div>`;
       }).join("")}</div>`
     : "";
@@ -808,7 +808,7 @@ body{margin:0;padding:12px;font-family:Inter,system-ui,sans-serif;background:#0b
 .empty{padding:40px 12px;text-align:center;color:#9a94b8}
 </style><style nonce="${opts.nonce}">${accent}</style></head><body>
 <div class="embed-wrap">
-<div class="embed-head"><h1 class="embed-title">${esc(br.name || opts.slug)}</h1><p class="embed-meta">${esc(br.period || "")} Ã‚Â· ${esc(br.prizePool || "")}</p></div>
+<div class="embed-head"><h1 class="embed-title">${esc(br.name || opts.slug)}</h1><p class="embed-meta">${esc(br.period || "")} · ${esc(br.prizePool || "")}</p></div>
 ${top3.length ? top3Html : '<p class="empty">No players yet.</p>'}
 ${rowsHtml}
 ${endsAt}
@@ -821,7 +821,7 @@ export function renderPasswordGate(site, opts, error = "") {
   const action = opts.isCustomDomain ? "/password" : `/${slug}/password`;
   return `<!DOCTYPE html><html lang="en"><head>
 <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>${name} Ã‚Â· Password required</title>
+<title>${name} · Password required</title>
 <link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="/assets/app.css" />
