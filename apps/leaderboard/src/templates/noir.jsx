@@ -27,6 +27,11 @@ body[data-template="noir"]{
   --grad-name:linear-gradient(100deg,#f0e7d3,var(--opt-accent,#d4af37));
   --grad-cta:linear-gradient(100deg,var(--opt-accent,#d4af37),#b8912e);
   --gold:var(--opt-accent,#d4af37);
+  --primary:var(--opt-accent,#d4af37);
+  --primary-strong:#b8912e;
+  --primary-deep:#7a5f1c;
+  --silver:#c7cdd6;
+  --bronze:#c98a4b;
   --radius:2px;
   --radius-sm:2px;
   font-family:"EB Garamond",Georgia,serif;
@@ -68,10 +73,19 @@ body[data-template="noir"] .t3--1{order:2;border-color:var(--line-2);padding:36p
 body[data-template="noir"] .t3--2{order:1}
 body[data-template="noir"] .t3--3{order:3}
 body[data-template="noir"] .t3-av{display:none}
+/* Base .t3-medal is an absolutely-positioned badge over the avatar; noir
+   has no avatars, so make it a static block above the name */
 body[data-template="noir"] .t3-medal,
 body[data-template="noir"] .t3--1 .t3-medal,
 body[data-template="noir"] .t3--2 .t3-medal,
-body[data-template="noir"] .t3--3 .t3-medal{font-size:0}
+body[data-template="noir"] .t3--3 .t3-medal{position:static;transform:none;width:auto;height:auto;display:block;background:transparent;border:none;box-shadow:none;margin:0 auto .3rem;font-size:0}
+body[data-template="noir"] .t3--1 .t3-wager{text-shadow:none}
+body[data-template="noir"] .code-val,
+body[data-template="noir"] .nav-links a:hover{text-shadow:none}
+/* Kill the base neon-purple glow: noir light comes from the gold accent */
+body[data-template="noir"] .btn--grad{box-shadow:0 0 24px -8px rgba(212,175,55,.55);color:#14110d;font-weight:700}
+body[data-template="noir"] .btn--grad:hover{box-shadow:0 0 30px -6px rgba(212,175,55,.7)}
+body[data-template="noir"] .orb{filter:none;opacity:.5}
 body[data-template="noir"] .t3-medal::before{font-family:"Playfair Display",Georgia,serif;color:var(--gold);font-size:1.9rem;letter-spacing:.08em}
 body[data-template="noir"] .t3--2 .t3-medal::before,
 body[data-template="noir"] .t3--3 .t3-medal::before{font-size:1.5rem;color:var(--ink-soft)}
@@ -89,7 +103,7 @@ body[data-template="noir"] .table{border:none;background:transparent}
 body[data-template="noir"] .t-head,
 body[data-template="noir"] .t-row{grid-template-columns:84px 1fr 160px 110px;padding:.72rem .4rem}
 body[data-template="noir"] .t-head{background:transparent;border-bottom:3px double var(--line-2);color:var(--ink-mute);letter-spacing:.22em;font-size:.78rem}
-body[data-template="noir"] .t-row{border-bottom:1px dashed var(--line)}
+body[data-template="noir"] .t-row{background:transparent;border:none;border-bottom:1px dashed var(--line);box-shadow:none;backdrop-filter:none}
 body[data-template="noir"] .t-row:hover{background:rgba(212,175,55,.05)}
 body[data-template="noir"] .tr-av{display:none}
 body[data-template="noir"] .tr-rank{font-family:"Playfair Display",Georgia,serif;color:var(--gold);font-size:1.05rem}
