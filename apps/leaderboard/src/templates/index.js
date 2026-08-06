@@ -9,6 +9,13 @@
 // unchanged across templates.
 // The chosen template id is stored in sites.theme_json.template and reaches
 // the renderer via data.branding.template.
+//
+// Conventions for new templates (these keep the system safe at scale):
+// - Ids are immutable API names: never rename or reuse one, only add new ids.
+// - Scope every CSS rule under body[data-template="<id>"] — never :root or
+//   bare selectors — so templates can never leak into each other.
+// - Declare the Google Fonts families the design needs in `fonts`; the
+//   renderer loads only those plus the streamer's picker font.
 import { CLASSIC } from "./classic.jsx";
 import { TERMINAL } from "./terminal.jsx";
 import { TOURNAMENT } from "./tournament.jsx";
@@ -26,6 +33,8 @@ export const templateCss = (id) => TEMPLATES[validTemplate(id)].css;
 // The composer that owns this template's page structure. Falls back to the
 // classic composition for unknown ids so old boards never break.
 export const composeFor = (id) => TEMPLATES[validTemplate(id)].compose || TEMPLATES.classic.compose;
+// Google Fonts css2 family params the template's design needs.
+export const templateFonts = (id) => TEMPLATES[validTemplate(id)].fonts || [];
 export const templateCatalog = () => TEMPLATE_IDS.map((id) => ({
   id: TEMPLATES[id].id,
   name: TEMPLATES[id].name,

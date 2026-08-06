@@ -16,7 +16,7 @@
     "predeploy": "node build.js && tsc",
     "deploy": "wrangler deploy",
     "dev": "wrangler dev",
-    "test": "bun test",
+    "test": "node ../../scripts/test-leaderboard.mjs",
     "lint": "eslint src/ --ext .js"
   },
   "type": "module",

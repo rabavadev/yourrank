@@ -621,6 +621,7 @@ section { width: min(var(--wrap), 100% - 2.5rem); margin-inline: auto; }
   .tr-gap { position: static; transform: none; grid-column: 2; padding: 0.15rem 0 0; }
 }
 @media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
   *, *::before, *::after { animation: none !important; transition: none !important; }
   .t3, .t-row { opacity: 1; transform: none; }
   .stream-window { animation: none; transform: rotate(-1.5deg); }

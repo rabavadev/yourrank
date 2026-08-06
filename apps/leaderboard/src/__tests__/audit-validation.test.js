@@ -55,6 +55,10 @@ mock.module(sessUrl, sessMock);
 mock.module(sessUrlTs, sessMock);
 
 const { handleCheckout } = await import("../billing.js");
+// NOTE: this file relies on mock isolation — it must be run in its own
+// process (scripts/test.mjs runs each leaderboard test file individually for
+// exactly this reason). Running `bun test` over the whole directory lets
+// other files' site.js/db mocks win and these tests fail spuriously.
 const { saveSite, updateSiteTheme } = await import("../site.js");
 
 const SESSION_VALUE = JSON.stringify({ u: "user-1", c: Date.now() });
