@@ -1,36 +1,31 @@
 // Registry of public-page templates, layered on top of /assets/leaderboard.css.
-// There is exactly ONE template ("classic"): one markup path, one renderer
-// branch, and colour presets for variety. Additional templates will be
-// reintroduced later as composable layout blocks, not per-template HTML.
+// Each template is a self-contained package in its own module: design tokens
+// and layout CSS (`css`), curated accent presets, and its own page composer
+// (`compose`) that assembles the shared, escaped buildParts() blocks into a
+// genuinely different page structure. All templates honour the same client
+// contract — every single-element data-* hook (data-rows, data-top3,
+// data-timer-grid, data-countdown, data-count, ...) appears exactly once —
+// so leaderboard.js (countdown, rows, top3, socials, live updates) works
+// unchanged across templates.
 // The chosen template id is stored in sites.theme_json.template and reaches
 // the renderer via data.branding.template.
+import { CLASSIC } from "./classic.jsx";
+import { TERMINAL } from "./terminal.jsx";
+import { TOURNAMENT } from "./tournament.jsx";
+
 export const TEMPLATES = {
-  classic: {
-    id: "classic",
-    name: "Classic",
-    description: "High-Stakes Kinetic: obsidian glass with a glowing neon podium.",
-    css: "",
-    presets: [
-      { id: "purplenight", name: "Purple Night", accentA: "#06b6d4", accentB: "#a855f7" },
-      { id: "electric", name: "Electric", accentA: "#5ad9ff", accentB: "#7b8cff" },
-      { id: "sunset", name: "Sunset", accentA: "#ff7a59", accentB: "#ff4d9d" },
-      { id: "emerald", name: "Emerald", accentA: "#3cf2b1", accentB: "#35a7ff" },
-      { id: "gold", name: "Gold", accentA: "#ffd15c", accentB: "#ff9f43" },
-      { id: "signal", name: "Signal", accentA: "#3b82ff", accentB: "#38e1c6" },
-      { id: "ember", name: "Ember", accentA: "#ff5f6d", accentB: "#ffc371" },
-      { id: "grape", name: "Grape", accentA: "#a855f7", accentB: "#ff5fae" },
-      { id: "reef", name: "Reef", accentA: "#42e6ff", accentB: "#ff5fae" },
-      { id: "lime", name: "Lime", accentA: "#cdff1f", accentB: "#72ff3d" },
-      { id: "redline", name: "Redline", accentA: "#ff3b3b", accentB: "#ff7a1a" },
-      { id: "ice", name: "Ice", accentA: "#7de8ff", accentB: "#4c68ff" },
-    ],
-  },
+  classic: CLASSIC,
+  terminal: TERMINAL,
+  tournament: TOURNAMENT,
 };
 
 export const TEMPLATE_IDS = Object.keys(TEMPLATES);
 
 export const validTemplate = (id) => (Object.hasOwn(TEMPLATES, id) ? id : "classic");
 export const templateCss = (id) => TEMPLATES[validTemplate(id)].css;
+// The composer that owns this template's page structure. Falls back to the
+// classic composition for unknown ids so old boards never break.
+export const composeFor = (id) => TEMPLATES[validTemplate(id)].compose || TEMPLATES.classic.compose;
 export const templateCatalog = () => TEMPLATE_IDS.map((id) => ({
   id: TEMPLATES[id].id,
   name: TEMPLATES[id].name,

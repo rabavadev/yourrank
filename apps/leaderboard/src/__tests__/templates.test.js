@@ -37,8 +37,8 @@ const DATA = {
 };
 
 describe("template catalog", async () => {
-  it("offers the single canonical template with curated presets", async () => {
-    expect(TEMPLATE_IDS).toEqual(["classic"]);
+  it("offers the registered templates with curated presets", async () => {
+    expect(TEMPLATE_IDS).toEqual(["classic", "terminal", "tournament"]);
     for (const id of TEMPLATE_IDS) {
       expect(TEMPLATES[id].presets.length).toBeGreaterThanOrEqual(3);
       expect(TEMPLATES[id].presets.every((preset) => /^#[0-9a-f]{6}$/i.test(preset.accentA) && /^#[0-9a-f]{6}$/i.test(preset.accentB))).toBe(true);
@@ -47,7 +47,7 @@ describe("template catalog", async () => {
 
   it("exposes client metadata without sending template CSS", async () => {
     const catalog = templateCatalog();
-    expect(catalog.length).toBe(1);
+    expect(catalog.length).toBe(3);
     expect(catalog.every((template) => !Object.hasOwn(template, "css"))).toBe(true);
     expect(catalog.map((template) => template.id)).toEqual(TEMPLATE_IDS);
   });

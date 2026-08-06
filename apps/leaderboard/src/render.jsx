@@ -1,7 +1,7 @@
 ﻿/** @jsxRuntime automatic */
 /** @jsxImportSource hono/jsx */
 // Server-render a streamer's leaderboard page from their data.
-import { templateCss, validTemplate } from "./templates/index.js";
+import { composeFor, templateCss, validTemplate } from "./templates/index.js";
 import { DEFAULT_EXTRA, FONT_FAMILIES } from "./site.js";
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 // E2E-009: Sanitize user-supplied URLs for href attributes.
@@ -79,10 +79,10 @@ function shareScriptNonce(nonce) {
 // Page composition. Every template shares the same client contract (each
 // data-* hook appears exactly once per page for single-element hooks like
 // data-rows/data-top3/data-timer-grid/data-countdown/data-count), but the
-// reference-based templates each get their OWN page structure: a different
-// hero, prize/countdown treatment, section order and framing. buildParts()
-// produces the shared, escaped building blocks; composeMain() assembles them
-// per template. The default composition preserves the classic page exactly.
+// each template gets its OWN page structure: a different hero,
+// prize/countdown treatment, section order and framing. buildParts()
+// produces the shared, escaped building blocks; each template module's
+// compose() assembles them, dispatched by composeMain() via the registry.
 // ---------------------------------------------------------------------------
 function buildParts(c) {
   const { b, hasCasino, casino, period, pool, hasCta, ctaHref, hasPartner, hasCode, code, blurb, chips = [], whyStats, socials, prizes, currency, hidePrizeAmounts, players: rawPlayers, slug = "", isCustomDomain = false } = c;
@@ -154,61 +154,11 @@ ${whyStats.length ? `<div class="pcol pcol-why"><span class="pcol-label">Why ${h
   return { ...c, name, streamWindow, ctaBtn, joinLabel, timerGrid, partnerPanel, announce, payouts, top3, findRank, table, rules, pastSec, socialsSec, titleGroup, poolSpan, periodSpan, cur, hidePrizes, hasPool, pool, prizePoolLabel, countdownLabel, payoutsLabel, sCount };
 }
 
-// The classic page: stream-window hero, partner panel, board, past, socials.
-function composeDefault(p) {
-  const { name, heroLogo, hasCasino, casino, period, pool, ctaBtn, joinLabel, timerGrid } = p;
-  return (
-    <>
-      <section class="hero">
-        <div dangerouslySetInnerHTML={{ __html: p.streamWindow }} />
-        <div dangerouslySetInnerHTML={{ __html: heroLogo }} />
-        <p class="hero-kicker">Welcome to</p>
-        <h1 class="hero-name" data-brand-name>{name}</h1>
-        <p class="hero-sub">
-          {hasCasino ? <><span data-casino>{casino}</span> partner · </> : ""}
-          <span data-period>{period}</span> leaderboard
-        </p>
-        <div class="hero-cta">
-          <div dangerouslySetInnerHTML={{ __html: ctaBtn(joinLabel) }} />
-          <a class="btn btn--ghost" href="#board">Leaderboard</a>
-        </div>
-        <div class="hero-timer" data-timer>
-          <p class="timer-label">
-            {pool ? <><span data-pool>{pool}</span> leaderboard resets in</> : "Leaderboard resets in"}
-          </p>
-          <div dangerouslySetInnerHTML={{ __html: timerGrid }} />
-        </div>
-      </section>
-      <div dangerouslySetInnerHTML={{ __html: p.partnerPanel }} />
-      <div dangerouslySetInnerHTML={{ __html: p.announce }} />
-      <section id="board" class="board">
-        <div class="board-head">
-          <p class="eyebrow">
-            {pool ? <><span data-pool>{pool}</span> · </> : ""}
-            <span data-period>{period}</span> Leaderboard
-          </p>
-          <div dangerouslySetInnerHTML={{ __html: p.titleGroup }} />
-          <div class="board-meta">
-            <span class="bm"><b class="countdown" data-countdown>--</b><span>{p.countdownLabel || "Resets in"}</span></span>
-            <span class="bm"><b data-count>{p.sCount}</b><span>Players</span></span>
-          </div>
-        </div>
-        <div dangerouslySetInnerHTML={{ __html: p.payouts }} />
-        <div dangerouslySetInnerHTML={{ __html: p.top3 }} />
-        <div dangerouslySetInnerHTML={{ __html: p.findRank }} />
-        <div dangerouslySetInnerHTML={{ __html: p.table }} />
-        <div dangerouslySetInnerHTML={{ __html: p.rules }} />
-      </section>
-      <div dangerouslySetInnerHTML={{ __html: p.pastSec }} />
-      <div dangerouslySetInnerHTML={{ __html: p.socialsSec }} />
-    </>
-  );
-}
-
-
-// Single template for now: every page uses the classic composition.
+// Each template owns its page structure: the registry maps template id to
+// the composer that assembles buildParts() blocks for that design. Unknown
+// ids fall back to the classic composition inside composeFor().
 async function composeMain(tpl, parts, text) {
-  const result = composeDefault(parts);
+  const result = composeFor(tpl)(parts);
   return (typeof result === "string") ? result : result.toString();
 }
 
