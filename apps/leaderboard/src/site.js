@@ -2,7 +2,7 @@
 import { effectivePlan, PLAN_LIMITS, BOARD_LIMITS } from "./billing.js";
 import { query, one, exec, withTransaction } from "../../../shared/db.js";
 import { detectTop3Changes, dispatchNotifyEvent } from "../../../shared/notifications.js";
-import { TEMPLATE_IDS } from "./templates/index.js";
+import { TEMPLATE_IDS, resolveOptions } from "./templates/index.js";
 import { RESERVED, slugify, hashPassword } from "./auth.js";
 import { logAudit } from "../../../shared/audit.js";
 import { createQueueProducer } from "../../../shared/queue-producer.js";
@@ -320,10 +320,14 @@ function parseTheme(site) {
     hidePrizeAmounts: rawPrizes.hidePrizeAmounts === true,
     payoutsLabel: String(rawPrizes.payoutsLabel || DEFAULT_PRIZES.payoutsLabel).slice(0, 40),
   };
+  const template = TEMPLATE_IDS.includes(t.template) ? t.template : "classic";
   return {
     accentA: HEX.test(t.accentA || "") ? t.accentA : null,
     accentB: HEX.test(t.accentB || "") ? t.accentB : null,
-    template: TEMPLATE_IDS.includes(t.template) ? t.template : "classic",
+    template,
+    // Per-template editable options, validated against the template's
+    // schema so the dashboard and renderer only ever see clean values.
+    options: resolveOptions(template, t.options),
     text: (t.text && typeof t.text === "object") ? t.text : {},
     font,
     prizes,
@@ -915,6 +919,14 @@ export async function saveSite(env, user, payload, siteId, request = null) {
     if (HEX.test(br.accentA || "")) t.accentA = br.accentA;
     if (HEX.test(br.accentB || "")) t.accentB = br.accentB;
     if (themeObj.template && themeObj.template !== "classic") t.template = themeObj.template;
+    // Per-template options: validate against the active template's schema.
+    // If the client didn't send any (older dashboard), keep the saved ones.
+    const effTemplate = TEMPLATE_IDS.includes(themeObj.template) ? themeObj.template : "classic";
+    if (br.options && typeof br.options === "object") {
+      t.options = resolveOptions(effTemplate, br.options);
+    } else if (themeObj.options && typeof themeObj.options === "object") {
+      t.options = resolveOptions(effTemplate, themeObj.options);
+    }
     if (FONT_KEYS.includes(br.font || "")) t.font = br.font;
     if (isProPlan(plan) && br.prizes && typeof br.prizes === "object") {
       t.prizes = {

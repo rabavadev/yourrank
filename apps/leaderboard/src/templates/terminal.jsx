@@ -20,10 +20,10 @@ body[data-template="terminal"]{
   --ink:#d7ffe9;
   --ink-soft:#7fbf9c;
   --ink-mute:#5e8a70;
-  --cy:#39d98a;
+  --cy:var(--opt-accent,#39d98a);
   --bl:#2fae6e;
-  --grad-name:linear-gradient(100deg,#39d98a,#2fae6e);
-  --grad-cta:linear-gradient(100deg,#39d98a,#2fae6e);
+  --grad-name:linear-gradient(100deg,var(--opt-accent,#39d98a),#2fae6e);
+  --grad-cta:linear-gradient(100deg,var(--opt-accent,#39d98a),#2fae6e);
   --gold:#e8c14c;
   --radius:8px;
   --radius-sm:6px;
@@ -90,6 +90,15 @@ body[data-template="terminal"] .find-rank-input{font-family:"JetBrains Mono",ui-
   body[data-template="terminal"] .t-head,
   body[data-template="terminal"] .t-row{grid-template-columns:52px 1fr 110px 84px}
 }
+/* ── Editable schema options (dashboard) ──────────────────────────── */
+/* CRT scanlines overlay over the terminal window */
+body[data-template="terminal"][data-opt-scanlines="true"] .term-body{position:relative}
+body[data-template="terminal"][data-opt-scanlines="true"] .term-body::after{content:"";position:absolute;inset:0;pointer-events:none;background:repeating-linear-gradient(0deg,rgba(0,0,0,.22) 0 1px,transparent 1px 3px)}
+/* Cozy table density (default is compact) */
+body[data-template="terminal"][data-opt-density="cozy"] .t-head,
+body[data-template="terminal"][data-opt-density="cozy"] .t-row{padding:.95rem 1.2rem}
+body[data-template="terminal"][data-opt-density="cozy"] .t3{padding:22px 16px}
+body[data-template="terminal"][data-opt-density="cozy"] .term-body{padding:16px 32px 44px}
 `;
 
 function composeTerminal(p) {
@@ -121,5 +130,14 @@ export const TERMINAL = {
     { id: "amber", name: "Amber", accentA: "#e8c14c", accentB: "#c8871c" },
     { id: "ice", name: "Ice", accentA: "#5ad9ff", accentB: "#3b82f6" },
   ],
+  // Dashboard-editable knobs for this design. The dashboard auto-builds
+  // controls from this schema; values arrive as --opt-accent, and as
+  // data-opt-scanlines / data-opt-density attributes consumed by the CSS
+  // above (also readable in compose() via parts.options).
+  schema: {
+    accent:    { type: "color",  label: "Terminal accent", default: "#39d98a" },
+    scanlines: { type: "toggle", label: "CRT scanlines",   default: false },
+    density:   { type: "select", label: "Table density",   options: ["compact", "cozy"], default: "compact" },
+  },
   compose: composeTerminal,
 };

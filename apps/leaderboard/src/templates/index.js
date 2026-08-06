@@ -30,6 +30,36 @@ export const TEMPLATE_IDS = Object.keys(TEMPLATES);
 
 export const validTemplate = (id) => (Object.hasOwn(TEMPLATES, id) ? id : "classic");
 export const templateCss = (id) => TEMPLATES[validTemplate(id)].css;
+
+// ── Editable options schema ─────────────────────────────────────────
+// Each template may declare a `schema`: the knobs the dashboard renders for
+// it. The dashboard never hardcodes per-template controls — it reads this
+// schema and auto-builds the form. Field types:
+//   color  — hex color, rendered as a color picker, exposed as --opt-<key>
+//   toggle — boolean, rendered as a checkbox, exposed as data-opt-<key>
+//   select — one of `options`, rendered as a dropdown, exposed both ways
+// Values reach the page as scoped CSS custom properties and data attributes
+// under body[data-template="<id>"], and as `parts.options` inside compose().
+const HEX_OPT = /^#[0-9a-fA-F]{6}$/;
+const OPT_KEY = /^[a-z][a-z0-9-]{0,31}$/;
+
+export const templateSchema = (id) => TEMPLATES[validTemplate(id)].schema || {};
+
+// Resolve a template's options: schema defaults overridden by validated
+// saved values. Unknown keys are dropped and wrong types fall back to the
+// default, so stale or hostile theme_json can never break a public page.
+export function resolveOptions(id, raw) {
+  const schema = templateSchema(id);
+  const out = {};
+  for (const [key, field] of Object.entries(schema)) {
+    if (!OPT_KEY.test(key) || !field || typeof field !== "object") continue;
+    const v = raw && typeof raw === "object" ? raw[key] : undefined;
+    if (field.type === "color") out[key] = HEX_OPT.test(v || "") ? v : field.default;
+    else if (field.type === "toggle") out[key] = typeof v === "boolean" ? v : field.default === true;
+    else if (field.type === "select") out[key] = (field.options || []).includes(v) ? v : field.default;
+  }
+  return out;
+}
 // The composer that owns this template's page structure. Falls back to the
 // classic composition for unknown ids so old boards never break.
 export const composeFor = (id) => TEMPLATES[validTemplate(id)].compose || TEMPLATES.classic.compose;
@@ -40,6 +70,7 @@ export const templateCatalog = () => TEMPLATE_IDS.map((id) => ({
   name: TEMPLATES[id].name,
   description: TEMPLATES[id].description,
   presets: TEMPLATES[id].presets,
+  schema: TEMPLATES[id].schema || {},
   vibe: TEMPLATES[id].vibe,
   featured: TEMPLATES[id].featured,
   textDefaults: TEMPLATES[id].textDefaults || {},
