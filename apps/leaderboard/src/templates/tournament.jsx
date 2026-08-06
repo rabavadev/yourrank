@@ -6,8 +6,10 @@
 // Shares the buildParts() data contract but owns its page structure and
 // tokens — Sora type, deep-blue palette, trophy podium ordering.
 
+// Convention: every rule is scoped under body[data-template="tournament"] so
+// templates can never leak into each other (preview compare, live switching).
 const TOURNAMENT_CSS = `
-:root{
+body[data-template="tournament"]{
   --bg:#070b14;
   --violet-1:#0b1322;
   --violet-2:#070c16;
@@ -25,41 +27,49 @@ const TOURNAMENT_CSS = `
   --gold:#ffd15c;
   --radius:14px;
   --radius-sm:10px;
+  font-family:"Sora",system-ui,sans-serif;
 }
-body{font-family:"Sora",system-ui,sans-serif}
-.field{background:radial-gradient(1000px 560px at 50% -12%,rgba(79,195,247,.12),transparent 60%),linear-gradient(180deg,var(--violet-1),var(--bg))}
-.watermarks{opacity:.03}
+body[data-template="tournament"] .field{background:radial-gradient(1000px 560px at 50% -12%,rgba(79,195,247,.12),transparent 60%),linear-gradient(180deg,var(--violet-1),var(--bg))}
+body[data-template="tournament"] .watermarks{opacity:.03}
 /* Clock hero */
-.hero--clock{text-align:center;padding:4rem 0 2.4rem;min-height:0;display:block}
-.hero--clock .hero-kicker{font-size:1rem;color:var(--ink-soft);letter-spacing:.1em}
-.clock-title{font-size:clamp(1.2rem,2vw,1.5rem);letter-spacing:.3em;text-transform:uppercase;color:var(--ink-mute);font-weight:600;margin:.8rem 0 1.2rem}
-.hero--clock .hero-timer{margin-top:0}
-.hero--clock .timer-grid{gap:.6rem}
-.hero--clock .tcell b{font-size:clamp(2.6rem,6vw,4.2rem);background:var(--panel-2);border:1px solid var(--line);border-radius:14px;padding:.45rem .8rem;min-width:2.4ch;font-variant-numeric:tabular-nums;box-shadow:0 20px 50px -30px rgba(79,195,247,.5)}
-.hero--clock .tcell span{margin-top:.55rem;letter-spacing:.2em}
-.hero--clock .tsep{font-size:2.4rem;color:var(--ink-mute);align-self:flex-start;padding-top:.8rem}
-.clock-sub{margin:1.4rem auto 1.2rem;color:var(--ink-soft);font-size:1.05rem}
-.clock-sub [data-pool]{color:var(--gold);font-weight:800;font-size:1.2rem}
-.clock-sub b[data-count]{color:var(--ink)}
+body[data-template="tournament"] .hero--clock{text-align:center;padding:4rem 0 2.4rem;min-height:0;display:block}
+body[data-template="tournament"] .hero--clock .hero-kicker{font-size:1rem;color:var(--ink-soft);letter-spacing:.1em}
+body[data-template="tournament"] .clock-title{font-size:clamp(1.2rem,2vw,1.5rem);letter-spacing:.3em;text-transform:uppercase;color:var(--ink-mute);font-weight:600;margin:.8rem 0 1.2rem}
+body[data-template="tournament"] .hero--clock .hero-timer{margin-top:0}
+body[data-template="tournament"] .hero--clock .timer-grid{gap:.6rem}
+body[data-template="tournament"] .hero--clock .tcell b{font-size:clamp(2.6rem,6vw,4.2rem);background:var(--panel-2);border:1px solid var(--line);border-radius:14px;padding:.45rem .8rem;min-width:2.4ch;font-variant-numeric:tabular-nums;box-shadow:0 20px 50px -30px rgba(79,195,247,.5)}
+body[data-template="tournament"] .hero--clock .tcell span{margin-top:.55rem;letter-spacing:.2em}
+body[data-template="tournament"] .hero--clock .tsep{font-size:2.4rem;color:var(--ink-mute);align-self:flex-start;padding-top:.8rem}
+body[data-template="tournament"] .clock-sub{margin:1.4rem auto 1.2rem;color:var(--ink-soft);font-size:1.05rem}
+body[data-template="tournament"] .clock-sub [data-pool]{color:var(--gold);font-weight:800;font-size:1.2rem}
+body[data-template="tournament"] .clock-sub b[data-count]{color:var(--ink)}
 /* Trophy podium top-3: winner centered and taller */
-.board-head--center{justify-content:center;text-align:center}
-.top3{grid-template-columns:1fr 1.12fr 1fr;align-items:end;gap:16px;margin:1.6rem auto 1.4rem}
-.t3{border-radius:var(--radius);padding:24px 16px 18px;text-align:center;background:linear-gradient(180deg,var(--panel-2),var(--panel));border:1px solid var(--line)}
-.t3--1{order:2;padding:32px 16px 26px;border-color:rgba(255,209,92,.42)}
-.t3--2{order:1}.t3--3{order:3}
-.t3-medal,.t3--1 .t3-medal,.t3--2 .t3-medal,.t3--3 .t3-medal{font-size:0}
-.t3--1 .t3-medal::before{content:"🏆";font-size:1.7rem}
-.t3--2 .t3-medal::before{content:"🥈";font-size:1.4rem}
-.t3--3 .t3-medal::before{content:"🥉";font-size:1.4rem}
-.t3--1 .t3-wager{color:var(--gold)}
+body[data-template="tournament"] .board-head--center{justify-content:center;text-align:center}
+body[data-template="tournament"] .top3{grid-template-columns:1fr 1.12fr 1fr;align-items:end;gap:16px;margin:1.6rem auto 1.4rem}
+body[data-template="tournament"] .t3{border-radius:var(--radius);padding:24px 16px 18px;text-align:center;background:linear-gradient(180deg,var(--panel-2),var(--panel));border:1px solid var(--line)}
+body[data-template="tournament"] .t3--1{order:2;padding:32px 16px 26px;border-color:rgba(255,209,92,.42)}
+body[data-template="tournament"] .t3--2{order:1}
+body[data-template="tournament"] .t3--3{order:3}
+body[data-template="tournament"] .t3-medal,
+body[data-template="tournament"] .t3--1 .t3-medal,
+body[data-template="tournament"] .t3--2 .t3-medal,
+body[data-template="tournament"] .t3--3 .t3-medal{font-size:0}
+body[data-template="tournament"] .t3--1 .t3-medal::before{content:"🏆";font-size:1.7rem}
+body[data-template="tournament"] .t3--2 .t3-medal::before{content:"🥈";font-size:1.4rem}
+body[data-template="tournament"] .t3--3 .t3-medal::before{content:"🥉";font-size:1.4rem}
+body[data-template="tournament"] .t3--1 .t3-wager{color:var(--gold)}
 /* Numbered standings, no avatars */
-.tr-av{display:none}
-.tr-rank{font-family:"JetBrains Mono",ui-monospace,monospace;color:var(--cy)}
-.t-row[data-position="1"] .tr-rank,.t-row[data-position="2"] .tr-rank,.t-row[data-position="3"] .tr-rank{color:var(--gold)}
-.t-row:hover{background:rgba(79,195,247,.05)}
+body[data-template="tournament"] .tr-av{display:none}
+body[data-template="tournament"] .tr-rank{font-family:"JetBrains Mono",ui-monospace,monospace;color:var(--cy)}
+body[data-template="tournament"] .t-row[data-position="1"] .tr-rank,
+body[data-template="tournament"] .t-row[data-position="2"] .tr-rank,
+body[data-template="tournament"] .t-row[data-position="3"] .tr-rank{color:var(--gold)}
+body[data-template="tournament"] .t-row:hover{background:rgba(79,195,247,.05)}
 @media (max-width:720px){
-  .top3{grid-template-columns:1fr;align-items:stretch}
-  .t3--1{order:1}.t3--2{order:2}.t3--3{order:3}
+  body[data-template="tournament"] .top3{grid-template-columns:1fr;align-items:stretch}
+  body[data-template="tournament"] .t3--1{order:1}
+  body[data-template="tournament"] .t3--2{order:2}
+  body[data-template="tournament"] .t3--3{order:3}
 }
 `;
 
@@ -87,6 +97,10 @@ export const TOURNAMENT = {
   name: "Tournament",
   description: "Countdown-first broadcast page: giant race clock hero, trophy podium.",
   css: TOURNAMENT_CSS,
+  fonts: [
+    "Sora:wght@400;600;700;800",
+    "JetBrains+Mono:wght@500;700",
+  ],
   presets: [
     { id: "signal", name: "Signal", accentA: "#4fc3f7", accentB: "#3b82f6" },
     { id: "lime", name: "Lime", accentA: "#a3e635", accentB: "#22c55e" },

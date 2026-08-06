@@ -6,8 +6,10 @@
 // window. Shares the buildParts() data contract (every data-* hook appears
 // exactly once) but owns its page structure, typography and tokens.
 
+// Convention: every rule is scoped under body[data-template="terminal"] so
+// templates can never leak into each other (preview compare, live switching).
 const TERMINAL_CSS = `
-:root{
+body[data-template="terminal"]{
   --bg:#05070a;
   --violet-1:#080b10;
   --violet-2:#05070a;
@@ -25,59 +27,68 @@ const TERMINAL_CSS = `
   --gold:#e8c14c;
   --radius:8px;
   --radius-sm:6px;
+  font-family:"JetBrains Mono",ui-monospace,monospace;
 }
-body{font-family:"JetBrains Mono",ui-monospace,monospace}
-.field{background:var(--bg)}
-.watermarks{display:none}
-.nav{border-bottom:1px solid var(--line)}
-.sec-title,.hero-name,.btn{font-family:"JetBrains Mono",ui-monospace,monospace}
+body[data-template="terminal"] .field{background:var(--bg)}
+body[data-template="terminal"] .watermarks{display:none}
+body[data-template="terminal"] .nav{border-bottom:1px solid var(--line)}
+body[data-template="terminal"] .sec-title,
+body[data-template="terminal"] .hero-name,
+body[data-template="terminal"] .btn{font-family:"JetBrains Mono",ui-monospace,monospace}
 /* Terminal window frame */
-.term-window{width:min(1100px,94%);margin:2.4rem auto;border:1px solid var(--line-2);border-radius:10px;background:var(--panel);box-shadow:0 40px 90px -50px rgba(57,217,138,.35);overflow:hidden}
-.term-bar{display:flex;align-items:center;gap:12px;padding:10px 16px;background:var(--panel-2);border-bottom:1px solid var(--line)}
-.term-dots{display:inline-flex;gap:6px}
-.term-dots i{width:11px;height:11px;border-radius:50%;background:#2a3f33}
-.term-dots i:first-child{background:#ff5f56}.term-dots i:nth-child(2){background:#ffbd2e}.term-dots i:last-child{background:#27c93f}
-.term-title{font-size:.82rem;color:var(--ink-soft)}
-.term-body{padding:8px 24px 32px}
+body[data-template="terminal"] .term-window{width:min(1100px,94%);margin:2.4rem auto;border:1px solid var(--line-2);border-radius:10px;background:var(--panel);box-shadow:0 40px 90px -50px rgba(57,217,138,.35);overflow:hidden}
+body[data-template="terminal"] .term-bar{display:flex;align-items:center;gap:12px;padding:10px 16px;background:var(--panel-2);border-bottom:1px solid var(--line)}
+body[data-template="terminal"] .term-dots{display:inline-flex;gap:6px}
+body[data-template="terminal"] .term-dots i{width:11px;height:11px;border-radius:50%;background:#2a3f33}
+body[data-template="terminal"] .term-dots i:first-child{background:#ff5f56}
+body[data-template="terminal"] .term-dots i:nth-child(2){background:#ffbd2e}
+body[data-template="terminal"] .term-dots i:last-child{background:#27c93f}
+body[data-template="terminal"] .term-title{font-size:.82rem;color:var(--ink-soft)}
+body[data-template="terminal"] .term-body{padding:8px 24px 32px}
 /* Prompt lines instead of a hero */
-.hero--term{min-height:0;padding:1.6rem 0 .6rem;text-align:left;display:block}
-.term-line{font-size:1rem;color:var(--ink);margin:.45rem 0;overflow-wrap:anywhere}
-.term-line--dim{color:var(--ink-soft)}
-.term-prompt{color:var(--cy);font-weight:700}
-.term-line b{color:var(--cy);font-variant-numeric:tabular-nums}
-.term-line [data-pool]{color:var(--gold)}
-.hero--term .hero-cta{justify-content:flex-start;margin:1rem 0 0}
-.btn--term{background:transparent;border:1px solid var(--line-2);color:var(--cy);border-radius:var(--radius);padding:.55rem 1.1rem;font-size:.9rem}
-.btn--term:hover{background:rgba(57,217,138,.08)}
+body[data-template="terminal"] .hero--term{min-height:0;padding:1.6rem 0 .6rem;text-align:left;display:block}
+body[data-template="terminal"] .term-line{font-size:1rem;color:var(--ink);margin:.45rem 0;overflow-wrap:anywhere}
+body[data-template="terminal"] .term-line--dim{color:var(--ink-soft)}
+body[data-template="terminal"] .term-prompt{color:var(--cy);font-weight:700}
+body[data-template="terminal"] .term-line b{color:var(--cy);font-variant-numeric:tabular-nums}
+body[data-template="terminal"] .term-line [data-pool]{color:var(--gold)}
+body[data-template="terminal"] .hero--term .hero-cta{justify-content:flex-start;margin:1rem 0 0}
+body[data-template="terminal"] .btn--term{background:transparent;border:1px solid var(--line-2);color:var(--cy);border-radius:var(--radius);padding:.55rem 1.1rem;font-size:.9rem}
+body[data-template="terminal"] .btn--term:hover{background:rgba(57,217,138,.08)}
 /* Board inside the window */
-.board{width:100%;padding:1rem 0 0}
-.board-head{margin-bottom:12px}
-.board-head .sec-title{font-size:1.1rem;letter-spacing:0;text-transform:none}
+body[data-template="terminal"] .board{width:100%;padding:1rem 0 0}
+body[data-template="terminal"] .board-head{margin-bottom:12px}
+body[data-template="terminal"] .board-head .sec-title{font-size:1.1rem;letter-spacing:0;text-transform:none}
 /* Compact top-3 readout, no card fanfare */
-.top3{grid-template-columns:repeat(3,1fr);gap:10px;margin:0 0 14px}
-.t3{border-radius:var(--radius);padding:14px;text-align:left;background:var(--panel-2);border:1px solid var(--line)}
-.t3-av{display:none}
-.t3-medal{font-size:.72rem;letter-spacing:.14em;color:var(--ink-mute)}
-.t3--1{border-color:rgba(232,193,76,.5)}
-.t3--1 .t3-medal,.t3--1 .t3-wager{color:var(--gold)}
-.t3--2 .t3-medal{color:#aab4c8}.t3--3 .t3-medal{color:#cf9160}
-.t3-name{font-size:1rem}
+body[data-template="terminal"] .top3{grid-template-columns:repeat(3,1fr);gap:10px;margin:0 0 14px}
+body[data-template="terminal"] .t3{border-radius:var(--radius);padding:14px;text-align:left;background:var(--panel-2);border:1px solid var(--line)}
+body[data-template="terminal"] .t3-av{display:none}
+body[data-template="terminal"] .t3-medal{font-size:.72rem;letter-spacing:.14em;color:var(--ink-mute)}
+body[data-template="terminal"] .t3--1{border-color:rgba(232,193,76,.5)}
+body[data-template="terminal"] .t3--1 .t3-medal,
+body[data-template="terminal"] .t3--1 .t3-wager{color:var(--gold)}
+body[data-template="terminal"] .t3--2 .t3-medal{color:#aab4c8}
+body[data-template="terminal"] .t3--3 .t3-medal{color:#cf9160}
+body[data-template="terminal"] .t3-name{font-size:1rem}
 /* Dense bracketed table */
-.table{border:1px solid var(--line);border-radius:var(--radius);background:var(--panel-2)}
-.t-head,.t-row{grid-template-columns:72px 1fr 150px 100px;padding:.5rem 1rem}
-.t-head{background:transparent;border-bottom:1px solid var(--line-2);color:var(--ink-mute);letter-spacing:.1em}
-.t-row{border-bottom:1px dashed var(--line)}
-.t-row:hover{background:rgba(57,217,138,.05)}
-.tr-rank{color:var(--cy)}
-.tr-rank::before{content:"["}.tr-rank::after{content:"]"}
-.tr-av{display:none}
-.tr-name{font-family:"JetBrains Mono",ui-monospace,monospace;font-weight:500}
-.t-row[data-position="1"] .tr-rank{color:var(--gold)}
-.tr-prize.has{color:var(--gold)}
-.find-rank-input{font-family:"JetBrains Mono",ui-monospace,monospace}
+body[data-template="terminal"] .table{border:1px solid var(--line);border-radius:var(--radius);background:var(--panel-2)}
+body[data-template="terminal"] .t-head,
+body[data-template="terminal"] .t-row{grid-template-columns:72px 1fr 150px 100px;padding:.5rem 1rem}
+body[data-template="terminal"] .t-head{background:transparent;border-bottom:1px solid var(--line-2);color:var(--ink-mute);letter-spacing:.1em}
+body[data-template="terminal"] .t-row{border-bottom:1px dashed var(--line)}
+body[data-template="terminal"] .t-row:hover{background:rgba(57,217,138,.05)}
+body[data-template="terminal"] .tr-rank{color:var(--cy)}
+body[data-template="terminal"] .tr-rank::before{content:"["}
+body[data-template="terminal"] .tr-rank::after{content:"]"}
+body[data-template="terminal"] .tr-av{display:none}
+body[data-template="terminal"] .tr-name{font-family:"JetBrains Mono",ui-monospace,monospace;font-weight:500}
+body[data-template="terminal"] .t-row[data-position="1"] .tr-rank{color:var(--gold)}
+body[data-template="terminal"] .tr-prize.has{color:var(--gold)}
+body[data-template="terminal"] .find-rank-input{font-family:"JetBrains Mono",ui-monospace,monospace}
 @media (max-width:720px){
-  .top3{grid-template-columns:1fr}
-  .t-head,.t-row{grid-template-columns:52px 1fr 110px 84px}
+  body[data-template="terminal"] .top3{grid-template-columns:1fr}
+  body[data-template="terminal"] .t-head,
+  body[data-template="terminal"] .t-row{grid-template-columns:52px 1fr 110px 84px}
 }
 `;
 
@@ -104,6 +115,7 @@ export const TERMINAL = {
   name: "Terminal",
   description: "The whole board inside a terminal window: prompt lines, dense monospace table.",
   css: TERMINAL_CSS,
+  fonts: ["JetBrains+Mono:wght@400;500;700"],
   presets: [
     { id: "matrix", name: "Matrix", accentA: "#39d98a", accentB: "#2fae6e" },
     { id: "amber", name: "Amber", accentA: "#e8c14c", accentB: "#c8871c" },

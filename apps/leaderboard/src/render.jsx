@@ -1,7 +1,7 @@
 ﻿/** @jsxRuntime automatic */
 /** @jsxImportSource hono/jsx */
 // Server-render a streamer's leaderboard page from their data.
-import { composeFor, templateCss, validTemplate } from "./templates/index.js";
+import { composeFor, templateCss, templateFonts, validTemplate } from "./templates/index.js";
 import { DEFAULT_EXTRA, FONT_FAMILIES } from "./site.js";
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 // E2E-009: Sanitize user-supplied URLs for href attributes.
@@ -39,6 +39,22 @@ const FONT_BASE_STYLE = `:root{--yr-font:FAMILY;--yr-font-fallback:system-ui,-ap
 function fontCss(br, nonce) {
   const family = FONT_FAMILIES[br?.font] || FONT_FAMILIES.Inter;
   return `<style nonce="${nonce}">${FONT_BASE_STYLE.replace("FAMILY", family)}</style>`;
+}
+
+// Google Fonts css2 params for each font the streamer's font picker can
+// select. Combined with the template's own `fonts` so each page loads only
+// the families its design actually uses.
+const PICKER_FONT_PARAMS = {
+  Inter: "Inter:wght@400;500;600;700;800;900",
+  Oswald: "Oswald:wght@400;500;600;700",
+  "Playfair Display": "Playfair+Display:wght@400;500;600;700;800;900",
+  Rajdhani: "Rajdhani:wght@400;500;600;700",
+  "Bebas Neue": "Bebas+Neue",
+};
+function fontsHref(tpl, br) {
+  const picker = PICKER_FONT_PARAMS[br?.font] || PICKER_FONT_PARAMS.Inter;
+  const families = [...new Set([...templateFonts(tpl), picker])];
+  return `https://fonts.googleapis.com/css2?${families.map((f) => `family=${f}`).join("&")}&display=swap`;
 }
 
 function logoSrcSet(baseUrl) {
@@ -296,9 +312,9 @@ document.addEventListener("click", (e) => {
 <meta property="og:url" content="${canonicalUrl}" />
 <meta name="twitter:card" content="${twitterCard}" /><meta name="twitter:title" content="${ogTitle}" /><meta name="twitter:description" content="${desc}" />${ogImage}
 <link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@500;700&family=Press+Start+2P&family=Fredoka+One&family=Orbitron:wght@400;700;900&family=Pacifico&family=Baloo+2:wght@400;600;800&family=Cormorant+Garamond:wght@400;600;700&family=Rye&family=Space+Mono:wght@400;700&family=Montserrat:wght@400;700;800;900&family=Playfair+Display:wght@400;600;700;800;900&family=Inter:wght@400;600;700;800;900&family=Oswald:wght@400;600;700&family=Rajdhani:wght@400;600;700&family=Bebas+Neue&display=swap" rel="stylesheet" media="print" data-async />
+<link href="${fontsHref(tpl, br)}" rel="stylesheet" media="print" data-async />
 <script nonce="${opts.nonce}">document.querySelector('link[data-async]').onload=function(){this.media='all'};</script>
-<noscript><link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@500;700&family=Press+Start+2P&family=Fredoka+One&family=Orbitron:wght@400;700;900&family=Pacifico&family=Baloo+2:wght@400;600;800&family=Cormorant+Garamond:wght@400;600;700&family=Rye&family=Space+Mono:wght@400;700&family=Montserrat:wght@400;700;800;900&family=Playfair+Display:wght@400;600;700;800;900&family=Inter:wght@400;600;700;800;900&family=Oswald:wght@400;600;700&family=Rajdhani:wght@400;600;700&family=Bebas+Neue&display=swap" rel="stylesheet" /></noscript>
+<noscript><link href="${fontsHref(tpl, br)}" rel="stylesheet" /></noscript>
 <link rel="stylesheet" href="/assets/leaderboard.css" />
 ${tplCss}
 ${themeCss}

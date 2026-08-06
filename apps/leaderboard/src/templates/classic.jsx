@@ -62,6 +62,13 @@ export const CLASSIC = {
   name: "Classic",
   description: "High-Stakes Kinetic: obsidian glass with a glowing neon podium.",
   css: "",
+  // Google Fonts css2 family params this design needs (plus the user's
+  // picker font, added by the renderer).
+  fonts: [
+    "Montserrat:wght@400;700;800;900",
+    "Inter:wght@400;600;700;800;900",
+    "Space+Mono:wght@400;700",
+  ],
   presets: [
     { id: "purplenight", name: "Purple Night", accentA: "#06b6d4", accentB: "#a855f7" },
     { id: "electric", name: "Electric", accentA: "#5ad9ff", accentB: "#7b8cff" },

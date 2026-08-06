@@ -57,6 +57,58 @@ describe("template catalog", async () => {
   });
 });
 
+describe("template client contract", async () => {
+  // leaderboard.js queries these with querySelector (single element). If any
+  // template renders one twice — or drops data-rows/data-top3 — live updates
+  // silently break for boards using that template. This is the gate.
+  const SINGLETON_HOOKS = [
+    "data-rows", "data-top3", "data-timer", "data-timer-grid", "data-countdown",
+    "data-count", "data-payouts", "data-find-rank", "data-find-result",
+    "data-rules", "data-past-grid", "data-socials", "data-player-count-badge",
+    "data-live-badge", "data-copy-status",
+  ];
+  const REQUIRED_HOOKS = ["data-rows", "data-top3"];
+
+  it("renders every single-element hook at most once per template", async () => {
+    for (const template of TEMPLATE_IDS) {
+      const html = await renderLeaderboard({ ...DATA, branding: { template } }, { nonce: "contract1" });
+      for (const hook of SINGLETON_HOOKS) {
+        // Word-boundary match so data-countdown doesn't count as data-count.
+        const n = (html.match(new RegExp(hook + "(?=[\\s>])", "g")) || []).length;
+        expect(n, `${template} renders ${hook} ${n} times`).toBeLessThanOrEqual(1);
+      }
+      for (const hook of REQUIRED_HOOKS) {
+        const n = (html.match(new RegExp(hook + "(?=[\\s>])", "g")) || []).length;
+        expect(n, `${template} is missing required ${hook}`).toBe(1);
+      }
+    }
+  });
+
+  it("loads only the template's fonts plus the picker font", async () => {
+    const terminal = await renderLeaderboard({ ...DATA, branding: { template: "terminal" } }, { nonce: "f1" });
+    expect(terminal).toContain("family=JetBrains+Mono");
+    expect(terminal).toContain("family=Inter"); // default picker font
+    expect(terminal).not.toContain("family=Sora");
+    expect(terminal).not.toContain("family=Montserrat");
+    const tournament = await renderLeaderboard({ ...DATA, branding: { template: "tournament" } }, { nonce: "f2" });
+    expect(tournament).toContain("family=Sora");
+    expect(tournament).not.toContain("family=Press+Start+2P");
+  });
+
+  it("scopes every template CSS rule under its data-template attribute", async () => {
+    for (const id of TEMPLATE_IDS) {
+      const css = TEMPLATES[id].css;
+      if (!css) continue;
+      const rules = css.split("}").map((r) => r.split("{")[0].trim()).filter((s) => s && !s.startsWith("@") && !s.startsWith("/*") && !s.startsWith("to") && !s.startsWith("from"));
+      for (const selector of rules) {
+        const cleaned = selector.replace(/\/\*[^]*?\*\//g, "").trim();
+        if (!cleaned || cleaned.startsWith("@media")) continue;
+        expect(cleaned.startsWith(`body[data-template="${id}"]`), `${id} has unscoped selector: ${cleaned.slice(0, 60)}`).toBe(true);
+      }
+    }
+  });
+});
+
 describe("template previews", async () => {
   it("renders real board data in preview mode", async () => {
     const html = await renderLeaderboard(
