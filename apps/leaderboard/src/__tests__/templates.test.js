@@ -1,6 +1,6 @@
 import { describe, expect, it } from "bun:test";
 import { renderLeaderboard } from "../render.jsx";
-import { TEMPLATE_IDS, TEMPLATES, templateCatalog, validTemplate } from "../templates/index.js";
+import { TEMPLATE_IDS, TEMPLATES, templateCatalog, validTemplate, resolveOptions } from "../templates/index.js";
 import { fromJsonb, publicShape } from "../site.js";
 
 function stripScripts(html) {
@@ -203,5 +203,49 @@ describe("theme_json / extra_json persistence (BUG: double-encoded JSONB)", asyn
     ];
     const shaped = publicShape({ ...SITE, theme_json: {}, extra_json: { socials } }, []);
     expect(shaped.socials.map((s) => s.brand)).toEqual(["x", "discord", "twitch", "telegram"]);
+  });
+});
+describe("template options schema", async () => {
+  it("exposes each template's schema in the catalog", async () => {
+    const catalog = templateCatalog();
+    expect(catalog.every((t) => t.schema && typeof t.schema === "object")).toBe(true);
+    const terminal = catalog.find((t) => t.id === "terminal");
+    expect(terminal.schema.accent.type).toBe("color");
+    expect(terminal.schema.scanlines.type).toBe("toggle");
+    expect(terminal.schema.density.type).toBe("select");
+  });
+
+  it("resolves schema defaults for missing or garbage input", async () => {
+    const defaults = { accent: "#39d98a", scanlines: false, density: "compact" };
+    expect(resolveOptions("terminal", null)).toEqual(defaults);
+    expect(resolveOptions("terminal", "junk")).toEqual(defaults);
+    expect(resolveOptions("classic", { anything: "x" })).toEqual({});
+  });
+
+  it("validates values per field type and drops unknown keys", async () => {
+    const out = resolveOptions("terminal", {
+      accent: "javascript:alert(1)", scanlines: "yes", density: "huge", evil: "x",
+    });
+    expect(out).toEqual({ accent: "#39d98a", scanlines: false, density: "compact" });
+    expect(resolveOptions("terminal", { accent: "#e8c14c", scanlines: true, density: "cozy" }))
+      .toEqual({ accent: "#e8c14c", scanlines: true, density: "cozy" });
+  });
+
+  it("renders options as scoped CSS vars and body attributes", async () => {
+    const html = await renderLeaderboard(
+      { ...DATA, branding: { template: "terminal", options: { accent: "#e8c14c", scanlines: true, density: "cozy" } } },
+      { nonce: "opt1" }
+    );
+    expect(html).toContain('data-opt-scanlines="true"');
+    expect(html).toContain('data-opt-density="cozy"');
+    expect(html).toContain("--opt-accent:#e8c14c");
+  });
+
+  it("renders schema defaults (not saved options) on watermark pages", async () => {
+    const html = await renderLeaderboard(
+      { ...DATA, branding: { template: "terminal", options: { accent: "#e8c14c" } } },
+      { nonce: "opt2", watermark: true }
+    );
+    expect(html).toContain("--opt-accent:#39d98a");
   });
 });

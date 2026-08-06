@@ -239,7 +239,7 @@ export function collect() {
   if (state.ACTIVE_SITE_ID) out.siteId = state.ACTIVE_SITE_ID;
   if (state.SITE_UPDATED_AT) out.expectedUpdatedAt = state.SITE_UPDATED_AT;
   if (state.ME && state.ME.plan !== "free") {
-    out.branding = { accentA: $("c_a").value, accentB: $("c_b").value, font: $("f_font")?.value || state.CURRENT_BRANDING?.font || "Inter" };
+    out.branding = { accentA: $("c_a").value, accentB: $("c_b").value, font: $("f_font")?.value || state.CURRENT_BRANDING?.font || "Inter", options: state.CURRENT_BRANDING?.options || {} };
     if (state.LOGO !== undefined) out.branding.logo = state.LOGO;
   }
   if (isPro()) {
@@ -449,7 +449,58 @@ function updateThemeSelection() {
   const font = $("f_font"); if (font) font.value = state.CURRENT_BRANDING.font || "Inter";
   renderTemplateGallery();
   renderColorPresets();
+  renderTemplateOptions();
   updateDesignPreview();
+}
+
+/* --- per-template options (schema-driven) ---
+   The dashboard never hardcodes per-template controls: it reads the active
+   template's `schema` from the catalog and auto-builds the form. Values live
+   in state.CURRENT_BRANDING.options and are validated server-side on save. */
+function renderTemplateOptions() {
+  const wrap = $("templateOptions");
+  if (!wrap) return;
+  const template = currentTemplate();
+  const schema = (template && template.schema) || {};
+  const keys = Object.keys(schema);
+  wrap.innerHTML = "";
+  if (!keys.length) { wrap.hidden = true; return; }
+  wrap.hidden = false;
+  const paid = state.ME && state.ME.plan !== "free";
+  const saved = state.CURRENT_BRANDING.options || {};
+  const title = document.createElement("p");
+  title.className = "hint";
+  title.textContent = paid ? `${template.name} options` : `${template.name} options are a Pro feature. Upgrade to unlock them.`;
+  wrap.appendChild(title);
+  const grid = document.createElement("div");
+  grid.className = "grid2";
+  for (const key of keys) {
+    const field = schema[key];
+    if (!field || typeof field !== "object") continue;
+    const value = Object.hasOwn(saved, key) ? saved[key] : field.default;
+    const id = `opt_${key}`;
+    const div = document.createElement("div");
+    div.className = "field";
+    if (field.type === "color") {
+      div.innerHTML = `<label for="${id}">${esc(field.label || key)}</label><input type="color" id="${id}" value="${esc(String(value || "#000000"))}"${paid ? "" : " disabled"} />`;
+    } else if (field.type === "toggle") {
+      div.innerHTML = `<label class="hint chk" for="${id}"><input type="checkbox" id="${id}"${value ? " checked" : ""}${paid ? "" : " disabled"} /> ${esc(field.label || key)}</label>`;
+    } else if (field.type === "select") {
+      const optsHtml = (field.options || []).map((o) => `<option value="${esc(o)}"${o === value ? " selected" : ""}>${esc(o)}</option>`).join("");
+      div.innerHTML = `<label for="${id}">${esc(field.label || key)}</label><select id="${id}"${paid ? "" : " disabled"}>${optsHtml}</select>`;
+    } else continue;
+    const input = div.querySelector("input,select");
+    if (input) {
+      input.addEventListener("change", () => {
+        const next = { ...(state.CURRENT_BRANDING.options || {}) };
+        next[key] = field.type === "toggle" ? input.checked : input.value;
+        state.CURRENT_BRANDING.options = next;
+        markDirty();
+      });
+    }
+    grid.appendChild(div);
+  }
+  wrap.appendChild(grid);
 }
 
 function _beforeUnloadGuard(e) {
@@ -468,7 +519,11 @@ state.markDirty = markDirty;
 
 export function applyTheme(template, accentA, accentB, label, font = null) {
   const selectedFont = font || $("f_font")?.value || state.CURRENT_BRANDING?.font || "Inter";
+  const templateChanged = template !== state.CURRENT_BRANDING.template;
   state.CURRENT_BRANDING = { ...state.CURRENT_BRANDING, template, font: selectedFont };
+  // Options are per-template: switching designs drops the previous
+  // template's knobs so stale keys never leak across designs.
+  if (templateChanged) state.CURRENT_BRANDING.options = {};
   if (state.ME.plan !== "free" && accentA && accentB) {
     state.CURRENT_BRANDING.accentA = accentA;
     state.CURRENT_BRANDING.accentB = accentB;
@@ -501,6 +556,7 @@ export function renderBranding(br) {
     accentA: br.accentA || null,
     accentB: br.accentB || null,
     font: br.font || "Inter",
+    options: (br.options && typeof br.options === "object") ? br.options : {},
   };
   const paid = state.ME.plan !== "free";
   $("brandBody").hidden = !paid;

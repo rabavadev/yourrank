@@ -1,7 +1,7 @@
 ﻿/** @jsxRuntime automatic */
 /** @jsxImportSource hono/jsx */
 // Server-render a streamer's leaderboard page from their data.
-import { composeFor, templateCss, templateFonts, validTemplate } from "./templates/index.js";
+import { composeFor, templateCss, templateFonts, validTemplate, resolveOptions } from "./templates/index.js";
 import { DEFAULT_EXTRA, FONT_FAMILIES } from "./site.js";
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 // E2E-009: Sanitize user-supplied URLs for href attributes.
@@ -193,6 +193,18 @@ export async function renderLeaderboard(data, opts = {}) {
   const tpl = validTemplate(br.template);
   const tplCssStr = templateCss(tpl);
   const tplCss = tplCssStr ? `<style nonce="${opts.nonce}" data-template="${tpl}">${tplCssStr}</style>` : "";
+  // Editable template options (declared by the template's schema, saved in
+  // theme_json.options). Free-plan pages always render schema defaults.
+  // resolveOptions() whitelists keys and validates values, so the emitted
+  // CSS variables and attributes are injection-safe by construction.
+  const tplOptions = resolveOptions(tpl, !opts.watermark ? br.options : null);
+  const optVars = Object.entries(tplOptions)
+    .map(([k, v]) => `--opt-${k}:${typeof v === "boolean" ? (v ? 1 : 0) : v};`)
+    .join("");
+  const optCss = optVars ? `<style nonce="${opts.nonce}" data-template-options>body[data-template="${tpl}"]{${optVars}}</style>` : "";
+  const optAttrs = Object.entries(tplOptions)
+    .map(([k, v]) => ` data-opt-${k}="${esc(String(v))}"`)
+    .join("");
   const previewCss = opts.preview ? `<style nonce="${opts.nonce}">
 html{background:var(--bg)}body[data-preview]{min-width:var(--preview-min-width,1100px);overflow:hidden}
 body[data-preview] .nav,body[data-preview] .field,body[data-preview] .watermarks,body[data-preview] .stream-window,
@@ -301,7 +313,7 @@ document.addEventListener("click", (e) => {
 });
 </script>` : "";
 
-  const mainHtml = await composeMain(tpl, buildParts({ b, esc, heroLogo, hasCasino, casino, period, pool, hasCta, ctaHref, hasPartner, hasCode, code, blurb, chips, whyStats, socials, prizes: data.prizes, currency: data.brand?.currency, hidePrizeAmounts: data.brand?.hidePrizeAmounts, players: data.players, slug: opts.slug || "", isCustomDomain: !!opts.isCustomDomain }), textOverrides);
+  const mainHtml = await composeMain(tpl, buildParts({ b, esc, heroLogo, hasCasino, casino, period, pool, hasCta, ctaHref, hasPartner, hasCode, code, blurb, chips, whyStats, socials, prizes: data.prizes, currency: data.brand?.currency, hidePrizeAmounts: data.brand?.hidePrizeAmounts, players: data.players, slug: opts.slug || "", isCustomDomain: !!opts.isCustomDomain, options: tplOptions }), textOverrides);
   
   return `<!DOCTYPE html>
 <html lang="en"><head>
@@ -317,6 +329,7 @@ document.addEventListener("click", (e) => {
 <noscript><link href="${fontsHref(tpl, br)}" rel="stylesheet" /></noscript>
 <link rel="stylesheet" href="/assets/leaderboard.css" />
 ${tplCss}
+${optCss}
 ${themeCss}
 ${profileLinkCss}
 ${sectionCss}
@@ -324,7 +337,7 @@ ${previewCss}
 ${fontCss(br, opts.nonce)}
 <style nonce="${opts.nonce}">${shareCss}</style>
 <script nonce="${opts.nonce}" type="application/ld+json">{"@context":"https://schema.org","@type":"ItemList","name":${JSON.stringify(title)},"description":${JSON.stringify(desc)},"numberOfItems":${data.players ? data.players.length : 0}}</script>
-</head><body data-template="${tpl}"${opts.preview ? ` data-preview style="--preview-min-width:${opts.previewDevice === "mobile" ? 390 : 1100}px"` : ""}${opts.demo ? " data-demo" : ""} ${sectionAttrs}>
+</head><body data-template="${tpl}"${optAttrs}${opts.preview ? ` data-preview style="--preview-min-width:${opts.previewDevice === "mobile" ? 390 : 1100}px"` : ""}${opts.demo ? " data-demo" : ""} ${sectionAttrs}>
 <noscript><p class="noscript-noscroll">This leaderboard requires JavaScript for live updates. The data shown below may not refresh automatically.</p></noscript>
 ${opts.demo ? `<div class="demo-bar" role="region" aria-label="Demo notice"><span class="demo-bar-txt">You're viewing a live <b>YourRank</b> demo board.</span><a class="demo-bar-cta" href="${esc(`${opts.homeUrl || ""}/signup`)}" target="_top">Create your free page →</a><a class="demo-bar-home" href="${esc(opts.homeUrl || "/")}" target="_top">Back to YourRank</a></div>` : ""}
 <a class="skip-link" href="#board">Skip to leaderboard</a>

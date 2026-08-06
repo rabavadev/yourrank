@@ -197,7 +197,8 @@ export function DashboardContent() {
 <div class="template-gallery-wrap" id="templateGalleryWrap">
 <div class="template-grid" id="templateGallery" aria-label="Page templates"></div>
 </div>
-<p class="hint template-status" id="templateStatus" role="status" aria-live="polite"></p></div>
+<p class="hint template-status" id="templateStatus" role="status" aria-live="polite"></p>
+<div class="template-options" id="templateOptions" hidden></div></div>
 <details class="pro-accordion" data-egroup="appearance" id="proAccordion">
 <summary class="pro-accordion__summary">
 <span class="pro-accordion__title">Pro features<span class="pill pill--info ml-6">PRO</span></span>
