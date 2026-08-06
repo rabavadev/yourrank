@@ -38,7 +38,7 @@ const DATA = {
 
 describe("template catalog", async () => {
   it("offers the registered templates with curated presets", async () => {
-    expect(TEMPLATE_IDS).toEqual(["classic", "terminal", "tournament"]);
+    expect(TEMPLATE_IDS).toEqual(["classic", "terminal", "tournament", "noir"]);
     for (const id of TEMPLATE_IDS) {
       expect(TEMPLATES[id].presets.length).toBeGreaterThanOrEqual(3);
       expect(TEMPLATES[id].presets.every((preset) => /^#[0-9a-f]{6}$/i.test(preset.accentA) && /^#[0-9a-f]{6}$/i.test(preset.accentB))).toBe(true);
@@ -47,7 +47,7 @@ describe("template catalog", async () => {
 
   it("exposes client metadata without sending template CSS", async () => {
     const catalog = templateCatalog();
-    expect(catalog.length).toBe(3);
+    expect(catalog.length).toBe(4);
     expect(catalog.every((template) => !Object.hasOwn(template, "css"))).toBe(true);
     expect(catalog.map((template) => template.id)).toEqual(TEMPLATE_IDS);
   });
@@ -93,6 +93,11 @@ describe("template client contract", async () => {
     const tournament = await renderLeaderboard({ ...DATA, branding: { template: "tournament" } }, { nonce: "f2" });
     expect(tournament).toContain("family=Sora");
     expect(tournament).not.toContain("family=Press+Start+2P");
+    const noir = await renderLeaderboard({ ...DATA, branding: { template: "noir" } }, { nonce: "f3" });
+    expect(noir).toContain("family=Playfair+Display");
+    expect(noir).toContain("family=EB+Garamond");
+    expect(noir).not.toContain("family=Sora");
+    expect(noir).not.toContain("family=JetBrains+Mono");
   });
 
   it("scopes every template CSS rule under its data-template attribute", async () => {
@@ -239,6 +244,19 @@ describe("template options schema", async () => {
     expect(html).toContain('data-opt-scanlines="true"');
     expect(html).toContain('data-opt-density="cozy"');
     expect(html).toContain("--opt-accent:#e8c14c");
+  });
+
+  it("noir: validates and renders its own options", async () => {
+    expect(resolveOptions("noir", null)).toEqual({ accent: "#d4af37", grain: true, podium: "roman" });
+    expect(resolveOptions("noir", { accent: "red", grain: "on", podium: "circles", x: 1 }))
+      .toEqual({ accent: "#d4af37", grain: true, podium: "roman" });
+    const html = await renderLeaderboard(
+      { ...DATA, branding: { template: "noir", options: { accent: "#a63a46", grain: false, podium: "numbers" } } },
+      { nonce: "noir1" }
+    );
+    expect(html).toContain("--opt-accent:#a63a46");
+    expect(html).toContain('data-opt-grain="false"');
+    expect(html).toContain('data-opt-podium="numbers"');
   });
 
   it("renders schema defaults (not saved options) on watermark pages", async () => {
