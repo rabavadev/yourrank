@@ -103,7 +103,7 @@ body[data-template="terminal"][data-opt-density="cozy"] .term-body{padding:16px 
 
 function composeTerminal(p) {
   const esc = p.esc;
-  return `<div class="term-window"><div class="term-bar"><span class="term-dots"><i></i><i></i><i></i></span><span class="term-title">~/leaderboard — <span data-brand-name>${p.name}</span></span></div>
+  return `${p.header}<main id="top"><div class="term-window"><div class="term-bar"><span class="term-dots"><i></i><i></i><i></i></span><span class="term-title">~/leaderboard — <span data-brand-name>${p.name}</span></span></div>
 <div class="term-body"><section class="hero hero--term"><p class="term-line"><span class="term-prompt">$</span> race --period ${p.periodSpan}${p.hasPool ? ` --pool ${p.poolSpan}` : ""}</p>
 <p class="term-line term-line--dim">resets_in <b class="countdown" data-countdown>--</b> · players <b data-count>${p.sCount}</b> · <span class="live-badge" data-live-badge><span class="live-badge-dot"></span>LIVE</span></p>
 <div class="hero-cta">${p.ctaBtn(`&gt; ${p.hasCasino ? `join <span data-casino>${esc(p.casino)}</span>` : "join now"}`, "btn btn--term")}</div>
@@ -116,7 +116,8 @@ ${p.table}
 ${p.rules}</section></div></div>
 ${p.partnerPanel}
 ${p.pastSec}
-${p.socialsSec}`;
+${p.socialsSec}</main>
+${p.footer}`;
 }
 
 export const TERMINAL = {

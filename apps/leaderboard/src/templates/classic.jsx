@@ -11,6 +11,8 @@ function composeClassic(p) {
   const { name, heroLogo, hasCasino, casino, period, pool, ctaBtn, joinLabel, timerGrid } = p;
   return (
     <>
+      <div dangerouslySetInnerHTML={{ __html: p.header }} />
+      <main id="top">
       <section class="hero">
         <div dangerouslySetInnerHTML={{ __html: p.streamWindow }} />
         <div dangerouslySetInnerHTML={{ __html: heroLogo }} />
@@ -53,6 +55,8 @@ function composeClassic(p) {
       </section>
       <div dangerouslySetInnerHTML={{ __html: p.pastSec }} />
       <div dangerouslySetInnerHTML={{ __html: p.socialsSec }} />
+      </main>
+      <div dangerouslySetInnerHTML={{ __html: p.footer }} />
     </>
   );
 }

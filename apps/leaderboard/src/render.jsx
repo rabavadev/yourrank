@@ -313,7 +313,43 @@ document.addEventListener("click", (e) => {
 });
 </script>` : "";
 
-  const mainHtml = await composeMain(tpl, buildParts({ b, esc, heroLogo, hasCasino, casino, period, pool, hasCta, ctaHref, hasPartner, hasCode, code, blurb, chips, whyStats, socials, prizes: data.prizes, currency: data.brand?.currency, hidePrizeAmounts: data.brand?.hidePrizeAmounts, players: data.players, slug: opts.slug || "", isCustomDomain: !!opts.isCustomDomain, options: tplOptions }), textOverrides);
+  // Page chrome as composable parts: each template's compose() decides where
+  // (and whether, for the header) these render. The footer carries the legal
+  // disclaimer, so the contract tests require it in every template's output.
+  const header = `<header class="nav"><a class="nav-brand" href="#top">${navLogo}<span data-brand-name>${esc(b.name)}</span></a>
+<button class="nav-toggle" aria-label="Toggle navigation" aria-expanded="false"><svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button>
+<nav class="nav-links" aria-label="Page sections">${hasPartner ? `<a href="#partner">Partner</a>` : ""}<a href="#board">Leaderboard</a>${socials.length ? `<a href="#socials">Socials</a>` : ""}</nav></header>
+${boardTabs}`;
+  const footer = `<footer class="ftr-premium">
+  <div class="ftr-premium-bg"></div>
+  <div class="ftr-premium-inner">
+    <div class="ftr-premium-main">
+      <div class="ftr-premium-brand">
+        <div class="ftr-premium-logo" data-brand-name>${esc(b.name)}</div>
+        <p class="ftr-premium-tagline" data-tagline>${esc(b.tagline)}</p>
+        <p class="ftr-premium-disclaimer">${footerDisclaimer(hasCasino, b.name, casino)}</p>
+      </div>
+      <div class="ftr-premium-links-group">
+        <div class="ftr-premium-col">
+          <span class="ftr-premium-col-title">Legal &amp; Policy</span>
+          <div class="ftr-premium-links">
+            ${renderLegalSidebar(data, legalHref).split("</a>").slice(0, 4).join("</a>") + (renderLegalSidebar(data, legalHref).split("</a>").length > 4 ? "</a>" : "")}
+          </div>
+        </div>
+        <div class="ftr-premium-col">
+          <span class="ftr-premium-col-title">Support</span>
+          <div class="ftr-premium-links">
+            ${renderLegalSidebar(data, legalHref).split("</a>").slice(4).join("</a>") + (renderLegalSidebar(data, legalHref).split("</a>").length > 5 ? "</a>" : "")}
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="ftr-premium-bottom">
+      <p class="ftr-premium-copy">© <span data-year></span> <span data-brand-name>${esc(b.name)}</span>. All rights reserved.</p>
+    </div>
+  </div>
+</footer>`;
+  const mainHtml = await composeMain(tpl, buildParts({ b, esc, heroLogo, hasCasino, casino, period, pool, hasCta, ctaHref, hasPartner, hasCode, code, blurb, chips, whyStats, socials, prizes: data.prizes, currency: data.brand?.currency, hidePrizeAmounts: data.brand?.hidePrizeAmounts, players: data.players, slug: opts.slug || "", isCustomDomain: !!opts.isCustomDomain, options: tplOptions, header, footer }), textOverrides);
   
   return `<!DOCTYPE html>
 <html lang="en"><head>
@@ -342,42 +378,8 @@ ${fontCss(br, opts.nonce)}
 ${opts.demo ? `<div class="demo-bar" role="region" aria-label="Demo notice"><span class="demo-bar-txt">You're viewing a live <b>YourRank</b> demo board.</span><a class="demo-bar-cta" href="${esc(`${opts.homeUrl || ""}/signup`)}" target="_top">Create your free page →</a><a class="demo-bar-home" href="${esc(opts.homeUrl || "/")}" target="_top">Back to YourRank</a></div>` : ""}
 <a class="skip-link" href="#board">Skip to leaderboard</a>
 <div class="field" aria-hidden="true"></div><div class="watermarks" data-watermarks aria-hidden="true"></div>
-<header class="nav"><a class="nav-brand" href="#top">${navLogo}<span data-brand-name>${esc(b.name)}</span></a>
-<button class="nav-toggle" aria-label="Toggle navigation" aria-expanded="false"><svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button>
-<nav class="nav-links" aria-label="Page sections">${hasPartner ? `<a href="#partner">Partner</a>` : ""}<a href="#board">Leaderboard</a>${socials.length ? `<a href="#socials">Socials</a>` : ""}</nav></header>
-${boardTabs}
-<main id="top">
-${mainHtml}</main>
+${mainHtml}
 ${shareHtml}
-<footer class="ftr-premium">
-  <div class="ftr-premium-bg"></div>
-  <div class="ftr-premium-inner">
-    <div class="ftr-premium-main">
-      <div class="ftr-premium-brand">
-        <div class="ftr-premium-logo" data-brand-name>${esc(b.name)}</div>
-        <p class="ftr-premium-tagline" data-tagline>${esc(b.tagline)}</p>
-        <p class="ftr-premium-disclaimer">${footerDisclaimer(hasCasino, b.name, casino)}</p>
-      </div>
-      <div class="ftr-premium-links-group">
-        <div class="ftr-premium-col">
-          <span class="ftr-premium-col-title">Legal &amp; Policy</span>
-          <div class="ftr-premium-links">
-            ${renderLegalSidebar(data, legalHref).split("</a>").slice(0, 4).join("</a>") + (renderLegalSidebar(data, legalHref).split("</a>").length > 4 ? "</a>" : "")}
-          </div>
-        </div>
-        <div class="ftr-premium-col">
-          <span class="ftr-premium-col-title">Support</span>
-          <div class="ftr-premium-links">
-            ${renderLegalSidebar(data, legalHref).split("</a>").slice(4).join("</a>") + (renderLegalSidebar(data, legalHref).split("</a>").length > 5 ? "</a>" : "")}
-          </div>
-        </div>
-      </div>
-    </div>
-    <div class="ftr-premium-bottom">
-      <p class="ftr-premium-copy">© <span data-year></span> <span data-brand-name>${esc(b.name)}</span>. All rights reserved.</p>
-    </div>
-  </div>
-</footer>
 ${badge}<script nonce="${opts.nonce}">window.__SITE_DATA__=${dataJson};window.__SLUG__=${JSON.stringify(opts.slug || "")};window.__IS_CUSTOM_DOMAIN__=${JSON.stringify(!!opts.isCustomDomain)};</script><script src="/assets/leaderboard.js" nonce="${opts.nonce}"></script>
 ${previewScript}
 </body></html>`;
