@@ -75,7 +75,7 @@ body[data-template="tournament"] .t-row:hover{background:rgba(79,195,247,.05)}
 
 function composeTournament(p) {
   const esc = p.esc;
-  return `<section class="hero hero--clock">${p.heroLogo}<p class="hero-kicker" data-brand-name>${p.name}</p>
+  return `${p.header}<main id="top"><section class="hero hero--clock">${p.heroLogo}<p class="hero-kicker" data-brand-name>${p.name}</p>
 <h1 class="clock-title">${esc(p.countdownLabel || "Race ends in")}</h1>
 <div class="hero-timer" data-timer>${p.timerGrid}</div>
 <p class="clock-sub">${p.hidePrizes || !p.hasPool ? `${p.periodSpan} race` : `${p.poolSpan} ${esc((p.prizePoolLabel || "Prize pool").toLowerCase())} · ${p.periodSpan} race`} · <b data-count>${p.sCount}</b> players</p>
@@ -89,7 +89,8 @@ ${p.table}
 ${p.rules}</section>
 ${p.partnerPanel}
 ${p.pastSec}
-${p.socialsSec}`;
+${p.socialsSec}</main>
+${p.footer}`;
 }
 
 export const TOURNAMENT = {

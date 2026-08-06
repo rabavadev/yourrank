@@ -17,6 +17,11 @@ Merged foundation (PRs #261–#263):
   dashboard auto-builds the form, `resolveOptions()` validates everything so
   hostile `theme_json` can't break a page. Values render as `--opt-*` CSS
   vars and `data-opt-*` body attributes.
+- Composable chrome: header and legal footer are `p.header` / `p.footer`
+  parts that each template's `compose()` places (or, for the header,
+  replaces/omits). A contract gate guarantees the legal footer always
+  renders exactly once — no template can accidentally ship a page without
+  the disclaimer.
 
 ## The rule that makes templates feel different
 

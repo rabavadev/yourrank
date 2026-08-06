@@ -133,6 +133,23 @@ describe("template previews", async () => {
     }
   });
 
+  it("every template places the header part and the legal footer part", async () => {
+    // Chrome is composable (p.header / p.footer) so templates own the full
+    // page — but the footer carries the legal disclaimer, so no template
+    // may drop it. The header is optional by design (a template may build
+    // its own nav), this just guards against accidentally losing the part.
+    for (const template of TEMPLATE_IDS) {
+      const html = await renderLeaderboard({ ...DATA, branding: { template } }, { nonce: "chrome1" });
+      expect(html, `${template} lost the header part`).toContain('class="nav"');
+      expect(html, `${template} lost the legal footer`).toContain("ftr-premium");
+      expect(html, `${template} lost the disclaimer`).toContain("18+ only");
+      // Chrome renders exactly once and outside <main>.
+      expect(html.match(/<header class="nav">/g) || [], `${template} rendered the header twice`).toHaveLength(1);
+      expect(html.match(/<footer class="ftr-premium">/g) || [], `${template} rendered the footer twice`).toHaveLength(1);
+      expect(html.indexOf('<main id="top">'), `${template} is missing <main id="top">`).toBeGreaterThan(-1);
+    }
+  });
+
   it("uses div-based ARIA table rows (aria-allowed-role fix, not ol/li)", async () => {
     const html = await renderLeaderboard({ ...DATA }, { nonce: "test123" });
     expect(html).toContain('<div class="t-rows" role="rowgroup" data-rows></div>');

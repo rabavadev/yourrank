@@ -126,7 +126,7 @@ body[data-template="noir"][data-opt-grain="true"] .field::after{content:"";posit
 
 function composeNoir(p) {
   const esc = p.esc;
-  return `<section class="hero hero--noir">${p.heroLogo}<div class="noir-rule"><span>Private Leaderboard</span></div>
+  return `${p.header}<main id="top"><section class="hero hero--noir">${p.heroLogo}<div class="noir-rule"><span>Private Leaderboard</span></div>
 <h1 class="hero-name" data-brand-name>${p.name}</h1>
 <p class="hero-sub">${p.hasCasino ? `in partnership with <span data-casino>${esc(p.casino)}</span> · ` : ""}${p.hasPool && !p.hidePrizes ? `<span data-pool>${p.poolSpan}</span> prize pool · ` : ""}${p.periodSpan} race</p>
 <p class="noir-meta"><b class="countdown" data-countdown>--</b> ${esc(p.countdownLabel || "resets in")} &nbsp;·&nbsp; <b data-count>${p.sCount}</b> players &nbsp;·&nbsp; <span class="live-badge" data-live-badge><span class="live-badge-dot"></span>LIVE</span></p>
@@ -140,7 +140,8 @@ ${p.table}
 ${p.rules}</section>
 ${p.partnerPanel}
 ${p.pastSec}
-${p.socialsSec}`;
+${p.socialsSec}</main>
+${p.footer}`;
 }
 
 export const NOIR = {
