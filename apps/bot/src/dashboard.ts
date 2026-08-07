@@ -69,7 +69,9 @@ export function buildDashboard(): Hono<DashEnv> {
     const msg = errMessage(err);
     const stack = err instanceof Error ? err.stack ?? "" : "";
     console.error("[dashboard unhandled error]", msg, stack);
-    return c.json({ error: msg, stack: stack.split("\n").slice(0, 5).join("\n") }, 500);
+    // Match buildHonoApp: never leak message/stack to clients in production.
+    const isDev = c.env?.ENVIRONMENT === "development" || c.env?.ENVIRONMENT === "local";
+    return c.json({ error: isDev ? msg : "Internal Server Error" }, 500);
   });
 
   // CSP header on all dashboard responses (SEC-102, SEC-703)
