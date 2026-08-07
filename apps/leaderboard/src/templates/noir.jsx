@@ -194,9 +194,9 @@ export const NOIR = {
   // data-opt-grain / data-opt-podium attributes consumed by the CSS above
   // (also readable in compose() via parts.options).
   schema: {
-    accent: { type: "color",  label: "Accent",        default: "#d4af37" },
-    grain:  { type: "toggle", label: "Film grain",    default: true },
-    podium: { type: "select", label: "Podium style",  options: ["roman", "numbers"], default: "roman" },
+    accent: { type: "color",  label: "Accent",       hint: "Headlines, rules and gold details.", default: "#d4af37" },
+    grain:  { type: "toggle", label: "Film grain",   hint: "Subtle vintage texture over the page.", default: true },
+    podium: { type: "select", label: "Podium style", hint: "How the top-3 ranks are numbered.", options: ["roman", "numbers"], default: "roman" },
   },
   compose: composeNoir,
   header: noirHeader,

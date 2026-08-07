@@ -57,11 +57,26 @@ function composeClassic(p) {
   );
 }
 
+/* ── Editable schema options (dashboard) ──────────────────────────── */
+/* Values arrive as data-opt-* attributes on <body>; defaults keep the
+   canonical look so nothing changes until the owner flips a knob. */
+const CLASSIC_CSS = `
+body[data-template="classic"][data-opt-striped="true"] .t-row:nth-child(even){background:rgba(255,255,255,.03)}
+body[data-template="classic"][data-opt-glow="false"] .t3--1{box-shadow:none}
+body[data-template="classic"][data-opt-glow="true"] .t3--1{box-shadow:0 0 44px -8px var(--cy)}
+body[data-template="classic"][data-opt-corners="sharp"]{--radius:6px;--radius-sm:4px}
+`;
+
 export const CLASSIC = {
   id: "classic",
   name: "Classic",
   description: "High-Stakes Kinetic: obsidian glass with a glowing neon podium.",
-  css: "",
+  css: CLASSIC_CSS,
+  schema: {
+    striped: { type: "toggle", label: "Striped rows", hint: "Alternate background on standings rows, easier to scan.", default: false },
+    glow:    { type: "toggle", label: "Winner glow",  hint: "Neon halo around the #1 podium card.", default: true },
+    corners: { type: "select", label: "Corner style", hint: "Rounded feels friendly, sharp feels esports.", options: ["rounded", "sharp"], default: "rounded" },
+  },
   // Google Fonts css2 family params this design needs (plus the user's
   // picker font, added by the renderer).
   fonts: [

@@ -20,10 +20,10 @@ body[data-template="tournament"]{
   --ink:#e9f0fb;
   --ink-soft:#a6b4cd;
   --ink-mute:#7d8aa3;
-  --cy:#4fc3f7;
+  --cy:var(--opt-accent,#4fc3f7);
   --bl:#3b82f6;
-  --grad-name:linear-gradient(100deg,#4fc3f7,#3b82f6);
-  --grad-cta:linear-gradient(100deg,#4fc3f7,#3b82f6);
+  --grad-name:linear-gradient(100deg,var(--opt-accent,#4fc3f7),#3b82f6);
+  --grad-cta:linear-gradient(100deg,var(--opt-accent,#4fc3f7),#3b82f6);
   --gold:#ffd15c;
   --radius:14px;
   --radius-sm:10px;
@@ -71,6 +71,10 @@ body[data-template="tournament"] .t-row:hover{background:rgba(79,195,247,.05)}
   body[data-template="tournament"] .t3--2{order:2}
   body[data-template="tournament"] .t3--3{order:3}
 }
+/* ── Editable schema options (dashboard) ── */
+body[data-template="tournament"][data-opt-medals="false"] .t3-medal::before{content:none}
+body[data-template="tournament"][data-opt-clocksize="huge"] .hero--clock .tcell b{font-size:clamp(3.4rem,8vw,5.6rem)}
+body[data-template="tournament"][data-opt-clocksize="huge"] .hero--clock .tsep{font-size:3rem}
 `;
 
 function composeTournament(p) {
@@ -106,5 +110,10 @@ export const TOURNAMENT = {
     { id: "lime", name: "Lime", accentA: "#a3e635", accentB: "#22c55e" },
     { id: "flare", name: "Flare", accentA: "#ff9f43", accentB: "#ff5f6d" },
   ],
+  schema: {
+    accent:    { type: "color",  label: "Accent",       hint: "Clock, winner and highlight color.", default: "#4fc3f7" },
+    medals:    { type: "toggle", label: "Medal emojis", hint: "Trophy and medals on the podium cards.", default: true },
+    clocksize: { type: "select", label: "Clock size",   hint: "How loud the countdown hero shouts.", options: ["normal", "huge"], default: "normal" },
+  },
   compose: composeTournament,
 };
