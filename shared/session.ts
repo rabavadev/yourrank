@@ -220,9 +220,11 @@ export async function resolveSession(req: Request, env: SessionEnv): Promise<Res
       const rotated = newToken();
       const rotatedHash = await hashToken(rotated);
       // Atomic swap: update the existing row's token and reset created_at.
-      // RETURNING id lets us detect the race where another request already rotated.
+      // RETURNING token lets us detect the race where another request already rotated.
+      // (The sessions PK is `token`; there is no `id` column — RETURNING id
+      // made the whole UPDATE error out, so rotation silently never happened.)
       const updated = await exec(
-        "UPDATE sessions SET token = $1, created_at = now(), expires_at = now() + make_interval(secs => $2), twofa_verified_at = twofa_verified_at WHERE token = $3 RETURNING id",
+        "UPDATE sessions SET token = $1, created_at = now(), expires_at = now() + make_interval(secs => $2), twofa_verified_at = twofa_verified_at WHERE token = $3 RETURNING token",
         [rotatedHash, SESSION_TTL_S, tokenHash]
       );
       if (!updated || updated.length === 0) {
