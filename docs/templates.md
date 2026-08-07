@@ -21,8 +21,26 @@ export const MY_TEMPLATE = {
     { id: "signal", name: "Signal", accentA: "#4fc3f7", accentB: "#3b82f6" },
   ],
   compose: (p) => `...`,     // the page structure (see below)
+  // Optional — full ownership beyond <main>:
+  header: (sp) => `...`,     // replaces the shared nav header entirely
+  footer: (sp) => `...`,     // replaces the shared footer entirely
+  parts: {                   // redesign the INSIDE of shared blocks
+    row: (pl, rank, h) => `...`,      // one standings row (rank >= 4)
+    top3Card: (pl, rank, h) => `...`, // one podium card (rank 1-3)
+  },
 };
 ```
+
+A template owns as much of the page as it wants. `compose()` defines
+`<main>`; `header`/`footer` replace the chrome around it; `parts` overrides
+the markup inside the shared data-bound blocks. Anything omitted falls back
+to the shared defaults in `render.jsx` — a template that only defines `css`
+still works. `header(sp)`/`footer(sp)` receive escaped shell parts (`b`,
+`esc`, `navLogo`, `hasPartner`, `socials`, `legalLinks`, `disclaimer`,
+`options`); part builders receive `(player, rank, helpers)` where helpers
+are `{ esc, initials, moneyS, moneyShortS, moneyPrizeS, playerHrefS, cur,
+hidePrizes }`. Custom chrome must keep the multi-element hooks the client
+fills (`data-brand-name`, `data-tagline`, `data-year`).
 
 `compose(parts)` receives the shared, already-escaped building blocks from
 `buildParts()` in `render.jsx` (`streamWindow`, `heroLogo`, `timerGrid`,

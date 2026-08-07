@@ -1,7 +1,7 @@
 ﻿/** @jsxRuntime automatic */
 /** @jsxImportSource hono/jsx */
 // Server-render a streamer's leaderboard page from their data.
-import { composeFor, templateCss, templateFonts, validTemplate, resolveOptions } from "./templates/index.js";
+import { composeFor, templateCss, templateFonts, validTemplate, resolveOptions, templateHeader, templateFooter, templateParts } from "./templates/index.js";
 import { DEFAULT_EXTRA, FONT_FAMILIES } from "./site.js";
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 // E2E-009: Sanitize user-supplied URLs for href attributes.
@@ -100,7 +100,7 @@ function shareScriptNonce(nonce) {
 // produces the shared, escaped building blocks; each template module's
 // compose() assembles them, dispatched by composeMain() via the registry.
 // ---------------------------------------------------------------------------
-function buildParts(c) {
+function buildParts(c, overrides = {}) {
   const { b, hasCasino, casino, period, pool, hasCta, ctaHref, hasPartner, hasCode, code, blurb, chips = [], whyStats, socials, prizes, currency, hidePrizeAmounts, players: rawPlayers, slug = "", isCustomDomain = false } = c;
   const name = esc(b.name);
   const cur = esc(String(currency || b.currency || "$").slice(0, 6));
@@ -141,18 +141,22 @@ ${whyStats.length ? `<div class="pcol pcol-why"><span class="pcol-label">Why ${h
   const playerHrefS = (name) => isCustomDomain
     ? `/player/${encodeURIComponent(name)}`
     : `/${encodeURIComponent(slug)}/player/${encodeURIComponent(name)}`;
-  const top3Srv = sortedPlayers.slice(0, 3).map((pl, i) => {
-    const rank = i + 1;
-    return `<div class="t3 t3--${rank}" data-name="${esc(pl.name)}"><div class="t3-av-wrap"><span class="t3-av" aria-hidden="true">${esc(initials(pl.name))}</span><span class="t3-medal">${rank}</span></div><a class="t3-name" href="${playerHrefS(pl.name)}">${esc(pl.name)}</a><span class="t3-prize">${pl.prize ? moneyPrizeS(pl.prize) : "—"}</span><div class="t3-wager-box"><span class="t3-wager-label">Total Wager</span><span class="t3-wager">${moneyS(pl.wagered)}</span></div></div>`;
-  }).join("");
-  const rowsSrv = sortedPlayers.slice(3).map((pl, i) => {
-    const rank = i + 4;
+  // Per-template part overrides: a template may redesign the INSIDE of the
+  // shared blocks (top-3 card markup, row markup) via its `parts` map,
+  // while the contract-bound wrappers (data-top3, data-rows) and the
+  // data-name/data-wagered attributes stay intact so live updates and the
+  // section toggles keep working. helpers are passed as the third arg.
+  const partHelpers = { esc, initials, moneyS, moneyShortS, moneyPrizeS, playerHrefS, cur: cur2, hidePrizes };
+  const top3CardFn = overrides.top3Card || ((pl, rank) => `<div class="t3 t3--${rank}" data-name="${esc(pl.name)}"><div class="t3-av-wrap"><span class="t3-av" aria-hidden="true">${esc(initials(pl.name))}</span><span class="t3-medal">${rank}</span></div><a class="t3-name" href="${playerHrefS(pl.name)}">${esc(pl.name)}</a><span class="t3-prize">${pl.prize ? moneyPrizeS(pl.prize) : "—"}</span><div class="t3-wager-box"><span class="t3-wager-label">Total Wager</span><span class="t3-wager">${moneyS(pl.wagered)}</span></div></div>`);
+  const rowFn = overrides.row || ((pl, rank) => {
     const prize = pl.prize ? `<span class="tr-prize has ta-r" role="cell">${moneyPrizeS(pl.prize)}</span>` : `<span class="tr-prize no ta-r" role="cell">—</span>`;
     return `<div class="t-row" role="row" data-position="${rank}" data-name="${esc(pl.name)}" data-wagered="${Number(pl.wagered) || 0}">
       <span class="tr-rank" role="cell">${String(rank).padStart(2, "0")}</span>
       <span class="tr-player" role="cell"><span class="tr-av" aria-hidden="true">${esc(initials(pl.name))}</span><a class="tr-name" href="${playerHrefS(pl.name)}">${esc(pl.name)}</a></span>
       <span class="tr-wager" role="cell"><span class="w-lg">${moneyS(pl.wagered)}</span><span class="w-sm">${moneyShortS(pl.wagered)}</span></span>${prize}<span class="tr-bar" aria-hidden="true"><i></i></span></div>`;
-  }).join("");
+  });
+  const top3Srv = sortedPlayers.slice(0, 3).map((pl, i) => top3CardFn(pl, i + 1, partHelpers)).join("");
+  const rowsSrv = sortedPlayers.slice(3).map((pl, i) => rowFn(pl, i + 4, partHelpers)).join("");
 
   const table = `<div class="table" role="table" aria-label="Leaderboard standings"><div class="t-head" role="row"><span role="columnheader">#</span><span role="columnheader">Player</span><span class="ta-r" role="columnheader">Wagered</span><span class="ta-r" role="columnheader">Prize</span></div>
 <div class="t-rows" role="rowgroup" data-rows>${rowsSrv}</div></div>`;
@@ -184,6 +188,53 @@ function footerDisclaimer(hasCasino, name, casino) {
   const affiliate = hasCasino && name && casino ? ` ${esc(name)} is not affiliated with ${esc(casino)}.` : "";
   const nonCasino = !hasCasino ? " Play responsibly." : "";
   return `${base}${gambling}${nonCasino}${affiliate}`;
+}
+
+// ── Default shell chrome ────────────────────────────────────────────
+// Header and footer belong to the template: a template module may export
+// `header(sp)` / `footer(sp)` and fully own the chrome around <main>.
+// Templates that don't define them get these shared defaults, so existing
+// templates are unaffected. sp = shell parts (brand, nav logo, legal links,
+// disclaimer, section flags — everything already escaped/sanitized).
+function defaultHeader(sp) {
+  const { b, esc, navLogo, hasPartner, socials } = sp;
+  return `<header class="nav"><a class="nav-brand" href="#top">${navLogo}<span data-brand-name>${esc(b.name)}</span></a>
+<button class="nav-toggle" aria-label="Toggle navigation" aria-expanded="false"><svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button>
+<nav class="nav-links" aria-label="Page sections">${hasPartner ? `<a href="#partner">Partner</a>` : ""}<a href="#board">Leaderboard</a>${socials.length ? `<a href="#socials">Socials</a>` : ""}</nav></header>`;
+}
+
+function defaultFooter(sp) {
+  const { b, esc, legalLinks, disclaimer } = sp;
+  const links = legalLinks.split("</a>");
+  return `<footer class="ftr-premium">
+  <div class="ftr-premium-bg"></div>
+  <div class="ftr-premium-inner">
+    <div class="ftr-premium-main">
+      <div class="ftr-premium-brand">
+        <div class="ftr-premium-logo" data-brand-name>${esc(b.name)}</div>
+        <p class="ftr-premium-tagline" data-tagline>${esc(b.tagline)}</p>
+        <p class="ftr-premium-disclaimer">${disclaimer}</p>
+      </div>
+      <div class="ftr-premium-links-group">
+        <div class="ftr-premium-col">
+          <span class="ftr-premium-col-title">Legal &amp; Policy</span>
+          <div class="ftr-premium-links">
+            ${links.slice(0, 4).join("</a>") + (links.length > 4 ? "</a>" : "")}
+          </div>
+        </div>
+        <div class="ftr-premium-col">
+          <span class="ftr-premium-col-title">Support</span>
+          <div class="ftr-premium-links">
+            ${links.slice(4).join("</a>") + (links.length > 5 ? "</a>" : "")}
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="ftr-premium-bottom">
+      <p class="ftr-premium-copy">© <span data-year></span> <span data-brand-name>${esc(b.name)}</span>. All rights reserved.</p>
+    </div>
+  </div>
+</footer>`;
 }
 
 export async function renderLeaderboard(data, opts = {}) {
@@ -313,7 +364,17 @@ document.addEventListener("click", (e) => {
 });
 </script>` : "";
 
-  const mainHtml = await composeMain(tpl, buildParts({ b, esc, heroLogo, hasCasino, casino, period, pool, hasCta, ctaHref, hasPartner, hasCode, code, blurb, chips, whyStats, socials, prizes: data.prizes, currency: data.brand?.currency, hidePrizeAmounts: data.brand?.hidePrizeAmounts, players: data.players, slug: opts.slug || "", isCustomDomain: !!opts.isCustomDomain, options: tplOptions }), textOverrides);
+  const mainHtml = await composeMain(tpl, buildParts({ b, esc, heroLogo, hasCasino, casino, period, pool, hasCta, ctaHref, hasPartner, hasCode, code, blurb, chips, whyStats, socials, prizes: data.prizes, currency: data.brand?.currency, hidePrizeAmounts: data.brand?.hidePrizeAmounts, players: data.players, slug: opts.slug || "", isCustomDomain: !!opts.isCustomDomain, options: tplOptions }, templateParts(tpl)), textOverrides);
+
+  // Shell chrome belongs to the template (see defaultHeader/defaultFooter).
+  const shellParts = {
+    b, esc, navLogo, hasPartner, hasCasino, casino, socials,
+    legalLinks: renderLegalSidebar(data, legalHref),
+    disclaimer: footerDisclaimer(hasCasino, b.name, casino),
+    options: tplOptions,
+  };
+  const headerHtml = (templateHeader(tpl) || defaultHeader)(shellParts);
+  const footerHtml = (templateFooter(tpl) || defaultFooter)(shellParts);
   
   return `<!DOCTYPE html>
 <html lang="en"><head>
@@ -342,42 +403,12 @@ ${fontCss(br, opts.nonce)}
 ${opts.demo ? `<div class="demo-bar" role="region" aria-label="Demo notice"><span class="demo-bar-txt">You're viewing a live <b>YourRank</b> demo board.</span><a class="demo-bar-cta" href="${esc(`${opts.homeUrl || ""}/signup`)}" target="_top">Create your free page →</a><a class="demo-bar-home" href="${esc(opts.homeUrl || "/")}" target="_top">Back to YourRank</a></div>` : ""}
 <a class="skip-link" href="#board">Skip to leaderboard</a>
 <div class="field" aria-hidden="true"></div><div class="watermarks" data-watermarks aria-hidden="true"></div>
-<header class="nav"><a class="nav-brand" href="#top">${navLogo}<span data-brand-name>${esc(b.name)}</span></a>
-<button class="nav-toggle" aria-label="Toggle navigation" aria-expanded="false"><svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button>
-<nav class="nav-links" aria-label="Page sections">${hasPartner ? `<a href="#partner">Partner</a>` : ""}<a href="#board">Leaderboard</a>${socials.length ? `<a href="#socials">Socials</a>` : ""}</nav></header>
+${headerHtml}
 ${boardTabs}
 <main id="top">
 ${mainHtml}</main>
 ${shareHtml}
-<footer class="ftr-premium">
-  <div class="ftr-premium-bg"></div>
-  <div class="ftr-premium-inner">
-    <div class="ftr-premium-main">
-      <div class="ftr-premium-brand">
-        <div class="ftr-premium-logo" data-brand-name>${esc(b.name)}</div>
-        <p class="ftr-premium-tagline" data-tagline>${esc(b.tagline)}</p>
-        <p class="ftr-premium-disclaimer">${footerDisclaimer(hasCasino, b.name, casino)}</p>
-      </div>
-      <div class="ftr-premium-links-group">
-        <div class="ftr-premium-col">
-          <span class="ftr-premium-col-title">Legal &amp; Policy</span>
-          <div class="ftr-premium-links">
-            ${renderLegalSidebar(data, legalHref).split("</a>").slice(0, 4).join("</a>") + (renderLegalSidebar(data, legalHref).split("</a>").length > 4 ? "</a>" : "")}
-          </div>
-        </div>
-        <div class="ftr-premium-col">
-          <span class="ftr-premium-col-title">Support</span>
-          <div class="ftr-premium-links">
-            ${renderLegalSidebar(data, legalHref).split("</a>").slice(4).join("</a>") + (renderLegalSidebar(data, legalHref).split("</a>").length > 5 ? "</a>" : "")}
-          </div>
-        </div>
-      </div>
-    </div>
-    <div class="ftr-premium-bottom">
-      <p class="ftr-premium-copy">© <span data-year></span> <span data-brand-name>${esc(b.name)}</span>. All rights reserved.</p>
-    </div>
-  </div>
-</footer>
+${footerHtml}
 ${badge}<script nonce="${opts.nonce}">window.__SITE_DATA__=${dataJson};window.__SLUG__=${JSON.stringify(opts.slug || "")};window.__IS_CUSTOM_DOMAIN__=${JSON.stringify(!!opts.isCustomDomain)};</script><script src="/assets/leaderboard.js" nonce="${opts.nonce}"></script>
 ${previewScript}
 </body></html>`;

@@ -65,6 +65,18 @@ export function resolveOptions(id, raw) {
 // The composer that owns this template's page structure. Falls back to the
 // classic composition for unknown ids so old boards never break.
 export const composeFor = (id) => TEMPLATES[validTemplate(id)].compose || TEMPLATES.classic.compose;
+// ── Shell chrome + part overrides ───────────────────────────────────
+// Templates are not limited to <main>: a template module may export
+//   header(sp)  — replaces the shared nav header entirely
+//   footer(sp)  — replaces the shared footer entirely
+//   parts       — map of block builders that redesign the inside of the
+//                 shared contract-bound blocks: row(player, rank, helpers),
+//                 top3Card(player, rank, helpers)
+// Anything a template omits falls back to the shared defaults in render.jsx,
+// so existing templates keep working untouched.
+export const templateHeader = (id) => TEMPLATES[validTemplate(id)].header || null;
+export const templateFooter = (id) => TEMPLATES[validTemplate(id)].footer || null;
+export const templateParts = (id) => TEMPLATES[validTemplate(id)].parts || {};
 // Google Fonts css2 family params the template's design needs.
 export const templateFonts = (id) => TEMPLATES[validTemplate(id)].fonts || [];
 export const templateCatalog = () => TEMPLATE_IDS.map((id) => ({
