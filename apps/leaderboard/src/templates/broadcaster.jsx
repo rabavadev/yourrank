@@ -33,6 +33,8 @@ body[data-template="broadcaster"]{
 }
 /* ON AIR top bar */
 body[data-template="broadcaster"] .bc-topbar{background:var(--panel);border-bottom:3px solid var(--cy);position:sticky;top:0;z-index:20}
+/* The topbar is already sticky, so the multi-board switcher must not pin over it */
+body[data-template="broadcaster"] .board-tabs{position:static;margin-top:1rem}
 body[data-template="broadcaster"] .bc-topbar-inner{display:flex;align-items:center;justify-content:space-between;gap:1rem;max-width:1100px;margin:0 auto;padding:.55rem 1rem}
 body[data-template="broadcaster"] .bc-brand{display:flex;align-items:center;gap:.6rem;color:var(--ink);text-decoration:none;font-family:"Oswald",sans-serif;text-transform:uppercase;letter-spacing:.08em;font-size:1.05rem}
 body[data-template="broadcaster"] .bc-brand .nav-logo{width:30px;height:30px;border-radius:4px}

@@ -65,6 +65,7 @@ export const DEFAULT_EXTRA = {
     rules: true,
     partner: true,
     socials: true,
+    share: true,
     pastWinners: true,
     countdown: true,
     cta: true,
