@@ -27,7 +27,7 @@ These live in the encrypted vault attached to the Worker, not in the repo.
 | `MAIL_FROM` | 🟡 | Required when RESEND_API_KEY is set. From address for transactional emails (e.g. 'YourRank <hey@yourrank.site>'). |
 | `PRO_PRICE_USD` | ⚪ | Pro plan price in USD. Defaults to 29 if unset. |
 | `LEAD_WEBHOOK_URL` | ⚪ | Discord/Telegram webhook to ping on each new lead. |
-| `ENCRYPTION_KEY` | 🟡 | 64-char hex key for general-purpose encryption (e.g. postback key encryption at rest). |
+| `TOKEN_ENC_KEY` | 🟡 | 64-char hex (32-byte) AES-256-GCM key. Encrypts postback keys at rest (shared/postback.ts reads `TOKEN_ENC_KEY`). Same value as the Bot Worker's `TOKEN_ENC_KEY`. |
 | `DISCORD_MONITORING_WEBHOOK` | ⚪ | Discord webhook for monitoring/error alerts. |
 
 ### Bot Worker (`yourrank-bot`)

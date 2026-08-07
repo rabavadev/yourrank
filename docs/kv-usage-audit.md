@@ -1,5 +1,11 @@
 # KV Usage Audit — yourrank SESSIONS namespace
 
+> **Superseded (2026-08):** sessions and password-reset tokens have migrated to
+> Postgres (`sessions` / `password_resets` tables), and the site cache, 2FA,
+> and health-probe keys are gone too. The SESSIONS KV namespace is now only
+> used as the legacy rate-limit fallback (shared/ratelimit.ts, when the
+> RATE_LIMITER_DO backend isn't configured). Kept for historical reference.
+
 **Date:** 2026-07-08
 **Namespace:** SESSIONS (id: 26e47bcce19941839a20bd2cd5879e42)
 **Shared:** yes — both leaderboard and bot Workers

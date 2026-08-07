@@ -66,7 +66,7 @@ wrangler secret put LEAD_WEBHOOK_URL      # optional (Discord/Slack ping on a ne
 wrangler secret put PRO_PRICE_USD         # optional (defaults to 29)
 wrangler secret put DATABASE_URL          # REQUIRED — direct Supabase Postgres connection string
 wrangler secret put SENTRY_DSN           # optional (Sentry error tracking)
-wrangler secret put ENCRYPTION_KEY       # REQUIRED for postback encryption (32-byte hex)
+wrangler secret put TOKEN_ENC_KEY        # REQUIRED for postback encryption (32-byte hex, 64 hex chars)
 ```
 Bot Worker (`cd apps/bot`):
 ```
