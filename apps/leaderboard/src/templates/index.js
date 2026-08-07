@@ -20,12 +20,14 @@ import { CLASSIC } from "./classic.jsx";
 import { TERMINAL } from "./terminal.jsx";
 import { TOURNAMENT } from "./tournament.jsx";
 import { NOIR } from "./noir.jsx";
+import { BROADCASTER } from "./broadcaster.jsx";
 
 export const TEMPLATES = {
   classic: CLASSIC,
   terminal: TERMINAL,
   tournament: TOURNAMENT,
   noir: NOIR,
+  broadcaster: BROADCASTER,
 };
 
 export const TEMPLATE_IDS = Object.keys(TEMPLATES);
