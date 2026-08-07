@@ -340,6 +340,7 @@ body[data-preview] .top3{margin-bottom:14px}
   const sectionAttrs = Object.entries(sections).map(([k, v]) => `data-sections-${k}="${String(v)}"`).join(" ");
   const sectionCss = `<style nonce="${opts.nonce}">
 body[data-sections-hero="false"] .hero,
+body[data-sections-leaderboard="false"] #board,
 body[data-sections-top3="false"] .top3,
 body[data-sections-search="false"] .find-rank-bar,
 body[data-sections-rules="false"] .rules,

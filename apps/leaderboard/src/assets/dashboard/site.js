@@ -14,6 +14,7 @@ const FONT_FAMILIES = [
 
 export const DEFAULT_SECTIONS = {
   hero: true,
+  leaderboard: true,
   top3: true,
   search: true,
   rules: true,
@@ -689,6 +690,7 @@ const SOCIAL_ICONS = {
   }
 
 const SECTIONS_CATALOG = [
+  { key: "leaderboard", label: "Show Leaderboard" },
   { key: "payouts", label: "Show Prize Pool" },
   { key: "countdown", label: "Show Countdown Timer" },
   { key: "rules", label: "Show Rules Section" },
