@@ -60,6 +60,7 @@ export const DEFAULT_EXTRA = {
   ],
   sections: {
     hero: true,
+    leaderboard: true,
     top3: true,
     search: true,
     rules: true,
