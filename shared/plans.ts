@@ -98,9 +98,16 @@ export interface BotPlanDef {
   starsPrice: number;
 }
 
-export const BOT_PLANS: Record<PlanTier, BotPlanDef> = {
+/**
+ * Bot plan tiers. "starter" is deliberately excluded: it had starsPrice 0,
+ * which made checkout always fail with a 400, and it offered nothing over
+ * "free" (broadcasts/postbacks both disabled). Legacy users rows with
+ * plan = 'starter' fall back to the free tier at lookup time.
+ */
+export type BotPlanTier = Exclude<PlanTier, "starter">; // "free" | "pro" | "agency"
+
+export const BOT_PLANS: Record<BotPlanTier, BotPlanDef> = {
   free:   { tier: "free",   label: "Free",   maxBots: 1,  maxOffers: 3,   broadcasts: false, postbacks: false, starsPrice: 0 },
-  starter:{ tier: "starter",label: "Starter", maxBots: 2,  maxOffers: 25,  broadcasts: false, postbacks: false, starsPrice: 0 },
   pro:    { tier: "pro",    label: "Pro",    maxBots: 3,  maxOffers: 50,  broadcasts: true,  postbacks: true,  starsPrice: 2900 },
   agency: { tier: "agency", label: "Agency", maxBots: 25, maxOffers: 999, broadcasts: true,  postbacks: true,  starsPrice: 7900 },
 };

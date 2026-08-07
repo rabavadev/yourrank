@@ -72,26 +72,10 @@ export async function processBroadcastBatch(batchSize = 300): Promise<boolean> {
     );
   }
 
-  // Subscriber segmentation (Phase 7.2)
-  // segment can be: 'all' (default), 'clicked', 'deposited', 'inactive'
-  const segment = (bc as any).segment || 'all';
-  let segmentJoin = '';
-  let segmentWhere = '';
-  if (segment === 'clicked') {
-    segmentJoin = 'JOIN clicks c ON c.tg_user_id = bs.tg_user_id';
-    segmentWhere = `AND c.created_at > now() - interval '30 days'`;
-  } else if (segment === 'deposited') {
-    segmentJoin = 'JOIN conversions cv ON cv.click_ref IN (SELECT click_ref FROM clicks WHERE tg_user_id = bs.tg_user_id)';
-    segmentWhere = `AND cv.status IN ('confirmed', 'finished')`;
-  } else if (segment === 'inactive') {
-    segmentWhere = `AND bs.last_active_at < now() - interval '7 days'`;
-  }
-
+  // Broadcasts always go to every active (non-blocked) subscriber.
   const subs = await query<{ tg_user_id: number; first_name: string | null; tg_username: string | null }>(
-    `SELECT DISTINCT bs.tg_user_id, bs.first_name, bs.tg_username FROM bot_subscribers bs
-      ${segmentJoin}
+    `SELECT bs.tg_user_id, bs.first_name, bs.tg_username FROM bot_subscribers bs
       WHERE bs.bot_id = $1 AND NOT bs.is_blocked AND bs.tg_user_id > $2
-      ${segmentWhere}
       ORDER BY bs.tg_user_id
       LIMIT $3`,
     [bc.bot_id, bc.cursor_tg_user_id, batchSize]

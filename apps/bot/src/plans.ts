@@ -6,6 +6,17 @@ import type { BotPlanDef, PlanTier } from "../../../shared/plans.js";
 export type { BotPlanDef, PlanTier } from "../../../shared/plans.js";
 export const PLANS = BOT_PLANS;
 
+/**
+ * Look up a bot plan def by tier string. Returns undefined for tiers that
+ * are not valid bot plans (e.g. the removed "starter"), so callers can fall
+ * back to free. DB rows may still contain legacy plan values, so every
+ * DB-sourced tier MUST go through this lookup instead of indexing PLANS
+ * directly.
+ */
+export function getBotPlanDef(tier: string | null | undefined): BotPlanDef | undefined {
+  return (BOT_PLANS as Partial<Record<PlanTier, BotPlanDef>>)[tier as PlanTier];
+}
+
 export async function getUserPlan(userId: string): Promise<BotPlanDef> {
   const row = await one<{ plan: PlanTier; plan_expires_at: string | null }>(
     `SELECT plan, plan_expires_at FROM users WHERE id = $1`, [userId]
@@ -19,7 +30,7 @@ export async function getUserPlan(userId: string): Promise<BotPlanDef> {
       return PLANS.free;
     }
   }
-  return PLANS[row?.plan ?? "free"] ?? PLANS.free;
+  return getBotPlanDef(row?.plan) ?? PLANS.free;
 }
 
 /** Returns an error string if the user is at their plan limit, else null. */
@@ -87,13 +98,13 @@ export async function withPlanLimit<R>(
       `SELECT plan, plan_expires_at FROM users WHERE id = $1`, [userId]
     );
     // BIZ-001: Check plan expiry inside the transaction too.
-    let planTier: PlanTier = planRow?.plan ?? "free";
+    let planTier: PlanTier | string = planRow?.plan ?? "free";
     if (planTier !== "free" && planRow?.plan_expires_at) {
       if (new Date(planRow.plan_expires_at).getTime() <= Date.now()) {
         planTier = "free";
       }
     }
-    const plan = PLANS[planTier] ?? PLANS.free;
+    const plan = getBotPlanDef(planTier) ?? PLANS.free;
     const table = kind === "bots" ? "bots" : "offers";
     const max = kind === "bots" ? plan.maxBots : plan.maxOffers;
     const row = await tx.one<{ n: number }>(

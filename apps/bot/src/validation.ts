@@ -55,7 +55,8 @@ export const broadcastSchema = z.object({
 }).strict();
 
 export const checkoutSchema = z.object({
-  plan: z.enum(["starter", "pro", "agency"]),
+  // Only tiers that exist in BOT_PLANS and have starsPrice > 0.
+  plan: z.enum(["pro", "agency"]),
 }).strict();
 
 export const adminUserSchema = z.object({

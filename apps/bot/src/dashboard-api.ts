@@ -15,7 +15,7 @@ import { getMe, setWebhook, deleteWebhook, getWebhookInfo, sendMessage, sendPhot
 import { syncMyCommands, syncMyCommandsForBot } from "./botEngine.js";
 import { withPlanLimit, getUserPlan } from "./plans.js";
 import { billingEnabled, createStarsInvoice } from "./billing.js";
-import { checkFeature, PLANS } from "./plans.js";
+import { checkFeature, PLANS, getBotPlanDef } from "./plans.js";
 import { rateLimit } from "./ratelimit.js";
 import { sameOrigin } from "./dashboard-auth.js";
 import { resolveSession, type SessionEnv } from "../../../shared/session.js";
@@ -637,7 +637,8 @@ export function buildDashboardApi(): Hono<{ Bindings: DashApiBindings; Variables
     const parsed = await validatedBody(c, checkoutSchema);
     if (parsed instanceof Response) return parsed;
     const { plan } = parsed;
-    if (!PLANS[plan] || PLANS[plan].starsPrice <= 0) return c.json({ error: "invalid plan" }, 400);
+    const target = getBotPlanDef(plan);
+    if (!target || target.starsPrice <= 0) return c.json({ error: "invalid plan" }, 400);
     const link = await createStarsInvoice(c.get("uid"), plan);
     return c.json({ invoice_link: link });
   });

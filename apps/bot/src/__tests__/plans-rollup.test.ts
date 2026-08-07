@@ -55,11 +55,11 @@ import { effectivePlan, PLAN_LIMITS, BOARD_LIMITS } from "../../../../shared/pla
 
 // ── PLANS constant (bot-specific) ──────────────────────────────────────
 describe("PLANS constant", () => {
-  it("defines all 4 tiers", () => {
+  it("defines the 3 bot tiers (starter was removed: starsPrice 0 made it unpurchasable)", () => {
     expect(PLANS).toHaveProperty("free");
-    expect(PLANS).toHaveProperty("starter");
     expect(PLANS).toHaveProperty("pro");
     expect(PLANS).toHaveProperty("agency");
+    expect(PLANS).not.toHaveProperty("starter");
   });
 
   it("each plan has required fields", () => {
