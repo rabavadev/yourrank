@@ -19,6 +19,7 @@ export const DEFAULT_SECTIONS = {
   rules: true,
   partner: true,
   socials: true,
+  share: true,
   pastWinners: true,
   countdown: true,
   cta: true,
@@ -692,6 +693,7 @@ const SECTIONS_CATALOG = [
   { key: "countdown", label: "Show Countdown Timer" },
   { key: "rules", label: "Show Rules Section" },
   { key: "socials", label: "Show Social Links" },
+  { key: "share", label: "Show Share Buttons" },
   { key: "poweredBy", label: "Show 'Powered by YourRank' badge" },
 ];
 
