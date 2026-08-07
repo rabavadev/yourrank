@@ -114,6 +114,23 @@ body[data-template="noir"] .find-rank-input{font-family:"EB Garamond",Georgia,se
 /* Film grain over the whole page (data-URI SVG turbulence, CSP-safe) */
 body[data-template="noir"][data-opt-grain="true"] .field{position:relative}
 body[data-template="noir"][data-opt-grain="true"] .field::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:5;opacity:.05;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+/* Noir owns its chrome: a centered masthead and a colophon footer instead
+   of the shared nav bar / premium footer. */
+body[data-template="noir"] .noir-masthead{display:flex;flex-direction:column;align-items:center;gap:.9rem;padding:1.6rem 1rem 0;text-align:center}
+body[data-template="noir"] .noir-masthead-rule{width:min(640px,80%);height:1px;background:linear-gradient(90deg,transparent,var(--line-2),transparent)}
+body[data-template="noir"] .noir-masthead-brand{font-family:"Playfair Display",Georgia,serif;font-size:1.3rem;letter-spacing:.28em;text-transform:uppercase;color:var(--ink);text-decoration:none;display:flex;align-items:center;gap:.6rem}
+body[data-template="noir"] .noir-masthead-brand .nav-logo{width:34px;height:34px;border-radius:50%}
+body[data-template="noir"] .noir-masthead-links{display:flex;gap:1.8rem}
+body[data-template="noir"] .noir-masthead-links a{font-family:"EB Garamond",Georgia,serif;font-style:italic;color:var(--ink-mute);text-decoration:none;font-size:1rem}
+body[data-template="noir"] .noir-masthead-links a:hover{color:var(--gold)}
+body[data-template="noir"] .noir-footer{margin-top:4rem;padding:2.4rem 1rem 3rem;text-align:center;border-top:3px double var(--line-2)}
+body[data-template="noir"] .noir-footer-name{font-family:"Playfair Display",Georgia,serif;font-size:1.15rem;letter-spacing:.22em;text-transform:uppercase;margin:0 0 .3rem}
+body[data-template="noir"] .noir-footer-tag{font-family:"EB Garamond",Georgia,serif;font-style:italic;color:var(--ink-mute);margin:0 0 1rem}
+body[data-template="noir"] .noir-footer-fine{color:var(--ink-mute);font-size:.8rem;max-width:56ch;margin:0 auto 1.2rem}
+body[data-template="noir"] .noir-footer-links{display:flex;flex-wrap:wrap;justify-content:center;gap:.4rem 1.2rem;margin-bottom:1.2rem}
+body[data-template="noir"] .noir-footer-links a{color:var(--ink-soft);text-decoration:none;font-size:.85rem;border-bottom:1px solid var(--line)}
+body[data-template="noir"] .noir-footer-links a:hover{color:var(--gold)}
+body[data-template="noir"] .noir-footer-copy{color:var(--ink-mute);font-size:.8rem;margin:0}
 @media (max-width:720px){
   body[data-template="noir"] .top3{grid-template-columns:1fr;align-items:stretch}
   body[data-template="noir"] .t3--1{order:1}
@@ -123,6 +140,20 @@ body[data-template="noir"][data-opt-grain="true"] .field::after{content:"";posit
   body[data-template="noir"] .t-row{grid-template-columns:56px 1fr 110px 84px}
 }
 `;
+
+// Noir replaces the shared shell chrome. header/footer receive the same
+// escaped shell parts as the defaults (brand, navLogo, legal links,
+// disclaimer) and return full HTML for the regions around <main>.
+function noirHeader(sp) {
+  const esc = sp.esc;
+  return `<header class="noir-masthead"><div class="noir-masthead-rule"></div><a class="noir-masthead-brand" href="#top">${sp.navLogo}<span data-brand-name>${esc(sp.b.name)}</span></a>
+<nav class="noir-masthead-links" aria-label="Page sections">${sp.hasPartner ? `<a href="#partner">Partner</a>` : ""}<a href="#board">Honour Roll</a>${sp.socials.length ? `<a href="#socials">Socials</a>` : ""}</nav><div class="noir-masthead-rule"></div></header>`;
+}
+
+function noirFooter(sp) {
+  const esc = sp.esc;
+  return `<footer class="noir-footer"><p class="noir-footer-name" data-brand-name>${esc(sp.b.name)}</p><p class="noir-footer-tag" data-tagline>${esc(sp.b.tagline)}</p><p class="noir-footer-fine">${sp.disclaimer}</p><div class="noir-footer-links">${sp.legalLinks}</div><p class="noir-footer-copy">© <span data-year></span> <span data-brand-name>${esc(sp.b.name)}</span>. All rights reserved.</p></footer>`;
+}
 
 function composeNoir(p) {
   const esc = p.esc;
@@ -168,4 +199,6 @@ export const NOIR = {
     podium: { type: "select", label: "Podium style",  options: ["roman", "numbers"], default: "roman" },
   },
   compose: composeNoir,
+  header: noirHeader,
+  footer: noirFooter,
 };

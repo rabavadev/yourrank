@@ -1,6 +1,6 @@
 import { describe, expect, it } from "bun:test";
 import { renderLeaderboard } from "../render.jsx";
-import { TEMPLATE_IDS, TEMPLATES, templateCatalog, validTemplate, resolveOptions } from "../templates/index.js";
+import { TEMPLATE_IDS, TEMPLATES, templateCatalog, validTemplate, resolveOptions, templateHeader, templateFooter, templateParts } from "../templates/index.js";
 import { fromJsonb, publicShape } from "../site.js";
 
 function stripScripts(html) {
@@ -111,6 +111,32 @@ describe("template client contract", async () => {
         expect(cleaned.startsWith(`body[data-template="${id}"]`), `${id} has unscoped selector: ${cleaned.slice(0, 60)}`).toBe(true);
       }
     }
+  });
+});
+
+describe("template shell ownership", async () => {
+  it("lets a template own its header and footer chrome", async () => {
+    const noir = await renderLeaderboard({ ...DATA, branding: { template: "noir" } }, { nonce: "s1" });
+    expect(noir).toContain("noir-masthead");
+    expect(noir).toContain("noir-footer");
+    expect(noir).not.toContain('<header class="nav">');
+    expect(noir).not.toContain("ftr-premium");
+    const classic = await renderLeaderboard({ ...DATA, branding: { template: "classic" } }, { nonce: "s2" });
+    expect(classic).toContain('<header class="nav">');
+    expect(classic).toContain("ftr-premium");
+  });
+
+  it("keeps the client contract intact with template-owned chrome", async () => {
+    // data-brand-name / data-tagline / data-year are multi-element hooks the
+    // client fills everywhere; custom chrome must not drop them.
+    const noir = await renderLeaderboard({ ...DATA, branding: { template: "noir" } }, { nonce: "s3" });
+    expect(noir).toContain("data-brand-name");
+    expect(noir).toContain("data-tagline");
+    expect(noir).toContain("data-year");
+    // Templates without header/footer get empty override maps.
+    expect(templateParts("classic")).toEqual({});
+    expect(templateHeader("classic")).toBe(null);
+    expect(templateFooter("classic")).toBe(null);
   });
 });
 
