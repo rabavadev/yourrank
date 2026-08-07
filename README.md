@@ -23,10 +23,20 @@ yourrank/
     ├── leaderboard/         Cloudflare Worker (JS) — root of yourrank.site
     │   ├── src/             SSR pages, dashboard, password auth, NOWPayments
     │   └── wrangler.toml    route: yourrank.site/*
-    └── bot/                 Cloudflare Worker (TS + Hono + grammY)
-        ├── src/             /bot/*, /hook/*, /r/*, /pb/*, /billing/hook/*
-        └── wrangler.toml    routes: /bot/*, /hook/*, /r/*, /pb/*, /billing/hook/*
+    ├── bot/                 Cloudflare Worker (TS + Hono + grammY)
+    │   ├── src/             /bot/*, /hook/*, /r/*, /pb/*, /billing/hook/*
+    │   └── wrangler.toml    routes: /bot/*, /hook/*, /r/*, /pb/*, /billing/hook/*
+    └── consumer/            Cloudflare Queue consumer (no HTTP routes)
+        ├── src/worker.js    drains yourrank-events: clicks, conversions,
+        │                    analytics bumps, notifications; DLQ → Discord alert
+        └── wrangler.toml    consumes yourrank-events + yourrank-events-dlq
 ```
+
+> ⚠️ **The consumer is not optional.** The leaderboard and bot Workers only
+> *enqueue* analytics events; if `apps/consumer` isn't deployed, the
+> `yourrank-events` queue fills up and dashboard analytics (views, clicks,
+> conversions) silently starve. Deploy it with the other two Workers — see
+> DEPLOY.md §5.
 
 ## Quick mental model
 
@@ -133,9 +143,10 @@ For webhook testing during local debug, the bot app will need a public tunnel (e
 ### Deploy
 
 ```bash
-# Deploy both Workers
+# Deploy all three Workers (leaderboard + bot + queue consumer)
 cd apps/leaderboard && wrangler deploy
 cd apps/bot && wrangler deploy
+node build-shared.mjs && cd apps/consumer && wrangler deploy
 ```
 
 See **DEPLOY.md** for first-time Cloudflare setup (routes, KV namespaces, Hyperdrive, secrets).

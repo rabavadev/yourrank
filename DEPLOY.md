@@ -90,6 +90,27 @@ plan-active message). They must not share a token.
 cd apps/leaderboard && node build.js && wrangler deploy    # rebuild assets_bundled.js first
 cd ../bot           && wrangler deploy
 ```
+
+### 5a. Deploy the queue consumer (required)
+The leaderboard and bot Workers push click/conversion/analytics events onto the
+`yourrank-events` Cloudflare Queue; `apps/consumer` is the Worker that drains it
+into Postgres. **Without it, the queue backs up and dashboard analytics
+(views, clicks, conversions) silently starve** — pages keep working, numbers
+just stop moving.
+
+```
+# one-time: create the queues (safe to re-run; "already exists" is fine)
+wrangler queues create yourrank-events
+wrangler queues create yourrank-events-dlq
+
+# from the repo root — the consumer imports shared/*.js, so build shared first
+node build-shared.mjs
+cd apps/consumer && wrangler deploy
+```
+Secrets (optional): `wrangler secret put DISCORD_MONITORING_WEBHOOK` — pings
+Discord when messages exhaust retries and land in the dead-letter queue.
+The consumer has no HTTP routes; it only runs on queue batches. CI deploys it
+automatically (see §7, `deploy-consumer` job).
 Routes are declared in each `wrangler.toml`. Cloudflare sends `/bot/*`, `/hook/*`,
 `/r/*`, `/pb/*`, `/billing/hook/*` to the bot Worker; everything else on
 `yourrank.site` to the leaderboard Worker. More-specific routes win.
