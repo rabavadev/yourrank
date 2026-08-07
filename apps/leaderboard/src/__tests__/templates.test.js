@@ -138,6 +138,19 @@ describe("template shell ownership", async () => {
     expect(templateHeader("classic")).toBe(null);
     expect(templateFooter("classic")).toBe(null);
   });
+
+  it("lets a template place shared sections inside its own chrome", async () => {
+    const data = { ...DATA, socials: [{ brand: "discord", name: "Discord", handle: "@streamer", url: "https://discord.gg/example" }] };
+    const noir = await renderLeaderboard({ ...data, branding: { template: "noir" } }, { nonce: "s4" });
+    // noir puts socials + share inside its footer, not in <main>
+    expect(noir.indexOf("noir-footer")).toBeLessThan(noir.indexOf("socials-sec"));
+    expect(noir.indexOf("noir-footer")).toBeLessThan(noir.indexOf("share-sec"));
+    expect((noir.match(/class="share-sec"/g) || []).length).toBe(1);
+    // classic keeps the legacy placement: socials in <main>, share after it
+    const classic = await renderLeaderboard({ ...data, branding: { template: "classic" } }, { nonce: "s5" });
+    expect(classic.indexOf("socials-sec")).toBeLessThan(classic.indexOf("</main>"));
+    expect(classic.indexOf("</main>")).toBeLessThan(classic.indexOf('class="share-sec"'));
+  });
 });
 
 describe("template previews", async () => {

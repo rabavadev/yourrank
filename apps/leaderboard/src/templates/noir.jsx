@@ -131,6 +131,12 @@ body[data-template="noir"] .noir-footer-links{display:flex;flex-wrap:wrap;justif
 body[data-template="noir"] .noir-footer-links a{color:var(--ink-soft);text-decoration:none;font-size:.85rem;border-bottom:1px solid var(--line)}
 body[data-template="noir"] .noir-footer-links a:hover{color:var(--gold)}
 body[data-template="noir"] .noir-footer-copy{color:var(--ink-mute);font-size:.8rem;margin:0}
+/* Socials + share live inside the noir footer — compact, ledger-styled */
+body[data-template="noir"] .noir-footer .socials-sec{margin:0 0 1.4rem;padding:0}
+body[data-template="noir"] .noir-footer .socials-sec .sec-title{font-family:"Playfair Display",Georgia,serif;font-size:1.1rem;letter-spacing:.18em;text-transform:uppercase}
+body[data-template="noir"] .noir-footer .socials-sec .sec-sub{font-family:"EB Garamond",Georgia,serif;font-style:italic}
+body[data-template="noir"] .noir-footer .share-sec{margin:0 0 1.6rem;padding:0}
+body[data-template="noir"] .noir-footer .share-title{font-family:"EB Garamond",Georgia,serif;font-style:italic;font-weight:400;color:var(--ink-mute);font-size:1rem}
 @media (max-width:720px){
   body[data-template="noir"] .top3{grid-template-columns:1fr;align-items:stretch}
   body[data-template="noir"] .t3--1{order:1}
@@ -152,7 +158,10 @@ function noirHeader(sp) {
 
 function noirFooter(sp) {
   const esc = sp.esc;
-  return `<footer class="noir-footer"><p class="noir-footer-name" data-brand-name>${esc(sp.b.name)}</p><p class="noir-footer-tag" data-tagline>${esc(sp.b.tagline)}</p><p class="noir-footer-fine">${sp.disclaimer}</p><div class="noir-footer-links">${sp.legalLinks}</div><p class="noir-footer-copy">© <span data-year></span> <span data-brand-name>${esc(sp.b.name)}</span>. All rights reserved.</p></footer>`;
+  // Socials and share live down here for noir — another template can keep
+  // them in <main> or pin them under the header. Same blocks, template's
+  // choice of address.
+  return `<footer class="noir-footer">${sp.socialsSec}${sp.shareSec}<p class="noir-footer-name" data-brand-name>${esc(sp.b.name)}</p><p class="noir-footer-tag" data-tagline>${esc(sp.b.tagline)}</p><p class="noir-footer-fine">${sp.disclaimer}</p><div class="noir-footer-links">${sp.legalLinks}</div><p class="noir-footer-copy">© <span data-year></span> <span data-brand-name>${esc(sp.b.name)}</span>. All rights reserved.</p></footer>`;
 }
 
 function composeNoir(p) {
@@ -170,9 +179,12 @@ ${p.findRank}
 ${p.table}
 ${p.rules}</section>
 ${p.partnerPanel}
-${p.pastSec}
-${p.socialsSec}`;
+${p.pastSec}`;
 }
+
+// NOTE: noir places socials + share in its footer (see noirFooter), not in
+// <main> — a template decides WHERE every section lives, not just how it
+// looks. The singleton data-* gate still guarantees each block appears once.
 
 export const NOIR = {
   id: "noir",

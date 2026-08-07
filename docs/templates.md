@@ -27,6 +27,14 @@ export const MY_TEMPLATE = {
   parts: {                   // redesign the INSIDE of shared blocks
     row: (pl, rank, h) => `...`,      // one standings row (rank >= 4)
     top3Card: (pl, rank, h) => `...`, // one podium card (rank 1-3)
+    // ...or replace ANY whole block; receives (defaultHtml, helpers, ctx):
+    table: (html, h, c) => `...`,     // standings table incl. head labels
+    rules: (html, h, c) => `...`,     // "how wager counts" block
+    partnerPanel: (html, h, c) => `...`,
+    socialsSec: (html, h, c) => `...`,
+    pastSec: (html, h, c) => `...`,
+    findRank: (html, h, c) => `...`,
+    shareSec: (html, h, c) => `...`,
   },
 };
 ```
@@ -35,12 +43,18 @@ A template owns as much of the page as it wants. `compose()` defines
 `<main>`; `header`/`footer` replace the chrome around it; `parts` overrides
 the markup inside the shared data-bound blocks. Anything omitted falls back
 to the shared defaults in `render.jsx` — a template that only defines `css`
-still works. `header(sp)`/`footer(sp)` receive escaped shell parts (`b`,
-`esc`, `navLogo`, `hasPartner`, `socials`, `legalLinks`, `disclaimer`,
-`options`); part builders receive `(player, rank, helpers)` where helpers
-are `{ esc, initials, moneyS, moneyShortS, moneyPrizeS, playerHrefS, cur,
-hidePrizes }`. Custom chrome must keep the multi-element hooks the client
-fills (`data-brand-name`, `data-tagline`, `data-year`).
+still works. `header(sp)`/`footer(sp)` receive the full parts map **plus** the shell
+extras (`navLogo`, `legalLinks`, `disclaimer`, ...) — so a template decides
+WHERE every section lives, not just how it looks: noir keeps socials and
+share inside its footer, another template can pin them under the header. If
+no part of the page includes the share section, the renderer appends the
+default one after `</main>` (legacy behavior for older templates). Part
+builders receive `(player, rank, helpers)` where helpers are `{ esc,
+initials, moneyS, moneyShortS, moneyPrizeS, playerHrefS, cur, hidePrizes }`.
+Custom chrome must keep the multi-element hooks the client fills
+(`data-brand-name`, `data-tagline`, `data-year`), and a block you relocate
+(e.g. `socialsSec` with its `data-socials` hook) must still appear exactly
+once across the whole page — the singleton gate checks the full document.
 
 `compose(parts)` receives the shared, already-escaped building blocks from
 `buildParts()` in `render.jsx` (`streamWindow`, `heroLogo`, `timerGrid`,

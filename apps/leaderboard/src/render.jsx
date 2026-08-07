@@ -171,7 +171,16 @@ ${whyStats.length ? `<div class="pcol pcol-why"><span class="pcol-label">Why ${h
   const periodSpan = `<span data-period>${esc(period)}</span>`;
   const payouts = hidePrizes ? `<div class="payouts" data-payouts hidden data-hide-prizes></div>` : `<div class="payouts" data-payouts hidden></div>`;
   const top3 = `<div class="top3" data-top3 data-hide-prizes="${hidePrizes ? "true" : "false"}">${top3Srv}</div>`;
-  return { ...c, name, streamWindow, ctaBtn, joinLabel, timerGrid, partnerPanel, announce, payouts, top3, findRank, table, rules, pastSec, socialsSec, titleGroup, poolSpan, periodSpan, cur, hidePrizes, hasPool, pool, prizePoolLabel, countdownLabel, payoutsLabel, sCount };
+  // Generic block overrides: beyond row/top3Card, a template's `parts` map
+  // may override ANY whole block (table, rules, partnerPanel, socialsSec,
+  // pastSec, findRank, shareSec, ...). The builder receives the default
+  // HTML, the part helpers, and the raw context, and returns replacement
+  // HTML. The data-* contract still applies and is enforced in CI.
+  const blocks = { timerGrid, partnerPanel, announce, payouts, top3, findRank, table, rules, pastSec, socialsSec, titleGroup, shareSec: c.shareSec || "" };
+  for (const key of Object.keys(blocks)) {
+    if (typeof overrides[key] === "function") blocks[key] = overrides[key](blocks[key], partHelpers, c);
+  }
+  return { ...c, name, streamWindow, ctaBtn, joinLabel, ...blocks, poolSpan, periodSpan, cur, hidePrizes, hasPool, pool, prizePoolLabel, countdownLabel, payoutsLabel, sCount };
 }
 
 // Each template owns its page structure: the registry maps template id to
@@ -324,7 +333,6 @@ body[data-preview] .top3{margin-bottom:14px}
   // /og.png so shares don't render blank. A board's own logo still wins.
   const ogFallback = `${esc(home)}/og.png`;
   const ogImageUrl = logo || ogFallback;
-  const shareHtml = shareSection(pageUrl, b.name || "Leaderboard");
   const ogImage = `<meta property="og:image" content="${ogImageUrl}" /><meta name="twitter:image" content="${ogImageUrl}" />`;
   const twitterCard = logo ? "summary_large_image" : "summary";
   const title = hasCasino ? `${esc(b.name)} | ${esc(casino)} Leaderboard` : `${esc(b.name)} — Leaderboard`;
@@ -364,10 +372,16 @@ document.addEventListener("click", (e) => {
 });
 </script>` : "";
 
-  const mainHtml = await composeMain(tpl, buildParts({ b, esc, heroLogo, hasCasino, casino, period, pool, hasCta, ctaHref, hasPartner, hasCode, code, blurb, chips, whyStats, socials, prizes: data.prizes, currency: data.brand?.currency, hidePrizeAmounts: data.brand?.hidePrizeAmounts, players: data.players, slug: opts.slug || "", isCustomDomain: !!opts.isCustomDomain, options: tplOptions }, templateParts(tpl)), textOverrides);
+  const shareSecHtml = shareSection(pageUrl, b.name || "Leaderboard");
+  const parts = buildParts({ b, esc, heroLogo, hasCasino, casino, period, pool, hasCta, ctaHref, hasPartner, hasCode, code, blurb, chips, whyStats, socials, prizes: data.prizes, currency: data.brand?.currency, hidePrizeAmounts: data.brand?.hidePrizeAmounts, players: data.players, slug: opts.slug || "", isCustomDomain: !!opts.isCustomDomain, options: tplOptions, shareSec: shareSecHtml }, templateParts(tpl));
+  const mainHtml = await composeMain(tpl, parts, textOverrides);
 
   // Shell chrome belongs to the template (see defaultHeader/defaultFooter).
+  // header/footer receive the FULL parts map too, so a template can place
+  // main-section blocks (socials, share, rules, partner panel) inside its
+  // own chrome — e.g. socials near the footer vs near the header.
   const shellParts = {
+    ...parts,
     b, esc, navLogo, hasPartner, hasCasino, casino, socials,
     legalLinks: renderLegalSidebar(data, legalHref),
     disclaimer: footerDisclaimer(hasCasino, b.name, casino),
@@ -375,6 +389,9 @@ document.addEventListener("click", (e) => {
   };
   const headerHtml = (templateHeader(tpl) || defaultHeader)(shellParts);
   const footerHtml = (templateFooter(tpl) || defaultFooter)(shellParts);
+  // Backward compat: templates that don't place the share section anywhere
+  // get it appended between </main> and the footer, like before.
+  const shareHtml = (headerHtml + mainHtml + footerHtml).includes('class="share-sec"') ? "" : shareSecHtml;
   
   return `<!DOCTYPE html>
 <html lang="en"><head>
