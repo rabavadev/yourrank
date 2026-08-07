@@ -72,17 +72,14 @@ const shareCss = `
 .share-btn:active{transform:translateY(1px)}
 `;
 
-function shareSection(pageUrl, name) {
-  const u = encodeURIComponent(pageUrl);
-  const text = encodeURIComponent(`Check out ${name}`);
+function shareSection(pageUrl) {
   const safe = (s) => String(s).replace(/"/g, "&quot;").replace(/</g, "&lt;");
+  // Only a copy-link utility lives here — social networks are the owner's
+  // channels, configured in the dashboard and rendered by the socials section.
   return `<section class="share-sec" aria-label="Share this board">
 <h3 class="share-title">Share this board</h3>
 <div class="share-btns">
   <button class="share-btn" data-share="copy" data-url="${safe(pageUrl)}" type="button">Copy link</button>
-  <a class="share-btn" href="https://twitter.com/intent/tweet?url=${u}&text=${text}" target="_blank" rel="noopener">𝕏</a>
-  <a class="share-btn" href="https://t.me/share/url?url=${u}&text=${text}" target="_blank" rel="noopener">Telegram</a>
-  <a class="share-btn" href="https://api.whatsapp.com/send?text=${text}%20${u}" target="_blank" rel="noopener">WhatsApp</a>
 </div>
 </section>`;
 }
@@ -324,7 +321,7 @@ body[data-preview] .top3{margin-bottom:14px}
   // /og.png so shares don't render blank. A board's own logo still wins.
   const ogFallback = `${esc(home)}/og.png`;
   const ogImageUrl = logo || ogFallback;
-  const shareHtml = shareSection(pageUrl, b.name || "Leaderboard");
+  const shareHtml = shareSection(pageUrl);
   const ogImage = `<meta property="og:image" content="${ogImageUrl}" /><meta name="twitter:image" content="${ogImageUrl}" />`;
   const twitterCard = logo ? "summary_large_image" : "summary";
   const title = hasCasino ? `${esc(b.name)} | ${esc(casino)} Leaderboard` : `${esc(b.name)} — Leaderboard`;
@@ -581,7 +578,7 @@ ${header}
     <h2 class="sec-title">History</h2>
     ${historyHtml}
   </div>
-  ${shareSection(canonical, player.name)}
+  ${shareSection(canonical)}
   <a class="pp-back" href="${backHref}">← Back to ${esc(b.name || "leaderboard")}</a>
 </div>
 </main>
@@ -765,7 +762,7 @@ ${header}
     <h2>Past boards</h2>
     ${archivesHtml}
   </section>
-  ${shareSection(canonical, b.name || "this streamer")}
+  ${shareSection(canonical)}
   ${botCta}
 </div>
 </main>
