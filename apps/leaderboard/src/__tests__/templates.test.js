@@ -38,7 +38,7 @@ const DATA = {
 
 describe("template catalog", async () => {
   it("offers the registered templates with curated presets", async () => {
-    expect(TEMPLATE_IDS).toEqual(["classic", "terminal", "tournament", "noir"]);
+    expect(TEMPLATE_IDS).toEqual(["classic", "terminal", "tournament", "noir", "broadcaster"]);
     for (const id of TEMPLATE_IDS) {
       expect(TEMPLATES[id].presets.length).toBeGreaterThanOrEqual(3);
       expect(TEMPLATES[id].presets.every((preset) => /^#[0-9a-f]{6}$/i.test(preset.accentA) && /^#[0-9a-f]{6}$/i.test(preset.accentB))).toBe(true);
@@ -47,7 +47,7 @@ describe("template catalog", async () => {
 
   it("exposes client metadata without sending template CSS", async () => {
     const catalog = templateCatalog();
-    expect(catalog.length).toBe(4);
+    expect(catalog.length).toBe(5);
     expect(catalog.every((template) => !Object.hasOwn(template, "css"))).toBe(true);
     expect(catalog.map((template) => template.id)).toEqual(TEMPLATE_IDS);
   });
@@ -137,6 +137,22 @@ describe("template shell ownership", async () => {
     expect(templateParts("classic")).toEqual({});
     expect(templateHeader("classic")).toBe(null);
     expect(templateFooter("classic")).toBe(null);
+  });
+
+  it("broadcaster owns its chrome and orders socials right after the hero", async () => {
+    const data = { ...DATA, socials: [{ brand: "discord", name: "Discord", handle: "@streamer", url: "https://discord.gg/example" }] };
+    const bc = await renderLeaderboard({ ...data, branding: { template: "broadcaster" } }, { nonce: "s6" });
+    expect(bc).toContain("bc-topbar");
+    expect(bc).toContain("bc-ticker");
+    expect(bc).not.toContain('<header class="nav">');
+    // socials come right after the hero, before the standings board
+    expect(bc.indexOf("bc-ticker")).toBeLessThan(bc.indexOf('class="socials-sec"'));
+    expect(bc.indexOf('class="socials-sec"')).toBeLessThan(bc.indexOf('id="board"'));
+    // share is not placed by the template, so it keeps the legacy spot after </main>
+    expect(bc.indexOf("</main>")).toBeLessThan(bc.indexOf('class="share-sec"'));
+    // noir keeps socials last in <main> — order is the template's choice
+    const noir = await renderLeaderboard({ ...data, branding: { template: "noir" } }, { nonce: "s7" });
+    expect(noir.indexOf('id="board"')).toBeLessThan(noir.indexOf('class="socials-sec"'));
   });
 });
 
