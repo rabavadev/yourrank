@@ -158,9 +158,9 @@ export const BROADCASTER = {
   // Dashboard-editable knobs for this design; consumed via --opt-accent and
   // the data-opt-ticker / data-opt-statsize body attributes above.
   schema: {
-    accent:   { type: "color",  label: "Accent",       default: "#e8321e" },
-    ticker:   { type: "toggle", label: "Ticker strip", default: true },
-    statsize: { type: "select", label: "Stat size",    options: ["normal", "huge"], default: "huge" },
+    accent:   { type: "color",  label: "Accent",       hint: "Lower-third and highlight color.", default: "#e8321e" },
+    ticker:   { type: "toggle", label: "Ticker strip", hint: "Scrolling news ticker under the header.", default: true },
+    statsize: { type: "select", label: "Stat size",    hint: "How big the key numbers render.", options: ["normal", "huge"], default: "huge" },
   },
   compose: composeBroadcaster,
   header: broadcasterHeader,

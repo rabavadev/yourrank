@@ -464,45 +464,59 @@ function renderTemplateOptions() {
   if (!wrap) return;
   const template = currentTemplate();
   const schema = (template && template.schema) || {};
-  const keys = Object.keys(schema);
+  const keys = Object.keys(schema).filter((k) => schema[k] && typeof schema[k] === "object");
   wrap.innerHTML = "";
   if (!keys.length) { wrap.hidden = true; return; }
   wrap.hidden = false;
   const paid = state.ME && state.ME.plan !== "free";
   const saved = state.CURRENT_BRANDING.options || {};
-  const title = document.createElement("p");
-  title.className = "hint";
-  title.textContent = paid ? `${template.name} options` : `${template.name} options are a Pro feature. Upgrade to unlock them.`;
-  wrap.appendChild(title);
-  const grid = document.createElement("div");
-  grid.className = "grid2";
+
+  const head = document.createElement("div");
+  head.className = "tpl-opt-head";
+  head.innerHTML = `<span class="tpl-opt-title">${esc(template.name)} options</span>${paid
+    ? `<span class="hint">Changes preview instantly — save to publish.</span>`
+    : `<span class="hint">Pro feature. <a href="/dashboard/billing">Upgrade to unlock</a>.</span>`}`;
+  wrap.appendChild(head);
+
+  const list = document.createElement("div");
+  list.className = "tpl-opt-list";
   for (const key of keys) {
     const field = schema[key];
-    if (!field || typeof field !== "object") continue;
     const value = Object.hasOwn(saved, key) ? saved[key] : field.default;
     const id = `opt_${key}`;
-    const div = document.createElement("div");
-    div.className = "field";
-    if (field.type === "color") {
-      div.innerHTML = `<label for="${id}">${esc(field.label || key)}</label><input type="color" id="${id}" value="${esc(String(value || "#000000"))}"${paid ? "" : " disabled"} />`;
-    } else if (field.type === "toggle") {
-      div.innerHTML = `<label class="hint chk" for="${id}"><input type="checkbox" id="${id}"${value ? " checked" : ""}${paid ? "" : " disabled"} /> ${esc(field.label || key)}</label>`;
+    const row = document.createElement("div");
+    row.className = "tpl-opt";
+    const label = `<div class="tpl-opt-label"><span class="tpl-opt-name">${esc(field.label || key)}</span>${field.hint ? `<span class="tpl-opt-hint">${esc(field.hint)}</span>` : ""}</div>`;
+    const apply = (v) => {
+      state.CURRENT_BRANDING.options = { ...(state.CURRENT_BRANDING.options || {}), [key]: v };
+      markDirty();
+    };
+    if (field.type === "toggle") {
+      row.innerHTML = `${label}<label class="switch" title="Toggle ${esc(field.label || key)}"><input type="checkbox" id="${id}"${value ? " checked" : ""}${paid ? "" : " disabled"} /><span class="switch-track"></span></label>`;
+      row.querySelector("input").addEventListener("change", (e) => apply(e.target.checked));
     } else if (field.type === "select") {
-      const optsHtml = (field.options || []).map((o) => `<option value="${esc(o)}"${o === value ? " selected" : ""}>${esc(o)}</option>`).join("");
-      div.innerHTML = `<label for="${id}">${esc(field.label || key)}</label><select id="${id}"${paid ? "" : " disabled"}>${optsHtml}</select>`;
+      const pills = (field.options || [])
+        .map((o) => `<button type="button" class="tpl-seg-btn${o === value ? " is-active" : ""}" data-val="${esc(o)}"${paid ? "" : " disabled"}>${esc(o)}</button>`)
+        .join("");
+      row.innerHTML = `${label}<div class="tpl-seg" role="group" aria-label="${esc(field.label || key)}">${pills}</div>`;
+      row.querySelectorAll(".tpl-seg-btn").forEach((btn) =>
+        btn.addEventListener("click", () => {
+          row.querySelectorAll(".tpl-seg-btn").forEach((b) => b.classList.toggle("is-active", b === btn));
+          apply(btn.dataset.val);
+        })
+      );
+    } else if (field.type === "color") {
+      row.innerHTML = `${label}<span class="tpl-color"><span class="tpl-color-hex" id="${id}_hex">${esc(String(value || "#000000"))}</span><input type="color" id="${id}" value="${esc(String(value || "#000000"))}"${paid ? "" : " disabled"} /></span>`;
+      const input = row.querySelector("input");
+      const hex = row.querySelector(`#${id}_hex`);
+      // "input" fires while dragging the picker so the preview feels alive.
+      const onInput = () => { if (hex) hex.textContent = input.value; apply(input.value); };
+      input.addEventListener("input", onInput);
+      input.addEventListener("change", onInput);
     } else continue;
-    const input = div.querySelector("input,select");
-    if (input) {
-      input.addEventListener("change", () => {
-        const next = { ...(state.CURRENT_BRANDING.options || {}) };
-        next[key] = field.type === "toggle" ? input.checked : input.value;
-        state.CURRENT_BRANDING.options = next;
-        markDirty();
-      });
-    }
-    grid.appendChild(div);
+    list.appendChild(row);
   }
-  wrap.appendChild(grid);
+  wrap.appendChild(list);
 }
 
 function _beforeUnloadGuard(e) {

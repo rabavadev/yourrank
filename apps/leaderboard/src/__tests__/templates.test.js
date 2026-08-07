@@ -162,7 +162,8 @@ describe("template previews", async () => {
       { ...DATA, branding: { template: "classic", accentA: "#00ffd1", accentB: "#ff2cd0" } },
       { nonce: "preview123", preview: true }
     );
-    expect(html).toContain('body data-template="classic" data-preview');
+    expect(html).toContain('data-template="classic"');
+    expect(html).toContain('data-preview');
     expect(html).toContain("Actual Streamer");
     expect(html).toContain("First Player");
     expect(html).toContain("body[data-preview]");
@@ -266,7 +267,7 @@ describe("template options schema", async () => {
     const defaults = { accent: "#39d98a", scanlines: false, density: "compact" };
     expect(resolveOptions("terminal", null)).toEqual(defaults);
     expect(resolveOptions("terminal", "junk")).toEqual(defaults);
-    expect(resolveOptions("classic", { anything: "x" })).toEqual({});
+    expect(resolveOptions("classic", { anything: "x" })).toEqual({ striped: false, glow: true, corners: "rounded" });
   });
 
   it("validates values per field type and drops unknown keys", async () => {

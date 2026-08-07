@@ -135,9 +135,9 @@ export const TERMINAL = {
   // data-opt-scanlines / data-opt-density attributes consumed by the CSS
   // above (also readable in compose() via parts.options).
   schema: {
-    accent:    { type: "color",  label: "Terminal accent", default: "#39d98a" },
-    scanlines: { type: "toggle", label: "CRT scanlines",   default: false },
-    density:   { type: "select", label: "Table density",   options: ["compact", "cozy"], default: "compact" },
+    accent:    { type: "color",  label: "Terminal accent", hint: "Prompt, cursor and highlight color.", default: "#39d98a" },
+    scanlines: { type: "toggle", label: "CRT scanlines",   hint: "Retro line overlay on the terminal window.", default: false },
+    density:   { type: "select", label: "Table density",   hint: "Row spacing in the standings table.", options: ["compact", "cozy"], default: "compact" },
   },
   compose: composeTerminal,
 };

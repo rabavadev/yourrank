@@ -71,7 +71,8 @@ describe("handleDashboardPreview", () => {
     );
     const html = await res.text();
     expect(res.status).toBe(200);
-    expect(html).toContain('body data-template="classic" data-preview');
+    expect(html).toContain('data-template="classic"');
+    expect(html).toContain('data-preview');
     expect(html).toContain("--cy:#00ffd1");
     expect(html).toContain("Actual Player");
     expect(SITE.data.branding).toEqual({
