@@ -428,14 +428,18 @@ function boot() {
     return `<div class="scard"><div class="scard-ico ${esc(brand)}">${ico}</div><div class="scard-name">${esc(s.name)}</div><div class="scard-handle">${esc(s.handle || "")}</div>${cta}</div>`;
   }).join("");
 
-  startCountdown(data.endsAt);
-
-  // Initialize particle effect
-  initParticles();
-
-  // Start live SSE stream
-  if (window.__SLUG__) {
-    connectStream();
+  // The live preview iframe redraws frequently; skip heavy animations and the
+  // real-time SSE stream so the dashboard host page stays responsive.
+  const isPreview = typeof window !== "undefined" && !!window.__IS_PREVIEW__;
+  if (!isPreview) {
+    startCountdown(data.endsAt);
+    initParticles();
+    if (window.__SLUG__) {
+      connectStream();
+    }
+  } else {
+    // Still show a static countdown value on first paint without a timer.
+    startCountdown(data.endsAt, false);
   }
 }
 
@@ -511,7 +515,7 @@ function initFindRank(sortedPlayers) {
   }
 }
 
-function startCountdown(endsAt) {
+function startCountdown(endsAt, live = true) {
   const el = $("[data-countdown]");
   const grid = $("[data-timer-grid]");
   const cell = (k) => (grid ? grid.querySelector(`[data-t="${k}"]`) : null);
@@ -538,7 +542,8 @@ function startCountdown(endsAt) {
       }
     }
   };
-  tick(); setInterval(tick, 1000);
+  tick();
+  if (live) setInterval(tick, 1000);
 }
 function nextMonthUTC() { const n = new Date(); return Date.UTC(n.getUTCFullYear(), n.getUTCMonth() + 1, 1); }
 document.addEventListener("DOMContentLoaded", () => {

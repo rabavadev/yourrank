@@ -409,7 +409,7 @@ ${boardTabs}
 ${mainHtml}</main>
 ${shareHtml}
 ${footerHtml}
-${badge}<script nonce="${opts.nonce}">window.__SITE_DATA__=${dataJson};window.__SLUG__=${JSON.stringify(opts.slug || "")};window.__IS_CUSTOM_DOMAIN__=${JSON.stringify(!!opts.isCustomDomain)};</script><script src="/assets/leaderboard.js" nonce="${opts.nonce}"></script>
+${badge}<script nonce="${opts.nonce}">window.__SITE_DATA__=${dataJson};window.__SLUG__=${JSON.stringify(opts.slug || "")};window.__IS_CUSTOM_DOMAIN__=${JSON.stringify(!!opts.isCustomDomain)};window.__IS_PREVIEW__=${JSON.stringify(!!opts.preview)};</script><script src="/assets/leaderboard.js" nonce="${opts.nonce}"></script>
 ${previewScript}
 </body></html>`;
 }
