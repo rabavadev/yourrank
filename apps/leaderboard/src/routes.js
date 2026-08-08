@@ -46,6 +46,7 @@ import {
   handleCreditsSaveShopItem,
   handleCreditsDeleteShopItem,
   handleCreditsUpdateRedemption,
+  handleCreditsAnalytics,
   handlePublicCredits,
   handlePublicRedeem,
 } from "./handlers/credits.js";
@@ -137,6 +138,7 @@ export const ROUTES = [
   { path: "/api/credits/shop", method: "POST", handler: withHandler(handleCreditsSaveShopItem) },
   { path: "/api/credits/shop/:id", method: "DELETE", handler: withHandler(handleCreditsDeleteShopItem) },
   { path: "/api/credits/redemptions/:id", method: "POST", handler: withHandler(handleCreditsUpdateRedemption) },
+  { path: "/api/credits/analytics", method: "GET", handler: withHandler(handleCreditsAnalytics) },
   { path: "/api/credits/viewers/:id/block", method: "POST", handler: withHandler(handleCreditsBlockViewer) },
 
   // Public credits / shop API (CSRF-exempt)
