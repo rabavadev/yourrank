@@ -127,16 +127,7 @@ cd apps/leaderboard && bun run dev
 cd apps/bot && bun run dev
 ```
 
-The `CLOUDFLARE_HYPERDRIVE_LOCAL_CONNECTION_STRING_HYPERDRIVE` value in
-`.dev.vars` tells Wrangler to connect the local `HYPERDRIVE` binding to the
-Postgres container instead of a remote Supabase database.
-
-The bot Worker’s deployed entrypoint is `src/worker.ts`, and `bun run dev` now uses `wrangler dev` to match production routing more closely.
-If you still need the older Node/tsx path for comparison, run:
-
-```bash
-cd apps/bot && bun run dev:legacy
-```
+The bot Worker’s deployed entrypoint is `src/worker.ts`, and `bun run dev` uses `wrangler dev` to match production routing more closely.
 
 For webhook testing during local debug, the bot app will need a public tunnel (e.g. `cloudflared tunnel`) to receive Telegram webhooks.
 
