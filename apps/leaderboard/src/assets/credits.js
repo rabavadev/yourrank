@@ -57,10 +57,15 @@ function render() {
   const rewardAtLimit = (usage.rewardMappings || 0) >= (limits.rewardMappings || 0);
   const shopAtLimit = (usage.shopItems || 0) >= (limits.shopItems || 0);
   const rewardSubmit = $("cr-reward-submit");
+  const rewardCreateSubmit = $("cr-reward-create-submit");
   const shopSubmit = $("cr-shop-submit");
   if (rewardSubmit) {
     rewardSubmit.disabled = rewardAtLimit;
     rewardSubmit.title = rewardAtLimit ? "Upgrade your plan to add more reward mappings" : "";
+  }
+  if (rewardCreateSubmit) {
+    rewardCreateSubmit.disabled = rewardAtLimit;
+    rewardCreateSubmit.title = rewardAtLimit ? "Upgrade your plan to add more reward mappings" : "";
   }
   if (shopSubmit) {
     shopSubmit.disabled = shopAtLimit;
@@ -198,6 +203,23 @@ $("cr-reward-form").addEventListener("submit", async (e) => {
     $("cr-reward-id").value = "";
     await load();
   } catch (err) { setStatus("cr-reward-status", err.message, true); }
+});
+
+$("cr-reward-create-form")?.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  try {
+    await api("POST", "/api/credits/rewards/create", {
+      title: $("cr-reward-create-title").value.trim(),
+      cost: Number($("cr-reward-create-cost").value),
+      credits: Number($("cr-reward-create-credits").value),
+      description: $("cr-reward-create-desc").value.trim(),
+      backgroundColor: $("cr-reward-create-color").value,
+    });
+    setStatus("cr-reward-create-status", "Reward created in Kick and mapped.");
+    $("cr-reward-create-form").reset();
+    $("cr-reward-create-color").value = "#00e701";
+    await load();
+  } catch (err) { setStatus("cr-reward-create-status", err.message, true); }
 });
 
 function editReward(id) {

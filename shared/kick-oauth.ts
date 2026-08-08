@@ -70,7 +70,7 @@ export function buildKickAuthorizeURL(
   env: any,
   state: string,
   codeChallenge: string,
-  scope = "user:read channel:read channel:rewards:read events:subscribe"
+  scope = "user:read channel:read channel:rewards:read channel:rewards:write events:subscribe"
 ): string {
   const { clientId, redirectUri } = getConfig(env);
   const params = new URLSearchParams({
@@ -184,22 +184,86 @@ export async function decryptKickToken(hex: string): Promise<string> {
   return decryptToken(Buffer.from(hex, "hex"));
 }
 
+export interface KickTokenSet {
+  accessToken: string;
+  accessEnc: string;
+  refreshEnc: string | null;
+  expiresAt: Date | null;
+}
+
 export async function getValidKickAccessToken(
   env: any,
   encryptedAccess: string,
   encryptedRefresh: string | null,
   expiresAt: Date | string | null
-): Promise<string> {
+): Promise<KickTokenSet> {
   const now = Date.now();
   const expiry = expiresAt ? new Date(expiresAt).getTime() : 0;
   if (encryptedAccess && expiry > now + 60_000) {
-    return decryptKickToken(encryptedAccess);
+    return {
+      accessToken: await decryptKickToken(encryptedAccess),
+      accessEnc: encryptedAccess,
+      refreshEnc: encryptedRefresh,
+      expiresAt: expiresAt ? new Date(expiresAt) : null,
+    };
   }
   if (!encryptedRefresh) {
     throw new Error("Kick refresh token not available");
   }
   const refresh = await decryptKickToken(encryptedRefresh);
   const tokens = await refreshKickTokens(env, refresh);
-  // Caller is responsible for persisting refreshed tokens if desired.
-  return tokens.access_token;
+  const accessEnc = await encryptKickToken(tokens.access_token);
+  const newRefreshEnc = tokens.refresh_token ? await encryptKickToken(tokens.refresh_token) : encryptedRefresh;
+  const newExpiresAt = tokens.expires_in ? new Date(now + tokens.expires_in * 1000) : null;
+  return {
+    accessToken: tokens.access_token,
+    accessEnc,
+    refreshEnc: newRefreshEnc,
+    expiresAt: newExpiresAt,
+  };
+}
+
+export interface KickRewardInput {
+  title: string;
+  cost: number;
+  description?: string;
+  background_color?: string;
+  is_enabled?: boolean;
+  is_user_input_required?: boolean;
+  should_redemptions_skip_request_queue?: boolean;
+}
+
+export interface KickReward {
+  id: string;
+  title: string;
+  cost: number;
+  description?: string;
+  background_color?: string;
+  is_enabled?: boolean;
+  is_paused?: boolean;
+  is_user_input_required?: boolean;
+  should_redemptions_skip_request_queue?: boolean;
+}
+
+export async function createKickChannelReward(
+  accessToken: string,
+  reward: KickRewardInput
+): Promise<KickReward> {
+  const res = await fetch("https://api.kick.com/public/v1/channels/rewards", {
+    method: "POST",
+    headers: {
+      authorization: `Bearer ${accessToken}`,
+      "content-type": "application/json",
+    },
+    body: JSON.stringify(reward),
+  });
+  const text = await res.text();
+  if (!res.ok) {
+    throw new Error(`Kick create reward failed ${res.status}: ${text}`);
+  }
+  const json = JSON.parse(text) as { data?: KickReward; message?: string };
+  if (!json.data) {
+    throw new Error(`Kick create reward returned no data: ${text}`);
+  }
+  return json.data;
 }
