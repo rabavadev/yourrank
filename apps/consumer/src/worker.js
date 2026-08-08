@@ -8,6 +8,7 @@ import { logMinimizedClick } from "../../../shared/clicks.js";
 import { bumpStat } from "../../../shared/stats.js";
 import { dispatchNotifyEvent } from "../../../shared/notifications.js";
 import { parseQueueEvent } from "../../../shared/queue-producer.js";
+import { processKickRewardRedemption } from "../../../shared/kick-credits.js";
 
 const db = { one, query };
 
@@ -81,6 +82,14 @@ async function handleEvent(input, tokenCache) {
     }
     case "notify": {
       await dispatchNotifyEvent(db, {}, body, tokenCache);
+      break;
+    }
+    case "kick-redemption": {
+      await processKickRewardRedemption({
+        messageId: body.messageId,
+        eventType: body.eventType,
+        payload: body.payload,
+      }, env);
       break;
     }
     default: {

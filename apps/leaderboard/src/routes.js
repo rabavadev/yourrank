@@ -32,6 +32,24 @@ import { handleCspReport } from "./handlers/csp-report.js";
 import { handleLog } from "./handlers/log.js";
 import { handleScores } from "./handlers/scores.js";
 import { handleQuickAdd } from "./handlers/quick-add.js";
+import { handleKickWebhook } from "./handlers/kick-webhook.js";
+import {
+  handleKickAuthStart,
+  handleKickAuthCallback,
+  handleKickAuthDisconnect,
+} from "./handlers/kick-auth.js";
+import {
+  handleCreditsStatus,
+  handleCreditsConnect,
+  handleCreditsSaveReward,
+  handleCreditsDeleteReward,
+  handleCreditsSaveShopItem,
+  handleCreditsDeleteShopItem,
+  handleCreditsUpdateRedemption,
+  handlePublicCredits,
+  handlePublicRedeem,
+} from "./handlers/credits.js";
+import { handleCreditsBlockViewer } from "./handlers/credits-block.js";
 import { handleApiDocs, handleOpenApiJson } from "./handlers/docs.js";
 import { handleCheckout, handleCheckoutLifetime, handleIpn, handleCancel, handleUserPayments } from "./billing.js";
 import {
@@ -103,6 +121,28 @@ export const ROUTES = [
   { path: "/api/track/scroll", method: "POST", handler: withHandler(handleTrackScroll) },
   { path: "/api/scores", method: "POST", handler: withHandler(handleScores) },
   
+  // Kick integration webhooks (CSRF-exempt)
+  { path: "/webhooks/kick", method: "POST", handler: withHandler(handleKickWebhook) },
+
+  // Kick OAuth
+  { path: "/auth/kick", method: "GET", handler: withHandler(handleKickAuthStart) },
+  { path: "/auth/kick/callback", method: "GET", handler: withHandler(handleKickAuthCallback) },
+  { path: "/api/kick/disconnect", method: "POST", handler: withHandler(handleKickAuthDisconnect) },
+
+  // Credits / shop dashboard API
+  { path: "/api/credits/status", method: "GET", handler: withHandler(handleCreditsStatus) },
+  { path: "/api/credits/connect", method: "POST", handler: withHandler(handleCreditsConnect) },
+  { path: "/api/credits/rewards", method: "POST", handler: withHandler(handleCreditsSaveReward) },
+  { path: "/api/credits/rewards/:id", method: "DELETE", handler: withHandler(handleCreditsDeleteReward) },
+  { path: "/api/credits/shop", method: "POST", handler: withHandler(handleCreditsSaveShopItem) },
+  { path: "/api/credits/shop/:id", method: "DELETE", handler: withHandler(handleCreditsDeleteShopItem) },
+  { path: "/api/credits/redemptions/:id", method: "POST", handler: withHandler(handleCreditsUpdateRedemption) },
+  { path: "/api/credits/viewers/:id/block", method: "POST", handler: withHandler(handleCreditsBlockViewer) },
+
+  // Public credits / shop API (CSRF-exempt)
+  { path: "/api/public/credits", method: "GET", handler: withHandler(handlePublicCredits) },
+  { path: "/api/public/redeem", method: "POST", handler: withHandler(handlePublicRedeem) },
+
   // Public API routes (CSRF-exempt)
   { path: "/api/docs", method: "GET", handler: withHandler(handleApiDocs) },
   { path: "/api/openapi.json", method: "GET", handler: withHandler(handleOpenApiJson) },

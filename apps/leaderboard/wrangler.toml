@@ -64,6 +64,10 @@ SESSION_COOKIE_DOMAIN = ".yourrank.site"
 #   LEAD_WEBHOOK_URL        (optional; Discord/Slack ping on a new lead)
 #   DISCORD_MONITORING_WEBHOOK (optional; error reporting + cron summaries)
 #   BACKUP_VERIFICATION_LIMIT_HOURS (optional; defaults to 168 — 7 days)
+#   KICK_WEBHOOK_PUBLIC_KEY (required for Kick channel-point credits integration)
+#   KICK_CLIENT_ID          (required for Kick OAuth login)
+#   KICK_CLIENT_SECRET      (required for Kick OAuth login)
+#   KICK_REDIRECT_URI       (defaults to https://yourrank.site/auth/kick/callback)
 
 # ---------------------------------------------------------------------------
 # Staging environment (wrangler deploy --env staging)

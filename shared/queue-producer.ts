@@ -69,6 +69,13 @@ const playerRankNotifyEventSchema = z.object({
   tgUserId: z.number().int().positive().safe(),
 }).strict();
 
+const kickRewardRedemptionEventSchema = z.object({
+  type: z.literal("kick-redemption"),
+  messageId: id,
+  eventType: z.string().max(128),
+  payload: z.record(z.unknown()),
+}).strict();
+
 export const queueEventSchema = z.union([
   clickEventSchema,
   conversionEventSchema,
@@ -76,6 +83,7 @@ export const queueEventSchema = z.union([
   top3NotifyEventSchema,
   resetNotifyEventSchema,
   playerRankNotifyEventSchema,
+  kickRewardRedemptionEventSchema,
 ]);
 
 export type QueueEvent = z.infer<typeof queueEventSchema>;
@@ -86,6 +94,7 @@ export type NotifyEvent =
   | z.infer<typeof top3NotifyEventSchema>
   | z.infer<typeof resetNotifyEventSchema>
   | z.infer<typeof playerRankNotifyEventSchema>;
+export type KickRewardRedemptionEvent = z.infer<typeof kickRewardRedemptionEventSchema>;
 
 export function parseQueueEvent(input: unknown): QueueEvent {
   return queueEventSchema.parse(input);
@@ -98,13 +107,15 @@ interface QueueProducer {
 /**
  * Create a queue producer that sends events to a Cloudflare Queue.
  * Falls back to direct DB write if the queue is not bound or the enqueue fails.
+ * Optional `env` is passed as the second argument to `fallbackFn`.
  */
 export function createQueueProducer(
   queue: { send: (message: QueueEvent) => Promise<void> } | undefined,
-  fallbackFn: (event: QueueEvent) => Promise<void>
+  fallbackFn: (event: QueueEvent, env?: any) => Promise<void>,
+  env?: any
 ): QueueProducer {
   if (!queue) {
-    return { send: fallbackFn };
+    return { send: (event) => fallbackFn(event, env) };
   }
 
   return {
@@ -113,7 +124,7 @@ export function createQueueProducer(
         await queue.send(event);
       } catch (err) {
         console.error("[queue-producer] enqueue failed, using fallback:", String(err));
-        await fallbackFn(event);
+        await fallbackFn(event, env);
       }
     },
   };
