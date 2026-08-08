@@ -17,7 +17,7 @@ export const adminPage = `<!DOCTYPE html><html lang="en"><head>
 <div id="panel" hidden>
 <div class="dash-head"><div><h1>Operator panel</h1><p class="live-link">Everything that happens on YourRank, in one place.</p></div></div>
 <div class="stats"><div class="stat"><b id="s_users">–</b><span>accounts</span></div><div class="stat"><b id="s_pro">–</b><span>on Pro</span></div><div class="stat"><b id="s_leads">–</b><span>leads</span></div><div class="stat"><b id="s_rev">–</b><span>revenue (USD)</span></div></div>
-<div class="tabs" role="tablist"><button class="tab is-on" id="tab-btn-users" data-tab="users" type="button" role="tab" aria-selected="true" aria-controls="tab-users">Users</button><button class="tab" id="tab-btn-leads" data-tab="leads" type="button" role="tab" aria-selected="false" aria-controls="tab-leads">Leads</button><button class="tab" id="tab-btn-payments" data-tab="payments" type="button" role="tab" aria-selected="false" aria-controls="tab-payments">Payments</button><button class="tab" id="tab-btn-support" data-tab="support" type="button" role="tab" aria-selected="false" aria-controls="tab-support">Support</button></div>
+<div class="tabs" role="tablist"><button class="tab is-on" id="tab-btn-users" data-tab="users" type="button" role="tab" aria-selected="true" aria-controls="tab-users">Users</button><button class="tab" id="tab-btn-leads" data-tab="leads" type="button" role="tab" aria-selected="false" aria-controls="tab-leads">Leads</button><button class="tab" id="tab-btn-payments" data-tab="payments" type="button" role="tab" aria-selected="false" aria-controls="tab-payments">Payments</button><button class="tab" id="tab-btn-support" data-tab="support" type="button" role="tab" aria-selected="false" aria-controls="tab-support">Support</button><button class="tab" id="tab-btn-identity" data-tab="identity" type="button" role="tab" aria-selected="false" aria-controls="tab-identity">Identity</button></div>
 <div class="tabpane" id="tab-users" role="tabpanel" aria-labelledby="tab-btn-users">
 <div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Email</th><th>Page</th><th>Plan</th><th>Status</th><th class="ta-r">Players</th><th>Joined</th><th>Actions</th></tr></thead><tbody id="usersBody"></tbody></table></div>
 <div class="empty" id="usersEmpty" hidden>No users yet.</div>
@@ -58,5 +58,20 @@ export const adminPage = `<!DOCTYPE html><html lang="en"><head>
 </div>
 </div>
 <p class="hint mt-18">Manual activation: use <b>+31d Pro</b> on any user after they pay you directly (PayPal, bank, whatever). Crypto payments through the site activate on their own. Reset links work for 24h — send them over Discord/Telegram if email isn't wired up.</p>
+</div>
+<div class="tabpane" id="tab-identity" role="tabpanel" aria-labelledby="tab-btn-identity" hidden>
+<div class="card" id="identityCard">
+<h2>Platform identity</h2>
+<p class="card-sub">Legal company details used on terms, privacy, refund, and footer pages. Required before launch.</p>
+<p class="status" id="identityStatus" role="status" aria-live="polite" hidden></p>
+<form id="identityForm" class="form-stack">
+<div class="field"><label for="i_company_name">Company name</label><input class="input" id="i_company_name" type="text" placeholder="YourRank Ltd" required /></div>
+<div class="field"><label for="i_company_country">Registered country</label><input class="input" id="i_company_country" type="text" placeholder="United Kingdom" /></div>
+<div class="field"><label for="i_company_number">Company registration number</label><input class="input" id="i_company_number" type="text" placeholder="12345678" /></div>
+<div class="field"><label for="i_support_email">Support email</label><input class="input" id="i_support_email" type="email" placeholder="contact@yourrank.site" /></div>
+<div class="field"><label for="i_affiliate_disclosure">Affiliate disclosure</label><textarea class="textarea" id="i_affiliate_disclosure" rows="3"></textarea><p class="hint">Shown in the footer of every public and platform page.</p></div>
+<div class="btns-row" style="display:flex;justify-content:flex-end;gap:12px;margin-top:12px"><button class="btn btn--accent" type="submit">Save identity</button></div>
+</form>
+</div>
 </div></main>
 <script src="/assets/admin.js?v=3"></script></body></html>`;
