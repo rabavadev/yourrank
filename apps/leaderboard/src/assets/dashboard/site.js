@@ -122,6 +122,18 @@ export function renderPlan() {
     summary.innerHTML = `<div class="plan-summary-row"><span class="plan-summary-label">Current plan</span><span class="plan-summary-value">${esc(currentName)}${isTrial ? " (Trial)" : ""}</span></div>${until ? `<div class="plan-summary-row"><span class="plan-summary-label">Expires</span><span class="plan-summary-value">${esc(until)}</span></div>` : ""}`;
   }
 
+  const cancelWrap = $("cancelWrap");
+  if (cancelWrap) {
+    const paid = plan !== "free" && !lifetime && !isTrial;
+    cancelWrap.hidden = !paid;
+    if (paid) {
+      const cancelStatus = $("cancelStatus");
+      if (cancelStatus) cancelStatus.textContent = "";
+      const cancelBtn = $("cancelBtn");
+      if (cancelBtn) { cancelBtn.hidden = false; cancelBtn.disabled = false; }
+    }
+  }
+
   const grid = $("planGrid");
   if (grid) {
     const currentIdx = PLAN_ORDER.indexOf(plan);
@@ -173,6 +185,96 @@ export function renderPlan() {
   if ($("planName")) $("planName").textContent = currentName + (isTrial ? " (Trial)" : "");
   if ($("planMeta")) $("planMeta").textContent = until || `Up to ${state.ME.limits.players} players`;
   if ($("goPro")) $("goPro").textContent = lifetime ? "Lifetime active" : (plan === "free" ? "Upgrade — plans from $12/mo" : `Extend ${currentName} (+30 days)`);
+}
+
+export function wireCancelSubscription() {
+  const btn = $("cancelBtn");
+  if (!btn || btn._wired) return;
+  btn._wired = true;
+  btn.addEventListener("click", async () => {
+    const plan = state.ME?.plan || "free";
+    const expiry = state.ME?.planExpiresAt;
+    const until = expiry && Number(expiry) > 0 ? new Date(Number(expiry)).toUTCString().slice(5, 16) : "";
+    const body = until
+      ? `You'll keep ${plan} features until ${until}, then revert to Free.`
+      : "Your plan will revert to Free immediately.";
+    if (!await showConfirmModal("Cancel subscription?", body, "Yes, cancel", true)) return;
+    const status = $("cancelStatus");
+    if (status) status.textContent = "Cancelling...";
+    try {
+      const res = await fetch("/api/billing/cancel", { method: "POST", credentials: "include", headers: { "x-csrf-token": getCsrf() } });
+      const d = await res.json();
+      if (res.ok && d.ok) {
+        if (status) status.textContent = d.message || "Subscription cancelled.";
+        btn.hidden = true;
+        setTimeout(() => location.reload(), 1200);
+      } else {
+        if (status) status.textContent = d.error || "Could not cancel.";
+      }
+    } catch (err) { logError("cancel-subscription", err); if (status) status.textContent = "Network error."; }
+  });
+}
+
+export function wireDeleteAccount() {
+  const btn = $("deleteAccountBtn");
+  const modal = $("deleteAccountModal");
+  const confirmInput = $("deleteAccountConfirm");
+  const passwordWrap = $("deleteAccountPasswordWrap");
+  const passwordInput = $("deleteAccountPassword");
+  const confirmBtn = $("deleteAccountConfirmBtn");
+  const cancelBtn = $("deleteAccountCancelBtn");
+  const status = $("deleteAccountModalStatus");
+  if (!btn || !modal || !confirmInput || !confirmBtn || !cancelBtn) return;
+  if (wireDeleteAccount._wired) return;
+  wireDeleteAccount._wired = true;
+  const close = () => {
+    modal.hidden = true;
+    confirmInput.value = "";
+    if (passwordInput) passwordInput.value = "";
+    if (passwordWrap) passwordWrap.hidden = true;
+    if (status) status.textContent = "";
+    if (confirmBtn) { confirmBtn.disabled = false; confirmBtn.textContent = "Delete my account"; }
+  };
+  btn.addEventListener("click", () => {
+    confirmInput.value = "";
+    if (passwordInput) passwordInput.value = "";
+    if (passwordWrap) passwordWrap.hidden = true;
+    if (status) status.textContent = "";
+    modal.hidden = false;
+    confirmInput.focus();
+  });
+  cancelBtn.addEventListener("click", close);
+  confirmBtn.addEventListener("click", async () => {
+    if (status) status.textContent = "";
+    if (confirmInput.value.trim() !== "DELETE") { if (status) status.textContent = "Type DELETE exactly to confirm."; return; }
+    const password = passwordWrap && !passwordWrap.hidden && passwordInput ? passwordInput.value.trim() : "";
+    if (passwordWrap && !passwordWrap.hidden && !password) { if (status) status.textContent = "Enter your password."; return; }
+    confirmBtn.disabled = true; confirmBtn.textContent = "Deleting...";
+    try {
+      const res = await fetch("/api/account/delete", {
+        method: "POST",
+        credentials: "include",
+        headers: { "content-type": "application/json", "x-csrf-token": getCsrf() },
+        body: JSON.stringify(password ? { password } : {})
+      });
+      const d = await res.json();
+      if (res.status === 400 && d.error && d.error.includes("Password required")) {
+        if (passwordWrap) passwordWrap.hidden = false;
+        if (status) status.textContent = "Enter your password to confirm deletion.";
+        confirmBtn.disabled = false; confirmBtn.textContent = "Delete my account";
+        if (passwordInput) passwordInput.focus();
+        return;
+      }
+      if (res.ok && d.ok) {
+        if (status) status.textContent = "Account deleted. Redirecting...";
+        location.href = "/";
+        return;
+      }
+      if (status) status.textContent = d.error || "Deletion failed. Try again.";
+    } catch (err) { logError("delete-account", err); if (status) status.textContent = "Couldn't delete account. Try again."; }
+    confirmBtn.disabled = false; confirmBtn.textContent = "Delete my account";
+  });
+  modal.addEventListener("click", (e) => { if (e.target === modal) close(); });
 }
 
 export function collect() {
@@ -477,7 +579,7 @@ function renderTemplateOptions() {
   head.className = "tpl-opt-head";
   head.innerHTML = `<span class="tpl-opt-title">${esc(template.name)} options</span>${paid
     ? `<span class="hint">Changes preview instantly — save to publish.</span>`
-    : `<span class="hint">Pro feature. <a href="/dashboard/billing">Upgrade to unlock</a>.</span>`}`;
+    : `<span class="hint">Pro feature. <a href="/dashboard?nav=manage">Upgrade to unlock</a>.</span>`}`;
   wrap.appendChild(head);
 
   const list = document.createElement("div");
@@ -643,7 +745,7 @@ export function renderNotifications(n) {
   const paid = state.ME.plan !== "free";
   $("notifyBody").hidden = !paid; $("notifyLock").hidden = paid;
   if (!paid) {
-    $("notifyUpgrade")?.addEventListener("click", (e) => { e.preventDefault(); location.href = "/dashboard/billing"; });
+    $("notifyUpgrade")?.addEventListener("click", (e) => { e.preventDefault(); location.href = "/dashboard?nav=manage"; });
     return;
   }
   const wh = $("f_webhook"); if (wh && n.discord_webhook_url) { wh.value = ""; wh.placeholder = "Webhook configured ✓ (enter new URL to change)"; }

@@ -31,7 +31,7 @@ export function DashboardContent() {
 <button class="lb-linkbtn lb-board-manage" id="manageBoardsBtn" type="button">Manage boards</button>
 <div class="board-upsell" id="boardLimitUpsell" role="status" hidden>
 <div><b id="boardLimitTitle">Need another leaderboard?</b><p class="hint" id="boardLimitText"></p></div>
-<a class="btn btn--sm btn--accent" id="boardLimitCta" href="/dashboard/billing">Upgrade plan</a>
+<a class="btn btn--sm btn--accent" id="boardLimitCta" href="/dashboard?nav=manage">Upgrade plan</a>
 </div>
 <div class="lb-board-form" id="newBoardForm" hidden>
 <div class="field field-flex"><label for="nb_name">Board name</label><input id="nb_name" placeholder="Summer Race 2026" /></div>
@@ -82,7 +82,7 @@ export function DashboardContent() {
 <a class="lb-qa" href="/demo" target="_blank" rel="noopener noreferrer"><span class="lb-qa-t">View demo</span><span class="lb-qa-d">See a live example board</span></a>
 </div>
 
-<div class="card"><div class="lb-cardhd"><h2>Activity · 14 days</h2><a href="/dashboard/analytics" class="lb-cardlink">Full analytics →</a></div><div class="stat-chart" style="margin-top:14px"><div class="stat-bars" id="ov_bars" title="Daily activity, last 14 days"></div><div class="stat-chart-lbl"><span id="ov_barsFrom"></span><span>today</span></div></div><p class="hint" id="ov_barsEmpty" hidden>No activity yet — share your page link to get it moving.</p><div class="stat-legend"><span class="stat-legend-item views">Views</span><span class="stat-legend-item copies">Copies</span><span class="stat-legend-item clicks">Clicks</span></div></div>
+<div class="card"><div class="lb-cardhd"><h2>Activity · 14 days</h2><a href="/dashboard?nav=growth" class="lb-cardlink">Full analytics →</a></div><div class="stat-chart" style="margin-top:14px"><div class="stat-bars" id="ov_bars" title="Daily activity, last 14 days"></div><div class="stat-chart-lbl"><span id="ov_barsFrom"></span><span>today</span></div></div><p class="hint" id="ov_barsEmpty" hidden>No activity yet — share your page link to get it moving.</p><div class="stat-legend"><span class="stat-legend-item views">Views</span><span class="stat-legend-item copies">Copies</span><span class="stat-legend-item clicks">Clicks</span></div></div>
 <div class="card" id="ovBoardStatusCard"><h2>Board status</h2><div class="board-status" id="ovBoardStatus"><div class="board-status-dot" id="ovStatusDot"></div><div><div class="board-status-text" id="ovStatusText">—</div><div class="board-status-sub" id="ovStatusSub"></div></div></div></div>
 
 <div class="card"><div class="lb-cardhd"><h2>Top players</h2><button class="lb-cardlink" type="button" data-jump="board">Manage all →</button></div><div class="lb-toplist" id="ov_top"></div><div class="empty" id="ov_topEmpty" hidden>No players yet. <button class="lb-linkbtn" type="button" data-jump="board">Add your first one →</button></div></div>
@@ -166,7 +166,7 @@ export function DashboardContent() {
 <div class="field" style="grid-column:1/-1"><label class="chk"><input type="checkbox" id="f_auto_reset" /> Auto-reset when countdown ends</label><select id="f_auto_reset_clear" disabled style="margin-top:8px"><option value="wagers">Reset wagers to 0</option><option value="players">Clear all players</option><option value="none">Keep board as-is</option></select><span class="hint">Archives the finished period and extends the end date by one period automatically.</span></div>
 <div class="field" style="grid-column:1/-1"><label class="chk"><input type="checkbox" id="f_password_enabled" /> Password-protect this board</label><input id="f_password" type="password" placeholder="Leave blank to keep current password" disabled style="margin-top:8px" /><span class="hint">Visitors must enter this password before seeing the leaderboard or using the public API.</span></div></div>
 <div class="field"><label for="f_blurb">Partner blurb</label><textarea id="f_blurb" rows="2" placeholder="Short pitch about the sponsor and your code (optional)."></textarea></div></div>
-<div class="card" data-egroup="data"><h2>Players</h2><p class="card-sub">The board auto-sorts by wagered, highest first. Prize <span class="mono">0</span> shows a dash. Names can be masked (keep the <span class="mono">***</span>). <span class="limit-widget" id="limitWidget"><span id="pCount" class="limit-hint"></span><span class="limit-bar"><span class="limit-fill" id="limitFill"></span></span><span class="limit-hint" id="limitHint"></span><a class="btn btn--sm btn--accent" id="playerLimitUpgrade" href="/dashboard/billing">Upgrade</a></span></p>
+<div class="card" data-egroup="data"><h2>Players</h2><p class="card-sub">The board auto-sorts by wagered, highest first. Prize <span class="mono">0</span> shows a dash. Names can be masked (keep the <span class="mono">***</span>). <span class="limit-widget" id="limitWidget"><span id="pCount" class="limit-hint"></span><span class="limit-bar"><span class="limit-fill" id="limitFill"></span></span><span class="limit-hint" id="limitHint"></span><a class="btn btn--sm btn--accent" id="playerLimitUpgrade" href="/dashboard?nav=manage">Upgrade</a></span></p>
 <div class="player-toolbar">
   <input type="search" id="playerSearch" class="player-search" placeholder="Find player..." autocomplete="off" />
   <div class="player-bulk" id="bulkActions" hidden>
@@ -321,9 +321,31 @@ export function DashboardContent() {
 <div class="empty" id="archEmpty" hidden>No closed-out periods yet. Your first one shows up here and on your page.</div></div>
 <div class="card" id="planCard"><h2>Plan &amp; billing</h2><p class="card-sub">Pick the plan that fits your stream, or start a free Pro trial.</p>
 <div class="plan-summary" id="planSummary"></div>
+<div id="cancelWrap" hidden>
+<p class="hint" id="cancelStatus" role="status" aria-live="polite"></p>
+<button class="btn btn--sm btn--danger" id="cancelBtn" type="button">Cancel subscription</button>
+</div>
 <div class="plan-grid" id="planGrid"></div>
 <div class="plan-trial" id="planTrial" hidden><p class="hint">Not ready to pay? Try every Pro feature free for 7 days.</p><button class="btn btn--accent" id="trialBtn" type="button">Start free Pro trial</button><p class="status" id="trialStatus" role="status" aria-live="polite"></p></div>
-<p class="hint" id="planHint">Paid plans are billed in crypto (BTC, ETH, USDT and 100+ more) and activate automatically once the network confirms. <a href="/dashboard/billing">See billing details →</a></p></div>
+<p class="hint" id="planHint">Paid plans are billed in crypto (BTC, ETH, USDT and 100+ more) and activate automatically once the network confirms.</p></div>
+<div class="card card--danger" id="dangerCard">
+<h2>Danger zone</h2>
+<p class="card-sub">Permanently delete your account and all associated data. This cannot be undone.</p>
+<button class="btn btn--danger" id="deleteAccountBtn" type="button">Delete my account</button>
+</div>
+<div class="modal" id="deleteAccountModal" role="dialog" aria-modal="true" aria-labelledby="deleteAccountModalTitle" hidden>
+<div class="modal-card">
+<h3 id="deleteAccountModalTitle">Delete your account?</h3>
+<p>This will remove all your data — leaderboards, players, archives, subscriptions, and connected bots. This cannot be undone.</p>
+<div class="field"><label for="deleteAccountConfirm">Type <b>DELETE</b> to confirm</label><input id="deleteAccountConfirm" autocomplete="off" placeholder="DELETE" /></div>
+<div class="field" id="deleteAccountPasswordWrap" hidden><label for="deleteAccountPassword">Enter your password</label><input id="deleteAccountPassword" type="password" autocomplete="current-password" placeholder="Password" /></div>
+<div class="d-flex gap-10 flex-wrap">
+<button class="btn btn--danger" id="deleteAccountConfirmBtn" type="button">Delete my account</button>
+<button class="btn btn--ghost" id="deleteAccountCancelBtn" type="button">Cancel</button>
+</div>
+<p class="status" id="deleteAccountModalStatus" role="status" aria-live="polite"></p>
+</div>
+</div>
 </section>
 </div>
       </div>

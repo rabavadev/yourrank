@@ -30,9 +30,7 @@ export interface NavLink {
 export const NAV_LINKS: NavLink[] = [
   { key: "leaderboard", label: "Leaderboard", href: "/dashboard",           match: ["/dashboard"], top: true },
   { key: "bot",         label: "Bot",         href: "/bot/dashboard",       match: ["/bot/dashboard", "/bot/dash"], top: true },
-  { key: "analytics",   label: "Analytics",   href: "/dashboard/analytics", match: ["/dashboard/analytics"], top: true },
   { key: "attribution", label: "Attribution", href: "/dashboard/attribution", match: ["/dashboard/attribution"] },
-  { key: "billing",     label: "Billing",     href: "/dashboard/billing",   match: ["/dashboard/billing"] },
   { key: "support",     label: "Support",     href: "/dashboard/support",   match: ["/dashboard/support"] },
   { key: "security",    label: "Security",    href: "/dashboard/security",  match: ["/dashboard/security"] },
 ];
@@ -98,7 +96,7 @@ export function shellNavHtml(
           <span class="gm-profile-chevron" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg></span>
         </summary>
         <div class="gm-profile-menu">
-          <a class="gm-profile-link" href="/dashboard/billing"><span class="gm-profile-ic">💳</span>Billing</a>
+          <a class="gm-profile-link" href="/dashboard?nav=manage"><span class="gm-profile-ic">💳</span>Billing</a>
           <a class="gm-profile-link" href="/dashboard/attribution"><span class="gm-profile-ic">🔗</span>Attribution</a>
           <a class="gm-profile-link" href="/dashboard/security"><span class="gm-profile-ic">🔒</span>Security</a>
           <a class="gm-profile-link" href="/dashboard/support"><span class="gm-profile-ic">❓</span>Support</a>

@@ -15,9 +15,9 @@ shared as described in the other specs.
 | `/`                     | landing page                              |
 | `/login`, `/signup`     | auth screens (password; Telegram link too)|
 | `/logout`               | destroy `yr_session`, clear legacy cookies |
-| `/dashboard`            | unified dashboard — **Leaderboard tab**   |
-| `/dashboard/analytics`  | Analytics tab                             |
-| `/dashboard/billing`    | Billing tab (NOWPayments)                 |
+| `/dashboard`            | unified dashboard                         |
+| `/dashboard?nav=growth` | Analytics section                         |
+| `/dashboard?nav=manage` | Plan & billing section                    |
 | `/api/*`                | leaderboard's own JSON API                |
 | `/assets/*`             | leaderboard static assets                 |
 | `/go/<slug>`            | public "join" click-through / redirect    |
