@@ -219,7 +219,7 @@ export async function handleCreditsUpdateRedemption(request, env) {
         );
         await tx.unsafe(
           `INSERT INTO credit_ledger (site_viewer_id, type, amount, description, metadata)
-           VALUES ($1, 'refund', $2, 'Cancelled redemption refund', $3)`,
+           VALUES ($1, 'revoke', $2, 'Cancelled redemption refund', $3)`,
           [redemption.site_viewer_id, redemption.cost, JSON.stringify({ redemption_id: id })]
         );
       }
