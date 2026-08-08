@@ -67,30 +67,6 @@ async function checkEndpoint(
   }
 }
 
-async function checkConsumerHealth(base: string, timeoutMs = 10_000): Promise<CheckResult> {
-  const start = Date.now();
-  try {
-    const res = await fetch(`${base}/health`, {
-      method: "GET",
-      signal: AbortSignal.timeout(timeoutMs),
-    });
-    if (!res.ok) {
-      return { name: "GET /health (consumer)", ok: false, status: res.status, latencyMs: Date.now() - start, error: "non-ok status" };
-    }
-    const body = (await res.json()) as { consumer?: { healthy?: boolean; last_seen?: number | null; note?: string; error?: string } };
-    if (!body.consumer) {
-      return { name: "GET /health (consumer)", ok: false, status: res.status, latencyMs: Date.now() - start, error: "consumer field missing" };
-    }
-    if (body.consumer.healthy === false) {
-      const detail = body.consumer.error ?? body.consumer.note ?? `last_seen=${body.consumer.last_seen ?? "unknown"}`;
-      return { name: "GET /health (consumer)", ok: false, status: res.status, latencyMs: Date.now() - start, error: `consumer unhealthy: ${detail}` };
-    }
-    return { name: "GET /health (consumer)", ok: true, status: res.status, latencyMs: Date.now() - start };
-  } catch (err) {
-    return { name: "GET /health (consumer)", ok: false, status: 0, latencyMs: Date.now() - start, error: String(err) };
-  }
-}
-
 async function alertEmail(env: Env, failures: CheckResult[]): Promise<boolean> {
   if (!env.RESEND_API_KEY || !env.ALERT_EMAIL) return false;
 
@@ -181,9 +157,10 @@ async function runChecks(env: Env): Promise<CheckResult[]> {
     );
   }
 
-  // 8. Consumer health: the leaderboard /health endpoint now includes a consumer
-  // heartbeat. If the analytics consumer stops processing events, this fails.
-  checks.push(checkConsumerHealth(base));
+  // 8. Consumer health: ping the consumer Worker's /health route. This both
+  // checks the consumer is reachable and updates its DB heartbeat row, which
+  // the leaderboard /health check above also reads.
+  checks.push(checkEndpoint(`${base}/consumer/health`, { method: "GET" }, "GET /consumer/health"));
 
   return Promise.all(checks);
 }
