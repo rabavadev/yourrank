@@ -58,6 +58,7 @@ export function DashboardContent() {
 <div class="lb-side-foot"><a class="btn btn--sm btn--accent lb-live-btn" id="liveLink" href="#" target="_blank" rel="noopener noreferrer">View live board ↗</a><span class="label" id="planBadge">FREE PLAN</span></div>
 </aside>
 <div class="lb-main">
+<div class="card card--danger" id="verifyBanner" hidden style="margin:16px 24px 0"><h2>Verify your email</h2><p class="card-sub">Your leaderboard won't be public until you confirm your email address. Check your inbox for the link, or <a href="/verify-email">request a new one</a>.</p></div>
 <div id="analyticsHud" class="hud-row" style="display: flex; gap: 20px; padding: 16px 24px; background: var(--panel); border-bottom: 1px solid var(--line); position: sticky; top: 0; z-index: 10;">
   <div class="hud-stat"><span class="hud-lbl" style="font-size: 0.75rem; color: var(--ink-mute); text-transform: uppercase; letter-spacing: 0.1em;">Views</span><div class="hud-val" id="hud_views" style="font-weight: 600; font-size: 1.25rem;">–</div></div>
   <div class="hud-stat"><span class="hud-lbl" style="font-size: 0.75rem; color: var(--ink-mute); text-transform: uppercase; letter-spacing: 0.1em;">Clicks</span><div class="hud-val" id="hud_clicks" style="font-weight: 600; font-size: 1.25rem;">–</div></div>

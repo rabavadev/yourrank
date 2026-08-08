@@ -7,7 +7,8 @@
 import { withHandler } from "./middleware/handler.js";
 
 import {
-  handleSignup, handleLogin, handleLogout, handleMe, handleForgot, handleReset
+  handleSignup, handleLogin, handleLogout, handleMe, handleForgot, handleReset,
+  handleVerifyEmail, handleResendVerification
 } from "./handlers/auth.js";
 import {
   handleChangePassword, handleListSessions, handleRevokeOtherSessions, handleExportData
@@ -53,6 +54,8 @@ export const ROUTES = [
   { path: "/api/auth/me", method: "GET", handler: withHandler(handleMe) },
   { path: "/api/auth/forgot", method: "POST", handler: withHandler(handleForgot) },
   { path: "/api/auth/reset", method: "POST", handler: withHandler(handleReset) },
+  { path: "/api/auth/verify", method: "POST", handler: withHandler(handleVerifyEmail) },
+  { path: "/api/auth/resend-verification", method: "POST", handler: withHandler(handleResendVerification) },
   
   // Authenticated auth routes (CSRF required)
   { path: "/api/auth/logout", method: "POST", handler: withHandler(handleLogout) },

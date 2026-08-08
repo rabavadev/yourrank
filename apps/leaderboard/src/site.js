@@ -407,10 +407,10 @@ export async function getPublicSite(env, slug, request = null) {
     // since it's from the users table (indexed by id, ~0.1ms).
     // DB-003-v8: Resolve plan first, then fetch only needed archives
     const owner = await one(
-      "SELECT plan, (EXTRACT(EPOCH FROM plan_expires_at) * 1000)::double precision AS plan_expires_at, status FROM users WHERE id=$1",
+      "SELECT plan, (EXTRACT(EPOCH FROM plan_expires_at) * 1000)::double precision AS plan_expires_at, status, email_verified FROM users WHERE id=$1",
       [site.user_id]
     );
-    if (owner && owner.status === "suspended") return { suspended: true };
+    if (owner && (owner.status === "suspended" || !owner.email_verified)) return { suspended: true };
     const plan = effectivePlan(owner);
     const archiveLimit = ARCHIVE_LIMITS[plan] || 6;
     const [players, archives, boards, bot] = await Promise.all([

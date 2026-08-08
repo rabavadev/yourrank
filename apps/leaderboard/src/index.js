@@ -399,6 +399,7 @@ async function handleRequest(request, env, ctx, meta) {
         return new Response(null, { status: 302, headers: { "set-cookie": cookieClear(env), location: "/login" } });
       }
       if (path === "/signup" || path === "/signup.html") return new Response(addCookieConsent(await renderHtmlPage(PAGES.signup)), { headers: { ...SECURE_HTML, ...csrfHeader } });
+      if (path === "/verify-email" || path === "/verify-email.html") return new Response(addCookieConsent(await renderHtmlPage(PAGES.verifyEmail)), { headers: { ...SECURE_HTML, ...csrfHeader } });
       if (path === "/dashboard" || path === "/dashboard.html") {
         try {
           const user = await currentUser(request, env);
