@@ -32,6 +32,7 @@ import { handleCspReport } from "./handlers/csp-report.js";
 import { handleLog } from "./handlers/log.js";
 import { handleScores } from "./handlers/scores.js";
 import { handleQuickAdd } from "./handlers/quick-add.js";
+import { handleKickWebhook } from "./handlers/kick-webhook.js";
 import { handleApiDocs, handleOpenApiJson } from "./handlers/docs.js";
 import { handleCheckout, handleCheckoutLifetime, handleIpn, handleCancel, handleUserPayments } from "./billing.js";
 import {
@@ -103,6 +104,9 @@ export const ROUTES = [
   { path: "/api/track/scroll", method: "POST", handler: withHandler(handleTrackScroll) },
   { path: "/api/scores", method: "POST", handler: withHandler(handleScores) },
   
+  // Kick integration webhooks (CSRF-exempt)
+  { path: "/webhooks/kick", method: "POST", handler: withHandler(handleKickWebhook) },
+
   // Public API routes (CSRF-exempt)
   { path: "/api/docs", method: "GET", handler: withHandler(handleApiDocs) },
   { path: "/api/openapi.json", method: "GET", handler: withHandler(handleOpenApiJson) },

@@ -21,3 +21,6 @@ ADMIN_TOTP_SECRET=
 CF_ZONE_ID=
 PRO_PRICE_USD=29
 SESSION_COOKIE_DOMAIN=.yourrank.site
+
+# Kick webhook public key (PEM) for verifying channel-point redemption events.
+KICK_WEBHOOK_PUBLIC_KEY=
