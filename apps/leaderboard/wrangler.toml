@@ -63,6 +63,7 @@ SESSION_COOKIE_DOMAIN = ".yourrank.site"
 #   PRO_PRICE_USD           (optional; defaults to 29)
 #   LEAD_WEBHOOK_URL        (optional; Discord/Slack ping on a new lead)
 #   DISCORD_MONITORING_WEBHOOK (optional; error reporting + cron summaries)
+#   BACKUP_VERIFICATION_LIMIT_HOURS (optional; defaults to 168 — 7 days)
 
 # ---------------------------------------------------------------------------
 # Staging environment (wrangler deploy --env staging)
