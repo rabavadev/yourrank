@@ -47,11 +47,20 @@ export const commandUpdateSchema = z.object({
   buttons: z.array(commandButtonSchema).max(10).optional(),
 }).strict();
 
+export const broadcastSegmentSchema = z.object({
+  language: z.string().min(1).max(10).optional().nullable(),
+  minLastSeenDays: z.number().int().min(0).max(3650).optional().nullable(),
+  maxLastSeenDays: z.number().int().min(0).max(3650).optional().nullable(),
+  firstSeenWithinDays: z.number().int().min(0).max(3650).optional().nullable(),
+  usernameContains: z.string().max(100).optional().nullable(),
+}).strict();
+
 export const broadcastSchema = z.object({
   bot_id: z.string().uuid(),
   body: z.string().min(1).max(4096),
   scheduled_at: z.string().datetime().optional().nullable(),
   media_url: z.string().url().max(2048).optional().nullable(),
+  segment: broadcastSegmentSchema.optional().nullable(),
 }).strict();
 
 export const checkoutSchema = z.object({
@@ -106,3 +115,5 @@ export async function validatedBody<T>(c: { req: { json(): Promise<unknown> }; j
     return c.json({ error: msg }, 400);
   }
 }
+
+export type BroadcastSegment = z.infer<typeof broadcastSegmentSchema>;

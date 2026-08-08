@@ -20,7 +20,8 @@ import { rateLimit } from "./ratelimit.js";
 import { sameOrigin } from "./dashboard-auth.js";
 import { resolveSession, type SessionEnv } from "../../../shared/session.js";
 import { type RateLimitKV } from "./ratelimit.js";
-import { validatedBody, offerCreateSchema, offerToggleSchema, botCreateSchema, botWelcomeSchema, testMessageSchema, commandCreateSchema, commandUpdateSchema, broadcastSchema, checkoutSchema } from "./validation.js";
+import { validatedBody, offerCreateSchema, offerToggleSchema, botCreateSchema, botWelcomeSchema, testMessageSchema, commandCreateSchema, commandUpdateSchema, broadcastSchema, checkoutSchema, broadcastSegmentSchema } from "./validation.js";
+import { normalizeSegment, parseSegment, buildSegmentWhere } from "./broadcast-segment.js";
 import { errMessage } from "./errors.js";
 
 type DashApiBindings = SessionEnv & {
@@ -645,14 +646,15 @@ export function buildDashboardApi(): Hono<{ Bindings: DashApiBindings; Variables
 
   // ---- broadcasts ----
   api.get("/broadcasts", async (c) => {
-    return c.json(await query(
+    const rows = await query(
       `SELECT b.id, b.body, b.media_url, b.status, b.scheduled_at, b.sent_at,
-              b.total_count, b.sent_count, b.fail_count, bo.username AS bot_username
+              b.segment, b.total_count, b.sent_count, b.fail_count, bo.username AS bot_username
          FROM broadcasts b JOIN bots bo ON bo.id = b.bot_id
         WHERE bo.owner_id = $1
         ORDER BY b.created_at DESC LIMIT 20`,
       [c.get("uid")]
-    ));
+    );
+    return c.json(rows.map((r: any) => ({ ...r, segment: parseSegment(r.segment) })));
   });
 
   // How many subscribers a broadcast would reach (active, non-blocked),
@@ -661,13 +663,24 @@ export function buildDashboardApi(): Hono<{ Bindings: DashApiBindings; Variables
     const uid = c.get("uid");
     const botId = c.req.query("bot_id");
     if (!botId) return c.json({ error: "bot_id required" }, 400);
+
+    let segment = null;
+    const segmentParam = c.req.query("segment");
+    if (segmentParam) {
+      try {
+        segment = broadcastSegmentSchema.parse(JSON.parse(segmentParam));
+      } catch {
+        return c.json({ error: "invalid segment" }, 400);
+      }
+    }
+    const { clause, values } = buildSegmentWhere(segment, 2);
     const row = await one<{ count: number }>(
       `SELECT count(*)::int AS count
          FROM bot_subscribers bs JOIN bots b ON b.id = bs.bot_id
-        WHERE b.id = $1 AND b.owner_id = $2 AND NOT bs.is_blocked`,
-      [botId, uid]
+        WHERE b.id = $1 AND b.owner_id = $2 AND NOT bs.is_blocked${clause ? ` AND ${clause}` : ""}`,
+      [botId, uid, ...values]
     );
-    return c.json({ count: row?.count ?? 0 });
+    return c.json({ count: row?.count ?? 0, segment });
   });
 
   api.post("/broadcasts", async (c) => {
@@ -677,19 +690,20 @@ export function buildDashboardApi(): Hono<{ Bindings: DashApiBindings; Variables
 
     const parsed = await validatedBody(c, broadcastSchema);
     if (parsed instanceof Response) return parsed;
-    const { bot_id, body: broadcastBody, scheduled_at, media_url } = parsed;
+    const { bot_id, body: broadcastBody, scheduled_at, media_url, segment } = parsed;
     const body = broadcastBody.trim();
 
     const bot = await one(`SELECT id FROM bots WHERE id = $1 AND owner_id = $2`, [bot_id, uid]);
     if (!bot) return c.json({ error: "bot not found" }, 404);
 
+    const segmentValue = normalizeSegment(segment);
     const row = await one(
-      `INSERT INTO broadcasts (bot_id, body, media_url, status, scheduled_at)
-       VALUES ($1, $2, $3, 'scheduled', $4)
+      `INSERT INTO broadcasts (bot_id, body, media_url, status, scheduled_at, segment)
+       VALUES ($1, $2, $3, 'scheduled', $4, $5)
        RETURNING id, status`,
-      [bot_id, body.trim(), media_url ?? null, scheduled_at ?? null]
+      [bot_id, body.trim(), media_url ?? null, scheduled_at ?? null, segmentValue]
     );
-    return c.json(row);
+    return c.json({ ...row, segment: parseSegment(segmentValue) });
   });
 
   // Cancel a scheduled broadcast. Already sent/delivered broadcasts can't be

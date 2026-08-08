@@ -1,5 +1,6 @@
 import { one, query } from "../../../shared/db.js";
 import { decryptToken } from "../../../shared/crypto.js";
+import { parseSegment, buildSegmentWhere } from "./broadcast-segment.js";
 
 /** Escape user content for Telegram HTML parse_mode */
 const esc = (s: unknown): string =>
@@ -24,6 +25,7 @@ interface ActiveBroadcast {
   body: string;
   media_url: string | null;
   buttons: unknown;
+  segment: string | null;
   cursor_tg_user_id: number; // Changed from string to number for numeric comparison
   sent_count: number;
   fail_count: number;
@@ -47,7 +49,7 @@ export async function processBroadcastBatch(batchSize = 300): Promise<boolean> {
          LIMIT 1
          FOR UPDATE SKIP LOCKED
       )
-      RETURNING id, bot_id, body, media_url, buttons, cursor_tg_user_id, sent_count, fail_count`
+      RETURNING id, bot_id, body, media_url, buttons, segment, cursor_tg_user_id, sent_count, fail_count`
   );
   if (!bc) return false;
 
@@ -60,25 +62,29 @@ export async function processBroadcastBatch(batchSize = 300): Promise<boolean> {
     return true;
   }
   const token = await decryptToken(Buffer.from(bot.token_encrypted));
+  const segment = parseSegment(bc.segment);
 
   // Set total on first batch.
   if (bc.cursor_tg_user_id === 0) {
+    const { clause: countClause, values: countValues } = buildSegmentWhere(segment, 1);
     await query(
       `UPDATE broadcasts SET total_count = (
-         SELECT count(*) FROM bot_subscribers
-          WHERE bot_id = $1 AND NOT is_blocked
+         SELECT count(*) FROM bot_subscribers bs
+          WHERE bs.bot_id = $1 AND NOT bs.is_blocked${countClause ? ` AND ${countClause}` : ""}
        ) WHERE id = $2`,
-      [bc.bot_id, bc.id]
+      [bc.bot_id, ...countValues, bc.id]
     );
   }
 
-  // Broadcasts always go to every active (non-blocked) subscriber.
+  // Broadcasts respect the segment filter (language, last_seen window, etc.).
+  const { clause: subClause, values: subValues } = buildSegmentWhere(segment, 3);
   const subs = await query<{ tg_user_id: number; first_name: string | null; tg_username: string | null }>(
     `SELECT bs.tg_user_id, bs.first_name, bs.tg_username FROM bot_subscribers bs
       WHERE bs.bot_id = $1 AND NOT bs.is_blocked AND bs.tg_user_id > $2
+           ${subClause ? `AND ${subClause}` : ""}
       ORDER BY bs.tg_user_id
       LIMIT $3`,
-    [bc.bot_id, bc.cursor_tg_user_id, batchSize]
+    [bc.bot_id, bc.cursor_tg_user_id, batchSize, ...subValues]
   );
 
   if (subs.length === 0) {
