@@ -2,7 +2,8 @@
 // queue consumer. Keeps webhook verification and credit-grant processing in
 // one place so the architecture can scale without duplicating code.
 
-import { one, exec, withTransaction } from "./db.js";
+import { one, query, exec, withTransaction } from "./db.js";
+import { rateLimit } from "./ratelimit.js";
 
 export interface KickRewardPayload {
   broadcaster?: { user_id?: number | string };
@@ -30,7 +31,9 @@ export interface KickRewardResult {
 export type KickRewardOutcome =
   | KickRewardResult
   | { duplicate: true }
-  | { skipped: true };
+  | { skipped: true }
+  | { blocked: true }
+  | { rateLimited: true };
 
 // ---------------------------------------------------------------------------
 // RSA-SHA256 / PKCS#1 v1.5 signature verification.
@@ -98,8 +101,32 @@ export function isCreditableKickStatus(status: string | undefined): boolean {
   return CREDITABLE_STATUSES.has(String(status || "").toLowerCase());
 }
 
+// Simple Levenshtein distance for username similarity checks.
+function levenshtein(a: string, b: string): number {
+  if (a.length === 0) return b.length;
+  if (b.length === 0) return a.length;
+  const prev = Array(a.length + 1).fill(0).map((_, i) => i);
+  for (let j = 1; j <= b.length; j++) {
+    let diag = prev[0];
+    prev[0] = j;
+    for (let i = 1; i <= a.length; i++) {
+      const temp = prev[i];
+      const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+      prev[i] = Math.min(prev[i] + 1, prev[i - 1] + 1, diag + cost);
+      diag = temp;
+    }
+  }
+  return prev[a.length];
+}
+
+export interface AntiFraudEnv {
+  SESSIONS?: any;
+  RL_FAIL_OPEN?: string;
+}
+
 export async function processKickRewardRedemption(
-  event: KickRewardEvent
+  event: KickRewardEvent,
+  env?: AntiFraudEnv
 ): Promise<KickRewardOutcome> {
   const { messageId, payload } = event;
 
@@ -167,7 +194,7 @@ export async function processKickRewardRedemption(
       throw new Error(`Reward cost mismatch for ${rewardId}: expected ${expectedCost}, got ${rewardCost}`);
     }
 
-    // Upsert viewer.
+    // Upsert viewer and record username history.
     const viewerRows = (await tx.unsafe(
       `INSERT INTO viewers (kick_user_id, kick_username, kick_avatar_url)
        VALUES ($1, $2, $3)
@@ -180,28 +207,142 @@ export async function processKickRewardRedemption(
     )) as { id: string }[];
     const viewerId = viewerRows[0].id;
 
+    const username = String(redeemer.username || "").trim().toLowerCase();
+    if (username) {
+      // Track username history to detect alt-account swaps.
+      await tx.unsafe(
+        `INSERT INTO viewer_username_history (viewer_id, username)
+         VALUES ($1, $2)
+         ON CONFLICT (viewer_id, username)
+         DO UPDATE SET seen_at = now()`,
+        [viewerId, username]
+      );
+    }
+
     // Check whether this viewer already existed on this site.
     const existingSiteViewer = await tx.one<{ id: string }>(
       "SELECT id FROM site_viewers WHERE site_id = $1 AND viewer_id = $2 LIMIT 1",
       [site.id, viewerId]
     );
 
-    // Upsert site viewer and grant credits.
+    // Upsert site viewer (without credits yet).
     const creditAmount = Number(mapping.credits || 0);
     const svRows = (await tx.unsafe(
       `INSERT INTO site_viewers (site_id, viewer_id, balance, total_earned, total_spent)
-       VALUES ($1, $2, $3, $3, 0)
+       VALUES ($1, $2, 0, 0, 0)
        ON CONFLICT (site_id, viewer_id)
-       DO UPDATE SET balance = site_viewers.balance + EXCLUDED.balance,
-                     total_earned = site_viewers.total_earned + EXCLUDED.total_earned,
-                     total_spent = site_viewers.total_spent,
-                     updated_at = now()
-       RETURNING id, balance`,
-      [site.id, viewerId, creditAmount]
-    )) as { id: string; balance: number }[];
-    const siteViewerId = svRows[0].id;
+       DO UPDATE SET updated_at = now()
+       RETURNING id, balance, blocked, fraud_score`,
+      [site.id, viewerId]
+    )) as { id: string; balance: number; blocked: boolean; fraud_score: number }[];
+    const siteViewer = svRows[0];
+    const siteViewerId = siteViewer.id;
 
-    // Record immutable ledger entry.
+    // Anti-fraud scoring.
+    let fraudScore = Number(siteViewer.fraud_score || 0);
+    let fraudReasons: string[] = [];
+    let isBlocked = siteViewer.blocked || false;
+
+    if (username) {
+      // Detect username reuse by a different Kick account (alt swap).
+      const altHistory = await tx.query<{ viewer_id: string; seen_at: string }>(
+        `SELECT viewer_id, seen_at FROM viewer_username_history
+          WHERE username = $1 AND viewer_id != $2
+            AND seen_at > now() - interval '30 days'
+          LIMIT 1`,
+        [username, viewerId]
+      );
+      if (altHistory.length > 0) {
+        fraudScore += 50;
+        fraudReasons.push("username reused by another Kick account");
+      }
+
+      // Detect look-alike usernames on this site.
+      const peers = await tx.query<{ kick_username: string }>(
+        `SELECT v.kick_username
+           FROM site_viewers sv
+           JOIN viewers v ON v.id = sv.viewer_id
+          WHERE sv.site_id = $1 AND v.id != $2 AND v.kick_username IS NOT NULL AND v.kick_username != ''`,
+        [site.id, viewerId]
+      );
+      for (const peer of peers) {
+        const peerName = String(peer.kick_username || "").trim().toLowerCase();
+        if (peerName.length < 4 || username.length < 4) continue;
+        if (peerName === username) continue;
+        const dist = levenshtein(username, peerName);
+        if (dist <= 2) {
+          fraudScore += 30;
+          fraudReasons.push("username similar to existing viewer");
+          break;
+        }
+      }
+    }
+
+    // Auto-block when fraud score crosses threshold.
+    if (fraudScore >= 100 && !isBlocked) {
+      isBlocked = true;
+      fraudReasons.push("auto-blocked by fraud score");
+    }
+
+    if (isBlocked || fraudReasons.length > 0) {
+      await tx.unsafe(
+        `UPDATE site_viewers
+            SET fraud_score = GREATEST(fraud_score, $1),
+                blocked = $2,
+                block_reason = CASE
+                  WHEN block_reason IS NULL THEN $3
+                  WHEN block_reason LIKE $4 THEN block_reason
+                  ELSE block_reason || '; ' || $3
+                END,
+                updated_at = now()
+          WHERE id = $5`,
+        [
+          fraudScore,
+          isBlocked,
+          fraudReasons.join("; "),
+          `%${fraudReasons.join("; ")}%`,
+          siteViewerId,
+        ]
+      );
+    }
+
+    // Update event with the matched site.
+    await tx.unsafe(
+      "UPDATE kick_reward_events SET site_id = $1 WHERE event_id = $2",
+      [site.id, messageId]
+    );
+
+    if (isBlocked) {
+      return { blocked: true };
+    }
+
+    // Rate-limit earning per viewer on this site.
+    if (env?.SESSIONS) {
+      const limit = await rateLimit(env, `kick-earn:${site.id}:${redeemerKickUserId}`, 15, 60);
+      if (!limit.ok) {
+        await tx.unsafe(
+          `UPDATE site_viewers
+              SET fraud_score = fraud_score + 10,
+                  updated_at = now()
+            WHERE id = $1`,
+          [siteViewerId]
+        );
+        return { rateLimited: true };
+      }
+    }
+
+    // Grant credits and record ledger.
+    const creditedRows = (await tx.unsafe(
+      `UPDATE site_viewers
+          SET balance = balance + $1,
+              total_earned = total_earned + $1,
+              last_earned_at = now(),
+              updated_at = now()
+        WHERE id = $2
+        RETURNING id, balance`,
+      [creditAmount, siteViewerId]
+    )) as { id: string; balance: number }[];
+
     await tx.unsafe(
       `INSERT INTO credit_ledger
          (site_viewer_id, type, amount, description, metadata, kick_event_id)
@@ -220,15 +361,9 @@ export async function processKickRewardRedemption(
       ]
     );
 
-    // Update the event row with the site we credited.
-    await tx.unsafe(
-      "UPDATE kick_reward_events SET site_id = $1 WHERE event_id = $2",
-      [site.id, messageId]
-    );
-
     return {
       credited: creditAmount,
-      balance: svRows[0].balance,
+      balance: creditedRows[0].balance,
       newViewer: !existingSiteViewer,
     };
   });

@@ -109,7 +109,7 @@ export const creditsPage = leaderboardPageHtml({
     <h2>Viewer balances</h2>
     <div class="board-table-wrap">
       <table class="board-table">
-        <thead><tr><th>Kick user</th><th>Balance</th><th>Total earned</th><th>Total spent</th><th>Joined</th></tr></thead>
+        <thead><tr><th>Kick user</th><th>Balance</th><th>Total earned</th><th>Total spent</th><th>Last earned</th><th class="ta-r">Actions</th></tr></thead>
         <tbody id="cr-viewer-list"></tbody>
       </table>
       <p class="empty" id="cr-viewer-empty" hidden>No viewers yet.</p>

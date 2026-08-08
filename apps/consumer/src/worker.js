@@ -89,7 +89,7 @@ async function handleEvent(input, tokenCache) {
         messageId: body.messageId,
         eventType: body.eventType,
         payload: body.payload,
-      });
+      }, env);
       break;
     }
     default: {

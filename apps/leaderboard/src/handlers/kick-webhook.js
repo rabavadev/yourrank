@@ -13,8 +13,8 @@ const KICK_REWARD_EVENT = "channel.reward.redemption.updated";
 
 // If the queue binding is missing, process the event inline so local/dev
 // tests still work, but always prefer the queue for scale.
-async function processFallback(event) {
-  const result = await processKickRewardRedemption(event);
+async function processFallback(event, env) {
+  const result = await processKickRewardRedemption(event, env);
   console.log("[kick-webhook] fallback processed:", result);
   return result;
 }
@@ -59,7 +59,7 @@ export async function handleKickWebhook(request, env) {
     return json({ ok: true, skipped: payload.status });
   }
 
-  const producer = createQueueProducer(env.EVENTS_QUEUE, processFallback);
+  const producer = createQueueProducer(env.EVENTS_QUEUE, processFallback, env);
 
   try {
     await producer.send({

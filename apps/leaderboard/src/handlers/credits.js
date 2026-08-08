@@ -2,6 +2,7 @@
 import { requireUser, bad, ok, readJson } from "../auth.js";
 import { getByUser, getBoardById } from "../site.js";
 import { query, one, exec, withTransaction } from "../../../../shared/db.js";
+import { rateLimit } from "../../../../shared/ratelimit.js";
 import { upsertCreditRewardMapping, setSiteKickChannel } from "../../../../shared/kick-credits.js";
 
 function getSite(env, user, url) {
@@ -32,7 +33,7 @@ export async function handleCreditsStatus(request, env) {
     ),
     query(
       `SELECT sv.id, v.kick_user_id, v.kick_username, sv.balance, sv.total_earned, sv.total_spent,
-              sv.created_at
+              sv.blocked, sv.fraud_score, sv.block_reason, sv.last_earned_at, sv.created_at
          FROM site_viewers sv
          JOIN viewers v ON v.id = sv.viewer_id
         WHERE sv.site_id=$1
@@ -245,19 +246,23 @@ export async function handlePublicCredits(request, _env) {
 
   const viewer = kickUserId
     ? await one(
-        `SELECT sv.id, sv.balance, sv.total_earned, sv.total_spent, v.kick_username
+        `SELECT sv.id, sv.balance, sv.total_earned, sv.total_spent, sv.blocked, sv.block_reason, v.kick_username
            FROM site_viewers sv
            JOIN viewers v ON v.id = sv.viewer_id
           WHERE sv.site_id=$1 AND v.kick_user_id=$2`,
         [site.id, kickUserId]
       )
     : await one(
-        `SELECT sv.id, sv.balance, sv.total_earned, sv.total_spent, v.kick_username
+        `SELECT sv.id, sv.balance, sv.total_earned, sv.total_spent, sv.blocked, sv.block_reason, v.kick_username
            FROM site_viewers sv
            JOIN viewers v ON v.id = sv.viewer_id
           WHERE sv.site_id=$1 AND lower(v.kick_username)=lower($2)`,
         [site.id, kickUsername]
       );
+
+  if (viewer?.blocked) {
+    return bad("viewer blocked");
+  }
 
   const shopItems = await query(
     `SELECT id, name, description, cost, stock, active
@@ -273,7 +278,7 @@ export async function handlePublicCredits(request, _env) {
   });
 }
 
-export async function handlePublicRedeem(request, _env) {
+export async function handlePublicRedeem(request, env) {
   const body = await readJson(request);
   const slug = String(body?.slug || "").trim();
   const kickUserId = String(body?.kickUserId || "").trim();
@@ -290,23 +295,32 @@ export async function handlePublicRedeem(request, _env) {
   );
   if (!site) return bad("site not found", 404);
 
+  // Rate-limit redemptions per viewer per minute.
+  if (env?.SESSIONS) {
+    const limit = await rateLimit(env, `redeem:${site.id}:${kickUserId || kickUsername}`, 5, 60);
+    if (!limit.ok) {
+      return bad("rate limited", 429);
+    }
+  }
+
   const result = await withTransaction(async (tx) => {
     const viewer = kickUserId
       ? await tx.one(
-          `SELECT sv.id, sv.balance, v.kick_username
+          `SELECT sv.id, sv.balance, sv.blocked, v.kick_username
              FROM site_viewers sv
              JOIN viewers v ON v.id = sv.viewer_id
             WHERE sv.site_id=$1 AND v.kick_user_id=$2`,
           [site.id, kickUserId]
         )
       : await tx.one(
-          `SELECT sv.id, sv.balance, v.kick_username
+          `SELECT sv.id, sv.balance, sv.blocked, v.kick_username
              FROM site_viewers sv
              JOIN viewers v ON v.id = sv.viewer_id
             WHERE sv.site_id=$1 AND lower(v.kick_username)=lower($2)`,
           [site.id, kickUsername]
         );
     if (!viewer) throw new Error("viewer not found");
+    if (viewer.blocked) throw new Error("viewer blocked");
 
     const item = await tx.one(
       "SELECT id, cost, stock FROM shop_items WHERE id=$1 AND site_id=$2 AND active=true FOR UPDATE",
@@ -320,6 +334,7 @@ export async function handlePublicRedeem(request, _env) {
       `UPDATE site_viewers
         SET balance = balance - $1,
             total_spent = total_spent + $1,
+            last_redeemed_at = now(),
             updated_at = now()
       WHERE id=$2`,
       [item.cost, viewer.id]

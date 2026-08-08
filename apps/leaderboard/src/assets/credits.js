@@ -58,11 +58,21 @@ function render() {
   const viewers = state.viewers || [];
   $("cr-viewer-list").innerHTML = viewers.map((v) => `
     <tr>
-      <td>${esc(v.kick_username || v.kick_user_id)}</td>
+      <td>
+        ${esc(v.kick_username || v.kick_user_id)}
+        ${v.blocked ? '<span class="pill pill--bad">blocked</span>' : ''}
+        ${v.fraud_score ? `<span class="pill pill--warn">risk ${v.fraud_score}</span>` : ''}
+        ${v.block_reason ? `<div class="hint">${esc(v.block_reason)}</div>` : ''}
+      </td>
       <td>${v.balance}</td>
       <td>${v.total_earned}</td>
       <td>${v.total_spent}</td>
-      <td>${fmtDate(v.created_at)}</td>
+      <td>${fmtDate(v.last_earned_at || v.created_at)}</td>
+      <td class="ta-r">
+        <button class="btn btn--sm ${v.blocked ? 'btn--accent' : 'btn--danger'}" data-block="${esc(v.id)}" data-blocked="${v.blocked ? '1' : ''}">
+          ${v.blocked ? 'Unblock' : 'Block'}
+        </button>
+      </td>
     </tr>
   `).join("");
   $("cr-viewer-empty").hidden = viewers.length > 0;
@@ -92,6 +102,18 @@ function render() {
   document.querySelectorAll("[data-del-shop]").forEach((b) => b.addEventListener("click", () => delShop(b.dataset.delShop)));
   document.querySelectorAll("[data-fulfill]").forEach((b) => b.addEventListener("click", () => updateRedemption(b.dataset.fulfill, "fulfilled")));
   document.querySelectorAll("[data-cancel]").forEach((b) => b.addEventListener("click", () => updateRedemption(b.dataset.cancel, "cancelled")));
+  document.querySelectorAll("[data-block]").forEach((b) => b.addEventListener("click", () => toggleBlock(b.dataset.block, b.dataset.blocked)));
+}
+
+async function toggleBlock(id, isBlocked) {
+  const blocking = !isBlocked;
+  let reason = "";
+  if (blocking) {
+    reason = window.prompt("Block reason:") || "";
+    if (!reason) return;
+  }
+  await api("POST", `/api/credits/viewers/${encodeURIComponent(id)}/block`, { blocked: blocking, reason });
+  await load();
 }
 
 function setStatus(id, msg, err) {
