@@ -4,10 +4,49 @@ import { getByUser, getBoardById } from "../site.js";
 import { query, one, exec, withTransaction } from "../../../../shared/db.js";
 import { rateLimit } from "../../../../shared/ratelimit.js";
 import { upsertCreditRewardMapping, setSiteKickChannel } from "../../../../shared/kick-credits.js";
+import {
+  effectivePlan,
+  CREDITS_REWARD_LIMITS,
+  CREDITS_SHOP_LIMITS,
+  CREDITS_PENDING_REDEMPTIONS_LIMITS,
+  CREDITS_REDEMPTIONS_PER_30D_LIMITS,
+  CREDITS_VIEWERS_PER_30D_LIMITS,
+} from "../../../../shared/plans.js";
 
 function getSite(env, user, url) {
   const siteId = url.searchParams.get("siteId");
   return siteId ? getBoardById(env, user.id, siteId) : getByUser(env, user.id);
+}
+
+async function getSiteCreditsUsage(siteId) {
+  const [rewardMappings, shopItems, pendingRedemptions, redemptions30d, newViewers30d] = await Promise.all([
+    one("SELECT count(*)::int AS count FROM credit_reward_mappings WHERE site_id=$1 AND active=true", [siteId]),
+    one("SELECT count(*)::int AS count FROM shop_items WHERE site_id=$1 AND active=true", [siteId]),
+    one(
+      `SELECT count(*)::int AS count FROM redemptions r
+         JOIN site_viewers sv ON sv.id = r.site_viewer_id
+        WHERE sv.site_id=$1 AND r.status='pending'`,
+      [siteId]
+    ),
+    one(
+      `SELECT count(*)::int AS count FROM redemptions r
+         JOIN site_viewers sv ON sv.id = r.site_viewer_id
+        WHERE sv.site_id=$1 AND r.status='fulfilled' AND r.created_at > now() - interval '30 days'`,
+      [siteId]
+    ),
+    one(
+      `SELECT count(*)::int AS count FROM site_viewers
+        WHERE site_id=$1 AND created_at > now() - interval '30 days'`,
+      [siteId]
+    ),
+  ]);
+  return {
+    rewardMappings: rewardMappings?.count || 0,
+    shopItems: shopItems?.count || 0,
+    pendingRedemptions: pendingRedemptions?.count || 0,
+    redemptionsPer30Days: redemptions30d?.count || 0,
+    newViewersPer30Days: newViewers30d?.count || 0,
+  };
 }
 
 export async function handleCreditsStatus(request, env) {
@@ -17,7 +56,7 @@ export async function handleCreditsStatus(request, env) {
   const site = await getSite(env, user, url);
   if (!site) return bad("no site", 404);
 
-  const [channel, mappings, items, viewers, redemptions] = await Promise.all([
+  const [channel, mappings, items, viewers, redemptions, usage] = await Promise.all([
     one("SELECT kick_channel_external_id, kick_channel_name FROM sites WHERE id=$1", [site.id]),
     query(
       `SELECT id, kick_reward_id, kick_reward_title, kick_reward_cost, credits, active
@@ -53,7 +92,10 @@ export async function handleCreditsStatus(request, env) {
         LIMIT 100`,
       [site.id]
     ),
+    getSiteCreditsUsage(site.id),
   ]);
+
+  const plan = effectivePlan(user);
 
   return ok({
     channel: {
@@ -64,6 +106,14 @@ export async function handleCreditsStatus(request, env) {
     shopItems: items || [],
     viewers: viewers || [],
     redemptions: redemptions || [],
+    usage: usage || {},
+    limits: {
+      rewardMappings: CREDITS_REWARD_LIMITS[plan],
+      shopItems: CREDITS_SHOP_LIMITS[plan],
+      pendingRedemptions: CREDITS_PENDING_REDEMPTIONS_LIMITS[plan],
+      redemptionsPer30Days: CREDITS_REDEMPTIONS_PER_30D_LIMITS[plan],
+      newViewersPer30Days: CREDITS_VIEWERS_PER_30D_LIMITS[plan],
+    },
   });
 }
 
@@ -91,6 +141,7 @@ export async function handleCreditsSaveReward(request, env) {
   if (!site) return bad("no site", 404);
 
   const body = await readJson(request);
+  const id = body?.id ? String(body.id).trim() : null;
   const kickRewardId = String(body?.kickRewardId || "").trim();
   const kickRewardTitle = String(body?.kickRewardTitle || "").trim();
   const kickRewardCost = Number(body?.kickRewardCost || 0);
@@ -100,8 +151,19 @@ export async function handleCreditsSaveReward(request, env) {
   if (!Number.isFinite(kickRewardCost) || kickRewardCost < 0) return bad("Reward cost must be a non-negative number");
   if (!Number.isFinite(credits) || credits <= 0) return bad("Credits must be a positive number");
 
-  const id = await upsertCreditRewardMapping(site.id, kickRewardId, kickRewardTitle, kickRewardCost, credits);
-  return ok({ id });
+  const plan = effectivePlan(user);
+  const limit = CREDITS_REWARD_LIMITS[plan];
+  const countRow = await one(
+    `SELECT count(*)::int AS count FROM credit_reward_mappings
+      WHERE site_id=$1 AND active=true ${id ? "AND id != $2" : ""}`,
+    id ? [site.id, id] : [site.id]
+  );
+  if ((countRow?.count || 0) >= limit) {
+    return bad(`Reward mapping limit reached for the ${plan} plan. Upgrade to add more.`, 403);
+  }
+
+  const resultId = await upsertCreditRewardMapping(site.id, kickRewardId, kickRewardTitle, kickRewardCost, credits, id);
+  return ok({ id: resultId });
 }
 
 export async function handleCreditsDeleteReward(request, env) {
@@ -139,6 +201,17 @@ export async function handleCreditsSaveShopItem(request, env) {
   if (!name) return bad("Item name is required");
   if (!Number.isFinite(cost) || cost <= 0) return bad("Cost must be a positive number");
   if (stock !== null && (!Number.isFinite(stock) || stock < 0)) return bad("Stock must be a non-negative number or null");
+
+  const plan = effectivePlan(user);
+  const limit = CREDITS_SHOP_LIMITS[plan];
+  const countRow = await one(
+    `SELECT count(*)::int AS count FROM shop_items
+      WHERE site_id=$1 AND active=true ${id ? "AND id != $2" : ""}`,
+    id ? [site.id, id] : [site.id]
+  );
+  if (active && (countRow?.count || 0) >= limit) {
+    return bad(`Shop item limit reached for the ${plan} plan. Upgrade to add more.`, 403);
+  }
 
   let resultId;
   if (id) {
@@ -290,10 +363,15 @@ export async function handlePublicRedeem(request, env) {
   }
 
   const site = await one(
-    "SELECT id FROM sites WHERE slug=$1 AND published=true",
+    `SELECT s.id, u.plan, (EXTRACT(EPOCH FROM u.plan_expires_at) * 1000)::double precision AS plan_expires_at
+       FROM sites s
+       JOIN users u ON u.id = s.user_id
+      WHERE s.slug=$1 AND s.published=true`,
     [slug.toLowerCase()]
   );
   if (!site) return bad("site not found", 404);
+
+  const plan = effectivePlan(site);
 
   // Rate-limit redemptions per viewer per minute.
   if (env?.SESSIONS) {
@@ -301,6 +379,28 @@ export async function handlePublicRedeem(request, env) {
     if (!limit.ok) {
       return bad("rate limited", 429);
     }
+  }
+
+  // Enforce site plan limits before creating the redemption.
+  const [pendingRow, fulfilled30dRow] = await Promise.all([
+    one(
+      `SELECT count(*)::int AS count FROM redemptions r
+         JOIN site_viewers sv ON sv.id = r.site_viewer_id
+        WHERE sv.site_id=$1 AND r.status='pending'`,
+      [site.id]
+    ),
+    one(
+      `SELECT count(*)::int AS count FROM redemptions r
+         JOIN site_viewers sv ON sv.id = r.site_viewer_id
+        WHERE sv.site_id=$1 AND r.status='fulfilled' AND r.created_at > now() - interval '30 days'`,
+      [site.id]
+    ),
+  ]);
+  if ((pendingRow?.count || 0) >= CREDITS_PENDING_REDEMPTIONS_LIMITS[plan]) {
+    return bad("This streamer's shop is at capacity. Ask them to upgrade.", 403);
+  }
+  if ((fulfilled30dRow?.count || 0) >= CREDITS_REDEMPTIONS_PER_30D_LIMITS[plan]) {
+    return bad("This streamer's monthly redemption limit is reached. Ask them to upgrade.", 403);
   }
 
   const result = await withTransaction(async (tx) => {

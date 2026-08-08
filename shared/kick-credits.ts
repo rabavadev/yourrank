@@ -4,6 +4,11 @@
 
 import { one, query, exec, withTransaction } from "./db.js";
 import { rateLimit } from "./ratelimit.js";
+import {
+  effectivePlan,
+  type PlanTier,
+  CREDITS_VIEWERS_PER_30D_LIMITS,
+} from "./plans.js";
 
 export interface KickRewardPayload {
   broadcaster?: { user_id?: number | string };
@@ -33,7 +38,8 @@ export type KickRewardOutcome =
   | { duplicate: true }
   | { skipped: true }
   | { blocked: true }
-  | { rateLimited: true };
+  | { rateLimited: true }
+  | { planLimit: true; plan: PlanTier };
 
 // ---------------------------------------------------------------------------
 // RSA-SHA256 / PKCS#1 v1.5 signature verification.
@@ -172,6 +178,14 @@ export async function processKickRewardRedemption(
       throw new Error(`No site linked to Kick channel ${channelExternalId}`);
     }
 
+    // Resolve effective plan for the streamer.
+    const owner = await tx.one<{ plan: string; plan_expires_at: number | null }>(
+      `SELECT plan, (EXTRACT(EPOCH FROM plan_expires_at) * 1000)::double precision AS plan_expires_at
+         FROM users WHERE id = $1`,
+      [site.user_id]
+    );
+    const plan = effectivePlan(owner);
+
     // Find the reward → credits mapping for this site.
     const mapping = await tx.one<{
       id: string;
@@ -224,6 +238,19 @@ export async function processKickRewardRedemption(
       "SELECT id FROM site_viewers WHERE site_id = $1 AND viewer_id = $2 LIMIT 1",
       [site.id, viewerId]
     );
+
+    // Enforce new-viewer plan limit (rolling 30 days) for new site viewers.
+    if (!existingSiteViewer) {
+      const newViewerCount = await tx.one<{ count: string }>(
+        `SELECT count(*)::text AS count FROM site_viewers
+          WHERE site_id = $1 AND created_at > now() - interval '30 days'`,
+        [site.id]
+      );
+      const limit = CREDITS_VIEWERS_PER_30D_LIMITS[plan] || 0;
+      if (Number(newViewerCount?.count || 0) >= limit) {
+        return { planLimit: true, plan };
+      }
+    }
 
     // Upsert site viewer (without credits yet).
     const creditAmount = Number(mapping.credits || 0);
@@ -378,14 +405,17 @@ export async function upsertCreditRewardMapping(
   kickRewardId: string,
   kickRewardTitle: string,
   kickRewardCost: number,
-  credits: number
+  credits: number,
+  id?: string | null
 ): Promise<string> {
-  const existing = await one<{ id: string }>(
-    `SELECT id FROM credit_reward_mappings
-      WHERE site_id = $1 AND kick_reward_id = $2
-      LIMIT 1`,
-    [siteId, kickRewardId]
-  );
+  const existing = id
+    ? await one<{ id: string }>("SELECT id FROM credit_reward_mappings WHERE id=$1 AND site_id=$2", [id, siteId])
+    : await one<{ id: string }>(
+        `SELECT id FROM credit_reward_mappings
+          WHERE site_id = $1 AND kick_reward_id = $2
+          LIMIT 1`,
+        [siteId, kickRewardId]
+      );
 
   if (existing) {
     await exec(
