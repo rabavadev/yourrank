@@ -356,6 +356,31 @@ async function handleRequest(request, env, ctx, meta) {
           result.db = false;
           result.status = "degraded";
         }
+
+        // Surface analytics consumer health. If the consumer stops processing,
+        // dashboard analytics silently starve; this makes that outage visible.
+        try {
+          const hb = await one("SELECT EXTRACT(EPOCH FROM (now() - last_seen))::int AS seconds_ago, processed_count, failed_count FROM consumer_heartbeat WHERE name='consumer'");
+          const consumerStaleSeconds = 600; // 10 minutes without a batch is an outage
+          if (hb) {
+            result.consumer = {
+              healthy: hb.seconds_ago < consumerStaleSeconds,
+              last_seen: Number(hb.seconds_ago),
+              processed_count: Number(hb.processed_count),
+              failed_count: Number(hb.failed_count),
+            };
+            if (!result.consumer.healthy) result.status = "degraded";
+          } else {
+            result.consumer = { healthy: false, last_seen: null, note: "no heartbeat row" };
+            result.status = "degraded";
+          }
+        } catch (e) {
+          if (workerLog) workerLog.warn("health_consumer_probe_failed", { error: String(e) });
+          else console.error("[leaderboard] health_consumer_probe_failed:", String(e));
+          result.consumer = { healthy: false, error: "probe_failed" };
+          result.status = "degraded";
+        }
+
         const status = result.status === "ok" ? 200 : 503;
         return new Response(JSON.stringify(result), {
           status,

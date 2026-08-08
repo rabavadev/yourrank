@@ -7,6 +7,10 @@ interface Env {
   MONITOR_SLUG?: string;        // known board slug for /r/ check
   MONITOR_PB_KEY?: string;      // known postback key for /pb check
   MONITOR_BACKUP_CHECK?: string; // "true" to also check /api/health/backup
+  RESEND_API_KEY?: string;      // Optional email alert fallback
+  ALERT_EMAIL?: string;         // Optional email alert recipient
+  ALERT_FROM?: string;          // Optional email from address
+  MONITOR_CHECK_SECRET?: string; // Optional secret to protect /check manual trigger
 }
 
 interface CheckResult {
@@ -60,6 +64,54 @@ async function checkEndpoint(
       latencyMs: Date.now() - start,
       error: String(err),
     };
+  }
+}
+
+async function checkConsumerHealth(base: string, timeoutMs = 10_000): Promise<CheckResult> {
+  const start = Date.now();
+  try {
+    const res = await fetch(`${base}/health`, {
+      method: "GET",
+      signal: AbortSignal.timeout(timeoutMs),
+    });
+    if (!res.ok) {
+      return { name: "GET /health (consumer)", ok: false, status: res.status, latencyMs: Date.now() - start, error: "non-ok status" };
+    }
+    const body = (await res.json()) as { consumer?: { healthy?: boolean; last_seen?: number | null; note?: string; error?: string } };
+    if (!body.consumer) {
+      return { name: "GET /health (consumer)", ok: false, status: res.status, latencyMs: Date.now() - start, error: "consumer field missing" };
+    }
+    if (body.consumer.healthy === false) {
+      const detail = body.consumer.error ?? body.consumer.note ?? `last_seen=${body.consumer.last_seen ?? "unknown"}`;
+      return { name: "GET /health (consumer)", ok: false, status: res.status, latencyMs: Date.now() - start, error: `consumer unhealthy: ${detail}` };
+    }
+    return { name: "GET /health (consumer)", ok: true, status: res.status, latencyMs: Date.now() - start };
+  } catch (err) {
+    return { name: "GET /health (consumer)", ok: false, status: 0, latencyMs: Date.now() - start, error: String(err) };
+  }
+}
+
+async function alertEmail(env: Env, failures: CheckResult[]): Promise<boolean> {
+  if (!env.RESEND_API_KEY || !env.ALERT_EMAIL) return false;
+
+  const fromAddr = env.ALERT_FROM ?? "YourRank Monitor <alerts@yourrank.site>";
+  const subject = `🔴 YourRank uptime alert: ${failures.length} check(s) failed`;
+  const text = failures.map((f) => `❌ ${f.name}\nStatus: ${f.status} | Latency: ${f.latencyMs}ms${f.error ? `\nError: ${f.error}` : ""}`).join("\n\n");
+  const html = `<div style="font-family:system-ui,sans-serif;max-width:480px;margin:0 auto;padding:24px"><h2>YourRank uptime alert</h2><pre style="white-space:pre-wrap;background:#f6f6f6;padding:14px;border-radius:6px">${text.replace(/</g, "&lt;")}</pre></div>`;
+
+  try {
+    const res = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        authorization: `Bearer ${env.RESEND_API_KEY}`,
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({ from: fromAddr, to: [env.ALERT_EMAIL], subject, text, html }),
+      signal: AbortSignal.timeout(8_000),
+    });
+    return res.ok;
+  } catch {
+    return false;
   }
 }
 
@@ -129,11 +181,15 @@ async function runChecks(env: Env): Promise<CheckResult[]> {
     );
   }
 
+  // 8. Consumer health: the leaderboard /health endpoint now includes a consumer
+  // heartbeat. If the analytics consumer stops processing events, this fails.
+  checks.push(checkConsumerHealth(base));
+
   return Promise.all(checks);
 }
 
-async function alertDiscord(env: Env, failures: CheckResult[]): Promise<void> {
-  if (!env.DISCORD_MONITORING_WEBHOOK) return;
+async function alertDiscord(env: Env, failures: CheckResult[]): Promise<boolean> {
+  if (!env.DISCORD_MONITORING_WEBHOOK) return false;
 
   const fields = failures.map((f) => ({
     name: `❌ ${f.name}`,
@@ -150,7 +206,7 @@ async function alertDiscord(env: Env, failures: CheckResult[]): Promise<void> {
   };
 
   try {
-    await fetch(env.DISCORD_MONITORING_WEBHOOK, {
+    const res = await fetch(env.DISCORD_MONITORING_WEBHOOK, {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({
@@ -159,8 +215,31 @@ async function alertDiscord(env: Env, failures: CheckResult[]): Promise<void> {
       }),
       signal: AbortSignal.timeout(8_000),
     });
+    return res.ok;
   } catch {
-    // Swallow — never let alert failure crash the monitor
+    return false;
+  }
+}
+
+async function alertAll(env: Env, failures: CheckResult[]): Promise<void> {
+  // Send to Discord first, then to email. If Discord fails, email becomes the
+  // fallback. If both are configured, both fire so you don't lose the alert.
+  const discordOk = await alertDiscord(env, failures);
+  const emailOk = await alertEmail(env, failures);
+
+  if (!discordOk && !emailOk) {
+    console.error(JSON.stringify({
+      level: "error",
+      msg: "monitor_alerts_failed",
+      ts: new Date().toISOString(),
+      failures: failures.map((f) => f.name),
+    }));
+  } else if (!discordOk) {
+    console.warn(JSON.stringify({
+      level: "warn",
+      msg: "monitor_discord_alert_failed_email_sent",
+      ts: new Date().toISOString(),
+    }));
   }
 }
 
@@ -177,7 +256,7 @@ export default {
         failures: failures.map((f) => f.name),
         ts: new Date().toISOString(),
       }));
-      ctx.waitUntil(alertDiscord(env, failures));
+      ctx.waitUntil(alertAll(env, failures));
     } else {
       console.log(JSON.stringify({
         level: "info",
@@ -199,7 +278,17 @@ export default {
     }
 
     if (url.pathname === "/check") {
-      // Manual trigger for testing
+      // Manual trigger for testing. Require a secret if one is configured,
+      // so an attacker cannot use your monitor as a free load generator.
+      const secret = env.MONITOR_CHECK_SECRET;
+      if (secret) {
+        const auth = request.headers.get("authorization") ?? "";
+        const bearer = auth.replace(/^Bearer\s+/i, "").trim();
+        const querySecret = url.searchParams.get("secret") ?? "";
+        if (bearer !== secret && querySecret !== secret) {
+          return new Response(JSON.stringify({ ok: false, error: "unauthorized" }), { status: 401, headers: { "content-type": "application/json" } });
+        }
+      }
       const results = await runChecks(env);
       return new Response(JSON.stringify(results, null, 2), {
         headers: { "content-type": "application/json" },
