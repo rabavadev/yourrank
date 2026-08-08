@@ -109,8 +109,8 @@ export async function handleRevokeOtherSessions(request, env) {
 
 async function collectExportData(userId) {
   const userCols = `id, email, display_name, telegram_user_id, telegram_username,
-    telegram_id, telegram_linked_at, plan, plan_expires_at, status, is_admin,
-    postback_key, created_at, updated_at, has_trial, failed_login_count, locked_until`;
+    telegram_id, telegram_linked_at, plan, plan_expires_at, status, is_admin, email_verified,
+    created_at, updated_at, has_trial, failed_login_count, locked_until`;
   const user = await one(`SELECT ${userCols} FROM users WHERE id=$1`, [userId]);
 
   const sites = await query(
