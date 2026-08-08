@@ -186,6 +186,9 @@ export const readJson = async (req) => {
 
 export async function handleAccountDelete(request, env) {
     try {
+      if (!(await rateLimit(env, `account-delete:${clientIp(request)}`, 5, 3600)).ok) {
+        return bad("Too many attempts. Try again later.", 429);
+      }
       const user = await currentUser(request, env);
       if (!user) return bad("unauthorized", 401);
       const userPw = await one("SELECT password_hash, password_salt FROM users WHERE id=$1", [user.id]);
@@ -195,14 +198,31 @@ export async function handleAccountDelete(request, env) {
         const { ok: pwOk } = await verifyPassword(body.password, userPw.password_salt, userPw.password_hash);
         if (!pwOk) return bad("Incorrect password", 401);
       }
-      
+
       await withTransaction(async (tx) => {
+        // Tables without ON DELETE CASCADE FKs to sites need explicit cleanup.
+        const sites = await tx.query("SELECT id FROM sites WHERE user_id=$1", [user.id]);
+        const siteIds = sites.map((s) => s.id);
+        if (siteIds.length) {
+          await tx.unsafe("DELETE FROM site_stats_hourly WHERE site_id = ANY($1)", [siteIds]);
+          await tx.unsafe("DELETE FROM site_referrers WHERE site_id = ANY($1)", [siteIds]);
+        }
+
+        // Delete logs and support messages that contain or reference this user.
+        await tx.unsafe("DELETE FROM audit_log WHERE actor_id=$1", [user.id]);
+        await tx.unsafe("DELETE FROM admin_audit WHERE admin_id=$1 OR target_user_id=$1", [user.id]);
+        await tx.unsafe("DELETE FROM support_messages WHERE user_id=$1", [user.id]);
+
+        // Foreign keys handle the rest (sites, offers, bots, payments, sessions,
+        // etc.), but referral rows reference users directly.
+        await tx.unsafe("DELETE FROM referral_rewards WHERE referrer_id=$1 OR referred_id=$1", [user.id]);
+
         await tx.unsafe("DELETE FROM users WHERE id=$1", [user.id]);
       });
       // Destroy all sessions (other devices/tabs) — don't leave orphaned
       // sessions for a deleted user.
       await destroyAllUserSessions(env, user.id);
-      
+
       return json({ ok: true, message: "Account deleted successfully." }, 200, {
         "Set-Cookie": cookieClear(env)
       });
