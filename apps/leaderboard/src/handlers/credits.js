@@ -5,6 +5,10 @@ import { query, one, exec, withTransaction } from "../../../../shared/db.js";
 import { rateLimit } from "../../../../shared/ratelimit.js";
 import { upsertCreditRewardMapping, setSiteKickChannel } from "../../../../shared/kick-credits.js";
 import {
+  getValidKickAccessToken,
+  createKickChannelReward,
+} from "../../../../shared/kick-oauth.js";
+import {
   effectivePlan,
   CREDITS_REWARD_LIMITS,
   CREDITS_SHOP_LIMITS,
@@ -164,6 +168,91 @@ export async function handleCreditsSaveReward(request, env) {
 
   const resultId = await upsertCreditRewardMapping(site.id, kickRewardId, kickRewardTitle, kickRewardCost, credits, id);
   return ok({ id: resultId });
+}
+
+export async function handleCreditsCreateReward(request, env) {
+  const { user, res } = await requireUser(request, env);
+  if (res) return res;
+  const url = new URL(request.url);
+  const site = await getSite(env, user, url);
+  if (!site) return bad("no site", 404);
+
+  const body = await readJson(request);
+  const title = String(body?.title || "").trim();
+  const cost = Number(body?.cost || 0);
+  const credits = Number(body?.credits || 0);
+  const description = String(body?.description || "").trim();
+  const backgroundColor = String(body?.backgroundColor || "#00e701").trim();
+
+  if (!title) return bad("Reward title is required");
+  if (!Number.isFinite(cost) || cost < 1) return bad("Reward cost must be a positive number");
+  if (!Number.isFinite(credits) || credits <= 0) return bad("Credits must be a positive number");
+
+  // Enforce plan limit.
+  const plan = effectivePlan(user);
+  const limit = CREDITS_REWARD_LIMITS[plan];
+  const countRow = await one(
+    "SELECT count(*)::int AS count FROM credit_reward_mappings WHERE site_id=$1 AND active=true",
+    [site.id]
+  );
+  if ((countRow?.count || 0) >= limit) {
+    return bad(`Reward mapping limit reached for the ${plan} plan. Upgrade to add more.`, 403);
+  }
+
+  // Load and refresh the streamer's Kick tokens.
+  const tokenRow = await one(
+    `SELECT kick_access_token_enc, kick_refresh_token_enc, kick_token_expires_at
+       FROM users WHERE id=$1`,
+    [user.id]
+  );
+  if (!tokenRow?.kick_access_token_enc) {
+    return bad("Connect your Kick account first in the channel section", 403);
+  }
+
+  const tokenSet = await getValidKickAccessToken(
+    env,
+    tokenRow.kick_access_token_enc,
+    tokenRow.kick_refresh_token_enc || null,
+    tokenRow.kick_token_expires_at
+  );
+
+  const reward = await createKickChannelReward(tokenSet.accessToken, {
+    title,
+    cost,
+    description: description || undefined,
+    background_color: backgroundColor,
+    is_enabled: true,
+  });
+
+  // Persist refreshed tokens if they changed.
+  await exec(
+    `UPDATE users
+        SET kick_access_token_enc = $1,
+            kick_refresh_token_enc = $2,
+            kick_token_expires_at = $3,
+            updated_at = now()
+      WHERE id = $4`,
+    [tokenSet.accessEnc, tokenSet.refreshEnc, tokenSet.expiresAt, user.id]
+  );
+
+  const mappingId = await upsertCreditRewardMapping(
+    site.id,
+    String(reward.id),
+    reward.title,
+    reward.cost,
+    credits
+  );
+
+  return ok({
+    id: mappingId,
+    reward: {
+      id: reward.id,
+      title: reward.title,
+      cost: reward.cost,
+      description: reward.description,
+      backgroundColor: reward.background_color,
+    },
+  });
 }
 
 export async function handleCreditsDeleteReward(request, env) {
