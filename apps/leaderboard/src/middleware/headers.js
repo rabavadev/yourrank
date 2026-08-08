@@ -72,3 +72,10 @@ export function suspendedPage(nonce) {
 <style${n}>body{background:#0b0b0c;color:#ededf0;font-family:system-ui,sans-serif;display:grid;place-items:center;min-height:100vh;margin:0}.b{text-align:center}a{color:#c8ff00}</style></head>
 <body><div class="b"><h1>This page is unavailable</h1><p>The owner's account is suspended.</p><p><a href="/">YourRank</a></p></div><script src="/assets/cookie-consent.js" defer></script></body></html>`;
 }
+
+export function error500Page(nonce) {
+  const n = nonce ? ` nonce="${nonce}"` : "";
+  return `<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex, nofollow"><title>Something went wrong</title>
+<style${n}>body{background:#0b0b0c;color:#ededf0;font-family:system-ui,sans-serif;display:grid;place-items:center;min-height:100vh;margin:0}.b{text-align:center;max-width:520px;padding:24px}a{color:#c8ff00}</style></head>
+<body><div class="b"><h1>Something went wrong</h1><p>We're having trouble loading this page. Try refreshing, or come back in a moment.</p><p>If it keeps happening, <a href="/contact">contact support</a>.</p><p><a href="/">Back to YourRank</a></p></div><script src="/assets/cookie-consent.js" defer></script></body></html>`;
+}

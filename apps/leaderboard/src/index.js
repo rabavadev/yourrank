@@ -19,7 +19,7 @@ import {
   resolveCustomDomain, isCustomHost,
   serveStaticAsset,
   serveRobotsTxt, serveSitemapXml, serveFavicon,
-  HTML, SECURE_HTML, notFoundPage, suspendedPage, withNonce
+  HTML, SECURE_HTML, notFoundPage, suspendedPage, error500Page, withNonce
 } from "./middleware/index.js";
 import { handlePublicApiPreflight } from "./middleware/public-api.js";
 import { findSiteLogoData, findSiteStatus, findUserTotpSecret } from "./data/sites.js";
@@ -182,6 +182,8 @@ async function bodyExceedsLimit(request, maxBytes) {
 
 async function handleRequest(request, env, ctx, meta) {
     const { log: workerLog, reqId } = meta || {};
+    const nonce = crypto.randomUUID().replace(/-/g, "");
+    const HTML_N = withNonce(HTML, nonce);
     try {
       // Load legal company identity once per isolate; cached for 60s.
       await loadPlatformIdentity(env);
@@ -204,9 +206,6 @@ async function handleRequest(request, env, ctx, meta) {
       const path = url.pathname;
       const method = request.method === "HEAD" ? "GET" : request.method;
       const host = (request.headers.get("host") || "").toLowerCase().split(":")[0];
-      // BUG-007: Nonce for inline <style> blocks — CSP 'unsafe-inline' replaced per-request.
-      const nonce = crypto.randomUUID().replace(/-/g, "");
-      const HTML_N = withNonce(HTML, nonce);
 
       // --- custom domain resolution ---
       // If the Host header is not our primary domain, check if it maps to a
@@ -421,7 +420,7 @@ async function handleRequest(request, env, ctx, meta) {
           // raw Cloudflare 1101 after the session cookie redirected past the
           // unauthenticated path. Retry-safe: a plain refresh re-runs the read.
           if (workerLog) workerLog.error("dashboard_render_failed", { error: String(e?.message || e) }); else console.error("dashboard render failed:", String(e?.message || e));
-          return new Response("Dashboard couldn't load right now — please refresh.", { status: 500, headers: { "content-type": "text/plain; charset=utf-8" } });
+          return new Response(error500Page(nonce), { status: 500, headers: HTML_N });
         }
       }
       if (path === "/dashboard/preview" && (method === "GET" || method === "POST")) {
@@ -429,7 +428,7 @@ async function handleRequest(request, env, ctx, meta) {
           return await handleDashboardPreview(request, env, nonce);
         } catch (e) {
           if (workerLog) workerLog.error("template_preview_failed", { error: String(e?.message || e) }); else console.error("template preview failed:", String(e?.message || e));
-          return new Response("Preview couldn't load.", { status: 500 });
+          return new Response(error500Page(nonce), { status: 500, headers: HTML_N });
         }
       }
       // Analytics and billing have been folded into the unified dashboard.
@@ -448,7 +447,7 @@ async function handleRequest(request, env, ctx, meta) {
           return new Response(html, { headers: { ...SECURE_HTML, ...csrfHeader, "cache-control": "no-store, no-cache, must-revalidate" } });
         } catch (e) {
           if (workerLog) workerLog.error("attribution_render_failed", { error: String(e?.message || e) }); else console.error("attribution render failed:", String(e?.message || e));
-          return new Response("Attribution couldn't load right now — please refresh.", { status: 500, headers: { "content-type": "text/plain; charset=utf-8" } });
+          return new Response(error500Page(nonce), { status: 500, headers: HTML_N });
         }
       }
       if (path === "/dashboard/bot/setup") {
@@ -460,7 +459,7 @@ async function handleRequest(request, env, ctx, meta) {
           return new Response(html, { headers: { ...SECURE_HTML, ...csrfHeader, "cache-control": "no-store, no-cache, must-revalidate" } });
         } catch (e) {
           if (workerLog) workerLog.error("bot_setup_render_failed", { error: String(e?.message || e) }); else console.error("bot setup render failed:", String(e?.message || e));
-          return new Response("Bot setup couldn't load right now — please refresh.", { status: 500, headers: { "content-type": "text/plain; charset=utf-8" } });
+          return new Response(error500Page(nonce), { status: 500, headers: HTML_N });
         }
       }
       if (path === "/dashboard/setup") {
@@ -479,7 +478,7 @@ async function handleRequest(request, env, ctx, meta) {
           return new Response(html, { headers: { ...withNonce(SECURE_HTML, nonce), ...csrfHeader, "cache-control": "no-store, no-cache, must-revalidate" } });
         } catch (e) {
           if (workerLog) workerLog.error("setup_render_failed", { error: String(e?.message || e) }); else console.error("setup render failed:", String(e?.message || e));
-          return new Response("Setup couldn't load right now — please refresh.", { status: 500, headers: { "content-type": "text/plain; charset=utf-8" } });
+          return new Response(error500Page(nonce), { status: 500, headers: HTML_N });
         }
       }
       if (path === "/dashboard/support") {
@@ -491,7 +490,7 @@ async function handleRequest(request, env, ctx, meta) {
           return new Response(html, { headers: { ...SECURE_HTML, ...csrfHeader, "cache-control": "no-store, no-cache, must-revalidate" } });
         } catch (e) {
           if (workerLog) workerLog.error("support_render_failed", { error: String(e?.message || e) }); else console.error("support render failed:", String(e?.message || e));
-          return new Response("Support page couldn't load right now — please refresh.", { status: 500, headers: { "content-type": "text/plain; charset=utf-8" } });
+          return new Response(error500Page(nonce), { status: 500, headers: HTML_N });
         }
       }
       if (path === "/dashboard/security") {
@@ -503,7 +502,7 @@ async function handleRequest(request, env, ctx, meta) {
           return new Response(html, { headers: { ...SECURE_HTML, ...csrfHeader, "cache-control": "no-store, no-cache, must-revalidate" } });
         } catch (e) {
           if (workerLog) workerLog.error("security_render_failed", { error: String(e?.message || e) }); else console.error("security render failed:", String(e?.message || e));
-          return new Response("Security page couldn't load right now — please refresh.", { status: 500, headers: { "content-type": "text/plain; charset=utf-8" } });
+          return new Response(error500Page(nonce), { status: 500, headers: HTML_N });
         }
       }
       if (path === "/forgot") return new Response(addCookieConsent(await renderHtmlPage(PAGES.forgot)), { headers: { ...SECURE_HTML, ...csrfHeader } });
@@ -846,7 +845,7 @@ a{color:#c8ff00;text-decoration:none;font-weight:600}</style></head><body>
           worker: "leaderboard",
         }));
       }
-      return new Response("Internal Server Error", { status: 500 });
+      return new Response(error500Page(nonce), { status: 500, headers: HTML_N });
     }
 }
 

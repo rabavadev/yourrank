@@ -129,13 +129,20 @@ async function collectExportData(userId) {
       ])
     : [[], []];
 
-  const [subscriptions, payments, sessions, offers, conversions, bots] = await Promise.all([
+  const [
+    subscriptions, payments, sessions, offers, conversions, bots,
+    postbackKeys, featureOverrides, onboardingEmails, referralRewards,
+  ] = await Promise.all([
     query("SELECT id, plan, status, provider, current_period_end, created_at FROM subscriptions WHERE user_id=$1", [userId]),
     query("SELECT id, subscription_id, provider, invoice_id, amount, currency, tx_ref, status, created_at, updated_at, plan_tier FROM payments WHERE user_id=$1", [userId]),
     query("SELECT created_at, expires_at, twofa_verified FROM sessions WHERE user_id=$1", [userId]),
     query("SELECT id, casino_id, label, referral_url, promo_code, bonus_text, priority, is_active, created_at, updated_at FROM offers WHERE owner_id=$1", [userId]),
     query("SELECT id, offer_id, click_ref, event, amount, currency, raw, ts FROM conversions WHERE owner_id=$1", [userId]),
     query("SELECT id, tg_bot_id, username, token_hint, status, welcome_message, created_at, updated_at FROM bots WHERE owner_id=$1", [userId]),
+    query("SELECT id, label, key_hash, created_at, revoked_at, expires_at, last_used_at FROM postback_keys WHERE user_id=$1", [userId]),
+    query("SELECT feature_key, enabled, created_at, updated_at FROM user_feature_overrides WHERE user_id=$1", [userId]),
+    query("SELECT day, sent_at FROM user_onboarding_emails WHERE user_id=$1", [userId]),
+    query("SELECT referrer_id, referred_id, reward_days, created_at FROM referral_rewards WHERE referrer_id=$1 OR referred_id=$1", [userId]),
   ]);
 
   const offerIds = offers.map((o) => o.id);
@@ -144,9 +151,24 @@ async function collectExportData(userId) {
     : [];
 
   const botIds = bots.map((b) => b.id);
-  const botCommands = botIds.length
-    ? await query("SELECT bot_id, command, response, offer_id, is_enabled FROM bot_commands WHERE bot_id = ANY($1)", [botIds])
-    : [];
+  const [botCommands, broadcasts, botSubscribers] = botIds.length
+    ? await Promise.all([
+        query("SELECT bot_id, command, response, offer_id, is_enabled FROM bot_commands WHERE bot_id = ANY($1)", [botIds]),
+        query("SELECT id, bot_id, status, body, media_url, buttons, scheduled_at, sent_at, total_count, sent_count, fail_count, segment, created_at FROM broadcasts WHERE bot_id = ANY($1)", [botIds]),
+        query("SELECT id, bot_id, tg_user_id, tg_username, first_name, language, is_blocked, first_seen, last_seen FROM bot_subscribers WHERE bot_id = ANY($1)", [botIds]),
+      ])
+    : [[], [], []];
+
+  const [
+    auditLog, adminAudit, supportMessages,
+    siteStatsHourly, siteReferrers,
+  ] = await Promise.all([
+    query("SELECT id, action, entity_type, entity_id, details, ip_address, user_agent, created_at FROM audit_log WHERE actor_id=$1", [userId]),
+    query("SELECT id, admin_id, target_user_id, action, details, ip_address, user_agent, created_at FROM admin_audit WHERE admin_id=$1 OR target_user_id=$1", [userId]),
+    query("SELECT id, name, email, subject, message, status, ip_hash, created_at, updated_at FROM support_messages WHERE user_id=$1", [userId]),
+    siteIds.length ? query("SELECT site_id, day, hour, day_of_week, views FROM site_stats_hourly WHERE site_id = ANY($1)", [siteIds]) : [],
+    siteIds.length ? query("SELECT site_id, day, domain, count FROM site_referrers WHERE site_id = ANY($1)", [siteIds]) : [],
+  ]);
 
   return {
     exportedAt: new Date().toISOString(),
@@ -162,6 +184,17 @@ async function collectExportData(userId) {
     conversions,
     bots,
     botCommands,
+    broadcasts,
+    botSubscribers,
+    postbackKeys,
+    featureOverrides,
+    onboardingEmails,
+    referralRewards,
+    auditLog,
+    adminAudit,
+    supportMessages,
+    siteStatsHourly,
+    siteReferrers,
   };
 }
 
