@@ -67,7 +67,7 @@ None for the local flow itself, but the Worker expects a `.dev.vars` file under 
 ## Common gotchas
 
 - If you reset the database or change `plan`, reload the dashboard to pick up the new state.
-- The `Overview` page hides `ovQuickActions` when the onboarding checklist is complete (`setupComplete`), which means the Quick Actions card (including `Copy your page link`) can be invisible for accounts with the sample board.
+- The `Overview` Quick Actions card stays visible once setup is complete; it provides persistent shortcuts including `Copy your page link`.
 - After editing colors/templates, the `#savebar` appears at the bottom. Click `#save` and wait for the `Saved. Your page is updated.` toast.
 - Pro feature cards in `Appearance` switch between real forms (paid) and `.upsell-card` CTAs (free) based on `state.ME.plan`.
 
