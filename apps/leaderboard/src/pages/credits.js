@@ -49,27 +49,58 @@ export const creditsPage = leaderboardPageHtml({
     <h2>Reward mappings</h2>
     <p class="card-sub">When a viewer redeems one of these Kick channel rewards, they get the matching YourRank credits.</p>
     <p class="hint" id="cr-reward-usage"></p>
-    <form class="grid2" id="cr-reward-form">
-      <input type="hidden" id="cr-reward-id" />
+    <details class="cr-advanced">
+      <summary>Manual reward mapping</summary>
+      <form class="grid2" id="cr-reward-form">
+        <input type="hidden" id="cr-reward-id" />
+        <div class="field">
+          <label for="cr-reward-kick-id">Kick reward ID</label>
+          <input id="cr-reward-kick-id" type="text" required />
+        </div>
+        <div class="field">
+          <label for="cr-reward-title">Reward title</label>
+          <input id="cr-reward-title" type="text" required />
+        </div>
+        <div class="field">
+          <label for="cr-reward-cost">Kick point cost</label>
+          <input id="cr-reward-cost" type="number" min="0" value="100" required />
+        </div>
+        <div class="field">
+          <label for="cr-reward-credits">Credits granted</label>
+          <input id="cr-reward-credits" type="number" min="1" value="50" required />
+        </div>
+        <div class="field" style="grid-column:1/-1">
+          <button class="btn" type="submit" id="cr-reward-submit">Save mapping</button>
+          <p class="status" id="cr-reward-status" role="status" aria-live="polite"></p>
+        </div>
+      </form>
+    </details>
+
+    <h3>Create reward in Kick</h3>
+    <form class="grid2" id="cr-reward-create-form">
       <div class="field">
-        <label for="cr-reward-kick-id">Kick reward ID</label>
-        <input id="cr-reward-kick-id" type="text" required />
+        <label for="cr-reward-create-title">Title</label>
+        <input id="cr-reward-create-title" type="text" required maxlength="50" />
       </div>
       <div class="field">
-        <label for="cr-reward-title">Reward title</label>
-        <input id="cr-reward-title" type="text" required />
+        <label for="cr-reward-create-cost">Kick point cost</label>
+        <input id="cr-reward-create-cost" type="number" min="1" value="100" required />
       </div>
       <div class="field">
-        <label for="cr-reward-cost">Kick point cost</label>
-        <input id="cr-reward-cost" type="number" min="0" value="100" required />
+        <label for="cr-reward-create-credits">Credits granted</label>
+        <input id="cr-reward-create-credits" type="number" min="1" value="50" required />
       </div>
       <div class="field">
-        <label for="cr-reward-credits">Credits granted</label>
-        <input id="cr-reward-credits" type="number" min="1" value="50" required />
+        <label for="cr-reward-create-color">Background color</label>
+        <input id="cr-reward-create-color" type="color" value="#00e701" />
       </div>
       <div class="field" style="grid-column:1/-1">
-        <button class="btn btn--accent" type="submit" id="cr-reward-submit">Save mapping</button>
-        <p class="status" id="cr-reward-status" role="status" aria-live="polite"></p>
+        <label for="cr-reward-create-desc">Description</label>
+        <input id="cr-reward-create-desc" type="text" maxlength="200" />
+      </div>
+      <div class="field" style="grid-column:1/-1">
+        <button class="btn btn--accent" type="submit" id="cr-reward-create-submit">Create in Kick</button>
+        <p class="status" id="cr-reward-create-status" role="status" aria-live="polite"></p>
       </div>
     </form>
     <div class="board-table-wrap">

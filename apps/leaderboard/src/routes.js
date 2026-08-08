@@ -42,6 +42,7 @@ import {
   handleCreditsStatus,
   handleCreditsConnect,
   handleCreditsSaveReward,
+  handleCreditsCreateReward,
   handleCreditsDeleteReward,
   handleCreditsSaveShopItem,
   handleCreditsDeleteShopItem,
@@ -133,6 +134,7 @@ export const ROUTES = [
   // Credits / shop dashboard API
   { path: "/api/credits/status", method: "GET", handler: withHandler(handleCreditsStatus) },
   { path: "/api/credits/connect", method: "POST", handler: withHandler(handleCreditsConnect) },
+  { path: "/api/credits/rewards/create", method: "POST", handler: withHandler(handleCreditsCreateReward) },
   { path: "/api/credits/rewards", method: "POST", handler: withHandler(handleCreditsSaveReward) },
   { path: "/api/credits/rewards/:id", method: "DELETE", handler: withHandler(handleCreditsDeleteReward) },
   { path: "/api/credits/shop", method: "POST", handler: withHandler(handleCreditsSaveShopItem) },
