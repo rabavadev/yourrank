@@ -17,6 +17,31 @@ export const BOARD_LIMITS: Record<PlanTier, number> = {
   free: 1, starter: 1, pro: 3, agency: 99,
 };
 
+/** Max active Kick reward-to-credit mappings per site. */
+export const CREDITS_REWARD_LIMITS: Record<PlanTier, number> = {
+  free: 3, starter: 10, pro: 50, agency: 999,
+};
+
+/** Max active shop items per site. */
+export const CREDITS_SHOP_LIMITS: Record<PlanTier, number> = {
+  free: 5, starter: 25, pro: 100, agency: 999,
+};
+
+/** Max concurrent pending redemptions per site. */
+export const CREDITS_PENDING_REDEMPTIONS_LIMITS: Record<PlanTier, number> = {
+  free: 20, starter: 100, pro: 500, agency: 9999,
+};
+
+/** Max fulfilled redemptions in a rolling 30-day window per site. */
+export const CREDITS_REDEMPTIONS_PER_30D_LIMITS: Record<PlanTier, number> = {
+  free: 50, starter: 300, pro: 2000, agency: 99999,
+};
+
+/** Max new site viewers (rolling 30-day) per site. */
+export const CREDITS_VIEWERS_PER_30D_LIMITS: Record<PlanTier, number> = {
+  free: 200, starter: 1500, pro: 10000, agency: 999999,
+};
+
 /** Prices in USD per 30-day access period (no auto-renewal) */
 export const PLAN_PRICES: Record<PlanTier, number> = {
   free: 0, starter: 12, pro: 29, agency: 79,

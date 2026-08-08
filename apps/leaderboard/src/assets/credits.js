@@ -2,6 +2,11 @@
 function $(id) { return document.getElementById(id); }
 function esc(s) { return String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
 function fmtDate(iso) { return iso ? new Date(iso).toLocaleString() : "—"; }
+function usageLabel(used, limit, name) {
+  const pct = limit > 0 ? Math.round((used / limit) * 100) : 0;
+  const color = used >= limit ? "color:#ff6b6b" : pct >= 80 ? "color:#ffcc00" : "";
+  return `<span style="${color}">${used} / ${limit} ${name}</span>`;
+}
 function csrf() {
   const m = document.cookie.match(/(?:^|;\s*)__csrf=([^;]+)/);
   return m ? m[1] : "";
@@ -33,6 +38,33 @@ function render() {
   $("cr-channel-name").textContent = state.channel?.name || "";
   $("cr-channel-id-input").value = state.channel?.externalId || "";
   $("cr-channel-name-input").value = state.channel?.name || "";
+
+  const usage = state.usage || {};
+  const limits = state.limits || {};
+
+  $("cr-reward-usage").innerHTML = usageLabel(
+    usage.rewardMappings || 0,
+    limits.rewardMappings || 0,
+    "reward mappings"
+  );
+  $("cr-shop-usage").innerHTML = usageLabel(
+    usage.shopItems || 0,
+    limits.shopItems || 0,
+    "shop items"
+  );
+
+  const rewardAtLimit = (usage.rewardMappings || 0) >= (limits.rewardMappings || 0);
+  const shopAtLimit = (usage.shopItems || 0) >= (limits.shopItems || 0);
+  const rewardSubmit = $("cr-reward-submit");
+  const shopSubmit = $("cr-shop-submit");
+  if (rewardSubmit) {
+    rewardSubmit.disabled = rewardAtLimit;
+    rewardSubmit.title = rewardAtLimit ? "Upgrade your plan to add more reward mappings" : "";
+  }
+  if (shopSubmit) {
+    shopSubmit.disabled = shopAtLimit;
+    shopSubmit.title = shopAtLimit ? "Upgrade your plan to add more shop items" : "";
+  }
 
   $("cr-reward-list").innerHTML = (state.mappings || []).map((m) => `
     <tr>

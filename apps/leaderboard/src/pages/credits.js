@@ -48,6 +48,7 @@ export const creditsPage = leaderboardPageHtml({
   <section class="card">
     <h2>Reward mappings</h2>
     <p class="card-sub">When a viewer redeems one of these Kick channel rewards, they get the matching YourRank credits.</p>
+    <p class="hint" id="cr-reward-usage"></p>
     <form class="grid2" id="cr-reward-form">
       <input type="hidden" id="cr-reward-id" />
       <div class="field">
@@ -67,7 +68,7 @@ export const creditsPage = leaderboardPageHtml({
         <input id="cr-reward-credits" type="number" min="1" value="50" required />
       </div>
       <div class="field" style="grid-column:1/-1">
-        <button class="btn btn--accent" type="submit">Save mapping</button>
+        <button class="btn btn--accent" type="submit" id="cr-reward-submit">Save mapping</button>
         <p class="status" id="cr-reward-status" role="status" aria-live="polite"></p>
       </div>
     </form>
@@ -82,6 +83,7 @@ export const creditsPage = leaderboardPageHtml({
   <section class="card">
     <h2>Shop items</h2>
     <p class="card-sub">Items viewers can buy with credits. Redemptions appear below for you to fulfill off-platform.</p>
+    <p class="hint" id="cr-shop-usage"></p>
     <form class="grid2" id="cr-shop-form">
       <input type="hidden" id="cr-shop-item-id" />
       <div class="field">
@@ -104,7 +106,7 @@ export const creditsPage = leaderboardPageHtml({
         <label class="chk"><input type="checkbox" id="cr-shop-active" checked /> Active</label>
       </div>
       <div class="field" style="grid-column:1/-1">
-        <button class="btn btn--accent" type="submit">Save item</button>
+        <button class="btn btn--accent" type="submit" id="cr-shop-submit">Save item</button>
         <p class="status" id="cr-shop-status" role="status" aria-live="polite"></p>
       </div>
     </form>
