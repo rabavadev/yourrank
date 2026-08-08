@@ -7,6 +7,7 @@ import { logAudit } from "../../../shared/audit.js";
 import { generateSecret, verifyCode, generateOtpauthUri } from "./totp.js";
 import { encrypt, decrypt, hashToken, bytesToHex, safeEqual } from "../../../shared/crypto.js";
 import { listFeatureFlags, setFeatureFlag, setUserFeatureOverride } from "../../../shared/features.js";
+import { loadPlatformIdentity, getPlatformIdentity, updatePlatformIdentity, isIdentityComplete } from "./platform-identity.js";
 
 // QUALITY-007: Named timing constants (no magic numbers)
 const RESET_TOKEN_TTL_S = 86400;   // 24 hours — admin-initiated password reset link validity
@@ -661,4 +662,32 @@ export async function handleFeatureFlagOverride(request, env) {
   await setUserFeatureOverride(userId, featureKey, enabled);
   await logAdminAction(env, admin.id, "feature_flag_override", userId, { featureKey, enabled }, request);
   return ok({ userId, featureKey, enabled });
+}
+
+// GET /api/admin/identity — platform legal identity (company details + disclosures)
+export async function handleGetIdentity(request, env) {
+  const { res } = await requireAdminWith2fa(request, env);
+  if (res) return res;
+
+  await loadPlatformIdentity(env);
+  const identity = getPlatformIdentity();
+  return ok({ identity: { ...identity, complete: isIdentityComplete(identity) } });
+}
+
+// PUT /api/admin/identity — update platform legal identity
+export async function handleUpdateIdentity(request, env) {
+  const { admin, res } = await requireAdminWith2fa(request, env);
+  if (res) return res;
+
+  const body = await readJson(request);
+  if (!body || typeof body !== "object") return bad("Invalid body", 400);
+
+  const identity = await updatePlatformIdentity(env, body, admin.id, request);
+  await logAdminAction(env, admin.id, "platform_identity_update", null, {
+    company_name: identity.company_name,
+    company_country: identity.company_country,
+    support_email: identity.support_email,
+  }, request);
+
+  return ok({ identity: { ...identity, complete: isIdentityComplete(identity) } });
 }

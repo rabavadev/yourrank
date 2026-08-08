@@ -24,10 +24,10 @@ export const contactPage = `<!DOCTYPE html><html lang="en"><head>
 <p class="hint" id="c_success" hidden style="color:var(--accent)">Message received. We'll reply by email.</p>
 </form>
 <p class="hint" id="c_back_wrap" hidden style="margin-top:18px"><a id="c_back" href="/dashboard">← Back to dashboard</a></p>
-<p class="hint" style="margin-top:24px">You can also email <a href="mailto:contact@yourrank.site">contact@yourrank.site</a> directly.</p>
+<p class="hint" style="margin-top:24px">You can also email <a href="mailto:{{SUPPORT_EMAIL}}">{{SUPPORT_EMAIL}}</a> directly.</p>
 </main>
 <footer class="wrap footer-wrap" style="margin-top:48px">
-<span>© <span id="yr"></span> YourRank</span>
+<span>© <span id="yr"></span> {{COMPANY_NAME}}</span>
 <span><a href="/terms">Terms</a> · <a href="/privacy">Privacy</a> · <a href="/refund">Refunds</a> · <a href="/cookies">Cookies</a> · <a href="/responsible">Responsible play</a></span>
 </footer>
 <script src="/assets/contact.js"></script></body></html>`;

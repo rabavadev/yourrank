@@ -38,7 +38,8 @@ import {
   handleOverview, handleUsers, handleLeads, handlePayments, handleAction,
   handleSupportMessages, handleSupportReply,
   handle2faEnable, handle2faVerify, handle2faRecovery, handle2faStatus, handle2faDisable,
-  handleFeatureFlags, handleFeatureFlagOverride
+  handleFeatureFlags, handleFeatureFlagOverride,
+  handleGetIdentity, handleUpdateIdentity
 } from "./admin.js";
 import {
   handleBackupHealth, handleRecordBackupVerification, handleListBackupVerifications
@@ -153,6 +154,8 @@ export const ROUTES = [
   { path: "/api/admin/features", method: "GET", handler: withHandler(handleFeatureFlags) },
   { path: "/api/admin/features", method: "POST", handler: withHandler(handleFeatureFlags) },
   { path: "/api/admin/features/override", method: "POST", handler: withHandler(handleFeatureFlagOverride) },
+  { path: "/api/admin/identity", method: "GET", handler: withHandler(handleGetIdentity) },
+  { path: "/api/admin/identity", method: "PUT", handler: withHandler(handleUpdateIdentity) },
   { path: "/api/admin/2fa/enable", method: "POST", handler: withHandler(handle2faEnable) },
   { path: "/api/admin/2fa/verify", method: "POST", handler: withHandler(handle2faVerify) },
   { path: "/api/admin/2fa/recovery", method: "POST", handler: withHandler(handle2faRecovery) },

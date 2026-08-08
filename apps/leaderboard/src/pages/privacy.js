@@ -19,4 +19,4 @@ export const privacyPage = legal("Privacy Policy", "July 2026", `
 <h2>Your page is public</h2>
 <p>Anything you publish on your leaderboard page is visible to anyone with the link, including player names you enter. Mask player names (like <span class="mono">*****ess</span>) if your community expects it.</p>
 <h2>Contact</h2>
-<p>Privacy questions or deletion requests: email us at contact@yourrank.site.</p>`, "privacy", "YourRank privacy policy. We collect minimal data: email, hashed password, and your public page content. No ad trackers.");
+<p>Privacy questions or deletion requests: email us at <a href="mailto:{{SUPPORT_EMAIL}}">{{SUPPORT_EMAIL}}</a>.</p>`, "privacy", "YourRank privacy policy. We collect minimal data: email, hashed password, and your public page content. No ad trackers.");

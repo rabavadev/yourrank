@@ -10,4 +10,4 @@ export const cookiesPage = legal("Cookie Policy", "July 2026", `
 <h2>Your choices</h2>
 <p>When you first visit, you can choose to accept only essential cookies or all cookies. You can change this at any time by clearing the <code>yr_consent</code> localStorage entry and refreshing the page. If you disable cookies entirely, you will be signed out and some dashboard features may not work.</p>
 <h2>Contact</h2>
-<p>Questions about this policy: email contact@yourrank.site.</p>`, "cookies", "YourRank cookie policy. Explains essential cookies, analytics, and how to manage your choices.");
+<p>Questions about this policy: email <a href="mailto:{{SUPPORT_EMAIL}}">{{SUPPORT_EMAIL}}</a>.</p>`, "cookies", "YourRank cookie policy. Explains essential cookies, analytics, and how to manage your choices.");

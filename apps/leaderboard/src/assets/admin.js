@@ -33,9 +33,68 @@ async function init() {
   const [ov] = await Promise.all([api("/api/admin/overview")]); // 403s here for non-admins
   $("s_users").textContent = ov.users; $("s_pro").textContent = ov.pro;
   $("s_leads").textContent = ov.leads; $("s_rev").textContent = "$" + Number(ov.revenue || 0).toLocaleString();
-  await Promise.all([loadUsers(), loadLeads(), loadPayments(), loadSupport()]);
+  await Promise.all([loadUsers(), loadLeads(), loadPayments(), loadSupport(), loadIdentity()]);
   $("loading").hidden = true; $("panel").hidden = false;
 }
+
+async function loadIdentity() {
+  try {
+    const d = await api("/api/admin/identity");
+    if (!d.ok) return;
+    const i = d.identity || {};
+    $("i_company_name").value = i.company_name || "";
+    $("i_company_country").value = i.company_country || "";
+    $("i_company_number").value = i.company_number || "";
+    $("i_support_email").value = i.support_email || "";
+    $("i_affiliate_disclosure").value = i.affiliate_disclosure || "";
+    const status = $("identityStatus");
+    if (!i.complete) {
+      status.hidden = false;
+      status.textContent = "Company name and country are required before launch.";
+      status.className = "status status--bad";
+    } else {
+      status.hidden = true;
+    }
+  } catch (e) {
+    console.error("loadIdentity failed", e);
+  }
+}
+
+$("identityForm")?.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const btn = e.submitter;
+  btn.disabled = true;
+  const status = $("identityStatus");
+  status.hidden = false;
+  status.textContent = "Saving...";
+  status.className = "status";
+  try {
+    const body = {
+      company_name: $("i_company_name").value.trim(),
+      company_country: $("i_company_country").value.trim(),
+      company_number: $("i_company_number").value.trim(),
+      support_email: $("i_support_email").value.trim(),
+      affiliate_disclosure: $("i_affiliate_disclosure").value.trim(),
+    };
+    const d = await api("/api/admin/identity", { method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
+    if (!d.ok) {
+      status.textContent = d.error || "Failed to save.";
+      status.className = "status status--bad";
+      btn.disabled = false;
+      return;
+    }
+    status.textContent = "Saved. Legal pages and footers now use these details.";
+    status.className = "status status--good";
+    if (!d.identity?.complete) {
+      status.textContent += " Company name and country are still required before launch.";
+      status.className = "status status--bad";
+    }
+  } catch {
+    status.textContent = "Network error. Try again.";
+    status.className = "status status--bad";
+  }
+  btn.disabled = false;
+});
 
 function pill(text, tone) {
   return `<span class="pill pill--${tone || "muted"}">${esc(text)}</span>`;
