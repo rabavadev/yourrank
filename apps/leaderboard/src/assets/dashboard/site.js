@@ -187,6 +187,32 @@ export function renderPlan() {
   if ($("goPro")) $("goPro").textContent = lifetime ? "Lifetime active" : (plan === "free" ? "Upgrade — plans from $12/mo" : `Extend ${currentName} (+30 days)`);
 }
 
+export async function loadHistory() {
+  const card = $("historyCard");
+  const table = $("historyTable");
+  const body = $("historyBody");
+  const empty = $("historyEmpty");
+  if (!card || !table || !body) return;
+  try {
+    const res = await fetch("/api/account/payments", { credentials: "include" }).then(guardAuth);
+    const d = await res.json();
+    if (!res.ok || !d.ok) return;
+    const rows = d.payments || [];
+    card.hidden = false;
+    empty.hidden = rows.length > 0;
+    table.hidden = rows.length === 0;
+    body.innerHTML = rows.map((p) => {
+      const plan = String(p.plan_tier || p.plan || "–").toUpperCase();
+      const amount = Number(p.amount) || 0;
+      const amountStr = `$${amount.toFixed(2)} ${p.currency || "USD"}`;
+      const status = String(p.status || "").toLowerCase();
+      const statusClass = ["confirmed", "finished", "active"].includes(status) ? "good" : ["failed", "expired", "refunded"].includes(status) ? "bad" : "muted";
+      const date = p.created_at ? new Date(p.created_at).toLocaleString() : "–";
+      return `<tr><td>${esc(date)}</td><td>${esc(plan)}</td><td>${esc(amountStr)}</td><td><span class="pill pill--${esc(statusClass)}">${esc(status)}</span></td></tr>`;
+    }).join("");
+  } catch (err) { logError("loadHistory", err); }
+}
+
 export function wireCancelSubscription() {
   const btn = $("cancelBtn");
   if (!btn || btn._wired) return;

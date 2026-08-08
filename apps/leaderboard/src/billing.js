@@ -1,12 +1,13 @@
 // Billing: NOWPayments (crypto) + manual activation. Plan logic lives here.
 import { json, bad, ok, uuid, requireUser, safeEqual, readJson } from "./auth.js";
-import { exec, withTransaction } from "../../../shared/db.js";
+import { one, query, exec, withTransaction } from "../../../shared/db.js";
 import { logAudit } from "../../../shared/audit.js";
 import { logProviderEvent } from "../../../shared/provider-events.js";
 
 // Plan definitions imported from shared source of truth.
 // Re-exported here for backward compatibility with any local imports.
 import { PLAN_LIMITS as _PL, BOARD_LIMITS as _BL, PLAN_PRICES as _PP, PLAN_META as _PM, computeProratedExpiry as _computeProratedExpiry } from "../../../shared/plans.js";
+import { sendReceiptEmail } from "./email.js";
 export const PLAN_LIMITS = _PL;
 export const BOARD_LIMITS = _BL;
 export const PLAN_PRICES = _PP;
@@ -240,7 +241,7 @@ async function hmacSha512Hex(secret, msg) {
 }
 
 // POST /api/billing/ipn — NOWPayments calls this on every payment status change.
-export async function handleIpn(request, env) {
+export async function handleIpn(request, env, ctx) {
   if (!env.NOWPAYMENTS_IPN_SECRET) return bad("not configured", 503);
   const raw = await request.text();
   let body;
@@ -381,6 +382,33 @@ export async function handleIpn(request, env) {
       request,
       details: { order_id: ipnResult.orderId, amount: ipnResult.amount, plan: ipnResult.plan, lifetime: !!ipnResult.lifetime, provider: "nowpayments" },
     });
+
+    // Send a receipt email for every successful payment. Fire-and-forget so an
+    // email outage does not block IPN acking.
+    try {
+      const user = await one("SELECT email FROM users WHERE id=$1", [ipnResult.userId]);
+      if (user?.email) {
+        const origin = new URL(request.url).origin;
+        const expiresAt = ipnResult.lifetime
+          ? new Date('2099-12-31T23:59:59Z').toISOString()
+          : new Date(Date.now() + PRO_DAYS * 86400000).toISOString();
+        const receiptPromise = sendReceiptEmail(env, {
+          email: user.email,
+          orderId: ipnResult.orderId,
+          plan: ipnResult.plan,
+          amount: ipnResult.amount,
+          currency: "USD",
+          provider: "nowpayments",
+          isLifetime: ipnResult.lifetime,
+          expiresAt,
+          origin,
+        });
+        if (ctx?.waitUntil) ctx.waitUntil(receiptPromise.catch((err) => console.error("[ipn] receipt email failed:", err)));
+        else receiptPromise.catch((err) => console.error("[ipn] receipt email failed:", err));
+      }
+    } catch (receiptErr) {
+      console.error("[ipn] receipt preparation failed:", receiptErr);
+    }
   }
 
   return ok();
@@ -412,5 +440,25 @@ export async function handleCancel(request, env) {
   } catch (err) {
     console.error("[handleCancel] failed:", err);
     return bad("Could not cancel subscription. Please try again or contact support.", 500);
+  }
+}
+
+// GET /api/account/payments — payment history for the authenticated user.
+export async function handleUserPayments(request, env) {
+  const { user, res } = await requireUser(request, env);
+  if (res) return res;
+  try {
+    const rows = await query(
+      `SELECT id, provider, amount, currency, status, plan_tier, tx_ref, created_at, updated_at
+         FROM payments
+        WHERE user_id=$1
+        ORDER BY created_at DESC
+        LIMIT 100`,
+      [user.id]
+    );
+    return json({ ok: true, payments: rows || [] });
+  } catch (err) {
+    console.error("[handleUserPayments] failed:", err);
+    return bad("Could not load payment history. Try again later.", 500);
   }
 }
