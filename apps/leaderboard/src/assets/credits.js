@@ -26,6 +26,7 @@ async function load() {
   const data = await api("GET", "/api/credits/status");
   state = data;
   render();
+  await loadAnalytics();
   $("cr-app").hidden = false;
   $("cr-empty").hidden = true;
 }
@@ -255,6 +256,85 @@ async function updateRedemption(id, status) {
   await api("POST", `/api/credits/redemptions/${encodeURIComponent(id)}`, { status });
   await load();
 }
+
+async function loadAnalytics() {
+  const days = Number($("cr-analytics-days").value) || 30;
+  try {
+    const data = await api("GET", `/api/credits/analytics?days=${days}`);
+    state.analytics = data;
+    renderAnalytics();
+  } catch (err) {
+    console.error("analytics load failed", err);
+  }
+}
+
+function renderAnalytics() {
+  const a = state.analytics;
+  if (!a) return;
+  const s = a.summary || {};
+  $("cr-stat-earned").textContent = `${s.periodEarned || 0} (all time: ${s.allTimeEarned || 0})`;
+  $("cr-stat-spent").textContent = `${s.periodSpent || 0} (all time: ${s.allTimeSpent || 0})`;
+  $("cr-stat-redemptions").textContent = s.redemptionsTotal || 0;
+  $("cr-stat-pending").textContent = s.redemptionsPending || 0;
+  $("cr-stat-balance").textContent = s.viewerBalance || 0;
+
+  const earners = a.topEarners || [];
+  $("cr-top-earners-list").innerHTML = earners.map((v) => `
+    <tr>
+      <td>${esc(v.kick_username)}</td>
+      <td>${v.balance}</td>
+      <td>${v.total_earned}</td>
+      <td>${v.total_spent}</td>
+    </tr>
+  `).join("");
+  $("cr-top-earners-empty").hidden = earners.length > 0;
+
+  const items = a.topItems || [];
+  $("cr-top-items-list").innerHTML = items.map((i) => `
+    <tr>
+      <td>${esc(i.name)}</td>
+      <td>${i.redemptions}</td>
+      <td>${i.credits_spent}</td>
+    </tr>
+  `).join("");
+  $("cr-top-items-empty").hidden = items.length > 0;
+
+  renderCreditsByDay(a.creditsByDay || []);
+}
+
+function renderCreditsByDay(rows) {
+  const container = $("cr-credits-by-day");
+  if (!rows.length) {
+    container.innerHTML = "";
+    $("cr-credits-by-day-empty").hidden = false;
+    return;
+  }
+  $("cr-credits-by-day-empty").hidden = true;
+
+  const grouped = {};
+  for (const r of rows) {
+    grouped[r.day] = grouped[r.day] || { earn: 0, spend: 0 };
+    grouped[r.day][r.type] = r.total;
+  }
+  const days = Object.keys(grouped).sort();
+  const max = Math.max(1, ...days.map((d) => grouped[d].earn + grouped[d].spend));
+
+  container.innerHTML = days.map((d) => {
+    const g = grouped[d];
+    const total = g.earn + g.spend;
+    const earnPct = max > 0 ? (g.earn / max) * 100 : 0;
+    const spendPct = max > 0 ? (g.spend / max) * 100 : 0;
+    const label = new Date(d).toLocaleDateString(undefined, { month: "short", day: "numeric" });
+    return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%" title="${label}: ${total} (${g.earn} earned, ${g.spend} spent)">
+      <div style="width:100%;display:flex;align-items:flex-end;gap:1px;height:100%">
+        <div style="flex:1;background:var(--accent,#c8ff00);height:${earnPct}%"></div>
+        <div style="flex:1;background:var(--ink-mute,#8b949e);height:${spendPct}%"></div>
+      </div>
+    </div>`;
+  }).join("");
+}
+
+$("cr-analytics-days")?.addEventListener("change", loadAnalytics);
 
 load().catch((err) => {
   $("cr-empty").innerHTML = `<p class="error">Could not load credits dashboard: ${esc(err.message)}</p>`;

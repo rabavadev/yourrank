@@ -139,6 +139,44 @@ export const creditsPage = leaderboardPageHtml({
       <p class="empty" id="cr-redemption-empty" hidden>No redemptions yet.</p>
     </div>
   </section>
+
+  <section class="card">
+    <h2>Analytics</h2>
+    <div class="field" style="margin-bottom:16px">
+      <label for="cr-analytics-days">Last</label>
+      <select id="cr-analytics-days">
+        <option value="7">7 days</option>
+        <option value="30" selected>30 days</option>
+        <option value="90">90 days</option>
+      </select>
+    </div>
+    <div class="cr-analytics-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin-bottom:18px">
+      <div class="cr-stat"><div class="cr-stat-label">Credits earned</div><div class="cr-stat-value" id="cr-stat-earned">–</div></div>
+      <div class="cr-stat"><div class="cr-stat-label">Credits spent</div><div class="cr-stat-value" id="cr-stat-spent">–</div></div>
+      <div class="cr-stat"><div class="cr-stat-label">Redemptions</div><div class="cr-stat-value" id="cr-stat-redemptions">–</div></div>
+      <div class="cr-stat"><div class="cr-stat-label">Pending</div><div class="cr-stat-value" id="cr-stat-pending">–</div></div>
+      <div class="cr-stat"><div class="cr-stat-label">Viewer balance</div><div class="cr-stat-value" id="cr-stat-balance">–</div></div>
+    </div>
+    <h3>Top earners</h3>
+    <div class="board-table-wrap">
+      <table class="board-table" id="cr-top-earners">
+        <thead><tr><th>Viewer</th><th>Balance</th><th>Earned</th><th>Spent</th></tr></thead>
+        <tbody id="cr-top-earners-list"></tbody>
+      </table>
+      <p class="empty" id="cr-top-earners-empty" hidden>No data yet.</p>
+    </div>
+    <h3>Top items</h3>
+    <div class="board-table-wrap">
+      <table class="board-table" id="cr-top-items">
+        <thead><tr><th>Item</th><th>Redemptions</th><th>Credits spent</th></tr></thead>
+        <tbody id="cr-top-items-list"></tbody>
+      </table>
+      <p class="empty" id="cr-top-items-empty" hidden>No data yet.</p>
+    </div>
+    <h3>Credits by day</h3>
+    <div id="cr-credits-by-day" class="cr-bars" style="display:flex;align-items:flex-end;gap:4px;height:120px;margin-bottom:8px"></div>
+    <p class="empty" id="cr-credits-by-day-empty" hidden>No data for this period.</p>
+  </section>
 </div>
 
 <div id="cr-empty" class="empty" hidden>
