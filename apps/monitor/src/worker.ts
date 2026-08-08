@@ -6,6 +6,7 @@ interface Env {
   DISCORD_MONITORING_WEBHOOK: string;  // Discord webhook for alerts
   MONITOR_SLUG?: string;        // known board slug for /r/ check
   MONITOR_PB_KEY?: string;      // known postback key for /pb check
+  MONITOR_BACKUP_CHECK?: string; // "true" to also check /api/health/backup
 }
 
 interface CheckResult {
@@ -107,6 +108,21 @@ async function runChecks(env: Env): Promise<CheckResult[]> {
           },
         },
         "POST /pb (canary)",
+        10_000,
+        [200]
+      )
+    );
+  }
+
+  // 7. Backup verification freshness — only if enabled. The leaderboard
+  // endpoint returns 503 when no successful practice restore has been recorded
+  // within the configured limit (default 7 days).
+  if (env.MONITOR_BACKUP_CHECK === "true") {
+    checks.push(
+      checkEndpoint(
+        `${base}/api/health/backup`,
+        { method: "GET" },
+        "GET /api/health/backup",
         10_000,
         [200]
       )

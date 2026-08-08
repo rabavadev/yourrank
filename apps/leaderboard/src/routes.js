@@ -40,6 +40,9 @@ import {
   handleFeatureFlags, handleFeatureFlagOverride
 } from "./admin.js";
 import {
+  handleBackupHealth, handleRecordBackupVerification, handleListBackupVerifications
+} from "./handlers/backup.js";
+import {
   handlePublicStandings, handlePublicPlayers, handlePublicStream, handlePublicRank, handlePublicData, handlePublicStats
 } from "./handlers/public.js";
 
@@ -130,8 +133,13 @@ export const ROUTES = [
 
   // Client-side error reporting
   { path: "/api/log", method: "POST", handler: withHandler(handleLog) },
-  
+
+  // Backup health (public canary for monitor)
+  { path: "/api/health/backup", method: "GET", handler: withHandler(handleBackupHealth) },
+
   // Admin routes
+  { path: "/api/admin/backup-verifications", method: "GET", handler: withHandler(handleListBackupVerifications) },
+  { path: "/api/admin/backup-verifications", method: "POST", handler: withHandler(handleRecordBackupVerification) },
   { path: "/api/admin/overview", method: "GET", handler: withHandler(handleOverview) },
   { path: "/api/admin/users", method: "GET", handler: withHandler(handleUsers) },
   { path: "/api/admin/leads", method: "GET", handler: withHandler(handleLeads) },

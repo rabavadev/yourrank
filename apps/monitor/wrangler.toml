@@ -14,3 +14,6 @@ MONITOR_SLUG = ""        # set to a known board slug after first board exists
 # Secrets (set via wrangler secret put):
 #   DISCORD_MONITORING_WEBHOOK — Discord webhook for uptime alerts
 #   MONITOR_PB_KEY — known postback key for /pb canary check
+#
+# Vars:
+#   MONITOR_BACKUP_CHECK = "true"  — also check /api/health/backup freshness
