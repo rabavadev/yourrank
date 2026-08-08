@@ -111,7 +111,11 @@ async function init() {
       fitDesignPreview();
     });
   });
-  window.addEventListener("resize", fitDesignPreview);
+  let resizeTimer;
+  window.addEventListener("resize", () => {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(fitDesignPreview, 150);
+  });
   const editorNav = document.querySelector('[data-nav="board"]');
   if (editorNav) editorNav.addEventListener("click", () => setTimeout(fitDesignPreview, 0));
   if (p.customDomain !== undefined) $("f_domain").value = p.customDomain || "";
@@ -188,7 +192,14 @@ async function init() {
   renderReferrals();
   wireStreamerHud();
 
-  const markDirty = () => { state._dirty = true; const sb = $("savebar"); if (sb) sb.hidden = false; renderOverviewSummary(); };
+  let dirtyTimer;
+  const markDirty = () => {
+    state._dirty = true;
+    const sb = $("savebar");
+    if (sb) sb.hidden = false;
+    clearTimeout(dirtyTimer);
+    dirtyTimer = setTimeout(renderOverviewSummary, 150);
+  };
 
   window.addEventListener("message", (e) => {
     if (e.data?.type === "yr_edit_request") {

@@ -555,6 +555,9 @@ let _previewTimeout = null;
 export function updateDesignPreview() {
   const iframe = $("designPreview");
   if (!iframe || !state.ACTIVE_SITE_ID) return;
+  // Don't waste CPU/network rendering a preview that isn't on screen.
+  const editorVisible = document.querySelector('section[data-page="board"].is-on');
+  if (!editorVisible) return;
 
   const tpl = state.CURRENT_BRANDING.template || currentTemplate()?.id || "classic";
   const active = document.querySelector(".preview-tab.is-active");
@@ -564,7 +567,7 @@ export function updateDesignPreview() {
   const params = new URLSearchParams({ board: state.ACTIVE_SITE_ID, template: tpl, device });
   const url = "/dashboard/preview?" + params.toString();
 
-  // Debounce the live preview update (300ms) to avoid spamming the backend
+  // Debounce the live preview update (750ms) so typing doesn't repeatedly re-render.
   clearTimeout(_previewTimeout);
   _previewTimeout = setTimeout(async () => {
     if (_previewAbort) _previewAbort.abort();

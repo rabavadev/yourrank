@@ -3,7 +3,7 @@
 export const dashboardConfig = {
   title: "Dashboard · YourRank",
   canonical: "https://yourrank.site/dashboard",
-  scripts: ['<script src="/assets/dashboard.js?v=4" type="module"></script>'],
+  scripts: ['<script src="/assets/dashboard.js?v=5" type="module"></script>'],
 };
 
 export function DashboardContent() {
