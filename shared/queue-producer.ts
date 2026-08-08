@@ -69,6 +69,13 @@ const playerRankNotifyEventSchema = z.object({
   tgUserId: z.number().int().positive().safe(),
 }).strict();
 
+const kickRewardRedemptionEventSchema = z.object({
+  type: z.literal("kick-redemption"),
+  messageId: id,
+  eventType: z.string().max(128),
+  payload: z.record(z.unknown()),
+}).strict();
+
 export const queueEventSchema = z.union([
   clickEventSchema,
   conversionEventSchema,
@@ -76,6 +83,7 @@ export const queueEventSchema = z.union([
   top3NotifyEventSchema,
   resetNotifyEventSchema,
   playerRankNotifyEventSchema,
+  kickRewardRedemptionEventSchema,
 ]);
 
 export type QueueEvent = z.infer<typeof queueEventSchema>;
@@ -86,6 +94,7 @@ export type NotifyEvent =
   | z.infer<typeof top3NotifyEventSchema>
   | z.infer<typeof resetNotifyEventSchema>
   | z.infer<typeof playerRankNotifyEventSchema>;
+export type KickRewardRedemptionEvent = z.infer<typeof kickRewardRedemptionEventSchema>;
 
 export function parseQueueEvent(input: unknown): QueueEvent {
   return queueEventSchema.parse(input);
