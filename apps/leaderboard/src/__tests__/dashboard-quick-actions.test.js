@@ -23,18 +23,25 @@ describe("dashboard overview quick actions", () => {
     expect(overviewJs).toContain('location.origin + "/" + state.SLUG');
   });
 
-  it("promotes postbacks into a top-level Automate nav group", () => {
+  it("organises navigation into Build / Connect / Grow / Account", () => {
     const html = dashboardHtml();
-    // Attribution/postbacks is the core value prop and now lives in the primary nav.
-    expect(html).toContain('<span class="lb-side-grp">Automate</span>');
+    // Build: where users edit their board and switch contexts.
+    expect(html).toContain('<span class="lb-side-grp">Build</span>');
+    expect(html).toContain('data-nav="board"');
+    expect(html).toContain('data-nav="overview"');
+    expect(html).toContain('class="lb-nav lb-nav--boards" type="button" data-nav="boards" hidden');
+    // Connect: third-party wiring (postbacks + integrations).
+    expect(html).toContain('<span class="lb-side-grp">Connect</span>');
     expect(html).toContain('href="/dashboard/attribution"');
     expect(html).toContain('>Postbacks</a>');
-    // Integrations (overlay/domain/alerts) sits alongside it under Automate.
     expect(html).toContain('data-nav="integrations"');
-    // The four-group IA: Board / Automate / Grow / Plan.
-    expect(html).toContain('<span class="lb-side-grp">Board</span>');
+    // Grow: distribution and analytics.
     expect(html).toContain('<span class="lb-side-grp">Grow</span>');
-    expect(html).toContain('<span class="lb-side-grp">Plan</span>');
+    expect(html).toContain('data-nav="growth"');
+    expect(html).toContain('data-nav="referrals"');
+    // Account: plan and billing.
+    expect(html).toContain('<span class="lb-side-grp">Account</span>');
+    expect(html).toContain('data-nav="manage"');
     // Icons are real inline SVGs, not emoji.
     expect(html).not.toContain('aria-hidden="true">🔌</span>');
   });
