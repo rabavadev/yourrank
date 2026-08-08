@@ -465,3 +465,130 @@ export async function handlePublicRedeem(request, env) {
 
   return ok(result);
 }
+
+export async function handleCreditsAnalytics(request, env) {
+  const { user, res } = await requireUser(request, env);
+  if (res) return res;
+  const url = new URL(request.url);
+  const site = await getSite(env, user, url);
+  if (!site) return bad("no site", 404);
+
+  const rawDays = Number(url.searchParams.get("days") || 30);
+  const days = Math.min(Math.max(Number.isFinite(rawDays) ? rawDays : 30, 1), 90);
+  const startDate = new Date(Date.now() - days * 86400000).toISOString();
+
+  const [
+    allTimeEarned,
+    periodEarned,
+    allTimeSpent,
+    periodSpent,
+    redemptionSummary,
+    viewerBalance,
+    topEarners,
+    topItems,
+    redemptionsByStatus,
+    creditsByDay,
+  ] = await Promise.all([
+    one(
+      `SELECT COALESCE(SUM(cl.amount), 0)::int AS total
+         FROM credit_ledger cl
+         JOIN site_viewers sv ON sv.id = cl.site_viewer_id
+        WHERE sv.site_id = $1 AND cl.type = 'earn'`,
+      [site.id]
+    ),
+    one(
+      `SELECT COALESCE(SUM(cl.amount), 0)::int AS total
+         FROM credit_ledger cl
+         JOIN site_viewers sv ON sv.id = cl.site_viewer_id
+        WHERE sv.site_id = $1 AND cl.type = 'earn' AND cl.created_at > $2::timestamptz`,
+      [site.id, startDate]
+    ),
+    one(
+      `SELECT COALESCE(SUM(cl.amount), 0)::int AS total
+         FROM credit_ledger cl
+         JOIN site_viewers sv ON sv.id = cl.site_viewer_id
+        WHERE sv.site_id = $1 AND cl.type = 'spend'`,
+      [site.id]
+    ),
+    one(
+      `SELECT COALESCE(SUM(cl.amount), 0)::int AS total
+         FROM credit_ledger cl
+         JOIN site_viewers sv ON sv.id = cl.site_viewer_id
+        WHERE sv.site_id = $1 AND cl.type = 'spend' AND cl.created_at > $2::timestamptz`,
+      [site.id, startDate]
+    ),
+    one(
+      `SELECT
+         COUNT(*) FILTER (WHERE r.status != 'cancelled')::int AS total,
+         COUNT(*) FILTER (WHERE r.status = 'fulfilled')::int AS fulfilled,
+         COUNT(*) FILTER (WHERE r.status = 'pending')::int AS pending,
+         COUNT(*) FILTER (WHERE r.status = 'cancelled')::int AS cancelled,
+         COALESCE(SUM(r.cost) FILTER (WHERE r.status != 'cancelled'), 0)::int AS credits_spent
+         FROM redemptions r
+         JOIN site_viewers sv ON sv.id = r.site_viewer_id
+        WHERE sv.site_id = $1 AND r.created_at > $2::timestamptz`,
+      [site.id, startDate]
+    ),
+    one(
+      "SELECT COALESCE(SUM(balance), 0)::int AS total FROM site_viewers WHERE site_id = $1",
+      [site.id]
+    ),
+    query(
+      `SELECT v.kick_username, sv.balance, sv.total_earned, sv.total_spent
+         FROM site_viewers sv
+         JOIN viewers v ON v.id = sv.viewer_id
+        WHERE sv.site_id = $1
+        ORDER BY sv.total_earned DESC, v.kick_username ASC
+        LIMIT 10`,
+      [site.id]
+    ),
+    query(
+      `SELECT i.id, i.name, COUNT(r.id) FILTER (WHERE r.status != 'cancelled')::int AS redemptions,
+              COALESCE(SUM(r.cost) FILTER (WHERE r.status != 'cancelled'), 0)::int AS credits_spent
+         FROM shop_items i
+         LEFT JOIN redemptions r ON r.shop_item_id = i.id
+        WHERE i.site_id = $1
+        GROUP BY i.id, i.name
+        ORDER BY redemptions DESC, i.name ASC
+        LIMIT 10`,
+      [site.id]
+    ),
+    query(
+      `SELECT r.status, COUNT(*)::int AS count
+         FROM redemptions r
+         JOIN site_viewers sv ON sv.id = r.site_viewer_id
+        WHERE sv.site_id = $1
+        GROUP BY r.status`,
+      [site.id]
+    ),
+    query(
+      `SELECT DATE(cl.created_at) AS day, cl.type, COALESCE(SUM(cl.amount), 0)::int AS total
+         FROM credit_ledger cl
+         JOIN site_viewers sv ON sv.id = cl.site_viewer_id
+        WHERE sv.site_id = $1 AND cl.created_at > $2::timestamptz AND cl.type IN ('earn', 'spend')
+        GROUP BY DATE(cl.created_at), cl.type
+        ORDER BY day ASC`,
+      [site.id, startDate]
+    ),
+  ]);
+
+  return ok({
+    days,
+    summary: {
+      allTimeEarned: allTimeEarned?.total || 0,
+      periodEarned: periodEarned?.total || 0,
+      allTimeSpent: allTimeSpent?.total || 0,
+      periodSpent: periodSpent?.total || 0,
+      redemptionsTotal: redemptionSummary?.total || 0,
+      redemptionsFulfilled: redemptionSummary?.fulfilled || 0,
+      redemptionsPending: redemptionSummary?.pending || 0,
+      redemptionsCancelled: redemptionSummary?.cancelled || 0,
+      redemptionCreditsSpent: redemptionSummary?.credits_spent || 0,
+      viewerBalance: viewerBalance?.total || 0,
+    },
+    topEarners: topEarners || [],
+    topItems: topItems || [],
+    redemptionsByStatus: redemptionsByStatus || [],
+    creditsByDay: creditsByDay || [],
+  });
+}
