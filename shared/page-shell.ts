@@ -221,6 +221,15 @@ const BOT_BASE_CSS = `
   .bc-preview-img img { max-width:100%; border-radius:8px; margin-bottom:14px; display:block; }
   .bc-preview-actions { display:flex; gap:10px; justify-content:flex-end; }
 
+  /* broadcast segment & schedule controls */
+  .bc-segment { margin:10px 0; color:var(--dim); border:1px solid var(--border); border-radius:8px; padding:10px 12px; }
+  .bc-segment summary { cursor:pointer; font-size:13px; }
+  .bc-segment-fields { display:grid; grid-template-columns:repeat(2, minmax(120px, 1fr)); gap:10px; margin-top:10px; }
+  .bc-segment-fields label { grid-column:1 / -1; margin:0; font-size:12px; }
+  .bc-segment-fields input,
+  .bc-segment-fields select { padding:6px 8px; border-radius:6px; border:1px solid var(--border); background:var(--bg); color:var(--fg); }
+  @media (max-width:600px) { .bc-segment-fields { grid-template-columns:1fr; } }
+
   .cmd-button-list { display:flex; flex-wrap:wrap; gap:8px; margin:8px 0 12px; }
   .cmd-button-chip { display:inline-flex; align-items:center; gap:6px; background:var(--panel-2); border:1px solid var(--border); border-radius:999px; padding:4px 10px; font-size:13px; color:var(--fg); }
   .cmd-button-chip button { padding:0 4px; font-size:16px; line-height:1; background:transparent; border:none; color:var(--dim); cursor:pointer; }
