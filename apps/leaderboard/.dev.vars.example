@@ -16,7 +16,7 @@ MAIL_FROM=YourRank <hey@yourrank.site>
 LEAD_WEBHOOK_URL=
 DISCORD_MONITORING_WEBHOOK=
 SENTRY_DSN=
-ENCRYPTION_KEY=
+TOKEN_ENC_KEY=
 ADMIN_TOTP_SECRET=
 CF_ZONE_ID=
 PRO_PRICE_USD=29
@@ -24,3 +24,9 @@ SESSION_COOKIE_DOMAIN=.yourrank.site
 
 # Kick webhook public key (PEM) for verifying channel-point redemption events.
 KICK_WEBHOOK_PUBLIC_KEY=
+
+# Kick OAuth app credentials.
+KICK_CLIENT_ID=
+KICK_CLIENT_SECRET=
+# Kick OAuth redirect URI. Must exactly match the URL in your Kick app settings.
+KICK_REDIRECT_URI=https://yourrank.site/auth/kick/callback

@@ -17,21 +17,32 @@ export const creditsPage = leaderboardPageHtml({
 <div id="cr-app" hidden>
   <section class="card">
     <h2>Connected Kick channel</h2>
-    <p class="card-sub">The broadcaster user ID from Kick. Reward redemptions from this channel will credit your viewers.</p>
-    <form class="grid2" id="cr-channel-form">
-      <div class="field">
-        <label for="cr-channel-id">Kick channel/broadcaster ID</label>
-        <input id="cr-channel-id" type="text" placeholder="12345678" required />
-      </div>
-      <div class="field">
-        <label for="cr-channel-name">Channel name (optional)</label>
-        <input id="cr-channel-name" type="text" placeholder="yourchannel" />
-      </div>
-      <div class="field" style="grid-column:1/-1">
-        <button class="btn btn--accent" type="submit">Save channel</button>
-        <p class="status" id="cr-channel-status" role="status" aria-live="polite"></p>
-      </div>
-    </form>
+    <p class="card-sub">Link your Kick account so reward redemptions from your channel credit your viewers.</p>
+    <div id="cr-channel-connected" hidden>
+      <p class="card-sub">Connected: <b id="cr-channel-name"></b> (<code id="cr-channel-id"></code>)</p>
+      <a id="cr-channel-connect" class="btn" href="/auth/kick">Reconnect Kick</a>
+      <button id="cr-channel-disconnect" class="btn btn--danger" type="button">Disconnect</button>
+    </div>
+    <div id="cr-channel-connect-wrap">
+      <a id="cr-channel-connect" class="btn btn--accent" href="/auth/kick">Connect with Kick</a>
+      <details class="cr-advanced">
+        <summary>Manual channel ID</summary>
+        <form class="grid2" id="cr-channel-form">
+          <div class="field">
+            <label for="cr-channel-id-input">Kick channel/broadcaster ID</label>
+            <input id="cr-channel-id-input" type="text" placeholder="12345678" />
+          </div>
+          <div class="field">
+            <label for="cr-channel-name-input">Channel name (optional)</label>
+            <input id="cr-channel-name-input" type="text" placeholder="yourchannel" />
+          </div>
+          <div class="field" style="grid-column:1/-1">
+            <button class="btn" type="submit">Save channel</button>
+            <p class="status" id="cr-channel-status" role="status" aria-live="polite"></p>
+          </div>
+        </form>
+      </details>
+    </div>
   </section>
 
   <section class="card">

@@ -68,7 +68,14 @@ SESSION_COOKIE_DOMAIN = ".yourrank.site"
 ||||||| parent of 4082c5a (feat(credits): add Kick channel-point webhook and Phase 0 schema)
 =======
 #   KICK_WEBHOOK_PUBLIC_KEY (required for Kick channel-point credits integration)
+<<<<<<< HEAD
 >>>>>>> 4082c5a (feat(credits): add Kick channel-point webhook and Phase 0 schema)
+||||||| parent of 6d4bdbe (feat: Kick OAuth login for streamers)
+=======
+#   KICK_CLIENT_ID          (required for Kick OAuth login)
+#   KICK_CLIENT_SECRET      (required for Kick OAuth login)
+#   KICK_REDIRECT_URI       (defaults to https://yourrank.site/auth/kick/callback)
+>>>>>>> 6d4bdbe (feat: Kick OAuth login for streamers)
 
 # ---------------------------------------------------------------------------
 # Staging environment (wrangler deploy --env staging)

@@ -34,6 +34,11 @@ import { handleScores } from "./handlers/scores.js";
 import { handleQuickAdd } from "./handlers/quick-add.js";
 import { handleKickWebhook } from "./handlers/kick-webhook.js";
 import {
+  handleKickAuthStart,
+  handleKickAuthCallback,
+  handleKickAuthDisconnect,
+} from "./handlers/kick-auth.js";
+import {
   handleCreditsStatus,
   handleCreditsConnect,
   handleCreditsSaveReward,
@@ -118,6 +123,11 @@ export const ROUTES = [
   
   // Kick integration webhooks (CSRF-exempt)
   { path: "/webhooks/kick", method: "POST", handler: withHandler(handleKickWebhook) },
+
+  // Kick OAuth
+  { path: "/auth/kick", method: "GET", handler: withHandler(handleKickAuthStart) },
+  { path: "/auth/kick/callback", method: "GET", handler: withHandler(handleKickAuthCallback) },
+  { path: "/api/kick/disconnect", method: "POST", handler: withHandler(handleKickAuthDisconnect) },
 
   // Credits / shop dashboard API
   { path: "/api/credits/status", method: "GET", handler: withHandler(handleCreditsStatus) },

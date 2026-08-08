@@ -26,8 +26,13 @@ async function load() {
 }
 
 function render() {
-  $("cr-channel-id").value = state.channel?.externalId || "";
-  $("cr-channel-name").value = state.channel?.name || "";
+  const connected = Boolean(state.channel?.externalId);
+  $("cr-channel-connected").hidden = !connected;
+  $("cr-channel-connect-wrap").hidden = connected;
+  $("cr-channel-id").textContent = state.channel?.externalId || "";
+  $("cr-channel-name").textContent = state.channel?.name || "";
+  $("cr-channel-id-input").value = state.channel?.externalId || "";
+  $("cr-channel-name-input").value = state.channel?.name || "";
 
   $("cr-reward-list").innerHTML = (state.mappings || []).map((m) => `
     <tr>
@@ -127,12 +132,21 @@ $("cr-channel-form").addEventListener("submit", async (e) => {
   e.preventDefault();
   try {
     const data = await api("POST", "/api/credits/connect", {
-      externalId: $("cr-channel-id").value.trim(),
-      name: $("cr-channel-name").value.trim(),
+      externalId: $("cr-channel-id-input").value.trim(),
+      name: $("cr-channel-name-input").value.trim(),
     });
     state.channel = data.channel;
     setStatus("cr-channel-status", "Channel saved.");
     render();
+  } catch (err) { setStatus("cr-channel-status", err.message, true); }
+});
+
+$("cr-channel-disconnect")?.addEventListener("click", async () => {
+  try {
+    await api("POST", "/api/kick/disconnect");
+    state.channel = { externalId: null, name: null };
+    render();
+    setStatus("cr-channel-status", "Disconnected.");
   } catch (err) { setStatus("cr-channel-status", err.message, true); }
 });
 
