@@ -65,8 +65,6 @@ async function init() {
   renderTemplateText();
   renderLegal();
   renderEmbedShare();
-  const proAccordion = $("proAccordion");
-  if (proAccordion) proAccordion.open = state.ME.plan !== "free";
   function fitDesignPreview() {
     const iframe = $("designPreview");
     const stage = $("previewStage");

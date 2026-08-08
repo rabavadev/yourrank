@@ -199,13 +199,7 @@ export function DashboardContent() {
 </div>
 <p class="hint template-status" id="templateStatus" role="status" aria-live="polite"></p>
 <div class="template-options" id="templateOptions" hidden></div></div>
-<details class="pro-accordion" data-egroup="appearance" id="proAccordion">
-<summary class="pro-accordion__summary">
-<span class="pro-accordion__title">Pro features<span class="pill pill--info ml-6">PRO</span></span>
-<span class="hint">Branding, sections, prize customization</span>
-</summary>
-<div class="pro-accordion__body">
-<div class="card" id="brandCard"><h2>Branding <span class="pill pill--info ml-6">PRO</span></h2><p class="card-sub">Your logo and page colors. Free pages use the default look.</p>
+<div class="card" data-egroup="appearance" id="brandCard"><h2>Branding <span class="pill pill--info ml-6">PRO</span></h2><p class="card-sub">Your logo and page colors. Free pages use the default look.</p>
 <div id="brandBody">
 <div class="grid2">
 <div class="field"><label for="logoFile">Logo</label>
@@ -220,11 +214,11 @@ export function DashboardContent() {
 </details></div>
 <div class="field"><label for="f_font">Font</label><select id="f_font"><option value="Inter">Inter — Default</option><option value="Oswald">Oswald — Bold & Sporty</option><option value="Playfair Display">Playfair Display — Premium & Elegant</option><option value="Rajdhani">Rajdhani — Techy & Esports</option><option value="Bebas Neue">Bebas Neue — Impact & Hype</option></select><span class="hint">Changes the personality of your public page text.</span></div>
 </div></div>
-<div class="empty" id="brandLock" hidden>Branding is a Pro feature. <a href="#" id="brandUpgrade">Upgrade to unlock it</a>.</div></div>
-<div class="card" id="sectionsCard"><h2>Sections <span class="pill pill--info ml-6">PRO</span></h2><p class="card-sub">Choose what appears on your public page. Turn sections off to build a leaner layout.</p>
+<div class="empty upsell-card" id="brandLock" hidden>Branding is a Pro feature. <a href="#" id="brandUpgrade">Upgrade to unlock it</a>.</div></div>
+<div class="card" data-egroup="appearance" id="sectionsCard"><h2>Sections <span class="pill pill--info ml-6">PRO</span></h2><p class="card-sub">Choose what appears on your public page. Turn sections off to build a leaner layout.</p>
 <div id="sectionsBody"><div class="sections-editor" id="sectionsList"></div></div>
-<div class="empty" id="sectionsLock" hidden>Section controls are a Pro feature. <a href="#" id="sectionsUpgrade">Upgrade to unlock it</a>.</div></div>
-<div class="card" id="prizesCard"><h2>Prize & countdown <span class="pill pill--info ml-6">PRO</span></h2><p class="card-sub">Customize how prizes, currency and the countdown appear on your public page.</p>
+<div class="empty upsell-card" id="sectionsLock" hidden>Section controls are a Pro feature. <a href="#" id="sectionsUpgrade">Upgrade to unlock it</a>.</div></div>
+<div class="card" data-egroup="appearance" id="prizesCard"><h2>Prize & countdown <span class="pill pill--info ml-6">PRO</span></h2><p class="card-sub">Customize how prizes, currency and the countdown appear on your public page.</p>
 <div id="prizesBody">
 <div class="grid2">
 <div class="field"><label for="f_prizePoolLabel">Prize pool label</label><input type="text" id="f_prizePoolLabel" placeholder="Prize pool" /></div>
@@ -234,11 +228,11 @@ export function DashboardContent() {
 </div>
 <label class="hint chk"><input type="checkbox" id="f_hidePrizeAmounts" /> Hide prize amounts on the public page</label>
 </div>
-<div class="empty" id="prizesLock" hidden>Prize customization is a Pro feature. <a href="#" id="prizesUpgrade">Upgrade to unlock it</a>.</div></div>
-</div>
-</details>
+<div class="empty upsell-card" id="prizesLock" hidden>Prize customization is a Pro feature. <a href="#" id="prizesUpgrade">Upgrade to unlock it</a>.</div></div>
 <div class="card" data-egroup="appearance" id="textCard"><h2>Template text</h2><p class="card-sub">Change the copy inside your selected design. Keys with an empty value fall back to the default.</p>
 <div class="text-editor" id="textList"></div></div>
+<div class="card" data-egroup="appearance" id="socialsCard"><h2>Social links</h2><p class="card-sub">Add the links to your channels. Turn a network <b>on</b> to show it on your public page; turn it <b>off</b> to hide it.</p>
+<div class="socials-editor" id="socialsList"></div></div>
 <div class="card" data-egroup="share" id="embedShareCard"><h2>Embed &amp; share</h2><p class="card-sub">Share your leaderboard or embed it on stream.</p>
 <div class="field"><label>Public page link</label><div class="d-flex gap-8 items-center flex-wrap"><code id="embedPublicLink" class="overlay-url" style="flex:1"></code><button class="btn btn--sm btn--accent ic-btn" id="embedPublicCopy" type="button"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg> Copy</button></div></div>
 <div class="embed-obs-box"><div class="d-flex items-center gap-8 mb-8"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="14" x="2" y="3" rx="2" ry="2"/><line x1="8" x2="16" y1="21" y2="21"/><line x1="12" x2="12" y1="17" y2="21"/></svg><b style="font-size:14px">OBS Browser Source</b></div><div class="field" style="margin-bottom:8px"><div class="d-flex gap-8 items-center flex-wrap"><code id="embedObsUrl" class="overlay-url" style="flex:1"></code><button class="btn btn--sm btn--accent ic-btn" id="embedObsCopy" type="button"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg> Copy</button></div></div><div class="embed-obs-row"><div><span class="hint">Width</span><div class="embed-obs-dim" id="embedObsWidth">1100px</div></div><div><span class="hint">Height</span><div class="embed-obs-dim" id="embedObsHeight">auto</div></div></div><div class="embed-tip"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="16" y2="12"/><line x1="12" x2="12.01" y1="8" y2="8"/></svg><span>For best results, uncheck "Shutdown source when not visible" in OBS so the overlay stays live while switching scenes.</span></div></div>
@@ -252,8 +246,6 @@ export function DashboardContent() {
 <div class="info-notice"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="16" y2="12"/><line x1="12" x2="12.01" y1="8" y2="8"/></svg><span>Leave any field blank to use the default legal text provided by YourRank. Your custom text will be shown on your public page at <code>/terms</code>, <code>/privacy</code>, etc.</span></div>
 <div class="legal-editor" id="legalList"></div>
 <div class="legal-footer-preview" id="legalFooterPreview"><b>Footer links preview:</b> <a href="#" onclick="return false">Terms</a> · <a href="#" onclick="return false">Privacy</a> · <a href="#" onclick="return false">Responsible Gaming</a> · <a href="#" onclick="return false">Cookies</a> · <a href="#" onclick="return false">Refund</a> · <a href="#" onclick="return false">Contact</a></div></div>
-<div class="card" data-egroup="appearance" id="socialsCard"><h2>Social links</h2><p class="card-sub">Add the links to your channels. Turn a network <b>on</b> to show it on your public page; turn it <b>off</b> to hide it.</p>
-<div class="socials-editor" id="socialsList"></div></div>
 </div>
 <div class="design-preview">
 <div class="card">
