@@ -118,8 +118,9 @@ export async function handlePublicStream(request, env, ctx) {
     const slug = ctx.slug;
     const rl = await rateLimit(env, `pub-stream:${clientIp(request)}`, 60, 60);
     if (!rl.ok) return bad("Rate limit exceeded. Try again shortly.", 429, rateLimitHeaders(rl));
-    const r = await getPublicSite(env, slug);
+    const r = await getPublicSite(env, slug, request);
     if (!r || r.suspended) return bad("not found", 404);
+    if (r.requiresPassword) return bad("Password required.", 401);
     const siteId = r.id;
     let lastTs = "";
     let closed = false;
@@ -130,8 +131,8 @@ export async function handlePublicStream(request, env, ctx) {
         const newTs = v?.m ? new Date(v.m).toISOString() : "0";
         if (newTs !== lastTs) {
           lastTs = newTs;
-          const data = await getPublicSite(env, slug);
-          if (!data || data.suspended) { controller.close(); return; }
+          const data = await getPublicSite(env, slug, request);
+          if (!data || data.suspended || data.requiresPassword) { controller.close(); return; }
           const payload = JSON.stringify({ players: data.data.players, updatedAt: newTs });
           controller.enqueue(enc.encode(`data: ${payload}\n\n`));
         }

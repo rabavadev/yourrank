@@ -57,7 +57,7 @@ mock.module(sessUrl, sessMock);
 mock.module(sessUrlTs, sessMock);
 
 // ── Import after mocks ─────────────────────────────────────────────────
-import { handlePublicStandings, handlePublicPlayers, handlePublicRank, handlePublicData } from "../handlers/public.js";
+import { handlePublicStandings, handlePublicPlayers, handlePublicRank, handlePublicData, handlePublicStream } from "../handlers/public.js";
 
 // Helper: build a minimal Request
 function req(url, method = "GET") {
@@ -83,16 +83,18 @@ const siteUrl = import.meta.resolve("../site.js");
 const siteUrlTs = import.meta.resolve("../site.ts");
 
 mock.module(siteUrl, () => ({
-  getPublicSite: (_env, slug) => {
+  getPublicSite: (_env, slug, request) => {
     if (slug === "nonexistent") return null;
     if (slug === "suspended") return { suspended: true, data: {} };
+    if (slug === "protected") return { requiresPassword: true, id: "site-1", slug: "protected" };
     return { id: "site-1", data: mockSiteData, plan: "pro", suspended: false };
   },
 }));
 mock.module(siteUrlTs, () => ({
-  getPublicSite: (_env, slug) => {
+  getPublicSite: (_env, slug, request) => {
     if (slug === "nonexistent") return null;
     if (slug === "suspended") return { suspended: true, data: {} };
+    if (slug === "protected") return { requiresPassword: true, id: "site-1", slug: "protected" };
     return { id: "site-1", data: mockSiteData, plan: "pro", suspended: false };
   },
 }));
@@ -184,6 +186,21 @@ describe("handlePublicRank", () => {
     expect(res.status).toBe(200);
     const text = await res.text();
     expect(text).toContain("not on");
+  });
+});
+
+// ── handlePublicStream ─────────────────────────────────────────────────
+describe("handlePublicStream", () => {
+  it("returns 401 for a password-protected board", async () => {
+    const env = mockEnv();
+    const res = await handlePublicStream(req("https://test.com/api/public/protected/stream"), env, { slug: "protected" });
+    expect(res.status).toBe(401);
+  });
+
+  it("returns 404 for a nonexistent slug", async () => {
+    const env = mockEnv();
+    const res = await handlePublicStream(req("https://test.com/api/public/nonexistent/stream"), env, { slug: "nonexistent" });
+    expect(res.status).toBe(404);
   });
 });
 
