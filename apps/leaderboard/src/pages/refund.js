@@ -7,8 +7,6 @@ export const refundPage = legal("Refund & Cancellation Policy", "July 2026", `
 <p>Paid subscriptions are billed in advance. If you upgrade and change your mind, you can cancel at any time from your dashboard. After cancelling, you keep your paid features until the end of the current billing period. We do not offer partial refunds for unused days.</p>
 <h2>Crypto payments</h2>
 <p>Payments made in cryptocurrency are non-refundable because of blockchain irreversibility. Make sure the selected plan and amount are correct before sending any transaction.</p>
-<h2>Telegram Stars payments</h2>
-<p>Payments made with Telegram Stars are processed by Telegram and are subject to Telegram's refund policy. Refunds, when available, are issued through Telegram's system back to the originating account.</p>
 <h2>Lifetime plans</h2>
 <p>Lifetime plans are a one-time purchase. They are non-refundable because they include immediate, permanent access to Pro features.</p>
 <h2>Failed or duplicate charges</h2>

@@ -24,11 +24,10 @@ export function sameOrigin(req: Request, publicBaseUrl: string): boolean {
   // SEC-008-v7: If neither Origin nor Referer is present on a state-changing
   // request, we REJECT it (return false) unless the path is explicitly exempted.
   // This is intentional defense-in-depth alongside the SameSite=Lax session
-  // cookie. The exempted paths (/auth/telegram, /pb/*, /billing/hook) are
-  // server-to-server callbacks or browser widget redirects that don't send
-  // Origin in all embed contexts. Risk: a non-browser attacker sending
-  // requests without Origin could still reach exempted paths, but those
-  // paths have their own auth (HMAC, Telegram signature).
+  // cookie. The exempted paths (/auth/telegram, /pb/*) are server-to-server
+  // callbacks or browser widget redirects that don't send Origin in all embed
+  // contexts. Risk: a non-browser attacker sending requests without Origin
+  // could still reach exempted paths, but those paths have their own auth.
   if (!origin) {
     const method = req.method.toUpperCase();
     if (method === "POST" || method === "PATCH" || method === "PUT" || method === "DELETE") {
@@ -37,7 +36,7 @@ export function sameOrigin(req: Request, publicBaseUrl: string): boolean {
       // postback endpoints (server-to-server callbacks).
       const url = new URL(req.url);
       const path = url.pathname;
-      if (path.endsWith("/auth/telegram") || path.startsWith("/pb") || path.startsWith("/billing/hook")) {
+      if (path.endsWith("/auth/telegram") || path.startsWith("/pb")) {
         return true;
       }
       return false;

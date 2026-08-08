@@ -322,6 +322,7 @@ export function DashboardContent() {
 <div class="empty" id="archEmpty" hidden>No closed-out periods yet. Your first one shows up here and on your page.</div></div>
 <div class="card" id="planCard"><h2>Plan &amp; billing</h2><p class="card-sub">Pick the plan that fits your stream, or start a free Pro trial.</p>
 <div class="plan-summary" id="planSummary"></div>
+<div class="plan-banner" id="planBanner" role="status" aria-live="polite" hidden></div>
 <div id="cancelWrap" hidden>
 <p class="hint" id="cancelStatus" role="status" aria-live="polite"></p>
 <button class="btn btn--sm btn--danger" id="cancelBtn" type="button">Cancel subscription</button>

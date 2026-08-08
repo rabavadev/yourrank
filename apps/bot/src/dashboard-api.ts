@@ -14,13 +14,12 @@ import {
 import { getMe, setWebhook, deleteWebhook, getWebhookInfo, sendMessage, sendPhoto } from "./telegram.js";
 import { syncMyCommands, syncMyCommandsForBot } from "./botEngine.js";
 import { withPlanLimit, getUserPlan } from "./plans.js";
-import { billingEnabled, createStarsInvoice } from "./billing.js";
-import { checkFeature, PLANS, getBotPlanDef } from "./plans.js";
+import { checkFeature, PLANS } from "./plans.js";
 import { rateLimit } from "./ratelimit.js";
 import { sameOrigin } from "./dashboard-auth.js";
 import { resolveSession, type SessionEnv } from "../../../shared/session.js";
 import { type RateLimitKV } from "./ratelimit.js";
-import { validatedBody, offerCreateSchema, offerToggleSchema, botCreateSchema, botWelcomeSchema, testMessageSchema, commandCreateSchema, commandUpdateSchema, broadcastSchema, checkoutSchema, broadcastSegmentSchema } from "./validation.js";
+import { validatedBody, offerCreateSchema, offerToggleSchema, botCreateSchema, botWelcomeSchema, testMessageSchema, commandCreateSchema, commandUpdateSchema, broadcastSchema, broadcastSegmentSchema } from "./validation.js";
 import { normalizeSegment, parseSegment, buildSegmentWhere } from "./broadcast-segment.js";
 import { errMessage } from "./errors.js";
 
@@ -625,23 +624,31 @@ export function buildDashboardApi(): Hono<{ Bindings: DashApiBindings; Variables
 
   // ---- plan & billing ----
   api.get("/plan", async (c) => {
+    const row = await one<{ plan: string; plan_expires_at: string | null }>(
+      `SELECT plan, plan_expires_at FROM users WHERE id = $1`,
+      [c.get("uid")]
+    );
     const plan = await getUserPlan(c.get("uid"));
+    const expiresAt = row?.plan_expires_at ? new Date(row.plan_expires_at).getTime() : null;
+    const now = Date.now();
+    const daysLeft = expiresAt ? Math.floor((expiresAt - now) / 86_400_000) : null;
+    let warning: string | null = null;
+    if (plan.tier !== "free" && expiresAt) {
+      if (daysLeft !== null && daysLeft < 0) {
+        warning = "Your plan has expired and will downgrade to Free. Renew to restore features.";
+      } else if (daysLeft !== null && daysLeft <= 7) {
+        warning = `Your plan expires in ${daysLeft} day${daysLeft === 1 ? "" : "s"}. Renew to keep features.`;
+      }
+    }
+    const origin = config.publicBaseUrl || "https://yourrank.site";
     return c.json({
       current: plan,
-      billing_enabled: billingEnabled(),
+      expiresAt,
+      daysLeft,
+      warning,
+      upgradeUrl: `${origin}/dashboard?nav=manage`,
       plans: Object.values(PLANS),
     });
-  });
-
-  api.post("/billing/checkout", async (c) => {
-    if (!billingEnabled()) return c.json({ error: "billing not configured on this deployment" }, 400);
-    const parsed = await validatedBody(c, checkoutSchema);
-    if (parsed instanceof Response) return parsed;
-    const { plan } = parsed;
-    const target = getBotPlanDef(plan);
-    if (!target || target.starsPrice <= 0) return c.json({ error: "invalid plan" }, 400);
-    const link = await createStarsInvoice(c.get("uid"), plan);
-    return c.json({ invoice_link: link });
   });
 
   // ---- broadcasts ----

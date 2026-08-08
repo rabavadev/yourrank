@@ -122,6 +122,26 @@ export function renderPlan() {
     summary.innerHTML = `<div class="plan-summary-row"><span class="plan-summary-label">Current plan</span><span class="plan-summary-value">${esc(currentName)}${isTrial ? " (Trial)" : ""}</span></div>${until ? `<div class="plan-summary-row"><span class="plan-summary-label">Expires</span><span class="plan-summary-value">${esc(until)}</span></div>` : ""}`;
   }
 
+  const banner = $("planBanner");
+  if (banner) {
+    if (!lifetime && plan !== "free" && expiry && Number(expiry) > 0) {
+      const days = Math.floor((Number(expiry) - Date.now()) / 86_400_000);
+      if (days < 0) {
+        banner.hidden = false;
+        banner.textContent = "Your plan has expired. Renew to restore Pro features.";
+      } else if (days <= 7) {
+        banner.hidden = false;
+        banner.textContent = `Your plan expires in ${days} day${days === 1 ? "" : "s"}. Renew to keep your Pro features.`;
+      } else {
+        banner.hidden = true;
+        banner.textContent = "";
+      }
+    } else {
+      banner.hidden = true;
+      banner.textContent = "";
+    }
+  }
+
   const cancelWrap = $("cancelWrap");
   if (cancelWrap) {
     const paid = plan !== "free" && !lifetime && !isTrial;
