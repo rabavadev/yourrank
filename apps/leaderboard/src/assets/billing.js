@@ -38,6 +38,34 @@ const TIERS = [
 
 const PLAN_ORDER = ["free", "starter", "pro", "agency"];
 
+function fmtDate(iso) {
+  if (!iso) return "–";
+  const d = new Date(iso);
+  return d.toLocaleDateString() + " " + d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+}
+
+async function loadHistory() {
+  try {
+    const r = await fetch("/api/account/payments");
+    const d = await r.json();
+    if (!r.ok || !d.ok) return;
+    const rows = d.payments || [];
+    $("historyCard").hidden = false;
+    $("historyEmpty").hidden = rows.length > 0;
+    $("historyTable").hidden = rows.length === 0;
+    $("historyBody").innerHTML = rows.map((p) => {
+      const plan = String(p.plan_tier || p.plan || "–").toUpperCase();
+      const amount = Number(p.amount) || 0;
+      const amountStr = `$${amount.toFixed(2)} ${p.currency || "USD"}`;
+      const status = String(p.status || "").toLowerCase();
+      const statusClass = ["confirmed", "finished", "active"].includes(status) ? "good" : ["failed", "expired", "refunded"].includes(status) ? "bad" : "muted";
+      return `<tr><td>${fmtDate(p.created_at)}</td><td>${plan}</td><td>${amountStr}</td><td><span class="pill pill--${statusClass}">${status}</span></td></tr>`;
+    }).join("");
+  } catch (e) {
+    console.error("loadHistory failed", e);
+  }
+}
+
 function fmtExp(ms) {
   if (!ms) return "Lifetime — no expiry.";
   const d = new Date(Number(ms));
@@ -235,6 +263,8 @@ function fmtExp(ms) {
       });
     }
   }
+
+  await loadHistory();
 
   $("loading").hidden = true;
   $("bl").hidden = false;
