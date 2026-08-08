@@ -15,6 +15,10 @@ async function init() {
   state.ME = me.user;
   const emailEl = $("userEmail"); if (emailEl) emailEl.textContent = state.ME.email;
   if (state.ME.isAdmin) { const adminEl = $("adminLink"); if (adminEl) adminEl.hidden = false; }
+  if (!state.ME.emailVerified) {
+    const banner = $("verifyBanner");
+    if (banner) banner.hidden = false;
+  }
   renderPlan();
 
   const urlParams = new URLSearchParams(location.search);

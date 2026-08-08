@@ -160,6 +160,10 @@ form.addEventListener("submit", async (e) => {
       submit.textContent = "Sent";
       return;
     }
+    if (data.needsVerification) {
+      location.href = "/verify-email";
+      return;
+    }
     if (mode === "signup") {
       const p = (planParam || "").toLowerCase();
       if (["starter", "pro"].includes(p)) location.href = `/dashboard/billing?plan=${encodeURIComponent(p)}`;
