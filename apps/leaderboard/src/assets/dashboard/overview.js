@@ -2,43 +2,10 @@
 import { $, esc, fmtMoney, currentPlayers, resetsIn, logError } from "./utils.js";
 import { state } from "./state.js";
 
-// Plotly chart: render activity chart from stats data (loaded lazily)
-function renderPlotlyChart(stats) {
-  const el = $("ov_plotly");
-  if (!el || !stats?.days?.length) { if (el) el.innerHTML = '<p class="hint" style="padding:20px;text-align:center">No activity data yet.</p>'; return; }
-  // Try to use Plotly if available (CDN loaded), otherwise show a subtle fallback
-  if (typeof window.Plotly === "undefined") {
-    // Dynamic load Plotly from CDN
-    const script = document.createElement("script");
-    script.src = "https://cdn.plot.ly/plotly-2.35.0.min.js";
-    script.onload = () => _doPlotlyRender(el, stats);
-    script.onerror = () => { el.innerHTML = ""; }; // graceful fallback: the stat-bars already show
-    document.head.appendChild(script);
-  } else {
-    _doPlotlyRender(el, stats);
-  }
-}
-
-function _doPlotlyRender(el, stats) {
-  const days = stats.days || [];
-  if (!days.length || typeof window.Plotly === "undefined") return;
-  const x = days.map(d => d.day);
-  const views = { x, y: days.map(d => d.views), name: "Views", type: "scatter", mode: "lines+markers", line: { color: "#c8f135", width: 2 }, marker: { size: 5, color: "#c8f135" }, fill: "tozeroy", fillcolor: "rgba(200,241,53,0.08)" };
-  const copies = { x, y: days.map(d => d.copies), name: "Copies", type: "scatter", mode: "lines+markers", line: { color: "#7b8cff", width: 2 }, marker: { size: 4, color: "#7b8cff" } };
-  const clicks = { x, y: days.map(d => d.clicks), name: "Clicks", type: "scatter", mode: "lines+markers", line: { color: "#3ccf4a", width: 2 }, marker: { size: 4, color: "#3ccf4a" } };
-  const layout = {
-    paper_bgcolor: "transparent", plot_bgcolor: "transparent",
-    margin: { t: 10, r: 20, b: 40, l: 50 },
-    xaxis: { color: "#9a9aa2", gridcolor: "#2a2a2a", linecolor: "#2a2a2a", tickfont: { family: "JetBrains Mono, monospace", size: 10 } },
-    yaxis: { color: "#9a9aa2", gridcolor: "#2a2a2a", linecolor: "#2a2a2a", tickfont: { family: "JetBrains Mono, monospace", size: 10 } },
-    legend: { orientation: "h", y: -0.18, x: 0.5, xanchor: "center", font: { color: "#a3a3ab", size: 11 } },
-    font: { family: "Inter, system-ui, sans-serif" },
-    hovermode: "x unified",
-    showlegend: true,
-  };
-  const config = { displayModeBar: false, responsive: true };
-  window.Plotly.newPlot(el, [views, copies, clicks], layout, config);
-}
+// Activity chart: the CSS bar chart (renderOverviewSummary's stat-bars, fed by
+// loadStats in site.js) is the single activity visualization. The Plotly CDN
+// chart that used to render here was removed — the page CSP blocks the CDN, so
+// it never loaded and the container sat empty.
 
 async function copyLiveLink(triggerLabel, url) {
   try {
@@ -149,9 +116,4 @@ export function renderOverviewSummary() {
       const isMax = state.ME?.plan === "pro" || state.ME?.plan === "agency" || lifetime;
       upgradeBtn.hidden = isMax;
     }
-  }
-
-  // Called from the main dashboard when stats are loaded (from loadStats in site.js).
-  export function renderOverviewPlotly(stats) {
-    renderPlotlyChart(stats);
   }

@@ -1,5 +1,5 @@
 import { currentUser } from "../auth.js";
-import { effectivePlan } from "../billing.js";
+import { effectivePlan } from "../../../../shared/plans.js";
 import { getUserSiteById, FONT_KEYS } from "../site.js";
 import { renderLeaderboard } from "../render.jsx";
 import { SECURE_HTML, withNonce } from "../middleware/headers.js";

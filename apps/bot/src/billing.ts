@@ -1,7 +1,7 @@
 import type { Update } from "grammy/types";
 import { query, withTransaction } from "../../../shared/db.js";
 import { logProviderEvent } from "../../../shared/provider-events.js";
-import { PLANS, type PlanTier } from "./plans.js";
+import { PLANS, getBotPlanDef, type PlanTier } from "./plans.js";
 import { computeProratedExpiry } from "../../../shared/plans.js";
 import { setWebhook } from "./telegram.js";
 
@@ -48,8 +48,8 @@ export function billingEnabled(): boolean {
 }
 
 /** Create a Stars invoice link the user can open from the dashboard. */
-export async function createStarsInvoice(userId: string, tier: PlanTier): Promise<string> {
-  const plan = PLANS[tier];
+export async function createStarsInvoice(userId: string, tier: PlanTier | string): Promise<string> {
+  const plan = getBotPlanDef(tier);
   if (!plan || plan.starsPrice <= 0) throw new Error("plan not purchasable");
   return tg<string>("createInvoiceLink", {
     title: `${plan.label} plan — 30 days`,
@@ -77,8 +77,8 @@ export async function handleBillingUpdate(update: Update): Promise<void> {
     const q = update.pre_checkout_query;
     const payloadParts = String(q.invoice_payload || "").split(":");
     const payloadOk = payloadParts.length === 2 && /^[0-9a-f-]{36}$/.test(payloadParts[0]);
-    const tier = (payloadOk ? payloadParts[1] : undefined) as PlanTier | undefined;
-    const plan = tier ? PLANS[tier] : undefined;
+    const tier = payloadOk ? payloadParts[1] : undefined;
+    const plan = getBotPlanDef(tier);
     const valid =
       payloadOk &&
       Boolean(plan) &&
@@ -101,10 +101,10 @@ export async function handleBillingUpdate(update: Update): Promise<void> {
     // state. Guards a malformed/hostile payload before we touch the DB.
     const parts = String(sp.invoice_payload || "").split(":");
     if (parts.length !== 2) return;
-    const [userId, tier] = parts as [string, PlanTier];
-    if (!/^[0-9a-f-]{36}$/.test(userId) || !PLANS[tier]) return;
+    const [userId, tier] = parts;
+    const plan = getBotPlanDef(tier);
+    if (!/^[0-9a-f-]{36}$/.test(userId) || !plan) return;
 
-    const plan = PLANS[tier];
     if (sp.currency !== "XTR" || Number(sp.total_amount) !== plan.starsPrice) {
       console.error(`[billing] Stars payment mismatch: user=${userId} tier=${tier} currency=${sp.currency} amount=${sp.total_amount} expected=${plan.starsPrice}`);
       return;
@@ -146,12 +146,12 @@ export async function handleBillingUpdate(update: Update): Promise<void> {
         [userId]
       );
       const prices: Record<string, number> = {};
-      for (const t of Object.keys(PLANS) as PlanTier[]) prices[t] = PLANS[t].starsPrice;
+      for (const p of Object.values(PLANS)) prices[p.tier] = p.starsPrice;
       const expiresMs = computeProratedExpiry({
         nowMs: Date.now(),
         currentPlan: userRow?.plan ?? "free",
         currentExpiryMs: userRow?.plan_expires_at ? new Date(userRow.plan_expires_at).getTime() : null,
-        targetPlan: tier,
+        targetPlan: tier as PlanTier, // validated above via getBotPlanDef
         periodDays: 30,
         prices,
         maxExtensionDays: 365,

@@ -66,7 +66,7 @@ wrangler secret put LEAD_WEBHOOK_URL      # optional (Discord/Slack ping on a ne
 wrangler secret put PRO_PRICE_USD         # optional (defaults to 29)
 wrangler secret put DATABASE_URL          # REQUIRED — direct Supabase Postgres connection string
 wrangler secret put SENTRY_DSN           # optional (Sentry error tracking)
-wrangler secret put ENCRYPTION_KEY       # REQUIRED for postback encryption (32-byte hex)
+wrangler secret put TOKEN_ENC_KEY        # REQUIRED for postback encryption (32-byte hex, 64 hex chars)
 ```
 Bot Worker (`cd apps/bot`):
 ```
@@ -90,6 +90,27 @@ plan-active message). They must not share a token.
 cd apps/leaderboard && node build.js && wrangler deploy    # rebuild assets_bundled.js first
 cd ../bot           && wrangler deploy
 ```
+
+### 5a. Deploy the queue consumer (required)
+The leaderboard and bot Workers push click/conversion/analytics events onto the
+`yourrank-events` Cloudflare Queue; `apps/consumer` is the Worker that drains it
+into Postgres. **Without it, the queue backs up and dashboard analytics
+(views, clicks, conversions) silently starve** — pages keep working, numbers
+just stop moving.
+
+```
+# one-time: create the queues (safe to re-run; "already exists" is fine)
+wrangler queues create yourrank-events
+wrangler queues create yourrank-events-dlq
+
+# from the repo root — the consumer imports shared/*.js, so build shared first
+node build-shared.mjs
+cd apps/consumer && wrangler deploy
+```
+Secrets (optional): `wrangler secret put DISCORD_MONITORING_WEBHOOK` — pings
+Discord when messages exhaust retries and land in the dead-letter queue.
+The consumer has no HTTP routes; it only runs on queue batches. CI deploys it
+automatically (see §7, `deploy-consumer` job).
 Routes are declared in each `wrangler.toml`. Cloudflare sends `/bot/*`, `/hook/*`,
 `/r/*`, `/pb/*`, `/billing/hook/*` to the bot Worker; everything else on
 `yourrank.site` to the leaderboard Worker. More-specific routes win.

@@ -49,7 +49,7 @@ const dbMock = () => ({
       if (row) {
         sessions.delete(oldToken);
         sessions.set(newToken, { ...row, created_at: new Date().toISOString(), age: 0 });
-        return [{ id: 1 }];
+        return [{ token: newToken }];
       }
       return [];
     }

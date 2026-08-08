@@ -145,6 +145,24 @@ export default {
               // Non-critical — don't fail the whole cron batch
             }
           })(),
+          // AUTH-102: Purge expired sessions and password reset tokens so the
+          // tables don't grow unbounded. Single statement via CTEs; counts are
+          // logged for observability.
+          (async () => {
+            try {
+              const result = await dbExec(
+                `WITH s AS (DELETE FROM sessions WHERE expires_at < now() RETURNING 1),
+                      r AS (DELETE FROM password_resets WHERE expires_at < now() RETURNING 1)
+                 SELECT (SELECT count(*)::int FROM s) AS sessions_deleted,
+                        (SELECT count(*)::int FROM r) AS resets_deleted`
+              );
+              const row = result?.[0] ?? {};
+              console.log(`[cron 0 3 * * *] auth cleanup: deleted ${row.sessions_deleted ?? 0} expired sessions, ${row.resets_deleted ?? 0} expired password resets`);
+            } catch (err) {
+              console.error("[cron] auth cleanup failed:", err);
+              // Non-critical — don't fail the whole cron batch
+            }
+          })(),
           // Onboarding email sequence: Day 0 (welcome), Day 3 (bot/offers), Day 7 (upgrade)
           (async () => {
             try {
@@ -161,7 +179,7 @@ export default {
         // Log any rejections and alert via Discord — allSettled never throws
         const failures = results.filter(r => r.status === "rejected");
         if (failures.length > 0) {
-          const failedTasks = ["rollupClicks", "ensureCurrentMonthPartition", "ensureNextMonthPartition", "downgradeExpired", "cleanupOldClicks", "onboardingEmails"]
+          const failedTasks = ["rollupClicks", "ensureCurrentMonthPartition", "ensureNextMonthPartition", "downgradeExpired", "cleanupOldClicks", "authCleanup", "onboardingEmails"]
             .filter((_, i) => results[i].status === "rejected");
           const reasons = failures.map(f => String((f as PromiseRejectedResult).reason?.message || f.reason)).join("; ");
           console.error(`[cron 0 3 * * *] ${failures.length} task(s) failed: ${failedTasks.join(", ")} — ${reasons}`);

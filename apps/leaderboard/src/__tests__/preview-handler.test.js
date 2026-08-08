@@ -2,9 +2,8 @@ import { beforeEach, describe, expect, it, mock } from "bun:test";
 
 const authUrl = import.meta.resolve("../auth.js");
 const siteUrl = import.meta.resolve("../site.js");
-const billingUrl = import.meta.resolve("../billing.js");
 
-const mockCurrentUser = mock(() => Promise.resolve({ id: "user-1", plan: "pro" }));
+const mockCurrentUser = mock(() => Promise.resolve({ id: "user-1", plan: "pro", plan_expires_at: Date.now() + 86400000 }));
 const mockGetUserSiteById = mock(() => Promise.resolve(null));
 
 mock.module(authUrl, () => ({
@@ -13,10 +12,6 @@ mock.module(authUrl, () => ({
 mock.module(siteUrl, () => ({
   getUserSiteById: (...args) => mockGetUserSiteById(...args),
 }));
-mock.module(billingUrl, () => ({
-  effectivePlan: (user) => user.plan,
-}));
-
 import { handleDashboardPreview } from "../handlers/preview.js";
 
 const SITE = {
@@ -37,7 +32,7 @@ describe("handleDashboardPreview", () => {
   beforeEach(() => {
     mockCurrentUser.mockReset();
     mockGetUserSiteById.mockReset();
-    mockCurrentUser.mockResolvedValue({ id: "user-1", plan: "pro" });
+    mockCurrentUser.mockResolvedValue({ id: "user-1", plan: "pro", plan_expires_at: Date.now() + 86400000 });
     mockGetUserSiteById.mockResolvedValue(SITE);
   });
 

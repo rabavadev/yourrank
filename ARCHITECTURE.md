@@ -28,7 +28,7 @@ A streamer signs up **once**. That single account owns both their leaderboard an
     │  - analytics      │                      │  - /pb/:key postbacks │
     └────────┬──────────┘                      │  - Telegram-login     │
              │                                 │  - Telegram Stars     │
-             shared KV (SESSIONS)     │  - cron: broadcasts,  │
+             shared session (Postgres)│  - cron: broadcasts,  │
                     │        yr_session cookie        │    click rollup        │
              │      (Domain=.yourrank.site)    └───────────┬───────────┘
              │                                             │
@@ -58,7 +58,7 @@ A streamer signs up **once**. That single account owns both their leaderboard an
 | **Supabase (not D1)** | The bot engine relies on Postgres features D1 can't do: monthly-**partitioned** `clicks`, `count(*) FILTER`, `make_interval`, JSONB. Moving the bot to SQLite would be a downgrade and lose partitioning. So the *leaderboard* moved to Postgres instead. |
 | **Hyperdrive in front of Postgres** | Workers are serverless; opening a raw Postgres connection per request exhausts Supabase's connection cap. Hyperdrive pools + caches. Both Workers share one Hyperdrive config. |
 | **Two Workers, not one** | The two apps have opposite runtimes (plain-JS Worker vs TS+Hono+grammY) and the bot needs **cron triggers** (broadcasts, click rollup) the leaderboard doesn't. Keeping them separate avoids a risky full rewrite and lets each deploy independently. They *feel* like one app via a shared nav + shared session. |
-| **Shared session in KV** | One `yr_session` cookie scoped to `.yourrank.site` + one shared KV namespace = log in once, both Workers recognize you. |
+| **Shared session in Postgres** | One `yr_session` cookie scoped to `.yourrank.site` + one shared `sessions` table (both Workers reach it via the same Hyperdrive) = log in once, both Workers recognize you. Sessions used to live in the `SESSIONS` KV namespace; that namespace is now only a legacy rate-limit fallback. |
 
 ## The seam that makes it "one app": the `users` table
 

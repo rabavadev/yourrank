@@ -2,7 +2,7 @@
 import { requireUser, json, bad, ok, readJson, rateLimit, slugify, clientIp } from "../auth.js";
 import { getByUser, getUserSite, getUserSiteById, getUserBoardsList, createBoard, duplicateBoard, createArchive, deleteArchive, deleteBoard, setActiveBoard, updateSiteTheme, invalidateSiteCache, invalidateUserCache, getBoardById, saveSite, fromJsonb } from "../site.js";
 import { bumpStat, getStats, getHeatmap, getTopReferrers } from "../stats.js";
-import { effectivePlan, PLAN_LIMITS, BOARD_LIMITS } from "../billing.js";
+import { effectivePlan, PLAN_LIMITS, BOARD_LIMITS } from "../../../../shared/plans.js";
 import { templateCatalog } from "../templates/index.js";
 import { one, exec, query } from "../../../../shared/db.js";
 import { logAudit } from "../../../../shared/audit.js";

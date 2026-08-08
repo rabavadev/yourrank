@@ -117,13 +117,13 @@ correct and DB-agnostic). Only the **session** functions change: swap the old
 `createSession` / `readToken` / `currentUser` from `auth.js` for the ones in
 `shared/session.js`. The current cookie name is `yr_session`.
 
-### Migration grace period
-Existing users hold an `rk_session` cookie whose KV entry is `sess:<token>` —
-the **same KV prefix**, only the cookie name differs. `session.js` exports
-`readTokenWithLegacy(req)` reads `yr_session` first, then falls back to the
-legacy `gm_session` and `rk_session` cookies. Use it for ~30 days after cutover,
-and on any legacy hit, re-issue a fresh `yr_session` cookie. After the window,
-drop the legacy read.
+### Migration grace period (completed)
+Legacy `rk_session` / `gm_session` cookies (backed by the old `SESSIONS` KV)
+were honored for a ~30-day cutover window via a `readTokenWithLegacy` helper.
+That window has closed and the helper has been removed: `session.ts` now only
+reads `yr_session`, and any legacy cookie is cleared on every response via
+`hasLegacyCookie()` + `cookieClearLegacy()` (SEC-104, see below). Users still
+holding a legacy cookie are simply asked to log in again.
 
 **SEC-104**: The old HMAC-signed `sess` cookie (not `rk_session`) is detected
 and cleared on every response via `hasLegacyCookie()` + `cookieClearLegacy()`.
@@ -131,25 +131,29 @@ This runs in the main fetch handler for both Workers.
 
 **SEC-107**: Sessions are rotated when older than 24 hours. On first read of a
 legacy bare-UUID session (pre-migration), rotation happens immediately.
-The new token is issued transparently; the old token is deleted from KV and the
-per-user token index. 2FA verification flags are transferred to the new token.
+The new token is issued transparently via an atomic `UPDATE sessions SET
+token = ...` on the existing row (no delete/insert race window). 2FA
+verification flags are preserved on the row.
 
 ---
 
 ## 6. Race conditions & correctness notes
 
-1. **Same cookie, same KV, same value shape** eliminates the classic split-brain
-   where one Worker writes a session the other can't read. Enforced by shipping
-   ONE source module (`session.js`) and a synced port (`session.ts`).
-2. **No read-modify-write on the session** — value is immutable (UUID + creation
-   timestamp), so concurrent reads across both Workers can't corrupt it.
-   Rotation creates a NEW key and deletes the old one (no in-place mutation).
-3. **KV is eventually consistent (~seconds globally).** A freshly created session
-   is readable in the same region immediately; a login on one edge then an
-   instant cross-Worker request from a far edge could miss by a beat. In
-   practice both Workers run on the same edge for the same user, so this is a
-   non-issue; if paranoid, the login response can carry the token forward.
-4. **Logout revocation is instant-ish** (KV delete), unlike a stateless token
-   which stays valid until expiry. This is a security win of the KV model.
-5. **Rate-limit / counter keys** (`rl:` prefix in old `auth.js`) also live in
-   `SESSIONS` KV and are unaffected — they're separate keyspace.
+1. **Same cookie, same table, same row shape** eliminates the classic
+   split-brain where one Worker writes a session the other can't read. Both
+   Workers query the same Postgres `sessions` table through the same
+   Hyperdrive, and ship ONE source module (`session.ts`, built to
+   `session.js` for the leaderboard).
+2. **No read-modify-write on the session** — rotation is a single atomic
+   `UPDATE sessions SET token = $new WHERE token = $old`, so concurrent reads
+   across both Workers can't corrupt it. The `RETURNING token` clause detects
+   the race where another request already rotated; the loser just serves the
+   request with the old token.
+3. **Postgres is strongly consistent**, so a freshly created session is
+   visible to both Workers immediately — no cross-edge replication lag to
+   reason about (unlike the old KV model, which was eventually consistent).
+4. **Logout revocation is instant** (delete the row), unlike a stateless token
+   which stays valid until expiry.
+5. **Rate-limit / counter keys** (`rl:` prefix in old `auth.js`) still live in
+   the `SESSIONS` KV namespace as a legacy fallback and are unaffected —
+   they're a separate keyspace from sessions.

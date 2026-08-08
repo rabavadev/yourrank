@@ -4,8 +4,8 @@ import { state } from "./dashboard/state.js";
 import { navTo, setupShell } from "./dashboard/shell.js";
 import { renderBoardSwitcher, renderSidebarBoardSwitcher, renderBoardsPage } from "./dashboard/boards.js";
 import { renderPlayers } from "./dashboard/players.js";
-import { loadStats, renderArchives, renderBranding, renderDomain, renderDomainStatus, renderEmbedShare, renderLegal, renderNotifications, renderOverlay, renderPlan, renderPlayerFields, renderPrizes, renderSections, renderSocials, renderTemplateText, updateDesignPreview } from "./dashboard/site.js";
-import { renderOverviewSummary, renderOverviewPlotly, wireOverviewQuickActions } from "./dashboard/overview.js";
+import { renderArchives, renderBranding, renderDomain, renderDomainStatus, renderEmbedShare, renderLegal, renderNotifications, renderOverlay, renderPlan, renderPlayerFields, renderPrizes, renderSections, renderSocials, renderTemplateText, updateDesignPreview } from "./dashboard/site.js";
+import { renderOverviewSummary, wireOverviewQuickActions } from "./dashboard/overview.js";
 import { renderReferrals } from "./dashboard/referrals.js";
 
 async function init() {
@@ -40,7 +40,6 @@ async function init() {
   renderDraftBanner(p);
   const d = p.data || {};
   const b = d.brand || {};
-  loadStats().then((stats) => { if (stats) renderOverviewPlotly(stats); });
   state.EXTRA = { chips: d.partner?.chips, whyStats: d.whyStats, rules: d.rules, socials: p.socials || d.socials || [], sections: d.sections, playerFields: d.playerFields || {}, text: (d.branding && d.branding.text) || {}, legal: d.legal || {} };
   $("f_name").value = b.name || "";
   $("f_tagline").value = b.tagline || "";

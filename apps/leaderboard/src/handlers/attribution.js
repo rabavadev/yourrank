@@ -14,7 +14,7 @@ import {
   unsignedPostbacksEnabled,
 } from "../../../../shared/postback.js";
 import { recordConversion } from "../../../../shared/conversions.js";
-import { effectivePlan } from "../billing.js";
+import { effectivePlan } from "../../../../shared/plans.js";
 
 const MAX_DAYS = 365;
 

@@ -1,5 +1,5 @@
 // Site + players data helpers for the Worker.
-import { effectivePlan, PLAN_LIMITS, BOARD_LIMITS } from "./billing.js";
+import { effectivePlan, PLAN_LIMITS, BOARD_LIMITS } from "../../../shared/plans.js";
 import { query, one, exec, withTransaction } from "../../../shared/db.js";
 import { detectTop3Changes, dispatchNotifyEvent } from "../../../shared/notifications.js";
 import { TEMPLATE_IDS, resolveOptions } from "./templates/index.js";

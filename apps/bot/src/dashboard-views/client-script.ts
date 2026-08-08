@@ -536,7 +536,7 @@ async function revealPostback(btn){
   const pb = $('pbUrl');
   if (pb) {
     pb.textContent = 'POST '+r.signed_endpoint+' · X-Postback-Key: '+r.postback_key;
-    pb.dataset.url = 'POST '+r.signed_endpoint+'\\nX-Postback-Key: '+r.postback_key+'\\nX-Postback-Signature: HMAC-SHA256(query, key)';
+    pb.dataset.url = 'POST '+r.signed_endpoint+'\nX-Postback-Key: '+r.postback_key+'\nX-Postback-Signature: HMAC-SHA256(query, key)';
   }
   toast('Signed postback setup revealed'); restoreBtn(btn);
 }
@@ -548,7 +548,7 @@ async function rotatePostback(btn){
   const pb = $('pbUrl');
   if (pb) {
     pb.textContent = 'POST '+r.signed_endpoint+' · X-Postback-Key: '+r.postback_key;
-    pb.dataset.url = 'POST '+r.signed_endpoint+'\\nX-Postback-Key: '+r.postback_key+'\\nX-Postback-Signature: HMAC-SHA256(query, key)';
+    pb.dataset.url = 'POST '+r.signed_endpoint+'\nX-Postback-Key: '+r.postback_key+'\nX-Postback-Signature: HMAC-SHA256(query, key)';
   }
   toast('Postback key rotated'); restoreBtn(btn);
 }
