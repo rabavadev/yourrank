@@ -23,12 +23,6 @@ export function wireOverviewQuickActions() {
     const label = qaBtn.querySelector(".lb-qa-t");
     qaBtn.addEventListener("click", () => copyLiveLink(label, location.origin + "/" + state.SLUG));
   }
-  const headerBtn = $("overviewCopyLink");
-  if (headerBtn && !headerBtn._wired) {
-    headerBtn._wired = true;
-    const label = headerBtn.childNodes[0];
-    headerBtn.addEventListener("click", () => copyLiveLink(label, location.origin + "/" + state.SLUG));
-  }
 }
 
 export function renderOverviewSummary() {
@@ -62,13 +56,11 @@ export function renderOverviewSummary() {
 
     const setupComplete = !!(brandDone && playersDone && sharedDone);
     const qa = $("ovQuickActions");
-    const telegram = $("ovTelegramCard");
     const steps = $("ovSetupSteps");
     // Only one "finish setup" surface at a time: if the resume-wizard draft banner
     // is showing, keep the granular checklist hidden so we don't nag twice.
     const draftBannerActive = !$("draftBanner")?.hidden;
     if (qa) qa.hidden = setupComplete;
-    if (telegram) telegram.hidden = setupComplete;
     if (steps) steps.hidden = setupComplete || draftBannerActive;
 
     // Board status card
@@ -84,36 +76,4 @@ export function renderOverviewSummary() {
         : "Not visible to visitors yet";
     }
 
-    // Plan progress bars
-    const planName = $("ovPlanName");
-    const planNames = { free: "Free", starter: "Starter", pro: "Pro", agency: "Agency", lifetime: "Lifetime Pro" };
-    const lifetime = state.ME?.planExpiresAt && Number(state.ME.planExpiresAt) > new Date("2099-01-01T00:00:00Z").getTime();
-    if (planName) planName.textContent = (lifetime ? "Lifetime Pro" : planNames[state.ME?.plan] || "Free") + " plan";
-
-    const pBar = $("ovPlanPlayers");
-    const pFill = $("ovPlanPlayersFill");
-    const playerLimit = state.ME?.limits?.players || 10;
-    if (pBar) pBar.textContent = players.length + " / " + playerLimit;
-    if (pFill) {
-      const pct = Math.min(100, Math.round((players.length / playerLimit) * 100));
-      pFill.style.width = pct + "%";
-      pFill.classList.toggle("ov-plan-fill--warn", pct > 80);
-    }
-
-    const bBar = $("ovPlanBoards");
-    const bFill = $("ovPlanBoardsFill");
-    const boardCount = (state.BOARDS || []).length;
-    const boardLimit = state.ME?.limits?.boards || 1;
-    if (bBar) bBar.textContent = boardCount + " / " + boardLimit;
-    if (bFill) {
-      const pct = Math.min(100, Math.round((boardCount / boardLimit) * 100));
-      bFill.style.width = pct + "%";
-      bFill.classList.toggle("ov-plan-fill--warn", pct > 80);
-    }
-
-    const upgradeBtn = $("ovPlanUpgrade");
-    if (upgradeBtn) {
-      const isMax = state.ME?.plan === "pro" || state.ME?.plan === "agency" || lifetime;
-      upgradeBtn.hidden = isMax;
-    }
   }
