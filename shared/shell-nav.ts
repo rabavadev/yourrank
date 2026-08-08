@@ -30,6 +30,13 @@ export interface NavLink {
 export const NAV_LINKS: NavLink[] = [
   { key: "leaderboard", label: "Leaderboard", href: "/dashboard",           match: ["/dashboard"], top: true },
   { key: "bot",         label: "Bot",         href: "/bot/dashboard",       match: ["/bot/dashboard", "/bot/dash"], top: true },
+<<<<<<< HEAD
+||||||| parent of fac7173 (Phase 1: credits dashboard and viewer shop pages)
+  { key: "analytics",   label: "Analytics",   href: "/dashboard/analytics", match: ["/dashboard/analytics"], top: true },
+=======
+  { key: "analytics",   label: "Analytics",   href: "/dashboard/analytics", match: ["/dashboard/analytics"], top: true },
+  { key: "credits",     label: "Credits",     href: "/dashboard/credits",   match: ["/dashboard/credits"], top: true },
+>>>>>>> fac7173 (Phase 1: credits dashboard and viewer shop pages)
   { key: "attribution", label: "Attribution", href: "/dashboard/attribution", match: ["/dashboard/attribution"] },
   { key: "support",     label: "Support",     href: "/dashboard/support",   match: ["/dashboard/support"] },
   { key: "security",    label: "Security",    href: "/dashboard/security",  match: ["/dashboard/security"] },

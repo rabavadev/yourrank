@@ -1,0 +1,195 @@
+// Credits & shop dashboard client.
+function $(id) { return document.getElementById(id); }
+function esc(s) { return String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
+function fmtDate(iso) { return iso ? new Date(iso).toLocaleString() : "—"; }
+function csrf() {
+  const m = document.cookie.match(/(?:^|;\s*)__csrf=([^;]+)/);
+  return m ? m[1] : "";
+}
+async function api(method, path, body) {
+  const opts = { method, credentials: "same-origin", headers: { "x-csrf-token": csrf() } };
+  if (body) { opts.headers["content-type"] = "application/json"; opts.body = JSON.stringify(body); }
+  const res = await fetch(path, opts);
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+  return data;
+}
+
+let state = {};
+
+async function load() {
+  const data = await api("GET", "/api/credits/status");
+  state = data;
+  render();
+  $("cr-app").hidden = false;
+  $("cr-empty").hidden = true;
+}
+
+function render() {
+  $("cr-channel-id").value = state.channel?.externalId || "";
+  $("cr-channel-name").value = state.channel?.name || "";
+
+  $("cr-reward-list").innerHTML = (state.mappings || []).map((m) => `
+    <tr>
+      <td><b>${esc(m.kick_reward_title)}</b><br><span class="hint">${esc(m.kick_reward_id)}</span></td>
+      <td>${m.kick_reward_cost}</td>
+      <td>${m.credits}</td>
+      <td>${m.active ? "Yes" : "No"}</td>
+      <td class="ta-r">
+        <button class="btn btn--sm" data-edit-reward="${esc(m.id)}">Edit</button>
+        <button class="btn btn--sm btn--danger" data-del-reward="${esc(m.id)}">Disable</button>
+      </td>
+    </tr>
+  `).join("");
+
+  $("cr-shop-list").innerHTML = (state.shopItems || []).map((i) => `
+    <tr>
+      <td><b>${esc(i.name)}</b><br><span class="hint">${esc(i.description || "")}</span></td>
+      <td>${i.cost}</td>
+      <td>${i.stock === null ? "∞" : i.stock}</td>
+      <td>${i.active ? "Yes" : "No"}</td>
+      <td class="ta-r">
+        <button class="btn btn--sm" data-edit-shop="${esc(i.id)}">Edit</button>
+        <button class="btn btn--sm btn--danger" data-del-shop="${esc(i.id)}">Delete</button>
+      </td>
+    </tr>
+  `).join("");
+
+  const viewers = state.viewers || [];
+  $("cr-viewer-list").innerHTML = viewers.map((v) => `
+    <tr>
+      <td>${esc(v.kick_username || v.kick_user_id)}</td>
+      <td>${v.balance}</td>
+      <td>${v.total_earned}</td>
+      <td>${v.total_spent}</td>
+      <td>${fmtDate(v.created_at)}</td>
+    </tr>
+  `).join("");
+  $("cr-viewer-empty").hidden = viewers.length > 0;
+
+  const redemptions = state.redemptions || [];
+  $("cr-redemption-list").innerHTML = redemptions.map((r) => `
+    <tr>
+      <td>${esc(r.kick_username || r.kick_user_id)}</td>
+      <td>${esc(r.item_name)}</td>
+      <td>${r.cost}</td>
+      <td><span class="pill pill--${r.status === "pending" ? "muted" : r.status === "fulfilled" ? "good" : "bad"}">${r.status}</span></td>
+      <td>${fmtDate(r.created_at)}</td>
+      <td class="ta-r">
+        ${r.status === "pending" ? `
+          <button class="btn btn--sm btn--accent" data-fulfill="${esc(r.id)}">Fulfill</button>
+          <button class="btn btn--sm btn--danger" data-cancel="${esc(r.id)}">Cancel</button>
+        ` : ""}
+      </td>
+    </tr>
+  `).join("");
+  $("cr-redemption-empty").hidden = redemptions.length > 0;
+
+  // Wire action buttons
+  document.querySelectorAll("[data-edit-reward]").forEach((b) => b.addEventListener("click", () => editReward(b.dataset.editReward)));
+  document.querySelectorAll("[data-del-reward]").forEach((b) => b.addEventListener("click", () => delReward(b.dataset.delReward)));
+  document.querySelectorAll("[data-edit-shop]").forEach((b) => b.addEventListener("click", () => editShop(b.dataset.editShop)));
+  document.querySelectorAll("[data-del-shop]").forEach((b) => b.addEventListener("click", () => delShop(b.dataset.delShop)));
+  document.querySelectorAll("[data-fulfill]").forEach((b) => b.addEventListener("click", () => updateRedemption(b.dataset.fulfill, "fulfilled")));
+  document.querySelectorAll("[data-cancel]").forEach((b) => b.addEventListener("click", () => updateRedemption(b.dataset.cancel, "cancelled")));
+}
+
+function setStatus(id, msg, err) {
+  const el = $(id);
+  el.textContent = msg;
+  el.className = err ? "status error" : "status";
+  if (!err) setTimeout(() => { el.textContent = ""; }, 3000);
+}
+
+$("cr-channel-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  try {
+    const data = await api("POST", "/api/credits/connect", {
+      externalId: $("cr-channel-id").value.trim(),
+      name: $("cr-channel-name").value.trim(),
+    });
+    state.channel = data.channel;
+    setStatus("cr-channel-status", "Channel saved.");
+    render();
+  } catch (err) { setStatus("cr-channel-status", err.message, true); }
+});
+
+$("cr-reward-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  try {
+    await api("POST", "/api/credits/rewards", {
+      id: $("cr-reward-id").value || undefined,
+      kickRewardId: $("cr-reward-kick-id").value.trim(),
+      kickRewardTitle: $("cr-reward-title").value.trim(),
+      kickRewardCost: Number($("cr-reward-cost").value),
+      credits: Number($("cr-reward-credits").value),
+    });
+    setStatus("cr-reward-status", "Mapping saved.");
+    $("cr-reward-form").reset();
+    $("cr-reward-id").value = "";
+    await load();
+  } catch (err) { setStatus("cr-reward-status", err.message, true); }
+});
+
+function editReward(id) {
+  const m = (state.mappings || []).find((x) => x.id === id);
+  if (!m) return;
+  $("cr-reward-id").value = m.id;
+  $("cr-reward-kick-id").value = m.kick_reward_id;
+  $("cr-reward-title").value = m.kick_reward_title;
+  $("cr-reward-cost").value = m.kick_reward_cost;
+  $("cr-reward-credits").value = m.credits;
+}
+
+async function delReward(id) {
+  if (!confirm("Disable this reward mapping?")) return;
+  await api("DELETE", `/api/credits/rewards/${encodeURIComponent(id)}`);
+  await load();
+}
+
+$("cr-shop-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  try {
+    await api("POST", "/api/credits/shop", {
+      id: $("cr-shop-item-id").value || undefined,
+      name: $("cr-shop-name").value.trim(),
+      description: $("cr-shop-desc").value.trim(),
+      cost: Number($("cr-shop-cost").value),
+      stock: $("cr-shop-stock").value === "" ? null : Number($("cr-shop-stock").value),
+      active: $("cr-shop-active").checked,
+    });
+    setStatus("cr-shop-status", "Item saved.");
+    $("cr-shop-form").reset();
+    $("cr-shop-item-id").value = "";
+    $("cr-shop-active").checked = true;
+    await load();
+  } catch (err) { setStatus("cr-shop-status", err.message, true); }
+});
+
+function editShop(id) {
+  const i = (state.shopItems || []).find((x) => x.id === id);
+  if (!i) return;
+  $("cr-shop-item-id").value = i.id;
+  $("cr-shop-name").value = i.name;
+  $("cr-shop-desc").value = i.description || "";
+  $("cr-shop-cost").value = i.cost;
+  $("cr-shop-stock").value = i.stock === null ? "" : i.stock;
+  $("cr-shop-active").checked = i.active;
+}
+
+async function delShop(id) {
+  if (!confirm("Delete this shop item?")) return;
+  await api("DELETE", `/api/credits/shop/${encodeURIComponent(id)}`);
+  await load();
+}
+
+async function updateRedemption(id, status) {
+  await api("POST", `/api/credits/redemptions/${encodeURIComponent(id)}`, { status });
+  await load();
+}
+
+load().catch((err) => {
+  $("cr-empty").innerHTML = `<p class="error">Could not load credits dashboard: ${esc(err.message)}</p>`;
+  $("cr-empty").hidden = false;
+  $("cr-app").hidden = true;
+});
