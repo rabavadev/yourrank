@@ -10,6 +10,10 @@ export const billingPage = leaderboardPageHtml({
 <div id="bl" hidden>
 <div class="card" id="currentCard"><h2>Current plan</h2><p class="card-sub"><span id="planLine">Free — up to 10 players, one leaderboard.</span></p>
 <p class="hint" id="expLine" hidden></p>
+<div class="card mt-18" id="historyCard" hidden><h2>Payment history</h2><p class="card-sub">Your past payments and receipts.</p>
+<table class="admin-table" id="historyTable"><thead><tr><th>Date</th><th>Plan</th><th>Amount</th><th>Status</th></tr></thead><tbody id="historyBody"></tbody></table>
+<div class="empty" id="historyEmpty" hidden>No payments yet.</div>
+<p class="hint">Receipts are also emailed to your account address after each successful payment.</p></div>
 <div id="cancelBox" class="mt-18" hidden><p class="hint">Paid subscription? You can cancel it at any time. You'll keep features until the end of the current billing period.</p>
 <button class="btn btn--danger" id="cancelBtn" type="button">Cancel subscription</button>
 <p class="status" id="cancelStatus" role="status" aria-live="polite"></p>
