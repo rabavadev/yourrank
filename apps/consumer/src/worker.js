@@ -156,6 +156,27 @@ export default {
     }
   },
 
+  // Keep the heartbeat fresh even when the queue is empty, so the dashboard
+  // /health check does not falsely report the consumer as down.
+  async scheduled(event, env, ctx) {
+    setProcessEnv(env);
+    try {
+      await exec(
+        `INSERT INTO consumer_heartbeat (name, last_seen, processed_count, failed_count)
+         VALUES ('consumer', now(), 0, 0)
+         ON CONFLICT (name) DO UPDATE
+         SET last_seen = now()`,
+        []
+      );
+    } catch (hbErr) {
+      console.error(JSON.stringify({
+        event: "consumer_scheduled_heartbeat_failed",
+        error: hbErr instanceof Error ? hbErr.message : String(hbErr),
+        ts: new Date().toISOString(),
+      }));
+    }
+  },
+
   async fetch(request, env, ctx) {
     setProcessEnv(env);
     const url = new URL(request.url);

@@ -8,6 +8,10 @@ CREATE TABLE IF NOT EXISTS consumer_heartbeat (
 );
 
 -- Only one row is needed for the single consumer deployment.
+-- Refresh last_seen on conflict so re-runs do not leave a stale timestamp.
 INSERT INTO consumer_heartbeat (name, last_seen, processed_count, failed_count)
 VALUES ('consumer', now(), 0, 0)
-ON CONFLICT (name) DO NOTHING;
+ON CONFLICT (name) DO UPDATE
+SET last_seen = now(),
+    processed_count = consumer_heartbeat.processed_count + EXCLUDED.processed_count,
+    failed_count = consumer_heartbeat.failed_count + EXCLUDED.failed_count;

@@ -24,5 +24,9 @@ max_retries = 0
 binding = "HYPERDRIVE"
 id = "9e5b625bfdd84cd691b44c4780bdaf13"
 
+# Run a no-op heartbeat update every minute so /health stays green during idle periods.
+[triggers]
+crons = ["* * * * *"]
+
 # Secrets (set via wrangler secret put):
 #   DISCORD_MONITORING_WEBHOOK — optional Discord webhook for DLQ alerts
