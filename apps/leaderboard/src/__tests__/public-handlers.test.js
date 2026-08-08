@@ -83,7 +83,7 @@ const siteUrl = import.meta.resolve("../site.js");
 const siteUrlTs = import.meta.resolve("../site.ts");
 
 mock.module(siteUrl, () => ({
-  getPublicSite: (_env, slug, request) => {
+  getPublicSite: (_env, slug, _request) => {
     if (slug === "nonexistent") return null;
     if (slug === "suspended") return { suspended: true, data: {} };
     if (slug === "protected") return { requiresPassword: true, id: "site-1", slug: "protected" };
@@ -91,7 +91,7 @@ mock.module(siteUrl, () => ({
   },
 }));
 mock.module(siteUrlTs, () => ({
-  getPublicSite: (_env, slug, request) => {
+  getPublicSite: (_env, slug, _request) => {
     if (slug === "nonexistent") return null;
     if (slug === "suspended") return { suspended: true, data: {} };
     if (slug === "protected") return { requiresPassword: true, id: "site-1", slug: "protected" };
