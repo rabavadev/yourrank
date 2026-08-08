@@ -55,12 +55,10 @@ export function renderOverviewSummary() {
     $("ov_step_postback")?.classList.toggle("is-locked", o.isFree);
 
     const setupComplete = !!(brandDone && playersDone && sharedDone);
-    const qa = $("ovQuickActions");
     const steps = $("ovSetupSteps");
     // Only one "finish setup" surface at a time: if the resume-wizard draft banner
     // is showing, keep the granular checklist hidden so we don't nag twice.
     const draftBannerActive = !$("draftBanner")?.hidden;
-    if (qa) qa.hidden = setupComplete;
     if (steps) steps.hidden = setupComplete || draftBannerActive;
 
     // Board status card

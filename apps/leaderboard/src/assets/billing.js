@@ -31,9 +31,9 @@ function untrapFocus(modalEl) {
 
 const TIERS = [
   { key: "free", name: "Free", price: 0, priceStr: "$0", desc: "Up to 10 players · 1 leaderboard · YourRank badge" },
-  { key: "starter", name: "Starter", price: 12, priceStr: "$12/mo", desc: "Up to 25 players · 1 leaderboard · no badge · CSV import" },
-  { key: "pro", name: "Pro", price: 29, priceStr: "$29/mo", desc: "Up to 9,999 players · up to 3 boards · custom domain · OBS widget · signed score API" },
-  { key: "agency", name: "Agency", price: 79, priceStr: "$79/mo", desc: "Up to 99 boards · up to 9,999 players each · white-label · signed score API" },
+  { key: "starter", name: "Starter", price: 12, priceStr: "$12/30 days", desc: "Up to 25 players · 1 leaderboard · no badge · CSV import" },
+  { key: "pro", name: "Pro", price: 29, priceStr: "$29/30 days", desc: "Up to 9,999 players · up to 3 boards · custom domain · OBS widget · signed score API" },
+  { key: "agency", name: "Agency", price: 79, priceStr: "$79/30 days", desc: "Up to 99 boards · up to 9,999 players each · white-label · signed score API", contact: true },
 ];
 
 const PLAN_ORDER = ["free", "starter", "pro", "agency"];
@@ -172,11 +172,19 @@ function fmtExp(ms) {
         el.className = "plan-opt" + (isCurrent ? " plan-opt--current" : isDowngrade ? " plan-opt--disabled" : "");
         el.innerHTML = `<span class="plan-opt-name">${t.name}</span><span class="plan-opt-price">${t.priceStr}</span>`;
         if (!isCurrent && !isDowngrade) {
-          const btn = document.createElement("button");
-          btn.className = "btn btn--sm btn--accent plan-opt-btn";
-          btn.textContent = `Upgrade to ${t.name}`;
-          btn.onclick = () => startCheckout(t.key);
-          el.appendChild(btn);
+          if (t.contact) {
+            const a = document.createElement("a");
+            a.className = "btn btn--sm plan-opt-btn";
+            a.textContent = "Contact us";
+            a.href = "/contact?plan=agency";
+            el.appendChild(a);
+          } else {
+            const btn = document.createElement("button");
+            btn.className = "btn btn--sm btn--accent plan-opt-btn";
+            btn.textContent = `Upgrade to ${t.name}`;
+            btn.onclick = () => startCheckout(t.key);
+            el.appendChild(btn);
+          }
         } else if (isCurrent) {
           const badge = document.createElement("span");
           badge.className = "plan-opt-btn";
@@ -199,15 +207,23 @@ function fmtExp(ms) {
         el.className = "plan-opt" + (isCurrent ? " plan-opt--current" : isDowngrade ? " plan-opt--disabled" : "");
         el.innerHTML = `<span class="plan-opt-name">${t.name}</span><span class="plan-opt-price">${t.price === 0 ? "Free" : t.priceStr}</span>`;
         if (!isCurrent && !isDowngrade) {
-          const btn = document.createElement("button");
-          btn.className = "btn btn--sm btn--accent plan-opt-btn";
-          btn.textContent = t.price === 0 ? "Current" : `Upgrade to ${t.name}`;
-          if (t.price > 0) {
-            btn.onclick = () => startCheckout(t.key);
+          if (t.contact) {
+            const a = document.createElement("a");
+            a.className = "btn btn--sm plan-opt-btn";
+            a.textContent = "Contact us";
+            a.href = "/contact?plan=agency";
+            el.appendChild(a);
           } else {
-            btn.disabled = true;
+            const btn = document.createElement("button");
+            btn.className = "btn btn--sm btn--accent plan-opt-btn";
+            btn.textContent = t.price === 0 ? "Current" : `Upgrade to ${t.name}`;
+            if (t.price > 0) {
+              btn.onclick = () => startCheckout(t.key);
+            } else {
+              btn.disabled = true;
+            }
+            el.appendChild(btn);
           }
-          el.appendChild(btn);
         } else if (isCurrent) {
           const badge = document.createElement("span");
           badge.className = "plan-opt-btn";
@@ -230,8 +246,10 @@ function fmtExp(ms) {
     const target = autoPlan.toLowerCase();
     if (target === "lifetime" && !isLifetime) {
       startLifetimeCheckout();
-    } else if (["starter", "pro", "agency"].includes(target) && PLAN_ORDER.indexOf(target) > PLAN_ORDER.indexOf(plan)) {
+    } else if (["starter", "pro"].includes(target) && PLAN_ORDER.indexOf(target) > PLAN_ORDER.indexOf(plan)) {
       startCheckout(target);
+    } else if (target === "agency" && PLAN_ORDER.indexOf(target) > PLAN_ORDER.indexOf(plan)) {
+      location.href = "/contact?plan=agency";
     }
   }
 })();

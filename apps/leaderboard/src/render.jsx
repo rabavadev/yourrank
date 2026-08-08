@@ -182,9 +182,10 @@ async function composeMain(tpl, parts, text) {
 function footerDisclaimer(hasCasino, name, casino) {
   const base = "18+ only. For entertainment purposes only.";
   const gambling = hasCasino ? " Gambling can be addictive. Please play responsibly. BeGambleAware.org." : "";
-  const affiliate = hasCasino && name && casino ? ` ${esc(name)} is not affiliated with ${esc(casino)}.` : "";
+  const commission = hasCasino ? " Links and promo codes may be affiliate links — we may earn a commission if you sign up or deposit, at no extra cost to you." : "";
+  const nonAffil = hasCasino && name && casino ? ` ${esc(name)} is not affiliated with ${esc(casino)}.` : "";
   const nonCasino = !hasCasino ? " Play responsibly." : "";
-  return `${base}${gambling}${nonCasino}${affiliate}`;
+  return `${base}${gambling}${nonCasino}${commission}${nonAffil}`;
 }
 
 // ── Default shell chrome ────────────────────────────────────────────

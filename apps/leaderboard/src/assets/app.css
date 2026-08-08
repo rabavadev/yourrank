@@ -236,6 +236,16 @@ table.admin-table td.note{max-width:260px;color:var(--ink-soft)}
 .ftr-col a:hover{color:var(--accent)}
 .ftr-col a[aria-current]{color:var(--accent)}
 .legal-company{font-size:12px;color:var(--ink-mute);margin:12px 0 4px}
+.ftr-affiliate{font-size:12px;color:var(--ink-mute);margin:8px 0 4px;max-width:70ch}
+
+/* --- leaderboard / legal page footer --- */
+.ftr--board .ftr-inner{display:flex;justify-content:space-between;gap:24px;flex-wrap:wrap;margin-bottom:16px}
+.ftr--board .ftr-links-col{display:flex;flex-direction:column;gap:8px}
+.ftr--board .ftr-links-title{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink)}
+.ftr--board .ftr-links{display:flex;flex-wrap:wrap;gap:12px 18px;align-items:center}
+.ftr--board .ftr-links a{color:var(--ink-soft);font-size:13px}
+.ftr--board .ftr-links a:hover{color:var(--accent)}
+.ftr--board .ftr-bottom{text-align:center;font-size:12px;color:var(--ink-mute)}
 
 /* --- premium leaderboard footer removed --- */
 

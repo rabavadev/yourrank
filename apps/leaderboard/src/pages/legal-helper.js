@@ -48,6 +48,7 @@ function platformFooter(pagePath) {
   </div>
 </div>
 ${companyLine()}
+<p class="ftr-affiliate">Some links and offers on this site are affiliate links. We may earn a commission if you sign up or deposit through them, at no extra cost to you.</p>
 <p class="ftr-copy">© ${new Date().getFullYear()} YourRank · <a href="mailto:${COMPANY.email}">${COMPANY.email}</a></p>
 <p class="ftr-fine">18+ · For entertainment purposes only. Play responsibly.</p>
 </footer>`;
