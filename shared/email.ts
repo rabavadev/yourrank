@@ -63,7 +63,7 @@ export function onboardingEmail(day: 0 | 3 | 7, user: OnboardingOptions) {
   const name = user.display_name || String(user.email).split("@")[0] || "there";
   const origin = user.origin || "https://yourrank.site";
   const dashboard = `${origin}/dashboard`;
-  const billing = `${origin}/dashboard/billing`;
+  const billing = `${origin}/dashboard?nav=manage`;
   const botDashboard = `${origin}/bot/dashboard`;
 
   if (day === 0) {

@@ -6,8 +6,6 @@ import { forgotPage } from "./pages/forgot.js";
 import { resetPage } from "./pages/reset.js";
 import { signupPage } from "./pages/signup.js";
 import { dashboardConfig, DashboardContent } from "./pages/dashboard.jsx";
-import { analyticsPage } from "./pages/analytics.js";
-import { billingPage } from "./pages/billing.js";
 import { attributionPage } from "./pages/attribution.js";
 import { botSetupPage } from "./pages/bot-setup.js";
 import { securityPage } from "./pages/security.js";
@@ -33,8 +31,6 @@ export const PAGES = {
   reset: resetPage,
   signup: signupPage,
   dashboard: { config: dashboardConfig, Component: DashboardContent },
-  analytics: analyticsPage,
-  billing: billingPage,
   attribution: attributionPage,
   botSetup: botSetupPage,
   security: securityPage,

@@ -4,7 +4,7 @@ import { state } from "./dashboard/state.js";
 import { navTo, setupShell } from "./dashboard/shell.js";
 import { renderBoardSwitcher, renderSidebarBoardSwitcher, renderBoardsPage } from "./dashboard/boards.js";
 import { renderPlayers } from "./dashboard/players.js";
-import { renderArchives, renderBranding, renderDomain, renderDomainStatus, renderEmbedShare, renderLegal, renderNotifications, renderOverlay, renderPlan, renderPlayerFields, renderPrizes, renderSections, renderSocials, renderTemplateText, updateDesignPreview } from "./dashboard/site.js";
+import { checkout, renderArchives, renderBranding, renderDomain, renderDomainStatus, renderEmbedShare, renderLegal, renderNotifications, renderOverlay, renderPlan, renderPlayerFields, renderPrizes, renderSections, renderSocials, renderTemplateText, updateDesignPreview, wireCancelSubscription, wireDeleteAccount } from "./dashboard/site.js";
 import { renderOverviewSummary, wireOverviewQuickActions } from "./dashboard/overview.js";
 import { renderReferrals } from "./dashboard/referrals.js";
 
@@ -161,14 +161,21 @@ async function init() {
   $("loading").hidden = true;
   $("dash").hidden = false;
   setupShell();
+  wireCancelSubscription();
+  wireDeleteAccount();
   // Boards nav is redundant for solo streamers — the sidebar board switcher covers it.
   const boardsNav = document.querySelector(".lb-nav--boards");
   if (boardsNav) boardsNav.hidden = state.BOARDS.length < 2;
   // Smart landing: returning, set-up users go straight to the Editor (the daily job).
   // Brand-new boards still land on Overview so the setup checklist is front and center.
-  const initialNav = new URLSearchParams(location.search).get("nav");
-  const landing = initialNav || (isBoardSetup(p) ? "board" : "overview");
+  const initialNav = urlParams.get("nav");
+  const planParam = urlParams.get("plan");
+  const landing = initialNav || (planParam ? "manage" : (isBoardSetup(p) ? "board" : "overview"));
   if (document.querySelector(`section[data-page="${landing}"]`)) navTo(landing);
+  if (landing === "manage" && planParam) {
+    if (planParam.toLowerCase() === "agency") location.href = "/contact?plan=agency";
+    else checkout(planParam);
+  }
   if (document.querySelector('section[data-page="board"].is-on')) fitDesignPreview();
 
   renderOverviewSummary();

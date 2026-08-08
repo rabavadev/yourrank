@@ -425,29 +425,12 @@ async function handleRequest(request, env, ctx, meta) {
           return new Response("Preview couldn't load.", { status: 500 });
         }
       }
+      // Analytics and billing have been folded into the unified dashboard.
       if (path === "/dashboard/analytics") {
-        try {
-          const user = await currentUser(request, env);
-          if (!user) return Response.redirect(new URL("/login", url), 302);
-          const html = addCookieConsent(PAGES.analytics
-            .replace("<!--GM_NAV-->", shellNavHtml({ activePath: "/dashboard/analytics", user })));
-          return new Response(html, { headers: { ...SECURE_HTML, ...csrfHeader, "cache-control": "no-store, no-cache, must-revalidate" } });
-        } catch (e) {
-          if (workerLog) workerLog.error("analytics_render_failed", { error: String(e?.message || e) }); else console.error("analytics render failed:", String(e?.message || e));
-          return new Response("Analytics couldn't load right now — please refresh.", { status: 500, headers: { "content-type": "text/plain; charset=utf-8" } });
-        }
+        return Response.redirect(new URL("/dashboard?nav=growth", url), 302);
       }
       if (path === "/dashboard/billing") {
-        try {
-          const user = await currentUser(request, env);
-          if (!user) return Response.redirect(new URL("/login", url), 302);
-          const html = addCookieConsent(PAGES.billing
-            .replace("<!--GM_NAV-->", shellNavHtml({ activePath: "/dashboard/billing", user })));
-          return new Response(html, { headers: { ...SECURE_HTML, ...csrfHeader, "cache-control": "no-store, no-cache, must-revalidate" } });
-        } catch (e) {
-          if (workerLog) workerLog.error("billing_render_failed", { error: String(e?.message || e) }); else console.error("billing render failed:", String(e?.message || e));
-          return new Response("Billing couldn't load right now — please refresh.", { status: 500, headers: { "content-type": "text/plain; charset=utf-8" } });
-        }
+        return Response.redirect(new URL("/dashboard?nav=manage", url), 302);
       }
       if (path === "/dashboard/attribution") {
         try {

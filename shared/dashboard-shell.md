@@ -29,14 +29,12 @@ Files: [`shell-nav.js`](./shell-nav.js) (leaderboard, JS) · [`shell-nav.ts`](./
 Sticky top bar, 56px, containing:
 
 ```
-[GM YourRank]   Leaderboard  Bot  Analytics  Billing        {name}  {plan badge}  Logout
+[GM YourRank]   Leaderboard  Bot                {name}  {plan badge}  Logout
 ```
 
 - **Brand** (`GM` lime chip + wordmark) → `/dashboard`.
-- **Tabs** — `Leaderboard | Bot | Analytics | Billing`. The active tab is
-  underlined in the lime accent, computed from the current path by `activeKey()`
-  (longest-prefix match, so `/dashboard/billing` lights Billing, not
-  Leaderboard).
+- **Tabs** — `Leaderboard | Bot`. Analytics and Billing are sections inside the
+  unified dashboard sidebar (`/dashboard?nav=growth` and `/dashboard?nav=manage`).
 - **Right side** — streamer `display_name` (falls back to `email`, then
   "Streamer"), a **plan badge** (`Free` muted / `Pro` · `Agency` accent), and a
   **Logout** link → `/logout`.
@@ -45,8 +43,6 @@ Sticky top bar, 56px, containing:
 |-------------|-------------------------|--------------------|
 | Leaderboard | `/dashboard`            | Leaderboard Worker |
 | Bot         | `/bot/dashboard`        | Bot Worker         |
-| Analytics   | `/dashboard/analytics`  | Leaderboard Worker |
-| Billing     | `/dashboard/billing`    | Leaderboard Worker |
 | Logout      | `/logout`               | Leaderboard Worker |
 
 > Analytics + Billing live on the leaderboard Worker because that's where the
