@@ -2,7 +2,7 @@
 //
 // Processes click, conversion, analytics (bump), and notification events durably
 // off the request thread. Failed messages are retried and routed to the DLQ.
-import { one, query } from "../../../shared/db.js";
+import { one, query, exec } from "../../../shared/db.js";
 import { recordConversion } from "../../../shared/conversions.js";
 import { logMinimizedClick } from "../../../shared/clicks.js";
 import { bumpStat } from "../../../shared/stats.js";
@@ -98,12 +98,15 @@ export default {
     }
 
     const tokenCache = new Map();
+    let processed = 0;
+    let failed = 0;
 
     for (const msg of batch.messages) {
       const startedAt = Date.now();
       try {
         await handleEvent(msg.body, tokenCache);
         msg.ack();
+        processed++;
         console.log(JSON.stringify({
           event: "queue_message_processed",
           message_id: msg.id,
@@ -111,6 +114,7 @@ export default {
           duration_ms: Date.now() - startedAt,
         }));
       } catch (err) {
+        failed++;
         console.error(JSON.stringify({
           event: "queue_message_failed",
           message_id: msg.id,
@@ -120,6 +124,26 @@ export default {
         }));
         msg.retry();
       }
+    }
+
+    // Record that the consumer is alive and how much work it did in this batch.
+    // This lets the monitor detect a silent outage instead of waiting for stale analytics.
+    try {
+      await exec(
+        `INSERT INTO consumer_heartbeat (name, last_seen, processed_count, failed_count)
+         VALUES ('consumer', now(), $1, $2)
+         ON CONFLICT (name) DO UPDATE
+         SET last_seen = now(),
+             processed_count = consumer_heartbeat.processed_count + EXCLUDED.processed_count,
+             failed_count = consumer_heartbeat.failed_count + EXCLUDED.failed_count`,
+        [processed, failed]
+      );
+    } catch (hbErr) {
+      console.error(JSON.stringify({
+        event: "consumer_heartbeat_failed",
+        error: hbErr instanceof Error ? hbErr.message : String(hbErr),
+        ts: new Date().toISOString(),
+      }));
     }
   },
 
