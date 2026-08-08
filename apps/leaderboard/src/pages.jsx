@@ -22,12 +22,8 @@ import { contactPage } from "./pages/contact.js";
 import { pricingPage } from "./pages/pricing.js";
 import { supportPage } from "./pages/support.js";
 import { docsPage } from "./pages/docs.js";
-<<<<<<< HEAD
 import { verifyEmailPage } from "./pages/verify-email.js";
-||||||| parent of fac7173 (Phase 1: credits dashboard and viewer shop pages)
-=======
 import { creditsPage } from "./pages/credits.js";
->>>>>>> fac7173 (Phase 1: credits dashboard and viewer shop pages)
 
 export const PAGES = {
   index: landingPage,
@@ -52,10 +48,6 @@ export const PAGES = {
   contact: contactPage,
   pricing: pricingPage,
   support: supportPage,
-<<<<<<< HEAD
   verifyEmail: verifyEmailPage,
-||||||| parent of fac7173 (Phase 1: credits dashboard and viewer shop pages)
-=======
   credits: creditsPage,
->>>>>>> fac7173 (Phase 1: credits dashboard and viewer shop pages)
 };
