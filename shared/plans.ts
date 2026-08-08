@@ -84,32 +84,30 @@ export const PLAN_META: Record<PlanTier, {
   },
 };
 
-// ---- Bot plan definitions (Telegram Stars pricing) ----
-// Stars prices match USD pricing to ensure pricing parity across channels.
+// ---- Bot plan definitions ----
 
 export interface BotPlanDef {
-  tier: PlanTier;
+  tier: BotPlanTier;
   label: string;
   maxBots: number;
   maxOffers: number;
   broadcasts: boolean;
   postbacks: boolean;
-  /** Price per 30 days in Telegram Stars (XTR). 0 = not purchasable. */
-  starsPrice: number;
+  /** Price per 30 days in USD. 0 = free. */
+  priceUsd: number;
 }
 
 /**
- * Bot plan tiers. "starter" is deliberately excluded: it had starsPrice 0,
- * which made checkout always fail with a 400, and it offered nothing over
+ * Bot plan tiers. "starter" is deliberately excluded: it offered nothing over
  * "free" (broadcasts/postbacks both disabled). Legacy users rows with
  * plan = 'starter' fall back to the free tier at lookup time.
  */
 export type BotPlanTier = Exclude<PlanTier, "starter">; // "free" | "pro" | "agency"
 
 export const BOT_PLANS: Record<BotPlanTier, BotPlanDef> = {
-  free:   { tier: "free",   label: "Free",   maxBots: 1,  maxOffers: 3,   broadcasts: false, postbacks: false, starsPrice: 0 },
-  pro:    { tier: "pro",    label: "Pro",    maxBots: 3,  maxOffers: 50,  broadcasts: true,  postbacks: true,  starsPrice: 2900 },
-  agency: { tier: "agency", label: "Agency", maxBots: 25, maxOffers: 999, broadcasts: true,  postbacks: true,  starsPrice: 7900 },
+  free:   { tier: "free",   label: "Free",   maxBots: 1,  maxOffers: 3,   broadcasts: false, postbacks: false, priceUsd: PLAN_PRICES.free },
+  pro:    { tier: "pro",    label: "Pro",    maxBots: 3,  maxOffers: 50,  broadcasts: true,  postbacks: true,  priceUsd: PLAN_PRICES.pro },
+  agency: { tier: "agency", label: "Agency", maxBots: 25, maxOffers: 999, broadcasts: true,  postbacks: true,  priceUsd: PLAN_PRICES.agency },
 };
 
 // ── Pure helper functions (no DB dependency) ──────────────────────────────

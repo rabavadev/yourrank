@@ -7,7 +7,6 @@ import { getBotBySecret, handleUpdateForBot } from "./botEngine.js";
 import { getMe, setWebhook } from "./telegram.js";
 import { buildDashboard } from "./dashboard.js";
 import { logMinimizedClick } from "./clicks.js";
-import { billingEnabled, handleBillingUpdate, setupBillingWebhook } from "./billing.js";
 import { withPlanLimit } from "./plans.js";
 import { rateLimit, type RateLimitKV } from "./ratelimit.js";
 import { createQueueProducer, type QueueEvent } from "../../../shared/queue-producer.js";
@@ -291,22 +290,6 @@ export function buildHonoApp(): Hono<{ Bindings: Bindings }> {
   });
 
   // =================================================================
-  // 2c) BILLING WEBHOOK — platform bot (Telegram Stars payments)
-  // =================================================================
-  app.post("/billing/hook/:secret", async (c) => {
-    const secret = c.req.param("secret");
-    if (
-      !billingEnabled() ||
-      !safeEqual(secret, process.env.PLATFORM_WEBHOOK_SECRET ?? "") ||
-      !safeEqual(c.req.header("x-telegram-bot-api-secret-token") ?? "", secret)
-    ) {
-      return c.body(null, 401);
-    }
-    await handleBillingUpdate(await c.req.json<Update>());
-    return c.body(null, 200);
-  });
-
-  // =================================================================
   // 3) ADMIN API
   // =================================================================
   const api = new Hono<{ Bindings: Bindings }>();
@@ -454,14 +437,6 @@ export function buildHonoApp(): Hono<{ Bindings: Bindings }> {
         GROUP BY o.id, o.label, c.name ORDER BY clicks DESC`,
       [owner_id, days]
     ));
-  });
-
-  // One-time setup: point the platform bot's webhook here (admin only).
-  api.post("/billing/setup", async (c) => {
-    if (!billingEnabled())
-      return c.json({ error: "set PLATFORM_BOT_TOKEN and PLATFORM_WEBHOOK_SECRET first" }, 400);
-    await setupBillingWebhook(config.publicBaseUrl);
-    return c.json({ ok: true, webhook: `${config.publicBaseUrl}/billing/hook/***` });
   });
 
   // POST /api/reencrypt — re-encrypt all bot tokens with the current key.

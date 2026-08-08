@@ -55,7 +55,7 @@ import { effectivePlan, PLAN_LIMITS, BOARD_LIMITS } from "../../../../shared/pla
 
 // ── PLANS constant (bot-specific) ──────────────────────────────────────
 describe("PLANS constant", () => {
-  it("defines the 3 bot tiers (starter was removed: starsPrice 0 made it unpurchasable)", () => {
+  it("defines the 3 bot tiers (starter was removed: it offered nothing over free)", () => {
     expect(PLANS).toHaveProperty("free");
     expect(PLANS).toHaveProperty("pro");
     expect(PLANS).toHaveProperty("agency");

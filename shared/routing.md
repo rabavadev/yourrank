@@ -31,7 +31,6 @@ shared as described in the other specs.
 | `/hook/*`           | Telegram webhook (per-bot secret)              |
 | `/r/*`              | tracked affiliate redirect                     |
 | `/pb/*`             | casino postbacks                               |
-| `/billing/hook/*`   | Telegram-Stars billing webhook                 |
 
 ---
 

@@ -107,7 +107,8 @@ const BOT_STYLE_ATTR_CSS = `
 .style-32 { margin-left:6px;color:var(--red) }
 .style-33 { padding:2px 8px;font-size:12px }
 .style-34 { color:var(--accent) }
-.style-35 { margin-right:8px }
+.style-35 { margin-right:8px; display:inline-block }
+.style-warn { color:var(--red); font-size:13px; margin-top:6px }
 `;
 
 const BOT_BASE_CSS = `

@@ -8,7 +8,7 @@ export const privacyPage = legal("Privacy Policy", "July 2026", `
 <li><b>Account:</b> your email and a hashed password (we never store the password itself).</li>
 <li><b>Page content:</b> whatever you put on your leaderboard — it's public by design.</li>
 <li><b>Requests:</b> if you use the contact form, we keep what you send us (handle, contact info, note).</li>
-<li><b>Payments:</b> plan, amount, and payment status. Crypto payments are processed by NOWPayments and Telegram Star payments are processed by Telegram — we never see or store wallet keys, card numbers, or Telegram account credentials.</li>
+<li><b>Payments:</b> plan, amount, and payment status. Crypto payments are processed by NOWPayments — we never see or store wallet keys or card numbers.</li>
 </ul>
 <h2>Cookies</h2>
 <p>Essential cookies keep you signed in and secure your dashboard actions. With your consent, we also set analytics cookies to count page views and understand how visitors interact with leaderboards. You can choose to accept only essential cookies via the banner on your first visit. We never load third-party ad trackers or pixels.</p>

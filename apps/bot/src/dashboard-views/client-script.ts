@@ -163,18 +163,27 @@ async function loadExtras(){
   if (cur) {
     const plur = (n, w) => n + ' ' + w + (n === 1 ? '' : 's');
     const planInfo = $('planInfo');
+    let warning = '';
+    if (plan?.warning) warning = '<p class="style-warn" style="margin:8px 0 0">'+esc(plan.warning)+'</p>';
     if (planInfo) planInfo.innerHTML = '<b class="style-34">'+esc(cur.label)+'</b> — up to '+plur(cur.maxBots, 'bot')+', '
-      +plur(cur.maxOffers, 'offer')+(cur.broadcasts?', broadcasts':'')+(cur.postbacks?', postbacks':'');
+      +plur(cur.maxOffers, 'offer')+(cur.broadcasts?', broadcasts':'')+(cur.postbacks?', postbacks':'')+warning;
     if (typeof cur.maxBots === 'number') {
       __maxBots = cur.maxBots;
       const cf = $('connectForm');
       if (cf) cf.classList.toggle('hidden', __lastBots.filter(b => b.status === 'active').length >= __maxBots);
     }
     const planButtons = $('planButtons');
-    if (planButtons) planButtons.innerHTML = (plan.plans||[]).filter(p=>p.starsPrice>0 && p.tier!==cur.tier).map(p=>
-      '<button class="style-35" data-action="upgrade" data-tier="'+esc(p.tier)+'" type="button">'
-      +(plan.billing_enabled?'Upgrade to '+esc(p.label)+' — ⭐'+esc(String(p.starsPrice))+'/30d':esc(p.label)+' (billing not enabled)')+'</button>'
-    ).join('');
+    if (planButtons) {
+      const upsell = (plan.plans||[]).filter(p=>p.priceUsd>0 && p.tier!==cur.tier);
+      if (upsell.length) {
+        planButtons.innerHTML = upsell.map(p=>
+          '<a class="style-35" href="'+esc(plan.upgradeUrl)+'&plan='+esc(p.tier)+'" target="_blank" rel="noopener">'
+          +'Upgrade to '+esc(p.label)+' — $'+esc(String(p.priceUsd))+'/30d</a>'
+        ).join('');
+      } else {
+        planButtons.innerHTML = '<a class="style-35" href="'+esc(plan.upgradeUrl)+'" target="_blank" rel="noopener">Manage billing</a>';
+      }
+    }
   }
 
   const bcList = $('bcList');
@@ -601,14 +610,6 @@ async function copyPostback(target){
   navigator.clipboard.writeText(url);
   toast('Signed postback setup copied');
 }
-async function upgrade(target){
-  setLoading(target, 'Loading…');
-  const r = await api('/billing/checkout',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({plan:target.dataset.tier})});
-  if (r.error) { restoreBtn(target); return toast(r.error); }
-  window.open(r.invoice_link, '_blank');
-  restoreBtn(target);
-}
-
 function setLoading(el, text = 'Loading…') {
   if (!el) return;
   if (el.disabled !== undefined) el.disabled = true;
@@ -676,7 +677,6 @@ async function handleAction(e) {
     else if (action === 'toggleOffer') { e.preventDefault(); await toggleOffer(target); }
     else if (action === 'toggleCommand') { e.preventDefault(); await toggleCommand(target); }
     else if (action === 'deleteCommand') { e.preventDefault(); await deleteCommand(target); }
-    else if (action === 'upgrade') { e.preventDefault(); await upgrade(target); }
   } catch (err) {
     console.error('[dashboard action]', action, err);
     toast('Something went wrong — please reload');

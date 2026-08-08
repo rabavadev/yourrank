@@ -63,11 +63,6 @@ export const broadcastSchema = z.object({
   segment: broadcastSegmentSchema.optional().nullable(),
 }).strict();
 
-export const checkoutSchema = z.object({
-  // Only tiers that exist in BOT_PLANS and have starsPrice > 0.
-  plan: z.enum(["pro", "agency"]),
-}).strict();
-
 export const adminUserSchema = z.object({
   email: z.string().email().max(254).optional(),
   display_name: z.string().max(80).optional(),

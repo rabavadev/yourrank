@@ -114,6 +114,18 @@ export default {
           })(),
           (async () => {
             try {
+              const { sendExpiryWarnings } = await import("../../../shared/email.js");
+              const origin = env.PUBLIC_BASE_URL || process.env.PUBLIC_BASE_URL || "https://yourrank.site";
+              const { sent, skipped } = await sendExpiryWarnings(env, { origin });
+              console.log(`[cron 0 3 * * *] sendExpiryWarnings: ${sent} sent, ${skipped} skipped`);
+              return { sent, skipped };
+            } catch (err) {
+              console.error("[cron 0 3 * * *] sendExpiryWarnings failed:", err);
+              throw err;
+            }
+          })(),
+          (async () => {
+            try {
               const downgraded = await downgradeExpired();
               console.log(`[cron 0 3 * * *] downgradeExpired: ${downgraded} user(s) downgraded to free`);
               // Alert via monitoring webhook if any users were downgraded
@@ -179,7 +191,7 @@ export default {
         // Log any rejections and alert via Discord — allSettled never throws
         const failures = results.filter(r => r.status === "rejected");
         if (failures.length > 0) {
-          const failedTasks = ["rollupClicks", "ensureCurrentMonthPartition", "ensureNextMonthPartition", "downgradeExpired", "cleanupOldClicks", "authCleanup", "onboardingEmails"]
+          const failedTasks = ["rollupClicks", "ensureCurrentMonthPartition", "ensureNextMonthPartition", "sendExpiryWarnings", "downgradeExpired", "cleanupOldClicks", "authCleanup", "onboardingEmails"]
             .filter((_, i) => results[i].status === "rejected");
           const reasons = failures.map(f => String((f as PromiseRejectedResult).reason?.message || f.reason)).join("; ");
           console.error(`[cron 0 3 * * *] ${failures.length} task(s) failed: ${failedTasks.join(", ")} — ${reasons}`);
