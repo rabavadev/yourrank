@@ -85,17 +85,6 @@ mock.module("../site.js", () => ({
   saveSite: async () => _saveSiteResult,
 }));
 
-mock.module("../billing.js", () => ({
-  effectivePlan: (user) => {
-    if (!user || user.status === "suspended") return "free";
-    const plan = String(user.plan || "free").toLowerCase();
-    const expired = user.plan_expires_at == null || Number(user.plan_expires_at) <= Date.now();
-    if (expired) return "free";
-    return ["agency", "pro", "starter"].includes(plan) ? plan : "free";
-  },
-  PLAN_LIMITS: { free: 10, starter: 25, pro: 9999, agency: 9999 },
-}));
-
 const { handleScores } = await import("../handlers/scores.js");
 
 // QA-006: Freeze the clock so Date.now()-based tests are deterministic

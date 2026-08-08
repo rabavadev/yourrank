@@ -5,7 +5,7 @@ import { hashToken } from "../../../../shared/crypto.js";
 import { trackActivation } from "../../../../shared/activation-funnel.js";
 import { DEFAULT_EXTRA, getUserBoardsList, seedSamplePlayers } from "../site.js";
 import { sendEmail, resetEmail, sendOnboardingEmail } from "../email.js";
-import { effectivePlan, PLAN_LIMITS, BOARD_LIMITS, priceUsd } from "../billing.js";
+import { effectivePlan, PLAN_LIMITS, BOARD_LIMITS, priceUsd } from "../../../../shared/plans.js";
 import { getEnabledFeatureKeys } from "../../../../shared/features.js";
 import {
   findUserByEmail, findSiteBySlug, findUserByReferralCode, createUser, createSite

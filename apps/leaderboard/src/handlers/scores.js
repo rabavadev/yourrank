@@ -1,7 +1,7 @@
 // Score postback handler (authenticated via X-Postback-Key + HMAC-SHA256 signature)
 import { json, bad, rateLimit, rateLimitHeaders } from "../auth.js";
 import { saveSite } from "../site.js";
-import { effectivePlan, PLAN_LIMITS } from "../billing.js";
+import { effectivePlan, PLAN_LIMITS } from "../../../../shared/plans.js";
 import { one } from "../../../../shared/db.js";
 import { verifyHmacSha256Hex } from "../../../../shared/crypto.js";
 import {
