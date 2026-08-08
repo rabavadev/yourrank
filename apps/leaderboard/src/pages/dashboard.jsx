@@ -329,6 +329,10 @@ export function DashboardContent() {
 <div class="plan-grid" id="planGrid"></div>
 <div class="plan-trial" id="planTrial" hidden><p class="hint">Not ready to pay? Try every Pro feature free for 7 days.</p><button class="btn btn--accent" id="trialBtn" type="button">Start free Pro trial</button><p class="status" id="trialStatus" role="status" aria-live="polite"></p></div>
 <p class="hint" id="planHint">Paid plans are billed in crypto (BTC, ETH, USDT and 100+ more) and activate automatically once the network confirms.</p></div>
+<div class="card" id="historyCard" hidden><h2>Payment history</h2><p class="card-sub">Your past payments and receipts.</p>
+<table class="admin-table" id="historyTable"><thead><tr><th>Date</th><th>Plan</th><th>Amount</th><th>Status</th></tr></thead><tbody id="historyBody"></tbody></table>
+<div class="empty" id="historyEmpty" hidden>No payments yet.</div>
+<p class="hint">Receipts are also emailed to your account address after each successful payment.</p></div>
 <div class="card card--danger" id="dangerCard">
 <h2>Danger zone</h2>
 <p class="card-sub">Permanently delete your account and all associated data. This cannot be undone.</p>
