@@ -364,13 +364,18 @@ async function handleRequest(request, env, ctx, meta) {
           const hb = await one("SELECT EXTRACT(EPOCH FROM (now() - last_seen))::int AS seconds_ago, processed_count, failed_count FROM consumer_heartbeat WHERE name='consumer'");
           const consumerStaleSeconds = 600; // 10 minutes without a batch is an outage
           if (hb) {
+            // A brand-new deploy has no queue events yet, so the heartbeat row
+            // may be stale even though the consumer is healthy. Once it has
+            // processed any events we start enforcing freshness.
+            const processedAny = Number(hb.processed_count) > 0 || Number(hb.failed_count) > 0;
+            const healthy = !processedAny || hb.seconds_ago < consumerStaleSeconds;
             result.consumer = {
-              healthy: hb.seconds_ago < consumerStaleSeconds,
+              healthy,
               last_seen: Number(hb.seconds_ago),
               processed_count: Number(hb.processed_count),
               failed_count: Number(hb.failed_count),
             };
-            if (!result.consumer.healthy) result.status = "degraded";
+            if (!healthy) result.status = "degraded";
           } else {
             result.consumer = { healthy: false, last_seen: null, note: "no heartbeat row" };
             result.status = "degraded";
