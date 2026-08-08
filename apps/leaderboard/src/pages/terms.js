@@ -18,4 +18,4 @@ export const termsPage = legal("Terms of Service", "July 2026", `
 <h2>Liability</h2>
 <p>YourRank is provided as-is. We work to keep pages online, but we don't guarantee uninterrupted service and we're not liable for lost revenue, lost viewers, or disputes between you and your community. Our total liability is capped at what you paid us in the last 3 months.</p>
 <h2>Contact</h2>
-<p>Questions about these terms: email us at contact@yourrank.site.</p>`, "terms", "YourRank terms of service. Covers accounts, content, payments, liability, and how we handle disputes.");
+<p>Questions about these terms: email us at <a href="mailto:{{SUPPORT_EMAIL}}">{{SUPPORT_EMAIL}}</a>.</p>`, "terms", "YourRank terms of service. Covers accounts, content, payments, liability, and how we handle disputes.");

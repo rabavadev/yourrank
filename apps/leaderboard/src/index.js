@@ -25,6 +25,8 @@ import { handlePublicApiPreflight } from "./middleware/public-api.js";
 import { findSiteLogoData, findSiteStatus, findUserTotpSecret } from "./data/sites.js";
 import { detectImageMime } from "./site.js";
 import { one } from "../../../shared/db.js";
+import { loadPlatformIdentity, getPlatformIdentity } from "./platform-identity.js";
+import { applyLegalIdentity } from "./pages/legal-helper.js";
 import { hashToken, newClickRef } from "../../../shared/crypto.js";
 import { handleDashboardPreview } from "./handlers/preview.js";
 import { demoLeaderboardData } from "./demo-data.js";
@@ -181,6 +183,8 @@ async function bodyExceedsLimit(request, maxBytes) {
 async function handleRequest(request, env, ctx, meta) {
     const { log: workerLog, reqId } = meta || {};
     try {
+      // Load legal company identity once per isolate; cached for 60s.
+      await loadPlatformIdentity(env);
       // BE-004 / H-18: Reject oversized request bodies early, before any parsing.
       // 1 MB is generous for JSON payloads (site data, auth forms, etc.) while
       // blocking multi-MB abuse. Applies to all state-changing methods and checks
@@ -366,6 +370,8 @@ async function handleRequest(request, env, ctx, meta) {
           let result = pageObj;
           if (activePath && user) result = result.replace("<!--GM_NAV-->", shellNavHtml({ activePath, user }));
           if (reqId) result = result.replace("{{REQ_ID}}", reqId);
+          // Fill in legal company identity placeholders on static/legal pages.
+          result = applyLegalIdentity(result, getPlatformIdentity());
           return result;
         }
         

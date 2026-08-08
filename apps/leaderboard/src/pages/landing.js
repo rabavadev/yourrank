@@ -92,7 +92,8 @@ export const landingPage = `<!DOCTYPE html>
     <div class="ftr-col"><b>Legal</b><a href="/terms">Terms of Service</a><a href="/privacy">Privacy Policy</a><a href="/cookies">Cookie Policy</a><a href="/refund">Refund Policy</a><a href="/responsible">Responsible Play</a></div>
   </div>
 </div>
-<p class="ftr-copy">© <span id="yr"></span> YourRank · <a href="mailto:contact@yourrank.site">contact@yourrank.site</a></p>
+<p class="ftr-affiliate">{{AFFILIATE_DISCLOSURE}}</p>
+<p class="ftr-copy">© <span id="yr"></span> {{COMPANY_NAME}} · <a href="mailto:{{SUPPORT_EMAIL}}">{{SUPPORT_EMAIL}}</a></p>
 <p class="ftr-fine">18+ · For entertainment purposes only. Play responsibly.</p>
 </div></footer>
 <script src="/assets/landing.js?v=3"></script>

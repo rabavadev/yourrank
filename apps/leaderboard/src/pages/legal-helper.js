@@ -1,19 +1,24 @@
 // Shared legal page shell helper
-// NOTE: update COMPANY below with the real operating entity details before going live.
-const COMPANY = {
-  name: "",          // e.g. "YourRank Ltd"
-  country: "",       // e.g. "United Kingdom"
-  number: "",        // e.g. "Company number 12345678"
-  email: "contact@yourrank.site",
-};
+// NOTE: fill in company identity from Dashboard → Admin → Identity before going live.
 
-function companyLine() {
-  const parts = [
-    COMPANY.name,
-    COMPANY.country ? `registered in ${COMPANY.country}` : "",
-    COMPANY.number,
-  ].filter(Boolean);
-  return parts.length ? `<p class="legal-company">${parts.join(" · ")}</p>` : "";
+export function applyLegalIdentity(html, identity) {
+  const i = identity || {};
+  const companyName = i.company_name?.trim() || "YourRank";
+  const country = i.company_country?.trim() || "";
+  const number = i.company_number?.trim() || "";
+  const supportEmail = i.support_email?.trim() || "contact@yourrank.site";
+  const affiliate = i.affiliate_disclosure?.trim() || "Some links and offers on this site are affiliate links. We may earn a commission if you sign up or deposit through them, at no extra cost to you.";
+
+  const parts = [companyName, country ? `registered in ${country}` : "", number].filter(Boolean);
+  const companyLine = parts.length ? `<p class="legal-company">${parts.join(" · ")}</p>` : "";
+
+  return html
+    .replace(/{{COMPANY_NAME}}/g, companyName)
+    .replace(/{{COMPANY_COUNTRY}}/g, country)
+    .replace(/{{COMPANY_NUMBER}}/g, number)
+    .replace(/{{SUPPORT_EMAIL}}/g, supportEmail)
+    .replace(/{{AFFILIATE_DISCLOSURE}}/g, affiliate)
+    .replace(/{{COMPANY_LINE}}/g, companyLine);
 }
 
 function platformHeader() {
@@ -47,9 +52,9 @@ function platformFooter(pagePath) {
     </div>
   </div>
 </div>
-${companyLine()}
-<p class="ftr-affiliate">Some links and offers on this site are affiliate links. We may earn a commission if you sign up or deposit through them, at no extra cost to you.</p>
-<p class="ftr-copy">© ${new Date().getFullYear()} YourRank · <a href="mailto:${COMPANY.email}">${COMPANY.email}</a></p>
+{{COMPANY_LINE}}
+<p class="ftr-affiliate">{{AFFILIATE_DISCLOSURE}}</p>
+<p class="ftr-copy">© ${new Date().getFullYear()} {{COMPANY_NAME}} · <a href="mailto:{{SUPPORT_EMAIL}}">{{SUPPORT_EMAIL}}</a></p>
 <p class="ftr-fine">18+ · For entertainment purposes only. Play responsibly.</p>
 </footer>`;
 }
