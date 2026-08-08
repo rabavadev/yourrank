@@ -4,7 +4,7 @@ import { hashPassword, verifyPassword, uuid, newToken, createSession, destroySes
 import { hashToken } from "../../../../shared/crypto.js";
 import { trackActivation } from "../../../../shared/activation-funnel.js";
 import { DEFAULT_EXTRA, getUserBoardsList, seedSamplePlayers } from "../site.js";
-import { sendEmail, resetEmail, sendOnboardingEmail } from "../email.js";
+import { sendEmail, resetEmail, sendOnboardingEmail, sendVerificationEmail } from "../email.js";
 import { effectivePlan, PLAN_LIMITS, BOARD_LIMITS, priceUsd } from "../../../../shared/plans.js";
 import { getEnabledFeatureKeys } from "../../../../shared/features.js";
 import {
@@ -13,6 +13,22 @@ import {
 
 const REFERRAL_REWARD_DAYS = 31;
 const REFERRAL_MAX_EXTENSION_DAYS = 365;
+const VERIFICATION_TTL_HOURS = 24;
+
+async function issueVerificationEmail(env, userId, email, origin, waitUntil) {
+  const token = newToken();
+  const tokenHash = await hashToken(token);
+  await exec(
+    "UPDATE users SET email_verification_token_hash=$1, email_verification_sent_at=now() WHERE id=$2",
+    [tokenHash, userId]
+  );
+  const link = `${origin}/verify-email?token=${encodeURIComponent(token)}`;
+  const task = sendVerificationEmail(env, email, link).catch((err) => {
+    console.error("[verification] email failed:", err);
+  });
+  if (waitUntil) waitUntil(task);
+  else task.catch(() => {});
+}
 
 async function applyReferralReward(referrerId, referredId) {
   if (!referrerId || !referredId || referrerId === referredId) return;
@@ -111,17 +127,18 @@ export async function handleSignup(request, env, ctx) {
 
     const token = await createSession(env, userId);
     const origin = new URL(request.url).origin;
+    await issueVerificationEmail(env, userId, email, origin, ctx?.waitUntil);
     const onboardingPromise = sendOnboardingEmail(env, 0, { id: userId, email, display_name: displayName, slug: finalSlug, origin });
     if (ctx?.waitUntil) ctx.waitUntil(onboardingPromise.catch((err) => console.error("[signup] onboarding day 0 failed:", err)));
     trackActivation("leaderboard", userId, "signup", { email, referred: !!referrerId });
-    return json({ ok: true, user: { id: userId, email, slug: finalSlug } }, 200, { "set-cookie": cookieSet(token, env) });
+    return json({ ok: true, user: { id: userId, email, slug: finalSlug, emailVerified: false }, needsVerification: true }, 200, { "set-cookie": cookieSet(token, env) });
   } catch (e) {
     console.error("signup failed:", String(e?.message || e));
     return bad("Sign-up failed, please try again", 500);
   }
 }
 
-export async function handleLogin(request, env) {
+export async function handleLogin(request, env, ctx) {
   try {
     // SEC-110: IP-based rate limit
     if (!(await rateLimit(env, `login:${clientIp(request)}`, 20, 600)).ok) return bad("Too many attempts. Try again in a few minutes.", 429);
@@ -133,7 +150,7 @@ export async function handleLogin(request, env) {
     // SEC-110: Per-account rate limit (prevents brute-force across multiple IPs)
     if (!(await rateLimit(env, `login-email:${email}`, 10, 900)).ok) return bad("Too many attempts on this account. Try again later.", 429);
     // QA-002: Check per-account lockout before password verification
-    const user = await one("SELECT id,email,password_hash,password_salt,status,failed_login_count,locked_until FROM users WHERE email=$1", [email]);
+    const user = await one("SELECT id,email,password_hash,password_salt,status,email_verified,failed_login_count,locked_until FROM users WHERE email=$1", [email]);
     if (user?.locked_until && new Date(user.locked_until) > new Date()) {
       return bad("Account temporarily locked due to too many failed attempts. Try again later.", 429);
     }
@@ -166,7 +183,12 @@ export async function handleLogin(request, env) {
       createSession(env, user.id),
       getEnabledFeatureKeys(user.id),
     ]);
-    return json({ ok: true, user: { id: user.id, email: user.email, slug: site?.slug || null, features } }, 200, { "set-cookie": cookieSet(token, env) });
+    const origin = new URL(request.url).origin;
+    if (!user.email_verified) {
+      await issueVerificationEmail(env, user.id, user.email, origin, ctx?.waitUntil);
+      return json({ ok: true, user: { id: user.id, email: user.email, slug: site?.slug || null, features, emailVerified: false }, needsVerification: true }, 200, { "set-cookie": cookieSet(token, env) });
+    }
+    return json({ ok: true, user: { id: user.id, email: user.email, slug: site?.slug || null, features, emailVerified: true } }, 200, { "set-cookie": cookieSet(token, env) });
   } catch (e) {
     console.error("login failed:", String(e?.message || e));
     return bad("Login failed, please try again", 500);
@@ -199,7 +221,8 @@ export async function handleMe(request, env) {
     return json({ ok: true, user: {
       id: user.id, email: user.email, displayName: user.display_name || null,
       plan, planExpiresAt: user.plan_expires_at || 0,
-      status: user.status, isAdmin: !!user.is_admin, slug: site?.slug || null,
+      status: user.status, isAdmin: !!user.is_admin, emailVerified: !!user.email_verified,
+      slug: site?.slug || null,
       limits: { players: PLAN_LIMITS[plan], boards: BOARD_LIMITS[plan] },
       proPrice: priceUsd(env, "pro"),
       hasTrial: !!user.has_trial,
@@ -286,5 +309,56 @@ export async function handleReset(request, env) {
     // SEC-702: Never log the reset token — redact it from any error context.
     console.error("reset failed:", String(e?.message || e).replace(/[a-f0-9]{32,}/gi, '[REDACTED]'));
     return bad("Password reset failed. Please try again.", 500);
+  }
+}
+
+// POST /api/auth/verify — { token }
+export async function handleVerifyEmail(request, _env) {
+  try {
+    const body = await readJson(request);
+    const token = String(body?.token || "").trim();
+    if (!token) return bad("Verification token required");
+    const tokenHash = await hashToken(token);
+    const user = await one(
+      "SELECT id, email_verification_sent_at FROM users WHERE email_verification_token_hash=$1 AND email_verified=false",
+      [tokenHash]
+    );
+    if (!user) return bad("This verification link is invalid or has already been used.", 400);
+    if (user.email_verification_sent_at) {
+      const sentAt = new Date(user.email_verification_sent_at).getTime();
+      if (Date.now() - sentAt > VERIFICATION_TTL_HOURS * 60 * 60 * 1000) {
+        return bad("Verification link has expired. Please sign in to request a new one.", 410);
+      }
+    }
+    await exec(
+      "UPDATE users SET email_verified=true, email_verification_token_hash=NULL, email_verification_sent_at=NULL WHERE id=$1",
+      [user.id]
+    );
+    return ok({ emailVerified: true });
+  } catch (e) {
+    console.error("[verify] failed:", String(e?.message || e).replace(/[a-f0-9]{32,}/gi, '[REDACTED]'));
+    return bad("Could not verify email. Please try again.", 500);
+  }
+}
+
+// POST /api/auth/resend-verification — { email }
+// Does not reveal whether the email exists.
+export async function handleResendVerification(request, env, ctx) {
+  try {
+    const body = await readJson(request);
+    const email = String(body?.email || "").trim().toLowerCase();
+    if (!isEmail(email)) return bad("Enter a valid email");
+    if (!(await rateLimit(env, `resend-verification:${email}`, 3, 3600)).ok) {
+      return bad("Too many requests. Try again later.", 429);
+    }
+    const user = await one("SELECT id, email_verified FROM users WHERE email=$1", [email]);
+    if (user && !user.email_verified) {
+      const origin = new URL(request.url).origin;
+      await issueVerificationEmail(env, user.id, email, origin, ctx?.waitUntil);
+    }
+    return ok({ sent: true });
+  } catch (e) {
+    console.error("[resend verification] failed:", String(e?.message || e));
+    return bad("Could not resend verification email. Please try again.", 500);
   }
 }

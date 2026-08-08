@@ -175,3 +175,19 @@ export async function sendPendingOnboardingEmails(env: EmailEnv): Promise<{ sent
   }
   return { sent, skipped };
 }
+
+export function verifyEmailEmail(link: string) {
+  const subject = "Confirm your YourRank email";
+  const text = `Welcome to YourRank.\n\nConfirm your email by opening this link:\n\n${link}\n\nIf you didn't create this account, you can ignore this email.`;
+  const html = `<div style="font-family:system-ui,sans-serif;max-width:480px;margin:0 auto;padding:24px">
+<h2 style="margin:0 0 12px">Confirm your email</h2>
+<p style="color:#555;line-height:1.5">Click the button below to finish creating your YourRank account.</p>
+<p style="margin:24px 0"><a href="${link}" style="background:#111;color:#fff;padding:12px 20px;text-decoration:none;border-radius:6px;display:inline-block">Confirm email</a></p>
+<p style="color:#999;font-size:13px">If the button doesn't work, copy and paste this link: <a href="${link}">${link}</a></p>
+</div>`;
+  return { subject, html, text };
+}
+
+export async function sendVerificationEmail(env: EmailEnv, email: string, link: string): Promise<SendResult> {
+  return sendEmail(env, { to: email, ...verifyEmailEmail(link) });
+}
