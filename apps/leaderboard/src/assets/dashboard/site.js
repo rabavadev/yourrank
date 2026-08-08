@@ -95,15 +95,17 @@ export async function checkout(planOrBtn, btnRef) {
   checkingOut = false;
 }
 
-function renderPlanCard(p, isCurrent, isLower, cta, accent) {
+function renderPlanCard(p, isCurrent, isLower, cta, accent, isContact) {
   const classes = ["plan-card"];
   if (isCurrent) classes.push("plan-card--current");
   if (p.note === "Most popular") classes.push("plan-card--popular");
   const disabled = isCurrent || isLower ? "disabled" : "";
-  const btnClass = accent ? "btn btn--sm btn--accent plan-card-cta" : "btn btn--sm plan-card-cta";
   const note = p.note ? `<span class="plan-card-note">${esc(p.note)}</span>` : "";
   const list = p.features.map((f) => `<li>${esc(f)}</li>`).join("");
-  return `<div class="${classes.join(" ")}"><div class="plan-card-head"><div class="plan-card-name">${esc(p.name)}${note}</div><div class="plan-card-price">${esc(p.priceStr)}<span>${esc(p.period)}</span></div></div><ul class="plan-card-features">${list}</ul><button class="${btnClass}" data-plan="${esc(p.key)}" ${disabled}>${esc(cta)}</button></div>`;
+  const ctaEl = isContact
+    ? `<a class="btn btn--sm plan-card-cta" href="/contact?plan=agency">${esc(cta)}</a>`
+    : `<button class="${accent ? "btn btn--sm btn--accent plan-card-cta" : "btn btn--sm plan-card-cta"}" data-plan="${esc(p.key)}" ${disabled}>${esc(cta)}</button>`;
+  return `<div class="${classes.join(" ")}"><div class="plan-card-head"><div class="plan-card-name">${esc(p.name)}${note}</div><div class="plan-card-price">${esc(p.priceStr)}<span>${esc(p.period)}</span></div></div><ul class="plan-card-features">${list}</ul>${ctaEl}</div>`;
 }
 
 export function renderPlan() {
@@ -127,7 +129,7 @@ export function renderPlan() {
       if (p.key === LIFETIME_KEY) {
         const isCurrent = lifetime;
         const cta = isCurrent ? "Current plan" : "Get Lifetime Pro";
-        return renderPlanCard(p, isCurrent, false, cta, !isCurrent);
+        return renderPlanCard(p, isCurrent, false, cta, !isCurrent, false);
       }
       const pIdx = PLAN_ORDER.indexOf(p.key);
       const isCurrent = p.key === plan && !lifetime;
@@ -138,10 +140,10 @@ export function renderPlan() {
       } else if (isLower) {
         cta = "Included";
       } else {
-        cta = p.key === "free" ? "Current" : `Upgrade to ${p.name}`;
-        accent = true;
+        cta = p.key === "free" ? "Current" : (p.key === "agency" ? "Contact us" : `Upgrade to ${p.name}`);
+        accent = p.key !== "agency";
       }
-      return renderPlanCard(p, isCurrent, isLower, cta, accent && !isCurrent);
+      return renderPlanCard(p, isCurrent, isLower, cta, accent && !isCurrent, p.key === "agency");
     }).join("");
     if (!grid._wired) {
       grid.addEventListener("click", (e) => {
