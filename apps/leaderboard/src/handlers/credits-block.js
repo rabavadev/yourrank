@@ -1,6 +1,6 @@
 // Block / unblock / flag a viewer for anti-fraud purposes.
-import { requireUser, bad, ok, readJson } from "./auth.js";
-import { getByUser, getBoardById } from "./site.js";
+import { requireUser, bad, ok, readJson } from "../auth.js";
+import { getByUser, getBoardById } from "../site.js";
 import { exec } from "../../../../shared/db.js";
 
 function getSite(env, user, url) {
