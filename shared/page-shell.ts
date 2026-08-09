@@ -30,12 +30,14 @@ export interface LeaderboardPageOpts {
   noscript?: string;
   nav?: boolean;
   footer?: boolean;
+  wide?: boolean;
   content: string;
 }
 
 /** Full HTML document for leaderboard dashboard pages. */
 export function leaderboardPageHtml(opts: LeaderboardPageOpts): string {
   const mainClass = esc(opts.mainClass || "wrap");
+  const bodyAttr = opts.wide ? ' data-wide="true"' : "";
   const reqIdMeta = opts.reqId ? `<meta name="request-id" content="${esc(opts.reqId)}" />` : "";
   const styles = (opts.styles || ["/assets/app.css", "/assets/shell-nav.css"])
     .map((href) => `<link rel="stylesheet" href="${esc(href)}" />`)
@@ -61,7 +63,7 @@ export function leaderboardPageHtml(opts: LeaderboardPageOpts): string {
 ${reqIdMeta}
 <meta name="robots" content="noindex, nofollow" /><link rel="canonical" href="${esc(opts.canonical)}" />${GOOGLE_FONTS}
 ${styles}
-</head><body>
+</head><body${bodyAttr}>
 <noscript><div class="noscript-msg">${noscript}</div></noscript>
 <a href="#main-content" class="sr-only skip-link">Skip to content</a>
 ${navPlaceholder}

@@ -7,6 +7,7 @@ export const dashboardConfig = {
   scripts: ['<script src="/assets/dashboard.js?v=11" type="module"></script>'],
   nav: true,
   footer: false,
+  wide: true,
 };
 
 export function DashboardContent() {
