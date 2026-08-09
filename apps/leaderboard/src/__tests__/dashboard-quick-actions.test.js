@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import { PAGES } from "../pages.jsx";
 
 const overviewJs = readFileSync(new URL("../assets/dashboard/overview.js", import.meta.url), "utf8");
+const utilsJs = readFileSync(new URL("../assets/dashboard/utils.js", import.meta.url), "utf8");
 
 function dashboardHtml() {
   return PAGES.dashboard.Component().toString();
@@ -18,7 +19,8 @@ describe("dashboard overview quick actions", () => {
   });
 
   it("copies the live page URL from the Overview", () => {
-    expect(overviewJs).toContain('navigator.clipboard.writeText');
+    expect(utilsJs).toContain('navigator.clipboard.writeText');
+    expect(overviewJs).toContain('copyToClipboard');
     expect(overviewJs).toContain('location.origin + "/" + state.SLUG');
   });
 

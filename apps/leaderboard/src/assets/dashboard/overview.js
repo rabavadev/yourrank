@@ -1,5 +1,5 @@
 // Overview page summary tiles / top players / setup checklist.
-import { $, esc, fmtMoney, currentPlayers, resetsIn, logError } from "./utils.js";
+import { $, esc, fmtMoney, currentPlayers, resetsIn, logError, copyToClipboard, flashButton } from "./utils.js";
 import { state } from "./state.js";
 import { navTo } from "./shell.js";
 
@@ -23,12 +23,8 @@ function setStepDone(el, done) {
 }
 
 async function copyLiveLink(btn) {
-  try {
-    await navigator.clipboard.writeText(location.origin + "/" + state.SLUG);
-    const prev = btn.textContent;
-    btn.textContent = "Copied!";
-    setTimeout(() => btn.textContent = prev, 1500);
-  } catch (err) { logError("copy-live-link", err); }
+  const ok = await copyToClipboard(location.origin + "/" + state.SLUG);
+  flashButton(btn, ok ? "Copied!" : "Copy failed");
 }
 
 export function wireOverviewQuickActions() {

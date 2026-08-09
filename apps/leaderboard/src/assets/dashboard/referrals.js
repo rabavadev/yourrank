@@ -1,5 +1,5 @@
 // Referrals page in the dashboard.
-import { $, logError } from "./utils.js";
+import { $, logError, copyToClipboard, flashButton } from "./utils.js";
 
 export async function renderReferrals() {
   const linkEl = $("refLink");
@@ -21,13 +21,12 @@ export async function renderReferrals() {
     if (copyBtn && !copyBtn._wired) {
       copyBtn._wired = true;
       copyBtn.addEventListener("click", async () => {
-        try {
-          await navigator.clipboard.writeText(linkEl.value);
-          copyBtn.textContent = "Copied!";
-          setTimeout(() => { copyBtn.textContent = "Copy link"; }, 1500);
-        } catch (err) {
-          logError("copy-referral", err);
-          statusEl.textContent = "Copy failed. Select the link and copy manually.";
+        const ok = await copyToClipboard(linkEl.value);
+        if (ok) {
+          flashButton(copyBtn, "Copied!");
+        } else {
+          logError("copy-referral", new Error("clipboard write failed"));
+          if (statusEl) statusEl.textContent = "Copy failed. Select the link and copy manually.";
         }
       });
     }

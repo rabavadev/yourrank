@@ -1,5 +1,5 @@
 // Site editing: plan, branding/theme, save, archive, domain, overlay, notifications.
-import { $, esc, fromLocalInput, getCsrf, guardAuth, logError, toLocalInput, parseAmount, showToast, showConfirmModal } from "./utils.js";
+import { $, esc, fromLocalInput, getCsrf, guardAuth, logError, toLocalInput, parseAmount, showToast, showConfirmModal, copyToClipboard, flashButton } from "./utils.js";
 import { state } from "./state.js";
 import { renderBoardSwitcher, renderBoardsPage, renderSidebarBoardSwitcher } from "./boards.js";
 import { applyPlayerFieldVisibility, renderPlayers, renumber, toggleEmpty } from "./players.js";
@@ -549,8 +549,8 @@ function renderColorPresets() {
   });
 }
 
-let _previewAbort = null;
 let _previewTimeout = null;
+let _previewForm = null;
 
 export function updateDesignPreview() {
   const iframe = $("designPreview");
@@ -563,10 +563,6 @@ export function updateDesignPreview() {
   const active = document.querySelector(".preview-tab.is-active");
   const device = active?.dataset.device || "desktop";
 
-  // Build full URL for POST target
-  const params = new URLSearchParams({ board: state.ACTIVE_SITE_ID, template: tpl, device });
-  const url = "/dashboard/preview?" + params.toString();
-
   // Wire retry button once.
   const retry = $("previewRetry");
   if (retry && !retry._wired) {
@@ -576,39 +572,30 @@ export function updateDesignPreview() {
 
   // Debounce the live preview update so typing doesn't repeatedly re-render.
   clearTimeout(_previewTimeout);
-  _previewTimeout = setTimeout(async () => {
-    if (_previewAbort) _previewAbort.abort();
-    _previewAbort = new AbortController();
-
+  _previewTimeout = setTimeout(() => {
     try {
-      // collect() returns the current draft state of the board
       const draft = collect();
-      const res = await fetch(url, {
-        method: "POST",
-        headers: { "content-type": "application/json", "x-csrf-token": getCsrf() },
-        body: JSON.stringify(draft),
-        signal: _previewAbort.signal
-      });
+      const url = previewUrl(tpl, null, null, null, device);
+      if (!_previewForm) {
+        _previewForm = document.createElement("form");
+        _previewForm.method = "post";
+        _previewForm.target = "designPreview";
+        _previewForm.hidden = true;
+        const draftInput = document.createElement("input");
+        draftInput.type = "hidden";
+        draftInput.name = "draft";
+        _previewForm.appendChild(draftInput);
+        document.body.appendChild(_previewForm);
+      }
+      _previewForm.action = url;
+      _previewForm.querySelector("input[name='draft']").value = JSON.stringify(draft);
+      _previewForm.submit();
       const errorOverlay = $("previewError");
-      if (res.ok) {
-        const html = await res.text();
-        if (iframe.hasAttribute("srcdoc") && iframe.contentWindow) {
-          iframe.contentWindow.postMessage({ type: "yr_preview_update", html }, "*");
-        } else {
-          iframe.srcdoc = html;
-          iframe.removeAttribute("src");
-        }
-        if (errorOverlay) errorOverlay.hidden = true;
-      } else {
-        if (errorOverlay) errorOverlay.hidden = false;
-        logError("preview-render", { status: res.status });
-      }
+      if (errorOverlay) errorOverlay.hidden = true;
     } catch (e) {
-      if (e.name !== "AbortError") {
-        const errorOverlay = $("previewError");
-        if (errorOverlay) errorOverlay.hidden = false;
-        logError("preview-render", e);
-      }
+      logError("preview-submit", e);
+      const errorOverlay = $("previewError");
+      if (errorOverlay) errorOverlay.hidden = false;
     }
   }, 300);
 }
@@ -1031,9 +1018,8 @@ export function renderOverlay() {
   if (copy && !copy._wired) {
     copy._wired = true;
     copy.addEventListener("click", async () => {
-      try { await navigator.clipboard.writeText(overlayUrl); copy.textContent = "Copied!"; }
-      catch (err) { logError("copy-overlay", err); copy.textContent = "Copy failed"; }
-      setTimeout(() => { copy.textContent = "📋 Copy"; }, 1500);
+      const ok = await copyToClipboard(overlayUrl);
+      flashButton(copy, ok ? "Copied!" : "Copy failed");
     });
   }
 }
@@ -1231,10 +1217,8 @@ export function renderEmbedShare() {
     if (pubCopy && !pubCopy._wired) {
       pubCopy._wired = true;
       pubCopy.addEventListener("click", async () => {
-        try { await navigator.clipboard.writeText(publicUrl); pubCopy.querySelector("svg + *")?.remove(); } catch {}
-        const span = document.createElement("span"); span.textContent = " Copied!";
-        pubCopy.appendChild(span);
-        setTimeout(() => span.remove(), 1500);
+        const ok = await copyToClipboard(publicUrl);
+        flashButton(pubCopy, ok ? "Copied!" : "Copy failed");
       });
     }
 
@@ -1246,10 +1230,8 @@ export function renderEmbedShare() {
     if (obsCopy && !obsCopy._wired) {
       obsCopy._wired = true;
       obsCopy.addEventListener("click", async () => {
-        try { await navigator.clipboard.writeText(obsUrl); obsCopy.querySelector("svg + *")?.remove(); } catch {}
-        const span = document.createElement("span"); span.textContent = " Copied!";
-        obsCopy.appendChild(span);
-        setTimeout(() => span.remove(), 1500);
+        const ok = await copyToClipboard(obsUrl);
+        flashButton(obsCopy, ok ? "Copied!" : "Copy failed");
       });
     }
 
@@ -1261,8 +1243,8 @@ export function renderEmbedShare() {
     if (embedCopy && !embedCopy._wired) {
       embedCopy._wired = true;
       embedCopy.addEventListener("click", async () => {
-        try { await navigator.clipboard.writeText(embedCode); embedCopy.textContent = "Copied!"; embedCopy.classList.add("is-copied"); } catch {}
-        setTimeout(() => { embedCopy.textContent = "Copy"; embedCopy.classList.remove("is-copied"); }, 1500);
+        const ok = await copyToClipboard(embedCode);
+        flashButton(embedCopy, ok ? "Copied!" : "Copy failed");
       });
     }
 
@@ -1294,10 +1276,8 @@ export function renderEmbedShare() {
     if (shareCopy && !shareCopy._wired) {
       shareCopy._wired = true;
       shareCopy.addEventListener("click", async () => {
-        try { await navigator.clipboard.writeText(publicUrl); shareCopy.querySelector("svg + *")?.remove(); } catch {}
-        const span = document.createElement("span"); span.textContent = " Copied!";
-        shareCopy.appendChild(span);
-        setTimeout(() => span.remove(), 1500);
+        const ok = await copyToClipboard(publicUrl);
+        flashButton(shareCopy, ok ? "Copied!" : "Copy failed");
       });
     }
 
@@ -1319,19 +1299,19 @@ export function renderEmbedShare() {
         s = d.stats;
       } catch (err) { logError("load-stats", err); return null; }
   const fmt = (n) => n >= 10000 ? (n / 1000).toFixed(1).replace(/\.0$/, "") + "k" : String(n);
-  $("st_views7").textContent = fmt(s.last7.views);
-  $("st_views30").textContent = fmt(s.last30.views);
-  $("st_copies30").textContent = fmt(s.last30.copies);
-  $("st_clicks30").textContent = fmt(s.last30.clicks);
   const bars = $("statBars"); const days = s.days || [];
-  const max = Math.max(1, ...days.map((x) => x.views));
-  bars.innerHTML = days.map((x) => {
-    const h = Math.max(2, Math.round((x.views / max) * 100));
-    const nice = new Date(x.day + "T00:00:00Z").toUTCString().slice(5, 11);
-    return `<div class="stat-bar" style="height:${h}%" title="${nice}: ${x.views} views, ${x.copies} copies, ${x.clicks} clicks"></div>`;
-  }).join("");
-  if (days.length) $("statFrom").textContent = new Date(days[0].day + "T00:00:00Z").toUTCString().slice(5, 11);
-  if (s.last30.views === 0 && s.last30.copies === 0 && s.last30.clicks === 0) $("statsEmpty").hidden = false;
+  if (bars) {
+    const max = Math.max(1, ...days.map((x) => x.views));
+    bars.innerHTML = days.map((x) => {
+      const h = Math.max(2, Math.round((x.views / max) * 100));
+      const nice = new Date(x.day + "T00:00:00Z").toUTCString().slice(5, 11);
+      return `<div class="stat-bar" style="height:${h}%" title="${nice}: ${x.views} views, ${x.copies} copies, ${x.clicks} clicks"></div>`;
+    }).join("");
+    const statFrom = $("statFrom");
+    if (statFrom && days.length) statFrom.textContent = new Date(days[0].day + "T00:00:00Z").toUTCString().slice(5, 11);
+    const statsEmpty = $("statsEmpty");
+    if (statsEmpty) statsEmpty.hidden = !(s.last30.views === 0 && s.last30.copies === 0 && s.last30.clicks === 0);
+  }
   
   // Populate HUD
   const hV = $("hud_views"); if (hV) hV.textContent = fmt(s.last30.views);
