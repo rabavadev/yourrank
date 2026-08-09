@@ -1347,6 +1347,7 @@ export function renderEmbedShare() {
   }
   const shareStep = $("ov_step_share");
   if (shareStep && s.last7.views > 0) shareStep.classList.add("is-done");
+  if (typeof state.renderPerformance === "function") state.renderPerformance(s);
   return s;
 }
 

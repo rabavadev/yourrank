@@ -998,3 +998,13 @@ html{color-scheme:light}
   .lb-widget,.lb-widget--half,.lb-widget--third,.lb-widget--wide,.lb-widget--narrow{grid-column:span 12}
   .kpi-row{grid-template-columns:1fr 1fr}
 }
+
+/* --- performance + settings widgets --- */
+.lb-widget[id]{scroll-margin-top:84px}
+.perf-header{flex-direction:row;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.perf-header h2{margin:0}
+.perf-filter{display:flex;gap:8px;flex-wrap:wrap}
+.perf-filter .is-active{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.settings-nav nav{display:flex;gap:8px;flex-wrap:wrap}
+.lb-widget--danger{border-color:var(--danger);background:rgba(239,68,68,0.04)}
+.lb-widget--danger h2{color:var(--danger)}
