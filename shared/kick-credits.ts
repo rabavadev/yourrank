@@ -127,6 +127,8 @@ function levenshtein(a: string, b: string): number {
 
 export interface AntiFraudEnv {
   SESSIONS?: any;
+  RATE_LIMITER_DO?: any;
+  RL_BACKEND?: string;
   RL_FAIL_OPEN?: string;
 }
 
@@ -344,7 +346,7 @@ export async function processKickRewardRedemption(
     }
 
     // Rate-limit earning per viewer on this site.
-    if (env?.SESSIONS) {
+    if (env && (env.SESSIONS || env.RATE_LIMITER_DO)) {
       const limit = await rateLimit(env, `kick-earn:${site.id}:${redeemerKickUserId}`, 15, 60);
       if (!limit.ok) {
         await tx.unsafe(
