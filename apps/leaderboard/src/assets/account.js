@@ -148,11 +148,51 @@ function wirePostbacks() {
   }
 }
 
+function setActiveAccountNav(hash = "") {
+  const clean = hash.replace("#", "");
+  document.querySelectorAll(".lb-nav[data-hash]").forEach((n) => {
+    const active = n.dataset.hash === clean;
+    n.classList.toggle("is-on", active);
+    if (active) n.setAttribute("aria-current", "page");
+    else n.removeAttribute("aria-current");
+  });
+}
+
+function scrollToHash(hash = "") {
+  const clean = hash.replace("#", "");
+  if (!clean) return;
+  const target = document.getElementById(clean);
+  if (target) {
+    target.scrollIntoView({ block: "start", behavior: "smooth" });
+    target.classList.add("is-highlighted");
+    setTimeout(() => target.classList.remove("is-highlighted"), 1200);
+  }
+}
+
+function setupAccountShell() {
+  const userName = $("accUserName");
+  if (userName && state.ME) userName.textContent = state.ME.display_name || state.ME.email || "Account";
+  document.querySelectorAll(".lb-nav[data-hash]").forEach((link) => link.addEventListener("click", (e) => {
+    e.preventDefault();
+    const hash = link.dataset.hash;
+    history.pushState({}, "", `/account#${hash}`);
+    setActiveAccountNav(hash);
+    scrollToHash(hash);
+  }));
+  window.addEventListener("popstate", () => {
+    setActiveAccountNav(location.hash);
+    scrollToHash(location.hash);
+  });
+  setActiveAccountNav(location.hash);
+  scrollToHash(location.hash);
+}
+
 async function init() {
   let me;
   try { me = await (await fetch("/api/auth/me")).json(); } catch (err) { logError("auth/me", err); me = null; }
   if (!me || !me.ok || !me.user) { location.href = "/login"; return; }
   state.ME = me.user;
+  setupAccountShell();
 
   renderPlan();
   loadHistory();
