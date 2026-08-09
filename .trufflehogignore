@@ -1,0 +1,7 @@
+# Test files and local-development placeholders contain fake credentials.
+shared/__tests__/
+apps/**/__tests__/
+*.example
+*.md
+start-local.sh
+start-local.ps1

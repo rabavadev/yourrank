@@ -60,6 +60,7 @@ export async function handleCreditsStatus(request, env) {
   const url = new URL(request.url);
   const site = await getSite(env, user, url);
   if (!site) return bad("no site", 404);
+  if (!(await rateLimit(env, `credits:status:${user.id}`, 60, 60)).ok) return bad("Too many requests.", 429);
 
   const [channel, mappings, items, viewers, redemptions, usage] = await Promise.all([
     one("SELECT kick_channel_external_id, kick_channel_name FROM sites WHERE id=$1", [site.id]),
@@ -133,6 +134,7 @@ export async function handleCreditsConnect(request, env) {
   const url = new URL(request.url);
   const site = await getSite(env, user, url);
   if (!site) return bad("no site", 404);
+  if (!(await rateLimit(env, `credits:connect:${user.id}`, 10, 60)).ok) return bad("Too many requests.", 429);
 
   const body = await readJson(request);
   const externalId = String(body?.externalId || "").trim();
@@ -149,6 +151,7 @@ export async function handleCreditsSaveReward(request, env) {
   const url = new URL(request.url);
   const site = await getSite(env, user, url);
   if (!site) return bad("no site", 404);
+  if (!(await rateLimit(env, `credits:reward:${user.id}`, 20, 60)).ok) return bad("Too many requests.", 429);
 
   const body = await readJson(request);
   const id = body?.id ? String(body.id).trim() : null;
@@ -214,6 +217,7 @@ export async function handleCreditsCreateReward(request, env) {
   const url = new URL(request.url);
   const site = await getSite(env, user, url);
   if (!site) return bad("no site", 404);
+  if (!(await rateLimit(env, `credits:reward-create:${user.id}`, 5, 60)).ok) return bad("Too many requests.", 429);
 
   const body = await readJson(request);
   const title = String(body?.title || "").trim();
@@ -353,14 +357,17 @@ export async function handleCreditsDeleteReward(request, env, ctx) {
   const site = await getSite(env, user, url);
   if (!site) return bad("no site", 404);
 
+  if (!(await rateLimit(env, `credits:reward-del:${user.id}`, 20, 60)).ok) return bad("Too many requests.", 429);
+
   const id = ctx?.slug || url.pathname.split("/").pop();
   if (!id) return bad("missing reward id");
 
-  await exec(
-    "UPDATE credit_reward_mappings SET active=false, updated_at=now() WHERE id=$1 AND site_id=$2",
+  const rows = await exec(
+    "UPDATE credit_reward_mappings SET active=false, updated_at=now() WHERE id=$1 AND site_id=$2 RETURNING id",
     [id, site.id]
   );
-  return ok({ id });
+  if (!rows || rows.length === 0) return bad("reward not found", 404);
+  return ok({ id: rows[0].id });
 }
 
 export async function handleCreditsSaveShopItem(request, env) {
@@ -369,6 +376,7 @@ export async function handleCreditsSaveShopItem(request, env) {
   const url = new URL(request.url);
   const site = await getSite(env, user, url);
   if (!site) return bad("no site", 404);
+  if (!(await rateLimit(env, `credits:shop:${user.id}`, 20, 60)).ok) return bad("Too many requests.", 429);
 
   const body = await readJson(request);
   const id = body?.id ? String(body.id).trim() : null;
@@ -428,6 +436,7 @@ export async function handleCreditsDeleteShopItem(request, env, ctx) {
   const url = new URL(request.url);
   const site = await getSite(env, user, url);
   if (!site) return bad("no site", 404);
+  if (!(await rateLimit(env, `credits:shop-del:${user.id}`, 20, 60)).ok) return bad("Too many requests.", 429);
 
   const id = ctx?.slug || url.pathname.split("/").pop();
   if (!id) return bad("missing item id");
@@ -449,6 +458,7 @@ export async function handleCreditsUpdateRedemption(request, env, ctx) {
   const url = new URL(request.url);
   const site = await getSite(env, user, url);
   if (!site) return bad("no site", 404);
+  if (!(await rateLimit(env, `credits:redeem-update:${user.id}`, 30, 60)).ok) return bad("Too many requests.", 429);
 
   const id = ctx?.slug || url.pathname.split("/").pop();
   const body = await readJson(request);
@@ -502,6 +512,8 @@ export async function handleCreditsViewerHistory(request, env) {
   if (res) return res;
 
   const url = new URL(request.url);
+  if (!(await rateLimit(env, `credits:viewer-history:${user.id}`, 20, 60)).ok) return bad("Too many requests.", 429);
+
   const kickUsername = String(url.searchParams.get("kickUsername") || "").trim();
   const kickUserId = String(url.searchParams.get("kickUserId") || "").trim();
   if (!kickUsername && !kickUserId) return bad("kickUsername or kickUserId is required");
@@ -743,6 +755,7 @@ export async function handleCreditsViewerAuth(request, env) {
   const url = new URL(request.url);
   const site = await getSite(env, user, url);
   if (!site) return bad("no site", 404);
+  if (!(await rateLimit(env, `credits:auth-toggle:${user.id}`, 10, 60)).ok) return bad("Too many requests.", 429);
 
   const body = await readJson(request);
   const kick = body?.kick === true || body?.kick === "true";
@@ -768,6 +781,7 @@ export async function handleCreditsAnalytics(request, env) {
   const url = new URL(request.url);
   const site = await getSite(env, user, url);
   if (!site) return bad("no site", 404);
+  if (!(await rateLimit(env, `credits:analytics:${user.id}`, 30, 60)).ok) return bad("Too many requests.", 429);
 
   const rawDays = Number(url.searchParams.get("days") || 30);
   const days = Math.min(Math.max(Number.isFinite(rawDays) ? rawDays : 30, 1), 90);

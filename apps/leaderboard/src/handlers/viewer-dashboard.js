@@ -14,10 +14,11 @@ import {
 export async function handleViewerMe(request, env) {
   const { viewer, res } = await requireViewer(request, env);
   if (res) return res;
+  if (!(await rateLimit(env, `viewer:me:${viewer.id}`, 60, 60)).ok) return bad("Too many requests.", 429);
 
   const boards = await query(
     `SELECT s.id, s.slug, s.name, sv.balance, sv.total_earned, sv.total_spent,
-            sv.blocked, sv.block_reason, sv.public_token,
+            sv.blocked, sv.block_reason,
             u.plan, u.plan_expires_at, u.status, u.email_verified
        FROM site_viewers sv
        JOIN sites s ON s.id = sv.site_id
@@ -39,7 +40,6 @@ export async function handleViewerMe(request, env) {
     totalSpent: b.total_spent,
     blocked: b.blocked,
     blockReason: b.block_reason,
-    publicToken: b.public_token,
     plan: effectivePlan({ plan: b.plan, plan_expires_at: b.plan_expires_at }),
   }));
 
@@ -88,6 +88,7 @@ export async function handleViewerSite(request, env) {
   const url = new URL(request.url);
   const slug = String(url.searchParams.get("slug") || "").trim().toLowerCase();
   if (!slug) return bad("slug required");
+  if (!(await rateLimit(env, `viewer:site:${viewer.id}:${slug}`, 60, 60)).ok) return bad("Too many requests.", 429);
 
   const r = await getPublicSite(env, slug, request);
   if (r && r.requiresPassword) return bad("Password required.", 401);
@@ -101,7 +102,7 @@ export async function handleViewerSite(request, env) {
   if (!site) return bad("site not found", 404);
 
   const viewerRow = await one(
-    `SELECT sv.id, sv.balance, sv.total_earned, sv.total_spent, sv.blocked, sv.block_reason, sv.public_token
+    `SELECT sv.id, sv.balance, sv.total_earned, sv.total_spent, sv.blocked, sv.block_reason
        FROM site_viewers sv
       WHERE sv.site_id = $1 AND sv.viewer_id = $2`,
     [site.id, viewer.id]
@@ -144,7 +145,6 @@ export async function handleViewerSite(request, env) {
           totalSpent: viewerRow.total_spent,
           blocked: viewerRow.blocked,
           blockReason: viewerRow.block_reason,
-          publicToken: viewerRow.public_token,
         }
       : null,
     shopItems: shopItems || [],
