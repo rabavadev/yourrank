@@ -31,7 +31,6 @@ export const NAV_LINKS: NavLink[] = [
   { key: "leaderboard", label: "Dashboard", href: "/dashboard",           match: ["/dashboard"], top: true },
   { key: "bot",         label: "Bot",         href: "/bot/dashboard",       match: ["/bot/dashboard", "/bot/dash"], top: true },
   { key: "analytics",   label: "Analytics",   href: "/dashboard?nav=performance", match: ["/dashboard/analytics"], top: true },
-  { key: "credits",     label: "Credits",     href: "/dashboard/credits",   match: ["/dashboard/credits"], top: true },
 ];
 
 export function activeKey(pathname: string): string | null {

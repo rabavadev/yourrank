@@ -8,7 +8,6 @@ import { logMinimizedClick } from "../../../shared/clicks.js";
 import { bumpStat } from "../../../shared/stats.js";
 import { dispatchNotifyEvent } from "../../../shared/notifications.js";
 import { parseQueueEvent } from "../../../shared/queue-producer.js";
-import { processKickRewardRedemption } from "../../../shared/kick-credits.js";
 import { RateLimiter } from "../../../shared/rate-limiter-do.js";
 
 const db = { one, query };
@@ -86,11 +85,7 @@ async function handleEvent(input, tokenCache, env) {
       break;
     }
     case "kick-redemption": {
-      await processKickRewardRedemption({
-        messageId: body.messageId,
-        eventType: body.eventType,
-        payload: body.payload,
-      }, env);
+      // Legacy credits/shop events are no longer processed.
       break;
     }
     default: {

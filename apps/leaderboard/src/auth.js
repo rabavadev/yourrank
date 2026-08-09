@@ -124,8 +124,7 @@ const loadUser = (env, uid) =>
               telegram_user_id, telegram_username,
               (EXTRACT(EPOCH FROM created_at) * 1000)::double precision AS created_at,
               referral_code,
-              active_site_id,
-              kick_user_id, kick_username, kick_linked_at
+              active_site_id
          FROM users WHERE id=$1`,
       [uid]
     );

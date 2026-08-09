@@ -5,7 +5,6 @@ import { RateLimiter } from "../../../shared/rate-limiter-do.js";
 import { populateEnv } from "../../../shared/env.js";
 import { getPublicSite, getBySlug, getArchives, ARCHIVE_LIMITS } from "./site.js";
 import { renderEmbed, renderHallOfFame, renderLeaderboard, renderLegalPage, renderPasswordGate, renderPlayerProfile, renderStreamerProfile } from "./render.jsx";
-import { renderPublicCreditsPage } from "./public-credits.js";
 import { verifyBoardPassword, issueBoardPasswordToken, boardPasswordSetCookieHeader } from "./board-password.js";
 import { PAGES } from "./pages.jsx";
 import { leaderboardPageHtml } from "../../../shared/page-shell.js";
@@ -484,21 +483,6 @@ async function handleRequest(request, env, ctx, meta) {
       if (path === "/dashboard/security") {
         return Response.redirect(new URL("/dashboard?nav=settings", url), 302);
       }
-      if (path === "/dashboard/credits") {
-        try {
-          const user = await currentUser(request, env);
-          if (!user) return Response.redirect(new URL("/login", url), 302);
-          const html = addCookieConsent(await renderHtmlPage(PAGES.credits, {
-            activePath: "/dashboard/credits",
-            user,
-            reqId: reqId || ""
-          }));
-          return new Response(html, { headers: { ...SECURE_HTML, ...csrfHeader, "cache-control": "no-store, no-cache, must-revalidate" } });
-        } catch (e) {
-          if (workerLog) workerLog.error("credits_render_failed", { error: String(e?.message || e) }); else console.error("credits render failed:", String(e?.message || e));
-          return new Response("Credits page couldn't load right now — please refresh.", { status: 500, headers: { "content-type": "text/plain; charset=utf-8" } });
-        }
-      }
       if (path === "/forgot") return new Response(addCookieConsent(await renderHtmlPage(PAGES.forgot)), { headers: { ...SECURE_HTML, ...csrfHeader } });
       if (path === "/reset") {
         // BUG-003: Don't show password form when no token is present.
@@ -559,8 +543,8 @@ async function handleRequest(request, env, ctx, meta) {
         if (preflight) return preflight;
       }
 
-      // Pass all /api/ endpoints, Kick webhooks, and Kick OAuth routes to Hono router.
-      if (path.startsWith("/api/") || path === "/webhooks/kick" || path.startsWith("/auth/kick")) {
+      // Pass all /api/ endpoints to Hono router.
+      if (path.startsWith("/api/")) {
         const apiResponse = await apiApp.fetch(request, { workerContext: { request, env, ctx, meta } }, ctx);
         // Return the handler's response, INCLUDING a legitimate 404 it produced.
         // Only fall through to page routing when no API route matched at all,
@@ -742,19 +726,6 @@ a{color:#5771ff;text-decoration:none;font-weight:600}</style></head><body>
             logoUrl: paid && r.data.branding?.hasLogo ? `${url.origin}/logo/${slug}` : null,
             boards: r.boards, botUsername: r.botUsername,
           }),
-          { headers: { ...HTML_N, "cache-control": "no-store" } }
-        );
-      }
-
-      // --- public credits / shop pages at /<slug>/credits and /<slug>/shop ---
-      if (method === "GET" && /^\/[^/]+\/(credits|shop)$/.test(path)) {
-        let slug;
-        try { slug = decodeURIComponent(path.slice(1).split("/")[0]).toLowerCase(); } catch { return new Response(notFoundPage("", nonce), { status: 404, headers: HTML_N }); }
-        if (RESERVED.has(slug)) return new Response(notFoundPage(slug, nonce), { status: 404, headers: HTML_N });
-        const r = await getPublicSite(env, slug);
-        if (!r || r.suspended) return new Response(notFoundPage(slug, nonce), { status: 404, headers: HTML_N });
-        return new Response(
-          renderPublicCreditsPage({ slug, nonce, homeUrl: url.origin }),
           { headers: { ...HTML_N, "cache-control": "no-store" } }
         );
       }
