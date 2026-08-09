@@ -305,11 +305,26 @@ const BOT_DASH_V2_CSS = `
   button.ghost { background: var(--yr-panel-2); color: var(--yr-ink-soft); border: 1px solid var(--yr-line-2); }
   button.danger { background: transparent; color: var(--yr-red); border: 1px solid rgba(217,48,37,.4); }
 
-  .side { background: var(--yr-panel); border-right: 1px solid var(--yr-line); }
-  .side .snav a { border-radius: 10px; color: var(--yr-ink-soft); }
+  .shell { display: flex; gap: 24px; align-items: flex-start; max-width: 1440px; margin: 0 auto; padding: 24px 28px 80px; }
+  .side { flex: 0 0 240px; position: sticky; top: 86px; display: flex; flex-direction: column; gap: 6px; height: auto; max-height: calc(100vh - 110px); overflow-y: auto; padding: 18px; background: var(--yr-panel); border: 1px solid var(--yr-line); border-radius: var(--yr-radius); box-shadow: var(--yr-shadow); }
+  .side-head { border-bottom: 1px solid var(--yr-line); margin-bottom: 6px; padding: 0 4px 16px; }
+  .side-head .label { font-family: var(--yr-mono); font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--yr-ink-mute); }
+  .side-active-name { font-weight: 700; font-size: 15px; color: var(--yr-ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 2px; }
+  .side-active-meta { font-size: 12px; color: var(--yr-ink-mute); margin-top: 2px; }
+  .side .snav { display: flex; flex-direction: column; gap: 2px; }
+  .side .snav a { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: 10px; color: var(--yr-ink-soft); text-decoration: none; font-size: 14px; }
+  .side .snav a .ic { width: 18px; height: 18px; flex: none; display: inline-flex; }
   .side .snav a:hover { background: var(--yr-panel-2); color: var(--yr-ink); }
   .side .snav a.active { background: var(--yr-panel-2); color: var(--yr-ink); box-shadow: inset 3px 0 0 var(--yr-accent); }
-  .side .sfoot { border-top: 1px solid var(--yr-line); color: var(--yr-ink-soft); }
+  .side .sfoot { margin-top: auto; padding-top: 12px; }
+  .side .sfoot button { width: 100%; }
+
+  @media (max-width: 860px) {
+    .shell { display: block; padding: 16px 16px 60px; }
+    .side { position: fixed; left: 0; top: 0; height: 100vh; max-height: 100vh; z-index: 60; border-radius: 0; border: 0; border-right: 1px solid var(--yr-line); transform: translateX(-100%); transition: transform .2s; box-shadow: 2px 0 18px rgba(0,0,0,.5); }
+    .side.open { transform: none; }
+    .main { padding-left: 0; }
+  }
 
   .badge { border: 1px solid var(--yr-line-2); color: var(--yr-ink-soft); }
   .badge.on { color: var(--yr-green); border-color: rgba(30,142,62,.4); }
