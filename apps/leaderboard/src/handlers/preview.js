@@ -25,7 +25,16 @@ export async function handleDashboardPreview(request, env, nonce) {
   
   let draftData = {};
   if (request.method === "POST") {
-    draftData = await request.json().catch(() => ({}));
+    const ct = request.headers.get("content-type") || "";
+    if (ct.includes("application/x-www-form-urlencoded") || ct.includes("multipart/form-data")) {
+      try {
+        const fd = await request.formData();
+        const draft = fd.get("draft");
+        if (draft) draftData = JSON.parse(String(draft));
+      } catch { /* malformed form data falls back to {} */ }
+    } else {
+      draftData = await request.json().catch(() => ({}));
+    }
   }
 
   const mergedData = { ...site.data, ...draftData };

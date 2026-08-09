@@ -1,5 +1,5 @@
 // Dashboard entry point. Coordinates data loading and initial render across modules.
-import { $, esc, getCsrf, localTzLabel, logError, toLocalInput } from "./dashboard/utils.js";
+import { $, esc, getCsrf, localTzLabel, logError, toLocalInput, copyToClipboard, flashButton } from "./dashboard/utils.js";
 import { state } from "./dashboard/state.js";
 import { navTo, setupShell } from "./dashboard/shell.js";
 import { renderBoardSwitcher, renderSidebarBoardSwitcher, renderBoardsPage } from "./dashboard/boards.js";
@@ -156,12 +156,9 @@ async function init() {
   const editorCopyLink = $("editorCopyLink");
   if (editorCopyLink && !editorCopyLink._wired) {
     editorCopyLink._wired = true;
-    editorCopyLink.addEventListener("click", () => {
-      navigator.clipboard.writeText(location.origin + "/" + state.SLUG).then(() => {
-        const prev = editorCopyLink.textContent;
-        editorCopyLink.textContent = "Copied!";
-        setTimeout(() => { editorCopyLink.textContent = prev; }, 1500);
-      }).catch(() => {});
+    editorCopyLink.addEventListener("click", async () => {
+      const ok = await copyToClipboard(location.origin + "/" + state.SLUG);
+      flashButton(editorCopyLink, ok ? "Copied!" : "Copy failed");
     });
   }
   const embedCode = `<iframe src="https://${location.host}/${state.SLUG}/embed" width="100%" height="640" frameborder="0" loading="lazy" title="${esc(state.SLUG)} leaderboard"></iframe>`;
@@ -169,11 +166,15 @@ async function init() {
   if (embedTextarea) embedTextarea.value = embedCode;
   const embedPreview = $("embedPreview");
   if (embedPreview) { embedPreview.href = `/${state.SLUG}/embed`; embedPreview.target = "_blank"; }
-  $("copyEmbed")?.addEventListener("click", () => {
-    if (!embedTextarea) return;
-    embedTextarea.select();
-    navigator.clipboard.writeText(embedTextarea.value).catch(() => {});
-  });
+  const copyEmbed = $("copyEmbed");
+  if (copyEmbed && !copyEmbed._wired) {
+    copyEmbed._wired = true;
+    copyEmbed.addEventListener("click", async () => {
+      if (!embedTextarea) return;
+      const ok = await copyToClipboard(embedTextarea.value);
+      flashButton(copyEmbed, ok ? "Copied!" : "Copy failed");
+    });
+  }
   $("loading").hidden = true;
   $("dash").hidden = false;
   setupShell();
@@ -317,11 +318,9 @@ function wireStreamerHud() {
   }
 
   if (copyObs) {
-    copyObs.addEventListener("click", () => {
-      navigator.clipboard.writeText(location.origin + "/" + state.SLUG + "/overlay").then(() => {
-        copyObs.textContent = "✓ Copied";
-        setTimeout(() => { copyObs.textContent = "📋 Copy OBS Link"; }, 2000);
-      });
+    copyObs.addEventListener("click", async () => {
+      const ok = await copyToClipboard(location.origin + "/" + state.SLUG + "/overlay");
+      flashButton(copyObs, ok ? "✓ Copied" : "Copy failed", 2000);
     });
   }
 

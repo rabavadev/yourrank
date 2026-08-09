@@ -156,3 +156,33 @@ export function resetsIn() {
   const h = Math.floor((ms % 86400000) / 3600000);
   return d >= 1 ? `${d}d` : `${h}h`;
 }
+
+export async function copyToClipboard(text) {
+  if (navigator.clipboard && window.isSecureContext) {
+    try { await navigator.clipboard.writeText(text); return true; } catch (err) { logError("clipboard-api", err); }
+  }
+  // Fallback for non-secure contexts or denied permission.
+  try {
+    const ta = document.createElement("textarea");
+    ta.value = text;
+    ta.style.position = "fixed";
+    ta.style.opacity = "0";
+    document.body.appendChild(ta);
+    ta.focus();
+    ta.select();
+    const ok = document.execCommand("copy");
+    document.body.removeChild(ta);
+    return ok;
+  } catch (err) { logError("clipboard-fallback", err); return false; }
+}
+
+export function flashButton(btn, message, duration = 1500) {
+  if (!btn) return;
+  if (btn._flashTimeout) clearTimeout(btn._flashTimeout);
+  if (btn._flashOriginal === undefined) btn._flashOriginal = btn.innerHTML;
+  btn.textContent = message;
+  btn._flashTimeout = setTimeout(() => {
+    btn.innerHTML = btn._flashOriginal;
+    delete btn._flashOriginal;
+  }, duration);
+}

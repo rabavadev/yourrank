@@ -259,7 +259,7 @@ export function DashboardContent() {
 <div class="preview-tabs" role="tablist" aria-label="Preview device"><button class="preview-tab is-active" data-width="1100" data-device="desktop" type="button" role="tab" aria-selected="true">Desktop</button><button class="preview-tab" data-width="390" data-device="mobile" type="button" role="tab" aria-selected="false">Mobile</button></div>
 </div>
 </div>
-<div class="preview-frame" id="previewFrame"><div class="preview-stage" id="previewStage"><iframe id="designPreview" src="" loading="eager" title="Live preview" sandbox="allow-scripts allow-same-origin allow-popups-to-escape-sandbox"></iframe></div><div class="preview-error" id="previewError" hidden><p>Preview could not load. <button class="btn btn--sm" id="previewRetry" type="button">Retry</button></p></div></div>
+<div class="preview-frame" id="previewFrame"><div class="preview-stage" id="previewStage"><iframe id="designPreview" name="designPreview" src="" loading="eager" title="Live preview" sandbox="allow-scripts allow-same-origin allow-popups-to-escape-sandbox"></iframe></div><div class="preview-error" id="previewError" hidden><p>Preview could not load. <button class="btn btn--sm" id="previewRetry" type="button">Retry</button></p></div></div>
 </div>
 </div>
 </div>
