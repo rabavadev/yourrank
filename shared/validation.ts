@@ -40,6 +40,9 @@ const optionalSignedNumber = (max = Number.MAX_SAFE_INTEGER) =>
 // Accepts ISO date strings or numbers.
 const optionalDateString = () => z.string().max(64).optional();
 
+const positiveInt = (max = Number.MAX_SAFE_INTEGER) =>
+  z.coerce.number().int().min(1).max(max);
+
 // ---------------------------------------------------------------------------
 // Reusable object fragments
 // ---------------------------------------------------------------------------
@@ -372,6 +375,79 @@ export const handlerSchemas: Record<string, ZodSchema<any>> = {
       stack: z.string().max(10_000).optional().or(z.literal("").optional()),
       req_id: z.string().max(64).optional().or(z.literal("").optional()),
       extra: z.record(z.unknown()).optional(),
+    })
+    .strict(),
+
+  // Credits / viewer dashboard schemas
+  handleCreditsConnect: z
+    .object({
+      externalId: z.string().trim().min(1).max(64),
+      name: z.string().trim().max(100).optional().or(z.literal("").optional()),
+    })
+    .strict(),
+
+  handleCreditsSaveReward: z
+    .object({
+      id: z.string().max(64).optional().or(z.literal("").optional()),
+      kickRewardId: z.string().trim().min(1).max(64),
+      kickRewardTitle: z.string().trim().min(1).max(200),
+      kickRewardCost: z.coerce.number().int().min(0).max(1e9),
+      credits: positiveInt(1e9),
+    })
+    .strict(),
+
+  handleCreditsCreateReward: z
+    .object({
+      title: z.string().trim().min(1).max(100),
+      cost: positiveInt(1e9),
+      credits: positiveInt(1e9),
+      description: z.string().trim().max(500).optional().or(z.literal("").optional()),
+      backgroundColor: z.string().trim().max(20).optional().or(z.literal("").optional()),
+    })
+    .strict(),
+
+  handleCreditsSaveShopItem: z
+    .object({
+      id: z.string().uuid().optional().or(z.literal("").optional()),
+      name: z.string().trim().min(1).max(100),
+      description: z.string().trim().max(500).optional().or(z.literal("").optional()),
+      cost: positiveInt(1e9),
+      stock: z.preprocess(
+        (val) => (val === "" || val === null || val === undefined ? null : Number(val)),
+        z.union([z.number().int().min(0).max(1e9), z.literal(null)]).optional()
+      ),
+      active: z.boolean().optional(),
+    })
+    .strict(),
+
+  handleCreditsUpdateRedemption: z
+    .object({
+      status: z.enum(["fulfilled", "cancelled"]),
+    })
+    .strict(),
+
+  handleCreditsViewerAuth: z
+    .object({
+      kick: z.union([z.boolean(), z.literal("true"), z.literal("false")]).optional(),
+      discord: z.union([z.boolean(), z.literal("true"), z.literal("false")]).optional(),
+      public: z.union([z.boolean(), z.literal("true"), z.literal("false")]).optional(),
+    })
+    .strict(),
+
+  handlePublicRedeem: z
+    .object({
+      slug: z.string().trim().min(1).max(80),
+      kickUserId: z.string().trim().max(64).optional().or(z.literal("").optional()),
+      kickUsername: z.string().trim().max(80).optional().or(z.literal("").optional()),
+      shopItemId: z.string().trim().min(1).max(64),
+      publicToken: z.string().trim().min(1).max(64),
+    })
+    .strict(),
+
+  handleViewerRedeem: z
+    .object({
+      slug: z.string().trim().min(1).max(80),
+      shopItemId: z.string().trim().min(1).max(64),
     })
     .strict(),
 };
