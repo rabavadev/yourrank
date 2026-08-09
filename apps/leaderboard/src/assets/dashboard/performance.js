@@ -81,7 +81,7 @@ function setKpi(id, value, label) {
 }
 
 async function loadHeatmap() {
-  const wrap = $("perfHeatmap");
+  const wrap = $("perf-heatmap");
   if (!wrap || wrap._loading) return;
   wrap._loading = true;
   try {
