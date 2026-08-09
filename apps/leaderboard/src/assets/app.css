@@ -1008,3 +1008,16 @@ html{color-scheme:light}
 .settings-nav nav{display:flex;gap:8px;flex-wrap:wrap}
 .lb-widget--danger{border-color:var(--danger);background:rgba(239,68,68,0.04)}
 .lb-widget--danger h2{color:var(--danger)}
+@media(max-width:640px){
+  .perf-header{flex-direction:column;align-items:stretch;gap:12px}
+  .perf-filter{justify-content:flex-start;overflow-x:auto;flex-wrap:nowrap;-webkit-overflow-scrolling:touch;padding-bottom:4px;scrollbar-width:none}
+  .perf-filter::-webkit-scrollbar{display:none}
+  .perf-filter .btn{white-space:nowrap}
+  .settings-nav nav{flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:4px;scrollbar-width:none}
+  .settings-nav nav::-webkit-scrollbar{display:none}
+  .settings-nav .btn{white-space:nowrap}
+  .editor-steps{flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:4px;scrollbar-width:none}
+  .editor-steps::-webkit-scrollbar{display:none}
+  .editor-step{white-space:nowrap}
+  .toast{top:auto;bottom:12px;left:12px;right:12px}
+}
