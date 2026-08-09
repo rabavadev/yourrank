@@ -21,7 +21,7 @@ export function navTo(page) {
   if (page === "home" || page === "performance") loadStats();
   // Re-fit the live preview whenever the Editor becomes visible (it can't measure while hidden).
   if (page === "board" && typeof state.fitDesignPreview === "function") setTimeout(state.fitDesignPreview, 0);
-  const titles = { home: "Home", board: "Board", boards: "Boards", performance: "Performance", settings: "Settings" };
+  const titles = { home: "Home", board: "Board", boards: "Boards", performance: "Analytics", settings: "Settings" };
   const topbarTitle = $("lbTopbarTitle");
   if (topbarTitle) { topbarTitle.textContent = titles[page] || page; topbarTitle.focus({ preventScroll: true }); }
   const main = document.querySelector(".lb-main");
@@ -82,7 +82,7 @@ function _drawerFocusTrap(e) {
 }
 
 // Editor sub-navigation: group the endless controls column into tabs
-// (Details / Players / Design / Share) so the form isn't one long scroll.
+// (Setup / Players / Design / Share / History) so the form isn't one long scroll.
 export function setupEditorTabs() {
     const tabs = document.getElementById("editorTabs");
     if (!tabs || tabs._wired) return;

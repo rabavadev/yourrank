@@ -1,28 +1,54 @@
 // Overview page summary tiles / top players / setup checklist.
 import { $, esc, fmtMoney, currentPlayers, resetsIn, logError } from "./utils.js";
 import { state } from "./state.js";
+import { navTo } from "./shell.js";
 
 // Activity chart: the CSS bar chart (renderOverviewSummary's stat-bars, fed by
 // loadStats in site.js) is the single activity visualization. The Plotly CDN
 // chart that used to render here was removed — the page CSP blocks the CDN, so
 // it never loaded and the container sat empty.
 
-async function copyLiveLink(triggerLabel, url) {
+function isBoardSetup() {
+  const o = state.ONBOARDING || {};
+  const brand = $("f_name")?.value.trim() || o.brand;
+  const players = currentPlayers();
+  const published = state.PUBLISHED;
+  return !!(brand && (o.players || players.length > 0) && (o.shared || published));
+}
+
+function setStepDone(el, done) {
+  if (!el) return;
+  el.classList.toggle("is-done", done);
+  el.textContent = done ? "✓" : el.dataset.num || el.textContent;
+}
+
+async function copyLiveLink(btn) {
   try {
-    await navigator.clipboard.writeText(url);
-    const prev = triggerLabel?.textContent;
-    if (triggerLabel) triggerLabel.textContent = "Copied!";
-    setTimeout(() => { if (triggerLabel) triggerLabel.textContent = prev; }, 1500);
+    await navigator.clipboard.writeText(location.origin + "/" + state.SLUG);
+    const prev = btn.textContent;
+    btn.textContent = "Copied!";
+    setTimeout(() => btn.textContent = prev, 1500);
   } catch (err) { logError("copy-live-link", err); }
 }
 
 export function wireOverviewQuickActions() {
-  const qaBtn = $("ov_copyLink");
-  if (qaBtn && !qaBtn._wired) {
-    qaBtn._wired = true;
-    const label = qaBtn.querySelector(".lb-qa-t");
-    qaBtn.addEventListener("click", () => copyLiveLink(label, location.origin + "/" + state.SLUG));
+  const copyBtn = $("ov_copyLink");
+  if (copyBtn && !copyBtn._wired) {
+    copyBtn._wired = true;
+    copyBtn.addEventListener("click", () => copyLiveLink(copyBtn));
   }
+  const startBtn = $("ovStartBtn");
+  if (startBtn && !startBtn._wired) {
+    startBtn._wired = true;
+    startBtn.addEventListener("click", () => navTo("board"));
+  }
+  ["ovStepBrandBtn", "ovStepPlayersBtn"].forEach((id) => {
+    const btn = $(id);
+    if (btn && !btn._wired) {
+      btn._wired = true;
+      btn.addEventListener("click", () => navTo("board"));
+    }
+  });
 }
 
 export function renderOverviewSummary() {
@@ -55,5 +81,25 @@ export function renderOverviewSummary() {
         ? "Your leaderboard is live at " + (state.SLUG || "—")
         : "Not visible to visitors yet";
     }
-
+    // Empty vs active home state
+    const onboardBento = $("ovOnboardingBento");
+    const activeBento = $("ovActiveBento");
+    if (onboardBento && activeBento) {
+      const done = isBoardSetup();
+      onboardBento.hidden = done;
+      activeBento.hidden = !done;
+    }
+    const brandDone = !!$("f_name")?.value.trim() || state.ONBOARDING?.brand;
+    const playersDone = players.length > 0 || state.ONBOARDING?.players;
+    const shareDone = state.PUBLISHED || state.ONBOARDING?.shared;
+    setStepDone($("ovStepBrand"), brandDone);
+    setStepDone($("ovStepBrandMark"), brandDone);
+    setStepDone($("ovStepPlayers"), playersDone);
+    setStepDone($("ovStepPlayersMark"), playersDone);
+    setStepDone($("ovStepShare"), shareDone);
+    setStepDone($("ovStepShareMark"), shareDone);
+    const shareHint = $("ovShareHint");
+    if (shareHint) shareHint.textContent = state.PUBLISHED ? "Your leaderboard is live — copy the link" : "Publish and copy your public link";
+    const copyBtn = $("ov_copyLink");
+    if (copyBtn) copyBtn.disabled = !state.PUBLISHED;
   }

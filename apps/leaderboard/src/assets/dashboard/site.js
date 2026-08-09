@@ -1092,6 +1092,24 @@ export function renderDomainStatus(status, message) {
   }
 }
 
+export async function loadCreditsStatus() {
+  const statusEl = $("kickStatus");
+  const linkEl = $("kickRewardsLink");
+  if (!statusEl) return;
+  try {
+    const res = await fetch("/api/credits/status");
+    const data = await res.json();
+    const connected = Boolean(data.channel?.externalId);
+    statusEl.textContent = connected
+      ? `Connected to ${data.channel?.name || "your Kick channel"}. ${data.usage?.rewardMappings || 0} reward mappings active.`
+      : "Connect your Kick channel in the rewards dashboard to start giving viewers credits.";
+    if (linkEl) linkEl.textContent = connected ? "Manage Kick rewards →" : "Connect Kick rewards →";
+  } catch (err) {
+    logError("credits/status", err);
+    statusEl.textContent = "Could not load Kick rewards status.";
+  }
+}
+
 /* --- past winners / close out --- */
 export function renderArchives(list) {
   const box = $("archList"); box.innerHTML = "";
@@ -1345,7 +1363,7 @@ export function renderEmbedShare() {
     const ovBarsEmpty = $("ov_barsEmpty");
     if (ovBarsEmpty) ovBarsEmpty.hidden = days.length > 0 && (s.last30.views + s.last30.copies + s.last30.clicks) > 0;
   }
-  const shareStep = $("ov_step_share");
+  const shareStep = $("ovStepShare");
   if (shareStep && s.last7.views > 0) shareStep.classList.add("is-done");
   if (typeof state.renderPerformance === "function") state.renderPerformance(s);
   return s;

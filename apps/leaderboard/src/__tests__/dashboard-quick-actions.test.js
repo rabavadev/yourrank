@@ -11,19 +11,18 @@ function dashboardHtml() {
 describe("dashboard overview quick actions", () => {
   it("puts the main tasks one click from the Overview", () => {
     const html = dashboardHtml();
-    expect(html).toContain('class="lb-qa" aria-label="Quick actions"');
-    expect(html).toContain('data-jump="board"><span class="lb-qa-t">Add players</span>');
-    expect(html).toContain('<span class="lb-qa-t">Set the prize</span>');
-    expect(html).toContain('data-jump="board"><span class="lb-qa-t">Pick a design</span>');
+    expect(html).toContain('aria-label="Onboarding checklist"');
+    expect(html).toContain('id="ovStepBrandBtn"');
+    expect(html).toContain('id="ovStepPlayersBtn"');
     expect(html).toContain('id="ov_copyLink"');
   });
 
   it("copies the live page URL from the Overview", () => {
-    expect(overviewJs).toContain('navigator.clipboard.writeText(url)');
+    expect(overviewJs).toContain('navigator.clipboard.writeText');
     expect(overviewJs).toContain('location.origin + "/" + state.SLUG');
   });
 
-  it("organises navigation into Home / Board / Performance / Settings", () => {
+  it("organises navigation into Home / Board / Analytics / Settings", () => {
     const html = dashboardHtml();
     expect(html).toContain('data-nav="home"');
     expect(html).toContain('data-nav="board"');
@@ -33,6 +32,8 @@ describe("dashboard overview quick actions", () => {
     expect(html).not.toContain('<span class="lb-side-grp">');
     // Icons are real inline SVGs, not emoji.
     expect(html).not.toContain('aria-hidden="true">🔌</span>');
+    // Performance nav is now labelled Analytics.
+    expect(html).toContain('>Analytics</button>');
   });
 
   it("leads with the Board editor and hides Boards for solo users", () => {
@@ -45,6 +46,7 @@ describe("dashboard overview quick actions", () => {
     expect(html).toContain('data-egroup="players"');
     expect(html).toContain('data-egroup="design"');
     expect(html).toContain('data-egroup="share"');
+    expect(html).toContain('data-egroup="history"');
     // Boards nav starts hidden; JS reveals it only when the user has 2+ boards.
     expect(html).toContain('class="lb-nav lb-nav--boards" type="button" data-nav="boards" hidden');
   });
