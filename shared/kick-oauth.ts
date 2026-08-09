@@ -2,6 +2,7 @@
 // Shared between leaderboard Worker and any future bot features.
 
 import { encryptToken, decryptToken } from "./crypto.js";
+import { CircuitBreaker } from "./circuit-breaker.js";
 
 export interface KickOAuthConfig {
   clientId: string;
@@ -55,6 +56,8 @@ export async function generatePKCE(): Promise<{ codeVerifier: string; codeChalle
     codeChallenge: base64UrlEncode(new Uint8Array(digest)),
   };
 }
+
+const kickCircuit = new CircuitBreaker("kick-api", { failureThreshold: 5, resetTimeoutMs: 30_000 });
 
 function getConfig(env: any): KickOAuthConfig {
   const clientId = env.KICK_CLIENT_ID;
@@ -110,11 +113,13 @@ async function postTokenEndpoint(env: any, body: URLSearchParams): Promise<KickT
   body.set("client_id", clientId);
   body.set("client_secret", clientSecret);
 
-  const res = await fetch("https://id.kick.com/oauth/token", {
-    method: "POST",
-    headers: { "content-type": "application/x-www-form-urlencoded" },
-    body: body.toString(),
-  });
+  const res = await kickCircuit.call(() =>
+    fetch("https://id.kick.com/oauth/token", {
+      method: "POST",
+      headers: { "content-type": "application/x-www-form-urlencoded" },
+      body: body.toString(),
+    })
+  );
   const text = await res.text();
   if (!res.ok) {
     throw new Error(`Kick token endpoint returned ${res.status}: ${text}`);
@@ -155,9 +160,11 @@ export function refreshKickTokens(env: any, refreshToken: string): Promise<KickT
 }
 
 async function kickApiGet<T>(accessToken: string, url: string): Promise<T> {
-  const res = await fetch(url, {
-    headers: { authorization: `Bearer ${accessToken}` },
-  });
+  const res = await kickCircuit.call(() =>
+    fetch(url, {
+      headers: { authorization: `Bearer ${accessToken}` },
+    })
+  );
   const text = await res.text();
   if (!res.ok) {
     throw new Error(`Kick API GET ${url} returned ${res.status}: ${text}`);
@@ -187,17 +194,19 @@ export async function subscribeKickWebhookEvent(
   eventName: string,
   version = 1
 ): Promise<void> {
-  const res = await fetch("https://api.kick.com/public/v1/events/subscriptions", {
-    method: "POST",
-    headers: {
-      authorization: `Bearer ${accessToken}`,
-      "content-type": "application/json",
-    },
-    body: JSON.stringify({
-      events: [{ name: eventName, version }],
-      method: "webhook",
-    }),
-  });
+  const res = await kickCircuit.call(() =>
+    fetch("https://api.kick.com/public/v1/events/subscriptions", {
+      method: "POST",
+      headers: {
+        authorization: `Bearer ${accessToken}`,
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({
+        events: [{ name: eventName, version }],
+        method: "webhook",
+      }),
+    })
+  );
   const text = await res.text();
   if (!res.ok) {
     throw new Error(`Kick event subscription failed ${res.status}: ${text}`);
@@ -278,14 +287,16 @@ export async function createKickChannelReward(
   accessToken: string,
   reward: KickRewardInput
 ): Promise<KickReward> {
-  const res = await fetch("https://api.kick.com/public/v1/channels/rewards", {
-    method: "POST",
-    headers: {
-      authorization: `Bearer ${accessToken}`,
-      "content-type": "application/json",
-    },
-    body: JSON.stringify(reward),
-  });
+  const res = await kickCircuit.call(() =>
+    fetch("https://api.kick.com/public/v1/channels/rewards", {
+      method: "POST",
+      headers: {
+        authorization: `Bearer ${accessToken}`,
+        "content-type": "application/json",
+      },
+      body: JSON.stringify(reward),
+    })
+  );
   const text = await res.text();
   if (!res.ok) {
     throw new Error(`Kick create reward failed ${res.status}: ${text}`);

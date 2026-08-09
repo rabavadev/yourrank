@@ -1,5 +1,5 @@
 // Kick OAuth 2.1 flow for streamers linking their Kick channel.
-import { currentUser, requireUser, ok } from "../auth.js";
+import { currentUser, requireUser, ok, rateLimit } from "../auth.js";
 import { one, exec } from "../../../../shared/db.js";
 import {
   generatePKCE,
@@ -44,6 +44,9 @@ function redirect(url, status = 302) {
 
 export async function handleKickAuthStart(request, env) {
   const user = await currentUser(request, env);
+  if (user && !(await rateLimit(env, `kick-oauth-start:${user.id}`, 10, 60)).ok) {
+    return redirect("/dashboard/credits?error=rate_limited");
+  }
   if (!user) return redirect("/login");
 
   const url = new URL(request.url);

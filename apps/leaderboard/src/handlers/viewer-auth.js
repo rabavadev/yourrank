@@ -18,7 +18,7 @@ import {
   viewerCookieClear,
   readViewerToken,
 } from "../../../../shared/viewer-session.js";
-import { bad, ok } from "../auth.js";
+import { bad, ok, rateLimit, clientIp } from "../auth.js";
 
 const OAUTH_TTL = 600; // 10 minutes
 
@@ -62,6 +62,9 @@ export async function requireViewer(req, env) {
 // --- Kick ---
 
 export async function handleKickViewerAuthStart(request, env) {
+  if (!(await rateLimit(env, `viewer-oauth-start:kick:${clientIp(request)}`, 20, 60)).ok) {
+    return redirect("/me?error=rate_limited");
+  }
   const url = new URL(request.url);
   const returnTo = safeReturnTo(url.searchParams.get("returnTo"));
 
@@ -148,6 +151,9 @@ export async function handleKickViewerAuthCallback(request, env) {
 // --- Discord ---
 
 export async function handleDiscordViewerAuthStart(request, env) {
+  if (!(await rateLimit(env, `viewer-oauth-start:discord:${clientIp(request)}`, 20, 60)).ok) {
+    return redirect("/me?error=rate_limited");
+  }
   const url = new URL(request.url);
   const returnTo = safeReturnTo(url.searchParams.get("returnTo"));
 
