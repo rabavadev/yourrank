@@ -151,6 +151,12 @@ async function init() {
   const liveUrl = "/" + state.SLUG;
   const liveLink = $("liveLink");
   if (liveLink) { liveLink.href = liveUrl; liveLink.title = location.host + liveUrl; }
+  const topbarStatus = $("lbTopbarStatus");
+  if (topbarStatus) {
+    const statusText = p.isDraft ? "Draft" : (p.published ? "Published" : "Unpublished");
+    topbarStatus.textContent = statusText;
+    topbarStatus.className = "lb-status lb-status--" + statusText.toLowerCase();
+  }
   const editorLiveLink = $("editorLiveLink");
   if (editorLiveLink) { editorLiveLink.href = liveUrl; editorLiveLink.title = location.host + liveUrl; }
   const editorCopyLink = $("editorCopyLink");

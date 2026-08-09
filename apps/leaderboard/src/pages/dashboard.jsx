@@ -3,7 +3,7 @@
 export const dashboardConfig = {
   title: "Dashboard · YourRank",
   canonical: "https://yourrank.site/dashboard",
-  scripts: ['<script src="/assets/dashboard.js?v=6" type="module"></script>'],
+  scripts: ['<script src="/assets/dashboard.js?v=7" type="module"></script>'],
 };
 
 export function DashboardContent() {
@@ -44,29 +44,39 @@ export function DashboardContent() {
 </div>
 <button class="lb-side-close" type="button" aria-label="Close navigation" data-close-side>×</button>
 <span class="lb-side-grp">Build</span>
-<button class="lb-nav is-on" type="button" data-nav="board" aria-current="page"><span class="lb-nav-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg></span>Editor</button>
+<button class="lb-nav is-on" type="button" data-nav="board" aria-current="page"><span class="lb-nav-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg></span>Board</button>
 <button class="lb-nav" type="button" data-nav="overview"><span class="lb-nav-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg></span>Overview</button>
 <button class="lb-nav lb-nav--boards" type="button" data-nav="boards" hidden><span class="lb-nav-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 2 7l10 5 10-5-10-5Z"/><path d="m2 17 10 5 10-5"/><path d="m2 12 10 5 10-5"/></svg></span>Boards</button>
 <span class="lb-side-grp">Connect</span>
-<a class="lb-nav lb-nav--link" href="/dashboard/attribution"><span class="lb-nav-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"/></svg></span>Postbacks</a>
-<button class="lb-nav" type="button" data-nav="integrations"><span class="lb-nav-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12v6a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-6"/><path d="M12 2v8"/><path d="m8 6 4 4 4-4"/><path d="M2 12h5"/><path d="M17 12h5"/></svg></span>Integrations</button>
+<a class="lb-nav lb-nav--link" href="/dashboard/attribution"><span class="lb-nav-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"/></svg></span>Score feed</a>
+<button class="lb-nav" type="button" data-nav="integrations"><span class="lb-nav-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12v6a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-6"/><path d="M12 2v8"/><path d="m8 6 4 4 4-4"/><path d="M2 12h5"/><path d="M17 12h5"/></svg></span>Connections</button>
 <span class="lb-side-grp">Grow</span>
 <button class="lb-nav" type="button" data-nav="growth"><span class="lb-nav-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v16a2 2 0 0 0 2 2h16"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></svg></span>Analytics</button>
 <button class="lb-nav" type="button" data-nav="referrals"><span class="lb-nav-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="5" x="2" y="7" rx="1"/><path d="M12 22V7"/><path d="M20 12v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-8"/><path d="M7.5 7a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7s1-5 4.5-5a2.5 2.5 0 0 1 0 5"/></svg></span>Referrals</button>
 <span class="lb-side-grp">Account</span>
-<button class="lb-nav" type="button" data-nav="manage"><span class="lb-nav-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/></svg></span>Plan &amp; billing</button>
+<button class="lb-nav" type="button" data-nav="manage"><span class="lb-nav-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/></svg></span>Billing</button>
 <div class="lb-side-foot"><a class="btn btn--sm btn--accent lb-live-btn" id="liveLink" href="#" target="_blank" rel="noopener noreferrer">View live board ↗</a><span class="label" id="planBadge">FREE PLAN</span></div>
 </aside>
 <div class="lb-main">
 <div class="card card--danger" id="verifyBanner" hidden style="margin:16px 24px 0"><h2>Verify your email</h2><p class="card-sub">Your leaderboard won't be public until you confirm your email address. Check your inbox for the link, or <a href="/verify-email">request a new one</a>.</p></div>
-<div id="analyticsHud" class="hud-row" style="display: flex; gap: 20px; padding: 16px 24px; background: var(--panel); border-bottom: 1px solid var(--line); position: sticky; top: 0; z-index: 10;">
-  <div class="hud-stat"><span class="hud-lbl" style="font-size: 0.75rem; color: var(--ink-mute); text-transform: uppercase; letter-spacing: 0.1em;">Views</span><div class="hud-val" id="hud_views" style="font-weight: 600; font-size: 1.25rem;">–</div></div>
-  <div class="hud-stat"><span class="hud-lbl" style="font-size: 0.75rem; color: var(--ink-mute); text-transform: uppercase; letter-spacing: 0.1em;">Clicks</span><div class="hud-val" id="hud_clicks" style="font-weight: 600; font-size: 1.25rem;">–</div></div>
-  <div class="hud-stat"><span class="hud-lbl" style="font-size: 0.75rem; color: var(--ink-mute); text-transform: uppercase; letter-spacing: 0.1em;">CTR</span><div class="hud-val" id="hud_ctr" style="font-weight: 600; font-size: 1.25rem;">–</div></div>
-  <div class="hud-stat"><span class="hud-lbl" style="font-size: 0.75rem; color: var(--ink-mute); text-transform: uppercase; letter-spacing: 0.1em;">Signups</span><div class="hud-val" id="hud_signups" style="font-weight: 600; font-size: 1.25rem;">–</div></div>
-</div>
+<header class="lb-topbar" id="lbTopbar">
+  <div class="lb-topbar-left">
+    <h1 class="lb-topbar-title" id="lbTopbarTitle" tabindex="-1">Overview</h1>
+    <span class="lb-status lb-status--draft" id="lbTopbarStatus">Draft</span>
+  </div>
+  <div class="lb-topbar-hud">
+    <div class="hud-stat"><span class="hud-lbl">Views</span><div class="hud-val" id="hud_views">–</div></div>
+    <div class="hud-stat"><span class="hud-lbl">Clicks</span><div class="hud-val" id="hud_clicks">–</div></div>
+    <div class="hud-stat"><span class="hud-lbl">CTR</span><div class="hud-val" id="hud_ctr">–</div></div>
+    <div class="hud-stat"><span class="hud-lbl">Signups</span><div class="hud-val" id="hud_signups">–</div></div>
+  </div>
+  <div class="lb-topbar-actions">
+    <button class="btn btn--sm" id="editorCopyLink" type="button">Copy link</button>
+    <a class="btn btn--sm btn--accent" id="editorLiveLink" href="#" target="_blank" rel="noopener noreferrer">View live ↗</a>
+  </div>
+</header>
 <section class="lb-page" data-page="overview">
-<div class="lb-phead"><button class="lb-menu" id="lbMenu" type="button" aria-label="Show sections" aria-expanded="false" aria-controls="lbSide">☰</button><div class="lb-phead-text"><h1 tabindex="-1">Overview</h1><p class="lb-psub">Your leaderboard at a glance</p></div></div>
+<div class="lb-phead"><button class="lb-menu" id="lbMenu" type="button" aria-label="Show sections" aria-expanded="false" aria-controls="lbSide">☰</button></div>
 <div class="card card--danger" id="draftBanner" hidden><h2>Pick up where you left off</h2><p class="card-sub">You started the setup wizard for <b id="draftName">this board</b> but didn't finish. Jump back into the guided flow, or switch to editing it here.</p><div class="d-flex gap-10 flex-wrap"><a class="btn btn--sm btn--accent" id="draftResume" href="/dashboard/setup">Resume wizard →</a><button class="btn btn--sm btn--ghost" id="draftDone" type="button">Edit here instead</button></div></div>
 <div class="ov-stat-grid">
 <div class="ov-stat"><div class="ov-stat-icon"><svg viewBox="0 0 24 24"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg></div><span class="ov-stat-val" id="ov_board">–</span><span class="ov-stat-label">Board</span></div>
@@ -97,7 +107,7 @@ export function DashboardContent() {
 
 </section>
 <section class="lb-page" data-page="boards">
-<div class="lb-phead"><button class="lb-menu" type="button" aria-label="Show sections" data-menu aria-expanded="false" aria-controls="lbSide">☰</button><div><h1 tabindex="-1">Boards</h1><p class="lb-psub">All your sponsor leaderboards</p></div><button class="btn btn--sm" id="addBoardFromBoards" type="button">+ New board</button></div>
+<div class="lb-phead"><button class="lb-menu" type="button" aria-label="Show sections" data-menu aria-expanded="false" aria-controls="lbSide">☰</button><button class="btn btn--sm" id="addBoardFromBoards" type="button">+ New board</button></div>
 <div class="card">
 <div class="board-table-wrap">
 <table class="board-table">
@@ -109,7 +119,7 @@ export function DashboardContent() {
 </div>
 </section>
 <section class="lb-page" data-page="growth">
-<div class="lb-phead"><button class="lb-menu" type="button" aria-label="Show sections" data-menu aria-expanded="false" aria-controls="lbSide">☰</button><div><h1 tabindex="-1">Analytics</h1><p class="lb-psub">How your page is performing</p></div></div>
+<div class="lb-phead"><button class="lb-menu" type="button" aria-label="Show sections" data-menu aria-expanded="false" aria-controls="lbSide">☰</button></div>
 <div class="card"><p class="card-sub">Last 30 days on your page. Views count every visit; copies and clicks are people grabbing your code or hitting Join.</p>
 <div class="stat-tiles">
 <div class="stat-tile"><span class="stat-num" id="st_views7">–</span><span class="stat-lbl">Views · 7d</span></div>
@@ -123,7 +133,7 @@ export function DashboardContent() {
 <div class="d-flex gap-8"><button class="btn btn--sm" id="copyEmbed" type="button">Copy code</button><a class="btn btn--sm btn--ghost" id="embedPreview" href="#" target="_blank" rel="noopener noreferrer">Preview</a></div></div>
 </section>
 <section class="lb-page" data-page="referrals">
-<div class="lb-phead"><button class="lb-menu" type="button" aria-label="Show sections" data-menu aria-expanded="false" aria-controls="lbSide">☰</button><div><h1 tabindex="-1">Referrals</h1><p class="lb-psub">Invite other streamers, earn free Pro time</p></div></div>
+<div class="lb-phead"><button class="lb-menu" type="button" aria-label="Show sections" data-menu aria-expanded="false" aria-controls="lbSide">☰</button></div>
 <div class="card" id="refCard">
 <h2>Your referral link</h2>
 <p class="card-sub">Share this link. Every new user who signs up through it adds 31 days of Pro to your account.</p>
@@ -137,7 +147,7 @@ export function DashboardContent() {
 </div>
 </section>
 <section class="lb-page is-on" data-page="board">
-<div class="lb-phead"><button class="lb-menu" type="button" aria-label="Show sections" data-menu aria-expanded="false" aria-controls="lbSide">☰</button><div class="lb-phead-text"><h1 tabindex="-1">Editor</h1><p class="lb-psub">Edit your board and watch it update live</p></div><div class="lb-phead-actions"><button class="btn btn--sm" id="editorCopyLink" type="button">Copy link</button><a class="btn btn--sm btn--accent" id="editorLiveLink" href="#" target="_blank" rel="noopener noreferrer">View live ↗</a></div></div>
+<div class="lb-phead"><button class="lb-menu" type="button" aria-label="Show sections" data-menu aria-expanded="false" aria-controls="lbSide">☰</button></div>
 <div class="streamer-hud card" style="margin-bottom:18px;display:flex;gap:12px;align-items:center;padding:12px;flex-wrap:wrap">
   <form id="hudQuickAdd" style="display:flex;gap:8px;flex:1;min-width:300px;align-items:center">
     <b style="font-size:13px;white-space:nowrap;margin-right:4px;display:inline-flex;align-items:center;gap:6px"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"/></svg>Quick Add</b>
@@ -262,7 +272,7 @@ export function DashboardContent() {
 </div>
 </section>
 <section class="lb-page" data-page="integrations">
-<div class="lb-phead"><button class="lb-menu" type="button" aria-label="Show sections" data-menu aria-expanded="false" aria-controls="lbSide">☰</button><div><h1 tabindex="-1">Integrations</h1><p class="lb-psub">Overlay, custom domain and alerts — set these once</p></div></div>
+<div class="lb-phead"><button class="lb-menu" type="button" aria-label="Show sections" data-menu aria-expanded="false" aria-controls="lbSide">☰</button></div>
 <div class="card" id="overlayCard"><h2>OBS Stream Overlay <span class="pill pill--info ml-6">PRO</span></h2><p class="card-sub">Add a live leaderboard overlay to your stream. It auto-updates every 15 seconds with smooth rank animations.</p>
 <div id="overlayBody">
 <div class="field"><label>Overlay URL</label>
@@ -312,7 +322,7 @@ export function DashboardContent() {
 <div class="empty" id="notifyLock" hidden>Notifications are a Pro feature. <a href="#" id="notifyUpgrade">Upgrade to unlock them</a>.</div></div>
 </section>
 <section class="lb-page" data-page="manage">
-<div class="lb-phead"><button class="lb-menu" type="button" aria-label="Show sections" data-menu aria-expanded="false" aria-controls="lbSide">☰</button><div><h1 tabindex="-1">Plan &amp; billing</h1><p class="lb-psub">Manage your plan, billing and period close-outs</p></div></div>
+<div class="lb-phead"><button class="lb-menu" type="button" aria-label="Show sections" data-menu aria-expanded="false" aria-controls="lbSide">☰</button></div>
 <div class="card" id="archiveCard"><h2>Past winners</h2><p class="card-sub">When a period ends, close it out: the current board is saved and shown on your page under "Past Winners". Saves your unsaved edits first.</p>
 <div class="arch-form">
 <div class="field field-flex"><label for="a_label">Label</label><input id="a_label" placeholder="July 2026" /></div>
