@@ -3,12 +3,12 @@ import { withTransaction, one, exec } from "../../../../shared/db.js";
 import { hashPassword, verifyPassword, uuid, newToken, createSession, destroySession, destroyAllUserSessions, currentUser, isEmail, slugify, RESERVED, cookieSet, cookieClear, readToken, json, bad, ok, readJson, rateLimit, clientIp, generateUniqueReferralCode } from "../auth.js";
 import { hashToken } from "../../../../shared/crypto.js";
 import { trackActivation } from "../../../../shared/activation-funnel.js";
-import { DEFAULT_EXTRA, getUserBoardsList, seedSamplePlayers } from "../site.js";
+import { createBoard, getUserBoardsList } from "../site.js";
 import { sendEmail, resetEmail, sendOnboardingEmail, sendVerificationEmail } from "../email.js";
 import { effectivePlan, PLAN_LIMITS, BOARD_LIMITS, priceUsd } from "../../../../shared/plans.js";
 import { getEnabledFeatureKeys } from "../../../../shared/features.js";
 import {
-  findUserByEmail, findSiteBySlug, findUserByReferralCode, createUser, createSite
+  findUserByEmail, findSiteBySlug, findUserByReferralCode, createUser
 } from "../data/auth.js";
 
 const REFERRAL_REWARD_DAYS = 31;
@@ -95,9 +95,8 @@ export async function handleSignup(request, env, ctx) {
       try {
         await withTransaction(async (tx) => {
           await createUser(tx, userId, email, hash, salt, referralCode, referrerId);
-          const siteId = uuid();
-          await createSite(tx, siteId, userId, finalSlug, displayName, DEFAULT_EXTRA);
-          await seedSamplePlayers(tx, siteId);
+          const board = await createBoard(env, userId, { slug: finalSlug, name: displayName, published: false, is_draft: true, seed: true }, request, tx);
+          if (!board.ok) throw new Error(board.error || "board_create_failed");
         });
         created = true;
         break;
@@ -211,7 +210,6 @@ export async function handleDemoLogin(request, env) {
     const { hash, salt } = await hashPassword(crypto.randomUUID());
     const userId = uuid();
     const referralCode = await generateUniqueReferralCode();
-    const siteId = uuid();
     const baseSlug = "demo-board";
     let finalSlug = baseSlug;
     for (let n = 2; ; n++) {
@@ -221,8 +219,8 @@ export async function handleDemoLogin(request, env) {
     }
     await withTransaction(async (tx) => {
       await createUser(tx, userId, email, hash, salt, referralCode, null);
-      await createSite(tx, siteId, userId, finalSlug, "Demo Board", DEFAULT_EXTRA);
-      await seedSamplePlayers(tx, siteId);
+      const board = await createBoard(env, userId, { slug: finalSlug, name: "Demo Board", published: false, is_draft: true, seed: true }, request, tx);
+      if (!board.ok) throw new Error(board.error || "board_create_failed");
     });
     user = { id: userId };
   }

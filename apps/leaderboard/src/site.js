@@ -536,14 +536,17 @@ export async function getUserSiteById(env, uid, siteId, plan) {
   }
 
 // Multi-board: create a new board for a user.
-export async function createBoard(env, uid, { slug, name, casino = "", code = "" } = {}, request = null) {
-  const plan = effectivePlan(await one("SELECT plan, (EXTRACT(EPOCH FROM plan_expires_at) * 1000)::double precision AS plan_expires_at, status FROM users WHERE id=$1", [uid]));
+export async function createBoard(env, uid, { slug, name, casino = "", code = "", published = true, is_draft = false, seed = false } = {}, request = null, tx = null) {
+  const dbOne = tx ? (text, params) => tx.one(text, params) : one;
+  const dbExec = tx ? (text, params) => tx.unsafe(text, params) : exec;
+  const dbQuery = tx ? (text, params) => tx.query(text, params) : query;
+  const plan = effectivePlan(await dbOne("SELECT plan, (EXTRACT(EPOCH FROM plan_expires_at) * 1000)::double precision AS plan_expires_at, status FROM users WHERE id=$1", [uid]));
   const limit = BOARD_LIMITS[plan] || 1;
-  const boards = await getAllBoards(env, uid);
+  const boards = await dbQuery(`SELECT ${SITE_COLUMNS} FROM sites WHERE user_id=$1 ORDER BY id ASC`, [uid]);
   if (boards.length >= limit) {
     return { error: `Your ${plan} plan allows up to ${limit} leaderboard${limit > 1 ? "s" : ""}. Upgrade to create more.`, code: "board_limit" };
   }
-  const existing = await one("SELECT id FROM sites WHERE slug=$1", [slug]);
+  const existing = await dbOne("SELECT id FROM sites WHERE slug=$1", [slug]);
   if (existing) return { error: "That URL is already taken. Pick another.", code: "slug_taken" };
   // BIZ-004: Reject reserved slugs (api, login, dashboard, bot, etc.)
   if (RESERVED.has(slug)) return { error: "That URL is reserved and cannot be used.", code: "slug_reserved" };
@@ -551,12 +554,16 @@ export async function createBoard(env, uid, { slug, name, casino = "", code = ""
   const cleanCasino = String(casino || "").trim().slice(0, 40);
   const cleanCode = String(code || "").trim().slice(0, 40);
   const themeObj = { template: "classic" };
-  await exec(
+  await dbExec(
     "INSERT INTO sites (id,user_id,slug,name,casino,code,prize_pool,period,published,is_draft,extra_json,theme_json) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11::jsonb,$12::jsonb)",
-    [siteId, uid, slug, name || slug, cleanCasino, cleanCode, "$0", "Monthly", true, false, DEFAULT_EXTRA, themeObj]
+    [siteId, uid, slug, name || slug, cleanCasino, cleanCode, "$0", "Monthly", published, is_draft, DEFAULT_EXTRA, themeObj]
   );
   // If the user has no active board, make the new one active.
-  await exec("UPDATE users SET active_site_id=$1, updated_at=now() WHERE id=$2 AND active_site_id IS NULL", [siteId, uid]);
+  await dbExec("UPDATE users SET active_site_id=$1, updated_at=now() WHERE id=$2 AND active_site_id IS NULL", [siteId, uid]);
+  if (seed) {
+    const seedTx = tx || { unsafe: dbExec };
+    await seedSamplePlayers(seedTx, siteId);
+  }
   invalidateUserCache(env, uid);
   await logAudit({
     actorId: uid,
@@ -564,7 +571,7 @@ export async function createBoard(env, uid, { slug, name, casino = "", code = ""
     entityType: "site",
     entityId: siteId,
     request,
-    details: { board_id: siteId, board_slug: slug, name: name || slug, casino: cleanCasino, code: cleanCode },
+    details: { board_id: siteId, board_slug: slug, name: name || slug, casino: cleanCasino, code: cleanCode, published, is_draft },
   });
   return { ok: true, id: siteId, slug };
 }

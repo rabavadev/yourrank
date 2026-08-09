@@ -47,6 +47,10 @@ async function load() {
   }
 }
 
+export async function initKickrewards() {
+  return load();
+}
+
 function render() {
   const connected = Boolean(state.channel?.externalId);
   $("cr-channel-connected").hidden = !connected;
@@ -534,8 +538,11 @@ wireAutosave("cr-shop-form", "shop");
 wireAutosave("cr-viewer-auth-form", "viewer-auth");
 wireAutosave("cr-history-form", "history");
 
-load().catch((err) => {
-  $("cr-empty").innerHTML = `<p class="error">Could not load credits dashboard: ${esc(err.message)}</p>`;
-  $("cr-empty").hidden = false;
-  $("cr-app").hidden = true;
-});
+// Auto-init only when the standalone credits markup is present. The dashboard SPA imports this module and calls initKickrewards() on demand.
+if (document.getElementById("cr-standalone")) {
+  initKickrewards().catch((err) => {
+    $("cr-empty").innerHTML = `<p class="error">Could not load credits dashboard: ${esc(err.message)}</p>`;
+    $("cr-empty").hidden = false;
+    $("cr-app").hidden = true;
+  });
+}
