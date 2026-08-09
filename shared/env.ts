@@ -31,7 +31,9 @@ export function populateEnv(env: Record<string, any>, options?: { setGlobalEnv?:
   if (env.RESEND_API_KEY !== undefined) pe.RESEND_API_KEY = env.RESEND_API_KEY;
   if (env.SUPPORT_EMAIL !== undefined) pe.SUPPORT_EMAIL = env.SUPPORT_EMAIL;
   if (env.MAIL_FROM !== undefined) pe.MAIL_FROM = env.MAIL_FROM;
-  
+  if (env.ALLOW_DEMO_LOGIN !== undefined) pe.ALLOW_DEMO_LOGIN = env.ALLOW_DEMO_LOGIN;
+  if (env.DEMO_USER_EMAIL !== undefined) pe.DEMO_USER_EMAIL = env.DEMO_USER_EMAIL;
+
   // Bot-specific bindings
   if (env.LOGIN_BOT_TOKEN !== undefined) pe.LOGIN_BOT_TOKEN = env.LOGIN_BOT_TOKEN;
   if (env.LOGIN_BOT_USERNAME !== undefined) pe.LOGIN_BOT_USERNAME = env.LOGIN_BOT_USERNAME;

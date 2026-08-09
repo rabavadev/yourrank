@@ -200,6 +200,43 @@ export async function handleLogout(request, env) {
   return json({ ok: true }, 200, { "set-cookie": cookieClear(env) });
 }
 
+export async function handleDemoLogin(request, env) {
+  if (env.ALLOW_DEMO_LOGIN !== "true") return bad("Demo login is disabled", 404);
+  if (!(await rateLimit(env, `demo:${clientIp(request)}`, 5, 3600)).ok) return bad("Too many demo attempts. Try again later.", 429);
+
+  const email = String(env.DEMO_USER_EMAIL || "demo@yourrank.site").trim().toLowerCase();
+
+  let user = await findUserByEmail(email);
+  if (!user) {
+    const { hash, salt } = await hashPassword(crypto.randomUUID());
+    const userId = uuid();
+    const referralCode = await generateUniqueReferralCode();
+    const siteId = uuid();
+    const baseSlug = "demo-board";
+    let finalSlug = baseSlug;
+    for (let n = 2; ; n++) {
+      const existing = await findSiteBySlug(finalSlug);
+      if (!existing) break;
+      finalSlug = `${baseSlug}-${n}`;
+    }
+    await withTransaction(async (tx) => {
+      await createUser(tx, userId, email, hash, salt, referralCode, null);
+      await createSite(tx, siteId, userId, finalSlug, "Demo Board", DEFAULT_EXTRA);
+      await seedSamplePlayers(tx, siteId);
+    });
+    user = { id: userId };
+  }
+
+  const token = await createSession(env, user.id);
+  return new Response(null, {
+    status: 302,
+    headers: {
+      location: "/dashboard",
+      "set-cookie": cookieSet(token, env),
+    },
+  });
+}
+
 export async function handleMe(request, env) {
   try {
     const user = await currentUser(request, env);
