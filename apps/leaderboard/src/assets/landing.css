@@ -1,12 +1,12 @@
 /* YourRank marketing — raw, monochrome, one accent. */
-:root{--bg:#0f0f0f;--panel:#1c1c1c;--panel-2:#1f1f1f;--line:#2a2a2a;--line-2:#323232;--ink:#ededf0;--ink-soft:#a7a6a6;--ink-mute:#82828a;--accent:#2200ff;--accent-ink:#ffffff;--mono:"IBM Plex Mono","JetBrains Mono",ui-monospace,Menlo,monospace;--sans:"Inter",system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+:root{--bg:#fafafa;--panel:#ffffff;--panel-2:#f7f7f8;--line:#e4e4e7;--line-2:#d4d4d8;--ink:#191919;--ink-soft:#55555c;--ink-mute:#82828a;--accent:#2200ff;--accent-ink:#ffffff;--mono:"IBM Plex Mono","JetBrains Mono",ui-monospace,Menlo,monospace;--sans:"Inter",system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
 /* type scale (modular 1.25) */
 --fs-xs:.75rem;--fs-sm:.875rem;--fs-md:1rem;--fs-lg:1.25rem;--fs-xl:1.5rem;--fs-2xl:2rem;--fs-3xl:2.5rem;
 /* spacing scale (4px base) */
 --space-1:4px;--space-2:8px;--space-3:12px;--space-4:16px;--space-6:24px;--space-8:32px;--space-12:48px;--space-16:64px;--space-24:96px;
 /* radius + elevation */
 --radius-sm:8px;--radius-md:10px;--radius-lg:14px;--radius-full:999px;
---shadow-sm:0 1px 2px rgba(0,0,0,.3);--shadow-md:0 8px 28px rgba(0,0,0,.35);--shadow-lg:0 16px 38px -10px rgba(0,0,0,.5);
+--shadow-sm:0 1px 2px rgba(0,0,0,.05);--shadow-md:0 4px 12px rgba(0,0,0,.08);--shadow-lg:0 12px 32px rgba(0,0,0,.12);
 /* min interactive target */
 --tap:44px}
 *{box-sizing:border-box}*:focus-visible{outline:2px solid var(--accent,#2200ff);outline-offset:2px}html,body{margin:0;overflow-x:hidden;max-width:100%}
@@ -106,10 +106,10 @@ table.pricing tr td:last-child,table.pricing tr th:last-child{text-align:right}.
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; } }
 
 /* SEC-713: noscript fallback — replaces inline style="" attributes */
-.noscript-card{max-width:640px;margin:40px auto;padding:24px;background:var(--panel,#101012);border:1px solid var(--line,#212125);border-radius:12px;color:var(--ink,#ededf0);font-family:system-ui,sans-serif;text-align:center}
+.noscript-card{max-width:640px;margin:40px auto;padding:24px;background:var(--panel);border:1px solid var(--line);border-radius:12px;color:var(--ink,#191919);font-family:system-ui,sans-serif;text-align:center}
 .noscript-card h1{margin:0 0 12px;font-size:24px}
-.noscript-card p{color:var(--ink-soft,#a1a1a9);margin:0 0 16px}
-.noscript-card a{display:inline-block;padding:11px 24px;background:var(--accent,#2200ff);color:var(--accent-ink,#000);font-weight:600;border-radius:8px;text-decoration:none}
+.noscript-card p{color:var(--ink-soft);margin:0 0 16px}
+.noscript-card a{display:inline-block;padding:11px 24px;background:var(--accent,#2200ff);color:var(--accent-ink);font-weight:600;border-radius:8px;text-decoration:none}
 .price-amount-sub{font-size:13px;font-weight:400}
 
 /* --- UX audit: prose intro (fixes /pricing broken line breaks, V-8) --- */
