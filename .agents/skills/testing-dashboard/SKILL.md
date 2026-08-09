@@ -97,14 +97,14 @@ For bot dev login, also add to `apps/bot/.dev.vars`:
 ## Common gotchas
 
 - `wrangler dev` may fail with “Wrangler requires at least Node.js v22.0.0” when invoked through Bun; prepend the Node 22 path.
-- If `assets_bundled.js` is stale, rebuilt assets won't be picked up until the Worker restarts or `wrangler dev` reloads; stop and restart `wrangler dev` after `node build.js`.
-- `loadStats()` in `assets/dashboard/site.js` was fixed to use the new KPI IDs (`hud_*`/`ov_kpi_*`) and now calls `state.renderPerformance(s)`. KPI values update correctly, but the Analytics page **Activity map** still stays on “Loading…”. The cause is a DOM ID mismatch: `performance.js` looks for `$('perfHeatmap')` while the markup uses `id="perf-heatmap"`.
+- If `assets_bundled.js` is stale, rebuilt assets won't be picked up until the Worker restarts. Stop any running `wrangler dev` process, run `node build.js`, then restart the Worker.
+- `loadStats()` in `assets/dashboard/site.js` uses the new KPI IDs. After PR #345, the Analytics page **Activity map** loads correctly: `performance.js` now selects `$('perf-heatmap')`, matching the markup `id="perf-heatmap"`.
 - Copy-link buttons now use `flashButton()` and show “Copied!” feedback when the user gesture succeeds.
 - `loadStats` and `updateDesignPreview` make authenticated requests; keep the session cookie and CSRF token in sync when testing via `curl`.
 - Logging into the bot Worker sets a shared `yr_session` cookie for `localhost`, which can then be sent to the leaderboard Worker on port 8787 and cause the leaderboard dashboard to fail if the bot user has no site. Log out between Workers or use separate browser profiles.
 - The bot dashboard client script has been moved to an external same-origin file at `/bot/dash/client.js`, so CSP nonce issues are gone. Verify by checking that `window.load` and `window.showPage` are defined and panels switch correctly.
-- To avoid `yr_session` cookie confusion between `localhost:8787` and `localhost:8788`, use a separate incognito window or profile for the bot dashboard.
-- Account page **Active sessions** can stay on “Loading…”. `loadSessions()` is wired in `dashboard/account.js`, but if `/api/auth/sessions` fails or returns unexpected data the placeholder is not replaced.
+- To avoid `yr_session` cookie confusion between `localhost:8787` and `localhost:8788`, use a separate incognito window or profile for the bot dashboard; log out between Workers if using the same profile. Navigating from the bot Worker to the leaderboard Worker in the same cookie jar will cause the leaderboard dashboard to fail with "Couldn't load your site."
+- Account page **Active sessions** now loads after PR #345. The top-level event wiring in `site.js`, `players.js`, and `credits.js` is guarded with optional chaining so the Account page module graph no longer throws before `loadSessions()` runs.
 - Dev login on `/bot/dashboard` requires `ALLOW_DEV_LOGIN=1` and accepts any numeric Telegram user ID.
 
 ## Useful paths
