@@ -125,11 +125,8 @@ describe("dashboard views", () => {
     expect(html).toContain('data-action="checkHealth"');
     expect(html).toContain("Show signed postback setup");
     expect(html).toContain("X-Postback-Signature");
-    expect(html).toContain("/contact?type=feedback&amp;");
-    expect(html).toContain("/dashboard/support");
-    expect(html).toContain(">Feedback</a>");
-    expect(html).toContain(">Support</a>");
     expect(html).toContain('nonce="nonce123"');
+    expect(html).not.toContain("gm-shell-nav");
     expect(html).not.toContain("onclick=");
     expect(html).not.toContain("onfocus=");
     expect(html).not.toContain("onblur=");

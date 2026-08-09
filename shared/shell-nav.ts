@@ -28,13 +28,10 @@ export interface NavLink {
 }
 
 export const NAV_LINKS: NavLink[] = [
-  { key: "leaderboard", label: "Leaderboard", href: "/dashboard",           match: ["/dashboard"], top: true },
+  { key: "leaderboard", label: "Dashboard", href: "/dashboard",           match: ["/dashboard"], top: true },
   { key: "bot",         label: "Bot",         href: "/bot/dashboard",       match: ["/bot/dashboard", "/bot/dash"], top: true },
-  { key: "analytics",   label: "Analytics",   href: "/dashboard/analytics", match: ["/dashboard/analytics"], top: true },
+  { key: "analytics",   label: "Analytics",   href: "/dashboard?nav=performance", match: ["/dashboard/analytics"], top: true },
   { key: "credits",     label: "Credits",     href: "/dashboard/credits",   match: ["/dashboard/credits"], top: true },
-  { key: "attribution", label: "Attribution", href: "/dashboard/attribution", match: ["/dashboard/attribution"] },
-  { key: "support",     label: "Support",     href: "/dashboard/support",   match: ["/dashboard/support"] },
-  { key: "security",    label: "Security",    href: "/dashboard/security",  match: ["/dashboard/security"] },
 ];
 
 export function activeKey(pathname: string): string | null {
@@ -98,10 +95,8 @@ export function shellNavHtml(
           <span class="gm-profile-chevron" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg></span>
         </summary>
         <div class="gm-profile-menu">
-          <a class="gm-profile-link" href="/dashboard?nav=manage"><span class="gm-profile-ic">💳</span>Billing</a>
-          <a class="gm-profile-link" href="/dashboard/attribution"><span class="gm-profile-ic">🔗</span>Attribution</a>
-          <a class="gm-profile-link" href="/dashboard/security"><span class="gm-profile-ic">🔒</span>Security</a>
-          <a class="gm-profile-link" href="/dashboard/support"><span class="gm-profile-ic">❓</span>Support</a>
+          <a class="gm-profile-link" href="/dashboard?nav=settings"><span class="gm-profile-ic">⚙️</span>Settings</a>
+          <a class="gm-profile-link" href="/contact?type=support&amp;area=${area}&amp;return=${returnTo}"><span class="gm-profile-ic">❓</span>Support</a>
           <a class="gm-profile-link gm-profile-link--accent" href="/contact?type=feedback&amp;${helpQuery}"><span class="gm-profile-ic">💬</span>Feedback</a>
           <form method="POST" action="${esc(opts.logoutAction || "/logout")}" class="gm-logout-form"><button class="gm-logout" type="submit">Logout</button></form>
         </div>

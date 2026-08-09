@@ -27,7 +27,6 @@ import { handleReferrals } from "./handlers/referrals.js";
 import { handleLead } from "./handlers/leads.js";
 import { handleAttribution, handleAttributionExport, handlePostback, handleRotatePostbackKey, handleRevokePostbackKey } from "./handlers/attribution.js";
 import { handleContact } from "./handlers/contact.js";
-import { handleListTickets, handleGetTicket, handleCreateTicket } from "./handlers/support.js";
 import { handleCspReport } from "./handlers/csp-report.js";
 import { handleLog } from "./handlers/log.js";
 import { handleScores } from "./handlers/scores.js";
@@ -117,9 +116,6 @@ export const ROUTES = [
   // Public routes (CSRF-exempt)
   { path: "/api/lead", method: "POST", handler: withHandler(handleLead) },
   { path: "/api/contact", method: "POST", handler: withHandler(handleContact) },
-  { path: "/api/support", method: "GET", handler: withHandler(handleListTickets) },
-  { path: "/api/support", method: "POST", handler: withHandler(handleCreateTicket) },
-  { path: "/api/support/:id", method: "GET", handler: withHandler(handleGetTicket) },
   { path: "/api/track/copy", method: "POST", handler: withHandler(handleTrackCopy) },
   { path: "/api/track/scroll", method: "POST", handler: withHandler(handleTrackScroll) },
   { path: "/api/scores", method: "POST", handler: withHandler(handleScores) },

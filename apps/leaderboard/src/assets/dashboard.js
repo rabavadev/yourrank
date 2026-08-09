@@ -8,6 +8,7 @@ import { checkout, loadHistory, loadStats, renderArchives, renderBranding, rende
 import { renderOverviewSummary, wireOverviewQuickActions } from "./dashboard/overview.js";
 import { renderReferrals } from "./dashboard/referrals.js";
 import { initPerformance, renderPerformance } from "./dashboard/performance.js";
+import { wireAccount } from "./dashboard/account.js";
 
 async function init() {
   let me;
@@ -201,6 +202,7 @@ async function init() {
   state.renderPerformance = renderPerformance;
   loadStats();
   wireStreamerHud();
+  wireAccount();
 
   let dirtyTimer;
   const markDirty = () => {

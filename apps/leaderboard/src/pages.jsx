@@ -6,12 +6,8 @@ import { forgotPage } from "./pages/forgot.js";
 import { resetPage } from "./pages/reset.js";
 import { signupPage } from "./pages/signup.js";
 import { dashboardConfig, DashboardContent } from "./pages/dashboard.jsx";
-import { attributionPage } from "./pages/attribution.js";
-import { botSetupPage } from "./pages/bot-setup.js";
-import { securityPage } from "./pages/security.js";
 import { adminPage } from "./pages/admin.js";
 import { admin2faPage } from "./pages/admin-2fa.js";
-import { setupPage } from "./pages/setup.js";
 import { overlayPage } from "./pages/overlay.js";
 import { termsPage } from "./pages/terms.js";
 import { privacyPage } from "./pages/privacy.js";
@@ -20,7 +16,6 @@ import { refundPage } from "./pages/refund.js";
 import { cookiesPage } from "./pages/cookies.js";
 import { contactPage } from "./pages/contact.js";
 import { pricingPage } from "./pages/pricing.js";
-import { supportPage } from "./pages/support.js";
 import { docsPage } from "./pages/docs.js";
 import { verifyEmailPage } from "./pages/verify-email.js";
 import { creditsPage } from "./pages/credits.js";
@@ -33,12 +28,8 @@ export const PAGES = {
   reset: resetPage,
   signup: signupPage,
   dashboard: { config: dashboardConfig, Component: DashboardContent },
-  attribution: attributionPage,
-  botSetup: botSetupPage,
-  security: securityPage,
   admin: adminPage,
   admin2fa: admin2faPage,
-  setup: setupPage,
   overlay: overlayPage,
   terms: termsPage,
   privacy: privacyPage,
@@ -47,7 +38,6 @@ export const PAGES = {
   cookies: cookiesPage,
   contact: contactPage,
   pricing: pricingPage,
-  support: supportPage,
   verifyEmail: verifyEmailPage,
   credits: creditsPage,
 };

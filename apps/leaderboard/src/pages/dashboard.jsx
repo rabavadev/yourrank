@@ -3,7 +3,10 @@
 export const dashboardConfig = {
   title: "Dashboard · YourRank",
   canonical: "https://yourrank.site/dashboard",
-  scripts: ['<script src="/assets/dashboard.js?v=10" type="module"></script>'],
+  styles: ["/assets/app.css"],
+  scripts: ['<script src="/assets/dashboard.js?v=11" type="module"></script>'],
+  nav: false,
+  footer: false,
 };
 
 export function DashboardContent() {
@@ -289,6 +292,7 @@ export function DashboardContent() {
     <a class="btn btn--xs btn--ghost" href="#settings-connections">Connections</a>
     <a class="btn btn--xs btn--ghost" href="#settings-notifications">Notifications</a>
     <a class="btn btn--xs btn--ghost" href="#settings-billing">Billing</a>
+    <a class="btn btn--xs btn--ghost" href="#settings-account">Account</a>
     <a class="btn btn--xs btn--ghost" href="#settings-winners">Winners</a>
     <a class="btn btn--xs btn--ghost" href="#settings-legal">Legal</a>
     <a class="btn btn--xs btn--ghost" href="#settings-danger">Danger</a>
@@ -320,10 +324,10 @@ export function DashboardContent() {
   </div>
   <div class="empty" id="domainLock" hidden>Custom domains are a Pro feature. <a href="#" id="domainUpgrade">Upgrade to unlock it</a>.</div>
 </div>
-<div class="lb-widget lb-widget--half">
+<div class="lb-widget lb-widget--half" id="settings-integrations">
   <h2>External tools</h2>
-  <p class="card-sub">Postback tracking and the Telegram bot.</p>
-  <div class="d-flex gap-8 flex-wrap"><a class="btn btn--sm" href="/dashboard/attribution">Set up postbacks →</a><a class="btn btn--sm" href="/dashboard/bot/setup">Connect Telegram bot →</a></div>
+  <p class="card-sub">Manage offers, postbacks, and Telegram bots in one place.</p>
+  <div class="d-flex gap-8 flex-wrap"><a class="btn btn--sm" href="/bot/dashboard">Open bot dashboard →</a></div>
 </div>
 <div class="lb-widget lb-widget--full" id="settings-notifications">
   <h2>Notifications <span class="pill pill--info ml-6">PRO</span></h2>
@@ -373,6 +377,25 @@ export function DashboardContent() {
     <table class="admin-table" id="historyTable"><thead><tr><th>Date</th><th>Plan</th><th>Amount</th><th>Status</th></tr></thead><tbody id="historyBody"></tbody></table>
     <div class="empty" id="historyEmpty" hidden>No payments yet.</div>
     <p class="hint">Receipts are also emailed to your account address after each successful payment.</p>
+  </div>
+</div>
+<div class="lb-widget lb-widget--full" id="settings-account">
+  <h2>Account</h2>
+  <p class="card-sub">Password, active sessions, and your data.</p>
+  <div class="field"><label for="accCurrentPassword">Current password</label><input type="password" id="accCurrentPassword" autocomplete="current-password" /></div>
+  <div class="field"><label for="accNewPassword">New password</label><input type="password" id="accNewPassword" autocomplete="new-password" minlength="8" /></div>
+  <div class="d-flex gap-8 items-center flex-wrap">
+    <button class="btn btn--accent" id="accChangePassword" type="button">Update password</button>
+    <span class="hint" id="accPasswordStatus" role="status" aria-live="polite"></span>
+  </div>
+  <hr style="border:0;border-top:1px solid var(--line);margin:18px 0" />
+  <div class="d-flex justify-between items-center" style="margin-bottom:12px"><h3 style="margin:0">Active sessions</h3><button class="btn btn--ghost btn--sm" id="accRevokeSessions" type="button">Sign out other sessions</button></div>
+  <div id="accSessions"><p class="hint">Loading…</p></div>
+  <p class="hint" id="accSessionsStatus" role="status" aria-live="polite"></p>
+  <hr style="border:0;border-top:1px solid var(--line);margin:18px 0" />
+  <div class="d-flex gap-8 items-center flex-wrap">
+    <button class="btn btn--accent" id="accExportData" type="button">Download my data</button>
+    <span class="hint" id="accExportStatus" role="status" aria-live="polite"></span>
   </div>
 </div>
 <div class="lb-widget lb-widget--half" id="settings-winners">
