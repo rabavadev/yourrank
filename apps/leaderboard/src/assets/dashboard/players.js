@@ -189,52 +189,6 @@ $("qa_name")?.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.pr
 $("qa_wager")?.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); $("qa_prize")?.focus(); } });
 $("qa_prize")?.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); addQuickRow(); $("qa_name")?.focus(); } });
 
-$("hudQuickAdd")?.addEventListener("submit", (e) => {
-  e.preventDefault();
-  const name = $("hudName").value.trim();
-  const amountRaw = $("hudAmount").value.trim();
-  if (!name || !amountRaw) return;
-
-  const isAddition = amountRaw.startsWith("+");
-  const isSubtraction = amountRaw.startsWith("-");
-  const amount = parseAmount(amountRaw);
-
-  let found = false;
-  const nameLower = name.toLowerCase();
-  [...$("rows").children].forEach(row => {
-    const pName = row.querySelector(".p-name").value.trim();
-    if (pName.toLowerCase() === nameLower) {
-      found = true;
-      const wagerInput = row.querySelector(".p-wager");
-      const currentWager = parseAmount(wagerInput.value);
-      if (isAddition || isSubtraction) {
-         wagerInput.value = (isSubtraction ? currentWager - amount : currentWager + amount);
-      } else {
-         wagerInput.value = amount;
-      }
-      wagerInput.dispatchEvent(new Event("input", { bubbles: true }));
-    }
-  });
-
-  if (!found) {
-    if (state.ME && $("rows").children.length >= state.ME.limits.players && state.ME.limits.players < 999) {
-      const el = $("status");
-      if (el) el.textContent = "Player limit reached. Upgrade to add more.";
-      return;
-    }
-    const wagered = isSubtraction ? 0 : amount;
-    $("rows").appendChild(playerRow({ name, wagered, prize: 0 }));
-    renumber();
-    toggleEmpty();
-    applyPlayerFieldVisibility();
-    $("rows").lastElementChild.querySelector(".p-wager").dispatchEvent(new Event("input", { bubbles: true }));
-  }
-
-  $("hudName").value = "";
-  $("hudAmount").value = "";
-  $("hudName").focus();
-});
-
 const NAME_RE = /^[\p{L}\p{N}\p{P}\p{S}\s]+$/u;
 
 export function sanitizeImportName(s) {

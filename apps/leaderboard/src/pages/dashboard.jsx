@@ -3,7 +3,7 @@
 export const dashboardConfig = {
   title: "Dashboard · YourRank",
   canonical: "https://yourrank.site/dashboard",
-  scripts: ['<script src="/assets/dashboard.js?v=7" type="module"></script>'],
+  scripts: ['<script src="/assets/dashboard.js?v=8" type="module"></script>'],
 };
 
 export function DashboardContent() {
@@ -155,24 +155,16 @@ export function DashboardContent() {
 </section>
 <section class="lb-page is-on" data-page="board">
 <div class="lb-phead"><button class="lb-menu" type="button" aria-label="Show sections" data-menu aria-expanded="false" aria-controls="lbSide">☰</button></div>
-<div class="streamer-hud card" style="margin-bottom:18px;display:flex;gap:12px;align-items:center;padding:12px;flex-wrap:wrap">
-  <form id="hudQuickAdd" style="display:flex;gap:8px;flex:1;min-width:300px;align-items:center">
-    <b style="font-size:13px;white-space:nowrap;margin-right:4px;display:inline-flex;align-items:center;gap:6px"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"/></svg>Quick Add</b>
-    <input id="hudName" class="field" style="flex:2;margin:0" placeholder="Player name (e.g. Steve)" required />
-    <input id="hudAmount" class="field" style="flex:1;margin:0" type="text" inputmode="decimal" placeholder="+$500" required />
-    <button type="submit" class="btn btn--sm btn--accent" id="hudAddBtn">Update</button>
-  </form>
-  <button class="btn btn--sm ic-btn" id="hudCopyObs" type="button" style="white-space:nowrap;border-color:var(--accent);color:var(--accent)"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>Copy OBS Link</button>
-</div>
+
 <div class="editor-tabs" id="editorTabs" role="tablist" aria-label="Editor sections">
-  <button class="editor-tab is-active" type="button" role="tab" aria-selected="true" data-egroup="data"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg> General &amp; data</button>
-  <button class="editor-tab" type="button" role="tab" aria-selected="false" data-egroup="appearance"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20a8 8 0 1 0 0-16 8 8 0 0 0 0 16Z"/><path d="M12 14a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg> Appearance</button>
-  <button class="editor-tab" type="button" role="tab" aria-selected="false" data-egroup="share"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" x2="12" y1="2" y2="15"/></svg> Embed &amp; share</button>
-  <button class="editor-tab" type="button" role="tab" aria-selected="false" data-egroup="legal"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" x2="8" y1="13" y2="13"/><line x1="16" x2="8" y1="17" y2="17"/><polyline points="10 9 9 9 8 9"/></svg> Legal pages</button>
+  <button class="editor-tab is-active" type="button" role="tab" aria-selected="true" data-egroup="details"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20a8 8 0 1 0 0-16 8 8 0 0 0 0 16Z"/><path d="M12 14a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg> Details</button>
+  <button class="editor-tab" type="button" role="tab" aria-selected="false" data-egroup="players"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg> Players</button>
+  <button class="editor-tab" type="button" role="tab" aria-selected="false" data-egroup="design"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg> Design</button>
+  <button class="editor-tab" type="button" role="tab" aria-selected="false" data-egroup="share"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" x2="12" y1="2" y2="15"/></svg> Share</button>
   </div>
 <div class="design-grid">
 <div class="design-controls">
-<div class="card" data-egroup="data"><h2>Brand &amp; prize</h2><p class="card-sub">The headline details on your page.</p><div class="grid2">
+<div class="card" data-egroup="details"><h2>Brand &amp; prize</h2><p class="card-sub">The headline details on your page.</p><div class="grid2">
 <div class="field"><label for="f_name">Display name</label><input id="f_name" /></div>
 <div class="field"><label for="f_tagline">Tagline</label><input id="f_tagline" placeholder="Stream community leaderboard" /></div>
 <div class="field"><label for="f_casino">Sponsor / prize source</label><input id="f_casino" placeholder="Your brand or sponsor" /></div>
@@ -184,7 +176,7 @@ export function DashboardContent() {
 <div class="field" style="grid-column:1/-1"><label class="chk"><input type="checkbox" id="f_auto_reset" /> Auto-reset when countdown ends</label><select id="f_auto_reset_clear" disabled style="margin-top:8px"><option value="wagers">Reset wagers to 0</option><option value="players">Clear all players</option><option value="none">Keep board as-is</option></select><span class="hint">Archives the finished period and extends the end date by one period automatically.</span></div>
 <div class="field" style="grid-column:1/-1"><label class="chk"><input type="checkbox" id="f_password_enabled" /> Password-protect this board</label><input id="f_password" type="password" placeholder="Leave blank to keep current password" disabled style="margin-top:8px" /><span class="hint">Visitors must enter this password before seeing the leaderboard or using the public API.</span></div></div>
 <div class="field"><label for="f_blurb">Partner blurb</label><textarea id="f_blurb" rows="2" placeholder="Short pitch about the sponsor and your code (optional)."></textarea></div></div>
-<div class="card" data-egroup="data"><h2>Players</h2><p class="card-sub">The board auto-sorts by wagered, highest first. Prize <span class="mono">0</span> shows a dash. Names can be masked (keep the <span class="mono">***</span>). <span class="limit-widget" id="limitWidget"><span id="pCount" class="limit-hint"></span><span class="limit-bar"><span class="limit-fill" id="limitFill"></span></span><span class="limit-hint" id="limitHint"></span><a class="btn btn--sm btn--accent" id="playerLimitUpgrade" href="/dashboard?nav=manage">Upgrade</a></span></p>
+<div class="card" data-egroup="players"><h2>Players</h2><p class="card-sub">The board auto-sorts by wagered, highest first. Prize <span class="mono">0</span> shows a dash. Names can be masked (keep the <span class="mono">***</span>). <span class="limit-widget" id="limitWidget"><span id="pCount" class="limit-hint"></span><span class="limit-bar"><span class="limit-fill" id="limitFill"></span></span><span class="limit-hint" id="limitHint"></span><a class="btn btn--sm btn--accent" id="playerLimitUpgrade" href="/dashboard?nav=manage">Upgrade</a></span></p>
 <div class="player-toolbar">
   <input type="search" id="playerSearch" class="player-search" placeholder="Find player..." autocomplete="off" />
   <div class="player-bulk" id="bulkActions" hidden>
@@ -209,15 +201,15 @@ export function DashboardContent() {
 </div>
 <p class="hint mt-8" id="gsheetStatus"></p>
 </div></div>
-<div class="card" data-egroup="data" id="playerFieldsCard"><h2>Player columns</h2><p class="card-sub">Choose which extra columns show on the dashboard player table and on supported public templates.</p><div class="section-list" id="playerFieldsList"></div></div>
-<div class="card" data-egroup="appearance" id="templateCard"><h2>Page design</h2><p class="card-sub">Pick a design; the preview on the right uses your real players.</p>
+<div class="card" data-egroup="players" id="playerFieldsCard"><h2>Player columns</h2><p class="card-sub">Choose which extra columns show on the dashboard player table and on supported public templates.</p><div class="section-list" id="playerFieldsList"></div></div>
+<div class="card" data-egroup="design" id="templateCard"><h2>Page design</h2><p class="card-sub">Pick a design; the preview on the right uses your real players.</p>
 <input type="hidden" id="f_template" value="classic" />
 <div class="template-gallery-wrap" id="templateGalleryWrap">
 <div class="template-grid" id="templateGallery" aria-label="Page templates"></div>
 </div>
 <p class="hint template-status" id="templateStatus" role="status" aria-live="polite"></p>
 <div class="template-options" id="templateOptions" hidden></div></div>
-<div class="card" data-egroup="appearance" id="brandCard"><h2>Branding <span class="pill pill--info ml-6">PRO</span></h2><p class="card-sub">Your logo and page colors. Free pages use the default look.</p>
+<div class="card" data-egroup="design" id="brandCard"><h2>Branding <span class="pill pill--info ml-6">PRO</span></h2><p class="card-sub">Your logo and page colors. Free pages use the default look.</p>
 <div id="brandBody">
 <div class="grid2">
 <div class="field"><label for="logoFile">Logo</label>
@@ -233,10 +225,10 @@ export function DashboardContent() {
 <div class="field"><label for="f_font">Font</label><select id="f_font"><option value="Inter">Inter — Default</option><option value="Oswald">Oswald — Bold & Sporty</option><option value="Playfair Display">Playfair Display — Premium & Elegant</option><option value="Rajdhani">Rajdhani — Techy & Esports</option><option value="Bebas Neue">Bebas Neue — Impact & Hype</option></select><span class="hint">Changes the personality of your public page text.</span></div>
 </div></div>
 <div class="empty upsell-card" id="brandLock" hidden>Branding is a Pro feature. <a href="#" id="brandUpgrade">Upgrade to unlock it</a>.</div></div>
-<div class="card" data-egroup="appearance" id="sectionsCard"><h2>Sections <span class="pill pill--info ml-6">PRO</span></h2><p class="card-sub">Choose what appears on your public page. Turn sections off to build a leaner layout.</p>
+<div class="card" data-egroup="design" id="sectionsCard"><h2>Sections <span class="pill pill--info ml-6">PRO</span></h2><p class="card-sub">Choose what appears on your public page. Turn sections off to build a leaner layout.</p>
 <div id="sectionsBody"><div class="sections-editor" id="sectionsList"></div></div>
 <div class="empty upsell-card" id="sectionsLock" hidden>Section controls are a Pro feature. <a href="#" id="sectionsUpgrade">Upgrade to unlock it</a>.</div></div>
-<div class="card" data-egroup="appearance" id="prizesCard"><h2>Prize & countdown <span class="pill pill--info ml-6">PRO</span></h2><p class="card-sub">Customize how prizes, currency and the countdown appear on your public page.</p>
+<div class="card" data-egroup="design" id="prizesCard"><h2>Prize & countdown <span class="pill pill--info ml-6">PRO</span></h2><p class="card-sub">Customize how prizes, currency and the countdown appear on your public page.</p>
 <div id="prizesBody">
 <div class="grid2">
 <div class="field"><label for="f_prizePoolLabel">Prize pool label</label><input type="text" id="f_prizePoolLabel" placeholder="Prize pool" /></div>
@@ -247,9 +239,9 @@ export function DashboardContent() {
 <label class="hint chk"><input type="checkbox" id="f_hidePrizeAmounts" /> Hide prize amounts on the public page</label>
 </div>
 <div class="empty upsell-card" id="prizesLock" hidden>Prize customization is a Pro feature. <a href="#" id="prizesUpgrade">Upgrade to unlock it</a>.</div></div>
-<div class="card" data-egroup="appearance" id="textCard"><h2>Template text</h2><p class="card-sub">Change the copy inside your selected design. Keys with an empty value fall back to the default.</p>
+<div class="card" data-egroup="design" id="textCard"><h2>Template text</h2><p class="card-sub">Change the copy inside your selected design. Keys with an empty value fall back to the default.</p>
 <div class="text-editor" id="textList"></div></div>
-<div class="card" data-egroup="appearance" id="socialsCard"><h2>Social links</h2><p class="card-sub">Add the links to your channels. Turn a network <b>on</b> to show it on your public page; turn it <b>off</b> to hide it.</p>
+<div class="card" data-egroup="design" id="socialsCard"><h2>Social links</h2><p class="card-sub">Add the links to your channels. Turn a network <b>on</b> to show it on your public page; turn it <b>off</b> to hide it.</p>
 <div class="socials-editor" id="socialsList"></div></div>
 <div class="card" data-egroup="share" id="embedShareCard"><h2>Embed &amp; share</h2><p class="card-sub">Share your leaderboard or embed it on stream.</p>
 <div class="field"><label>Public page link</label><div class="d-flex gap-8 items-center flex-wrap"><code id="embedPublicLink" class="overlay-url" style="flex:1"></code><button class="btn btn--sm btn--accent ic-btn" id="embedPublicCopy" type="button"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg> Copy</button></div></div>
@@ -260,7 +252,7 @@ export function DashboardContent() {
 <div class="share-cards" id="shareCards"><div class="share-card share-card--x" id="shareX"><svg viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg> X (Twitter)</div><div class="share-card share-card--discord" id="shareDiscord"><svg viewBox="0 0 24 24"><path d="M20.317 4.492c-1.53-.69-3.17-1.2-4.885-1.49a.075.075 0 0 0-.079.036c-.21.369-.444.85-.608 1.23a18.566 18.566 0 0 0-5.487 0 12.36 12.36 0 0 0-.617-1.23A.077.077 0 0 0 8.562 3c-1.714.29-3.354.8-4.885 1.491a.07.07 0 0 0-.032.027C.533 9.093-.32 13.555.099 17.961a.08.08 0 0 0 .031.055 20.03 20.03 0 0 0 5.993 2.98.078.078 0 0 0 .084-.026c.462-.62.874-1.275 1.226-1.963.021-.04.001-.088-.041-.104a13.201 13.201 0 0 1-1.872-.878.075.075 0 0 1-.008-.125c.126-.093.252-.19.372-.287a.075.075 0 0 1 .078-.01c3.927 1.764 8.18 1.764 12.061 0a.075.075 0 0 1 .079.009c.12.098.245.195.372.288a.075.075 0 0 1-.006.125c-.598.344-1.22.635-1.873.877a.075.075 0 0 0-.041.105c.36.687.772 1.341 1.225 1.962a.077.077 0 0 0 .084.028 19.963 19.963 0 0 0 6.002-2.981.076.076 0 0 0 .032-.054c.5-5.094-.838-9.52-3.549-13.442a.06.06 0 0 0-.031-.028zM8.02 15.278c-1.182 0-2.157-1.069-2.157-2.38 0-1.312.956-2.38 2.157-2.38 1.21 0 2.176 1.077 2.157 2.38 0 1.312-.956 2.38-2.157 2.38zm7.975 0c-1.183 0-2.157-1.069-2.157-2.38 0-1.312.955-2.38 2.157-2.38 1.21 0 2.176 1.077 2.157 2.38 0 1.312-.946 2.38-2.157 2.38z"/></svg> Discord</div><div class="share-card share-card--twitch" id="shareTwitch"><svg viewBox="0 0 24 24"><path d="M11.571 4.714h1.715v5.143H11.57zm4.715 0H18v5.143h-1.714zM6 0L1.714 4.286v15.428h5.143V24l4.286-4.286h3.428L22.286 12V0zm14.571 11.143l-3.428 3.428h-3.429l-3 3v-3H6.857V1.714h13.714z"/></svg> Twitch</div><div class="share-card share-card--copy" id="shareCopy"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg> Copy link</div></div>
 <div class="api-access locked" id="apiAccess"><div><b style="font-size:14px">API Access</b><p class="hint" style="margin-top:4px">REST API for programmatic board management</p></div><span class="api-lock-badge"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> Pro</span></div>
 </div>
-<div class="card" data-egroup="legal" id="legalCard"><h2>Legal pages</h2><p class="card-sub">Set your own Terms, Privacy, and other legal copy. Empty fields use defaults and the footer links go to your own /terms, /privacy, etc.</p>
+<div class="card" data-egroup="details" id="legalCard"><h2>Legal pages</h2><p class="card-sub">Set your own Terms, Privacy, and other legal copy. Empty fields use defaults and the footer links go to your own /terms, /privacy, etc.</p>
 <div class="info-notice"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="16" y2="12"/><line x1="12" x2="12.01" y1="8" y2="8"/></svg><span>Leave any field blank to use the default legal text provided by YourRank. Your custom text will be shown on your public page at <code>/terms</code>, <code>/privacy</code>, etc.</span></div>
 <div class="legal-editor" id="legalList"></div>
 <div class="legal-footer-preview" id="legalFooterPreview"><b>Footer links preview:</b> <a href="#" onclick="return false">Terms</a> · <a href="#" onclick="return false">Privacy</a> · <a href="#" onclick="return false">Responsible Gaming</a> · <a href="#" onclick="return false">Cookies</a> · <a href="#" onclick="return false">Refund</a> · <a href="#" onclick="return false">Contact</a></div></div>
@@ -273,7 +265,7 @@ export function DashboardContent() {
 <div class="preview-tabs" role="tablist" aria-label="Preview device"><button class="preview-tab is-active" data-width="1100" data-device="desktop" type="button" role="tab" aria-selected="true">Desktop</button><button class="preview-tab" data-width="390" data-device="mobile" type="button" role="tab" aria-selected="false">Mobile</button></div>
 </div>
 </div>
-<div class="preview-frame" id="previewFrame"><div class="preview-stage" id="previewStage"><iframe id="designPreview" src="" loading="eager" title="Live preview"></iframe></div></div>
+<div class="preview-frame" id="previewFrame"><div class="preview-stage" id="previewStage"><iframe id="designPreview" src="" loading="eager" title="Live preview" sandbox="allow-scripts allow-same-origin allow-popups-to-escape-sandbox"></iframe></div><div class="preview-error" id="previewError" hidden><p>Preview could not load. <button class="btn btn--sm" id="previewRetry" type="button">Retry</button></p></div></div>
 </div>
 </div>
 </div>
