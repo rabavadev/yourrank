@@ -181,7 +181,7 @@ export function buildDashboard(): Hono<DashEnv> {
       user,
       logoutAction: "/bot/auth/logout",
       settingsHref: "/bot/settings",
-      theme: "dark",
+      theme: "light",
     });
     return c.html(appHtml(user ?? { display_name: "", email: "", plan: "free" }, config.publicBaseUrl, c.get("cspNonce"), page, nav));
   };

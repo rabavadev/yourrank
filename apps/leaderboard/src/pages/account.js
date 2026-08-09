@@ -116,7 +116,8 @@ const accountContent = `
 export const accountPage = leaderboardPageHtml({
   title: "Account · YourRank",
   canonical: "https://yourrank.site/account",
-  mainClass: "wrap",
-  scripts: ['<script src="/assets/account.js?v=1" type="module"></script>'],
+  mainClass: "wrap v2-dash",
+  styles: ["/assets/app.css", "/assets/shell-nav.css", "/assets/dashboard-v2.css"],
+  scripts: ['<script src="/assets/account.js?v=2" type="module"></script>'],
   content: accountContent,
 });
