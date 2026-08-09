@@ -14,14 +14,16 @@ interface WindowState {
   windowStart: number;
 }
 
+const WINDOW_KEY = "window";
+
 /**
  * RateLimiter Durable Object.
- * Uses fixed-window counting with atomic in-memory state.
- * Each DO instance handles one rate-limit key.
+ * Uses fixed-window counting persisted to Durable Object storage so the
+ * counter survives hibernation/eviction. Each DO instance handles one
+ * rate-limit key.
  */
 export class RateLimiter {
   private state: any;
-  private windows: Map<string, WindowState> = new Map();
 
   constructor(state: any) {
     this.state = state;
@@ -41,14 +43,14 @@ export class RateLimiter {
         });
       }
 
-      const result = this.check(limit, windowSec);
+      const result = await this.check(limit, windowSec);
       return new Response(JSON.stringify(result), {
         headers: { "content-type": "application/json" },
       });
     }
 
     if (url.pathname === "/reset" && request.method === "POST") {
-      this.windows.clear();
+      await this.state.storage.delete(WINDOW_KEY);
       return new Response(JSON.stringify({ ok: true }), {
         headers: { "content-type": "application/json" },
       });
@@ -57,31 +59,30 @@ export class RateLimiter {
     return new Response("RateLimiter DO", { status: 200 });
   }
 
-  private check(limit: number, windowSec: number): RateLimitResult {
+  private async check(limit: number, windowSec: number): Promise<RateLimitResult> {
     const now = Math.floor(Date.now() / 1000);
     const windowId = Math.floor(now / windowSec);
-    const windowKey = `w:${windowId}`;
+    const windowStart = windowId * windowSec;
     const retryAfter = windowSec - (now % windowSec);
 
-    let state = this.windows.get(windowKey);
-
-    // Clean up old windows (keep only current)
-    for (const [key] of this.windows) {
-      if (key !== windowKey) {
-        this.windows.delete(key);
-      }
+    let stored: WindowState | null = null;
+    try {
+      stored = (await this.state.storage.get(WINDOW_KEY)) as WindowState | null;
+    } catch (e) {
+      // Storage read failed; fall back to an empty window.
+      stored = null;
     }
 
-    if (!state) {
-      state = { count: 0, windowStart: windowId * windowSec };
-      this.windows.set(windowKey, state);
+    if (!stored || stored.windowStart !== windowStart) {
+      stored = { count: 0, windowStart };
     }
 
-    if (state.count >= limit) {
+    if (stored.count >= limit) {
       return { ok: false, remaining: 0, limit, retryAfter };
     }
 
-    state.count++;
-    return { ok: true, remaining: Math.max(0, limit - state.count), limit, retryAfter };
+    stored.count++;
+    await this.state.storage.put(WINDOW_KEY, stored);
+    return { ok: true, remaining: Math.max(0, limit - stored.count), limit, retryAfter };
   }
 }

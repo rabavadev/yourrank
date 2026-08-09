@@ -1,9 +1,9 @@
 // Dashboard API for the Kick credits / shop system.
 import { requireUser, bad, ok, readJson } from "../auth.js";
-import { getByUser, getBoardById } from "../site.js";
+import { getByUser, getBoardById, getPublicSite } from "../site.js";
 import { query, one, exec, withTransaction } from "../../../../shared/db.js";
 import { rateLimit } from "../../../../shared/ratelimit.js";
-import { upsertCreditRewardMapping, setSiteKickChannel } from "../../../../shared/kick-credits.js";
+import { setSiteKickChannel } from "../../../../shared/kick-credits.js";
 import {
   getValidKickAccessToken,
   createKickChannelReward,
@@ -157,17 +157,49 @@ export async function handleCreditsSaveReward(request, env) {
 
   const plan = effectivePlan(user);
   const limit = CREDITS_REWARD_LIMITS[plan];
-  const countRow = await one(
-    `SELECT count(*)::int AS count FROM credit_reward_mappings
-      WHERE site_id=$1 AND active=true ${id ? "AND id != $2" : ""}`,
-    id ? [site.id, id] : [site.id]
-  );
-  if ((countRow?.count || 0) >= limit) {
-    return bad(`Reward mapping limit reached for the ${plan} plan. Upgrade to add more.`, 403);
-  }
 
-  const resultId = await upsertCreditRewardMapping(site.id, kickRewardId, kickRewardTitle, kickRewardCost, credits, id);
-  return ok({ id: resultId });
+  const txResult = await withTransaction(async (tx) => {
+    await tx.unsafe("SELECT id FROM sites WHERE id=$1 FOR UPDATE", [site.id]);
+
+    const countRow = await tx.one(
+      `SELECT count(*)::int AS count FROM credit_reward_mappings
+        WHERE site_id=$1 AND active=true ${id ? "AND id != $2" : ""}`,
+      id ? [site.id, id] : [site.id]
+    );
+    if ((countRow?.count || 0) >= limit) {
+      return { error: `Reward mapping limit reached for the ${plan} plan. Upgrade to add more.`, status: 403 };
+    }
+
+    const existing = id
+      ? await tx.one("SELECT id FROM credit_reward_mappings WHERE id=$1 AND site_id=$2", [id, site.id])
+      : await tx.one(
+          `SELECT id FROM credit_reward_mappings
+            WHERE site_id=$1 AND kick_reward_id=$2
+            LIMIT 1`,
+          [site.id, kickRewardId]
+        );
+
+    if (existing) {
+      await tx.unsafe(
+        `UPDATE credit_reward_mappings
+            SET kick_reward_id=$1, kick_reward_title=$2, kick_reward_cost=$3, credits=$4, active=true, updated_at=now()
+          WHERE id=$5`,
+        [kickRewardId, kickRewardTitle, kickRewardCost, credits, existing.id]
+      );
+      return { id: existing.id };
+    }
+
+    const rows = await tx.unsafe(
+      `INSERT INTO credit_reward_mappings (site_id, kick_reward_id, kick_reward_title, kick_reward_cost, credits)
+       VALUES ($1, $2, $3, $4, $5)
+       RETURNING id`,
+      [site.id, kickRewardId, kickRewardTitle, kickRewardCost, credits]
+    );
+    return { id: rows[0].id };
+  });
+
+  if (txResult.error) return bad(txResult.error, txResult.status);
+  return ok({ id: txResult.id });
 }
 
 export async function handleCreditsCreateReward(request, env) {
@@ -188,14 +220,14 @@ export async function handleCreditsCreateReward(request, env) {
   if (!Number.isFinite(cost) || cost < 1) return bad("Reward cost must be a positive number");
   if (!Number.isFinite(credits) || credits <= 0) return bad("Credits must be a positive number");
 
-  // Enforce plan limit.
+  // Enforce plan limit before calling Kick (re-checked under a lock below).
   const plan = effectivePlan(user);
   const limit = CREDITS_REWARD_LIMITS[plan];
-  const countRow = await one(
+  const preCount = await one(
     "SELECT count(*)::int AS count FROM credit_reward_mappings WHERE site_id=$1 AND active=true",
     [site.id]
   );
-  if ((countRow?.count || 0) >= limit) {
+  if ((preCount?.count || 0) >= limit) {
     return bad(`Reward mapping limit reached for the ${plan} plan. Upgrade to add more.`, 403);
   }
 
@@ -235,16 +267,48 @@ export async function handleCreditsCreateReward(request, env) {
     [tokenSet.accessEnc, tokenSet.refreshEnc, tokenSet.expiresAt, user.id]
   );
 
-  const mappingId = await upsertCreditRewardMapping(
-    site.id,
-    String(reward.id),
-    reward.title,
-    reward.cost,
-    credits
-  );
+  // Atomic insert under a site lock so two concurrent auto-creates cannot overrun the plan limit.
+  const txResult = await withTransaction(async (tx) => {
+    await tx.unsafe("SELECT id FROM sites WHERE id=$1 FOR UPDATE", [site.id]);
+
+    const countRow = await tx.one(
+      "SELECT count(*)::int AS count FROM credit_reward_mappings WHERE site_id=$1 AND active=true",
+      [site.id]
+    );
+    if ((countRow?.count || 0) >= limit) {
+      return { error: `Reward mapping limit reached for the ${plan} plan. Upgrade to add more.`, status: 403 };
+    }
+
+    const existing = await tx.one(
+      `SELECT id FROM credit_reward_mappings
+        WHERE site_id=$1 AND kick_reward_id=$2
+        LIMIT 1`,
+      [site.id, String(reward.id)]
+    );
+
+    if (existing) {
+      await tx.unsafe(
+        `UPDATE credit_reward_mappings
+            SET kick_reward_id=$1, kick_reward_title=$2, kick_reward_cost=$3, credits=$4, active=true, updated_at=now()
+          WHERE id=$5`,
+        [String(reward.id), reward.title, reward.cost, credits, existing.id]
+      );
+      return { id: existing.id };
+    }
+
+    const rows = await tx.unsafe(
+      `INSERT INTO credit_reward_mappings (site_id, kick_reward_id, kick_reward_title, kick_reward_cost, credits)
+       VALUES ($1, $2, $3, $4, $5)
+       RETURNING id`,
+      [site.id, String(reward.id), reward.title, reward.cost, credits]
+    );
+    return { id: rows[0].id };
+  });
+
+  if (txResult.error) return bad(txResult.error, txResult.status);
 
   return ok({
-    id: mappingId,
+    id: txResult.id,
     reward: {
       id: reward.id,
       title: reward.title,
@@ -293,37 +357,42 @@ export async function handleCreditsSaveShopItem(request, env) {
 
   const plan = effectivePlan(user);
   const limit = CREDITS_SHOP_LIMITS[plan];
-  const countRow = await one(
-    `SELECT count(*)::int AS count FROM shop_items
-      WHERE site_id=$1 AND active=true ${id ? "AND id != $2" : ""}`,
-    id ? [site.id, id] : [site.id]
-  );
-  if (active && (countRow?.count || 0) >= limit) {
-    return bad(`Shop item limit reached for the ${plan} plan. Upgrade to add more.`, 403);
-  }
 
-  let resultId;
-  if (id) {
-    const rows = await exec(
-      `UPDATE shop_items
-        SET name=$1, description=$2, cost=$3, stock=$4, active=$5, updated_at=now()
-      WHERE id=$6 AND site_id=$7
-      RETURNING id`,
-      [name, description, cost, stock, active, id, site.id]
+  const txResult = await withTransaction(async (tx) => {
+    await tx.unsafe("SELECT id FROM sites WHERE id=$1 FOR UPDATE", [site.id]);
+
+    const countRow = await tx.one(
+      `SELECT count(*)::int AS count FROM shop_items
+        WHERE site_id=$1 AND active=true ${id ? "AND id != $2" : ""}`,
+      id ? [site.id, id] : [site.id]
     );
-    if (!rows || rows.length === 0) return bad("shop item not found", 404);
-    resultId = rows[0].id;
-  } else {
-    const rows = await exec(
+    if (active && (countRow?.count || 0) >= limit) {
+      return { error: `Shop item limit reached for the ${plan} plan. Upgrade to add more.`, status: 403 };
+    }
+
+    if (id) {
+      const rows = await tx.unsafe(
+        `UPDATE shop_items
+            SET name=$1, description=$2, cost=$3, stock=$4, active=$5, updated_at=now()
+          WHERE id=$6 AND site_id=$7
+          RETURNING id`,
+        [name, description, cost, stock, active, id, site.id]
+      );
+      if (!rows || rows.length === 0) return { error: "shop item not found", status: 404 };
+      return { id: rows[0].id };
+    }
+
+    const rows = await tx.unsafe(
       `INSERT INTO shop_items (site_id, name, description, cost, stock, active)
        VALUES ($1, $2, $3, $4, $5, $6)
        RETURNING id`,
       [site.id, name, description, cost, stock, active]
     );
-    resultId = rows[0].id;
-  }
+    return { id: rows[0].id };
+  });
 
-  return ok({ id: resultId });
+  if (txResult.error) return bad(txResult.error, txResult.status);
+  return ok({ id: txResult.id });
 }
 
 export async function handleCreditsDeleteShopItem(request, env, ctx) {
@@ -336,11 +405,15 @@ export async function handleCreditsDeleteShopItem(request, env, ctx) {
   const id = ctx?.slug || url.pathname.split("/").pop();
   if (!id) return bad("missing item id");
 
-  await exec(
-    "DELETE FROM shop_items WHERE id=$1 AND site_id=$2",
+  const rows = await exec(
+    `UPDATE shop_items
+        SET active=false, updated_at=now()
+      WHERE id=$1 AND site_id=$2
+      RETURNING id`,
     [id, site.id]
   );
-  return ok({ id });
+  if (!rows || rows.length === 0) return bad("shop item not found", 404);
+  return ok({ id: rows[0].id });
 }
 
 export async function handleCreditsUpdateRedemption(request, env, ctx) {
@@ -355,41 +428,44 @@ export async function handleCreditsUpdateRedemption(request, env, ctx) {
   const status = String(body?.status || "").trim();
   if (!["fulfilled", "cancelled"].includes(status)) return bad("status must be fulfilled or cancelled");
 
-  const result = await exec(
-    `UPDATE redemptions r
-        SET status=$1, updated_at=now()
-      FROM site_viewers sv
-      WHERE r.id=$2 AND r.site_viewer_id = sv.id AND sv.site_id=$3
-      RETURNING r.id`,
-    [status, id, site.id]
-  );
-  if (!result || result.length === 0) return bad("redemption not found", 404);
+  const result = await withTransaction(async (tx) => {
+    const redemption = await tx.one(
+      `UPDATE redemptions r
+          SET status=$1, updated_at=now()
+        FROM site_viewers sv
+        WHERE r.id=$2 AND r.site_viewer_id = sv.id AND sv.site_id=$3
+        RETURNING r.id, r.site_viewer_id, r.shop_item_id, r.cost`,
+      [status, id, site.id]
+    );
+    if (!redemption) return null;
 
-  if (status === "cancelled") {
-    await withTransaction(async (tx) => {
-      const redemption = await tx.one(
-        "SELECT site_viewer_id, cost FROM redemptions WHERE id=$1",
-        [id]
-      );
-      if (redemption) {
-        await tx.unsafe(
-          `UPDATE site_viewers
+    if (status === "cancelled") {
+      await tx.unsafe(
+        `UPDATE site_viewers
             SET balance = balance + $1,
                 total_spent = GREATEST(total_spent - $1, 0),
                 updated_at = now()
           WHERE id=$2`,
-          [redemption.cost, redemption.site_viewer_id]
-        );
-        await tx.unsafe(
-          `INSERT INTO credit_ledger (site_viewer_id, type, amount, description, metadata)
-           VALUES ($1, 'revoke', $2, 'Cancelled redemption refund', $3)`,
-          [redemption.site_viewer_id, redemption.cost, JSON.stringify({ redemption_id: id })]
-        );
-      }
-    });
-  }
+        [redemption.cost, redemption.site_viewer_id]
+      );
+      await tx.unsafe(
+        `UPDATE shop_items
+            SET stock = stock + 1, updated_at = now()
+          WHERE id=$1 AND stock IS NOT NULL`,
+        [redemption.shop_item_id]
+      );
+      await tx.unsafe(
+        `INSERT INTO credit_ledger (site_viewer_id, type, amount, description, metadata)
+         VALUES ($1, 'revoke', $2, 'Cancelled redemption refund', $3)`,
+        [redemption.site_viewer_id, redemption.cost, JSON.stringify({ redemption_id: redemption.id })]
+      );
+    }
 
-  return ok({ id: result[0].id, status });
+    return { id: redemption.id, status };
+  });
+
+  if (!result) return bad("redemption not found", 404);
+  return ok(result);
 }
 
 // Cross-board viewer history for a streamer: all of their sites where a given
@@ -424,7 +500,7 @@ export async function handleCreditsViewerHistory(request, env) {
      JOIN viewers v ON v.id = sv.viewer_id
      LEFT JOIN redemptions r ON r.site_viewer_id = sv.id
      WHERE s.user_id = $1
-       AND ($2 = '' OR v.kick_username ILIKE $2)
+       AND ($2 = '' OR lower(v.kick_username) = lower($2))
        AND ($3 = '' OR v.kick_user_id = $3)
      GROUP BY s.id, s.slug, s.name, sv.id, v.kick_user_id, v.kick_username
      ORDER BY sv.total_earned DESC, s.name ASC
@@ -453,18 +529,19 @@ export async function handleCreditsViewerHistory(request, env) {
 }
 
 // Public viewer endpoints (no auth; keyed by slug + kick user id).
-export async function handlePublicCredits(request, _env) {
+export async function handlePublicCredits(request, env) {
   const url = new URL(request.url);
   const slug = url.searchParams.get("slug") || "";
   const kickUserId = String(url.searchParams.get("kickUserId") || "").trim();
   const kickUsername = String(url.searchParams.get("kickUsername") || "").trim();
   if (!slug || (!kickUserId && !kickUsername)) return bad("slug and kickUserId or kickUsername required");
 
-  const site = await one(
-    "SELECT id, slug FROM sites WHERE slug=$1 AND published=true",
-    [slug.toLowerCase()]
-  );
-  if (!site) return bad("site not found", 404);
+  const r = await getPublicSite(env, slug.toLowerCase(), request);
+  if (r && r.requiresPassword) return bad("Password required.", 401);
+  if (!r || r.suspended) return bad("site not found", 404);
+
+  const rl = await rateLimit(env, `public-credits:${r.id}:${kickUserId || kickUsername}`, 30, 60);
+  if (!rl.ok) return bad("rate limited", 429);
 
   const viewer = kickUserId
     ? await one(
@@ -472,14 +549,14 @@ export async function handlePublicCredits(request, _env) {
            FROM site_viewers sv
            JOIN viewers v ON v.id = sv.viewer_id
           WHERE sv.site_id=$1 AND v.kick_user_id=$2`,
-        [site.id, kickUserId]
+        [r.id, kickUserId]
       )
     : await one(
         `SELECT sv.id, sv.balance, sv.total_earned, sv.total_spent, sv.blocked, sv.block_reason, v.kick_username
            FROM site_viewers sv
            JOIN viewers v ON v.id = sv.viewer_id
           WHERE sv.site_id=$1 AND lower(v.kick_username)=lower($2)`,
-        [site.id, kickUsername]
+        [r.id, kickUsername]
       );
 
   if (viewer?.blocked) {
@@ -491,7 +568,7 @@ export async function handlePublicCredits(request, _env) {
        FROM shop_items
       WHERE site_id=$1 AND active=true
       ORDER BY cost ASC`,
-    [site.id]
+    [r.id]
   );
 
   return ok({
@@ -511,71 +588,69 @@ export async function handlePublicRedeem(request, env) {
     return bad("slug, kickUserId or kickUsername, and shopItemId required");
   }
 
-  const site = await one(
-    `SELECT s.id, u.plan, (EXTRACT(EPOCH FROM u.plan_expires_at) * 1000)::double precision AS plan_expires_at
-       FROM sites s
-       JOIN users u ON u.id = s.user_id
-      WHERE s.slug=$1 AND s.published=true`,
-    [slug.toLowerCase()]
-  );
-  if (!site) return bad("site not found", 404);
+  const r = await getPublicSite(env, slug.toLowerCase(), request);
+  if (r && r.requiresPassword) return bad("Password required.", 401);
+  if (!r || r.suspended) return bad("site not found", 404);
 
-  const plan = effectivePlan(site);
+  const plan = r.plan;
 
   // Rate-limit redemptions per viewer per minute.
-  const rl = await rateLimit(env, `redeem:${site.id}:${kickUserId || kickUsername}`, 5, 60);
+  const rl = await rateLimit(env, `redeem:${r.id}:${kickUserId || kickUsername}`, 5, 60);
   if (!rl.ok) {
     return bad("rate limited", 429);
   }
 
-  // Enforce site plan limits before creating the redemption.
-  const [pendingRow, fulfilled30dRow] = await Promise.all([
-    one(
-      `SELECT count(*)::int AS count FROM redemptions r
-         JOIN site_viewers sv ON sv.id = r.site_viewer_id
-        WHERE sv.site_id=$1 AND r.status='pending'`,
-      [site.id]
-    ),
-    one(
-      `SELECT count(*)::int AS count FROM redemptions r
-         JOIN site_viewers sv ON sv.id = r.site_viewer_id
-        WHERE sv.site_id=$1 AND r.status='fulfilled' AND r.created_at > now() - interval '30 days'`,
-      [site.id]
-    ),
-  ]);
-  if ((pendingRow?.count || 0) >= CREDITS_PENDING_REDEMPTIONS_LIMITS[plan]) {
-    return bad("This streamer's shop is at capacity. Ask them to upgrade.", 403);
-  }
-  if ((fulfilled30dRow?.count || 0) >= CREDITS_REDEMPTIONS_PER_30D_LIMITS[plan]) {
-    return bad("This streamer's monthly redemption limit is reached. Ask them to upgrade.", 403);
-  }
+  const txResult = await withTransaction(async (tx) => {
+    // Serialize all redemptions for this site to stop concurrent plan-limit overruns.
+    await tx.unsafe("SELECT id FROM sites WHERE id=$1 FOR UPDATE", [r.id]);
 
-  const result = await withTransaction(async (tx) => {
+    // Enforce site plan limits atomically inside the redemption transaction.
+    const [pendingRow, fulfilled30dRow] = await Promise.all([
+      tx.one(
+        `SELECT count(*)::int AS count FROM redemptions r
+           JOIN site_viewers sv ON sv.id = r.site_viewer_id
+          WHERE sv.site_id=$1 AND r.status='pending'`,
+        [r.id]
+      ),
+      tx.one(
+        `SELECT count(*)::int AS count FROM redemptions r
+           JOIN site_viewers sv ON sv.id = r.site_viewer_id
+          WHERE sv.site_id=$1 AND r.status='fulfilled' AND r.created_at > now() - interval '30 days'`,
+        [r.id]
+      ),
+    ]);
+    if ((pendingRow?.count || 0) >= CREDITS_PENDING_REDEMPTIONS_LIMITS[plan]) {
+      return { error: "This streamer's shop is at capacity. Ask them to upgrade.", status: 403 };
+    }
+    if ((fulfilled30dRow?.count || 0) >= CREDITS_REDEMPTIONS_PER_30D_LIMITS[plan]) {
+      return { error: "This streamer's monthly redemption limit is reached. Ask them to upgrade.", status: 403 };
+    }
+
     const viewer = kickUserId
       ? await tx.one(
           `SELECT sv.id, sv.balance, sv.blocked, v.kick_username
              FROM site_viewers sv
              JOIN viewers v ON v.id = sv.viewer_id
             WHERE sv.site_id=$1 AND v.kick_user_id=$2`,
-          [site.id, kickUserId]
+          [r.id, kickUserId]
         )
       : await tx.one(
           `SELECT sv.id, sv.balance, sv.blocked, v.kick_username
              FROM site_viewers sv
              JOIN viewers v ON v.id = sv.viewer_id
             WHERE sv.site_id=$1 AND lower(v.kick_username)=lower($2)`,
-          [site.id, kickUsername]
+          [r.id, kickUsername]
         );
-    if (!viewer) throw new Error("viewer not found");
-    if (viewer.blocked) throw new Error("viewer blocked");
+    if (!viewer) return { error: "viewer not found", status: 400 };
+    if (viewer.blocked) return { error: "viewer blocked", status: 400 };
 
     const item = await tx.one(
       "SELECT id, cost, stock FROM shop_items WHERE id=$1 AND site_id=$2 AND active=true FOR UPDATE",
-      [shopItemId, site.id]
+      [shopItemId, r.id]
     );
-    if (!item) throw new Error("item not found");
-    if (item.stock !== null && item.stock <= 0) throw new Error("out of stock");
-    if (viewer.balance < item.cost) throw new Error("insufficient balance");
+    if (!item) return { error: "item not found", status: 400 };
+    if (item.stock !== null && item.stock <= 0) return { error: "out of stock", status: 400 };
+    if (viewer.balance < item.cost) return { error: "insufficient balance", status: 400 };
 
     await tx.unsafe(
       `UPDATE site_viewers
@@ -610,7 +685,8 @@ export async function handlePublicRedeem(request, env) {
     return { redemptionId: redemptionRows[0].id, balance: viewer.balance - item.cost };
   });
 
-  return ok(result);
+  if (txResult.error) return bad(txResult.error, txResult.status);
+  return ok(txResult);
 }
 
 export async function handleCreditsAnalytics(request, env) {

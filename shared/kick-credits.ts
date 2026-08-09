@@ -39,7 +39,9 @@ export type KickRewardOutcome =
   | { skipped: true }
   | { blocked: true }
   | { rateLimited: true }
-  | { planLimit: true; plan: PlanTier };
+  | { planLimit: true; plan: PlanTier }
+  | { suspended: true }
+  | { unverified: true };
 
 // ---------------------------------------------------------------------------
 // RSA-SHA256 / PKCS#1 v1.5 signature verification.
@@ -171,21 +173,25 @@ export async function processKickRewardRedemption(
       return { duplicate: true };
     }
 
-    // Find the leaderboard site linked to this Kick channel.
+    // Find the leaderboard site linked to this Kick channel and lock it.
     const site = await tx.one<{ id: string; user_id: string }>(
       "SELECT id, user_id FROM sites WHERE kick_channel_external_id = $1 LIMIT 1",
       [channelExternalId]
     );
     if (!site) {
-      throw new Error(`No site linked to Kick channel ${channelExternalId}`);
+      return { skipped: true };
     }
+    await tx.unsafe("SELECT id FROM sites WHERE id=$1 FOR UPDATE", [site.id]);
 
-    // Resolve effective plan for the streamer.
-    const owner = await tx.one<{ plan: string; plan_expires_at: number | null }>(
-      `SELECT plan, (EXTRACT(EPOCH FROM plan_expires_at) * 1000)::double precision AS plan_expires_at
+    // Resolve effective plan for the streamer and reject suspended/unverified accounts.
+    const owner = await tx.one<{ plan: string; plan_expires_at: number | null; status: string; email_verified: boolean }>(
+      `SELECT plan, (EXTRACT(EPOCH FROM plan_expires_at) * 1000)::double precision AS plan_expires_at,
+              status, email_verified
          FROM users WHERE id = $1`,
       [site.user_id]
     );
+    if (owner && owner.status === "suspended") return { suspended: true };
+    if (owner && !owner.email_verified) return { unverified: true };
     const plan = effectivePlan(owner);
 
     // Find the reward → credits mapping for this site.
@@ -201,7 +207,7 @@ export async function processKickRewardRedemption(
       [site.id, rewardId]
     );
     if (!mapping) {
-      throw new Error(`No credit mapping for reward ${rewardId} on site ${site.id}`);
+      return { skipped: true };
     }
 
     // Anti-tamper: make sure the reward cost hasn't changed since mapping.
