@@ -7,7 +7,7 @@
 //  These modules are compiled to shared/*.js by `node build-shared.mjs`.
 // ============================================================================
 
-import { shellNavHtml, SHELL_NAV_CSS, type ShellUser } from "./shell-nav.js";
+import { type ShellUser } from "./shell-nav.js";
 
 function esc(s: unknown): string {
   return String(s ?? "").replace(/[&<>"']/g, (ch) =>
@@ -28,10 +28,12 @@ export interface LeaderboardPageOpts {
   styles?: string[];
   scripts?: string[];
   noscript?: string;
+  nav?: boolean;
+  footer?: boolean;
   content: string;
 }
 
-/** Full HTML document for leaderboard dashboard pages, with a <!--GM_NAV--> placeholder. */
+/** Full HTML document for leaderboard dashboard pages. */
 export function leaderboardPageHtml(opts: LeaderboardPageOpts): string {
   const mainClass = esc(opts.mainClass || "wrap");
   const reqIdMeta = opts.reqId ? `<meta name="request-id" content="${esc(opts.reqId)}" />` : "";
@@ -42,6 +44,16 @@ export function leaderboardPageHtml(opts: LeaderboardPageOpts): string {
   const noscript =
     opts.noscript ||
     "<p>YourRank requires JavaScript</p><p>Please enable JavaScript in your browser settings to use the dashboard.</p>";
+  const navPlaceholder = opts.nav !== false ? "<!--GM_NAV-->" : "";
+  const footer = opts.footer !== false ? `<footer class="gm-shell-footer">
+  <div class="gm-shell-inner">
+    <a class="gm-brand" href="/dashboard"><span class="gm-brand-mark">YR</span><span class="gm-brand-word">YourRank</span></a>
+    <nav class="gm-shell-footer-links" aria-label="Legal">
+      <a href="/terms">Terms</a><a href="/privacy">Privacy</a><a href="/contact">Contact</a><a href="/responsible">Responsible Play</a>
+    </nav>
+    <span class="gm-shell-footer-copy">© ${new Date().getFullYear()} YourRank</span>
+  </div>
+</footer>` : "";
 
   return `<!DOCTYPE html><html lang="en"><head>
 <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -52,17 +64,9 @@ ${styles}
 </head><body>
 <noscript><div class="noscript-msg">${noscript}</div></noscript>
 <a href="#main-content" class="sr-only skip-link">Skip to content</a>
-<!--GM_NAV-->
+${navPlaceholder}
 <main class="${mainClass}" id="main-content">${opts.content}</main>
-<footer class="gm-shell-footer">
-  <div class="gm-shell-inner">
-    <a class="gm-brand" href="/dashboard"><span class="gm-brand-mark">YR</span><span class="gm-brand-word">YourRank</span></a>
-    <nav class="gm-shell-footer-links" aria-label="Legal">
-      <a href="/terms">Terms</a><a href="/privacy">Privacy</a><a href="/contact">Contact</a><a href="/responsible">Responsible Play</a>
-    </nav>
-    <span class="gm-shell-footer-copy">© ${new Date().getFullYear()} YourRank</span>
-  </div>
-</footer>
+${footer}
 ${scripts}
 </body></html>`;
 }
@@ -265,12 +269,10 @@ export interface BotPageOpts {
 /** Full HTML document for the bot dashboard. `content` is placed right after the shared header. */
 export function botPageHtml(opts: BotPageOpts): string {
   const nonceAttr = opts.nonce ? ` nonce="${esc(opts.nonce)}"` : "";
-  const activePath = "/bot" + (opts.page === "overview" ? "/dashboard" : "/" + opts.page);
   return `<!doctype html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Streamer Dashboard</title><style${nonceAttr}>${BOT_STYLE_ATTR_CSS}${SHELL_NAV_CSS}${BOT_BASE_CSS}</style></head><body data-page="${esc(opts.page)}">
+<title>Streamer Dashboard</title><style${nonceAttr}>${BOT_STYLE_ATTR_CSS}${BOT_BASE_CSS}</style></head><body data-page="${esc(opts.page)}">
 <a href="#main-content" class="skip-link">Skip to main content</a>
-${shellNavHtml({ activePath, user: opts.user, logoutAction: "/bot/auth/logout" })}
 ${opts.content}
 </body></html>`;
 }

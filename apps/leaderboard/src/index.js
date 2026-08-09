@@ -3,7 +3,7 @@ import { sendErrorToDiscord } from "../../../shared/monitoring.js";
 import { withWorkerFetch } from "../../../shared/with-worker.js";
 import { RateLimiter } from "../../../shared/rate-limiter-do.js";
 import { populateEnv } from "../../../shared/env.js";
-import { getPublicSite, getByUser, getBySlug, getArchives, ARCHIVE_LIMITS } from "./site.js";
+import { getPublicSite, getBySlug, getArchives, ARCHIVE_LIMITS } from "./site.js";
 import { renderEmbed, renderHallOfFame, renderLeaderboard, renderLegalPage, renderPasswordGate, renderPlayerProfile, renderStreamerProfile } from "./render.jsx";
 import { renderPublicCreditsPage } from "./public-credits.js";
 import { verifyBoardPassword, issueBoardPasswordToken, boardPasswordSetCookieHeader } from "./board-password.js";
@@ -470,71 +470,19 @@ async function handleRequest(request, env, ctx, meta) {
         return Response.redirect(new URL("/dashboard?nav=settings", url), 302);
       }
       if (path === "/dashboard/attribution") {
-        try {
-          const user = await currentUser(request, env);
-          if (!user) return Response.redirect(new URL("/login", url), 302);
-          const html = addCookieConsent(PAGES.attribution
-            .replace("<!--GM_NAV-->", shellNavHtml({ activePath: "/dashboard/attribution", user })));
-          return new Response(html, { headers: { ...SECURE_HTML, ...csrfHeader, "cache-control": "no-store, no-cache, must-revalidate" } });
-        } catch (e) {
-          if (workerLog) workerLog.error("attribution_render_failed", { error: String(e?.message || e) }); else console.error("attribution render failed:", String(e?.message || e));
-          return new Response(error500Page(nonce), { status: 500, headers: HTML_N });
-        }
+        return Response.redirect(new URL("/bot/dashboard", url), 302);
       }
       if (path === "/dashboard/bot/setup") {
-        try {
-          const user = await currentUser(request, env);
-          if (!user) return Response.redirect(new URL("/login", url), 302);
-          const html = addCookieConsent(PAGES.botSetup
-            .replace("<!--GM_NAV-->", shellNavHtml({ activePath: "/dashboard/bot/setup", user })));
-          return new Response(html, { headers: { ...SECURE_HTML, ...csrfHeader, "cache-control": "no-store, no-cache, must-revalidate" } });
-        } catch (e) {
-          if (workerLog) workerLog.error("bot_setup_render_failed", { error: String(e?.message || e) }); else console.error("bot setup render failed:", String(e?.message || e));
-          return new Response(error500Page(nonce), { status: 500, headers: HTML_N });
-        }
+        return Response.redirect(new URL("/bot/dashboard", url), 302);
       }
       if (path === "/dashboard/setup") {
-        try {
-          const user = await currentUser(request, env);
-          if (!user) return Response.redirect(new URL("/login", url), 302);
-          // Returning user with brand.name already set → skip wizard
-          const site = await getByUser(env, user.id);
-          if (site && site.name && site.name !== site.slug) {
-            return Response.redirect(new URL("/dashboard", url), 302);
-          }
-          const nonce = crypto.randomUUID();
-          const html = addCookieConsent(PAGES.setup
-            .replace("<!--GM_NAV-->", shellNavHtml({ activePath: "/dashboard", user }))
-            .replace(/__NONCE__/g, nonce));
-          return new Response(html, { headers: { ...withNonce(SECURE_HTML, nonce), ...csrfHeader, "cache-control": "no-store, no-cache, must-revalidate" } });
-        } catch (e) {
-          if (workerLog) workerLog.error("setup_render_failed", { error: String(e?.message || e) }); else console.error("setup render failed:", String(e?.message || e));
-          return new Response(error500Page(nonce), { status: 500, headers: HTML_N });
-        }
+        return Response.redirect(new URL("/dashboard", url), 302);
       }
       if (path === "/dashboard/support") {
-        try {
-          const user = await currentUser(request, env);
-          if (!user) return Response.redirect(new URL("/login", url), 302);
-          const html = addCookieConsent(PAGES.support
-            .replace("<!--GM_NAV-->", shellNavHtml({ activePath: "/dashboard/support", user })));
-          return new Response(html, { headers: { ...SECURE_HTML, ...csrfHeader, "cache-control": "no-store, no-cache, must-revalidate" } });
-        } catch (e) {
-          if (workerLog) workerLog.error("support_render_failed", { error: String(e?.message || e) }); else console.error("support render failed:", String(e?.message || e));
-          return new Response(error500Page(nonce), { status: 500, headers: HTML_N });
-        }
+        return Response.redirect(new URL("/contact?type=support&area=dashboard&return=/dashboard", url), 302);
       }
       if (path === "/dashboard/security") {
-        try {
-          const user = await currentUser(request, env);
-          if (!user) return Response.redirect(new URL("/login", url), 302);
-          const html = addCookieConsent(PAGES.security
-            .replace("<!--GM_NAV-->", shellNavHtml({ activePath: "/dashboard/security", user })));
-          return new Response(html, { headers: { ...SECURE_HTML, ...csrfHeader, "cache-control": "no-store, no-cache, must-revalidate" } });
-        } catch (e) {
-          if (workerLog) workerLog.error("security_render_failed", { error: String(e?.message || e) }); else console.error("security render failed:", String(e?.message || e));
-          return new Response(error500Page(nonce), { status: 500, headers: HTML_N });
-        }
+        return Response.redirect(new URL("/dashboard?nav=settings", url), 302);
       }
       if (path === "/dashboard/credits") {
         try {
@@ -624,9 +572,9 @@ async function handleRequest(request, env, ctx, meta) {
 
 
 
-      // --- /setup → /dashboard/setup redirect (legacy bookmark fixup) ---
+      // --- /setup → /dashboard redirect (legacy bookmark fixup) ---
       if (method === "GET" && path === "/setup") {
-        return Response.redirect(url.origin + "/dashboard/setup", 302);
+        return Response.redirect(url.origin + "/dashboard", 302);
       }
 
       // --- permanent demo leaderboard (always works, no DB needed) ---
