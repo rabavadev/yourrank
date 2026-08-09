@@ -449,7 +449,8 @@ async function handleRequest(request, env, ctx, meta) {
             activePath: url.pathname + url.search,
             user,
             reqId: reqId || "",
-            theme: "light"
+            theme: "light",
+            settingsHref: "/account"
           }));
           return new Response(html, { headers: { ...SECURE_HTML, ...csrfHeader, "cache-control": "no-store, no-cache, must-revalidate" } });
         } catch (e) {
@@ -457,6 +458,23 @@ async function handleRequest(request, env, ctx, meta) {
           // raw Cloudflare 1101 after the session cookie redirected past the
           // unauthenticated path. Retry-safe: a plain refresh re-runs the read.
           if (workerLog) workerLog.error("dashboard_render_failed", { error: String(e?.message || e) }); else console.error("dashboard render failed:", String(e?.message || e));
+          return new Response(error500Page(nonce), { status: 500, headers: HTML_N });
+        }
+      }
+      if (path === "/account" || path === "/account.html") {
+        try {
+          const user = await currentUser(request, env);
+          if (!user) return Response.redirect(new URL("/login", url), 302);
+          const html = addCookieConsent(await renderHtmlPage(PAGES.account, {
+            activePath: url.pathname,
+            user,
+            reqId: reqId || "",
+            theme: "light",
+            settingsHref: "/account"
+          }));
+          return new Response(html, { headers: { ...SECURE_HTML, ...csrfHeader, "cache-control": "no-store, no-cache, must-revalidate" } });
+        } catch (e) {
+          if (workerLog) workerLog.error("account_render_failed", { error: String(e?.message || e) }); else console.error("account render failed:", String(e?.message || e));
           return new Response(error500Page(nonce), { status: 500, headers: HTML_N });
         }
       }
@@ -473,10 +491,10 @@ async function handleRequest(request, env, ctx, meta) {
         return Response.redirect(new URL("/dashboard?nav=performance", url), 302);
       }
       if (path === "/dashboard/billing") {
-        return Response.redirect(new URL("/dashboard?nav=settings", url), 302);
+        return Response.redirect(new URL("/account#plan", url), 302);
       }
       if (path === "/dashboard/attribution") {
-        return Response.redirect(new URL("/bot/dashboard", url), 302);
+        return Response.redirect(new URL("/account#postbacks", url), 302);
       }
       if (path === "/dashboard/bot/setup") {
         return Response.redirect(new URL("/bot/dashboard", url), 302);
@@ -488,7 +506,7 @@ async function handleRequest(request, env, ctx, meta) {
         return Response.redirect(new URL("/contact?type=support&area=dashboard&return=/dashboard", url), 302);
       }
       if (path === "/dashboard/security") {
-        return Response.redirect(new URL("/dashboard?nav=settings", url), 302);
+        return Response.redirect(new URL("/account#profile", url), 302);
       }
       if (path === "/dashboard/credits") {
         try {

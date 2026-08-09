@@ -1,7 +1,10 @@
 // settings dashboard page panels
 export function settingsPanel(publicBaseUrl: string): string {
   return `
-  <div class="panel" data-page="settings"><h2>Deposit tracking</h2>
+  <div class="panel" data-page="settings"><h2>Postbacks</h2>
+    <p class="muted style-21">Manage postback keys, signed endpoints, and the conversion log in your Account.</p>
+    <p class="style-21"><a class="style-22 style-34" href="/account#postbacks">Open postback management →</a></p>
+    <hr class="style-20" />
     <p class="muted style-21">See which of your clicks turn into real deposits. You don't need to do anything technical —
       send the setup details below to your affiliate manager and they'll connect it for you.</p>
     <details class="adv"><summary>Setup details for your affiliate manager (technical)</summary>
@@ -18,6 +21,9 @@ export function settingsPanel(publicBaseUrl: string): string {
   </div>
 
   <div class="panel" data-page="settings"><h2>Plan</h2>
+    <p class="muted style-21">Manage your plan, payment history, and Pro trial in your Account.</p>
+    <p class="style-21"><a class="style-22 style-34" href="/account#plan">Manage plan &amp; billing →</a></p>
+    <hr class="style-20" />
     <div id="planInfo" class="muted">Loading…</div>
     <div class="style-10" id="planButtons"></div>
   </div>`;
