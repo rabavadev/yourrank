@@ -94,7 +94,7 @@ export const DEFAULT_EXTRA = {
 // needed by the /logo/:slug endpoint and saveSite(), which fetch it separately.
 // PERF-004 / PERF-107: avoid SELECT * to prevent 180KB+ transfers on every page.
 // PERF-005: include has_logo as a computed column to avoid a separate re-query.
-const SITE_COLUMNS = "id, user_id, slug, name, tagline, casino, code, cta_url, prize_pool, period, ends_at, reset_note, blurb, extra_json, published, is_draft, theme_json, updated_at, custom_domain, domain_status, discord_webhook_url_enc, telegram_chat_id, telegram_notify, auto_reset_enabled, auto_reset_clear, auto_reset_last_run_at, password_hash, password_salt, (logo_data IS NOT NULL AND logo_data != '') AS has_logo";
+const SITE_COLUMNS = "id, user_id, slug, name, tagline, casino, code, cta_url, prize_pool, period, ends_at, reset_note, blurb, extra_json, published, is_draft, theme_json, updated_at, custom_domain, domain_status, discord_webhook_url_enc, telegram_chat_id, telegram_notify, auto_reset_enabled, auto_reset_clear, auto_reset_last_run_at, password_hash, password_salt, viewer_kick_auth_enabled, viewer_discord_auth_enabled, viewer_public_redeem_enabled, (logo_data IS NOT NULL AND logo_data != '') AS has_logo";
 
 // L1 in-memory cache (per-isolate). No L2 KV — sessions moved to Postgres.
 const siteCache = new Map();
@@ -435,7 +435,17 @@ export async function getPublicSite(env, slug, request = null) {
       getPublicBoards(env, site.user_id),
       one("SELECT username FROM bots WHERE owner_id=$1 LIMIT 1", [site.user_id]),
     ]);
-    return { id: site.id, userId: site.user_id, data: publicShape(site, players, archives, !!site.has_logo), plan, boards, botUsername: bot?.username || null };
+    return {
+      id: site.id,
+      userId: site.user_id,
+      data: publicShape(site, players, archives, !!site.has_logo),
+      plan,
+      boards,
+      botUsername: bot?.username || null,
+      viewerKickAuthEnabled: !!site.viewer_kick_auth_enabled,
+      viewerDiscordAuthEnabled: !!site.viewer_discord_auth_enabled,
+      viewerPublicRedeemEnabled: !!site.viewer_public_redeem_enabled,
+    };
   }
 
 export async function getUserSite(env, uid, plan) {

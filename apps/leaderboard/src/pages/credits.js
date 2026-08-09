@@ -46,6 +46,25 @@ export const creditsPage = leaderboardPageHtml({
   </section>
 
   <section class="card">
+    <h2>Plan usage</h2>
+    <div id="cr-usage" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px"></div>
+  </section>
+
+  <section class="card">
+    <h2>Viewer login</h2>
+    <p class="card-sub">Choose how viewers can access their credits and redeem items.</p>
+    <form id="cr-viewer-auth-form" class="grid2">
+      <label class="chk"><input type="checkbox" id="cr-viewer-auth-kick" checked /> Allow "Log in with Kick"</label>
+      <label class="chk"><input type="checkbox" id="cr-viewer-auth-discord" checked /> Allow "Log in with Discord"</label>
+      <label class="chk"><input type="checkbox" id="cr-viewer-auth-public" checked /> Allow public username lookup &amp; redeem</label>
+      <div class="field" style="grid-column:1/-1">
+        <button class="btn" type="submit" id="cr-viewer-auth-submit">Save settings</button>
+        <p class="status" id="cr-viewer-auth-status" role="status" aria-live="polite"></p>
+      </div>
+    </form>
+  </section>
+
+  <section class="card">
     <h2>Reward mappings</h2>
     <p class="card-sub">When a viewer redeems one of these Kick channel rewards, they get the matching YourRank credits.</p>
     <p class="hint" id="cr-reward-usage"></p>

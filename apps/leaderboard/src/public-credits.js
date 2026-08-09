@@ -3,7 +3,8 @@ function esc(s) {
   return String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 }
 
-export function renderPublicCreditsPage({ slug, nonce, homeUrl }) {
+export function renderPublicCreditsPage({ slug, nonce, homeUrl, kickAuthEnabled, discordAuthEnabled, publicRedeemEnabled }) {
+  const returnTo = `/${slug}/credits`;
   return `<!DOCTYPE html><html lang="en"><head>
 <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Viewer Credits · ${esc(slug)}</title>
@@ -23,6 +24,7 @@ export function renderPublicCreditsPage({ slug, nonce, homeUrl }) {
   .pc-item-name{font-weight:600;}
   .pc-item-desc{font-size:13px;color:var(--ink-mute);}
   .pc-item-cost{font-weight:700;}
+  .pc-login{display:flex;gap:8px;flex-wrap:wrap;}
 </style>
 </head><body>
 <a href="#main-content" class="sr-only skip-link">Skip to content</a>
@@ -34,6 +36,16 @@ export function renderPublicCreditsPage({ slug, nonce, homeUrl }) {
     <h1>Channel points shop</h1>
     <p>Enter your Kick username to see your balance and redeem items.</p>
   </div>
+
+  <section class="pc-card" id="pc-login-card" hidden>
+    <h2>Log in</h2>
+    <p class="card-sub">The streamer enabled viewer login. Log in to see your credits across all boards and redeem faster.</p>
+    <div class="pc-login">
+      <a class="btn btn--accent" id="pc-login-kick" href="/api/viewer/auth/kick?returnTo=${encodeURIComponent(returnTo)}" hidden>Log in with Kick</a>
+      <a class="btn" id="pc-login-discord" href="/api/viewer/auth/discord?returnTo=${encodeURIComponent(returnTo)}" hidden>Log in with Discord</a>
+      <a class="btn" href="/me">My dashboard</a>
+    </div>
+  </section>
 
   <section class="pc-card">
     <form id="pc-lookup" class="field" style="margin-bottom:0">
@@ -64,11 +76,19 @@ export function renderPublicCreditsPage({ slug, nonce, homeUrl }) {
 <script nonce="${esc(nonce)}">
 (function(){
   const slug = ${JSON.stringify(slug)};
+  const auth = { kick: ${kickAuthEnabled ? 'true' : 'false'}, discord: ${discordAuthEnabled ? 'true' : 'false'}, public: ${publicRedeemEnabled ? 'true' : 'false'} };
   let viewer = null;
+  let viewerToken = null;
 
   function $(id){ return document.getElementById(id); }
   function esc(s){ return String(s??"").replace(/[&<>"']/g,(c)=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
   function setStatus(msg, err){ const el=$("pc-status"); el.textContent=msg; el.className=err?"status error":"status"; }
+
+  if (auth.kick || auth.discord) {
+    $("pc-login-card").hidden = false;
+    $("pc-login-kick").hidden = !auth.kick;
+    $("pc-login-discord").hidden = !auth.discord;
+  }
 
   async function api(method, path, body){
     const opts={method,credentials:"same-origin",headers:{}};
@@ -86,10 +106,11 @@ export function renderPublicCreditsPage({ slug, nonce, homeUrl }) {
     try{
       const data=await api("GET","/api/public/credits?"+new URLSearchParams({slug,kickUsername:username}).toString());
       viewer=data.viewer;
+      viewerToken=viewer ? viewer.publicToken || null : null;
       if(!viewer){
-        setStatus("No credits found for that username yet. Earn some by redeeming Kick channel rewards.",true);
         $("pc-balance-card").hidden=true;
         $("pc-shop-card").hidden=true;
+        setStatus("No credits found for that username yet. Earn some by redeeming Kick channel rewards.",true);
         return;
       }
       $("pc-balance").textContent=viewer.balance;
@@ -109,18 +130,19 @@ export function renderPublicCreditsPage({ slug, nonce, homeUrl }) {
     for(const item of active){
       const div=document.createElement("div");
       div.className="pc-item";
-      const canBuy=viewer && viewer.balance>=item.cost && (item.stock===null || item.stock>0);
+      const canBuy=auth.public && viewer && viewer.balance>=item.cost && (item.stock===null || item.stock>0);
       div.innerHTML='<div class="pc-item-info"><div class="pc-item-name">'+esc(item.name)+'</div><div class="pc-item-desc">'+esc(item.description||"")+'</div></div>'+
         '<div style="text-align:right"><div class="pc-item-cost">'+item.cost+' credits</div>'+
         (item.stock!==null ? '<div class="hint">Stock: '+item.stock+'</div>':'')+
-        '<button class="btn btn--sm" '+(canBuy?'':'disabled')+' data-redeem="'+esc(item.id)+'">Redeem</button></div>';
+        '<button class="btn btn--sm" '+(canBuy?'':'disabled')+' data-redeem="'+esc(item.id)+'">'+(auth.public?'Redeem':'Log in to redeem')+'</button></div>';
       list.appendChild(div);
     }
     list.querySelectorAll("[data-redeem]").forEach((b)=>{
       b.addEventListener("click", async ()=>{
+        if(!auth.public) { window.location.href="/me"; return; }
         if(!confirm("Spend "+itemById(active,b.dataset.redeem).cost+" credits on this item?")) return;
         try{
-          const data=await api("POST","/api/public/redeem",{slug,kickUsername:username,shopItemId:b.dataset.redeem});
+          const data=await api("POST","/api/public/redeem",{slug,kickUsername:username,shopItemId:b.dataset.redeem,publicToken:viewerToken});
           viewer.balance=data.balance;
           $("pc-balance").textContent=data.balance;
           setStatus("Redemption requested! The streamer will fulfill it off-platform.",false);

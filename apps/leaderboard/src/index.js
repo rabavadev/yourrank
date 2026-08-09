@@ -6,6 +6,7 @@ import { populateEnv } from "../../../shared/env.js";
 import { getPublicSite, getBySlug, getArchives, ARCHIVE_LIMITS } from "./site.js";
 import { renderEmbed, renderHallOfFame, renderLeaderboard, renderLegalPage, renderPasswordGate, renderPlayerProfile, renderStreamerProfile } from "./render.jsx";
 import { renderPublicCreditsPage } from "./public-credits.js";
+import { viewerDashboardPage } from "./pages/viewer-dashboard.js";
 import { verifyBoardPassword, issueBoardPasswordToken, boardPasswordSetCookieHeader } from "./board-password.js";
 import { PAGES } from "./pages.jsx";
 import { leaderboardPageHtml } from "../../../shared/page-shell.js";
@@ -499,6 +500,9 @@ async function handleRequest(request, env, ctx, meta) {
           return new Response("Credits page couldn't load right now — please refresh.", { status: 500, headers: { "content-type": "text/plain; charset=utf-8" } });
         }
       }
+      if (path === "/me" || path === "/me.html") {
+        return new Response(addCookieConsent(viewerDashboardPage), { headers: { ...HTML_N, ...csrfHeader, "cache-control": "no-store, no-cache, must-revalidate" } });
+      }
       if (path === "/forgot") return new Response(addCookieConsent(await renderHtmlPage(PAGES.forgot)), { headers: { ...SECURE_HTML, ...csrfHeader } });
       if (path === "/reset") {
         // BUG-003: Don't show password form when no token is present.
@@ -757,7 +761,14 @@ a{color:#5771ff;text-decoration:none;font-weight:600}</style></head><body>
         }
         if (!r || r.suspended) return new Response(notFoundPage(slug, nonce), { status: 404, headers: HTML_N });
         return new Response(
-          renderPublicCreditsPage({ slug, nonce, homeUrl: url.origin }),
+          renderPublicCreditsPage({
+            slug,
+            nonce,
+            homeUrl: url.origin,
+            kickAuthEnabled: r.viewerKickAuthEnabled,
+            discordAuthEnabled: r.viewerDiscordAuthEnabled,
+            publicRedeemEnabled: r.viewerPublicRedeemEnabled,
+          }),
           { headers: { ...HTML_N, "cache-control": "no-store" } }
         );
       }

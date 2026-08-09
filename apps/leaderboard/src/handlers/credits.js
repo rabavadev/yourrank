@@ -7,6 +7,7 @@ import { setSiteKickChannel } from "../../../../shared/kick-credits.js";
 import {
   getValidKickAccessToken,
   createKickChannelReward,
+  fetchKickCurrentChannel,
 } from "../../../../shared/kick-oauth.js";
 import {
   effectivePlan,
@@ -111,6 +112,11 @@ export async function handleCreditsStatus(request, env) {
     viewers: viewers || [],
     redemptions: redemptions || [],
     usage: usage || {},
+    viewerAuth: {
+      kick: site.viewer_kick_auth_enabled,
+      discord: site.viewer_discord_auth_enabled,
+      public: site.viewer_public_redeem_enabled,
+    },
     limits: {
       rewardMappings: CREDITS_REWARD_LIMITS[plan],
       shopItems: CREDITS_SHOP_LIMITS[plan],
@@ -256,6 +262,18 @@ export async function handleCreditsCreateReward(request, env) {
     is_enabled: true,
   });
 
+  // The reward was created on the streamer's Kick channel. Capture that channel
+  // so webhook redemptions can find this site even if the manual connect form was skipped.
+  const kickChannel = await fetchKickCurrentChannel(tokenSet.accessToken);
+  if (!kickChannel) {
+    return bad("Could not determine your Kick channel from the OAuth token", 500);
+  }
+  const kickChannelId = String(kickChannel.broadcaster_user_id || "");
+  const kickChannelName = String(kickChannel.slug || "");
+  if (!kickChannelId) {
+    return bad("Kick channel ID missing from current channel response", 500);
+  }
+
   // Persist refreshed tokens if they changed.
   await exec(
     `UPDATE users
@@ -270,6 +288,15 @@ export async function handleCreditsCreateReward(request, env) {
   // Atomic insert under a site lock so two concurrent auto-creates cannot overrun the plan limit.
   const txResult = await withTransaction(async (tx) => {
     await tx.unsafe("SELECT id FROM sites WHERE id=$1 FOR UPDATE", [site.id]);
+
+    await tx.unsafe(
+      `UPDATE sites
+          SET kick_channel_external_id = $1,
+              kick_channel_name = $2,
+              updated_at = now()
+        WHERE id = $3`,
+      [kickChannelId, kickChannelName, site.id]
+    );
 
     const countRow = await tx.one(
       "SELECT count(*)::int AS count FROM credit_reward_mappings WHERE site_id=$1 AND active=true",
@@ -545,14 +572,14 @@ export async function handlePublicCredits(request, env) {
 
   const viewer = kickUserId
     ? await one(
-        `SELECT sv.id, sv.balance, sv.total_earned, sv.total_spent, sv.blocked, sv.block_reason, v.kick_username
+        `SELECT sv.id, sv.balance, sv.total_earned, sv.total_spent, sv.blocked, sv.block_reason, sv.public_token, v.kick_username
            FROM site_viewers sv
            JOIN viewers v ON v.id = sv.viewer_id
           WHERE sv.site_id=$1 AND v.kick_user_id=$2`,
         [r.id, kickUserId]
       )
     : await one(
-        `SELECT sv.id, sv.balance, sv.total_earned, sv.total_spent, sv.blocked, sv.block_reason, v.kick_username
+        `SELECT sv.id, sv.balance, sv.total_earned, sv.total_spent, sv.blocked, sv.block_reason, sv.public_token, v.kick_username
            FROM site_viewers sv
            JOIN viewers v ON v.id = sv.viewer_id
           WHERE sv.site_id=$1 AND lower(v.kick_username)=lower($2)`,
@@ -572,8 +599,24 @@ export async function handlePublicCredits(request, env) {
   );
 
   return ok({
-    viewer: viewer || null,
+    viewer: viewer
+      ? {
+          id: viewer.id,
+          balance: viewer.balance,
+          total_earned: viewer.total_earned,
+          total_spent: viewer.total_spent,
+          blocked: viewer.blocked,
+          block_reason: viewer.block_reason,
+          kick_username: viewer.kick_username,
+          publicToken: viewer.public_token,
+        }
+      : null,
     shopItems: shopItems || [],
+    auth: {
+      kickEnabled: r.viewerKickAuthEnabled,
+      discordEnabled: r.viewerDiscordAuthEnabled,
+      publicRedeemEnabled: r.viewerPublicRedeemEnabled,
+    },
   });
 }
 
@@ -583,14 +626,16 @@ export async function handlePublicRedeem(request, env) {
   const kickUserId = String(body?.kickUserId || "").trim();
   const kickUsername = String(body?.kickUsername || "").trim();
   const shopItemId = String(body?.shopItemId || "").trim();
+  const publicToken = String(body?.publicToken || "").trim();
 
-  if (!slug || (!kickUserId && !kickUsername) || !shopItemId) {
-    return bad("slug, kickUserId or kickUsername, and shopItemId required");
+  if (!slug || (!kickUserId && !kickUsername) || !shopItemId || !publicToken) {
+    return bad("slug, kickUserId or kickUsername, shopItemId, and publicToken required");
   }
 
   const r = await getPublicSite(env, slug.toLowerCase(), request);
   if (r && r.requiresPassword) return bad("Password required.", 401);
   if (!r || r.suspended) return bad("site not found", 404);
+  if (!r.viewerPublicRedeemEnabled) return bad("Public redeem is disabled. Please log in.", 403);
 
   const plan = r.plan;
 
@@ -628,14 +673,14 @@ export async function handlePublicRedeem(request, env) {
 
     const viewer = kickUserId
       ? await tx.one(
-          `SELECT sv.id, sv.balance, sv.blocked, v.kick_username
+          `SELECT sv.id, sv.balance, sv.blocked, sv.public_token, v.kick_username
              FROM site_viewers sv
              JOIN viewers v ON v.id = sv.viewer_id
             WHERE sv.site_id=$1 AND v.kick_user_id=$2`,
           [r.id, kickUserId]
         )
       : await tx.one(
-          `SELECT sv.id, sv.balance, sv.blocked, v.kick_username
+          `SELECT sv.id, sv.balance, sv.blocked, sv.public_token, v.kick_username
              FROM site_viewers sv
              JOIN viewers v ON v.id = sv.viewer_id
             WHERE sv.site_id=$1 AND lower(v.kick_username)=lower($2)`,
@@ -643,6 +688,9 @@ export async function handlePublicRedeem(request, env) {
         );
     if (!viewer) return { error: "viewer not found", status: 400 };
     if (viewer.blocked) return { error: "viewer blocked", status: 400 };
+    if (String(viewer.public_token || "") !== publicToken) {
+      return { error: "invalid viewer token", status: 401 };
+    }
 
     const item = await tx.one(
       "SELECT id, cost, stock FROM shop_items WHERE id=$1 AND site_id=$2 AND active=true FOR UPDATE",
@@ -689,6 +737,31 @@ export async function handlePublicRedeem(request, env) {
   return ok(txResult);
 }
 
+export async function handleCreditsViewerAuth(request, env) {
+  const { user, res } = await requireUser(request, env);
+  if (res) return res;
+  const url = new URL(request.url);
+  const site = await getSite(env, user, url);
+  if (!site) return bad("no site", 404);
+
+  const body = await readJson(request);
+  const kick = body?.kick === true || body?.kick === "true";
+  const discord = body?.discord === true || body?.discord === "true";
+  const publicRedeem = body?.public === true || body?.public === "true";
+
+  await exec(
+    `UPDATE sites
+        SET viewer_kick_auth_enabled = $1,
+            viewer_discord_auth_enabled = $2,
+            viewer_public_redeem_enabled = $3,
+            updated_at = now()
+      WHERE id = $4 AND user_id = $5`,
+    [kick, discord, publicRedeem, site.id, user.id]
+  );
+
+  return ok({ kick, discord, public: publicRedeem });
+}
+
 export async function handleCreditsAnalytics(request, env) {
   const { user, res } = await requireUser(request, env);
   if (res) return res;
@@ -727,17 +800,21 @@ export async function handleCreditsAnalytics(request, env) {
       [site.id, startDate]
     ),
     one(
-      `SELECT COALESCE(SUM(cl.amount), 0)::int AS total
+      `SELECT COALESCE(SUM(CASE WHEN cl.type = 'spend' THEN cl.amount
+                                WHEN cl.type = 'revoke' THEN -cl.amount
+                                ELSE 0 END), 0)::int AS total
          FROM credit_ledger cl
          JOIN site_viewers sv ON sv.id = cl.site_viewer_id
-        WHERE sv.site_id = $1 AND cl.type = 'spend'`,
+        WHERE sv.site_id = $1 AND cl.type IN ('spend', 'revoke')`,
       [site.id]
     ),
     one(
-      `SELECT COALESCE(SUM(cl.amount), 0)::int AS total
+      `SELECT COALESCE(SUM(CASE WHEN cl.type = 'spend' THEN cl.amount
+                                WHEN cl.type = 'revoke' THEN -cl.amount
+                                ELSE 0 END), 0)::int AS total
          FROM credit_ledger cl
          JOIN site_viewers sv ON sv.id = cl.site_viewer_id
-        WHERE sv.site_id = $1 AND cl.type = 'spend' AND cl.created_at > $2::timestamptz`,
+        WHERE sv.site_id = $1 AND cl.type IN ('spend', 'revoke') AND cl.created_at > $2::timestamptz`,
       [site.id, startDate]
     ),
     one(

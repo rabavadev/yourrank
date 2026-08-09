@@ -50,8 +50,21 @@ import {
   handleCreditsViewerHistory,
   handlePublicCredits,
   handlePublicRedeem,
+  handleCreditsViewerAuth,
 } from "./handlers/credits.js";
 import { handleCreditsBlockViewer } from "./handlers/credits-block.js";
+import {
+  handleKickViewerAuthStart,
+  handleKickViewerAuthCallback,
+  handleDiscordViewerAuthStart,
+  handleDiscordViewerAuthCallback,
+  handleViewerLogout,
+} from "./handlers/viewer-auth.js";
+import {
+  handleViewerMe,
+  handleViewerSite,
+  handleViewerRedeem,
+} from "./handlers/viewer-dashboard.js";
 import { handleApiDocs, handleOpenApiJson } from "./handlers/docs.js";
 import { handleCheckout, handleCheckoutLifetime, handleIpn, handleCancel, handleUserPayments } from "./billing.js";
 import {
@@ -144,6 +157,21 @@ export const ROUTES = [
   // Public credits / shop API (CSRF-exempt)
   { path: "/api/public/credits", method: "GET", handler: withHandler(handlePublicCredits) },
   { path: "/api/public/redeem", method: "POST", handler: withHandler(handlePublicRedeem) },
+
+  // Viewer auth (Kick / Discord)
+  { path: "/api/viewer/auth/kick", method: "GET", handler: withHandler(handleKickViewerAuthStart) },
+  { path: "/api/viewer/auth/kick/callback", method: "GET", handler: withHandler(handleKickViewerAuthCallback) },
+  { path: "/api/viewer/auth/discord", method: "GET", handler: withHandler(handleDiscordViewerAuthStart) },
+  { path: "/api/viewer/auth/discord/callback", method: "GET", handler: withHandler(handleDiscordViewerAuthCallback) },
+  { path: "/api/viewer/logout", method: "POST", handler: withHandler(handleViewerLogout) },
+
+  // Viewer dashboard API
+  { path: "/api/viewer/me", method: "GET", handler: withHandler(handleViewerMe) },
+  { path: "/api/viewer/site", method: "GET", handler: withHandler(handleViewerSite) },
+  { path: "/api/viewer/redeem", method: "POST", handler: withHandler(handleViewerRedeem) },
+
+  // Streamer viewer-auth toggles
+  { path: "/api/credits/viewer-auth", method: "POST", handler: withHandler(handleCreditsViewerAuth) },
 
   // Public API routes (CSRF-exempt)
   { path: "/api/docs", method: "GET", handler: withHandler(handleApiDocs) },

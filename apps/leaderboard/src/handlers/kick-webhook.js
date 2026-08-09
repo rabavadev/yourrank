@@ -10,6 +10,7 @@ import {
 } from "../../../../shared/kick-credits.js";
 
 const KICK_REWARD_EVENT = "channel.reward.redemption.updated";
+const KICK_WEBHOOK_MAX_AGE_MS = 5 * 60 * 1000;
 
 // If the queue binding is missing, process the event inline so local/dev
 // tests still work, but always prefer the queue for scale.
@@ -40,6 +41,15 @@ export async function handleKickWebhook(request, env) {
   const isValid = await verifyKickWebhookSignature(publicKeyPem, signedMessage, signature);
   if (!isValid) {
     return bad("Invalid webhook signature", 401);
+  }
+
+  const timestampMs = Date.parse(timestamp);
+  if (!Number.isFinite(timestampMs)) {
+    return bad("Invalid webhook timestamp", 400);
+  }
+  const now = Date.now();
+  if (now - timestampMs > KICK_WEBHOOK_MAX_AGE_MS || timestampMs > now + 60_000) {
+    return bad("Webhook event timestamp outside accepted window", 400);
   }
 
   // Acknowledge any event we don't care about so Kick doesn't retry.
