@@ -7,7 +7,7 @@ compatibility_flags = ["nodejs_compat"]
 PUBLIC_BASE_URL = "https://yourrank.site"
 RL_BACKEND = "do"  # Change to "kv" to use KV for rate limiting
 RL_FAIL_OPEN = "false"  # Block requests when the rate-limit backend is down (fail-closed).
-POSTBACK_UNSIGNED_ENABLED = "true"  # Set false at the documented sunset after usage review.
+POSTBACK_UNSIGNED_ENABLED = "false"  # Signed postbacks only.
 SESSION_COOKIE_DOMAIN = ".yourrank.site"
 # Set SENTRY_DSN via `wrangler secret put SENTRY_DSN` when ready
 

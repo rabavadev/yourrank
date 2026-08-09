@@ -36,7 +36,7 @@ export interface KickRewardResult {
 export type KickRewardOutcome =
   | KickRewardResult
   | { duplicate: true }
-  | { skipped: true }
+  | { skipped: true; reason?: string }
   | { blocked: true }
   | { rateLimited: true }
   | { planLimit: true; plan: PlanTier }
@@ -152,7 +152,7 @@ export async function processKickRewardRedemption(
   const rewardCost = Number(reward.cost || 0);
 
   if (!channelExternalId || !redeemerKickUserId || !rewardId) {
-    throw new Error("Missing broadcaster, redeemer or reward ID");
+    return { skipped: true, reason: "Missing broadcaster, redeemer or reward ID" };
   }
 
   if (!isCreditableKickStatus(status)) {
@@ -213,7 +213,7 @@ export async function processKickRewardRedemption(
     // Anti-tamper: make sure the reward cost hasn't changed since mapping.
     const expectedCost = Number(mapping.kick_reward_cost || 0);
     if (expectedCost !== 0 && expectedCost !== rewardCost) {
-      throw new Error(`Reward cost mismatch for ${rewardId}: expected ${expectedCost}, got ${rewardCost}`);
+      return { skipped: true, reason: `Reward cost mismatch for ${rewardId}: expected ${expectedCost}, got ${rewardCost}` };
     }
 
     // Upsert viewer and record username history.

@@ -45,7 +45,7 @@ APP_NAME = "YourRank"
 CF_ZONE_ID = "dd79a3ac13643b94732f2fef6ce3b1f5"
 RL_BACKEND = "do"  # Change to "kv" to use KV for rate limiting
 RL_FAIL_OPEN = "false"  # Block requests when the rate-limit backend is down (fail-closed).
-POSTBACK_UNSIGNED_ENABLED = "true"  # Set false at the documented sunset after usage review.
+POSTBACK_UNSIGNED_ENABLED = "false"  # Signed postbacks only.
 # Production session cookie is scoped to the apex domain so it is shared across
 # subdomains, but isolated from staging by the staging value below.
 SESSION_COOKIE_DOMAIN = ".yourrank.site"

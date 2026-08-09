@@ -65,6 +65,7 @@ export function renderPublicCreditsPage({ slug, nonce, homeUrl }) {
 (function(){
   const slug = ${JSON.stringify(slug)};
   let viewer = null;
+  let viewerToken = null;
 
   function $(id){ return document.getElementById(id); }
   function esc(s){ return String(s??"").replace(/[&<>"']/g,(c)=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
@@ -86,6 +87,7 @@ export function renderPublicCreditsPage({ slug, nonce, homeUrl }) {
     try{
       const data=await api("GET","/api/public/credits?"+new URLSearchParams({slug,kickUsername:username}).toString());
       viewer=data.viewer;
+      viewerToken=viewer ? viewer.publicToken || null : null;
       if(!viewer){
         setStatus("No credits found for that username yet. Earn some by redeeming Kick channel rewards.",true);
         $("pc-balance-card").hidden=true;
@@ -120,7 +122,7 @@ export function renderPublicCreditsPage({ slug, nonce, homeUrl }) {
       b.addEventListener("click", async ()=>{
         if(!confirm("Spend "+itemById(active,b.dataset.redeem).cost+" credits on this item?")) return;
         try{
-          const data=await api("POST","/api/public/redeem",{slug,kickUsername:username,shopItemId:b.dataset.redeem});
+          const data=await api("POST","/api/public/redeem",{slug,kickUsername:username,shopItemId:b.dataset.redeem,publicToken:viewerToken});
           viewer.balance=data.balance;
           $("pc-balance").textContent=data.balance;
           setStatus("Redemption requested! The streamer will fulfill it off-platform.",false);

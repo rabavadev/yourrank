@@ -7,6 +7,11 @@ function usageLabel(used, limit, name) {
   const color = used >= limit ? "color:#ff6b6b" : pct >= 80 ? "color:#ffcc00" : "";
   return `<span style="${color}">${used} / ${limit} ${name}</span>`;
 }
+function usageCard(used, limit, name) {
+  const pct = limit > 0 ? Math.round((used / limit) * 100) : 0;
+  const color = used >= limit ? "color:#ff6b6b" : pct >= 80 ? "color:#ffcc00" : "";
+  return `<div style="padding:10px;border:1px solid var(--line);border-radius:8px"><div class="hint">${esc(name)}</div><div style="font-weight:600;${color}">${used} / ${limit}</div></div>`;
+}
 function csrf() {
   const m = document.cookie.match(/(?:^|;\s*)__csrf=([^;]+)/);
   return m ? m[1] : "";
@@ -71,6 +76,14 @@ function render() {
     shopSubmit.disabled = shopAtLimit;
     shopSubmit.title = shopAtLimit ? "Upgrade your plan to add more shop items" : "";
   }
+
+  $("cr-usage").innerHTML = [
+    usageCard(usage.rewardMappings || 0, limits.rewardMappings || 0, "reward mappings"),
+    usageCard(usage.shopItems || 0, limits.shopItems || 0, "shop items"),
+    usageCard(usage.pendingRedemptions || 0, limits.pendingRedemptions || 0, "pending redemptions"),
+    usageCard(usage.redemptionsPer30Days || 0, limits.redemptionsPer30Days || 0, "redemptions / 30 days"),
+    usageCard(usage.newViewersPer30Days || 0, limits.newViewersPer30Days || 0, "new viewers / 30 days"),
+  ].join("");
 
   $("cr-reward-list").innerHTML = (state.mappings || []).map((m) => `
     <tr>

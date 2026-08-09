@@ -46,6 +46,11 @@ export const creditsPage = leaderboardPageHtml({
   </section>
 
   <section class="card">
+    <h2>Plan usage</h2>
+    <div id="cr-usage" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px"></div>
+  </section>
+
+  <section class="card">
     <h2>Reward mappings</h2>
     <p class="card-sub">When a viewer redeems one of these Kick channel rewards, they get the matching YourRank credits.</p>
     <p class="hint" id="cr-reward-usage"></p>

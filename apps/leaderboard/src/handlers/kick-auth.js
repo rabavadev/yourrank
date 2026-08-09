@@ -172,5 +172,16 @@ export async function handleKickAuthDisconnect(request, env) {
     [user.id]
   );
 
+  if (user.active_site_id) {
+    await exec(
+      `UPDATE sites
+          SET kick_channel_external_id = null,
+              kick_channel_name = null,
+              updated_at = now()
+        WHERE id = $1 AND user_id = $2`,
+      [user.active_site_id, user.id]
+    );
+  }
+
   return ok({ disconnected: true });
 }
