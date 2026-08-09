@@ -2,6 +2,7 @@
 // Shared between leaderboard Worker and any future features.
 
 import { encryptToken, decryptToken } from "./crypto.js";
+import { CircuitBreaker } from "./circuit-breaker.js";
 
 export interface DiscordOAuthConfig {
   clientId: string;
@@ -24,6 +25,8 @@ export interface DiscordUser {
   avatar?: string | null;
   discriminator?: string;
 }
+
+const discordCircuit = new CircuitBreaker("discord-api", { failureThreshold: 5, resetTimeoutMs: 30_000 });
 
 function getConfig(env: any): DiscordOAuthConfig {
   const clientId = env.DISCORD_CLIENT_ID;
@@ -51,14 +54,16 @@ export function buildDiscordAuthorizeURL(env: any, state: string, scope = "ident
 async function postDiscordToken(env: any, body: URLSearchParams): Promise<DiscordTokens> {
   const { clientId, clientSecret } = getConfig(env);
   const auth = btoa(`${clientId}:${clientSecret}`);
-  const res = await fetch("https://discord.com/api/oauth2/token", {
-    method: "POST",
-    headers: {
-      "content-type": "application/x-www-form-urlencoded",
-      authorization: `Basic ${auth}`,
-    },
-    body: body.toString(),
-  });
+  const res = await discordCircuit.call(() =>
+    fetch("https://discord.com/api/oauth2/token", {
+      method: "POST",
+      headers: {
+        "content-type": "application/x-www-form-urlencoded",
+        authorization: `Basic ${auth}`,
+      },
+      body: body.toString(),
+    })
+  );
   const text = await res.text();
   if (!res.ok) {
     throw new Error(`Discord token endpoint returned ${res.status}: ${text}`);
@@ -85,9 +90,11 @@ export function refreshDiscordTokens(env: any, refreshToken: string): Promise<Di
 }
 
 export async function fetchDiscordCurrentUser(accessToken: string): Promise<DiscordUser | null> {
-  const res = await fetch("https://discord.com/api/users/@me", {
-    headers: { authorization: `Bearer ${accessToken}` },
-  });
+  const res = await discordCircuit.call(() =>
+    fetch("https://discord.com/api/users/@me", {
+      headers: { authorization: `Bearer ${accessToken}` },
+    })
+  );
   const text = await res.text();
   if (!res.ok) {
     throw new Error(`Discord user endpoint returned ${res.status}: ${text}`);
