@@ -160,7 +160,7 @@ export default {
   async fetch(request, env, ctx) {
     setProcessEnv(env);
     const url = new URL(request.url);
-    if (url.pathname === "/health") {
+    if (url.pathname === "/health" || url.pathname === "/consumer/health") {
       // Update the heartbeat when the monitor pings this endpoint. This keeps
       // the dashboard /health check green during idle queue periods without
       // requiring a cron trigger on the queue consumer.
