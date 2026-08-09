@@ -271,6 +271,21 @@ jobs:
           fi
           echo "OK: bot dashboard HTTP $STATUS"
 
+      - name: "Smoke: consumer health ping"
+        run: |
+          MAX_RETRIES=6
+          for i in $(seq 1 $MAX_RETRIES); do
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 10 https://yourrank.site/consumer/health || true)
+            if [ "$STATUS" = "200" ]; then
+              echo "OK: consumer /health returned HTTP 200 (attempt $i)"
+              exit 0
+            fi
+            echo "Attempt $i/$MAX_RETRIES: consumer /health HTTP $STATUS — retrying in 10s…"
+            sleep 10
+          done
+          echo "FAIL: consumer /health did not return 200 after $MAX_RETRIES attempts"
+          exit 1
+
       - name: "Smoke: DB connectivity (yourrank.site/health)"
         run: |
           BODY=$(curl -s -L --max-time 20 https://yourrank.site/health || true)
