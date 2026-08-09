@@ -66,7 +66,7 @@ import {
   handleViewerRedeem,
 } from "./handlers/viewer-dashboard.js";
 import { handleApiDocs, handleOpenApiJson } from "./handlers/docs.js";
-import { handleCheckout, handleCheckoutLifetime, handleIpn, handleCancel, handleUserPayments } from "./billing.js";
+import { handleCheckout, handleCheckoutLifetime, handleIpn, handleCancel, handleUserPayments, handlePendingPayment } from "./billing.js";
 import {
   handleOverview, handleUsers, handleLeads, handlePayments, handleAction,
   handleSupportMessages, handleSupportReply,
@@ -189,6 +189,7 @@ export const ROUTES = [
   // Billing routes
   { path: "/api/billing/checkout", method: "POST", handler: withHandler(handleCheckout) },
   { path: "/api/billing/checkout-lifetime", method: "POST", handler: withHandler(handleCheckoutLifetime) },
+  { path: "/api/billing/pending", method: "GET", handler: withHandler(handlePendingPayment) },
   { path: "/api/billing/trial", method: "POST", handler: withHandler(handleTrial) },
   { path: "/api/billing/cancel", method: "POST", handler: withHandler(handleCancel) },
   { path: "/api/account/payments", method: "GET", handler: withHandler(handleUserPayments) },

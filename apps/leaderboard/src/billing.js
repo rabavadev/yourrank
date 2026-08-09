@@ -1,5 +1,5 @@
 // Billing: NOWPayments (crypto) + manual activation. Plan logic lives here.
-import { json, bad, ok, uuid, requireUser, safeEqual, readJson } from "./auth.js";
+import { json, bad, ok, uuid, requireUser, safeEqual, readJson, rateLimit } from "./auth.js";
 import { one, query, exec, withTransaction } from "../../../shared/db.js";
 import { logAudit } from "../../../shared/audit.js";
 import { logProviderEvent } from "../../../shared/provider-events.js";
@@ -17,6 +17,15 @@ export const PRO_DAYS = 30;
 
 // QUALITY-007: Named timing constants (no magic numbers)
 const MAX_SUBSCRIPTION_EXTENSION_DAYS = 365;  // Cap subscription stacking to 1 year
+const PENDING_PAYMENT_WINDOW_MINUTES = 30;
+const MAX_CHECKOUT_ATTEMPTS_PER_MINUTE = 10;
+
+// Stable int64-ish advisory-lock key derived from a user UUID.
+// The lock scopes checkout/payment creation to one concurrent attempt per user.
+function advisoryKey(userId) {
+  const hex = userId.replace(/-/g, "").slice(0, 12);
+  return Number.parseInt(hex, 16);
+}
 
 // priceUsd returns the price for the given plan tier (or the env override for pro).
 // priceUsd and effectivePlan are pure functions in shared/plans.js (no DB dependency).
@@ -122,9 +131,12 @@ async function createNowPaymentsInvoice(env, { price, orderId, description, orig
 
 // POST /api/billing/checkout — create a NOWPayments invoice, return its hosted URL.
 export async function handleCheckout(request, env) {
+  let targetPlan = null;
+  let userId = null;
   try {
     const { user, res } = await requireUser(request, env);
     if (res) return res;
+    userId = user.id;
     if (!env.NOWPAYMENTS_API_KEY) return bad("Payments aren't configured yet. Contact support.", 503);
     const origin = new URL(request.url).origin;
     // Determine which plan to upgrade to (default: next tier up)
@@ -138,7 +150,6 @@ export async function handleCheckout(request, env) {
     if (requestedPlan && !["starter", "pro", "agency"].includes(requestedPlan)) {
       return bad("Unknown plan. Choose Starter, Pro, or Agency.", 400);
     }
-    let targetPlan;
     if (["starter", "pro", "agency"].includes(requestedPlan)) {
       if (tiers.indexOf(requestedPlan) <= currentIdx) {
         return bad("You already have this plan or a higher one.", 400);
@@ -148,60 +159,134 @@ export async function handleCheckout(request, env) {
       targetPlan = currentIdx >= 0 && currentIdx < tiers.length - 1 ? tiers[currentIdx + 1] : "pro";
     }
     const price = priceUsd(env, targetPlan);
-    const orderId = `rk_${uuid()}`;
-    await exec(
-      "INSERT INTO payments (user_id,provider,amount,currency,status,tx_ref,plan_tier) VALUES ($1,$2,$3,$4,$5,$6,$7)",
-      [user.id, "nowpayments", price, "USD", "created", orderId, targetPlan]
-    );
+
+    const rl = await rateLimit(env, `checkout:${user.id}`, MAX_CHECKOUT_ATTEMPTS_PER_MINUTE, 60);
+    if (!rl.ok) return bad("Too many checkout attempts. Please wait a minute.", 429);
+
+    const checkout = await withTransaction(async (tx) => {
+      // Serialize per-user so two fast clicks cannot create two pending invoices.
+      await tx.unsafe("SELECT pg_advisory_xact_lock($1)", [advisoryKey(user.id)]);
+
+      const existing = await tx.one(
+        `SELECT id, invoice_url, status FROM payments
+          WHERE user_id=$1 AND plan_tier=$2 AND provider='nowpayments'
+            AND status IN ('created','waiting')
+            AND created_at > now() - interval '${PENDING_PAYMENT_WINDOW_MINUTES} minutes'
+          ORDER BY created_at DESC LIMIT 1`,
+        [user.id, targetPlan]
+      );
+
+      // Re-use an invoice that is already waiting for the user.
+      if (existing?.invoice_url) {
+        return { ok: true, url: existing.invoice_url };
+      }
+
+      // Abandon stale rows that never got an invoice_url so they don't block future checkouts.
+      if (existing?.id) {
+        await tx.unsafe("UPDATE payments SET status='abandoned', updated_at=now() WHERE id=$1", [existing.id]);
+      }
+
+      const orderId = `rk_${uuid()}`;
+      const pay = await tx.one(
+        `INSERT INTO payments (user_id,provider,amount,currency,status,tx_ref,plan_tier) VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING id, tx_ref`,
+        [user.id, "nowpayments", price, "USD", "created", orderId, targetPlan]
+      );
+      return { ok: false, paymentId: pay.id, orderId, price };
+    });
+
+    if (checkout.url) {
+      return ok({ url: checkout.url });
+    }
+
+    const { paymentId, orderId, price: amount } = checkout;
     await logAudit({
       actorId: user.id,
       action: "payment_checkout",
       entityType: "payment",
       entityId: orderId,
       request,
-      details: { provider: "nowpayments", amount: price, currency: "USD", plan: targetPlan, status: "created" },
+      details: { provider: "nowpayments", amount, currency: "USD", plan: targetPlan, status: "created" },
     });
     const inv = await createNowPaymentsInvoice(env, {
-      price,
+      price: amount,
       orderId,
       description: `YourRank ${targetPlan.charAt(0).toUpperCase() + targetPlan.slice(1)} — 30 days`,
       origin,
     });
     if (!inv) {
-      await exec("UPDATE payments SET status='failed', updated_at=now() WHERE tx_ref=$1", [orderId]);
+      await exec("UPDATE payments SET status='failed', updated_at=now() WHERE id=$1", [paymentId]);
       return bad("Couldn't start the payment. Try again in a minute or contact support.", 502);
     }
-    await exec("UPDATE payments SET invoice_id=$1, status='waiting', updated_at=now() WHERE tx_ref=$2",
-      [String(inv.id || ""), orderId]);
+    await exec("UPDATE payments SET invoice_id=$1, invoice_url=$2, status='waiting', updated_at=now() WHERE id=$3",
+      [String(inv.id || ""), inv.invoice_url, paymentId]);
     return ok({ url: inv.invoice_url });
   } catch (e) {
     console.error("[billing] checkout error:", e);
+    if (targetPlan && userId) {
+      // Try to record a failed row if we got far enough to know the user/plan.
+      // This is best-effort: ignore errors so we don't mask the original problem.
+      try {
+        const orderId = `rk_${uuid()}`;
+        await exec("INSERT INTO payments (user_id,provider,amount,currency,status,tx_ref,plan_tier) VALUES ($1,'nowpayments',$2,'USD','failed',$3,$4)", [userId, priceUsd(env, targetPlan), orderId, targetPlan]);
+      } catch { /* best-effort failure audit; don't mask original error */ }
+    }
     return json({ ok: false, error: "Payment processing failed. Please try again or contact support." }, 500);
   }
 }
 
 // POST /api/billing/checkout-lifetime — create a NOWPayments invoice for $149 lifetime Pro.
 export async function handleCheckoutLifetime(request, env) {
+  let userId = null;
   try {
     const { user, res } = await requireUser(request, env);
     if (res) return res;
+    userId = user.id;
     if (!env.NOWPAYMENTS_API_KEY) return bad("Payments aren't configured yet. Contact support.", 503);
     const current = effectivePlan(user);
     if (current === "agency") return bad("You're already on the Agency plan.", 400);
     const origin = new URL(request.url).origin;
     const price = 149;
-    const orderId = `rk_lt_${uuid()}`;
-    await exec(
-      "INSERT INTO payments (user_id,provider,amount,currency,status,tx_ref,plan_tier) VALUES ($1,$2,$3,$4,$5,$6,$7)",
-      [user.id, "nowpayments", price, "USD", "created", orderId, "pro"]
-    );
+    const targetPlan = "pro";
+
+    const rl = await rateLimit(env, `checkout:${user.id}`, MAX_CHECKOUT_ATTEMPTS_PER_MINUTE, 60);
+    if (!rl.ok) return bad("Too many checkout attempts. Please wait a minute.", 429);
+
+    const checkout = await withTransaction(async (tx) => {
+      await tx.unsafe("SELECT pg_advisory_xact_lock($1)", [advisoryKey(user.id)]);
+
+      const existing = await tx.one(
+        `SELECT id, invoice_url FROM payments
+          WHERE user_id=$1 AND plan_tier=$2 AND provider='nowpayments'
+            AND status IN ('created','waiting')
+            AND created_at > now() - interval '${PENDING_PAYMENT_WINDOW_MINUTES} minutes'
+          ORDER BY created_at DESC LIMIT 1`,
+        [user.id, targetPlan]
+      );
+
+      if (existing?.invoice_url) return { ok: true, url: existing.invoice_url };
+
+      if (existing?.id) {
+        await tx.unsafe("UPDATE payments SET status='abandoned', updated_at=now() WHERE id=$1", [existing.id]);
+      }
+
+      const orderId = `rk_lt_${uuid()}`;
+      const pay = await tx.one(
+        `INSERT INTO payments (user_id,provider,amount,currency,status,tx_ref,plan_tier) VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING id, tx_ref`,
+        [user.id, "nowpayments", price, "USD", "created", orderId, targetPlan]
+      );
+      return { ok: false, paymentId: pay.id, orderId, price };
+    });
+
+    if (checkout.url) return ok({ url: checkout.url });
+
+    const { paymentId, orderId } = checkout;
     await logAudit({
       actorId: user.id,
       action: "payment_checkout",
       entityType: "payment",
       entityId: orderId,
       request,
-      details: { provider: "nowpayments", amount: price, currency: "USD", plan: "pro", status: "created", lifetime: true },
+      details: { provider: "nowpayments", amount: price, currency: "USD", plan: targetPlan, status: "created", lifetime: true },
     });
     const inv = await createNowPaymentsInvoice(env, {
       price,
@@ -210,14 +295,20 @@ export async function handleCheckoutLifetime(request, env) {
       origin,
     });
     if (!inv) {
-      await exec("UPDATE payments SET status='failed', updated_at=now() WHERE tx_ref=$1", [orderId]);
+      await exec("UPDATE payments SET status='failed', updated_at=now() WHERE id=$1", [paymentId]);
       return bad("Couldn't start the payment. Try again in a minute or contact support.", 502);
     }
-    await exec("UPDATE payments SET invoice_id=$1, status='waiting', updated_at=now() WHERE tx_ref=$2",
-      [String(inv.id || ""), orderId]);
+    await exec("UPDATE payments SET invoice_id=$1, invoice_url=$2, status='waiting', updated_at=now() WHERE id=$3",
+      [String(inv.id || ""), inv.invoice_url, paymentId]);
     return ok({ url: inv.invoice_url });
   } catch (e) {
     console.error("[billing] checkout error:", e);
+    if (userId) {
+      try {
+        const orderId = `rk_lt_${uuid()}`;
+        await exec("INSERT INTO payments (user_id,provider,amount,currency,status,tx_ref,plan_tier) VALUES ($1,'nowpayments',149,'USD','failed',$2,'pro')", [userId, orderId]);
+      } catch { /* best-effort failure audit; don't mask original error */ }
+    }
     return json({ ok: false, error: "Payment processing failed. Please try again or contact support." }, 500);
   }
 }
@@ -449,16 +540,70 @@ export async function handleUserPayments(request, env) {
   if (res) return res;
   try {
     const rows = await query(
-      `SELECT id, provider, amount, currency, status, plan_tier, tx_ref, created_at, updated_at
+      `SELECT id, provider, amount, currency, status, plan_tier, tx_ref, invoice_url, created_at, updated_at
          FROM payments
         WHERE user_id=$1
         ORDER BY created_at DESC
         LIMIT 100`,
       [user.id]
     );
-    return json({ ok: true, payments: rows || [] });
+    return json({ ok: true, payments: (rows || []).map((p) => ({ ...p, message: paymentStatusMessage(p.status) })) });
   } catch (err) {
     console.error("[handleUserPayments] failed:", err);
     return bad("Could not load payment history. Try again later.", 500);
+  }
+}
+
+function paymentStatusMessage(status) {
+  switch (String(status || "").toLowerCase()) {
+    case "failed":
+    case "expired":
+    case "cancelled":
+    case "refunded":
+      return "No charge was made.";
+    case "waiting":
+    case "confirming":
+    case "created":
+      return "Waiting for payment confirmation.";
+    case "confirmed":
+    case "finished":
+    case "active":
+    case "manual":
+      return "Payment completed.";
+    default:
+      return "";
+  }
+}
+
+// GET /api/billing/pending — return any waiting invoice so a user can resume
+// checkout after their internet cut out or they closed the tab.
+export async function handlePendingPayment(request, env) {
+  const { user, res } = await requireUser(request, env);
+  if (res) return res;
+  try {
+    const row = await one(
+      `SELECT id, plan_tier, amount, invoice_url, status, created_at
+         FROM payments
+        WHERE user_id=$1
+          AND status='waiting'
+          AND invoice_url IS NOT NULL
+          AND invoice_url <> ''
+          AND created_at > now() - interval '24 hours'
+        ORDER BY created_at DESC
+        LIMIT 1`,
+      [user.id]
+    );
+    if (!row) return ok({ pending: false });
+    return ok({
+      pending: true,
+      url: row.invoice_url,
+      plan: row.plan_tier,
+      amount: Number(row.amount) || 0,
+      status: row.status,
+      createdAt: row.created_at,
+    });
+  } catch (err) {
+    console.error("[handlePendingPayment] failed:", err);
+    return bad("Could not load pending payment. Try again later.", 500);
   }
 }
