@@ -43,24 +43,6 @@ export function renderOverviewSummary() {
       top.hidden = sorted.length === 0;
       if (topEmpty) topEmpty.hidden = sorted.length > 0;
     }
-    const o = state.ONBOARDING || {};
-    const brandDone = o.brand || !!$("f_name")?.value.trim();
-    const playersDone = o.players || players.length > 0;
-    const sharedDone = o.shared || state.PUBLISHED;
-    $("ov_step_brand")?.classList.toggle("is-done", brandDone);
-    $("ov_step_players")?.classList.toggle("is-done", playersDone);
-    $("ov_step_share")?.classList.toggle("is-done", sharedDone);
-    $("ov_step_bot")?.classList.toggle("is-done", o.botConnected);
-    $("ov_step_postback")?.classList.toggle("is-done", o.postback);
-    $("ov_step_postback")?.classList.toggle("is-locked", o.isFree);
-
-    const setupComplete = !!(brandDone && playersDone && sharedDone);
-    const steps = $("ovSetupSteps");
-    // Only one "finish setup" surface at a time: if the resume-wizard draft banner
-    // is showing, keep the granular checklist hidden so we don't nag twice.
-    const draftBannerActive = !$("draftBanner")?.hidden;
-    if (steps) steps.hidden = setupComplete || draftBannerActive;
-
     // Board status card
     const statusDot = $("ovStatusDot");
     const statusText = $("ovStatusText");

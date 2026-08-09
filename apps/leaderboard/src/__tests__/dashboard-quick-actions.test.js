@@ -23,40 +23,29 @@ describe("dashboard overview quick actions", () => {
     expect(overviewJs).toContain('location.origin + "/" + state.SLUG');
   });
 
-  it("organises navigation into Build / Connect / Grow / Account", () => {
+  it("organises navigation into Home / Board / Performance / Settings", () => {
     const html = dashboardHtml();
-    // Build: where users edit their board and switch contexts.
-    expect(html).toContain('<span class="lb-side-grp">Build</span>');
+    expect(html).toContain('data-nav="home"');
     expect(html).toContain('data-nav="board"');
-    expect(html).toContain('data-nav="overview"');
+    expect(html).toContain('data-nav="performance"');
+    expect(html).toContain('data-nav="settings"');
     expect(html).toContain('class="lb-nav lb-nav--boards" type="button" data-nav="boards" hidden');
-    // Connect: third-party wiring (postbacks + integrations).
-    expect(html).toContain('<span class="lb-side-grp">Connect</span>');
-    expect(html).toContain('href="/dashboard/attribution"');
-    expect(html).toContain('>Score feed</a>');
-    expect(html).toContain('data-nav="integrations"');
-    // Grow: distribution and analytics.
-    expect(html).toContain('<span class="lb-side-grp">Grow</span>');
-    expect(html).toContain('data-nav="growth"');
-    expect(html).toContain('data-nav="referrals"');
-    // Account: plan and billing.
-    expect(html).toContain('<span class="lb-side-grp">Account</span>');
-    expect(html).toContain('data-nav="manage"');
+    expect(html).not.toContain('<span class="lb-side-grp">');
     // Icons are real inline SVGs, not emoji.
     expect(html).not.toContain('aria-hidden="true">🔌</span>');
   });
 
-  it("leads with a single Editor section and hides Boards for solo users", () => {
+  it("leads with the Board editor and hides Boards for solo users", () => {
     const html = dashboardHtml();
-    // The daily job (prize + players + design) lives in one Editor section...
-    expect(html).toContain('data-nav="board" aria-current="page"><span class="lb-nav-ic" aria-hidden="true">');
-    expect(html).toContain('</svg></span>Board');
-    // ...which is the section shown on load.
-    expect(html).toContain('<section class="lb-page is-on" data-page="board">');
-    // Boards nav starts hidden; JS reveals it only when the user has 2+ boards.
-    expect(html).toContain('class="lb-nav lb-nav--boards" type="button" data-nav="boards" hidden');
-    // Prize/players and the live preview share one split-screen grid.
+    expect(html).toContain('<section class="lb-page" data-page="board">');
     expect(html).toContain('class="design-grid"');
     expect(html).toContain('id="designPreview"');
+    expect(html).toContain('class="editor-steps"');
+    expect(html).toContain('data-egroup="setup"');
+    expect(html).toContain('data-egroup="players"');
+    expect(html).toContain('data-egroup="design"');
+    expect(html).toContain('data-egroup="share"');
+    // Boards nav starts hidden; JS reveals it only when the user has 2+ boards.
+    expect(html).toContain('class="lb-nav lb-nav--boards" type="button" data-nav="boards" hidden');
   });
 });

@@ -2,6 +2,7 @@
 import { $ } from "./utils.js";
 import { state } from "./state.js";
 import { renderOverviewSummary } from "./overview.js";
+import { loadStats } from "./site.js";
 
 export function setAriaCurrentNav(page) {
   document.querySelectorAll(".lb-nav").forEach((n) => {
@@ -16,10 +17,11 @@ export function navTo(page) {
   setAriaCurrentNav(page);
   document.querySelectorAll(".lb-page").forEach((p) => p.classList.toggle("is-on", p.dataset.page === page));
   closeDrawer();
-  if (page === "overview") renderOverviewSummary();
+  if (page === "home") renderOverviewSummary();
+  if (page === "home" || page === "performance") loadStats();
   // Re-fit the live preview whenever the Editor becomes visible (it can't measure while hidden).
   if (page === "board" && typeof state.fitDesignPreview === "function") setTimeout(state.fitDesignPreview, 0);
-  const titles = { overview: "Overview", board: "Board", boards: "Boards", growth: "Analytics", referrals: "Referrals", integrations: "Connections", manage: "Billing" };
+  const titles = { home: "Home", board: "Board", boards: "Boards", performance: "Performance", settings: "Settings" };
   const topbarTitle = $("lbTopbarTitle");
   if (topbarTitle) { topbarTitle.textContent = titles[page] || page; topbarTitle.focus({ preventScroll: true }); }
   const main = document.querySelector(".lb-main");
@@ -86,7 +88,7 @@ export function setupEditorTabs() {
     if (!tabs || tabs._wired) return;
     tabs._wired = true;
     const controls = document.querySelector(".design-controls");
-    const buttons = [...tabs.querySelectorAll(".editor-tab")];
+    const buttons = [...tabs.querySelectorAll(".editor-step")];
     function show(group) {
       buttons.forEach((b) => {
         const on = b.dataset.egroup === group;
@@ -110,7 +112,7 @@ export function setupEditorTabs() {
       else if (e.key === "ArrowLeft") next = buttons[(i - 1 + buttons.length) % buttons.length];
       if (next) { e.preventDefault(); next.click(); next.focus(); }
     });
-    show("details");
+    show("setup");
   }
 
 export function setupShell() {

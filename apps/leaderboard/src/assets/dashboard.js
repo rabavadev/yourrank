@@ -4,7 +4,7 @@ import { state } from "./dashboard/state.js";
 import { navTo, setupShell } from "./dashboard/shell.js";
 import { renderBoardSwitcher, renderSidebarBoardSwitcher, renderBoardsPage } from "./dashboard/boards.js";
 import { renderPlayers } from "./dashboard/players.js";
-import { checkout, loadHistory, renderArchives, renderBranding, renderDomain, renderDomainStatus, renderEmbedShare, renderLegal, renderNotifications, renderOverlay, renderPlan, renderPlayerFields, renderPrizes, renderSections, renderSocials, renderTemplateText, updateDesignPreview, wireCancelSubscription, wireDeleteAccount } from "./dashboard/site.js";
+import { checkout, loadHistory, loadStats, renderArchives, renderBranding, renderDomain, renderDomainStatus, renderEmbedShare, renderLegal, renderNotifications, renderOverlay, renderPlan, renderPlayerFields, renderPrizes, renderSections, renderSocials, renderTemplateText, updateDesignPreview, wireCancelSubscription, wireDeleteAccount } from "./dashboard/site.js";
 import { renderOverviewSummary, wireOverviewQuickActions } from "./dashboard/overview.js";
 import { renderReferrals } from "./dashboard/referrals.js";
 
@@ -39,17 +39,9 @@ async function init() {
   state.SITE_UPDATED_AT = p.updatedAt || null;
   state.ONBOARDING = p.onboarding || {};
 
-  // First-run boards start as drafts. Send the user through the setup wizard
-  // instead of dropping them into the Editor with no context.
-  if (!requestedSiteId && p.isDraft && !urlParams.get("nav") && !urlParams.get("plan") && !urlParams.get("upgraded")) {
-    location.href = "/dashboard/setup?resume=1";
-    return;
-  }
-
   renderBoardSwitcher();
   renderSidebarBoardSwitcher();
   renderBoardsPage();
-  renderDraftBanner(p);
   const d = p.data || {};
   const b = d.brand || {};
   state.EXTRA = { chips: d.partner?.chips, whyStats: d.whyStats, rules: d.rules, socials: p.socials || d.socials || [], sections: d.sections, playerFields: d.playerFields || {}, text: (d.branding && d.branding.text) || {}, legal: d.legal || {} };
@@ -188,13 +180,14 @@ async function init() {
   // Boards nav is redundant for solo streamers — the sidebar board switcher covers it.
   const boardsNav = document.querySelector(".lb-nav--boards");
   if (boardsNav) boardsNav.hidden = state.BOARDS.length < 2;
-  // Smart landing: returning, set-up users go straight to the Editor (the daily job).
-  // Brand-new boards still land on Overview so the setup checklist is front and center.
-  const initialNav = urlParams.get("nav");
+  // Smart landing: set-up boards land on Home; drafts or new boards land on the Board editor.
+  // Legacy nav names are mapped to the new clean-sheet IA.
+  const NAV_MAP = { overview: "home", growth: "performance", referrals: "performance", analytics: "performance", integrations: "settings", manage: "settings", billing: "settings" };
+  const initialNav = NAV_MAP[urlParams.get("nav")] || urlParams.get("nav");
   const planParam = urlParams.get("plan");
-  const landing = initialNav || (planParam ? "manage" : (isBoardSetup(p) ? "board" : "overview"));
+  const landing = initialNav || (planParam ? "settings" : (isBoardSetup(p) ? "home" : "board"));
   if (document.querySelector(`section[data-page="${landing}"]`)) navTo(landing);
-  if (landing === "manage" && planParam) {
+  if (planParam) {
     if (planParam.toLowerCase() === "agency") location.href = "/contact?plan=agency";
     else checkout(planParam);
   }
@@ -203,6 +196,7 @@ async function init() {
   renderOverviewSummary();
   wireOverviewQuickActions();
   renderReferrals();
+  loadStats();
   wireStreamerHud();
 
   let dirtyTimer;
@@ -279,32 +273,6 @@ function isBoardSetup(p) {
   return brandDone && playersDone && sharedDone;
 }
 
-function renderDraftBanner(p) {
-  const banner = $("draftBanner");
-  if (!banner) return;
-  const activeId = p.siteId || state.ACTIVE_SITE_ID;
-  const active = (p.boards || []).find((b) => b.id === activeId && b.isDraft);
-  const steps = $("ovSetupSteps");
-  if (!active || isBoardSetup(p)) { banner.hidden = true; return; }
-  banner.hidden = false;
-  // Only ever show ONE "finish setup" surface. While the resume-wizard banner is
-  // up, suppress the granular checklist so the user isn't nagged twice.
-  if (steps) steps.hidden = true;
-  $("draftName").textContent = active.name || active.slug || "this board";
-  $("draftResume").href = `/setup?resume=${encodeURIComponent(active.slug)}`;
-  const doneBtn = $("draftDone");
-  if (doneBtn) {
-    doneBtn.onclick = async () => {
-      doneBtn.disabled = true;
-      try {
-        const res = await fetch("/api/site/finish", { method: "POST", credentials: "include", headers: { "content-type": "application/json", "x-csrf-token": getCsrf() }, body: JSON.stringify({ siteId: active.id }) });
-        if (!res.ok) { const d = await res.json().catch(() => ({})); $("status").textContent = d.error || "Could not mark as done."; doneBtn.disabled = false; return; }
-        banner.hidden = true;
-      } catch (e) { $("status").textContent = "Network error"; doneBtn.disabled = false; }
-    };
-  }
-}
-  
 function wireStreamerHud() {
   const form = document.getElementById("hudQuickAdd");
   const addBtn = document.getElementById("hudAddBtn");
