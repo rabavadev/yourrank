@@ -80,7 +80,7 @@ function _drawerFocusTrap(e) {
 }
 
 // Editor sub-navigation: group the endless controls column into tabs
-// (General & data / Appearance / Embed & share / Legal pages) so the form isn't one long scroll.
+// (Details / Players / Design / Share) so the form isn't one long scroll.
 export function setupEditorTabs() {
     const tabs = document.getElementById("editorTabs");
     if (!tabs || tabs._wired) return;
@@ -110,7 +110,7 @@ export function setupEditorTabs() {
       else if (e.key === "ArrowLeft") next = buttons[(i - 1 + buttons.length) % buttons.length];
       if (next) { e.preventDefault(); next.click(); next.focus(); }
     });
-    show("data");
+    show("details");
   }
 
 export function setupShell() {

@@ -567,7 +567,14 @@ export function updateDesignPreview() {
   const params = new URLSearchParams({ board: state.ACTIVE_SITE_ID, template: tpl, device });
   const url = "/dashboard/preview?" + params.toString();
 
-  // Debounce the live preview update (750ms) so typing doesn't repeatedly re-render.
+  // Wire retry button once.
+  const retry = $("previewRetry");
+  if (retry && !retry._wired) {
+    retry._wired = true;
+    retry.addEventListener("click", () => { $("previewError").hidden = true; updateDesignPreview(); });
+  }
+
+  // Debounce the live preview update so typing doesn't repeatedly re-render.
   clearTimeout(_previewTimeout);
   _previewTimeout = setTimeout(async () => {
     if (_previewAbort) _previewAbort.abort();
@@ -582,6 +589,7 @@ export function updateDesignPreview() {
         body: JSON.stringify(draft),
         signal: _previewAbort.signal
       });
+      const errorOverlay = $("previewError");
       if (res.ok) {
         const html = await res.text();
         if (iframe.hasAttribute("srcdoc") && iframe.contentWindow) {
@@ -590,9 +598,17 @@ export function updateDesignPreview() {
           iframe.srcdoc = html;
           iframe.removeAttribute("src");
         }
+        if (errorOverlay) errorOverlay.hidden = true;
+      } else {
+        if (errorOverlay) errorOverlay.hidden = false;
+        logError("preview-render", { status: res.status });
       }
     } catch (e) {
-      if (e.name !== "AbortError") console.error("Preview render failed", e);
+      if (e.name !== "AbortError") {
+        const errorOverlay = $("previewError");
+        if (errorOverlay) errorOverlay.hidden = false;
+        logError("preview-render", e);
+      }
     }
   }, 300);
 }
