@@ -66,13 +66,24 @@ function getConfig(env: any): KickOAuthConfig {
   return { clientId, clientSecret, redirectUri };
 }
 
+function getViewerConfig(env: any): KickOAuthConfig {
+  const clientId = env.KICK_CLIENT_ID;
+  const clientSecret = env.KICK_CLIENT_SECRET;
+  const redirectUri = env.KICK_VIEWER_REDIRECT_URI || "https://yourrank.site/api/viewer/auth/kick/callback";
+  if (!clientId || !clientSecret) {
+    throw new Error("KICK_CLIENT_ID and KICK_CLIENT_SECRET are required");
+  }
+  return { clientId, clientSecret, redirectUri };
+}
+
 export function buildKickAuthorizeURL(
   env: any,
   state: string,
   codeChallenge: string,
-  scope = "user:read channel:read channel:rewards:read channel:rewards:write events:subscribe"
+  scope = "user:read channel:read channel:rewards:read channel:rewards:write events:subscribe",
+  viewerFlow = false
 ): string {
-  const { clientId, redirectUri } = getConfig(env);
+  const { clientId, redirectUri } = viewerFlow ? getViewerConfig(env) : getConfig(env);
   const params = new URLSearchParams({
     response_type: "code",
     client_id: clientId,
@@ -83,6 +94,15 @@ export function buildKickAuthorizeURL(
     code_challenge_method: "S256",
   });
   return `https://id.kick.com/oauth/authorize?${params.toString()}`;
+}
+
+export function buildKickViewerAuthorizeURL(
+  env: any,
+  state: string,
+  codeChallenge: string,
+  scope = "user:read"
+): string {
+  return buildKickAuthorizeURL(env, state, codeChallenge, scope, true);
 }
 
 async function postTokenEndpoint(env: any, body: URLSearchParams): Promise<KickTokens> {
@@ -105,9 +125,10 @@ async function postTokenEndpoint(env: any, body: URLSearchParams): Promise<KickT
 export function exchangeKickCode(
   env: any,
   code: string,
-  codeVerifier: string
+  codeVerifier: string,
+  viewerFlow = false
 ): Promise<KickTokens> {
-  const { redirectUri } = getConfig(env);
+  const { redirectUri } = viewerFlow ? getViewerConfig(env) : getConfig(env);
   const body = new URLSearchParams({
     grant_type: "authorization_code",
     redirect_uri: redirectUri,
@@ -115,6 +136,14 @@ export function exchangeKickCode(
     code_verifier: codeVerifier,
   });
   return postTokenEndpoint(env, body);
+}
+
+export function exchangeKickViewerCode(
+  env: any,
+  code: string,
+  codeVerifier: string
+): Promise<KickTokens> {
+  return exchangeKickCode(env, code, codeVerifier, true);
 }
 
 export function refreshKickTokens(env: any, refreshToken: string): Promise<KickTokens> {

@@ -85,6 +85,11 @@ function render() {
     usageCard(usage.newViewersPer30Days || 0, limits.newViewersPer30Days || 0, "new viewers / 30 days"),
   ].join("");
 
+  const va = state.viewerAuth || {};
+  $("cr-viewer-auth-kick").checked = va.kick !== false;
+  $("cr-viewer-auth-discord").checked = va.discord !== false;
+  $("cr-viewer-auth-public").checked = va.public !== false;
+
   $("cr-reward-list").innerHTML = (state.mappings || []).map((m) => `
     <tr>
       <td><b>${esc(m.kick_reward_title)}</b><br><span class="hint">${esc(m.kick_reward_id)}</span></td>
@@ -370,6 +375,19 @@ function renderCreditsByDay(rows) {
 }
 
 $("cr-analytics-days")?.addEventListener("change", loadAnalytics);
+
+$("cr-viewer-auth-form")?.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  try {
+    const data = await api("POST", "/api/credits/viewer-auth", {
+      kick: $("cr-viewer-auth-kick").checked,
+      discord: $("cr-viewer-auth-discord").checked,
+      public: $("cr-viewer-auth-public").checked,
+    });
+    state.viewerAuth = data;
+    setStatus("cr-viewer-auth-status", "Viewer login settings saved.");
+  } catch (err) { setStatus("cr-viewer-auth-status", err.message, true); }
+});
 
 async function searchHistory(e) {
   e.preventDefault();

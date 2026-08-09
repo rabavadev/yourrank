@@ -1,0 +1,264 @@
+// Viewer-facing dashboard API: cross-board credits, per-board shop, and redeem.
+
+import { one, query, withTransaction } from "../../../../shared/db.js";
+import { rateLimit } from "../../../../shared/ratelimit.js";
+import { getPublicSite } from "../site.js";
+import { requireViewer } from "./viewer-auth.js";
+import { bad, ok } from "../auth.js";
+import {
+  CREDITS_PENDING_REDEMPTIONS_LIMITS,
+  CREDITS_REDEMPTIONS_PER_30D_LIMITS,
+  effectivePlan,
+} from "../../../../shared/plans.js";
+
+export async function handleViewerMe(request, env) {
+  const { viewer, res } = await requireViewer(request, env);
+  if (res) return res;
+
+  const boards = await query(
+    `SELECT s.id, s.slug, s.name, sv.balance, sv.total_earned, sv.total_spent,
+            sv.blocked, sv.block_reason, sv.public_token,
+            u.plan, u.plan_expires_at, u.status, u.email_verified
+       FROM site_viewers sv
+       JOIN sites s ON s.id = sv.site_id
+       JOIN users u ON u.id = s.user_id
+      WHERE sv.viewer_id = $1
+        AND s.published = true
+        AND u.status != 'suspended'
+        AND u.email_verified = true
+      ORDER BY sv.updated_at DESC`,
+    [viewer.id]
+  );
+
+  const safeBoards = (boards || []).map((b) => ({
+    siteId: b.id,
+    slug: b.slug,
+    name: b.name,
+    balance: b.balance,
+    totalEarned: b.total_earned,
+    totalSpent: b.total_spent,
+    blocked: b.blocked,
+    blockReason: b.block_reason,
+    publicToken: b.public_token,
+    plan: effectivePlan({ plan: b.plan, plan_expires_at: b.plan_expires_at }),
+  }));
+
+  const redemptions = await query(
+    `SELECT r.id, r.cost, r.status, r.created_at, r.updated_at,
+            s.slug AS site_slug, s.name AS site_name, i.name AS item_name
+       FROM redemptions r
+       JOIN site_viewers sv ON sv.id = r.site_viewer_id
+       JOIN sites s ON s.id = sv.site_id
+       JOIN users u ON u.id = s.user_id
+       JOIN shop_items i ON i.id = r.shop_item_id
+      WHERE sv.viewer_id = $1
+        AND s.published = true
+        AND u.status != 'suspended'
+        AND u.email_verified = true
+      ORDER BY r.created_at DESC
+      LIMIT 50`,
+    [viewer.id]
+  );
+
+  return ok({
+    viewer: {
+      id: viewer.id,
+      kickUsername: viewer.kick_username,
+      discordUsername: viewer.discord_username,
+      avatarUrl: viewer.avatar_url,
+    },
+    boards: safeBoards,
+    redemptions: (redemptions || []).map((r) => ({
+      id: r.id,
+      cost: r.cost,
+      status: r.status,
+      createdAt: r.created_at,
+      updatedAt: r.updated_at,
+      siteSlug: r.site_slug,
+      siteName: r.site_name,
+      itemName: r.item_name,
+    })),
+  });
+}
+
+export async function handleViewerSite(request, env) {
+  const { viewer, res } = await requireViewer(request, env);
+  if (res) return res;
+
+  const url = new URL(request.url);
+  const slug = String(url.searchParams.get("slug") || "").trim().toLowerCase();
+  if (!slug) return bad("slug required");
+
+  const r = await getPublicSite(env, slug, request);
+  if (r && r.requiresPassword) return bad("Password required.", 401);
+  if (!r || r.suspended) return bad("site not found", 404);
+
+  const site = await one(
+    `SELECT id, name, slug, viewer_kick_auth_enabled, viewer_discord_auth_enabled, viewer_public_redeem_enabled
+       FROM sites WHERE slug = $1`,
+    [slug]
+  );
+  if (!site) return bad("site not found", 404);
+
+  const viewerRow = await one(
+    `SELECT sv.id, sv.balance, sv.total_earned, sv.total_spent, sv.blocked, sv.block_reason, sv.public_token
+       FROM site_viewers sv
+      WHERE sv.site_id = $1 AND sv.viewer_id = $2`,
+    [site.id, viewer.id]
+  );
+
+  const shopItems = await query(
+    `SELECT id, name, description, cost, stock, active
+       FROM shop_items
+      WHERE site_id=$1 AND active=true
+      ORDER BY cost ASC`,
+    [site.id]
+  );
+
+  const redemptions = viewerRow
+    ? await query(
+        `SELECT r.id, r.cost, r.status, r.created_at, r.updated_at, i.name AS item_name
+           FROM redemptions r
+           JOIN shop_items i ON i.id = r.shop_item_id
+          WHERE r.site_viewer_id = $1
+          ORDER BY r.created_at DESC
+          LIMIT 50`,
+        [viewerRow.id]
+      )
+    : [];
+
+  return ok({
+    site: {
+      id: site.id,
+      slug: site.slug,
+      name: site.name,
+      kickAuthEnabled: site.viewer_kick_auth_enabled,
+      discordAuthEnabled: site.viewer_discord_auth_enabled,
+      publicRedeemEnabled: site.viewer_public_redeem_enabled,
+    },
+    viewer: viewerRow
+      ? {
+          siteViewerId: viewerRow.id,
+          balance: viewerRow.balance,
+          totalEarned: viewerRow.total_earned,
+          totalSpent: viewerRow.total_spent,
+          blocked: viewerRow.blocked,
+          blockReason: viewerRow.block_reason,
+          publicToken: viewerRow.public_token,
+        }
+      : null,
+    shopItems: shopItems || [],
+    redemptions: (redemptions || []).map((r) => ({
+      id: r.id,
+      cost: r.cost,
+      status: r.status,
+      createdAt: r.created_at,
+      updatedAt: r.updated_at,
+      itemName: r.item_name,
+    })),
+  });
+}
+
+export async function handleViewerRedeem(request, env) {
+  const { viewer, res } = await requireViewer(request, env);
+  if (res) return res;
+
+  const body = await (async () => {
+    try { return await request.json(); } catch { return null; }
+  })();
+  const slug = String(body?.slug || "").trim().toLowerCase();
+  const shopItemId = String(body?.shopItemId || "").trim();
+
+  if (!slug || !shopItemId) return bad("slug and shopItemId required");
+
+  const r = await getPublicSite(env, slug, request);
+  if (r && r.requiresPassword) return bad("Password required.", 401);
+  if (!r || r.suspended) return bad("site not found", 404);
+
+  const plan = r.plan;
+
+  const rl = await rateLimit(env, `viewer-redeem:${r.id}:${viewer.id}`, 10, 60);
+  if (!rl.ok) return bad("rate limited", 429);
+
+  const txResult = await withTransaction(async (tx) => {
+    await tx.unsafe("SELECT id FROM sites WHERE id=$1 FOR UPDATE", [r.id]);
+
+    const [pendingRow, fulfilled30dRow] = await Promise.all([
+      tx.one(
+        `SELECT count(*)::int AS count FROM redemptions red
+           JOIN site_viewers sv ON sv.id = red.site_viewer_id
+          WHERE sv.site_id=$1 AND red.status='pending'`,
+        [r.id]
+      ),
+      tx.one(
+        `SELECT count(*)::int AS count FROM redemptions red
+           JOIN site_viewers sv ON sv.id = red.site_viewer_id
+          WHERE sv.site_id=$1 AND red.status='fulfilled' AND red.created_at > now() - interval '30 days'`,
+        [r.id]
+      ),
+    ]);
+    if ((pendingRow?.count || 0) >= CREDITS_PENDING_REDEMPTIONS_LIMITS[plan]) {
+      return { error: "This streamer's shop is at capacity. Ask them to upgrade.", status: 403 };
+    }
+    if ((fulfilled30dRow?.count || 0) >= CREDITS_REDEMPTIONS_PER_30D_LIMITS[plan]) {
+      return { error: "This streamer's monthly redemption limit is reached. Ask them to upgrade.", status: 403 };
+    }
+
+    const viewerRow = await tx.one(
+      `SELECT sv.id, sv.balance, sv.blocked
+         FROM site_viewers sv
+        WHERE sv.site_id=$1 AND sv.viewer_id=$2`,
+      [r.id, viewer.id]
+    );
+    if (!viewerRow) return { error: "No credits found on this board. Earn some first.", status: 400 };
+    if (viewerRow.blocked) return { error: "viewer blocked", status: 400 };
+
+    const item = await tx.one(
+      "SELECT id, cost, stock FROM shop_items WHERE id=$1 AND site_id=$2 AND active=true FOR UPDATE",
+      [shopItemId, r.id]
+    );
+    if (!item) return { error: "item not found", status: 400 };
+    if (item.stock !== null && item.stock <= 0) return { error: "out of stock", status: 400 };
+    if (viewerRow.balance < item.cost) return { error: "insufficient balance", status: 400 };
+
+    await tx.unsafe(
+      `UPDATE site_viewers
+        SET balance = balance - $1,
+            total_spent = total_spent + $1,
+            last_redeemed_at = now(),
+            updated_at = now()
+      WHERE id=$2`,
+      [item.cost, viewerRow.id]
+    );
+
+    if (item.stock !== null) {
+      await tx.unsafe(
+        "UPDATE shop_items SET stock = stock - 1, updated_at = now() WHERE id=$1",
+        [item.id]
+      );
+    }
+
+    const redemptionRows = await tx.unsafe(
+      `INSERT INTO redemptions (site_viewer_id, shop_item_id, cost, status)
+       VALUES ($1, $2, $3, 'pending')
+       RETURNING id`,
+      [viewerRow.id, item.id, item.cost]
+    );
+
+    await tx.unsafe(
+      `INSERT INTO credit_ledger (site_viewer_id, type, amount, description, metadata)
+       VALUES ($1, 'spend', $2, $3, $4)`,
+      [
+        viewerRow.id,
+        item.cost,
+        `Redeemed: ${item.id}`,
+        JSON.stringify({ shop_item_id: item.id, redemption_id: redemptionRows[0].id }),
+      ]
+    );
+
+    return { redemptionId: redemptionRows[0].id, balance: viewerRow.balance - item.cost };
+  });
+
+  if (txResult.error) return bad(txResult.error, txResult.status);
+  return ok(txResult);
+}

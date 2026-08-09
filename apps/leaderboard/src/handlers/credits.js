@@ -112,6 +112,11 @@ export async function handleCreditsStatus(request, env) {
     viewers: viewers || [],
     redemptions: redemptions || [],
     usage: usage || {},
+    viewerAuth: {
+      kick: site.viewer_kick_auth_enabled,
+      discord: site.viewer_discord_auth_enabled,
+      public: site.viewer_public_redeem_enabled,
+    },
     limits: {
       rewardMappings: CREDITS_REWARD_LIMITS[plan],
       shopItems: CREDITS_SHOP_LIMITS[plan],
@@ -607,6 +612,11 @@ export async function handlePublicCredits(request, env) {
         }
       : null,
     shopItems: shopItems || [],
+    auth: {
+      kickEnabled: r.viewerKickAuthEnabled,
+      discordEnabled: r.viewerDiscordAuthEnabled,
+      publicRedeemEnabled: r.viewerPublicRedeemEnabled,
+    },
   });
 }
 
@@ -625,6 +635,7 @@ export async function handlePublicRedeem(request, env) {
   const r = await getPublicSite(env, slug.toLowerCase(), request);
   if (r && r.requiresPassword) return bad("Password required.", 401);
   if (!r || r.suspended) return bad("site not found", 404);
+  if (!r.viewerPublicRedeemEnabled) return bad("Public redeem is disabled. Please log in.", 403);
 
   const plan = r.plan;
 
@@ -724,6 +735,31 @@ export async function handlePublicRedeem(request, env) {
 
   if (txResult.error) return bad(txResult.error, txResult.status);
   return ok(txResult);
+}
+
+export async function handleCreditsViewerAuth(request, env) {
+  const { user, res } = await requireUser(request, env);
+  if (res) return res;
+  const url = new URL(request.url);
+  const site = await getSite(env, user, url);
+  if (!site) return bad("no site", 404);
+
+  const body = await readJson(request);
+  const kick = body?.kick === true || body?.kick === "true";
+  const discord = body?.discord === true || body?.discord === "true";
+  const publicRedeem = body?.public === true || body?.public === "true";
+
+  await exec(
+    `UPDATE sites
+        SET viewer_kick_auth_enabled = $1,
+            viewer_discord_auth_enabled = $2,
+            viewer_public_redeem_enabled = $3,
+            updated_at = now()
+      WHERE id = $4 AND user_id = $5`,
+    [kick, discord, publicRedeem, site.id, user.id]
+  );
+
+  return ok({ kick, discord, public: publicRedeem });
 }
 
 export async function handleCreditsAnalytics(request, env) {
