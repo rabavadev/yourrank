@@ -1,10 +1,13 @@
 /* SEC-713: Extracted from SHELL_NAV_CSS to avoid inline <style> injection */
 :root{
-  --gm-bg:#0f0f0f; --gm-panel:#1c1c1c; --gm-line:#2a2a2a; --gm-line-2:#323232;
-  --gm-ink:#ededf0; --gm-ink-soft:#a7a6a6; --gm-ink-mute:#82828a;
+  --gm-bg:#fafafa; --gm-panel:#ffffff; --gm-line:#e4e4e7; --gm-line-2:#d4d4d8;
+  --gm-ink:#191919; --gm-ink-soft:#55555c; --gm-ink-mute:#82828a;
   --gm-accent:#2200ff; --gm-accent-ink:#ffffff;
   --gm-mono:"IBM Plex Mono","JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
   --gm-sans:"Inter",system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+  --gm-shadow-sm:0 1px 2px rgba(0,0,0,.05);
+  --gm-shadow-md:0 4px 12px rgba(0,0,0,.08);
+  --gm-shadow-lg:0 12px 32px rgba(0,0,0,.12);
 }
 .gm-shell-nav{position:sticky;top:0;z-index:50;background:var(--gm-bg);
   border-bottom:1px solid var(--gm-line);}
@@ -43,7 +46,7 @@
 .gm-profile-trigger{color:var(--gm-ink);}
 .gm-profile-chevron{display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;color:var(--gm-ink-soft);transition:transform .2s,color .2s;}
 .gm-profile[open] .gm-profile-chevron{transform:rotate(180deg);}
-.gm-profile-menu{position:absolute;right:0;left:auto;top:calc(100% + 10px);min-width:190px;width:max-content;max-width:calc(100vw - 40px);background:var(--gm-panel);border:1px solid var(--gm-line-2);border-radius:10px;padding:6px;display:flex;flex-direction:column;gap:2px;box-shadow:0 16px 48px rgba(0,0,0,.55);z-index:200;}
+.gm-profile-menu{position:absolute;right:0;left:auto;top:calc(100% + 10px);min-width:190px;width:max-content;max-width:calc(100vw - 40px);background:var(--gm-panel);border:1px solid var(--gm-line-2);border-radius:10px;padding:6px;display:flex;flex-direction:column;gap:2px;box-shadow:var(--gm-shadow-lg);z-index:200;}
 .gm-profile-link{font-family:var(--gm-sans);font-size:13px;color:var(--gm-ink-soft);text-decoration:none;padding:8px 10px;border-radius:7px;white-space:nowrap;display:flex;align-items:center;gap:10px;}
 .gm-profile-ic{display:inline-flex;align-items:center;justify-content:center;width:18px;font-size:13px;flex:0 0 auto;}
 .gm-profile-link:hover{color:var(--gm-ink);background:var(--gm-line);}
@@ -66,7 +69,7 @@
 @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
   }
-html{color-scheme:dark light}
+html{color-scheme:light}
 
 /* Dashboard footer */
 .gm-shell-footer{border-top:1px solid var(--gm-line);margin-top:40px;padding:18px 0;background:var(--gm-bg)}
