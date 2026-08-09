@@ -392,6 +392,66 @@ export async function handleCreditsUpdateRedemption(request, env) {
   return ok({ id: result[0].id, status });
 }
 
+// Cross-board viewer history for a streamer: all of their sites where a given
+// Kick viewer has a site_viewer record, with balances and redemption counts.
+export async function handleCreditsViewerHistory(request, env) {
+  const { user, res } = await requireUser(request, env);
+  if (res) return res;
+
+  const url = new URL(request.url);
+  const kickUsername = String(url.searchParams.get("kickUsername") || "").trim();
+  const kickUserId = String(url.searchParams.get("kickUserId") || "").trim();
+  if (!kickUsername && !kickUserId) return bad("kickUsername or kickUserId is required");
+
+  const rows = await query(
+    `SELECT
+       s.id AS site_id,
+       s.slug,
+       s.name,
+       sv.id AS site_viewer_id,
+       sv.balance,
+       sv.total_earned,
+       sv.total_spent,
+       sv.blocked,
+       sv.fraud_score,
+       sv.created_at,
+       v.kick_user_id,
+       v.kick_username,
+       COUNT(r.id) FILTER (WHERE r.status != 'cancelled')::int AS redemptions_total,
+       COUNT(r.id) FILTER (WHERE r.status = 'pending')::int AS redemptions_pending
+     FROM sites s
+     JOIN site_viewers sv ON sv.site_id = s.id
+     JOIN viewers v ON v.id = sv.viewer_id
+     LEFT JOIN redemptions r ON r.site_viewer_id = sv.id
+     WHERE s.user_id = $1
+       AND ($2 = '' OR v.kick_username ILIKE $2)
+       AND ($3 = '' OR v.kick_user_id = $3)
+     GROUP BY s.id, s.slug, s.name, sv.id, v.kick_user_id, v.kick_username
+     ORDER BY sv.total_earned DESC, s.name ASC
+     LIMIT 50`,
+    [user.id, kickUsername, kickUserId]
+  );
+
+  const boards = (rows || []).map((r) => ({
+    siteId: r.site_id,
+    slug: r.slug,
+    name: r.name,
+    siteViewerId: r.site_viewer_id,
+    balance: r.balance,
+    totalEarned: r.total_earned,
+    totalSpent: r.total_spent,
+    blocked: r.blocked,
+    fraudScore: r.fraud_score,
+    createdAt: r.created_at,
+    kickUserId: r.kick_user_id,
+    kickUsername: r.kick_username,
+    redemptionsTotal: r.redemptions_total,
+    redemptionsPending: r.redemptions_pending,
+  }));
+
+  return ok({ kickUsername: kickUsername || null, kickUserId: kickUserId || null, boards });
+}
+
 // Public viewer endpoints (no auth; keyed by slug + kick user id).
 export async function handlePublicCredits(request, _env) {
   const url = new URL(request.url);

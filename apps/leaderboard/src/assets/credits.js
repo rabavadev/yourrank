@@ -358,6 +358,37 @@ function renderCreditsByDay(rows) {
 
 $("cr-analytics-days")?.addEventListener("change", loadAnalytics);
 
+async function searchHistory(e) {
+  e.preventDefault();
+  const username = $("cr-history-username").value.trim();
+  if (!username) return setStatus("cr-history-status", "Enter a Kick username", true);
+  try {
+    const data = await api("GET", `/api/credits/viewer/history?kickUsername=${encodeURIComponent(username)}`);
+    renderHistory(data);
+    setStatus("cr-history-status", `Found ${data.boards?.length || 0} board(s).`);
+  } catch (err) { setStatus("cr-history-status", err.message, true); }
+}
+
+function renderHistory(data) {
+  const boards = data.boards || [];
+  $("cr-history-list").innerHTML = boards.map((b) => `
+    <tr>
+      <td><b>${esc(b.name || b.slug)}</b><br><span class="hint">${esc(b.slug)}</span></td>
+      <td>${b.balance}</td>
+      <td>${b.totalEarned}</td>
+      <td>${b.totalSpent}</td>
+      <td>${b.redemptionsPending}</td>
+      <td>${b.redemptionsTotal}</td>
+      <td class="ta-r">
+        <a class="btn btn--sm" href="/dashboard/credits?siteId=${esc(b.siteId)}" target="_blank" rel="noopener">Board</a>
+      </td>
+    </tr>
+  `).join("");
+  $("cr-history-empty").hidden = boards.length > 0;
+}
+
+$("cr-history-form")?.addEventListener("submit", searchHistory);
+
 load().catch((err) => {
   $("cr-empty").innerHTML = `<p class="error">Could not load credits dashboard: ${esc(err.message)}</p>`;
   $("cr-empty").hidden = false;
