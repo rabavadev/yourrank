@@ -118,12 +118,13 @@ const BOT_STYLE_ATTR_CSS = `
 `;
 
 const BOT_BASE_CSS = `
-  :root { --bg:#0d1117; --panel:#161b22; --panel-2:#1b222b; --border:#2a313a; --border-2:#3a434f;
-          --fg:#e9eef4; --dim:#9aa4b0; --mute:#8b949e;
-          --accent:#f0b429; --accent-ink:#1a1205; --green:#3fb950; --red:#f85149;
-          --mono:ui-monospace,SFMono-Regular,Menlo,monospace; }
+  :root { --bg:#f8f9fb; --panel:#ffffff; --panel-2:#f4f5f8; --border:#e9eaef; --border-2:#dcdee6;
+          --fg:#111114; --dim:#4e4f57; --mute:#8b8d98;
+          --accent:#4f46e5; --accent-ink:#ffffff; --green:#1e8e3e; --red:#d93025;
+          --mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+          --sans:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; }
   * { box-sizing:border-box; margin:0; }
-  body { background:var(--bg); color:var(--fg); font:15px/1.5 -apple-system,'Segoe UI',Roboto,sans-serif; }
+  body { background:var(--bg); color:var(--fg); font:15px/1.5 var(--sans); }
 
   /* ---- shell: sidebar + main ---- */
   .shell { display:flex; align-items:flex-start; }
@@ -255,10 +256,7 @@ const BOT_BASE_CSS = `
     .wrap { padding:16px 14px 48px; }
   }
 
-  html { color-scheme: dark light; }
-  @media (prefers-color-scheme: light) {
-    :root { --bg: #ffffff; --panel: #f7f7f9; --panel-2: #eef0f4; --border: #e4e5ea; --border-2: #d8dae0; --fg: #111114; --dim: #4e4f57; --mute: #6b6c75; --accent: #7fb300; --accent-ink: #0b0b0c; --green: #1e8e3e; --red: #d93025; }
-  }
+  html { color-scheme: light; }
 `;
 
 export interface BotPageOpts {
@@ -275,7 +273,7 @@ export function botPageHtml(opts: BotPageOpts): string {
   const nav = opts.nav || "";
   return `<!doctype html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Streamer Dashboard</title><style${nonceAttr}>${BOT_STYLE_ATTR_CSS}${BOT_BASE_CSS}${nav ? SHELL_NAV_CSS : ""}</style></head><body data-page="${esc(opts.page)}">
+<title>Streamer Dashboard</title>${GOOGLE_FONTS}<style${nonceAttr}>${BOT_STYLE_ATTR_CSS}${BOT_BASE_CSS}${nav ? SHELL_NAV_CSS : ""}</style></head><body data-page="${esc(opts.page)}">
 <a href="#main-content" class="skip-link">Skip to main content</a>
 ${nav}
 ${opts.content}
