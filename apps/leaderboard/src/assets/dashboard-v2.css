@@ -1521,6 +1521,229 @@
   background: var(--yr-panel);
 }
 
+/* ---- Plan picker + Account page ---- */
+.v2-dash .plan-summary {
+  margin-bottom: 16px;
+  padding: 14px;
+  border: 1px solid var(--yr-line);
+  border-radius: var(--yr-radius-sm);
+  background: var(--yr-panel-2);
+}
+
+.v2-dash .plan-summary-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  font-size: 13px;
+}
+
+.v2-dash .plan-summary-row + .plan-summary-row {
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px solid var(--yr-line);
+}
+
+.v2-dash .plan-summary-label {
+  color: var(--yr-ink-soft);
+}
+
+.v2-dash .plan-summary-value {
+  font-weight: 700;
+  color: var(--yr-accent);
+}
+
+.v2-dash .plan-banner {
+  padding: 12px 14px;
+  border-radius: var(--yr-radius-sm);
+  background: rgba(79, 70, 229, .08);
+  border: 1px solid rgba(79, 70, 229, .15);
+  color: var(--yr-accent);
+  font-size: 13px;
+  margin: -8px 0 16px;
+}
+
+.v2-dash .plan-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 14px;
+  margin-top: 16px;
+}
+
+.v2-dash .plan-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid var(--yr-line-2);
+  border-radius: var(--yr-radius);
+  background: var(--yr-panel-2);
+  transition: border-color .15s, box-shadow .15s, transform .1s;
+  box-shadow: var(--yr-shadow);
+}
+
+.v2-dash .plan-card:hover {
+  border-color: var(--yr-line-2);
+  transform: translateY(-1px);
+}
+
+.v2-dash .plan-card--current {
+  border-color: var(--yr-accent);
+  background: var(--yr-panel);
+  box-shadow: 0 0 0 1px var(--yr-accent), var(--yr-shadow);
+}
+
+.v2-dash .plan-card--popular::before {
+  content: "Most popular";
+  position: absolute;
+  top: -9px;
+  left: 14px;
+  background: var(--yr-accent);
+  color: var(--yr-accent-ink);
+  font: 700 9px var(--yr-mono);
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  padding: 2px 8px;
+  border-radius: 99px;
+}
+
+.v2-dash .plan-card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.v2-dash .plan-card-name {
+  font: 700 15px var(--yr-sans);
+  color: var(--yr-ink);
+}
+
+.v2-dash .plan-card-note {
+  display: block;
+  font: 700 9px var(--yr-mono);
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--yr-accent);
+  margin-top: 2px;
+}
+
+.v2-dash .plan-card-price {
+  font: 700 22px/1 var(--yr-mono);
+  color: var(--yr-ink);
+}
+
+.v2-dash .plan-card-price span {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--yr-ink-mute);
+}
+
+.v2-dash .plan-card-features {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  font-size: 13px;
+  color: var(--yr-ink-soft);
+  flex: 1;
+}
+
+.v2-dash .plan-card-features li {
+  padding: 3px 0 3px 18px;
+  position: relative;
+}
+
+.v2-dash .plan-card-features li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 9px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--yr-accent);
+  opacity: .7;
+}
+
+.v2-dash .plan-card-cta {
+  margin-top: auto;
+}
+
+.v2-dash .plan-card-cta:disabled {
+  opacity: .5;
+  cursor: not-allowed;
+  background: transparent;
+  color: var(--yr-ink-mute);
+  border-color: var(--yr-line-2);
+}
+
+.v2-dash .plan-trial {
+  margin-top: 16px;
+  padding: 14px;
+  border: 1px dashed var(--yr-line-2);
+  border-radius: var(--yr-radius-sm);
+  background: var(--yr-panel-2);
+}
+
+.v2-dash .plan-trial .status {
+  font-size: 13px;
+  color: var(--yr-red);
+  margin-top: 8px;
+  min-height: 18px;
+}
+
+.v2-dash .modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, .45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 18px;
+  z-index: 200;
+}
+
+.v2-dash .modal-card {
+  width: 100%;
+  max-width: 420px;
+  background: var(--yr-panel);
+  border: 1px solid var(--yr-line);
+  border-radius: var(--yr-radius);
+  padding: 22px;
+  box-shadow: var(--yr-shadow-lg);
+}
+
+.v2-dash .modal-card h3 {
+  margin: 0 0 8px;
+  font-size: 18px;
+  color: var(--yr-ink);
+}
+
+.v2-dash .modal-card p {
+  color: var(--yr-ink-soft);
+  margin: 0 0 18px;
+  font-size: 14px;
+}
+
+.v2-dash .toast {
+  position: fixed;
+  top: 18px;
+  right: 18px;
+  background: var(--yr-ink);
+  color: var(--yr-panel);
+  padding: 12px 16px;
+  border-radius: var(--yr-radius-sm);
+  font-size: 13px;
+  font-weight: 600;
+  z-index: 100;
+  box-shadow: var(--yr-shadow-lg);
+}
+
+.v2-dash .toast--error {
+  background: var(--yr-red);
+}
+
 .v2-dash table.players {
   width: 100%;
   border-collapse: collapse;
