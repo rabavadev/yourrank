@@ -349,7 +349,7 @@ function renderCreditsByDay(rows) {
     const label = new Date(d).toLocaleDateString(undefined, { month: "short", day: "numeric" });
     return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%" title="${label}: ${total} (${g.earn} earned, ${g.spend} spent)">
       <div style="width:100%;display:flex;align-items:flex-end;gap:1px;height:100%">
-        <div style="flex:1;background:var(--accent,#c8ff00);height:${earnPct}%"></div>
+        <div style="flex:1;background:var(--accent,#2200ff);height:${earnPct}%"></div>
         <div style="flex:1;background:var(--ink-mute,#8b949e);height:${spendPct}%"></div>
       </div>
     </div>`;

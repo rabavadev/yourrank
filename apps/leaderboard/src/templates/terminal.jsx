@@ -128,7 +128,7 @@ export const TERMINAL = {
   presets: [
     { id: "matrix", name: "Matrix", accentA: "#39d98a", accentB: "#2fae6e" },
     { id: "amber", name: "Amber", accentA: "#e8c14c", accentB: "#c8871c" },
-    { id: "ice", name: "Ice", accentA: "#5ad9ff", accentB: "#3b82f6" },
+    { id: "ice", name: "Ice", accentA: "#5771ff", accentB: "#3b82f6" },
   ],
   // Dashboard-editable knobs for this design. The dashboard auto-builds
   // controls from this schema; values arrive as --opt-accent, and as

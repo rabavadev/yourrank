@@ -16,7 +16,7 @@ export function renderPublicCreditsPage({ slug, nonce, homeUrl }) {
   .pc-hero p{color:var(--ink-mute,#8b949e);}
   .pc-card{background:var(--panel,#0f0f11);border:1px solid var(--line,#232327);border-radius:12px;padding:20px;margin-bottom:18px;}
   .pc-card h2{font-size:1.1rem;margin-bottom:12px;}
-  .pc-balance{font-size:2rem;font-weight:700;color:var(--accent,#c8ff00);}
+  .pc-balance{font-size:2rem;font-weight:700;color:var(--accent,#2200ff);}
   .pc-grid{display:grid;gap:14px;}
   .pc-item{display:flex;justify-content:space-between;align-items:center;padding:14px;border:1px solid var(--line);border-radius:8px;}
   .pc-item-info{flex:1;}
