@@ -9,10 +9,27 @@ export const dashboardConfig = {
 export function DashboardContent() {
   return (
     <>
-      <div id="loading" class="py-26">
-<div class="skel-header"><div><div class="skeleton skeleton-text--lg skel-w-180"></div><div class="skeleton skeleton-text--sm skel-w-260 mt-8"></div></div><div class="skeleton skeleton-text skel-w-90"></div></div>
-<div class="card mt-18"><div class="skeleton skeleton-block skel-h-200"></div></div>
-<div class="card mt-18"><div class="skeleton skeleton-block skel-h-300"></div></div>
+      <div id="loading" class="lb-bento" style="padding-top:24px">
+<div class="lb-widget lb-widget--full" style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
+<div style="display:flex;flex-direction:column;gap:8px">
+<div class="skeleton skeleton-text--lg" style="width:160px"></div>
+<div class="skeleton skeleton-text--sm" style="width:240px"></div>
+</div>
+<div class="skeleton skeleton-text" style="width:90px"></div>
+</div>
+<div class="lb-widget lb-widget--full">
+<div class="kpi-row">
+<div class="kpi-card"><div class="skeleton skeleton-text" style="width:70px"></div><div class="skeleton skeleton-text--lg" style="width:50px;margin-top:10px"></div></div>
+<div class="kpi-card"><div class="skeleton skeleton-text" style="width:70px"></div><div class="skeleton skeleton-text--lg" style="width:50px;margin-top:10px"></div></div>
+<div class="kpi-card"><div class="skeleton skeleton-text" style="width:70px"></div><div class="skeleton skeleton-text--lg" style="width:50px;margin-top:10px"></div></div>
+<div class="kpi-card"><div class="skeleton skeleton-text" style="width:70px"></div><div class="skeleton skeleton-text--lg" style="width:50px;margin-top:10px"></div></div>
+</div>
+</div>
+<div class="lb-widget lb-widget--wide"><div class="skeleton skeleton-block" style="height:180px"></div></div>
+<div class="lb-widget lb-widget--narrow"><div class="skeleton skeleton-block" style="height:180px"></div></div>
+<div class="lb-widget lb-widget--narrow"><div class="skeleton skeleton-block" style="height:180px"></div></div>
+<div class="lb-widget lb-widget--half"><div class="skeleton skeleton-block" style="height:140px"></div></div>
+<div class="lb-widget lb-widget--half"><div class="skeleton skeleton-block" style="height:140px"></div></div>
 </div>
 <div id="dash" hidden>
 <div class="toast" id="status" role="status" aria-live="polite"></div>

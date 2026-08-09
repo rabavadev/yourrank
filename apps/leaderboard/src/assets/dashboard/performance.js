@@ -107,6 +107,10 @@ function renderHeatmap(matrix) {
   if (!grid) return;
   const flat = matrix.flat();
   const max = Math.max(1, ...flat);
+  if (max === 1) {
+    grid.innerHTML = `<p class="heatmap-loading">No hourly activity yet.</p>`;
+    return;
+  }
   let html = `<div class="heatmap-corner"></div>`;
   for (let h = 0; h < 24; h++) {
     if (h % 3 !== 0) {
