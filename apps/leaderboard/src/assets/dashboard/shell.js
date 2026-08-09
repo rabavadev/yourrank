@@ -126,7 +126,7 @@ export function setupShell() {
     document.body.appendChild(backdrop);
   }
   backdrop.addEventListener("click", () => closeDrawer());
-  document.querySelectorAll(".lb-nav").forEach((btn) => btn.addEventListener("click", () => navTo(btn.dataset.nav)));
+  document.querySelectorAll(".lb-nav[data-nav]").forEach((btn) => btn.addEventListener("click", () => navTo(btn.dataset.nav)));
   document.querySelectorAll("[data-jump]").forEach((el) => el.addEventListener("click", () => navTo(el.dataset.jump)));
   document.querySelectorAll(".lb-menu").forEach((btn) => btn.addEventListener("click", (e) => { e.stopPropagation(); openDrawer(); }));
   document.querySelectorAll("[data-close-side]").forEach((btn) => btn.addEventListener("click", () => closeDrawer()));
