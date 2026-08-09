@@ -464,10 +464,10 @@ async function handleRequest(request, env, ctx, meta) {
       }
       // Analytics and billing have been folded into the unified dashboard.
       if (path === "/dashboard/analytics") {
-        return Response.redirect(new URL("/dashboard?nav=growth", url), 302);
+        return Response.redirect(new URL("/dashboard?nav=performance", url), 302);
       }
       if (path === "/dashboard/billing") {
-        return Response.redirect(new URL("/dashboard?nav=manage", url), 302);
+        return Response.redirect(new URL("/dashboard?nav=settings", url), 302);
       }
       if (path === "/dashboard/attribution") {
         try {

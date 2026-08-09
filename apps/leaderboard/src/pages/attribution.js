@@ -24,7 +24,7 @@ export const attributionPage = leaderboardPageHtml({
 </div>
 <div class="postback-upgrade" id="postbackUpgrade" hidden style="padding:14px;border:1px solid var(--line-2);border-radius:10px;background:var(--panel-2);margin-top:18px;text-align:center">
 <p class="card-sub">Postback tracking is included with Pro and Agency plans.</p>
-<a href="/dashboard/billing" class="btn btn--sm btn--accent">Upgrade to Pro</a>
+<a href="/dashboard?nav=settings" class="btn btn--sm btn--accent">Upgrade to Pro</a>
 </div>
 <div class="stats" id="summary" style="margin-top:18px">
 <div class="stat"><b id="s_clicks">–</b><span>clicks</span></div>

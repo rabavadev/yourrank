@@ -50,7 +50,7 @@ export const pricingPage = `<!DOCTYPE html><html lang="en"><head>
 <h2 class="sec" style="margin-top:64px">Frequently asked questions</h2>
 <div class="steps" style="margin-top:24px">
 <div class="step"><div class="n">?</div><div><h3>Do plans auto-renew?</h3><p>No. Each payment gives you 30 days of access. When it expires, your page drops back to the Free plan — you can renew manually whenever you're ready.</p></div></div>
-<div class="step"><div class="n">?</div><div><h3>Is there a free trial?</h3><p>Two ways: the Free plan never expires — use it as long as you like — and you can also start a 7-day free Pro trial from your <a href="/dashboard?nav=manage">Plan &amp; billing</a> section to test every Pro feature before you pay.</p></div></div>
+<div class="step"><div class="n">?</div><div><h3>Is there a free trial?</h3><p>Two ways: the Free plan never expires — use it as long as you like — and you can also start a 7-day free Pro trial from your <a href="/dashboard?nav=settings">Plan &amp; billing</a> section to test every Pro feature before you pay.</p></div></div>
 <div class="step"><div class="n">?</div><div><h3>What payment methods do you accept?</h3><p>Crypto (BTC, ETH, USDT and 100+ more) through our payment processor. We are working on adding credit card checkout.</p></div></div>
 <div class="step"><div class="n">?</div><div><h3>Do you offer refunds?</h3><p>Paid periods keep working until the end of the 30 days and are not partially refunded. Crypto and lifetime purchases are non-refundable. See <a href="/refund">our refund policy</a>.</p></div></div>
 </div>

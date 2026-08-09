@@ -644,7 +644,7 @@ function renderTemplateOptions() {
   head.className = "tpl-opt-head";
   head.innerHTML = `<span class="tpl-opt-title">${esc(template.name)} options</span>${paid
     ? `<span class="hint">Changes preview instantly — save to publish.</span>`
-    : `<span class="hint">Pro feature. <a href="/dashboard?nav=manage">Upgrade to unlock</a>.</span>`}`;
+    : `<span class="hint">Pro feature. <a href="/dashboard?nav=settings">Upgrade to unlock</a>.</span>`}`;
   wrap.appendChild(head);
 
   const list = document.createElement("div");
@@ -810,7 +810,7 @@ export function renderNotifications(n) {
   const paid = state.ME.plan !== "free";
   $("notifyBody").hidden = !paid; $("notifyLock").hidden = paid;
   if (!paid) {
-    $("notifyUpgrade")?.addEventListener("click", (e) => { e.preventDefault(); location.href = "/dashboard?nav=manage"; });
+    $("notifyUpgrade")?.addEventListener("click", (e) => { e.preventDefault(); location.href = "/dashboard?nav=settings"; });
     return;
   }
   const wh = $("f_webhook"); if (wh && n.discord_webhook_url) { wh.value = ""; wh.placeholder = "Webhook configured ✓ (enter new URL to change)"; }

@@ -179,8 +179,8 @@ form.addEventListener("submit", async (e) => {
     }
     if (mode === "signup") {
       const p = (planParam || "").toLowerCase();
-      if (["starter", "pro"].includes(p)) location.href = `/dashboard?nav=manage&plan=${encodeURIComponent(p)}`;
-      else if (p === "lifetime") location.href = "/dashboard?nav=manage&plan=lifetime";
+      if (["starter", "pro"].includes(p)) location.href = `/dashboard?nav=settings&plan=${encodeURIComponent(p)}`;
+      else if (p === "lifetime") location.href = "/dashboard?nav=settings&plan=lifetime";
       else if (p === "agency") location.href = "/contact?plan=agency";
       else location.href = "/dashboard";
     } else {

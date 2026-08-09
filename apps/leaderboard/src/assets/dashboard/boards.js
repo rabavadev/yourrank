@@ -100,7 +100,7 @@ function boardLimitOffer() {
       title: `You've reached ${limit} boards`,
       text: "Agency supports up to 99 independent leaderboards.",
       cta: "View Agency plan",
-      href: "/dashboard?nav=manage",
+      href: "/dashboard?nav=settings",
     };
   }
   const planName = plan === "starter" ? "Starter" : "Free";
@@ -108,7 +108,7 @@ function boardLimitOffer() {
     title: "Need another leaderboard?",
     text: `${planName} includes ${limit} board. Pro unlocks up to 3 independent boards.`,
     cta: "Upgrade to Pro",
-    href: "/dashboard?nav=manage",
+    href: "/dashboard?nav=settings",
   };
 }
 
