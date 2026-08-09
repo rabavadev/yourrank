@@ -12,9 +12,9 @@ export const dashboardConfig = {
 export function DashboardContent() {
   return (
     <>
-      <div id="loading" class="lb-bento" style="padding-top:24px">
-<div class="lb-widget lb-widget--full" style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
-<div style="display:flex;flex-direction:column;gap:8px">
+      <div id="loading" class="lb-bento pt-24">
+<div class="lb-widget lb-widget--full d-flex justify-between items-center gap-12 flex-wrap">
+<div class="d-flex flex-col gap-8">
 <div class="skeleton skeleton-text--lg" style="width:160px"></div>
 <div class="skeleton skeleton-text--sm" style="width:240px"></div>
 </div>
@@ -74,7 +74,7 @@ export function DashboardContent() {
 <div class="lb-side-foot"><a class="btn btn--sm btn--accent lb-live-btn" id="liveLink" href="#" target="_blank" rel="noopener noreferrer">View live board ↗</a><span class="label" id="planBadge">FREE PLAN</span></div>
 </aside>
 <div class="lb-main">
-<div class="card card--danger" id="verifyBanner" hidden style="margin:16px 24px 0"><h2>Verify your email</h2><p class="card-sub">Your leaderboard won't be public until you confirm your email address. Check your inbox for the link, or <a href="/verify-email">request a new one</a>.</p></div>
+<div class="lb-widget lb-widget--full lb-widget--danger" id="verifyBanner" hidden style="margin:16px 24px 0"><h2>Verify your email</h2><p class="card-sub">Your leaderboard won't be public until you confirm your email address. Check your inbox for the link, or <a href="/verify-email">request a new one</a>.</p></div>
 <header class="lb-topbar" id="lbTopbar">
   <div class="lb-topbar-left">
     <h1 class="lb-topbar-title" id="lbTopbarTitle" tabindex="-1">Home</h1>
@@ -96,14 +96,14 @@ export function DashboardContent() {
 <div class="lb-bento">
 <div class="lb-widget lb-widget--full" aria-label="Key metrics">
 <div class="kpi-row">
-<div class="kpi-card"><span class="kpi-lbl">Views · 7d</span><span class="kpi-val" id="ov_kpi_views">–</span></div>
-<div class="kpi-card"><span class="kpi-lbl">Clicks · 7d</span><span class="kpi-val" id="ov_kpi_clicks">–</span></div>
-<div class="kpi-card"><span class="kpi-lbl">Copies · 7d</span><span class="kpi-val" id="ov_kpi_copies">–</span></div>
-<div class="kpi-card"><span class="kpi-lbl">Signups · 7d</span><span class="kpi-val" id="ov_kpi_signups">–</span></div>
+<div class="kpi-card"><span class="kpi-lbl"><span class="kpi-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg></span>Views · 7d</span><span class="kpi-val" id="ov_kpi_views">–</span></div>
+<div class="kpi-card"><span class="kpi-lbl"><span class="kpi-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3l7 18 3-7 7-3L3 3z"/></svg></span>Clicks · 7d</span><span class="kpi-val" id="ov_kpi_clicks">–</span></div>
+<div class="kpi-card"><span class="kpi-lbl"><span class="kpi-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg></span>Copies · 7d</span><span class="kpi-val" id="ov_kpi_copies">–</span></div>
+<div class="kpi-card"><span class="kpi-lbl"><span class="kpi-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6"/><path d="M22 11h-6"/></svg></span>Signups · 7d</span><span class="kpi-val" id="ov_kpi_signups">–</span></div>
 </div>
 </div>
 
-<div class="lb-widget lb-widget--wide"><div class="lb-cardhd"><h2>Activity · 14 days</h2><button class="lb-cardlink" type="button" data-jump="performance">Full analytics →</button></div><div class="stat-chart" style="margin-top:14px"><div class="stat-bars" id="ov_bars" title="Daily activity, last 14 days"></div><div class="stat-chart-lbl"><span id="ov_barsFrom"></span><span>today</span></div></div><p class="hint" id="ov_barsEmpty" hidden>No activity yet — share your page link to get it moving.</p><div class="stat-legend"><span class="stat-legend-item views">Views</span><span class="stat-legend-item copies">Copies</span><span class="stat-legend-item clicks">Clicks</span></div></div>
+<div class="lb-widget lb-widget--wide"><div class="lb-cardhd"><h2>Activity · 14 days</h2><button class="lb-cardlink" type="button" data-jump="performance">Full analytics →</button></div><div class="stat-chart mt-14"><div class="stat-bars" id="ov_bars" title="Daily activity, last 14 days"></div><div class="stat-chart-lbl"><span id="ov_barsFrom"></span><span>today</span></div></div><p class="hint" id="ov_barsEmpty" hidden>No activity yet — share your page link to get it moving.</p><div class="stat-legend"><span class="stat-legend-item views">Views</span><span class="stat-legend-item copies">Copies</span><span class="stat-legend-item clicks">Clicks</span></div></div>
 <div class="lb-widget lb-widget--narrow" id="ovBoardStatusWidget"><h2>Board health</h2><div class="mini-stats">
 <div class="mini-stat"><span class="mini-stat-lbl">Name</span><span class="mini-stat-val" id="ov_board">–</span></div>
 <div class="mini-stat"><span class="mini-stat-lbl">Prize pool</span><span class="mini-stat-val" id="ov_prize">–</span></div>
@@ -141,8 +141,8 @@ export function DashboardContent() {
 <div class="field"><label for="f_pool">Prize pool</label><input id="f_pool" placeholder="$500" /></div>
 <div class="field"><label for="f_period">Period</label><select id="f_period"><option>Weekly</option><option selected>Monthly</option><option>Season</option></select></div>
 <div class="field"><label for="f_ends">Countdown ends</label><input id="f_ends" type="datetime-local" /><span class="hint" id="f_ends_hint">When the leaderboard resets, in your local time. Powers the live timer.</span></div>
-<div class="field" style="grid-column:1/-1"><label class="chk"><input type="checkbox" id="f_auto_reset" /> Auto-reset when countdown ends</label><select id="f_auto_reset_clear" disabled style="margin-top:8px"><option value="wagers">Reset wagers to 0</option><option value="players">Clear all players</option><option value="none">Keep board as-is</option></select><span class="hint">Archives the finished period and extends the end date by one period automatically.</span></div>
-<div class="field" style="grid-column:1/-1"><label class="chk"><input type="checkbox" id="f_password_enabled" /> Password-protect this board</label><input id="f_password" type="password" placeholder="Leave blank to keep current password" disabled style="margin-top:8px" /><span class="hint">Visitors must enter this password before seeing the leaderboard or using the public API.</span></div></div>
+<div class="field field--full"><label class="chk"><input type="checkbox" id="f_auto_reset" /> Auto-reset when countdown ends</label><select id="f_auto_reset_clear" disabled class="mt-8"><option value="wagers">Reset wagers to 0</option><option value="players">Clear all players</option><option value="none">Keep board as-is</option></select><span class="hint">Archives the finished period and extends the end date by one period automatically.</span></div>
+<div class="field field--full"><label class="chk"><input type="checkbox" id="f_password_enabled" /> Password-protect this board</label><input id="f_password" type="password" placeholder="Leave blank to keep current password" disabled class="mt-8" /><span class="hint">Visitors must enter this password before seeing the leaderboard or using the public API.</span></div></div>
 <div class="field"><label for="f_blurb">Partner blurb</label><textarea id="f_blurb" rows="2" placeholder="Short pitch about the sponsor and your code (optional)."></textarea></div></div>
 <div class="card" data-egroup="players"><h2>Players</h2><p class="card-sub">The board auto-sorts by wagered, highest first. Prize <span class="mono">0</span> shows a dash. Names can be masked (keep the <span class="mono">***</span>). <span class="limit-widget" id="limitWidget"><span id="pCount" class="limit-hint"></span><span class="limit-bar"><span class="limit-fill" id="limitFill"></span></span><span class="limit-hint" id="limitHint"></span><a class="btn btn--sm btn--accent" id="playerLimitUpgrade" href="/dashboard?nav=settings">Upgrade</a></span></p>
 <div class="player-toolbar">
@@ -164,7 +164,7 @@ export function DashboardContent() {
 <div class="import" id="gsheetPanel" hidden>
 <p class="hint mb-8">Paste a Google Sheets URL. Public / “Publish to web” sheets work best; private sheets may be blocked by Google’s CORS.</p>
 <div class="d-flex gap-8 flex-wrap">
-<input type="text" id="gsheetUrl" style="flex:1" placeholder="https://docs.google.com/spreadsheets/d/..." />
+<input type="text" id="gsheetUrl" class="flex-1" placeholder="https://docs.google.com/spreadsheets/d..." />
 <button class="btn btn--sm btn--accent" id="gsheetFetch" type="button">Fetch CSV</button>
 </div>
 <p class="hint mt-8" id="gsheetStatus"></p>
@@ -212,13 +212,13 @@ export function DashboardContent() {
 <div class="card" data-egroup="design" id="socialsCard"><h2>Social links</h2><p class="card-sub">Add the links to your channels. Turn a network <b>on</b> to show it on your public page; turn it <b>off</b> to hide it.</p>
 <div class="socials-editor" id="socialsList"></div></div>
 <div class="card" data-egroup="share" id="embedShareCard"><h2>Embed &amp; share</h2><p class="card-sub">Share your leaderboard or embed it on stream.</p>
-<div class="field"><label>Public page link</label><div class="d-flex gap-8 items-center flex-wrap"><code id="embedPublicLink" class="overlay-url" style="flex:1"></code><button class="btn btn--sm btn--accent ic-btn" id="embedPublicCopy" type="button"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg> Copy</button></div></div>
-<div class="embed-obs-box"><div class="d-flex items-center gap-8 mb-8"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="14" x="2" y="3" rx="2" ry="2"/><line x1="8" x2="16" y1="21" y2="21"/><line x1="12" x2="12" y1="17" y2="21"/></svg><b style="font-size:14px">OBS Browser Source</b></div><div class="field" style="margin-bottom:8px"><div class="d-flex gap-8 items-center flex-wrap"><code id="embedObsUrl" class="overlay-url" style="flex:1"></code><button class="btn btn--sm btn--accent ic-btn" id="embedObsCopy" type="button"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg> Copy</button></div></div><div class="embed-obs-row"><div><span class="hint">Width</span><div class="embed-obs-dim" id="embedObsWidth">1100px</div></div><div><span class="hint">Height</span><div class="embed-obs-dim" id="embedObsHeight">auto</div></div></div><div class="embed-tip"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="16" y2="12"/><line x1="12" x2="12.01" y1="8" y2="8"/></svg><span>For best results, uncheck "Shutdown source when not visible" in OBS so the overlay stays live while switching scenes.</span></div></div>
-<div class="field" style="margin-top:14px"><label>Website embed code</label><div class="embed-code-block" id="embedCodeBlock"><code id="embedCodeInline"></code><button class="embed-copy-btn" id="embedCodeCopy" type="button">Copy</button></div></div>
-<div class="d-flex gap-8 flex-wrap" style="margin-top:14px"><label class="chk"><input type="checkbox" id="embedTransparent" /> Transparent background</label><label class="chk"><input type="checkbox" id="embedHideBranding" /> Hide branding</label></div>
-<h3 style="font-size:14px;font-weight:700;margin:18px 0 8px">Share on social</h3>
+<div class="field"><label>Public page link</label><div class="d-flex gap-8 items-center flex-wrap"><code id="embedPublicLink" class="overlay-url"></code><button class="btn btn--sm btn--accent ic-btn" id="embedPublicCopy" type="button"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg> Copy</button></div></div>
+<div class="embed-obs-box"><div class="d-flex items-center gap-8 mb-8"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="14" x="2" y="3" rx="2" ry="2"/><line x1="8" x2="16" y1="21" y2="21"/><line x1="12" x2="12" y1="17" y2="21"/></svg><b class="font-14">OBS Browser Source</b></div><div class="field mb-8"><div class="d-flex gap-8 items-center flex-wrap"><code id="embedObsUrl" class="overlay-url"></code><button class="btn btn--sm btn--accent ic-btn" id="embedObsCopy" type="button"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg> Copy</button></div></div><div class="embed-obs-row"><div><span class="hint">Width</span><div class="embed-obs-dim" id="embedObsWidth">1100px</div></div><div><span class="hint">Height</span><div class="embed-obs-dim" id="embedObsHeight">auto</div></div></div><div class="embed-tip"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="16" y2="12"/><line x1="12" x2="12.01" y1="8" y2="8"/></svg><span>For best results, uncheck "Shutdown source when not visible" in OBS so the overlay stays live while switching scenes.</span></div></div>
+<div class="field mt-14"><label>Website embed code</label><div class="embed-code-block" id="embedCodeBlock"><code id="embedCodeInline"></code><button class="embed-copy-btn" id="embedCodeCopy" type="button">Copy</button></div></div>
+<div class="d-flex gap-8 flex-wrap mt-14"><label class="chk"><input type="checkbox" id="embedTransparent" /> Transparent background</label><label class="chk"><input type="checkbox" id="embedHideBranding" /> Hide branding</label></div>
+<h3 class="m-0 mt-18 mb-8 font-14 fw-700">Share on social</h3>
 <div class="share-cards" id="shareCards"><button class="share-card share-card--x" id="shareX" type="button"><span>Share on X</span></button><button class="share-card share-card--discord" id="shareDiscord" type="button"><span>Share on Discord</span></button><button class="share-card share-card--twitch" id="shareTwitch" type="button"><span>Share on Twitch</span></button><button class="share-card share-card--copy" id="shareCopy" type="button"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg><span>Copy link</span></button></div>
-<div class="api-access locked" id="apiAccess"><div><b style="font-size:14px">API Access</b><p class="hint" style="margin-top:4px">REST API for programmatic board management</p></div><span class="api-lock-badge"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> Pro</span></div>
+<div class="api-access locked" id="apiAccess"><div><b class="font-14">API Access</b><p class="hint mt-4">REST API for programmatic board management</p></div><span class="api-lock-badge"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> Pro</span></div>
 </div>
 </div>
 <div class="design-preview">
@@ -250,10 +250,10 @@ export function DashboardContent() {
 </div>
 <div class="lb-widget lb-widget--full">
   <div class="kpi-row">
-    <div class="kpi-card"><span class="kpi-lbl" id="perfKpiViewsLbl">Views · 14d</span><span class="kpi-val" id="perfKpiViews">–</span></div>
-    <div class="kpi-card"><span class="kpi-lbl" id="perfKpiClicksLbl">Clicks · 14d</span><span class="kpi-val" id="perfKpiClicks">–</span></div>
-    <div class="kpi-card"><span class="kpi-lbl" id="perfKpiCopiesLbl">Copies · 14d</span><span class="kpi-val" id="perfKpiCopies">–</span></div>
-    <div class="kpi-card"><span class="kpi-lbl" id="perfKpiCtrLbl">CTR · 14d</span><span class="kpi-val" id="perfKpiCtr">–</span></div>
+    <div class="kpi-card"><span class="kpi-lbl" id="perfKpiViewsLbl"><span class="kpi-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg></span>Views · 14d</span><span class="kpi-val" id="perfKpiViews">–</span></div>
+    <div class="kpi-card"><span class="kpi-lbl" id="perfKpiClicksLbl"><span class="kpi-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3l7 18 3-7 7-3L3 3z"/></svg></span>Clicks · 14d</span><span class="kpi-val" id="perfKpiClicks">–</span></div>
+    <div class="kpi-card"><span class="kpi-lbl" id="perfKpiCopiesLbl"><span class="kpi-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg></span>Copies · 14d</span><span class="kpi-val" id="perfKpiCopies">–</span></div>
+    <div class="kpi-card"><span class="kpi-lbl" id="perfKpiCtrLbl"><span class="kpi-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20v-6"/><path d="M6 20V10"/><path d="M18 20V4"/></svg></span>CTR · 14d</span><span class="kpi-val" id="perfKpiCtr">–</span></div>
   </div>
 </div>
 <div class="lb-widget lb-widget--wide">
@@ -264,7 +264,7 @@ export function DashboardContent() {
 </div>
 <div class="lb-widget lb-widget--narrow" id="perfHeatmap">
   <div class="lb-cardhd"><h2>Activity map</h2></div>
-  <p class="hint" style="margin:0 0 8px">Views by day and hour (last 30 days).</p>
+  <p class="hint m-0 mb-8">Views by day and hour (last 30 days).</p>
   <div class="heatmap-wrap"><div class="heatmap" id="perfHeatmapGrid"><p class="heatmap-loading">Loading…</p></div></div>
 </div>
 <div class="lb-widget lb-widget--narrow">
@@ -275,8 +275,8 @@ export function DashboardContent() {
 <div class="lb-widget lb-widget--half" id="refCard">
   <h2>Referrals</h2>
   <p class="card-sub">Share your link. Every sign-up adds 31 days of Pro.</p>
-  <div class="d-flex gap-8 flex-wrap items-center" style="margin-top:12px"><input id="refLink" class="field" readonly style="flex:1;min-width:220px" value="…" /><button class="btn btn--accent" id="refCopy" type="button">Copy link</button></div>
-  <div class="stat-tiles" style="margin-top:18px">
+  <div class="d-flex gap-8 flex-wrap items-center mt-12"><input id="refLink" class="overlay-url min-w-220" readonly value="…" /><button class="btn btn--accent" id="refCopy" type="button">Copy link</button></div>
+  <div class="stat-tiles mt-18">
     <div class="stat-tile"><span class="stat-num" id="refCount">–</span><span class="stat-lbl">People signed up</span></div>
     <div class="stat-tile"><span class="stat-num" id="refDays">–</span><span class="stat-lbl">Free days earned</span></div>
     <div class="stat-tile"><span class="stat-num" id="refSaved">–</span><span class="stat-lbl">Value earned ($)</span></div>
@@ -313,7 +313,7 @@ export function DashboardContent() {
     <div class="mt-14 d-flex gap-8 flex-wrap"><a class="btn btn--sm" id="overlayPreview" href="#" target="_blank" rel="noopener noreferrer">Preview overlay →</a></div>
   </div>
   <div class="empty" id="overlayLock" hidden>OBS Overlay is a Pro feature. <a href="#" id="overlayUpgrade">Upgrade to unlock it</a>.</div>
-  <hr style="border:0;border-top:1px solid var(--line);margin:18px 0" />
+  <hr class="hr" />
   <div id="domainBody">
     <div class="field"><label for="f_domain">Your domain</label><input id="f_domain" placeholder="board.mystream.com" />
       <span class="hint">Point a <b>CNAME record</b> for your domain to <span class="mono">yourrank.site</span>. Then enter the domain here and click <b>Verify &amp; Provision TLS</b>.</span>
@@ -373,7 +373,7 @@ export function DashboardContent() {
   <div class="plan-trial" id="planTrial" hidden><p class="hint">Not ready to pay? Try every Pro feature free for 7 days.</p><button class="btn btn--accent" id="trialBtn" type="button">Start free Pro trial</button><p class="status" id="trialStatus" role="status" aria-live="polite"></p></div>
   <p class="hint" id="planHint">Paid plans are billed in crypto (BTC, ETH, USDT and 100+ more) and activate automatically once the network confirms.</p>
   <div id="historyCard" hidden>
-    <h3 style="margin:18px 0 4px">Payment history</h3>
+    <h3 class="m-0 mt-18 mb-4">Payment history</h3>
     <p class="card-sub">Your past payments and receipts.</p>
     <table class="admin-table" id="historyTable"><thead><tr><th>Date</th><th>Plan</th><th>Amount</th><th>Status</th></tr></thead><tbody id="historyBody"></tbody></table>
     <div class="empty" id="historyEmpty" hidden>No payments yet.</div>
@@ -389,11 +389,11 @@ export function DashboardContent() {
     <button class="btn btn--accent" id="accChangePassword" type="button">Update password</button>
     <span class="hint" id="accPasswordStatus" role="status" aria-live="polite"></span>
   </div>
-  <hr style="border:0;border-top:1px solid var(--line);margin:18px 0" />
-  <div class="d-flex justify-between items-center" style="margin-bottom:12px"><h3 style="margin:0">Active sessions</h3><button class="btn btn--ghost btn--sm" id="accRevokeSessions" type="button">Sign out other sessions</button></div>
+  <hr class="hr" />
+  <div class="d-flex justify-between items-center mb-12"><h3 class="m-0">Active sessions</h3><button class="btn btn--ghost btn--sm" id="accRevokeSessions" type="button">Sign out other sessions</button></div>
   <div id="accSessions"><p class="hint">Loading…</p></div>
   <p class="hint" id="accSessionsStatus" role="status" aria-live="polite"></p>
-  <hr style="border:0;border-top:1px solid var(--line);margin:18px 0" />
+  <hr class="hr" />
   <div class="d-flex gap-8 items-center flex-wrap">
     <button class="btn btn--accent" id="accExportData" type="button">Download my data</button>
     <span class="hint" id="accExportStatus" role="status" aria-live="polite"></span>
