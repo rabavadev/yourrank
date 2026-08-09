@@ -172,6 +172,28 @@ export const creditsPage = leaderboardPageHtml({
   </section>
 
   <section class="card">
+    <h2>Cross-board viewer history</h2>
+    <p class="card-sub">Search a Kick viewer across all of your boards.</p>
+    <form class="grid2" id="cr-history-form" style="margin-bottom:14px">
+      <div class="field">
+        <label for="cr-history-username">Kick username</label>
+        <input id="cr-history-username" type="text" placeholder="viewer123" />
+      </div>
+      <div class="field" style="display:flex;align-items:flex-end">
+        <button class="btn" type="submit" id="cr-history-search">Search</button>
+      </div>
+    </form>
+    <p class="status" id="cr-history-status" role="status" aria-live="polite"></p>
+    <div class="board-table-wrap">
+      <table class="board-table">
+        <thead><tr><th>Board</th><th>Balance</th><th>Earned</th><th>Spent</th><th>Pending</th><th>Total</th><th class="ta-r">Actions</th></tr></thead>
+        <tbody id="cr-history-list"></tbody>
+      </table>
+      <p class="empty" id="cr-history-empty" hidden>No boards found for this viewer.</p>
+    </div>
+  </section>
+
+  <section class="card">
     <h2>Analytics</h2>
     <div class="field" style="margin-bottom:16px">
       <label for="cr-analytics-days">Last</label>
