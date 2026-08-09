@@ -26,6 +26,12 @@ import { handleTrial } from "./handlers/billing.js";
 import { handleReferrals } from "./handlers/referrals.js";
 import { handleLead } from "./handlers/leads.js";
 import { handleAttribution, handleAttributionExport, handlePostback, handleRotatePostbackKey, handleRevokePostbackKey } from "./handlers/attribution.js";
+import {
+  handleAccountPostbacks,
+  handleAccountPostbacksRotate,
+  handleAccountPostbacksRevoke,
+  handleAccountConversions,
+} from "./handlers/account.js";
 import { handleContact } from "./handlers/contact.js";
 import { handleCspReport } from "./handlers/csp-report.js";
 import { handleLog } from "./handlers/log.js";
@@ -197,6 +203,12 @@ export const ROUTES = [
   { path: "/api/billing/ipn", method: "POST", handler: withHandler(handleIpn) },
   
   // Bot lifecycle is owned by the bot Worker; obsolete leaderboard routes removed (C-06).
+
+  // Account
+  { path: "/api/account/postbacks", method: "GET", handler: withHandler(handleAccountPostbacks) },
+  { path: "/api/account/postbacks/rotate", method: "POST", handler: withHandler(handleAccountPostbacksRotate) },
+  { path: "/api/account/postbacks", method: "DELETE", handler: withHandler(handleAccountPostbacksRevoke) },
+  { path: "/api/account/conversions", method: "GET", handler: withHandler(handleAccountConversions) },
 
   // Attribution
   { path: "/api/attribution", method: "GET", handler: withHandler(handleAttribution) },

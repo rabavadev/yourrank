@@ -396,10 +396,11 @@ async function handleRequest(request, env, ctx, meta) {
       }
 
       // --- helper for rendering strings or JSX pages ---
-      const renderHtmlPage = async (pageObj, { reqId, activePath, user } = {}) => {
+      const renderHtmlPage = async (pageObj, { reqId, activePath, user, theme, settingsHref, logoutAction } = {}) => {
+        const navOpts = activePath && user ? { activePath, user, theme, settingsHref: settingsHref || "/account", logoutAction } : null;
         if (typeof pageObj === "string") {
           let result = pageObj;
-          if (activePath && user) result = result.replace("<!--GM_NAV-->", shellNavHtml({ activePath, user }));
+          if (navOpts) result = result.replace("<!--GM_NAV-->", shellNavHtml(navOpts));
           if (reqId) result = result.replace("{{REQ_ID}}", reqId);
           // Fill in legal company identity placeholders on static/legal pages.
           result = applyLegalIdentity(result, getPlatformIdentity());
@@ -408,14 +409,14 @@ async function handleRequest(request, env, ctx, meta) {
           result = result.replace(/{{GBP_PHOTO_URL}}/g, env.GBP_PHOTO_URL || "");
           return result;
         }
-        
+
         if (pageObj.Component) {
           let node = pageObj.Component({ reqId, user });
           if (node instanceof Promise) node = await node;
           const content = node.toString();
           if (pageObj.config) {
             let result = leaderboardPageHtml({ ...pageObj.config, content });
-            if (activePath && user) result = result.replace("<!--GM_NAV-->", shellNavHtml({ activePath, user }));
+            if (navOpts) result = result.replace("<!--GM_NAV-->", shellNavHtml(navOpts));
             if (reqId) result = result.replace("{{REQ_ID}}", reqId);
             return result;
           }
@@ -444,10 +445,15 @@ async function handleRequest(request, env, ctx, meta) {
         try {
           const user = await currentUser(request, env);
           if (!user) return Response.redirect(new URL("/login", url), 302);
+          if (url.searchParams.get("nav") === "kickrewards") {
+            return Response.redirect(new URL("/dashboard/credits", url), 302);
+          }
           const html = addCookieConsent(await renderHtmlPage(PAGES.dashboard, {
-            activePath: "/dashboard",
+            activePath: url.pathname + url.search,
             user,
-            reqId: reqId || ""
+            reqId: reqId || "",
+            theme: "light",
+            settingsHref: "/account"
           }));
           return new Response(html, { headers: { ...SECURE_HTML, ...csrfHeader, "cache-control": "no-store, no-cache, must-revalidate" } });
         } catch (e) {
@@ -455,6 +461,23 @@ async function handleRequest(request, env, ctx, meta) {
           // raw Cloudflare 1101 after the session cookie redirected past the
           // unauthenticated path. Retry-safe: a plain refresh re-runs the read.
           if (workerLog) workerLog.error("dashboard_render_failed", { error: String(e?.message || e) }); else console.error("dashboard render failed:", String(e?.message || e));
+          return new Response(error500Page(nonce), { status: 500, headers: HTML_N });
+        }
+      }
+      if (path === "/account" || path === "/account.html") {
+        try {
+          const user = await currentUser(request, env);
+          if (!user) return Response.redirect(new URL("/login", url), 302);
+          const html = addCookieConsent(await renderHtmlPage(PAGES.account, {
+            activePath: url.pathname,
+            user,
+            reqId: reqId || "",
+            theme: "light",
+            settingsHref: "/account"
+          }));
+          return new Response(html, { headers: { ...SECURE_HTML, ...csrfHeader, "cache-control": "no-store, no-cache, must-revalidate" } });
+        } catch (e) {
+          if (workerLog) workerLog.error("account_render_failed", { error: String(e?.message || e) }); else console.error("account render failed:", String(e?.message || e));
           return new Response(error500Page(nonce), { status: 500, headers: HTML_N });
         }
       }
@@ -471,10 +494,10 @@ async function handleRequest(request, env, ctx, meta) {
         return Response.redirect(new URL("/dashboard?nav=performance", url), 302);
       }
       if (path === "/dashboard/billing") {
-        return Response.redirect(new URL("/dashboard?nav=settings", url), 302);
+        return Response.redirect(new URL("/account#plan", url), 302);
       }
       if (path === "/dashboard/attribution") {
-        return Response.redirect(new URL("/bot/dashboard", url), 302);
+        return Response.redirect(new URL("/account#postbacks", url), 302);
       }
       if (path === "/dashboard/bot/setup") {
         return Response.redirect(new URL("/bot/dashboard", url), 302);
@@ -486,7 +509,7 @@ async function handleRequest(request, env, ctx, meta) {
         return Response.redirect(new URL("/contact?type=support&area=dashboard&return=/dashboard", url), 302);
       }
       if (path === "/dashboard/security") {
-        return Response.redirect(new URL("/dashboard?nav=settings", url), 302);
+        return Response.redirect(new URL("/account#profile", url), 302);
       }
       if (path === "/dashboard/credits") {
         try {
@@ -495,7 +518,8 @@ async function handleRequest(request, env, ctx, meta) {
           const html = addCookieConsent(await renderHtmlPage(PAGES.credits, {
             activePath: "/dashboard/credits",
             user,
-            reqId: reqId || ""
+            reqId: reqId || "",
+            theme: "light"
           }));
           return new Response(html, { headers: { ...SECURE_HTML, ...csrfHeader, "cache-control": "no-store, no-cache, must-revalidate" } });
         } catch (e) {
