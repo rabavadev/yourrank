@@ -25,7 +25,31 @@ function setStatus(id, msg, err) {
   el.className = err ? "status error" : "status";
 }
 
+function setLoading(idOrEl, loading, text = "Loading…") {
+  const el = typeof idOrEl === "string" ? $(idOrEl) : idOrEl;
+  if (!el) return;
+  if (loading) {
+    el.dataset.origText = el.textContent;
+    el.disabled = true;
+    el.setAttribute("aria-busy", "true");
+    el.classList.add("btn--loading");
+    el.textContent = text;
+  } else {
+    el.disabled = false;
+    el.removeAttribute("aria-busy");
+    el.classList.remove("btn--loading");
+    el.textContent = el.dataset.origText || el.textContent;
+    delete el.dataset.origText;
+  }
+}
+
+function setGlobalLoading(loading) {
+  const el = $("vd-loading");
+  if (el) el.hidden = !loading;
+}
+
 async function load() {
+  setGlobalLoading(true);
   try {
     const data = await api("GET", "/api/viewer/me");
     state = data;
@@ -36,6 +60,8 @@ async function load() {
     } else {
       setStatus("vd-login-status", err.message, true);
     }
+  } finally {
+    setGlobalLoading(false);
   }
 }
 
@@ -85,16 +111,18 @@ function render() {
   `).join("");
 
   document.querySelectorAll("[data-view-site]").forEach((b) => {
-    b.addEventListener("click", () => viewSite(b.dataset.viewSite));
+    b.addEventListener("click", () => viewSite(b.dataset.viewSite, b));
   });
 }
 
-async function viewSite(slug) {
+async function viewSite(slug, btn) {
+  if (btn) setLoading(btn, true);
   try {
     const data = await api("GET", `/api/viewer/site?slug=${encodeURIComponent(slug)}`);
     state.current = data;
     renderSite();
   } catch (err) { setStatus("vd-login-status", err.message, true); }
+  finally { if (btn) setLoading(btn, false); }
 }
 
 function renderSite() {
@@ -127,7 +155,7 @@ function renderSite() {
   }).join("");
 
   document.querySelectorAll("[data-redeem]").forEach((b) => {
-    b.addEventListener("click", () => redeem(b.dataset.redeem));
+    b.addEventListener("click", () => redeem(b.dataset.redeem, b));
   });
 
   const redemptions = data.redemptions || [];
@@ -143,12 +171,13 @@ function renderSite() {
   `).join("");
 }
 
-async function redeem(shopItemId) {
+async function redeem(shopItemId, btn) {
   const slug = state.current?.site?.slug;
   if (!slug) return;
   const item = (state.current.shopItems || []).find((i) => i.id === shopItemId);
   if (!item) return;
   if (!confirm(`Spend ${item.cost} credits on ${item.name}?`)) return;
+  if (btn) setLoading(btn, true, "Redeeming…");
 
   try {
     const data = await api("POST", "/api/viewer/redeem", { slug, shopItemId });
@@ -165,14 +194,18 @@ async function redeem(shopItemId) {
     // Refresh boards list to update balances.
     load().catch(() => {});
   } catch (err) { setStatus("vd-login-status", err.message, true); }
+  finally { if (btn) setLoading(btn, false); }
 }
 
 $("vd-logout")?.addEventListener("click", async () => {
+  const btn = $("vd-logout");
+  setLoading(btn, true, "Logging out…");
   try {
     await api("POST", "/api/viewer/logout");
     state = {};
     renderLoggedOut();
   } catch (err) { setStatus("vd-login-status", err.message, true); }
+  finally { setLoading(btn, false); }
 });
 
 $("vd-back")?.addEventListener("click", () => {
