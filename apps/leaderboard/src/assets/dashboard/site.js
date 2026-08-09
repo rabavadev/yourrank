@@ -1305,7 +1305,11 @@ export function renderEmbedShare() {
   const hCtr = $("hud_ctr"); if (hCtr) hCtr.textContent = (s.last30.views ? ((s.last30.clicks / s.last30.views) * 100).toFixed(1) : "0.0") + "%";
   const hS = $("hud_signups"); if (hS) hS.textContent = fmt(s.last30.copies); // Using copies as signups proxy
 
-  const ov7 = $("ov_views7"); if (ov7) ov7.textContent = fmt(s.last7.views);
+  // Overview KPI row
+  const ovKpiViews = $("ov_kpi_views"); if (ovKpiViews) ovKpiViews.textContent = fmt(s.last7.views);
+  const ovKpiClicks = $("ov_kpi_clicks"); if (ovKpiClicks) ovKpiClicks.textContent = fmt(s.last7.clicks);
+  const ovKpiCopies = $("ov_kpi_copies"); if (ovKpiCopies) ovKpiCopies.textContent = fmt(s.last7.copies);
+  const ovKpiSignups = $("ov_kpi_signups"); if (ovKpiSignups) ovKpiSignups.textContent = fmt(s.last7.conversions || s.last7.copies);
   const ovBars = $("ov_bars");
   if (ovBars) {
     const ovMax = Math.max(1, ...days.map((x) => x.views + x.copies + x.clicks));

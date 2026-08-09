@@ -78,33 +78,40 @@ export function DashboardContent() {
 <section class="lb-page" data-page="overview">
 <div class="lb-phead"><button class="lb-menu" id="lbMenu" type="button" aria-label="Show sections" aria-expanded="false" aria-controls="lbSide">☰</button></div>
 <div class="card card--danger" id="draftBanner" hidden><h2>Pick up where you left off</h2><p class="card-sub">You started the setup wizard for <b id="draftName">this board</b> but didn't finish. Jump back into the guided flow, or switch to editing it here.</p><div class="d-flex gap-10 flex-wrap"><a class="btn btn--sm btn--accent" id="draftResume" href="/dashboard/setup">Resume wizard →</a><button class="btn btn--sm btn--ghost" id="draftDone" type="button">Edit here instead</button></div></div>
-<div class="ov-stat-grid">
-<div class="ov-stat"><div class="ov-stat-icon"><svg viewBox="0 0 24 24"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg></div><span class="ov-stat-val" id="ov_board">–</span><span class="ov-stat-label">Board</span></div>
-<div class="ov-stat"><div class="ov-stat-icon"><svg viewBox="0 0 24 24"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div><span class="ov-stat-val" id="ov_prize">–</span><span class="ov-stat-label">Prize pool</span></div>
-<div class="ov-stat"><div class="ov-stat-icon"><svg viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div><span class="ov-stat-val" id="ov_players">–</span><span class="ov-stat-label">Players</span></div>
-<div class="ov-stat"><div class="ov-stat-icon"><svg viewBox="0 0 24 24"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg></div><span class="ov-stat-val" id="ov_views7">–</span><span class="ov-stat-label">Views · 7d</span></div>
-<div class="ov-stat"><div class="ov-stat-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div><span class="ov-stat-val" id="ov_resets">–</span><span class="ov-stat-label">Resets in</span></div>
+<div class="lb-bento">
+<div class="lb-widget lb-widget--full" aria-label="Key metrics">
+<div class="kpi-row">
+<div class="kpi-card"><span class="kpi-lbl">Views · 7d</span><span class="kpi-val" id="ov_kpi_views">–</span></div>
+<div class="kpi-card"><span class="kpi-lbl">Clicks · 7d</span><span class="kpi-val" id="ov_kpi_clicks">–</span></div>
+<div class="kpi-card"><span class="kpi-lbl">Copies · 7d</span><span class="kpi-val" id="ov_kpi_copies">–</span></div>
+<div class="kpi-card"><span class="kpi-lbl">Signups · 7d</span><span class="kpi-val" id="ov_kpi_signups">–</span></div>
 </div>
-<div class="lb-qa" aria-label="Quick actions" id="ovQuickActions">
+</div>
+
+<div class="lb-widget lb-widget--wide"><div class="lb-cardhd"><h2>Activity · 14 days</h2><a href="/dashboard?nav=growth" class="lb-cardlink">Full analytics →</a></div><div class="stat-chart" style="margin-top:14px"><div class="stat-bars" id="ov_bars" title="Daily activity, last 14 days"></div><div class="stat-chart-lbl"><span id="ov_barsFrom"></span><span>today</span></div></div><p class="hint" id="ov_barsEmpty" hidden>No activity yet — share your page link to get it moving.</p><div class="stat-legend"><span class="stat-legend-item views">Views</span><span class="stat-legend-item copies">Copies</span><span class="stat-legend-item clicks">Clicks</span></div></div>
+<div class="lb-widget lb-widget--narrow" id="ovBoardStatusWidget"><h2>Board health</h2><div class="mini-stats">
+<div class="mini-stat"><span class="mini-stat-lbl">Name</span><span class="mini-stat-val" id="ov_board">–</span></div>
+<div class="mini-stat"><span class="mini-stat-lbl">Prize pool</span><span class="mini-stat-val" id="ov_prize">–</span></div>
+<div class="mini-stat"><span class="mini-stat-lbl">Players</span><span class="mini-stat-val" id="ov_players">–</span></div>
+<div class="mini-stat"><span class="mini-stat-lbl">Resets in</span><span class="mini-stat-val" id="ov_resets">–</span></div>
+</div><div class="board-status" id="ovBoardStatus"><div class="board-status-dot" id="ovStatusDot"></div><div><div class="board-status-text" id="ovStatusText">—</div><div class="board-status-sub" id="ovStatusSub"></div></div></div></div>
+
+<div class="lb-widget lb-widget--half"><div class="lb-cardhd"><h2>Top players</h2><button class="lb-cardlink" type="button" data-jump="board">Manage all →</button></div><div class="lb-toplist" id="ov_top"></div><div class="empty" id="ov_topEmpty" hidden>No players yet. <button class="lb-linkbtn" type="button" data-jump="board">Add your first one →</button></div></div>
+<div class="lb-widget lb-widget--half"><h2>Quick actions</h2><div class="lb-qa" aria-label="Quick actions" id="ovQuickActions">
 <button type="button" data-jump="board"><span class="lb-qa-t">Add players</span><span class="lb-qa-d">Type them in or paste from a spreadsheet</span></button>
 <button type="button" data-jump="board"><span class="lb-qa-t">Set the prize</span><span class="lb-qa-d">Prize pool, casino and your code</span></button>
 <button type="button" data-jump="board"><span class="lb-qa-t">Pick a design</span><span class="lb-qa-d">One click publishes it</span></button>
 <button type="button" id="ov_copyLink"><span class="lb-qa-t">Copy your page link</span><span class="lb-qa-d">Share it anywhere</span></button>
 <a class="lb-qa" href="/demo" target="_blank" rel="noopener noreferrer"><span class="lb-qa-t">View demo</span><span class="lb-qa-d">See a live example board</span></a>
-</div>
-
-<div class="card"><div class="lb-cardhd"><h2>Activity · 14 days</h2><a href="/dashboard?nav=growth" class="lb-cardlink">Full analytics →</a></div><div class="stat-chart" style="margin-top:14px"><div class="stat-bars" id="ov_bars" title="Daily activity, last 14 days"></div><div class="stat-chart-lbl"><span id="ov_barsFrom"></span><span>today</span></div></div><p class="hint" id="ov_barsEmpty" hidden>No activity yet — share your page link to get it moving.</p><div class="stat-legend"><span class="stat-legend-item views">Views</span><span class="stat-legend-item copies">Copies</span><span class="stat-legend-item clicks">Clicks</span></div></div>
-<div class="card" id="ovBoardStatusCard"><h2>Board status</h2><div class="board-status" id="ovBoardStatus"><div class="board-status-dot" id="ovStatusDot"></div><div><div class="board-status-text" id="ovStatusText">—</div><div class="board-status-sub" id="ovStatusSub"></div></div></div></div>
-
-<div class="card"><div class="lb-cardhd"><h2>Top players</h2><button class="lb-cardlink" type="button" data-jump="board">Manage all →</button></div><div class="lb-toplist" id="ov_top"></div><div class="empty" id="ov_topEmpty" hidden>No players yet. <button class="lb-linkbtn" type="button" data-jump="board">Add your first one →</button></div></div>
-<div class="card" id="ovSetupSteps"><h2>Finish setup</h2><p class="card-sub">A few steps to a page worth sharing.</p><div class="lb-steps" id="ov_steps">
+</div></div>
+<div class="lb-widget lb-widget--full" id="ovSetupSteps"><h2>Finish setup</h2><p class="card-sub">A few steps to a page worth sharing.</p><div class="lb-steps" id="ov_steps">
 <div class="lb-step" id="ov_step_brand"><span class="lb-step-n">Step 1</span><span class="lb-step-t">Brand &amp; prize</span><span class="lb-step-d">Set your name, code and prize in <button class="lb-linkbtn" type="button" data-jump="board">Prize &amp; players</button>.</span></div>
 <div class="lb-step" id="ov_step_players"><span class="lb-step-n">Step 2</span><span class="lb-step-t">Add players</span><span class="lb-step-d">Add or import your ranked list.</span></div>
 <div class="lb-step" id="ov_step_bot"><span class="lb-step-n">Step 3</span><span class="lb-step-t">Connect the bot <span class="pill pill--muted">Optional</span></span><span class="lb-step-d"><a class="lb-linkbtn" href="/dashboard/bot/setup">Connect your Telegram bot</a> so viewers can subscribe and get alerts.</span></div>
 <div class="lb-step" id="ov_step_share"><span class="lb-step-n">Step 4</span><span class="lb-step-t">Share your leaderboard link</span><span class="lb-step-d">Publish your page, then drop your URL in stream panels and Discord.</span></div>
 <div class="lb-step" id="ov_step_postback"><span class="lb-step-n">Step 5</span><span class="lb-step-t">Add postback tracking</span><span class="lb-step-d"><a class="lb-linkbtn" href="/dashboard/attribution">Set up casino postbacks</a> to see which viewers convert into depositors.</span></div>
 </div></div>
-
+</div>
 </section>
 <section class="lb-page" data-page="boards">
 <div class="lb-phead"><button class="lb-menu" type="button" aria-label="Show sections" data-menu aria-expanded="false" aria-controls="lbSide">☰</button><button class="btn btn--sm" id="addBoardFromBoards" type="button">+ New board</button></div>
