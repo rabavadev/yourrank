@@ -107,7 +107,9 @@ jobs:
             echo "::error::Test coverage ${COVERAGE}% is below 60% threshold"
             exit 1
           fi
-          echo "OK: Test coverage ${COVERAGE}% meets 60% threshold"      - working-directory: apps/leaderboard
+          echo "OK: Test coverage ${COVERAGE}% meets 60% threshold"
+      - name: Build leaderboard
+        working-directory: apps/leaderboard
         run: node build.js
       - name: Capture current leaderboard version
         id: capture-lb
@@ -147,8 +149,10 @@ jobs:
         run: bun audit --audit-level moderate --ignore=GHSA-f88m-g3jw-g9cj --ignore=GHSA-mh99-v99m-4gvg
         # sharp <0.35.0 (transitive via wrangler, dev-only) and brace-expansion <=5.0.7
         # (transitive via eslint, dev-only) are tracked separately; both are build-time-only.
-      - name: Run tests
-        run: bun run test      - working-directory: apps/bot
+      - name: Run bot tests
+        run: bun run test
+      - name: Typecheck bot
+        working-directory: apps/bot
         run: bun run typecheck
       - name: Build shared TypeScript
         run: node build-shared.mjs
