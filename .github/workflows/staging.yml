@@ -27,8 +27,10 @@ jobs:
         run: bun audit --audit-level moderate --ignore=GHSA-f88m-g3jw-g9cj --ignore=GHSA-mh99-v99m-4gvg
         # sharp <0.35.0 (transitive via wrangler, dev-only) and brace-expansion <=5.0.7
         # (transitive via eslint, dev-only) are tracked separately; both are build-time-only.
-      - name: Run tests
-        run: bun run test      - working-directory: apps/leaderboard
+      - name: Run leaderboard tests
+        run: bun run test
+      - name: Build leaderboard
+        working-directory: apps/leaderboard
         run: node build.js
       - uses: cloudflare/wrangler-action@ebbaa1584979971c8614a24965b4405ff95890e0
         with:
@@ -52,8 +54,10 @@ jobs:
         run: bun audit --audit-level moderate --ignore=GHSA-f88m-g3jw-g9cj --ignore=GHSA-mh99-v99m-4gvg
         # sharp <0.35.0 (transitive via wrangler, dev-only) and brace-expansion <=5.0.7
         # (transitive via eslint, dev-only) are tracked separately; both are build-time-only.
-      - name: Run tests
-        run: bun run test      - working-directory: apps/bot
+      - name: Run bot tests
+        run: bun run test
+      - name: Typecheck bot
+        working-directory: apps/bot
         run: bun run typecheck
       - uses: cloudflare/wrangler-action@ebbaa1584979971c8614a24965b4405ff95890e0
         with:
