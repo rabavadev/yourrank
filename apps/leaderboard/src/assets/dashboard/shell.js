@@ -19,8 +19,9 @@ export function navTo(page) {
   if (page === "overview") renderOverviewSummary();
   // Re-fit the live preview whenever the Editor becomes visible (it can't measure while hidden).
   if (page === "board" && typeof state.fitDesignPreview === "function") setTimeout(state.fitDesignPreview, 0);
-  const heading = document.querySelector(".lb-page.is-on .lb-phead h1");
-  if (heading) heading.focus({ preventScroll: true });
+  const titles = { overview: "Overview", board: "Board", boards: "Boards", growth: "Analytics", referrals: "Referrals", integrations: "Connections", manage: "Billing" };
+  const topbarTitle = $("lbTopbarTitle");
+  if (topbarTitle) { topbarTitle.textContent = titles[page] || page; topbarTitle.focus({ preventScroll: true }); }
   const main = document.querySelector(".lb-main");
   if (main) main.scrollIntoView({ block: "start" });
 }

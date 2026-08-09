@@ -33,7 +33,7 @@ describe("dashboard overview quick actions", () => {
     // Connect: third-party wiring (postbacks + integrations).
     expect(html).toContain('<span class="lb-side-grp">Connect</span>');
     expect(html).toContain('href="/dashboard/attribution"');
-    expect(html).toContain('>Postbacks</a>');
+    expect(html).toContain('>Score feed</a>');
     expect(html).toContain('data-nav="integrations"');
     // Grow: distribution and analytics.
     expect(html).toContain('<span class="lb-side-grp">Grow</span>');
@@ -50,7 +50,7 @@ describe("dashboard overview quick actions", () => {
     const html = dashboardHtml();
     // The daily job (prize + players + design) lives in one Editor section...
     expect(html).toContain('data-nav="board" aria-current="page"><span class="lb-nav-ic" aria-hidden="true">');
-    expect(html).toContain('</svg></span>Editor');
+    expect(html).toContain('</svg></span>Board');
     // ...which is the section shown on load.
     expect(html).toContain('<section class="lb-page is-on" data-page="board">');
     // Boards nav starts hidden; JS reveals it only when the user has 2+ boards.
