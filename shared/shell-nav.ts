@@ -47,7 +47,7 @@ export function activeKey(activePath: string): string | null {
 
   if (pathname === "/dashboard" || pathname.startsWith("/dashboard/")) {
     if (nav === "performance") return "analytics";
-    if (nav === "kickrewards") return "kickrewards";
+    if (nav === "kickrewards" || pathname === "/dashboard/credits" || pathname.startsWith("/dashboard/credits")) return "kickrewards";
     return "leaderboard";
   }
 

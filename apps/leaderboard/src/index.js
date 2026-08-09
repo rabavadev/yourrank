@@ -397,7 +397,7 @@ async function handleRequest(request, env, ctx, meta) {
 
       // --- helper for rendering strings or JSX pages ---
       const renderHtmlPage = async (pageObj, { reqId, activePath, user, theme, settingsHref, logoutAction } = {}) => {
-        const navOpts = activePath && user ? { activePath, user, theme, settingsHref, logoutAction } : null;
+        const navOpts = activePath && user ? { activePath, user, theme, settingsHref: settingsHref || "/account", logoutAction } : null;
         if (typeof pageObj === "string") {
           let result = pageObj;
           if (navOpts) result = result.replace("<!--GM_NAV-->", shellNavHtml(navOpts));
@@ -445,6 +445,9 @@ async function handleRequest(request, env, ctx, meta) {
         try {
           const user = await currentUser(request, env);
           if (!user) return Response.redirect(new URL("/login", url), 302);
+          if (url.searchParams.get("nav") === "kickrewards") {
+            return Response.redirect(new URL("/dashboard/credits", url), 302);
+          }
           const html = addCookieConsent(await renderHtmlPage(PAGES.dashboard, {
             activePath: url.pathname + url.search,
             user,
@@ -515,7 +518,8 @@ async function handleRequest(request, env, ctx, meta) {
           const html = addCookieConsent(await renderHtmlPage(PAGES.credits, {
             activePath: "/dashboard/credits",
             user,
-            reqId: reqId || ""
+            reqId: reqId || "",
+            theme: "light"
           }));
           return new Response(html, { headers: { ...SECURE_HTML, ...csrfHeader, "cache-control": "no-store, no-cache, must-revalidate" } });
         } catch (e) {
