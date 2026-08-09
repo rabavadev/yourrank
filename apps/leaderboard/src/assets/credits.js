@@ -278,7 +278,7 @@ function wireAutosave(formId, id) {
   restoreFormDraft(formId, id);
 }
 
-$("cr-channel-form").addEventListener("submit", async (e) => {
+$("cr-channel-form")?.addEventListener("submit", async (e) => {
   e.preventDefault();
   const btn = e.submitter;
   setLoading(btn, true, "Saving…");
@@ -303,7 +303,7 @@ $("cr-channel-disconnect")?.addEventListener("click", async () => {
   } catch (err) { setStatus("cr-channel-status", err.message, true); }
 });
 
-$("cr-reward-form").addEventListener("submit", async (e) => {
+$("cr-reward-form")?.addEventListener("submit", async (e) => {
   e.preventDefault();
   const btn = e.submitter;
   setLoading(btn, true, "Saving…");
@@ -359,7 +359,7 @@ async function delReward(id) {
   await load();
 }
 
-$("cr-shop-form").addEventListener("submit", async (e) => {
+$("cr-shop-form")?.addEventListener("submit", async (e) => {
   e.preventDefault();
   const btn = e.submitter;
   setLoading(btn, true, "Saving…");

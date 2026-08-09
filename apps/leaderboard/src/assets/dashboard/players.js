@@ -142,13 +142,13 @@ function onSortableInput() {
   sortTimer = setTimeout(sortRows, 200);
 }
 
-$("rows").addEventListener("input", (e) => {
+$("rows")?.addEventListener("input", (e) => {
   if (e.target && e.target.classList && (e.target.classList.contains("p-wager") || e.target.classList.contains("p-prize"))) {
     onSortableInput();
   }
 });
 
-$("addRow").addEventListener("click", () => {
+$("addRow")?.addEventListener("click", () => {
   if (state.ME && $("rows").children.length >= state.ME.limits.players && state.ME.limits.players < 999) {
     const planNames = { free: "Free", starter: "Starter", pro: "Pro" };
     const msg = state.ME.plan === "pro" || state.ME.plan === "agency"
@@ -306,7 +306,7 @@ $("importPasteBtn")?.addEventListener("click", () => {
   if (!p.hidden) $("importText").focus();
 });
 
-$("importText").addEventListener("input", () => {
+$("importText")?.addEventListener("input", () => {
   const result = parseImportText($("importText").value, "paste");
   const n = result.rows.length;
   const err = result.errors.length ? ` (${result.errors.length} problem${result.errors.length === 1 ? "" : "s"})` : "";
@@ -314,7 +314,7 @@ $("importText").addEventListener("input", () => {
   $("importApply").disabled = n === 0;
 });
 
-$("importApply").addEventListener("click", () => {
+$("importApply")?.addEventListener("click", () => {
   const result = parseImportText($("importText").value, "paste");
   if (!result.rows.length) {
     $("status").textContent = result.errors.length ? result.errors[0] : "No players to import.";

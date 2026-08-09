@@ -774,11 +774,11 @@ export function renderPrizes(prizes = {}) {
   $("f_hidePrizeAmounts").checked = !!p.hidePrizeAmounts;
 }
 
-$("logoPick").setAttribute("aria-label", "Upload logo");
-$("logoPick").addEventListener("click", () => $("logoFile").click());
-$("logoClear").setAttribute("aria-label", "Remove logo");
-$("logoClear").addEventListener("click", () => { state.LOGO = null; $("logoPreview").hidden = true; $("logoClear").hidden = true; $("status").textContent = "Logo will be removed when you save."; });
-$("logoFile").addEventListener("change", () => {
+$("logoPick")?.setAttribute("aria-label", "Upload logo");
+$("logoPick")?.addEventListener("click", () => $("logoFile")?.click());
+$("logoClear")?.setAttribute("aria-label", "Remove logo");
+$("logoClear")?.addEventListener("click", () => { state.LOGO = null; $("logoPreview").hidden = true; $("logoClear").hidden = true; $("status").textContent = "Logo will be removed when you save."; });
+$("logoFile")?.addEventListener("change", () => {
   const f = $("logoFile").files[0]; if (!f) return;
   const img = new Image();
   img.onload = () => {
@@ -809,10 +809,10 @@ $("logoFile").addEventListener("change", () => {
   img.src = URL.createObjectURL(f);
   $("logoFile").value = "";
 });
-$("applyCustomColors").addEventListener("click", () => applyTheme(state.CURRENT_BRANDING.template, $("c_a").value, $("c_b").value, "Custom colors"));
-$("colorsReset").addEventListener("click", () => { const preset = currentTemplate()?.presets?.[0]; if (preset) applyTheme(state.CURRENT_BRANDING.template, preset.accentA, preset.accentB, preset.name); });
-$("f_font")?.addEventListener("change", () => applyTheme(state.CURRENT_BRANDING.template, $("c_a")?.value, $("c_b")?.value, "Font"));
-$("brandUpgrade").addEventListener("click", (e) => { e.preventDefault(); checkout("pro", e.target); });
+$("applyCustomColors")?.addEventListener("click", () => applyTheme(state.CURRENT_BRANDING?.template, $("c_a")?.value, $("c_b")?.value, "Custom colors"));
+$("colorsReset")?.addEventListener("click", () => { const preset = currentTemplate()?.presets?.[0]; if (preset && state.CURRENT_BRANDING?.template) applyTheme(state.CURRENT_BRANDING.template, preset.accentA, preset.accentB, preset.name); });
+$("f_font")?.addEventListener("change", () => applyTheme(state.CURRENT_BRANDING?.template, $("c_a")?.value, $("c_b")?.value, "Font"));
+$("brandUpgrade")?.addEventListener("click", (e) => { e.preventDefault(); checkout("pro", e.target); });
 
 export function renderNotifications(n) {
   const paid = state.ME.plan !== "free";
@@ -1172,7 +1172,7 @@ export function renderArchives(list) {
   });
 }
 
-$("a_go").addEventListener("click", async () => {
+$("a_go")?.addEventListener("click", async () => {
   const btn = $("a_go"), status = $("status");
   if (![...$("rows").children].length) { status.textContent = "The board is empty — nothing to close out."; return; }
   const clear = $("a_clear").value;
@@ -1199,7 +1199,7 @@ $("a_go").addEventListener("click", async () => {
   btn.disabled = false; btn.textContent = "Close out period";
 });
 
-$("save").addEventListener("click", async () => {
+$("save")?.addEventListener("click", async () => {
   const btn = $("save"), status = $("status"); btn.disabled = true; btn.textContent = "Saving…"; status.textContent = "";
   const limitEl = $("limitMsg"); if (limitEl) limitEl.textContent = "";
   try {
