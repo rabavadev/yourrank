@@ -21,6 +21,7 @@ async function api(method, path, body) {
   if (body) { opts.headers["content-type"] = "application/json"; opts.body = JSON.stringify(body); }
   const res = await fetch(path, opts);
   const data = await res.json().catch(() => ({}));
+  if (res.status === 401) { location.href = "/login"; throw new Error("Session expired"); }
   if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
   return data;
 }
@@ -215,6 +216,62 @@ function setLoading(idOrEl, loading, text = "Loading…") {
 function setGlobalLoading(loading) {
   const el = $("cr-loading");
   if (el) el.hidden = !loading;
+}
+
+function draftKey(id) { return "yr:credits:draft:" + id; }
+
+function debounce(fn, ms) {
+  let t;
+  return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), ms); };
+}
+
+function saveFormDraft(formId, id) {
+  const form = $(formId);
+  if (!form) return;
+  const data = {};
+  for (const el of form.elements) {
+    if (!el.name) continue;
+    if (el.type === "checkbox") { if (el.checked) data[el.name] = true; }
+    else if (el.type === "number") { if (el.value !== "") data[el.name] = el.value; }
+    else if (el.value.trim()) { data[el.name] = el.value; }
+  }
+  if (Object.keys(data).length === 0) { localStorage.removeItem(draftKey(id)); return; }
+  try { localStorage.setItem(draftKey(id), JSON.stringify(data)); } catch {}
+}
+
+function restoreFormDraft(formId, id) {
+  const form = $(formId);
+  if (!form) return;
+  const raw = localStorage.getItem(draftKey(id));
+  if (!raw) return;
+  try {
+    const data = JSON.parse(raw);
+    for (const el of form.elements) {
+      if (!el.name || data[el.name] === undefined) continue;
+      if (el.type === "checkbox") el.checked = Boolean(data[el.name]);
+      else el.value = data[el.name];
+    }
+    const status = form.querySelector(".status");
+    if (status) {
+      status.textContent = "Draft restored.";
+      status.className = "status";
+      setTimeout(() => { status.textContent = ""; }, 3000);
+    }
+  } catch {}
+}
+
+function clearFormDraft(id) {
+  try { localStorage.removeItem(draftKey(id)); } catch {}
+}
+
+function wireAutosave(formId, id) {
+  const form = $(formId);
+  if (!form) return;
+  const save = debounce(() => saveFormDraft(formId, id), 400);
+  form.addEventListener("input", save);
+  form.addEventListener("change", save);
+  form.addEventListener("submit", () => clearFormDraft(id));
+  restoreFormDraft(formId, id);
 }
 
 $("cr-channel-form").addEventListener("submit", async (e) => {
@@ -469,6 +526,13 @@ function renderHistory(data) {
 }
 
 $("cr-history-form")?.addEventListener("submit", searchHistory);
+
+wireAutosave("cr-channel-form", "channel");
+wireAutosave("cr-reward-form", "reward");
+wireAutosave("cr-reward-create-form", "reward-create");
+wireAutosave("cr-shop-form", "shop");
+wireAutosave("cr-viewer-auth-form", "viewer-auth");
+wireAutosave("cr-history-form", "history");
 
 load().catch((err) => {
   $("cr-empty").innerHTML = `<p class="error">Could not load credits dashboard: ${esc(err.message)}</p>`;

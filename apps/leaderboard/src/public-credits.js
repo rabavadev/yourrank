@@ -97,6 +97,11 @@ export function renderPublicCreditsPage({ slug, nonce, homeUrl, kickAuthEnabled,
     else { el.disabled=false; el.removeAttribute("aria-busy"); el.textContent=el.dataset.origText||el.textContent; delete el.dataset.origText; }
   }
   function setGlobalLoading(loading){ const el=$("pc-loading"); if(el) el.hidden=!loading; }
+  function saveUsername(){ try{ localStorage.setItem("yr:public:credits:username", $("pc-username").value); } catch{} }
+  function restoreUsername(){ try{ const v=localStorage.getItem("yr:public:credits:username"); if(v) $("pc-username").value=v; } catch{} }
+
+  $("pc-username").addEventListener("input", saveUsername);
+  restoreUsername();
 
   if (auth.kick || auth.discord) {
     $("pc-login-card").hidden = false;
