@@ -19,6 +19,8 @@ import { pricingPage } from "./pages/pricing.js";
 import { docsPage } from "./pages/docs.js";
 import { verifyEmailPage } from "./pages/verify-email.js";
 import { creditsPage } from "./pages/credits.js";
+import { faqPage } from "./pages/faq.js";
+import { reviewsPage } from "./pages/reviews.js";
 
 export const PAGES = {
   index: landingPage,
@@ -40,4 +42,6 @@ export const PAGES = {
   pricing: pricingPage,
   verifyEmail: verifyEmailPage,
   credits: creditsPage,
+  faq: faqPage,
+  reviews: reviewsPage,
 };

@@ -53,6 +53,9 @@ SESSION_COOKIE_DOMAIN = ".yourrank.site"
 # In production this should be "false" unless you want a public demo account.
 ALLOW_DEMO_LOGIN = "false"
 DEMO_USER_EMAIL = "demo@yourrank.site"
+# Optional Google Business Profile integration (/reviews page).
+# GBP_REVIEW_URL = "https://g.page/.../review"
+# GBP_PHOTO_URL = "https://yourrank.site/og.png"
 # Set SENTRY_DSN via `wrangler secret put SENTRY_DSN` when ready
 
 # --- Secrets (set via `wrangler secret put <NAME>`), NOT stored here: ---

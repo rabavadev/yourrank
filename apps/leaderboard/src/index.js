@@ -403,6 +403,9 @@ async function handleRequest(request, env, ctx, meta) {
           if (reqId) result = result.replace("{{REQ_ID}}", reqId);
           // Fill in legal company identity placeholders on static/legal pages.
           result = applyLegalIdentity(result, getPlatformIdentity());
+          // Google Business Profile placeholders (optional; set via wrangler secret/vars).
+          result = result.replace(/{{GBP_REVIEW_URL}}/g, env.GBP_REVIEW_URL || "#");
+          result = result.replace(/{{GBP_PHOTO_URL}}/g, env.GBP_PHOTO_URL || "");
           return result;
         }
         
@@ -549,6 +552,8 @@ async function handleRequest(request, env, ctx, meta) {
       if (path === "/contact") return new Response(addCookieConsent(await renderHtmlPage(PAGES.contact)), { headers: { ...HTML_N, ...csrfHeader } });
       if (path === "/docs") return new Response(addCookieConsent(await renderHtmlPage(PAGES.docs)), { headers: { ...HTML_N, ...csrfHeader } });
       if (path === "/pricing" || path === "/pricing.html") return new Response(addCookieConsent(await renderHtmlPage(PAGES.pricing)), { headers: { ...HTML_N, ...csrfHeader } });
+      if (path === "/faq" || path === "/faq.html") return new Response(addCookieConsent(await renderHtmlPage(PAGES.faq)), { headers: { ...HTML_N, ...csrfHeader } });
+      if (path === "/reviews" || path === "/reviews.html") return new Response(addCookieConsent(await renderHtmlPage(PAGES.reviews)), { headers: { ...HTML_N, ...csrfHeader } });
       if (path === "/cookies" || path === "/cookies.html") return new Response(addCookieConsent(await renderHtmlPage(PAGES.cookies)), { headers: { ...HTML_N, ...csrfHeader } });
 
 

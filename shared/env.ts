@@ -33,6 +33,8 @@ export function populateEnv(env: Record<string, any>, options?: { setGlobalEnv?:
   if (env.MAIL_FROM !== undefined) pe.MAIL_FROM = env.MAIL_FROM;
   if (env.ALLOW_DEMO_LOGIN !== undefined) pe.ALLOW_DEMO_LOGIN = env.ALLOW_DEMO_LOGIN;
   if (env.DEMO_USER_EMAIL !== undefined) pe.DEMO_USER_EMAIL = env.DEMO_USER_EMAIL;
+  if (env.GBP_REVIEW_URL !== undefined) pe.GBP_REVIEW_URL = env.GBP_REVIEW_URL;
+  if (env.GBP_PHOTO_URL !== undefined) pe.GBP_PHOTO_URL = env.GBP_PHOTO_URL;
 
   // Bot-specific bindings
   if (env.LOGIN_BOT_TOKEN !== undefined) pe.LOGIN_BOT_TOKEN = env.LOGIN_BOT_TOKEN;

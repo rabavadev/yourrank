@@ -205,7 +205,9 @@ Before announcing the site:
 5. **Demo mode** — set `ALLOW_DEMO_LOGIN = "true"` only if you want a public one-click demo at `/auth/demo`. In production it should be `"false"`.
 6. **Billing bot** — run `curl -X POST https://yourrank.site/bot/api/billing/setup -H "x-api-key: $ADMIN_API_KEY"`.
 7. **Smoke test** — open `/health`, `/demo`, `/dashboard`, and complete a test payment in sandbox.
-8. **Monitoring** — set `DISCORD_MONITORING_WEBHOOK` or `SENTRY_DSN` so errors are visible.
+8. **Search Console** — submit the sitemap at `https://yourrank.site/sitemap.xml` in Google Search Console → Sitemaps.
+9. **Google Business Profile** — claim or create a profile at business.google.com, set the review URL and a photo, then paste them into Worker vars `GBP_REVIEW_URL` and `GBP_PHOTO_URL`. The `/reviews` page will link to it.
+10. **Monitoring** — set `DISCORD_MONITORING_WEBHOOK` or `SENTRY_DSN` so errors are visible.
 
 ## 10. One-click dashboard demo
 
