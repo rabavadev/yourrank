@@ -23,7 +23,7 @@ export function navTo(page) {
   // Re-fit the live preview whenever the Editor becomes visible (it can't measure while hidden).
   if (page === "board" && typeof state.fitDesignPreview === "function") setTimeout(state.fitDesignPreview, 0);
   if (page === "kickrewards") initKickrewards().catch((err) => { console.error("kickrewards init failed", err); });
-  const titles = { home: "Home", board: "Editor", boards: "All boards", performance: "Analytics", settings: "Settings", kickrewards: "Kick rewards" };
+  const titles = { home: "Overview", board: "Editor", boards: "All boards", performance: "Analytics", settings: "Settings", kickrewards: "Kick rewards" };
   const topbarTitle = $("lbTopbarTitle");
   if (topbarTitle) { topbarTitle.textContent = titles[page] || page; topbarTitle.focus({ preventScroll: true }); }
   const main = document.querySelector(".lb-main");

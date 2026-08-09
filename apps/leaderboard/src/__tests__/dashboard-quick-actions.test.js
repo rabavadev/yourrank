@@ -24,18 +24,16 @@ describe("dashboard overview quick actions", () => {
     expect(overviewJs).toContain('location.origin + "/" + state.SLUG');
   });
 
-  it("organises navigation into Home / Editor / Analytics / Settings", () => {
+  it("organises navigation into Overview / Editor / Boards / Settings", () => {
     const html = dashboardHtml();
     expect(html).toContain('data-nav="home"');
     expect(html).toContain('data-nav="board"');
-    expect(html).toContain('data-nav="performance"');
     expect(html).toContain('data-nav="settings"');
     expect(html).toContain('data-nav="boards"');
     expect(html).not.toContain('<span class="lb-side-grp">');
     // Icons are real inline SVGs, not emoji.
     expect(html).not.toContain('aria-hidden="true">🔌</span>');
-    // Performance nav is now labelled Analytics; Board is now Editor.
-    expect(html).toContain('>Analytics</button>');
+    expect(html).toContain('>Overview</button>');
     expect(html).toContain('>Editor</button>');
     expect(html).toContain('>All boards</span>');
   });

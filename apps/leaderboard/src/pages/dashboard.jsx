@@ -5,8 +5,8 @@ import { creditsContent } from "./credits.js";
 export const dashboardConfig = {
   title: "Dashboard · YourRank",
   canonical: "https://yourrank.site/dashboard",
-  styles: ["/assets/app.css", "/assets/shell-nav.css"],
-  scripts: ['<script src="/assets/dashboard.js?v=11" type="module"></script>'],
+  styles: ["/assets/app.css", "/assets/shell-nav.css", "/assets/dashboard-v2.css"],
+  scripts: ['<script src="/assets/dashboard.js?v=12" type="module"></script>'],
   nav: true,
   footer: false,
   wide: true,
@@ -37,7 +37,7 @@ export function DashboardContent() {
 <div class="lb-widget lb-widget--half"><div class="skeleton skeleton-block" style="height:140px"></div></div>
 <div class="lb-widget lb-widget--half"><div class="skeleton skeleton-block" style="height:140px"></div></div>
 </div>
-<div id="dash" hidden>
+<div id="dash" class="v2-dash" hidden>
 <div class="toast" id="status" role="status" aria-live="polite"></div>
 <div class="lb-shell">
 <aside class="lb-side" id="lbSide" aria-label="Dashboard sections" role="dialog" aria-modal="false">
@@ -67,11 +67,10 @@ export function DashboardContent() {
 </div>
 <button class="lb-side-close" type="button" aria-label="Close navigation" data-close-side>×</button>
 <nav aria-label="Main">
-<button class="lb-nav" type="button" data-nav="home"><span class="lb-nav-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg></span>Home</button>
-<button class="lb-nav is-on" type="button" data-nav="board" aria-current="page"><span class="lb-nav-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg></span>Editor</button>
-<button class="lb-nav" type="button" data-nav="performance"><span class="lb-nav-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v16a2 2 0 0 0 2 2h16"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></svg></span>Analytics</button>
-<button class="lb-nav" type="button" data-nav="settings"><span class="lb-nav-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></span>Settings</button>
+<button class="lb-nav is-on" type="button" data-nav="home" aria-current="page"><span class="lb-nav-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg></span>Overview</button>
+<button class="lb-nav" type="button" data-nav="board"><span class="lb-nav-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg></span>Editor</button>
 <button class="lb-nav lb-nav--boards" id="allBoardsNav" type="button" data-nav="boards"><span class="lb-nav-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 2 7l10 5 10-5-10-5Z"/><path d="m2 17 10 5 10-5"/><path d="m2 12 10 5 10-5"/></svg></span><span class="lb-nav-label">All boards</span><span class="lb-nav-count" id="allBoardsCount">0</span></button>
+<button class="lb-nav" type="button" data-nav="settings"><span class="lb-nav-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></span>Settings</button>
 </nav>
 <div class="lb-side-foot"><a class="btn btn--sm btn--accent lb-live-btn" id="liveLink" href="#" target="_blank" rel="noopener noreferrer">View live board ↗</a><span class="label" id="planBadge">FREE PLAN</span></div>
 </aside>
@@ -79,7 +78,7 @@ export function DashboardContent() {
 <div class="lb-widget lb-widget--full lb-widget--danger" id="verifyBanner" hidden style="margin:16px 24px 0"><h2>Verify your email</h2><p class="card-sub">Your leaderboard won't be public until you confirm your email address. Check your inbox for the link, or <a href="/verify-email">request a new one</a>.</p></div>
 <header class="lb-topbar" id="lbTopbar">
   <div class="lb-topbar-left">
-    <h1 class="lb-topbar-title" id="lbTopbarTitle" tabindex="-1">Home</h1>
+    <h1 class="lb-topbar-title" id="lbTopbarTitle" tabindex="-1">Overview</h1>
     <span class="lb-status lb-status--draft" id="lbTopbarStatus">Draft</span>
   </div>
   <div class="lb-topbar-hud">
