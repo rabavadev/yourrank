@@ -1029,3 +1029,25 @@ html{color-scheme:light}
   .editor-step{white-space:nowrap}
   .toast{top:auto;bottom:12px;left:12px;right:12px}
 }
+
+/* Onboarding checklist */
+.ov-welcome{border:2px dashed var(--line);background:var(--panel);border-radius:var(--radius-xl);padding:28px;display:flex;align-items:center;justify-content:center;text-align:center}
+.ov-welcome-icon{color:var(--accent);margin-bottom:12px}
+.ov-welcome h2{margin:0 0 6px;font-size:22px}
+.ov-checklist{list-style:none;padding:0;margin:22px 0;display:flex;flex-direction:column;gap:10px;max-width:460px}
+.ov-checklist li,.ov-checklist-row{display:flex;align-items:center;gap:12px;text-align:left;padding:12px;border:1px solid var(--line);border-radius:var(--radius-md);background:var(--panel-2);width:100%;font:inherit;color:inherit;cursor:pointer}
+.ov-checklist-row:hover{border-color:var(--accent);background:var(--panel)}
+.ov-step-num{flex:none;display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:99px;background:var(--accent);color:var(--accent-ink);font-size:12px;font-weight:700}
+.ov-step-num.is-done{background:var(--ok);color:#fff}
+.ov-step-body{display:flex;flex-direction:column;gap:2px;flex:1}
+.ov-step-body b{font-size:14px}
+.ov-step-body .hint{font-size:12px;color:var(--ink-mute)}
+
+/* Design section group headings */
+.design-group-heading{padding:24px 0 8px;margin-top:8px;border-top:1px solid var(--line)}
+.design-group-heading:first-of-type{border-top:none}
+.design-group-heading h3{margin:0;font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-mute);font-weight:700}
+
+/* Events feed */
+.events-list{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:8px}
+.events-list li{padding:10px;border:1px solid var(--line);border-radius:var(--radius-md);background:var(--panel-2);font-size:13px}

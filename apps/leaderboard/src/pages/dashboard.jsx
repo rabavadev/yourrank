@@ -66,9 +66,8 @@ export function DashboardContent() {
 <nav aria-label="Main">
 <button class="lb-nav" type="button" data-nav="home"><span class="lb-nav-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg></span>Home</button>
 <button class="lb-nav is-on" type="button" data-nav="board" aria-current="page"><span class="lb-nav-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg></span>Board</button>
-<button class="lb-nav" type="button" data-nav="performance"><span class="lb-nav-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v16a2 2 0 0 0 2 2h16"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></svg></span>Performance</button>
+<button class="lb-nav" type="button" data-nav="performance"><span class="lb-nav-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v16a2 2 0 0 0 2 2h16"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></svg></span>Analytics</button>
 <button class="lb-nav" type="button" data-nav="settings"><span class="lb-nav-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></span>Settings</button>
-<a class="lb-nav" href="/dashboard/credits"><span class="lb-nav-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></span>Credits</a>
 <button class="lb-nav lb-nav--boards" type="button" data-nav="boards" hidden><span class="lb-nav-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 2 7l10 5 10-5-10-5Z"/><path d="m2 17 10 5 10-5"/><path d="m2 12 10 5 10-5"/></svg></span>Boards</button>
 </nav>
 <div class="lb-side-foot"><a class="btn btn--sm btn--accent lb-live-btn" id="liveLink" href="#" target="_blank" rel="noopener noreferrer">View live board ↗</a><span class="label" id="planBadge">FREE PLAN</span></div>
@@ -93,7 +92,25 @@ export function DashboardContent() {
 </header>
 <section class="lb-page is-on" data-page="home">
 <div class="lb-phead"><button class="lb-menu" id="lbMenu" type="button" aria-label="Show sections" aria-expanded="false" aria-controls="lbSide">☰</button></div>
-<div class="lb-bento">
+<div class="lb-bento" id="ovOnboardingBento" hidden>
+<div class="lb-widget lb-widget--full ov-welcome">
+<div class="ov-welcome-body">
+<div class="ov-welcome-icon"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg></div>
+<h2 id="ovWelcomeTitle">Create your first leaderboard</h2>
+<p class="card-sub" id="ovWelcomeSub">Three quick steps and your page is ready to share.</p>
+<ol class="ov-checklist" id="ovChecklist">
+<li id="ovStepBrand"><span class="ov-step-num" data-num="1">1</span><span class="ov-step-body"><b>Name &amp; prize</b><span class="hint">Set the board name, sponsor and prize pool</span></span></li>
+<li id="ovStepPlayers"><span class="ov-step-num" data-num="2">2</span><span class="ov-step-body"><b>Add players</b><span class="hint">Type them in or paste from a spreadsheet</span></span></li>
+<li id="ovStepShare"><span class="ov-step-num" data-num="3">3</span><span class="ov-step-body"><b>Share</b><span class="hint">Publish and copy your public link</span></span></li>
+</ol>
+<div class="d-flex gap-10 flex-wrap justify-center">
+<button class="btn btn--accent" id="ovStartBtn" type="button" data-jump="board">Set up your leaderboard</button>
+<a class="btn btn--ghost" href="/demo" target="_blank" rel="noopener noreferrer">See a demo</a>
+</div>
+</div>
+</div>
+</div>
+<div class="lb-bento" id="ovActiveBento" hidden>
 <div class="lb-widget lb-widget--full" aria-label="Key metrics">
 <div class="kpi-row">
 <div class="kpi-card"><span class="kpi-lbl"><span class="kpi-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg></span>Views · 7d</span><span class="kpi-val" id="ov_kpi_views">–</span></div>
@@ -112,12 +129,10 @@ export function DashboardContent() {
 </div><div class="board-status" id="ovBoardStatus"><div class="board-status-dot" id="ovStatusDot"></div><div><div class="board-status-text" id="ovStatusText">—</div><div class="board-status-sub" id="ovStatusSub"></div></div></div></div>
 
 <div class="lb-widget lb-widget--half"><div class="lb-cardhd"><h2>Top players</h2><button class="lb-cardlink" type="button" data-jump="board">Manage all →</button></div><div class="lb-toplist" id="ov_top"></div><div class="empty" id="ov_topEmpty" hidden>No players yet. <button class="lb-linkbtn" type="button" data-jump="board">Add your first one →</button></div></div>
-<div class="lb-widget lb-widget--half"><h2>Quick actions</h2><div class="lb-qa" aria-label="Quick actions" id="ovQuickActions">
-<button type="button" data-jump="board"><span class="lb-qa-t">Add players</span><span class="lb-qa-d">Type them in or paste from a spreadsheet</span></button>
-<button type="button" data-jump="board"><span class="lb-qa-t">Set the prize</span><span class="lb-qa-d">Prize pool, casino and your code</span></button>
-<button type="button" data-jump="board"><span class="lb-qa-t">Pick a design</span><span class="lb-qa-d">One click publishes it</span></button>
-<button type="button" id="ov_copyLink"><span class="lb-qa-t">Copy your page link</span><span class="lb-qa-d">Share it anywhere</span></button>
-<a class="lb-qa" href="/demo" target="_blank" rel="noopener noreferrer"><span class="lb-qa-t">View demo</span><span class="lb-qa-d">See a live example board</span></a>
+<div class="lb-widget lb-widget--half"><h2>Next steps</h2><div class="ov-checklist" aria-label="Onboarding checklist" id="ovQuickActions">
+<button type="button" id="ovStepBrandBtn" class="ov-checklist-row" data-jump="board"><span class="ov-step-num" id="ovStepBrandMark" data-num="1">1</span><span class="ov-step-body"><b>Name &amp; prize</b><span class="hint">Set the board name, sponsor and prize pool</span></span></button>
+<button type="button" id="ovStepPlayersBtn" class="ov-checklist-row" data-jump="board"><span class="ov-step-num" id="ovStepPlayersMark" data-num="2">2</span><span class="ov-step-body"><b>Add players</b><span class="hint">Type them in or paste from a spreadsheet</span></span></button>
+<div id="ovShareWrap" class="ov-checklist-row"><span class="ov-step-num" id="ovStepShareMark" data-num="3">3</span><span class="ov-step-body"><b>Share</b><span class="hint" id="ovShareHint">Publish and copy your public link</span></span><button class="btn btn--sm" id="ov_copyLink" type="button">Copy link</button></div>
 </div></div>
 </div>
 </section>
@@ -129,21 +144,25 @@ export function DashboardContent() {
   <button class="editor-step" type="button" role="tab" aria-selected="false" data-egroup="players"><span class="step-num">2</span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg> Players</button>
   <button class="editor-step" type="button" role="tab" aria-selected="false" data-egroup="design"><span class="step-num">3</span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg> Design</button>
   <button class="editor-step" type="button" role="tab" aria-selected="false" data-egroup="share"><span class="step-num">4</span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" x2="12" y1="2" y2="15"/></svg> Share</button>
+  <button class="editor-step" type="button" role="tab" aria-selected="false" data-egroup="history"><span class="step-num">5</span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3v5a5 5 0 0 0 5 5h10a5 5 0 0 1 5 5v5"/><path d="M12 12 7 7l5-5"/><path d="M12 12 17 7l5 5"/></svg> History</button>
   </div>
 <div class="design-grid">
 <div class="design-controls">
-<div class="card" data-egroup="setup"><h2>Brand &amp; prize</h2><p class="card-sub">The headline details on your page.</p><div class="grid2">
+<div class="card" data-egroup="setup"><h2>Details</h2><p class="card-sub">The headline details on your page.</p><div class="grid2">
 <div class="field"><label for="f_name">Display name</label><input id="f_name" /></div>
 <div class="field"><label for="f_tagline">Tagline</label><input id="f_tagline" placeholder="Stream community leaderboard" /></div>
 <div class="field"><label for="f_casino">Sponsor / prize source</label><input id="f_casino" placeholder="Your brand or sponsor" /></div>
 <div class="field"><label for="f_code">Referral or promo code</label><input id="f_code" placeholder="OPTIONAL" /></div>
 <div class="field"><label for="f_cta">Sponsor link</label><input id="f_cta" placeholder="https://example.com" /></div>
+<div class="field field--full"><label for="f_blurb">Partner blurb</label><textarea id="f_blurb" rows="2" placeholder="Short pitch about the sponsor and your code (optional)."></textarea></div></div></div>
+<div class="card" data-egroup="setup"><h2>Schedule &amp; prize</h2><p class="card-sub">When the race ends and what the winner gets.</p><div class="grid2">
 <div class="field"><label for="f_pool">Prize pool</label><input id="f_pool" placeholder="$500" /></div>
 <div class="field"><label for="f_period">Period</label><select id="f_period"><option>Weekly</option><option selected>Monthly</option><option>Season</option></select></div>
 <div class="field"><label for="f_ends">Countdown ends</label><input id="f_ends" type="datetime-local" /><span class="hint" id="f_ends_hint">When the leaderboard resets, in your local time. Powers the live timer.</span></div>
-<div class="field field--full"><label class="chk"><input type="checkbox" id="f_auto_reset" /> Auto-reset when countdown ends</label><select id="f_auto_reset_clear" disabled class="mt-8"><option value="wagers">Reset wagers to 0</option><option value="players">Clear all players</option><option value="none">Keep board as-is</option></select><span class="hint">Archives the finished period and extends the end date by one period automatically.</span></div>
-<div class="field field--full"><label class="chk"><input type="checkbox" id="f_password_enabled" /> Password-protect this board</label><input id="f_password" type="password" placeholder="Leave blank to keep current password" disabled class="mt-8" /><span class="hint">Visitors must enter this password before seeing the leaderboard or using the public API.</span></div></div>
-<div class="field"><label for="f_blurb">Partner blurb</label><textarea id="f_blurb" rows="2" placeholder="Short pitch about the sponsor and your code (optional)."></textarea></div></div>
+<div class="field field--full"><label class="chk"><input type="checkbox" id="f_auto_reset" /> Auto-reset when countdown ends</label><select id="f_auto_reset_clear" disabled class="mt-8"><option value="wagers">Reset wagers to 0</option><option value="players">Clear all players</option><option value="none">Keep board as-is</option></select><span class="hint">Archives the finished period and extends the end date by one period automatically.</span></div></div></div>
+<div class="card" data-egroup="setup"><h2>Access</h2><p class="card-sub">Publishing and password protection.</p>
+<div class="field field--full"><label class="chk"><input type="checkbox" id="f_password_enabled" /> Password-protect this board</label><input id="f_password" type="password" placeholder="Leave blank to keep current password" disabled class="mt-8" /><span class="hint">Visitors must enter this password before seeing the leaderboard or using the public API.</span></div>
+<p class="hint mt-14">Publishing is controlled by the <b>Published</b> toggle in the sidebar.</p></div>
 <div class="card" data-egroup="players"><h2>Players</h2><p class="card-sub">The board auto-sorts by wagered, highest first. Prize <span class="mono">0</span> shows a dash. Names can be masked (keep the <span class="mono">***</span>). <span class="limit-widget" id="limitWidget"><span id="pCount" class="limit-hint"></span><span class="limit-bar"><span class="limit-fill" id="limitFill"></span></span><span class="limit-hint" id="limitHint"></span><a class="btn btn--sm btn--accent" id="playerLimitUpgrade" href="/dashboard?nav=settings">Upgrade</a></span></p>
 <div class="player-toolbar">
   <input type="search" id="playerSearch" class="player-search" placeholder="Find player..." autocomplete="off" />
@@ -169,14 +188,15 @@ export function DashboardContent() {
 </div>
 <p class="hint mt-8" id="gsheetStatus"></p>
 </div></div>
-<div class="card" data-egroup="players" id="playerFieldsCard"><h2>Player columns</h2><p class="card-sub">Choose which extra columns show on the dashboard player table and on supported public templates.</p><div class="section-list" id="playerFieldsList"></div></div>
-<div class="card" data-egroup="design" id="templateCard"><h2>Page design</h2><p class="card-sub">Pick a design; the preview on the right uses your real players.</p>
+<div class="card" data-egroup="design" id="playerFieldsCard"><h2>Visible columns</h2><p class="card-sub">Choose which extra columns show on the dashboard player table and on supported public templates.</p><div class="section-list" id="playerFieldsList"></div></div>
+<div class="card" data-egroup="design" id="templateCard"><h2>Template</h2><p class="card-sub">Pick a design; the preview on the right uses your real players.</p>
 <input type="hidden" id="f_template" value="classic" />
 <div class="template-gallery-wrap" id="templateGalleryWrap">
 <div class="template-grid" id="templateGallery" aria-label="Page templates"></div>
 </div>
 <p class="hint template-status" id="templateStatus" role="status" aria-live="polite"></p>
 <div class="template-options" id="templateOptions" hidden></div></div>
+<div class="design-group-heading" data-egroup="design"><h3>Appearance</h3></div>
 <div class="card" data-egroup="design" id="brandCard"><h2>Branding <span class="pill pill--info ml-6">PRO</span></h2><p class="card-sub">Your logo and page colors. Free pages use the default look.</p>
 <div id="brandBody">
 <div class="grid2">
@@ -207,6 +227,7 @@ export function DashboardContent() {
 <label class="hint chk"><input type="checkbox" id="f_hidePrizeAmounts" /> Hide prize amounts on the public page</label>
 </div>
 <div class="empty upsell-card" id="prizesLock" hidden>Prize customization is a Pro feature. <a href="#" id="prizesUpgrade">Upgrade to unlock it</a>.</div></div>
+<div class="design-group-heading" data-egroup="design"><h3>Content</h3></div>
 <div class="card" data-egroup="design" id="textCard"><h2>Template text</h2><p class="card-sub">Change the copy inside your selected design. Keys with an empty value fall back to the default.</p>
 <div class="text-editor" id="textList"></div></div>
 <div class="card" data-egroup="design" id="socialsCard"><h2>Social links</h2><p class="card-sub">Add the links to your channels. Turn a network <b>on</b> to show it on your public page; turn it <b>off</b> to hide it.</p>
@@ -219,6 +240,15 @@ export function DashboardContent() {
 <h3 class="m-0 mt-18 mb-8 font-14 fw-700">Share on social</h3>
 <div class="share-cards" id="shareCards"><button class="share-card share-card--x" id="shareX" type="button"><span>Share on X</span></button><button class="share-card share-card--discord" id="shareDiscord" type="button"><span>Share on Discord</span></button><button class="share-card share-card--twitch" id="shareTwitch" type="button"><span>Share on Twitch</span></button><button class="share-card share-card--copy" id="shareCopy" type="button"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg><span>Copy link</span></button></div>
 <div class="api-access locked" id="apiAccess"><div><b class="font-14">API Access</b><p class="hint mt-4">REST API for programmatic board management</p></div><span class="api-lock-badge"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> Pro</span></div>
+</div>
+<div class="card" data-egroup="history"><h2>History</h2><p class="card-sub">Close out finished periods and see past winners. Saves your unsaved edits first.</p>
+<div class="arch-form">
+<div class="field field-flex"><label for="a_label">Label</label><input id="a_label" placeholder="July 2026" /></div>
+<div class="field m-0"><label for="a_clear">Then</label><select id="a_clear"><option value="wagers">Reset all wagers to 0</option><option value="players">Clear the player list</option><option value="none">Keep the board as is</option></select></div>
+<button class="btn btn--accent self-end" id="a_go" type="button">Close out period</button>
+</div>
+<div class="arch-list" id="archList"></div>
+<div class="empty" id="archEmpty" hidden>No closed-out periods yet. Your first one shows up here and on your page.</div>
 </div>
 </div>
 <div class="design-preview">
@@ -239,7 +269,7 @@ export function DashboardContent() {
 <div class="lb-bento">
 <div class="lb-widget lb-widget--full perf-header">
   <div>
-    <h2>Performance</h2>
+    <h2>Analytics</h2>
     <p class="card-sub">Views, clicks, copies and where your traffic comes from.</p>
   </div>
   <div class="perf-filter" id="perfRangeFilter" role="group" aria-label="Date range">
@@ -283,6 +313,11 @@ export function DashboardContent() {
   </div>
   <p class="status" id="refStatus" role="status" aria-live="polite"></p>
 </div>
+<div class="lb-widget lb-widget--half">
+  <div class="lb-cardhd"><h2>Events</h2></div>
+  <ul class="events-list" id="eventsList"><li class="hint">Recent postbacks, score updates and link copies will appear here.</li></ul>
+  <p class="empty" id="eventsEmpty" hidden>No events yet.</p>
+</div>
 </div>
 </section>
 <section class="lb-page" data-page="settings">
@@ -290,18 +325,97 @@ export function DashboardContent() {
 <div class="lb-bento">
 <div class="lb-widget lb-widget--full settings-nav">
   <nav aria-label="Settings sections">
-    <a class="btn btn--xs btn--ghost" href="#settings-connections">Connections</a>
-    <a class="btn btn--xs btn--ghost" href="#settings-notifications">Notifications</a>
-    <a class="btn btn--xs btn--ghost" href="#settings-billing">Billing</a>
+    <a class="btn btn--xs btn--ghost" href="#settings-profile">Profile</a>
+    <a class="btn btn--xs btn--ghost" href="#settings-plan">Plan &amp; billing</a>
+    <a class="btn btn--xs btn--ghost" href="#settings-integrations">Integrations</a>
+    <a class="btn btn--xs btn--ghost" href="#settings-compliance">Compliance</a>
     <a class="btn btn--xs btn--ghost" href="#settings-account">Account</a>
-    <a class="btn btn--xs btn--ghost" href="#settings-winners">Winners</a>
-    <a class="btn btn--xs btn--ghost" href="#settings-legal">Legal</a>
-    <a class="btn btn--xs btn--ghost" href="#settings-danger">Danger</a>
   </nav>
 </div>
-<div class="lb-widget lb-widget--half" id="settings-connections">
-  <h2>Stream &amp; domain</h2>
-  <p class="card-sub">OBS overlay and your own domain are Pro features.</p>
+<div class="lb-widget lb-widget--full" id="settings-profile">
+  <h2>Profile</h2>
+  <p class="card-sub">Your password and active sessions.</p>
+  <div class="field"><label for="accCurrentPassword">Current password</label><input type="password" id="accCurrentPassword" autocomplete="current-password" /></div>
+  <div class="field"><label for="accNewPassword">New password</label><input type="password" id="accNewPassword" autocomplete="new-password" minlength="8" /></div>
+  <div class="d-flex gap-8 items-center flex-wrap">
+    <button class="btn btn--accent" id="accChangePassword" type="button">Update password</button>
+    <span class="hint" id="accPasswordStatus" role="status" aria-live="polite"></span>
+  </div>
+  <hr class="hr" />
+  <div class="d-flex justify-between items-center mb-12"><h3 class="m-0">Active sessions</h3><button class="btn btn--ghost btn--sm" id="accRevokeSessions" type="button">Sign out other sessions</button></div>
+  <div id="accSessions"><p class="hint">Loading…</p></div>
+  <p class="hint" id="accSessionsStatus" role="status" aria-live="polite"></p>
+</div>
+<div class="lb-widget lb-widget--full" id="settings-plan">
+  <h2>Plan &amp; billing</h2>
+  <p class="card-sub">Pick the plan that fits your stream, or start a free Pro trial.</p>
+  <div class="plan-summary" id="planSummary"></div>
+  <div class="plan-banner" id="planBanner" role="status" aria-live="polite" hidden></div>
+  <div id="cancelWrap" hidden>
+    <p class="hint" id="cancelStatus" role="status" aria-live="polite"></p>
+    <button class="btn btn--sm btn--danger" id="cancelBtn" type="button">Cancel subscription</button>
+  </div>
+  <div class="plan-grid" id="planGrid"></div>
+  <div class="plan-trial" id="planTrial" hidden><p class="hint">Not ready to pay? Try every Pro feature free for 7 days.</p><button class="btn btn--accent" id="trialBtn" type="button">Start free Pro trial</button><p class="status" id="trialStatus" role="status" aria-live="polite"></p></div>
+  <p class="hint" id="planHint">Paid plans are billed in crypto (BTC, ETH, USDT and 100+ more) and activate automatically once the network confirms.</p>
+  <div id="historyCard" hidden>
+    <h3 class="m-0 mt-18 mb-4">Payment history</h3>
+    <p class="card-sub">Your past payments and receipts.</p>
+    <table class="admin-table" id="historyTable"><thead><tr><th>Date</th><th>Plan</th><th>Amount</th><th>Status</th></tr></thead><tbody id="historyBody"></tbody></table>
+    <div class="empty" id="historyEmpty" hidden>No payments yet.</div>
+    <p class="hint">Receipts are also emailed to your account address after each successful payment.</p>
+  </div>
+</div>
+<div class="lb-widget lb-widget--full" id="settings-integrations">
+  <h2>Integrations</h2>
+  <p class="card-sub">Stream tools, webhooks, postbacks and Kick rewards.</p>
+  <div class="grid2">
+    <div class="card" id="kickRewardsCard">
+      <h3>Kick rewards</h3>
+      <p class="card-sub">Let viewers earn credits by redeeming Kick channel rewards.</p>
+      <p class="hint" id="kickStatus">Loading…</p>
+      <div class="d-flex gap-8 flex-wrap mt-14">
+        <a class="btn btn--sm btn--accent" href="/dashboard/credits" id="kickRewardsLink">Open Kick rewards →</a>
+      </div>
+    </div>
+    <div class="card" id="postbacksCard">
+      <h3>Postbacks</h3>
+      <p class="card-sub">Receive automatic score updates from your sponsor via postback URLs.</p>
+      <p class="hint" id="postbackStatus">Manage postback keys and endpoints in the <a href="/bot/dashboard" target="_blank" rel="noopener noreferrer">bot dashboard</a>.</p>
+    </div>
+  </div>
+  <hr class="hr" />
+  <div class="card">
+    <h3>Notifications <span class="pill pill--info ml-6">PRO</span></h3>
+    <p class="card-sub">Optional alerts when your leaderboard resets or a player breaks into the top 3.</p>
+    <div id="notifyBody">
+      <div class="field"><label>Events that trigger notifications</label>
+        <div class="d-flex gap-8 flex-wrap mb-4">
+          <span class="pill pill--muted ic-btn"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg>Leaderboard reset</span>
+          <span class="pill pill--muted ic-btn"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg>Player enters top 3</span>
+        </div>
+      </div>
+      <div class="field"><label for="f_webhook">Discord webhook URL</label>
+        <input id="f_webhook" placeholder="https://discord.com/api/webhooks/..." />
+        <span class="hint">Create a webhook in your Discord server settings → Integrations → Webhooks. Paste the URL here.</span>
+      </div>
+      <div class="d-flex gap-8 items-center flex-wrap mt-n8 mb-16">
+        <button class="btn btn--sm ic-btn" id="testDiscord" type="button"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.536 21.686a.5.5 0 0 0 .937-.024l6.5-19a.496.496 0 0 0-.635-.635l-19 6.5a.5.5 0 0 0-.024.937l7.93 3.18a2 2 0 0 1 1.112 1.11z"/><path d="m21.854 2.147-10.94 10.939"/></svg>Test Discord</button>
+        <span class="hint" id="testDiscordStatus" role="status" aria-live="polite"></span>
+      </div>
+      <div class="field"><label for="f_tgChatId">Telegram chat/group ID</label>
+        <input id="f_tgChatId" placeholder="-1001234567890" />
+        <span class="hint">The chat or group ID where notifications should be sent. Use <code>/start</code> in your bot chat or add the bot to a group to get the ID.</span>
+      </div>
+      <div class="d-flex gap-8 items-center flex-wrap mt-n8 mb-16">
+        <label class="hint chk"><input type="checkbox" id="f_tgNotify" /> Enable Telegram notifications</label>
+        <button class="btn btn--sm ic-btn" id="testTelegram" type="button"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.536 21.686a.5.5 0 0 0 .937-.024l6.5-19a.496.496 0 0 0-.635-.635l-19 6.5a.5.5 0 0 0-.024.937l7.93 3.18a2 2 0 0 1 1.112 1.11z"/><path d="m21.854 2.147-10.94 10.939"/></svg>Test Telegram</button>
+        <span class="hint" id="testTelegramStatus" role="status" aria-live="polite"></span>
+      </div>
+    </div>
+    <div class="empty" id="notifyLock" hidden>Notifications are a Pro feature. <a href="#" id="notifyUpgrade">Upgrade to unlock them</a>.</div>
+  </div>
+  <hr class="hr" />
   <div id="overlayBody">
     <div class="field"><label>Overlay URL</label>
       <div class="d-flex gap-8 items-center flex-wrap">
@@ -325,100 +439,22 @@ export function DashboardContent() {
   </div>
   <div class="empty" id="domainLock" hidden>Custom domains are a Pro feature. <a href="#" id="domainUpgrade">Upgrade to unlock it</a>.</div>
 </div>
-<div class="lb-widget lb-widget--half" id="settings-integrations">
-  <h2>External tools</h2>
-  <p class="card-sub">Manage offers, postbacks, and Telegram bots in one place.</p>
-  <div class="d-flex gap-8 flex-wrap"><a class="btn btn--sm" href="/bot/dashboard">Open bot dashboard →</a></div>
-</div>
-<div class="lb-widget lb-widget--full" id="settings-notifications">
-  <h2>Notifications <span class="pill pill--info ml-6">PRO</span></h2>
-  <p class="card-sub">Optional alerts when your leaderboard resets or a player breaks into the top 3. Discord and Telegram supported — the leaderboard itself works without either.</p>
-  <div id="notifyBody">
-    <div class="field"><label>Events that trigger notifications</label>
-      <div class="d-flex gap-8 flex-wrap mb-4">
-        <span class="pill pill--muted ic-btn"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg>Leaderboard reset</span>
-        <span class="pill pill--muted ic-btn"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg>Player enters top 3</span>
-      </div>
-    </div>
-    <div class="field"><label for="f_webhook">Discord webhook URL</label>
-      <input id="f_webhook" placeholder="https://discord.com/api/webhooks/..." />
-      <span class="hint">Create a webhook in your Discord server settings → Integrations → Webhooks. Paste the URL here.</span>
-    </div>
-    <div class="d-flex gap-8 items-center flex-wrap mt-n8 mb-16">
-      <button class="btn btn--sm ic-btn" id="testDiscord" type="button"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.536 21.686a.5.5 0 0 0 .937-.024l6.5-19a.496.496 0 0 0-.635-.635l-19 6.5a.5.5 0 0 0-.024.937l7.93 3.18a2 2 0 0 1 1.112 1.11z"/><path d="m21.854 2.147-10.94 10.939"/></svg>Test Discord</button>
-      <span class="hint" id="testDiscordStatus" role="status" aria-live="polite"></span>
-    </div>
-    <div class="field"><label for="f_tgChatId">Telegram chat/group ID</label>
-      <input id="f_tgChatId" placeholder="-1001234567890" />
-      <span class="hint">The chat or group ID where notifications should be sent. Use <code>/start</code> in your bot chat or add the bot to a group to get the ID.</span>
-    </div>
-    <div class="d-flex gap-8 items-center flex-wrap mt-n8 mb-16">
-      <label class="hint chk"><input type="checkbox" id="f_tgNotify" /> Enable Telegram notifications</label>
-      <button class="btn btn--sm ic-btn" id="testTelegram" type="button"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.536 21.686a.5.5 0 0 0 .937-.024l6.5-19a.496.496 0 0 0-.635-.635l-19 6.5a.5.5 0 0 0-.024.937l7.93 3.18a2 2 0 0 1 1.112 1.11z"/><path d="m21.854 2.147-10.94 10.939"/></svg>Test Telegram</button>
-      <span class="hint" id="testTelegramStatus" role="status" aria-live="polite"></span>
-    </div>
-  </div>
-  <div class="empty" id="notifyLock" hidden>Notifications are a Pro feature. <a href="#" id="notifyUpgrade">Upgrade to unlock them</a>.</div>
-</div>
-<div class="lb-widget lb-widget--full" id="settings-billing">
-  <h2>Plan &amp; billing</h2>
-  <p class="card-sub">Pick the plan that fits your stream, or start a free Pro trial.</p>
-  <div class="plan-summary" id="planSummary"></div>
-  <div class="plan-banner" id="planBanner" role="status" aria-live="polite" hidden></div>
-  <div id="cancelWrap" hidden>
-    <p class="hint" id="cancelStatus" role="status" aria-live="polite"></p>
-    <button class="btn btn--sm btn--danger" id="cancelBtn" type="button">Cancel subscription</button>
-  </div>
-  <div class="plan-grid" id="planGrid"></div>
-  <div class="plan-trial" id="planTrial" hidden><p class="hint">Not ready to pay? Try every Pro feature free for 7 days.</p><button class="btn btn--accent" id="trialBtn" type="button">Start free Pro trial</button><p class="status" id="trialStatus" role="status" aria-live="polite"></p></div>
-  <p class="hint" id="planHint">Paid plans are billed in crypto (BTC, ETH, USDT and 100+ more) and activate automatically once the network confirms.</p>
-  <div id="historyCard" hidden>
-    <h3 class="m-0 mt-18 mb-4">Payment history</h3>
-    <p class="card-sub">Your past payments and receipts.</p>
-    <table class="admin-table" id="historyTable"><thead><tr><th>Date</th><th>Plan</th><th>Amount</th><th>Status</th></tr></thead><tbody id="historyBody"></tbody></table>
-    <div class="empty" id="historyEmpty" hidden>No payments yet.</div>
-    <p class="hint">Receipts are also emailed to your account address after each successful payment.</p>
-  </div>
-</div>
-<div class="lb-widget lb-widget--full" id="settings-account">
-  <h2>Account</h2>
-  <p class="card-sub">Password, active sessions, and your data.</p>
-  <div class="field"><label for="accCurrentPassword">Current password</label><input type="password" id="accCurrentPassword" autocomplete="current-password" /></div>
-  <div class="field"><label for="accNewPassword">New password</label><input type="password" id="accNewPassword" autocomplete="new-password" minlength="8" /></div>
-  <div class="d-flex gap-8 items-center flex-wrap">
-    <button class="btn btn--accent" id="accChangePassword" type="button">Update password</button>
-    <span class="hint" id="accPasswordStatus" role="status" aria-live="polite"></span>
-  </div>
-  <hr class="hr" />
-  <div class="d-flex justify-between items-center mb-12"><h3 class="m-0">Active sessions</h3><button class="btn btn--ghost btn--sm" id="accRevokeSessions" type="button">Sign out other sessions</button></div>
-  <div id="accSessions"><p class="hint">Loading…</p></div>
-  <p class="hint" id="accSessionsStatus" role="status" aria-live="polite"></p>
-  <hr class="hr" />
-  <div class="d-flex gap-8 items-center flex-wrap">
-    <button class="btn btn--accent" id="accExportData" type="button">Download my data</button>
-    <span class="hint" id="accExportStatus" role="status" aria-live="polite"></span>
-  </div>
-</div>
-<div class="lb-widget lb-widget--half" id="settings-winners">
-  <h2>Past winners</h2>
-  <p class="card-sub">When a period ends, close it out: the current board is saved and shown on your page under "Past Winners". Saves your unsaved edits first.</p>
-  <div class="arch-form">
-    <div class="field field-flex"><label for="a_label">Label</label><input id="a_label" placeholder="July 2026" /></div>
-    <div class="field m-0"><label for="a_clear">Then</label><select id="a_clear"><option value="wagers">Reset all wagers to 0</option><option value="players">Clear the player list</option><option value="none">Keep the board as is</option></select></div>
-    <button class="btn btn--accent self-end" id="a_go" type="button">Close out period</button>
-  </div>
-  <div class="arch-list" id="archList"></div>
-  <div class="empty" id="archEmpty" hidden>No closed-out periods yet. Your first one shows up here and on your page.</div>
-</div>
-<div class="lb-widget lb-widget--half" id="settings-legal">
-  <h2>Legal pages</h2>
-  <p class="card-sub">Set your own Terms, Privacy, and other legal copy. Empty fields use defaults and the footer links go to your own /terms, /privacy, etc.</p>
+<div class="lb-widget lb-widget--full" id="settings-compliance">
+  <h2>Compliance</h2>
+  <p class="card-sub">Company identity, legal pages and responsible-gaming messaging.</p>
   <div class="info-notice"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="16" y2="12"/><line x1="12" x2="12.01" y1="8" y2="8"/></svg><span>Leave any field blank to use the default legal text provided by YourRank. Your custom text will be shown on your public page at <code>/terms</code>, <code>/privacy</code>, etc.</span></div>
   <div class="legal-editor" id="legalList"></div>
   <div class="legal-footer-preview" id="legalFooterPreview"><b>Footer links preview:</b> <a href="#" onclick="return false">Terms</a> · <a href="#" onclick="return false">Privacy</a> · <a href="#" onclick="return false">Responsible Gaming</a> · <a href="#" onclick="return false">Cookies</a> · <a href="#" onclick="return false">Refund</a> · <a href="#" onclick="return false">Contact</a></div>
 </div>
-<div class="lb-widget lb-widget--full lb-widget--danger" id="settings-danger">
-  <h2>Danger zone</h2>
+<div class="lb-widget lb-widget--full lb-widget--danger" id="settings-account">
+  <h2>Account</h2>
+  <p class="card-sub">Export your data or permanently delete your account.</p>
+  <div class="d-flex gap-8 items-center flex-wrap">
+    <button class="btn btn--accent" id="accExportData" type="button">Download my data</button>
+    <span class="hint" id="accExportStatus" role="status" aria-live="polite"></span>
+  </div>
+  <hr class="hr" />
+  <h3 class="m-0 mt-18 mb-4">Danger zone</h3>
   <p class="card-sub">Permanently delete your account and all associated data. This cannot be undone.</p>
   <button class="btn btn--danger" id="deleteAccountBtn" type="button">Delete my account</button>
 </div>
