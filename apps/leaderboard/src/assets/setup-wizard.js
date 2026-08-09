@@ -73,6 +73,7 @@ wiz3next.onclick=async()=>{
       players:parsePlayers(),
       isDraft:true,
     };
+    if(siteId) body.siteId=siteId;
     const res=await fetch("/api/site",{method:"PUT",headers:{"content-type":"application/json","x-csrf-token":getCsrf()},body:JSON.stringify(body)});
     const data=await res.json().catch(()=>({}));
     if(!res.ok||!data.ok){$("wiz_err").textContent=data.error||"Failed to save your page. Try again.";wiz3next.disabled=false;wiz3next.textContent=prev;return;}
@@ -127,17 +128,14 @@ function getCsrf(){const m=document.cookie.match(/(?:^|;\s*)__csrf=([^;]+)/);ret
 
 // Resume an unfinished wizard board: prefill the current board data.
 async function loadResume(){
-  const params=new URLSearchParams(location.search);
-  const resume=params.get("resume");
-  if(!resume)return;
   try{
     const res=await fetch("/api/site",{credentials:"include"});
     const d=await res.json().catch(()=>({}));
     if(!d.ok||!d.data)return;
-    const s=d.data.data||{};
+    const s=d.data||{};
     const b=s.brand||{};
     nameIn.value=b.name||"";
-    const sSlug=d.data.slug||"";
+    const sSlug=d.slug||"";
     slugIn.value=sSlug;
     userEditedSlug=true;
     preview.textContent=sSlug?"yourrank.site/"+sSlug:"yourrank.site/…";
@@ -150,7 +148,7 @@ async function loadResume(){
       countPlayers();
     }
     slug=slugify(sSlug);
-    siteId=d.siteId||d.data?.siteId||"";
+    siteId=d.siteId||"";
   }catch(e){}
 }
 loadResume();

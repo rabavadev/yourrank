@@ -39,6 +39,13 @@ async function init() {
   state.SITE_UPDATED_AT = p.updatedAt || null;
   state.ONBOARDING = p.onboarding || {};
 
+  // First-run boards start as drafts. Send the user through the setup wizard
+  // instead of dropping them into the Editor with no context.
+  if (!requestedSiteId && p.isDraft && !urlParams.get("nav") && !urlParams.get("plan") && !urlParams.get("upgraded")) {
+    location.href = "/dashboard/setup?resume=1";
+    return;
+  }
+
   renderBoardSwitcher();
   renderSidebarBoardSwitcher();
   renderBoardsPage();

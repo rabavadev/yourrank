@@ -10,7 +10,7 @@ export const setupPage = leaderboardPageHtml({
   mainClass: "gm-shell-main",
   styles: ["/assets/app.css","/assets/shell-nav.css","/assets/setup-styles.css"],
   noscript: "<p>YourRank requires JavaScript</p><p>Please enable JavaScript in your browser settings to set up your leaderboard.</p>",
-  scripts: [`<script nonce="__NONCE__">window.__TEMPLATE_CATALOG__=${TEMPLATES_JSON};</script><script src="/assets/setup-wizard.js?v=4"></script>`],
+  scripts: [`<script nonce="__NONCE__">window.__TEMPLATE_CATALOG__=${TEMPLATES_JSON};</script><script src="/assets/setup-wizard.js?v=5"></script>`],
   content: `<div class="setup-wrap">
 <h1>Set up your leaderboard</h1>
 <p class="sub">Three quick steps and you're live. <a href="/demo" target="_blank">See a live demo first →</a></p>

@@ -564,7 +564,7 @@ export async function createBoard(env, uid, { slug, name, casino = "", code = ""
 export async function seedSamplePlayers(tx, siteId) {
   const endsAt = new Date(Date.now() + 7 * 86400000).toISOString();
   await tx.unsafe(
-    "UPDATE sites SET prize_pool=$1, ends_at=$2, is_draft=false, published=true WHERE id=$3",
+    "UPDATE sites SET prize_pool=$1, ends_at=$2 WHERE id=$3",
     ["$500", endsAt, siteId]
   );
   const players = [
