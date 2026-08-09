@@ -106,9 +106,17 @@ if (mode === "signup" && pwInput) {
 
 const submit = document.getElementById("submit");
 const nameInput = document.getElementById("name");
+const slugInput = document.getElementById("slug");
 const slugPreview = document.getElementById("slugPreview");
 function slugify(s){return String(s||"").toLowerCase().trim().replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"").slice(0,40);}
-if (nameInput && slugPreview) nameInput.addEventListener("input", () => { const s = slugify(nameInput.value); slugPreview.textContent = s ? "yourrank.site/" + s : "yourrank.site/…"; });
+function updateSlugPreview(){ const s = slugify(slugInput ? slugInput.value : nameInput?.value); if (slugPreview) slugPreview.textContent = s ? "yourrank.site/" + s : "yourrank.site/…"; }
+let userEditedSlug = false;
+if (nameInput && slugInput) {
+  nameInput.addEventListener("input", () => { if (!userEditedSlug) { slugInput.value = slugify(nameInput.value); updateSlugPreview(); } });
+}
+if (slugInput) {
+  slugInput.addEventListener("input", () => { userEditedSlug = true; updateSlugPreview(); });
+}
 const PLAN_NAMES = { free: "Free", starter: "Starter", pro: "Pro", agency: "Agency", lifetime: "Lifetime Pro" };
 if (mode === "signup" && PLAN_NAMES[planParam]) {
   const banner = document.getElementById("planBanner");
@@ -134,7 +142,10 @@ form.addEventListener("submit", async (e) => {
     payload = { token, password: document.getElementById("password").value };
   } else {
     payload = { email: document.getElementById("email").value.trim(), password: document.getElementById("password").value };
-    if (mode === "signup" && nameInput) payload.name = nameInput.value.trim();
+    if (mode === "signup") {
+      if (nameInput) payload.name = nameInput.value.trim();
+      if (slugInput) payload.slug = slugify(slugInput.value) || slugify(nameInput?.value || "");
+    }
     const ref = new URLSearchParams(location.search).get("ref");
     if (mode === "signup" && ref) payload.ref = ref;
   }
@@ -143,6 +154,8 @@ form.addEventListener("submit", async (e) => {
     let firstInvalid = null;
     if (!EMAIL_RE.test(payload.email || "")) { setFieldError("email", "Enter a valid email address"); firstInvalid = firstInvalid || "email"; }
     if (mode === "signup" && (payload.password || "").length < 8) { setFieldError("password", "Password must be at least 8 characters"); firstInvalid = firstInvalid || "password"; }
+    if (mode === "signup" && !(payload.name || "").trim()) { setFieldError("name", "Enter your name or handle"); firstInvalid = firstInvalid || "name"; }
+    if (mode === "signup" && !(payload.slug || "").trim()) { setFieldError("slug", "Enter a page URL"); firstInvalid = firstInvalid || "slug"; }
     if (firstInvalid) {
       const el = document.getElementById(firstInvalid);
       if (el) el.focus();

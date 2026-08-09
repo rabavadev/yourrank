@@ -37,10 +37,9 @@ export async function createUser(tx, userId, email, hash, salt, referralCode, re
 }
 
 export async function createSite(tx, siteId, userId, slug, name, extraJson) {
-  // A fresh page starts with no sponsor. The public renderer shows neutral copy
-  // until the owner configures it. is_draft is false because signup now seeds a
-  // sample board, so the dashboard is immediately usable.
-  await tx.unsafe("INSERT INTO sites (id,user_id,slug,name,casino,prize_pool,period,published,is_draft,extra_json) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10::jsonb)", [siteId, userId, slug, name, "", "", "Monthly", true, false, extraJson]);
+  // A fresh page starts as a draft so first-time users are guided through the
+  // setup wizard before the page is publicly visible.
+  await tx.unsafe("INSERT INTO sites (id,user_id,slug,name,casino,prize_pool,period,published,is_draft,extra_json) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10::jsonb)", [siteId, userId, slug, name, "", "", "Monthly", false, true, extraJson]);
 }
 
 export async function updateUserPassword(userId, hash, salt) {
