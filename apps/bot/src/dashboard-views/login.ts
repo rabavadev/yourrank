@@ -1,87 +1,67 @@
 import { escHtml } from "./utils.js";
 
+const GOOGLE_FONTS =
+  '<link rel="preconnect" href="https://fonts.googleapis.com" />' +
+  '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />' +
+  '<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />';
+
 const STYLE_ATTR_CSS = `
 /* ---- inline style migration (M-02) ---- */
 .hidden { display: none !important; }
 .sr-only { position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0); }
-.skip-link { position:absolute;left:8px;top:8px;z-index:100;background:var(--bg);color:var(--fg);padding:10px 14px;border:1px solid var(--border-2);border-radius:8px;text-decoration:none;transform:translateY(-200%);transition:transform .15s; }
-.skip-link:focus { transform:translateY(0);outline:2px solid var(--accent); }
+.skip-link { position:absolute;left:8px;top:8px;z-index:100;background:var(--yr-bg);color:var(--yr-ink);padding:10px 14px;border:1px solid var(--yr-line-2);border-radius:10px;text-decoration:none;transform:translateY(-200%);transition:transform .15s; }
+.skip-link:focus { transform:translateY(0);outline:2px solid var(--yr-accent); }
 .style-1 { margin-bottom:8px }
 .style-2 { margin-bottom:20px }
-.style-3 { margin-top:24px;border-top:1px solid var(--border);padding-top:16px }
-.style-4 { display:flex;align-items:center;gap:12px }
-.style-5 { margin-bottom:18px }
-.style-6 { font-size:12px }
-.style-7 { display:flex;justify-content:space-between;font-size:11px }
-.style-8 { text-align:right }
-.style-9 { font-size:12px;margin-top:10px }
-.style-10 { margin-top:12px }
-.style-11 { display:flex;gap:6px;align-items:center }
-.style-12 { flex:1 }
-.style-13 { margin-bottom:12px;font-size:13px }
-.style-14 { width:auto;min-width:160px;display:inline-block;margin-left:8px }
-.style-15 { margin-bottom:12px;color:var(--accent) }
-.style-16 { margin-bottom:12px }
-.style-17 { display:block;margin-bottom:4px;font-size:13px }
-.style-18 { margin:20px 0 6px;font-size:14px }
-.style-19 { margin-bottom:10px;font-size:13px }
-.style-20 { margin-top:14px }
-.style-21 { margin-bottom:10px }
-.style-22 { display:block;font-size:13px }
-.style-23 { max-width:300px }
-.style-24 { font-size:13px;margin:2px 0 10px }
-.style-25 { display:flex;gap:8px;align-items:center;flex-wrap:wrap }
-.style-26 { font-size:13px }
-.style-27 { max-width:150px }
-.style-28 { font-size:12px;margin-top:6px }
-.style-29 { margin-bottom:10px;font-size:12px }
-.style-30 { margin-left:8px }
-.style-31 { margin-left:12px }
-.style-32 { margin-left:6px;color:var(--red) }
-.style-33 { padding:2px 8px;font-size:12px }
-.style-34 { color:var(--accent) }
-.style-35 { margin-right:8px }
+.style-3 { margin-top:24px;border-top:1px solid var(--yr-line);padding-top:16px }
 `;
 
 export function loginHtml(botUsername: string, devLogin: boolean, nonce?: string): string {
   return `<!doctype html><html lang="en"><head><meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>YourRank Bot — Login</title>
+  ${GOOGLE_FONTS}
   <style${nonce ? ` nonce="${nonce}"` : ""}>
   ${STYLE_ATTR_CSS}
-  :root { --bg:#0d1117; --panel:#161b22; --border:#30363d; --fg:#e6edf3; --dim:#8b949e;
-          --accent:#f0b429; }
+  :root { --yr-bg:#f8f9fb; --yr-panel:#ffffff; --yr-panel-2:#f4f5f8; --yr-line:#e9eaef; --yr-line-2:#dcdee6;
+          --yr-ink:#111114; --yr-ink-soft:#4e4f57; --yr-ink-mute:#8b8d98;
+          --yr-accent:#4f46e5; --yr-accent-ink:#ffffff; --yr-green:#1e8e3e; --yr-red:#d93025;
+          --yr-radius:14px; --yr-shadow:0 1px 3px rgba(0,0,0,.05),0 1px 2px rgba(0,0,0,.03);
+          --yr-sans:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+          --yr-mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,monospace; }
   * { box-sizing:border-box; margin:0; }
-  body { background:var(--bg); color:var(--fg); font:15px/1.5 -apple-system,'Segoe UI',Roboto,sans-serif; }
-  .panel { background:var(--panel); border:1px solid var(--border); border-radius:10px; padding:20px; margin-bottom:20px; }
-  .muted { color:var(--dim); }
-  input { width:100%; background:var(--bg); color:var(--fg); border:1px solid var(--border);
-          border-radius:6px; padding:8px 10px; margin-bottom:10px; font:inherit; }
-  button { background:var(--accent); color:#000; border:0; border-radius:6px; padding:8px 16px;
-           font:600 14px/1 inherit; cursor:pointer; }
-  .center { min-height:90vh; display:flex; align-items:center; justify-content:center; }
-  .card { text-align:center; max-width:380px; }
-  .sr-only { position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0); }
-  .err { color:#f85149; margin-top:12px; }
+  body { background:var(--yr-bg); color:var(--yr-ink); font:15px/1.5 var(--yr-sans); display:flex; align-items:center; justify-content:center; min-height:100vh; padding:20px; }
+  .card { width:100%; max-width:420px; background:var(--yr-panel); border:1px solid var(--yr-line); border-radius:var(--yr-radius); box-shadow:var(--yr-shadow); padding:32px; text-align:center; }
+  .brand { font-weight:800; letter-spacing:-0.03em; font-size:22px; margin-bottom:8px; }
+  .brand b { color:var(--yr-accent); }
+  .muted { color:var(--yr-ink-soft); font-size:14px; margin-bottom:22px; }
+  .divider { height:1px; background:var(--yr-line); border:0; margin:22px 0; }
+  input { width:100%; background:var(--yr-panel); color:var(--yr-ink); border:1px solid var(--yr-line-2); border-radius:10px; padding:12px 14px; margin-bottom:12px; font:inherit; }
+  input:focus { outline:2px solid var(--yr-accent); }
+  button { width:100%; background:var(--yr-accent); color:var(--yr-accent-ink); border:0; border-radius:10px; padding:12px 18px; font:600 14px/1 inherit; cursor:pointer; }
+  button:disabled { opacity:0.6; cursor:not-allowed; }
+  button.ghost { background:var(--yr-panel-2); color:var(--yr-ink); border:1px solid var(--yr-line-2); margin-top:8px; }
+  button.ghost:hover { background:var(--yr-line); }
+  .err { color:var(--yr-red); margin-top:12px; font-size:13px; }
+  .tg-placeholder { color:var(--yr-ink-mute); font-size:13px; margin-bottom:18px; }
   </style></head><body>
 <a href="#main-content" class="sr-only skip-link">Skip to content</a>
-<main class="center" id="main-content"><div class="panel card">
-  <h1 class="style-1">🎰 Streamer Dashboard</h1>
-  <p class="muted style-2">Manage your bot, offers and click stats.</p>
+<main class="card" id="main-content">
+  <h1 class="brand">Your<b>Rank</b> Bot</h1>
+  <p class="muted">Manage your Telegram bot, offers, and click stats.</p>
   ${botUsername
     ? `<script${nonce ? ` nonce="${nonce}"` : ""} async src="https://telegram.org/js/telegram-widget.js?22"
          data-telegram-login="${escHtml(botUsername)}" data-size="large"
          data-onauth="onTgAuth" data-request-access="write"></script>`
-    : `<p class="muted">Telegram login isn't configured yet (set LOGIN_BOT_TOKEN + LOGIN_BOT_USERNAME).</p>`}
+    : `<p class="tg-placeholder">Telegram login is not configured yet (set LOGIN_BOT_TOKEN + LOGIN_BOT_USERNAME).</p>`}
   ${devLogin ? `
-  <div class="style-3">
-    <p class="muted style-1">Dev login</p>
-    <label class="sr-only" for="devid">Telegram User ID</label>
-    <input id="devid" type="number" placeholder="Telegram user id">
-    <button data-action="devLogin" type="button">Enter</button>
-  </div>` : ""}
+  <hr class="divider" />
+  <p class="muted style-1">Dev login</p>
+  <label class="sr-only" for="devid">Telegram User ID</label>
+  <input id="devid" type="number" placeholder="Telegram user id">
+  <button data-action="devLogin" type="button">Enter</button>` : ""}
   <p id="loginMsg" class="err" role="alert" aria-live="assertive" hidden></p>
-</div></main>
+</main>
 <script${nonce ? ` nonce="${nonce}"` : ""}>
 function showLoginError(msg) {
   const el = document.getElementById('loginMsg');
