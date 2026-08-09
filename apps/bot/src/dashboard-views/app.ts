@@ -12,12 +12,14 @@ export function appHtml(
   user: { display_name: string; email: string; plan: string },
   publicBaseUrl: string,
   nonce?: string,
-  page = "overview"
+  page = "overview",
+  nav?: string
 ): string {
   return botPageHtml({
     user,
     page,
     nonce,
+    nav,
     content: `<main class="shell" id="main-content">
 ${sideNav(page, user)}
 <div class="main"><div class="wrap">

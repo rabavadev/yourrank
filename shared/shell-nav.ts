@@ -28,19 +28,35 @@ export interface NavLink {
 }
 
 export const NAV_LINKS: NavLink[] = [
-  { key: "leaderboard", label: "Dashboard", href: "/dashboard",           match: ["/dashboard"], top: true },
-  { key: "bot",         label: "Bot",         href: "/bot/dashboard",       match: ["/bot/dashboard", "/bot/dash"], top: true },
-  { key: "analytics",   label: "Analytics",   href: "/dashboard?nav=performance", match: ["/dashboard/analytics"], top: true },
-  { key: "credits",     label: "Credits",     href: "/dashboard/credits",   match: ["/dashboard/credits"], top: true },
+  { key: "leaderboard", label: "Leaderboard",  href: "/dashboard",                 match: ["/dashboard"],                 top: true },
+  { key: "bot",         label: "Bot",          href: "/bot/dashboard",             match: ["/bot"],                       top: true },
+  { key: "analytics",   label: "Analytics",    href: "/dashboard?nav=performance", match: ["/dashboard?nav=performance"], top: true },
+  { key: "kickrewards", label: "Kick rewards", href: "/dashboard?nav=kickrewards", match: ["/dashboard?nav=kickrewards"], top: true },
+  { key: "account",     label: "Account",      href: "/account",                   match: ["/account"],                   top: true },
 ];
 
-export function activeKey(pathname: string): string | null {
-  const p = (pathname || "/").replace(/\/+$/, "") || "/";
+export function activeKey(activePath: string): string | null {
+  const raw = (activePath || "/").replace(/\/+$/, "") || "/";
+  const qIndex = raw.indexOf("?");
+  const pathname = qIndex >= 0 ? raw.slice(0, qIndex) : raw;
+  const search = qIndex >= 0 ? raw.slice(qIndex + 1) : "";
+  const nav = new URLSearchParams(search).get("nav");
+
+  if (pathname.startsWith("/bot")) return "bot";
+  if (pathname.startsWith("/account")) return "account";
+
+  if (pathname === "/dashboard" || pathname.startsWith("/dashboard/")) {
+    if (nav === "performance") return "analytics";
+    if (nav === "kickrewards") return "kickrewards";
+    return "leaderboard";
+  }
+
+  // Fallback to longest literal prefix match for public / marketing pages.
   let best: string | null = null;
   let bestLen = -1;
   for (const link of NAV_LINKS) {
     for (const m of link.match) {
-      if ((p === m || p.startsWith(m + "/")) && m.length > bestLen) {
+      if ((raw === m || raw.startsWith(m + "/")) && m.length > bestLen) {
         best = link.key;
         bestLen = m.length;
       }
@@ -62,10 +78,19 @@ function planBadge(plan?: string | null): string {
   return `<span class="gm-badge ${mod}">${label}</span>`;
 }
 
-export function shellNavHtml(
-  opts: { activePath?: string; user?: ShellUser; logoutAction?: string } = {}
-): string {
-  const active = activeKey(opts.activePath || "/");
+export interface ShellNavOpts {
+  activePath?: string;
+  active?: string;
+  user?: ShellUser;
+  logoutAction?: string;
+  settingsHref?: string;
+  theme?: "light" | "dark";
+}
+
+export function shellNavHtml(opts: ShellNavOpts = {}): string {
+  const active = opts.active || activeKey(opts.activePath || "/");
+  const theme = opts.theme || "dark";
+  const headerClass = `gm-shell-nav gm-shell-nav--${theme}`;
   const name = esc(opts.user?.display_name || opts.user?.email || "Streamer");
   const badge = planBadge(opts.user?.plan);
   const area = encodeURIComponent(active || "dashboard");
@@ -79,7 +104,9 @@ export function shellNavHtml(
       `${isActive ? ' aria-current="page"' : ""} href="${l.href}">${l.label}</a>`;
   }).join("");
 
-  return `<header class="gm-shell-nav">
+  const settingsHref = esc(opts.settingsHref || "/dashboard?nav=settings");
+
+  return `<header class="${headerClass}" data-theme="${theme}">
   <div class="gm-shell-inner">
     <a class="gm-brand" href="/dashboard">
       <span class="gm-brand-mark">YR</span>
@@ -95,7 +122,7 @@ export function shellNavHtml(
           <span class="gm-profile-chevron" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg></span>
         </summary>
         <div class="gm-profile-menu">
-          <a class="gm-profile-link" href="/dashboard?nav=settings"><span class="gm-profile-ic">⚙️</span>Settings</a>
+          <a class="gm-profile-link" href="${settingsHref}"><span class="gm-profile-ic">⚙️</span>Settings</a>
           <a class="gm-profile-link" href="/contact?type=support&amp;area=${area}&amp;return=${returnTo}"><span class="gm-profile-ic">❓</span>Support</a>
           <a class="gm-profile-link gm-profile-link--accent" href="/contact?type=feedback&amp;${helpQuery}"><span class="gm-profile-ic">💬</span>Feedback</a>
           <form method="POST" action="${esc(opts.logoutAction || "/logout")}" class="gm-logout-form"><button class="gm-logout" type="submit">Logout</button></form>
@@ -115,6 +142,16 @@ export const SHELL_NAV_CSS = `
   --gm-accent:#2200ff; --gm-accent-ink:#ffffff;
   --gm-mono:"IBM Plex Mono","JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
   --gm-sans:"Inter",system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+}
+.gm-shell-nav--light{
+  --gm-bg:#fafafa; --gm-panel:#ffffff; --gm-line:#e4e4e7; --gm-line-2:#d4d4d8;
+  --gm-ink:#191919; --gm-ink-soft:#55555c; --gm-ink-mute:#82828a;
+  --gm-accent:#2200ff; --gm-accent-ink:#ffffff;
+}
+.gm-shell-nav--dark{
+  --gm-bg:#0f0f0f; --gm-panel:#1c1c1c; --gm-line:#2a2a2a; --gm-line-2:#323232;
+  --gm-ink:#ededf0; --gm-ink-soft:#a7a6a6; --gm-ink-mute:#82828a;
+  --gm-accent:#2200ff; --gm-accent-ink:#ffffff;
 }
 .gm-shell-nav{position:sticky;top:0;z-index:50;background:var(--gm-bg);
   border-bottom:1px solid var(--gm-line);}
@@ -176,5 +213,4 @@ export const SHELL_NAV_CSS = `
   @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
   }
-html{color-scheme:dark}
   `;

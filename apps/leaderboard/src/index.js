@@ -396,10 +396,11 @@ async function handleRequest(request, env, ctx, meta) {
       }
 
       // --- helper for rendering strings or JSX pages ---
-      const renderHtmlPage = async (pageObj, { reqId, activePath, user } = {}) => {
+      const renderHtmlPage = async (pageObj, { reqId, activePath, user, theme, settingsHref, logoutAction } = {}) => {
+        const navOpts = activePath && user ? { activePath, user, theme, settingsHref, logoutAction } : null;
         if (typeof pageObj === "string") {
           let result = pageObj;
-          if (activePath && user) result = result.replace("<!--GM_NAV-->", shellNavHtml({ activePath, user }));
+          if (navOpts) result = result.replace("<!--GM_NAV-->", shellNavHtml(navOpts));
           if (reqId) result = result.replace("{{REQ_ID}}", reqId);
           // Fill in legal company identity placeholders on static/legal pages.
           result = applyLegalIdentity(result, getPlatformIdentity());
@@ -408,14 +409,14 @@ async function handleRequest(request, env, ctx, meta) {
           result = result.replace(/{{GBP_PHOTO_URL}}/g, env.GBP_PHOTO_URL || "");
           return result;
         }
-        
+
         if (pageObj.Component) {
           let node = pageObj.Component({ reqId, user });
           if (node instanceof Promise) node = await node;
           const content = node.toString();
           if (pageObj.config) {
             let result = leaderboardPageHtml({ ...pageObj.config, content });
-            if (activePath && user) result = result.replace("<!--GM_NAV-->", shellNavHtml({ activePath, user }));
+            if (navOpts) result = result.replace("<!--GM_NAV-->", shellNavHtml(navOpts));
             if (reqId) result = result.replace("{{REQ_ID}}", reqId);
             return result;
           }
@@ -445,9 +446,10 @@ async function handleRequest(request, env, ctx, meta) {
           const user = await currentUser(request, env);
           if (!user) return Response.redirect(new URL("/login", url), 302);
           const html = addCookieConsent(await renderHtmlPage(PAGES.dashboard, {
-            activePath: "/dashboard",
+            activePath: url.pathname + url.search,
             user,
-            reqId: reqId || ""
+            reqId: reqId || "",
+            theme: "light"
           }));
           return new Response(html, { headers: { ...SECURE_HTML, ...csrfHeader, "cache-control": "no-store, no-cache, must-revalidate" } });
         } catch (e) {

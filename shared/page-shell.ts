@@ -7,7 +7,7 @@
 //  These modules are compiled to shared/*.js by `node build-shared.mjs`.
 // ============================================================================
 
-import { type ShellUser } from "./shell-nav.js";
+import { SHELL_NAV_CSS, type ShellUser } from "./shell-nav.js";
 
 function esc(s: unknown): string {
   return String(s ?? "").replace(/[&<>"']/g, (ch) =>
@@ -263,16 +263,19 @@ export interface BotPageOpts {
   user: ShellUser;
   page: string;
   nonce?: string;
+  nav?: string;
   content: string;
 }
 
-/** Full HTML document for the bot dashboard. `content` is placed right after the shared header. */
+/** Full HTML document for the bot dashboard. `nav` is rendered before `<main>`. */
 export function botPageHtml(opts: BotPageOpts): string {
   const nonceAttr = opts.nonce ? ` nonce="${esc(opts.nonce)}"` : "";
+  const nav = opts.nav || "";
   return `<!doctype html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Streamer Dashboard</title><style${nonceAttr}>${BOT_STYLE_ATTR_CSS}${BOT_BASE_CSS}</style></head><body data-page="${esc(opts.page)}">
+<title>Streamer Dashboard</title><style${nonceAttr}>${BOT_STYLE_ATTR_CSS}${BOT_BASE_CSS}${nav ? SHELL_NAV_CSS : ""}</style></head><body data-page="${esc(opts.page)}">
 <a href="#main-content" class="skip-link">Skip to main content</a>
+${nav}
 ${opts.content}
 </body></html>`;
 }

@@ -44,6 +44,7 @@ import {
 import { sameOrigin, verifyTelegramLogin } from "./dashboard-auth.js";
 import { buildDashboardApi } from "./dashboard-api.js";
 import { loginHtml, appHtml } from "./dashboard-views.js";
+import { shellNavHtml } from "../../../shared/shell-nav.js";
 import { rateLimit, type RateLimitKV } from "./ratelimit.js";
 import { errMessage } from "./errors.js";
 
@@ -175,7 +176,14 @@ export function buildDashboard(): Hono<DashEnv> {
       `SELECT display_name, email, plan FROM users WHERE id=$1`,
       [uid]
     );
-    return c.html(appHtml(user ?? { display_name: "", email: "", plan: "free" }, config.publicBaseUrl, c.get("cspNonce"), page));
+    const nav = shellNavHtml({
+      activePath: c.req.path,
+      user,
+      logoutAction: "/bot/auth/logout",
+      settingsHref: "/bot/settings",
+      theme: "dark",
+    });
+    return c.html(appHtml(user ?? { display_name: "", email: "", plan: "free" }, config.publicBaseUrl, c.get("cspNonce"), page, nav));
   };
 
   app.get("/dashboard", (c) => dashboardPage(c, "overview"));
