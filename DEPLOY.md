@@ -25,6 +25,10 @@ Grab the **direct** connection string from Supabase → Project Settings → Dat
 **Do not use the pooler (port 6543)** with Hyperdrive — Hyperdrive pools itself,
 so pointing it at the Supabase pooler double-pools and causes connection hangs.
 
+Use the `yourrank_app` database role (created by `supabase/migrations/20260809000000_db_app_role.sql`)
+instead of the `postgres` superuser. Connect once as `postgres`, set a strong password
+for `yourrank_app`, and use that role in Hyperdrive / `DATABASE_URL`:
+
 ## 2. Hyperdrive (both Workers)
 Both Workers use Hyperdrive to pool connections to Supabase Postgres.
 Create one Hyperdrive config and paste the returned id into **both**
@@ -33,7 +37,7 @@ Create one Hyperdrive config and paste the returned id into **both**
 
 ```
 wrangler hyperdrive create yourrank-db \
-  --connection-string="postgresql://postgres.PROJECT:PASS@db.PROJECT.supabase.co:5432/postgres"
+  --connection-string="postgresql://yourrank_app.PROJECT:PASS@db.PROJECT.supabase.co:5432/postgres"
 ```
 
 The `DATABASE_URL` secret is kept as a fallback if Hyperdrive is removed or
@@ -64,7 +68,7 @@ wrangler secret put MAIL_FROM             # REQUIRED if RESEND_API_KEY is set;
                                           #   (Resend rejects an empty From)
 wrangler secret put LEAD_WEBHOOK_URL      # optional (Discord/Slack ping on a new lead)
 wrangler secret put PRO_PRICE_USD         # optional (defaults to 29)
-wrangler secret put DATABASE_URL          # REQUIRED — direct Supabase Postgres connection string
+wrangler secret put DATABASE_URL          # REQUIRED — direct Supabase Postgres connection string (use yourrank_app, not postgres superuser)
 wrangler secret put SENTRY_DSN           # optional (Sentry error tracking)
 wrangler secret put TOKEN_ENC_KEY        # REQUIRED for postback encryption (32-byte hex, 64 hex chars)
 ```
