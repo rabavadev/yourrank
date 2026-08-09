@@ -511,6 +511,36 @@ async function handleRequest(request, env, ctx, meta) {
       if (path === "/dashboard/credits") {
         return Response.redirect(new URL("/dashboard?nav=kickrewards", url), 302);
       }
+      if (path === "/dashboard/rewards") {
+        return Response.redirect(new URL("/dashboard?nav=kickrewards", url), 302);
+      }
+      if (path === "/dashboard/editor") {
+        return Response.redirect(new URL("/dashboard?nav=board", url), 302);
+      }
+      if (path === "/dashboard/boards") {
+        return Response.redirect(new URL("/dashboard?nav=boards", url), 302);
+      }
+      if (path === "/dashboard/settings") {
+        return Response.redirect(new URL("/dashboard?nav=settings", url), 302);
+      }
+      if (path.startsWith("/dashboard/analytics/")) {
+        const tab = path.slice("/dashboard/analytics/".length);
+        const map = { activity: "activity", referrals: "referrals", events: "events" };
+        const hash = map[tab] || "";
+        return Response.redirect(new URL(`/dashboard?nav=performance${hash ? "#" + hash : ""}`, url), 302);
+      }
+      if (path.startsWith("/dashboard/rewards/")) {
+        const tab = path.slice("/dashboard/rewards/".length);
+        const map = { channel: "cr-channel", maps: "cr-maps", shop: "cr-shop", viewers: "cr-viewers", redemptions: "cr-redemptions", history: "cr-history" };
+        const hash = map[tab] || "";
+        return Response.redirect(new URL(`/dashboard?nav=kickrewards${hash ? "#" + hash : ""}`, url), 302);
+      }
+      if (path.startsWith("/dashboard/editor/")) {
+        const tab = path.slice("/dashboard/editor/".length);
+        const map = { setup: "setup", players: "players", design: "design", share: "share", history: "history" };
+        const hash = map[tab] || "";
+        return Response.redirect(new URL(`/dashboard?nav=board${hash ? "#" + hash : ""}`, url), 302);
+      }
       if (path === "/me" || path === "/me.html") {
         return new Response(addCookieConsent(viewerDashboardPage), { headers: { ...HTML_N, ...csrfHeader, "cache-control": "no-store, no-cache, must-revalidate" } });
       }

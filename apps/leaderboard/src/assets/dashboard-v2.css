@@ -138,6 +138,19 @@
   margin-bottom: 4px;
 }
 
+.v2-dash .lb-side-group {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  border-top: 1px solid var(--yr-line);
+  padding-top: 10px;
+  margin-top: 10px;
+}
+
+.v2-dash .lb-side-group[hidden] {
+  display: none;
+}
+
 .v2-dash .lb-nav {
   display: flex;
   align-items: center;
@@ -1794,4 +1807,14 @@
     left: 18px;
     right: 18px;
   }
+}
+
+.v2-dash .is-highlighted {
+  animation: yr-pulse 1.2s ease;
+}
+
+@keyframes yr-pulse {
+  0% { box-shadow: 0 0 0 0 rgba(79, 70, 229, .35); }
+  70% { box-shadow: 0 0 0 8px rgba(79, 70, 229, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(79, 70, 229, 0); }
 }

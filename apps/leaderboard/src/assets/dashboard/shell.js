@@ -5,17 +5,34 @@ import { renderOverviewSummary } from "./overview.js";
 import { loadStats } from "./site.js";
 import { initKickrewards } from "../credits.js";
 
-export function setAriaCurrentNav(page) {
+const AREA_MAP = { home: "leaderboard", board: "leaderboard", boards: "leaderboard", settings: "leaderboard", performance: "analytics", kickrewards: "rewards" };
+
+export function areaForPage(page) { return AREA_MAP[page] || "leaderboard"; }
+
+export function setActiveSideNav(page, hash = "") {
+  const area = areaForPage(page);
+  document.querySelectorAll(".lb-side-group").forEach((g) => { g.hidden = g.dataset.area !== area; });
   document.querySelectorAll(".lb-nav").forEach((n) => {
-    const active = n.dataset.nav === page;
+    const navPage = n.dataset.nav;
+    const navHash = n.dataset.hash || "";
+    const active = navPage === page && (!navHash || navHash === hash);
     n.classList.toggle("is-on", active);
     if (active) n.setAttribute("aria-current", "page");
     else n.removeAttribute("aria-current");
   });
+  // Keep the shared product top-nav in sync when navigating inside the SPA.
+  document.querySelectorAll(".gm-tab").forEach((t) => {
+    const href = t.getAttribute("href") || "";
+    const isActive = (area === "leaderboard" && href === "/dashboard") ||
+                     (area === "analytics" && href === "/dashboard?nav=performance") ||
+                     (area === "rewards" && href === "/dashboard?nav=kickrewards") ||
+                     (area === "bot" && href.startsWith("/bot"));
+    t.classList.toggle("gm-tab--active", isActive);
+  });
 }
 
-export function navTo(page) {
-  setAriaCurrentNav(page);
+export function navTo(page, hash = "") {
+  setActiveSideNav(page, hash);
   document.querySelectorAll(".lb-page").forEach((p) => p.classList.toggle("is-on", p.dataset.page === page));
   closeDrawer();
   if (page === "home") renderOverviewSummary();
@@ -26,8 +43,21 @@ export function navTo(page) {
   const titles = { home: "Overview", board: "Editor", boards: "All boards", performance: "Analytics", settings: "Settings", kickrewards: "Kick rewards" };
   const topbarTitle = $("lbTopbarTitle");
   if (topbarTitle) { topbarTitle.textContent = titles[page] || page; topbarTitle.focus({ preventScroll: true }); }
-  const main = document.querySelector(".lb-main");
-  if (main) main.scrollIntoView({ block: "start" });
+  scrollToHash(hash);
+}
+
+export function scrollToHash(hash) {
+  if (!hash) {
+    const main = document.querySelector(".lb-main");
+    if (main) main.scrollIntoView({ block: "start" });
+    return;
+  }
+  const target = document.getElementById(hash) || document.querySelector(`[data-egroup="${hash}"]`);
+  if (target) {
+    target.scrollIntoView({ block: "start", behavior: "smooth" });
+    target.classList.add("is-highlighted");
+    setTimeout(() => target.classList.remove("is-highlighted"), 1200);
+  }
 }
 
 export function openDrawer() {
@@ -114,7 +144,9 @@ export function setupEditorTabs() {
       else if (e.key === "ArrowLeft") next = buttons[(i - 1 + buttons.length) % buttons.length];
       if (next) { e.preventDefault(); next.click(); next.focus(); }
     });
-    show("setup");
+    tabs._show = show;
+    const initialGroup = location.hash.replace("#", "") || "setup";
+    show(buttons.find((b) => b.dataset.egroup === initialGroup)?.dataset.egroup || "setup");
   }
 
 export function setupShell() {
@@ -128,9 +160,26 @@ export function setupShell() {
     document.body.appendChild(backdrop);
   }
   backdrop.addEventListener("click", () => closeDrawer());
-  document.querySelectorAll(".lb-nav[data-nav]").forEach((btn) => btn.addEventListener("click", () => navTo(btn.dataset.nav)));
+  document.querySelectorAll(".lb-nav[data-nav]").forEach((link) => link.addEventListener("click", (e) => {
+    e.preventDefault();
+    const page = link.dataset.nav;
+    const hash = link.dataset.hash || "";
+    const query = page === "home" ? "" : `?nav=${encodeURIComponent(page)}${hash ? "#" + hash : ""}`;
+    const newPath = `/dashboard${query}`;
+    if (newPath !== location.pathname + location.search + location.hash) {
+      history.pushState({}, "", newPath);
+    }
+    navTo(page, hash);
+  }));
   document.querySelectorAll("[data-jump]").forEach((el) => el.addEventListener("click", () => navTo(el.dataset.jump)));
   document.querySelectorAll(".lb-menu").forEach((btn) => btn.addEventListener("click", (e) => { e.stopPropagation(); openDrawer(); }));
   document.querySelectorAll("[data-close-side]").forEach((btn) => btn.addEventListener("click", () => closeDrawer()));
   document.addEventListener("keydown", (e) => { if (e.key === "Escape" && $("lbSide")?.classList.contains("is-open")) { e.preventDefault(); closeDrawer(); } });
+  // Handle browser back/forward inside the SPA.
+  window.addEventListener("popstate", () => {
+    const params = new URLSearchParams(location.search);
+    const page = params.get("nav") || "home";
+    const hash = location.hash.replace("#", "");
+    navTo(page, hash);
+  });
 }

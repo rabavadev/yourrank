@@ -6,7 +6,7 @@ export const dashboardConfig = {
   title: "Dashboard · YourRank",
   canonical: "https://yourrank.site/dashboard",
   styles: ["/assets/app.css", "/assets/shell-nav.css", "/assets/dashboard-v2.css"],
-  scripts: ['<script src="/assets/dashboard.js?v=12" type="module"></script>'],
+  scripts: ['<script src="/assets/dashboard.js?v=13" type="module"></script>'],
   nav: true,
   footer: false,
   wide: true,
@@ -66,11 +66,24 @@ export function DashboardContent() {
 </div>
 </div>
 <button class="lb-side-close" type="button" aria-label="Close navigation" data-close-side>×</button>
-<nav aria-label="Main">
-<button class="lb-nav is-on" type="button" data-nav="home" aria-current="page"><span class="lb-nav-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg></span>Overview</button>
-<button class="lb-nav" type="button" data-nav="board"><span class="lb-nav-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg></span>Editor</button>
-<button class="lb-nav lb-nav--boards" id="allBoardsNav" type="button" data-nav="boards"><span class="lb-nav-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 2 7l10 5 10-5-10-5Z"/><path d="m2 17 10 5 10-5"/><path d="m2 12 10 5 10-5"/></svg></span><span class="lb-nav-label">All boards</span><span class="lb-nav-count" id="allBoardsCount">0</span></button>
-<button class="lb-nav" type="button" data-nav="settings"><span class="lb-nav-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></span>Settings</button>
+<nav class="lb-side-group" data-area="leaderboard" aria-label="Leaderboard">
+<a class="lb-nav is-on" href="/dashboard" data-nav="home" aria-current="page"><span class="lb-nav-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg></span>Overview</a>
+<a class="lb-nav" href="/dashboard/editor" data-nav="board"><span class="lb-nav-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg></span>Editor</a>
+<a class="lb-nav lb-nav--boards" id="allBoardsNav" href="/dashboard/boards" data-nav="boards"><span class="lb-nav-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 2 7l10 5 10-5-10-5Z"/><path d="m2 17 10 5 10-5"/><path d="m2 12 10 5 10-5"/></svg></span><span class="lb-nav-label">All boards</span><span class="lb-nav-count" id="allBoardsCount">0</span></a>
+<a class="lb-nav" href="/dashboard/settings" data-nav="settings"><span class="lb-nav-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></span>Settings</a>
+</nav>
+<nav class="lb-side-group" data-area="analytics" aria-label="Analytics" hidden>
+<a class="lb-nav" href="/dashboard/analytics/activity" data-nav="performance" data-hash="activity"><span class="lb-nav-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m7 12 4-4 4 4 5-5"/></svg></span>Activity</a>
+<a class="lb-nav" href="/dashboard/analytics/referrals" data-nav="performance" data-hash="referrals"><span class="lb-nav-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="5"/><path d="M20 21a8 8 0 1 0-16 0"/></svg></span>Referrals</a>
+<a class="lb-nav" href="/dashboard/analytics/events" data-nav="performance" data-hash="events"><span class="lb-nav-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg></span>Events</a>
+</nav>
+<nav class="lb-side-group" data-area="rewards" aria-label="Rewards" hidden>
+<a class="lb-nav" href="/dashboard/rewards/channel" data-nav="kickrewards" data-hash="cr-channel"><span class="lb-nav-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="14" x="2" y="3" rx="2" ry="2"/><line x1="8" x2="16" y1="21" y2="21"/><line x1="12" x2="12" y1="17" y2="21"/></svg></span>Channel</a>
+<a class="lb-nav" href="/dashboard/rewards/maps" data-nav="kickrewards" data-hash="cr-maps"><span class="lb-nav-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 11 19-9-9 19-2-8-8-2z"/></svg></span>Reward maps</a>
+<a class="lb-nav" href="/dashboard/rewards/shop" data-nav="kickrewards" data-hash="cr-shop"><span class="lb-nav-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><line x1="3" x2="21" y1="6" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg></span>Shop</a>
+<a class="lb-nav" href="/dashboard/rewards/viewers" data-nav="kickrewards" data-hash="cr-viewers"><span class="lb-nav-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>Viewers</a>
+<a class="lb-nav" href="/dashboard/rewards/redemptions" data-nav="kickrewards" data-hash="cr-redemptions"><span class="lb-nav-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12V8h-4"/><path d="M17 4v4"/><path d="M4 17v1a3 3 0 0 0 3 3h10a3 3 0 0 0 3-3v-1"/><path d="M12 17 8 13"/><path d="m16 13-4 4-4-4"/></svg></span>Redemptions</a>
+<a class="lb-nav" href="/dashboard/rewards/history" data-nav="kickrewards" data-hash="cr-history"><span class="lb-nav-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v5a5 5 0 0 0 5 5h10a5 5 0 0 1 5 5v5"/><path d="M12 12 7 7l5-5"/><path d="M12 12 17 7l5 5"/></svg></span>History</a>
 </nav>
 <div class="lb-side-foot"><a class="btn btn--sm btn--accent lb-live-btn" id="liveLink" href="#" target="_blank" rel="noopener noreferrer">View live board ↗</a><span class="label" id="planBadge">FREE PLAN</span></div>
 </aside>
@@ -269,7 +282,7 @@ export function DashboardContent() {
 <section class="lb-page" data-page="performance">
 <div class="lb-phead"><button class="lb-menu" type="button" aria-label="Show sections" data-menu aria-expanded="false" aria-controls="lbSide">☰</button></div>
 <div class="lb-bento">
-<div class="lb-widget lb-widget--full perf-header">
+<div class="lb-widget lb-widget--full perf-header" id="perf-activity">
   <div>
     <h2>Analytics</h2>
     <p class="card-sub">Views, clicks, copies and where your traffic comes from.</p>
@@ -294,17 +307,17 @@ export function DashboardContent() {
   <p class="hint" id="statsEmpty" hidden>No activity yet — share your page link in your stream panels and Discord to get it moving.</p>
   <div class="stat-legend"><span class="stat-legend-item views">Views</span><span class="stat-legend-item copies">Copies</span><span class="stat-legend-item clicks">Clicks</span></div>
 </div>
-<div class="lb-widget lb-widget--narrow" id="perfHeatmap">
+<div class="lb-widget lb-widget--narrow" id="perf-heatmap">
   <div class="lb-cardhd"><h2>Activity map</h2></div>
   <p class="hint m-0 mb-8">Views by day and hour (last 30 days).</p>
   <div class="heatmap-wrap"><div class="heatmap" id="perfHeatmapGrid"><p class="heatmap-loading">Loading…</p></div></div>
 </div>
-<div class="lb-widget lb-widget--narrow">
+<div class="lb-widget lb-widget--narrow" id="perf-referrers">
   <div class="lb-cardhd"><h2>Top referrers</h2></div>
   <table class="ref-table"><thead><tr><th>Domain</th><th class="ta-r">Views</th></tr></thead><tbody id="perfReferrersBody"></tbody></table>
   <p class="empty" id="perfReferrersEmpty" hidden>No referrer data yet.</p>
 </div>
-<div class="lb-widget lb-widget--half" id="refCard">
+<div class="lb-widget lb-widget--half" id="perf-referrals">
   <h2>Referrals</h2>
   <p class="card-sub">Share your link. Every sign-up adds 31 days of Pro.</p>
   <div class="d-flex gap-8 flex-wrap items-center mt-12"><input id="refLink" class="overlay-url min-w-220" readonly value="…" /><button class="btn btn--accent" id="refCopy" type="button">Copy link</button></div>
@@ -315,7 +328,7 @@ export function DashboardContent() {
   </div>
   <p class="status" id="refStatus" role="status" aria-live="polite"></p>
 </div>
-<div class="lb-widget lb-widget--half">
+<div class="lb-widget lb-widget--half" id="perf-events">
   <div class="lb-cardhd"><h2>Events</h2></div>
   <ul class="events-list" id="eventsList"><li class="hint">Recent postbacks, score updates and link copies will appear here.</li></ul>
   <p class="empty" id="eventsEmpty" hidden>No events yet.</p>

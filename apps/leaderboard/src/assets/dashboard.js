@@ -190,7 +190,8 @@ async function init() {
   const initialNav = NAV_MAP[urlParams.get("nav")] || urlParams.get("nav");
   const planParam = urlParams.get("plan");
   const landing = initialNav || (planParam ? "settings" : (isBoardSetup(p) ? "home" : "board"));
-  if (document.querySelector(`section[data-page="${landing}"]`)) navTo(landing);
+  const hash = location.hash.replace("#", "");
+  if (document.querySelector(`section[data-page="${landing}"]`)) navTo(landing, hash);
   if (planParam) {
     if (planParam.toLowerCase() === "agency") location.href = "/contact?plan=agency";
     else checkout(planParam);

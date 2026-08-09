@@ -30,11 +30,11 @@ describe("dashboard overview quick actions", () => {
     expect(html).toContain('data-nav="board"');
     expect(html).toContain('data-nav="settings"');
     expect(html).toContain('data-nav="boards"');
-    expect(html).not.toContain('<span class="lb-side-grp">');
+    expect(html).toContain('class="lb-side-group"');
     // Icons are real inline SVGs, not emoji.
     expect(html).not.toContain('aria-hidden="true">🔌</span>');
-    expect(html).toContain('>Overview</button>');
-    expect(html).toContain('>Editor</button>');
+    expect(html).toContain('>Overview</a>');
+    expect(html).toContain('>Editor</a>');
     expect(html).toContain('>All boards</span>');
   });
 
