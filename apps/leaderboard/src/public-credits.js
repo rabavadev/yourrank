@@ -25,12 +25,19 @@ export function renderPublicCreditsPage({ slug, nonce, homeUrl, kickAuthEnabled,
   .pc-item-desc{font-size:13px;color:var(--ink-mute);}
   .pc-item-cost{font-weight:700;}
   .pc-login{display:flex;gap:8px;flex-wrap:wrap;}
+  #pc-loading{position:fixed;inset:0;background:rgba(15,15,17,.7);display:flex;align-items:center;justify-content:center;z-index:200;color:#fff}
+  #pc-loading[hidden]{display:none!important}
+  .pc-spinner{width:28px;height:28px;border:3px solid #333;border-top-color:#00e701;border-radius:50%;animation:pc-spin 1s linear infinite}
+  @keyframes pc-spin{to{transform:rotate(360deg)}}
+  .pc-btn{position:relative}
+  .pc-btn[aria-busy="true"]{opacity:.6;cursor:wait}
 </style>
 </head><body>
 <a href="#main-content" class="sr-only skip-link">Skip to content</a>
 <header class="gm-shell-nav"><div class="gm-shell-inner">
   <a class="gm-brand" href="${esc(homeUrl)}"><span class="gm-brand-mark">YR</span><span class="gm-brand-word">YourRank</span></a>
 </div></header>
+<div id="pc-loading" hidden><div class="pc-spinner"></div></div>
 <main class="pc-wrap" id="main-content">
   <div class="pc-hero">
     <h1>Channel points shop</h1>
@@ -82,7 +89,19 @@ export function renderPublicCreditsPage({ slug, nonce, homeUrl, kickAuthEnabled,
 
   function $(id){ return document.getElementById(id); }
   function esc(s){ return String(s??"").replace(/[&<>"']/g,(c)=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
-  function setStatus(msg, err){ const el=$("pc-status"); el.textContent=msg; el.className=err?"status error":"status"; }
+  function setStatus(msg, err){ const el=$("pc-status"); el.textContent=msg; el.className=err?"status error":"status"; if(msg && !err) setTimeout(()=>{ el.textContent=""; }, 4000); }
+  function setLoading(idOrEl, loading, text="Loading…"){
+    const el = typeof idOrEl === "string" ? $(idOrEl) : idOrEl;
+    if(!el) return;
+    if(loading){ el.dataset.origText=el.textContent; el.disabled=true; el.setAttribute("aria-busy","true"); el.textContent=text; }
+    else { el.disabled=false; el.removeAttribute("aria-busy"); el.textContent=el.dataset.origText||el.textContent; delete el.dataset.origText; }
+  }
+  function setGlobalLoading(loading){ const el=$("pc-loading"); if(el) el.hidden=!loading; }
+  function saveUsername(){ try{ localStorage.setItem("yr:public:credits:username", $("pc-username").value); } catch{} }
+  function restoreUsername(){ try{ const v=localStorage.getItem("yr:public:credits:username"); if(v) $("pc-username").value=v; } catch{} }
+
+  $("pc-username").addEventListener("input", saveUsername);
+  restoreUsername();
 
   if (auth.kick || auth.discord) {
     $("pc-login-card").hidden = false;
@@ -101,8 +120,11 @@ export function renderPublicCreditsPage({ slug, nonce, homeUrl, kickAuthEnabled,
 
   $("pc-lookup").addEventListener("submit", async (e)=>{
     e.preventDefault();
+    const btn = e.submitter;
     const username=$("pc-username").value.trim();
     if(!username) return;
+    setGlobalLoading(true);
+    setLoading(btn, true, "Looking up…");
     try{
       const data=await api("GET","/api/public/credits?"+new URLSearchParams({slug,kickUsername:username}).toString());
       viewer=data.viewer;
@@ -119,6 +141,7 @@ export function renderPublicCreditsPage({ slug, nonce, homeUrl, kickAuthEnabled,
       renderShop(data.shopItems, username);
       setStatus("");
     }catch(err){ setStatus(err.message,true); }
+    finally { setGlobalLoading(false); setLoading(btn, false); }
   });
 
   function renderShop(items, username){
@@ -140,7 +163,11 @@ export function renderPublicCreditsPage({ slug, nonce, homeUrl, kickAuthEnabled,
     list.querySelectorAll("[data-redeem]").forEach((b)=>{
       b.addEventListener("click", async ()=>{
         if(!auth.public) { window.location.href="/me"; return; }
-        if(!confirm("Spend "+itemById(active,b.dataset.redeem).cost+" credits on this item?")) return;
+        const item = itemById(active,b.dataset.redeem);
+        if(!item) return;
+        if(!confirm("Spend "+item.cost+" credits on "+item.name+"?")) return;
+        setGlobalLoading(true);
+        setLoading(b, true, "Redeeming…");
         try{
           const data=await api("POST","/api/public/redeem",{slug,kickUsername:username,shopItemId:b.dataset.redeem,publicToken:viewerToken});
           viewer.balance=data.balance;
@@ -148,6 +175,7 @@ export function renderPublicCreditsPage({ slug, nonce, homeUrl, kickAuthEnabled,
           setStatus("Redemption requested! The streamer will fulfill it off-platform.",false);
           $("pc-lookup").dispatchEvent(new Event("submit"));
         }catch(err){ setStatus(err.message,true); }
+        finally { setGlobalLoading(false); setLoading(b, false); }
       });
     });
   }

@@ -14,6 +14,8 @@ export const creditsPage = leaderboardPageHtml({
   </div>
 </div>
 
+<div id="cr-loading" class="ui-loading" hidden><div class="ui-loading__spinner"></div></div>
+
 <div id="cr-app" hidden>
   <section class="card">
     <h2>Connected Kick channel</h2>

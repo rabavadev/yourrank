@@ -13,6 +13,7 @@ export const viewerDashboardPage = leaderboardPageHtml({
 </div></header>
 
 <main class="wrap cr-wrap" id="main-content">
+  <div id="vd-loading" class="ui-loading" hidden><div class="ui-loading__spinner"></div></div>
   <div class="an-head">
     <div>
       <div class="an-eyebrow">Viewer dashboard</div>

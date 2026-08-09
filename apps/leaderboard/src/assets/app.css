@@ -1051,3 +1051,17 @@ html{color-scheme:light}
 /* Events feed */
 .events-list{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:8px}
 .events-list li{padding:10px;border:1px solid var(--line);border-radius:var(--radius-md);background:var(--panel-2);font-size:13px}
+
+/* Loading overlay + button state */
+.ui-loading{position:fixed;inset:0;background:rgba(250,250,250,.72);display:flex;align-items:center;justify-content:center;z-index:300}
+.ui-loading[hidden]{display:none!important}
+.ui-loading__spinner{width:32px;height:32px;border:3px solid var(--line);border-top-color:var(--accent);border-radius:50%;animation:ui-spin 1s linear infinite}
+.ui-loading__spinner--dark{border-color:var(--line);border-top-color:var(--accent)}
+@keyframes ui-spin{to{transform:rotate(360deg)}}
+.ui-status:empty{display:none}
+.ui-status{min-height:20px;font-size:13px;margin-top:8px;color:var(--ink-soft)}
+.ui-status.error{color:var(--danger)}
+.ui-status.success{color:var(--ok)}
+.btn[aria-busy="true"]{opacity:.65;cursor:wait}
+.btn--loading{display:inline-flex;align-items:center;gap:8px}
+.btn--loading::before{content:"";width:14px;height:14px;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;animation:ui-spin .7s linear infinite;opacity:.7}

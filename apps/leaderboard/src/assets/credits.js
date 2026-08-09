@@ -21,6 +21,7 @@ async function api(method, path, body) {
   if (body) { opts.headers["content-type"] = "application/json"; opts.body = JSON.stringify(body); }
   const res = await fetch(path, opts);
   const data = await res.json().catch(() => ({}));
+  if (res.status === 401) { location.href = "/login"; throw new Error("Session expired"); }
   if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
   return data;
 }
@@ -28,12 +29,22 @@ async function api(method, path, body) {
 let state = {};
 
 async function load() {
-  const data = await api("GET", "/api/credits/status");
-  state = data;
-  render();
-  await loadAnalytics();
-  $("cr-app").hidden = false;
-  $("cr-empty").hidden = true;
+  setGlobalLoading(true);
+  try {
+    const data = await api("GET", "/api/credits/status");
+    state = data;
+    render();
+    await loadAnalytics();
+    $("cr-app").hidden = false;
+    $("cr-empty").hidden = true;
+  } catch (err) {
+    $("cr-empty").innerHTML = `<p class="error">Could not load credits dashboard: ${esc(err.message)}</p>`;
+    $("cr-empty").hidden = false;
+    $("cr-app").hidden = true;
+    throw err;
+  } finally {
+    setGlobalLoading(false);
+  }
 }
 
 function render() {
@@ -184,8 +195,89 @@ function setStatus(id, msg, err) {
   if (!err) setTimeout(() => { el.textContent = ""; }, 3000);
 }
 
+function setLoading(idOrEl, loading, text = "Loading…") {
+  const el = typeof idOrEl === "string" ? $(idOrEl) : idOrEl;
+  if (!el) return;
+  if (loading) {
+    el.dataset.origText = el.textContent;
+    el.disabled = true;
+    el.setAttribute("aria-busy", "true");
+    el.classList.add("btn--loading");
+    el.textContent = text;
+  } else {
+    el.disabled = false;
+    el.removeAttribute("aria-busy");
+    el.classList.remove("btn--loading");
+    el.textContent = el.dataset.origText || el.textContent;
+    delete el.dataset.origText;
+  }
+}
+
+function setGlobalLoading(loading) {
+  const el = $("cr-loading");
+  if (el) el.hidden = !loading;
+}
+
+function draftKey(id) { return "yr:credits:draft:" + id; }
+
+function debounce(fn, ms) {
+  let t;
+  return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), ms); };
+}
+
+function saveFormDraft(formId, id) {
+  const form = $(formId);
+  if (!form) return;
+  const data = {};
+  for (const el of form.elements) {
+    if (!el.name) continue;
+    if (el.type === "checkbox") { if (el.checked) data[el.name] = true; }
+    else if (el.type === "number") { if (el.value !== "") data[el.name] = el.value; }
+    else if (el.value.trim()) { data[el.name] = el.value; }
+  }
+  if (Object.keys(data).length === 0) { localStorage.removeItem(draftKey(id)); return; }
+  try { localStorage.setItem(draftKey(id), JSON.stringify(data)); } catch {}
+}
+
+function restoreFormDraft(formId, id) {
+  const form = $(formId);
+  if (!form) return;
+  const raw = localStorage.getItem(draftKey(id));
+  if (!raw) return;
+  try {
+    const data = JSON.parse(raw);
+    for (const el of form.elements) {
+      if (!el.name || data[el.name] === undefined) continue;
+      if (el.type === "checkbox") el.checked = Boolean(data[el.name]);
+      else el.value = data[el.name];
+    }
+    const status = form.querySelector(".status");
+    if (status) {
+      status.textContent = "Draft restored.";
+      status.className = "status";
+      setTimeout(() => { status.textContent = ""; }, 3000);
+    }
+  } catch {}
+}
+
+function clearFormDraft(id) {
+  try { localStorage.removeItem(draftKey(id)); } catch {}
+}
+
+function wireAutosave(formId, id) {
+  const form = $(formId);
+  if (!form) return;
+  const save = debounce(() => saveFormDraft(formId, id), 400);
+  form.addEventListener("input", save);
+  form.addEventListener("change", save);
+  form.addEventListener("submit", () => clearFormDraft(id));
+  restoreFormDraft(formId, id);
+}
+
 $("cr-channel-form").addEventListener("submit", async (e) => {
   e.preventDefault();
+  const btn = e.submitter;
+  setLoading(btn, true, "Saving…");
   try {
     const data = await api("POST", "/api/credits/connect", {
       externalId: $("cr-channel-id-input").value.trim(),
@@ -195,6 +287,7 @@ $("cr-channel-form").addEventListener("submit", async (e) => {
     setStatus("cr-channel-status", "Channel saved.");
     render();
   } catch (err) { setStatus("cr-channel-status", err.message, true); }
+  finally { setLoading(btn, false); }
 });
 
 $("cr-channel-disconnect")?.addEventListener("click", async () => {
@@ -208,6 +301,8 @@ $("cr-channel-disconnect")?.addEventListener("click", async () => {
 
 $("cr-reward-form").addEventListener("submit", async (e) => {
   e.preventDefault();
+  const btn = e.submitter;
+  setLoading(btn, true, "Saving…");
   try {
     await api("POST", "/api/credits/rewards", {
       id: $("cr-reward-id").value || undefined,
@@ -221,10 +316,13 @@ $("cr-reward-form").addEventListener("submit", async (e) => {
     $("cr-reward-id").value = "";
     await load();
   } catch (err) { setStatus("cr-reward-status", err.message, true); }
+  finally { setLoading(btn, false); }
 });
 
 $("cr-reward-create-form")?.addEventListener("submit", async (e) => {
   e.preventDefault();
+  const btn = e.submitter;
+  setLoading(btn, true, "Creating…");
   try {
     await api("POST", "/api/credits/rewards/create", {
       title: $("cr-reward-create-title").value.trim(),
@@ -238,6 +336,7 @@ $("cr-reward-create-form")?.addEventListener("submit", async (e) => {
     $("cr-reward-create-color").value = "#00e701";
     await load();
   } catch (err) { setStatus("cr-reward-create-status", err.message, true); }
+  finally { setLoading(btn, false); }
 });
 
 function editReward(id) {
@@ -258,6 +357,8 @@ async function delReward(id) {
 
 $("cr-shop-form").addEventListener("submit", async (e) => {
   e.preventDefault();
+  const btn = e.submitter;
+  setLoading(btn, true, "Saving…");
   try {
     await api("POST", "/api/credits/shop", {
       id: $("cr-shop-item-id").value || undefined,
@@ -273,6 +374,7 @@ $("cr-shop-form").addEventListener("submit", async (e) => {
     $("cr-shop-active").checked = true;
     await load();
   } catch (err) { setStatus("cr-shop-status", err.message, true); }
+  finally { setLoading(btn, false); }
 });
 
 function editShop(id) {
@@ -378,6 +480,8 @@ $("cr-analytics-days")?.addEventListener("change", loadAnalytics);
 
 $("cr-viewer-auth-form")?.addEventListener("submit", async (e) => {
   e.preventDefault();
+  const btn = e.submitter;
+  setLoading(btn, true, "Saving…");
   try {
     const data = await api("POST", "/api/credits/viewer-auth", {
       kick: $("cr-viewer-auth-kick").checked,
@@ -387,17 +491,20 @@ $("cr-viewer-auth-form")?.addEventListener("submit", async (e) => {
     state.viewerAuth = data;
     setStatus("cr-viewer-auth-status", "Viewer login settings saved.");
   } catch (err) { setStatus("cr-viewer-auth-status", err.message, true); }
+  finally { setLoading(btn, false); }
 });
 
 async function searchHistory(e) {
   e.preventDefault();
   const username = $("cr-history-username").value.trim();
   if (!username) return setStatus("cr-history-status", "Enter a Kick username", true);
+  setLoading("cr-history-search", true, "Searching…");
   try {
     const data = await api("GET", `/api/credits/viewer/history?kickUsername=${encodeURIComponent(username)}`);
     renderHistory(data);
     setStatus("cr-history-status", `Found ${data.boards?.length || 0} board(s).`);
   } catch (err) { setStatus("cr-history-status", err.message, true); }
+  finally { setLoading("cr-history-search", false); }
 }
 
 function renderHistory(data) {
@@ -419,6 +526,13 @@ function renderHistory(data) {
 }
 
 $("cr-history-form")?.addEventListener("submit", searchHistory);
+
+wireAutosave("cr-channel-form", "channel");
+wireAutosave("cr-reward-form", "reward");
+wireAutosave("cr-reward-create-form", "reward-create");
+wireAutosave("cr-shop-form", "shop");
+wireAutosave("cr-viewer-auth-form", "viewer-auth");
+wireAutosave("cr-history-form", "history");
 
 load().catch((err) => {
   $("cr-empty").innerHTML = `<p class="error">Could not load credits dashboard: ${esc(err.message)}</p>`;
