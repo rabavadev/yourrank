@@ -12,7 +12,7 @@ export const creditsContent = `
 <div id="cr-loading" class="ui-loading" hidden><div class="ui-loading__spinner"></div></div>
 
 <div id="cr-app" hidden>
-  <section class="card">
+  <section class="card" id="cr-channel">
     <h2>Connected Kick channel</h2>
     <p class="card-sub">Link your Kick account so reward redemptions from your channel credit your viewers.</p>
     <div id="cr-channel-connected" hidden>
@@ -61,7 +61,7 @@ export const creditsContent = `
     </form>
   </section>
 
-  <section class="card">
+  <section class="card" id="cr-maps">
     <h2>Reward mappings</h2>
     <p class="card-sub">When a viewer redeems one of these Kick channel rewards, they get the matching YourRank credits.</p>
     <p class="hint" id="cr-reward-usage"></p>
@@ -127,7 +127,7 @@ export const creditsContent = `
     </div>
   </section>
 
-  <section class="card">
+  <section class="card" id="cr-shop">
     <h2>Shop items</h2>
     <p class="card-sub">Items viewers can buy with credits. Redemptions appear below for you to fulfill off-platform.</p>
     <p class="hint" id="cr-shop-usage"></p>
@@ -165,7 +165,7 @@ export const creditsContent = `
     </div>
   </section>
 
-  <section class="card">
+  <section class="card" id="cr-viewers">
     <h2>Viewer balances</h2>
     <div class="board-table-wrap">
       <table class="board-table">
@@ -176,7 +176,7 @@ export const creditsContent = `
     </div>
   </section>
 
-  <section class="card">
+  <section class="card" id="cr-redemptions">
     <h2>Redemptions</h2>
     <div class="board-table-wrap">
       <table class="board-table">
@@ -187,7 +187,7 @@ export const creditsContent = `
     </div>
   </section>
 
-  <section class="card">
+  <section class="card" id="cr-history">
     <h2>Cross-board viewer history</h2>
     <p class="card-sub">Search a Kick viewer across all of your boards.</p>
     <form class="grid2" id="cr-history-form" style="margin-bottom:14px">
