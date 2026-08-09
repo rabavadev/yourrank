@@ -79,11 +79,11 @@ export const docsPage = `<!DOCTYPE html><html lang="en"><head>
 .docs-wrap h1{font-size:clamp(32px,5vw,48px);font-weight:800;letter-spacing:-.03em;margin:0 0 12px}
 .docs-wrap h2{font-size:22px;font-weight:700;margin:36px 0 14px}
 .docs-wrap p{line-height:1.6;color:var(--ink-soft,#9a94b8)}
-.docs-wrap pre{background:var(--panel-2,#1a1a22);border:1px solid var(--line-2,rgba(150,120,220,.2));border-radius:10px;padding:16px;overflow-x:auto;margin:14px 0;font-family:"JetBrains Mono",monospace;font-size:13px}
+.docs-wrap pre{background:var(--panel-2,#1a1a22);border:1px solid var(--line-2,rgba(87,113,255,.2));border-radius:10px;padding:16px;overflow-x:auto;margin:14px 0;font-family:"JetBrains Mono",monospace;font-size:13px}
 .docs-wrap code{font-family:"JetBrains Mono",monospace;background:var(--panel-2,#1a1a22);padding:2px 6px;border-radius:4px}
 .docs-wrap pre code{padding:0;background:transparent}
 .docs-table{width:100%;border-collapse:collapse;margin:14px 0;font-size:14px}
-.docs-table th,.docs-table td{padding:10px 8px;border-bottom:1px solid var(--line-2,rgba(150,120,220,.2));text-align:left}
+.docs-table th,.docs-table td{padding:10px 8px;border-bottom:1px solid var(--line-2,rgba(87,113,255,.2));text-align:left}
 .docs-table th{color:var(--ink-soft,#9a94b8);font-weight:600}
 .docs-lang{color:#7ee787}
 .docs-json{color:#d6b0ff}

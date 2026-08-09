@@ -86,7 +86,7 @@ export const CLASSIC = {
   ],
   presets: [
     { id: "purplenight", name: "Purple Night", accentA: "#06b6d4", accentB: "#a855f7" },
-    { id: "electric", name: "Electric", accentA: "#5ad9ff", accentB: "#7b8cff" },
+    { id: "electric", name: "Electric", accentA: "#5771ff", accentB: "#7b8cff" },
     { id: "sunset", name: "Sunset", accentA: "#ff7a59", accentB: "#ff4d9d" },
     { id: "emerald", name: "Emerald", accentA: "#3cf2b1", accentB: "#35a7ff" },
     { id: "gold", name: "Gold", accentA: "#ffd15c", accentB: "#ff9f43" },

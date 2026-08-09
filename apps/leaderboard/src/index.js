@@ -697,9 +697,9 @@ async function handleRequest(request, env, ctx, meta) {
           // Upsell page for free users
           const upsell = `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>OBS Overlay — Pro Feature</title><style nonce="${nonce}">*{margin:0;padding:0;box-sizing:border-box}body{width:320px;background:rgba(8,8,12,0.95);font-family:'Segoe UI',system-ui,sans-serif;color:#fff;padding:20px;border-radius:12px;text-align:center}
-h2{font-size:16px;margin-bottom:8px;background:linear-gradient(135deg,#c8ff00,#5ad9ff);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+h2{font-size:16px;margin-bottom:8px;background:linear-gradient(135deg,#5771ff,#2200ff);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
 p{font-size:11px;color:rgba(255,255,255,0.5);line-height:1.5}
-a{color:#c8ff00;text-decoration:none;font-weight:600}</style></head><body>
+a{color:#5771ff;text-decoration:none;font-weight:600}</style></head><body>
 <h2>🎬 OBS Overlay</h2>
 <p>This is a Pro feature.<br/>Upgrade at <a href="/" target="_blank">yourrank.site</a> to unlock the live stream overlay with animated rankings.</p>
 </body></html>`;

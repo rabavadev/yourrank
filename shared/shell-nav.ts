@@ -115,10 +115,10 @@ export function shellNavHtml(
 // collides with the bot dashboard's own BASE_CSS.
 export const SHELL_NAV_CSS = `
 :root{
-  --gm-bg:#0b0b0c; --gm-panel:#0f0f11; --gm-line:#232327; --gm-line-2:#2e2e33;
-  --gm-ink:#ededf0; --gm-ink-soft:#a3a3ab; --gm-ink-mute:#8b949e;
-  --gm-accent:#c8ff00; --gm-accent-ink:#0b0b0c;
-  --gm-mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+  --gm-bg:#0f0f0f; --gm-panel:#1c1c1c; --gm-line:#2a2a2a; --gm-line-2:#323232;
+  --gm-ink:#ededf0; --gm-ink-soft:#a7a6a6; --gm-ink-mute:#82828a;
+  --gm-accent:#2200ff; --gm-accent-ink:#ffffff;
+  --gm-mono:"IBM Plex Mono","JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
   --gm-sans:"Inter",system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
 }
 .gm-shell-nav{position:sticky;top:0;z-index:50;background:var(--gm-bg);
@@ -150,7 +150,7 @@ export const SHELL_NAV_CSS = `
 .gm-badge{font-family:var(--gm-mono);font-size:10px;letter-spacing:.12em;
   text-transform:uppercase;padding:4px 8px;border-radius:99px;border:1px solid var(--gm-line-2);display:inline-flex;align-items:center;line-height:1;vertical-align:middle;}
 .gm-badge--free{color:var(--gm-ink-mute);}
-.gm-badge--paid{color:var(--gm-accent);border-color:#3a4218;}
+.gm-badge--paid{color:var(--gm-accent);border-color:color-mix(in srgb,var(--gm-accent) 25%,var(--gm-line));}
 .gm-profile{position:relative;min-width:0;}
 .gm-profile > summary{list-style:none;display:inline-flex;align-items:center;gap:8px;cursor:pointer;padding:6px 10px;border-radius:10px;border:1px solid var(--gm-line-2);background:transparent;transition:background .15s,border-color .15s;user-select:none;}
 .gm-profile > summary:hover{background:var(--gm-line);border-color:var(--gm-line-2);}
@@ -181,8 +181,5 @@ export const SHELL_NAV_CSS = `
   @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
   }
-html{color-scheme:dark light}
-@media (prefers-color-scheme: light){
-  :root{--gm-bg:#ffffff;--gm-panel:#f7f7f9;--gm-line:#e4e5ea;--gm-line-2:#d8dae0;--gm-ink:#111114;--gm-ink-soft:#4e4f57;--gm-ink-mute:#6b6c75;--gm-accent:#7fb300;--gm-accent-ink:#0b0b0c}
-}
+html{color-scheme:dark}
   `;
