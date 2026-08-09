@@ -445,9 +445,6 @@ async function handleRequest(request, env, ctx, meta) {
         try {
           const user = await currentUser(request, env);
           if (!user) return Response.redirect(new URL("/login", url), 302);
-          if (url.searchParams.get("nav") === "kickrewards") {
-            return Response.redirect(new URL("/dashboard/credits", url), 302);
-          }
           const html = addCookieConsent(await renderHtmlPage(PAGES.dashboard, {
             activePath: url.pathname + url.search,
             user,
@@ -512,20 +509,7 @@ async function handleRequest(request, env, ctx, meta) {
         return Response.redirect(new URL("/account#profile", url), 302);
       }
       if (path === "/dashboard/credits") {
-        try {
-          const user = await currentUser(request, env);
-          if (!user) return Response.redirect(new URL("/login", url), 302);
-          const html = addCookieConsent(await renderHtmlPage(PAGES.credits, {
-            activePath: "/dashboard/credits",
-            user,
-            reqId: reqId || "",
-            theme: "light"
-          }));
-          return new Response(html, { headers: { ...SECURE_HTML, ...csrfHeader, "cache-control": "no-store, no-cache, must-revalidate" } });
-        } catch (e) {
-          if (workerLog) workerLog.error("credits_render_failed", { error: String(e?.message || e) }); else console.error("credits render failed:", String(e?.message || e));
-          return new Response("Credits page couldn't load right now — please refresh.", { status: 500, headers: { "content-type": "text/plain; charset=utf-8" } });
-        }
+        return Response.redirect(new URL("/dashboard?nav=kickrewards", url), 302);
       }
       if (path === "/me" || path === "/me.html") {
         return new Response(addCookieConsent(viewerDashboardPage), { headers: { ...HTML_N, ...csrfHeader, "cache-control": "no-store, no-cache, must-revalidate" } });

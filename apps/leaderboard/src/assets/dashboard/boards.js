@@ -208,6 +208,8 @@ export function renderSidebarBoardSwitcher() {
   const metaEl = $("activeBoardMeta");
   const sel = $("sidebarBoardSelect");
   const manage = $("manageBoardsBtn");
+  const allBoardsNav = $("allBoardsNav");
+  const allBoardsCount = $("allBoardsCount");
   const active = state.BOARDS.find((b) => b.id === state.ACTIVE_SITE_ID);
   if (nameEl) nameEl.textContent = active?.name || "…";
   if (metaEl) {
@@ -242,6 +244,8 @@ export function renderSidebarBoardSwitcher() {
     }
   }
   if (manage) manage.onclick = () => navTo("boards");
+  if (allBoardsNav) allBoardsNav.hidden = false;
+  if (allBoardsCount) allBoardsCount.textContent = state.BOARDS.length;
 }
 
 export function renderBoardsPage() {

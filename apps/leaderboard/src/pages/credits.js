@@ -1,11 +1,6 @@
 import { leaderboardPageHtml } from "../../../../shared/page-shell.js";
 
-export const creditsPage = leaderboardPageHtml({
-  title: "Credits · YourRank",
-  canonical: "https://yourrank.site/dashboard/credits",
-  mainClass: "wrap cr-wrap",
-  scripts: ['<script src="/assets/credits.js?v=1" type="module"></script>'],
-  content: `
+export const creditsContent = `
 <div class="an-head">
   <div>
     <div class="an-eyebrow">Kick channel points</div>
@@ -256,4 +251,13 @@ export const creditsPage = leaderboardPageHtml({
 <div id="cr-empty" class="empty" hidden>
   <p>Loading your credits dashboard…</p>
 </div>
-`});
+<div id="cr-standalone" hidden></div>
+`;
+
+export const creditsPage = leaderboardPageHtml({
+  title: "Credits · YourRank",
+  canonical: "https://yourrank.site/dashboard/credits",
+  mainClass: "wrap cr-wrap",
+  scripts: ['<script src="/assets/credits.js?v=2" type="module"></script>'],
+  content: creditsContent,
+});

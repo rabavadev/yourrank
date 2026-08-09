@@ -28,6 +28,7 @@
 .gm-brand-word{font-family:var(--gm-mono);font-size:14px;letter-spacing:.02em;
   color:var(--gm-ink);}
 .gm-shell-inner{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:22px;max-width:1280px;margin:0 auto;padding:20px 28px}
+body[data-wide] .gm-shell-inner{max-width:none}
 .gm-tabs-wrap{position:relative;min-width:0;overflow:hidden;}
 .gm-tabs-wrap::after{content:"";position:absolute;right:0;top:0;bottom:0;width:24px;background:linear-gradient(to right, transparent, var(--gm-bg));pointer-events:none;opacity:0;transition:opacity .2s;}
 .gm-tabs{display:flex;align-items:center;gap:2px;min-width:0;overflow-x:auto;

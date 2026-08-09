@@ -3,6 +3,7 @@ import { $ } from "./utils.js";
 import { state } from "./state.js";
 import { renderOverviewSummary } from "./overview.js";
 import { loadStats } from "./site.js";
+import { initKickrewards } from "../credits.js";
 
 export function setAriaCurrentNav(page) {
   document.querySelectorAll(".lb-nav").forEach((n) => {
@@ -21,7 +22,8 @@ export function navTo(page) {
   if (page === "home" || page === "performance") loadStats();
   // Re-fit the live preview whenever the Editor becomes visible (it can't measure while hidden).
   if (page === "board" && typeof state.fitDesignPreview === "function") setTimeout(state.fitDesignPreview, 0);
-  const titles = { home: "Home", board: "Board", boards: "Boards", performance: "Analytics", settings: "Settings" };
+  if (page === "kickrewards") initKickrewards().catch((err) => { console.error("kickrewards init failed", err); });
+  const titles = { home: "Home", board: "Editor", boards: "All boards", performance: "Analytics", settings: "Settings", kickrewards: "Kick rewards" };
   const topbarTitle = $("lbTopbarTitle");
   if (topbarTitle) { topbarTitle.textContent = titles[page] || page; topbarTitle.focus({ preventScroll: true }); }
   const main = document.querySelector(".lb-main");

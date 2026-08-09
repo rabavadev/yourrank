@@ -24,21 +24,23 @@ describe("dashboard overview quick actions", () => {
     expect(overviewJs).toContain('location.origin + "/" + state.SLUG');
   });
 
-  it("organises navigation into Home / Board / Analytics / Settings", () => {
+  it("organises navigation into Home / Editor / Analytics / Settings", () => {
     const html = dashboardHtml();
     expect(html).toContain('data-nav="home"');
     expect(html).toContain('data-nav="board"');
     expect(html).toContain('data-nav="performance"');
     expect(html).toContain('data-nav="settings"');
-    expect(html).toContain('class="lb-nav lb-nav--boards" type="button" data-nav="boards" hidden');
+    expect(html).toContain('data-nav="boards"');
     expect(html).not.toContain('<span class="lb-side-grp">');
     // Icons are real inline SVGs, not emoji.
     expect(html).not.toContain('aria-hidden="true">🔌</span>');
-    // Performance nav is now labelled Analytics.
+    // Performance nav is now labelled Analytics; Board is now Editor.
     expect(html).toContain('>Analytics</button>');
+    expect(html).toContain('>Editor</button>');
+    expect(html).toContain('>All boards</span>');
   });
 
-  it("leads with the Board editor and hides Boards for solo users", () => {
+  it("leads with the Board editor and always shows All boards", () => {
     const html = dashboardHtml();
     expect(html).toContain('<section class="lb-page" data-page="board">');
     expect(html).toContain('class="design-grid"');
@@ -49,7 +51,8 @@ describe("dashboard overview quick actions", () => {
     expect(html).toContain('data-egroup="design"');
     expect(html).toContain('data-egroup="share"');
     expect(html).toContain('data-egroup="history"');
-    // Boards nav starts hidden; JS reveals it only when the user has 2+ boards.
-    expect(html).toContain('class="lb-nav lb-nav--boards" type="button" data-nav="boards" hidden');
+    // All boards nav is always visible; the count is updated by JS.
+    expect(html).toContain('id="allBoardsNav"');
+    expect(html).not.toContain('data-nav="boards" hidden');
   });
 });
