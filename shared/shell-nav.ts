@@ -31,7 +31,7 @@ export const NAV_LINKS: NavLink[] = [
   { key: "leaderboard", label: "Leaderboard",  href: "/dashboard",                 match: ["/dashboard"],                 top: true },
   { key: "bot",         label: "Bot",          href: "/bot/dashboard",             match: ["/bot"],                       top: true },
   { key: "analytics",   label: "Analytics",    href: "/dashboard?nav=performance", match: ["/dashboard?nav=performance"], top: true },
-  { key: "kickrewards", label: "Kick rewards", href: "/dashboard?nav=kickrewards", match: ["/dashboard?nav=kickrewards"], top: true },
+  { key: "rewards", label: "Rewards", href: "/dashboard?nav=kickrewards", match: ["/dashboard?nav=kickrewards"], top: true },
   { key: "account",     label: "Account",      href: "/account",                   match: ["/account"],                   top: true },
 ];
 
@@ -47,7 +47,7 @@ export function activeKey(activePath: string): string | null {
 
   if (pathname === "/dashboard" || pathname.startsWith("/dashboard/")) {
     if (nav === "performance") return "analytics";
-    if (nav === "kickrewards" || pathname === "/dashboard/credits" || pathname.startsWith("/dashboard/credits")) return "kickrewards";
+    if (nav === "kickrewards" || pathname === "/dashboard/credits" || pathname.startsWith("/dashboard/credits")) return "rewards";
     return "leaderboard";
   }
 
