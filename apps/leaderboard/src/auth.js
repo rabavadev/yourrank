@@ -138,6 +138,10 @@ export async function currentUser(req, env) {
     const { userId, cookie } = await _resolveSession(req, env);
     if (!userId) return null;
 
+    const u = await loadUser(env, userId);
+    // SEC-AUDIT-01: suspended accounts cannot act through an existing session.
+    if (!u || u.status === "suspended") return null;
+
     // If a rotation happened, propagate the new cookie
     if (cookie) {
       if (!req._sessionCookies) req._sessionCookies = [];
@@ -150,7 +154,7 @@ export async function currentUser(req, env) {
       req._sessionCookies.push(cookieClearLegacy());
     }
 
-    return loadUser(env, userId);
+    return u;
 }
 
 // Rate limit wrapper — delegates to the shared rate limiter.

@@ -255,14 +255,14 @@ export async function handleCreditsCreateReward(request, env) {
   });
 }
 
-export async function handleCreditsDeleteReward(request, env) {
+export async function handleCreditsDeleteReward(request, env, ctx) {
   const { user, res } = await requireUser(request, env);
   if (res) return res;
   const url = new URL(request.url);
   const site = await getSite(env, user, url);
   if (!site) return bad("no site", 404);
 
-  const id = url.pathname.split("/").pop();
+  const id = ctx?.slug || url.pathname.split("/").pop();
   if (!id) return bad("missing reward id");
 
   await exec(
@@ -326,14 +326,14 @@ export async function handleCreditsSaveShopItem(request, env) {
   return ok({ id: resultId });
 }
 
-export async function handleCreditsDeleteShopItem(request, env) {
+export async function handleCreditsDeleteShopItem(request, env, ctx) {
   const { user, res } = await requireUser(request, env);
   if (res) return res;
   const url = new URL(request.url);
   const site = await getSite(env, user, url);
   if (!site) return bad("no site", 404);
 
-  const id = url.pathname.split("/").pop();
+  const id = ctx?.slug || url.pathname.split("/").pop();
   if (!id) return bad("missing item id");
 
   await exec(
@@ -343,14 +343,14 @@ export async function handleCreditsDeleteShopItem(request, env) {
   return ok({ id });
 }
 
-export async function handleCreditsUpdateRedemption(request, env) {
+export async function handleCreditsUpdateRedemption(request, env, ctx) {
   const { user, res } = await requireUser(request, env);
   if (res) return res;
   const url = new URL(request.url);
   const site = await getSite(env, user, url);
   if (!site) return bad("no site", 404);
 
-  const id = url.pathname.split("/").pop();
+  const id = ctx?.slug || url.pathname.split("/").pop();
   const body = await readJson(request);
   const status = String(body?.status || "").trim();
   if (!["fulfilled", "cancelled"].includes(status)) return bad("status must be fulfilled or cancelled");
@@ -523,11 +523,9 @@ export async function handlePublicRedeem(request, env) {
   const plan = effectivePlan(site);
 
   // Rate-limit redemptions per viewer per minute.
-  if (env?.SESSIONS) {
-    const limit = await rateLimit(env, `redeem:${site.id}:${kickUserId || kickUsername}`, 5, 60);
-    if (!limit.ok) {
-      return bad("rate limited", 429);
-    }
+  const rl = await rateLimit(env, `redeem:${site.id}:${kickUserId || kickUsername}`, 5, 60);
+  if (!rl.ok) {
+    return bad("rate limited", 429);
   }
 
   // Enforce site plan limits before creating the redemption.

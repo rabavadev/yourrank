@@ -8,14 +8,14 @@ function getSite(env, user, url) {
   return siteId ? getBoardById(env, user.id, siteId) : getByUser(env, user.id);
 }
 
-export async function handleCreditsBlockViewer(request, env) {
+export async function handleCreditsBlockViewer(request, env, ctx) {
   const { user, res } = await requireUser(request, env);
   if (res) return res;
   const url = new URL(request.url);
   const site = await getSite(env, user, url);
   if (!site) return bad("no site", 404);
 
-  const id = url.pathname.split("/").pop();
+  const id = ctx?.slug || url.pathname.split("/").pop();
   const body = await readJson(request);
   const blocked = body?.blocked === true;
   const reason = String(body?.reason || "").trim();

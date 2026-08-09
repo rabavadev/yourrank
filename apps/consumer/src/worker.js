@@ -9,6 +9,7 @@ import { bumpStat } from "../../../shared/stats.js";
 import { dispatchNotifyEvent } from "../../../shared/notifications.js";
 import { parseQueueEvent } from "../../../shared/queue-producer.js";
 import { processKickRewardRedemption } from "../../../shared/kick-credits.js";
+import { RateLimiter } from "../../../shared/rate-limiter-do.js";
 
 const db = { one, query };
 
@@ -59,7 +60,7 @@ async function handleDlq(batch, env, ctx) {
   ctx?.waitUntil(alertDiscord(env.DISCORD_MONITORING_WEBHOOK, batch));
 }
 
-async function handleEvent(input, tokenCache) {
+async function handleEvent(input, tokenCache, env) {
   const body = parseQueueEvent(input);
 
   switch (body.type) {
@@ -113,7 +114,7 @@ export default {
     for (const msg of batch.messages) {
       const startedAt = Date.now();
       try {
-        await handleEvent(msg.body, tokenCache);
+        await handleEvent(msg.body, tokenCache, env);
         msg.ack();
         processed++;
         console.log(JSON.stringify({
@@ -185,3 +186,6 @@ export default {
     return new Response("consumer ok", { status: 200 });
   },
 };
+
+// Durable Object class must be exported from the main module for bindings to resolve.
+export { RateLimiter };
