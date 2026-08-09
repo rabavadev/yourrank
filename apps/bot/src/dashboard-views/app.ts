@@ -32,6 +32,6 @@ ${sideNav(page, user)}
   ${settingsPanel(publicBaseUrl)}
 </div></div></main>
 <div id="toast" class="hidden" role="status" aria-live="polite"></div>
-${dashClientScript(nonce)}`,
+${dashClientScript()}`,
   });
 }

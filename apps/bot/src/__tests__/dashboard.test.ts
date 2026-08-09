@@ -57,7 +57,7 @@ mock.module(telegramUrlTs, telegramMock);
 // ── Import real modules after mocks are registered ─────────────────────
 import { buildDashboard } from "../dashboard.js";
 import { sameOrigin } from "../dashboard-auth.js";
-import { loginHtml, appHtml } from "../dashboard-views.js";
+import { loginHtml, appHtml, clientScriptSource } from "../dashboard-views.js";
 
 const testEnv = { RL_FAIL_OPEN: "true" } as any;
 
@@ -117,12 +117,13 @@ describe("dashboard views", () => {
     expect(html).not.toContain("onblur=");
   });
 
-  it("appHtml does not contain inline event handlers and uses data-action", () => {
+  it("appHtml loads the external client script and keeps markup data-action based", () => {
     const html = appHtml({ display_name: "Test", email: "test@example.com", plan: "free" }, "https://yourrank.site", "nonce123");
+    expect(html).toContain('<script src="/bot/dash/client.js"></script>');
     expect(html).toContain('data-action="connectBot"');
     expect(html).toContain('data-action="createOffer"');
     expect(html).toContain('data-action="sendBroadcast"');
-    expect(html).toContain('data-action="checkHealth"');
+    expect(html).toContain('data-action="logout"');
     expect(html).toContain("Show signed postback setup");
     expect(html).toContain("X-Postback-Signature");
     expect(html).toContain('nonce="nonce123"');
@@ -130,6 +131,16 @@ describe("dashboard views", () => {
     expect(html).not.toContain("onclick=");
     expect(html).not.toContain("onfocus=");
     expect(html).not.toContain("onblur=");
+  });
+
+  it("clientScriptSource handles dashboard actions without inline event handlers", () => {
+    const js = clientScriptSource();
+    expect(js).toContain('data-action="checkHealth"');
+    expect(js).toContain('data-action="disconnectBot"');
+    expect(js).toContain('data-action="reconnectBot"');
+    expect(js).not.toContain("onclick=");
+    expect(js).not.toContain("onfocus=");
+    expect(js).not.toContain("onblur=");
   });
 
   it("keeps the test-message form hidden until a bot is selected", () => {
@@ -140,7 +151,7 @@ describe("dashboard views", () => {
       "bots"
     );
     expect(html).toContain('id="testMsgPanel" hidden');
-    expect(html).toContain("if (!__testBotId) return toast('Select a bot first')");
+    expect(clientScriptSource()).toContain("if (!__testBotId) return toast('Select a bot first')");
   });
 
   it("appHtml renders each page with its own page key and includes the .hidden rule", () => {
@@ -228,11 +239,9 @@ describe("buildDashboard", () => {
     const res = await app.fetch(req, testEnv);
     expect(res.status).toBe(200);
     const html = await res.text();
+    expect(html).toContain('<script src="/bot/dash/client.js"></script>');
     expect(html).toContain('data-action="connectBot"');
     expect(html).toContain('data-action="logout"');
-    expect(html).toContain('data-action="checkHealth"');
-    expect(html).toContain('data-action="disconnectBot"');
-    expect(html).toContain('data-action="reconnectBot"');
     expect(html).not.toContain("onclick=");
 
     const csp = res.headers.get("content-security-policy") || "";

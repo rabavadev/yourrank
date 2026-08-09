@@ -52,7 +52,11 @@ export function scrollToHash(hash) {
     if (main) main.scrollIntoView({ block: "start" });
     return;
   }
-  const target = document.getElementById(hash) || document.querySelector(`[data-egroup="${hash}"]`);
+  const target =
+    document.getElementById(hash) ||
+    document.querySelector(`[data-egroup="${hash}"]`) ||
+    document.getElementById(`perf-${hash}`) ||
+    document.getElementById(`cr-${hash}`);
   if (target) {
     target.scrollIntoView({ block: "start", behavior: "smooth" });
     target.classList.add("is-highlighted");

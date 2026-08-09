@@ -43,7 +43,7 @@ import {
 } from "../../../shared/session.js";
 import { sameOrigin, verifyTelegramLogin } from "./dashboard-auth.js";
 import { buildDashboardApi } from "./dashboard-api.js";
-import { loginHtml, appHtml } from "./dashboard-views.js";
+import { loginHtml, appHtml, clientScriptSource } from "./dashboard-views.js";
 import { shellNavHtml } from "../../../shared/shell-nav.js";
 import { rateLimit, type RateLimitKV } from "./ratelimit.js";
 import { errMessage } from "./errors.js";
@@ -157,6 +157,14 @@ export function buildDashboard(): Hono<DashEnv> {
   // ---- session-scoped API ----
   const api = buildDashboardApi();
   app.route("/dash/api", api);
+
+  // ---- static client JS (external so CSP nonce cannot block it) ----
+  app.get("/dash/client.js", (c) =>
+    c.body(clientScriptSource(), 200, {
+      "Content-Type": "application/javascript; charset=utf-8",
+      "Cache-Control": "no-store, no-cache, must-revalidate",
+    })
+  );
 
   // ---- HTML ----
   const dashboardPage = async (c: any, page: string) => {
