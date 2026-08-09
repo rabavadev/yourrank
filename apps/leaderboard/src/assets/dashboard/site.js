@@ -95,6 +95,24 @@ export async function checkout(planOrBtn, btnRef) {
   checkingOut = false;
 }
 
+async function loadPendingPayment() {
+  const wrap = $("pendingPayment");
+  const link = $("pendingPaymentLink");
+  const status = wrap?.querySelector("p[role='status']");
+  if (!wrap || !link || !status) return;
+  try {
+    const res = await fetch("/api/billing/pending", { credentials: "include" }).then(guardAuth);
+    const d = await res.json();
+    if (res.ok && d.ok && d.pending && d.url) {
+      status.textContent = `You have a pending ${d.plan?.toUpperCase()} payment of $${Number(d.amount).toFixed(2)}.`;
+      link.href = d.url;
+      wrap.hidden = false;
+      return;
+    }
+  } catch (err) { logError("loadPendingPayment", err); }
+  wrap.hidden = true;
+}
+
 function renderPlanCard(p, isCurrent, isLower, cta, accent, isContact) {
   const classes = ["plan-card"];
   if (isCurrent) classes.push("plan-card--current");
@@ -205,6 +223,8 @@ export function renderPlan() {
   if ($("planName")) $("planName").textContent = currentName + (isTrial ? " (Trial)" : "");
   if ($("planMeta")) $("planMeta").textContent = until || `Up to ${state.ME.limits.players} players`;
   if ($("goPro")) $("goPro").textContent = lifetime ? "Lifetime active" : (plan === "free" ? "Upgrade — plans from $12/mo" : `Extend ${currentName} (+30 days)`);
+
+  loadPendingPayment();
 }
 
 export async function loadHistory() {
@@ -226,9 +246,10 @@ export async function loadHistory() {
       const amount = Number(p.amount) || 0;
       const amountStr = `$${amount.toFixed(2)} ${p.currency || "USD"}`;
       const status = String(p.status || "").toLowerCase();
-      const statusClass = ["confirmed", "finished", "active"].includes(status) ? "good" : ["failed", "expired", "refunded"].includes(status) ? "bad" : "muted";
+      const statusClass = ["confirmed", "finished", "active", "manual"].includes(status) ? "good" : ["failed", "expired", "refunded", "abandoned", "cancelled"].includes(status) ? "bad" : "muted";
       const date = p.created_at ? new Date(p.created_at).toLocaleString() : "–";
-      return `<tr><td>${esc(date)}</td><td>${esc(plan)}</td><td>${esc(amountStr)}</td><td><span class="pill pill--${esc(statusClass)}">${esc(status)}</span></td></tr>`;
+      const note = p.message ? `<div class="hint">${esc(p.message)}</div>` : "";
+      return `<tr><td>${esc(date)}</td><td>${esc(plan)}</td><td>${esc(amountStr)}</td><td><span class="pill pill--${esc(statusClass)}">${esc(status)}</span>${note}</td></tr>`;
     }).join("");
   } catch (err) { logError("loadHistory", err); }
 }

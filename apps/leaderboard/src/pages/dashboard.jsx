@@ -351,6 +351,10 @@ export function DashboardContent() {
   <p class="card-sub">Pick the plan that fits your stream, or start a free Pro trial.</p>
   <div class="plan-summary" id="planSummary"></div>
   <div class="plan-banner" id="planBanner" role="status" aria-live="polite" hidden></div>
+  <div id="pendingPayment" hidden>
+    <p class="status" role="status" aria-live="polite"></p>
+    <a class="btn btn--sm" id="pendingPaymentLink" href="#">Complete payment</a>
+  </div>
   <div id="cancelWrap" hidden>
     <p class="hint" id="cancelStatus" role="status" aria-live="polite"></p>
     <button class="btn btn--sm btn--danger" id="cancelBtn" type="button">Cancel subscription</button>
