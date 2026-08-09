@@ -751,7 +751,10 @@ a{color:#5771ff;text-decoration:none;font-weight:600}</style></head><body>
         let slug;
         try { slug = decodeURIComponent(path.slice(1).split("/")[0]).toLowerCase(); } catch { return new Response(notFoundPage("", nonce), { status: 404, headers: HTML_N }); }
         if (RESERVED.has(slug)) return new Response(notFoundPage(slug, nonce), { status: 404, headers: HTML_N });
-        const r = await getPublicSite(env, slug);
+        const r = await getPublicSite(env, slug, request);
+        if (r && r.requiresPassword) {
+          return new Response(renderPasswordGate(r, { nonce, isCustomDomain: false }), { headers: { ...HTML_N, "cache-control": "no-store" } });
+        }
         if (!r || r.suspended) return new Response(notFoundPage(slug, nonce), { status: 404, headers: HTML_N });
         return new Response(
           renderPublicCreditsPage({ slug, nonce, homeUrl: url.origin }),

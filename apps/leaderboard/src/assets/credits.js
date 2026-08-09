@@ -269,7 +269,7 @@ function editShop(id) {
 }
 
 async function delShop(id) {
-  if (!confirm("Delete this shop item?")) return;
+  if (!confirm("Disable this shop item? It will no longer be redeemable, but past redemptions stay in the ledger.")) return;
   await api("DELETE", `/api/credits/shop/${encodeURIComponent(id)}`);
   await load();
 }
