@@ -1044,7 +1044,6 @@
   color: var(--yr-red);
 }
 
-@media (max-width: 980px) {
   .v2-dash .design-grid {
     grid-template-columns: 1fr;
   }
@@ -1052,4 +1051,85 @@
     position: static;
     max-height: none;
   }
+}
+
+/* ---- Kick Rewards / Credits area ---- */
+.v2-dash .an-head {
+  margin-bottom: 22px;
+}
+
+.v2-dash .an-eyebrow {
+  font: 700 11px var(--yr-mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--yr-ink-mute);
+  margin-bottom: 4px;
+}
+
+.v2-dash .an-title {
+  font: 700 22px/1.25 var(--yr-sans);
+  margin: 0 0 4px;
+  color: var(--yr-ink);
+}
+
+.v2-dash .an-sub {
+  font-size: 13px;
+  color: var(--yr-ink-soft);
+  margin: 0;
+}
+
+.v2-dash .cr-analytics-grid {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 14px;
+  margin-bottom: 20px;
+}
+
+.v2-dash .cr-stat {
+  background: var(--yr-panel);
+  border: 1px solid var(--yr-line);
+  border-radius: var(--yr-radius-sm);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-height: 92px;
+  justify-content: center;
+  box-shadow: var(--yr-shadow);
+}
+
+.v2-dash .cr-stat-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--yr-ink-mute);
+}
+
+.v2-dash .cr-stat-value {
+  font: 700 24px/1 var(--yr-mono);
+  color: var(--yr-ink);
+}
+
+.v2-dash .cr-bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 4px;
+  height: 140px !important;
+  padding: 14px;
+  background: var(--yr-panel);
+  border: 1px solid var(--yr-line);
+  border-radius: var(--yr-radius-sm);
+  box-shadow: var(--yr-shadow);
+}
+
+.v2-dash .cr-bars .cr-bar {
+  flex: 1;
+  background: var(--yr-accent);
+  opacity: .8;
+  border-radius: 4px 4px 0 0;
+  min-height: 4px;
+  transition: opacity .15s;
+}
+
+.v2-dash .cr-bars .cr-bar:hover {
+  opacity: 1;
 }
