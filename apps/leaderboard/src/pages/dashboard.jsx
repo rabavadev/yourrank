@@ -3,7 +3,7 @@
 export const dashboardConfig = {
   title: "Dashboard · YourRank",
   canonical: "https://yourrank.site/dashboard",
-  scripts: ['<script src="/assets/dashboard.js?v=9" type="module"></script>'],
+  scripts: ['<script src="/assets/dashboard.js?v=10" type="module"></script>'],
 };
 
 export function DashboardContent() {
@@ -215,118 +215,184 @@ export function DashboardContent() {
 </section>
 <section class="lb-page" data-page="performance">
 <div class="lb-phead"><button class="lb-menu" type="button" aria-label="Show sections" data-menu aria-expanded="false" aria-controls="lbSide">☰</button></div>
-<div class="card"><p class="card-sub">Last 30 days on your page. Views count every visit; copies and clicks are people grabbing your code or hitting Join.</p>
-<div class="stat-tiles">
-<div class="stat-tile"><span class="stat-num" id="st_views7">–</span><span class="stat-lbl">Views · 7d</span></div>
-<div class="stat-tile"><span class="stat-num" id="st_views30">–</span><span class="stat-lbl">Views · 30d</span></div>
-<div class="stat-tile"><span class="stat-num" id="st_copies30">–</span><span class="stat-lbl">Code copies · 30d</span></div>
-<div class="stat-tile"><span class="stat-num" id="st_clicks30">–</span><span class="stat-lbl">Join clicks · 30d</span></div></div>
-<div class="stat-chart"><div class="stat-bars" id="statBars" title="Daily views, last 14 days"></div><div class="stat-chart-lbl"><span id="statFrom"></span><span>Daily views, last 14 days</span><span>today</span></div></div>
-<p class="hint" id="statsEmpty" hidden>No views yet — share your page link in your stream panels and Discord to get it moving.</p></div>
-<div class="card" id="refCard">
-<h2>Your referral link</h2>
-<p class="card-sub">Share this link. Every new user who signs up through it adds 31 days of Pro to your account.</p>
-<div class="d-flex gap-8 flex-wrap items-center" style="margin-top:12px"><input id="refLink" class="field" readonly style="flex:1;min-width:220px" value="…" /><button class="btn btn--accent" id="refCopy" type="button">Copy link</button></div>
-<div class="stat-tiles" style="margin-top:18px">
-<div class="stat-tile"><span class="stat-num" id="refCount">–</span><span class="stat-lbl">People signed up</span></div>
-<div class="stat-tile"><span class="stat-num" id="refDays">–</span><span class="stat-lbl">Free days earned</span></div>
-<div class="stat-tile"><span class="stat-num" id="refSaved">–</span><span class="stat-lbl">Value earned ($)</span></div>
+<div class="lb-bento">
+<div class="lb-widget lb-widget--full perf-header">
+  <div>
+    <h2>Performance</h2>
+    <p class="card-sub">Views, clicks, copies and where your traffic comes from.</p>
+  </div>
+  <div class="perf-filter" id="perfRangeFilter" role="group" aria-label="Date range">
+    <button class="btn btn--xs" type="button" data-range="7">7 days</button>
+    <button class="btn btn--xs is-active" type="button" data-range="14">14 days</button>
+    <button class="btn btn--xs" type="button" data-range="30">30 days</button>
+  </div>
 </div>
-<p class="status" id="refStatus" role="status" aria-live="polite"></p>
+<div class="lb-widget lb-widget--full">
+  <div class="kpi-row">
+    <div class="kpi-card"><span class="kpi-lbl" id="perfKpiViewsLbl">Views · 14d</span><span class="kpi-val" id="perfKpiViews">–</span></div>
+    <div class="kpi-card"><span class="kpi-lbl" id="perfKpiClicksLbl">Clicks · 14d</span><span class="kpi-val" id="perfKpiClicks">–</span></div>
+    <div class="kpi-card"><span class="kpi-lbl" id="perfKpiCopiesLbl">Copies · 14d</span><span class="kpi-val" id="perfKpiCopies">–</span></div>
+    <div class="kpi-card"><span class="kpi-lbl" id="perfKpiCtrLbl">CTR · 14d</span><span class="kpi-val" id="perfKpiCtr">–</span></div>
+  </div>
+</div>
+<div class="lb-widget lb-widget--wide">
+  <div class="lb-cardhd"><h2>Activity</h2><a class="btn btn--xs btn--ghost" href="/api/site/stats/export" id="perfExport">Export CSV</a></div>
+  <div class="stat-chart"><div class="stat-bars" id="statBars" title="Daily activity"></div><div class="stat-chart-lbl"><span id="statFrom"></span><span>today</span></div></div>
+  <p class="hint" id="statsEmpty" hidden>No activity yet — share your page link in your stream panels and Discord to get it moving.</p>
+  <div class="stat-legend"><span class="stat-legend-item views">Views</span><span class="stat-legend-item copies">Copies</span><span class="stat-legend-item clicks">Clicks</span></div>
+</div>
+<div class="lb-widget lb-widget--narrow" id="perfHeatmap">
+  <div class="lb-cardhd"><h2>Activity map</h2></div>
+  <p class="hint" style="margin:0 0 8px">Views by day and hour (last 30 days).</p>
+  <div class="heatmap-wrap"><div class="heatmap" id="perfHeatmapGrid"><p class="heatmap-loading">Loading…</p></div></div>
+</div>
+<div class="lb-widget lb-widget--narrow">
+  <div class="lb-cardhd"><h2>Top referrers</h2></div>
+  <table class="ref-table"><thead><tr><th>Domain</th><th class="ta-r">Views</th></tr></thead><tbody id="perfReferrersBody"></tbody></table>
+  <p class="empty" id="perfReferrersEmpty" hidden>No referrer data yet.</p>
+</div>
+<div class="lb-widget lb-widget--half" id="refCard">
+  <h2>Referrals</h2>
+  <p class="card-sub">Share your link. Every sign-up adds 31 days of Pro.</p>
+  <div class="d-flex gap-8 flex-wrap items-center" style="margin-top:12px"><input id="refLink" class="field" readonly style="flex:1;min-width:220px" value="…" /><button class="btn btn--accent" id="refCopy" type="button">Copy link</button></div>
+  <div class="stat-tiles" style="margin-top:18px">
+    <div class="stat-tile"><span class="stat-num" id="refCount">–</span><span class="stat-lbl">People signed up</span></div>
+    <div class="stat-tile"><span class="stat-num" id="refDays">–</span><span class="stat-lbl">Free days earned</span></div>
+    <div class="stat-tile"><span class="stat-num" id="refSaved">–</span><span class="stat-lbl">Value earned ($)</span></div>
+  </div>
+  <p class="status" id="refStatus" role="status" aria-live="polite"></p>
+</div>
 </div>
 </section>
 <section class="lb-page" data-page="settings">
 <div class="lb-phead"><button class="lb-menu" type="button" aria-label="Show sections" data-menu aria-expanded="false" aria-controls="lbSide">☰</button></div>
-<div class="card"><h2>Integrations</h2><p class="card-sub">Stream overlay, custom domain, notifications, postbacks and bot.</p>
-<div class="d-flex gap-8 flex-wrap"><a class="btn btn--sm" href="/dashboard/attribution">Set up postbacks →</a><a class="btn btn--sm" href="/dashboard/bot/setup">Connect Telegram bot →</a></div></div>
-<div class="card" id="overlayCard"><h2>OBS Stream Overlay <span class="pill pill--info ml-6">PRO</span></h2><p class="card-sub">Add a live leaderboard overlay to your stream. It auto-updates every 15 seconds with smooth rank animations.</p>
-<div id="overlayBody">
-<div class="field"><label>Overlay URL</label>
-<div class="d-flex gap-8 items-center flex-wrap">
-<code id="overlayUrl" class="overlay-url"></code>
-<button class="btn btn--sm btn--accent ic-btn" id="overlayCopy" type="button"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>Copy</button>
+<div class="lb-bento">
+<div class="lb-widget lb-widget--full settings-nav">
+  <nav aria-label="Settings sections">
+    <a class="btn btn--xs btn--ghost" href="#settings-connections">Connections</a>
+    <a class="btn btn--xs btn--ghost" href="#settings-notifications">Notifications</a>
+    <a class="btn btn--xs btn--ghost" href="#settings-billing">Billing</a>
+    <a class="btn btn--xs btn--ghost" href="#settings-winners">Winners</a>
+    <a class="btn btn--xs btn--ghost" href="#settings-legal">Legal</a>
+    <a class="btn btn--xs btn--ghost" href="#settings-danger">Danger</a>
+  </nav>
 </div>
-<span class="hint">Add this as a <b>Browser Source</b> in OBS. Set width to <b>320px</b>, height auto. Check "Shutdown source when not visible" off for live updates.</span></div>
-<div class="mt-14 d-flex gap-8 flex-wrap">
-<a class="btn btn--sm" id="overlayPreview" href="#" target="_blank" rel="noopener noreferrer">Preview overlay →</a>
+<div class="lb-widget lb-widget--half" id="settings-connections">
+  <h2>Stream &amp; domain</h2>
+  <p class="card-sub">OBS overlay and your own domain are Pro features.</p>
+  <div id="overlayBody">
+    <div class="field"><label>Overlay URL</label>
+      <div class="d-flex gap-8 items-center flex-wrap">
+        <code id="overlayUrl" class="overlay-url"></code>
+        <button class="btn btn--sm btn--accent ic-btn" id="overlayCopy" type="button"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>Copy</button>
+      </div>
+      <span class="hint">Add this as a <b>Browser Source</b> in OBS. Set width to <b>320px</b>, height auto. Check "Shutdown source when not visible" off for live updates.</span>
+    </div>
+    <div class="mt-14 d-flex gap-8 flex-wrap"><a class="btn btn--sm" id="overlayPreview" href="#" target="_blank" rel="noopener noreferrer">Preview overlay →</a></div>
+  </div>
+  <div class="empty" id="overlayLock" hidden>OBS Overlay is a Pro feature. <a href="#" id="overlayUpgrade">Upgrade to unlock it</a>.</div>
+  <hr style="border:0;border-top:1px solid var(--line);margin:18px 0" />
+  <div id="domainBody">
+    <div class="field"><label for="f_domain">Your domain</label><input id="f_domain" placeholder="board.mystream.com" />
+      <span class="hint">Point a <b>CNAME record</b> for your domain to <span class="mono">yourrank.site</span>. Then enter the domain here and click <b>Verify &amp; Provision TLS</b>.</span>
+    </div>
+    <div class="mt-8 d-flex gap-8 items-center flex-wrap">
+      <button class="btn btn--sm btn--accent" id="domainVerify" type="button">Verify &amp; Provision TLS</button>
+    </div>
+    <div id="domainStatus" class="hint mt-8 min-h-18" role="status" aria-live="polite"></div>
+  </div>
+  <div class="empty" id="domainLock" hidden>Custom domains are a Pro feature. <a href="#" id="domainUpgrade">Upgrade to unlock it</a>.</div>
 </div>
+<div class="lb-widget lb-widget--half">
+  <h2>External tools</h2>
+  <p class="card-sub">Postback tracking and the Telegram bot.</p>
+  <div class="d-flex gap-8 flex-wrap"><a class="btn btn--sm" href="/dashboard/attribution">Set up postbacks →</a><a class="btn btn--sm" href="/dashboard/bot/setup">Connect Telegram bot →</a></div>
 </div>
-<div class="empty" id="overlayLock" hidden>OBS Overlay is a Pro feature. <a href="#" id="overlayUpgrade">Upgrade to unlock it</a>.</div></div>
-<div class="card" id="domainCard"><h2>Custom Domain <span class="pill pill--info ml-6">PRO</span></h2><p class="card-sub">Serve your leaderboard on your own domain instead of yourrank.site/yourname.</p>
-<div id="domainBody">
-<div class="field"><label for="f_domain">Your domain</label><input id="f_domain" placeholder="board.mystream.com" />
-<span class="hint">Point a <b>CNAME record</b> for your domain to <span class="mono">yourrank.site</span>. Then enter the domain here and click <b>Verify &amp; Provision TLS</b>.</span></div>
-<div class="mt-8 d-flex gap-8 items-center flex-wrap">
-<button class="btn btn--sm btn--accent" id="domainVerify" type="button">Verify &amp; Provision TLS</button>
+<div class="lb-widget lb-widget--full" id="settings-notifications">
+  <h2>Notifications <span class="pill pill--info ml-6">PRO</span></h2>
+  <p class="card-sub">Optional alerts when your leaderboard resets or a player breaks into the top 3. Discord and Telegram supported — the leaderboard itself works without either.</p>
+  <div id="notifyBody">
+    <div class="field"><label>Events that trigger notifications</label>
+      <div class="d-flex gap-8 flex-wrap mb-4">
+        <span class="pill pill--muted ic-btn"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg>Leaderboard reset</span>
+        <span class="pill pill--muted ic-btn"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg>Player enters top 3</span>
+      </div>
+    </div>
+    <div class="field"><label for="f_webhook">Discord webhook URL</label>
+      <input id="f_webhook" placeholder="https://discord.com/api/webhooks/..." />
+      <span class="hint">Create a webhook in your Discord server settings → Integrations → Webhooks. Paste the URL here.</span>
+    </div>
+    <div class="d-flex gap-8 items-center flex-wrap mt-n8 mb-16">
+      <button class="btn btn--sm ic-btn" id="testDiscord" type="button"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.536 21.686a.5.5 0 0 0 .937-.024l6.5-19a.496.496 0 0 0-.635-.635l-19 6.5a.5.5 0 0 0-.024.937l7.93 3.18a2 2 0 0 1 1.112 1.11z"/><path d="m21.854 2.147-10.94 10.939"/></svg>Test Discord</button>
+      <span class="hint" id="testDiscordStatus" role="status" aria-live="polite"></span>
+    </div>
+    <div class="field"><label for="f_tgChatId">Telegram chat/group ID</label>
+      <input id="f_tgChatId" placeholder="-1001234567890" />
+      <span class="hint">The chat or group ID where notifications should be sent. Use <code>/start</code> in your bot chat or add the bot to a group to get the ID.</span>
+    </div>
+    <div class="d-flex gap-8 items-center flex-wrap mt-n8 mb-16">
+      <label class="hint chk"><input type="checkbox" id="f_tgNotify" /> Enable Telegram notifications</label>
+      <button class="btn btn--sm ic-btn" id="testTelegram" type="button"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.536 21.686a.5.5 0 0 0 .937-.024l6.5-19a.496.496 0 0 0-.635-.635l-19 6.5a.5.5 0 0 0-.024.937l7.93 3.18a2 2 0 0 1 1.112 1.11z"/><path d="m21.854 2.147-10.94 10.939"/></svg>Test Telegram</button>
+      <span class="hint" id="testTelegramStatus" role="status" aria-live="polite"></span>
+    </div>
+  </div>
+  <div class="empty" id="notifyLock" hidden>Notifications are a Pro feature. <a href="#" id="notifyUpgrade">Upgrade to unlock them</a>.</div>
 </div>
-<div id="domainStatus" class="hint mt-8 min-h-18" role="status" aria-live="polite"></div>
+<div class="lb-widget lb-widget--full" id="settings-billing">
+  <h2>Plan &amp; billing</h2>
+  <p class="card-sub">Pick the plan that fits your stream, or start a free Pro trial.</p>
+  <div class="plan-summary" id="planSummary"></div>
+  <div class="plan-banner" id="planBanner" role="status" aria-live="polite" hidden></div>
+  <div id="cancelWrap" hidden>
+    <p class="hint" id="cancelStatus" role="status" aria-live="polite"></p>
+    <button class="btn btn--sm btn--danger" id="cancelBtn" type="button">Cancel subscription</button>
+  </div>
+  <div class="plan-grid" id="planGrid"></div>
+  <div class="plan-trial" id="planTrial" hidden><p class="hint">Not ready to pay? Try every Pro feature free for 7 days.</p><button class="btn btn--accent" id="trialBtn" type="button">Start free Pro trial</button><p class="status" id="trialStatus" role="status" aria-live="polite"></p></div>
+  <p class="hint" id="planHint">Paid plans are billed in crypto (BTC, ETH, USDT and 100+ more) and activate automatically once the network confirms.</p>
+  <div id="historyCard" hidden>
+    <h3 style="margin:18px 0 4px">Payment history</h3>
+    <p class="card-sub">Your past payments and receipts.</p>
+    <table class="admin-table" id="historyTable"><thead><tr><th>Date</th><th>Plan</th><th>Amount</th><th>Status</th></tr></thead><tbody id="historyBody"></tbody></table>
+    <div class="empty" id="historyEmpty" hidden>No payments yet.</div>
+    <p class="hint">Receipts are also emailed to your account address after each successful payment.</p>
+  </div>
 </div>
-<div class="empty" id="domainLock" hidden>Custom domains are a Pro feature. <a href="#" id="domainUpgrade">Upgrade to unlock it</a>.</div></div>
-<div class="card" id="notifyCard"><h2>Notifications <span class="pill pill--info ml-6">PRO</span></h2><p class="card-sub">Optional alerts when your leaderboard resets or a player breaks into the top 3. Discord and Telegram supported — the leaderboard itself works without either.</p>
-<div id="notifyBody">
-<div class="field"><label>Events that trigger notifications</label>
-<div class="d-flex gap-8 flex-wrap mb-4">
-<span class="pill pill--muted ic-btn"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg>Leaderboard reset</span>
-<span class="pill pill--muted ic-btn"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg>Player enters top 3</span>
-</div></div>
-<div class="field"><label for="f_webhook">Discord webhook URL</label>
-<input id="f_webhook" placeholder="https://discord.com/api/webhooks/..." />
-<span class="hint">Create a webhook in your Discord server settings → Integrations → Webhooks. Paste the URL here.</span></div>
-<div class="d-flex gap-8 items-center flex-wrap mt-n8 mb-16">
-<button class="btn btn--sm ic-btn" id="testDiscord" type="button"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.536 21.686a.5.5 0 0 0 .937-.024l6.5-19a.496.496 0 0 0-.635-.635l-19 6.5a.5.5 0 0 0-.024.937l7.93 3.18a2 2 0 0 1 1.112 1.11z"/><path d="m21.854 2.147-10.94 10.939"/></svg>Test Discord</button>
-<span class="hint" id="testDiscordStatus" role="status" aria-live="polite"></span>
+<div class="lb-widget lb-widget--half" id="settings-winners">
+  <h2>Past winners</h2>
+  <p class="card-sub">When a period ends, close it out: the current board is saved and shown on your page under "Past Winners". Saves your unsaved edits first.</p>
+  <div class="arch-form">
+    <div class="field field-flex"><label for="a_label">Label</label><input id="a_label" placeholder="July 2026" /></div>
+    <div class="field m-0"><label for="a_clear">Then</label><select id="a_clear"><option value="wagers">Reset all wagers to 0</option><option value="players">Clear the player list</option><option value="none">Keep the board as is</option></select></div>
+    <button class="btn btn--accent self-end" id="a_go" type="button">Close out period</button>
+  </div>
+  <div class="arch-list" id="archList"></div>
+  <div class="empty" id="archEmpty" hidden>No closed-out periods yet. Your first one shows up here and on your page.</div>
 </div>
-<div class="field"><label for="f_tgChatId">Telegram chat/group ID</label>
-<input id="f_tgChatId" placeholder="-1001234567890" />
-<span class="hint">The chat or group ID where notifications should be sent. Use <code>/start</code> in your bot chat or add the bot to a group to get the ID.</span></div>
-<div class="d-flex gap-8 items-center flex-wrap mt-n8 mb-16">
-<label class="hint chk"><input type="checkbox" id="f_tgNotify" /> Enable Telegram notifications</label>
-<button class="btn btn--sm ic-btn" id="testTelegram" type="button"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.536 21.686a.5.5 0 0 0 .937-.024l6.5-19a.496.496 0 0 0-.635-.635l-19 6.5a.5.5 0 0 0-.024.937l7.93 3.18a2 2 0 0 1 1.112 1.11z"/><path d="m21.854 2.147-10.94 10.939"/></svg>Test Telegram</button>
-<span class="hint" id="testTelegramStatus" role="status" aria-live="polite"></span>
+<div class="lb-widget lb-widget--half" id="settings-legal">
+  <h2>Legal pages</h2>
+  <p class="card-sub">Set your own Terms, Privacy, and other legal copy. Empty fields use defaults and the footer links go to your own /terms, /privacy, etc.</p>
+  <div class="info-notice"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="16" y2="12"/><line x1="12" x2="12.01" y1="8" y2="8"/></svg><span>Leave any field blank to use the default legal text provided by YourRank. Your custom text will be shown on your public page at <code>/terms</code>, <code>/privacy</code>, etc.</span></div>
+  <div class="legal-editor" id="legalList"></div>
+  <div class="legal-footer-preview" id="legalFooterPreview"><b>Footer links preview:</b> <a href="#" onclick="return false">Terms</a> · <a href="#" onclick="return false">Privacy</a> · <a href="#" onclick="return false">Responsible Gaming</a> · <a href="#" onclick="return false">Cookies</a> · <a href="#" onclick="return false">Refund</a> · <a href="#" onclick="return false">Contact</a></div>
 </div>
-</div>
-<div class="empty" id="notifyLock" hidden>Notifications are a Pro feature. <a href="#" id="notifyUpgrade">Upgrade to unlock them</a>.</div></div>
-<div class="card" id="planCard"><h2>Plan &amp; billing</h2><p class="card-sub">Pick the plan that fits your stream, or start a free Pro trial.</p>
-<div class="plan-summary" id="planSummary"></div>
-<div class="plan-banner" id="planBanner" role="status" aria-live="polite" hidden></div>
-<div id="cancelWrap" hidden>
-<p class="hint" id="cancelStatus" role="status" aria-live="polite"></p>
-<button class="btn btn--sm btn--danger" id="cancelBtn" type="button">Cancel subscription</button>
-</div>
-<div class="plan-grid" id="planGrid"></div>
-<div class="plan-trial" id="planTrial" hidden><p class="hint">Not ready to pay? Try every Pro feature free for 7 days.</p><button class="btn btn--accent" id="trialBtn" type="button">Start free Pro trial</button><p class="status" id="trialStatus" role="status" aria-live="polite"></p></div>
-<p class="hint" id="planHint">Paid plans are billed in crypto (BTC, ETH, USDT and 100+ more) and activate automatically once the network confirms.</p></div>
-<div class="card" id="historyCard" hidden><h2>Payment history</h2><p class="card-sub">Your past payments and receipts.</p>
-<table class="admin-table" id="historyTable"><thead><tr><th>Date</th><th>Plan</th><th>Amount</th><th>Status</th></tr></thead><tbody id="historyBody"></tbody></table>
-<div class="empty" id="historyEmpty" hidden>No payments yet.</div>
-<p class="hint">Receipts are also emailed to your account address after each successful payment.</p></div>
-<div class="card" id="archiveCard"><h2>Past winners</h2><p class="card-sub">When a period ends, close it out: the current board is saved and shown on your page under "Past Winners". Saves your unsaved edits first.</p>
-<div class="arch-form">
-<div class="field field-flex"><label for="a_label">Label</label><input id="a_label" placeholder="July 2026" /></div>
-<div class="field m-0"><label for="a_clear">Then</label><select id="a_clear"><option value="wagers">Reset all wagers to 0</option><option value="players">Clear the player list</option><option value="none">Keep the board as is</option></select></div>
-<button class="btn btn--accent self-end" id="a_go" type="button">Close out period</button></div>
-<div class="arch-list" id="archList"></div>
-<div class="empty" id="archEmpty" hidden>No closed-out periods yet. Your first one shows up here and on your page.</div></div>
-<div class="card" id="legalCard"><h2>Legal pages</h2><p class="card-sub">Set your own Terms, Privacy, and other legal copy. Empty fields use defaults and the footer links go to your own /terms, /privacy, etc.</p>
-<div class="info-notice"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="16" y2="12"/><line x1="12" x2="12.01" y1="8" y2="8"/></svg><span>Leave any field blank to use the default legal text provided by YourRank. Your custom text will be shown on your public page at <code>/terms</code>, <code>/privacy</code>, etc.</span></div>
-<div class="legal-editor" id="legalList"></div>
-<div class="legal-footer-preview" id="legalFooterPreview"><b>Footer links preview:</b> <a href="#" onclick="return false">Terms</a> · <a href="#" onclick="return false">Privacy</a> · <a href="#" onclick="return false">Responsible Gaming</a> · <a href="#" onclick="return false">Cookies</a> · <a href="#" onclick="return false">Refund</a> · <a href="#" onclick="return false">Contact</a></div></div>
-<div class="card card--danger" id="dangerCard">
-<h2>Danger zone</h2>
-<p class="card-sub">Permanently delete your account and all associated data. This cannot be undone.</p>
-<button class="btn btn--danger" id="deleteAccountBtn" type="button">Delete my account</button>
+<div class="lb-widget lb-widget--full lb-widget--danger" id="settings-danger">
+  <h2>Danger zone</h2>
+  <p class="card-sub">Permanently delete your account and all associated data. This cannot be undone.</p>
+  <button class="btn btn--danger" id="deleteAccountBtn" type="button">Delete my account</button>
 </div>
 <div class="modal" id="deleteAccountModal" role="dialog" aria-modal="true" aria-labelledby="deleteAccountModalTitle" hidden>
-<div class="modal-card">
-<h3 id="deleteAccountModalTitle">Delete your account?</h3>
-<p>This will remove all your data — leaderboards, players, archives, subscriptions, and connected bots. This cannot be undone.</p>
-<div class="field"><label for="deleteAccountConfirm">Type <b>DELETE</b> to confirm</label><input id="deleteAccountConfirm" autocomplete="off" placeholder="DELETE" /></div>
-<div class="field" id="deleteAccountPasswordWrap" hidden><label for="deleteAccountPassword">Enter your password</label><input id="deleteAccountPassword" type="password" autocomplete="current-password" placeholder="Password" /></div>
-<div class="d-flex gap-10 flex-wrap">
-<button class="btn btn--danger" id="deleteAccountConfirmBtn" type="button">Delete my account</button>
-<button class="btn btn--ghost" id="deleteAccountCancelBtn" type="button">Cancel</button>
-</div>
-<p class="status" id="deleteAccountModalStatus" role="status" aria-live="polite"></p>
+  <div class="modal-card">
+    <h3 id="deleteAccountModalTitle">Delete your account?</h3>
+    <p>This will remove all your data — leaderboards, players, archives, subscriptions, and connected bots. This cannot be undone.</p>
+    <div class="field"><label for="deleteAccountConfirm">Type <b>DELETE</b> to confirm</label><input id="deleteAccountConfirm" autocomplete="off" placeholder="DELETE" /></div>
+    <div class="field" id="deleteAccountPasswordWrap" hidden><label for="deleteAccountPassword">Enter your password</label><input id="deleteAccountPassword" type="password" autocomplete="current-password" placeholder="Password" /></div>
+    <div class="d-flex gap-10 flex-wrap">
+      <button class="btn btn--danger" id="deleteAccountConfirmBtn" type="button">Delete my account</button>
+      <button class="btn btn--ghost" id="deleteAccountCancelBtn" type="button">Cancel</button>
+    </div>
+    <p class="status" id="deleteAccountModalStatus" role="status" aria-live="polite"></p>
+  </div>
 </div>
 </div>
 </section>
