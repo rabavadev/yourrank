@@ -29,6 +29,9 @@ export async function serveSitemapXml(origin, _env) {
 
   let entries = [
     `<url><loc>${origin}/</loc><priority>1.0</priority></url>`,
+    `<url><loc>${origin}/pricing</loc><priority>0.9</priority></url>`,
+    `<url><loc>${origin}/faq</loc><priority>0.8</priority></url>`,
+    `<url><loc>${origin}/reviews</loc><priority>0.6</priority></url>`,
     `<url><loc>${origin}/terms</loc><priority>0.3</priority></url>`,
     `<url><loc>${origin}/privacy</loc><priority>0.3</priority></url>`,
     `<url><loc>${origin}/responsible</loc><priority>0.3</priority></url>`,

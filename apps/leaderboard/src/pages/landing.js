@@ -17,7 +17,7 @@ export const landingPage = `<!DOCTYPE html>
 <link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="/assets/landing.css" />
-<script type="application/ld+json">{"@context":"https://schema.org","@type":"Organization","name":"YourRank","url":"https://yourrank.site","description":"Hosted leaderboard pages for streamers and entertainment communities","contactPoint":{"@type":"ContactPoint","contactType":"customer service"}}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"Organization","name":"YourRank","url":"https://yourrank.site","description":"Hosted leaderboard pages for streamers and entertainment communities","areaServed":"Worldwide","knowsAbout":["leaderboards","streaming","Kick","Discord","community tools"],"contactPoint":{"@type":"ContactPoint","contactType":"customer service","email":"contact@yourrank.site","availableLanguage":["English"]}}</script>
 </head><body>
 <noscript><div class="noscript-card">
 <p class="noscript-title">YourRank</p>
@@ -88,8 +88,8 @@ export const landingPage = `<!DOCTYPE html>
 <div class="ftr-top">
   <div class="ftr-brand"><a class="brand" href="/">Your<b>Rank</b></a><p>Leaderboards for streamers &amp; communities</p></div>
   <div class="ftr-cols">
-    <div class="ftr-col"><b>Product</b><a href="/#how">How it works</a><a href="/pricing">Pricing</a><a href="/docs">API Docs</a><a href="/contact">Contact</a></div>
-    <div class="ftr-col"><b>Legal</b><a href="/terms">Terms of Service</a><a href="/privacy">Privacy Policy</a><a href="/cookies">Cookie Policy</a><a href="/refund">Refund Policy</a><a href="/responsible">Responsible Play</a></div>
+    <div class="ftr-col"><b>Product</b><a href="/#how">How it works</a><a href="/pricing">Pricing</a><a href="/faq">FAQ</a><a href="/docs">API Docs</a><a href="/contact">Contact</a></div>
+    <div class="ftr-col"><b>Legal</b><a href="/terms">Terms of Service</a><a href="/privacy">Privacy Policy</a><a href="/cookies">Cookie Policy</a><a href="/refund">Refund Policy</a><a href="/responsible">Responsible Play</a><a href="/reviews">Reviews</a></div>
   </div>
 </div>
 <p class="ftr-affiliate">{{AFFILIATE_DISCLOSURE}}</p>

@@ -8,7 +8,7 @@ import { withHandler } from "./middleware/handler.js";
 
 import {
   handleSignup, handleLogin, handleLogout, handleMe, handleForgot, handleReset,
-  handleVerifyEmail, handleResendVerification
+  handleVerifyEmail, handleResendVerification, handleDemoLogin
 } from "./handlers/auth.js";
 import {
   handleChangePassword, handleListSessions, handleRevokeOtherSessions, handleExportData
@@ -83,6 +83,7 @@ import {
 
 export const ROUTES = [
   // Auth routes (CSRF-exempt: callers may not have a CSRF cookie yet)
+  { path: "/auth/demo", method: "GET", handler: withHandler(handleDemoLogin) },
   { path: "/api/auth/signup", method: "POST", handler: withHandler(handleSignup) },
   { path: "/api/auth/login", method: "POST", handler: withHandler(handleLogin) },
   { path: "/api/auth/me", method: "GET", handler: withHandler(handleMe) },

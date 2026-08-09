@@ -191,3 +191,29 @@ The two phases are:
 
 Both trigger on push to `main`. You can also trigger manually from repo → Actions.
 
+## 9. Production go-live checklist
+
+Before announcing the site:
+
+1. **DNS & zone** — `yourrank.site` is active in Cloudflare and nameservers point to Cloudflare.
+2. **Secrets** — all required Worker secrets are set:
+   - Leaderboard: `DATABASE_URL`, `TOKEN_ENC_KEY`, `NOWPAYMENTS_API_KEY`, `NOWPAYMENTS_IPN_SECRET`
+   - If using credits: `KICK_WEBHOOK_PUBLIC_KEY`, `KICK_CLIENT_ID`, `KICK_CLIENT_SECRET`
+   - If using viewer login: `DISCORD_CLIENT_ID`, `DISCORD_CLIENT_SECRET`
+   - Bot: `ADMIN_API_KEY`, `TOKEN_ENC_KEY`, `IP_HASH_SALT`, bot tokens
+3. **Migrations** — run `supabase db push` or let CI run the `Migrate` job.
+4. **Callbacks** — in Kick and Discord developer apps set exact redirect/webhook URLs:
+   - Kick redirect: `https://yourrank.site/auth/kick/callback`
+   - Kick webhook: `https://yourrank.site/webhooks/kick`
+   - Discord redirect: `https://yourrank.site/api/viewer/auth/discord/callback`
+5. **Demo mode** — set `ALLOW_DEMO_LOGIN = "true"` only if you want a public one-click demo at `/auth/demo`. In production it should be `"false"`.
+6. **Billing bot** — run `curl -X POST https://yourrank.site/bot/api/billing/setup -H "x-api-key: $ADMIN_API_KEY"`.
+7. **Smoke test** — open `/health`, `/demo`, `/dashboard`, and complete a test payment in sandbox.
+8. **Search Console** — submit the sitemap at `https://yourrank.site/sitemap.xml` in Google Search Console → Sitemaps.
+9. **Google Business Profile** — claim or create a profile at business.google.com, set the review URL and a photo, then paste them into Worker vars `GBP_REVIEW_URL` and `GBP_PHOTO_URL`. The `/reviews` page will link to it.
+10. **Monitoring** — set `DISCORD_MONITORING_WEBHOOK` or `SENTRY_DSN` so errors are visible.
+
+## 10. One-click dashboard demo
+
+Set `ALLOW_DEMO_LOGIN = "true"` in `apps/leaderboard/wrangler.toml` and visit `/auth/demo`. It creates a single demo user (`demo@yourrank.site` by default) with a sample board and logs the browser into the dashboard. Keep this `false` in production unless you intend to let anyone access a shared demo account.
+
