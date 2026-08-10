@@ -2,7 +2,7 @@
 import { $ } from "./utils.js";
 import { state } from "./state.js";
 import { renderOverviewSummary } from "./overview.js";
-import { loadStats } from "./site.js";
+import { fitDesignPreview, loadStats, refreshDesignPreview } from "./site.js";
 
 
 const AREA_MAP = { home: "leaderboard", board: "leaderboard", boards: "leaderboard", settings: "leaderboard", performance: "analytics" };
@@ -56,7 +56,7 @@ export function navTo(page, hash = "") {
   // Re-render and re-fit the live preview whenever the Editor becomes visible
   // (updateDesignPreview() no-ops while the section is hidden, so navigating in
   // has to ask for it again).
-  if (page === "board" && typeof state.refreshDesignPreview === "function") setTimeout(state.refreshDesignPreview, 0);
+  if (page === "board") setTimeout(refreshDesignPreview, 0);
   const titles = { home: "Overview", board: "Editor", boards: "All boards", performance: "Analytics", settings: "Settings" };
   document.title = `${titles[page] || page} · YourRank`;
   const topbarTitle = $("lbTopbarTitle");
@@ -165,7 +165,7 @@ export function setupEditorTabs() {
         });
       }
       // The preview measures off the visible column height; re-fit after toggling.
-      if (typeof state.fitDesignPreview === "function") setTimeout(state.fitDesignPreview, 0);
+      setTimeout(fitDesignPreview, 0);
     }
     buttons.forEach((b) => b.addEventListener("click", () => show(b.dataset.egroup)));
     tabs.addEventListener("keydown", (e) => {

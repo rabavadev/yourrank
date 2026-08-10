@@ -1,13 +1,13 @@
 // Dashboard entry point. Coordinates data loading and initial render across modules.
 import { $, esc, getCsrf, localTzLabel, logError, toLocalInput, copyToClipboard, flashButton, showToast } from "./dashboard/utils.js";
-import { state } from "./dashboard/state.js";
+import { markDirty, setState, state, subscribe } from "./dashboard/state.js";
 import { navTo, setupShell } from "./dashboard/shell.js";
 import { renderBoardSwitcher, renderSidebarBoardSwitcher, renderBoardsPage } from "./dashboard/boards.js";
 import { renderPlayers } from "./dashboard/players.js";
-import { checkout, loadCreditsStatus, loadHistory, loadStats, renderArchives, renderBranding, renderDomain, renderDomainStatus, renderBoardStatus, renderEditorTimestamps, renderEmbedShare, renderLegal, renderNotifications, renderOverlay, renderPlan, renderPlayerFields, renderPrizes, renderSections, renderSocials, renderTemplateText, updateDesignPreview, wireCancelSubscription, wireDeleteAccount } from "./dashboard/site.js";
+import { checkout, fitDesignPreview, loadCreditsStatus, loadHistory, loadStats, refreshDesignPreview, renderArchives, renderBranding, renderDomain, renderDomainStatus, renderBoardStatus, renderEditorTimestamps, renderEmbedShare, renderLegal, renderNotifications, renderOverlay, renderPlan, renderPlayerFields, renderPrizes, renderSections, renderSocials, renderTemplateText, wireCancelSubscription, wireDeleteAccount } from "./dashboard/site.js";
 import { renderOverviewSummary, wireOverviewQuickActions } from "./dashboard/overview.js";
 import { renderReferrals } from "./dashboard/referrals.js";
-import { initPerformance, renderPerformance } from "./dashboard/performance.js";
+import { initPerformance } from "./dashboard/performance.js";
 import { wireAccount } from "./dashboard/account.js";
 
 async function init() {
@@ -71,35 +71,6 @@ async function init() {
   renderTemplateText();
   renderLegal();
   renderEmbedShare();
-  function fitDesignPreview() {
-    const iframe = $("designPreview");
-    const stage = $("previewStage");
-    const frame = $("previewFrame");
-    if (!iframe || !stage || !frame) return;
-    const active = document.querySelector(".preview-tab.is-active");
-    const deviceWidth = parseInt(active?.dataset.width || "1100", 10) || 1100;
-    const cw = frame.clientWidth;
-    if (!cw) return;
-    const doc = iframe.contentDocument;
-    let contentHeight = 680;
-    if (doc && doc.readyState === "complete" && doc.documentElement) {
-      const html = doc.documentElement;
-      const body = doc.body;
-      contentHeight = Math.max(680, html.scrollHeight, body ? body.scrollHeight : 0, html.offsetHeight, body ? body.offsetHeight : 0);
-    }
-    const scale = cw / deviceWidth;
-    const scaledHeight = contentHeight * scale;
-    const maxHeight = Math.min(720, Math.floor(window.innerHeight * 0.75));
-    const frameHeight = Math.min(scaledHeight, maxHeight);
-    stage.style.width = deviceWidth + "px";
-    stage.style.height = contentHeight + "px";
-    stage.style.setProperty("--preview-scale", String(scale));
-    frame.style.height = frameHeight + "px";
-  }
-  // Expose so shell.js can re-fit and re-render the preview when navigating
-  // into the Editor.
-  state.fitDesignPreview = fitDesignPreview;
-  state.refreshDesignPreview = () => { updateDesignPreview(); fitDesignPreview(); };
   const iframe = $("designPreview");
   if (iframe) iframe.addEventListener("load", fitDesignPreview);
   document.querySelectorAll(".preview-tab").forEach((btn) => {
@@ -110,8 +81,7 @@ async function init() {
       });
       btn.classList.add("is-active");
       btn.setAttribute("aria-selected", "true");
-      updateDesignPreview();
-      fitDesignPreview();
+      refreshDesignPreview();
     });
   });
   let resizeTimer;
@@ -133,7 +103,7 @@ async function init() {
     btn.textContent = willPublish ? "Save & publish" : "Save changes";
     hint.textContent = willPublish ? "This board will go live when you save" : "Unsaved changes";
   }
-  if (pubToggle) pubToggle.addEventListener("change", () => { state._dirty = true; const sb = $("savebar"); if (sb) sb.hidden = false; updatePublishHint(); });
+  if (pubToggle) pubToggle.addEventListener("change", () => { setState({ _dirty: true }); updatePublishHint(); });
   updatePublishHint();
   const arToggle = $("f_auto_reset");
   const arClear = $("f_auto_reset_clear");
@@ -204,28 +174,26 @@ async function init() {
   // The iframe starts empty: render the preview once so the editor never opens
   // on a blank frame.
   if (document.querySelector('section[data-page="board"].is-on')) {
-    updateDesignPreview();
-    fitDesignPreview();
+    refreshDesignPreview();
   }
 
   renderOverviewSummary();
   wireOverviewQuickActions();
   renderReferrals();
   initPerformance();
-  state.renderPerformance = renderPerformance;
   loadStats();
   loadCreditsStatus();
   wireStreamerHud();
   wireAccount();
 
-  // Dirty state lives in dashboard/site.js (savebar + unload guard + preview);
-  // this only adds the debounced overview refresh on top of it.
+  // The save bar, unload guard and preview react to the same notification in
+  // dashboard/site.js; this only adds the debounced overview refresh.
   let dirtyTimer;
-  const markDirty = () => {
-    state.markDirty();
+  subscribe((keys) => {
+    if (!keys.includes("draft")) return;
     clearTimeout(dirtyTimer);
     dirtyTimer = setTimeout(renderOverviewSummary, 150);
-  };
+  });
 
   window.addEventListener("message", (e) => {
     if (e.data?.type === "yr_edit_request") {
@@ -275,7 +243,6 @@ async function init() {
     }
   });
 
-  window.addEventListener("beforeunload", (e) => { if (state._dirty) { e.preventDefault(); e.returnValue = ""; } });
   if (urlParams.get("upgraded")) {
     $("status").textContent = "Payment received — Pro activates once the network confirms (usually minutes).";
   }

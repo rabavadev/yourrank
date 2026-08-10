@@ -1,6 +1,6 @@
 // Player table, CSV/paste import, and row management.
 import { $, esc, logError, parseAmount } from "./utils.js";
-import { state } from "./state.js";
+import { state, markDirty } from "./state.js";
 
 export function playerRow(p = { name: "", wagered: "", prize: "", score: "", hands: "", netProfit: "", winRate: "", change: "" }) {
   const tr = document.createElement("tr");
@@ -498,7 +498,7 @@ $("bulkDelete")?.addEventListener("click", () => {
   }
   if (removed) {
     renumber(); toggleEmpty(); syncSelectAll();
-    state.markDirty?.();
+    markDirty();
     $("status").textContent = `${removed} player${removed === 1 ? "" : "s"} removed.`;
   }
 });
@@ -513,7 +513,7 @@ $("bulkClearWager")?.addEventListener("click", () => {
   }
   if (cleared) {
     sortRows();
-    state.markDirty?.();
+    markDirty();
     $("status").textContent = `${cleared} wager${cleared === 1 ? "" : "s"} cleared.`;
   }
 });
@@ -543,7 +543,7 @@ $("colMenu")?.addEventListener("change", (e) => {
     fields[e.target.dataset.col] = e.target.checked;
     state.EXTRA.playerFields = fields;
     applyPlayerFieldVisibility(fields);
-    state.markDirty?.();
+    markDirty();
   }
 });
 
