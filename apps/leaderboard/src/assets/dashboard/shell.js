@@ -82,6 +82,9 @@ export function scrollToHash(hash) {
     document.getElementById(`perf-${hash}`) ||
     document.getElementById(`cr-${hash}`);
   if (target) {
+    // If the target is inside a collapsed <details>, open it before scrolling.
+    const details = target.closest("details");
+    if (details) details.open = true;
     target.scrollIntoView({ block: "start", behavior: prefersReducedMotion() ? "auto" : "smooth" });
     target.classList.add("is-highlighted");
     setTimeout(() => target.classList.remove("is-highlighted"), 1200);
@@ -245,6 +248,18 @@ export function setupShell() {
     const params = new URLSearchParams(location.search);
     const page = params.get("nav") || "home";
     const hash = location.hash.replace("#", "");
+    navTo(page, hash);
+  });
+
+  // Allow nested dashboard modules to request navigation without a circular import.
+  window.addEventListener("yr-nav", (e) => {
+    const { page, hash } = e.detail || {};
+    if (!page) return;
+    e.preventDefault();
+    const newPath = pathForPage(page, hash);
+    if (newPath !== location.pathname + location.search + location.hash) {
+      history.pushState({}, "", newPath);
+    }
     navTo(page, hash);
   });
 }
