@@ -23,12 +23,12 @@ export function loginHtml(botUsername: string, devLogin: boolean, nonce?: string
   ${GOOGLE_FONTS}
   <style${nonce ? ` nonce="${nonce}"` : ""}>
   ${STYLE_ATTR_CSS}
-  :root { --yr-bg:#f8f9fb; --yr-panel:#ffffff; --yr-panel-2:#f4f5f8; --yr-line:#e9eaef; --yr-line-2:#dcdee6;
-          --yr-ink:#111114; --yr-ink-soft:#4e4f57; --yr-ink-mute:#8b8d98;
-          --yr-accent:#4f46e5; --yr-accent-ink:#ffffff; --yr-green:#1e8e3e; --yr-red:#d93025;
-          --yr-radius:14px; --yr-shadow:0 1px 3px rgba(0,0,0,.05),0 1px 2px rgba(0,0,0,.03);
+  :root { --yr-bg:#fafafa; --yr-panel:#ffffff; --yr-panel-2:#f7f7f8; --yr-line:#e4e4e7; --yr-line-2:#d4d4d8;
+          --yr-ink:#191919; --yr-ink-soft:#55555c; --yr-ink-mute:#82828a;
+          --yr-accent:#2200ff; --yr-accent-ink:#ffffff; --yr-green:#10a37f; --yr-red:#ef4444;
+          --yr-radius:14px; --yr-shadow:0 1px 2px rgba(0,0,0,.05);
           --yr-sans:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
-          --yr-mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,monospace; }
+          --yr-mono:"IBM Plex Mono","JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,monospace; }
   * { box-sizing:border-box; margin:0; }
   body { background:var(--yr-bg); color:var(--yr-ink); font:15px/1.5 var(--yr-sans); display:flex; align-items:center; justify-content:center; min-height:100vh; padding:20px; }
   .card { width:100%; max-width:420px; background:var(--yr-panel); border:1px solid var(--yr-line); border-radius:var(--yr-radius); box-shadow:var(--yr-shadow); padding:32px; text-align:center; }

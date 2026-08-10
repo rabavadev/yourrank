@@ -90,6 +90,35 @@ export interface ShellNavOpts {
   theme?: "light" | "dark";
 }
 
+/**
+ * Signed-out variant of the same header. Pages that can be reached by both
+ * visitors and signed-in streamers (Help) render this when there is no
+ * session, so the chrome stays identical instead of switching to a different
+ * marketing top bar.
+ */
+export function publicNavHtml(opts: { activePath?: string; theme?: "light" | "dark" } = {}): string {
+  const theme = opts.theme || "dark";
+  const next = encodeURIComponent(opts.activePath || "/");
+  return `<header class="gm-shell-nav gm-shell-nav--${theme}" data-theme="${theme}">
+  <div class="gm-shell-inner">
+    <a class="gm-brand" href="/">
+      <span class="gm-brand-mark">YR</span>
+      <span class="gm-brand-word">YourRank</span>
+    </a>
+    <div class="gm-tabs-wrap">
+      <nav class="gm-tabs" aria-label="Site">
+        <a class="gm-tab" href="/pricing">Pricing</a>
+        <a class="gm-tab" href="/docs">Docs</a>
+      </nav>
+    </div>
+    <div class="gm-who gm-who--anon">
+      <a class="gm-anon-link" href="/login?next=${next}">Sign in</a>
+      <a class="gm-anon-cta" href="/signup">Get started</a>
+    </div>
+  </div>
+</header>`;
+}
+
 export function shellNavHtml(opts: ShellNavOpts = {}): string {
   const active = opts.active || activeKey(opts.activePath || "/");
   const theme = opts.theme || "dark";

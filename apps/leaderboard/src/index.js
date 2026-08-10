@@ -15,7 +15,7 @@ import { leaderboardPageHtml } from "../../../shared/page-shell.js";
 import { bumpStat } from "./stats.js";
 import { runAutoReset } from "./auto-reset.js";
 import { createQueueProducer } from "../../../shared/queue-producer.js";
-import { shellNavHtml } from "../../../shared/shell-nav.js";
+import { shellNavHtml, publicNavHtml } from "../../../shared/shell-nav.js";
 import apiApp from "./router.js";
 import { OG_IMAGE_PNG_BASE64 } from "./og-image.js";
 import {
@@ -36,6 +36,19 @@ import { handleDashboardPreview } from "./handlers/preview.js";
 import { demoLeaderboardData } from "./demo-data.js";
 
 const LEGAL_PAGES = new Set(["terms", "privacy", "responsible", "cookies", "refund", "contact"]);
+
+// `/dashboard/<section>` → `?nav=<section>`. Keys are every `data-page` in the
+// dashboard plus the legacy aliases we have shipped links for.
+const DASHBOARD_SECTIONS = {
+  home: "home",
+  overview: "home",
+  board: "board",
+  editor: "board",
+  boards: "boards",
+  performance: "performance",
+  analytics: "performance",
+  settings: "settings",
+};
 
 function enqueueBump(env, ctx, siteId, field, referer = null, visitorHash = null) {
   const producer = createQueueProducer(
@@ -406,16 +419,23 @@ async function handleRequest(request, env, ctx, meta) {
       // --- helper for rendering strings or JSX pages ---
       const renderHtmlPage = async (pageObj, { reqId, activePath, user, theme, accountHref, logoutAction } = {}) => {
         const navOpts = activePath && user ? { activePath, user, theme, accountHref: accountHref || "/account/profile", logoutAction } : null;
-        if (typeof pageObj === "string") {
-          let result = pageObj;
-          if (navOpts) result = result.replace("<!--GM_NAV-->", shellNavHtml(navOpts));
-          if (reqId) result = result.replace("{{REQ_ID}}", reqId);
-          // Fill in legal company identity placeholders on static/legal pages.
+        // Pages reachable signed-out (Help) still get a header — the anonymous
+        // variant of the same shell rather than a separate marketing top bar.
+        const navHtml = () => (navOpts ? shellNavHtml(navOpts) : publicNavHtml({ activePath, theme }));
+        // Placeholders every page can carry, whatever it is rendered from.
+        const applyPlaceholders = (html) => {
+          let result = reqId ? html.replace("{{REQ_ID}}", reqId) : html;
+          // Legal company identity (support email, company name, ...).
           result = applyLegalIdentity(result, getPlatformIdentity());
           // Google Business Profile placeholders (optional; set via wrangler secret/vars).
           result = result.replace(/{{GBP_REVIEW_URL}}/g, env.GBP_REVIEW_URL || "#");
           result = result.replace(/{{GBP_PHOTO_URL}}/g, env.GBP_PHOTO_URL || "");
           return fillYear(result);
+        };
+        if (typeof pageObj === "string") {
+          let result = pageObj;
+          if (navOpts) result = result.replace("<!--GM_NAV-->", shellNavHtml(navOpts));
+          return applyPlaceholders(result);
         }
 
         if (pageObj.Component) {
@@ -423,12 +443,10 @@ async function handleRequest(request, env, ctx, meta) {
           if (node instanceof Promise) node = await node;
           const content = node.toString();
           if (pageObj.config) {
-            let result = leaderboardPageHtml({ ...pageObj.config, content });
-            if (navOpts) result = result.replace("<!--GM_NAV-->", shellNavHtml(navOpts));
-            if (reqId) result = result.replace("{{REQ_ID}}", reqId);
-            return fillYear(result);
+            const result = leaderboardPageHtml({ ...pageObj.config, content }).replace("<!--GM_NAV-->", navHtml());
+            return applyPlaceholders(result);
           }
-          return fillYear(content);
+          return applyPlaceholders(content);
         }
       }
 
@@ -522,9 +540,6 @@ async function handleRequest(request, env, ctx, meta) {
         }
       }
       // Analytics and billing have been folded into the unified dashboard.
-      if (path === "/dashboard/analytics") {
-        return Response.redirect(new URL("/dashboard?nav=performance", url), 302);
-      }
       if (path === "/dashboard/billing") {
         return Response.redirect(new URL("/account/plan", url), 302);
       }
@@ -552,14 +567,13 @@ async function handleRequest(request, env, ctx, meta) {
       if (path === "/dashboard/rewards") {
         return Response.redirect(new URL("/dashboard/rewards/channel", url), 302);
       }
-      if (path === "/dashboard/editor") {
-        return Response.redirect(new URL("/dashboard?nav=board", url), 302);
-      }
-      if (path === "/dashboard/boards") {
-        return Response.redirect(new URL("/dashboard?nav=boards", url), 302);
-      }
-      if (path === "/dashboard/settings") {
-        return Response.redirect(new URL("/dashboard?nav=settings", url), 302);
+      // The dashboard renders its sections client-side behind ?nav=, but the
+      // sidebar and our own copy link to them as paths. Map every section (and
+      // its legacy alias) instead of listing redirects one at a time, so a real
+      // section can never 404 the way /dashboard/performance did.
+      if (path.startsWith("/dashboard/")) {
+        const nav = DASHBOARD_SECTIONS[path.slice("/dashboard/".length)];
+        if (nav) return Response.redirect(new URL(`/dashboard?nav=${nav}`, url), 302);
       }
       if (path.startsWith("/dashboard/analytics/")) {
         const tab = path.slice("/dashboard/analytics/".length);
@@ -657,7 +671,9 @@ async function handleRequest(request, env, ctx, meta) {
         const map = { support: "helpSupport", feedback: "helpFeedback" };
         const pageKey = map[tab];
         if (!pageKey) return Response.redirect(new URL("/help/support", url), 302);
-        return new Response(addCookieConsent(await renderHtmlPage(PAGES[pageKey])), { headers: { ...HTML_N, ...csrfHeader } });
+        const helpUser = await currentUser(request, env).catch(() => null);
+        const helpHtml = await renderHtmlPage(PAGES[pageKey], { activePath: path, user: helpUser || undefined, theme: "dark" });
+        return new Response(addCookieConsent(helpHtml), { headers: { ...HTML_N, ...csrfHeader } });
       }
       if (path === "/docs") return new Response(addCookieConsent(await renderHtmlPage(PAGES.docs)), { headers: { ...HTML_N, ...csrfHeader } });
       if (path === "/pricing" || path === "/pricing.html") return new Response(addCookieConsent(await renderHtmlPage(PAGES.pricing)), { headers: { ...HTML_N, ...csrfHeader } });

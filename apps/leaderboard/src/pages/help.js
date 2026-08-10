@@ -1,4 +1,7 @@
 // Help center pages: Support and Feedback with a persistent sidebar.
+// Rendered through the shared page shell so a signed-in streamer keeps the app
+// header (and their session) instead of landing on a marketing page that offers
+// them a "Sign in" button.
 const TABS = [
   { key: "support", label: "Support", kind: "support" },
   { key: "feedback", label: "Feedback", kind: "feedback" },
@@ -11,20 +14,8 @@ function tabsHtml(active) {
   }).join("");
 }
 
-function helpShell({ active, title, description, canonical, h1, intro, kind, subjectPlaceholder, messagePlaceholder }) {
-  return `<!DOCTYPE html><html lang="en"><head>
-<meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>${title} · YourRank</title>
-<meta name="description" content="${description}" />
-<link rel="canonical" href="${canonical}" />
-<link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
-<link rel="stylesheet" href="/assets/app.css" />
-</head><body>
-<a href="#main-content" class="sr-only skip-link">Skip to content</a>
-<header class="topbar"><a class="brand" href="/">Your<b>Rank</b></a>
-<div class="topbar-right"><a href="/login" class="btn btn--sm btn--ghost">Sign in</a></div></header>
-<div id="help-app" data-help-tab="${active}">
+function helpContent({ active, h1, intro, kind, subjectPlaceholder, messagePlaceholder }) {
+  return `<div id="help-app" data-help-tab="${active}">
 <div class="lb-backdrop" id="helpBackdrop"></div>
 <div class="lb-shell">
   <aside class="lb-side" id="helpSide" aria-label="Help sections" role="dialog" aria-modal="false">
@@ -39,7 +30,7 @@ function helpShell({ active, title, description, canonical, h1, intro, kind, sub
       <button class="lb-menu" type="button" aria-label="Show sections" aria-expanded="false" aria-controls="helpSide">☰</button>
     </div>
     <div class="lb-bento">
-      <main class="lb-widget" id="main-content">
+      <div class="lb-widget">
         <h1 id="contactTitle">${h1}</h1>
         <p class="sub" id="contactIntro">${intro}</p>
         <form id="contactForm" class="card">
@@ -55,20 +46,32 @@ function helpShell({ active, title, description, canonical, h1, intro, kind, sub
         </form>
         <p class="hint mt-18" id="c_back_wrap" hidden><a id="c_back" href="/">← Back</a></p>
         <p class="hint mt-24">You can also email <a href="mailto:{{SUPPORT_EMAIL}}">{{SUPPORT_EMAIL}}</a> directly.</p>
-      </main>
+      </div>
     </div>
   </div>
 </div>
-</div>
-<footer class="wrap footer-wrap mt-48">
-<span>© <span id="yr"></span> {{COMPANY_NAME}}</span>
-<span><a href="/terms">Terms</a> · <a href="/privacy">Privacy</a> · <a href="/refund">Refunds</a> · <a href="/cookies">Cookies</a> · <a href="/responsible">Responsible play</a></span>
-</footer>
-<script src="/assets/contact.js"></script>
-</body></html>`;
+</div>`;
 }
 
-export const helpSupportPage = helpShell({
+function helpPage(opts) {
+  return {
+    config: {
+      title: `${opts.title} · YourRank`,
+      canonical: opts.canonical,
+      description: opts.description,
+      robots: "index, follow",
+      styles: ["/assets/app.css", "/assets/shell-nav.css"],
+      scripts: ['<script src="/assets/contact.js"></script>'],
+      mainClass: "wrap",
+      nav: true,
+      footer: true,
+      wide: true,
+    },
+    Component: () => helpContent(opts),
+  };
+}
+
+export const helpSupportPage = helpPage({
   active: "support",
   title: "Contact support",
   description: "Get help with YourRank. Questions, feedback, and support.",
@@ -80,7 +83,7 @@ export const helpSupportPage = helpShell({
   messagePlaceholder: "Describe the problem and what you expected to happen...",
 });
 
-export const helpFeedbackPage = helpShell({
+export const helpFeedbackPage = helpPage({
   active: "feedback",
   title: "Give feedback",
   description: "Share product feedback and feature requests for YourRank.",

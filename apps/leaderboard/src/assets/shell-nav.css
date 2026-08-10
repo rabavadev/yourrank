@@ -56,6 +56,15 @@ body[data-wide] .gm-shell-inner{max-width:none}
 .gm-profile-nav{display:none;flex-direction:column;gap:2px;padding-bottom:4px;margin-bottom:4px;border-bottom:1px solid var(--gm-line);}
 .gm-profile-link--nav{font-family:var(--gm-mono);font-size:12px;letter-spacing:.06em;text-transform:uppercase;}
 .gm-profile-link--nav.is-active{color:var(--gm-ink);background:var(--gm-line);}
+/* Signed-out header (Help viewed without a session). */
+.gm-who--anon{gap:8px;}
+.gm-anon-link,.gm-anon-cta{font-family:var(--gm-mono);font-size:12px;letter-spacing:.08em;
+  text-transform:uppercase;text-decoration:none;padding:9px 14px;border-radius:10px;white-space:nowrap;
+  transition:background .15s,border-color .15s,color .15s;}
+.gm-anon-link{color:var(--gm-ink-soft);border:1px solid transparent;}
+.gm-anon-link:hover{color:var(--gm-ink);background:var(--gm-line);}
+.gm-anon-cta{color:var(--gm-accent-ink);background:var(--gm-accent);}
+.gm-anon-cta:hover{filter:brightness(1.06);}
 .gm-badge{font-family:var(--gm-mono);font-size:10px;letter-spacing:.12em;
   text-transform:uppercase;padding:4px 8px;border-radius:99px;border:1px solid var(--gm-line-2);display:inline-flex;align-items:center;line-height:1;vertical-align:middle;}
 .gm-badge--free{color:var(--gm-ink-soft);}

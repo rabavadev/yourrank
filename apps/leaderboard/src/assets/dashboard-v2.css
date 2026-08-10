@@ -1,24 +1,26 @@
 /* YourRank dashboard v2 — clean SaaS shell based on Linear/Vercel patterns */
 
+/* Palette values are the product's one palette (see app.css / shell-nav.css /
+   BOT_BASE_CSS). tokens.test.js fails if these three copies drift again. */
 :root {
-  --yr-bg: #f8f9fb;
+  --yr-bg: #fafafa;
   --yr-panel: #ffffff;
-  --yr-panel-2: #f4f5f8;
-  --yr-line: #e9eaef;
-  --yr-line-2: #dcdee6;
-  --yr-ink: #111114;
-  --yr-ink-soft: #4e4f57;
-  --yr-ink-mute: #8b8d98;
-  --yr-accent: #4f46e5;
+  --yr-panel-2: #f7f7f8;
+  --yr-line: #e4e4e7;
+  --yr-line-2: #d4d4d8;
+  --yr-ink: #191919;
+  --yr-ink-soft: #55555c;
+  --yr-ink-mute: #82828a;
+  --yr-accent: #2200ff;
   --yr-accent-ink: #ffffff;
-  --yr-green: #1e8e3e;
-  --yr-red: #d93025;
+  --yr-green: #10a37f;
+  --yr-red: #ef4444;
   --yr-radius: 14px;
   --yr-radius-sm: 10px;
-  --yr-shadow: 0 1px 3px rgba(0,0,0,.05), 0 1px 2px rgba(0,0,0,.03);
-  --yr-shadow-lg: 0 10px 30px rgba(0,0,0,.06);
+  --yr-shadow: 0 1px 2px rgba(0,0,0,.05);
+  --yr-shadow-lg: 0 12px 32px rgba(0,0,0,.12);
   --yr-sans: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  --yr-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  --yr-mono: "IBM Plex Mono", "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 
 .v2-dash {
