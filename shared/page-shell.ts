@@ -362,6 +362,13 @@ const BOT_DASH_V2_CSS = `
   .form-status { margin-top: 10px; font-size: 14px; }
   .form-status.error { color: var(--yr-red); }
   .form-status.ok { color: var(--yr-green); }
+  .list-controls { display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-bottom:12px; }
+  .list-controls-row { display:flex; gap:10px; flex:1; min-width:220px; }
+  .list-search { flex:1; min-width:160px; padding:8px 10px; border:1px solid var(--yr-line-2); border-radius:10px; background:var(--yr-panel); font:inherit; }
+  .list-sort { padding:8px 10px; border:1px solid var(--yr-line-2); border-radius:10px; background:var(--yr-panel); font:inherit; min-width:130px; }
+  .list-pagination { display:flex; gap:8px; align-items:center; margin-left:auto; }
+  .list-page-info { font-size:12px; color:var(--yr-ink-soft); min-width:110px; text-align:center; }
+  @media(max-width:640px) { .list-controls { flex-direction:column; align-items:stretch; } .list-controls-row { flex-direction:column; min-width:auto; } .list-pagination { margin-left:0; justify-content:space-between; } }
 `;
 
 export interface BotPageOpts {

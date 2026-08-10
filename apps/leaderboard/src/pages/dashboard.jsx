@@ -422,6 +422,7 @@ export function DashboardContent() {
 <section class="lb-page" data-page="boards">
 <div class="lb-phead"><button class="lb-menu" type="button" aria-label="Show sections" data-menu aria-expanded="false" aria-controls="lbSide">☰</button><button class="btn btn--sm" id="addBoardFromBoards" type="button">+ New board</button></div>
 <div class="card">
+<div class="list-controls"><input type="search" id="boardsSearch" class="list-search" placeholder="Find board…" aria-label="Find board" /></div>
 <div class="board-table-wrap">
 <table class="board-table">
 <thead><tr><th>Board</th><th>Sponsor</th><th>URL</th><th>Players</th><th>Template</th><th>Status</th><th class="ta-r">Actions</th></tr></thead>
