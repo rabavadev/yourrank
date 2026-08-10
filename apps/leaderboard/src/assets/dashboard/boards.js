@@ -270,6 +270,27 @@ export function renderBoardsPage() {
       tr.querySelector('[data-action="del"]')?.addEventListener("click", () => { deleteBoard(b.id); });
       body.appendChild(tr);
     });
+    filterBoards();
   }
   if (addBtn) addBtn.onclick = openNewBoardForm;
 }
+
+function filterBoards() {
+  const input = $("boardsSearch");
+  const body = $("boardsBody");
+  const empty = $("boardsEmpty");
+  if (!input || !body) return;
+  const q = input.value.trim().toLowerCase();
+  let visible = 0;
+  for (const row of body.children) {
+    const hide = q && !row.textContent.toLowerCase().includes(q);
+    row.hidden = hide;
+    if (!hide) visible++;
+  }
+  if (empty) {
+    empty.textContent = q ? "No boards match your search." : "No boards yet. Create one to get started.";
+    empty.hidden = visible > 0;
+  }
+}
+
+$("boardsSearch")?.addEventListener("input", filterBoards);
