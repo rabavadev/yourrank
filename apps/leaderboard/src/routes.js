@@ -73,7 +73,7 @@ import {
   handleViewerRedeem,
 } from "./handlers/viewer-dashboard.js";
 import { handleApiDocs, handleOpenApiJson } from "./handlers/docs.js";
-import { handleCheckout, handleCheckoutLifetime, handleIpn, handleCancel, handleUserPayments, handlePendingPayment } from "./billing.js";
+import { handleCheckout, handleCheckoutLifetime, handleIpn, handleCancel, handleUserPayments, handlePendingPayment, handleAccountUsage } from "./billing.js";
 import {
   handleOverview, handleUsers, handleLeads, handlePayments, handleAction,
   handleSupportMessages, handleSupportReply,
@@ -200,6 +200,7 @@ export const ROUTES = [
   { path: "/api/billing/trial", method: "POST", handler: withHandler(handleTrial) },
   { path: "/api/billing/cancel", method: "POST", handler: withHandler(handleCancel) },
   { path: "/api/account/payments", method: "GET", handler: withHandler(handleUserPayments) },
+  { path: "/api/account/usage", method: "GET", handler: withHandler(handleAccountUsage) },
   { path: "/api/billing/ipn", method: "POST", handler: withHandler(handleIpn) },
   
   // Bot lifecycle is owned by the bot Worker; obsolete leaderboard routes removed (C-06).

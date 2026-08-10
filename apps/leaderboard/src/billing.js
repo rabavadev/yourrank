@@ -6,7 +6,7 @@ import { logProviderEvent } from "../../../shared/provider-events.js";
 
 // Plan definitions imported from shared source of truth.
 // Re-exported here for backward compatibility with any local imports.
-import { PLAN_LIMITS as _PL, BOARD_LIMITS as _BL, PLAN_PRICES as _PP, PLAN_META as _PM, computeProratedExpiry as _computeProratedExpiry } from "../../../shared/plans.js";
+import { PLAN_LIMITS as _PL, BOARD_LIMITS as _BL, PLAN_PRICES as _PP, PLAN_META as _PM, computeProratedExpiry as _computeProratedExpiry, CREDITS_REWARD_LIMITS as _CRL, CREDITS_SHOP_LIMITS as _CSL, CREDITS_PENDING_REDEMPTIONS_LIMITS as _CPRL, CREDITS_REDEMPTIONS_PER_30D_LIMITS as _CR30L, CREDITS_VIEWERS_PER_30D_LIMITS as _CVL } from "../../../shared/plans.js";
 import { sendReceiptEmail } from "./email.js";
 export const PLAN_LIMITS = _PL;
 export const BOARD_LIMITS = _BL;
@@ -573,6 +573,85 @@ function paymentStatusMessage(status) {
     default:
       return "";
   }
+}
+
+// GET /api/account/usage — aggregated usage against plan limits for all products.
+export async function handleAccountUsage(request, env) {
+  const { user, res } = await requireUser(request, env);
+  if (res) return res;
+  const plan = effectivePlan(user);
+  try {
+    const sites = await query("SELECT id FROM sites WHERE user_id=$1", [user.id]);
+    const siteIds = (sites || []).map((s) => s.id);
+    const activeSite = await one("SELECT id FROM sites WHERE user_id=$1 ORDER BY created_at DESC LIMIT 1", [user.id]);
+
+    const [playerCount, creditsUsage] = await Promise.all([
+      siteIds.length
+        ? one("SELECT count(*)::int AS count FROM players WHERE site_id = ANY($1)", [siteIds])
+        : { count: 0 },
+      activeSite ? getSiteCreditsUsage(activeSite.id) : null,
+    ]);
+
+    return ok({
+      plan,
+      leaderboard: {
+        boards: { used: siteIds.length, limit: _BL[plan] },
+        players: { used: playerCount?.count || 0, limit: _PL[plan] },
+      },
+      credits: activeSite
+        ? {
+            rewardMappings: { used: creditsUsage.rewardMappings, limit: _CRL[plan] },
+            shopItems: { used: creditsUsage.shopItems, limit: _CSL[plan] },
+            pendingRedemptions: { used: creditsUsage.pendingRedemptions, limit: _CPRL[plan] },
+            redemptionsPer30Days: { used: creditsUsage.redemptionsPer30Days, limit: _CR30L[plan] },
+            newViewersPer30Days: { used: creditsUsage.newViewersPer30Days, limit: _CVL[plan] },
+          }
+        : null,
+      limits: {
+        boards: _BL[plan],
+        players: _PL[plan],
+        rewardMappings: _CRL[plan],
+        shopItems: _CSL[plan],
+        pendingRedemptions: _CPRL[plan],
+        redemptionsPer30Days: _CR30L[plan],
+        newViewersPer30Days: _CVL[plan],
+      },
+    });
+  } catch (err) {
+    console.error("[handleAccountUsage] failed:", err);
+    return bad("Could not load usage. Try again later.", 500);
+  }
+}
+
+async function getSiteCreditsUsage(siteId) {
+  const [rewardMappings, shopItems, pendingRedemptions, redemptions30d, newViewers30d] = await Promise.all([
+    one("SELECT count(*)::int AS count FROM credit_reward_mappings WHERE site_id=$1 AND active=true", [siteId]),
+    one("SELECT count(*)::int AS count FROM shop_items WHERE site_id=$1 AND active=true", [siteId]),
+    one(
+      `SELECT count(*)::int AS count FROM redemptions r
+         JOIN site_viewers sv ON sv.id = r.site_viewer_id
+        WHERE sv.site_id=$1 AND r.status='pending'`,
+      [siteId]
+    ),
+    one(
+      `SELECT count(*)::int AS count FROM redemptions r
+         JOIN site_viewers sv ON sv.id = r.site_viewer_id
+        WHERE sv.site_id=$1 AND r.status='fulfilled' AND r.created_at > now() - interval '30 days'`,
+      [siteId]
+    ),
+    one(
+      `SELECT count(*)::int AS count FROM site_viewers
+        WHERE site_id=$1 AND created_at > now() - interval '30 days'`,
+      [siteId]
+    ),
+  ]);
+  return {
+    rewardMappings: rewardMappings?.count || 0,
+    shopItems: shopItems?.count || 0,
+    pendingRedemptions: pendingRedemptions?.count || 0,
+    redemptionsPer30Days: redemptions30d?.count || 0,
+    newViewersPer30Days: newViewers30d?.count || 0,
+  };
 }
 
 // GET /api/billing/pending — return any waiting invoice so a user can resume
