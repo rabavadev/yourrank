@@ -89,6 +89,96 @@ async function copyWithFallback(text) {
   if (ok) return true;
   return manualCopyFallback(text);
 }
+
+// Generic client-side search/sort/pagination for bot dashboard lists.
+function ListController(opts){
+  var self = this;
+  self.tbody = typeof opts.tbody === 'string' ? $(opts.tbody) : opts.tbody;
+  var table = self.tbody && self.tbody.closest && self.tbody.closest('table');
+  self.root = table || (typeof opts.root === 'string' ? $(opts.root) : opts.root);
+  self.all = opts.items || [];
+  self.perPage = opts.perPage || 20;
+  self.searchFn = opts.searchFn || function(){ return ''; };
+  self.sortOptions = opts.sortOptions || [];
+  self.emptyAllText = opts.emptyAllText || 'No items yet.';
+  self.emptyText = opts.emptyText || 'No matching items.';
+  self.renderItem = opts.renderItem || function(item){ return '<td colspan="99">'+esc(String(item))+'</td>'; };
+  self.onRender = opts.onRender || function(){};
+  self.page = 1;
+  self.query = '';
+  self.sortKey = self.sortOptions[0] ? self.sortOptions[0].key : '';
+
+  var wrap = document.createElement('div');
+  wrap.className = 'list-controls';
+  var html = '<div class="list-controls-row">';
+  html += '<input type="search" class="list-search" placeholder="'+(opts.searchPlaceholder || 'Search…')+'" aria-label="Search">';
+  if (self.sortOptions.length) {
+    html += '<select class="list-sort" aria-label="Sort"><option value="">Sort by…</option>';
+    self.sortOptions.forEach(function(o){ html += '<option value="'+esc(o.key)+'"'+(o.key===self.sortKey?' selected':'')+'>'+esc(o.label)+'</option>'; });
+    html += '</select>';
+  }
+  html += '</div><div class="list-pagination" role="group" aria-label="Pagination"><button class="ghost" data-prev type="button">Previous</button><span class="list-page-info"></span><button class="ghost" data-next type="button">Next</button></div>';
+  wrap.innerHTML = html;
+  if (self.root && table && table.parentNode) table.parentNode.insertBefore(wrap, table);
+  else if (self.root) self.root.insertBefore(wrap, self.root.firstChild);
+
+  self.searchInput = wrap.querySelector('.list-search');
+  self.sortSelect = wrap.querySelector('.list-sort');
+  self.prevBtn = wrap.querySelector('[data-prev]');
+  self.nextBtn = wrap.querySelector('[data-next]');
+  self.pageInfo = wrap.querySelector('.list-page-info');
+
+  self.searchInput.addEventListener('input', function(){ self.query = self.searchInput.value.trim().toLowerCase(); self.page = 1; self.refresh(); });
+  if (self.sortSelect) self.sortSelect.addEventListener('change', function(){ self.sortKey = self.sortSelect.value; self.page = 1; self.refresh(); });
+  self.prevBtn.addEventListener('click', function(){ if (self.page > 1){ self.page--; self.refresh(); } });
+  self.nextBtn.addEventListener('click', function(){ if (self.page < self.totalPages){ self.page++; self.refresh(); } });
+
+  self.refresh();
+}
+ListController.prototype.setItems = function(items){
+  this.all = items || [];
+  this.page = 1;
+  this.refresh();
+};
+ListController.prototype.matches = function(item){
+  if (!this.query) return true;
+  var hay = String(this.searchFn(item)).toLowerCase();
+  var terms = this.query.split(' ').filter(Boolean);
+  for (var i = 0; i < terms.length; i++) if (hay.indexOf(terms[i]) === -1) return false;
+  return true;
+};
+ListController.prototype.compare = function(a, b){
+  var opt = null;
+  for (var i = 0; i < this.sortOptions.length; i++) if (this.sortOptions[i].key === this.sortKey){ opt = this.sortOptions[i]; break; }
+  if (!opt || !opt.fn) return 0;
+  return opt.fn(a, b);
+};
+ListController.prototype.refresh = function(){
+  var self = this;
+  var filtered = self.all.filter(function(item){ return self.matches(item); });
+  var sorted = self.sortKey ? filtered.slice().sort(function(a, b){ return self.compare(a,b); }) : filtered;
+  self.totalPages = Math.max(1, Math.ceil(sorted.length / self.perPage));
+  if (self.page > self.totalPages) self.page = self.totalPages || 1;
+  var start = (self.page - 1) * self.perPage;
+  var pageItems = sorted.slice(start, start + self.perPage);
+  if (!pageItems.length) {
+    var msg = self.all.length === 0 && !self.query ? self.emptyAllText : self.emptyText;
+    var colCount = self.tbody && self.tbody.closest && self.tbody.closest('table') ? self.tbody.closest('table').querySelectorAll('thead th').length || 1 : 1;
+    self.tbody.innerHTML = '<tr><td colspan="'+colCount+'" class="muted">'+esc(msg)+'</td></tr>';
+  } else {
+    self.tbody.innerHTML = pageItems.map(function(item){ return '<tr>'+self.renderItem(item)+'</tr>'; }).join('');
+  }
+  self.updatePagination(sorted.length);
+  self.onRender(pageItems);
+};
+ListController.prototype.updatePagination = function(total){
+  this.pageInfo.textContent = total ? 'Page '+this.page+' of '+this.totalPages+' ('+total+')' : '0';
+  this.prevBtn.disabled = this.page <= 1;
+  this.nextBtn.disabled = this.page >= this.totalPages || this.totalPages === 0;
+};
+
+let __offersCtrl, __broadcastsCtrl, __broadcasts = [];
+
 async function api(path, opts) {
   const r = await fetch('/bot/dash/api'+path, opts);
   if (r.status === 401) { saveBroadcastDraft(); location.reload(); throw new Error('session expired'); }
@@ -231,21 +321,48 @@ async function loadSubscribers(bots){
 // Render the offers table from client state. Mutation handlers update __offers
 // from their authoritative result and re-render, so the table reflects changes
 // immediately without a re-fetch (which can read stale data after a write).
+function offerRow(o){
+  const ctr = o.ctr != null ? ((o.ctr)*100).toFixed(1) : '0.0';
+  const cr = o.cr != null ? ((o.cr)*100).toFixed(1) : '0.0';
+  return '<td><b>'+esc(o.casino)+'</b><br><span class="muted">'+esc(o.label)+'</span></td>'+
+  '<td>'+(o.slug?'<span class="copy" data-action="copyLink" data-slug="'+esc(o.slug)+'" title="Copy tracked link">'+esc('/r/'+o.slug)+'</span> <button class="ghost style-33" data-action="copyLink" data-slug="'+esc(o.slug)+'" type="button" aria-label="Copy link">Copy</button>':'–')+'</td>'+
+  '<td>'+esc(String(o.clicks))+'</td><td>'+esc(String(o.unique_clicks))+'</td>'+
+  '<td>'+esc(ctr)+'%</td><td>'+esc(cr)+'%</td><td>'+esc(String(o.conversions||0))+'</td>'+
+  '<td class="'+(o.is_active?'ok':'off')+'">'+(o.is_active?'active':'off')+'</td>'+
+  '<td><button class="ghost" data-action="toggleOffer" data-id="'+esc(o.id)+'" data-active="'+(!o.is_active)+'">'+(o.is_active?'Disable':'Enable')+'</button></td>';
+}
 function renderOffers(){
   const offersEl = $('offers');
   if (!offersEl) return;
-  offersEl.innerHTML = (__offers||[]).map(o=>{
-    const ctr = o.ctr != null ? ((o.ctr)*100).toFixed(1) : '0.0';
-    const cr = o.cr != null ? ((o.cr)*100).toFixed(1) : '0.0';
-    return '<tr>'+
-    '<td><b>'+esc(o.casino)+'</b><br><span class="muted">'+esc(o.label)+'</span></td>'+
-    '<td>'+(o.slug?'<span class="copy" data-action="copyLink" data-slug="'+esc(o.slug)+'" title="Copy tracked link">'+esc('/r/'+o.slug)+'</span> <button class="ghost style-33" data-action="copyLink" data-slug="'+esc(o.slug)+'" type="button" aria-label="Copy link">Copy</button>':'–')+'</td>'+
-    '<td>'+esc(String(o.clicks))+'</td><td>'+esc(String(o.unique_clicks))+'</td>'+
-    '<td>'+esc(ctr)+'%</td><td>'+esc(cr)+'%</td><td>'+esc(String(o.conversions||0))+'</td>'+
-    '<td class="'+(o.is_active?'ok':'off')+'">'+(o.is_active?'active':'off')+'</td>'+
-    '<td><button class="ghost" data-action="toggleOffer" data-id="'+esc(o.id)+'" data-active="'+(!o.is_active)+'">'+(o.is_active?'Disable':'Enable')+'</button></td>'+
-  '</tr>';
-  }).join('') || '<tr><td colspan="9" class="muted">No offers yet.</td></tr>';
+  if (!__offersCtrl) {
+    __offersCtrl = new ListController({
+      tbody: 'offers', items: __offers || [], perPage: 10,
+      searchFn: function(o){ return [o.casino, o.label, o.slug, o.code].filter(Boolean).join(' '); },
+      sortOptions: [
+        { key: 'clicks', label: 'Clicks', fn: function(a,b){ return (b.clicks||0) - (a.clicks||0); } },
+        { key: 'unique', label: 'Unique clicks', fn: function(a,b){ return (b.unique_clicks||0) - (a.unique_clicks||0); } },
+        { key: 'ctr', label: 'CTR', fn: function(a,b){ return (b.ctr||0) - (a.ctr||0); } },
+        { key: 'cr', label: 'CR', fn: function(a,b){ return (b.cr||0) - (a.cr||0); } },
+        { key: 'conversions', label: 'Conversions', fn: function(a,b){ return (b.conversions||0) - (a.conversions||0); } },
+        { key: 'active', label: 'Active first', fn: function(a,b){ return Number(b.is_active) - Number(a.is_active); } }
+      ],
+      emptyAllText: 'No offers yet.', emptyText: 'No matching offers.',
+      searchPlaceholder: 'Search offers…',
+      renderItem: offerRow
+    });
+  } else {
+    __offersCtrl.setItems(__offers || []);
+  }
+}
+
+function broadcastRow(b){
+  const bodyPreview = esc(b.body.slice(0,60)) + (b.body.length>60?'…':'') + (b.media_url ? ' (image)' : '');
+  const when = b.scheduled_at ? new Date(b.scheduled_at).toLocaleString(undefined,{dateStyle:'short',timeStyle:'short'}) : 'now';
+  const seg = formatSegmentLabel(b.segment);
+  return '<td>'+bodyPreview+'</td><td>'+esc(b.bot_username||'–')+'</td><td>'+esc(b.status)+'</td>'+
+  '<td>'+when+(seg?' <span class="muted">('+esc(seg)+')</span>':'')+'</td>'+
+  '<td>'+esc(b.sent_count)+'/'+(b.total_count?esc(b.total_count):'?')+'</td><td>'+esc(b.fail_count)+'</td>'+
+  '<td>'+(b.status==='scheduled'?'<button class="ghost" data-action="cancelBroadcast" data-id="'+esc(b.id)+'" type="button">Cancel</button>':'')+'</td>';
 }
 
 async function loadExtras(){
@@ -263,18 +380,25 @@ async function loadExtras(){
     if (cf) cf.classList.toggle('hidden', __lastBots.filter(b => b.status === 'active').length >= __maxBots);
   }
 
+  __broadcasts = bcs || [];
   const bcList = $('bcList');
   if (bcList) {
-    bcList.innerHTML = (bcs||[]).map(b=>{
-      const bodyPreview = esc(b.body.slice(0,60)) + (b.body.length>60?'…':'') + (b.media_url ? ' (image)' : '');
-      const when = b.scheduled_at ? new Date(b.scheduled_at).toLocaleString(undefined,{dateStyle:'short',timeStyle:'short'}) : 'now';
-      const seg = formatSegmentLabel(b.segment);
-      return '<tr><td>'+bodyPreview+'</td><td>'+esc(b.bot_username||'–')+'</td><td>'+esc(b.status)+'</td>'+
-      '<td>'+when+(seg?' <span class="muted">('+esc(seg)+')</span>':'')+'</td>'+
-      '<td>'+esc(b.sent_count)+'/'+(b.total_count?esc(b.total_count):'?')+'</td><td>'+esc(b.fail_count)+'</td>'+
-      '<td>'+(b.status==='scheduled'?'<button class="ghost" data-action="cancelBroadcast" data-id="'+esc(b.id)+'" type="button">Cancel</button>':'')+'</td></tr>';
-    }).join('')
-      || '<tr><td colspan="7" class="muted">No broadcasts yet.</td></tr>';
+    if (!__broadcastsCtrl) {
+      __broadcastsCtrl = new ListController({
+        tbody: 'bcList', items: __broadcasts, perPage: 10,
+        searchFn: function(b){ return [b.body, b.bot_username, b.status, formatSegmentLabel(b.segment)].filter(Boolean).join(' '); },
+        sortOptions: [
+          { key: 'time', label: 'Newest', fn: function(a,b){ return new Date(b.created_at || b.scheduled_at || 0) - new Date(a.created_at || a.scheduled_at || 0); } },
+          { key: 'status', label: 'Status', fn: function(a,b){ return (a.status||'').localeCompare(b.status||''); } },
+          { key: 'sent', label: 'Sent', fn: function(a,b){ return (b.sent_count||0) - (a.sent_count||0); } }
+        ],
+        emptyAllText: 'No broadcasts yet.', emptyText: 'No matching broadcasts.',
+        searchPlaceholder: 'Search broadcasts…',
+        renderItem: broadcastRow
+      });
+    } else {
+      __broadcastsCtrl.setItems(__broadcasts);
+    }
   }
 
   if (typeof markStep === 'function') markStep('stepPb', !!pbStatus?.active);
