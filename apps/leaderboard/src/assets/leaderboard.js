@@ -24,6 +24,20 @@ const playerHref = (name) => {
   const slug = (typeof window !== "undefined" && window.__SLUG__) || "";
   return slug ? `/${encodeURIComponent(slug)}/player/${encodeURIComponent(name)}` : `/player/${encodeURIComponent(name)}`;
 };
+async function copyToClipboard(text) {
+  if (navigator.clipboard && window.isSecureContext) {
+    try { await navigator.clipboard.writeText(text); return true; } catch {}
+  }
+  try {
+    const ta = document.createElement("textarea");
+    ta.value = text; ta.style.position = "fixed"; ta.style.opacity = "0";
+    document.body.appendChild(ta); ta.focus(); ta.select();
+    const ok = document.execCommand("copy");
+    document.body.removeChild(ta);
+    return ok;
+  } catch {}
+  return false;
+}
 
 const SOCIAL_ICONS = {
   discord: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M20.3 4.4A19.8 19.8 0 0 0 15.4 3l-.3.5c1.7.4 2.9 1 4 1.7a13.5 13.5 0 0 0-11.4 0c1.1-.7 2.5-1.4 4.1-1.7L11.6 3A19.8 19.8 0 0 0 6.7 4.4C3.6 9 2.8 13.5 3.2 17.9a19.9 19.9 0 0 0 6 3l.8-1.3c-.7-.3-1.4-.6-2-1l.5-.4a14.2 14.2 0 0 0 12.2 0l.5.4c-.6.4-1.3.7-2 1l.8 1.3a19.8 19.8 0 0 0 6-3c.5-5.1-.8-9.6-3.6-13.5ZM9.5 15.3c-1 0-1.8-.9-1.8-2s.8-2 1.8-2 1.8.9 1.8 2-.8 2-1.8 2Zm5 0c-1 0-1.8-.9-1.8-2s.8-2 1.8-2 1.8.9 1.8 2-.8 2-1.8 2Z"/></svg>',
@@ -338,18 +352,19 @@ function boot() {
   }
 
   const cc = $("[data-copy-code]");
-  if (cc) cc.addEventListener("click", async () => { try { await navigator.clipboard.writeText(b.code || ""); cc.classList.add("copied"); const p = cc.textContent; cc.textContent = "Copied!"; setTimeout(() => { cc.classList.remove("copied"); cc.textContent = p; }, TOAST_DURATION_MS); } catch (_) { /* ignored */ }
-    try { const cs = document.querySelector("[data-copy-status]"); if(cs) cs.textContent = "Code copied to clipboard"; } catch (_) { /* ignored */ }
-    try { if (window.__SLUG__ && consentAllowsAnalytics()) navigator.sendBeacon("/api/track/copy", new Blob([JSON.stringify({ slug: window.__SLUG__ })], { type: "application/json" })); } catch (_) { /* ignored */ } });
+  if (cc) cc.addEventListener("click", async () => {
+    const ok = await copyToClipboard(b.code || "");
+    if (ok) { cc.classList.add("copied"); const p = cc.textContent; cc.textContent = "Copied!"; setTimeout(() => { cc.classList.remove("copied"); cc.textContent = p; }, TOAST_DURATION_MS); }
+    try { const cs = document.querySelector("[data-copy-status]"); if(cs) cs.textContent = ok ? "Code copied to clipboard" : "Copy failed — copy manually"; } catch (_) { /* ignored */ }
+    try { if (ok && window.__SLUG__ && consentAllowsAnalytics()) navigator.sendBeacon("/api/track/copy", new Blob([JSON.stringify({ slug: window.__SLUG__ })], { type: "application/json" })); } catch (_) { /* ignored */ }
+  });
 
   const shareBtn = $("[data-share='copy']");
   if (shareBtn) shareBtn.addEventListener("click", async () => {
-    try {
-      await navigator.clipboard.writeText(shareBtn.dataset.url || location.href);
-      const prevText = shareBtn.textContent;
-      shareBtn.textContent = "Copied!";
-      setTimeout(() => { shareBtn.textContent = prevText; }, TOAST_DURATION_MS);
-    } catch (_) { /* ignored */ }
+    const ok = await copyToClipboard(shareBtn.dataset.url || location.href);
+    const prevText = shareBtn.textContent;
+    shareBtn.textContent = ok ? "Copied!" : "Copy failed";
+    setTimeout(() => { shareBtn.textContent = prevText; }, TOAST_DURATION_MS);
   });
 
   const p = data.partner || {};

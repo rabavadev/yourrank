@@ -44,9 +44,54 @@ function confirmModal(title, body, confirmText, isDanger) {
     ok.focus();
   });
 }
+function setFieldErr(id, msg) {
+  const input = $(id); if (!input) return;
+  input.setAttribute('aria-invalid','true'); input.classList.add('input-err');
+  let err = $(id + '-error');
+  if (!err) { err = document.createElement('span'); err.id = id + '-error'; err.className = 'field-err'; err.setAttribute('role','alert'); input.parentNode.insertBefore(err, input.nextSibling); }
+  err.textContent = msg;
+}
+function clearFieldErr(id) {
+  const input = $(id); if (input) { input.removeAttribute('aria-invalid'); input.classList.remove('input-err'); }
+  const err = $(id + '-error'); if (err) err.textContent = '';
+}
+function setFormStatus(id, msg, isErr) {
+  const el = $(id); if (!el) return;
+  el.textContent = msg;
+  el.classList.toggle('error', !!isErr);
+  el.classList.toggle('ok', !isErr);
+  el.hidden = !msg;
+}
+function clearFormStatus(id) { setFormStatus(id, '', false); }
+function copyText(text) {
+  if (navigator.clipboard && window.isSecureContext) {
+    try { return navigator.clipboard.writeText(text).then(function(){ return true; }).catch(function(){ return false; }); } catch (e) { return Promise.resolve(false); }
+  }
+  return new Promise(function(resolve){
+    try {
+      const ta = document.createElement('textarea'); ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0'; document.body.appendChild(ta); ta.focus(); ta.select();
+      const ok = document.execCommand('copy'); document.body.removeChild(ta); resolve(ok);
+    } catch (e) { resolve(false); }
+  });
+}
+function manualCopyFallback(text) {
+  try {
+    const ta = document.createElement('textarea'); ta.value = text; ta.readOnly = true; ta.style.cssText = 'position:fixed;left:0;top:0;width:1px;height:1px;opacity:0;';
+    document.body.appendChild(ta); ta.select(); ta.setSelectionRange(0, text.length);
+    const msg = document.createElement('p'); msg.className = 'form-status ok'; msg.textContent = 'Text selected. Press Ctrl+C (or Cmd+C) to copy, then close this message.';
+    ta.parentNode.insertBefore(msg, ta.nextSibling);
+    setTimeout(function(){ if(msg.parentNode) msg.parentNode.removeChild(msg); if(ta.parentNode) ta.parentNode.removeChild(ta); }, 6000);
+    return true;
+  } catch (e) { return false; }
+}
+async function copyWithFallback(text) {
+  const ok = await copyText(text);
+  if (ok) return true;
+  return manualCopyFallback(text);
+}
 async function api(path, opts) {
   const r = await fetch('/bot/dash/api'+path, opts);
-  if (r.status === 401) { location.reload(); throw new Error('session expired'); }
+  if (r.status === 401) { saveBroadcastDraft(); location.reload(); throw new Error('session expired'); }
   if (!r.ok) {
     try { const data = await r.json(); if (data && data.error) return data; } catch {}
     return { error: 'Server error (' + r.status + ') — try again or contact support' };
@@ -247,7 +292,7 @@ function renderPostbackStatus(pb){
   }
 }
 
-async function copyLink(target){ navigator.clipboard.writeText(location.origin+'/r/'+target.dataset.slug); toast('Link copied'); }
+async function copyLink(target){ const ok = await copyWithFallback(location.origin+'/r/'+target.dataset.slug); toast(ok ? 'Link copied' : 'Copy failed — copy the URL manually'); }
 async function toggleOffer(target){
   const on = target.dataset.active === 'true';
   setLoading(target);
@@ -280,26 +325,32 @@ function updateOfferPreview(){
   wrap.hidden = false;
 }
 async function createOffer(btn){
+  ['oCasino','oLabel','oUrl','oCode','oBonus'].forEach(id => clearFieldErr(id));
   const body = { casino:$('oCasino').value.trim(), label:$('oLabel').value.trim(), referral_url:$('oUrl').value.trim(),
                  promo_code:$('oCode').value.trim()||undefined, bonus_text:$('oBonus').value.trim()||undefined };
+  if (!body.label) { setFieldErr('oLabel','Enter an offer label'); return; }
+  if (!body.referral_url) { setFieldErr('oUrl','Enter a referral URL'); return; }
+  if (!body.referral_url.startsWith('http://') && !body.referral_url.startsWith('https://')) { setFieldErr('oUrl','URL must start with http:// or https://'); return; }
+  setLoading(btn, 'Creating…');
   const r = await api('/offers',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)});
-  if (r.error) { restoreBtn(btn); return toast(r.error); }
+  if (r.error) { restoreBtn(btn); setFieldErr('oLabel', r.error + ' — click Create again to retry.'); return; }
   ['oCasino','oLabel','oUrl','oCode','oBonus'].forEach(id=>$(id).value='');
   const wrap = $('offerPreview'); if (wrap) wrap.hidden = true;
   toast('Offer created'); restoreBtn(btn); load();
 }
 async function connectBot(btn){
+  clearFieldErr('botToken');
   const token = $('botToken').value.trim();
-  if (!token) return toast('Paste a bot token first');
+  if (!token) { setFieldErr('botToken','Paste a bot token first'); return; }
   showWizardStep(3);
-  const status = $('connectStatus'); if (status) status.textContent = 'Checking token with Telegram…';
+  const status = $('connectStatus'); if (status) { status.className = 'muted'; status.textContent = 'Checking token with Telegram…'; }
   const r = await api('/bots',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({token, welcome_message:$('botWelcome').value.trim()||undefined})});
   if (r.error) {
-    if (status) status.textContent = 'Could not connect: ' + r.error + '. Go back and check your token.';
+    if (status) { status.className = 'muted off'; status.textContent = 'Could not connect: ' + r.error + '. Go back and check your token.'; }
     return;
   }
   $('botToken').value='';
-  if (status) status.textContent = 'Connected to @' + r.username + '! You can send a test message below.';
+  if (status) { status.className = 'muted ok'; status.textContent = 'Connected to @' + r.username + '! You can send a test message below.'; }
   if (r.warning) { toast(r.warning); } else { toast('Bot @'+r.username+' connected'); }
   load();
 }
@@ -376,14 +427,15 @@ function cancelTestMessage(){
   __testBotId = null;
 }
 async function sendTestMessage(btn){
+  clearFieldErr('tmChatId'); clearFieldErr('tmText');
   if (!__testBotId) return toast('Select a bot first');
   const chatId = Number(($('tmChatId').value || '').trim());
-  if (!chatId || isNaN(chatId)) return toast('Enter a valid numeric chat ID');
+  if (!chatId || isNaN(chatId)) { setFieldErr('tmChatId','Enter a valid numeric chat ID'); return; }
   const text = ($('tmText').value || '').trim();
-  if (!text) return toast('Enter a message');
+  if (!text) { setFieldErr('tmText','Enter a message'); return; }
   setLoading(btn, 'Sending…');
   const r = await api('/bots/'+__testBotId+'/test-message',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({chat_id:chatId,text})});
-  if (r.error) { restoreBtn(btn); return toast(r.error); }
+  if (r.error) { restoreBtn(btn); setFieldErr('tmText', r.error + ' — click Send again to retry.'); return; }
   toast('Test message sent');
   restoreBtn(btn); cancelTestMessage();
 }
@@ -491,10 +543,13 @@ function selectBotById(id){
 
 // ---- bot customization: welcome message + custom slash-commands ----
 async function saveWelcome(btn){
+  clearFieldErr('welcomeMsg');
   if (!custBotId) return toast('Select a bot first');
+  const text = $('welcomeMsg').value.trim();
+  if (!text) { setFieldErr('welcomeMsg','Enter a welcome message'); return; }
   setLoading(btn, 'Saving…');
-  const r = await api('/bots/'+custBotId,{method:'PATCH',headers:{'content-type':'application/json'},body:JSON.stringify({welcome_message:$('welcomeMsg').value.trim()||null})});
-  if (r.error) { restoreBtn(btn); return toast(r.error); }
+  const r = await api('/bots/'+custBotId,{method:'PATCH',headers:{'content-type':'application/json'},body:JSON.stringify({welcome_message:text||null})});
+  if (r.error) { restoreBtn(btn); setFieldErr('welcomeMsg', r.error + ' — click Save again to retry.'); return; }
   toast('Welcome message saved'); restoreBtn(btn);
 }
 let __commands = [];
@@ -505,10 +560,12 @@ function renderCmdButtons(){
   el.innerHTML = (__cmdButtons||[]).map((b,i)=>'<span class="cmd-button-chip">'+esc(b.label)+' <button class="ghost" data-action="removeCommandButton" data-idx="'+i+'" type="button" title="Remove">×</button></span>').join('') || '';
 }
 function addCommandButton(btn){
+  clearFieldErr('cmdBtnLabel'); clearFieldErr('cmdBtnUrl');
   const label = $('cmdBtnLabel').value.trim(), url = $('cmdBtnUrl').value.trim();
-  if (!label || !url) return toast('Enter a button label and URL');
-  if (!url.startsWith('http://') && !url.startsWith('https://')) return toast('URL must start with http:// or https://');
-  if (__cmdButtons.length >= 10) return toast('Max 10 buttons per command');
+  if (!label) { setFieldErr('cmdBtnLabel','Enter a button label'); return; }
+  if (!url) { setFieldErr('cmdBtnUrl','Enter a button URL'); return; }
+  if (!url.startsWith('http://') && !url.startsWith('https://')) { setFieldErr('cmdBtnUrl','URL must start with http:// or https://'); return; }
+  if (__cmdButtons.length >= 10) { setFieldErr('cmdBtnUrl','Max 10 buttons per command'); return; }
   __cmdButtons.push({label, url});
   renderCmdButtons();
   $('cmdBtnLabel').value=''; $('cmdBtnUrl').value=''; $('cmdBtnLabel').focus();
@@ -557,18 +614,20 @@ function normalizeCommandInput(raw){
   return parts[0].toLowerCase();
 }
 async function addCommand(btn){
+  clearFieldErr('cmdName'); clearFieldErr('cmdResp');
   if (!custBotId) return toast('Select a bot first');
   const command = normalizeCommandInput($('cmdName').value);
   const response = $('cmdResp').value.trim();
-  if (!command || !response) return toast('Enter a command and a reply');
-  if (!/^[a-z0-9_]{1,32}$/.test(command)) return toast('Command must be 1-32 chars: letters, numbers, or underscore');
-  if (RESERVED_COMMANDS.has(command)) return toast("/"+command+" is a built-in command and can't be overridden");
-  if (__commands.some(c => c.command === command)) return toast('/'+command+' already exists for this bot');
+  if (!command) { setFieldErr('cmdName','Enter a command'); return; }
+  if (!response) { setFieldErr('cmdResp','Enter a reply'); return; }
+  if (!/^[a-z0-9_]{1,32}$/.test(command)) { setFieldErr('cmdName','Command must be 1-32 chars: letters, numbers, or underscore'); return; }
+  if (RESERVED_COMMANDS.has(command)) { setFieldErr('cmdName',"/"+command+" is a built-in command and can't be overridden"); return; }
+  if (__commands.some(c => c.command === command)) { setFieldErr('cmdName','/'+command+' already exists for this bot'); return; }
   setLoading(btn, 'Adding…');
   const payload = {command, response};
   if (__cmdButtons.length) payload.buttons = __cmdButtons;
   const r = await api('/bots/'+custBotId+'/commands',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(payload)});
-  if (r.error) { restoreBtn(btn); return toast(r.error); }
+  if (r.error) { restoreBtn(btn); setFieldErr('cmdName', r.error + ' — click Add again to retry.'); return; }
   const i = __commands.findIndex(c => c.id === r.id || c.command === r.command);
   if (i >= 0) __commands[i] = r; else __commands.push(r);
   __commands.sort((a,b)=>a.command.localeCompare(b.command));
@@ -616,17 +675,18 @@ function closeCommandPreview(){
   const chat = $('cmdTestChatId'); if (chat) chat.value = '';
 }
 async function testCommand(target){
+  clearFieldErr('cmdTestChatId');
   const id = target.dataset.id || target.closest('[data-command-id]')?.dataset.commandId;
   const c = __commands.find(x => x.id === id);
   if (!c) return toast('Command not found');
   const chatId = Number(($('cmdTestChatId')?.value || '').trim());
-  if (!chatId || isNaN(chatId)) return toast('Enter a valid numeric chat ID');
+  if (!chatId || isNaN(chatId)) { setFieldErr('cmdTestChatId','Enter a valid numeric chat ID'); return; }
   const bot = __lastBots.find(b => b.id === custBotId);
   if (!bot) return toast('Select a bot first');
   setLoading(target, 'Sending…');
   const r = await api('/bots/'+custBotId+'/test-message',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({chat_id:chatId, text:c.response})});
   restoreBtn(target);
-  if (r.error) return toast(r.error);
+  if (r.error) { setFieldErr('cmdTestChatId', r.error + ' — try again.'); return; }
   toast('Test message sent');
 }
 
@@ -682,6 +742,7 @@ function saveBroadcastDraft(){
       username: ($('bcUsername')?.value || ''),
       when: (document.querySelector('input[name="bcWhen"]:checked'))?.value || 'now',
       schedule: ($('bcSchedule')?.value || ''),
+      testChat: ($('bcTestChat')?.value || ''),
     };
     localStorage.setItem(BC_DRAFT_KEY, JSON.stringify(draft));
   } catch { /* storage may be unavailable */ }
@@ -704,6 +765,7 @@ function loadBroadcastDraft(){
       if (radio) radio.checked = true;
     }
     if ($('bcSchedule')) ($('bcSchedule')).value = d.schedule || '';
+    if ($('bcTestChat')) ($('bcTestChat')).value = d.testChat || '';
     const status = $('bcDraftStatus');
     if (status) status.hidden = false;
     return true;
@@ -786,12 +848,13 @@ function buildSummaryHtml(){
 }
 let bcPreviewFocusTrap = null;
 function openBroadcastPreview(){
+  clearFieldErr('bcBody'); clearFieldErr('bcBotSelect'); clearFormStatus('bcFormStatus');
   const body = ($('bcBody')?.value || '').trim();
-  if (!body) return toast('Write a message first');
+  if (!body) { setFieldErr('bcBody','Write a message first'); setFormStatus('bcFormStatus','Write a message first',true); return; }
   const botId = ($('bcBotSelect')?.value || '').trim() || firstBotId;
-  if (!botId) return toast('Select a bot first');
+  if (!botId) { setFieldErr('bcBotSelect','Select a bot first'); setFormStatus('bcFormStatus','Select a bot first',true); return; }
   const n = __bcAudience;
-  if (typeof n === 'number' && n === 0) return toast("This segment has no subscribers yet — nobody would receive it.");
+  if (typeof n === 'number' && n === 0) { setFormStatus('bcFormStatus','This segment has no subscribers yet — nobody would receive it.',true); return; }
   const countEl = $('bcPreviewCount');
   const bodyEl = $('bcPreviewBody');
   if (countEl) countEl.innerHTML = esc(String(n ?? '–'));
@@ -831,28 +894,30 @@ async function confirmSendBroadcast(btn){
   const botId = ($('bcBotSelect')?.value || '').trim() || firstBotId;
   if (!botId || !body) return;
   setLoading(btn, 'Sending…');
+  clearFormStatus('bcFormStatus');
   const mediaUrl = ($('bcImage')?.value || '').trim() || null;
   const scheduledAt = isScheduleSelected() ? getScheduledAt() : null;
   const segment = buildSegmentFromForm();
   const r = await api('/broadcasts',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({bot_id:botId, body, media_url: mediaUrl, scheduled_at: scheduledAt, segment})});
-  if (r.error) { restoreBtn(btn); return toast(r.error); }
-  clearBroadcastForm(); closeBroadcastPreview(); toast(isScheduleSelected() ? 'Broadcast scheduled' : 'Broadcast sent'); restoreBtn(btn); loadExtras();
+  if (r.error) { restoreBtn(btn); setFormStatus('bcFormStatus', r.error + ' — click Send again to retry.', true); return; }
+  clearBroadcastForm(); closeBroadcastPreview(); setFormStatus('bcFormStatus', isScheduleSelected() ? 'Broadcast scheduled' : 'Broadcast sent', false); restoreBtn(btn); loadExtras();
 }
 async function sendBroadcast(btn){ openBroadcastPreview(); }
 // Send a single test copy of the broadcast to one chat ID before blasting.
 async function testBroadcast(btn){
+  clearFieldErr('bcBody'); clearFieldErr('bcBotSelect'); clearFieldErr('bcTestChat'); clearFormStatus('bcFormStatus');
   const body = $('bcBody').value.trim();
-  if (!body) return toast('Write a message first');
+  if (!body) { setFieldErr('bcBody','Write a message first'); setFormStatus('bcFormStatus','Write a message first',true); return; }
   const botId = $('bcBotSelect')?.value || firstBotId;
-  if (!botId) return toast('Select a bot first');
+  if (!botId) { setFieldErr('bcBotSelect','Select a bot first'); setFormStatus('bcFormStatus','Select a bot first',true); return; }
   const chatId = Number(($('bcTestChat')?.value || '').trim());
-  if (!chatId) return toast('Enter your chat ID to send a test');
+  if (!chatId || isNaN(chatId)) { setFieldErr('bcTestChat','Enter a valid numeric chat ID'); setFormStatus('bcFormStatus','Enter a valid chat ID',true); return; }
   setLoading(btn, 'Sending…');
   const imageUrl = ($('bcImage')?.value || '').trim() || null;
   const r = await api('/bots/'+botId+'/test-message',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({chat_id:chatId, text:body, image_url: imageUrl})});
   restoreBtn(btn);
-  if (r.error) return toast(r.error);
-  toast('Test sent — check that chat');
+  if (r.error) { setFormStatus('bcFormStatus', r.error + ' — click Send test again to retry.', true); return; }
+  setFormStatus('bcFormStatus','Test sent — check that chat', false);
 }
 async function cancelBroadcast(btn){
   if (!await confirmModal('Cancel broadcast', 'Cancel this scheduled broadcast?', 'Cancel broadcast', true)) return;
@@ -970,7 +1035,9 @@ if (logoutForm) {
 const botSelect = $('botSelect');
 if (botSelect) botSelect.addEventListener('change', (e) => { selectBotById(e.target.value); });
 const bcBotSelect = $('bcBotSelect');
-if (bcBotSelect) bcBotSelect.addEventListener('change', (e) => { firstBotId = e.target.value; updateAudience(); });
+if (bcBotSelect) bcBotSelect.addEventListener('change', (e) => { firstBotId = e.target.value; saveBroadcastDraft(); updateAudience(); });
+const bcTestChat = $('bcTestChat');
+if (bcTestChat) bcTestChat.addEventListener('input', saveBroadcastDraft);
 ['bcLang','bcMinLastSeen','bcFirstSeen','bcUsername'].forEach(id => {
   const el = $(id);
   if (el) el.addEventListener('input', () => { saveBroadcastDraft(); updateAudience(); });
@@ -981,6 +1048,12 @@ if (bcBotSelect) bcBotSelect.addEventListener('change', (e) => { firstBotId = e.
 });
 document.querySelectorAll('input[name="bcWhen"]').forEach(radio => {
   radio.addEventListener('change', () => { updateScheduleInputState(); saveBroadcastDraft(); });
+});
+window.addEventListener('beforeunload', (e) => {
+  const body = ($('bcBody')?.value || '').trim();
+  if (!body) return;
+  e.preventDefault();
+  e.returnValue = '';
 });
 ['oCasino','oLabel','oUrl','oCode','oBonus'].forEach(id => {
   const el = $(id);
