@@ -28,18 +28,18 @@ export function overviewPanel(): string {
     </dl>
   </details>
 
-  <div class="grid2 style-5" data-page="overview">
-    <div class="panel"><div class="cardhd"><h2>Daily clicks</h2><span class="muted style-6">14 days</span></div>
+  <div class="grid2 mb-lg" data-page="overview">
+    <div class="panel"><div class="cardhd"><h2>Daily clicks</h2><span class="muted text-xs">14 days</span></div>
       <svg id="chart" role="img" aria-label="Daily clicks chart" width="100%" height="120" preserveAspectRatio="none"></svg>
-      <div id="chartLabels" class="muted style-7"></div></div>
+      <div id="chartLabels" class="muted chart-axis"></div></div>
     <div class="panel"><div class="cardhd"><h2>Where subscribers came from</h2></div>
-      <table><thead><tr><th>Source</th><th class="style-8">Subscribers</th></tr></thead>
+      <table><thead><tr><th>Source</th><th class="num">Subscribers</th></tr></thead>
       <tbody id="subSources"><tr><td colspan="2" class="muted">Loading…</td></tr></tbody></table>
-      <p class="muted style-9">Share <code id="deepLinkExample">t.me/&lt;yourbot&gt;?start=twitch</code> to tag a source. <b>direct</b> = no link.</p>
+      <p class="muted hint">Share <code id="deepLinkExample">t.me/&lt;yourbot&gt;?start=twitch</code> to tag a source. <b>direct</b> = no link.</p>
     </div>
   </div>
 
-  <div class="grid2 style-5" data-page="overview">
+  <div class="grid2 mb-lg" data-page="overview">
     <div class="panel"><div class="cardhd"><h2>Your bots</h2><a href="/bot/bots">Manage →</a></div>
       <div id="ovBots" class="muted">Loading…</div></div>
     <div class="panel"><div class="cardhd"><h2>Top offers</h2><a href="/bot/offers">All offers →</a></div>

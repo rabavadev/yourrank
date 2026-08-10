@@ -80,46 +80,38 @@ ${scripts}
 }
 
 const BOT_STYLE_ATTR_CSS = `
-/* ---- inline style migration (M-02) ---- */
 .hidden { display: none !important; }
 .sr-only { position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0); }
 .skip-link { position:absolute;left:8px;top:8px;z-index:100;background:var(--bg);color:var(--fg);padding:10px 14px;border:1px solid var(--border-2);border-radius:8px;text-decoration:none;transform:translateY(-200%);transition:transform .15s; }
 .skip-link:focus { transform:translateY(0);outline:2px solid var(--accent); }
-.style-1 { margin-bottom:8px }
-.style-2 { margin-bottom:20px }
-.style-3 { margin-top:24px;border-top:1px solid var(--border);padding-top:16px }
-.style-4 { display:flex;align-items:center;gap:12px }
-.style-5 { margin-bottom:18px }
-.style-6 { font-size:12px }
-.style-7 { display:flex;justify-content:space-between;font-size:11px }
-.style-8 { text-align:right }
-.style-9 { font-size:12px;margin-top:10px }
-.style-10 { margin-top:12px }
-.style-11 { display:flex;gap:6px;align-items:center }
-.style-12 { flex:1 }
-.style-13 { margin-bottom:12px;font-size:13px }
-.style-14 { width:auto;min-width:160px;display:inline-block;margin-left:8px }
-.style-15 { margin-bottom:12px;color:var(--accent) }
-.style-16 { margin-bottom:12px }
-.style-17 { display:block;margin-bottom:4px;font-size:13px }
-.style-18 { margin:20px 0 6px;font-size:14px }
-.style-19 { margin-bottom:10px;font-size:13px }
-.style-20 { margin-top:14px }
-.style-21 { margin-bottom:10px }
-.style-22 { display:block;font-size:13px }
-.style-23 { max-width:300px }
-.style-24 { font-size:13px;margin:2px 0 10px }
-.style-25 { display:flex;gap:8px;align-items:center;flex-wrap:wrap }
-.style-26 { font-size:13px }
-.style-27 { max-width:150px }
-.style-28 { font-size:12px;margin-top:6px }
-.style-29 { margin-bottom:10px;font-size:12px }
-.style-30 { margin-left:8px }
-.style-31 { margin-left:12px }
-.style-32 { margin-left:6px;color:var(--red) }
-.style-33 { padding:2px 8px;font-size:12px }
-.style-34 { color:var(--accent) }
-.style-35 { margin-right:8px; display:inline-block }
+
+/* ---- spacing / type utilities: named steps, not indexes ---- */
+.mb-sm { margin-bottom:10px }
+.mb-md { margin-bottom:12px }
+.mb-lg { margin-bottom:18px }
+.mt-sm { margin-top:8px }
+.mt-md { margin-top:14px }
+.text-sm { font-size:13px }
+.text-xs { font-size:12px }
+.num { text-align:right }
+
+/* ---- small shared pieces of the bot dashboard ---- */
+.pagehead-row { display:flex;align-items:center;gap:12px }
+.panel-intro { font-size:13px;margin-bottom:12px }
+.subhead { margin:20px 0 6px;font-size:14px }
+.hint { font-size:12px;margin-top:6px }
+.notice { margin-bottom:12px;color:var(--accent) }
+.field-label { display:block;margin-bottom:4px;font-size:13px }
+.field-row { display:flex;gap:6px;align-items:center }
+.field-row .grow { flex:1 }
+.form-note { font-size:13px;margin:2px 0 10px }
+.inline-row { display:flex;gap:8px;align-items:center;flex-wrap:wrap }
+.input-w-md { max-width:300px }
+.input-w-sm { max-width:150px }
+.link-block { display:block;font-size:13px;color:var(--accent) }
+.chart-axis { display:flex;justify-content:space-between;font-size:11px }
+.divider { margin:14px 0 0;border:0;border-top:1px solid var(--border) }
+.pre-wrap { white-space:pre-wrap }
 .style-warn { color:var(--red); font-size:13px; margin-top:6px }
 `;
 

@@ -2,7 +2,7 @@
 export function broadcastsPanel(): string {
   return `
   <div class="panel" data-page="broadcasts"><h2>Broadcast to subscribers</h2>
-    <div id="bcGate" class="muted style-21"></div>
+    <div id="bcGate" class="muted mb-sm"></div>
     <p class="muted" id="bcDraftStatus" hidden>Draft loaded from your last visit.</p>
 
     <div class="bc-step" data-step="1">
@@ -16,8 +16,8 @@ export function broadcastsPanel(): string {
 
     <div class="bc-step" data-step="2">
       <h3>2. Audience</h3>
-      <label for="bcBotSelect" class="muted style-22">From bot</label>
-      <select class="style-23" id="bcBotSelect" aria-errormessage="bcBotSelect-error"><option value="">Loading bots…</option></select>
+      <label for="bcBotSelect" class="muted field-label">From bot</label>
+      <select class="input-w-md" id="bcBotSelect" aria-errormessage="bcBotSelect-error"><option value="">Loading bots…</option></select>
       <span id="bcBotSelect-error" class="field-err" role="alert"></span>
       <div class="bc-segment-fields">
         <label class="muted" for="bcLang">Language</label>
@@ -29,7 +29,7 @@ export function broadcastsPanel(): string {
         <label class="muted" for="bcUsername">Username contains</label>
         <input id="bcUsername" type="text" maxLength="100" placeholder="optional" />
       </div>
-      <div id="bcAudience" class="muted style-24" aria-live="polite">This will send to <b>–</b> subscribers.</div>
+      <div id="bcAudience" class="muted form-note" aria-live="polite">This will send to <b>–</b> subscribers.</div>
     </div>
 
     <div class="bc-step" data-step="3">
@@ -47,8 +47,8 @@ export function broadcastsPanel(): string {
     <div class="bc-step" data-step="4">
       <h3>4. Preview &amp; test</h3>
       <button class="ghost" data-action="openBroadcastPreview" type="button">Preview broadcast</button>
-      <span class="muted style-26">or send a test copy to</span>
-      <input class="style-27" id="bcTestChat" inputmode="numeric" aria-errormessage="bcTestChat-error" placeholder="your chat ID">
+      <span class="muted text-sm">or send a test copy to</span>
+      <input class="input-w-sm" id="bcTestChat" inputmode="numeric" aria-errormessage="bcTestChat-error" placeholder="your chat ID">
       <span id="bcTestChat-error" class="field-err" role="alert"></span>
       <button class="ghost" data-action="testBroadcast" type="button">Send test</button>
     </div>
@@ -71,13 +71,13 @@ export function broadcastsPanel(): string {
       </div>
     </div>
 
-    <div class="style-25">
+    <div class="inline-row">
       <button data-action="sendBroadcast" type="button" id="bcReviewBtn">Review and send</button>
     </div>
     <p id="bcFormStatus" class="form-status" role="alert" aria-live="polite"></p>
 
-    <p class="muted style-28">Use <code>{name}</code> to include the subscriber's first name. Get your chat ID by sending <code>/start</code> to <a href="https://t.me/userinfobot" target="_blank" rel="noopener">@userinfobot</a>. Scheduled broadcasts can be cancelled until they start sending.</p>
-    <div class="tbl-scroll"><table class="style-20"><thead><tr><th>Message</th><th>Bot</th><th>Status</th><th>Scheduled</th><th>Sent</th><th>Failed</th><th><span class="sr-only">Actions</span></th></tr></thead>
+    <p class="muted hint">Use <code>{name}</code> to include the subscriber's first name. Get your chat ID by sending <code>/start</code> to <a href="https://t.me/userinfobot" target="_blank" rel="noopener">@userinfobot</a>. Scheduled broadcasts can be cancelled until they start sending.</p>
+    <div class="tbl-scroll"><table class="mt-md"><thead><tr><th>Message</th><th>Bot</th><th>Status</th><th>Scheduled</th><th>Sent</th><th>Failed</th><th><span class="sr-only">Actions</span></th></tr></thead>
     <tbody id="bcList"></tbody></table></div>
   </div>`;
 }

@@ -37,7 +37,7 @@ export function sideNav(active: string, user: { display_name: string; plan: stri
 
 export function pageHead(active: string): string {
   const p = pageLinks.find(l => l.key === active) || pageLinks[0];
-  return `<div class="pagehead"><div class="style-4">
+  return `<div class="pagehead"><div class="pagehead-row">
     <button class="menu-btn" id="menuBtn" type="button" aria-label="Open menu">\u2630</button>
     <div><h1>${escHtml(p.label)}</h1><p>${escHtml(p.sub)}</p></div></div></div>`;
 }

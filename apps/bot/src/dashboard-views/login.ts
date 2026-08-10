@@ -6,14 +6,11 @@ const GOOGLE_FONTS =
   '<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />';
 
 const STYLE_ATTR_CSS = `
-/* ---- inline style migration (M-02) ---- */
 .hidden { display: none !important; }
 .sr-only { position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0); }
 .skip-link { position:absolute;left:8px;top:8px;z-index:100;background:var(--yr-bg);color:var(--yr-ink);padding:10px 14px;border:1px solid var(--yr-line-2);border-radius:10px;text-decoration:none;transform:translateY(-200%);transition:transform .15s; }
 .skip-link:focus { transform:translateY(0);outline:2px solid var(--yr-accent); }
-.style-1 { margin-bottom:8px }
-.style-2 { margin-bottom:20px }
-.style-3 { margin-top:24px;border-top:1px solid var(--yr-line);padding-top:16px }
+.dev-login-label { margin-bottom:8px }
 `;
 
 export function loginHtml(botUsername: string, devLogin: boolean, nonce?: string): string {
@@ -56,7 +53,7 @@ export function loginHtml(botUsername: string, devLogin: boolean, nonce?: string
     : `<p class="tg-placeholder">Telegram login is not configured yet (set LOGIN_BOT_TOKEN + LOGIN_BOT_USERNAME).</p>`}
   ${devLogin ? `
   <hr class="divider" />
-  <p class="muted style-1">Dev login</p>
+  <p class="muted dev-login-label">Dev login</p>
   <label class="sr-only" for="devid">Telegram User ID</label>
   <input id="devid" type="number" placeholder="Telegram user id">
   <button data-action="devLogin" type="button">Enter</button>` : ""}

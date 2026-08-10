@@ -265,7 +265,7 @@ function renderOverviewSummary(bots, offers){
             '<div class="ds">'+(on?'webhook active':'disconnected')+'</div></div>'+
             '<span class="badge '+(on?'on':'off')+'">'+(on?'active':'off')+'</span></div>';
         }).join('')
-      : '<p class="muted style-26">No bot connected yet. <a href="/bot/bots">Connect one →</a></p>';
+      : '<p class="muted text-sm">No bot connected yet. <a href="/bot/bots">Connect one →</a></p>';
   }
   const oo = $('ovOffers');
   if (oo) {
@@ -278,7 +278,7 @@ function renderOverviewSummary(bots, offers){
             '<div class="ds">'+esc(o.label||'')+' · '+esc(String(o.clicks||0))+' clicks · '+esc(String(o.conversions||0))+' conv · '+esc(cr)+'% CR</div></div>'+
             '<span class="badge '+(on?'on':'off')+'">'+(on?'active':'off')+'</span></div>';
         }).join('')
-      : '<p class="muted style-26">No offers yet. <a href="/bot/offers">Create one →</a></p>';
+      : '<p class="muted text-sm">No offers yet. <a href="/bot/offers">Create one →</a></p>';
   }
   markStep('stepBot', (bots||[]).some(b=>b.status==='active'));
   markStep('stepOffer', (offers||[]).length > 0);
@@ -294,7 +294,7 @@ async function loadSubscribers(bots){
   setText('subsNew', (t.new_7d ?? 0) > 0 ? '+' + (t.new_7d ?? 0) + ' new in 7d' : 'no new in 7d');
   const rows = (s.sources || []);
   setHtml('subSources', rows.length
-    ? rows.map(r=>'<tr><td>'+esc(r.source)+'</td><td class="style-8">'+esc(String(r.count))+'</td></tr>').join('')
+    ? rows.map(r=>'<tr><td>'+esc(r.source)+'</td><td class="num">'+esc(String(r.count))+'</td></tr>').join('')
     : '<tr><td colspan="2" class="muted">No subscribers yet. Share your bot link to get your first one.</td></tr>');
   const active = (bots || []).find(b=>b.status==='active' && b.username);
   if (active) setText('deepLinkExample', 't.me/'+active.username+'?start=twitch');
@@ -307,7 +307,7 @@ function offerRow(o){
   const ctr = o.ctr != null ? ((o.ctr)*100).toFixed(1) : '0.0';
   const cr = o.cr != null ? ((o.cr)*100).toFixed(1) : '0.0';
   return '<td><b>'+esc(o.casino)+'</b><br><span class="muted">'+esc(o.label)+'</span></td>'+
-  '<td>'+(o.slug?'<span class="copy" data-action="copyLink" data-slug="'+esc(o.slug)+'" title="Copy tracked link">'+esc('/r/'+o.slug)+'</span> <button class="ghost style-33" data-action="copyLink" data-slug="'+esc(o.slug)+'" type="button" aria-label="Copy link">Copy</button>':'–')+'</td>'+
+  '<td>'+(o.slug?'<span class="copy" data-action="copyLink" data-slug="'+esc(o.slug)+'" title="Copy tracked link">'+esc('/r/'+o.slug)+'</span> <button class="ghost btn--xs" data-action="copyLink" data-slug="'+esc(o.slug)+'" type="button" aria-label="Copy link">Copy</button>':'–')+'</td>'+
   '<td>'+esc(String(o.clicks))+'</td><td>'+esc(String(o.unique_clicks))+'</td>'+
   '<td>'+esc(ctr)+'%</td><td>'+esc(cr)+'%</td><td>'+esc(String(o.conversions||0))+'</td>'+
   '<td class="'+(o.is_active?'ok':'off')+'">'+(o.is_active?'active':'off')+'</td>'+
@@ -555,7 +555,7 @@ function renderBots(bots, loadCmds = true){
             '<div class="bot-card-head">'+
               '<div class="meta"><a href="https://t.me/'+esc(b.username)+'" target="_blank" rel="noopener">@'+esc(b.username)+'</a> '+
               '<span class="muted">(…'+esc(b.token_hint)+')</span> <span class="badge '+statusClass+'">'+esc(statusText)+'</span></div>'+
-              '<div class="muted" style="font-size:12px;margin-top:4px">'+esc(syncLabel)+' · updated '+esc(fmtTime(b.updated_at))+'</div>'+
+              '<div class="muted hint">'+esc(syncLabel)+' · updated '+esc(fmtTime(b.updated_at))+'</div>'+
             '</div>'+
             '<div class="actions">'+
               (isActive ? '<button class="ghost" data-action="checkHealth" data-id="'+esc(b.id)+'" type="button">Check webhook</button>' : '')+
