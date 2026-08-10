@@ -2,10 +2,11 @@
   "name": "yourrank-leaderboard",
   "version": "0.1.0",
   "devDependencies": {
-    "wrangler": "4.106.0",
-    "typescript": "^5.5.3",
     "@types/node": "^20.14.10",
-    "eslint": "^8.57.0"
+    "esbuild": "0.28.1",
+    "eslint": "^8.57.0",
+    "typescript": "^5.5.3",
+    "wrangler": "4.106.0"
   },
   "engines": {
     "node": ">=20"
@@ -17,12 +18,15 @@
     "deploy": "wrangler deploy",
     "dev": "wrangler dev",
     "test": "node ../../scripts/test-leaderboard.mjs",
-    "lint": "eslint src/ --ext .js"
+    "lint": "eslint src/ --ext .js",
+    "typecheck:games": "tsc -p tsconfig.games.json --noEmit"
   },
   "type": "module",
   "dependencies": {
+    "@preact/signals": "2.10.1",
     "hono": "^4.13.0",
     "postgres": "^3.4.9",
+    "preact": "10.29.7",
     "toucan-js": "^4.0.0",
     "zod": "3.25.76"
   }

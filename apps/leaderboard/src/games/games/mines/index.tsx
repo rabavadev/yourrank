@@ -1,0 +1,10 @@
+/** @jsxImportSource preact */
+// Mines board. Owned by the mines game session — replace the placeholder below
+// with the real board; the export contract (default export of a component
+// taking `GameProps`) is what the registry loads.
+import { ComingSoon } from "../ComingSoon.js";
+import type { GameProps } from "../../registry.js";
+
+export default function MinesGame(props: GameProps) {
+  return <ComingSoon {...props} />;
+}
