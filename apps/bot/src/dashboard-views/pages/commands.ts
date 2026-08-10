@@ -6,18 +6,21 @@ export function commandsPanel(): string {
     <p class="muted">Connect a bot first — do that in <a href="/bot/bots">Bots</a>.</p>
   </div>
 
-  <!-- Customization (bots, commands) -->
   <div class="panel" data-page="bots commands" id="customizePanel">
-    <h2>Customize <select class="style-14" id="botSelect" aria-label="Select bot"><option>Loading…</option></select></h2>
+    <div class="cmd-head">
+      <h2>Welcome message</h2>
+      <p class="muted" id="selectedBotName">No bot selected</p>
+    </div>
     <div id="custDisabledNote" class="muted style-15 hidden">This bot is disconnected — reconnect it to customize.</div>
-    <p class="muted style-16">Personalize what the selected bot says to viewers. Changes apply instantly — no redeploy needed.</p>
-
-    <label for="welcomeMsg" class="muted style-17">Welcome message — the reply to <code>/start</code></label>
+    <p class="muted style-16">This is what viewers receive when they send <code>/start</code> to the selected bot.</p>
+    <label for="welcomeMsg" class="muted style-17">Welcome message</label>
     <textarea id="welcomeMsg" rows="2" placeholder="Leave blank to use the default greeting"></textarea>
     <button data-action="saveWelcome" type="button">Save welcome message</button>
 
-    <h3 class="style-18">Custom commands</h3>
-    <p class="muted style-19">Add slash-commands your viewers can send (e.g. <code>/vip</code>) and the reply they'll get. Built-ins like <code>/start</code>, <code>/code</code>, <code>/subscribe</code> are reserved.</p>
+    <hr class="style-20" />
+
+    <h2 class="style-18">Custom commands</h2>
+    <p class="muted style-19">Add slash-commands your viewers can send (e.g. <code>/vip</code>) and the reply they'll get. Built-ins like <code>/start</code>, <code>/code</code>, <code>/subscribe</code> are reserved and can't be overridden.</p>
     <div class="row">
       <label class="sr-only" for="cmdName">Command</label>
       <input id="cmdName" placeholder="Command (e.g. vip)">
@@ -33,6 +36,20 @@ export function commandsPanel(): string {
     </div>
     <div id="cmdButtonList" class="cmd-button-list"></div>
     <button data-action="addCommand" type="button" style="margin-top:8px">Add command</button>
+    <p class="muted" style="font-size:12px;margin-top:6px">Tip: view a command to see the full reply, or test it by sending a copy to your chat ID.</p>
+
+    <div id="cmdPreview" class="cmd-preview" hidden>
+      <h3 class="style-18">Command preview</h3>
+      <p><b id="cmdPreviewName">/</b></p>
+      <pre id="cmdPreviewResponse" style="white-space:pre-wrap"></pre>
+      <div class="row">
+        <label class="sr-only" for="cmdTestChatId">Chat ID</label>
+        <input id="cmdTestChatId" inputmode="numeric" placeholder="Your chat ID">
+        <button data-action="testCommand" type="button">Send test</button>
+        <button class="ghost" data-action="closeCommandPreview" type="button">Close</button>
+      </div>
+    </div>
+
     <table class="style-20"><thead><tr><th>Command</th><th>Reply</th><th>Buttons</th><th>Status</th><th><span class="sr-only">Actions</span></th></tr></thead>
     <tbody id="cmdList"><tr><td colspan="5" class="muted">Loading…</td></tr></tbody></table>
   </div>`;

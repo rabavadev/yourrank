@@ -1,5 +1,5 @@
 // Overview page summary tiles / top players / setup checklist.
-import { $, esc, fmtMoney, currentPlayers, resetsIn, logError, copyToClipboard, flashButton } from "./utils.js";
+import { $, esc, fmtMoney, currentPlayers, resetsIn, localTzLabel, logError, copyToClipboard, flashButton } from "./utils.js";
 import { state } from "./state.js";
 import { navTo } from "./shell.js";
 
@@ -12,7 +12,7 @@ function fmtDateTime(iso) {
   if (!iso) return "";
   try {
     const d = new Date(iso);
-    return d.toLocaleString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
+    return d.toLocaleString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) + " " + localTzLabel();
   } catch { return ""; }
 }
 

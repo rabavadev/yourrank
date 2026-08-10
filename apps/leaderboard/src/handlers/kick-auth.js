@@ -149,6 +149,7 @@ export async function handleKickAuthCallback(request, env) {
       `UPDATE sites
           SET kick_channel_external_id = $1,
               kick_channel_name = $2,
+              kick_channel_linked_at = now(),
               updated_at = now()
         WHERE id = $3 AND user_id = $4`,
       [String(kickChannel.broadcaster_user_id), kickChannel.slug || "", stateData.siteId, user.id]
@@ -180,6 +181,7 @@ export async function handleKickAuthDisconnect(request, env) {
       `UPDATE sites
           SET kick_channel_external_id = null,
               kick_channel_name = null,
+              kick_channel_linked_at = null,
               updated_at = now()
         WHERE id = $1 AND user_id = $2`,
       [user.active_site_id, user.id]

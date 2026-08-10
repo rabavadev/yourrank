@@ -1,5 +1,5 @@
 // Site editing: plan, branding/theme, save, archive, domain, overlay, notifications.
-import { $, esc, fromLocalInput, getCsrf, guardAuth, logError, toLocalInput, parseAmount, showToast, showConfirmModal, copyToClipboard, flashButton } from "./utils.js";
+import { $, esc, fromLocalInput, getCsrf, guardAuth, localTzLabel, logError, toLocalInput, parseAmount, showToast, showConfirmModal, copyToClipboard, flashButton } from "./utils.js";
 import { state } from "./state.js";
 import { renderBoardSwitcher, renderBoardsPage, renderSidebarBoardSwitcher } from "./boards.js";
 import { renderOverviewSummary } from "./overview.js";
@@ -622,6 +622,21 @@ export function updateDesignPreview() {
   }, 300);
 }
 
+export function renderEditorTimestamps() {
+  const el = $("editorTimestamp");
+  if (!el) return;
+  const fmt = (iso) => {
+    if (!iso) return "—";
+    try {
+      const d = new Date(iso);
+      return d.toLocaleString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) + " " + localTzLabel();
+    } catch { return "—"; }
+  };
+  const saved = state.SITE_UPDATED_AT ? "Last saved " + fmt(state.SITE_UPDATED_AT) : "";
+  const published = state.PUBLISHED_AT ? "Published " + fmt(state.PUBLISHED_AT) : "Not published yet";
+  el.textContent = saved ? (state.PUBLISHED ? `${saved} · ${published}` : `${saved} · ${published}`) : published;
+}
+
 function updateThemeSelection() {
   const tpl = $("f_template"); if (tpl) tpl.value = state.CURRENT_BRANDING.template;
   if (state.CURRENT_BRANDING.accentA) $("c_a").value = state.CURRENT_BRANDING.accentA;
@@ -1219,6 +1234,7 @@ $("save")?.addEventListener("click", async () => {
       const sb = $("savebar"); if (sb) sb.hidden = true;
       const saveBtn = $("save"); if (saveBtn) saveBtn.textContent = "Save changes";
       const saveHint = document.querySelector(".savebar-hint"); if (saveHint) saveHint.textContent = "Unsaved changes";
+      renderEditorTimestamps();
       renderOverviewSummary();
       const active = state.BOARDS.find((b) => b.id === state.ACTIVE_SITE_ID);
       if (active) { active.name = payload.name; active.casino = payload.brand?.casino || active.casino; active.code = payload.brand?.code || active.code; }

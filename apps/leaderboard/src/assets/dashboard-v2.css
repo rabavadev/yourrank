@@ -1865,6 +1865,13 @@
   box-shadow: var(--yr-shadow-lg);
   z-index: 50;
 }
+.v2-dash .savebar-hint { font-weight: 500; }
+.v2-dash .savebar-ts {
+  flex: 1;
+  opacity: .75;
+  font-size: 13px;
+  text-align: right;
+}
 
 @media (max-width: 980px) {
   .v2-dash .savebar {

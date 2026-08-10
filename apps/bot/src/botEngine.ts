@@ -487,6 +487,7 @@ export async function syncMyCommandsForBot(botId: string): Promise<void> {
   if (!row) return;
   const token = await decryptToken(Buffer.from(row.token_encrypted));
   await syncMyCommands(token, botId);
+  await query(`UPDATE bots SET last_command_sync_at = now(), updated_at = now() WHERE id = $1`, [botId]);
 }
 
 async function sendOffers(ctx: Context, botRow: BotRow): Promise<void> {
