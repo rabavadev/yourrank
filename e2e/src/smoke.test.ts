@@ -25,6 +25,7 @@ const slug = `e2e-${id}`;
 
 let client: Client;
 let primarySlug: string;
+let primarySiteId: string | undefined;
 let postbackKey: string;
 let offerSlug: string;
 let botId: string;
@@ -124,6 +125,14 @@ describe("YourRank E2E smoke", () => {
       expect(res.status).toBe(200);
       expect(res.json?.ok).toBe(true);
       expect(res.json?.slug).toBe(primarySlug);
+      primarySiteId = res.json?.siteId;
+    });
+
+    it("publishes the primary board so public pages are reachable", async () => {
+      const res = await client.post("/api/site/finish", { siteId: primarySiteId });
+      expect(res.status).toBe(200);
+      expect(res.json?.ok).toBe(true);
+      expect(res.json?.published).toBe(true);
     });
 
     it("GET /<slug> renders the public leaderboard page", async () => {
@@ -173,6 +182,27 @@ describe("YourRank E2E smoke", () => {
       const res = await client.get("/api/site/list");
       expect(res.status).toBe(200);
       expect(res.json?.boards?.length).toBeGreaterThanOrEqual(2);
+    });
+  });
+
+  describe("public credits and viewer overlay", () => {
+    it("GET /me returns the viewer dashboard page", async () => {
+      const res = await client.get("/me");
+      expect(res.status).toBe(200);
+      expect(res.body).toContain("My credits");
+    });
+
+    it("GET /<slug>/credits returns the public credits page", async () => {
+      const res = await client.get(`/${primarySlug}/credits`);
+      expect(res.status).toBe(200);
+      expect(res.body).toContain("pc-wrap");
+      expect(res.body).not.toMatch(/© 1970/);
+    });
+
+    it("GET /<slug>/overlay returns the OBS overlay page", async () => {
+      const res = await client.get(`/${primarySlug}/overlay`);
+      expect(res.status).toBe(200);
+      expect(res.body).toContain("ov-wrap");
     });
   });
 
