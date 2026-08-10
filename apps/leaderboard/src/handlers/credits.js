@@ -584,14 +584,14 @@ export async function handlePublicCredits(request, env) {
 
   const viewer = kickUserId
     ? await one(
-        `SELECT sv.id, sv.balance, sv.total_earned, sv.total_spent, sv.blocked, sv.block_reason, sv.public_token, v.kick_username
+        `SELECT sv.id, sv.balance, sv.total_earned, sv.total_spent, sv.blocked, sv.block_reason, v.kick_username
            FROM site_viewers sv
            JOIN viewers v ON v.id = sv.viewer_id
           WHERE sv.site_id=$1 AND v.kick_user_id=$2`,
         [r.id, kickUserId]
       )
     : await one(
-        `SELECT sv.id, sv.balance, sv.total_earned, sv.total_spent, sv.blocked, sv.block_reason, sv.public_token, v.kick_username
+        `SELECT sv.id, sv.balance, sv.total_earned, sv.total_spent, sv.blocked, sv.block_reason, v.kick_username
            FROM site_viewers sv
            JOIN viewers v ON v.id = sv.viewer_id
           WHERE sv.site_id=$1 AND lower(v.kick_username)=lower($2)`,
@@ -620,7 +620,6 @@ export async function handlePublicCredits(request, env) {
           blocked: viewer.blocked,
           block_reason: viewer.block_reason,
           kick_username: viewer.kick_username,
-          publicToken: viewer.public_token,
         }
       : null,
     shopItems: shopItems || [],
@@ -630,123 +629,6 @@ export async function handlePublicCredits(request, env) {
       publicRedeemEnabled: r.viewerPublicRedeemEnabled,
     },
   });
-}
-
-export async function handlePublicRedeem(request, env) {
-  const body = await readJson(request);
-  const slug = String(body?.slug || "").trim();
-  const kickUserId = String(body?.kickUserId || "").trim();
-  const kickUsername = String(body?.kickUsername || "").trim();
-  const shopItemId = String(body?.shopItemId || "").trim();
-  const publicToken = String(body?.publicToken || "").trim();
-
-  if (!slug || (!kickUserId && !kickUsername) || !shopItemId || !publicToken) {
-    return bad("slug, kickUserId or kickUsername, shopItemId, and publicToken required");
-  }
-
-  const r = await getPublicSite(env, slug.toLowerCase(), request);
-  if (r && r.requiresPassword) return bad("Password required.", 401);
-  if (!r || r.suspended) return bad("site not found", 404);
-  if (!r.viewerPublicRedeemEnabled) return bad("Public redeem is disabled. Please log in.", 403);
-
-  const plan = r.plan;
-
-  // Rate-limit redemptions per viewer per minute.
-  const rl = await rateLimit(env, `redeem:${r.id}:${kickUserId || kickUsername}`, 5, 60);
-  if (!rl.ok) {
-    return bad("rate limited", 429);
-  }
-
-  const txResult = await withTransaction(async (tx) => {
-    // Serialize all redemptions for this site to stop concurrent plan-limit overruns.
-    await tx.unsafe("SELECT id FROM sites WHERE id=$1 FOR UPDATE", [r.id]);
-
-    // Enforce site plan limits atomically inside the redemption transaction.
-    const [pendingRow, fulfilled30dRow] = await Promise.all([
-      tx.one(
-        `SELECT count(*)::int AS count FROM redemptions r
-           JOIN site_viewers sv ON sv.id = r.site_viewer_id
-          WHERE sv.site_id=$1 AND r.status='pending'`,
-        [r.id]
-      ),
-      tx.one(
-        `SELECT count(*)::int AS count FROM redemptions r
-           JOIN site_viewers sv ON sv.id = r.site_viewer_id
-          WHERE sv.site_id=$1 AND r.status='fulfilled' AND r.created_at > now() - interval '30 days'`,
-        [r.id]
-      ),
-    ]);
-    if ((pendingRow?.count || 0) >= CREDITS_PENDING_REDEMPTIONS_LIMITS[plan]) {
-      return { error: "This streamer's shop is at capacity. Ask them to upgrade.", status: 403 };
-    }
-    if ((fulfilled30dRow?.count || 0) >= CREDITS_REDEMPTIONS_PER_30D_LIMITS[plan]) {
-      return { error: "This streamer's monthly redemption limit is reached. Ask them to upgrade.", status: 403 };
-    }
-
-    const viewer = kickUserId
-      ? await tx.one(
-          `SELECT sv.id, sv.balance, sv.blocked, sv.public_token, v.kick_username
-             FROM site_viewers sv
-             JOIN viewers v ON v.id = sv.viewer_id
-            WHERE sv.site_id=$1 AND v.kick_user_id=$2`,
-          [r.id, kickUserId]
-        )
-      : await tx.one(
-          `SELECT sv.id, sv.balance, sv.blocked, sv.public_token, v.kick_username
-             FROM site_viewers sv
-             JOIN viewers v ON v.id = sv.viewer_id
-            WHERE sv.site_id=$1 AND lower(v.kick_username)=lower($2)`,
-          [r.id, kickUsername]
-        );
-    if (!viewer) return { error: "viewer not found", status: 400 };
-    if (viewer.blocked) return { error: "viewer blocked", status: 400 };
-    if (String(viewer.public_token || "") !== publicToken) {
-      return { error: "invalid viewer token", status: 401 };
-    }
-
-    const item = await tx.one(
-      "SELECT id, cost, stock FROM shop_items WHERE id=$1 AND site_id=$2 AND active=true FOR UPDATE",
-      [shopItemId, r.id]
-    );
-    if (!item) return { error: "item not found", status: 400 };
-    if (item.stock !== null && item.stock <= 0) return { error: "out of stock", status: 400 };
-    if (viewer.balance < item.cost) return { error: "insufficient balance", status: 400 };
-
-    await tx.unsafe(
-      `UPDATE site_viewers
-        SET balance = balance - $1,
-            total_spent = total_spent + $1,
-            last_redeemed_at = now(),
-            updated_at = now()
-      WHERE id=$2`,
-      [item.cost, viewer.id]
-    );
-
-    if (item.stock !== null) {
-      await tx.unsafe(
-        "UPDATE shop_items SET stock = stock - 1, updated_at = now() WHERE id=$1",
-        [item.id]
-      );
-    }
-
-    const redemptionRows = await tx.unsafe(
-      `INSERT INTO redemptions (site_viewer_id, shop_item_id, cost, status)
-       VALUES ($1, $2, $3, 'pending')
-       RETURNING id`,
-      [viewer.id, item.id, item.cost]
-    );
-
-    await tx.unsafe(
-      `INSERT INTO credit_ledger (site_viewer_id, type, amount, description, metadata)
-       VALUES ($1, 'spend', $2, $3, $4)`,
-      [viewer.id, item.cost, `Redeemed: ${item.id}`, JSON.stringify({ shop_item_id: item.id, redemption_id: redemptionRows[0].id })]
-    );
-
-    return { redemptionId: redemptionRows[0].id, balance: viewer.balance - item.cost };
-  });
-
-  if (txResult.error) return bad(txResult.error, txResult.status);
-  return ok(txResult);
 }
 
 export async function handleCreditsViewerAuth(request, env) {
