@@ -54,7 +54,7 @@ export function DashboardContent() {
 <button class="lb-linkbtn lb-board-manage" id="manageBoardsBtn" type="button">Manage boards</button>
 <div class="board-upsell" id="boardLimitUpsell" role="status" hidden>
 <div><b id="boardLimitTitle">Need another leaderboard?</b><p class="hint" id="boardLimitText"></p></div>
-<a class="btn btn--sm btn--accent" id="boardLimitCta" href="/dashboard?nav=settings">Upgrade plan</a>
+<a class="btn btn--sm btn--accent" id="boardLimitCta" href="/dashboard/settings">Upgrade plan</a>
 </div>
 <div class="lb-board-form" id="newBoardForm" hidden>
 <div class="field field-flex"><label for="nb_name">Board name</label><input id="nb_name" placeholder="Summer Race 2026" /></div>
@@ -170,7 +170,7 @@ export function DashboardContent() {
 <div class="card" data-egroup="setup"><h2>Access</h2><p class="card-sub">Publishing and password protection.</p>
 <div class="field field--full"><label class="chk"><input type="checkbox" id="f_password_enabled" /> Password-protect this board</label><input id="f_password" type="password" placeholder="Leave blank to keep current password" disabled class="mt-8" /><span class="hint">Visitors must enter this password before seeing the leaderboard or using the public API.</span></div>
 <p class="hint mt-14">Publishing is controlled by the <b>Published</b> toggle in the sidebar.</p></div>
-<div class="card" data-egroup="players"><h2>Players</h2><p class="card-sub">The board auto-sorts by wagered, highest first. Prize <span class="mono">0</span> shows a dash. Names can be masked (keep the <span class="mono">***</span>). <span class="limit-widget" id="limitWidget"><span id="pCount" class="limit-hint"></span><span class="limit-bar"><span class="limit-fill" id="limitFill"></span></span><span class="limit-hint" id="limitHint"></span><a class="btn btn--sm btn--accent" id="playerLimitUpgrade" href="/dashboard?nav=settings">Upgrade</a></span></p>
+<div class="card" data-egroup="players"><h2>Players</h2><p class="card-sub">The board auto-sorts by wagered, highest first. Prize <span class="mono">0</span> shows a dash. Names can be masked (keep the <span class="mono">***</span>). <span class="limit-widget" id="limitWidget"><span id="pCount" class="limit-hint"></span><span class="limit-bar"><span class="limit-fill" id="limitFill"></span></span><span class="limit-hint" id="limitHint"></span><a class="btn btn--sm btn--accent" id="playerLimitUpgrade" href="/dashboard/settings">Upgrade</a></span></p>
 <div class="player-toolbar">
   <input type="search" id="playerSearch" class="player-search" placeholder="Find player..." autocomplete="off" />
   <div class="player-bulk" id="bulkActions" hidden>
@@ -398,7 +398,7 @@ export function DashboardContent() {
   <hr class="hr" />
   <div class="field"><label>OBS Overlay</label>
     <p class="card-sub">Copy the overlay URL, embed code and share links in Board → Share.</p>
-    <a class="btn btn--sm" href="/dashboard?nav=board">Open Board → Share</a>
+    <a class="btn btn--sm" href="/dashboard/editor/share">Open Board → Share</a>
   </div>
   <hr class="hr" />
   <div id="domainBody">

@@ -34,21 +34,10 @@ import { applyLegalIdentity } from "./pages/legal-helper.js";
 import { hashToken, newClickRef } from "../../../shared/crypto.js";
 import { handleDashboardPreview } from "./handlers/preview.js";
 import { demoLeaderboardData } from "./demo-data.js";
+import { parseDashboardPath, dashboardPath, resolveSection } from "./assets/dashboard/routes.js";
 
 const LEGAL_PAGES = new Set(["terms", "privacy", "responsible", "cookies", "refund", "contact"]);
 
-// `/dashboard/<section>` → `?nav=<section>`. Keys are every `data-page` in the
-// dashboard plus the legacy aliases we have shipped links for.
-const DASHBOARD_SECTIONS = {
-  home: "home",
-  overview: "home",
-  board: "board",
-  editor: "board",
-  boards: "boards",
-  performance: "performance",
-  analytics: "performance",
-  settings: "settings",
-};
 
 function enqueueBump(env, ctx, siteId, field, referer = null, visitorHash = null) {
   const producer = createQueueProducer(
@@ -486,9 +475,21 @@ async function handleRequest(request, env, ctx, meta) {
         const html = addCookieConsent(await renderHtmlPage(verifyEmailPageHtml(verifyState)));
         return new Response(html, { status, headers: { ...SECURE_HTML, ...csrfHeader } });
       }
-      if (path === "/dashboard" || path === "/dashboard.html") {
+      // Every dashboard section is a real URL: `/dashboard`, `/dashboard/editor`,
+      // `/dashboard/editor/players`, … The section is rendered client-side, so
+      // they all serve the same document; the shell reads the path on boot.
+      const dashboardRoute = parseDashboardPath(path);
+      if (dashboardRoute) {
         if (url.searchParams.get("nav") === "kickrewards") {
           return Response.redirect(new URL("/dashboard/rewards/channel", url), 302);
+        }
+        // `?nav=` was the old address of a section. Send it to the real one so
+        // the URL a user copies is the URL they can share.
+        const legacy = resolveSection(url.searchParams.get("nav"));
+        if (legacy) {
+          const target = new URL(dashboardPath(legacy), url);
+          for (const [k, v] of url.searchParams) if (k !== "nav") target.searchParams.set(k, v);
+          return Response.redirect(target, 302);
         }
         try {
           const user = await currentUser(request, env);
@@ -567,20 +568,6 @@ async function handleRequest(request, env, ctx, meta) {
       if (path === "/dashboard/rewards") {
         return Response.redirect(new URL("/dashboard/rewards/channel", url), 302);
       }
-      // The dashboard renders its sections client-side behind ?nav=, but the
-      // sidebar and our own copy link to them as paths. Map every section (and
-      // its legacy alias) instead of listing redirects one at a time, so a real
-      // section can never 404 the way /dashboard/performance did.
-      if (path.startsWith("/dashboard/")) {
-        const nav = DASHBOARD_SECTIONS[path.slice("/dashboard/".length)];
-        if (nav) return Response.redirect(new URL(`/dashboard?nav=${nav}`, url), 302);
-      }
-      if (path.startsWith("/dashboard/analytics/")) {
-        const tab = path.slice("/dashboard/analytics/".length);
-        const map = { activity: "activity", referrals: "referrals", events: "events" };
-        const hash = map[tab] || "";
-        return Response.redirect(new URL(`/dashboard?nav=performance${hash ? "#" + hash : ""}`, url), 302);
-      }
       if (path.startsWith("/dashboard/rewards/")) {
         const tab = path.slice("/dashboard/rewards/".length).split("?")[0];
         const map = { channel: "rewardsChannel", rewards: "rewardsRewards", maps: "rewardsMaps", shop: "rewardsShop", viewers: "rewardsViewers", redemptions: "rewardsRedemptions", history: "rewardsHistory" };
@@ -601,11 +588,11 @@ async function handleRequest(request, env, ctx, meta) {
           return new Response(error500Page(nonce), { status: 500, headers: HTML_N });
         }
       }
-      if (path.startsWith("/dashboard/editor/")) {
-        const tab = path.slice("/dashboard/editor/".length);
-        const map = { setup: "setup", players: "players", design: "design", share: "share", history: "history" };
-        const hash = map[tab] || "";
-        return Response.redirect(new URL(`/dashboard?nav=board${hash ? "#" + hash : ""}`, url), 302);
+      // An unknown tab under a real section (a typo, a renamed step) belongs on
+      // that section rather than on a 404.
+      if (path.startsWith("/dashboard/")) {
+        const section = resolveSection(path.slice("/dashboard/".length).split("/")[0]);
+        if (section) return Response.redirect(new URL(dashboardPath(section), url), 302);
       }
       if (path === "/me" || path === "/me.html") {
         return new Response(addCookieConsent(fillYear(viewerDashboardPage)), { headers: { ...HTML_N, ...csrfHeader, "cache-control": "no-store, no-cache, must-revalidate" } });

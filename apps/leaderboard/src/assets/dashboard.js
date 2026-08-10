@@ -1,7 +1,7 @@
 // Dashboard entry point. Coordinates data loading and initial render across modules.
 import { $, esc, getCsrf, localTzLabel, logError, toLocalInput, copyToClipboard, flashButton, showToast } from "./dashboard/utils.js";
 import { markDirty, setState, state, subscribe } from "./dashboard/state.js";
-import { navTo, setupShell } from "./dashboard/shell.js";
+import { currentRoute, navTo, setupShell } from "./dashboard/shell.js";
 import { renderBoardSwitcher, renderSidebarBoardSwitcher, renderBoardsPage } from "./dashboard/boards.js";
 import { renderPlayers } from "./dashboard/players.js";
 import { checkout, fitDesignPreview, loadCreditsStatus, loadHistory, loadStats, refreshDesignPreview, renderArchives, renderBranding, renderDomain, renderDomainStatus, renderBoardStatus, renderEditorTimestamps, renderEmbedShare, renderLegal, renderNotifications, renderOverlay, renderPlan, renderPlayerFields, renderPrizes, renderSections, renderSocials, renderTemplateText, wireCancelSubscription, wireDeleteAccount } from "./dashboard/site.js";
@@ -159,13 +159,14 @@ async function init() {
   // Boards nav is redundant for solo streamers — the sidebar board switcher covers it.
   const boardsNav = document.querySelector(".lb-nav--boards");
   if (boardsNav) boardsNav.hidden = state.BOARDS.length < 2;
-  // Smart landing: set-up boards land on Home; drafts or new boards land on the Board editor.
-  // Legacy nav names are mapped to the new clean-sheet IA.
-  const NAV_MAP = { overview: "home", growth: "performance", referrals: "performance", analytics: "performance", integrations: "settings", manage: "settings", billing: "settings" };
-  const initialNav = NAV_MAP[urlParams.get("nav")] || urlParams.get("nav");
+  // The URL decides which section opens; /dashboard itself has no section, so
+  // it lands set-up boards on Home and drafts on the editor they still need.
+  const route = currentRoute();
   const planParam = urlParams.get("plan");
-  const landing = initialNav || (planParam ? "settings" : (isBoardSetup(p) ? "home" : "board"));
-  const hash = location.hash.replace("#", "");
+  const landing = route.page !== "home"
+    ? route.page
+    : (planParam ? "settings" : (isBoardSetup(p) ? "home" : "board"));
+  const hash = route.tab || location.hash.replace("#", "");
   if (document.querySelector(`section[data-page="${landing}"]`)) navTo(landing, hash);
   if (planParam) {
     if (planParam.toLowerCase() === "agency") location.href = "/help/support?area=billing";
