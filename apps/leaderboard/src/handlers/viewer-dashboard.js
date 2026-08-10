@@ -60,12 +60,19 @@ export async function handleViewerMe(request, env) {
     [viewer.id]
   );
 
+  let provider = "unknown";
+  if (viewer.kick_user_id) provider = "kick";
+  else if (viewer.discord_user_id) provider = "discord";
+
   return ok({
     viewer: {
       id: viewer.id,
+      provider,
       kickUsername: viewer.kick_username,
       discordUsername: viewer.discord_username,
       avatarUrl: viewer.avatar_url,
+      kickLinkedAt: viewer.kick_linked_at,
+      discordLinkedAt: viewer.discord_linked_at,
     },
     boards: safeBoards,
     redemptions: (redemptions || []).map((r) => ({
@@ -95,7 +102,8 @@ export async function handleViewerSite(request, env) {
   if (!r || r.suspended) return bad("site not found", 404);
 
   const site = await one(
-    `SELECT id, name, slug, viewer_kick_auth_enabled, viewer_discord_auth_enabled, viewer_public_redeem_enabled
+    `SELECT id, name, slug, kick_channel_external_id, kick_channel_name,
+            viewer_kick_auth_enabled, viewer_discord_auth_enabled, viewer_public_redeem_enabled
        FROM sites WHERE slug = $1`,
     [slug]
   );
@@ -133,6 +141,8 @@ export async function handleViewerSite(request, env) {
       id: site.id,
       slug: site.slug,
       name: site.name,
+      kickChannelName: site.kick_channel_name,
+      kickChannelExternalId: site.kick_channel_external_id,
       kickAuthEnabled: site.viewer_kick_auth_enabled,
       discordAuthEnabled: site.viewer_discord_auth_enabled,
       publicRedeemEnabled: site.viewer_public_redeem_enabled,

@@ -237,6 +237,46 @@ function setupAccountShell() {
   scrollToHash(location.hash);
 }
 
+function renderConnectedAccounts(data) {
+  const wrap = $("connectedAccounts");
+  if (!wrap) return;
+  if (!data || data.error) { wrap.innerHTML = `<p class="error">Could not load connected accounts.</p>`; return; }
+
+  const kick = data.kick;
+  const telegram = data.telegram;
+  const sites = data.sites || [];
+
+  let html = "";
+  if (kick || telegram) {
+    html += `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-bottom:14px">`;
+    if (kick) html += `<div style="padding:12px;border:1px solid var(--line);border-radius:8px"><div class="hint">Kick</div><div style="font-weight:600">@${esc(kick.username || kick.userId)}</div><div class="hint">Linked ${fmtDateTime(kick.linkedAt)}</div></div>`;
+    if (telegram) html += `<div style="padding:12px;border:1px solid var(--line);border-radius:8px"><div class="hint">Telegram</div><div style="font-weight:600">@${esc(telegram.username || telegram.userId)}</div><div class="hint">Linked ${fmtDateTime(telegram.linkedAt)}</div></div>`;
+    html += `</div>`;
+  } else {
+    html += `<p class="hint">No streamer accounts connected yet. Connect Kick from Credits and Telegram from the bot dashboard.</p>`;
+  }
+
+  if (sites.length > 0) {
+    html += `<h3 class="m-0 mt-18 mb-4">Per-board integrations</h3><table class="admin-table"><thead><tr><th>Board</th><th>Kick channel</th><th>Discord webhook</th><th>Telegram chat</th></tr></thead><tbody>`;
+    for (const s of sites) {
+      html += `<tr>
+        <td><a href="/${esc(s.slug)}">${esc(s.name || s.slug)}</a></td>
+        <td>${s.kickChannel ? `<span class="badge ok">${esc(s.kickChannel.name || s.kickChannel.id)}</span>` : "—"}</td>
+        <td>${s.discordWebhook ? `<span class="badge ok">On</span>` : "—"}</td>
+        <td>${s.telegramChat ? `<span class="badge ok">${esc(s.telegramChat.chatId)}</span>` : "—"}</td>
+      </tr>`;
+    }
+    html += `</tbody></table>`;
+  }
+
+  wrap.innerHTML = html;
+}
+
+async function loadConnectedAccounts() {
+  const r = await jsonReq("GET", "/api/account/connected-accounts");
+  renderConnectedAccounts(r.ok ? r.data : { error: r.data?.error || "failed" });
+}
+
 async function init() {
   let me;
   try { me = await (await fetch("/api/auth/me")).json(); } catch (err) { logError("auth/me", err); me = null; }
@@ -251,6 +291,7 @@ async function init() {
   wireCancelSubscription();
   await loadPostbacks();
   wirePostbacks();
+  await loadConnectedAccounts();
 }
 
 init();
