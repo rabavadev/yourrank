@@ -7,7 +7,7 @@ const faqs = [
   { q: "Can viewers log in?", a: "Yes. Streamers can enable Kick or Discord OAuth for their board. Viewers then log in at /me to see their balance across boards and redeem shop items." },
   { q: "What payment methods do you accept?", a: "Paid plans are billed in crypto (BTC, ETH, USDT and 100+ more) through NOWPayments. Card checkout is not available yet." },
   { q: "Do I need to write code?", a: "No. YourRank runs entirely in the browser and on Cloudflare. You create a page, customize it, and share the URL. The Telegram bot and Kick connection are configured from the dashboard." },
-  { q: "How do I get support?", a: "Email support@yourrank.site or use the contact form at /contact. Pro and Agency plans include priority support." },
+  { q: "How do I get support?", a: "Email support@yourrank.site or use the contact form at /help/support. Pro and Agency plans include priority support." },
 ];
 
 const faqStructuredData = JSON.stringify({
@@ -41,13 +41,13 @@ export const faqPage = `<!DOCTYPE html><html lang="en"><head>
 <div class="links"><a href="/">Home</a><a href="/#products">Products</a><a href="/pricing">Pricing</a><a href="/login">Sign in</a><a href="/signup" class="btn btn--accent">Create your free page</a></div></nav></header>
 <main class="wrap pg-wrap" id="main-content">
 <h1 class="pg-title">Frequently asked questions</h1>
-<p class="prose-lead">Quick answers about the YourRank suite. Can't find what you need? <a href="/contact">Contact support</a>.</p>
+<p class="prose-lead">Quick answers about the YourRank suite. Can't find what you need? <a href="/help/support">Contact support</a>.</p>
 <div class="faq-list mt-32">
 ${itemsHtml}
 </div>
 </main>
 <footer class="ftr ftr--platform"><div class="wrap">
-<p class="ftr-copy">© {{YEAR}} YourRank · <a href="/contact">Contact</a></p>
+<p class="ftr-copy">© {{YEAR}} YourRank · <a href="/help/support">Contact</a></p>
 </div></footer>
 <script src="/assets/landing.js?v=3"></script>
 </body></html>`;

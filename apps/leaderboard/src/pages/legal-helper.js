@@ -40,7 +40,7 @@ function platformFooter(pagePath) {
       <a href="/#how">How it works</a>
       <a href="/pricing">Pricing</a>
       <a href="/docs">API Docs</a>
-      <a href="/contact">Contact</a>
+      <a href="/help/support">Contact</a>
     </div>
     <div class="ftr-col">
       <b>Legal</b>

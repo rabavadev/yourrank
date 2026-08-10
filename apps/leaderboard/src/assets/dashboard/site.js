@@ -122,7 +122,7 @@ function renderPlanCard(p, isCurrent, isLower, cta, accent, isContact) {
   const note = p.note ? `<span class="plan-card-note">${esc(p.note)}</span>` : "";
   const list = p.features.map((f) => `<li>${esc(f)}</li>`).join("");
   const ctaEl = isContact
-    ? `<a class="btn btn--sm plan-card-cta" href="/contact?plan=agency">${esc(cta)}</a>`
+    ? `<a class="btn btn--sm plan-card-cta" href="/help/support?area=billing">${esc(cta)}</a>`
     : `<button class="${accent ? "btn btn--sm btn--accent plan-card-cta" : "btn btn--sm plan-card-cta"}" data-plan="${esc(p.key)}" ${disabled}>${esc(cta)}</button>`;
   return `<div class="${classes.join(" ")}"><div class="plan-card-head"><div class="plan-card-name">${esc(p.name)}${note}</div><div class="plan-card-price">${esc(p.priceStr)}<span>${esc(p.period)}</span></div></div><ul class="plan-card-features">${list}</ul>${ctaEl}</div>`;
 }

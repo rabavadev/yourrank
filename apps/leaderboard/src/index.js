@@ -516,7 +516,10 @@ async function handleRequest(request, env, ctx, meta) {
         return Response.redirect(new URL("/dashboard", url), 302);
       }
       if (path === "/dashboard/support") {
-        return Response.redirect(new URL("/contact?type=support&area=dashboard&return=/dashboard", url), 302);
+        const redirectUrl = new URL("/help/support", url);
+        redirectUrl.searchParams.set("area", "dashboard");
+        redirectUrl.searchParams.set("return", "/dashboard");
+        return Response.redirect(redirectUrl, 302);
       }
       if (path === "/dashboard/security") {
         return Response.redirect(new URL("/account/profile", url), 302);
@@ -614,7 +617,26 @@ async function handleRequest(request, env, ctx, meta) {
       if (path === "/privacy") return new Response(addCookieConsent(await renderHtmlPage(PAGES.privacy)), { headers: { ...HTML_N, ...csrfHeader } });
       if (path === "/responsible") return new Response(addCookieConsent(await renderHtmlPage(PAGES.responsible)), { headers: { ...HTML_N, ...csrfHeader } });
       if (path === "/refund") return new Response(addCookieConsent(await renderHtmlPage(PAGES.refund)), { headers: { ...HTML_N, ...csrfHeader } });
-      if (path === "/contact") return new Response(addCookieConsent(await renderHtmlPage(PAGES.contact)), { headers: { ...HTML_N, ...csrfHeader } });
+      if (path === "/contact" || path === "/contact.html") {
+        const redirectUrl = new URL("/help/support", url);
+        const type = url.searchParams.get("type");
+        if (type === "feedback") redirectUrl.pathname = "/help/feedback";
+        for (const key of ["area", "return"]) {
+          const value = url.searchParams.get(key);
+          if (value) redirectUrl.searchParams.set(key, value);
+        }
+        return Response.redirect(redirectUrl, 302);
+      }
+      if (path === "/help" || path === "/help.html") {
+        return Response.redirect(new URL("/help/support", url), 302);
+      }
+      if (path.startsWith("/help/")) {
+        const tab = path.slice("/help/".length).split("?")[0];
+        const map = { support: "helpSupport", feedback: "helpFeedback" };
+        const pageKey = map[tab];
+        if (!pageKey) return Response.redirect(new URL("/help/support", url), 302);
+        return new Response(addCookieConsent(await renderHtmlPage(PAGES[pageKey])), { headers: { ...HTML_N, ...csrfHeader } });
+      }
       if (path === "/docs") return new Response(addCookieConsent(await renderHtmlPage(PAGES.docs)), { headers: { ...HTML_N, ...csrfHeader } });
       if (path === "/pricing" || path === "/pricing.html") return new Response(addCookieConsent(await renderHtmlPage(PAGES.pricing)), { headers: { ...HTML_N, ...csrfHeader } });
       if (path === "/faq" || path === "/faq.html") return new Response(addCookieConsent(await renderHtmlPage(PAGES.faq)), { headers: { ...HTML_N, ...csrfHeader } });

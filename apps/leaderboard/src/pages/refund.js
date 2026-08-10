@@ -14,4 +14,4 @@ export const refundPage = legal("Refund & Cancellation Policy", "July 2026", `
 <h2>How to cancel</h2>
 <p>Visit your <a href="/dashboard?nav=settings">Plan &amp; billing</a> section and choose "Cancel subscription". Your page will downgrade to the Free plan at the end of the 30-day period.</p>
 <h2>Contact</h2>
-<p>Questions about billing or refunds: <a href="/contact">contact us</a> or email <a href="mailto:{{SUPPORT_EMAIL}}">{{SUPPORT_EMAIL}}</a>.</p>`, "refund", "YourRank refund and cancellation policy. Crypto payments are non-refundable; subscriptions can be cancelled at any time.");
+<p>Questions about billing or refunds: <a href="/help/support">contact us</a> or email <a href="mailto:{{SUPPORT_EMAIL}}">{{SUPPORT_EMAIL}}</a>.</p>`, "refund", "YourRank refund and cancellation policy. Crypto payments are non-refundable; subscriptions can be cancelled at any time.");
