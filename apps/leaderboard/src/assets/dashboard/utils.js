@@ -42,192 +42,38 @@ export function showToast(message, type = "error") {
   }, 4000);
 }
 
-// Accessible confirmation modal with focus trap, Escape handling, and focus restore.
-export function showConfirmModal(title, body, confirmText = "Confirm", isDanger = false) {
-  return new Promise((resolve) => {
-    const trigger = document.activeElement;
-    const modal = document.createElement("div");
-    modal.className = "modal";
-    modal.setAttribute("role", "dialog");
-    modal.setAttribute("aria-modal", "true");
-    const titleId = "modal-title-" + Math.random().toString(36).slice(2, 8);
-    const descId = "modal-desc-" + Math.random().toString(36).slice(2, 8);
-    modal.setAttribute("aria-labelledby", titleId);
-    modal.setAttribute("aria-describedby", descId);
-
-    const card = document.createElement("div");
-    card.className = "modal-card";
-    card.setAttribute("role", "document");
-
-    const h3 = document.createElement("h3");
-    h3.id = titleId;
-    h3.textContent = title;
-
-    const p = document.createElement("p");
-    p.id = descId;
-    p.textContent = body;
-
-    const actions = document.createElement("div");
-    actions.className = "modal-actions";
-    actions.style.display = "flex";
-    actions.style.gap = "10px";
-    actions.style.justifyContent = "flex-end";
-
-    const cancel = document.createElement("button");
-    cancel.className = "btn btn--sm btn--ghost";
-    cancel.type = "button";
-    cancel.textContent = "Cancel";
-
-    const confirm = document.createElement("button");
-    confirm.className = `btn btn--sm ${isDanger ? 'btn--danger' : 'btn--accent'}`;
-    confirm.type = "button";
-    confirm.textContent = confirmText;
-
-    actions.appendChild(cancel);
-    actions.appendChild(confirm);
-    card.appendChild(h3);
-    card.appendChild(p);
-    card.appendChild(actions);
-    modal.appendChild(card);
-
-    const focusable = () => Array.from(modal.querySelectorAll("button, [href], input, select, textarea, [tabindex]:not([tabindex='-1'])")).filter((el) => !el.disabled && el.offsetParent !== null);
-
-    let keyHandler;
-    const close = (val) => {
-      document.removeEventListener("keydown", keyHandler);
-      document.body.removeChild(modal);
-      if (trigger && trigger.focus) trigger.focus();
-      resolve(val);
-    };
-
-    keyHandler = (e) => {
-      if (e.key === "Escape") {
-        e.preventDefault();
-        close(false);
-        return;
-      }
-      if (e.key === "Tab") {
-        const focusables = focusable();
-        if (focusables.length === 0) return;
-        const first = focusables[0];
-        const last = focusables[focusables.length - 1];
-        if (e.shiftKey && document.activeElement === first) {
-          e.preventDefault();
-          last.focus();
-        } else if (!e.shiftKey && document.activeElement === last) {
-          e.preventDefault();
-          first.focus();
-        }
-      }
-    };
-
-    cancel.onclick = () => close(false);
-    confirm.onclick = () => close(true);
-    modal.onclick = (e) => { if (e.target === modal) close(false); };
-
-    document.body.appendChild(modal);
-    document.addEventListener("keydown", keyHandler);
-    confirm.focus();
-  });
+// The dialog itself lives in /assets/dialog.js so the bot dashboard can use the
+// same one; these keep the call sites unchanged.
+let dialogReady;
+function ensureDialog() {
+  if (window.YRDialog) return Promise.resolve(window.YRDialog);
+  if (!dialogReady) {
+    dialogReady = new Promise((resolve, reject) => {
+      const s = document.createElement("script");
+      s.src = "/assets/dialog.js";
+      s.onload = () => resolve(window.YRDialog);
+      s.onerror = reject;
+      document.head.appendChild(s);
+    });
+  }
+  return dialogReady;
 }
 
-// Accessible prompt modal (single input). Returns the string value, or null if cancelled.
-export function showPromptModal(title, body, opts = {}) {
-  return new Promise((resolve) => {
-    const { confirmText = "OK", inputType = "text", defaultValue = "", placeholder = "" } = opts;
-    const trigger = document.activeElement;
-    const modal = document.createElement("div");
-    modal.className = "modal";
-    modal.setAttribute("role", "dialog");
-    modal.setAttribute("aria-modal", "true");
-    const titleId = "modal-title-" + Math.random().toString(36).slice(2, 8);
-    const descId = "modal-desc-" + Math.random().toString(36).slice(2, 8);
-    modal.setAttribute("aria-labelledby", titleId);
-    modal.setAttribute("aria-describedby", descId);
+export async function showConfirmModal(title, body, confirmText = "Confirm", isDanger = false) {
+  const dialog = await ensureDialog();
+  return dialog.confirm({ title, body, confirmText, danger: isDanger });
+}
 
-    const card = document.createElement("div");
-    card.className = "modal-card";
-    card.setAttribute("role", "document");
-
-    const h3 = document.createElement("h3");
-    h3.id = titleId;
-    h3.textContent = title;
-
-    const p = document.createElement("p");
-    p.id = descId;
-    p.textContent = body;
-
-    const input = document.createElement("input");
-    input.type = inputType;
-    input.className = "modal-input";
-    input.value = defaultValue;
-    input.placeholder = placeholder;
-    input.style.width = "100%";
-    input.style.marginBottom = "14px";
-
-    const actions = document.createElement("div");
-    actions.className = "modal-actions";
-    actions.style.display = "flex";
-    actions.style.gap = "10px";
-    actions.style.justifyContent = "flex-end";
-
-    const cancel = document.createElement("button");
-    cancel.className = "btn btn--sm btn--ghost";
-    cancel.type = "button";
-    cancel.textContent = "Cancel";
-
-    const confirm = document.createElement("button");
-    confirm.className = "btn btn--sm btn--accent";
-    confirm.type = "button";
-    confirm.textContent = confirmText;
-
-    actions.appendChild(cancel);
-    actions.appendChild(confirm);
-    card.appendChild(h3);
-    card.appendChild(p);
-    card.appendChild(input);
-    card.appendChild(actions);
-    modal.appendChild(card);
-
-    const focusable = () => Array.from(modal.querySelectorAll("button, [href], input, select, textarea, [tabindex]:not([tabindex='-1'])")).filter((el) => !el.disabled && el.offsetParent !== null);
-
-    let keyHandler;
-    const close = (val) => {
-      document.removeEventListener("keydown", keyHandler);
-      document.body.removeChild(modal);
-      if (trigger && trigger.focus) trigger.focus();
-      resolve(val);
-    };
-
-    keyHandler = (e) => {
-      if (e.key === "Escape") {
-        e.preventDefault();
-        close(null);
-        return;
-      }
-      if (e.key === "Tab") {
-        const focusables = focusable();
-        if (focusables.length === 0) return;
-        const first = focusables[0];
-        const last = focusables[focusables.length - 1];
-        if (e.shiftKey && document.activeElement === first) {
-          e.preventDefault();
-          last.focus();
-        } else if (!e.shiftKey && document.activeElement === last) {
-          e.preventDefault();
-          first.focus();
-        }
-      }
-    };
-
-    input.addEventListener("keydown", (e) => { if (e.key === "Enter") close(input.value); });
-    cancel.onclick = () => close(null);
-    confirm.onclick = () => close(input.value);
-    modal.onclick = (e) => { if (e.target === modal) close(null); };
-
-    document.body.appendChild(modal);
-    document.addEventListener("keydown", keyHandler);
-    input.focus();
+export async function showPromptModal(title, body, opts = {}) {
+  const dialog = await ensureDialog();
+  return dialog.prompt({
+    title,
+    body,
+    confirmText: opts.confirmText || "OK",
+    type: opts.inputType || "text",
+    value: opts.defaultValue || "",
+    placeholder: opts.placeholder || "",
+    label: opts.label || title,
   });
 }
 

@@ -54,7 +54,7 @@ describe("shared UI primitives", () => {
 
   // A bare `.btn`/`.badge`/`button` rule elsewhere re-forks the component;
   // scoped rules like `.perf-filter .btn` only position it and are fine.
-  const OWNED = new Set([".btn", ".btn--accent", ".btn--ghost", ".btn--danger", ".btn--sm", ".btn--xs", ".badge", ".tbl-scroll"]);
+  const OWNED = new Set([".btn", ".btn--accent", ".btn--ghost", ".btn--danger", ".btn--sm", ".btn--xs", ".badge", ".tbl-scroll", ".modal", ".modal-card", ".modal-input", ".modal-actions"]);
 
   // leaderboard.css is the public board's own design system: those pages are the
   // customer's branded site, not our app chrome, so they deliberately do not
