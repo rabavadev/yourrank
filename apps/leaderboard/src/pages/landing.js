@@ -78,7 +78,7 @@ export const landingPage = `<!DOCTYPE html>
 </div>
 <div class="lifetime-banner"><div class="lifetime-banner-txt"><span class="lifetime-banner-lead">Prefer to pay once?</span> <b>Lifetime Pro</b> — every Pro feature, no monthly bills. <span class="lifetime-banner-price">$149<small> one-time</small></span></div><a href="/signup?plan=lifetime" class="btn btn--accent lifetime-banner-cta">Get Lifetime Pro</a></div>
 <p class="pay-note">Paid plans billed in crypto (BTC · ETH · USDT · 100+ more). Card checkout coming soon.</p>
-<p class="sec-sub" style="margin-top:16px"><a href="/pricing">Compare every plan &amp; feature →</a></p></div></section>
+<p class="sec-sub sec-sub--mt"><a href="/pricing">Compare every plan &amp; feature →</a></p></div></section>
 <section id="start"><div class="wrap"><h2 class="sec">Ready to start?</h2><p class="sec-sub">Create your free page in under a minute. No credit card needed.</p>
 <div class="cta cta-wrap"><a href="/signup" class="btn btn--accent btn--cta-lg">Create your free page</a></div>
 <ul class="trust-line trust-line--center"><li>Free forever</li><li>7-day Pro trial</li><li>No card</li></ul></div></section>

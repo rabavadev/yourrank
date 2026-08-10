@@ -9,7 +9,7 @@ export const contactPage = `<!DOCTYPE html><html lang="en"><head>
 <a href="#main-content" class="sr-only skip-link">Skip to content</a>
 <header class="topbar"><a class="brand" href="/">Your<b>Rank</b></a>
 <div class="topbar-right"><a href="/login" class="btn btn--sm btn--ghost">Sign in</a></div></header>
-<main class="wrap" id="main-content" style="max-width:620px;padding:48px 24px">
+<main class="wrap pg-narrow" id="main-content">
 <h1 id="contactTitle">Contact</h1>
 <p class="sub" id="contactIntro">Questions, feedback, or billing issue? Send us a message and we'll reply by email — usually within 1 business day.</p>
 <form id="contactForm" class="card">
@@ -21,12 +21,12 @@ export const contactPage = `<!DOCTYPE html><html lang="en"><head>
 <div class="field"><label for="c_message">Message</label><textarea id="c_message" name="message" rows="6" required minlength="10" maxlength="4000" placeholder="Tell us what's going on..."></textarea></div>
 <div class="err" id="c_err" role="alert" aria-live="assertive"></div>
 <button class="btn btn--accent w-full" type="submit" id="c_submit">Send message</button>
-<p class="hint" id="c_success" hidden style="color:var(--accent)">Message received. We'll reply by email.</p>
+<p class="hint text-accent" id="c_success" hidden>Message received. We'll reply by email.</p>
 </form>
-<p class="hint" id="c_back_wrap" hidden style="margin-top:18px"><a id="c_back" href="/dashboard">← Back to dashboard</a></p>
-<p class="hint" style="margin-top:24px">You can also email <a href="mailto:{{SUPPORT_EMAIL}}">{{SUPPORT_EMAIL}}</a> directly.</p>
+<p class="hint mt-18" id="c_back_wrap" hidden><a id="c_back" href="/dashboard">← Back to dashboard</a></p>
+<p class="hint mt-24">You can also email <a href="mailto:{{SUPPORT_EMAIL}}">{{SUPPORT_EMAIL}}</a> directly.</p>
 </main>
-<footer class="wrap footer-wrap" style="margin-top:48px">
+<footer class="wrap footer-wrap mt-48">
 <span>© <span id="yr"></span> {{COMPANY_NAME}}</span>
 <span><a href="/terms">Terms</a> · <a href="/privacy">Privacy</a> · <a href="/refund">Refunds</a> · <a href="/cookies">Cookies</a> · <a href="/responsible">Responsible play</a></span>
 </footer>
