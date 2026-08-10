@@ -22,8 +22,15 @@ function helpShell({ active, title, description, canonical, h1, intro, kind, sub
 <link rel="stylesheet" href="/assets/app.css" />
 </head><body>
 <a href="#main-content" class="sr-only skip-link">Skip to content</a>
-<header class="topbar"><a class="brand" href="/">Your<b>Rank</b></a>
-<div class="topbar-right"><a href="/login" class="btn btn--sm btn--ghost">Sign in</a></div></header>
+<header class="hc-header"><div class="hc-header-inner">
+<a class="brand" href="/">Your<b>Rank</b><span class="hc-tag">Help</span></a>
+<nav class="hc-nav" aria-label="Help sections">
+  <a class="hc-link${active === "support" ? " is-on" : ""}" href="/help/support"${active === "support" ? ' aria-current="page"' : ""}>Support</a>
+  <a class="hc-link${active === "feedback" ? " is-on" : ""}" href="/help/feedback"${active === "feedback" ? ' aria-current="page"' : ""}>Feedback</a>
+  <a class="hc-link" href="/docs">Docs</a>
+</nav>
+<a href="/login" class="btn btn--sm btn--ghost">Sign in</a>
+</div></header>
 <div id="help-app" data-help-tab="${active}">
 <div class="lb-backdrop" id="helpBackdrop"></div>
 <div class="lb-shell">
