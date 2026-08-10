@@ -171,6 +171,8 @@ function render() {
   `).join("");
   $("cr-redemption-empty").hidden = redemptions.length > 0;
 
+  renderOnboarding();
+
   // Wire action buttons
   document.querySelectorAll("[data-edit-reward]").forEach((b) => b.addEventListener("click", () => editReward(b.dataset.editReward)));
   document.querySelectorAll("[data-del-reward]").forEach((b) => b.addEventListener("click", () => delReward(b.dataset.delReward)));
@@ -179,6 +181,37 @@ function render() {
   document.querySelectorAll("[data-fulfill]").forEach((b) => b.addEventListener("click", () => updateRedemption(b.dataset.fulfill, "fulfilled")));
   document.querySelectorAll("[data-cancel]").forEach((b) => b.addEventListener("click", () => updateRedemption(b.dataset.cancel, "cancelled")));
   document.querySelectorAll("[data-block]").forEach((b) => b.addEventListener("click", () => toggleBlock(b.dataset.block, b.dataset.blocked)));
+}
+
+function renderOnboarding() {
+  const wrap = $("cr-onboarding");
+  if (!wrap) return;
+  const hidden = localStorage.getItem("cr-onboarding-hide") === "1";
+  const connected = Boolean(state.channel?.externalId);
+  const mappings = (state.mappings || []).filter((m) => m.active).length;
+  const items = (state.shopItems || []).filter((i) => i.active).length;
+  const redemptions = (state.redemptions || []).length;
+
+  const steps = [
+    { id: 1, done: connected },
+    { id: 2, done: mappings > 0 },
+    { id: 3, done: items > 0 },
+    { id: 4, done: redemptions > 0 },
+    { id: 5, done: connected && mappings > 0 && items > 0 },
+  ];
+
+  let current = 1;
+  for (const s of steps) {
+    const el = $(`cr-step-${s.id}`);
+    if (!el) continue;
+    el.classList.toggle("done", s.done);
+    el.classList.toggle("current", current === s.id && !s.done);
+    if (!s.done) current = s.id;
+  }
+
+  const ready = steps[4].done;
+  wrap.hidden = hidden && ready;
+  $("cr-onboarding-hide").hidden = !ready;
 }
 
 async function toggleBlock(id, isBlocked) {
@@ -530,6 +563,12 @@ function renderHistory(data) {
 }
 
 $("cr-history-form")?.addEventListener("submit", searchHistory);
+
+$("cr-onboarding-hide")?.addEventListener("click", () => {
+  localStorage.setItem("cr-onboarding-hide", "1");
+  const wrap = $("cr-onboarding");
+  if (wrap) wrap.hidden = true;
+});
 
 wireAutosave("cr-channel-form", "channel");
 wireAutosave("cr-reward-form", "reward");

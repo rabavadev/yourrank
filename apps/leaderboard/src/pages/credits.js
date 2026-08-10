@@ -12,6 +12,51 @@ export const creditsContent = `
 <div id="cr-loading" class="ui-loading" hidden><div class="ui-loading__spinner"></div></div>
 
 <div id="cr-app" hidden>
+  <section class="card" id="cr-onboarding" hidden>
+    <div class="cr-section-head">
+      <div>
+        <h2>Get started</h2>
+        <p class="card-sub">Kick points → reward → YourRank credits → shop item → redemption</p>
+      </div>
+      <button class="btn btn--ghost btn--sm" id="cr-onboarding-hide" type="button">Hide</button>
+    </div>
+    <ol class="cr-steps">
+      <li class="cr-step" id="cr-step-1">
+        <div class="cr-step-text">
+          <b>1. Connect Kick</b>
+          <span class="hint">Link your channel so redemptions on Kick become credits here.</span>
+        </div>
+        <a class="btn btn--sm" href="#cr-channel">Connect</a>
+      </li>
+      <li class="cr-step" id="cr-step-2">
+        <div class="cr-step-text">
+          <b>2. Create reward mapping</b>
+          <span class="hint">Map a Kick reward to the credits a viewer earns.</span>
+        </div>
+        <a class="btn btn--sm" href="#cr-maps">Add mapping</a>
+      </li>
+      <li class="cr-step" id="cr-step-3">
+        <div class="cr-step-text">
+          <b>3. Create shop item</b>
+          <span class="hint">Add something viewers can buy with their credits.</span>
+        </div>
+        <a class="btn btn--sm" href="#cr-shop">Add item</a>
+      </li>
+      <li class="cr-step" id="cr-step-4">
+        <div class="cr-step-text">
+          <b>4. Test live</b>
+          <span class="hint">Redeem a Kick reward on stream, then approve the redemption below.</span>
+        </div>
+      </li>
+      <li class="cr-step" id="cr-step-5">
+        <div class="cr-step-text">
+          <b>5. Ready to use</b>
+          <span class="hint">Your credits &amp; shop program is live.</span>
+        </div>
+      </li>
+    </ol>
+  </section>
+
   <section class="card" id="cr-channel">
     <h2>Connected Kick channel</h2>
     <p class="card-sub">Link your Kick account so reward redemptions from your channel credit your viewers.</p>

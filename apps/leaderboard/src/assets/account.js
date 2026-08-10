@@ -47,36 +47,61 @@ function renderConversions(rows) {
   `).join("");
 }
 
-function renderPostback(pb, upgrade) {
-  const card = $("postbackCard");
+function fmtDateTime(iso) {
+  if (!iso) return "—";
+  try { return new Date(iso).toLocaleString(); } catch { return iso; }
+}
+
+function renderPostback(pb, status, upgrade) {
+  const statusCard = $("postbackStatusCard");
+  const shareCard = $("postbackShareCard");
+  const keyCard = $("postbackKeyCard");
+  const advanced = $("postbackAdvanced");
   const upgradeEl = $("postbackUpgrade");
-  const status = $("postbackStatus");
-  if (!card || !upgradeEl) return;
+  if (!statusCard || !shareCard || !keyCard || !advanced || !upgradeEl) return;
 
   if (upgrade) {
-    card.hidden = true;
+    statusCard.hidden = true;
+    shareCard.hidden = true;
+    keyCard.hidden = true;
+    advanced.hidden = true;
     upgradeEl.hidden = false;
     return;
   }
   upgradeEl.hidden = true;
 
   if (!pb) {
-    card.hidden = true;
-    if (status) {
-      status.textContent = "No active postback key. Click Rotate to generate one.";
-      status.className = "hint";
-    }
+    statusCard.hidden = false;
+    shareCard.hidden = true;
+    keyCard.hidden = true;
+    advanced.hidden = true;
+    const dot = $("postbackStatusDot");
+    const text = $("postbackStatusText");
+    const hint = $("postbackStatusHint");
+    if (dot) dot.className = "status-dot status-dot--off";
+    if (text) text.textContent = "Not configured";
+    if (hint) hint.textContent = "Generate a postback key to start receiving conversions.";
     return;
   }
 
-  card.hidden = false;
+  statusCard.hidden = false;
+  shareCard.hidden = false;
+  keyCard.hidden = false;
+  advanced.hidden = false;
+
+  const active = status === "active";
+  const dot = $("postbackStatusDot");
+  const text = $("postbackStatusText");
+  const hint = $("postbackStatusHint");
+  if (dot) dot.className = `status-dot ${active ? "status-dot--ok" : "status-dot--pending"}`;
+  if (text) text.textContent = active ? "Active — receiving conversions" : "Pending — no conversion received yet";
+  if (hint) hint.textContent = active
+    ? `Last conversion received: ${fmtDateTime(pb.lastUsedAt)}`
+    : `Key created: ${fmtDateTime(pb.createdAt)}. Send the setup block below to your affiliate manager.`;
+
   $("postbackSigned").textContent = pb.signedEndpoint;
   $("postbackKey").textContent = pb.key;
   $("postbackLegacy").textContent = pb.legacyUrl;
-  if (status) {
-    status.textContent = `Legacy URL sunset: ${pb.legacySunset}. Sign the raw query string with HMAC-SHA256 keyed by the postback key.`;
-    status.className = "hint";
-  }
 }
 
 async function loadPostbacks() {
@@ -87,7 +112,7 @@ async function loadPostbacks() {
       setStatus(data.error || "Could not load postbacks.", true);
       return;
     }
-    renderPostback(data.postback, data.upgrade);
+    renderPostback(data.postback, data.status, data.upgrade);
     renderConversions(data.conversions);
   } catch (e) {
     logError("loadPostbacks", e);
@@ -110,19 +135,28 @@ function wirePostbacks() {
   wireCopy("postbackCopyKey", "postbackKey");
   wireCopy("postbackCopyLegacy", "postbackLegacy");
 
+  const manager = $("postbackCopyManager");
+  if (manager) {
+    manager.addEventListener("click", async () => {
+      const signed = $("postbackSigned");
+      if (!signed) return;
+      const text = `Signed endpoint: ${signed.textContent}\nMethod: POST\nSign the raw query string with HMAC-SHA256 keyed by your postback key, then send the hex signature as the X-Postback-Signature header.\nAlso include X-Postback-Key with your key.\nLegacy unsigned URL: ${$("postbackLegacy")?.textContent || "deprecated"} (sunset ${$("postbackLegacy")?.textContent ? "2026-10-01" : ""})`;
+      const ok = await copyToClipboard(text);
+      flashButton(manager, ok ? "Copied!" : "Copy failed");
+    });
+  }
+
   const rotate = $("postbackRotate");
   const revoke = $("postbackRevoke");
-  const status = $("postbackStatus");
 
   if (rotate) {
     rotate.addEventListener("click", async () => {
-      if (!confirm("Rotate the postback key? This will revoke the existing key.")) return;
+      if (!confirm("Rotate the postback key? This will revoke the existing key immediately.")) return;
       rotate.disabled = true;
-      if (status) { status.textContent = "Rotating…"; status.className = "hint"; }
       const result = await jsonReq("POST", "/api/account/postbacks/rotate");
       rotate.disabled = false;
       if (result.ok && result.data.postback) {
-        renderPostback(result.data.postback, false);
+        renderPostback(result.data.postback, "pending", false);
         setStatus("Postback key rotated.", false);
       } else {
         setStatus(result.data?.error || "Could not rotate key.", true);
@@ -134,15 +168,31 @@ function wirePostbacks() {
     revoke.addEventListener("click", async () => {
       if (!confirm("Revoke the postback key? Casino updates will stop until a new key is created.")) return;
       revoke.disabled = true;
-      if (status) { status.textContent = "Revoking…"; status.className = "hint"; }
       const result = await jsonReq("DELETE", "/api/account/postbacks");
       revoke.disabled = false;
       if (result.ok) {
-        renderPostback(null, false);
+        renderPostback(null, "not_configured", false);
         renderConversions([]);
         setStatus("Postback key revoked.", false);
       } else {
         setStatus(result.data?.error || "Could not revoke key.", true);
+      }
+    });
+  }
+
+  const testBtn = $("postbackTest");
+  const testStatus = $("postbackTestStatus");
+  if (testBtn) {
+    testBtn.addEventListener("click", async () => {
+      testBtn.disabled = true;
+      if (testStatus) { testStatus.textContent = "Sending test conversion…"; testStatus.className = "hint"; }
+      const result = await jsonReq("POST", "/api/account/postbacks/test");
+      testBtn.disabled = false;
+      if (result.ok) {
+        if (testStatus) { testStatus.textContent = result.data.message; testStatus.className = "hint hint--success"; }
+        await loadPostbacks();
+      } else {
+        if (testStatus) { testStatus.textContent = result.data?.error || "Test failed."; testStatus.className = "hint hint--error"; }
       }
     });
   }

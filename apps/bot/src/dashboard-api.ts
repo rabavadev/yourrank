@@ -767,6 +767,20 @@ export function buildDashboardApi(): Hono<{ Bindings: DashApiBindings; Variables
     return c.json({ ok: true });
   });
 
+  // Status-only view for Bot Settings; full management lives in /account#postbacks.
+  api.get("/postback-status", async (c) => {
+    const uid = c.get("uid");
+    const row = await one<{ active: boolean; created_at: string | null }>(
+      `SELECT (COUNT(*) > 0) AS active, MAX(created_at) AS created_at
+         FROM postback_keys
+        WHERE user_id = $1
+          AND revoked_at IS NULL
+          AND (expires_at IS NULL OR expires_at > now())`,
+      [uid]
+    );
+    return c.json({ ok: true, active: row?.active ?? false, createdAt: row?.created_at ?? null });
+  });
+
   api.get("/conversions", async (c) => {
     return c.json(await query(
       `SELECT cv.event, cv.amount, cv.currency, cv.click_ref,

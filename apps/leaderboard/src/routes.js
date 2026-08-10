@@ -30,6 +30,7 @@ import {
   handleAccountPostbacks,
   handleAccountPostbacksRotate,
   handleAccountPostbacksRevoke,
+  handleAccountPostbacksTest,
   handleAccountConversions,
 } from "./handlers/account.js";
 import { handleContact } from "./handlers/contact.js";
@@ -206,6 +207,7 @@ export const ROUTES = [
   { path: "/api/account/postbacks", method: "GET", handler: withHandler(handleAccountPostbacks) },
   { path: "/api/account/postbacks/rotate", method: "POST", handler: withHandler(handleAccountPostbacksRotate) },
   { path: "/api/account/postbacks", method: "DELETE", handler: withHandler(handleAccountPostbacksRevoke) },
+  { path: "/api/account/postbacks/test", method: "POST", handler: withHandler(handleAccountPostbacksTest) },
   { path: "/api/account/conversions", method: "GET", handler: withHandler(handleAccountConversions) },
 
   // Attribution
