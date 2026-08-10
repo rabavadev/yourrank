@@ -1,11 +1,12 @@
 // FAQ page — answer-engine optimization (FAQPage schema)
 const faqs = [
-  { q: "What is YourRank?", a: "YourRank is a hosted leaderboard platform for streamers and communities. You edit players, prizes, and branding from a dashboard and share a public link that updates instantly." },
-  { q: "Is YourRank free?", a: "Yes. The Free plan includes one leaderboard with up to 10 players. Paid plans add more boards, players, custom domains, OBS overlays, and API access." },
+  { q: "What is YourRank?", a: "YourRank is an all-in-one suite for streamers and communities. It includes three products: branded leaderboards, a Telegram bot with tracked offers, and a viewer Rewards & Shop powered by Kick channel points." },
+  { q: "What are the three products?", a: "Leaderboards let you publish a branded public race. The Telegram bot publishes tracked offers, broadcasts, and commands for your community. Rewards & Shop lets viewers earn credits from Kick channel-point redemptions and spend them in your shop." },
+  { q: "Is YourRank free?", a: "Yes. The Free plan includes one leaderboard with up to 10 players, one Telegram bot, three tracked offers, three reward mappings, and five shop items. Paid plans add more of each product, plus custom domains, OBS overlays, and API access." },
   { q: "How do viewers earn credits?", a: "Streamers connect a Kick channel and map channel-point rewards to credits. When a viewer redeems a reward on Kick, YourRank credits the viewer automatically." },
-  { q: "Can viewers log in?", a: "Yes. Streamers can enable Kick or Discord OAuth for their board. Viewers then log in at /me to see their balance and redeem items." },
+  { q: "Can viewers log in?", a: "Yes. Streamers can enable Kick or Discord OAuth for their board. Viewers then log in at /me to see their balance across boards and redeem shop items." },
   { q: "What payment methods do you accept?", a: "Paid plans are billed in crypto (BTC, ETH, USDT and 100+ more) through NOWPayments. Card checkout is not available yet." },
-  { q: "Do I need to write code?", a: "No. YourRank runs entirely in the browser and on Cloudflare. You create a page, customize it, and share the URL." },
+  { q: "Do I need to write code?", a: "No. YourRank runs entirely in the browser and on Cloudflare. You create a page, customize it, and share the URL. The Telegram bot and Kick connection are configured from the dashboard." },
   { q: "How do I get support?", a: "Email support@yourrank.site or use the contact form at /contact. Pro and Agency plans include priority support." },
 ];
 
@@ -19,16 +20,16 @@ const itemsHtml = faqs.map((f) => `<details class="faq-item"><summary>${f.q}</su
 
 export const faqPage = `<!DOCTYPE html><html lang="en"><head>
 <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>FAQ · YourRank</title>
-<meta name="description" content="Frequently asked questions about YourRank: free leaderboards, Kick credits, viewer login, pricing, and support." />
+<title>FAQ · YourRank suite</title>
+<meta name="description" content="Frequently asked questions about YourRank: leaderboards, Telegram bot, viewer rewards, pricing, and support." />
 <link rel="canonical" href="https://yourrank.site/faq" />
-<meta property="og:title" content="FAQ · YourRank">
-<meta property="og:description" content="Answers to common questions about YourRank leaderboards, credits, and pricing.">
+<meta property="og:title" content="FAQ · YourRank suite">
+<meta property="og:description" content="Answers to common questions about YourRank leaderboards, Telegram bot, credits, and pricing.">
 <meta property="og:url" content="https://yourrank.site/faq">
 <meta property="og:type" content="website">
 <meta name="twitter:card" content="summary_large_image" />
-<meta name="twitter:title" content="FAQ · YourRank" />
-<meta name="twitter:description" content="Answers to common questions about YourRank leaderboards, credits, and pricing." />
+<meta name="twitter:title" content="FAQ · YourRank suite" />
+<meta name="twitter:description" content="Answers to common questions about YourRank leaderboards, Telegram bot, credits, and pricing." />
 <link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="/assets/landing.css" />
@@ -37,10 +38,10 @@ export const faqPage = `<!DOCTYPE html><html lang="en"><head>
 <a href="#main-content" class="sr-only skip-link">Skip to content</a>
 <header><nav class="top wrap"><a href="/" class="brand">Your<b>Rank</b></a>
 <button class="nav-toggle" aria-label="Toggle menu" aria-expanded="false"><svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button>
-<div class="links"><a href="/">Home</a><a href="/pricing">Pricing</a><a href="/faq">FAQ</a><a href="/login">Sign in</a><a href="/signup" class="btn btn--accent">Create your free page</a></div></nav></header>
+<div class="links"><a href="/">Home</a><a href="/#products">Products</a><a href="/pricing">Pricing</a><a href="/login">Sign in</a><a href="/signup" class="btn btn--accent">Create your free page</a></div></nav></header>
 <main class="wrap pg-wrap" id="main-content">
 <h1 class="pg-title">Frequently asked questions</h1>
-<p class="prose-lead">Quick answers about YourRank. Can't find what you need? <a href="/contact">Contact support</a>.</p>
+<p class="prose-lead">Quick answers about the YourRank suite. Can't find what you need? <a href="/contact">Contact support</a>.</p>
 <div class="faq-list mt-32">
 ${itemsHtml}
 </div>
