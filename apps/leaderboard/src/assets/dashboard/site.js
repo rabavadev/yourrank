@@ -1,8 +1,9 @@
 // Site editing: plan, branding/theme, save, archive, domain, overlay, notifications.
 import { $, esc, fromLocalInput, getCsrf, guardAuth, localTzLabel, logError, toLocalInput, parseAmount, showToast, showConfirmModal, copyToClipboard, flashButton } from "./utils.js";
-import { state, boardStatus } from "./state.js";
+import { state, boardStatus, markDirty, setState, subscribe } from "./state.js";
 import { renderBoardSwitcher, renderBoardsPage, renderSidebarBoardSwitcher } from "./boards.js";
 import { renderOverviewSummary } from "./overview.js";
+import { renderPerformance } from "./performance.js";
 import { applyPlayerFieldVisibility, renderPlayers, renumber, toggleEmpty } from "./players.js";
 
 const FONT_FAMILIES = [
@@ -664,6 +665,41 @@ export function updateDesignPreview() {
   }, 300);
 }
 
+/**
+ * Scale the preview iframe so a `deviceWidth`-wide page fits the stage: the
+ * iframe renders at the device width and is transform-scaled down, so the stage
+ * is sized in unscaled pixels and the frame in scaled ones.
+ */
+export function fitDesignPreview() {
+  const iframe = $("designPreview");
+  const stage = $("previewStage");
+  const frame = $("previewFrame");
+  if (!iframe || !stage || !frame) return;
+  const active = document.querySelector(".preview-tab.is-active");
+  const deviceWidth = parseInt(active?.dataset.width || "1100", 10) || 1100;
+  const cw = frame.clientWidth;
+  if (!cw) return;
+  const doc = iframe.contentDocument;
+  let contentHeight = 680;
+  if (doc && doc.readyState === "complete" && doc.documentElement) {
+    const html = doc.documentElement;
+    const body = doc.body;
+    contentHeight = Math.max(680, html.scrollHeight, body ? body.scrollHeight : 0, html.offsetHeight, body ? body.offsetHeight : 0);
+  }
+  const scale = cw / deviceWidth;
+  const maxHeight = Math.min(720, Math.floor(window.innerHeight * 0.75));
+  stage.style.width = deviceWidth + "px";
+  stage.style.height = contentHeight + "px";
+  stage.style.setProperty("--preview-scale", String(scale));
+  frame.style.height = Math.min(contentHeight * scale, maxHeight) + "px";
+}
+
+/** Re-render the preview and re-fit it: what every "show me the draft" path wants. */
+export function refreshDesignPreview() {
+  updateDesignPreview();
+  fitDesignPreview();
+}
+
 // Renders every "is my board live" surface from boardStatus() so the badge,
 // banner and share affordances can never contradict each other.
 export function renderBoardStatus() {
@@ -790,14 +826,18 @@ function _beforeUnloadGuard(e) {
   return (e.returnValue = "");
 }
 
-function markDirty() {
-  if (!state._dirty) window.addEventListener("beforeunload", _beforeUnloadGuard);
-  state._dirty = true;
-  const sb = $("savebar");
-  if (sb) sb.hidden = false;
-  updateDesignPreview();
-}
-state.markDirty = markDirty;
+// The save bar, the unload guard and the live preview are derived from the
+// draft instead of being poked by each edit handler, so an edit path that
+// forgets to refresh one of them can't exist.
+subscribe((keys) => {
+  if (keys.includes("_dirty")) {
+    const sb = $("savebar");
+    if (sb) sb.hidden = !state._dirty;
+    if (state._dirty) window.addEventListener("beforeunload", _beforeUnloadGuard);
+    else window.removeEventListener("beforeunload", _beforeUnloadGuard);
+  }
+  if (keys.includes("draft")) updateDesignPreview();
+});
 
 export function applyTheme(template, accentA, accentB, label, font = null) {
   const selectedFont = font || $("f_font")?.value || state.CURRENT_BRANDING?.font || "Inter";
@@ -1290,17 +1330,14 @@ $("save")?.addEventListener("click", async () => {
     const d = await res.json();
     if (res.ok && d.ok) {
       justPublished = !!payload.published && !state.PUBLISHED;
-      state._dirty = false;
-      state.PUBLISHED = !!payload.published;
+      setState({ _dirty: false, PUBLISHED: !!payload.published });
       status.textContent = justPublished
         ? (boardStatus().live
           ? "Saved and published. Your board is now live."
           : "Saved. Your board goes live as soon as you confirm your email.")
         : "Saved. Your page is updated.";
-      window.removeEventListener("beforeunload", _beforeUnloadGuard);
-      if (d.updatedAt) state.SITE_UPDATED_AT = d.updatedAt;
-      if (d.publishedAt) state.PUBLISHED_AT = d.publishedAt;
-      const sb = $("savebar"); if (sb) sb.hidden = true;
+      if (d.updatedAt) setState({ SITE_UPDATED_AT: d.updatedAt });
+      if (d.publishedAt) setState({ PUBLISHED_AT: d.publishedAt });
       const saveBtn = $("save"); if (saveBtn) saveBtn.textContent = "Save changes";
       const saveHint = document.querySelector(".savebar-hint"); if (saveHint) saveHint.textContent = "Unsaved changes";
       renderEditorTimestamps();
@@ -1469,7 +1506,7 @@ export function renderEmbedShare() {
   }
   const shareStep = $("ovStepShare");
   if (shareStep && s.last7.views > 0) shareStep.classList.add("is-done");
-  if (typeof state.renderPerformance === "function") state.renderPerformance(s);
+  renderPerformance(s);
   return s;
 }
 

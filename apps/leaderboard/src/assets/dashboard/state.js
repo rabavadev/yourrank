@@ -1,4 +1,8 @@
-// Shared mutable state for the dashboard modules.
+// Shared mutable state for the dashboard modules, plus the one change
+// notification path. Modules must not reach into each other to refresh a
+// surface — and cannot, in the case of players.js, which site.js imports —
+// so every mutation goes through setState()/markDirty() and every surface
+// that has to react subscribes here.
 export const state = {
   SLUG: null,
   EXTRA: {},
@@ -16,6 +20,51 @@ export const state = {
   _dirty: false,
   pageReqId: document.querySelector('meta[name="request-id"]')?.content || "",
 };
+
+const listeners = new Set();
+
+/** Subscribe to change notifications. Returns an unsubscribe function. */
+export function subscribe(fn) {
+  listeners.add(fn);
+  return () => listeners.delete(fn);
+}
+
+function notify(keys) {
+  for (const fn of [...listeners]) {
+    try {
+      fn(keys, state);
+    } catch (err) {
+      // One broken subscriber must not stop the rest of the UI updating.
+      console.error("dashboard subscriber failed", err);
+    }
+  }
+}
+
+/** Assign `patch` onto the state and notify subscribers of the keys that changed. */
+export function setState(patch) {
+  const changed = [];
+  for (const key of Object.keys(patch)) {
+    if (state[key] !== patch[key]) changed.push(key);
+    state[key] = patch[key];
+  }
+  if (changed.length) notify(changed);
+  return changed;
+}
+
+/**
+ * The editor draft changed: flag unsaved work and tell every surface that
+ * derives from the draft (live preview, overview summary) to re-render. Fires
+ * on every edit, not just the first, so it is separate from the `_dirty` flip.
+ */
+export function markDirty() {
+  setState({ _dirty: true });
+  notify(["draft"]);
+}
+
+/** The draft was saved (or discarded): drop the unsaved-changes state. */
+export function clearDirty() {
+  setState({ _dirty: false });
+}
 
 // Single source of truth for "is this board actually reachable by visitors".
 // A published board is still not live while the owner's email is unconfirmed,
