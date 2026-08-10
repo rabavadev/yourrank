@@ -5,12 +5,11 @@ const gbpStructuredData = JSON.stringify({
   name: "YourRank",
   url: "https://yourrank.site",
   image: "{{GBP_PHOTO_URL}}",
-  description: "Hosted leaderboards and channel-point credit rewards for streamers and communities.",
-  priceRange: "$$",
-  telephone: "+1-000-000-0000",
+  description: "All-in-one streamer suite: leaderboards, Telegram bot, and viewer rewards & shop.",
+  priceRange: "$",
   address: {
     "@type": "PostalAddress",
-    addressCountry: "US",
+    addressCountry: "MA",
   },
 
 });
@@ -18,7 +17,7 @@ const gbpStructuredData = JSON.stringify({
 export const reviewsPage = `<!DOCTYPE html><html lang="en"><head>
 <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Reviews · YourRank</title>
-<meta name="description" content="Leave a review for YourRank on Google and see what the community is saying." />
+<meta name="description" content="Leave a review for YourRank on Google and see what the community is saying about the streamer suite." />
 <link rel="canonical" href="https://yourrank.site/reviews" />
 <meta property="og:title" content="Reviews · YourRank">
 <meta property="og:description" content="Leave a review for YourRank on Google.">
@@ -35,10 +34,10 @@ export const reviewsPage = `<!DOCTYPE html><html lang="en"><head>
 <a href="#main-content" class="sr-only skip-link">Skip to content</a>
 <header><nav class="top wrap"><a href="/" class="brand">Your<b>Rank</b></a>
 <button class="nav-toggle" aria-label="Toggle menu" aria-expanded="false"><svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button>
-<div class="links"><a href="/">Home</a><a href="/pricing">Pricing</a><a href="/faq">FAQ</a><a href="/login">Sign in</a><a href="/signup" class="btn btn--accent">Create your free page</a></div></nav></header>
+<div class="links"><a href="/">Home</a><a href="/#products">Products</a><a href="/pricing">Pricing</a><a href="/faq">FAQ</a><a href="/login">Sign in</a><a href="/signup" class="btn btn--accent">Create your free page</a></div></nav></header>
 <main class="wrap pg-wrap pg-wrap--center" id="main-content">
 <h1 class="pg-title pg-title--center">Rate YourRank on Google</h1>
-<p class="prose-lead lead--center">If YourRank helped you run a leaderboard or reward your viewers, leave a review. It helps other streamers find us.</p>
+<p class="prose-lead lead--center">If YourRank helped you run a leaderboard, Telegram bot, or reward your viewers, leave a review. It helps other streamers find us.</p>
 <a class="btn btn--accent btn--cta-lg" id="gbp-review" href="{{GBP_REVIEW_URL}}" target="_blank" rel="noopener">Leave a Google review</a>
 <div class="mt-48">
   <img id="gbp-photo" class="gbp-photo" src="{{GBP_PHOTO_URL}}" alt="YourRank on Google Business Profile" hidden />

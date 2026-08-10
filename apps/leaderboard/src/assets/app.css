@@ -55,6 +55,11 @@ a{color:var(--ink);text-decoration:none}a:hover{color:var(--accent)}
 .auth-card h2{font-size:22px;margin:0 0 4px;letter-spacing:-.01em}.auth-card .sub{color:var(--ink-mute);font-size:13px;margin-bottom:26px}
 .plan-banner{padding:12px 14px;border-radius:var(--radius,8px);background:var(--panel-2);border:1px solid var(--line);color:var(--ink);font-size:13px;margin:-8px 0 16px}
 .auth-card .foot{margin-top:18px;font-size:13px;color:var(--ink-mute)}
+.auth-card .foot-sep{display:block;margin-top:10px}
+.auth-url-wrap{display:flex;align-items:center;gap:8px;border:1px solid var(--line);border-radius:8px;padding:10px 12px;background:color-mix(in srgb,var(--panel-2) 50%,#000)}
+.auth-url-prefix{color:var(--ink-mute);font-size:14px;white-space:nowrap}
+.auth-url-input{flex:1;border:none;background:transparent;padding:0;color:var(--ink);font-size:14px;min-width:0}
+.auth-url-input:focus{outline:none;box-shadow:none}
 .auth-brand-m{display:none}
 .field-err{color:var(--danger);font-size:12px;margin-top:6px}
 .field-err:empty{display:none}

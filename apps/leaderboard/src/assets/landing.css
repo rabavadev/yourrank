@@ -209,3 +209,10 @@ section{padding:72px 0}
 .lead--center{margin:0 auto 32px;max-width:60ch}
 .gbp-photo{max-width:100%;border-radius:12px;box-shadow:0 8px 30px rgba(0,0,0,.12)}
 .sec-sub--mt{margin-top:16px}
+
+/* Suite product cards */
+.product-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px;margin-top:8px}
+.product-card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:24px 20px}
+.product-card h3{margin:0 0 8px;font-size:18px;font-weight:600}
+.product-card p{margin:0;color:var(--ink-soft);font-size:14px;line-height:1.5}
+@media(max-width:640px){.product-grid{grid-template-columns:1fr}}

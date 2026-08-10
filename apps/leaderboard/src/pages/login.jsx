@@ -7,7 +7,7 @@ export function LoginPage() {
       <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>Sign in · YourRank</title>
+        <title>Sign in · YourRank suite</title>
         <meta name="robots" content="noindex, nofollow" />
         <link rel="canonical" href="https://yourrank.site/login" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -21,20 +21,20 @@ export function LoginPage() {
           <aside class="auth-side">
             <div><div class="brand">Your<b>Rank</b></div></div>
             <div>
-              <h2>Your leaderboard, hosted and handled.</h2>
-              <p>Edit your prize pool, code and players from one dashboard. Your page updates instantly. No code, no redeploys.</p>
+              <h2>Your streamer suite, hosted and handled.</h2>
+              <p>Leaderboards, Telegram bot, and viewer rewards &amp; shop — all from one dashboard. No code, no redeploys.</p>
               <div class="auth-spec" aria-hidden="true">
-                <div class="auth-spec-h"><span>your-page.config</span><span class="dot">● live</span></div>
-                <div class="auth-spec-row"><span>Public URL</span><span>yourrank.site/you</span></div>
-                <div class="auth-spec-row"><span>Prize pool</span><span>editable</span></div>
-                <div class="auth-spec-row"><span>Countdown</span><span>auto</span></div>
+                <div class="auth-spec-h"><span>your-suite.config</span><span class="dot">● live</span></div>
+                <div class="auth-spec-row"><span>Leaderboards</span><span>included</span></div>
+                <div class="auth-spec-row"><span>Telegram bot</span><span>turn on</span></div>
+                <div class="auth-spec-row"><span>Rewards &amp; Shop</span><span>Kick connected</span></div>
                 <div class="auth-spec-row"><span>Updates</span><span>instant</span></div>
               </div>
             </div>
             <div class="feat">
-              <div>— Live countdown to every reset</div>
-              <div>— Auto-sorted standings from wager</div>
-              <div>— Your own public URL</div>
+              <div>— Branded leaderboards for your community</div>
+              <div>— Tracked offers and broadcasts in Telegram</div>
+              <div>— Viewer credits powered by Kick channel points</div>
             </div>
           </aside>
           <main class="auth-main" id="main-content">
@@ -67,7 +67,7 @@ export function LoginPage() {
                 <div class="err" id="err" role="alert" aria-live="assertive"></div>
                 <button class="btn btn--accent w-full" type="submit" id="submit">Sign in</button>
               </form>
-              <p class="foot">No account? <a href="/signup">Create one</a> · <a href="/forgot">Forgot password?</a></p>
+              <p class="foot">No account? <a href="/signup">Create one</a> · <a href="/forgot">Forgot password?</a><span class="foot-sep">Are you a viewer? <a href="/me">Log in with Kick or Discord</a></span></p>
             </div>
           </main>
         </div>
