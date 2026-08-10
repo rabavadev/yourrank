@@ -3,15 +3,23 @@
 export function demoLeaderboardData() {
   return {
     brand: {
-      name: "Demo Race",
+      name: "Demo Challenge",
       casino: "",
       code: "",
       ctaUrl: "",
-      prizePool: "$500",
+      prizePool: "500 points",
       period: "Monthly",
-      tagline: "A sample leaderboard for any community.",
+      tagline: "A sample community challenge for any streamer.",
       resetNote: "",
-      blurb: "This is a demo race. Create your own board and replace these players with your community.",
+      blurb: "This is a demo board. Create your own and replace these players with your community.",
+    },
+    prizes: {
+      prizePoolLabel: "Reward pool",
+      currency: "pts ",
+      payoutsLabel: "Payouts",
+      wagerLabel: "Score",
+      prizeLabel: "Reward",
+      wagerTotalLabel: "Total Score",
     },
     branding: { hasLogo: false },
     players: [
@@ -25,7 +33,7 @@ export function demoLeaderboardData() {
     rules: [
       "Leaderboard resets automatically each period.",
       "Scores update instantly when posted via the dashboard or API.",
-      "Prizes are set by the board owner and displayed for entertainment.",
+      "Rewards are set by the board owner and displayed for entertainment.",
     ],
     whyStats: [],
     socials: [],
