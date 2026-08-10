@@ -6,8 +6,14 @@ import { loadStats } from "./site.js";
 import { initKickrewards } from "../credits.js";
 
 const AREA_MAP = { home: "leaderboard", board: "leaderboard", boards: "leaderboard", settings: "leaderboard", performance: "analytics", kickrewards: "rewards" };
+const DEFAULT_HASH = { kickrewards: "cr-channel", performance: "activity", board: "setup" };
 
 export function areaForPage(page) { return AREA_MAP[page] || "leaderboard"; }
+
+function defaultHash(page) { return DEFAULT_HASH[page] || ""; }
+function prefersReducedMotion() {
+  return window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+}
 
 export function setActiveSideNav(page, hash = "") {
   const area = areaForPage(page);
@@ -32,7 +38,17 @@ export function setActiveSideNav(page, hash = "") {
 }
 
 export function navTo(page, hash = "") {
-  setActiveSideNav(page, hash);
+  const scrollHash = hash || defaultHash(page);
+  const navHash = page === "board" ? hash : scrollHash;
+
+  // Keep the URL in sync with the visible sub-section without polluting history.
+  if (scrollHash && location.hash.replace("#", "") !== scrollHash && typeof history.replaceState === "function") {
+    const url = new URL(location.href);
+    url.hash = scrollHash;
+    history.replaceState(history.state || {}, "", url.toString());
+  }
+
+  setActiveSideNav(page, navHash);
   document.querySelectorAll(".lb-page").forEach((p) => p.classList.toggle("is-on", p.dataset.page === page));
   closeDrawer();
   if (page === "home") renderOverviewSummary();
@@ -41,9 +57,17 @@ export function navTo(page, hash = "") {
   if (page === "board" && typeof state.fitDesignPreview === "function") setTimeout(state.fitDesignPreview, 0);
   if (page === "kickrewards") initKickrewards().catch((err) => { console.error("kickrewards init failed", err); });
   const titles = { home: "Overview", board: "Editor", boards: "All boards", performance: "Analytics", settings: "Settings", kickrewards: "Kick rewards" };
+  document.title = `${titles[page] || page} · YourRank`;
   const topbarTitle = $("lbTopbarTitle");
   if (topbarTitle) { topbarTitle.textContent = titles[page] || page; topbarTitle.focus({ preventScroll: true }); }
-  scrollToHash(hash);
+
+  // Sync editor sub-tabs when navigating directly to a sub-group.
+  if (page === "board") {
+    const tabs = document.getElementById("editorTabs");
+    if (tabs && tabs._show) tabs._show(scrollHash);
+  }
+
+  scrollToHash(scrollHash);
 }
 
 export function scrollToHash(hash) {
@@ -58,7 +82,7 @@ export function scrollToHash(hash) {
     document.getElementById(`perf-${hash}`) ||
     document.getElementById(`cr-${hash}`);
   if (target) {
-    target.scrollIntoView({ block: "start", behavior: "smooth" });
+    target.scrollIntoView({ block: "start", behavior: prefersReducedMotion() ? "auto" : "smooth" });
     target.classList.add("is-highlighted");
     setTimeout(() => target.classList.remove("is-highlighted"), 1200);
   }
@@ -164,21 +188,58 @@ export function setupShell() {
     document.body.appendChild(backdrop);
   }
   backdrop.addEventListener("click", () => closeDrawer());
+  function pathForPage(page, hash) {
+    const scrollHash = hash || defaultHash(page);
+    const query = page === "home" ? "" : `?nav=${encodeURIComponent(page)}`;
+    return `/dashboard${query}${scrollHash ? "#" + scrollHash : ""}`;
+  }
+
   document.querySelectorAll(".lb-nav[data-nav]").forEach((link) => link.addEventListener("click", (e) => {
     e.preventDefault();
     const page = link.dataset.nav;
     const hash = link.dataset.hash || "";
-    const query = page === "home" ? "" : `?nav=${encodeURIComponent(page)}${hash ? "#" + hash : ""}`;
-    const newPath = `/dashboard${query}`;
+    const newPath = pathForPage(page, hash);
     if (newPath !== location.pathname + location.search + location.hash) {
       history.pushState({}, "", newPath);
     }
     navTo(page, hash);
   }));
-  document.querySelectorAll("[data-jump]").forEach((el) => el.addEventListener("click", () => navTo(el.dataset.jump)));
+  document.querySelectorAll("[data-jump]").forEach((el) => el.addEventListener("click", () => {
+    const page = el.dataset.jump;
+    const newPath = pathForPage(page, "");
+    if (newPath !== location.pathname + location.search + location.hash) {
+      history.pushState({}, "", newPath);
+    }
+    navTo(page, "");
+  }));
   document.querySelectorAll(".lb-menu").forEach((btn) => btn.addEventListener("click", (e) => { e.stopPropagation(); openDrawer(); }));
   document.querySelectorAll("[data-close-side]").forEach((btn) => btn.addEventListener("click", () => closeDrawer()));
   document.addEventListener("keydown", (e) => { if (e.key === "Escape" && $("lbSide")?.classList.contains("is-open")) { e.preventDefault(); closeDrawer(); } });
+
+  // Make the shared top product tabs part of the same SPA for same-Worker pages.
+  document.querySelectorAll(".gm-tab, .gm-brand").forEach((link) => {
+    const href = link.getAttribute("href") || "";
+    if (!href.startsWith("/dashboard")) return;
+    link.addEventListener("click", (e) => {
+      e.preventDefault();
+      const url = new URL(href, location.origin);
+      const page = url.searchParams.get("nav") || "home";
+      const hash = url.hash.replace("#", "");
+      const newPath = pathForPage(page, hash);
+      if (newPath !== location.pathname + location.search + location.hash) {
+        history.pushState({}, "", newPath);
+      }
+      navTo(page, hash);
+    });
+  });
+
+  // Close the profile dropdown when clicking outside.
+  document.addEventListener("click", (e) => {
+    document.querySelectorAll("details.gm-profile[open]").forEach((d) => {
+      if (!d.contains(e.target)) d.removeAttribute("open");
+    });
+  });
+
   // Handle browser back/forward inside the SPA.
   window.addEventListener("popstate", () => {
     const params = new URLSearchParams(location.search);

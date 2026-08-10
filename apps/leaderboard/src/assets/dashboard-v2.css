@@ -273,6 +273,7 @@
   margin: 0;
   color: var(--yr-ink);
 }
+.v2-dash .lb-topbar-title:focus { outline: none; }
 
 .v2-dash .lb-status {
   font-size: 12px;
