@@ -600,8 +600,10 @@ function renderColorPresets() {
   });
 }
 
+const PREVIEW_TIMEOUT_MS = 8000;
 let _previewTimeout = null;
 let _previewForm = null;
+let _previewWatchdog = null;
 
 export function updateDesignPreview() {
   const iframe = $("designPreview");
@@ -619,6 +621,13 @@ export function updateDesignPreview() {
   if (retry && !retry._wired) {
     retry._wired = true;
     retry.addEventListener("click", () => { $("previewError").hidden = true; updateDesignPreview(); });
+  }
+
+  // A preview that never arrives has to say so: the frame is otherwise just a
+  // blank rectangle labelled "Live preview".
+  if (!iframe._wiredWatchdog) {
+    iframe._wiredWatchdog = true;
+    iframe.addEventListener("load", () => clearTimeout(_previewWatchdog));
   }
 
   // Debounce the live preview update so typing doesn't repeatedly re-render.
@@ -643,6 +652,10 @@ export function updateDesignPreview() {
       _previewForm.submit();
       const errorOverlay = $("previewError");
       if (errorOverlay) errorOverlay.hidden = true;
+      clearTimeout(_previewWatchdog);
+      _previewWatchdog = setTimeout(() => {
+        if (errorOverlay) errorOverlay.hidden = false;
+      }, PREVIEW_TIMEOUT_MS);
     } catch (e) {
       logError("preview-submit", e);
       const errorOverlay = $("previewError");

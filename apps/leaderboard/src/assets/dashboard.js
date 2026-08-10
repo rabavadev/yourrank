@@ -96,8 +96,10 @@ async function init() {
     stage.style.setProperty("--preview-scale", String(scale));
     frame.style.height = frameHeight + "px";
   }
-  // Expose so shell.js can re-fit the preview when navigating into the Editor.
+  // Expose so shell.js can re-fit and re-render the preview when navigating
+  // into the Editor.
   state.fitDesignPreview = fitDesignPreview;
+  state.refreshDesignPreview = () => { updateDesignPreview(); fitDesignPreview(); };
   const iframe = $("designPreview");
   if (iframe) iframe.addEventListener("load", fitDesignPreview);
   document.querySelectorAll(".preview-tab").forEach((btn) => {
@@ -199,7 +201,12 @@ async function init() {
     if (planParam.toLowerCase() === "agency") location.href = "/help/support?area=billing";
     else checkout(planParam);
   }
-  if (document.querySelector('section[data-page="board"].is-on')) fitDesignPreview();
+  // The iframe starts empty: render the preview once so the editor never opens
+  // on a blank frame.
+  if (document.querySelector('section[data-page="board"].is-on')) {
+    updateDesignPreview();
+    fitDesignPreview();
+  }
 
   renderOverviewSummary();
   wireOverviewQuickActions();
@@ -211,11 +218,11 @@ async function init() {
   wireStreamerHud();
   wireAccount();
 
+  // Dirty state lives in dashboard/site.js (savebar + unload guard + preview);
+  // this only adds the debounced overview refresh on top of it.
   let dirtyTimer;
   const markDirty = () => {
-    state._dirty = true;
-    const sb = $("savebar");
-    if (sb) sb.hidden = false;
+    state.markDirty();
     clearTimeout(dirtyTimer);
     dirtyTimer = setTimeout(renderOverviewSummary, 150);
   };
@@ -233,12 +240,12 @@ async function init() {
           // Find the player row by name and update
           const rows = [...$("rows").children];
           const row = rows.find(tr => tr.querySelector(".p-name")?.value.trim() === extra);
-          if (row) { row.querySelector(".p-name").value = value; markDirty(); updateDesignPreview(); }
+          if (row) { row.querySelector(".p-name").value = value; markDirty(); }
         } else if (key === "player_wager" && extra) {
           // Find the player row by name and update wager
           const rows = [...$("rows").children];
           const row = rows.find(tr => tr.querySelector(".p-name")?.value.trim() === extra);
-          if (row) { row.querySelector(".p-wager").value = value.replace(/[^0-9.]/g, ""); markDirty(); updateDesignPreview(); }
+          if (row) { row.querySelector(".p-wager").value = value.replace(/[^0-9.]/g, ""); markDirty(); }
         }
       } else {
         // Fallback: scroll to and focus the relevant field in the settings panel

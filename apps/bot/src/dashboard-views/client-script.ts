@@ -227,12 +227,28 @@ function wizardPrev(btn){ showWizardStep(Number(btn.dataset.step) - 1); }
 let firstBotId = null;
 let custBotId = null;
 
+// Every panel ships a static "Loading…" placeholder; if the load fails they
+// have to say so instead of claiming to load forever.
+const LOADING_SLOTS = [['botList',0],['ovBots',0],['ovOffers',0],['postbackStatus',0],['offers',9],['cmdList',5],['subSources',2]];
+function showLoadError(msg){
+  const body = '<span class="muted">' + esc(msg || "Couldn't load your dashboard.") + '</span> ' +
+    '<button class="ghost" type="button" data-action="retryLoad">Retry</button>';
+  for (const slot of LOADING_SLOTS) {
+    const el = $(slot[0]);
+    if (!el) continue;
+    el.innerHTML = slot[1] ? '<tr><td colspan="' + slot[1] + '">' + body + '</td></tr>' : body;
+  }
+}
+
 async function load() {
   const me = await api('/me');
-  if (me.error) { toast(me.error); return; }
+  if (me.error) { toast(me.error); showLoadError(me.error); return; }
 
   const [offers, daily, bots] = await Promise.all([api('/offers'), api('/stats/daily'), api('/bots')]);
-  if (daily.error || offers.error || bots.error) { toast(daily.error || offers.error || bots.error); return; }
+  if (daily.error || offers.error || bots.error) {
+    const err = daily.error || offers.error || bots.error;
+    toast(err); showLoadError(err); return;
+  }
 
   showPage(page);
 
@@ -727,7 +743,7 @@ const RESERVED_COMMANDS = new Set(['start','menu','help','support','code','codes
 function normalizeCommandInput(raw){
   let s = (raw ?? '').trim();
   if (s.startsWith('/')) s = s.slice(1);
-  const parts = s.split(/[ \t\r\n@]/);
+  const parts = s.split(/[ \\t\\r\\n@]/);
   return parts[0].toLowerCase();
 }
 async function addCommand(btn){
@@ -917,7 +933,8 @@ function updateUtcHint(){
   if (!hint) return;
   if (v) {
     hint.hidden = false;
-    hint.querySelector('b')!.textContent = new Date(v).toISOString();
+    const b = hint.querySelector('b');
+    if (b) b.textContent = new Date(v).toISOString();
   } else {
     hint.hidden = true;
   }
@@ -1057,7 +1074,11 @@ function restoreBtn(el) {
   if (el.dataset.originalText !== undefined) { el.textContent = el.dataset.originalText; delete el.dataset.originalText; }
 }
 
-load(); loadExtras();
+function boot(){
+  load().catch((err) => { console.error('[dashboard load]', err); showLoadError(); });
+  loadExtras();
+}
+boot();
 
 function toggleToken(btn) {
   const input = document.getElementById('botToken');
@@ -1073,6 +1094,7 @@ async function handleAction(e) {
   if (!target) return;
   const action = target.dataset.action;
   if (action === 'toggleToken') { e.preventDefault(); toggleToken(target); return; }
+  if (action === 'retryLoad') { e.preventDefault(); location.reload(); return; }
   if (submitting && action !== 'copyLink') return;
   submitting = true;
   // Show a loading state on the clicked control for every network-backed action.

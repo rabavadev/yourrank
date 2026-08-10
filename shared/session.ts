@@ -45,6 +45,7 @@ export interface SessionEnv {
 export interface UserRecord {
   id: string;
   email: string;
+  display_name: string | null;
   slug: string;
   plan: string;
   plan_expires_at: string | null;
@@ -279,7 +280,7 @@ export async function currentUserId(req: Request, env: SessionEnv): Promise<stri
 export async function loadUser(env: SessionEnv, userId: string): Promise<UserRecord | null> {
   try {
     return (await one<UserRecord>(
-      `SELECT id, email, slug, plan, plan_expires_at, status, is_admin
+      `SELECT id, email, display_name, slug, plan, plan_expires_at, status, is_admin
          FROM users WHERE id = $1`,
       [userId]
     )) ?? null;
