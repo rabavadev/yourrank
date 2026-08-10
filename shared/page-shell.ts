@@ -357,6 +357,11 @@ const BOT_DASH_V2_CSS = `
   .muted { color: var(--yr-ink-soft); }
   .ok { color: var(--yr-green); }
   .off { color: var(--yr-red); }
+  .field-err { color: var(--yr-red); font-size: 13px; margin-top: 4px; display: block; }
+  input.input-err, textarea.input-err, select.input-err { border-color: var(--yr-red); }
+  .form-status { margin-top: 10px; font-size: 14px; }
+  .form-status.error { color: var(--yr-red); }
+  .form-status.ok { color: var(--yr-green); }
 `;
 
 export interface BotPageOpts {
