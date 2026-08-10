@@ -332,8 +332,8 @@ export function DashboardContent() {
 </div>
 <div class="lb-widget lb-widget--half" id="perf-events">
   <div class="lb-cardhd"><h2>Events</h2></div>
-  <ul class="events-list" id="eventsList"><li class="hint">Recent postbacks, score updates and link copies will appear here.</li></ul>
-  <p class="empty" id="eventsEmpty" hidden>No events yet — postbacks and score updates will appear once a sponsor sends them. Set up postbacks in <a href="/account/postbacks">Account → Postbacks</a>.</p>
+  <ul class="events-list" id="eventsList"></ul>
+  <p class="empty" id="eventsEmpty">No events yet — postbacks and score updates will appear once a sponsor sends them. Set up postbacks in <a href="/account/postbacks">Account → Postbacks</a>.</p>
 </div>
 </div>
 </section>

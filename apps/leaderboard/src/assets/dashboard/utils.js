@@ -42,6 +42,50 @@ export function showToast(message, type = "error") {
   }, 4000);
 }
 
+/**
+ * "You have nothing yet" and "we couldn't load this" are different facts, and
+ * every panel used to conflate them: a failed fetch left the empty state
+ * showing, so a network error read as "No payments yet". These two write to the
+ * panel's existing empty node — the original copy is kept so the empty state
+ * comes back after a successful retry.
+ */
+export function showLoadError(el, what, retry) {
+  if (!el) return;
+  if (el.dataset.emptyHtml === undefined) {
+    el.dataset.emptyHtml = el.innerHTML;
+    el.dataset.emptyClass = el.className;
+  }
+  el.className = `${el.dataset.emptyClass} empty--error`.trim();
+  el.setAttribute("role", "status");
+  el.innerHTML = `<span class="empty__icon" aria-hidden="true">⚠</span>Couldn't load ${what}.`;
+  if (retry) {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "btn btn--sm btn--ghost ghost";
+    btn.textContent = "Try again";
+    btn.addEventListener("click", () => { clearLoadError(el); retry(); });
+    el.appendChild(document.createElement("br"));
+    el.appendChild(btn);
+  }
+  el.hidden = false;
+}
+
+/** Put the panel's own empty copy back, and hide it unless `show`. */
+export function clearLoadError(el, show = false) {
+  if (!el) return;
+  if (el.dataset.emptyHtml !== undefined) {
+    el.innerHTML = el.dataset.emptyHtml;
+    el.className = el.dataset.emptyClass;
+  }
+  el.removeAttribute("role");
+  el.hidden = !show;
+}
+
+/** True while the panel is showing a load failure rather than its empty copy. */
+export function hasLoadError(el) {
+  return Boolean(el && el.classList.contains("empty--error"));
+}
+
 // The dialog itself lives in /assets/dialog.js so the bot dashboard can use the
 // same one; these keep the call sites unchanged.
 let dialogReady;

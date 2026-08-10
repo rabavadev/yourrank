@@ -1,5 +1,5 @@
 // Site editing: plan, branding/theme, save, archive, domain, overlay, notifications.
-import { $, esc, fromLocalInput, getCsrf, guardAuth, localTzLabel, logError, toLocalInput, parseAmount, showToast, showConfirmModal, copyToClipboard, flashButton } from "./utils.js";
+import { $, esc, fromLocalInput, getCsrf, guardAuth, localTzLabel, logError, toLocalInput, parseAmount, showToast, showConfirmModal, copyToClipboard, flashButton, showLoadError, clearLoadError } from "./utils.js";
 import { state, boardStatus, markDirty, setState, subscribe } from "./state.js";
 import { renderBoardSwitcher, renderBoardsPage, renderSidebarBoardSwitcher } from "./boards.js";
 import { renderOverviewSummary } from "./overview.js";
@@ -238,10 +238,10 @@ export async function loadHistory() {
   try {
     const res = await fetch("/api/account/payments", { credentials: "include" }).then(guardAuth);
     const d = await res.json();
-    if (!res.ok || !d.ok) return;
+    if (!res.ok || !d.ok) throw new Error(d.error || `payments ${res.status}`);
     const rows = d.payments || [];
     card.hidden = false;
-    empty.hidden = rows.length > 0;
+    clearLoadError(empty, rows.length === 0);
     table.hidden = rows.length === 0;
     body.innerHTML = rows.map((p) => {
       const plan = String(p.plan_tier || p.plan || "–").toUpperCase();
@@ -253,7 +253,12 @@ export async function loadHistory() {
       const note = p.message ? `<div class="hint">${esc(p.message)}</div>` : "";
       return `<tr><td>${esc(date)}</td><td>${esc(plan)}</td><td>${esc(amountStr)}</td><td><span class="pill pill--${esc(statusClass)}">${esc(status)}</span>${note}</td></tr>`;
     }).join("");
-  } catch (err) { logError("loadHistory", err); }
+  } catch (err) {
+    logError("loadHistory", err);
+    card.hidden = false;
+    table.hidden = true;
+    showLoadError(empty, "your payment history", loadHistory);
+  }
 }
 
 export async function loadPlanUsage() {
@@ -1450,9 +1455,16 @@ export function renderEmbedShare() {
       try {
         const r = await fetch(statsUrl);
         const d = await r.json();
-        if (!r.ok || !d.ok) return null;
+        if (!r.ok || !d.ok) throw new Error(d.error || `stats ${r.status}`);
         s = d.stats;
-      } catch (err) { logError("load-stats", err); return null; }
+      } catch (err) {
+        // Returning quietly left "No activity yet" on screen, which reads as a
+        // fact about the account rather than a failed request.
+        logError("load-stats", err);
+        showLoadError($("statsEmpty"), "your stats", loadStats);
+        showLoadError($("ov_barsEmpty"), "your stats", loadStats);
+        return null;
+      }
   const fmt = (n) => n >= 10000 ? (n / 1000).toFixed(1).replace(/\.0$/, "") + "k" : String(n);
   const bars = $("statBars"); const days = s.days || [];
   if (bars) {
@@ -1467,8 +1479,7 @@ export function renderEmbedShare() {
     bars.setAttribute("aria-label", `Bar chart of daily activity for the last ${days.length} days. Total: ${total} events.`);
     const statFrom = $("statFrom");
     if (statFrom && days.length) statFrom.textContent = new Date(days[0].day + "T00:00:00Z").toUTCString().slice(5, 11);
-    const statsEmpty = $("statsEmpty");
-    if (statsEmpty) statsEmpty.hidden = !(s.last30.views === 0 && s.last30.copies === 0 && s.last30.clicks === 0);
+    clearLoadError($("statsEmpty"), s.last30.views === 0 && s.last30.copies === 0 && s.last30.clicks === 0);
   }
   
   // Populate HUD
@@ -1501,8 +1512,7 @@ export function renderEmbedShare() {
     const ovTotal = days.reduce((a, x) => a + x.views + x.copies + x.clicks, 0);
     ovBars.setAttribute("aria-label", `Stacked bar chart of activity for the last ${days.length} days. Total: ${ovTotal} events.`);
     if (days.length) $("ov_barsFrom").textContent = new Date(days[0].day + "T00:00:00Z").toUTCString().slice(5, 11);
-    const ovBarsEmpty = $("ov_barsEmpty");
-    if (ovBarsEmpty) ovBarsEmpty.hidden = days.length > 0 && (s.last30.views + s.last30.copies + s.last30.clicks) > 0;
+    clearLoadError($("ov_barsEmpty"), !(days.length > 0 && (s.last30.views + s.last30.copies + s.last30.clicks) > 0));
   }
   const shareStep = $("ovStepShare");
   if (shareStep && s.last7.views > 0) shareStep.classList.add("is-done");
