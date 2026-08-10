@@ -3,10 +3,10 @@ import { $ } from "./utils.js";
 import { state } from "./state.js";
 import { renderOverviewSummary } from "./overview.js";
 import { loadStats } from "./site.js";
-import { initKickrewards } from "../credits.js";
 
-const AREA_MAP = { home: "leaderboard", board: "leaderboard", boards: "leaderboard", settings: "leaderboard", performance: "analytics", kickrewards: "rewards" };
-const DEFAULT_HASH = { kickrewards: "cr-channel", performance: "activity", board: "setup" };
+
+const AREA_MAP = { home: "leaderboard", board: "leaderboard", boards: "leaderboard", settings: "leaderboard", performance: "analytics" };
+const DEFAULT_HASH = { performance: "activity", board: "setup" };
 
 export function areaForPage(page) { return AREA_MAP[page] || "leaderboard"; }
 
@@ -31,7 +31,7 @@ export function setActiveSideNav(page, hash = "") {
     const href = t.getAttribute("href") || "";
     const isActive = (area === "leaderboard" && href === "/dashboard") ||
                      (area === "analytics" && href === "/dashboard?nav=performance") ||
-                     (area === "rewards" && href === "/dashboard?nav=kickrewards") ||
+                     (area === "rewards" && href.startsWith("/dashboard/rewards")) ||
                      (area === "bot" && href.startsWith("/bot"));
     t.classList.toggle("gm-tab--active", isActive);
   });
@@ -55,8 +55,7 @@ export function navTo(page, hash = "") {
   if (page === "home" || page === "performance") loadStats();
   // Re-fit the live preview whenever the Editor becomes visible (it can't measure while hidden).
   if (page === "board" && typeof state.fitDesignPreview === "function") setTimeout(state.fitDesignPreview, 0);
-  if (page === "kickrewards") initKickrewards().catch((err) => { console.error("kickrewards init failed", err); });
-  const titles = { home: "Overview", board: "Editor", boards: "All boards", performance: "Analytics", settings: "Settings", kickrewards: "Kick rewards" };
+  const titles = { home: "Overview", board: "Editor", boards: "All boards", performance: "Analytics", settings: "Settings" };
   document.title = `${titles[page] || page} · YourRank`;
   const topbarTitle = $("lbTopbarTitle");
   if (topbarTitle) { topbarTitle.textContent = titles[page] || page; topbarTitle.focus({ preventScroll: true }); }
@@ -222,7 +221,7 @@ export function setupShell() {
   // Make the shared top product tabs part of the same SPA for same-Worker pages.
   document.querySelectorAll(".gm-tab, .gm-brand").forEach((link) => {
     const href = link.getAttribute("href") || "";
-    if (!href.startsWith("/dashboard")) return;
+    if (!href.startsWith("/dashboard") || href.startsWith("/dashboard/rewards")) return;
     link.addEventListener("click", (e) => {
       e.preventDefault();
       const url = new URL(href, location.origin);

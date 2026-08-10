@@ -1,5 +1,6 @@
 // Credits & shop dashboard client.
 import { showConfirmModal, showPromptModal, ListController } from "./dashboard/utils.js";
+import { openDrawer, closeDrawer } from "./dashboard/shell.js";
 function $(id) { return document.getElementById(id); }
 function esc(s) { return String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
 function fmtDate(iso) { return iso ? new Date(iso).toLocaleString() : "—"; }
@@ -35,15 +36,62 @@ async function api(method, path, body) {
 let state = {};
 let viewerCtrl, redemptionCtrl, rewardCtrl, shopCtrl, historyCtrl;
 
+function currentTab() {
+  return document.getElementById("cr-app")?.dataset?.crTab || "";
+}
+
+function wireRewardsMobileMenu() {
+  if (wireRewardsMobileMenu._done) return;
+  wireRewardsMobileMenu._done = true;
+  let backdrop = document.querySelector(".lb-backdrop");
+  if (!backdrop) {
+    backdrop = document.createElement("div");
+    backdrop.className = "lb-backdrop";
+    document.body.appendChild(backdrop);
+  }
+  backdrop.addEventListener("click", closeDrawer);
+  document.querySelectorAll(".lb-menu").forEach((btn) => btn.addEventListener("click", (e) => { e.stopPropagation(); openDrawer(); }));
+  document.querySelectorAll("[data-close-side]").forEach((btn) => btn.addEventListener("click", closeDrawer));
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape" && $("lbSide")?.classList.contains("is-open")) { e.preventDefault(); closeDrawer(); } });
+  document.addEventListener("click", (e) => { document.querySelectorAll("details.gm-profile[open]").forEach((d) => { if (!d.contains(e.target)) d.removeAttribute("open"); }); });
+}
+
+function setBoardName() {
+  const name = state.channel?.name || state.site?.name || "";
+  const el = $("activeBoardName");
+  if (el && name) el.textContent = name;
+}
+
+function prefillEditFromQuery() {
+  if (currentTab() !== "maps") return;
+  const id = new URLSearchParams(location.search).get("edit");
+  if (!id) return;
+  const m = (state.mappings || []).find((x) => String(x.id) === id);
+  if (!m) return;
+  const form = $("cr-reward-form");
+  if (!form) return;
+  $("cr-reward-id").value = m.id;
+  $("cr-reward-kick-id").value = m.kick_reward_id;
+  $("cr-reward-title").value = m.kick_reward_title;
+  $("cr-reward-cost").value = m.kick_reward_cost;
+  $("cr-reward-credits").value = m.credits;
+  const status = form.querySelector(".status");
+  if (status) { status.textContent = "Editing mapping."; status.className = "status"; setTimeout(() => { status.textContent = ""; }, 3000); }
+}
+
 async function load() {
   setGlobalLoading(true);
   try {
-    const data = await api("GET", "/api/credits/status");
+    const q = new URLSearchParams(location.search);
+    const siteId = q.get("siteId");
+    const data = await api("GET", "/api/credits/status" + (siteId ? `?siteId=${encodeURIComponent(siteId)}` : ""));
     state = data;
+    setBoardName();
     render();
-    await loadAnalytics();
+    if ($("cr-analytics")) await loadAnalytics();
     $("cr-app").hidden = false;
     $("cr-empty").hidden = true;
+    prefillEditFromQuery();
   } catch (err) {
     $("cr-empty").innerHTML = `<p class="error">Could not load credits dashboard: ${esc(err.message)}</p>`;
     $("cr-empty").hidden = false;
@@ -71,7 +119,7 @@ function redemptionRow(r) {
   return `<td>${esc(r.kick_username || r.kick_user_id)}</td><td>${esc(r.item_name)}</td><td>${r.cost}</td><td><span class="pill pill--${r.status === "pending" ? "muted" : r.status === "fulfilled" ? "good" : "bad"}">${r.status}</span></td><td>${fmtDate(r.created_at)}</td><td class="ta-r">${r.status === "pending" ? `<button class="btn btn--sm btn--accent" data-fulfill="${esc(r.id)}">Fulfill</button> <button class="btn btn--sm btn--danger" data-cancel="${esc(r.id)}">Cancel</button>` : ""}</td>`;
 }
 function historyRow(b) {
-  return `<td><b>${esc(b.name || b.slug)}</b><br><span class="hint">${esc(b.slug)}</span></td><td>${b.balance}</td><td>${b.totalEarned}</td><td>${b.totalSpent}</td><td>${b.redemptionsPending}</td><td>${b.redemptionsTotal}</td><td class="ta-r"><a class="btn btn--sm" href="/dashboard/credits?siteId=${esc(b.siteId)}" target="_blank" rel="noopener">Board</a></td>`;
+  return `<td><b>${esc(b.name || b.slug)}</b><br><span class="hint">${esc(b.slug)}</span></td><td>${b.balance}</td><td>${b.totalEarned}</td><td>${b.totalSpent}</td><td>${b.redemptionsPending}</td><td>${b.redemptionsTotal}</td><td class="ta-r"><a class="btn btn--sm" href="/dashboard/rewards/channel?siteId=${esc(b.siteId)}">Board</a></td>`;
 }
 function wireRewardActions() {
   document.querySelectorAll("[data-edit-reward]").forEach((b) => b.addEventListener("click", () => editReward(b.dataset.editReward)));
@@ -88,129 +136,138 @@ function wireRedemptionActions() {
 }
 
 function render() {
-  const connected = Boolean(state.channel?.externalId);
-  $("cr-channel-connected").hidden = !connected;
-  $("cr-channel-connect-wrap").hidden = connected;
-  $("cr-channel-id").textContent = state.channel?.externalId || "";
-  $("cr-channel-name").textContent = state.channel?.name || "";
-  $("cr-channel-id-input").value = state.channel?.externalId || "";
-  $("cr-channel-name-input").value = state.channel?.name || "";
-  const linked = state.channel?.linkedAt ? fmtDate(state.channel.linkedAt) : "—";
-  const linkedEl = $("cr-channel-linked");
-  if (linkedEl) linkedEl.textContent = `· linked ${linked}`;
-
+  const tab = currentTab();
   const usage = state.usage || {};
   const limits = state.limits || {};
-
-  $("cr-reward-usage").innerHTML = usageLabel(
-    usage.rewardMappings || 0,
-    limits.rewardMappings || 0,
-    "reward mappings"
-  );
-  $("cr-shop-usage").innerHTML = usageLabel(
-    usage.shopItems || 0,
-    limits.shopItems || 0,
-    "shop items"
-  );
-
   const rewardAtLimit = (usage.rewardMappings || 0) >= (limits.rewardMappings || 0);
   const shopAtLimit = (usage.shopItems || 0) >= (limits.shopItems || 0);
-  const rewardSubmit = $("cr-reward-submit");
-  const rewardCreateSubmit = $("cr-reward-create-submit");
-  const shopSubmit = $("cr-shop-submit");
-  if (rewardSubmit) {
-    rewardSubmit.disabled = rewardAtLimit;
-    rewardSubmit.title = rewardAtLimit ? "Upgrade your plan to add more reward mappings" : "";
+
+  if (!tab || tab === "channel") {
+    const connected = Boolean(state.channel?.externalId);
+    const connectedEl = $("cr-channel-connected");
+    if (connectedEl) connectedEl.hidden = !connected;
+    const connectWrap = $("cr-channel-connect-wrap");
+    if (connectWrap) connectWrap.hidden = connected;
+    const channelId = $("cr-channel-id");
+    if (channelId) channelId.textContent = state.channel?.externalId || "";
+    const channelName = $("cr-channel-name");
+    if (channelName) channelName.textContent = state.channel?.name || "";
+    const idInput = $("cr-channel-id-input");
+    if (idInput) idInput.value = state.channel?.externalId || "";
+    const nameInput = $("cr-channel-name-input");
+    if (nameInput) nameInput.value = state.channel?.name || "";
+    const linked = state.channel?.linkedAt ? fmtDate(state.channel.linkedAt) : "—";
+    const linkedEl = $("cr-channel-linked");
+    if (linkedEl) linkedEl.textContent = `· linked ${linked}`;
+
+    const crUsage = $("cr-usage");
+    if (crUsage) {
+      crUsage.innerHTML = [
+        usageCard(usage.rewardMappings || 0, limits.rewardMappings || 0, "reward mappings"),
+        usageCard(usage.shopItems || 0, limits.shopItems || 0, "shop items"),
+        usageCard(usage.pendingRedemptions || 0, limits.pendingRedemptions || 0, "pending redemptions"),
+        usageCard(usage.redemptionsPer30Days || 0, limits.redemptionsPer30Days || 0, "redemptions / 30 days"),
+        usageCard(usage.newViewersPer30Days || 0, limits.newViewersPer30Days || 0, "new viewers / 30 days"),
+      ].join("");
+    }
+
+    const va = state.viewerAuth || {};
+    const authKick = $("cr-viewer-auth-kick");
+    if (authKick) authKick.checked = va.kick !== false;
+    const authDiscord = $("cr-viewer-auth-discord");
+    if (authDiscord) authDiscord.checked = va.discord !== false;
+    const authPublic = $("cr-viewer-auth-public");
+    if (authPublic) authPublic.checked = va.public !== false;
+    renderOnboarding();
   }
-  if (rewardCreateSubmit) {
-    rewardCreateSubmit.disabled = rewardAtLimit;
-    rewardCreateSubmit.title = rewardAtLimit ? "Upgrade your plan to add more reward mappings" : "";
+
+  if (!tab || tab === "rewards" || tab === "maps") {
+    const rewardUsage = $("cr-reward-usage");
+    if (rewardUsage) rewardUsage.innerHTML = usageLabel(usage.rewardMappings || 0, limits.rewardMappings || 0, "reward mappings");
+    const rewardSubmit = $("cr-reward-submit");
+    if (rewardSubmit) { rewardSubmit.disabled = rewardAtLimit; rewardSubmit.title = rewardAtLimit ? "Upgrade your plan to add more reward mappings" : ""; }
+    const rewardCreateSubmit = $("cr-reward-create-submit");
+    if (rewardCreateSubmit) { rewardCreateSubmit.disabled = rewardAtLimit; rewardCreateSubmit.title = rewardAtLimit ? "Upgrade your plan to add more reward mappings" : ""; }
   }
-  if (shopSubmit) {
-    shopSubmit.disabled = shopAtLimit;
-    shopSubmit.title = shopAtLimit ? "Upgrade your plan to add more shop items" : "";
+
+  if (!tab || tab === "rewards") {
+    const mappings = state.mappings || [];
+    if (!rewardCtrl && $("cr-rewards")) {
+      rewardCtrl = new ListController({
+        root: $("cr-rewards"), tbody: "cr-reward-list", items: mappings, perPage: 10,
+        searchFn: (m) => `${m.kick_reward_title} ${m.kick_reward_id} ${m.kick_reward_cost} ${m.credits}`,
+        sortOptions: [
+          { key: "cost", label: "Kick cost", fn: (a, b) => (b.kick_reward_cost || 0) - (a.kick_reward_cost || 0) },
+          { key: "credits", label: "Credits", fn: (a, b) => (b.credits || 0) - (a.credits || 0) },
+          { key: "active", label: "Active first", fn: (a, b) => Number(b.active) - Number(a.active) },
+        ],
+        emptyAllText: "No reward mappings yet.", emptyText: "No matching reward mappings.",
+        renderItem: rewardRow, onRender: wireRewardActions,
+      });
+    } else if (rewardCtrl) { rewardCtrl.setItems(mappings); }
   }
 
-  $("cr-usage").innerHTML = [
-    usageCard(usage.rewardMappings || 0, limits.rewardMappings || 0, "reward mappings"),
-    usageCard(usage.shopItems || 0, limits.shopItems || 0, "shop items"),
-    usageCard(usage.pendingRedemptions || 0, limits.pendingRedemptions || 0, "pending redemptions"),
-    usageCard(usage.redemptionsPer30Days || 0, limits.redemptionsPer30Days || 0, "redemptions / 30 days"),
-    usageCard(usage.newViewersPer30Days || 0, limits.newViewersPer30Days || 0, "new viewers / 30 days"),
-  ].join("");
+  if (!tab || tab === "shop") {
+    const shopItems = state.shopItems || [];
+    const shopUsage = $("cr-shop-usage");
+    if (shopUsage) shopUsage.innerHTML = usageLabel(usage.shopItems || 0, limits.shopItems || 0, "shop items");
+    const shopSubmit = $("cr-shop-submit");
+    if (shopSubmit) { shopSubmit.disabled = shopAtLimit; shopSubmit.title = shopAtLimit ? "Upgrade your plan to add more shop items" : ""; }
+    if (!shopCtrl && $("cr-shop")) {
+      shopCtrl = new ListController({
+        root: $("cr-shop"), tbody: "cr-shop-list", items: shopItems, perPage: 10,
+        searchFn: (i) => `${i.name} ${i.description || ""} ${i.cost} ${i.stock === null ? "" : i.stock}`,
+        sortOptions: [
+          { key: "cost", label: "Cost", fn: (a, b) => (b.cost || 0) - (a.cost || 0) },
+          { key: "stock", label: "Stock", fn: (a, b) => ((b.stock ?? Infinity) - (a.stock ?? Infinity)) },
+          { key: "active", label: "Active first", fn: (a, b) => Number(b.active) - Number(a.active) },
+        ],
+        emptyAllText: "No shop items yet.", emptyText: "No matching shop items.",
+        renderItem: shopRow, onRender: wireRewardActions,
+      });
+    } else if (shopCtrl) { shopCtrl.setItems(shopItems); }
+  }
 
-  const va = state.viewerAuth || {};
-  $("cr-viewer-auth-kick").checked = va.kick !== false;
-  $("cr-viewer-auth-discord").checked = va.discord !== false;
-  $("cr-viewer-auth-public").checked = va.public !== false;
+  if (!tab || tab === "viewers") {
+    const viewers = state.viewers || [];
+    if (!viewerCtrl && $("cr-viewers")) {
+      viewerCtrl = new ListController({
+        root: $("cr-viewers"), tbody: "cr-viewer-list", items: viewers, perPage: 15,
+        searchFn: (v) => `${v.kick_username || v.kick_user_id} ${v.block_reason || ""} ${v.blocked ? "blocked" : ""}`,
+        sortOptions: [
+          { key: "balance", label: "Balance", fn: (a, b) => (b.balance || 0) - (a.balance || 0) },
+          { key: "earned", label: "Earned", fn: (a, b) => (b.total_earned || 0) - (a.total_earned || 0) },
+          { key: "spent", label: "Spent", fn: (a, b) => (b.total_spent || 0) - (a.total_spent || 0) },
+          { key: "last", label: "Last earned", fn: (a, b) => new Date(b.last_earned_at || b.created_at || 0) - new Date(a.last_earned_at || a.created_at || 0) },
+        ],
+        emptyAllText: "No viewers yet.", emptyText: "No matching viewers.",
+        renderItem: viewerRow, onRender: wireViewerActions,
+      });
+    } else if (viewerCtrl) { viewerCtrl.setItems(viewers); }
+    const viewerEmpty = $("cr-viewer-empty");
+    if (viewerEmpty) viewerEmpty.hidden = true;
+  }
 
-  const mappings = state.mappings || [];
-  const shopItems = state.shopItems || [];
-  const viewers = state.viewers || [];
-  const redemptions = state.redemptions || [];
+  if (!tab || tab === "redemptions") {
+    const redemptions = state.redemptions || [];
+    if (!redemptionCtrl && $("cr-redemptions")) {
+      redemptionCtrl = new ListController({
+        root: $("cr-redemptions"), tbody: "cr-redemption-list", items: redemptions, perPage: 15,
+        searchFn: (r) => `${r.kick_username || r.kick_user_id} ${r.item_name} ${r.status}`,
+        sortOptions: [
+          { key: "time", label: "Newest", fn: (a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0) },
+          { key: "cost", label: "Cost", fn: (a, b) => (b.cost || 0) - (a.cost || 0) },
+          { key: "status", label: "Status", fn: (a, b) => (a.status || "").localeCompare(b.status || "") },
+        ],
+        emptyAllText: "No redemptions yet.", emptyText: "No matching redemptions.",
+        renderItem: redemptionRow, onRender: wireRedemptionActions,
+      });
+    } else if (redemptionCtrl) { redemptionCtrl.setItems(redemptions); }
+    const redemptionEmpty = $("cr-redemption-empty");
+    if (redemptionEmpty) redemptionEmpty.hidden = true;
+  }
 
-  if (!rewardCtrl && $("cr-maps")) {
-    rewardCtrl = new ListController({
-      root: $("cr-maps"), tbody: "cr-reward-list", items: mappings, perPage: 10,
-      searchFn: (m) => `${m.kick_reward_title} ${m.kick_reward_id} ${m.kick_reward_cost} ${m.credits}`,
-      sortOptions: [
-        { key: "cost", label: "Kick cost", fn: (a, b) => (b.kick_reward_cost || 0) - (a.kick_reward_cost || 0) },
-        { key: "credits", label: "Credits", fn: (a, b) => (b.credits || 0) - (a.credits || 0) },
-        { key: "active", label: "Active first", fn: (a, b) => Number(b.active) - Number(a.active) },
-      ],
-      emptyAllText: "No reward mappings yet.", emptyText: "No matching reward mappings.",
-      renderItem: rewardRow, onRender: wireRewardActions,
-    });
-  } else if (rewardCtrl) { rewardCtrl.setItems(mappings); }
-
-  if (!shopCtrl && $("cr-shop")) {
-    shopCtrl = new ListController({
-      root: $("cr-shop"), tbody: "cr-shop-list", items: shopItems, perPage: 10,
-      searchFn: (i) => `${i.name} ${i.description || ""} ${i.cost} ${i.stock === null ? "" : i.stock}`,
-      sortOptions: [
-        { key: "cost", label: "Cost", fn: (a, b) => (b.cost || 0) - (a.cost || 0) },
-        { key: "stock", label: "Stock", fn: (a, b) => ((b.stock ?? Infinity) - (a.stock ?? Infinity)) },
-        { key: "active", label: "Active first", fn: (a, b) => Number(b.active) - Number(a.active) },
-      ],
-      emptyAllText: "No shop items yet.", emptyText: "No matching shop items.",
-      renderItem: shopRow, onRender: wireRewardActions,
-    });
-  } else if (shopCtrl) { shopCtrl.setItems(shopItems); }
-
-  if (!viewerCtrl && $("cr-viewers")) {
-    viewerCtrl = new ListController({
-      root: $("cr-viewers"), tbody: "cr-viewer-list", items: viewers, perPage: 15,
-      searchFn: (v) => `${v.kick_username || v.kick_user_id} ${v.block_reason || ""} ${v.blocked ? "blocked" : ""}`,
-      sortOptions: [
-        { key: "balance", label: "Balance", fn: (a, b) => (b.balance || 0) - (a.balance || 0) },
-        { key: "earned", label: "Earned", fn: (a, b) => (b.total_earned || 0) - (a.total_earned || 0) },
-        { key: "spent", label: "Spent", fn: (a, b) => (b.total_spent || 0) - (a.total_spent || 0) },
-        { key: "last", label: "Last earned", fn: (a, b) => new Date(b.last_earned_at || b.created_at || 0) - new Date(a.last_earned_at || a.created_at || 0) },
-      ],
-      emptyAllText: "No viewers yet.", emptyText: "No matching viewers.",
-      renderItem: viewerRow, onRender: wireViewerActions,
-    });
-  } else if (viewerCtrl) { viewerCtrl.setItems(viewers); }
-  $("cr-viewer-empty").hidden = true;
-
-  if (!redemptionCtrl && $("cr-redemptions")) {
-    redemptionCtrl = new ListController({
-      root: $("cr-redemptions"), tbody: "cr-redemption-list", items: redemptions, perPage: 15,
-      searchFn: (r) => `${r.kick_username || r.kick_user_id} ${r.item_name} ${r.status}`,
-      sortOptions: [
-        { key: "time", label: "Newest", fn: (a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0) },
-        { key: "cost", label: "Cost", fn: (a, b) => (b.cost || 0) - (a.cost || 0) },
-        { key: "status", label: "Status", fn: (a, b) => (a.status || "").localeCompare(b.status || "") },
-      ],
-      emptyAllText: "No redemptions yet.", emptyText: "No matching redemptions.",
-      renderItem: redemptionRow, onRender: wireRedemptionActions,
-    });
-  } else if (redemptionCtrl) { redemptionCtrl.setItems(redemptions); }
-  $("cr-redemption-empty").hidden = true;
-
-  renderOnboarding();
   renderStatus();
-  wireCrJumps();
 }
 
 function renderOnboarding() {
@@ -249,62 +306,49 @@ function renderOnboarding() {
   $("cr-onboarding-hide").hidden = !ready;
 }
 
+const REWARD_ROUTES = {
+  channel: "/dashboard/rewards/channel",
+  rewards: "/dashboard/rewards/rewards",
+  maps: "/dashboard/rewards/maps",
+  shop: "/dashboard/rewards/shop",
+  redemptions: "/dashboard/rewards/redemptions",
+  viewers: "/dashboard/rewards/viewers",
+};
+
 function renderStatus() {
   const connected = Boolean(state.channel?.externalId);
   const channelName = state.channel?.name || "";
   const activeMappings = (state.mappings || []).filter((m) => m.active).length;
   const activeItems = (state.shopItems || []).filter((i) => i.active).length;
   const pending = (state.redemptions || []).filter((r) => r.status === "pending").length;
-  const summary = state.analytics?.summary || {};
-  const balance = summary.viewerBalance || 0;
+  const balance = (state.viewers || []).reduce((a, v) => a + (v.balance || 0), 0);
   const viewers = (state.viewers || []).length;
 
-  $("cr-status-channel").textContent = connected ? (channelName || "Connected") : "Not connected";
-  $("cr-status-mappings").textContent = `${activeMappings} active`;
-  $("cr-status-shop").textContent = `${activeItems} active`;
-  $("cr-status-pending").textContent = `${pending}`;
-  $("cr-status-balance").textContent = `${balance}`;
+  const channelEl = $("cr-status-channel");
+  if (channelEl) channelEl.textContent = connected ? (channelName || "Connected") : "Not connected";
+  const mappingsEl = $("cr-status-mappings");
+  if (mappingsEl) mappingsEl.textContent = `${activeMappings} active`;
+  const shopEl = $("cr-status-shop");
+  if (shopEl) shopEl.textContent = `${activeItems} active`;
+  const pendingEl = $("cr-status-pending");
+  if (pendingEl) pendingEl.textContent = `${pending}`;
+  const balanceEl = $("cr-status-balance");
+  if (balanceEl) balanceEl.textContent = `${balance}`;
 
   let msg = "";
-  let action = "";
+  let route = "";
   let label = "";
-  if (!connected) { msg = "Next step: connect your Kick channel so viewers can earn credits."; action = "cr-channel"; label = "Connect Kick"; }
-  else if (activeMappings === 0) { msg = "Next step: create a reward mapping to convert Kick points into credits."; action = "cr-maps"; label = "Add mapping"; }
-  else if (activeItems === 0) { msg = "Next step: add a shop item for viewers to spend credits."; action = "cr-shop"; label = "Add shop item"; }
-  else if (pending > 0) { msg = `${pending} redemption(s) need your approval.`; action = "cr-redemptions"; label = "View redemptions"; }
-  else if (viewers === 0) { msg = "Your rewards are ready. Redeem a test Kick reward to see a viewer appear."; action = "cr-viewers"; label = "Check viewers"; }
+  if (!connected) { msg = "Next step: connect your Kick channel so viewers can earn credits."; route = REWARD_ROUTES.channel; label = "Connect Kick"; }
+  else if (activeMappings === 0) { msg = "Next step: create a Kick reward that grants credits."; route = REWARD_ROUTES.rewards; label = "Create reward"; }
+  else if (activeItems === 0) { msg = "Next step: add a shop item for viewers to spend credits."; route = REWARD_ROUTES.shop; label = "Add shop item"; }
+  else if (pending > 0) { msg = `${pending} redemption(s) need your approval.`; route = REWARD_ROUTES.redemptions; label = "View redemptions"; }
+  else if (viewers === 0) { msg = "Your rewards are ready. Redeem a test Kick reward to see a viewer appear."; route = REWARD_ROUTES.viewers; label = "Check viewers"; }
   else { msg = "Credits & shop is live. Add more rewards or items to grow."; }
 
   const msgEl = $("cr-status-msg");
-  msgEl.textContent = msg;
+  if (msgEl) msgEl.textContent = msg;
   const actionWrap = $("cr-status-action");
-  actionWrap.innerHTML = "";
-  if (action) {
-    const btn = document.createElement("button");
-    btn.type = "button";
-    btn.className = "btn btn--sm btn--accent";
-    btn.dataset.crJump = action;
-    btn.textContent = label;
-    actionWrap.appendChild(btn);
-  }
-}
-
-let _crJumpsWired = false;
-function wireCrJumps() {
-  if (_crJumpsWired) return;
-  _crJumpsWired = true;
-  document.addEventListener("click", (e) => {
-    const btn = e.target.closest("[data-cr-jump]");
-    if (!btn) return;
-    e.preventDefault();
-    const hash = btn.dataset.crJump;
-    const event = new CustomEvent("yr-nav", { detail: { page: "kickrewards", hash }, cancelable: true });
-    window.dispatchEvent(event);
-    if (!event.defaultPrevented) {
-      const el = document.getElementById(hash);
-      if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
-    }
-  });
+  if (actionWrap) actionWrap.innerHTML = route ? `<a class="btn btn--sm btn--accent" href="${esc(route)}">${esc(label)}</a>` : "";
 }
 
 async function toggleBlock(id, isBlocked) {
@@ -470,13 +514,14 @@ $("cr-reward-create-form")?.addEventListener("submit", async (e) => {
 });
 
 function editReward(id) {
-  const m = (state.mappings || []).find((x) => x.id === id);
+  const m = (state.mappings || []).find((x) => String(x.id) === String(id));
   if (!m) return;
-  $("cr-reward-id").value = m.id;
-  $("cr-reward-kick-id").value = m.kick_reward_id;
-  $("cr-reward-title").value = m.kick_reward_title;
-  $("cr-reward-cost").value = m.kick_reward_cost;
-  $("cr-reward-credits").value = m.credits;
+  const q = new URLSearchParams(location.search);
+  const siteId = q.get("siteId");
+  const params = new URLSearchParams();
+  params.set("edit", m.id);
+  if (siteId) params.set("siteId", siteId);
+  location.href = `/dashboard/rewards/maps?${params.toString()}`;
 }
 
 async function delReward(id) {
@@ -678,11 +723,16 @@ wireAutosave("cr-shop-form", "shop");
 wireAutosave("cr-viewer-auth-form", "viewer-auth");
 wireAutosave("cr-history-form", "history");
 
-// Auto-init only when the standalone credits markup is present. The dashboard SPA imports this module and calls initKickrewards() on demand.
-if (document.getElementById("cr-standalone")) {
+// Auto-init when the credits app markup is present on a real route.
+if (document.getElementById("cr-app")) {
+  wireRewardsMobileMenu();
   initKickrewards().catch((err) => {
-    $("cr-empty").innerHTML = `<p class="error">Could not load credits dashboard: ${esc(err.message)}</p>`;
-    $("cr-empty").hidden = false;
-    $("cr-app").hidden = true;
+    const empty = $("cr-empty");
+    if (empty) {
+      empty.innerHTML = `<p class="error">Could not load credits dashboard: ${esc(err.message)}</p>`;
+      empty.hidden = false;
+    }
+    const app = $("cr-app");
+    if (app) app.hidden = true;
   });
 }

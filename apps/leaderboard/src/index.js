@@ -447,6 +447,9 @@ async function handleRequest(request, env, ctx, meta) {
       if (path === "/signup" || path === "/signup.html") return new Response(addCookieConsent(await renderHtmlPage(PAGES.signup)), { headers: { ...SECURE_HTML, ...csrfHeader } });
       if (path === "/verify-email" || path === "/verify-email.html") return new Response(addCookieConsent(await renderHtmlPage(PAGES.verifyEmail)), { headers: { ...SECURE_HTML, ...csrfHeader } });
       if (path === "/dashboard" || path === "/dashboard.html") {
+        if (url.searchParams.get("nav") === "kickrewards") {
+          return Response.redirect(new URL("/dashboard/rewards/channel", url), 302);
+        }
         try {
           const user = await currentUser(request, env);
           if (!user) return Response.redirect(new URL("/login", url), 302);
@@ -514,10 +517,10 @@ async function handleRequest(request, env, ctx, meta) {
         return Response.redirect(new URL("/account#profile", url), 302);
       }
       if (path === "/dashboard/credits") {
-        return Response.redirect(new URL("/dashboard?nav=kickrewards", url), 302);
+        return Response.redirect(new URL("/dashboard/rewards/channel", url), 302);
       }
       if (path === "/dashboard/rewards") {
-        return Response.redirect(new URL("/dashboard?nav=kickrewards", url), 302);
+        return Response.redirect(new URL("/dashboard/rewards/channel", url), 302);
       }
       if (path === "/dashboard/editor") {
         return Response.redirect(new URL("/dashboard?nav=board", url), 302);
@@ -535,10 +538,25 @@ async function handleRequest(request, env, ctx, meta) {
         return Response.redirect(new URL(`/dashboard?nav=performance${hash ? "#" + hash : ""}`, url), 302);
       }
       if (path.startsWith("/dashboard/rewards/")) {
-        const tab = path.slice("/dashboard/rewards/".length);
-        const map = { channel: "cr-channel", maps: "cr-maps", shop: "cr-shop", viewers: "cr-viewers", redemptions: "cr-redemptions", history: "cr-history" };
-        const hash = map[tab] || "";
-        return Response.redirect(new URL(`/dashboard?nav=kickrewards${hash ? "#" + hash : ""}`, url), 302);
+        const tab = path.slice("/dashboard/rewards/".length).split("?")[0];
+        const map = { channel: "rewardsChannel", rewards: "rewardsRewards", maps: "rewardsMaps", shop: "rewardsShop", viewers: "rewardsViewers", redemptions: "rewardsRedemptions", history: "rewardsHistory" };
+        const pageKey = map[tab];
+        if (!pageKey) return Response.redirect(new URL("/dashboard/rewards/channel", url), 302);
+        try {
+          const user = await currentUser(request, env);
+          if (!user) return Response.redirect(new URL("/login", url), 302);
+          const html = addCookieConsent(await renderHtmlPage(PAGES[pageKey], {
+            activePath: url.pathname + url.search,
+            user,
+            reqId: reqId || "",
+            theme: "light",
+            accountHref: "/account"
+          }));
+          return new Response(html, { headers: { ...SECURE_HTML, ...csrfHeader, "cache-control": "no-store, no-cache, must-revalidate" } });
+        } catch (e) {
+          if (workerLog) workerLog.error("rewards_render_failed", { error: String(e?.message || e) }); else console.error("rewards render failed:", String(e?.message || e));
+          return new Response(error500Page(nonce), { status: 500, headers: HTML_N });
+        }
       }
       if (path.startsWith("/dashboard/editor/")) {
         const tab = path.slice("/dashboard/editor/".length);

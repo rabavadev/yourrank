@@ -18,7 +18,24 @@ import { contactPage } from "./pages/contact.js";
 import { pricingPage } from "./pages/pricing.js";
 import { docsPage } from "./pages/docs.js";
 import { verifyEmailPage } from "./pages/verify-email.js";
-import { creditsPage } from "./pages/credits.js";
+import {
+  RewardsChannelPage,
+  RewardsRewardsPage,
+  RewardsMapsPage,
+  RewardsShopPage,
+  RewardsViewersPage,
+  RewardsRedemptionsPage,
+  RewardsHistoryPage,
+} from "./pages/rewards.jsx";
+import {
+  rewardsChannelConfig,
+  rewardsRewardsConfig,
+  rewardsMapsConfig,
+  rewardsShopConfig,
+  rewardsViewersConfig,
+  rewardsRedemptionsConfig,
+  rewardsHistoryConfig,
+} from "./pages/rewards.jsx";
 import { accountPage } from "./pages/account.js";
 import { faqPage } from "./pages/faq.js";
 import { reviewsPage } from "./pages/reviews.js";
@@ -42,7 +59,13 @@ export const PAGES = {
   contact: contactPage,
   pricing: pricingPage,
   verifyEmail: verifyEmailPage,
-  credits: creditsPage,
+  rewardsChannel: { config: rewardsChannelConfig, Component: RewardsChannelPage },
+  rewardsRewards: { config: rewardsRewardsConfig, Component: RewardsRewardsPage },
+  rewardsMaps: { config: rewardsMapsConfig, Component: RewardsMapsPage },
+  rewardsShop: { config: rewardsShopConfig, Component: RewardsShopPage },
+  rewardsViewers: { config: rewardsViewersConfig, Component: RewardsViewersPage },
+  rewardsRedemptions: { config: rewardsRedemptionsConfig, Component: RewardsRedemptionsPage },
+  rewardsHistory: { config: rewardsHistoryConfig, Component: RewardsHistoryPage },
   account: accountPage,
   faq: faqPage,
   reviews: reviewsPage,

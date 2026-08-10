@@ -30,7 +30,7 @@ export interface NavLink {
 export const NAV_LINKS: NavLink[] = [
   { key: "leaderboard", label: "Leaderboards", href: "/dashboard",                    match: ["/dashboard"],                    top: true },
   { key: "bot",         label: "Telegram",     href: "/bot/dashboard",                match: ["/bot"],                            top: true },
-  { key: "rewards",     label: "Rewards & Shop", href: "/dashboard?nav=kickrewards", match: ["/dashboard?nav=kickrewards"],      top: true },
+  { key: "rewards",     label: "Rewards & Shop", href: "/dashboard/rewards/channel", match: ["/dashboard/rewards"],              top: true },
   { key: "account",     label: "Account",      href: "/account",                      match: ["/account"],                      top: true },
   { key: "help",        label: "Help",         href: "/contact?type=support",         match: ["/contact?type=support", "/contact"], top: true },
 ];
@@ -47,7 +47,7 @@ export function activeKey(activePath: string): string | null {
   if (pathname.startsWith("/contact")) return "help";
 
   if (pathname === "/dashboard" || pathname.startsWith("/dashboard/")) {
-    if (nav === "kickrewards" || pathname === "/dashboard/credits" || pathname.startsWith("/dashboard/credits")) return "rewards";
+    if (pathname === "/dashboard/credits" || pathname.startsWith("/dashboard/credits") || pathname.startsWith("/dashboard/rewards")) return "rewards";
     return "leaderboard";
   }
 
