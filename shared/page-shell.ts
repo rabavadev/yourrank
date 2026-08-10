@@ -7,7 +7,7 @@
 //  These modules are compiled to shared/*.js by `node build-shared.mjs`.
 // ============================================================================
 
-import { SHELL_NAV_CSS, type ShellUser } from "./shell-nav.js";
+import { type ShellUser } from "./shell-nav.js";
 
 function esc(s: unknown): string {
   return String(s ?? "").replace(/[&<>"']/g, (ch) =>
@@ -47,6 +47,7 @@ export function leaderboardPageHtml(opts: LeaderboardPageOpts): string {
     opts.noscript ||
     "<p>YourRank requires JavaScript</p><p>Please enable JavaScript in your browser settings to use the dashboard.</p>";
   const navPlaceholder = opts.nav !== false ? "<!--GM_NAV-->" : "";
+  const navScript = opts.nav !== false ? '<script src="/assets/shell-nav.js" defer></script>' : "";
   const footer = opts.footer !== false ? `<footer class="gm-shell-footer">
   <div class="gm-shell-inner">
     <a class="gm-brand" href="/dashboard"><span class="gm-brand-mark">YR</span><span class="gm-brand-word">YourRank</span></a>
@@ -69,6 +70,7 @@ ${styles}
 ${navPlaceholder}
 <main class="${mainClass}" id="main-content">${opts.content}</main>
 ${footer}
+${navScript}
 ${scripts}
 </body></html>`;
 }
@@ -393,9 +395,10 @@ export function botPageHtml(opts: BotPageOpts): string {
   const nav = opts.nav || "";
   return `<!doctype html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Streamer Dashboard</title>${GOOGLE_FONTS}<style${nonceAttr}>${BOT_STYLE_ATTR_CSS}${BOT_BASE_CSS}${BOT_DASH_V2_CSS}${nav ? SHELL_NAV_CSS : ""}</style></head><body data-page="${esc(opts.page)}">
+<title>Streamer Dashboard</title>${GOOGLE_FONTS}<style${nonceAttr}>${BOT_STYLE_ATTR_CSS}${BOT_BASE_CSS}${BOT_DASH_V2_CSS}</style>${nav ? '<link rel="stylesheet" href="/assets/shell-nav.css">' : ""}</head><body data-page="${esc(opts.page)}">
 <a href="#main-content" class="skip-link">Skip to main content</a>
 ${nav}
 ${opts.content}
+${nav ? '<script src="/assets/shell-nav.js" defer></script>' : ""}
 </body></html>`;
 }

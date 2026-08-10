@@ -133,6 +133,27 @@ describe("dashboard views", () => {
     expect(html).not.toContain("onblur=");
   });
 
+  it("clientScriptSource emits parseable JavaScript", () => {
+    // The script is built from a template literal, so escape sequences like
+    // \\t are interpreted at build time and can emit raw control characters
+    // into the served file. A single unparseable line kills the whole
+    // dashboard silently, so the emitted source must be parsed here.
+    const js = clientScriptSource();
+    expect(() => new Function(js)).not.toThrow();
+  });
+
+  it("clientScriptSource normalizes command input on whitespace and @", () => {
+    const js = clientScriptSource();
+    const normalize = new Function(
+      `${js.slice(js.indexOf("function normalizeCommandInput"), js.indexOf("async function addCommand"))}
+       return normalizeCommandInput;`
+    )() as (raw: string) => string;
+    expect(normalize("/Start@MyBot")).toBe("start");
+    expect(normalize(" /help me")).toBe("help");
+    expect(normalize("code\tnow")).toBe("code");
+    expect(normalize("rank\nboard")).toBe("rank");
+  });
+
   it("clientScriptSource handles dashboard actions without inline event handlers", () => {
     const js = clientScriptSource();
     expect(js).toContain('data-action="checkHealth"');

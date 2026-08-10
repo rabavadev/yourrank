@@ -53,8 +53,10 @@ export function navTo(page, hash = "") {
   closeDrawer();
   if (page === "home") renderOverviewSummary();
   if (page === "home" || page === "performance") loadStats();
-  // Re-fit the live preview whenever the Editor becomes visible (it can't measure while hidden).
-  if (page === "board" && typeof state.fitDesignPreview === "function") setTimeout(state.fitDesignPreview, 0);
+  // Re-render and re-fit the live preview whenever the Editor becomes visible
+  // (updateDesignPreview() no-ops while the section is hidden, so navigating in
+  // has to ask for it again).
+  if (page === "board" && typeof state.refreshDesignPreview === "function") setTimeout(state.refreshDesignPreview, 0);
   const titles = { home: "Overview", board: "Editor", boards: "All boards", performance: "Analytics", settings: "Settings" };
   document.title = `${titles[page] || page} · YourRank`;
   const topbarTitle = $("lbTopbarTitle");
@@ -235,12 +237,8 @@ export function setupShell() {
     });
   });
 
-  // Close the profile dropdown when clicking outside.
-  document.addEventListener("click", (e) => {
-    document.querySelectorAll("details.gm-profile[open]").forEach((d) => {
-      if (!d.contains(e.target)) d.removeAttribute("open");
-    });
-  });
+  // The profile dropdown's open/close behaviour ships with the header itself
+  // (/assets/shell-nav.js) so it is identical on every Worker.
 
   // Handle browser back/forward inside the SPA.
   window.addEventListener("popstate", () => {

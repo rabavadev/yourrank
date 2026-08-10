@@ -1,17 +1,17 @@
 // ============================================================================
 //  YourRank — SHARED DASHBOARD SHELL / TOP NAV  (bot Worker, TypeScript)
 //
-//  Behavioural port of shared/shell-nav.js. See that file for the full doc.
 //  Renders the same sticky header (Leaderboards | Telegram | Rewards & Shop |
 //  Account | Help) so the bot dashboard at /bot/dashboard feels like the same app.
 //
+//  The stylesheet and behaviour live in the leaderboard Worker's static
+//  assets (/assets/shell-nav.css, /assets/shell-nav.js) and are linked by
+//  shared/page-shell.ts, so every page renders the same header from one source.
+//
 //  Usage (bot Worker dashboard.ts):
-//    import { shellNavHtml, SHELL_NAV_CSS } from "../shared/shell-nav.js";
+//    import { shellNavHtml } from "../shared/shell-nav.js";
 //    // (import path ends in .js even from .ts under NodeNext/Workers ESM)
-//    const html = `<!doctype html><html><head>...<style>${SHELL_NAV_CSS}
-//                  ${BASE_CSS}</style></head><body>
-//                  ${shellNavHtml({ activePath: "/bot/dashboard", user })}
-//                  <main class="gm-shell-main">...bot dashboard...</main>`;
+//    botPageHtml({ nav: shellNavHtml({ activePath: "/bot/dashboard", user }), ... })
 // ============================================================================
 
 export interface ShellUser {
@@ -94,7 +94,13 @@ export function shellNavHtml(opts: ShellNavOpts = {}): string {
   const active = opts.active || activeKey(opts.activePath || "/");
   const theme = opts.theme || "dark";
   const headerClass = `gm-shell-nav gm-shell-nav--${theme}`;
-  const name = esc(opts.user?.display_name || opts.user?.email || "Streamer");
+  // Never render a raw email as the user's identity: fall back to the local
+  // part so the chip reads as a name rather than a truncated address.
+  const rawName = opts.user?.display_name?.trim()
+    || opts.user?.email?.split("@")[0]
+    || "Streamer";
+  const name = esc(rawName);
+  const initial = (rawName[0] || "S").toUpperCase();
   const badge = planBadge(opts.user?.plan);
   const area = encodeURIComponent(active || "dashboard");
   const returnTo = encodeURIComponent(opts.activePath || "/dashboard");
@@ -104,6 +110,15 @@ export function shellNavHtml(opts: ShellNavOpts = {}): string {
   const tabs = topLinks.map((l) => {
     const isActive = l.key === active;
     return `<a class="gm-tab${isActive ? " gm-tab--active" : ""}"` +
+      `${isActive ? ' aria-current="page"' : ""} href="${l.href}">${l.label}</a>`;
+  }).join("");
+
+  // The tab bar is hidden on narrow viewports (it cannot fit next to the
+  // account chip), so the same destinations are repeated inside the account
+  // menu and revealed by CSS at the same breakpoint.
+  const mobileTabs = topLinks.map((l) => {
+    const isActive = l.key === active;
+    return `<a class="gm-profile-link gm-profile-link--nav${isActive ? " is-active" : ""}"` +
       `${isActive ? ' aria-current="page"' : ""} href="${l.href}">${l.label}</a>`;
   }).join("");
 
@@ -120,11 +135,14 @@ export function shellNavHtml(opts: ShellNavOpts = {}): string {
     </div>
     <div class="gm-who">
       <details class="gm-profile">
-        <summary class="gm-profile-trigger" aria-haspopup="true" aria-label="Account menu">
+        <summary class="gm-profile-trigger">
+          <span class="gm-who-avatar" aria-hidden="true">${esc(initial)}</span>
           <span class="gm-who-id"><span class="gm-who-name">${name}</span>${badge}</span>
           <span class="gm-profile-chevron" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg></span>
         </summary>
         <div class="gm-profile-menu">
+          <div class="gm-profile-nav">${mobileTabs}</div>
+          <div class="gm-profile-id"><span class="gm-profile-id-name">${name}</span>${badge}</div>
           <a class="gm-profile-link" href="${accountHref}"><span class="gm-profile-ic"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9c-.18-.7-.43-1.36-.79-1.95a2 2 0 0 1 .63-2.75l.06-.06a2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33h.09A1.65 1.65 0 0 0 9 4.6V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09c0 .66.25 1.28.67 1.75h.09a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V15z"/></svg></span>Account</a>
           <a class="gm-profile-link" href="/help/support?area=${area}&amp;return=${returnTo}"><span class="gm-profile-ic"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></span>Support</a>
           <a class="gm-profile-link gm-profile-link--accent" href="/help/feedback?${helpQuery}"><span class="gm-profile-ic"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></span>Feedback</a>
@@ -135,86 +153,3 @@ export function shellNavHtml(opts: ShellNavOpts = {}): string {
   </div>
 </header>`;
 }
-
-// Identical CSS to shell-nav.js — namespaced .gm-shell-* / .gm-* so it never
-// collides with the bot dashboard's own BASE_CSS.
-export const SHELL_NAV_CSS = `
-:root{
-  --gm-bg:#0f0f0f; --gm-panel:#1c1c1c; --gm-line:#2a2a2a; --gm-line-2:#323232;
-  --gm-ink:#ededf0; --gm-ink-soft:#a7a6a6; --gm-ink-mute:#82828a;
-  --gm-accent:#2200ff; --gm-accent-ink:#ffffff;
-  --gm-mono:"IBM Plex Mono","JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
-  --gm-sans:"Inter",system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
-}
-.gm-shell-nav--light{
-  --gm-bg:#fafafa; --gm-panel:#ffffff; --gm-line:#e4e4e7; --gm-line-2:#d4d4d8;
-  --gm-ink:#191919; --gm-ink-soft:#55555c; --gm-ink-mute:#82828a;
-  --gm-accent:#2200ff; --gm-accent-ink:#ffffff;
-}
-.gm-shell-nav--dark{
-  --gm-bg:#0f0f0f; --gm-panel:#1c1c1c; --gm-line:#2a2a2a; --gm-line-2:#323232;
-  --gm-ink:#ededf0; --gm-ink-soft:#a7a6a6; --gm-ink-mute:#82828a;
-  --gm-accent:#2200ff; --gm-accent-ink:#ffffff;
-}
-.gm-shell-nav{position:sticky;top:0;z-index:50;background:var(--gm-bg);
-  border-bottom:1px solid var(--gm-line);}
-.gm-brand{display:flex;align-items:center;gap:9px;text-decoration:none;flex:0 0 auto;padding:20px 0 0 24px;}
-.gm-brand-mark{font-family:var(--gm-mono);font-weight:700;font-size:13px;
-  letter-spacing:.02em;color:var(--gm-accent-ink);background:var(--gm-accent);
-  width:26px;height:26px;display:grid;place-items:center;border-radius:6px;}
-.gm-brand-word{font-family:var(--gm-mono);font-size:14px;letter-spacing:.02em;
-  color:var(--gm-ink);}
-.gm-shell-inner{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:22px;max-width:1280px;margin:0 auto;padding:20px 28px}
-.gm-tabs-wrap{position:relative;min-width:0;overflow:hidden;}
-.gm-tabs-wrap::after{content:"";position:absolute;right:0;top:0;bottom:0;width:24px;background:linear-gradient(to right, transparent, var(--gm-bg));pointer-events:none;opacity:0;transition:opacity .2s;}
-.gm-tabs{display:flex;align-items:center;gap:2px;min-width:0;overflow-x:auto;
-  -webkit-overflow-scrolling:touch;scrollbar-width:none;-ms-overflow-style:none;
-  flex-wrap:nowrap;}
-.gm-tabs::-webkit-scrollbar{display:none;}
-.gm-tab{font-family:var(--gm-mono);font-size:12px;letter-spacing:.08em;
-  text-transform:uppercase;color:var(--gm-ink-mute);text-decoration:none;
-  padding:18px 14px;border-bottom:2px solid transparent;transition:color .15s,border-color .15s;
-  white-space:nowrap;flex:0 0 auto;display:inline-block;}
-.gm-tab:hover{color:var(--gm-ink-soft);}
-.gm-tab--active{color:var(--gm-ink);border-bottom-color:var(--gm-accent);}
-.gm-who{display:flex;align-items:center;gap:12px;flex:0 0 auto;min-width:0;}
-.gm-who-id{display:flex;align-items:center;gap:8px;min-width:0;}
-.gm-who-name{font-family:var(--gm-sans);font-size:13px;color:var(--gm-ink-soft);min-width:0;
-  max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-.gm-who-id .gm-badge{flex:0 0 auto;}
-.gm-badge{font-family:var(--gm-mono);font-size:10px;letter-spacing:.12em;
-  text-transform:uppercase;padding:4px 8px;border-radius:99px;border:1px solid var(--gm-line-2);display:inline-flex;align-items:center;line-height:1;vertical-align:middle;}
-.gm-badge--free{color:var(--gm-ink-mute);}
-.gm-badge--paid{color:var(--gm-accent);border-color:color-mix(in srgb,var(--gm-accent) 25%,var(--gm-line));}
-.gm-profile{position:relative;min-width:0;}
-.gm-profile > summary{list-style:none;display:inline-flex;align-items:center;gap:8px;cursor:pointer;padding:6px 10px;border-radius:10px;border:1px solid var(--gm-line-2);background:transparent;transition:background .15s,border-color .15s;user-select:none;}
-.gm-profile > summary:hover{background:var(--gm-line);border-color:var(--gm-line-2);}
-.gm-profile > summary::-webkit-details-marker{display:none;}
-.gm-profile-trigger{color:var(--gm-ink);}
-.gm-profile-chevron{display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;color:var(--gm-ink-soft);transition:transform .2s,color .2s;}
-.gm-profile[open] .gm-profile-chevron{transform:rotate(180deg);}
-.gm-profile-menu{position:absolute;right:0;left:auto;top:calc(100% + 10px);min-width:190px;width:max-content;max-width:calc(100vw - 40px);background:var(--gm-panel);border:1px solid var(--gm-line-2);border-radius:10px;padding:6px;display:flex;flex-direction:column;gap:2px;box-shadow:0 16px 48px rgba(0,0,0,.55);z-index:200;}
-.gm-profile-link{font-family:var(--gm-sans);font-size:13px;color:var(--gm-ink-soft);text-decoration:none;padding:8px 10px;border-radius:7px;white-space:nowrap;display:flex;align-items:center;gap:10px;}
-.gm-profile-ic{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;color:var(--gm-ink-soft);flex:0 0 auto;}
-.gm-profile-link:hover{color:var(--gm-ink);background:var(--gm-line);}
-.gm-profile-link--accent{color:var(--gm-accent);}
-.gm-profile .gm-logout-form{padding:6px 10px;}
-.gm-profile .gm-logout{width:100%;}
-.gm-logout{font-family:var(--gm-mono);font-size:11px;letter-spacing:.06em;
-  text-transform:uppercase;color:var(--gm-ink-soft);text-decoration:none;
-  display:inline-flex;align-items:center;gap:8px;
-  padding:6px 10px;border:1px solid var(--gm-line-2);border-radius:7px;transition:color .15s,border-color .15s;background:transparent;cursor:pointer;}
-.gm-logout:hover{color:var(--gm-ink);border-color:var(--gm-line-2);}
-.gm-shell-main{max-width:1040px;margin:0 auto;padding:22px 18px 60px;}
-@media(max-width:680px){
-    .gm-shell-inner{gap:12px;padding:0 12px;}
-    .gm-brand-word{display:none;}
-    .gm-tab{padding:18px 9px;font-size:11px;letter-spacing:.05em;}
-    .gm-profile-menu{right:0;left:auto;min-width:180px;}
-    .gm-tabs-wrap::after{opacity:1;}
-    .gm-tabs{padding-right:24px;}
-  }
-  @media (prefers-reduced-motion: reduce) {
-    *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
-  }
-  `;

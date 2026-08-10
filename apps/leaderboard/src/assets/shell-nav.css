@@ -1,4 +1,5 @@
-/* SEC-713: Extracted from SHELL_NAV_CSS to avoid inline <style> injection */
+/* Shared app header. Single source of truth: the bot Worker links this same
+   file (see shared/page-shell.ts), so the two shells cannot drift. */
 :root{
   --gm-bg:#fafafa; --gm-panel:#ffffff; --gm-line:#e4e4e7; --gm-line-2:#d4d4d8;
   --gm-ink:#191919; --gm-ink-soft:#55555c; --gm-ink-mute:#82828a;
@@ -21,13 +22,13 @@
 }
 .gm-shell-nav{position:sticky;top:0;z-index:50;background:var(--gm-bg);
   border-bottom:1px solid var(--gm-line);}
-.gm-brand{display:flex;align-items:center;gap:9px;text-decoration:none;flex:0 0 auto;padding:20px 0 0 24px;}
+.gm-brand{display:flex;align-items:center;gap:9px;text-decoration:none;flex:0 0 auto;}
 .gm-brand-mark{font-family:var(--gm-mono);font-weight:700;font-size:13px;
   letter-spacing:.02em;color:var(--gm-accent-ink);background:var(--gm-accent);
   width:26px;height:26px;display:grid;place-items:center;border-radius:6px;}
 .gm-brand-word{font-family:var(--gm-mono);font-size:14px;letter-spacing:.02em;
   color:var(--gm-ink);}
-.gm-shell-inner{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:22px;max-width:1280px;margin:0 auto;padding:20px 28px}
+.gm-shell-inner{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:22px;max-width:1280px;margin:0 auto;padding:0 28px;min-height:58px}
 body[data-wide] .gm-shell-inner{max-width:none}
 .gm-tabs-wrap{position:relative;min-width:0;overflow:hidden;}
 .gm-tabs-wrap::after{content:"";position:absolute;right:0;top:0;bottom:0;width:24px;background:linear-gradient(to right, transparent, var(--gm-bg));pointer-events:none;opacity:0;transition:opacity .2s;}
@@ -36,19 +37,28 @@ body[data-wide] .gm-shell-inner{max-width:none}
   flex-wrap:nowrap;}
 .gm-tabs::-webkit-scrollbar{display:none;}
 .gm-tab{font-family:var(--gm-mono);font-size:12px;letter-spacing:.08em;
-  text-transform:uppercase;color:var(--gm-ink-mute);text-decoration:none;
-  padding:18px 14px;border-bottom:2px solid transparent;transition:color .15s,border-color .15s;
+  text-transform:uppercase;color:var(--gm-ink-soft);text-decoration:none;
+  padding:20px 14px;border-bottom:2px solid transparent;transition:color .15s,border-color .15s;
   white-space:nowrap;flex:0 0 auto;display:inline-block;}
-.gm-tab:hover{color:var(--gm-ink-soft);}
+.gm-tab:hover{color:var(--gm-ink);}
 .gm-tab--active{color:var(--gm-ink);border-bottom-color:var(--gm-accent);}
 .gm-who{display:flex;align-items:center;gap:12px;flex:0 0 auto;min-width:0;}
 .gm-who-id{display:flex;align-items:center;gap:8px;min-width:0;}
 .gm-who-name{font-family:var(--gm-sans);font-size:13px;color:var(--gm-ink-soft);min-width:0;
   max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .gm-who-id .gm-badge{flex:0 0 auto;}
+.gm-who-avatar{flex:0 0 auto;width:26px;height:26px;border-radius:99px;display:grid;place-items:center;
+  font-family:var(--gm-mono);font-size:12px;font-weight:700;color:var(--gm-accent-ink);background:var(--gm-accent);}
+/* Identity repeated inside the menu for the viewports where the chip is
+   collapsed to just the avatar. */
+.gm-profile-id{display:none;align-items:center;gap:8px;padding:8px 10px;border-bottom:1px solid var(--gm-line);margin-bottom:4px;}
+.gm-profile-id-name{font-family:var(--gm-sans);font-size:13px;color:var(--gm-ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.gm-profile-nav{display:none;flex-direction:column;gap:2px;padding-bottom:4px;margin-bottom:4px;border-bottom:1px solid var(--gm-line);}
+.gm-profile-link--nav{font-family:var(--gm-mono);font-size:12px;letter-spacing:.06em;text-transform:uppercase;}
+.gm-profile-link--nav.is-active{color:var(--gm-ink);background:var(--gm-line);}
 .gm-badge{font-family:var(--gm-mono);font-size:10px;letter-spacing:.12em;
   text-transform:uppercase;padding:4px 8px;border-radius:99px;border:1px solid var(--gm-line-2);display:inline-flex;align-items:center;line-height:1;vertical-align:middle;}
-.gm-badge--free{color:var(--gm-ink-mute);}
+.gm-badge--free{color:var(--gm-ink-soft);}
 .gm-badge--paid{color:var(--gm-accent);border-color:color-mix(in srgb,var(--gm-accent) 25%,var(--gm-line));}
 .gm-profile{position:relative;min-width:0;}
 .gm-profile > summary{list-style:none;display:inline-flex;align-items:center;gap:8px;cursor:pointer;padding:6px 10px;border-radius:10px;border:1px solid var(--gm-line-2);background:transparent;transition:background .15s,border-color .15s;user-select:none;}
@@ -69,13 +79,20 @@ body[data-wide] .gm-shell-inner{max-width:none}
   padding:6px 10px;border:1px solid var(--gm-line-2);border-radius:7px;transition:color .15s,border-color .15s;background:transparent;cursor:pointer;}
 .gm-logout:hover{color:var(--gm-ink);border-color:var(--gm-line-2);}
 .gm-shell-main{max-width:1040px;margin:0 auto;padding:22px 18px 60px;}
+/* Below this width the five tabs and the account chip cannot share a row: the
+   tab strip used to be crushed to a few unreadable pixels, so it is replaced
+   by the same links inside the account menu. */
+@media(max-width:860px){
+    .gm-tabs-wrap{display:none;}
+    .gm-who-id{display:none;}
+    .gm-profile-nav{display:flex;}
+    .gm-profile-id{display:flex;}
+    .gm-profile > summary{padding:5px 8px;}
+    .gm-profile-menu{min-width:210px;}
+  }
 @media(max-width:680px){
     .gm-shell-inner{gap:12px;padding:0 12px;}
     .gm-brand-word{display:none;}
-    .gm-tab{padding:18px 9px;font-size:11px;letter-spacing:.05em;}
-    .gm-profile-menu{right:0;left:auto;min-width:180px;}
-    .gm-tabs-wrap::after{opacity:1;}
-    .gm-tabs{padding-right:24px;}
   }
 @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
