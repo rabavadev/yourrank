@@ -1,0 +1,21 @@
+{
+  "//": "Typechecks the games island. The root tsconfig.json compiles shared/*.ts for the Worker and deliberately excludes src/, so the island needs its own DOM-flavoured config.",
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "jsx": "react-jsx",
+    "jsxImportSource": "preact",
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true,
+    "exactOptionalPropertyTypes": false,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "noEmit": true,
+    "types": []
+  },
+  "include": ["src/games/**/*.ts", "src/games/**/*.tsx"]
+}
