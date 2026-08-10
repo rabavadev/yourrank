@@ -32,6 +32,7 @@ import {
   handleAccountPostbacksRevoke,
   handleAccountPostbacksTest,
   handleAccountConversions,
+  handleAccountConnectedAccounts,
 } from "./handlers/account.js";
 import { handleContact } from "./handlers/contact.js";
 import { handleCspReport } from "./handlers/csp-report.js";
@@ -209,6 +210,7 @@ export const ROUTES = [
   { path: "/api/account/postbacks", method: "DELETE", handler: withHandler(handleAccountPostbacksRevoke) },
   { path: "/api/account/postbacks/test", method: "POST", handler: withHandler(handleAccountPostbacksTest) },
   { path: "/api/account/conversions", method: "GET", handler: withHandler(handleAccountConversions) },
+  { path: "/api/account/connected-accounts", method: "GET", handler: withHandler(handleAccountConnectedAccounts) },
 
   // Attribution
   { path: "/api/attribution", method: "GET", handler: withHandler(handleAttribution) },

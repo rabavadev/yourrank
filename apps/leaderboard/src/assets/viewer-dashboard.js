@@ -91,6 +91,11 @@ function render() {
     $("vd-avatar").hidden = true;
   }
 
+  const providerName = v.provider === "kick" ? "Kick" : v.provider === "discord" ? "Discord" : "YourRank";
+  const linkedAt = v.provider === "kick" ? v.kickLinkedAt : v.provider === "discord" ? v.discordLinkedAt : null;
+  $("vd-identity").textContent = `Logged in with ${providerName} as @${name}${linkedAt ? " · linked " + fmtDate(linkedAt) : ""}`;
+  $("vd-wrong-account").hidden = false;
+
   $("vd-nav").innerHTML = `<a class="btn btn--sm" href="/me">My credits</a>`;
 
   const boards = state.boards || [];
@@ -132,8 +137,20 @@ function renderSite() {
   $("vd-boards-card").hidden = true;
   $("vd-site-card").hidden = false;
   $("vd-site-name").textContent = data.site.name || data.site.slug;
+  const channel = data.site.kickChannelName;
+  $("vd-site-streamer").textContent = channel
+    ? `Kick channel: @${channel}${data.site.kickChannelExternalId ? " · " + data.site.kickChannelExternalId : ""}`
+    : "Streamer board";
+
   const v = data.viewer;
   $("vd-site-balance").textContent = v ? v.balance : 0;
+
+  const earnHint = $("vd-earn-hint");
+  if (earnHint) {
+    earnHint.textContent = channel
+      ? `Earn credits by redeeming @${channel}'s mapped Kick channel rewards during a live stream.`
+      : "Earn credits by redeeming the streamer's mapped Kick channel rewards during a live stream.";
+  }
 
   const items = data.shopItems || [];
   $("vd-shop-empty").hidden = items.length > 0;
@@ -160,15 +177,19 @@ function renderSite() {
 
   const redemptions = data.redemptions || [];
   $("vd-redemptions-empty").hidden = redemptions.length > 0;
-  $("vd-redemptions-list").innerHTML = redemptions.map((r) => `
+  $("vd-redemptions-list").innerHTML = redemptions.map((r) => {
+    const statusLabel = r.status === "pending" ? "Pending" : r.status === "fulfilled" ? "Fulfilled" : "Cancelled";
+    return `
     <div style="padding:12px;border:1px solid var(--line);border-radius:8px;margin-bottom:8px;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap">
-      <div>${esc(r.item_name)}</div>
       <div>
-        <span class="pill pill--${r.status === "pending" ? "muted" : r.status === "fulfilled" ? "good" : "bad"}">${r.status}</span>
-        <div class="hint">${fmtDate(r.createdAt)}</div>
+        <div style="font-weight:600">${esc(r.item_name)}</div>
+        <div class="hint">${r.cost} credits · ${fmtDate(r.createdAt)}</div>
+      </div>
+      <div>
+        <span class="pill pill--${r.status === "pending" ? "muted" : r.status === "fulfilled" ? "good" : "bad"}">${statusLabel}</span>
       </div>
     </div>
-  `).join("");
+  `}).join("");
 }
 
 async function redeem(shopItemId, btn) {
@@ -213,6 +234,11 @@ $("vd-back")?.addEventListener("click", () => {
   $("vd-site-card").hidden = true;
   $("vd-boards-card").hidden = false;
   load().catch(() => {});
+});
+
+$("vd-switch")?.addEventListener("click", async () => {
+  await api("POST", "/api/viewer/logout").catch(() => {});
+  location.href = "/me";
 });
 
 // Show any OAuth error in the URL.

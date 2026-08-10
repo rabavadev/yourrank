@@ -12,6 +12,7 @@ const accountContent = `
       <a class="lb-nav" href="/account#profile" data-hash="profile"><span class="lb-nav-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span>Profile</a>
       <a class="lb-nav" href="/account#plan" data-hash="plan"><span class="lb-nav-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="14" x="2" y="5" rx="2" ry="2"/><line x1="2" x2="22" y1="10" y2="10"/></svg></span>Plan &amp; billing</a>
       <a class="lb-nav" href="/account#postbacks" data-hash="postbacks"><span class="lb-nav-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></span>Postbacks</a>
+      <a class="lb-nav" href="/account#connected" data-hash="connected"><span class="lb-nav-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></span>Connected accounts</a>
       <a class="lb-nav" href="/account#data" data-hash="data"><span class="lb-nav-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" x2="12" y1="9" y2="13"/><line x1="12" x2="12.01" y1="17" y2="17"/></svg></span>Danger zone</a>
     </nav>
   </aside>
@@ -127,6 +128,13 @@ const accountContent = `
         <h3 class="m-0 mt-18 mb-4">Recent conversions</h3>
         <table class="admin-table" id="conversionsTable"><thead><tr><th>Time</th><th>Event</th><th>Amount</th><th>Currency</th><th>Offer</th></tr></thead><tbody id="conversionsBody"></tbody></table>
         <p class="empty" id="conversionsEmpty" hidden>No conversions yet.</p>
+      </div>
+
+      <div class="lb-widget lb-widget--full" id="connected">
+        <h2>Connected accounts</h2>
+        <p class="card-sub">Accounts and integrations linked to your streamer profile.</p>
+        <div id="connectedAccounts"><p class="hint">Loading…</p></div>
+        <p class="hint">Identities are not merged across providers unless you explicitly enable linking.</p>
       </div>
 
       <div class="lb-widget lb-widget--full lb-widget--danger" id="data">

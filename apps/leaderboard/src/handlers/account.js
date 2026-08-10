@@ -165,3 +165,41 @@ export async function handleAccountConversions(request, env) {
   const rows = await loadConversions(user.id);
   return json({ ok: true, conversions: rows });
 }
+
+// GET /api/account/connected-accounts
+export async function handleAccountConnectedAccounts(request, env) {
+  const { user, res } = await requireUser(request, env);
+  if (!user) return res;
+  if (!(await rateLimit(env, `account-connections:${user.id}`, 120, 60)).ok) {
+    return bad("Too many requests. Try again later.", 429);
+  }
+
+  const sites = await query(
+    `SELECT id, name, slug, kick_channel_external_id, kick_channel_name,
+            discord_webhook_url_enc, telegram_chat_id
+       FROM sites
+      WHERE user_id = $1
+      ORDER BY created_at DESC`,
+    [user.id]
+  );
+
+  const kick = user.kick_user_id
+    ? { userId: user.kick_user_id, username: user.kick_username, linkedAt: user.kick_linked_at }
+    : null;
+  const telegram = user.telegram_id
+    ? { userId: String(user.telegram_id), username: user.telegram_username, linkedAt: user.telegram_linked_at }
+    : null;
+
+  const perSite = (sites || []).map((s) => ({
+    siteId: s.id,
+    slug: s.slug,
+    name: s.name,
+    kickChannel: s.kick_channel_external_id
+      ? { id: s.kick_channel_external_id, name: s.kick_channel_name }
+      : null,
+    discordWebhook: Boolean(s.discord_webhook_url_enc),
+    telegramChat: s.telegram_chat_id ? { chatId: s.telegram_chat_id } : null,
+  }));
+
+  return json({ ok: true, kick, telegram, sites: perSite });
+}
