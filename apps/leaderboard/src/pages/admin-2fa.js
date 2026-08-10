@@ -12,7 +12,7 @@ export const admin2faPage = `<!DOCTYPE html><html lang="en"><head>
 <div class="topbar-right"><a href="/dashboard" class="btn btn--sm btn--ghost">Dashboard</a><a href="#" id="logout" class="btn btn--sm btn--ghost">Sign out</a></div></header>
 <main class="wrap" id="main-content">
 <div class="tfa-wrap" id="tfaVerify">
-<h1>🔒 Two-Factor Authentication</h1>
+<h1><span class="tfa-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>Two-Factor Authentication</h1>
 <p>Enter the 6-digit code from your authenticator app.</p>
 <label for="tfaCode" class="sr-only">6-digit verification code</label><input class="code-input" id="tfaCode" type="text" inputmode="numeric" maxlength="6" pattern="[0-9]{6}" placeholder="000000" autocomplete="one-time-code" autofocus aria-label="Verification code" />
 <div class="err" id="tfaErr" role="alert" aria-live="assertive"></div>
