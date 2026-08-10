@@ -179,7 +179,7 @@ export async function handleAccountConnectedAccounts(request, env) {
             discord_webhook_url_enc, telegram_chat_id
        FROM sites
       WHERE user_id = $1
-      ORDER BY created_at DESC`,
+      ORDER BY board_order ASC, id ASC`,
     [user.id]
   );
 
