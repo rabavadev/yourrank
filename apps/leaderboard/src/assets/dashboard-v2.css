@@ -1945,3 +1945,26 @@
   70% { box-shadow: 0 0 0 8px rgba(79, 70, 229, 0); }
   100% { box-shadow: 0 0 0 0 rgba(79, 70, 229, 0); }
 }
+
+.metric-glossary {
+  margin-top: 18px;
+  border: 1px solid var(--yr-line);
+  border-radius: var(--yr-radius-sm);
+  background: var(--yr-panel);
+  padding: 14px;
+  font-size: 13px;
+}
+.metric-glossary summary {
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--yr-ink);
+}
+.metric-glossary dl {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 8px 18px;
+  margin: 12px 0 0;
+}
+.metric-glossary div { display: flex; gap: 6px; }
+.metric-glossary dt { font-weight: 600; color: var(--yr-ink); white-space: nowrap; }
+.metric-glossary dd { margin: 0; color: var(--yr-ink-soft); }

@@ -54,7 +54,7 @@ function platformFooter(pagePath) {
 </div>
 {{COMPANY_LINE}}
 <p class="ftr-affiliate">{{AFFILIATE_DISCLOSURE}}</p>
-<p class="ftr-copy">© ${new Date().getFullYear()} {{COMPANY_NAME}} · <a href="mailto:{{SUPPORT_EMAIL}}">{{SUPPORT_EMAIL}}</a></p>
+<p class="ftr-copy">© {{YEAR}} {{COMPANY_NAME}} · <a href="mailto:{{SUPPORT_EMAIL}}">{{SUPPORT_EMAIL}}</a></p>
 <p class="ftr-fine">18+ · For entertainment purposes only. Play responsibly.</p>
 </footer>`;
 }

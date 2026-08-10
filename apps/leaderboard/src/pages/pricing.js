@@ -64,6 +64,6 @@ export const pricingPage = `<!DOCTYPE html><html lang="en"><head>
 </main>
 <div class="mobile-cta"><a href="/signup" class="btn btn--accent">Create your free page</a></div>
 <footer class="ftr ftr--platform"><div class="wrap">
-<p class="ftr-copy">© ${new Date().getFullYear()} YourRank · <a href="/contact">Contact</a></p>
+<p class="ftr-copy">© {{YEAR}} YourRank · <a href="/contact">Contact</a></p>
 </div></footer>
 <script src="/assets/landing.js?v=3"></script></body></html>`;

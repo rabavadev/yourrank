@@ -458,11 +458,14 @@ function renderAnalytics() {
   const a = state.analytics;
   if (!a) return;
   const s = a.summary || {};
+  const days = Number($("cr-analytics-days")?.value) || 30;
   $("cr-stat-earned").textContent = `${s.periodEarned || 0} (all time: ${s.allTimeEarned || 0})`;
   $("cr-stat-spent").textContent = `${s.periodSpent || 0} (all time: ${s.allTimeSpent || 0})`;
   $("cr-stat-redemptions").textContent = s.redemptionsTotal || 0;
   $("cr-stat-pending").textContent = s.redemptionsPending || 0;
   $("cr-stat-balance").textContent = s.viewerBalance || 0;
+  const daysLabel = $("cr-analytics-days-label");
+  if (daysLabel) daysLabel.textContent = String(days);
 
   const earners = a.topEarners || [];
   $("cr-top-earners-list").innerHTML = earners.map((v) => `

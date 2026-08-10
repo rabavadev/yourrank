@@ -148,6 +148,8 @@ async function load() {
 
   // overview stats
   if (page === 'overview') {
+    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || 'local';
+    setHtml('ovScope', 'Metrics for all connected bots over the last 14 days. Timezone: <code>' + esc(tz) + '</code>.');
     const totClicks = (daily||[]).reduce((s,d)=>s+d.clicks,0);
     const totUnique = (daily||[]).reduce((s,d)=>s+d.unique_clicks,0);
     const activeOffers = (offers||[]).filter(o=>o.is_active).length;
@@ -223,7 +225,7 @@ async function loadSubscribers(bots){
   const rows = (s.sources || []);
   setHtml('subSources', rows.length
     ? rows.map(r=>'<tr><td>'+esc(r.source)+'</td><td class="style-8">'+esc(String(r.count))+'</td></tr>').join('')
-    : '<tr><td colspan="2" class="muted">No subscribers yet.</td></tr>');
+    : '<tr><td colspan="2" class="muted">No subscribers yet. Share your bot link to get your first one.</td></tr>');
   const active = (bots || []).find(b=>b.status==='active' && b.username);
   if (active) setText('deepLinkExample', 't.me/'+active.username+'?start=twitch');
 }
@@ -245,7 +247,7 @@ function renderOffers(){
     '<td class="'+(o.is_active?'ok':'off')+'">'+(o.is_active?'active':'off')+'</td>'+
     '<td><button class="ghost" data-action="toggleOffer" data-id="'+esc(o.id)+'" data-active="'+(!o.is_active)+'">'+(o.is_active?'Disable':'Enable')+'</button></td>'+
   '</tr>';
-  }).join('') || '<tr><td colspan="9" class="muted">No offers yet.</td></tr>';
+  }).join('') || '<tr><td colspan="9" class="muted">No offers yet. Create one with the form below to get a tracked link.</td></tr>';
 }
 
 async function loadExtras(){

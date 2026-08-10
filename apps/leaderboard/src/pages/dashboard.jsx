@@ -285,7 +285,7 @@ export function DashboardContent() {
 <div class="lb-widget lb-widget--full perf-header" id="perf-activity">
   <div>
     <h2>Analytics</h2>
-    <p class="card-sub">Views, clicks, copies and where your traffic comes from.</p>
+    <p class="card-sub">Views, clicks, copies and where your traffic comes from. <span class="hint" id="perfScope">Scope: active board · last <span id="perfRangeLabel">14</span> days · local time.</span></p>
   </div>
   <div class="perf-filter" id="perfRangeFilter" role="group" aria-label="Date range">
     <button class="btn btn--xs" type="button" data-range="7">7 days</button>
@@ -295,11 +295,21 @@ export function DashboardContent() {
 </div>
 <div class="lb-widget lb-widget--full">
   <div class="kpi-row">
-    <div class="kpi-card"><span class="kpi-lbl" id="perfKpiViewsLbl"><span class="kpi-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg></span>Views · 14d</span><span class="kpi-val" id="perfKpiViews">–</span></div>
-    <div class="kpi-card"><span class="kpi-lbl" id="perfKpiClicksLbl"><span class="kpi-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M3 3l7 18 3-7 7-3L3 3z"/></svg></span>Clicks · 14d</span><span class="kpi-val" id="perfKpiClicks">–</span></div>
-    <div class="kpi-card"><span class="kpi-lbl" id="perfKpiCopiesLbl"><span class="kpi-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg></span>Copies · 14d</span><span class="kpi-val" id="perfKpiCopies">–</span></div>
-    <div class="kpi-card"><span class="kpi-lbl" id="perfKpiCtrLbl"><span class="kpi-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 20v-6"/><path d="M6 20V10"/><path d="M18 20V4"/></svg></span>CTR · 14d</span><span class="kpi-val" id="perfKpiCtr">–</span></div>
+    <div class="kpi-card" title="Total times your public page was loaded"><span class="kpi-lbl" id="perfKpiViewsLbl"><span class="kpi-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg></span>Views · 14d</span><span class="kpi-val" id="perfKpiViews">–</span></div>
+    <div class="kpi-card" title="Clicks on your tracked referral or share links"><span class="kpi-lbl" id="perfKpiClicksLbl"><span class="kpi-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M3 3l7 18 3-7 7-3L3 3z"/></svg></span>Clicks · 14d</span><span class="kpi-val" id="perfKpiClicks">–</span></div>
+    <div class="kpi-card" title="Times a visitor copied your public link to the clipboard"><span class="kpi-lbl" id="perfKpiCopiesLbl"><span class="kpi-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg></span>Copies · 14d</span><span class="kpi-val" id="perfKpiCopies">–</span></div>
+    <div class="kpi-card" title="Click-through rate: clicks divided by views in the selected range"><span class="kpi-lbl" id="perfKpiCtrLbl"><span class="kpi-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 20v-6"/><path d="M6 20V10"/><path d="M18 20V4"/></svg></span>CTR · 14d</span><span class="kpi-val" id="perfKpiCtr">–</span></div>
   </div>
+  <details class="metric-glossary"><summary>Metric glossary</summary>
+    <dl>
+      <div><dt>Views</dt><dd>Total page loads of your public leaderboard.</dd></div>
+      <div><dt>Clicks</dt><dd>Clicks on your tracked referral or share links.</dd></div>
+      <div><dt>Copies</dt><dd>Times a visitor copied your page URL or a share link.</dd></div>
+      <div><dt>CTR</dt><dd>Click-through rate: clicks ÷ views in the selected date range.</dd></div>
+      <div><dt>Referrers</dt><dd>Domains that sent traffic to your page, when the browser reports them.</dd></div>
+      <div><dt>Events</dt><dd>Recent postbacks, score updates and link copies recorded for this board.</dd></div>
+    </dl>
+  </details>
 </div>
 <div class="lb-widget lb-widget--wide">
   <div class="lb-cardhd"><h2>Activity</h2><a class="btn btn--xs btn--ghost" href="/api/site/stats/export" id="perfExport">Export CSV</a></div>
@@ -315,7 +325,7 @@ export function DashboardContent() {
 <div class="lb-widget lb-widget--narrow" id="perf-referrers">
   <div class="lb-cardhd"><h2>Top referrers</h2></div>
   <table class="ref-table"><thead><tr><th>Domain</th><th class="ta-r">Views</th></tr></thead><tbody id="perfReferrersBody"></tbody></table>
-  <p class="empty" id="perfReferrersEmpty" hidden>No referrer data yet.</p>
+  <p class="empty" id="perfReferrersEmpty" hidden>No referrer data yet — add <code>?ref=your-source</code> to your share link to track sources.</p>
 </div>
 <div class="lb-widget lb-widget--half" id="perf-referrals">
   <h2>Referrals</h2>
@@ -331,7 +341,7 @@ export function DashboardContent() {
 <div class="lb-widget lb-widget--half" id="perf-events">
   <div class="lb-cardhd"><h2>Events</h2></div>
   <ul class="events-list" id="eventsList"><li class="hint">Recent postbacks, score updates and link copies will appear here.</li></ul>
-  <p class="empty" id="eventsEmpty" hidden>No events yet.</p>
+  <p class="empty" id="eventsEmpty" hidden>No events yet — postbacks and score updates will appear once a sponsor sends them. Set up postbacks in <a href="/account#postbacks">Account → Postbacks</a>.</p>
 </div>
 </div>
 </section>

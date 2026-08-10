@@ -53,7 +53,7 @@ export function leaderboardPageHtml(opts: LeaderboardPageOpts): string {
     <nav class="gm-shell-footer-links" aria-label="Legal">
       <a href="/terms">Terms</a><a href="/privacy">Privacy</a><a href="/contact">Contact</a><a href="/responsible">Responsible Play</a>
     </nav>
-    <span class="gm-shell-footer-copy">© ${new Date().getFullYear()} YourRank</span>
+    <span class="gm-shell-footer-copy">© {{YEAR}} YourRank</span>
   </div>
 </footer>` : "";
 
@@ -362,7 +362,15 @@ const BOT_DASH_V2_CSS = `
   .form-status { margin-top: 10px; font-size: 14px; }
   .form-status.error { color: var(--yr-red); }
   .form-status.ok { color: var(--yr-green); }
+
+  .glossary { margin-top: 16px; border: 1px solid var(--yr-line); border-radius: var(--yr-radius-sm); background: var(--yr-panel); padding: 14px; font-size: 13px; }
+  .glossary summary { cursor: pointer; font-weight: 600; color: var(--yr-ink); }
+  .glossary dl { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 8px 18px; margin: 12px 0 0; }
+  .glossary div { display: flex; gap: 6px; }
+  .glossary dt { font-weight: 600; color: var(--yr-ink); white-space: nowrap; }
+  .glossary dd { margin: 0; color: var(--yr-ink-soft); }
 `;
+
 
 export interface BotPageOpts {
   user: ShellUser;

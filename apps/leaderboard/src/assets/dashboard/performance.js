@@ -47,6 +47,9 @@ export function renderPerformance(s) {
   setKpi("perfKpiCopies", fmt(totals.copies), `Copies · ${range}d`);
   setKpi("perfKpiCtr", ctr + "%", `CTR · ${range}d`);
 
+  const rangeLabel = $("perfRangeLabel");
+  if (rangeLabel) rangeLabel.textContent = String(range);
+
   const bars = $("statBars");
   if (bars) {
     const max = Math.max(1, ...days.map((x) => (Number(x.views) || 0) + (Number(x.copies) || 0) + (Number(x.clicks) || 0)));
@@ -73,11 +76,21 @@ export function renderPerformance(s) {
   loadHeatmap();
 }
 
+const KPI_TITLES = {
+  perfKpiViewsLbl: "Total times your public page was loaded.",
+  perfKpiClicksLbl: "Clicks on your tracked referral or share links.",
+  perfKpiCopiesLbl: "Times a visitor copied your page or share link.",
+  perfKpiCtrLbl: "Click-through rate: clicks divided by views.",
+};
+
 function setKpi(id, value, label) {
   const valEl = document.getElementById(id);
   const lblEl = document.getElementById(id + "Lbl");
   if (valEl) valEl.textContent = value;
-  if (lblEl) lblEl.textContent = label;
+  if (lblEl) {
+    lblEl.textContent = label;
+    lblEl.title = KPI_TITLES[lblEl.id] || "";
+  }
 }
 
 async function loadHeatmap() {

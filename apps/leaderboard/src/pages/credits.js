@@ -256,7 +256,8 @@ export const creditsContent = `
 
   <section class="card">
     <h2>Analytics</h2>
-    <div class="field" style="margin-bottom:16px">
+    <p class="card-sub" id="cr-analytics-scope">Showing data for this board for the last <span id="cr-analytics-days-label">30</span> days. Times are in your local timezone.</p>
+    <div class="field">
       <label for="cr-analytics-days">Last</label>
       <select id="cr-analytics-days">
         <option value="7">7 days</option>
@@ -264,20 +265,30 @@ export const creditsContent = `
         <option value="90">90 days</option>
       </select>
     </div>
-    <div class="cr-analytics-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin-bottom:18px">
-      <div class="cr-stat"><div class="cr-stat-label">Credits earned</div><div class="cr-stat-value" id="cr-stat-earned">–</div></div>
-      <div class="cr-stat"><div class="cr-stat-label">Credits spent</div><div class="cr-stat-value" id="cr-stat-spent">–</div></div>
-      <div class="cr-stat"><div class="cr-stat-label">Redemptions</div><div class="cr-stat-value" id="cr-stat-redemptions">–</div></div>
-      <div class="cr-stat"><div class="cr-stat-label">Pending</div><div class="cr-stat-value" id="cr-stat-pending">–</div></div>
-      <div class="cr-stat"><div class="cr-stat-label">Viewer balance</div><div class="cr-stat-value" id="cr-stat-balance">–</div></div>
+    <div class="cr-analytics-grid">
+      <div class="cr-stat" title="Credits viewers received from Kick channel-point redemptions"><div class="cr-stat-label">Credits earned</div><div class="cr-stat-value" id="cr-stat-earned">–</div></div>
+      <div class="cr-stat" title="Credits viewers spent in the shop"><div class="cr-stat-label">Credits spent</div><div class="cr-stat-value" id="cr-stat-spent">–</div></div>
+      <div class="cr-stat" title="Total redemption requests, including pending and completed"><div class="cr-stat-label">Redemptions</div><div class="cr-stat-value" id="cr-stat-redemptions">–</div></div>
+      <div class="cr-stat" title="Redemptions waiting for you to fulfill"><div class="cr-stat-label">Pending</div><div class="cr-stat-value" id="cr-stat-pending">–</div></div>
+      <div class="cr-stat" title="Total credits currently held by all viewers"><div class="cr-stat-label">Viewer balance</div><div class="cr-stat-value" id="cr-stat-balance">–</div></div>
     </div>
+    <details class="metric-glossary"><summary>Metric glossary</summary>
+      <dl>
+        <div><dt>Credits earned</dt><dd>Credits viewers received from Kick channel-point redemptions.</dd></div>
+        <div><dt>Credits spent</dt><dd>Credits viewers used to redeem shop items.</dd></div>
+        <div><dt>Redemptions</dt><dd>Total redemption requests, including pending and completed.</dd></div>
+        <div><dt>Pending</dt><dd>Redemptions you have not yet fulfilled or cancelled.</dd></div>
+        <div><dt>Viewer balance</dt><dd>Total credits currently held by all viewers on this board.</dd></div>
+        <div><dt>Net spend</dt><dd>Credits spent minus any credits restored from cancelled redemptions.</dd></div>
+      </dl>
+    </details>
     <h3>Top earners</h3>
     <div class="board-table-wrap">
       <table class="board-table" id="cr-top-earners">
         <thead><tr><th>Viewer</th><th>Balance</th><th>Earned</th><th>Spent</th></tr></thead>
         <tbody id="cr-top-earners-list"></tbody>
       </table>
-      <p class="empty" id="cr-top-earners-empty" hidden>No data yet.</p>
+      <p class="empty" id="cr-top-earners-empty" hidden>No earners yet — create a reward mapping and have viewers redeem it on Kick.</p>
     </div>
     <h3>Top items</h3>
     <div class="board-table-wrap">
@@ -285,11 +296,11 @@ export const creditsContent = `
         <thead><tr><th>Item</th><th>Redemptions</th><th>Credits spent</th></tr></thead>
         <tbody id="cr-top-items-list"></tbody>
       </table>
-      <p class="empty" id="cr-top-items-empty" hidden>No data yet.</p>
+      <p class="empty" id="cr-top-items-empty" hidden>No items redeemed yet — add a shop item and let viewers spend credits.</p>
     </div>
     <h3>Credits by day</h3>
-    <div id="cr-credits-by-day" class="cr-bars" style="display:flex;align-items:flex-end;gap:4px;height:120px;margin-bottom:8px"></div>
-    <p class="empty" id="cr-credits-by-day-empty" hidden>No data for this period.</p>
+    <div id="cr-credits-by-day" class="cr-bars"></div>
+    <p class="empty" id="cr-credits-by-day-empty" hidden>No credit activity for this period. Try a longer range or create reward mappings and shop items.</p>
   </section>
 </div>
 
