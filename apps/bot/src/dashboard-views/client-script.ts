@@ -651,7 +651,7 @@ function getScheduledAt(){
   return isNaN(d.getTime()) ? null : d.toISOString();
 }
 function isScheduleSelected(){
-  const when = document.querySelector('input[name="bcWhen"]:checked') as HTMLInputElement | null;
+  const when = document.querySelector('input[name="bcWhen"]:checked');
   return when?.value === 'schedule';
 }
 function formatSegmentLabel(segment){
@@ -665,7 +665,7 @@ function formatSegmentLabel(segment){
 }
 function getBotNameForBroadcast(){
   const botId = $('bcBotSelect')?.value || firstBotId;
-  const select = $('bcBotSelect') as HTMLSelectElement | null;
+  const select = $('bcBotSelect');
   if (!select || !botId) return '';
   const opt = Array.from(select.options).find(o => o.value === botId);
   return opt?.text || botId;
@@ -680,7 +680,7 @@ function saveBroadcastDraft(){
       minLast: ($('bcMinLastSeen')?.value || ''),
       firstSeen: ($('bcFirstSeen')?.value || ''),
       username: ($('bcUsername')?.value || ''),
-      when: (document.querySelector('input[name="bcWhen"]:checked') as HTMLInputElement | null)?.value || 'now',
+      when: (document.querySelector('input[name="bcWhen"]:checked'))?.value || 'now',
       schedule: ($('bcSchedule')?.value || ''),
     };
     localStorage.setItem(BC_DRAFT_KEY, JSON.stringify(draft));
@@ -692,18 +692,18 @@ function loadBroadcastDraft(){
     if (!raw) return false;
     const d = JSON.parse(raw);
     if (!d || typeof d !== 'object') return false;
-    if (d.botId && $('bcBotSelect')) ($('bcBotSelect') as HTMLSelectElement).value = d.botId;
-    if ($('bcBody')) ($('bcBody') as HTMLTextAreaElement).value = d.body || '';
-    if ($('bcImage')) ($('bcImage') as HTMLInputElement).value = d.image || '';
-    if ($('bcLang')) ($('bcLang') as HTMLSelectElement).value = d.lang || '';
-    if ($('bcMinLastSeen')) ($('bcMinLastSeen') as HTMLInputElement).value = d.minLast || '';
-    if ($('bcFirstSeen')) ($('bcFirstSeen') as HTMLInputElement).value = d.firstSeen || '';
-    if ($('bcUsername')) ($('bcUsername') as HTMLInputElement).value = d.username || '';
+    if (d.botId && $('bcBotSelect')) ($('bcBotSelect')).value = d.botId;
+    if ($('bcBody')) ($('bcBody')).value = d.body || '';
+    if ($('bcImage')) ($('bcImage')).value = d.image || '';
+    if ($('bcLang')) ($('bcLang')).value = d.lang || '';
+    if ($('bcMinLastSeen')) ($('bcMinLastSeen')).value = d.minLast || '';
+    if ($('bcFirstSeen')) ($('bcFirstSeen')).value = d.firstSeen || '';
+    if ($('bcUsername')) ($('bcUsername')).value = d.username || '';
     if (d.when === 'schedule') {
-      const radio = document.querySelector('input[name="bcWhen"][value="schedule"]') as HTMLInputElement | null;
+      const radio = document.querySelector('input[name="bcWhen"][value="schedule"]');
       if (radio) radio.checked = true;
     }
-    if ($('bcSchedule')) ($('bcSchedule') as HTMLInputElement).value = d.schedule || '';
+    if ($('bcSchedule')) ($('bcSchedule')).value = d.schedule || '';
     const status = $('bcDraftStatus');
     if (status) status.hidden = false;
     return true;
@@ -714,21 +714,21 @@ function clearBroadcastDraft(){
   const status = $('bcDraftStatus'); if (status) status.hidden = true;
 }
 function clearBroadcastForm(){
-  if ($('bcBody')) ($('bcBody') as HTMLTextAreaElement).value = '';
-  if ($('bcImage')) ($('bcImage') as HTMLInputElement).value = '';
-  if ($('bcSchedule')) ($('bcSchedule') as HTMLInputElement).value = '';
-  if ($('bcUsername')) ($('bcUsername') as HTMLInputElement).value = '';
-  if ($('bcMinLastSeen')) ($('bcMinLastSeen') as HTMLInputElement).value = '';
-  if ($('bcFirstSeen')) ($('bcFirstSeen') as HTMLInputElement).value = '';
-  if ($('bcLang')) ($('bcLang') as HTMLSelectElement).value = '';
-  const nowRadio = document.querySelector('input[name="bcWhen"][value="now"]') as HTMLInputElement | null;
+  if ($('bcBody')) ($('bcBody')).value = '';
+  if ($('bcImage')) ($('bcImage')).value = '';
+  if ($('bcSchedule')) ($('bcSchedule')).value = '';
+  if ($('bcUsername')) ($('bcUsername')).value = '';
+  if ($('bcMinLastSeen')) ($('bcMinLastSeen')).value = '';
+  if ($('bcFirstSeen')) ($('bcFirstSeen')).value = '';
+  if ($('bcLang')) ($('bcLang')).value = '';
+  const nowRadio = document.querySelector('input[name="bcWhen"][value="now"]');
   if (nowRadio) nowRadio.checked = true;
   updateScheduleInputState();
   clearBroadcastDraft();
 }
 function updateScheduleInputState(){
   const selected = isScheduleSelected();
-  const input = $('bcSchedule') as HTMLInputElement | null;
+  const input = $('bcSchedule');
   if (input) input.disabled = !selected;
   updateUtcHint();
 }
@@ -784,6 +784,7 @@ function buildSummaryHtml(){
   if (image) html += '<li><b>Image:</b> '+esc(image)+'</li>';
   return html;
 }
+let bcPreviewFocusTrap = null;
 function openBroadcastPreview(){
   const body = ($('bcBody')?.value || '').trim();
   if (!body) return toast('Write a message first');
@@ -799,17 +800,31 @@ function openBroadcastPreview(){
   const imgEl = $('bcPreviewImg');
   if (imgEl) {
     imgEl.innerHTML = img ? '<img src="'+esc(img)+'" alt="" />' : '';
-    (imgEl as HTMLElement).hidden = !img;
+    (imgEl).hidden = !img;
   }
   const summaryList = $('bcSummaryList');
   if (summaryList) summaryList.innerHTML = buildSummaryHtml();
   const summary = $('bcSummary'); if (summary) summary.hidden = false;
-  const confirmBtn = $('bcConfirmBtn') as HTMLButtonElement | null;
+  const confirmBtn = $('bcConfirmBtn');
   if (confirmBtn) confirmBtn.textContent = isScheduleSelected() ? 'Schedule' : 'Send now';
   const preview = $('bcPreview'); if (preview) preview.hidden = false;
+  const card = preview?.querySelector('.bc-preview-card');
+  const firstBtn = card?.querySelector('button');
+  if (firstBtn) firstBtn.focus();
+  bcPreviewFocusTrap = { handler: function(e){
+    if (e.key === 'Escape') { e.preventDefault(); closeBroadcastPreview(); return; }
+    if (e.key !== 'Tab' || !card) return;
+    const focusable = Array.from(card.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])')).filter(el => !el.disabled && (el).offsetParent !== null);
+    if (focusable.length === 0) return;
+    const first = focusable[0], last = focusable[focusable.length - 1];
+    if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+    else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+  }, trigger: document.activeElement };
+  document.addEventListener('keydown', bcPreviewFocusTrap.handler);
 }
 function closeBroadcastPreview(){
   const preview = $('bcPreview'); if (preview) preview.hidden = true;
+  if (bcPreviewFocusTrap) { document.removeEventListener('keydown', bcPreviewFocusTrap.handler); bcPreviewFocusTrap.trigger && (bcPreviewFocusTrap.trigger).focus(); bcPreviewFocusTrap = null; }
 }
 async function confirmSendBroadcast(btn){
   const body = ($('bcBody')?.value || '').trim();
@@ -928,7 +943,7 @@ async function handleAction(e) {
 }
 
 document.addEventListener('click', handleAction);
-// Mobile sidebar drawer: toggle with the hamburger, close when tapping outside.
+// Mobile sidebar drawer: toggle with the hamburger, close when tapping outside, trap focus.
 const menuBtn = $('menuBtn');
 const side = $('side');
 if (menuBtn && side) {
@@ -936,6 +951,16 @@ if (menuBtn && side) {
   menuBtn.addEventListener('click', (e) => { e.stopPropagation(); side.classList.toggle('open'); menuBtn.setAttribute('aria-expanded', String(side.classList.contains('open'))); });
   document.addEventListener('click', (e) => {
     if (side.classList.contains('open') && !side.contains(e.target) && e.target !== menuBtn) { side.classList.remove('open'); menuBtn.setAttribute('aria-expanded','false'); }
+  });
+  document.addEventListener('keydown', (e) => {
+    if (!side.classList.contains('open')) return;
+    if (e.key === 'Escape') { side.classList.remove('open'); menuBtn.setAttribute('aria-expanded','false'); menuBtn.focus(); return; }
+    if (e.key !== 'Tab') return;
+    const focusable = Array.from(side.querySelectorAll('a, button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])')).filter(el => !el.disabled && el.offsetParent !== null);
+    if (focusable.length === 0) return;
+    const first = focusable[0], last = focusable[focusable.length - 1];
+    if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+    else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
   });
 }
 const logoutForm = document.querySelector('.gm-logout-form');

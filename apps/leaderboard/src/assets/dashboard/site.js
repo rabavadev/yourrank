@@ -1382,6 +1382,9 @@ export function renderEmbedShare() {
       const nice = new Date(x.day + "T00:00:00Z").toUTCString().slice(5, 11);
       return `<div class="stat-bar" style="height:${h}%" title="${nice}: ${x.views} views, ${x.copies} copies, ${x.clicks} clicks"></div>`;
     }).join("");
+    bars.setAttribute("role", "img");
+    const total = days.reduce((a, x) => a + x.views + x.copies + x.clicks, 0);
+    bars.setAttribute("aria-label", `Bar chart of daily activity for the last ${days.length} days. Total: ${total} events.`);
     const statFrom = $("statFrom");
     if (statFrom && days.length) statFrom.textContent = new Date(days[0].day + "T00:00:00Z").toUTCString().slice(5, 11);
     const statsEmpty = $("statsEmpty");
@@ -1414,6 +1417,9 @@ export function renderEmbedShare() {
       };
       return `<div class="stat-bar is-stacked" style="height:${h}%" title="${tip}">${seg(x.views, "views")}${seg(x.copies, "copies")}${seg(x.clicks, "clicks")}</div>`;
     }).join("");
+    ovBars.setAttribute("role", "img");
+    const ovTotal = days.reduce((a, x) => a + x.views + x.copies + x.clicks, 0);
+    ovBars.setAttribute("aria-label", `Stacked bar chart of activity for the last ${days.length} days. Total: ${ovTotal} events.`);
     if (days.length) $("ov_barsFrom").textContent = new Date(days[0].day + "T00:00:00Z").toUTCString().slice(5, 11);
     const ovBarsEmpty = $("ov_barsEmpty");
     if (ovBarsEmpty) ovBarsEmpty.hidden = days.length > 0 && (s.last30.views + s.last30.copies + s.last30.clicks) > 0;

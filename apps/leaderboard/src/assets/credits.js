@@ -511,13 +511,16 @@ function renderCreditsByDay(rows) {
     const earnPct = max > 0 ? (g.earn / max) * 100 : 0;
     const spendPct = max > 0 ? (g.spend / max) * 100 : 0;
     const label = new Date(d).toLocaleDateString(undefined, { month: "short", day: "numeric" });
-    return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%" title="${label}: ${total} (${g.earn} earned, ${g.spend} spent)">
-      <div style="width:100%;display:flex;align-items:flex-end;gap:1px;height:100%">
-        <div style="flex:1;background:var(--accent,#2200ff);height:${earnPct}%"></div>
-        <div style="flex:1;background:var(--ink-mute,#8b949e);height:${spendPct}%"></div>
+    return `<div class="cr-bar-col" title="${label}: ${total} (${g.earn} earned, ${g.spend} spent)">
+      <div class="cr-bar-col-inner">
+        <div class="cr-bar-earn" style="height:${earnPct}%"></div>
+        <div class="cr-bar-spend" style="height:${spendPct}%"></div>
       </div>
     </div>`;
   }).join("");
+  container.setAttribute("role", "img");
+  const allTotal = days.reduce((a, d) => a + grouped[d].earn + grouped[d].spend, 0);
+  container.setAttribute("aria-label", `Bar chart of credits by day for the last ${days.length} days. Total: ${allTotal} credits.`);
 }
 
 $("cr-analytics-days")?.addEventListener("change", loadAnalytics);
