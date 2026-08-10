@@ -1,6 +1,6 @@
 /** @jsxRuntime automatic */
 /** @jsxImportSource hono/jsx */
-import { creditsContent } from "./credits.js";
+
 
 export const dashboardConfig = {
   title: "Dashboard · YourRank",
@@ -76,14 +76,6 @@ export function DashboardContent() {
 <a class="lb-nav" href="/dashboard/analytics/activity" data-nav="performance" data-hash="activity"><span class="lb-nav-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M3 3v18h18"/><path d="m7 12 4-4 4 4 5-5"/></svg></span>Activity</a>
 <a class="lb-nav" href="/dashboard/analytics/referrals" data-nav="performance" data-hash="referrals"><span class="lb-nav-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="8" r="5"/><path d="M20 21a8 8 0 1 0-16 0"/></svg></span>Referrals</a>
 <a class="lb-nav" href="/dashboard/analytics/events" data-nav="performance" data-hash="events"><span class="lb-nav-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg></span>Events</a>
-</nav>
-<nav class="lb-side-group" data-area="rewards" aria-label="Rewards" hidden>
-<a class="lb-nav" href="/dashboard/rewards/channel" data-nav="kickrewards" data-hash="cr-channel"><span class="lb-nav-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect width="20" height="14" x="2" y="3" rx="2" ry="2"/><line x1="8" x2="16" y1="21" y2="21"/><line x1="12" x2="12" y1="17" y2="21"/></svg></span>Channel</a>
-<a class="lb-nav" href="/dashboard/rewards/maps" data-nav="kickrewards" data-hash="cr-maps"><span class="lb-nav-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m3 11 19-9-9 19-2-8-8-2z"/></svg></span>Reward maps</a>
-<a class="lb-nav" href="/dashboard/rewards/shop" data-nav="kickrewards" data-hash="cr-shop"><span class="lb-nav-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><line x1="3" x2="21" y1="6" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg></span>Shop</a>
-<a class="lb-nav" href="/dashboard/rewards/viewers" data-nav="kickrewards" data-hash="cr-viewers"><span class="lb-nav-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>Viewers</a>
-<a class="lb-nav" href="/dashboard/rewards/redemptions" data-nav="kickrewards" data-hash="cr-redemptions"><span class="lb-nav-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M20 12V8h-4"/><path d="M17 4v4"/><path d="M4 17v1a3 3 0 0 0 3 3h10a3 3 0 0 0 3-3v-1"/><path d="M12 17 8 13"/><path d="m16 13-4 4-4-4"/></svg></span>Redemptions</a>
-<a class="lb-nav" href="/dashboard/rewards/history" data-nav="kickrewards" data-hash="cr-history"><span class="lb-nav-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M3 3v5a5 5 0 0 0 5 5h10a5 5 0 0 1 5 5v5"/><path d="M12 12 7 7l5-5"/><path d="M12 12 17 7l5 5"/></svg></span>History</a>
 </nav>
 <div class="lb-side-foot"><a class="btn btn--sm btn--accent lb-live-btn" id="liveLink" href="#" target="_blank" rel="noopener noreferrer">View live board ↗</a><span class="label" id="planBadge">FREE PLAN</span></div>
 </aside>
@@ -442,7 +434,6 @@ export function DashboardContent() {
 <div id="boardsEmpty" class="empty" hidden>No boards yet. Create one to get started.</div>
 </div>
 </section>
-<section class="lb-page" data-page="kickrewards" dangerouslySetInnerHTML={{ __html: creditsContent }} />
 </div>
       </div>
       <div class="savebar" id="savebar" hidden><span class="savebar-hint">Unsaved changes</span><span class="savebar-ts" id="editorTimestamp"></span><button class="btn btn--accent" id="save" type="button">Save changes</button></div>

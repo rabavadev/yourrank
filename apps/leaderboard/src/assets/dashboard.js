@@ -8,7 +8,6 @@ import { checkout, loadCreditsStatus, loadHistory, loadStats, renderArchives, re
 import { renderOverviewSummary, wireOverviewQuickActions } from "./dashboard/overview.js";
 import { renderReferrals } from "./dashboard/referrals.js";
 import { initPerformance, renderPerformance } from "./dashboard/performance.js";
-import { initKickrewards } from "./credits.js";
 import { wireAccount } from "./dashboard/account.js";
 
 async function init() {
