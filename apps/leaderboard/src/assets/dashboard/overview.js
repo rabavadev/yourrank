@@ -8,6 +8,14 @@ import { navTo } from "./shell.js";
 // chart that used to render here was removed — the page CSP blocks the CDN, so
 // it never loaded and the container sat empty.
 
+function fmtDateTime(iso) {
+  if (!iso) return "";
+  try {
+    const d = new Date(iso);
+    return d.toLocaleString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
+  } catch { return ""; }
+}
+
 function isBoardSetup() {
   const o = state.ONBOARDING || {};
   const brand = $("f_name")?.value.trim() || o.brand;
@@ -73,9 +81,14 @@ export function renderOverviewSummary() {
       const published = state.PUBLISHED;
       statusDot.className = "board-status-dot " + (published ? "is-live" : "is-draft");
       statusText.textContent = published ? "Published" : "Draft";
-      if (statusSub) statusSub.textContent = published
-        ? "Your leaderboard is live at " + (state.SLUG || "—")
-        : "Not visible to visitors yet";
+      if (statusSub) {
+        const parts = [];
+        if (state.SITE_UPDATED_AT) parts.push("Last saved " + fmtDateTime(state.SITE_UPDATED_AT));
+        if (published && state.PUBLISHED_AT) parts.push("Published " + fmtDateTime(state.PUBLISHED_AT));
+        statusSub.textContent = parts.length
+          ? (published ? "Live at /" + (state.SLUG || "—") + " · " : "Not visible yet · ") + parts.join(" · ")
+          : (published ? "Your leaderboard is live at " + (state.SLUG || "—") : "Not visible to visitors yet");
+      }
     }
     // Empty vs active home state
     const onboardBento = $("ovOnboardingBento");

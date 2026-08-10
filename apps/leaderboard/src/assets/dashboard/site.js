@@ -2,6 +2,7 @@
 import { $, esc, fromLocalInput, getCsrf, guardAuth, logError, toLocalInput, parseAmount, showToast, showConfirmModal, copyToClipboard, flashButton } from "./utils.js";
 import { state } from "./state.js";
 import { renderBoardSwitcher, renderBoardsPage, renderSidebarBoardSwitcher } from "./boards.js";
+import { renderOverviewSummary } from "./overview.js";
 import { applyPlayerFieldVisibility, renderPlayers, renumber, toggleEmpty } from "./players.js";
 
 const FONT_FAMILIES = [
@@ -1202,16 +1203,23 @@ $("a_go")?.addEventListener("click", async () => {
 $("save")?.addEventListener("click", async () => {
   const btn = $("save"), status = $("status"); btn.disabled = true; btn.textContent = "Saving…"; status.textContent = "";
   const limitEl = $("limitMsg"); if (limitEl) limitEl.textContent = "";
+  let justPublished = false;
   try {
     const payload = collect();
     const res = await fetch("/api/site", { method: "PUT", credentials: "include", headers: { "content-type": "application/json", "x-csrf-token": getCsrf() }, body: JSON.stringify(payload) }).then(guardAuth);
     const d = await res.json();
     if (res.ok && d.ok) {
-      status.textContent = "Saved. Your page is updated.";
+      justPublished = !!payload.published && !state.PUBLISHED;
+      status.textContent = justPublished ? "Saved and published. Your board is now live." : "Saved. Your page is updated.";
       state._dirty = false;
+      state.PUBLISHED = !!payload.published;
       window.removeEventListener("beforeunload", _beforeUnloadGuard);
       if (d.updatedAt) state.SITE_UPDATED_AT = d.updatedAt;
+      if (d.publishedAt) state.PUBLISHED_AT = d.publishedAt;
       const sb = $("savebar"); if (sb) sb.hidden = true;
+      const saveBtn = $("save"); if (saveBtn) saveBtn.textContent = "Save changes";
+      const saveHint = document.querySelector(".savebar-hint"); if (saveHint) saveHint.textContent = "Unsaved changes";
+      renderOverviewSummary();
       const active = state.BOARDS.find((b) => b.id === state.ACTIVE_SITE_ID);
       if (active) { active.name = payload.name; active.casino = payload.brand?.casino || active.casino; active.code = payload.brand?.code || active.code; }
       renderBoardSwitcher();
@@ -1222,7 +1230,8 @@ $("save")?.addEventListener("click", async () => {
     } else status.textContent = d.error || "Save failed.";
   } catch (err) { logError("save", err); status.textContent = "Network error."; }
   btn.disabled = false; btn.textContent = "Save changes";
-  if (status.textContent === "Saved. Your page is updated.") setTimeout(() => { if (status.textContent === "Saved. Your page is updated.") status.textContent = ""; }, 6000);
+  const savedMsg = justPublished ? "Saved and published. Your board is now live." : "Saved. Your page is updated.";
+  if (status.textContent === savedMsg) setTimeout(() => { if (status.textContent === savedMsg) status.textContent = ""; }, 6000);
 });
 
 export function renderEmbedShare() {

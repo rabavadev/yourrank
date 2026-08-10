@@ -175,7 +175,7 @@ export async function handleGetSite(request, env) {
   if (!s) return bad("No site for this account", 404);
   const boards = await getUserBoardsList(env, user.id);
   const onboarding = await onboardingForSite(env, s, user.id, plan);
-  return json({ ok: true, slug: s.slug, published: s.published, isDraft: s.is_draft, plan: plan, data: s.data, socials: s.socials, notify: s.notify || {}, archives: s.archives, boards, siteId: s.id, customDomain: s.customDomain || "", domainStatus: s.domainStatus || "pending", onboarding, templates: templateCatalog(), updatedAt: s.updated_at }, 200, { "cache-control": "no-store, no-cache, must-revalidate" });
+  return json({ ok: true, slug: s.slug, published: s.published, isDraft: s.is_draft, plan: plan, data: s.data, socials: s.socials, notify: s.notify || {}, archives: s.archives, boards, siteId: s.id, customDomain: s.customDomain || "", domainStatus: s.domainStatus || "pending", onboarding, templates: templateCatalog(), updatedAt: s.updated_at, publishedAt: s.published_at }, 200, { "cache-control": "no-store, no-cache, must-revalidate" });
 }
 
 export async function handleListBoards(request, env) {
@@ -283,7 +283,7 @@ export async function handlePutSite(request, env) {
   const payload = await readJson(request);
   if (!payload) return bad("Invalid request");
   const r = await saveSite(env, user, payload, payload.siteId || null, request);
-  return r.error ? bad(r.error, 400) : json({ ok: true, updatedAt: r.updatedAt, slug: r.slug, siteId: r.siteId });
+  return r.error ? bad(r.error, 400) : json({ ok: true, updatedAt: r.updatedAt, publishedAt: r.publishedAt, slug: r.slug, siteId: r.siteId });
 }
 
 // POST /api/site/finish — mark the wizard-created board as finished.
@@ -294,7 +294,7 @@ export async function handleFinishSetup(request, env) {
   if (!(await rateLimit(env, `finish-setup:${user.id}`, 10, 60)).ok) return bad("Too many requests. Try again shortly.", 429);
   const payload = await readJson(request) || {};
   const r = await saveSite(env, user, { isDraft: false, published: true }, payload.siteId || null, request);
-  return r.error ? bad(r.error, 400) : json({ ok: true, updatedAt: r.updatedAt, slug: r.slug, siteId: r.siteId });
+  return r.error ? bad(r.error, 400) : json({ ok: true, updatedAt: r.updatedAt, publishedAt: r.publishedAt, slug: r.slug, siteId: r.siteId });
 }
 
 export async function handlePutTheme(request, env) {

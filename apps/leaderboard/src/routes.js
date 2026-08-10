@@ -55,7 +55,6 @@ import {
   handleCreditsAnalytics,
   handleCreditsViewerHistory,
   handlePublicCredits,
-  handlePublicRedeem,
   handleCreditsViewerAuth,
 } from "./handlers/credits.js";
 import { handleCreditsBlockViewer } from "./handlers/credits-block.js";
@@ -161,9 +160,8 @@ export const ROUTES = [
   { path: "/api/credits/viewer/history", method: "GET", handler: withHandler(handleCreditsViewerHistory) },
   { path: "/api/credits/viewers/:id/block", method: "POST", handler: withHandler(handleCreditsBlockViewer) },
 
-  // Public credits / shop API (CSRF-exempt)
+  // Public credits / shop API (CSRF-exempt, read-only balance lookup)
   { path: "/api/public/credits", method: "GET", handler: withHandler(handlePublicCredits) },
-  { path: "/api/public/redeem", method: "POST", handler: withHandler(handlePublicRedeem) },
 
   // Viewer auth (Kick / Discord)
   { path: "/api/viewer/auth/kick", method: "GET", handler: withHandler(handleKickViewerAuthStart) },

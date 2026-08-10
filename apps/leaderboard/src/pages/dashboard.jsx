@@ -46,7 +46,7 @@ export function DashboardContent() {
 <span class="label" id="activeBoardLabel">Active board</span>
 <div class="lb-active-name" id="activeBoardName">…</div>
 <div class="lb-active-meta" id="activeBoardMeta"></div>
-<label class="lb-board-pub hint chk"><input type="checkbox" id="pubToggle" checked /> Published</label>
+<label class="lb-board-pub hint chk" title="When checked, saving makes the board public at /your-slug"><input type="checkbox" id="pubToggle" checked /> Publish on save</label>
 <div class="lb-board-row">
 <select class="lb-board-select" id="sidebarBoardSelect" aria-label="Switch board"></select>
 <button class="btn btn--sm lb-board-new" id="newBoard" type="button" title="New board" aria-label="New board">+</button>

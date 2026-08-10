@@ -85,7 +85,7 @@ export function renderPublicCreditsPage({ slug, nonce, homeUrl, kickAuthEnabled,
   const slug = ${JSON.stringify(slug)};
   const auth = { kick: ${kickAuthEnabled ? 'true' : 'false'}, discord: ${discordAuthEnabled ? 'true' : 'false'}, public: ${publicRedeemEnabled ? 'true' : 'false'} };
   let viewer = null;
-  let viewerToken = null;
+  let viewerSession = null;
 
   function $(id){ return document.getElementById(id); }
   function esc(s){ return String(s??"").replace(/[&<>"']/g,(c)=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
@@ -102,6 +102,20 @@ export function renderPublicCreditsPage({ slug, nonce, homeUrl, kickAuthEnabled,
 
   $("pc-username").addEventListener("input", saveUsername);
   restoreUsername();
+
+  async function loadSession(){
+    try {
+      const res = await fetch("/api/viewer/me", { credentials: "same-origin" });
+      if (res.ok) {
+        const data = await res.json().catch(() => null);
+        if (data && data.viewer) {
+          viewerSession = data.viewer;
+          if (viewerSession.kickUsername) { $("pc-username").value = viewerSession.kickUsername; }
+        }
+      }
+    } catch {}
+  }
+  loadSession();
 
   if (auth.kick || auth.discord) {
     $("pc-login-card").hidden = false;
@@ -128,7 +142,6 @@ export function renderPublicCreditsPage({ slug, nonce, homeUrl, kickAuthEnabled,
     try{
       const data=await api("GET","/api/public/credits?"+new URLSearchParams({slug,kickUsername:username}).toString());
       viewer=data.viewer;
-      viewerToken=viewer ? viewer.publicToken || null : null;
       if(!viewer){
         $("pc-balance-card").hidden=true;
         $("pc-shop-card").hidden=true;
@@ -138,49 +151,40 @@ export function renderPublicCreditsPage({ slug, nonce, homeUrl, kickAuthEnabled,
       $("pc-balance").textContent=viewer.balance;
       $("pc-balance-sub").textContent=viewer.kick_username ? "Hello, "+viewer.kick_username : "";
       $("pc-balance-card").hidden=false;
-      renderShop(data.shopItems, username);
+      renderShop(data.shopItems);
       setStatus("");
     }catch(err){ setStatus(err.message,true); }
     finally { setGlobalLoading(false); setLoading(btn, false); }
   });
 
-  function renderShop(items, username){
+  function renderShop(items){
     const list=$("pc-shop-list");
     list.innerHTML="";
     const active=(items||[]).filter(i=>i.active!==false);
     $("pc-shop-empty").hidden=active.length>0;
     $("pc-shop-card").hidden=active.length===0;
+    if (!auth.public) {
+      $("pc-shop-card").hidden = true;
+      return;
+    }
     for(const item of active){
       const div=document.createElement("div");
       div.className="pc-item";
-      const canBuy=auth.public && viewer && viewer.balance>=item.cost && (item.stock===null || item.stock>0);
+      const canAfford=viewer && viewer.balance>=item.cost;
+      const inStock=item.stock===null || item.stock>0;
       div.innerHTML='<div class="pc-item-info"><div class="pc-item-name">'+esc(item.name)+'</div><div class="pc-item-desc">'+esc(item.description||"")+'</div></div>'+
         '<div style="text-align:right"><div class="pc-item-cost">'+item.cost+' credits</div>'+
         (item.stock!==null ? '<div class="hint">Stock: '+item.stock+'</div>':'')+
-        '<button class="btn btn--sm" '+(canBuy?'':'disabled')+' data-redeem="'+esc(item.id)+'">'+(auth.public?'Redeem':'Log in to redeem')+'</button></div>';
+        '<button class="btn btn--sm" data-redeem="'+esc(item.id)+'" '+(canAfford && inStock ? '' : 'disabled')+'>'+(canAfford && inStock ? 'Redeem in dashboard' : (inStock ? 'Need more credits' : 'Out of stock'))+'</button></div>';
       list.appendChild(div);
     }
     list.querySelectorAll("[data-redeem]").forEach((b)=>{
-      b.addEventListener("click", async ()=>{
-        if(!auth.public) { window.location.href="/me"; return; }
-        const item = itemById(active,b.dataset.redeem);
-        if(!item) return;
-        if(!confirm("Spend "+item.cost+" credits on "+item.name+"?")) return;
-        setGlobalLoading(true);
-        setLoading(b, true, "Redeeming…");
-        try{
-          const data=await api("POST","/api/public/redeem",{slug,kickUsername:username,shopItemId:b.dataset.redeem,publicToken:viewerToken});
-          viewer.balance=data.balance;
-          $("pc-balance").textContent=data.balance;
-          setStatus("Redemption requested! The streamer will fulfill it off-platform.",false);
-          $("pc-lookup").dispatchEvent(new Event("submit"));
-        }catch(err){ setStatus(err.message,true); }
-        finally { setGlobalLoading(false); setLoading(b, false); }
-      });
+      if (b.disabled) return;
+      b.addEventListener("click", ()=>{ window.location.href="/me"; });
     });
   }
 
-  function itemById(items,id){ return items.find(i=>i.id===id); }
+
 })();
 </script>
 </body></html>`;

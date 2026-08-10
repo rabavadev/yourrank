@@ -7,11 +7,11 @@ export const signupPage = `<!DOCTYPE html><html lang="en"><head>
 <link rel="stylesheet" href="/assets/app.css" /></head><body>
 <a href="#main-content" class="sr-only skip-link">Skip to content</a>
 <div class="auth-wrap"><aside class="auth-side"><div><div class="brand">Your<b>Rank</b></div></div>
-<div><h2>Your leaderboard, live in seconds.</h2><p>One email, one password, and your page is ready. You can rename it once you're in.</p>
+<div><h2>Your leaderboard, live in seconds.</h2><p>One email, one password, and your page is ready. The first board is a draft sample race — you can rename the URL, edit everything, and publish when you're ready.</p>
 <div class="auth-spec" aria-hidden="true"><div class="auth-spec-h"><span>what happens next</span><span class="dot">3 steps</span></div>
 <div class="auth-spec-row"><span>01</span><span>Create your account</span></div>
-<div class="auth-spec-row"><span>02</span><span>We create a sample race for you</span></div>
-<div class="auth-spec-row"><span>03</span><span>Customise and share your link</span></div></div></div>
+<div class="auth-spec-row"><span>02</span><span>We create a sample race in draft</span></div>
+<div class="auth-spec-row"><span>03</span><span>Customise, then publish and share</span></div></div></div>
 <div class="feat"><div>Free to set up · upgrade when you are ready</div></div></aside>
 <main class="auth-main" id="main-content"><div class="auth-card"><a href="/" class="auth-brand-m">Your<b>Rank</b></a><h1>Create account</h1><p class="sub">Free. Takes 30 seconds.</p>
 <div id="planBanner" class="plan-banner" hidden></div>
