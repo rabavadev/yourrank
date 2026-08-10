@@ -32,7 +32,7 @@ export const faqPage = `<!DOCTYPE html><html lang="en"><head>
 <meta name="twitter:description" content="Answers to common questions about YourRank leaderboards, Telegram bot, credits, and pricing." />
 <link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
-<link rel="stylesheet" href="/assets/landing.css" />
+<link rel="stylesheet" href="/assets/ui.css" /><link rel="stylesheet" href="/assets/landing.css" />
 <script type="application/ld+json">${faqStructuredData}</script>
 </head><body>
 <a href="#main-content" class="sr-only skip-link">Skip to content</a>

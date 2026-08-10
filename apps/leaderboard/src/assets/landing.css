@@ -18,10 +18,10 @@ a{color:var(--ink)}::selection{background:var(--accent);color:var(--accent-ink)}
 .mono{font-family:var(--mono)}
 .label{font-family:var(--mono);font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-mute)}
 .wrap{max-width:1080px;margin:0 auto;padding:0 24px}
-.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;font-weight:600;font-size:14px;padding:11px 18px;min-height:var(--tap);border-radius:8px;border:1px solid var(--line-2);background:var(--panel-2);color:var(--ink);cursor:pointer;text-decoration:none;transition:border-color .15s}
-.btn:hover{border-color:var(--ink-mute)}.btn--accent{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}.btn--accent:hover{filter:brightness(1.05)}
-.btn--ghost{background:transparent}
-.btn--sm{padding:8px 14px;font-size:13px;min-height:var(--tap)}
+/* Buttons come from ui.css, shared with the app and the bot dashboard. Only the
+   hero pair is sized up here: they carry the page and should read larger than
+   an in-app action. */
+.hero .cta .btn{padding:13px 22px;font-size:15px;min-height:46px}
 nav.top{display:flex;align-items:center;justify-content:space-between;padding:20px 0;border-bottom:1px solid var(--line)}
 nav.top .brand{font-weight:800;font-size:19px;letter-spacing:-.02em}nav.top .brand b{color:var(--accent)}
 nav.top .links{display:flex;gap:20px;align-items:center;font-size:14px}

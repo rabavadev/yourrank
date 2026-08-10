@@ -43,7 +43,7 @@ export function leaderboardPageHtml(opts: LeaderboardPageOpts): string {
   const bodyAttr = opts.wide ? ' data-wide="true"' : "";
   const reqIdMeta = opts.reqId ? `<meta name="request-id" content="${esc(opts.reqId)}" />` : "";
   const description = opts.description ? `<meta name="description" content="${esc(opts.description)}" />` : "";
-  const styles = (opts.styles || ["/assets/app.css", "/assets/shell-nav.css"])
+  const styles = (opts.styles || ["/assets/app.css", "/assets/shell-nav.css", "/assets/ui.css"])
     .map((href) => `<link rel="stylesheet" href="${esc(href)}" />`)
     .join("");
   const scripts = (opts.scripts || []).join("");
@@ -163,11 +163,8 @@ const BOT_BASE_CSS = `
   input, textarea, select { width:100%; background:var(--bg); color:var(--fg); border:1px solid var(--border-2);
           border-radius:8px; padding:9px 11px; margin-bottom:10px; font:inherit; }
   select { cursor:pointer; }
-  button { background:var(--accent); color:var(--accent-ink); border:0; border-radius:8px; padding:9px 15px;
-           font:600 14px/1 inherit; cursor:pointer; }
-  button.ghost { background:transparent; color:var(--dim); border:1px solid var(--border-2); padding:8px 12px; }
-  button.ghost:hover { color:var(--fg); }
-  button.danger { background:transparent; color:var(--red); border:1px solid var(--red); padding:8px 12px; }
+  /* Buttons come from /assets/ui.css (the .yr-ui body class), so this dashboard
+     and the leaderboard render the same component. */
   table { width:100%; border-collapse:collapse; font-size:14px; }
   th, td { text-align:left; padding:9px 10px; border-bottom:1px solid var(--border); }
   th { color:var(--dim); font-weight:500; font-size:12px; }
@@ -176,7 +173,6 @@ const BOT_BASE_CSS = `
   .stat { font-size:28px; font-weight:700; } .copy { cursor:pointer; text-decoration:underline dotted; }
   #toast { position:fixed; bottom:20px; left:50%; transform:translateX(-50%); background:var(--accent);
            color:var(--accent-ink); padding:10px 18px; border-radius:8px; font-weight:600; }
-  button:disabled, .copy:disabled { opacity:0.6; cursor:not-allowed; }
 
   /* ---- quick actions (overview) ---- */
   .qa { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:16px; }
@@ -212,9 +208,6 @@ const BOT_BASE_CSS = `
   .lrow:first-child { border-top:0; }
   .lrow .l { min-width:0; } .lrow .l .nm { font-weight:600; font-size:14px; }
   .lrow .l .ds { font-size:12px; color:var(--dim); }
-  .badge { font-size:11px; font-weight:600; padding:3px 9px; border-radius:999px; border:1px solid var(--border-2); color:var(--dim); }
-  .badge.on { color:var(--green); border-color:rgba(63,185,80,.4); }
-  .badge.off { color:var(--red); border-color:rgba(248,81,73,.4); }
 
   /* ---- setup checklist (overview) ---- */
   .steps { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; }
@@ -231,9 +224,6 @@ const BOT_BASE_CSS = `
   .bot-card .meta { flex:1; min-width:180px; }
   .bot-card .actions { display:flex; gap:8px; flex-wrap:wrap; }
   .bot-card button { padding:6px 12px; font-size:13px; }
-  .badge { display:inline-block; padding:2px 8px; border-radius:999px; font-size:12px; font-weight:600; background:var(--panel-2); }
-  .badge.ok { background:rgba(40,167,69,.15); color:#28a745; }
-  .badge.off { background:rgba(108,117,125,.15); color:#6c757d; }
   .health-details { width:100%; font-size:13px; color:var(--dim); }
   .health-details summary { cursor:pointer; color:var(--fg); margin-bottom:6px; }
   .health-details ul { margin:0 0 8px; padding-left:18px; }
@@ -266,12 +256,14 @@ const BOT_BASE_CSS = `
   .cmd-button-chip { display:inline-flex; align-items:center; gap:6px; background:var(--panel-2); border:1px solid var(--border); border-radius:999px; padding:4px 10px; font-size:13px; color:var(--fg); }
   .cmd-button-chip button { padding:0 4px; font-size:16px; line-height:1; background:transparent; border:none; color:var(--dim); cursor:pointer; }
 
-  .menu-btn { display:none; }
+  /* Scoped with .yr-ui so it outranks the shared button component in ui.css,
+     which would otherwise show the hamburger on desktop. */
+  .yr-ui .menu-btn { display:none; }
   @media (max-width:860px) {
     .side { position:fixed; left:0; top:0; height:100vh; z-index:60; background:var(--bg);
             transform:translateX(-100%); transition:transform .2s; box-shadow:2px 0 18px rgba(0,0,0,.5); }
     .side.open { transform:none; }
-    .menu-btn { display:inline-grid; place-items:center; width:36px; height:36px; border-radius:8px;
+    .yr-ui .menu-btn { display:inline-grid; place-items:center; width:36px; height:36px; border-radius:8px;
                 border:1px solid var(--border-2); background:transparent; color:var(--fg); padding:0; }
     .kpis { grid-template-columns:1fr 1fr; }
     .qa { grid-template-columns:1fr 1fr; }
@@ -316,10 +308,6 @@ const BOT_DASH_V2_CSS = `
   .bot-card-head { display:flex; flex-wrap:wrap; justify-content:space-between; align-items:flex-start; gap:8px; }
   .bot-card .meta { flex:1; min-width:180px; }
   .bot-card .actions { display:flex; gap:8px; flex-wrap:wrap; }
-  .bot-card button { padding:6px 12px; font-size:13px; }
-  .badge { display:inline-block; padding:2px 8px; border-radius:999px; font-size:12px; font-weight:600; background:var(--yr-panel-2); }
-  .badge.ok { background:rgba(74,222,128,.15); color:#4ade80; }
-  .badge.off { background:rgba(156,163,175,.2); color:#9ca3af; }
   .health-details { width:100%; font-size:13px; color:var(--yr-ink-soft); }
   .health-details summary { cursor:pointer; color:var(--yr-ink); margin-bottom:6px; }
   .health-details ul { margin:0 0 8px; padding-left:18px; }
@@ -335,25 +323,8 @@ const BOT_DASH_V2_CSS = `
   table th { color: var(--yr-ink-mute); font-weight: 500; font-size: 12px; border-bottom: 1px solid var(--yr-line); }
   table td { border-bottom: 1px solid var(--yr-line); }
 
-  /* Tables are wider than a phone. Scroll them inside their panel instead of
-     letting them widen the document, and keep the row label in view. */
-  /* position:relative also keeps the absolutely-positioned .sr-only labels in
-     the header row from escaping the scroller and widening the document. */
-  .tbl-scroll { position: relative; overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 0 -18px; padding: 0 18px; }
-  .tbl-scroll > table { min-width: 560px; }
-  @media (max-width: 700px) {
-    .tbl-scroll th:first-child, .tbl-scroll td:first-child {
-      position: sticky; left: 0; background: var(--yr-panel);
-      box-shadow: 1px 0 0 var(--yr-line);
-    }
-    .tbl-scroll td[colspan] { position: static; box-shadow: none; }
-  }
-
   input, textarea, select { background: var(--yr-panel); border: 1px solid var(--yr-line-2); border-radius: 10px; padding: 10px 12px; font: inherit; }
   input:focus, textarea:focus, select:focus { outline: 2px solid var(--yr-accent); outline-offset: 0; }
-  button { border-radius: 10px; }
-  button.ghost { background: var(--yr-panel-2); color: var(--yr-ink-soft); border: 1px solid var(--yr-line-2); }
-  button.danger { background: transparent; color: var(--yr-red); border: 1px solid rgba(217,48,37,.4); }
 
   .shell { display: flex; gap: 24px; align-items: flex-start; max-width: 1440px; margin: 0 auto; padding: 24px 28px 80px; }
   .side { flex: 0 0 240px; position: sticky; top: 86px; display: flex; flex-direction: column; gap: 6px; height: auto; max-height: calc(100vh - 110px); overflow-y: auto; padding: 18px; background: var(--yr-panel); border: 1px solid var(--yr-line); border-radius: var(--yr-radius); box-shadow: var(--yr-shadow); }
@@ -375,14 +346,9 @@ const BOT_DASH_V2_CSS = `
     .side.open { transform: none; }
     .main { padding-left: 0; }
     /* Comfortable touch targets on a phone. */
-    button, .side .snav a, .qa a { min-height: 44px; }
-    button { padding: 11px 16px; }
-    .bot-card .actions button, .list-pagination button { min-height: 40px; }
+    .side .snav a, .qa a { min-height: 44px; }
   }
 
-  .badge { border: 1px solid var(--yr-line-2); color: var(--yr-ink-soft); }
-  .badge.on { color: var(--yr-green); border-color: rgba(30,142,62,.4); }
-  .badge.off { color: var(--yr-red); border-color: rgba(217,48,37,.4); }
   .muted { color: var(--yr-ink-soft); }
   .ok { color: var(--yr-green); }
   .off { color: var(--yr-red); }
@@ -422,7 +388,7 @@ export function botPageHtml(opts: BotPageOpts): string {
   const nav = opts.nav || "";
   return `<!doctype html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Streamer Dashboard</title>${GOOGLE_FONTS}<style${nonceAttr}>${BOT_STYLE_ATTR_CSS}${BOT_BASE_CSS}${BOT_DASH_V2_CSS}</style>${nav ? '<link rel="stylesheet" href="/assets/shell-nav.css">' : ""}</head><body data-page="${esc(opts.page)}">
+<title>Streamer Dashboard</title>${GOOGLE_FONTS}<style${nonceAttr}>${BOT_STYLE_ATTR_CSS}${BOT_BASE_CSS}${BOT_DASH_V2_CSS}</style><link rel="stylesheet" href="/assets/ui.css">${nav ? '<link rel="stylesheet" href="/assets/shell-nav.css">' : ""}</head><body class="yr-ui" data-page="${esc(opts.page)}">
 <a href="#main-content" class="skip-link">Skip to main content</a>
 ${nav}
 ${opts.content}

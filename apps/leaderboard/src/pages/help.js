@@ -60,7 +60,7 @@ function helpPage(opts) {
       canonical: opts.canonical,
       description: opts.description,
       robots: "index, follow",
-      styles: ["/assets/app.css", "/assets/shell-nav.css"],
+      styles: ["/assets/app.css", "/assets/shell-nav.css", "/assets/ui.css"],
       scripts: ['<script src="/assets/contact.js"></script>'],
       mainClass: "wrap",
       nav: true,

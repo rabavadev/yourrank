@@ -476,7 +476,7 @@ export function renderLegalPage(data, page, opts) {
   const platformBase = esc(opts.homeUrl || "https://yourrank.site").replace(/\/$/, "");
   const legalNotice = isDefaultLegal ? `<div class="legal-notice"><b>⚠️ Legal pages not configured</b> — ${esc(b.name || "this page")} is currently showing YourRank platform terms. You can also read the platform <a href="${platformBase}/terms">Terms of Service</a>, <a href="${platformBase}/privacy">Privacy Policy</a>, and <a href="${platformBase}/responsible">Responsible Play</a> guidelines.</div>` : "";
   const fontLink = GOOGLE_FONTS_LINK;
-  const cssLink = `<link rel="stylesheet" href="/assets/app.css" />`;
+  const cssLink = `<link rel="stylesheet" href="/assets/app.css" /><link rel="stylesheet" href="/assets/ui.css" />`;
   const canonical = `${esc(opts.homeUrl || "https://yourrank.site")}${legalHref(page)}`;
   const fontStyle = fontCss(br, opts.nonce);
   const header = `<header class="topbar"><a class="brand" href="${homeHref}">${esc(b.name || "YourRank")}</a></header>`;
@@ -524,7 +524,7 @@ export function renderPlayerProfile(data, player, history, opts) {
   const backHref = playerBackHref(opts);
   const fontLink = GOOGLE_FONTS_LINK;
   const fontStyle = fontCss(br, opts.nonce);
-  const cssLink = `<link rel="stylesheet" href="/assets/app.css" />`;
+  const cssLink = `<link rel="stylesheet" href="/assets/app.css" /><link rel="stylesheet" href="/assets/ui.css" />`;
   const legalHref = (page) => opts.isCustomDomain ? `/${page}` : `/${esc(opts.slug || "")}/${page}`;
   const header = `<header class="topbar"><a class="brand" href="${homeHref}">${esc(b.name || "YourRank")}</a></header>`;
   const footer = `<footer class="ftr ftr--board"><div class="ftr-inner"><div class="ftr-brand-col"><div class="ftr-id"><span class="ftr-name" data-brand-name>${esc(b.name)}</span><span class="ftr-tag" data-tagline>${esc(b.tagline)}</span></div><p class="ftr-fine">18+ only. Gambling can be addictive. Please play responsibly. BeGambleAware.org.</p></div><div class="ftr-links-col"><span class="ftr-links-title">Legal</span><div class="ftr-links">${renderLegalLinks(data, legalHref, ["terms", "privacy", "responsible"])}<a href="${legalHref("cookies")}">Cookies</a><a href="${legalHref("refund")}">Refund</a><a href="${legalHref("contact")}">Contact</a></div></div></div><div class="ftr-bottom"><p class="ftr-copy">© ${new Date().getFullYear()} <span data-brand-name>${esc(b.name)}</span>. All rights reserved.</p></div></footer>`;
@@ -603,7 +603,7 @@ export function renderHallOfFame(data, opts) {
   const legalHref = (p) => isCustomDomain ? `/${p}` : `/${esc(opts.slug || "")}/${p}`;
   const fontLink = GOOGLE_FONTS_LINK;
   const fontStyle = fontCss(br, opts.nonce);
-  const cssLink = `<link rel="stylesheet" href="/assets/app.css" />`;
+  const cssLink = `<link rel="stylesheet" href="/assets/app.css" /><link rel="stylesheet" href="/assets/ui.css" />`;
   const canonical = `${esc(opts.homeUrl || "https://yourrank.site")}${isCustomDomain ? "/hall-of-fame" : `/${esc(opts.slug || "")}/hall-of-fame`}`;
   const header = `<header class="topbar"><a class="brand" href="${homeHref}">${esc(b.name || "YourRank")}</a></header>`;
   const footer = `<footer class="ftr ftr--board"><div class="ftr-inner"><div class="ftr-brand-col"><div class="ftr-id"><span class="ftr-name" data-brand-name>${esc(b.name)}</span><span class="ftr-tag" data-tagline>${esc(b.tagline)}</span></div><p class="ftr-fine">${footerDisclaimer(!!b.casino, b.name, b.casino)}</p></div><div class="ftr-links-col"><span class="ftr-links-title">Legal</span><div class="ftr-links">${renderLegalLinks(data, legalHref, ["terms", "privacy", "responsible"])}<a href="${legalHref("cookies")}">Cookies</a><a href="${legalHref("refund")}">Refund</a><a href="${legalHref("contact")}">Contact</a></div></div></div><div class="ftr-bottom"><p class="ftr-copy">© ${new Date().getFullYear()} <span data-brand-name>${esc(b.name)}</span>. All rights reserved.</p></div></footer>`;
@@ -669,7 +669,7 @@ export function renderStreamerProfile(data, opts) {
   const profileHref = opts.isCustomDomain ? "/profile" : `/${esc(opts.slug || "")}/profile`;
   const boardHref = (slug) => opts.isCustomDomain ? `https://yourrank.site/${esc(slug)}` : `/${esc(slug)}`;
   const fontLink = `<link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin /><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />`;
-  const cssLink = `<link rel="stylesheet" href="/assets/app.css" />`;
+  const cssLink = `<link rel="stylesheet" href="/assets/app.css" /><link rel="stylesheet" href="/assets/ui.css" />`;
   const legalHref = (page) => opts.isCustomDomain ? `/${page}` : `/${esc(opts.slug || "")}/${page}`;
   const header = `<header class="topbar"><a class="brand" href="${homeHref}">${esc(b.name || "YourRank")}</a></header>`;
   const footer = `<footer class="ftr ftr--board"><div class="ftr-inner"><div class="ftr-brand-col"><div class="ftr-id"><span class="ftr-name" data-brand-name>${esc(b.name)}</span><span class="ftr-tag" data-tagline>${esc(b.tagline)}</span></div><p class="ftr-fine">18+ only. Gambling can be addictive. Please play responsibly. BeGambleAware.org.</p></div><div class="ftr-links-col"><span class="ftr-links-title">Legal</span><div class="ftr-links">${renderLegalLinks(data, legalHref, ["terms", "privacy", "responsible"])}<a href="${legalHref("cookies")}">Cookies</a><a href="${legalHref("refund")}">Refund</a><a href="${legalHref("contact")}">Contact</a></div></div></div><div class="ftr-bottom"><p class="ftr-copy">© ${new Date().getFullYear()} <span data-brand-name>${esc(b.name)}</span>. All rights reserved.</p></div></footer>`;
@@ -838,7 +838,7 @@ export function renderPasswordGate(site, opts, error = "") {
 <title>${name} · Password required</title>
 <link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
-<link rel="stylesheet" href="/assets/app.css" />
+<link rel="stylesheet" href="/assets/app.css" /><link rel="stylesheet" href="/assets/ui.css" />
 <style nonce="${opts.nonce}">
 .pw-wrap{max-width:420px;margin:0 auto;padding:80px 24px;text-align:center}
 .pw-title{font-size:clamp(26px,4vw,36px);font-weight:800;letter-spacing:-.03em;margin:0 0 8px}

@@ -9,7 +9,7 @@ export function renderPublicCreditsPage({ slug, nonce, homeUrl, kickAuthEnabled,
 <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Viewer Credits · ${esc(slug)}</title>
 <meta name="robots" content="noindex, nofollow" />
-<link rel="stylesheet" href="/assets/app.css" />
+<link rel="stylesheet" href="/assets/app.css" /><link rel="stylesheet" href="/assets/ui.css" />
 <style nonce="${esc(nonce)}">
   .pc-wrap{max-width:760px;margin:32px auto;padding:0 18px;}
   .pc-hero{text-align:center;margin-bottom:28px;}

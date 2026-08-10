@@ -5,7 +5,7 @@
 export const dashboardConfig = {
   title: "Dashboard · YourRank",
   canonical: "https://yourrank.site/dashboard",
-  styles: ["/assets/app.css", "/assets/shell-nav.css", "/assets/dashboard-v2.css"],
+  styles: ["/assets/app.css", "/assets/shell-nav.css", "/assets/dashboard-v2.css", "/assets/ui.css"],
   scripts: ['<script src="/assets/dashboard.js?v=13" type="module"></script>'],
   nav: true,
   footer: false,

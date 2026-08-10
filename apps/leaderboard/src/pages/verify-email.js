@@ -6,7 +6,7 @@ export const verifyEmailPage = `<!DOCTYPE html><html lang="en"><head>
 <title>Verify email · YourRank</title>
 <meta name="robots" content="noindex, nofollow" /><link rel="canonical" href="https://yourrank.site/verify-email" /><link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
-<link rel="stylesheet" href="/assets/app.css" /></head><body>
+<link rel="stylesheet" href="/assets/app.css" /><link rel="stylesheet" href="/assets/ui.css" /></head><body>
 <a href="#main-content" class="sr-only skip-link">Skip to content</a>
 <div class="auth-wrap"><aside class="auth-side"><div><div class="brand">Your<b>Rank</b></div></div>
 <div><h1>Confirm your email.</h1><p>Click the link we sent you to finish setting up your page.</p></div>

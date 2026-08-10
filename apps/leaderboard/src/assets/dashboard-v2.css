@@ -339,31 +339,6 @@
   gap: 10px;
 }
 
-.v2-dash .lb-topbar-actions .btn {
-  border-radius: var(--yr-radius-sm);
-  font-size: 13px;
-  padding: 9px 14px;
-  font-weight: 600;
-}
-
-.v2-dash .btn--accent {
-  background: var(--yr-accent);
-  color: var(--yr-accent-ink);
-  border: 0;
-}
-
-.v2-dash .btn--ghost {
-  background: transparent;
-  color: var(--yr-ink-soft);
-  border: 1px solid var(--yr-line-2);
-}
-
-.v2-dash .btn--ghost:hover {
-  border-color: var(--yr-line-2);
-  color: var(--yr-ink);
-  background: var(--yr-panel-2);
-}
-
 .v2-dash .lb-bento {
   display: grid;
   grid-template-columns: repeat(12, 1fr);
@@ -807,8 +782,8 @@
   .v2-dash .lb-menu {
     display: inline-grid;
     place-items: center;
-    width: 36px;
-    height: 36px;
+    width: var(--tap, 44px);
+    height: var(--tap, 44px);
     border: 1px solid var(--yr-line-2);
     border-radius: var(--yr-radius-sm);
     background: var(--yr-panel);
@@ -944,56 +919,7 @@
   background: var(--yr-panel-2);
 }
 
-.v2-dash .btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  border-radius: var(--yr-radius-sm);
-  font: 600 13px var(--yr-sans);
-  padding: 9px 14px;
-  cursor: pointer;
-  transition: opacity .15s;
-  text-decoration: none;
-}
-
-.v2-dash .btn:disabled {
-  opacity: .5;
-  cursor: not-allowed;
-}
-
-.v2-dash .btn--accent {
-  background: var(--yr-accent);
-  color: var(--yr-accent-ink);
-  border: 0;
-}
-
-.v2-dash .btn--ghost {
-  background: transparent;
-  color: var(--yr-ink-soft);
-  border: 1px solid var(--yr-line-2);
-}
-
-.v2-dash .btn--ghost:hover {
-  background: var(--yr-panel-2);
-  color: var(--yr-ink);
-}
-
-.v2-dash .btn--danger {
-  background: transparent;
-  color: var(--yr-red);
-  border: 1px solid rgba(217, 48, 37, .35);
-}
-
-.v2-dash .btn--sm {
-  padding: 7px 11px;
-  font-size: 12px;
-}
-
-.v2-dash .btn--xs {
-  padding: 5px 9px;
-  font-size: 11px;
-}
+/* Buttons are defined once, in ui.css, for both Workers. */
 
 .v2-dash .field {
   display: flex;

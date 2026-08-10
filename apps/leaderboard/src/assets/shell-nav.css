@@ -85,7 +85,10 @@ body[data-wide] .gm-shell-inner{max-width:none}
 .gm-profile .gm-logout{width:100%;}
 .gm-logout{font-family:var(--gm-mono);font-size:11px;letter-spacing:.06em;
   text-transform:uppercase;color:var(--gm-ink-soft);text-decoration:none;
+  display:inline-flex;align-items:center;justify-content:center;
   padding:6px 10px;border:1px solid var(--gm-line-2);border-radius:7px;transition:color .15s,border-color .15s;background:transparent;cursor:pointer;}
+/* Inside the account menu this is a full-width row a finger has to hit. */
+@media (pointer:coarse),(max-width:860px){.gm-profile .gm-logout{min-height:44px;}}
 .gm-logout:hover{color:var(--gm-ink);border-color:var(--gm-line-2);}
 .gm-shell-main{max-width:1040px;margin:0 auto;padding:22px 18px 60px;}
 /* Below this width the five tabs and the account chip cannot share a row: the
