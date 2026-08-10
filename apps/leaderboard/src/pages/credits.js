@@ -12,6 +12,36 @@ export const creditsContent = `
 <div id="cr-loading" class="ui-loading" hidden><div class="ui-loading__spinner"></div></div>
 
 <div id="cr-app" hidden>
+  <section class="card card--status" id="cr-status">
+    <h2 class="sr-only">Credits &amp; shop status</h2>
+    <div class="cr-status-grid">
+      <div class="cr-status-item">
+        <div class="cr-status-label">Kick channel</div>
+        <div class="cr-status-value" id="cr-status-channel">—</div>
+      </div>
+      <div class="cr-status-item">
+        <div class="cr-status-label">Reward mappings</div>
+        <div class="cr-status-value" id="cr-status-mappings">—</div>
+      </div>
+      <div class="cr-status-item">
+        <div class="cr-status-label">Shop items</div>
+        <div class="cr-status-value" id="cr-status-shop">—</div>
+      </div>
+      <div class="cr-status-item">
+        <div class="cr-status-label">Pending redemptions</div>
+        <div class="cr-status-value" id="cr-status-pending">—</div>
+      </div>
+      <div class="cr-status-item">
+        <div class="cr-status-label">Viewer balance</div>
+        <div class="cr-status-value" id="cr-status-balance">—</div>
+      </div>
+    </div>
+    <div class="cr-status-foot">
+      <p id="cr-status-msg" role="status" aria-live="polite"></p>
+      <span id="cr-status-action"></span>
+    </div>
+  </section>
+
   <section class="card" id="cr-onboarding" hidden>
     <div class="cr-section-head">
       <div>
@@ -26,21 +56,21 @@ export const creditsContent = `
           <b>1. Connect Kick</b>
           <span class="hint">Link your channel so redemptions on Kick become credits here.</span>
         </div>
-        <a class="btn btn--sm" href="#cr-channel">Connect</a>
+        <button class="btn btn--sm" data-cr-jump="cr-channel" type="button">Connect</button>
       </li>
       <li class="cr-step" id="cr-step-2">
         <div class="cr-step-text">
           <b>2. Create reward mapping</b>
           <span class="hint">Map a Kick reward to the credits a viewer earns.</span>
         </div>
-        <a class="btn btn--sm" href="#cr-maps">Add mapping</a>
+        <button class="btn btn--sm" data-cr-jump="cr-maps" type="button">Add mapping</button>
       </li>
       <li class="cr-step" id="cr-step-3">
         <div class="cr-step-text">
           <b>3. Create shop item</b>
           <span class="hint">Add something viewers can buy with their credits.</span>
         </div>
-        <a class="btn btn--sm" href="#cr-shop">Add item</a>
+        <button class="btn btn--sm" data-cr-jump="cr-shop" type="button">Add item</button>
       </li>
       <li class="cr-step" id="cr-step-4">
         <div class="cr-step-text">
@@ -85,25 +115,6 @@ export const creditsContent = `
         </form>
       </details>
     </div>
-  </section>
-
-  <section class="card">
-    <h2>Plan usage</h2>
-    <div id="cr-usage" class="cr-usage-grid"></div>
-  </section>
-
-  <section class="card">
-    <h2>Viewer login</h2>
-    <p class="card-sub">Choose how viewers can access their credits and redeem items.</p>
-    <form id="cr-viewer-auth-form" class="grid2">
-      <label class="chk"><input type="checkbox" id="cr-viewer-auth-kick" checked /> Allow "Log in with Kick"</label>
-      <label class="chk"><input type="checkbox" id="cr-viewer-auth-discord" checked /> Allow "Log in with Discord"</label>
-      <label class="chk"><input type="checkbox" id="cr-viewer-auth-public" checked /> Allow public username lookup &amp; redeem</label>
-      <div class="field field--full">
-        <button class="btn" type="submit" id="cr-viewer-auth-submit">Save settings</button>
-        <p class="status" id="cr-viewer-auth-status" role="status" aria-live="polite"></p>
-      </div>
-    </form>
   </section>
 
   <section class="card" id="cr-maps">
@@ -210,17 +221,6 @@ export const creditsContent = `
     </div>
   </section>
 
-  <section class="card" id="cr-viewers">
-    <h2>Viewer balances</h2>
-    <div class="board-table-wrap">
-      <table class="board-table">
-        <thead><tr><th>Kick user</th><th>Balance</th><th>Total earned</th><th>Total spent</th><th>Last earned</th><th class="ta-r">Actions</th></tr></thead>
-        <tbody id="cr-viewer-list"></tbody>
-      </table>
-      <p class="empty" id="cr-viewer-empty" hidden>No viewers yet.</p>
-    </div>
-  </section>
-
   <section class="card" id="cr-redemptions">
     <h2>Redemptions</h2>
     <div class="board-table-wrap">
@@ -232,29 +232,18 @@ export const creditsContent = `
     </div>
   </section>
 
-  <section class="card" id="cr-history">
-    <h2>Cross-board viewer history</h2>
-    <p class="card-sub">Search a Kick viewer across all of your boards.</p>
-    <form class="grid2 cr-history-form" id="cr-history-form">
-      <div class="field">
-        <label for="cr-history-username">Kick username</label>
-        <input id="cr-history-username" type="text" placeholder="viewer123" />
-      </div>
-      <div class="field field--end">
-        <button class="btn" type="submit" id="cr-history-search">Search</button>
-      </div>
-    </form>
-    <p class="status" id="cr-history-status" role="status" aria-live="polite"></p>
+  <section class="card" id="cr-viewers">
+    <h2>Viewer balances</h2>
     <div class="board-table-wrap">
       <table class="board-table">
-        <thead><tr><th>Board</th><th>Balance</th><th>Earned</th><th>Spent</th><th>Pending</th><th>Total</th><th class="ta-r">Actions</th></tr></thead>
-        <tbody id="cr-history-list"></tbody>
+        <thead><tr><th>Kick user</th><th>Balance</th><th>Total earned</th><th>Total spent</th><th>Last earned</th><th class="ta-r">Actions</th></tr></thead>
+        <tbody id="cr-viewer-list"></tbody>
       </table>
-      <p class="empty" id="cr-history-empty" hidden>No boards found for this viewer.</p>
+      <p class="empty" id="cr-viewer-empty" hidden>No viewers yet.</p>
     </div>
   </section>
 
-  <section class="card">
+  <section class="card" id="cr-analytics">
     <h2>Analytics</h2>
     <p class="card-sub" id="cr-analytics-scope">Showing data for this board for the last <span id="cr-analytics-days-label">30</span> days. Times are in your local timezone.</p>
     <div class="field">
@@ -302,6 +291,48 @@ export const creditsContent = `
     <div id="cr-credits-by-day" class="cr-bars"></div>
     <p class="empty" id="cr-credits-by-day-empty" hidden>No credit activity for this period. Try a longer range or create reward mappings and shop items.</p>
   </section>
+
+  <details class="card cr-advanced" id="cr-settings">
+    <summary>Settings &amp; tools</summary>
+    <section class="cr-settings-section">
+      <h2>Plan usage</h2>
+      <div id="cr-usage" class="cr-usage-grid"></div>
+    </section>
+    <section class="cr-settings-section">
+      <h2>Viewer login</h2>
+      <p class="card-sub">Choose how viewers can access their credits and redeem items.</p>
+      <form id="cr-viewer-auth-form" class="grid2">
+        <label class="chk"><input type="checkbox" id="cr-viewer-auth-kick" checked /> Allow "Log in with Kick"</label>
+        <label class="chk"><input type="checkbox" id="cr-viewer-auth-discord" checked /> Allow "Log in with Discord"</label>
+        <label class="chk"><input type="checkbox" id="cr-viewer-auth-public" checked /> Allow public username lookup &amp; redeem</label>
+        <div class="field field--full">
+          <button class="btn" type="submit" id="cr-viewer-auth-submit">Save settings</button>
+          <p class="status" id="cr-viewer-auth-status" role="status" aria-live="polite"></p>
+        </div>
+      </form>
+    </section>
+    <section class="cr-settings-section" id="cr-history">
+      <h2>Cross-board viewer history</h2>
+      <p class="card-sub">Search a Kick viewer across all of your boards.</p>
+      <form class="grid2 cr-history-form" id="cr-history-form">
+        <div class="field">
+          <label for="cr-history-username">Kick username</label>
+          <input id="cr-history-username" type="text" placeholder="viewer123" />
+        </div>
+        <div class="field field--end">
+          <button class="btn" type="submit" id="cr-history-search">Search</button>
+        </div>
+      </form>
+      <p class="status" id="cr-history-status" role="status" aria-live="polite"></p>
+      <div class="board-table-wrap">
+        <table class="board-table">
+          <thead><tr><th>Board</th><th>Balance</th><th>Earned</th><th>Spent</th><th>Pending</th><th>Total</th><th class="ta-r">Actions</th></tr></thead>
+          <tbody id="cr-history-list"></tbody>
+        </table>
+        <p class="empty" id="cr-history-empty" hidden>No boards found for this viewer.</p>
+      </div>
+    </section>
+  </details>
 </div>
 
 <div id="cr-empty" class="empty" hidden>

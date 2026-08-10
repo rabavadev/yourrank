@@ -1243,6 +1243,71 @@
   color: var(--yr-ink-soft);
 }
 
+/* ---- Rewards & Shop status ---- */
+.v2-dash .card--status {
+  background: linear-gradient(180deg, var(--yr-panel-2) 0%, var(--yr-panel) 100%);
+  border-color: var(--yr-accent);
+}
+.v2-dash .cr-status-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 12px;
+}
+.v2-dash .cr-status-item {
+  padding: 12px;
+  background: var(--yr-panel);
+  border: 1px solid var(--yr-line);
+  border-radius: var(--yr-radius-sm);
+}
+.v2-dash .cr-status-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  color: var(--yr-ink-mute);
+  margin-bottom: 6px;
+}
+.v2-dash .cr-status-value {
+  font: 700 18px/1.2 var(--yr-mono);
+  color: var(--yr-ink);
+}
+.v2-dash .cr-status-foot {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--yr-line);
+}
+.v2-dash .cr-status-foot p {
+  margin: 0;
+  color: var(--yr-ink-soft);
+}
+
+/* ---- Settings & tools ---- */
+.v2-dash details.cr-advanced {
+  margin-bottom: 20px;
+}
+.v2-dash details.cr-advanced > summary {
+  list-style: none;
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--yr-ink-soft);
+  padding: 14px 0;
+}
+.v2-dash details.cr-advanced > summary::-webkit-details-marker { display: none; }
+.v2-dash details.cr-advanced > summary::before {
+  content: "▸ ";
+  color: var(--yr-accent);
+}
+.v2-dash details.cr-advanced[open] > summary::before { content: "▾ "; }
+.v2-dash .cr-settings-section {
+  padding: 18px 0;
+  border-top: 1px solid var(--yr-line);
+}
+.v2-dash .cr-settings-section:first-of-type { border-top: 0; }
+
 /* ---- Analytics overrides ---- */
 .v2-dash .perf-header {
   display: flex;
