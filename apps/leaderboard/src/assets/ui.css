@@ -173,3 +173,58 @@
   }
   .tbl-scroll td[colspan] { position: static; box-shadow: none; }
 }
+
+/* ---- dialog ----
+   Behaviour lives in /assets/dialog.js; this is the one appearance for a
+   confirmation, a prompt and the broadcast preview, on both Workers. */
+.yr-modal-open, .yr-modal-open body { overflow: hidden; }
+
+.modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, .45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 18px;
+  z-index: 200;
+}
+
+.modal-card {
+  width: 100%;
+  max-width: 420px;
+  max-height: calc(100vh - 36px);
+  overflow-y: auto;
+  background: var(--yr-panel, var(--panel));
+  border: 1px solid var(--yr-line, var(--line));
+  border-radius: var(--yr-radius, 12px);
+  padding: 22px;
+  box-shadow: var(--yr-shadow-lg, var(--shadow-lg));
+}
+
+.modal-card h3 { margin: 0 0 8px; font-size: 18px; color: var(--yr-ink, var(--ink)); }
+.modal-card p { margin: 0 0 18px; font-size: 14px; color: var(--yr-ink-soft, var(--ink-soft)); }
+
+.modal-input {
+  width: 100%;
+  margin-bottom: 14px;
+  padding: 10px 12px;
+  font-size: 14px;
+  border: 1px solid var(--yr-line-2, var(--line-2));
+  border-radius: var(--yr-radius-sm, 8px);
+  background: var(--yr-panel, var(--panel));
+  color: var(--yr-ink, var(--ink));
+}
+
+.modal-input:focus-visible { outline: 2px solid var(--yr-accent, var(--accent)); outline-offset: 2px; }
+
+.modal-actions { display: flex; gap: 10px; justify-content: flex-end; }
+.modal-card .status { margin-top: 12px; }
+
+/* A 420px box with two buttons still has to fit a 390px phone. */
+@media (max-width: 480px) {
+  .modal { padding: 12px; align-items: flex-end; }
+  .modal-card { padding: 18px; border-radius: var(--yr-radius, 12px); }
+  .modal-actions { flex-direction: column-reverse; }
+  .modal-actions .btn { width: 100%; }
+}

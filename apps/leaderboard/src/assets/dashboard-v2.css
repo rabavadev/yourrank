@@ -1883,39 +1883,6 @@
   min-height: 18px;
 }
 
-.v2-dash .modal {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, .45);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 18px;
-  z-index: 200;
-}
-
-.v2-dash .modal-card {
-  width: 100%;
-  max-width: 420px;
-  background: var(--yr-panel);
-  border: 1px solid var(--yr-line);
-  border-radius: var(--yr-radius);
-  padding: 22px;
-  box-shadow: var(--yr-shadow-lg);
-}
-
-.v2-dash .modal-card h3 {
-  margin: 0 0 8px;
-  font-size: 18px;
-  color: var(--yr-ink);
-}
-
-.v2-dash .modal-card p {
-  color: var(--yr-ink-soft);
-  margin: 0 0 18px;
-  font-size: 14px;
-}
-
 .v2-dash .toast {
   position: fixed;
   top: 18px;

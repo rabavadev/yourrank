@@ -393,5 +393,6 @@ export function botPageHtml(opts: BotPageOpts): string {
 ${nav}
 ${opts.content}
 ${nav ? '<script src="/assets/shell-nav.js" defer></script>' : ""}
+<script src="/assets/dialog.js" defer></script>
 </body></html>`;
 }
