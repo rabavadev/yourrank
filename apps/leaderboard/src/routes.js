@@ -72,6 +72,15 @@ import {
   handleViewerSite,
   handleViewerRedeem,
 } from "./handlers/viewer-dashboard.js";
+import {
+  handleGamesConfig,
+  handleGamesBet,
+  handleGamesMinesReveal,
+  handleGamesMinesCashout,
+  handleGamesHistory,
+  handleGamesFairness,
+  handleGamesFairnessRotate,
+} from "./handlers/games.js";
 import { handleApiDocs, handleOpenApiJson } from "./handlers/docs.js";
 import { handleCheckout, handleCheckoutLifetime, handleIpn, handleCancel, handleUserPayments, handlePendingPayment, handleAccountUsage } from "./billing.js";
 import {
@@ -179,6 +188,15 @@ export const ROUTES = [
 
   // Streamer viewer-auth toggles
   { path: "/api/credits/viewer-auth", method: "POST", handler: withHandler(handleCreditsViewerAuth) },
+
+  // Originals games (viewer-facing; POSTs are CSRF-protected by router.js)
+  { path: "/api/games/config", method: "GET", handler: withHandler(handleGamesConfig) },
+  { path: "/api/games/bet", method: "POST", handler: withHandler(handleGamesBet) },
+  { path: "/api/games/mines/reveal", method: "POST", handler: withHandler(handleGamesMinesReveal) },
+  { path: "/api/games/mines/cashout", method: "POST", handler: withHandler(handleGamesMinesCashout) },
+  { path: "/api/games/history", method: "GET", handler: withHandler(handleGamesHistory) },
+  { path: "/api/games/fairness", method: "GET", handler: withHandler(handleGamesFairness) },
+  { path: "/api/games/fairness/rotate", method: "POST", handler: withHandler(handleGamesFairnessRotate) },
 
   // Public API routes (CSRF-exempt)
   { path: "/api/docs", method: "GET", handler: withHandler(handleApiDocs) },

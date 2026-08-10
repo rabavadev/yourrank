@@ -28,12 +28,21 @@ console.log("Compiling shared TypeScript to JavaScript for leaderboard Worker...
 
 // Remove stale generated .js files so tsc can emit fresh copies in-place.
 const sharedDir = path.join(__dirname, "shared");
-for (const entry of fs.readdirSync(sharedDir, { withFileTypes: true })) {
-  if (!entry.isFile()) continue;
-  if (entry.name.endsWith(".js")) {
-    fs.rmSync(path.join(sharedDir, entry.name));
+function cleanGenerated(dir) {
+  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    const full = path.join(dir, entry.name);
+    // Recurse into subdirectories (shared/games/*) but skip test fixtures.
+    if (entry.isDirectory()) {
+      if (entry.name !== "__tests__" && entry.name !== "node_modules") cleanGenerated(full);
+      continue;
+    }
+    // Only remove a .js file that has a .ts sibling — i.e. one tsc generated.
+    if (entry.name.endsWith(".js") && fs.existsSync(full.replace(/\.js$/, ".ts"))) {
+      fs.rmSync(full);
+    }
   }
 }
+cleanGenerated(sharedDir);
 
 try {
   const tscBin = findTsc();

@@ -10,6 +10,7 @@ bun.lockb
 !.env.example
 # Compiled shared TypeScript (generated from .ts via `node build-shared.mjs`)
 shared/*.js
+shared/games/*.js
 # Auto-generated asset bundle
 # REL-007: This file is gitignored because it's too large to track. The
 # deployed version (bundled at build time) could theoretically differ from
