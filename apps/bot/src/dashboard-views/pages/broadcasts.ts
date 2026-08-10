@@ -55,11 +55,11 @@ export function broadcastsPanel(): string {
       <ul id="bcSummaryList" class="muted"></ul>
     </div>
 
-    <div id="bcPreview" class="bc-preview" hidden>
+    <div id="bcPreview" class="bc-preview" role="dialog" aria-modal="true" aria-labelledby="bcPreviewTitle" aria-describedby="bcPreviewDesc" hidden>
       <div class="bc-preview-card">
-        <h3>Preview broadcast</h3>
-        <p>This will send to <b id="bcPreviewCount">–</b> subscribers.</p>
-        <div class="bc-preview-msg" id="bcPreviewBody"></div>
+        <h3 id="bcPreviewTitle">Preview broadcast</h3>
+        <p id="bcPreviewDesc">This will send to <b id="bcPreviewCount">–</b> subscribers.</p>
+        <div class="bc-preview-msg" id="bcPreviewBody" role="document"></div>
         <div class="bc-preview-img" id="bcPreviewImg" hidden></div>
         <div class="bc-preview-actions">
           <button class="ghost" data-action="closeBroadcastPreview" type="button">Cancel</button>

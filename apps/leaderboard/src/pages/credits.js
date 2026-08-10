@@ -62,7 +62,7 @@ export const creditsContent = `
     <p class="card-sub">Link your Kick account so reward redemptions from your channel credit your viewers.</p>
     <div id="cr-channel-connected" hidden>
       <p class="card-sub">Connected: <b id="cr-channel-name"></b> (<code id="cr-channel-id"></code>) <span class="hint" id="cr-channel-linked"></span></p>
-      <a id="cr-channel-connect" class="btn" href="/auth/kick">Reconnect Kick</a>
+      <a id="cr-channel-reconnect" class="btn" href="/auth/kick">Reconnect Kick</a>
       <button id="cr-channel-disconnect" class="btn btn--danger" type="button">Disconnect</button>
     </div>
     <div id="cr-channel-connect-wrap">
