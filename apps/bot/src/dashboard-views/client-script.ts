@@ -238,12 +238,34 @@ async function toggleOffer(target){
   renderOffers();
   restoreBtn(target);
 }
+function updateOfferPreview(){
+  const casino = ($('oCasino')?.value || '').trim();
+  const label = ($('oLabel')?.value || '').trim();
+  const url = ($('oUrl')?.value || '').trim();
+  const code = ($('oCode')?.value || '').trim();
+  const bonus = ($('oBonus')?.value || '').trim();
+  const wrap = $('offerPreview');
+  if (!wrap) return;
+  if (!casino && !label && !url) { wrap.hidden = true; return; }
+  const parts = [];
+  if (label) parts.push(label);
+  if (casino) parts.push('at ' + casino);
+  if (bonus) parts.push('— ' + bonus);
+  if (code) parts.push('Code: ' + code);
+  const line = parts.join(' ');
+  const urlEl = $('offerPreviewUrl');
+  const textEl = $('offerPreviewText');
+  if (urlEl) urlEl.textContent = url || 'https://yourrank.site/r/<short-link-will-appear-here>';
+  if (textEl) textEl.textContent = line || 'Offer preview will appear here';
+  wrap.hidden = false;
+}
 async function createOffer(btn){
   const body = { casino:$('oCasino').value.trim(), label:$('oLabel').value.trim(), referral_url:$('oUrl').value.trim(),
                  promo_code:$('oCode').value.trim()||undefined, bonus_text:$('oBonus').value.trim()||undefined };
   const r = await api('/offers',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)});
   if (r.error) { restoreBtn(btn); return toast(r.error); }
   ['oCasino','oLabel','oUrl','oCode','oBonus'].forEach(id=>$(id).value='');
+  const wrap = $('offerPreview'); if (wrap) wrap.hidden = true;
   toast('Offer created'); restoreBtn(btn); load();
 }
 async function connectBot(btn){
@@ -417,6 +439,8 @@ function applyCustomizeState(bot){
   const active = bot.status === 'active';
   const note = $('custDisabledNote'); if (note) note.classList.toggle('hidden', active);
   const welcome = $('welcomeMsg'); if (welcome) welcome.value = bot.welcome_message || '';
+  const nameEl = $('selectedBotName');
+  if (nameEl) nameEl.textContent = bot ? 'Selected bot: @' + bot.username : 'No bot selected';
   ['welcomeMsg','cmdName','cmdResp'].forEach(id => { const el = $(id); if (el) el.disabled = !active; });
   const panel = $('customizePanel');
   if (panel) panel.querySelectorAll('[data-action="saveWelcome"],[data-action="addCommand"]').forEach(b => { b.disabled = !active; });
@@ -473,12 +497,16 @@ function renderCommands(){
   cmdList.innerHTML = (__commands||[]).map(c=>{
     const buttons = Array.isArray(c.buttons) ? c.buttons : [];
     const btnText = buttons.length ? buttons.map(b => esc(b.label)).join(', ') : '–';
+    const short = esc((c.response||'').slice(0,60));
+    const ellipsis = (c.response||'').length > 60 ? '…' : '';
     return '<tr>'+
     '<td>/'+esc(c.command)+'</td>'+
-    '<td class="muted">'+esc((c.response||'').slice(0,60))+'</td>'+
+    '<td class="muted">'+short+ellipsis+'</td>'+
     '<td class="muted">'+btnText+'</td>'+
     '<td class="'+(c.is_enabled?'ok':'off')+'">'+(c.is_enabled?'on':'off')+'</td>'+
-    '<td><button class="ghost" data-action="toggleCommand" data-id="'+esc(c.id)+'" data-active="'+(!c.is_enabled)+'">'+(c.is_enabled?'Disable':'Enable')+'</button> '
+    '<td><button class="ghost" data-action="viewCommand" data-id="'+esc(c.id)+'">View</button> '
+        +'<button class="ghost" data-action="testCommand" data-id="'+esc(c.id)+'">Test</button> '
+        +'<button class="ghost" data-action="toggleCommand" data-id="'+esc(c.id)+'" data-active="'+(!c.is_enabled)+'">'+(c.is_enabled?'Disable':'Enable')+'</button> '
         +'<button class="ghost" data-action="deleteCommand" data-id="'+esc(c.id)+'">Delete</button></td>'+
   '</tr>';
   }).join('') || '<tr><td colspan="5" class="muted">No custom commands yet.</td></tr>';
@@ -490,10 +518,21 @@ async function loadCommands(){
   __commands = cmds || [];
   renderCommands();
 }
+const RESERVED_COMMANDS = new Set(['start','menu','help','support','code','codes','subscribe','unsubscribe','rank','board','leaderboard']);
+function normalizeCommandInput(raw){
+  let s = (raw ?? '').trim();
+  if (s.startsWith('/')) s = s.slice(1);
+  const parts = s.split(/[ \t\r\n@]/);
+  return parts[0].toLowerCase();
+}
 async function addCommand(btn){
   if (!custBotId) return toast('Select a bot first');
-  const command = $('cmdName').value.trim(), response = $('cmdResp').value.trim();
+  const command = normalizeCommandInput($('cmdName').value);
+  const response = $('cmdResp').value.trim();
   if (!command || !response) return toast('Enter a command and a reply');
+  if (!/^[a-z0-9_]{1,32}$/.test(command)) return toast('Command must be 1-32 chars: letters, numbers, or underscore');
+  if (RESERVED_COMMANDS.has(command)) return toast("/"+command+" is a built-in command and can't be overridden");
+  if (__commands.some(c => c.command === command)) return toast('/'+command+' already exists for this bot');
   setLoading(btn, 'Adding…');
   const payload = {command, response};
   if (__cmdButtons.length) payload.buttons = __cmdButtons;
@@ -518,12 +557,46 @@ async function toggleCommand(target){
   restoreBtn(target);
 }
 async function deleteCommand(target){
+  const c = __commands.find(x => x.id === target.dataset.id);
+  if (!confirm('Delete /'+(c?.command||'this command')+'? This cannot be undone.')) return;
   setLoading(target, 'Deleting…');
   const r = await api('/commands/'+target.dataset.id,{method:'DELETE'});
   if (r.error) { restoreBtn(target); return toast(r.error); }
   __commands = __commands.filter(c => c.id !== target.dataset.id);
   renderCommands();
   toast('Command deleted'); restoreBtn(target);
+}
+function openCommandPreview(id){
+  const c = __commands.find(x => x.id === id);
+  if (!c) return;
+  const wrap = $('cmdPreview');
+  if (!wrap) return;
+  const name = $('cmdPreviewName');
+  const resp = $('cmdPreviewResponse');
+  if (name) name.textContent = '/' + c.command;
+  if (resp) resp.textContent = c.response || '';
+  wrap.hidden = false;
+  wrap.dataset.commandId = id;
+  const chat = $('cmdTestChatId'); if (chat) chat.focus();
+}
+function closeCommandPreview(){
+  const wrap = $('cmdPreview');
+  if (wrap) { wrap.hidden = true; wrap.dataset.commandId = ''; }
+  const chat = $('cmdTestChatId'); if (chat) chat.value = '';
+}
+async function testCommand(target){
+  const id = target.dataset.id || target.closest('[data-command-id]')?.dataset.commandId;
+  const c = __commands.find(x => x.id === id);
+  if (!c) return toast('Command not found');
+  const chatId = Number(($('cmdTestChatId')?.value || '').trim());
+  if (!chatId || isNaN(chatId)) return toast('Enter a valid numeric chat ID');
+  const bot = __lastBots.find(b => b.id === custBotId);
+  if (!bot) return toast('Select a bot first');
+  setLoading(target, 'Sending…');
+  const r = await api('/bots/'+custBotId+'/test-message',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({chat_id:chatId, text:c.response})});
+  restoreBtn(target);
+  if (r.error) return toast(r.error);
+  toast('Test message sent');
 }
 
 let __bcAudience = null;
@@ -779,6 +852,7 @@ async function handleAction(e) {
   const NO_LOADING = action === 'copyLink' || action === 'selectBot'
     || action === 'testMessage' || action === 'cancelTestMessage'
     || action === 'sendBroadcast' || action === 'openBroadcastPreview' || action === 'closeBroadcastPreview'
+    || action === 'viewCommand' || action === 'closeCommandPreview'
     || action === 'wizardNext' || action === 'wizardPrev';
   if (!NO_LOADING) setLoading(target);
   try {
@@ -809,6 +883,9 @@ async function handleAction(e) {
     else if (action === 'toggleOffer') { e.preventDefault(); await toggleOffer(target); }
     else if (action === 'toggleCommand') { e.preventDefault(); await toggleCommand(target); }
     else if (action === 'deleteCommand') { e.preventDefault(); await deleteCommand(target); }
+    else if (action === 'viewCommand') { e.preventDefault(); openCommandPreview(target.dataset.id); }
+    else if (action === 'closeCommandPreview') { e.preventDefault(); closeCommandPreview(); }
+    else if (action === 'testCommand') { e.preventDefault(); await testCommand(target); }
   } catch (err) {
     console.error('[dashboard action]', action, err);
     toast('Something went wrong — please reload');
@@ -846,6 +923,10 @@ if (bcBotSelect) bcBotSelect.addEventListener('change', (e) => { firstBotId = e.
 });
 document.querySelectorAll('input[name="bcWhen"]').forEach(radio => {
   radio.addEventListener('change', () => { updateScheduleInputState(); saveBroadcastDraft(); });
+});
+['oCasino','oLabel','oUrl','oCode','oBonus'].forEach(id => {
+  const el = $(id);
+  if (el) el.addEventListener('input', updateOfferPreview);
 });
 showTimezone();
 
