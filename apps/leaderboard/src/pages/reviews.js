@@ -36,12 +36,12 @@ export const reviewsPage = `<!DOCTYPE html><html lang="en"><head>
 <header><nav class="top wrap"><a href="/" class="brand">Your<b>Rank</b></a>
 <button class="nav-toggle" aria-label="Toggle menu" aria-expanded="false"><svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button>
 <div class="links"><a href="/">Home</a><a href="/pricing">Pricing</a><a href="/faq">FAQ</a><a href="/login">Sign in</a><a href="/signup" class="btn btn--accent">Create your free page</a></div></nav></header>
-<main class="wrap" id="main-content" style="padding:48px 24px 24px;text-align:center">
-<h1 style="font-size:clamp(32px,5vw,52px);line-height:1.05;letter-spacing:-.03em;margin:0 auto 12px;max-width:20ch">Rate YourRank on Google</h1>
-<p class="prose-lead" style="margin:0 auto 32px;max-width:60ch">If YourRank helped you run a leaderboard or reward your viewers, leave a review. It helps other streamers find us.</p>
+<main class="wrap pg-wrap pg-wrap--center" id="main-content">
+<h1 class="pg-title pg-title--center">Rate YourRank on Google</h1>
+<p class="prose-lead lead--center">If YourRank helped you run a leaderboard or reward your viewers, leave a review. It helps other streamers find us.</p>
 <a class="btn btn--accent btn--cta-lg" id="gbp-review" href="{{GBP_REVIEW_URL}}" target="_blank" rel="noopener">Leave a Google review</a>
-<div style="margin-top:48px">
-  <img id="gbp-photo" src="{{GBP_PHOTO_URL}}" alt="YourRank on Google Business Profile" style="max-width:100%;border-radius:12px;box-shadow:0 8px 30px rgba(0,0,0,.12);display:none" />
+<div class="mt-48">
+  <img id="gbp-photo" class="gbp-photo" src="{{GBP_PHOTO_URL}}" alt="YourRank on Google Business Profile" hidden />
 </div>
 </main>
 <footer class="ftr ftr--platform"><div class="wrap">

@@ -47,7 +47,7 @@ nav.top .links a{color:var(--ink-soft);text-decoration:none;min-height:var(--tap
 .spec .dot{color:var(--accent)}
 @media(max-width:820px){.hero{grid-template-columns:1fr;gap:32px;padding:48px 24px 24px}}
 section{padding:52px 0;border-top:1px solid var(--line)}
-h2.sec{font-size:28px;letter-spacing:-.02em;margin:0 0 8px}p.sec-sub{color:var(--ink-soft);max-width:56ch;margin:0 0 32px}
+h2.sec{font-size:28px;letter-spacing:-.02em;margin:0 0 8px}p.sec-sub{color:var(--ink-soft);max-width:56ch;margin:0 0 32px}p.sec-sub--mt{margin-top:16px}
 .steps{display:flex;flex-direction:column;gap:2px}
 .step{display:grid;grid-template-columns:52px 1fr;gap:20px;padding:22px 0;border-bottom:1px solid var(--line);align-items:baseline}
 .step:last-child{border-bottom:none}.step .n{font-family:var(--mono);font-size:15px;color:var(--accent)}.step h3{margin:0 0 4px;font-size:17px}.step p{margin:0;color:var(--ink-soft);max-width:60ch}
@@ -199,3 +199,13 @@ section{padding:72px 0}
   .cookie-banner{bottom:0}
   body.hide-sticky-cta .mobile-cta{transform:translateY(120%);transition:transform .2s ease}
 }
+/* Public page layout utilities (avoid inline styles so the strict public CSP with nonces stays clean) */
+.pg-wrap{padding:48px 24px 24px}.pg-wrap--center{text-align:center}
+.pg-title{font-size:clamp(32px,5vw,52px);line-height:1.05;letter-spacing:-.03em;margin:0 0 12px;max-width:18ch}
+.pg-title--center{margin:0 auto 12px;max-width:20ch}
+.mt-24{margin-top:24px}.mt-32{margin-top:32px}.mt-48{margin-top:48px}.mt-64{margin-top:64px}.text-center{text-align:center}
+.table-scroll--pricing{margin-top:24px;overflow-x:auto;-webkit-overflow-scrolling:touch}
+.pricing-table{min-width:520px}
+.lead--center{margin:0 auto 32px;max-width:60ch}
+.gbp-photo{max-width:100%;border-radius:12px;box-shadow:0 8px 30px rgba(0,0,0,.12)}
+.sec-sub--mt{margin-top:16px}

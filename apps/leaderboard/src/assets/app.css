@@ -1081,3 +1081,11 @@ html{color-scheme:light}
 .cr-bar-col-inner{width:100%;display:flex;align-items:flex-end;gap:1px;height:100%}
 .cr-bar-earn{flex:1;background:var(--accent,#2200ff)}
 .cr-bar-spend{flex:1;background:var(--ink-mute,#8b949e)}
+/* Viewer dashboard + public contact utilities */
+.vd-login-actions{display:flex;gap:12px;flex-wrap:wrap}
+.vd-profile-head{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.vd-avatar{width:48px;height:48px;border-radius:50%;object-fit:cover}
+.vd-profile-actions{margin-left:auto;display:flex;gap:8px;align-items:center}
+.vd-site-head{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.mt-32{margin-top:32px}.mt-48{margin-top:48px}.mt-64{margin-top:64px}.text-accent{color:var(--accent)}.text-center{text-align:center}
+.pg-narrow{max-width:620px;margin:0 auto;padding:48px 24px}

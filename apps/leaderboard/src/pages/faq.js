@@ -38,10 +38,10 @@ export const faqPage = `<!DOCTYPE html><html lang="en"><head>
 <header><nav class="top wrap"><a href="/" class="brand">Your<b>Rank</b></a>
 <button class="nav-toggle" aria-label="Toggle menu" aria-expanded="false"><svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button>
 <div class="links"><a href="/">Home</a><a href="/pricing">Pricing</a><a href="/faq">FAQ</a><a href="/login">Sign in</a><a href="/signup" class="btn btn--accent">Create your free page</a></div></nav></header>
-<main class="wrap" id="main-content" style="padding:48px 24px 24px">
-<h1 style="font-size:clamp(32px,5vw,52px);line-height:1.05;letter-spacing:-.03em;margin:0 0 12px;max-width:18ch">Frequently asked questions</h1>
+<main class="wrap pg-wrap" id="main-content">
+<h1 class="pg-title">Frequently asked questions</h1>
 <p class="prose-lead">Quick answers about YourRank. Can't find what you need? <a href="/contact">Contact support</a>.</p>
-<div class="faq-list" style="margin-top:32px">
+<div class="faq-list mt-32">
 ${itemsHtml}
 </div>
 </main>

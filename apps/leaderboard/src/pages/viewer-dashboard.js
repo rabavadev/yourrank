@@ -25,7 +25,7 @@ export const viewerDashboardPage = leaderboardPageHtml({
   <section class="card" id="vd-login-card">
     <h2>Log in to YourRank</h2>
     <p class="card-sub">Connect the account you use to earn channel points.</p>
-    <div style="display:flex;gap:12px;flex-wrap:wrap">
+    <div class="vd-login-actions">
       <a class="btn btn--accent" id="vd-login-kick" href="/api/viewer/auth/kick">Log in with Kick</a>
       <a class="btn" id="vd-login-discord" href="/api/viewer/auth/discord">Log in with Discord</a>
     </div>
@@ -33,13 +33,13 @@ export const viewerDashboardPage = leaderboardPageHtml({
   </section>
 
   <section class="card" id="vd-profile" hidden>
-    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
-      <img id="vd-avatar" src="" alt="" style="width:48px;height:48px;border-radius:50%;object-fit:cover" hidden />
+    <div class="vd-profile-head">
+      <img id="vd-avatar" class="vd-avatar" src="" alt="" hidden />
       <div>
         <h2 id="vd-username">Viewer</h2>
         <p class="card-sub" id="vd-identity">Loading identity…</p>
       </div>
-      <div style="margin-left:auto;display:flex;gap:8px;align-items:center">
+      <div class="vd-profile-actions">
         <button class="btn btn--sm" id="vd-logout" type="button">Log out</button>
       </div>
     </div>
@@ -54,7 +54,7 @@ export const viewerDashboardPage = leaderboardPageHtml({
   </section>
 
   <section class="card" id="vd-site-card" hidden>
-    <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
+    <div class="vd-site-head">
       <div>
         <h2 id="vd-site-name">Board</h2>
         <p class="card-sub" id="vd-site-streamer">Streamer board</p>
@@ -68,7 +68,7 @@ export const viewerDashboardPage = leaderboardPageHtml({
     <div id="vd-shop-list"></div>
     <p class="empty" id="vd-shop-empty" hidden>No items available.</p>
 
-    <h3 style="margin-top:24px">Your redemptions</h3>
+    <h3 class="mt-24">Your redemptions</h3>
     <div id="vd-redemptions-list"></div>
     <p class="empty" id="vd-redemptions-empty" hidden>No redemptions yet.</p>
     <p class="hint"><b>Pending</b> = waiting for the streamer; <b>Fulfilled</b> = approved; <b>Cancelled</b> = refunded.</p>
