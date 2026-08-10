@@ -32,28 +32,27 @@ export const landingPage = `<!DOCTYPE html>
 </div></header>
 <main id="main-content">
 <section class="hero"><div>
-<p class="label mb-18">Suite for streamers and communities</p>
-<h1>Leaderboards, Telegram bot, and viewer rewards — all in one place.</h1>
-<p class="lead">YourRank gives streamers three tools: a branded leaderboard, a Telegram bot with tracked offers, and a rewards &amp; shop powered by Kick channel points. Your first leaderboard is free, no card required.</p>
-<div class="cta"><a href="/signup" class="btn btn--accent">Create your free page</a><a href="/demo" class="btn btn--ghost">Try a demo</a></div>
+<p class="label mb-18">Engagement toolkit for streamers and communities</p>
+<h1>Turn your stream into a community people want to join.</h1>
+<p class="lead">YourRank is one dashboard with three tools: a branded leaderboard, a Telegram bot with tracked offers, and a rewards &amp; shop powered by Kick channel points. No code, no hosting, no card to start.</p>
+<div class="cta"><a href="/signup" class="btn btn--accent">Create your free page</a><a href="/demo" class="btn btn--ghost">Try a demo →</a></div>
 <ul class="trust-line"><li>Free forever</li><li>7-day Pro trial</li><li>No card</li><li>Entertainment only</li></ul>
 <p class="fine">YourRank is an entertainment platform — we don't take bets or pay prizes.</p></div>
-<div class="spec"><div class="spec-h"><span>your-suite.config</span><span class="dot">● live</span></div>
-<div class="spec-row"><span>Public URL</span><span>yourrank.site/you</span></div>
+<div class="spec"><div class="spec-h"><span>yourrank.site/demo</span><span class="dot">● live</span></div>
 <div class="spec-row"><span>Leaderboards</span><span>1 included</span></div>
 <div class="spec-row"><span>Telegram bot</span><span>turn on anytime</span></div>
 <div class="spec-row"><span>Rewards &amp; Shop</span><span>Kick connected</span></div>
 <div class="spec-row"><span>Updates</span><span>instant</span></div></div></section>
-<section id="proof" class="proof"><div class="wrap">
-<p class="proof-metric"><b>Your suite, your rules</b> — one dashboard, live everywhere.</p>
+<section id="use-cases" class="proof"><div class="wrap">
+<p class="proof-metric"><b>Built for creators who want more engagement</b> — one dashboard, live everywhere.</p>
 <ul class="proof-logos" aria-label="Use cases">
 <li>Streamers</li><li>Kick creators</li><li>Telegram communities</li><li>Affiliate races</li>
 </ul></div></section>
 <section id="products"><div class="wrap"><h2 class="sec">Three products, one dashboard</h2><p class="sec-sub">Turn on the tools you need. All of them share the same account, plan, and public URL.</p>
 <div class="product-grid">
-<div class="product-card"><h3>Leaderboards</h3><p>Branded public pages with prizes, countdowns, player standings, and referral tracking. No code, no hosting.</p></div>
-<div class="product-card"><h3>Telegram bot</h3><p>Publish offers, track clicks and conversions, broadcast to your community, and reward engagement automatically.</p></div>
-<div class="product-card"><h3>Rewards &amp; Shop</h3><p>Connect your Kick channel, map channel-point rewards to credits, and let viewers spend them on shop items you control.</p></div>
+<div class="product-card"><h3><a href="#leaderboards">Leaderboards</a></h3><p>Branded public pages with scores, countdowns, player standings, and referral tracking. No code, no hosting.</p><a href="/demo" class="product-link">See a demo →</a></div>
+<div class="product-card"><h3><a href="#telegram">Telegram bot</a></h3><p>Publish offers, track clicks and conversions, broadcast to your community, and reward engagement automatically.</p><a href="/signup" class="product-link">Add to your suite →</a></div>
+<div class="product-card"><h3><a href="#rewards">Rewards &amp; Shop</a></h3><p>Connect your Kick channel, map channel-point rewards to credits, and let viewers spend them on shop items you control.</p><a href="/signup" class="product-link">Start rewarding viewers →</a></div>
 </div></div></section>
 <section id="how"><div class="wrap"><h2 class="sec">How it works</h2><p class="sec-sub">Three steps. No build tools, no redeploys, nothing to host yourself.</p>
 <div class="steps">
@@ -68,6 +67,10 @@ export const landingPage = `<!DOCTYPE html>
 <div class="step"><div class="n n--ico"><svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></div><div><h3>No spreadsheets, no copy-paste</h3><p>Forget manually updating player scores. The postback system does it in real time — one source of truth, zero human error.</p></div></div>
 <div class="step"><div class="n n--ico"><svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></div><div><h3>Built-in analytics</h3><p>Track views, clicks, conversions, and referrers from your dashboard. See what's working and where your traffic comes from.</p></div></div>
 </div></div></section>
+<section id="integrations"><div class="wrap"><h2 class="sec">Integrations</h2><p class="sec-sub">YourRank connects with the platforms your community already uses.</p>
+<ul class="integration-list">
+<li>Kick</li><li>Telegram</li><li>Discord</li><li>OBS</li><li>Google Sheets</li><li>API / Webhooks</li>
+</ul></div></section>
 <section id="example"><div class="wrap"><h2 class="sec">A real page</h2><p class="sec-sub">This is a live leaderboard running on YourRank. Yours works the same way.</p>
 <div class="example"><div class="bar"><span>yourrank.site/demo</span><span>live</span></div>
 <iframe src="/demo" loading="lazy" title="Example leaderboard"></iframe></div></div></section>
