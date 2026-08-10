@@ -228,3 +228,36 @@
   .modal-actions { flex-direction: column-reverse; }
   .modal-actions .btn { width: 100%; }
 }
+
+/* ---- empty and error states ----
+   "You have nothing yet" and "we could not load this" are different facts and
+   have to look different: a panel that failed used to fall back to its empty
+   copy, telling people they had no payments when the request had simply failed. */
+.empty {
+  color: var(--yr-ink-mute, var(--ink-mute));
+  font-size: 13px;
+  line-height: 1.5;
+  padding: 18px 14px;
+  text-align: center;
+  border: 1px dashed var(--yr-line-2, var(--line-2));
+  border-radius: var(--yr-radius-sm, 8px);
+}
+
+.empty a,
+.empty .lb-linkbtn {
+  color: var(--yr-accent, var(--accent));
+  font-weight: 600;
+}
+
+.empty--error {
+  border-style: solid;
+  border-color: rgba(239, 68, 68, .4);
+  color: var(--yr-ink-soft, var(--ink-soft));
+}
+
+.empty__icon { display: block; font-size: 20px; margin-bottom: 6px; }
+.empty .btn { margin-top: 10px; }
+
+/* Full-panel failure (the dashboard itself could not load). */
+.error-state { text-align: center; padding: 48px 22px; color: var(--yr-ink-soft, var(--ink-soft)); }
+.error-state .error-icon { font-size: 32px; display: block; margin-bottom: 12px; }

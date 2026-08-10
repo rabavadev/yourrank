@@ -195,8 +195,10 @@ let custBotId = null;
 // have to say so instead of claiming to load forever.
 const LOADING_SLOTS = [['botList',0],['ovBots',0],['ovOffers',0],['postbackStatus',0],['offers',9],['cmdList',5],['subSources',2]];
 function showLoadError(msg){
-  const body = '<span class="muted">' + esc(msg || "Couldn't load your dashboard.") + '</span> ' +
-    '<button class="ghost" type="button" data-action="retryLoad">Retry</button>';
+  // Same empty/error component as the leaderboard dashboard (ui.css).
+  const body = '<div class="empty empty--error"><span class="empty__icon" aria-hidden="true">\u26a0</span>' +
+    esc(msg || "Couldn't load your dashboard.") +
+    '<br><button class="btn btn--sm btn--ghost ghost" type="button" data-action="retryLoad">Try again</button></div>';
   for (const slot of LOADING_SLOTS) {
     const el = $(slot[0]);
     if (!el) continue;

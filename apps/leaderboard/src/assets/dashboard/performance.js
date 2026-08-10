@@ -1,5 +1,5 @@
 // Performance page widgets: KPIs, activity chart, heatmap, referrers.
-import { $, logError } from "./utils.js";
+import { $, logError, showLoadError, clearLoadError } from "./utils.js";
 import { state } from "./state.js";
 
 const DOW = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -69,8 +69,7 @@ export function renderPerformance(s) {
       .join("");
     const from = $("statFrom");
     if (from && days.length) from.textContent = new Date(days[0].day + "T00:00:00Z").toUTCString().slice(5, 11);
-    const empty = $("statsEmpty");
-    if (empty) empty.hidden = days.some((d) => (Number(d.views) || 0) + (Number(d.copies) || 0) + (Number(d.clicks) || 0) > 0);
+    clearLoadError($("statsEmpty"), !days.some((d) => (Number(d.views) || 0) + (Number(d.copies) || 0) + (Number(d.clicks) || 0) > 0));
   }
 
   loadHeatmap();
@@ -109,7 +108,10 @@ async function loadHeatmap() {
   } catch (err) {
     logError("load-heatmap", err);
     const grid = $("perfHeatmapGrid");
-    if (grid) grid.innerHTML = `<p class="heatmap-loading">Could not load activity map.</p>`;
+    if (grid) grid.innerHTML = `<p class="empty empty--error"><span class="empty__icon" aria-hidden="true">⚠</span>Couldn't load your activity map.</p>`;
+    // The referrer table is filled from the same response, so it failed too:
+    // leaving "No referrer data yet" there would be a lie.
+    showLoadError($("perfReferrersEmpty"), "your traffic sources", loadHeatmap);
   } finally {
     wrap._loading = false;
   }
@@ -150,9 +152,9 @@ function renderReferrers(referrers) {
   if (!body) return;
   if (!referrers.length) {
     body.innerHTML = "";
-    if (empty) empty.hidden = false;
+    clearLoadError(empty, true);
     return;
   }
-  if (empty) empty.hidden = true;
+  clearLoadError(empty);
   body.innerHTML = referrers.map((r) => `<tr><td>${r.domain}</td><td class="ta-r mono">${r.count}</td></tr>`).join("");
 }
