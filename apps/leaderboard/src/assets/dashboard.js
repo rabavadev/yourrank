@@ -4,7 +4,7 @@ import { state } from "./dashboard/state.js";
 import { navTo, setupShell } from "./dashboard/shell.js";
 import { renderBoardSwitcher, renderSidebarBoardSwitcher, renderBoardsPage } from "./dashboard/boards.js";
 import { renderPlayers } from "./dashboard/players.js";
-import { checkout, loadCreditsStatus, loadHistory, loadStats, renderArchives, renderBranding, renderDomain, renderDomainStatus, renderEditorTimestamps, renderEmbedShare, renderLegal, renderNotifications, renderOverlay, renderPlan, renderPlayerFields, renderPrizes, renderSections, renderSocials, renderTemplateText, updateDesignPreview, wireCancelSubscription, wireDeleteAccount } from "./dashboard/site.js";
+import { checkout, loadCreditsStatus, loadHistory, loadStats, renderArchives, renderBranding, renderDomain, renderDomainStatus, renderBoardStatus, renderEditorTimestamps, renderEmbedShare, renderLegal, renderNotifications, renderOverlay, renderPlan, renderPlayerFields, renderPrizes, renderSections, renderSocials, renderTemplateText, updateDesignPreview, wireCancelSubscription, wireDeleteAccount } from "./dashboard/site.js";
 import { renderOverviewSummary, wireOverviewQuickActions } from "./dashboard/overview.js";
 import { renderReferrals } from "./dashboard/referrals.js";
 import { initPerformance, renderPerformance } from "./dashboard/performance.js";
@@ -17,10 +17,6 @@ async function init() {
   state.ME = me.user;
   const emailEl = $("userEmail"); if (emailEl) emailEl.textContent = state.ME.email;
   if (state.ME.isAdmin) { const adminEl = $("adminLink"); if (adminEl) adminEl.hidden = false; }
-  if (!state.ME.emailVerified) {
-    const banner = $("verifyBanner");
-    if (banner) banner.hidden = false;
-  }
   renderPlan();
   loadHistory();
 
@@ -40,6 +36,8 @@ async function init() {
   state.TEMPLATE_CATALOG = Array.isArray(p.templates) ? p.templates : [];
   state.SITE_UPDATED_AT = p.updatedAt || null;
   state.PUBLISHED_AT = p.publishedAt || null;
+  state.PUBLISHED = !!p.published;
+  state.IS_DRAFT = !!p.isDraft;
   state.ONBOARDING = p.onboarding || {};
 
   renderEditorTimestamps();
@@ -124,7 +122,6 @@ async function init() {
   if (p.customDomain !== undefined) $("f_domain").value = p.customDomain || "";
   if (p.customDomain && p.domainStatus) renderDomainStatus(p.domainStatus, "");
   const pubToggle = $("pubToggle");
-  state.PUBLISHED = p.published !== false;
   if (pubToggle) pubToggle.checked = state.PUBLISHED;
   function updatePublishHint() {
     const btn = $("save");
@@ -157,16 +154,7 @@ async function init() {
   const liveUrl = "/" + state.SLUG;
   const liveLink = $("liveLink");
   if (liveLink) { liveLink.href = liveUrl; liveLink.title = location.host + liveUrl; }
-  const topbarStatus = $("lbTopbarStatus");
-  if (topbarStatus) {
-    const statusText = p.isDraft ? "Draft" : (p.published ? "Published" : "Unpublished");
-    topbarStatus.textContent = statusText;
-    topbarStatus.className = "lb-status lb-status--" + statusText.toLowerCase();
-    const parts = [];
-    if (p.updatedAt) parts.push("Last saved " + new Date(p.updatedAt).toLocaleString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }));
-    if (p.published && p.publishedAt) parts.push("Published " + new Date(p.publishedAt).toLocaleString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }));
-    topbarStatus.title = parts.length ? parts.join(" · ") : (p.published ? "Your board is live" : "Not visible to visitors");
-  }
+  renderBoardStatus();
   const editorLiveLink = $("editorLiveLink");
   if (editorLiveLink) { editorLiveLink.href = liveUrl; editorLiveLink.title = location.host + liveUrl; }
   const editorCopyLink = $("editorCopyLink");

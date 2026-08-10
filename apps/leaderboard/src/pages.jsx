@@ -17,7 +17,6 @@ import { cookiesPage } from "./pages/cookies.js";
 import { helpSupportPage, helpFeedbackPage } from "./pages/help.js";
 import { pricingPage } from "./pages/pricing.js";
 import { docsPage } from "./pages/docs.js";
-import { verifyEmailPage } from "./pages/verify-email.js";
 import {
   RewardsChannelPage,
   RewardsRewardsPage,
@@ -72,7 +71,6 @@ export const PAGES = {
   helpSupport: helpSupportPage,
   helpFeedback: helpFeedbackPage,
   pricing: pricingPage,
-  verifyEmail: verifyEmailPage,
   rewardsChannel: { config: rewardsChannelConfig, Component: RewardsChannelPage },
   rewardsRewards: { config: rewardsRewardsConfig, Component: RewardsRewardsPage },
   rewardsMaps: { config: rewardsMapsConfig, Component: RewardsMapsPage },

@@ -36,8 +36,9 @@ function AccountShell({ activeTab, children }) {
   return (
     <>
       <div class="toast" id="status" role="status" aria-live="polite" hidden></div>
+      <div class="v2-dash">
       <div class="lb-shell">
-        <aside class="lb-side" id="accSide" aria-label="Account sections">
+        <aside class="lb-side" id="lbSide" aria-label="Account sections" role="dialog" aria-modal="false">
           <div class="lb-side-head">
             <span class="label">Account</span>
             <div class="lb-active-name" id="accUserName">…</div>
@@ -53,12 +54,20 @@ function AccountShell({ activeTab, children }) {
               </a>
             ))}
           </nav>
+          <button class="lb-side-close" type="button" aria-label="Close navigation" data-close-side>×</button>
         </aside>
         <div class="lb-main">
-          <div class="lb-bento">
+          <div class="lb-phead">
+            <button class="lb-menu" type="button" aria-label="Show sections" aria-expanded="false" aria-controls="lbSide">☰</button>
+          </div>
+          <header class="lb-topbar">
+            <h1 class="lb-topbar-title" tabindex="-1">{TITLES[activeTab] || "Account"}</h1>
+          </header>
+          <div class="acct-main">
             {children}
           </div>
         </div>
+      </div>
       </div>
     </>
   );

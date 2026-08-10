@@ -979,6 +979,7 @@ html{color-scheme:light}
 /* --- Footer links preview card --- */
 .legal-footer-preview{border:1px solid var(--line);border-radius:10px;background:var(--panel-2);padding:14px 18px;margin-top:14px;display:flex;gap:16px;flex-wrap:wrap;font-size:13px;color:var(--ink-soft)}
 .legal-footer-preview a{color:var(--accent)}
+.legal-footer-link{color:var(--accent)}
 
 @media(max-width:900px){
   .ov-stat-grid{grid-template-columns:repeat(3,1fr)}

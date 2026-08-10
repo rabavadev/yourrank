@@ -1,6 +1,6 @@
 // Site editing: plan, branding/theme, save, archive, domain, overlay, notifications.
 import { $, esc, fromLocalInput, getCsrf, guardAuth, localTzLabel, logError, toLocalInput, parseAmount, showToast, showConfirmModal, copyToClipboard, flashButton } from "./utils.js";
-import { state } from "./state.js";
+import { state, boardStatus } from "./state.js";
 import { renderBoardSwitcher, renderBoardsPage, renderSidebarBoardSwitcher } from "./boards.js";
 import { renderOverviewSummary } from "./overview.js";
 import { applyPlayerFieldVisibility, renderPlayers, renumber, toggleEmpty } from "./players.js";
@@ -651,6 +651,37 @@ export function updateDesignPreview() {
   }, 300);
 }
 
+// Renders every "is my board live" surface from boardStatus() so the badge,
+// banner and share affordances can never contradict each other.
+export function renderBoardStatus() {
+  const s = boardStatus();
+  const LABELS = { draft: "Draft", unpublished: "Unpublished", pending: "Not live yet", published: "Published" };
+  const TITLES = {
+    draft: "Not visible to visitors",
+    unpublished: "Not visible to visitors",
+    pending: "Published, but visitors can't see it until you confirm your email",
+    published: "Your board is live",
+  };
+  const badge = $("lbTopbarStatus");
+  if (badge) {
+    badge.textContent = LABELS[s.key];
+    badge.className = "lb-status lb-status--" + s.key;
+    const parts = [];
+    if (state.SITE_UPDATED_AT) parts.push("Last saved " + new Date(state.SITE_UPDATED_AT).toLocaleString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }));
+    if (s.published && state.PUBLISHED_AT) parts.push("Published " + new Date(state.PUBLISHED_AT).toLocaleString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }));
+    parts.push(TITLES[s.key]);
+    badge.title = parts.join(" · ");
+  }
+  const banner = $("verifyBanner");
+  if (banner) banner.hidden = s.emailVerified;
+  // "View live" must not be offered while the public URL would not resolve.
+  for (const id of ["liveLink", "editorLiveLink"]) {
+    const link = $(id);
+    if (link) link.hidden = !s.live;
+  }
+  return s;
+}
+
 export function renderEditorTimestamps() {
   const el = $("editorTimestamp");
   if (!el) return;
@@ -808,10 +839,7 @@ export function renderPrizes(prizes = {}) {
   const body = $("prizesBody"), lock = $("prizesLock");
   if (body) body.hidden = !isPro();
   if (lock) lock.hidden = isPro();
-  if (!isPro()) {
-    lock?.addEventListener("click", (e) => { if (e.target.id === "prizesUpgrade") { e.preventDefault(); checkout("pro", e.target); } });
-    return;
-  }
+  if (!isPro()) return;
   $("f_prizePoolLabel").value = p.prizePoolLabel || "";
   $("f_payoutsLabel").value = p.payoutsLabel || "";
   $("f_countdownLabel").value = p.countdownLabel || "";
@@ -857,15 +885,11 @@ $("logoFile")?.addEventListener("change", () => {
 $("applyCustomColors")?.addEventListener("click", () => applyTheme(state.CURRENT_BRANDING?.template, $("c_a")?.value, $("c_b")?.value, "Custom colors"));
 $("colorsReset")?.addEventListener("click", () => { const preset = currentTemplate()?.presets?.[0]; if (preset && state.CURRENT_BRANDING?.template) applyTheme(state.CURRENT_BRANDING.template, preset.accentA, preset.accentB, preset.name); });
 $("f_font")?.addEventListener("change", () => applyTheme(state.CURRENT_BRANDING?.template, $("c_a")?.value, $("c_b")?.value, "Font"));
-$("brandUpgrade")?.addEventListener("click", (e) => { e.preventDefault(); checkout("pro", e.target); });
 
 export function renderNotifications(n) {
   const paid = state.ME.plan !== "free";
   $("notifyBody").hidden = !paid; $("notifyLock").hidden = paid;
-  if (!paid) {
-    $("notifyUpgrade")?.addEventListener("click", (e) => { e.preventDefault(); location.href = "/dashboard?nav=settings"; });
-    return;
-  }
+  if (!paid) return;
   const wh = $("f_webhook"); if (wh && n.discord_webhook_url) { wh.value = ""; wh.placeholder = "Webhook configured ✓ (enter new URL to change)"; }
   const tg = $("f_tgNotify"); if (tg) tg.checked = !!n.telegram_notify;
   const tgChat = $("f_tgChatId"); if (tgChat) tgChat.value = n.telegram_chat_id || "";
@@ -958,7 +982,6 @@ export function renderSections() {
   }
   if (body) body.hidden = !isPro();
   if (lock) lock.hidden = isPro();
-  if (lock && !isPro()) lock.addEventListener("click", (e) => { if (e.target.id === "sectionsUpgrade") { e.preventDefault(); checkout("pro", e.target); } });
   if (!list || !isPro()) return;
   const current = { ...DEFAULT_SECTIONS, ...(state.EXTRA?.sections || {}) };
   list.innerHTML = SECTIONS_CATALOG.map((s) => `<div class="section-row" data-section="${esc(s.key)}">
@@ -1254,9 +1277,13 @@ $("save")?.addEventListener("click", async () => {
     const d = await res.json();
     if (res.ok && d.ok) {
       justPublished = !!payload.published && !state.PUBLISHED;
-      status.textContent = justPublished ? "Saved and published. Your board is now live." : "Saved. Your page is updated.";
       state._dirty = false;
       state.PUBLISHED = !!payload.published;
+      status.textContent = justPublished
+        ? (boardStatus().live
+          ? "Saved and published. Your board is now live."
+          : "Saved. Your board goes live as soon as you confirm your email.")
+        : "Saved. Your page is updated.";
       window.removeEventListener("beforeunload", _beforeUnloadGuard);
       if (d.updatedAt) state.SITE_UPDATED_AT = d.updatedAt;
       if (d.publishedAt) state.PUBLISHED_AT = d.publishedAt;
@@ -1264,6 +1291,7 @@ $("save")?.addEventListener("click", async () => {
       const saveBtn = $("save"); if (saveBtn) saveBtn.textContent = "Save changes";
       const saveHint = document.querySelector(".savebar-hint"); if (saveHint) saveHint.textContent = "Unsaved changes";
       renderEditorTimestamps();
+      renderBoardStatus();
       renderOverviewSummary();
       const active = state.BOARDS.find((b) => b.id === state.ACTIVE_SITE_ID);
       if (active) { active.name = payload.name; active.casino = payload.brand?.casino || active.casino; active.code = payload.brand?.code || active.code; }
@@ -1275,8 +1303,10 @@ $("save")?.addEventListener("click", async () => {
     } else status.textContent = d.error || "Save failed.";
   } catch (err) { logError("save", err); status.textContent = "Network error."; }
   btn.disabled = false; btn.textContent = "Save changes";
-  const savedMsg = justPublished ? "Saved and published. Your board is now live." : "Saved. Your page is updated.";
-  if (status.textContent === savedMsg) setTimeout(() => { if (status.textContent === savedMsg) status.textContent = ""; }, 6000);
+  const savedMsg = status.textContent;
+  if (justPublished || savedMsg === "Saved. Your page is updated.") {
+    setTimeout(() => { if (status.textContent === savedMsg) status.textContent = ""; }, 6000);
+  }
 });
 
 export function renderEmbedShare() {
@@ -1433,7 +1463,6 @@ export function renderEmbedShare() {
 $("logout")?.addEventListener("click", async (e) => { e.preventDefault(); await fetch("/api/auth/logout", { method: "POST", credentials: "include", headers: { "x-csrf-token": getCsrf() } }); location.href = "/login"; });
 $("upgrade")?.addEventListener("click", (e) => { e.preventDefault(); checkout("pro", e.target); });
 $("goPro")?.addEventListener("click", (e) => { e.preventDefault(); checkout("pro", e.target); });
-$("domainUpgrade")?.addEventListener("click", (e) => { e.preventDefault(); checkout("pro", e.target); });
 $("overlayUpgrade")?.addEventListener("click", (e) => { e.preventDefault(); checkout("pro", e.target); });
 $("testDiscord")?.addEventListener("click", async () => {
   const s = $("testDiscordStatus"); if (s) s.textContent = "Sending…";
