@@ -36,7 +36,20 @@ import {
   rewardsRedemptionsConfig,
   rewardsHistoryConfig,
 } from "./pages/rewards.jsx";
-import { accountPage } from "./pages/account.js";
+import {
+  AccountProfilePage,
+  AccountPlanPage,
+  AccountPostbacksPage,
+  AccountConnectedPage,
+  AccountDataPage,
+} from "./pages/account.jsx";
+import {
+  accountProfileConfig,
+  accountPlanConfig,
+  accountPostbacksConfig,
+  accountConnectedConfig,
+  accountDataConfig,
+} from "./pages/account.jsx";
 import { faqPage } from "./pages/faq.js";
 import { reviewsPage } from "./pages/reviews.js";
 
@@ -66,7 +79,11 @@ export const PAGES = {
   rewardsViewers: { config: rewardsViewersConfig, Component: RewardsViewersPage },
   rewardsRedemptions: { config: rewardsRedemptionsConfig, Component: RewardsRedemptionsPage },
   rewardsHistory: { config: rewardsHistoryConfig, Component: RewardsHistoryPage },
-  account: accountPage,
+  accountProfile: { config: accountProfileConfig, Component: AccountProfilePage },
+  accountPlan: { config: accountPlanConfig, Component: AccountPlanPage },
+  accountPostbacks: { config: accountPostbacksConfig, Component: AccountPostbacksPage },
+  accountConnected: { config: accountConnectedConfig, Component: AccountConnectedPage },
+  accountData: { config: accountDataConfig, Component: AccountDataPage },
   faq: faqPage,
   reviews: reviewsPage,
 };

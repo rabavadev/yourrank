@@ -50,7 +50,7 @@ export function overviewPanel(): string {
     <div class="steps" id="ovSetup">
       <div class="step" id="stepBot"><div class="n">STEP 1</div><div class="t">Connect a bot</div><div class="d">Add your Telegram bot token in <a href="/bot/bots">Bots</a>.</div></div>
       <div class="step" id="stepOffer"><div class="n">STEP 2</div><div class="t">Create an offer</div><div class="d">Add a casino offer with a tracked link in <a href="/bot/offers">Offers</a>.</div></div>
-      <div class="step" id="stepPb"><div class="n">STEP 3</div><div class="t">Track deposits</div><div class="d">See which clicks turn into deposits \u2014 set it up in <a href="/account#postbacks">Account → Postbacks</a>.</div></div>
+      <div class="step" id="stepPb"><div class="n">STEP 3</div><div class="t">Track deposits</div><div class="d">See which clicks turn into deposits \u2014 set it up in <a href="/account/postbacks">Account → Postbacks</a>.</div></div>
     </div>
   </div>`;
 }

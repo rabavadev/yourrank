@@ -31,7 +31,7 @@ export const NAV_LINKS: NavLink[] = [
   { key: "leaderboard", label: "Leaderboards", href: "/dashboard",                    match: ["/dashboard"],                    top: true },
   { key: "bot",         label: "Telegram",     href: "/bot/dashboard",                match: ["/bot"],                            top: true },
   { key: "rewards",     label: "Rewards & Shop", href: "/dashboard/rewards/channel", match: ["/dashboard/rewards"],              top: true },
-  { key: "account",     label: "Account",      href: "/account",                      match: ["/account"],                      top: true },
+  { key: "account",     label: "Account",      href: "/account/profile",            match: ["/account"],                      top: true },
   { key: "help",        label: "Help",         href: "/contact?type=support",         match: ["/contact?type=support", "/contact"], top: true },
 ];
 
@@ -106,7 +106,7 @@ export function shellNavHtml(opts: ShellNavOpts = {}): string {
       `${isActive ? ' aria-current="page"' : ""} href="${l.href}">${l.label}</a>`;
   }).join("");
 
-  const accountHref = esc(opts.accountHref || opts.settingsHref || "/account");
+  const accountHref = esc(opts.accountHref || opts.settingsHref || "/account/profile");
 
   return `<header class="${headerClass}" data-theme="${theme}">
   <div class="gm-shell-inner">

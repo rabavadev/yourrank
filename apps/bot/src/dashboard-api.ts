@@ -791,7 +791,7 @@ export function buildDashboardApi(): Hono<{ Bindings: DashApiBindings; Variables
     return c.json({ ok: true });
   });
 
-  // Status-only view for Bot Settings; full management lives in /account#postbacks.
+  // Status-only view for Bot Settings; full management lives in /account/postbacks.
   api.get("/postback-status", async (c) => {
     const uid = c.get("uid");
     const row = await one<{ active: boolean; created_at: string | null }>(

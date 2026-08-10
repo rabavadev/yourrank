@@ -73,13 +73,13 @@ After the Phase 2 UX and product restructuring, the following QA items were comp
 - `/<slug>/hall-of-fame`, `/<slug>/profile`, `/<slug>/player/<name>`
 
 **Backward-compatible redirects** (all 302 to the canonical location)
-- `/dashboard/billing` → `/account#plan`
-- `/dashboard/attribution` → `/account#postbacks`
+- `/dashboard/billing` → `/account/plan`
+- `/dashboard/attribution` → `/account/postbacks`
 - `/dashboard/analytics` → `/dashboard?nav=performance`
 - `/dashboard/analytics/:tab` → `/dashboard?nav=performance#:tab` (`activity`, `referrals`, `events`)
-- `/dashboard/credits` → `/dashboard?nav=kickrewards`
-- `/dashboard/rewards` → `/dashboard?nav=kickrewards`
-- `/dashboard/rewards/:tab` → `/dashboard?nav=kickrewards#:tab` (`channel`, `maps`, `shop`, `viewers`, `redemptions`, `history`)
+- `/dashboard/credits` → `/dashboard/rewards/channel`
+- `/dashboard/rewards` → `/dashboard/rewards/channel`
+- `/dashboard/rewards/:tab` → `/dashboard/rewards/:tab` (`channel`, `maps`, `shop`, `viewers`, `redemptions`, `history`)
 - `/dashboard/editor` → `/dashboard?nav=board`
 - `/dashboard/editor/:tab` → `/dashboard?nav=board#:tab` (`setup`, `players`, `design`, `share`, `history`)
 - `/dashboard/boards` → `/dashboard?nav=boards`
@@ -87,7 +87,7 @@ After the Phase 2 UX and product restructuring, the following QA items were comp
 - `/dashboard/setup` → `/dashboard`
 - `/dashboard/bot/setup` → `/bot/dashboard`
 - `/dashboard/support` → `/contact?type=support&area=dashboard&return=/dashboard`
-- `/dashboard/security` → `/account#profile`
+- `/dashboard/security` → `/account/profile`
 
 ### Still needing S M / external action
 - Set Kick developer app redirect URI and webhook URL (Phase 0 go-live).

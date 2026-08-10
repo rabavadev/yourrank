@@ -402,7 +402,7 @@ async function handleRequest(request, env, ctx, meta) {
 
       // --- helper for rendering strings or JSX pages ---
       const renderHtmlPage = async (pageObj, { reqId, activePath, user, theme, accountHref, logoutAction } = {}) => {
-        const navOpts = activePath && user ? { activePath, user, theme, accountHref: accountHref || "/account", logoutAction } : null;
+        const navOpts = activePath && user ? { activePath, user, theme, accountHref: accountHref || "/account/profile", logoutAction } : null;
         if (typeof pageObj === "string") {
           let result = pageObj;
           if (navOpts) result = result.replace("<!--GM_NAV-->", shellNavHtml(navOpts));
@@ -457,8 +457,7 @@ async function handleRequest(request, env, ctx, meta) {
             activePath: url.pathname + url.search,
             user,
             reqId: reqId || "",
-            theme: "light",
-            accountHref: "/account"
+            theme: "light"
           }));
           return new Response(html, { headers: { ...SECURE_HTML, ...csrfHeader, "cache-control": "no-store, no-cache, must-revalidate" } });
         } catch (e) {
@@ -470,15 +469,21 @@ async function handleRequest(request, env, ctx, meta) {
         }
       }
       if (path === "/account" || path === "/account.html") {
+        return Response.redirect(new URL("/account/profile", url), 302);
+      }
+      if (path.startsWith("/account/")) {
+        const tab = path.slice("/account/".length).split("?")[0];
+        const map = { profile: "accountProfile", plan: "accountPlan", postbacks: "accountPostbacks", connected: "accountConnected", data: "accountData" };
+        const pageKey = map[tab];
+        if (!pageKey) return Response.redirect(new URL("/account/profile", url), 302);
         try {
           const user = await currentUser(request, env);
           if (!user) return Response.redirect(new URL("/login", url), 302);
-          const html = addCookieConsent(await renderHtmlPage(PAGES.account, {
-            activePath: url.pathname,
+          const html = addCookieConsent(await renderHtmlPage(PAGES[pageKey], {
+            activePath: url.pathname + url.search,
             user,
             reqId: reqId || "",
-            theme: "light",
-            accountHref: "/account"
+            theme: "light"
           }));
           return new Response(html, { headers: { ...SECURE_HTML, ...csrfHeader, "cache-control": "no-store, no-cache, must-revalidate" } });
         } catch (e) {
@@ -499,10 +504,10 @@ async function handleRequest(request, env, ctx, meta) {
         return Response.redirect(new URL("/dashboard?nav=performance", url), 302);
       }
       if (path === "/dashboard/billing") {
-        return Response.redirect(new URL("/account#plan", url), 302);
+        return Response.redirect(new URL("/account/plan", url), 302);
       }
       if (path === "/dashboard/attribution") {
-        return Response.redirect(new URL("/account#postbacks", url), 302);
+        return Response.redirect(new URL("/account/postbacks", url), 302);
       }
       if (path === "/dashboard/bot/setup") {
         return Response.redirect(new URL("/bot/dashboard", url), 302);
@@ -514,7 +519,7 @@ async function handleRequest(request, env, ctx, meta) {
         return Response.redirect(new URL("/contact?type=support&area=dashboard&return=/dashboard", url), 302);
       }
       if (path === "/dashboard/security") {
-        return Response.redirect(new URL("/account#profile", url), 302);
+        return Response.redirect(new URL("/account/profile", url), 302);
       }
       if (path === "/dashboard/credits") {
         return Response.redirect(new URL("/dashboard/rewards/channel", url), 302);
@@ -549,8 +554,7 @@ async function handleRequest(request, env, ctx, meta) {
             activePath: url.pathname + url.search,
             user,
             reqId: reqId || "",
-            theme: "light",
-            accountHref: "/account"
+            theme: "light"
           }));
           return new Response(html, { headers: { ...SECURE_HTML, ...csrfHeader, "cache-control": "no-store, no-cache, must-revalidate" } });
         } catch (e) {
