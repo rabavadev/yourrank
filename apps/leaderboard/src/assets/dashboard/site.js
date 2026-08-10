@@ -255,6 +255,35 @@ export async function loadHistory() {
   } catch (err) { logError("loadHistory", err); }
 }
 
+export async function loadPlanUsage() {
+  const wrap = $("planUsage");
+  if (!wrap) return;
+  try {
+    const res = await fetch("/api/account/usage", { credentials: "include" }).then(guardAuth);
+    const d = await res.json();
+    if (!res.ok || !d.ok) { wrap.innerHTML = `<p class="hint hint--error">Could not load usage.</p>`; return; }
+    const rows = [];
+    rows.push({ label: "Leaderboards", product: "Leaderboard", used: d.leaderboard.boards.used, limit: d.leaderboard.boards.limit });
+    rows.push({ label: "Players", product: "Leaderboard", used: d.leaderboard.players.used, limit: d.leaderboard.players.limit });
+    if (d.credits) {
+      rows.push({ label: "Reward mappings", product: "Rewards & Shop", used: d.credits.rewardMappings.used, limit: d.credits.rewardMappings.limit });
+      rows.push({ label: "Shop items", product: "Rewards & Shop", used: d.credits.shopItems.used, limit: d.credits.shopItems.limit });
+      rows.push({ label: "Pending redemptions", product: "Rewards & Shop", used: d.credits.pendingRedemptions.used, limit: d.credits.pendingRedemptions.limit });
+      rows.push({ label: "Redemptions / 30 days", product: "Rewards & Shop", used: d.credits.redemptionsPer30Days.used, limit: d.credits.redemptionsPer30Days.limit });
+      rows.push({ label: "New viewers / 30 days", product: "Rewards & Shop", used: d.credits.newViewersPer30Days.used, limit: d.credits.newViewersPer30Days.limit });
+    }
+    wrap.innerHTML = rows.map((r) => {
+      const atLimit = r.limit > 0 && r.used >= r.limit;
+      const near = r.limit > 0 && !atLimit && r.used >= Math.floor(r.limit * 0.8);
+      const color = atLimit ? "color:#ff6b6b" : near ? "color:#ffcc00" : "";
+      return `<div class="plan-usage-row"><div class="plan-usage-meta"><span class="plan-usage-label">${esc(r.label)}</span><span class="plan-usage-product">${esc(r.product)}</span></div><span class="plan-usage-value" style="${esc(color)}">${Number(r.used).toLocaleString()} / ${Number(r.limit).toLocaleString()}</span></div>`;
+    }).join("");
+  } catch (err) {
+    logError("loadPlanUsage", err);
+    if (wrap) wrap.innerHTML = `<p class="hint hint--error">Could not load usage.</p>`;
+  }
+}
+
 export function wireCancelSubscription() {
   const btn = $("cancelBtn");
   if (!btn || btn._wired) return;
