@@ -4,8 +4,8 @@ export function offersPanel(publicBaseUrl: string): string {
   <div class="panel" data-page="offers"><h2>Your offers</h2>
     <p class="muted">Lifetime metrics for all offers. Set up postbacks to see conversions.</p>
     <p class="muted" id="postbackStatus">Loading postback status…</p>
-    <table><thead><tr><th>Offer</th><th>Link</th><th>Clicks</th><th>Unique</th><th title="Click-through rate: unique clicks / total clicks">CTR ?</th><th title="Conversion rate: conversions / unique clicks">CR ?</th><th>Conv.</th><th>Status</th><th><span class="sr-only">Actions</span></th></tr></thead>
-    <tbody id="offers"><tr><td colspan="9" class="muted">Loading…</td></tr></tbody></table>
+    <div class="tbl-scroll"><table><thead><tr><th>Offer</th><th>Link</th><th>Clicks</th><th>Unique</th><th title="Click-through rate: unique clicks / total clicks">CTR ?</th><th title="Conversion rate: conversions / unique clicks">CR ?</th><th>Conv.</th><th>Status</th><th><span class="sr-only">Actions</span></th></tr></thead>
+    <tbody id="offers"><tr><td colspan="9" class="muted">Loading…</td></tr></tbody></table></div>
     <p class="muted style-28">Metrics are lifetime totals for each offer. <a href="${publicBaseUrl}/account/postbacks">Manage postbacks in Account →</a></p>
     <details class="glossary"><summary>Metric glossary</summary>
       <dl>

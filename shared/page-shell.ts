@@ -296,15 +296,18 @@ const BOT_DASH_V2_CSS = `
   }
   .panel { padding: 18px; margin-bottom: 16px; }
   .kpi { padding: 16px; }
-  .kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 18px; }
-  .qa { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 16px; }
+  /* auto-fit rather than a fixed 4 + a breakpoint: the cards reflow to 2 and
+     then 1 column on their own, so nothing is crushed on a phone. */
+  .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 14px; margin-bottom: 18px; }
+  .qa { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; margin-bottom: 16px; }
   .qa a { display: flex; flex-direction: column; gap: 4px; padding: 16px; text-decoration: none; color: var(--yr-ink); }
   .qa a:hover { border-color: var(--yr-accent); }
   .qa .t { font-weight: 600; font-size: 14px; }
   .qa .d { font-size: 12px; color: var(--yr-ink-soft); }
   .grid2 { display: grid; grid-template-columns: 1.6fr 1fr; gap: 18px; }
   .grid2 .panel { margin-bottom: 0; }
-  .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+  @media (max-width: 900px) { .grid2 { grid-template-columns: 1fr; } }
+  .steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; }
   .step { padding: 14px; }
   .step .n { font-size: 11px; color: var(--yr-ink-mute); font-family: var(--yr-mono); }
   .step .t { font-weight: 600; font-size: 14px; margin: 3px 0; color: var(--yr-ink); }
@@ -332,6 +335,20 @@ const BOT_DASH_V2_CSS = `
   table th { color: var(--yr-ink-mute); font-weight: 500; font-size: 12px; border-bottom: 1px solid var(--yr-line); }
   table td { border-bottom: 1px solid var(--yr-line); }
 
+  /* Tables are wider than a phone. Scroll them inside their panel instead of
+     letting them widen the document, and keep the row label in view. */
+  /* position:relative also keeps the absolutely-positioned .sr-only labels in
+     the header row from escaping the scroller and widening the document. */
+  .tbl-scroll { position: relative; overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 0 -18px; padding: 0 18px; }
+  .tbl-scroll > table { min-width: 560px; }
+  @media (max-width: 700px) {
+    .tbl-scroll th:first-child, .tbl-scroll td:first-child {
+      position: sticky; left: 0; background: var(--yr-panel);
+      box-shadow: 1px 0 0 var(--yr-line);
+    }
+    .tbl-scroll td[colspan] { position: static; box-shadow: none; }
+  }
+
   input, textarea, select { background: var(--yr-panel); border: 1px solid var(--yr-line-2); border-radius: 10px; padding: 10px 12px; font: inherit; }
   input:focus, textarea:focus, select:focus { outline: 2px solid var(--yr-accent); outline-offset: 0; }
   button { border-radius: 10px; }
@@ -357,6 +374,10 @@ const BOT_DASH_V2_CSS = `
     .side { position: fixed; left: 0; top: 0; height: 100vh; max-height: 100vh; z-index: 60; border-radius: 0; border: 0; border-right: 1px solid var(--yr-line); transform: translateX(-100%); transition: transform .2s; box-shadow: 2px 0 18px rgba(0,0,0,.5); }
     .side.open { transform: none; }
     .main { padding-left: 0; }
+    /* Comfortable touch targets on a phone. */
+    button, .side .snav a, .qa a { min-height: 44px; }
+    button { padding: 11px 16px; }
+    .bot-card .actions button, .list-pagination button { min-height: 40px; }
   }
 
   .badge { border: 1px solid var(--yr-line-2); color: var(--yr-ink-soft); }
