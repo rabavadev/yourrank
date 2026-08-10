@@ -188,7 +188,7 @@ export function buildDashboard(): Hono<DashEnv> {
       activePath: c.req.path,
       user,
       logoutAction: "/bot/auth/logout",
-      settingsHref: "/bot/settings",
+      accountHref: "/account",
       theme: "light",
     });
     return c.html(appHtml(user ?? { display_name: "", email: "", plan: "free" }, config.publicBaseUrl, c.get("cspNonce"), page, nav));

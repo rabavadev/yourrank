@@ -24,9 +24,9 @@ export function sideNav(active: string, user: { display_name: string; plan: stri
     `<span class="ic" aria-hidden="true">${ICONS[p.key]}</span> ${escHtml(p.label)}</a>`
   ).join("");
   const plan = escHtml((user.plan || "free").replace(/^./, c => c.toUpperCase()));
-  return `<aside class="side" id="side" aria-label="Bot dashboard navigation">
+  return `<aside class="side" id="side" aria-label="Telegram dashboard navigation">
     <div class="side-head">
-      <span class="label">Bot</span>
+      <span class="label">Telegram</span>
       <div class="side-active-name">${escHtml(user.display_name || 'Streamer')}</div>
       <div class="side-active-meta">${plan} plan</div>
     </div>

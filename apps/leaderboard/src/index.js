@@ -396,8 +396,8 @@ async function handleRequest(request, env, ctx, meta) {
       }
 
       // --- helper for rendering strings or JSX pages ---
-      const renderHtmlPage = async (pageObj, { reqId, activePath, user, theme, settingsHref, logoutAction } = {}) => {
-        const navOpts = activePath && user ? { activePath, user, theme, settingsHref: settingsHref || "/account", logoutAction } : null;
+      const renderHtmlPage = async (pageObj, { reqId, activePath, user, theme, accountHref, logoutAction } = {}) => {
+        const navOpts = activePath && user ? { activePath, user, theme, accountHref: accountHref || "/account", logoutAction } : null;
         if (typeof pageObj === "string") {
           let result = pageObj;
           if (navOpts) result = result.replace("<!--GM_NAV-->", shellNavHtml(navOpts));
@@ -450,7 +450,7 @@ async function handleRequest(request, env, ctx, meta) {
             user,
             reqId: reqId || "",
             theme: "light",
-            settingsHref: "/account"
+            accountHref: "/account"
           }));
           return new Response(html, { headers: { ...SECURE_HTML, ...csrfHeader, "cache-control": "no-store, no-cache, must-revalidate" } });
         } catch (e) {
@@ -470,7 +470,7 @@ async function handleRequest(request, env, ctx, meta) {
             user,
             reqId: reqId || "",
             theme: "light",
-            settingsHref: "/account"
+            accountHref: "/account"
           }));
           return new Response(html, { headers: { ...SECURE_HTML, ...csrfHeader, "cache-control": "no-store, no-cache, must-revalidate" } });
         } catch (e) {

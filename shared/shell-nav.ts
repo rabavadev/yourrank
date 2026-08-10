@@ -2,8 +2,8 @@
 //  YourRank — SHARED DASHBOARD SHELL / TOP NAV  (bot Worker, TypeScript)
 //
 //  Behavioural port of shared/shell-nav.js. See that file for the full doc.
-//  Renders the same sticky header (Leaderboard | Bot | Analytics | Billing |
-//  Logout) so the bot dashboard at /bot/dashboard feels like the same app.
+//  Renders the same sticky header (Leaderboards | Telegram | Rewards & Shop |
+//  Account | Help) so the bot dashboard at /bot/dashboard feels like the same app.
 //
 //  Usage (bot Worker dashboard.ts):
 //    import { shellNavHtml, SHELL_NAV_CSS } from "../shared/shell-nav.js";
@@ -28,11 +28,11 @@ export interface NavLink {
 }
 
 export const NAV_LINKS: NavLink[] = [
-  { key: "leaderboard", label: "Leaderboard",  href: "/dashboard",                 match: ["/dashboard"],                 top: true },
-  { key: "bot",         label: "Bot",          href: "/bot/dashboard",             match: ["/bot"],                       top: true },
-  { key: "analytics",   label: "Analytics",    href: "/dashboard?nav=performance", match: ["/dashboard?nav=performance"], top: true },
-  { key: "rewards", label: "Rewards", href: "/dashboard?nav=kickrewards", match: ["/dashboard?nav=kickrewards"], top: true },
-  { key: "account",     label: "Account",      href: "/account",                   match: ["/account"],                   top: true },
+  { key: "leaderboard", label: "Leaderboards", href: "/dashboard",                    match: ["/dashboard"],                    top: true },
+  { key: "bot",         label: "Telegram",     href: "/bot/dashboard",                match: ["/bot"],                            top: true },
+  { key: "rewards",     label: "Rewards & Shop", href: "/dashboard?nav=kickrewards", match: ["/dashboard?nav=kickrewards"],      top: true },
+  { key: "account",     label: "Account",      href: "/account",                      match: ["/account"],                      top: true },
+  { key: "help",        label: "Help",         href: "/contact?type=support",         match: ["/contact?type=support", "/contact"], top: true },
 ];
 
 export function activeKey(activePath: string): string | null {
@@ -44,9 +44,9 @@ export function activeKey(activePath: string): string | null {
 
   if (pathname.startsWith("/bot")) return "bot";
   if (pathname.startsWith("/account")) return "account";
+  if (pathname.startsWith("/contact")) return "help";
 
   if (pathname === "/dashboard" || pathname.startsWith("/dashboard/")) {
-    if (nav === "performance") return "analytics";
     if (nav === "kickrewards" || pathname === "/dashboard/credits" || pathname.startsWith("/dashboard/credits")) return "rewards";
     return "leaderboard";
   }
@@ -83,7 +83,9 @@ export interface ShellNavOpts {
   active?: string;
   user?: ShellUser;
   logoutAction?: string;
+  /** @deprecated use accountHref */
   settingsHref?: string;
+  accountHref?: string;
   theme?: "light" | "dark";
 }
 
@@ -104,7 +106,7 @@ export function shellNavHtml(opts: ShellNavOpts = {}): string {
       `${isActive ? ' aria-current="page"' : ""} href="${l.href}">${l.label}</a>`;
   }).join("");
 
-  const settingsHref = esc(opts.settingsHref || "/dashboard?nav=settings");
+  const accountHref = esc(opts.accountHref || opts.settingsHref || "/account");
 
   return `<header class="${headerClass}" data-theme="${theme}">
   <div class="gm-shell-inner">
@@ -122,7 +124,7 @@ export function shellNavHtml(opts: ShellNavOpts = {}): string {
           <span class="gm-profile-chevron" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg></span>
         </summary>
         <div class="gm-profile-menu">
-          <a class="gm-profile-link" href="${settingsHref}"><span class="gm-profile-ic">⚙️</span>Settings</a>
+          <a class="gm-profile-link" href="${accountHref}"><span class="gm-profile-ic">⚙️</span>Account</a>
           <a class="gm-profile-link" href="/contact?type=support&amp;area=${area}&amp;return=${returnTo}"><span class="gm-profile-ic">❓</span>Support</a>
           <a class="gm-profile-link gm-profile-link--accent" href="/contact?type=feedback&amp;${helpQuery}"><span class="gm-profile-ic">💬</span>Feedback</a>
           <form method="POST" action="${esc(opts.logoutAction || "/logout")}" class="gm-logout-form"><button class="gm-logout" type="submit">Logout</button></form>
