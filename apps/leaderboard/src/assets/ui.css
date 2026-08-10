@@ -1,0 +1,175 @@
+/* YourRank UI primitives — the one definition of the components that appear in
+   both Workers. Served by the leaderboard Worker and linked by both shells, the
+   same way /assets/shell-nav.css is.
+
+   Before this file a button had three definitions: `.btn` in app.css, a partial
+   `.v2-dash .btn` override in dashboard-v2.css that silently merged with it, and
+   a bare `button` element rule inlined in the bot shell — so the same action
+   looked like three different products. Add component styles here, not there.
+
+   Every colour is read through a `var(--yr-x, var(--x))` chain rather than a
+   literal: this sheet also loads on public leaderboards, where a board's own
+   branding overrides --accent, and the primitives must follow the board's brand
+   there and the product palette everywhere else. Never hardcode a colour here. */
+
+/* The `hidden` attribute must win over the component display rules below, which
+   are more specific than the UA's `[hidden] { display: none }`. Without this a
+   hidden button (the bot's wizard steps, the collapsed forms) renders. */
+[hidden] { display: none !important; }
+
+/* ---- button ----------------------------------------------------------------
+   `.yr-ui button` covers the bot dashboard, whose markup uses bare <button>
+   elements with .ghost/.danger modifiers rather than the .btn class. Both
+   spellings resolve to the same component. */
+.btn,
+.yr-ui button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-family: var(--yr-sans, var(--sans));
+  font-weight: 600;
+  font-size: 14px;
+  line-height: 1.2;
+  padding: 10px 16px;
+  min-height: 36px;
+  border-radius: var(--yr-radius-sm, 10px);
+  border: 1px solid var(--yr-line, var(--line));
+  background: var(--yr-panel-2, var(--panel-2));
+  color: var(--yr-ink, var(--ink));
+  cursor: pointer;
+  text-decoration: none;
+  transition: background-color .15s, border-color .15s, opacity .15s, filter .15s;
+}
+
+.btn:hover,
+.yr-ui button:hover { border-color: var(--yr-ink-soft, var(--ink-soft)); }
+.btn:active,
+.yr-ui button:active { transform: translateY(1px); }
+
+.btn:disabled,
+.btn[aria-disabled="true"],
+.yr-ui button:disabled,
+.copy:disabled {
+  opacity: .45;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* The bot's default button is the accent one: it has no .btn--accent to opt in
+   with, so anything that isn't explicitly ghost/danger is the primary action. */
+.btn--accent,
+.yr-ui button:not(.ghost):not(.danger):not(.plain) {
+  background: var(--yr-accent, var(--accent));
+  color: var(--yr-accent-ink, var(--accent-ink));
+  border-color: var(--yr-accent, var(--accent));
+}
+
+.btn--accent:hover,
+.yr-ui button:not(.ghost):not(.danger):not(.plain):hover {
+  filter: brightness(1.08);
+  border-color: var(--yr-accent, var(--accent));
+}
+
+.btn--ghost,
+.yr-ui button.ghost {
+  background: transparent;
+  color: var(--yr-ink-soft, var(--ink-soft));
+  border-color: var(--yr-line-2, var(--line-2));
+}
+
+.btn--ghost:hover,
+.yr-ui button.ghost:hover {
+  background: var(--yr-panel-2, var(--panel-2));
+  color: var(--yr-ink, var(--ink));
+}
+
+.btn--danger,
+.yr-ui button.danger {
+  background: transparent;
+  color: var(--yr-red, var(--danger));
+  border-color: rgba(239, 68, 68, .4);
+}
+
+.btn--danger:hover,
+.yr-ui button.danger:hover { background: rgba(239, 68, 68, .06); }
+
+.btn--sm,
+.yr-ui button.sm {
+  padding: 8px 13px;
+  font-size: 13px;
+  min-height: 38px;
+}
+
+.btn--xs,
+.yr-ui button.xs {
+  padding: 6px 10px;
+  font-size: 12px;
+  min-height: 32px;
+}
+
+/* A finger needs the full 44px target; a mouse does not, and 44px everywhere
+   made desktop toolbars look like a phone app. */
+@media (pointer: coarse), (max-width: 860px) {
+  .btn,
+  .btn--sm,
+  .btn--xs,
+  .yr-ui button { min-height: var(--tap, 44px); }
+}
+
+.btn[aria-busy="true"] { opacity: .65; cursor: wait; }
+
+.btn--loading::before {
+  content: "";
+  width: 14px;
+  height: 14px;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: ui-spin .7s linear infinite;
+  opacity: .7;
+}
+
+@keyframes ui-spin { to { transform: rotate(360deg); } }
+
+/* ---- badge ---- */
+.badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--yr-line-2, var(--line-2));
+  background: var(--yr-panel-2, var(--panel-2));
+  color: var(--yr-ink-soft, var(--ink-soft));
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.badge.on,
+.badge.ok { color: var(--yr-green, var(--ok)); border-color: rgba(16, 163, 127, .4); }
+.badge.off { color: var(--yr-red, var(--danger)); border-color: rgba(239, 68, 68, .4); }
+
+/* ---- table scroller ----
+   Tables are wider than a phone: scroll them inside their container instead of
+   letting them widen the document, and keep the row label in view. The
+   `position: relative` also keeps absolutely-positioned .sr-only header labels
+   from escaping the scroller and re-creating the overflow. */
+.tbl-scroll {
+  position: relative;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  margin: 0 -18px;
+  padding: 0 18px;
+}
+
+.tbl-scroll > table { min-width: 560px; }
+
+@media (max-width: 700px) {
+  .tbl-scroll th:first-child,
+  .tbl-scroll td:first-child {
+    position: sticky;
+    left: 0;
+    background: var(--yr-panel, var(--panel));
+    box-shadow: 1px 0 0 var(--yr-line, var(--line));
+  }
+  .tbl-scroll td[colspan] { position: static; box-shadow: none; }
+}

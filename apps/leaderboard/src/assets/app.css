@@ -13,10 +13,8 @@ a{color:var(--ink);text-decoration:none}a:hover{color:var(--accent)}
 .topbar{display:flex;align-items:center;justify-content:space-between;padding:14px 22px;border-bottom:1px solid var(--line)}
 .brand{font-weight:800;letter-spacing:-.02em;font-size:17px}.brand b{color:var(--accent)}
 .topbar-right{display:flex;gap:18px;align-items:center;font-size:13px}
-.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;font-weight:600;font-size:14px;padding:10px 16px;min-height:var(--tap);border-radius:8px;border:1px solid var(--line,rgba(255,255,255,0.08));background:var(--panel-2);color:var(--ink);cursor:pointer;transition:all .2s ease;}
-.btn:hover{border-color:var(--ink-soft);background:var(--panel-2)}.btn:active{transform:translateY(1px)}.btn:disabled{opacity:.45;cursor:not-allowed}
-.btn--accent{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}.btn--accent:hover{filter:brightness(1.05);transform:translateY(-1px)}
-.btn--ghost{background:transparent}.btn--sm{padding:8px 13px;font-size:13px;min-height:var(--tap)}.btn--danger{color:var(--danger);border-color:#3a2222}
+/* .btn and its variants live in ui.css — the one definition shared with the bot
+   Worker. Page-specific button layout (margins, widths) still belongs here. */
 .field{display:flex;flex-direction:column;gap:6px;margin-bottom:16px}
 .field label{font-size:13px;color:var(--ink-soft);font-weight:600}
 .field input,.field select,.field textarea{font-family:var(--sans);font-size:14px;color:var(--ink);background:var(--panel-2);border:1px solid var(--line,rgba(255,255,255,0.06));border-radius:8px;padding:10px 12px;width:100%;transition:border-color .2s,box-shadow .2s}
@@ -182,7 +180,6 @@ table.admin-table td a{color:var(--accent)}
 table.admin-table td.note{max-width:260px;color:var(--ink-soft)}
 .ta-r{text-align:right}
 .actions{display:flex;gap:6px;flex-wrap:wrap}
-.btn--xs{padding:6px 10px;font-size:12px;border-radius:8px;min-height:var(--tap)}
 .pill{display:inline-block;font-family:var(--mono);font-size:11px;padding:2px 8px;border-radius:99px;border:1px solid var(--line-2)}
 .pill--good{color:var(--ok);border-color:#1e3a2b;background:var(--ok-bg)}
 .pill--bad{color:var(--danger);border-color:#3a2222;background:color-mix(in srgb,var(--danger) 10%,transparent)}
@@ -702,7 +699,7 @@ table.ref-table td{padding:8px 8px;border-bottom:1px solid var(--line);color:var
 #ov_board{text-transform:capitalize}
 .lb-phead-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-left:auto;padding-top:4px}
 @media(max-width:640px){.lb-phead-actions{width:100%;margin-left:0}}
-.lb-menu{display:none;flex:0 0 auto;width:38px;height:38px;border:1px solid var(--line-2);background:var(--panel-2);color:var(--ink);border-radius:9px;font-size:18px;cursor:pointer}
+.lb-menu{display:none;flex:0 0 auto;width:var(--tap);height:var(--tap);border:1px solid var(--line-2);background:var(--panel-2);color:var(--ink);border-radius:9px;font-size:18px;cursor:pointer}
 .lb-cardhd{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}
 .lb-cardhd h2{margin:0;font-size:15px}
 .lb-cardlink{background:transparent;border:0;color:var(--accent);font:600 13px var(--sans);cursor:pointer;padding:0;text-decoration:none}
@@ -737,7 +734,7 @@ table.ref-table td{padding:8px 8px;border-bottom:1px solid var(--line);color:var
   .lb-shell{display:block}
   .lb-side{position:fixed;left:0;top:0;bottom:0;z-index:70;flex-basis:auto;width:260px;max-height:none;border-radius:0;background:var(--panel);border-right:1px solid var(--line);transform:translateX(-105%);transition:transform .2s ease;box-shadow:var(--shadow-lg);padding-top:6px}
   .lb-side.is-open{transform:none}
-  .lb-side-close{display:inline-flex;align-items:center;justify-content:center;position:absolute;top:10px;right:10px;width:32px;height:32px;border-radius:8px;border:1px solid var(--line-2);background:var(--panel);color:var(--ink);font-size:20px;line-height:1;cursor:pointer}
+  .lb-side-close{display:inline-flex;align-items:center;justify-content:center;position:absolute;top:10px;right:10px;width:var(--tap);height:var(--tap);border-radius:8px;border:1px solid var(--line-2);background:var(--panel);color:var(--ink);font-size:20px;line-height:1;cursor:pointer}
   .lb-side-close:hover{background:var(--panel-2)}
   .lb-menu{display:inline-grid;place-items:center}
   .lb-steps{grid-template-columns:1fr}
@@ -1094,9 +1091,6 @@ html{color-scheme:light}
 .ui-status{min-height:20px;font-size:13px;margin-top:8px;color:var(--ink-soft)}
 .ui-status.error{color:var(--danger)}
 .ui-status.success{color:var(--ok)}
-.btn[aria-busy="true"]{opacity:.65;cursor:wait}
-.btn--loading{display:inline-flex;align-items:center;gap:8px}
-.btn--loading::before{content:"";width:14px;height:14px;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;animation:ui-spin .7s linear infinite;opacity:.7}
 /* Credits analytics bars */
 .cr-bar-col{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%}
 .cr-bar-col-inner{width:100%;display:flex;align-items:flex-end;gap:1px;height:100%}

@@ -183,7 +183,7 @@ describe("dashboard views", () => {
         "nonce123",
         page
       );
-      expect(html).toContain(`<body data-page="${page}">`);
+      expect(html).toContain(`<body class="yr-ui" data-page="${page}">`);
       // Without this rule showPage() cannot hide other pages' sections and
       // every route renders the same stacked UI.
       expect(html).toContain(".hidden { display: none !important; }");

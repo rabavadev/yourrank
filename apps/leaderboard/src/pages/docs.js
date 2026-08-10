@@ -87,7 +87,7 @@ export const docsPage = `<!DOCTYPE html><html lang="en"><head>
 <meta name="description" content="YourRank public API documentation with endpoints, examples, chat bot commands, and OpenAPI spec." />
 <link rel="canonical" href="https://yourrank.site/docs" /><link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
-<link rel="stylesheet" href="/assets/app.css" />
+<link rel="stylesheet" href="/assets/app.css" /><link rel="stylesheet" href="/assets/ui.css" />
 <style>
 .docs-wrap{max-width:840px;margin:0 auto;padding:40px 24px}
 .docs-wrap h1{font-size:clamp(32px,5vw,48px);font-weight:800;letter-spacing:-.03em;margin:0 0 12px}

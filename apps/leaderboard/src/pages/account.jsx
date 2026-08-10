@@ -93,7 +93,7 @@ export const AccountConnectedPage = () => <AccountPage tab="connected" />;
 export const AccountDataPage = () => <AccountPage tab="data" />;
 
 const accountConfigBase = {
-  styles: ["/assets/app.css", "/assets/shell-nav.css", "/assets/dashboard-v2.css"],
+  styles: ["/assets/app.css", "/assets/shell-nav.css", "/assets/dashboard-v2.css", "/assets/ui.css"],
   scripts: ['<script src="/assets/account.js?v=3" type="module"></script>'],
   nav: true,
   footer: false,

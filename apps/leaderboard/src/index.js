@@ -618,7 +618,7 @@ async function handleRequest(request, env, ctx, meta) {
 <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Invalid link · YourRank</title>
 <meta name="robots" content="noindex, nofollow" />
-<link rel="stylesheet" href="/assets/app.css" /></head><body>
+<link rel="stylesheet" href="/assets/app.css" /><link rel="stylesheet" href="/assets/ui.css" /></head><body>
 <a href="#main-content" class="sr-only skip-link">Skip to content</a>
 <div class="auth-wrap"><aside class="auth-side"><div><div class="brand">Your<b>Rank</b></div></div>
 <div><h1>That link doesn't work.</h1><p>This reset link is missing, expired, or already used. Request a fresh one below.</p></div>

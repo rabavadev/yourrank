@@ -16,7 +16,7 @@ export const landingPage = `<!DOCTYPE html>
 <meta name="twitter:image" content="https://yourrank.site/og.png" />
 <link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
-<link rel="stylesheet" href="/assets/landing.css" />
+<link rel="stylesheet" href="/assets/ui.css" /><link rel="stylesheet" href="/assets/landing.css" />
 <script type="application/ld+json">{"@context":"https://schema.org","@type":"Organization","name":"YourRank","url":"https://yourrank.site","description":"All-in-one streamer suite: branded leaderboards, Telegram bot, and viewer rewards & shop.","areaServed":"Worldwide","knowsAbout":["leaderboards","streaming","Kick","Discord","Telegram bot","community tools","viewer rewards"],"contactPoint":{"@type":"ContactPoint","contactType":"customer service","email":"contact@yourrank.site","availableLanguage":["English"]}}</script>
 </head><body>
 <noscript><div class="noscript-card">

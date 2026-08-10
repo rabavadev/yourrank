@@ -104,7 +104,7 @@ export function RewardsRedemptionsPage() { return <RewardsPage tab="redemptions"
 export function RewardsHistoryPage() { return <RewardsPage tab="history" />; }
 
 const rewardsConfigBase = {
-  styles: ["/assets/app.css", "/assets/shell-nav.css", "/assets/dashboard-v2.css"],
+  styles: ["/assets/app.css", "/assets/shell-nav.css", "/assets/dashboard-v2.css", "/assets/ui.css"],
   scripts: ['<script src="/assets/credits.js?v=3" type="module"></script>'],
   nav: true,
   footer: false,
