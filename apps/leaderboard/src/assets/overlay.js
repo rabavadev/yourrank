@@ -58,10 +58,10 @@
   function renderSponsor() {
     const el = document.querySelector("[data-ov-sponsor]");
     if (!el) return;
-    if (!SPONSOR_TEXT) { el.style.display = "none"; return; }
-    el.style.display = "";
+    if (!SPONSOR_TEXT) { el.classList.remove("is-visible"); return; }
+    el.classList.add("is-visible");
     if (SPONSOR_URL) {
-      el.innerHTML = `<a href="${SPONSOR_URL}" target="_blank" rel="noopener" style="color:inherit;text-decoration:none">${SPONSOR_TEXT}</a>`;
+      el.innerHTML = `<a href="${SPONSOR_URL}" target="_blank" rel="noopener">${SPONSOR_TEXT}</a>`;
     } else {
       el.textContent = SPONSOR_TEXT;
     }
