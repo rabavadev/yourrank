@@ -6,7 +6,7 @@ export function offersPanel(publicBaseUrl: string): string {
     <p class="muted" id="postbackStatus">Loading postback status…</p>
     <div class="tbl-scroll"><table><thead><tr><th>Offer</th><th>Link</th><th>Clicks</th><th>Unique</th><th title="Click-through rate: unique clicks / total clicks">CTR ?</th><th title="Conversion rate: conversions / unique clicks">CR ?</th><th>Conv.</th><th>Status</th><th><span class="sr-only">Actions</span></th></tr></thead>
     <tbody id="offers"><tr><td colspan="9" class="muted">Loading…</td></tr></tbody></table></div>
-    <p class="muted style-28">Metrics are lifetime totals for each offer. <a href="${publicBaseUrl}/account/postbacks">Manage postbacks in Account →</a></p>
+    <p class="muted hint">Metrics are lifetime totals for each offer. <a href="${publicBaseUrl}/account/postbacks">Manage postbacks in Account →</a></p>
     <details class="glossary"><summary>Metric glossary</summary>
       <dl>
         <div><dt>Clicks</dt><dd>Total clicks on this offer's tracked short link.</dd></div>
@@ -38,7 +38,7 @@ export function offersPanel(publicBaseUrl: string): string {
     <button data-action="createOffer" type="button">Create offer</button>
 
     <div id="offerPreview" class="offer-preview" hidden>
-      <h3 class="style-18">Link preview</h3>
+      <h3 class="subhead">Link preview</h3>
       <p class="muted" id="offerPreviewUrl">—</p>
       <p id="offerPreviewText">—</p>
     </div>
