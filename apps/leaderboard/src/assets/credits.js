@@ -16,7 +16,7 @@ function usageLabel(used, limit, name) {
 }
 function usageCard(used, limit, name) {
   const cls = usageCls(used, limit);
-  const link = cls ? `<a href="/account#plan" class="cr-usage-upgrade">Upgrade plan</a>` : "";
+  const link = cls ? `<a href="/account/plan" class="cr-usage-upgrade">Upgrade plan</a>` : "";
   return `<div class="cr-usage-card"><div class="hint">${esc(name)}</div><div class="cr-usage-number${cls ? " " + cls : ""}">${used} / ${limit}</div>${link}</div>`;
 }
 function csrf() {
