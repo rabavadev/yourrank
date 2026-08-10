@@ -209,12 +209,14 @@ function render() {
   $("cr-redemption-empty").hidden = true;
 
   renderOnboarding();
+  renderStatus();
+  wireCrJumps();
 }
 
 function renderOnboarding() {
   const wrap = $("cr-onboarding");
   if (!wrap) return;
-  const hidden = localStorage.getItem("cr-onboarding-hide") === "1";
+  let hidden = localStorage.getItem("cr-onboarding-hide") === "1";
   const connected = Boolean(state.channel?.externalId);
   const mappings = (state.mappings || []).filter((m) => m.active).length;
   const items = (state.shopItems || []).filter((i) => i.active).length;
@@ -238,8 +240,71 @@ function renderOnboarding() {
   }
 
   const ready = steps[4].done;
-  wrap.hidden = hidden && ready;
+  // Auto-hide the checklist once the program is fully set up.
+  if (ready && !hidden) {
+    hidden = true;
+    try { localStorage.setItem("cr-onboarding-hide", "1"); } catch {}
+  }
+  wrap.hidden = hidden;
   $("cr-onboarding-hide").hidden = !ready;
+}
+
+function renderStatus() {
+  const connected = Boolean(state.channel?.externalId);
+  const channelName = state.channel?.name || "";
+  const activeMappings = (state.mappings || []).filter((m) => m.active).length;
+  const activeItems = (state.shopItems || []).filter((i) => i.active).length;
+  const pending = (state.redemptions || []).filter((r) => r.status === "pending").length;
+  const summary = state.analytics?.summary || {};
+  const balance = summary.viewerBalance || 0;
+  const viewers = (state.viewers || []).length;
+
+  $("cr-status-channel").textContent = connected ? (channelName || "Connected") : "Not connected";
+  $("cr-status-mappings").textContent = `${activeMappings} active`;
+  $("cr-status-shop").textContent = `${activeItems} active`;
+  $("cr-status-pending").textContent = `${pending}`;
+  $("cr-status-balance").textContent = `${balance}`;
+
+  let msg = "";
+  let action = "";
+  let label = "";
+  if (!connected) { msg = "Next step: connect your Kick channel so viewers can earn credits."; action = "cr-channel"; label = "Connect Kick"; }
+  else if (activeMappings === 0) { msg = "Next step: create a reward mapping to convert Kick points into credits."; action = "cr-maps"; label = "Add mapping"; }
+  else if (activeItems === 0) { msg = "Next step: add a shop item for viewers to spend credits."; action = "cr-shop"; label = "Add shop item"; }
+  else if (pending > 0) { msg = `${pending} redemption(s) need your approval.`; action = "cr-redemptions"; label = "View redemptions"; }
+  else if (viewers === 0) { msg = "Your rewards are ready. Redeem a test Kick reward to see a viewer appear."; action = "cr-viewers"; label = "Check viewers"; }
+  else { msg = "Credits & shop is live. Add more rewards or items to grow."; }
+
+  const msgEl = $("cr-status-msg");
+  msgEl.textContent = msg;
+  const actionWrap = $("cr-status-action");
+  actionWrap.innerHTML = "";
+  if (action) {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "btn btn--sm btn--accent";
+    btn.dataset.crJump = action;
+    btn.textContent = label;
+    actionWrap.appendChild(btn);
+  }
+}
+
+let _crJumpsWired = false;
+function wireCrJumps() {
+  if (_crJumpsWired) return;
+  _crJumpsWired = true;
+  document.addEventListener("click", (e) => {
+    const btn = e.target.closest("[data-cr-jump]");
+    if (!btn) return;
+    e.preventDefault();
+    const hash = btn.dataset.crJump;
+    const event = new CustomEvent("yr-nav", { detail: { page: "kickrewards", hash }, cancelable: true });
+    window.dispatchEvent(event);
+    if (!event.defaultPrevented) {
+      const el = document.getElementById(hash);
+      if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  });
 }
 
 async function toggleBlock(id, isBlocked) {
@@ -510,6 +575,7 @@ function renderAnalytics() {
   $("cr-top-items-empty").hidden = items.length > 0;
 
   renderCreditsByDay(a.creditsByDay || []);
+  renderStatus();
 }
 
 function renderCreditsByDay(rows) {
