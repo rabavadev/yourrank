@@ -450,6 +450,42 @@ export const handlerSchemas: Record<string, ZodSchema<any>> = {
       shopItemId: z.string().trim().min(1).max(64),
     })
     .strict(),
+
+  // --- Originals games ------------------------------------------------------
+  // The client only ever sends a bet, game params and (for Mines) a tile.
+  // Outcomes, multipliers and payouts are server-computed and never accepted
+  // from a request body — hence `.strict()` on every schema here.
+  handleGamesBet: z
+    .object({
+      slug: z.string().trim().min(1).max(80),
+      game: z.enum(["mines", "plinko", "dice", "limbo"]),
+      bet: z.coerce.number().int().min(1).max(1_000_000),
+      idempotencyKey: z.string().trim().min(8).max(100),
+      params: z.record(z.union([z.string(), z.number(), z.boolean()])).default({}),
+    })
+    .strict(),
+
+  handleGamesMinesReveal: z
+    .object({
+      slug: z.string().trim().min(1).max(80),
+      roundId: z.string().uuid(),
+      tile: z.coerce.number().int().min(0).max(24),
+    })
+    .strict(),
+
+  handleGamesMinesCashout: z
+    .object({
+      slug: z.string().trim().min(1).max(80),
+      roundId: z.string().uuid(),
+    })
+    .strict(),
+
+  handleGamesFairnessRotate: z
+    .object({
+      slug: z.string().trim().min(1).max(80),
+      clientSeed: z.string().trim().min(1).max(64).optional(),
+    })
+    .strict(),
 };
 
 // ---------------------------------------------------------------------------
