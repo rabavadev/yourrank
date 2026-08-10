@@ -77,7 +77,7 @@ export function broadcastsPanel(): string {
     <p id="bcFormStatus" class="form-status" role="alert" aria-live="polite"></p>
 
     <p class="muted style-28">Use <code>{name}</code> to include the subscriber's first name. Get your chat ID by sending <code>/start</code> to <a href="https://t.me/userinfobot" target="_blank" rel="noopener">@userinfobot</a>. Scheduled broadcasts can be cancelled until they start sending.</p>
-    <table class="style-20"><thead><tr><th>Message</th><th>Bot</th><th>Status</th><th>Scheduled</th><th>Sent</th><th>Failed</th><th><span class="sr-only">Actions</span></th></tr></thead>
-    <tbody id="bcList"></tbody></table>
+    <div class="tbl-scroll"><table class="style-20"><thead><tr><th>Message</th><th>Bot</th><th>Status</th><th>Scheduled</th><th>Sent</th><th>Failed</th><th><span class="sr-only">Actions</span></th></tr></thead>
+    <tbody id="bcList"></tbody></table></div>
   </div>`;
 }

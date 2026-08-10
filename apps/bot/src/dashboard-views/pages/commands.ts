@@ -50,7 +50,7 @@ export function commandsPanel(): string {
       </div>
     </div>
 
-    <table class="style-20"><thead><tr><th>Command</th><th>Reply</th><th>Buttons</th><th>Status</th><th><span class="sr-only">Actions</span></th></tr></thead>
-    <tbody id="cmdList"><tr><td colspan="5" class="muted">Loading…</td></tr></tbody></table>
+    <div class="tbl-scroll"><table class="style-20"><thead><tr><th>Command</th><th>Reply</th><th>Buttons</th><th>Status</th><th><span class="sr-only">Actions</span></th></tr></thead>
+    <tbody id="cmdList"><tr><td colspan="5" class="muted">Loading…</td></tr></tbody></table></div>
   </div>`;
 }

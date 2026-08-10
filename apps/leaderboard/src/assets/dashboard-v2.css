@@ -13,6 +13,8 @@
   --yr-ink-mute: #82828a;
   --yr-accent: #2200ff;
   --yr-accent-ink: #ffffff;
+  --yr-accent-soft: rgba(34, 0, 255, .08);
+  --yr-accent-line: rgba(34, 0, 255, .15);
   --yr-green: #10a37f;
   --yr-red: #ef4444;
   --yr-radius: 14px;
@@ -178,7 +180,7 @@
 
 .v2-dash .lb-nav.is-on,
 .v2-dash .lb-nav[aria-current="page"] {
-  background: rgba(79, 70, 229, .08);
+  background: var(--yr-accent-soft);
   color: var(--yr-accent);
   font-weight: 600;
 }
@@ -735,7 +737,7 @@
   display: grid;
   place-items: center;
   border-radius: var(--yr-radius);
-  background: rgba(79, 70, 229, .08);
+  background: var(--yr-accent-soft);
   color: var(--yr-accent);
 }
 
@@ -1033,7 +1035,7 @@
 .v2-dash textarea:focus,
 .v2-dash select:focus {
   border-color: var(--yr-accent);
-  box-shadow: 0 0 0 3px rgba(79, 70, 229, .08);
+  box-shadow: 0 0 0 3px var(--yr-accent-soft);
 }
 
 .v2-dash .pill {
@@ -1048,9 +1050,9 @@
 }
 
 .v2-dash .pill--info {
-  background: rgba(79, 70, 229, .08);
+  background: var(--yr-accent-soft);
   color: var(--yr-accent);
-  border-color: rgba(79, 70, 229, .15);
+  border-color: var(--yr-accent-line);
 }
 
 .v2-dash .hr {
@@ -1111,6 +1113,7 @@
   color: var(--yr-red);
 }
 
+@media (max-width: 1080px) {
   .v2-dash .design-grid {
     grid-template-columns: 1fr;
   }
@@ -1545,9 +1548,9 @@
 }
 
 .v2-dash .pill--info {
-  background: rgba(79, 70, 229, .08);
+  background: var(--yr-accent-soft);
   color: var(--yr-accent);
-  border-color: rgba(79, 70, 229, .15);
+  border-color: var(--yr-accent-line);
 }
 
 .v2-dash .pill--muted {
@@ -1761,8 +1764,8 @@
 .v2-dash .plan-banner {
   padding: 12px 14px;
   border-radius: var(--yr-radius-sm);
-  background: rgba(79, 70, 229, .08);
-  border: 1px solid rgba(79, 70, 229, .15);
+  background: var(--yr-accent-soft);
+  border: 1px solid var(--yr-accent-line);
   color: var(--yr-accent);
   font-size: 13px;
   margin: -8px 0 16px;
@@ -2069,9 +2072,9 @@
 }
 
 @keyframes yr-pulse {
-  0% { box-shadow: 0 0 0 0 rgba(79, 70, 229, .35); }
-  70% { box-shadow: 0 0 0 8px rgba(79, 70, 229, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(79, 70, 229, 0); }
+  0% { box-shadow: 0 0 0 0 rgba(34, 0, 255, .35); }
+  70% { box-shadow: 0 0 0 8px rgba(34, 0, 255, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(34, 0, 255, 0); }
 }
 
 .metric-glossary {
