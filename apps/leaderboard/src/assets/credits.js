@@ -9,8 +9,11 @@ function usageLabel(used, limit, name) {
 }
 function usageCard(used, limit, name) {
   const pct = limit > 0 ? Math.round((used / limit) * 100) : 0;
-  const color = used >= limit ? "color:#ff6b6b" : pct >= 80 ? "color:#ffcc00" : "";
-  return `<div style="padding:10px;border:1px solid var(--line);border-radius:8px"><div class="hint">${esc(name)}</div><div style="font-weight:600;${color}">${used} / ${limit}</div></div>`;
+  const atLimit = limit > 0 && used >= limit;
+  const near = limit > 0 && !atLimit && pct >= 80;
+  const color = atLimit ? "color:#ff6b6b" : near ? "color:#ffcc00" : "";
+  const link = atLimit || near ? `<a href="/account#plan" style="font-size:12px">Upgrade plan</a>` : "";
+  return `<div style="padding:10px;border:1px solid var(--line);border-radius:8px"><div class="hint">${esc(name)}</div><div style="font-weight:600;${color}">${used} / ${limit}</div>${link}</div>`;
 }
 function csrf() {
   const m = document.cookie.match(/(?:^|;\s*)__csrf=([^;]+)/);

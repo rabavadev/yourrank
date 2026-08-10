@@ -1763,6 +1763,62 @@
   background: var(--yr-panel-2);
 }
 
+.v2-dash .plan-usage {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 10px;
+}
+
+.v2-dash .plan-usage-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--yr-line);
+  border-radius: var(--yr-radius-sm);
+  background: var(--yr-panel-2);
+}
+
+.v2-dash .plan-usage-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.v2-dash .plan-usage-label {
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.v2-dash .plan-usage-product {
+  font-size: 11px;
+  color: var(--yr-ink-mute);
+}
+
+.v2-dash .plan-usage-value {
+  font: 700 14px var(--yr-mono);
+  white-space: nowrap;
+}
+
+.v2-dash .plan-pending,
+.v2-dash .plan-cancel {
+  margin-top: 22px;
+  padding: 14px;
+  border: 1px solid var(--yr-line);
+  border-radius: var(--yr-radius-sm);
+  background: var(--yr-panel-2);
+}
+
+.v2-dash .plan-cancel-list {
+  margin: 0 0 14px;
+  padding-left: 18px;
+}
+
+.v2-dash .plan-cancel-list li {
+  margin-bottom: 6px;
+}
+
 .v2-dash .plan-trial .status {
   font-size: 13px;
   color: var(--yr-red);

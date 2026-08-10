@@ -2,7 +2,7 @@
 import { $, esc, getCsrf, logError, copyToClipboard, flashButton } from "./dashboard/utils.js";
 import { state } from "./dashboard/state.js";
 import { wireAccount } from "./dashboard/account.js";
-import { renderPlan, loadHistory, wireDeleteAccount, wireCancelSubscription } from "./dashboard/site.js";
+import { renderPlan, loadHistory, loadPlanUsage, wireDeleteAccount, wireCancelSubscription } from "./dashboard/site.js";
 
 const statusEl = () => $("status");
 function setStatus(message, isError) {
@@ -285,6 +285,7 @@ async function init() {
   setupAccountShell();
 
   renderPlan();
+  loadPlanUsage();
   loadHistory();
   wireAccount();
   wireDeleteAccount();

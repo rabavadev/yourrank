@@ -35,20 +35,39 @@ const accountContent = `
 
       <div class="lb-widget lb-widget--full" id="plan">
         <h2>Plan &amp; billing</h2>
-        <p class="card-sub">Pick the plan that fits your stream, or start a free Pro trial.</p>
+        <p class="card-sub">Current plan, usage and billing history.</p>
+
         <div class="plan-summary" id="planSummary"></div>
         <div class="plan-banner" id="planBanner" role="status" aria-live="polite" hidden></div>
-        <div id="pendingPayment" hidden>
-          <p class="status" role="status" aria-live="polite"></p>
-          <a class="btn btn--sm" id="pendingPaymentLink" href="#">Complete payment</a>
-        </div>
-        <div id="cancelWrap" hidden>
-          <p class="hint" id="cancelStatus" role="status" aria-live="polite"></p>
-          <button class="btn btn--sm btn--danger" id="cancelBtn" type="button">Cancel subscription</button>
-        </div>
+
+        <h3 class="m-0 mt-18 mb-8">Usage &amp; limits</h3>
+        <p class="card-sub">What you are using across all products. Limit messages in other dashboards link here.</p>
+        <div class="plan-usage" id="planUsage"><p class="hint">Loading usage…</p></div>
+
+        <h3 class="m-0 mt-18 mb-8">Compare plans</h3>
         <div class="plan-grid" id="planGrid"></div>
         <div class="plan-trial" id="planTrial" hidden><p class="hint">Not ready to pay? Try every Pro feature free for 7 days.</p><button class="btn btn--accent" id="trialBtn" type="button">Start free Pro trial</button><p class="status" id="trialStatus" role="status" aria-live="polite"></p></div>
         <p class="hint" id="planHint">Paid plans are billed in crypto (BTC, ETH, USDT and 100+ more) and activate automatically once the network confirms.</p>
+
+        <div id="pendingPayment" hidden class="plan-pending">
+          <h3 class="m-0 mb-8">Pending payment</h3>
+          <p class="status" role="status" aria-live="polite"></p>
+          <a class="btn btn--sm" id="pendingPaymentLink" href="#">Complete payment</a>
+        </div>
+
+        <div id="cancelWrap" hidden class="plan-cancel">
+          <h3 class="m-0 mb-8">Cancel or change plan</h3>
+          <p class="card-sub">What happens before you cancel or downgrade.</p>
+          <ul class="hint plan-cancel-list">
+            <li>You keep your current plan features until the expiry date shown above.</li>
+            <li>After expiry, your account reverts to Free and paid features stop working.</li>
+            <li>If you are over Free limits (boards, players, reward mappings, shop items), you won't be able to add more until you upgrade again.</li>
+            <li>Existing leaderboard data, viewers and redemptions are never deleted by a downgrade.</li>
+          </ul>
+          <p class="hint" id="cancelStatus" role="status" aria-live="polite"></p>
+          <button class="btn btn--sm btn--danger" id="cancelBtn" type="button">Cancel subscription</button>
+        </div>
+
         <div id="historyCard" hidden>
           <h3 class="m-0 mt-18 mb-4">Payment history</h3>
           <p class="card-sub">Your past payments and receipts.</p>

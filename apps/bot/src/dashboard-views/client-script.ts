@@ -172,30 +172,10 @@ async function loadExtras(){
   renderPostbackStatus(pbStatus);
 
   const cur = plan?.current;
-  if (cur) {
-    const plur = (n, w) => n + ' ' + w + (n === 1 ? '' : 's');
-    const planInfo = $('planInfo');
-    let warning = '';
-    if (plan?.warning) warning = '<p class="style-warn" style="margin:8px 0 0">'+esc(plan.warning)+'</p>';
-    if (planInfo) planInfo.innerHTML = '<b class="style-34">'+esc(cur.label)+'</b> — up to '+plur(cur.maxBots, 'bot')+', '
-      +plur(cur.maxOffers, 'offer')+(cur.broadcasts?', broadcasts':'')+(cur.postbacks?', postbacks':'')+warning;
-    if (typeof cur.maxBots === 'number') {
-      __maxBots = cur.maxBots;
-      const cf = $('connectWizard');
-      if (cf) cf.classList.toggle('hidden', __lastBots.filter(b => b.status === 'active').length >= __maxBots);
-    }
-    const planButtons = $('planButtons');
-    if (planButtons) {
-      const upsell = (plan.plans||[]).filter(p=>p.priceUsd>0 && p.tier!==cur.tier);
-      if (upsell.length) {
-        planButtons.innerHTML = upsell.map(p=>
-          '<a class="style-35" href="'+esc(plan.upgradeUrl)+'&plan='+esc(p.tier)+'" target="_blank" rel="noopener">'
-          +'Upgrade to '+esc(p.label)+' — $'+esc(String(p.priceUsd))+'/30d</a>'
-        ).join('');
-      } else {
-        planButtons.innerHTML = '<a class="style-35" href="'+esc(plan.upgradeUrl)+'" target="_blank" rel="noopener">Manage billing</a>';
-      }
-    }
+  if (cur && typeof cur.maxBots === 'number') {
+    __maxBots = cur.maxBots;
+    const cf = $('connectWizard');
+    if (cf) cf.classList.toggle('hidden', __lastBots.filter(b => b.status === 'active').length >= __maxBots);
   }
 
   const bcList = $('bcList');
@@ -944,10 +924,8 @@ showTimezone();
 
 window.addEventListener('error', () => {
   const bl = $('botList'); if (bl) bl.textContent = 'Something went wrong. Please reload the page.';
-  const pi = $('planInfo'); if (pi) pi.textContent = 'Something went wrong. Please reload the page.';
 });
 window.addEventListener('unhandledrejection', () => {
-  const pi = $('planInfo'); if (pi) pi.textContent = 'Something went wrong. Please reload the page.';
   const bl = $('botList'); if (bl) bl.textContent = 'Something went wrong. Please reload the page.';
 });
 
