@@ -108,6 +108,10 @@ export function openDrawer() {
   const side = $("lbSide");
   if (side) {
     side.classList.add("is-open");
+    // The sidebar is a permanent navigation landmark on desktop and only becomes
+    // a dialog while it is open as a drawer, so the role goes on here and comes
+    // off on close — a static `role="dialog"` hides the nav from assistive tech.
+    side.setAttribute("role", "dialog");
     side.setAttribute("aria-modal", "true");
   }
   document.querySelector(".lb-backdrop")?.classList.add("is-open");
@@ -126,7 +130,8 @@ export function closeDrawer(focusMenu = true) {
   const side = $("lbSide");
   if (side) {
     side.classList.remove("is-open");
-    side.setAttribute("aria-modal", "false");
+    side.removeAttribute("role");
+    side.removeAttribute("aria-modal");
   }
   document.querySelector(".lb-backdrop")?.classList.remove("is-open");
   document.querySelectorAll(".lb-menu").forEach((b) => b.setAttribute("aria-expanded", "false"));

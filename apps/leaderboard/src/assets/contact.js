@@ -118,13 +118,16 @@ function wireHelpDrawer() {
   if (!side) return;
   function openDrawer() {
     side.classList.add("is-open");
+    // Only a dialog while it is open as a drawer (see dashboard/shell.js).
+    side.setAttribute("role", "dialog");
     side.setAttribute("aria-modal", "true");
     menu?.setAttribute("aria-expanded", "true");
     if (backdrop) backdrop.classList.add("is-open");
   }
   function closeDrawer() {
     side.classList.remove("is-open");
-    side.setAttribute("aria-modal", "false");
+    side.removeAttribute("role");
+    side.removeAttribute("aria-modal");
     menu?.setAttribute("aria-expanded", "false");
     if (backdrop) backdrop.classList.remove("is-open");
   }

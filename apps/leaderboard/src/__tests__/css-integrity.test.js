@@ -54,7 +54,7 @@ describe("shared UI primitives", () => {
 
   // A bare `.btn`/`.badge`/`button` rule elsewhere re-forks the component;
   // scoped rules like `.perf-filter .btn` only position it and are fine.
-  const OWNED = new Set([".btn", ".btn--accent", ".btn--ghost", ".btn--danger", ".btn--sm", ".btn--xs", ".badge", ".tbl-scroll", ".modal", ".modal-card", ".modal-input", ".modal-actions", ".empty", ".error-state"]);
+  const OWNED = new Set([".btn", ".btn--accent", ".btn--ghost", ".btn--danger", ".btn--sm", ".btn--xs", ".badge", ".tbl-scroll", ".modal", ".modal-card", ".modal-input", ".modal-actions", ".empty", ".error-state", ".sr-only", ".skip-link"]);
 
   // leaderboard.css is the public board's own design system: those pages are the
   // customer's branded site, not our app chrome, so they deliberately do not
@@ -67,6 +67,27 @@ describe("shared UI primitives", () => {
       expect(clashes).toEqual([]);
     });
   }
+
+  // Every page opens with `<a class="sr-only skip-link">`, so any sheet a page
+  // can be rendered with alone has to hide it — /` and /pricing load landing.css
+  // and ui.css only, and the skip link was visible on both.
+  it("hides the skip link on every sheet a page ships with", () => {
+    expect(ui).toMatch(/\.sr-only\s*\{[^}]*clip:\s*rect\(0,\s*0,\s*0,\s*0\)/);
+    // The bot shell's skip link has no .sr-only class, so .skip-link has to
+    // hide itself too rather than relying on the class next to it.
+    expect(ui).toMatch(/\.skip-link\s*\{[^}]*transform:\s*translateY\(-200%\)/);
+    expect(ui).toMatch(/\.skip-link:focus\s*\{[^}]*transform:\s*none/);
+    const pagesDir = path.resolve(import.meta.dir, "../pages");
+    const withSkipLink = fs
+      .readdirSync(pagesDir)
+      .filter((f) => /\.(js|jsx)$/.test(f))
+      .filter((f) => fs.readFileSync(path.join(pagesDir, f), "utf8").includes("sr-only skip-link"));
+    expect(withSkipLink.length).toBeGreaterThan(0);
+    for (const file of withSkipLink) {
+      const src = fs.readFileSync(path.join(pagesDir, file), "utf8");
+      expect(`${file} links ui.css`).toBe(src.includes('href="/assets/ui.css"') ? `${file} links ui.css` : `${file} does not`);
+    }
+  });
 
   it("the bot shell styles buttons through ui.css, not its own copy", () => {
     expect(botShell).toContain('<link rel="stylesheet" href="/assets/ui.css">');

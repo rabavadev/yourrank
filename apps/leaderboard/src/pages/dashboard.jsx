@@ -40,7 +40,7 @@ export function DashboardContent() {
 <div id="dash" class="v2-dash" hidden>
 <div class="toast" id="status" role="status" aria-live="polite"></div>
 <div class="lb-shell">
-<aside class="lb-side" id="lbSide" aria-label="Dashboard sections" role="dialog" aria-modal="false">
+<aside class="lb-side" id="lbSide" aria-label="Dashboard sections">
 <div class="lb-side-head">
 <div class="lb-side-board">
 <span class="label" id="activeBoardLabel">Active board</span>

@@ -17,6 +17,52 @@
    hidden button (the bot's wizard steps, the collapsed forms) renders. */
 [hidden] { display: none !important; }
 
+/* ---- screen-reader-only content and the skip link --------------------------
+   Every page in the product opens with `<a class="sr-only skip-link">`, but
+   `.sr-only` used to be defined only in app.css, which the marketing pages do
+   not load — so "Skip to content" sat visibly in the corner of / and /pricing.
+   It belongs in the one sheet every surface links. */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Two markups exist — `.sr-only.skip-link` on the app pages and a bare
+   `.skip-link` in the bot shell — so the link hides both ways: clipped by
+   .sr-only where present, and moved off the top edge on its own. */
+.skip-link {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 9999;
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--tap, 44px);
+  padding: 12px 16px;
+  background: var(--yr-accent, var(--accent, #2200ff));
+  color: var(--yr-accent-ink, var(--accent-ink, #fff));
+  font-weight: 700;
+  text-decoration: none;
+  transform: translateY(-200%);
+}
+
+.skip-link:focus { transform: none; }
+
+.sr-only.skip-link:focus {
+  width: auto;
+  height: auto;
+  overflow: visible;
+  clip: auto;
+  white-space: nowrap;
+}
+
 /* ---- button ----------------------------------------------------------------
    `.yr-ui button` covers the bot dashboard, whose markup uses bare <button>
    elements with .ghost/.danger modifiers rather than the .btn class. Both

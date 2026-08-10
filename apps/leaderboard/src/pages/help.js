@@ -18,7 +18,7 @@ function helpContent({ active, h1, intro, kind, subjectPlaceholder, messagePlace
   return `<div id="help-app" data-help-tab="${active}">
 <div class="lb-backdrop" id="helpBackdrop"></div>
 <div class="lb-shell">
-  <aside class="lb-side" id="helpSide" aria-label="Help sections" role="dialog" aria-modal="false">
+  <aside class="lb-side" id="helpSide" aria-label="Help sections">
     <div class="lb-side-head"><span class="label">Help</span></div>
     <nav class="lb-side-group" aria-label="Help">
       ${tabsHtml(active)}
