@@ -3,18 +3,20 @@ import { showConfirmModal, showPromptModal } from "./dashboard/utils.js";
 function $(id) { return document.getElementById(id); }
 function esc(s) { return String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
 function fmtDate(iso) { return iso ? new Date(iso).toLocaleString() : "—"; }
-function usageLabel(used, limit, name) {
+function usageCls(used, limit) {
   const pct = limit > 0 ? Math.round((used / limit) * 100) : 0;
-  const color = used >= limit ? "color:#ff6b6b" : pct >= 80 ? "color:#ffcc00" : "";
-  return `<span style="${color}">${used} / ${limit} ${name}</span>`;
+  if (limit > 0 && used >= limit) return "cr-usage-over";
+  if (limit > 0 && pct >= 80) return "cr-usage-near";
+  return "";
+}
+function usageLabel(used, limit, name) {
+  const cls = usageCls(used, limit);
+  return `<span class="cr-usage-text${cls ? " " + cls : ""}">${used} / ${limit} ${name}</span>`;
 }
 function usageCard(used, limit, name) {
-  const pct = limit > 0 ? Math.round((used / limit) * 100) : 0;
-  const atLimit = limit > 0 && used >= limit;
-  const near = limit > 0 && !atLimit && pct >= 80;
-  const color = atLimit ? "color:#ff6b6b" : near ? "color:#ffcc00" : "";
-  const link = atLimit || near ? `<a href="/account#plan" style="font-size:12px">Upgrade plan</a>` : "";
-  return `<div style="padding:10px;border:1px solid var(--line);border-radius:8px"><div class="hint">${esc(name)}</div><div style="font-weight:600;${color}">${used} / ${limit}</div>${link}</div>`;
+  const cls = usageCls(used, limit);
+  const link = cls ? `<a href="/account#plan" class="cr-usage-upgrade">Upgrade plan</a>` : "";
+  return `<div class="cr-usage-card"><div class="hint">${esc(name)}</div><div class="cr-usage-number${cls ? " " + cls : ""}">${used} / ${limit}</div>${link}</div>`;
 }
 function csrf() {
   const m = document.cookie.match(/(?:^|;\s*)__csrf=([^;]+)/);
@@ -516,11 +518,12 @@ function renderCreditsByDay(rows) {
     const label = new Date(d).toLocaleDateString(undefined, { month: "short", day: "numeric" });
     return `<div class="cr-bar-col" title="${label}: ${total} (${g.earn} earned, ${g.spend} spent)">
       <div class="cr-bar-col-inner">
-        <div class="cr-bar-earn" style="height:${earnPct}%"></div>
-        <div class="cr-bar-spend" style="height:${spendPct}%"></div>
+        <div class="cr-bar-earn" data-height="${earnPct}"></div>
+        <div class="cr-bar-spend" data-height="${spendPct}"></div>
       </div>
     </div>`;
   }).join("");
+  container.querySelectorAll("[data-height]").forEach((el) => { el.style.height = el.dataset.height + "%"; });
   container.setAttribute("role", "img");
   const allTotal = days.reduce((a, d) => a + grouped[d].earn + grouped[d].spend, 0);
   container.setAttribute("aria-label", `Bar chart of credits by day for the last ${days.length} days. Total: ${allTotal} credits.`);

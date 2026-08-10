@@ -78,7 +78,7 @@ export const creditsContent = `
             <label for="cr-channel-name-input">Channel name (optional)</label>
             <input id="cr-channel-name-input" type="text" placeholder="yourchannel" />
           </div>
-          <div class="field" style="grid-column:1/-1">
+          <div class="field field--full">
             <button class="btn" type="submit">Save channel</button>
             <p class="status" id="cr-channel-status" role="status" aria-live="polite"></p>
           </div>
@@ -89,7 +89,7 @@ export const creditsContent = `
 
   <section class="card">
     <h2>Plan usage</h2>
-    <div id="cr-usage" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px"></div>
+    <div id="cr-usage" class="cr-usage-grid"></div>
   </section>
 
   <section class="card">
@@ -99,7 +99,7 @@ export const creditsContent = `
       <label class="chk"><input type="checkbox" id="cr-viewer-auth-kick" checked /> Allow "Log in with Kick"</label>
       <label class="chk"><input type="checkbox" id="cr-viewer-auth-discord" checked /> Allow "Log in with Discord"</label>
       <label class="chk"><input type="checkbox" id="cr-viewer-auth-public" checked /> Allow public username lookup &amp; redeem</label>
-      <div class="field" style="grid-column:1/-1">
+      <div class="field field--full">
         <button class="btn" type="submit" id="cr-viewer-auth-submit">Save settings</button>
         <p class="status" id="cr-viewer-auth-status" role="status" aria-live="polite"></p>
       </div>
@@ -130,7 +130,7 @@ export const creditsContent = `
           <label for="cr-reward-credits">Credits granted</label>
           <input id="cr-reward-credits" type="number" min="1" value="50" required />
         </div>
-        <div class="field" style="grid-column:1/-1">
+        <div class="field field--full">
           <button class="btn" type="submit" id="cr-reward-submit">Save mapping</button>
           <p class="status" id="cr-reward-status" role="status" aria-live="polite"></p>
         </div>
@@ -155,11 +155,11 @@ export const creditsContent = `
         <label for="cr-reward-create-color">Background color</label>
         <input id="cr-reward-create-color" type="color" value="#00e701" />
       </div>
-      <div class="field" style="grid-column:1/-1">
+      <div class="field field--full">
         <label for="cr-reward-create-desc">Description</label>
         <input id="cr-reward-create-desc" type="text" maxlength="200" />
       </div>
-      <div class="field" style="grid-column:1/-1">
+      <div class="field field--full">
         <button class="btn btn--accent" type="submit" id="cr-reward-create-submit">Create in Kick</button>
         <p class="status" id="cr-reward-create-status" role="status" aria-live="polite"></p>
       </div>
@@ -186,7 +186,7 @@ export const creditsContent = `
         <label for="cr-shop-cost">Credit cost</label>
         <input id="cr-shop-cost" type="number" min="1" value="100" required />
       </div>
-      <div class="field" style="grid-column:1/-1">
+      <div class="field field--full">
         <label for="cr-shop-desc">Description</label>
         <textarea id="cr-shop-desc" rows="2"></textarea>
       </div>
@@ -197,7 +197,7 @@ export const creditsContent = `
       <div class="field">
         <label class="chk"><input type="checkbox" id="cr-shop-active" checked /> Active</label>
       </div>
-      <div class="field" style="grid-column:1/-1">
+      <div class="field field--full">
         <button class="btn btn--accent" type="submit" id="cr-shop-submit">Save item</button>
         <p class="status" id="cr-shop-status" role="status" aria-live="polite"></p>
       </div>
@@ -235,12 +235,12 @@ export const creditsContent = `
   <section class="card" id="cr-history">
     <h2>Cross-board viewer history</h2>
     <p class="card-sub">Search a Kick viewer across all of your boards.</p>
-    <form class="grid2" id="cr-history-form" style="margin-bottom:14px">
+    <form class="grid2 cr-history-form" id="cr-history-form">
       <div class="field">
         <label for="cr-history-username">Kick username</label>
         <input id="cr-history-username" type="text" placeholder="viewer123" />
       </div>
-      <div class="field" style="display:flex;align-items:flex-end">
+      <div class="field field--end">
         <button class="btn" type="submit" id="cr-history-search">Search</button>
       </div>
     </form>

@@ -967,6 +967,15 @@
   gap: 6px;
   margin-bottom: 14px;
 }
+.v2-dash .field--full { grid-column: 1 / -1; }
+.v2-dash .field--end { display: flex; align-items: flex-end; }
+
+.v2-dash .cr-usage-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 12px;
+}
+.v2-dash .cr-history-form { margin-bottom: 14px; }
 
 .v2-dash .field label {
   font-size: 13px;
@@ -1134,6 +1143,28 @@
   font: 700 24px/1 var(--yr-mono);
   color: var(--yr-ink);
 }
+
+.v2-dash .cr-usage-card {
+  padding: 10px;
+  border: 1px solid var(--yr-line);
+  border-radius: 8px;
+  background: var(--yr-panel);
+}
+.v2-dash .cr-usage-number {
+  font-weight: 600;
+  color: var(--yr-ink);
+  margin: 4px 0;
+}
+.v2-dash .cr-usage-number.cr-usage-near { color: #ffcc00; }
+.v2-dash .cr-usage-number.cr-usage-over { color: #ff6b6b; }
+.v2-dash .cr-usage-text.cr-usage-near { color: #ffcc00; }
+.v2-dash .cr-usage-text.cr-usage-over { color: #ff6b6b; }
+.v2-dash .cr-usage-upgrade {
+  font-size: 12px;
+  color: var(--yr-accent);
+  text-decoration: none;
+}
+.v2-dash .cr-usage-upgrade:hover { text-decoration: underline; }
 
 .v2-dash .cr-bars {
   display: flex;
