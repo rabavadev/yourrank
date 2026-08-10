@@ -23,6 +23,9 @@ const GOOGLE_FONTS =
 export interface LeaderboardPageOpts {
   title: string;
   canonical: string;
+  description?: string;
+  /** Defaults to "noindex, nofollow" — public pages must opt in to indexing. */
+  robots?: string;
   reqId?: string;
   mainClass?: string;
   styles?: string[];
@@ -39,6 +42,7 @@ export function leaderboardPageHtml(opts: LeaderboardPageOpts): string {
   const mainClass = esc(opts.mainClass || "wrap");
   const bodyAttr = opts.wide ? ' data-wide="true"' : "";
   const reqIdMeta = opts.reqId ? `<meta name="request-id" content="${esc(opts.reqId)}" />` : "";
+  const description = opts.description ? `<meta name="description" content="${esc(opts.description)}" />` : "";
   const styles = (opts.styles || ["/assets/app.css", "/assets/shell-nav.css"])
     .map((href) => `<link rel="stylesheet" href="${esc(href)}" />`)
     .join("");
@@ -62,7 +66,7 @@ export function leaderboardPageHtml(opts: LeaderboardPageOpts): string {
 <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>${esc(opts.title)}</title>
 ${reqIdMeta}
-<meta name="robots" content="noindex, nofollow" /><link rel="canonical" href="${esc(opts.canonical)}" />${GOOGLE_FONTS}
+${description}<meta name="robots" content="${esc(opts.robots || "noindex, nofollow")}" /><link rel="canonical" href="${esc(opts.canonical)}" />${GOOGLE_FONTS}
 ${styles}
 </head><body${bodyAttr}>
 <noscript><div class="noscript-msg">${noscript}</div></noscript>
@@ -120,15 +124,17 @@ const BOT_STYLE_ATTR_CSS = `
 `;
 
 const BOT_BASE_CSS = `
-  :root { --bg:#f8f9fb; --panel:#ffffff; --panel-2:#f4f5f8; --border:#e9eaef; --border-2:#dcdee6;
-          --fg:#111114; --dim:#4e4f57; --mute:#8b8d98;
-          --accent:#4f46e5; --accent-ink:#ffffff; --green:#1e8e3e; --red:#d93025;
-          --mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+  /* One palette across both Workers — see apps/leaderboard/src/assets/app.css.
+     tokens.test.js fails if these copies drift again. */
+  :root { --bg:#fafafa; --panel:#ffffff; --panel-2:#f7f7f8; --border:#e4e4e7; --border-2:#d4d4d8;
+          --fg:#191919; --dim:#55555c; --mute:#82828a;
+          --accent:#2200ff; --accent-ink:#ffffff; --green:#10a37f; --red:#ef4444;
+          --mono:"IBM Plex Mono","JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
           --sans:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
           --yr-bg:var(--bg); --yr-panel:var(--panel); --yr-panel-2:var(--panel-2); --yr-line:var(--border); --yr-line-2:var(--border-2);
           --yr-ink:var(--fg); --yr-ink-soft:var(--dim); --yr-ink-mute:var(--mute); --yr-accent:var(--accent); --yr-accent-ink:var(--accent-ink);
           --yr-green:var(--green); --yr-red:var(--red); --yr-radius:14px; --yr-radius-sm:10px;
-          --yr-shadow:0 1px 3px rgba(0,0,0,.05),0 1px 2px rgba(0,0,0,.03); --yr-shadow-lg:0 10px 30px rgba(0,0,0,.06);
+          --yr-shadow:0 1px 2px rgba(0,0,0,.05); --yr-shadow-lg:0 12px 32px rgba(0,0,0,.12);
           --yr-sans:var(--sans); --yr-mono:var(--mono); }
   * { box-sizing:border-box; margin:0; }
   body { background:var(--bg); color:var(--fg); font:15px/1.5 var(--sans); }
