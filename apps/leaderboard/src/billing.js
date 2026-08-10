@@ -583,7 +583,13 @@ export async function handleAccountUsage(request, env) {
   try {
     const sites = await query("SELECT id FROM sites WHERE user_id=$1", [user.id]);
     const siteIds = (sites || []).map((s) => s.id);
-    const activeSite = await one("SELECT id FROM sites WHERE user_id=$1 ORDER BY created_at DESC LIMIT 1", [user.id]);
+    const activeSite = await one(
+      `SELECT id FROM sites WHERE user_id=$1
+        ORDER BY CASE WHEN id=(SELECT active_site_id FROM users WHERE id=$1) THEN 0 ELSE 1 END,
+                 board_order ASC, id ASC
+        LIMIT 1`,
+      [user.id]
+    );
 
     const [playerCount, creditsUsage] = await Promise.all([
       siteIds.length
