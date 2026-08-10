@@ -1,8 +1,7 @@
-/* Verify email landing page */
+/* Verify email landing page — the token itself is verified server-side; this
+   module only powers the "Send again" recovery action. */
 import { showPromptModal } from "./dashboard/utils.js";
 const $ = (id) => document.getElementById(id);
-const url = new URLSearchParams(location.search);
-const token = url.get("token");
 const msg = $("msg");
 const err = $("err");
 const resendWrap = $("resendWrap");
@@ -14,27 +13,6 @@ function showError(text, showResend) {
   err.hidden = false;
   err.textContent = text;
   if (showResend) resendWrap.hidden = false;
-}
-
-async function verify(t) {
-  try {
-    const r = await fetch("/api/auth/verify", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ token: t })
-    });
-    const d = await r.json().catch(() => ({}));
-    if (r.ok && d.ok) {
-      msg.textContent = "Email verified! Redirecting to your dashboard…";
-      msg.style.color = "var(--good, #0a0)";
-      setTimeout(() => { location.href = "/dashboard"; }, 1500);
-      return;
-    }
-    const isExpired = r.status === 410;
-    showError(d.error || "This link didn't work. Please sign in to request a new one.", isExpired || r.status >= 400);
-  } catch {
-    showError("Network error. Please try again.", true);
-  }
 }
 
 resendBtn?.addEventListener("click", async () => {
@@ -67,9 +45,3 @@ resendBtn?.addEventListener("click", async () => {
     resendBtn.textContent = "Send again";
   }
 });
-
-if (token) {
-  verify(token);
-} else {
-  showError("No verification link found. Sign in and we can resend it.", true);
-}

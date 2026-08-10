@@ -219,10 +219,10 @@ export function DashboardContent() {
 </details></div>
 <div class="field"><label for="f_font">Font</label><select id="f_font"><option value="Inter">Inter — Default</option><option value="Oswald">Oswald — Bold & Sporty</option><option value="Playfair Display">Playfair Display — Premium & Elegant</option><option value="Rajdhani">Rajdhani — Techy & Esports</option><option value="Bebas Neue">Bebas Neue — Impact & Hype</option></select><span class="hint">Changes the personality of your public page text.</span></div>
 </div></div>
-<div class="empty upsell-card" id="brandLock" hidden>Branding is a Pro feature. <a href="#" id="brandUpgrade">Upgrade to unlock it</a>.</div></div>
+<div class="empty upsell-card" id="brandLock" hidden>Branding is a Pro feature. <a href="/account/plan?from=branding" id="brandUpgrade">Upgrade to unlock it</a>.</div></div>
 <div class="card" data-egroup="design" id="sectionsCard"><h2>Sections <span class="pill pill--info ml-6">PRO</span></h2><p class="card-sub">Choose what appears on your public page. Turn sections off to build a leaner layout.</p>
 <div id="sectionsBody"><div class="sections-editor" id="sectionsList"></div></div>
-<div class="empty upsell-card" id="sectionsLock" hidden>Section controls are a Pro feature. <a href="#" id="sectionsUpgrade">Upgrade to unlock it</a>.</div></div>
+<div class="empty upsell-card" id="sectionsLock" hidden>Section controls are a Pro feature. <a href="/account/plan?from=sections" id="sectionsUpgrade">Upgrade to unlock it</a>.</div></div>
 <div class="card" data-egroup="design" id="prizesCard"><h2>Prize display <span class="pill pill--info ml-6">PRO</span></h2><p class="card-sub">Customize how prizes, currency and the countdown appear on your public page.</p>
 <div id="prizesBody">
 <div class="grid2">
@@ -233,7 +233,7 @@ export function DashboardContent() {
 </div>
 <label class="hint chk"><input type="checkbox" id="f_hidePrizeAmounts" /> Hide prize amounts on the public page</label>
 </div>
-<div class="empty upsell-card" id="prizesLock" hidden>Prize customization is a Pro feature. <a href="#" id="prizesUpgrade">Upgrade to unlock it</a>.</div></div>
+<div class="empty upsell-card" id="prizesLock" hidden>Prize customization is a Pro feature. <a href="/account/plan?from=prizes" id="prizesUpgrade">Upgrade to unlock it</a>.</div></div>
 <div class="design-group-heading" data-egroup="design"><h3>Content</h3></div>
 <div class="card" data-egroup="design" id="textCard"><h2>Template text</h2><p class="card-sub">Change the copy inside your selected design. Keys with an empty value fall back to the default.</p>
 <div class="text-editor" id="textList"></div></div>
@@ -393,7 +393,7 @@ export function DashboardContent() {
         <span class="hint" id="testTelegramStatus" role="status" aria-live="polite"></span>
       </div>
     </div>
-    <div class="empty" id="notifyLock" hidden>Notifications are a Pro feature. <a href="#" id="notifyUpgrade">Upgrade to unlock them</a>.</div>
+    <div class="empty" id="notifyLock" hidden>Notifications are a Pro feature. <a href="/account/plan?from=notifications" id="notifyUpgrade">Upgrade to unlock them</a>.</div>
   </div>
   <hr class="hr" />
   <div class="field"><label>OBS Overlay</label>
@@ -410,14 +410,14 @@ export function DashboardContent() {
     </div>
     <div id="domainStatus" class="hint mt-8 min-h-18" role="status" aria-live="polite"></div>
   </div>
-  <div class="empty" id="domainLock" hidden>Custom domains are a Pro feature. <a href="#" id="domainUpgrade">Upgrade to unlock it</a>.</div>
+  <div class="empty" id="domainLock" hidden>Custom domains are a Pro feature. <a href="/account/plan?from=domain" id="domainUpgrade">Upgrade to unlock it</a>.</div>
 </div>
 <div class="lb-widget lb-widget--full" id="settings-compliance">
   <h2>Compliance</h2>
   <p class="card-sub">Company identity, legal pages and responsible-gaming messaging.</p>
   <div class="info-notice"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="16" y2="12"/><line x1="12" x2="12.01" y1="8" y2="8"/></svg><span>Leave any field blank to use the default legal text provided by YourRank. Your custom text will be shown on your public page at <code>/terms</code>, <code>/privacy</code>, etc.</span></div>
   <div class="legal-editor" id="legalList"></div>
-  <div class="legal-footer-preview" id="legalFooterPreview"><b>Footer links preview:</b> <a href="#" onclick="return false">Terms</a> · <a href="#" onclick="return false">Privacy</a> · <a href="#" onclick="return false">Responsible Gaming</a> · <a href="#" onclick="return false">Cookies</a> · <a href="#" onclick="return false">Refund</a> · <a href="#" onclick="return false">Contact</a></div>
+  <div class="legal-footer-preview" id="legalFooterPreview"><b>Footer links preview:</b> <span class="legal-footer-link">Terms</span> · <span class="legal-footer-link">Privacy</span> · <span class="legal-footer-link">Responsible Gaming</span> · <span class="legal-footer-link">Cookies</span> · <span class="legal-footer-link">Refund</span> · <span class="legal-footer-link">Contact</span></div>
 </div>
 </div>
 </section>

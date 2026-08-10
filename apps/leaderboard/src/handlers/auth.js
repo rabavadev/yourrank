@@ -347,33 +347,42 @@ export async function handleReset(request, env) {
   }
 }
 
-// POST /api/auth/verify — { token }
-export async function handleVerifyEmail(request, _env) {
+// Verifies an email token. Shared by the POST API and the server-rendered
+// GET /verify-email page so verification never depends on client JavaScript.
+export async function verifyEmailToken(token) {
+  const value = String(token || "").trim();
+  if (!value) return { ok: false, status: 400, error: "Verification token required" };
   try {
-    const body = await readJson(request);
-    const token = String(body?.token || "").trim();
-    if (!token) return bad("Verification token required");
-    const tokenHash = await hashToken(token);
+    const tokenHash = await hashToken(value);
     const user = await one(
       "SELECT id, email_verification_sent_at FROM users WHERE email_verification_token_hash=$1 AND email_verified=false",
       [tokenHash]
     );
-    if (!user) return bad("This verification link is invalid or has already been used.", 400);
+    if (!user) return { ok: false, status: 400, error: "This verification link is invalid or has already been used." };
     if (user.email_verification_sent_at) {
       const sentAt = new Date(user.email_verification_sent_at).getTime();
       if (Date.now() - sentAt > VERIFICATION_TTL_HOURS * 60 * 60 * 1000) {
-        return bad("Verification link has expired. Please sign in to request a new one.", 410);
+        return { ok: false, status: 410, error: "Verification link has expired. Please sign in to request a new one." };
       }
     }
     await exec(
       "UPDATE users SET email_verified=true, email_verification_token_hash=NULL, email_verification_sent_at=NULL WHERE id=$1",
       [user.id]
     );
-    return ok({ emailVerified: true });
+    return { ok: true, userId: user.id };
   } catch (e) {
     console.error("[verify] failed:", String(e?.message || e).replace(/[a-f0-9]{32,}/gi, '[REDACTED]'));
-    return bad("Could not verify email. Please try again.", 500);
+    return { ok: false, status: 500, error: "Could not verify email. Please try again." };
   }
+}
+
+// POST /api/auth/verify — { token }
+export async function handleVerifyEmail(request, _env) {
+  let body = null;
+  try { body = await readJson(request); } catch { return bad("Verification token required"); }
+  const result = await verifyEmailToken(body?.token);
+  if (!result.ok) return bad(result.error, result.status);
+  return ok({ emailVerified: true });
 }
 
 // POST /api/auth/resend-verification — { email }

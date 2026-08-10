@@ -73,6 +73,15 @@ export function suspendedPage(nonce) {
 <body><div class="b"><h1>This page is unavailable</h1><p>The owner's account is suspended.</p><p><a href="/">YourRank</a></p></div><script src="/assets/cookie-consent.js" defer></script></body></html>`;
 }
 
+// Shown when the owner's account is fine but their email is not confirmed yet.
+// Deliberately does not accuse the owner of anything.
+export function pendingVerificationPage(nonce) {
+  const n = nonce ? ` nonce="${nonce}"` : "";
+  return `<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex, nofollow"><title>Not live yet</title>
+<style${n}>body{background:#0b0b0c;color:#ededf0;font-family:system-ui,sans-serif;display:grid;place-items:center;min-height:100vh;margin:0}.b{text-align:center;max-width:520px;padding:24px}a{color:#5771ff}p{color:#a7a6a6}</style></head>
+<body><div class="b"><h1>This leaderboard isn't live yet</h1><p>The owner still needs to confirm their email address. Check back soon.</p><p><a href="/">YourRank</a></p></div><script src="/assets/cookie-consent.js" defer></script></body></html>`;
+}
+
 export function error500Page(nonce) {
   const n = nonce ? ` nonce="${nonce}"` : "";
   return `<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex, nofollow"><title>Something went wrong</title>

@@ -7,6 +7,8 @@ import { getPublicSite, getBySlug, getArchives, ARCHIVE_LIMITS } from "./site.js
 import { renderEmbed, renderHallOfFame, renderLeaderboard, renderLegalPage, renderPasswordGate, renderPlayerProfile, renderStreamerProfile } from "./render.jsx";
 import { renderPublicCreditsPage } from "./public-credits.js";
 import { viewerDashboardPage } from "./pages/viewer-dashboard.js";
+import { verifyEmailPageHtml } from "./pages/verify-email.js";
+import { verifyEmailToken } from "./handlers/auth.js";
 import { verifyBoardPassword, issueBoardPasswordToken, boardPasswordSetCookieHeader } from "./board-password.js";
 import { PAGES } from "./pages.jsx";
 import { leaderboardPageHtml } from "../../../shared/page-shell.js";
@@ -21,7 +23,7 @@ import {
   resolveCustomDomain, isCustomHost,
   serveStaticAsset,
   serveRobotsTxt, serveSitemapXml, serveFavicon,
-  HTML, SECURE_HTML, notFoundPage, suspendedPage, error500Page, withNonce
+  HTML, SECURE_HTML, notFoundPage, suspendedPage, pendingVerificationPage, error500Page, withNonce
 } from "./middleware/index.js";
 import { handlePublicApiPreflight } from "./middleware/public-api.js";
 import { findSiteLogoData, findSiteStatus, findUserTotpSecret } from "./data/sites.js";
@@ -248,6 +250,7 @@ async function handleRequest(request, env, ctx, meta) {
             if (r && r.requiresPassword) {
               return new Response(renderPasswordGate(r, { nonce, isCustomDomain: true }), { headers: { ...HTML_N, "cache-control": "no-store" } });
             }
+            if (r && r.pendingVerification) return new Response(pendingVerificationPage(nonce), { status: 403, headers: HTML_N });
             if (!r || r.suspended) return new Response(notFoundPage(customSlug, nonce), { status: 404, headers: HTML_N });
             const paid = r.plan !== "free";
             const watermark = !paid ? true : (r.data.sections?.poweredBy === true);
@@ -445,7 +448,26 @@ async function handleRequest(request, env, ctx, meta) {
         return new Response(null, { status: 302, headers: { "set-cookie": cookieClear(env), location: "/login" } });
       }
       if (path === "/signup" || path === "/signup.html") return new Response(addCookieConsent(await renderHtmlPage(PAGES.signup)), { headers: { ...SECURE_HTML, ...csrfHeader } });
-      if (path === "/verify-email" || path === "/verify-email.html") return new Response(addCookieConsent(await renderHtmlPage(PAGES.verifyEmail)), { headers: { ...SECURE_HTML, ...csrfHeader } });
+      if (path === "/verify-email" || path === "/verify-email.html") {
+        // Verification happens server-side: the emailed link must work even if
+        // client JavaScript fails to load or run.
+        const token = url.searchParams.get("token");
+        let verifyState = { message: "Open the link we emailed you to confirm your address.", showResend: true };
+        let status = 200;
+        if (token) {
+          const result = await verifyEmailToken(token);
+          if (result.ok) {
+            const user = await currentUser(request, env);
+            if (user) return Response.redirect(new URL("/dashboard?verified=1", url), 302);
+            verifyState = { message: "Email confirmed. Sign in below to finish setting up your page." };
+          } else {
+            verifyState = { message: "We couldn't confirm your email.", error: result.error, showResend: true };
+            status = result.status || 400;
+          }
+        }
+        const html = addCookieConsent(await renderHtmlPage(verifyEmailPageHtml(verifyState)));
+        return new Response(html, { status, headers: { ...SECURE_HTML, ...csrfHeader } });
+      }
       if (path === "/dashboard" || path === "/dashboard.html") {
         if (url.searchParams.get("nav") === "kickrewards") {
           return Response.redirect(new URL("/dashboard/rewards/channel", url), 302);
@@ -902,6 +924,7 @@ a{color:#5771ff;text-decoration:none;font-weight:600}</style></head><body>
           if (rawSite && rawSite.suspended) return new Response(suspendedPage(nonce), { status: 403, headers: HTML_N });
           return new Response(notFoundPage(slug, nonce), { status: 404, headers: HTML_N });
         }
+        if (r.pendingVerification) return new Response(pendingVerificationPage(nonce), { status: 403, headers: HTML_N });
         if (r.suspended) return new Response(suspendedPage(nonce), { status: 403, headers: HTML_N });
         // Stable visitor token for new-vs-returning analytics. 1-year cookie, hashed before DB storage.
         // Only set analytics cookies when the user has explicitly opted in via the cookie banner.

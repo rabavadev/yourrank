@@ -1,6 +1,6 @@
 // Overview page summary tiles / top players / setup checklist.
 import { $, esc, fmtMoney, currentPlayers, resetsIn, localTzLabel, logError, copyToClipboard, flashButton } from "./utils.js";
-import { state } from "./state.js";
+import { state, boardStatus } from "./state.js";
 import { navTo } from "./shell.js";
 
 // Activity chart: the CSS bar chart (renderOverviewSummary's stat-bars, fed by
@@ -77,17 +77,18 @@ export function renderOverviewSummary() {
     const statusDot = $("ovStatusDot");
     const statusText = $("ovStatusText");
     const statusSub = $("ovStatusSub");
+    const status = boardStatus();
     if (statusDot && statusText) {
-      const published = state.PUBLISHED;
-      statusDot.className = "board-status-dot " + (published ? "is-live" : "is-draft");
-      statusText.textContent = published ? "Published" : "Draft";
+      statusDot.className = "board-status-dot " + (status.live ? "is-live" : "is-draft");
+      statusText.textContent = status.live ? "Published" : (status.published ? "Not live yet" : "Draft");
       if (statusSub) {
         const parts = [];
         if (state.SITE_UPDATED_AT) parts.push("Last saved " + fmtDateTime(state.SITE_UPDATED_AT));
-        if (published && state.PUBLISHED_AT) parts.push("Published " + fmtDateTime(state.PUBLISHED_AT));
-        statusSub.textContent = parts.length
-          ? (published ? "Live at /" + (state.SLUG || "—") + " · " : "Not visible yet · ") + parts.join(" · ")
-          : (published ? "Your leaderboard is live at " + (state.SLUG || "—") : "Not visible to visitors yet");
+        if (status.published && state.PUBLISHED_AT) parts.push("Published " + fmtDateTime(state.PUBLISHED_AT));
+        let lead = "Not visible to visitors yet";
+        if (status.live) lead = "Live at /" + (state.SLUG || "—");
+        else if (status.published) lead = "Confirm your email to make it visible";
+        statusSub.textContent = parts.length ? lead + " · " + parts.join(" · ") : lead;
       }
     }
     // Empty vs active home state
@@ -100,7 +101,7 @@ export function renderOverviewSummary() {
     }
     const brandDone = !!$("f_name")?.value.trim() || state.ONBOARDING?.brand;
     const playersDone = players.length > 0 || state.ONBOARDING?.players;
-    const shareDone = state.PUBLISHED || state.ONBOARDING?.shared;
+    const shareDone = status.live || state.ONBOARDING?.shared;
     setStepDone($("ovStepBrand"), brandDone);
     setStepDone($("ovStepBrandMark"), brandDone);
     setStepDone($("ovStepPlayers"), playersDone);
@@ -108,7 +109,11 @@ export function renderOverviewSummary() {
     setStepDone($("ovStepShare"), shareDone);
     setStepDone($("ovStepShareMark"), shareDone);
     const shareHint = $("ovShareHint");
-    if (shareHint) shareHint.textContent = state.PUBLISHED ? "Your leaderboard is live — copy the link" : "Publish and copy your public link";
+    if (shareHint) {
+      shareHint.textContent = status.live
+        ? "Your leaderboard is live — copy the link"
+        : (status.published ? "Confirm your email to make your board visible" : "Publish and copy your public link");
+    }
     const copyBtn = $("ov_copyLink");
-    if (copyBtn) copyBtn.disabled = !state.PUBLISHED;
+    if (copyBtn) copyBtn.disabled = !status.live;
   }

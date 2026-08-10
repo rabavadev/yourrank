@@ -273,7 +273,7 @@
   margin: 0;
   color: var(--yr-ink);
 }
-.v2-dash .lb-topbar-title:focus { outline: none; }
+
 
 .v2-dash .lb-status {
   font-size: 12px;
@@ -297,6 +297,13 @@
   background: rgba(217, 48, 37, .08);
   color: var(--yr-red);
   border-color: rgba(217, 48, 37, .2);
+}
+
+/* Published, but not reachable yet because the owner's email is unconfirmed. */
+.v2-dash .lb-status--pending {
+  background: rgba(180, 83, 9, .08);
+  color: #92400e;
+  border-color: rgba(180, 83, 9, .2);
 }
 
 .v2-dash .lb-topbar-hud {
@@ -370,6 +377,22 @@
   display: flex;
   flex-direction: column;
   gap: 16px;
+}
+
+/* Account sections are one column of prose-width content, not bento tiles:
+   the 12-column grid squeezed them into a narrow strip. */
+.v2-dash .acct-main {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  max-width: 860px;
+}
+
+.v2-dash .acct-main #acc-app {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  min-width: 0;
 }
 
 .v2-dash .lb-widget h2 {

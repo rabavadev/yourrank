@@ -2,6 +2,7 @@
 import { $, esc, getCsrf, logError, copyToClipboard, flashButton, showConfirmModal } from "./dashboard/utils.js";
 import { state } from "./dashboard/state.js";
 import { wireAccount } from "./dashboard/account.js";
+import { openDrawer, closeDrawer } from "./dashboard/shell.js";
 import { renderPlan, loadHistory, loadPlanUsage, wireDeleteAccount, wireCancelSubscription } from "./dashboard/site.js";
 
 const statusEl = () => $("status");
@@ -247,7 +248,25 @@ async function loadConnectedAccounts() {
   renderConnectedAccounts(r.ok ? r.data : { error: r.data?.error || "failed" });
 }
 
+// The account sidebar becomes an off-canvas drawer under 980px, so the section
+// nav needs the same open/close wiring the dashboard shell does.
+function wireSectionDrawer() {
+  let backdrop = document.querySelector(".lb-backdrop");
+  if (!backdrop) {
+    backdrop = document.createElement("div");
+    backdrop.className = "lb-backdrop";
+    document.body.appendChild(backdrop);
+  }
+  backdrop.addEventListener("click", () => closeDrawer());
+  document.querySelectorAll(".lb-menu").forEach((btn) => btn.addEventListener("click", (e) => { e.stopPropagation(); openDrawer(); }));
+  document.querySelectorAll("[data-close-side]").forEach((btn) => btn.addEventListener("click", () => closeDrawer()));
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && $("lbSide")?.classList.contains("is-open")) { e.preventDefault(); closeDrawer(); }
+  });
+}
+
 async function init() {
+  wireSectionDrawer();
   let me;
   try { me = await (await fetch("/api/auth/me")).json(); } catch (err) { logError("auth/me", err); me = null; }
   if (!me || !me.ok || !me.user) { location.href = "/login"; return; }

@@ -1,4 +1,6 @@
 // email verification landing page
+// The {{VERIFY_*}} placeholders are filled server-side so
+// verification never depends on client JavaScript running.
 export const verifyEmailPage = `<!DOCTYPE html><html lang="en"><head>
 <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Verify email · YourRank</title>
@@ -10,8 +12,17 @@ export const verifyEmailPage = `<!DOCTYPE html><html lang="en"><head>
 <div><h1>Confirm your email.</h1><p>Click the link we sent you to finish setting up your page.</p></div>
 <div class="feat"></div></aside>
 <main class="auth-main" id="main-content"><div class="auth-card"><h2>Verify email</h2>
-<p class="sub" id="msg">Checking your verification link…</p>
-<div class="err" id="err" role="alert" aria-live="assertive" hidden></div>
-<p class="foot" id="resendWrap" hidden>Didn't get it? <button class="btn btn--ghost btn--sm" id="resendBtn" type="button">Send again</button></p>
+<p class="sub" id="msg">{{VERIFY_MSG}}</p>
+<div class="err" id="err" role="alert" aria-live="assertive"{{VERIFY_ERR_HIDDEN}}>{{VERIFY_ERR}}</div>
+<p class="foot" id="resendWrap"{{VERIFY_RESEND_HIDDEN}}>Didn't get it? <button class="btn btn--ghost btn--sm" id="resendBtn" type="button">Send again</button></p>
 <p class="foot"><a href="/login">Back to sign in</a></p></div></main></div>
-<script src="/assets/verify-email.js"></script></body></html>`;
+<script src="/assets/verify-email.js" type="module"></script></body></html>`;
+
+// Server-rendered states for the page above.
+export function verifyEmailPageHtml({ message, error = "", showResend = false } = {}) {
+  return verifyEmailPage
+    .replace("{{VERIFY_MSG}}", message)
+    .replace("{{VERIFY_ERR}}", error)
+    .replace("{{VERIFY_ERR_HIDDEN}}", error ? "" : " hidden")
+    .replace("{{VERIFY_RESEND_HIDDEN}}", showResend ? "" : " hidden");
+}

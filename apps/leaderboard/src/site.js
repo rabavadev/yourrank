@@ -432,7 +432,11 @@ export async function getPublicSite(env, slug, request = null) {
       "SELECT plan, (EXTRACT(EPOCH FROM plan_expires_at) * 1000)::double precision AS plan_expires_at, status, email_verified FROM users WHERE id=$1",
       [site.user_id]
     );
-    if (owner && (owner.status === "suspended" || !owner.email_verified)) return { suspended: true };
+    // Gate the board for suspended owners and for owners who have not confirmed
+    // their email — but keep the two states distinct so the public page can say
+    // "not live yet" instead of accusing the owner of being suspended.
+    if (owner && owner.status === "suspended") return { suspended: true };
+    if (owner && !owner.email_verified) return { suspended: true, pendingVerification: true };
     const plan = effectivePlan(owner);
     const archiveLimit = ARCHIVE_LIMITS[plan] || 6;
     const [players, archives, boards, bot] = await Promise.all([
