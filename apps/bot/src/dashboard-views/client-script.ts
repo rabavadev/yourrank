@@ -4,6 +4,46 @@ export function clientScriptSource(): string {
 const setText = (id, v) => { const el = $(id); if (el) el.textContent = v; };
 const setHtml = (id, v) => { const el = $(id); if (el) el.innerHTML = v; };
 function toast(msg) { const t=$('toast'); t.textContent=msg; t.classList.remove('hidden'); setTimeout(()=>t.classList.add('hidden'),2500); }
+function confirmModal(title, body, confirmText, isDanger) {
+  return new Promise(function(resolve){
+    const trigger = document.activeElement;
+    const modal = document.createElement('div');
+    modal.setAttribute('role','dialog'); modal.setAttribute('aria-modal','true');
+    const titleId = 'mt'+Math.random().toString(36).slice(2); const descId = 'md'+Math.random().toString(36).slice(2);
+    modal.setAttribute('aria-labelledby', titleId); modal.setAttribute('aria-describedby', descId);
+    modal.style.cssText = 'position:fixed;inset:0;background:rgba(17,17,20,.45);display:flex;align-items:center;justify-content:center;padding:18px;z-index:200;';
+    const card = document.createElement('div');
+    card.setAttribute('role','document');
+    card.style.cssText = 'width:100%;max-width:420px;background:var(--panel,#ffffff);border:1px solid var(--border,#e9eaef);border-radius:12px;padding:22px;box-shadow:0 12px 32px rgba(0,0,0,.12);';
+    const h = document.createElement('h3'); h.id=titleId; h.textContent=title; h.style.cssText='margin:0 0 8px;font-size:18px;color:var(--fg,#111114);';
+    const p = document.createElement('p'); p.id=descId; p.textContent=body; p.style.cssText='margin:0 0 18px;font-size:14px;color:var(--dim,#4e4f57);';
+    const actions = document.createElement('div'); actions.style.cssText='display:flex;gap:10px;justify-content:flex-end;';
+    const cancel = document.createElement('button'); cancel.type='button'; cancel.textContent='Cancel'; cancel.className='ghost';
+    const ok = document.createElement('button'); ok.type='button'; ok.textContent=confirmText; if(isDanger) ok.className='danger';
+    actions.appendChild(cancel); actions.appendChild(ok);
+    card.appendChild(h); card.appendChild(p); card.appendChild(actions);
+    modal.appendChild(card);
+    const focusables = function(){ return Array.from(modal.querySelectorAll('button,[href],input,select,textarea,[tabindex]:not([tabindex="-1"])')).filter(function(el){ return !el.disabled && el.offsetParent !== null; }); };
+    let keyHandler;
+    const close = function(val){ document.removeEventListener('keydown', keyHandler); if(modal.parentNode) modal.parentNode.removeChild(modal); if(trigger && trigger.focus) trigger.focus(); resolve(val); };
+    keyHandler = function(e){
+      if(e.key === 'Escape'){ e.preventDefault(); close(false); return; }
+      if(e.key === 'Tab'){
+        const f = focusables();
+        if(f.length === 0) return;
+        const first = f[0], last = f[f.length-1];
+        if(e.shiftKey && document.activeElement === first){ e.preventDefault(); last.focus(); }
+        else if(!e.shiftKey && document.activeElement === last){ e.preventDefault(); first.focus(); }
+      }
+    };
+    cancel.onclick = function(){ close(false); };
+    ok.onclick = function(){ close(true); };
+    modal.onclick = function(e){ if(e.target === modal) close(false); };
+    document.body.appendChild(modal);
+    document.addEventListener('keydown', keyHandler);
+    ok.focus();
+  });
+}
 async function api(path, opts) {
   const r = await fetch('/bot/dash/api'+path, opts);
   if (r.status === 401) { location.reload(); throw new Error('session expired'); }
@@ -289,7 +329,7 @@ async function checkHealth(target){
   toast(summary + ' — see details below');
 }
 async function disconnectBot(btn){
-  if (!confirm('Disconnect this bot? It will stop responding, but your offers, commands and subscriber history stay in YourRank. Your token is removed from our servers.')) return;
+  if (!await confirmModal('Disconnect bot', 'It will stop responding, but your offers, commands and subscriber history stay in YourRank. Your token is removed from our servers.', 'Disconnect', true)) return;
   setLoading(btn, 'Disconnecting…');
   const r = await api('/bots/'+btn.dataset.id+'/disconnect',{method:'POST'});
   if (r.error) { restoreBtn(btn); return toast(r.error); }
@@ -315,7 +355,7 @@ async function syncCommands(btn){
   restoreBtn(btn); renderBots(__lastBots, false);
 }
 async function deleteBot(btn){
-  if (!confirm('Permanently delete this bot? This cannot be undone.')) return;
+  if (!await confirmModal('Delete bot', 'Permanently delete this bot? This cannot be undone.', 'Delete', true)) return;
   setLoading(btn, 'Deleting…');
   const r = await api('/bots/'+btn.dataset.id,{method:'DELETE'});
   if (r.error) { restoreBtn(btn); return toast(r.error); }
@@ -549,7 +589,7 @@ async function toggleCommand(target){
 }
 async function deleteCommand(target){
   const c = __commands.find(x => x.id === target.dataset.id);
-  if (!confirm('Delete /'+(c?.command||'this command')+'? This cannot be undone.')) return;
+  if (!await confirmModal('Delete command', 'Delete /'+(c?.command||'this command')+'? This cannot be undone.', 'Delete', true)) return;
   setLoading(target, 'Deleting…');
   const r = await api('/commands/'+target.dataset.id,{method:'DELETE'});
   if (r.error) { restoreBtn(target); return toast(r.error); }
@@ -800,7 +840,7 @@ async function testBroadcast(btn){
   toast('Test sent — check that chat');
 }
 async function cancelBroadcast(btn){
-  if (!confirm('Cancel this scheduled broadcast?')) return;
+  if (!await confirmModal('Cancel broadcast', 'Cancel this scheduled broadcast?', 'Cancel broadcast', true)) return;
   setLoading(btn, 'Cancelling…');
   const r = await api('/broadcasts/'+btn.dataset.id,{method:'DELETE'});
   if (r.error) { restoreBtn(btn); return toast(r.error); }
@@ -892,9 +932,10 @@ document.addEventListener('click', handleAction);
 const menuBtn = $('menuBtn');
 const side = $('side');
 if (menuBtn && side) {
-  menuBtn.addEventListener('click', (e) => { e.stopPropagation(); side.classList.toggle('open'); });
+  menuBtn.setAttribute('aria-expanded', String(side.classList.contains('open')));
+  menuBtn.addEventListener('click', (e) => { e.stopPropagation(); side.classList.toggle('open'); menuBtn.setAttribute('aria-expanded', String(side.classList.contains('open'))); });
   document.addEventListener('click', (e) => {
-    if (side.classList.contains('open') && !side.contains(e.target) && e.target !== menuBtn) side.classList.remove('open');
+    if (side.classList.contains('open') && !side.contains(e.target) && e.target !== menuBtn) { side.classList.remove('open'); menuBtn.setAttribute('aria-expanded','false'); }
   });
 }
 const logoutForm = document.querySelector('.gm-logout-form');

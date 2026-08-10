@@ -76,7 +76,7 @@ import { handleApiDocs, handleOpenApiJson } from "./handlers/docs.js";
 import { handleCheckout, handleCheckoutLifetime, handleIpn, handleCancel, handleUserPayments, handlePendingPayment, handleAccountUsage } from "./billing.js";
 import {
   handleOverview, handleUsers, handleLeads, handlePayments, handleAction,
-  handleSupportMessages, handleSupportReply,
+  handleSupportMessages, handleSupportReply, handleAudit,
   handle2faEnable, handle2faVerify, handle2faRecovery, handle2faStatus, handle2faDisable,
   handleFeatureFlags, handleFeatureFlagOverride,
   handleGetIdentity, handleUpdateIdentity
@@ -238,6 +238,7 @@ export const ROUTES = [
   { path: "/api/admin/payments", method: "GET", handler: withHandler(handlePayments) },
   { path: "/api/admin/support", method: "GET", handler: withHandler(handleSupportMessages) },
   { path: "/api/admin/support/reply", method: "POST", handler: withHandler(handleSupportReply) },
+  { path: "/api/admin/audit", method: "GET", handler: withHandler(handleAudit) },
   { path: "/api/admin/action", method: "POST", handler: withHandler(handleAction) },
   { path: "/api/admin/features", method: "GET", handler: withHandler(handleFeatureFlags) },
   { path: "/api/admin/features", method: "POST", handler: withHandler(handleFeatureFlags) },

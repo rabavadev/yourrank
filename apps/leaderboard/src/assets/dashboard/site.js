@@ -1172,7 +1172,7 @@ export function renderArchives(list) {
     row.innerHTML = `<span class="arch-label"></span><span class="hint">${a.players} players · closed ${when}</span><button class="btn btn--xs btn--ghost arch-restore" type="button">Restore</button><button class="btn btn--xs btn--ghost arch-del" type="button">Delete</button>`;
     row.querySelector(".arch-label").textContent = a.label;
     row.querySelector(".arch-restore").addEventListener("click", async (e) => {
-      if (!confirm(`Restore players from "${a.label}"? This will replace the current player list. Save changes to publish.`)) return;
+      if (!await showConfirmModal("Restore archive", `Restore players from "${a.label}"? This will replace the current player list. Save changes to publish.`, "Restore", false)) return;
       const btn = e.target;
       const orig = btn.textContent;
       btn.disabled = true;
@@ -1194,7 +1194,7 @@ export function renderArchives(list) {
       }
     });
     row.querySelector(".arch-del").addEventListener("click", async (e) => {
-      if (!confirm(`Delete the "${a.label}" archive? It disappears from your page too.`)) return;
+      if (!await showConfirmModal("Delete archive", `Delete the "${a.label}" archive? It disappears from your page too.`, "Delete", true)) return;
       const btn = e.target;
       const orig = btn.textContent;
       btn.disabled = true;
@@ -1222,7 +1222,7 @@ $("a_go")?.addEventListener("click", async () => {
   if (![...$("rows").children].length) { status.textContent = "The board is empty — nothing to close out."; return; }
   const clear = $("a_clear").value;
   const warn = clear === "players" ? "save the current board as past winners, then CLEAR the player list" : clear === "wagers" ? "save the current board as past winners, then reset every wager to 0" : "save the current board as past winners";
-  if (!confirm(`This will ${warn}. Continue?`)) return;
+  if (!await showConfirmModal("Close out period", `This will ${warn}. Continue?`, "Close out", true)) return;
   btn.disabled = true; btn.textContent = "Closing out…";
   try {
     const savePayload = collect();

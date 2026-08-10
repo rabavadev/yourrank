@@ -1,5 +1,5 @@
 // Account settings: password, sessions, data export.
-import { $, getCsrf, logError } from "./utils.js";
+import { $, getCsrf, logError, showConfirmModal } from "./utils.js";
 
 async function jsonPost(path, body) {
   const res = await fetch(path, {
@@ -79,7 +79,7 @@ function wireRevokeSessions() {
   if (!btn) return;
   btn.addEventListener("click", async () => {
     const status = $("accSessionsStatus");
-    if (!confirm("Sign out every other device?")) return;
+    if (!await showConfirmModal("Sign out other devices", "Every other active session will be closed. This device will stay signed in.", "Sign out", false)) return;
     setStatus(status, "Signing out…", false);
     const result = await jsonPost("/api/auth/sessions/revoke-others", {});
     if (result.ok) {

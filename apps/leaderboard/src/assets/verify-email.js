@@ -1,4 +1,5 @@
 /* Verify email landing page */
+import { showPromptModal } from "./dashboard/utils.js";
 const $ = (id) => document.getElementById(id);
 const url = new URLSearchParams(location.search);
 const token = url.get("token");
@@ -39,7 +40,7 @@ async function verify(t) {
 resendBtn?.addEventListener("click", async () => {
   resendBtn.disabled = true;
   resendBtn.textContent = "Sending…";
-  const email = prompt("Enter your email address to resend the verification link:");
+  const email = await showPromptModal("Resend verification link", "Enter your email address:", { confirmText: "Send", inputType: "email", placeholder: "you@example.com" });
   if (!email || !email.includes("@")) {
     resendBtn.disabled = false;
     resendBtn.textContent = "Send again";

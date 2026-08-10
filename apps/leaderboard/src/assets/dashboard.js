@@ -1,5 +1,5 @@
 // Dashboard entry point. Coordinates data loading and initial render across modules.
-import { $, esc, getCsrf, localTzLabel, logError, toLocalInput, copyToClipboard, flashButton } from "./dashboard/utils.js";
+import { $, esc, getCsrf, localTzLabel, logError, toLocalInput, copyToClipboard, flashButton, showToast } from "./dashboard/utils.js";
 import { state } from "./dashboard/state.js";
 import { navTo, setupShell } from "./dashboard/shell.js";
 import { renderBoardSwitcher, renderSidebarBoardSwitcher, renderBoardsPage } from "./dashboard/boards.js";
@@ -323,12 +323,12 @@ function wireStreamerHud() {
           location.reload();
         } else {
           const d = await res.json().catch(() => ({}));
-          alert(d.error || "Failed to update player");
+          showToast(d.error || "Failed to update player", "error");
           addBtn.disabled = false;
           addBtn.textContent = "Update";
         }
       } catch (err) {
-        alert("Network error");
+        showToast("Network error", "error");
         addBtn.disabled = false;
         addBtn.textContent = "Update";
       }
