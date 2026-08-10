@@ -94,7 +94,7 @@ export const DEFAULT_EXTRA = {
 // needed by the /logo/:slug endpoint and saveSite(), which fetch it separately.
 // PERF-004 / PERF-107: avoid SELECT * to prevent 180KB+ transfers on every page.
 // PERF-005: include has_logo as a computed column to avoid a separate re-query.
-const SITE_COLUMNS = "id, user_id, slug, name, tagline, casino, code, cta_url, prize_pool, period, ends_at, reset_note, blurb, extra_json, published, is_draft, theme_json, updated_at, custom_domain, domain_status, discord_webhook_url_enc, telegram_chat_id, telegram_notify, auto_reset_enabled, auto_reset_clear, auto_reset_last_run_at, password_hash, password_salt, viewer_kick_auth_enabled, viewer_discord_auth_enabled, viewer_public_redeem_enabled, (logo_data IS NOT NULL AND logo_data != '') AS has_logo";
+const SITE_COLUMNS = "id, user_id, slug, name, tagline, casino, code, cta_url, prize_pool, period, ends_at, reset_note, blurb, extra_json, published, is_draft, theme_json, updated_at, published_at, custom_domain, domain_status, discord_webhook_url_enc, telegram_chat_id, telegram_notify, auto_reset_enabled, auto_reset_clear, auto_reset_last_run_at, password_hash, password_salt, viewer_kick_auth_enabled, viewer_discord_auth_enabled, viewer_public_redeem_enabled, (logo_data IS NOT NULL AND logo_data != '') AS has_logo";
 
 // L1 in-memory cache (per-isolate). No L2 KV — sessions moved to Postgres.
 const siteCache = new Map();
@@ -1012,19 +1012,20 @@ export async function saveSite(env, user, payload, siteId, request = null) {
 
     const publishedVal = typeof payload.published === "boolean" ? payload.published : site.published;
     const isDraftVal = typeof payload.isDraft === "boolean" ? payload.isDraft : site.is_draft;
+    const publishedAtVal = publishedVal && !site.published ? new Date().toISOString() : site.published_at;
     const endsAtVal = normalizeEndsAt(payload.endsAt, site.ends_at);
     const slugVal = slugRename || site.slug;
     const periodVal = VALID_PERIODS.includes(String(b.period || "Monthly").trim())
       ? String(b.period || "Monthly").trim()
       : (site.period || "Monthly");
     await tx.unsafe(
-      `UPDATE sites SET slug=$1, name=$2, tagline=$3, casino=$4, code=$5, cta_url=$6, prize_pool=$7, period=$8, ends_at=$9, reset_note=$10, blurb=$11, extra_json=$12::jsonb, logo_data=$13, theme_json=$14::jsonb, published=$15, is_draft=$16, discord_webhook_url_enc=$17, telegram_chat_id=$18, telegram_notify=$19, auto_reset_enabled=$20, auto_reset_clear=$21, password_hash=$22, password_salt=$23, updated_at=now() WHERE id=$24`,
+      `UPDATE sites SET slug=$1, name=$2, tagline=$3, casino=$4, code=$5, cta_url=$6, prize_pool=$7, period=$8, ends_at=$9, reset_note=$10, blurb=$11, extra_json=$12::jsonb, logo_data=$13, theme_json=$14::jsonb, published=$15, is_draft=$16, discord_webhook_url_enc=$17, telegram_chat_id=$18, telegram_notify=$19, auto_reset_enabled=$20, auto_reset_clear=$21, password_hash=$22, password_salt=$23, published_at=$24, updated_at=now() WHERE id=$25`,
       [
         slugVal, siteName, b.tagline ?? site.tagline, b.casino ?? site.casino, b.code ?? site.code,
         b.ctaUrl ?? site.cta_url, b.prizePool ?? site.prize_pool, periodVal,
         endsAtVal, b.resetNote ?? site.reset_note, (payload.partner && payload.partner.blurb) ?? site.blurb,
         extra, logoData, themeJson, publishedVal, isDraftVal, discordWebhookUrlEnc, telegramChatId, telegramNotify,
-        autoResetEnabled, autoResetClear, passwordHash, passwordSalt, site.id,
+        autoResetEnabled, autoResetClear, passwordHash, passwordSalt, publishedAtVal, site.id,
       ]
     );
 
@@ -1164,7 +1165,7 @@ export async function saveSite(env, user, payload, siteId, request = null) {
     },
   });
 
-  return { ok: true, updatedAt: updatedSite?.updated_at, slug: updatedSite?.slug || slugRename || site.slug, siteId: updatedSite?.id || site.id };
+  return { ok: true, updatedAt: updatedSite?.updated_at, publishedAt: updatedSite?.published_at, slug: updatedSite?.slug || slugRename || site.slug, siteId: updatedSite?.id || site.id };
 }
 
 export async function deleteBoard(env, uid, siteId, request = null) {

@@ -40,6 +40,7 @@ async function init() {
   state.BOARDS = p.boards || [];
   state.TEMPLATE_CATALOG = Array.isArray(p.templates) ? p.templates : [];
   state.SITE_UPDATED_AT = p.updatedAt || null;
+  state.PUBLISHED_AT = p.publishedAt || null;
   state.ONBOARDING = p.onboarding || {};
 
   renderBoardSwitcher();
@@ -125,6 +126,16 @@ async function init() {
   const pubToggle = $("pubToggle");
   state.PUBLISHED = p.published !== false;
   if (pubToggle) pubToggle.checked = state.PUBLISHED;
+  function updatePublishHint() {
+    const btn = $("save");
+    const hint = document.querySelector(".savebar-hint");
+    if (!btn || !hint) return;
+    const willPublish = pubToggle?.checked && !state.PUBLISHED;
+    btn.textContent = willPublish ? "Save & publish" : "Save changes";
+    hint.textContent = willPublish ? "This board will go live when you save" : "Unsaved changes";
+  }
+  if (pubToggle) pubToggle.addEventListener("change", () => { state._dirty = true; const sb = $("savebar"); if (sb) sb.hidden = false; updatePublishHint(); });
+  updatePublishHint();
   const arToggle = $("f_auto_reset");
   const arClear = $("f_auto_reset_clear");
   if (arToggle) {
@@ -151,6 +162,10 @@ async function init() {
     const statusText = p.isDraft ? "Draft" : (p.published ? "Published" : "Unpublished");
     topbarStatus.textContent = statusText;
     topbarStatus.className = "lb-status lb-status--" + statusText.toLowerCase();
+    const parts = [];
+    if (p.updatedAt) parts.push("Last saved " + new Date(p.updatedAt).toLocaleString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }));
+    if (p.published && p.publishedAt) parts.push("Published " + new Date(p.publishedAt).toLocaleString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }));
+    topbarStatus.title = parts.length ? parts.join(" · ") : (p.published ? "Your board is live" : "Not visible to visitors");
   }
   const editorLiveLink = $("editorLiveLink");
   if (editorLiveLink) { editorLiveLink.href = liveUrl; editorLiveLink.title = location.host + liveUrl; }
