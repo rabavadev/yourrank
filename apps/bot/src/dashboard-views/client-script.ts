@@ -385,6 +385,9 @@ function renderBots(bots, loadCmds = true){
   if (botSelect && custBotId) botSelect.value = custBotId;
   if (bcBotSelect && firstBotId) bcBotSelect.value = firstBotId;
   if (bcBotSelect) updateAudience();
+  loadBroadcastDraft();
+  updateScheduleInputState();
+  showTimezone();
 
   // Hide the connect form once the plan's active-bot slots are full.
   const cf = $('connectWizard');
@@ -524,6 +527,7 @@ async function deleteCommand(target){
 }
 
 let __bcAudience = null;
+const BC_DRAFT_KEY = 'yr_bc_draft';
 function buildSegmentFromForm(){
   const segment = {};
   const lang = ($('bcLang')?.value || '').trim();
@@ -542,6 +546,10 @@ function getScheduledAt(){
   const d = new Date(v);
   return isNaN(d.getTime()) ? null : d.toISOString();
 }
+function isScheduleSelected(){
+  const when = document.querySelector('input[name="bcWhen"]:checked') as HTMLInputElement | null;
+  return when?.value === 'schedule';
+}
 function formatSegmentLabel(segment){
   if (!segment) return '';
   const parts = [];
@@ -550,6 +558,96 @@ function formatSegmentLabel(segment){
   if (segment.firstSeenWithinDays) parts.push('new '+segment.firstSeenWithinDays+'d');
   if (segment.usernameContains) parts.push('@'+segment.usernameContains);
   return parts.join(', ');
+}
+function getBotNameForBroadcast(){
+  const botId = $('bcBotSelect')?.value || firstBotId;
+  const select = $('bcBotSelect') as HTMLSelectElement | null;
+  if (!select || !botId) return '';
+  const opt = Array.from(select.options).find(o => o.value === botId);
+  return opt?.text || botId;
+}
+function saveBroadcastDraft(){
+  try {
+    const draft = {
+      body: ($('bcBody')?.value || ''),
+      image: ($('bcImage')?.value || ''),
+      botId: ($('bcBotSelect')?.value || firstBotId || ''),
+      lang: ($('bcLang')?.value || ''),
+      minLast: ($('bcMinLastSeen')?.value || ''),
+      firstSeen: ($('bcFirstSeen')?.value || ''),
+      username: ($('bcUsername')?.value || ''),
+      when: (document.querySelector('input[name="bcWhen"]:checked') as HTMLInputElement | null)?.value || 'now',
+      schedule: ($('bcSchedule')?.value || ''),
+    };
+    localStorage.setItem(BC_DRAFT_KEY, JSON.stringify(draft));
+  } catch { /* storage may be unavailable */ }
+}
+function loadBroadcastDraft(){
+  try {
+    const raw = localStorage.getItem(BC_DRAFT_KEY);
+    if (!raw) return false;
+    const d = JSON.parse(raw);
+    if (!d || typeof d !== 'object') return false;
+    if (d.botId && $('bcBotSelect')) ($('bcBotSelect') as HTMLSelectElement).value = d.botId;
+    if ($('bcBody')) ($('bcBody') as HTMLTextAreaElement).value = d.body || '';
+    if ($('bcImage')) ($('bcImage') as HTMLInputElement).value = d.image || '';
+    if ($('bcLang')) ($('bcLang') as HTMLSelectElement).value = d.lang || '';
+    if ($('bcMinLastSeen')) ($('bcMinLastSeen') as HTMLInputElement).value = d.minLast || '';
+    if ($('bcFirstSeen')) ($('bcFirstSeen') as HTMLInputElement).value = d.firstSeen || '';
+    if ($('bcUsername')) ($('bcUsername') as HTMLInputElement).value = d.username || '';
+    if (d.when === 'schedule') {
+      const radio = document.querySelector('input[name="bcWhen"][value="schedule"]') as HTMLInputElement | null;
+      if (radio) radio.checked = true;
+    }
+    if ($('bcSchedule')) ($('bcSchedule') as HTMLInputElement).value = d.schedule || '';
+    const status = $('bcDraftStatus');
+    if (status) status.hidden = false;
+    return true;
+  } catch { return false; }
+}
+function clearBroadcastDraft(){
+  try { localStorage.removeItem(BC_DRAFT_KEY); } catch {}
+  const status = $('bcDraftStatus'); if (status) status.hidden = true;
+}
+function clearBroadcastForm(){
+  if ($('bcBody')) ($('bcBody') as HTMLTextAreaElement).value = '';
+  if ($('bcImage')) ($('bcImage') as HTMLInputElement).value = '';
+  if ($('bcSchedule')) ($('bcSchedule') as HTMLInputElement).value = '';
+  if ($('bcUsername')) ($('bcUsername') as HTMLInputElement).value = '';
+  if ($('bcMinLastSeen')) ($('bcMinLastSeen') as HTMLInputElement).value = '';
+  if ($('bcFirstSeen')) ($('bcFirstSeen') as HTMLInputElement).value = '';
+  if ($('bcLang')) ($('bcLang') as HTMLSelectElement).value = '';
+  const nowRadio = document.querySelector('input[name="bcWhen"][value="now"]') as HTMLInputElement | null;
+  if (nowRadio) nowRadio.checked = true;
+  updateScheduleInputState();
+  clearBroadcastDraft();
+}
+function updateScheduleInputState(){
+  const selected = isScheduleSelected();
+  const input = $('bcSchedule') as HTMLInputElement | null;
+  if (input) input.disabled = !selected;
+  updateUtcHint();
+}
+function updateUtcHint(){
+  const v = getScheduledAt();
+  const hint = $('bcUtcHint');
+  if (!hint) return;
+  if (v) {
+    hint.hidden = false;
+    hint.querySelector('b')!.textContent = new Date(v).toISOString();
+  } else {
+    hint.hidden = true;
+  }
+}
+function showTimezone(){
+  const el = $('bcTimezone');
+  if (!el) return;
+  const name = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  const offset = -new Date().getTimezoneOffset();
+  const sign = offset >= 0 ? '+' : '-';
+  const h = String(Math.floor(Math.abs(offset) / 60)).padStart(2, '0');
+  const m = String(Math.abs(offset) % 60).padStart(2, '0');
+  el.innerHTML = 'Your timezone: <b>'+esc(name)+' (UTC'+sign+h+':'+m+')</b>';
 }
 // Show how many subscribers the selected bot would reach, so the streamer
 // knows the blast size before committing.
@@ -566,10 +664,26 @@ async function updateAudience(){
   const label = formatSegmentLabel(segment);
   el.innerHTML = 'This'+(label?' <span class="muted">('+esc(label)+')</span>':'')+' will send to <b>'+esc(String(r.count))+'</b> subscriber'+(r.count===1?'':'s')+'.';
 }
+function buildSummaryHtml(){
+  const body = ($('bcBody')?.value || '').trim();
+  const botName = getBotNameForBroadcast();
+  const segment = buildSegmentFromForm();
+  const segLabel = formatSegmentLabel(segment) || 'all subscribers';
+  const scheduled = getScheduledAt();
+  const when = isScheduleSelected() && scheduled ? new Date(scheduled).toLocaleString(undefined, {dateStyle:'medium', timeStyle:'short'}) : 'now';
+  let html = '';
+  html += '<li><b>Bot:</b> '+esc(botName || '—')+'</li>';
+  html += '<li><b>Audience:</b> '+esc(segLabel)+' ('+esc(String(__bcAudience ?? '–'))+' subscribers)</li>';
+  html += '<li><b>When:</b> '+esc(when)+'</li>';
+  html += '<li><b>Message:</b> '+esc(body.slice(0,120))+(body.length>120?'…':'')+'</li>';
+  const image = ($('bcImage')?.value || '').trim();
+  if (image) html += '<li><b>Image:</b> '+esc(image)+'</li>';
+  return html;
+}
 function openBroadcastPreview(){
-  const body = $('bcBody').value.trim();
+  const body = ($('bcBody')?.value || '').trim();
   if (!body) return toast('Write a message first');
-  const botId = $('bcBotSelect')?.value || firstBotId;
+  const botId = ($('bcBotSelect')?.value || '').trim() || firstBotId;
   if (!botId) return toast('Select a bot first');
   const n = __bcAudience;
   if (typeof n === 'number' && n === 0) return toast("This segment has no subscribers yet — nobody would receive it.");
@@ -577,22 +691,33 @@ function openBroadcastPreview(){
   const bodyEl = $('bcPreviewBody');
   if (countEl) countEl.innerHTML = esc(String(n ?? '–'));
   if (bodyEl) bodyEl.innerHTML = esc(body).split('{name}').join('<b>{name}</b>');
+  const img = ($('bcImage')?.value || '').trim();
+  const imgEl = $('bcPreviewImg');
+  if (imgEl) {
+    imgEl.innerHTML = img ? '<img src="'+esc(img)+'" alt="" />' : '';
+    (imgEl as HTMLElement).hidden = !img;
+  }
+  const summaryList = $('bcSummaryList');
+  if (summaryList) summaryList.innerHTML = buildSummaryHtml();
+  const summary = $('bcSummary'); if (summary) summary.hidden = false;
+  const confirmBtn = $('bcConfirmBtn') as HTMLButtonElement | null;
+  if (confirmBtn) confirmBtn.textContent = isScheduleSelected() ? 'Schedule' : 'Send now';
   const preview = $('bcPreview'); if (preview) preview.hidden = false;
 }
 function closeBroadcastPreview(){
   const preview = $('bcPreview'); if (preview) preview.hidden = true;
 }
 async function confirmSendBroadcast(btn){
-  const body = $('bcBody').value.trim();
-  const botId = $('bcBotSelect')?.value || firstBotId;
+  const body = ($('bcBody')?.value || '').trim();
+  const botId = ($('bcBotSelect')?.value || '').trim() || firstBotId;
   if (!botId || !body) return;
   setLoading(btn, 'Sending…');
   const mediaUrl = ($('bcImage')?.value || '').trim() || null;
-  const scheduledAt = getScheduledAt();
+  const scheduledAt = isScheduleSelected() ? getScheduledAt() : null;
   const segment = buildSegmentFromForm();
   const r = await api('/broadcasts',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({bot_id:botId, body, media_url: mediaUrl, scheduled_at: scheduledAt, segment})});
   if (r.error) { restoreBtn(btn); return toast(r.error); }
-  $('bcBody').value=''; if ($('bcImage')) $('bcImage').value=''; if ($('bcSchedule')) $('bcSchedule').value=''; if ($('bcUsername')) $('bcUsername').value=''; if ($('bcMinLastSeen')) $('bcMinLastSeen').value=''; if ($('bcFirstSeen')) $('bcFirstSeen').value=''; if ($('bcLang')) $('bcLang').value = ''; closeBroadcastPreview(); toast('Broadcast queued'); restoreBtn(btn); loadExtras();
+  clearBroadcastForm(); closeBroadcastPreview(); toast(isScheduleSelected() ? 'Broadcast scheduled' : 'Broadcast sent'); restoreBtn(btn); loadExtras();
 }
 async function sendBroadcast(btn){ openBroadcastPreview(); }
 // Send a single test copy of the broadcast to one chat ID before blasting.
@@ -653,7 +778,7 @@ async function handleAction(e) {
   // Pure client-side actions (copy, local bot selection) don't need it.
   const NO_LOADING = action === 'copyLink' || action === 'selectBot'
     || action === 'testMessage' || action === 'cancelTestMessage'
-    || action === 'sendBroadcast' || action === 'closeBroadcastPreview'
+    || action === 'sendBroadcast' || action === 'openBroadcastPreview' || action === 'closeBroadcastPreview'
     || action === 'wizardNext' || action === 'wizardPrev';
   if (!NO_LOADING) setLoading(target);
   try {
@@ -675,6 +800,7 @@ async function handleAction(e) {
     else if (action === 'removeCommandButton') { e.preventDefault(); removeCommandButton(target); }
     else if (action === 'saveWelcome') { e.preventDefault(); await saveWelcome(target); }
     else if (action === 'sendBroadcast') { e.preventDefault(); openBroadcastPreview(); }
+    else if (action === 'openBroadcastPreview') { e.preventDefault(); openBroadcastPreview(); }
     else if (action === 'confirmBroadcast') { e.preventDefault(); await confirmSendBroadcast(target); }
     else if (action === 'closeBroadcastPreview') { e.preventDefault(); closeBroadcastPreview(); }
     else if (action === 'testBroadcast') { e.preventDefault(); await testBroadcast(target); }
@@ -712,8 +838,16 @@ const bcBotSelect = $('bcBotSelect');
 if (bcBotSelect) bcBotSelect.addEventListener('change', (e) => { firstBotId = e.target.value; updateAudience(); });
 ['bcLang','bcMinLastSeen','bcFirstSeen','bcUsername'].forEach(id => {
   const el = $(id);
-  if (el) el.addEventListener('input', updateAudience);
+  if (el) el.addEventListener('input', () => { saveBroadcastDraft(); updateAudience(); });
 });
+['bcBody','bcImage','bcSchedule'].forEach(id => {
+  const el = $(id);
+  if (el) el.addEventListener('input', saveBroadcastDraft);
+});
+document.querySelectorAll('input[name="bcWhen"]').forEach(radio => {
+  radio.addEventListener('change', () => { updateScheduleInputState(); saveBroadcastDraft(); });
+});
+showTimezone();
 
 window.addEventListener('error', () => {
   const bl = $('botList'); if (bl) bl.textContent = 'Something went wrong. Please reload the page.';
