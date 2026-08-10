@@ -670,7 +670,7 @@ export function buildDashboardApi(): Hono<{ Bindings: DashApiBindings; Variables
       expiresAt,
       daysLeft,
       warning,
-      upgradeUrl: `${origin}/dashboard?nav=manage`,
+      upgradeUrl: `${origin}/dashboard/settings`,
       plans: Object.values(PLANS),
     });
   });

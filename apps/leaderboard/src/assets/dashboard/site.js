@@ -777,7 +777,7 @@ function renderTemplateOptions() {
   head.className = "tpl-opt-head";
   head.innerHTML = `<span class="tpl-opt-title">${esc(template.name)} options</span>${paid
     ? `<span class="hint">Changes preview instantly — save to publish.</span>`
-    : `<span class="hint">Pro feature. <a href="/dashboard?nav=settings">Upgrade to unlock</a>.</span>`}`;
+    : `<span class="hint">Pro feature. <a href="/dashboard/settings">Upgrade to unlock</a>.</span>`}`;
   wrap.appendChild(head);
 
   const list = document.createElement("div");

@@ -100,7 +100,7 @@ function boardLimitOffer() {
       title: `You've reached ${limit} boards`,
       text: "Agency supports up to 99 independent leaderboards.",
       cta: "View Agency plan",
-      href: "/dashboard?nav=settings",
+      href: "/dashboard/settings",
     };
   }
   const planName = plan === "starter" ? "Starter" : "Free";
@@ -108,7 +108,7 @@ function boardLimitOffer() {
     title: "Need another leaderboard?",
     text: `${planName} includes ${limit} board. Pro unlocks up to 3 independent boards.`,
     cta: "Upgrade to Pro",
-    href: "/dashboard?nav=settings",
+    href: "/dashboard/settings",
   };
 }
 
@@ -265,7 +265,9 @@ export function renderBoardsPage() {
       const statusClass = b.published ? "pill--good" : "pill--muted";
       const statusText = b.published ? "Published" : "Draft";
       tr.innerHTML = `<td><a class="board-table-name${isActive ? ' board-table-name--active' : ''}" href="/dashboard?board=${encodeURIComponent(b.id)}">${esc(b.name)}${isActive ? '<span class="board-table-badge">editing</span>' : ''}</a></td><td>${esc(b.casino || "")}${b.code ? `<span class="mono"> · ${esc(b.code)}</span>` : ""}</td><td><a class="mono" href="/${esc(b.slug)}" target="_blank">/${esc(b.slug)}</a></td><td>${b.players || 0}</td><td>${esc(tpl ? tpl.name : (b.template || "classic"))}</td><td><span class="pill ${statusClass}">${statusText}</span></td><td class="ta-r"><button class="btn btn--xs btn--ghost" data-action="edit" type="button">Edit</button><button class="btn btn--xs" data-action="dup" type="button">Duplicate</button><button class="btn btn--xs btn--danger" data-action="del" type="button">Delete</button></td>`;
-      tr.querySelector('[data-action="edit"]')?.addEventListener("click", () => { location.href = "/dashboard?board=" + encodeURIComponent(b.id); });
+      // "Edit" now has an address to go to, so it opens the editor rather than
+      // whichever section the smart landing picks.
+      tr.querySelector('[data-action="edit"]')?.addEventListener("click", () => { location.href = "/dashboard/editor?board=" + encodeURIComponent(b.id); });
       tr.querySelector('[data-action="dup"]')?.addEventListener("click", () => { duplicateBoard(b.id); });
       tr.querySelector('[data-action="del"]')?.addEventListener("click", () => { deleteBoard(b.id); });
       body.appendChild(tr);

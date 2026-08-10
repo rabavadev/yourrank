@@ -3,14 +3,26 @@ import { $ } from "./utils.js";
 import { state } from "./state.js";
 import { renderOverviewSummary } from "./overview.js";
 import { fitDesignPreview, loadStats, refreshDesignPreview } from "./site.js";
+import { SECTIONS, dashboardPath, defaultTab, parseDashboardPath } from "./routes.js";
 
 
 const AREA_MAP = { home: "leaderboard", board: "leaderboard", boards: "leaderboard", settings: "leaderboard", performance: "analytics" };
-const DEFAULT_HASH = { performance: "activity", board: "setup" };
 
 export function areaForPage(page) { return AREA_MAP[page] || "leaderboard"; }
 
-function defaultHash(page) { return DEFAULT_HASH[page] || ""; }
+function defaultHash(page) { return defaultTab(page); }
+
+/** The section this document was opened at, from the path the Worker served. */
+export function currentRoute() {
+  return parseDashboardPath(location.pathname) || { page: "home", tab: "" };
+}
+
+function pushRoute(page, tab) {
+  // Keep the query: `?board=<id>` selects which board the dashboard is editing,
+  // so moving between sections must not drop it.
+  const next = dashboardPath(page, tab) + location.search;
+  if (next !== location.pathname + location.search) history.pushState({}, "", next);
+}
 function prefersReducedMotion() {
   return window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 }
@@ -30,7 +42,7 @@ export function setActiveSideNav(page, hash = "") {
   document.querySelectorAll(".gm-tab").forEach((t) => {
     const href = t.getAttribute("href") || "";
     const isActive = (area === "leaderboard" && href === "/dashboard") ||
-                     (area === "analytics" && href === "/dashboard?nav=performance") ||
+                     (area === "analytics" && href.startsWith("/dashboard/analytics")) ||
                      (area === "rewards" && href.startsWith("/dashboard/rewards")) ||
                      (area === "bot" && href.startsWith("/bot"));
     t.classList.toggle("gm-tab--active", isActive);
@@ -41,11 +53,11 @@ export function navTo(page, hash = "") {
   const scrollHash = hash || defaultHash(page);
   const navHash = page === "board" ? hash : scrollHash;
 
-  // Keep the URL in sync with the visible sub-section without polluting history.
-  if (scrollHash && location.hash.replace("#", "") !== scrollHash && typeof history.replaceState === "function") {
-    const url = new URL(location.href);
-    url.hash = scrollHash;
-    history.replaceState(history.state || {}, "", url.toString());
+  // Keep the URL on the section actually being shown, without adding an entry:
+  // navTo() is also how popstate and boot render, and those must not push.
+  const canonical = dashboardPath(page, scrollHash);
+  if (canonical !== location.pathname && typeof history.replaceState === "function") {
+    history.replaceState(history.state || {}, "", canonical + location.search);
   }
 
   setActiveSideNav(page, navHash);
@@ -57,10 +69,10 @@ export function navTo(page, hash = "") {
   // (updateDesignPreview() no-ops while the section is hidden, so navigating in
   // has to ask for it again).
   if (page === "board") setTimeout(refreshDesignPreview, 0);
-  const titles = { home: "Overview", board: "Editor", boards: "All boards", performance: "Analytics", settings: "Settings" };
-  document.title = `${titles[page] || page} · YourRank`;
+  const title = SECTIONS[page]?.title || page;
+  document.title = `${title} · YourRank`;
   const topbarTitle = $("lbTopbarTitle");
-  if (topbarTitle) { topbarTitle.textContent = titles[page] || page; topbarTitle.focus({ preventScroll: true }); }
+  if (topbarTitle) { topbarTitle.textContent = title; topbarTitle.focus({ preventScroll: true }); }
 
   // Sync editor sub-tabs when navigating directly to a sub-group.
   if (page === "board") {
@@ -167,7 +179,12 @@ export function setupEditorTabs() {
       // The preview measures off the visible column height; re-fit after toggling.
       setTimeout(fitDesignPreview, 0);
     }
-    buttons.forEach((b) => b.addEventListener("click", () => show(b.dataset.egroup)));
+    // Each step is its own URL, so a step can be linked to and Back returns to
+    // the previous one instead of leaving the editor entirely.
+    buttons.forEach((b) => b.addEventListener("click", () => {
+      show(b.dataset.egroup);
+      pushRoute("board", b.dataset.egroup);
+    }));
     tabs.addEventListener("keydown", (e) => {
       const i = buttons.indexOf(document.activeElement);
       if (i === -1) return;
@@ -177,7 +194,7 @@ export function setupEditorTabs() {
       if (next) { e.preventDefault(); next.click(); next.focus(); }
     });
     tabs._show = show;
-    const initialGroup = location.hash.replace("#", "") || "setup";
+    const initialGroup = currentRoute().tab || location.hash.replace("#", "") || "setup";
     show(buttons.find((b) => b.dataset.egroup === initialGroup)?.dataset.egroup || "setup");
   }
 
@@ -192,28 +209,17 @@ export function setupShell() {
     document.body.appendChild(backdrop);
   }
   backdrop.addEventListener("click", () => closeDrawer());
-  function pathForPage(page, hash) {
-    const scrollHash = hash || defaultHash(page);
-    const query = page === "home" ? "" : `?nav=${encodeURIComponent(page)}`;
-    return `/dashboard${query}${scrollHash ? "#" + scrollHash : ""}`;
-  }
 
   document.querySelectorAll(".lb-nav[data-nav]").forEach((link) => link.addEventListener("click", (e) => {
     e.preventDefault();
     const page = link.dataset.nav;
     const hash = link.dataset.hash || "";
-    const newPath = pathForPage(page, hash);
-    if (newPath !== location.pathname + location.search + location.hash) {
-      history.pushState({}, "", newPath);
-    }
+    pushRoute(page, hash || defaultHash(page));
     navTo(page, hash);
   }));
   document.querySelectorAll("[data-jump]").forEach((el) => el.addEventListener("click", () => {
     const page = el.dataset.jump;
-    const newPath = pathForPage(page, "");
-    if (newPath !== location.pathname + location.search + location.hash) {
-      history.pushState({}, "", newPath);
-    }
+    pushRoute(page, defaultHash(page));
     navTo(page, "");
   }));
   document.querySelectorAll(".lb-menu").forEach((btn) => btn.addEventListener("click", (e) => { e.stopPropagation(); openDrawer(); }));
@@ -225,15 +231,12 @@ export function setupShell() {
     const href = link.getAttribute("href") || "";
     if (!href.startsWith("/dashboard") || href.startsWith("/dashboard/rewards")) return;
     link.addEventListener("click", (e) => {
-      e.preventDefault();
       const url = new URL(href, location.origin);
-      const page = url.searchParams.get("nav") || "home";
-      const hash = url.hash.replace("#", "");
-      const newPath = pathForPage(page, hash);
-      if (newPath !== location.pathname + location.search + location.hash) {
-        history.pushState({}, "", newPath);
-      }
-      navTo(page, hash);
+      const route = parseDashboardPath(url.pathname);
+      if (!route) return;
+      e.preventDefault();
+      pushRoute(route.page, route.tab || defaultHash(route.page));
+      navTo(route.page, route.tab);
     });
   });
 
@@ -242,10 +245,8 @@ export function setupShell() {
 
   // Handle browser back/forward inside the SPA.
   window.addEventListener("popstate", () => {
-    const params = new URLSearchParams(location.search);
-    const page = params.get("nav") || "home";
-    const hash = location.hash.replace("#", "");
-    navTo(page, hash);
+    const { page, tab } = currentRoute();
+    navTo(page, tab);
   });
 
   // Allow nested dashboard modules to request navigation without a circular import.
@@ -253,10 +254,7 @@ export function setupShell() {
     const { page, hash } = e.detail || {};
     if (!page) return;
     e.preventDefault();
-    const newPath = pathForPage(page, hash);
-    if (newPath !== location.pathname + location.search + location.hash) {
-      history.pushState({}, "", newPath);
-    }
+    pushRoute(page, hash || defaultHash(page));
     navTo(page, hash);
   });
 }
