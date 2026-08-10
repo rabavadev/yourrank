@@ -92,7 +92,7 @@ function boardLimitOffer() {
       title: `You've reached ${limit} boards`,
       text: "Need a higher limit? Contact support and tell us how many boards your team manages.",
       cta: "Contact support",
-      href: "/contact?type=support&area=billing&return=/dashboard",
+      href: "/help/support?area=billing&return=/dashboard",
     };
   }
   if (plan === "pro") {

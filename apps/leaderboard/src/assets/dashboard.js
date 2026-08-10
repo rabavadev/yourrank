@@ -208,7 +208,7 @@ async function init() {
   const hash = location.hash.replace("#", "");
   if (document.querySelector(`section[data-page="${landing}"]`)) navTo(landing, hash);
   if (planParam) {
-    if (planParam.toLowerCase() === "agency") location.href = "/contact?plan=agency";
+    if (planParam.toLowerCase() === "agency") location.href = "/help/support?area=billing";
     else checkout(planParam);
   }
   if (document.querySelector('section[data-page="board"].is-on')) fitDesignPreview();

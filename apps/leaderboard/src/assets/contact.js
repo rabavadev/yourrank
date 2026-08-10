@@ -15,7 +15,9 @@ const backWrap = document.getElementById("c_back_wrap");
 const back = document.getElementById("c_back");
 
 const params = new URLSearchParams(location.search);
-const requestedType = params.get("type");
+const helpApp = document.getElementById("help-app");
+const helpTab = helpApp?.dataset?.helpTab;
+const requestedType = helpTab || params.get("type");
 const requestedArea = params.get("area");
 const requestedReturn = params.get("return");
 const allowedAreas = new Set(["dashboard", "leaderboard", "bot", "analytics", "attribution", "billing"]);
@@ -107,6 +109,31 @@ if (form) {
     }
   });
 }
+
+function wireHelpDrawer() {
+  const side = document.getElementById("helpSide");
+  const menu = document.querySelector('[aria-controls="helpSide"]');
+  const close = side?.querySelector('[data-close-side]');
+  const backdrop = document.getElementById("helpBackdrop");
+  if (!side) return;
+  function openDrawer() {
+    side.classList.add("is-open");
+    side.setAttribute("aria-modal", "true");
+    menu?.setAttribute("aria-expanded", "true");
+    if (backdrop) backdrop.classList.add("is-open");
+  }
+  function closeDrawer() {
+    side.classList.remove("is-open");
+    side.setAttribute("aria-modal", "false");
+    menu?.setAttribute("aria-expanded", "false");
+    if (backdrop) backdrop.classList.remove("is-open");
+  }
+  menu?.addEventListener("click", openDrawer);
+  close?.addEventListener("click", closeDrawer);
+  backdrop?.addEventListener("click", closeDrawer);
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape" && side.classList.contains("is-open")) { e.preventDefault(); closeDrawer(); } });
+}
+wireHelpDrawer();
 
 const yr = document.getElementById("yr");
 if (yr) yr.textContent = new Date().getFullYear();
