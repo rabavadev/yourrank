@@ -329,3 +329,98 @@ export function flashButton(btn, message, duration = 1500) {
     delete btn._flashOriginal;
   }, duration);
 }
+
+// Generic client-side search/sort/pagination controller for data-driven tables.
+export class ListController {
+  constructor(opts) {
+    this.root = opts.root;
+    this.tbody = typeof opts.tbody === "string" ? $(opts.tbody) : opts.tbody;
+    this.all = opts.items || [];
+    this.perPage = opts.perPage || 20;
+    this.searchFn = opts.searchFn || (() => "");
+    this.sortOptions = opts.sortOptions || [];
+    this.emptyText = opts.emptyText || "No items.";
+    this.emptyAllText = opts.emptyAllText || this.emptyText;
+    this.onRender = opts.onRender || (() => {});
+    this.renderItem = opts.renderItem || ((item) => `<tr><td colspan="99">${esc(String(item))}</td></tr>`);
+    this.page = 1;
+    this.query = "";
+    this.sortKey = this.sortOptions[0]?.key || "";
+    this._buildControls();
+    this.refresh();
+  }
+  _buildControls() {
+    const wrap = document.createElement("div");
+    wrap.className = "list-controls";
+    const searchPlaceholder = this.root?.dataset?.searchPlaceholder || "Search…";
+    let html = `<div class="list-controls-row">`;
+    html += `<input type="search" class="list-search" placeholder="${esc(searchPlaceholder)}" aria-label="Search" />`;
+    if (this.sortOptions.length) {
+      html += `<select class="list-sort" aria-label="Sort"><option value="">Sort by…</option>`;
+      for (const opt of this.sortOptions) html += `<option value="${esc(opt.key)}"${opt.key === this.sortKey ? " selected" : ""}>${esc(opt.label)}</option>`;
+      html += `</select>`;
+    }
+    html += `</div><div class="list-pagination" role="group" aria-label="Pagination"><button class="btn btn--sm" data-prev type="button">Previous</button><span class="list-page-info"></span><button class="btn btn--sm" data-next type="button">Next</button></div>`;
+    wrap.innerHTML = html;
+    this.root.insertBefore(wrap, this.root.firstChild);
+    this.searchInput = wrap.querySelector(".list-search");
+    this.sortSelect = wrap.querySelector(".list-sort");
+    this.prevBtn = wrap.querySelector("[data-prev]");
+    this.nextBtn = wrap.querySelector("[data-next]");
+    this.pageInfo = wrap.querySelector(".list-page-info");
+    this.searchInput.addEventListener("input", () => { this.query = this.searchInput.value.trim().toLowerCase(); this.page = 1; this.refresh(); });
+    if (this.sortSelect) this.sortSelect.addEventListener("change", () => { this.sortKey = this.sortSelect.value; this.page = 1; this.refresh(); });
+    this.prevBtn.addEventListener("click", () => { if (this.page > 1) { this.page--; this.refresh(); } });
+    this.nextBtn.addEventListener("click", () => { if (this.page < this.totalPages) { this.page++; this.refresh(); } });
+  }
+  setItems(items) {
+    this.all = items || [];
+    this.page = 1;
+    this.refresh();
+  }
+  _matches(item) {
+    if (!this.query) return true;
+    const hay = String(this.searchFn(item)).toLowerCase();
+    const terms = this.query.split(/\s+/).filter(Boolean);
+    return terms.every((t) => hay.includes(t));
+  }
+  _sort(a, b) {
+    const opt = this.sortOptions.find((o) => o.key === this.sortKey);
+    if (!opt || !opt.fn) return 0;
+    return opt.fn(a, b);
+  }
+  refresh() {
+    const filtered = this.all.filter((item) => this._matches(item));
+    const sorted = this.sortKey ? [...filtered].sort(this._sort.bind(this)) : filtered;
+    this.totalPages = Math.max(1, Math.ceil(sorted.length / this.perPage));
+    if (this.page > this.totalPages) this.page = this.totalPages || 1;
+    const start = (this.page - 1) * this.perPage;
+    const pageItems = sorted.slice(start, start + this.perPage);
+    if (pageItems.length === 0) {
+      const msg = this.all.length === 0 && !this.query ? this.emptyAllText : this.emptyText;
+      const colCount = this.tbody?.closest("table")?.querySelectorAll("thead th").length || 1;
+      this.tbody.innerHTML = `<tr><td colspan="${colCount}" class="muted">${esc(msg)}</td></tr>`;
+    } else {
+      const frag = document.createDocumentFragment();
+      for (const item of pageItems) {
+        const rendered = this.renderItem(item);
+        if (typeof rendered === "string") {
+          const tr = document.createElement("tr");
+          tr.innerHTML = rendered;
+          frag.appendChild(tr);
+        } else {
+          frag.appendChild(rendered);
+        }
+      }
+      this.tbody.innerHTML = "";
+      this.tbody.appendChild(frag);
+    }
+    this._updatePagination(sorted.length);
+    this.onRender(pageItems);
+  }
+  _updatePagination(total) {
+    this.pageInfo.textContent = total ? `Page ${this.page} of ${this.totalPages} (${total})` : `0`;
+    this.prevBtn.disabled = this.page <= 1;
+    this.nextBtn.disabled = this.page >= this.totalPages || this.totalPages === 0;
+  }
+}
