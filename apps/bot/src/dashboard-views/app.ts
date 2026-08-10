@@ -27,7 +27,7 @@ ${sideNav(page, user)}
   ${overviewPanel()}
   ${botsPanel()}
   ${commandsPanel()}
-  ${offersPanel()}
+  ${offersPanel(publicBaseUrl)}
   ${broadcastsPanel()}
   ${settingsPanel(publicBaseUrl)}
 </div></div></main>
