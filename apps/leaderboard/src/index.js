@@ -48,6 +48,11 @@ function enqueueBump(env, ctx, siteId, field, referer = null, visitorHash = null
   ctx.waitUntil(p);
 }
 
+function fillYear(html) {
+  const year = new Date().getFullYear();
+  return html.replace(/{{YEAR}}/g, String(year)).replace(/{{NEXT_YEAR}}/g, String(year + 1));
+}
+
 function findProfilePlayer(data, rawName) {
   const name = decodeURIComponent(rawName).trim();
   const players = (data.players || []).slice().sort((a, b) => (Number(b.wagered) || 0) - (Number(a.wagered) || 0));
@@ -407,7 +412,7 @@ async function handleRequest(request, env, ctx, meta) {
           // Google Business Profile placeholders (optional; set via wrangler secret/vars).
           result = result.replace(/{{GBP_REVIEW_URL}}/g, env.GBP_REVIEW_URL || "#");
           result = result.replace(/{{GBP_PHOTO_URL}}/g, env.GBP_PHOTO_URL || "");
-          return result;
+          return fillYear(result);
         }
 
         if (pageObj.Component) {
@@ -418,9 +423,9 @@ async function handleRequest(request, env, ctx, meta) {
             let result = leaderboardPageHtml({ ...pageObj.config, content });
             if (navOpts) result = result.replace("<!--GM_NAV-->", shellNavHtml(navOpts));
             if (reqId) result = result.replace("{{REQ_ID}}", reqId);
-            return result;
+            return fillYear(result);
           }
-          return content;
+          return fillYear(content);
         }
       }
 
@@ -542,7 +547,7 @@ async function handleRequest(request, env, ctx, meta) {
         return Response.redirect(new URL(`/dashboard?nav=board${hash ? "#" + hash : ""}`, url), 302);
       }
       if (path === "/me" || path === "/me.html") {
-        return new Response(addCookieConsent(viewerDashboardPage), { headers: { ...HTML_N, ...csrfHeader, "cache-control": "no-store, no-cache, must-revalidate" } });
+        return new Response(addCookieConsent(fillYear(viewerDashboardPage)), { headers: { ...HTML_N, ...csrfHeader, "cache-control": "no-store, no-cache, must-revalidate" } });
       }
       if (path === "/forgot") return new Response(addCookieConsent(await renderHtmlPage(PAGES.forgot)), { headers: { ...SECURE_HTML, ...csrfHeader } });
       if (path === "/reset") {

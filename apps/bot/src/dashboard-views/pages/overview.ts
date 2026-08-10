@@ -8,13 +8,25 @@ export function overviewPanel(): string {
     <a href="/bot/commands"><span class="t">Change what your bot says</span><span class="d">Greeting and replies</span></a>
   </div>
 
+  <p class="muted" id="ovScope">Metrics for all connected bots over the last 14 days. Times are local.</p>
   <!-- Overview stats -->
   <div class="kpis" data-page="overview">
-    <div class="kpi"><div class="lbl">Clicks · 14d</div><div class="stat" id="totClicks">–</div><div class="sub" id="clicksSub"></div></div>
-    <div class="kpi"><div class="lbl">Unique · 14d</div><div class="stat" id="totUnique">–</div><div class="sub" id="uniqueSub"></div></div>
-    <div class="kpi"><div class="lbl">Subscribers</div><div class="stat" id="totSubs">–</div><div class="sub" id="subsNew"></div></div>
-    <div class="kpi"><div class="lbl">Active offers</div><div class="stat" id="totOffers">–</div><div class="sub" id="offersSub"></div></div>
+    <div class="kpi" title="Total clicks on tracked offer links"><div class="lbl">Clicks · 14d</div><div class="stat" id="totClicks">–</div><div class="sub" id="clicksSub"></div></div>
+    <div class="kpi" title="Unique users who clicked tracked offer links"><div class="lbl">Unique · 14d</div><div class="stat" id="totUnique">–</div><div class="sub" id="uniqueSub"></div></div>
+    <div class="kpi" title="Users who started a conversation with any of your bots"><div class="lbl">Subscribers</div><div class="stat" id="totSubs">–</div><div class="sub" id="subsNew"></div></div>
+    <div class="kpi" title="Offers currently marked active"><div class="lbl">Active offers</div><div class="stat" id="totOffers">–</div><div class="sub" id="offersSub"></div></div>
   </div>
+  <details class="glossary"><summary>Metric glossary</summary>
+    <dl>
+      <div><dt>Clicks</dt><dd>Total clicks on your tracked offer links.</dd></div>
+      <div><dt>Unique</dt><dd>Distinct users who clicked at least once, based on the same browser/IP signature.</dd></div>
+      <div><dt>CTR</dt><dd>Click-through rate: clicks ÷ impressions when impressions are tracked.</dd></div>
+      <div><dt>CR</dt><dd>Conversion rate: conversions ÷ unique clicks.</dd></div>
+      <div><dt>Conversion</dt><dd>A deposit or sign-up event reported by a sponsor via postback.</dd></div>
+      <div><dt>Postback</dt><dd>A server-to-server notification that tells YourRank a click resulted in a conversion.</dd></div>
+      <div><dt>Subscriber</dt><dd>A Telegram user who started your bot.</dd></div>
+    </dl>
+  </details>
 
   <div class="grid2 style-5" data-page="overview">
     <div class="panel"><div class="cardhd"><h2>Daily clicks</h2><span class="muted style-6">14 days</span></div>

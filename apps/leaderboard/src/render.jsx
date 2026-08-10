@@ -105,6 +105,9 @@ function buildParts(c, overrides = {}) {
   const prizePoolLabel = esc((prizes && prizes.prizePoolLabel) || b.prizePoolLabel || "Prize pool");
   const countdownLabelValue = String((prizes && prizes.countdownLabel) || b.countdownLabel || "").slice(0, 40);
   const payoutsLabel = esc((prizes && prizes.payoutsLabel) || b.payoutsLabel || "Payouts");
+  const wagerLabel = esc((prizes && prizes.wagerLabel) || "Wagered");
+  const prizeLabel = esc((prizes && prizes.prizeLabel) || "Prize");
+  const wagerTotalLabel = esc((prizes && prizes.wagerTotalLabel) || "Total Wager");
   const countdownLabel = countdownLabelValue || null;
   const streamWindow = `<div class="stream-window" aria-hidden="true"><div class="sw-bar"><span class="sw-dots"><i></i><i></i><i></i></span><span class="sw-title">Kick Stream</span></div>
 <div class="sw-body"><div class="sw-live"><span class="live-dot"></span> LIVE</div><div class="sw-play"><svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" width="34" height="34" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></div><div class="sw-name" data-brand-name>${name}</div></div></div>`;
@@ -143,8 +146,8 @@ ${whyStats.length ? `<div class="pcol pcol-why"><span class="pcol-label">Why ${h
   // while the contract-bound wrappers (data-top3, data-rows) and the
   // data-name/data-wagered attributes stay intact so live updates and the
   // section toggles keep working. helpers are passed as the third arg.
-  const partHelpers = { esc, initials, moneyS, moneyShortS, moneyPrizeS, playerHrefS, cur: cur2, hidePrizes };
-  const top3CardFn = overrides.top3Card || ((pl, rank) => `<div class="t3 t3--${rank}" data-name="${esc(pl.name)}"><div class="t3-av-wrap"><span class="t3-av" aria-hidden="true">${esc(initials(pl.name))}</span><span class="t3-medal">${rank}</span></div><a class="t3-name" href="${playerHrefS(pl.name)}">${esc(pl.name)}</a><span class="t3-prize">${pl.prize ? moneyPrizeS(pl.prize) : "—"}</span><div class="t3-wager-box"><span class="t3-wager-label">Total Wager</span><span class="t3-wager">${moneyS(pl.wagered)}</span></div></div>`);
+  const partHelpers = { esc, initials, moneyS, moneyShortS, moneyPrizeS, playerHrefS, cur: cur2, hidePrizes, wagerLabel, prizeLabel, wagerTotalLabel };
+  const top3CardFn = overrides.top3Card || ((pl, rank) => `<div class="t3 t3--${rank}" data-name="${esc(pl.name)}"><div class="t3-av-wrap"><span class="t3-av" aria-hidden="true">${esc(initials(pl.name))}</span><span class="t3-medal">${rank}</span></div><a class="t3-name" href="${playerHrefS(pl.name)}">${esc(pl.name)}</a><span class="t3-prize">${pl.prize ? moneyPrizeS(pl.prize) : "—"}</span><div class="t3-wager-box"><span class="t3-wager-label">${wagerTotalLabel}</span><span class="t3-wager">${moneyS(pl.wagered)}</span></div></div>`);
   const rowFn = overrides.row || ((pl, rank) => {
     const prize = pl.prize ? `<span class="tr-prize has ta-r" role="cell">${moneyPrizeS(pl.prize)}</span>` : `<span class="tr-prize no ta-r" role="cell">—</span>`;
     return `<div class="t-row" role="row" data-position="${rank}" data-name="${esc(pl.name)}" data-wagered="${Number(pl.wagered) || 0}">
@@ -155,9 +158,9 @@ ${whyStats.length ? `<div class="pcol pcol-why"><span class="pcol-label">Why ${h
   const top3Srv = sortedPlayers.slice(0, 3).map((pl, i) => top3CardFn(pl, i + 1, partHelpers)).join("");
   const rowsSrv = sortedPlayers.slice(3).map((pl, i) => rowFn(pl, i + 4, partHelpers)).join("");
 
-  const table = `<div class="table" role="table" aria-label="Leaderboard standings"><div class="t-head" role="row"><span role="columnheader">#</span><span role="columnheader">Player</span><span class="ta-r" role="columnheader">Wagered</span><span class="ta-r" role="columnheader">Prize</span></div>
+  const table = `<div class="table" role="table" aria-label="Leaderboard standings"><div class="t-head" role="row"><span role="columnheader">#</span><span role="columnheader">Player</span><span class="ta-r" role="columnheader">${wagerLabel}</span><span class="ta-r" role="columnheader">${prizeLabel}</span></div>
 <div class="t-rows" role="rowgroup" data-rows>${rowsSrv}</div></div>`;
-  const rules = `<details class="rules"><summary>Leaderboard rules — how wager counts</summary><ol class="rules-list" data-rules></ol></details>`;
+  const rules = `<details class="rules"><summary>Leaderboard rules — scoring and reset details</summary><ol class="rules-list" data-rules></ol></details>`;
   const pastSec = `<section id="past" class="past-sec" data-past hidden><h2 class="sec-title center">Past Winners</h2><p class="sec-sub center">Every closed-out period, on the record.</p>
 <div class="past-grid" data-past-grid></div></section>`;
   const socialsSec = socials.length ? `<section id="socials" class="socials-sec"><h2 class="sec-title center">Join the Socials</h2><p class="sec-sub center">More giveaways and promotions across every platform.</p>
@@ -327,9 +330,10 @@ body[data-preview] .top3{margin-bottom:14px}
   const twitterCard = logo ? "summary_large_image" : "summary";
   const title = hasCasino ? `${esc(b.name)} | ${esc(casino)} Leaderboard` : `${esc(b.name)} — Leaderboard`;
   const ogTitle = hasCasino ? `${esc(b.name)} | ${esc(casino)}` : `${esc(b.name)} — Leaderboard`;
+  const prizePoolLabel = esc((data.prizes?.prizePoolLabel) || b.prizePoolLabel || "Prize pool");
   const desc = (hasCasino && hasCode)
     ? `${esc(b.name)} x ${esc(casino)}. Use code ${esc(code)} and compete in the ${esc(pool ? pool + " " : "")}${esc(period.toLowerCase())} leaderboard.`
-    : `${esc(b.name)}'s ${esc(period.toLowerCase())} leaderboard${pool ? ` — compete for the ${esc(pool)} prize pool` : ""}.`;
+    : `${esc(b.name)}'s ${esc(period.toLowerCase())} leaderboard${pool ? ` — compete for the ${esc(pool)} ${prizePoolLabel.toLowerCase()}` : ""}.`;
   const dataJson = JSON.stringify(data).replace(/</g, "\\u003c");
   const sections = { ...DEFAULT_EXTRA.sections, ...(data.sections || {}) };
   // Surface enabled socials even if the section toggle was accidentally off.

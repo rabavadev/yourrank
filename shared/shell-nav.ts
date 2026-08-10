@@ -124,10 +124,10 @@ export function shellNavHtml(opts: ShellNavOpts = {}): string {
           <span class="gm-profile-chevron" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg></span>
         </summary>
         <div class="gm-profile-menu">
-          <a class="gm-profile-link" href="${accountHref}"><span class="gm-profile-ic">⚙️</span>Account</a>
-          <a class="gm-profile-link" href="/contact?type=support&amp;area=${area}&amp;return=${returnTo}"><span class="gm-profile-ic">❓</span>Support</a>
-          <a class="gm-profile-link gm-profile-link--accent" href="/contact?type=feedback&amp;${helpQuery}"><span class="gm-profile-ic">💬</span>Feedback</a>
-          <form method="POST" action="${esc(opts.logoutAction || "/logout")}" class="gm-logout-form"><button class="gm-logout" type="submit">Logout</button></form>
+          <a class="gm-profile-link" href="${accountHref}"><span class="gm-profile-ic"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9c-.18-.7-.43-1.36-.79-1.95a2 2 0 0 1 .63-2.75l.06-.06a2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33h.09A1.65 1.65 0 0 0 9 4.6V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09c0 .66.25 1.28.67 1.75h.09a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V15z"/></svg></span>Account</a>
+          <a class="gm-profile-link" href="/contact?type=support&amp;area=${area}&amp;return=${returnTo}"><span class="gm-profile-ic"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></span>Support</a>
+          <a class="gm-profile-link gm-profile-link--accent" href="/contact?type=feedback&amp;${helpQuery}"><span class="gm-profile-ic"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></span>Feedback</a>
+          <form method="POST" action="${esc(opts.logoutAction || "/logout")}" class="gm-logout-form"><button class="gm-logout" type="submit"><span class="gm-profile-ic"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg></span>Sign out</button></form>
         </div>
       </details>
     </div>
@@ -194,13 +194,14 @@ export const SHELL_NAV_CSS = `
 .gm-profile[open] .gm-profile-chevron{transform:rotate(180deg);}
 .gm-profile-menu{position:absolute;right:0;left:auto;top:calc(100% + 10px);min-width:190px;width:max-content;max-width:calc(100vw - 40px);background:var(--gm-panel);border:1px solid var(--gm-line-2);border-radius:10px;padding:6px;display:flex;flex-direction:column;gap:2px;box-shadow:0 16px 48px rgba(0,0,0,.55);z-index:200;}
 .gm-profile-link{font-family:var(--gm-sans);font-size:13px;color:var(--gm-ink-soft);text-decoration:none;padding:8px 10px;border-radius:7px;white-space:nowrap;display:flex;align-items:center;gap:10px;}
-.gm-profile-ic{display:inline-flex;align-items:center;justify-content:center;width:18px;font-size:13px;flex:0 0 auto;}
+.gm-profile-ic{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;color:var(--gm-ink-soft);flex:0 0 auto;}
 .gm-profile-link:hover{color:var(--gm-ink);background:var(--gm-line);}
 .gm-profile-link--accent{color:var(--gm-accent);}
 .gm-profile .gm-logout-form{padding:6px 10px;}
 .gm-profile .gm-logout{width:100%;}
 .gm-logout{font-family:var(--gm-mono);font-size:11px;letter-spacing:.06em;
   text-transform:uppercase;color:var(--gm-ink-soft);text-decoration:none;
+  display:inline-flex;align-items:center;gap:8px;
   padding:6px 10px;border:1px solid var(--gm-line-2);border-radius:7px;transition:color .15s,border-color .15s;background:transparent;cursor:pointer;}
 .gm-logout:hover{color:var(--gm-ink);border-color:var(--gm-line-2);}
 .gm-shell-main{max-width:1040px;margin:0 auto;padding:22px 18px 60px;}

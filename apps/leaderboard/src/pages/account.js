@@ -129,7 +129,7 @@ const accountContent = `
         <details class="adv" id="postbackAdvanced" hidden>
           <summary>Advanced configuration</summary>
           <div class="field mt-14">
-            <label>Legacy URL (sunset ${new Date().getFullYear() + 1})</label>
+            <label>Legacy URL (sunset {{NEXT_YEAR}})</label>
             <div class="d-flex gap-8 items-center flex-wrap">
               <code id="postbackLegacy" class="overlay-url"></code>
               <button class="btn btn--sm ic-btn" id="postbackCopyLegacy" type="button">Copy</button>

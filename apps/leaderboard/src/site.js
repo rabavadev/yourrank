@@ -308,6 +308,9 @@ const DEFAULT_PRIZES = {
   currency: "$",
   hidePrizeAmounts: false,
   payoutsLabel: "Payouts",
+  wagerLabel: "Wagered",
+  prizeLabel: "Prize",
+  wagerTotalLabel: "Total Wager",
 };
 
 function parseTheme(site) {
@@ -321,6 +324,9 @@ function parseTheme(site) {
     currency: String(rawPrizes.currency || DEFAULT_PRIZES.currency).slice(0, 6),
     hidePrizeAmounts: rawPrizes.hidePrizeAmounts === true,
     payoutsLabel: String(rawPrizes.payoutsLabel || DEFAULT_PRIZES.payoutsLabel).slice(0, 40),
+    wagerLabel: String(rawPrizes.wagerLabel || DEFAULT_PRIZES.wagerLabel).slice(0, 40),
+    prizeLabel: String(rawPrizes.prizeLabel || DEFAULT_PRIZES.prizeLabel).slice(0, 40),
+    wagerTotalLabel: String(rawPrizes.wagerTotalLabel || DEFAULT_PRIZES.wagerTotalLabel).slice(0, 40),
   };
   const template = TEMPLATE_IDS.includes(t.template) ? t.template : "classic";
   return {
@@ -970,6 +976,9 @@ export async function saveSite(env, user, payload, siteId, request = null) {
         currency: String(br.prizes.currency || DEFAULT_PRIZES.currency).slice(0, 6),
         hidePrizeAmounts: br.prizes.hidePrizeAmounts === true,
         payoutsLabel: String(br.prizes.payoutsLabel || DEFAULT_PRIZES.payoutsLabel).slice(0, 40),
+        wagerLabel: String(br.prizes.wagerLabel || DEFAULT_PRIZES.wagerLabel).slice(0, 40),
+        prizeLabel: String(br.prizes.prizeLabel || DEFAULT_PRIZES.prizeLabel).slice(0, 40),
+        wagerTotalLabel: String(br.prizes.wagerTotalLabel || DEFAULT_PRIZES.wagerTotalLabel).slice(0, 40),
       };
     }
     themeObj = t;
@@ -1242,6 +1251,9 @@ export async function updateSiteTheme(env, user, payload = {}, request = null) {
       currency: String(payload.prizes.currency || DEFAULT_PRIZES.currency).slice(0, 6),
       hidePrizeAmounts: payload.prizes.hidePrizeAmounts === true,
       payoutsLabel: String(payload.prizes.payoutsLabel || DEFAULT_PRIZES.payoutsLabel).slice(0, 40),
+      wagerLabel: String(payload.prizes.wagerLabel || DEFAULT_PRIZES.wagerLabel).slice(0, 40),
+      prizeLabel: String(payload.prizes.prizeLabel || DEFAULT_PRIZES.prizeLabel).slice(0, 40),
+      wagerTotalLabel: String(payload.prizes.wagerTotalLabel || DEFAULT_PRIZES.wagerTotalLabel).slice(0, 40),
     };
   }
 

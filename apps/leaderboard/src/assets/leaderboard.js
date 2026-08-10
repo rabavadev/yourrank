@@ -10,6 +10,9 @@ const siteBrand = () => (typeof window !== "undefined" ? (window.__SITE_DATA__ |
 const sitePrizes = () => (typeof window !== "undefined" ? (window.__SITE_DATA__ || {}).prizes || {} : {});
 const currencySymbol = () => String(siteBrand().currency || "$").slice(0, 6);
 const hidePrizeAmounts = () => !!siteBrand().hidePrizeAmounts;
+const wagerLabel = () => esc(String(sitePrizes().wagerLabel || "Wagered"));
+const prizeLabel = () => esc(String(sitePrizes().prizeLabel || "Prize"));
+const wagerTotalLabel = () => esc(String(sitePrizes().wagerTotalLabel || "Total Wager"));
 const money = (n) => currencySymbol() + Number(n).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const moneyShort = (n) => currencySymbol() + Number(n).toLocaleString("en-US", { maximumFractionDigits: 0 });
 const moneyPrize = (n) => hidePrizeAmounts() ? "—" : moneyShort(n);
@@ -147,7 +150,7 @@ function buildPlayerRow(pl, rank, delay, gap) {
   }
 
 function buildTop3Card(pl, rank) {
-  return `<div class="t3 t3--${rank}" data-name="${esc(pl.name)}"><div class="t3-av-wrap"><span class="t3-av" aria-hidden="true">${esc(initials(pl.name))}</span><span class="t3-medal">${rank}</span></div><a class="t3-name" href="${playerHref(pl.name)}">${esc(pl.name)}</a>${streakBadge(pl.streak)}<span class="t3-prize">${pl.prize ? moneyPrize(pl.prize) : "—"}</span><div class="t3-wager-box"><span class="t3-wager-label">Total Wager</span><span class="t3-wager">${money(pl.wagered)}</span></div></div>`;}
+  return `<div class="t3 t3--${rank}" data-name="${esc(pl.name)}"><div class="t3-av-wrap"><span class="t3-av" aria-hidden="true">${esc(initials(pl.name))}</span><span class="t3-medal">${rank}</span></div><a class="t3-name" href="${playerHref(pl.name)}">${esc(pl.name)}</a>${streakBadge(pl.streak)}<span class="t3-prize">${pl.prize ? moneyPrize(pl.prize) : "—"}</span><div class="t3-wager-box"><span class="t3-wager-label">${wagerTotalLabel()}</span><span class="t3-wager">${money(pl.wagered)}</span></div></div>`;}
 
 // data-style-* attributes carry dynamic per-player values
 // because the strict CSP blocks inline style="..." attributes. Apply them via

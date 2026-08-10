@@ -238,6 +238,8 @@ async function load() {
 
   // overview stats
   if (page === 'overview') {
+    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || 'local';
+    setHtml('ovScope', 'Metrics for all connected bots over the last 14 days. Timezone: <code>' + esc(tz) + '</code>.');
     const totClicks = (daily||[]).reduce((s,d)=>s+d.clicks,0);
     const totUnique = (daily||[]).reduce((s,d)=>s+d.unique_clicks,0);
     const activeOffers = (offers||[]).filter(o=>o.is_active).length;
@@ -313,7 +315,7 @@ async function loadSubscribers(bots){
   const rows = (s.sources || []);
   setHtml('subSources', rows.length
     ? rows.map(r=>'<tr><td>'+esc(r.source)+'</td><td class="style-8">'+esc(String(r.count))+'</td></tr>').join('')
-    : '<tr><td colspan="2" class="muted">No subscribers yet.</td></tr>');
+    : '<tr><td colspan="2" class="muted">No subscribers yet. Share your bot link to get your first one.</td></tr>');
   const active = (bots || []).find(b=>b.status==='active' && b.username);
   if (active) setText('deepLinkExample', 't.me/'+active.username+'?start=twitch');
 }
@@ -346,23 +348,14 @@ function renderOffers(){
         { key: 'conversions', label: 'Conversions', fn: function(a,b){ return (b.conversions||0) - (a.conversions||0); } },
         { key: 'active', label: 'Active first', fn: function(a,b){ return Number(b.is_active) - Number(a.is_active); } }
       ],
-      emptyAllText: 'No offers yet.', emptyText: 'No matching offers.',
+      emptyAllText: 'No offers yet. Create one with the form below to get a tracked link.',
+      emptyText: 'No matching offers.',
       searchPlaceholder: 'Search offers…',
       renderItem: offerRow
     });
   } else {
     __offersCtrl.setItems(__offers || []);
   }
-}
-
-function broadcastRow(b){
-  const bodyPreview = esc(b.body.slice(0,60)) + (b.body.length>60?'…':'') + (b.media_url ? ' (image)' : '');
-  const when = b.scheduled_at ? new Date(b.scheduled_at).toLocaleString(undefined,{dateStyle:'short',timeStyle:'short'}) : 'now';
-  const seg = formatSegmentLabel(b.segment);
-  return '<td>'+bodyPreview+'</td><td>'+esc(b.bot_username||'–')+'</td><td>'+esc(b.status)+'</td>'+
-  '<td>'+when+(seg?' <span class="muted">('+esc(seg)+')</span>':'')+'</td>'+
-  '<td>'+esc(b.sent_count)+'/'+(b.total_count?esc(b.total_count):'?')+'</td><td>'+esc(b.fail_count)+'</td>'+
-  '<td>'+(b.status==='scheduled'?'<button class="ghost" data-action="cancelBroadcast" data-id="'+esc(b.id)+'" type="button">Cancel</button>':'')+'</td>';
 }
 
 async function loadExtras(){

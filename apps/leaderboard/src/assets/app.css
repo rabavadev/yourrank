@@ -1109,3 +1109,4 @@ html{color-scheme:light}
 .vd-site-head{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
 .mt-32{margin-top:32px}.mt-48{margin-top:48px}.mt-64{margin-top:64px}.text-accent{color:var(--accent)}.text-center{text-align:center}
 .pg-narrow{max-width:620px;margin:0 auto;padding:48px 24px}
+.tfa-icon{display:inline-flex;vertical-align:-4px;margin-right:8px}

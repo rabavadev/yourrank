@@ -40,7 +40,7 @@ export const viewerDashboardPage = leaderboardPageHtml({
         <p class="card-sub" id="vd-identity">Loading identity…</p>
       </div>
       <div class="vd-profile-actions">
-        <button class="btn btn--sm" id="vd-logout" type="button">Log out</button>
+        <button class="btn btn--sm" id="vd-logout" type="button">Sign out</button>
       </div>
     </div>
     <p class="hint" id="vd-wrong-account" hidden>Wrong account? <button class="btn btn--ghost btn--sm" id="vd-switch" type="button">Use a different login</button></p>

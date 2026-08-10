@@ -2,10 +2,21 @@
 export function offersPanel(publicBaseUrl: string): string {
   return `
   <div class="panel" data-page="offers"><h2>Your offers</h2>
+    <p class="muted">Lifetime metrics for all offers. Set up postbacks to see conversions.</p>
     <p class="muted" id="postbackStatus">Loading postback status…</p>
     <table><thead><tr><th>Offer</th><th>Link</th><th>Clicks</th><th>Unique</th><th title="Click-through rate: unique clicks / total clicks">CTR ?</th><th title="Conversion rate: conversions / unique clicks">CR ?</th><th>Conv.</th><th>Status</th><th><span class="sr-only">Actions</span></th></tr></thead>
     <tbody id="offers"><tr><td colspan="9" class="muted">Loading…</td></tr></tbody></table>
-    <p class="muted" style="font-size:12px;margin-top:6px">Metrics are lifetime totals for each offer. <a href="${publicBaseUrl}/account#postbacks">Manage postbacks in Account →</a></p>
+    <p class="muted style-28">Metrics are lifetime totals for each offer. <a href="${publicBaseUrl}/account#postbacks">Manage postbacks in Account →</a></p>
+    <details class="glossary"><summary>Metric glossary</summary>
+      <dl>
+        <div><dt>Clicks</dt><dd>Total clicks on this offer's tracked short link.</dd></div>
+        <div><dt>Unique</dt><dd>Distinct users who clicked at least once.</dd></div>
+        <div><dt>CTR</dt><dd>Click-through rate: unique clicks ÷ total clicks.</dd></div>
+        <div><dt>CR</dt><dd>Conversion rate: conversions ÷ unique clicks.</dd></div>
+        <div><dt>Conv.</dt><dd>Reported conversions from sponsor postbacks.</dd></div>
+        <div><dt>Postback</dt><dd>A server-to-server call that confirms a click led to a conversion.</dd></div>
+      </dl>
+    </details>
   </div>
 
   <div class="panel" data-page="offers"><h2>Create offer</h2>

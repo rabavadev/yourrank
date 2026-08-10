@@ -53,7 +53,7 @@ export function leaderboardPageHtml(opts: LeaderboardPageOpts): string {
     <nav class="gm-shell-footer-links" aria-label="Legal">
       <a href="/terms">Terms</a><a href="/privacy">Privacy</a><a href="/contact">Contact</a><a href="/responsible">Responsible Play</a>
     </nav>
-    <span class="gm-shell-footer-copy">© ${new Date().getFullYear()} YourRank</span>
+    <span class="gm-shell-footer-copy">© {{YEAR}} YourRank</span>
   </div>
 </footer>` : "";
 
@@ -362,6 +362,13 @@ const BOT_DASH_V2_CSS = `
   .form-status { margin-top: 10px; font-size: 14px; }
   .form-status.error { color: var(--yr-red); }
   .form-status.ok { color: var(--yr-green); }
+  .glossary { margin-top: 16px; border: 1px solid var(--yr-line); border-radius: var(--yr-radius-sm); background: var(--yr-panel); padding: 14px; font-size: 13px; }
+  .glossary summary { cursor: pointer; font-weight: 600; color: var(--yr-ink); }
+  .glossary dl { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 8px 18px; margin: 12px 0 0; }
+  .glossary div { display: flex; gap: 6px; }
+  .glossary dt { font-weight: 600; color: var(--yr-ink); white-space: nowrap; }
+  .glossary dd { margin: 0; color: var(--yr-ink-soft); }
+
   .list-controls { display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-bottom:12px; }
   .list-controls-row { display:flex; gap:10px; flex:1; min-width:220px; }
   .list-search { flex:1; min-width:160px; padding:8px 10px; border:1px solid var(--yr-line-2); border-radius:10px; background:var(--yr-panel); font:inherit; }
@@ -370,6 +377,7 @@ const BOT_DASH_V2_CSS = `
   .list-page-info { font-size:12px; color:var(--yr-ink-soft); min-width:110px; text-align:center; }
   @media(max-width:640px) { .list-controls { flex-direction:column; align-items:stretch; } .list-controls-row { flex-direction:column; min-width:auto; } .list-pagination { margin-left:0; justify-content:space-between; } }
 `;
+
 
 export interface BotPageOpts {
   user: ShellUser;
