@@ -63,7 +63,7 @@ export async function handleCreditsStatus(request, env) {
   if (!(await rateLimit(env, `credits:status:${user.id}`, 60, 60)).ok) return bad("Too many requests.", 429);
 
   const [channel, mappings, items, viewers, redemptions, usage] = await Promise.all([
-    one("SELECT kick_channel_external_id, kick_channel_name FROM sites WHERE id=$1", [site.id]),
+    one("SELECT kick_channel_external_id, kick_channel_name, kick_channel_linked_at FROM sites WHERE id=$1", [site.id]),
     query(
       `SELECT id, kick_reward_id, kick_reward_title, kick_reward_cost, credits, active
          FROM credit_reward_mappings
@@ -107,6 +107,7 @@ export async function handleCreditsStatus(request, env) {
     channel: {
       externalId: channel?.kick_channel_external_id || null,
       name: channel?.kick_channel_name || null,
+      linkedAt: channel?.kick_channel_linked_at || null,
     },
     mappings: mappings || [],
     shopItems: items || [],
@@ -142,7 +143,11 @@ export async function handleCreditsConnect(request, env) {
   if (!externalId) return bad("Kick channel ID is required");
 
   await setSiteKickChannel(site.id, externalId, name);
-  return ok({ channel: { externalId, name } });
+  const row = await one(
+    `SELECT kick_channel_linked_at FROM sites WHERE id = $1`,
+    [site.id]
+  );
+  return ok({ channel: { externalId, name, linkedAt: row?.kick_channel_linked_at || null } });
 }
 
 export async function handleCreditsSaveReward(request, env) {

@@ -451,7 +451,7 @@ export async function setSiteKickChannel(
 ): Promise<void> {
   await exec(
     `UPDATE sites
-        SET kick_channel_external_id = $1, kick_channel_name = $2, updated_at = now()
+        SET kick_channel_external_id = $1, kick_channel_name = $2, kick_channel_linked_at = now(), updated_at = now()
       WHERE id = $3`,
     [kickChannelExternalId, kickChannelName, siteId]
   );

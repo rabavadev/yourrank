@@ -434,7 +434,7 @@ export function DashboardContent() {
 <section class="lb-page" data-page="kickrewards" dangerouslySetInnerHTML={{ __html: creditsContent }} />
 </div>
       </div>
-      <div class="savebar" id="savebar" hidden><span class="savebar-hint">Unsaved changes</span><button class="btn btn--accent" id="save" type="button">Save changes</button></div>
+      <div class="savebar" id="savebar" hidden><span class="savebar-hint">Unsaved changes</span><span class="savebar-ts" id="editorTimestamp"></span><button class="btn btn--accent" id="save" type="button">Save changes</button></div>
       </div>
     </>
   );

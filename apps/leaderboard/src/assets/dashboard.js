@@ -4,7 +4,7 @@ import { state } from "./dashboard/state.js";
 import { navTo, setupShell } from "./dashboard/shell.js";
 import { renderBoardSwitcher, renderSidebarBoardSwitcher, renderBoardsPage } from "./dashboard/boards.js";
 import { renderPlayers } from "./dashboard/players.js";
-import { checkout, loadCreditsStatus, loadHistory, loadStats, renderArchives, renderBranding, renderDomain, renderDomainStatus, renderEmbedShare, renderLegal, renderNotifications, renderOverlay, renderPlan, renderPlayerFields, renderPrizes, renderSections, renderSocials, renderTemplateText, updateDesignPreview, wireCancelSubscription, wireDeleteAccount } from "./dashboard/site.js";
+import { checkout, loadCreditsStatus, loadHistory, loadStats, renderArchives, renderBranding, renderDomain, renderDomainStatus, renderEditorTimestamps, renderEmbedShare, renderLegal, renderNotifications, renderOverlay, renderPlan, renderPlayerFields, renderPrizes, renderSections, renderSocials, renderTemplateText, updateDesignPreview, wireCancelSubscription, wireDeleteAccount } from "./dashboard/site.js";
 import { renderOverviewSummary, wireOverviewQuickActions } from "./dashboard/overview.js";
 import { renderReferrals } from "./dashboard/referrals.js";
 import { initPerformance, renderPerformance } from "./dashboard/performance.js";
@@ -43,6 +43,7 @@ async function init() {
   state.PUBLISHED_AT = p.publishedAt || null;
   state.ONBOARDING = p.onboarding || {};
 
+  renderEditorTimestamps();
   renderBoardSwitcher();
   renderSidebarBoardSwitcher();
   renderBoardsPage();

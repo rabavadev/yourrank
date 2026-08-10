@@ -298,7 +298,7 @@ async function checkHealth(target){
     details.innerHTML = '<ul>'+
       '<li><b>Webhook URL:</b> '+(r.url ? esc(r.url) : 'none')+'</li>'+
       '<li><b>Pending updates:</b> '+esc(String(r.pending_updates))+'</li>'+
-      (r.last_error ? '<li><b>Last error:</b> '+esc(r.last_error)+'</li>' : '')+
+      (r.last_error ? '<li><b>Last error:</b> '+esc(r.last_error)+(r.last_error_at ? ' <span class="muted">('+esc(fmtTime(r.last_error_at))+')</span>' : '')+'</li>' : '')+
       '</ul><p>'+action+'</p>';
     wrap.hidden = false;
     wrap.open = true;
@@ -323,6 +323,15 @@ async function reconnectBot(btn){
   if (r.error) { restoreBtn(btn); return toast(r.error); }
   toast('Bot @'+r.username+' reconnected');
   const bot = __lastBots.find(b => b.id === btn.dataset.id); if (bot) bot.status = 'active';
+  restoreBtn(btn); renderBots(__lastBots, false);
+}
+async function syncCommands(btn){
+  setLoading(btn, 'Syncing…');
+  const r = await api('/bots/'+btn.dataset.id+'/sync-commands',{method:'POST'});
+  if (r.error) { restoreBtn(btn); return toast(r.error); }
+  toast('Commands synced');
+  const bot = __lastBots.find(b => b.id === btn.dataset.id);
+  if (bot) bot.last_command_sync_at = r.last_command_sync_at;
   restoreBtn(btn); renderBots(__lastBots, false);
 }
 async function deleteBot(btn){
@@ -372,14 +381,16 @@ function renderBots(bots, loadCmds = true){
           const statusClass = b.status === 'active' ? 'ok' : 'off';
           const statusText = b.status === 'active' ? 'active' : (b.status === 'revoked' ? 'disconnected' : b.status);
           const isActive = b.status === 'active';
+          const syncLabel = b.last_command_sync_at ? 'Synced '+fmtTime(b.last_command_sync_at) : 'Commands not synced yet';
           return '<div class="bot-card">'+
             '<div class="bot-card-head">'+
               '<div class="meta"><a href="https://t.me/'+esc(b.username)+'" target="_blank" rel="noopener">@'+esc(b.username)+'</a> '+
               '<span class="muted">(…'+esc(b.token_hint)+')</span> <span class="badge '+statusClass+'">'+esc(statusText)+'</span></div>'+
-              '<div class="muted" style="font-size:12px;margin-top:4px">Last updated · '+esc(fmtTime(b.updated_at))+'</div>'+
+              '<div class="muted" style="font-size:12px;margin-top:4px">'+esc(syncLabel)+' · updated '+esc(fmtTime(b.updated_at))+'</div>'+
             '</div>'+
             '<div class="actions">'+
               (isActive ? '<button class="ghost" data-action="checkHealth" data-id="'+esc(b.id)+'" type="button">Check webhook</button>' : '')+
+              (isActive ? '<button class="ghost" data-action="syncCommands" data-id="'+esc(b.id)+'" type="button">Sync commands</button>' : '')+
               (isActive ? '<button class="ghost" data-action="disconnectBot" data-id="'+esc(b.id)+'" type="button">Disconnect</button>'
                         : '<button class="ghost" data-action="reconnectBot" data-id="'+esc(b.id)+'" type="button">Reconnect</button>')+
               (isActive ? '<button class="ghost" data-action="selectBot" data-id="'+esc(b.id)+'" type="button">Edit commands</button>' : '')+
@@ -859,6 +870,7 @@ async function handleAction(e) {
     if (action === 'logout') { e.preventDefault(); await logout(target); }
     else if (action === 'connectBot') { e.preventDefault(); await connectBot(target); }
     else if (action === 'checkHealth') { e.preventDefault(); await checkHealth(target); }
+    else if (action === 'syncCommands') { e.preventDefault(); await syncCommands(target); }
     else if (action === 'disconnectBot') { e.preventDefault(); await disconnectBot(target); }
     else if (action === 'reconnectBot') { e.preventDefault(); await reconnectBot(target); }
     else if (action === 'deleteBot') { e.preventDefault(); await deleteBot(target); }

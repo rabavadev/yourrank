@@ -234,7 +234,7 @@ export function buildDashboardApi(): Hono<{ Bindings: DashApiBindings; Variables
 
   api.get("/bots", async (c) => {
     return c.json(await query(
-      `SELECT id, username, token_hint, status, welcome_message, created_at, updated_at FROM bots WHERE owner_id = $1 ORDER BY created_at DESC`,
+      `SELECT id, username, token_hint, status, welcome_message, created_at, updated_at, last_command_sync_at FROM bots WHERE owner_id = $1 ORDER BY created_at DESC`,
       [c.get("uid")]
     ));
   });
@@ -257,12 +257,14 @@ export function buildDashboardApi(): Hono<{ Bindings: DashApiBindings; Variables
       const info = await getWebhookInfo(token);
       const expected = `${config.publicBaseUrl}/hook/${bot.webhook_secret}`;
       const configured = info.url === expected;
+      const lastErrorAt = info.last_error_date ? new Date(info.last_error_date * 1000).toISOString() : null;
       return c.json({
         ok: true,
         configured,
         url: info.url || null,
         pending_updates: info.pending_update_count ?? 0,
         last_error: info.last_error_message || null,
+        last_error_at: lastErrorAt,
       });
     } catch (err) {
       const msg = errMessage(err);
@@ -302,6 +304,28 @@ export function buildDashboardApi(): Hono<{ Bindings: DashApiBindings; Variables
     );
     if (!row) return c.json({ error: "bot not found" }, 404);
     return c.json({ ok: true, webhook_removed: webhookRemoved });
+  });
+
+  // Manually re-sync a bot's Telegram command menu (custom + built-in commands).
+  // Updates the bot's last_command_sync_at on success.
+  api.post("/bots/:id/sync-commands", async (c) => {
+    const bot = await one<{ id: string; token_encrypted: Buffer }>(
+      `SELECT id, token_encrypted FROM bots WHERE id = $1 AND owner_id = $2 AND status = 'active'`,
+      [c.req.param("id"), c.get("uid")]
+    );
+    if (!bot) return c.json({ error: "bot not found or not active" }, 404);
+    try {
+      await syncMyCommandsForBot(bot.id);
+      const row = await one<{ last_command_sync_at: string }>(
+        `SELECT last_command_sync_at FROM bots WHERE id = $1`,
+        [bot.id]
+      );
+      return c.json({ ok: true, last_command_sync_at: row?.last_command_sync_at || null });
+    } catch (err) {
+      const msg = errMessage(err);
+      console.error("[POST /bots/:id/sync-commands] failed:", msg);
+      return c.json({ error: msg }, 502);
+    }
   });
 
   // One-click reconnect: re-register the stored webhook with Telegram.

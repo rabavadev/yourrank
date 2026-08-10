@@ -59,6 +59,9 @@ function render() {
   $("cr-channel-name").textContent = state.channel?.name || "";
   $("cr-channel-id-input").value = state.channel?.externalId || "";
   $("cr-channel-name-input").value = state.channel?.name || "";
+  const linked = state.channel?.linkedAt ? fmtDate(state.channel.linkedAt) : "—";
+  const linkedEl = $("cr-channel-linked");
+  if (linkedEl) linkedEl.textContent = `· linked ${linked}`;
 
   const usage = state.usage || {};
   const limits = state.limits || {};
