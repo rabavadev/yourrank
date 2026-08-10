@@ -1,5 +1,5 @@
 // Account page entry point: profile, plan, postbacks, danger zone.
-import { $, esc, getCsrf, logError, copyToClipboard, flashButton } from "./dashboard/utils.js";
+import { $, esc, getCsrf, logError, copyToClipboard, flashButton, showConfirmModal } from "./dashboard/utils.js";
 import { state } from "./dashboard/state.js";
 import { wireAccount } from "./dashboard/account.js";
 import { renderPlan, loadHistory, loadPlanUsage, wireDeleteAccount, wireCancelSubscription } from "./dashboard/site.js";
@@ -151,7 +151,7 @@ function wirePostbacks() {
 
   if (rotate) {
     rotate.addEventListener("click", async () => {
-      if (!confirm("Rotate the postback key? This will revoke the existing key immediately.")) return;
+      if (!await showConfirmModal("Rotate postback key", "This will revoke the existing key immediately. Any in-flight conversions using the old key will fail.", "Rotate", true)) return;
       rotate.disabled = true;
       const result = await jsonReq("POST", "/api/account/postbacks/rotate");
       rotate.disabled = false;
@@ -166,7 +166,7 @@ function wirePostbacks() {
 
   if (revoke) {
     revoke.addEventListener("click", async () => {
-      if (!confirm("Revoke the postback key? Casino updates will stop until a new key is created.")) return;
+      if (!await showConfirmModal("Revoke postback key", "Casino updates will stop until a new key is created.", "Revoke", true)) return;
       revoke.disabled = true;
       const result = await jsonReq("DELETE", "/api/account/postbacks");
       revoke.disabled = false;

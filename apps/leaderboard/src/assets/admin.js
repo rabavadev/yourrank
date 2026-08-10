@@ -1,4 +1,5 @@
 /* Operator panel: users, leads, payments, support, actions. */
+import { showConfirmModal, showPromptModal, showToast } from "./dashboard/utils.js";
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const when = (ms) => { if (!ms) return "–"; const d = new Date(Number(ms)); return d.toLocaleDateString() + " " + d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }); };
@@ -33,7 +34,7 @@ async function init() {
   const [ov] = await Promise.all([api("/api/admin/overview")]); // 403s here for non-admins
   $("s_users").textContent = ov.users; $("s_pro").textContent = ov.pro;
   $("s_leads").textContent = ov.leads; $("s_rev").textContent = "$" + Number(ov.revenue || 0).toLocaleString();
-  await Promise.all([loadUsers(), loadLeads(), loadPayments(), loadSupport(), loadIdentity()]);
+  await Promise.all([loadUsers(), loadLeads(), loadPayments(), loadSupport(), loadIdentity(), loadFeatures(), loadAudit()]);
   $("loading").hidden = true; $("panel").hidden = false;
 }
 
@@ -118,9 +119,12 @@ document.querySelectorAll(".tab").forEach((t) => t.addEventListener("click", () 
     if (next) { e.preventDefault(); next.click(); next.focus(); }
   });
 
+let userFilters = { q: "", status: "all", plan: "all" };
+
 async function loadUsers(page) {
   page = page || 1;
-  const d = await api("/api/admin/users?page=" + page);
+  const qs = new URLSearchParams({ page: String(page), q: userFilters.q, status: userFilters.status, plan: userFilters.plan });
+  const d = await api("/api/admin/users?" + qs.toString());
   const rows = d.users || [];
   $("usersEmpty").hidden = rows.length > 0;
   $("usersBody").innerHTML = rows.map((u) => {
@@ -133,11 +137,14 @@ async function loadUsers(page) {
         planTxt = plan + " · lifetime";
       }
     }
+    const totp = u.totp_enabled ? (u.totp_locked_until ? "locked" : "on") : "off";
+    const reasonAttr = u.suspension_reason ? ` title="Reason: ${esc(u.suspension_reason)}"` : "";
     return `<tr>
 <td>${esc(u.email)}${u.is_admin ? " " + pill("admin", "info") : ""}</td>
 <td>${u.slug ? `<a href="/${esc(u.slug)}" target="_blank">/${esc(u.slug)}</a>` : "–"}</td>
 <td>${pill(planTxt, paid ? "good" : "muted")}</td>
-<td>${pill(u.status, u.status === "active" ? "good" : "bad")}</td>
+<td${reasonAttr}>${pill(u.status, u.status === "active" ? "good" : "bad")}</td>
+<td>${pill(totp, totp === "on" ? "good" : totp === "locked" ? "bad" : "muted")}</td>
 <td class="ta-r">${u.player_count ?? 0}</td>
 <td>${when(u.created_at)}</td>
 <td class="actions">
@@ -157,28 +164,35 @@ ${u.status === "suspended"
     const prevDis = page <= 1 ? "disabled" : "";
     const nextDis = page >= totalPages ? "disabled" : "";
     pagEl.innerHTML = `<span class="hint" style="margin-right:auto">${d.total || 0} users · page ${page} of ${totalPages}</span>` +
-      `<button class="btn btn--sm btn--ghost" id="pagPrev" ${prevDis}>← Previous</button>` +
-      `<button class="btn btn--sm btn--ghost" id="pagNext" ${nextDis}>Next →</button>`;
-    $("pagPrev")?.addEventListener("click", () => loadUsers(page - 1));
-    $("pagNext")?.addEventListener("click", () => loadUsers(page + 1));
+      `<button class="btn btn--sm btn--ghost" id="usersPagPrev" ${prevDis}>← Previous</button>` +
+      `<button class="btn btn--sm btn--ghost" id="usersPagNext" ${nextDis}>Next →</button>`;
+    $("usersPagPrev")?.addEventListener("click", () => loadUsers(page - 1));
+    $("usersPagNext")?.addEventListener("click", () => loadUsers(page + 1));
   }
 }
 
 async function action(btn) {
   const act = btn.dataset.act, userId = btn.dataset.id;
-  if (act === "suspend" && !confirm("Suspend this account? Their page goes offline and they can't sign in.")) return;
+  if (act === "suspend") {
+    if (!await showConfirmModal("Suspend account", "Their page goes offline and they can't sign in. Existing viewers can still spend credits, but new earnings stop.", "Suspend", true)) return;
+    const reason = await showPromptModal("Suspension reason", "Why is this account being suspended?", { confirmText: "Confirm suspend", placeholder: "e.g. ToS violation / chargeback" });
+    if (!reason) return;
+    btn.dataset.reason = reason;
+  }
+  if (act === "free" && !await showConfirmModal("Downgrade to Free", "Their paid features stop immediately. Existing data stays, but rewards, broadcasts and shop items may exceed Free limits.", "Downgrade", true)) return;
   btn.disabled = true;
   try {
     const body = { userId, action: act };
     if (act === "pro") {
-      const amt = prompt("Amount they paid you in USD (for the revenue ledger — 0 if comped):", "29");
+      const amt = await showPromptModal("Activate Pro plan", "Amount they paid you in USD (for the revenue ledger — 0 if comped):", { confirmText: "Activate", inputType: "number", defaultValue: "29" });
       if (amt === null) { btn.disabled = false; return; }
       body.amountUsd = Number(amt) || 0;
     }
+    if (act === "suspend" && btn.dataset.reason) { body.reason = btn.dataset.reason; delete btn.dataset.reason; }
     const d = await api("/api/admin/action", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
-    if (!d.ok) { alert(d.error || "Failed"); btn.disabled = false; return; }
+    if (!d.ok) { showToast(d.error || "Failed"); btn.disabled = false; return; }
     if (act === "reset-link") {
-      alert(d.message || "Reset link generated. Deliver it via email.");
+      showToast(d.message || "Reset link generated. Deliver it via email.", "success");
       btn.disabled = false;
       return;
     }
@@ -276,6 +290,59 @@ async function submitReply(e) {
 $("replyForm")?.addEventListener("submit", submitReply);
 $("replyCancel")?.addEventListener("click", () => { $("supportReplyCard").hidden = true; });
 $("supportFilter")?.addEventListener("change", () => loadSupport(1, $("supportFilter").value));
+
+$("usersFilterApply")?.addEventListener("click", () => {
+  userFilters.q = $("usersSearch").value.trim();
+  userFilters.status = $("usersStatusFilter").value;
+  userFilters.plan = $("usersPlanFilter").value;
+  loadUsers(1);
+});
+$("usersSearch")?.addEventListener("keydown", (e) => { if (e.key === "Enter") $("usersFilterApply").click(); });
+
+async function loadFeatures() {
+  const d = await api("/api/admin/features");
+  const rows = d.flags || [];
+  $("featuresEmpty").hidden = rows.length > 0;
+  $("featuresBody").innerHTML = rows.map((f) =>
+    `<tr>
+      <td>${esc(f.key)}</td>
+      <td>${esc(f.name || f.key)}<br><small class="muted">${esc(f.description || "")}</small></td>
+      <td>${pill(f.defaultValue ? "on" : "off", f.defaultValue ? "good" : "muted")}</td>
+      <td><input class="input" type="text" data-feature-override-user="${esc(f.key)}" placeholder="user ID" style="min-width:140px" /></td>
+      <td><button class="btn btn--xs" data-feature-override="${esc(f.key)}">Set override</button></td>
+    </tr>`
+  ).join("");
+  $("featuresBody").querySelectorAll("[data-feature-override]").forEach((b) => b.addEventListener("click", () => setFeatureOverride(b)));
+}
+
+async function setFeatureOverride(btn) {
+  const key = btn.dataset.featureOverride;
+  const input = $("featuresBody").querySelector(`[data-feature-override-user="${key}"]`);
+  const userId = input?.value.trim();
+  if (!userId) { showToast("Enter a user ID"); return; }
+  const enabled = await showConfirmModal("Override feature flag", `Enable "${key}" for user ${userId}? Click Cancel to disable it.`, "Enable", false);
+  const d = await api("/api/admin/features/override", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ userId, featureKey: key, enabled }) });
+  if (!d.ok) { showToast(d.error || "Failed"); return; }
+  showToast(`Override ${enabled ? "enabled" : "disabled"} for ${userId}.`, "success");
+}
+
+async function loadAudit(page) {
+  page = page || 1;
+  const d = await api("/api/admin/audit?page=" + page);
+  const rows = d.events || [];
+  $("auditEmpty").hidden = rows.length > 0;
+  $("auditBody").innerHTML = rows.map((e) => {
+    const details = e.details && typeof e.details === "object" ? Object.entries(e.details).map(([k, v]) => `${esc(k)}: ${esc(String(v))}`).join("; ") : "";
+    return `<tr>
+      <td>${when(e.created_at)}</td>
+      <td>${esc(e.actor_email || "system")}</td>
+      <td>${esc(e.action)}</td>
+      <td>${esc(e.entity_id || "—")}</td>
+      <td><small class="muted">${esc(details)}</small></td>
+    </tr>`;
+  }).join("");
+  renderPag("auditPagination", d, page, loadAudit);
+}
 
 function renderPag(containerId, data, page, loadFn) {
   const el = $(containerId);

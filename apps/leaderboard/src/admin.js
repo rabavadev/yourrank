@@ -126,38 +126,53 @@ export async function handleOverview(request, env) {
 }
 
 export async function handleUsers(request, env) {
-      const { admin, res } = await requireAdminWith2fa(request, env);
-      if (res) return res;
-      // QA-012: Audit-log admin page views
-      await logAdminAction(env, admin.id, "users", null, null, request);
-      const url = new URL(request.url);
-    const page = Math.max(1, Number(url.searchParams.get("page")) || 1);
-    const pageSize = 50;
-    const offset = (page - 1) * pageSize;
-    const [total, rows] = await Promise.all([
-      one("SELECT COUNT(*) n FROM users"),
-      query(
-        `WITH first_board AS (
-           SELECT DISTINCT ON (s.user_id) s.user_id, s.id AS site_id, s.slug
-           FROM sites s ORDER BY s.user_id, s.board_order ASC
-         )
-         SELECT u.id, u.email, u.plan,
-                (EXTRACT(EPOCH FROM u.plan_expires_at) * 1000)::double precision AS plan_expires_at,
-                u.status, u.is_admin,
-                (EXTRACT(EPOCH FROM u.created_at) * 1000)::double precision AS created_at,
-                COALESCE(bc.board_count, 0) AS board_count,
-                fb.slug,
-                COALESCE(pc.player_count, 0) AS player_count
-           FROM users u
-           LEFT JOIN (SELECT user_id, COUNT(*) AS board_count FROM sites GROUP BY user_id) bc ON bc.user_id = u.id
-           LEFT JOIN first_board fb ON fb.user_id = u.id
-           LEFT JOIN (SELECT site_id, COUNT(*) AS player_count FROM players GROUP BY site_id) pc ON pc.site_id = fb.site_id
-           ORDER BY u.created_at DESC LIMIT $1 OFFSET $2`,
-        [pageSize, offset]
-      ),
-    ]);
-    return ok({ users: rows || [], page, pageSize, total: Number(total?.n) || 0 });
-  }
+  const { admin, res } = await requireAdminWith2fa(request, env);
+  if (res) return res;
+  // QA-012: Audit-log admin page views
+  await logAdminAction(env, admin.id, "users", null, null, request);
+  const url = new URL(request.url);
+  const page = Math.max(1, Number(url.searchParams.get("page")) || 1);
+  const pageSize = 50;
+  const offset = (page - 1) * pageSize;
+  const q = (url.searchParams.get("q") || "").trim().toLowerCase();
+  const statusFilter = url.searchParams.get("status") || "all";
+  const planFilter = url.searchParams.get("plan") || "all";
+
+  const conditions = ["1=1"];
+  const params = [];
+  if (q) { conditions.push("(LOWER(u.email) LIKE $" + (params.length + 1) + " OR LOWER(u.id::text) LIKE $" + (params.length + 1) + ")"); params.push("%" + q + "%"); }
+  if (statusFilter !== "all") { conditions.push("u.status = $" + (params.length + 1)); params.push(statusFilter); }
+  if (planFilter !== "all") { conditions.push("u.plan = $" + (params.length + 1)); params.push(planFilter); }
+  const where = "WHERE " + conditions.join(" AND ");
+
+  const [total, rows] = await Promise.all([
+    one("SELECT COUNT(*) n FROM users u " + where, params),
+    query(
+      `WITH first_board AS (
+         SELECT DISTINCT ON (s.user_id) s.user_id, s.id AS site_id, s.slug
+         FROM sites s ORDER BY s.user_id, s.board_order ASC
+       )
+       SELECT u.id, u.email, u.plan,
+              (EXTRACT(EPOCH FROM u.plan_expires_at) * 1000)::double precision AS plan_expires_at,
+              u.status, u.is_admin,
+              u.totp_secret IS NOT NULL AS totp_enabled,
+              u.totp_locked_until,
+              u.suspension_reason,
+              (EXTRACT(EPOCH FROM u.created_at) * 1000)::double precision AS created_at,
+              COALESCE(bc.board_count, 0) AS board_count,
+              fb.slug,
+              COALESCE(pc.player_count, 0) AS player_count
+         FROM users u
+         LEFT JOIN (SELECT user_id, COUNT(*) AS board_count FROM sites GROUP BY user_id) bc ON bc.user_id = u.id
+         LEFT JOIN first_board fb ON fb.user_id = u.id
+         LEFT JOIN (SELECT site_id, COUNT(*) AS player_count FROM players GROUP BY site_id) pc ON pc.site_id = fb.site_id
+         ${where}
+         ORDER BY u.created_at DESC LIMIT $${params.length + 1} OFFSET $${params.length + 2}`,
+      [...params, pageSize, offset]
+    ),
+  ]);
+  return ok({ users: rows || [], page, pageSize, total: Number(total?.n) || 0, filters: { q, status: statusFilter, plan: planFilter } });
+}
 
 export async function handleLeads(request, env) {
   const { admin, res } = await requireAdminWith2fa(request, env);
@@ -230,13 +245,15 @@ export async function handleAction(request, env) {
     case "free":
       await exec("UPDATE users SET plan='free', plan_expires_at=NULL, updated_at=now() WHERE id=$1", [target.id]);
       break;
-    case "suspend":
+    case "suspend": {
       if (target.is_admin) return bad("Can't suspend an admin");
-      await exec("UPDATE users SET status='suspended', updated_at=now() WHERE id=$1", [target.id]);
+      const reason = String(body.reason || "").trim();
+      await exec("UPDATE users SET status='suspended', suspension_reason=$2, updated_at=now() WHERE id=$1", [target.id, reason || null]);
       await destroyAllUserSessions(env, target.id);
       break;
+    }
     case "unsuspend":
-      await exec("UPDATE users SET status='active', updated_at=now() WHERE id=$1", [target.id]);
+      await exec("UPDATE users SET status='active', suspension_reason=NULL, updated_at=now() WHERE id=$1", [target.id]);
       break;
     case "reset-link": {
       if (target.is_admin) return bad("Can't generate a reset link for an admin");
@@ -267,7 +284,7 @@ export async function handleAction(request, env) {
   }
   await logAdminAction(env, admin.id, body.action, target.id, {
     email: target.email,
-    details: body.days || body.amountUsd || null,
+    details: body.days || body.amountUsd || body.reason || null,
   }, request);
   return ok();
 }
@@ -329,6 +346,31 @@ export async function handleSupportReply(request, env) {
     subject: m.subject,
   }, request);
   return ok({ emailSent: emailResult.sent });
+}
+
+// GET /api/admin/audit — recent audit log events for sensitive actions.
+export async function handleAudit(request, env) {
+  const { res } = await requireAdminWith2fa(request, env);
+  if (res) return res;
+  const url = new URL(request.url);
+  const page = Math.max(1, Number(url.searchParams.get("page")) || 1);
+  const pageSize = 50;
+  const offset = (page - 1) * pageSize;
+  const [total, rows] = await Promise.all([
+    one("SELECT COUNT(*) n FROM audit_log WHERE entity_type = 'admin'"),
+    query(
+      `SELECT a.id,
+              (EXTRACT(EPOCH FROM a.created_at) * 1000)::double precision AS created_at,
+              a.action, a.entity_id, a.details,
+              u.email AS actor_email
+         FROM audit_log a
+         LEFT JOIN users u ON u.id = a.actor_id
+        WHERE a.entity_type = 'admin'
+        ORDER BY a.created_at DESC LIMIT $1 OFFSET $2`,
+      [pageSize, offset]
+    ),
+  ]);
+  return ok({ events: rows || [], page, pageSize, total: Number(total?.n) || 0 });
 }
 
 function esc(s) {

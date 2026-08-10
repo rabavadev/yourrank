@@ -5,6 +5,7 @@ export const adminPage = `<!DOCTYPE html><html lang="en"><head>
 <meta name="robots" content="noindex, nofollow" /><link rel="canonical" href="https://yourrank.site/admin" /><link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="/assets/app.css" /></head><body>
+<div class="toast" id="status" role="status" aria-live="polite" hidden></div>
 <noscript><div class="noscript-msg"><p>YourRank Admin requires JavaScript</p><p>Please enable JavaScript in your browser settings to use the admin panel.</p></div></noscript>
 <a href="#main-content" class="sr-only skip-link">Skip to content</a>
 <header class="topbar"><div class="brand">Your<b>Rank</b> <span class="label ml-8">ADMIN</span></div>
@@ -17,9 +18,15 @@ export const adminPage = `<!DOCTYPE html><html lang="en"><head>
 <div id="panel" hidden>
 <div class="dash-head"><div><h1>Operator panel</h1><p class="live-link">Everything that happens on YourRank, in one place.</p></div></div>
 <div class="stats"><div class="stat"><b id="s_users">–</b><span>accounts</span></div><div class="stat"><b id="s_pro">–</b><span>on Pro</span></div><div class="stat"><b id="s_leads">–</b><span>leads</span></div><div class="stat"><b id="s_rev">–</b><span>revenue (USD)</span></div></div>
-<div class="tabs" role="tablist"><button class="tab is-on" id="tab-btn-users" data-tab="users" type="button" role="tab" aria-selected="true" aria-controls="tab-users">Users</button><button class="tab" id="tab-btn-leads" data-tab="leads" type="button" role="tab" aria-selected="false" aria-controls="tab-leads">Leads</button><button class="tab" id="tab-btn-payments" data-tab="payments" type="button" role="tab" aria-selected="false" aria-controls="tab-payments">Payments</button><button class="tab" id="tab-btn-support" data-tab="support" type="button" role="tab" aria-selected="false" aria-controls="tab-support">Support</button><button class="tab" id="tab-btn-identity" data-tab="identity" type="button" role="tab" aria-selected="false" aria-controls="tab-identity">Identity</button></div>
+<div class="tabs" role="tablist"><button class="tab is-on" id="tab-btn-users" data-tab="users" type="button" role="tab" aria-selected="true" aria-controls="tab-users">Users</button><button class="tab" id="tab-btn-leads" data-tab="leads" type="button" role="tab" aria-selected="false" aria-controls="tab-leads">Leads</button><button class="tab" id="tab-btn-payments" data-tab="payments" type="button" role="tab" aria-selected="false" aria-controls="tab-payments">Payments</button><button class="tab" id="tab-btn-support" data-tab="support" type="button" role="tab" aria-selected="false" aria-controls="tab-support">Support</button><button class="tab" id="tab-btn-features" data-tab="features" type="button" role="tab" aria-selected="false" aria-controls="tab-features">Features</button><button class="tab" id="tab-btn-audit" data-tab="audit" type="button" role="tab" aria-selected="false" aria-controls="tab-audit">Audit</button><button class="tab" id="tab-btn-identity" data-tab="identity" type="button" role="tab" aria-selected="false" aria-controls="tab-identity">Identity</button></div>
 <div class="tabpane" id="tab-users" role="tabpanel" aria-labelledby="tab-btn-users">
-<div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Email</th><th>Page</th><th>Plan</th><th>Status</th><th class="ta-r">Players</th><th>Joined</th><th>Actions</th></tr></thead><tbody id="usersBody"></tbody></table></div>
+<div class="card" style="margin-bottom:18px;display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end">
+<div style="flex:1 1 220px"><label for="usersSearch" style="display:block;font-size:13px;color:var(--ink-soft);margin-bottom:4px">Search</label><input id="usersSearch" class="input" type="text" placeholder="Email or user ID" /></div>
+<div><label for="usersStatusFilter" style="display:block;font-size:13px;color:var(--ink-soft);margin-bottom:4px">Status</label><select id="usersStatusFilter" class="select"><option value="all">All</option><option value="active">Active</option><option value="suspended">Suspended</option><option value="unverified">Unverified</option></select></div>
+<div><label for="usersPlanFilter" style="display:block;font-size:13px;color:var(--ink-soft);margin-bottom:4px">Plan</label><select id="usersPlanFilter" class="select"><option value="all">All</option><option value="free">Free</option><option value="starter">Starter</option><option value="pro">Pro</option><option value="agency">Agency</option><option value="lifetime">Lifetime</option></select></div>
+<button class="btn btn--sm" id="usersFilterApply">Filter</button>
+</div>
+<div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Email</th><th>Page</th><th>Plan</th><th>Status</th><th>2FA</th><th class="ta-r">Players</th><th>Joined</th><th>Actions</th></tr></thead><tbody id="usersBody"></tbody></table></div>
 <div class="empty" id="usersEmpty" hidden>No users yet.</div>
 <div id="usersPagination" class="admin-pagination"></div></div>
 <div class="tabpane" id="tab-leads" role="tabpanel" aria-labelledby="tab-btn-leads" hidden>
@@ -58,6 +65,24 @@ export const adminPage = `<!DOCTYPE html><html lang="en"><head>
 </div>
 </div>
 <p class="hint mt-18">Manual activation: use <b>+31d Pro</b> on any user after they pay you directly (PayPal, bank, whatever). Crypto payments through the site activate on their own. Reset links work for 24h — send them over Discord/Telegram if email isn't wired up.</p>
+</div>
+<div class="tabpane" id="tab-features" role="tabpanel" aria-labelledby="tab-btn-features" hidden>
+<div class="card">
+<h2>Feature flags</h2>
+<p class="card-sub">Toggle features globally or override them for a specific user.</p>
+<div id="featuresStatus" role="status" aria-live="polite"></div>
+<div class="admin-table-wrap" style="margin-top:14px"><table class="admin-table"><thead><tr><th>Key</th><th>Name</th><th>Default</th><th>Override for user</th><th></th></tr></thead><tbody id="featuresBody"></tbody></table></div>
+<div class="empty" id="featuresEmpty" hidden>No feature flags yet.</div>
+</div>
+</div>
+<div class="tabpane" id="tab-audit" role="tabpanel" aria-labelledby="tab-btn-audit" hidden>
+<div class="card">
+<h2>Audit log</h2>
+<p class="card-sub">Recent admin actions and plan changes. Times are in your local timezone.</p>
+<div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>When</th><th>Actor</th><th>Action</th><th>Target</th><th>Details</th></tr></thead><tbody id="auditBody"></tbody></table></div>
+<div class="empty" id="auditEmpty" hidden>No audit events yet.</div>
+<div id="auditPagination" class="admin-pagination"></div>
+</div>
 </div>
 <div class="tabpane" id="tab-identity" role="tabpanel" aria-labelledby="tab-btn-identity" hidden>
 <div class="card" id="identityCard">

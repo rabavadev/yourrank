@@ -1,4 +1,5 @@
 // Viewer dashboard (/me) client.
+import { showConfirmModal } from "./dashboard/utils.js";
 function $(id) { return document.getElementById(id); }
 function esc(s) { return String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
 function fmtDate(iso) { return iso ? new Date(iso).toLocaleString() : "—"; }
@@ -197,7 +198,7 @@ async function redeem(shopItemId, btn) {
   if (!slug) return;
   const item = (state.current.shopItems || []).find((i) => i.id === shopItemId);
   if (!item) return;
-  if (!confirm(`Spend ${item.cost} credits on ${item.name}?`)) return;
+  if (!await showConfirmModal("Confirm redemption", `Spend ${item.cost} credits on ${item.name}?`, "Redeem", false)) return;
   if (btn) setLoading(btn, true, "Redeeming…");
 
   try {

@@ -1,4 +1,5 @@
 // Credits & shop dashboard client.
+import { showConfirmModal, showPromptModal } from "./dashboard/utils.js";
 function $(id) { return document.getElementById(id); }
 function esc(s) { return String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
 function fmtDate(iso) { return iso ? new Date(iso).toLocaleString() : "—"; }
@@ -224,7 +225,7 @@ async function toggleBlock(id, isBlocked) {
   const blocking = !isBlocked;
   let reason = "";
   if (blocking) {
-    reason = window.prompt("Block reason:") || "";
+    reason = await showPromptModal("Block viewer", "Why are you blocking this viewer?", { confirmText: "Block", placeholder: "e.g. chargeback / abuse" }) || "";
     if (!reason) return;
   }
   await api("POST", `/api/credits/viewers/${encodeURIComponent(id)}/block`, { blocked: blocking, reason });
@@ -393,7 +394,7 @@ function editReward(id) {
 }
 
 async function delReward(id) {
-  if (!confirm("Disable this reward mapping?")) return;
+  if (!await showConfirmModal("Disable reward", "Disable this reward mapping? Viewers can no longer earn credits from it.", "Disable", true)) return;
   await api("DELETE", `/api/credits/rewards/${encodeURIComponent(id)}`);
   await load();
 }
@@ -432,7 +433,7 @@ function editShop(id) {
 }
 
 async function delShop(id) {
-  if (!confirm("Disable this shop item? It will no longer be redeemable, but past redemptions stay in the ledger.")) return;
+  if (!await showConfirmModal("Disable shop item", "Disable this shop item? It will no longer be redeemable, but past redemptions stay in the ledger.", "Disable", true)) return;
   await api("DELETE", `/api/credits/shop/${encodeURIComponent(id)}`);
   await load();
 }
