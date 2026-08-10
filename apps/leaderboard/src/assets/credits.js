@@ -1,5 +1,5 @@
 // Credits & shop dashboard client.
-import { showConfirmModal, showPromptModal } from "./dashboard/utils.js";
+import { showConfirmModal, showPromptModal, ListController } from "./dashboard/utils.js";
 function $(id) { return document.getElementById(id); }
 function esc(s) { return String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
 function fmtDate(iso) { return iso ? new Date(iso).toLocaleString() : "—"; }
@@ -33,6 +33,7 @@ async function api(method, path, body) {
 }
 
 let state = {};
+let viewerCtrl, redemptionCtrl, rewardCtrl, shopCtrl, historyCtrl;
 
 async function load() {
   setGlobalLoading(true);
@@ -55,6 +56,35 @@ async function load() {
 
 export async function initKickrewards() {
   return load();
+}
+
+function rewardRow(m) {
+  return `<td><b>${esc(m.kick_reward_title)}</b><br><span class="hint">${esc(m.kick_reward_id)}</span></td><td>${m.kick_reward_cost}</td><td>${m.credits}</td><td>${m.active ? "Yes" : "No"}</td><td class="ta-r"><button class="btn btn--sm" data-edit-reward="${esc(m.id)}">Edit</button> <button class="btn btn--sm btn--danger" data-del-reward="${esc(m.id)}">Disable</button></td>`;
+}
+function shopRow(i) {
+  return `<td><b>${esc(i.name)}</b><br><span class="hint">${esc(i.description || "")}</span></td><td>${i.cost}</td><td>${i.stock === null ? "∞" : i.stock}</td><td>${i.active ? "Yes" : "No"}</td><td class="ta-r"><button class="btn btn--sm" data-edit-shop="${esc(i.id)}">Edit</button> <button class="btn btn--sm btn--danger" data-del-shop="${esc(i.id)}">Delete</button></td>`;
+}
+function viewerRow(v) {
+  return `<td>${esc(v.kick_username || v.kick_user_id)}${v.blocked ? ' <span class="pill pill--bad">blocked</span>' : ''}${v.fraud_score ? ` <span class="pill pill--warn">risk ${v.fraud_score}</span>` : ''}${v.block_reason ? `<div class="hint">${esc(v.block_reason)}</div>` : ''}</td><td>${v.balance}</td><td>${v.total_earned}</td><td>${v.total_spent}</td><td>${fmtDate(v.last_earned_at || v.created_at)}</td><td class="ta-r"><button class="btn btn--sm ${v.blocked ? 'btn--accent' : 'btn--danger'}" data-block="${esc(v.id)}" data-blocked="${v.blocked ? '1' : ''}">${v.blocked ? 'Unblock' : 'Block'}</button></td>`;
+}
+function redemptionRow(r) {
+  return `<td>${esc(r.kick_username || r.kick_user_id)}</td><td>${esc(r.item_name)}</td><td>${r.cost}</td><td><span class="pill pill--${r.status === "pending" ? "muted" : r.status === "fulfilled" ? "good" : "bad"}">${r.status}</span></td><td>${fmtDate(r.created_at)}</td><td class="ta-r">${r.status === "pending" ? `<button class="btn btn--sm btn--accent" data-fulfill="${esc(r.id)}">Fulfill</button> <button class="btn btn--sm btn--danger" data-cancel="${esc(r.id)}">Cancel</button>` : ""}</td>`;
+}
+function historyRow(b) {
+  return `<td><b>${esc(b.name || b.slug)}</b><br><span class="hint">${esc(b.slug)}</span></td><td>${b.balance}</td><td>${b.totalEarned}</td><td>${b.totalSpent}</td><td>${b.redemptionsPending}</td><td>${b.redemptionsTotal}</td><td class="ta-r"><a class="btn btn--sm" href="/dashboard/credits?siteId=${esc(b.siteId)}" target="_blank" rel="noopener">Board</a></td>`;
+}
+function wireRewardActions() {
+  document.querySelectorAll("[data-edit-reward]").forEach((b) => b.addEventListener("click", () => editReward(b.dataset.editReward)));
+  document.querySelectorAll("[data-del-reward]").forEach((b) => b.addEventListener("click", () => delReward(b.dataset.delReward)));
+  document.querySelectorAll("[data-edit-shop]").forEach((b) => b.addEventListener("click", () => editShop(b.dataset.editShop)));
+  document.querySelectorAll("[data-del-shop]").forEach((b) => b.addEventListener("click", () => delShop(b.dataset.delShop)));
+}
+function wireViewerActions() {
+  document.querySelectorAll("[data-block]").forEach((b) => b.addEventListener("click", () => toggleBlock(b.dataset.block, b.dataset.blocked)));
+}
+function wireRedemptionActions() {
+  document.querySelectorAll("[data-fulfill]").forEach((b) => b.addEventListener("click", () => updateRedemption(b.dataset.fulfill, "fulfilled")));
+  document.querySelectorAll("[data-cancel]").forEach((b) => b.addEventListener("click", () => updateRedemption(b.dataset.cancel, "cancelled")));
 }
 
 function render() {
@@ -114,82 +144,71 @@ function render() {
   $("cr-viewer-auth-discord").checked = va.discord !== false;
   $("cr-viewer-auth-public").checked = va.public !== false;
 
-  $("cr-reward-list").innerHTML = (state.mappings || []).map((m) => `
-    <tr>
-      <td><b>${esc(m.kick_reward_title)}</b><br><span class="hint">${esc(m.kick_reward_id)}</span></td>
-      <td>${m.kick_reward_cost}</td>
-      <td>${m.credits}</td>
-      <td>${m.active ? "Yes" : "No"}</td>
-      <td class="ta-r">
-        <button class="btn btn--sm" data-edit-reward="${esc(m.id)}">Edit</button>
-        <button class="btn btn--sm btn--danger" data-del-reward="${esc(m.id)}">Disable</button>
-      </td>
-    </tr>
-  `).join("");
-
-  $("cr-shop-list").innerHTML = (state.shopItems || []).map((i) => `
-    <tr>
-      <td><b>${esc(i.name)}</b><br><span class="hint">${esc(i.description || "")}</span></td>
-      <td>${i.cost}</td>
-      <td>${i.stock === null ? "∞" : i.stock}</td>
-      <td>${i.active ? "Yes" : "No"}</td>
-      <td class="ta-r">
-        <button class="btn btn--sm" data-edit-shop="${esc(i.id)}">Edit</button>
-        <button class="btn btn--sm btn--danger" data-del-shop="${esc(i.id)}">Delete</button>
-      </td>
-    </tr>
-  `).join("");
-
+  const mappings = state.mappings || [];
+  const shopItems = state.shopItems || [];
   const viewers = state.viewers || [];
-  $("cr-viewer-list").innerHTML = viewers.map((v) => `
-    <tr>
-      <td>
-        ${esc(v.kick_username || v.kick_user_id)}
-        ${v.blocked ? '<span class="pill pill--bad">blocked</span>' : ''}
-        ${v.fraud_score ? `<span class="pill pill--warn">risk ${v.fraud_score}</span>` : ''}
-        ${v.block_reason ? `<div class="hint">${esc(v.block_reason)}</div>` : ''}
-      </td>
-      <td>${v.balance}</td>
-      <td>${v.total_earned}</td>
-      <td>${v.total_spent}</td>
-      <td>${fmtDate(v.last_earned_at || v.created_at)}</td>
-      <td class="ta-r">
-        <button class="btn btn--sm ${v.blocked ? 'btn--accent' : 'btn--danger'}" data-block="${esc(v.id)}" data-blocked="${v.blocked ? '1' : ''}">
-          ${v.blocked ? 'Unblock' : 'Block'}
-        </button>
-      </td>
-    </tr>
-  `).join("");
-  $("cr-viewer-empty").hidden = viewers.length > 0;
-
   const redemptions = state.redemptions || [];
-  $("cr-redemption-list").innerHTML = redemptions.map((r) => `
-    <tr>
-      <td>${esc(r.kick_username || r.kick_user_id)}</td>
-      <td>${esc(r.item_name)}</td>
-      <td>${r.cost}</td>
-      <td><span class="pill pill--${r.status === "pending" ? "muted" : r.status === "fulfilled" ? "good" : "bad"}">${r.status}</span></td>
-      <td>${fmtDate(r.created_at)}</td>
-      <td class="ta-r">
-        ${r.status === "pending" ? `
-          <button class="btn btn--sm btn--accent" data-fulfill="${esc(r.id)}">Fulfill</button>
-          <button class="btn btn--sm btn--danger" data-cancel="${esc(r.id)}">Cancel</button>
-        ` : ""}
-      </td>
-    </tr>
-  `).join("");
-  $("cr-redemption-empty").hidden = redemptions.length > 0;
+
+  if (!rewardCtrl && $("cr-maps")) {
+    rewardCtrl = new ListController({
+      root: $("cr-maps"), tbody: "cr-reward-list", items: mappings, perPage: 10,
+      searchFn: (m) => `${m.kick_reward_title} ${m.kick_reward_id} ${m.kick_reward_cost} ${m.credits}`,
+      sortOptions: [
+        { key: "cost", label: "Kick cost", fn: (a, b) => (b.kick_reward_cost || 0) - (a.kick_reward_cost || 0) },
+        { key: "credits", label: "Credits", fn: (a, b) => (b.credits || 0) - (a.credits || 0) },
+        { key: "active", label: "Active first", fn: (a, b) => Number(b.active) - Number(a.active) },
+      ],
+      emptyAllText: "No reward mappings yet.", emptyText: "No matching reward mappings.",
+      renderItem: rewardRow, onRender: wireRewardActions,
+    });
+  } else if (rewardCtrl) { rewardCtrl.setItems(mappings); }
+
+  if (!shopCtrl && $("cr-shop")) {
+    shopCtrl = new ListController({
+      root: $("cr-shop"), tbody: "cr-shop-list", items: shopItems, perPage: 10,
+      searchFn: (i) => `${i.name} ${i.description || ""} ${i.cost} ${i.stock === null ? "" : i.stock}`,
+      sortOptions: [
+        { key: "cost", label: "Cost", fn: (a, b) => (b.cost || 0) - (a.cost || 0) },
+        { key: "stock", label: "Stock", fn: (a, b) => ((b.stock ?? Infinity) - (a.stock ?? Infinity)) },
+        { key: "active", label: "Active first", fn: (a, b) => Number(b.active) - Number(a.active) },
+      ],
+      emptyAllText: "No shop items yet.", emptyText: "No matching shop items.",
+      renderItem: shopRow, onRender: wireRewardActions,
+    });
+  } else if (shopCtrl) { shopCtrl.setItems(shopItems); }
+
+  if (!viewerCtrl && $("cr-viewers")) {
+    viewerCtrl = new ListController({
+      root: $("cr-viewers"), tbody: "cr-viewer-list", items: viewers, perPage: 15,
+      searchFn: (v) => `${v.kick_username || v.kick_user_id} ${v.block_reason || ""} ${v.blocked ? "blocked" : ""}`,
+      sortOptions: [
+        { key: "balance", label: "Balance", fn: (a, b) => (b.balance || 0) - (a.balance || 0) },
+        { key: "earned", label: "Earned", fn: (a, b) => (b.total_earned || 0) - (a.total_earned || 0) },
+        { key: "spent", label: "Spent", fn: (a, b) => (b.total_spent || 0) - (a.total_spent || 0) },
+        { key: "last", label: "Last earned", fn: (a, b) => new Date(b.last_earned_at || b.created_at || 0) - new Date(a.last_earned_at || a.created_at || 0) },
+      ],
+      emptyAllText: "No viewers yet.", emptyText: "No matching viewers.",
+      renderItem: viewerRow, onRender: wireViewerActions,
+    });
+  } else if (viewerCtrl) { viewerCtrl.setItems(viewers); }
+  $("cr-viewer-empty").hidden = true;
+
+  if (!redemptionCtrl && $("cr-redemptions")) {
+    redemptionCtrl = new ListController({
+      root: $("cr-redemptions"), tbody: "cr-redemption-list", items: redemptions, perPage: 15,
+      searchFn: (r) => `${r.kick_username || r.kick_user_id} ${r.item_name} ${r.status}`,
+      sortOptions: [
+        { key: "time", label: "Newest", fn: (a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0) },
+        { key: "cost", label: "Cost", fn: (a, b) => (b.cost || 0) - (a.cost || 0) },
+        { key: "status", label: "Status", fn: (a, b) => (a.status || "").localeCompare(b.status || "") },
+      ],
+      emptyAllText: "No redemptions yet.", emptyText: "No matching redemptions.",
+      renderItem: redemptionRow, onRender: wireRedemptionActions,
+    });
+  } else if (redemptionCtrl) { redemptionCtrl.setItems(redemptions); }
+  $("cr-redemption-empty").hidden = true;
 
   renderOnboarding();
-
-  // Wire action buttons
-  document.querySelectorAll("[data-edit-reward]").forEach((b) => b.addEventListener("click", () => editReward(b.dataset.editReward)));
-  document.querySelectorAll("[data-del-reward]").forEach((b) => b.addEventListener("click", () => delReward(b.dataset.delReward)));
-  document.querySelectorAll("[data-edit-shop]").forEach((b) => b.addEventListener("click", () => editShop(b.dataset.editShop)));
-  document.querySelectorAll("[data-del-shop]").forEach((b) => b.addEventListener("click", () => delShop(b.dataset.delShop)));
-  document.querySelectorAll("[data-fulfill]").forEach((b) => b.addEventListener("click", () => updateRedemption(b.dataset.fulfill, "fulfilled")));
-  document.querySelectorAll("[data-cancel]").forEach((b) => b.addEventListener("click", () => updateRedemption(b.dataset.cancel, "cancelled")));
-  document.querySelectorAll("[data-block]").forEach((b) => b.addEventListener("click", () => toggleBlock(b.dataset.block, b.dataset.blocked)));
 }
 
 function renderOnboarding() {
@@ -562,20 +581,20 @@ async function searchHistory(e) {
 
 function renderHistory(data) {
   const boards = data.boards || [];
-  $("cr-history-list").innerHTML = boards.map((b) => `
-    <tr>
-      <td><b>${esc(b.name || b.slug)}</b><br><span class="hint">${esc(b.slug)}</span></td>
-      <td>${b.balance}</td>
-      <td>${b.totalEarned}</td>
-      <td>${b.totalSpent}</td>
-      <td>${b.redemptionsPending}</td>
-      <td>${b.redemptionsTotal}</td>
-      <td class="ta-r">
-        <a class="btn btn--sm" href="/dashboard/credits?siteId=${esc(b.siteId)}" target="_blank" rel="noopener">Board</a>
-      </td>
-    </tr>
-  `).join("");
-  $("cr-history-empty").hidden = boards.length > 0;
+  if (!historyCtrl && $("cr-history")) {
+    historyCtrl = new ListController({
+      root: $("cr-history"), tbody: "cr-history-list", items: boards, perPage: 10,
+      searchFn: (b) => `${b.name || ""} ${b.slug || ""} ${b.balance} ${b.totalEarned} ${b.totalSpent}`,
+      sortOptions: [
+        { key: "balance", label: "Balance", fn: (a, b) => (b.balance || 0) - (a.balance || 0) },
+        { key: "earned", label: "Earned", fn: (a, b) => (b.totalEarned || 0) - (a.totalEarned || 0) },
+        { key: "pending", label: "Pending", fn: (a, b) => (b.redemptionsPending || 0) - (a.redemptionsPending || 0) },
+      ],
+      emptyAllText: "No boards found for this viewer.", emptyText: "No matching boards.",
+      renderItem: historyRow,
+    });
+  } else if (historyCtrl) { historyCtrl.setItems(boards); }
+  $("cr-history-empty").hidden = true;
 }
 
 $("cr-history-form")?.addEventListener("submit", searchHistory);
