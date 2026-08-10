@@ -51,6 +51,7 @@ export function GamesShell({ store, branding, showHeader = true }: GamesShellPro
   const gameModule = useGameModule(store);
   const frameState = resolveFrameState(store);
   const playable = frameState === "ready" && active !== null;
+  const logoUrl = safeImageUrl(branding.logoUrl);
 
   useEffect(() => {
     void store.load();
@@ -80,8 +81,8 @@ export function GamesShell({ store, branding, showHeader = true }: GamesShellPro
         <header class={showHeader ? "gx-header" : "gx-header gx-header--compact"}>
           {showHeader ? (
             <a class="gx-header__brand" href={safePath(branding.homeUrl, "/")}>
-              {safeImageUrl(branding.logoUrl) ? (
-                <img class="gx-header__logo" src={safeImageUrl(branding.logoUrl) ?? ""} alt="" width={28} height={28} />
+              {logoUrl ? (
+                <img class="gx-header__logo" src={logoUrl} alt="" width={28} height={28} />
               ) : (
                 <span class="gx-header__mark" aria-hidden="true">
                   {branding.siteName.slice(0, 2).toUpperCase()}

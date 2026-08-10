@@ -19,5 +19,7 @@ export function safePath(value: unknown, fallback: string): string {
 
 export function safeImageUrl(value: unknown): string | null {
   if (typeof value !== "string") return null;
-  return SAFE_PATH.test(value) || SAFE_IMAGE.test(value) ? value : null;
+  if (SAFE_PATH.test(value)) return value;
+  if (SAFE_IMAGE.test(value)) return value;
+  return null;
 }
