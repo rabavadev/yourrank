@@ -164,11 +164,12 @@ function renderOffers(){
 }
 
 async function loadExtras(){
-  const [plan, bcs, convs] = await Promise.all([api('/plan'), api('/broadcasts'), api('/conversions')]);
-  if (plan.error || bcs.error || convs.error) {
-    toast(plan.error || bcs.error || convs.error);
+  const [plan, bcs, pbStatus] = await Promise.all([api('/plan'), api('/broadcasts'), api('/postback-status')]);
+  if (plan.error || bcs.error || pbStatus.error) {
+    toast(plan.error || bcs.error || pbStatus.error);
     return;
   }
+  renderPostbackStatus(pbStatus);
 
   const cur = plan?.current;
   if (cur) {
@@ -211,14 +212,19 @@ async function loadExtras(){
       || '<tr><td colspan="7" class="muted">No broadcasts yet.</td></tr>';
   }
 
-  const convList = $('convList');
-  if (convList) {
-    convList.innerHTML = (convs||[]).map(v=>'<tr><td>'+esc(v.at)+'</td><td>'+esc(v.event)+'</td>'+
-      '<td>'+(v.amount?esc(v.amount)+' '+esc(v.currency):'–')+'</td><td>'+esc(v.offer||'–')+'</td></tr>').join('')
-      || '<tr><td colspan="4" class="muted">No conversions reported yet.</td></tr>';
-  }
+  if (typeof markStep === 'function') markStep('stepPb', !!pbStatus?.active);
+}
 
-  if (typeof markStep === 'function') markStep('stepPb', (convs||[]).length > 0);
+function renderPostbackStatus(pb){
+  const el = $('postbackStatus');
+  if (!el) return;
+  if (!pb || pb.error) { el.textContent = 'Could not load postback status.'; return; }
+  if (pb.active) {
+    const at = pb.createdAt ? new Date(pb.createdAt).toLocaleString(undefined,{dateStyle:'short',timeStyle:'short'}) : 'active';
+    el.innerHTML = '<span class="badge ok">Active</span> Postback key created '+esc(at)+'. Full setup is in Account → Postbacks.';
+  } else {
+    el.innerHTML = '<span class="badge off">Not configured</span> Set up postbacks in Account → Postbacks to receive conversion events.';
+  }
 }
 
 async function copyLink(target){ navigator.clipboard.writeText(location.origin+'/r/'+target.dataset.slug); toast('Link copied'); }
@@ -611,43 +617,6 @@ async function cancelBroadcast(btn){
   if (r.error) { restoreBtn(btn); return toast(r.error); }
   toast('Broadcast cancelled'); restoreBtn(btn); loadExtras();
 }
-async function revealPostback(btn){
-  setLoading(btn, 'Revealing…');
-  const r = await api('/postback-key',{method:'POST'});
-  if (r.error) { restoreBtn(btn); return toast(r.error); }
-  const pb = $('pbUrl');
-  if (pb) {
-    pb.textContent = 'POST '+r.signed_endpoint+' · X-Postback-Key: '+r.postback_key;
-    pb.dataset.url = 'POST '+r.signed_endpoint+'\\nX-Postback-Key: '+r.postback_key+'\\nX-Postback-Signature: HMAC-SHA256(query, key)';
-  }
-  toast('Signed postback setup revealed'); restoreBtn(btn);
-}
-async function rotatePostback(btn){
-  if (!confirm('Rotate your postback key? The old key will stop working immediately.')) return;
-  setLoading(btn, 'Rotating…');
-  const r = await api('/postback-key/rotate',{method:'POST'});
-  if (r.error) { restoreBtn(btn); return toast(r.error); }
-  const pb = $('pbUrl');
-  if (pb) {
-    pb.textContent = 'POST '+r.signed_endpoint+' · X-Postback-Key: '+r.postback_key;
-    pb.dataset.url = 'POST '+r.signed_endpoint+'\\nX-Postback-Key: '+r.postback_key+'\\nX-Postback-Signature: HMAC-SHA256(query, key)';
-  }
-  toast('Postback key rotated'); restoreBtn(btn);
-}
-async function revokePostback(btn){
-  if (!confirm('Revoke your postback key? Existing casino integrations will stop receiving conversions.')) return;
-  setLoading(btn, 'Revoking…');
-  const r = await api('/postback-key',{method:'DELETE'});
-  if (r.error) { restoreBtn(btn); return toast(r.error); }
-  const pb = $('pbUrl'); if (pb) { pb.textContent = ''; pb.dataset.url = ''; }
-  toast('Postback key revoked'); restoreBtn(btn);
-}
-async function copyPostback(target){
-  const url = target.dataset.url;
-  if (!url) return toast('Show the signed postback setup first');
-  navigator.clipboard.writeText(url);
-  toast('Signed postback setup copied');
-}
 function setLoading(el, text = 'Loading…') {
   if (!el) return;
   if (el.disabled !== undefined) el.disabled = true;
@@ -678,11 +647,11 @@ async function handleAction(e) {
   if (!target) return;
   const action = target.dataset.action;
   if (action === 'toggleToken') { e.preventDefault(); toggleToken(target); return; }
-  if (submitting && action !== 'copyLink' && action !== 'copyPostback') return;
+  if (submitting && action !== 'copyLink') return;
   submitting = true;
   // Show a loading state on the clicked control for every network-backed action.
   // Pure client-side actions (copy, local bot selection) don't need it.
-  const NO_LOADING = action === 'copyLink' || action === 'copyPostback' || action === 'selectBot'
+  const NO_LOADING = action === 'copyLink' || action === 'selectBot'
     || action === 'testMessage' || action === 'cancelTestMessage'
     || action === 'sendBroadcast' || action === 'closeBroadcastPreview'
     || action === 'wizardNext' || action === 'wizardPrev';
@@ -710,10 +679,6 @@ async function handleAction(e) {
     else if (action === 'closeBroadcastPreview') { e.preventDefault(); closeBroadcastPreview(); }
     else if (action === 'testBroadcast') { e.preventDefault(); await testBroadcast(target); }
     else if (action === 'cancelBroadcast') { e.preventDefault(); await cancelBroadcast(target); }
-    else if (action === 'revealPostback') { e.preventDefault(); await revealPostback(target); }
-    else if (action === 'rotatePostback') { e.preventDefault(); await rotatePostback(target); }
-    else if (action === 'revokePostback') { e.preventDefault(); await revokePostback(target); }
-    else if (action === 'copyPostback') { e.preventDefault(); await copyPostback(target); }
     else if (action === 'copyLink') { e.preventDefault(); await copyLink(target); }
     else if (action === 'toggleOffer') { e.preventDefault(); await toggleOffer(target); }
     else if (action === 'toggleCommand') { e.preventDefault(); await toggleCommand(target); }

@@ -124,8 +124,8 @@ describe("dashboard views", () => {
     expect(html).toContain('data-action="createOffer"');
     expect(html).toContain('data-action="sendBroadcast"');
     expect(html).toContain('data-action="logout"');
-    expect(html).toContain("Show signed postback setup");
-    expect(html).toContain("X-Postback-Signature");
+    expect(html).toContain("Manage postbacks in Account");
+    expect(html).toContain("postbackStatus");
     expect(html).toContain('nonce="nonce123"');
     expect(html).not.toContain("gm-shell-nav");
     expect(html).not.toContain("onclick=");

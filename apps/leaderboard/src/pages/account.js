@@ -58,9 +58,20 @@ const accountContent = `
       </div>
 
       <div class="lb-widget lb-widget--full" id="postbacks">
-        <h2>Postbacks</h2>
-        <p class="card-sub">Receive automatic score updates from your sponsor via signed postback URLs.</p>
-        <div id="postbackCard" hidden>
+        <h2>Attribution / Postbacks</h2>
+        <p class="card-sub">Let your sponsor or affiliate manager send conversion events straight to YourRank.</p>
+
+        <div id="postbackStatusCard" class="card card--status" hidden>
+          <div class="d-flex items-center gap-8">
+            <span class="status-dot" id="postbackStatusDot"></span>
+            <b id="postbackStatusText">—</b>
+          </div>
+          <p class="hint" id="postbackStatusHint"></p>
+        </div>
+
+        <div id="postbackShareCard" hidden>
+          <h3 class="m-0 mt-18 mb-8">What to send your affiliate manager</h3>
+          <p class="hint">This block is safe to copy — it does <b>not</b> contain your secret key.</p>
           <div class="field">
             <label>Signed endpoint URL</label>
             <div class="d-flex gap-8 items-center flex-wrap">
@@ -69,34 +80,53 @@ const accountContent = `
             </div>
           </div>
           <div class="field">
+            <label>How to sign</label>
+            <p class="hint">Sign the raw query string with <code>HMAC-SHA256</code> keyed by the postback key we gave you, then send it as the <code>X-Postback-Signature</code> header.</p>
+            <button class="btn btn--sm btn--ghost" id="postbackCopyManager" type="button">Copy full setup for affiliate manager</button>
+          </div>
+          <div class="field">
+            <label>Test connection</label>
+            <p class="hint">Send a sample conversion to confirm the endpoint is reachable and the signature is accepted.</p>
+            <button class="btn btn--sm" id="postbackTest" type="button">Send test conversion</button>
+            <span class="hint" id="postbackTestStatus" role="status" aria-live="polite"></span>
+          </div>
+        </div>
+
+        <div id="postbackKeyCard" hidden>
+          <h3 class="m-0 mt-18 mb-8">Key management</h3>
+          <p class="hint">Keep the key private. Rotating revokes the old key immediately.</p>
+          <div class="field">
             <label>Postback key</label>
             <div class="d-flex gap-8 items-center flex-wrap">
               <code id="postbackKey" class="overlay-url"></code>
               <button class="btn btn--sm btn--accent ic-btn" id="postbackCopyKey" type="button">Copy</button>
+              <button class="btn btn--sm" id="postbackRotate" type="button">Rotate key</button>
+              <button class="btn btn--sm btn--danger" id="postbackRevoke" type="button">Revoke key</button>
             </div>
-            <span class="hint">Sign the raw query string with HMAC-SHA256 keyed by this value, then send it as the <code>X-Postback-Signature</code> header.</span>
           </div>
-          <div class="field">
+        </div>
+
+        <details class="adv" id="postbackAdvanced" hidden>
+          <summary>Advanced configuration</summary>
+          <div class="field mt-14">
             <label>Legacy URL (sunset ${new Date().getFullYear() + 1})</label>
             <div class="d-flex gap-8 items-center flex-wrap">
               <code id="postbackLegacy" class="overlay-url"></code>
               <button class="btn btn--sm ic-btn" id="postbackCopyLegacy" type="button">Copy</button>
             </div>
+            <p class="hint">Unsigned postbacks are deprecated and will be rejected unless your worker explicitly enables legacy mode.</p>
           </div>
-          <div class="d-flex gap-8 flex-wrap mt-14">
-            <button class="btn btn--sm" id="postbackRotate" type="button">Rotate key</button>
-            <button class="btn btn--sm btn--danger" id="postbackRevoke" type="button">Revoke key</button>
-          </div>
-          <p class="hint" id="postbackStatus" role="status" aria-live="polite"></p>
-          <hr class="hr" />
-          <h3 class="m-0 mt-18 mb-4">Recent conversions</h3>
-          <table class="admin-table" id="conversionsTable"><thead><tr><th>Time</th><th>Event</th><th>Amount</th><th>Currency</th><th>Offer</th></tr></thead><tbody id="conversionsBody"></tbody></table>
-          <p class="empty" id="conversionsEmpty" hidden>No conversions yet.</p>
-        </div>
+        </details>
+
         <div id="postbackUpgrade" hidden>
           <p class="hint">Postbacks are a paid feature. Upgrade to Pro to generate keys and view conversions.</p>
           <a class="btn btn--accent" href="/account#plan">See plans</a>
         </div>
+
+        <hr class="hr" />
+        <h3 class="m-0 mt-18 mb-4">Recent conversions</h3>
+        <table class="admin-table" id="conversionsTable"><thead><tr><th>Time</th><th>Event</th><th>Amount</th><th>Currency</th><th>Offer</th></tr></thead><tbody id="conversionsBody"></tbody></table>
+        <p class="empty" id="conversionsEmpty" hidden>No conversions yet.</p>
       </div>
 
       <div class="lb-widget lb-widget--full lb-widget--danger" id="data">
