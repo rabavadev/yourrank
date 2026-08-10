@@ -3,15 +3,33 @@ export function botsPanel(): string {
   return `
   <div class="panel" data-page="bots"><h2>Your bots</h2>
     <div id="botList" class="muted">Loading…</div>
-    <div class="style-10" id="connectForm">
-      <label class="sr-only" for="botToken">Bot Token</label>
-      <div class="style-11">
-        <input class="style-12" id="botToken" type="password" autocomplete="off" placeholder="Paste bot token from @BotFather (123456:ABC-...)">
-        <button class="ghost" data-action="toggleToken" type="button" aria-label="Show token">Show</button>
+
+    <div class="wizard" id="connectWizard">
+      <div class="wizard-step" data-step="1">
+        <h3>1. Get a bot from @BotFather</h3>
+        <p class="muted">Open BotFather in Telegram, create a new bot, and copy the API token. Keep the token secret — only you and YourRank need it.</p>
+        <a href="https://t.me/BotFather" target="_blank" rel="noopener" class="btn">Open @BotFather</a>
+        <button type="button" class="ghost" data-action="wizardNext" data-step="1">I have a token →</button>
       </div>
-      <label class="sr-only" for="botWelcome">Welcome Message</label>
-      <input id="botWelcome" placeholder="Welcome message (optional)">
-      <button data-action="connectBot" type="button">Connect bot</button>
+
+      <div class="wizard-step" data-step="2" hidden>
+        <h3>2. Paste your bot token</h3>
+        <p class="muted">Your token is encrypted on our side. We only store the last 4 characters so you can recognise it.</p>
+        <label class="sr-only" for="botToken">Bot Token</label>
+        <div class="style-11">
+          <input class="style-12" id="botToken" type="password" autocomplete="off" placeholder="123456:ABC-...">
+          <button class="ghost" data-action="toggleToken" type="button" aria-label="Show token">Show</button>
+        </div>
+        <label class="sr-only" for="botWelcome">Welcome Message</label>
+        <input id="botWelcome" placeholder="Welcome message (optional)">
+        <button data-action="connectBot" type="button">Connect bot</button>
+        <button type="button" class="ghost" data-action="wizardPrev" data-step="2">← Back</button>
+      </div>
+
+      <div class="wizard-step" data-step="3" hidden>
+        <h3>3. Verifying connection…</h3>
+        <p class="muted" id="connectStatus">Checking your bot with Telegram.</p>
+      </div>
     </div>
   </div>
 

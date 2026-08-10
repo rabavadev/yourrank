@@ -234,7 +234,7 @@ export function buildDashboardApi(): Hono<{ Bindings: DashApiBindings; Variables
 
   api.get("/bots", async (c) => {
     return c.json(await query(
-      `SELECT id, username, token_hint, status, welcome_message, created_at FROM bots WHERE owner_id = $1 ORDER BY created_at DESC`,
+      `SELECT id, username, token_hint, status, welcome_message, created_at, updated_at FROM bots WHERE owner_id = $1 ORDER BY created_at DESC`,
       [c.get("uid")]
     ));
   });

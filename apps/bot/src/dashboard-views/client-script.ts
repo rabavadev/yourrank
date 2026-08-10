@@ -37,6 +37,18 @@ showPage(page);
 
 function esc(s){ return String(s??'').replace(/[&<>"']/g, ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch])); }
 
+function fmtTime(iso){
+  if (!iso) return 'never';
+  try { return new Date(iso).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }); }
+  catch { return iso; }
+}
+
+function showWizardStep(n){
+  document.querySelectorAll('#connectWizard .wizard-step').forEach(el => { el.hidden = Number(el.dataset.step) !== n; });
+}
+function wizardNext(btn){ showWizardStep(Number(btn.dataset.step) + 1); }
+function wizardPrev(btn){ showWizardStep(Number(btn.dataset.step) - 1); }
+
 let firstBotId = null;
 let custBotId = null;
 
@@ -168,7 +180,7 @@ async function loadExtras(){
       +plur(cur.maxOffers, 'offer')+(cur.broadcasts?', broadcasts':'')+(cur.postbacks?', postbacks':'')+warning;
     if (typeof cur.maxBots === 'number') {
       __maxBots = cur.maxBots;
-      const cf = $('connectForm');
+      const cf = $('connectWizard');
       if (cf) cf.classList.toggle('hidden', __lastBots.filter(b => b.status === 'active').length >= __maxBots);
     }
     const planButtons = $('planButtons');
@@ -231,25 +243,45 @@ async function createOffer(btn){
 async function connectBot(btn){
   const token = $('botToken').value.trim();
   if (!token) return toast('Paste a bot token first');
-  setLoading(btn, 'Connecting…');
+  showWizardStep(3);
+  const status = $('connectStatus'); if (status) status.textContent = 'Checking token with Telegram…';
   const r = await api('/bots',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({token, welcome_message:$('botWelcome').value.trim()||undefined})});
-  if (r.error) { restoreBtn(btn); return toast(r.error); }
+  if (r.error) {
+    if (status) status.textContent = 'Could not connect: ' + r.error + '. Go back and check your token.';
+    return;
+  }
   $('botToken').value='';
+  if (status) status.textContent = 'Connected to @' + r.username + '! You can send a test message below.';
   if (r.warning) { toast(r.warning); } else { toast('Bot @'+r.username+' connected'); }
-  restoreBtn(btn); load();
+  load();
 }
 async function checkHealth(target){
   setLoading(target, 'Checking…');
-  const r = await api('/bots/'+target.dataset.id+'/health');
-  if (r.error) { restoreBtn(target); return toast(r.error); }
-  const msg = r.configured
-    ? 'Webhook configured: ' + r.url + ' ('+r.pending_updates+' pending)'
-    : 'Webhook not set: ' + (r.url || 'none') + ' ('+r.pending_updates+' pending)';
-  toast(msg + (r.last_error ? ' | Error: ' + r.last_error : ''));
+  const id = target.dataset.id;
+  const r = await api('/bots/'+id+'/health');
   restoreBtn(target);
+  if (r.error) { return toast(r.error); }
+  const details = $('health-body-'+id);
+  const wrap = $('health-'+id);
+  if (details && wrap) {
+    const action = r.configured
+      ? (r.last_error ? 'Your bot had an error. Try clicking <b>Reconnect</b> to reset the webhook.' : 'Webhook looks good. If messages stop arriving, click <b>Reconnect</b>.')
+      : 'Webhook is missing. Click <b>Reconnect</b> to register it with Telegram.';
+    details.innerHTML = '<ul>'+
+      '<li><b>Webhook URL:</b> '+(r.url ? esc(r.url) : 'none')+'</li>'+
+      '<li><b>Pending updates:</b> '+esc(String(r.pending_updates))+'</li>'+
+      (r.last_error ? '<li><b>Last error:</b> '+esc(r.last_error)+'</li>' : '')+
+      '</ul><p>'+action+'</p>';
+    wrap.hidden = false;
+    wrap.open = true;
+  }
+  const summary = r.configured
+    ? 'Webhook OK' + (r.last_error ? ' (had an error)' : '')
+    : 'Webhook missing';
+  toast(summary + ' — see details below');
 }
 async function disconnectBot(btn){
-  if (!confirm('Disconnect this bot? It will stop responding and free your plan slot.')) return;
+  if (!confirm('Disconnect this bot? It will stop responding, but your offers, commands and subscriber history stay in YourRank. Your token is removed from our servers.')) return;
   setLoading(btn, 'Disconnecting…');
   const r = await api('/bots/'+btn.dataset.id+'/disconnect',{method:'POST'});
   if (r.error) { restoreBtn(btn); return toast(r.error); }
@@ -313,19 +345,26 @@ function renderBots(bots, loadCmds = true){
           const statusText = b.status === 'active' ? 'active' : (b.status === 'revoked' ? 'disconnected' : b.status);
           const isActive = b.status === 'active';
           return '<div class="bot-card">'+
-            '<div class="meta"><a href="https://t.me/'+esc(b.username)+'" target="_blank" rel="noopener">@'+esc(b.username)+'</a> '+
-            '<span class="muted">(…'+esc(b.token_hint)+')</span> <span class="'+statusClass+'">'+esc(statusText)+'</span></div>'+
+            '<div class="bot-card-head">'+
+              '<div class="meta"><a href="https://t.me/'+esc(b.username)+'" target="_blank" rel="noopener">@'+esc(b.username)+'</a> '+
+              '<span class="muted">(…'+esc(b.token_hint)+')</span> <span class="badge '+statusClass+'">'+esc(statusText)+'</span></div>'+
+              '<div class="muted" style="font-size:12px;margin-top:4px">Last updated · '+esc(fmtTime(b.updated_at))+'</div>'+
+            '</div>'+
             '<div class="actions">'+
-              (isActive ? '<button class="ghost" data-action="checkHealth" data-id="'+esc(b.id)+'" type="button">Check health</button>' : '')+
+              (isActive ? '<button class="ghost" data-action="checkHealth" data-id="'+esc(b.id)+'" type="button">Check webhook</button>' : '')+
               (isActive ? '<button class="ghost" data-action="disconnectBot" data-id="'+esc(b.id)+'" type="button">Disconnect</button>'
                         : '<button class="ghost" data-action="reconnectBot" data-id="'+esc(b.id)+'" type="button">Reconnect</button>')+
-              (isActive ? '<button class="ghost" data-action="selectBot" data-id="'+esc(b.id)+'" type="button">Select</button>' : '')+
+              (isActive ? '<button class="ghost" data-action="selectBot" data-id="'+esc(b.id)+'" type="button">Edit commands</button>' : '')+
               (isActive && page === 'bots' ? '<button class="ghost" data-action="testMessage" data-id="'+esc(b.id)+'" type="button">Test message</button>' : '')+
               (page === 'bots' ? '<button class="danger" data-action="deleteBot" data-id="'+esc(b.id)+'" type="button">Delete</button>' : '')+
             '</div>'+
+            '<details class="health-details" id="health-'+esc(b.id)+'" hidden>'+
+              '<summary>Technical details</summary>'+
+              '<div class="health-body" id="health-body-'+esc(b.id)+'">Click <b>Check webhook</b> to load the latest status.</div>'+
+            '</details>'+
           '</div>';
         }).join('')
-      : 'No bot connected yet — paste your token below.';
+      : 'No bot connected yet — start with step 1 below.';
   }
 
   const botSelect = $('botSelect');
@@ -342,7 +381,7 @@ function renderBots(bots, loadCmds = true){
   if (bcBotSelect) updateAudience();
 
   // Hide the connect form once the plan's active-bot slots are full.
-  const cf = $('connectForm');
+  const cf = $('connectWizard');
   if (cf) cf.classList.toggle('hidden', bots.filter(b => b.status === 'active').length >= __maxBots);
 
   // customize panel (only on pages that show it)
@@ -645,7 +684,8 @@ async function handleAction(e) {
   // Pure client-side actions (copy, local bot selection) don't need it.
   const NO_LOADING = action === 'copyLink' || action === 'copyPostback' || action === 'selectBot'
     || action === 'testMessage' || action === 'cancelTestMessage'
-    || action === 'sendBroadcast' || action === 'closeBroadcastPreview';
+    || action === 'sendBroadcast' || action === 'closeBroadcastPreview'
+    || action === 'wizardNext' || action === 'wizardPrev';
   if (!NO_LOADING) setLoading(target);
   try {
     if (action === 'logout') { e.preventDefault(); await logout(target); }
@@ -658,6 +698,8 @@ async function handleAction(e) {
     else if (action === 'sendTestMessage') { e.preventDefault(); await sendTestMessage(target); }
     else if (action === 'cancelTestMessage') { e.preventDefault(); cancelTestMessage(); }
     else if (action === 'selectBot') { e.preventDefault(); selectBotById(target.dataset.id); }
+    else if (action === 'wizardNext') { e.preventDefault(); wizardNext(target); }
+    else if (action === 'wizardPrev') { e.preventDefault(); wizardPrev(target); }
     else if (action === 'createOffer') { e.preventDefault(); await createOffer(target); }
     else if (action === 'addCommand') { e.preventDefault(); await addCommand(target); }
     else if (action === 'addCommandButton') { e.preventDefault(); addCommandButton(target); }
