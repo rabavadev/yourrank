@@ -17,6 +17,7 @@ import { isGameId } from "./registry.js";
 import { createGamesStore } from "./state/store.js";
 import { GamesShell } from "./ui/GamesShell.js";
 import type { GameId, ViewerState } from "./types.js";
+import { safeImageUrl, safePath } from "./url.js";
 
 interface BootPayload {
   slug: string;
@@ -101,8 +102,8 @@ export async function mountGames(root: HTMLElement): Promise<void> {
     slug: boot.slug,
     viewer,
     demo,
-    signInHref: boot.signInHref,
-    earnHref: boot.earnHref,
+    signInHref: safePath(boot.signInHref, `/${encodeURIComponent(boot.slug)}`),
+    earnHref: safePath(boot.earnHref, `/${encodeURIComponent(boot.slug)}`),
     initialGame: initialGame(),
   });
 
@@ -111,7 +112,11 @@ export async function mountGames(root: HTMLElement): Promise<void> {
     <GamesShell
       store={store}
       showHeader={boot.header !== false}
-      branding={{ siteName: boot.siteName, logoUrl: boot.logoUrl, homeUrl: boot.homeUrl }}
+      branding={{
+        siteName: boot.siteName,
+        logoUrl: safeImageUrl(boot.logoUrl),
+        homeUrl: safePath(boot.homeUrl, `/${encodeURIComponent(boot.slug)}`),
+      }}
     />,
     root
   );

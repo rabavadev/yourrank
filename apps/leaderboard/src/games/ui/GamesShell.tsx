@@ -17,6 +17,7 @@ import { GamesStoreContext } from "../state/context.js";
 import type { GamesStore } from "../state/store.js";
 import { setHapticsEnabled } from "../haptics.js";
 import { sound } from "../sound.js";
+import { safeImageUrl, safePath } from "../url.js";
 import { BalanceDisplay } from "./BalanceDisplay.js";
 import { DefaultBetPanel } from "./DefaultBetPanel.js";
 import { GameFrame } from "./GameFrame.js";
@@ -78,9 +79,9 @@ export function GamesShell({ store, branding, showHeader = true }: GamesShellPro
 
         <header class={showHeader ? "gx-header" : "gx-header gx-header--compact"}>
           {showHeader ? (
-            <a class="gx-header__brand" href={branding.homeUrl}>
-              {branding.logoUrl ? (
-                <img class="gx-header__logo" src={branding.logoUrl} alt="" width={28} height={28} />
+            <a class="gx-header__brand" href={safePath(branding.homeUrl, "/")}>
+              {safeImageUrl(branding.logoUrl) ? (
+                <img class="gx-header__logo" src={safeImageUrl(branding.logoUrl) ?? ""} alt="" width={28} height={28} />
               ) : (
                 <span class="gx-header__mark" aria-hidden="true">
                   {branding.siteName.slice(0, 2).toUpperCase()}
@@ -122,8 +123,8 @@ export function GamesShell({ store, branding, showHeader = true }: GamesShellPro
               minBet={active?.minBet ?? 1}
               errorMessage={store.error.value}
               onRetry={() => void store.load()}
-              signInHref={store.signInHref}
-              earnHref={store.earnHref}
+              signInHref={safePath(store.signInHref, "/")}
+              earnHref={safePath(store.earnHref, "/")}
             >
               {Board && active ? <Board store={store} config={active} /> : null}
             </GameFrame>

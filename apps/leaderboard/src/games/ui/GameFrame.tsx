@@ -5,6 +5,7 @@
 // and the product reads as three different products.
 import type { ComponentChildren } from "preact";
 import { formatCredits } from "../bet.js";
+import { safePath } from "../url.js";
 import { AlertIcon, ClockIcon, CoinIcon, LockIcon } from "./icons.js";
 import { Button } from "./Button.js";
 
@@ -95,7 +96,7 @@ function FrameState({
         body={`Your ${currency} are tied to your account. Sign in to place a bet — it takes a few seconds and it's free.`}
         action={
           signInHref ? (
-            <a class="gx-btn gx-btn--primary" href={signInHref}>
+            <a class="gx-btn gx-btn--primary" href={safePath(signInHref, "/")}>
               Sign in
             </a>
           ) : null
@@ -112,7 +113,7 @@ function FrameState({
         body={`You need at least ${formatCredits(minBet)} ${currency} to place a bet — you have ${formatCredits(balance)}. Earn more by redeeming the streamer's free channel-point rewards.`}
         action={
           earnHref ? (
-            <a class="gx-btn gx-btn--primary" href={earnHref}>
+            <a class="gx-btn gx-btn--primary" href={safePath(earnHref, "/")}>
               Earn {currency}
             </a>
           ) : null
