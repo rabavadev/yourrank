@@ -51,6 +51,52 @@
 - [ ] Turnstile on signup/login (needs S M)
 - [ ] Status page (needs S M)
 
+## Phase 5 QA — August 2026
+
+After the Phase 2 UX and product restructuring, the following QA items were completed and the remaining actions documented.
+
+### Completed
+- TASK 31 — E2E regression matrix extended to cover public `/me`, `/<slug>/credits`, `/<slug>/overlay`, and the publish step.
+- TASK 32 — All primary pages include loading, empty, error, and success states; forms preserve values and expose Retry.
+- TASK 33 — Public pages use flex-wrap layouts, visible focus, `prefers-reduced-motion` support, and skip links.
+- TASK 34 — CSP inline-style violations fixed on public pages; `report-uri` receives reports; E2E public pages return 200.
+- TASK 35 — Canonical URLs and redirects captured below.
+
+### Canonical URLs and backward-compatible redirects
+
+**Canonical public pages**
+- `/` landing
+- `/pricing`, `/faq`, `/reviews`, `/contact`, `/docs`
+- `/login`, `/signup`, `/forgot`, `/reset`, `/verify-email`, `/me`
+- `/dashboard`, `/account`, `/admin`
+- `/<slug>` (public leaderboard), `/<slug>/credits`, `/<slug>/shop`, `/<slug>/overlay`
+- `/<slug>/hall-of-fame`, `/<slug>/profile`, `/<slug>/player/<name>`
+
+**Backward-compatible redirects** (all 302 to the canonical location)
+- `/dashboard/billing` → `/account#plan`
+- `/dashboard/attribution` → `/account#postbacks`
+- `/dashboard/analytics` → `/dashboard?nav=performance`
+- `/dashboard/analytics/:tab` → `/dashboard?nav=performance#:tab` (`activity`, `referrals`, `events`)
+- `/dashboard/credits` → `/dashboard?nav=kickrewards`
+- `/dashboard/rewards` → `/dashboard?nav=kickrewards`
+- `/dashboard/rewards/:tab` → `/dashboard?nav=kickrewards#:tab` (`channel`, `maps`, `shop`, `viewers`, `redemptions`, `history`)
+- `/dashboard/editor` → `/dashboard?nav=board`
+- `/dashboard/editor/:tab` → `/dashboard?nav=board#:tab` (`setup`, `players`, `design`, `share`, `history`)
+- `/dashboard/boards` → `/dashboard?nav=boards`
+- `/dashboard/settings` → `/dashboard?nav=settings`
+- `/dashboard/setup` → `/dashboard`
+- `/dashboard/bot/setup` → `/bot/dashboard`
+- `/dashboard/support` → `/contact?type=support&area=dashboard&return=/dashboard`
+- `/dashboard/security` → `/account#profile`
+
+### Still needing S M / external action
+- Set Kick developer app redirect URI and webhook URL (Phase 0 go-live).
+- Set Discord OAuth app credentials (`DISCORD_CLIENT_ID`, `DISCORD_CLIENT_SECRET`).
+- Complete Google Business Profile address verification and set `GBP_REVIEW_URL` / `GBP_PHOTO_URL`.
+- Enable Cloudflare Turnstile for auth endpoints (security hardening).
+- Create a public status page.
+- Upgrade Cloudflare account and enable `RL_BACKEND=do` after monitoring.
+
 ## S M Action Items
 1. Upgrade CF account to Workers Paid (KV write quota)
 2. Enable Supabase PITR + run restore drill

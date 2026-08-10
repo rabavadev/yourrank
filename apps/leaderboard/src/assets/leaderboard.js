@@ -135,7 +135,7 @@ function initParticles() {
 let previousPlayerNames = []; // tracks ordered names from last render for rank-change detection
 
 function streakBadge(streak) {
-  return streak >= 2 ? `<span class="yr-streak" style="margin-left:.35rem;font-size:.78rem;color:#ff7a00;font-weight:700;white-space:nowrap" title="${streak} consecutive #1 finishes" aria-label="${streak} streak">🔥${streak}</span>` : "";
+  return streak >= 2 ? `<span class="yr-streak" title="${streak} consecutive #1 finishes" aria-label="${streak} streak">🔥${streak}</span>` : "";
 }
 
 function buildPlayerRow(pl, rank, delay, gap) {

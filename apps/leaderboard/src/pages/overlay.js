@@ -52,6 +52,9 @@ html,body{width:320px;overflow:hidden;background:transparent;font-family:'Inter'
 .ov-footer{display:flex;align-items:center;justify-content:space-between;margin-top:10px;padding-top:8px;border-top:1px solid rgba(255,255,255,0.05)}
 .ov-footer .ov-count{font-size:9px;color:rgba(255,255,255,0.3);text-transform:uppercase;letter-spacing:.08em}
 .ov-footer .ov-powered{font-size:8px;color:rgba(255,255,255,0.15);letter-spacing:.04em}
+.ov-sponsor{display:none;font-size:9px;text-align:center;color:rgba(255,255,255,0.4);padding:6px 0;letter-spacing:.04em}
+.ov-sponsor.is-visible{display:block}
+.ov-sponsor a{color:inherit;text-decoration:none}
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; } }
 </style>
 </head><body>
@@ -71,7 +74,7 @@ ${endsAt ? `<p class="ov-timer-label">${esc(b.prizePool || "")} resets in</p>
 <b data-ot>--</b>
 </div>` : ""}
 <div class="ov-rows" id="ov-players">${rows}${emptyRows}</div>
-<div class="ov-sponsor" data-ov-sponsor style="display:none;font-size:9px;text-align:center;color:rgba(255,255,255,0.4);padding:6px 0;letter-spacing:.04em"></div>
+<div class="ov-sponsor" data-ov-sponsor></div>
 <div class="ov-footer">
 <span class="ov-count"><span id="ov-count">${(data.players || []).length}</span> players</span>
 <span class="ov-powered">YourRank</span>

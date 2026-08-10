@@ -10,7 +10,7 @@ export function renderPublicCreditsPage({ slug, nonce, homeUrl, kickAuthEnabled,
 <title>Viewer Credits · ${esc(slug)}</title>
 <meta name="robots" content="noindex, nofollow" />
 <link rel="stylesheet" href="/assets/app.css" />
-<style>
+<style nonce="${esc(nonce)}">
   .pc-wrap{max-width:760px;margin:32px auto;padding:0 18px;}
   .pc-hero{text-align:center;margin-bottom:28px;}
   .pc-hero h1{font-size:1.8rem;margin-bottom:8px;}
@@ -24,7 +24,11 @@ export function renderPublicCreditsPage({ slug, nonce, homeUrl, kickAuthEnabled,
   .pc-item-name{font-weight:600;}
   .pc-item-desc{font-size:13px;color:var(--ink-mute);}
   .pc-item-cost{font-weight:700;}
+  .pc-item-actions{text-align:right;}
   .pc-login{display:flex;gap:8px;flex-wrap:wrap;}
+  .pc-lookup{margin-bottom:0;}
+  .pc-input-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;}
+  .pc-username-input{flex:1;min-width:220px;}
   #pc-loading{position:fixed;inset:0;background:rgba(15,15,17,.7);display:flex;align-items:center;justify-content:center;z-index:200;color:#fff}
   #pc-loading[hidden]{display:none!important}
   .pc-spinner{width:28px;height:28px;border:3px solid #333;border-top-color:#00e701;border-radius:50%;animation:pc-spin 1s linear infinite}
@@ -55,10 +59,10 @@ export function renderPublicCreditsPage({ slug, nonce, homeUrl, kickAuthEnabled,
   </section>
 
   <section class="pc-card">
-    <form id="pc-lookup" class="field" style="margin-bottom:0">
+    <form id="pc-lookup" class="field pc-lookup">
       <label for="pc-username">Kick username</label>
-      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">
-        <input id="pc-username" type="text" style="flex:1;min-width:220px" placeholder="your_kick_username" required />
+      <div class="pc-input-row">
+        <input id="pc-username" class="pc-username-input" type="text" placeholder="your_kick_username" required />
         <button class="btn btn--accent" type="submit">Look up</button>
       </div>
     </form>
@@ -78,7 +82,7 @@ export function renderPublicCreditsPage({ slug, nonce, homeUrl, kickAuthEnabled,
   </section>
 </main>
 <footer class="gm-shell-footer"><div class="gm-shell-inner">
-  <span class="gm-shell-footer-copy">© ${new Date().getFullYear()} YourRank</span>
+  <span class="gm-shell-footer-copy">© {{YEAR}} YourRank</span>
 </div></footer>
 <script nonce="${esc(nonce)}">
 (function(){
@@ -173,7 +177,7 @@ export function renderPublicCreditsPage({ slug, nonce, homeUrl, kickAuthEnabled,
       const canAfford=viewer && viewer.balance>=item.cost;
       const inStock=item.stock===null || item.stock>0;
       div.innerHTML='<div class="pc-item-info"><div class="pc-item-name">'+esc(item.name)+'</div><div class="pc-item-desc">'+esc(item.description||"")+'</div></div>'+
-        '<div style="text-align:right"><div class="pc-item-cost">'+item.cost+' credits</div>'+
+        '<div class="pc-item-actions"><div class="pc-item-cost">'+item.cost+' credits</div>'+
         (item.stock!==null ? '<div class="hint">Stock: '+item.stock+'</div>':'')+
         '<button class="btn btn--sm" data-redeem="'+esc(item.id)+'" '+(canAfford && inStock ? '' : 'disabled')+'>'+(canAfford && inStock ? 'Redeem in dashboard' : (inStock ? 'Need more credits' : 'Out of stock'))+'</button></div>';
       list.appendChild(div);

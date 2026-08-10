@@ -809,14 +809,14 @@ a{color:#5771ff;text-decoration:none;font-weight:600}</style></head><body>
         }
         if (!r || r.suspended) return new Response(notFoundPage(slug, nonce), { status: 404, headers: HTML_N });
         return new Response(
-          renderPublicCreditsPage({
+          fillYear(renderPublicCreditsPage({
             slug,
             nonce,
             homeUrl: url.origin,
             kickAuthEnabled: r.viewerKickAuthEnabled,
             discordAuthEnabled: r.viewerDiscordAuthEnabled,
             publicRedeemEnabled: r.viewerPublicRedeemEnabled,
-          }),
+          })),
           { headers: { ...HTML_N, "cache-control": "no-store" } }
         );
       }

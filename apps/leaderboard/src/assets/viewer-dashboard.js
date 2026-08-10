@@ -102,14 +102,14 @@ function render() {
   const boards = state.boards || [];
   $("vd-boards-empty").hidden = boards.length > 0;
   $("vd-boards").innerHTML = boards.map((b) => `
-    <div style="padding:14px;border:1px solid var(--line);border-radius:8px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
-      <div>
-        <div style="font-weight:600">${esc(b.name || b.slug)}</div>
+    <div class="vd-card-row">
+      <div class="vd-card-main">
+        <div class="vd-card-title">${esc(b.name || b.slug)}</div>
         <div class="hint">${esc(b.slug)}</div>
         ${b.blocked ? `<span class="pill pill--bad">blocked</span>` : ""}
       </div>
-      <div style="text-align:right">
-        <div style="font-size:1.4rem;font-weight:700">${b.balance}</div>
+      <div class="vd-card-side">
+        <div class="vd-card-cost">${b.balance}</div>
         <div class="hint">credits</div>
         <button class="btn btn--sm" data-view-site="${esc(b.slug)}">View shop</button>
       </div>
@@ -158,13 +158,13 @@ function renderSite() {
   $("vd-shop-list").innerHTML = items.map((i) => {
     const canBuy = v && !v.blocked && v.balance >= i.cost && (i.stock === null || i.stock > 0);
     return `
-      <div style="padding:14px;border:1px solid var(--line);border-radius:8px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
-        <div>
-          <div style="font-weight:600">${esc(i.name)}</div>
+      <div class="vd-card-row">
+        <div class="vd-card-main">
+          <div class="vd-card-title">${esc(i.name)}</div>
           <div class="hint">${esc(i.description || "")}</div>
         </div>
-        <div style="text-align:right">
-          <div style="font-weight:700">${i.cost} credits</div>
+        <div class="vd-card-side">
+          <div class="vd-card-cost">${i.cost} credits</div>
           ${i.stock !== null ? `<div class="hint">Stock: ${i.stock}</div>` : ""}
           <button class="btn btn--sm" data-redeem="${esc(i.id)}" ${canBuy ? "" : "disabled"}>Redeem</button>
         </div>
@@ -181,12 +181,12 @@ function renderSite() {
   $("vd-redemptions-list").innerHTML = redemptions.map((r) => {
     const statusLabel = r.status === "pending" ? "Pending" : r.status === "fulfilled" ? "Fulfilled" : "Cancelled";
     return `
-    <div style="padding:12px;border:1px solid var(--line);border-radius:8px;margin-bottom:8px;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap">
-      <div>
-        <div style="font-weight:600">${esc(r.item_name)}</div>
+    <div class="vd-card-row vd-redemption-row">
+      <div class="vd-card-main">
+        <div class="vd-card-title">${esc(r.item_name)}</div>
         <div class="hint">${r.cost} credits · ${fmtDate(r.createdAt)}</div>
       </div>
-      <div>
+      <div class="vd-card-side">
         <span class="pill pill--${r.status === "pending" ? "muted" : r.status === "fulfilled" ? "good" : "bad"}">${statusLabel}</span>
       </div>
     </div>

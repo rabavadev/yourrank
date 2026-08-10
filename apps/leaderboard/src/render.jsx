@@ -258,7 +258,7 @@ export async function renderLeaderboard(data, opts = {}) {
     .map(([k, v]) => ` data-opt-${k}="${esc(String(v))}"`)
     .join("");
   const previewCss = opts.preview ? `<style nonce="${opts.nonce}">
-html{background:var(--bg)}body[data-preview]{min-width:var(--preview-min-width,1100px);overflow:hidden}
+html{background:var(--bg)}body[data-preview]{--preview-min-width:${opts.previewDevice === "mobile" ? 390 : 1100}px;min-width:var(--preview-min-width);overflow:hidden}
 body[data-preview] .nav,body[data-preview] .field,body[data-preview] .watermarks,body[data-preview] .stream-window,
 body[data-preview] .panel,body[data-preview] .find-rank-bar,body[data-preview] .rules,body[data-preview] .past-sec,
 body[data-preview] .socials-sec,body[data-preview] .ftr,body[data-preview] .rk-badge,body[data-preview] .share-sec{display:none!important}
@@ -402,7 +402,7 @@ ${previewCss}
 ${fontCss(br, opts.nonce)}
 <style nonce="${opts.nonce}">${shareCss}</style>
 <script nonce="${opts.nonce}" type="application/ld+json">{"@context":"https://schema.org","@type":"ItemList","name":${JSON.stringify(title)},"description":${JSON.stringify(desc)},"numberOfItems":${data.players ? data.players.length : 0}}</script>
-</head><body data-template="${tpl}"${optAttrs}${opts.preview ? ` data-preview style="--preview-min-width:${opts.previewDevice === "mobile" ? 390 : 1100}px"` : ""}${opts.demo ? " data-demo" : ""} ${sectionAttrs}>
+</head><body data-template="${tpl}"${optAttrs}${opts.preview ? ` data-preview` : ""}${opts.demo ? " data-demo" : ""} ${sectionAttrs}>
 <noscript><p class="noscript-noscroll">This leaderboard requires JavaScript for live updates. The data shown below may not refresh automatically.</p></noscript>
 ${opts.demo ? `<div class="demo-bar" role="region" aria-label="Demo notice"><span class="demo-bar-txt">You're viewing a live <b>YourRank</b> demo board.</span><a class="demo-bar-cta" href="${esc(`${opts.homeUrl || ""}/signup`)}" target="_top">Create your free page →</a><a class="demo-bar-home" href="${esc(opts.homeUrl || "/")}" target="_top">Back to YourRank</a></div>` : ""}
 <a class="skip-link" href="#board">Skip to leaderboard</a>
