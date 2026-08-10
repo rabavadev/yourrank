@@ -34,14 +34,15 @@ async function loadSessions() {
       list.innerHTML = '<p class="hint">No active sessions.</p>';
       return;
     }
-    let html = '<table class="admin-table"><thead><tr><th>Started</th><th>Expires</th><th></th></tr></thead><tbody>';
+    let html =
+      '<div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Started</th><th>Expires</th><th></th></tr></thead><tbody>';
     for (const s of data.sessions) {
       const label = s.current ? '<span class="pill pill--info">This device</span>' : "";
       const created = s.createdAt ? new Date(s.createdAt).toLocaleString() : "—";
       const expires = s.expiresAt ? new Date(s.expiresAt).toLocaleString() : "—";
       html += `<tr><td>${created}</td><td>${expires}</td><td class="ta-r">${label}</td></tr>`;
     }
-    html += "</tbody></table>";
+    html += "</tbody></table></div>";
     list.innerHTML = html;
   } catch (e) {
     logError("loadSessions", e);
