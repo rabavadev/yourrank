@@ -14,10 +14,8 @@ export function initPerformance() {
     actions: [{ label: "Set up postbacks", href: "/account/postbacks", accent: true }],
   });
   const local = $("perfLocalTime");
-  if (local) {
-    const offset = -new Date().getTimezoneOffset();
-    local.textContent = `Local time (UTC${offset >= 0 ? "+" : "-"}${String(Math.floor(Math.abs(offset) / 60)).padStart(2, "0")}:${String(Math.abs(offset) % 60).padStart(2, "0")})`;
-  }
+  if (local) local.textContent = "Times in UTC";
+  local?.setAttribute("title", "Daily and hourly activity buckets are aggregated in UTC.");
 }
 
 function wireRangeFilter() {
@@ -177,7 +175,7 @@ function renderHeatmap(matrix) {
   for (let hour = 0; hour < 24; hour++) html += hour % 3 === 0 ? `<div class="heatmap-hlabel">${hour}</div>` : "<div></div>";
   for (let day = 0; day < 7; day++) {
     html += `<div class="heatmap-dlabel">${DOW[day]}</div>`;
-    for (let hour = 0; hour < 24; hour++) html += `<div class="heatmap-cell" title="${DOW[day]} ${hour}:00 — ${Number(matrix[day]?.[hour]) || 0} views"></div>`;
+    for (let hour = 0; hour < 24; hour++) html += `<div class="heatmap-cell" title="${DOW[day]} ${hour}:00 UTC — ${Number(matrix[day]?.[hour]) || 0} views"></div>`;
   }
   grid.innerHTML = html;
   grid.removeAttribute("aria-busy");

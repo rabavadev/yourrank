@@ -1,5 +1,5 @@
 // Site editing: plan, branding/theme, save, archive, domain, overlay, notifications.
-import { $, esc, fromLocalInput, getCsrf, guardAuth, localTzLabel, logError, parseAmount, showConfirmModal, copyToClipboard, flashButton, showLoadError, clearLoadError } from "./utils.js";
+import { $, esc, fromLocalInput, getCsrf, guardAuth, logError, timeZoneOffsetLabel, parseAmount, showConfirmModal, copyToClipboard, flashButton, showLoadError, clearLoadError } from "./utils.js";
 import { state, boardStatus, markDirty, setState, subscribe } from "./state.js";
 import { renderEmpty } from "./states.js";
 import { renderBoardSwitcher, renderBoardsPage, renderSidebarBoardSwitcher } from "./boards.js";
@@ -760,7 +760,9 @@ export function renderEditorTimestamps() {
     if (!iso) return "—";
     try {
       const d = new Date(iso);
-      return d.toLocaleString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) + " " + localTzLabel();
+      const formatted = d.toLocaleString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
+      const offset = timeZoneOffsetLabel(d);
+      return formatted + (offset ? ` ${offset}` : "");
     } catch { return "—"; }
   };
   const saved = state.SITE_UPDATED_AT ? "Last saved " + fmt(state.SITE_UPDATED_AT) : "";
