@@ -134,11 +134,11 @@
 .yr-ui button.danger {
   background: transparent;
   color: var(--yr-red, var(--danger));
-  border-color: rgba(239, 68, 68, .4);
+  border-color: var(--yr-color-danger-line-2, rgba(239, 68, 68, .4));
 }
 
 .btn--danger:hover,
-.yr-ui button.danger:hover { background: rgba(239, 68, 68, .06); }
+.yr-ui button.danger:hover { background: var(--yr-color-danger-soft-2, rgba(239, 68, 68, .06)); }
 
 .btn--sm,
 .yr-ui button.sm {
@@ -191,8 +191,8 @@
 }
 
 .badge.on,
-.badge.ok { color: var(--yr-green, var(--ok)); border-color: rgba(16, 163, 127, .4); }
-.badge.off { color: var(--yr-red, var(--danger)); border-color: rgba(239, 68, 68, .4); }
+.badge.ok { color: var(--yr-green, var(--ok)); border-color: var(--yr-color-success-line-2, rgba(16, 163, 127, .4)); }
+.badge.off { color: var(--yr-red, var(--danger)); border-color: var(--yr-color-danger-line-2, rgba(239, 68, 68, .4)); }
 
 /* ---- table scroller ----
    Tables are wider than a phone: scroll them inside their container instead of
@@ -297,7 +297,7 @@
 
 .empty--error {
   border-style: solid;
-  border-color: rgba(239, 68, 68, .4);
+  border-color: var(--yr-color-danger-line-2, rgba(239, 68, 68, .4));
   color: var(--yr-ink-soft, var(--ink-soft));
 }
 
