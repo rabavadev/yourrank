@@ -24,6 +24,38 @@ function getSite(env, user, url) {
   return siteId ? getBoardById(env, user.id, siteId) : getByUser(env, user.id);
 }
 
+const LEDGER_DIRECTIONS = Object.freeze({
+  earn: "credit",
+  revoke: "credit",
+  spend: "debit",
+  redeem: "debit",
+  refund: "debit",
+});
+
+export function ledgerDirection(type) {
+  return LEDGER_DIRECTIONS[type] || null;
+}
+
+function encodeActivityCursor(createdAt, id) {
+  return btoa(JSON.stringify({ createdAt, id }))
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/, "");
+}
+
+function decodeActivityCursor(value) {
+  if (!value) return null;
+  try {
+    const padded = value.replace(/-/g, "+").replace(/_/g, "/") + "===".slice((value.length + 3) % 4);
+    const parsed = JSON.parse(atob(padded));
+    if (!parsed || typeof parsed.createdAt !== "string" || typeof parsed.id !== "string") return null;
+    if (!parsed.createdAt || !parsed.id) return null;
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
 async function getSiteCreditsUsage(siteId) {
   const [rewardMappings, shopItems, pendingRedemptions, redemptions30d, newViewers30d] = await Promise.all([
     one("SELECT count(*)::int AS count FROM credit_reward_mappings WHERE site_id=$1 AND active=true", [siteId]),
@@ -581,6 +613,80 @@ export async function handleCreditsViewerHistory(request, env) {
   }));
 
   return ok({ kickUsername: kickUsername || null, kickUserId: kickUserId || null, boards });
+}
+
+export async function handleCreditsActivity(request, env) {
+  const { user, res } = await requireUser(request, env);
+  if (res) return res;
+
+  const url = new URL(request.url);
+  if (!(await rateLimit(env, `credits:activity:${user.id}`, 60, 60)).ok) return bad("Too many requests.", 429);
+
+  const siteId = String(url.searchParams.get("siteId") || "").trim();
+  if (!siteId) return bad("siteId is required");
+
+  const site = await getBoardById(env, user.id, siteId);
+  if (!site) return bad("no site", 404);
+
+  const rawLimit = url.searchParams.get("limit");
+  const parsedLimit = rawLimit === null || rawLimit === "" ? 25 : Number(rawLimit);
+  if (!Number.isInteger(parsedLimit) || parsedLimit < 1) return bad("limit must be a positive integer");
+  const limit = Math.min(parsedLimit, 100);
+
+  const cursorValue = url.searchParams.get("cursor");
+  const cursor = decodeActivityCursor(cursorValue);
+  if (cursorValue && !cursor) return bad("invalid cursor");
+
+  const kickUsername = String(url.searchParams.get("kickUsername") || "").trim();
+  const type = String(url.searchParams.get("type") || "").trim().toLowerCase();
+  if (type && !ledgerDirection(type)) return bad("invalid type");
+
+  const params = [siteId, kickUsername, type, user.id];
+  const conditions = [
+    "sv.site_id = $1",
+    "($2 = '' OR lower(v.kick_username) = lower($2))",
+    "($3 = '' OR cl.type = $3)",
+    "s.user_id = $4",
+  ];
+  if (cursor) {
+    params.push(cursor.createdAt, cursor.id);
+    conditions.push("(cl.created_at, cl.id) < ($5::timestamptz, $6::uuid)");
+  }
+  params.push(limit + 1);
+
+  const rows = await query(
+    `SELECT cl.id, cl.created_at, cl.type, cl.amount, cl.description,
+            v.kick_username, v.kick_user_id, s.id AS site_id, s.name AS site_name
+       FROM credit_ledger cl
+       JOIN site_viewers sv ON sv.id = cl.site_viewer_id
+       JOIN sites s ON s.id = sv.site_id
+       JOIN viewers v ON v.id = sv.viewer_id
+      WHERE ${conditions.join(" AND ")}
+      ORDER BY cl.created_at DESC, cl.id DESC
+      LIMIT $${params.length}`,
+    params
+  );
+
+  const page = rows || [];
+  const hasNext = page.length > limit;
+  const events = page.slice(0, limit).map((row) => ({
+    id: row.id,
+    createdAt: row.created_at,
+    type: row.type,
+    amount: row.amount,
+    direction: ledgerDirection(row.type),
+    description: row.description,
+    kickUsername: row.kick_username,
+    kickUserId: row.kick_user_id,
+    siteId: row.site_id,
+    siteName: row.site_name,
+  }));
+  const last = events[events.length - 1];
+
+  return ok({
+    events,
+    nextCursor: hasNext && last ? encodeActivityCursor(last.createdAt, last.id) : null,
+  });
 }
 
 // Public viewer endpoints: shop is public, viewer data is session-only.

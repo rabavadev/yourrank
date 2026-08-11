@@ -71,7 +71,7 @@ describe("dashboard loading states", () => {
     expect(credits).toContain('emptyEl: $("cr-reward-empty")');
     expect(credits).toContain('emptyEl: $("cr-viewer-empty")');
     expect(credits).toContain('emptyEl: $("cr-redemption-empty")');
-    expect(credits).toContain('emptyEl: $("cr-history-empty")');
+    expect(credits).toContain('$("cr-history-feed-empty")');
     expect(pages).not.toContain("Loading your credits dashboard");
   });
 

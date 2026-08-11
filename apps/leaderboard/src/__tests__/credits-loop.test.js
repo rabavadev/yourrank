@@ -23,6 +23,7 @@ const siteFixture = {
   viewerDiscordAuthEnabled: false,
   viewerPublicRedeemEnabled: true,
 };
+let boardResult = siteFixture;
 
 const userFixture = { id: "user-1", plan: "pro", status: "active", email_verified: true };
 
@@ -80,12 +81,12 @@ mock.module(viewerSessionUrlTs, () => ({ resolveViewer: async () => ({ viewer: v
 mock.module(siteUrl, () => ({
   getPublicSite: async (_env, slug) => (slug === "missing" ? null : siteFixture),
   getByUser: async () => siteFixture,
-  getBoardById: async () => siteFixture,
+  getBoardById: async () => boardResult,
 }));
 mock.module(siteUrlTs, () => ({
   getPublicSite: async (_env, slug) => (slug === "missing" ? null : siteFixture),
   getByUser: async () => siteFixture,
-  getBoardById: async () => siteFixture,
+  getBoardById: async () => boardResult,
 }));
 mock.module(viewerAuthUrl, () => ({
   requireViewer: async () => ({ viewer: { id: "viewer-1", kick_user_id: "kick-1", kick_username: "alice" }, cookie: null, res: null }),
@@ -105,6 +106,7 @@ import {
   handleCreditsUpdateRedemption,
   handleCreditsAdjustBalance,
   handleCreditsReconcile,
+  handleCreditsActivity,
 } from "../handlers/credits.js";
 import { processKickRewardRedemption } from "../../../../shared/kick-credits.js";
 
@@ -114,6 +116,7 @@ function resetDb() {
   db.unsafeResponses.length = 0;
   db.queryResponses.length = 0;
   viewerSessionState.viewer = null;
+  boardResult = siteFixture;
 }
 
 function req(url, method = "GET", body) {
@@ -321,6 +324,74 @@ describe("handleCreditsReconcile", () => {
     expect(body.ok).toBe(false);
     expect(body.mismatches.length).toBe(1);
     expect(body.mismatches[0].expectedBalance).toBe(40);
+  });
+});
+
+describe("handleCreditsActivity", () => {
+  const event = (id, type, createdAt) => ({
+    id,
+    created_at: createdAt || "2026-08-12T12:00:00.000Z",
+    type,
+    amount: 10,
+    description: `${type} event`,
+    kick_username: "alice",
+    kick_user_id: "kick-1",
+    site_id: "site-1",
+    site_name: "Test Casino",
+  });
+
+  it("requires an owned site and does not leak another user's rows", async () => {
+    boardResult = null;
+    const res = await handleCreditsActivity(req("https://test.com/api/credits/activity?siteId=other-site"), makeEnv());
+    expect(res.status).toBe(404);
+    expect(db.calls.some((call) => call.method === "query")).toBe(false);
+  });
+
+  it("caps the requested page at 100", async () => {
+    db.queryResponses.push([]);
+    const res = await handleCreditsActivity(req("https://test.com/api/credits/activity?siteId=site-1&limit=500"), makeEnv());
+    expect(res.status).toBe(200);
+    expect(db.calls[0].params.at(-1)).toBe(101);
+  });
+
+  it("maps all five ledger types to balance directions", async () => {
+    db.queryResponses.push([
+      event("e1", "earn"),
+      event("e2", "spend"),
+      event("e3", "redeem"),
+      event("e4", "revoke"),
+      event("e5", "refund"),
+    ]);
+    const res = await handleCreditsActivity(req("https://test.com/api/credits/activity?siteId=site-1&limit=100"), makeEnv());
+    const body = await res.json();
+    expect(body.events.map((item) => item.direction)).toEqual(["credit", "debit", "debit", "credit", "debit"]);
+  });
+
+  it("uses a cursor to fetch the next page without duplicating rows", async () => {
+    db.queryResponses.push(
+      [event("e3", "earn", "2026-08-12T12:00:03.000Z"), event("e2", "spend", "2026-08-12T12:00:02.000Z"), event("e1", "earn", "2026-08-12T12:00:01.000Z")],
+      [event("e1", "earn", "2026-08-12T12:00:01.000Z")]
+    );
+    const first = await handleCreditsActivity(req("https://test.com/api/credits/activity?siteId=site-1&limit=2"), makeEnv());
+    const firstBody = await first.json();
+    expect(firstBody.events.map((item) => item.id)).toEqual(["e3", "e2"]);
+    expect(firstBody.nextCursor).toBeTruthy();
+
+    const second = await handleCreditsActivity(req(`https://test.com/api/credits/activity?siteId=site-1&limit=2&cursor=${encodeURIComponent(firstBody.nextCursor)}`), makeEnv());
+    const secondBody = await second.json();
+    expect(secondBody.events.map((item) => item.id)).toEqual(["e1"]);
+    expect(db.calls.at(-1).sql).toContain("(cl.created_at, cl.id) < ($5::timestamptz, $6::uuid)");
+    expect(db.calls.at(-1).params.slice(4, 6)).toEqual(["2026-08-12T12:00:02.000Z", "e2"]);
+  });
+
+  it("passes the username and type filters into the tenant-scoped query", async () => {
+    db.queryResponses.push([]);
+    const res = await handleCreditsActivity(req("https://test.com/api/credits/activity?siteId=site-1&kickUsername=Alice&type=refund"), makeEnv());
+    expect(res.status).toBe(200);
+    expect(db.calls[0].sql).toContain("lower(v.kick_username) = lower($2)");
+    expect(db.calls[0].sql).toContain("cl.type = $3");
+    expect(db.calls[0].sql).toContain("s.user_id = $4");
+    expect(db.calls[0].params.slice(0, 4)).toEqual(["site-1", "Alice", "refund", "user-1"]);
   });
 });
 
