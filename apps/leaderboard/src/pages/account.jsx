@@ -1,5 +1,6 @@
 /** @jsxRuntime automatic */
 /** @jsxImportSource hono/jsx */
+
 import {
   profilePage,
   planPage,
@@ -7,6 +8,7 @@ import {
   connectedPage,
   dataPage,
 } from "./account-pages.js";
+import { DashboardShell } from "./dashboard-shell.jsx";
 
 const TITLES = {
   profile: "Profile",
@@ -16,74 +18,12 @@ const TITLES = {
   data: "Danger zone",
 };
 
-const PAGES_BY_TAB = {
-  profile: profilePage,
-  plan: planPage,
-  postbacks: postbacksPage,
-  connected: connectedPage,
-  data: dataPage,
-};
-
-const TABS = [
-  { key: "profile", label: "Profile" },
-  { key: "plan", label: "Plan & billing" },
-  { key: "postbacks", label: "Postbacks" },
-  { key: "connected", label: "Connected accounts" },
-  { key: "data", label: "Danger zone" },
-];
-
-function AccountShell({ activeTab, children }) {
-  return (
-    <>
-      <div class="toast" id="status" role="status" aria-live="polite" hidden></div>
-      <div class="v2-dash">
-      <div class="lb-shell">
-        <aside class="lb-side" id="lbSide" aria-label="Account sections">
-          <div class="lb-side-head">
-            <span class="label">Account</span>
-            <div class="lb-active-name" id="accUserName">…</div>
-          </div>
-          <nav class="lb-side-group" aria-label="Account">
-            {TABS.map((t) => (
-              <a
-                class={"lb-nav" + (activeTab === t.key ? " is-on" : "")}
-                href={"/account/" + t.key}
-                aria-current={activeTab === t.key ? "page" : undefined}
-              >
-                {t.label}
-              </a>
-            ))}
-          </nav>
-          <button class="lb-side-close" type="button" aria-label="Close navigation" data-close-side>×</button>
-        </aside>
-        <div class="lb-main">
-          <div class="lb-phead">
-            <button class="lb-menu" type="button" aria-label="Show sections" aria-expanded="false" aria-controls="lbSide">☰</button>
-          </div>
-          <header class="lb-topbar">
-            <h1 class="lb-topbar-title" tabindex="-1">{TITLES[activeTab] || "Account"}</h1>
-          </header>
-          <div class="acct-main">
-            {children}
-          </div>
-        </div>
-      </div>
-      </div>
-    </>
-  );
-}
-
-function AccountContent({ tab }) {
-  const html = PAGES_BY_TAB[tab] || profilePage;
-  return <div dangerouslySetInnerHTML={{ __html: html }} />;
-}
+const PAGES_BY_TAB = { profile: profilePage, plan: planPage, postbacks: postbacksPage, connected: connectedPage, data: dataPage };
 
 function AccountPage({ tab }) {
-  return (
-    <AccountShell activeTab={tab}>
-      <AccountContent tab={tab} />
-    </AccountShell>
-  );
+  return <DashboardShell activeNav={tab} boardContext="none" footer="account" title={TITLES[tab] || "Account"}>
+    <div dangerouslySetInnerHTML={{ __html: PAGES_BY_TAB[tab] || profilePage }} />
+  </DashboardShell>;
 }
 
 export const AccountProfilePage = () => <AccountPage tab="profile" />;
@@ -93,9 +33,9 @@ export const AccountConnectedPage = () => <AccountPage tab="connected" />;
 export const AccountDataPage = () => <AccountPage tab="data" />;
 
 const accountConfigBase = {
-  styles: ["/assets/app.css", "/assets/shell-nav.css", "/assets/dashboard-v2.css", "/assets/ui.css"],
-  scripts: ['<script src="/assets/account.js?v=3" type="module"></script>'],
-  nav: true,
+  styles: ["/assets/app.css", "/assets/shell-nav.css", "/assets/dashboard-v3.css", "/assets/ui.css"],
+  scripts: ['<script src="/assets/account.js?v=3" type="module"></script>', '<script src="/assets/shell-nav.js?v=1" defer></script>'],
+  nav: false,
   footer: false,
   wide: true,
 };
