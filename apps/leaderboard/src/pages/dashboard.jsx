@@ -80,7 +80,6 @@ export function DashboardContent() {
 <div class="lb-side-foot"><a class="btn btn--sm btn--accent lb-live-btn" id="liveLink" href="#" target="_blank" rel="noopener noreferrer">View live page ↗</a><div class="lb-usage" id="planUsage" hidden><div class="lb-usage-head"><span class="lb-usage-lbl">VIP PRO</span><span class="lb-usage-val">Active</span></div><div class="lb-usage-meta">API Usage <span id="usageAmount">0</span> / <span id="usageLimit">0</span> req</div><div class="lb-usage-bar" aria-hidden="true"><i id="usageFill" style="width:0%"></i></div></div><span class="label" id="planBadge">FREE PLAN</span></div>
 </aside>
 <div class="lb-main">
-<div class="lb-widget lb-widget--full lb-widget--danger" id="verifyBanner" hidden style="margin:16px 24px 0"><h2>Verify your email</h2><p class="card-sub">Your leaderboard won't be public until you confirm your email address. Check your inbox for the link, or <a href="/verify-email">request a new one</a>.</p></div>
 <header class="lb-topbar" id="lbTopbar">
   <a class="lb-brand" href="/dashboard" aria-label="YourRank dashboard">
     <span class="lb-brand-mark">Y</span>
@@ -88,6 +87,7 @@ export function DashboardContent() {
   </a>
   <div class="lb-topbar-hud">
     <div class="lb-board-select-wrap">
+      <span class="lb-board-select-lbl" aria-hidden="true">Board:</span>
       <select class="lb-board-select" id="sidebarBoardSelect" aria-label="Switch board"></select>
       <button class="btn btn--sm lb-board-new" id="newBoard" type="button" title="New board" aria-label="New board">+</button>
     </div>
@@ -98,6 +98,7 @@ export function DashboardContent() {
     <span class="lb-avatar" id="userAvatar" aria-label="Account">Y</span>
   </div>
 </header>
+<div class="lb-widget lb-widget--full lb-widget--danger" id="verifyBanner" hidden style="margin:0 0 24px"><h2>Verify your email</h2><p class="card-sub">Your leaderboard won't be public until you confirm your email address. Check your inbox for the link, or <a href="/verify-email">request a new one</a>.</p></div>
 <section class="lb-page is-on" data-page="home">
 <div class="lb-phead"><button class="lb-menu" id="lbMenu" type="button" aria-label="Show sections" aria-expanded="false" aria-controls="lbSide">☰</button></div>
 <div class="lb-bento" id="ovOnboardingBento" hidden>
