@@ -13,7 +13,7 @@ export const dashboardConfig = {
   wide: true,
 };
 
-export function DashboardContent() {
+export function DashboardContent({ user } = {}) {
   return (
     <>
       <div id="loading" class="lb-bento pt-24">
@@ -38,7 +38,7 @@ export function DashboardContent() {
 <div class="lb-widget lb-widget--half"><div class="skeleton skeleton-block" style="height:140px"></div></div>
 <div class="lb-widget lb-widget--half"><div class="skeleton skeleton-block" style="height:140px"></div></div>
 </div>
-<DashboardShell activeNav="home" boardContext="full" footer="dashboard" initiallyHidden>
+<DashboardShell activeNav="home" boardContext="full" footer="dashboard" initiallyHidden user={user}>
 <div class="lb-widget lb-widget--full lb-widget--danger" id="verifyBanner" hidden style="margin:0 0 24px"><h2>Verify your email</h2><p class="card-sub">Your leaderboard won't be public until you confirm your email address. Check your inbox for the link, or <a href="/verify-email">request a new one</a>.</p></div>
 <section class="lb-page is-on" data-page="home">
 <div class="lb-phead"><button class="lb-menu" id="lbMenu" type="button" aria-label="Show sections" aria-expanded="false" aria-controls="lbSide">☰</button></div>

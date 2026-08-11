@@ -56,10 +56,11 @@ function SidebarFooter({ boardContext, footer }) {
   </div>;
 }
 
-export function DashboardShell({ activeNav = "home", activeHash = "", boardContext = "full", footer = "dashboard", title = "", rootId, initiallyHidden = false, children }) {
+export function DashboardShell({ activeNav = "home", activeHash = "", boardContext = "full", footer = "dashboard", title = "", rootId, initiallyHidden = false, user, children }) {
   const navItems = boardContext === "none" ? ACCOUNT_NAV : DASHBOARD_NAV;
   const activePath = boardContext === "none" ? `/account/${activeNav}` : REWARDS_NAV_KEYS.has(activeNav) ? "/dashboard/rewards/redemptions" : "/dashboard";
   const shellId = rootId || (boardContext === "none" ? "account-dash" : "dash");
+  const profile = profileMenuHtml({ activePath, user, standalone: true, dynamicIdentity: true });
   return <div class="v3-dash" id={shellId} hidden={initiallyHidden}>
     <div class="toast" id="status" role="status" aria-live="polite"></div>
     <div class="lb-shell">
@@ -82,7 +83,7 @@ export function DashboardShell({ activeNav = "home", activeHash = "", boardConte
         <header class="lb-topbar" id="lbTopbar">
           <a class="lb-brand" href="/dashboard" aria-label="YourRank dashboard"><span class="lb-brand-mark">Y</span><span class="lb-brand-txt">YourRank</span></a>
           {boardContext !== "none" && <div class="lb-topbar-hud"><div class="lb-board-select-wrap"><span class="lb-board-select-lbl" aria-hidden="true">Board:</span><select class="lb-board-select" id="sidebarBoardSelect" aria-label="Switch board"></select>{boardContext === "full" && <button class="btn btn--sm lb-board-new" id="newBoard" type="button" title="New board" aria-label="New board">+</button>}</div></div>}
-          <div class="lb-topbar-actions">{title && <h1 class="lb-topbar-title" id="lbTopbarTitle" tabindex="-1">{title}</h1>}{boardContext !== "none" && <><span class="lb-status" id="lbTopbarStatus">—</span>{boardContext === "full" && <label class="lb-pub-toggle" title="When checked, saving makes the board public at /your-slug"><input type="checkbox" id="pubToggle" checked /> <span class="lb-pub-lbl">Publish site</span></label>}</>}<div class="gm-profile-host" dangerouslySetInnerHTML={{ __html: profileMenuHtml({ activePath, standalone: true, dynamicIdentity: true }) }}></div></div>
+          <div class="lb-topbar-actions">{title && <h1 class="lb-topbar-title" id="lbTopbarTitle" tabindex="-1">{title}</h1>}{boardContext !== "none" && <><span class="lb-status" id="lbTopbarStatus">—</span>{boardContext === "full" && <label class="lb-pub-toggle" title="When checked, saving makes the board public at /your-slug"><input type="checkbox" id="pubToggle" checked /> <span class="lb-pub-lbl">Publish site</span></label>}</>}<div class="gm-profile-host" dangerouslySetInnerHTML={{ __html: profile }}></div></div>
         </header>
         {boardContext !== "full" && <div class="lb-phead"><button class="lb-menu" id="lbMenu" type="button" aria-label="Show sections" aria-expanded="false" aria-controls="lbSide">☰</button></div>}
         <main class="lb-bento" id={boardContext === "selector" ? "cr-main" : undefined}>{children}</main>

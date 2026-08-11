@@ -171,6 +171,8 @@
   overflow-y: auto;
   box-shadow: none;
 }
+.v3-dash .lb-side.is-open { z-index: 110; }
+body:has(.v3-dash) > .lb-backdrop { z-index: 80; }
 
 .v3-dash .lb-side-head {
   border-bottom: 1px solid var(--v3-chrome-line);
@@ -1854,6 +1856,9 @@ body[data-wide] .v3-dash .lb-main {
   .v3-dash .v3-bulkbar { max-width: calc(100vw - 24px); gap: 8px; padding: 10px; }
   .v3-dash .v3-bulkbar .v3-btn { padding: 0 8px; }
   .v3-dash .v3-players-table { min-width: 720px; }
+}
+@media (max-width: 1200px) and (min-width: 561px) {
+  .v3-dash .v3-players-table { min-width: 960px; }
 }
 /* ---------- Rewards & Shop v3 screens ---------- */
 .v3-dash #cr-main { display: block; }
