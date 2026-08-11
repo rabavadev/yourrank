@@ -22,14 +22,27 @@ mock.module(sharedTs("viewer-session"), () => ({
   resolveViewer: (req, _env) => Promise.resolve(viewerByRequest.get(req) || { viewer: null, cookie: null }),
 }));
 
-mock.module(shared("crypto"), () => ({
-  hashToken: () => Promise.resolve("hash"),
+// Include the full crypto API so later tests in the same process don't see a partial module.
+const cryptoMock = () => ({
+  encryptToken: (s) => s,
+  decryptToken: (enc) => enc,
+  reencryptToken: (s) => s,
+  isCurrentVersion: () => true,
+  encrypt: (s) => s,
+  decrypt: (s) => s,
   safeEqual: (a, b) => a === b,
-}));
-mock.module(sharedTs("crypto"), () => ({
+  bytesToHex: (bytes) => Buffer.from(bytes).toString("hex"),
+  hexToBytes: (hex) => Uint8Array.from(Buffer.from(hex, "hex")),
+  hashIp: async (ip) => ip,
   hashToken: () => Promise.resolve("hash"),
-  safeEqual: (a, b) => a === b,
-}));
+  newWebhookSecret: () => "secret",
+  newLinkSlug: () => "slug",
+  newClickRef: () => "ref",
+  newPostbackKey: () => "pbkey",
+  verifyHmacSha256Hex: async () => true,
+});
+mock.module(shared("crypto"), cryptoMock);
+mock.module(sharedTs("crypto"), cryptoMock);
 
 mock.module(shared("queue-producer"), () => ({
   createQueueProducer: () => ({ send: () => Promise.resolve() }),
