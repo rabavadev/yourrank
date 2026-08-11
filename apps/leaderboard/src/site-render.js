@@ -275,14 +275,14 @@ function kpi(label, iconKey, value, sub, { accent = false } = {}) {
 
 function panel({ title, meta = "", body, foot = "", pad = false }) {
   return `<div class="yr-panel yr-lb">
-<div class="yr-panel-head"><h3 class="yr-panel-title">${esc(title)}</h3>${meta ? `<span class="yr-panel-meta">${meta}</span>` : ""}</div>
+<div class="yr-panel-head"><h2 class="yr-panel-title">${esc(title)}</h2>${meta ? `<span class="yr-panel-meta">${meta}</span>` : ""}</div>
 ${pad ? `<div class="yr-panel-pad">${body}</div>` : body}
 ${foot ? `<div class="yr-panel-foot">${foot}</div>` : ""}
 </div>`;
 }
 
 function sectionHead(title, right = "") {
-  return `<div class="yr-sec-head"><h3 class="yr-sec-title">${esc(title)}</h3>${right}</div>`;
+  return `<div class="yr-sec-head"><h2 class="yr-sec-title">${esc(title)}</h2>${right}</div>`;
 }
 
 /** Inline 7-day area chart. No chart library: one path, one average line. */
