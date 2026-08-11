@@ -1,6 +1,5 @@
 // Dashboard shell: sidebar navigation and mobile drawer.
 import { $ } from "./utils.js";
-import { state } from "./state.js";
 import { renderOverviewSummary } from "./overview.js";
 import { fitDesignPreview, loadStats, refreshDesignPreview } from "./site.js";
 import { SECTIONS, dashboardPath, defaultTab, parseDashboardPath } from "./routes.js";
