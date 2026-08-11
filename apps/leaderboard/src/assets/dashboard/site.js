@@ -709,7 +709,7 @@ export function refreshDesignPreview() {
 // banner and share affordances can never contradict each other.
 export function renderBoardStatus() {
   const s = boardStatus();
-  const LABELS = { draft: "Draft", unpublished: "Unpublished", pending: "Not live yet", published: "Published" };
+  const LABELS = { draft: "Not live", unpublished: "Not live", pending: "Not live", published: "Live" };
   const TITLES = {
     draft: "Not visible to visitors",
     unpublished: "Not visible to visitors",

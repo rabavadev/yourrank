@@ -5,7 +5,7 @@
 export const dashboardConfig = {
   title: "Dashboard · YourRank",
   canonical: "https://yourrank.site/dashboard",
-  styles: ["/assets/app.css", "/assets/shell-nav.css", "/assets/dashboard-v2.css", "/assets/ui.css"],
+  styles: ["/assets/app.css", "/assets/shell-nav.css", "/assets/dashboard-v2.css", "/assets/dashboard-v3.css", "/assets/ui.css"],
   scripts: ['<script src="/assets/dashboard.js?v=13" type="module"></script>'],
   nav: true,
   footer: false,
@@ -37,20 +37,21 @@ export function DashboardContent() {
 <div class="lb-widget lb-widget--half"><div class="skeleton skeleton-block" style="height:140px"></div></div>
 <div class="lb-widget lb-widget--half"><div class="skeleton skeleton-block" style="height:140px"></div></div>
 </div>
-<div id="dash" class="v2-dash" hidden>
+<div id="dash" class="v2-dash v3-dash" hidden>
 <div class="toast" id="status" role="status" aria-live="polite"></div>
 <div class="lb-shell">
 <aside class="lb-side" id="lbSide" aria-label="Dashboard sections">
 <div class="lb-side-head">
 <div class="lb-side-board">
-<span class="label" id="activeBoardLabel">Active board</span>
-<div class="lb-active-name" id="activeBoardName">…</div>
-<div class="lb-active-meta" id="activeBoardMeta"></div>
-<label class="lb-board-pub hint chk" title="When checked, saving makes the board public at /your-slug"><input type="checkbox" id="pubToggle" checked /> Publish on save</label>
-<div class="lb-board-row">
-<select class="lb-board-select" id="sidebarBoardSelect" aria-label="Switch board"></select>
-<button class="btn btn--sm lb-board-new" id="newBoard" type="button" title="New board" aria-label="New board">+</button>
+<div class="lb-board-row-head">
+  <div>
+    <span class="label" id="activeBoardLabel">Active board</span>
+    <div class="lb-active-name" id="activeBoardName">…</div>
+    <div class="lb-active-meta" id="activeBoardMeta"></div>
+  </div>
+  <button class="btn btn--sm lb-board-new-side" id="newBoardSide" type="button" title="New board" aria-label="New board">+</button>
 </div>
+<button class="btn btn--sm btn--ghost lb-board-add" id="addBoardBtn" type="button">+ New board</button>
 <button class="lb-linkbtn lb-board-manage" id="manageBoardsBtn" type="button">Manage boards</button>
 <div class="board-upsell" id="boardLimitUpsell" role="status" hidden>
 <div><b id="boardLimitTitle">Need another leaderboard?</b><p class="hint" id="boardLimitText"></p></div>
@@ -66,55 +67,74 @@ export function DashboardContent() {
 </div>
 </div>
 <button class="lb-side-close" type="button" aria-label="Close navigation" data-close-side>×</button>
-<nav class="lb-side-group" data-area="leaderboard" aria-label="Leaderboard">
+<nav class="lb-side-group lb-side-nav" data-area="all" aria-label="Dashboard">
 <a class="lb-nav is-on" href="/dashboard" data-nav="home" aria-current="page"><span class="lb-nav-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg></span>Overview</a>
-<a class="lb-nav" href="/dashboard/editor" data-nav="board"><span class="lb-nav-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg></span>Editor</a>
-<a class="lb-nav lb-nav--boards" id="allBoardsNav" href="/dashboard/boards" data-nav="boards"><span class="lb-nav-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 2 2 7l10 5 10-5-10-5Z"/><path d="m2 17 10 5 10-5"/><path d="m2 12 10 5 10-5"/></svg></span><span class="lb-nav-label">All boards</span><span class="lb-nav-count" id="allBoardsCount">0</span></a>
+<a class="lb-nav" href="/dashboard/editor" data-nav="board" data-hash="players"><span class="lb-nav-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>Leaderboard</a>
+<a class="lb-nav" href="/dashboard/editor/design" data-nav="board" data-hash="design"><span class="lb-nav-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg></span>Page</a>
+<a class="lb-nav" href="/dashboard/rewards/channel"><span class="lb-nav-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="9" cy="9" r="6"/><path d="M8 21h12a2 2 0 0 0 2-2v-4"/><path d="m19 16 3-3-3-3"/></svg></span>Rewards &amp; Shop</a>
+<a class="lb-nav" href="#" aria-disabled="true"><span class="lb-nav-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="10"/><path d="m14.31 8 5.74 9.94"/><path d="M9.69 8h11.48"/><path d="m7.38 12 5.74-9.94"/><path d="M9.69 16 3.95 6.06"/><path d="M14.31 16H2.83"/><path d="m16.62 12-5.74 9.94"/></svg></span>Games</a>
+<a class="lb-nav" href="/dashboard/analytics/activity" data-nav="performance" data-hash="activity"><span class="lb-nav-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M3 3v18h18"/><path d="m7 12 4-4 4 4 5-5"/></svg></span>Analytics</a>
+<a class="lb-nav" href="/dashboard/editor/history" data-nav="board" data-hash="history"><span class="lb-nav-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg></span>History</a>
 <a class="lb-nav" href="/dashboard/settings" data-nav="settings"><span class="lb-nav-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></span>Settings</a>
 </nav>
-<nav class="lb-side-group" data-area="analytics" aria-label="Analytics" hidden>
-<a class="lb-nav" href="/dashboard/analytics/activity" data-nav="performance" data-hash="activity"><span class="lb-nav-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M3 3v18h18"/><path d="m7 12 4-4 4 4 5-5"/></svg></span>Activity</a>
-<a class="lb-nav" href="/dashboard/analytics/referrals" data-nav="performance" data-hash="referrals"><span class="lb-nav-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="8" r="5"/><path d="M20 21a8 8 0 1 0-16 0"/></svg></span>Referrals</a>
-<a class="lb-nav" href="/dashboard/analytics/events" data-nav="performance" data-hash="events"><span class="lb-nav-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg></span>Events</a>
-</nav>
-<div class="lb-side-foot"><a class="btn btn--sm btn--accent lb-live-btn" id="liveLink" href="#" target="_blank" rel="noopener noreferrer">View live board ↗</a><span class="label" id="planBadge">FREE PLAN</span></div>
+<div class="lb-side-foot"><a class="btn btn--sm btn--accent lb-live-btn" id="liveLink" href="#" target="_blank" rel="noopener noreferrer">View live page ↗</a><div class="lb-usage" id="planUsage" hidden><div class="lb-usage-head"><span class="lb-usage-lbl">VIP PRO</span><span class="lb-usage-val">Active</span></div><div class="lb-usage-meta">API Usage <span id="usageAmount">0</span> / <span id="usageLimit">0</span> req</div><div class="lb-usage-bar" aria-hidden="true"><i id="usageFill" style="width:0%"></i></div></div><span class="label" id="planBadge">FREE PLAN</span></div>
 </aside>
 <div class="lb-main">
 <div class="lb-widget lb-widget--full lb-widget--danger" id="verifyBanner" hidden style="margin:16px 24px 0"><h2>Verify your email</h2><p class="card-sub">Your leaderboard won't be public until you confirm your email address. Check your inbox for the link, or <a href="/verify-email">request a new one</a>.</p></div>
 <header class="lb-topbar" id="lbTopbar">
-  <div class="lb-topbar-left">
-    <h1 class="lb-topbar-title" id="lbTopbarTitle" tabindex="-1">Overview</h1>
-    <span class="lb-status lb-status--draft" id="lbTopbarStatus">Draft</span>
-  </div>
+  <a class="lb-brand" href="/dashboard" aria-label="YourRank dashboard">
+    <span class="lb-brand-mark">Y</span>
+    <span class="lb-brand-txt">YourRank</span>
+  </a>
   <div class="lb-topbar-hud">
-    <div class="hud-stat"><span class="hud-lbl">Views</span><div class="hud-val" id="hud_views">–</div></div>
-    <div class="hud-stat"><span class="hud-lbl">Clicks</span><div class="hud-val" id="hud_clicks">–</div></div>
-    <div class="hud-stat"><span class="hud-lbl">CTR</span><div class="hud-val" id="hud_ctr">–</div></div>
-    <div class="hud-stat"><span class="hud-lbl">Signups</span><div class="hud-val" id="hud_signups">–</div></div>
+    <div class="lb-board-select-wrap">
+      <select class="lb-board-select" id="sidebarBoardSelect" aria-label="Switch board"></select>
+      <button class="btn btn--sm lb-board-new" id="newBoard" type="button" title="New board" aria-label="New board">+</button>
+    </div>
   </div>
   <div class="lb-topbar-actions">
-    <button class="btn btn--sm" id="editorCopyLink" type="button">Copy link</button>
-    <a class="btn btn--sm btn--accent" id="editorLiveLink" href="#" target="_blank" rel="noopener noreferrer">View live ↗</a>
+    <span class="lb-status" id="lbTopbarStatus">Draft</span>
+    <label class="lb-pub-toggle" title="When checked, saving makes the board public at /your-slug"><input type="checkbox" id="pubToggle" checked /> <span class="lb-pub-lbl">Publish site</span></label>
+    <span class="lb-avatar" id="userAvatar" aria-label="Account">Y</span>
   </div>
 </header>
 <section class="lb-page is-on" data-page="home">
 <div class="lb-phead"><button class="lb-menu" id="lbMenu" type="button" aria-label="Show sections" aria-expanded="false" aria-controls="lbSide">☰</button></div>
 <div class="lb-bento" id="ovOnboardingBento" hidden>
-<div class="lb-widget lb-widget--full ov-welcome">
-<div class="ov-welcome-body">
-<div class="ov-welcome-icon"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg></div>
-<h2 id="ovWelcomeTitle">Create your first leaderboard</h2>
-<p class="card-sub" id="ovWelcomeSub">Three quick steps and your page is ready to share.</p>
-<ol class="ov-checklist" id="ovChecklist">
-<li id="ovStepBrand"><span class="ov-step-num" data-num="1">1</span><span class="ov-step-body"><b>Name &amp; prize</b><span class="hint">Set the board name, sponsor and prize pool</span></span></li>
-<li id="ovStepPlayers"><span class="ov-step-num" data-num="2">2</span><span class="ov-step-body"><b>Add players</b><span class="hint">Type them in or paste from a spreadsheet</span></span></li>
-<li id="ovStepShare"><span class="ov-step-num" data-num="3">3</span><span class="ov-step-body"><b>Share</b><span class="hint">Publish and copy your public link</span></span></li>
-</ol>
-<div class="d-flex gap-10 flex-wrap justify-center">
-<button class="btn btn--accent" id="ovStartBtn" type="button" data-jump="board">Set up your leaderboard</button>
-<a class="btn btn--ghost" href="/demo" target="_blank" rel="noopener noreferrer">See a demo</a>
+<div class="lb-widget lb-widget--full ov-setup">
+<div class="ov-setup-head">
+<h2>Setup Progress</h2>
+<span class="ov-setup-count" id="ovSetupCount">0 of 5 complete</span>
+</div>
+<div class="ov-setup-bar" aria-hidden="true"><i id="ovSetupFill" style="width:0%"></i></div>
+<div class="ov-setup-list" id="ovChecklist">
+<div class="ov-setup-row" id="ovStepBrand">
+<span class="ov-step-icon" id="ovStepBrandMark" data-num="1">1</span>
+<div class="ov-step-body"><b>Name your board</b><span class="hint">Set up your custom display name for this event series</span></div>
+<span class="ov-step-status" id="ovStepBrandStatus">TODO</span>
+</div>
+<div class="ov-setup-row" id="ovStepPlayers">
+<span class="ov-step-icon" id="ovStepPlayersMark" data-num="2">2</span>
+<div class="ov-step-body"><b>Add players</b><span class="hint">Import list of streamers or enter manually to populate leaderboard</span></div>
+<span class="ov-step-status" id="ovStepPlayersStatus">TODO</span>
+</div>
+<div class="ov-setup-row" id="ovStepKick">
+<span class="ov-step-icon" id="ovStepKickMark" data-num="3">3</span>
+<div class="ov-step-body"><b>Connect Kick channel</b><span class="hint">Link streamer Kick API for automated wager tracking</span></div>
+<span class="ov-step-status" id="ovStepKickStatus">TODO</span>
+</div>
+<div class="ov-setup-row" id="ovStepConfigure">
+<span class="ov-step-icon" id="ovStepConfigureMark" data-num="4">4</span>
+<div class="ov-step-body"><b>Configure your page</b><span class="hint">Customize layouts, visual branding, and prize announcements</span></div>
+<span class="ov-step-status" id="ovStepConfigureStatus">TODO</span>
+</div>
+<div class="ov-setup-row" id="ovStepPublish">
+<span class="ov-step-icon" id="ovStepPublishMark" data-num="5">5</span>
+<div class="ov-step-body"><b>Publish</b><span class="hint">Make your leaderboard publicly accessible to viewers</span></div>
+<span class="ov-step-status" id="ovStepPublishStatus">TODO</span>
 </div>
 </div>
+<div class="ov-setup-foot"><button class="lb-linkbtn" type="button" id="ovSkipSetup" data-jump="board">Skip setup and view dashboard</button></div>
 </div>
 </div>
 <div class="lb-bento" id="ovActiveBento" hidden>

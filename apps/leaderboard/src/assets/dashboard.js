@@ -16,6 +16,7 @@ async function init() {
   if (!me || !me.ok || !me.user) { location.href = "/login"; return; }
   state.ME = me.user;
   const emailEl = $("userEmail"); if (emailEl) emailEl.textContent = state.ME.email;
+  const avatarEl = $("userAvatar"); if (avatarEl) avatarEl.textContent = (state.ME.displayName || state.ME.email || "Y").trim().charAt(0).toUpperCase();
   if (state.ME.isAdmin) { const adminEl = $("adminLink"); if (adminEl) adminEl.hidden = false; }
   renderPlan();
   loadHistory();
@@ -43,6 +44,12 @@ async function init() {
   renderEditorTimestamps();
   renderBoardSwitcher();
   renderSidebarBoardSwitcher();
+  document.querySelectorAll("#newBoardSide, #addBoardBtn").forEach((btn) => {
+    if (btn && !btn._wired) {
+      btn._wired = true;
+      btn.addEventListener("click", () => $("newBoard")?.click());
+    }
+  });
   renderBoardsPage();
   const d = p.data || {};
   const b = d.brand || {};
