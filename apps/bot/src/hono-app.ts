@@ -73,7 +73,6 @@ async function bodyExceedsLimit(req: Request, maxBytes: number): Promise<boolean
 
 export function buildHonoApp(): Hono<{ Bindings: Bindings }> {
   const app = new Hono<{ Bindings: Bindings }>();
-  const sharedAssets = new Set(["ui.css", "shell-nav.css", "shell-nav.js", "dialog.js"]);
 
   // Global error handler — Hono's default returns text/plain "Internal Server
   // Error" which the dashboard's api() client can't JSON-parse, producing a
@@ -108,18 +107,6 @@ export function buildHonoApp(): Hono<{ Bindings: Bindings }> {
     c.header('X-Frame-Options', 'DENY');
     c.header('Referrer-Policy', 'strict-origin-when-cross-origin');
     c.header('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
-  });
-
-  // The bot Worker is also run standalone during local development, where
-  // /assets/* does not fall through to the root leaderboard Worker. Proxy only
-  // the shared assets used by the bot shell so both deployment modes use the
-  // same compiled files.
-  app.get("/assets/:asset", async (c) => {
-    const asset = c.req.param("asset");
-    if (!sharedAssets.has(asset)) return c.notFound();
-    const origin = config.publicBaseUrl || new URL(c.req.url).origin;
-    const response = await fetch(new URL(`/assets/${asset}`, origin));
-    return new Response(response.body, response);
   });
 
   // Health check — reachable at /bot/health (Cloudflare routes /bot/* to this Worker)

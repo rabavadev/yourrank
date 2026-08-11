@@ -151,7 +151,7 @@ describe("dashboard views", () => {
     expect(js).toContain("const requestOpts = controller");
   });
 
-  it("links the shared shell styles and keeps the skip link screen-reader-only", () => {
+  it("links the shared shell styles and keeps the skip link keyboard-reachable", () => {
     const html = appHtml({ display_name: "Test", email: "test@example.com", plan: "free" }, "https://yourrank.site", "nonce123", "overview", '<header class="gm-shell-nav"></header>');
     expect(html).toContain('<link rel="stylesheet" href="/assets/shell-nav.css">');
     expect(html).toContain('<a href="#main-content" class="skip-link">Skip to main content</a>');
