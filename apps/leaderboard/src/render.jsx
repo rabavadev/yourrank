@@ -862,3 +862,6 @@ ${error ? `<p class="pw-error">${esc(error)}</p>` : ""}
 </form>
 </main></body></html>`;
 }
+
+// Exports for the new multi-section site shell.
+export { buildParts, composeMain, shareSection, shareScriptNonce, fontsHref, fontCss, logoSrcSet, defaultHeader, defaultFooter, renderLegalSidebar, footerDisclaimer, esc, safeUrl };

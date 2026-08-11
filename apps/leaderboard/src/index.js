@@ -6,6 +6,7 @@ import { populateEnv } from "../../../shared/env.js";
 import { getPublicSite, getBySlug, getArchives, ARCHIVE_LIMITS } from "./site.js";
 import { renderEmbed, renderHallOfFame, renderLeaderboard, renderLegalPage, renderPasswordGate, renderPlayerProfile, renderStreamerProfile } from "./render.jsx";
 import { renderPublicCreditsPage } from "./public-credits.js";
+import { parseSitePath, renderSiteRoute } from "./site-routes.js";
 import { viewerDashboardPage } from "./pages/viewer-dashboard.js";
 import { verifyEmailPageHtml } from "./pages/verify-email.js";
 import { verifyEmailToken } from "./handlers/auth.js";
@@ -247,27 +248,15 @@ async function handleRequest(request, env, ctx, meta) {
           if (method === "GET" && path.startsWith("/logo/")) {
             return serveLogo(request, path);
           }
-          if (method === "GET" && (path === "/" || path === "")) {
-            const r = await getPublicSite(env, customSlug, request);
-            if (r && r.requiresPassword) {
-              return new Response(renderPasswordGate(r, { nonce, isCustomDomain: true }), { headers: { ...HTML_N, "cache-control": "no-store" } });
-            }
-            if (r && r.pendingVerification) return new Response(pendingVerificationPage(nonce), { status: 403, headers: HTML_N });
-            if (!r || r.suspended) return new Response(notFoundPage(customSlug, nonce), { status: 404, headers: HTML_N });
-            const paid = r.plan !== "free";
-            const watermark = !paid ? true : (r.data.sections?.poweredBy === true);
-            return new Response(
-              await renderLeaderboard(r.data, {
-                watermark, homeUrl: `https://${host}`, slug: customSlug, nonce, isCustomDomain: true,
-                logoUrl: paid && r.data.branding?.hasLogo ? `https://${host}/logo/${customSlug}` : null,
-              }),
-              { headers: { ...HTML_N, "cache-control": "no-store" } }
-            );
-          }
           if (method === "GET" && path === "/favicon.ico") {
             return new Response('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1 1"></svg>', {
               headers: { "content-type": "image/svg+xml", "cache-control": "public, max-age=86400" },
             });
+          }
+          // --- branded site sections (custom domain): /, /leaderboard, /shop, /games, /me ---
+          const customSiteRoute = parseSitePath(path, true, customSlug);
+          if (customSiteRoute) {
+            return renderSiteRoute({ request, env, ctx, nonce, slug: customSiteRoute.slug, section: customSiteRoute.section, isCustomDomain: true });
           }
           if (method === "GET" && path === "/hall-of-fame") {
             const r = await getPublicSite(env, customSlug);
@@ -867,8 +856,8 @@ a{color:#5771ff;text-decoration:none;font-weight:600}</style></head><body>
         );
       }
 
-      // --- public credits / shop pages at /<slug>/credits and /<slug>/shop ---
-      if (method === "GET" && /^\/[^/]+\/(credits|shop)$/.test(path)) {
+      // --- legacy public credits page at /<slug>/credits (/<slug>/shop is part of the site shell) ---
+      if (method === "GET" && /^\/[^/]+\/credits$/.test(path)) {
         let slug;
         try { slug = decodeURIComponent(path.slice(1).split("/")[0]).toLowerCase(); } catch { return new Response(notFoundPage("", nonce), { status: 404, headers: HTML_N }); }
         if (RESERVED.has(slug)) return new Response(notFoundPage(slug, nonce), { status: 404, headers: HTML_N });
@@ -907,6 +896,11 @@ a{color:#5771ff;text-decoration:none;font-weight:600}</style></head><body>
         const token = await issueBoardPasswordToken(site);
         const cookie = boardPasswordSetCookieHeader(site, token, { isCustomDomain: false });
         return new Response(null, { status: 302, headers: { "location": `/${slug}`, "set-cookie": cookie } });
+      }
+      // --- branded site sections: /<slug>, /<slug>/leaderboard, /shop, /games, /me ---
+      const siteRoute = parseSitePath(path, false);
+      if (siteRoute) {
+        return renderSiteRoute({ request, env, ctx, nonce, slug: siteRoute.slug, section: siteRoute.section, isCustomDomain: false });
       }
       // --- public leaderboard at /<slug> ---
       if (method === "GET" && path.length > 1 && !path.includes(".")) {
