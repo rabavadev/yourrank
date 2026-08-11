@@ -21,7 +21,7 @@ let shopSort = "cost";
 let wired = false;
 const tab = () => $("cr-app")?.dataset.crTab || "";
 const siteQuery = () => new URLSearchParams(location.search).get("siteId");
-const sitePath = (path) => `${path}${siteQuery() ? `?siteId=${encodeURIComponent(siteQuery())}` : ""}`;
+const sitePath = (path) => `${path}${siteQuery() ? `${path.includes("?") ? "&" : "?"}siteId=${encodeURIComponent(siteQuery())}` : ""}`;
 function setStatus(id, msg, error = false) { const el = $(id); if (!el) return; el.textContent = msg; el.className = error ? "status error" : "status"; if (!error) setTimeout(() => { el.textContent = ""; }, 3000); }
 function setLoading(idOrEl, loading, text = "Loading…") {
   const el = typeof idOrEl === "string" ? $(idOrEl) : idOrEl;
@@ -31,7 +31,6 @@ function setLoading(idOrEl, loading, text = "Loading…") {
 }
 function setGlobalLoading(loading) { if ($("cr-loading")) $("cr-loading").hidden = !loading; }
 function usageCls(used, limit) { const pct = limit > 0 ? Math.round((used / limit) * 100) : 0; return limit > 0 && used >= limit ? "cr-usage-over" : limit > 0 && pct >= 80 ? "cr-usage-near" : ""; }
-function usageLabel(used, limit, name) { const cls = usageCls(used, limit); return `<span class="cr-usage-text${cls ? ` ${cls}` : ""}">${used} / ${limit} ${name}</span>`; }
 function usageCard(used, limit, name) { const cls = usageCls(used, limit); return `<div class="cr-usage-card"><div class="hint">${esc(name)}</div><div class="cr-usage-number${cls ? ` ${cls}` : ""}">${used} / ${limit}</div>${cls ? '<a href="/account/plan" class="cr-usage-upgrade">Upgrade plan</a>' : ""}</div>`; }
 function draftKey(id) { return `yr:credits:draft:${id}`; }
 function debounce(fn, ms) { let timer; return (...args) => { clearTimeout(timer); timer = setTimeout(() => fn(...args), ms); }; }
@@ -44,7 +43,7 @@ function saveFormDraft(formId, id) {
     else if (el.type === "number") { if (el.value !== "") data[el.name] = el.value; }
     else if (el.value.trim()) data[el.name] = el.value;
   }
-  try { if (Object.keys(data).length) localStorage.setItem(draftKey(id), JSON.stringify(data)); else localStorage.removeItem(draftKey(id)); } catch {}
+  try { if (Object.keys(data).length) localStorage.setItem(draftKey(id), JSON.stringify(data)); else localStorage.removeItem(draftKey(id)); } catch { void 0; }
 }
 function restoreFormDraft(formId, id) {
   const form = $(formId); if (!form) return;
@@ -52,9 +51,9 @@ function restoreFormDraft(formId, id) {
     const data = JSON.parse(localStorage.getItem(draftKey(id)) || "null"); if (!data) return;
     for (const el of form.elements) { if (el.name && data[el.name] !== undefined) el.type === "checkbox" ? el.checked = Boolean(data[el.name]) : el.value = data[el.name]; }
     setStatus(form.querySelector(".status")?.id, "Draft restored.");
-  } catch {}
+  } catch { void 0; }
 }
-function clearFormDraft(id) { try { localStorage.removeItem(draftKey(id)); } catch {} }
+function clearFormDraft(id) { try { localStorage.removeItem(draftKey(id)); } catch { void 0; } }
 function wireAutosave(formId, id) {
   const form = $(formId); if (!form) return;
   const save = debounce(() => saveFormDraft(formId, id), 400);
@@ -155,8 +154,10 @@ function render() {
     const viewers = state.viewers || [];
     if (!viewerCtrl) { viewerCtrl = new ListController({ root: $("cr-viewers"), tbody: "cr-viewer-list", items: viewers, perPage: 15, searchFn: (v) => `${v.kick_username || v.kick_user_id} ${v.block_reason || ""} ${v.blocked ? "blocked" : ""}`, sortOptions: [{ key: "balance", label: "Balance", fn: (a, b) => (b.balance || 0) - (a.balance || 0) }, { key: "earned", label: "Earned", fn: (a, b) => (b.total_earned || 0) - (a.total_earned || 0) }, { key: "spent", label: "Spent", fn: (a, b) => (b.total_spent || 0) - (a.total_spent || 0) }, { key: "last", label: "Last earned", fn: (a, b) => new Date(b.last_earned_at || b.created_at || 0) - new Date(a.last_earned_at || a.created_at || 0) }], emptyAllText: "No viewers yet.", emptyText: "No matching viewers.", renderItem: (v) => renderViewerRow(v), onRender: () => wireDynamicActions() }); }
     else viewerCtrl.setItems(viewers);
+    renderAnalytics();
   }
   if (current === "redemptions") {
+    renderOnboarding();
     const channel = $("cr-redemption-channel");
     if (state.channel?.externalId) { channel.innerHTML = `● Connected to @${esc(state.channel.name || state.channel.externalId)}`; channel.className = "v3-chip v3-chip--refunded"; } else { channel.innerHTML = '<a href="/dashboard/rewards/channel">Not connected · Connect in Channel</a>'; channel.className = "v3-chip v3-chip--cancelled"; }
     $("cr-pending-counter").textContent = `${usage.pendingRedemptions || 0} / ${limits.pendingRedemptions || 0}`; $("cr-fulfilled-counter").textContent = `${usage.redemptionsPer30Days || 0} / ${limits.redemptionsPer30Days || 0}`;
@@ -164,6 +165,61 @@ function render() {
     if (!redemptionCtrl) { redemptionCtrl = new ListController({ root: $("cr-redemptions"), tbody: "cr-redemption-list", items: redemptions, perPage: 15, searchFn: (r) => `${r.kick_username || r.kick_user_id} ${r.item_name} ${r.status}`, sortOptions: [{ key: "time", label: "Newest", fn: (a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0) }, { key: "cost", label: "Cost", fn: (a, b) => (b.cost || 0) - (a.cost || 0) }, { key: "status", label: "Status", fn: (a, b) => (a.status || "").localeCompare(b.status || "") }], emptyAllText: "No redemptions yet.", emptyText: "No matching redemptions.", renderItem: (r) => renderRedemptionRow(r), onRender: () => wireDynamicActions() }); mountListControls($("cr-redemptions"), $("cr-redemption-toolbar"), $("cr-redemption-foot")); }
     else redemptionCtrl.setItems(redemptions);
   }
+}
+function renderOnboarding() {
+  const wrap = $("cr-onboarding"); if (!wrap) return;
+  let hidden = false;
+  try { hidden = localStorage.getItem("cr-onboarding-hide") === "1"; } catch { void 0; }
+  const connected = Boolean(state.channel?.externalId);
+  const mappings = (state.mappings || []).filter((m) => m.active).length;
+  const items = (state.shopItems || []).filter((i) => i.active).length;
+  const redemptions = (state.redemptions || []).length;
+  const steps = [{ id: 1, done: connected }, { id: 2, done: mappings > 0 }, { id: 3, done: items > 0 }, { id: 4, done: redemptions > 0 }, { id: 5, done: connected && mappings > 0 && items > 0 }];
+  const current = steps.find((step) => !step.done)?.id;
+  for (const step of steps) {
+    const el = $(`cr-step-${step.id}`); if (!el) continue;
+    el.classList.toggle("done", step.done); el.classList.toggle("current", current === step.id && !step.done);
+  }
+  const ready = steps[4].done;
+  if (ready && !hidden) { hidden = true; try { localStorage.setItem("cr-onboarding-hide", "1"); } catch { void 0; } }
+  wrap.hidden = hidden;
+  const hide = $("cr-onboarding-hide"); if (hide) hide.hidden = false;
+}
+async function loadAnalytics() {
+  const days = Number($("cr-analytics-days")?.value) || 30;
+  try {
+    const data = await api("GET", sitePath(`/api/credits/analytics?days=${days}`));
+    state.analytics = data; renderAnalytics(); setStatus("cr-analytics-status", "");
+  } catch { setStatus("cr-analytics-status", "Analytics are temporarily unavailable.", true); }
+}
+function renderAnalytics() {
+  const a = state.analytics; if (!a) return;
+  const s = a.summary || {};
+  $("cr-stat-earned").textContent = `${s.periodEarned ?? "—"} (all time: ${s.allTimeEarned ?? "—"})`;
+  $("cr-stat-spent").textContent = `${s.periodSpent ?? "—"} (all time: ${s.allTimeSpent ?? "—"})`;
+  $("cr-stat-redemptions").textContent = s.redemptionsTotal ?? "—";
+  $("cr-stat-pending").textContent = s.redemptionsPending ?? "—";
+  $("cr-stat-balance").textContent = s.viewerBalance ?? "—";
+  const label = $("cr-analytics-days-label"); if (label) label.textContent = String(Number($("cr-analytics-days")?.value) || 30);
+  const items = a.topItems || [];
+  $("cr-top-items-list").innerHTML = items.map((i) => `<tr><td>${esc(i.name)}</td><td class="num">${i.redemptions}</td><td class="num">${i.credits_spent}</td></tr>`).join("");
+  $("cr-top-items-empty").hidden = items.length > 0;
+  renderCreditsByDay(a.creditsByDay || []);
+}
+function renderCreditsByDay(rows) {
+  const container = $("cr-credits-by-day"); if (!container) return;
+  container.innerHTML = ""; container.removeAttribute("role"); container.removeAttribute("aria-label");
+  $("cr-credits-by-day-empty").hidden = rows.length > 0;
+  if (!rows.length) return;
+  const grouped = {};
+  for (const row of rows) { grouped[row.day] = grouped[row.day] || { earn: 0, spend: 0 }; grouped[row.day][row.type] = row.total; }
+  const days = Object.keys(grouped).sort(); const max = Math.max(1, ...days.map((day) => grouped[day].earn + grouped[day].spend));
+  container.innerHTML = days.map((day) => {
+    const g = grouped[day]; const total = g.earn + g.spend; const label = new Date(day).toLocaleDateString(undefined, { month: "short", day: "numeric" });
+    return `<div class="cr-bar-col" title="${label}: ${total} (${g.earn} earned, ${g.spend} spent)"><div class="cr-bar-col-inner"><div class="cr-bar-earn" style="height:${(g.earn / max) * 100}%"></div><div class="cr-bar-spend" style="height:${(g.spend / max) * 100}%"></div></div></div>`;
+  }).join("");
+  container.setAttribute("role", "img"); const allTotal = days.reduce((sum, day) => sum + grouped[day].earn + grouped[day].spend, 0);
+  container.setAttribute("aria-label", `Bar chart of credits across ${days.length} days with activity. Total: ${allTotal} credits.`);
 }
 function prefillEditFromQuery() {
   if (tab() !== "maps") return;
@@ -188,7 +244,7 @@ async function delShop(id, trigger) {
   catch (err) { setStatus("cr-shop-status", err.message, true); } finally { setLoading(trigger, false); }
 }
 async function toggleBlock(id, blocked, trigger) {
-  const next = !Boolean(blocked);
+  const next = !blocked;
   let reason = "";
   if (next) { reason = await showPromptModal("Block viewer", "Why are you blocking this viewer?", { confirmText: "Block", placeholder: "e.g. chargeback / abuse" }) || ""; if (!reason) return; }
   setLoading(trigger, true, next ? "Blocking…" : "Unblocking…");
@@ -280,6 +336,7 @@ async function load() {
     await loadBoardShell();
     state = await api("GET", sitePath("/api/credits/status"));
     render();
+    if (tab() === "viewers" && $("cr-analytics")) await loadAnalytics();
     $("cr-app").hidden = false; $("cr-empty").hidden = true;
   } catch (err) {
     $("cr-empty").innerHTML = `<p class="error">Could not load credits dashboard: ${esc(err.message)}</p>`;
@@ -323,6 +380,8 @@ function wireActions() {
     catch (err) { setStatus("cr-viewer-auth-status", err.message, true); } finally { setLoading(btn, false); }
   });
   $("cr-history-form")?.addEventListener("submit", searchHistory);
+  $("cr-analytics-days")?.addEventListener("change", loadAnalytics);
+  $("cr-onboarding-hide")?.addEventListener("click", () => { try { localStorage.setItem("cr-onboarding-hide", "1"); } catch { void 0; } $("cr-onboarding").hidden = true; });
 }
 async function searchHistory(e) {
   e.preventDefault(); const username = $("cr-history-username").value.trim(); if (!username) { setStatus("cr-history-status", "Enter a Kick username", true); return; }
