@@ -64,7 +64,7 @@ export function withNonce(headers, nonce) {
 // is light with the brand blue, so landing on one felt like leaving the site.
 // Self-contained on purpose: these also serve custom domains and must render
 // even when nothing else about the request worked.
-const STATUS_CSS = `:root{--bg:#fafafa;--panel:#fff;--line:#e4e4e7;--ink:#191919;--dim:#55555c;--accent:#2200ff;--accent-ink:#fff}
+const STATUS_CSS = `:root{--bg:#fafafa;--panel:#fff;--line:#e4e4e7;--ink:#191919;--dim:#55555c;--accent:#5b5bf5;--accent-ink:#fff}
 *{box-sizing:border-box;margin:0}
 body{background:var(--bg);color:var(--ink);font:15px/1.6 "Inter",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:24px;gap:22px}
 .brand{font-weight:800;font-size:20px;letter-spacing:-.03em;color:var(--ink);text-decoration:none}

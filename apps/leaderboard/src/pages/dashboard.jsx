@@ -151,7 +151,7 @@ export function DashboardContent() {
 <div class="preset-list" id="colorPresets"></div>
 <span class="hint">Each template includes ready-made combinations. Click one to publish it instantly.</span>
 <details class="advanced-colors"><summary>Advanced custom colors</summary>
-<div class="color-row"><label for="c_a" class="sr-only">Accent color start</label><input type="color" id="c_a" value="#5771ff" /><label for="c_b" class="sr-only">Accent color end</label><input type="color" id="c_b" value="#2200ff" /><button class="btn btn--sm btn--ghost" id="applyCustomColors" type="button">Apply colors</button><button class="btn btn--sm btn--ghost" id="colorsReset" type="button">Template default</button></div>
+<div class="color-row"><label for="c_a" class="sr-only">Accent color start</label><input type="color" id="c_a" value="#5b5bf5" /><label for="c_b" class="sr-only">Accent color end</label><input type="color" id="c_b" value="#5b5bf5" /><button class="btn btn--sm btn--ghost" id="applyCustomColors" type="button">Apply colors</button><button class="btn btn--sm btn--ghost" id="colorsReset" type="button">Template default</button></div>
 </details></div>
 <div class="field"><label for="f_font">Font</label><select id="f_font"><option value="Inter">Inter — Default</option><option value="Oswald">Oswald — Bold & Sporty</option><option value="Playfair Display">Playfair Display — Premium & Elegant</option><option value="Rajdhani">Rajdhani — Techy & Esports</option><option value="Bebas Neue">Bebas Neue — Impact & Hype</option></select><span class="hint">Changes the personality of your public page text.</span></div>
 </div></div>

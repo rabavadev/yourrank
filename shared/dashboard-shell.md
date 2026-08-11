@@ -56,7 +56,7 @@ Sticky top bar, 56px, containing:
 Pulled from `apps/leaderboard/src/assets/app.css`:
 
 - Background near-black `#0f0f0f`, panels `#1c1c1c`, hairlines `#2a2a2a`.
-- **One** accent: Devin blue `#2200ff` (accent-ink `#ffffff`). No second accent.
+- Operator surfaces use indigo `#5b5bf5` (accent-ink `#ffffff`). Public streamer-facing surfaces deliberately default to the separate Kick lime accent `#53fc18`; per-site branding overrides it through `theme_json.accentA`.
 - **No gradients, no glassmorphism, no blur, no shadows.** Flat surfaces,
   1px borders, a single 2px accent underline for the active tab.
 - Type: **JetBrains Mono** for labels/tabs/badges (uppercase, tracked), **Inter**

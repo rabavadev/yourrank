@@ -39,7 +39,7 @@ const SECTION_TITLES = {
 };
 
 const HEX = /^#[0-9a-fA-F]{6}$/;
-const ACCENT_DEFAULT = "#53fc18";
+const ACCENT_DEFAULT = "var(--yr-color-brand-kick)";
 const CREDITS_DISCLAIMER = "Credits are free loyalty points earned from channel-point redemptions. No purchase, no cash value, no cashout.";
 const FONTS_HREF = "https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap";
 
@@ -121,6 +121,7 @@ function accentColor(br, options) {
 
 /** Black or white text on the accent, whichever stays readable. */
 function accentInk(hex) {
+  if (hex === ACCENT_DEFAULT) return "#000000";
   const n = parseInt(hex.slice(1), 16);
   const lum = (0.299 * ((n >> 16) & 255) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255)) / 255;
   return lum > 0.6 ? "#000000" : "#ffffff";

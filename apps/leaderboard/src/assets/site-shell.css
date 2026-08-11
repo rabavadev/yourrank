@@ -14,7 +14,8 @@
   --yr-edge-soft: rgba(43, 43, 48, 0.6);
   --yr-mute: #9ca3af;
   --yr-faint: #6b7280;
-  --yr-accent: #5b5bf5;
+  --yr-color-brand-kick: #53fc18;
+  --yr-accent: var(--yr-color-brand-kick);
   --yr-live: #16c784;
   --yr-gold: #e7b53c;
   --yr-side-w: 260px;

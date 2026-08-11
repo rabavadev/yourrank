@@ -14,8 +14,8 @@ export const overlayPage = (data, opts = {}) => {
   const rows = players.map((p, i) => `<div class="ov-row" data-name="${esc(p.name)}"><span class="ov-medal">${medal(i)}</span><span class="ov-name">${esc(p.name)}</span><span class="ov-wager">${fmt(p.wagered)}</span></div>`).join("");
   const empty = 5 - players.length;
   const emptyRows = empty > 0 ? Array.from({ length: empty }, (_, i) => `<div class="ov-row ov-empty"><span class="ov-medal">#${players.length + i + 1}</span><span class="ov-name">—</span><span class="ov-wager">—</span></div>`).join("") : "";
-  const accentA = (br.accentA && /^#[0-9a-fA-F]{6}$/.test(br.accentA)) ? br.accentA : "#5771ff";
-  const accentB = (br.accentB && /^#[0-9a-fA-F]{6}$/.test(br.accentB)) ? br.accentB : "#2200ff";
+  const accentA = (br.accentA && /^#[0-9a-fA-F]{6}$/.test(br.accentA)) ? br.accentA : "#53fc18";
+  const accentB = (br.accentB && /^#[0-9a-fA-F]{6}$/.test(br.accentB)) ? br.accentB : "#53fc18";
   const dataJson = JSON.stringify({ players, endsAt }).replace(/</g, "\\u003c");
   return `<!DOCTYPE html>
 <html lang="en"><head>
@@ -40,7 +40,7 @@ html,body{width:320px;overflow:hidden;background:transparent;font-family:'Inter'
 .ov-timer-over{font-size:11px;color:rgba(255,255,255,0.4);font-style:italic}
 .ov-rows{display:flex;flex-direction:column;gap:4px}
 .ov-row{display:flex;align-items:center;gap:8px;padding:8px 10px;background:rgba(255,255,255,0.03);border-radius:8px;border:1px solid rgba(255,255,255,0.04);transition:transform .5s cubic-bezier(.22,1,.36,1),opacity .5s ease,background .3s ease}
-.ov-row:first-child{background:linear-gradient(135deg,rgba(87,113,255,0.08),rgba(34,0,255,0.06));border-color:rgba(87,113,255,0.12)}
+.ov-row:first-child{background:linear-gradient(135deg,rgba(83,252,24,0.08),rgba(83,252,24,0.06));border-color:rgba(83,252,24,0.12)}
 .ov-row.ov-empty{opacity:.25}
 .ov-row.ov-enter{animation:ov-slideIn .5s cubic-bezier(.22,1,.36,1) both}
 @keyframes ov-slideIn{from{opacity:0;transform:translateX(-16px)}to{opacity:1;transform:translateX(0)}}
