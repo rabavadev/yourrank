@@ -439,6 +439,7 @@ body[data-wide] .v3-dash .lb-main {
   .v3-dash .lb-main { margin-left: 0; }
   .v3-dash .lb-phead { display: block; padding: 0 0 16px; }
   .v3-dash .lb-topbar { padding: 0 16px; }
+  .v3-dash .lb-topbar-hud { display: none; }
   .v3-dash .kpi-row { grid-template-columns: repeat(2, 1fr); }
   .v3-dash .lb-widget--wide,
   .v3-dash .lb-widget--narrow,
@@ -448,7 +449,6 @@ body[data-wide] .v3-dash .lb-main {
 
 @media (max-width: 640px) {
   .v3-dash .kpi-row { grid-template-columns: 1fr; }
-  .v3-dash .lb-topbar-hud { display: none; }
 }
 
 /* ---------- Live badge utility ---------- */

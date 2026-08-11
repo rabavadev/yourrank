@@ -118,7 +118,7 @@ export function openDrawer() {
   document.querySelectorAll(".lb-menu").forEach((b) => b.setAttribute("aria-expanded", "true"));
   // Inert the background so Tab can't reach content behind the drawer.
   document.querySelectorAll("main:not(.lb-side), header, footer").forEach((el) => {
-    if (el !== side) el.inert = true;
+    if (el !== side && !el.contains(side)) el.inert = true;
   });
   const firstNav = side?.querySelector(".lb-nav");
   if (firstNav) setTimeout(() => firstNav.focus(), 0);

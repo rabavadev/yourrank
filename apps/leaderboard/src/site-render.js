@@ -586,7 +586,7 @@ ${creditsChart(series)}
         title: "Top of the board",
         meta: `<a class="yr-sec-link" href="${boardHref}">All</a>`,
         body: players.length
-          ? `<div class="yr-feed yr-noscroll">${players.slice().sort((x, z) => (z.wagered || 0) - (x.wagered || 0)).slice(0, 8).map((p, i) => `<div class="yr-feed-item"><div class="yr-feed-top"><span class="yr-feed-kind">${String(i + 1).padStart(2, "0")} · ${esc(p.name)}</span><span class="yr-feed-time">${esc(money(data.brand?.currency, p.wagered))}</span></div></div>`).join("")}</div>`
+          ? `<div class="yr-feed yr-noscroll">${players.slice().sort((x, z) => (z.wagered || 0) - (x.wagered || 0)).slice(0, 8).map((p, i) => `<div class="yr-feed-item"><div class="yr-feed-top"><span class="yr-feed-kind">${String(i + 1).padStart(2, "0")} · ${esc(p.name)}</span><span class="yr-feed-time yr-prize-value">${esc(money(data.brand?.currency, p.wagered))}</span></div></div>`).join("")}</div>`
           : `<div class="yr-empty">No players yet</div>`,
       })}</div>`;
 
