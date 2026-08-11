@@ -68,7 +68,8 @@ async function init() {
   const renderEndsHint = () => {
     if (!endsHint) return;
     const zone = getViewerTimeZone();
-    const label = endsInput?.value && zone ? timeZoneLabel(fromLocalInput(endsInput.value, zone), zone) : "";
+    const instant = endsInput?.value ? fromLocalInput(endsInput.value, zone) : new Date().toISOString();
+    const label = zone ? timeZoneLabel(instant, zone) : "";
     endsHint.textContent = label
       ? `When the leaderboard resets, shown in ${label}. Powers the live timer.`
       : `When the leaderboard resets, shown in ${zone ? "your timezone" : "your browser's timezone"}. Powers the live timer.`;

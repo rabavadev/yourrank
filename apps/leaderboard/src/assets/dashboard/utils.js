@@ -224,6 +224,11 @@ function sameMinute(a, b) {
 export function toLocalInput(iso, timeZone = getViewerTimeZone()) {
   if (!iso) return "";
   const d = new Date(iso);
+  if (isNaN(d)) return "";
+  if (!timeZone) {
+    const p = (n) => String(n).padStart(2, "0");
+    return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`;
+  }
   const parts = localParts(d, timeZone);
   if (!parts) return "";
   const p = (n) => String(n).padStart(2, "0");
@@ -232,7 +237,11 @@ export function toLocalInput(iso, timeZone = getViewerTimeZone()) {
 
 export function fromLocalInput(value, timeZone = getViewerTimeZone()) {
   const wanted = inputParts(value);
-  if (!wanted || !timeZone) return "";
+  if (!wanted) return "";
+  if (!timeZone) {
+    const date = new Date(value);
+    return isNaN(date) ? "" : date.toISOString();
+  }
   const wall = Date.UTC(wanted.year, wanted.month - 1, wanted.day, wanted.hour, wanted.minute);
   const offsets = new Set([
     offsetMinutes(new Date(wall), timeZone),

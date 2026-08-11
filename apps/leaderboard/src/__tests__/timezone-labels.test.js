@@ -36,4 +36,11 @@ describe("timezone labels and datetime-local conversion", () => {
     expect(toLocalInput("", "Europe/Paris")).toBe("");
     expect(fromLocalInput("", "Europe/Paris")).toBe("");
   });
+
+  it("preserves ambient-local conversion when the timezone is unavailable", () => {
+    const value = "2026-07-15T20:00";
+    const iso = new Date(value).toISOString();
+    expect(fromLocalInput(value, "")).toBe(iso);
+    expect(toLocalInput(iso, "")).toBe(value);
+  });
 });

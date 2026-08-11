@@ -764,7 +764,9 @@ export function renderEditorTimestamps() {
     if (!iso) return "—";
     try {
       const d = new Date(iso);
-      return d.toLocaleString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) + " " + timeZoneOffsetLabel(d);
+      const formatted = d.toLocaleString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
+      const offset = timeZoneOffsetLabel(d);
+      return formatted + (offset ? ` ${offset}` : "");
     } catch { return "—"; }
   };
   const saved = state.SITE_UPDATED_AT ? "Last saved " + fmt(state.SITE_UPDATED_AT) : "";
