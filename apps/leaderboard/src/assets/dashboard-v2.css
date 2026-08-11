@@ -11,11 +11,11 @@
   --yr-ink: #191919;
   --yr-ink-soft: #55555c;
   --yr-ink-mute: #82828a;
-  --yr-accent: #2200ff;
+  --yr-accent: #5b5bf5;
   --yr-accent-ink: #ffffff;
-  --yr-accent-soft: rgba(34, 0, 255, .08);
-  --yr-accent-line: rgba(34, 0, 255, .15);
-  --yr-green: #10a37f;
+  --yr-accent-soft: rgba(91, 91, 245, .10);
+  --yr-accent-line: rgba(91, 91, 245, .18);
+  --yr-green: #16c784;
   --yr-red: #ef4444;
   --yr-radius: 14px;
   --yr-radius-sm: 10px;

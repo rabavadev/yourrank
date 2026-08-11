@@ -3,10 +3,10 @@
    wrapper also has .v3-dash. */
 
 .v3-dash {
-  --v3-accent: var(--yr-color-live);
-  --v3-accent-ink: var(--yr-color-live-ink);
-  --v3-accent-soft: var(--yr-color-live-soft);
-  --v3-accent-line: var(--yr-color-live-line);
+  --v3-accent: var(--yr-color-action);
+  --v3-accent-ink: var(--yr-color-text-inverse);
+  --v3-accent-soft: var(--yr-color-action-soft);
+  --v3-accent-line: var(--yr-color-action-line);
 
   --v3-chrome: var(--yr-color-chrome);
   --v3-chrome-2: var(--yr-color-chrome-3);
@@ -39,7 +39,7 @@
   --v3-sans: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --v3-mono: "IBM Plex Mono", "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
 
-  /* Drive shared ui.css components in the lime palette */
+  /* Drive shared ui.css components in the indigo brand palette */
   --yr-accent: var(--v3-accent);
   --yr-accent-ink: var(--v3-accent-ink);
   --yr-accent-soft: var(--v3-accent-soft);

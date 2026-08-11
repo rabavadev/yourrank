@@ -27,7 +27,7 @@
   --gx-ink-mute: #7c7c8c;
 
   /* Overridden inline from the streamer's branding. */
-  --gx-accent: #2200ff;
+  --gx-accent: #5b5bf5;
   --gx-accent-ink: #ffffff;
   --gx-accent-soft: color-mix(in srgb, var(--gx-accent) 16%, transparent);
   --gx-accent-line: color-mix(in srgb, var(--gx-accent) 38%, transparent);
@@ -52,7 +52,7 @@
 
   --gx-shadow: 0 1px 2px rgba(0, 0, 0, .4);
   --gx-shadow-lg: 0 24px 60px rgba(0, 0, 0, .55);
-  --gx-glow: 0 0 0 1px var(--gx-accent-line), 0 0 32px color-mix(in srgb, var(--gx-accent) 22%, transparent);
+  --gx-glow: 0 0 0 1px var(--gx-accent-line), 0 0 24px color-mix(in srgb, var(--gx-accent) 16%, transparent);
 
   --gx-sans: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --gx-mono: "IBM Plex Mono", "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;

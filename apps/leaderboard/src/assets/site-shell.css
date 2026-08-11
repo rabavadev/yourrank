@@ -10,11 +10,12 @@
 .yr-site {
   --yr-ink: #000000;
   --yr-panel: #0a0a0a;
-  --yr-edge: #1f2937;
-  --yr-edge-soft: rgba(31, 41, 55, 0.5);
+  --yr-edge: #2b2b30;
+  --yr-edge-soft: rgba(43, 43, 48, 0.6);
   --yr-mute: #9ca3af;
   --yr-faint: #6b7280;
-  --yr-accent: #53fc18;
+  --yr-accent: #5b5bf5;
+  --yr-live: #16c784;
   --yr-gold: #e7b53c;
   --yr-side-w: 260px;
   --yr-bar-h: 72px;
@@ -38,7 +39,7 @@
 .yr-site *::before,
 .yr-site *::after { box-sizing: border-box; }
 
-.yr-site ::selection { background: var(--yr-accent); color: #000; }
+.yr-site ::selection { background: var(--yr-accent); color: #fff; }
 .yr-site ::-webkit-scrollbar { width: 6px; height: 6px; }
 .yr-site ::-webkit-scrollbar-track { background: transparent; }
 .yr-site ::-webkit-scrollbar-thumb { background: var(--yr-edge); }
@@ -111,10 +112,10 @@
 .yr-live { position: relative; display: flex; height: 8px; width: 8px; flex-shrink: 0; }
 .yr-live i {
   position: absolute; inset: 0; border-radius: 999px;
-  background: var(--yr-accent); opacity: 0.75;
+  background: var(--yr-live); opacity: 0.75;
   animation: yr-ping 1s cubic-bezier(0, 0, 0.2, 1) infinite;
 }
-.yr-live b { position: relative; height: 8px; width: 8px; border-radius: 999px; background: var(--yr-accent); }
+.yr-live b { position: relative; height: 8px; width: 8px; border-radius: 999px; background: var(--yr-live); }
 @keyframes yr-ping { 75%, 100% { transform: scale(2); opacity: 0; } }
 
 .yr-live-txt {
@@ -288,7 +289,7 @@
   font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.2em;
   transition: background 0.3s;
 }
-.yr-btn:hover { background: var(--yr-accent); }
+.yr-btn:hover { background: var(--yr-accent); color: #fff; }
 .yr-btn--ghost { background: transparent; color: #fff; border: 1px solid var(--yr-edge); }
 .yr-btn--ghost:hover { background: transparent; border-color: rgba(255, 255, 255, 0.3); }
 
@@ -361,7 +362,7 @@
   background: #fff; color: #000; padding: 2px 6px;
   font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em;
 }
-.yr-flag--accent { background: var(--yr-accent); color: #000; }
+.yr-flag--accent { background: var(--yr-accent); color: #fff; }
 .yr-flag--ghost { background: rgba(0, 0, 0, 0.6); color: var(--yr-faint); border: 1px solid var(--yr-edge); }
 .yr-item-body { padding: 20px; display: flex; flex-direction: column; flex: 1; }
 .yr-item-h { font-size: 14px; line-height: 20px; font-weight: 700; margin-bottom: 4px; }

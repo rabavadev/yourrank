@@ -22,7 +22,7 @@ export function loginHtml(botUsername: string, devLogin: boolean, nonce?: string
   ${STYLE_ATTR_CSS}
   :root { --yr-bg:#fafafa; --yr-panel:#ffffff; --yr-panel-2:#f7f7f8; --yr-line:#e4e4e7; --yr-line-2:#d4d4d8;
           --yr-ink:#191919; --yr-ink-soft:#55555c; --yr-ink-mute:#82828a;
-          --yr-accent:#2200ff; --yr-accent-ink:#ffffff; --yr-green:#10a37f; --yr-red:#ef4444;
+          --yr-accent:#5b5bf5; --yr-accent-ink:#ffffff; --yr-green:#16c784; --yr-red:#ef4444;
           --yr-radius:14px; --yr-shadow:0 1px 2px rgba(0,0,0,.05);
           --yr-sans:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
           --yr-mono:"IBM Plex Mono","JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,monospace; }

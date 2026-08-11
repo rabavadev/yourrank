@@ -119,7 +119,7 @@ const BOT_BASE_CSS = `
      tokens.test.js fails if these copies drift again. */
   :root { --bg:#fafafa; --panel:#ffffff; --panel-2:#f7f7f8; --border:#e4e4e7; --border-2:#d4d4d8;
           --fg:#191919; --dim:#55555c; --mute:#82828a;
-          --accent:#2200ff; --accent-ink:#ffffff; --green:#10a37f; --red:#ef4444;
+          --accent:#5b5bf5; --accent-ink:#ffffff; --green:#16c784; --red:#ef4444;
           --mono:"IBM Plex Mono","JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
           --sans:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
           --yr-bg:var(--bg); --yr-panel:var(--panel); --yr-panel-2:var(--panel-2); --yr-line:var(--border); --yr-line-2:var(--border-2);
