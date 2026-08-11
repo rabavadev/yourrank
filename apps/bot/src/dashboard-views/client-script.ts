@@ -147,9 +147,12 @@ ListController.prototype.updatePagination = function(total){
 let __offersCtrl, __broadcastsCtrl, __broadcasts = [];
 
 async function api(path, opts) {
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 10000);
-  const requestOpts = Object.assign({}, opts || {}, { signal: controller.signal });
+  const readRequest = !opts || !opts.method || opts.method.toUpperCase() === 'GET';
+  const controller = readRequest ? new AbortController() : null;
+  const timeout = controller ? setTimeout(() => controller.abort(), 10000) : null;
+  const requestOpts = controller
+    ? Object.assign({}, opts || {}, { signal: controller.signal })
+    : (opts || {});
   let r;
   try {
     r = await fetch('/bot/dash/api'+path, requestOpts);
@@ -157,7 +160,7 @@ async function api(path, opts) {
     if (err && err.name === 'AbortError') return { error: 'The request timed out — try again.' };
     throw err;
   } finally {
-    clearTimeout(timeout);
+    if (timeout) clearTimeout(timeout);
   }
   if (r.status === 401) { saveBroadcastDraft(); location.reload(); throw new Error('session expired'); }
   if (!r.ok) {

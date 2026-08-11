@@ -147,12 +147,14 @@ describe("dashboard views", () => {
     expect(js).toContain("this.controls.hidden = this.all.length === 0");
     expect(js).toContain("this.pageInfo.textContent = total ? 'Page '+this.page+' of '+this.totalPages+' ('+total+')' : ''");
     expect(js).toContain("setBroadcastAvailability(bots.length > 0)");
+    expect(js).toContain("const readRequest = !opts || !opts.method || opts.method.toUpperCase() === 'GET'");
+    expect(js).toContain("const requestOpts = controller");
   });
 
   it("links the shared shell styles and keeps the skip link screen-reader-only", () => {
     const html = appHtml({ display_name: "Test", email: "test@example.com", plan: "free" }, "https://yourrank.site", "nonce123", "overview", '<header class="gm-shell-nav"></header>');
     expect(html).toContain('<link rel="stylesheet" href="/assets/shell-nav.css">');
-    expect(html).toContain('<a href="#main-content" class="sr-only skip-link">Skip to main content</a>');
+    expect(html).toContain('<a href="#main-content" class="skip-link">Skip to main content</a>');
   });
 
   it("clientScriptSource emits parseable JavaScript", () => {
