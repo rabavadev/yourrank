@@ -59,32 +59,84 @@ export function withNonce(headers, nonce) {
   return { ...headers, "Content-Security-Policy": updated };
 }
 
-export function notFoundPage(slug, nonce) {
+// Every status page (404, suspended, unverified, 500) is one branded layout.
+// They used to be four hand-rolled dark documents while the rest of the product
+// is light with the brand blue, so landing on one felt like leaving the site.
+// Self-contained on purpose: these also serve custom domains and must render
+// even when nothing else about the request worked.
+const STATUS_CSS = `:root{--bg:#fafafa;--panel:#fff;--line:#e4e4e7;--ink:#191919;--dim:#55555c;--accent:#2200ff;--accent-ink:#fff}
+*{box-sizing:border-box;margin:0}
+body{background:var(--bg);color:var(--ink);font:15px/1.6 "Inter",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:24px;gap:22px}
+.brand{font-weight:800;font-size:20px;letter-spacing:-.03em;color:var(--ink);text-decoration:none}
+.brand b{color:var(--accent)}
+.card{width:100%;max-width:460px;background:var(--panel);border:1px solid var(--line);border-radius:14px;box-shadow:0 1px 2px rgba(0,0,0,.05);padding:32px;text-align:center}
+h1{font-size:20px;font-weight:700;letter-spacing:-.02em;margin-bottom:8px}
+p{color:var(--dim);font-size:14px}
+p+p{margin-top:8px}
+p a{color:var(--accent);font-weight:600}
+code{font-family:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,monospace;font-size:13px;background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:1px 6px;word-break:break-all}
+.actions{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:20px}
+.btn{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:10px 18px;border-radius:10px;border:1px solid var(--line);background:var(--panel);color:var(--ink);font-weight:600;font-size:14px;text-decoration:none}
+.btn--accent{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn:hover{border-color:var(--accent)}`;
+
+function statusPage({ title, heading, body, actions, nonce }) {
   const n = nonce ? ` nonce="${nonce}"` : "";
-  return `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex, nofollow"><title>Not found</title>
-<style${n}>body{background:#0b0b0c;color:#ededf0;font-family:system-ui,sans-serif;display:grid;place-items:center;min-height:100vh;margin:0}.b{text-align:center}a{color:#5771ff}</style></head>
-<body><div class="b"><h1>No leaderboard here</h1><p>There's no page at <b>/${esc(slug)}</b> yet.</p><p><a href="/">Back to YourRank</a></p></div><script src="/assets/cookie-consent.js" defer></script></body></html>`;
+  return `<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex, nofollow"><title>${esc(title)} · YourRank</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<style${n}>${STATUS_CSS}</style></head>
+<body><a class="brand" href="/">Your<b>Rank</b></a>
+<main class="card"><h1>${esc(heading)}</h1>${body}
+<div class="actions">${actions}</div></main>
+<script src="/assets/cookie-consent.js" defer></script></body></html>`;
+}
+
+const HOME_BTN = '<a class="btn btn--accent" href="/">Go to YourRank</a>';
+
+export function notFoundPage(slug, nonce) {
+  return statusPage({
+    nonce,
+    title: "Not found",
+    heading: "No leaderboard here",
+    body: slug
+      ? `<p>Nothing is published at <code>/${esc(slug)}</code>. The link may be mistyped, or the board may have been renamed.</p>`
+      : "<p>Nothing is published at that address. The link may be mistyped, or the board may have been renamed.</p>",
+    // Only on the marketing domain: /demo is not a page on a customer's own domain.
+    actions: slug ? `${HOME_BTN}<a class="btn" href="/demo">See an example board</a>` : HOME_BTN,
+  });
 }
 
 export function suspendedPage(nonce) {
-  const n = nonce ? ` nonce="${nonce}"` : "";
-  return `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex, nofollow"><title>Unavailable</title>
-<style${n}>body{background:#0b0b0c;color:#ededf0;font-family:system-ui,sans-serif;display:grid;place-items:center;min-height:100vh;margin:0}.b{text-align:center}a{color:#5771ff}</style></head>
-<body><div class="b"><h1>This page is unavailable</h1><p>The owner's account is suspended.</p><p><a href="/">YourRank</a></p></div><script src="/assets/cookie-consent.js" defer></script></body></html>`;
+  return statusPage({
+    nonce,
+    title: "Unavailable",
+    heading: "This page is unavailable",
+    body: "<p>The owner's account is suspended, so their boards are hidden for now.</p>",
+    actions: HOME_BTN,
+  });
 }
 
 // Shown when the owner's account is fine but their email is not confirmed yet.
 // Deliberately does not accuse the owner of anything.
 export function pendingVerificationPage(nonce) {
-  const n = nonce ? ` nonce="${nonce}"` : "";
-  return `<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex, nofollow"><title>Not live yet</title>
-<style${n}>body{background:#0b0b0c;color:#ededf0;font-family:system-ui,sans-serif;display:grid;place-items:center;min-height:100vh;margin:0}.b{text-align:center;max-width:520px;padding:24px}a{color:#5771ff}p{color:#a7a6a6}</style></head>
-<body><div class="b"><h1>This leaderboard isn't live yet</h1><p>The owner still needs to confirm their email address. Check back soon.</p><p><a href="/">YourRank</a></p></div><script src="/assets/cookie-consent.js" defer></script></body></html>`;
+  return statusPage({
+    nonce,
+    title: "Not live yet",
+    heading: "This leaderboard isn't live yet",
+    body: "<p>The owner still needs to confirm their email address. Check back soon.</p>",
+    actions: HOME_BTN,
+  });
 }
 
 export function error500Page(nonce) {
-  const n = nonce ? ` nonce="${nonce}"` : "";
-  return `<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex, nofollow"><title>Something went wrong</title>
-<style${n}>body{background:#0b0b0c;color:#ededf0;font-family:system-ui,sans-serif;display:grid;place-items:center;min-height:100vh;margin:0}.b{text-align:center;max-width:520px;padding:24px}a{color:#5771ff}</style></head>
-<body><div class="b"><h1>Something went wrong</h1><p>We're having trouble loading this page. Try refreshing, or come back in a moment.</p><p>If it keeps happening, <a href="/help/support">contact support</a>.</p><p><a href="/">Back to YourRank</a></p></div><script src="/assets/cookie-consent.js" defer></script></body></html>`;
+  return statusPage({
+    nonce,
+    title: "Something went wrong",
+    heading: "Something went wrong",
+    body:
+      "<p>We're having trouble loading this page. Try refreshing, or come back in a moment.</p>" +
+      '<p>If it keeps happening, <a href="/help/support">contact support</a>.</p>',
+    actions: `<a class="btn btn--accent" href="">Try again</a><a class="btn" href="/">Go to YourRank</a>`,
+  });
 }

@@ -81,9 +81,8 @@ ${scripts}
 
 const BOT_STYLE_ATTR_CSS = `
 .hidden { display: none !important; }
-.sr-only { position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0); }
-.skip-link { position:absolute;left:8px;top:8px;z-index:100;background:var(--bg);color:var(--fg);padding:10px 14px;border:1px solid var(--border-2);border-radius:8px;text-decoration:none;transform:translateY(-200%);transition:transform .15s; }
-.skip-link:focus { transform:translateY(0);outline:2px solid var(--accent); }
+/* .sr-only and .skip-link come from /assets/ui.css, linked below — one skip
+   link for both products rather than a second one that only looks similar. */
 
 /* ---- spacing / type utilities: named steps, not indexes ---- */
 .mb-sm { margin-bottom:10px }

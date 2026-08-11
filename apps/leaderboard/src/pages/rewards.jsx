@@ -44,7 +44,7 @@ function RewardsShell({ activeTab, title, children }) {
   return (
     <div class="v2-dash">
       <div class="lb-shell">
-        <aside class="lb-side" id="lbSide" aria-label="Rewards sections" role="dialog" aria-modal="false">
+        <aside class="lb-side" id="lbSide" aria-label="Rewards sections">
           <div class="lb-side-head">
             <a class="gm-brand" href="/dashboard">
               <span class="gm-brand-mark">YR</span>
