@@ -115,6 +115,15 @@ function siteShellCss() {
 .site-powered{position:fixed;right:12px;bottom:calc(var(--site-bottom-h) + 12px);z-index:90}
 .site-powered a{display:inline-flex;align-items:center;gap:.35rem;padding:.35rem .6rem;background:var(--panel,#1c1c1c);border:1px solid var(--line,rgba(255,255,255,.06));border-radius:999px;color:var(--ink-mute,#82828a);text-decoration:none;font-size:11px;font-weight:600}
 .site-powered a:hover{color:var(--ink,#ededf0)}
+.site-feedback{border:none;border-radius:var(--radius,12px);background:var(--panel,#1c1c1c);border:1px solid var(--line,rgba(255,255,255,.06));color:var(--ink,#ededf0);padding:0;width:min(460px,calc(100% - 2rem));max-width:100%;box-shadow:0 24px 60px rgba(0,0,0,.45)}
+.site-feedback::backdrop{background:rgba(0,0,0,.55);backdrop-filter:blur(2px)}
+.site-feedback-form{padding:1.25rem;display:flex;flex-direction:column;gap:.75rem}
+.site-feedback-form h2{margin:0;font-size:1.25rem}
+.site-feedback-hint{margin:0;color:var(--ink-soft,#a7a6a6);font-size:.9rem}
+.site-feedback-form textarea{width:100%;box-sizing:border-box;resize:vertical;background:var(--surface,#141414);border:1px solid var(--line,rgba(255,255,255,.06));border-radius:var(--radius-sm,8px);padding:.75rem;color:var(--ink,#ededf0);font:inherit}
+.site-feedback-form textarea:focus-visible{outline:2px solid var(--accent,#5771ff);outline-offset:2px}
+.site-feedback-actions{display:flex;justify-content:flex-end;gap:.5rem}
+.site-feedback-status{min-height:1.25em;margin:0;font-size:.9rem}
 @media (min-width: 720px){
   .site-topbar-nav{display:flex}
   .site-topbar-actions{display:flex}
@@ -288,7 +297,9 @@ body[data-sections-payouts="false"] .payouts { display: none !important; }
     section, r, data, b, siteSections, parts, viewer, viewerData, slug, isCustomDomain, homeUrl, ctaHref, hasCta, hasCasino, casino, period, hasPartner, socials, logoUrl,
   });
 
+  const siteName = r.data?.brand?.name || slug;
   const siteTopbarHtml = siteTopbar({ r, section, siteSections, slug, isCustomDomain, homeUrl, logoUrl, viewer, viewerData, returnTo });
+  const feedbackModalHtml = feedbackModal({ slug, siteName });
   const bottomTabsHtml = siteBottomTabs({ section, siteSections, slug, isCustomDomain });
   const siteFooterHtml = siteFooter({ data, b, siteSections, slug, isCustomDomain, watermark, homeUrl });
   const badge = watermark
@@ -325,10 +336,11 @@ ${section === "leaderboard" ? `<style nonce="${nonce}">${/* shareCss inlined */ 
 ${opts.csrfToken ? `<meta name="csrf-token" content="${esc(opts.csrfToken)}" />` : ""}
 </head>`;
 
-  const body = `<body data-template="${tpl}"${optAttrs} ${sectionAttrs} data-section="${section}">
+  const body = `<body data-template="${tpl}"${optAttrs} ${sectionAttrs} data-section="${section}" data-slug="${esc(slug)}">
 <a class="skip-link" href="#main-content">Skip to content</a>
 <div class="field" aria-hidden="true"></div><div class="watermarks" data-watermarks aria-hidden="true"></div>
 ${siteTopbarHtml}
+${feedbackModalHtml}
 ${mainHtml}
 ${badge}
 ${siteFooterHtml}
@@ -355,9 +367,12 @@ function siteTopbar({ r, section, siteSections, slug, isCustomDomain, homeUrl, l
   const avatar = viewer?.avatar_url
     ? `<img src="${esc(viewer.avatar_url)}" alt="" />`
     : `<span>${esc(initials(viewer?.kick_username || viewer?.discord_username || "You"))}</span>`;
-  const actions = viewer
+  const authActions = viewer
     ? `<a class="site-balance-chip" href="${homeUrl}${siteSectionHref("me", slug, isCustomDomain)}"><span class="site-balance-amount">${formatNumber(balance)} credits</span><span class="site-avatar">${avatar}</span></a>`
     : signInLinks(r, returnTo);
+  const feedbackBtn = `<button class="btn btn--sm" id="yr-feedback-open-d" type="button" aria-label="Send feedback">Feedback</button>`;
+  const feedbackBtnMobile = `<button class="site-nav-link" id="yr-feedback-open-m" type="button">Feedback</button>`;
+  const actions = `${authActions}${feedbackBtn}`;
 
   const homeHref = `${homeUrl}${siteSectionHref("home", slug, isCustomDomain)}`;
   const brandLogo = logoUrl ? `<img class="site-brand-logo" src="${esc(logoUrl)}" alt="" />` : "";
@@ -371,11 +386,28 @@ function siteTopbar({ r, section, siteSections, slug, isCustomDomain, homeUrl, l
 <summary aria-label="Open menu" type="button"><svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></summary>
 <div class="site-menu-panel" role="menu" aria-label="Site sections">
 ${enabled.map((s) => `<a class="${s === section ? "site-nav-link--active" : "site-nav-link"}" href="${homeUrl}${siteSectionHref(s, slug, isCustomDomain)}" role="menuitem">${esc(SECTION_LABELS[s])}</a>`).join("")}
-<div class="site-menu-actions">${actions}</div>
+${feedbackBtnMobile}
+<div class="site-menu-actions">${authActions}</div>
 </div>
 </details>
 </div>
 </header>`;
+}
+
+function feedbackModal({ slug, siteName }) {
+  return `<dialog id="yr-feedback" class="site-feedback" aria-label="Send feedback">
+<form class="site-feedback-form" method="dialog">
+<h2>Send feedback</h2>
+<p class="site-feedback-hint">Tell us what you think about ${esc(siteName)}. No contact info needed — just type your message.</p>
+<textarea name="message" rows="5" minlength="10" maxlength="2000" placeholder="What's working? What's not?" required aria-label="Your feedback"></textarea>
+<div class="site-feedback-actions">
+<button class="btn btn--sm btn--success" type="submit">Send feedback</button>
+<button class="btn btn--sm" type="button" id="yr-feedback-close">Cancel</button>
+</div>
+<p class="site-feedback-status" id="yr-feedback-status" role="status" aria-live="polite"></p>
+<input type="hidden" name="slug" value="${esc(slug)}" />
+</form>
+</dialog>`;
 }
 
 function signInLinks(r, returnTo) {
@@ -592,8 +624,40 @@ ${locked}
 }
 
 function siteScript({ section, nonce, slug }) {
+  const base = `<script nonce="${nonce}">
+(function(){
+  const dialog=document.getElementById("yr-feedback");
+  const openD=document.getElementById("yr-feedback-open-d");
+  const openM=document.getElementById("yr-feedback-open-m");
+  const closeBtn=document.getElementById("yr-feedback-close");
+  const statusEl=document.getElementById("yr-feedback-status");
+  function show(){ if(dialog){ dialog.showModal(); if(statusEl)statusEl.textContent=""; const menu=document.querySelector(".site-menu"); if(menu)menu.removeAttribute("open"); } }
+  function hide(){ if(dialog){ dialog.close(); } }
+  if(openD)openD.addEventListener("click",show);
+  if(openM)openM.addEventListener("click",show);
+  if(closeBtn)closeBtn.addEventListener("click",hide);
+  const form=document.querySelector("#yr-feedback form");
+  if(form){
+    form.addEventListener("submit",async function(e){
+      e.preventDefault();
+      const btn=form.querySelector('button[type="submit"]');
+      const message=form.message.value.trim();
+      if(message.length<10){ if(statusEl)statusEl.textContent="Please write at least 10 characters."; return; }
+      const csrf=document.querySelector('meta[name="csrf-token"]')?.content;
+      const siteSlug=form.slug.value;
+      btn.disabled=true; btn.textContent="Sending...";
+      try{
+        const res=await fetch("/api/feedback",{method:"POST",credentials:"same-origin",headers:{"content-type":"application/json","x-csrf-token":csrf||""},body:JSON.stringify({slug:siteSlug,message:message})});
+        const data=await res.json().catch(function(){return {}});
+        if(res.ok && data.ok){ if(statusEl)statusEl.textContent="Thanks! Your feedback was sent."; form.message.value=""; setTimeout(hide,1400); }
+        else { if(statusEl)statusEl.textContent=data.error||"Could not send feedback. Try again."; btn.disabled=false; btn.textContent="Send feedback"; }
+      }catch(err){ if(statusEl)statusEl.textContent="Network error. Please try again."; btn.disabled=false; btn.textContent="Send feedback"; }
+    });
+  }
+})();
+</script>`;
   if (section === "shop") {
-    return `<script nonce="${nonce}">
+    return base + `<script nonce="${nonce}">
 (function(){
   document.querySelectorAll("[data-redeem]").forEach(function(btn){
     btn.addEventListener("click", async function(){
@@ -610,7 +674,7 @@ function siteScript({ section, nonce, slug }) {
 </script>`;
   }
   if (section === "home") {
-    return `<script nonce="${nonce}">
+    return base + `<script nonce="${nonce}">
 (function(){
   const el=document.getElementById("hero-timer"); if(!el)return; const end=Number(el.dataset.endsAt); if(!end)return;
   function fmt(n){return String(Math.max(0,Math.floor(n))).padStart(2,"0")}
@@ -620,7 +684,7 @@ function siteScript({ section, nonce, slug }) {
 </script>`;
   }
   if (section === "leaderboard") {
-    return shareScriptNonce(nonce);
+    return base + shareScriptNonce(nonce);
   }
-  return "";
+  return base;
 }

@@ -35,6 +35,7 @@ import {
   handleAccountConnectedAccounts,
 } from "./handlers/account.js";
 import { handleContact } from "./handlers/contact.js";
+import { handleFeedback } from "./handlers/feedback.js";
 import { handleCspReport } from "./handlers/csp-report.js";
 import { handleLog } from "./handlers/log.js";
 import { handleScores } from "./handlers/scores.js";
@@ -148,6 +149,7 @@ export const ROUTES = [
   // Public routes (CSRF-exempt)
   { path: "/api/lead", method: "POST", handler: withHandler(handleLead) },
   { path: "/api/contact", method: "POST", handler: withHandler(handleContact) },
+  { path: "/api/feedback", method: "POST", handler: withHandler(handleFeedback) },
   { path: "/api/track/copy", method: "POST", handler: withHandler(handleTrackCopy) },
   { path: "/api/track/scroll", method: "POST", handler: withHandler(handleTrackScroll) },
   { path: "/api/scores", method: "POST", handler: withHandler(handleScores) },
