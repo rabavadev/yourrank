@@ -1,8 +1,14 @@
 /* YourRank app shell — login, signup, dashboard. Light, clean, one accent. */
 :root{--bg:#fafafa;--panel:#ffffff;--panel-2:#f7f7f8;--line:#e4e4e7;--line-2:#d4d4d8;--ink:#191919;--ink-soft:#55555c;--ink-mute:#82828a;--accent:#2200ff;--accent-ink:#ffffff;--toggle-on:#10a37f;--danger:#ef4444;--ok:#10a37f;--ok-bg:rgba(16,163,127,.08);--warn:#f59e0b;--link:#1a00cc;--radius:12px;--radius-xl:16px;--accent-soft:rgba(34,0,255,.08);--mono:"IBM Plex Mono","JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,monospace;--sans:"Inter",system-ui,-apple-system,Segoe UI,Roboto,sans-serif;--fs-xs:.75rem;--fs-sm:.875rem;--fs-md:1rem;--fs-lg:1.25rem;--fs-xl:1.5rem;--fs-2xl:2rem;--fs-3xl:2.5rem;--space-1:4px;--space-2:8px;--space-3:12px;--space-4:16px;--space-6:24px;--space-8:32px;--space-12:48px;--space-16:64px;--space-24:96px;--radius-sm:8px;--radius-md:10px;--radius-lg:14px;--radius-full:999px;--shadow-sm:0 1px 2px rgba(0,0,0,.05);--shadow-md:0 4px 12px rgba(0,0,0,.08);--shadow-lg:0 12px 32px rgba(0,0,0,.12);--tap:44px;--color-bg-primary:var(--bg);--color-bg-secondary:var(--panel);--color-bg-tertiary:var(--panel-2);--color-border-default:var(--line);--color-border-hover:var(--line-2);--color-text-primary:var(--ink);--color-text-secondary:var(--ink-soft);--color-text-muted:var(--ink-mute);--color-accent:var(--accent);--color-accent-ink:var(--accent-ink);--color-accent-hover:var(--link);--color-accent-soft:var(--accent-soft);--color-success:var(--ok);--color-success-bg:var(--ok-bg);--color-danger:var(--danger);--color-warning:var(--warn);--color-link:var(--link);--font-sans:var(--sans);--font-mono:var(--mono);--font-size-xs:var(--fs-xs);--font-size-sm:var(--fs-sm);--font-size-md:var(--fs-md);--font-size-lg:var(--fs-lg);--font-size-xl:var(--fs-xl);--font-size-2xl:var(--fs-2xl);--font-size-3xl:var(--fs-3xl);--ease-default:ease;--ease-out:cubic-bezier(0.16,1,0.3,1);--ease-in-out:cubic-bezier(0.65,0,0.35,1);--ease-bounce:cubic-bezier(0.34,1.56,0.64,1);--duration-fast:100ms;--duration-normal:200ms;--duration-slow:300ms;--duration-stagger:50ms;--opacity-disabled:0.45;--opacity-hover:0.08;--opacity-backdrop:0.7;--alpha-soft:0.1;--alpha-border:0.06;--z-base:0;--z-dropdown:20;--z-sticky:50;--z-modal:100;--z-toast:200}
 
-/* Canonical semantic color layer. Scoped --yr-*/--v3-*/--gm-* hooks re-bind to these stable tokens. The nine base tokens remain duplicated in four places because tokens.test.js and the bot Worker require literal copies. */
- :root {
+/* Canonical semantic color layer: the one place a colour value is written.
+   The scoped hook families (--yr-x, --v3-x, --gm-x) re-bind to these tokens;
+   nothing re-binds a --yr-color-x, so a rule can reference one and get the same
+   value in every scope. Roles, not appearances: a later dark theme flips the
+   values here. The nine base tokens stay duplicated across app.css,
+   dashboard-v2.css, shell-nav.css and shared/page-shell.ts because the bot
+   Worker cannot link this sheet; tokens.test.js guards those copies. */
+:root {
   /* bg */
   --yr-color-bg: var(--bg);
   --yr-color-bg-2: #f9f9f9;
