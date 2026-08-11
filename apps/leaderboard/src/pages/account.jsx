@@ -22,7 +22,7 @@ const PAGES_BY_TAB = { profile: profilePage, plan: planPage, postbacks: postback
 
 function AccountPage({ tab }) {
   return <DashboardShell activeNav={tab} boardContext="none" footer="account" title={TITLES[tab] || "Account"}>
-    <div dangerouslySetInnerHTML={{ __html: PAGES_BY_TAB[tab] || profilePage }} />
+    <div class="account-body" dangerouslySetInnerHTML={{ __html: PAGES_BY_TAB[tab] || profilePage }} />
   </DashboardShell>;
 }
 
