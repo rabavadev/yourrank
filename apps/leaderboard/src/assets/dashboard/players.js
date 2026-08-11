@@ -2,6 +2,32 @@
 import { $, esc, logError, parseAmount } from "./utils.js";
 import { state, markDirty } from "./state.js";
 
+function currencySymbol() {
+  return String($("f_currency")?.value || "$").trim().slice(0, 6) || "$";
+}
+
+function formatMoney(value) {
+  const amount = parseAmount(value);
+  return `${currencySymbol()}${amount.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
+
+function showMoneyValue(input) {
+  const raw = input.value.trim();
+  if (raw) input.value = formatMoney(raw);
+}
+
+function showMoneyEditor(input) {
+  if (!input.value.trim()) return;
+  input.value = String(parseAmount(input.value));
+  input.select();
+}
+
+function wireMoneyInput(input) {
+  input.addEventListener("focus", () => showMoneyEditor(input));
+  input.addEventListener("blur", () => showMoneyValue(input));
+  showMoneyValue(input);
+}
+
 export function playerRow(p = { name: "", wagered: "", prize: "", score: "", hands: "", netProfit: "", winRate: "", change: "" }) {
   const tr = document.createElement("tr");
   tr.innerHTML = `<td class="sel"><input type="checkbox" class="row-sel" title="Select" aria-label="Select player" /></td>
@@ -14,8 +40,15 @@ export function playerRow(p = { name: "", wagered: "", prize: "", score: "", han
     <td class="num col-net" hidden><input class="p-net-profit" inputmode="decimal" placeholder="0" value="${esc(p.netProfit)}"></td>
     <td class="num col-win" hidden><input class="p-win-rate" inputmode="decimal" placeholder="0" value="${esc(p.winRate)}"></td>
     <td class="num col-change" hidden><input class="p-change" inputmode="decimal" placeholder="0" value="${esc(p.change)}"></td>
-    <td class="act"><button class="row-x" title="Remove" aria-label="Remove player" type="button">×</button></td>`;
+    <td class="act"><button class="row-edit" title="Edit player" aria-label="Edit player" type="button"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></button><button class="row-x" title="Remove" aria-label="Remove player" type="button">×</button></td>`;
+  tr.querySelector(".row-edit").addEventListener("click", () => {
+    const name = tr.querySelector(".p-name");
+    name?.focus();
+    name?.select();
+  });
   tr.querySelector(".row-x").addEventListener("click", () => { tr.remove(); renumber(); toggleEmpty(); syncSelectAll(); });
+  wireMoneyInput(tr.querySelector(".p-wager"));
+  wireMoneyInput(tr.querySelector(".p-prize"));
   return tr;
 }
 
@@ -48,6 +81,7 @@ export function applyPlayerFieldVisibility(fields) {
 export function renderPlayers(list) {
   const b = $("rows");
   b.innerHTML = "";
+  currentPage = 1;
   const frag = document.createDocumentFragment();
   list.forEach((p) => frag.appendChild(playerRow(p)));
   b.appendChild(frag);
@@ -59,44 +93,56 @@ export function renderPlayers(list) {
 
 export function renumber() {
   const rows = [...$("rows").children];
-  rows.forEach((tr, i) => tr.querySelector(".rank").textContent = String(i + 1).padStart(2, "0"));
+  rows.forEach((tr, i) => tr.querySelector(".rank").textContent = String(i + 1));
   const n = rows.length;
   const limit = state.ME?.limits?.players ?? 25;
-  const unlimited = limit >= 999;
   const pCount = $("pCount");
-  if (pCount) pCount.textContent = unlimited ? `${n} player${n === 1 ? "" : "s"}` : `${n} / ${limit} players`;
-  const fill = $("limitFill");
-  if (fill) {
-    const pct = unlimited ? 0 : Math.min(100, Math.round((n / limit) * 100));
-    fill.style.width = `${pct}%`;
-    fill.classList.toggle("limit-warning", !unlimited && n >= limit);
-  }
+  if (pCount) pCount.textContent = String(n);
+  const pLimit = $("pLimit");
+  if (pLimit) pLimit.textContent = String(limit);
   const hint = $("limitHint");
-  if (hint) hint.textContent = unlimited ? "Unlimited" : (n >= limit ? "Limit reached" : (n >= Math.floor(limit * 0.8) ? "Approaching limit" : ""));
+  if (hint) hint.textContent = n >= limit ? "Limit reached" : (n >= Math.floor(limit * 0.8) ? "Approaching limit" : "");
   const upgrade = $("playerLimitUpgrade");
-  if (upgrade) upgrade.hidden = unlimited || n < Math.max(1, Math.floor(limit * 0.8));
+  if (upgrade) upgrade.hidden = n < Math.max(1, Math.floor(limit * 0.8));
+  applyRowVisibility();
 }
 
 export function toggleEmpty() {
-  $("playersEmpty").hidden = $("rows").children.length > 0;
+  const empty = $("rows").children.length === 0;
+  if ($("playersEmpty")) $("playersEmpty").hidden = !empty;
+  if ($("playersTableWrap")) $("playersTableWrap").hidden = empty;
+  if ($("playersFoot")) $("playersFoot").hidden = empty;
+  if ($("playerSort")) $("playerSort").hidden = empty;
+  if (empty) $("selectAll") && ($("selectAll").checked = false);
 }
 
 // Live re-sort the player table as wagered numbers change, with a tiny
 // FLIP-style translate animation so the operator sees the row move.
 let sortTimer;
+let currentPage = 1;
+const PAGE_SIZE = 10;
+
 function sortRows() {
   const rowsEl = $("rows");
   if (!rowsEl) return;
   const before = new Map();
   for (const row of rowsEl.children) before.set(row, row.getBoundingClientRect().top);
   const rowsArr = [...rowsEl.children];
+  const sort = $("playerSort")?.value || "wagered";
   rowsArr.sort((a, b) => {
-    const wa = parseAmount(a.querySelector(".p-wager").value);
-    const wb = parseAmount(b.querySelector(".p-wager").value);
-    if (wb !== wa) return wb - wa;
-    const pa = parseAmount(a.querySelector(".p-prize").value);
-    const pb = parseAmount(b.querySelector(".p-prize").value);
-    return pb - pa;
+    if (sort === "name") {
+      return a.querySelector(".p-name").value.localeCompare(b.querySelector(".p-name").value, undefined, { sensitivity: "base" });
+    }
+    const selector = sort === "prize" ? ".p-prize" : ".p-wager";
+    const av = parseAmount(a.querySelector(selector).value);
+    const bv = parseAmount(b.querySelector(selector).value);
+    if (bv !== av) return bv - av;
+    if (sort !== "prize") {
+      const ap = parseAmount(a.querySelector(".p-prize").value);
+      const bp = parseAmount(b.querySelector(".p-prize").value);
+      if (bp !== ap) return bp - ap;
+    }
+    return a.querySelector(".p-name").value.localeCompare(b.querySelector(".p-name").value, undefined, { sensitivity: "base" });
   });
   
   let isSorted = true;
@@ -135,9 +181,11 @@ function sortRows() {
   requestAnimationFrame(() => {
     for (const row of rowsArr) { row.style.transition = "transform 0.2s ease"; row.style.transform = ""; }
   });
+  applyRowVisibility();
 }
 
 function onSortableInput() {
+  if (($("playerSort")?.value || "wagered") !== "wagered") return;
   clearTimeout(sortTimer);
   sortTimer = setTimeout(sortRows, 200);
 }
@@ -182,6 +230,7 @@ function addQuickRow() {
   $("qa_prize").value = "";
   renumber();
   toggleEmpty();
+  applyPlayerFieldVisibility();
 }
 
 $("qa_add")?.addEventListener("click", addQuickRow);
@@ -293,11 +342,6 @@ export function formatImportSummary(result, imported, skipped, capped) {
   return msg || "Nothing to import";
 }
 
-$("importMenuBtn")?.addEventListener("click", () => {
-  const menu = $("importMenu");
-  if (menu) menu.hidden = !menu.hidden;
-});
-
 $("importPasteBtn")?.addEventListener("click", () => {
   $("importMenu").hidden = true;
   const p = $("importPanel");
@@ -324,8 +368,8 @@ $("importApply")?.addEventListener("click", () => {
   const existing = replace ? [] : [...$("rows").children].map((tr) => {
     const p = {
       name: tr.querySelector(".p-name").value.trim(),
-      wagered: parseFloat(tr.querySelector(".p-wager").value) || 0,
-      prize: parseFloat(tr.querySelector(".p-prize").value) || 0,
+      wagered: parseAmount(tr.querySelector(".p-wager").value),
+      prize: parseAmount(tr.querySelector(".p-prize").value),
     };
     const score = tr.querySelector(".p-score").value.trim();
     const hands = tr.querySelector(".p-hands").value.trim();
@@ -455,24 +499,52 @@ $("gsheetFetch")?.addEventListener("click", async () => {
   }
 });
 
-// --- Search, bulk selection, and column visibility ---
-function getVisibleRows() {
+// --- Search, pagination, bulk selection, and column visibility ---
+function filteredRows() {
+  const q = $("playerSearch")?.value.trim().toLowerCase() || "";
+  return [...$("rows").children].filter((row) => !q || row.querySelector(".p-name")?.value.toLowerCase().includes(q));
+}
+
+function applyRowVisibility() {
   const rows = [...$("rows").children];
-  return rows.filter((tr) => !tr.hidden && tr.style.display !== "none");
+  const matches = filteredRows();
+  const pages = Math.max(1, Math.ceil(matches.length / PAGE_SIZE));
+  currentPage = Math.min(Math.max(1, currentPage), pages);
+  const start = (currentPage - 1) * PAGE_SIZE;
+  const pageRows = new Set(matches.slice(start, start + PAGE_SIZE));
+  rows.forEach((row) => {
+    const visible = pageRows.has(row);
+    row.hidden = !visible;
+    row.classList.toggle("is-sel", !!row.querySelector(".row-sel")?.checked);
+  });
+  const showing = $("playersShowing");
+  if (showing) {
+    showing.textContent = matches.length
+      ? `Showing ${start + 1}-${Math.min(start + PAGE_SIZE, matches.length)} of ${matches.length} players`
+      : "No players";
+  }
+  const prev = $("playersPrev");
+  const next = $("playersNext");
+  if (prev) prev.disabled = currentPage <= 1;
+  if (next) next.disabled = currentPage >= pages;
+  syncSelectAll();
+}
+
+function getVisibleRows() {
+  return [...$("rows").children].filter((tr) => !tr.hidden);
 }
 
 export function syncSelectAll() {
-  updateBulkActions();
   const visible = getVisibleRows();
   const checked = visible.filter((tr) => tr.querySelector(".row-sel")?.checked).length;
   const selectAll = $("selectAll");
   if (selectAll) selectAll.checked = checked > 0 && checked === visible.length;
-}
-
-function updateBulkActions() {
-  const any = $("rows")?.querySelector(".row-sel:checked");
+  const selected = [...$("rows").children].filter((tr) => tr.querySelector(".row-sel")?.checked);
   const bar = $("bulkActions");
-  if (bar) bar.hidden = !any;
+  if (bar) bar.hidden = selected.length === 0;
+  const count = $("bulkCount");
+  if (count) count.textContent = `${selected.length} player${selected.length === 1 ? "" : "s"} selected`;
+  [...$("rows").children].forEach((row) => row.classList.toggle("is-sel", !!row.querySelector(".row-sel")?.checked));
 }
 
 $("selectAll")?.addEventListener("change", () => {
@@ -481,13 +553,11 @@ $("selectAll")?.addEventListener("change", () => {
     const cb = row.querySelector(".row-sel");
     if (cb) cb.checked = checked;
   }
-  updateBulkActions();
+  syncSelectAll();
 });
 
 $("rows")?.addEventListener("change", (e) => {
-  if (e.target && e.target.classList && e.target.classList.contains("row-sel")) {
-    syncSelectAll();
-  }
+  if (e.target?.classList?.contains("row-sel")) syncSelectAll();
 });
 
 $("bulkDelete")?.addEventListener("click", () => {
@@ -508,7 +578,7 @@ $("bulkClearWager")?.addEventListener("click", () => {
   for (const row of $("rows").children) {
     if (row.querySelector(".row-sel")?.checked) {
       const input = row.querySelector(".p-wager");
-      if (input && input.value !== "0") { input.value = "0"; cleared++; }
+      if (input && parseAmount(input.value) !== 0) { input.value = "0"; showMoneyValue(input); cleared++; }
     }
   }
   if (cleared) {
@@ -519,22 +589,39 @@ $("bulkClearWager")?.addEventListener("click", () => {
 });
 
 $("playerSearch")?.addEventListener("input", () => {
-  const q = $("playerSearch").value.trim().toLowerCase();
+  currentPage = 1;
+  const matches = new Set(filteredRows());
   for (const row of $("rows").children) {
-    const name = row.querySelector(".p-name")?.value.toLowerCase() || "";
-    const hide = q && !name.includes(q);
-    row.hidden = hide;
-    if (hide) row.querySelector(".row-sel") && (row.querySelector(".row-sel").checked = false);
+    if (!matches.has(row)) {
+      const checkbox = row.querySelector(".row-sel");
+      if (checkbox) checkbox.checked = false;
+    }
   }
-  $("selectAll").checked = false;
-  updateBulkActions();
-  renumber();
+  applyRowVisibility();
+});
+
+$("playerSort")?.addEventListener("change", () => {
+  currentPage = 1;
+  sortRows();
+  applyRowVisibility();
+});
+
+$("playersPrev")?.addEventListener("click", () => {
+  currentPage--;
+  applyRowVisibility();
+});
+
+$("playersNext")?.addEventListener("click", () => {
+  currentPage++;
+  applyRowVisibility();
 });
 
 $("colDropdownBtn")?.addEventListener("click", (e) => {
   e.stopPropagation();
   const menu = $("colMenu");
-  if (menu) menu.hidden = !menu.hidden;
+  if (!menu) return;
+  menu.hidden = !menu.hidden;
+  $("colDropdownBtn").setAttribute("aria-expanded", String(!menu.hidden));
 });
 
 $("colMenu")?.addEventListener("change", (e) => {
@@ -547,11 +634,64 @@ $("colMenu")?.addEventListener("change", (e) => {
   }
 });
 
+function closeMenus() {
+  $("importMenu").hidden = true;
+  $("colMenu").hidden = true;
+  $("importMenuBtn")?.setAttribute("aria-expanded", "false");
+  $("colDropdownBtn")?.setAttribute("aria-expanded", "false");
+}
+
 // Close dropdowns when clicking outside
 document.addEventListener("click", (e) => {
-  if (!e.target.closest("#importMenu, #importMenuBtn")) $("importMenu").hidden = true;
-  if (!e.target.closest("#colMenu, #colDropdownBtn")) $("colMenu").hidden = true;
+  if (!e.target.closest("#importMenu, #importMenuBtn, #colMenu, #colDropdownBtn")) closeMenus();
+});
+
+// Initialize the active column state and the first page once the DOM is ready.
+document.addEventListener("DOMContentLoaded", () => {
+  applyPlayerFieldVisibility();
+  applyRowVisibility();
+});
+
+// The new toolbar keeps the existing import actions and panel wiring.
+$("emptyImportBtn")?.addEventListener("click", () => {
+  $("importPanel").hidden = false;
+  $("gsheetPanel").hidden = true;
+  $("importText").focus();
+});
+
+$("emptyPasteBtn")?.addEventListener("click", async () => {
+  $("importPanel").hidden = false;
+  $("gsheetPanel").hidden = true;
+  const input = $("importText");
+  try {
+    if (!navigator.clipboard?.readText) throw new Error("Clipboard API unavailable");
+    input.value = await navigator.clipboard.readText();
+    input.dispatchEvent(new Event("input"));
+  } catch (err) {
+    logError("clipboardRead", err);
+    $("status").textContent = "Couldn't read your clipboard — paste the players in below.";
+  }
+  input.focus();
+});
+
+$("importMenuBtn")?.addEventListener("click", (e) => {
+  e.stopPropagation();
+  const menu = $("importMenu");
+  if (!menu) return;
+  menu.hidden = !menu.hidden;
+  $("importMenuBtn").setAttribute("aria-expanded", String(!menu.hidden));
+});
+
+["importPasteBtn", "csvImportBtn", "gsheetBtn", "csvTemplateBtn"].forEach((id) => {
+  $(id)?.addEventListener("click", () => {
+    $("importMenu").hidden = true;
+    $("importMenuBtn")?.setAttribute("aria-expanded", "false");
+  });
+});
+
+$("csvExportBtn")?.addEventListener("click", () => {
+  $("importMenu").hidden = true;
+  $("importMenuBtn")?.setAttribute("aria-expanded", "false");
 });
 
 // Initialize column dropdown state once the DOM is ready.
-document.addEventListener("DOMContentLoaded", () => applyPlayerFieldVisibility());
