@@ -2,6 +2,7 @@
 import { $, esc, getCsrf, guardAuth, logError, slugify, showConfirmModal, showToast } from "./utils.js";
 import { state } from "./state.js";
 import { navTo } from "./shell.js";
+import { renderEmpty } from "./states.js";
 
 export function renderBoardSwitcher() {
   const list = $("boardList");
@@ -255,7 +256,8 @@ export function renderBoardsPage() {
   if (!body) return;
   body.innerHTML = "";
   if (!state.BOARDS.length) {
-    if (empty) empty.hidden = false;
+    renderEmpty(empty, { icon: "archive", title: "No boards yet", body: "Create one to get started.", actions: [{ label: "Create board", id: "boardsCreateEmpty", accent: true }] });
+    $("boardsCreateEmpty")?.addEventListener("click", openNewBoardForm);
   } else {
     if (empty) empty.hidden = true;
     state.BOARDS.forEach((b) => {

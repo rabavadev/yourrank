@@ -1,5 +1,7 @@
-import { showConfirmModal, showPromptModal, ListController } from "./dashboard/utils.js";
+import { showConfirmModal, showPromptModal, ListController, logError } from "./dashboard/utils.js";
 import { openDrawer, closeDrawer } from "./dashboard/shell.js";
+import { setState } from "./dashboard/state.js";
+import { UNKNOWN } from "./dashboard/states.js";
 
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
@@ -44,7 +46,7 @@ function saveFormDraft(formId, id) {
     else if (el.type === "number") { if (el.value !== "") data[el.name] = el.value; }
     else if (el.value.trim()) data[el.name] = el.value;
   }
-  try { if (Object.keys(data).length) localStorage.setItem(draftKey(id), JSON.stringify(data)); else localStorage.removeItem(draftKey(id)); } catch {}
+  try { if (Object.keys(data).length) localStorage.setItem(draftKey(id), JSON.stringify(data)); else localStorage.removeItem(draftKey(id)); } catch (err) { logError("save-draft", err); }
 }
 function restoreFormDraft(formId, id) {
   const form = $(formId); if (!form) return;
@@ -52,9 +54,9 @@ function restoreFormDraft(formId, id) {
     const data = JSON.parse(localStorage.getItem(draftKey(id)) || "null"); if (!data) return;
     for (const el of form.elements) { if (el.name && data[el.name] !== undefined) el.type === "checkbox" ? el.checked = Boolean(data[el.name]) : el.value = data[el.name]; }
     setStatus(form.querySelector(".status")?.id, "Draft restored.");
-  } catch {}
+  } catch (err) { logError("restore-draft", err); }
 }
-function clearFormDraft(id) { try { localStorage.removeItem(draftKey(id)); } catch {} }
+function clearFormDraft(id) { try { localStorage.removeItem(draftKey(id)); } catch (err) { logError("clear-draft", err); } }
 function wireAutosave(formId, id) {
   const form = $(formId); if (!form) return;
   const save = debounce(() => saveFormDraft(formId, id), 400);
@@ -85,13 +87,14 @@ async function loadBoardShell() {
   $("planBadge").textContent = `${String(board.plan || user.plan || "free").toUpperCase()} PLAN`; if (board.slug) $("liveLink").href = `/${board.slug}`;
 }
 function renderShellUsage() {
-  const used = Number(state.usage?.redemptionsPer30Days || 0);
-  const limit = Number(state.limits?.redemptionsPer30Days || 0);
+  const used = state.usage?.redemptionsPer30Days;
+  const limit = state.limits?.redemptionsPer30Days;
   const amount = $("usageAmount"); const max = $("usageLimit"); const fill = $("usageFill");
-  if (amount) amount.textContent = used;
-  if (max) max.textContent = limit;
-  if (fill) fill.style.width = `${limit ? Math.min(100, (used / limit) * 100) : 0}%`;
+  if (amount) amount.textContent = used == null ? UNKNOWN : used;
+  if (max) max.textContent = limit == null ? UNKNOWN : limit;
+  if (fill) fill.style.width = `${limit > 0 && used != null ? Math.min(100, (used / limit) * 100) : 0}%`;
 }
+const metric = (value) => value == null ? UNKNOWN : value;
 function renderRewardRow(m) {
   return `<td><b>${esc(m.kick_reward_title)}</b><br><span class="hint">${esc(m.kick_reward_id)}</span></td><td class="hint">When redeemed · ${m.kick_reward_cost} points</td><td class="num"><b>+${m.credits} cr</b></td><td><input class="v3-toggle" type="checkbox" ${m.active ? "checked" : ""} data-toggle-reward="${esc(m.id)}" /></td><td class="ta-r"><button class="btn btn--sm" data-edit-reward="${esc(m.id)}">Edit</button> <button class="btn btn--sm btn--danger" data-del-reward="${esc(m.id)}">Delete</button></td>`;
 }
@@ -112,10 +115,10 @@ function renderShopCards(items) {
 function render() {
   const usage = state.usage || {}, limits = state.limits || {}, current = tab();
   renderShellUsage();
-  const rewardAtLimit = (usage.rewardMappings || 0) >= (limits.rewardMappings || 0);
-  const shopAtLimit = (usage.shopItems || 0) >= (limits.shopItems || 0);
+  const rewardAtLimit = usage.rewardMappings != null && limits.rewardMappings != null && usage.rewardMappings >= limits.rewardMappings;
+  const shopAtLimit = usage.shopItems != null && limits.shopItems != null && usage.shopItems >= limits.shopItems;
   const rewardUsage = $("cr-reward-usage");
-  if (rewardUsage) rewardUsage.textContent = `${usage.rewardMappings || 0} / ${limits.rewardMappings || 0} MAPPINGS DEFINED`;
+  if (rewardUsage) rewardUsage.textContent = `${metric(usage.rewardMappings)} / ${metric(limits.rewardMappings)} MAPPINGS DEFINED`;
   const addMapping = $("cr-add-mapping");
   if (addMapping) {
     addMapping.classList.toggle("is-disabled", rewardAtLimit);
@@ -134,7 +137,7 @@ function render() {
     $("cr-channel-name").textContent = state.channel?.name || ""; $("cr-channel-id-input").value = state.channel?.externalId || ""; $("cr-channel-name-input").value = state.channel?.name || "";
     const expiry = state.channel?.tokenExpiresAt;
     $("cr-channel-token").textContent = expiry ? (new Date(expiry) > new Date() ? `Token valid · expires in ${Math.max(1, Math.ceil((new Date(expiry) - Date.now()) / 86400000))} days` : "Token expired · reconnect") : "No Kick token · connect Kick";
-    $("cr-usage").innerHTML = [usageCard(usage.rewardMappings || 0, limits.rewardMappings || 0, "reward mappings"), usageCard(usage.shopItems || 0, limits.shopItems || 0, "shop items"), usageCard(usage.pendingRedemptions || 0, limits.pendingRedemptions || 0, "pending redemptions"), usageCard(usage.redemptionsPer30Days || 0, limits.redemptionsPer30Days || 0, "redemptions / 30 days"), usageCard(usage.newViewersPer30Days || 0, limits.newViewersPer30Days || 0, "new viewers / 30 days")].join("");
+    $("cr-usage").innerHTML = [usageCard(metric(usage.rewardMappings), metric(limits.rewardMappings), "reward mappings"), usageCard(metric(usage.shopItems), metric(limits.shopItems), "shop items"), usageCard(metric(usage.pendingRedemptions), metric(limits.pendingRedemptions), "pending redemptions"), usageCard(metric(usage.redemptionsPer30Days), metric(limits.redemptionsPer30Days), "redemptions / 30 days"), usageCard(metric(usage.newViewersPer30Days), metric(limits.newViewersPer30Days), "new viewers / 30 days")].join("");
     const auth = state.viewerAuth || {};
     $("cr-viewer-auth-kick").checked = auth.kick !== false; $("cr-viewer-auth-discord").checked = auth.discord !== false; $("cr-viewer-auth-public").checked = auth.public !== false;
   }
@@ -146,7 +149,7 @@ function render() {
     prefillEditFromQuery();
   }
   if (current === "shop") {
-    $("cr-shop-usage").textContent = `${usage.shopItems || 0} / ${limits.shopItems || 0} ACTIVE ITEMS`;
+    $("cr-shop-usage").textContent = `${metric(usage.shopItems)} / ${metric(limits.shopItems)} ACTIVE ITEMS`;
     const submit = $("cr-shop-submit"); if (submit) { submit.disabled = shopAtLimit; submit.title = shopAtLimit ? "Upgrade your plan to add more shop items" : ""; }
     const create = $("cr-shop-new"); if (create) { create.disabled = shopAtLimit; create.title = shopAtLimit ? "Upgrade your plan to add more shop items" : ""; }
     shopItemsView = state.shopItems || []; renderShopCards(shopItemsView);
@@ -159,7 +162,7 @@ function render() {
   if (current === "redemptions") {
     const channel = $("cr-redemption-channel");
     if (state.channel?.externalId) { channel.innerHTML = `● Connected to @${esc(state.channel.name || state.channel.externalId)}`; channel.className = "v3-chip v3-chip--refunded"; } else { channel.innerHTML = '<a href="/dashboard/rewards/channel">Not connected · Connect in Channel</a>'; channel.className = "v3-chip v3-chip--cancelled"; }
-    $("cr-pending-counter").textContent = `${usage.pendingRedemptions || 0} / ${limits.pendingRedemptions || 0}`; $("cr-fulfilled-counter").textContent = `${usage.redemptionsPer30Days || 0} / ${limits.redemptionsPer30Days || 0}`;
+    $("cr-pending-counter").textContent = `${metric(usage.pendingRedemptions)} / ${metric(limits.pendingRedemptions)}`; $("cr-fulfilled-counter").textContent = `${metric(usage.redemptionsPer30Days)} / ${metric(limits.redemptionsPer30Days)}`;
     const redemptions = state.redemptions || [];
     if (!redemptionCtrl) { redemptionCtrl = new ListController({ root: $("cr-redemptions"), tbody: "cr-redemption-list", items: redemptions, perPage: 15, searchFn: (r) => `${r.kick_username || r.kick_user_id} ${r.item_name} ${r.status}`, sortOptions: [{ key: "time", label: "Newest", fn: (a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0) }, { key: "cost", label: "Cost", fn: (a, b) => (b.cost || 0) - (a.cost || 0) }, { key: "status", label: "Status", fn: (a, b) => (a.status || "").localeCompare(b.status || "") }], emptyAllText: "No redemptions yet.", emptyText: "No matching redemptions.", renderItem: (r) => renderRedemptionRow(r), onRender: () => wireDynamicActions() }); mountListControls($("cr-redemptions"), $("cr-redemption-toolbar"), $("cr-redemption-foot")); }
     else redemptionCtrl.setItems(redemptions);
@@ -188,7 +191,7 @@ async function delShop(id, trigger) {
   catch (err) { setStatus("cr-shop-status", err.message, true); } finally { setLoading(trigger, false); }
 }
 async function toggleBlock(id, blocked, trigger) {
-  const next = !Boolean(blocked);
+  const next = !blocked;
   let reason = "";
   if (next) { reason = await showPromptModal("Block viewer", "Why are you blocking this viewer?", { confirmText: "Block", placeholder: "e.g. chargeback / abuse" }) || ""; if (!reason) return; }
   setLoading(trigger, true, next ? "Blocking…" : "Unblocking…");
@@ -275,13 +278,16 @@ async function toggleReward(id, trigger) {
   } catch (err) { trigger.checked = m.active; setStatus("cr-reward-status", err.message, true); } finally { setLoading(trigger, false); }
 }
 async function load() {
+  setState({ CREDITS_STATUS: "loading" });
   setGlobalLoading(true);
   try {
     await loadBoardShell();
     state = await api("GET", sitePath("/api/credits/status"));
+    setState({ CREDITS_STATUS: "ready" });
     render();
     $("cr-app").hidden = false; $("cr-empty").hidden = true;
   } catch (err) {
+    setState({ CREDITS_STATUS: "error" });
     $("cr-empty").innerHTML = `<p class="error">Could not load credits dashboard: ${esc(err.message)}</p>`;
     $("cr-empty").hidden = false; $("cr-app").hidden = true;
     throw err;
