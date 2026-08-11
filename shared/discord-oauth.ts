@@ -38,12 +38,13 @@ function getConfig(env: any): DiscordOAuthConfig {
   return { clientId, clientSecret, redirectUri };
 }
 
-export function buildDiscordAuthorizeURL(env: any, state: string, scope = "identify"): string {
-  const { clientId, redirectUri } = getConfig(env);
+export function buildDiscordAuthorizeURL(env: any, state: string, scope = "identify", redirectUri?: string): string {
+  const { clientId } = getConfig(env);
+  const finalRedirectUri = redirectUri || getConfig(env).redirectUri;
   const params = new URLSearchParams({
     response_type: "code",
     client_id: clientId,
-    redirect_uri: redirectUri,
+    redirect_uri: finalRedirectUri,
     scope,
     state,
     prompt: "consent",
@@ -71,12 +72,12 @@ async function postDiscordToken(env: any, body: URLSearchParams): Promise<Discor
   return JSON.parse(text) as DiscordTokens;
 }
 
-export function exchangeDiscordCode(env: any, code: string): Promise<DiscordTokens> {
-  const { redirectUri } = getConfig(env);
+export function exchangeDiscordCode(env: any, code: string, redirectUri?: string): Promise<DiscordTokens> {
+  const finalRedirectUri = redirectUri || getConfig(env).redirectUri;
   const body = new URLSearchParams({
     grant_type: "authorization_code",
     code,
-    redirect_uri: redirectUri,
+    redirect_uri: finalRedirectUri,
   });
   return postDiscordToken(env, body);
 }

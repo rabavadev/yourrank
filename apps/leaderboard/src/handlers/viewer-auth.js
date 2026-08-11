@@ -18,7 +18,7 @@ import {
   viewerCookieClear,
   readViewerToken,
 } from "../../../../shared/viewer-session.js";
-import { bad, ok, rateLimit, clientIp } from "../auth.js";
+import { bad, json, rateLimit, clientIp } from "../auth.js";
 
 const OAUTH_TTL = 600; // 10 minutes
 
@@ -47,9 +47,19 @@ function redirect(url, headers = {}, status = 302) {
   return new Response(null, { status, headers: { location: url, ...headers } });
 }
 
-function safeReturnTo(raw, fallback = "/me") {
+function safeReturnTo(raw, allowedOrigin, fallback = "/me") {
   const s = String(raw || "").trim();
+  // Same-origin relative path.
   if (s.startsWith("/") && !s.startsWith("//") && !s.startsWith("/\\")) return s;
+  // Same-origin absolute URL (or a custom domain whose auth flow started on that origin).
+  if (allowedOrigin) {
+    try {
+      const u = new URL(s, allowedOrigin);
+      if (u.origin === allowedOrigin) return s;
+    } catch {
+      // ignore malformed URLs
+    }
+  }
   return fallback;
 }
 
@@ -66,14 +76,16 @@ export async function handleKickViewerAuthStart(request, env) {
     return redirect("/me?error=rate_limited");
   }
   const url = new URL(request.url);
-  const returnTo = safeReturnTo(url.searchParams.get("returnTo"));
+  const origin = url.origin;
+  const returnTo = safeReturnTo(url.searchParams.get("returnTo"), origin);
+  const redirectUri = `${origin}/api/viewer/auth/kick/callback`;
 
   const { generatePKCE } = await import("../../../../shared/kick-oauth.js");
   const { codeVerifier, codeChallenge } = await generatePKCE();
   const state = randomState();
-  await storeOAuthState(env, state, { provider: "kick", codeVerifier, returnTo });
+  await storeOAuthState(env, state, { provider: "kick", codeVerifier, returnTo, origin, redirectUri });
 
-  const authorizeURL = buildKickViewerAuthorizeURL(env, state, codeChallenge);
+  const authorizeURL = buildKickViewerAuthorizeURL(env, state, codeChallenge, undefined, redirectUri);
   return redirect(authorizeURL);
 }
 
@@ -97,7 +109,7 @@ export async function handleKickViewerAuthCallback(request, env) {
   await deleteOAuthState(env, state);
 
   try {
-    const tokens = await exchangeKickViewerCode(env, code, stateData.codeVerifier);
+    const tokens = await exchangeKickViewerCode(env, code, stateData.codeVerifier, stateData.redirectUri);
     if (!tokens.access_token) {
       throw new Error("Kick did not return an access token");
     }
@@ -170,7 +182,7 @@ export async function handleKickViewerAuthCallback(request, env) {
     }
 
     const sessionToken = await createViewerSession(env, viewerId);
-    return redirect(safeReturnTo(stateData.returnTo), { "set-cookie": viewerCookieSet(sessionToken, env) });
+    return redirect(safeReturnTo(stateData.returnTo, stateData.origin), { "set-cookie": viewerCookieSet(sessionToken, env, request) });
   } catch (err) {
     console.error("[viewer-auth] kick callback failed:", err?.message || err);
     return redirect(`/me?error=${encodeURIComponent(err?.message || "kick_auth_failed")}`);
@@ -184,12 +196,14 @@ export async function handleDiscordViewerAuthStart(request, env) {
     return redirect("/me?error=rate_limited");
   }
   const url = new URL(request.url);
-  const returnTo = safeReturnTo(url.searchParams.get("returnTo"));
+  const origin = url.origin;
+  const returnTo = safeReturnTo(url.searchParams.get("returnTo"), origin);
+  const redirectUri = `${origin}/api/viewer/auth/discord/callback`;
 
   const state = randomState();
-  await storeOAuthState(env, state, { provider: "discord", returnTo });
+  await storeOAuthState(env, state, { provider: "discord", returnTo, origin, redirectUri });
 
-  const authorizeURL = buildDiscordAuthorizeURL(env, state);
+  const authorizeURL = buildDiscordAuthorizeURL(env, state, undefined, redirectUri);
   return redirect(authorizeURL);
 }
 
@@ -213,7 +227,7 @@ export async function handleDiscordViewerAuthCallback(request, env) {
   await deleteOAuthState(env, state);
 
   try {
-    const tokens = await exchangeDiscordCode(env, code);
+    const tokens = await exchangeDiscordCode(env, code, stateData.redirectUri);
     if (!tokens.access_token) {
       throw new Error("Discord did not return an access token");
     }
@@ -286,7 +300,7 @@ export async function handleDiscordViewerAuthCallback(request, env) {
     }
 
     const sessionToken = await createViewerSession(env, viewerId);
-    return redirect(safeReturnTo(stateData.returnTo), { "set-cookie": viewerCookieSet(sessionToken, env) });
+    return redirect(safeReturnTo(stateData.returnTo, stateData.origin), { "set-cookie": viewerCookieSet(sessionToken, env, request) });
   } catch (err) {
     console.error("[viewer-auth] discord callback failed:", err?.message || err);
     return redirect(`/me?error=${encodeURIComponent(err?.message || "discord_auth_failed")}`);
@@ -298,5 +312,5 @@ export async function handleDiscordViewerAuthCallback(request, env) {
 export async function handleViewerLogout(request, env) {
   const token = readViewerToken(request);
   await destroyViewerSession(env, token);
-  return ok({ loggedOut: true }, 200, { "set-cookie": viewerCookieClear(env) });
+  return json({ ok: true, loggedOut: true }, 200, { "set-cookie": viewerCookieClear(env, request) });
 }

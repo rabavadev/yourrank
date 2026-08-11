@@ -931,6 +931,12 @@ export async function saveSite(env, user, payload, siteId, request = null) {
     : site.telegram_chat_id;
   const telegramNotify = notify.telegram_notify !== undefined ? !!notify.telegram_notify : !!site.telegram_notify;
 
+  // Site section visibility toggles (home and leaderboard are always on).
+  const sectionPayload = payload.siteSections && typeof payload.siteSections === "object" ? payload.siteSections : {};
+  const shopEnabled = typeof sectionPayload.shop === "boolean" ? sectionPayload.shop : !!site.shop_enabled;
+  const creditsEnabled = typeof sectionPayload.credits === "boolean" ? sectionPayload.credits : !!site.credits_enabled;
+  const gamesEnabled = typeof sectionPayload.games === "boolean" ? sectionPayload.games : !!site.games_enabled;
+
   // Auto-reset scheduler controls
   const autoReset = payload.autoReset && typeof payload.autoReset === "object" ? payload.autoReset : {};
   const autoResetEnabled = typeof autoReset.enabled === "boolean" ? autoReset.enabled : !!site.auto_reset_enabled;
@@ -1039,13 +1045,14 @@ export async function saveSite(env, user, payload, siteId, request = null) {
       ? String(b.period || "Monthly").trim()
       : (site.period || "Monthly");
     await tx.unsafe(
-      `UPDATE sites SET slug=$1, name=$2, tagline=$3, casino=$4, code=$5, cta_url=$6, prize_pool=$7, period=$8, ends_at=$9, reset_note=$10, blurb=$11, extra_json=$12::jsonb, logo_data=$13, theme_json=$14::jsonb, published=$15, is_draft=$16, discord_webhook_url_enc=$17, telegram_chat_id=$18, telegram_notify=$19, auto_reset_enabled=$20, auto_reset_clear=$21, password_hash=$22, password_salt=$23, published_at=$24, updated_at=now() WHERE id=$25`,
+      `UPDATE sites SET slug=$1, name=$2, tagline=$3, casino=$4, code=$5, cta_url=$6, prize_pool=$7, period=$8, ends_at=$9, reset_note=$10, blurb=$11, extra_json=$12::jsonb, logo_data=$13, theme_json=$14::jsonb, published=$15, is_draft=$16, discord_webhook_url_enc=$17, telegram_chat_id=$18, telegram_notify=$19, auto_reset_enabled=$20, auto_reset_clear=$21, password_hash=$22, password_salt=$23, published_at=$24, shop_enabled=$25, credits_enabled=$26, games_enabled=$27, updated_at=now() WHERE id=$28`,
       [
         slugVal, siteName, b.tagline ?? site.tagline, b.casino ?? site.casino, b.code ?? site.code,
         b.ctaUrl ?? site.cta_url, b.prizePool ?? site.prize_pool, periodVal,
         endsAtVal, b.resetNote ?? site.reset_note, (payload.partner && payload.partner.blurb) ?? site.blurb,
         extra, logoData, themeJson, publishedVal, isDraftVal, discordWebhookUrlEnc, telegramChatId, telegramNotify,
-        autoResetEnabled, autoResetClear, passwordHash, passwordSalt, publishedAtVal, site.id,
+        autoResetEnabled, autoResetClear, passwordHash, passwordSalt, publishedAtVal,
+        shopEnabled, creditsEnabled, gamesEnabled, site.id,
       ]
     );
 
@@ -1169,6 +1176,9 @@ export async function saveSite(env, user, payload, siteId, request = null) {
   }
   if (payload.endsAt !== undefined) changes.push("ends_at");
   if (payload.customDomain !== undefined) changes.push("custom_domain");
+  if (typeof sectionPayload.shop === "boolean" && sectionPayload.shop !== !!site.shop_enabled) changes.push("shop_enabled");
+  if (typeof sectionPayload.credits === "boolean" && sectionPayload.credits !== !!site.credits_enabled) changes.push("credits_enabled");
+  if (typeof sectionPayload.games === "boolean" && sectionPayload.games !== !!site.games_enabled) changes.push("games_enabled");
 
   await logAudit({
     actorId: uid,

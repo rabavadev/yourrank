@@ -41,22 +41,37 @@ export function newViewerToken(): string {
   return bytesToHex(crypto.getRandomValues(new Uint8Array(32)));
 }
 
-function cookieDomain(env: ViewerSessionEnv): string {
-  return env.SESSION_COOKIE_DOMAIN || VIEWER_COOKIE_DOMAIN;
+function cookieDomainFromHostname(hostname: string | null): string | null {
+  if (!hostname || hostname === "localhost" || hostname.includes(":")) return null;
+  // Share the cookie across the yourrank.site apex and any subdomains.
+  if (hostname === "yourrank.site" || hostname.endsWith(".yourrank.site")) return ".yourrank.site";
+  // For custom domains, use a host-only cookie to avoid cross-domain leaks.
+  return null;
 }
 
-function cookieAttrs(env?: ViewerSessionEnv): string {
-  const domain = env ? cookieDomain(env) : VIEWER_COOKIE_DOMAIN;
+function cookieDomain(env?: ViewerSessionEnv, req?: Request): string | null {
+  if (req) {
+    try {
+      const hostname = new URL(req.url).hostname;
+      return cookieDomainFromHostname(hostname);
+    } catch { return null; }
+  }
+  return env?.SESSION_COOKIE_DOMAIN || VIEWER_COOKIE_DOMAIN;
+}
+
+function cookieAttrs(env?: ViewerSessionEnv, req?: Request): string {
+  const domain = cookieDomain(env, req);
   const secure = env?.ENVIRONMENT === "development" ? "" : "Secure; ";
-  return `HttpOnly; ${secure}SameSite=Lax; Domain=${domain}; Path=/`;
+  const base = `HttpOnly; ${secure}SameSite=Lax; Path=/`;
+  return domain ? `${base}; Domain=${domain}` : base;
 }
 
-export function viewerCookieSet(token: string, env?: ViewerSessionEnv): string {
-  return `${VIEWER_COOKIE_NAME}=${encodeURIComponent(token)}; ${cookieAttrs(env)}; Max-Age=${VIEWER_SESSION_TTL_S}`;
+export function viewerCookieSet(token: string, env?: ViewerSessionEnv, req?: Request): string {
+  return `${VIEWER_COOKIE_NAME}=${encodeURIComponent(token)}; ${cookieAttrs(env, req)}; Max-Age=${VIEWER_SESSION_TTL_S}`;
 }
 
-export function viewerCookieClear(env?: ViewerSessionEnv): string {
-  return `${VIEWER_COOKIE_NAME}=; ${cookieAttrs(env)}; Max-Age=0`;
+export function viewerCookieClear(env?: ViewerSessionEnv, req?: Request): string {
+  return `${VIEWER_COOKIE_NAME}=; ${cookieAttrs(env, req)}; Max-Age=0`;
 }
 
 export function readViewerToken(req: Request): string | null {
@@ -117,7 +132,7 @@ export async function resolveViewerSession(req: Request, env: ViewerSessionEnv):
         [rotatedHash, VIEWER_SESSION_TTL_S, tokenHash]
       );
       if (updated && updated.length > 0) {
-        return { viewerId, cookie: viewerCookieSet(rotated, env) };
+        return { viewerId, cookie: viewerCookieSet(rotated, env, req) };
       }
     } catch {
       console.error("[viewer-session] rotation failed, serving with old token");
