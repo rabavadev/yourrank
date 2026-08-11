@@ -155,20 +155,20 @@ async function loadSettingsUsage() {
     const data = await res.json();
     if (!res.ok || !data) throw new Error("usage request failed");
     const rows = [
-      settingsMeter("Boards", data.leaderboard?.boards?.used, data.leaderboard?.boards?.limit),
-      settingsMeter("Players tracked", data.leaderboard?.players?.used, data.leaderboard?.players?.limit),
+      settingsMeter("Players per board", data.leaderboard?.players?.used, data.leaderboard?.players?.limit),
+      settingsMeter("Active boards", data.leaderboard?.boards?.used, data.leaderboard?.boards?.limit),
     ];
     if (data.credits) rows.push(
-      settingsMeter("Reward mappings", data.credits.rewardMappings?.used, data.credits.rewardMappings?.limit),
-      settingsMeter("Shop items", data.credits.shopItems?.used, data.credits.shopItems?.limit),
+      settingsMeter("Kick reward mappings", data.credits.rewardMappings?.used, data.credits.rewardMappings?.limit),
+      settingsMeter("Active shop items", data.credits.shopItems?.used, data.credits.shopItems?.limit),
       settingsMeter("Pending redemptions", data.credits.pendingRedemptions?.used, data.credits.pendingRedemptions?.limit),
-      settingsMeter("Redemptions / 30 days", data.credits.redemptionsPer30Days?.used, data.credits.redemptionsPer30Days?.limit),
-      settingsMeter("New viewers / 30 days", data.credits.newViewersPer30Days?.used, data.credits.newViewersPer30Days?.limit),
+      settingsMeter("New viewers this month", data.credits.newViewersPer30Days?.used, data.credits.newViewersPer30Days?.limit),
+      settingsMeter("Fulfilled this month", data.credits.redemptionsPer30Days?.used, data.credits.redemptionsPer30Days?.limit),
     );
-    wrap.innerHTML = rows.join("") || '<p class="v3-empty">No usage data yet.</p>';
+    wrap.innerHTML = rows.join("") || '<p class="v3-settings-inline">No usage data yet.</p>';
   } catch (err) {
     logError("settings-usage", err);
-    wrap.innerHTML = '<p class="v3-empty v3-empty--error">Couldn’t load usage. Try again later.</p>';
+    wrap.innerHTML = '<p class="v3-settings-inline v3-settings-inline--error">Couldn’t load usage. Try again later.</p>';
   }
 }
 
@@ -182,7 +182,7 @@ function renderSettingsPlan() {
   if (price) price.textContent = plan === "free" ? "Free" : `$${state.ME?.proPrice || "—"} / month`;
   if (renewal) {
     const expiry = state.ME?.planExpiresAt ? new Date(state.ME.planExpiresAt).toLocaleDateString() : "";
-    renewal.textContent = state.ME?.isTrial ? `Your trial is active${expiry ? ` until ${expiry}` : ""}.` : expiry ? `Renews or expires on ${expiry}.` : "Your current plan is active.";
+    renewal.textContent = state.ME?.isTrial ? `Your trial is active${expiry ? ` until ${expiry}` : ""}.` : expiry ? `Your subscription renews automatically on ${expiry}.` : "Your subscription is active.";
   }
 }
 
@@ -224,7 +224,7 @@ async function loadSettingsProviders() {
   try {
     const res = await fetch("/api/credits/status", { credentials: "include" });
     const data = await res.json();
-    toggle.checked = data?.viewerAuth?.kick !== false;
+    toggle.checked = data?.viewerAuth?.kick === true;
   } catch (err) {
     logError("settings-providers", err);
     toggle.checked = false;
