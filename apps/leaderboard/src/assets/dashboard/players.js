@@ -237,10 +237,8 @@ $("qa_wager")?.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.p
 $("qa_prize")?.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); addQuickRow(); $("qa_name")?.focus(); } });
 
 export function sanitizeImportName(s) {
-  let n = Array.from(String(s || "")).filter((char) => {
-    const code = char.charCodeAt(0);
-    return code > 31 && code !== 127;
-  }).join("").trim();
+  // eslint-disable-next-line no-control-regex -- deliberately strip ASCII control characters from imported names.
+  let n = String(s || "").replace(/[\x00-\x1f\x7f]/g, "").trim();
   n = n.replace(/^"+/, "").replace(/"+$/, "");
   n = n.replace(/[^\p{L}\p{N}\p{P}\p{S}\s]/gu, "").trim();
   return n.length > 40 ? n.slice(0, 40) : n;

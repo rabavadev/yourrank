@@ -26,7 +26,7 @@ export function logError(context, err, extra = {}) {
       body: JSON.stringify(payload)
     }).catch(() => undefined);
   } catch {
-    return;
+    // Telemetry failures are deliberately swallowed so error reporting cannot break the dashboard.
   }
 }
 
