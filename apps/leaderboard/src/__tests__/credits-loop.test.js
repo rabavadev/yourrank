@@ -3,8 +3,7 @@ import { describe, it, expect, mock, beforeEach } from "bun:test";
 // Resolve module URLs we need to mock before any handler imports.
 const dbUrl = import.meta.resolve("../../../../shared/db.js");
 const dbUrlTs = import.meta.resolve("../../../../shared/db.ts");
-const rateLimitUrl = import.meta.resolve("../../../../shared/ratelimit.js");
-const rateLimitUrlTs = import.meta.resolve("../../../../shared/ratelimit.ts");
+
 const viewerSessionUrl = import.meta.resolve("../../../../shared/viewer-session.js");
 const viewerSessionUrlTs = import.meta.resolve("../../../../shared/viewer-session.ts");
 const siteUrl = import.meta.resolve("../site.js");
@@ -74,8 +73,7 @@ const db = {
 
 mock.module(dbUrl, () => db);
 mock.module(dbUrlTs, () => db);
-mock.module(rateLimitUrl, () => ({ rateLimit: async () => ({ ok: true, remaining: 10, limit: 100, retryAfter: 0 }) }));
-mock.module(rateLimitUrlTs, () => ({ rateLimit: async () => ({ ok: true, remaining: 10, limit: 100, retryAfter: 0 }) }));
+
 const viewerSessionState = { viewer: null };
 mock.module(viewerSessionUrl, () => ({ resolveViewer: async () => ({ viewer: viewerSessionState.viewer, cookie: null }) }));
 mock.module(viewerSessionUrlTs, () => ({ resolveViewer: async () => ({ viewer: viewerSessionState.viewer, cookie: null }) }));
@@ -127,6 +125,13 @@ function req(url, method = "GET", body) {
   return new Request(url, init);
 }
 
+function makeEnv() {
+  return {
+    SESSIONS: { get: async () => null, put: async () => {} },
+    RL_FAIL_OPEN: "true",
+  };
+}
+
 beforeEach(() => resetDb());
 
 describe("handleViewerRedeem", () => {
@@ -136,7 +141,7 @@ describe("handleViewerRedeem", () => {
       null, // fulfilled30d count
       { id: "sv-1", balance: 100, blocked: true } // viewer row
     );
-    const res = await handleViewerRedeem(req("https://test.com/api/viewer/redeem", "POST", { slug: "test", shopItemId: "item-1" }), {});
+    const res = await handleViewerRedeem(req("https://test.com/api/viewer/redeem", "POST", { slug: "test", shopItemId: "item-1" }), makeEnv());
     expect(res.status).toBe(400);
     const body = await res.json();
     expect(body.error).toBe("viewer blocked");
@@ -157,7 +162,7 @@ describe("handleViewerRedeem", () => {
       [{ id: "red-1" }], // redemption insert RETURNING
       [] // ledger insert
     );
-    const res = await handleViewerRedeem(req("https://test.com/api/viewer/redeem", "POST", { slug: "test", shopItemId: "item-1" }), {});
+    const res = await handleViewerRedeem(req("https://test.com/api/viewer/redeem", "POST", { slug: "test", shopItemId: "item-1" }), makeEnv());
     expect(res.status).toBe(200);
     const balanceUpdate = db.calls.find((c) => c.method === "one" && /UPDATE site_viewers[\s\S]*balance = balance - \$1/s.test(c.sql));
     expect(balanceUpdate).toBeDefined();
@@ -178,7 +183,7 @@ describe("handleViewerRedeem", () => {
       null // conditional balance update fails
     );
     db.unsafeResponses.push([{ id: "site-1" }]);
-    const res = await handleViewerRedeem(req("https://test.com/api/viewer/redeem", "POST", { slug: "test", shopItemId: "item-1" }), {});
+    const res = await handleViewerRedeem(req("https://test.com/api/viewer/redeem", "POST", { slug: "test", shopItemId: "item-1" }), makeEnv());
     expect(res.status).toBe(400);
     const body = await res.json();
     expect(body.error).toBe("insufficient balance");
@@ -193,7 +198,7 @@ describe("handleViewerRedeem", () => {
       null // site_viewers update still runs? Actually stock is checked before update; in code item.stock<=0 returns out of stock early
     );
     db.unsafeResponses.push([{ id: "site-1" }]);
-    const res = await handleViewerRedeem(req("https://test.com/api/viewer/redeem", "POST", { slug: "test", shopItemId: "item-1" }), {});
+    const res = await handleViewerRedeem(req("https://test.com/api/viewer/redeem", "POST", { slug: "test", shopItemId: "item-1" }), makeEnv());
     expect(res.status).toBe(400);
     const body = await res.json();
     expect(body.error).toBe("out of stock");
@@ -209,7 +214,7 @@ describe("handleViewerRedeem", () => {
       null // stock update loses the race
     );
     db.unsafeResponses.push([{ id: "site-1" }]);
-    const res = await handleViewerRedeem(req("https://test.com/api/viewer/redeem", "POST", { slug: "test", shopItemId: "item-1" }), {});
+    const res = await handleViewerRedeem(req("https://test.com/api/viewer/redeem", "POST", { slug: "test", shopItemId: "item-1" }), makeEnv());
     expect(res.status).toBe(400);
     const body = await res.json();
     expect(body.error).toBe("out of stock");
@@ -221,7 +226,7 @@ describe("handlePublicCredits", () => {
     // No session -> viewer should be null regardless of query params.
     viewerSessionState.viewer = null;
     db.queryResponses.push([]); // shopItems
-    const res = await handlePublicCredits(req("https://test.com/api/public/credits?slug=test&kickUsername=alice"), {});
+    const res = await handlePublicCredits(req("https://test.com/api/public/credits?slug=test&kickUsername=alice"), makeEnv());
     expect(res.status).toBe(200);
     const body = await res.json();
     expect(body.viewer).toBeNull();
@@ -238,7 +243,7 @@ describe("handleCreditsUpdateRedemption", () => {
     db.unsafeResponses.push([], [], []);
     const res = await handleCreditsUpdateRedemption(
       req("https://test.com/api/credits/redemptions/red-1", "POST", { status: "cancelled" }),
-      {},
+      makeEnv(),
       { slug: "red-1" }
     );
     expect(res.status).toBe(200);
@@ -253,7 +258,7 @@ describe("handleCreditsUpdateRedemption", () => {
     db.oneResponses.push(null);
     const res = await handleCreditsUpdateRedemption(
       req("https://test.com/api/credits/redemptions/red-1", "POST", { status: "cancelled" }),
-      {},
+      makeEnv(),
       { slug: "red-1" }
     );
     expect(res.status).toBe(404);
@@ -271,7 +276,7 @@ describe("handleCreditsAdjustBalance", () => {
     db.unsafeResponses.push([]);
     const res = await handleCreditsAdjustBalance(
       req("https://test.com/api/credits/viewers/sv-1/balance", "POST", { delta: 20, reason: "Birthday bonus" }),
-      {},
+      makeEnv(),
       { slug: "sv-1" }
     );
     expect(res.status).toBe(200);
@@ -289,7 +294,7 @@ describe("handleCreditsAdjustBalance", () => {
     );
     const res = await handleCreditsAdjustBalance(
       req("https://test.com/api/credits/viewers/sv-1/balance", "POST", { delta: -20, reason: "Oops" }),
-      {},
+      makeEnv(),
       { slug: "sv-1" }
     );
     expect(res.status).toBe(400);
@@ -310,7 +315,7 @@ describe("handleCreditsReconcile", () => {
         ledger_spent: 10,
       },
     ]);
-    const res = await handleCreditsReconcile(req("https://test.com/api/credits/reconcile?slug=test"), {});
+    const res = await handleCreditsReconcile(req("https://test.com/api/credits/reconcile?slug=test"), makeEnv());
     expect(res.status).toBe(200);
     const body = await res.json();
     expect(body.ok).toBe(false);
