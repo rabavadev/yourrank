@@ -8,7 +8,7 @@ import { checkout, fitDesignPreview, loadCreditsStatus, loadHistory, loadStats, 
 import { renderOverviewSummary, wireOverviewQuickActions } from "./dashboard/overview.js";
 import { renderReferrals } from "./dashboard/referrals.js";
 import { initPerformance } from "./dashboard/performance.js";
-import { wireAccount } from "./dashboard/account.js";
+import { setupSettingsScreen, wireAccount } from "./dashboard/account.js";
 
 async function init() {
   let me;
@@ -193,6 +193,7 @@ async function init() {
   loadCreditsStatus();
   wireStreamerHud();
   wireAccount();
+  setupSettingsScreen(p);
 
   // The save bar, unload guard and preview react to the same notification in
   // dashboard/site.js; this only adds the debounced overview refresh.
