@@ -2,7 +2,7 @@ import { describe, expect, it } from "bun:test";
 import { readFileSync } from "node:fs";
 import { PAGES } from "../pages.jsx";
 
-const overviewJs = readFileSync(new URL("../assets/dashboard/overview.js", import.meta.url), "utf8");
+const siteJs = readFileSync(new URL("../assets/dashboard/site.js", import.meta.url), "utf8");
 const utilsJs = readFileSync(new URL("../assets/dashboard/utils.js", import.meta.url), "utf8");
 
 function dashboardHtml() {
@@ -16,13 +16,15 @@ describe("dashboard overview quick actions", () => {
     expect(html).toContain('id="ovStepBrand"');
     expect(html).toContain('id="ovStepPlayers"');
     expect(html).toContain('id="ovStepPublish"');
-    expect(html).toContain('id="ov_copyLink"');
+    expect(html).toContain('id="ovActivityList"');
+    expect(html).toContain('id="ovTopPlayers"');
+    expect(html).toContain('id="ovStatusbar"');
   });
 
-  it("copies the live page URL from the Overview", () => {
+  it("copies the live page URL from the editor Share tab", () => {
     expect(utilsJs).toContain('navigator.clipboard.writeText');
-    expect(overviewJs).toContain('copyToClipboard');
-    expect(overviewJs).toContain('location.origin + "/" + state.SLUG');
+    expect(siteJs).toContain('const shareCopy = $("shareCopy")');
+    expect(siteJs).toContain('copyToClipboard(publicUrl)');
   });
 
   it("organises navigation into the v3 section list", () => {

@@ -5,7 +5,7 @@ import { currentRoute, navTo, setupShell } from "./dashboard/shell.js";
 import { renderBoardSwitcher, renderSidebarBoardSwitcher, renderBoardsPage } from "./dashboard/boards.js";
 import { renderPlayers } from "./dashboard/players.js";
 import { checkout, fitDesignPreview, loadCreditsStatus, loadHistory, loadStats, refreshDesignPreview, renderArchives, renderBranding, renderDomain, renderDomainStatus, renderBoardStatus, renderEditorTimestamps, renderEmbedShare, renderLegal, renderNotifications, renderOverlay, renderPlan, renderPlayerFields, renderPrizes, renderSections, renderSocials, renderTemplateText, wireCancelSubscription, wireDeleteAccount } from "./dashboard/site.js";
-import { renderOverviewSummary, wireOverviewQuickActions } from "./dashboard/overview.js";
+import { renderOverviewSummary } from "./dashboard/overview.js";
 import { renderReferrals } from "./dashboard/referrals.js";
 import { initPerformance } from "./dashboard/performance.js";
 import { setupSettingsScreen, wireAccount } from "./dashboard/account.js";
@@ -188,7 +188,6 @@ async function init() {
   }
 
   renderOverviewSummary();
-  wireOverviewQuickActions();
   renderReferrals();
   initPerformance();
   loadStats();

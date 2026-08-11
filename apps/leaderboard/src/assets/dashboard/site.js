@@ -1248,18 +1248,19 @@ export function renderDomainStatus(status, message) {
 export async function loadCreditsStatus() {
   const statusEl = $("kickStatus");
   const linkEl = $("kickRewardsLink");
-  if (!statusEl) return;
   try {
     const res = await fetch("/api/credits/status");
     const data = await res.json();
+    setState({ CREDITS: data });
+    renderOverviewSummary();
     const connected = Boolean(data.channel?.externalId);
-    statusEl.textContent = connected
+    if (statusEl) statusEl.textContent = connected
       ? `Connected to ${data.channel?.name || "your Kick channel"}. ${data.usage?.rewardMappings || 0} reward mappings active.`
       : "Connect your Kick channel in the rewards dashboard to start giving viewers credits.";
     if (linkEl) linkEl.textContent = connected ? "Manage Kick rewards →" : "Connect Kick rewards →";
   } catch (err) {
     logError("credits/status", err);
-    statusEl.textContent = "Could not load Kick rewards status.";
+    if (statusEl) statusEl.textContent = "Could not load Kick rewards status.";
   }
 }
 
@@ -1482,7 +1483,6 @@ export function renderEmbedShare() {
         // fact about the account rather than a failed request.
         logError("load-stats", err);
         showLoadError($("statsEmpty"), "your stats", loadStats);
-        showLoadError($("ov_barsEmpty"), "your stats", loadStats);
         return null;
       }
   const fmt = (n) => n >= 10000 ? (n / 1000).toFixed(1).replace(/\.0$/, "") + "k" : String(n);
@@ -1508,34 +1508,8 @@ export function renderEmbedShare() {
   const hCtr = $("hud_ctr"); if (hCtr) hCtr.textContent = (s.last30.views ? ((s.last30.clicks / s.last30.views) * 100).toFixed(1) : "0.0") + "%";
   const hS = $("hud_signups"); if (hS) hS.textContent = fmt(s.last30.copies); // Using copies as signups proxy
 
-  // Overview KPI row
-  const ovKpiViews = $("ov_kpi_views"); if (ovKpiViews) ovKpiViews.textContent = fmt(s.last7.views);
-  const ovKpiClicks = $("ov_kpi_clicks"); if (ovKpiClicks) ovKpiClicks.textContent = fmt(s.last7.clicks);
-  const ovKpiCopies = $("ov_kpi_copies"); if (ovKpiCopies) ovKpiCopies.textContent = fmt(s.last7.copies);
-  const ovKpiSignups = $("ov_kpi_signups"); if (ovKpiSignups) ovKpiSignups.textContent = fmt(s.last7.conversions || s.last7.copies);
-  const ovBars = $("ov_bars");
-  if (ovBars) {
-    const ovMax = Math.max(1, ...days.map((x) => x.views + x.copies + x.clicks));
-    ovBars.innerHTML = days.map((x) => {
-      const total = x.views + x.copies + x.clicks;
-      const h = Math.max(2, Math.round((total / ovMax) * 100));
-      const nice = new Date(x.day + "T00:00:00Z").toUTCString().slice(5, 11);
-      const tip = `${nice}: ${x.views} views, ${x.copies} copies, ${x.clicks} clicks`;
-      if (!total) return `<div class="stat-bar is-empty" style="height:2%" title="${tip}"></div>`;
-      const seg = (v, c) => {
-        const pct = Math.max(1, Math.round((v / total) * 100));
-        return v ? `<div class="stat-bar-seg ${c}" style="height:${pct}%"></div>` : "";
-      };
-      return `<div class="stat-bar is-stacked" style="height:${h}%" title="${tip}">${seg(x.views, "views")}${seg(x.copies, "copies")}${seg(x.clicks, "clicks")}</div>`;
-    }).join("");
-    ovBars.setAttribute("role", "img");
-    const ovTotal = days.reduce((a, x) => a + x.views + x.copies + x.clicks, 0);
-    ovBars.setAttribute("aria-label", `Stacked bar chart of activity for the last ${days.length} days. Total: ${ovTotal} events.`);
-    if (days.length) $("ov_barsFrom").textContent = new Date(days[0].day + "T00:00:00Z").toUTCString().slice(5, 11);
-    clearLoadError($("ov_barsEmpty"), !(days.length > 0 && (s.last30.views + s.last30.copies + s.last30.clicks) > 0));
-  }
-  const shareStep = $("ovStepShare");
-  if (shareStep && s.last7.views > 0) shareStep.classList.add("is-done");
+  setState({ STATS: s });
+  renderOverviewSummary();
   renderPerformance(s);
   return s;
 }
