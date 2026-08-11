@@ -156,8 +156,8 @@ function render() {
     else viewerCtrl.setItems(viewers);
     renderAnalytics();
   }
-  if (current === "redemptions") renderOnboarding();
   if (current === "redemptions") {
+    renderOnboarding();
     const channel = $("cr-redemption-channel");
     if (state.channel?.externalId) { channel.innerHTML = `● Connected to @${esc(state.channel.name || state.channel.externalId)}`; channel.className = "v3-chip v3-chip--refunded"; } else { channel.innerHTML = '<a href="/dashboard/rewards/channel">Not connected · Connect in Channel</a>'; channel.className = "v3-chip v3-chip--cancelled"; }
     $("cr-pending-counter").textContent = `${usage.pendingRedemptions || 0} / ${limits.pendingRedemptions || 0}`; $("cr-fulfilled-counter").textContent = `${usage.redemptionsPer30Days || 0} / ${limits.redemptionsPer30Days || 0}`;
