@@ -5,6 +5,7 @@
 // Run: bun test src/__tests__/site-routes.test.js
 
 import { describe, it, expect, mock } from "bun:test";
+import { detectImageMime, validateLogoData } from "../logo-validation.js";
 
 // ── Helper: resolve module paths the same way the source files do ───────
 function local(p) { return import.meta.resolve(`../${p}.js`); }
@@ -120,7 +121,8 @@ mock.module(local("site"), () => ({
   getBySlug: () => Promise.resolve(null),
   getArchives: () => Promise.resolve([]),
   ARCHIVE_LIMITS: { free: 6, starter: 6, pro: 12, agency: 24 },
-  detectImageMime: () => null,
+  detectImageMime,
+  validateLogoData,
 }));
 
 // ── Mock site-data.js to avoid DB queries for viewer data ───────────────
