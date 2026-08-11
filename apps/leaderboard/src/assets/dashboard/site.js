@@ -34,11 +34,11 @@ const PLAN_ORDER = ["free", "starter", "pro", "agency"];
 const LIFETIME_KEY = "lifetime";
 const DEFAULT_PRIZES = { prizePoolLabel: "Prize pool", payoutsLabel: "Payouts", countdownLabel: "", currency: "$", hidePrizeAmounts: false };
 
-function isLifetime() {
+export function isLifetime() {
   const exp = state.ME?.planExpiresAt;
   return Number(exp) > new Date("2099-01-01T00:00:00Z").getTime();
 }
-function isPro() {
+export function isPro() {
   const plan = state.ME?.plan;
   return plan === "pro" || plan === "agency" || plan === "lifetime" || isLifetime();
 }

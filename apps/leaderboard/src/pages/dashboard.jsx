@@ -94,7 +94,7 @@ export function DashboardContent() {
   </div>
   <div class="lb-topbar-actions">
     <span class="lb-status" id="lbTopbarStatus">—</span>
-    <label class="lb-pub-toggle" title="When checked, saving makes the board public at /your-slug"><input type="checkbox" id="pubToggle" disabled /> <span class="lb-pub-lbl">Publish site</span></label>
+    <label class="lb-pub-toggle" title="When checked, saving makes the board public at /your-slug"><input type="checkbox" id="pubToggle" checked /> <span class="lb-pub-lbl">Publish site</span></label>
     <span class="lb-avatar" id="userAvatar" aria-label="Account">Y</span>
   </div>
 </header>

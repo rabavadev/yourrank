@@ -1,6 +1,6 @@
 import { $, getCsrf, guardAuth, logError, showToast } from "./utils.js";
-import { state, markDirty } from "./state.js";
-import { DEFAULT_SECTIONS } from "./site.js";
+import { state } from "./state.js";
+import { DEFAULT_SECTIONS, isPro } from "./site.js";
 
 const GAME_ROWS = [
   { key: "plinko", label: "Plinko", description: "A pachinko-style game with multiplier rewards." },
@@ -35,18 +35,11 @@ function renderPageBlocks() {
   const list = $("leaderboardBlockRows");
   const note = $("leaderboardBlockNote");
   if (!list) return;
-  const editable = isPro();
   const current = { ...DEFAULT_SECTIONS, ...(state.EXTRA?.sections || {}) };
-  list.innerHTML = BLOCK_ROWS.map(([key, label]) => `<label><span>${label}</span><input class="v3-toggle" type="checkbox" data-page-block="${key}" ${current[key] !== false ? "checked" : ""} ${editable ? "" : "disabled"} aria-disabled="${editable ? "false" : "true"}" /></label>`).join("");
-  if (note) note.textContent = editable
-    ? "Changes apply when you save your board."
+  list.innerHTML = BLOCK_ROWS.map(([key, label]) => `<label><span>${label}</span><input class="v3-toggle" type="checkbox" ${current[key] !== false ? "checked" : ""} disabled aria-disabled="true" /></label>`).join("");
+  if (note) note.textContent = isPro()
+    ? "Edit block visibility in the Page design editor."
     : "Block visibility is available on Pro plans. Current board settings are shown.";
-  list.querySelectorAll("[data-page-block]").forEach((input) => {
-    input.addEventListener("change", () => {
-      state.EXTRA.sections = { ...DEFAULT_SECTIONS, ...(state.EXTRA.sections || {}), [input.dataset.pageBlock]: input.checked };
-      markDirty();
-    });
-  });
 }
 
 function siteSections() {
