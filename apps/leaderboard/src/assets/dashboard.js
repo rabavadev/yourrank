@@ -136,6 +136,8 @@ async function init() {
   renderBoardStatus();
   const editorLiveLink = $("editorLiveLink");
   if (editorLiveLink) { editorLiveLink.href = liveUrl; editorLiveLink.title = location.host + liveUrl; }
+  const previewLiveLink = $("previewLiveLink");
+  if (previewLiveLink) { previewLiveLink.href = liveUrl; previewLiveLink.title = location.host + liveUrl; }
   const editorCopyLink = $("editorCopyLink");
   if (editorCopyLink && !editorCopyLink._wired) {
     editorCopyLink._wired = true;

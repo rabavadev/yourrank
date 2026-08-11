@@ -751,10 +751,7 @@ export function renderBoardStatus() {
   // "View live" must not be offered while the public URL would not resolve.
   for (const id of ["liveLink", "editorLiveLink", "previewLiveLink"]) {
     const link = $(id);
-    if (link) {
-      link.hidden = !s.live;
-      if (s.live && state.SLUG) link.href = `${location.origin}/${state.SLUG}`;
-    }
+    if (link) link.hidden = !s.live;
   }
   return s;
 }
