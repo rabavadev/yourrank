@@ -381,88 +381,34 @@ export function DashboardContent() {
 </section>
 <section class="lb-page" data-page="settings">
 <div class="lb-phead"><button class="lb-menu" type="button" aria-label="Show sections" data-menu aria-expanded="false" aria-controls="lbSide">☰</button></div>
-<div class="lb-bento">
-<div class="lb-widget lb-widget--full settings-nav">
-  <nav aria-label="Settings sections">
-    <a class="btn btn--xs btn--ghost" href="#settings-integrations">Integrations</a>
-    <a class="btn btn--xs btn--ghost" href="#settings-compliance">Compliance</a>
-  </nav>
-</div>
-<div class="lb-widget lb-widget--full" id="settings-integrations">
-  <h2>Integrations</h2>
-  <p class="card-sub">Stream tools, webhooks, postbacks and Kick rewards.</p>
-  <div class="grid2">
-    <div class="card" id="kickRewardsCard">
-      <h3>Kick rewards</h3>
-      <p class="card-sub">Let viewers earn credits by redeeming Kick channel rewards.</p>
-      <p class="hint" id="kickStatus">Loading…</p>
-      <div class="d-flex gap-8 flex-wrap mt-14">
-        <a class="btn btn--sm btn--accent" href="/dashboard/credits" id="kickRewardsLink">Open Kick rewards →</a>
-      </div>
-    </div>
-    <div class="card" id="postbacksCard">
-      <h3>Postbacks</h3>
-      <p class="card-sub">Receive automatic score updates from your sponsor via postback URLs.</p>
-      <p class="hint" id="postbackStatus">Manage postback keys and endpoints in <a href="/account/postbacks">Account → Postbacks</a>.</p>
-    </div>
+<div class="v3-settings">
+  <div class="v3-head"><h1>Settings</h1><p class="v3-head-sub" id="settingsSubline">Manage your subscription, account connections, and safety settings</p></div>
+  <div class="v3-tabs" role="tablist" aria-label="Settings sections">
+    <button class="v3-tab is-on" id="settingsTabPlan" type="button" role="tab" aria-selected="true" aria-controls="settingsPanelPlan" data-settings-tab="plan">Plan &amp; Usage</button>
+    <button class="v3-tab" id="settingsTabAccount" type="button" role="tab" aria-selected="false" aria-controls="settingsPanelAccount" data-settings-tab="account">Account</button>
+    <button class="v3-tab" id="settingsTabSecurity" type="button" role="tab" aria-selected="false" aria-controls="settingsPanelSecurity" data-settings-tab="security">Security</button>
+    <button class="v3-tab" id="settingsTabDomain" type="button" role="tab" aria-selected="false" aria-controls="settingsPanelDomain" data-settings-tab="domain">Domain</button>
+    <button class="v3-tab" id="settingsTabSupport" type="button" role="tab" aria-selected="false" aria-controls="settingsPanelSupport" data-settings-tab="support">Support</button>
   </div>
-  <hr class="hr" />
-  <div class="card">
-    <h3>Notifications <span class="pill pill--info ml-6">PRO</span></h3>
-    <p class="card-sub">Optional alerts when your leaderboard resets or a player breaks into the top 3.</p>
-    <div id="notifyBody">
-      <div class="field"><label>Events that trigger notifications</label>
-        <div class="d-flex gap-8 flex-wrap mb-4">
-          <span class="pill pill--muted ic-btn"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg>Leaderboard reset</span>
-          <span class="pill pill--muted ic-btn"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg>Player enters top 3</span>
-        </div>
-      </div>
-      <div class="field"><label for="f_webhook">Discord webhook URL</label>
-        <input id="f_webhook" placeholder="https://discord.com/api/webhooks/..." />
-        <span class="hint">Create a webhook in your Discord server settings → Integrations → Webhooks. Paste the URL here.</span>
-      </div>
-      <div class="d-flex gap-8 items-center flex-wrap mt-n8 mb-16">
-        <button class="btn btn--sm ic-btn" id="testDiscord" type="button"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.536 21.686a.5.5 0 0 0 .937-.024l6.5-19a.496.496 0 0 0-.635-.635l-19 6.5a.5.5 0 0 0-.024.937l7.93 3.18a2 2 0 0 1 1.112 1.11z"/><path d="m21.854 2.147-10.94 10.939"/></svg>Test Discord</button>
-        <span class="hint" id="testDiscordStatus" role="status" aria-live="polite"></span>
-      </div>
-      <div class="field"><label for="f_tgChatId">Telegram chat/group ID</label>
-        <input id="f_tgChatId" placeholder="-1001234567890" />
-        <span class="hint">The chat or group ID where notifications should be sent. Use <code>/start</code> in your bot chat or add the bot to a group to get the ID.</span>
-      </div>
-      <div class="d-flex gap-8 items-center flex-wrap mt-n8 mb-16">
-        <label class="hint chk"><input type="checkbox" id="f_tgNotify" /> Enable Telegram notifications</label>
-        <button class="btn btn--sm ic-btn" id="testTelegram" type="button"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.536 21.686a.5.5 0 0 0 .937-.024l6.5-19a.496.496 0 0 0-.635-.635l-19 6.5a.5.5 0 0 0-.024.937l7.93 3.18a2 2 0 0 1 1.112 1.11z"/><path d="m21.854 2.147-10.94 10.939"/></svg>Test Telegram</button>
-        <span class="hint" id="testTelegramStatus" role="status" aria-live="polite"></span>
-      </div>
-    </div>
-    <div class="empty" id="notifyLock" hidden>Notifications are a Pro feature. <a href="/account/plan?from=notifications" id="notifyUpgrade">Upgrade to unlock them</a>.</div>
-  </div>
-  <hr class="hr" />
-  <div class="field"><label>OBS Overlay</label>
-    <p class="card-sub">Copy the overlay URL, embed code and share links in Board → Share.</p>
-    <a class="btn btn--sm" href="/dashboard/editor/share">Open Board → Share</a>
-  </div>
-  <hr class="hr" />
-  <div id="domainBody">
-    <div class="field"><label for="f_domain">Your domain</label><input id="f_domain" placeholder="board.mystream.com" />
-      <span class="hint">Point a <b>CNAME record</b> for your domain to <span class="mono">yourrank.site</span>. Then enter the domain here and click <b>Verify &amp; Provision TLS</b>.</span>
-    </div>
-    <div class="mt-8 d-flex gap-8 items-center flex-wrap">
-      <button class="btn btn--sm btn--accent" id="domainVerify" type="button">Verify &amp; Provision TLS</button>
-    </div>
-    <div id="domainStatus" class="hint mt-8 min-h-18" role="status" aria-live="polite"></div>
-  </div>
-  <div class="empty" id="domainLock" hidden>Custom domains are a Pro feature. <a href="/account/plan?from=domain" id="domainUpgrade">Upgrade to unlock it</a>.</div>
-</div>
-<div class="lb-widget lb-widget--full" id="settings-compliance">
-  <h2>Compliance</h2>
-  <p class="card-sub">Company identity, legal pages and responsible-gaming messaging.</p>
-  <div class="info-notice"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="16" y2="12"/><line x1="12" x2="12.01" y1="8" y2="8"/></svg><span>Leave any field blank to use the default legal text provided by YourRank. Your custom text will be shown on your public page at <code>/terms</code>, <code>/privacy</code>, etc.</span></div>
-  <div class="legal-editor" id="legalList"></div>
-  <div class="legal-footer-preview" id="legalFooterPreview"><b>Footer links preview:</b> <span class="legal-footer-link">Terms</span> · <span class="legal-footer-link">Privacy</span> · <span class="legal-footer-link">Responsible Gaming</span> · <span class="legal-footer-link">Cookies</span> · <span class="legal-footer-link">Refund</span> · <span class="legal-footer-link">Contact</span></div>
-</div>
+  <section class="v3-settings-panel" id="settingsPanelPlan" role="tabpanel" aria-labelledby="settingsTabPlan" data-settings-panel="plan">
+    <div class="v3-settings-card v3-plan-card"><div><div class="v3-settings-plan-row"><span class="v3-chip v3-chip--pro" id="settingsPlanChip">—</span><span class="v3-settings-price" id="settingsPlanPrice">—</span></div><p class="v3-settings-card-sub" id="settingsPlanRenewal">—</p></div><a class="v3-set-btn v3-set-btn--outline" href="/account/plan" id="settingsManagePlan">Manage subscription</a></div>
+    <div class="v3-settings-card"><div class="v3-settings-card-head"><div><h2>Platform Limits</h2></div></div><div class="v3-set-meters" id="settingsUsage"><p class="v3-settings-inline">Loading usage…</p></div></div>
+    <div class="v3-settings-card"><div class="v3-settings-card-head"><div><h2>Account Providers &amp; Schedulers</h2></div></div><div class="v3-settings-group-label">VIEWER LOGIN PROVIDERS</div><div class="v3-settings-row"><div><b>Kick Authentication</b><p>Allow viewers to sign in natively using Kick OAuth services. <a href="/dashboard/rewards/channel">Configure in Rewards &amp; Shop</a></p></div><input class="v3-toggle" id="settingsKickLogin" type="checkbox" aria-label="Allow viewers to log in with Kick" disabled /></div><div class="v3-settings-row"><div><b>Discord Integration</b><p>Allow viewers to link Discord accounts to trace server roles.</p></div><a class="v3-set-btn v3-set-btn--outline" href="#settingsPanelSecurity" data-settings-jump="security">Webhook settings</a></div></div>
+  </section>
+  <section class="v3-settings-panel" id="settingsPanelAccount" role="tabpanel" aria-labelledby="settingsTabAccount" data-settings-panel="account" hidden>
+    <div class="v3-settings-card"><div class="v3-settings-card-head"><div><h2>Account security</h2><p>Update your password and review active sessions.</p></div></div><div class="v3-settings-form-grid"><label>Current password<input type="password" id="accCurrentPassword" autocomplete="current-password" /></label><label>New password<input type="password" id="accNewPassword" autocomplete="new-password" minlength="8" /></label></div><div class="v3-settings-actions"><button class="v3-set-btn v3-set-btn--dark" id="accChangePassword" type="button">Update password</button><span class="v3-settings-status" id="accPasswordStatus" role="status"></span></div><div class="v3-settings-divider"></div><div class="v3-settings-row"><div><b>Active sessions</b><p>Sign out every other device while keeping this one active.</p></div><button class="v3-set-btn v3-set-btn--outline" id="accRevokeSessions" type="button">Sign out other sessions</button></div><div id="accSessions" class="v3-settings-sessions"><p class="v3-settings-muted">Loading…</p></div><p class="v3-settings-status" id="accSessionsStatus" role="status"></p></div>
+    <div class="v3-settings-card"><div class="v3-settings-card-head"><div><h2>Integrations</h2><p>Stream tools, postbacks, Kick rewards and legal pages.</p></div></div><div class="v3-settings-row"><div><b>Kick rewards</b><p>Let viewers earn credits by redeeming Kick channel rewards.</p><span class="v3-settings-muted" id="kickStatus">Loading…</span></div><a class="v3-set-btn v3-set-btn--outline" href="/dashboard/credits" id="kickRewardsLink">Open Kick rewards</a></div><div class="v3-settings-row"><div><b>Postbacks</b><p id="postbackStatus">Receive automatic score updates from your sponsor.</p></div><a class="v3-set-btn v3-set-btn--outline" href="/account/postbacks">Manage postbacks</a></div><div class="v3-settings-divider"></div><div class="v3-settings-notify-account"><label class="v3-settings-label" for="f_tgChatId">Telegram chat/group ID</label><input id="f_tgChatId" placeholder="-1001234567890" /><label class="v3-settings-check"><input type="checkbox" id="f_tgNotify" /> Enable Telegram notifications</label><button class="v3-set-btn v3-set-btn--outline" id="testTelegram" type="button">Test Telegram</button><span class="v3-settings-status" id="testTelegramStatus" role="status"></span></div><div class="v3-settings-divider"></div><div class="v3-settings-legal"><h3>Compliance</h3><div id="legalList"></div><div id="legalFooterPreview" class="v3-settings-muted"></div></div></div>
+  </section>
+  <section class="v3-settings-panel" id="settingsPanelSecurity" role="tabpanel" aria-labelledby="settingsTabSecurity" data-settings-panel="security" hidden>
+    <div class="v3-settings-card"><div class="v3-settings-row v3-settings-row--top"><div><h2>Password Protection</h2><p>Visitors must enter this password before seeing the leaderboard or using the public API.</p></div><input class="v3-toggle" id="settingsPasswordEnabled" type="checkbox" aria-label="Enable password protection" /></div><div class="v3-settings-inline-form"><input id="settingsPassword" type="password" placeholder="Leave blank to keep current password" autocomplete="new-password" /><button class="v3-set-btn v3-set-btn--dark" id="settingsPasswordSave" type="button">Update password</button><span class="v3-settings-status" id="settingsPasswordStatus" role="status"></span></div></div>
+    <div class="v3-settings-card"><div class="v3-settings-row v3-settings-row--top"><div><h2>Webhook Notifications <span class="v3-chip v3-chip--pro">PRO</span></h2><p>Receive alerts when your leaderboard resets or a player reaches the top 3.</p></div><input class="v3-toggle" id="settingsWebhookEnabled" type="checkbox" aria-label="Enable webhook notifications" /></div><div class="v3-settings-notify-body" id="notifyBody"><div class="v3-settings-inline-form"><input id="f_webhook" aria-label="Discord webhook URL" placeholder="https://discord.com/api/webhooks/..." /><button class="v3-set-btn v3-set-btn--outline" id="testDiscord" type="button">Test webhook</button><span class="v3-settings-status" id="testDiscordStatus" role="status"></span></div></div><div class="v3-settings-inline" id="notifyLock" hidden>Notifications are a Pro feature. <a href="/account/plan?from=notifications">Upgrade to unlock them</a>.</div></div>
+    <div class="v3-settings-card v3-danger-card"><div class="v3-danger-lbl">DANGER ZONE</div><div class="v3-settings-row"><div><b>Reset All Leaderboard Data</b><p>Instantly wipes all player scores, wagers, and redemption history. This action cannot be undone.</p></div><button class="v3-set-btn v3-set-btn--danger-outline" id="settingsResetData" type="button">Reset data</button></div><div class="v3-settings-row"><div><b>Delete this board</b><p>Permanently delete this board configuration. This action cannot be undone.</p></div><button class="v3-set-btn v3-set-btn--danger" id="settingsDeleteBoard" type="button">Delete board</button></div></div>
+  </section>
+  <section class="v3-settings-panel" id="settingsPanelDomain" role="tabpanel" aria-labelledby="settingsTabDomain" data-settings-panel="domain" hidden><div class="v3-settings-card"><div class="v3-settings-card-head"><div><h2>Custom Domain</h2><p>Point your domain to your public board and provision TLS.</p></div></div><div id="domainBody"><label class="v3-settings-label" for="f_domain">Your domain</label><input id="f_domain" placeholder="board.mystream.com" /><p class="v3-settings-muted">Point a CNAME record to <span class="mono">yourrank.site</span>, then verify.</p><button class="v3-set-btn v3-set-btn--dark" id="domainVerify" type="button">Verify &amp; Provision TLS</button><div id="domainStatus" class="v3-settings-status" role="status"></div></div><div class="v3-settings-inline" id="domainLock" hidden>Custom domains are a Pro feature. <a href="/account/plan?from=domain">Upgrade to unlock it</a>.</div></div></section>
+  <section class="v3-settings-panel" id="settingsPanelSupport" role="tabpanel" aria-labelledby="settingsTabSupport" data-settings-panel="support" hidden><div class="v3-settings-card"><div class="v3-settings-card-head"><div><h2>Support &amp; Resources</h2><p>Find help and manage the tools around your public board.</p></div></div><div class="v3-settings-row"><div><b>OBS Overlay</b><p>Copy the overlay URL, embed code and share links.</p></div><a class="v3-set-btn v3-set-btn--outline" href="/dashboard/editor/share">Open Board → Share</a></div><div class="v3-settings-row"><div><b>Need help?</b><p>Contact support or read the YourRank documentation.</p></div><a class="v3-set-btn v3-set-btn--outline" href="/help/support">Contact support</a></div></div></section>
 </div>
 </section>
+
 <section class="lb-page" data-page="boards">
 <div class="lb-phead"><button class="lb-menu" type="button" aria-label="Show sections" data-menu aria-expanded="false" aria-controls="lbSide">☰</button><button class="btn btn--sm" id="addBoardFromBoards" type="button">+ New board</button></div>
 <div class="card">
