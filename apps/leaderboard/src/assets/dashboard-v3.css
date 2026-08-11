@@ -2031,6 +2031,24 @@ body[data-wide] .v3-dash .lb-main {
   .v3-dash .v3-tab { flex: 0 0 auto; }
 }
 /* ---------- Overview (04 / 05) ---------- */
+main:has(.v3-dash section[data-page="home"].is-on) {
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
+.v3-dash:has(section[data-page="home"].is-on) {
+  min-height: 0;
+}
+
+.v3-dash:has(section[data-page="home"].is-on) .lb-shell {
+  min-height: 0;
+  padding-bottom: 0;
+}
+
+.v3-dash:has(section[data-page="home"].is-on) .lb-main {
+  min-height: 0;
+}
+
 .v3-dash .ov-setup { display: flex; flex-direction: column; gap: 24px; }
 .v3-dash .ov-setup-progress {
   min-height: 82px;
@@ -2056,10 +2074,11 @@ body[data-wide] .v3-dash .lb-main {
 .v3-dash .ov-setup-lock svg { width: 16px; height: 16px; }
 .v3-dash .ov-live .kpi-row { grid-template-columns: repeat(3, 1fr); gap: 20px; }
 .v3-dash .ov-live .kpi-card { height: 100px; padding: 20px; justify-content: space-between; }
+.v3-dash .ov-live .kpi-card::before { display: none; }
 .v3-dash .ov-live .kpi-value-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
 .v3-dash .ov-live .kpi-val { font-family: var(--v3-mono); font-size: 30px; }
 .v3-dash .ov-live .kpi-action { color: #3f9c12; font-size: 13px; font-weight: 600; white-space: nowrap; }
-.v3-dash .ov-live { display: flex; flex-direction: column; gap: 20px; min-height: calc(100vh - 220px); }
+.v3-dash .ov-live { display: flex; flex-direction: column; gap: 20px; }
 .v3-dash .ov-live-grid { display: grid; grid-template-columns: 1.62fr 1fr; gap: 20px; flex: 1; min-height: 280px; }
 .v3-dash .ov-live-card { min-width: 0; padding: 20px; border: 1px solid var(--v3-main-line); border-radius: var(--v3-radius); background: var(--v3-main-panel); }
 .v3-dash .ov-live-card h2 { margin: 0 0 10px; }
@@ -2080,6 +2099,15 @@ body[data-wide] .v3-dash .lb-main {
 .v3-dash .ov-status-sep { color: var(--v3-main-ink-mute); }
 .v3-dash .ov-live .v3-statusbar-end { font-weight: 600; }
 .v3-dash .ov-tracked-count { color: var(--v3-ink); }
+
+@media (min-width: 641px) {
+  .v3-dash .ov-setup-row {
+    height: 68px;
+    min-height: 68px;
+    box-sizing: border-box;
+  }
+}
+
 @media (max-width: 640px) {
   .v3-dash .ov-live .kpi-row, .v3-dash .ov-live-grid { grid-template-columns: 1fr; }
   .v3-dash .ov-live { min-height: 0; }

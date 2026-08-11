@@ -24,7 +24,7 @@ function computeSetupSteps() {
 function setStepDone(el, done) {
   if (!el) return;
   el.classList.toggle("is-done", done);
-  el.textContent = done ? "✓" : el.dataset.num || el.textContent;
+  el.textContent = done ? "✓" : "";
 }
 
 function setSetupStatus(el, done) {
