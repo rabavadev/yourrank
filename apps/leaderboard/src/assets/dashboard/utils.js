@@ -24,8 +24,10 @@ export function logError(context, err, extra = {}) {
       credentials: "include",
       headers: { "content-type": "application/json", "x-csrf-token": getCsrf(), "x-request-id": reqId },
       body: JSON.stringify(payload)
-    }).catch(() => {});
-  } catch {}
+    }).catch(() => undefined);
+  } catch {
+    // Telemetry failures are deliberately swallowed so error reporting cannot break the dashboard.
+  }
 }
 
 export function showToast(message, type = "error") {

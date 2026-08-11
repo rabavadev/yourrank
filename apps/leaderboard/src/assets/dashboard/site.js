@@ -1,18 +1,10 @@
 // Site editing: plan, branding/theme, save, archive, domain, overlay, notifications.
-import { $, esc, fromLocalInput, getCsrf, guardAuth, localTzLabel, logError, toLocalInput, parseAmount, showToast, showConfirmModal, copyToClipboard, flashButton, showLoadError, clearLoadError } from "./utils.js";
+import { $, esc, fromLocalInput, getCsrf, guardAuth, localTzLabel, logError, parseAmount, showConfirmModal, copyToClipboard, flashButton, showLoadError, clearLoadError } from "./utils.js";
 import { state, boardStatus, markDirty, setState, subscribe } from "./state.js";
 import { renderBoardSwitcher, renderBoardsPage, renderSidebarBoardSwitcher } from "./boards.js";
 import { renderOverviewSummary } from "./overview.js";
 import { renderPerformance } from "./performance.js";
 import { applyPlayerFieldVisibility, renderPlayers, renumber, toggleEmpty } from "./players.js";
-
-const FONT_FAMILIES = [
-  { key: "Inter", label: "Inter — Default" },
-  { key: "Oswald", label: "Oswald — Bold & Sporty" },
-  { key: "Playfair Display", label: "Playfair Display — Premium & Elegant" },
-  { key: "Rajdhani", label: "Rajdhani — Techy & Esports" },
-  { key: "Bebas Neue", label: "Bebas Neue — Impact & Hype" },
-];
 
 export const DEFAULT_SECTIONS = {
   hero: true,

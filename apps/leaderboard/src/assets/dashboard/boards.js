@@ -1,5 +1,5 @@
 // Board switcher, creation, duplication, deletion, and the board list page.
-import { $, esc, getCsrf, guardAuth, logError, slugify, showConfirmModal, showToast } from "./utils.js";
+import { $, esc, getCsrf, guardAuth, logError, slugify, showConfirmModal } from "./utils.js";
 import { state } from "./state.js";
 import { navTo } from "./shell.js";
 
