@@ -2,6 +2,7 @@ import { showConfirmModal, showPromptModal, ListController, logError } from "./d
 import { openDrawer, closeDrawer } from "./dashboard/shell.js";
 import { setState } from "./dashboard/state.js";
 import { UNKNOWN, renderEmpty, setMetricLoading, setRowsLoading } from "./dashboard/states.js";
+import { updateProfileMenu } from "./dashboard/profile-menu.js";
 
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
@@ -77,7 +78,7 @@ function wireShell() {
 }
 async function loadBoardShell() {
   const [me, boards] = await Promise.all([api("GET", "/api/auth/me"), api("GET", "/api/site/list")]);
-  const user = me.user || {}; $("userAvatar").textContent = (user.displayName || user.email || "Y").trim().charAt(0).toUpperCase();
+  const user = me.user || {}; updateProfileMenu(user);
   const list = boards.sites || boards.boards || boards || []; const current = siteQuery() || list[0]?.id || list[0]?.siteId; const select = $("sidebarBoardSelect");
   if (select) { select.innerHTML = list.map((b) => `<option value="${esc(b.id || b.siteId)}" ${String(b.id || b.siteId) === String(current) ? "selected" : ""}>${esc(b.name || b.slug || "Board")}</option>`).join(""); select.addEventListener("change", () => { location.href = `${location.pathname}?siteId=${encodeURIComponent(select.value)}`; }); }
   const board = list.find((b) => String(b.id || b.siteId) === String(current)) || list[0] || {};

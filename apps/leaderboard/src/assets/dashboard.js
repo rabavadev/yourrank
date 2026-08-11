@@ -10,6 +10,7 @@ import { renderReferrals } from "./dashboard/referrals.js";
 import { initPerformance } from "./dashboard/performance.js";
 import { setupSettingsScreen, wireAccount } from "./dashboard/account.js";
 import { initGames } from "./dashboard/games.js";
+import { updateProfileMenu } from "./dashboard/profile-menu.js";
 
 async function init() {
   let me;
@@ -17,7 +18,7 @@ async function init() {
   if (!me || !me.ok || !me.user) { location.href = "/login"; return; }
   state.ME = me.user;
   const emailEl = $("userEmail"); if (emailEl) emailEl.textContent = state.ME.email;
-  const avatarEl = $("userAvatar"); if (avatarEl) avatarEl.textContent = (state.ME.displayName || state.ME.email || "Y").trim().charAt(0).toUpperCase();
+  updateProfileMenu(state.ME);
   if (state.ME.isAdmin) { const adminEl = $("adminLink"); if (adminEl) adminEl.hidden = false; }
   renderPlan();
   loadHistory();

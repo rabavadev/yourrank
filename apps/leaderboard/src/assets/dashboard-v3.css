@@ -89,11 +89,12 @@
 
 /* ---------- Global topbar ---------- */
 .v3-dash .lb-topbar {
+  --v3-topbar-height: 72px;
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
-  height: 72px;
+  height: var(--v3-topbar-height);
   z-index: 100;
   background: var(--v3-chrome);
   border-bottom: 1px solid var(--v3-chrome-line);
