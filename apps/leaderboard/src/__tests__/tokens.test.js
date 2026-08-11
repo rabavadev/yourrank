@@ -55,6 +55,6 @@ describe("design tokens", () => {
   }
 
   it("uses the brand accent", () => {
-    expect(declared(sources.app, "--accent")).toBe("#2200ff");
+    expect(declared(sources.app, "--accent")).toBe("#5b5bf5");
   });
 });

@@ -46,7 +46,7 @@
   align-items: center;
   min-height: var(--tap, 44px);
   padding: 12px 16px;
-  background: var(--yr-accent, var(--accent, #2200ff));
+  background: var(--yr-accent, var(--accent, #5b5bf5));
   color: var(--yr-accent-ink, var(--accent-ink, #fff));
   font-weight: 700;
   text-decoration: none;
@@ -191,7 +191,7 @@
 }
 
 .badge.on,
-.badge.ok { color: var(--yr-green, var(--ok)); border-color: var(--yr-color-success-line-2, rgba(16, 163, 127, .4)); }
+.badge.ok { color: var(--yr-green, var(--ok)); border-color: var(--yr-color-success-line-2, rgba(22, 199, 132, .4)); }
 .badge.off { color: var(--yr-red, var(--danger)); border-color: var(--yr-color-danger-line-2, rgba(239, 68, 68, .4)); }
 
 /* ---- table scroller ----

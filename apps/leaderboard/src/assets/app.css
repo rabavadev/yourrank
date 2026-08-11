@@ -1,5 +1,5 @@
 /* YourRank app shell — login, signup, dashboard. Light, clean, one accent. */
-:root{--bg:#fafafa;--panel:#ffffff;--panel-2:#f7f7f8;--line:#e4e4e7;--line-2:#d4d4d8;--ink:#191919;--ink-soft:#55555c;--ink-mute:#82828a;--accent:#2200ff;--accent-ink:#ffffff;--toggle-on:#10a37f;--danger:#ef4444;--ok:#10a37f;--ok-bg:rgba(16,163,127,.08);--warn:#f59e0b;--link:#1a00cc;--radius:12px;--radius-xl:16px;--accent-soft:rgba(34,0,255,.08);--mono:"IBM Plex Mono","JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,monospace;--sans:"Inter",system-ui,-apple-system,Segoe UI,Roboto,sans-serif;--fs-xs:.75rem;--fs-sm:.875rem;--fs-md:1rem;--fs-lg:1.25rem;--fs-xl:1.5rem;--fs-2xl:2rem;--fs-3xl:2.5rem;--space-1:4px;--space-2:8px;--space-3:12px;--space-4:16px;--space-6:24px;--space-8:32px;--space-12:48px;--space-16:64px;--space-24:96px;--radius-sm:8px;--radius-md:10px;--radius-lg:14px;--radius-full:999px;--shadow-sm:0 1px 2px rgba(0,0,0,.05);--shadow-md:0 4px 12px rgba(0,0,0,.08);--shadow-lg:0 12px 32px rgba(0,0,0,.12);--tap:44px;--color-bg-primary:var(--bg);--color-bg-secondary:var(--panel);--color-bg-tertiary:var(--panel-2);--color-border-default:var(--line);--color-border-hover:var(--line-2);--color-text-primary:var(--ink);--color-text-secondary:var(--ink-soft);--color-text-muted:var(--ink-mute);--color-accent:var(--accent);--color-accent-ink:var(--accent-ink);--color-accent-hover:var(--link);--color-accent-soft:var(--accent-soft);--color-success:var(--ok);--color-success-bg:var(--ok-bg);--color-danger:var(--danger);--color-warning:var(--warn);--color-link:var(--link);--font-sans:var(--sans);--font-mono:var(--mono);--font-size-xs:var(--fs-xs);--font-size-sm:var(--fs-sm);--font-size-md:var(--fs-md);--font-size-lg:var(--fs-lg);--font-size-xl:var(--fs-xl);--font-size-2xl:var(--fs-2xl);--font-size-3xl:var(--fs-3xl);--ease-default:ease;--ease-out:cubic-bezier(0.16,1,0.3,1);--ease-in-out:cubic-bezier(0.65,0,0.35,1);--ease-bounce:cubic-bezier(0.34,1.56,0.64,1);--duration-fast:100ms;--duration-normal:200ms;--duration-slow:300ms;--duration-stagger:50ms;--opacity-disabled:0.45;--opacity-hover:0.08;--opacity-backdrop:0.7;--alpha-soft:0.1;--alpha-border:0.06;--z-base:0;--z-dropdown:20;--z-sticky:50;--z-modal:100;--z-toast:200}
+:root{--bg:#fafafa;--panel:#ffffff;--panel-2:#f7f7f8;--line:#e4e4e7;--line-2:#d4d4d8;--ink:#191919;--ink-soft:#55555c;--ink-mute:#82828a;--accent:#5b5bf5;--accent-ink:#ffffff;--toggle-on:#16c784;--danger:#ef4444;--ok:#16c784;--ok-bg:rgba(22,199,132,.10);--warn:#f59e0b;--link:#4a4ae0;--radius:12px;--radius-xl:16px;--accent-soft:rgba(91,91,245,.10);--mono:"IBM Plex Mono","JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,monospace;--sans:"Inter",system-ui,-apple-system,Segoe UI,Roboto,sans-serif;--fs-xs:.75rem;--fs-sm:.875rem;--fs-md:1rem;--fs-lg:1.25rem;--fs-xl:1.5rem;--fs-2xl:2rem;--fs-3xl:2.5rem;--space-1:4px;--space-2:8px;--space-3:12px;--space-4:16px;--space-6:24px;--space-8:32px;--space-12:48px;--space-16:64px;--space-24:96px;--radius-sm:8px;--radius-md:10px;--radius-lg:14px;--radius-full:999px;--shadow-sm:0 1px 2px rgba(0,0,0,.05);--shadow-md:0 4px 12px rgba(0,0,0,.08);--shadow-lg:0 12px 32px rgba(0,0,0,.12);--tap:44px;--color-bg-primary:var(--bg);--color-bg-secondary:var(--panel);--color-bg-tertiary:var(--panel-2);--color-border-default:var(--line);--color-border-hover:var(--line-2);--color-text-primary:var(--ink);--color-text-secondary:var(--ink-soft);--color-text-muted:var(--ink-mute);--color-accent:var(--accent);--color-accent-ink:var(--accent-ink);--color-accent-hover:var(--link);--color-accent-soft:var(--accent-soft);--color-success:var(--ok);--color-success-bg:var(--ok-bg);--color-danger:var(--danger);--color-warning:var(--warn);--color-link:var(--link);--font-sans:var(--sans);--font-mono:var(--mono);--font-size-xs:var(--fs-xs);--font-size-sm:var(--fs-sm);--font-size-md:var(--fs-md);--font-size-lg:var(--fs-lg);--font-size-xl:var(--fs-xl);--font-size-2xl:var(--fs-2xl);--font-size-3xl:var(--fs-3xl);--ease-default:ease;--ease-out:cubic-bezier(0.16,1,0.3,1);--ease-in-out:cubic-bezier(0.65,0,0.35,1);--ease-bounce:cubic-bezier(0.34,1.56,0.64,1);--duration-fast:100ms;--duration-normal:200ms;--duration-slow:300ms;--duration-stagger:50ms;--opacity-disabled:0.45;--opacity-hover:0.08;--opacity-backdrop:0.7;--alpha-soft:0.1;--alpha-border:0.06;--z-base:0;--z-dropdown:20;--z-sticky:50;--z-modal:100;--z-toast:200}
 
 /* Canonical semantic color layer: the one place a colour value is written.
    The scoped hook families (--yr-x, --v3-x, --gm-x) re-bind to these tokens;
@@ -35,14 +35,14 @@
   --yr-color-text-secondary-3: #52525b;
   /* action */
   --yr-color-action: var(--accent);
-  --yr-color-action-2: #7b8cff;
-  --yr-color-action-line: rgba(34, 0, 255, .15);
-  --yr-color-action-line-2: rgba(34, 0, 255, .35);
-  --yr-color-action-line-3: rgba(34,0,255,.28);
+  --yr-color-action-2: #8f8ff9;
+  --yr-color-action-line: rgba(91, 91, 245, .18);
+  --yr-color-action-line-2: rgba(91, 91, 245, .38);
+  --yr-color-action-line-3: rgba(91,91,245,.30);
   --yr-color-action-soft: var(--accent-soft);
-  --yr-color-action-soft-2: rgba(34,0,255,.12);
+  --yr-color-action-soft-2: rgba(91,91,245,.14);
   --yr-color-action-strong: var(--link);
-  --yr-color-action-soft-3: rgba(34, 0, 255, 0);
+  --yr-color-action-soft-3: rgba(91, 91, 245, 0);
   /* danger */
   --yr-color-danger: var(--danger);
   --yr-color-danger-2: #ff6b6b;
@@ -73,16 +73,16 @@
   /* success */
   --yr-color-success: var(--ok);
   --yr-color-success-2: #10b981;
-  --yr-color-success-3: #3f9c12;
-  --yr-color-success-4: #3fae6b;
-  --yr-color-success-5: #4ade80;
-  --yr-color-success-6: #3ccf4a;
-  --yr-color-success-7: #8bd64f;
-  --yr-color-success-line: #1e3a2b;
-  --yr-color-success-line-2: rgba(16, 163, 127, .4);
-  --yr-color-success-line-3: rgba(30, 142, 62, .2);
+  --yr-color-success-3: #15a06b;
+  --yr-color-success-4: #2fae7a;
+  --yr-color-success-5: #34d399;
+  --yr-color-success-6: #16c784;
+  --yr-color-success-7: #22c57e;
+  --yr-color-success-line: #163a2b;
+  --yr-color-success-line-2: rgba(22, 199, 132, .4);
+  --yr-color-success-line-3: rgba(22, 199, 132, .2);
   --yr-color-success-soft: var(--ok-bg);
-  --yr-color-success-soft-2: rgba(30, 142, 62, .08);
+  --yr-color-success-soft-2: rgba(22, 199, 132, .08);
   /* prize */
   --yr-color-prize: #ffcc00;
   --yr-color-prize-2: #fbbf24;
@@ -100,12 +100,12 @@
   --yr-color-prize-soft-4: rgba(201,168,76,.08);
   --yr-color-prize-soft-5: rgba(240,194,75,.1);
   /* live */
-  --yr-color-live: #53fc18;
-  --yr-color-live-ink: #0A0A0A;
-  --yr-color-live-line: rgba(83, 252, 24, 0.20);
-  --yr-color-live-line-2: rgba(83, 252, 24, .25);
-  --yr-color-live-soft: rgba(83, 252, 24, 0.12);
-  --yr-color-live-soft-2: rgba(83, 252, 24, .14);
+  --yr-color-live: #16c784;
+  --yr-color-live-ink: #06231a;
+  --yr-color-live-line: rgba(22, 199, 132, 0.22);
+  --yr-color-live-line-2: rgba(22, 199, 132, .28);
+  --yr-color-live-soft: rgba(22, 199, 132, 0.14);
+  --yr-color-live-soft-2: rgba(22, 199, 132, .16);
   /* chrome */
   --yr-color-chrome: #0A0A0A;
   --yr-color-chrome-2: #0f0f0f;
@@ -144,6 +144,7 @@
   --yr-color-shadow-8: rgba(0,0,0,.5);
   --yr-color-shadow-soft: rgba(0,0,0,.03);
   /* brand */
+  --yr-color-brand-kick: #53fc18;
   --yr-color-brand-discord: #5865F2;
   --yr-color-brand-instagram: #F58529;
   --yr-color-brand-instagram-2: #DD2A7B;
@@ -158,7 +159,7 @@
 
 
 
-*{box-sizing:border-box}*:focus-visible{outline:2px solid var(--accent,#2200ff);outline-offset:2px}html,body{margin:0}
+*{box-sizing:border-box}*:focus-visible{outline:2px solid var(--accent,#5b5bf5);outline-offset:2px}html,body{margin:0}
 /* The `hidden` attribute must always win: display utilities like .d-flex/.btn
    have the same specificity as the UA [hidden] rule and would otherwise keep
    hidden elements (e.g. the collapsed "New board" form) visible. */
@@ -729,7 +730,7 @@ table.ref-table td{padding:8px 8px;border-bottom:1px solid var(--line);color:var
 :root{
   --an-fs-display:44px;--an-fs-h1:27px;--an-fs-h2:17px;
   --an-ink-6:#4a4a55;
-  --an-heat-0:#f7f7f8;--an-heat-1:rgba(34,0,255,.28);--an-heat-2:rgba(34,0,255,.6);
+  --an-heat-0:#f7f7f8;--an-heat-1:rgba(91,91,245,.28);--an-heat-2:rgba(91,91,245,.6);
 }
 .an-wrap{max-width:1200px}
 .an-head{margin-bottom:22px}
@@ -1042,7 +1043,7 @@ html{color-scheme:light}
 .social-brand-icon{width:40px;height:40px;border-radius:10px;display:inline-flex;align-items:center;justify-content:center;flex:none;font-weight:700;font-size:16px;color:var(--yr-color-text-inverse)}
 .social-brand-icon svg{width:20px;height:20px;fill:currentColor}
 .social-brand-icon--discord{background:var(--yr-color-brand-discord)}
-.social-brand-icon--kick{background:var(--yr-color-live);color:var(--yr-color-text-inverse-strong)}
+.social-brand-icon--kick{background:var(--yr-color-brand-kick);color:var(--yr-color-text-inverse-strong)}
 .social-brand-icon--twitch{background:var(--yr-color-brand-twitch)}
 .social-brand-icon--x{background:var(--yr-color-brand-x);border:1px solid var(--yr-color-chrome-line-6)}
 .social-brand-icon--youtube{background:var(--yr-color-brand-youtube)}
@@ -1243,7 +1244,7 @@ html{color-scheme:light}
 /* Credits analytics bars */
 .cr-bar-col{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%}
 .cr-bar-col-inner{width:100%;display:flex;align-items:flex-end;gap:1px;height:100%}
-.cr-bar-earn{flex:1;background:var(--accent,#2200ff)}
+.cr-bar-earn{flex:1;background:var(--accent,#5b5bf5)}
 .cr-bar-spend{flex:1;background:var(--ink-mute,#8b949e)}
 /* Viewer dashboard + public contact utilities */
 .vd-login-actions{display:flex;gap:12px;flex-wrap:wrap}
