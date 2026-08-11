@@ -17,9 +17,9 @@ const PAGES = { channel: channelPage, rewards: rewardsPage, maps: mapsPage, shop
 function RewardsPage({ tab, activeNav = tab, boardContext = "selector", footer = "rewards" }) {
   const body = PAGES[tab] || channelPage;
   return <DashboardShell activeNav={activeNav} boardContext={boardContext} footer={footer} rootId="cr-dash">
-    <div data-cr-tab={tab}>
+    <div>
       <div id="cr-loading" class="ui-loading" hidden><div class="ui-loading__spinner"></div></div>
-      <div id="cr-app" hidden dangerouslySetInnerHTML={{ __html: body }}></div>
+      <div id="cr-app" data-cr-tab={tab} hidden dangerouslySetInnerHTML={{ __html: body }}></div>
       <div id="cr-empty" class="empty" hidden><p>Loading your credits dashboard…</p></div>
     </div>
   </DashboardShell>;
