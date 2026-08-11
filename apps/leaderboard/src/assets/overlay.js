@@ -142,14 +142,13 @@
   // --- SSE live updates ---
   let streamFailures = 0;
   let streamTimer = null;
-  const STREAM_MAX_FAILURES = 3;
   const STREAM_RECONNECT_BASE_MS = 1000;
   const STREAM_RECONNECT_MAX_MS = 30000;
 
   let streamEs = null;
   function onStreamFail() {
     streamFailures++;
-    if (streamFailures >= STREAM_MAX_FAILURES || document.hidden) return;
+    if (document.hidden) return;
     const backoff = Math.min(
       STREAM_RECONNECT_MAX_MS,
       STREAM_RECONNECT_BASE_MS * (2 ** (streamFailures - 1))
