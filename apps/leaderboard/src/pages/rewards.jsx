@@ -35,9 +35,9 @@ export function RewardsHistoryPage() { return <RewardsPage tab="history" />; }
 
 const rewardsConfigBase = { styles: ["/assets/app.css", "/assets/shell-nav.css", "/assets/dashboard-v3.css", "/assets/ui.css"], scripts: ['<script src="/assets/credits.js?v=4" type="module"></script>', '<script src="/assets/shell-nav.js?v=1" defer></script>'], nav: false, footer: false, wide: true };
 export const rewardsChannelConfig = { ...rewardsConfigBase, title: "Channel · Rewards & Shop · YourRank", canonical: "https://yourrank.site/dashboard/rewards/channel" };
-export const rewardsRewardsConfig = { ...rewardsConfigBase, title: "Mappings · Rewards & Shop · YourRank", canonical: "https://yourrank.site/dashboard/rewards/rewards" };
-export const rewardsMapsConfig = { ...rewardsConfigBase, title: "Mappings · Rewards & Shop · YourRank", canonical: "https://yourrank.site/dashboard/rewards/maps" };
-export const rewardsShopConfig = { ...rewardsConfigBase, title: "Shop Items · Rewards & Shop · YourRank", canonical: "https://yourrank.site/dashboard/rewards/shop" };
+export const rewardsRewardsConfig = { ...rewardsConfigBase, title: "Credit rules · Rewards & Shop · YourRank", canonical: "https://yourrank.site/dashboard/rewards/rewards" };
+export const rewardsMapsConfig = { ...rewardsConfigBase, title: "Credit rules · Rewards & Shop · YourRank", canonical: "https://yourrank.site/dashboard/rewards/maps" };
+export const rewardsShopConfig = { ...rewardsConfigBase, title: "Shop · Rewards & Shop · YourRank", canonical: "https://yourrank.site/dashboard/rewards/shop" };
 export const rewardsViewersConfig = { ...rewardsConfigBase, title: "Viewers · Rewards & Shop · YourRank", canonical: "https://yourrank.site/dashboard/rewards/viewers" };
 export const rewardsRedemptionsConfig = { ...rewardsConfigBase, title: "Redemptions · Rewards & Shop · YourRank", canonical: "https://yourrank.site/dashboard/rewards/redemptions" };
-export const rewardsHistoryConfig = { ...rewardsConfigBase, title: "Ledger · Rewards & Shop · YourRank", canonical: "https://yourrank.site/dashboard/rewards/history" };
+export const rewardsHistoryConfig = { ...rewardsConfigBase, title: "Credit activity · Rewards & Shop · YourRank", canonical: "https://yourrank.site/dashboard/rewards/history" };

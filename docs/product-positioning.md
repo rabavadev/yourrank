@@ -34,8 +34,8 @@ These products live under one account and share authentication, plan/billing, an
 
 ### Rewards & Shop
 - Engagement product tied to the streamer's Kick channel.
-- Contains: Overview, Kick connection, Reward mappings, Shop, Viewers, Redemptions, Analytics, Settings.
-- The unit is `credits`; the relation to Kick is a `reward mapping`; a purchase request is a `redemption`.
+- Contains: Overview, Kick connection, Credit rules, Shop, Viewers, Redemptions, Credit activity, Analytics, Settings.
+- The unit is `credits`; the relation to Kick is a `credit rule`; a purchase request is a `redemption`.
 
 ## Analytics scope
 

@@ -18,7 +18,7 @@ export const viewerDashboardPage = leaderboardPageHtml({
     <div>
       <div class="an-eyebrow">Viewer dashboard</div>
       <h1 class="an-title" id="vd-title">My credits</h1>
-      <p class="an-sub">See your credits across all streamer boards and redeem shop items.</p>
+      <p class="an-sub">See your credits across all streamer boards and redeem items.</p>
     </div>
   </div>
 

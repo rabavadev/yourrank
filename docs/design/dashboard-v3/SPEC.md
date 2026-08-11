@@ -13,8 +13,8 @@ same spacing. When code and reference disagree, the reference wins.
 | `04-overview-setup.png` | Overview, setup checklist (board not live) | `/dashboard` |
 | `05-overview-live.png` | Overview, KPIs + activity + top players + status bar | `/dashboard` |
 | `06-page-setup.png` | Page editor, Setup tab + live preview rail | `/dashboard/editor/design` |
-| `07-rewards-shop-items.png` | Shop items grid + create-item drawer | `/dashboard/rewards/items` |
-| `08-rewards-channel.png` | Kick channel + reward→credit mappings | `/dashboard/rewards/channel` |
+| `07-rewards-shop-items.png` | Shop items grid + create-item drawer | `/dashboard/rewards/shop` |
+| `08-rewards-channel.png` | Kick channel + credit rules | `/dashboard/rewards/channel` |
 | `09-sections-and-games.png` | Site sections, page blocks, game settings | `/dashboard/games` |
 | `10-analytics.png` | Analytics KPIs, views chart, activity table | `/dashboard/analytics/activity` |
 | `11-settings-plan.png` | Settings → Plan & Usage | `/dashboard/settings` |
