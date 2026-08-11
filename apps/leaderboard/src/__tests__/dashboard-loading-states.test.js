@@ -107,6 +107,7 @@ describe("dashboard loading states", () => {
   it("starts the redemption channel chip in a disconnected state", () => {
     const pages = fs.readFileSync(path.resolve(assets, "../pages/credits-pages.js"), "utf8");
     expect(pages).toContain('class="v3-chip v3-chip--cancelled">● Not connected');
+    expect(pages).not.toContain("● Not connected ·");
     expect(pages).not.toContain('class="v3-chip v3-chip--refunded">● Connected to @');
   });
 

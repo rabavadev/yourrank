@@ -1075,7 +1075,7 @@ html{color-scheme:light}
 .share-card{display:flex;flex-direction:column;align-items:center;gap:8px;padding:16px 12px;border:1px solid var(--line);border-radius:12px;background:var(--panel-2);cursor:pointer;transition:all .15s;font-size:13px;font-weight:600;color:var(--ink-soft);text-align:center}
 .share-card:hover{border-color:var(--ink-mute);color:var(--ink)}
 .share-card svg{width:24px;height:24px;fill:currentColor}
-.share-card--x{color:var(--ink-soft)}.share-card--x:hover{border-color:var(--ink)}
+.share-card--x{color:var(--yr-color-brand-x)}.share-card--x:hover{border-color:var(--yr-color-brand-x)}
 .share-card--discord{color:var(--yr-color-brand-discord)}.share-card--discord:hover{border-color:var(--yr-color-brand-discord)}
 .share-card--twitch{color:var(--yr-color-brand-twitch)}.share-card--twitch:hover{border-color:var(--yr-color-brand-twitch)}
 .share-card--copy:hover{border-color:var(--accent);color:var(--accent)}
