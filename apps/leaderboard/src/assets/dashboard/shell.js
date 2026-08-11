@@ -29,7 +29,7 @@ function prefersReducedMotion() {
 
 export function setActiveSideNav(page, hash = "") {
   const area = areaForPage(page);
-  document.querySelectorAll(".lb-side-group").forEach((g) => { g.hidden = g.dataset.area !== area; });
+  document.querySelectorAll(".lb-side-group").forEach((g) => { g.hidden = (g.dataset.area !== area && g.dataset.area !== "all"); });
   document.querySelectorAll(".lb-nav").forEach((n) => {
     const navPage = n.dataset.nav;
     const navHash = n.dataset.hash || "";

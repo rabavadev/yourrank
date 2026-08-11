@@ -17,17 +17,33 @@ function fmtDateTime(iso) {
 }
 
 function isBoardSetup() {
+  const steps = computeSetupSteps();
+  return Object.values(steps).every(Boolean);
+}
+
+function computeSetupSteps() {
   const o = state.ONBOARDING || {};
-  const brand = $("f_name")?.value.trim() || o.brand;
-  const players = currentPlayers();
-  const published = state.PUBLISHED;
-  return !!(brand && (o.players || players.length > 0) && (o.shared || published));
+  const brand = Boolean($("f_name")?.value.trim() || o.brand);
+  const players = currentPlayers().length > 0 || o.players;
+  const kick = false; // reserved until credits channel state is wired
+  const configure = false; // reserved until branding is confirmed
+  const status = boardStatus();
+  const publish = status.published;
+  return { brand, players, kick, configure, publish };
 }
 
 function setStepDone(el, done) {
   if (!el) return;
   el.classList.toggle("is-done", done);
   el.textContent = done ? "✓" : el.dataset.num || el.textContent;
+}
+
+function setSetupStatus(el, done) {
+  if (!el) return;
+  const mark = el.parentElement?.querySelector(".ov-step-icon");
+  if (mark) setStepDone(mark, done);
+  el.classList.toggle("is-done", done);
+  el.textContent = done ? "COMPLETED" : "TODO";
 }
 
 async function copyLiveLink(btn) {
@@ -41,18 +57,6 @@ export function wireOverviewQuickActions() {
     copyBtn._wired = true;
     copyBtn.addEventListener("click", () => copyLiveLink(copyBtn));
   }
-  const startBtn = $("ovStartBtn");
-  if (startBtn && !startBtn._wired) {
-    startBtn._wired = true;
-    startBtn.addEventListener("click", () => navTo("board"));
-  }
-  ["ovStepBrandBtn", "ovStepPlayersBtn"].forEach((id) => {
-    const btn = $(id);
-    if (btn && !btn._wired) {
-      btn._wired = true;
-      btn.addEventListener("click", () => navTo("board"));
-    }
-  });
 }
 
 export function renderOverviewSummary() {
@@ -99,21 +103,19 @@ export function renderOverviewSummary() {
       onboardBento.hidden = done;
       activeBento.hidden = !done;
     }
-    const brandDone = !!$("f_name")?.value.trim() || state.ONBOARDING?.brand;
-    const playersDone = players.length > 0 || state.ONBOARDING?.players;
-    const shareDone = status.live || state.ONBOARDING?.shared;
-    setStepDone($("ovStepBrand"), brandDone);
-    setStepDone($("ovStepBrandMark"), brandDone);
-    setStepDone($("ovStepPlayers"), playersDone);
-    setStepDone($("ovStepPlayersMark"), playersDone);
-    setStepDone($("ovStepShare"), shareDone);
-    setStepDone($("ovStepShareMark"), shareDone);
-    const shareHint = $("ovShareHint");
-    if (shareHint) {
-      shareHint.textContent = status.live
-        ? "Your leaderboard is live — copy the link"
-        : (status.published ? "Confirm your email to make your board visible" : "Publish and copy your public link");
-    }
+    // Setup progress
+    const steps = computeSetupSteps();
+    const stepOrder = ["brand", "players", "kick", "configure", "publish"];
+    const completed = stepOrder.filter((k) => steps[k]).length;
+    const countEl = $("ovSetupCount");
+    const fillEl = $("ovSetupFill");
+    if (countEl) countEl.textContent = `${completed} of 5 complete`;
+    if (fillEl) fillEl.style.width = `${(completed / 5) * 100}%`;
+    setSetupStatus($("ovStepBrandStatus"), steps.brand);
+    setSetupStatus($("ovStepPlayersStatus"), steps.players);
+    setSetupStatus($("ovStepKickStatus"), steps.kick);
+    setSetupStatus($("ovStepConfigureStatus"), steps.configure);
+    setSetupStatus($("ovStepPublishStatus"), steps.publish);
     const copyBtn = $("ov_copyLink");
     if (copyBtn) copyBtn.disabled = !status.live;
   }
