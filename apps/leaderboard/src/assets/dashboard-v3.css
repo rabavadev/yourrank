@@ -1350,18 +1350,20 @@
   color: var(--v3-main-ink-mute);
 }
 
-.v3-dash section[data-page="board"] .field > label.chk {
+.v3-dash section[data-page="board"] .chk {
   display: flex;
   align-items: center;
   justify-content: flex-start;
   gap: 6px;
+  flex: 0 0 auto;
+  white-space: nowrap;
   color: var(--v3-main-ink);
   font: 400 13px var(--v3-sans);
   letter-spacing: normal;
   text-transform: none;
 }
 
-.v3-dash section[data-page="board"] .field > label.chk input[type="checkbox"] {
+.v3-dash section[data-page="board"] .chk input[type="checkbox"] {
   width: auto;
   min-width: 15px;
   height: 15px;
@@ -1415,7 +1417,7 @@
   top: 72px;
   height: calc(100vh - 72px);
   max-height: none;
-  margin: -32px -32px -32px 0;
+  margin: -32px 0 -32px 0;
   padding: 32px;
   overflow-y: auto;
   background: var(--v3-chrome);
