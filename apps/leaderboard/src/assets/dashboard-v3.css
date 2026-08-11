@@ -1921,6 +1921,7 @@
 .v3-dash .cr-list-card .v3-table th.num,
 .v3-dash .cr-list-card .v3-table td.num { text-align: left; }
 .v3-dash .cr-list-card .v3-table td.num b { white-space: nowrap; }
+.v3-dash .v3-table input.v3-toggle { width: 40px; height: 22px; appearance: none; }
 .v3-dash .cr-list-card .btn--sm { min-height: 26px; padding: 4px 9px; font-size: 11px; }
 .v3-dash .cr-shop-grid { grid-template-columns: minmax(0, 1fr); }
 .v3-dash .cr-shop-layout.has-drawer .cr-shop-grid { grid-template-columns: minmax(0, 1fr) 380px; }
