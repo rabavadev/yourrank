@@ -1,7 +1,7 @@
 // ============================================================================
 //  YourRank — SHARED DASHBOARD SHELL / TOP NAV  (bot Worker, TypeScript)
 //
-//  Renders the same sticky header (Leaderboards | Telegram | Rewards & Shop |
+//  Renders the same sticky header (Leaderboards | Telegram | Rewards |
 //  Account | Help) so the bot dashboard at /bot/dashboard feels like the same app.
 //
 //  The stylesheet and behaviour live in the leaderboard Worker's static
@@ -30,7 +30,7 @@ export interface NavLink {
 export const NAV_LINKS: NavLink[] = [
   { key: "leaderboard", label: "Leaderboards", href: "/dashboard",                    match: ["/dashboard"],                    top: true },
   { key: "bot",         label: "Telegram",     href: "/bot/dashboard",                match: ["/bot"],                            top: true },
-  { key: "rewards",     label: "Rewards & Shop", href: "/dashboard/rewards/channel", match: ["/dashboard/rewards"],              top: true },
+  { key: "rewards",     label: "Rewards",       href: "/dashboard/rewards/redemptions", match: ["/dashboard/rewards"],              top: true },
   { key: "account",     label: "Account",      href: "/account/profile",            match: ["/account"],                      top: true },
   { key: "help",        label: "Help",         href: "/help/support",                match: ["/help", "/contact"], top: true },
 ];
@@ -48,7 +48,7 @@ export function activeKey(activePath: string): string | null {
   if (pathname.startsWith("/contact")) return "help";
 
   if (pathname === "/dashboard" || pathname.startsWith("/dashboard/")) {
-    if (pathname === "/dashboard/credits" || pathname.startsWith("/dashboard/credits") || pathname.startsWith("/dashboard/rewards")) return "rewards";
+    if (pathname === "/dashboard/credits" || pathname.startsWith("/dashboard/credits") || pathname.startsWith("/dashboard/rewards") || pathname.startsWith("/dashboard/audience")) return "rewards";
     return "leaderboard";
   }
 

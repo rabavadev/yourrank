@@ -77,9 +77,13 @@ After the Phase 2 UX and product restructuring, the following QA items were comp
 - `/dashboard/attribution` → `/account/postbacks`
 - `/dashboard/analytics` → `/dashboard?nav=performance`
 - `/dashboard/analytics/:tab` → `/dashboard?nav=performance#:tab` (`activity`, `referrals`, `events`)
-- `/dashboard/credits` → `/dashboard/rewards/channel`
-- `/dashboard/rewards` → `/dashboard/rewards/channel`
-- `/dashboard/rewards/:tab` → `/dashboard/rewards/:tab` (`channel`, `maps`, `shop`, `viewers`, `redemptions`, `history`)
+- `/dashboard/credits` → `/dashboard/settings/integrations`
+- `/dashboard/rewards` → `/dashboard/rewards/redemptions`
+- `/dashboard/rewards/channel` → `/dashboard/settings/integrations`
+- `/dashboard/rewards/maps` and `/dashboard/rewards/rewards` → `/dashboard/rewards/rules`
+- `/dashboard/rewards/viewers` → `/dashboard/audience/viewers`
+- `/dashboard/rewards/history` → `/dashboard/audience/activity`
+- `/dashboard/rewards/:tab` → `/dashboard/rewards/:tab` (`rules`, `shop`, `redemptions`)
 - `/dashboard/editor` → `/dashboard?nav=board`
 - `/dashboard/editor/:tab` → `/dashboard?nav=board#:tab` (`setup`, `players`, `design`, `share`, `history`)
 - `/dashboard/boards` → `/dashboard?nav=boards`
