@@ -101,68 +101,24 @@ export function DashboardContent() {
 <div class="lb-widget lb-widget--full lb-widget--danger" id="verifyBanner" hidden style="margin:0 0 24px"><h2>Verify your email</h2><p class="card-sub">Your leaderboard won't be public until you confirm your email address. Check your inbox for the link, or <a href="/verify-email">request a new one</a>.</p></div>
 <section class="lb-page is-on" data-page="home">
 <div class="lb-phead"><button class="lb-menu" id="lbMenu" type="button" aria-label="Show sections" aria-expanded="false" aria-controls="lbSide">☰</button></div>
-<div class="lb-bento" id="ovOnboardingBento" hidden>
-<div class="lb-widget lb-widget--full ov-setup">
-<div class="ov-setup-head">
-<h2>Setup Progress</h2>
-<span class="ov-setup-count" id="ovSetupCount">0 of 5 complete</span>
-</div>
-<div class="ov-setup-bar" aria-hidden="true"><i id="ovSetupFill" style="width:0%"></i></div>
+<div class="v3-head"><h1>Overview</h1><p class="v3-head-sub" id="ovHeadSub">Complete setup to go live</p></div>
+<div id="ovOnboardingBento" hidden>
+<div class="ov-setup">
+<div class="ov-setup-progress"><div class="ov-setup-head"><h2>Setup Progress</h2><span class="ov-setup-count" id="ovSetupCount">0 of 5 complete</span></div>
+<div class="ov-setup-bar" aria-hidden="true"><i id="ovSetupFill" style="width:0%"></i></div></div>
 <div class="ov-setup-list" id="ovChecklist">
-<div class="ov-setup-row" id="ovStepBrand">
-<span class="ov-step-icon" id="ovStepBrandMark" data-num="1">1</span>
-<div class="ov-step-body"><b>Name your board</b><span class="hint">Set up your custom display name for this event series</span></div>
-<span class="ov-step-status" id="ovStepBrandStatus">TODO</span>
-</div>
-<div class="ov-setup-row" id="ovStepPlayers">
-<span class="ov-step-icon" id="ovStepPlayersMark" data-num="2">2</span>
-<div class="ov-step-body"><b>Add players</b><span class="hint">Import list of streamers or enter manually to populate leaderboard</span></div>
-<span class="ov-step-status" id="ovStepPlayersStatus">TODO</span>
-</div>
-<div class="ov-setup-row" id="ovStepKick">
-<span class="ov-step-icon" id="ovStepKickMark" data-num="3">3</span>
-<div class="ov-step-body"><b>Connect Kick channel</b><span class="hint">Link streamer Kick API for automated wager tracking</span></div>
-<span class="ov-step-status" id="ovStepKickStatus">TODO</span>
-</div>
-<div class="ov-setup-row" id="ovStepConfigure">
-<span class="ov-step-icon" id="ovStepConfigureMark" data-num="4">4</span>
-<div class="ov-step-body"><b>Configure your page</b><span class="hint">Customize layouts, visual branding, and prize announcements</span></div>
-<span class="ov-step-status" id="ovStepConfigureStatus">TODO</span>
-</div>
-<div class="ov-setup-row" id="ovStepPublish">
-<span class="ov-step-icon" id="ovStepPublishMark" data-num="5">5</span>
-<div class="ov-step-body"><b>Publish</b><span class="hint">Make your leaderboard publicly accessible to viewers</span></div>
-<span class="ov-step-status" id="ovStepPublishStatus">TODO</span>
-</div>
-</div>
-<div class="ov-setup-foot"><button class="lb-linkbtn" type="button" id="ovSkipSetup" data-jump="board">Skip setup and view dashboard</button></div>
-</div>
-</div>
-<div class="lb-bento" id="ovActiveBento" hidden>
-<div class="lb-widget lb-widget--full" aria-label="Key metrics">
-<div class="kpi-row">
-<div class="kpi-card"><span class="kpi-lbl"><span class="kpi-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg></span>Views · 7d</span><span class="kpi-val" id="ov_kpi_views">–</span></div>
-<div class="kpi-card"><span class="kpi-lbl"><span class="kpi-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M3 3l7 18 3-7 7-3L3 3z"/></svg></span>Clicks · 7d</span><span class="kpi-val" id="ov_kpi_clicks">–</span></div>
-<div class="kpi-card"><span class="kpi-lbl"><span class="kpi-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg></span>Copies · 7d</span><span class="kpi-val" id="ov_kpi_copies">–</span></div>
-<div class="kpi-card"><span class="kpi-lbl"><span class="kpi-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6"/><path d="M22 11h-6"/></svg></span>Signups · 7d</span><span class="kpi-val" id="ov_kpi_signups">–</span></div>
-</div>
-</div>
-
-<div class="lb-widget lb-widget--wide"><div class="lb-cardhd"><h2>Activity · 14 days</h2><button class="lb-cardlink" type="button" data-jump="performance">Full analytics →</button></div><div class="stat-chart mt-14"><div class="stat-bars" id="ov_bars" title="Daily activity, last 14 days"></div><div class="stat-chart-lbl"><span id="ov_barsFrom"></span><span>today</span></div></div><p class="hint" id="ov_barsEmpty" hidden>No activity yet — share your page link to get it moving.</p><div class="stat-legend"><span class="stat-legend-item views">Views</span><span class="stat-legend-item copies">Copies</span><span class="stat-legend-item clicks">Clicks</span></div></div>
-<div class="lb-widget lb-widget--narrow" id="ovBoardStatusWidget"><h2>Board health</h2><div class="mini-stats">
-<div class="mini-stat"><span class="mini-stat-lbl">Name</span><span class="mini-stat-val" id="ov_board">–</span></div>
-<div class="mini-stat"><span class="mini-stat-lbl">Prize pool</span><span class="mini-stat-val" id="ov_prize">–</span></div>
-<div class="mini-stat"><span class="mini-stat-lbl">Players</span><span class="mini-stat-val" id="ov_players">–</span></div>
-<div class="mini-stat"><span class="mini-stat-lbl">Resets in</span><span class="mini-stat-val" id="ov_resets">–</span></div>
-</div><div class="board-status" id="ovBoardStatus"><div class="board-status-dot" id="ovStatusDot"></div><div><div class="board-status-text" id="ovStatusText">—</div><div class="board-status-sub" id="ovStatusSub"></div></div></div></div>
-
-<div class="lb-widget lb-widget--half"><div class="lb-cardhd"><h2>Top players</h2><button class="lb-cardlink" type="button" data-jump="board">Manage all →</button></div><div class="lb-toplist" id="ov_top"></div><div class="empty" id="ov_topEmpty" hidden>No players yet. <button class="lb-linkbtn" type="button" data-jump="board">Add your first one →</button></div></div>
-<div class="lb-widget lb-widget--half"><h2>Next steps</h2><div class="ov-checklist" aria-label="Onboarding checklist" id="ovQuickActions">
-<button type="button" id="ovStepBrandBtn" class="ov-checklist-row" data-jump="board"><span class="ov-step-num" id="ovStepBrandMark" data-num="1">1</span><span class="ov-step-body"><b>Name &amp; prize</b><span class="hint">Set the board name, sponsor and prize pool</span></span></button>
-<button type="button" id="ovStepPlayersBtn" class="ov-checklist-row" data-jump="board"><span class="ov-step-num" id="ovStepPlayersMark" data-num="2">2</span><span class="ov-step-body"><b>Add players</b><span class="hint">Type them in or paste from a spreadsheet</span></span></button>
-<div id="ovShareWrap" class="ov-checklist-row"><span class="ov-step-num" id="ovStepShareMark" data-num="3">3</span><span class="ov-step-body"><b>Share</b><span class="hint" id="ovShareHint">Publish and copy your public link</span></span><button class="btn btn--sm" id="ov_copyLink" type="button">Copy link</button></div>
+<div class="ov-setup-row" id="ovStepBrand"><span class="ov-step-icon"></span><div class="ov-step-body"><b>Name your board</b><span class="hint">Set up your custom display name for this event series</span></div><span class="ov-step-status" id="ovStepBrandStatus">TODO</span></div>
+<div class="ov-setup-row" id="ovStepPlayers"><span class="ov-step-icon"></span><div class="ov-step-body"><b>Add players</b><span class="hint">Import list of streamers or enter manually to populate leaderboard</span></div><span class="ov-step-status" id="ovStepPlayersStatus">TODO</span></div>
+<div class="ov-setup-row" id="ovStepKick"><span class="ov-step-icon" id="ovStepKickMark"></span><div class="ov-step-body"><b>Connect Kick channel</b><span class="hint">Link streamer Kick API for automated wager tracking</span></div><span class="ov-step-status" id="ovStepKickStatus">TODO</span></div>
+<div class="ov-setup-row" id="ovStepConfigure"><span class="ov-step-icon" id="ovStepConfigureMark"></span><div class="ov-step-body"><b>Configure your page</b><span class="hint">Customize layouts, visual branding, and prize announcements</span></div><span class="ov-step-status" id="ovStepConfigureStatus">TODO</span></div>
+<div class="ov-setup-row" id="ovStepPublish"><span class="ov-step-icon" id="ovStepPublishMark"></span><div class="ov-step-body"><b>Publish</b><span class="hint">Make your leaderboard publicly accessible to viewers</span></div><span class="ov-step-status" id="ovStepPublishStatus">TODO</span></div>
+</div><div class="ov-setup-foot"><button class="lb-linkbtn" type="button" id="ovSkipSetup" data-jump="board">Skip setup and view dashboard</button></div>
 </div></div>
-</div>
+<div id="ovActiveBento" hidden><div class="ov-live" aria-label="Overview">
+<div class="kpi-row"><div class="kpi-card"><span class="kpi-lbl">Pending redemptions</span><div class="kpi-value-row"><span class="kpi-val" id="ovPendingRedemptions">–</span><a class="kpi-action" href="/dashboard/rewards/redemptions">View queue →</a></div></div><div class="kpi-card"><span class="kpi-lbl">Page views (14d)</span><div class="kpi-value-row"><span class="kpi-val" id="ovViews14">–</span><span id="ovViewsDelta"></span></div></div><div class="kpi-card"><span class="kpi-lbl">Referral copies (14d)</span><div class="kpi-value-row"><span class="kpi-val" id="ovCopies14">–</span><span id="ovCopiesDelta"></span></div></div></div>
+<div class="ov-live-grid"><div class="ov-live-card" aria-label="Recent activity"><div class="ov-live-card-head"><h2>Recent Activity</h2><button class="lb-cardlink kpi-action ov-analytics-link" id="ovAnalyticsLink" type="button" data-jump="performance">View analytics →</button></div><div class="ov-activity-list" id="ovActivityList"></div><p class="ov-card-empty" id="ovActivityEmpty" hidden>No activity yet.</p></div><div class="ov-live-card" aria-label="Top players"><h2>Top Players</h2><div class="ov-players-list" id="ovTopPlayers"></div><p class="ov-card-empty" id="ov_topEmpty" hidden>No players yet.</p></div></div>
+<div class="v3-statusbar" id="ovStatusbar"><span><i class="ov-status-dot"></i><b id="ovPublishedStatus">Published</b></span><span class="ov-status-sep">|</span><span><i class="ov-status-dot"></i><b id="ovKickStatus">Kick Connected</b></span><span class="ov-status-sep">|</span><span id="ovTrackedPlayers"></span><span class="v3-statusbar-end" id="ovMetricsStatus"></span></div>
+</div></div>
 </section>
 <section class="lb-page" data-page="board">
 <div class="lb-phead"><button class="lb-menu" type="button" aria-label="Show sections" data-menu aria-expanded="false" aria-controls="lbSide">☰</button></div>

@@ -29,7 +29,6 @@ describe("empty and error states", () => {
   const failing = [
     ["billing history", site, /loadHistory[\s\S]*?showLoadError\(empty, "your payment history", loadHistory\)/],
     ["stats", site, /showLoadError\(\$\("statsEmpty"\), "your stats", loadStats\)/],
-    ["overview chart", site, /showLoadError\(\$\("ov_barsEmpty"\), "your stats", loadStats\)/],
     ["traffic sources", performance, /showLoadError\(\$\("perfReferrersEmpty"\), "your traffic sources", loadHeatmap\)/],
   ];
   for (const [what, source, pattern] of failing) {
