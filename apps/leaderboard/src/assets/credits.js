@@ -175,16 +175,15 @@ function renderOnboarding() {
   const items = (state.shopItems || []).filter((i) => i.active).length;
   const redemptions = (state.redemptions || []).length;
   const steps = [{ id: 1, done: connected }, { id: 2, done: mappings > 0 }, { id: 3, done: items > 0 }, { id: 4, done: redemptions > 0 }, { id: 5, done: connected && mappings > 0 && items > 0 }];
-  let current = 1;
+  const current = steps.find((step) => !step.done)?.id;
   for (const step of steps) {
     const el = $(`cr-step-${step.id}`); if (!el) continue;
     el.classList.toggle("done", step.done); el.classList.toggle("current", current === step.id && !step.done);
-    if (!step.done) current = step.id;
   }
   const ready = steps[4].done;
   if (ready && !hidden) { hidden = true; try { localStorage.setItem("cr-onboarding-hide", "1"); } catch { void 0; } }
   wrap.hidden = hidden;
-  const hide = $("cr-onboarding-hide"); if (hide) hide.hidden = !ready;
+  const hide = $("cr-onboarding-hide"); if (hide) hide.hidden = false;
 }
 async function loadAnalytics() {
   const days = Number($("cr-analytics-days")?.value) || 30;
@@ -220,7 +219,7 @@ function renderCreditsByDay(rows) {
     return `<div class="cr-bar-col" title="${label}: ${total} (${g.earn} earned, ${g.spend} spent)"><div class="cr-bar-col-inner"><div class="cr-bar-earn" style="height:${(g.earn / max) * 100}%"></div><div class="cr-bar-spend" style="height:${(g.spend / max) * 100}%"></div></div></div>`;
   }).join("");
   container.setAttribute("role", "img"); const allTotal = days.reduce((sum, day) => sum + grouped[day].earn + grouped[day].spend, 0);
-  container.setAttribute("aria-label", `Bar chart of credits by day for the last ${days.length} days. Total: ${allTotal} credits.`);
+  container.setAttribute("aria-label", `Bar chart of credits across ${days.length} days with activity. Total: ${allTotal} credits.`);
 }
 function prefillEditFromQuery() {
   if (tab() !== "maps") return;
