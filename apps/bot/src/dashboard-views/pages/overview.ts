@@ -16,18 +16,6 @@ export function overviewPanel(): string {
     <div class="kpi" title="Users who started a conversation with any of your bots"><div class="lbl">Subscribers</div><div class="stat" id="totSubs">–</div><div class="sub" id="subsNew"></div></div>
     <div class="kpi" title="Offers currently marked active"><div class="lbl">Active offers</div><div class="stat" id="totOffers">–</div><div class="sub" id="offersSub"></div></div>
   </div>
-  <details class="glossary"><summary>Metric glossary</summary>
-    <dl>
-      <div><dt>Clicks</dt><dd>Total clicks on your tracked offer links.</dd></div>
-      <div><dt>Unique</dt><dd>Distinct users who clicked at least once, based on the same browser/IP signature.</dd></div>
-      <div><dt>CTR</dt><dd>Click-through rate: clicks ÷ impressions when impressions are tracked.</dd></div>
-      <div><dt>CR</dt><dd>Conversion rate: conversions ÷ unique clicks.</dd></div>
-      <div><dt>Conversion</dt><dd>A deposit or sign-up event reported by a sponsor via postback.</dd></div>
-      <div><dt>Postback</dt><dd>A server-to-server notification that tells YourRank a click resulted in a conversion.</dd></div>
-      <div><dt>Subscriber</dt><dd>A Telegram user who started your bot.</dd></div>
-    </dl>
-  </details>
-
   <div class="grid2 mb-lg" data-page="overview">
     <div class="panel"><div class="cardhd"><h2>Daily clicks</h2><span class="muted text-xs">14 days</span></div>
       <svg id="chart" role="img" aria-label="Daily clicks chart" width="100%" height="120" preserveAspectRatio="none"></svg>

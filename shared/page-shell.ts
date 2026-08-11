@@ -380,7 +380,7 @@ export function botPageHtml(opts: BotPageOpts): string {
   return `<!doctype html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Streamer Dashboard</title>${GOOGLE_FONTS}<style${nonceAttr}>${BOT_STYLE_ATTR_CSS}${BOT_BASE_CSS}${BOT_DASH_V2_CSS}</style><link rel="stylesheet" href="/assets/ui.css">${nav ? '<link rel="stylesheet" href="/assets/shell-nav.css">' : ""}</head><body class="yr-ui" data-page="${esc(opts.page)}">
-<a href="#main-content" class="skip-link">Skip to main content</a>
+<a href="#main-content" class="sr-only skip-link">Skip to main content</a>
 ${nav}
 ${opts.content}
 ${nav ? '<script src="/assets/shell-nav.js" defer></script>' : ""}

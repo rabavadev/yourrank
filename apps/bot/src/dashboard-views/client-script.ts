@@ -74,6 +74,7 @@ function ListController(opts){
 
   var wrap = document.createElement('div');
   wrap.className = 'list-controls';
+  self.controls = wrap;
   var html = '<div class="list-controls-row">';
   html += '<input type="search" class="list-search" placeholder="'+(opts.searchPlaceholder || 'Search…')+'" aria-label="Search">';
   if (self.sortOptions.length) {
@@ -97,11 +98,13 @@ function ListController(opts){
   self.prevBtn.addEventListener('click', function(){ if (self.page > 1){ self.page--; self.refresh(); } });
   self.nextBtn.addEventListener('click', function(){ if (self.page < self.totalPages){ self.page++; self.refresh(); } });
 
+  wrap.hidden = self.all.length === 0;
   self.refresh();
 }
 ListController.prototype.setItems = function(items){
   this.all = items || [];
   this.page = 1;
+  this.controls.hidden = this.all.length === 0;
   this.refresh();
 };
 ListController.prototype.matches = function(item){
@@ -136,7 +139,7 @@ ListController.prototype.refresh = function(){
   self.onRender(pageItems);
 };
 ListController.prototype.updatePagination = function(total){
-  this.pageInfo.textContent = total ? 'Page '+this.page+' of '+this.totalPages+' ('+total+')' : '0';
+  this.pageInfo.textContent = total ? 'Page '+this.page+' of '+this.totalPages+' ('+total+')' : '';
   this.prevBtn.disabled = this.page <= 1;
   this.nextBtn.disabled = this.page >= this.totalPages || this.totalPages === 0;
 };
@@ -144,7 +147,18 @@ ListController.prototype.updatePagination = function(total){
 let __offersCtrl, __broadcastsCtrl, __broadcasts = [];
 
 async function api(path, opts) {
-  const r = await fetch('/bot/dash/api'+path, opts);
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 10000);
+  const requestOpts = Object.assign({}, opts || {}, { signal: controller.signal });
+  let r;
+  try {
+    r = await fetch('/bot/dash/api'+path, requestOpts);
+  } catch (err) {
+    if (err && err.name === 'AbortError') return { error: 'The request timed out — try again.' };
+    throw err;
+  } finally {
+    clearTimeout(timeout);
+  }
   if (r.status === 401) { saveBroadcastDraft(); location.reload(); throw new Error('session expired'); }
   if (!r.ok) {
     try { const data = await r.json(); if (data && data.error) return data; } catch {}
@@ -194,16 +208,23 @@ let custBotId = null;
 // Every panel ships a static "Loading…" placeholder; if the load fails they
 // have to say so instead of claiming to load forever.
 const LOADING_SLOTS = [['botList',0],['ovBots',0],['ovOffers',0],['postbackStatus',0],['offers',9],['cmdList',5],['subSources',2]];
+function loadErrorMarkup(msg, action){
+  return '<div class="empty empty--error"><span class="empty__icon" aria-hidden="true">\u26a0</span>' +
+    esc(msg) +
+    '<br><button class="btn btn--sm btn--ghost ghost" type="button" data-action="'+action+'">Try again</button></div>';
+}
 function showLoadError(msg){
   // Same empty/error component as the leaderboard dashboard (ui.css).
-  const body = '<div class="empty empty--error"><span class="empty__icon" aria-hidden="true">\u26a0</span>' +
-    esc(msg || "Couldn't load your dashboard.") +
-    '<br><button class="btn btn--sm btn--ghost ghost" type="button" data-action="retryLoad">Try again</button></div>';
+  const body = loadErrorMarkup(msg || "Couldn't load your dashboard.", 'retryLoad');
   for (const slot of LOADING_SLOTS) {
     const el = $(slot[0]);
     if (!el) continue;
     el.innerHTML = slot[1] ? '<tr><td colspan="' + slot[1] + '">' + body + '</td></tr>' : body;
   }
+}
+function showPostbackError(msg){
+  const el = $('postbackStatus');
+  if (el) el.innerHTML = loadErrorMarkup(msg || "Couldn't load postback status.", 'retryPostbacks');
 }
 
 async function load() {
@@ -343,7 +364,9 @@ function renderOffers(){
 async function loadExtras(){
   const [plan, bcs, pbStatus] = await Promise.all([api('/plan'), api('/broadcasts'), api('/postback-status')]);
   if (plan.error || bcs.error || pbStatus.error) {
-    toast(plan.error || bcs.error || pbStatus.error);
+    const error = plan.error || bcs.error || pbStatus.error;
+    toast(error);
+    if (pbStatus.error) showPostbackError("Couldn't load postback status.");
     return;
   }
   renderPostbackStatus(pbStatus);
@@ -367,7 +390,7 @@ async function loadExtras(){
           { key: 'status', label: 'Status', fn: function(a,b){ return (a.status||'').localeCompare(b.status||''); } },
           { key: 'sent', label: 'Sent', fn: function(a,b){ return (b.sent_count||0) - (a.sent_count||0); } }
         ],
-        emptyAllText: 'No broadcasts yet.', emptyText: 'No matching broadcasts.',
+        emptyAllText: 'No broadcasts yet. Connect a bot in Bots to send your first message.', emptyText: 'No matching broadcasts.',
         searchPlaceholder: 'Search broadcasts…',
         renderItem: broadcastRow
       });
@@ -588,7 +611,8 @@ function renderBots(bots, loadCmds = true){
   if (!bots.length) custBotId = null;
   if (botSelect && custBotId) botSelect.value = custBotId;
   if (bcBotSelect && firstBotId) bcBotSelect.value = firstBotId;
-  if (bcBotSelect) updateAudience();
+  setBroadcastAvailability(bots.length > 0);
+  if (bcBotSelect && firstBotId) updateAudience();
   loadBroadcastDraft();
   updateScheduleInputState();
   showTimezone();
@@ -612,6 +636,27 @@ function renderBots(bots, loadCmds = true){
   // Hide the "connect a bot first" hint once the user has a bot.
   const commandsHint = $('commandsEmptyHint');
   if (commandsHint) commandsHint.classList.toggle('hidden', bots.length > 0);
+}
+
+function setBroadcastAvailability(hasBots){
+  const gate = $('bcGate');
+  if (gate) {
+    gate.innerHTML = hasBots
+      ? ''
+      : 'No bot is connected yet. Follow the setup steps in <a href="/bot/bots">Bots</a>, starting with <a href="https://t.me/BotFather" target="_blank" rel="noopener">Open @BotFather</a>.';
+  }
+  const panel = document.querySelector('[data-page="broadcasts"]');
+  if (!panel) return;
+  ['bcBody','bcImage','bcBotSelect','bcLang','bcMinLastSeen','bcFirstSeen','bcUsername',
+    'bcSchedule','bcTestChat','bcReviewBtn'].forEach(id => {
+    const el = $(id);
+    if (el) el.disabled = !hasBots;
+  });
+  panel.querySelectorAll('input[name="bcWhen"],[data-action="openBroadcastPreview"],[data-action="testBroadcast"]').forEach(el => {
+    el.disabled = !hasBots;
+  });
+  const audience = $('bcAudience');
+  if (!hasBots && audience) audience.textContent = 'Connect a bot to choose an audience.';
 }
 
 // A disconnected bot can't be customized — reflect that by disabling the
@@ -1051,6 +1096,7 @@ async function handleAction(e) {
   const action = target.dataset.action;
   if (action === 'toggleToken') { e.preventDefault(); toggleToken(target); return; }
   if (action === 'retryLoad') { e.preventDefault(); location.reload(); return; }
+  if (action === 'retryPostbacks') { e.preventDefault(); loadExtras(); return; }
   if (submitting && action !== 'copyLink') return;
   submitting = true;
   // Show a loading state on the clicked control for every network-backed action.
