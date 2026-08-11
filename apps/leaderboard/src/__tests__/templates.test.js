@@ -299,6 +299,23 @@ describe("derived archive values", async () => {
     expect(shaped.pastWinners.map((archive) => archive.top)).toEqual([[], []]);
     expect(shaped.players).toEqual([]);
   });
+
+  it("unwraps legacy double-encoded archive snapshots before shaping equivalent data", async () => {
+    const snapshot = [{ name: "Alice", wagered: "500", prize: "50" }];
+    const encoded = JSON.stringify(snapshot);
+    expect(fromJsonb(encoded)).toEqual(snapshot);
+    const arrayShape = publicShape({ ...SITE }, [], [{
+      label: "Array", created_at: 1,
+      top3_json: [{ name: "Alice", wagered: 500, prize: 50 }],
+      winner_name: "Alice",
+    }]);
+    const stringShape = publicShape({ ...SITE }, [], [{
+      label: "String", created_at: 1,
+      top3_json: [{ name: "Alice", wagered: 500, prize: 50 }],
+      winner_name: "Alice",
+    }]);
+    expect(stringShape.pastWinners[0].top).toEqual(arrayShape.pastWinners[0].top);
+  });
 });
 
 describe("template options schema", async () => {

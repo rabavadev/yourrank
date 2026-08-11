@@ -3,7 +3,7 @@ import { sendErrorToDiscord } from "../../../shared/monitoring.js";
 import { withWorkerFetch } from "../../../shared/with-worker.js";
 import { RateLimiter } from "../../../shared/rate-limiter-do.js";
 import { populateEnv } from "../../../shared/env.js";
-import { getPublicSite, getBySlug, getArchiveSnapshots, ARCHIVE_LIMITS, PUBLIC_ARCHIVE_LIMIT } from "./site.js";
+import { fromJsonb, getPublicSite, getBySlug, getArchiveSnapshots, ARCHIVE_LIMITS, PUBLIC_ARCHIVE_LIMIT } from "./site.js";
 import { renderEmbed, renderHallOfFame, renderLeaderboard, renderLegalPage, renderPasswordGate, renderPlayerProfile, renderStreamerProfile } from "./render.jsx";
 import { renderPublicCreditsPage } from "./public-credits.js";
 import { parseSitePath, renderSiteRoute } from "./site-routes.js";
@@ -77,7 +77,8 @@ async function buildPlayerHistory(env, siteId, rawName, plan) {
   const archives = await getArchiveSnapshots(env, siteId, Math.min(ARCHIVE_LIMITS[plan] || 6, PUBLIC_ARCHIVE_LIMIT));
   const out = [];
   for (const a of archives) {
-    const snap = Array.isArray(a.snapshot_json) ? a.snapshot_json : [];
+    const parsed = fromJsonb(a.snapshot_json);
+    const snap = Array.isArray(parsed) ? parsed : [];
     const sorted = snap.slice().sort((x, y) => (Number(y.wagered) || 0) - (Number(x.wagered) || 0));
     const idx = sorted.findIndex((p) => String(p.name || "").toLowerCase() === name);
     if (idx !== -1) {

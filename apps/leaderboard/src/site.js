@@ -330,8 +330,7 @@ export async function getArchiveSnapshots(env, siteId, limit = 6) {
 async function getArchivePlayerCounts(env, siteId, limit = 6) {
   const rows = await query(
     `SELECT id, label, top3_json, winner_name,
-            CASE WHEN jsonb_typeof(snapshot_json) = 'array'
-                 THEN jsonb_array_length(snapshot_json) ELSE 0 END AS player_count,
+            jsonb_array_length(public.archive_snapshot_array(snapshot_json)) AS player_count,
             (EXTRACT(EPOCH FROM created_at) * 1000)::double precision AS created_at
        FROM archives WHERE site_id=$1 ORDER BY created_at DESC LIMIT $2`,
     [siteId, limit]

@@ -3,6 +3,33 @@ ALTER TABLE public.archives
   ADD COLUMN IF NOT EXISTS top3_json jsonb NOT NULL DEFAULT '[]'::jsonb,
   ADD COLUMN IF NOT EXISTS winner_name text;
 
+CREATE OR REPLACE FUNCTION public.archive_snapshot_array(value jsonb)
+RETURNS jsonb
+LANGUAGE plpgsql
+IMMUTABLE
+AS $$
+DECLARE
+  unwrapped jsonb;
+BEGIN
+  IF jsonb_typeof(value) = 'array' THEN
+    RETURN value;
+  END IF;
+
+  IF jsonb_typeof(value) = 'string' THEN
+    BEGIN
+      unwrapped := (value #>> '{}')::jsonb;
+    EXCEPTION WHEN others THEN
+      RETURN '[]'::jsonb;
+    END;
+    IF jsonb_typeof(unwrapped) = 'array' THEN
+      RETURN unwrapped;
+    END IF;
+  END IF;
+
+  RETURN '[]'::jsonb;
+END;
+$$;
+
 CREATE OR REPLACE FUNCTION public.derive_archive_values()
 RETURNS trigger
 LANGUAGE plpgsql
@@ -16,10 +43,7 @@ DECLARE
   prize numeric;
   ordinal integer := 0;
 BEGIN
-  source := CASE
-    WHEN jsonb_typeof(NEW.snapshot_json) = 'array' THEN NEW.snapshot_json
-    ELSE '[]'::jsonb
-  END;
+  source := public.archive_snapshot_array(NEW.snapshot_json);
 
   FOR elem IN SELECT value FROM jsonb_array_elements(source) LOOP
     IF jsonb_typeof(elem) <> 'object' THEN
