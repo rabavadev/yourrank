@@ -1844,6 +1844,7 @@
 .v3-dash .cr-counters > div { display: grid; grid-template-columns: auto auto; gap: 3px 8px; }
 .v3-dash .cr-counters span { grid-column: 1 / -1; }
 .v3-dash .cr-counters b { font: 600 16px var(--v3-mono); }
+.v3-dash .cr-counters b { white-space: nowrap; }
 .v3-dash .cr-counters small { color: var(--v3-main-ink-mute); align-self: end; }
 .v3-dash .cr-counters i { height: 34px; border-left: 1px solid var(--v3-main-line); }
 .v3-dash .cr-list-toolbar { display: flex; gap: 8px; padding: 12px 16px; border-bottom: 1px solid var(--v3-main-line); }

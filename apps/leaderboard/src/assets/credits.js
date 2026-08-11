@@ -96,7 +96,7 @@ function renderRewardRow(m) {
   return `<td><b>${esc(m.kick_reward_title)}</b><br><span class="hint">${esc(m.kick_reward_id)}</span></td><td class="hint">When redeemed · ${m.kick_reward_cost} points</td><td class="num"><b>+${m.credits} cr</b></td><td><input class="v3-toggle" type="checkbox" ${m.active ? "checked" : ""} data-toggle-reward="${esc(m.id)}" /></td><td class="ta-r"><button class="btn btn--sm" data-edit-reward="${esc(m.id)}">Edit</button> <button class="btn btn--sm btn--danger" data-del-reward="${esc(m.id)}">Delete</button></td>`;
 }
 function renderViewerRow(v) { return `<td>${esc(v.kick_username || v.kick_user_id)}${v.blocked ? ' <span class="v3-chip v3-chip--cancelled">blocked</span>' : ""}</td><td class="num">${v.balance}</td><td class="num">${v.total_earned}</td><td class="num">${v.total_spent}</td><td>${fmtDate(v.last_earned_at || v.created_at)}</td><td class="ta-r"><button class="btn btn--sm ${v.blocked ? "btn--accent" : "btn--danger"}" data-block="${esc(v.id)}" data-blocked="${v.blocked ? "1" : ""}">${v.blocked ? "Unblock" : "Block"}</button></td>`; }
-function renderRedemptionRow(r) { return `<td><b>${esc(r.kick_username || r.kick_user_id)}</b></td><td>${esc(r.item_name)}</td><td class="num"><b>${r.cost}</b> <span class="hint">cr</span></td><td>${statusChip(r.status)}</td><td title="${esc(fmtDate(r.created_at))}">${relative(r.created_at)}</td><td class="ta-r">${r.status === "pending" ? `<button class="btn btn--sm" data-cancel="${esc(r.id)}">Cancel</button> <button class="btn btn--sm btn--accent" data-fulfill="${esc(r.id)}">Fulfil</button>` : ""}</td>`; }
+function renderRedemptionRow(r) { return `<td><b>${esc(r.kick_username || r.kick_user_id)}</b></td><td>${esc(r.item_name)}</td><td class="num"><b>${r.cost}</b><span class="hint">cr</span></td><td>${statusChip(r.status)}</td><td title="${esc(fmtDate(r.created_at))}">${relative(r.created_at)}</td><td class="ta-r">${r.status === "pending" ? `<button class="btn btn--sm" data-cancel="${esc(r.id)}">Cancel</button> <button class="btn btn--sm btn--accent" data-fulfill="${esc(r.id)}">Fulfil</button>` : ""}</td>`; }
 function renderShopCards(items) {
   const root = $("cr-shop-list"); if (!root) return;
   ensureShopControls();
@@ -114,6 +114,20 @@ function render() {
   renderShellUsage();
   const rewardAtLimit = (usage.rewardMappings || 0) >= (limits.rewardMappings || 0);
   const shopAtLimit = (usage.shopItems || 0) >= (limits.shopItems || 0);
+  const rewardUsage = $("cr-reward-usage");
+  if (rewardUsage) rewardUsage.textContent = `${usage.rewardMappings || 0} / ${limits.rewardMappings || 0} MAPPINGS DEFINED`;
+  const addMapping = $("cr-add-mapping");
+  if (addMapping) {
+    addMapping.classList.toggle("is-disabled", rewardAtLimit);
+    addMapping.title = rewardAtLimit ? "Upgrade your plan to add more reward mappings" : "";
+    addMapping.setAttribute("aria-disabled", rewardAtLimit ? "true" : "false");
+    addMapping.onclick = rewardAtLimit ? (e) => e.preventDefault() : (e) => {
+      e.preventDefault();
+      const details = $("cr-reward-form")?.closest("details");
+      if (details) details.open = true;
+      $("cr-reward-kick-id")?.focus();
+    };
+  }
   if (current === "channel") {
     const connected = Boolean(state.channel?.externalId);
     $("cr-channel-connected").hidden = !connected; $("cr-channel-connect-wrap").hidden = connected;
@@ -125,9 +139,7 @@ function render() {
     $("cr-viewer-auth-kick").checked = auth.kick !== false; $("cr-viewer-auth-discord").checked = auth.discord !== false; $("cr-viewer-auth-public").checked = auth.public !== false;
   }
   if (current === "maps" || current === "rewards") {
-    $("cr-reward-usage").innerHTML = `${usage.rewardMappings || 0} / ${limits.rewardMappings || 0} MAPPINGS DEFINED`;
     for (const id of ["cr-reward-submit", "cr-reward-create-submit"]) { const el = $(id); if (el) { el.disabled = rewardAtLimit; el.title = rewardAtLimit ? "Upgrade your plan to add more reward mappings" : ""; } }
-    const add = $("cr-add-mapping"); if (add) { add.classList.toggle("is-disabled", rewardAtLimit); add.title = rewardAtLimit ? "Upgrade your plan to add more reward mappings" : ""; add.setAttribute("aria-disabled", rewardAtLimit ? "true" : "false"); add.onclick = rewardAtLimit ? (e) => e.preventDefault() : null; }
     const mappings = state.mappings || [];
     if (!rewardCtrl) { rewardCtrl = new ListController({ root: $("cr-rewards"), tbody: "cr-reward-list", items: mappings, perPage: 10, searchFn: (m) => `${m.kick_reward_title} ${m.kick_reward_id} ${m.kick_reward_cost} ${m.credits}`, sortOptions: [{ key: "cost", label: "Kick cost", fn: (a, b) => (b.kick_reward_cost || 0) - (a.kick_reward_cost || 0) }, { key: "credits", label: "Credits", fn: (a, b) => (b.credits || 0) - (a.credits || 0) }, { key: "active", label: "Active first", fn: (a, b) => Number(b.active) - Number(a.active) }], emptyAllText: "No reward mappings yet.", emptyText: "No matching reward mappings.", renderItem: (m) => renderRewardRow(m), onRender: () => wireDynamicActions() }); }
     else rewardCtrl.setItems(mappings);
