@@ -2064,6 +2064,8 @@ body[data-wide] .v3-dash .lb-main {
 .v3-dash .ov-live-grid { display: grid; grid-template-columns: 1.62fr 1fr; gap: 20px; flex: 1; min-height: 490px; }
 .v3-dash .ov-live-card { min-width: 0; padding: 24px; border: 1px solid var(--v3-main-line); border-radius: var(--v3-radius); background: var(--v3-main-panel); }
 .v3-dash .ov-live-card h2 { margin: 0 0 10px; font-size: 18px; font-weight: 600; }
+.v3-dash .ov-live-card-head { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.v3-dash .ov-live-card-head h2 { margin: 0; }
 .v3-dash .ov-activity-row, .v3-dash .ov-player-row { display: flex; align-items: center; gap: 12px; min-height: 57px; border-bottom: 1px solid var(--v3-main-line); }
 .v3-dash .ov-player-row { min-height: 37px; }
 .v3-dash .ov-activity-icon { display: grid; place-items: center; width: 28px; height: 28px; border-radius: 8px; background: #f4f4f5; color: var(--v3-main-ink-soft); }
