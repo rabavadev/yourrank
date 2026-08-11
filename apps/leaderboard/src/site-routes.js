@@ -13,6 +13,14 @@ import { generateCsrfToken, csrfCookie } from "./middleware/csrf.js";
 import { renderPasswordGate } from "./render.jsx";
 import { renderSite } from "./site-render.js";
 import { getViewerSiteData } from "./site-data.js";
+import {
+  cachedPublicBoardResponse,
+  getPublicBoardCache,
+  isPublicBoardCacheRequest,
+  isPublicBoardCacheSite,
+  publicHtmlCacheControl,
+  putPublicBoardCache,
+} from "./public-html-cache.js";
 
 const SECTIONS = new Set(["home", "leaderboard", "shop", "games", "me"]);
 
@@ -79,6 +87,15 @@ export async function renderSiteRoute({ request, env, ctx, nonce, slug, section,
   const respHeaders = new Headers({ ...HTML_N, "cache-control": "no-store" });
 
   try {
+    const cacheableRequest = isPublicBoardCacheRequest(request, section);
+    if (cacheableRequest) {
+      const cached = await getPublicBoardCache(request);
+      if (cached) {
+        const csrfToken = generateCsrfToken();
+        return cachedPublicBoardResponse(cached, csrfToken, csrfCookie(csrfToken));
+      }
+    }
+
     const r = await getPublicSite(env, slug, request);
     if (r && r.requiresPassword) {
       return new Response(renderPasswordGate(r, { nonce, isCustomDomain }), { headers: respHeaders });
@@ -129,7 +146,14 @@ export async function renderSiteRoute({ request, env, ctx, nonce, slug, section,
       viewerData,
       opts: { nonce, homeUrl, slug, isCustomDomain, logoUrl, watermark, csrfToken, boards: r.boards, botUsername: r.botUsername },
     });
-    return new Response(html, { headers: respHeaders });
+    const response = new Response(html, { headers: respHeaders });
+    if (cacheableRequest && isPublicBoardCacheSite(r)) {
+      respHeaders.set("cache-control", publicHtmlCacheControl());
+      response.headers.set("cache-control", publicHtmlCacheControl());
+      if (ctx?.waitUntil) ctx.waitUntil(putPublicBoardCache(request, response));
+      else await putPublicBoardCache(request, response);
+    }
+    return response;
   } catch (err) {
     console.error("[site-routes]", String(err?.message || err), err?.stack);
     return new Response(error500Page(nonce), { status: 500, headers: HTML_N });
