@@ -1243,7 +1243,6 @@
   .v3-dash .v3-bulkbar { left: 50%; right: auto; }
   .v3-dash .v3-table-card { overflow-x: auto; }
 }
-
 /* ---------- Page editor (docs/design/dashboard-v3/06-page-setup.png) ---------- */
 .v3-dash section[data-page="board"] .editor-steps {
   width: calc(100% - 480px);
@@ -1811,4 +1810,71 @@
   .v3-dash .v3-bulkbar { max-width: calc(100vw - 24px); gap: 8px; padding: 10px; }
   .v3-dash .v3-bulkbar .v3-btn { padding: 0 8px; }
   .v3-dash .v3-players-table { min-width: 720px; }
+}
+/* ---------- Rewards & Shop v3 screens ---------- */
+.v3-dash #cr-main { display: block; }
+.v3-dash #cr-app { display: block; }
+.v3-dash .v3-section-head,
+.v3-dash .cr-shop-card-head,
+.v3-dash .cr-channel-summary,
+.v3-dash .cr-drawer-head,
+.v3-dash .cr-drawer-actions,
+.v3-dash .cr-shop-card-foot { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.v3-dash .v3-section-head { padding: 20px 20px 16px; }
+.v3-dash .v3-section-head h2 { margin: 0; font-size: 17px; }
+.v3-dash .cr-table-scroll { overflow-x: auto; }
+.v3-dash .cr-table-scroll .v3-table { min-width: 760px; }
+.v3-dash .cr-status-card { margin-bottom: 20px; }
+.v3-dash .cr-status-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 16px; padding: 18px 20px; }
+.v3-dash .cr-status-grid > div { display: grid; gap: 5px; }
+.v3-dash .cr-status-label,
+.v3-dash .cr-channel-facts span,
+.v3-dash .cr-counters span { font: 500 11px var(--v3-mono); letter-spacing: .08em; color: var(--v3-main-ink-mute); text-transform: uppercase; }
+.v3-dash .cr-status-grid b { font: 600 16px var(--v3-mono); }
+.v3-dash .cr-channel-card { padding: 24px; }
+.v3-dash .cr-kick-mark { display: grid; place-items: center; width: 40px; height: 40px; border-radius: var(--v3-radius-sm); background: var(--v3-accent); color: var(--v3-accent-ink); font-weight: 800; font-size: 22px; }
+.v3-dash .cr-channel-summary { justify-content: flex-start; }
+.v3-dash .cr-channel-summary > :last-child { margin-left: auto; }
+.v3-dash .cr-channel-summary h2 { margin: 0 0 7px; font-size: 18px; }
+.v3-dash .cr-channel-facts { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; border-top: 1px solid var(--v3-main-line); margin-top: 24px; padding-top: 18px; }
+.v3-dash .cr-channel-facts div { display: grid; gap: 6px; }
+.v3-dash .cr-form-panel { padding: 0 20px 18px; }
+.v3-dash .cr-redemption-summary { display: flex; align-items: center; justify-content: space-between; gap: 24px; padding: 18px 20px; margin-bottom: 20px; }
+.v3-dash .cr-counters { display: flex; align-items: center; gap: 24px; }
+.v3-dash .cr-counters > div { display: grid; grid-template-columns: auto auto; gap: 3px 8px; }
+.v3-dash .cr-counters span { grid-column: 1 / -1; }
+.v3-dash .cr-counters b { font: 600 16px var(--v3-mono); }
+.v3-dash .cr-counters small { color: var(--v3-main-ink-mute); align-self: end; }
+.v3-dash .cr-counters i { height: 34px; border-left: 1px solid var(--v3-main-line); }
+.v3-dash .cr-list-toolbar { display: flex; gap: 8px; padding: 12px 16px; border-bottom: 1px solid var(--v3-main-line); }
+.v3-dash .cr-list-toolbar .list-search { max-width: 240px; }
+.v3-dash .cr-shop-grid { display: grid; grid-template-columns: minmax(0, 1fr) 380px; gap: 20px; align-items: start; }
+.v3-dash .cr-shop-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); gap: 16px; }
+.v3-dash .cr-shop-card { background: var(--v3-main-panel); border: 1px solid var(--v3-main-line); border-radius: var(--v3-radius); padding: 18px; }
+.v3-dash .cr-shop-card.is-inactive { opacity: .65; }
+.v3-dash .cr-shop-card h2 { margin: 0; font-size: 16px; }
+.v3-dash .cr-shop-card p { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--v3-main-ink-soft); font-size: 13px; margin: 14px 0; }
+.v3-dash .cr-shop-card hr { border: 0; border-top: 1px solid var(--v3-main-line); margin: 0 0 14px; }
+.v3-dash .cr-shop-card-foot b { font: 600 18px var(--v3-mono); }
+.v3-dash .cr-shop-card-foot small { font-size: 11px; color: var(--v3-main-ink-mute); }
+.v3-dash .cr-shop-card-foot span { font: 500 12px var(--v3-mono); color: var(--v3-main-ink-soft); }
+.v3-dash .cr-shop-card > .btn { margin-top: 16px; }
+.v3-dash .cr-shop-drawer { position: sticky; top: 92px; background: var(--v3-main-panel); border-left: 1px solid var(--v3-main-line); padding: 24px; min-height: 480px; }
+.v3-dash .cr-drawer-head { margin-bottom: 24px; }
+.v3-dash .cr-drawer-head h2 { margin: 0; font-size: 18px; }
+.v3-dash .cr-drawer-close { background: none; border: 0; font-size: 26px; cursor: pointer; }
+.v3-dash .cr-suffix-field { position: relative; }
+.v3-dash .cr-suffix-field input { padding-right: 42px; }
+.v3-dash .cr-suffix-field > span { position: absolute; right: 12px; bottom: 10px; font: 500 11px var(--v3-mono); color: var(--v3-main-ink-mute); }
+.v3-dash .cr-toggle-row { display: flex; align-items: center; justify-content: space-between; padding: 18px 0; border-top: 1px solid var(--v3-main-line); border-bottom: 1px solid var(--v3-main-line); margin: 20px 0; }
+.v3-dash .cr-toggle-row span { display: grid; gap: 4px; }
+.v3-dash .cr-toggle-row small { color: var(--v3-main-ink-soft); }
+.v3-dash .cr-drawer-actions { justify-content: flex-end; }
+.v3-dash .cr-shop-layout > .v3-section-head { padding-left: 0; padding-right: 0; }
+.v3-dash .cr-shop-list { min-width: 0; }
+@media (max-width: 980px) {
+  .v3-dash .cr-status-grid { grid-template-columns: repeat(2, 1fr); }
+  .v3-dash .cr-redemption-summary { align-items: flex-start; flex-direction: column; }
+  .v3-dash .cr-shop-grid { grid-template-columns: 1fr; }
+  .v3-dash .cr-shop-drawer { position: fixed; inset: 72px 0 0; z-index: 90; overflow: auto; }
 }

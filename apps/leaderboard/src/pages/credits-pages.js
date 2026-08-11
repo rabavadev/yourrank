@@ -1,91 +1,36 @@
-// Per-route Rewards & Shop page bodies generated from the legacy monolithic creditsContent.
-// This keeps the markup source-of-truth in pages/credits.js while producing separate pages.
-import { creditsContent } from "./credits.js";
+const TABS = [
+  ["redemptions", "Redemptions", "/dashboard/rewards/redemptions"],
+  ["shop", "Shop Items", "/dashboard/rewards/shop"],
+  ["channel", "Channel", "/dashboard/rewards/channel"],
+  ["maps", "Mappings", "/dashboard/rewards/maps"],
+  ["viewers", "Viewers", "/dashboard/rewards/viewers"],
+  ["history", "Ledger", "/dashboard/rewards/history"],
+];
 
-function between(html, start, end) {
-  const i = html.indexOf(start);
-  if (i < 0) throw new Error("credits-pages: start not found: " + start.slice(0, 60));
-  const j = html.indexOf(end, i + start.length);
-  if (j < 0) throw new Error("credits-pages: end not found after " + start.slice(0, 60));
-  return html.slice(i, j + end.length);
+function tabs(active) {
+  return `<nav class="v3-tabs" aria-label="Rewards & Shop sections">${TABS.map(([key, label, href]) => `<a class="v3-tab${active === key || (active === "rewards" && key === "maps") ? " is-on" : ""}"${active === key || (active === "rewards" && key === "maps") ? ' aria-current="page"' : ""} href="${href}">${label}</a>`).join("")}</nav>`;
 }
 
-function wrap(tab, body) {
-  return `<div id="cr-loading" class="ui-loading" hidden><div class="ui-loading__spinner"></div></div>
-
-<div id="cr-app" data-cr-tab="${tab}" hidden>
-${body}
-</div>
-
-<div id="cr-empty" class="empty" hidden>
-  <p>Loading your credits dashboard…</p>
-</div>`;
+function page(tab, sub, body) {
+  return `<div class="v3-head"><h1>Rewards &amp; Shop</h1><p class="v3-head-sub">${sub}</p></div>${tabs(tab)}${body}`;
 }
 
-const raw = creditsContent.replace(/<div class="an-head">[\s\S]*?<\/div>\s*/, "");
+const channel = `<section class="v3-table-card cr-channel-card" id="cr-channel"><div id="cr-channel-connected" hidden><div class="cr-channel-summary"><div class="cr-kick-mark">K</div><div><h2>@<span id="cr-channel-name"></span> on Kick</h2><span class="v3-chip v3-chip--fulfilled">● Connected</span></div><button id="cr-channel-disconnect" class="btn btn--sm btn--danger" type="button">Disconnect</button></div><div class="cr-channel-facts"><div><span>CHANNEL STATUS</span><b id="cr-channel-live">Connected</b></div><div><span>TOKEN HEALTH</span><b id="cr-channel-token">No Kick token · connect Kick</b></div></div><span id="cr-channel-id" hidden></span><span id="cr-channel-linked" hidden></span><a id="cr-channel-reconnect" href="/auth/kick" hidden>Reconnect Kick</a></div><div id="cr-channel-connect-wrap"><div class="cr-channel-summary"><div class="cr-kick-mark">K</div><div><h2>Connect your Kick channel</h2><p class="v3-head-sub">Link Kick to turn channel-point rewards into credits.</p></div></div><a id="cr-channel-connect" class="btn btn--accent" href="/auth/kick">Connect with Kick</a><details class="cr-advanced"><summary>Manual channel ID</summary><form class="grid2" id="cr-channel-form"><div class="field"><label for="cr-channel-id-input">Kick channel/broadcaster ID</label><input id="cr-channel-id-input" name="externalId" type="text" placeholder="12345678" /></div><div class="field"><label for="cr-channel-name-input">Channel name (optional)</label><input id="cr-channel-name-input" name="name" type="text" placeholder="yourchannel" /></div><div class="field field--full"><button class="btn" type="submit">Save channel</button><p class="status" id="cr-channel-status" role="status" aria-live="polite"></p></div></form></details></div></section>`;
 
-const statusHero = between(raw, '<section class="card card--status" id="cr-status">', '</section>');
+const mappings = `<section class="v3-table-card" id="cr-maps"><div class="v3-section-head"><div><h2>Reward → Credit Mappings</h2><p class="v3-head-sub" id="cr-reward-usage"></p></div><a class="btn btn--sm btn--accent" href="/dashboard/rewards/maps#cr-reward-form">+ Add mapping</a></div><div class="cr-form-panel"><details class="cr-advanced"><summary>Manual reward mapping</summary><form class="grid2" id="cr-reward-form"><input type="hidden" id="cr-reward-id" /><div class="field"><label for="cr-reward-kick-id">Kick reward ID</label><input id="cr-reward-kick-id" type="text" required /></div><div class="field"><label for="cr-reward-title">Reward title</label><input id="cr-reward-title" type="text" required /></div><div class="field"><label for="cr-reward-cost">Kick point cost</label><input id="cr-reward-cost" type="number" min="0" value="100" required /></div><div class="field"><label for="cr-reward-credits">Credits granted</label><input id="cr-reward-credits" type="number" min="1" value="50" required /></div><div class="field field--full"><button class="btn" type="submit" id="cr-reward-submit">Save mapping</button><p class="status" id="cr-reward-status" role="status" aria-live="polite"></p></div></form></details></div><div class="cr-table-scroll"><table class="v3-table"><thead><tr><th>KICK REWARD EVENT</th><th>TYPE / CONDITION</th><th>CREDITS AWARDED</th><th>STATUS</th><th class="ta-r">ACTIONS</th></tr></thead><tbody id="cr-reward-list"></tbody></table></div></section>`;
 
-let onboarding = between(raw, '<section class="card" id="cr-onboarding" hidden>', '</section>');
-onboarding = onboarding.replace(
-  /<button class="btn btn--sm" data-cr-jump="([^"]+)" type="button">([^<]+)<\/button>/g,
-  (_, jump, text) => {
-    const href =
-      jump === "cr-channel" ? "/dashboard/rewards/channel" :
-      jump === "cr-maps" ? "/dashboard/rewards/rewards" :
-      jump === "cr-shop" ? "/dashboard/rewards/shop" :
-      "#";
-    return `<a class="btn btn--sm" href="${href}">${text}</a>`;
-  }
-);
+const shop = `<section class="cr-shop-layout" id="cr-shop"><div class="v3-section-head"><p class="v3-head-sub v3-head-sub--mono" id="cr-shop-usage"></p><button class="btn btn--sm btn--accent" type="button" id="cr-shop-new">+ Create item</button></div><div class="cr-shop-grid"><div class="cr-shop-list"><div class="v3-empty" id="cr-shop-empty" hidden><div class="v3-empty-ic">□</div><h2>No shop items yet</h2><p>Create an item viewers can redeem with credits.</p><div class="v3-empty-actions"><button class="btn btn--sm btn--accent" type="button" data-cr-shop-create>+ Create item</button></div></div><div class="cr-shop-cards" id="cr-shop-list"></div></div><aside class="cr-shop-drawer" id="cr-shop-drawer" hidden><div class="cr-drawer-head"><h2 id="cr-shop-drawer-title">Create New Shop Item</h2><button type="button" class="cr-drawer-close" id="cr-shop-close" aria-label="Close">×</button></div><form id="cr-shop-form"><input type="hidden" id="cr-shop-item-id" /><div class="field"><label for="cr-shop-name">Item Name</label><input id="cr-shop-name" name="name" type="text" required /></div><div class="field"><label for="cr-shop-desc">Description</label><textarea id="cr-shop-desc" name="description" rows="3"></textarea></div><div class="grid2"><div class="field cr-suffix-field"><label for="cr-shop-cost">Cost</label><input id="cr-shop-cost" name="cost" type="number" min="1" value="100" required /><span>cr</span></div><div class="field cr-suffix-field"><label for="cr-shop-stock">Stock</label><input id="cr-shop-stock" name="stock" type="number" min="0" placeholder="∞" /><span>LIMIT</span></div></div><label class="cr-toggle-row"><span><b>Active</b><small>Visible and redeemable by viewers.</small></span><input type="checkbox" class="v3-toggle" id="cr-shop-active" name="active" checked /></label><div class="cr-drawer-actions"><button class="btn" type="button" id="cr-shop-cancel">Cancel</button><button class="btn btn--accent" type="submit" id="cr-shop-submit">Save Item</button></div><p class="status" id="cr-shop-status" role="status" aria-live="polite"></p></form></aside></div></section>`;
 
-const channelSection = between(raw, '<section class="card" id="cr-channel">', '</section>');
-const mapsSection = between(raw, '<section class="card" id="cr-maps">', '</section>');
-const shopSection = between(raw, '<section class="card" id="cr-shop">', '</section>');
-const redemptionsSection = between(raw, '<section class="card" id="cr-redemptions">', '</section>');
-const viewersSection = between(raw, '<section class="card" id="cr-viewers">', '</section>');
+const redemptions = `<section class="cr-redemptions-wrap" id="cr-redemptions"><div class="v3-table-card cr-redemption-summary"><div id="cr-redemption-channel" class="v3-chip v3-chip--refunded">● Connected to @<span></span></div><div class="cr-counters"><div><span>PENDING QUEUE</span><b id="cr-pending-counter">0 / 0</b><small>limit</small></div><i></i><div><span>FULFILLED (THIS MONTH)</span><b id="cr-fulfilled-counter">0 / 0</b><small>limit</small></div></div></div><div class="v3-table-card cr-list-card"><div class="cr-list-toolbar"><input class="list-search" type="search" placeholder="Search redemptions…" aria-label="Search redemptions" /><span class="cr-list-sort"></span></div><div class="cr-table-scroll"><table class="v3-table"><thead><tr><th>VIEWER</th><th>ITEM</th><th>COST</th><th>STATUS</th><th>REQUESTED</th><th class="ta-r">ACTIONS</th></tr></thead><tbody id="cr-redemption-list"></tbody></table></div><div class="v3-empty" id="cr-redemption-empty" hidden><div class="v3-empty-ic">□</div><h2>No redemptions yet</h2><p>Viewer requests will appear here.</p></div><div class="v3-table-foot" id="cr-redemption-foot"></div></div></section>`;
 
-const settingsDetails = between(raw, '<details class="card cr-advanced" id="cr-settings">', '</details>');
-const settingsSections = [...settingsDetails.matchAll(/<section class="cr-settings-section"[^>]*>([\s\S]*?)<\/section>/g)].map((m) => m[0]);
-if (settingsSections.length < 3) throw new Error("credits-pages: expected 3 settings sections");
-const [planUsageSection, viewerLoginSection, historySectionRaw] = settingsSections;
+const viewers = `<section class="v3-table-card" id="cr-viewers"><div class="v3-section-head"><div><h2>Viewer balances</h2><p class="v3-head-sub">Credits earned and spent by viewers on this board.</p></div></div><div class="cr-table-scroll"><table class="v3-table"><thead><tr><th>KICK USER</th><th class="num">BALANCE</th><th class="num">TOTAL EARNED</th><th class="num">TOTAL SPENT</th><th>LAST EARNED</th><th class="ta-r">ACTIONS</th></tr></thead><tbody id="cr-viewer-list"></tbody></table></div><div class="v3-empty" id="cr-viewer-empty" hidden><h2>No viewers yet.</h2></div></section>`;
+const history = `<section class="v3-table-card" id="cr-history"><div class="v3-section-head"><div><h2>Viewer ledger history</h2><p class="v3-head-sub">Search a Kick viewer across your boards.</p></div></div><form class="cr-history-form" id="cr-history-form"><input id="cr-history-username" placeholder="Kick username" /><button class="btn btn--accent" id="cr-history-search" type="submit">Search</button><span class="status" id="cr-history-status"></span></form><div class="cr-table-scroll"><table class="v3-table"><thead><tr><th>BOARD</th><th class="num">BALANCE</th><th class="num">EARNED</th><th class="num">SPENT</th><th class="num">PENDING</th><th class="num">REDEMPTIONS</th><th></th></tr></thead><tbody id="cr-history-list"></tbody></table></div><div class="v3-empty" id="cr-history-empty"><h2>Search for a viewer</h2></div></section>`;
+const analytics = `<section class="v3-table-card" id="cr-analytics" hidden><h2>Analytics</h2><span id="cr-analytics-days-label">30</span><select id="cr-analytics-days"><option value="7">7 days</option><option value="30" selected>30 days</option><option value="90">90 days</option></select><span id="cr-stat-earned"></span><span id="cr-stat-spent"></span><span id="cr-stat-redemptions"></span><span id="cr-stat-pending"></span><span id="cr-stat-balance"></span><div id="cr-top-earners-list"></div><div id="cr-top-items-list"></div><div id="cr-credits-by-day"></div><p id="cr-credits-by-day-empty"></p><p id="cr-top-earners-empty"></p><p id="cr-top-items-empty"></p></section>`;
 
-const settingsForChannel = `<details class="card cr-advanced" id="cr-settings">
-<summary>Settings &amp; tools</summary>
-${planUsageSection}
-${viewerLoginSection}
-</details>`;
-
-const historySection = historySectionRaw.replace(
-  'class="cr-settings-section" id="cr-history"',
-  'class="card" id="cr-history"'
-);
-
-// Split the legacy cr-maps section into auto-create rewards (cr-rewards) and manual mapping (cr-maps).
-const h3Marker = '<h3>Create reward in Kick</h3>';
-const h3Idx = mapsSection.indexOf(h3Marker);
-if (h3Idx < 0) throw new Error("credits-pages: create reward heading not found");
-const manualWithOpen = mapsSection.slice(0, h3Idx);
-const createWithClose = mapsSection.slice(h3Idx);
-
-const manualForm = between(manualWithOpen, '<form class="grid2" id="cr-reward-form">', '</form>');
-const mapsPageSection = `<section class="card" id="cr-maps">
-  <h2>Reward mapping</h2>
-  <p class="card-sub">Manually map an existing Kick reward to YourRank credits.</p>
-  <p class="hint" id="cr-reward-usage"></p>
-  ${manualForm}
-</section>`;
-
-const rewardsPageSection = `<section class="card" id="cr-rewards">
-  <h2>Kick rewards</h2>
-  <p class="card-sub">Create and manage Kick channel rewards that grant YourRank credits.</p>
-  <p class="hint" id="cr-reward-usage"></p>
-  ${createWithClose}`;
-
-export const channelPage = wrap("channel", [statusHero, onboarding, channelSection, settingsForChannel].join("\n"));
-export const rewardsPage = wrap("rewards", [statusHero, rewardsPageSection].join("\n"));
-export const mapsPage = wrap("maps", [statusHero, mapsPageSection].join("\n"));
-export const shopPage = wrap("shop", [statusHero, shopSection].join("\n"));
-export const viewersPage = wrap("viewers", [statusHero, viewersSection].join("\n"));
-export const redemptionsPage = wrap("redemptions", [statusHero, redemptionsSection].join("\n"));
-export const historyPage = wrap("history", [statusHero, historySection].join("\n"));
+export const channelPage = page("channel", "Configure platform integrations and reward triggers.", `${channel}${mappings}`);
+export const rewardsPage = page("rewards", "Configure platform integrations and reward triggers.", mappings);
+export const mapsPage = page("maps", "Configure platform integrations and reward triggers.", mappings);
+export const shopPage = page("shop", "Manage viewer items and custom channel redemptions.", shop);
+export const viewersPage = page("viewers", "Review viewer balances and credit activity.", viewers);
+export const redemptionsPage = page("redemptions", "Approve viewer redemptions and keep fulfillment moving.", `${redemptions}${analytics}`);
+export const historyPage = page("history", "Review viewer credit history across your boards.", history);
