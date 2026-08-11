@@ -16,7 +16,7 @@
   --gm-accent:#2200ff; --gm-accent-ink:#ffffff;
 }
 .gm-shell-nav--dark{
-  --gm-bg:var(--yr-color-chrome-3); --gm-panel:#1c1c1c; --gm-line:var(--yr-color-chrome-line-4); --gm-line-2:var(--yr-color-chrome-line-3);
+  --gm-bg:var(--yr-color-chrome-3); --gm-panel:var(--yr-color-chrome-6); --gm-line:var(--yr-color-chrome-line-4); --gm-line-2:var(--yr-color-chrome-line-3);
   --gm-ink:var(--yr-color-chrome-ink); --gm-ink-soft:var(--yr-color-chrome-ink-2); --gm-ink-mute:var(--yr-color-text-muted);
   --gm-accent:var(--yr-color-action); --gm-accent-ink:var(--yr-color-text-inverse);
 }

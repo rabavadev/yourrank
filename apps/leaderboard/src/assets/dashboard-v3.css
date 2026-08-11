@@ -4,14 +4,14 @@
 
 .v3-dash {
   --v3-accent: var(--yr-color-live);
-  --v3-accent-ink: var(--yr-color-chrome-2);
+  --v3-accent-ink: var(--yr-color-live-ink);
   --v3-accent-soft: var(--yr-color-live-soft);
   --v3-accent-line: var(--yr-color-live-line);
 
-  --v3-chrome: var(--yr-color-chrome-2);
-  --v3-chrome-2: var(--yr-color-chrome-4);
-  --v3-chrome-3: var(--yr-color-chrome-5);
-  --v3-chrome-card: var(--yr-color-chrome-6);
+  --v3-chrome: var(--yr-color-chrome);
+  --v3-chrome-2: var(--yr-color-chrome-3);
+  --v3-chrome-3: var(--yr-color-chrome-4);
+  --v3-chrome-card: var(--yr-color-chrome-5);
   --v3-chrome-line: var(--yr-color-chrome-line);
   --v3-chrome-line-2: var(--yr-color-chrome-line-2);
   --v3-ink: var(--yr-color-text-inverse);
@@ -19,10 +19,10 @@
   --v3-ink-mute: var(--yr-color-chrome-ink-4);
 
   --v3-main-bg: var(--yr-color-bg-2);
-  --v3-main-panel: var(--yr-color-text-inverse);
+  --v3-main-panel: var(--yr-color-surface);
   --v3-main-line: var(--yr-color-border);
   --v3-main-line-2: var(--yr-color-border-strong);
-  --v3-main-ink: var(--yr-color-chrome-2);
+  --v3-main-ink: var(--yr-color-text-2);
   --v3-main-ink-soft: var(--yr-color-text-secondary-3);
   --v3-main-ink-mute: var(--yr-color-text-muted-2);
 
@@ -737,7 +737,7 @@ body[data-wide] .v3-dash .lb-main {
   width: 26px;
   height: 26px;
   border-radius: 6px;
-  background: var(--yr-color-text-inverse);
+  background: var(--yr-color-surface);
   border: 1px solid var(--v3-main-line);
   color: var(--v3-main-ink-mute);
   font: 600 12px var(--v3-mono);
@@ -1101,7 +1101,7 @@ body[data-wide] .v3-dash .lb-main {
   width: 16px;
   height: 16px;
   border-radius: 50%;
-  background: var(--yr-color-text-inverse);
+  background: var(--yr-color-surface);
   transition: transform .15s, background .15s;
 }
 
