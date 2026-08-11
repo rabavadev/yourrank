@@ -6,7 +6,7 @@ import { fitDesignPreview, loadStats, refreshDesignPreview } from "./site.js";
 import { SECTIONS, dashboardPath, defaultTab, parseDashboardPath } from "./routes.js";
 
 
-const AREA_MAP = { home: "leaderboard", board: "leaderboard", boards: "leaderboard", settings: "leaderboard", performance: "analytics" };
+const AREA_MAP = { home: "leaderboard", board: "leaderboard", boards: "leaderboard", games: "leaderboard", settings: "leaderboard", performance: "analytics" };
 
 export function areaForPage(page) { return AREA_MAP[page] || "leaderboard"; }
 
@@ -65,6 +65,7 @@ export function navTo(page, hash = "") {
   closeDrawer();
   if (page === "home") renderOverviewSummary();
   if (page === "home" || page === "performance") loadStats();
+  if (page === "games") window.dispatchEvent(new CustomEvent("yr-games-visible"));
   // Re-render and re-fit the live preview whenever the Editor becomes visible
   // (updateDesignPreview() no-ops while the section is hidden, so navigating in
   // has to ask for it again).
