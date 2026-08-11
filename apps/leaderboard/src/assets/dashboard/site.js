@@ -34,21 +34,22 @@ const PLAN_ORDER = ["free", "starter", "pro", "agency"];
 const LIFETIME_KEY = "lifetime";
 const DEFAULT_PRIZES = { prizePoolLabel: "Prize pool", payoutsLabel: "Payouts", countdownLabel: "", currency: "$", hidePrizeAmounts: false };
 
-function isLifetime() {
+export function isLifetime() {
   const exp = state.ME?.planExpiresAt;
   return Number(exp) > new Date("2099-01-01T00:00:00Z").getTime();
 }
-function isPro() {
+export function isPro() {
   const plan = state.ME?.plan;
   return plan === "pro" || plan === "agency" || plan === "lifetime" || isLifetime();
 }
 
 function planDefs() {
-  const proPrice = state.ME?.proPrice || 29;
+  const proPrice = state.ME?.proPrice;
+  const proPriceStr = proPrice == null ? "—" : `$${proPrice}`;
   return [
     { key: "free", name: "Free", price: 0, priceStr: "$0", period: "", note: "forever", features: ["1 leaderboard", "Up to 10 players", "YourRank badge", "Basic analytics (7 days)", "Live countdown"] },
     { key: "starter", name: "Starter", price: 12, priceStr: "$12", period: "/30 days", note: "", features: ["1 leaderboard", "Up to 25 players", "CSV import", "Full analytics (30 days)", "Font choice", "Custom accent colors", "Logo"] },
-    { key: "pro", name: "Pro", price: proPrice, priceStr: `$${proPrice}`, period: "/30 days", note: "Most popular", features: ["Up to 3 leaderboards", "Up to 9,999 players", "Custom domain", "OBS overlay", "Discord + Telegram alerts", "Section controls", "Prize & countdown customization", "Remove YourRank badge"] },
+    { key: "pro", name: "Pro", price: proPrice, priceStr: proPriceStr, period: "/30 days", note: "Most popular", features: ["Up to 3 leaderboards", "Up to 9,999 players", "Custom domain", "OBS overlay", "Discord + Telegram alerts", "Section controls", "Prize & countdown customization", "Remove YourRank badge"] },
     { key: "agency", name: "Agency", price: 79, priceStr: "$79", period: "/30 days", note: "", features: ["Up to 99 leaderboards", "White-label branding", "Signed score API", "Dedicated support", "Custom CSS", "Remove YourRank badge"] },
     { key: "lifetime", name: "Lifetime Pro", price: 149, priceStr: "$149", period: "", note: "one-time", features: ["All Pro + Agency features", "Pay once, use forever", "No monthly bills"] },
   ];

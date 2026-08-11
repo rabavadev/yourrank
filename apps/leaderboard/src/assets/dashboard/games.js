@@ -1,5 +1,6 @@
 import { $, getCsrf, guardAuth, logError, showToast } from "./utils.js";
 import { state } from "./state.js";
+import { DEFAULT_SECTIONS, isPro } from "./site.js";
 
 const GAME_ROWS = [
   { key: "plinko", label: "Plinko", description: "A pachinko-style game with multiplier rewards." },
@@ -13,6 +14,28 @@ const sectionRows = [
   ["credits", "Credits", "Let viewers see their balance and redemption history.", "Turning off removes Credits from navigation and disables the /credits URL."],
   ["games", "Games", "Let viewers play credit-based games on your board.", "Turning off removes Games from navigation and disables the /games URL."],
 ];
+
+const BLOCK_ROWS = [
+  ["hero", "Hero banner"],
+  ["top3", "Top 3 podium"],
+  ["search", "Search & Filter"],
+  ["rules", "Rules marquee"],
+  ["socials", "Social widgets"],
+  ["share", "Share button"],
+  ["countdown", "Countdown timer"],
+  ["cta", "Call to action"],
+];
+
+function renderPageBlocks() {
+  const list = $("leaderboardBlockRows");
+  const note = $("leaderboardBlockNote");
+  if (!list) return;
+  const current = { ...DEFAULT_SECTIONS, ...(state.EXTRA?.sections || {}) };
+  list.innerHTML = BLOCK_ROWS.map(([key, label]) => `<label><span>${label}</span><input class="v3-toggle" type="checkbox" ${current[key] !== false ? "checked" : ""} disabled aria-disabled="true" /></label>`).join("");
+  if (note) note.textContent = isPro()
+    ? "Edit block visibility in the Page design editor."
+    : "Block visibility is available on Pro plans. Current board settings are shown.";
+}
 
 function siteSections() {
   const incoming = state.EXTRA?.siteSections || {};
@@ -161,10 +184,12 @@ export function initGames() {
   if (initGames._wired) return;
   initGames._wired = true;
   renderSections();
+  renderPageBlocks();
   renderGames([]);
   loadGames();
   window.addEventListener("yr-games-visible", () => {
     renderSections();
+    renderPageBlocks();
     loadGames();
   });
 }
