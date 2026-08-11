@@ -1887,10 +1887,68 @@
 .v3-dash .cr-drawer-actions { justify-content: flex-end; }
 .v3-dash .cr-shop-layout > .v3-section-head { padding-left: 0; padding-right: 0; }
 .v3-dash .cr-shop-list { min-width: 0; }
+.v3-dash .cr-channel-facts { grid-template-columns: max-content max-content; gap: 130px; }
+.v3-dash .cr-channel-facts div { min-width: 110px; }
+.v3-dash .cr-channel-facts b { font-size: 15px; font-weight: 600; }
+.v3-dash .cr-list-card .v3-chip { gap: 5px; }
+.v3-dash .cr-list-card .v3-chip i { font-style: normal; font-size: 12px; font-weight: 700; line-height: 1; }
+.v3-dash .cr-channel-secondary { margin-top: 20px; padding: 20px; }
+.v3-dash .cr-channel-secondary .cr-usage-panel,
+.v3-dash .cr-channel-secondary .cr-auth-panel { margin-top: 0; }
+.v3-dash .cr-channel-secondary .cr-auth-panel { margin-top: 24px; }
+.v3-dash .cr-auth-options { display: flex; flex-wrap: wrap; gap: 12px 24px; margin-bottom: 18px; }
+.v3-dash .cr-auth-option { display: inline-flex; align-items: center; gap: 8px; font-size: 14px; }
+.v3-dash .cr-auth-option input { margin: 0; }
+.v3-dash #cr-redemption-toolbar { align-items: center; min-height: 52px; }
+.v3-dash #cr-redemption-toolbar .list-controls-row { display: flex; align-items: center; gap: 8px; width: 100%; }
+.v3-dash #cr-redemption-toolbar .list-search { width: 240px; max-width: 240px; }
+.v3-dash #cr-redemption-toolbar .list-sort { width: 160px; max-width: 160px; }
+.v3-dash #cr-redemption-toolbar .status { margin-left: auto; }
+.v3-dash #cr-redemption-foot { display: flex; justify-content: flex-end; }
+.v3-dash #cr-shop-controls { display: flex; align-items: center; gap: 8px; margin: 0 0 16px; }
+.v3-dash #cr-shop-controls .list-controls-row { display: flex; align-items: center; gap: 8px; }
+.v3-dash #cr-shop-controls .list-search { width: 240px; max-width: 240px; }
+.v3-dash #cr-shop-controls .list-sort { width: 160px; max-width: 160px; }
+.v3-dash #cr-shop-controls .list-pagination { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+.v3-dash .cr-list-card .v3-table th.num,
+.v3-dash .cr-list-card .v3-table td.num { text-align: left; }
+.v3-dash .cr-list-card .v3-table td.num b { white-space: nowrap; }
+.v3-dash .cr-list-card .btn--sm { min-height: 26px; padding: 4px 9px; font-size: 11px; }
+.v3-dash .cr-shop-grid { grid-template-columns: minmax(0, 1fr); }
+.v3-dash .cr-shop-layout.has-drawer .cr-shop-grid { grid-template-columns: minmax(0, 1fr) 380px; }
+.v3-dash .cr-shop-card-head { gap: 10px; }
+.v3-dash .cr-shop-card-title { min-width: 0; overflow: hidden; padding: 0; border: 0; background: none; color: inherit; font: inherit; font-weight: 700; text-align: left; text-overflow: ellipsis; white-space: nowrap; cursor: pointer; }
+.v3-dash .cr-shop-card-controls { display: flex; align-items: center; gap: 8px; }
+.v3-dash .cr-shop-delete { width: 24px; height: 24px; padding: 0; border: 1px solid var(--v3-main-line); border-radius: 6px; background: var(--v3-main-panel); color: var(--v3-main-ink-soft); font-size: 17px; line-height: 1; cursor: pointer; opacity: 0; }
+.v3-dash .cr-shop-card:hover .cr-shop-delete,
+.v3-dash .cr-shop-delete:focus-visible { opacity: 1; }
+.v3-dash .cr-shop-delete:hover { color: var(--v3-danger); border-color: var(--v3-danger); }
+.v3-dash .cr-shop-card-actions { display: none; }
+.v3-dash .v3-tabs { max-width: 100%; overflow-x: auto; overflow-y: hidden; flex-wrap: nowrap; scrollbar-width: thin; }
+.v3-dash .v3-tab { flex: 0 0 auto; }
+.v3-dash .lb-topbar,
+.v3-dash .lb-bento,
+.v3-dash .lb-main { min-width: 0; max-width: 100%; }
+.v3-dash .lb-topbar { box-sizing: border-box; overflow: hidden; }
 @media (max-width: 980px) {
   .v3-dash .cr-status-grid { grid-template-columns: repeat(2, 1fr); }
   .v3-dash .cr-redemption-summary { align-items: flex-start; flex-direction: column; }
   .v3-dash .cr-shop-grid { grid-template-columns: 1fr; }
   .v3-dash .cr-shop-drawer { position: fixed; inset: 72px 0 0; z-index: 90; overflow: auto; }
   .v3-dash .cr-usage-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .v3-dash .cr-channel-facts { gap: 36px; }
+  .v3-dash .cr-shop-layout.has-drawer .cr-shop-grid { grid-template-columns: 1fr; }
+  .v3-dash .cr-shop-delete { opacity: 1; }
+  .v3-dash .lb-topbar { padding-left: 12px; padding-right: 12px; }
+  .v3-dash .lb-brand-txt { display: none; }
+  .v3-dash .lb-topbar-actions { gap: 8px; }
+  .v3-dash .lb-topbar-actions { min-width: 0; flex-shrink: 1; }
+  .v3-dash .lb-topbar-actions .btn { padding-left: 8px; padding-right: 8px; }
+  .v3-dash .lb-board-select-wrap { max-width: 130px; }
+  .v3-dash .lb-board-select { max-width: 100%; }
+  .v3-dash .cr-redemption-summary { overflow: hidden; max-width: 100%; }
+}
+@media (max-width: 480px) {
+  .v3-dash .lb-topbar-actions .lb-status { display: none; }
+  .v3-dash .lb-topbar-actions .btn { white-space: nowrap; }
 }

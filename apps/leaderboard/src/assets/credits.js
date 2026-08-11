@@ -60,7 +60,15 @@ function wireAutosave(formId, id) {
   const save = debounce(() => saveFormDraft(formId, id), 400);
   form.addEventListener("input", save); form.addEventListener("change", save); form.addEventListener("submit", () => clearFormDraft(id)); restoreFormDraft(formId, id);
 }
-function statusChip(status) { const kind = status === "fulfilled" ? "fulfilled" : status === "cancelled" ? "cancelled" : status === "refunded" ? "refunded" : "pending"; return `<span class="v3-chip v3-chip--${kind}">● ${esc(status)}</span>`; }
+function statusChip(status) {
+  const meta = {
+    pending: ["pending", "◷", "Pending"],
+    fulfilled: ["fulfilled", "✓", "Fulfilled"],
+    refunded: ["refunded", "↶", "Refunded"],
+    cancelled: ["cancelled", "×", "Cancelled"],
+  }[status] || ["pending", "◷", "Pending"];
+  return `<span class="v3-chip v3-chip--${meta[0]}"><i aria-hidden="true">${meta[1]}</i> ${meta[2]}</span>`;
+}
 function wireShell() {
   const backdrop = document.querySelector(".lb-backdrop") || document.body.appendChild(Object.assign(document.createElement("div"), { className: "lb-backdrop" }));
   $("lbMenu")?.addEventListener("click", () => openDrawer()); document.querySelector("[data-close-side]")?.addEventListener("click", () => closeDrawer()); backdrop.addEventListener("click", () => closeDrawer());
@@ -76,6 +84,14 @@ async function loadBoardShell() {
   $("lbTopbarStatus").textContent = board.published ? "LIVE" : "NOT LIVE"; $("lbTopbarStatus").className = `lb-status ${board.published ? "lb-status--live" : "lb-status--draft"}`;
   $("planBadge").textContent = `${String(board.plan || user.plan || "free").toUpperCase()} PLAN`; if (board.slug) $("liveLink").href = `/${board.slug}`;
 }
+function renderShellUsage() {
+  const used = Number(state.usage?.redemptionsPer30Days || 0);
+  const limit = Number(state.limits?.redemptionsPer30Days || 0);
+  const amount = $("usageAmount"); const max = $("usageLimit"); const fill = $("usageFill");
+  if (amount) amount.textContent = used;
+  if (max) max.textContent = limit;
+  if (fill) fill.style.width = `${limit ? Math.min(100, (used / limit) * 100) : 0}%`;
+}
 function renderRewardRow(m) {
   return `<td><b>${esc(m.kick_reward_title)}</b><br><span class="hint">${esc(m.kick_reward_id)}</span></td><td class="hint">When redeemed · ${m.kick_reward_cost} points</td><td class="num"><b>+${m.credits} cr</b></td><td><input class="v3-toggle" type="checkbox" ${m.active ? "checked" : ""} data-toggle-reward="${esc(m.id)}" /></td><td class="ta-r"><button class="btn btn--sm" data-edit-reward="${esc(m.id)}">Edit</button> <button class="btn btn--sm btn--danger" data-del-reward="${esc(m.id)}">Delete</button></td>`;
 }
@@ -89,12 +105,13 @@ function renderShopCards(items) {
   const pages = Math.max(1, Math.ceil(sorted.length / 10)); shopPage = Math.min(shopPage, pages);
   const pageItems = sorted.slice((shopPage - 1) * 10, shopPage * 10);
   $("cr-shop-empty").hidden = filtered.length > 0;
-  root.innerHTML = pageItems.map((i) => `<article class="cr-shop-card${i.active ? "" : " is-inactive"}"><div class="cr-shop-card-head"><h2>${esc(i.name)}</h2><input class="v3-toggle" type="checkbox" ${i.active ? "checked" : ""} data-toggle-shop="${esc(i.id)}" aria-label="Toggle ${esc(i.name)}" /></div><p>${esc(i.description || "")}</p><hr /><div class="cr-shop-card-foot"><b>${i.cost} <small>cr</small></b><span>Stock: ${i.stock === null ? "∞" : `${i.stock} left`}</span></div><div class="cr-shop-card-actions"><button class="btn btn--sm" data-edit-shop="${esc(i.id)}">Edit</button><button class="btn btn--sm btn--danger" data-del-shop="${esc(i.id)}">Delete</button></div></article>`).join("");
+  root.innerHTML = pageItems.map((i) => `<article class="cr-shop-card${i.active ? "" : " is-inactive"}"><div class="cr-shop-card-head"><button class="cr-shop-card-title" type="button" data-edit-shop="${esc(i.id)}">${esc(i.name)}</button><div class="cr-shop-card-controls"><button class="cr-shop-delete" type="button" data-del-shop="${esc(i.id)}" aria-label="Delete ${esc(i.name)}">×</button><input class="v3-toggle" type="checkbox" ${i.active ? "checked" : ""} data-toggle-shop="${esc(i.id)}" aria-label="Toggle ${esc(i.name)}" /></div></div><p>${esc(i.description || "")}</p><hr /><div class="cr-shop-card-foot"><b>${i.cost} <small>cr</small></b><span>Stock: ${i.stock === null ? "∞" : `${i.stock} left`}</span></div></article>`).join("");
   const controls = $("cr-shop-controls"); if (controls) { controls.querySelector("[data-shop-page]").textContent = filtered.length ? `Page ${shopPage} of ${pages} (${filtered.length})` : "0"; controls.querySelector("[data-shop-prev]").disabled = shopPage <= 1; controls.querySelector("[data-shop-next]").disabled = shopPage >= pages; }
   wireDynamicActions();
 }
 function render() {
   const usage = state.usage || {}, limits = state.limits || {}, current = tab();
+  renderShellUsage();
   const rewardAtLimit = (usage.rewardMappings || 0) >= (limits.rewardMappings || 0);
   const shopAtLimit = (usage.shopItems || 0) >= (limits.shopItems || 0);
   if (current === "channel") {
@@ -129,7 +146,7 @@ function render() {
   }
   if (current === "redemptions") {
     const channel = $("cr-redemption-channel");
-    if (state.channel?.externalId) { channel.innerHTML = `● Connected to @<span>${esc(state.channel.name || state.channel.externalId)}</span>`; channel.className = "v3-chip v3-chip--refunded"; } else { channel.innerHTML = '<a href="/dashboard/rewards/channel">Not connected · Connect in Channel</a>'; channel.className = "v3-chip v3-chip--cancelled"; }
+    if (state.channel?.externalId) { channel.innerHTML = `● Connected to @${esc(state.channel.name || state.channel.externalId)}`; channel.className = "v3-chip v3-chip--refunded"; } else { channel.innerHTML = '<a href="/dashboard/rewards/channel">Not connected · Connect in Channel</a>'; channel.className = "v3-chip v3-chip--cancelled"; }
     $("cr-pending-counter").textContent = `${usage.pendingRedemptions || 0} / ${limits.pendingRedemptions || 0}`; $("cr-fulfilled-counter").textContent = `${usage.redemptionsPer30Days || 0} / ${limits.redemptionsPer30Days || 0}`;
     const redemptions = state.redemptions || [];
     if (!redemptionCtrl) { redemptionCtrl = new ListController({ root: $("cr-redemptions"), tbody: "cr-redemption-list", items: redemptions, perPage: 15, searchFn: (r) => `${r.kick_username || r.kick_user_id} ${r.item_name} ${r.status}`, sortOptions: [{ key: "time", label: "Newest", fn: (a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0) }, { key: "cost", label: "Cost", fn: (a, b) => (b.cost || 0) - (a.cost || 0) }, { key: "status", label: "Status", fn: (a, b) => (a.status || "").localeCompare(b.status || "") }], emptyAllText: "No redemptions yet.", emptyText: "No matching redemptions.", renderItem: (r) => renderRedemptionRow(r), onRender: () => wireDynamicActions() }); mountListControls($("cr-redemptions"), $("cr-redemption-toolbar"), $("cr-redemption-foot")); }
@@ -198,9 +215,10 @@ function mountListControls(root, toolbar, foot) {
 let drawerTrigger;
 function openShop(item, trigger) {
   drawerTrigger = trigger || $("cr-shop-new");
+  $("cr-shop")?.classList.add("has-drawer");
   $("cr-shop-drawer").hidden = false; $("cr-shop-drawer-title").textContent = item ? "Edit Shop Item" : "Create New Shop Item"; $("cr-shop-item-id").value = item?.id || ""; $("cr-shop-name").value = item?.name || ""; $("cr-shop-desc").value = item?.description || ""; $("cr-shop-cost").value = item?.cost || 100; $("cr-shop-stock").value = item?.stock === null ? "" : (item?.stock ?? ""); $("cr-shop-active").checked = item?.active !== false; $("cr-shop-name").focus();
 }
-function closeShop() { $("cr-shop-drawer").hidden = true; drawerTrigger?.focus(); }
+function closeShop() { $("cr-shop-drawer").hidden = true; $("cr-shop")?.classList.remove("has-drawer"); drawerTrigger?.focus(); }
 let activePopover;
 function closePopover(result = false) {
   if (!activePopover) return;
