@@ -25,7 +25,7 @@ function RewardsPage({ tab, activeNav = tab, boardContext = "selector", footer =
   </DashboardShell>;
 }
 
-export function RewardsChannelPage() { return <RewardsPage tab="channel" activeNav="settings" boardContext="full" footer="dashboard" />; }
+export function RewardsChannelPage() { return <RewardsPage tab="channel" activeNav="settings" boardContext="selector" footer="rewards" />; }
 export function RewardsRewardsPage() { return <RewardsPage tab="rewards" activeNav="maps" />; }
 export function RewardsMapsPage() { return <RewardsPage tab="maps" activeNav="maps" />; }
 export function RewardsShopPage() { return <RewardsPage tab="shop" activeNav="shop" />; }
