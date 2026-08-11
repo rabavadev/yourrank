@@ -255,6 +255,8 @@ export function renderBoardsPage() {
   const addBtn = $("addBoardFromBoards");
   if (!body) return;
   body.innerHTML = "";
+  const controls = $("boardsSearch")?.closest(".list-controls");
+  if (controls) controls.hidden = state.BOARDS.length === 0;
   if (!state.BOARDS.length) {
     renderEmpty(empty, { icon: "archive", title: "No boards yet", body: "Create one to get started.", actions: [{ label: "Create board", id: "boardsCreateEmpty", accent: true }] });
     $("boardsCreateEmpty")?.addEventListener("click", openNewBoardForm);

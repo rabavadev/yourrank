@@ -1,4 +1,4 @@
-import { showConfirmModal, showPromptModal, ListController, logError } from "./dashboard/utils.js";
+import { showConfirmModal, showPromptModal, ListController, logError, showLoadError, clearLoadError } from "./dashboard/utils.js";
 import { openDrawer, closeDrawer } from "./dashboard/shell.js";
 import { setState } from "./dashboard/state.js";
 import { UNKNOWN, emptyStateHtml, renderEmpty, setMetricLoading, setRowsLoading } from "./dashboard/states.js";
@@ -108,14 +108,15 @@ function renderViewerRow(v) { return `<td>${esc(v.kick_username || v.kick_user_i
 function renderRedemptionRow(r) { return `<td><b>${esc(r.kick_username || r.kick_user_id)}</b></td><td>${esc(r.item_name)}</td><td class="num"><b>${r.cost}</b><span class="hint">cr</span></td><td>${statusChip(r.status)}</td><td title="${esc(fmtDate(r.created_at))}">${relative(r.created_at)}</td><td class="ta-r">${r.status === "pending" ? `<button class="btn btn--sm" data-cancel="${esc(r.id)}">Cancel</button> <button class="btn btn--sm btn--accent" data-fulfill="${esc(r.id)}">Fulfil</button>` : ""}</td>`; }
 function renderShopCards(items) {
   const root = $("cr-shop-list"); if (!root) return;
-  ensureShopControls();
+  ensureShopControls(items.length > 0);
+  $("cr-shop-controls")?.toggleAttribute("hidden", items.length === 0);
   const filtered = items.filter((i) => !shopSearch || `${i.name} ${i.description || ""} ${i.cost} ${i.stock ?? ""}`.toLowerCase().includes(shopSearch));
   const sorted = [...filtered].sort((a, b) => shopSort === "active" ? Number(b.active) - Number(a.active) : shopSort === "stock" ? ((b.stock ?? Infinity) - (a.stock ?? Infinity)) : (b.cost || 0) - (a.cost || 0));
   const pages = Math.max(1, Math.ceil(sorted.length / 10)); shopPage = Math.min(shopPage, pages);
   const pageItems = sorted.slice((shopPage - 1) * 10, shopPage * 10);
   $("cr-shop-empty").hidden = filtered.length > 0;
   root.innerHTML = pageItems.map((i) => `<article class="cr-shop-card${i.active ? "" : " is-inactive"}"><div class="cr-shop-card-head"><button class="cr-shop-card-title" type="button" data-edit-shop="${esc(i.id)}">${esc(i.name)}</button><div class="cr-shop-card-controls"><button class="cr-shop-delete" type="button" data-del-shop="${esc(i.id)}" aria-label="Disable ${esc(i.name)}" title="Disable ${esc(i.name)}">×</button><input class="v3-toggle" type="checkbox" ${i.active ? "checked" : ""} data-toggle-shop="${esc(i.id)}" aria-label="Toggle ${esc(i.name)}" /></div></div><p>${esc(i.description || "")}</p><hr /><div class="cr-shop-card-foot"><b>${i.cost} <small>cr</small></b><span>Stock: ${i.stock === null ? "∞" : `${i.stock} left`}</span></div></article>`).join("");
-  const controls = $("cr-shop-controls"); if (controls) { controls.querySelector("[data-shop-page]").textContent = filtered.length ? `Page ${shopPage} of ${pages} (${filtered.length})` : "0"; controls.querySelector("[data-shop-prev]").disabled = shopPage <= 1; controls.querySelector("[data-shop-next]").disabled = shopPage >= pages; }
+  const controls = $("cr-shop-controls"); if (controls) { controls.querySelector("[data-shop-page]").textContent = filtered.length ? `Page ${shopPage} of ${pages} (${filtered.length})` : ""; controls.querySelector("[data-shop-prev]").disabled = shopPage <= 1; controls.querySelector("[data-shop-next]").disabled = shopPage >= pages; }
   wireDynamicActions();
 }
 function render() {
@@ -294,9 +295,10 @@ function wireDynamicActions() {
   document.querySelectorAll("[data-toggle-shop]:not([data-wired])").forEach((b) => { b.dataset.wired = "1"; b.addEventListener("change", () => toggleShop(b.dataset.toggleShop, b)); });
   document.querySelectorAll("[data-toggle-reward]:not([data-wired])").forEach((b) => { b.dataset.wired = "1"; b.addEventListener("change", () => toggleReward(b.dataset.toggleReward, b)); });
 }
-function ensureShopControls() {
+function ensureShopControls(hasItems = false) {
   const root = $("cr-shop-list"); if (!root || $("cr-shop-controls")) return;
   const controls = document.createElement("div"); controls.id = "cr-shop-controls"; controls.className = "list-controls";
+  controls.hidden = !hasItems;
   controls.innerHTML = '<div class="list-controls-row"><input class="list-search" type="search" placeholder="Search items…" aria-label="Search items" /><select class="list-sort" aria-label="Sort items"><option value="cost">Cost</option><option value="stock">Stock</option><option value="active">Active first</option></select></div><div class="list-pagination"><button class="btn btn--sm" type="button" data-shop-prev>Previous</button><span data-shop-page></span><button class="btn btn--sm" type="button" data-shop-next>Next</button></div>';
   root.parentElement.insertBefore(controls, root);
   controls.querySelector(".list-search").addEventListener("input", (e) => { shopSearch = e.target.value.toLowerCase(); renderShopCards(shopItemsView); });
@@ -308,8 +310,10 @@ let shopPage = 1;
 function mountListControls(root, toolbar, foot) {
   const controls = root?.querySelector(":scope > .list-controls");
   if (!controls) return;
+  controls._mountedTargets = [toolbar, foot].filter(Boolean);
   toolbar?.appendChild(controls.querySelector(".list-controls-row"));
   foot?.appendChild(controls.querySelector(".list-pagination"));
+  controls._mountedTargets.forEach((target) => { target.hidden = controls.hidden; });
   controls.remove();
 }
 let drawerTrigger;
@@ -363,6 +367,7 @@ async function toggleReward(id, trigger) {
   } catch (err) { trigger.checked = m.active; setStatus("cr-reward-status", err.message, true); } finally { setLoading(trigger, false); }
 }
 async function load() {
+  clearLoadError($("cr-empty"), false);
   setState({ CREDITS_STATUS: "loading" });
   setMetricLoading($("cr-pending-counter"));
   setMetricLoading($("cr-fulfilled-counter"));
@@ -380,8 +385,9 @@ async function load() {
     $("cr-app").hidden = false; $("cr-empty").hidden = true;
   } catch (err) {
     setState({ CREDITS_STATUS: "error" });
-    $("cr-empty").innerHTML = `<p class="error">Could not load credits dashboard: ${esc(err.message)}</p>`;
-    $("cr-empty").hidden = false; $("cr-app").hidden = true;
+    logError("load-credits-dashboard", err);
+    showLoadError($("cr-empty"), "your credits dashboard", load);
+    $("cr-app").hidden = false;
     throw err;
   } finally { setGlobalLoading(false); }
 }

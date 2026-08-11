@@ -358,6 +358,7 @@ export class ListController {
   _buildControls() {
     const wrap = document.createElement("div");
     wrap.className = "list-controls";
+    wrap.hidden = this.all.length === 0;
     const searchPlaceholder = this.root?.dataset?.searchPlaceholder || "Search…";
     let html = `<div class="list-controls-row">`;
     html += `<input type="search" class="list-search" placeholder="${esc(searchPlaceholder)}" aria-label="Search" />`;
@@ -374,6 +375,7 @@ export class ListController {
     this.prevBtn = wrap.querySelector("[data-prev]");
     this.nextBtn = wrap.querySelector("[data-next]");
     this.pageInfo = wrap.querySelector(".list-page-info");
+    this.controls = wrap;
     this.searchInput.addEventListener("input", () => { this.query = this.searchInput.value.trim().toLowerCase(); this.page = 1; this.refresh(); });
     if (this.sortSelect) this.sortSelect.addEventListener("change", () => { this.sortKey = this.sortSelect.value; this.page = 1; this.refresh(); });
     this.prevBtn.addEventListener("click", () => { if (this.page > 1) { this.page--; this.refresh(); } });
@@ -382,8 +384,14 @@ export class ListController {
   setItems(items) {
     this.all = items || [];
     this.page = 1;
+    this._setControlsHidden(this.all.length === 0);
     this.setLoading(false);
     this.refresh();
+  }
+  _setControlsHidden(hidden) {
+    if (!this.controls) return;
+    this.controls.hidden = hidden;
+    this.controls._mountedTargets?.forEach((target) => { target.hidden = hidden; });
   }
   setLoading(loading) {
     if (!this.tbody) return;
@@ -443,7 +451,7 @@ export class ListController {
     this.onRender(pageItems);
   }
   _updatePagination(total) {
-    this.pageInfo.textContent = total ? `Page ${this.page} of ${this.totalPages} (${total})` : `0`;
+    this.pageInfo.textContent = total ? `Page ${this.page} of ${this.totalPages} (${total})` : "";
     this.prevBtn.disabled = this.page <= 1;
     this.nextBtn.disabled = this.page >= this.totalPages || this.totalPages === 0;
   }
