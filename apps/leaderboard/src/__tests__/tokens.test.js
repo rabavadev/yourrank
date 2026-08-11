@@ -63,6 +63,7 @@ describe("design tokens", () => {
   it("uses the Kick brand token for the public accent fallback", () => {
     expect(declared(sources.publicShell, "--yr-accent")).toBe("var(--yr-color-brand-kick)");
     expect(sources.publicShell).toContain("--yr-color-brand-kick: #53fc18");
-    expect(sources.publicRuntime).toContain('const ACCENT_DEFAULT = "var(--yr-color-brand-kick)"');
+    expect(sources.publicRuntime).toContain('value: "var(--yr-color-brand-kick)"');
+    expect(sources.publicRuntime).toContain('ink: "#000000"');
   });
 });

@@ -15,7 +15,7 @@ export const overlayPage = (data, opts = {}) => {
   const empty = 5 - players.length;
   const emptyRows = empty > 0 ? Array.from({ length: empty }, (_, i) => `<div class="ov-row ov-empty"><span class="ov-medal">#${players.length + i + 1}</span><span class="ov-name">—</span><span class="ov-wager">—</span></div>`).join("") : "";
   const accentA = (br.accentA && /^#[0-9a-fA-F]{6}$/.test(br.accentA)) ? br.accentA : "#53fc18";
-  const accentB = (br.accentB && /^#[0-9a-fA-F]{6}$/.test(br.accentB)) ? br.accentB : "#53fc18";
+  const accentB = (br.accentB && /^#[0-9a-fA-F]{6}$/.test(br.accentB)) ? br.accentB : "#35c211";
   const dataJson = JSON.stringify({ players, endsAt }).replace(/</g, "\\u003c");
   return `<!DOCTYPE html>
 <html lang="en"><head>
