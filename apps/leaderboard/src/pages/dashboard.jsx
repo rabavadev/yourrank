@@ -334,64 +334,6 @@ export function DashboardContent() {
   <details class="metric-glossary"><summary>Metric glossary</summary><dl><div><dt>Views</dt><dd>Total page loads of your public leaderboard.</dd></div><div><dt>Clicks</dt><dd>Clicks on your tracked referral or share links.</dd></div><div><dt>Copies</dt><dd>Times a visitor copied your page URL or a share link.</dd></div><div><dt>CTR</dt><dd>Click-through rate: clicks ÷ views in the selected date range.</dd></div><div><dt>Referrers</dt><dd>Domains that sent traffic to your page, when the browser reports them.</dd></div><div><dt>Events</dt><dd>Recent postbacks, score updates and link copies recorded for this board.</dd></div></dl></details>
 </div>
 </section>
-<section class="lb-page" data-page="performance-legacy">
-<div class="lb-phead"><button class="lb-menu" type="button" aria-label="Show sections" data-menu aria-expanded="false" aria-controls="lbSide">☰</button></div>
-<div class="v3-analytics-page">
-<header class="v3-head"><h1>Analytics</h1><p class="v3-head-sub">Track real-time viewer actions, clicks, and conversion performance</p></header>
-<div class="v3-analytics-scope"><span id="perfScope"><span id="perfBoardName">Active board</span> · Last <span id="perfRangeLabel">14</span> days · <span id="perfLocalTime">Local time</span></span><div class="v3-range-filter" id="perfRangeFilter" role="group" aria-label="Date range"><button class="v3-range-btn" type="button" data-range="7">7d</button><button class="v3-range-btn is-active" type="button" data-range="14">14d</button><button class="v3-range-btn" type="button" data-range="30">30d</button></div></div>
-<nav class="v3-tabs" id="performanceTabs" aria-label="Analytics sections"><a class="v3-tab" href="/dashboard/analytics/activity" data-perf-tab="activity">Activity</a><a class="v3-tab" href="/dashboard/analytics/referrals" data-perf-tab="referrals">Referrals</a><a class="v3-tab" href="/dashboard/analytics/events" data-perf-tab="events">Events</a></nav>
-<div class="lb-widget lb-widget--full">
-  <div class="kpi-row">
-    <div class="kpi-card" title="Total times your public page was loaded"><span class="kpi-lbl" id="perfKpiViewsLbl"><span class="kpi-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg></span>Views · 14d</span><span class="kpi-val" id="perfKpiViews">–</span></div>
-    <div class="kpi-card" title="Clicks on your tracked referral or share links"><span class="kpi-lbl" id="perfKpiClicksLbl"><span class="kpi-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M3 3l7 18 3-7 7-3L3 3z"/></svg></span>Clicks · 14d</span><span class="kpi-val" id="perfKpiClicks">–</span></div>
-    <div class="kpi-card" title="Times a visitor copied your public link to the clipboard"><span class="kpi-lbl" id="perfKpiCopiesLbl"><span class="kpi-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg></span>Copies · 14d</span><span class="kpi-val" id="perfKpiCopies">–</span></div>
-    <div class="kpi-card" title="Click-through rate: clicks divided by views in the selected range"><span class="kpi-lbl" id="perfKpiCtrLbl"><span class="kpi-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 20v-6"/><path d="M6 20V10"/><path d="M18 20V4"/></svg></span>CTR · 14d</span><span class="kpi-val" id="perfKpiCtr">–</span></div>
-  </div>
-  <details class="metric-glossary"><summary>Metric glossary</summary>
-    <dl>
-      <div><dt>Views</dt><dd>Total page loads of your public leaderboard.</dd></div>
-      <div><dt>Clicks</dt><dd>Clicks on your tracked referral or share links.</dd></div>
-      <div><dt>Copies</dt><dd>Times a visitor copied your page URL or a share link.</dd></div>
-      <div><dt>CTR</dt><dd>Click-through rate: clicks ÷ views in the selected date range.</dd></div>
-      <div><dt>Referrers</dt><dd>Domains that sent traffic to your page, when the browser reports them.</dd></div>
-      <div><dt>Events</dt><dd>Recent postbacks, score updates and link copies recorded for this board.</dd></div>
-    </dl>
-  </details>
-</div>
-<div class="lb-widget lb-widget--wide">
-  <div class="lb-cardhd"><h2>Activity</h2><a class="btn btn--xs btn--ghost" href="/api/site/stats/export" id="perfExport">Export CSV</a></div>
-  <div class="stat-chart"><div class="stat-bars" id="statBars" title="Daily activity"></div><div class="stat-chart-lbl"><span id="statFrom"></span><span>today</span></div></div>
-  <p class="hint" id="statsEmpty" hidden>No activity yet — share your page link in your stream panels and Discord to get it moving.</p>
-  <div class="stat-legend"><span class="stat-legend-item views">Views</span><span class="stat-legend-item copies">Copies</span><span class="stat-legend-item clicks">Clicks</span></div>
-</div>
-<div class="lb-widget lb-widget--narrow" id="perf-heatmap">
-  <div class="lb-cardhd"><h2>Activity map</h2></div>
-  <p class="hint m-0 mb-8">Views by day and hour (last 30 days).</p>
-  <div class="heatmap-wrap"><div class="heatmap" id="perfHeatmapGrid"><p class="heatmap-loading">Loading…</p></div></div>
-</div>
-<div class="lb-widget lb-widget--narrow" id="perf-referrers">
-  <div class="lb-cardhd"><h2>Top referrers</h2></div>
-  <table class="ref-table"><thead><tr><th>Domain</th><th class="ta-r">Views</th></tr></thead><tbody id="perfReferrersBody"></tbody></table>
-  <p class="empty" id="perfReferrersEmpty" hidden>No referrer data yet — add <code>?ref=your-source</code> to your share link to track sources.</p>
-</div>
-<div class="lb-widget lb-widget--half" id="perf-referrals">
-  <h2>Referrals</h2>
-  <p class="card-sub">Share your link. Every sign-up adds 31 days of Pro.</p>
-  <div class="d-flex gap-8 flex-wrap items-center mt-12"><input id="refLink" class="overlay-url min-w-220" readonly value="…" /><button class="btn btn--accent" id="refCopy" type="button">Copy link</button></div>
-  <div class="stat-tiles mt-18">
-    <div class="stat-tile"><span class="stat-num" id="refCount">–</span><span class="stat-lbl">People signed up</span></div>
-    <div class="stat-tile"><span class="stat-num" id="refDays">–</span><span class="stat-lbl">Free days earned</span></div>
-    <div class="stat-tile"><span class="stat-num" id="refSaved">–</span><span class="stat-lbl">Value earned ($)</span></div>
-  </div>
-  <p class="status" id="refStatus" role="status" aria-live="polite"></p>
-</div>
-<div class="lb-widget lb-widget--half" id="perf-events">
-  <div class="lb-cardhd"><h2>Events</h2></div>
-  <ul class="events-list" id="eventsList"></ul>
-  <p class="empty" id="eventsEmpty">No events yet — postbacks and score updates will appear once a sponsor sends them. Set up postbacks in <a href="/account/postbacks">Account → Postbacks</a>.</p>
-</div>
-</div>
-</section>
 <section class="lb-page" data-page="settings">
 <div class="lb-phead"><button class="lb-menu" type="button" aria-label="Show sections" data-menu aria-expanded="false" aria-controls="lbSide">☰</button></div>
 <div class="v3-settings">
