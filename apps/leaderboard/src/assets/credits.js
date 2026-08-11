@@ -1,7 +1,7 @@
 import { showConfirmModal, showPromptModal, ListController, logError } from "./dashboard/utils.js";
 import { openDrawer, closeDrawer } from "./dashboard/shell.js";
 import { setState } from "./dashboard/state.js";
-import { UNKNOWN, renderEmpty, setMetricLoading, setRowsLoading } from "./dashboard/states.js";
+import { UNKNOWN, emptyStateHtml, renderEmpty, setMetricLoading, setRowsLoading } from "./dashboard/states.js";
 import { updateProfileMenu } from "./dashboard/profile-menu.js";
 
 const $ = (id) => document.getElementById(id);
@@ -17,7 +17,11 @@ async function api(method, path, body) {
   if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`); return data;
 }
 let state = {};
-let viewerCtrl, redemptionCtrl, rewardCtrl, historyCtrl;
+let viewerCtrl, redemptionCtrl, rewardCtrl;
+let activeSiteId = "";
+let activityEvents = [];
+let activityCursor = null;
+let activityLoading = false;
 let shopItemsView = [];
 let shopSearch = "";
 let shopSort = "cost";
@@ -80,6 +84,7 @@ async function loadBoardShell() {
   const [me, boards] = await Promise.all([api("GET", "/api/auth/me"), api("GET", "/api/site/list")]);
   const user = me.user || {}; updateProfileMenu(user);
   const list = boards.sites || boards.boards || boards || []; const current = siteQuery() || list[0]?.id || list[0]?.siteId; const select = $("sidebarBoardSelect");
+  activeSiteId = current || "";
   if (select) { select.innerHTML = list.map((b) => `<option value="${esc(b.id || b.siteId)}" ${String(b.id || b.siteId) === String(current) ? "selected" : ""}>${esc(b.name || b.slug || "Board")}</option>`).join(""); select.addEventListener("change", () => { location.href = `${location.pathname}?siteId=${encodeURIComponent(select.value)}`; }); }
   const board = list.find((b) => String(b.id || b.siteId) === String(current)) || list[0] || {};
   $("activeBoardName").textContent = board.name || board.slug || "Board"; $("activeBoardMeta").textContent = board.slug ? `yourrank.site/${board.slug}` : "";
@@ -169,8 +174,12 @@ function render() {
     if (!redemptionCtrl) { redemptionCtrl = new ListController({ root: $("cr-redemptions"), tbody: "cr-redemption-list", emptyEl: $("cr-redemption-empty"), emptySpec: { icon: "archive", title: "No redemptions yet", body: "Viewer requests will appear here." }, items: redemptions, perPage: 15, searchFn: (r) => `${r.kick_username || r.kick_user_id} ${r.item_name} ${r.status}`, sortOptions: [{ key: "time", label: "Newest", fn: (a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0) }, { key: "cost", label: "Cost", fn: (a, b) => (b.cost || 0) - (a.cost || 0) }, { key: "status", label: "Status", fn: (a, b) => (a.status || "").localeCompare(b.status || "") }], emptyAllText: "No redemptions yet.", emptyText: "No matching redemptions.", renderItem: (r) => renderRedemptionRow(r), onRender: () => wireDynamicActions() }); mountListControls($("cr-redemptions"), $("cr-redemption-toolbar"), $("cr-redemption-foot")); }
     else redemptionCtrl.setItems(redemptions);
   }
-  if (current === "history" && !historyCtrl) {
-    renderEmpty($("cr-history-empty"), { icon: "users", title: "Search for a viewer", body: "Enter a Kick username to view credit activity across your boards." });
+  if (current === "history") {
+    const empty = $("cr-history-feed-empty");
+    if (empty) {
+      empty.innerHTML = emptyStateHtml({ icon: "chart", title: "No credit activity yet", body: "Credit events will appear here as viewers earn, spend, or receive adjustments." });
+      empty.hidden = false;
+    }
   }
 }
 function renderOnboarding() {
@@ -362,6 +371,7 @@ async function load() {
     state = await api("GET", sitePath("/api/credits/status"));
     setState({ CREDITS_STATUS: "ready" });
     render();
+    if (tab() === "history") await loadActivity({ reset: true });
     if (tab() === "viewers" && $("cr-analytics")) await loadAnalytics();
     $("cr-app").hidden = false; $("cr-empty").hidden = true;
   } catch (err) {
@@ -406,23 +416,89 @@ function wireActions() {
     try { state.viewerAuth = await api("POST", "/api/credits/viewer-auth", { kick: $("cr-viewer-auth-kick").checked, discord: $("cr-viewer-auth-discord").checked, public: $("cr-viewer-auth-public").checked }); setStatus("cr-viewer-auth-status", "Viewer login settings saved."); }
     catch (err) { setStatus("cr-viewer-auth-status", err.message, true); } finally { setLoading(btn, false); }
   });
-  $("cr-history-form")?.addEventListener("submit", searchHistory);
+  $("cr-history-form")?.addEventListener("submit", (e) => {
+    e.preventDefault();
+    loadActivity({ reset: true }).catch((err) => setStatus("cr-history-status", err.message, true));
+  });
+  $("cr-history-load-more")?.addEventListener("click", () => loadActivity({ reset: false }).catch((err) => setStatus("cr-history-status", err.message, true)));
   $("cr-analytics-days")?.addEventListener("change", loadAnalytics);
   $("cr-onboarding-hide")?.addEventListener("click", () => { try { localStorage.setItem("cr-onboarding-hide", "1"); } catch { void 0; } $("cr-onboarding").hidden = true; });
 }
-async function searchHistory(e) {
-  e.preventDefault(); const username = $("cr-history-username").value.trim(); if (!username) { setStatus("cr-history-status", "Enter a Kick username", true); return; }
-  const btn = $("cr-history-search"); setLoading(btn, true, "Searching…");
-  $("cr-history-empty").hidden = true;
-  historyCtrl?.setLoading(true);
-  setRowsLoading($("cr-history-list"), { cols: 7, rows: 3 });
-  try { const data = await api("GET", `/api/credits/viewer/history?kickUsername=${encodeURIComponent(username)}`); renderHistory(data); setStatus("cr-history-status", `Found ${data.boards?.length || 0} board(s).`); }
-  catch (err) { setStatus("cr-history-status", err.message, true); } finally { setLoading(btn, false); }
+async function loadViewerSummary(username) {
+  const summary = $("cr-history-summary");
+  if (!username) {
+    if (summary) summary.hidden = true;
+    return;
+  }
+  const data = await api("GET", `/api/credits/viewer/history?kickUsername=${encodeURIComponent(username)}`);
+  renderHistory(data);
+  if (summary) summary.hidden = false;
+}
+
+async function loadActivity({ reset }) {
+  if (activityLoading || !activeSiteId) return;
+  activityLoading = true;
+  const btn = $("cr-history-search");
+  const more = $("cr-history-load-more");
+  try {
+    if (reset) {
+      activityEvents = [];
+      activityCursor = null;
+      $("cr-history-feed-list").innerHTML = "";
+      $("cr-history-feed-empty").hidden = true;
+      setLoading(btn, true, "Loading…");
+      await loadViewerSummary($("cr-history-username")?.value.trim());
+    } else {
+      setLoading(more, true, "Loading…");
+    }
+    const params = new URLSearchParams({ siteId: activeSiteId });
+    const username = $("cr-history-username")?.value.trim();
+    const type = $("cr-history-type")?.value || "";
+    if (username) params.set("kickUsername", username);
+    if (type) params.set("type", type);
+    if (activityCursor) params.set("cursor", activityCursor);
+    const data = await api("GET", `/api/credits/activity?${params}`);
+    activityEvents = reset ? data.events || [] : activityEvents.concat(data.events || []);
+    activityCursor = data.nextCursor || null;
+    renderActivity();
+    setStatus("cr-history-status", `${activityEvents.length} event(s) loaded.`);
+  } finally {
+    activityLoading = false;
+    setLoading(btn, false);
+    setLoading(more, false);
+  }
+}
+
+function renderActivity() {
+  const list = $("cr-history-feed-list");
+  const empty = $("cr-history-feed-empty");
+  const more = $("cr-history-load-more");
+  if (!list) return;
+  if (!activityEvents.length) {
+    list.innerHTML = "";
+    if (empty) {
+      empty.innerHTML = emptyStateHtml({ icon: "chart", title: "No credit activity found", body: "Try another viewer or event type." });
+      empty.hidden = false;
+    }
+  } else {
+    if (empty) empty.hidden = true;
+    list.innerHTML = activityEvents.map((event) => {
+      const debit = event.direction === "debit";
+      const amount = `${debit ? "−" : "+"}${event.amount}`;
+      return `<tr><td title="${esc(fmtDate(event.createdAt))}">${esc(relative(event.createdAt))}</td><td>${esc(event.kickUsername || event.kickUserId || "Unknown viewer")}</td><td>${esc(event.type)}</td><td class="num ${debit ? "cr-negative" : "cr-positive"}">${amount}</td><td>${esc(event.description || "—")}</td></tr>`;
+    }).join("");
+  }
+  if (more) more.hidden = !activityCursor;
 }
 function renderHistory(data) {
   const boards = data.boards || [];
-  if (!historyCtrl) historyCtrl = new ListController({ root: $("cr-history"), tbody: "cr-history-list", emptyEl: $("cr-history-empty"), emptySpec: { icon: "users", title: "No credit activity found", body: "No credit activity was found for this viewer." }, items: boards, perPage: 10, searchFn: (b) => `${b.name || ""} ${b.slug || ""} ${b.balance} ${b.totalEarned} ${b.totalSpent}`, sortOptions: [{ key: "balance", label: "Balance", fn: (a, b) => (b.balance || 0) - (a.balance || 0) }, { key: "earned", label: "Earned", fn: (a, b) => (b.totalEarned || 0) - (a.totalEarned || 0) }, { key: "pending", label: "Pending", fn: (a, b) => (b.redemptionsPending || 0) - (a.redemptionsPending || 0) }], emptyAllText: "No boards found for this viewer.", emptyText: "No matching boards.", renderItem: (b) => `<td><b>${esc(b.name || b.slug)}</b><br><span class="hint">${esc(b.slug)}</span></td><td class="num">${b.balance}</td><td class="num">${b.totalEarned}</td><td class="num">${b.totalSpent}</td><td class="num">${b.redemptionsPending}</td><td class="num">${b.redemptionsTotal}</td><td class="ta-r"><a class="btn btn--sm" href="/dashboard/settings/integrations?siteId=${esc(b.siteId)}">Integrations</a></td>` });
-  else historyCtrl.setItems(boards);
-  $("cr-history-empty").hidden = true;
+  const list = $("cr-history-list");
+  const empty = $("cr-history-empty");
+  if (!list) return;
+  list.innerHTML = boards.map((b) => `<tr><td><b>${esc(b.name || b.slug)}</b><br><span class="hint">${esc(b.slug)}</span></td><td class="num">${b.balance}</td><td class="num">${b.totalEarned}</td><td class="num">${b.totalSpent}</td><td class="num">${b.redemptionsPending}</td><td class="num">${b.redemptionsTotal}</td><td class="ta-r"><a class="btn btn--sm" href="/dashboard/settings/integrations?siteId=${esc(b.siteId)}">Integrations</a></td></tr>`).join("");
+  if (empty) {
+    empty.innerHTML = boards.length ? "" : emptyStateHtml({ icon: "users", title: "No boards found", body: "This viewer has no activity on your boards." });
+    empty.hidden = boards.length > 0;
+  }
 }
 if ($("cr-app")) { wireShell(); wireActions(); load().catch(() => {}); }
