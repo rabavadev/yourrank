@@ -14,9 +14,9 @@ import { DashboardShell } from "./dashboard-shell.jsx";
 
 const PAGES = { channel: channelPage, rewards: rewardsPage, maps: mapsPage, shop: shopPage, viewers: viewersPage, redemptions: redemptionsPage, history: historyPage };
 
-function RewardsPage({ tab, activeNav = tab, boardContext = "selector", footer = "rewards" }) {
+function RewardsPage({ tab, activeNav = tab, boardContext = "selector", footer = "rewards", user }) {
   const body = PAGES[tab] || channelPage;
-  return <DashboardShell activeNav={activeNav} boardContext={boardContext} footer={footer} rootId="cr-dash">
+  return <DashboardShell activeNav={activeNav} boardContext={boardContext} footer={footer} rootId="cr-dash" user={user}>
     <div>
       <div id="cr-loading" class="ui-loading" hidden><div class="ui-loading__spinner"></div></div>
       <div id="cr-app" data-cr-tab={tab} hidden dangerouslySetInnerHTML={{ __html: body }}></div>

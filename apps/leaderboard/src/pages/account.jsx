@@ -20,8 +20,8 @@ const TITLES = {
 
 const PAGES_BY_TAB = { profile: profilePage, plan: planPage, postbacks: postbacksPage, connected: connectedPage, data: dataPage };
 
-function AccountPage({ tab }) {
-  return <DashboardShell activeNav={tab} boardContext="none" footer="account" title={TITLES[tab] || "Account"}>
+function AccountPage({ tab, user }) {
+  return <DashboardShell activeNav={tab} boardContext="none" footer="account" title={TITLES[tab] || "Account"} user={user}>
     <div class="account-body" dangerouslySetInnerHTML={{ __html: PAGES_BY_TAB[tab] || profilePage }} />
   </DashboardShell>;
 }
