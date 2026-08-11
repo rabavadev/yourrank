@@ -162,8 +162,8 @@ async function loadSettingsUsage() {
       settingsMeter("Kick reward mappings", data.credits.rewardMappings?.used, data.credits.rewardMappings?.limit),
       settingsMeter("Active shop items", data.credits.shopItems?.used, data.credits.shopItems?.limit),
       settingsMeter("Pending redemptions", data.credits.pendingRedemptions?.used, data.credits.pendingRedemptions?.limit),
-      settingsMeter("New viewers this month", data.credits.newViewersPer30Days?.used, data.credits.newViewersPer30Days?.limit),
       settingsMeter("Fulfilled this month", data.credits.redemptionsPer30Days?.used, data.credits.redemptionsPer30Days?.limit),
+      settingsMeter("New viewers this month", data.credits.newViewersPer30Days?.used, data.credits.newViewersPer30Days?.limit),
     );
     wrap.innerHTML = rows.join("") || '<p class="v3-settings-inline">No usage data yet.</p>';
   } catch (err) {
@@ -174,12 +174,12 @@ async function loadSettingsUsage() {
 
 function renderSettingsPlan() {
   const plan = state.ME?.plan || "free";
-  const label = plan === "pro" ? "PRO" : plan === "starter" ? "STARTER" : plan.toUpperCase();
+  const label = plan === "pro" ? "PRO PLAN" : plan === "starter" ? "STARTER PLAN" : `${plan.toUpperCase()} PLAN`;
   const chip = $("settingsPlanChip");
   const price = $("settingsPlanPrice");
   const renewal = $("settingsPlanRenewal");
   if (chip) chip.textContent = label;
-  if (price) price.textContent = plan === "free" ? "Free" : `$${state.ME?.proPrice || "—"} / month`;
+  if (price) price.textContent = plan === "free" ? "Free" : `$${state.ME?.proPrice || "29"}/month`;
   if (renewal) {
     const expiry = state.ME?.planExpiresAt ? new Date(state.ME.planExpiresAt).toLocaleDateString() : "";
     renewal.textContent = state.ME?.isTrial ? `Your trial is active${expiry ? ` until ${expiry}` : ""}.` : expiry ? `Your subscription renews automatically on ${expiry}.` : "Your subscription is active.";
