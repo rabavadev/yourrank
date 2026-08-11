@@ -287,6 +287,10 @@
   background: var(--v3-main-bg);
 }
 
+body[data-wide] .v3-dash .lb-main {
+  padding-right: 32px;
+}
+
 .v3-dash .lb-phead {
   display: none;
 }
@@ -1239,6 +1243,7 @@
 
 @media (max-width: 980px) {
   .v3-dash .lb-main { padding: 20px 16px; }
+  body[data-wide] .v3-dash .lb-main { padding-right: 16px; }
   .v3-dash .v3-head h1 { font-size: 26px; }
   .v3-dash .v3-bulkbar { left: 50%; right: auto; }
   .v3-dash .v3-table-card { overflow-x: auto; }
