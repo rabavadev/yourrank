@@ -8,6 +8,9 @@ import { logAudit } from "../../../shared/audit.js";
 import { createQueueProducer } from "../../../shared/queue-producer.js";
 import { encrypt } from "../../../shared/crypto.js";
 import { verifyBoardPasswordCookie } from "./board-password.js";
+import { detectImageMime, validateLogoData } from "./logo-validation.js";
+
+export { detectImageMime, validateLogoData };
 
 function normalizePlayerName(name) {
   // C-07 / H-17: stable, case-insensitive, whitespace-collapsed identity.
@@ -187,98 +190,6 @@ export async function getPlayers(env, siteId) {
 }
 
 const HEX = /^#[0-9a-fA-F]{6}$/;
-
-// H-19: Logo uploads are validated by decoded magic bytes, not just the data-URI
-// regex. We still store the base64 blob in Postgres until an R2 bucket is
-// provisioned; moving the asset out of the database is deferred to the infra task.
-const LOGO_RE = /^data:image\/(png|jpeg|webp);base64,([A-Za-z0-9+/=]+)$/;
-const MAX_LOGO_CHARS = 250000; // chars of data URI (~187KB decoded)
-const MAX_LOGO_BYTES = 200 * 1024;
-const MAX_LOGO_JSON_CHARS = 400000; // srcset object with multiple pre-sized WebP blobs
-const MAX_LOGO_TOTAL_BYTES = 240 * 1024;
-
-function validateSingleLogoData(dataUri) {
-  const m = LOGO_RE.exec(String(dataUri ?? ""));
-  if (!m) return { error: "Logo must be a base64 data URI for PNG, JPEG or WebP." };
-
-  const declaredMime = `image/${m[1]}`;
-  const base64 = m[2];
-  if (base64.length > MAX_LOGO_CHARS) {
-    return { error: "Logo is too large. Keep it under ~180KB." };
-  }
-
-  let bytes;
-  try {
-    bytes = Buffer.from(base64, "base64");
-  } catch {
-    return { error: "Logo base64 is malformed." };
-  }
-  if (bytes.length > MAX_LOGO_BYTES) {
-    return { error: "Logo is too large. Keep it under ~180KB." };
-  }
-
-  const detected = detectImageMime(bytes);
-  if (!detected) {
-    return { error: "Logo file type could not be verified from its contents." };
-  }
-  if (detected !== declaredMime) {
-    return { error: `Logo content is ${detected.split("/")[1]} but declared as ${declaredMime.split("/")[1]}.` };
-  }
-
-  // Normalise the data URI to the detected MIME (dropping accidental whitespace).
-  const normalised = `data:${detected};base64,${bytes.toString("base64")}`;
-  return { ok: true, mime: detected, dataUri: normalised, bytes: bytes.length };
-}
-
-const PNG_MAGIC = [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A];
-const JPEG_MAGIC = [0xFF, 0xD8];
-const WEBP_MAGIC = [0x52, 0x49, 0x46, 0x46];
-
-function bytesMatch(buf, magic) {
-  if (buf.length < magic.length) return false;
-  for (let i = 0; i < magic.length; i++) {
-    if (buf[i] !== magic[i]) return false;
-  }
-  return true;
-}
-
-export function detectImageMime(buf) {
-  if (bytesMatch(buf, PNG_MAGIC)) return "image/png";
-  if (bytesMatch(buf, JPEG_MAGIC)) return "image/jpeg";
-  if (bytesMatch(buf, WEBP_MAGIC) && buf.length >= 12 &&
-      buf[8] === 0x57 && buf[9] === 0x45 && buf[10] === 0x42 && buf[11] === 0x50) {
-    return "image/webp";
-  }
-  return null;
-}
-
-/** Validate a logo data URI (or a srcset object of URIs) by decoding and checking magic bytes.
- *  Returns { ok: true, mime, dataUri } or { error }.
- *  When an object is supplied, dataUri is a JSON string containing the normalised blobs.
- */
-export function validateLogoData(dataUri) {
-  if (dataUri && typeof dataUri === "object") {
-    const keys = Object.keys(dataUri);
-    if (keys.length === 0) return { error: "Logo must be a base64 data URI for PNG, JPEG or WebP." };
-    const normalised = {};
-    let totalBytes = 0;
-    for (const k of keys) {
-      const single = validateSingleLogoData(dataUri[k]);
-      if (single.error) return { error: `Logo size ${k}: ${single.error}` };
-      totalBytes += single.bytes || 0;
-      normalised[k] = single.dataUri;
-    }
-    const json = JSON.stringify(normalised);
-    if (json.length > MAX_LOGO_JSON_CHARS) {
-      return { error: "Logo set is too large. Try a smaller image." };
-    }
-    if (totalBytes > MAX_LOGO_TOTAL_BYTES) {
-      return { error: "Logo set is too large. Keep it under ~240KB." };
-    }
-    return { ok: true, mime: "image/webp", dataUri: json };
-  }
-  return validateSingleLogoData(dataUri);
-}
 
 // theme_json / extra_json / snapshot_json are JSONB. postgres.js returns them
 // already parsed (object/array). But a value that is pre-stringified with
