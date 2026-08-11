@@ -59,8 +59,6 @@ const FIELD_COLS = {
   winRate: "col-win",
   change: "col-change",
 };
-const FIELD_LABELS = { score: "Score", hands: "Hands", netProfit: "Net profit", winRate: "Win rate", change: "Change" };
-
 function syncColumnDropdown(fields) {
   const merged = { ...state.EXTRA?.playerFields, ...(fields || {}) };
   $("colMenu")?.querySelectorAll("[data-col]").forEach((cb) => {
@@ -238,10 +236,11 @@ $("qa_name")?.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.pr
 $("qa_wager")?.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); $("qa_prize")?.focus(); } });
 $("qa_prize")?.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); addQuickRow(); $("qa_name")?.focus(); } });
 
-const NAME_RE = /^[\p{L}\p{N}\p{P}\p{S}\s]+$/u;
-
 export function sanitizeImportName(s) {
-  let n = String(s || "").replace(/[\x00-\x1f\x7f]/g, "").trim();
+  let n = Array.from(String(s || "")).filter((char) => {
+    const code = char.charCodeAt(0);
+    return code > 31 && code !== 127;
+  }).join("").trim();
   n = n.replace(/^"+/, "").replace(/"+$/, "");
   n = n.replace(/[^\p{L}\p{N}\p{P}\p{S}\s]/gu, "").trim();
   return n.length > 40 ? n.slice(0, 40) : n;
