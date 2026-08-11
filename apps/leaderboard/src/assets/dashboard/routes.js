@@ -12,6 +12,7 @@ export const SECTIONS = {
   home: { path: "/dashboard", title: "Overview" },
   board: { path: "/dashboard/editor", title: "Editor", tabs: ["setup", "players", "design", "share", "history"] },
   boards: { path: "/dashboard/boards", title: "All boards" },
+  games: { path: "/dashboard/games", title: "Site Sections & Games" },
   performance: { path: "/dashboard/analytics", title: "Analytics", tabs: ["activity", "referrals", "events"] },
   settings: { path: "/dashboard/settings", title: "Settings" },
 };

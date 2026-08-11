@@ -72,7 +72,7 @@ export function DashboardContent() {
 <a class="lb-nav" href="/dashboard/editor" data-nav="board" data-hash="players"><span class="lb-nav-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>Leaderboard</a>
 <a class="lb-nav" href="/dashboard/editor/design" data-nav="board" data-hash="design"><span class="lb-nav-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg></span>Page</a>
 <a class="lb-nav" href="/dashboard/rewards/channel"><span class="lb-nav-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="9" cy="9" r="6"/><path d="M8 21h12a2 2 0 0 0 2-2v-4"/><path d="m19 16 3-3-3-3"/></svg></span>Rewards &amp; Shop</a>
-<a class="lb-nav" href="#" aria-disabled="true"><span class="lb-nav-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="10"/><path d="m14.31 8 5.74 9.94"/><path d="M9.69 8h11.48"/><path d="m7.38 12 5.74-9.94"/><path d="M9.69 16 3.95 6.06"/><path d="M14.31 16H2.83"/><path d="m16.62 12-5.74 9.94"/></svg></span>Games</a>
+<a class="lb-nav" href="/dashboard/games" data-nav="games"><span class="lb-nav-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="10"/><path d="m14.31 8 5.74 9.94"/><path d="M9.69 8h11.48"/><path d="m7.38 12 5.74-9.94"/><path d="M9.69 16 3.95 6.06"/><path d="M14.31 16H2.83"/><path d="m16.62 12-5.74 9.94"/></svg></span>Games</a>
 <a class="lb-nav" href="/dashboard/analytics/activity" data-nav="performance" data-hash="activity"><span class="lb-nav-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M3 3v18h18"/><path d="m7 12 4-4 4 4 5-5"/></svg></span>Analytics</a>
 <a class="lb-nav" href="/dashboard/editor/history" data-nav="board" data-hash="history"><span class="lb-nav-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg></span>History</a>
 <a class="lb-nav" href="/dashboard/settings" data-nav="settings"><span class="lb-nav-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></span>Settings</a>
@@ -269,70 +269,69 @@ export function DashboardContent() {
 </div>
 </div>
 </section>
+<section class="lb-page" data-page="games">
+<div class="lb-phead"><button class="lb-menu" type="button" aria-label="Show sections" data-menu aria-expanded="false" aria-controls="lbSide">☰</button></div>
+<div class="v3-games-page">
+  <header class="v3-head">
+    <h1>Site Sections &amp; Games</h1>
+    <p class="v3-head-sub">Control which sections appear on your public page</p>
+  </header>
+  <div class="v3-games-layout">
+    <div class="v3-games-left">
+      <div class="v3-table-card v3-setting-card">
+        <div class="v3-card-head"><span class="v3-head-sub v3-head-sub--mono">Viewer site sections</span></div>
+        <div id="gamesSectionRows"></div>
+      </div>
+      <div class="v3-table-card v3-block-card">
+        <div class="v3-card-head"><div><h2>Leaderboard page blocks</h2><p class="v3-head-sub">Choose which blocks appear on your leaderboard page</p></div><span class="v3-chip v3-chip--pro">PRO</span></div>
+        <div class="v3-block-grid">
+          <label><span>Hero banner</span><input class="v3-toggle" type="checkbox" checked disabled aria-disabled="true" /></label>
+          <label><span>Top 3 podium</span><input class="v3-toggle" type="checkbox" checked disabled aria-disabled="true" /></label>
+          <label><span>Search &amp; Filter</span><input class="v3-toggle" type="checkbox" checked disabled aria-disabled="true" /></label>
+          <label><span>Rules marquee</span><input class="v3-toggle" type="checkbox" checked disabled aria-disabled="true" /></label>
+          <label><span>Social widgets</span><input class="v3-toggle" type="checkbox" checked disabled aria-disabled="true" /></label>
+          <label><span>Share button</span><input class="v3-toggle" type="checkbox" checked disabled aria-disabled="true" /></label>
+          <label><span>Countdown timer</span><input class="v3-toggle" type="checkbox" checked disabled aria-disabled="true" /></label>
+          <label><span>Call to action</span><input class="v3-toggle" type="checkbox" checked disabled aria-disabled="true" /></label>
+        </div>
+        <div class="v3-note">Note: Customize block visibility is currently locked to PRO users (showing all blocks by default).</div>
+      </div>
+    </div>
+    <div class="v3-table-card v3-game-card">
+      <div class="v3-card-head"><div><h2>Game settings</h2><p class="v3-head-sub">Configure constraints for credit-based viewer games</p></div></div>
+      <div id="gameSettingRows"></div>
+      <div class="v3-note">All games use credits only. Outcomes are server-determined and provably fair.</div>
+    </div>
+  </div>
+</div>
+</section>
 <section class="lb-page" data-page="performance">
 <div class="lb-phead"><button class="lb-menu" type="button" aria-label="Show sections" data-menu aria-expanded="false" aria-controls="lbSide">☰</button></div>
-<div class="lb-bento">
-<div class="lb-widget lb-widget--full perf-header" id="perf-activity">
-  <div>
-    <h2>Analytics</h2>
-    <p class="card-sub">Views, clicks, copies and where your traffic comes from. <span class="hint" id="perfScope">Scope: active board · last <span id="perfRangeLabel">14</span> days · local time.</span></p>
+<div class="v3-analytics-page">
+  <header class="v3-head"><h1>Analytics</h1><p class="v3-head-sub">Track real-time viewer actions, clicks, and conversion performance</p></header>
+  <div class="v3-analytics-scope"><span id="perfScope"><span id="perfBoardName">Active board</span> · Last <span id="perfRangeLabel">14</span> days · <span id="perfLocalTime">Local time</span></span><div id="perfRangeFilter" class="v3-range-filter" role="group" aria-label="Date range"><button class="v3-range-btn" type="button" data-range="7">7d</button><button class="v3-range-btn is-active" type="button" data-range="14">14d</button><button class="v3-range-btn" type="button" data-range="30">30d</button></div></div>
+  <nav class="v3-tabs" aria-label="Analytics sections" role="tablist">
+    <a class="v3-tab" href="/dashboard/analytics/activity" data-perf-tab="activity" role="tab">Activity</a>
+    <a class="v3-tab" href="/dashboard/analytics/referrals" data-perf-tab="referrals" role="tab">Referrals</a>
+    <a class="v3-tab" href="/dashboard/analytics/events" data-perf-tab="events" role="tab">Events</a>
+  </nav>
+  <div class="v3-kpi-grid">
+    <div class="v3-kpi-card"><div class="v3-kpi-label">VIEWS <span title="Total times your public page was loaded." aria-label="Metric help">[?]</span></div><div class="v3-kpi-value-row"><strong id="perfKpiViews">–</strong><span class="v3-delta" id="perfKpiViewsDelta"></span></div></div>
+    <div class="v3-kpi-card"><div class="v3-kpi-label">CTA CLICKS <span title="Clicks on your tracked referral or share links." aria-label="Metric help">[?]</span></div><div class="v3-kpi-value-row"><strong id="perfKpiClicks">–</strong><span class="v3-delta" id="perfKpiClicksDelta"></span></div></div>
+    <div class="v3-kpi-card"><div class="v3-kpi-label">REF COPIES <span title="Times a visitor copied your public link to the clipboard." aria-label="Metric help">[?]</span></div><div class="v3-kpi-value-row"><strong id="perfKpiCopies">–</strong><span class="v3-delta" id="perfKpiCopiesDelta"></span></div></div>
+    <div class="v3-kpi-card"><div class="v3-kpi-label">CTR <span title="Click-through rate: clicks divided by views in the selected range." aria-label="Metric help">[?]</span></div><div class="v3-kpi-value-row"><strong id="perfKpiCtr">–</strong><span class="v3-delta" id="perfKpiCtrDelta"></span></div></div>
   </div>
-  <div class="perf-filter" id="perfRangeFilter" role="group" aria-label="Date range">
-    <button class="btn btn--xs" type="button" data-range="7">7 days</button>
-    <button class="btn btn--xs is-active" type="button" data-range="14">14 days</button>
-    <button class="btn btn--xs" type="button" data-range="30">30 days</button>
+  <div class="v3-perf-panel" data-perf-panel="activity" id="perf-activity">
+    <div class="v3-table-card v3-chart-card"><div class="v3-card-head"><h2>Views over time</h2><span class="v3-chart-total">Total views: <b id="perfTotalViews">0</b></span></div><div id="statBars" class="v3-line-chart" role="img" aria-label="Daily views over time"></div><p class="v3-empty-copy" id="statsEmpty" hidden>No activity yet — share your page link in your stream panels and Discord to get it moving.</p></div>
+    <div class="v3-table-card v3-activity-table-card"><div class="v3-card-head"><h2>Daily activity</h2><a class="v3-btn" href="/api/site/stats/export" id="perfExport">Export CSV</a></div><div class="v3-table-scroll"><table class="v3-table"><thead><tr><th>DATE</th><th class="num">VIEWS</th><th class="num">CLICKS</th><th class="num">COPIES</th><th class="num">CTR</th></tr></thead><tbody id="perfActivityBody"></tbody></table></div></div>
+    <div class="v3-table-card" id="perf-heatmap"><div class="v3-card-head"><div><h2>Activity map</h2><p class="v3-head-sub">Views by day and hour (last 30 days).</p></div></div><div class="heatmap-wrap"><div class="heatmap" id="perfHeatmapGrid"><p class="heatmap-loading">Loading…</p></div></div></div>
   </div>
-</div>
-<div class="lb-widget lb-widget--full">
-  <div class="kpi-row">
-    <div class="kpi-card" title="Total times your public page was loaded"><span class="kpi-lbl" id="perfKpiViewsLbl"><span class="kpi-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg></span>Views · 14d</span><span class="kpi-val" id="perfKpiViews">–</span></div>
-    <div class="kpi-card" title="Clicks on your tracked referral or share links"><span class="kpi-lbl" id="perfKpiClicksLbl"><span class="kpi-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M3 3l7 18 3-7 7-3L3 3z"/></svg></span>Clicks · 14d</span><span class="kpi-val" id="perfKpiClicks">–</span></div>
-    <div class="kpi-card" title="Times a visitor copied your public link to the clipboard"><span class="kpi-lbl" id="perfKpiCopiesLbl"><span class="kpi-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg></span>Copies · 14d</span><span class="kpi-val" id="perfKpiCopies">–</span></div>
-    <div class="kpi-card" title="Click-through rate: clicks divided by views in the selected range"><span class="kpi-lbl" id="perfKpiCtrLbl"><span class="kpi-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 20v-6"/><path d="M6 20V10"/><path d="M18 20V4"/></svg></span>CTR · 14d</span><span class="kpi-val" id="perfKpiCtr">–</span></div>
+  <div class="v3-perf-panel" data-perf-panel="referrals" id="perf-referrals" hidden>
+    <div class="v3-table-card"><div class="v3-card-head"><div><h2>Referrals</h2><p class="v3-head-sub">Share your link. Every sign-up adds 31 days of Pro.</p></div></div><div class="v3-ref-link-row"><input id="refLink" readonly value="…" /><button class="v3-btn v3-btn--accent" id="refCopy" type="button">Copy link</button></div><div class="v3-stat-tiles"><div><b id="refCount">–</b><span>People signed up</span></div><div><b id="refDays">–</b><span>Free days earned</span></div><div><b id="refSaved">–</b><span>Value earned ($)</span></div></div><p id="refStatus" role="status" aria-live="polite"></p></div>
+    <div class="v3-table-card" id="perf-referrers"><div class="v3-card-head"><h2>Top referrers</h2></div><div class="v3-table-scroll"><table class="v3-table"><thead><tr><th>DOMAIN</th><th class="num">VIEWS</th></tr></thead><tbody id="perfReferrersBody"></tbody></table></div><p class="v3-empty-copy" id="perfReferrersEmpty" hidden>No referrer data yet — add <code>?ref=your-source</code> to your share link to track sources.</p></div>
   </div>
-  <details class="metric-glossary"><summary>Metric glossary</summary>
-    <dl>
-      <div><dt>Views</dt><dd>Total page loads of your public leaderboard.</dd></div>
-      <div><dt>Clicks</dt><dd>Clicks on your tracked referral or share links.</dd></div>
-      <div><dt>Copies</dt><dd>Times a visitor copied your page URL or a share link.</dd></div>
-      <div><dt>CTR</dt><dd>Click-through rate: clicks ÷ views in the selected date range.</dd></div>
-      <div><dt>Referrers</dt><dd>Domains that sent traffic to your page, when the browser reports them.</dd></div>
-      <div><dt>Events</dt><dd>Recent postbacks, score updates and link copies recorded for this board.</dd></div>
-    </dl>
-  </details>
-</div>
-<div class="lb-widget lb-widget--wide">
-  <div class="lb-cardhd"><h2>Activity</h2><a class="btn btn--xs btn--ghost" href="/api/site/stats/export" id="perfExport">Export CSV</a></div>
-  <div class="stat-chart"><div class="stat-bars" id="statBars" title="Daily activity"></div><div class="stat-chart-lbl"><span id="statFrom"></span><span>today</span></div></div>
-  <p class="hint" id="statsEmpty" hidden>No activity yet — share your page link in your stream panels and Discord to get it moving.</p>
-  <div class="stat-legend"><span class="stat-legend-item views">Views</span><span class="stat-legend-item copies">Copies</span><span class="stat-legend-item clicks">Clicks</span></div>
-</div>
-<div class="lb-widget lb-widget--narrow" id="perf-heatmap">
-  <div class="lb-cardhd"><h2>Activity map</h2></div>
-  <p class="hint m-0 mb-8">Views by day and hour (last 30 days).</p>
-  <div class="heatmap-wrap"><div class="heatmap" id="perfHeatmapGrid"><p class="heatmap-loading">Loading…</p></div></div>
-</div>
-<div class="lb-widget lb-widget--narrow" id="perf-referrers">
-  <div class="lb-cardhd"><h2>Top referrers</h2></div>
-  <table class="ref-table"><thead><tr><th>Domain</th><th class="ta-r">Views</th></tr></thead><tbody id="perfReferrersBody"></tbody></table>
-  <p class="empty" id="perfReferrersEmpty" hidden>No referrer data yet — add <code>?ref=your-source</code> to your share link to track sources.</p>
-</div>
-<div class="lb-widget lb-widget--half" id="perf-referrals">
-  <h2>Referrals</h2>
-  <p class="card-sub">Share your link. Every sign-up adds 31 days of Pro.</p>
-  <div class="d-flex gap-8 flex-wrap items-center mt-12"><input id="refLink" class="overlay-url min-w-220" readonly value="…" /><button class="btn btn--accent" id="refCopy" type="button">Copy link</button></div>
-  <div class="stat-tiles mt-18">
-    <div class="stat-tile"><span class="stat-num" id="refCount">–</span><span class="stat-lbl">People signed up</span></div>
-    <div class="stat-tile"><span class="stat-num" id="refDays">–</span><span class="stat-lbl">Free days earned</span></div>
-    <div class="stat-tile"><span class="stat-num" id="refSaved">–</span><span class="stat-lbl">Value earned ($)</span></div>
-  </div>
-  <p class="status" id="refStatus" role="status" aria-live="polite"></p>
-</div>
-<div class="lb-widget lb-widget--half" id="perf-events">
-  <div class="lb-cardhd"><h2>Events</h2></div>
-  <ul class="events-list" id="eventsList"></ul>
-  <p class="empty" id="eventsEmpty">No events yet — postbacks and score updates will appear once a sponsor sends them. Set up postbacks in <a href="/account/postbacks">Account → Postbacks</a>.</p>
-</div>
+  <div class="v3-perf-panel" data-perf-panel="events" id="perf-events" hidden><div class="v3-table-card"><div class="v3-card-head"><h2>Events</h2></div><ul class="events-list" id="eventsList"></ul><div class="v3-empty" id="eventsEmpty"><h2>No events yet</h2><p>Postbacks and score updates will appear once a sponsor sends them. Set up postbacks in <a href="/account/postbacks">Account → Postbacks</a>.</p></div></div></div>
+  <details class="metric-glossary"><summary>Metric glossary</summary><dl><div><dt>Views</dt><dd>Total page loads of your public leaderboard.</dd></div><div><dt>Clicks</dt><dd>Clicks on your tracked referral or share links.</dd></div><div><dt>Copies</dt><dd>Times a visitor copied your page URL or a share link.</dd></div><div><dt>CTR</dt><dd>Click-through rate: clicks ÷ views in the selected date range.</dd></div><div><dt>Referrers</dt><dd>Domains that sent traffic to your page, when the browser reports them.</dd></div><div><dt>Events</dt><dd>Recent postbacks, score updates and link copies recorded for this board.</dd></div></dl></details>
 </div>
 </section>
 <section class="lb-page" data-page="settings">

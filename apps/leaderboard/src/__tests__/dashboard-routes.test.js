@@ -6,7 +6,7 @@ import { dashboardPath, parseDashboardPath, resolveSection, defaultTab } from ".
 
 describe("dashboard routes", () => {
   it("round-trips every section and sub-tab", () => {
-    for (const [page, tab] of [["home", ""], ["board", "players"], ["boards", ""], ["performance", "referrals"], ["settings", ""]]) {
+    for (const [page, tab] of [["home", ""], ["board", "players"], ["boards", ""], ["games", ""], ["performance", "referrals"], ["settings", ""]]) {
       expect(parseDashboardPath(dashboardPath(page, tab))).toEqual({ page, tab });
     }
   });

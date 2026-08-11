@@ -9,6 +9,7 @@ import { renderOverviewSummary } from "./dashboard/overview.js";
 import { renderReferrals } from "./dashboard/referrals.js";
 import { initPerformance } from "./dashboard/performance.js";
 import { setupSettingsScreen, wireAccount } from "./dashboard/account.js";
+import { initGames } from "./dashboard/games.js";
 
 async function init() {
   let me;
@@ -53,7 +54,7 @@ async function init() {
   renderBoardsPage();
   const d = p.data || {};
   const b = d.brand || {};
-  state.EXTRA = { chips: d.partner?.chips, whyStats: d.whyStats, rules: d.rules, socials: p.socials || d.socials || [], sections: d.sections, playerFields: d.playerFields || {}, text: (d.branding && d.branding.text) || {}, legal: d.legal || {} };
+  state.EXTRA = { chips: d.partner?.chips, whyStats: d.whyStats, rules: d.rules, socials: p.socials || d.socials || [], sections: d.sections, siteSections: d.siteSections || {}, playerFields: d.playerFields || {}, text: (d.branding && d.branding.text) || {}, legal: d.legal || {} };
   $("f_name").value = b.name || "";
   $("f_tagline").value = b.tagline || "";
   $("f_casino").value = b.casino || "";
@@ -163,6 +164,7 @@ async function init() {
   $("loading").hidden = true;
   $("dash").hidden = false;
   setupShell();
+  initGames();
   wireCancelSubscription();
   wireDeleteAccount();
   // Boards nav is redundant for solo streamers — the sidebar board switcher covers it.
