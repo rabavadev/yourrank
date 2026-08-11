@@ -35,6 +35,22 @@ export const TEMPLATE_IDS = Object.keys(TEMPLATES);
 export const validTemplate = (id) => (Object.hasOwn(TEMPLATES, id) ? id : "classic");
 export const templateCss = (id) => TEMPLATES[validTemplate(id)].css;
 
+/**
+ * Extract the design-token variables declared in a template's main
+ * `body[data-template="<id>"]` block.  These are the palette, type and
+ * radius defaults that every shell section should inherit.
+ */
+export function templateTokens(id) {
+  const css = TEMPLATES[validTemplate(id)].css || "";
+  const match = css.match(new RegExp(`body\\s*\\[data-template="${validTemplate(id)}"\\]\\s*\\{([^}]*)\\}`, "s"));
+  if (!match) return {};
+  const vars = {};
+  for (const m of match[1].matchAll(/--([\w-]+)\s*:\s*([^;{}]+)/g)) {
+    vars[`--${m[1].trim()}`] = m[2].trim();
+  }
+  return vars;
+}
+
 // ── Editable options schema ─────────────────────────────────────────
 // Each template may declare a `schema`: the knobs the dashboard renders for
 // it. The dashboard never hardcodes per-template controls — it reads this
