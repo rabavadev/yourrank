@@ -128,6 +128,9 @@ cd apps/bot && bun run dev
 ```
 
 The bot Worker’s deployed entrypoint is `src/worker.ts`, and `bun run dev` uses `wrangler dev` to match production routing more closely.
+Because `/assets/*` belongs to the leaderboard Worker’s root route, run the
+leaderboard Worker alongside the bot Worker for local dashboard styling. A
+standalone bot Worker does not serve those shared assets.
 
 For webhook testing during local debug, the bot app will need a public tunnel (e.g. `cloudflared tunnel`) to receive Telegram webhooks.
 

@@ -133,6 +133,30 @@ describe("dashboard views", () => {
     expect(html).not.toContain("onblur=");
   });
 
+  it("renders one offers metric glossary and bot setup guidance for empty broadcasts", () => {
+    const html = appHtml({ display_name: "Test", email: "test@example.com", plan: "free" }, "https://yourrank.site");
+    expect((html.match(/<summary>Metric glossary<\/summary>/g) || []).length).toBe(1);
+    expect(html).toContain('id="bcList"');
+    expect(clientScriptSource()).toContain("No broadcasts yet. Connect a bot in Bots to send your first message.");
+    expect(clientScriptSource()).toContain('href="https://t.me/BotFather"');
+  });
+
+  it("gates empty list controls and avoids page-zero pagination", () => {
+    const js = clientScriptSource();
+    expect(js).toContain("wrap.hidden = self.all.length === 0");
+    expect(js).toContain("this.controls.hidden = this.all.length === 0");
+    expect(js).toContain("this.pageInfo.textContent = total ? 'Page '+this.page+' of '+this.totalPages+' ('+total+')' : ''");
+    expect(js).toContain("setBroadcastAvailability(bots.length > 0)");
+    expect(js).toContain("const readRequest = !opts || !opts.method || opts.method.toUpperCase() === 'GET'");
+    expect(js).toContain("const requestOpts = controller");
+  });
+
+  it("links the shared shell styles and keeps the skip link keyboard-reachable", () => {
+    const html = appHtml({ display_name: "Test", email: "test@example.com", plan: "free" }, "https://yourrank.site", "nonce123", "overview", '<header class="gm-shell-nav"></header>');
+    expect(html).toContain('<link rel="stylesheet" href="/assets/shell-nav.css">');
+    expect(html).toContain('<a href="#main-content" class="skip-link">Skip to main content</a>');
+  });
+
   it("clientScriptSource emits parseable JavaScript", () => {
     // The script is built from a template literal, so escape sequences like
     // \\t are interpreted at build time and can emit raw control characters
