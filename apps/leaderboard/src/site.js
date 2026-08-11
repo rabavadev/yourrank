@@ -105,6 +105,9 @@ const inflight = new Map();        // PERF-009: single-flight — prevent cache 
 const L1_TTL = 25_000;
 const L1_MAX_ENTRY_BYTES = 50_000;
 const SITE_CACHE_MAX = 1000;
+const PUBLIC_STREAM_VERSION_TTL = 3_000;
+const publicStreamVersionCache = new Map();
+const publicStreamVersionInflight = new Map();
 
 function evictOldest(cache, max) {
   while (cache.size > max) {
@@ -151,6 +154,34 @@ export function invalidateSiteCache(env, ...keys) {
 export function invalidateUserCache(env, uid) {
   siteCache.delete(uid);
   siteCache.delete(`user_boards:${uid}`);
+}
+
+export async function getPublicStreamVersion(siteId) {
+  const cached = publicStreamVersionCache.get(siteId);
+  if (cached && cached.expires > Date.now()) return cached.value;
+
+  if (publicStreamVersionInflight.has(siteId)) {
+    return publicStreamVersionInflight.get(siteId);
+  }
+
+  const p = (async () => {
+    try {
+      const row = await one("SELECT max(updated_at) AS m FROM players WHERE site_id=$1", [siteId]);
+      const value = row?.m ? new Date(row.m).toISOString() : "0";
+      publicStreamVersionCache.set(siteId, { value, expires: Date.now() + PUBLIC_STREAM_VERSION_TTL });
+      evictOldest(publicStreamVersionCache, SITE_CACHE_MAX);
+      return value;
+    } finally {
+      publicStreamVersionInflight.delete(siteId);
+    }
+  })();
+  publicStreamVersionInflight.set(siteId, p);
+  return p;
+}
+
+export function clearPublicStreamVersionCache() {
+  publicStreamVersionCache.clear();
+  publicStreamVersionInflight.clear();
 }
 
 export const getBySlug = (env, slug) => getCached(env, slug, () => one(`SELECT ${SITE_COLUMNS} FROM sites WHERE slug=$1`, [slug]));

@@ -12,6 +12,7 @@ const dbUrl    = import.meta.resolve("../../../../shared/db.js");
 const dbUrlTs  = import.meta.resolve("../../../../shared/db.ts");
 const sessUrl  = import.meta.resolve("../../../../shared/session.js");
 const sessUrlTs = import.meta.resolve("../../../../shared/session.ts");
+const dbOne = mock(() => Promise.resolve(null));
 
 const mockSiteData = {
   brand: { name: "Test Casino", casino: "Stake", period: "Monthly", prizePool: "$10,000" },
@@ -24,7 +25,7 @@ const mockSiteData = {
 };
 
 const dbMock = () => ({
-  one: mock(() => Promise.resolve(null)),
+  one: dbOne,
   exec: mock(() => Promise.resolve()),
   query: mock(() => Promise.resolve([])),
   getSql: () => null,
@@ -81,6 +82,8 @@ function mockEnv(siteData = mockSiteData) {
 // Since handlers import getPublicSite from "../site.js", we mock the site module
 const siteUrl = import.meta.resolve("../site.js");
 const siteUrlTs = import.meta.resolve("../site.ts");
+const clearVersionCache = mock(() => {});
+const streamVersion = mock(() => Promise.resolve("2026-01-01T00:00:00.000Z"));
 
 mock.module(siteUrl, () => ({
   getPublicSite: (_env, slug, _request) => {
@@ -89,6 +92,8 @@ mock.module(siteUrl, () => ({
     if (slug === "protected") return { requiresPassword: true, id: "site-1", slug: "protected" };
     return { id: "site-1", data: mockSiteData, plan: "pro", suspended: false };
   },
+  getPublicStreamVersion: streamVersion,
+  clearPublicStreamVersionCache: clearVersionCache,
 }));
 mock.module(siteUrlTs, () => ({
   getPublicSite: (_env, slug, _request) => {
@@ -97,6 +102,8 @@ mock.module(siteUrlTs, () => ({
     if (slug === "protected") return { requiresPassword: true, id: "site-1", slug: "protected" };
     return { id: "site-1", data: mockSiteData, plan: "pro", suspended: false };
   },
+  getPublicStreamVersion: streamVersion,
+  clearPublicStreamVersionCache: clearVersionCache,
 }));
 
 // ── handlePublicStandings ──────────────────────────────────────────────
@@ -201,6 +208,18 @@ describe("handlePublicStream", () => {
     const env = mockEnv();
     const res = await handlePublicStream(req("https://test.com/api/public/nonexistent/stream"), env, { slug: "nonexistent" });
     expect(res.status).toBe(404);
+  });
+
+  it("pushes the full payload when the player timestamp changes", async () => {
+    streamVersion.mockResolvedValueOnce("2026-01-01T00:00:00.000Z");
+    const env = mockEnv();
+    const res = await handlePublicStream(req("https://test.com/api/public/testboard/stream"), env, { slug: "testboard" });
+    const reader = res.body.getReader();
+    const first = await reader.read();
+    await reader.cancel();
+    const payload = JSON.parse(new TextDecoder().decode(first.value).replace(/^data: |\n\n$/g, ""));
+    expect(payload.updatedAt).toBe("2026-01-01T00:00:00.000Z");
+    expect(payload.players).toEqual(mockSiteData.players);
   });
 });
 

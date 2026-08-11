@@ -141,25 +141,53 @@
 
   // --- SSE live updates ---
   let streamFailures = 0;
+  let streamTimer = null;
+  const STREAM_MAX_FAILURES = 3;
+  const STREAM_RECONNECT_BASE_MS = 1000;
+  const STREAM_RECONNECT_MAX_MS = 30000;
 
   let streamEs = null;
+  function onStreamFail() {
+    streamFailures++;
+    if (streamFailures >= STREAM_MAX_FAILURES || document.hidden) return;
+    const backoff = Math.min(
+      STREAM_RECONNECT_MAX_MS,
+      STREAM_RECONNECT_BASE_MS * (2 ** (streamFailures - 1))
+    );
+    const delay = backoff * (0.8 + Math.random() * 0.4);
+    if (streamTimer) clearTimeout(streamTimer);
+    streamTimer = setTimeout(() => {
+      streamTimer = null;
+      connectStream();
+    }, delay);
+  }
+
   function connectStream() {
     if (!SLUG || typeof EventSource === "undefined") return;
+    if (streamTimer) { clearTimeout(streamTimer); streamTimer = null; }
     if (streamEs) { streamEs.close(); streamEs = null; }
     streamEs = new EventSource("/api/public/" + encodeURIComponent(SLUG) + "/stream");
     streamEs.onmessage = (e) => {
       try {
         const data = JSON.parse(e.data);
         if (data.players) { streamFailures = 0; renderPlayers(data.players); }
-      } catch { streamFailures++; }
+      } catch {
+        if (streamEs) { streamEs.close(); streamEs = null; }
+        onStreamFail();
+      }
     };
-    streamEs.onerror = () => { streamFailures++; };
+    streamEs.onerror = () => {
+      if (streamEs) { streamEs.close(); streamEs = null; }
+      onStreamFail();
+    };
   }
 
   document.addEventListener("visibilitychange", () => {
     if (document.hidden) {
+      if (streamTimer) { clearTimeout(streamTimer); streamTimer = null; }
       if (streamEs) { streamEs.close(); streamEs = null; }
     } else {
+      streamFailures = 0;
       connectStream();
     }
   });
