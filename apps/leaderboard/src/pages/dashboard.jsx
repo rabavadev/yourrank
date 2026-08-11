@@ -167,12 +167,14 @@ export function DashboardContent() {
 <section class="lb-page" data-page="board">
 <div class="lb-phead"><button class="lb-menu" type="button" aria-label="Show sections" data-menu aria-expanded="false" aria-controls="lbSide">☰</button></div>
 
-<div class="editor-steps" id="editorTabs" role="tablist" aria-label="Editor steps">
-  <button class="editor-step is-active" type="button" role="tab" aria-selected="true" data-egroup="setup"><span class="step-num">1</span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="4" x2="4" y1="21" y2="14"/><line x1="4" x2="4" y1="10" y2="3"/><line x1="12" x2="12" y1="21" y2="12"/><line x1="12" x2="12" y1="8" y2="3"/><line x1="20" x2="20" y1="21" y2="16"/><line x1="20" x2="20" y1="12" y2="3"/><line x1="9" x2="15" y1="8" y2="8"/><line x1="1" x2="7" y1="14" y2="14"/><line x1="17" x2="23" y1="16" y2="16"/></svg> Setup</button>
-  <button class="editor-step" type="button" role="tab" aria-selected="false" data-egroup="players"><span class="step-num">2</span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg> Players</button>
-  <button class="editor-step" type="button" role="tab" aria-selected="false" data-egroup="design"><span class="step-num">3</span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg> Design</button>
-  <button class="editor-step" type="button" role="tab" aria-selected="false" data-egroup="share"><span class="step-num">4</span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" x2="12" y1="2" y2="15"/></svg> Share</button>
-  <button class="editor-step" type="button" role="tab" aria-selected="false" data-egroup="history"><span class="step-num">5</span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3v5a5 5 0 0 0 5 5h10a5 5 0 0 1 5 5v5"/><path d="M12 12 7 7l5-5"/><path d="M12 12 17 7l5 5"/></svg> History</button>
+<h1 class="sr-only">Page</h1>
+<span class="editor-steps" hidden aria-hidden="true"></span>
+<div class="editor-steps v3-tabs" id="editorTabs" role="tablist" aria-label="Editor steps">
+  <button class="editor-step v3-tab is-active" type="button" role="tab" aria-selected="true" data-egroup="setup"><span class="step-num">1</span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="4" x2="4" y1="21" y2="14"/><line x1="4" x2="4" y1="10" y2="3"/><line x1="12" x2="12" y1="21" y2="12"/><line x1="12" x2="12" y1="8" y2="3"/><line x1="20" x2="20" y1="21" y2="16"/><line x1="20" x2="20" y1="12" y2="3"/><line x1="9" x2="15" y1="8" y2="8"/><line x1="1" x2="7" y1="14" y2="14"/><line x1="17" x2="23" y1="16" y2="16"/></svg> Setup</button>
+  <button class="editor-step v3-tab" type="button" role="tab" aria-selected="false" data-egroup="players"><span class="step-num">2</span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg> Players</button>
+  <button class="editor-step v3-tab" type="button" role="tab" aria-selected="false" data-egroup="design"><span class="step-num">3</span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg> Design</button>
+  <button class="editor-step v3-tab" type="button" role="tab" aria-selected="false" data-egroup="share"><span class="step-num">4</span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" x2="12" y1="2" y2="15"/></svg> Share</button>
+  <button class="editor-step v3-tab" type="button" role="tab" aria-selected="false" data-egroup="history"><span class="step-num">5</span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3v5a5 5 0 0 0 5 5h10a5 5 0 0 1 5 5v5"/><path d="M12 12 7 7l5-5"/><path d="M12 12 17 7l5 5"/></svg> History</button>
   </div>
 <div class="design-grid">
 <div class="design-controls">
@@ -282,12 +284,15 @@ export function DashboardContent() {
 <div class="design-preview">
 <div class="card">
 <div class="preview-header">
-<div class="preview-header-text"><h2>Live preview</h2><p class="preview-sub">Click elements on the board to edit them directly.</p></div>
+<div class="preview-header-text"><h2>Live Preview</h2><p class="preview-sub">Click elements on the board to edit them directly.</p></div>
 <div class="preview-actions">
 <div class="preview-tabs" role="tablist" aria-label="Preview device"><button class="preview-tab is-active" data-width="1100" data-device="desktop" type="button" role="tab" aria-selected="true">Desktop</button><button class="preview-tab" data-width="390" data-device="mobile" type="button" role="tab" aria-selected="false">Mobile</button></div>
+<span class="v3-chip v3-chip--pro preview-sync" id="previewSyncStatus">SYNCED</span>
 </div>
 </div>
+<div class="preview-sync-strip"><span><i aria-hidden="true"></i> PREVIEW MODE</span><small id="previewSyncTime">Last synced —</small></div>
 <div class="preview-frame" id="previewFrame"><div class="preview-stage" id="previewStage"><iframe id="designPreview" name="designPreview" src="" loading="eager" title="Live preview" sandbox="allow-scripts allow-same-origin allow-popups-to-escape-sandbox"></iframe></div><div class="preview-error" id="previewError" hidden><p>Preview could not load. <button class="btn btn--sm" id="previewRetry" type="button">Retry</button></p></div></div>
+<a class="preview-live-link" id="previewLiveLink" href="#" target="_blank" rel="noopener noreferrer">Open live page ↗</a>
 </div>
 </div>
 </div>

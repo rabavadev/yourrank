@@ -610,6 +610,20 @@ const PREVIEW_TIMEOUT_MS = 8000;
 let _previewTimeout = null;
 let _previewForm = null;
 let _previewWatchdog = null;
+let _previewSyncedAt = null;
+
+function setPreviewSyncStatus(status, syncedAt = _previewSyncedAt) {
+  const chip = $("previewSyncStatus");
+  const timestamp = $("previewSyncTime");
+  if (chip) {
+    chip.textContent = status;
+    chip.classList.toggle("is-syncing", status === "SYNCING");
+  }
+  if (timestamp) {
+    const seconds = syncedAt ? Math.max(0, Math.floor((Date.now() - syncedAt) / 1000)) : null;
+    timestamp.textContent = seconds === null ? "Last synced —" : seconds === 0 ? "Last synced just now" : `Last synced ${seconds}s ago`;
+  }
+}
 
 export function updateDesignPreview() {
   const iframe = $("designPreview");
@@ -633,7 +647,12 @@ export function updateDesignPreview() {
   // blank rectangle labelled "Live preview".
   if (!iframe._wiredWatchdog) {
     iframe._wiredWatchdog = true;
-    iframe.addEventListener("load", () => clearTimeout(_previewWatchdog));
+    iframe.addEventListener("load", () => {
+      clearTimeout(_previewWatchdog);
+      _previewSyncedAt = Date.now();
+      setPreviewSyncStatus("SYNCED", _previewSyncedAt);
+      fitDesignPreview();
+    });
   }
 
   // Debounce the live preview update so typing doesn't repeatedly re-render.
@@ -655,6 +674,7 @@ export function updateDesignPreview() {
       }
       _previewForm.action = url;
       _previewForm.querySelector("input[name='draft']").value = JSON.stringify(draft);
+      setPreviewSyncStatus("SYNCING");
       _previewForm.submit();
       const errorOverlay = $("previewError");
       if (errorOverlay) errorOverlay.hidden = true;
@@ -729,9 +749,12 @@ export function renderBoardStatus() {
   const banner = $("verifyBanner");
   if (banner) banner.hidden = s.emailVerified;
   // "View live" must not be offered while the public URL would not resolve.
-  for (const id of ["liveLink", "editorLiveLink"]) {
+  for (const id of ["liveLink", "editorLiveLink", "previewLiveLink"]) {
     const link = $(id);
-    if (link) link.hidden = !s.live;
+    if (link) {
+      link.hidden = !s.live;
+      if (s.live && state.SLUG) link.href = `${location.origin}/${state.SLUG}`;
+    }
   }
   return s;
 }
