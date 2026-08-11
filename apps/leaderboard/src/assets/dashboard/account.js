@@ -173,16 +173,16 @@ async function loadSettingsUsage() {
 }
 
 function renderSettingsPlan() {
-  const plan = state.ME?.plan || "free";
-  const label = plan === "pro" ? "PRO PLAN" : plan === "starter" ? "STARTER PLAN" : `${plan.toUpperCase()} PLAN`;
+  const plan = state.ME?.plan || null;
+  const label = plan === "pro" ? "PRO PLAN" : plan === "starter" ? "STARTER PLAN" : plan ? `${plan.toUpperCase()} PLAN` : "—";
   const chip = $("settingsPlanChip");
   const price = $("settingsPlanPrice");
   const renewal = $("settingsPlanRenewal");
   if (chip) chip.textContent = label;
-  if (price) price.textContent = plan === "free" ? "Free" : `$${state.ME?.proPrice || "29"}/month`;
+  if (price) price.textContent = plan === "free" ? "Free" : state.ME?.proPrice ? `$${state.ME.proPrice}/month` : "—";
   if (renewal) {
     const expiry = state.ME?.planExpiresAt ? new Date(state.ME.planExpiresAt).toLocaleDateString() : "";
-    renewal.textContent = state.ME?.isTrial ? `Your trial is active${expiry ? ` until ${expiry}` : ""}.` : expiry ? `Your subscription renews automatically on ${expiry}.` : "Your subscription is active.";
+    renewal.textContent = state.ME?.isTrial ? `Your trial is active${expiry ? ` until ${expiry}` : ""}.` : expiry ? `Your subscription renews automatically on ${expiry}.` : "—";
   }
 }
 

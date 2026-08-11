@@ -7,7 +7,7 @@ export const dashboardConfig = {
   canonical: "https://yourrank.site/dashboard",
   styles: ["/assets/app.css", "/assets/shell-nav.css", "/assets/dashboard-v2.css", "/assets/dashboard-v3.css", "/assets/ui.css"],
   scripts: ['<script src="/assets/dashboard.js?v=13" type="module"></script>'],
-  nav: true,
+  nav: false,
   footer: false,
   wide: true,
 };
@@ -391,7 +391,7 @@ export function DashboardContent() {
     <button class="v3-tab" id="settingsTabSupport" type="button" role="tab" aria-selected="false" aria-controls="settingsPanelSupport" data-settings-tab="support">Support</button>
   </div>
   <section class="v3-settings-panel" id="settingsPanelPlan" role="tabpanel" aria-labelledby="settingsTabPlan" data-settings-panel="plan">
-    <div class="v3-settings-card v3-plan-card"><div><div class="v3-settings-plan-row"><span class="v3-chip v3-chip--pro" id="settingsPlanChip">FREE</span><span class="v3-settings-price" id="settingsPlanPrice">—</span></div><p class="v3-settings-card-sub" id="settingsPlanRenewal">Your subscription renews automatically.</p></div><a class="v3-set-btn v3-set-btn--outline" href="/account/plan" id="settingsManagePlan">Manage subscription</a></div>
+    <div class="v3-settings-card v3-plan-card"><div><div class="v3-settings-plan-row"><span class="v3-chip v3-chip--pro" id="settingsPlanChip">—</span><span class="v3-settings-price" id="settingsPlanPrice">—</span></div><p class="v3-settings-card-sub" id="settingsPlanRenewal">—</p></div><a class="v3-set-btn v3-set-btn--outline" href="/account/plan" id="settingsManagePlan">Manage subscription</a></div>
     <div class="v3-settings-card"><div class="v3-settings-card-head"><div><h2>Platform Limits</h2></div></div><div class="v3-set-meters" id="settingsUsage"><p class="v3-settings-inline">Loading usage…</p></div></div>
     <div class="v3-settings-card"><div class="v3-settings-card-head"><div><h2>Account Providers &amp; Schedulers</h2></div></div><div class="v3-settings-group-label">VIEWER LOGIN PROVIDERS</div><div class="v3-settings-row"><div><b>Kick Authentication</b><p>Allow viewers to sign in natively using Kick OAuth services. <a href="/dashboard/rewards/channel">Configure in Rewards &amp; Shop</a></p></div><input class="v3-toggle" id="settingsKickLogin" type="checkbox" aria-label="Allow viewers to log in with Kick" disabled /></div><div class="v3-settings-row"><div><b>Discord Integration</b><p>Allow viewers to link Discord accounts to trace server roles.</p></div><a class="v3-set-btn v3-set-btn--outline" href="#settingsPanelSecurity" data-settings-jump="security">Webhook settings</a></div></div>
   </section>
