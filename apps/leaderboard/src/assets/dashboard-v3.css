@@ -1859,6 +1859,21 @@
 .v3-dash .cr-shop-card-foot small { font-size: 11px; color: var(--v3-main-ink-mute); }
 .v3-dash .cr-shop-card-foot span { font: 500 12px var(--v3-mono); color: var(--v3-main-ink-soft); }
 .v3-dash .cr-shop-card > .btn { margin-top: 16px; }
+.v3-dash .cr-shop-card-actions { display: flex; gap: 8px; margin-top: 16px; }
+.v3-dash .cr-usage-panel,
+.v3-dash .cr-auth-panel { border-top: 1px solid var(--v3-main-line); margin-top: 24px; padding-top: 20px; }
+.v3-dash .cr-usage-panel h2,
+.v3-dash .cr-auth-panel h2 { margin: 0 0 14px; font-size: 16px; }
+.v3-dash .cr-usage-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; }
+.v3-dash .cr-usage-card { border: 1px solid var(--v3-main-line); border-radius: var(--v3-radius-sm); padding: 12px; }
+.v3-dash .cr-usage-number { font: 600 16px var(--v3-mono); margin-top: 6px; }
+.v3-dash .cr-usage-upgrade { display: block; color: var(--v3-accent-ink); font-size: 11px; margin-top: 8px; }
+.v3-dash .cr-confirm-popover { position: fixed; z-index: 200; width: 260px; padding: 14px; border-radius: var(--v3-radius-sm); background: var(--v3-chrome); color: #fff; box-shadow: 0 12px 28px rgba(0,0,0,.24); }
+.v3-dash .cr-confirm-popover strong { display: block; font-size: 14px; font-weight: 700; }
+.v3-dash .cr-confirm-popover p { color: #bdbdc3; font-size: 13px; line-height: 1.4; margin: 8px 0 14px; }
+.v3-dash .cr-confirm-popover div { display: flex; justify-content: flex-end; gap: 8px; }
+.v3-dash .cr-confirm-popover button { border: 1px solid #4a4a4f; border-radius: var(--v3-radius-sm); background: transparent; color: #fff; padding: 7px 11px; cursor: pointer; }
+.v3-dash .cr-confirm-popover button.btn--accent { border-color: var(--v3-accent); background: var(--v3-accent); color: var(--v3-accent-ink); }
 .v3-dash .cr-shop-drawer { position: sticky; top: 92px; background: var(--v3-main-panel); border-left: 1px solid var(--v3-main-line); padding: 24px; min-height: 480px; }
 .v3-dash .cr-drawer-head { margin-bottom: 24px; }
 .v3-dash .cr-drawer-head h2 { margin: 0; font-size: 18px; }
@@ -1877,4 +1892,5 @@
   .v3-dash .cr-redemption-summary { align-items: flex-start; flex-direction: column; }
   .v3-dash .cr-shop-grid { grid-template-columns: 1fr; }
   .v3-dash .cr-shop-drawer { position: fixed; inset: 72px 0 0; z-index: 90; overflow: auto; }
+  .v3-dash .cr-usage-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
