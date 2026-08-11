@@ -138,10 +138,10 @@ function render() {
     const auth = state.viewerAuth || {};
     $("cr-viewer-auth-kick").checked = auth.kick !== false; $("cr-viewer-auth-discord").checked = auth.discord !== false; $("cr-viewer-auth-public").checked = auth.public !== false;
   }
-  if (current === "maps" || current === "rewards") {
+  if (current === "channel" || current === "maps" || current === "rewards") {
     for (const id of ["cr-reward-submit", "cr-reward-create-submit"]) { const el = $(id); if (el) { el.disabled = rewardAtLimit; el.title = rewardAtLimit ? "Upgrade your plan to add more reward mappings" : ""; } }
     const mappings = state.mappings || [];
-    if (!rewardCtrl) { rewardCtrl = new ListController({ root: $("cr-rewards"), tbody: "cr-reward-list", items: mappings, perPage: 10, searchFn: (m) => `${m.kick_reward_title} ${m.kick_reward_id} ${m.kick_reward_cost} ${m.credits}`, sortOptions: [{ key: "cost", label: "Kick cost", fn: (a, b) => (b.kick_reward_cost || 0) - (a.kick_reward_cost || 0) }, { key: "credits", label: "Credits", fn: (a, b) => (b.credits || 0) - (a.credits || 0) }, { key: "active", label: "Active first", fn: (a, b) => Number(b.active) - Number(a.active) }], emptyAllText: "No reward mappings yet.", emptyText: "No matching reward mappings.", renderItem: (m) => renderRewardRow(m), onRender: () => wireDynamicActions() }); }
+    if (!rewardCtrl) { rewardCtrl = new ListController({ root: $("cr-rewards"), tbody: "cr-reward-list", items: mappings, perPage: 10, searchFn: (m) => `${m.kick_reward_title} ${m.kick_reward_id} ${m.kick_reward_cost} ${m.credits}`, sortOptions: [{ key: "cost", label: "Kick cost", fn: (a, b) => (b.kick_reward_cost || 0) - (a.kick_reward_cost || 0) }, { key: "credits", label: "Credits", fn: (a, b) => (b.credits || 0) - (a.credits || 0) }, { key: "active", label: "Active first", fn: (a, b) => Number(b.active) - Number(a.active) }], emptyAllText: "No reward mappings yet.", emptyText: "No matching reward mappings.", renderItem: (m) => renderRewardRow(m), onRender: () => wireDynamicActions() }); mountListControls($("cr-rewards"), $("cr-mapping-toolbar"), $("cr-mapping-foot")); }
     else rewardCtrl.setItems(mappings);
     prefillEditFromQuery();
   }

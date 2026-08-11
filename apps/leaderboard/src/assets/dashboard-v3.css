@@ -1839,6 +1839,8 @@
 .v3-dash .cr-channel-facts { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; border-top: 1px solid var(--v3-main-line); margin-top: 24px; padding-top: 18px; }
 .v3-dash .cr-channel-facts div { display: grid; gap: 6px; }
 .v3-dash .cr-form-panel { padding: 0 20px 18px; }
+.v3-dash #cr-rewards .cr-form-panel { padding-top: 8px; }
+.v3-dash #cr-rewards .cr-form-panel details + details { margin-top: 6px; }
 .v3-dash .cr-redemption-summary { display: flex; align-items: center; justify-content: space-between; gap: 24px; padding: 18px 20px; margin-bottom: 20px; }
 .v3-dash .cr-counters { display: flex; align-items: center; gap: 24px; }
 .v3-dash .cr-counters > div { display: grid; grid-template-columns: auto auto; gap: 3px 8px; }
@@ -1906,6 +1908,11 @@
 .v3-dash #cr-redemption-toolbar .list-sort { width: 160px; max-width: 160px; }
 .v3-dash #cr-redemption-toolbar .status { margin-left: auto; }
 .v3-dash #cr-redemption-foot { display: flex; justify-content: flex-end; }
+.v3-dash #cr-mapping-toolbar { display: flex; align-items: center; min-height: 52px; padding: 12px 16px; border-bottom: 1px solid var(--v3-main-line); }
+.v3-dash #cr-mapping-toolbar .list-controls-row { display: flex; align-items: center; gap: 8px; width: 100%; }
+.v3-dash #cr-mapping-toolbar .list-search { width: 240px; max-width: 240px; }
+.v3-dash #cr-mapping-toolbar .list-sort { width: 160px; max-width: 160px; }
+.v3-dash #cr-mapping-foot { display: flex; justify-content: flex-end; }
 .v3-dash #cr-shop-controls { display: flex; align-items: center; gap: 8px; margin: 0 0 16px; }
 .v3-dash #cr-shop-controls .list-controls-row { display: flex; align-items: center; gap: 8px; }
 .v3-dash #cr-shop-controls .list-search { width: 240px; max-width: 240px; }
