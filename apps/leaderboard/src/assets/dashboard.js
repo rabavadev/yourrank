@@ -1,5 +1,5 @@
 // Dashboard entry point. Coordinates data loading and initial render across modules.
-import { $, esc, getCsrf, localTzLabel, logError, toLocalInput, copyToClipboard, flashButton, showToast } from "./dashboard/utils.js";
+import { $, esc, fromLocalInput, getCsrf, getViewerTimeZone, logError, timeZoneLabel, toLocalInput, copyToClipboard, flashButton, showToast } from "./dashboard/utils.js";
 import { markDirty, setState, state, subscribe } from "./dashboard/state.js";
 import { currentRoute, navTo, setupShell } from "./dashboard/shell.js";
 import { renderBoardSwitcher, renderSidebarBoardSwitcher, renderBoardsPage } from "./dashboard/boards.js";
@@ -64,7 +64,17 @@ async function init() {
   $("f_period").value = b.period || "Monthly";
   $("f_ends").value = toLocalInput(d.endsAt);
   const endsHint = $("f_ends_hint");
-  if (endsHint) { const tz = localTzLabel(); endsHint.textContent = `When the leaderboard resets, in your local time${tz ? ` (${tz})` : ""}. Powers the live timer.`; }
+  const endsInput = $("f_ends");
+  const renderEndsHint = () => {
+    if (!endsHint) return;
+    const zone = getViewerTimeZone();
+    const label = endsInput?.value && zone ? timeZoneLabel(fromLocalInput(endsInput.value, zone), zone) : "";
+    endsHint.textContent = label
+      ? `When the leaderboard resets, shown in ${label}. Powers the live timer.`
+      : `When the leaderboard resets, shown in ${zone ? "your timezone" : "your browser's timezone"}. Powers the live timer.`;
+  };
+  renderEndsHint();
+  endsInput?.addEventListener("change", renderEndsHint);
   $("f_blurb").value = d.partner?.blurb || "";
   renderPlayers(d.players || []);
   renderPlayerFields();

@@ -25,7 +25,9 @@ export function logError(context, err, extra = {}) {
       headers: { "content-type": "application/json", "x-csrf-token": getCsrf(), "x-request-id": reqId },
       body: JSON.stringify(payload)
     }).catch(() => {});
-  } catch {}
+  } catch {
+    // Logging is best-effort.
+  }
 }
 
 export function showToast(message, type = "error") {
@@ -121,34 +123,136 @@ export async function showPromptModal(title, body, opts = {}) {
   });
 }
 
-// Fill a <input type="datetime-local"> with the wall-clock time in the user's
-// OWN timezone. fromLocalInput() parses the field back as local time, so both
-// sides must agree — using UTC getters here (as before) shifted the countdown
-// by the user's offset on every save.
-export function toLocalInput(iso) {
-  if (!iso) return "";
-  const d = new Date(iso);
-  if (isNaN(d)) return "";
-  const p = (n) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`;
-}
-
-// The user's timezone abbreviation (e.g. "GMT+2", "EDT") for labelling the
-// countdown field so nobody has to think in UTC.
-export function localTzLabel() {
+export function getViewerTimeZone() {
   try {
-    const parts = new Intl.DateTimeFormat(undefined, { timeZoneName: "short" }).formatToParts(new Date());
-    const tz = parts.find((p) => p.type === "timeZoneName");
-    return tz ? tz.value : "";
+    return Intl.DateTimeFormat().resolvedOptions().timeZone || "";
   } catch {
     return "";
   }
 }
 
-export function fromLocalInput(v) {
-  if (!v) return "";
-  const d = new Date(v);
-  return isNaN(d) ? "" : d.toISOString();
+function dateFromInput(value) {
+  if (value instanceof Date) return value;
+  const date = new Date(value);
+  return isNaN(date) ? null : date;
+}
+
+function offsetMinutes(date, timeZone) {
+  if (!timeZone) return null;
+  try {
+    const parts = new Intl.DateTimeFormat("en-US", {
+      timeZone,
+      timeZoneName: "longOffset",
+      hour: "2-digit",
+      hourCycle: "h23",
+    }).formatToParts(date);
+    const name = parts.find((part) => part.type === "timeZoneName")?.value || "";
+    const match = name.match(/GMT([+-])(\d{1,2}):?(\d{2})?$/);
+    if (match) return (match[1] === "+" ? 1 : -1) * (Number(match[2]) * 60 + Number(match[3] || 0));
+    if (name === "GMT") return 0;
+  } catch {
+    // Fall back to parts arithmetic for engines without longOffset.
+  }
+  try {
+    const parts = new Intl.DateTimeFormat("en-US", {
+      timeZone,
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      hourCycle: "h23",
+    }).formatToParts(date);
+    const values = Object.fromEntries(parts.filter((part) => part.type !== "literal").map((part) => [part.type, Number(part.value)]));
+    const wall = Date.UTC(values.year, values.month - 1, values.day, values.hour, values.minute, values.second);
+    return Math.round((wall - date.getTime()) / 60000);
+  } catch {
+    return null;
+  }
+}
+
+export function timeZoneOffsetLabel(value, timeZone = getViewerTimeZone()) {
+  const date = dateFromInput(value);
+  const offset = date && offsetMinutes(date, timeZone);
+  if (offset === null || offset === undefined) return "";
+  const sign = offset >= 0 ? "+" : "-";
+  const absolute = Math.abs(offset);
+  return `UTC${sign}${String(Math.floor(absolute / 60)).padStart(2, "0")}:${String(absolute % 60).padStart(2, "0")}`;
+}
+
+export function timeZoneLabel(value, timeZone = getViewerTimeZone()) {
+  const offset = timeZoneOffsetLabel(value, timeZone);
+  return offset && timeZone ? `${timeZone} (${offset})` : offset;
+}
+
+function localParts(value, timeZone) {
+  const date = dateFromInput(value);
+  if (!date || !timeZone) return null;
+  try {
+    const parts = new Intl.DateTimeFormat("en-US", {
+      timeZone,
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      hourCycle: "h23",
+    }).formatToParts(date);
+    const values = Object.fromEntries(parts.filter((part) => part.type !== "literal").map((part) => [part.type, Number(part.value)]));
+    return values;
+  } catch {
+    return null;
+  }
+}
+
+function inputParts(value) {
+  const match = String(value || "").match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/);
+  if (!match) return null;
+  const parts = match.slice(1).map(Number);
+  const [year, month, day, hour, minute] = parts;
+  const check = new Date(Date.UTC(year, month - 1, day, hour, minute));
+  if (check.getUTCFullYear() !== year || check.getUTCMonth() !== month - 1 || check.getUTCDate() !== day || check.getUTCHours() !== hour || check.getUTCMinutes() !== minute) return null;
+  return { year, month, day, hour, minute };
+}
+
+function sameMinute(a, b) {
+  return a && b && a.year === b.year && a.month === b.month && a.day === b.day && a.hour === b.hour && a.minute === b.minute;
+}
+
+// Fill a <input type="datetime-local"> with the wall-clock time in `timeZone`.
+export function toLocalInput(iso, timeZone = getViewerTimeZone()) {
+  if (!iso) return "";
+  const d = new Date(iso);
+  const parts = localParts(d, timeZone);
+  if (!parts) return "";
+  const p = (n) => String(n).padStart(2, "0");
+  return `${parts.year}-${p(parts.month)}-${p(parts.day)}T${p(parts.hour)}:${p(parts.minute)}`;
+}
+
+export function fromLocalInput(value, timeZone = getViewerTimeZone()) {
+  const wanted = inputParts(value);
+  if (!wanted || !timeZone) return "";
+  const wall = Date.UTC(wanted.year, wanted.month - 1, wanted.day, wanted.hour, wanted.minute);
+  const offsets = new Set([
+    offsetMinutes(new Date(wall), timeZone),
+    offsetMinutes(new Date(wall - 86400000), timeZone),
+    offsetMinutes(new Date(wall + 86400000), timeZone),
+  ].filter((offset) => offset !== null));
+  const candidates = [...offsets]
+    .map((offset) => new Date(wall - offset * 60000))
+    .filter((date) => sameMinute(localParts(date, timeZone), wanted))
+    .sort((a, b) => a - b);
+  // For a fall-back overlap, choose the earlier of the two valid instants.
+  if (candidates.length) return candidates[0].toISOString();
+
+  // For a spring-forward gap, choose the first representable wall time after the gap.
+  const later = [...offsets]
+    .map((offset) => new Date(wall - offset * 60000))
+    .map((date) => ({ date, parts: localParts(date, timeZone) }))
+    .filter(({ parts }) => parts && Date.UTC(parts.year, parts.month - 1, parts.day, parts.hour, parts.minute) >= wall)
+    .sort((a, b) => Date.UTC(a.parts.year, a.parts.month - 1, a.parts.day, a.parts.hour, a.parts.minute) - Date.UTC(b.parts.year, b.parts.month - 1, b.parts.day, b.parts.hour, b.parts.minute));
+  return later[0]?.date.toISOString() || "";
 }
 
 export function slugify(s) {
