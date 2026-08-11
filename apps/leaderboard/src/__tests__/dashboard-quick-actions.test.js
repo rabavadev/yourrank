@@ -44,7 +44,7 @@ describe("dashboard overview quick actions", () => {
     expect(html).toContain('<section class="lb-page" data-page="board">');
     expect(html).toContain('class="design-grid"');
     expect(html).toContain('id="designPreview"');
-    expect(html).toContain('class="editor-steps"');
+    expect(html).toContain('class="editor-steps v3-tabs"');
     expect(html).toContain('data-egroup="setup"');
     expect(html).toContain('data-egroup="players"');
     expect(html).toContain('data-egroup="design"');
