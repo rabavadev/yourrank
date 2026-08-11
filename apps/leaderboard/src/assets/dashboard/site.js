@@ -268,11 +268,11 @@ export async function loadPlanUsage() {
     rows.push({ label: "Leaderboards", product: "Leaderboard", used: d.leaderboard.boards.used, limit: d.leaderboard.boards.limit });
     rows.push({ label: "Players", product: "Leaderboard", used: d.leaderboard.players.used, limit: d.leaderboard.players.limit });
     if (d.credits) {
-      rows.push({ label: "Credit rules", product: "Rewards & Shop", used: d.credits.rewardMappings.used, limit: d.credits.rewardMappings.limit });
-      rows.push({ label: "Items", product: "Rewards & Shop", used: d.credits.shopItems.used, limit: d.credits.shopItems.limit });
-      rows.push({ label: "Pending redemptions", product: "Rewards & Shop", used: d.credits.pendingRedemptions.used, limit: d.credits.pendingRedemptions.limit });
-      rows.push({ label: "Redemptions / 30 days", product: "Rewards & Shop", used: d.credits.redemptionsPer30Days.used, limit: d.credits.redemptionsPer30Days.limit });
-      rows.push({ label: "New viewers / 30 days", product: "Rewards & Shop", used: d.credits.newViewersPer30Days.used, limit: d.credits.newViewersPer30Days.limit });
+      rows.push({ label: "Credit rules", product: "Rewards", used: d.credits.rewardMappings.used, limit: d.credits.rewardMappings.limit });
+      rows.push({ label: "Items", product: "Rewards", used: d.credits.shopItems.used, limit: d.credits.shopItems.limit });
+      rows.push({ label: "Pending redemptions", product: "Rewards", used: d.credits.pendingRedemptions.used, limit: d.credits.pendingRedemptions.limit });
+      rows.push({ label: "Redemptions / 30 days", product: "Rewards", used: d.credits.redemptionsPer30Days.used, limit: d.credits.redemptionsPer30Days.limit });
+      rows.push({ label: "New viewers / 30 days", product: "Audience", used: d.credits.newViewersPer30Days.used, limit: d.credits.newViewersPer30Days.limit });
     }
     wrap.innerHTML = rows.map((r) => {
       const atLimit = r.limit > 0 && r.used >= r.limit;
@@ -1261,13 +1261,13 @@ export async function loadCreditsStatus() {
     if (statusEl) statusEl.textContent = connected
       ? `Connected to ${data.channel?.name || "your Kick channel"}. ${data.usage?.rewardMappings == null ? "—" : data.usage.rewardMappings} credit rules active.`
       : "Connect your Kick channel in the rewards dashboard to start giving viewers credits.";
-    if (linkEl) linkEl.textContent = connected ? "Manage Kick rewards →" : "Connect Kick rewards →";
+    if (linkEl) linkEl.textContent = connected ? "Manage Integrations →" : "Open Integrations →";
   } catch (err) {
     setState({ CREDITS_STATUS: "error" });
     logError("credits/status", err);
     if (statusEl) {
       statusEl.removeAttribute("aria-busy");
-      statusEl.textContent = "Could not load Kick rewards status.";
+      statusEl.textContent = "Could not load integrations status.";
     }
   }
 }

@@ -234,7 +234,7 @@ export function setupShell() {
   // Make the shared top product tabs part of the same SPA for same-Worker pages.
   document.querySelectorAll(".gm-tab, .gm-brand").forEach((link) => {
     const href = link.getAttribute("href") || "";
-    if (!href.startsWith("/dashboard") || href.startsWith("/dashboard/rewards")) return;
+    if (!href.startsWith("/dashboard") || href.startsWith("/dashboard/rewards") || href.startsWith("/dashboard/audience") || href.startsWith("/dashboard/settings/integrations")) return;
     link.addEventListener("click", (e) => {
       const url = new URL(href, location.origin);
       const route = parseDashboardPath(url.pathname);

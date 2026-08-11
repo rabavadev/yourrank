@@ -268,6 +268,21 @@
   margin: 0;
 }
 
+.v3-dash .lb-nav-group-label {
+  color: var(--v3-ink-mute);
+  font: 600 10px var(--v3-mono);
+  letter-spacing: .14em;
+  padding: 14px 12px 4px;
+}
+
+.v3-dash .lb-nav-child {
+  padding-left: 24px;
+}
+
+.v3-dash .lb-nav-group-label ~ .lb-nav-group-label {
+  margin-top: 6px;
+}
+
 .v3-dash .lb-side-foot {
   margin-top: auto;
   padding-top: 16px;

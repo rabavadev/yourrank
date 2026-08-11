@@ -14,7 +14,7 @@ same spacing. When code and reference disagree, the reference wins.
 | `05-overview-live.png` | Overview, KPIs + activity + top players + status bar | `/dashboard` |
 | `06-page-setup.png` | Page editor, Setup tab + live preview rail | `/dashboard/editor/design` |
 | `07-rewards-shop-items.png` | Shop items grid + create-item drawer | `/dashboard/rewards/shop` |
-| `08-rewards-channel.png` | Kick channel + credit rules | `/dashboard/rewards/channel` |
+| `08-rewards-channel.png` | Kick channel integration | `/dashboard/settings/integrations` |
 | `09-sections-and-games.png` | Site sections, page blocks, game settings | `/dashboard/games` |
 | `10-analytics.png` | Analytics KPIs, views chart, activity table | `/dashboard/analytics/activity` |
 | `11-settings-plan.png` | Settings → Plan & Usage | `/dashboard/settings` |
@@ -43,13 +43,13 @@ page.
 - Sidebar: fixed, 260px, black, full height under the topbar. Top: `ACTIVE BOARD`
   mono label card with the board name, a stepper chevron and a full-width
   `+ New board` outline button. Then the nav: Overview, Leaderboard, Page,
-  Rewards & Shop, Games, Analytics, History, Settings — 24px icons, active item
+  Rewards (Redemptions, Shop, Credit rules), Audience (Viewers, Credit activity), Games, Analytics, Past periods, Settings — 24px icons, active item
   has a 3px accent left bar, `#1A1A1A` fill and accent icon. Bottom: accent
   `View live page ↗` link and the `VIP PRO / Active` usage card with the API
   usage meter.
 - Content: 32px padding. Page title 34px/700 with a mono or prose sub-line under
   it. Cards are white, 1px hairline, 12px radius, no shadow at rest.
-- Tab bars (`Page`, `Rewards & Shop`, `Analytics`, `Settings`) are text tabs with
+- Tab bars (`Site`, `Rewards`, `Audience`, `Analytics`, `Settings`) are text tabs with
   a 2px underline on the active tab, sitting on a full-width hairline.
 - Tables: mono uppercase headers on `#FAFAFA`, 1px row hairlines, 41px rows,
   right-aligned numeric columns in mono, row hover `#FAFAFA`, selected row

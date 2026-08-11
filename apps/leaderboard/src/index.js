@@ -58,6 +58,12 @@ function fillYear(html) {
   return html.replace(/{{YEAR}}/g, String(year)).replace(/{{NEXT_YEAR}}/g, String(year + 1));
 }
 
+function redirectKeepingSearch(pathname, url) {
+  const target = new URL(pathname, url);
+  target.search = url.search;
+  return Response.redirect(target, 302);
+}
+
 function findProfilePlayer(data, rawName) {
   const name = decodeURIComponent(rawName).trim();
   const players = (data.players || []).slice().sort((a, b) => (Number(b.wagered) || 0) - (Number(a.wagered) || 0));
@@ -464,13 +470,48 @@ async function handleRequest(request, env, ctx, meta) {
         const html = addCookieConsent(await renderHtmlPage(verifyEmailPageHtml(verifyState)));
         return new Response(html, { status, headers: { ...SECURE_HTML, ...csrfHeader } });
       }
+      if (path === "/dashboard/settings/integrations") {
+        try {
+          const user = await currentUser(request, env);
+          if (!user) return Response.redirect(new URL("/login", url), 302);
+          const html = addCookieConsent(await renderHtmlPage(PAGES.rewardsChannel, {
+            activePath: url.pathname + url.search,
+            user,
+            reqId: reqId || "",
+            theme: "light"
+          }));
+          return new Response(html, { headers: { ...SECURE_HTML, ...csrfHeader, "cache-control": "no-store, no-cache, must-revalidate" } });
+        } catch (e) {
+          if (workerLog) workerLog.error("integrations_render_failed", { error: String(e?.message || e) }); else console.error("integrations render failed:", String(e?.message || e));
+          return new Response(error500Page(nonce), { status: 500, headers: HTML_N });
+        }
+      }
+      if (path === "/dashboard/audience/viewers" || path === "/dashboard/audience/activity") {
+        const pageKey = path.endsWith("/viewers") ? "rewardsViewers" : "rewardsHistory";
+        try {
+          const user = await currentUser(request, env);
+          if (!user) return Response.redirect(new URL("/login", url), 302);
+          const html = addCookieConsent(await renderHtmlPage(PAGES[pageKey], {
+            activePath: url.pathname + url.search,
+            user,
+            reqId: reqId || "",
+            theme: "light"
+          }));
+          return new Response(html, { headers: { ...SECURE_HTML, ...csrfHeader, "cache-control": "no-store, no-cache, must-revalidate" } });
+        } catch (e) {
+          if (workerLog) workerLog.error("audience_render_failed", { error: String(e?.message || e) }); else console.error("audience render failed:", String(e?.message || e));
+          return new Response(error500Page(nonce), { status: 500, headers: HTML_N });
+        }
+      }
       // Every dashboard section is a real URL: `/dashboard`, `/dashboard/editor`,
       // `/dashboard/editor/players`, … The section is rendered client-side, so
       // they all serve the same document; the shell reads the path on boot.
       const dashboardRoute = parseDashboardPath(path);
       if (dashboardRoute) {
         if (url.searchParams.get("nav") === "kickrewards") {
-          return Response.redirect(new URL("/dashboard/rewards/channel", url), 302);
+          const target = new URL("/dashboard/settings/integrations", url);
+          for (const [k, v] of url.searchParams) if (k !== "nav") target.searchParams.set(k, v);
+          return Response.redirect(target, 302);
         }
         // `?nav=` was the old address of a section. Send it to the real one so
         // the URL a user copies is the URL they can share.
@@ -552,16 +593,20 @@ async function handleRequest(request, env, ctx, meta) {
         return Response.redirect(new URL("/account/profile", url), 302);
       }
       if (path === "/dashboard/credits") {
-        return Response.redirect(new URL("/dashboard/rewards/channel", url), 302);
+        return redirectKeepingSearch("/dashboard/settings/integrations", url);
       }
       if (path === "/dashboard/rewards") {
-        return Response.redirect(new URL("/dashboard/rewards/channel", url), 302);
+        return redirectKeepingSearch("/dashboard/rewards/redemptions", url);
       }
       if (path.startsWith("/dashboard/rewards/")) {
         const tab = path.slice("/dashboard/rewards/".length).split("?")[0];
-        const map = { channel: "rewardsChannel", rewards: "rewardsRewards", maps: "rewardsMaps", shop: "rewardsShop", viewers: "rewardsViewers", redemptions: "rewardsRedemptions", history: "rewardsHistory" };
+        if (tab === "channel") return redirectKeepingSearch("/dashboard/settings/integrations", url);
+        if (tab === "maps" || tab === "rewards") return redirectKeepingSearch("/dashboard/rewards/rules", url);
+        if (tab === "viewers") return redirectKeepingSearch("/dashboard/audience/viewers", url);
+        if (tab === "history") return redirectKeepingSearch("/dashboard/audience/activity", url);
+        const map = { rules: "rewardsMaps", shop: "rewardsShop", redemptions: "rewardsRedemptions" };
         const pageKey = map[tab];
-        if (!pageKey) return Response.redirect(new URL("/dashboard/rewards/channel", url), 302);
+        if (!pageKey) return Response.redirect(new URL("/dashboard/rewards/redemptions", url), 302);
         try {
           const user = await currentUser(request, env);
           if (!user) return Response.redirect(new URL("/login", url), 302);
