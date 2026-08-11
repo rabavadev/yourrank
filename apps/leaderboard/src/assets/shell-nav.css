@@ -16,9 +16,9 @@
   --gm-accent:#2200ff; --gm-accent-ink:#ffffff;
 }
 .gm-shell-nav--dark{
-  --gm-bg:#0f0f0f; --gm-panel:#1c1c1c; --gm-line:#2a2a2a; --gm-line-2:#323232;
-  --gm-ink:#ededf0; --gm-ink-soft:#a7a6a6; --gm-ink-mute:#82828a;
-  --gm-accent:#2200ff; --gm-accent-ink:#ffffff;
+  --gm-bg:var(--yr-dark-bg); --gm-panel:var(--yr-dark-panel); --gm-line:var(--yr-dark-line); --gm-line-2:var(--yr-dark-line-2);
+  --gm-ink:var(--yr-dark-ink); --gm-ink-soft:var(--yr-dark-ink-soft); --gm-ink-mute:var(--yr-ink-mute, var(--ink-mute, #82828a));
+  --gm-accent:var(--yr-accent, var(--accent, #2200ff)); --gm-accent-ink:var(--yr-panel, var(--panel, #ffffff));
 }
 .gm-shell-nav{position:sticky;top:0;z-index:50;background:var(--gm-bg);
   border-bottom:1px solid var(--gm-line);}

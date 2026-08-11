@@ -227,7 +227,7 @@
   text-align: center;
   justify-content: center;
   background: var(--yr-ink);
-  color: #fff;
+  color: var(--yr-panel, var(--panel, #fff));
   border: 0;
   border-radius: var(--yr-radius-sm);
   padding: 10px 14px;
@@ -291,23 +291,23 @@
 
 .v2-dash .lb-status--live,
 .v2-dash .lb-status--published {
-  background: rgba(30, 142, 62, .08);
+  background: var(--yr-success-soft-alt);
   color: var(--yr-green);
-  border-color: rgba(30, 142, 62, .2);
+  border-color: var(--yr-success-border-alt);
 }
 
 .v2-dash .lb-status--draft,
 .v2-dash .lb-status--unpublished {
-  background: rgba(217, 48, 37, .08);
+  background: var(--yr-danger-soft-strong);
   color: var(--yr-red);
-  border-color: rgba(217, 48, 37, .2);
+  border-color: var(--yr-danger-border-strong);
 }
 
 /* Published, but not reachable yet because the owner's email is unconfirmed. */
 .v2-dash .lb-status--pending {
-  background: rgba(180, 83, 9, .08);
-  color: #92400e;
-  border-color: rgba(180, 83, 9, .2);
+  background: var(--yr-warning-soft);
+  color: var(--yr-warning-ink);
+  border-color: var(--yr-warning-border);
 }
 
 .v2-dash .lb-topbar-hud {
@@ -497,8 +497,8 @@
 }
 
 .v2-dash .stat-bar-seg.views { background: var(--yr-accent); }
-.v2-dash .stat-bar-seg.copies { background: #8b5cf6; }
-.v2-dash .stat-bar-seg.clicks { background: #10b981; }
+.v2-dash .stat-bar-seg.copies { background: var(--yr-purple); }
+.v2-dash .stat-bar-seg.clicks { background: var(--yr-success); }
 
 .v2-dash .stat-bar.is-empty {
   background: var(--yr-line);
@@ -530,8 +530,8 @@
 }
 
 .v2-dash .stat-legend-item.views::before { background: var(--yr-accent); }
-.v2-dash .stat-legend-item.copies::before { background: #8b5cf6; }
-.v2-dash .stat-legend-item.clicks::before { background: #10b981; }
+.v2-dash .stat-legend-item.copies::before { background: var(--yr-purple); }
+.v2-dash .stat-legend-item.clicks::before { background: var(--yr-success); }
 
 .v2-dash .mini-stats {
   display: grid;
@@ -596,7 +596,7 @@
   background: var(--yr-ink-mute);
 }
 .v2-dash .status-dot--ok { background: var(--yr-green); }
-.v2-dash .status-dot--pending { background: #f59e0b; }
+.v2-dash .status-dot--pending { background: var(--yr-warn, var(--warn, #f59e0b)); }
 .v2-dash .status-dot--off { background: var(--yr-red); }
 .v2-dash .hint--success { color: var(--yr-green); }
 .v2-dash .hint--error { color: var(--yr-red); }
@@ -682,7 +682,7 @@
 .v2-dash .ov-step-num.is-done {
   background: var(--yr-green);
   border-color: var(--yr-green);
-  color: #fff;
+  color: var(--yr-panel, var(--panel, #fff));
 }
 
 .v2-dash .ov-step-body {
@@ -871,7 +871,7 @@
 
 .v2-dash .editor-step:hover {
   color: var(--yr-ink);
-  background: rgba(0,0,0,.03);
+  background: var(--yr-shadow-subtle);
 }
 
 .v2-dash .editor-step.is-active {
@@ -1024,8 +1024,8 @@
 
 .v2-dash .lb-widget--danger,
 .v2-dash .card--danger {
-  background: rgba(217, 48, 37, .04);
-  border-color: rgba(217, 48, 37, .2);
+  background: var(--yr-danger-tint-strong);
+  border-color: var(--yr-danger-border-strong);
 }
 
 .v2-dash .lb-widget--danger h2,
@@ -1110,10 +1110,10 @@
   color: var(--yr-ink);
   margin: 4px 0;
 }
-.v2-dash .cr-usage-number.cr-usage-near { color: #ffcc00; }
-.v2-dash .cr-usage-number.cr-usage-over { color: #ff6b6b; }
-.v2-dash .cr-usage-text.cr-usage-near { color: #ffcc00; }
-.v2-dash .cr-usage-text.cr-usage-over { color: #ff6b6b; }
+.v2-dash .cr-usage-number.cr-usage-near { color: var(--yr-prize); }
+.v2-dash .cr-usage-number.cr-usage-over { color: var(--yr-danger-ink-alt); }
+.v2-dash .cr-usage-text.cr-usage-near { color: var(--yr-prize); }
+.v2-dash .cr-usage-text.cr-usage-over { color: var(--yr-danger-ink-alt); }
 .v2-dash .cr-usage-upgrade {
   font-size: 12px;
   color: var(--yr-accent);
@@ -1367,7 +1367,7 @@
   aspect-ratio: 1;
   border-radius: 3px;
   min-width: 12px;
-  border: 1px solid rgba(0,0,0,.06);
+  border: 1px solid var(--yr-border-alpha);
 }
 
 .v2-dash .ref-table {
@@ -1480,15 +1480,15 @@
 }
 
 .v2-dash .pill--bad {
-  background: rgba(217, 48, 37, .08);
+  background: var(--yr-danger-soft-strong);
   color: var(--yr-red);
-  border-color: rgba(217, 48, 37, .2);
+  border-color: var(--yr-danger-border-strong);
 }
 
 .v2-dash .pill--good {
-  background: rgba(30, 142, 62, .08);
+  background: var(--yr-success-soft-alt);
   color: var(--yr-green);
-  border-color: rgba(30, 142, 62, .2);
+  border-color: var(--yr-success-border-alt);
 }
 
 .v2-dash .overlay-url,
@@ -1959,9 +1959,9 @@
 }
 
 @keyframes yr-pulse {
-  0% { box-shadow: 0 0 0 0 rgba(34, 0, 255, .35); }
-  70% { box-shadow: 0 0 0 8px rgba(34, 0, 255, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(34, 0, 255, 0); }
+  0% { box-shadow: 0 0 0 0 var(--yr-accent-border); }
+  70% { box-shadow: 0 0 0 8px var(--yr-accent-transparent); }
+  100% { box-shadow: 0 0 0 0 var(--yr-accent-transparent); }
 }
 
 .metric-glossary {
