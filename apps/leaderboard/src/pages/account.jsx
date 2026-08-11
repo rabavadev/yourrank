@@ -26,11 +26,11 @@ function AccountPage({ tab, user }) {
   </DashboardShell>;
 }
 
-export const AccountProfilePage = () => <AccountPage tab="profile" />;
-export const AccountPlanPage = () => <AccountPage tab="plan" />;
-export const AccountPostbacksPage = () => <AccountPage tab="postbacks" />;
-export const AccountConnectedPage = () => <AccountPage tab="connected" />;
-export const AccountDataPage = () => <AccountPage tab="data" />;
+export const AccountProfilePage = ({ user } = {}) => <AccountPage tab="profile" user={user} />;
+export const AccountPlanPage = ({ user } = {}) => <AccountPage tab="plan" user={user} />;
+export const AccountPostbacksPage = ({ user } = {}) => <AccountPage tab="postbacks" user={user} />;
+export const AccountConnectedPage = ({ user } = {}) => <AccountPage tab="connected" user={user} />;
+export const AccountDataPage = ({ user } = {}) => <AccountPage tab="data" user={user} />;
 
 const accountConfigBase = {
   styles: ["/assets/app.css", "/assets/shell-nav.css", "/assets/dashboard-v3.css", "/assets/ui.css"],

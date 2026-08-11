@@ -25,13 +25,13 @@ function RewardsPage({ tab, activeNav = tab, boardContext = "selector", footer =
   </DashboardShell>;
 }
 
-export function RewardsChannelPage() { return <RewardsPage tab="channel" activeNav="settings" boardContext="selector" footer="rewards" />; }
-export function RewardsRewardsPage() { return <RewardsPage tab="rewards" activeNav="maps" />; }
-export function RewardsMapsPage() { return <RewardsPage tab="maps" activeNav="maps" />; }
-export function RewardsShopPage() { return <RewardsPage tab="shop" activeNav="shop" />; }
-export function RewardsViewersPage() { return <RewardsPage tab="viewers" activeNav="viewers" />; }
-export function RewardsRedemptionsPage() { return <RewardsPage tab="redemptions" activeNav="redemptions" />; }
-export function RewardsHistoryPage() { return <RewardsPage tab="history" activeNav="history" />; }
+export function RewardsChannelPage({ user } = {}) { return <RewardsPage tab="channel" activeNav="settings" boardContext="selector" footer="rewards" user={user} />; }
+export function RewardsRewardsPage({ user } = {}) { return <RewardsPage tab="rewards" activeNav="maps" user={user} />; }
+export function RewardsMapsPage({ user } = {}) { return <RewardsPage tab="maps" activeNav="maps" user={user} />; }
+export function RewardsShopPage({ user } = {}) { return <RewardsPage tab="shop" activeNav="shop" user={user} />; }
+export function RewardsViewersPage({ user } = {}) { return <RewardsPage tab="viewers" activeNav="viewers" user={user} />; }
+export function RewardsRedemptionsPage({ user } = {}) { return <RewardsPage tab="redemptions" activeNav="redemptions" user={user} />; }
+export function RewardsHistoryPage({ user } = {}) { return <RewardsPage tab="history" activeNav="history" user={user} />; }
 
 const rewardsConfigBase = { styles: ["/assets/app.css", "/assets/shell-nav.css", "/assets/dashboard-v3.css", "/assets/ui.css"], scripts: ['<script src="/assets/credits.js?v=4" type="module"></script>', '<script src="/assets/shell-nav.js?v=1" defer></script>'], nav: false, footer: false, wide: true };
 export const rewardsChannelConfig = { ...rewardsConfigBase, title: "Integrations · Settings · YourRank", canonical: "https://yourrank.site/dashboard/settings/integrations" };

@@ -172,7 +172,7 @@
   box-shadow: none;
 }
 .v3-dash .lb-side.is-open { z-index: 110; }
-.lb-backdrop { z-index: 80; }
+body:has(.v3-dash) > .lb-backdrop { z-index: 80; }
 
 .v3-dash .lb-side-head {
   border-bottom: 1px solid var(--v3-chrome-line);
