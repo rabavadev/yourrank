@@ -118,11 +118,11 @@ function render() {
   const rewardAtLimit = usage.rewardMappings != null && limits.rewardMappings != null && usage.rewardMappings >= limits.rewardMappings;
   const shopAtLimit = usage.shopItems != null && limits.shopItems != null && usage.shopItems >= limits.shopItems;
   const rewardUsage = $("cr-reward-usage");
-  if (rewardUsage) rewardUsage.textContent = `${metric(usage.rewardMappings)} / ${metric(limits.rewardMappings)} MAPPINGS DEFINED`;
+  if (rewardUsage) rewardUsage.textContent = `${metric(usage.rewardMappings)} / ${metric(limits.rewardMappings)} credit rules`;
   const addMapping = $("cr-add-mapping");
   if (addMapping) {
     addMapping.classList.toggle("is-disabled", rewardAtLimit);
-    addMapping.title = rewardAtLimit ? "Upgrade your plan to add more reward mappings" : "";
+    addMapping.title = rewardAtLimit ? "Upgrade your plan to add more credit rules" : "";
     addMapping.setAttribute("aria-disabled", rewardAtLimit ? "true" : "false");
     addMapping.onclick = rewardAtLimit ? (e) => e.preventDefault() : (e) => {
       e.preventDefault();
@@ -137,21 +137,21 @@ function render() {
     $("cr-channel-name").textContent = state.channel?.name || ""; $("cr-channel-id-input").value = state.channel?.externalId || ""; $("cr-channel-name-input").value = state.channel?.name || "";
     const expiry = state.channel?.tokenExpiresAt;
     $("cr-channel-token").textContent = expiry ? (new Date(expiry) > new Date() ? `Token valid · expires in ${Math.max(1, Math.ceil((new Date(expiry) - Date.now()) / 86400000))} days` : "Token expired · reconnect") : "No Kick token · connect Kick";
-    $("cr-usage").innerHTML = [usageCard(metric(usage.rewardMappings), metric(limits.rewardMappings), "reward mappings"), usageCard(metric(usage.shopItems), metric(limits.shopItems), "shop items"), usageCard(metric(usage.pendingRedemptions), metric(limits.pendingRedemptions), "pending redemptions"), usageCard(metric(usage.redemptionsPer30Days), metric(limits.redemptionsPer30Days), "redemptions / 30 days"), usageCard(metric(usage.newViewersPer30Days), metric(limits.newViewersPer30Days), "new viewers / 30 days")].join("");
+    $("cr-usage").innerHTML = [usageCard(metric(usage.rewardMappings), metric(limits.rewardMappings), "credit rules"), usageCard(metric(usage.shopItems), metric(limits.shopItems), "items"), usageCard(metric(usage.pendingRedemptions), metric(limits.pendingRedemptions), "pending redemptions"), usageCard(metric(usage.redemptionsPer30Days), metric(limits.redemptionsPer30Days), "redemptions / 30 days"), usageCard(metric(usage.newViewersPer30Days), metric(limits.newViewersPer30Days), "new viewers / 30 days")].join("");
     const auth = state.viewerAuth || {};
     $("cr-viewer-auth-kick").checked = auth.kick !== false; $("cr-viewer-auth-discord").checked = auth.discord !== false; $("cr-viewer-auth-public").checked = auth.public !== false;
   }
   if (current === "channel" || current === "maps" || current === "rewards") {
-    for (const id of ["cr-reward-submit", "cr-reward-create-submit"]) { const el = $(id); if (el) { el.disabled = rewardAtLimit; el.title = rewardAtLimit ? "Upgrade your plan to add more reward mappings" : ""; } }
+    for (const id of ["cr-reward-submit", "cr-reward-create-submit"]) { const el = $(id); if (el) { el.disabled = rewardAtLimit; el.title = rewardAtLimit ? "Upgrade your plan to add more credit rules" : ""; } }
     const mappings = state.mappings || [];
-    if (!rewardCtrl) { rewardCtrl = new ListController({ root: $("cr-rewards"), tbody: "cr-reward-list", emptyEl: $("cr-reward-empty"), emptySpec: { icon: "link", title: "No reward mappings yet", body: "Map Kick rewards to credits for your viewers.", actions: [{ label: "Add mapping", href: "/dashboard/rewards/maps#cr-reward-form", accent: true }] }, items: mappings, perPage: 10, searchFn: (m) => `${m.kick_reward_title} ${m.kick_reward_id} ${m.kick_reward_cost} ${m.credits}`, sortOptions: [{ key: "cost", label: "Kick cost", fn: (a, b) => (b.kick_reward_cost || 0) - (a.kick_reward_cost || 0) }, { key: "credits", label: "Credits", fn: (a, b) => (b.credits || 0) - (a.credits || 0) }, { key: "active", label: "Active first", fn: (a, b) => Number(b.active) - Number(a.active) }], emptyAllText: "No reward mappings yet.", emptyText: "No matching reward mappings.", renderItem: (m) => renderRewardRow(m), onRender: () => wireDynamicActions() }); mountListControls($("cr-rewards"), $("cr-mapping-toolbar"), $("cr-mapping-foot")); }
+    if (!rewardCtrl) { rewardCtrl = new ListController({ root: $("cr-rewards"), tbody: "cr-reward-list", emptyEl: $("cr-reward-empty"), emptySpec: { icon: "link", title: "No credit rules yet", body: "Set how Kick rewards award credits to your viewers.", actions: [{ label: "Create credit rule", href: "/dashboard/rewards/maps#cr-reward-form", accent: true }] }, items: mappings, perPage: 10, searchFn: (m) => `${m.kick_reward_title} ${m.kick_reward_id} ${m.kick_reward_cost} ${m.credits}`, sortOptions: [{ key: "cost", label: "Kick cost", fn: (a, b) => (b.kick_reward_cost || 0) - (a.kick_reward_cost || 0) }, { key: "credits", label: "Credits", fn: (a, b) => (b.credits || 0) - (a.credits || 0) }, { key: "active", label: "Active first", fn: (a, b) => Number(b.active) - Number(a.active) }], emptyAllText: "No credit rules yet.", emptyText: "No matching credit rules.", renderItem: (m) => renderRewardRow(m), onRender: () => wireDynamicActions() }); mountListControls($("cr-rewards"), $("cr-mapping-toolbar"), $("cr-mapping-foot")); }
     else rewardCtrl.setItems(mappings);
     prefillEditFromQuery();
   }
   if (current === "shop") {
-    $("cr-shop-usage").textContent = `${metric(usage.shopItems)} / ${metric(limits.shopItems)} ACTIVE ITEMS`;
-    const submit = $("cr-shop-submit"); if (submit) { submit.disabled = shopAtLimit; submit.title = shopAtLimit ? "Upgrade your plan to add more shop items" : ""; }
-    const create = $("cr-shop-new"); if (create) { create.disabled = shopAtLimit; create.title = shopAtLimit ? "Upgrade your plan to add more shop items" : ""; }
+    $("cr-shop-usage").textContent = `${metric(usage.shopItems)} / ${metric(limits.shopItems)} active items`;
+    const submit = $("cr-shop-submit"); if (submit) { submit.disabled = shopAtLimit; submit.title = shopAtLimit ? "Upgrade your plan to add more items" : ""; }
+    const create = $("cr-shop-new"); if (create) { create.disabled = shopAtLimit; create.title = shopAtLimit ? "Upgrade your plan to add more items" : ""; }
     shopItemsView = state.shopItems || []; renderShopCards(shopItemsView);
   }
   if (current === "viewers") {
@@ -170,7 +170,7 @@ function render() {
     else redemptionCtrl.setItems(redemptions);
   }
   if (current === "history" && !historyCtrl) {
-    renderEmpty($("cr-history-empty"), { icon: "users", title: "Search for a viewer", body: "Enter a Kick username to view credit history across your boards." });
+    renderEmpty($("cr-history-empty"), { icon: "users", title: "Search for a viewer", body: "Enter a Kick username to view credit activity across your boards." });
   }
 }
 function renderOnboarding() {
@@ -218,7 +218,7 @@ function renderAnalytics() {
   $("cr-top-items-list").innerHTML = items.map((i) => `<tr><td>${esc(i.name)}</td><td class="num">${i.redemptions}</td><td class="num">${i.credits_spent}</td></tr>`).join("");
   const topEmpty = $("cr-top-items-empty");
   if (items.length) topEmpty.hidden = true;
-  else renderEmpty(topEmpty, { icon: "archive", title: "No items redeemed yet", body: "Redeemed shop items will appear here." });
+  else renderEmpty(topEmpty, { icon: "archive", title: "No items redeemed yet", body: "Redeemed items will appear here." });
   renderCreditsByDay(a.creditsByDay || []);
 }
 function renderCreditsByDay(rows) {
@@ -226,7 +226,7 @@ function renderCreditsByDay(rows) {
   container.innerHTML = ""; container.removeAttribute("role"); container.removeAttribute("aria-label"); container.removeAttribute("aria-busy");
   const empty = $("cr-credits-by-day-empty");
   if (!rows.length) {
-    renderEmpty(empty, { icon: "chart", title: "No credit activity for this period", body: "Try a longer range or create reward mappings and shop items." });
+    renderEmpty(empty, { icon: "chart", title: "No credit activity for this period", body: "Try a longer range or create credit rules and items." });
     return;
   }
   empty.hidden = true;
@@ -246,18 +246,18 @@ function prefillEditFromQuery() {
   const m = (state.mappings || []).find((x) => String(x.id) === String(id));
   if (!m) return;
   $("cr-reward-id").value = m.id; $("cr-reward-kick-id").value = m.kick_reward_id; $("cr-reward-title").value = m.kick_reward_title; $("cr-reward-cost").value = m.kick_reward_cost; $("cr-reward-credits").value = m.credits;
-  setStatus("cr-reward-status", "Editing mapping.");
+  setStatus("cr-reward-status", "Editing credit rule.");
 }
 function editReward(id) { const q = new URLSearchParams(); q.set("edit", id); if (siteQuery()) q.set("siteId", siteQuery()); location.href = `/dashboard/rewards/maps?${q}`; }
 async function delReward(id, trigger) {
-  const confirmed = await confirmPopover(trigger, "Disable mapping", "This disables the mapping; history is retained.");
+  const confirmed = await confirmPopover(trigger, "Disable credit rule", "This disables the credit rule; credit activity is retained.");
   if (!confirmed) return;
   setLoading(trigger, true, "Deleting…");
   try { await api("DELETE", sitePath(`/api/credits/rewards/${encodeURIComponent(id)}`)); await load(); }
   catch (err) { setStatus("cr-reward-status", err.message, true); } finally { setLoading(trigger, false); }
 }
 async function delShop(id, trigger) {
-  if (!await showConfirmModal("Disable shop item", "Disable this shop item? It will no longer be redeemable, but past redemptions stay in the ledger.", "Disable", true)) return;
+  if (!await showConfirmModal("Disable item", "Disable this item? It will no longer be redeemable, but past redemptions stay in credit activity.", "Disable", true)) return;
   setLoading(trigger, true, "Deleting…");
   try { await api("DELETE", sitePath(`/api/credits/shop/${encodeURIComponent(id)}`)); await load(); }
   catch (err) { setStatus("cr-shop-status", err.message, true); } finally { setLoading(trigger, false); }
@@ -284,7 +284,7 @@ function wireDynamicActions() {
 function ensureShopControls() {
   const root = $("cr-shop-list"); if (!root || $("cr-shop-controls")) return;
   const controls = document.createElement("div"); controls.id = "cr-shop-controls"; controls.className = "list-controls";
-  controls.innerHTML = '<div class="list-controls-row"><input class="list-search" type="search" placeholder="Search shop items…" aria-label="Search shop items" /><select class="list-sort" aria-label="Sort shop items"><option value="cost">Cost</option><option value="stock">Stock</option><option value="active">Active first</option></select></div><div class="list-pagination"><button class="btn btn--sm" type="button" data-shop-prev>Previous</button><span data-shop-page></span><button class="btn btn--sm" type="button" data-shop-next>Next</button></div>';
+  controls.innerHTML = '<div class="list-controls-row"><input class="list-search" type="search" placeholder="Search items…" aria-label="Search items" /><select class="list-sort" aria-label="Sort items"><option value="cost">Cost</option><option value="stock">Stock</option><option value="active">Active first</option></select></div><div class="list-pagination"><button class="btn btn--sm" type="button" data-shop-prev>Previous</button><span data-shop-page></span><button class="btn btn--sm" type="button" data-shop-next>Next</button></div>';
   root.parentElement.insertBefore(controls, root);
   controls.querySelector(".list-search").addEventListener("input", (e) => { shopSearch = e.target.value.toLowerCase(); renderShopCards(shopItemsView); });
   controls.querySelector(".list-sort").addEventListener("change", (e) => { shopSort = e.target.value; renderShopCards(shopItemsView); });
@@ -303,7 +303,7 @@ let drawerTrigger;
 function openShop(item, trigger) {
   drawerTrigger = trigger || $("cr-shop-new");
   $("cr-shop")?.classList.add("has-drawer");
-  $("cr-shop-drawer").hidden = false; $("cr-shop-drawer-title").textContent = item ? "Edit Shop Item" : "Create New Shop Item"; $("cr-shop-item-id").value = item?.id || ""; $("cr-shop-name").value = item?.name || ""; $("cr-shop-desc").value = item?.description || ""; $("cr-shop-cost").value = item?.cost || 100; $("cr-shop-stock").value = item?.stock === null ? "" : (item?.stock ?? ""); $("cr-shop-active").checked = item?.active !== false; $("cr-shop-name").focus();
+  $("cr-shop-drawer").hidden = false; $("cr-shop-drawer-title").textContent = item ? "Edit item" : "Create item"; $("cr-shop-item-id").value = item?.id || ""; $("cr-shop-name").value = item?.name || ""; $("cr-shop-desc").value = item?.description || ""; $("cr-shop-cost").value = item?.cost || 100; $("cr-shop-stock").value = item?.stock === null ? "" : (item?.stock ?? ""); $("cr-shop-active").checked = item?.active !== false; $("cr-shop-name").focus();
 }
 function closeShop() { $("cr-shop-drawer").hidden = true; $("cr-shop")?.classList.remove("has-drawer"); drawerTrigger?.focus(); }
 let activePopover;
@@ -344,7 +344,7 @@ async function toggleReward(id, trigger) {
   setLoading(trigger, true, "Saving…");
   try {
     if (trigger.checked) await api("POST", sitePath("/api/credits/rewards"), { id: m.id, kickRewardId: m.kick_reward_id, kickRewardTitle: m.kick_reward_title, kickRewardCost: m.kick_reward_cost, credits: m.credits });
-    else if (await confirmPopover(trigger, "Disable mapping", "This disables the mapping; history is retained.")) await api("DELETE", sitePath(`/api/credits/rewards/${m.id}`));
+    else if (await confirmPopover(trigger, "Disable credit rule", "This disables the credit rule; credit activity is retained.")) await api("DELETE", sitePath(`/api/credits/rewards/${m.id}`));
     else { trigger.checked = true; return; }
     await load();
   } catch (err) { trigger.checked = m.active; setStatus("cr-reward-status", err.message, true); } finally { setLoading(trigger, false); }
@@ -387,12 +387,12 @@ function wireActions() {
   });
   $("cr-reward-form")?.addEventListener("submit", async (e) => {
     e.preventDefault(); const btn = e.submitter || $("cr-reward-submit"); setLoading(btn, true, "Saving…");
-    try { await api("POST", sitePath("/api/credits/rewards"), { id: $("cr-reward-id").value || undefined, kickRewardId: $("cr-reward-kick-id").value.trim(), kickRewardTitle: $("cr-reward-title").value.trim(), kickRewardCost: Number($("cr-reward-cost").value), credits: Number($("cr-reward-credits").value) }); setStatus("cr-reward-status", "Mapping saved."); $("cr-reward-form").reset(); $("cr-reward-id").value = ""; await load(); }
+    try { await api("POST", sitePath("/api/credits/rewards"), { id: $("cr-reward-id").value || undefined, kickRewardId: $("cr-reward-kick-id").value.trim(), kickRewardTitle: $("cr-reward-title").value.trim(), kickRewardCost: Number($("cr-reward-cost").value), credits: Number($("cr-reward-credits").value) }); setStatus("cr-reward-status", "Credit rule saved."); $("cr-reward-form").reset(); $("cr-reward-id").value = ""; await load(); }
     catch (err) { setStatus("cr-reward-status", err.message, true); } finally { setLoading(btn, false); }
   });
   $("cr-reward-create-form")?.addEventListener("submit", async (e) => {
     e.preventDefault(); const btn = e.submitter || $("cr-reward-create-submit"); setLoading(btn, true, "Creating…");
-    try { await api("POST", sitePath("/api/credits/rewards/create"), { title: $("cr-reward-create-title").value.trim(), cost: Number($("cr-reward-create-cost").value), credits: Number($("cr-reward-create-credits").value), description: $("cr-reward-create-desc").value.trim(), backgroundColor: $("cr-reward-create-color").value }); setStatus("cr-reward-create-status", "Reward created in Kick and mapped."); $("cr-reward-create-form").reset(); $("cr-reward-create-color").value = "#00e701"; await load(); }
+    try { await api("POST", sitePath("/api/credits/rewards/create"), { title: $("cr-reward-create-title").value.trim(), cost: Number($("cr-reward-create-cost").value), credits: Number($("cr-reward-create-credits").value), description: $("cr-reward-create-desc").value.trim(), backgroundColor: $("cr-reward-create-color").value }); setStatus("cr-reward-create-status", "Reward created in Kick and set as a credit rule."); $("cr-reward-create-form").reset(); $("cr-reward-create-color").value = "#00e701"; await load(); }
     catch (err) { setStatus("cr-reward-create-status", err.message, true); } finally { setLoading(btn, false); }
   });
   $("cr-shop-new")?.addEventListener("click", () => openShop()); document.querySelector("[data-cr-shop-create]")?.addEventListener("click", () => openShop()); $("cr-shop-close")?.addEventListener("click", closeShop); $("cr-shop-cancel")?.addEventListener("click", closeShop);
@@ -421,7 +421,7 @@ async function searchHistory(e) {
 }
 function renderHistory(data) {
   const boards = data.boards || [];
-  if (!historyCtrl) historyCtrl = new ListController({ root: $("cr-history"), tbody: "cr-history-list", emptyEl: $("cr-history-empty"), emptySpec: { icon: "users", title: "No history found", body: "No credit history was found for this viewer." }, items: boards, perPage: 10, searchFn: (b) => `${b.name || ""} ${b.slug || ""} ${b.balance} ${b.totalEarned} ${b.totalSpent}`, sortOptions: [{ key: "balance", label: "Balance", fn: (a, b) => (b.balance || 0) - (a.balance || 0) }, { key: "earned", label: "Earned", fn: (a, b) => (b.totalEarned || 0) - (a.totalEarned || 0) }, { key: "pending", label: "Pending", fn: (a, b) => (b.redemptionsPending || 0) - (a.redemptionsPending || 0) }], emptyAllText: "No boards found for this viewer.", emptyText: "No matching boards.", renderItem: (b) => `<td><b>${esc(b.name || b.slug)}</b><br><span class="hint">${esc(b.slug)}</span></td><td class="num">${b.balance}</td><td class="num">${b.totalEarned}</td><td class="num">${b.totalSpent}</td><td class="num">${b.redemptionsPending}</td><td class="num">${b.redemptionsTotal}</td><td class="ta-r"><a class="btn btn--sm" href="/dashboard/rewards/channel?siteId=${esc(b.siteId)}">Board</a></td>` });
+  if (!historyCtrl) historyCtrl = new ListController({ root: $("cr-history"), tbody: "cr-history-list", emptyEl: $("cr-history-empty"), emptySpec: { icon: "users", title: "No credit activity found", body: "No credit activity was found for this viewer." }, items: boards, perPage: 10, searchFn: (b) => `${b.name || ""} ${b.slug || ""} ${b.balance} ${b.totalEarned} ${b.totalSpent}`, sortOptions: [{ key: "balance", label: "Balance", fn: (a, b) => (b.balance || 0) - (a.balance || 0) }, { key: "earned", label: "Earned", fn: (a, b) => (b.totalEarned || 0) - (a.totalEarned || 0) }, { key: "pending", label: "Pending", fn: (a, b) => (b.redemptionsPending || 0) - (a.redemptionsPending || 0) }], emptyAllText: "No boards found for this viewer.", emptyText: "No matching boards.", renderItem: (b) => `<td><b>${esc(b.name || b.slug)}</b><br><span class="hint">${esc(b.slug)}</span></td><td class="num">${b.balance}</td><td class="num">${b.totalEarned}</td><td class="num">${b.totalSpent}</td><td class="num">${b.redemptionsPending}</td><td class="num">${b.redemptionsTotal}</td><td class="ta-r"><a class="btn btn--sm" href="/dashboard/rewards/channel?siteId=${esc(b.siteId)}">Board</a></td>` });
   else historyCtrl.setItems(boards);
   $("cr-history-empty").hidden = true;
 }

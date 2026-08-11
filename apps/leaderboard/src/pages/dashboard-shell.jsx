@@ -6,11 +6,11 @@ import { profileMenuHtml } from "../../../../shared/shell-nav.js";
 const DASHBOARD_NAV = [
   ["home", "Overview", "/dashboard", '<rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/>'],
   ["board", "Leaderboard", "/dashboard/editor", '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>', "players"],
-  ["board", "Page", "/dashboard/editor/design", '<rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/>', "design"],
+  ["board", "Site", "/dashboard/editor/design", '<rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/>', "design"],
   ["rewards", "Rewards & Shop", "/dashboard/rewards/channel", '<circle cx="9" cy="9" r="6"/><path d="M8 21h12a2 2 0 0 0 2-2v-4"/><path d="m19 16 3-3-3-3"/>'],
   ["games", "Games", "/dashboard/games", '<circle cx="12" cy="12" r="10"/><path d="m14.31 8 5.74 9.94"/><path d="M9.69 8h11.48"/><path d="m7.38 12 5.74-9.94"/><path d="M9.69 16 3.95 6.06"/><path d="M14.31 16H2.83"/><path d="m16.62 12-5.74 9.94"/>'],
   ["performance", "Analytics", "/dashboard/analytics/activity", '<path d="M3 3v18h18"/><path d="m7 12 4-4 4 4 5-5"/>', "activity"],
-  ["board", "History", "/dashboard/editor/history", '<circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>', "history"],
+  ["board", "Past periods", "/dashboard/editor/history", '<circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>', "history"],
   ["settings", "Settings", "/dashboard/settings", '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82V9a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83 2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 0 0 1 2 2v.09A1.65 1.65 0 0 0 15 4.6a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>'],
 ];
 

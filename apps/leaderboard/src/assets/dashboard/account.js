@@ -169,8 +169,8 @@ async function loadSettingsUsage() {
       settingsMeter("Active boards", data.leaderboard?.boards?.used, data.leaderboard?.boards?.limit),
     ];
     if (data.credits) rows.push(
-      settingsMeter("Kick reward mappings", data.credits.rewardMappings?.used, data.credits.rewardMappings?.limit),
-      settingsMeter("Active shop items", data.credits.shopItems?.used, data.credits.shopItems?.limit),
+      settingsMeter("Kick credit rules", data.credits.rewardMappings?.used, data.credits.rewardMappings?.limit),
+      settingsMeter("Active items", data.credits.shopItems?.used, data.credits.shopItems?.limit),
       settingsMeter("Pending redemptions", data.credits.pendingRedemptions?.used, data.credits.pendingRedemptions?.limit),
       settingsMeter("Fulfilled this month", data.credits.redemptionsPer30Days?.used, data.credits.redemptionsPer30Days?.limit),
       settingsMeter("New viewers this month", data.credits.newViewersPer30Days?.used, data.credits.newViewersPer30Days?.limit),

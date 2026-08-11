@@ -2,8 +2,8 @@
 const faqs = [
   { q: "What is YourRank?", a: "YourRank is an all-in-one suite for streamers and communities. It includes three products: branded leaderboards, a Telegram bot with tracked offers, and a viewer Rewards & Shop powered by Kick channel points." },
   { q: "What are the three products?", a: "Leaderboards let you publish a branded public race. The Telegram bot publishes tracked offers, broadcasts, and commands for your community. Rewards & Shop lets viewers earn credits from Kick channel-point redemptions and spend them in your shop." },
-  { q: "Is YourRank free?", a: "Yes. The Free plan includes one leaderboard with up to 10 players, one Telegram bot, three tracked offers, three reward mappings, and five shop items. Paid plans add more of each product, plus custom domains, OBS overlays, and API access." },
-  { q: "How do viewers earn credits?", a: "Streamers connect a Kick channel and map channel-point rewards to credits. When a viewer redeems a reward on Kick, YourRank credits the viewer automatically." },
+  { q: "Is YourRank free?", a: "Yes. The Free plan includes one leaderboard with up to 10 players, one Telegram bot, three tracked offers, three credit rules, and five shop items. Paid plans add more of each product, plus custom domains, OBS overlays, and API access." },
+  { q: "How do viewers earn credits?", a: "Streamers connect a Kick channel and create credit rules for channel-point rewards. When a viewer redeems a reward on Kick, YourRank credits the viewer automatically." },
   { q: "Can viewers log in?", a: "Yes. Streamers can enable Kick or Discord OAuth for their board. Viewers then log in at /me to see their balance across boards and redeem shop items." },
   { q: "What payment methods do you accept?", a: "Paid plans are billed in crypto (BTC, ETH, USDT and 100+ more) through NOWPayments. Card checkout is not available yet." },
   { q: "Do I need to write code?", a: "No. YourRank runs entirely in the browser and on Cloudflare. You create a page, customize it, and share the URL. The Telegram bot and Kick connection are configured from the dashboard." },

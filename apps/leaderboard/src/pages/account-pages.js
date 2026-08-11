@@ -44,7 +44,7 @@ const planWidget = `<div class="lb-widget lb-widget--full" id="plan">
           <ul class="hint plan-cancel-list">
             <li>You keep your current plan features until the expiry date shown above.</li>
             <li>After expiry, your account reverts to Free and paid features stop working.</li>
-            <li>If you are over Free limits (boards, players, reward mappings, shop items), you won't be able to add more until you upgrade again.</li>
+            <li>If you are over Free limits (boards, players, credit rules, items), you won't be able to add more until you upgrade again.</li>
             <li>Existing leaderboard data, viewers and redemptions are never deleted by a downgrade.</li>
           </ul>
           <p class="hint" id="cancelStatus" role="status" aria-live="polite"></p>
