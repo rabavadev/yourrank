@@ -1,19 +1,11 @@
 // Site editing: plan, branding/theme, save, archive, domain, overlay, notifications.
-import { $, esc, fromLocalInput, getCsrf, guardAuth, localTzLabel, logError, toLocalInput, parseAmount, showToast, showConfirmModal, copyToClipboard, flashButton, showLoadError, clearLoadError } from "./utils.js";
+import { $, esc, fromLocalInput, getCsrf, guardAuth, localTzLabel, logError, parseAmount, showConfirmModal, copyToClipboard, flashButton, showLoadError, clearLoadError } from "./utils.js";
 import { state, boardStatus, markDirty, setState, subscribe } from "./state.js";
 import { renderEmpty } from "./states.js";
 import { renderBoardSwitcher, renderBoardsPage, renderSidebarBoardSwitcher } from "./boards.js";
 import { renderOverviewSummary } from "./overview.js";
-import { renderPerformance } from "./performance.js";
+import { renderPerformance, renderPerformanceLoading } from "./performance.js";
 import { applyPlayerFieldVisibility, renderPlayers, renumber, toggleEmpty } from "./players.js";
-
-const FONT_FAMILIES = [
-  { key: "Inter", label: "Inter — Default" },
-  { key: "Oswald", label: "Oswald — Bold & Sporty" },
-  { key: "Playfair Display", label: "Playfair Display — Premium & Elegant" },
-  { key: "Rajdhani", label: "Rajdhani — Techy & Esports" },
-  { key: "Bebas Neue", label: "Bebas Neue — Impact & Hype" },
-];
 
 export const DEFAULT_SECTIONS = {
   hero: true,
@@ -1256,7 +1248,7 @@ export async function loadCreditsStatus() {
   setState({ CREDITS_STATUS: "loading" });
   if (statusEl) {
     statusEl.setAttribute("aria-busy", "true");
-    statusEl.innerHTML = '<span class="skeleton skeleton-text" aria-hidden="true"></span>';
+    statusEl.innerHTML = '<span class="skeleton v3-skel-line" aria-hidden="true"></span>';
   }
   try {
     const res = await fetch("/api/credits/status");
@@ -1489,8 +1481,9 @@ export function renderEmbedShare() {
     }
   }
 
-  export async function loadStats() {
+export async function loadStats() {
       setState({ STATS_STATUS: "loading" });
+      renderPerformanceLoading();
       const statsUrl = state.ACTIVE_SITE_ID ? `/api/site/stats?siteId=${encodeURIComponent(state.ACTIVE_SITE_ID)}` : "/api/site/stats";
       let s;
       try {

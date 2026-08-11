@@ -36,13 +36,13 @@ export function metricText(status, value) {
 export function setMetricLoading(el) {
   if (!el) return;
   el.setAttribute("aria-busy", "true");
-  el.innerHTML = '<span class="skeleton skeleton-text--lg" aria-hidden="true"></span>';
+  el.innerHTML = '<span class="skeleton v3-skel-kpi" aria-hidden="true"></span>';
 }
 
 export function setMetricValue(el, text) {
   if (!el) return;
   el.removeAttribute("aria-busy");
-  el.textContent = String(text ?? UNKNOWN);
+  el.textContent = metricText("ready", text);
 }
 
 export function setMetricUnknown(el) {
@@ -53,14 +53,14 @@ export function setRowsLoading(tbody, { cols = 1, rows = 3 } = {}) {
   if (!tbody) return;
   tbody.setAttribute("aria-busy", "true");
   tbody.innerHTML = Array.from({ length: rows }, () =>
-    `<tr aria-hidden="true">${Array.from({ length: cols }, () => '<td><span class="skeleton skeleton-text"></span></td>').join("")}</tr>`
+    `<tr aria-hidden="true">${Array.from({ length: cols }, () => '<td><span class="skeleton v3-skel-cell"></span></td>').join("")}</tr>`
   ).join("");
 }
 
 export function setBlockLoading(el, { lines = 3 } = {}) {
   if (!el) return;
   el.setAttribute("aria-busy", "true");
-  el.innerHTML = Array.from({ length: lines }, () => '<span class="skeleton skeleton-text"></span>').join("");
+  el.innerHTML = Array.from({ length: lines }, () => '<span class="skeleton v3-skel-line"></span>').join("");
 }
 
 export function renderEmpty(el, spec) {

@@ -1,6 +1,6 @@
 import { $, logError, showLoadError, clearLoadError } from "./utils.js";
 import { setState, state } from "./state.js";
-import { renderEmpty, setMetricLoading, setRowsLoading } from "./states.js";
+import { renderEmpty, setMetricLoading, setMetricValue, setRowsLoading } from "./states.js";
 
 const DOW = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
@@ -114,11 +114,13 @@ function renderChart(days) {
   }).join("");
   host.innerHTML = `<svg viewBox="0 0 ${width} ${height}" role="img" aria-label="Daily views over time"><g class="v3-chart-grid">${[20, 75, 130, 185].map((y) => `<line x1="0" x2="${width}" y1="${y}" y2="${y}"/>`).join("")}</g><polyline points="${points}" fill="none"/>${labels}</svg>`;
   const total = $("perfTotalViews");
-  if (total) total.textContent = String(values.reduce((sum, value) => sum + value, 0));
+  if (total) setMetricValue(total, String(values.reduce((sum, value) => sum + value, 0)));
   if (values.some(Boolean)) {
     clearLoadError($("statsEmpty"), false);
   } else {
-    renderEmpty($("statsEmpty"), { icon: "chart", title: "No activity yet", body: "Share your page link in your stream panels and Discord to get it moving." });
+    const empty = $("statsEmpty");
+    clearLoadError(empty, false);
+    renderEmpty(empty, { icon: "chart", title: "No activity yet", body: "Share your page link in your stream panels and Discord to get it moving." });
   }
 }
 
@@ -141,7 +143,7 @@ async function loadHeatmap() {
   const grid = $("perfHeatmapGrid");
   if (grid) {
     grid.setAttribute("aria-busy", "true");
-    grid.innerHTML = '<span class="skeleton skeleton-block" aria-hidden="true"></span>';
+    grid.innerHTML = '<span class="skeleton v3-skel-heatmap" aria-hidden="true"></span>';
   }
   try {
     const query = state.ACTIVE_SITE_ID ? `?siteId=${encodeURIComponent(state.ACTIVE_SITE_ID)}` : "";
@@ -190,7 +192,9 @@ function renderReferrers(referrers) {
     clearLoadError($("perfReferrersEmpty"), false);
     $("perfReferrersEmpty").hidden = true;
   } else {
-    renderEmpty($("perfReferrersEmpty"), { icon: "link", title: "No referrer data yet", body: "Add ?ref=your-source to your share link to track sources." });
+    const empty = $("perfReferrersEmpty");
+    clearLoadError(empty, false);
+    renderEmpty(empty, { icon: "link", title: "No referrer data yet", body: "Add ?ref=your-source to your share link to track sources." });
   }
 }
 

@@ -1,7 +1,7 @@
 // Referrals page in the dashboard.
 import { $, logError, copyToClipboard, flashButton } from "./utils.js";
 import { setState } from "./state.js";
-import { setMetricLoading, setMetricValue } from "./states.js";
+import { setMetricLoading, setMetricUnknown, setMetricValue } from "./states.js";
 
 export async function renderReferrals() {
   const linkEl = $("refLink");
@@ -23,9 +23,9 @@ export async function renderReferrals() {
     }
     setState({ REFERRALS_STATUS: "ready" });
     linkEl.value = d.link;
-    setMetricValue($("refCount"), d.count == null ? "—" : d.count);
-    setMetricValue($("refDays"), d.totalDays == null ? "—" : d.totalDays);
-    setMetricValue($("refSaved"), d.savedUsd == null ? "—" : `$${d.savedUsd}`);
+    if (d.count == null) setMetricUnknown($("refCount")); else setMetricValue($("refCount"), d.count);
+    if (d.totalDays == null) setMetricUnknown($("refDays")); else setMetricValue($("refDays"), d.totalDays);
+    if (d.savedUsd == null) setMetricUnknown($("refSaved")); else setMetricValue($("refSaved"), `$${d.savedUsd}`);
     if (copyBtn && !copyBtn._wired) {
       copyBtn._wired = true;
       copyBtn.addEventListener("click", async () => {

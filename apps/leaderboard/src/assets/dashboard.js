@@ -7,7 +7,7 @@ import { renderPlayers } from "./dashboard/players.js";
 import { checkout, fitDesignPreview, loadCreditsStatus, loadHistory, loadStats, refreshDesignPreview, renderArchives, renderBranding, renderDomain, renderDomainStatus, renderBoardStatus, renderEditorTimestamps, renderEmbedShare, renderLegal, renderNotifications, renderOverlay, renderPlan, renderPlayerFields, renderPrizes, renderSections, renderSocials, renderTemplateText, wireCancelSubscription, wireDeleteAccount } from "./dashboard/site.js";
 import { renderOverviewSummary } from "./dashboard/overview.js";
 import { renderReferrals } from "./dashboard/referrals.js";
-import { initPerformance, renderPerformanceLoading } from "./dashboard/performance.js";
+import { initPerformance } from "./dashboard/performance.js";
 import { setupSettingsScreen, wireAccount } from "./dashboard/account.js";
 import { initGames } from "./dashboard/games.js";
 
@@ -192,7 +192,6 @@ async function init() {
   renderOverviewSummary();
   renderReferrals();
   initPerformance();
-  renderPerformanceLoading();
   loadStats();
   loadCreditsStatus();
   wireStreamerHud();

@@ -1,7 +1,7 @@
 import { showConfirmModal, showPromptModal, ListController, logError } from "./dashboard/utils.js";
 import { openDrawer, closeDrawer } from "./dashboard/shell.js";
 import { setState } from "./dashboard/state.js";
-import { UNKNOWN } from "./dashboard/states.js";
+import { UNKNOWN, renderEmpty, setMetricLoading, setRowsLoading } from "./dashboard/states.js";
 
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
@@ -33,7 +33,6 @@ function setLoading(idOrEl, loading, text = "Loading…") {
 }
 function setGlobalLoading(loading) { if ($("cr-loading")) $("cr-loading").hidden = !loading; }
 function usageCls(used, limit) { const pct = limit > 0 ? Math.round((used / limit) * 100) : 0; return limit > 0 && used >= limit ? "cr-usage-over" : limit > 0 && pct >= 80 ? "cr-usage-near" : ""; }
-function usageLabel(used, limit, name) { const cls = usageCls(used, limit); return `<span class="cr-usage-text${cls ? ` ${cls}` : ""}">${used} / ${limit} ${name}</span>`; }
 function usageCard(used, limit, name) { const cls = usageCls(used, limit); return `<div class="cr-usage-card"><div class="hint">${esc(name)}</div><div class="cr-usage-number${cls ? ` ${cls}` : ""}">${used} / ${limit}</div>${cls ? '<a href="/account/plan" class="cr-usage-upgrade">Upgrade plan</a>' : ""}</div>`; }
 function draftKey(id) { return `yr:credits:draft:${id}`; }
 function debounce(fn, ms) { let timer; return (...args) => { clearTimeout(timer); timer = setTimeout(() => fn(...args), ms); }; }
@@ -144,7 +143,7 @@ function render() {
   if (current === "channel" || current === "maps" || current === "rewards") {
     for (const id of ["cr-reward-submit", "cr-reward-create-submit"]) { const el = $(id); if (el) { el.disabled = rewardAtLimit; el.title = rewardAtLimit ? "Upgrade your plan to add more reward mappings" : ""; } }
     const mappings = state.mappings || [];
-    if (!rewardCtrl) { rewardCtrl = new ListController({ root: $("cr-rewards"), tbody: "cr-reward-list", items: mappings, perPage: 10, searchFn: (m) => `${m.kick_reward_title} ${m.kick_reward_id} ${m.kick_reward_cost} ${m.credits}`, sortOptions: [{ key: "cost", label: "Kick cost", fn: (a, b) => (b.kick_reward_cost || 0) - (a.kick_reward_cost || 0) }, { key: "credits", label: "Credits", fn: (a, b) => (b.credits || 0) - (a.credits || 0) }, { key: "active", label: "Active first", fn: (a, b) => Number(b.active) - Number(a.active) }], emptyAllText: "No reward mappings yet.", emptyText: "No matching reward mappings.", renderItem: (m) => renderRewardRow(m), onRender: () => wireDynamicActions() }); mountListControls($("cr-rewards"), $("cr-mapping-toolbar"), $("cr-mapping-foot")); }
+    if (!rewardCtrl) { rewardCtrl = new ListController({ root: $("cr-rewards"), tbody: "cr-reward-list", emptyEl: $("cr-reward-empty"), emptySpec: { icon: "link", title: "No reward mappings yet", body: "Map Kick rewards to credits for your viewers.", actions: [{ label: "Add mapping", href: "/dashboard/rewards/maps#cr-reward-form", accent: true }] }, items: mappings, perPage: 10, searchFn: (m) => `${m.kick_reward_title} ${m.kick_reward_id} ${m.kick_reward_cost} ${m.credits}`, sortOptions: [{ key: "cost", label: "Kick cost", fn: (a, b) => (b.kick_reward_cost || 0) - (a.kick_reward_cost || 0) }, { key: "credits", label: "Credits", fn: (a, b) => (b.credits || 0) - (a.credits || 0) }, { key: "active", label: "Active first", fn: (a, b) => Number(b.active) - Number(a.active) }], emptyAllText: "No reward mappings yet.", emptyText: "No matching reward mappings.", renderItem: (m) => renderRewardRow(m), onRender: () => wireDynamicActions() }); mountListControls($("cr-rewards"), $("cr-mapping-toolbar"), $("cr-mapping-foot")); }
     else rewardCtrl.setItems(mappings);
     prefillEditFromQuery();
   }
@@ -156,7 +155,7 @@ function render() {
   }
   if (current === "viewers") {
     const viewers = state.viewers || [];
-    if (!viewerCtrl) { viewerCtrl = new ListController({ root: $("cr-viewers"), tbody: "cr-viewer-list", items: viewers, perPage: 15, searchFn: (v) => `${v.kick_username || v.kick_user_id} ${v.block_reason || ""} ${v.blocked ? "blocked" : ""}`, sortOptions: [{ key: "balance", label: "Balance", fn: (a, b) => (b.balance || 0) - (a.balance || 0) }, { key: "earned", label: "Earned", fn: (a, b) => (b.total_earned || 0) - (a.total_earned || 0) }, { key: "spent", label: "Spent", fn: (a, b) => (b.total_spent || 0) - (a.total_spent || 0) }, { key: "last", label: "Last earned", fn: (a, b) => new Date(b.last_earned_at || b.created_at || 0) - new Date(a.last_earned_at || a.created_at || 0) }], emptyAllText: "No viewers yet.", emptyText: "No matching viewers.", renderItem: (v) => renderViewerRow(v), onRender: () => wireDynamicActions() }); }
+    if (!viewerCtrl) { viewerCtrl = new ListController({ root: $("cr-viewers"), tbody: "cr-viewer-list", emptyEl: $("cr-viewer-empty"), emptySpec: { icon: "users", title: "No viewers yet", body: "Viewer balances will appear after viewers earn or spend credits." }, items: viewers, perPage: 15, searchFn: (v) => `${v.kick_username || v.kick_user_id} ${v.block_reason || ""} ${v.blocked ? "blocked" : ""}`, sortOptions: [{ key: "balance", label: "Balance", fn: (a, b) => (b.balance || 0) - (a.balance || 0) }, { key: "earned", label: "Earned", fn: (a, b) => (b.total_earned || 0) - (a.total_earned || 0) }, { key: "spent", label: "Spent", fn: (a, b) => (b.total_spent || 0) - (a.total_spent || 0) }, { key: "last", label: "Last earned", fn: (a, b) => new Date(b.last_earned_at || b.created_at || 0) - new Date(a.last_earned_at || a.created_at || 0) }], emptyAllText: "No viewers yet.", emptyText: "No matching viewers.", renderItem: (v) => renderViewerRow(v), onRender: () => wireDynamicActions() }); }
     else viewerCtrl.setItems(viewers);
   }
   if (current === "redemptions") {
@@ -164,8 +163,11 @@ function render() {
     if (state.channel?.externalId) { channel.innerHTML = `● Connected to @${esc(state.channel.name || state.channel.externalId)}`; channel.className = "v3-chip v3-chip--refunded"; } else { channel.innerHTML = '<a href="/dashboard/rewards/channel">Not connected · Connect in Channel</a>'; channel.className = "v3-chip v3-chip--cancelled"; }
     $("cr-pending-counter").textContent = `${metric(usage.pendingRedemptions)} / ${metric(limits.pendingRedemptions)}`; $("cr-fulfilled-counter").textContent = `${metric(usage.redemptionsPer30Days)} / ${metric(limits.redemptionsPer30Days)}`;
     const redemptions = state.redemptions || [];
-    if (!redemptionCtrl) { redemptionCtrl = new ListController({ root: $("cr-redemptions"), tbody: "cr-redemption-list", items: redemptions, perPage: 15, searchFn: (r) => `${r.kick_username || r.kick_user_id} ${r.item_name} ${r.status}`, sortOptions: [{ key: "time", label: "Newest", fn: (a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0) }, { key: "cost", label: "Cost", fn: (a, b) => (b.cost || 0) - (a.cost || 0) }, { key: "status", label: "Status", fn: (a, b) => (a.status || "").localeCompare(b.status || "") }], emptyAllText: "No redemptions yet.", emptyText: "No matching redemptions.", renderItem: (r) => renderRedemptionRow(r), onRender: () => wireDynamicActions() }); mountListControls($("cr-redemptions"), $("cr-redemption-toolbar"), $("cr-redemption-foot")); }
+    if (!redemptionCtrl) { redemptionCtrl = new ListController({ root: $("cr-redemptions"), tbody: "cr-redemption-list", emptyEl: $("cr-redemption-empty"), emptySpec: { icon: "archive", title: "No redemptions yet", body: "Viewer requests will appear here." }, items: redemptions, perPage: 15, searchFn: (r) => `${r.kick_username || r.kick_user_id} ${r.item_name} ${r.status}`, sortOptions: [{ key: "time", label: "Newest", fn: (a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0) }, { key: "cost", label: "Cost", fn: (a, b) => (b.cost || 0) - (a.cost || 0) }, { key: "status", label: "Status", fn: (a, b) => (a.status || "").localeCompare(b.status || "") }], emptyAllText: "No redemptions yet.", emptyText: "No matching redemptions.", renderItem: (r) => renderRedemptionRow(r), onRender: () => wireDynamicActions() }); mountListControls($("cr-redemptions"), $("cr-redemption-toolbar"), $("cr-redemption-foot")); }
     else redemptionCtrl.setItems(redemptions);
+  }
+  if (current === "history" && !historyCtrl) {
+    renderEmpty($("cr-history-empty"), { icon: "users", title: "Search for a viewer", body: "Enter a Kick username to view credit history across your boards." });
   }
 }
 function prefillEditFromQuery() {
@@ -279,6 +281,11 @@ async function toggleReward(id, trigger) {
 }
 async function load() {
   setState({ CREDITS_STATUS: "loading" });
+  setMetricLoading($("cr-pending-counter"));
+  setMetricLoading($("cr-fulfilled-counter"));
+  rewardCtrl?.setLoading(true);
+  viewerCtrl?.setLoading(true);
+  redemptionCtrl?.setLoading(true);
   setGlobalLoading(true);
   try {
     await loadBoardShell();
@@ -333,12 +340,15 @@ function wireActions() {
 async function searchHistory(e) {
   e.preventDefault(); const username = $("cr-history-username").value.trim(); if (!username) { setStatus("cr-history-status", "Enter a Kick username", true); return; }
   const btn = $("cr-history-search"); setLoading(btn, true, "Searching…");
+  $("cr-history-empty").hidden = true;
+  historyCtrl?.setLoading(true);
+  setRowsLoading($("cr-history-list"), { cols: 7, rows: 3 });
   try { const data = await api("GET", `/api/credits/viewer/history?kickUsername=${encodeURIComponent(username)}`); renderHistory(data); setStatus("cr-history-status", `Found ${data.boards?.length || 0} board(s).`); }
   catch (err) { setStatus("cr-history-status", err.message, true); } finally { setLoading(btn, false); }
 }
 function renderHistory(data) {
   const boards = data.boards || [];
-  if (!historyCtrl) historyCtrl = new ListController({ root: $("cr-history"), tbody: "cr-history-list", items: boards, perPage: 10, searchFn: (b) => `${b.name || ""} ${b.slug || ""} ${b.balance} ${b.totalEarned} ${b.totalSpent}`, sortOptions: [{ key: "balance", label: "Balance", fn: (a, b) => (b.balance || 0) - (a.balance || 0) }, { key: "earned", label: "Earned", fn: (a, b) => (b.totalEarned || 0) - (a.totalEarned || 0) }, { key: "pending", label: "Pending", fn: (a, b) => (b.redemptionsPending || 0) - (a.redemptionsPending || 0) }], emptyAllText: "No boards found for this viewer.", emptyText: "No matching boards.", renderItem: (b) => `<td><b>${esc(b.name || b.slug)}</b><br><span class="hint">${esc(b.slug)}</span></td><td class="num">${b.balance}</td><td class="num">${b.totalEarned}</td><td class="num">${b.totalSpent}</td><td class="num">${b.redemptionsPending}</td><td class="num">${b.redemptionsTotal}</td><td class="ta-r"><a class="btn btn--sm" href="/dashboard/rewards/channel?siteId=${esc(b.siteId)}">Board</a></td>` });
+  if (!historyCtrl) historyCtrl = new ListController({ root: $("cr-history"), tbody: "cr-history-list", emptyEl: $("cr-history-empty"), emptySpec: { icon: "users", title: "No history found", body: "No credit history was found for this viewer." }, items: boards, perPage: 10, searchFn: (b) => `${b.name || ""} ${b.slug || ""} ${b.balance} ${b.totalEarned} ${b.totalSpent}`, sortOptions: [{ key: "balance", label: "Balance", fn: (a, b) => (b.balance || 0) - (a.balance || 0) }, { key: "earned", label: "Earned", fn: (a, b) => (b.totalEarned || 0) - (a.totalEarned || 0) }, { key: "pending", label: "Pending", fn: (a, b) => (b.redemptionsPending || 0) - (a.redemptionsPending || 0) }], emptyAllText: "No boards found for this viewer.", emptyText: "No matching boards.", renderItem: (b) => `<td><b>${esc(b.name || b.slug)}</b><br><span class="hint">${esc(b.slug)}</span></td><td class="num">${b.balance}</td><td class="num">${b.totalEarned}</td><td class="num">${b.totalSpent}</td><td class="num">${b.redemptionsPending}</td><td class="num">${b.redemptionsTotal}</td><td class="ta-r"><a class="btn btn--sm" href="/dashboard/rewards/channel?siteId=${esc(b.siteId)}">Board</a></td>` });
   else historyCtrl.setItems(boards);
   $("cr-history-empty").hidden = true;
 }

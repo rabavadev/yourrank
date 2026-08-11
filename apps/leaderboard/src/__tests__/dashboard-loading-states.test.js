@@ -60,4 +60,24 @@ describe("dashboard loading states", () => {
     expect(credits).not.toMatch(/usage\.[A-Za-z0-9_]+ \|\| 0/);
     expect(credits).not.toMatch(/limits\.[A-Za-z0-9_]+ \|\| 0/);
   });
+
+  it("uses shared list loading and confirmed-empty treatments", () => {
+    const utils = read("dashboard/utils.js");
+    const credits = read("credits.js");
+    const pages = fs.readFileSync(path.resolve(assets, "../pages/credits-pages.js"), "utf8");
+    expect(utils).toContain("setRowsLoading");
+    expect(utils).toContain("renderEmpty(this.emptyEl, this.emptySpec)");
+    expect(credits).toContain("rewardCtrl?.setLoading(true)");
+    expect(credits).toContain('emptyEl: $("cr-reward-empty")');
+    expect(credits).toContain('emptyEl: $("cr-viewer-empty")');
+    expect(credits).toContain('emptyEl: $("cr-redemption-empty")');
+    expect(credits).toContain('emptyEl: $("cr-history-empty")');
+    expect(pages).not.toContain("Loading your credits dashboard");
+  });
+
+  it("resets error presentation before retrying into a normal empty state", () => {
+    const performance = read("dashboard/performance.js");
+    expect(performance).toMatch(/clearLoadError\(empty, false\);\s*renderEmpty\(empty/);
+    expect(performance).toContain('setMetricValue(total, String(values.reduce');
+  });
 });

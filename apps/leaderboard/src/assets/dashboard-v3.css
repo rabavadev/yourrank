@@ -1194,6 +1194,17 @@ body[data-wide] .v3-dash .lb-main {
 .v3-dash .v3-empty h2 { font-size: 17px; font-weight: 700; margin: 0; }
 .v3-dash .v3-empty p { margin: 0; font-size: 14px; color: var(--v3-main-ink-soft); }
 .v3-dash .v3-empty-actions { display: flex; gap: 10px; margin-top: 16px; }
+.v3-skel-kpi { width: 3.5em; height: 1.1em; margin: 0; }
+.v3-skel-line { width: 12rem; height: 1em; margin: 5px 0; }
+.v3-skel-meter { width: 11rem; height: 1em; margin: 4px 0; }
+.v3-skel-cell { width: 70%; height: 1em; margin: 4px 0; }
+.v3-skel-heatmap { display: block; width: 100%; height: 180px; }
+.v3-dash .heatmap > .v3-empty { grid-column: 1 / -1; min-height: 180px; padding: 32px 16px; }
+.v3-dash .ov-card-empty { min-height: 150px; margin: 16px 0; padding: 28px 16px; }
+.v3-dash .v3-settings-sessions > .v3-empty,
+.v3-dash .v3-set-meters > .v3-empty { min-height: 96px; padding: 24px 16px; }
+.v3-dash #boardsEmpty,
+.v3-dash #archEmpty { min-height: 180px; box-sizing: border-box; padding: 48px 24px; }
 
 /* ---------- Limit meters ---------- */
 .v3-dash .v3-meter-lbl {
