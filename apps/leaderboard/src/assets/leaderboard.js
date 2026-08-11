@@ -267,10 +267,28 @@ let streamEs = null;
 
 let streamFailures = 0;
 let streamTimer = null;
+const STREAM_MAX_FAILURES = 3;
+const STREAM_RECONNECT_BASE_MS = 1000;
+const STREAM_RECONNECT_MAX_MS = 30_000;
 
 function onStreamFail() {
   streamFailures++;
-  if (streamFailures >= 3) showStreamBanner();
+  if (streamFailures >= STREAM_MAX_FAILURES) {
+    showStreamBanner();
+    return;
+  }
+  const backoff = Math.min(
+    STREAM_RECONNECT_MAX_MS,
+    STREAM_RECONNECT_BASE_MS * (2 ** (streamFailures - 1))
+  );
+  const delay = backoff * (0.8 + Math.random() * 0.4);
+  if (!document.hidden) {
+    if (streamTimer) clearTimeout(streamTimer);
+    streamTimer = setTimeout(() => {
+      streamTimer = null;
+      connectStream();
+    }, delay);
+  }
 }
 
 function showStreamBanner() {
@@ -295,6 +313,7 @@ function connectStream() {
   if (!slug || slug === "demo") return;
   if (typeof EventSource === "undefined") return;
   if (streamTimer) clearTimeout(streamTimer);
+  streamTimer = null;
   if (streamEs) { streamEs.close(); streamEs = null; }
   streamEs = new EventSource(`/api/public/${encodeURIComponent(slug)}/stream`);
   streamEs.onmessage = (e) => {
@@ -306,15 +325,24 @@ function connectStream() {
         updateLeaderboard(data.players);
         const ann = document.getElementById("lb-announce"); if (ann) ann.textContent = "Leaderboard updated.";
       }
-    } catch (_) { onStreamFail(); }
+    } catch (_) {
+      if (streamEs) { streamEs.close(); streamEs = null; }
+      onStreamFail();
+    }
   };
-  streamEs.onerror = () => { onStreamFail(); };
+  streamEs.onerror = () => {
+    if (streamEs) { streamEs.close(); streamEs = null; }
+    onStreamFail();
+  };
 }
 
 document.addEventListener("visibilitychange", () => {
   if (document.hidden) {
+    if (streamTimer) { clearTimeout(streamTimer); streamTimer = null; }
     if (streamEs) { streamEs.close(); streamEs = null; }
   } else {
+    streamFailures = 0;
+    hideStreamBanner();
     connectStream();
   }
 });

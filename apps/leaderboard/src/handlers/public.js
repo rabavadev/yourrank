@@ -1,5 +1,5 @@
 // Public API handlers for leaderboard data access
-import { getPublicSite } from "../site.js";
+import { getPublicSite, getPublicStreamVersion } from "../site.js";
 import { getStats } from "../stats.js";
 import { rateLimit, rateLimitHeaders, clientIp, json, bad } from "../auth.js";
 import { one } from "../../../../shared/db.js";
@@ -124,22 +124,30 @@ export async function handlePublicStream(request, env, ctx) {
     const siteId = r.id;
     let lastTs = "";
     let closed = false;
+    const baseInterval = getPublicStreamInterval(env);
     const enc = new TextEncoder();
     const send = async (controller) => {
       try {
-        const v = await one("SELECT max(updated_at) AS m FROM players WHERE site_id=$1", [siteId]);
-        const newTs = v?.m ? new Date(v.m).toISOString() : "0";
+        if (closed) return;
+        const newTs = await getPublicStreamVersion(siteId);
         if (newTs !== lastTs) {
           lastTs = newTs;
           const data = await getPublicSite(env, slug, request);
-          if (!data || data.suspended || data.requiresPassword) { controller.close(); return; }
+          if (!data || data.suspended || data.requiresPassword) {
+            closed = true;
+            controller.close();
+            return;
+          }
           const payload = JSON.stringify({ players: data.data.players, updatedAt: newTs });
           controller.enqueue(enc.encode(`data: ${payload}\n\n`));
         }
       } catch (e) {
         console.error("[public/stream] tick", String(e?.message || e));
       }
-      if (!closed) setTimeout(() => send(controller), 4000);
+      if (!closed) {
+        const jitter = 0.8 + Math.random() * 0.4;
+        setTimeout(() => send(controller), baseInterval * jitter);
+      }
     };
     const stream = new ReadableStream({
       async start(controller) {
@@ -159,6 +167,13 @@ export async function handlePublicStream(request, env, ctx) {
     console.error("[public/stream]", String(e?.message || e));
     return bad("Something went wrong. Try again.", 500);
   }
+}
+
+const PUBLIC_STREAM_INTERVAL_MS = 15_000;
+
+function getPublicStreamInterval(env) {
+  const configured = Number(env?.PUBLIC_STREAM_INTERVAL_MS);
+  return Number.isFinite(configured) && configured > 0 ? configured : PUBLIC_STREAM_INTERVAL_MS;
 }
 
 /**
