@@ -81,6 +81,36 @@ describe("dashboard loading states", () => {
     expect(performance).toContain('setMetricValue(total, String(values.reduce');
   });
 
+  it("keeps credits load failures plain and retryable", () => {
+    const credits = read("credits.js");
+    expect(credits).toContain('logError("load-credits-dashboard", err)');
+    expect(credits).toContain('showLoadError($("cr-empty"), "your credits dashboard", load)');
+    expect(credits).not.toContain("err.message}</p>");
+    expect(credits).toContain('$("cr-app").hidden = false');
+  });
+
+  it("hides list controls and invalid page labels when lists are empty", () => {
+    const utils = read("dashboard/utils.js");
+    const credits = read("credits.js");
+    const boards = read("dashboard/boards.js");
+    const players = read("dashboard/players.js");
+    expect(utils).toContain("wrap.hidden = this.all.length === 0");
+    expect(utils).toContain("this._setControlsHidden(this.all.length === 0)");
+    expect(utils).toContain('this.pageInfo.textContent = total ? `Page ${this.page}');
+    expect(utils).not.toContain(": `0`");
+    expect(credits).toContain('toggleAttribute("hidden", items.length === 0)');
+    expect(boards).toContain("controls.hidden = state.BOARDS.length === 0");
+    expect(players).toContain("controls.hidden = empty");
+    expect(players).toContain("archiveForm.hidden = empty");
+  });
+
+  it("starts the redemption channel chip in a disconnected state", () => {
+    const pages = fs.readFileSync(path.resolve(assets, "../pages/credits-pages.js"), "utf8");
+    expect(pages).toContain('class="v3-chip v3-chip--cancelled">● Not connected');
+    expect(pages).not.toContain("● Not connected ·");
+    expect(pages).not.toContain('class="v3-chip v3-chip--refunded">● Connected to @');
+  });
+
   it("preserves shared boards empty markup while filtering", () => {
     const boards = read("dashboard/boards.js");
     const account = read("dashboard/account.js");

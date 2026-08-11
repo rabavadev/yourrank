@@ -107,6 +107,10 @@ export function renumber() {
 
 export function toggleEmpty() {
   const empty = $("rows").children.length === 0;
+  const controls = document.querySelector(".v3-players-bar");
+  if (controls) controls.hidden = empty;
+  const archiveForm = document.querySelector(".arch-form");
+  if (archiveForm) archiveForm.hidden = empty;
   if ($("playersEmpty")) $("playersEmpty").hidden = !empty;
   if ($("playersTableWrap")) $("playersTableWrap").hidden = empty;
   if ($("playersFoot")) $("playersFoot").hidden = empty;

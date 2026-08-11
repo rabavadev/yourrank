@@ -57,6 +57,9 @@ export function renderPerformance(stats) {
   const range = state.PERF_RANGE || 14;
   const all = Array.isArray(stats.days) ? stats.days : [];
   const days = all.slice(-range);
+  const hasData = all.length > 0;
+  if ($("perfRangeFilter")) $("perfRangeFilter").hidden = !hasData;
+  if ($("perfExport")) $("perfExport").hidden = !hasData;
   const previous = all.slice(Math.max(0, all.length - range * 2), Math.max(0, all.length - range));
   const currentTotals = totals(days);
   const previousTotals = totals(previous);
