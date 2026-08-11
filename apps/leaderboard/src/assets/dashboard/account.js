@@ -52,7 +52,7 @@ async function loadSessions() {
     list.innerHTML = html;
     list.removeAttribute("aria-busy");
   } catch (e) {
-    state.SESSIONS_STATUS = "error";
+    setState({ SESSIONS_STATUS: "error" });
     logError("loadSessions", e);
     list.innerHTML = '<p class="err">Could not load sessions.</p>';
   }

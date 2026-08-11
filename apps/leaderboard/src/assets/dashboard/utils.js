@@ -26,8 +26,8 @@ export function logError(context, err, extra = {}) {
       headers: { "content-type": "application/json", "x-csrf-token": getCsrf(), "x-request-id": reqId },
       body: JSON.stringify(payload)
     }).catch(() => {});
-  } catch (err) {
-    console.error("dashboard logging failed", err);
+  } catch (loggingErr) {
+    console.error("dashboard logging failed", loggingErr);
   }
 }
 

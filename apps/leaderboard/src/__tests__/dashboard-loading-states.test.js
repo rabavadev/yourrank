@@ -80,4 +80,14 @@ describe("dashboard loading states", () => {
     expect(performance).toMatch(/clearLoadError\(empty, false\);\s*renderEmpty\(empty/);
     expect(performance).toContain('setMetricValue(total, String(values.reduce');
   });
+
+  it("preserves shared boards empty markup while filtering", () => {
+    const boards = read("dashboard/boards.js");
+    const account = read("dashboard/account.js");
+    const utils = read("dashboard/utils.js");
+    expect(boards).toContain('renderEmpty(empty, q');
+    expect(boards).not.toContain('empty.textContent = q ? "No boards match your search."');
+    expect(account).toContain('setState({ SESSIONS_STATUS: "error" })');
+    expect(utils).toContain("catch (loggingErr)");
+  });
 });
