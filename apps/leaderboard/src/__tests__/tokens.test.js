@@ -37,6 +37,8 @@ const sources = {
   v2: read("apps/leaderboard/src/assets/dashboard-v2.css"),
   nav: read("apps/leaderboard/src/assets/shell-nav.css"),
   bot: read("shared/page-shell.ts"),
+  publicShell: read("apps/leaderboard/src/assets/site-shell.css"),
+  publicRuntime: read("apps/leaderboard/src/site-render.js"),
 };
 
 describe("design tokens", () => {
@@ -56,5 +58,12 @@ describe("design tokens", () => {
 
   it("uses the brand accent", () => {
     expect(declared(sources.app, "--accent")).toBe("#5b5bf5");
+  });
+
+  it("uses the Kick brand token for the public accent fallback", () => {
+    expect(declared(sources.publicShell, "--yr-accent")).toBe("var(--yr-color-brand-kick)");
+    expect(sources.publicShell).toContain("--yr-color-brand-kick: #53fc18");
+    expect(sources.publicRuntime).toContain('value: "var(--yr-color-brand-kick)"');
+    expect(sources.publicRuntime).toContain('ink: "#000000"');
   });
 });

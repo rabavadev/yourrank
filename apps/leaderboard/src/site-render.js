@@ -39,7 +39,10 @@ const SECTION_TITLES = {
 };
 
 const HEX = /^#[0-9a-fA-F]{6}$/;
-const ACCENT_DEFAULT = "#53fc18";
+const PUBLIC_ACCENT_DEFAULT = {
+  value: "var(--yr-color-brand-kick)",
+  ink: "#000000",
+};
 const CREDITS_DISCLAIMER = "Credits are free loyalty points earned from channel-point redemptions. No purchase, no cash value, no cashout.";
 const FONTS_HREF = "https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap";
 
@@ -116,14 +119,18 @@ function accentColor(br, options) {
   for (const c of candidates) {
     if (HEX.test(String(c || ""))) return String(c).toLowerCase();
   }
-  return ACCENT_DEFAULT;
+  return PUBLIC_ACCENT_DEFAULT.value;
 }
 
-/** Black or white text on the accent, whichever stays readable. */
+/** Compute ink for a concrete hex accent; CSS-var defaults cannot be measured. */
 function accentInk(hex) {
   const n = parseInt(hex.slice(1), 16);
   const lum = (0.299 * ((n >> 16) & 255) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255)) / 255;
   return lum > 0.6 ? "#000000" : "#ffffff";
+}
+
+function accentInkFor(accent) {
+  return accent === PUBLIC_ACCENT_DEFAULT.value ? PUBLIC_ACCENT_DEFAULT.ink : accentInk(accent);
 }
 
 function money(currency, n) {
@@ -454,7 +461,7 @@ export async function renderSite({ r, section, viewer, viewerData, opts }) {
 <noscript><link href="${FONTS_HREF}" rel="stylesheet" /></noscript>
 <link rel="stylesheet" href="/assets/site-shell.css" />
 ${section === "games" ? gamesIslandHead() : ""}
-<style nonce="${nonce}" data-theme-tokens>.yr-site{--yr-accent:${accent}}${section === "games" ? `#gx-root{--gx-accent:${accent};--gx-accent-ink:${accentInk(accent)}}` : ""}</style>
+<style nonce="${nonce}" data-theme-tokens>.yr-site{--yr-accent:${accent}}${section === "games" ? `#gx-root{--gx-accent:${accent};--gx-accent-ink:${accentInkFor(accent)}}` : ""}</style>
 ${opts.csrfToken ? `<meta name="csrf-token" content="${esc(opts.csrfToken)}" />` : ""}
 </head>`;
 

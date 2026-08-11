@@ -61,7 +61,7 @@ export async function handleDashboardPreview(request, env, nonce) {
     const editableSelectors = "[data-brand-name], [data-casino], .hero-name, .hero-sub, .clock-sub";
     html = html.replace('</head>', `<style nonce="${nonce}">
       ${editableSelectors} { cursor: text; transition: outline 0.15s ease, outline-offset 0.15s ease; }
-      ${editableSelectors.split(", ").map(s => s + ":hover").join(", ")} { outline: 2px dashed rgba(34,0,255,0.4); outline-offset: 3px; border-radius: 4px; }
+      ${editableSelectors.split(", ").map(s => s + ":hover").join(", ")} { outline: 2px dashed rgba(91,91,245,0.4); outline-offset: 3px; border-radius: 4px; }
     </style></head>`);
     html = html.replace('</body>', `<script nonce="${nonce}">
       document.addEventListener("click", (e) => {
@@ -83,7 +83,7 @@ export async function handleDashboardPreview(request, env, nonce) {
           selection.removeAllRanges();
           selection.addRange(range);
           
-          el.style.outline = "2px solid #2200ff";
+          el.style.outline = "2px solid #5b5bf5";
           el.style.outlineOffset = "2px";
           el.style.borderRadius = "4px";
           

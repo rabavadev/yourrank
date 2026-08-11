@@ -26,7 +26,7 @@ Measured off the renders; they are already declared in
 `apps/leaderboard/src/assets/dashboard-v3.css` and must not be re-invented per
 page.
 
-- Accent `#53FC18`, accent ink `#0A0A0A`, selected-row wash `#EDFEE7`.
+- Operator surfaces (dashboard, bot dashboard, account, marketing, and emails) use indigo `#5B5BF5`. Public streamer-facing surfaces (the `.yr-site` shell: home, leaderboard, shop, games, and `/me`, plus the OBS overlay) deliberately default to Kick lime `#53FC18`; streamers override it per site through `theme_json.accentA`.
 - Chrome (topbar, sidebar) `#0A0A0A`; sidebar card `#131313`; hairlines `#232323`.
 - Content background `#F9F9F9`; cards `#FFFFFF`; hairline `#E4E4E7`.
 - Danger `#EF4444`, warning `#F59E0B`.
