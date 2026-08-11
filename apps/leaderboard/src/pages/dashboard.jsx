@@ -1,12 +1,13 @@
 /** @jsxRuntime automatic */
 /** @jsxImportSource hono/jsx */
 
+import { profileMenuHtml } from "../../../../shared/shell-nav.js";
 
 export const dashboardConfig = {
   title: "Dashboard · YourRank",
   canonical: "https://yourrank.site/dashboard",
   styles: ["/assets/app.css", "/assets/shell-nav.css", "/assets/dashboard-v2.css", "/assets/dashboard-v3.css", "/assets/ui.css"],
-  scripts: ['<script src="/assets/dashboard.js?v=13" type="module"></script>'],
+  scripts: ['<script src="/assets/dashboard.js?v=13" type="module"></script>', '<script src="/assets/shell-nav.js?v=1" defer></script>'],
   nav: false,
   footer: false,
   wide: true,
@@ -95,7 +96,7 @@ export function DashboardContent() {
   <div class="lb-topbar-actions">
     <span class="lb-status" id="lbTopbarStatus">—</span>
     <label class="lb-pub-toggle" title="When checked, saving makes the board public at /your-slug"><input type="checkbox" id="pubToggle" checked /> <span class="lb-pub-lbl">Publish site</span></label>
-    <span class="lb-avatar" id="userAvatar" aria-label="Account">Y</span>
+    <div class="gm-profile-host" dangerouslySetInnerHTML={{ __html: profileMenuHtml({ activePath: "/dashboard" }) }}></div>
   </div>
 </header>
 <div class="lb-widget lb-widget--full lb-widget--danger" id="verifyBanner" hidden style="margin:0 0 24px"><h2>Verify your email</h2><p class="card-sub">Your leaderboard won't be public until you confirm your email address. Check your inbox for the link, or <a href="/verify-email">request a new one</a>.</p></div>
