@@ -220,8 +220,10 @@ export function setupShell() {
     const route = parseDashboardPath(new URL(href, location.origin).pathname);
     if (!route) return;
     e.preventDefault();
-    pushRoute(route.page, route.tab || defaultHash(route.page));
-    navTo(route.page, route.tab);
+    const page = link.dataset.nav;
+    const hash = link.dataset.hash || "";
+    pushRoute(page, hash || defaultHash(page));
+    navTo(page, hash);
   }));
   document.querySelectorAll("[data-jump]").forEach((el) => el.addEventListener("click", () => {
     const page = el.dataset.jump;
@@ -238,9 +240,6 @@ export function setupShell() {
     const route = parseDashboardPath(new URL(href, location.origin).pathname);
     if (!route) return;
     link.addEventListener("click", (e) => {
-      const url = new URL(href, location.origin);
-      const route = parseDashboardPath(url.pathname);
-      if (!route) return;
       e.preventDefault();
       pushRoute(route.page, route.tab || defaultHash(route.page));
       navTo(route.page, route.tab);
