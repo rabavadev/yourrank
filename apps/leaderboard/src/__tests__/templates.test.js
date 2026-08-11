@@ -253,6 +253,54 @@ describe("theme_json / extra_json persistence (BUG: double-encoded JSONB)", asyn
     expect(shaped.socials.map((s) => s.brand)).toEqual(["x", "discord", "twitch", "telegram"]);
   });
 });
+
+describe("derived archive values", async () => {
+  const SITE = {
+    name: "Archive Board", tagline: "", code: "", prize_pool: "$0",
+    period: "Monthly", casino: "", cta_url: "", reset_note: "", blurb: "", ends_at: null,
+    theme_json: {}, extra_json: {},
+  };
+
+  it("renders the stored top three in the same shape as snapshot-derived archives", async () => {
+    const snapshot = [
+      { name: "Alice", wagered: "500", prize: "50" },
+      { name: "Bob", wagered: "300", prize: "30" },
+      { name: "Cara", wagered: "100", prize: "10" },
+      { name: "Dana", wagered: "1", prize: "1" },
+    ];
+    const expectedTop = snapshot.slice().sort((a, b) => (b.wagered || 0) - (a.wagered || 0)).slice(0, 3)
+      .map((p) => ({ name: String(p.name || ""), wagered: Number(p.wagered) || 0, prize: Number(p.prize) || 0 }));
+    const shaped = publicShape({ ...SITE }, [], [{
+      label: "January", created_at: 123,
+      top3_json: expectedTop,
+      winner_name: "Alice",
+    }]);
+    expect(shaped.pastWinners).toEqual([{ label: "January", at: 123, top: expectedTop }]);
+  });
+
+  it("counts consecutive winner names for the current rank-one player", async () => {
+    const shaped = publicShape({ ...SITE }, [
+      { name: "  Alice  ", wagered: 500, prize: 50 },
+      { name: "Bob", wagered: 300, prize: 30 },
+    ], [
+      { label: "Current", created_at: 3, top3_json: [], winner_name: "alice" },
+      { label: "Previous", created_at: 2, top3_json: [], winner_name: " Alice " },
+      { label: "Older", created_at: 1, top3_json: [], winner_name: "Bob" },
+    ]);
+    expect(shaped.players[0].streak).toBe(3);
+    expect(shaped.players[1].streak).toBe(0);
+  });
+
+  it("renders safely when derived archive data is empty or malformed", async () => {
+    const shaped = publicShape({ ...SITE }, [], [
+      { label: "Empty", created_at: 1, top3_json: null, winner_name: null },
+      { label: "Malformed", created_at: 2, top3_json: "not-json", winner_name: 42 },
+    ]);
+    expect(shaped.pastWinners.map((archive) => archive.top)).toEqual([[], []]);
+    expect(shaped.players).toEqual([]);
+  });
+});
+
 describe("template options schema", async () => {
   it("exposes each template's schema in the catalog", async () => {
     const catalog = templateCatalog();

@@ -285,11 +285,9 @@ function parseTheme(site) {
 }
 
 function archiveShape(a) {
-  const snap = fromJsonb(a.snapshot_json);
-  let top = Array.isArray(snap) ? snap : [];
-  top = top.slice().sort((x, y) => (y.wagered || 0) - (x.wagered || 0)).slice(0, 3)
-    .map((p) => ({ name: String(p.name || ""), wagered: Number(p.wagered) || 0, prize: Number(p.prize) || 0 }));
-  return { label: a.label, at: a.created_at, top };
+  const top = fromJsonb(a.top3_json);
+  const players = Array.isArray(top) ? top : [];
+  return { label: a.label, at: a.created_at, top: players };
 }
 
 function playerStreak(player, currentRank, archives) {
@@ -297,28 +295,49 @@ function playerStreak(player, currentRank, archives) {
   const name = normalizePlayerName(player.name);
   let streak = 1;
   for (const a of archives) {
-    const snap = fromJsonb(a.snapshot_json);
-    const list = Array.isArray(snap) ? snap : [];
-    const sorted = list.slice().sort((x, y) => (Number(y.wagered) || 0) - (Number(x.wagered) || 0));
-    const idx = sorted.findIndex((p) => normalizePlayerName(p.name) === name);
-    if (idx === 0) streak++;
-    else break;
+    if (normalizePlayerName(a.winner_name) !== name) break;
+    streak++;
   }
   return streak;
 }
 
 // Plan-aware archive limits
 export const ARCHIVE_LIMITS = { free: 6, starter: 6, pro: 24, agency: 999 };
+export const PUBLIC_ARCHIVE_LIMIT = 24;
 
 export async function getArchives(env, siteId, limit = 6) {
     const rows = await query(
-      `SELECT id, label, snapshot_json,
+      `SELECT id, label, top3_json, winner_name,
               (EXTRACT(EPOCH FROM created_at) * 1000)::double precision AS created_at
          FROM archives WHERE site_id=$1 ORDER BY created_at DESC LIMIT $2`,
       [siteId, limit]
     );
     return rows || [];
   }
+
+// Expensive detail-only read. Never use this on the board render path: it
+// transfers the full archived player snapshots instead of derived summaries.
+export async function getArchiveSnapshots(env, siteId, limit = 6) {
+  const rows = await query(
+    `SELECT id, label, snapshot_json,
+            (EXTRACT(EPOCH FROM created_at) * 1000)::double precision AS created_at
+       FROM archives WHERE site_id=$1 ORDER BY created_at DESC LIMIT $2`,
+    [siteId, Math.min(limit, PUBLIC_ARCHIVE_LIMIT)]
+  );
+  return rows || [];
+}
+
+async function getArchivePlayerCounts(env, siteId, limit = 6) {
+  const rows = await query(
+    `SELECT id, label, top3_json, winner_name,
+            CASE WHEN jsonb_typeof(snapshot_json) = 'array'
+                 THEN jsonb_array_length(snapshot_json) ELSE 0 END AS player_count,
+            (EXTRACT(EPOCH FROM created_at) * 1000)::double precision AS created_at
+       FROM archives WHERE site_id=$1 ORDER BY created_at DESC LIMIT $2`,
+    [siteId, limit]
+  );
+  return rows || [];
+}
 
 export function publicShape(site, players, archives = [], hasLogo = false) {
   const rawExtra = fromJsonb(site.extra_json);
@@ -387,10 +406,10 @@ export async function getPublicSite(env, slug, request = null) {
     if (owner && owner.status === "suspended") return { suspended: true };
     if (owner && !owner.email_verified) return { suspended: true, pendingVerification: true };
     const plan = effectivePlan(owner);
-    const archiveLimit = ARCHIVE_LIMITS[plan] || 6;
+    const archiveLimit = Math.min(ARCHIVE_LIMITS[plan] || 6, PUBLIC_ARCHIVE_LIMIT);
     const [players, archives, boards, bot] = await Promise.all([
       getPlayers(env, site.id),
-      getArchives(env, site.id, archiveLimit), // DB-003-v8: fetch only what plan allows
+      getArchives(env, site.id, archiveLimit), // DB-003-v8: fetch only what the public page renders
       getPublicBoards(env, site.user_id),
       one("SELECT username FROM bots WHERE owner_id=$1 LIMIT 1", [site.user_id]),
     ]);
@@ -412,7 +431,7 @@ export async function getUserSite(env, uid, plan) {
       if (!site) return null;
       const archiveLimit = ARCHIVE_LIMITS[plan || "free"] || 6;
       // PERF-005: has_logo is now in SITE_COLUMNS — no separate query needed.
-      const archives = await getArchives(env, site.id, archiveLimit);
+      const archives = await getArchivePlayerCounts(env, site.id, archiveLimit);
     return {
         id: site.id, slug: site.slug, published: !!site.published,
         isDraft: !!site.is_draft,
@@ -430,9 +449,7 @@ export async function getUserSite(env, uid, plan) {
           telegram_notify: !!site.telegram_notify,
         },
         archives: archives.map((a) => {
-          const snap = fromJsonb(a.snapshot_json);
-          const n = Array.isArray(snap) ? snap.length : 0;
-          return { id: a.id, label: a.label, at: a.created_at, players: n };
+          return { id: a.id, label: a.label, at: a.created_at, players: Number(a.player_count) || 0 };
         }),
       };
     }
@@ -470,7 +487,7 @@ export async function getUserSiteById(env, uid, siteId, plan) {
     if (!site) return null;
     const archiveLimit = ARCHIVE_LIMITS[plan || "free"] || 6;
     // PERF-005: has_logo is now in SITE_COLUMNS — no separate query needed.
-    const archives = await getArchives(env, site.id, archiveLimit);
+    const archives = await getArchivePlayerCounts(env, site.id, archiveLimit);
   return {
     id: site.id, slug: site.slug, published: !!site.published,
     isDraft: !!site.is_draft,
@@ -487,9 +504,7 @@ export async function getUserSiteById(env, uid, siteId, plan) {
         telegram_notify: !!site.telegram_notify,
       },
       archives: archives.map((a) => {
-        const snap = fromJsonb(a.snapshot_json);
-        const n = Array.isArray(snap) ? snap.length : 0;
-        return { id: a.id, label: a.label, at: a.created_at, players: n };
+        return { id: a.id, label: a.label, at: a.created_at, players: Number(a.player_count) || 0 };
       }),
     };
   }

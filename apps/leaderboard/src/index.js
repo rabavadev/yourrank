@@ -3,7 +3,7 @@ import { sendErrorToDiscord } from "../../../shared/monitoring.js";
 import { withWorkerFetch } from "../../../shared/with-worker.js";
 import { RateLimiter } from "../../../shared/rate-limiter-do.js";
 import { populateEnv } from "../../../shared/env.js";
-import { getPublicSite, getBySlug, getArchives, ARCHIVE_LIMITS } from "./site.js";
+import { getPublicSite, getBySlug, getArchiveSnapshots, ARCHIVE_LIMITS, PUBLIC_ARCHIVE_LIMIT } from "./site.js";
 import { renderEmbed, renderHallOfFame, renderLeaderboard, renderLegalPage, renderPasswordGate, renderPlayerProfile, renderStreamerProfile } from "./render.jsx";
 import { renderPublicCreditsPage } from "./public-credits.js";
 import { parseSitePath, renderSiteRoute } from "./site-routes.js";
@@ -74,7 +74,7 @@ function findProfilePlayer(data, rawName) {
 
 async function buildPlayerHistory(env, siteId, rawName, plan) {
   const name = decodeURIComponent(rawName).trim().toLowerCase();
-  const archives = await getArchives(env, siteId, ARCHIVE_LIMITS[plan] || 6);
+  const archives = await getArchiveSnapshots(env, siteId, Math.min(ARCHIVE_LIMITS[plan] || 6, PUBLIC_ARCHIVE_LIMIT));
   const out = [];
   for (const a of archives) {
     const snap = Array.isArray(a.snapshot_json) ? a.snapshot_json : [];
