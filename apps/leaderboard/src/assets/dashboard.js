@@ -102,7 +102,10 @@ async function init() {
   if (p.customDomain !== undefined) $("f_domain").value = p.customDomain || "";
   if (p.customDomain && p.domainStatus) renderDomainStatus(p.domainStatus, "");
   const pubToggle = $("pubToggle");
-  if (pubToggle) pubToggle.checked = state.PUBLISHED;
+  if (pubToggle) {
+    pubToggle.checked = state.PUBLISHED;
+    pubToggle.disabled = false;
+  }
   function updatePublishHint() {
     const btn = $("save");
     const hint = document.querySelector(".savebar-hint");

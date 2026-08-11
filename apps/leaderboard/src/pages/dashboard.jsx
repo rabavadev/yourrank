@@ -93,8 +93,8 @@ export function DashboardContent() {
     </div>
   </div>
   <div class="lb-topbar-actions">
-    <span class="lb-status" id="lbTopbarStatus">Draft</span>
-    <label class="lb-pub-toggle" title="When checked, saving makes the board public at /your-slug"><input type="checkbox" id="pubToggle" checked /> <span class="lb-pub-lbl">Publish site</span></label>
+    <span class="lb-status" id="lbTopbarStatus">—</span>
+    <label class="lb-pub-toggle" title="When checked, saving makes the board public at /your-slug"><input type="checkbox" id="pubToggle" disabled /> <span class="lb-pub-lbl">Publish site</span></label>
     <span class="lb-avatar" id="userAvatar" aria-label="Account">Y</span>
   </div>
 </header>
@@ -284,17 +284,8 @@ export function DashboardContent() {
       </div>
       <div class="v3-table-card v3-block-card">
         <div class="v3-card-head"><div><h2>Leaderboard page blocks</h2><p class="v3-head-sub">Choose which blocks appear on your leaderboard page</p></div><span class="v3-chip v3-chip--pro">PRO</span></div>
-        <div class="v3-block-grid">
-          <label><span>Hero banner</span><input class="v3-toggle" type="checkbox" checked disabled aria-disabled="true" /></label>
-          <label><span>Top 3 podium</span><input class="v3-toggle" type="checkbox" checked disabled aria-disabled="true" /></label>
-          <label><span>Search &amp; Filter</span><input class="v3-toggle" type="checkbox" checked disabled aria-disabled="true" /></label>
-          <label><span>Rules marquee</span><input class="v3-toggle" type="checkbox" checked disabled aria-disabled="true" /></label>
-          <label><span>Social widgets</span><input class="v3-toggle" type="checkbox" checked disabled aria-disabled="true" /></label>
-          <label><span>Share button</span><input class="v3-toggle" type="checkbox" checked disabled aria-disabled="true" /></label>
-          <label><span>Countdown timer</span><input class="v3-toggle" type="checkbox" checked disabled aria-disabled="true" /></label>
-          <label><span>Call to action</span><input class="v3-toggle" type="checkbox" checked disabled aria-disabled="true" /></label>
-        </div>
-        <div class="v3-note">Note: Customize block visibility is currently locked to PRO users (showing all blocks by default).</div>
+        <div class="v3-block-grid" id="leaderboardBlockRows"></div>
+        <div class="v3-note" id="leaderboardBlockNote">Block visibility follows your board settings.</div>
       </div>
     </div>
     <div class="v3-table-card v3-game-card">

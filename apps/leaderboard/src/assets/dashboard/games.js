@@ -1,5 +1,6 @@
 import { $, getCsrf, guardAuth, logError, showToast } from "./utils.js";
-import { state } from "./state.js";
+import { state, markDirty } from "./state.js";
+import { DEFAULT_SECTIONS } from "./site.js";
 
 const GAME_ROWS = [
   { key: "plinko", label: "Plinko", description: "A pachinko-style game with multiplier rewards." },
@@ -13,6 +14,40 @@ const sectionRows = [
   ["credits", "Credits", "Let viewers see their balance and redemption history.", "Turning off removes Credits from navigation and disables the /credits URL."],
   ["games", "Games", "Let viewers play credit-based games on your board.", "Turning off removes Games from navigation and disables the /games URL."],
 ];
+
+const BLOCK_ROWS = [
+  ["hero", "Hero banner"],
+  ["top3", "Top 3 podium"],
+  ["search", "Search & Filter"],
+  ["rules", "Rules marquee"],
+  ["socials", "Social widgets"],
+  ["share", "Share button"],
+  ["countdown", "Countdown timer"],
+  ["cta", "Call to action"],
+];
+
+function isPro() {
+  const plan = state.ME?.plan;
+  return plan === "pro" || plan === "agency" || plan === "lifetime" || Number(state.ME?.planExpiresAt) > new Date("2099-01-01T00:00:00Z").getTime();
+}
+
+function renderPageBlocks() {
+  const list = $("leaderboardBlockRows");
+  const note = $("leaderboardBlockNote");
+  if (!list) return;
+  const editable = isPro();
+  const current = { ...DEFAULT_SECTIONS, ...(state.EXTRA?.sections || {}) };
+  list.innerHTML = BLOCK_ROWS.map(([key, label]) => `<label><span>${label}</span><input class="v3-toggle" type="checkbox" data-page-block="${key}" ${current[key] !== false ? "checked" : ""} ${editable ? "" : "disabled"} aria-disabled="${editable ? "false" : "true"}" /></label>`).join("");
+  if (note) note.textContent = editable
+    ? "Changes apply when you save your board."
+    : "Block visibility is available on Pro plans. Current board settings are shown.";
+  list.querySelectorAll("[data-page-block]").forEach((input) => {
+    input.addEventListener("change", () => {
+      state.EXTRA.sections = { ...DEFAULT_SECTIONS, ...(state.EXTRA.sections || {}), [input.dataset.pageBlock]: input.checked };
+      markDirty();
+    });
+  });
+}
 
 function siteSections() {
   const incoming = state.EXTRA?.siteSections || {};
@@ -161,10 +196,12 @@ export function initGames() {
   if (initGames._wired) return;
   initGames._wired = true;
   renderSections();
+  renderPageBlocks();
   renderGames([]);
   loadGames();
   window.addEventListener("yr-games-visible", () => {
     renderSections();
+    renderPageBlocks();
     loadGames();
   });
 }
