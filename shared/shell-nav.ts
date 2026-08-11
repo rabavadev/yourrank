@@ -90,8 +90,8 @@ export interface ShellNavOpts {
   theme?: "light" | "dark";
 }
 
-export function profileMenuHtml(opts: ShellNavOpts = {}): string {
-  const active = opts.active || activeKey(opts.activePath || "/");
+export function profileMenuHtml(opts: ShellNavOpts & { mobileTabs?: string; standalone?: boolean; dynamicIdentity?: boolean } = {}): string {
+  const active = opts.active || activeKey(opts.activePath || "/") || "";
   const rawName = opts.user?.display_name?.trim()
     || opts.user?.email?.split("@")[0]
     || "—";
@@ -102,18 +102,21 @@ export function profileMenuHtml(opts: ShellNavOpts = {}): string {
   const returnTo = encodeURIComponent(opts.activePath || "/dashboard");
   const helpQuery = `area=${area}&amp;return=${returnTo}`;
   const accountHref = esc(opts.accountHref || opts.settingsHref || "/account/profile");
+  const profileClass = opts.standalone ? "gm-profile gm-profile--standalone" : "gm-profile";
+  const identityAttr = opts.dynamicIdentity ? " data-profile-name" : "";
+  const profileNav = opts.mobileTabs ? `<div class="gm-profile-nav">${opts.mobileTabs}</div>` : "";
 
-  return `<details class="gm-profile gm-profile--standalone">
+  return `<details class="${profileClass}">
         <summary class="gm-profile-trigger">
           <span class="gm-who-avatar" aria-hidden="true">${esc(initial)}</span>
-          <span class="gm-who-id"><span class="gm-who-name" data-profile-name>${name}</span>${badge}</span>
+          <span class="gm-who-id"><span class="gm-who-name"${identityAttr}>${name}</span>${badge}</span>
           <span class="gm-profile-chevron" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg></span>
         </summary>
         <div class="gm-profile-menu">
-          <div class="gm-profile-nav">${""}</div>
-          <div class="gm-profile-id"><span class="gm-profile-id-name" data-profile-name>${name}</span>${badge}</div>
+          ${profileNav}
+          <div class="gm-profile-id"><span class="gm-profile-id-name"${identityAttr}>${name}</span>${badge}</div>
           <a class="gm-profile-link" href="${accountHref}"><span class="gm-profile-ic"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9c-.18-.7-.43-1.36-.79-1.95a2 2 0 0 1 .63-2.75l.06-.06a2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33h.09A1.65 1.65 0 0 0 9 4.6V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09c0 .66.25 1.28.67 1.75h.09a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V15z"/></svg></span>Account</a>
-          <a class="gm-profile-link" href="/help/support?area=${area}&amp;return=${returnTo}"><span class="gm-profile-ic"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></span>Support</a>
+          <a class="gm-profile-link" href="/help/support?${helpQuery}"><span class="gm-profile-ic"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></span>Support</a>
           <a class="gm-profile-link gm-profile-link--accent" href="/help/feedback?${helpQuery}"><span class="gm-profile-ic"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></span>Feedback</a>
           <form method="POST" action="${esc(opts.logoutAction || "/logout")}" class="gm-logout-form"><button class="gm-logout" type="submit"><span class="gm-profile-ic"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg></span>Sign out</button></form>
         </div>
@@ -150,21 +153,9 @@ export function publicNavHtml(opts: { activePath?: string; theme?: "light" | "da
 }
 
 export function shellNavHtml(opts: ShellNavOpts = {}): string {
-  const active = opts.active || activeKey(opts.activePath || "/");
+  const active = opts.active || activeKey(opts.activePath || "/") || "";
   const theme = opts.theme || "dark";
   const headerClass = `gm-shell-nav gm-shell-nav--${theme}`;
-  // Never render a raw email as the user's identity: fall back to the local
-  // part so the chip reads as a name rather than a truncated address.
-  const rawName = opts.user?.display_name?.trim()
-    || opts.user?.email?.split("@")[0]
-    || "Streamer";
-  const name = esc(rawName);
-  const initial = (rawName[0] || "S").toUpperCase();
-  const badge = planBadge(opts.user?.plan);
-  const area = encodeURIComponent(active || "dashboard");
-  const returnTo = encodeURIComponent(opts.activePath || "/dashboard");
-  const helpQuery = `area=${area}&amp;return=${returnTo}`;
-
   const topLinks = NAV_LINKS.filter((l) => l.top);
   const tabs = topLinks.map((l) => {
     const isActive = l.key === active;
@@ -181,8 +172,6 @@ export function shellNavHtml(opts: ShellNavOpts = {}): string {
       `${isActive ? ' aria-current="page"' : ""} href="${l.href}">${l.label}</a>`;
   }).join("");
 
-  const accountHref = esc(opts.accountHref || opts.settingsHref || "/account/profile");
-
   return `<header class="${headerClass}" data-theme="${theme}">
   <div class="gm-shell-inner">
     <a class="gm-brand" href="/dashboard">
@@ -193,21 +182,16 @@ export function shellNavHtml(opts: ShellNavOpts = {}): string {
       <nav class="gm-tabs" aria-label="Dashboard">${tabs}</nav>
     </div>
     <div class="gm-who">
-      <details class="gm-profile">
-        <summary class="gm-profile-trigger">
-          <span class="gm-who-avatar" aria-hidden="true">${esc(initial)}</span>
-          <span class="gm-who-id"><span class="gm-who-name">${name}</span>${badge}</span>
-          <span class="gm-profile-chevron" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg></span>
-        </summary>
-        <div class="gm-profile-menu">
-          <div class="gm-profile-nav">${mobileTabs}</div>
-          <div class="gm-profile-id"><span class="gm-profile-id-name">${name}</span>${badge}</div>
-          <a class="gm-profile-link" href="${accountHref}"><span class="gm-profile-ic"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9c-.18-.7-.43-1.36-.79-1.95a2 2 0 0 1 .63-2.75l.06-.06a2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33h.09A1.65 1.65 0 0 0 9 4.6V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09c0 .66.25 1.28.67 1.75h.09a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V15z"/></svg></span>Account</a>
-          <a class="gm-profile-link" href="/help/support?area=${area}&amp;return=${returnTo}"><span class="gm-profile-ic"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></span>Support</a>
-          <a class="gm-profile-link gm-profile-link--accent" href="/help/feedback?${helpQuery}"><span class="gm-profile-ic"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></span>Feedback</a>
-          <form method="POST" action="${esc(opts.logoutAction || "/logout")}" class="gm-logout-form"><button class="gm-logout" type="submit"><span class="gm-profile-ic"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg></span>Sign out</button></form>
-        </div>
-      </details>
+      ${profileMenuHtml({
+        activePath: opts.activePath,
+        active,
+        user: opts.user,
+        logoutAction: opts.logoutAction,
+        accountHref: String(opts.accountHref || opts.settingsHref || "") || undefined,
+        theme: opts.theme,
+        mobileTabs,
+        standalone: false
+      })}
     </div>
   </div>
 </header>`;

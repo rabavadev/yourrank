@@ -1964,7 +1964,7 @@ body[data-wide] .v3-dash .lb-main {
 .v3-dash .lb-topbar,
 .v3-dash .lb-bento,
 .v3-dash .lb-main { min-width: 0; max-width: 100%; }
-.v3-dash .lb-topbar { box-sizing: border-box; overflow: visible; }
+.v3-dash .lb-topbar { box-sizing: border-box; overflow: hidden; }
 @media (max-width: 980px) {
   .v3-dash .cr-status-grid { grid-template-columns: repeat(2, 1fr); }
   .v3-dash .cr-redemption-summary { align-items: flex-start; flex-direction: column; }
