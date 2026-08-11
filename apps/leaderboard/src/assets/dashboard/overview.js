@@ -1,7 +1,6 @@
 // Overview page summary tiles / top players / setup checklist.
 import { $, esc, currentPlayers } from "./utils.js";
 import { state, boardStatus } from "./state.js";
-import { dashboardPath } from "./routes.js";
 
 const ACTIVITY_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>';
 const LOCK_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect width="16" height="11" x="4" y="11" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>';
@@ -38,8 +37,6 @@ function setSetupStatus(el, done) {
 
 export function renderOverviewSummary() {
     if (!$("ovActiveBento")) return;
-    const analyticsLink = $("ovAnalyticsLink");
-    if (analyticsLink) analyticsLink.href = dashboardPath("performance");
     const players = currentPlayers();
     const status = boardStatus();
     $("ovHeadSub").textContent = status.live ? "All systems operational" : "Complete setup to go live";
