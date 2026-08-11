@@ -620,7 +620,7 @@ export async function handleCreditsActivity(request, env) {
   if (res) return res;
 
   const url = new URL(request.url);
-  if (!(await rateLimit(env, `credits:viewer-history:${user.id}`, 20, 60)).ok) return bad("Too many requests.", 429);
+  if (!(await rateLimit(env, `credits:activity:${user.id}`, 60, 60)).ok) return bad("Too many requests.", 429);
 
   const siteId = String(url.searchParams.get("siteId") || "").trim();
   if (!siteId) return bad("siteId is required");

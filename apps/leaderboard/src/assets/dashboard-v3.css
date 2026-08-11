@@ -1142,6 +1142,8 @@ body[data-wide] .v3-dash .lb-main {
 .v3-dash .v3-chip--fulfilled { background: #dcfce7; color: #15803d; }
 .v3-dash .v3-chip--refunded { background: #dbeafe; color: #1d4ed8; }
 .v3-dash .v3-chip--cancelled { background: var(--yr-color-surface-sunken-2); color: var(--v3-main-ink-mute); }
+.v3-dash .cr-positive { color: #15803d; }
+.v3-dash .cr-negative { color: #b91c1c; }
 .v3-dash .v3-chip--pro {
   background: var(--v3-accent-soft);
   color: var(--yr-color-success-3);

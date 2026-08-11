@@ -9,6 +9,7 @@ const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "
 const csrf = () => document.cookie.match(/(?:^|;\s*)__csrf=([^;]+)/)?.[1] || "";
 const fmtDate = (iso) => iso ? new Date(iso).toLocaleString() : "—";
 const relative = (iso) => { const mins = Math.max(0, Math.floor((Date.now() - new Date(iso).getTime()) / 60000)); return mins < 60 ? `${mins}m ago` : mins < 1440 ? `${Math.floor(mins / 60)}h ago` : `${Math.floor(mins / 1440)}d ago`; };
+const LEDGER_EVENT_LABELS = Object.freeze({ earn: "Earned", spend: "Spent", redeem: "Redeemed", revoke: "Refunded spend", refund: "Reversed earn" });
 async function api(method, path, body) {
   const opts = { method, credentials: "same-origin", headers: { "x-csrf-token": csrf() } };
   if (body) { opts.headers["content-type"] = "application/json"; opts.body = JSON.stringify(body); }
@@ -175,11 +176,14 @@ function render() {
     else redemptionCtrl.setItems(redemptions);
   }
   if (current === "history") {
-    const empty = $("cr-history-feed-empty");
-    if (empty) {
-      empty.innerHTML = emptyStateHtml({ icon: "chart", title: "No credit activity yet", body: "Credit events will appear here as viewers earn, spend, or receive adjustments." });
-      empty.hidden = false;
+    const typeSelect = $("cr-history-type");
+    if (typeSelect && typeSelect.options.length === 1) {
+      for (const [value, label] of Object.entries(LEDGER_EVENT_LABELS)) typeSelect.add(new Option(label, value));
     }
+    const empty = $("cr-history-feed-empty");
+    const list = $("cr-history-feed-list");
+    if (list) setRowsLoading(list, { cols: 5, rows: 3 });
+    if (empty) empty.hidden = true;
   }
 }
 function renderOnboarding() {
@@ -436,7 +440,19 @@ async function loadViewerSummary(username) {
 }
 
 async function loadActivity({ reset }) {
-  if (activityLoading || !activeSiteId) return;
+  if (activityLoading) return;
+  if (!activeSiteId) {
+    const list = $("cr-history-feed-list");
+    const empty = $("cr-history-feed-empty");
+    const more = $("cr-history-load-more");
+    if (list) list.innerHTML = "";
+    if (empty) {
+      empty.innerHTML = emptyStateHtml({ icon: "archive", title: "No board selected", body: "Select a board to view its credit activity." });
+      empty.hidden = false;
+    }
+    if (more) more.hidden = true;
+    return;
+  }
   activityLoading = true;
   const btn = $("cr-history-search");
   const more = $("cr-history-load-more");
@@ -444,7 +460,7 @@ async function loadActivity({ reset }) {
     if (reset) {
       activityEvents = [];
       activityCursor = null;
-      $("cr-history-feed-list").innerHTML = "";
+      setRowsLoading($("cr-history-feed-list"), { cols: 5, rows: 3 });
       $("cr-history-feed-empty").hidden = true;
       setLoading(btn, true, "Loading…");
       await loadViewerSummary($("cr-history-username")?.value.trim());
@@ -485,7 +501,7 @@ function renderActivity() {
     list.innerHTML = activityEvents.map((event) => {
       const debit = event.direction === "debit";
       const amount = `${debit ? "−" : "+"}${event.amount}`;
-      return `<tr><td title="${esc(fmtDate(event.createdAt))}">${esc(relative(event.createdAt))}</td><td>${esc(event.kickUsername || event.kickUserId || "Unknown viewer")}</td><td>${esc(event.type)}</td><td class="num ${debit ? "cr-negative" : "cr-positive"}">${amount}</td><td>${esc(event.description || "—")}</td></tr>`;
+      return `<tr><td title="${esc(fmtDate(event.createdAt))}">${esc(relative(event.createdAt))}</td><td>${esc(event.kickUsername || event.kickUserId || "Unknown viewer")}</td><td>${esc(LEDGER_EVENT_LABELS[event.type] || event.type)}</td><td class="num ${debit ? "cr-negative" : "cr-positive"}">${amount}</td><td>${esc(event.description || "—")}</td></tr>`;
     }).join("");
   }
   if (more) more.hidden = !activityCursor;
