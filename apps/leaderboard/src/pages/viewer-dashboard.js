@@ -50,7 +50,7 @@ export const viewerDashboardPage = leaderboardPageHtml({
     <h2>Your boards</h2>
     <p class="card-sub">Each card shows your credits for a streamer's board. Select one to view the shop and your redemptions.</p>
     <div id="vd-boards"></div>
-    <p class="empty" id="vd-boards-empty" hidden>You don't have credits on any board yet. Redeem a Kick channel reward that is mapped to YourRank credits to earn some.</p>
+    <p class="empty" id="vd-boards-empty" hidden>You don't have credits on any board yet. Redeem a Kick channel reward covered by a credit rule to earn some.</p>
   </section>
 
   <section class="card" id="vd-site-card" hidden>
@@ -62,7 +62,7 @@ export const viewerDashboardPage = leaderboardPageHtml({
       <button class="btn btn--sm" id="vd-back" type="button">Back to boards</button>
     </div>
     <p class="card-sub">Balance: <b id="vd-site-balance">0</b> credits</p>
-    <p class="hint" id="vd-earn-hint">Earn credits by redeeming the streamer's mapped Kick channel rewards during a live stream.</p>
+    <p class="hint" id="vd-earn-hint">Earn credits by redeeming the streamer's Kick channel rewards covered by credit rules during a live stream.</p>
 
     <h3>Shop</h3>
     <div id="vd-shop-list"></div>
