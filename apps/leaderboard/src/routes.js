@@ -56,6 +56,8 @@ import {
   handleCreditsUpdateRedemption,
   handleCreditsAnalytics,
   handleCreditsViewerHistory,
+  handleCreditsAdjustBalance,
+  handleCreditsReconcile,
   handlePublicCredits,
   handleCreditsViewerAuth,
 } from "./handlers/credits.js";
@@ -169,6 +171,8 @@ export const ROUTES = [
   { path: "/api/credits/redemptions/:id", method: "POST", handler: withHandler(handleCreditsUpdateRedemption) },
   { path: "/api/credits/analytics", method: "GET", handler: withHandler(handleCreditsAnalytics) },
   { path: "/api/credits/viewer/history", method: "GET", handler: withHandler(handleCreditsViewerHistory) },
+  { path: "/api/credits/viewers/:id/balance", method: "POST", handler: withHandler(handleCreditsAdjustBalance) },
+  { path: "/api/credits/reconcile", method: "GET", handler: withHandler(handleCreditsReconcile) },
   { path: "/api/credits/viewers/:id/block", method: "POST", handler: withHandler(handleCreditsBlockViewer) },
 
   // Public credits / shop API (CSRF-exempt, read-only balance lookup)

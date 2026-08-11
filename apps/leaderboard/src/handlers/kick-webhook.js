@@ -6,6 +6,7 @@ import { createQueueProducer } from "../../../../shared/queue-producer.js";
 import {
   verifyKickWebhookSignature,
   isCreditableKickStatus,
+  isReversibleKickStatus,
   processKickRewardRedemption,
 } from "../../../../shared/kick-credits.js";
 
@@ -64,8 +65,8 @@ export async function handleKickWebhook(request, env) {
     return bad("Invalid JSON body", 400);
   }
 
-  // Only queue redemptions that actually completed.
-  if (!isCreditableKickStatus(payload.status)) {
+  // Queue creditable completions and reversible cancellations/refunds.
+  if (!isCreditableKickStatus(payload.status) && !isReversibleKickStatus(payload.status)) {
     return json({ ok: true, skipped: payload.status });
   }
 
