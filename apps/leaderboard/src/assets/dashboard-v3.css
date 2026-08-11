@@ -2143,7 +2143,7 @@ body[data-wide] .v3-dash .lb-main {
 }
 
 .v3-dash .card--status {
-  background: linear-gradient(180deg, #f7f7f8 0%, var(--v3-main-panel) 100%);
+  background: linear-gradient(180deg, var(--yr-color-surface-sunken) 0%, var(--v3-main-panel) 100%);
   border-color: var(--v3-accent);
 }
 
@@ -2173,7 +2173,7 @@ body[data-wide] .v3-dash .lb-main {
   padding: 10px 12px;
   border: 1px solid var(--v3-main-line);
   border-radius: var(--v3-radius-sm);
-  background: #f7f7f8;
+  background: var(--yr-color-surface-sunken);
 }
 
 .v3-dash .plan-usage-meta {
@@ -2194,7 +2194,7 @@ body[data-wide] .v3-dash .lb-main {
   padding: 14px;
   border: 1px solid var(--v3-main-line);
   border-radius: var(--v3-radius-sm);
-  background: #f7f7f8;
+  background: var(--yr-color-surface-sunken);
 }
 
 .v3-dash .plan-cancel-list {
