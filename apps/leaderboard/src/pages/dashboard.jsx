@@ -359,7 +359,7 @@ export function DashboardContent() {
 </div>
 </section>
 <section class="lb-page" data-page="settings">
-<div class="lb-phead v3-settings-phead"><button class="lb-menu" type="button" aria-label="Show sections" data-menu aria-expanded="false" aria-controls="lbSide">☰</button></div>
+<div class="lb-phead"><button class="lb-menu" type="button" aria-label="Show sections" data-menu aria-expanded="false" aria-controls="lbSide">☰</button></div>
 <div class="v3-settings">
   <div class="v3-head"><h1>Settings</h1><p class="v3-head-sub" id="settingsSubline">Manage your subscription, account connections, and safety settings</p></div>
   <div class="v3-tabs" role="tablist" aria-label="Settings sections">

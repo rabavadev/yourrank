@@ -1245,8 +1245,7 @@
 }
 
 /* ---------- Settings screen ---------- */
-.v3-dash .v3-settings { max-width: 1060px; margin: 0 auto; padding-top: 42px; }
-.v3-dash .v3-settings-phead { display: none; }
+.v3-dash .v3-settings { max-width: 1060px; margin: 0 auto; }
 .v3-dash .v3-settings .v3-head { margin-bottom: 26px; }
 .v3-dash .v3-settings .v3-head h1 { margin: 0; font: 700 34px/1.15 var(--v3-sans); color: var(--v3-main-ink); }
 .v3-dash .v3-settings .v3-head-sub { margin: 8px 0 0; color: var(--v3-main-ink-soft); font-size: 14px; }
