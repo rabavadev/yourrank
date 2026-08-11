@@ -399,7 +399,7 @@ export function publicShape(site, players, archives = [], hasLogo = false) {
     endsAt: site.ends_at,
     partner: { blurb: site.blurb, chips: m.chips },
     whyStats: m.whyStats, rules: m.rules, socials: (m.socials || []).filter(s => s.enabled !== false),
-    branding: { hasLogo, accentA: theme.accentA, accentB: theme.accentB, template: theme.template, text: theme.text, font: theme.font },
+    branding: { hasLogo, accentA: theme.accentA, accentB: theme.accentB, template: theme.template, text: theme.text, font: theme.font, options: theme.options },
     pastWinners: archives.map(archiveShape),
     players: players.map((p, i) => ({
       name: p.name,
