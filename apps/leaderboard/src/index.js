@@ -433,6 +433,22 @@ async function handleRequest(request, env, ctx, meta) {
           return applyPlaceholders(content);
         }
       }
+      const renderDashboardPage = async (pageKey, logLabel) => {
+        try {
+          const user = await currentUser(request, env);
+          if (!user) return Response.redirect(new URL("/login", url), 302);
+          const html = addCookieConsent(await renderHtmlPage(PAGES[pageKey], {
+            activePath: url.pathname + url.search,
+            user,
+            reqId: reqId || "",
+            theme: "light"
+          }));
+          return new Response(html, { headers: { ...SECURE_HTML, ...csrfHeader, "cache-control": "no-store, no-cache, must-revalidate" } });
+        } catch (e) {
+          if (workerLog) workerLog.error(logLabel, { error: String(e?.message || e) }); else console.error(`${logLabel.replaceAll("_", " ")}:`, String(e?.message || e));
+          return new Response(error500Page(nonce), { status: 500, headers: HTML_N });
+        }
+      };
 
       // --- pages ---
       // SEC-108: Issue CSRF cookie on every page load so the JS client can
@@ -471,37 +487,11 @@ async function handleRequest(request, env, ctx, meta) {
         return new Response(html, { status, headers: { ...SECURE_HTML, ...csrfHeader } });
       }
       if (path === "/dashboard/settings/integrations") {
-        try {
-          const user = await currentUser(request, env);
-          if (!user) return Response.redirect(new URL("/login", url), 302);
-          const html = addCookieConsent(await renderHtmlPage(PAGES.rewardsChannel, {
-            activePath: url.pathname + url.search,
-            user,
-            reqId: reqId || "",
-            theme: "light"
-          }));
-          return new Response(html, { headers: { ...SECURE_HTML, ...csrfHeader, "cache-control": "no-store, no-cache, must-revalidate" } });
-        } catch (e) {
-          if (workerLog) workerLog.error("integrations_render_failed", { error: String(e?.message || e) }); else console.error("integrations render failed:", String(e?.message || e));
-          return new Response(error500Page(nonce), { status: 500, headers: HTML_N });
-        }
+        return renderDashboardPage("rewardsChannel", "integrations_render_failed");
       }
       if (path === "/dashboard/audience/viewers" || path === "/dashboard/audience/activity") {
         const pageKey = path.endsWith("/viewers") ? "rewardsViewers" : "rewardsHistory";
-        try {
-          const user = await currentUser(request, env);
-          if (!user) return Response.redirect(new URL("/login", url), 302);
-          const html = addCookieConsent(await renderHtmlPage(PAGES[pageKey], {
-            activePath: url.pathname + url.search,
-            user,
-            reqId: reqId || "",
-            theme: "light"
-          }));
-          return new Response(html, { headers: { ...SECURE_HTML, ...csrfHeader, "cache-control": "no-store, no-cache, must-revalidate" } });
-        } catch (e) {
-          if (workerLog) workerLog.error("audience_render_failed", { error: String(e?.message || e) }); else console.error("audience render failed:", String(e?.message || e));
-          return new Response(error500Page(nonce), { status: 500, headers: HTML_N });
-        }
+        return renderDashboardPage(pageKey, "audience_render_failed");
       }
       // Every dashboard section is a real URL: `/dashboard`, `/dashboard/editor`,
       // `/dashboard/editor/players`, … The section is rendered client-side, so
@@ -607,20 +597,7 @@ async function handleRequest(request, env, ctx, meta) {
         const map = { rules: "rewardsMaps", shop: "rewardsShop", redemptions: "rewardsRedemptions" };
         const pageKey = map[tab];
         if (!pageKey) return Response.redirect(new URL("/dashboard/rewards/redemptions", url), 302);
-        try {
-          const user = await currentUser(request, env);
-          if (!user) return Response.redirect(new URL("/login", url), 302);
-          const html = addCookieConsent(await renderHtmlPage(PAGES[pageKey], {
-            activePath: url.pathname + url.search,
-            user,
-            reqId: reqId || "",
-            theme: "light"
-          }));
-          return new Response(html, { headers: { ...SECURE_HTML, ...csrfHeader, "cache-control": "no-store, no-cache, must-revalidate" } });
-        } catch (e) {
-          if (workerLog) workerLog.error("rewards_render_failed", { error: String(e?.message || e) }); else console.error("rewards render failed:", String(e?.message || e));
-          return new Response(error500Page(nonce), { status: 500, headers: HTML_N });
-        }
+        return renderDashboardPage(pageKey, "rewards_render_failed");
       }
       // An unknown tab under a real section (a typo, a renamed step) belongs on
       // that section rather than on a 404.
