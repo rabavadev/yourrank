@@ -93,19 +93,19 @@ export const docsPage = `<!DOCTYPE html><html lang="en"><head>
 .docs-wrap h1{font-size:clamp(32px,5vw,48px);font-weight:800;letter-spacing:-.03em;margin:0 0 12px}
 .docs-wrap h2{font-size:22px;font-weight:700;margin:36px 0 14px}
 .docs-wrap h3{font-size:16px;font-weight:600;margin:24px 0 10px}
-.docs-wrap p{line-height:1.6;color:var(--ink-soft,#9a94b8)}
-.docs-wrap pre{background:var(--panel-2,#1a1a22);border:1px solid var(--line-2,rgba(87,113,255,.2));border-radius:10px;padding:16px;overflow-x:auto;margin:14px 0;font-family:"JetBrains Mono",monospace;font-size:13px}
-.docs-wrap code{font-family:"JetBrains Mono",monospace;background:var(--panel-2,#1a1a22);padding:2px 6px;border-radius:4px}
+.docs-wrap p{line-height:1.6;color:var(--yr-color-text-secondary-4, #9a94b8)}
+.docs-wrap pre{background:var(--yr-color-surface-sunken-3, #1a1a22);border:1px solid var(--yr-color-chart-series-line, rgba(87,113,255,.2));border-radius:10px;padding:16px;overflow-x:auto;margin:14px 0;font-family:"JetBrains Mono",monospace;font-size:13px}
+.docs-wrap code{font-family:"JetBrains Mono",monospace;background:var(--yr-color-surface-sunken-3, #1a1a22);padding:2px 6px;border-radius:4px}
 .docs-wrap pre code{padding:0;background:transparent}
 .docs-table{width:100%;border-collapse:collapse;margin:14px 0;font-size:14px}
-.docs-table th,.docs-table td{padding:10px 8px;border-bottom:1px solid var(--line-2,rgba(87,113,255,.2));text-align:left}
-.docs-table th{color:var(--ink-soft,#9a94b8);font-weight:600}
-.docs-lang{color:#7ee787}
-.docs-json{color:#d6b0ff}
-.docs-toc{display:flex;flex-wrap:wrap;gap:8px 16px;padding:16px 0 0;margin:0 0 28px;border-bottom:1px solid var(--line-2,rgba(87,113,255,.2));list-style:none}
-.docs-toc a{color:var(--ink-soft,#9a94b8);text-decoration:none;font-size:14px;font-weight:500}
-.docs-toc a:hover{color:var(--accent,#8b5cf6);text-decoration:underline}
-.legal-foot{margin-top:48px;font-size:13px;color:var(--ink-mute,#6c6685)}
+.docs-table th,.docs-table td{padding:10px 8px;border-bottom:1px solid var(--yr-color-chart-series-line, rgba(87,113,255,.2));text-align:left}
+.docs-table th{color:var(--yr-color-text-secondary-4, #9a94b8);font-weight:600}
+.docs-lang{color:var(--yr-color-success-8, #7ee787)}
+.docs-json{color:var(--yr-color-chart-series-3, #d6b0ff)}
+.docs-toc{display:flex;flex-wrap:wrap;gap:8px 16px;padding:16px 0 0;margin:0 0 28px;border-bottom:1px solid var(--yr-color-chart-series-line, rgba(87,113,255,.2));list-style:none}
+.docs-toc a{color:var(--yr-color-text-secondary-4, #9a94b8);text-decoration:none;font-size:14px;font-weight:500}
+.docs-toc a:hover{color:var(--yr-color-chart-series, #8b5cf6);text-decoration:underline}
+.legal-foot{margin-top:48px;font-size:13px;color:var(--yr-color-text-muted-3, #6c6685)}
 </style></head><body>
 <a href="#main-content" class="sr-only skip-link">Skip to content</a>
 <header class="topbar"><a class="brand" href="/">Your<b>Rank</b></a>

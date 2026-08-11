@@ -280,7 +280,7 @@ function showStreamBanner() {
   banner.id = "lb-poll-banner";
   banner.setAttribute("role", "alert");
   banner.setAttribute("aria-live", "polite");
-  banner.style.cssText = "position:fixed;bottom:12px;left:50%;transform:translateX(-50%);background:rgba(220,38,38,.92);color:#fff;padding:8px 18px;border-radius:8px;font:13px/1.4 system-ui,sans-serif;z-index:9999;backdrop-filter:blur(6px)";
+  banner.style.cssText = "position:fixed;bottom:12px;left:50%;transform:translateX(-50%);background:var(--yr-color-danger-5, rgba(220,38,38,.92));color:var(--yr-color-text-inverse, #fff);padding:8px 18px;border-radius:8px;font:13px/1.4 system-ui,sans-serif;z-index:9999;backdrop-filter:blur(6px)";
   banner.textContent = "Connection lost. Refresh to get the latest data.";
   document.body.appendChild(banner);
 }
