@@ -258,7 +258,7 @@ describe("logged-out vs logged-in rendering", () => {
     const res = await renderSiteRoute({ request, env, ctx, nonce: "n", slug: "streamer", section: "shop", isCustomDomain: false });
     expect(res.status).toBe(200);
     const html = await res.text();
-    expect(html).toContain("500 credits");
+    expect(html).toContain(">500</p>"); // balance in the shop hero
     expect(html).toContain(">Redeem<");
     expect(html).not.toContain("Sign in with Kick");
   });
@@ -270,9 +270,9 @@ describe("logged-out vs logged-in rendering", () => {
     expect(res.status).toBe(200);
     const html = await res.text();
     expect(html).toContain("My Credits");
-    expect(html).toContain("500 credits");
-    expect(html).toContain("Shoutout");
-    expect(html).toContain("Stream");
+    expect(html).toContain(">500</p>"); // balance in the hero
+    expect(html).toContain("Shoutout"); // redemption
+    expect(html).toContain("Stream"); // ledger description
   });
 
   it("leaderboard renders inside the shared site shell", async () => {
@@ -280,8 +280,8 @@ describe("logged-out vs logged-in rendering", () => {
     expect(res.status).toBe(200);
     const html = await res.text();
     expect(html).toContain("Alice");
-    expect(html).toContain('class="site-topbar"');
-    expect(html).toContain('class="site-bottom-tabs"');
+    expect(html).toContain('class="yr-side"');
+    expect(html).toContain('class="yr-header"');
     expect(html).toContain("Leaderboard");
   });
 });

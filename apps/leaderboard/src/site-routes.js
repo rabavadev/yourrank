@@ -108,13 +108,14 @@ export async function renderSiteRoute({ request, env, ctx, nonce, slug, section,
     const logoUrl = paid && r.data?.branding?.hasLogo ? `${homeUrl}/logo/${slug}` : null;
 
     let viewerData = null;
-    if (section === "home" || section === "leaderboard") {
-      if (viewer) {
-        viewerData = await getViewerSiteData(r.id, viewer.id);
-      }
-    } else if (section === "shop" || section === "me") {
-      const opts = { shop: true, redemptions: true, ledger: true };
+    if (section === "home" || section === "shop" || section === "me") {
+      // Home shows the featured reward grid (public), plus the signed-in
+      // viewer's balance, 7-day chart, activity log and pending count.
+      const opts = { shop: true, redemptions: !!viewer, ledger: !!viewer };
       viewerData = await getViewerSiteData(r.id, viewer?.id || null, opts);
+    } else if (viewer) {
+      // Leaderboard and Games only need the balance shown in the header.
+      viewerData = await getViewerSiteData(r.id, viewer.id);
     }
 
     if (section === "home" || section === "leaderboard") {

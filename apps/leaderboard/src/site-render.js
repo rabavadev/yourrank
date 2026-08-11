@@ -1,26 +1,36 @@
-// Multi-section, branded streamer site shell. Reuses the leaderboard design tokens
-// and template CSS while wrapping every public section (Home, Leaderboard, Shop,
-// Games, My Credits) in a shared header, navigation, mobile tab bar and footer.
+// Multi-section, branded streamer site shell (Home, Leaderboard, Shop, Games,
+// My Credits).
+//
+// The chrome is the approved "console" design: a fixed 260px sidebar, a 72px
+// utility header, near-black panels with hairline borders and one accent
+// colour. It ships as a single stylesheet (/assets/site-shell.css) plus a small
+// progressive-enhancement script (/assets/site-shell.js) — no CDN, no runtime
+// CSS framework, no chart library.
+//
+// Only data the backend can actually produce is rendered: balances and history
+// come from the viewer's ledger, standings from the streamer's board, rewards
+// from shop_items. Nothing here claims watch time, tiers or percentiles, and
+// sponsor cash is kept visually distinct from free credits.
 import {
-  buildParts,
-  composeMain,
-  shareSection,
-  shareScriptNonce,
-  fontsHref,
-  fontCss,
   logoSrcSet,
   renderLegalSidebar,
-  footerDisclaimer,
   esc as renderEsc,
   safeUrl as renderSafeUrl,
 } from "./render.jsx";
-import { DEFAULT_EXTRA, FONT_FAMILIES } from "./site.js";
-import { validTemplate, templateCss, templateTokens, resolveOptions, templateHeader, templateFooter, templateParts } from "./templates/index.js";
+import { gamesIslandHead, gamesIslandMount } from "./games-embed.js";
 
 const esc = renderEsc;
 const safeUrl = renderSafeUrl;
 
 const SECTION_LABELS = {
+  home: "Home",
+  leaderboard: "Ranks",
+  shop: "Shop",
+  games: "Games",
+  me: "My Credits",
+};
+
+const SECTION_TITLES = {
   home: "Home",
   leaderboard: "Leaderboard",
   shop: "Shop",
@@ -28,63 +38,33 @@ const SECTION_LABELS = {
   me: "My Credits",
 };
 
-const SECTION_DESCRIPTIONS = {
-  leaderboard: "See who is on top and chase the prize pool.",
-  shop: "Spend your free credits on streamer rewards.",
-  games: "Play original games and win more credits.",
-  me: "Check your balance, history and redemptions.",
-};
-
 const HEX = /^#[0-9a-fA-F]{6}$/;
+const ACCENT_DEFAULT = "#53fc18";
+const CREDITS_DISCLAIMER = "Credits are free loyalty points earned from channel-point redemptions. No purchase, no cash value, no cashout.";
+const FONTS_HREF = "https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap";
 
-// Base design-system tokens from /assets/leaderboard.css.  The shell emits
-// these on :root once per page, merges the active template's palette, then
-// layers the streamer's chosen accent colours on top.  This removes the need
-// for hardcoded hex fallbacks in the shell CSS and keeps every section in the
-// same branded palette.
-const DEFAULT_TOKENS = {
-  "--bg": "#0f0f0f",
-  "--surface": "#141414",
-  "--panel": "#1c1c1c",
-  "--panel-2": "#1f1f1f",
-  "--surface-highest": "#272727",
-  "--line": "rgba(255,255,255,0.06)",
-  "--line-2": "rgba(255,255,255,0.10)",
-  "--ink": "#ededf0",
-  "--ink-soft": "#a7a6a6",
-  "--ink-mute": "#82828a",
-  "--primary": "#5771ff",
-  "--primary-strong": "#2200ff",
-  "--primary-deep": "#1a00cc",
-  "--cy": "#e4ecf4",
-  "--bl": "#5771ff",
-  "--grad-name": "linear-gradient(100deg,#e4ecf4 0%,#5771ff 45%,#2200ff 100%)",
-  "--grad-cta": "linear-gradient(100deg,#5771ff,#1a00cc)",
-  "--accent": "#5771ff",
-  "--green": "#10a37f",
-  "--kick": "#10a37f",
-  "--x": "#1d1d1f",
-  "--youtube": "#ff0000",
-  "--instagram": "#e1306c",
-  "--telegram": "#229ed9",
-  "--font-display": '"Inter", "Montserrat", system-ui, sans-serif',
-  "--font-body": '"Inter", system-ui, sans-serif',
-  "--font-mono": '"IBM Plex Mono", "Space Mono", "JetBrains Mono", monospace',
-  "--radius": "12px",
-  "--radius-sm": "8px",
-  "--wrap": "1200px",
-  "--ease": "cubic-bezier(0.16, 1, 0.3, 1)",
-  "--tap": "44px",
+/* ── tiny inline icon set (replaces the mockup's Font Awesome) ────────── */
+const S = 'viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"';
+const ICONS = {
+  home: `<svg ${S}><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/></svg>`,
+  leaderboard: `<svg ${S}><path d="M8 21h8"/><path d="M12 17v4"/><path d="M7 4h10v5a5 5 0 0 1-10 0z"/><path d="M17 5h3v2a3 3 0 0 1-3 3"/><path d="M7 5H4v2a3 3 0 0 0 3 3"/></svg>`,
+  shop: `<svg ${S}><path d="M3 9h18l-1.5 11H4.5z"/><path d="M8 9V6a4 4 0 0 1 8 0v3"/></svg>`,
+  games: `<svg ${S}><rect x="2" y="7" width="20" height="11" rx="4"/><path d="M7 12h3M8.5 10.5v3M15.5 11h.01M17.5 13.5h.01"/></svg>`,
+  me: `<svg ${S}><ellipse cx="12" cy="6.5" rx="7" ry="3"/><path d="M5 6.5v11c0 1.7 3.1 3 7 3s7-1.3 7-3v-11"/><path d="M5 12c0 1.7 3.1 3 7 3s7-1.3 7-3"/></svg>`,
+  book: `<svg ${S}><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v15H6.5A2.5 2.5 0 0 0 4 20.5z"/><path d="M4 18.5V5.5"/></svg>`,
+  kick: `<svg ${S}><path d="M6 4v16"/><path d="M18 4l-7 8 7 8"/></svg>`,
+  search: `<svg ${S}><circle cx="11" cy="11" r="7"/><path d="M16.5 16.5 21 21"/></svg>`,
+  bell: `<svg ${S}><path d="M6 9a6 6 0 0 1 12 0c0 5 2 6 2 6H4s2-1 2-6"/><path d="M10 19a2 2 0 0 0 4 0"/></svg>`,
+  bars: `<svg ${S}><path d="M3 6h18M3 12h18M3 18h18"/></svg>`,
+  chart: `<svg ${S}><path d="M3 3v18h18"/><path d="M7 15l4-5 3 3 5-7"/></svg>`,
+  trophy: `<svg ${S}><path d="M8 21h8M12 17v4"/><path d="M7 4h10v5a5 5 0 0 1-10 0z"/></svg>`,
+  hourglass: `<svg ${S}><path d="M7 3h10M7 21h10"/><path d="M8 3c0 4 4 5 4 9s-4 5-4 9"/><path d="M16 3c0 4-4 5-4 9s4 5 4 9"/></svg>`,
+  arrow: `<svg ${S}><path d="M5 12h14M13 6l6 6-6 6"/></svg>`,
+  crown: `<svg ${S}><path d="M4 18h16"/><path d="M4 18 3 7l5 4 4-6 4 6 5-4-1 11"/></svg>`,
+  medal: `<svg ${S}><circle cx="12" cy="15" r="5"/><path d="M8 4h8l-2.5 6h-3z"/></svg>`,
+  bomb: `<svg ${S}><circle cx="10" cy="14" r="6"/><path d="M15 9l2-2M17 5l1.5 1.5M20 8l1.5-1.5"/></svg>`,
+  gift: `<svg ${S}><rect x="3" y="8" width="18" height="12" rx="1"/><path d="M12 8v12M3 13h18"/><path d="M12 8S10.5 4 8.5 4a2 2 0 0 0 0 4z"/><path d="M12 8s1.5-4 3.5-4a2 2 0 0 1 0 4z"/></svg>`,
 };
-
-// Pull a concrete hex out of a template token value.  Some templates declare
-// --cy as `var(--opt-accent,#d4af37)` so the dashboard accent option drives the
-// page; when we generate the static :root block we still need the default hex.
-function extractHexValue(value) {
-  if (HEX.test(value || "")) return value.toLowerCase();
-  const m = String(value || "").match(/var\(--[\w-]+,\s*(#[0-9a-fA-F]{6})\s*\)/);
-  return m ? m[1].toLowerCase() : null;
-}
 
 export function siteSectionHref(section, slug, isCustomDomain) {
   if (isCustomDomain) return section === "home" ? "/" : `/${section}`;
@@ -95,10 +75,30 @@ function formatNumber(n) {
   return Number(n || 0).toLocaleString("en-US");
 }
 
+function compact(n) {
+  const v = Math.abs(Number(n) || 0);
+  const sign = Number(n) < 0 ? "-" : "";
+  if (v >= 1e6) return `${sign}${(v / 1e6).toFixed(1)}m`;
+  if (v >= 1e4) return `${sign}${Math.round(v / 1e3)}k`;
+  if (v >= 1e3) return `${sign}${(v / 1e3).toFixed(1)}k`;
+  return `${sign}${v}`;
+}
+
 function formatDate(d) {
   if (!d) return "—";
   const dt = new Date(d);
   return Number.isNaN(dt.getTime()) ? "—" : dt.toLocaleString("en-US", { month: "short", day: "numeric", year: "numeric" });
+}
+
+/** "02H_AGO" / "3D_AGO" — the mockup's mono log timestamps. */
+function agoStamp(d) {
+  const t = d ? new Date(d).getTime() : NaN;
+  if (Number.isNaN(t)) return "—";
+  const mins = Math.max(0, Math.floor((Date.now() - t) / 60000));
+  if (mins < 60) return `${String(mins).padStart(2, "0")}M_AGO`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `${String(hours).padStart(2, "0")}H_AGO`;
+  return `${Math.floor(hours / 24)}D_AGO`;
 }
 
 function initials(name) {
@@ -110,682 +110,701 @@ function sectionList(sections) {
   return ["home", "leaderboard", "shop", "games", "me"].filter((s) => sections[s] !== false);
 }
 
-/**
- * Build the :root token block for the active template and streamer accent.
- * Reads the template's own palette (templateTokens) so noir/tournament/etc.
- * keep their backgrounds, then layers the streamer's chosen accent over the top.
- */
-function themeTokenCss(br, tpl, nonce, options = null) {
-  const tokens = { ...DEFAULT_TOKENS };
-  const tplTokens = templateTokens(tpl);
-  for (const [k, v] of Object.entries(tplTokens)) {
-    if (k.startsWith("--")) tokens[k] = v;
+/** Streamer accent, falling back to the design's default lime. */
+function accentColor(br, options) {
+  const candidates = [br?.accentA, options?.accent];
+  for (const c of candidates) {
+    if (HEX.test(String(c || ""))) return String(c).toLowerCase();
   }
+  return ACCENT_DEFAULT;
+}
 
-  const resolvedOptions = options || br.options || {};
-  const tplCy = extractHexValue(tplTokens["--cy"] || "");
-  const tplBl = extractHexValue(tplTokens["--bl"] || "");
+/** Black or white text on the accent, whichever stays readable. */
+function accentInk(hex) {
+  const n = parseInt(hex.slice(1), 16);
+  const lum = (0.299 * ((n >> 16) & 255) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255)) / 255;
+  return lum > 0.6 ? "#000000" : "#ffffff";
+}
 
-  let userA = br.accentA || null;
-  let userB = br.accentB || null;
-  if (!HEX.test(userA)) userA = null;
-  if (!HEX.test(userB)) userB = null;
+function money(currency, n) {
+  const cur = String(currency || "$").slice(0, 6);
+  return `${cur}${formatNumber(Math.round(Number(n) || 0))}`;
+}
 
-  let accentA = userA;
-  if (!accentA && HEX.test(resolvedOptions.accent || "")) accentA = resolvedOptions.accent;
-  if (!accentA && tplCy) accentA = tplCy;
-  if (!accentA || !HEX.test(accentA)) accentA = DEFAULT_TOKENS["--cy"];
+function countdownText(endsAt) {
+  const end = endsAt ? new Date(endsAt).getTime() : NaN;
+  if (Number.isNaN(end)) return null;
+  const left = Math.max(0, end - Date.now());
+  const d = Math.floor(left / 86400000);
+  const h = Math.floor((left % 86400000) / 3600000);
+  const m = Math.floor((left % 3600000) / 60000);
+  return { ms: end, text: d > 0 ? `${d}d ${h}h` : `${h}h ${m}m` };
+}
 
-  let accentB;
-  if (userB) {
-    accentB = userB;
-  } else if (userA) {
-    accentB = userA;
-  } else if (tplBl) {
-    accentB = tplBl;
-  } else {
-    accentB = DEFAULT_TOKENS["--bl"];
+/* ── shell pieces ─────────────────────────────────────────────────────── */
+
+function navItem({ key, label, href, active, badge }) {
+  const icon = ICONS[key] || ICONS.home;
+  const cls = `yr-nav-a${active ? " is-on" : ""}${badge ? " yr-nav-a--split" : ""}`;
+  const aria = active ? ' aria-current="page"' : "";
+  if (badge) {
+    return `<a class="${cls}" href="${href}"${aria}><span>${icon} ${esc(label)}</span><span class="yr-nav-badge">${esc(badge)}</span></a>`;
   }
-  if (!HEX.test(accentB)) accentB = accentA;
-
-  tokens["--cy"] = accentA;
-  tokens["--bl"] = accentB;
-  tokens["--grad-name"] = `linear-gradient(100deg,${accentA},${accentB})`;
-  tokens["--grad-cta"] = `linear-gradient(100deg,${accentA},${accentB})`;
-  tokens["--accent"] = accentA;
-  tokens["--primary"] = accentA;
-  tokens["--primary-strong"] = accentB;
-  tokens["--primary-deep"] = accentB;
-
-  const bodyFont = FONT_FAMILIES[br.font] || FONT_FAMILIES.Inter;
-  tokens["--font-body"] = `${bodyFont}, system-ui, sans-serif`;
-
-  const decls = Object.entries(tokens).map(([k, v]) => `${k}:${v}`).join(";");
-  return `<style nonce="${nonce}" data-theme-tokens>:root{${decls}}</style>`;
+  return `<a class="${cls}" href="${href}"${aria}>${icon} ${esc(label)}</a>`;
 }
 
-function siteShellCss() {
-  return `:root{
-  --site-topbar-h: 60px;
-  --site-bottom-h: 64px;
-}
-.btn--sm{font-size:.85rem;padding:.4rem .75rem}
-.btn--kick{background:var(--kick);color:#fff;border-color:transparent}
-.btn--success{background:var(--green);color:#003915}
-@media (prefers-reduced-motion: reduce){
-  .site-topbar *,.site-bottom-tabs *,.site-menu-panel *{animation:none!important;transition:none!important}
-}
-.site-topbar{position:sticky;top:0;z-index:100;width:100%;background:color-mix(in srgb,var(--bg) 85%,transparent);backdrop-filter:blur(12px);border-bottom:1px solid var(--line);box-sizing:border-box}
-.site-topbar-inner{width:min(var(--wrap),100% - 2rem);margin:0 auto;height:var(--site-topbar-h);display:flex;align-items:center;gap:1rem;justify-content:space-between}
-.site-brand{display:flex;align-items:center;gap:.6rem;color:var(--ink);text-decoration:none;font-weight:700;overflow:hidden;min-width:0}
-.site-brand-logo{width:36px;height:36px;border-radius:8px;object-fit:cover;flex-shrink:0}
-.site-brand-name{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.site-topbar-nav{display:none;align-items:center;gap:.4rem}
-.site-topbar-actions{display:none;align-items:center;gap:.6rem;flex-shrink:0}
-.site-nav-link,.site-nav-link--active{display:inline-flex;align-items:center;padding:.45rem .75rem;border-radius:8px;color:var(--ink-soft);text-decoration:none;font-size:.92rem;font-weight:500;transition:color .15s,background .15s;white-space:nowrap}
-.site-nav-link:hover,.site-nav-link:focus-visible{color:var(--ink);background:var(--panel-2);outline:none}
-.site-nav-link--active{color:var(--ink);background:var(--panel-2)}
-.site-balance-chip{display:inline-flex;align-items:center;gap:.5rem;padding:.35rem .7rem .35rem .85rem;background:var(--panel);border:1px solid var(--line);border-radius:999px;color:var(--ink);text-decoration:none;font-weight:600;font-size:.88rem;flex-shrink:0;max-width:220px}
-.site-balance-chip:hover{border-color:var(--accent)}
-.site-balance-amount{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.site-avatar{width:26px;height:26px;border-radius:50%;background:var(--primary-strong);color:#fff;display:grid;place-items:center;font-size:10px;font-weight:700;flex-shrink:0;overflow:hidden}
-.site-avatar img{width:100%;height:100%;object-fit:cover}
-.site-signin{display:flex;align-items:center;gap:.5rem}
-.site-signin .btn{font-size:.82rem;padding:.4rem .75rem}
-.site-menu{position:relative;display:flex;align-items:center;margin-left:auto}
-.site-menu summary{list-style:none;cursor:pointer;display:grid;place-items:center;width:40px;height:40px;border-radius:8px;color:var(--ink);background:var(--panel);border:1px solid var(--line)}
-.site-menu summary::-webkit-details-marker{display:none}
-.site-menu summary svg{width:22px;height:22px}
-.site-menu[open] summary{background:var(--panel-2)}
-.site-menu-panel{position:absolute;top:calc(100% + 8px);right:0;min-width:220px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:.6rem;box-shadow:0 20px 40px rgba(0,0,0,.35);display:flex;flex-direction:column;gap:.25rem;z-index:101}
-.site-menu-panel .site-nav-link{justify-content:flex-start;padding:.65rem .8rem}
-.site-menu-actions{display:flex;flex-direction:column;gap:.5rem;padding-top:.5rem;margin-top:.25rem;border-top:1px solid var(--line)}
-.site-bottom-tabs{position:fixed;bottom:0;left:0;right:0;z-index:99;background:color-mix(in srgb,var(--bg) 92%,transparent);backdrop-filter:blur(12px);border-top:1px solid var(--line);display:flex;justify-content:safe center;overflow-x:auto;scrollbar-width:none;padding-bottom:env(safe-area-inset-bottom,0)}
-.site-bottom-tabs::-webkit-scrollbar{display:none}
-.site-bottom-tabs-inner{display:flex;width:100%;max-width:var(--wrap);margin:0 auto}
-.site-bottom-tab{flex:1 1 0;min-width:64px;max-width:120px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;height:var(--site-bottom-h);color:var(--ink-soft);text-decoration:none;font-size:11px;font-weight:500;white-space:nowrap;transition:color .15s,background .15s}
-.site-bottom-tab:hover,.site-bottom-tab:focus-visible{color:var(--ink);background:var(--panel-2);outline:none}
-.site-bottom-tab--active{color:var(--ink);background:var(--panel-2);position:relative}
-.site-bottom-tab--active::before{content:"";position:absolute;top:0;left:12px;right:12px;height:3px;background:var(--accent);border-radius:0 0 4px 4px}
-.site-main{width:min(var(--wrap),100% - 2rem);margin:0 auto;padding:1.5rem 0 5rem}
-.site-main--leaderboard{padding-top:0}
-.site-footer{border-top:1px solid var(--line);padding:2rem 0 2.5rem;background:var(--surface);margin-bottom:var(--site-bottom-h)}
-.site-footer-inner{width:min(var(--wrap),100% - 2rem);margin:0 auto;display:flex;flex-direction:column;gap:1rem;text-align:center;color:var(--ink-mute);font-size:.85rem}
-.site-footer-legal{font-size:.8rem;max-width:720px;margin:0 auto;line-height:1.5}
-.site-footer-links{display:flex;flex-wrap:wrap;justify-content:center;gap:.5rem 1rem;margin-top:.5rem}
-.site-footer-links a{color:var(--ink-soft);text-decoration:none}
-.site-footer-links a:hover{color:var(--ink);text-decoration:underline}
-.site-powered{position:fixed;right:12px;bottom:calc(var(--site-bottom-h) + 12px);z-index:90}
-.site-powered a{display:inline-flex;align-items:center;gap:.35rem;padding:.35rem .6rem;background:var(--panel);border:1px solid var(--line);border-radius:999px;color:var(--ink-mute);text-decoration:none;font-size:11px;font-weight:600}
-.site-powered a:hover{color:var(--ink)}
-.site-feedback{border:none;border-radius:var(--radius);background:var(--panel);border:1px solid var(--line);color:var(--ink);padding:0;width:min(460px,calc(100% - 2rem));max-width:100%;box-shadow:0 24px 60px rgba(0,0,0,.45)}
-.site-feedback::backdrop{background:rgba(0,0,0,.55);backdrop-filter:blur(2px)}
-.site-feedback-form{padding:1.25rem;display:flex;flex-direction:column;gap:.75rem}
-.site-feedback-form h2{margin:0;font-size:1.25rem}
-.site-feedback-hint{margin:0;color:var(--ink-soft);font-size:.9rem}
-.site-feedback-form textarea{width:100%;box-sizing:border-box;resize:vertical;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-sm);padding:.75rem;color:var(--ink);font:inherit}
-.site-feedback-form textarea:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
-.site-feedback-actions{display:flex;justify-content:flex-end;gap:.5rem}
-.site-feedback-status{min-height:1.25em;margin:0;font-size:.9rem}
-@media (min-width: 720px){
-  .site-topbar-nav{display:flex}
-  .site-topbar-actions{display:flex}
-  .site-menu{display:none}
-  .site-bottom-tabs{display:none}
-  .site-main{padding-bottom:2rem}
-  .site-footer{margin-bottom:0}
-  .site-powered{bottom:12px}
-}
-@media (max-width: 719px){
-  .site-brand-name{max-width:26vw;font-size:.9rem}
-  .site-main{padding-bottom:calc(var(--site-bottom-h) + 1.5rem)}
-}
-`;
+function sidebar({ b, slug, section, siteSections, homeUrl, isCustomDomain, logoUrl, viewer, balance, ctaHref, hasCta, casino, kickUrl }) {
+  const enabled = sectionList(siteSections);
+  const items = enabled.map((s) => navItem({
+    key: s,
+    label: SECTION_LABELS[s],
+    href: `${homeUrl}${siteSectionHref(s, slug, isCustomDomain)}`,
+    active: s === section,
+    badge: s === "me" && viewer ? compact(balance) : null,
+  })).join("");
+
+  const resources = [
+    kickUrl ? `<a class="yr-nav-a" href="${kickUrl}" target="_blank" rel="noopener">${ICONS.kick} Watch on Kick</a>` : "",
+    hasCta && casino ? `<a class="yr-nav-a" href="${ctaHref}" target="_blank" rel="noopener">${ICONS.gift} Join ${esc(casino)}</a>` : "",
+    `<button class="yr-nav-a" type="button" data-feedback-open>${ICONS.book} Send feedback</button>`,
+  ].filter(Boolean).join("");
+
+  const mark = logoUrl
+    ? `<img class="yr-brand-logo" src="${esc(logoUrl)}" srcset="${logoSrcSet(logoUrl)}" sizes="28px" alt="" />`
+    : "";
+  const name = esc(b.name || slug);
+
+  const foot = viewer
+    ? `<div class="yr-user"><span class="yr-user-l"><span class="yr-ava">${avatarHtml(viewer)}</span><span><span class="yr-user-name">${esc(viewerName(viewer))}</span><span class="yr-user-sub">Signed in with ${viewer.kick_username ? "Kick" : "Discord"}</span></span></span></div>`
+    : `<a class="yr-user" href="${homeUrl}${siteSectionHref("me", slug, isCustomDomain)}"><span class="yr-user-l"><span class="yr-ava">?</span><span><span class="yr-user-name">Guest</span><span class="yr-user-sub">Not signed in</span></span></span></a>`;
+
+  return `<aside class="yr-side" id="yr-side">
+<div class="yr-side-head"><a class="yr-brand" href="${homeUrl}${siteSectionHref("home", slug, isCustomDomain)}">${mark}${name}</a><span class="yr-live" aria-hidden="true"><i></i><b></b></span><span class="yr-live-txt">Live</span></div>
+<nav class="yr-nav yr-noscroll" aria-label="Sections">
+${items}
+<div class="yr-nav-group">Resources</div>
+${resources}
+</nav>
+<div class="yr-side-foot">${foot}</div>
+</aside>
+<button class="yr-scrim" id="yr-scrim" type="button" aria-label="Close menu" hidden></button>`;
 }
 
-function homeAndSectionCss() {
-  return `.site-hero{position:relative;padding:2.5rem 1rem 2rem;border-radius:var(--radius);border:1px solid var(--line);background:linear-gradient(180deg,rgba(255,255,255,.04),transparent),var(--panel);text-align:center;overflow:hidden}
-.site-hero-content{position:relative;z-index:1}
-.site-hero h1{font-size:clamp(2rem,6vw,3.6rem);font-weight:800;letter-spacing:-.03em;margin:0 0 .5rem;background:var(--grad-name);-webkit-background-clip:text;background-clip:text;color:transparent}
-.site-hero-tagline{color:var(--ink-soft);font-size:clamp(1rem,2.5vw,1.25rem);max-width:560px;margin:0 auto 1.5rem}
-.site-hero-cta{display:flex;flex-wrap:wrap;gap:.75rem;justify-content:center}
-.site-hero-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:1rem;max-width:680px;margin:2rem auto 0}
-.site-stat{background:var(--panel-2);border:1px solid var(--line);border-radius:var(--radius-sm);padding:1rem;text-align:center}
-.site-stat-label{display:block;font-size:.75rem;text-transform:uppercase;letter-spacing:.08em;color:var(--ink-mute);margin-bottom:.35rem}
-.site-stat-value{font-size:1.5rem;font-weight:700;color:var(--ink);display:block}
-.site-stat-value [data-pool]{font-size:inherit;color:var(--ink)}
-.site-stat .timer-grid{justify-content:center;background:transparent;border:none;backdrop-filter:none;padding:0;margin:0}
-.site-section-title{font-size:1.35rem;font-weight:700;margin:0 0 .4rem;color:var(--ink)}
-.site-section-header{display:flex;align-items:baseline;justify-content:space-between;gap:1rem;margin-bottom:1rem;flex-wrap:wrap}
-.site-section-header a{font-size:.9rem;color:var(--accent);text-decoration:none}
-.site-section{margin-top:2.5rem}
-.site-podium .top3{grid-template-columns:repeat(3,1fr);gap:14px;margin-top:1rem}
-@media (max-width: 640px){.site-podium .top3{grid-template-columns:1fr}}
-.site-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:1rem}
-.site-card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:1.25rem;color:var(--ink);text-decoration:none;transition:transform .1s,border-color .15s;display:flex;flex-direction:column;gap:.35rem}
-.site-card:hover,.site-card:focus-visible{border-color:var(--accent);transform:translateY(-2px);outline:none}
-.site-card h3{margin:0;font-size:1.05rem}
-.site-card p{margin:0;color:var(--ink-soft);font-size:.9rem}
-.site-empty{text-align:center;color:var(--ink-mute);padding:2.5rem 1rem;background:var(--panel);border:1px solid var(--line);border-radius:var(--radius)}
-`;
+function viewerName(viewer) {
+  return viewer?.kick_username || viewer?.discord_username || "Viewer";
 }
 
-function shopAndMeCss() {
-  return `.site-shop-head{display:flex;align-items:center;justify-content:space-between;gap:1rem;margin-bottom:1.25rem;flex-wrap:wrap}
-.site-shop-head h1{margin:0;font-size:clamp(1.5rem,4vw,2rem)}
-.site-balance-large{font-size:2rem;font-weight:700;color:var(--accent)}
-.site-shop-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:1rem}
-.site-shop-item{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:1.1rem;display:flex;flex-direction:column;gap:.6rem}
-.site-shop-item h3{margin:0;font-size:1.05rem}
-.site-shop-item p{margin:0;color:var(--ink-soft);font-size:.9rem}
-.site-shop-meta{display:flex;align-items:center;justify-content:space-between;gap:.5rem;margin-top:auto;flex-wrap:wrap}
-.site-shop-cost{font-weight:700;color:var(--accent)}
-.site-shop-stock{font-size:.8rem;color:var(--ink-mute)}
-.site-signin-prompt{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:2rem;text-align:center;max-width:480px;margin:2rem auto}
-.site-signin-prompt h2{margin:0 0 .5rem}
-.site-signin-prompt p{color:var(--ink-soft);margin:0 0 1.25rem}
-.site-ledger{border-collapse:collapse;width:100%;font-size:.9rem}
-.site-ledger th,.site-ledger td{padding:.7rem .5rem;text-align:left;border-bottom:1px solid var(--line)}
-.site-ledger th{color:var(--ink-mute);font-weight:600;font-size:.8rem;text-transform:uppercase;letter-spacing:.05em}
-.site-ledger td{color:var(--ink-soft)}
-.site-ledger tr:last-child td{border-bottom:none}
-`;
+function avatarHtml(viewer) {
+  return viewer?.avatar_url
+    ? `<img src="${esc(viewer.avatar_url)}" alt="" />`
+    : esc(initials(viewerName(viewer)));
 }
 
-function gamesCss() {
-  return `.site-games-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:1rem}
-.site-game-card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:1.25rem;text-align:center;display:flex;flex-direction:column;gap:.5rem}
-.site-game-card h3{margin:0}
-.site-game-card p{margin:0;color:var(--ink-soft);font-size:.9rem;flex:1}
-`;
+function header({ r, viewer, balance, returnTo, searchable, homeUrl, slug, isCustomDomain }) {
+  const search = searchable
+    ? `<input class="yr-search" id="yr-search" type="search" placeholder="Search the board…" aria-label="Search the board" autocomplete="off" />`
+    : `<a class="yr-search yr-search--link" href="${homeUrl}${siteSectionHref("leaderboard", slug, isCustomDomain)}">Search the board…</a>`;
+
+  const right = viewer
+    ? `<a class="yr-bell" href="${homeUrl}${siteSectionHref("me", slug, isCustomDomain)}" aria-label="Credit activity">${ICONS.bell}<i></i></a>
+<span class="yr-vr"></span>
+<a class="yr-bal" href="${homeUrl}${siteSectionHref("me", slug, isCustomDomain)}"><span class="yr-bal-txt"><span class="yr-bal-num">${formatNumber(balance)}</span><span class="yr-bal-unit">Creds</span></span><span class="yr-ava">${avatarHtml(viewer)}</span></a>`
+    : signInLink(r, returnTo, "yr-btn yr-btn--ghost");
+
+  return `<header class="yr-header">
+<div class="yr-header-l">
+<button class="yr-menu" id="yr-menu" type="button" aria-label="Open sections" aria-controls="yr-side">${ICONS.bars}</button>
+${ICONS.search}
+${search}
+</div>
+<div class="yr-header-r">${right}</div>
+</header>`;
 }
+
+function signInLink(r, returnTo, cls = "yr-btn") {
+  if (r.viewerKickAuthEnabled) {
+    return `<a class="${cls} yr-btn--sm" href="/api/viewer/auth/kick?returnTo=${encodeURIComponent(returnTo)}">Sign in with Kick</a>`;
+  }
+  if (r.viewerDiscordAuthEnabled) {
+    return `<a class="${cls} yr-btn--sm" href="/api/viewer/auth/discord?returnTo=${encodeURIComponent(returnTo)}">Sign in with Discord</a>`;
+  }
+  return `<a class="${cls} yr-btn--sm" href="/me">Sign in</a>`;
+}
+
+function signInButton(r, returnTo) {
+  if (r.viewerKickAuthEnabled) {
+    return `<a class="yr-btn" href="/api/viewer/auth/kick?returnTo=${encodeURIComponent(returnTo)}">Sign in with Kick</a>`;
+  }
+  if (r.viewerDiscordAuthEnabled) {
+    return `<a class="yr-btn" href="/api/viewer/auth/discord?returnTo=${encodeURIComponent(returnTo)}">Sign in with Discord</a>`;
+  }
+  return `<a class="yr-btn" href="/me">Sign in</a>`;
+}
+
+function hero({ eyebrow, title, lede, right }) {
+  return `<section class="yr-hero">
+<div class="yr-hero-blob" aria-hidden="true"></div>
+<div class="yr-hero-l">
+${eyebrow ? `<p class="yr-eyebrow"><i aria-hidden="true"></i>${esc(eyebrow)}</p>` : ""}
+<h1 class="yr-h1">${esc(title)}</h1>
+${lede ? `<p class="yr-lede">${lede}</p>` : ""}
+</div>
+${right || ""}
+</section>`;
+}
+
+function heroStat(label, value, { cd = null } = {}) {
+  const attr = cd ? ` data-ends-at="${cd}"` : "";
+  return `<div><p class="yr-label">${esc(label)}</p><p class="yr-big"${attr}>${value}</p></div>`;
+}
+
+function kpi(label, iconKey, value, sub, { accent = false } = {}) {
+  return `<div class="yr-card yr-lb">
+<div class="yr-card-top"><span class="yr-label">${esc(label)}</span>${ICONS[iconKey] || ""}</div>
+<p class="yr-num">${esc(String(value))}</p>
+<p class="yr-sub${accent ? " is-accent" : ""}">${esc(sub)}</p>
+</div>`;
+}
+
+function panel({ title, meta = "", body, foot = "", pad = false }) {
+  return `<div class="yr-panel yr-lb">
+<div class="yr-panel-head"><h3 class="yr-panel-title">${esc(title)}</h3>${meta ? `<span class="yr-panel-meta">${meta}</span>` : ""}</div>
+${pad ? `<div class="yr-panel-pad">${body}</div>` : body}
+${foot ? `<div class="yr-panel-foot">${foot}</div>` : ""}
+</div>`;
+}
+
+function sectionHead(title, right = "") {
+  return `<div class="yr-sec-head"><h3 class="yr-sec-title">${esc(title)}</h3>${right}</div>`;
+}
+
+/** Inline 7-day area chart. No chart library: one path, one average line. */
+function creditsChart(series) {
+  const w = 800;
+  const h = 320;
+  const padL = 8;
+  const padB = 28;
+  const values = series.map((p) => p.value);
+  const max = Math.max(1, ...values);
+  const avg = values.reduce((a, v) => a + v, 0) / (values.length || 1);
+  const step = (w - padL * 2) / Math.max(1, values.length - 1);
+  const y = (v) => (h - padB) - (v / max) * (h - padB - 16);
+  const pts = values.map((v, i) => `${(padL + i * step).toFixed(1)},${y(v).toFixed(1)}`);
+  const line = `M${pts.join("L")}`;
+  const area = `${line}L${(padL + (values.length - 1) * step).toFixed(1)},${h - padB}L${padL},${h - padB}Z`;
+  const grid = [0.25, 0.5, 0.75, 1].map((f) => {
+    const gy = (y(max * f)).toFixed(1);
+    return `<line x1="${padL}" x2="${w - padL}" y1="${gy}" y2="${gy}" stroke="#1f2937" stroke-width="1" vector-effect="non-scaling-stroke" />`;
+  }).join("");
+  const labels = series.map((p) => `<span>${esc(p.label)}</span>`).join("");
+  return `<div class="yr-chart">
+<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" role="img" aria-label="Credits earned per day, last 7 days">
+<defs><linearGradient id="yr-fill" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--yr-accent)" stop-opacity="0.25" /><stop offset="1" stop-color="var(--yr-accent)" stop-opacity="0" /></linearGradient></defs>
+${grid}
+<path d="${area}" fill="url(#yr-fill)" />
+<path d="${line}" fill="none" stroke="var(--yr-accent)" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linejoin="round" />
+<line x1="${padL}" x2="${w - padL}" y1="${y(avg).toFixed(1)}" y2="${y(avg).toFixed(1)}" stroke="#374151" stroke-width="1" stroke-dasharray="4 4" vector-effect="non-scaling-stroke" />
+</svg>
+<div class="yr-legend yr-legend--x">${labels}</div>
+</div>`;
+}
+
+/** Last 7 calendar days of positive ledger movement. */
+function dailyEarned(ledger) {
+  const days = [];
+  const now = new Date();
+  for (let i = 6; i >= 0; i -= 1) {
+    const d = new Date(now.getTime() - i * 86400000);
+    days.push({ key: d.toISOString().slice(0, 10), label: d.toLocaleDateString("en-US", { weekday: "short" }).toUpperCase(), value: 0 });
+  }
+  const index = new Map(days.map((d) => [d.key, d]));
+  for (const row of ledger) {
+    const amount = Number(row.amount) || 0;
+    if (amount <= 0) continue;
+    const key = String(row.created_at || "").slice(0, 10);
+    const bucket = index.get(key);
+    if (bucket) bucket.value += amount;
+  }
+  return days;
+}
+
+const LEDGER_KIND = {
+  earn: "EARNED_CREDITS",
+  spend: "REWARD_REDEMPTION",
+  refund: "REFUND_ISSUED",
+  adjust: "MANUAL_ADJUSTMENT",
+  game_bet: "GAME_ROUND",
+  game_win: "GAME_ROUND",
+};
+
+function activityFeed(ledger) {
+  if (!ledger.length) return `<div class="yr-empty">No credit activity yet</div>`;
+  return `<div class="yr-feed yr-noscroll">${ledger.slice(0, 20).map((row) => {
+    const amount = Number(row.amount) || 0;
+    const kind = LEDGER_KIND[row.type] || String(row.type || "CREDIT_EVENT").toUpperCase();
+    const sign = amount >= 0 ? `<span class="yr-pos">+${formatNumber(amount)}</span>` : `<span class="yr-neg">${formatNumber(amount)}</span>`;
+    const text = row.description ? `${esc(row.description)} · ${sign} credits` : `${sign} credits`;
+    return `<div class="yr-feed-item">
+<div class="yr-feed-top"><span class="yr-feed-kind">${esc(kind)}</span><span class="yr-feed-time">${esc(agoStamp(row.created_at))}</span></div>
+<p class="yr-feed-txt">${text}</p>
+</div>`;
+  }).join("")}</div>`;
+}
+
+/* ── reward cards ─────────────────────────────────────────────────────── */
+
+function rewardCard({ item, viewer, balance, blocked, signIn }) {
+  const cost = Number(item.cost) || 0;
+  const inStock = item.stock === null || item.stock === undefined || item.stock > 0;
+  const short = viewer ? Math.max(0, cost - balance) : 0;
+  const affordable = viewer && !blocked && inStock && short === 0;
+  const off = !affordable;
+
+  let flag = "";
+  if (!inStock) flag = `<span class="yr-flag yr-flag--ghost">Out of stock</span>`;
+  else if (item.stock !== null && item.stock !== undefined && item.stock <= 3) flag = `<span class="yr-flag">${formatNumber(item.stock)} left</span>`;
+
+  let action;
+  if (!viewer) action = `<a class="yr-act" href="${signIn}">Sign in</a>`;
+  else if (blocked) action = `<span class="yr-act yr-act--off">Unavailable</span>`;
+  else if (!inStock) action = `<span class="yr-act yr-act--off">Out of stock</span>`;
+  else if (short > 0) action = `<span class="yr-act yr-act--off">${formatNumber(short)} short</span>`;
+  else action = `<button class="yr-act" type="button" data-redeem="${esc(item.id)}">Redeem</button>`;
+
+  const meter = viewer && inStock && short > 0 && cost > 0
+    ? `<div class="yr-meter" aria-hidden="true"><i data-fill="${Math.min(100, Math.round((balance / cost) * 20) * 5)}"></i></div>`
+    : "";
+
+  return `<article class="yr-item${off ? " yr-item--off" : ""}">
+<div class="yr-item-art yr-gridbg">${ICONS.gift}<span class="yr-shade"></span>${flag}</div>
+<div class="yr-item-body">
+<h4 class="yr-item-h">${esc(item.name)}</h4>
+<p class="yr-item-p">${esc(item.description || "Fulfilled by the streamer.")}</p>
+${meter}
+<div class="yr-item-foot"><span class="yr-cost">${formatNumber(cost)} <i>CR</i></span>${action}</div>
+</div>
+</article>`;
+}
+
+/* ── page renderer ────────────────────────────────────────────────────── */
 
 export async function renderSite({ r, section, viewer, viewerData, opts }) {
   const data = r.data || {};
   const b = data.brand || {};
   const br = data.branding || {};
-  const tpl = validTemplate(br.template);
   const siteSections = data.siteSections || { home: true, leaderboard: true, shop: true, games: false, me: true };
   const nonce = opts.nonce;
   const slug = opts.slug || "";
   const isCustomDomain = !!opts.isCustomDomain;
   const homeUrl = String(opts.homeUrl || "https://yourrank.site").replace(/\/$/, "");
   const logoUrl = opts.logoUrl || null;
-  const paid = r.plan !== "free";
-  const watermark = !paid;
+  const watermark = r.plan === "free";
 
   const casino = String(b.casino || "").trim();
-  const code = String(b.code || "").trim();
   const pool = String(b.prizePool || "").trim();
   const period = String(b.period || "Monthly");
-  const blurb = String((data.partner && data.partner.blurb) || "").trim();
-  const chips = Array.isArray(data.partner?.chips) ? data.partner.chips : [];
-  const whyStats = Array.isArray(data.whyStats) ? data.whyStats : [];
-  const socials = Array.isArray(data.socials) ? data.socials : [];
-  const hasCasino = !!casino;
-  const hasCode = !!code;
   const ctaDest = b.ctaUrl;
   const ctaHref = slug ? esc(`/go/${slug}`) : safeUrl(ctaDest);
-  const hasCta = !!(ctaDest || hasCasino || hasCode);
-  const hasPartner = hasCasino || hasCode || !!blurb || chips.length > 0 || whyStats.length > 0;
+  const hasCta = !!(ctaDest || casino);
+  const accent = accentColor(br, br.options);
 
-  const tplOptions = resolveOptions(tpl, !watermark ? br.options : null);
-  const optVars = Object.entries(tplOptions).map(([k, v]) => `--opt-${k}:${typeof v === "boolean" ? (v ? 1 : 0) : v};`).join("");
-  const optCss = optVars ? `<style nonce="${nonce}" data-template-options>body[data-template="${tpl}"]{${optVars}}</style>` : "";
-  const optAttrs = Object.entries(tplOptions).map(([k, v]) => ` data-opt-${k}="${esc(String(v))}"`).join("");
-
-  const themeTokens = themeTokenCss(br, tpl, nonce, tplOptions);
-
-  const sections = { ...DEFAULT_EXTRA.sections, ...(data.sections || {}) };
-  if (socials.length > 0 && sections.socials === false) sections.socials = true;
-  const sectionAttrs = Object.entries(sections).map(([k, v]) => `data-sections-${k}="${String(v)}"`).join(" ");
-  const sectionCss = `<style nonce="${nonce}">
-body[data-sections-hero="false"] .hero,
-body[data-sections-leaderboard="false"] #board,
-body[data-sections-top3="false"] .top3,
-body[data-sections-search="false"] .find-rank-bar,
-body[data-sections-rules="false"] .rules,
-body[data-sections-partner="false"] #partner,
-body[data-sections-socials="false"] .socials-sec,
-body[data-sections-share="false"] .share-sec,
-body[data-sections-pastWinners="false"] .past-sec,
-body[data-sections-countdown="false"] .hero-timer,
-body[data-sections-countdown="false"] .countdown,
-body[data-sections-cta="false"] .hero-cta,
-body[data-sections-payouts="false"] .payouts { display: none !important; }
-</style>`;
+  const viewerOnSite = viewerData?.viewerOnSite || null;
+  const balance = Number(viewerOnSite?.balance || 0);
+  const kickUrl = (Array.isArray(data.socials) ? data.socials : []).find((s) => /kick/i.test(s?.type || s?.name || ""))?.url;
 
   const sectionUrl = `${homeUrl}${siteSectionHref(section, slug, isCustomDomain)}`;
   const canonicalUrl = esc(sectionUrl);
-  const returnTo = encodeURIComponent(sectionUrl);
+  const returnTo = sectionUrl;
 
   const titleBase = esc(b.name || slug);
-  let title;
-  let ogTitle;
-  let desc;
-  if (section === "home") {
-    title = `${titleBase} — ${esc(b.tagline || "Leaderboard & Rewards")}`;
-    ogTitle = titleBase;
-    desc = `${titleBase}'s viewer site — ${esc(b.tagline || "compete on the leaderboard, earn credits and redeem rewards.")}`;
-  } else if (section === "leaderboard") {
-    title = hasCasino ? `${titleBase} | ${esc(casino)} Leaderboard` : `${titleBase} — Leaderboard`;
-    ogTitle = hasCasino ? `${titleBase} | ${esc(casino)}` : `${titleBase} — Leaderboard`;
-    const prizePoolLabel = esc((data.prizes?.prizePoolLabel) || b.prizePoolLabel || "Prize pool");
-    desc = (hasCasino && hasCode)
-      ? `${titleBase} x ${esc(casino)}. Use code ${esc(code)} and compete in the ${esc(pool ? pool + " " : "")}${esc(period.toLowerCase())} leaderboard.`
-      : `${titleBase}'s ${esc(period.toLowerCase())} leaderboard${pool ? ` — compete for the ${esc(pool)} ${prizePoolLabel.toLowerCase()}` : ""}.`;
-  } else {
-    const label = SECTION_LABELS[section] || section;
-    title = `${label} · ${titleBase}`;
-    ogTitle = title;
-    desc = `${label} for ${titleBase}'s viewer site.`;
-  }
+  const sectionTitle = SECTION_TITLES[section] || section;
+  const title = section === "home"
+    ? `${titleBase} — ${esc(b.tagline || "Leaderboard & Rewards")}`
+    : `${sectionTitle} · ${titleBase}`;
+  const desc = section === "home"
+    ? `${titleBase}'s viewer site — ${esc(b.tagline || "compete on the leaderboard, earn free credits and redeem rewards.")}`
+    : `${sectionTitle} for ${titleBase}'s viewer site.`;
+  const ogImageUrl = logoUrl ? esc(logoUrl) : `${homeUrl}/og.png`;
 
-  const ogFallback = `${homeUrl}/og.png`;
-  const ogImageUrl = logoUrl ? esc(logoUrl) : ogFallback;
-  const dataJson = JSON.stringify(data).replace(/</g, "\\u003c");
+  const ctx = {
+    r, data, b, br, section, siteSections, slug, isCustomDomain, homeUrl, logoUrl,
+    viewer, viewerData, viewerOnSite, balance, casino, pool, period, ctaHref, hasCta,
+    returnTo, nonce, watermark,
+  };
 
-  const parts = (section === "home" || section === "leaderboard")
-    ? buildParts({
-        b, esc, heroLogo: logoUrl ? `<img class="hero-logo" src="${esc(logoUrl)}" srcset="${logoSrcSet(logoUrl)}" sizes="(max-width: 640px) 120px, 200px" alt="${esc(b.name)} logo" />` : "",
-        hasCasino, casino, period, pool, hasCta, ctaHref, hasPartner, hasCode, code, blurb, chips, whyStats, socials,
-        prizes: data.prizes, currency: data.brand?.currency, hidePrizeAmounts: data.brand?.hidePrizeAmounts,
-        players: data.players, slug, isCustomDomain, options: tplOptions,
-      }, templateParts(tpl))
-    : null;
+  const mainInner = section === "home" ? homeMain(ctx)
+    : section === "leaderboard" ? boardMain(ctx)
+    : section === "shop" ? shopMain(ctx)
+    : section === "games" ? gamesMain(ctx)
+    : section === "me" ? meMain(ctx)
+    : `<div class="yr-empty">Section not found</div>`;
 
-  const mainHtml = await renderMainForSection({
-    section, r, data, b, siteSections, parts, viewer, viewerData, slug, isCustomDomain, homeUrl, ctaHref, hasCta, hasCasino, casino, period, hasPartner, socials, logoUrl,
-  });
-
-  const siteName = r.data?.brand?.name || slug;
-  const siteTopbarHtml = siteTopbar({ r, section, siteSections, slug, isCustomDomain, homeUrl, logoUrl, viewer, viewerData, returnTo });
-  const feedbackModalHtml = feedbackModal({ slug, siteName });
-  const bottomTabsHtml = siteBottomTabs({ section, siteSections, slug, isCustomDomain });
-  const siteFooterHtml = siteFooter({ data, b, siteSections, slug, isCustomDomain, watermark, homeUrl });
-  const badge = watermark
-    ? `<aside class="site-powered" aria-label="YourRank branding"><a href="${esc(homeUrl || "/")}" target="_blank" rel="noopener">Powered by <b>YourRank</b></a></aside>`
-    : "";
-
-  const scripts = [];
-  if (section === "leaderboard") {
-    scripts.push(`<script nonce="${nonce}">window.__SITE_DATA__=${dataJson};window.__SLUG__=${JSON.stringify(slug)};window.__IS_CUSTOM_DOMAIN__=${JSON.stringify(isCustomDomain)};window.__IS_PREVIEW__=false;</script>`);
-    scripts.push(`<script src="/assets/leaderboard.js" nonce="${nonce}"></script>`);
-  }
-  scripts.push(siteScript({ section, nonce, dataJson, slug, homeUrl, returnTo, viewerData }));
+  const footer = siteFooter({ data, b, siteSections, slug, isCustomDomain, homeUrl, watermark });
 
   const head = `<!DOCTYPE html>
 <html lang="en"><head>
 <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>${title}</title><meta name="description" content="${esc(desc)}" />
-<meta property="og:title" content="${esc(ogTitle)}" /><meta property="og:description" content="${esc(desc)}" /><meta property="og:type" content="website" />
-<link rel="canonical" href="${canonicalUrl}" />
-<meta property="og:url" content="${canonicalUrl}" />
-<meta name="twitter:card" content="${logoUrl ? "summary_large_image" : "summary"}" /><meta name="twitter:title" content="${esc(ogTitle)}" /><meta name="twitter:description" content="${esc(desc)}" /><meta property="og:image" content="${ogImageUrl}" /><meta name="twitter:image" content="${ogImageUrl}" />
+<meta property="og:title" content="${titleBase}" /><meta property="og:description" content="${esc(desc)}" /><meta property="og:type" content="website" />
+<link rel="canonical" href="${canonicalUrl}" /><meta property="og:url" content="${canonicalUrl}" />
+<meta name="twitter:card" content="${logoUrl ? "summary_large_image" : "summary"}" /><meta name="twitter:title" content="${titleBase}" /><meta name="twitter:description" content="${esc(desc)}" /><meta property="og:image" content="${ogImageUrl}" /><meta name="twitter:image" content="${ogImageUrl}" />
 <link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="${fontsHref(tpl, br)}" rel="stylesheet" media="print" data-async />
+<link href="${FONTS_HREF}" rel="stylesheet" media="print" data-async />
 <script nonce="${nonce}">document.querySelector('link[data-async]').onload=function(){this.media='all'};</script>
-<noscript><link href="${fontsHref(tpl, br)}" rel="stylesheet" /></noscript>
-<link rel="stylesheet" href="/assets/leaderboard.css" />
-${themeTokens}
-<style nonce="${nonce}">${siteShellCss()}${homeAndSectionCss()}${shopAndMeCss()}${gamesCss()}</style>
-${templateCss(tpl) ? `<style nonce="${nonce}" data-template="${tpl}">${templateCss(tpl)}</style>` : ""}
-${optCss}
-${sectionCss}
-${fontCss(br, nonce)}
-${section === "leaderboard" ? `<style nonce="${nonce}">${/* shareCss inlined */ shareCssInline()}</style>` : ""}
+<noscript><link href="${FONTS_HREF}" rel="stylesheet" /></noscript>
+<link rel="stylesheet" href="/assets/site-shell.css" />
+${section === "games" ? gamesIslandHead() : ""}
+<style nonce="${nonce}" data-theme-tokens>.yr-site{--yr-accent:${accent}}${section === "games" ? `#gx-root{--gx-accent:${accent};--gx-accent-ink:${accentInk(accent)}}` : ""}</style>
 ${opts.csrfToken ? `<meta name="csrf-token" content="${esc(opts.csrfToken)}" />` : ""}
 </head>`;
 
-  const body = `<body data-template="${tpl}"${optAttrs} ${sectionAttrs} data-section="${section}" data-slug="${esc(slug)}">
-<a class="skip-link" href="#main-content">Skip to content</a>
-<div class="field" aria-hidden="true"></div><div class="watermarks" data-watermarks aria-hidden="true"></div>
-${siteTopbarHtml}
-${feedbackModalHtml}
-${mainHtml}
-${badge}
-${siteFooterHtml}
-${bottomTabsHtml}
-${scripts.join("")}
+  const body = `<body class="yr-site" data-section="${esc(section)}" data-slug="${esc(slug)}">
+<a class="yr-sr" href="#main-content">Skip to content</a>
+${sidebar({ b, slug, section, siteSections, homeUrl, isCustomDomain, logoUrl, viewer, balance, ctaHref, hasCta, casino, kickUrl: kickUrl ? safeUrl(kickUrl) : null })}
+<div class="yr-region">
+<div class="yr-gridbg" aria-hidden="true"></div>
+${header({ r, viewer, balance, returnTo, searchable: section === "leaderboard", homeUrl, slug, isCustomDomain })}
+<main class="yr-main" id="main-content">
+${mainInner}
+${footer}
+</main>
+</div>
+${feedbackModal({ slug, siteName: b.name || slug })}
+<script src="/assets/site-shell.js" nonce="${nonce}" defer></script>
 </body></html>`;
 
   return head + body;
 }
 
-function shareCssInline() {
-  return `.share-sec{padding:24px 4vw;max-width:var(--wrap,1200px);margin:0 auto;text-align:center}.share-title{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-mute,#9a9aa2);margin:0 0 12px}.share-btns{display:inline-flex;flex-wrap:wrap;gap:10px;justify-content:center}.share-btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:40px;padding:8px 16px;border-radius:8px;border:1px solid var(--line,rgba(87,113,255,.3));background:var(--panel-2,#141417);color:var(--ink,#ededf0);font-size:14px;font-weight:600;text-decoration:none;cursor:pointer;transition:border-color .15s,transform .05s}.share-btn:hover{border-color:var(--accent,#2200ff);color:var(--accent,#2200ff)}.share-btn:active{transform:translateY(1px)}`;
-}
-
-function siteTopbar({ r, section, siteSections, slug, isCustomDomain, homeUrl, logoUrl, viewer, viewerData, returnTo }) {
-  const enabled = sectionList(siteSections);
-  const links = enabled.map((s) => {
-    const cls = s === section ? "site-nav-link--active" : "site-nav-link";
-    return `<a class="${cls}" href="${homeUrl}${siteSectionHref(s, slug, isCustomDomain)}">${esc(SECTION_LABELS[s])}</a>`;
-  }).join("");
-
-  const viewerOnSite = viewerData?.viewerOnSite;
-  const balance = viewerOnSite?.balance ?? 0;
-  const avatar = viewer?.avatar_url
-    ? `<img src="${esc(viewer.avatar_url)}" alt="" />`
-    : `<span>${esc(initials(viewer?.kick_username || viewer?.discord_username || "You"))}</span>`;
-  const authActions = viewer
-    ? `<a class="site-balance-chip" href="${homeUrl}${siteSectionHref("me", slug, isCustomDomain)}"><span class="site-balance-amount">${formatNumber(balance)} credits</span><span class="site-avatar">${avatar}</span></a>`
-    : signInLinks(r, returnTo);
-  const feedbackBtn = `<button class="btn btn--sm" id="yr-feedback-open-d" type="button" aria-label="Send feedback">Feedback</button>`;
-  const feedbackBtnMobile = `<button class="site-nav-link" id="yr-feedback-open-m" type="button">Feedback</button>`;
-  const actions = `${authActions}${feedbackBtn}`;
-
-  const homeHref = `${homeUrl}${siteSectionHref("home", slug, isCustomDomain)}`;
-  const brandLogo = logoUrl ? `<img class="site-brand-logo" src="${esc(logoUrl)}" alt="" />` : "";
-
-  return `<header class="site-topbar">
-<div class="site-topbar-inner">
-<a class="site-brand" href="${homeHref}">${brandLogo}<span class="site-brand-name">${esc(r.data?.brand?.name || slug)}</span></a>
-<nav class="site-topbar-nav" aria-label="Site sections">${links}</nav>
-<div class="site-topbar-actions">${actions}</div>
-<details class="site-menu">
-<summary aria-label="Open menu" type="button"><svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></summary>
-<div class="site-menu-panel" role="menu" aria-label="Site sections">
-${enabled.map((s) => `<a class="${s === section ? "site-nav-link--active" : "site-nav-link"}" href="${homeUrl}${siteSectionHref(s, slug, isCustomDomain)}" role="menuitem">${esc(SECTION_LABELS[s])}</a>`).join("")}
-${feedbackBtnMobile}
-<div class="site-menu-actions">${authActions}</div>
-</div>
-</details>
-</div>
-</header>`;
-}
-
 function feedbackModal({ slug, siteName }) {
-  return `<dialog id="yr-feedback" class="site-feedback" aria-label="Send feedback">
-<form class="site-feedback-form" method="dialog">
+  return `<dialog id="yr-feedback" class="yr-modal" aria-label="Send feedback">
+<form class="yr-modal-in" method="dialog">
 <h2>Send feedback</h2>
-<p class="site-feedback-hint">Tell us what you think about ${esc(siteName)}. No contact info needed — just type your message.</p>
+<p class="yr-note">Tell ${esc(siteName)} what works and what doesn't. No contact details needed.</p>
 <textarea name="message" rows="5" minlength="10" maxlength="2000" placeholder="What's working? What's not?" required aria-label="Your feedback"></textarea>
-<div class="site-feedback-actions">
-<button class="btn btn--sm btn--success" type="submit">Send feedback</button>
-<button class="btn btn--sm" type="button" id="yr-feedback-close">Cancel</button>
+<p class="yr-modal-status" id="yr-feedback-status" role="status" aria-live="polite"></p>
+<div class="yr-modal-acts">
+<button class="yr-btn yr-btn--ghost yr-btn--sm" type="button" id="yr-feedback-close">Cancel</button>
+<button class="yr-btn yr-btn--sm" type="submit">Send</button>
 </div>
-<p class="site-feedback-status" id="yr-feedback-status" role="status" aria-live="polite"></p>
 <input type="hidden" name="slug" value="${esc(slug)}" />
 </form>
 </dialog>`;
 }
 
-function signInLinks(r, returnTo) {
-  if (r.viewerKickAuthEnabled) {
-    return `<a class="btn btn--sm btn--kick" href="/api/viewer/auth/kick?returnTo=${encodeURIComponent(returnTo)}">Sign in with Kick</a>`;
-  }
-  if (r.viewerDiscordAuthEnabled) {
-    return `<a class="btn btn--sm" href="/api/viewer/auth/discord?returnTo=${encodeURIComponent(returnTo)}">Sign in with Discord</a>`;
-  }
-  return `<a class="btn btn--sm" href="/me">Sign in</a>`;
-}
-
-function siteBottomTabs({ section, siteSections, slug, isCustomDomain }) {
-  const enabled = sectionList(siteSections);
-  return `<nav class="site-bottom-tabs" aria-label="Mobile sections">
-<div class="site-bottom-tabs-inner">
-${enabled.map((s) => `<a class="site-bottom-tab${s === section ? " site-bottom-tab--active" : ""}" href="${siteSectionHref(s, slug, isCustomDomain)}"><span>${esc(SECTION_LABELS[s])}</span></a>`).join("")}
-</div>
-</nav>`;
-}
-
-function siteFooter({ data, b, siteSections, slug, isCustomDomain, homeUrl }) {
+function siteFooter({ data, b, siteSections, slug, isCustomDomain, homeUrl, watermark }) {
   const enabled = sectionList(siteSections);
   const legalHref = (page) => `${homeUrl}${siteSectionHref(page, slug, isCustomDomain)}`;
   const legalLinks = renderLegalSidebar(data, legalHref).split("\n").filter(Boolean).join("");
-  return `<footer class="site-footer">
-<div class="site-footer-inner">
-<p class="site-footer-legal">Credits are free loyalty points earned from channel-point redemptions. No purchase, no cash value, no cashout.</p>
-<div class="site-footer-links">${enabled.map((s) => `<a href="${homeUrl}${siteSectionHref(s, slug, isCustomDomain)}">${esc(SECTION_LABELS[s])}</a>`).join("")}${legalLinks}</div>
-<p class="site-footer-copy">&copy; ${new Date().getFullYear()} ${esc(b.name || slug)}. All rights reserved.</p>
-</div>
+  return `<footer class="yr-foot">
+<p class="yr-fine">${CREDITS_DISCLAIMER}</p>
+<div class="yr-foot-links">${enabled.map((s) => `<a href="${homeUrl}${siteSectionHref(s, slug, isCustomDomain)}">${esc(SECTION_LABELS[s])}</a>`).join("")}${legalLinks}</div>
+<p class="yr-fine">&copy; ${new Date().getFullYear()} ${esc(b.name || slug)}.${watermark ? ` Powered by <a href="${esc(homeUrl || "/")}" target="_blank" rel="noopener">YourRank</a>.` : ""}</p>
 </footer>`;
 }
 
-async function renderMainForSection(ctx) {
-  const { section } = ctx;
-  switch (section) {
-    case "home": return renderHomeMain(ctx);
-    case "leaderboard": return await renderLeaderboardMain(ctx);
-    case "shop": return renderShopMain(ctx);
-    case "me": return renderMeMain(ctx);
-    case "games": return renderGamesMain(ctx);
-    default: return `<main id="main-content" class="site-main"><div class="site-empty">Section not found.</div></main>`;
-  }
-}
+/* ── Home ─────────────────────────────────────────────────────────────── */
 
-function renderHomeMain({ data, b, siteSections, parts, slug, isCustomDomain, homeUrl, hasCta, hasCasino, casino, period, pool, viewer, viewerData }) {
-  const poolHtml = parts.poolSpan;
-  const endsAt = data.endsAt ? new Date(data.endsAt).getTime() : null;
-  const endsNow = endsAt && Number.isNaN(endsAt) === false ? endsAt : null;
-  const heroTimer = endsNow && parts.timerGrid ? `<div class="site-stat" id="hero-timer" data-ends-at="${endsNow}"><span class="site-stat-label">Ends in</span>${parts.timerGrid}</div>` : "";
-  const viewerBalance = viewerData?.viewerOnSite;
-  const yourCredits = viewer
-    ? `<div class="site-stat"><span class="site-stat-label">Your credits</span><span class="site-stat-value">${formatNumber(viewerBalance?.balance || 0)}</span></div>`
-    : `<div class="site-stat"><span class="site-stat-label">Your credits</span><span class="site-stat-value">—</span></div>`;
-
-  const primaryCta = hasCta
-    ? parts.ctaBtn(hasCasino ? `Join ${esc(casino)}` : "Join now", "btn btn--grad")
-    : `<a class="btn btn--grad" href="${homeUrl}${siteSectionHref("leaderboard", slug, isCustomDomain)}">View Leaderboard</a>`;
-
-  const tagline = b.tagline || (hasCasino ? `Compete in the ${esc(period)} leaderboard${pool ? ` for the ${esc(pool)} prize pool` : ""}.` : `Compete on the leaderboard and redeem free credits.`);
-
-  const enabled = sectionList(siteSections).filter((s) => s !== "home");
-  const cards = enabled.map((s) => `
-<a class="site-card" href="${homeUrl}${siteSectionHref(s, slug, isCustomDomain)}">
-<h3>${esc(SECTION_LABELS[s])}</h3>
-<p>${esc(SECTION_DESCRIPTIONS[s] || "")}</p>
-</a>`).join("");
-
-  return `<main id="main-content" class="site-main site-main--home">
-<section class="site-hero" aria-labelledby="site-hero-title">
-<div class="site-hero-content">
-<h1 id="site-hero-title">${esc(b.name || slug)}</h1>
-<p class="site-hero-tagline">${esc(tagline)}</p>
-<div class="site-hero-cta">${primaryCta}</div>
-<div class="site-hero-stats">
-<div class="site-stat"><span class="site-stat-label">${parts.prizePoolLabel || "Prize pool"}</span><span class="site-stat-value">${poolHtml}</span></div>
-${heroTimer}
-<div class="site-stat"><span class="site-stat-label">Players</span><span class="site-stat-value">${parts.sCount}</span></div>
-${yourCredits}
-</div>
-</div>
-</section>
-<section class="site-section site-podium" aria-labelledby="site-podium-title">
-<div class="site-section-header"><h2 id="site-podium-title" class="site-section-title">Top players</h2><a href="${homeUrl}${siteSectionHref("leaderboard", slug, isCustomDomain)}">View full leaderboard &rarr;</a></div>
-${parts.top3}
-</section>
-<section class="site-section" aria-labelledby="site-explore-title">
-<h2 id="site-explore-title" class="site-section-title">Explore</h2>
-<div class="site-cards">${cards}</div>
-</section>
-</main>`;
-}
-
-async function renderLeaderboardMain({ data, b, parts, slug, isCustomDomain, homeUrl, logoUrl }) {
-  const tpl = validTemplate(data.branding?.template);
-  const logo = logoUrl ? esc(logoUrl) : null;
-  const logoSet = logoSrcSet(logoUrl);
-  const navLogo = logo ? `<img class="nav-logo" src="${logo}" srcset="${logoSet}" sizes="64px" alt="" />` : "";
-  const shellParts = {
-    b, esc, navLogo,
-    hasPartner: parts.hasPartner, hasCasino: parts.hasCasino, casino: parts.casino, socials: data.socials || [],
-    legalLinks: renderLegalSidebar(data, (page) => siteSectionHref(page, slug, isCustomDomain)),
-    disclaimer: footerDisclaimer(parts.hasCasino, b.name, parts.casino),
-    options: parts.options || {},
-  };
-  const headerHtml = templateHeader(tpl) ? templateHeader(tpl)(shellParts) : "";
-  const footerHtml = templateFooter(tpl) ? templateFooter(tpl)(shellParts) : "";
-  const textOverrides = (data.branding?.text) || {};
-  const compose = await composeMain(tpl, parts, textOverrides);
-  const pageUrl = `${homeUrl}${siteSectionHref("leaderboard", slug, isCustomDomain)}`;
-  return `<main id="main-content" class="site-main site-main--leaderboard">
-${headerHtml}
-${compose}
-${shareSection(pageUrl)}
-${footerHtml}
-</main>`;
-}
-
-function renderShopMain({ r, slug, isCustomDomain, homeUrl, viewer, viewerData }) {
-  const items = viewerData?.shopItems || [];
-  const active = items.filter((i) => i.active !== false);
-  const viewerOnSite = viewerData?.viewerOnSite;
-  const balance = viewerOnSite?.balance || 0;
-  const blocked = viewerOnSite?.blocked;
-
-  const header = viewer
-    ? `<div class="site-shop-head"><h1>Shop</h1><div class="site-balance-large">${formatNumber(balance)} credits</div></div>`
-    : `<div class="site-shop-head"><h1>Shop</h1>${signInLinks(r, `${homeUrl}${siteSectionHref("shop", slug, isCustomDomain)}`)}</div>`;
-
-  if (active.length === 0) {
-    return `<main id="main-content" class="site-main">${header}<div class="site-empty">No rewards in the shop right now.</div></main>`;
-  }
-
-  const cards = active.map((item) => {
-    const inStock = item.stock === null || item.stock > 0;
-    let action;
-    if (!viewer) {
-      action = signInLinks(r, `${homeUrl}${siteSectionHref("shop", slug, isCustomDomain)}`);
-    } else if (blocked) {
-      action = `<span class="hint">Credits blocked</span>`;
-    } else if (!inStock) {
-      action = `<button class="btn btn--sm" disabled>Out of stock</button>`;
-    } else if (balance < item.cost) {
-      action = `<button class="btn btn--sm" disabled>Need ${formatNumber(item.cost - balance)} more</button>`;
-    } else {
-      action = `<button class="btn btn--sm btn--grad" data-redeem="${esc(item.id)}" data-name="${esc(item.name)}" type="button">Redeem</button>`;
-    }
-    const stockText = item.stock !== null ? `<span class="site-shop-stock">${formatNumber(item.stock)} left</span>` : "";
-    return `<article class="site-shop-item">
-<h3>${esc(item.name)}</h3>
-<p>${esc(item.description || "")}</p>
-<div class="site-shop-meta"><span class="site-shop-cost">${formatNumber(item.cost)} credits</span>${stockText}${action}</div>
-</article>`;
-  }).join("");
-
-  return `<main id="main-content" class="site-main">${header}<div class="site-shop-list">${cards}</div></main>`;
-}
-
-function renderMeMain({ r, slug, isCustomDomain, homeUrl, viewer, viewerData }) {
-  if (!viewer) {
-    return `<main id="main-content" class="site-main"><section class="site-signin-prompt"><h2>My Credits</h2><p>Sign in to see your balance, history and redemptions.</p>${signInLinks(r, `${homeUrl}${siteSectionHref("me", slug, isCustomDomain)}`)}</section></main>`;
-  }
-
-  const viewerOnSite = viewerData?.viewerOnSite;
-  const balance = viewerOnSite?.balance || 0;
+function homeMain(ctx) {
+  const { r, data, b, slug, isCustomDomain, homeUrl, viewer, viewerData, balance, viewerOnSite, period, pool, returnTo, siteSections } = ctx;
+  const shopHref = `${homeUrl}${siteSectionHref("shop", slug, isCustomDomain)}`;
+  const boardHref = `${homeUrl}${siteSectionHref("leaderboard", slug, isCustomDomain)}`;
+  const meHref = `${homeUrl}${siteSectionHref("me", slug, isCustomDomain)}`;
+  const cd = countdownText(data.endsAt);
+  const players = Array.isArray(data.players) ? data.players : [];
+  const items = (viewerData?.shopItems || []).filter((i) => i.active !== false);
   const ledger = viewerData?.ledger || [];
   const redemptions = viewerData?.redemptions || [];
+  const pending = redemptions.filter((x) => x.status === "pending").length;
+  const shopEnabled = siteSections.shop !== false;
 
-  const ledgerRows = ledger.length
-    ? ledger.map((row) => `<tr><td>${formatDate(row.created_at)}</td><td>${esc(row.type)}</td><td>${formatNumber(row.amount)}</td><td>${esc(row.description || "")}</td></tr>`).join("")
-    : `<tr><td colspan="4" style="text-align:center">No credit history yet.</td></tr>`;
+  const eyebrow = [esc(period).toUpperCase(), cd ? `ENDS IN ${cd.text.toUpperCase()}` : ""].filter(Boolean).join(" · ");
 
-  const redemptionsRows = redemptions.length
-    ? redemptions.map((row) => `<tr><td>${formatDate(row.created_at)}</td><td>${esc(row.item_name || "")}</td><td>${formatNumber(row.cost)}</td><td>${esc(row.status)}</td></tr>`).join("")
-    : `<tr><td colspan="4" style="text-align:center">No redemptions yet.</td></tr>`;
+  // "N more credits unlocks X" — the closest reward the viewer cannot afford yet.
+  const nextReward = viewer
+    ? items.filter((i) => Number(i.cost) > balance).sort((x, z) => Number(x.cost) - Number(z.cost))[0]
+    : null;
 
-  return `<main id="main-content" class="site-main">
-<section class="site-section">
-<div class="site-shop-head"><h1>My Credits</h1><div class="site-balance-large">${formatNumber(balance)} credits</div></div>
-</section>
-<section class="site-section">
-<h2 class="site-section-title">History</h2>
-<table class="site-ledger"><thead><tr><th>Date</th><th>Type</th><th>Amount</th><th>Description</th></tr></thead><tbody>${ledgerRows}</tbody></table>
-</section>
-<section class="site-section">
-<h2 class="site-section-title">Redemptions</h2>
-<table class="site-ledger"><thead><tr><th>Date</th><th>Item</th><th>Cost</th><th>Status</th></tr></thead><tbody>${redemptionsRows}</tbody></table>
-</section>
-</main>`;
-}
+  const heroRight = viewer
+    ? `<div class="yr-hero-r">${heroStat("Loyalty credits", formatNumber(balance))}${shopEnabled ? `<a class="yr-btn" href="${shopHref}">Spend credits</a>` : ""}</div>`
+    : `<div class="yr-hero-r">${heroStat(pool ? "Prize pool" : "Players", pool ? esc(pool) : formatNumber(players.length))}${signInButton(r, returnTo)}</div>`;
 
-function renderGamesMain({ r, slug, isCustomDomain, homeUrl, viewer }) {
-  const games = [
-    { key: "mines", name: "Mines", desc: "Clear the grid without hitting a mine." },
-    { key: "plinko", name: "Plinko", desc: "Drop the chip and multiply your credits." },
-    { key: "dice", name: "Dice", desc: "Roll over or under the target." },
-    { key: "limbo", name: "Limbo", desc: "Guess how high the multiplier will go." },
-  ];
+  const lede = viewer
+    ? `Redeem a channel-point reward on Kick and credits land here automatically.${nextReward ? ` <b>${formatNumber(Number(nextReward.cost) - balance)}</b> more credits unlocks ${esc(nextReward.name)}.` : ""}`
+    : `${esc(b.tagline || `Compete on the ${esc(period).toLowerCase()} leaderboard and turn free channel-point credits into real rewards.`)}`;
 
-  const locked = !viewer
-    ? `<div class="site-signin-prompt"><h2>Games are for signed-in viewers</h2><p>Sign in to play originals and win credits.</p>${signInLinks(r, `${homeUrl}${siteSectionHref("games", slug, isCustomDomain)}`)}</div>`
+  const heroHtml = hero({
+    eyebrow,
+    title: viewer ? `Welcome back, ${viewerName(viewer)}` : (b.name || slug),
+    lede,
+    right: heroRight,
+  });
+
+  const kpis = viewer
+    ? [
+        kpi("Credits / 7d", "chart", `+${formatNumber(dailyEarned(ledger).reduce((a, d) => a + d.value, 0))}`, `${ledger.length} recent credit events`, { accent: true }),
+        kpi("Earned all time", "trophy", formatNumber(viewerOnSite?.total_earned || 0), `${formatNumber(viewerOnSite?.total_spent || 0)} spent so far`),
+        kpi("Pending rewards", "hourglass", formatNumber(pending), pending ? `${esc(b.name || slug)} fulfils by hand` : "Nothing waiting"),
+      ].join("")
+    : [
+        kpi(pool ? "Prize pool" : "Board", "trophy", pool ? esc(pool) : esc(period), `${esc(period)} leaderboard`),
+        kpi("Players", "chart", formatNumber(players.length), "On the current board"),
+        kpi("Resets in", "hourglass", cd ? cd.text : "—", cd ? "End of period" : "No reset date set"),
+      ].join("");
+
+  const series = dailyEarned(ledger);
+  const chartOrHow = viewer
+    ? `<div class="yr-c8 yr-panel yr-lb yr-chart-panel">
+<div class="yr-chart-head"><h3 class="yr-panel-title">Credits earned</h3><div class="yr-legend"><span><i></i>Credits</span><span><i class="is-avg"></i>7-day average</span></div></div>
+${creditsChart(series)}
+</div>`
+    : `<div class="yr-c8">${panel({
+        title: "How credits work",
+        meta: "Free · no purchase",
+        pad: true,
+        body: `<ol class="yr-lede yr-steps">
+<li>Watch on Kick and redeem one of ${esc(b.name || slug)}'s channel-point rewards.</li>
+<li>Credits land on this site automatically — nothing to type in, no codes.</li>
+<li>Spend them in the shop. ${esc(b.name || slug)} fulfils every reward by hand, and cancelled rewards are refunded in full.</li>
+</ol>`,
+      })}</div>`;
+
+  const rightCol = viewer
+    ? `<div class="yr-c4">${panel({
+        title: "Log activity",
+        meta: `<a class="yr-sec-link" href="${meHref}">All</a>`,
+        body: activityFeed(ledger),
+      })}</div>`
+    : `<div class="yr-c4">${panel({
+        title: "Top of the board",
+        meta: `<a class="yr-sec-link" href="${boardHref}">All</a>`,
+        body: players.length
+          ? `<div class="yr-feed yr-noscroll">${players.slice().sort((x, z) => (z.wagered || 0) - (x.wagered || 0)).slice(0, 8).map((p, i) => `<div class="yr-feed-item"><div class="yr-feed-top"><span class="yr-feed-kind">${String(i + 1).padStart(2, "0")} · ${esc(p.name)}</span><span class="yr-feed-time">${esc(money(data.brand?.currency, p.wagered))}</span></div></div>`).join("")}</div>`
+          : `<div class="yr-empty">No players yet</div>`,
+      })}</div>`;
+
+  const featured = shopEnabled && items.length
+    ? `<div>${sectionHead("Featured rewards", `<a class="yr-sec-link" href="${shopHref}">Go to shop ${ICONS.arrow}</a>`)}
+<div class="yr-g4">${items.slice().sort((x, z) => Number(x.cost) - Number(z.cost)).slice(0, 4).map((item) => rewardCard({
+        item, viewer, balance, blocked: viewerOnSite?.blocked, signIn: `/api/viewer/auth/kick?returnTo=${encodeURIComponent(returnTo)}`,
+      })).join("")}</div></div>`
     : "";
 
-  const cards = games.map((g) => `<article class="site-game-card"><h3>${esc(g.name)}</h3><p>${esc(g.desc)}</p>${viewer ? `<button class="btn btn--sm" disabled>Coming soon</button>` : `<span class="hint">Sign in to play</span>`}</article>`).join("");
-
-  return `<main id="main-content" class="site-main">
-${locked}
-<section class="site-section">
-<h1 class="site-section-title">Originals</h1>
-<div class="site-games-grid">${cards}</div>
-</section>
-</main>`;
+  return `${heroHtml}
+<div class="yr-g3">${kpis}</div>
+<div class="yr-g12">${chartOrHow}${rightCol}</div>
+${featured}`;
 }
 
-function siteScript({ section, nonce, slug }) {
-  const base = `<script nonce="${nonce}">
-(function(){
-  const dialog=document.getElementById("yr-feedback");
-  const openD=document.getElementById("yr-feedback-open-d");
-  const openM=document.getElementById("yr-feedback-open-m");
-  const closeBtn=document.getElementById("yr-feedback-close");
-  const statusEl=document.getElementById("yr-feedback-status");
-  function show(){ if(dialog){ dialog.showModal(); if(statusEl)statusEl.textContent=""; const menu=document.querySelector(".site-menu"); if(menu)menu.removeAttribute("open"); } }
-  function hide(){ if(dialog){ dialog.close(); } }
-  if(openD)openD.addEventListener("click",show);
-  if(openM)openM.addEventListener("click",show);
-  if(closeBtn)closeBtn.addEventListener("click",hide);
-  const form=document.querySelector("#yr-feedback form");
-  if(form){
-    form.addEventListener("submit",async function(e){
-      e.preventDefault();
-      const btn=form.querySelector('button[type="submit"]');
-      const message=form.message.value.trim();
-      if(message.length<10){ if(statusEl)statusEl.textContent="Please write at least 10 characters."; return; }
-      const csrf=document.querySelector('meta[name="csrf-token"]')?.content;
-      const siteSlug=form.slug.value;
-      btn.disabled=true; btn.textContent="Sending...";
-      try{
-        const res=await fetch("/api/feedback",{method:"POST",credentials:"same-origin",headers:{"content-type":"application/json","x-csrf-token":csrf||""},body:JSON.stringify({slug:siteSlug,message:message})});
-        const data=await res.json().catch(function(){return {}});
-        if(res.ok && data.ok){ if(statusEl)statusEl.textContent="Thanks! Your feedback was sent."; form.message.value=""; setTimeout(hide,1400); }
-        else { if(statusEl)statusEl.textContent=data.error||"Could not send feedback. Try again."; btn.disabled=false; btn.textContent="Send feedback"; }
-      }catch(err){ if(statusEl)statusEl.textContent="Network error. Please try again."; btn.disabled=false; btn.textContent="Send feedback"; }
-    });
-  }
-})();
-</script>`;
-  if (section === "shop") {
-    return base + `<script nonce="${nonce}">
-(function(){
-  document.querySelectorAll("[data-redeem]").forEach(function(btn){
-    btn.addEventListener("click", async function(){
-      btn.disabled=true; btn.textContent="Redeeming…";
-      try{
-        const res=await fetch("/api/viewer/redeem",{method:"POST",credentials:"same-origin",headers:{"content-type":"application/json"},body:JSON.stringify({slug:${JSON.stringify(slug)},shopItemId:btn.dataset.redeem})});
-        const data=await res.json().catch(function(){return {}});
-        if(res.ok && data.ok){ btn.textContent="Redeemed!"; btn.classList.add("btn--success"); setTimeout(function(){location.reload()},900); }
-        else { btn.textContent=data.error||"Failed"; btn.disabled=false; }
-      }catch(e){ btn.textContent="Error"; btn.disabled=false; }
-    });
+/* ── Leaderboard / Ranks ──────────────────────────────────────────────── */
+
+function boardMain(ctx) {
+  const { data, b, slug, isCustomDomain, period, pool } = ctx;
+  const currency = data.brand?.currency;
+  const hidePrizes = !!data.brand?.hidePrizeAmounts;
+  const cd = countdownText(data.endsAt);
+  const players = (Array.isArray(data.players) ? data.players : []).slice().sort((x, z) => (z.wagered || 0) - (x.wagered || 0));
+  const wagerLabel = esc(data.prizes?.wagerLabel || "Wagered");
+  const prizeLabel = esc(data.prizes?.prizeLabel || "Prize");
+  const poolLabel = esc(data.prizes?.prizePoolLabel || b.prizePoolLabel || "Prize pool");
+  const playerHref = (name) => isCustomDomain ? `/player/${encodeURIComponent(name)}` : `/${encodeURIComponent(slug)}/player/${encodeURIComponent(name)}`;
+
+  const heroHtml = hero({
+    eyebrow: [pool ? `${esc(pool)} ${poolLabel.toUpperCase()}` : "", `${esc(period).toUpperCase()} BOARD`].filter(Boolean).join(" · "),
+    title: "Standings",
+    lede: `Ranked by ${wagerLabel.toLowerCase()} on ${esc(b.name || slug)}'s board. Prizes are paid by the sponsor and are separate from free loyalty credits.`,
+    right: cd
+      ? `<div class="yr-hero-r yr-hero-r--stack">${heroStat("Resets in", cd.text, { cd: cd.ms })}</div>`
+      : (pool ? `<div class="yr-hero-r yr-hero-r--stack">${heroStat(poolLabel, esc(pool))}</div>` : ""),
   });
-})();
-</script>`;
+
+  const podium = players.slice(0, 3).map((p, i) => {
+    const rank = i + 1;
+    const first = rank === 1;
+    return `<div class="yr-card yr-lb${first ? " yr-card--on" : ""}">
+<div class="yr-card-top"><span class="yr-label${first ? " is-accent" : ""}">#${rank}</span>${first ? ICONS.crown : ICONS.medal}</div>
+<p class="yr-card-name"><a href="${playerHref(p.name)}">${esc(p.name)}</a></p>
+<p class="yr-num">${esc(money(currency, p.wagered))}</p>
+<p class="yr-sub">${wagerLabel}${!hidePrizes && p.prize ? ` · <span class="yr-gold">${esc(money(currency, p.prize))}</span>` : ""}</p>
+</div>`;
+  }).join("");
+
+  const rows = players.map((p, i) => `<tr data-name="${esc(String(p.name || "").toLowerCase())}">
+<td class="yr-idx">${String(i + 1).padStart(2, "0")}</td>
+<td><a href="${playerHref(p.name)}">${esc(p.name)}</a></td>
+<td class="yr-mono yr-r">${esc(money(currency, p.wagered))}</td>
+<td class="yr-mono yr-r${!hidePrizes && p.prize ? " yr-gold" : ""}">${hidePrizes ? "—" : (p.prize ? esc(money(currency, p.prize)) : "—")}</td>
+</tr>`).join("");
+
+  const table = players.length
+    ? `<table class="yr-table"><thead><tr><th>#</th><th>Player</th><th class="yr-r">${wagerLabel}</th><th class="yr-r">${prizeLabel}</th></tr></thead>
+<tbody>${rows}<tr class="yr-nomatch" id="yr-no-match" hidden><td colspan="4">No player matches that search.</td></tr></tbody></table>`
+    : `<div class="yr-empty">No players on the board yet</div>`;
+
+  const poolPanel = pool && !hidePrizes
+    ? `<div class="yr-card yr-lb yr-split">
+<div><p class="yr-label">${poolLabel}</p><p class="yr-num yr-gold">${esc(pool)}</p></div>
+<p class="yr-note yr-note--w">Paid in cash by the sponsor to the top ${wagerLabel.toLowerCase()} players. Separate from credits — credits can't be won here and cash can't be bought with credits.</p>
+</div>`
+    : "";
+
+  const note = data.resetNote ? `<p class="yr-note">${esc(data.resetNote)}</p>` : "";
+
+  return `${heroHtml}
+${poolPanel}
+${podium ? `<div class="yr-g3">${podium}</div>` : ""}
+${panel({ title: "Standings", meta: `${formatNumber(players.length)} players`, body: table, foot: note })}`;
+}
+
+/* ── Shop ─────────────────────────────────────────────────────────────── */
+
+function shopMain(ctx) {
+  const { r, b, viewer, viewerData, viewerOnSite, balance, returnTo, slug } = ctx;
+  const items = (viewerData?.shopItems || []).filter((i) => i.active !== false).slice().sort((x, z) => Number(x.cost) - Number(z.cost));
+  const redemptions = viewerData?.redemptions || [];
+  const pending = redemptions.filter((x) => x.status === "pending").length;
+  const signIn = r.viewerKickAuthEnabled
+    ? `/api/viewer/auth/kick?returnTo=${encodeURIComponent(returnTo)}`
+    : (r.viewerDiscordAuthEnabled ? `/api/viewer/auth/discord?returnTo=${encodeURIComponent(returnTo)}` : "/me");
+
+  const heroHtml = hero({
+    eyebrow: `${formatNumber(items.length)} REWARDS${viewer && pending ? ` · ${pending} PENDING` : ""}`,
+    title: "Rewards",
+    lede: `${esc(b.name || slug)} hands every one of these over personally. Credits are deducted when you redeem and returned in full if it's cancelled.`,
+    right: viewer
+      ? `<div class="yr-hero-r yr-hero-r--stack">${heroStat("Loyalty credits", formatNumber(balance))}</div>`
+      : `<div class="yr-hero-r">${signInButton(r, returnTo)}</div>`,
+  });
+
+  const blockedNote = viewerOnSite?.blocked
+    ? `<div class="yr-card yr-lb"><p class="yr-label">Redeeming disabled</p><p class="yr-note">${esc(viewerOnSite.block_reason || "The streamer has paused redemptions for your account.")}</p></div>`
+    : "";
+
+  const grid = items.length
+    ? `<div>${sectionHead("All rewards", `<span class="yr-panel-meta">Sorted by cost</span>`)}
+<div class="yr-g4">${items.map((item) => rewardCard({ item, viewer, balance, blocked: viewerOnSite?.blocked, signIn })).join("")}</div></div>`
+    : `<div class="yr-empty">No rewards in the shop right now</div>`;
+
+  const history = viewer
+    ? panel({
+        title: "Your redemptions",
+        meta: "Fulfilled by hand",
+        body: redemptions.length
+          ? `<div class="yr-list">${redemptions.slice(0, 10).map(redemptionRow).join("")}</div>`
+          : `<div class="yr-empty">Nothing redeemed yet</div>`,
+      })
+    : "";
+
+  return `${heroHtml}
+${blockedNote}
+${grid}
+${history}`;
+}
+
+function redemptionRow(row) {
+  const status = String(row.status || "pending");
+  const tagCls = status === "pending" ? "yr-tag yr-tag--pending" : status === "fulfilled" ? "yr-tag yr-tag--done" : "yr-tag";
+  const detail = status === "refunded"
+    ? `${formatDate(row.created_at)} · ${formatNumber(row.cost)} credits refunded in full`
+    : status === "cancelled"
+      ? `${formatDate(row.created_at)} · cancelled, ${formatNumber(row.cost)} credits returned`
+      : `${formatDate(row.created_at)} · ${formatNumber(row.cost)} credits deducted`;
+  return `<div class="yr-list-item">
+<div><p class="yr-list-h">${esc(row.item_name || "Reward")}</p><p class="yr-list-p">${esc(detail)}</p></div>
+<span class="${tagCls}">${esc(status)}</span>
+</div>`;
+}
+
+/* ── Games ────────────────────────────────────────────────────────────── */
+
+function gamesMain(ctx) {
+  const { r, b, slug, viewer, balance, returnTo, nonce, logoUrl, homeUrl, isCustomDomain } = ctx;
+  const heroHtml = hero({
+    eyebrow: "PLAY WITH CREDITS",
+    title: "Games",
+    lede: "Credits only. Nothing here can be bought with money and nothing pays out money — every round is decided on the server.",
+    right: viewer
+      ? `<div class="yr-hero-r yr-hero-r--stack">${heroStat("Playable balance", formatNumber(balance))}</div>`
+      : `<div class="yr-hero-r">${signInButton(r, returnTo)}</div>`,
+  });
+
+  if (!viewer) {
+    return `${heroHtml}
+<div class="yr-gate"><h2>Sign in to play originals</h2><p>Rounds are tied to your account and settled on the server. They cost credits only — no money in, no money out.</p>${signInButton(r, returnTo)}</div>`;
   }
-  if (section === "home") {
-    return base + `<script nonce="${nonce}">
-(function(){
-  const el=document.getElementById("hero-timer"); if(!el)return; const end=Number(el.dataset.endsAt); if(!end)return;
-  function fmt(n){return String(Math.max(0,Math.floor(n))).padStart(2,"0")}
-  function tick(){const left=Math.max(0,end-Date.now()); const d=fmt(left/86400000),h=fmt((left%86400000)/3600000),m=fmt((left%3600000)/60000),s=fmt((left%60000)/1000); el.querySelectorAll("[data-t]").forEach(function(c){const t=c.dataset.t;if(t==="d")c.textContent=d;if(t==="h")c.textContent=h;if(t==="m")c.textContent=m;if(t==="s")c.textContent=s;});}
-  tick(); setInterval(tick,1000);
-})();
-</script>`;
+
+  const mount = gamesIslandMount({
+    slug,
+    nonce,
+    siteName: b.name || slug,
+    logoUrl: logoUrl || null,
+    creditsUrl: `${homeUrl}${siteSectionHref("me", slug, isCustomDomain)}`,
+    signInUrl: `/api/viewer/auth/kick?returnTo=${encodeURIComponent(returnTo)}`,
+    header: false,
+  });
+
+  return `${heroHtml}
+${sectionHead("Available games", `<span class="yr-panel-meta">Server decided · provably fair</span>`)}
+${mount}`;
+}
+
+/* ── My Credits ───────────────────────────────────────────────────────── */
+
+function meMain(ctx) {
+  const { r, b, slug, viewer, viewerData, viewerOnSite, balance, returnTo, homeUrl, isCustomDomain, siteSections } = ctx;
+  if (!viewer) {
+    return `${hero({ eyebrow: "LOYALTY CREDITS", title: "My Credits", lede: "Sign in to see your balance, credit history and reward redemptions.", right: `<div class="yr-hero-r">${signInButton(r, returnTo)}</div>` })}
+<div class="yr-gate"><h2>Sign in to see your credits</h2><p>${esc(CREDITS_DISCLAIMER)}</p>${signInButton(r, returnTo)}</div>`;
   }
-  if (section === "leaderboard") {
-    return base + shareScriptNonce(nonce);
-  }
-  return base;
+
+  const ledger = viewerData?.ledger || [];
+  const redemptions = viewerData?.redemptions || [];
+  const earned7 = dailyEarned(ledger).reduce((a, d) => a + d.value, 0);
+  const shopHref = `${homeUrl}${siteSectionHref("shop", slug, isCustomDomain)}`;
+
+  const heroHtml = hero({
+    eyebrow: "LOYALTY CREDITS",
+    title: viewerName(viewer),
+    lede: `Every credit here came from ${esc(b.name || slug)}'s Kick channel-point rewards. ${esc(CREDITS_DISCLAIMER)}`,
+    right: `<div class="yr-hero-r">${heroStat("Balance", formatNumber(balance))}${siteSections.shop !== false ? `<a class="yr-btn" href="${shopHref}">Spend credits</a>` : ""}</div>`,
+  });
+
+  const kpis = [
+    kpi("Credits / 7d", "chart", `+${formatNumber(earned7)}`, `${ledger.length} recent credit events`, { accent: true }),
+    kpi("Earned all time", "trophy", formatNumber(viewerOnSite?.total_earned || 0), `${formatNumber(viewerOnSite?.total_spent || 0)} spent so far`),
+    kpi("Pending rewards", "hourglass", formatNumber(redemptions.filter((x) => x.status === "pending").length), `${esc(b.name || slug)} fulfils by hand`),
+  ].join("");
+
+  const ledgerRows = ledger.length
+    ? ledger.map((row) => {
+        const amount = Number(row.amount) || 0;
+        return `<tr>
+<td class="yr-mono">${esc(formatDate(row.created_at))}</td>
+<td>${esc(LEDGER_KIND[row.type] || String(row.type || "").toUpperCase())}</td>
+<td class="yr-mono yr-r"><span class="${amount >= 0 ? "yr-pos" : ""}">${amount >= 0 ? "+" : ""}${formatNumber(amount)}</span></td>
+<td class="yr-mono yr-r">${esc(row.description || "—")}</td>
+</tr>`;
+      }).join("")
+    : "";
+
+  const historyPanel = panel({
+    title: "Credit history",
+    meta: `${formatNumber(ledger.length)} events`,
+    body: ledgerRows
+      ? `<table class="yr-table"><thead><tr><th class="yr-w-auto">Date</th><th>Type</th><th class="yr-r">Amount</th><th class="yr-r">Detail</th></tr></thead><tbody>${ledgerRows}</tbody></table>`
+      : `<div class="yr-empty">No credit history yet</div>`,
+  });
+
+  const redemptionsPanel = panel({
+    title: "Redemptions",
+    meta: "Fulfilled by hand",
+    body: redemptions.length
+      ? `<div class="yr-list">${redemptions.map(redemptionRow).join("")}</div>`
+      : `<div class="yr-empty">Nothing redeemed yet</div>`,
+  });
+
+  return `${heroHtml}
+<div class="yr-g3">${kpis}</div>
+${historyPanel}
+${redemptionsPanel}`;
 }
