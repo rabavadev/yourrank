@@ -2,6 +2,7 @@
 import { $, esc, getCsrf, guardAuth, logError, slugify, showConfirmModal } from "./utils.js";
 import { state } from "./state.js";
 import { navTo } from "./shell.js";
+import { renderEmpty } from "./states.js";
 
 export function renderBoardSwitcher() {
   const list = $("boardList");
@@ -255,7 +256,8 @@ export function renderBoardsPage() {
   if (!body) return;
   body.innerHTML = "";
   if (!state.BOARDS.length) {
-    if (empty) empty.hidden = false;
+    renderEmpty(empty, { icon: "archive", title: "No boards yet", body: "Create one to get started.", actions: [{ label: "Create board", id: "boardsCreateEmpty", accent: true }] });
+    $("boardsCreateEmpty")?.addEventListener("click", openNewBoardForm);
   } else {
     if (empty) empty.hidden = true;
     state.BOARDS.forEach((b) => {
@@ -290,8 +292,14 @@ function filterBoards() {
     if (!hide) visible++;
   }
   if (empty) {
-    empty.textContent = q ? "No boards match your search." : "No boards yet. Create one to get started.";
-    empty.hidden = visible > 0;
+    if (visible > 0) {
+      empty.hidden = true;
+    } else {
+      renderEmpty(empty, q
+        ? { icon: "archive", title: "No boards match your search.", body: "Try a different search." }
+        : { icon: "archive", title: "No boards yet", body: "Create one to get started.", actions: [{ label: "Create board", id: "boardsCreateEmpty", accent: true }] });
+      if (!q) $("boardsCreateEmpty")?.addEventListener("click", openNewBoardForm);
+    }
   }
 }
 

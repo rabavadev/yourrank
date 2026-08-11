@@ -1,5 +1,6 @@
 // Shared helpers used across dashboard modules.
 import { state } from "./state.js";
+import { renderEmpty, setRowsLoading } from "./states.js";
 
 export function getCsrf() {
   const m = document.cookie.match(/(?:^|;\s*)__csrf=([^;]+)/);
@@ -25,8 +26,8 @@ export function logError(context, err, extra = {}) {
       headers: { "content-type": "application/json", "x-csrf-token": getCsrf(), "x-request-id": reqId },
       body: JSON.stringify(payload)
     }).catch(() => undefined);
-  } catch {
-    // Telemetry failures are deliberately swallowed so error reporting cannot break the dashboard.
+  } catch (loggingErr) {
+    console.error("dashboard logging failed", loggingErr);
   }
 }
 
@@ -344,6 +345,8 @@ export class ListController {
     this.sortOptions = opts.sortOptions || [];
     this.emptyText = opts.emptyText || "No items.";
     this.emptyAllText = opts.emptyAllText || this.emptyText;
+    this.emptyEl = opts.emptyEl || null;
+    this.emptySpec = opts.emptySpec || { icon: "chart", title: this.emptyAllText };
     this.onRender = opts.onRender || (() => {});
     this.renderItem = opts.renderItem || ((item) => `<tr><td colspan="99">${esc(String(item))}</td></tr>`);
     this.page = 1;
@@ -379,7 +382,19 @@ export class ListController {
   setItems(items) {
     this.all = items || [];
     this.page = 1;
+    this.setLoading(false);
     this.refresh();
+  }
+  setLoading(loading) {
+    if (!this.tbody) return;
+    if (loading) {
+      this.tbody.closest("table")?.setAttribute("aria-busy", "true");
+      if (this.emptyEl) this.emptyEl.hidden = true;
+      setRowsLoading(this.tbody, { cols: this.tbody.closest("table")?.querySelectorAll("thead th").length || 1, rows: 3 });
+    } else {
+      this.tbody.closest("table")?.removeAttribute("aria-busy");
+      this.tbody.removeAttribute("aria-busy");
+    }
   }
   _matches(item) {
     if (!this.query) return true;
@@ -402,8 +417,14 @@ export class ListController {
     if (pageItems.length === 0) {
       const msg = this.all.length === 0 && !this.query ? this.emptyAllText : this.emptyText;
       const colCount = this.tbody?.closest("table")?.querySelectorAll("thead th").length || 1;
-      this.tbody.innerHTML = `<tr><td colspan="${colCount}" class="muted">${esc(msg)}</td></tr>`;
+      this.tbody.innerHTML = "";
+      if (this.emptyEl && this.all.length === 0 && !this.query) {
+        renderEmpty(this.emptyEl, this.emptySpec);
+      } else {
+        this.tbody.innerHTML = `<tr><td colspan="${colCount}" class="muted">${esc(msg)}</td></tr>`;
+      }
     } else {
+      if (this.emptyEl) this.emptyEl.hidden = true;
       const frag = document.createDocumentFragment();
       for (const item of pageItems) {
         const rendered = this.renderItem(item);

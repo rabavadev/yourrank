@@ -1,6 +1,7 @@
 import { $, getCsrf, guardAuth, logError, showToast } from "./utils.js";
-import { state } from "./state.js";
+import { setState, state } from "./state.js";
 import { DEFAULT_SECTIONS, isPro } from "./site.js";
+import { setBlockLoading } from "./states.js";
 
 const GAME_ROWS = [
   { key: "plinko", label: "Plinko", description: "A pachinko-style game with multiplier rewards." },
@@ -168,12 +169,16 @@ function renderGames(settings) {
 
 async function loadGames() {
   if (!state.ACTIVE_SITE_ID) return;
+  setState({ GAMES_STATUS: "loading" });
+  setBlockLoading($("gameSettingRows"), { lines: GAME_ROWS.length });
   try {
     const res = await fetch(`/api/site/games/settings?siteId=${encodeURIComponent(state.ACTIVE_SITE_ID)}`, { credentials: "include" }).then(guardAuth);
     const body = await res.json();
     if (!res.ok || !body.ok) throw new Error(body.error || "Could not load game settings.");
+    setState({ GAMES_STATUS: "ready" });
     renderGames(body.settings || []);
   } catch (err) {
+    setState({ GAMES_STATUS: "error" });
     logError("load-game-settings", err);
     const list = $("gameSettingRows");
     if (list) list.innerHTML = `<p class="v3-inline-error">Couldn't load game settings.</p>`;
@@ -185,7 +190,7 @@ export function initGames() {
   initGames._wired = true;
   renderSections();
   renderPageBlocks();
-  renderGames([]);
+  setBlockLoading($("gameSettingRows"), { lines: GAME_ROWS.length });
   loadGames();
   window.addEventListener("yr-games-visible", () => {
     renderSections();

@@ -1,9 +1,10 @@
 // Site editing: plan, branding/theme, save, archive, domain, overlay, notifications.
 import { $, esc, fromLocalInput, getCsrf, guardAuth, logError, timeZoneOffsetLabel, parseAmount, showConfirmModal, copyToClipboard, flashButton, showLoadError, clearLoadError } from "./utils.js";
 import { state, boardStatus, markDirty, setState, subscribe } from "./state.js";
+import { renderEmpty } from "./states.js";
 import { renderBoardSwitcher, renderBoardsPage, renderSidebarBoardSwitcher } from "./boards.js";
 import { renderOverviewSummary } from "./overview.js";
-import { renderPerformance } from "./performance.js";
+import { renderPerformance, renderPerformanceLoading } from "./performance.js";
 import { applyPlayerFieldVisibility, renderPlayers, renumber, toggleEmpty } from "./players.js";
 
 export const DEFAULT_SECTIONS = {
@@ -257,10 +258,12 @@ export async function loadHistory() {
 export async function loadPlanUsage() {
   const wrap = $("planUsage");
   if (!wrap) return;
+  setState({ USAGE_STATUS: "loading" });
   try {
     const res = await fetch("/api/account/usage", { credentials: "include" }).then(guardAuth);
     const d = await res.json();
-    if (!res.ok || !d.ok) { wrap.innerHTML = `<p class="hint hint--error">Could not load usage.</p>`; return; }
+    if (!res.ok || !d.ok) { setState({ USAGE_STATUS: "error" }); wrap.innerHTML = `<p class="hint hint--error">Could not load usage.</p>`; return; }
+    setState({ USAGE_STATUS: "ready" });
     const rows = [];
     rows.push({ label: "Leaderboards", product: "Leaderboard", used: d.leaderboard.boards.used, limit: d.leaderboard.boards.limit });
     rows.push({ label: "Players", product: "Leaderboard", used: d.leaderboard.players.used, limit: d.leaderboard.players.limit });
@@ -278,6 +281,7 @@ export async function loadPlanUsage() {
       return `<div class="plan-usage-row"><div class="plan-usage-meta"><span class="plan-usage-label">${esc(r.label)}</span><span class="plan-usage-product">${esc(r.product)}</span></div><span class="plan-usage-value" style="${esc(color)}">${Number(r.used).toLocaleString()} / ${Number(r.limit).toLocaleString()}</span></div>`;
     }).join("");
   } catch (err) {
+    setState({ USAGE_STATUS: "error" });
     logError("loadPlanUsage", err);
     if (wrap) wrap.innerHTML = `<p class="hint hint--error">Could not load usage.</p>`;
   }
@@ -1243,26 +1247,36 @@ export function renderDomainStatus(status, message) {
 export async function loadCreditsStatus() {
   const statusEl = $("kickStatus");
   const linkEl = $("kickRewardsLink");
+  setState({ CREDITS_STATUS: "loading" });
+  if (statusEl) {
+    statusEl.setAttribute("aria-busy", "true");
+    statusEl.innerHTML = '<span class="skeleton v3-skel-line" aria-hidden="true"></span>';
+  }
   try {
     const res = await fetch("/api/credits/status");
     const data = await res.json();
-    setState({ CREDITS: data });
+    setState({ CREDITS: data, CREDITS_STATUS: "ready" });
     renderOverviewSummary();
     const connected = Boolean(data.channel?.externalId);
     if (statusEl) statusEl.textContent = connected
-      ? `Connected to ${data.channel?.name || "your Kick channel"}. ${data.usage?.rewardMappings || 0} reward mappings active.`
+      ? `Connected to ${data.channel?.name || "your Kick channel"}. ${data.usage?.rewardMappings == null ? "—" : data.usage.rewardMappings} reward mappings active.`
       : "Connect your Kick channel in the rewards dashboard to start giving viewers credits.";
     if (linkEl) linkEl.textContent = connected ? "Manage Kick rewards →" : "Connect Kick rewards →";
   } catch (err) {
+    setState({ CREDITS_STATUS: "error" });
     logError("credits/status", err);
-    if (statusEl) statusEl.textContent = "Could not load Kick rewards status.";
+    if (statusEl) {
+      statusEl.removeAttribute("aria-busy");
+      statusEl.textContent = "Could not load Kick rewards status.";
+    }
   }
 }
 
 /* --- past winners / close out --- */
 export function renderArchives(list) {
   const box = $("archList"); box.innerHTML = "";
-  $("archEmpty").hidden = list.length > 0;
+  if (list.length) $("archEmpty").hidden = true;
+  else renderEmpty($("archEmpty"), { icon: "archive", title: "No closed-out periods yet", body: "Your first one will show up here and on your page." });
   list.forEach((a) => {
     const row = document.createElement("div"); row.className = "arch-row";
     const when = new Date(a.at).toLocaleDateString();
@@ -1301,7 +1315,11 @@ export function renderArchives(list) {
         if (state.ACTIVE_SITE_ID) body.siteId = state.ACTIVE_SITE_ID;
         const res = await fetch("/api/site/archive/delete", { method: "POST", credentials: "include", headers: { "content-type": "application/json", "x-csrf-token": getCsrf() }, body: JSON.stringify(body) });
         const d = await res.json();
-        if (res.ok && d.ok) { row.remove(); if (!$("archList").children.length) $("archEmpty").hidden = false; $("status").textContent = "Archive deleted."; }
+        if (res.ok && d.ok) {
+          row.remove();
+          if (!$("archList").children.length) renderEmpty($("archEmpty"), { icon: "archive", title: "No closed-out periods yet", body: "Your first one will show up here and on your page." });
+          $("status").textContent = "Archive deleted.";
+        }
         else $("status").textContent = d.error || "Couldn't delete that.";
       } finally {
         if (document.body.contains(btn)) {
@@ -1465,7 +1483,9 @@ export function renderEmbedShare() {
     }
   }
 
-  export async function loadStats() {
+export async function loadStats() {
+      setState({ STATS_STATUS: "loading" });
+      renderPerformanceLoading();
       const statsUrl = state.ACTIVE_SITE_ID ? `/api/site/stats?siteId=${encodeURIComponent(state.ACTIVE_SITE_ID)}` : "/api/site/stats";
       let s;
       try {
@@ -1477,9 +1497,11 @@ export function renderEmbedShare() {
         // Returning quietly left "No activity yet" on screen, which reads as a
         // fact about the account rather than a failed request.
         logError("load-stats", err);
+        setState({ STATS_STATUS: "error" });
         showLoadError($("statsEmpty"), "your stats", loadStats);
         return null;
       }
+  setState({ STATS: s, STATS_STATUS: "ready" });
   const fmt = (n) => n >= 10000 ? (n / 1000).toFixed(1).replace(/\.0$/, "") + "k" : String(n);
   const bars = $("statBars"); const days = s.days || [];
   if (bars) {
@@ -1503,7 +1525,6 @@ export function renderEmbedShare() {
   const hCtr = $("hud_ctr"); if (hCtr) hCtr.textContent = (s.last30.views ? ((s.last30.clicks / s.last30.views) * 100).toFixed(1) : "0.0") + "%";
   const hS = $("hud_signups"); if (hS) hS.textContent = fmt(s.last30.copies); // Using copies as signups proxy
 
-  setState({ STATS: s });
   renderOverviewSummary();
   renderPerformance(s);
   return s;

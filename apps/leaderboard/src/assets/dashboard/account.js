@@ -1,6 +1,7 @@
 // Account settings: password, sessions, data export.
 import { $, getCsrf, logError, showConfirmModal } from "./utils.js";
-import { state } from "./state.js";
+import { setState, state } from "./state.js";
+import { renderEmpty, setBlockLoading } from "./states.js";
 
 async function jsonPost(path, body) {
   const res = await fetch(path, {
@@ -24,15 +25,19 @@ function setStatus(el, message, isError) {
 async function loadSessions() {
   const list = $("accSessions");
   if (!list) return;
+  setState({ SESSIONS_STATUS: "loading" });
+  setBlockLoading(list, { lines: 3 });
   try {
     const res = await fetch("/api/auth/sessions", { credentials: "include" });
     const data = await res.json();
     if (!data?.ok || !data.sessions) {
+      setState({ SESSIONS_STATUS: "error" });
       list.innerHTML = '<p class="err">Could not load sessions.</p>';
       return;
     }
+    setState({ SESSIONS_STATUS: "ready" });
     if (!data.sessions.length) {
-      list.innerHTML = '<p class="hint">No active sessions.</p>';
+      renderEmpty(list, { icon: "users", title: "No active sessions.", body: "Active signed-in devices will appear here." });
       return;
     }
     let html =
@@ -45,7 +50,9 @@ async function loadSessions() {
     }
     html += "</tbody></table></div>";
     list.innerHTML = html;
+    list.removeAttribute("aria-busy");
   } catch (e) {
+    setState({ SESSIONS_STATUS: "error" });
     logError("loadSessions", e);
     list.innerHTML = '<p class="err">Could not load sessions.</p>';
   }
@@ -150,10 +157,13 @@ function settingsMeter(name, used, limit) {
 async function loadSettingsUsage() {
   const wrap = $("settingsUsage");
   if (!wrap) return;
+  setState({ USAGE_STATUS: "loading" });
+  setBlockLoading(wrap, { lines: 4 });
   try {
     const res = await fetch("/api/account/usage", { credentials: "include" });
     const data = await res.json();
     if (!res.ok || !data) throw new Error("usage request failed");
+    setState({ USAGE_STATUS: "ready" });
     const rows = [
       settingsMeter("Players per board", data.leaderboard?.players?.used, data.leaderboard?.players?.limit),
       settingsMeter("Active boards", data.leaderboard?.boards?.used, data.leaderboard?.boards?.limit),
@@ -166,7 +176,9 @@ async function loadSettingsUsage() {
       settingsMeter("New viewers this month", data.credits.newViewersPer30Days?.used, data.credits.newViewersPer30Days?.limit),
     );
     wrap.innerHTML = rows.join("") || '<p class="v3-settings-inline">No usage data yet.</p>';
+    wrap.removeAttribute("aria-busy");
   } catch (err) {
+    setState({ USAGE_STATUS: "error" });
     logError("settings-usage", err);
     wrap.innerHTML = '<p class="v3-settings-inline v3-settings-inline--error">Couldn’t load usage. Try again later.</p>';
   }

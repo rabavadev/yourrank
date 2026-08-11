@@ -15,6 +15,13 @@ export const state = {
   CURRENT_BRANDING: { template: "classic", accentA: null, accentB: null },
   PUBLISHED: false,
   IS_DRAFT: false,
+  STATS_STATUS: "loading",
+  CREDITS_STATUS: "loading",
+  HEATMAP_STATUS: "loading",
+  REFERRALS_STATUS: "loading",
+  USAGE_STATUS: "loading",
+  SESSIONS_STATUS: "loading",
+  GAMES_STATUS: "loading",
   THEME_SAVING: false,
   LOGO: undefined, // undefined = unchanged, null = remove, string = new data URI
   _dirty: false,
