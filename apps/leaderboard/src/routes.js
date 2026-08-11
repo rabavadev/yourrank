@@ -20,7 +20,7 @@ import {
   handleStats, handleHeatmap, handleTrackCopy, handleTrackScroll, handleGetSite, handleListBoards,
   handleCreateBoard, handleDuplicateBoard, handleArchive, handleArchiveDelete, handleRestoreArchive, handlePutSite,
   handleFinishSetup, handlePutTheme, handleDeleteSite, handleSetActive, handleNotifyTest, handleDomainVerify, handleExportStats,
-  handleExportPlayers
+  handleExportPlayers, handlePostSiteSections, handleGetSiteGameSettings, handlePostSiteGameSettings
 } from "./handlers/sites.js";
 import { handleTrial } from "./handlers/billing.js";
 import { handleReferrals } from "./handlers/referrals.js";
@@ -128,6 +128,9 @@ export const ROUTES = [
   // Site routes
   { path: "/api/site", method: "GET", handler: withHandler(handleGetSite) },
   { path: "/api/site", method: "PUT", handler: withHandler(handlePutSite) },
+  { path: "/api/site/sections", method: "POST", handler: withHandler(handlePostSiteSections) },
+  { path: "/api/site/games/settings", method: "GET", handler: withHandler(handleGetSiteGameSettings) },
+  { path: "/api/site/games/settings", method: "POST", handler: withHandler(handlePostSiteGameSettings) },
   { path: "/api/site/finish", method: "POST", handler: withHandler(handleFinishSetup) },
   { path: "/api/site/theme", method: "POST", handler: withHandler(handlePutTheme) },
   { path: "/api/site", method: "DELETE", handler: withHandler(handleDeleteSite) },

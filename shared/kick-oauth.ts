@@ -84,13 +84,16 @@ export function buildKickAuthorizeURL(
   state: string,
   codeChallenge: string,
   scope = "user:read channel:read channel:rewards:read channel:rewards:write events:subscribe",
-  viewerFlow = false
+  viewerFlow = false,
+  redirectUri?: string
 ): string {
-  const { clientId, redirectUri } = viewerFlow ? getViewerConfig(env) : getConfig(env);
+  const config = viewerFlow ? getViewerConfig(env) : getConfig(env);
+  const { clientId } = config;
+  const finalRedirectUri = redirectUri || config.redirectUri;
   const params = new URLSearchParams({
     response_type: "code",
     client_id: clientId,
-    redirect_uri: redirectUri,
+    redirect_uri: finalRedirectUri,
     scope,
     state,
     code_challenge: codeChallenge,
@@ -103,9 +106,10 @@ export function buildKickViewerAuthorizeURL(
   env: any,
   state: string,
   codeChallenge: string,
-  scope = "user:read"
+  scope = "user:read",
+  redirectUri?: string
 ): string {
-  return buildKickAuthorizeURL(env, state, codeChallenge, scope, true);
+  return buildKickAuthorizeURL(env, state, codeChallenge, scope, true, redirectUri);
 }
 
 async function postTokenEndpoint(env: any, body: URLSearchParams): Promise<KickTokens> {
@@ -131,12 +135,14 @@ export function exchangeKickCode(
   env: any,
   code: string,
   codeVerifier: string,
-  viewerFlow = false
+  viewerFlow = false,
+  redirectUri?: string
 ): Promise<KickTokens> {
-  const { redirectUri } = viewerFlow ? getViewerConfig(env) : getConfig(env);
+  const config = viewerFlow ? getViewerConfig(env) : getConfig(env);
+  const finalRedirectUri = redirectUri || config.redirectUri;
   const body = new URLSearchParams({
     grant_type: "authorization_code",
-    redirect_uri: redirectUri,
+    redirect_uri: finalRedirectUri,
     code,
     code_verifier: codeVerifier,
   });
@@ -146,9 +152,10 @@ export function exchangeKickCode(
 export function exchangeKickViewerCode(
   env: any,
   code: string,
-  codeVerifier: string
+  codeVerifier: string,
+  redirectUri?: string
 ): Promise<KickTokens> {
-  return exchangeKickCode(env, code, codeVerifier, true);
+  return exchangeKickCode(env, code, codeVerifier, true, redirectUri);
 }
 
 export function refreshKickTokens(env: any, refreshToken: string): Promise<KickTokens> {
