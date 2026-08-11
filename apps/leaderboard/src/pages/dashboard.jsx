@@ -165,7 +165,7 @@ export function DashboardContent() {
 </div>
 </section>
 <section class="lb-page" data-page="board">
-<div class="lb-phead v3-settings-phead"><button class="lb-menu" type="button" aria-label="Show sections" data-menu aria-expanded="false" aria-controls="lbSide">☰</button></div>
+<div class="lb-phead"><button class="lb-menu" type="button" aria-label="Show sections" data-menu aria-expanded="false" aria-controls="lbSide">☰</button></div>
 
 <div class="editor-steps" id="editorTabs" role="tablist" aria-label="Editor steps">
   <button class="editor-step is-active" type="button" role="tab" aria-selected="true" data-egroup="setup"><span class="step-num">1</span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="4" x2="4" y1="21" y2="14"/><line x1="4" x2="4" y1="10" y2="3"/><line x1="12" x2="12" y1="21" y2="12"/><line x1="12" x2="12" y1="8" y2="3"/><line x1="20" x2="20" y1="21" y2="16"/><line x1="20" x2="20" y1="12" y2="3"/><line x1="9" x2="15" y1="8" y2="8"/><line x1="1" x2="7" y1="14" y2="14"/><line x1="17" x2="23" y1="16" y2="16"/></svg> Setup</button>
@@ -359,7 +359,7 @@ export function DashboardContent() {
 </div>
 </section>
 <section class="lb-page" data-page="settings">
-<div class="lb-phead"><button class="lb-menu" type="button" aria-label="Show sections" data-menu aria-expanded="false" aria-controls="lbSide">☰</button></div>
+<div class="lb-phead v3-settings-phead"><button class="lb-menu" type="button" aria-label="Show sections" data-menu aria-expanded="false" aria-controls="lbSide">☰</button></div>
 <div class="v3-settings">
   <div class="v3-head"><h1>Settings</h1><p class="v3-head-sub" id="settingsSubline">Manage your subscription, account connections, and safety settings</p></div>
   <div class="v3-tabs" role="tablist" aria-label="Settings sections">
