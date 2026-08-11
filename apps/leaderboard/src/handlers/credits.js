@@ -2,6 +2,7 @@
 import { requireUser, bad, ok, readJson } from "../auth.js";
 import { getByUser, getBoardById, getPublicSite } from "../site.js";
 import { query, one, exec, withTransaction } from "../../../../shared/db.js";
+import { resolveViewer } from "../../../../shared/viewer-session.js";
 import { rateLimit } from "../../../../shared/ratelimit.js";
 import { setSiteKickChannel } from "../../../../shared/kick-credits.js";
 import {
@@ -471,11 +472,13 @@ export async function handleCreditsUpdateRedemption(request, env, ctx) {
   if (!["fulfilled", "cancelled"].includes(status)) return bad("status must be fulfilled or cancelled");
 
   const result = await withTransaction(async (tx) => {
+    // Only allow transitions from pending; this makes the refund idempotent
+    // and prevents a redemption being cancelled twice.
     const redemption = await tx.one(
       `UPDATE redemptions r
           SET status=$1, updated_at=now()
         FROM site_viewers sv
-        WHERE r.id=$2 AND r.site_viewer_id = sv.id AND sv.site_id=$3
+        WHERE r.id=$2 AND r.site_viewer_id = sv.id AND sv.site_id=$3 AND r.status = 'pending'
         RETURNING r.id, r.site_viewer_id, r.shop_item_id, r.cost`,
       [status, id, site.id]
     );
@@ -572,39 +575,33 @@ export async function handleCreditsViewerHistory(request, env) {
   return ok({ kickUsername: kickUsername || null, kickUserId: kickUserId || null, boards });
 }
 
-// Public viewer endpoints (no auth; keyed by slug + kick user id).
+// Public viewer endpoints: shop is public, viewer data is session-only.
 export async function handlePublicCredits(request, env) {
   const url = new URL(request.url);
-  const slug = url.searchParams.get("slug") || "";
-  const kickUserId = String(url.searchParams.get("kickUserId") || "").trim();
-  const kickUsername = String(url.searchParams.get("kickUsername") || "").trim();
-  if (!slug || (!kickUserId && !kickUsername)) return bad("slug and kickUserId or kickUsername required");
+  const slug = String(url.searchParams.get("slug") || "").trim().toLowerCase();
+  if (!slug) return bad("slug required");
 
-  const r = await getPublicSite(env, slug.toLowerCase(), request);
+  const r = await getPublicSite(env, slug, request);
   if (r && r.requiresPassword) return bad("Password required.", 401);
   if (!r || r.suspended) return bad("site not found", 404);
 
-  const rl = await rateLimit(env, `public-credits:${r.id}:${kickUserId || kickUsername}`, 30, 60);
+  const { viewer } = await resolveViewer(request, env);
+
+  const rl = await rateLimit(env, `public-credits:${r.id}:${viewer?.id || "anon"}`, 30, 60);
   if (!rl.ok) return bad("rate limited", 429);
 
-  const viewer = kickUserId
-    ? await one(
-        `SELECT sv.id, sv.balance, sv.total_earned, sv.total_spent, sv.blocked, sv.block_reason, v.kick_username
-           FROM site_viewers sv
-           JOIN viewers v ON v.id = sv.viewer_id
-          WHERE sv.site_id=$1 AND v.kick_user_id=$2`,
-        [r.id, kickUserId]
-      )
-    : await one(
-        `SELECT sv.id, sv.balance, sv.total_earned, sv.total_spent, sv.blocked, sv.block_reason, v.kick_username
-           FROM site_viewers sv
-           JOIN viewers v ON v.id = sv.viewer_id
-          WHERE sv.site_id=$1 AND lower(v.kick_username)=lower($2)`,
-        [r.id, kickUsername]
-      );
-
-  if (viewer?.blocked) {
-    return bad("viewer blocked");
+  let viewerData = null;
+  if (viewer) {
+    viewerData = await one(
+      `SELECT sv.id, sv.balance, sv.total_earned, sv.total_spent, sv.blocked, sv.block_reason, v.kick_username
+         FROM site_viewers sv
+         JOIN viewers v ON v.id = sv.viewer_id
+        WHERE sv.site_id=$1 AND sv.viewer_id=$2`,
+      [r.id, viewer.id]
+    );
+    if (viewerData?.blocked) {
+      return bad("viewer blocked");
+    }
   }
 
   const shopItems = await query(
@@ -616,15 +613,15 @@ export async function handlePublicCredits(request, env) {
   );
 
   return ok({
-    viewer: viewer
+    viewer: viewerData
       ? {
-          id: viewer.id,
-          balance: viewer.balance,
-          total_earned: viewer.total_earned,
-          total_spent: viewer.total_spent,
-          blocked: viewer.blocked,
-          block_reason: viewer.block_reason,
-          kick_username: viewer.kick_username,
+          id: viewerData.id,
+          balance: viewerData.balance,
+          total_earned: viewerData.total_earned,
+          total_spent: viewerData.total_spent,
+          blocked: viewerData.blocked,
+          block_reason: viewerData.block_reason,
+          kick_username: viewerData.kick_username,
         }
       : null,
     shopItems: shopItems || [],
@@ -687,17 +684,21 @@ export async function handleCreditsAnalytics(request, env) {
     creditsByDay,
   ] = await Promise.all([
     one(
-      `SELECT COALESCE(SUM(cl.amount), 0)::int AS total
+      `SELECT COALESCE(SUM(CASE WHEN cl.type = 'earn' THEN cl.amount
+                                WHEN cl.type = 'refund' THEN -cl.amount
+                                ELSE 0 END), 0)::int AS total
          FROM credit_ledger cl
          JOIN site_viewers sv ON sv.id = cl.site_viewer_id
-        WHERE sv.site_id = $1 AND cl.type = 'earn'`,
+        WHERE sv.site_id = $1 AND cl.type IN ('earn', 'refund')`,
       [site.id]
     ),
     one(
-      `SELECT COALESCE(SUM(cl.amount), 0)::int AS total
+      `SELECT COALESCE(SUM(CASE WHEN cl.type = 'earn' THEN cl.amount
+                                WHEN cl.type = 'refund' THEN -cl.amount
+                                ELSE 0 END), 0)::int AS total
          FROM credit_ledger cl
          JOIN site_viewers sv ON sv.id = cl.site_viewer_id
-        WHERE sv.site_id = $1 AND cl.type = 'earn' AND cl.created_at > $2::timestamptz`,
+        WHERE sv.site_id = $1 AND cl.type IN ('earn', 'refund') AND cl.created_at > $2::timestamptz`,
       [site.id, startDate]
     ),
     one(
@@ -766,7 +767,7 @@ export async function handleCreditsAnalytics(request, env) {
       `SELECT DATE(cl.created_at) AS day, cl.type, COALESCE(SUM(cl.amount), 0)::int AS total
          FROM credit_ledger cl
          JOIN site_viewers sv ON sv.id = cl.site_viewer_id
-        WHERE sv.site_id = $1 AND cl.created_at > $2::timestamptz AND cl.type IN ('earn', 'spend')
+        WHERE sv.site_id = $1 AND cl.created_at > $2::timestamptz AND cl.type IN ('earn', 'spend', 'refund', 'revoke')
         GROUP BY DATE(cl.created_at), cl.type
         ORDER BY day ASC`,
       [site.id, startDate]
@@ -792,4 +793,117 @@ export async function handleCreditsAnalytics(request, env) {
     redemptionsByStatus: redemptionsByStatus || [],
     creditsByDay: creditsByDay || [],
   });
+}
+
+// Streamer-only: add or remove credits from a site viewer with a ledger row.
+export async function handleCreditsAdjustBalance(request, env, ctx) {
+  const { user, res } = await requireUser(request, env);
+  if (res) return res;
+  const url = new URL(request.url);
+  const site = await getSite(env, user, url);
+  if (!site) return bad("no site", 404);
+  if (!(await rateLimit(env, `credits:adjust:${user.id}`, 30, 60)).ok) return bad("Too many requests.", 429);
+
+  const siteViewerId = ctx?.slug || url.pathname.split("/").pop();
+  if (!siteViewerId) return bad("missing viewer id");
+
+  const body = await readJson(request);
+  const delta = Number(body?.delta);
+  const reason = String(body?.reason || "").trim();
+  if (!Number.isFinite(delta) || delta === 0) return bad("delta must be a non-zero integer");
+  if (!reason) return bad("reason is required");
+
+  const result = await withTransaction(async (tx) => {
+    const siteViewer = await tx.one(
+      `SELECT sv.id, sv.balance, sv.total_earned
+         FROM site_viewers sv
+        WHERE sv.id = $1 AND sv.site_id = $2
+        FOR UPDATE`,
+      [siteViewerId, site.id]
+    );
+    if (!siteViewer) return { error: "viewer not found", status: 404 };
+
+    if (delta > 0) {
+      const updated = await tx.one(
+        `UPDATE site_viewers
+            SET balance = balance + $1,
+                total_earned = total_earned + $1,
+                updated_at = now()
+          WHERE id = $2
+          RETURNING id, balance`,
+        [delta, siteViewer.id]
+      );
+      await tx.unsafe(
+        `INSERT INTO credit_ledger (site_viewer_id, type, amount, description, metadata)
+         VALUES ($1, 'earn', $2, $3, $4)`,
+        [siteViewer.id, delta, `Manual credit: ${reason}`, JSON.stringify({ reason, adjusted_by: user.id, manual: true })]
+      );
+      return { siteViewerId: siteViewer.id, balance: updated.balance, delta };
+    }
+
+    // delta < 0: debit/refund credits.
+    const debitAmount = -delta;
+    const updated = await tx.one(
+      `UPDATE site_viewers
+          SET balance = balance - $1,
+              total_earned = GREATEST(total_earned - $1, 0),
+              updated_at = now()
+        WHERE id = $2 AND balance >= $1
+        RETURNING id, balance`,
+      [debitAmount, siteViewer.id]
+    );
+    if (!updated) return { error: "insufficient balance to debit", status: 400 };
+    await tx.unsafe(
+      `INSERT INTO credit_ledger (site_viewer_id, type, amount, description, metadata)
+       VALUES ($1, 'refund', $2, $3, $4)`,
+      [siteViewer.id, debitAmount, `Manual debit: ${reason}`, JSON.stringify({ reason, adjusted_by: user.id, manual: true })]
+    );
+    return { siteViewerId: siteViewer.id, balance: updated.balance, delta };
+  });
+
+  if (result.error) return bad(result.error, result.status);
+  return ok(result);
+}
+
+// Reconcile ledger-derived balance against stored site_viewers.balance.
+export async function handleCreditsReconcile(request, env) {
+  const { user, res } = await requireUser(request, env);
+  if (res) return res;
+  const url = new URL(request.url);
+  const site = await getSite(env, user, url);
+  if (!site) return bad("no site", 404);
+  if (!(await rateLimit(env, `credits:reconcile:${user.id}`, 10, 60)).ok) return bad("Too many requests.", 429);
+
+  const rows = await query(
+    `SELECT sv.id, sv.balance, sv.total_earned, sv.total_spent,
+            COALESCE(SUM(CASE WHEN cl.type = 'earn' THEN cl.amount
+                              WHEN cl.type = 'refund' THEN -cl.amount
+                              ELSE 0 END), 0)::int AS ledger_earned,
+            COALESCE(SUM(CASE WHEN cl.type = 'spend' THEN cl.amount
+                              WHEN cl.type = 'revoke' THEN -cl.amount
+                              ELSE 0 END), 0)::int AS ledger_spent
+       FROM site_viewers sv
+       LEFT JOIN credit_ledger cl ON cl.site_viewer_id = sv.id
+      WHERE sv.site_id = $1
+      GROUP BY sv.id, sv.balance, sv.total_earned, sv.total_spent`,
+    [site.id]
+  );
+
+  const mismatches = [];
+  for (const row of rows || []) {
+    const expectedBalance = (row.ledger_earned || 0) - (row.ledger_spent || 0);
+    if (row.balance !== expectedBalance || row.total_earned !== row.ledger_earned || row.total_spent !== row.ledger_spent) {
+      mismatches.push({
+        siteViewerId: row.id,
+        balance: row.balance,
+        expectedBalance,
+        total_earned: row.total_earned,
+        ledger_earned: row.ledger_earned,
+        total_spent: row.total_spent,
+        ledger_spent: row.ledger_spent,
+      });
+    }
+  }
+
+  return ok({ ok: mismatches.length === 0, mismatches });
 }

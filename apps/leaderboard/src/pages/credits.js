@@ -5,7 +5,7 @@ export const creditsContent = `
   <div>
     <div class="an-eyebrow">Kick channel points</div>
     <h1 class="an-title">Credits &amp; shop</h1>
-    <p class="an-sub">Link your Kick channel, map rewards to credits, and manage viewer redemptions.</p>
+    <p class="an-sub">Link your Kick channel, pick which channel-point rewards give YourRank credits, and let viewers spend them in your shop. Credits are free loyalty points — no purchase, no cashout.</p>
   </div>
 </div>
 
@@ -46,7 +46,7 @@ export const creditsContent = `
     <div class="cr-section-head">
       <div>
         <h2>Get started</h2>
-        <p class="card-sub">Kick points → reward → YourRank credits → shop item → redemption</p>
+        <p class="card-sub">Viewers earn credits from your Kick channel-point rewards, then spend them in your shop.</p>
       </div>
       <button class="btn btn--ghost btn--sm" id="cr-onboarding-hide" type="button">Hide</button>
     </div>
@@ -60,28 +60,28 @@ export const creditsContent = `
       </li>
       <li class="cr-step" id="cr-step-2">
         <div class="cr-step-text">
-          <b>2. Create reward mapping</b>
-          <span class="hint">Map a Kick reward to the credits a viewer earns.</span>
+          <b>2. Pick a reward</b>
+          <span class="hint">Choose one of your Kick channel-point rewards and set how many credits it gives.</span>
         </div>
         <button class="btn btn--sm" data-cr-jump="cr-maps" type="button">Add mapping</button>
       </li>
       <li class="cr-step" id="cr-step-3">
         <div class="cr-step-text">
-          <b>3. Create shop item</b>
-          <span class="hint">Add something viewers can buy with their credits.</span>
+          <b>3. Add a shop item</b>
+          <span class="hint">Add something viewers can unlock with their free credits.</span>
         </div>
         <button class="btn btn--sm" data-cr-jump="cr-shop" type="button">Add item</button>
       </li>
       <li class="cr-step" id="cr-step-4">
         <div class="cr-step-text">
-          <b>4. Test live</b>
-          <span class="hint">Redeem a Kick reward on stream, then approve the redemption below.</span>
+          <b>4. Test it live</b>
+          <span class="hint">Redeem the reward on your Kick stream, then approve the item here.</span>
         </div>
       </li>
       <li class="cr-step" id="cr-step-5">
         <div class="cr-step-text">
-          <b>5. Ready to use</b>
-          <span class="hint">Your credits &amp; shop program is live.</span>
+          <b>5. You're live</b>
+          <span class="hint">Your credits and shop are visible on your site.</span>
         </div>
       </li>
     </ol>

@@ -45,28 +45,17 @@ export function renderPublicCreditsPage({ slug, nonce, homeUrl, kickAuthEnabled,
 <main class="pc-wrap" id="main-content">
   <div class="pc-hero">
     <h1>Channel points shop</h1>
-    <p>Enter your Kick username to see your balance and redeem items.</p>
+    <p>Sign in with Kick to see your credits and redeem items. Credits are free loyalty points earned from channel-point redemptions — no purchase, no cash value, no cashout.</p>
   </div>
 
   <section class="pc-card" id="pc-login-card" hidden>
-    <h2>Log in</h2>
-    <p class="card-sub">The streamer enabled viewer login. Log in to see your credits across all boards and redeem faster.</p>
+    <h2>Sign in</h2>
+    <p class="card-sub">Sign in to see your credits across all boards and redeem faster.</p>
     <div class="pc-login">
-      <a class="btn btn--accent" id="pc-login-kick" href="/api/viewer/auth/kick?returnTo=${encodeURIComponent(returnTo)}" hidden>Log in with Kick</a>
-      <a class="btn" id="pc-login-discord" href="/api/viewer/auth/discord?returnTo=${encodeURIComponent(returnTo)}" hidden>Log in with Discord</a>
+      <a class="btn btn--accent" id="pc-login-kick" href="/api/viewer/auth/kick?returnTo=${encodeURIComponent(returnTo)}" hidden>Sign in with Kick</a>
+      <a class="btn" id="pc-login-discord" href="/api/viewer/auth/discord?returnTo=${encodeURIComponent(returnTo)}" hidden>Sign in with Discord</a>
       <a class="btn" href="/me">My dashboard</a>
     </div>
-  </section>
-
-  <section class="pc-card">
-    <form id="pc-lookup" class="field pc-lookup">
-      <label for="pc-username">Kick username</label>
-      <div class="pc-input-row">
-        <input id="pc-username" class="pc-username-input" type="text" placeholder="your_kick_username" required />
-        <button class="btn btn--accent" type="submit">Look up</button>
-      </div>
-    </form>
-    <p class="status" id="pc-status" role="status" aria-live="polite"></p>
   </section>
 
   <section class="pc-card" id="pc-balance-card" hidden>
@@ -82,7 +71,7 @@ export function renderPublicCreditsPage({ slug, nonce, homeUrl, kickAuthEnabled,
   </section>
 </main>
 <footer class="gm-shell-footer"><div class="gm-shell-inner">
-  <span class="gm-shell-footer-copy">© {{YEAR}} YourRank</span>
+  <span class="gm-shell-footer-copy">© {{YEAR}} YourRank. Credits are free loyalty points earned from channel-point redemptions. No purchase, no cash value, no cashout.</span>
 </div></footer>
 <script nonce="${esc(nonce)}">
 (function(){
@@ -94,38 +83,7 @@ export function renderPublicCreditsPage({ slug, nonce, homeUrl, kickAuthEnabled,
   function $(id){ return document.getElementById(id); }
   function esc(s){ return String(s??"").replace(/[&<>"']/g,(c)=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
   function setStatus(msg, err){ const el=$("pc-status"); el.textContent=msg; el.className=err?"status error":"status"; if(msg && !err) setTimeout(()=>{ el.textContent=""; }, 4000); }
-  function setLoading(idOrEl, loading, text="Loading…"){
-    const el = typeof idOrEl === "string" ? $(idOrEl) : idOrEl;
-    if(!el) return;
-    if(loading){ el.dataset.origText=el.textContent; el.disabled=true; el.setAttribute("aria-busy","true"); el.textContent=text; }
-    else { el.disabled=false; el.removeAttribute("aria-busy"); el.textContent=el.dataset.origText||el.textContent; delete el.dataset.origText; }
-  }
   function setGlobalLoading(loading){ const el=$("pc-loading"); if(el) el.hidden=!loading; }
-  function saveUsername(){ try{ localStorage.setItem("yr:public:credits:username", $("pc-username").value); } catch{} }
-  function restoreUsername(){ try{ const v=localStorage.getItem("yr:public:credits:username"); if(v) $("pc-username").value=v; } catch{} }
-
-  $("pc-username").addEventListener("input", saveUsername);
-  restoreUsername();
-
-  async function loadSession(){
-    try {
-      const res = await fetch("/api/viewer/me", { credentials: "same-origin" });
-      if (res.ok) {
-        const data = await res.json().catch(() => null);
-        if (data && data.viewer) {
-          viewerSession = data.viewer;
-          if (viewerSession.kickUsername) { $("pc-username").value = viewerSession.kickUsername; }
-        }
-      }
-    } catch {}
-  }
-  loadSession();
-
-  if (auth.kick || auth.discord) {
-    $("pc-login-card").hidden = false;
-    $("pc-login-kick").hidden = !auth.kick;
-    $("pc-login-discord").hidden = !auth.discord;
-  }
 
   async function api(method, path, body){
     const opts={method,credentials:"same-origin",headers:{}};
@@ -136,30 +94,47 @@ export function renderPublicCreditsPage({ slug, nonce, homeUrl, kickAuthEnabled,
     return data;
   }
 
-  $("pc-lookup").addEventListener("submit", async (e)=>{
-    e.preventDefault();
-    const btn = e.submitter;
-    const username=$("pc-username").value.trim();
-    if(!username) return;
-    setGlobalLoading(true);
-    setLoading(btn, true, "Looking up…");
-    try{
-      const data=await api("GET","/api/public/credits?"+new URLSearchParams({slug,kickUsername:username}).toString());
-      viewer=data.viewer;
-      if(!viewer){
-        $("pc-balance-card").hidden=true;
-        $("pc-shop-card").hidden=true;
-        setStatus("No credits found for that username yet. Earn some by redeeming Kick channel rewards.",true);
-        return;
+  async function loadSession(){
+    try {
+      const res = await fetch("/api/viewer/me", { credentials: "same-origin" });
+      if (res.ok) {
+        const data = await res.json().catch(() => null);
+        if (data && data.viewer) {
+          viewerSession = data.viewer;
+        }
       }
-      $("pc-balance").textContent=viewer.balance;
-      $("pc-balance-sub").textContent=viewer.kick_username ? "Hello, "+viewer.kick_username : "";
-      $("pc-balance-card").hidden=false;
-      renderShop(data.shopItems);
-      setStatus("");
-    }catch(err){ setStatus(err.message,true); }
-    finally { setGlobalLoading(false); setLoading(btn, false); }
-  });
+    } catch {}
+  }
+
+  async function loadCredits(){
+    setGlobalLoading(true);
+    try {
+      const data = await api("GET", "/api/public/credits?" + new URLSearchParams({ slug }).toString());
+      viewer = data.viewer || null;
+      if (viewer) {
+        $("pc-balance").textContent = viewer.balance;
+        $("pc-balance-sub").textContent = viewer.kick_username
+          ? "Hello, " + viewer.kick_username
+          : (Number(viewer.balance) === 0 ? "You have 0 credits. Earn more by redeeming Kick channel-point rewards on this streamer's channel." : "");
+        $("pc-balance-card").hidden = false;
+      } else {
+        $("pc-balance-card").hidden = true;
+      }
+      renderShop(data.shopItems || []);
+    } catch (err) { setStatus(err.message, true); }
+    finally { setGlobalLoading(false); }
+  }
+
+  async function init(){
+    await loadSession();
+    if (auth.kick || auth.discord) {
+      $("pc-login-card").hidden = false;
+      $("pc-login-kick").hidden = !auth.kick;
+      $("pc-login-discord").hidden = !auth.discord;
+    }
+    await loadCredits();
+  }
+  init();
 
   function renderShop(items){
     const list=$("pc-shop-list");
@@ -167,7 +142,7 @@ export function renderPublicCreditsPage({ slug, nonce, homeUrl, kickAuthEnabled,
     const active=(items||[]).filter(i=>i.active!==false);
     $("pc-shop-empty").hidden=active.length>0;
     $("pc-shop-card").hidden=active.length===0;
-    if (!auth.public) {
+    if (!auth.public && !viewer) {
       $("pc-shop-card").hidden = true;
       return;
     }
@@ -176,10 +151,26 @@ export function renderPublicCreditsPage({ slug, nonce, homeUrl, kickAuthEnabled,
       div.className="pc-item";
       const canAfford=viewer && viewer.balance>=item.cost;
       const inStock=item.stock===null || item.stock>0;
+      const signedIn=!!viewer;
+      let buttonText;
+      let buttonDisabled;
+      if (!signedIn) {
+        buttonText = "Sign in to redeem";
+        buttonDisabled = false;
+      } else if (!inStock) {
+        buttonText = "Out of stock";
+        buttonDisabled = true;
+      } else if (!canAfford) {
+        buttonText = "Need more credits";
+        buttonDisabled = true;
+      } else {
+        buttonText = "Redeem in dashboard";
+        buttonDisabled = false;
+      }
       div.innerHTML='<div class="pc-item-info"><div class="pc-item-name">'+esc(item.name)+'</div><div class="pc-item-desc">'+esc(item.description||"")+'</div></div>'+
         '<div class="pc-item-actions"><div class="pc-item-cost">'+item.cost+' credits</div>'+
         (item.stock!==null ? '<div class="hint">Stock: '+item.stock+'</div>':'')+
-        '<button class="btn btn--sm" data-redeem="'+esc(item.id)+'" '+(canAfford && inStock ? '' : 'disabled')+'>'+(canAfford && inStock ? 'Redeem in dashboard' : (inStock ? 'Need more credits' : 'Out of stock'))+'</button></div>';
+        '<button class="btn btn--sm" data-redeem="'+esc(item.id)+'" '+(buttonDisabled ? 'disabled' : '')+'>'+buttonText+'</button></div>';
       list.appendChild(div);
     }
     list.querySelectorAll("[data-redeem]").forEach((b)=>{
@@ -187,7 +178,6 @@ export function renderPublicCreditsPage({ slug, nonce, homeUrl, kickAuthEnabled,
       b.addEventListener("click", ()=>{ window.location.href="/me"; });
     });
   }
-
 
 })();
 </script>

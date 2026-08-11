@@ -114,10 +114,21 @@ export async function handleKickViewerAuthCallback(request, env) {
     const kickUsername = kickUser.name || "";
     const avatarUrl = kickUser.profile_picture || null;
 
-    const existing = await one("SELECT id FROM viewers WHERE kick_user_id=$1", [kickUserId]);
+    const existing = await one("SELECT id, kick_username FROM viewers WHERE kick_user_id=$1", [kickUserId]);
     let viewerId;
     if (existing) {
       viewerId = existing.id;
+      const oldUsername = String(existing.kick_username || "").trim().toLowerCase();
+      const newUsername = kickUsername.trim().toLowerCase();
+      if (oldUsername && oldUsername !== newUsername) {
+        await exec(
+          `INSERT INTO viewer_username_history (viewer_id, username)
+           VALUES ($1, $2)
+           ON CONFLICT (viewer_id, username)
+           DO UPDATE SET seen_at = now()`,
+          [viewerId, oldUsername]
+        );
+      }
       await exec(
         `UPDATE viewers
             SET kick_username = $1,
@@ -130,6 +141,15 @@ export async function handleKickViewerAuthCallback(request, env) {
           WHERE id = $6`,
         [kickUsername, accessEnc, refreshEnc, expiresAt, avatarUrl, viewerId]
       );
+      if (newUsername) {
+        await exec(
+          `INSERT INTO viewer_username_history (viewer_id, username)
+           VALUES ($1, $2)
+           ON CONFLICT (viewer_id, username)
+           DO UPDATE SET seen_at = now()`,
+          [viewerId, newUsername]
+        );
+      }
     } else {
       const rows = await exec(
         `INSERT INTO viewers (kick_user_id, kick_username, kick_access_token_enc, kick_refresh_token_enc, kick_token_expires_at, kick_linked_at, avatar_url)
@@ -138,6 +158,15 @@ export async function handleKickViewerAuthCallback(request, env) {
         [kickUserId, kickUsername, accessEnc, refreshEnc, expiresAt, avatarUrl]
       );
       viewerId = rows[0].id;
+      if (kickUsername.trim()) {
+        await exec(
+          `INSERT INTO viewer_username_history (viewer_id, username)
+           VALUES ($1, $2)
+           ON CONFLICT (viewer_id, username)
+           DO UPDATE SET seen_at = now()`,
+          [viewerId, kickUsername.trim().toLowerCase()]
+        );
+      }
     }
 
     const sessionToken = await createViewerSession(env, viewerId);
@@ -201,10 +230,21 @@ export async function handleDiscordViewerAuthCallback(request, env) {
     const discordUsername = discordUser.global_name || discordUser.username || "";
     const avatarUrl = discordAvatarUrl(discordUser.id, discordUser.avatar);
 
-    const existing = await one("SELECT id FROM viewers WHERE discord_user_id=$1", [discordUserId]);
+    const existing = await one("SELECT id, discord_username FROM viewers WHERE discord_user_id=$1", [discordUserId]);
     let viewerId;
     if (existing) {
       viewerId = existing.id;
+      const oldUsername = String(existing.discord_username || "").trim().toLowerCase();
+      const newUsername = discordUsername.trim().toLowerCase();
+      if (oldUsername && oldUsername !== newUsername) {
+        await exec(
+          `INSERT INTO viewer_username_history (viewer_id, username)
+           VALUES ($1, $2)
+           ON CONFLICT (viewer_id, username)
+           DO UPDATE SET seen_at = now()`,
+          [viewerId, oldUsername]
+        );
+      }
       await exec(
         `UPDATE viewers
             SET discord_username = $1,
@@ -217,6 +257,15 @@ export async function handleDiscordViewerAuthCallback(request, env) {
           WHERE id = $6`,
         [discordUsername, accessEnc, refreshEnc, expiresAt, avatarUrl, viewerId]
       );
+      if (newUsername) {
+        await exec(
+          `INSERT INTO viewer_username_history (viewer_id, username)
+           VALUES ($1, $2)
+           ON CONFLICT (viewer_id, username)
+           DO UPDATE SET seen_at = now()`,
+          [viewerId, newUsername]
+        );
+      }
     } else {
       const rows = await exec(
         `INSERT INTO viewers (discord_user_id, discord_username, discord_access_token_enc, discord_refresh_token_enc, discord_token_expires_at, discord_linked_at, avatar_url)
@@ -225,6 +274,15 @@ export async function handleDiscordViewerAuthCallback(request, env) {
         [discordUserId, discordUsername, accessEnc, refreshEnc, expiresAt, avatarUrl]
       );
       viewerId = rows[0].id;
+      if (discordUsername.trim()) {
+        await exec(
+          `INSERT INTO viewer_username_history (viewer_id, username)
+           VALUES ($1, $2)
+           ON CONFLICT (viewer_id, username)
+           DO UPDATE SET seen_at = now()`,
+          [viewerId, discordUsername.trim().toLowerCase()]
+        );
+      }
     }
 
     const sessionToken = await createViewerSession(env, viewerId);

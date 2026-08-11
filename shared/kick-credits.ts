@@ -11,6 +11,7 @@ import {
 } from "./plans.js";
 
 export interface KickRewardPayload {
+  id?: string;
   broadcaster?: { user_id?: number | string };
   redeemer?: {
     user_id?: number | string;
@@ -35,6 +36,7 @@ export interface KickRewardResult {
 
 export type KickRewardOutcome =
   | KickRewardResult
+  | { refunded: number; balance: number }
   | { duplicate: true }
   | { skipped: true; reason?: string }
   | { blocked: true }
@@ -109,6 +111,12 @@ export function isCreditableKickStatus(status: string | undefined): boolean {
   return CREDITABLE_STATUSES.has(String(status || "").toLowerCase());
 }
 
+const REVERSIBLE_STATUSES = new Set(["canceled", "cancelled", "refunded"]);
+
+export function isReversibleKickStatus(status: string | undefined): boolean {
+  return REVERSIBLE_STATUSES.has(String(status || "").toLowerCase());
+}
+
 // Simple Levenshtein distance for username similarity checks.
 function levenshtein(a: string, b: string): number {
   if (a.length === 0) return b.length;
@@ -150,13 +158,17 @@ export async function processKickRewardRedemption(
   const rewardId = String(reward.id || "");
   const rewardTitle = String(reward.title || "");
   const rewardCost = Number(reward.cost || 0);
+  const kickRedemptionId = String(payload.id || messageId);
+  const newUsername = String(redeemer.username || "").trim().toLowerCase();
 
   if (!channelExternalId || !redeemerKickUserId || !rewardId) {
     return { skipped: true, reason: "Missing broadcaster, redeemer or reward ID" };
   }
 
-  if (!isCreditableKickStatus(status)) {
-    return { skipped: true };
+  const isCreditable = isCreditableKickStatus(status);
+  const isReversible = isReversibleKickStatus(status);
+  if (!isCreditable && !isReversible) {
+    return { skipped: true, reason: `Status '${status}' is not handled` };
   }
 
   return await withTransaction(async (tx) => {
@@ -194,6 +206,145 @@ export async function processKickRewardRedemption(
     if (owner && !owner.email_verified) return { unverified: true };
     const plan = effectivePlan(owner);
 
+    // Resolve or create the viewer, preserving the previous username in history
+    // before overwriting it. This keeps old usernames reachable for audit and
+    // anti-fraud even after a viewer changes their Kick name.
+    let viewerId: string;
+    const existingViewer = await tx.one<{ id: string; kick_username: string | null }>(
+      "SELECT id, kick_username FROM viewers WHERE kick_user_id = $1 FOR UPDATE",
+      [redeemerKickUserId]
+    );
+    if (existingViewer) {
+      viewerId = existingViewer.id;
+      const oldUsername = String(existingViewer.kick_username || "").trim().toLowerCase();
+      if (oldUsername && oldUsername !== newUsername) {
+        await tx.unsafe(
+          `INSERT INTO viewer_username_history (viewer_id, username)
+           VALUES ($1, $2)
+           ON CONFLICT (viewer_id, username)
+           DO UPDATE SET seen_at = now()`,
+          [viewerId, oldUsername]
+        );
+      }
+      await tx.unsafe(
+        `UPDATE viewers
+            SET kick_username = $1,
+                kick_avatar_url = $2,
+                updated_at = now()
+          WHERE id = $3`,
+        [redeemer.username || "", redeemer.profile_picture || "", viewerId]
+      );
+    } else {
+      const viewerRows = (await tx.unsafe(
+        `INSERT INTO viewers (kick_user_id, kick_username, kick_avatar_url)
+         VALUES ($1, $2, $3)
+         RETURNING id`,
+        [redeemerKickUserId, redeemer.username || "", redeemer.profile_picture || ""]
+      )) as { id: string }[];
+      viewerId = viewerRows[0].id;
+    }
+
+    if (newUsername) {
+      // Track the current username as well.
+      await tx.unsafe(
+        `INSERT INTO viewer_username_history (viewer_id, username)
+         VALUES ($1, $2)
+         ON CONFLICT (viewer_id, username)
+         DO UPDATE SET seen_at = now()`,
+        [viewerId, newUsername]
+      );
+    }
+
+    // Check whether this viewer already existed on this site.
+    const existingSiteViewer = await tx.one<{ id: string }>(
+      "SELECT id FROM site_viewers WHERE site_id = $1 AND viewer_id = $2 LIMIT 1",
+      [site.id, viewerId]
+    );
+
+    if (isReversible) {
+      if (!existingSiteViewer) {
+        return { skipped: true, reason: "viewer has no credits on this site" };
+      }
+
+      const siteViewer = await tx.one<{
+        id: string;
+        balance: number;
+      }>(
+        "SELECT id, balance FROM site_viewers WHERE site_id = $1 AND viewer_id = $2 FOR UPDATE",
+        [site.id, viewerId]
+      );
+      if (!siteViewer) {
+        return { skipped: true, reason: "viewer has no credits on this site" };
+      }
+
+      const originalEarn = await tx.one<{
+        id: string;
+        amount: number;
+      }>(
+        `SELECT id, amount
+           FROM credit_ledger
+          WHERE site_viewer_id = $1
+            AND type = 'earn'
+            AND metadata ->> 'kick_redemption_id' = $2
+          ORDER BY created_at DESC
+          LIMIT 1`,
+        [siteViewer.id, kickRedemptionId]
+      );
+      if (!originalEarn) {
+        return { skipped: true, reason: "no matching earn ledger row" };
+      }
+
+      const existingRefund = await tx.one<{ id: string }>(
+        `SELECT id FROM credit_ledger
+          WHERE site_viewer_id = $1
+            AND type = 'refund'
+            AND metadata ->> 'kick_redemption_id' = $2
+          LIMIT 1`,
+        [siteViewer.id, kickRedemptionId]
+      );
+      if (existingRefund) {
+        return { duplicate: true };
+      }
+
+      const refundAmount = Number(originalEarn.amount || 0);
+      const updatedRows = (await tx.unsafe(
+        `UPDATE site_viewers
+            SET balance = balance - $1,
+                total_earned = GREATEST(total_earned - $1, 0),
+                updated_at = now()
+          WHERE id = $2 AND balance >= $1
+          RETURNING id, balance`,
+        [refundAmount, siteViewer.id]
+      )) as { id: string; balance: number }[];
+      if (!updatedRows || updatedRows.length === 0) {
+        return { skipped: true, reason: "viewer balance too low to reverse" };
+      }
+
+      await tx.unsafe(
+        `INSERT INTO credit_ledger
+           (site_viewer_id, type, amount, description, metadata, kick_event_id)
+         VALUES ($1, 'refund', $2, $3, $4, $5)`,
+        [
+          siteViewer.id,
+          refundAmount,
+          `Reversed Kick reward: ${rewardTitle}`,
+          JSON.stringify({
+            reward_id: rewardId,
+            reward_title: rewardTitle,
+            reward_cost: rewardCost,
+            channel_id: channelExternalId,
+            kick_redemption_id: kickRedemptionId,
+            original_ledger_id: originalEarn.id,
+          }),
+          messageId,
+        ]
+      );
+
+      return { refunded: refundAmount, balance: updatedRows[0].balance };
+    }
+
+    // Creditable path from here.
+
     // Find the reward → credits mapping for this site.
     const mapping = await tx.one<{
       id: string;
@@ -215,37 +366,6 @@ export async function processKickRewardRedemption(
     if (expectedCost !== 0 && expectedCost !== rewardCost) {
       return { skipped: true, reason: `Reward cost mismatch for ${rewardId}: expected ${expectedCost}, got ${rewardCost}` };
     }
-
-    // Upsert viewer and record username history.
-    const viewerRows = (await tx.unsafe(
-      `INSERT INTO viewers (kick_user_id, kick_username, kick_avatar_url)
-       VALUES ($1, $2, $3)
-       ON CONFLICT (kick_user_id)
-       DO UPDATE SET kick_username = EXCLUDED.kick_username,
-                     kick_avatar_url = EXCLUDED.kick_avatar_url,
-                     updated_at = now()
-       RETURNING id`,
-      [redeemerKickUserId, redeemer.username || "", redeemer.profile_picture || ""]
-    )) as { id: string }[];
-    const viewerId = viewerRows[0].id;
-
-    const username = String(redeemer.username || "").trim().toLowerCase();
-    if (username) {
-      // Track username history to detect alt-account swaps.
-      await tx.unsafe(
-        `INSERT INTO viewer_username_history (viewer_id, username)
-         VALUES ($1, $2)
-         ON CONFLICT (viewer_id, username)
-         DO UPDATE SET seen_at = now()`,
-        [viewerId, username]
-      );
-    }
-
-    // Check whether this viewer already existed on this site.
-    const existingSiteViewer = await tx.one<{ id: string }>(
-      "SELECT id FROM site_viewers WHERE site_id = $1 AND viewer_id = $2 LIMIT 1",
-      [site.id, viewerId]
-    );
 
     // Enforce new-viewer plan limit (rolling 30 days) for new site viewers.
     if (!existingSiteViewer) {
@@ -278,14 +398,14 @@ export async function processKickRewardRedemption(
     let fraudReasons: string[] = [];
     let isBlocked = siteViewer.blocked || false;
 
-    if (username) {
+    if (newUsername) {
       // Detect username reuse by a different Kick account (alt swap).
       const altHistory = await tx.query<{ viewer_id: string; seen_at: string }>(
         `SELECT viewer_id, seen_at FROM viewer_username_history
           WHERE username = $1 AND viewer_id != $2
             AND seen_at > now() - interval '30 days'
           LIMIT 1`,
-        [username, viewerId]
+        [newUsername, viewerId]
       );
       if (altHistory.length > 0) {
         fraudScore += 50;
@@ -302,9 +422,9 @@ export async function processKickRewardRedemption(
       );
       for (const peer of peers) {
         const peerName = String(peer.kick_username || "").trim().toLowerCase();
-        if (peerName.length < 4 || username.length < 4) continue;
-        if (peerName === username) continue;
-        const dist = levenshtein(username, peerName);
+        if (peerName.length < 4 || newUsername.length < 4) continue;
+        if (peerName === newUsername) continue;
+        const dist = levenshtein(newUsername, peerName);
         if (dist <= 2) {
           fraudScore += 30;
           fraudReasons.push("username similar to existing viewer");
@@ -391,6 +511,7 @@ export async function processKickRewardRedemption(
           reward_title: rewardTitle,
           reward_cost: rewardCost,
           channel_id: channelExternalId,
+          kick_redemption_id: kickRedemptionId,
         }),
         messageId,
       ]

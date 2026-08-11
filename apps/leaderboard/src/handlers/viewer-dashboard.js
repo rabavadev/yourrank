@@ -217,35 +217,43 @@ export async function handleViewerRedeem(request, env) {
     const viewerRow = await tx.one(
       `SELECT sv.id, sv.balance, sv.blocked
          FROM site_viewers sv
-        WHERE sv.site_id=$1 AND sv.viewer_id=$2`,
+        WHERE sv.site_id=$1 AND sv.viewer_id=$2
+        FOR UPDATE`,
       [r.id, viewer.id]
     );
     if (!viewerRow) return { error: "No credits found on this board. Earn some first.", status: 400 };
     if (viewerRow.blocked) return { error: "viewer blocked", status: 400 };
 
     const item = await tx.one(
-      "SELECT id, cost, stock FROM shop_items WHERE id=$1 AND site_id=$2 AND active=true FOR UPDATE",
+      "SELECT id, name, cost, stock FROM shop_items WHERE id=$1 AND site_id=$2 AND active=true FOR UPDATE",
       [shopItemId, r.id]
     );
     if (!item) return { error: "item not found", status: 400 };
     if (item.stock !== null && item.stock <= 0) return { error: "out of stock", status: 400 };
-    if (viewerRow.balance < item.cost) return { error: "insufficient balance", status: 400 };
 
-    await tx.unsafe(
+    // Atomic conditional update: the WHERE clauses make concurrent redemptions
+    // race-safe and ensure balance can never go negative or stock below zero.
+    const updatedViewer = await tx.one(
       `UPDATE site_viewers
         SET balance = balance - $1,
             total_spent = total_spent + $1,
             last_redeemed_at = now(),
             updated_at = now()
-      WHERE id=$2`,
+      WHERE id=$2 AND balance >= $1
+      RETURNING id, balance`,
       [item.cost, viewerRow.id]
     );
+    if (!updatedViewer) return { error: "insufficient balance", status: 400 };
 
     if (item.stock !== null) {
-      await tx.unsafe(
-        "UPDATE shop_items SET stock = stock - 1, updated_at = now() WHERE id=$1",
+      const updatedItem = await tx.one(
+        `UPDATE shop_items
+            SET stock = stock - 1, updated_at = now()
+          WHERE id=$1 AND stock >= 1
+         RETURNING id`,
         [item.id]
       );
+      if (!updatedItem) return { error: "out of stock", status: 400 };
     }
 
     const redemptionRows = await tx.unsafe(
@@ -261,12 +269,12 @@ export async function handleViewerRedeem(request, env) {
       [
         viewerRow.id,
         item.cost,
-        `Redeemed: ${item.id}`,
-        JSON.stringify({ shop_item_id: item.id, redemption_id: redemptionRows[0].id }),
+        `Redeemed: ${item.name || item.id}`,
+        JSON.stringify({ shop_item_id: item.id, redemption_id: redemptionRows[0].id, item_name: item.name || "" }),
       ]
     );
 
-    return { redemptionId: redemptionRows[0].id, balance: viewerRow.balance - item.cost };
+    return { redemptionId: redemptionRows[0].id, balance: updatedViewer.balance };
   });
 
   if (txResult.error) return bad(txResult.error, txResult.status);
