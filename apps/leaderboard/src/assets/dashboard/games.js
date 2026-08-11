@@ -26,11 +26,6 @@ const BLOCK_ROWS = [
   ["cta", "Call to action"],
 ];
 
-function isPro() {
-  const plan = state.ME?.plan;
-  return plan === "pro" || plan === "agency" || plan === "lifetime" || Number(state.ME?.planExpiresAt) > new Date("2099-01-01T00:00:00Z").getTime();
-}
-
 function renderPageBlocks() {
   const list = $("leaderboardBlockRows");
   const note = $("leaderboardBlockNote");
