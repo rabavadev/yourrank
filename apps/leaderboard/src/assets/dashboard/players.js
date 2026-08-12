@@ -502,12 +502,16 @@ $("gsheetFetch")?.addEventListener("click", async () => {
 
 // --- Search, pagination, bulk selection, and column visibility ---
 function filteredRows() {
+  const rows = $("rows");
+  if (!rows) return [];
   const q = $("playerSearch")?.value.trim().toLowerCase() || "";
-  return [...$("rows").children].filter((row) => !q || row.querySelector(".p-name")?.value.toLowerCase().includes(q));
+  return [...rows.children].filter((row) => !q || row.querySelector(".p-name")?.value.toLowerCase().includes(q));
 }
 
 function applyRowVisibility() {
-  const rows = [...$("rows").children];
+  const rowsEl = $("rows");
+  if (!rowsEl) return;
+  const rows = [...rowsEl.children];
   const matches = filteredRows();
   const pages = Math.max(1, Math.ceil(matches.length / PAGE_SIZE));
   currentPage = Math.min(Math.max(1, currentPage), pages);
@@ -649,6 +653,7 @@ document.addEventListener("click", (e) => {
 
 // Initialize the active column state and the first page once the DOM is ready.
 document.addEventListener("DOMContentLoaded", () => {
+  if (!$("rows")) return;
   applyPlayerFieldVisibility();
   applyRowVisibility();
 });

@@ -106,6 +106,13 @@ export function scrollToHash(hash) {
 
 export function openDrawer() {
   const side = $("lbSide");
+  const inertSiblings = (container) => {
+    for (const child of container.children) {
+      if (child === side) continue;
+      if (child.contains(side)) inertSiblings(child);
+      else child.inert = true;
+    }
+  };
   if (side) {
     side.classList.add("is-open");
     // The sidebar is a permanent navigation landmark on desktop and only becomes
@@ -118,7 +125,15 @@ export function openDrawer() {
   document.querySelectorAll(".lb-menu").forEach((b) => b.setAttribute("aria-expanded", "true"));
   // Inert the background so Tab can't reach content behind the drawer.
   document.querySelectorAll("main:not(.lb-side), header, footer").forEach((el) => {
-    if (el !== side) el.inert = true;
+    if (el === side) return;
+    if (!el.contains(side)) {
+      el.inert = true;
+      return;
+    }
+    // Some shells wrap both the drawer and page content in the same main.
+    // Inert only that wrapper's non-drawer children so the drawer remains
+    // interactive while the content behind it is unavailable to AT and input.
+    inertSiblings(el);
   });
   const firstNav = side?.querySelector(".lb-nav");
   if (firstNav) setTimeout(() => firstNav.focus(), 0);

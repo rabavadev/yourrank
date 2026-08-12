@@ -365,7 +365,16 @@ function renderOffers(){
 }
 
 async function loadExtras(){
+  const bcListLoading = $('bcList');
+  if (bcListLoading) bcListLoading.innerHTML = '<tr><td colspan="7" class="muted">Loading broadcasts…</td></tr>';
   const [plan, bcs, pbStatus] = await Promise.all([api('/plan'), api('/broadcasts'), api('/postback-status')]);
+  if (bcs.error) {
+    const bcList = $('bcList');
+    if (bcList) {
+      const colCount = bcList.closest('table')?.querySelectorAll('thead th').length || 1;
+      bcList.innerHTML = '<tr><td colspan="' + colCount + '">' + loadErrorMarkup(bcs.error || "Couldn’t load broadcast history.", 'retryBroadcasts') + '</td></tr>';
+    }
+  }
   if (plan.error || bcs.error || pbStatus.error) {
     const error = plan.error || bcs.error || pbStatus.error;
     toast(error);
@@ -870,6 +879,20 @@ function formatSegmentLabel(segment){
   if (segment.usernameContains) parts.push('@'+segment.usernameContains);
   return parts.join(', ');
 }
+function broadcastRow(b){
+  const status = String(b.status || 'unknown').toLowerCase();
+  const statusLabel = status.charAt(0).toUpperCase() + status.slice(1);
+  const canCancel = status === 'scheduled' || status === 'pending';
+  const scheduled = b.scheduled_at ? fmtTime(b.scheduled_at) : 'Now';
+  const sent = Number(b.sent_count || 0);
+  const failed = Number(b.fail_count || 0);
+  const message = String(b.body || '').replace(/\\s+/g, ' ').trim();
+  return '<td><span class="bc-message">' + esc(message || '—') + '</span></td>' +
+    '<td>' + esc(b.bot_username ? '@' + b.bot_username : '—') + '</td>' +
+    '<td><span class="badge ' + (status === 'sent' || status === 'completed' ? 'ok' : status === 'failed' ? 'off' : '') + '">' + esc(statusLabel) + '</span></td>' +
+    '<td>' + esc(scheduled) + '</td><td>' + esc(String(sent)) + '</td><td>' + esc(String(failed)) + '</td>' +
+    '<td>' + (canCancel ? '<button class="ghost btn--sm" type="button" data-action="cancelBroadcast" data-id="' + esc(String(b.id || '')) + '">Cancel</button>' : '') + '</td>';
+}
 function getBotNameForBroadcast(){
   const botId = $('bcBotSelect')?.value || firstBotId;
   const select = $('bcBotSelect');
@@ -1135,6 +1158,7 @@ async function handleAction(e) {
     else if (action === 'closeBroadcastPreview') { e.preventDefault(); closeBroadcastPreview(); }
     else if (action === 'testBroadcast') { e.preventDefault(); await testBroadcast(target); }
     else if (action === 'cancelBroadcast') { e.preventDefault(); await cancelBroadcast(target); }
+    else if (action === 'retryBroadcasts') { e.preventDefault(); loadExtras(); }
     else if (action === 'copyLink') { e.preventDefault(); await copyLink(target); }
     else if (action === 'toggleOffer') { e.preventDefault(); await toggleOffer(target); }
     else if (action === 'toggleCommand') { e.preventDefault(); await toggleCommand(target); }
