@@ -4,6 +4,7 @@
 import { describe, it, expect, beforeAll } from "bun:test";
 
 let createDashboardState;
+const createTestState = () => createDashboardState({ onSubscriberError: () => {} });
 
 beforeAll(async () => {
   // state.js reads the request-id meta tag at module scope.
@@ -13,7 +14,7 @@ beforeAll(async () => {
 
 describe("dashboard state store", () => {
   it("notifies subscribers with the keys that changed", () => {
-    const { setState, subscribe } = createDashboardState();
+    const { setState, subscribe } = createTestState();
     const seen = [];
     const off = subscribe((keys) => seen.push(keys));
     setState({ SLUG: "acme", PUBLISHED: true });
@@ -22,7 +23,7 @@ describe("dashboard state store", () => {
   });
 
   it("does not notify when nothing changed", () => {
-    const { setState, subscribe } = createDashboardState();
+    const { setState, subscribe } = createTestState();
     setState({ SLUG: "acme" });
     const seen = [];
     const off = subscribe((keys) => seen.push(keys));
@@ -32,7 +33,7 @@ describe("dashboard state store", () => {
   });
 
   it("announces every edit as a draft change, not just the first", () => {
-    const { state, subscribe, markDirty } = createDashboardState();
+    const { state, subscribe, markDirty } = createTestState();
     const drafts = [];
     const off = subscribe((keys) => { if (keys.includes("draft")) drafts.push(state._dirty); });
     markDirty();
@@ -43,7 +44,7 @@ describe("dashboard state store", () => {
   });
 
   it("flips _dirty once per transition so the unload guard is added and removed once", () => {
-    const { state, subscribe, markDirty, clearDirty } = createDashboardState();
+    const { state, subscribe, markDirty, clearDirty } = createTestState();
     clearDirty();
     const flips = [];
     const off = subscribe((keys) => { if (keys.includes("_dirty")) flips.push(state._dirty); });
@@ -56,7 +57,7 @@ describe("dashboard state store", () => {
   });
 
   it("keeps notifying the other subscribers when one throws", () => {
-    const { setState, subscribe } = createDashboardState();
+    const { setState, subscribe } = createTestState();
     const seen = [];
     const offBad = subscribe(() => { throw new Error("boom"); });
     const offGood = subscribe(() => seen.push("ok"));
@@ -67,7 +68,7 @@ describe("dashboard state store", () => {
   });
 
   it("unsubscribes", () => {
-    const { setState, subscribe } = createDashboardState();
+    const { setState, subscribe } = createTestState();
     let calls = 0;
     const off = subscribe(() => calls++);
     off();

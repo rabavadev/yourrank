@@ -3,7 +3,7 @@
 // surface — and cannot, in the case of players.js, which site.js imports —
 // so every mutation goes through setState()/markDirty() and every surface
 // that has to react subscribes here.
-export function createDashboardState({ requestId } = {}) {
+export function createDashboardState({ requestId, onSubscriberError = (err) => console.error("dashboard subscriber failed", err) } = {}) {
   const state = {
     SLUG: null,
     EXTRA: {},
@@ -42,7 +42,7 @@ export function createDashboardState({ requestId } = {}) {
         fn(keys, state);
       } catch (err) {
         // One broken subscriber must not stop the rest of the UI updating.
-        console.error("dashboard subscriber failed", err);
+        onSubscriberError(err);
       }
     }
   }
