@@ -15,6 +15,11 @@ export interface AuditEntry {
   request?: Request | null;
 }
 
+export interface AuditDeps {
+  exec?: typeof exec;
+  getLogger?: typeof getLogger;
+}
+
 // Whitelist of keys that are safe to persist. Any key not in this set is
 // dropped to prevent tokens, secrets, passwords, or other sensitive fields
 // from leaking into the audit log.
@@ -85,7 +90,9 @@ function sanitizeAuditDetails(details: Record<string, unknown>): Record<string, 
  * Write a single audit record. Failures are logged but never throw, so a
  * downstream DB hiccup does not break the original request.
  */
-export async function logAudit(entry: AuditEntry): Promise<void> {
+export async function logAudit(entry: AuditEntry, deps: AuditDeps = {}): Promise<void> {
+  const execImpl = deps.exec || exec;
+  const getLoggerImpl = deps.getLogger || getLogger;
   const { actorId, action, entityType, entityId, details, request } = entry;
   const safeDetails = details ? sanitizeAuditDetails(details) : {};
   const ipAddress = request
@@ -94,13 +101,13 @@ export async function logAudit(entry: AuditEntry): Promise<void> {
   const userAgent = request ? request.headers.get("user-agent") : null;
 
   try {
-    await exec(
+    await execImpl(
       `INSERT INTO audit_log (actor_id, action, entity_type, entity_id, details, ip_address, user_agent)
        VALUES ($1, $2, $3, $4, $5::jsonb, $6, $7)`,
       [actorId || null, action, entityType || null, entityId || null, safeDetails, ipAddress, userAgent]
     );
   } catch (err) {
-    const logger = getLogger();
+    const logger = getLoggerImpl();
     logger.error("audit_log_insert_failed", {
       error: errMessage(err),
       action,
