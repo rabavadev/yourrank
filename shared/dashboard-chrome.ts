@@ -55,6 +55,28 @@ export function navListHtml(
   return `<nav class="lb-side-group lb-side-nav" data-area="all" aria-label="${esc(label)}">${links}</nav>`;
 }
 
+export interface Crumb {
+  label: string;
+  href?: string;
+}
+
+/**
+ * Leaf pages get an explicit path back up: the rail shows where you are, but
+ * only within one product area, and several screens (board settings, credit
+ * tabs, Telegram pages) are two levels deep.
+ */
+export function crumbsHtml(trail: Crumb[]): string {
+  if (!trail || trail.length < 2) return "";
+  const parts = trail.map((c, i) => {
+    const last = i === trail.length - 1;
+    const item = last || !c.href
+      ? `<span${last ? ' aria-current="page"' : ""}>${esc(c.label)}</span>`
+      : `<a href="${esc(c.href)}">${esc(c.label)}</a>`;
+    return i === 0 ? item : `<span class="v3-crumb-sep" aria-hidden="true">/</span>${item}`;
+  }).join("");
+  return `<nav class="v3-crumbs" aria-label="Breadcrumb">${parts}</nav>`;
+}
+
 export interface ChromeOpts {
   /** Rail contents, in order. */
   nav: NavItem[];
@@ -69,6 +91,7 @@ export interface ChromeOpts {
   productLinks?: { label: string; href: string; active?: boolean }[];
   title?: string;
   subtitle?: string;
+  crumbs?: Crumb[];
   user?: ShellUser;
   activePath?: string;
   logoutAction?: string;
@@ -104,8 +127,9 @@ export function dashboardChromeHtml(opts: ChromeOpts): string {
       (opts.headMeta ? `<div class="lb-active-meta">${esc(opts.headMeta)}</div>` : "") +
       `</div>`
     : "";
+  const crumbs = crumbsHtml(opts.crumbs || []);
   const title = opts.title
-    ? `<div class="v3-head"><h1>${esc(opts.title)}</h1>` +
+    ? `<div class="v3-head">${crumbs}<h1>${esc(opts.title)}</h1>` +
       (opts.subtitle ? `<p class="v3-head-sub">${esc(opts.subtitle)}</p>` : "") +
       `</div>`
     : "";
@@ -126,8 +150,10 @@ ${opts.footHtml ? `<div class="lb-side-foot">${opts.footHtml}</div>` : ""}
 <div class="lb-topbar-actions"><div class="gm-profile-host">${profile}</div></div>
 </header>
 <main class="lb-bento" id="main-content">
+<div class="v3-stack">
 ${title}
 ${opts.content}
+</div>
 </main>
 </div>
 </div>

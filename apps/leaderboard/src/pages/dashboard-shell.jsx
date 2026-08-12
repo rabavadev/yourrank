@@ -3,7 +3,7 @@
 
 import { NAV_LINKS, activeKey, profileMenuHtml } from "../../../../shared/shell-nav.js";
 import { raw } from "hono/html";
-import { navListHtml } from "../../../../shared/dashboard-chrome.js";
+import { crumbsHtml, navListHtml } from "../../../../shared/dashboard-chrome.js";
 
 const CREDITS_NAV_KEYS = new Set(["credits", "channel", "redemptions", "shop", "rules", "viewers", "history"]);
 
@@ -72,7 +72,7 @@ function SidebarFooter({ boardContext, footer }) {
   </>;
 }
 
-export function DashboardShell({ activeNav = "home", activeHash = "", boardContext = "full", footer = "dashboard", title = "", rootId, initiallyHidden = false, user, children }) {
+export function DashboardShell({ activeNav = "home", activeHash = "", boardContext = "full", footer = "dashboard", title = "", crumbs = null, rootId, initiallyHidden = false, user, children }) {
   const navItems = boardContext === "none" ? ACCOUNT_NAV : DASHBOARD_NAV;
   const activePath = boardContext === "none" ? "/dashboard/settings" : CREDITS_NAV_KEYS.has(activeNav) ? "/dashboard/rewards/redemptions" : "/dashboard";
   const shellId = rootId || (boardContext === "none" ? "account-dash" : "dash");
@@ -103,7 +103,7 @@ export function DashboardShell({ activeNav = "home", activeHash = "", boardConte
           {boardContext !== "none" && <div class="lb-topbar-hud"><div class="lb-board-select-wrap"><span class="lb-board-select-lbl" aria-hidden="true">Board:</span><select class="lb-board-select" id="sidebarBoardSelect" aria-label="Switch board"></select>{boardContext === "full" && <button class="btn btn--sm lb-board-new" id="newBoard" type="button" title="New board" aria-label="New board">+</button>}</div></div>}
           <div class="lb-topbar-actions">{title && <h1 class="lb-topbar-title" id="lbTopbarTitle" tabindex="-1">{title}</h1>}{boardContext !== "none" && <><span class="lb-status" id="lbTopbarStatus">—</span>{boardContext === "full" && <label class="lb-pub-toggle" title="When checked, saving makes the board public at /your-slug"><input type="checkbox" id="pubToggle" checked /> <span class="lb-pub-lbl">Publish board</span></label>}</>}<div class="gm-profile-host" dangerouslySetInnerHTML={{ __html: profile }}></div></div>
         </header>
-        <div class="lb-bento" id={boardContext === "selector" ? "cr-main" : undefined}>{children}</div>
+        <div class="lb-bento" id={boardContext === "selector" ? "cr-main" : undefined}>{crumbs ? raw(crumbsHtml(crumbs)) : null}{children}</div>
       </div>
     </div>
   </div>;

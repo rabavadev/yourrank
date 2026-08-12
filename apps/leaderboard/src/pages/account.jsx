@@ -19,7 +19,7 @@ export function UnifiedSettingsPage({ activePath, user, tab = "account" } = {}) 
   const active = SETTINGS_TABS.some(([key]) => key === tab) ? tab : "account";
   const boardUrl = new URL(activePath || "/dashboard/settings", "https://yourrank.site");
   boardUrl.pathname = "/dashboard/settings/board";
-  return <DashboardShell activeNav="account" boardContext="none" footer="account" title="Settings" user={user}>
+  return <DashboardShell activeNav="account" boardContext="none" crumbs={[{ label: "Dashboard", href: "/dashboard" }, { label: "Account settings" }]} footer="account" title="Settings" user={user}>
     <div class="account-body account-settings" id="acc-app" data-acc-tab="settings" data-settings-active={active}>
       <div class="account-settings-head">
         <h1>Account settings</h1>

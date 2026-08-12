@@ -16,6 +16,30 @@ export const dashboardConfig = {
 const EDITOR_TABS = ["setup", "players", "design", "share", "history"];
 const ANALYTICS_TABS = ["activity", "referrals", "events"];
 
+// Each route serves one section, so the trail is derived from the route rather
+// than hand-written per screen — every page below Overview says where it is.
+const SECTION_CRUMBS = {
+  board: { label: "Editor", href: "/dashboard/editor" },
+  games: { label: "Public page", href: "/dashboard/games" },
+  performance: { label: "Analytics", href: "/dashboard/analytics/activity" },
+  settings: { label: "Board settings", href: "/dashboard/settings/board" },
+  boards: { label: "Boards", href: "/dashboard/boards" },
+};
+const TAB_LABELS = {
+  setup: "Setup", players: "Players", design: "Design", share: "Share", history: "History",
+  activity: "Activity", referrals: "Referrals", events: "Events",
+};
+
+function dashboardCrumbs(activeNav, activeHash) {
+  const section = SECTION_CRUMBS[activeNav];
+  if (!section) return null;
+  const trail = [{ label: "Dashboard", href: "/dashboard" }];
+  const tab = TAB_LABELS[activeHash];
+  trail.push(tab ? section : { label: section.label });
+  if (tab) trail.push({ label: tab });
+  return trail;
+}
+
 function dashboardShellRoute(activePath = "") {
   const pathname = String(activePath || "").split("?")[0].replace(/\/+$/, "") || "/dashboard";
   if (pathname === "/dashboard" || pathname === "/dashboard.html") return { activeNav: "home", activeHash: "" };
@@ -286,7 +310,6 @@ function BoardSettingsSection({ active } = {}) {
 <section class={active ? "lb-page is-on" : "lb-page"} data-page="settings">
 <div class="v3-settings">
   <header class="v3-head">
-    <nav class="v3-crumbs" aria-label="Breadcrumb"><a href="/dashboard/settings">Settings</a><span class="v3-crumb-sep" aria-hidden="true">/</span><span aria-current="page">Board settings</span></nav>
     <h1>Board settings</h1>
     <p class="v3-head-sub" id="settingsSubline">These settings belong to the board selected above. Your plan, password, billing and postback keys live in <a href="/dashboard/settings">account settings</a>.</p>
   </header>
@@ -366,7 +389,7 @@ export function DashboardContent({ user, activePath } = {}) {
 <div class="lb-widget lb-widget--half"><div class="skeleton skeleton-block" style="height:140px"></div></div>
 <div class="lb-widget lb-widget--half"><div class="skeleton skeleton-block" style="height:140px"></div></div>
 </div>
-<DashboardShell activeNav={activeNav} activeHash={activeHash} boardContext="full" footer="dashboard" initiallyHidden user={user}>
+<DashboardShell activeNav={activeNav} activeHash={activeHash} boardContext="full" crumbs={dashboardCrumbs(activeNav, activeHash)} footer="dashboard" initiallyHidden user={user}>
 <div class="lb-widget lb-widget--full lb-widget--danger" id="verifyBanner" hidden style="margin:0 0 24px"><h2>Verify your email</h2><p class="card-sub">Your leaderboard won't be public until you confirm your email address. Check your inbox for the link, or <a href="/verify-email">request a new one</a>.</p></div>
 {sections.map((key) => {
   const Section = SECTIONS[key];

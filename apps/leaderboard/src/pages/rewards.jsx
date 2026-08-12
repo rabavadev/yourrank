@@ -13,9 +13,18 @@ import { DashboardShell } from "./dashboard-shell.jsx";
 
 const PAGES = { channel: channelPage, rules: rulesPage, shop: shopPage, viewers: viewersPage, redemptions: redemptionsPage, history: historyPage };
 
+// Every credits screen is two levels deep, so each one says where it sits and
+// how to get back up rather than relying on the rail alone.
+const CRUMB_LABELS = { channel: "Kick channel", rules: "Credit rules", shop: "Shop", viewers: "Viewers", redemptions: "Redemptions", history: "Credit activity" };
+
+function crumbsFor(tab) {
+  const trail = [{ label: "Dashboard", href: "/dashboard" }, { label: "Credits", href: "/dashboard/rewards/redemptions" }];
+  return tab === "redemptions" ? trail.map((c, i) => (i ? { label: c.label } : c)) : [...trail, { label: CRUMB_LABELS[tab] || tab }];
+}
+
 function RewardsPage({ tab, activeNav = tab, boardContext = "selector", footer = "rewards", user }) {
   const body = PAGES[tab] || channelPage;
-  return <DashboardShell activeNav={activeNav} boardContext={boardContext} footer={footer} rootId="cr-dash" user={user}>
+  return <DashboardShell activeNav={activeNav} boardContext={boardContext} crumbs={crumbsFor(tab)} footer={footer} rootId="cr-dash" user={user}>
     <div>
       <div id="cr-loading" class="ui-loading" hidden><div class="ui-loading__spinner"></div></div>
       <div id="cr-app" data-cr-tab={tab} hidden dangerouslySetInnerHTML={{ __html: body }}></div>

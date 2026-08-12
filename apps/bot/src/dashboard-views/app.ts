@@ -31,6 +31,11 @@ export function appHtml(
     ],
     title: meta.label,
     subtitle: meta.sub,
+    crumbs: [
+      { label: "Dashboard", href: "/dashboard" },
+      { label: "Telegram", href: "/bot/dashboard" },
+      { label: meta.label },
+    ],
     user,
     activePath: "/bot/dashboard",
     logoutAction: "/bot/auth/logout",

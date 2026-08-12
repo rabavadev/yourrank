@@ -124,6 +124,21 @@ describe("dashboard views", () => {
     expect(html).not.toContain("onblur=");
   });
 
+  it("renders the Telegram pages in the shared dashboard shell", () => {
+    const html = appHtml({ display_name: "Test", email: "test@example.com", plan: "free" }, "https://yourrank.site", "nonce123", "offers");
+    // Same rail, topbar and stylesheets as the leaderboard dashboard.
+    expect(html).toContain('<aside class="lb-side" id="lbSide"');
+    expect(html).toContain('<link rel="stylesheet" href="/assets/dashboard-v3.css">');
+    expect(html).toContain('class="lb-nav" href="/dashboard" data-nav="back"');
+    expect(html).toContain('data-nav="offers" aria-current="page"');
+    expect(html).toContain('<nav class="v3-crumbs" aria-label="Breadcrumb">');
+    // One shell, not the product header stacked on a second rail.
+    expect(html).not.toContain("gm-shell-nav");
+    expect(html).not.toContain('<aside class="side"');
+    expect((html.match(/<main/g) || []).length).toBe(1);
+    expect((html.match(/<h1/g) || []).length).toBe(1);
+  });
+
   it("appHtml loads the external client script and keeps markup data-action based", () => {
     const html = appHtml({ display_name: "Test", email: "test@example.com", plan: "free" }, "https://yourrank.site", "nonce123");
     expect(html).toContain('<script src="/bot/dash/client.js"></script>');
