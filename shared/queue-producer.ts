@@ -76,6 +76,12 @@ const kickRewardRedemptionEventSchema = z.object({
   payload: z.record(z.unknown()),
 }).strict();
 
+const accountExportEventSchema = z.object({
+  type: z.literal("account-export"),
+  exportId: id,
+  userId: id,
+}).strict();
+
 export const queueEventSchema = z.union([
   clickEventSchema,
   conversionEventSchema,
@@ -84,6 +90,7 @@ export const queueEventSchema = z.union([
   resetNotifyEventSchema,
   playerRankNotifyEventSchema,
   kickRewardRedemptionEventSchema,
+  accountExportEventSchema,
 ]);
 
 export type QueueEvent = z.infer<typeof queueEventSchema>;
@@ -95,6 +102,7 @@ export type NotifyEvent =
   | z.infer<typeof resetNotifyEventSchema>
   | z.infer<typeof playerRankNotifyEventSchema>;
 export type KickRewardRedemptionEvent = z.infer<typeof kickRewardRedemptionEventSchema>;
+export type AccountExportEvent = z.infer<typeof accountExportEventSchema>;
 
 export function parseQueueEvent(input: unknown): QueueEvent {
   return queueEventSchema.parse(input);

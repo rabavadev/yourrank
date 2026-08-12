@@ -31,6 +31,10 @@ class_name = "RateLimiter"
 queue = "yourrank-events"
 binding = "EVENTS_QUEUE"
 
+[[r2_buckets]]
+binding = "ACCOUNT_EXPORTS"
+bucket_name = "yourrank-account-exports"
+
 # --- Postgres (Supabase) via Hyperdrive. ---
 # Config recreated with correct username (postgres, not postgres.<ref>).
 [[hyperdrive]]
@@ -106,3 +110,7 @@ class_name = "RateLimiter"
 [[env.staging.hyperdrive]]
 binding = "HYPERDRIVE"
 id = "STAGING_HYPERDRIVE_ID_PLACEHOLDER"
+
+[[env.staging.r2_buckets]]
+binding = "ACCOUNT_EXPORTS"
+bucket_name = "yourrank-account-exports-staging"

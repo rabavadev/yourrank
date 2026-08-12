@@ -18,6 +18,10 @@ new_sqlite_classes = ["RateLimiter"]
 queue = "yourrank-events"
 binding = "EVENTS_QUEUE"
 
+[[r2_buckets]]
+binding = "ACCOUNT_EXPORTS"
+bucket_name = "yourrank-account-exports"
+
 [[queues.consumers]]
 queue = "yourrank-events"
 max_batch_size = 50
