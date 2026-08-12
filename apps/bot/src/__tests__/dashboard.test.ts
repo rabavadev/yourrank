@@ -132,6 +132,12 @@ describe("dashboard views", () => {
     expect(html).toContain('data-action="sendBroadcast"');
     expect(html).toContain('data-action="logout"');
     expect(html).not.toContain('<div class="panel" data-page="settings">');
+    expect(html).toContain("Manage postbacks in Account");
+    expect(html).toContain("postbackStatus");
+    expect(html).toContain("Click metrics cover the last 90 days");
+    expect(html).toContain("Reported revenue");
+    expect(html).toContain("Last activity");
+    expect(html).toContain('colspan="11"');
     expect(html).toContain('nonce="nonce123"');
     expect(html).not.toContain("gm-shell-nav");
     expect(html).not.toContain("onclick=");
@@ -153,6 +159,9 @@ describe("dashboard views", () => {
     const js = clientScriptSource();
     expect(js).toContain("wrap.hidden = self.all.length === 0");
     expect(js).toContain("this.controls.hidden = this.all.length === 0");
+    expect(js).toContain("reported_revenue");
+    expect(js).toContain("last_activity_at");
+    expect(js).toContain("This does not indicate that an individual offer is converting.");
     expect(js).toContain("this.pageInfo.textContent = total ? 'Page '+this.page+' of '+this.totalPages+' ('+total+')' : ''");
     expect(js).toContain("setBroadcastAvailability(bots.length > 0)");
     expect(js).toContain("page !== 'commands' || bots.length > 0");
@@ -359,6 +368,30 @@ describe("buildDashboard", () => {
     expect(body.ok).toBe(true);
     expect(body.configured).toBe(true);
     expect(body.url).toBe("https://yourrank.site/hook/secret");
+  });
+
+  it("GET /dash/api/offers includes reported revenue and last activity", async () => {
+    mockOne.mockImplementation((sql: string) => {
+      if (sql.includes("SELECT status FROM users")) return Promise.resolve({ status: "active" });
+      return Promise.resolve(null);
+    });
+    mockQuery.mockImplementation((sql: string) => {
+      if (sql.includes("FROM sessions")) return Promise.resolve([{ user_id: "u-1", created_at: new Date(), age: 0 }]);
+      if (sql.includes("FROM offers o")) return Promise.resolve([]);
+      return Promise.resolve([]);
+    });
+    const req = new Request("http://localhost:8787/dash/api/offers", {
+      headers: { cookie: "yr_session=token123" },
+    });
+    const res = await app.fetch(req, testEnv);
+    expect(res.status).toBe(200);
+    expect(await res.json() as any).toEqual([]);
+    const offersSql = mockQuery.mock.calls
+      .map(([sql]) => sql)
+      .find((sql) => typeof sql === "string" && sql.includes("FROM offers o"));
+    expect(offersSql).toContain("reported_revenue");
+    expect(offersSql).toContain("last_activity_at");
+    expect(offersSql).toContain("conversion_by_currency");
   });
 
   it("POST /dash/api/bots/:id/disconnect revokes the bot", async () => {

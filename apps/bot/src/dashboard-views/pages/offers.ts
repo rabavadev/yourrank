@@ -2,11 +2,11 @@
 export function offersPanel(publicBaseUrl: string): string {
   return `
   <div class="panel" data-page="offers"><h2>Your offers</h2>
-    <p class="muted">Lifetime metrics for all offers. Set up postbacks to see conversions.</p>
+    <p class="muted">Click metrics cover the last 90 days. Reported conversions and revenue reflect available sponsor postbacks.</p>
     <p class="muted" id="postbackStatusOffers">Loading postback status…</p>
-    <div class="tbl-scroll"><table><thead><tr><th>Offer</th><th>Link</th><th>Clicks</th><th>Unique</th><th title="Click-through rate: unique clicks / total clicks">CTR ?</th><th title="Conversion rate: conversions / unique clicks">CR ?</th><th>Conv.</th><th>Status</th><th><span class="sr-only">Actions</span></th></tr></thead>
-    <tbody id="offers"><tr><td colspan="9" class="muted">Loading…</td></tr></tbody></table></div>
-    <p class="muted hint">Metrics are lifetime totals for each offer. <a href="${publicBaseUrl}/account/postbacks">Manage postbacks in Account →</a></p>
+    <div class="tbl-scroll"><table><thead><tr><th>Offer</th><th>Link</th><th>Clicks</th><th>Unique</th><th title="Click-through rate: unique clicks / total clicks">CTR ?</th><th title="Conversion rate: conversions / unique clicks">CR ?</th><th>Conv.</th><th>Reported revenue</th><th>Last activity</th><th>Status</th><th><span class="sr-only">Actions</span></th></tr></thead>
+    <tbody id="offers"><tr><td colspan="11" class="muted">Loading…</td></tr></tbody></table></div>
+    <p class="muted hint">Clicks and click-derived rates use the rolling 90-day window. Revenue is reported by sponsor postback and is not verified receipt. <a href="${publicBaseUrl}/account/postbacks">Manage postbacks in Account →</a></p>
     <details class="glossary"><summary>Metric glossary</summary>
       <dl>
         <div><dt>Clicks</dt><dd>Total clicks on this offer's tracked short link.</dd></div>
@@ -14,6 +14,8 @@ export function offersPanel(publicBaseUrl: string): string {
         <div><dt>CTR</dt><dd>Click-through rate: unique clicks ÷ total clicks.</dd></div>
         <div><dt>CR</dt><dd>Conversion rate: conversions ÷ unique clicks.</dd></div>
         <div><dt>Conv.</dt><dd>Reported conversions from sponsor postbacks.</dd></div>
+        <div><dt>Reported revenue</dt><dd>Sum of amounts claimed by sponsor postbacks, shown separately by currency.</dd></div>
+        <div><dt>Last activity</dt><dd>Most recent retained click or reported conversion.</dd></div>
         <div><dt>Postback</dt><dd>A server-to-server call that confirms a click led to a conversion.</dd></div>
       </dl>
     </details>

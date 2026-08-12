@@ -123,18 +123,47 @@ export function buildDashboardApi(): Hono<{ Bindings: DashApiBindings; Variables
           WHERE cl.ts >= current_date
           GROUP BY cl.short_link_id
        ),
-       offer_conversions AS (
+       conversion_by_currency AS (
          SELECT c.offer_id,
-                count(*)::int AS conversions
+                coalesce(nullif(upper(c.currency), ''), 'Unknown') AS currency,
+                count(*)::int AS conversions,
+                max(c.ts) AS last_conversion_at,
+                sum(c.amount)::numeric AS amount
            FROM conversions c
           WHERE c.owner_id = $1
-          GROUP BY c.offer_id
+          GROUP BY c.offer_id, coalesce(nullif(upper(c.currency), ''), 'Unknown')
+       ),
+       offer_conversions AS (
+         SELECT offer_id,
+                sum(conversions)::int AS conversions,
+                max(last_conversion_at) AS last_conversion_at,
+                coalesce(
+                  jsonb_agg(
+                    jsonb_build_object('currency', currency, 'amount', amount)
+                    ORDER BY currency
+                  ) FILTER (WHERE amount IS NOT NULL),
+                  '[]'::jsonb
+                ) AS reported_revenue
+           FROM conversion_by_currency
+          GROUP BY offer_id
+       ),
+       click_activity AS (
+         SELECT sl.offer_id,
+                max(cl.ts) AS last_click_at
+           FROM clicks cl
+           JOIN short_links sl ON sl.id = cl.short_link_id
+           JOIN offers owner_offer
+             ON owner_offer.id = sl.offer_id
+            AND owner_offer.owner_id = $1
+          GROUP BY sl.offer_id
        )
        SELECT o.id, o.label, ca.name AS casino, o.promo_code, o.bonus_text,
               o.is_active, o.priority, sl.slug,
               (coalesce(lc.clicks, 0) + coalesce(tc.clicks, 0))::int               AS clicks,
               (coalesce(lc.unique_clicks, 0) + coalesce(tc.unique_clicks, 0))::int AS unique_clicks,
-              coalesce(conv.conversions, 0)::int                                       AS conversions,
+              coalesce(conv.conversions, 0)::int                                  AS conversions,
+              conv.reported_revenue,
+              greatest(act.last_click_at, conv.last_conversion_at)                AS last_activity_at,
               CASE WHEN (coalesce(lc.clicks, 0) + coalesce(tc.clicks, 0)) > 0
                    THEN round(((coalesce(lc.unique_clicks, 0) + coalesce(tc.unique_clicks, 0))::numeric) / (coalesce(lc.clicks, 0) + coalesce(tc.clicks, 0)), 3)::float
                    ELSE 0
@@ -149,6 +178,7 @@ export function buildDashboardApi(): Hono<{ Bindings: DashApiBindings; Variables
          LEFT JOIN link_clicks  lc ON lc.short_link_id = sl.id
          LEFT JOIN today_clicks tc ON tc.short_link_id = sl.id
          LEFT JOIN offer_conversions conv ON conv.offer_id = o.id
+         LEFT JOIN click_activity act ON act.offer_id = o.id
         WHERE o.owner_id = $1
         ORDER BY o.priority DESC, o.created_at DESC`,
       [c.get("uid")]
