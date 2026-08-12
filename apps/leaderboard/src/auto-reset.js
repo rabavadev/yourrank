@@ -4,6 +4,7 @@ import { query, exec, one } from "../../../shared/db.js";
 import { createArchive, getPlayers } from "./site.js";
 import { notifyReset } from "../../../shared/notifications.js";
 import { mapWithConcurrency, SHARED_WORK_CONCURRENCY_LIMIT } from "../../../shared/work-concurrency.js";
+import { restoreAutoResetMarker } from "./auto-reset-claim.js";
 
 const CLEAR_OPTIONS = new Set(["wagers", "players", "none"]);
 
@@ -71,7 +72,7 @@ export async function processAutoResetSite(env, site) {
     const result = await createArchive(env, site.user_id, { label, clear, siteId: site.id });
     if (result.error) {
       console.error(`[auto-reset] archive failed for site ${site.id}: ${result.error}`);
-      await restoreAutoResetMarker(site.id, claimed.prev);
+      await restoreAutoResetMarker(exec, site.id, claimed.prev);
       return;
     }
 
@@ -90,14 +91,4 @@ export async function processAutoResetSite(env, site) {
   } catch (err) {
     console.error(`[auto-reset] failed for site ${site.id}:`, err);
   }
-}
-
-export async function restoreAutoResetMarker(siteId, previousValue, execute = exec) {
-  await execute(
-    `UPDATE sites
-        SET auto_reset_last_run_at = $2
-      WHERE id = $1
-        AND auto_reset_last_run_at = ends_at`,
-    [siteId, previousValue ?? null]
-  );
 }
