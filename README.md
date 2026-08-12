@@ -145,6 +145,50 @@ node build-shared.mjs && cd apps/consumer && wrangler deploy
 
 See **DEPLOY.md** for first-time Cloudflare setup (routes, KV namespaces, Hyperdrive, secrets).
 
+### Staging load test
+
+The capacity ramp is an opt-in k6 harness. It requires an explicit target and
+board slug, has no production default, and refuses `yourrank.site` /
+`www.yourrank.site`. Because production boards can also use custom domains,
+any non-local hostname requires the explicit
+`I_KNOW_THIS_IS_NOT_PRODUCTION=true` acknowledgement after verifying that the
+target uses an isolated staging database.
+
+After provisioning an isolated staging database and seeding the fixtures in
+`/home/ubuntu/audit/CAPACITY_AUDIT.md` §12, run the mixed viewer plan:
+
+```bash
+TARGET_URL=https://staging.example.test BOARD_SLUG=large-board \
+I_KNOW_THIS_IS_NOT_PRODUCTION=true \
+k6 run docs/load-test.js
+```
+
+The plan runs T1–T7 at 100 → 250 → 500 → 1,000 → 2,500 → 5,000 → 10,000
+VUs, exercising board HTML, a held SSE stream, page-two pagination, search,
+and a `/go` redirect. Run the audit's SSE-only test separately with `STAGE=T0`:
+
+```bash
+TARGET_URL=https://staging.example.test BOARD_SLUG=large-board \
+I_KNOW_THIS_IS_NOT_PRODUCTION=true \
+STAGE=T0 k6 run docs/load-test.js
+```
+
+To run one mixed stage, set `STAGE=T1` through `STAGE=T7`; it ramps to that
+stage's target, holds for the audit duration, and ramps down. HTTP 429
+responses are expected when many VUs share the load generator's source IP:
+the harness accepts them, excludes them from the regular request failure
+threshold, and reports their share in the `rate_limited` metric (tagged by
+surface). This does not weaken application limits. To measure origin capacity
+instead of limiter shedding, run from distributed source IPs or arrange
+rate-limit keys that distinguish the load-generator clients; alternatively,
+reduce the search/pagination request share and interpret the shed rate
+separately. Threshold failures still require investigation: board-render p95
+under 1.5 seconds, regular non-429 request errors under 1%, and early SSE
+closes under 5%. The k6 summary reports p50/p95/p99 timings; correlate it with
+Worker CPU, Hyperdrive pool errors, Supabase CPU/connections, and queue backlog
+as described in the audit.
+**Never point this harness at production.**
+
 ## Provenance
 
 Merged from `rabavadev/yourrank` (leaderboards, D1→Postgres ported) and

@@ -3,7 +3,8 @@ import { one, query } from "../../../shared/db.js";
 
 export async function getShopItems(siteId) {
   return query(
-    "SELECT id, name, description, cost, stock, active FROM shop_items WHERE site_id=$1 AND active=true ORDER BY name ASC",
+    // Defensive ceiling above the Agency plan's 999 active-item contractual limit.
+    "SELECT id, name, description, cost, stock, active FROM shop_items WHERE site_id=$1 AND active=true ORDER BY name ASC LIMIT 1024",
     [siteId]
   ) || [];
 }

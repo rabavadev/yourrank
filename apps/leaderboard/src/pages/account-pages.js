@@ -143,7 +143,7 @@ const dataWidget = `<div class="lb-widget lb-widget--full lb-widget--danger" id=
         <h2>Account</h2>
         <p class="card-sub">Export your data or permanently delete your account.</p>
         <div class="d-flex gap-8 items-center flex-wrap">
-          <button class="btn btn--accent" id="accExportData" type="button">Download my data</button>
+          <button class="btn btn--accent" id="accExportData" type="button">Prepare my data export</button>
           <span class="hint" id="accExportStatus" role="status" aria-live="polite"></span>
         </div>
         <hr class="hr" />

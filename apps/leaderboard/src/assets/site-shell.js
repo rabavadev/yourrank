@@ -43,25 +43,97 @@
     });
   }
 
-  // ── Standings: filter rows from the header search ───────────────────
+  // ── Standings: local filter with server fallback and real pagination ──
   var search = document.getElementById("yr-search");
-  var rows = Array.prototype.slice.call(document.querySelectorAll("[data-name]"));
-  if (search && rows.length) {
+  var rowsRoot = document.querySelector("[data-rows]");
+  var loadMore = document.querySelector("[data-load-more]");
+  var loadMoreStatus = document.querySelector("[data-load-more-status]");
+  var slug = document.body.dataset.slug || "";
+  var isCustomDomain = document.body.dataset.customDomain === "true";
+  var loadedCount = rowsRoot ? rowsRoot.querySelectorAll("tr[data-name]").length : 0;
+  var totalCount = Number((document.querySelector("[data-player-count-badge]") || {}).textContent?.replace(/[^\d]/g, "")) || loadedCount;
+  var activeSearch = "";
+  var searchOffset = 0;
+  var savedRowsHtml = rowsRoot ? rowsRoot.innerHTML : "";
+  var currency = document.body.dataset.currency || "$";
+  var money = function (v) { return currency + Number(v || 0).toLocaleString("en-US", { maximumFractionDigits: 0 }); };
+  var esc = function (v) { return String(v == null ? "" : v).replace(/[&<>"']/g, function (c) { return ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]); }); };
+  var rowHtml = function (p) {
+    var rank = Number(p.rank) || 0;
+    return '<tr data-name="' + esc(String(p.name || "").toLowerCase()) + '" data-position="' + rank + '">' +
+      '<td class="yr-idx">' + String(rank).padStart(2, "0") + '</td>' +
+      '<td><a href="' + (isCustomDomain ? "/player/" : "/" + encodeURIComponent(slug) + "/player/") + encodeURIComponent(p.name || "") + '">' + esc(p.name) + '</a></td>' +
+      '<td class="yr-mono yr-r">' + esc(money(p.wagered)) + '</td>' +
+      '<td class="yr-mono yr-r">' + (p.prize ? esc(money(p.prize)) : "—") + '</td></tr>';
+  };
+  var fetchPage = function (offset, q) {
+    var params = new URLSearchParams({ limit: "100", offset: String(offset) });
+    if (q) params.set("search", q);
+    return fetch("/api/public/" + encodeURIComponent(slug) + "/players?" + params.toString()).then(function (res) {
+      if (!res.ok) throw new Error("Could not load players.");
+      return res.json();
+    });
+  };
+  var appendPage = function (page, replace) {
+    if (!rowsRoot) return;
+    var html = (page.players || []).map(rowHtml).join("");
+    if (replace) rowsRoot.innerHTML = html;
+    else rowsRoot.insertAdjacentHTML("beforeend", html);
+    loadedCount = replace ? (page.players || []).length : loadedCount + (page.players || []).length;
+    totalCount = Number(page.total) || totalCount;
+    if (loadMore) loadMore.hidden = !page.hasMore;
+  };
+  if (search && rowsRoot) {
+    var rows = function () { return Array.prototype.slice.call(rowsRoot.querySelectorAll("tr[data-name]")); };
     var empty = document.getElementById("yr-no-match");
     search.addEventListener("input", function () {
       var q = search.value.trim().toLowerCase();
+      activeSearch = q;
+      searchOffset = 0;
       var shown = 0;
-      rows.forEach(function (row) {
+      rows().forEach(function (row) {
         var hit = !q || row.dataset.name.indexOf(q) !== -1;
         row.hidden = !hit;
         if (hit) shown += 1;
       });
-      if (empty) empty.hidden = shown !== 0;
+      if (!q) {
+        if (rowsRoot && savedRowsHtml) rowsRoot.innerHTML = savedRowsHtml;
+        loadedCount = rows().length;
+        if (loadMore) loadMore.hidden = loadedCount >= totalCount;
+        if (empty) empty.hidden = true;
+        return;
+      }
+      if (shown === 0) {
+        fetchPage(0, q).then(function (page) {
+          if (activeSearch !== q) return;
+          appendPage(page, true);
+          searchOffset = (page.players || []).length;
+          if (empty) empty.hidden = (page.players || []).length !== 0;
+        }).catch(function () {
+          if (empty) empty.hidden = false;
+        });
+      } else if (empty) empty.hidden = true;
+    });
+  }
+
+  if (loadMore) {
+    loadMore.addEventListener("click", function () {
+      loadMore.disabled = true;
+      if (loadMoreStatus) loadMoreStatus.textContent = "Loading…";
+      var offset = activeSearch ? searchOffset : loadedCount;
+      fetchPage(offset, activeSearch).then(function (page) {
+        appendPage(page, !!activeSearch && searchOffset === 0);
+        if (activeSearch) searchOffset += (page.players || []).length;
+        loadMore.disabled = false;
+        if (loadMoreStatus) loadMoreStatus.textContent = "";
+      }).catch(function (err) {
+        loadMore.disabled = false;
+        if (loadMoreStatus) loadMoreStatus.textContent = err.message;
+      });
     });
   }
 
   // ── Shop: redeem ────────────────────────────────────────────────────
-  var slug = document.body.dataset.slug || "";
   document.querySelectorAll("[data-redeem]").forEach(function (btn) {
     btn.addEventListener("click", function () {
       var label = btn.textContent;

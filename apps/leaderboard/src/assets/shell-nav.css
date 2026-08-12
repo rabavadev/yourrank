@@ -2,22 +2,22 @@
    file (see shared/page-shell.ts), so the two shells cannot drift. */
 :root{
   --gm-bg:#fafafa; --gm-panel:#ffffff; --gm-line:#e4e4e7; --gm-line-2:#d4d4d8;
-  --gm-ink:#191919; --gm-ink-soft:#55555c; --gm-ink-mute:#82828a;
+  --gm-ink:#191919; --gm-ink-soft:#55555c; --gm-ink-mute:#707070;
   --gm-accent:#5b5bf5; --gm-accent-ink:#ffffff;
   --gm-mono:"IBM Plex Mono","JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
   --gm-sans:"Inter",system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
-  --gm-shadow-sm:0 1px 2px rgba(0,0,0,.05);
-  --gm-shadow-md:0 4px 12px rgba(0,0,0,.08);
-  --gm-shadow-lg:0 12px 32px rgba(0,0,0,.12);
+  --gm-shadow-sm:var(--yr-shadow-sm, 0 1px 2px rgba(0,0,0,.05));
+  --gm-shadow-md:var(--yr-shadow-sm, 0 1px 2px rgba(0,0,0,.05));
+  --gm-shadow-lg:var(--yr-shadow-lg, 0 12px 32px rgba(0,0,0,.12));
 }
 .gm-shell-nav--light{
   --gm-bg:#fafafa; --gm-panel:#ffffff; --gm-line:#e4e4e7; --gm-line-2:#d4d4d8;
-  --gm-ink:#191919; --gm-ink-soft:#55555c; --gm-ink-mute:#82828a;
+  --gm-ink:#191919; --gm-ink-soft:#55555c; --gm-ink-mute:#707070;
   --gm-accent:#5b5bf5; --gm-accent-ink:#ffffff;
 }
 .gm-shell-nav--dark{
   --gm-bg:var(--yr-color-chrome-3); --gm-panel:var(--yr-color-chrome-6); --gm-line:var(--yr-color-chrome-line-4); --gm-line-2:var(--yr-color-chrome-line-3);
-  --gm-ink:var(--yr-color-chrome-ink); --gm-ink-soft:var(--yr-color-chrome-ink-2); --gm-ink-mute:var(--yr-color-text-muted);
+  --gm-ink:var(--yr-color-chrome-ink); --gm-ink-soft:var(--yr-color-chrome-ink-2); --gm-ink-mute:var(--yr-color-chrome-ink-4);
   --gm-accent:var(--yr-color-action); --gm-accent-ink:var(--yr-color-text-inverse);
 }
 .gm-shell-nav{position:sticky;top:0;z-index:50;background:var(--gm-bg);

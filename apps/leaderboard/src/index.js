@@ -3,7 +3,7 @@ import { sendErrorToDiscord } from "../../../shared/monitoring.js";
 import { withWorkerFetch } from "../../../shared/with-worker.js";
 import { RateLimiter } from "../../../shared/rate-limiter-do.js";
 import { populateEnv } from "../../../shared/env.js";
-import { getPublicSite, getBySlug, getArchives, ARCHIVE_LIMITS } from "./site.js";
+import { fromJsonb, getPublicSite, getBySlug, getClickRedirectSite, getArchiveSnapshots, ARCHIVE_LIMITS, PUBLIC_ARCHIVE_LIMIT } from "./site.js";
 import { renderEmbed, renderHallOfFame, renderLeaderboard, renderLegalPage, renderPasswordGate, renderPlayerProfile, renderStreamerProfile } from "./render.jsx";
 import { renderPublicCreditsPage } from "./public-credits.js";
 import { parseSitePath, renderSiteRoute } from "./site-routes.js";
@@ -29,15 +29,52 @@ import {
 import { handlePublicApiPreflight } from "./middleware/public-api.js";
 import { findSiteLogoData, findSiteStatus, findUserTotpSecret } from "./data/sites.js";
 import { detectImageMime } from "./site.js";
-import { one } from "../../../shared/db.js";
+import { one, query, exec } from "../../../shared/db.js";
+import { logAudit } from "../../../shared/audit.js";
 import { loadPlatformIdentity, getPlatformIdentity } from "./platform-identity.js";
 import { applyLegalIdentity } from "./pages/legal-helper.js";
 import { hashToken, newClickRef } from "../../../shared/crypto.js";
 import { handleDashboardPreview } from "./handlers/preview.js";
 import { demoLeaderboardData } from "./demo-data.js";
 import { parseDashboardPath, dashboardPath, resolveSection } from "./assets/dashboard/routes.js";
+import { deferClickWrite, trackedDestination } from "./tracked-redirect.js";
+import { setRequestMetrics } from "../../../shared/request-id.js";
 
 const LEGAL_PAGES = new Set(["terms", "privacy", "responsible", "cookies", "refund", "contact"]);
+const NON_SITE_PATHS = new Set([
+  "api", "auth", "dashboard", "login", "logout", "signup", "verify-email",
+  "account", "contact", "faq", "reviews", "cookies", "privacy", "terms",
+  "responsible", "refund", "setup", "demo", "go", "logo", "favicon.ico",
+]);
+const PUBLIC_API_OPERATIONS = new Set(["standings", "players", "stream", "rank", "data", "stats"]);
+const SITE_SECTIONS = new Set(["home", "leaderboard", "shop", "games", "me"]);
+
+function telemetryRoute(path) {
+  const parts = path.split("/").filter(Boolean);
+  if (parts[0] === "api") {
+    if (parts[1] === "public" && PUBLIC_API_OPERATIONS.has(parts[3])) {
+      return "/api/public/:slug/" + parts[3];
+    }
+    if (parts[1] && NON_SITE_PATHS.has(parts[1])) return "/api/" + parts[1];
+    return "/other";
+  }
+  if (parts[0] === "go") return "/go/:slug";
+  if (parts[0] === "logo") return "/logo/:slug";
+  if (parts.length >= 2 && parts[1] === "player") return "/:slug/player/:name";
+  if (parts.length >= 2 && SITE_SECTIONS.has(parts[1])) return "/:slug/" + parts[1];
+  if (parts.length === 1 && !NON_SITE_PATHS.has(parts[0])) return "/:slug";
+  if (parts.length === 1 && NON_SITE_PATHS.has(parts[0])) return "/" + parts[0];
+  return "/other";
+}
+
+function telemetrySite(path) {
+  const publicPath = path.match(/^\/api\/public\/([^/]+)/i);
+  const redirectPath = path.match(/^\/go\/([^/]+)/i);
+  if (publicPath?.[1]) return publicPath[1].toLowerCase();
+  if (redirectPath?.[1]) return redirectPath[1].toLowerCase();
+  const first = path.split("/").filter(Boolean)[0]?.toLowerCase();
+  return first && !NON_SITE_PATHS.has(first) ? first : undefined;
+}
 
 
 function enqueueBump(env, ctx, siteId, field, referer = null, visitorHash = null) {
@@ -74,10 +111,11 @@ function findProfilePlayer(data, rawName) {
 
 async function buildPlayerHistory(env, siteId, rawName, plan) {
   const name = decodeURIComponent(rawName).trim().toLowerCase();
-  const archives = await getArchives(env, siteId, ARCHIVE_LIMITS[plan] || 6);
+  const archives = await getArchiveSnapshots(env, siteId, Math.min(ARCHIVE_LIMITS[plan] || 6, PUBLIC_ARCHIVE_LIMIT));
   const out = [];
   for (const a of archives) {
-    const snap = Array.isArray(a.snapshot_json) ? a.snapshot_json : [];
+    const parsed = fromJsonb(a.snapshot_json);
+    const snap = Array.isArray(parsed) ? parsed : [];
     const sorted = snap.slice().sort((x, y) => (Number(y.wagered) || 0) - (Number(x.wagered) || 0));
     const idx = sorted.findIndex((p) => String(p.name || "").toLowerCase() === name);
     if (idx !== -1) {
@@ -133,7 +171,7 @@ export default {
       }
     }
     return response;
-  }),
+  }, { telemetry: true }),
 
   scheduled: handleScheduled,
 };
@@ -162,7 +200,79 @@ async function handleScheduled(event, env, ctx) {
         }
       })
     );
+    ctx.waitUntil(cleanupExpiredExports(env).catch((err) => {
+      console.error("[scheduled] account export cleanup failed:", String(err?.message || err));
+    }));
   }
+}
+
+async function cleanupExpiredAccountExports(env) {
+  const stale = await query(
+    `SELECT id, user_id FROM account_export_jobs
+      WHERE status='processing' AND started_at < now() - INTERVAL '15 minutes'
+      ORDER BY started_at ASC LIMIT 100`,
+    []
+  );
+  for (const job of stale) {
+    await exec(
+      `UPDATE account_export_jobs
+          SET status='failed', error='Export worker stopped before completion', completed_at=now()
+        WHERE id=$1 AND status='processing'`,
+      [job.id]
+    );
+    await logAudit({ actorId: job.user_id, action: "account_export_failed", entityType: "account_export", entityId: job.id, details: { export_id: job.id, status: "failed" } });
+  }
+  for (;;) {
+    const expired = await query(
+      "SELECT id, artifact_key FROM account_export_jobs WHERE expires_at <= now() ORDER BY expires_at ASC LIMIT 100",
+      []
+    );
+    if (!expired.length) return;
+    if (env.ACCOUNT_EXPORTS) {
+      for (const job of expired) {
+        if (job.artifact_key) await env.ACCOUNT_EXPORTS.delete(job.artifact_key).catch(() => {});
+      }
+    }
+    await exec("DELETE FROM account_export_jobs WHERE id = ANY($1)", [expired.map((job) => job.id)]);
+    if (expired.length < 100) return;
+  }
+}
+
+async function cleanupExpiredViewerExports(env) {
+  const stale = await query(
+    `SELECT id, viewer_id FROM viewer_export_jobs
+      WHERE status='processing' AND started_at < now() - INTERVAL '15 minutes'
+      ORDER BY started_at ASC LIMIT 100`,
+    []
+  );
+  for (const job of stale) {
+    await exec(
+      `UPDATE viewer_export_jobs
+          SET status='failed', error='Export worker stopped before completion', completed_at=now()
+        WHERE id=$1 AND status='processing'`,
+      [job.id]
+    );
+    await logAudit({ actorId: job.viewer_id, action: "viewer_export_failed", entityType: "viewer_export", entityId: job.id, details: { export_id: job.id, status: "failed" } });
+  }
+  for (;;) {
+    const expired = await query(
+      "SELECT id, artifact_key FROM viewer_export_jobs WHERE expires_at <= now() ORDER BY expires_at ASC LIMIT 100",
+      []
+    );
+    if (!expired.length) return;
+    if (env.ACCOUNT_EXPORTS) {
+      for (const job of expired) {
+        if (job.artifact_key) await env.ACCOUNT_EXPORTS.delete(job.artifact_key).catch(() => {});
+      }
+    }
+    await exec("DELETE FROM viewer_export_jobs WHERE id = ANY($1)", [expired.map((job) => job.id)]);
+    if (expired.length < 100) return;
+  }
+}
+
+async function cleanupExpiredExports(env) {
+  await cleanupExpiredAccountExports(env);
+  await cleanupExpiredViewerExports(env);
 }
 
 function addCookieConsent(html) {
@@ -224,6 +334,10 @@ async function handleRequest(request, env, ctx, meta) {
       const path = url.pathname;
       const method = request.method === "HEAD" ? "GET" : request.method;
       const host = (request.headers.get("host") || "").toLowerCase().split(":")[0];
+      setRequestMetrics({
+        route: telemetryRoute(path),
+        site: telemetrySite(path),
+      });
 
       // --- custom domain resolution ---
       // If the Host header is not our primary domain, check if it maps to a
@@ -731,25 +845,18 @@ async function handleRequest(request, env, ctx, meta) {
           return Response.redirect(`${url.origin}/signup`, 302);
         }
         const clickRef = newClickRef();
-        const r = await getPublicSite(env, slug, request);
-        if (!r || r.suspended || r.requiresPassword) return new Response(notFoundPage(slug, nonce), { status: 404, headers: HTML_N });
-        if (r.id && r.userId) {
-          await one(
+        const r = await getClickRedirectSite(env, slug, request);
+        if (!r) return new Response(notFoundPage(slug, nonce), { status: 404, headers: HTML_N });
+        if (r.id && r.user_id) {
+          deferClickWrite(ctx, () => one(
             "INSERT INTO site_clicks (click_ref, site_id, owner_id, cta_url) VALUES ($1, $2, $3, $4)",
-            [clickRef, r.id, r.userId, r.data?.brand?.ctaUrl || null]
-          );
-          if (r.id) enqueueBump(env, ctx, r.id, "clicks");
+            [clickRef, r.id, r.user_id, r.cta_url || null]
+          ).then(() => enqueueBump(env, ctx, r.id, "clicks")));
         }
-        const dest = r.data?.brand?.ctaUrl;
         // E2E-008: Only redirect to the CTA URL if it's a valid https:// URL.
         // If empty/null or non-https (javascript:, data:, relative paths),
         // redirect to the board page instead of risking a redirect loop.
-        if (dest && /^https:\/\//i.test(dest)) {
-          const destUrl = new URL(dest);
-          destUrl.searchParams.set("yr_click", clickRef);
-          return Response.redirect(destUrl.toString(), 302);
-        }
-        return Response.redirect(`${url.origin}/${slug}`, 302);
+        return trackedDestination(url.origin, slug, r.cta_url, clickRef);
       }
 
       // --- referral redirect: /ref/<code> → /signup?ref=<code> ---
@@ -770,7 +877,7 @@ async function handleRequest(request, env, ctx, meta) {
           const overlayHtml = PAGES.overlay(demoLeaderboardData(), { slug: "demo", nonce });
           return new Response(overlayHtml, { headers: { ...HTML_N, "cache-control": "no-store" } });
         }
-        const r = await getPublicSite(env, slug, request);
+        const r = await getPublicSite(env, slug, request, { limit: 100, offset: 0 });
         if (!r || r.suspended || r.requiresPassword) return new Response(notFoundPage(slug, nonce), { status: 404, headers: HTML_N });
         const paid = r.plan !== "free";
         if (!paid) {

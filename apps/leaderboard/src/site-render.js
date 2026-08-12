@@ -275,14 +275,14 @@ function kpi(label, iconKey, value, sub, { accent = false } = {}) {
 
 function panel({ title, meta = "", body, foot = "", pad = false }) {
   return `<div class="yr-panel yr-lb">
-<div class="yr-panel-head"><h3 class="yr-panel-title">${esc(title)}</h3>${meta ? `<span class="yr-panel-meta">${meta}</span>` : ""}</div>
+<div class="yr-panel-head"><h2 class="yr-panel-title">${esc(title)}</h2>${meta ? `<span class="yr-panel-meta">${meta}</span>` : ""}</div>
 ${pad ? `<div class="yr-panel-pad">${body}</div>` : body}
 ${foot ? `<div class="yr-panel-foot">${foot}</div>` : ""}
 </div>`;
 }
 
 function sectionHead(title, right = "") {
-  return `<div class="yr-sec-head"><h3 class="yr-sec-title">${esc(title)}</h3>${right}</div>`;
+  return `<div class="yr-sec-head"><h2 class="yr-sec-title">${esc(title)}</h2>${right}</div>`;
 }
 
 /** Inline 7-day area chart. No chart library: one path, one average line. */
@@ -465,7 +465,7 @@ ${section === "games" ? gamesIslandHead() : ""}
 ${opts.csrfToken ? `<meta name="csrf-token" content="${esc(opts.csrfToken)}" />` : ""}
 </head>`;
 
-  const body = `<body class="yr-site" data-section="${esc(section)}" data-slug="${esc(slug)}">
+  const body = `<body class="yr-site" data-section="${esc(section)}" data-slug="${esc(slug)}" data-custom-domain="${isCustomDomain ? "true" : "false"}" data-currency="${esc(data.brand?.currency || "$")}">
 <a class="yr-sr" href="#main-content">Skip to content</a>
 ${sidebar({ b, slug, section, siteSections, homeUrl, isCustomDomain, logoUrl, viewer, balance, ctaHref, hasCta, casino, kickUrl: kickUrl ? safeUrl(kickUrl) : null })}
 <div class="yr-region">
@@ -586,7 +586,7 @@ ${creditsChart(series)}
         title: "Top of the board",
         meta: `<a class="yr-sec-link" href="${boardHref}">All</a>`,
         body: players.length
-          ? `<div class="yr-feed yr-noscroll">${players.slice().sort((x, z) => (z.wagered || 0) - (x.wagered || 0)).slice(0, 8).map((p, i) => `<div class="yr-feed-item"><div class="yr-feed-top"><span class="yr-feed-kind">${String(i + 1).padStart(2, "0")} · ${esc(p.name)}</span><span class="yr-feed-time">${esc(money(data.brand?.currency, p.wagered))}</span></div></div>`).join("")}</div>`
+          ? `<div class="yr-feed yr-noscroll">${players.slice(0, 8).map((p, i) => `<div class="yr-feed-item"><div class="yr-feed-top"><span class="yr-feed-kind">${String(Number(p.rank) || i + 1).padStart(2, "0")} · ${esc(p.name)}</span><span class="yr-feed-time yr-prize-value">${esc(money(data.brand?.currency, p.wagered))}</span></div></div>`).join("")}</div>`
           : `<div class="yr-empty">No players yet</div>`,
       })}</div>`;
 
@@ -610,7 +610,8 @@ function boardMain(ctx) {
   const currency = data.brand?.currency;
   const hidePrizes = !!data.brand?.hidePrizeAmounts;
   const cd = countdownText(data.endsAt);
-  const players = (Array.isArray(data.players) ? data.players : []).slice().sort((x, z) => (z.wagered || 0) - (x.wagered || 0));
+  const players = (Array.isArray(data.players) ? data.players : []).slice().sort((x, z) => (x.rank || 0) - (z.rank || 0));
+  const playerCount = Number(data.playerCount) || players.length;
   const wagerLabel = esc(data.prizes?.wagerLabel || "Wagered");
   const prizeLabel = esc(data.prizes?.prizeLabel || "Prize");
   const poolLabel = esc(data.prizes?.prizePoolLabel || b.prizePoolLabel || "Prize pool");
@@ -626,7 +627,7 @@ function boardMain(ctx) {
   });
 
   const podium = players.slice(0, 3).map((p, i) => {
-    const rank = i + 1;
+    const rank = Number(p.rank) || i + 1;
     const first = rank === 1;
     return `<div class="yr-card yr-lb${first ? " yr-card--on" : ""}">
 <div class="yr-card-top"><span class="yr-label${first ? " is-accent" : ""}">#${rank}</span>${first ? ICONS.crown : ICONS.medal}</div>
@@ -636,8 +637,8 @@ function boardMain(ctx) {
 </div>`;
   }).join("");
 
-  const rows = players.map((p, i) => `<tr data-name="${esc(String(p.name || "").toLowerCase())}">
-<td class="yr-idx">${String(i + 1).padStart(2, "0")}</td>
+  const rows = players.map((p, i) => `<tr data-name="${esc(String(p.name || "").toLowerCase())}" data-position="${Number(p.rank) || i + 1}">
+<td class="yr-idx">${String(Number(p.rank) || i + 1).padStart(2, "0")}</td>
 <td><a href="${playerHref(p.name)}">${esc(p.name)}</a></td>
 <td class="yr-mono yr-r">${esc(money(currency, p.wagered))}</td>
 <td class="yr-mono yr-r${!hidePrizes && p.prize ? " yr-gold" : ""}">${hidePrizes ? "—" : (p.prize ? esc(money(currency, p.prize)) : "—")}</td>
@@ -645,7 +646,8 @@ function boardMain(ctx) {
 
   const table = players.length
     ? `<table class="yr-table"><thead><tr><th>#</th><th>Player</th><th class="yr-r">${wagerLabel}</th><th class="yr-r">${prizeLabel}</th></tr></thead>
-<tbody>${rows}<tr class="yr-nomatch" id="yr-no-match" hidden><td colspan="4">No player matches that search.</td></tr></tbody></table>`
+<tbody data-rows>${rows}<tr class="yr-nomatch" id="yr-no-match" hidden><td colspan="4">No player matches that search.</td></tr></tbody></table>
+${playerCount > players.length ? `<div class="yr-pagination"><button class="yr-btn yr-btn--sm" type="button" data-load-more>Load more</button><span data-load-more-status role="status" aria-live="polite"></span></div>` : ""}`
     : `<div class="yr-empty">No players on the board yet</div>`;
 
   const poolPanel = pool && !hidePrizes
@@ -660,7 +662,7 @@ function boardMain(ctx) {
   return `${heroHtml}
 ${poolPanel}
 ${podium ? `<div class="yr-g3">${podium}</div>` : ""}
-${panel({ title: "Standings", meta: `${formatNumber(players.length)} players`, body: table, foot: note })}`;
+${panel({ title: "Standings", meta: `<span data-player-count-badge>${formatNumber(playerCount)} players</span>`, body: table, foot: note })}`;
 }
 
 /* ── Shop ─────────────────────────────────────────────────────────────── */

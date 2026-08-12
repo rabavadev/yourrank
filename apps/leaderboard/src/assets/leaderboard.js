@@ -133,6 +133,11 @@ function initParticles() {
 
 // ---- Live polling ----
 let previousPlayerNames = []; // tracks ordered names from last render for rank-change detection
+let loadedPlayers = [];
+let totalPlayers = 0;
+let activePlayerSearch = "";
+let playersBeforeSearch = null;
+let searchRequestId = 0;
 
 function streakBadge(streak) {
   return streak >= 2 ? `<span class="yr-streak" title="${streak} consecutive #1 finishes" aria-label="${streak} streak">🔥${streak}</span>` : "";
@@ -181,9 +186,11 @@ function applyRowBars(sorted) {
 }
 
 function updateLeaderboard(players) {
-  const sorted = players.slice().sort((a, b) => b.wagered - a.wagered);
+  const sorted = players.slice().sort((a, b) => (a.rank || 0) - (b.rank || 0));
   const cnt = $("[data-count]");
-  if (cnt) cnt.textContent = sorted.length;
+  if (cnt) cnt.textContent = totalPlayers || sorted.length;
+  const countBadge = $("[data-player-count-badge]");
+  if (countBadge) countBadge.textContent = `${totalPlayers || sorted.length} player${(totalPlayers || sorted.length) !== 1 ? "s" : ""}`;
 
   // Update top 3
   const t3 = $("[data-top3]");
@@ -199,7 +206,7 @@ function updateLeaderboard(players) {
   if (rows) {
     const startIndex = t3 ? 3 : 0;
     rows.innerHTML = sorted.slice(startIndex).map((pl, i) => {
-      const rank = i + 1 + startIndex;
+      const rank = Number(pl.rank) || i + 1 + startIndex;
       const gap = i === 0 ? 0 : sorted[i - 1 + startIndex].wagered - pl.wagered;
       return buildPlayerRow(pl, rank, Math.min(i * 0.025, 0.5), gap);
       }).join("");
@@ -263,14 +270,65 @@ function updateLeaderboard(players) {
   }
 }
 
+async function fetchPlayerPage(offset, search = "") {
+  const slug = window.__SLUG__;
+  if (!slug || slug === "demo") return null;
+  const params = new URLSearchParams({ limit: "100", offset: String(offset) });
+  if (search) params.set("search", search);
+  const res = await fetch(`/api/public/${encodeURIComponent(slug)}/players?${params}`, { credentials: "same-origin" });
+  if (!res.ok) throw new Error("Could not load more players.");
+  return res.json();
+}
+
+function initPlayerPagination() {
+  const button = $("[data-load-more]");
+  if (!button || totalPlayers <= loadedPlayers.length) return;
+  const status = $("[data-load-more-status]");
+  button.addEventListener("click", async () => {
+    button.disabled = true;
+    if (status) status.textContent = "Loading…";
+    try {
+      const page = await fetchPlayerPage(loadedPlayers.length, activePlayerSearch);
+      if (!page) return;
+      const seen = new Set(loadedPlayers.map((p) => p.name));
+      loadedPlayers = loadedPlayers.concat((page.players || []).filter((p) => !seen.has(p.name)));
+      totalPlayers = Number(page.total) || totalPlayers;
+      updateLeaderboard(loadedPlayers);
+      if (status) status.textContent = "";
+      if (!page.hasMore || loadedPlayers.length >= totalPlayers) button.remove();
+    } catch (err) {
+      if (status) status.textContent = err.message;
+      button.disabled = false;
+    }
+  });
+}
+
 let streamEs = null;
 
 let streamFailures = 0;
 let streamTimer = null;
+const STREAM_MAX_FAILURES = 3;
+const STREAM_RECONNECT_BASE_MS = 1000;
+const STREAM_RECONNECT_MAX_MS = 30_000;
 
 function onStreamFail() {
   streamFailures++;
-  if (streamFailures >= 3) showStreamBanner();
+  if (streamFailures >= STREAM_MAX_FAILURES) {
+    showStreamBanner();
+    return;
+  }
+  const backoff = Math.min(
+    STREAM_RECONNECT_MAX_MS,
+    STREAM_RECONNECT_BASE_MS * (2 ** (streamFailures - 1))
+  );
+  const delay = backoff * (0.8 + Math.random() * 0.4);
+  if (!document.hidden) {
+    if (streamTimer) clearTimeout(streamTimer);
+    streamTimer = setTimeout(() => {
+      streamTimer = null;
+      connectStream();
+    }, delay);
+  }
 }
 
 function showStreamBanner() {
@@ -295,6 +353,7 @@ function connectStream() {
   if (!slug || slug === "demo") return;
   if (typeof EventSource === "undefined") return;
   if (streamTimer) clearTimeout(streamTimer);
+  streamTimer = null;
   if (streamEs) { streamEs.close(); streamEs = null; }
   streamEs = new EventSource(`/api/public/${encodeURIComponent(slug)}/stream`);
   streamEs.onmessage = (e) => {
@@ -303,18 +362,33 @@ function connectStream() {
       if (data.players && Array.isArray(data.players)) {
         streamFailures = 0;
         hideStreamBanner();
-        updateLeaderboard(data.players);
+        // SSE intentionally carries only page one. Preserve pages the viewer
+        // already loaded instead of replacing them with the live first page.
+        const firstNames = new Set(data.players.map((p) => p.name));
+        const extras = loadedPlayers.filter((p) => Number(p.rank) > data.players.length && !firstNames.has(p.name));
+        loadedPlayers = data.players.concat(extras);
+        totalPlayers = Number(data.total) || totalPlayers;
+        updateLeaderboard(loadedPlayers);
         const ann = document.getElementById("lb-announce"); if (ann) ann.textContent = "Leaderboard updated.";
       }
-    } catch (_) { onStreamFail(); }
+    } catch (_) {
+      if (streamEs) { streamEs.close(); streamEs = null; }
+      onStreamFail();
+    }
   };
-  streamEs.onerror = () => { onStreamFail(); };
+  streamEs.onerror = () => {
+    if (streamEs) { streamEs.close(); streamEs = null; }
+    onStreamFail();
+  };
 }
 
 document.addEventListener("visibilitychange", () => {
   if (document.hidden) {
+    if (streamTimer) { clearTimeout(streamTimer); streamTimer = null; }
     if (streamEs) { streamEs.close(); streamEs = null; }
   } else {
+    streamFailures = 0;
+    hideStreamBanner();
     connectStream();
   }
 });
@@ -377,12 +451,14 @@ function boot() {
   const why = $("[data-why]");
   if (why && Array.isArray(data.whyStats)) why.innerHTML = data.whyStats.map((s) => `<div class="why"><span class="why-big">${esc(s.big)}</span><span class="why-label">${esc(s.label)}</span>${s.sub ? `<span class="why-sub">${esc(s.sub)}</span>` : ""}</div>`).join("");
 
-  const players = (data.players || []).slice().sort((a, b) => b.wagered - a.wagered);
-  const cnt = $("[data-count]"); if (cnt) cnt.textContent = players.length;
+  const players = (data.players || []).slice().sort((a, b) => (a.rank || 0) - (b.rank || 0));
+  loadedPlayers = players;
+  totalPlayers = Number(data.playerCount) || players.length;
+  const cnt = $("[data-count]"); if (cnt) cnt.textContent = totalPlayers;
 
   // Player count badge
   const countBadge = $("[data-player-count-badge]");
-  if (countBadge) countBadge.textContent = `${players.length} player${players.length !== 1 ? "s" : ""}`;
+  if (countBadge) countBadge.textContent = `${totalPlayers} player${totalPlayers !== 1 ? "s" : ""}`;
 
   const t3 = $("[data-top3]");
   if (t3 && players.length >= 1) t3.innerHTML = players.slice(0, 3).map((pl, i) => buildTop3Card(pl, i + 1)).join("");
@@ -391,7 +467,7 @@ function boot() {
   if (rows) {
     const startIndex = t3 ? 3 : 0;
     rows.innerHTML = players.slice(startIndex).map((pl, i) => {
-      const r = i + 1 + startIndex;
+      const r = Number(pl.rank) || i + 1 + startIndex;
       const gap = i === 0 ? 0 : players[i - 1 + startIndex].wagered - pl.wagered;
       return buildPlayerRow(pl, r, Math.min(i * 0.025, 0.5), gap);
     }).join("");
@@ -405,6 +481,7 @@ function boot() {
 
   // ---- Find My Rank search ----
   initFindRank(players);
+  initPlayerPagination();
 
   const rl = $("[data-rules]"); if (rl && Array.isArray(data.rules)) rl.innerHTML = data.rules.map((r) => `<li>${esc(r)}</li>`).join("");
 
@@ -476,7 +553,7 @@ function initFindRank(sortedPlayers) {
     return (el.dataset.name || el.querySelector(".t3-name, .tr-name")?.textContent || "").toLowerCase();
   }
 
-  function doSearch() {
+  async function doSearch() {
     const q = input.value.trim().toLowerCase();
     const rows = $$("[data-rows] .t-row");
     const top3 = $$(".t3");
@@ -486,7 +563,15 @@ function initFindRank(sortedPlayers) {
     top3.forEach((el) => { el.classList.remove("t-row--found", "find-filtered"); });
     if (resultEl) resultEl.textContent = "";
 
-    if (!q) return;
+    if (!q) {
+      activePlayerSearch = "";
+      if (playersBeforeSearch) {
+        loadedPlayers = playersBeforeSearch;
+        playersBeforeSearch = null;
+        updateLeaderboard(loadedPlayers);
+      }
+      return;
+    }
 
     let matchCount = 0;
     let firstMatch = null;
@@ -508,9 +593,25 @@ function initFindRank(sortedPlayers) {
     top3.forEach(filter);
 
     if (matchCount === 0) {
-      if (resultEl) resultEl.textContent = "No player found with that name";
-      resultEl?.classList.remove("found");
-      resultEl?.classList.add("not-found");
+      const requestId = ++searchRequestId;
+      if (!playersBeforeSearch) playersBeforeSearch = loadedPlayers.slice();
+      try {
+        const page = await fetchPlayerPage(0, q);
+        if (requestId !== searchRequestId) return;
+        activePlayerSearch = q;
+        loadedPlayers = page?.players || [];
+        updateLeaderboard(loadedPlayers);
+        const found = loadedPlayers.length;
+        if (resultEl) resultEl.textContent = found
+          ? `${found} player${found === 1 ? "" : "s"} found on the board`
+          : "No player found with that name";
+        resultEl?.classList.toggle("found", found > 0);
+        resultEl?.classList.toggle("not-found", found === 0);
+      } catch {
+        if (resultEl) resultEl.textContent = "Could not search the board";
+        resultEl?.classList.remove("found");
+        resultEl?.classList.add("not-found");
+      }
       return;
     }
 

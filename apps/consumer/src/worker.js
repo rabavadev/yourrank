@@ -10,6 +10,9 @@ import { dispatchNotifyEvent } from "../../../shared/notifications.js";
 import { parseQueueEvent } from "../../../shared/queue-producer.js";
 import { processKickRewardRedemption } from "../../../shared/kick-credits.js";
 import { RateLimiter } from "../../../shared/rate-limiter-do.js";
+import { mapWithConcurrency, SHARED_WORK_CONCURRENCY_LIMIT } from "../../../shared/work-concurrency.js";
+import { processAccountExport } from "./account-export.js";
+import { processViewerExport } from "./viewer-export.js";
 
 const db = { one, query };
 
@@ -93,10 +96,38 @@ async function handleEvent(input, tokenCache, env) {
       }, env);
       break;
     }
+    case "account-export": {
+      await processAccountExport(body, env);
+      break;
+    }
+    case "viewer-export": {
+      await processViewerExport(body, env);
+      break;
+    }
     default: {
       throw new Error(`unsupported queue event: ${body.type}`);
     }
   }
+}
+
+export async function processQueueMessages(messages, handler) {
+  let processed = 0;
+  let failed = 0;
+  await mapWithConcurrency(
+    messages,
+    SHARED_WORK_CONCURRENCY_LIMIT,
+    async (msg) => {
+      try {
+        await handler(msg);
+        msg.ack();
+        processed++;
+      } catch (err) {
+        failed++;
+        msg.retry();
+      }
+    }
+  );
+  return { processed, failed };
 }
 
 export default {
@@ -108,15 +139,12 @@ export default {
     }
 
     const tokenCache = new Map();
-    let processed = 0;
-    let failed = 0;
-
-    for (const msg of batch.messages) {
+    const { processed, failed } = await processQueueMessages(
+      batch.messages,
+      async (msg) => {
       const startedAt = Date.now();
       try {
         await handleEvent(msg.body, tokenCache, env);
-        msg.ack();
-        processed++;
         console.log(JSON.stringify({
           event: "queue_message_processed",
           message_id: msg.id,
@@ -124,7 +152,6 @@ export default {
           duration_ms: Date.now() - startedAt,
         }));
       } catch (err) {
-        failed++;
         console.error(JSON.stringify({
           event: "queue_message_failed",
           message_id: msg.id,
@@ -132,9 +159,10 @@ export default {
           duration_ms: Date.now() - startedAt,
           error: err instanceof Error ? err.message : String(err),
         }));
-        msg.retry();
+        throw err;
       }
-    }
+      }
+    );
 
     // Record that the consumer is alive and how much work it did in this batch.
     // This lets the monitor detect a silent outage instead of waiting for stale analytics.

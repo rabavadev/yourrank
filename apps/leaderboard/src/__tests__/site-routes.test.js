@@ -128,6 +128,8 @@ mock.module(local("site"), () => ({
   getPublicSite: (_env, slug, _request) => {
     if (slug === "missing") return null;
     if (slug === "suspended") return { id: "site-s", suspended: true, data: {} };
+    if (slug === "password") return { id: "site-p", slug, requiresPassword: true, name: "Private Board", data: {} };
+    if (slug === "error") throw new Error("render failure");
     if (slug === "disabled") return makeSite("disabled", { home: true, leaderboard: true, shop: false, games: false, me: false });
     return makeSite(slug || "streamer");
   },
@@ -168,6 +170,16 @@ function req(url, opts = {}) {
 
 const env = {};
 const ctx = { waitUntil: () => {} };
+
+async function expectHydratedResponse(response, nonce) {
+  const body = await response.text();
+  const csp = response.headers.get("content-security-policy") || "";
+  expect(body).toContain(`nonce="${nonce}"`);
+  expect(csp).toContain(`'nonce-${nonce}'`);
+  expect(body).not.toContain("__YOURRANK_");
+  expect(csp).not.toContain("__YOURRANK_");
+  expect(response.headers.get("set-cookie") || "").not.toContain("__YOURRANK_");
+}
 
 // ── Route parsing ──────────────────────────────────────────────────────
 
@@ -221,6 +233,34 @@ describe("section visibility", () => {
   it("returns 404 for a suspended site", async () => {
     const res = await renderSiteRoute({ request: req("https://example.com/suspended"), env, ctx, nonce: "n", slug: "suspended", section: "home", isCustomDomain: false });
     expect(res.status).toBe(404);
+  });
+
+  it("keeps a cookie-free password gate nonce-matched and hydrated", async () => {
+    const res = await renderSiteRoute({
+      request: req("https://example.com/password"),
+      env,
+      ctx,
+      nonce: "password-nonce",
+      slug: "password",
+      section: "home",
+      isCustomDomain: false,
+    });
+    expect(res.status).toBe(200);
+    await expectHydratedResponse(res, "password-nonce");
+  });
+
+  it("keeps the 500 response nonce-matched and hydrated", async () => {
+    const res = await renderSiteRoute({
+      request: req("https://example.com/error"),
+      env,
+      ctx,
+      nonce: "error-nonce",
+      slug: "error",
+      section: "home",
+      isCustomDomain: false,
+    });
+    expect(res.status).toBe(500);
+    await expectHydratedResponse(res, "error-nonce");
   });
 });
 

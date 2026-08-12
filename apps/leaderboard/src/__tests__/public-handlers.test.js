@@ -12,19 +12,21 @@ const dbUrl    = import.meta.resolve("../../../../shared/db.js");
 const dbUrlTs  = import.meta.resolve("../../../../shared/db.ts");
 const sessUrl  = import.meta.resolve("../../../../shared/session.js");
 const sessUrlTs = import.meta.resolve("../../../../shared/session.ts");
+const dbOne = mock(() => Promise.resolve(null));
 
 const mockSiteData = {
   brand: { name: "Test Casino", casino: "Stake", period: "Monthly", prizePool: "$10,000" },
+  playerCount: 3,
   players: [
-    { name: "Alice", wagered: 50000, prize: "$5,000" },
-    { name: "Bob", wagered: 30000, prize: "$3,000" },
-    { name: "Charlie", wagered: 10000, prize: "$1,000" },
+    { name: "Alice", wagered: 50000, prize: "$5,000", rank: 1 },
+    { name: "Bob", wagered: 30000, prize: "$3,000", rank: 2 },
+    { name: "Charlie", wagered: 10000, prize: "$1,000", rank: 3 },
   ],
   endsAt: new Date(Date.now() + 86400000).toISOString(),
 };
 
 const dbMock = () => ({
-  one: mock(() => Promise.resolve(null)),
+  one: dbOne,
   exec: mock(() => Promise.resolve()),
   query: mock(() => Promise.resolve([])),
   getSql: () => null,
@@ -81,22 +83,34 @@ function mockEnv(siteData = mockSiteData) {
 // Since handlers import getPublicSite from "../site.js", we mock the site module
 const siteUrl = import.meta.resolve("../site.js");
 const siteUrlTs = import.meta.resolve("../site.ts");
+const clearVersionCache = mock(() => {});
+const streamVersion = mock(() => Promise.resolve("2026-01-01T00:00:00.000Z"));
 
 mock.module(siteUrl, () => ({
-  getPublicSite: (_env, slug, _request) => {
+  getPublicSite: (_env, slug, _request, options) => {
     if (slug === "nonexistent") return null;
     if (slug === "suspended") return { suspended: true, data: {} };
     if (slug === "protected") return { requiresPassword: true, id: "site-1", slug: "protected" };
-    return { id: "site-1", data: mockSiteData, plan: "pro", suspended: false };
+    const data = options
+      ? { ...mockSiteData, players: mockSiteData.players.slice(Number(options.offset) || 0, (Number(options.offset) || 0) + (Number(options.limit) || 100)) }
+      : mockSiteData;
+    return { id: "site-1", data, plan: "pro", suspended: false };
   },
+  getPublicStreamVersion: streamVersion,
+  clearPublicStreamVersionCache: clearVersionCache,
 }));
 mock.module(siteUrlTs, () => ({
-  getPublicSite: (_env, slug, _request) => {
+  getPublicSite: (_env, slug, _request, options) => {
     if (slug === "nonexistent") return null;
     if (slug === "suspended") return { suspended: true, data: {} };
     if (slug === "protected") return { requiresPassword: true, id: "site-1", slug: "protected" };
-    return { id: "site-1", data: mockSiteData, plan: "pro", suspended: false };
+    const data = options
+      ? { ...mockSiteData, players: mockSiteData.players.slice(Number(options.offset) || 0, (Number(options.offset) || 0) + (Number(options.limit) || 100)) }
+      : mockSiteData;
+    return { id: "site-1", data, plan: "pro", suspended: false };
   },
+  getPublicStreamVersion: streamVersion,
+  clearPublicStreamVersionCache: clearVersionCache,
 }));
 
 // ── handlePublicStandings ──────────────────────────────────────────────
@@ -154,6 +168,38 @@ describe("handlePublicPlayers", () => {
     expect(body.players[0].wagered).toBeGreaterThanOrEqual(body.players[1].wagered);
   });
 
+  it("returns truthful pagination metadata and global ranks", async () => {
+    const env = mockEnv();
+    const res = await handlePublicPlayers(
+      req("https://test.com/api/public/testboard/players?limit=2&offset=1"),
+      env,
+      { slug: "testboard" }
+    );
+    const body = await res.json();
+    expect(body.total).toBe(3);
+    expect(body.offset).toBe(1);
+    expect(body.limit).toBe(2);
+    expect(body.hasMore).toBe(false);
+    expect(body.players.map((p) => p.rank)).toEqual([2, 3]);
+  });
+
+  it("keeps search requests on a separate generous limit", async () => {
+    const env = mockEnv();
+    for (let i = 0; i < 60; i++) {
+      const res = await handlePublicPlayers(
+        req("https://test.com/api/public/testboard/players?search=alice"),
+        env,
+        { slug: "testboard" }
+      );
+      expect(res.status).toBe(200);
+    }
+    const limited = await handlePublicPlayers(
+      req("https://test.com/api/public/testboard/players?search=alice"),
+      env,
+      { slug: "testboard" }
+    );
+    expect(limited.status).toBe(429);
+  });
   it("returns 404 for nonexistent slug", async () => {
     const env = mockEnv();
     const res = await handlePublicPlayers(req("https://test.com/api/public/nonexistent/players"), env, { slug: "nonexistent" });
@@ -201,6 +247,18 @@ describe("handlePublicStream", () => {
     const env = mockEnv();
     const res = await handlePublicStream(req("https://test.com/api/public/nonexistent/stream"), env, { slug: "nonexistent" });
     expect(res.status).toBe(404);
+  });
+
+  it("pushes the full payload when the player timestamp changes", async () => {
+    streamVersion.mockResolvedValueOnce("2026-01-01T00:00:00.000Z");
+    const env = mockEnv();
+    const res = await handlePublicStream(req("https://test.com/api/public/testboard/stream"), env, { slug: "testboard" });
+    const reader = res.body.getReader();
+    const first = await reader.read();
+    await reader.cancel();
+    const payload = JSON.parse(new TextDecoder().decode(first.value).replace(/^data: |\n\n$/g, ""));
+    expect(payload.updatedAt).toBe("2026-01-01T00:00:00.000Z");
+    expect(payload.players).toEqual(mockSiteData.players);
   });
 });
 

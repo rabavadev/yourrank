@@ -46,6 +46,15 @@ export interface Logger {
   debug: (msg: string, extra?: Record<string, unknown>) => void;
 }
 
+export interface RequestMetrics {
+  startedAt: number;
+  dbQueries: number;
+  route?: string;
+  site?: string;
+  cache?: "hit" | "miss" | "bypass";
+  payloadBytes?: number;
+}
+
 // Capture the original console methods before anything monkey-patches them.
 const CONSOLE = {
   log: console.log.bind(console),
@@ -97,13 +106,28 @@ export function createLogger(worker: string, reqId: string, env?: LoggerEnv): Lo
 // Per-request logger context so any helper can call getLogger() instead of
 // passing a log object through every call stack.
 const loggerStore = new AsyncLocalStorage<{ logger: Logger }>();
+const metricsStore = new AsyncLocalStorage<RequestMetrics>();
 
 export function runWithLogger<T>(logger: Logger, fn: () => T): T {
-  return loggerStore.run({ logger }, fn);
+  return loggerStore.run({ logger }, () => metricsStore.run({ startedAt: Date.now(), dbQueries: 0 }, fn));
 }
 
 export function getLogger(): Logger {
   return loggerStore.getStore()?.logger || createLogger("unknown", "no-ctx");
+}
+
+export function getRequestMetrics(): RequestMetrics | null {
+  return metricsStore.getStore() || null;
+}
+
+export function setRequestMetrics(fields: Partial<Omit<RequestMetrics, "startedAt" | "dbQueries">>): void {
+  const metrics = metricsStore.getStore();
+  if (metrics) Object.assign(metrics, fields);
+}
+
+export function incrementDbQueries(): void {
+  const metrics = metricsStore.getStore();
+  if (metrics) metrics.dbQueries += 1;
 }
 
 function formatConsoleArgs(args: unknown[]): string {

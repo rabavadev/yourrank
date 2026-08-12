@@ -1,7 +1,7 @@
 import { describe, expect, it } from "bun:test";
 import { renderLeaderboard } from "../render.jsx";
 import { TEMPLATE_IDS, TEMPLATES, templateCatalog, validTemplate, resolveOptions, templateHeader, templateFooter, templateParts } from "../templates/index.js";
-import { fromJsonb, publicShape } from "../site.js";
+import { archiveShape, fromJsonb, playerStreak, publicShape } from "../site.js";
 
 function stripScripts(html) {
   let out = "";
@@ -253,6 +253,48 @@ describe("theme_json / extra_json persistence (BUG: double-encoded JSONB)", asyn
     expect(shaped.socials.map((s) => s.brand)).toEqual(["x", "discord", "twitch", "telegram"]);
   });
 });
+
+describe("derived archive values", async () => {
+  it("renders the stored top three in the same shape as snapshot-derived archives", async () => {
+    const top = [
+      { name: "Alice", wagered: 500, prize: 50 },
+      { name: "Bob", wagered: 300, prize: 30 },
+      { name: "Cara", wagered: 100, prize: 10 },
+    ];
+    expect(archiveShape({ label: "January", created_at: 123, top3_json: top })).toEqual({
+      label: "January", at: 123, top,
+    });
+  });
+
+  it("counts consecutive winner names for the current rank-one player", async () => {
+    const archives = [
+      { winner_name: "alice" },
+      { winner_name: " Alice " },
+      { winner_name: "Bob" },
+    ];
+    expect(playerStreak({ name: "  Alice  " }, 0, archives)).toBe(3);
+    expect(playerStreak({ name: "Bob" }, 1, archives)).toBe(0);
+  });
+
+  it("renders safely when derived archive data is empty or malformed", async () => {
+    expect(archiveShape({ label: "Empty", created_at: 1, top3_json: null }).top).toEqual([]);
+    expect(archiveShape({ label: "Malformed", created_at: 2, top3_json: "not-json" }).top).toEqual([]);
+    expect(playerStreak({ name: "Alice" }, 0, [{ winner_name: null }])).toBe(1);
+  });
+
+  it("unwraps legacy double-encoded archive snapshots before shaping equivalent data", async () => {
+    const snapshot = [{ name: "Alice", wagered: "500", prize: "50" }];
+    expect(fromJsonb(JSON.stringify(snapshot))).toEqual(snapshot);
+    expect(archiveShape({
+      label: "Legacy", created_at: 1,
+      top3_json: JSON.stringify([{ name: "Alice", wagered: 500, prize: 50 }]),
+    })).toEqual({
+      label: "Legacy", at: 1,
+      top: [{ name: "Alice", wagered: 500, prize: 50 }],
+    });
+  });
+});
+
 describe("template options schema", async () => {
   it("exposes each template's schema in the catalog", async () => {
     const catalog = templateCatalog();

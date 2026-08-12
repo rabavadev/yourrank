@@ -1,7 +1,7 @@
 // Site + players data helpers for the Worker.
 import { effectivePlan, PLAN_LIMITS, BOARD_LIMITS } from "../../../shared/plans.js";
 import { query, one, exec, withTransaction } from "../../../shared/db.js";
-import { detectTop3Changes, dispatchNotifyEvent } from "../../../shared/notifications.js";
+import { detectTop3Changes, dispatchNotifyEvent, getRankChangedPlayerNames } from "../../../shared/notifications.js";
 import { TEMPLATE_IDS, resolveOptions } from "./templates/index.js";
 import { RESERVED, slugify, hashPassword } from "./auth.js";
 import { logAudit } from "../../../shared/audit.js";
@@ -9,6 +9,7 @@ import { createQueueProducer } from "../../../shared/queue-producer.js";
 import { encrypt } from "../../../shared/crypto.js";
 import { verifyBoardPasswordCookie } from "./board-password.js";
 import { detectImageMime, validateLogoData } from "./logo-validation.js";
+import { invalidatePublicBoardCache } from "./public-html-cache.js";
 
 export { detectImageMime, validateLogoData };
 
@@ -105,6 +106,9 @@ const inflight = new Map();        // PERF-009: single-flight — prevent cache 
 const L1_TTL = 25_000;
 const L1_MAX_ENTRY_BYTES = 50_000;
 const SITE_CACHE_MAX = 1000;
+const PUBLIC_STREAM_VERSION_TTL = 3_000;
+const publicStreamVersionCache = new Map();
+const publicStreamVersionInflight = new Map();
 
 function evictOldest(cache, max) {
   while (cache.size > max) {
@@ -153,7 +157,53 @@ export function invalidateUserCache(env, uid) {
   siteCache.delete(`user_boards:${uid}`);
 }
 
+export async function getPublicStreamVersion(siteId) {
+  const cached = publicStreamVersionCache.get(siteId);
+  if (cached && cached.expires > Date.now()) return cached.value;
+
+  if (publicStreamVersionInflight.has(siteId)) {
+    return publicStreamVersionInflight.get(siteId);
+  }
+
+  const p = (async () => {
+    try {
+      const row = await one("SELECT max(updated_at) AS m FROM players WHERE site_id=$1", [siteId]);
+      const value = row?.m ? new Date(row.m).toISOString() : "0";
+      publicStreamVersionCache.set(siteId, { value, expires: Date.now() + PUBLIC_STREAM_VERSION_TTL });
+      evictOldest(publicStreamVersionCache, SITE_CACHE_MAX);
+      return value;
+    } finally {
+      publicStreamVersionInflight.delete(siteId);
+    }
+  })();
+  publicStreamVersionInflight.set(siteId, p);
+  return p;
+}
+
+export function clearPublicStreamVersionCache() {
+  publicStreamVersionCache.clear();
+  publicStreamVersionInflight.clear();
+}
+
 export const getBySlug = (env, slug) => getCached(env, slug, () => one(`SELECT ${SITE_COLUMNS} FROM sites WHERE slug=$1`, [slug]));
+
+export async function getClickRedirectSite(env, slug, request = null) {
+  const site = await one(
+    `SELECT s.id, s.user_id, s.slug, s.cta_url, s.published, s.is_draft,
+            s.password_hash, s.password_salt, u.status AS owner_status, u.email_verified
+       FROM sites s
+       JOIN users u ON u.id = s.user_id
+      WHERE s.slug = $1`,
+    [slug]
+  );
+  if (!site || !site.published || site.is_draft || site.owner_status === "suspended" || !site.email_verified) {
+    return null;
+  }
+  if (site.password_hash && !(request && await verifyBoardPasswordCookie(request, site))) {
+    return null;
+  }
+  return site;
+}
 
 // Multi-board: returns the ACTIVE board for a user (or the first board if none set).
 // Not cached: the dashboard reads this on every load and must see the latest saves
@@ -162,7 +212,8 @@ const getByUser = (env, uid) => one(`SELECT ${SITE_COLUMNS} FROM sites WHERE use
 
 // Multi-board: returns ALL boards for a user.
 export async function getAllBoards(env, uid) {
-  const rows = await query(`SELECT ${SITE_COLUMNS} FROM sites WHERE user_id=$1 ORDER BY id ASC`, [uid]);
+  // Defensive ceiling above the Agency plan's 99-board contractual limit.
+  const rows = await query(`SELECT ${SITE_COLUMNS} FROM sites WHERE user_id=$1 ORDER BY id ASC LIMIT 128`, [uid]);
   return rows || [];
 }
 
@@ -175,18 +226,67 @@ export async function getBoardById(env, uid, siteId) {
 // can tab across to the streamer's other sponsor leaderboards.
 async function getPublicBoards(env, uid) {
   const rows = await query(
-    "SELECT slug, name FROM sites WHERE user_id=$1 AND published=true ORDER BY board_order ASC, id ASC",
+    // Defensive ceiling above the Agency plan's 99-board contractual limit.
+    "SELECT slug, name FROM sites WHERE user_id=$1 AND published=true ORDER BY board_order ASC, id ASC LIMIT 128",
     [uid]
   );
   return (rows || []).map((r) => ({ slug: r.slug, name: r.name || r.slug }));
 }
 
-export async function getPlayers(env, siteId) {
+export async function getPlayers(env, siteId, options = {}) {
+  const limit = Math.min(10000, Math.max(1, Number(options.limit) || 10000));
+  const offset = Math.max(0, Number(options.offset) || 0);
+  const search = String(options.search || "").trim().toLowerCase().replace(/\s+/g, " ");
+  const sql = search
+    ? `WITH matches AS MATERIALIZED (
+         SELECT id, name, normalized_name, wagered, prize, score, hands, net_profit, win_rate, change
+           FROM players
+          WHERE site_id=$1 AND normalized_name LIKE '%' || $2 || '%'
+          ORDER BY wagered DESC, id ASC
+          LIMIT 10000
+       ), page AS (
+         SELECT *
+           FROM matches
+          ORDER BY wagered DESC, id ASC
+          LIMIT $3 OFFSET $4
+       )
+       SELECT name, wagered, prize, score, hands, net_profit, win_rate, change,
+              (SELECT count(*) FROM players better
+                WHERE better.site_id=$1
+                  AND (better.wagered > page.wagered
+                    OR (better.wagered = page.wagered AND better.id < page.id)))::int + 1 AS rank
+         FROM page
+        ORDER BY wagered DESC, id ASC`
+    : `SELECT name, wagered, prize, score, hands, net_profit, win_rate, change, rank
+         FROM (
+           SELECT name, normalized_name, wagered, prize, score, hands, net_profit, win_rate, change,
+                  ROW_NUMBER() OVER (ORDER BY wagered DESC, id ASC)::int AS rank
+             FROM (
+               -- Defensive ceiling above the Pro/Agency plan's 9,999-player contractual limit.
+               SELECT id, name, normalized_name, wagered, prize, score, hands, net_profit, win_rate, change
+                 FROM players
+                WHERE site_id=$1
+                ORDER BY wagered DESC, id ASC
+                LIMIT 10000
+             ) bounded
+         ) ranked
+        WHERE ($2 = '' OR normalized_name LIKE '%' || $2 || '%')
+        ORDER BY rank
+        LIMIT $3 OFFSET $4`;
   const rows = await query(
-    "SELECT name, wagered, prize, score, hands, net_profit, win_rate, change FROM players WHERE site_id=$1 ORDER BY wagered DESC",
-    [siteId]
+    sql,
+    [siteId, search, limit, offset]
   );
   return rows || [];
+}
+
+async function getPlayerCount(siteId, search = "") {
+  const normalizedSearch = String(search || "").trim().toLowerCase().replace(/\s+/g, " ");
+  const row = await one(
+    "SELECT count(*)::int AS count FROM players WHERE site_id=$1 AND ($2 = '' OR normalized_name LIKE '%' || $2 || '%')",
+    [siteId, normalizedSearch]
+  );
+  return Number(row?.count) || 0;
 }
 
 const HEX = /^#[0-9a-fA-F]{6}$/;
@@ -253,35 +353,30 @@ function parseTheme(site) {
   };
 }
 
-function archiveShape(a) {
-  const snap = fromJsonb(a.snapshot_json);
-  let top = Array.isArray(snap) ? snap : [];
-  top = top.slice().sort((x, y) => (y.wagered || 0) - (x.wagered || 0)).slice(0, 3)
-    .map((p) => ({ name: String(p.name || ""), wagered: Number(p.wagered) || 0, prize: Number(p.prize) || 0 }));
-  return { label: a.label, at: a.created_at, top };
+export function archiveShape(a) {
+  const top = fromJsonb(a.top3_json);
+  const players = Array.isArray(top) ? top : [];
+  return { label: a.label, at: a.created_at, top: players };
 }
 
-function playerStreak(player, currentRank, archives) {
+export function playerStreak(player, currentRank, archives) {
   if (currentRank !== 0) return 0;
   const name = normalizePlayerName(player.name);
   let streak = 1;
   for (const a of archives) {
-    const snap = fromJsonb(a.snapshot_json);
-    const list = Array.isArray(snap) ? snap : [];
-    const sorted = list.slice().sort((x, y) => (Number(y.wagered) || 0) - (Number(x.wagered) || 0));
-    const idx = sorted.findIndex((p) => normalizePlayerName(p.name) === name);
-    if (idx === 0) streak++;
-    else break;
+    if (normalizePlayerName(a.winner_name) !== name) break;
+    streak++;
   }
   return streak;
 }
 
 // Plan-aware archive limits
 export const ARCHIVE_LIMITS = { free: 6, starter: 6, pro: 24, agency: 999 };
+export const PUBLIC_ARCHIVE_LIMIT = 24;
 
 export async function getArchives(env, siteId, limit = 6) {
     const rows = await query(
-      `SELECT id, label, snapshot_json,
+      `SELECT id, label, top3_json, winner_name,
               (EXTRACT(EPOCH FROM created_at) * 1000)::double precision AS created_at
          FROM archives WHERE site_id=$1 ORDER BY created_at DESC LIMIT $2`,
       [siteId, limit]
@@ -289,7 +384,30 @@ export async function getArchives(env, siteId, limit = 6) {
     return rows || [];
   }
 
-export function publicShape(site, players, archives = [], hasLogo = false) {
+// Expensive detail-only read. Never use this on the board render path: it
+// transfers the full archived player snapshots instead of derived summaries.
+export async function getArchiveSnapshots(env, siteId, limit = 6) {
+  const rows = await query(
+    `SELECT id, label, snapshot_json,
+            (EXTRACT(EPOCH FROM created_at) * 1000)::double precision AS created_at
+       FROM archives WHERE site_id=$1 ORDER BY created_at DESC LIMIT $2`,
+    [siteId, Math.min(limit, PUBLIC_ARCHIVE_LIMIT)]
+  );
+  return rows || [];
+}
+
+async function getArchivePlayerCounts(env, siteId, limit = 6) {
+  const rows = await query(
+    `SELECT id, label, top3_json, winner_name,
+            jsonb_array_length(public.archive_snapshot_array(snapshot_json)) AS player_count,
+            (EXTRACT(EPOCH FROM created_at) * 1000)::double precision AS created_at
+       FROM archives WHERE site_id=$1 ORDER BY created_at DESC LIMIT $2`,
+    [siteId, limit]
+  );
+  return rows || [];
+}
+
+export function publicShape(site, players, archives = [], hasLogo = false, playerCount = null) {
   const rawExtra = fromJsonb(site.extra_json);
   const extra = (rawExtra && typeof rawExtra === "object") ? rawExtra : {};
   const m = { ...DEFAULT_EXTRA, ...extra };
@@ -312,6 +430,7 @@ export function publicShape(site, players, archives = [], hasLogo = false) {
     whyStats: m.whyStats, rules: m.rules, socials: (m.socials || []).filter(s => s.enabled !== false),
     branding: { hasLogo, accentA: theme.accentA, accentB: theme.accentB, template: theme.template, text: theme.text, font: theme.font, options: theme.options },
     pastWinners: archives.map(archiveShape),
+    playerCount: Number.isFinite(Number(playerCount)) ? Number(playerCount) : players.length,
     players: players.map((p, i) => ({
       name: p.name,
       wagered: p.wagered,
@@ -321,6 +440,7 @@ export function publicShape(site, players, archives = [], hasLogo = false) {
       netProfit: p.net_profit,
       winRate: p.win_rate,
       change: p.change,
+      rank: Number(p.rank) || i + 1,
       streak: playerStreak(p, i, archives),
     })),
     sections: m.sections || DEFAULT_EXTRA.sections,
@@ -336,7 +456,7 @@ export function publicShape(site, players, archives = [], hasLogo = false) {
   };
 }
 
-export async function getPublicSite(env, slug, request = null) {
+export async function getPublicSite(env, slug, request = null, playerOptions = null) {
     const site = await getBySlug(env, slug);
     if (!site || !site.published) return null;
     if (site.password_hash && !(request && await verifyBoardPasswordCookie(request, site))) {
@@ -356,17 +476,28 @@ export async function getPublicSite(env, slug, request = null) {
     if (owner && owner.status === "suspended") return { suspended: true };
     if (owner && !owner.email_verified) return { suspended: true, pendingVerification: true };
     const plan = effectivePlan(owner);
-    const archiveLimit = ARCHIVE_LIMITS[plan] || 6;
-    const [players, archives, boards, bot] = await Promise.all([
-      getPlayers(env, site.id),
-      getArchives(env, site.id, archiveLimit), // DB-003-v8: fetch only what plan allows
+    const archiveLimit = Math.min(ARCHIVE_LIMITS[plan] || 6, PUBLIC_ARCHIVE_LIMIT);
+    const boundedPlayers = playerOptions && Number.isFinite(Number(playerOptions.limit));
+    const totalCountPromise = boundedPlayers ? getPlayerCount(site.id) : Promise.resolve(null);
+    const matchCountPromise = boundedPlayers && String(playerOptions.search || "").trim()
+      ? getPlayerCount(site.id, playerOptions.search)
+      : totalCountPromise;
+    const [players, playerCount, playerMatchCount, archives, boards, bot] = await Promise.all([
+      getPlayers(env, site.id, boundedPlayers ? playerOptions : undefined),
+      totalCountPromise,
+      matchCountPromise,
+      getArchives(env, site.id, archiveLimit), // DB-003-v8: fetch only what the public page renders
       getPublicBoards(env, site.user_id),
       one("SELECT username FROM bots WHERE owner_id=$1 LIMIT 1", [site.user_id]),
     ]);
+    const data = publicShape(site, players, archives, !!site.has_logo, playerCount);
+    if (boundedPlayers) data.playerMatchCount = playerMatchCount;
     return {
       id: site.id,
       userId: site.user_id,
-      data: publicShape(site, players, archives, !!site.has_logo),
+      published: !!site.published,
+      isDraft: !!site.is_draft,
+      data,
       plan,
       boards,
       botUsername: bot?.username || null,
@@ -381,7 +512,7 @@ export async function getUserSite(env, uid, plan) {
       if (!site) return null;
       const archiveLimit = ARCHIVE_LIMITS[plan || "free"] || 6;
       // PERF-005: has_logo is now in SITE_COLUMNS — no separate query needed.
-      const archives = await getArchives(env, site.id, archiveLimit);
+      const archives = await getArchivePlayerCounts(env, site.id, archiveLimit);
     return {
         id: site.id, slug: site.slug, published: !!site.published,
         isDraft: !!site.is_draft,
@@ -399,9 +530,7 @@ export async function getUserSite(env, uid, plan) {
           telegram_notify: !!site.telegram_notify,
         },
         archives: archives.map((a) => {
-          const snap = fromJsonb(a.snapshot_json);
-          const n = Array.isArray(snap) ? snap.length : 0;
-          return { id: a.id, label: a.label, at: a.created_at, players: n };
+          return { id: a.id, label: a.label, at: a.created_at, players: Number(a.player_count) || 0 };
         }),
       };
     }
@@ -439,7 +568,7 @@ export async function getUserSiteById(env, uid, siteId, plan) {
     if (!site) return null;
     const archiveLimit = ARCHIVE_LIMITS[plan || "free"] || 6;
     // PERF-005: has_logo is now in SITE_COLUMNS — no separate query needed.
-    const archives = await getArchives(env, site.id, archiveLimit);
+    const archives = await getArchivePlayerCounts(env, site.id, archiveLimit);
   return {
     id: site.id, slug: site.slug, published: !!site.published,
     isDraft: !!site.is_draft,
@@ -456,9 +585,7 @@ export async function getUserSiteById(env, uid, siteId, plan) {
         telegram_notify: !!site.telegram_notify,
       },
       archives: archives.map((a) => {
-        const snap = fromJsonb(a.snapshot_json);
-        const n = Array.isArray(snap) ? snap.length : 0;
-        return { id: a.id, label: a.label, at: a.created_at, players: n };
+        return { id: a.id, label: a.label, at: a.created_at, players: Number(a.player_count) || 0 };
       }),
     };
   }
@@ -1033,23 +1160,28 @@ export async function saveSite(env, user, payload, siteId, request = null) {
         await notifyQueue.send({ type: "notify", kind: "top3", siteId: site.id, siteName, changes: top3Changes });
       }
 
-      const subs = await query(
-        `SELECT ps.tg_user_id, ps.player_name, ps.bot_id FROM player_subscriptions ps WHERE ps.site_id = $1`,
-        [site.id]
-      );
-      if (subs && subs.length > 0) {
-        const oldRankMap = new Map();
-        (oldPlayers || []).forEach((p, i) => oldRankMap.set(p.name, i + 1));
-        const newRankMap = new Map();
-        newSorted.forEach((p, i) => newRankMap.set(p.name, i + 1));
+      const changedNames = getRankChangedPlayerNames(oldPlayers || [], newSorted);
+      if (changedNames.length) {
+        const subs = await query(
+          `SELECT ps.tg_user_id, ps.player_name, ps.bot_id
+             FROM player_subscriptions ps
+            WHERE ps.site_id = $1
+              AND ps.player_name = ANY($2::text[])`,
+          [site.id, changedNames]
+        );
+        if (subs && subs.length > 0) {
+          const oldRankMap = new Map();
+          (oldPlayers || []).forEach((p, i) => oldRankMap.set(p.name, i + 1));
+          const newRankMap = new Map();
+          newSorted.forEach((p, i) => newRankMap.set(p.name, i + 1));
+          const rankEvents = [];
 
-        for (const sub of subs) {
-          const playerName = sub.player_name;
-          const oldRank = oldRankMap.get(playerName) ?? null;
-          const newRank = newRankMap.get(playerName);
-          if (!newRank) continue;
-          if ((oldRank === null && newRank <= 20) || (oldRank !== null && oldRank !== newRank)) {
-            await notifyQueue.send({
+          for (const sub of subs) {
+            const playerName = sub.player_name;
+            const oldRank = oldRankMap.get(playerName) ?? null;
+            const newRank = newRankMap.get(playerName);
+            if (!newRank) continue;
+            rankEvents.push({
               type: "notify",
               kind: "player-rank",
               siteId: site.id,
@@ -1061,6 +1193,7 @@ export async function saveSite(env, user, payload, siteId, request = null) {
               tgUserId: sub.tg_user_id,
             });
           }
+          if (rankEvents.length) await notifyQueue.sendBatch(rankEvents);
         }
       }
     } catch (e) {
@@ -1069,6 +1202,14 @@ export async function saveSite(env, user, payload, siteId, request = null) {
   }
   // Return updated site data including new timestamp for optimistic concurrency
   const updatedSite = await getBoardById(env, uid, site.id);
+  invalidatePublicBoardCache(
+    `yourrank.site/${site.slug}`,
+    `yourrank.site/${site.slug}/leaderboard`,
+    slugRename ? `yourrank.site/${slugRename}` : null,
+    slugRename ? `yourrank.site/${slugRename}/leaderboard` : null,
+    site.custom_domain ? `${site.custom_domain}/` : null,
+    site.custom_domain ? `${site.custom_domain}/leaderboard` : null,
+  );
 
   // Build a concise list of what changed for the audit log
   const changes = [];

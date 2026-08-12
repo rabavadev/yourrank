@@ -105,6 +105,9 @@ export function buildDashboardApi(): Hono<{ Bindings: DashApiBindings; Variables
                 coalesce(sum(cd.clicks), 0)::int        AS clicks,
                 coalesce(sum(cd.unique_clicks), 0)::int AS unique_clicks
            FROM short_links sl
+           JOIN offers owner_offer
+             ON owner_offer.id = sl.offer_id
+            AND owner_offer.owner_id = $1
            LEFT JOIN click_daily cd ON cd.short_link_id = sl.id AND cd.day < current_date
           GROUP BY sl.id
        ),
@@ -113,6 +116,10 @@ export function buildDashboardApi(): Hono<{ Bindings: DashApiBindings; Variables
                 count(*)::int                                AS clicks,
                 count(*) FILTER (WHERE cl.is_unique)::int    AS unique_clicks
            FROM clicks cl
+           JOIN short_links sl ON sl.id = cl.short_link_id
+           JOIN offers owner_offer
+             ON owner_offer.id = sl.offer_id
+            AND owner_offer.owner_id = $1
           WHERE cl.ts >= current_date
           GROUP BY cl.short_link_id
        ),
@@ -142,9 +149,9 @@ export function buildDashboardApi(): Hono<{ Bindings: DashApiBindings; Variables
          LEFT JOIN link_clicks  lc ON lc.short_link_id = sl.id
          LEFT JOIN today_clicks tc ON tc.short_link_id = sl.id
          LEFT JOIN offer_conversions conv ON conv.offer_id = o.id
-        WHERE o.owner_id = $2
+        WHERE o.owner_id = $1
         ORDER BY o.priority DESC, o.created_at DESC`,
-      [c.get("uid"), c.get("uid")]
+      [c.get("uid")]
     ));
   });
 

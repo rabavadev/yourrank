@@ -1,5 +1,5 @@
 // Site handlers: get, put, list, create, archive, stats, heatmap, notifications, custom domain
-import { requireUser, json, bad, ok, readJson, rateLimit, slugify, clientIp } from "../auth.js";
+import { requireUser, json, bad, ok, readJson, rateLimit, rateLimitHeaders, slugify, clientIp } from "../auth.js";
 import { getByUser, getUserSite, getUserSiteById, getUserBoardsList, createBoard, duplicateBoard, createArchive, deleteArchive, deleteBoard, setActiveBoard, updateSiteTheme, invalidateSiteCache, invalidateUserCache, getBoardById, saveSite, fromJsonb } from "../site.js";
 import { bumpStat, getStats, getHeatmap, getTopReferrers } from "../stats.js";
 import { effectivePlan, PLAN_LIMITS, BOARD_LIMITS } from "../../../../shared/plans.js";
@@ -51,14 +51,22 @@ export async function handleStats(request, env) {
   return json({ ok: true, stats: await getStats(env, site.id) });
 }
 
-export async function handleExportStats(request, env) {
-  const { user, res } = await requireUser(request, env);
+export async function handleExportStats(request, env, {
+  requireUserImpl = requireUser,
+  rateLimitImpl = rateLimit,
+  getByUserImpl = getByUser,
+  getBoardByIdImpl = getBoardById,
+  getStatsImpl = getStats,
+} = {}) {
+  const { user, res } = await requireUserImpl(request, env);
   if (res) return res;
+  const rl = await rateLimitImpl(env, `site-stats-export:${user.id}`, 10, 3600);
+  if (!rl.ok) return bad("Too many exports. Try again later.", 429, rateLimitHeaders(rl));
   const url = new URL(request.url);
   const siteId = url.searchParams.get("siteId");
-  const site = siteId ? await getBoardById(env, user.id, siteId) : await getByUser(env, user.id);
+  const site = siteId ? await getBoardByIdImpl(env, user.id, siteId) : await getByUserImpl(env, user.id);
   if (!site) return bad("no site", 404);
-  const stats = await getStats(env, site.id);
+  const stats = await getStatsImpl(env, site.id);
   const rows = (stats?.days || []).map((d) => [d.day, d.views, d.copies, d.clicks, d.conversions || 0, d.revenue || 0].join(","));
   const csv = "Day,Views,Copies,Clicks,Conversions,Revenue\n" + rows.join("\n") + "\n";
   const summary = `Summary,Views,Copies,Clicks,Conversions,Revenue\nToday,${stats?.today?.views || 0},${stats?.today?.copies || 0},${stats?.today?.clicks || 0},${stats?.today?.conversions || 0},${stats?.today?.revenue || 0}\nLast 7 days,${stats?.last7?.views || 0},${stats?.last7?.copies || 0},${stats?.last7?.clicks || 0},${stats?.last7?.conversions || 0},${stats?.last7?.revenue || 0}\nLast 30 days,${stats?.last30?.views || 0},${stats?.last30?.copies || 0},${stats?.last30?.clicks || 0},${stats?.last30?.conversions || 0},${stats?.last30?.revenue || 0}\n`;
@@ -70,15 +78,23 @@ export async function handleExportStats(request, env) {
   });
 }
 
-export async function handleExportPlayers(request, env) {
-  const { user, res } = await requireUser(request, env);
+export async function handleExportPlayers(request, env, {
+  requireUserImpl = requireUser,
+  rateLimitImpl = rateLimit,
+  getByUserImpl = getByUser,
+  getBoardByIdImpl = getBoardById,
+  queryImpl = query,
+} = {}) {
+  const { user, res } = await requireUserImpl(request, env);
   if (res) return res;
+  const rl = await rateLimitImpl(env, `site-players-export:${user.id}`, 10, 3600);
+  if (!rl.ok) return bad("Too many exports. Try again later.", 429, rateLimitHeaders(rl));
   if (user.status === "suspended") return bad("This account is suspended.", 403);
   const url = new URL(request.url);
   const siteId = url.searchParams.get("siteId");
-  const site = siteId ? await getBoardById(env, user.id, siteId) : await getByUser(env, user.id);
+  const site = siteId ? await getBoardByIdImpl(env, user.id, siteId) : await getByUserImpl(env, user.id);
   if (!site) return bad("no site", 404);
-  const rows = await query(
+  const rows = await queryImpl(
     "SELECT name, wagered, prize, score, hands, net_profit, win_rate, change FROM players WHERE site_id=$1 ORDER BY sort ASC",
     [site.id]
   );

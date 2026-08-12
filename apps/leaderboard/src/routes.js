@@ -11,7 +11,8 @@ import {
   handleVerifyEmail, handleResendVerification, handleDemoLogin
 } from "./handlers/auth.js";
 import {
-  handleChangePassword, handleListSessions, handleRevokeOtherSessions, handleExportData
+  handleChangePassword, handleListSessions, handleRevokeOtherSessions,
+  handleCreateExportJob, handleExportJobStatus, handleExportJobDownload
 } from "./handlers/security.js";
 import {
   handleTelegramLink, handleTelegramUnlink, handleTelegramStatus
@@ -85,6 +86,11 @@ import {
   handleGamesFairness,
   handleGamesFairnessRotate,
 } from "./handlers/games.js";
+import {
+  handleCreateViewerExportJob,
+  handleViewerExportStatus,
+  handleViewerExportDownload,
+} from "./handlers/viewer-export.js";
 import { handleApiDocs, handleOpenApiJson } from "./handlers/docs.js";
 import { handleCheckout, handleCheckoutLifetime, handleIpn, handleCancel, handleUserPayments, handlePendingPayment, handleAccountUsage } from "./billing.js";
 import {
@@ -119,7 +125,9 @@ export const ROUTES = [
   { path: "/api/auth/sessions/revoke-others", method: "POST", handler: withHandler(handleRevokeOtherSessions) },
 
   // Data export
-  { path: "/api/account/export", method: "GET", handler: withHandler(handleExportData) },
+  { path: "/api/account/export", method: "POST", handler: withHandler(handleCreateExportJob) },
+  { path: "/api/account/export/:id/status", method: "GET", handler: withHandler(handleExportJobStatus) },
+  { path: "/api/account/export/:id/download", method: "GET", handler: withHandler(handleExportJobDownload) },
   
   // Telegram identity linking
   { path: "/api/auth/telegram/link", method: "POST", handler: withHandler(handleTelegramLink) },
@@ -196,6 +204,9 @@ export const ROUTES = [
   { path: "/api/viewer/me", method: "GET", handler: withHandler(handleViewerMe) },
   { path: "/api/viewer/site", method: "GET", handler: withHandler(handleViewerSite) },
   { path: "/api/viewer/redeem", method: "POST", handler: withHandler(handleViewerRedeem) },
+  { path: "/api/viewer/export", method: "POST", handler: withHandler(handleCreateViewerExportJob) },
+  { path: "/api/viewer/export/:id/status", method: "GET", handler: withHandler(handleViewerExportStatus) },
+  { path: "/api/viewer/export/:id/download", method: "GET", handler: withHandler(handleViewerExportDownload) },
 
   // Streamer viewer-auth toggles
   { path: "/api/credits/viewer-auth", method: "POST", handler: withHandler(handleCreditsViewerAuth) },

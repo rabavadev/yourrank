@@ -14,6 +14,7 @@ import { RateLimiter } from "../../../shared/rate-limiter-do.js";
 import { populateEnv } from "../../../shared/env.js";
 import { exec as dbExec } from "../../../shared/db.js";
 import { Toucan } from "toucan-js";
+import type { BotRow } from "./botEngine.js";
 
 // Cache the Hono app instance so it's built once per isolate, not per request.
 let cachedApp: any = null;
@@ -45,6 +46,20 @@ async function notifyCronFailure(env: Record<string, any>, cron: string, task: s
   } catch {
     // Swallow — we must never crash on alerting failure.
     console.error("[cron] Failed to send Discord webhook notification");
+  }
+}
+
+async function recoverTelegramWebhookUpdatesForCron(env: Record<string, any>, cron: string): Promise<void> {
+  try {
+    const { getBotById, handleUpdateForBot } = await import("./botEngine.js");
+    const { recoverTelegramWebhookUpdates } = await import("./telegram-webhook.js");
+    const recovered = await recoverTelegramWebhookUpdates({
+      loadBot: (botId) => getBotById(botId),
+      process: (bot: BotRow, update) => handleUpdateForBot(bot, update, env),
+    });
+    console.log(`[cron ${cron}] Telegram webhook recovery: ${recovered} update(s) recovered`);
+  } catch (err) {
+    console.error(`[cron ${cron}] Telegram webhook recovery failed:`, err);
   }
 }
 
@@ -164,12 +179,17 @@ export default {
             try {
               const result = await dbExec(
                 `WITH s AS (DELETE FROM sessions WHERE expires_at < now() RETURNING 1),
-                      r AS (DELETE FROM password_resets WHERE expires_at < now() RETURNING 1)
+                      r AS (DELETE FROM password_resets WHERE expires_at < now() RETURNING 1),
+                      t AS (DELETE FROM telegram_webhook_updates
+                            WHERE (status = 'completed' AND completed_at < now() - interval '2 days')
+                               OR (status = 'abandoned' AND abandoned_at < now() - interval '7 days')
+                            RETURNING 1)
                  SELECT (SELECT count(*)::int FROM s) AS sessions_deleted,
-                        (SELECT count(*)::int FROM r) AS resets_deleted`
+                        (SELECT count(*)::int FROM r) AS resets_deleted,
+                        (SELECT count(*)::int FROM t) AS webhook_updates_deleted`
               );
               const row = result?.[0] ?? {};
-              console.log(`[cron 0 3 * * *] auth cleanup: deleted ${row.sessions_deleted ?? 0} expired sessions, ${row.resets_deleted ?? 0} expired password resets`);
+              console.log(`[cron 0 3 * * *] auth cleanup: deleted ${row.sessions_deleted ?? 0} expired sessions, ${row.resets_deleted ?? 0} expired password resets, ${row.webhook_updates_deleted ?? 0} Telegram webhook updates`);
             } catch (err) {
               console.error("[cron] auth cleanup failed:", err);
               // Non-critical — don't fail the whole cron batch
@@ -199,6 +219,8 @@ export default {
         } else {
           console.log(`[cron 0 3 * * *] All tasks completed successfully at ${new Date().toISOString()}`);
         }
+      } else if (event.cron === "*/5 * * * *") {
+        await recoverTelegramWebhookUpdatesForCron(env, event.cron);
       } else {
         // Default: broadcast batch (every minute cron)
         const { processBroadcastBatch } = await import("./broadcasts.js");

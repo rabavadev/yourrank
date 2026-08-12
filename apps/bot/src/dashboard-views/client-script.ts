@@ -438,7 +438,16 @@ function renderOffers(){
 }
 
 async function loadExtras(){
+  const bcListLoading = $('bcList');
+  if (bcListLoading) bcListLoading.innerHTML = '<tr><td colspan="8" class="muted">Loading broadcasts…</td></tr>';
   const [plan, bcs, pbStatus] = await Promise.all([api('/plan'), api('/broadcasts'), api('/postback-status')]);
+  if (bcs.error) {
+    const bcList = $('bcList');
+    if (bcList) {
+      const colCount = bcList.closest('table')?.querySelectorAll('thead th').length || 1;
+      bcList.innerHTML = '<tr><td colspan="' + colCount + '">' + loadErrorMarkup(bcs.error || "Couldn’t load broadcast history.", 'retryBroadcasts') + '</td></tr>';
+    }
+  }
   if (plan.error || bcs.error || pbStatus.error) {
     const error = plan.error || bcs.error || pbStatus.error;
     toast(error);
@@ -1264,6 +1273,7 @@ async function handleAction(e) {
     else if (action === 'cancelBroadcast') { e.preventDefault(); await cancelBroadcast(target); }
     else if (action === 'viewBroadcast') { e.preventDefault(); openBroadcastDetail(target.dataset.id); }
     else if (action === 'closeBroadcastDetail') { e.preventDefault(); closeBroadcastDetail(); }
+    else if (action === 'retryBroadcasts') { e.preventDefault(); loadExtras(); }
     else if (action === 'copyLink') { e.preventDefault(); await copyLink(target); }
     else if (action === 'toggleOffer') { e.preventDefault(); await toggleOffer(target); }
     else if (action === 'toggleCommand') { e.preventDefault(); await toggleCommand(target); }

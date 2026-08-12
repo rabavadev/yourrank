@@ -7,14 +7,17 @@ import { validTemplate } from "../templates/index.js";
 
 const HEX = /^#[0-9a-fA-F]{6}$/;
 
-export async function handleDashboardPreview(request, env, nonce) {
+export async function handleDashboardPreview(request, env, nonce, {
+  currentUserImpl = currentUser,
+  getUserSiteByIdImpl = getUserSiteById,
+} = {}) {
   const url = new URL(request.url);
-  const user = await currentUser(request, env);
+  const user = await currentUserImpl(request, env);
   if (!user) return Response.redirect(new URL("/login", url), 302);
   const plan = effectivePlan(user);
   const siteId = url.searchParams.get("board");
   if (!siteId) return new Response("board required", { status: 400 });
-  const site = await getUserSiteById(env, user.id, siteId, plan);
+  const site = await getUserSiteByIdImpl(env, user.id, siteId, plan);
   if (!site) return new Response("not found", { status: 404 });
 
   const template = validTemplate(url.searchParams.get("template"));

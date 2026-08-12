@@ -111,9 +111,10 @@ export async function handleCreditsStatus(request, env) {
       [site.id]
     ),
     query(
+      // Defensive ceiling above the Agency plan's 999 active-item contractual limit.
       `SELECT id, name, description, cost, stock, active
          FROM shop_items
-        WHERE site_id=$1 ORDER BY created_at DESC`,
+        WHERE site_id=$1 ORDER BY created_at DESC LIMIT 1024`,
       [site.id]
     ),
     query(
@@ -719,10 +720,12 @@ export async function handlePublicCredits(request, env) {
   }
 
   const shopItems = await query(
+    // Defensive ceiling above the Agency plan's 999 active-item contractual limit.
     `SELECT id, name, description, cost, stock, active
        FROM shop_items
       WHERE site_id=$1 AND active=true
-      ORDER BY cost ASC`,
+      ORDER BY cost ASC
+      LIMIT 1024`,
     [r.id]
   );
 
@@ -798,12 +801,9 @@ export async function handleCreditsAnalytics(request, env) {
     creditsByDay,
   ] = await Promise.all([
     one(
-      `SELECT COALESCE(SUM(CASE WHEN cl.type = 'earn' THEN cl.amount
-                                WHEN cl.type = 'refund' THEN -cl.amount
-                                ELSE 0 END), 0)::int AS total
-         FROM credit_ledger cl
-         JOIN site_viewers sv ON sv.id = cl.site_viewer_id
-        WHERE sv.site_id = $1 AND cl.type IN ('earn', 'refund')`,
+      `SELECT total_earned::int AS total
+         FROM site_credit_aggregates
+        WHERE site_id = $1`,
       [site.id]
     ),
     one(
@@ -816,12 +816,9 @@ export async function handleCreditsAnalytics(request, env) {
       [site.id, startDate]
     ),
     one(
-      `SELECT COALESCE(SUM(CASE WHEN cl.type = 'spend' THEN cl.amount
-                                WHEN cl.type = 'revoke' THEN -cl.amount
-                                ELSE 0 END), 0)::int AS total
-         FROM credit_ledger cl
-         JOIN site_viewers sv ON sv.id = cl.site_viewer_id
-        WHERE sv.site_id = $1 AND cl.type IN ('spend', 'revoke')`,
+      `SELECT total_spent::int AS total
+         FROM site_credit_aggregates
+        WHERE site_id = $1`,
       [site.id]
     ),
     one(
@@ -846,7 +843,7 @@ export async function handleCreditsAnalytics(request, env) {
       [site.id, startDate]
     ),
     one(
-      "SELECT COALESCE(SUM(balance), 0)::int AS total FROM site_viewers WHERE site_id = $1",
+      "SELECT total_balance::int AS total FROM site_credit_aggregates WHERE site_id = $1",
       [site.id]
     ),
     query(
@@ -870,11 +867,15 @@ export async function handleCreditsAnalytics(request, env) {
       [site.id]
     ),
     query(
-      `SELECT r.status, COUNT(*)::int AS count
-         FROM redemptions r
-         JOIN site_viewers sv ON sv.id = r.site_viewer_id
-        WHERE sv.site_id = $1
-        GROUP BY r.status`,
+      `SELECT totals.status, totals.count::int
+         FROM site_credit_aggregates a
+         CROSS JOIN LATERAL (
+           VALUES
+             ('pending', a.redemptions_pending),
+             ('fulfilled', a.redemptions_fulfilled),
+             ('cancelled', a.redemptions_cancelled)
+         ) AS totals(status, count)
+        WHERE a.site_id = $1 AND totals.count > 0`,
       [site.id]
     ),
     query(

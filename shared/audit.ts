@@ -42,6 +42,7 @@ const AUDIT_SAFE_KEYS = new Set([
   "email",
   "entity_id",
   "entity_type",
+  "export_id",
   "expires_at",
   "from_plan",
   "label",

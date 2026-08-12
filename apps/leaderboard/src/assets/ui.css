@@ -17,6 +17,17 @@
    hidden button (the bot's wizard steps, the collapsed forms) renders. */
 [hidden] { display: none !important; }
 
+/* Canonical internal control contract. Public templates do not load this
+   sheet; their runtime branding and geometry remain independent. */
+:root {
+  --yr-control-height: 40px;
+  --yr-control-height-narrow: 44px;
+  --yr-control-radius: 8px;
+  --yr-control-padding-x: 12px;
+  --yr-shadow-sm: 0 1px 2px rgba(0, 0, 0, .05);
+  --yr-shadow-lg: 0 12px 32px rgba(0, 0, 0, .12);
+}
+
 /* ---- screen-reader-only content and the skip link --------------------------
    Every page in the product opens with `<a class="sr-only skip-link">`, but
    `.sr-only` used to be defined only in app.css, which the marketing pages do
@@ -77,9 +88,9 @@
   font-weight: 600;
   font-size: 14px;
   line-height: 1.2;
-  padding: 10px 16px;
-  min-height: 36px;
-  border-radius: var(--yr-radius-sm, 10px);
+  padding: 0 16px;
+  min-height: var(--yr-control-height, 40px);
+  border-radius: var(--yr-control-radius, 8px);
   border: 1px solid var(--yr-line, var(--line));
   background: var(--yr-panel-2, var(--panel-2));
   color: var(--yr-ink, var(--ink));
@@ -142,9 +153,9 @@
 
 .btn--sm,
 .yr-ui button.sm {
-  padding: 8px 13px;
-  font-size: 13px;
-  min-height: 38px;
+  padding: 0 var(--yr-control-padding-x, 12px);
+  font-size: 14px;
+  min-height: var(--yr-control-height, 40px);
 }
 
 .btn--xs,
@@ -156,11 +167,11 @@
 
 /* A finger needs the full 44px target; a mouse does not, and 44px everywhere
    made desktop toolbars look like a phone app. */
-@media (pointer: coarse), (max-width: 860px) {
+@media (pointer: coarse), (max-width: 768px) {
   .btn,
   .btn--sm,
   .btn--xs,
-  .yr-ui button { min-height: var(--tap, 44px); }
+  .yr-ui button { min-height: var(--yr-control-height-narrow, 44px); }
 }
 
 .btn[aria-busy="true"] { opacity: .65; cursor: wait; }

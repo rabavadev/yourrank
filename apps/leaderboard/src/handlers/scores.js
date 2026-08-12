@@ -59,7 +59,7 @@ const scoreBodySchema = z
   });
 // POST /api/scores — authenticated by X-Postback-Key header + X-Postback-Signature HMAC.
 // Validates key against sites table, checks Pro plan gate, replaces player list.
-export async function handleScores(request, env) {
+export async function handleScores(request, env, { saveSiteImpl = saveSite } = {}) {
   try {
     const postbackKey = request.headers.get("x-postback-key");
     if (!postbackKey) return bad("Missing X-Postback-Key header.", 401);
@@ -120,7 +120,7 @@ export async function handleScores(request, env) {
         change: p.change !== undefined ? Number(p.change) : undefined,
       })),
     };
-    const r = await saveSite(env, user, savePayload, site.id, request);
+    const r = await saveSiteImpl(env, user, savePayload, site.id, request);
     return r.error ? bad(r.error, 400) : json({ ok: true, players: validPlayers.length }, 200, rateLimitHeaders(rl));
   } catch (e) {
     console.error("scores API failed:", String(e?.message || e));
