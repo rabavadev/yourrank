@@ -473,18 +473,18 @@ ${mainInner}
 ${footer}
 </main>
 </div>
-${feedbackModal({ slug, siteName: b.name || slug })}
+${feedbackModal({ slug })}
 <script src="/assets/site-shell.js" nonce="${nonce}" defer></script>
 </body></html>`;
 
   return head + body;
 }
 
-function feedbackModal({ slug, siteName }) {
+function feedbackModal({ slug }) {
   return `<dialog id="yr-feedback" class="yr-modal" aria-label="Send feedback">
 <form class="yr-modal-in" method="dialog">
 <h2>Send feedback</h2>
-<p class="yr-note">Tell ${esc(siteName)} what works and what doesn't. No contact details needed.</p>
+<p class="yr-note">Tell us what works and what doesn't. No contact details needed.</p>
 <textarea name="message" rows="5" minlength="10" maxlength="2000" placeholder="What's working? What's not?" required aria-label="Your feedback"></textarea>
 <p class="yr-modal-status" id="yr-feedback-status" role="status" aria-live="polite"></p>
 <div class="yr-modal-acts">

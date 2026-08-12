@@ -127,4 +127,21 @@ describe("new-shell auxiliary renderers", () => {
     expect(me).toContain("No credit activity or redemptions yet");
     expect(me).not.toContain("Credits / 7d");
   });
+
+  it("keeps the board name to distinct visible identity jobs", async () => {
+    const html = await renderSite({
+      r: record,
+      section: "home",
+      viewer: null,
+      viewerData: null,
+      opts,
+    });
+    const visible = html
+      .slice(html.indexOf("<body"), html.indexOf("</body>"))
+      .replace(/<[^>]*>/g, " ")
+      .replace(/\s+/g, " ");
+    expect((visible.match(/Demo Board/g) || []).length).toBe(3);
+    expect(html).toContain("Tell us what works and what doesn't.");
+    expect(html).not.toContain("Tell Demo Board what works");
+  });
 });
