@@ -13,7 +13,7 @@ YourRank is a **suite of three independent products for streamers and communitie
 2. **Telegram** — connect a bot, broadcast messages, manage offers and commands.
 3. **Rewards & Shop** — connect a Kick channel, map rewards to credits, run a viewer shop with redemptions.
 
-These products live under one account and share authentication, plan/billing, and a unified shell, but each has its own overview, navigation, analytics, and settings.
+These products live under one account and share authentication, plan/billing, a unified shell, and one account Settings home. Each product retains its own overview, navigation, analytics, and local configuration.
 
 ## Why Option B
 

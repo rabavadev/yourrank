@@ -1,5 +1,6 @@
 // Site editing: plan, branding/theme, save, archive, domain, overlay, notifications.
 import { $, esc, fromLocalInput, getCsrf, guardAuth, logError, timeZoneOffsetLabel, parseAmount, showConfirmModal, copyToClipboard, flashButton, showLoadError, clearLoadError } from "./utils.js";
+import { serializeWebhookUrl } from "./notifications.js";
 import { state, boardStatus, markDirty, setState, subscribe } from "./state.js";
 import { renderEmpty } from "./states.js";
 import { renderBoardSwitcher, renderBoardsPage, renderSidebarBoardSwitcher } from "./boards.js";
@@ -460,8 +461,9 @@ export function collect() {
       },
     };
   }
+  const webhook = $("f_webhook");
   out.notify = {
-    discord_webhook_url: $("f_webhook")?.value.trim() || null,
+    discord_webhook_url: serializeWebhookUrl(webhook?.value, webhook?.dataset.configured === "true"),
     telegram_chat_id: $("f_tgChatId")?.value.trim() || null,
     telegram_notify: $("f_tgNotify")?.checked || false,
   };
@@ -782,7 +784,14 @@ export function renderNotifications(n) {
   const paid = state.ME.plan !== "free";
   $("notifyBody").hidden = !paid; $("notifyLock").hidden = paid;
   if (!paid) return;
-  const wh = $("f_webhook"); if (wh && n.discord_webhook_url) { wh.value = ""; wh.placeholder = "Webhook configured ✓ (enter new URL to change)"; }
+  const wh = $("f_webhook");
+  if (wh) {
+    wh.dataset.configured = n.discord_webhook_url ? "true" : "false";
+    if (n.discord_webhook_url) {
+      wh.value = "";
+      wh.placeholder = "Webhook configured ✓ (enter new URL to change)";
+    }
+  }
   const tg = $("f_tgNotify"); if (tg) tg.checked = !!n.telegram_notify;
   const tgChat = $("f_tgChatId"); if (tgChat) tgChat.value = n.telegram_chat_id || "";
 }
@@ -845,7 +854,7 @@ const SECTIONS_CATALOG = [
   { key: "leaderboard", label: "Show Leaderboard" },
   { key: "payouts", label: "Show Prize Pool" },
   { key: "countdown", label: "Show Countdown Timer" },
-  { key: "rules", label: "Show Rules Section" },
+  { key: "rules", label: "Show Rules block" },
   { key: "socials", label: "Show Social Links" },
   { key: "share", label: "Show Share Buttons" },
   { key: "poweredBy", label: "Show 'Powered by YourRank' badge" },

@@ -15,7 +15,7 @@ const pageLinks = [
   { key: "offers", label: "Offers", href: "/bot/offers", sub: "Your casino links — clicks are tracked automatically" },
   { key: "commands", label: "Commands", href: "/bot/commands", sub: "Replies your bot sends when viewers type /something" },
   { key: "broadcasts", label: "Broadcasts", href: "/bot/broadcasts", sub: "Send a message to everyone who follows your bot" },
-  { key: "settings", label: "Settings", href: "/bot/settings", sub: "Deposit tracking and your plan" },
+  { key: "settings", label: "Account settings", href: "/dashboard/settings", sub: "Plan, security, and connected accounts" },
 ];
 
 export function sideNav(active: string, user: { display_name: string; plan: string }): string {

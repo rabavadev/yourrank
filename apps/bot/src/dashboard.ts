@@ -199,7 +199,12 @@ export function buildDashboard(): Hono<DashEnv> {
   app.get("/offers", (c) => dashboardPage(c, "offers"));
   app.get("/commands", (c) => dashboardPage(c, "commands"));
   app.get("/broadcasts", (c) => dashboardPage(c, "broadcasts"));
-  app.get("/settings", (c) => dashboardPage(c, "settings"));
+  app.get("/settings", (c) => {
+    const target = new URL("/dashboard/settings", c.req.url);
+    for (const [key, value] of new URL(c.req.url).searchParams) target.searchParams.set(key, value);
+    target.searchParams.set("from", "bot");
+    return c.redirect(target.toString(), 302);
+  });
 
   return app;
 }

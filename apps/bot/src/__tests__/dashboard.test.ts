@@ -124,8 +124,7 @@ describe("dashboard views", () => {
     expect(html).toContain('data-action="createOffer"');
     expect(html).toContain('data-action="sendBroadcast"');
     expect(html).toContain('data-action="logout"');
-    expect(html).toContain("Manage postbacks in Account");
-    expect(html).toContain("postbackStatus");
+    expect(html).not.toContain('<div class="panel" data-page="settings">');
     expect(html).toContain('nonce="nonce123"');
     expect(html).not.toContain("gm-shell-nav");
     expect(html).not.toContain("onclick=");
@@ -200,7 +199,7 @@ describe("dashboard views", () => {
   });
 
   it("appHtml renders each page with its own page key and includes the .hidden rule", () => {
-    for (const page of ["overview", "bots", "offers", "commands", "broadcasts", "settings"]) {
+    for (const page of ["overview", "bots", "offers", "commands", "broadcasts"]) {
       const html = appHtml(
         { display_name: "Test", email: "test@example.com", plan: "free" },
         "https://yourrank.site",

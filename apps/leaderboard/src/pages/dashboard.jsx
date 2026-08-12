@@ -81,7 +81,7 @@ export function DashboardContent({ user } = {}) {
 <div class="field"><label for="f_code">Referral or promo code</label><input id="f_code" placeholder="OPTIONAL" /></div>
 <div class="field"><label for="f_cta">Sponsor link</label><input id="f_cta" placeholder="https://example.com" /></div>
 <div class="field field--full"><label for="f_blurb">Partner blurb</label><textarea id="f_blurb" rows="2" placeholder="Short pitch about the sponsor and your code (optional)."></textarea></div></div></div>
-<div class="card" data-egroup="setup"><h2>Schedule &amp; prize</h2><p class="card-sub">When the race ends and what the winner gets.</p><div class="grid2">
+<div class="card" data-egroup="setup"><h2>Schedule &amp; reset</h2><p class="card-sub">When the race ends and how the board resets.</p><div class="grid2">
 <div class="field"><label for="f_pool">Prize pool</label><input id="f_pool" placeholder="$500" /></div>
 <div class="field"><label for="f_period">Period</label><select id="f_period"><option>Weekly</option><option selected>Monthly</option><option>Season</option></select></div>
 <div class="field"><label for="f_ends">Countdown ends</label><input id="f_ends" type="datetime-local" /><span class="hint" id="f_ends_hint">When the leaderboard resets, shown in your timezone. Powers the live timer.</span></div>
@@ -131,7 +131,7 @@ export function DashboardContent({ user } = {}) {
 </div>
 <div class="v3-bulkbar" id="bulkActions" role="status" hidden><span class="v3-bulkbar-mark" aria-hidden="true"></span><span id="bulkCount">0 players selected</span><span class="v3-bulkbar-sep" aria-hidden="true"></span><button class="v3-btn v3-btn--dark" id="bulkClearWager" type="button">Clear wagers</button><button class="v3-btn v3-btn--danger" id="bulkDelete" type="button">Delete selected</button></div>
 </div>
-<div class="card" data-egroup="design" id="playerFieldsCard"><h2>Visible columns</h2><p class="card-sub">Choose which extra columns show on the dashboard player table.</p><div class="section-list" id="playerFieldsList"></div></div>
+<div class="card" data-egroup="design" id="playerFieldsCard"><h2>Player table columns</h2><p class="card-sub">Choose which extra columns show on the player table.</p><a class="btn btn--sm btn--ghost" id="playerFieldsLink" href="/dashboard/editor/players">Manage columns in Players →</a></div>
 <div class="design-group-heading" data-egroup="design"><h3>Appearance</h3></div>
 <div class="card" data-egroup="design" id="brandCard"><h2>Branding <span class="pill pill--info ml-6">PRO</span></h2><p class="card-sub">Your logo and page colors. Free pages use the default look.</p>
 <div id="brandBody">
@@ -149,9 +149,9 @@ export function DashboardContent({ user } = {}) {
 <div class="field"><label for="f_font">Font</label><select id="f_font"><option value="Inter">Inter — Default</option><option value="Oswald">Oswald — Bold & Sporty</option><option value="Playfair Display">Playfair Display — Premium & Elegant</option><option value="Rajdhani">Rajdhani — Techy & Esports</option><option value="Bebas Neue">Bebas Neue — Impact & Hype</option></select><span class="hint">Changes the personality of your public page text.</span></div>
 </div></div>
 <div class="empty upsell-card" id="brandLock" hidden>Branding is a Pro feature. <a href="/account/plan?from=branding" id="brandUpgrade">Upgrade to unlock it</a>.</div></div>
-<div class="card" data-egroup="design" id="sectionsCard"><h2>Sections <span class="pill pill--info ml-6">PRO</span></h2><p class="card-sub">Choose what appears on your public page. Turn sections off to build a leaner layout.</p>
+<div class="card" data-egroup="design" id="sectionsCard"><h2>Page blocks <span class="pill pill--info ml-6">PRO</span></h2><p class="card-sub">Choose which blocks appear on your public leaderboard page. Turn blocks off to build a leaner layout.</p>
 <div id="sectionsBody"><div class="sections-editor" id="sectionsList"></div></div>
-<div class="empty upsell-card" id="sectionsLock" hidden>Section controls are a Pro feature. <a href="/account/plan?from=sections" id="sectionsUpgrade">Upgrade to unlock it</a>.</div></div>
+<div class="empty upsell-card" id="sectionsLock" hidden>Page block controls are a Pro feature. <a href="/account/plan?from=sections" id="sectionsUpgrade">Upgrade to unlock them</a>.</div></div>
 <div class="card" data-egroup="design" id="prizesCard"><h2>Prize display <span class="pill pill--info ml-6">PRO</span></h2><p class="card-sub">Customize how prizes, currency and the countdown appear on your public page.</p>
 <div id="prizesBody">
 <div class="grid2">
@@ -205,17 +205,17 @@ export function DashboardContent({ user } = {}) {
 <div class="lb-phead"><button class="lb-menu" type="button" aria-label="Show sections" data-menu aria-expanded="false" aria-controls="lbSide">☰</button></div>
 <div class="v3-games-page">
   <header class="v3-head">
-    <h1>Site Sections &amp; Games</h1>
-    <p class="v3-head-sub">Control which sections appear on your public page</p>
+    <h1>Viewer Pages &amp; Games</h1>
+    <p class="v3-head-sub">Control which viewer pages appear on your public board</p>
   </header>
   <div class="v3-games-layout">
     <div class="v3-games-left">
       <div class="v3-table-card v3-setting-card">
-        <div class="v3-card-head"><span class="v3-head-sub v3-head-sub--mono">Viewer site sections</span></div>
+        <div class="v3-card-head"><span class="v3-head-sub v3-head-sub--mono">Viewer pages</span></div>
         <div id="gamesSectionRows"></div>
       </div>
       <div class="v3-table-card v3-block-card">
-        <div class="v3-card-head"><div><h2>Leaderboard page blocks</h2><p class="v3-head-sub">Choose which blocks appear on your leaderboard page</p></div><span class="v3-chip v3-chip--pro">PRO</span></div>
+        <div class="v3-card-head"><div><h2>Page blocks</h2><p class="v3-head-sub">Choose which blocks appear on your leaderboard page</p></div><span class="v3-chip v3-chip--pro">PRO</span></div>
         <div class="v3-block-grid" id="leaderboardBlockRows"></div>
         <div class="v3-note" id="leaderboardBlockNote">Block visibility follows your board settings.</div>
       </div>
@@ -278,7 +278,7 @@ export function DashboardContent({ user } = {}) {
     <div class="v3-settings-card"><div class="v3-settings-card-head"><div><h2>Integrations</h2><p>Stream tools, postbacks, Kick rewards and legal pages.</p></div></div><div class="v3-settings-row"><div><b>Kick rewards</b><p>Let viewers earn credits by redeeming Kick channel rewards.</p><span class="v3-settings-muted" id="kickStatus"><span class="skeleton skeleton-text" aria-hidden="true"></span></span></div><a class="v3-set-btn v3-set-btn--outline" href="/dashboard/settings/integrations" id="kickRewardsLink">Open Integrations</a></div><div class="v3-settings-row"><div><b>Postbacks</b><p id="postbackStatus">Receive automatic score updates from your sponsor.</p></div><a class="v3-set-btn v3-set-btn--outline" href="/account/postbacks">Manage postbacks</a></div><div class="v3-settings-divider"></div><div class="v3-settings-notify-account"><label class="v3-settings-label" for="f_tgChatId">Telegram chat/group ID</label><input id="f_tgChatId" placeholder="-1001234567890" /><label class="v3-settings-check"><input type="checkbox" id="f_tgNotify" /> Enable Telegram notifications</label><button class="v3-set-btn v3-set-btn--outline" id="testTelegram" type="button">Test Telegram</button><span class="v3-settings-status" id="testTelegramStatus" role="status"></span></div><div class="v3-settings-divider"></div><div class="v3-settings-legal"><h3>Compliance</h3><div id="legalList"></div><div id="legalFooterPreview" class="v3-settings-muted"></div></div></div>
   </section>
   <section class="v3-settings-panel" id="settingsPanelSecurity" role="tabpanel" aria-labelledby="settingsTabSecurity" data-settings-panel="security" hidden>
-    <div class="v3-settings-card"><div class="v3-settings-row v3-settings-row--top"><div><h2>Password Protection</h2><p>Visitors must enter this password before seeing the leaderboard or using the public API.</p></div><input class="v3-toggle" id="settingsPasswordEnabled" type="checkbox" aria-label="Enable password protection" /></div><div class="v3-settings-inline-form"><input id="settingsPassword" type="password" placeholder="Leave blank to keep current password" autocomplete="new-password" /><button class="v3-set-btn v3-set-btn--dark" id="settingsPasswordSave" type="button">Update password</button><span class="v3-settings-status" id="settingsPasswordStatus" role="status"></span></div></div>
+    <div class="v3-settings-card"><div class="v3-settings-row"><div><h2>Board access</h2><p>Password protection applies to the selected board, not your account.</p></div><a class="v3-set-btn v3-set-btn--outline" id="settingsBoardAccessLink" href="/dashboard/editor/setup">Open Board → Setup → Access</a></div></div>
     <div class="v3-settings-card"><div class="v3-settings-row v3-settings-row--top"><div><h2>Webhook Notifications <span class="v3-chip v3-chip--pro">PRO</span></h2><p>Receive alerts when your leaderboard resets or a player reaches the top 3.</p></div><input class="v3-toggle" id="settingsWebhookEnabled" type="checkbox" aria-label="Enable webhook notifications" /></div><div class="v3-settings-notify-body" id="notifyBody"><div class="v3-settings-inline-form"><input id="f_webhook" aria-label="Discord webhook URL" placeholder="https://discord.com/api/webhooks/..." /><button class="v3-set-btn v3-set-btn--outline" id="testDiscord" type="button">Test webhook</button><span class="v3-settings-status" id="testDiscordStatus" role="status"></span></div></div><div class="v3-settings-inline" id="notifyLock" hidden>Notifications are a Pro feature. <a href="/account/plan?from=notifications">Upgrade to unlock them</a>.</div></div>
     <div class="v3-settings-card v3-danger-card"><div class="v3-danger-lbl">DANGER ZONE</div><div class="v3-settings-row"><div><b>Reset All Leaderboard Data</b><p>Instantly wipes all player scores, wagers, and redemption history. This action cannot be undone.</p></div><button class="v3-set-btn v3-set-btn--danger-outline" id="settingsResetData" type="button">Reset data</button></div><div class="v3-settings-row"><div><b>Delete this board</b><p>Permanently delete this board configuration. This action cannot be undone.</p></div><button class="v3-set-btn v3-set-btn--danger" id="settingsDeleteBoard" type="button">Delete board</button></div></div>
   </section>
