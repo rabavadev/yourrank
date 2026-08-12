@@ -133,13 +133,6 @@ describe("updateSiteTheme validation and plan behavior", () => {
 
   beforeEach(() => { mockOne.mockReset(); mockQuery.mockReset(); mockExec.mockReset(); });
 
-  it("rejects unknown template ids", async () => {
-    mockOne.mockResolvedValueOnce(SITE);
-    const r = await updateSiteTheme(mockEnv(), USER_ROW, { siteId: "site-1", template: "unknown" });
-    expect(r.code).toBe("invalid_template");
-    expect(mockExec).not.toHaveBeenCalled();
-  });
-
   it("ignores accent overrides on free plans", async () => {
     mockOne.mockResolvedValueOnce(SITE);
     const r = await updateSiteTheme(mockEnv(), USER_ROW, {

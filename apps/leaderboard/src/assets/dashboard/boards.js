@@ -265,10 +265,9 @@ export function renderBoardsPage() {
     state.BOARDS.forEach((b) => {
       const tr = document.createElement("tr");
       const isActive = b.id === state.ACTIVE_SITE_ID;
-      const tpl = state.TEMPLATE_CATALOG.find((t) => t.id === (b.template || "classic"));
       const statusClass = b.published ? "pill--good" : "pill--muted";
       const statusText = b.published ? "Published" : "Draft";
-      tr.innerHTML = `<td><a class="board-table-name${isActive ? ' board-table-name--active' : ''}" href="/dashboard?board=${encodeURIComponent(b.id)}">${esc(b.name)}${isActive ? '<span class="board-table-badge">editing</span>' : ''}</a></td><td>${esc(b.casino || "")}${b.code ? `<span class="mono"> · ${esc(b.code)}</span>` : ""}</td><td><a class="mono" href="/${esc(b.slug)}" target="_blank">/${esc(b.slug)}</a></td><td>${b.players || 0}</td><td>${esc(tpl ? tpl.name : (b.template || "classic"))}</td><td><span class="pill ${statusClass}">${statusText}</span></td><td class="ta-r"><button class="btn btn--xs btn--ghost" data-action="edit" type="button">Edit</button><button class="btn btn--xs" data-action="dup" type="button">Duplicate</button><button class="btn btn--xs btn--danger" data-action="del" type="button">Delete</button></td>`;
+      tr.innerHTML = `<td><a class="board-table-name${isActive ? ' board-table-name--active' : ''}" href="/dashboard?board=${encodeURIComponent(b.id)}">${esc(b.name)}${isActive ? '<span class="board-table-badge">editing</span>' : ''}</a></td><td>${esc(b.casino || "")}${b.code ? `<span class="mono"> · ${esc(b.code)}</span>` : ""}</td><td><a class="mono" href="/${esc(b.slug)}" target="_blank">/${esc(b.slug)}</a></td><td>${b.players || 0}</td><td><span class="pill ${statusClass}">${statusText}</span></td><td class="ta-r"><button class="btn btn--xs btn--ghost" data-action="edit" type="button">Edit</button><button class="btn btn--xs" data-action="dup" type="button">Duplicate</button><button class="btn btn--xs btn--danger" data-action="del" type="button">Delete</button></td>`;
       // "Edit" now has an address to go to, so it opens the editor rather than
       // whichever section the smart landing picks.
       tr.querySelector('[data-action="edit"]')?.addEventListener("click", () => { location.href = "/dashboard/editor?board=" + encodeURIComponent(b.id); });
