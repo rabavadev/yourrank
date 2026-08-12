@@ -387,7 +387,10 @@ async function handleRequest(request, env, ctx, meta) {
             return renderSiteRoute({ request, env, ctx, nonce, slug: customSiteRoute.slug, section: customSiteRoute.section, isCustomDomain: true });
           }
           if (method === "GET" && path === "/hall-of-fame") {
-            const r = await getPublicSite(env, customSlug);
+            const r = await getPublicSite(env, customSlug, request);
+            if (r && r.requiresPassword) {
+              return new Response(renderPasswordGate(r, { nonce, isCustomDomain: true }), { headers: { ...HTML_N, "cache-control": "no-store" } });
+            }
             if (!r || r.suspended) return new Response(notFoundPage(customSlug, nonce), { status: 404, headers: HTML_N });
             const paid = r.plan === "pro" || r.plan === "agency";
             return new Response(
@@ -434,7 +437,10 @@ async function handleRequest(request, env, ctx, meta) {
             );
           }
           if (method === "GET" && path === "/profile") {
-            const r = await getPublicSite(env, customSlug);
+            const r = await getPublicSite(env, customSlug, request);
+            if (r && r.requiresPassword) {
+              return new Response(renderPasswordGate(r, { nonce, isCustomDomain: true }), { headers: { ...HTML_N, "cache-control": "no-store" } });
+            }
             if (!r || r.suspended) return new Response(notFoundPage(customSlug, nonce), { status: 404, headers: HTML_N });
             const paid = r.plan === "pro" || r.plan === "agency";
             return new Response(
@@ -447,7 +453,10 @@ async function handleRequest(request, env, ctx, meta) {
             );
           }
           if (method === "GET" && path === "/embed") {
-            const r = await getPublicSite(env, customSlug);
+            const r = await getPublicSite(env, customSlug, request);
+            if (r && r.requiresPassword) {
+              return new Response(renderPasswordGate(r, { nonce, isCustomDomain: true }), { headers: { ...HTML_N, "cache-control": "no-store" } });
+            }
             if (!r || r.suspended) return new Response(notFoundPage(customSlug, nonce), { status: 404, headers: HTML_N });
             return new Response(renderNewEmbed(r.data, { nonce, slug: customSlug, isCustomDomain: true }), { headers: { ...HTML_N, "cache-control": "no-store" } });
           }
@@ -926,7 +935,10 @@ a{color:#5b5bf5;text-decoration:none;font-weight:600}</style></head><body>
         let slug;
         try { slug = decodeURIComponent(path.slice(1).split("/")[0]).toLowerCase(); } catch { return new Response(notFoundPage("", nonce), { status: 404, headers: HTML_N }); }
         if (RESERVED.has(slug)) return new Response(notFoundPage(slug, nonce), { status: 404, headers: HTML_N });
-        const r = await getPublicSite(env, slug);
+        const r = await getPublicSite(env, slug, request);
+        if (r && r.requiresPassword) {
+          return new Response(renderPasswordGate(r, { nonce, isCustomDomain: false }), { headers: { ...HTML_N, "cache-control": "no-store" } });
+        }
         if (!r || r.suspended) return new Response(notFoundPage(slug, nonce), { status: 404, headers: HTML_N });
         const paid = r.plan !== "free";
         return new Response(
@@ -943,7 +955,10 @@ a{color:#5b5bf5;text-decoration:none;font-weight:600}</style></head><body>
         let slug;
         try { slug = decodeURIComponent(path.slice(1).split("/")[0]).toLowerCase(); } catch { return new Response(notFoundPage("", nonce), { status: 404, headers: HTML_N }); }
         if (RESERVED.has(slug)) return new Response(notFoundPage(slug, nonce), { status: 404, headers: HTML_N });
-        const r = await getPublicSite(env, slug);
+        const r = await getPublicSite(env, slug, request);
+        if (r && r.requiresPassword) {
+          return new Response(renderPasswordGate(r, { nonce, isCustomDomain: false }), { headers: { ...HTML_N, "cache-control": "no-store" } });
+        }
         if (!r || r.suspended) return new Response(notFoundPage(slug, nonce), { status: 404, headers: HTML_N });
         return new Response(renderNewEmbed(r.data, { nonce, slug, isCustomDomain: false }), { headers: { ...HTML_N, "cache-control": "no-store" } });
       }
@@ -997,7 +1012,10 @@ a{color:#5b5bf5;text-decoration:none;font-weight:600}</style></head><body>
         let slug;
         try { slug = decodeURIComponent(path.slice(1).split("/")[0]).toLowerCase(); } catch { return new Response(notFoundPage("", nonce), { status: 404, headers: HTML_N }); }
         if (RESERVED.has(slug)) return new Response(notFoundPage(slug, nonce), { status: 404, headers: HTML_N });
-        const r = await getPublicSite(env, slug);
+        const r = await getPublicSite(env, slug, request);
+        if (r && r.requiresPassword) {
+          return new Response(renderPasswordGate(r, { nonce, isCustomDomain: false }), { headers: { ...HTML_N, "cache-control": "no-store" } });
+        }
         if (!r || r.suspended) return new Response(notFoundPage(slug, nonce), { status: 404, headers: HTML_N });
         const paid = r.plan !== "free";
         return new Response(
@@ -1020,7 +1038,9 @@ a{color:#5b5bf5;text-decoration:none;font-weight:600}</style></head><body>
           return new Response(renderPasswordGate(r, { nonce, isCustomDomain: false }), { headers: { ...HTML_N, "cache-control": "no-store" } });
         }
         if (!r || r.suspended) return new Response(notFoundPage(slug, nonce), { status: 404, headers: HTML_N });
-        return Response.redirect(new URL(`/${slug}/shop`, url), 302);
+        const shopUrl = new URL(url);
+        shopUrl.pathname = `/${slug}/shop`;
+        return Response.redirect(shopUrl, 302);
       }
 
       // --- password unlock submission for public boards ---
