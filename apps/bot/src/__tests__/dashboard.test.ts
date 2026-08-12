@@ -10,12 +10,16 @@ const cryptoUrl = import.meta.resolve("../../../../shared/crypto.js");
 const cryptoUrlTs = import.meta.resolve("../../../../shared/crypto.ts");
 const telegramUrl = import.meta.resolve("../telegram.js");
 const telegramUrlTs = import.meta.resolve("../telegram.ts");
+const realDb = await import(dbUrl);
+const realCrypto = await import(cryptoUrl);
+const realTelegram = await import(telegramUrl);
 
 const mockOne = mock<(...args: any[]) => Promise<any>>(() => Promise.resolve(null));
 const mockExec = mock<(...args: any[]) => Promise<any>>(() => Promise.resolve(undefined));
 const mockQuery = mock<(...args: any[]) => Promise<any>>(() => Promise.resolve([]));
 
 const dbMock = () => ({
+  ...realDb,
   one: (...args: any[]) => mockOne(...args),
   exec: (...args: any[]) => mockExec(...args),
   query: (...args: any[]) => mockQuery(...args),
@@ -24,6 +28,7 @@ const dbMock = () => ({
 });
 
 const cryptoMock = () => ({
+  ...realCrypto,
   encryptToken: (s: string) => `enc:${s}`,
   decryptToken: (enc: Buffer | string) => enc.toString().replace("enc:", ""),
   hashToken: async (s: string) => "hash:" + s,
@@ -40,6 +45,7 @@ const cryptoMock = () => ({
 });
 
 const telegramMock = () => ({
+  ...realTelegram,
   getMe: () => Promise.resolve({ id: 123456, username: "testbot", first_name: "Test Bot" }),
   setWebhook: () => Promise.resolve(true),
   deleteWebhook: () => Promise.resolve(true),

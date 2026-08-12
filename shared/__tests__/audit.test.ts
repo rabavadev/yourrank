@@ -2,6 +2,7 @@ import { describe, it, expect, mock, beforeEach } from "bun:test";
 
 const dbUrl = import.meta.resolve("../db.js");
 const dbUrlTs = import.meta.resolve("../db.ts");
+const realDb = await import(dbUrl);
 
 const execCalls: { text: string; params: unknown[] }[] = [];
 const mockExec = mock((text: string, params: unknown[]) => {
@@ -10,6 +11,7 @@ const mockExec = mock((text: string, params: unknown[]) => {
 });
 
 const dbMock = () => ({
+  ...realDb,
   exec: mockExec,
   query: mock(() => Promise.resolve([])),
   one: mock(() => Promise.resolve(undefined)),
@@ -100,11 +102,13 @@ describe("logAudit", () => {
   it("does not throw when the DB write fails", async () => {
     const failingExec = mock((text: string, params: unknown[]) => Promise.reject(new Error("audit table missing")));
     mock.module(dbUrl, () => ({
+      ...realDb,
       exec: failingExec,
       query: mock(() => Promise.resolve([])),
       one: mock(() => Promise.resolve(undefined)),
     }));
     mock.module(dbUrlTs, () => ({
+      ...realDb,
       exec: failingExec,
       query: mock(() => Promise.resolve([])),
       one: mock(() => Promise.resolve(undefined)),

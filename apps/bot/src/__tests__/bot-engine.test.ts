@@ -13,12 +13,15 @@ const dbUrl = import.meta.resolve("../../../../shared/db.js");
 const dbUrlTs = import.meta.resolve("../../../../shared/db.ts");
 const cryptoUrl = import.meta.resolve("../../../../shared/crypto.js");
 const cryptoUrlTs = import.meta.resolve("../../../../shared/crypto.ts");
+const realDb = await import(dbUrl);
+const realCrypto = await import(cryptoUrl);
 
 const mockOne = mock((..._args: any[]): Promise<any> => Promise.resolve(null));
 const mockExec = mock((..._args: any[]): Promise<any> => Promise.resolve(undefined));
 const mockUnsafe = mock((..._args: any[]): Promise<any[]> => Promise.resolve([{ id: "new-id" }]));
 
 const dbMockFactory = () => ({
+  ...realDb,
   one: (...args: any[]) => mockOne(...args),
   exec: (...args: any[]) => mockExec(...args),
   unsafe: (...args: any[]) => mockUnsafe(...args),
@@ -33,6 +36,7 @@ const dbMockFactory = () => ({
     }),
 });
 const cryptoMockFactory = () => ({
+  ...realCrypto,
   decryptToken: (enc: string) => enc,
   encryptToken: (s: string) => s,
   hashToken: async (s: string) => "hash:" + s,

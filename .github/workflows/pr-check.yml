@@ -36,8 +36,8 @@ jobs:
         working-directory: apps/leaderboard
         run: bun run lint
 
-      - name: Reject global leaderboard test mocks
-        run: bun run check:leaderboard-test-mocks
+      - name: Reject undocumented global test mocks
+        run: bun run check:test-mocks
 
   typecheck:
     name: Typecheck
