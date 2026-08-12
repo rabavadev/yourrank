@@ -13,7 +13,11 @@ The fields are:
   transaction statements and retry attempts.
 - `duration_ms`: wall-clock request duration.
 - `cache`: `hit`, `miss`, or `bypass` for the public HTML cache.
-- `payload_bytes`: rendered public HTML byte length when applicable.
+- `payload_bytes`: response HTML byte length when applicable. On a cache miss,
+  this is the freshly rendered HTML body before it is cached. On a cache hit,
+  it is the hydrated response body after nonce/CSRF placeholder substitution,
+  so it measures what was served rather than the stored cache entry. It is
+  therefore comparable as response size, but does not mean a render occurred.
 
 These are console JSON logs, so query them through the Worker’s existing
 Cloudflare Logs/observability view. For example, filter `msg =
