@@ -1,5 +1,5 @@
 // Site handlers: get, put, list, create, archive, stats, heatmap, notifications, custom domain
-import { requireUser, json, bad, ok, readJson, rateLimit, slugify, clientIp } from "../auth.js";
+import { requireUser, json, bad, ok, readJson, rateLimit, rateLimitHeaders, slugify, clientIp } from "../auth.js";
 import { getByUser, getUserSite, getUserSiteById, getUserBoardsList, createBoard, duplicateBoard, createArchive, deleteArchive, deleteBoard, setActiveBoard, updateSiteTheme, invalidateSiteCache, invalidateUserCache, getBoardById, saveSite, fromJsonb } from "../site.js";
 import { bumpStat, getStats, getHeatmap, getTopReferrers } from "../stats.js";
 import { effectivePlan, PLAN_LIMITS, BOARD_LIMITS } from "../../../../shared/plans.js";
@@ -54,6 +54,8 @@ export async function handleStats(request, env) {
 export async function handleExportStats(request, env) {
   const { user, res } = await requireUser(request, env);
   if (res) return res;
+  const rl = await rateLimit(env, `site-stats-export:${user.id}`, 10, 3600);
+  if (!rl.ok) return bad("Too many exports. Try again later.", 429, rateLimitHeaders(rl));
   const url = new URL(request.url);
   const siteId = url.searchParams.get("siteId");
   const site = siteId ? await getBoardById(env, user.id, siteId) : await getByUser(env, user.id);
@@ -73,6 +75,8 @@ export async function handleExportStats(request, env) {
 export async function handleExportPlayers(request, env) {
   const { user, res } = await requireUser(request, env);
   if (res) return res;
+  const rl = await rateLimit(env, `site-players-export:${user.id}`, 10, 3600);
+  if (!rl.ok) return bad("Too many exports. Try again later.", 429, rateLimitHeaders(rl));
   if (user.status === "suspended") return bad("This account is suspended.", 403);
   const url = new URL(request.url);
   const siteId = url.searchParams.get("siteId");
