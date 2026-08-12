@@ -1,7 +1,7 @@
 import { describe, expect, it } from "bun:test";
 import { renderLeaderboard } from "../render.jsx";
 import { TEMPLATE_IDS, TEMPLATES, templateCatalog, validTemplate, resolveOptions, templateHeader, templateFooter, templateParts } from "../templates/index.js";
-import { fromJsonb, publicShape } from "../site.js";
+import { archiveShape, fromJsonb, playerStreak, publicShape } from "../site.js";
 
 function stripScripts(html) {
   let out = "";
@@ -255,66 +255,43 @@ describe("theme_json / extra_json persistence (BUG: double-encoded JSONB)", asyn
 });
 
 describe("derived archive values", async () => {
-  const SITE = {
-    name: "Archive Board", tagline: "", code: "", prize_pool: "$0",
-    period: "Monthly", casino: "", cta_url: "", reset_note: "", blurb: "", ends_at: null,
-    theme_json: {}, extra_json: {},
-  };
-
   it("renders the stored top three in the same shape as snapshot-derived archives", async () => {
-    const snapshot = [
-      { name: "Alice", wagered: "500", prize: "50" },
-      { name: "Bob", wagered: "300", prize: "30" },
-      { name: "Cara", wagered: "100", prize: "10" },
-      { name: "Dana", wagered: "1", prize: "1" },
+    const top = [
+      { name: "Alice", wagered: 500, prize: 50 },
+      { name: "Bob", wagered: 300, prize: 30 },
+      { name: "Cara", wagered: 100, prize: 10 },
     ];
-    const expectedTop = snapshot.slice().sort((a, b) => (b.wagered || 0) - (a.wagered || 0)).slice(0, 3)
-      .map((p) => ({ name: String(p.name || ""), wagered: Number(p.wagered) || 0, prize: Number(p.prize) || 0 }));
-    const shaped = publicShape({ ...SITE }, [], [{
-      label: "January", created_at: 123,
-      top3_json: expectedTop,
-      winner_name: "Alice",
-    }]);
-    expect(shaped.pastWinners).toEqual([{ label: "January", at: 123, top: expectedTop }]);
+    expect(archiveShape({ label: "January", created_at: 123, top3_json: top })).toEqual({
+      label: "January", at: 123, top,
+    });
   });
 
   it("counts consecutive winner names for the current rank-one player", async () => {
-    const shaped = publicShape({ ...SITE }, [
-      { name: "  Alice  ", wagered: 500, prize: 50 },
-      { name: "Bob", wagered: 300, prize: 30 },
-    ], [
-      { label: "Current", created_at: 3, top3_json: [], winner_name: "alice" },
-      { label: "Previous", created_at: 2, top3_json: [], winner_name: " Alice " },
-      { label: "Older", created_at: 1, top3_json: [], winner_name: "Bob" },
-    ]);
-    expect(shaped.players[0].streak).toBe(3);
-    expect(shaped.players[1].streak).toBe(0);
+    const archives = [
+      { winner_name: "alice" },
+      { winner_name: " Alice " },
+      { winner_name: "Bob" },
+    ];
+    expect(playerStreak({ name: "  Alice  " }, 0, archives)).toBe(3);
+    expect(playerStreak({ name: "Bob" }, 1, archives)).toBe(0);
   });
 
   it("renders safely when derived archive data is empty or malformed", async () => {
-    const shaped = publicShape({ ...SITE }, [], [
-      { label: "Empty", created_at: 1, top3_json: null, winner_name: null },
-      { label: "Malformed", created_at: 2, top3_json: "not-json", winner_name: 42 },
-    ]);
-    expect(shaped.pastWinners.map((archive) => archive.top)).toEqual([[], []]);
-    expect(shaped.players).toEqual([]);
+    expect(archiveShape({ label: "Empty", created_at: 1, top3_json: null }).top).toEqual([]);
+    expect(archiveShape({ label: "Malformed", created_at: 2, top3_json: "not-json" }).top).toEqual([]);
+    expect(playerStreak({ name: "Alice" }, 0, [{ winner_name: null }])).toBe(1);
   });
 
   it("unwraps legacy double-encoded archive snapshots before shaping equivalent data", async () => {
     const snapshot = [{ name: "Alice", wagered: "500", prize: "50" }];
-    const encoded = JSON.stringify(snapshot);
-    expect(fromJsonb(encoded)).toEqual(snapshot);
-    const arrayShape = publicShape({ ...SITE }, [], [{
-      label: "Array", created_at: 1,
-      top3_json: [{ name: "Alice", wagered: 500, prize: 50 }],
-      winner_name: "Alice",
-    }]);
-    const stringShape = publicShape({ ...SITE }, [], [{
-      label: "String", created_at: 1,
-      top3_json: [{ name: "Alice", wagered: 500, prize: 50 }],
-      winner_name: "Alice",
-    }]);
-    expect(stringShape.pastWinners[0].top).toEqual(arrayShape.pastWinners[0].top);
+    expect(fromJsonb(JSON.stringify(snapshot))).toEqual(snapshot);
+    expect(archiveShape({
+      label: "Legacy", created_at: 1,
+      top3_json: JSON.stringify([{ name: "Alice", wagered: 500, prize: 50 }]),
+    })).toEqual({
+      label: "Legacy", at: 1,
+      top: [{ name: "Alice", wagered: 500, prize: 50 }],
+    });
   });
 });
 

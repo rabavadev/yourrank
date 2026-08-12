@@ -284,13 +284,13 @@ function parseTheme(site) {
   };
 }
 
-function archiveShape(a) {
+export function archiveShape(a) {
   const top = fromJsonb(a.top3_json);
   const players = Array.isArray(top) ? top : [];
   return { label: a.label, at: a.created_at, top: players };
 }
 
-function playerStreak(player, currentRank, archives) {
+export function playerStreak(player, currentRank, archives) {
   if (currentRank !== 0) return 0;
   const name = normalizePlayerName(player.name);
   let streak = 1;
