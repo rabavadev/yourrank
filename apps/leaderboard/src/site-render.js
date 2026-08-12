@@ -21,7 +21,7 @@ import { gamesIslandHead, gamesIslandMount } from "./games-embed.js";
 
 const SECTION_LABELS = {
   home: "Home",
-  leaderboard: "Ranks",
+  leaderboard: "Leaderboard",
   shop: "Shop",
   games: "Games",
   me: "My Credits",

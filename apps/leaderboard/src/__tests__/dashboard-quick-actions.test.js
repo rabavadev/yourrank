@@ -36,11 +36,15 @@ describe("dashboard overview quick actions", () => {
     // Icons are real inline SVGs, not emoji.
     expect(html).not.toContain('aria-hidden="true">🔌</span>');
     expect(html).toContain('>Overview</a>');
-    expect(html).toContain('>Leaderboard</a>');
+    expect(html).toContain('>Players</a>');
+    expect(html).toContain('>Design</a>');
     expect(html).toContain('>Settings</a>');
+    expect(html).toContain('>BOARD</div>');
     expect(html).toContain('>CREDITS</div>');
     expect(html).toContain('>Redemptions</a>');
     expect(html).toContain('>Credit rules</a>');
+    expect(html).not.toContain('>REWARDS</div>');
+    expect(html).not.toContain('>AUDIENCE</div>');
   });
 
   it("leads with the Board editor and still exposes editor sub-sections", () => {

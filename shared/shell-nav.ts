@@ -139,7 +139,7 @@ export function publicNavHtml(opts: { activePath?: string; theme?: "light" | "da
       <span class="gm-brand-word">YourRank</span>
     </a>
     <div class="gm-tabs-wrap">
-      <nav class="gm-tabs" aria-label="Site">
+      <nav class="gm-tabs" aria-label="Board">
         <a class="gm-tab" href="/pricing">Pricing</a>
         <a class="gm-tab" href="/docs">Docs</a>
       </nav>

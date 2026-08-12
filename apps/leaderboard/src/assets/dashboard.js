@@ -30,7 +30,7 @@ async function init() {
   const p = await res.json();
   if (!p.ok) {
     if (state.ME.isAdmin) { location.href = "/admin"; return; }
-    $("loading").innerHTML = '<div class="error-state"><span class="error-icon">⚠</span><p>Couldn\'t load your site.</p><button class="btn btn--sm" id="retryBtn">Try again</button></div>';
+    $("loading").innerHTML = '<div class="error-state"><span class="error-icon">⚠</span><p>Couldn\'t load your board.</p><button class="btn btn--sm" id="retryBtn">Try again</button></div>';
     document.getElementById("retryBtn")?.addEventListener("click", () => location.reload()); return;
   }
   state.SLUG = p.slug;

@@ -404,7 +404,7 @@ function openBroadcastDetail(id){
     '<dl class="bc-detail-grid">'+
       '<div class="bc-detail-item"><dt>Bot</dt><dd>'+esc(b.bot_username || '—')+'</dd></div>'+
       '<div class="bc-detail-item"><dt>Status</dt><dd>'+esc(b.status || '—')+'</dd></div>'+
-      '<div class="bc-detail-item"><dt>Audience</dt><dd>'+esc(filterText)+'</dd></div>'+
+      '<div class="bc-detail-item"><dt>Subscribers</dt><dd>'+esc(filterText)+'</dd></div>'+
       '<div class="bc-detail-item"><dt>Recipients captured at send</dt><dd>'+esc(b.total_count == null ? 'Not recorded' : String(b.total_count))+'</dd></div>'+
       '<div class="bc-detail-item"><dt>Scheduled</dt><dd>'+esc(formatBroadcastDate(b.scheduled_at))+'</dd></div>'+
       '<div class="bc-detail-item"><dt>Sent</dt><dd>'+esc(formatBroadcastDate(b.sent_at))+'</dd></div>'+
@@ -1096,7 +1096,7 @@ function buildSummaryHtml(){
   const when = isScheduleSelected() && scheduled ? new Date(scheduled).toLocaleString(undefined, {dateStyle:'medium', timeStyle:'short'}) : 'now';
   let html = '';
   html += '<li><b>Bot:</b> '+esc(botName || '—')+'</li>';
-  html += '<li><b>Audience:</b> '+esc(segLabel)+' ('+esc(String(__bcAudience ?? '–'))+' subscribers)</li>';
+  html += '<li><b>Subscribers:</b> '+esc(segLabel)+' ('+esc(String(__bcAudience ?? '–'))+' subscribers)</li>';
   html += '<li><b>When:</b> '+esc(when)+'</li>';
   html += '<li><b>Message:</b> '+esc(body.slice(0,120))+(body.length>120?'…':'')+'</li>';
   const image = ($('bcImage')?.value || '').trim();
@@ -1111,7 +1111,7 @@ function openBroadcastPreview(){
   const botId = ($('bcBotSelect')?.value || '').trim() || firstBotId;
   if (!botId) { setFieldErr('bcBotSelect','Select a bot first'); setFormStatus('bcFormStatus','Select a bot first',true); return; }
   const n = __bcAudience;
-  if (typeof n !== 'number') { setFormStatus('bcFormStatus','Wait for the audience count to finish loading, then review again.',true); return; }
+  if (typeof n !== 'number') { setFormStatus('bcFormStatus','Wait for the subscriber count to finish loading, then review again.',true); return; }
   if (typeof n === 'number' && n === 0) { setFormStatus('bcFormStatus','This segment has no subscribers yet — nobody would receive it.',true); return; }
   const countEl = $('bcPreviewCount');
   const bodyEl = $('bcPreviewBody');

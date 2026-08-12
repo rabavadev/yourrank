@@ -11,7 +11,7 @@ const GAME_ROWS = [
 ];
 
 const sectionRows = [
-  ["shop", "Shop", "Let viewers browse and redeem your credit rewards.", "Turning off removes Shop from navigation and disables the /shop URL."],
+  ["shop", "Shop", "Let viewers browse and redeem your shop items.", "Turning off removes Shop from navigation and disables the /shop URL."],
   ["credits", "Credits", "Let viewers see their balance and redemption history.", "Turning off removes Credits from navigation and disables the /credits URL."],
   ["games", "Games", "Let viewers play credit-based games on your board.", "Turning off removes Games from navigation and disables the /games URL."],
 ];
@@ -81,7 +81,7 @@ async function saveSection(input) {
     const body = await res.json();
     if (!res.ok || !body.ok) throw new Error(body.error || "Could not save viewer pages.");
     state.EXTRA.siteSections = { ...state.EXTRA.siteSections, shop: next.shop, games: next.games, me: next.credits };
-    showToast("Viewer pages saved.", "success");
+    showToast("Public page sections saved.", "success");
   } catch (err) {
     input.checked = previous;
     logError("save-site-sections", err);
