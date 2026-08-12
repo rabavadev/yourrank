@@ -64,7 +64,7 @@ export function DashboardContent({ user } = {}) {
 <section class="lb-page" data-page="board">
 <div class="lb-phead"><button class="lb-menu" type="button" aria-label="Show sections" data-menu aria-expanded="false" aria-controls="lbSide">☰</button></div>
 
-<h1 class="sr-only">Site</h1>
+<h1 class="sr-only">Board</h1>
 <div class="editor-steps v3-tabs" id="editorTabs" role="tablist" aria-label="Editor steps">
   <button class="editor-step v3-tab is-active" type="button" role="tab" aria-selected="true" data-egroup="setup"><span class="step-num">1</span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="4" x2="4" y1="21" y2="14"/><line x1="4" x2="4" y1="10" y2="3"/><line x1="12" x2="12" y1="21" y2="12"/><line x1="12" x2="12" y1="8" y2="3"/><line x1="20" x2="20" y1="21" y2="16"/><line x1="20" x2="20" y1="12" y2="3"/><line x1="9" x2="15" y1="8" y2="8"/><line x1="1" x2="7" y1="14" y2="14"/><line x1="17" x2="23" y1="16" y2="16"/></svg> Setup</button>
   <button class="editor-step v3-tab" type="button" role="tab" aria-selected="false" data-egroup="players"><span class="step-num">2</span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg> Players</button>
@@ -205,13 +205,13 @@ export function DashboardContent({ user } = {}) {
 <div class="lb-phead"><button class="lb-menu" type="button" aria-label="Show sections" data-menu aria-expanded="false" aria-controls="lbSide">☰</button></div>
 <div class="v3-games-page">
   <header class="v3-head">
-    <h1>Viewer Pages &amp; Games</h1>
-    <p class="v3-head-sub">Control which viewer pages appear on your public board</p>
+    <h1>Public page sections &amp; Games</h1>
+    <p class="v3-head-sub">Control which sections appear on your public page</p>
   </header>
   <div class="v3-games-layout">
     <div class="v3-games-left">
       <div class="v3-table-card v3-setting-card">
-        <div class="v3-card-head"><span class="v3-head-sub v3-head-sub--mono">Viewer pages</span></div>
+        <div class="v3-card-head"><span class="v3-head-sub v3-head-sub--mono">Public page sections</span></div>
         <div id="gamesSectionRows"></div>
       </div>
       <div class="v3-table-card v3-block-card">

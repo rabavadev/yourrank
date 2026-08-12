@@ -14,7 +14,7 @@ const pageLinks = [
   { key: "bots", label: "Bots", href: "/bot/bots", sub: "Connect and customize your Telegram bots" },
   { key: "offers", label: "Offers", href: "/bot/offers", sub: "Your casino links — clicks are tracked automatically" },
   { key: "commands", label: "Commands", href: "/bot/commands", sub: "Replies your bot sends when viewers type /something" },
-  { key: "broadcasts", label: "Broadcasts", href: "/bot/broadcasts", sub: "Send a message to everyone who follows your bot" },
+  { key: "broadcasts", label: "Broadcasts", href: "/bot/broadcasts", sub: "Send a message to your subscribers" },
   { key: "settings", label: "Account settings", href: "/dashboard/settings", sub: "Plan, security, and connected accounts" },
 ];
 

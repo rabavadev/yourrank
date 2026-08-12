@@ -41,6 +41,7 @@ describe("dashboard overview quick actions", () => {
     expect(html).toContain('>CREDITS</div>');
     expect(html).toContain('>Redemptions</a>');
     expect(html).toContain('>Credit rules</a>');
+    expect(html).not.toContain('>AUDIENCE</div>');
   });
 
   it("leads with the Board editor and still exposes editor sub-sections", () => {

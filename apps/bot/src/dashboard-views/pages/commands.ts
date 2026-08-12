@@ -14,7 +14,7 @@ export function commandsPanel(): string {
     <label for="botSelect" class="muted field-label">Bot</label>
     <select id="botSelect" class="input-w-md"><option value="">Loading bots…</option></select>
     <div id="custDisabledNote" class="muted notice hidden">This bot is disconnected — reconnect it to customize.</div>
-    <p class="muted panel-intro">This is what viewers receive when they send <code>/start</code> to the selected bot.</p>
+    <p class="muted panel-intro">This is what Telegram subscribers receive when they send <code>/start</code> to the selected bot.</p>
     <label for="welcomeMsg" class="muted field-label">Welcome message</label>
     <textarea id="welcomeMsg" rows="2" placeholder="Leave blank to use the default greeting"></textarea>
     <button data-action="saveWelcome" type="button">Save welcome message</button>
@@ -22,12 +22,12 @@ export function commandsPanel(): string {
     <hr class="divider" />
 
     <h2 class="subhead">Custom commands</h2>
-    <p class="muted panel-intro">Add slash-commands your viewers can send (e.g. <code>/vip</code>) and the reply they'll get. Built-ins like <code>/start</code>, <code>/code</code>, <code>/subscribe</code> are reserved and can't be overridden.</p>
+    <p class="muted panel-intro">Add slash-commands your subscribers can send (e.g. <code>/vip</code>) and the reply they'll get. Built-ins like <code>/start</code>, <code>/code</code>, <code>/subscribe</code> are reserved and can't be overridden.</p>
     <div class="row">
       <label class="sr-only" for="cmdName">Command</label>
       <input id="cmdName" placeholder="Command (e.g. vip)">
       <label class="sr-only" for="cmdResp">Reply</label>
-      <input id="cmdResp" placeholder="Reply text viewers receive">
+      <input id="cmdResp" placeholder="Reply text subscribers receive">
     </div>
     <div class="row mt-sm">
       <label class="sr-only" for="cmdBtnLabel">Button label</label>

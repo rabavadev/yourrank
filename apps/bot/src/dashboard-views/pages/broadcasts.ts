@@ -20,7 +20,7 @@ export function broadcastsPanel(): string {
     </div>
 
     <div class="bc-step" data-step="2">
-      <h3>2. Audience</h3>
+      <h3>2. Subscribers</h3>
       <label for="bcBotSelect" class="muted field-label">From bot</label>
       <select class="input-w-md" id="bcBotSelect" aria-errormessage="bcBotSelect-error"><option value="">Loading bots…</option></select>
       <span id="bcBotSelect-error" class="field-err" role="alert"></span>
@@ -95,7 +95,7 @@ export function broadcastsPanel(): string {
         <div id="bcDetailBody"></div>
       </div>
     </div>
-    <div class="tbl-scroll"><table class="mt-md"><thead><tr><th>Status</th><th>Audience</th><th>Message</th><th>Bot</th><th>Scheduled</th><th>Sent</th><th>Failed</th><th><span class="sr-only">Actions</span></th></tr></thead>
+    <div class="tbl-scroll"><table class="mt-md"><thead><tr><th>Status</th><th>Subscribers</th><th>Message</th><th>Bot</th><th>Scheduled</th><th>Sent</th><th>Failed</th><th><span class="sr-only">Actions</span></th></tr></thead>
     <tbody id="bcList"></tbody></table></div>
   </div>`;
 }

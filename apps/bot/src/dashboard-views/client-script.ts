@@ -390,7 +390,7 @@ function openBroadcastDetail(id){
     '<dl class="bc-detail-grid">'+
       '<div class="bc-detail-item"><dt>Bot</dt><dd>'+esc(b.bot_username || '—')+'</dd></div>'+
       '<div class="bc-detail-item"><dt>Status</dt><dd>'+esc(b.status || '—')+'</dd></div>'+
-      '<div class="bc-detail-item"><dt>Audience</dt><dd>'+esc(filterText)+'</dd></div>'+
+      '<div class="bc-detail-item"><dt>Subscribers</dt><dd>'+esc(filterText)+'</dd></div>'+
       '<div class="bc-detail-item"><dt>Recipients captured at send</dt><dd>'+esc(b.total_count == null ? 'Not recorded' : String(b.total_count))+'</dd></div>'+
       '<div class="bc-detail-item"><dt>Scheduled</dt><dd>'+esc(formatBroadcastDate(b.scheduled_at))+'</dd></div>'+
       '<div class="bc-detail-item"><dt>Sent</dt><dd>'+esc(formatBroadcastDate(b.sent_at))+'</dd></div>'+
@@ -730,6 +730,24 @@ function setBroadcastAvailability(hasBots){
   const composer = $('bcComposer');
   if (setup) setup.hidden = hasBots;
   if (composer) composer.hidden = !hasBots;
+  const gate = $('bcGate');
+  if (gate) {
+    gate.innerHTML = hasBots
+      ? ''
+      : 'No bot is connected yet. Follow the setup steps in <a href="/bot/bots">Bots</a>, starting with <a href="https://t.me/BotFather" target="_blank" rel="noopener">Open @BotFather</a>.';
+  }
+  const panel = document.querySelector('[data-page="broadcasts"]');
+  if (!panel) return;
+  ['bcBody','bcImage','bcBotSelect','bcLang','bcMinLastSeen','bcFirstSeen','bcUsername',
+    'bcSchedule','bcTestChat','bcReviewBtn'].forEach(id => {
+    const el = $(id);
+    if (el) el.disabled = !hasBots;
+  });
+  panel.querySelectorAll('input[name="bcWhen"],[data-action="openBroadcastPreview"],[data-action="testBroadcast"]').forEach(el => {
+    el.disabled = !hasBots;
+  });
+  const audience = $('bcAudience');
+  if (!hasBots && audience) audience.textContent = 'Connect a bot to choose subscribers.';
 }
 
 // A disconnected bot can't be customized — reflect that by disabling the
@@ -1082,7 +1100,7 @@ function buildSummaryHtml(){
   const when = isScheduleSelected() && scheduled ? new Date(scheduled).toLocaleString(undefined, {dateStyle:'medium', timeStyle:'short'}) : 'now';
   let html = '';
   html += '<li><b>Bot:</b> '+esc(botName || '—')+'</li>';
-  html += '<li><b>Audience:</b> '+esc(segLabel)+' ('+esc(String(__bcAudience ?? '–'))+' subscribers)</li>';
+  html += '<li><b>Subscribers:</b> '+esc(segLabel)+' ('+esc(String(__bcAudience ?? '–'))+' subscribers)</li>';
   html += '<li><b>When:</b> '+esc(when)+'</li>';
   html += '<li><b>Message:</b> '+esc(body.slice(0,120))+(body.length>120?'…':'')+'</li>';
   const image = ($('bcImage')?.value || '').trim();
@@ -1097,7 +1115,7 @@ function openBroadcastPreview(){
   const botId = ($('bcBotSelect')?.value || '').trim() || firstBotId;
   if (!botId) { setFieldErr('bcBotSelect','Select a bot first'); setFormStatus('bcFormStatus','Select a bot first',true); return; }
   const n = __bcAudience;
-  if (typeof n !== 'number') { setFormStatus('bcFormStatus','Wait for the audience count to finish loading, then review again.',true); return; }
+  if (typeof n !== 'number') { setFormStatus('bcFormStatus','Wait for the subscriber count to finish loading, then review again.',true); return; }
   if (typeof n === 'number' && n === 0) { setFormStatus('bcFormStatus','This segment has no subscribers yet — nobody would receive it.',true); return; }
   const countEl = $('bcPreviewCount');
   const bodyEl = $('bcPreviewBody');
