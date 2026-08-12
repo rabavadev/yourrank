@@ -394,8 +394,8 @@ async function handleRequest(request, env, ctx, meta) {
             if (!r || r.suspended) return new Response(notFoundPage(customSlug, nonce), { status: 404, headers: HTML_N });
             const paid = r.plan === "pro" || r.plan === "agency";
             return new Response(
-              renderNewHallOfFame(r.data, {
-                nonce, slug: customSlug, homeUrl: `https://${host}`, isCustomDomain: true,
+              await renderNewHallOfFame(r.data, {
+                nonce, slug: customSlug, plan: r.plan, homeUrl: `https://${host}`, isCustomDomain: true,
                 logoUrl: paid && r.data.branding?.hasLogo ? `https://${host}/logo/${customSlug}` : null,
               }),
               { headers: { ...HTML_N, "cache-control": "no-store" } }
@@ -410,8 +410,8 @@ async function handleRequest(request, env, ctx, meta) {
             const paid = r.plan === "pro" || r.plan === "agency";
             const page = path.slice(1);
             return new Response(
-              renderNewLegalPage(r.data, page, {
-                nonce, slug: customSlug, homeUrl: `https://${host}`, isCustomDomain: true,
+              await renderNewLegalPage(r.data, page, {
+                nonce, slug: customSlug, plan: r.plan, homeUrl: `https://${host}`, isCustomDomain: true,
                 logoUrl: paid && r.data.branding?.hasLogo ? `https://${host}/logo/${customSlug}` : null,
               }),
               { headers: { ...HTML_N, "cache-control": "no-store" } }
@@ -429,8 +429,8 @@ async function handleRequest(request, env, ctx, meta) {
             const history = await buildPlayerHistory(env, r.id, playerName, r.plan);
             const paid = r.plan === "pro" || r.plan === "agency";
             return new Response(
-              renderNewPlayerProfile(r.data, { ...profile.player, rank: profile.rank }, history, {
-                nonce, slug: customSlug, homeUrl: `https://${host}`, isCustomDomain: true,
+              await renderNewPlayerProfile(r.data, { ...profile.player, rank: profile.rank }, history, {
+                nonce, slug: customSlug, plan: r.plan, homeUrl: `https://${host}`, isCustomDomain: true,
                 logoUrl: paid && r.data.branding?.hasLogo ? `https://${host}/logo/${customSlug}` : null,
               }),
               { headers: { ...HTML_N, "cache-control": "no-store" } }
@@ -444,8 +444,8 @@ async function handleRequest(request, env, ctx, meta) {
             if (!r || r.suspended) return new Response(notFoundPage(customSlug, nonce), { status: 404, headers: HTML_N });
             const paid = r.plan === "pro" || r.plan === "agency";
             return new Response(
-              renderNewStreamerProfile(r.data, {
-                nonce, slug: customSlug, homeUrl: `https://${host}`, isCustomDomain: true,
+              await renderNewStreamerProfile(r.data, {
+                nonce, slug: customSlug, plan: r.plan, homeUrl: `https://${host}`, isCustomDomain: true,
                 logoUrl: paid && r.data.branding?.hasLogo ? `https://${host}/logo/${customSlug}` : null,
                 boards: r.boards, botUsername: r.botUsername,
               }),
@@ -458,7 +458,7 @@ async function handleRequest(request, env, ctx, meta) {
               return new Response(renderPasswordGate(r, { nonce, isCustomDomain: true }), { headers: { ...HTML_N, "cache-control": "no-store" } });
             }
             if (!r || r.suspended) return new Response(notFoundPage(customSlug, nonce), { status: 404, headers: HTML_N });
-            return new Response(renderNewEmbed(r.data, { nonce, slug: customSlug, isCustomDomain: true }), { headers: { ...HTML_N, "cache-control": "no-store" } });
+            return new Response(renderNewEmbed(r.data, { nonce, slug: customSlug, plan: r.plan, isCustomDomain: true }), { headers: { ...HTML_N, "cache-control": "no-store" } });
           }
           // Everything else on a custom domain → 404
           return new Response(notFoundPage("", nonce), { status: 404, headers: HTML_N });
@@ -942,8 +942,8 @@ a{color:#5b5bf5;text-decoration:none;font-weight:600}</style></head><body>
         if (!r || r.suspended) return new Response(notFoundPage(slug, nonce), { status: 404, headers: HTML_N });
         const paid = r.plan !== "free";
         return new Response(
-          renderNewHallOfFame(r.data, {
-            nonce, slug, homeUrl: url.origin, isCustomDomain: false,
+          await renderNewHallOfFame(r.data, {
+            nonce, slug, plan: r.plan, homeUrl: url.origin, isCustomDomain: false,
             logoUrl: paid && r.data.branding?.hasLogo ? `${url.origin}/logo/${slug}` : null,
           }),
           { headers: { ...HTML_N, "cache-control": "no-store" } }
@@ -960,7 +960,7 @@ a{color:#5b5bf5;text-decoration:none;font-weight:600}</style></head><body>
           return new Response(renderPasswordGate(r, { nonce, isCustomDomain: false }), { headers: { ...HTML_N, "cache-control": "no-store" } });
         }
         if (!r || r.suspended) return new Response(notFoundPage(slug, nonce), { status: 404, headers: HTML_N });
-        return new Response(renderNewEmbed(r.data, { nonce, slug, isCustomDomain: false }), { headers: { ...HTML_N, "cache-control": "no-store" } });
+        return new Response(renderNewEmbed(r.data, { nonce, slug, plan: r.plan, isCustomDomain: false }), { headers: { ...HTML_N, "cache-control": "no-store" } });
       }
       // --- per-site legal pages at /<slug>/<legal> ---
       if (method === "GET" && /^\/[^/]+\/(terms|privacy|responsible|cookies|refund|contact)$/.test(path)) {
@@ -975,8 +975,8 @@ a{color:#5b5bf5;text-decoration:none;font-weight:600}</style></head><body>
         if (!r || r.suspended) return new Response(notFoundPage(slug, nonce), { status: 404, headers: HTML_N });
         const paid = r.plan !== "free";
         return new Response(
-          renderNewLegalPage(r.data, page, {
-            nonce, slug, homeUrl: url.origin, isCustomDomain: false,
+          await renderNewLegalPage(r.data, page, {
+            nonce, slug, plan: r.plan, homeUrl: url.origin, isCustomDomain: false,
             logoUrl: paid && r.data.branding?.hasLogo ? `${url.origin}/logo/${slug}` : null,
           }),
           { headers: { ...HTML_N, "cache-control": "no-store" } }
@@ -999,8 +999,8 @@ a{color:#5b5bf5;text-decoration:none;font-weight:600}</style></head><body>
         const history = await buildPlayerHistory(env, r.id, playerName, r.plan);
         const paid = r.plan !== "free";
         return new Response(
-          renderNewPlayerProfile(r.data, { ...profile.player, rank: profile.rank }, history, {
-            nonce, slug, homeUrl: url.origin, isCustomDomain: false,
+          await renderNewPlayerProfile(r.data, { ...profile.player, rank: profile.rank }, history, {
+            nonce, slug, plan: r.plan, homeUrl: url.origin, isCustomDomain: false,
             logoUrl: paid && r.data.branding?.hasLogo ? `${url.origin}/logo/${slug}` : null,
           }),
           { headers: { ...HTML_N, "cache-control": "no-store" } }
@@ -1019,8 +1019,8 @@ a{color:#5b5bf5;text-decoration:none;font-weight:600}</style></head><body>
         if (!r || r.suspended) return new Response(notFoundPage(slug, nonce), { status: 404, headers: HTML_N });
         const paid = r.plan !== "free";
         return new Response(
-          renderNewStreamerProfile(r.data, {
-            nonce, slug, homeUrl: url.origin, isCustomDomain: false,
+          await renderNewStreamerProfile(r.data, {
+            nonce, slug, plan: r.plan, homeUrl: url.origin, isCustomDomain: false,
             logoUrl: paid && r.data.branding?.hasLogo ? `${url.origin}/logo/${slug}` : null,
             boards: r.boards, botUsername: r.botUsername,
           }),

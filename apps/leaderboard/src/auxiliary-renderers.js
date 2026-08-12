@@ -1,4 +1,4 @@
-import { renderSite } from "./site-render.js";
+import { formatMoney, renderSite } from "./site-render.js";
 
 function esc(s) {
   return String(s ?? "").replace(/[&<>"']/g, (c) => ({
@@ -9,7 +9,7 @@ function esc(s) {
 function shell({ r, slug, homeUrl, nonce, contentHtml, title, description, logoUrl = null, isCustomDomain = false }) {
   return renderSite({
     r,
-    section: "home",
+    section: null,
     viewer: null,
     viewerData: null,
     opts: {
@@ -29,7 +29,7 @@ function record(data, opts) {
   return data?.data ? data : {
     data,
     slug: opts.slug,
-    plan: opts.plan || "pro",
+    plan: opts.plan || "free",
     boards: opts.boards || [],
     botUsername: opts.botUsername || null,
   };
@@ -43,14 +43,14 @@ function legalBody(data, page) {
   }
   const name = esc(b.name || "This leaderboard");
   const copy = {
-    terms: `<p>Welcome to the ${name} leaderboard page. By viewing or participating you agree to these terms.</p><p>${name} is responsible for the rules, prizes, and player standings shown here. YourRank provides the hosting platform only and does not operate gambling or wagering services.</p>`,
-    privacy: `<p>${name} values your privacy. This page collects only the information needed to display the leaderboard, such as player names and scores.</p><p>Public pages are visible to anyone with the link. Do not share personal information you do not want made public.</p>`,
-    responsible: `<p>${name} is provided for entertainment purposes only. Gambling can be addictive and should be enjoyed in moderation, never as a source of income.</p><p>If you or someone you know needs help, reach out to a local responsible-gaming organisation.</p>`,
-    cookies: `<p>${name} uses cookies and similar technologies to provide the leaderboard service and understand how visitors use the page.</p>`,
-    refund: `<p>${name} sets its own refund policy for prizes, subscriptions, or promotions offered through this page.</p><p>Questions about a specific prize or payment should be directed to ${name}.</p>`,
-    contact: `<p>For questions about this leaderboard, its rules, or prizes, reach out through the channel links shown on the board.</p><p>For platform issues with YourRank, email contact@yourrank.site.</p>`,
+    terms: `<p>Welcome to the ${name} leaderboard page. By viewing or participating you agree to these terms.</p><p>${name} is responsible for the rules, prizes, and player standings shown here. YourRank provides the hosting platform only and does not operate any gambling or wagering services.</p><p>You must be 18 or older to participate. ${name} may update these terms at any time. For questions, use the Contact page.</p>`,
+    privacy: `<p>${name} values your privacy. This page collects only the information needed to display the leaderboard, such as player names and scores.</p><p>Public pages are visible to anyone with the link. Do not share personal information you do not want made public.</p><p>We use essential cookies and basic analytics to keep the service running. You can contact ${name} through the Contact page for data questions.</p>`,
+    responsible: `<p>${name} is provided for entertainment purposes only. Gambling can be addictive and should be enjoyed in moderation, never as a source of income.</p><p>If you or someone you know needs help, reach out to a local responsible-gaming organisation:</p><ul><li><a href="https://www.begambleaware.org" target="_blank" rel="noopener">BeGambleAware</a> — UK advice and support</li><li><a href="https://www.loketkansspel.nl" target="_blank" rel="noopener">Loket Kansspel</a> — Netherlands (in Dutch)</li><li><a href="https://www.connexontario.ca" target="_blank" rel="noopener">ConnexOntario</a> — Canada</li><li><a href="https://www.gamblingtherapy.org" target="_blank" rel="noopener">Gambling Therapy</a> — international, multilingual</li></ul><p>This page is intended for adults 18 and older only.</p>`,
+    cookies: `<p>${name} uses cookies and similar technologies to provide the leaderboard service and to understand how visitors use the page.</p><p>Essential cookies are required for the page to function. Analytics cookies help us improve the experience. You can adjust your browser settings to manage cookies.</p>`,
+    refund: `<p>${name} sets its own refund policy for any prizes, subscriptions, or promotions offered through this page.</p><p>If you have questions about a specific prize or payment, please contact ${name} through the Contact page. YourRank subscription payments made in cryptocurrency are final once confirmed on the blockchain.</p>`,
+    contact: `<p>For questions about this leaderboard, its rules, or prizes, please reach out to ${name} directly through the social channels shown on the leaderboard.</p><p>For platform issues with YourRank, email contact@yourrank.site.</p>`,
   };
-  return `<div class="yr-card yr-lb"><p class="yr-label">Not configured</p><p class="yr-note">This page is using the default ${name} guidance until the streamer adds custom text.</p></div>${copy[page] || "<p>Nothing here yet.</p>"}`;
+  return copy[page] || "<p>Nothing here yet.</p>";
 }
 
 export function renderNewLegalPage(data, page, opts) {
@@ -66,10 +66,12 @@ export function renderNewLegalPage(data, page, opts) {
 export function renderNewPlayerProfile(data, player, history, opts) {
   const r = record(data, opts);
   const p = player || {};
+  const currency = r.data.brand?.currency;
+  const hidePrizes = r.data.prizes?.hidePrizeAmounts === true;
   const rows = (history || []).length
-    ? history.map((h) => `<tr><td>${esc(h.label || "Archived")}</td><td>#${Number(h.rank) || "—"}</td><td>${esc(String(h.wagered || 0))}</td><td>${esc(String(h.prize || 0))}</td></tr>`).join("")
+    ? history.map((h) => `<tr><td>${esc(h.label || "Archived")}</td><td>#${Number(h.rank) || "—"}</td><td>${esc(formatMoney(currency, h.wagered))}</td><td>${hidePrizes ? "—" : esc(formatMoney(currency, h.prize))}</td></tr>`).join("")
     : `<tr><td colspan="4">No archived results yet.</td></tr>`;
-  const content = `<div class="yr-hero"><p class="yr-eyebrow"><i></i>PLAYER PROFILE</p><h1 class="yr-h1">${esc(p.name || "Player")}</h1><p class="yr-lede">Current standing and archived results for this board.</p></div><div class="yr-g3"><div class="yr-card yr-lb"><p class="yr-label">Current rank</p><p class="yr-num">#${Number(p.rank) || "—"}</p></div><div class="yr-card yr-lb"><p class="yr-label">Wagered</p><p class="yr-num">${esc(String(p.wagered || 0))}</p></div><div class="yr-card yr-lb"><p class="yr-label">Prize</p><p class="yr-num">${esc(String(p.prize || 0))}</p></div></div><div class="yr-card yr-lb"><h2 class="yr-panel-title">Archived results</h2><div class="yr-table-wrap"><table class="yr-table"><thead><tr><th>Period</th><th>Rank</th><th>Wagered</th><th>Prize</th></tr></thead><tbody>${rows}</tbody></table></div></div>`;
+  const content = `<div class="yr-hero"><p class="yr-eyebrow"><i></i>PLAYER PROFILE</p><h1 class="yr-h1">${esc(p.name || "Player")}</h1><p class="yr-lede">Current standing and archived results for this board.</p></div><div class="yr-g3"><div class="yr-card yr-lb"><p class="yr-label">Current rank</p><p class="yr-num">#${Number(p.rank) || "—"}</p></div><div class="yr-card yr-lb"><p class="yr-label">Wagered</p><p class="yr-num">${esc(formatMoney(currency, p.wagered))}</p></div><div class="yr-card yr-lb"><p class="yr-label">Prize</p><p class="yr-num">${hidePrizes ? "—" : esc(formatMoney(currency, p.prize))}</p></div></div><div class="yr-card yr-lb"><h2 class="yr-panel-title">Archived results</h2><div class="yr-table-wrap"><table class="yr-table"><thead><tr><th>Period</th><th>Rank</th><th>Wagered</th><th>Prize</th></tr></thead><tbody>${rows}</tbody></table></div></div>`;
   return shell({ r, ...opts, contentHtml: content, title: `${p.name || "Player"} · ${r.data.brand?.name || r.slug}`, description: `Player profile for ${p.name || "this player"}.` });
 }
 
@@ -91,7 +93,8 @@ export function renderNewStreamerProfile(data, opts) {
 
 export function renderNewEmbed(data, opts) {
   const b = data.brand || {};
+  const hidePrizes = data.prizes?.hidePrizeAmounts === true;
   const players = Array.isArray(data.players) ? data.players.slice().sort((a, z) => (Number(z.wagered) || 0) - (Number(a.wagered) || 0)) : [];
-  const rows = players.length ? players.map((p, i) => `<tr><td>${i + 1}</td><td>${esc(p.name)}</td><td>${esc(String(p.wagered || 0))}</td><td>${esc(String(p.prize || 0))}</td></tr>`).join("") : '<tr><td colspan="4">No players yet.</td></tr>';
+  const rows = players.length ? players.map((p, i) => `<tr><td>${i + 1}</td><td>${esc(p.name)}</td><td>${esc(formatMoney(b.currency, p.wagered))}</td><td>${hidePrizes ? "—" : esc(formatMoney(b.currency, p.prize))}</td></tr>`).join("") : '<tr><td colspan="4">No players yet.</td></tr>';
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(b.name || opts.slug)}</title><link rel="stylesheet" href="/assets/site-shell.css"><style nonce="${esc(opts.nonce)}">body{margin:0;background:transparent}.yr-embed{max-width:680px;margin:0 auto;padding:12px}.yr-embed .yr-card{padding:18px}.yr-embed table{width:100%}</style></head><body class="yr-site"><main class="yr-embed"><section class="yr-card yr-lb"><p class="yr-eyebrow"><i></i>${esc(b.period || "CURRENT BOARD")}</p><h1 class="yr-h1">${esc(b.name || opts.slug)}</h1><p class="yr-lede">${esc(b.prizePool || "")}</p><div class="yr-table-wrap"><table class="yr-table"><thead><tr><th>#</th><th>Player</th><th>Wagered</th><th>Prize</th></tr></thead><tbody>${rows}</tbody></table></div></section></main></body></html>`;
 }
