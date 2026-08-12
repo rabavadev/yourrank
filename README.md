@@ -145,6 +145,37 @@ node build-shared.mjs && cd apps/consumer && wrangler deploy
 
 See **DEPLOY.md** for first-time Cloudflare setup (routes, KV namespaces, Hyperdrive, secrets).
 
+### Staging load test
+
+The capacity ramp is an opt-in k6 harness. It requires an explicit target and
+board slug, has no production default, and refuses `yourrank.site` /
+`www.yourrank.site`.
+
+After provisioning an isolated staging database and seeding the fixtures in
+`/home/ubuntu/audit/CAPACITY_AUDIT.md` §12, run the mixed viewer plan:
+
+```bash
+TARGET_URL=https://staging.example.test BOARD_SLUG=large-board \
+k6 run docs/load-test.js
+```
+
+The plan runs T1–T7 at 100 → 250 → 500 → 1,000 → 2,500 → 5,000 → 10,000
+VUs, exercising board HTML, a held SSE stream, page-two pagination, search,
+and a `/go` redirect. Run the audit's SSE-only test separately with `STAGE=T0`:
+
+```bash
+TARGET_URL=https://staging.example.test BOARD_SLUG=large-board \
+STAGE=T0 k6 run docs/load-test.js
+```
+
+To run one mixed stage, set `STAGE=T1` through `STAGE=T7`; it ramps to that
+stage's target, holds for the audit duration, and ramps down. Threshold
+failures require investigation: board-render p95 under 1.5 seconds, regular
+request errors under 1%, and early SSE closes under 5%. The k6 summary reports
+p50/p95/p99 timings; correlate it with Worker CPU, Hyperdrive pool errors,
+Supabase CPU/connections, and queue backlog as described in the audit.
+**Never point this harness at production.**
+
 ## Provenance
 
 Merged from `rabavadev/yourrank` (leaderboards, D1→Postgres ported) and

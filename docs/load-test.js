@@ -1,54 +1,117 @@
-// k6 load test script for YourRank (Phase 8.2)
-// Run: k6 run --vus 50 --duration 60s docs/load-test.js
-// Requires: k6 installed (https://k6.io)
-
 import http from "k6/http";
 import { check, sleep } from "k6";
+import { Rate, Trend } from "k6/metrics";
 
-const BASE_URL = __ENV.BASE_URL || "https://yourrank.site";
-const KNOWN_SLUG = __ENV.KNOWN_SLUG || "demo";
+const TARGET_URL = String(__ENV.TARGET_URL || "").trim().replace(/\/+$/, "");
+const BOARD_SLUG = String(__ENV.BOARD_SLUG || "").trim();
+const STAGE = String(__ENV.STAGE || "").trim().toUpperCase();
+
+if (!TARGET_URL) throw new Error("TARGET_URL is required; refusing to choose a target");
+if (!BOARD_SLUG) throw new Error("BOARD_SLUG is required; refusing to choose a board");
+
+const target = new URL(TARGET_URL);
+if (!["http:", "https:"].includes(target.protocol)) {
+  throw new Error("TARGET_URL must use http or https");
+}
+if (["yourrank.site", "www.yourrank.site"].includes(target.hostname.toLowerCase())) {
+  throw new Error("Refusing to load-test the production hostname");
+}
+
+const stages = {
+  T1: { target: 100, ramp: "30s", hold: "5m" },
+  T2: { target: 250, ramp: "1m", hold: "10m" },
+  T3: { target: 500, ramp: "2m", hold: "10m" },
+  T4: { target: 1000, ramp: "3m", hold: "15m" },
+  T5: { target: 2500, ramp: "5m", hold: "15m" },
+  T6: { target: 5000, ramp: "5m", hold: "10m" },
+  T7: { target: 10000, ramp: "10m", hold: "15m" },
+};
+
+function mixedStages() {
+  const selected = STAGE && STAGE !== "ALL" ? stages[STAGE] : null;
+  if (STAGE && !selected && STAGE !== "T0" && STAGE !== "ALL") {
+    throw new Error(`Unknown STAGE ${STAGE}; use T0, T1-T7, or ALL`);
+  }
+  if (selected) {
+    return [
+      { duration: selected.ramp, target: selected.target },
+      { duration: selected.hold, target: selected.target },
+      { duration: "30s", target: 0 },
+    ];
+  }
+  return Object.values(stages).flatMap(({ target: vus, ramp, hold }) => [
+    { duration: ramp, target: vus },
+    { duration: hold, target: vus },
+  ]).concat({ duration: "30s", target: 0 });
+}
+
+function sseStages() {
+  if (STAGE && STAGE !== "T0") throw new Error("SSE-only mode requires STAGE=T0");
+  return [100, 250, 500, 1000].flatMap((target) => [
+    { duration: "60s", target },
+    { duration: "10m", target },
+  ]).concat({ duration: "30s", target: 0 });
+}
+
+const boardRender = new Trend("board_render_duration", true);
+const sseUnhealthy = new Rate("sse_unhealthy_rate");
 
 export const options = {
-  stages: [
-    { duration: "30s", target: 50 },  // Ramp up
-    { duration: "60s", target: 50 },  // Stay at 50 VUs
-    { duration: "30s", target: 0 },   // Ramp down
-  ],
+  stages: STAGE === "T0" ? sseStages() : mixedStages(),
   thresholds: {
-    http_req_duration: ["p(99)<500"], // 99th percentile under 500ms
-    http_req_failed: ["rate<0.01"],   // Less than 1% errors
+    board_render_duration: ["p(95)<1500"],
+    "http_req_failed{kind:regular}": ["rate<0.01"],
+    sse_unhealthy_rate: ["rate<0.05"],
   },
 };
 
+const base = TARGET_URL;
+const boardUrl = `${base}/${encodeURIComponent(BOARD_SLUG)}`;
+const apiUrl = `${base}/api/public/${encodeURIComponent(BOARD_SLUG)}`;
+
+function regularRequest(response, label, expected) {
+  check(response, { [`${label}: expected status`]: (r) => expected(r.status) }, { kind: "regular" });
+}
+
+function holdSse() {
+  // A healthy stream stays open until timeout. Early non-zero closes indicate
+  // reconnect pressure; status 0 at the timeout is expected for a held stream.
+  const response = http.get(`${apiUrl}/stream`, {
+    timeout: "35s",
+    tags: { kind: "sse", surface: "sse" },
+  });
+  const earlyClose = response.status !== 0
+    && (response.status !== 200 || response.timings.duration < 10000);
+  sseUnhealthy.add(earlyClose);
+  check(response, { "sse: opened": (r) => r.status === 200 || r.status === 0 }, { kind: "sse" });
+}
+
 export default function () {
-  // Test 1: Landing page
-  const landing = http.get(`${BASE_URL}/`);
-  check(landing, {
-    "landing: status 200": (r) => r.status === 200,
-    "landing: p99 < 500ms": (r) => r.timings.duration < 500,
-  });
+  if (STAGE === "T0") {
+    holdSse();
+    return;
+  }
 
-  // Test 2: Health endpoint
-  const health = http.get(`${BASE_URL}/health`);
-  check(health, {
-    "health: status 200": (r) => r.status === 200,
-    "health: has db=true": (r) => r.body.includes('"db":true'),
-  });
+  const board = http.get(boardUrl, { tags: { kind: "regular", surface: "board" } });
+  boardRender.add(board.timings.duration);
+  regularRequest(board, "board", (status) => status === 200);
 
-  // Test 3: Redirect (hot path)
-  const redirect = http.get(`${BASE_URL}/r/${KNOWN_SLUG}`, {
+  const pageTwo = http.get(`${apiUrl}/players?limit=100&offset=100`, {
+    tags: { kind: "regular", surface: "pagination" },
+  });
+  regularRequest(pageTwo, "pagination", (status) => status === 200);
+
+  const search = http.get(`${apiUrl}/players?limit=100&search=a`, {
+    tags: { kind: "regular", surface: "search" },
+  });
+  regularRequest(search, "search", (status) => status === 200);
+
+  const redirect = http.get(`${base}/go/${encodeURIComponent(BOARD_SLUG)}`, {
     redirects: "none",
+    tags: { kind: "regular", surface: "redirect" },
   });
-  check(redirect, {
-    "redirect: status 302 or 404": (r) => [302, 404].includes(r.status),
-    "redirect: p99 < 15ms": (r) => r.timings.duration < 15,
-  });
-
-  // Test 4: Public board API
-  const board = http.get(`${BASE_URL}/${KNOWN_SLUG}/api/standings`);
-  check(board, {
-    "board: status 200 or 404": (r) => [200, 404].includes(r.status),
-  });
+  regularRequest(redirect, "redirect", (status) => status >= 300 && status < 400);
 
   sleep(1);
+  holdSse();
 }
