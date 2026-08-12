@@ -71,27 +71,30 @@ export async function handlePublicStandings(request, env, ctx) {
 export async function handlePublicPlayers(request, env, ctx) {
   try {
     const slug = ctx.slug;
-    const rl = await rateLimit(env, `pub-players:${clientIp(request)}`, 120, 60);
-    if (!rl.ok) return bad("Rate limit exceeded. Try again shortly.", 429, rateLimitHeaders(rl));
-
-    // Demo board has no DB row — serve static demo data.
-    if (slug === "demo") {
-      const d = demoLeaderboardData();
-      const url = new URL(request.url);
-      const limit = Math.min(100, Math.max(1, Number(url.searchParams.get("limit")) || 100));
-      const offset = Math.max(0, Number(url.searchParams.get("offset")) || 0);
-      const search = String(url.searchParams.get("search") || "").trim().toLowerCase();
-      const all = (d.players || []).slice().sort((a, b) => b.wagered - a.wagered);
-      const filtered = search ? all.filter((p) => String(p.name || "").toLowerCase().includes(search)) : all;
-      const players = filtered.slice(offset, offset + limit).map((p) => ({ ...p, rank: all.indexOf(p) + 1 }));
-      return json({ players, total: all.length, offset, limit, hasMore: offset + players.length < filtered.length },
-        200, { "cache-control": "public, max-age=10", ...rateLimitHeaders(rl) });
-    }
-
+    const ip = clientIp(request);
     const url = new URL(request.url);
     const limit = Math.min(100, Math.max(1, Number(url.searchParams.get("limit")) || 100));
     const offset = Math.max(0, Number(url.searchParams.get("offset")) || 0);
     const search = String(url.searchParams.get("search") || "").trim().toLowerCase().replace(/\s+/g, " ");
+    const rl = await rateLimit(env, `pub-players:${ip}`, 120, 60);
+    const searchRl = search
+      ? await rateLimit(env, `pub-player-search:${ip}`, 60, 60)
+      : null;
+    const effectiveRl = searchRl || rl;
+    if (!rl.ok || (searchRl && !searchRl.ok)) {
+      return bad("Rate limit exceeded. Try again shortly.", 429, rateLimitHeaders(effectiveRl));
+    }
+
+    // Demo board has no DB row — serve static demo data.
+    if (slug === "demo") {
+      const d = demoLeaderboardData();
+      const all = (d.players || []).slice().sort((a, b) => b.wagered - a.wagered);
+      const filtered = search ? all.filter((p) => String(p.name || "").toLowerCase().includes(search)) : all;
+      const players = filtered.slice(offset, offset + limit).map((p) => ({ ...p, rank: all.indexOf(p) + 1 }));
+      return json({ players, total: all.length, offset, limit, hasMore: offset + players.length < filtered.length },
+        200, { "cache-control": "public, max-age=10", ...rateLimitHeaders(effectiveRl) });
+    }
+
     const r = await getPublicSite(env, slug, request, { limit, offset, search });
     if (r && r.requiresPassword) return bad("Password required.", 401);
     if (!r || r.suspended) return bad("not found", 404);
@@ -105,7 +108,7 @@ export async function handlePublicPlayers(request, env, ctx) {
     const etag = `W/"${slug}-${maxTs}-${version?.c || 0}-l${limit}-o${offset}-q${encodeURIComponent(search)}"`;
     const ifNoneMatch = request.headers.get("if-none-match");
     if (ifNoneMatch === etag) {
-      return new Response(null, { status: 304, headers: { "cache-control": "public, max-age=10", etag, ...rateLimitHeaders(rl) } });
+      return new Response(null, { status: 304, headers: { "cache-control": "public, max-age=10", etag, ...rateLimitHeaders(effectiveRl) } });
     }
 
     const players = (r.data.players || []).map((p) => ({
@@ -125,7 +128,7 @@ export async function handlePublicPlayers(request, env, ctx) {
       offset,
       limit,
       hasMore: offset + players.length < (r.data.playerMatchCount ?? r.data.playerCount),
-    }, 200, { "cache-control": "public, max-age=10", etag, ...rateLimitHeaders(rl) });
+    }, 200, { "cache-control": "public, max-age=10", etag, ...rateLimitHeaders(effectiveRl) });
   } catch (e) {
     console.error("[public/players]", String(e?.message || e));
     return bad("Something went wrong. Try again.", 500);
