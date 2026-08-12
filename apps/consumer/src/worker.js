@@ -12,6 +12,7 @@ import { processKickRewardRedemption } from "../../../shared/kick-credits.js";
 import { RateLimiter } from "../../../shared/rate-limiter-do.js";
 import { mapWithConcurrency, SHARED_WORK_CONCURRENCY_LIMIT } from "../../../shared/work-concurrency.js";
 import { processAccountExport } from "./account-export.js";
+import { processViewerExport } from "./viewer-export.js";
 
 const db = { one, query };
 
@@ -97,6 +98,10 @@ async function handleEvent(input, tokenCache, env) {
     }
     case "account-export": {
       await processAccountExport(body, env);
+      break;
+    }
+    case "viewer-export": {
+      await processViewerExport(body, env);
       break;
     }
     default: {

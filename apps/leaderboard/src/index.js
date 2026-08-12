@@ -200,7 +200,7 @@ async function handleScheduled(event, env, ctx) {
         }
       })
     );
-    ctx.waitUntil(cleanupExpiredAccountExports(env).catch((err) => {
+    ctx.waitUntil(cleanupExpiredExports(env).catch((err) => {
       console.error("[scheduled] account export cleanup failed:", String(err?.message || err));
     }));
   }
@@ -236,6 +236,43 @@ async function cleanupExpiredAccountExports(env) {
     await exec("DELETE FROM account_export_jobs WHERE id = ANY($1)", [expired.map((job) => job.id)]);
     if (expired.length < 100) return;
   }
+}
+
+async function cleanupExpiredViewerExports(env) {
+  const stale = await query(
+    `SELECT id, viewer_id FROM viewer_export_jobs
+      WHERE status='processing' AND started_at < now() - INTERVAL '15 minutes'
+      ORDER BY started_at ASC LIMIT 100`,
+    []
+  );
+  for (const job of stale) {
+    await exec(
+      `UPDATE viewer_export_jobs
+          SET status='failed', error='Export worker stopped before completion', completed_at=now()
+        WHERE id=$1 AND status='processing'`,
+      [job.id]
+    );
+    await logAudit({ actorId: job.viewer_id, action: "viewer_export_failed", entityType: "viewer_export", entityId: job.id, details: { export_id: job.id, status: "failed" } });
+  }
+  for (;;) {
+    const expired = await query(
+      "SELECT id, artifact_key FROM viewer_export_jobs WHERE expires_at <= now() ORDER BY expires_at ASC LIMIT 100",
+      []
+    );
+    if (!expired.length) return;
+    if (env.ACCOUNT_EXPORTS) {
+      for (const job of expired) {
+        if (job.artifact_key) await env.ACCOUNT_EXPORTS.delete(job.artifact_key).catch(() => {});
+      }
+    }
+    await exec("DELETE FROM viewer_export_jobs WHERE id = ANY($1)", [expired.map((job) => job.id)]);
+    if (expired.length < 100) return;
+  }
+}
+
+async function cleanupExpiredExports(env) {
+  await cleanupExpiredAccountExports(env);
+  await cleanupExpiredViewerExports(env);
 }
 
 function addCookieConsent(html) {
