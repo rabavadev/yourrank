@@ -16,6 +16,17 @@ if (!["http:", "https:"].includes(target.protocol)) {
 if (["yourrank.site", "www.yourrank.site"].includes(target.hostname.toLowerCase())) {
   throw new Error("Refusing to load-test the production hostname");
 }
+const localHostnames = new Set(["localhost", "127.0.0.1", "::1"]);
+const isLocalTarget = localHostnames.has(target.hostname.toLowerCase())
+  || target.hostname.toLowerCase().endsWith(".localhost");
+if (
+  !isLocalTarget
+  && String(__ENV.I_KNOW_THIS_IS_NOT_PRODUCTION || "").toLowerCase() !== "true"
+) {
+  throw new Error(
+    "Custom domains require I_KNOW_THIS_IS_NOT_PRODUCTION=true; verify this is an isolated staging target",
+  );
+}
 
 const stages = {
   T1: { target: 100, ramp: "30s", hold: "5m" },

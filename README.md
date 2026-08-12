@@ -149,13 +149,17 @@ See **DEPLOY.md** for first-time Cloudflare setup (routes, KV namespaces, Hyperd
 
 The capacity ramp is an opt-in k6 harness. It requires an explicit target and
 board slug, has no production default, and refuses `yourrank.site` /
-`www.yourrank.site`.
+`www.yourrank.site`. Because production boards can also use custom domains,
+any non-local hostname requires the explicit
+`I_KNOW_THIS_IS_NOT_PRODUCTION=true` acknowledgement after verifying that the
+target uses an isolated staging database.
 
 After provisioning an isolated staging database and seeding the fixtures in
 `/home/ubuntu/audit/CAPACITY_AUDIT.md` §12, run the mixed viewer plan:
 
 ```bash
 TARGET_URL=https://staging.example.test BOARD_SLUG=large-board \
+I_KNOW_THIS_IS_NOT_PRODUCTION=true \
 k6 run docs/load-test.js
 ```
 
@@ -165,6 +169,7 @@ and a `/go` redirect. Run the audit's SSE-only test separately with `STAGE=T0`:
 
 ```bash
 TARGET_URL=https://staging.example.test BOARD_SLUG=large-board \
+I_KNOW_THIS_IS_NOT_PRODUCTION=true \
 STAGE=T0 k6 run docs/load-test.js
 ```
 
