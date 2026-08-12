@@ -553,7 +553,7 @@ async function handleRequest(request, env, ctx, meta) {
         }
 
         if (pageObj.Component) {
-          let node = pageObj.Component({ reqId, user, tab });
+          let node = pageObj.Component({ reqId, activePath, user, tab });
           if (node instanceof Promise) node = await node;
           const content = node.toString();
           if (pageObj.config) {
@@ -621,7 +621,9 @@ async function handleRequest(request, env, ctx, meta) {
       }
       if (path === "/dashboard/settings" || /^\/dashboard\/settings\/(account|plan|connections|data)$/.test(path)) {
         const pathTab = path.split("/").pop();
-        const requestedTab = pathTab === "settings" ? url.searchParams.get("tab") : pathTab;
+        const requestedTab = pathTab === "settings"
+          ? (url.searchParams.get("tab") || (url.searchParams.has("plan") ? "plan" : null))
+          : pathTab;
         const tab = ["account", "plan", "connections", "data"].includes(requestedTab) ? requestedTab : "account";
         const user = await currentUser(request, env);
         if (!user) return Response.redirect(new URL("/login", url), 302);
@@ -697,12 +699,6 @@ async function handleRequest(request, env, ctx, meta) {
         }
       }
       // Analytics and billing have been folded into the unified dashboard.
-      if (path === "/dashboard/billing") {
-        return redirectKeepingSearch("/dashboard/settings/plan", url);
-      }
-      if (path === "/dashboard/attribution") {
-        return redirectKeepingSearch("/dashboard/settings/integrations", url);
-      }
       if (path === "/dashboard/bot/setup") {
         return Response.redirect(new URL("/bot/dashboard", url), 302);
       }
@@ -714,9 +710,6 @@ async function handleRequest(request, env, ctx, meta) {
         redirectUrl.searchParams.set("area", "dashboard");
         redirectUrl.searchParams.set("return", "/dashboard");
         return Response.redirect(redirectUrl, 302);
-      }
-      if (path === "/dashboard/security") {
-        return redirectKeepingSearch("/dashboard/settings/account", url);
       }
       if (path === "/dashboard/credits") {
         return redirectKeepingSearch("/dashboard/settings/integrations", url);

@@ -206,7 +206,8 @@ async function init() {
   loadCreditsStatus();
   wireStreamerHud();
   wireAccount();
-  setupSettingsScreen(p);
+  const settingsRoute = currentRoute();
+  setupSettingsScreen(p, settingsRoute.page === "settings" && settingsRoute.tab === "board" ? "plan" : undefined);
 
   // The save bar, unload guard and preview react to the same notification in
   // dashboard/site.js; this only adds the debounced overview refresh.

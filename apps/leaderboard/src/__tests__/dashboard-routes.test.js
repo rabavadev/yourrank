@@ -22,6 +22,8 @@ describe("dashboard routes", () => {
       expect(parseDashboardPath(`/dashboard/settings/${tab}`)).toEqual({ page: "settings", tab });
     }
     expect(parseDashboardPath("/dashboard/settings/integrations")).toBeNull();
+    expect(dashboardPath("settings", "board")).toBe("/dashboard/settings/board");
+    expect(parseDashboardPath("/dashboard/settings/board")).toEqual({ page: "settings", tab: "board" });
   });
 
   it("keeps the links we have already shipped working", () => {

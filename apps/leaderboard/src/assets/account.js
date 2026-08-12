@@ -3,7 +3,7 @@ import { $, esc, getCsrf, logError, copyToClipboard, flashButton, showConfirmMod
 import { state } from "./dashboard/state.js";
 import { wireAccount } from "./dashboard/account.js";
 import { openDrawer, closeDrawer } from "./dashboard/shell.js";
-import { renderPlan, loadHistory, loadPlanUsage, wireDeleteAccount, wireCancelSubscription } from "./dashboard/site.js";
+import { checkout, renderPlan, loadHistory, loadPlanUsage, wireDeleteAccount, wireCancelSubscription } from "./dashboard/site.js";
 
 const statusEl = () => $("status");
 function setStatus(message, isError) {
@@ -312,6 +312,8 @@ async function init() {
   if (tab === "settings") {
     wireAccount();
     renderPlan();
+    const plan = new URLSearchParams(location.search).get("plan")?.toLowerCase();
+    if (["starter", "pro", "lifetime"].includes(plan)) checkout(plan);
     loadPlanUsage();
     loadHistory();
     wireCancelSubscription();
