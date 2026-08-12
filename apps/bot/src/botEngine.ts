@@ -70,6 +70,16 @@ export async function getBotBySecret(secret: string): Promise<BotRow | undefined
   );
 }
 
+export async function getBotById(botId: string): Promise<BotRow | undefined> {
+  return one<BotRow>(
+    `SELECT b.id, b.owner_id, b.tg_bot_id, b.username, b.token_encrypted,
+            b.webhook_secret, b.status, b.welcome_message
+       FROM bots b JOIN users u ON u.id = b.owner_id
+      WHERE b.id = $1 AND u.status = 'active'`,
+    [botId],
+  );
+}
+
 export async function handleUpdateForBot(row: BotRow, update: Update, env?: any): Promise<void> {
   const token = await decryptToken(Buffer.from(row.token_encrypted));
   const botInfo: Record<string, unknown> = {
