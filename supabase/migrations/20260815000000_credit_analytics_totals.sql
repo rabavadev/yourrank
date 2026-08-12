@@ -161,6 +161,15 @@ BEGIN
         v_new_balance := COALESCE(NEW.balance, 0);
     END IF;
 
+    -- A site deletion cascades through site_viewers after the parent site row
+    -- is gone; its aggregate is cascaded separately, so do not recreate it.
+    IF v_old_site_id IS NOT NULL
+       AND NOT EXISTS (
+           SELECT 1 FROM public.sites WHERE id = v_old_site_id
+       ) THEN
+        v_old_site_id := NULL;
+    END IF;
+
     IF v_old_site_id IS NOT NULL THEN
         INSERT INTO public.site_credit_aggregates (site_id, total_balance)
         VALUES (v_old_site_id, -v_old_balance)
