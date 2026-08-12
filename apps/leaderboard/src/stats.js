@@ -1,9 +1,7 @@
 // Per-site daily analytics. Cheap upsert counters in Postgres — no external service.
-import { query } from "../../../shared/db.js";
+import { queryWithTimeout } from "../../../shared/db.js";
 import { bumpStat, todayUTC } from "../../../shared/stats.js";
 export { bumpStat, todayUTC };
-
-const ANALYTICS_TIMEOUT = "SET statement_timeout = '5000ms';";
 
 export function isStatementTimeout(err) {
   return String(err?.code ?? "") === "57014" ||
@@ -11,10 +9,9 @@ export function isStatementTimeout(err) {
 }
 
 function analyticsQuery(text, params) {
-  // Hyperdrive supports SET for the duration of a single query and resets it
-  // when the pooled connection is returned. Do not wrap the parallel reads in
-  // a shared transaction: that would hold an origin connection unnecessarily.
-  return query(`${ANALYTICS_TIMEOUT}\n${text}`, params);
+  // Each read gets its own short transaction. This keeps SET LOCAL on the
+  // same pooled connection without holding one across parallel reads.
+  return queryWithTimeout(text, params, 5000);
 }
 
 // Last 30 days of rows plus rolled-up totals for the dashboard.

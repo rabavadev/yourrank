@@ -105,6 +105,25 @@ export async function query<T = Record<string, unknown>>(
   throw lastErr;
 }
 
+/**
+ * Execute one read inside a short transaction-local timeout.
+ *
+ * Hyperdrive uses transaction pooling, so SET LOCAL is scoped to the same
+ * pooled connection as the read and is reset on COMMIT/ROLLBACK. Keeping this
+ * to one statement avoids holding an origin connection across multiple reads.
+ */
+export async function queryWithTimeout<T = Record<string, unknown>>(
+  text: string,
+  params: unknown[] = [],
+  timeoutMs = 5000
+): Promise<T[]> {
+  const timeout = Math.max(1, Math.floor(timeoutMs));
+  return withTransaction(async (tx) => {
+    await tx.query(`SET LOCAL statement_timeout = '${timeout}ms'`);
+    return tx.query<T>(text, params);
+  });
+}
+
 /** Execute a SQL read query and return the first row, or undefined if no rows. */
 export async function one<T = Record<string, unknown>>(
   text: string,
