@@ -7,23 +7,69 @@
 
   var side = document.getElementById("yr-side");
   var scrim = document.getElementById("yr-scrim");
+  var menu = document.getElementById("yr-menu");
+  var region = document.querySelector(".yr-region");
+  var sideOpener = null;
+  var bodyOverflow = "";
+  var inertBackground = [];
+  var drawerFocusables = function () {
+    if (!side) return [];
+    return Array.prototype.slice.call(side.querySelectorAll('a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'));
+  };
 
   function closeSide() {
-    if (!side) return;
+    if (!side || !side.hasAttribute("data-open")) return;
     side.removeAttribute("data-open");
+    side.removeAttribute("role");
+    side.removeAttribute("aria-modal");
     if (scrim) scrim.hidden = true;
+    if (menu) {
+      menu.setAttribute("aria-expanded", "false");
+      menu.setAttribute("aria-label", "Open sections");
+    }
+    inertBackground.forEach(function (el) { el.inert = false; });
+    inertBackground = [];
+    document.body.style.overflow = bodyOverflow;
+    var opener = sideOpener || menu;
+    sideOpener = null;
+    if (opener && typeof opener.focus === "function") opener.focus();
   }
 
   function openSide() {
     if (!side) return;
+    sideOpener = document.activeElement && document.activeElement !== document.body ? document.activeElement : menu;
+    bodyOverflow = document.body.style.overflow;
     side.setAttribute("data-open", "");
+    side.setAttribute("role", "dialog");
+    side.setAttribute("aria-modal", "true");
     if (scrim) scrim.hidden = false;
+    if (menu) {
+      menu.setAttribute("aria-expanded", "true");
+      menu.setAttribute("aria-label", "Close sections");
+    }
+    inertBackground = Array.prototype.slice.call(document.body.children).filter(function (el) { return el !== side && el !== scrim; });
+    inertBackground.forEach(function (el) { el.inert = true; });
+    document.body.style.overflow = "hidden";
+    var first = drawerFocusables()[0] || side;
+    window.setTimeout(function () { first.focus(); }, 0);
   }
 
-  var menu = document.getElementById("yr-menu");
   if (menu) menu.addEventListener("click", function () { (side && side.hasAttribute("data-open")) ? closeSide() : openSide(); });
   if (scrim) scrim.addEventListener("click", closeSide);
-  document.addEventListener("keydown", function (e) { if (e.key === "Escape") closeSide(); });
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape" && dialog && dialog.open) {
+      return;
+    }
+    if (!side || !side.hasAttribute("data-open")) return;
+    if (e.key === "Escape") { e.preventDefault(); closeSide(); return; }
+    if (e.key !== "Tab") return;
+    var focusables = drawerFocusables();
+    if (!focusables.length) { e.preventDefault(); side.focus(); return; }
+    var first = focusables[0];
+    var last = focusables[focusables.length - 1];
+    if (e.shiftKey && (document.activeElement === first || document.activeElement === side)) { e.preventDefault(); last.focus(); }
+    else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+  });
 
   // ── Standings: board tabs ───────────────────────────────────────────
   var tabs = Array.prototype.slice.call(document.querySelectorAll("[data-tab]"));
@@ -55,6 +101,11 @@
   var activeSearch = "";
   var searchOffset = 0;
   var savedRowsHtml = rowsRoot ? rowsRoot.innerHTML : "";
+  var searchStatus = document.getElementById("yr-search-status");
+  var empty = document.getElementById("yr-no-match");
+  var searchTimer = null;
+  var searchRequest = 0;
+  var searchController = null;
   var currency = document.body.dataset.currency || "$";
   var money = function (v) { return currency + Number(v || 0).toLocaleString("en-US", { maximumFractionDigits: 0 }); };
   var esc = function (v) { return String(v == null ? "" : v).replace(/[&<>"']/g, function (c) { return ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]); }); };
@@ -66,13 +117,18 @@
       '<td class="yr-mono yr-r">' + esc(money(p.wagered)) + '</td>' +
       '<td class="yr-mono yr-r">' + (p.prize ? esc(money(p.prize)) : "—") + '</td></tr>';
   };
-  var fetchPage = function (offset, q) {
+  var fetchPage = function (offset, q, signal) {
     var params = new URLSearchParams({ limit: "100", offset: String(offset) });
     if (q) params.set("search", q);
-    return fetch("/api/public/" + encodeURIComponent(slug) + "/players?" + params.toString()).then(function (res) {
+    return fetch("/api/public/" + encodeURIComponent(slug) + "/players?" + params.toString(), signal ? { signal: signal } : undefined).then(function (res) {
       if (!res.ok) throw new Error("Could not load players.");
       return res.json();
     });
+  };
+  var setSearchStatus = function (message, isError) {
+    if (!searchStatus) return;
+    searchStatus.textContent = message || "";
+    searchStatus.classList.toggle("is-error", !!isError);
   };
   var appendPage = function (page, replace) {
     if (!rowsRoot) return;
@@ -85,11 +141,15 @@
   };
   if (search && rowsRoot) {
     var rows = function () { return Array.prototype.slice.call(rowsRoot.querySelectorAll("tr[data-name]")); };
-    var empty = document.getElementById("yr-no-match");
     search.addEventListener("input", function () {
       var q = search.value.trim().toLowerCase();
       activeSearch = q;
       searchOffset = 0;
+      searchRequest += 1;
+      var requestId = searchRequest;
+      if (searchController) searchController.abort();
+      searchController = null;
+      clearTimeout(searchTimer);
       var shown = 0;
       rows().forEach(function (row) {
         var hit = !q || row.dataset.name.indexOf(q) !== -1;
@@ -101,18 +161,38 @@
         loadedCount = rows().length;
         if (loadMore) loadMore.hidden = loadedCount >= totalCount;
         if (empty) empty.hidden = true;
+        setSearchStatus("");
         return;
       }
-      if (shown === 0) {
-        fetchPage(0, q).then(function (page) {
-          if (activeSearch !== q) return;
+      if (shown > 0) {
+        if (empty) empty.hidden = true;
+        setSearchStatus("");
+        return;
+      }
+      setSearchStatus("Searching…");
+      searchTimer = window.setTimeout(function () {
+        searchController = typeof AbortController === "function" ? new AbortController() : null;
+        fetchPage(0, q, searchController && searchController.signal).then(function (page) {
+          if (requestId !== searchRequest || activeSearch !== q) return;
           appendPage(page, true);
           searchOffset = (page.players || []).length;
-          if (empty) empty.hidden = (page.players || []).length !== 0;
-        }).catch(function () {
-          if (empty) empty.hidden = false;
+          var found = (page.players || []).length !== 0;
+          if (empty) empty.hidden = found;
+          setSearchStatus(found ? "" : "No matches.");
+        }).catch(function (err) {
+          if (requestId !== searchRequest || activeSearch !== q || (err && err.name === "AbortError")) return;
+          if (empty) empty.hidden = true;
+          setSearchStatus("Couldn't load results.", true);
+          if (searchStatus && !searchStatus.querySelector("button")) {
+            var retry = document.createElement("button");
+            retry.type = "button";
+            retry.className = "yr-search-retry";
+            retry.textContent = "Retry";
+            retry.addEventListener("click", function () { search.dispatchEvent(new Event("input", { bubbles: true })); });
+            searchStatus.appendChild(retry);
+          }
         });
-      } else if (empty) empty.hidden = true;
+      }, 250);
     });
   }
 
@@ -134,11 +214,22 @@
   }
 
   // ── Shop: redeem ────────────────────────────────────────────────────
+  var redeemStatus = document.getElementById("yr-redeem-status");
+  var setRedeemStatus = function (message, isError) {
+    if (!redeemStatus) return;
+    redeemStatus.textContent = message || "";
+    redeemStatus.classList.toggle("is-error", !!isError);
+  };
   document.querySelectorAll("[data-redeem]").forEach(function (btn) {
     btn.addEventListener("click", function () {
       var label = btn.textContent;
+      var name = btn.dataset.rewardName || "this reward";
+      var cost = btn.dataset.rewardCost || "0";
+      if (!window.confirm("Redeem “" + name + "” for " + cost + " credits?")) return;
+      var focusTarget = btn;
       btn.disabled = true;
       btn.textContent = "Redeeming…";
+      setRedeemStatus("Redeeming “" + name + "”…");
       fetch("/api/viewer/redeem", {
         method: "POST",
         credentials: "same-origin",
@@ -149,19 +240,33 @@
         .then(function (r) {
           if (r.ok && r.data.ok) {
             btn.textContent = "Requested";
-            setTimeout(function () { location.reload(); }, 800);
+            btn.classList.add("is-success");
+            setRedeemStatus("Reward requested: “" + name + "”. " + cost + " credits deducted.");
+            focusTarget.focus();
           } else {
-            btn.textContent = r.data.error || "Failed";
+            btn.textContent = label;
             btn.disabled = false;
-            setTimeout(function () { btn.textContent = label; }, 2500);
+            setRedeemStatus(r.data.error || "Couldn’t redeem that reward. Please try again.", true);
+            focusTarget.focus();
           }
         })
         .catch(function () {
-          btn.textContent = "Network error";
+          btn.textContent = label;
           btn.disabled = false;
-          setTimeout(function () { btn.textContent = label; }, 2500);
+          setRedeemStatus("Network error. Your credits were not confirmed as deducted; please try again.", true);
+          focusTarget.focus();
         });
     });
+  });
+
+  // ── Table overflow affordance ───────────────────────────────────────
+  document.querySelectorAll("[data-table-wrap]").forEach(function (wrap) {
+    var syncOverflow = function () {
+      wrap.dataset.overflow = wrap.scrollWidth > wrap.clientWidth && wrap.scrollLeft < wrap.scrollWidth - wrap.clientWidth - 1 ? "true" : "false";
+    };
+    syncOverflow();
+    wrap.addEventListener("scroll", syncOverflow, { passive: true });
+    window.addEventListener("resize", syncOverflow);
   });
 
   // ── Countdown ───────────────────────────────────────────────────────
@@ -181,16 +286,26 @@
   // ── Feedback dialog ─────────────────────────────────────────────────
   var dialog = document.getElementById("yr-feedback");
   var statusEl = document.getElementById("yr-feedback-status");
+  var feedbackOpener = null;
+  var feedbackMessage = dialog && dialog.querySelector('textarea[name="message"]');
+  var restoreFeedbackFocus = function () {
+    var opener = feedbackOpener;
+    feedbackOpener = null;
+    if (opener && typeof opener.focus === "function") opener.focus();
+  };
   document.querySelectorAll("[data-feedback-open]").forEach(function (b) {
     b.addEventListener("click", function () {
       if (!dialog || !dialog.showModal) return;
+      feedbackOpener = b;
       closeSide();
       if (statusEl) statusEl.textContent = "";
       dialog.showModal();
+      window.setTimeout(function () { if (feedbackMessage) feedbackMessage.focus(); }, 0);
     });
   });
   var closeBtn = document.getElementById("yr-feedback-close");
   if (closeBtn && dialog) closeBtn.addEventListener("click", function () { dialog.close(); });
+  if (dialog) dialog.addEventListener("close", restoreFeedbackFocus);
 
   var form = dialog && dialog.querySelector("form");
   if (form) {

@@ -182,7 +182,7 @@ function sidebar({ b, slug, section, siteSections, homeUrl, isCustomDomain, logo
     ? `<div class="yr-user"><span class="yr-user-l"><span class="yr-ava">${avatarHtml(viewer)}</span><span><span class="yr-user-name">${esc(viewerName(viewer))}</span><span class="yr-user-sub">Signed in with ${viewer.kick_username ? "Kick" : "Discord"}</span></span></span></div>`
     : `<a class="yr-user" href="${homeUrl}${siteSectionHref("me", slug, isCustomDomain)}"><span class="yr-user-l"><span class="yr-ava">?</span><span><span class="yr-user-name">Guest</span><span class="yr-user-sub">Not signed in</span></span></span></a>`;
 
-  return `<aside class="yr-side" id="yr-side">
+  return `<aside class="yr-side" id="yr-side" aria-label="Site sections" tabindex="-1">
 <div class="yr-side-head"><a class="yr-brand" href="${homeUrl}${siteSectionHref("home", slug, isCustomDomain)}">${mark}${name}</a><span class="yr-live" aria-hidden="true"><i></i><b></b></span><span class="yr-live-txt">Live</span></div>
 <nav class="yr-nav yr-noscroll" aria-label="Sections">
 ${items}
@@ -217,7 +217,7 @@ function header({ r, viewer, balance, returnTo, searchable, homeUrl, slug, isCus
 
   return `<header class="yr-header">
 <div class="yr-header-l">
-<button class="yr-menu" id="yr-menu" type="button" aria-label="Open sections" aria-controls="yr-side">${ICONS.bars}</button>
+<button class="yr-menu" id="yr-menu" type="button" aria-label="Open sections" aria-controls="yr-side" aria-expanded="false">${ICONS.bars}</button>
 ${ICONS.search}
 ${search}
 </div>
@@ -373,7 +373,7 @@ function rewardCard({ item, viewer, balance, blocked, signIn }) {
   else if (blocked) action = `<span class="yr-act yr-act--off">Unavailable</span>`;
   else if (!inStock) action = `<span class="yr-act yr-act--off">Out of stock</span>`;
   else if (short > 0) action = `<span class="yr-act yr-act--off">${formatNumber(short)} short</span>`;
-  else action = `<button class="yr-act" type="button" data-redeem="${esc(item.id)}">Redeem</button>`;
+  else action = `<button class="yr-act" type="button" data-redeem="${esc(item.id)}" data-reward-name="${esc(item.name)}" data-reward-cost="${cost}">Redeem</button>`;
 
   const meter = viewer && inStock && short > 0 && cost > 0
     ? `<div class="yr-meter" aria-hidden="true"><i data-fill="${Math.min(100, Math.round((balance / cost) * 20) * 5)}"></i></div>`
@@ -650,8 +650,9 @@ function boardMain(ctx) {
 </tr>`).join("");
 
   const table = players.length
-    ? `<table class="yr-table"><thead><tr><th>#</th><th>Player</th><th class="yr-r">${wagerLabel}</th><th class="yr-r">${prizeLabel}</th></tr></thead>
-<tbody data-rows>${rows}<tr class="yr-nomatch" id="yr-no-match" hidden><td colspan="4">No player matches that search.</td></tr></tbody></table>
+    ? `<div class="yr-table-wrap" data-table-wrap><table class="yr-table"><caption class="yr-sr">Public standings for ${esc(b.name || slug)}</caption><thead><tr><th scope="col">#</th><th scope="col">Player</th><th scope="col" class="yr-r">${wagerLabel}</th><th scope="col" class="yr-r">${prizeLabel}</th></tr></thead>
+<tbody data-rows>${rows}<tr class="yr-nomatch" id="yr-no-match" hidden><td colspan="4">No player matches that search.</td></tr></tbody></table></div>
+<p class="yr-search-status" id="yr-search-status" role="status" aria-live="polite"></p>
 ${playerCount > players.length ? `<div class="yr-pagination"><button class="yr-btn yr-btn--sm" type="button" data-load-more>Load more</button><span data-load-more-status role="status" aria-live="polite"></span></div>` : ""}`
     : `<div class="yr-empty">No players on the board yet</div>`;
 
@@ -713,6 +714,7 @@ function shopMain(ctx) {
 
   return `${heroHtml}
 ${blockedNote}
+<p class="yr-redeem-status" id="yr-redeem-status" role="status" aria-live="polite"></p>
 ${grid}
 ${history}`;
 }
@@ -813,7 +815,7 @@ function meMain(ctx) {
     title: "Credit history",
     meta: `${formatNumber(ledger.length)} events`,
     body: ledgerRows
-      ? `<table class="yr-table"><thead><tr><th class="yr-w-auto">Date</th><th>Type</th><th class="yr-r">Amount</th><th class="yr-r">Detail</th></tr></thead><tbody>${ledgerRows}</tbody></table>`
+      ? `<div class="yr-table-wrap" data-table-wrap><table class="yr-table"><caption class="yr-sr">Credit history</caption><thead><tr><th scope="col" class="yr-w-auto">Date</th><th scope="col">Type</th><th scope="col" class="yr-r">Amount</th><th scope="col" class="yr-r">Detail</th></tr></thead><tbody>${ledgerRows}</tbody></table></div>`
       : `<div class="yr-empty">No credit history yet</div>`,
   });
 

@@ -1,7 +1,7 @@
 // Board switcher, creation, duplication, deletion, and the board list page.
 import { $, esc, getCsrf, guardAuth, logError, slugify, showConfirmModal } from "./utils.js";
 import { state } from "./state.js";
-import { navTo } from "./shell.js";
+import { requestDashboardRoute } from "./shell.js";
 import { renderEmpty } from "./states.js";
 
 export function renderBoardSwitcher() {
@@ -12,17 +12,15 @@ export function renderBoardSwitcher() {
       const el = document.createElement("div");
       const isActive = b.id === state.ACTIVE_SITE_ID;
       el.className = "board-item" + (isActive ? " board-item--active" : "");
-      el.setAttribute("role", "button");
-      el.setAttribute("tabindex", "0");
       const sponsor = [b.casino, b.code].filter(Boolean).join(" · ");
-      el.innerHTML = `<div class="board-info"><div class="board-row-top"><span class="board-slug">/${esc(b.slug)}</span><span class="board-name">${esc(b.name)}</span></div>${sponsor ? `<div class="board-sponsor">${esc(sponsor)}</div>` : ""}</div>${isActive ? '<span class="board-badge">editing</span>' : '<span class="board-actions"><button class="btn btn--sm" data-action="setActive" title="Set as active board" aria-label="Set as active board" type="button">★</button><button class="btn btn--sm" data-action="delete" title="Delete board" aria-label="Delete board" type="button">×</button></span>'}`;
-      if (!isActive) {
-        el.style.cursor = "pointer";
-        el.addEventListener("click", (e) => { if (e.target.closest('[data-action]')) return; location.href = "/dashboard?board=" + encodeURIComponent(b.id); });
-        el.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); el.click(); } });
-        el.querySelector('[data-action="setActive"]')?.addEventListener("click", (e) => { e.stopPropagation(); setActiveBoard(b.id); });
-        el.querySelector('[data-action="delete"]')?.addEventListener("click", (e) => { e.stopPropagation(); deleteBoard(b.id); });
-      }
+      const editHref = `/dashboard/editor?board=${encodeURIComponent(b.id)}`;
+      el.innerHTML = `<div class="board-info"><div class="board-row-top"><span class="board-slug">/${esc(b.slug)}</span><span class="board-name">${esc(b.name)}</span></div>${sponsor ? `<div class="board-sponsor">${esc(sponsor)}</div>` : ""}</div><span class="board-actions"><a class="btn btn--sm btn--ghost" data-action="edit" href="${editHref}">Edit</a>${isActive ? '<span class="board-badge">editing</span>' : '<button class="btn btn--sm" data-action="setActive" title="Set as active board" aria-label="Set as active board" type="button">★</button><button class="btn btn--sm" data-action="delete" title="Delete board" aria-label="Delete board" type="button">×</button>'}</span>`;
+      el.querySelector('[data-action="edit"]')?.addEventListener("click", (e) => {
+        e.preventDefault();
+        requestDashboardRoute("board", "", { query: `board=${encodeURIComponent(b.id)}`, reload: true });
+      });
+      el.querySelector('[data-action="setActive"]')?.addEventListener("click", () => setActiveBoard(b.id));
+      el.querySelector('[data-action="delete"]')?.addEventListener("click", () => deleteBoard(b.id));
       list.appendChild(el);
     });
     const countEl = $("boardCount");
@@ -71,7 +69,7 @@ export function renderBoardSwitcher() {
       const res = await fetch("/api/site/create", { method: "POST", credentials: "include", headers: { "content-type": "application/json", "x-csrf-token": getCsrf() }, body: JSON.stringify({ slug, name, casino, code }) });
       const d = await res.json();
       if (res.ok && d.ok) {
-        location.href = "/dashboard?board=" + encodeURIComponent(d.id);
+        requestDashboardRoute("home", "", { query: `board=${encodeURIComponent(d.id)}`, reload: true });
       } else if (d.code === "board_limit") {
         $("newBoardForm").hidden = true;
         newBtn.hidden = false;
@@ -146,7 +144,7 @@ export async function deleteBoard(siteId) {
     if (res.ok && d.ok) {
       const idx = state.BOARDS.findIndex((b) => b.id === siteId);
       if (idx >= 0) state.BOARDS.splice(idx, 1);
-      if (siteId === state.ACTIVE_SITE_ID) { location.href = "/dashboard"; return; }
+      if (siteId === state.ACTIVE_SITE_ID) { requestDashboardRoute("home", "", { query: "", reload: true }); return; }
       renderBoardSwitcher();
       renderSidebarBoardSwitcher();
       renderBoardsPage();
@@ -195,7 +193,7 @@ export async function duplicateBoard(siteId) {
     }).then(guardAuth);
     const d = await res.json();
     if (res.ok && d.ok) {
-      location.href = "/dashboard?board=" + encodeURIComponent(d.id);
+      requestDashboardRoute("home", "", { query: `board=${encodeURIComponent(d.id)}`, reload: true });
     } else if (d.code === "board_limit") {
       showBoardLimitUpsell();
     } else {
@@ -240,11 +238,11 @@ export function renderSidebarBoardSwitcher() {
       sel.disabled = false;
       sel.onchange = () => {
         const id = sel.value;
-        if (id && id !== state.ACTIVE_SITE_ID) location.href = "/dashboard?board=" + encodeURIComponent(id);
+        if (id && id !== state.ACTIVE_SITE_ID) requestDashboardRoute("home", "", { query: `board=${encodeURIComponent(id)}`, reload: true });
       };
     }
   }
-  if (manage) manage.onclick = () => navTo("boards");
+  if (manage) manage.onclick = () => requestDashboardRoute("boards");
   if (allBoardsNav) allBoardsNav.hidden = false;
   if (allBoardsCount) allBoardsCount.textContent = state.BOARDS.length;
 }
@@ -268,9 +266,13 @@ export function renderBoardsPage() {
       const statusClass = b.published ? "pill--good" : "pill--muted";
       const statusText = b.published ? "Published" : "Draft";
       tr.innerHTML = `<td><a class="board-table-name${isActive ? ' board-table-name--active' : ''}" href="/dashboard?board=${encodeURIComponent(b.id)}">${esc(b.name)}${isActive ? '<span class="board-table-badge">editing</span>' : ''}</a></td><td>${esc(b.casino || "")}${b.code ? `<span class="mono"> · ${esc(b.code)}</span>` : ""}</td><td><a class="mono" href="/${esc(b.slug)}" target="_blank">/${esc(b.slug)}</a></td><td>${b.players || 0}</td><td><span class="pill ${statusClass}">${statusText}</span></td><td class="ta-r"><button class="btn btn--xs btn--ghost" data-action="edit" type="button">Edit</button><button class="btn btn--xs" data-action="dup" type="button">Duplicate</button><button class="btn btn--xs btn--danger" data-action="del" type="button">Delete</button></td>`;
+      tr.querySelector(".board-table-name")?.addEventListener("click", (e) => {
+        e.preventDefault();
+        requestDashboardRoute("home", "", { query: `board=${encodeURIComponent(b.id)}`, reload: true });
+      });
       // "Edit" now has an address to go to, so it opens the editor rather than
       // whichever section the smart landing picks.
-      tr.querySelector('[data-action="edit"]')?.addEventListener("click", () => { location.href = "/dashboard/editor?board=" + encodeURIComponent(b.id); });
+      tr.querySelector('[data-action="edit"]')?.addEventListener("click", () => { requestDashboardRoute("board", "", { query: `board=${encodeURIComponent(b.id)}`, reload: true }); });
       tr.querySelector('[data-action="dup"]')?.addEventListener("click", () => { duplicateBoard(b.id); });
       tr.querySelector('[data-action="del"]')?.addEventListener("click", () => { deleteBoard(b.id); });
       body.appendChild(tr);

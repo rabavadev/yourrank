@@ -63,6 +63,25 @@ export function setBlockLoading(el, { lines = 3 } = {}) {
   el.innerHTML = Array.from({ length: lines }, () => '<span class="skeleton v3-skel-line"></span>').join("");
 }
 
+export function setBlockReady(el) {
+  if (!el) return;
+  el.removeAttribute("aria-busy");
+}
+
+export function renderError(el, { title = "Couldn't load this panel", body = "Try again to reload it.", retry, retryLabel = "Try again" } = {}) {
+  if (!el) return;
+  el.removeAttribute("aria-busy");
+  el.setAttribute("role", "alert");
+  el.innerHTML = emptyStateHtml({
+    icon: "chart",
+    title,
+    body,
+    actions: retry ? [{ label: retryLabel, id: "stateRetry", accent: true }] : [],
+  });
+  el.hidden = false;
+  if (retry) el.querySelector("#stateRetry")?.addEventListener("click", retry, { once: true });
+}
+
 export function renderEmpty(el, spec) {
   if (!el) return;
   el.removeAttribute("aria-busy");

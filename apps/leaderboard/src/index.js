@@ -617,8 +617,9 @@ async function handleRequest(request, env, ctx, meta) {
         const html = addCookieConsent(await renderHtmlPage(verifyEmailPageHtml(verifyState)));
         return new Response(html, { status, headers: { ...SECURE_HTML, ...csrfHeader } });
       }
+      // Connect Kick lives under Rewards now; keep the old URL working.
       if (path === "/dashboard/settings/integrations") {
-        return renderDashboardPage("rewardsChannel", "integrations_render_failed");
+        return redirectKeepingSearch("/dashboard/rewards/channel", url);
       }
       if (path === "/dashboard/settings" || /^\/dashboard\/settings\/(account|plan|connections|data)$/.test(path)) {
         const pathTab = path.split("/").pop();
@@ -651,7 +652,7 @@ async function handleRequest(request, env, ctx, meta) {
       const dashboardRoute = parseDashboardPath(path);
       if (dashboardRoute) {
         if (url.searchParams.get("nav") === "kickrewards") {
-          const target = new URL("/dashboard/settings/integrations", url);
+          const target = new URL("/dashboard/rewards/channel", url);
           for (const [k, v] of url.searchParams) if (k !== "nav") target.searchParams.set(k, v);
           return Response.redirect(target, 302);
         }
@@ -713,14 +714,14 @@ async function handleRequest(request, env, ctx, meta) {
         return Response.redirect(redirectUrl, 302);
       }
       if (path === "/dashboard/credits") {
-        return redirectKeepingSearch("/dashboard/settings/integrations", url);
+        return redirectKeepingSearch("/dashboard/rewards/channel", url);
       }
       if (path === "/dashboard/rewards") {
         return redirectKeepingSearch("/dashboard/rewards/redemptions", url);
       }
       if (path.startsWith("/dashboard/rewards/")) {
         const tab = path.slice("/dashboard/rewards/".length).split("?")[0];
-        if (tab === "channel") return redirectKeepingSearch("/dashboard/settings/integrations", url);
+        if (tab === "channel") return renderDashboardPage("rewardsChannel", "channel_render_failed");
         if (tab === "maps" || tab === "rewards") return redirectKeepingSearch("/dashboard/rewards/rules", url);
         if (tab === "viewers") return redirectKeepingSearch("/dashboard/audience/viewers", url);
         if (tab === "history") return redirectKeepingSearch("/dashboard/audience/activity", url);

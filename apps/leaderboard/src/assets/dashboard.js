@@ -4,6 +4,7 @@ import { markDirty, setState, state, subscribe } from "./dashboard/state.js";
 import { currentRoute, navTo, setupShell } from "./dashboard/shell.js";
 import { renderBoardSwitcher, renderSidebarBoardSwitcher, renderBoardsPage } from "./dashboard/boards.js";
 import { renderPlayers } from "./dashboard/players.js";
+import { wireDeleteAccountModal } from "./dashboard/account-delete-modal.js";
 import { checkout, fitDesignPreview, loadCreditsStatus, loadHistory, loadStats, refreshDesignPreview, renderArchives, renderBranding, renderDomain, renderDomainStatus, renderBoardStatus, renderEditorTimestamps, renderEmbedShare, renderLegal, renderNotifications, renderOverlay, renderPlan, renderPlayerFields, renderPrizes, renderSections, renderSocials, wireCancelSubscription, wireDeleteAccount } from "./dashboard/site.js";
 import { renderOverviewSummary } from "./dashboard/overview.js";
 import { renderReferrals } from "./dashboard/referrals.js";
@@ -26,12 +27,33 @@ async function init() {
   const urlParams = new URLSearchParams(location.search);
   const requestedSiteId = urlParams.get("board") || null;
   const apiUrl = requestedSiteId ? `/api/site?siteId=${encodeURIComponent(requestedSiteId)}` : "/api/site";
-  const res = await fetch(apiUrl);
-  const p = await res.json();
-  if (!p.ok) {
-    if (state.ME.isAdmin) { location.href = "/admin"; return; }
-    $("loading").innerHTML = '<div class="error-state"><span class="error-icon">⚠</span><p>Couldn\'t load your board.</p><button class="btn btn--sm" id="retryBtn">Try again</button></div>';
-    document.getElementById("retryBtn")?.addEventListener("click", () => location.reload()); return;
+  const loading = $("loading");
+  const renderSiteLoadError = (message) => {
+    const detail = message || "The board service returned an unexpected response.";
+    if (loading) {
+      loading.innerHTML = `<div class="error-state" role="alert"><span class="error-icon" aria-hidden="true">⚠</span><p>Couldn't load your board.</p><p class="hint">${esc(detail)}</p><button class="btn btn--sm" id="retryBtn" type="button">Retry</button><a class="btn btn--sm btn--ghost" href="/dashboard">Open dashboard</a></div>`;
+    }
+    const status = $("status");
+    if (status) {
+      status.textContent = `Couldn't load your board: ${detail}`;
+      status.setAttribute("role", "alert");
+      status.setAttribute("aria-live", "assertive");
+      status.hidden = false;
+    }
+    $("retryBtn")?.addEventListener("click", () => init());
+  };
+  let p;
+  try {
+    const res = await fetch(apiUrl);
+    let body;
+    try { body = await res.json(); } catch (err) { throw new Error(`The board service returned invalid data${res.status ? ` (HTTP ${res.status})` : ""}.`); }
+    if (!res.ok || !body?.ok) throw new Error(body?.error || `The board service returned HTTP ${res.status}.`);
+    p = body;
+  } catch (err) {
+    logError("site", err);
+    if (state.ME.isAdmin && err?.message?.includes("HTTP 404")) { location.href = "/admin"; return; }
+    renderSiteLoadError(err?.message || "Network error while loading the board.");
+    return;
   }
   state.SLUG = p.slug;
   state.ACTIVE_SITE_ID = p.siteId || null;
@@ -177,6 +199,7 @@ async function init() {
   initGames();
   wireCancelSubscription();
   wireDeleteAccount();
+    wireDeleteAccountModal();
   // Boards nav is redundant for solo streamers — the sidebar board switcher covers it.
   const boardsNav = document.querySelector(".lb-nav--boards");
   if (boardsNav) boardsNav.hidden = state.BOARDS.length < 2;
@@ -276,7 +299,11 @@ function isBoardSetup(p) {
   const b = d.brand || {};
   const players = d.players || [];
   const o = p.onboarding || {};
-  const brandDone = o.brand || !!b.name;
+  // Keep in lockstep with overview.js computeSetupSteps: a board name alone is
+  // not enough; the board also needs a sponsor/prize source or promo code.
+  // Kick/configure are checked on the Overview itself — they need async state
+  // that is not loaded yet when this landing decision runs.
+  const brandDone = o.brand || Boolean(b.name && (b.casino || b.code));
   const playersDone = o.players || players.length > 0;
   const sharedDone = o.shared || p.published !== false;
   return brandDone && playersDone && sharedDone;

@@ -1,7 +1,7 @@
 import { $, getCsrf, guardAuth, logError, showToast } from "./utils.js";
 import { setState, state } from "./state.js";
 import { DEFAULT_SECTIONS, isPro } from "./site.js";
-import { setBlockLoading } from "./states.js";
+import { renderEmpty, renderError, setBlockLoading, setBlockReady } from "./states.js";
 
 const GAME_ROWS = [
   { key: "plinko", label: "Plinko", description: "A pachinko-style game with multiplier rewards." },
@@ -57,8 +57,8 @@ function renderSections() {
       <span class="v3-chip v3-chip--always">ALWAYS ON</span>
     </div>
     ${sectionRows.map(([key, title, description, note]) => `
-      <label class="v3-setting-row">
-        <span><strong>${title}</strong><span>${description} ${note}</span></span>
+      <label class="v3-setting-row" data-site-section-row="${key}">
+        <span><strong>${title}</strong><span>${description} ${note}</span><small class="v3-inline-save" data-section-status="${key}" role="status" aria-live="polite"></small></span>
         <input class="v3-toggle" type="checkbox" data-site-section="${key}" ${current[key] ? "checked" : ""} aria-label="Enable ${title}">
       </label>
     `).join("")}`;
@@ -67,10 +67,18 @@ function renderSections() {
   });
 }
 
+function setInlineSave(input, message, isError = false) {
+  const status = input.closest("[data-site-section-row], [data-game]")?.querySelector("[data-section-status], [data-game-status]");
+  if (!status) return;
+  status.textContent = message;
+  status.dataset.state = isError ? "error" : message === "Saving…" ? "saving" : "saved";
+}
+
 async function saveSection(input) {
   const previous = !input.checked;
   const next = { ...siteSections(), [input.dataset.siteSection]: input.checked };
   input.disabled = true;
+  setInlineSave(input, "Saving…");
   try {
     const res = await fetch("/api/site/sections", {
       method: "POST",
@@ -81,9 +89,11 @@ async function saveSection(input) {
     const body = await res.json();
     if (!res.ok || !body.ok) throw new Error(body.error || "Could not save viewer pages.");
     state.EXTRA.siteSections = { ...state.EXTRA.siteSections, shop: next.shop, games: next.games, me: next.credits };
+    setInlineSave(input, "Saved");
     showToast("Public page sections saved.", "success");
   } catch (err) {
     input.checked = previous;
+    setInlineSave(input, "Couldn't save", true);
     logError("save-site-sections", err);
     showToast(err.message || "Could not save viewer pages.");
   } finally {
@@ -103,8 +113,8 @@ function gamePayload(game, values) {
   };
 }
 
-async function saveGame(game, values, changedInput = null) {
-  if (!state.ACTIVE_SITE_ID) return;
+async function saveGame(game, values, changedInput = null, previousValue = null, retryValues = values) {
+  if (!state.ACTIVE_SITE_ID) return false;
   try {
     const res = await fetch("/api/site/games/settings", {
       method: "POST",
@@ -114,11 +124,47 @@ async function saveGame(game, values, changedInput = null) {
     }).then(guardAuth);
     const body = await res.json();
     if (!res.ok || !body.ok) throw new Error(body.error || "Could not save game settings.");
+    if (changedInput) {
+      changedInput.dataset.previous = changedInput.type === "checkbox" ? String(changedInput.checked) : changedInput.value;
+      changedInput.dataset.saveError = "";
+      setInlineSave(changedInput, "Saved");
+      changedInput.closest("[data-game]")?.querySelector(".v3-inline-error")?.remove();
+    }
     showToast("Game settings saved.", "success");
+    return true;
   } catch (err) {
     logError("save-game-settings", err);
-    if (changedInput) changedInput.value = changedInput.dataset.previous || changedInput.value;
+    if (changedInput) {
+      const prior = previousValue ?? changedInput.dataset.previous ?? (changedInput.type === "checkbox" ? "false" : "");
+      if (changedInput.type === "checkbox") changedInput.checked = prior === "true";
+      else changedInput.value = prior;
+      changedInput.dataset.saveError = err.message || "Could not save game settings.";
+      setInlineSave(changedInput, "Couldn't save", true);
+      const row = changedInput.closest("[data-game]");
+      let error = row?.querySelector(".v3-inline-error");
+      if (!error && row) {
+        error = document.createElement("span");
+        error.className = "v3-inline-error";
+        row.querySelector(".v3-game-details")?.appendChild(error);
+      }
+      if (error) {
+        error.textContent = err.message || "Could not save game settings.";
+        error.setAttribute("role", "alert");
+        const retry = document.createElement("button");
+        retry.type = "button";
+        retry.className = "btn btn--xs btn--ghost";
+        retry.textContent = "Retry";
+        retry.addEventListener("click", () => {
+          if (changedInput.type === "checkbox") changedInput.checked = !!retryValues.enabled;
+          else changedInput.value = String(retryValues.maxBet ?? "");
+          error.textContent = "Retrying…";
+          saveGame(game, retryValues, changedInput, prior, retryValues);
+        });
+        error.append(" ", retry);
+      }
+    }
     showToast(err.message || "Could not save game settings.");
+    return false;
   }
 }
 
@@ -133,7 +179,7 @@ function renderGames(settings) {
       ? `<span class="v3-game-coming">Coming soon</span>`
       : `<span class="v3-game-max" ${row.enabled ? "" : "hidden"}><label for="gameMax-${game.key}">Max Bet</label><input id="gameMax-${game.key}" class="v3-number-input" type="number" min="1" step="1" inputmode="numeric" placeholder="100" value="${row.maxBet || ""}" data-game-max="${game.key}" /><span>cr</span></span>`;
     return `<div class="v3-game-row ${game.disabled ? "is-disabled" : ""}" data-game="${game.key}">
-      <div class="v3-game-main"><div><strong>${game.label}</strong><span>${game.description}</span></div><input class="v3-toggle" type="checkbox" data-game-toggle="${game.key}" ${row.enabled ? "checked" : ""} ${disabled} aria-label="Enable ${game.label}"></div>
+      <div class="v3-game-main"><div><strong>${game.label}</strong><span>${game.description}</span><small class="v3-inline-save" data-game-status="${game.key}" role="status" aria-live="polite"></small></div><input class="v3-toggle" type="checkbox" data-game-toggle="${game.key}" ${row.enabled ? "checked" : ""} ${disabled} aria-label="Enable ${game.label}"></div>
       <div class="v3-game-details">${details}</div>
     </div>`;
   }).join("");
@@ -143,7 +189,9 @@ function renderGames(settings) {
       const row = byGame.get(game) || { minBet: 1, maxBet: 1, houseEdgeBps: 100, dailyLossCap: null };
       const details = input.closest("[data-game]")?.querySelector(".v3-game-max");
       if (details) details.hidden = !input.checked;
-      saveGame(game, { ...row, enabled: input.checked }, input);
+      setInlineSave(input, "Saving…");
+      const previousValue = input.checked ? "false" : "true";
+      saveGame(game, { ...row, enabled: input.checked }, input, previousValue);
     });
   });
   list.querySelectorAll("[data-game-max]").forEach((input) => {
@@ -160,8 +208,9 @@ function renderGames(settings) {
           return;
         }
         input.setCustomValidity("");
-        saveGame(game, { ...row, maxBet }, input);
-        input.dataset.previous = input.value;
+        setInlineSave(input, "Saving…");
+        const previousValue = input.dataset.previous ?? input.value;
+        saveGame(game, { ...row, maxBet }, input, previousValue, { ...row, maxBet });
       }, 350);
     });
   });
@@ -176,12 +225,18 @@ async function loadGames() {
     const body = await res.json();
     if (!res.ok || !body.ok) throw new Error(body.error || "Could not load game settings.");
     setState({ GAMES_STATUS: "ready" });
-    renderGames(body.settings || []);
+    const settings = body.settings || [];
+    const list = $("gameSettingRows");
+    if (!settings.length) {
+      renderEmpty(list, { icon: "chart", title: "No game settings yet", body: "Game settings will appear here when your board supports credit games." });
+      return;
+    }
+    setBlockReady(list);
+    renderGames(settings);
   } catch (err) {
     setState({ GAMES_STATUS: "error" });
     logError("load-game-settings", err);
-    const list = $("gameSettingRows");
-    if (list) list.innerHTML = `<p class="v3-inline-error">Couldn't load game settings.</p>`;
+    renderError($("gameSettingRows"), { title: "Couldn't load game settings", body: "Your game settings could not be loaded.", retry: loadGames });
   }
 }
 

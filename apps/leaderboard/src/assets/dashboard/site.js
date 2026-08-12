@@ -6,7 +6,7 @@ import { renderEmpty } from "./states.js";
 import { renderBoardSwitcher, renderBoardsPage, renderSidebarBoardSwitcher } from "./boards.js";
 import { renderOverviewSummary } from "./overview.js";
 import { renderPerformance, renderPerformanceLoading } from "./performance.js";
-import { applyPlayerFieldVisibility, renderPlayers, renumber, toggleEmpty } from "./players.js";
+import { applyPlayerFieldVisibility, commitDraftMutation, renderPlayers, renumber, toggleEmpty } from "./players.js";
 
 export const DEFAULT_SECTIONS = {
   hero: true,
@@ -1083,8 +1083,13 @@ export function renderArchives(list) {
         if (res.ok && d.ok) {
           const apiUrl = state.ACTIVE_SITE_ID ? `/api/site?siteId=${encodeURIComponent(state.ACTIVE_SITE_ID)}` : "/api/site";
           const p = await (await fetch(apiUrl)).json();
-          if (p.ok) { renderPlayers(p.data.players || []); renumber(); toggleEmpty(); }
-          $("status").textContent = `Restored ${d.players || a.players} players from "${a.label}". Save to publish.`;
+          if (p.ok) {
+            commitDraftMutation(() => {
+              renderPlayers(p.data.players || []);
+              renumber();
+              toggleEmpty();
+            }, `Restored ${d.players || a.players} players from "${a.label}". Save to publish.`);
+          }
         } else $("status").textContent = d.error || "Couldn't restore that.";
       } finally {
         btn.disabled = false;
@@ -1138,7 +1143,12 @@ $("a_go")?.addEventListener("click", async () => {
     if (res.ok && d.ok) {
       const apiUrl2 = state.ACTIVE_SITE_ID ? `/api/site?siteId=${encodeURIComponent(state.ACTIVE_SITE_ID)}` : "/api/site";
       const p = await (await fetch(apiUrl2)).json();
-      if (p.ok) { renderPlayers(p.data.players || []); renderArchives(p.archives || []); }
+      if (p.ok) {
+        commitDraftMutation(() => {
+          renderPlayers(p.data.players || []);
+          renderArchives(p.archives || []);
+        }, `"${d.label}" closed out. Save to publish.`);
+      }
       $("a_label").value = "";
       status.textContent = `"${d.label}" closed out — it's on your page now.`;
     } else status.textContent = d.error || "Couldn't close out the period.";

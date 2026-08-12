@@ -1,4 +1,5 @@
 /* YourRank app shell — login, signup, dashboard. Light, clean, one accent. */
+/* Intentional brand boundary: light platform UI serves operator/marketing flows; the public viewer keeps its dark branded console. */
 /* The middle elevation role was retired; shadow-md intentionally aliases shadow-sm. */
 :root{--bg:#fafafa;--panel:#ffffff;--panel-2:#f7f7f8;--line:#e4e4e7;--line-2:#d4d4d8;--ink:#191919;--ink-soft:#55555c;--ink-mute:#707070;--accent:#5b5bf5;--accent-ink:#ffffff;--toggle-on:#16c784;--danger:#ef4444;--ok:#16c784;--ok-bg:rgba(22,199,132,.10);--warn:#f59e0b;--link:#4a4ae0;--radius:12px;--radius-xl:16px;--accent-soft:rgba(91,91,245,.10);--mono:"IBM Plex Mono","JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,monospace;--sans:"Inter",system-ui,-apple-system,Segoe UI,Roboto,sans-serif;--fs-xs:.75rem;--fs-sm:.875rem;--fs-md:1rem;--fs-lg:1.25rem;--fs-xl:1.5rem;--fs-2xl:2rem;--fs-3xl:2.5rem;--space-1:4px;--space-2:8px;--space-3:12px;--space-4:16px;--space-6:24px;--space-8:32px;--space-12:48px;--space-16:64px;--space-24:96px;--radius-sm:8px;--radius-md:10px;--radius-lg:14px;--radius-full:999px;--shadow-sm:0 1px 2px rgba(0,0,0,.05);--shadow-md:var(--shadow-sm);--shadow-lg:0 12px 32px rgba(0,0,0,.12);--tap:44px;--yr-control-height:40px;--yr-control-height-narrow:44px;--yr-control-radius:8px;--yr-control-padding-x:12px;--color-bg-primary:var(--bg);--color-bg-secondary:var(--panel);--color-bg-tertiary:var(--panel-2);--color-border-default:var(--line);--color-border-hover:var(--line-2);--color-text-primary:var(--ink);--color-text-secondary:var(--ink-soft);--color-text-muted:var(--ink-mute);--color-accent:var(--accent);--color-accent-ink:var(--accent-ink);--color-accent-hover:var(--link);--color-accent-soft:var(--accent-soft);--color-success:var(--ok);--color-success-bg:var(--ok-bg);--color-danger:var(--danger);--color-warning:var(--warn);--color-link:var(--link);--font-sans:var(--sans);--font-mono:var(--mono);--font-size-xs:var(--fs-xs);--font-size-sm:var(--fs-sm);--font-size-md:var(--fs-md);--font-size-lg:var(--fs-lg);--font-size-xl:var(--fs-xl);--font-size-2xl:var(--fs-2xl);--font-size-3xl:var(--fs-3xl);--ease-default:ease;--ease-out:cubic-bezier(0.16,1,0.3,1);--ease-in-out:cubic-bezier(0.65,0,0.35,1);--ease-bounce:cubic-bezier(0.34,1.56,0.64,1);--duration-fast:100ms;--duration-normal:200ms;--duration-slow:300ms;--duration-stagger:50ms;--opacity-disabled:0.45;--opacity-hover:0.08;--opacity-backdrop:0.7;--alpha-soft:0.1;--alpha-border:0.06;--z-base:0;--z-dropdown:20;--z-sticky:50;--z-modal:100;--z-toast:200}
 
@@ -204,7 +205,7 @@ a{color:var(--ink);text-decoration:none}a:hover{color:var(--accent)}
 .auth-spec-row span:last-child{font-family:var(--mono,ui-monospace,monospace);color:var(--ink);text-align:right}
 .auth-main{display:flex;align-items:center;justify-content:center;padding:32px}
 .auth-card{width:100%;max-width:360px}
-.auth-card h2{font-size:22px;margin:0 0 4px;letter-spacing:-.01em}.auth-card .sub{color:var(--ink-mute);font-size:13px;margin-bottom:26px}
+.auth-card h1,.auth-card h2{font-size:22px;line-height:1.2;margin:0 0 4px;letter-spacing:-.01em}.auth-card .sub{color:var(--ink-mute);font-size:13px;margin-bottom:26px}
 .plan-banner{padding:12px 14px;border-radius:var(--radius,8px);background:var(--panel-2);border:1px solid var(--line);color:var(--ink);font-size:13px;margin:-8px 0 16px}
 .auth-card .foot{margin-top:18px;font-size:13px;color:var(--ink-mute)}
 .auth-card .foot-sep{display:block;margin-top:10px}
@@ -295,7 +296,7 @@ table.players th.sortable{cursor:default}
 .toast--error{border-color:var(--danger);background:var(--yr-color-danger-surface);color:var(--danger)}
 .toast--success{border-color:var(--ok);background:var(--ok-bg);color:var(--ok)}
 /* Floating save chip; shown only when there are unsaved changes */
-.savebar{position:fixed;right:22px;bottom:22px;z-index:50;display:inline-flex;align-items:center;gap:12px;padding:10px 16px;border-radius:999px;background:var(--panel);border:1px solid var(--line);box-shadow:var(--shadow-md);transition:opacity .2s,transform .2s;opacity:1;transform:translateY(0)}
+.savebar{position:fixed;right:22px;bottom:var(--yr-fixed-action-bottom,22px);z-index:var(--yr-fixed-action-z,95);display:inline-flex;align-items:center;gap:12px;padding:10px 16px;border-radius:999px;background:var(--panel);border:1px solid var(--line);box-shadow:var(--shadow-md);transition:opacity .2s,transform .2s;opacity:1;transform:translateY(0)}
 .savebar[hidden]{display:none}
 .savebar-hint{font-size:13px;color:var(--ink-mute)}
 .skel{color:var(--ink-mute);padding:40px;text-align:center}
@@ -956,7 +957,7 @@ table.ref-table td{padding:8px 8px;border-bottom:1px solid var(--line);color:var
   .board-table .ta-r{display:flex;gap:6px;justify-content:flex-end}
   .field-flex{flex-direction:column;align-items:stretch;gap:4px}
   .field-flex label{flex:auto}
-  .savebar{right:12px;bottom:12px}
+  .savebar{right:12px;--yr-fixed-action-bottom:12px}
   .toast{left:12px;right:12px;max-width:none}
 }
 

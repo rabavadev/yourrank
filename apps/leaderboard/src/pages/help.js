@@ -91,7 +91,7 @@ function helpHubContent() {
   <h2 id="help-credits">Credits and viewer fulfilment</h2>
   <p>Credits come from Kick channel-point rewards and can be spent on shop items.</p>
   <ul class="operator-help-list">
-    <li><a href="/dashboard/settings/integrations">Connect Kick</a><span>Link the Kick channel so channel-point reward redemptions can become credits.</span></li>
+    <li><a href="/dashboard/rewards/channel">Connect Kick</a><span>Link the Kick channel so channel-point reward redemptions can become credits.</span></li>
     <li><a href="/dashboard/rewards/rules">Create a credit rule</a><span>Choose a Kick reward and set how many credits it awards.</span></li>
     <li><a href="/dashboard/rewards/shop">Add a shop item</a><span>Create something viewers can unlock with their credits.</span></li>
     <li><a href="/dashboard/rewards/redemptions">Process shop redemptions</a><span>Review pending viewer requests and approve or cancel them.</span></li>
