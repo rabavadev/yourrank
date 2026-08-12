@@ -9,9 +9,10 @@ const cryptoUrl = import.meta.resolve("../../../../shared/crypto.js");
 const cryptoUrlTs = import.meta.resolve("../../../../shared/crypto.ts");
 
 const mockQuery = mock<(...args: any[]) => Promise<any>>(() => Promise.resolve([]));
+const mockOne = mock<(...args: any[]) => Promise<any>>(() => Promise.resolve(null));
 
 const dbMock = () => ({
-  one: (..._args: any[]) => Promise.resolve(null),
+  one: (...args: any[]) => mockOne(...args),
   exec: (..._args: any[]) => Promise.resolve(undefined),
   query: (..._args: any[]) => mockQuery(..._args),
   getSql: () => null,
@@ -48,7 +49,7 @@ import { wireHandlers } from "../botEngine.js";
 
 function makeBot(botRow: any) {
   const bot = new Bot("test-token", { botInfo: { id: 1, is_bot: true, first_name: "Test Bot", username: "testbot" } as any });
-  wireHandlers(bot, botRow, {});
+  wireHandlers(bot, botRow);
   return bot;
 }
 
@@ -79,9 +80,22 @@ function messageUpdate(text: string) {
   };
 }
 
+function groupMessageUpdate(text: string, username: string) {
+  const update = messageUpdate(text);
+  return {
+    ...update,
+    message: {
+      ...update.message,
+      from: { id: 42, is_bot: false, first_name: "User", username },
+      chat: { id: -42, type: "group" },
+    },
+  };
+}
+
 describe("bot commands", () => {
   beforeEach(() => {
     mockQuery.mockImplementation(() => Promise.resolve([]));
+    mockOne.mockImplementation(() => Promise.resolve(null));
   });
 
   it("/help replies with the command list", async () => {
@@ -101,6 +115,31 @@ describe("bot commands", () => {
     await bot.handleUpdate(messageUpdate("/support") as any);
     expect(replies.length).toBe(1);
     expect(replies[0][1]).toContain("yourrank.site/contact");
+  });
+
+  it("!rank uses the exact database rank beyond the old top-1000 cap", async () => {
+    const calls: Array<[string, any[]]> = [];
+    mockQuery.mockImplementation((sql: string, params: any[]) => {
+      calls.push([sql, params]);
+      return Promise.resolve([]);
+    });
+    mockOne.mockImplementation((sql: string, params: any[]) => {
+      calls.push([sql, params]);
+      if (/FROM sites/.test(sql)) return Promise.resolve({ id: "s-1", name: "My Board", slug: "my-board" });
+      if (/FROM players ahead/.test(sql)) {
+        return Promise.resolve({ name: "Player1501", wagered: 100, rank: 1501, total: 1502 });
+      }
+      return Promise.resolve(null);
+    });
+    const bot = makeBot({ id: "b-1", owner_id: "u-1", welcome_message: "Hi" });
+    const replies = captureReplies(bot);
+
+    await bot.handleUpdate(groupMessageUpdate("!rank", "player1501") as any);
+
+    expect(replies[replies.length - 1][1]).toContain("ranked #1501 of 1502");
+    const rankQuery = calls.find(([sql]) => /FROM players ahead/.test(sql));
+    expect(rankQuery).toBeTruthy();
+    expect(rankQuery?.[0]).not.toContain("LIMIT 1000");
   });
 
   it("/start replies with the welcome text and an inline menu keyboard", async () => {
