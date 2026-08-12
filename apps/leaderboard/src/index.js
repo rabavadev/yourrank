@@ -4,8 +4,7 @@ import { withWorkerFetch } from "../../../shared/with-worker.js";
 import { RateLimiter } from "../../../shared/rate-limiter-do.js";
 import { populateEnv } from "../../../shared/env.js";
 import { fromJsonb, getPublicSite, getBySlug, getClickRedirectSite, getArchiveSnapshots, ARCHIVE_LIMITS, PUBLIC_ARCHIVE_LIMIT } from "./site.js";
-import { renderEmbed, renderHallOfFame, renderLeaderboard, renderLegalPage, renderPasswordGate, renderPlayerProfile, renderStreamerProfile } from "./render.jsx";
-import { renderPublicCreditsPage } from "./public-credits.js";
+import { renderLeaderboard } from "./render.jsx";
 import { parseSitePath, renderSiteRoute } from "./site-routes.js";
 import { renderSite } from "./site-render.js";
 import { viewerDashboardPage } from "./pages/viewer-dashboard.js";
@@ -37,6 +36,14 @@ import { applyLegalIdentity } from "./pages/legal-helper.js";
 import { hashToken, newClickRef } from "../../../shared/crypto.js";
 import { handleDashboardPreview } from "./handlers/preview.js";
 import { demoLeaderboardData } from "./demo-data.js";
+import { renderPasswordGate } from "./password-gate.js";
+import {
+  renderNewEmbed,
+  renderNewHallOfFame,
+  renderNewLegalPage,
+  renderNewPlayerProfile,
+  renderNewStreamerProfile,
+} from "./auxiliary-renderers.js";
 import { parseDashboardPath, dashboardPath, resolveSection } from "./assets/dashboard/routes.js";
 import { deferClickWrite, trackedDestination } from "./tracked-redirect.js";
 import { setRequestMetrics } from "../../../shared/request-id.js";
@@ -384,7 +391,7 @@ async function handleRequest(request, env, ctx, meta) {
             if (!r || r.suspended) return new Response(notFoundPage(customSlug, nonce), { status: 404, headers: HTML_N });
             const paid = r.plan === "pro" || r.plan === "agency";
             return new Response(
-              renderHallOfFame(r.data, {
+              renderNewHallOfFame(r.data, {
                 nonce, slug: customSlug, homeUrl: `https://${host}`, isCustomDomain: true,
                 logoUrl: paid && r.data.branding?.hasLogo ? `https://${host}/logo/${customSlug}` : null,
               }),
@@ -400,7 +407,7 @@ async function handleRequest(request, env, ctx, meta) {
             const paid = r.plan === "pro" || r.plan === "agency";
             const page = path.slice(1);
             return new Response(
-              renderLegalPage(r.data, page, {
+              renderNewLegalPage(r.data, page, {
                 nonce, slug: customSlug, homeUrl: `https://${host}`, isCustomDomain: true,
                 logoUrl: paid && r.data.branding?.hasLogo ? `https://${host}/logo/${customSlug}` : null,
               }),
@@ -419,7 +426,7 @@ async function handleRequest(request, env, ctx, meta) {
             const history = await buildPlayerHistory(env, r.id, playerName, r.plan);
             const paid = r.plan === "pro" || r.plan === "agency";
             return new Response(
-              renderPlayerProfile(r.data, { ...profile.player, rank: profile.rank }, history, {
+              renderNewPlayerProfile(r.data, { ...profile.player, rank: profile.rank }, history, {
                 nonce, slug: customSlug, homeUrl: `https://${host}`, isCustomDomain: true,
                 logoUrl: paid && r.data.branding?.hasLogo ? `https://${host}/logo/${customSlug}` : null,
               }),
@@ -431,7 +438,7 @@ async function handleRequest(request, env, ctx, meta) {
             if (!r || r.suspended) return new Response(notFoundPage(customSlug, nonce), { status: 404, headers: HTML_N });
             const paid = r.plan === "pro" || r.plan === "agency";
             return new Response(
-              renderStreamerProfile(r.data, {
+              renderNewStreamerProfile(r.data, {
                 nonce, slug: customSlug, homeUrl: `https://${host}`, isCustomDomain: true,
                 logoUrl: paid && r.data.branding?.hasLogo ? `https://${host}/logo/${customSlug}` : null,
                 boards: r.boards, botUsername: r.botUsername,
@@ -442,7 +449,7 @@ async function handleRequest(request, env, ctx, meta) {
           if (method === "GET" && path === "/embed") {
             const r = await getPublicSite(env, customSlug);
             if (!r || r.suspended) return new Response(notFoundPage(customSlug, nonce), { status: 404, headers: HTML_N });
-            return new Response(renderEmbed(r.data, { nonce, slug: customSlug, isCustomDomain: true }), { headers: { ...HTML_N, "cache-control": "no-store" } });
+            return new Response(renderNewEmbed(r.data, { nonce, slug: customSlug, isCustomDomain: true }), { headers: { ...HTML_N, "cache-control": "no-store" } });
           }
           // Everything else on a custom domain → 404
           return new Response(notFoundPage("", nonce), { status: 404, headers: HTML_N });
@@ -923,7 +930,7 @@ a{color:#5b5bf5;text-decoration:none;font-weight:600}</style></head><body>
         if (!r || r.suspended) return new Response(notFoundPage(slug, nonce), { status: 404, headers: HTML_N });
         const paid = r.plan !== "free";
         return new Response(
-          renderHallOfFame(r.data, {
+          renderNewHallOfFame(r.data, {
             nonce, slug, homeUrl: url.origin, isCustomDomain: false,
             logoUrl: paid && r.data.branding?.hasLogo ? `${url.origin}/logo/${slug}` : null,
           }),
@@ -938,7 +945,7 @@ a{color:#5b5bf5;text-decoration:none;font-weight:600}</style></head><body>
         if (RESERVED.has(slug)) return new Response(notFoundPage(slug, nonce), { status: 404, headers: HTML_N });
         const r = await getPublicSite(env, slug);
         if (!r || r.suspended) return new Response(notFoundPage(slug, nonce), { status: 404, headers: HTML_N });
-        return new Response(renderEmbed(r.data, { nonce, slug, isCustomDomain: false }), { headers: { ...HTML_N, "cache-control": "no-store" } });
+        return new Response(renderNewEmbed(r.data, { nonce, slug, isCustomDomain: false }), { headers: { ...HTML_N, "cache-control": "no-store" } });
       }
       // --- per-site legal pages at /<slug>/<legal> ---
       if (method === "GET" && /^\/[^/]+\/(terms|privacy|responsible|cookies|refund|contact)$/.test(path)) {
@@ -953,7 +960,7 @@ a{color:#5b5bf5;text-decoration:none;font-weight:600}</style></head><body>
         if (!r || r.suspended) return new Response(notFoundPage(slug, nonce), { status: 404, headers: HTML_N });
         const paid = r.plan !== "free";
         return new Response(
-          renderLegalPage(r.data, page, {
+          renderNewLegalPage(r.data, page, {
             nonce, slug, homeUrl: url.origin, isCustomDomain: false,
             logoUrl: paid && r.data.branding?.hasLogo ? `${url.origin}/logo/${slug}` : null,
           }),
@@ -977,7 +984,7 @@ a{color:#5b5bf5;text-decoration:none;font-weight:600}</style></head><body>
         const history = await buildPlayerHistory(env, r.id, playerName, r.plan);
         const paid = r.plan !== "free";
         return new Response(
-          renderPlayerProfile(r.data, { ...profile.player, rank: profile.rank }, history, {
+          renderNewPlayerProfile(r.data, { ...profile.player, rank: profile.rank }, history, {
             nonce, slug, homeUrl: url.origin, isCustomDomain: false,
             logoUrl: paid && r.data.branding?.hasLogo ? `${url.origin}/logo/${slug}` : null,
           }),
@@ -994,7 +1001,7 @@ a{color:#5b5bf5;text-decoration:none;font-weight:600}</style></head><body>
         if (!r || r.suspended) return new Response(notFoundPage(slug, nonce), { status: 404, headers: HTML_N });
         const paid = r.plan !== "free";
         return new Response(
-          renderStreamerProfile(r.data, {
+          renderNewStreamerProfile(r.data, {
             nonce, slug, homeUrl: url.origin, isCustomDomain: false,
             logoUrl: paid && r.data.branding?.hasLogo ? `${url.origin}/logo/${slug}` : null,
             boards: r.boards, botUsername: r.botUsername,
@@ -1003,7 +1010,7 @@ a{color:#5b5bf5;text-decoration:none;font-weight:600}</style></head><body>
         );
       }
 
-      // --- legacy public credits page at /<slug>/credits (/<slug>/shop is part of the site shell) ---
+      // --- legacy public credits URL: the new shell's Shop is the canonical page ---
       if (method === "GET" && /^\/[^/]+\/credits$/.test(path)) {
         let slug;
         try { slug = decodeURIComponent(path.slice(1).split("/")[0]).toLowerCase(); } catch { return new Response(notFoundPage("", nonce), { status: 404, headers: HTML_N }); }
@@ -1013,17 +1020,7 @@ a{color:#5b5bf5;text-decoration:none;font-weight:600}</style></head><body>
           return new Response(renderPasswordGate(r, { nonce, isCustomDomain: false }), { headers: { ...HTML_N, "cache-control": "no-store" } });
         }
         if (!r || r.suspended) return new Response(notFoundPage(slug, nonce), { status: 404, headers: HTML_N });
-        return new Response(
-          fillYear(renderPublicCreditsPage({
-            slug,
-            nonce,
-            homeUrl: url.origin,
-            kickAuthEnabled: r.viewerKickAuthEnabled,
-            discordAuthEnabled: r.viewerDiscordAuthEnabled,
-            publicRedeemEnabled: r.viewerPublicRedeemEnabled,
-          })),
-          { headers: { ...HTML_N, "cache-control": "no-store" } }
-        );
+        return Response.redirect(new URL(`/${slug}/shop`, url), 302);
       }
 
       // --- password unlock submission for public boards ---
