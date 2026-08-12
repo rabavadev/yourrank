@@ -10,6 +10,7 @@ const read = (f) => fs.readFileSync(path.join(assets, f), "utf8");
 const utils = read("dashboard/utils.js");
 const site = read("dashboard/site.js");
 const performance = read("dashboard/performance.js");
+const account = read("dashboard/account.js");
 const ui = read("ui.css");
 const botClient = fs.readFileSync(path.resolve(import.meta.dir, "../../../bot/src/dashboard-views/client-script.ts"), "utf8");
 
@@ -46,5 +47,10 @@ describe("empty and error states", () => {
   it("the bot dashboard uses the same error component", () => {
     expect(botClient).toContain('class="empty empty--error"');
     expect(botClient).toContain("Try again");
+  });
+
+  it("shows the server's temporary export-unavailable message instead of preparing", () => {
+    expect(account).toContain("(job.message || \"Export failed.\")");
+    expect(account).toContain("Starting export…");
   });
 });

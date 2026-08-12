@@ -19,6 +19,48 @@ The manifest remains first so the artifact can be streamed immediately. The
 trailer is authoritative for what the file actually contains and can be
 compared with the manifest to identify changes during export.
 
+## R2 availability
+
+The `ACCOUNT_EXPORTS` R2 binding is deliberately deferred until R2 is enabled
+for the Cloudflare account. While it is absent, account export requests fail
+immediately with a temporary-unavailability message; no pending job is
+created, and the dashboard does not show a job as preparing.
+
+After enabling R2, restore these exact blocks:
+
+`apps/leaderboard/wrangler.toml` production:
+
+```toml
+[[r2_buckets]]
+binding = "ACCOUNT_EXPORTS"
+bucket_name = "yourrank-account-exports"
+```
+
+`apps/leaderboard/wrangler.toml` staging:
+
+```toml
+[[env.staging.r2_buckets]]
+binding = "ACCOUNT_EXPORTS"
+bucket_name = "yourrank-account-exports-staging"
+```
+
+`apps/consumer/wrangler.toml` production:
+
+```toml
+[[r2_buckets]]
+binding = "ACCOUNT_EXPORTS"
+bucket_name = "yourrank-account-exports"
+```
+
+The consumer configuration currently has no staging environment. If one is
+introduced, restore this binding inside its `env.staging` section:
+
+```toml
+[[env.staging.r2_buckets]]
+binding = "ACCOUNT_EXPORTS"
+bucket_name = "yourrank-account-exports-staging"
+```
+
 ## Widened scope and privacy protections
 
 Export version `account-export-v2` includes the account holder's configuration,

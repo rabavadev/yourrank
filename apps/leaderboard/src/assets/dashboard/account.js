@@ -111,7 +111,8 @@ function wireExport() {
       status.innerHTML = `<a href="/api/account/export/${encodeURIComponent(job.exportId)}/download">Download your export</a>`;
       btn.disabled = false;
     } else if (job.status === "failed" || job.status === "expired") {
-      status.innerHTML = `${job.status === "failed" ? "Export failed." : "Export expired."} <button type="button" class="btn btn--sm btn--ghost" id="accExportRetry">Try again</button>`;
+      const message = job.status === "failed" ? (job.message || "Export failed.") : "Export expired.";
+      status.innerHTML = `${message} <button type="button" class="btn btn--sm btn--ghost" id="accExportRetry">Try again</button>`;
       $("accExportRetry")?.addEventListener("click", () => btn.click(), { once: true });
       btn.disabled = false;
     } else {
