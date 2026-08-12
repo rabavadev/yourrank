@@ -1,7 +1,7 @@
 // Site + players data helpers for the Worker.
 import { effectivePlan, PLAN_LIMITS, BOARD_LIMITS } from "../../../shared/plans.js";
 import { query, one, exec, withTransaction } from "../../../shared/db.js";
-import { detectTop3Changes, dispatchNotifyEvent } from "../../../shared/notifications.js";
+import { detectTop3Changes, dispatchNotifyEvent, getRankChangedPlayerNames } from "../../../shared/notifications.js";
 import { TEMPLATE_IDS, resolveOptions } from "./templates/index.js";
 import { RESERVED, slugify, hashPassword } from "./auth.js";
 import { logAudit } from "../../../shared/audit.js";
@@ -1102,23 +1102,28 @@ export async function saveSite(env, user, payload, siteId, request = null) {
         await notifyQueue.send({ type: "notify", kind: "top3", siteId: site.id, siteName, changes: top3Changes });
       }
 
-      const subs = await query(
-        `SELECT ps.tg_user_id, ps.player_name, ps.bot_id FROM player_subscriptions ps WHERE ps.site_id = $1`,
-        [site.id]
-      );
-      if (subs && subs.length > 0) {
-        const oldRankMap = new Map();
-        (oldPlayers || []).forEach((p, i) => oldRankMap.set(p.name, i + 1));
-        const newRankMap = new Map();
-        newSorted.forEach((p, i) => newRankMap.set(p.name, i + 1));
+      const changedNames = getRankChangedPlayerNames(oldPlayers || [], newSorted);
+      if (changedNames.length) {
+        const subs = await query(
+          `SELECT ps.tg_user_id, ps.player_name, ps.bot_id
+             FROM player_subscriptions ps
+            WHERE ps.site_id = $1
+              AND ps.player_name = ANY($2::text[])`,
+          [site.id, changedNames]
+        );
+        if (subs && subs.length > 0) {
+          const oldRankMap = new Map();
+          (oldPlayers || []).forEach((p, i) => oldRankMap.set(p.name, i + 1));
+          const newRankMap = new Map();
+          newSorted.forEach((p, i) => newRankMap.set(p.name, i + 1));
+          const rankEvents = [];
 
-        for (const sub of subs) {
-          const playerName = sub.player_name;
-          const oldRank = oldRankMap.get(playerName) ?? null;
-          const newRank = newRankMap.get(playerName);
-          if (!newRank) continue;
-          if ((oldRank === null && newRank <= 20) || (oldRank !== null && oldRank !== newRank)) {
-            await notifyQueue.send({
+          for (const sub of subs) {
+            const playerName = sub.player_name;
+            const oldRank = oldRankMap.get(playerName) ?? null;
+            const newRank = newRankMap.get(playerName);
+            if (!newRank) continue;
+            rankEvents.push({
               type: "notify",
               kind: "player-rank",
               siteId: site.id,
@@ -1130,6 +1135,7 @@ export async function saveSite(env, user, payload, siteId, request = null) {
               tgUserId: sub.tg_user_id,
             });
           }
+          if (rankEvents.length) await notifyQueue.sendBatch(rankEvents);
         }
       }
     } catch (e) {

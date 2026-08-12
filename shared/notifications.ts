@@ -321,6 +321,27 @@ function buildPlayerRankText(siteName: string, playerName: string, oldRank: numb
   return null;
 }
 
+export function getRankChangedPlayerNames(
+  oldPlayers: Array<{ name: string; wagered: number }>,
+  newPlayers: Array<{ name: string; wagered: number }>
+): string[] {
+  const oldRankMap = new Map<string, number>();
+  (oldPlayers || []).forEach((p, i) => oldRankMap.set(p.name, i + 1));
+
+  const newSorted = (newPlayers || []).slice().sort((a, b) => (b.wagered || 0) - (a.wagered || 0));
+  const newRankMap = new Map<string, number>();
+  newSorted.forEach((p, i) => newRankMap.set(p.name, i + 1));
+
+  return newSorted
+    .filter((p) => {
+      const oldRank = oldRankMap.get(p.name) ?? null;
+      const newRank = newRankMap.get(p.name);
+      if (!newRank) return false;
+      return (oldRank === null && newRank <= 20) || (oldRank !== null && oldRank !== newRank);
+    })
+    .map((p) => p.name);
+}
+
 /**
  * Send a single player rank-change DM using the bot the player subscribed to.
  * A token cache avoids fetching/decrypting the same bot token repeatedly when
@@ -362,7 +383,8 @@ export async function notifySubscribedPlayers(
   siteId: string,
   siteName: string,
   oldPlayers: Array<{ name: string; wagered: number }>,
-  newPlayers: Array<{ name: string; wagered: number }>
+  newPlayers: Array<{ name: string; wagered: number }>,
+  sendNotification: typeof sendPlayerRankNotification = sendPlayerRankNotification
 ): Promise<void> {
   const oldRankMap = new Map<string, number>();
   (oldPlayers || []).forEach((p, i) => oldRankMap.set(p.name, i + 1));
@@ -371,9 +393,15 @@ export async function notifySubscribedPlayers(
   const newSorted = (newPlayers || []).slice().sort((a, b) => (b.wagered || 0) - (a.wagered || 0));
   newSorted.forEach((p, i) => newRankMap.set(p.name, i + 1));
 
+  const changedNames = getRankChangedPlayerNames(oldPlayers, newPlayers);
+  if (!changedNames.length) return;
+
   const subs = await db.query(
-    `SELECT ps.tg_user_id, ps.player_name, ps.bot_id FROM player_subscriptions ps WHERE ps.site_id = $1`,
-    [siteId]
+    `SELECT ps.tg_user_id, ps.player_name, ps.bot_id
+       FROM player_subscriptions ps
+      WHERE ps.site_id = $1
+        AND ps.player_name = ANY($2::text[])`,
+    [siteId, changedNames]
   );
   if (!subs.length) return;
 
@@ -383,15 +411,19 @@ export async function notifySubscribedPlayers(
     const oldRank = oldRankMap.get(playerName) ?? null;
     const newRank = newRankMap.get(playerName);
     if (!newRank) continue;
-    await sendPlayerRankNotification(db, {
-      siteId,
-      siteName,
-      playerName,
-      oldRank,
-      newRank,
-      botId: sub.bot_id,
-      tgUserId: sub.tg_user_id,
-    }, tokenCache);
+    try {
+      await sendNotification(db, {
+        siteId,
+        siteName,
+        playerName,
+        oldRank,
+        newRank,
+        botId: sub.bot_id,
+        tgUserId: sub.tg_user_id,
+      }, tokenCache);
+    } catch (e) {
+      console.error("[notify] player notification failed:", String(e instanceof Error ? e.message : e));
+    }
   }
 }
 
