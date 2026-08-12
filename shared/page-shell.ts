@@ -118,13 +118,14 @@ const BOT_BASE_CSS = `
   /* One palette across both Workers — see apps/leaderboard/src/assets/app.css.
      tokens.test.js fails if these copies drift again. */
   :root { --bg:#fafafa; --panel:#ffffff; --panel-2:#f7f7f8; --border:#e4e4e7; --border-2:#d4d4d8;
-          --fg:#191919; --dim:#55555c; --mute:#82828a;
+          --fg:#191919; --dim:#55555c; --mute:#707070;
           --accent:#5b5bf5; --accent-ink:#ffffff; --green:#16c784; --red:#ef4444;
           --mono:"IBM Plex Mono","JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
           --sans:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
           --yr-bg:var(--bg); --yr-panel:var(--panel); --yr-panel-2:var(--panel-2); --yr-line:var(--border); --yr-line-2:var(--border-2);
           --yr-ink:var(--fg); --yr-ink-soft:var(--dim); --yr-ink-mute:var(--mute); --yr-accent:var(--accent); --yr-accent-ink:var(--accent-ink);
-          --yr-green:var(--green); --yr-red:var(--red); --yr-radius:14px; --yr-radius-sm:10px;
+          --yr-green:var(--green); --yr-red:var(--red); --yr-radius:14px; --yr-radius-sm:8px;
+          --yr-control-height:40px; --yr-control-height-narrow:44px; --yr-control-radius:8px; --yr-control-padding-x:12px;
           --yr-shadow:0 1px 2px rgba(0,0,0,.05); --yr-shadow-lg:0 12px 32px rgba(0,0,0,.12);
           --yr-sans:var(--sans); --yr-mono:var(--mono); }
   * { box-sizing:border-box; margin:0; }
@@ -152,7 +153,9 @@ const BOT_BASE_CSS = `
   h2 { font-size:12px; letter-spacing:.03em; text-transform:uppercase; margin-bottom:12px; color:var(--dim); font-weight:600; }
   h3 { color:var(--fg); }
   input, textarea, select { width:100%; background:var(--bg); color:var(--fg); border:1px solid var(--border-2);
-          border-radius:8px; padding:9px 11px; margin-bottom:10px; font:inherit; }
+          border-radius:var(--yr-control-radius); min-height:var(--yr-control-height); padding:0 var(--yr-control-padding-x);
+          margin-bottom:10px; font:14px/1.2 var(--sans); }
+  textarea { min-height:var(--yr-control-height); padding:8px var(--yr-control-padding-x); }
   select { cursor:pointer; }
   /* Buttons come from /assets/ui.css (the .yr-ui body class), so this dashboard
      and the leaderboard render the same component. */
@@ -227,7 +230,7 @@ const BOT_BASE_CSS = `
   /* broadcast preview modal */
   .bc-preview { position:fixed; inset:0; background:rgba(0,0,0,.7); display:flex; align-items:center; justify-content:center; padding:18px; z-index:100; }
   .bc-preview[hidden] { display:none; }
-  .bc-preview-card { width:100%; max-width:480px; background:var(--panel); border:1px solid var(--border); border-radius:12px; padding:22px; box-shadow:0 16px 38px -10px rgba(0,0,0,.5); }
+  .bc-preview-card { width:100%; max-width:480px; background:var(--panel); border:1px solid var(--border); border-radius:14px; padding:22px; box-shadow:var(--yr-shadow-lg); }
   .bc-preview-card h3 { margin:0 0 8px; }
   .bc-preview-card p { color:var(--dim); margin:0 0 14px; }
   .bc-preview-msg { background:var(--bg); border:1px solid var(--border); border-radius:8px; padding:12px; margin-bottom:14px; white-space:pre-wrap; word-break:break-word; }
@@ -252,7 +255,7 @@ const BOT_BASE_CSS = `
   .yr-ui .menu-btn { display:none; }
   @media (max-width:860px) {
     .side { position:fixed; left:0; top:0; height:100vh; z-index:60; background:var(--bg);
-            transform:translateX(-100%); transition:transform .2s; box-shadow:2px 0 18px rgba(0,0,0,.5); }
+            transform:translateX(-100%); transition:transform .2s; box-shadow:var(--yr-shadow-lg); }
     .side.open { transform:none; }
     .yr-ui .menu-btn { display:inline-grid; place-items:center; width:36px; height:36px; border-radius:8px;
                 border:1px solid var(--border-2); background:transparent; color:var(--fg); padding:0; }
@@ -271,13 +274,13 @@ const BOT_DASH_V2_CSS = `
   .pagehead h1 { font-size: 22px; font-weight: 700; letter-spacing: -0.02em; }
   .pagehead p { font-size: 13px; color: var(--yr-ink-soft); margin-top: 4px; }
 
-  .panel, .kpi, .qa a, .step, .bot-card, .bc-segment {
+  .kpi, .qa a, .step, .bot-card, .bc-segment {
     background: var(--yr-panel);
     border: 1px solid var(--yr-line);
     border-radius: var(--yr-radius);
     box-shadow: var(--yr-shadow);
   }
-  .panel { padding: 18px; margin-bottom: 16px; }
+  .panel { padding: 18px; margin-bottom: 16px; border-radius: 12px; }
   .kpi { padding: 16px; }
   /* auto-fit rather than a fixed 4 + a breakpoint: the cards reflow to 2 and
      then 1 column on their own, so nothing is crushed on a phone. */
@@ -314,7 +317,8 @@ const BOT_DASH_V2_CSS = `
   table th { color: var(--yr-ink-mute); font-weight: 500; font-size: 12px; border-bottom: 1px solid var(--yr-line); }
   table td { border-bottom: 1px solid var(--yr-line); }
 
-  input, textarea, select { background: var(--yr-panel); border: 1px solid var(--yr-line-2); border-radius: 10px; padding: 10px 12px; font: inherit; }
+  input, textarea, select { background: var(--yr-panel); border: 1px solid var(--yr-line-2); border-radius: var(--yr-control-radius); min-height: var(--yr-control-height); padding: 0 var(--yr-control-padding-x); font: 14px/1.2 var(--yr-sans); }
+  textarea { min-height: var(--yr-control-height); padding-top: 8px; padding-bottom: 8px; }
   input:focus, textarea:focus, select:focus { outline: 2px solid var(--yr-accent); outline-offset: 0; }
 
   .shell { display: flex; gap: 24px; align-items: flex-start; max-width: 1440px; margin: 0 auto; padding: 24px 28px 80px; }
@@ -333,11 +337,15 @@ const BOT_DASH_V2_CSS = `
 
   @media (max-width: 860px) {
     .shell { display: block; padding: 16px 16px 60px; }
-    .side { position: fixed; left: 0; top: 0; height: 100vh; max-height: 100vh; z-index: 60; border-radius: 0; border: 0; border-right: 1px solid var(--yr-line); transform: translateX(-100%); transition: transform .2s; box-shadow: 2px 0 18px rgba(0,0,0,.5); }
+    .side { position: fixed; left: 0; top: 0; height: 100vh; max-height: 100vh; z-index: 60; border-radius: 0; border: 0; border-right: 1px solid var(--yr-line); transform: translateX(-100%); transition: transform .2s; box-shadow: var(--yr-shadow-lg); }
     .side.open { transform: none; }
     .main { padding-left: 0; }
     /* Comfortable touch targets on a phone. */
     .side .snav a, .qa a { min-height: 44px; }
+  }
+  @media (max-width: 768px) {
+    input, textarea, select { min-height: var(--yr-control-height-narrow); }
+    textarea { min-height: var(--yr-control-height-narrow); }
   }
 
   .muted { color: var(--yr-ink-soft); }
