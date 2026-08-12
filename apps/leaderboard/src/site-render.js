@@ -521,6 +521,7 @@ function homeMain(ctx) {
   const redemptions = viewerData?.redemptions || [];
   const pending = redemptions.filter((x) => x.status === "pending").length;
   const shopEnabled = siteSections.shop !== false;
+  const emptyBoard = players.length === 0 && items.length === 0;
 
   const eyebrow = [esc(period).toUpperCase(), cd ? `ENDS IN ${cd.text.toUpperCase()}` : ""].filter(Boolean).join(" · ");
 
@@ -531,7 +532,9 @@ function homeMain(ctx) {
 
   const heroRight = viewer
     ? `<div class="yr-hero-r">${heroStat("Loyalty credits", formatNumber(balance))}${shopEnabled ? `<a class="yr-btn" href="${shopHref}">Spend credits</a>` : ""}</div>`
-    : `<div class="yr-hero-r">${heroStat(pool ? "Prize pool" : "Players", pool ? esc(pool) : formatNumber(players.length))}${signInButton(r, returnTo)}</div>`;
+    : emptyBoard
+      ? `<div class="yr-hero-r">${signInButton(r, returnTo)}</div>`
+      : `<div class="yr-hero-r">${heroStat(pool ? "Prize pool" : "Players", pool ? esc(pool) : formatNumber(players.length))}${signInButton(r, returnTo)}</div>`;
 
   const lede = viewer
     ? `Redeem a channel-point reward on Kick and credits land here automatically.${nextReward ? ` <b>${formatNumber(Number(nextReward.cost) - balance)}</b> more credits unlocks ${esc(nextReward.name)}.` : ""}`
@@ -551,10 +554,10 @@ function homeMain(ctx) {
         kpi("Pending rewards", "hourglass", formatNumber(pending), pending ? `${esc(b.name || slug)} fulfils by hand` : "Nothing waiting"),
       ].join("")
     : [
-        kpi(pool ? "Prize pool" : "Board", "trophy", pool ? esc(pool) : esc(period), `${esc(period)} leaderboard`),
+        pool ? null : kpi("Board", "trophy", esc(period), `${esc(period)} leaderboard`),
         kpi("Players", "chart", formatNumber(players.length), "On the current board"),
         kpi("Resets in", "hourglass", cd ? cd.text : "—", cd ? "End of period" : "No reset date set"),
-      ].join("");
+      ].filter(Boolean).join("");
 
   const series = dailyEarned(ledger);
   const chartOrHow = viewer
@@ -567,9 +570,9 @@ ${creditsChart(series)}
         meta: "Free · no purchase",
         pad: true,
         body: `<ol class="yr-lede yr-steps">
-<li>Watch on Kick and redeem one of ${esc(b.name || slug)}'s channel-point rewards.</li>
+<li>Watch on Kick and redeem one of the channel-point rewards.</li>
 <li>Credits land on this site automatically — nothing to type in, no codes.</li>
-<li>Spend them in the shop. ${esc(b.name || slug)} fulfils every reward by hand, and cancelled rewards are refunded in full.</li>
+<li>Spend them in the shop. The streamer fulfils every reward by hand, and cancelled rewards are refunded in full.</li>
 </ol>`,
       })}</div>`;
 
@@ -594,8 +597,13 @@ ${creditsChart(series)}
       })).join("")}</div></div>`
     : "";
 
+  if (emptyBoard) {
+    return `${heroHtml}
+<div class="yr-empty">This board has no players or rewards yet</div>`;
+  }
+
   return `${heroHtml}
-<div class="yr-g3">${kpis}</div>
+${kpis ? `<div class="yr-g3">${kpis}</div>` : ""}
 <div class="yr-g12">${chartOrHow}${rightCol}</div>
 ${featured}`;
 }
@@ -674,15 +682,17 @@ function shopMain(ctx) {
     : (r.viewerDiscordAuthEnabled ? `/api/viewer/auth/discord?returnTo=${encodeURIComponent(returnTo)}` : "/me");
 
   const heroHtml = hero({
-    eyebrow: `${formatNumber(items.length)} REWARDS${viewer && pending ? ` · ${pending} PENDING` : ""}`,
+    eyebrow: items.length ? `${formatNumber(items.length)} REWARDS${viewer && pending ? ` · ${pending} PENDING` : ""}` : "REWARDS",
     title: "Rewards",
-    lede: `${esc(b.name || slug)} hands every one of these over personally. Credits are deducted when you redeem and returned in full if it's cancelled.`,
+    lede: items.length
+      ? `${esc(b.name || slug)} hands every one of these over personally. Credits are deducted when you redeem and returned in full if it's cancelled.`
+      : "Rewards will appear here when the streamer adds them.",
     right: viewer
       ? `<div class="yr-hero-r yr-hero-r--stack">${heroStat("Loyalty credits", formatNumber(balance))}</div>`
       : `<div class="yr-hero-r">${signInButton(r, returnTo)}</div>`,
   });
 
-  const blockedNote = viewerOnSite?.blocked
+  const blockedNote = items.length && viewerOnSite?.blocked
     ? `<div class="yr-card yr-lb"><p class="yr-label">Redeeming disabled</p><p class="yr-note">${esc(viewerOnSite.block_reason || "The streamer has paused redemptions for your account.")}</p></div>`
     : "";
 
@@ -765,6 +775,7 @@ function meMain(ctx) {
 
   const ledger = viewerData?.ledger || [];
   const redemptions = viewerData?.redemptions || [];
+  const emptyCredits = ledger.length === 0 && redemptions.length === 0 && Number(balance || 0) === 0;
   const earned7 = dailyEarned(ledger).reduce((a, d) => a + d.value, 0);
   const shopHref = `${homeUrl}${siteSectionHref("shop", slug, isCustomDomain)}`;
 
@@ -774,6 +785,11 @@ function meMain(ctx) {
     lede: `Every credit here came from ${esc(b.name || slug)}'s Kick channel-point rewards. ${esc(CREDITS_DISCLAIMER)}`,
     right: `<div class="yr-hero-r">${heroStat("Balance", formatNumber(balance))}${siteSections.shop !== false ? `<a class="yr-btn" href="${shopHref}">Spend credits</a>` : ""}</div>`,
   });
+
+  if (emptyCredits) {
+    return `${heroHtml}
+<div class="yr-empty">No credit activity or redemptions yet</div>`;
+  }
 
   const kpis = [
     kpi("Credits / 7d", "chart", `+${formatNumber(earned7)}`, `${ledger.length} recent credit events`, { accent: true }),

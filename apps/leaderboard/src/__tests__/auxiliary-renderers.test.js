@@ -79,4 +79,52 @@ describe("new-shell auxiliary renderers", () => {
     expect(html).toContain("Incorrect password.");
     expect(html).toContain('name="password"');
   });
+
+  it("removes redundant home facts and scaffolding from an empty board", async () => {
+    const html = await renderSite({
+      r: {
+        ...record,
+        data: {
+          ...record.data,
+          brand: { ...record.data.brand, prizePool: "$500" },
+          players: [],
+        },
+      },
+      section: "home",
+      viewer: null,
+      viewerData: null,
+      opts,
+    });
+    expect(html).toContain("This board has no players or rewards yet");
+    expect(html).not.toContain("How credits work");
+    expect(html).not.toContain("Top of the board");
+    expect(html).not.toContain("Prize pool");
+  });
+
+  it("keeps empty shop and credits pages focused on their honest state", async () => {
+    const empty = {
+      ...record.data,
+      players: [],
+      shopItems: [],
+    };
+    const shop = await renderSite({
+      r: { ...record, data: empty },
+      section: "shop",
+      viewer: null,
+      viewerData: null,
+      opts,
+    });
+    const me = await renderSite({
+      r: { ...record, data: empty },
+      section: "me",
+      viewer: { name: "Viewer" },
+      viewerData: { ledger: [], redemptions: [] },
+      opts,
+    });
+    expect(shop).toContain("Rewards will appear here when the streamer adds them.");
+    expect(shop).toContain("No rewards in the shop right now");
+    expect(shop).not.toContain("All rewards");
+    expect(me).toContain("No credit activity or redemptions yet");
+    expect(me).not.toContain("Credits / 7d");
+  });
 });
