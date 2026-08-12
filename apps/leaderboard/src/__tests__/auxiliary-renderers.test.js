@@ -1,12 +1,14 @@
 import { describe, expect, it } from "bun:test";
-import { renderNewEmbed, renderNewHallOfFame, renderNewLegalPage, renderNewStreamerProfile } from "../auxiliary-renderers.js";
+import { renderNewEmbed, renderNewHallOfFame, renderNewLegalPage, renderNewPlayerProfile, renderNewStreamerProfile } from "../auxiliary-renderers.js";
 import { renderPasswordGate } from "../password-gate.js";
+import { renderSite } from "../site-render.js";
 
 const record = {
   slug: "demo-board",
   plan: "pro",
   data: {
     brand: { name: "Demo Board", tagline: "A sample board", period: "Monthly", prizePool: "$500" },
+    prizes: { hidePrizeAmounts: false },
     players: [{ name: "Alex", wagered: 100, prize: 25 }],
     socials: [],
     pastWinners: [],
@@ -32,6 +34,38 @@ describe("new-shell auxiliary renderers", () => {
     expect(embed).toContain('class="yr-embed"');
     expect(embed).not.toContain("yr-region");
     expect(embed).toContain("Alex");
+    expect(embed).toContain("$100");
+  });
+
+  it("keeps auxiliary pages neutral in navigation and preserves free-plan attribution", async () => {
+    const legal = await renderNewLegalPage(record.data, "terms", { ...opts, plan: "free" });
+    expect(legal).toContain("Powered by <a");
+    expect(legal).not.toContain("Not configured");
+    expect(legal).not.toContain('aria-current="page"');
+  });
+
+  it("formats player profile currency consistently", async () => {
+    const profile = await renderNewPlayerProfile(
+      record.data,
+      { name: "Alex", rank: 1, wagered: 12500, prize: 250 },
+      [{ label: "Monthly", rank: 1, wagered: 12500, prize: 250 }],
+      opts,
+    );
+    expect(profile).toContain("$12,500");
+    expect(profile).toContain("$250");
+    expect(profile).not.toContain(">12500<");
+  });
+
+  it("does not let custom content leak into a real section render", async () => {
+    const html = await renderSite({
+      r: { ...record, plan: "free" },
+      section: "leaderboard",
+      viewer: null,
+      viewerData: null,
+      opts: { ...opts, contentHtml: "<p>stale auxiliary body</p>" },
+    });
+    expect(html).not.toContain("stale auxiliary body");
+    expect(html).toContain("Standings");
   });
 
   it("keeps the password gate standalone and preserves the error path", () => {
