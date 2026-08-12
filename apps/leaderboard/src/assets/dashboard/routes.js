@@ -14,7 +14,7 @@ export const SECTIONS = {
   boards: { path: "/dashboard/boards", title: "All boards" },
   games: { path: "/dashboard/games", title: "Viewer Pages & Games" },
   performance: { path: "/dashboard/analytics", title: "Analytics", tabs: ["activity", "referrals", "events"] },
-  settings: { path: "/dashboard/settings", title: "Settings" },
+  settings: { path: "/dashboard/settings", title: "Settings", tabs: ["account", "plan", "connections", "data"] },
 };
 
 // Names we have shipped links for, in copy, e-mails and older builds.
@@ -41,6 +41,7 @@ export function defaultTab(page) {
 
 /** `("board", "players") → "/dashboard/editor/players"` */
 export function dashboardPath(page, tab = "") {
+  if (page === "settings" && tab === "board") return "/dashboard/settings/board";
   const section = SECTIONS[resolveSection(page) || "home"];
   const tabs = section.tabs || [];
   return tabs.includes(tab) ? `${section.path}/${tab}` : section.path;
@@ -50,6 +51,7 @@ export function dashboardPath(page, tab = "") {
 export function parseDashboardPath(pathname) {
   const clean = pathname.replace(/\/+$/, "") || "/dashboard";
   if (clean === "/dashboard" || clean === "/dashboard.html") return { page: "home", tab: "" };
+  if (clean === "/dashboard/settings/board") return { page: "settings", tab: "board" };
   if (!clean.startsWith("/dashboard/")) return null;
   const [head, tail] = clean.slice("/dashboard/".length).split("/");
   const page = resolveSection(head);

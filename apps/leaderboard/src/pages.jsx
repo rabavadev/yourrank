@@ -41,6 +41,7 @@ import {
   AccountPostbacksPage,
   AccountConnectedPage,
   AccountDataPage,
+  UnifiedSettingsPage,
 } from "./pages/account.jsx";
 import {
   accountProfileConfig,
@@ -48,6 +49,7 @@ import {
   accountPostbacksConfig,
   accountConnectedConfig,
   accountDataConfig,
+  settingsConfig,
 } from "./pages/account.jsx";
 import { faqPage } from "./pages/faq.js";
 import { reviewsPage } from "./pages/reviews.js";
@@ -83,6 +85,7 @@ export const PAGES = {
   accountPostbacks: { config: accountPostbacksConfig, Component: AccountPostbacksPage },
   accountConnected: { config: accountConnectedConfig, Component: AccountConnectedPage },
   accountData: { config: accountDataConfig, Component: AccountDataPage },
+  settingsUnified: { config: settingsConfig, Component: UnifiedSettingsPage },
   faq: faqPage,
   reviews: reviewsPage,
 };

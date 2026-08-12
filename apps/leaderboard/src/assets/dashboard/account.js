@@ -225,7 +225,7 @@ function renderSettingsPlan() {
   }
 }
 
-function wireSettingsTabs() {
+function wireSettingsTabs(initialTab = "plan") {
   const tabs = [...document.querySelectorAll("[data-settings-tab]")];
   const panels = [...document.querySelectorAll("[data-settings-panel]")];
   if (!tabs.length) return;
@@ -254,7 +254,7 @@ function wireSettingsTabs() {
     event.preventDefault();
     select(link.dataset.settingsJump);
   }));
-  select("plan");
+  select(initialTab);
 }
 
 async function loadSettingsProviders() {
@@ -326,9 +326,9 @@ function wireSettingsWebhook(sitePayload) {
   sync();
 }
 
-export function setupSettingsScreen(sitePayload) {
+export function setupSettingsScreen(sitePayload, initialTab = "plan") {
   if (!document.querySelector('[data-page="settings"]')) return;
-  wireSettingsTabs();
+  wireSettingsTabs(initialTab);
   renderSettingsPlan();
   loadSettingsUsage();
   loadSettingsProviders();

@@ -167,6 +167,14 @@ const deleteAccountModal = `<div class="modal" id="deleteAccountModal" role="dia
 </div>
 `;
 
+export const settingsWidgets = {
+  account: profileWidget,
+  plan: planWidget,
+  postbacks: postbacksWidget,
+  connected: connectedWidget,
+  data: dataWidget + deleteAccountModal,
+};
+
 function accountPage(tab, body) {
   if (!body) throw new Error("account page \"" + tab + "\" has an empty body");
   return `<div id="acc-app" data-acc-tab="${tab}">${body}</div>`;
