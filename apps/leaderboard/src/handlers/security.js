@@ -3,7 +3,7 @@ import { one, exec, query } from "../../../../shared/db.js";
 import { hashToken } from "../../../../shared/crypto.js";
 import {
   currentUser, createSession, readToken, cookieSet, destroyAllUserSessions,
-  json, bad, ok, readJson, rateLimit, clientIp, hashPassword, verifyPassword,
+  json, bad, ok, readJson, rateLimit, rateLimitHeaders, clientIp, hashPassword, verifyPassword,
 } from "../auth.js";
 import { updateUserPassword } from "../data/auth.js";
 
@@ -107,111 +107,168 @@ export async function handleRevokeOtherSessions(request, env) {
   }
 }
 
-async function collectExportData(userId) {
+const exportEncoder = new TextEncoder();
+
+function exportField(key, value, first) {
+  const encoded = JSON.stringify(value);
+  if (encoded === undefined) return "";
+  return `${first ? "" : ","}${JSON.stringify(key)}:${encoded}`;
+}
+
+async function* exportJsonChunks(userId, exportId, { oneImpl = one, queryImpl = query } = {}) {
+  const one = oneImpl;
+  const query = queryImpl;
+  let first = true;
+  const field = async function* (key, value) {
+    const chunk = exportField(key, value, first);
+    if (!chunk) return;
+    first = false;
+    yield exportEncoder.encode(chunk);
+  };
+
+  yield exportEncoder.encode(`{"ok":true,"exportId":${JSON.stringify(exportId)},"data":{`);
+  yield* field("exportedAt", new Date().toISOString());
+
   const userCols = `id, email, display_name, telegram_user_id, telegram_username,
     telegram_id, telegram_linked_at, plan, plan_expires_at, status, is_admin, email_verified,
     created_at, updated_at, has_trial, failed_login_count, locked_until`;
-  const user = await one(`SELECT ${userCols} FROM users WHERE id=$1`, [userId]);
+  let user = await one(`SELECT ${userCols} FROM users WHERE id=$1`, [userId]);
+  yield* field("user", user);
+  user = null;
 
-  const sites = await query(
+  let sites = await query(
     `SELECT id, slug, name, tagline, casino, code, cta_url, prize_pool, period, ends_at,
             reset_note, blurb, extra_json, published, theme_json, updated_at, custom_domain,
             domain_status, suspended, telegram_chat_id, telegram_notify
        FROM sites WHERE user_id=$1`,
     [userId]
   );
+  yield* field("sites", sites);
 
   const siteIds = sites.map((s) => s.id);
-  const [players, archives] = siteIds.length
-    ? await Promise.all([
-        query("SELECT * FROM players WHERE site_id = ANY($1)", [siteIds]),
-        query("SELECT * FROM archives WHERE site_id = ANY($1)", [siteIds]),
-      ])
-    : [[], []];
+  sites = null;
+  let players = siteIds.length
+    ? await query("SELECT * FROM players WHERE site_id = ANY($1)", [siteIds])
+    : [];
+  yield* field("players", players);
+  players = null;
 
-  const [
-    subscriptions, payments, sessions, offers, conversions, bots,
-    postbackKeys, featureOverrides, onboardingEmails, referralRewards,
-  ] = await Promise.all([
-    query("SELECT id, plan, status, provider, current_period_end, created_at FROM subscriptions WHERE user_id=$1", [userId]),
-    query("SELECT id, subscription_id, provider, invoice_id, amount, currency, tx_ref, status, created_at, updated_at, plan_tier FROM payments WHERE user_id=$1", [userId]),
-    query("SELECT created_at, expires_at, twofa_verified FROM sessions WHERE user_id=$1", [userId]),
-    query("SELECT id, casino_id, label, referral_url, promo_code, bonus_text, priority, is_active, created_at, updated_at FROM offers WHERE owner_id=$1", [userId]),
-    query("SELECT id, offer_id, click_ref, event, amount, currency, raw, ts FROM conversions WHERE owner_id=$1", [userId]),
-    query("SELECT id, tg_bot_id, username, token_hint, status, welcome_message, created_at, updated_at FROM bots WHERE owner_id=$1", [userId]),
-    query("SELECT id, label, key_hash, created_at, revoked_at, expires_at, last_used_at FROM postback_keys WHERE user_id=$1", [userId]),
-    query("SELECT feature_key, enabled, created_at, updated_at FROM user_feature_overrides WHERE user_id=$1", [userId]),
-    query("SELECT day, sent_at FROM user_onboarding_emails WHERE user_id=$1", [userId]),
-    query("SELECT referrer_id, referred_id, reward_days, created_at FROM referral_rewards WHERE referrer_id=$1 OR referred_id=$1", [userId]),
-  ]);
+  let archives = siteIds.length
+    ? await query("SELECT * FROM archives WHERE site_id = ANY($1)", [siteIds])
+    : [];
+  yield* field("archives", archives);
+  archives = null;
 
+  let subscriptions = await query("SELECT id, plan, status, provider, current_period_end, created_at FROM subscriptions WHERE user_id=$1", [userId]);
+  yield* field("subscriptions", subscriptions);
+  subscriptions = null;
+  let payments = await query("SELECT id, subscription_id, provider, invoice_id, amount, currency, tx_ref, status, created_at, updated_at, plan_tier FROM payments WHERE user_id=$1", [userId]);
+  yield* field("payments", payments);
+  payments = null;
+  let sessions = await query("SELECT created_at, expires_at, twofa_verified FROM sessions WHERE user_id=$1", [userId]);
+  yield* field("sessions", sessions);
+  sessions = null;
+  let offers = await query("SELECT id, casino_id, label, referral_url, promo_code, bonus_text, priority, is_active, created_at, updated_at FROM offers WHERE owner_id=$1", [userId]);
+  yield* field("offers", offers);
   const offerIds = offers.map((o) => o.id);
-  const shortLinks = offerIds.length
+  offers = null;
+  let shortLinks = offerIds.length
     ? await query("SELECT sl.id, sl.offer_id, sl.slug, sl.source, sl.created_at FROM short_links sl WHERE sl.offer_id = ANY($1)", [offerIds])
     : [];
-
+  yield* field("shortLinks", shortLinks);
+  shortLinks = null;
+  let conversions = await query("SELECT id, offer_id, click_ref, event, amount, currency, raw, ts FROM conversions WHERE owner_id=$1", [userId]);
+  yield* field("conversions", conversions);
+  conversions = null;
+  let bots = await query("SELECT id, tg_bot_id, username, token_hint, status, welcome_message, created_at, updated_at FROM bots WHERE owner_id=$1", [userId]);
+  yield* field("bots", bots);
   const botIds = bots.map((b) => b.id);
-  const [botCommands, broadcasts, botSubscribers] = botIds.length
-    ? await Promise.all([
-        query("SELECT bot_id, command, response, offer_id, is_enabled FROM bot_commands WHERE bot_id = ANY($1)", [botIds]),
-        query("SELECT id, bot_id, status, body, media_url, buttons, scheduled_at, sent_at, total_count, sent_count, fail_count, segment, created_at FROM broadcasts WHERE bot_id = ANY($1)", [botIds]),
-        query("SELECT id, bot_id, tg_user_id, tg_username, first_name, language, is_blocked, first_seen, last_seen FROM bot_subscribers WHERE bot_id = ANY($1)", [botIds]),
-      ])
-    : [[], [], []];
+  bots = null;
 
-  const [
-    auditLog, adminAudit, supportMessages,
-    siteStatsHourly, siteReferrers,
-  ] = await Promise.all([
-    query("SELECT id, action, entity_type, entity_id, details, ip_address, user_agent, created_at FROM audit_log WHERE actor_id=$1", [userId]),
-    query("SELECT id, admin_id, target_user_id, action, details, ip_address, user_agent, created_at FROM admin_audit WHERE admin_id=$1 OR target_user_id=$1", [userId]),
-    query("SELECT id, name, email, subject, message, status, ip_hash, created_at, updated_at FROM support_messages WHERE user_id=$1", [userId]),
-    siteIds.length ? query("SELECT site_id, day, hour, day_of_week, views FROM site_stats_hourly WHERE site_id = ANY($1)", [siteIds]) : [],
-    siteIds.length ? query("SELECT site_id, day, domain, count FROM site_referrers WHERE site_id = ANY($1)", [siteIds]) : [],
-  ]);
+  let botCommands = botIds.length
+    ? await query("SELECT bot_id, command, response, offer_id, is_enabled FROM bot_commands WHERE bot_id = ANY($1)", [botIds])
+    : [];
+  yield* field("botCommands", botCommands);
+  botCommands = null;
+  let broadcasts = botIds.length
+    ? await query("SELECT id, bot_id, status, body, media_url, buttons, scheduled_at, sent_at, total_count, sent_count, fail_count, segment, created_at FROM broadcasts WHERE bot_id = ANY($1)", [botIds])
+    : [];
+  yield* field("broadcasts", broadcasts);
+  broadcasts = null;
+  let botSubscribers = botIds.length
+    ? await query("SELECT id, bot_id, tg_user_id, tg_username, first_name, language, is_blocked, first_seen, last_seen FROM bot_subscribers WHERE bot_id = ANY($1)", [botIds])
+    : [];
+  yield* field("botSubscribers", botSubscribers);
+  botSubscribers = null;
+  let postbackKeys = await query("SELECT id, label, key_hash, created_at, revoked_at, expires_at, last_used_at FROM postback_keys WHERE user_id=$1", [userId]);
+  yield* field("postbackKeys", postbackKeys);
+  postbackKeys = null;
+  let featureOverrides = await query("SELECT feature_key, enabled, created_at, updated_at FROM user_feature_overrides WHERE user_id=$1", [userId]);
+  yield* field("featureOverrides", featureOverrides);
+  featureOverrides = null;
+  let onboardingEmails = await query("SELECT day, sent_at FROM user_onboarding_emails WHERE user_id=$1", [userId]);
+  yield* field("onboardingEmails", onboardingEmails);
+  onboardingEmails = null;
+  let referralRewards = await query("SELECT referrer_id, referred_id, reward_days, created_at FROM referral_rewards WHERE referrer_id=$1 OR referred_id=$1", [userId]);
+  yield* field("referralRewards", referralRewards);
+  referralRewards = null;
 
-  return {
-    exportedAt: new Date().toISOString(),
-    user,
-    sites,
-    players,
-    archives,
-    subscriptions,
-    payments,
-    sessions,
-    offers,
-    shortLinks,
-    conversions,
-    bots,
-    botCommands,
-    broadcasts,
-    botSubscribers,
-    postbackKeys,
-    featureOverrides,
-    onboardingEmails,
-    referralRewards,
-    auditLog,
-    adminAudit,
-    supportMessages,
-    siteStatsHourly,
-    siteReferrers,
-  };
+  let auditLog = await query("SELECT id, action, entity_type, entity_id, details, ip_address, user_agent, created_at FROM audit_log WHERE actor_id=$1", [userId]);
+  yield* field("auditLog", auditLog);
+  auditLog = null;
+  let adminAudit = await query("SELECT id, admin_id, target_user_id, action, details, ip_address, user_agent, created_at FROM admin_audit WHERE admin_id=$1 OR target_user_id=$1", [userId]);
+  yield* field("adminAudit", adminAudit);
+  adminAudit = null;
+  let supportMessages = await query("SELECT id, name, email, subject, message, status, ip_hash, created_at, updated_at FROM support_messages WHERE user_id=$1", [userId]);
+  yield* field("supportMessages", supportMessages);
+  supportMessages = null;
+  let siteStatsHourly = siteIds.length
+    ? await query("SELECT site_id, day, hour, day_of_week, views FROM site_stats_hourly WHERE site_id = ANY($1)", [siteIds])
+    : [];
+  yield* field("siteStatsHourly", siteStatsHourly);
+  siteStatsHourly = null;
+  let siteReferrers = siteIds.length
+    ? await query("SELECT site_id, day, domain, count FROM site_referrers WHERE site_id = ANY($1)", [siteIds])
+    : [];
+  yield* field("siteReferrers", siteReferrers);
+  siteReferrers = null;
+
+  yield exportEncoder.encode("}}");
 }
 
-export async function handleExportData(request, env) {
+export async function handleExportData(request, env, {
+  currentUserImpl = currentUser,
+  rateLimitImpl = rateLimit,
+  oneImpl = one,
+  queryImpl = query,
+} = {}) {
   try {
-    const user = await currentUser(request, env);
+    const user = await currentUserImpl(request, env);
     if (!user) return bad("unauthorized", 401);
+    const rl = await rateLimitImpl(env, `account-export:${user.id}`, 2, 3600);
+    if (!rl.ok) return bad("Too many exports. Try again later.", 429, rateLimitHeaders(rl));
 
     const exportId = `${Date.now()}-${user.id}`;
-    const payload = {
-      ok: true,
-      exportId,
-      data: await collectExportData(user.id),
-    };
+    const stream = new ReadableStream({
+      async start(controller) {
+        try {
+          for await (const chunk of exportJsonChunks(user.id, exportId, { oneImpl, queryImpl })) {
+            controller.enqueue(chunk);
+          }
+          controller.close();
+        } catch (e) {
+          console.error("data export stream failed:", String(e?.message || e));
+          controller.error(e);
+        }
+      },
+    });
 
-    return json(payload, 200, {
-      "content-disposition": `attachment; filename="yourrank-export-${exportId}.json"`,
+    return new Response(stream, {
+      status: 200,
+      headers: {
+        "content-type": "application/json; charset=utf-8",
+        "content-disposition": `attachment; filename="yourrank-export-${exportId}.json"`,
+      },
     });
   } catch (e) {
     console.error("data export failed:", String(e?.message || e));
