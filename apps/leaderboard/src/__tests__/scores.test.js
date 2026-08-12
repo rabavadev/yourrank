@@ -81,11 +81,9 @@ mock.module(_postbackUrl, () => ({
   recordReplayHash: async () => true,
 }));
 
-mock.module("../site.js", () => ({
-  saveSite: async () => _saveSiteResult,
-}));
-
 const { handleScores } = await import("../handlers/scores.js");
+const invokeScores = (request, env) =>
+  handleScores(request, env, { saveSiteImpl: async () => _saveSiteResult });
 
 // QA-006: Freeze the clock so Date.now()-based tests are deterministic
 const FROZEN_TIME = new Date("2025-06-15T12:00:00Z").getTime();
@@ -140,7 +138,7 @@ describe("handleScores — auth", () => {
 
   test("missing X-Postback-Key returns 401", async () => {
     const req = makeRequest({ body: { slug: "test", players: [] } });
-    const res = await handleScores(req, makeEnv());
+    const res = await invokeScores(req, makeEnv());
     expect(res.status).toBe(401);
     const body = await res.json();
     expect(body.error).toContain("X-Postback-Key");
@@ -149,7 +147,7 @@ describe("handleScores — auth", () => {
   test("rate limit exceeded returns 429", async () => {
     _rateLimitCount = 10;
     const req = makeRequest({ headers: { "x-postback-key": "valid-key" }, body: { slug: "test", players: [] } });
-    const res = await handleScores(req, makeEnv());
+    const res = await invokeScores(req, makeEnv());
     expect(res.status).toBe(429);
     _rateLimitCount = 0;
   });
@@ -157,13 +155,13 @@ describe("handleScores — auth", () => {
   test("unknown postback key returns 401", async () => {
     _siteRow = null;
     const req = makeRequest({ headers: { "x-postback-key": "unknown-key" }, body: { slug: "test", players: [] } });
-    const res = await handleScores(req, makeEnv());
+    const res = await invokeScores(req, makeEnv());
     expect(res.status).toBe(401);
   });
 
   test("missing board slug or siteId returns 400", async () => {
     const req = makeRequest({ headers: { "x-postback-key": "key" }, body: { players: [] } });
-    const res = await handleScores(req, makeEnv());
+    const res = await invokeScores(req, makeEnv());
     expect(res.status).toBe(400);
     const body = await res.json();
     expect(body.error).toContain("slug");
@@ -172,7 +170,7 @@ describe("handleScores — auth", () => {
   test("non-matching board slug returns 401", async () => {
     _siteRow = null;
     const req = makeRequest({ headers: { "x-postback-key": "key" }, body: { slug: "wrong-slug", players: [] } });
-    const res = await handleScores(req, makeEnv());
+    const res = await invokeScores(req, makeEnv());
     expect(res.status).toBe(401);
   });
 });
@@ -182,7 +180,7 @@ describe("handleScores — plan gate", () => {
     _siteRow = site();
     _ownerRow = { plan: "free", plan_expires_at: null, status: "active" };
     const req = makeRequest({ headers: { "x-postback-key": "key" }, body: { slug: "test", players: [] } });
-    const res = await handleScores(req, makeEnv());
+    const res = await invokeScores(req, makeEnv());
     expect(res.status).toBe(403);
     const body = await res.json();
     expect(body.error).toContain("Pro");
@@ -192,7 +190,7 @@ describe("handleScores — plan gate", () => {
     _siteRow = site();
     _ownerRow = { plan: "starter", plan_expires_at: Date.now() + 86_400_000, status: "active" };
     const req = makeRequest({ headers: { "x-postback-key": "key" }, body: { slug: "test", players: [] } });
-    const res = await handleScores(req, makeEnv());
+    const res = await invokeScores(req, makeEnv());
     expect(res.status).toBe(403);
   });
 
@@ -200,7 +198,7 @@ describe("handleScores — plan gate", () => {
     _siteRow = site();
     _ownerRow = { plan: "pro", plan_expires_at: Date.now() + 86_400_000, status: "suspended" };
     const req = makeRequest({ headers: { "x-postback-key": "key" }, body: { slug: "test", players: [] } });
-    const res = await handleScores(req, makeEnv());
+    const res = await invokeScores(req, makeEnv());
     expect(res.status).toBe(403);
   });
 
@@ -208,7 +206,7 @@ describe("handleScores — plan gate", () => {
     _siteRow = site();
     _ownerRow = { plan: "pro", plan_expires_at: Date.now() - 1000, status: "active" };
     const req = makeRequest({ headers: { "x-postback-key": "key" }, body: { slug: "test", players: [] } });
-    const res = await handleScores(req, makeEnv());
+    const res = await invokeScores(req, makeEnv());
     expect(res.status).toBe(403);
   });
 });
@@ -227,13 +225,13 @@ describe("handleScores — payload validation", () => {
       headers: { "x-postback-key": "key", "x-postback-signature": "test-sig", "content-type": "text/plain" },
       body: "not json",
     });
-    const res = await handleScores(req, makeEnv());
+    const res = await invokeScores(req, makeEnv());
     expect(res.status).toBe(400);
   });
 
   test("players not an array returns 400", async () => {
     const req = makeRequest({ headers: { "x-postback-key": "key" }, body: { slug: "test", players: "notanarray" } });
-    const res = await handleScores(req, makeEnv());
+    const res = await invokeScores(req, makeEnv());
     expect(res.status).toBe(400);
     const body = await res.json();
     expect(body.error).toContain("array");
@@ -243,7 +241,7 @@ describe("handleScores — payload validation", () => {
     _ownerRow = agencyOwner();
     const players = Array.from({ length: 10000 }, (_, i) => ({ name: `Player${i}`, wagered: 100 }));
     const req = makeRequest({ headers: { "x-postback-key": "key" }, body: { slug: "test", players } });
-    const res = await handleScores(req, makeEnv());
+    const res = await invokeScores(req, makeEnv());
     expect(res.status).toBe(400);
     const body = await res.json();
     expect(body.error).toContain("players");
@@ -255,7 +253,7 @@ describe("handleScores — payload validation", () => {
       { name: "Bob",   wagered: 3000, prize: 50  },
     ];
     const req = makeRequest({ headers: { "x-postback-key": "key" }, body: { slug: "test", players } });
-    const res = await handleScores(req, makeEnv());
+    const res = await invokeScores(req, makeEnv());
     expect(res.status).toBe(200);
     const body = await res.json();
     expect(body.ok).toBe(true);
@@ -268,7 +266,7 @@ describe("handleScores — payload validation", () => {
       { wagered: 500 },
     ];
     const req = makeRequest({ headers: { "x-postback-key": "key" }, body: { slug: "test", players } });
-    const res = await handleScores(req, makeEnv());
+    const res = await invokeScores(req, makeEnv());
     expect(res.status).toBe(400);
   });
 
@@ -277,7 +275,7 @@ describe("handleScores — payload validation", () => {
       headers: { "x-postback-key": "key" },
       body: { slug: "test", players: [], ownerId: "unexpected" },
     });
-    const res = await handleScores(req, makeEnv());
+    const res = await invokeScores(req, makeEnv());
     expect(res.status).toBe(400);
   });
 
@@ -286,7 +284,7 @@ describe("handleScores — payload validation", () => {
       headers: { "x-postback-key": "key" },
       body: { slug: "test", players: [{ name: "Player", wagered: 100, admin: true }] },
     });
-    const res = await handleScores(req, makeEnv());
+    const res = await invokeScores(req, makeEnv());
     expect(res.status).toBe(400);
   });
 
@@ -301,14 +299,14 @@ describe("handleScores — payload validation", () => {
         ],
       },
     });
-    const res = await handleScores(req, makeEnv());
+    const res = await invokeScores(req, makeEnv());
     expect(res.status).toBe(400);
   });
 
   test("saveSite error is surfaced as 400", async () => {
     _saveSiteResult = { error: "slug already taken" };
     const req = makeRequest({ headers: { "x-postback-key": "key" }, body: { slug: "test", players: [{ name: "Alice", wagered: 100 }] } });
-    const res = await handleScores(req, makeEnv());
+    const res = await invokeScores(req, makeEnv());
     expect(res.status).toBe(400);
     const body = await res.json();
     expect(body.error).toBe("slug already taken");

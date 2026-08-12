@@ -187,6 +187,24 @@ export function clearPublicStreamVersionCache() {
 
 export const getBySlug = (env, slug) => getCached(env, slug, () => one(`SELECT ${SITE_COLUMNS} FROM sites WHERE slug=$1`, [slug]));
 
+export async function getClickRedirectSite(env, slug, request = null) {
+  const site = await one(
+    `SELECT s.id, s.user_id, s.slug, s.cta_url, s.published, s.is_draft,
+            s.password_hash, s.password_salt, u.status AS owner_status, u.email_verified
+       FROM sites s
+       JOIN users u ON u.id = s.user_id
+      WHERE s.slug = $1`,
+    [slug]
+  );
+  if (!site || !site.published || site.is_draft || site.owner_status === "suspended" || !site.email_verified) {
+    return null;
+  }
+  if (site.password_hash && !(request && await verifyBoardPasswordCookie(request, site))) {
+    return null;
+  }
+  return site;
+}
+
 // Multi-board: returns the ACTIVE board for a user (or the first board if none set).
 // Not cached: the dashboard reads this on every load and must see the latest saves
 // immediately, even when the request hits a different worker isolate.

@@ -3,7 +3,7 @@ import { sendErrorToDiscord } from "../../../shared/monitoring.js";
 import { withWorkerFetch } from "../../../shared/with-worker.js";
 import { RateLimiter } from "../../../shared/rate-limiter-do.js";
 import { populateEnv } from "../../../shared/env.js";
-import { fromJsonb, getPublicSite, getBySlug, getArchiveSnapshots, ARCHIVE_LIMITS, PUBLIC_ARCHIVE_LIMIT } from "./site.js";
+import { fromJsonb, getPublicSite, getBySlug, getClickRedirectSite, getArchiveSnapshots, ARCHIVE_LIMITS, PUBLIC_ARCHIVE_LIMIT } from "./site.js";
 import { renderEmbed, renderHallOfFame, renderLeaderboard, renderLegalPage, renderPasswordGate, renderPlayerProfile, renderStreamerProfile } from "./render.jsx";
 import { renderPublicCreditsPage } from "./public-credits.js";
 import { parseSitePath, renderSiteRoute } from "./site-routes.js";
@@ -36,6 +36,7 @@ import { hashToken, newClickRef } from "../../../shared/crypto.js";
 import { handleDashboardPreview } from "./handlers/preview.js";
 import { demoLeaderboardData } from "./demo-data.js";
 import { parseDashboardPath, dashboardPath, resolveSection } from "./assets/dashboard/routes.js";
+import { deferClickWrite, trackedDestination } from "./tracked-redirect.js";
 
 const LEGAL_PAGES = new Set(["terms", "privacy", "responsible", "cookies", "refund", "contact"]);
 
@@ -732,25 +733,18 @@ async function handleRequest(request, env, ctx, meta) {
           return Response.redirect(`${url.origin}/signup`, 302);
         }
         const clickRef = newClickRef();
-        const r = await getPublicSite(env, slug, request);
-        if (!r || r.suspended || r.requiresPassword) return new Response(notFoundPage(slug, nonce), { status: 404, headers: HTML_N });
-        if (r.id && r.userId) {
-          await one(
+        const r = await getClickRedirectSite(env, slug, request);
+        if (!r) return new Response(notFoundPage(slug, nonce), { status: 404, headers: HTML_N });
+        if (r.id && r.user_id) {
+          deferClickWrite(ctx, () => one(
             "INSERT INTO site_clicks (click_ref, site_id, owner_id, cta_url) VALUES ($1, $2, $3, $4)",
-            [clickRef, r.id, r.userId, r.data?.brand?.ctaUrl || null]
-          );
-          if (r.id) enqueueBump(env, ctx, r.id, "clicks");
+            [clickRef, r.id, r.user_id, r.cta_url || null]
+          ).then(() => enqueueBump(env, ctx, r.id, "clicks")));
         }
-        const dest = r.data?.brand?.ctaUrl;
         // E2E-008: Only redirect to the CTA URL if it's a valid https:// URL.
         // If empty/null or non-https (javascript:, data:, relative paths),
         // redirect to the board page instead of risking a redirect loop.
-        if (dest && /^https:\/\//i.test(dest)) {
-          const destUrl = new URL(dest);
-          destUrl.searchParams.set("yr_click", clickRef);
-          return Response.redirect(destUrl.toString(), 302);
-        }
-        return Response.redirect(`${url.origin}/${slug}`, 302);
+        return trackedDestination(url.origin, slug, r.cta_url, clickRef);
       }
 
       // --- referral redirect: /ref/<code> → /signup?ref=<code> ---
