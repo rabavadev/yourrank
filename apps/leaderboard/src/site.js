@@ -238,21 +238,25 @@ export async function getPlayers(env, siteId, options = {}) {
   const offset = Math.max(0, Number(options.offset) || 0);
   const search = String(options.search || "").trim().toLowerCase().replace(/\s+/g, " ");
   const sql = search
-    ? `WITH matches AS (
+    ? `WITH matches AS MATERIALIZED (
          SELECT id, name, normalized_name, wagered, prize, score, hands, net_profit, win_rate, change
            FROM players
           WHERE site_id=$1 AND normalized_name LIKE '%' || $2 || '%'
           ORDER BY wagered DESC, id ASC
           LIMIT 10000
+       ), page AS (
+         SELECT *
+           FROM matches
+          ORDER BY wagered DESC, id ASC
+          LIMIT $3 OFFSET $4
        )
        SELECT name, wagered, prize, score, hands, net_profit, win_rate, change,
               (SELECT count(*) FROM players better
                 WHERE better.site_id=$1
-                  AND (better.wagered > matches.wagered
-                    OR (better.wagered = matches.wagered AND better.id < matches.id)))::int + 1 AS rank
-         FROM matches
-        ORDER BY rank
-        LIMIT $3 OFFSET $4`
+                  AND (better.wagered > page.wagered
+                    OR (better.wagered = page.wagered AND better.id < page.id)))::int + 1 AS rank
+         FROM page
+        ORDER BY wagered DESC, id ASC`
     : `SELECT name, wagered, prize, score, hands, net_profit, win_rate, change, rank
          FROM (
            SELECT name, normalized_name, wagered, prize, score, hands, net_profit, win_rate, change,
