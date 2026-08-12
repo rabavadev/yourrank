@@ -131,14 +131,7 @@ export function DashboardContent({ user } = {}) {
 </div>
 <div class="v3-bulkbar" id="bulkActions" role="status" hidden><span class="v3-bulkbar-mark" aria-hidden="true"></span><span id="bulkCount">0 players selected</span><span class="v3-bulkbar-sep" aria-hidden="true"></span><button class="v3-btn v3-btn--dark" id="bulkClearWager" type="button">Clear wagers</button><button class="v3-btn v3-btn--danger" id="bulkDelete" type="button">Delete selected</button></div>
 </div>
-<div class="card" data-egroup="design" id="playerFieldsCard"><h2>Visible columns</h2><p class="card-sub">Choose which extra columns show on the dashboard player table and on supported public templates.</p><div class="section-list" id="playerFieldsList"></div></div>
-<div class="card" data-egroup="design" id="templateCard"><h2>Template</h2><p class="card-sub">Pick a design; the preview on the right uses your real players.</p>
-<input type="hidden" id="f_template" value="classic" />
-<div class="template-gallery-wrap" id="templateGalleryWrap">
-<div class="template-grid" id="templateGallery" aria-label="Page templates"></div>
-</div>
-<p class="hint template-status" id="templateStatus" role="status" aria-live="polite"></p>
-<div class="template-options" id="templateOptions" hidden></div></div>
+<div class="card" data-egroup="design" id="playerFieldsCard"><h2>Visible columns</h2><p class="card-sub">Choose which extra columns show on the dashboard player table.</p><div class="section-list" id="playerFieldsList"></div></div>
 <div class="design-group-heading" data-egroup="design"><h3>Appearance</h3></div>
 <div class="card" data-egroup="design" id="brandCard"><h2>Branding <span class="pill pill--info ml-6">PRO</span></h2><p class="card-sub">Your logo and page colors. Free pages use the default look.</p>
 <div id="brandBody">
@@ -149,9 +142,9 @@ export function DashboardContent({ user } = {}) {
 <span class="hint">PNG, JPG or WebP. Shows in your page header and as the link preview image when your page gets shared. Square works best.</span></div>
 <div class="field"><label>Curated color presets</label>
 <div class="preset-list" id="colorPresets"></div>
-<span class="hint">Each template includes ready-made combinations. Click one to publish it instantly.</span>
+<span class="hint">Choose a starting palette, or set your own colors below.</span>
 <details class="advanced-colors"><summary>Advanced custom colors</summary>
-<div class="color-row"><label for="c_a" class="sr-only">Accent color start</label><input type="color" id="c_a" value="#5b5bf5" /><label for="c_b" class="sr-only">Accent color end</label><input type="color" id="c_b" value="#5b5bf5" /><button class="btn btn--sm btn--ghost" id="applyCustomColors" type="button">Apply colors</button><button class="btn btn--sm btn--ghost" id="colorsReset" type="button">Template default</button></div>
+<div class="color-row"><label for="c_a" class="sr-only">Accent color start</label><input type="color" id="c_a" value="#5b5bf5" /><label for="c_b" class="sr-only">Accent color end</label><input type="color" id="c_b" value="#5b5bf5" /><button class="btn btn--sm btn--ghost" id="applyCustomColors" type="button">Apply colors</button><button class="btn btn--sm btn--ghost" id="colorsReset" type="button">Reset palette</button></div>
 </details></div>
 <div class="field"><label for="f_font">Font</label><select id="f_font"><option value="Inter">Inter — Default</option><option value="Oswald">Oswald — Bold & Sporty</option><option value="Playfair Display">Playfair Display — Premium & Elegant</option><option value="Rajdhani">Rajdhani — Techy & Esports</option><option value="Bebas Neue">Bebas Neue — Impact & Hype</option></select><span class="hint">Changes the personality of your public page text.</span></div>
 </div></div>
@@ -171,8 +164,6 @@ export function DashboardContent({ user } = {}) {
 </div>
 <div class="empty upsell-card" id="prizesLock" hidden>Prize customization is a Pro feature. <a href="/account/plan?from=prizes" id="prizesUpgrade">Upgrade to unlock it</a>.</div></div>
 <div class="design-group-heading" data-egroup="design"><h3>Content</h3></div>
-<div class="card" data-egroup="design" id="textCard"><h2>Template text</h2><p class="card-sub">Change the copy inside your selected design. Keys with an empty value fall back to the default.</p>
-<div class="text-editor" id="textList"></div></div>
 <div class="card" data-egroup="design" id="socialsCard"><h2>Social links</h2><p class="card-sub">Add the links to your channels. Turn a network <b>on</b> to show it on your public page; turn it <b>off</b> to hide it.</p>
 <div class="socials-editor" id="socialsList"></div></div>
 <div class="card" data-egroup="share" id="embedShareCard"><h2>Embed &amp; share</h2><p class="card-sub">Share your leaderboard or embed it on stream.</p>
@@ -302,7 +293,7 @@ export function DashboardContent({ user } = {}) {
 <div class="list-controls"><input type="search" id="boardsSearch" class="list-search" placeholder="Find board…" aria-label="Find board" /></div>
 <div class="board-table-wrap">
 <table class="board-table">
-<thead><tr><th>Board</th><th>Sponsor</th><th>URL</th><th>Players</th><th>Template</th><th>Status</th><th class="ta-r">Actions</th></tr></thead>
+<thead><tr><th>Board</th><th>Sponsor</th><th>URL</th><th>Players</th><th>Status</th><th class="ta-r">Actions</th></tr></thead>
 <tbody id="boardsBody"></tbody>
 </table>
 </div>

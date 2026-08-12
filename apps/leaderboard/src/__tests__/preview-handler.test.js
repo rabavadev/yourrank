@@ -30,7 +30,7 @@ describe("handleDashboardPreview", () => {
   it("requires an authenticated dashboard session", async () => {
     mockCurrentUser.mockResolvedValueOnce(null);
     const res = await handleDashboardPreview(
-      new Request("https://test.com/dashboard/preview?board=site-1&template=classic"),
+      new Request("https://test.com/dashboard/preview?board=site-1"),
       {},
       "nonce123",
       { currentUserImpl: (...args) => mockCurrentUser(...args), getUserSiteByIdImpl: (...args) => mockGetUserSiteById(...args) },
@@ -42,7 +42,7 @@ describe("handleDashboardPreview", () => {
   it("returns 404 when the requested board is not owned by the user", async () => {
     mockGetUserSiteById.mockResolvedValueOnce(null);
     const res = await handleDashboardPreview(
-      new Request("https://test.com/dashboard/preview?board=other-site&template=classic"),
+      new Request("https://test.com/dashboard/preview?board=other-site"),
       {},
       "nonce123",
       { currentUserImpl: (...args) => mockCurrentUser(...args), getUserSiteByIdImpl: (...args) => mockGetUserSiteById(...args) },
@@ -53,7 +53,7 @@ describe("handleDashboardPreview", () => {
 
   it("overrides preview theme data without mutating stored board data", async () => {
     const res = await handleDashboardPreview(
-      new Request("https://test.com/dashboard/preview?board=site-1&template=classic&accentA=%2300ffd1&accentB=%23ff2cd0"),
+      new Request("https://test.com/dashboard/preview?board=site-1&accentA=%2300ffd1&accentB=%23ff2cd0"),
       {},
       "nonce123",
       { currentUserImpl: (...args) => mockCurrentUser(...args), getUserSiteByIdImpl: (...args) => mockGetUserSiteById(...args) },

@@ -17,7 +17,7 @@ const mockOne = mock(() => Promise.resolve(null));
 const mockQuery = mock(() => Promise.resolve([]));
 const mockUpdateSiteTheme = mock(() => Promise.resolve({
   ok: true,
-  branding: { template: "neon", accentA: null, accentB: null },
+  branding: { accentA: null, accentB: null },
 }));
 const mockCreateBoard = mock(() => Promise.resolve({
   error: "Your free plan allows up to 1 leaderboard. Upgrade to create more.",
@@ -164,8 +164,6 @@ describe("handleGetSite", () => {
     expect(body).toHaveProperty("siteId");
     expect(body).toHaveProperty("customDomain");
     expect(body).toHaveProperty("domainStatus");
-    expect(body.templates.length).toBe(5);
-    expect(body.templates.every((template) => !Object.hasOwn(template, "css"))).toBe(true);
     // Verify data sub-shape matches what dashboard.js expects
     expect(body.data).toHaveProperty("brand");
     expect(body.data).toHaveProperty("players");
@@ -186,20 +184,21 @@ describe("handlePutTheme", () => {
     mockUpdateSiteTheme.mockReset();
     mockUpdateSiteTheme.mockResolvedValue({
       ok: true,
-      branding: { template: "neon", accentA: null, accentB: null },
+      branding: { accentA: null, accentB: null },
     });
   });
 
-  it("applies a template without saving unrelated board fields", async () => {
+  it("updates the public appearance without saving unrelated board fields", async () => {
     mockOne.mockResolvedValueOnce(USER_ROW);
     const res = await handlePutTheme(req("https://test.com/api/site/theme", "POST", {
       siteId: "site-1",
-      template: "neon",
+      accentA: "#00ffd1",
+      accentB: "#ff2cd0",
     }), mockEnv());
     expect(res.status).toBe(200);
     expect(await res.json()).toEqual({
       ok: true,
-      branding: { template: "neon", accentA: null, accentB: null },
+      branding: { accentA: null, accentB: null },
     });
     expect(mockUpdateSiteTheme).toHaveBeenCalledTimes(1);
   });

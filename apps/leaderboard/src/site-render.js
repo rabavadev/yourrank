@@ -14,13 +14,10 @@
 import {
   logoSrcSet,
   renderLegalSidebar,
-  esc as renderEsc,
-  safeUrl as renderSafeUrl,
-} from "./render.jsx";
+  esc,
+  safeUrl,
+} from "./public-render-helpers.js";
 import { gamesIslandHead, gamesIslandMount } from "./games-embed.js";
-
-const esc = renderEsc;
-const safeUrl = renderSafeUrl;
 
 const SECTION_LABELS = {
   home: "Home",

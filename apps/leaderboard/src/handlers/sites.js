@@ -3,7 +3,6 @@ import { requireUser, json, bad, ok, readJson, rateLimit, rateLimitHeaders, slug
 import { getByUser, getUserSite, getUserSiteById, getUserBoardsList, createBoard, duplicateBoard, createArchive, deleteArchive, deleteBoard, setActiveBoard, updateSiteTheme, invalidateSiteCache, invalidateUserCache, getBoardById, saveSite, fromJsonb } from "../site.js";
 import { bumpStat, getStats, getHeatmap, getTopReferrers, isStatementTimeout } from "../stats.js";
 import { effectivePlan, PLAN_LIMITS, BOARD_LIMITS } from "../../../../shared/plans.js";
-import { templateCatalog } from "../templates/index.js";
 import { one, exec, query } from "../../../../shared/db.js";
 import { logAudit } from "../../../../shared/audit.js";
 import { buildTop3Embed, sendDiscordWebhook, sendTelegramMessage } from "../../../../shared/notifications.js";
@@ -201,7 +200,7 @@ export async function handleGetSite(request, env) {
   if (!s) return bad("No site for this account", 404);
   const boards = await getUserBoardsList(env, user.id);
   const onboarding = await onboardingForSite(env, s, user.id, plan);
-  return json({ ok: true, slug: s.slug, published: s.published, isDraft: s.is_draft, plan: plan, data: s.data, socials: s.socials, notify: s.notify || {}, archives: s.archives, boards, siteId: s.id, customDomain: s.customDomain || "", domainStatus: s.domainStatus || "pending", onboarding, templates: templateCatalog(), updatedAt: s.updated_at, publishedAt: s.published_at }, 200, { "cache-control": "no-store, no-cache, must-revalidate" });
+  return json({ ok: true, slug: s.slug, published: s.published, isDraft: s.is_draft, plan: plan, data: s.data, socials: s.socials, notify: s.notify || {}, archives: s.archives, boards, siteId: s.id, customDomain: s.customDomain || "", domainStatus: s.domainStatus || "pending", onboarding, updatedAt: s.updated_at, publishedAt: s.published_at }, 200, { "cache-control": "no-store, no-cache, must-revalidate" });
 }
 
 export async function handleListBoards(request, env) {

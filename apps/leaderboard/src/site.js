@@ -2,7 +2,6 @@
 import { effectivePlan, PLAN_LIMITS, BOARD_LIMITS } from "../../../shared/plans.js";
 import { query, one, exec, withTransaction } from "../../../shared/db.js";
 import { detectTop3Changes, dispatchNotifyEvent, getRankChangedPlayerNames } from "../../../shared/notifications.js";
-import { TEMPLATE_IDS, resolveOptions } from "./templates/index.js";
 import { RESERVED, slugify, hashPassword } from "./auth.js";
 import { logAudit } from "../../../shared/audit.js";
 import { createQueueProducer } from "../../../shared/queue-producer.js";
@@ -339,14 +338,13 @@ function parseTheme(site) {
     prizeLabel: String(rawPrizes.prizeLabel || DEFAULT_PRIZES.prizeLabel).slice(0, 40),
     wagerTotalLabel: String(rawPrizes.wagerTotalLabel || DEFAULT_PRIZES.wagerTotalLabel).slice(0, 40),
   };
-  const template = TEMPLATE_IDS.includes(t.template) ? t.template : "classic";
   return {
     accentA: HEX.test(t.accentA || "") ? t.accentA : null,
     accentB: HEX.test(t.accentB || "") ? t.accentB : null,
-    template,
-    // Per-template editable options, validated against the template's
-    // schema so the dashboard and renderer only ever see clean values.
-    options: resolveOptions(template, t.options),
+    // Stored template ids are retained for compatibility but ignored by the
+    // public renderer, which now has one canonical shell.
+    template: "classic",
+    options: {},
     text: (t.text && typeof t.text === "object") ? t.text : {},
     font,
     prizes,
@@ -1000,10 +998,6 @@ export async function saveSite(env, user, payload, siteId, request = null) {
   const rawThemeObj = fromJsonb(site.theme_json);
   let themeObj = (rawThemeObj && typeof rawThemeObj === "object") ? rawThemeObj : {};
   const br = payload.branding;
-  // Template selection is available on every plan. Whitelisted ids only.
-  if (br && typeof br.template === "string" && TEMPLATE_IDS.includes(br.template)) {
-    themeObj = { ...themeObj, template: br.template };
-  }
   if (br && typeof user === "object" && plan !== "free") {
     if (br.logo === null) logoData = "";
     else if ((typeof br.logo === "string" && br.logo) || (br.logo && typeof br.logo === "object")) {
@@ -1014,15 +1008,6 @@ export async function saveSite(env, user, payload, siteId, request = null) {
     const t = { text: themeObj.text };
     if (HEX.test(br.accentA || "")) t.accentA = br.accentA;
     if (HEX.test(br.accentB || "")) t.accentB = br.accentB;
-    if (themeObj.template && themeObj.template !== "classic") t.template = themeObj.template;
-    // Per-template options: validate against the active template's schema.
-    // If the client didn't send any (older dashboard), keep the saved ones.
-    const effTemplate = TEMPLATE_IDS.includes(themeObj.template) ? themeObj.template : "classic";
-    if (br.options && typeof br.options === "object") {
-      t.options = resolveOptions(effTemplate, br.options);
-    } else if (themeObj.options && typeof themeObj.options === "object") {
-      t.options = resolveOptions(effTemplate, themeObj.options);
-    }
     if (FONT_KEYS.includes(br.font || "")) t.font = br.font;
     if (isProPlan(plan) && br.prizes && typeof br.prizes === "object") {
       t.prizes = {
@@ -1038,7 +1023,8 @@ export async function saveSite(env, user, payload, siteId, request = null) {
     }
     themeObj = t;
   }
-  // Streamer-editable template text is available on every plan.
+  // Legacy theme text remains stored for compatibility but is ignored by the
+  // canonical public shell.
   if (br && br.text && typeof br.text === "object") {
     themeObj = { ...themeObj, text: br.text };
   }
@@ -1224,7 +1210,6 @@ export async function saveSite(env, user, payload, siteId, request = null) {
     if (br && br.logo !== undefined && hadLogo !== hasLogo) changes.push("logo");
     if (br && br.accentA && br.accentA !== (oldTheme.accentA || "")) changes.push("accentA");
     if (br && br.accentB && br.accentB !== (oldTheme.accentB || "")) changes.push("accentB");
-    if (br && br.template && br.template !== (oldTheme.template || "classic")) changes.push("template");
   }
   if (payload.endsAt !== undefined) changes.push("ends_at");
   if (payload.customDomain !== undefined) changes.push("custom_domain");
@@ -1299,13 +1284,9 @@ export async function updateSiteTheme(env, user, payload = {}, request = null) {
     ? await getBoardById(env, user.id, payload.siteId)
     : await getByUser(env, user.id);
   if (!site) return { error: "no site" };
-  if (!TEMPLATE_IDS.includes(payload.template)) {
-    return { error: "Choose a valid page template.", code: "invalid_template" };
-  }
-
   const rawTheme = fromJsonb(site.theme_json);
   const theme = (rawTheme && typeof rawTheme === "object") ? { ...rawTheme } : {};
-  theme.template = payload.template;
+  theme.template = "classic";
   const plan = effectivePlan(user);
   if (plan !== "free" && (payload.accentA != null || payload.accentB != null)) {
     if (!HEX.test(payload.accentA || "") || !HEX.test(payload.accentB || "")) {
