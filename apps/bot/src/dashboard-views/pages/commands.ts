@@ -6,11 +6,13 @@ export function commandsPanel(): string {
     <p class="muted">Connect a bot first — do that in <a href="/bot/bots">Bots</a>.</p>
   </div>
 
-  <div class="panel" data-page="bots commands" id="customizePanel">
+  <div class="panel" data-page="commands" id="customizePanel">
     <div class="cmd-head">
       <h2>Welcome message</h2>
       <p class="muted" id="selectedBotName">No bot selected</p>
     </div>
+    <label for="botSelect" class="muted field-label">Bot</label>
+    <select id="botSelect" class="input-w-md"><option value="">Loading bots…</option></select>
     <div id="custDisabledNote" class="muted notice hidden">This bot is disconnected — reconnect it to customize.</div>
     <p class="muted panel-intro">This is what viewers receive when they send <code>/start</code> to the selected bot.</p>
     <label for="welcomeMsg" class="muted field-label">Welcome message</label>
