@@ -102,7 +102,11 @@ export function parseQueueEvent(input: unknown): QueueEvent {
 
 interface QueueProducer {
   send(message: QueueEvent): Promise<void>;
+  sendBatch(messages: QueueEvent[]): Promise<void>;
 }
+
+// Cloudflare Queues accepts at most 100 messages in one sendBatch request.
+const QUEUE_BATCH_SIZE = 100;
 
 /**
  * Create a queue producer that sends events to a Cloudflare Queue.
@@ -110,12 +114,24 @@ interface QueueProducer {
  * Optional `env` is passed as the second argument to `fallbackFn`.
  */
 export function createQueueProducer(
-  queue: { send: (message: QueueEvent) => Promise<void> } | undefined,
+  queue: {
+    send: (message: QueueEvent) => Promise<void>;
+    sendBatch?: (messages: Iterable<{ body: QueueEvent }>) => Promise<unknown>;
+  } | undefined,
   fallbackFn: (event: QueueEvent, env?: any) => Promise<void>,
   env?: any
 ): QueueProducer {
+  const fallbackBatch = async (events: QueueEvent[]): Promise<void> => {
+    const results = await Promise.allSettled(events.map((event) => fallbackFn(event, env)));
+    const failure = results.find((result): result is PromiseRejectedResult => result.status === "rejected");
+    if (failure) throw failure.reason;
+  };
+
   if (!queue) {
-    return { send: (event) => fallbackFn(event, env) };
+    return {
+      send: (event) => fallbackFn(event, env),
+      sendBatch: fallbackBatch,
+    };
   }
 
   return {
@@ -126,6 +142,26 @@ export function createQueueProducer(
         console.error("[queue-producer] enqueue failed, using fallback:", String(err));
         await fallbackFn(event, env);
       }
+    },
+    async sendBatch(events: QueueEvent[]): Promise<void> {
+      if (!queue.sendBatch) {
+        return fallbackBatch(events);
+      }
+      let firstFailure: unknown;
+      for (let i = 0; i < events.length; i += QUEUE_BATCH_SIZE) {
+        const chunk = events.slice(i, i + QUEUE_BATCH_SIZE);
+        try {
+          await queue.sendBatch(chunk.map((body) => ({ body })));
+        } catch (err) {
+          console.error("[queue-producer] batch enqueue failed, using fallback:", String(err));
+          try {
+            await fallbackBatch(chunk);
+          } catch (fallbackError) {
+            firstFailure ??= fallbackError;
+          }
+        }
+      }
+      if (firstFailure) throw firstFailure;
     },
   };
 }
