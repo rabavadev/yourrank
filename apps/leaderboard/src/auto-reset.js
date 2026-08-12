@@ -3,6 +3,7 @@
 import { query, exec, one } from "../../../shared/db.js";
 import { createArchive, getPlayers } from "./site.js";
 import { notifyReset } from "../../../shared/notifications.js";
+import { mapWithConcurrency, SHARED_WORK_CONCURRENCY_LIMIT } from "../../../shared/work-concurrency.js";
 
 const CLEAR_OPTIONS = new Set(["wagers", "players", "none"]);
 
@@ -36,33 +37,58 @@ export async function runAutoReset(env) {
     []
   );
 
-  for (const site of rows || []) {
-    try {
-      const players = await getPlayers(env, site.id);
-      const top3 = players.slice().sort((a, b) => (b.wagered || 0) - (a.wagered || 0)).slice(0, 3);
-      const label = `Auto-reset · ${new Date().toLocaleString("en-US", { month: "long", day: "numeric", year: "numeric", timeZone: "UTC" })}`;
-      const clear = CLEAR_OPTIONS.has(site.auto_reset_clear) ? site.auto_reset_clear : "wagers";
+  await mapWithConcurrency(
+    rows || [],
+    SHARED_WORK_CONCURRENCY_LIMIT,
+    (site) => processAutoResetSite(env, site)
+  );
+}
 
-      const result = await createArchive(env, site.user_id, { label, clear, siteId: site.id });
-      if (result.error) {
-        console.error(`[auto-reset] archive failed for site ${site.id}: ${result.error}`);
-        continue;
-      }
+export async function processAutoResetSite(env, site) {
+  try {
+    // Claim before the archive write. If the Worker is interrupted after the
+    // archive commits, the marker prevents the next cron run from archiving
+    // the same period again.
+    const claimed = await one(
+      `UPDATE sites
+          SET auto_reset_last_run_at = ends_at
+        WHERE id = $1
+          AND auto_reset_enabled = true
+          AND ends_at IS NOT NULL
+          AND (auto_reset_last_run_at IS NULL OR auto_reset_last_run_at < ends_at)
+        RETURNING id, ends_at`,
+      [site.id]
+    );
+    if (!claimed) return;
 
-      const nextEnds = nextEndsAt(site.period, site.ends_at);
+    const players = await getPlayers(env, site.id);
+    const top3 = players.slice().sort((a, b) => (b.wagered || 0) - (a.wagered || 0)).slice(0, 3);
+    const label = `Auto-reset · ${new Date().toLocaleString("en-US", { month: "long", day: "numeric", year: "numeric", timeZone: "UTC" })}`;
+    const clear = CLEAR_OPTIONS.has(site.auto_reset_clear) ? site.auto_reset_clear : "wagers";
+
+    const result = await createArchive(env, site.user_id, { label, clear, siteId: site.id });
+    if (result.error) {
+      console.error(`[auto-reset] archive failed for site ${site.id}: ${result.error}`);
       await exec(
-        `UPDATE sites SET ends_at = $1, auto_reset_last_run_at = now(), updated_at = now() WHERE id = $2`,
-        [nextEnds, site.id]
+        `UPDATE sites SET auto_reset_last_run_at = NULL WHERE id = $1 AND auto_reset_last_run_at = ends_at`,
+        [site.id]
       );
-
-      // Fire Discord/Telegram reset notifications if configured.
-      await notifyReset({ one }, env, site.id, site.name, top3, site.period || "Monthly").catch((err) => {
-        console.error(`[auto-reset] notify failed for site ${site.id}:`, err);
-      });
-
-      console.log(`[auto-reset] archived site ${site.slug} (${site.id}), next reset ${nextEnds}`);
-    } catch (err) {
-      console.error(`[auto-reset] failed for site ${site.id}:`, err);
+      return;
     }
+
+    const nextEnds = nextEndsAt(site.period, site.ends_at);
+    await exec(
+      `UPDATE sites SET ends_at = $1, auto_reset_last_run_at = now(), updated_at = now() WHERE id = $2`,
+      [nextEnds, site.id]
+    );
+
+    // Fire Discord/Telegram reset notifications if configured.
+    await notifyReset({ one }, env, site.id, site.name, top3, site.period || "Monthly").catch((err) => {
+      console.error(`[auto-reset] notify failed for site ${site.id}:`, err);
+    });
+
+    console.log(`[auto-reset] archived site ${site.slug} (${site.id}), next reset ${nextEnds}`);
+  } catch (err) {
+    console.error(`[auto-reset] failed for site ${site.id}:`, err);
   }
 }

@@ -13,13 +13,16 @@ function runCmd(command, args, cwd) {
 // 1. Run shared tests
 runCmd("bun", ["test", "shared/__tests__/"]);
 
-// 2. Run bot tests
+// 2. Run queue consumer tests
+runCmd("bun", ["test", "src/worker.test.js"], "apps/consumer");
+
+// 3. Run bot tests
 runCmd("bun", ["test"], "apps/bot");
 
-// 3. Run leaderboard tests one by one to avoid mock.module cross-contamination
+// 4. Run leaderboard tests one by one to avoid mock.module cross-contamination
 runCmd("node", ["scripts/test-leaderboard.mjs"]);
 
-// 4. Run monitor tests
+// 5. Run monitor tests
 runCmd("bun", ["run", "test"], "apps/monitor");
 
 console.log("\n✅ All tests passed successfully!");
