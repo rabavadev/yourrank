@@ -14,7 +14,7 @@ export const SECTIONS = {
   boards: { path: "/dashboard/boards", title: "All boards" },
   games: { path: "/dashboard/games", title: "Site Sections & Games" },
   performance: { path: "/dashboard/analytics", title: "Analytics", tabs: ["activity", "referrals", "events"] },
-  settings: { path: "/dashboard/settings", title: "Settings" },
+  settings: { path: "/dashboard/settings", title: "Settings", tabs: ["account", "plan", "connections", "data"] },
 };
 
 // Names we have shipped links for, in copy, e-mails and older builds.

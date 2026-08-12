@@ -6,7 +6,7 @@ import { dashboardPath, parseDashboardPath, resolveSection, defaultTab } from ".
 
 describe("dashboard routes", () => {
   it("round-trips every section and sub-tab", () => {
-    for (const [page, tab] of [["home", ""], ["board", "players"], ["boards", ""], ["games", ""], ["performance", "referrals"], ["settings", ""]]) {
+    for (const [page, tab] of [["home", ""], ["board", "players"], ["boards", ""], ["games", ""], ["performance", "referrals"], ["settings", "connections"]]) {
       expect(parseDashboardPath(dashboardPath(page, tab))).toEqual({ page, tab });
     }
   });
@@ -14,6 +14,14 @@ describe("dashboard routes", () => {
   it("addresses the editor steps individually", () => {
     expect(dashboardPath("board", "design")).toBe("/dashboard/editor/design");
     expect(parseDashboardPath("/dashboard/editor/design")).toEqual({ page: "board", tab: "design" });
+  });
+
+  it("addresses every unified settings tab explicitly", () => {
+    for (const tab of ["account", "plan", "connections", "data"]) {
+      expect(dashboardPath("settings", tab)).toBe(`/dashboard/settings/${tab}`);
+      expect(parseDashboardPath(`/dashboard/settings/${tab}`)).toEqual({ page: "settings", tab });
+    }
+    expect(parseDashboardPath("/dashboard/settings/integrations")).toBeNull();
   });
 
   it("keeps the links we have already shipped working", () => {
@@ -36,7 +44,7 @@ describe("dashboard routes", () => {
   it("defaults a section to its first tab", () => {
     expect(defaultTab("performance")).toBe("activity");
     expect(defaultTab("board")).toBe("setup");
-    expect(defaultTab("settings")).toBe("");
+    expect(defaultTab("settings")).toBe("account");
   });
 
   it("no longer navigates through ?nav=", () => {

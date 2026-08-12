@@ -531,7 +531,7 @@ async function handleRequest(request, env, ctx, meta) {
       }
 
       // --- helper for rendering strings or JSX pages ---
-      const renderHtmlPage = async (pageObj, { reqId, activePath, user, theme, accountHref, logoutAction } = {}) => {
+      const renderHtmlPage = async (pageObj, { reqId, activePath, user, theme, accountHref, logoutAction, tab } = {}) => {
         const navOpts = activePath && user ? { activePath, user, theme, accountHref: accountHref || "/account/profile", logoutAction } : null;
         // Pages reachable signed-out (Help) still get a header — the anonymous
         // variant of the same shell rather than a separate marketing top bar.
@@ -553,7 +553,7 @@ async function handleRequest(request, env, ctx, meta) {
         }
 
         if (pageObj.Component) {
-          let node = pageObj.Component({ reqId, user });
+          let node = pageObj.Component({ reqId, user, tab });
           if (node instanceof Promise) node = await node;
           const content = node.toString();
           if (pageObj.config) {
@@ -619,6 +619,25 @@ async function handleRequest(request, env, ctx, meta) {
       if (path === "/dashboard/settings/integrations") {
         return renderDashboardPage("rewardsChannel", "integrations_render_failed");
       }
+      if (path === "/dashboard/settings" || /^\/dashboard\/settings\/(account|plan|connections|data)$/.test(path)) {
+        const pathTab = path.split("/").pop();
+        const requestedTab = pathTab === "settings" ? url.searchParams.get("tab") : pathTab;
+        const tab = ["account", "plan", "connections", "data"].includes(requestedTab) ? requestedTab : "account";
+        const user = await currentUser(request, env);
+        if (!user) return Response.redirect(new URL("/login", url), 302);
+        const html = addCookieConsent(await renderHtmlPage(PAGES.settingsUnified, {
+          activePath: url.pathname + url.search,
+          user,
+          reqId: reqId || "",
+          theme: "light",
+          tab: tab === "settings" ? "account" : tab,
+        }));
+        return new Response(html, { headers: { ...SECURE_HTML, ...csrfHeader, "cache-control": "no-store, no-cache, must-revalidate" } });
+      }
+      if (path === "/dashboard/billing") return redirectKeepingSearch("/dashboard/settings/plan", url);
+      if (path === "/dashboard/attribution") return redirectKeepingSearch("/dashboard/settings/connections", url);
+      if (path === "/dashboard/security") return redirectKeepingSearch("/dashboard/settings/account", url);
+      if (path === "/dashboard/integrations" || path === "/dashboard/manage") return redirectKeepingSearch("/dashboard/settings", url);
       if (path === "/dashboard/audience/viewers" || path === "/dashboard/audience/activity") {
         const pageKey = path.endsWith("/viewers") ? "rewardsViewers" : "rewardsHistory";
         return renderDashboardPage(pageKey, "audience_render_failed");
@@ -660,27 +679,14 @@ async function handleRequest(request, env, ctx, meta) {
         }
       }
       if (path === "/account" || path === "/account.html") {
-        return Response.redirect(new URL("/account/profile", url), 302);
+        return redirectKeepingSearch("/account/profile", url);
       }
       if (path.startsWith("/account/")) {
         const tab = path.slice("/account/".length).split("?")[0];
-        const map = { profile: "accountProfile", plan: "accountPlan", postbacks: "accountPostbacks", connected: "accountConnected", data: "accountData" };
-        const pageKey = map[tab];
-        if (!pageKey) return Response.redirect(new URL("/account/profile", url), 302);
-        try {
-          const user = await currentUser(request, env);
-          if (!user) return Response.redirect(new URL("/login", url), 302);
-          const html = addCookieConsent(await renderHtmlPage(PAGES[pageKey], {
-            activePath: url.pathname + url.search,
-            user,
-            reqId: reqId || "",
-            theme: "light"
-          }));
-          return new Response(html, { headers: { ...SECURE_HTML, ...csrfHeader, "cache-control": "no-store, no-cache, must-revalidate" } });
-        } catch (e) {
-          if (workerLog) workerLog.error("account_render_failed", { error: String(e?.message || e) }); else console.error("account render failed:", String(e?.message || e));
-          return new Response(error500Page(nonce), { status: 500, headers: HTML_N });
-        }
+        const map = { profile: "account", plan: "plan", postbacks: "connections", connected: "connections", data: "data" };
+        const target = map[tab];
+        if (!target) return redirectKeepingSearch("/dashboard/settings/account", url);
+        return redirectKeepingSearch(`/dashboard/settings/${target}`, url);
       }
       if (path === "/dashboard/preview" && (method === "GET" || method === "POST")) {
         try {
@@ -692,10 +698,10 @@ async function handleRequest(request, env, ctx, meta) {
       }
       // Analytics and billing have been folded into the unified dashboard.
       if (path === "/dashboard/billing") {
-        return Response.redirect(new URL("/account/plan", url), 302);
+        return redirectKeepingSearch("/dashboard/settings/plan", url);
       }
       if (path === "/dashboard/attribution") {
-        return Response.redirect(new URL("/account/postbacks", url), 302);
+        return redirectKeepingSearch("/dashboard/settings/integrations", url);
       }
       if (path === "/dashboard/bot/setup") {
         return Response.redirect(new URL("/bot/dashboard", url), 302);
@@ -710,7 +716,7 @@ async function handleRequest(request, env, ctx, meta) {
         return Response.redirect(redirectUrl, 302);
       }
       if (path === "/dashboard/security") {
-        return Response.redirect(new URL("/account/profile", url), 302);
+        return redirectKeepingSearch("/dashboard/settings/account", url);
       }
       if (path === "/dashboard/credits") {
         return redirectKeepingSearch("/dashboard/settings/integrations", url);

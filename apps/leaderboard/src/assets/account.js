@@ -203,6 +203,40 @@ function currentTab() {
   return document.getElementById("acc-app")?.dataset?.accTab || "";
 }
 
+function settingsTab() {
+  return document.getElementById("acc-app")?.dataset?.settingsActive || "account";
+}
+
+function wireUnifiedSettingsTabs() {
+  const root = document.getElementById("acc-app");
+  if (!root || currentTab() !== "settings") return;
+  const tabs = [...root.querySelectorAll("[data-settings-tab]")];
+  const panels = [...root.querySelectorAll("[data-settings-panel]")];
+  const select = (key, push = false) => {
+    const active = tabs.some((tab) => tab.dataset.settingsTab === key) ? key : "account";
+    tabs.forEach((tab) => {
+      const on = tab.dataset.settingsTab === active;
+      tab.classList.toggle("is-on", on);
+      tab.setAttribute("aria-selected", String(on));
+    });
+    panels.forEach((panel) => { panel.hidden = panel.dataset.settingsPanel !== active; });
+    if (push) {
+      const url = new URL(location.href);
+      url.pathname = `/dashboard/settings/${active}`;
+      history.pushState({ settingsTab: active }, "", url);
+    }
+  };
+  tabs.forEach((tab) => tab.addEventListener("click", (event) => {
+    event.preventDefault();
+    select(tab.dataset.settingsTab, true);
+  }));
+  addEventListener("popstate", () => {
+    const key = location.pathname.split("/").pop();
+    select(key);
+  });
+  select(settingsTab());
+}
+
 function setUserName() {
   const userName = $("accUserName");
   if (userName && state.ME) userName.textContent = state.ME.display_name || state.ME.email || "Account";
@@ -274,6 +308,19 @@ async function init() {
   setUserName();
 
   const tab = currentTab();
+  wireUnifiedSettingsTabs();
+  if (tab === "settings") {
+    wireAccount();
+    renderPlan();
+    loadPlanUsage();
+    loadHistory();
+    wireCancelSubscription();
+    await loadPostbacks();
+    wirePostbacks();
+    await loadConnectedAccounts();
+    wireDeleteAccount();
+    return;
+  }
   if (!tab || tab === "profile") wireAccount();
   if (!tab || tab === "plan") {
     renderPlan();
