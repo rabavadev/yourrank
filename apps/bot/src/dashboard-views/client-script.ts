@@ -339,6 +339,59 @@ function offerRow(o){
   '<td class="'+(o.is_active?'ok':'off')+'">'+(o.is_active?'active':'off')+'</td>'+
   '<td><button class="ghost" data-action="toggleOffer" data-id="'+esc(o.id)+'" data-active="'+(!o.is_active)+'">'+(o.is_active?'Disable':'Enable')+'</button></td>';
 }
+function formatBroadcastDate(value){
+  if (!value) return '—';
+  const d = new Date(value);
+  return isNaN(d.getTime()) ? String(value) : d.toLocaleString(undefined, {dateStyle:'medium', timeStyle:'short'});
+}
+function broadcastRow(b){
+  const audience = b.total_count != null ? String(b.total_count) : '—';
+  const status = String(b.status || 'unknown');
+  const canCancel = status === 'scheduled';
+  return '<td><span class="badge '+esc(status)+'">'+esc(status)+'</span></td>'+
+    '<td><b>'+esc(audience)+'</b> <span class="muted">recipients</span></td>'+
+    '<td><button class="link-button" data-action="viewBroadcast" data-id="'+esc(b.id)+'" type="button">'+esc(String(b.body || '').slice(0,90))+(String(b.body || '').length>90?'…':'')+'</button></td>'+
+    '<td>'+esc(b.bot_username || '—')+'</td>'+
+    '<td>'+esc(formatBroadcastDate(b.scheduled_at))+'</td>'+
+    '<td>'+esc(String(b.sent_count ?? 0))+'</td>'+
+    '<td>'+esc(String(b.fail_count ?? 0))+'</td>'+
+    '<td><button class="ghost" data-action="viewBroadcast" data-id="'+esc(b.id)+'" type="button">View record</button>'+
+      (canCancel ? ' <button class="ghost" data-action="cancelBroadcast" data-id="'+esc(b.id)+'" type="button">Cancel</button>' : '')+'</td>';
+}
+function broadcastAudienceText(b){
+  const n = b.total_count != null ? String(b.total_count) : 'not recorded';
+  const label = formatSegmentLabel(b.audience_filter_snapshot || b.segment) || 'all subscribers';
+  return label+' · '+n+' recipients';
+}
+function openBroadcastDetail(id){
+  const b = __broadcasts.find(x => x.id === id);
+  if (!b) return toast('Broadcast record not found');
+  const body = $('bcDetailBody');
+  if (!body) return;
+  const buttons = Array.isArray(b.buttons) ? b.buttons : [];
+  const filter = b.audience_filter_snapshot;
+  const filterText = filter ? (formatSegmentLabel(filter) || 'All subscribers') : 'Filter snapshot not retained for this older broadcast.';
+  const image = b.media_url ? '<img class="bc-detail-image" src="'+esc(b.media_url)+'" alt="Broadcast image" />' : '<span class="muted">No image</span>';
+  const buttonValue = b.buttons == null ? null : JSON.stringify(b.buttons, null, 2);
+  const buttonHtml = buttonValue ? '<pre class="bc-detail-message">'+esc(buttonValue)+'</pre>' : '<span class="muted">No buttons recorded</span>';
+  body.innerHTML =
+    '<dl class="bc-detail-grid">'+
+      '<div class="bc-detail-item"><dt>Bot</dt><dd>'+esc(b.bot_username || '—')+'</dd></div>'+
+      '<div class="bc-detail-item"><dt>Status</dt><dd>'+esc(b.status || '—')+'</dd></div>'+
+      '<div class="bc-detail-item"><dt>Audience</dt><dd>'+esc(filterText)+'</dd></div>'+
+      '<div class="bc-detail-item"><dt>Recipients captured at send</dt><dd>'+esc(b.total_count == null ? 'Not recorded' : String(b.total_count))+'</dd></div>'+
+      '<div class="bc-detail-item"><dt>Scheduled</dt><dd>'+esc(formatBroadcastDate(b.scheduled_at))+'</dd></div>'+
+      '<div class="bc-detail-item"><dt>Sent</dt><dd>'+esc(formatBroadcastDate(b.sent_at))+'</dd></div>'+
+      '<div class="bc-detail-item"><dt>Delivered</dt><dd>'+esc(String(b.sent_count ?? 0))+'</dd></div>'+
+      '<div class="bc-detail-item"><dt>Failed</dt><dd>'+esc(String(b.fail_count ?? 0))+'</dd></div>'+
+    '</dl>'+
+    '<h4>Exact message</h4><div class="bc-detail-message">'+esc(b.body || '')+'</div>'+
+    '<h4>Image</h4>'+image+(b.media_url ? '<p><a href="'+esc(b.media_url)+'" target="_blank" rel="noreferrer">'+esc(b.media_url)+'</a></p>' : '')+
+    '<h4>Buttons</h4>'+buttonHtml+
+    '<p class="muted">Recipient list is not retained.</p>';
+  const detail = $('bcDetail'); if (detail) detail.hidden = false;
+}
+function closeBroadcastDetail(){ const detail = $('bcDetail'); if (detail) detail.hidden = true; }
 function renderOffers(){
   const offersEl = $('offers');
   if (!offersEl) return;
@@ -838,6 +891,7 @@ async function testCommand(target){
 }
 
 let __bcAudience = null;
+let __bcPreviewSnapshot = null;
 const BC_DRAFT_KEY = 'yr_bc_draft';
 function buildSegmentFromForm(){
   const segment = {};
@@ -869,6 +923,23 @@ function formatSegmentLabel(segment){
   if (segment.firstSeenWithinDays) parts.push('new '+segment.firstSeenWithinDays+'d');
   if (segment.usernameContains) parts.push('@'+segment.usernameContains);
   return parts.join(', ');
+}
+function broadcastDraftSignature(){
+  return JSON.stringify({
+    body: ($('bcBody')?.value || '').trim(),
+    botId: ($('bcBotSelect')?.value || '').trim() || firstBotId,
+    mediaUrl: ($('bcImage')?.value || '').trim() || null,
+    segment: buildSegmentFromForm(),
+    when: isScheduleSelected() ? 'schedule' : 'now',
+    scheduledAt: isScheduleSelected() ? getScheduledAt() : null,
+    audience: __bcAudience,
+  });
+}
+function invalidateBroadcastPreview(){
+  if (!__bcPreviewSnapshot || $('bcPreview')?.hidden) return;
+  __bcPreviewSnapshot = null;
+  closeBroadcastPreview();
+  setFormStatus('bcFormStatus','The draft changed after preview. Review it again before sending.',true);
 }
 function getBotNameForBroadcast(){
   const botId = $('bcBotSelect')?.value || firstBotId;
@@ -1002,6 +1073,7 @@ function openBroadcastPreview(){
   const botId = ($('bcBotSelect')?.value || '').trim() || firstBotId;
   if (!botId) { setFieldErr('bcBotSelect','Select a bot first'); setFormStatus('bcFormStatus','Select a bot first',true); return; }
   const n = __bcAudience;
+  if (typeof n !== 'number') { setFormStatus('bcFormStatus','Wait for the audience count to finish loading, then review again.',true); return; }
   if (typeof n === 'number' && n === 0) { setFormStatus('bcFormStatus','This segment has no subscribers yet — nobody would receive it.',true); return; }
   const countEl = $('bcPreviewCount');
   const bodyEl = $('bcPreviewBody');
@@ -1016,8 +1088,8 @@ function openBroadcastPreview(){
   const summaryList = $('bcSummaryList');
   if (summaryList) summaryList.innerHTML = buildSummaryHtml();
   const summary = $('bcSummary'); if (summary) summary.hidden = false;
-  const confirmBtn = $('bcConfirmBtn');
-  if (confirmBtn) confirmBtn.textContent = isScheduleSelected() ? 'Schedule' : 'Send now';
+  __bcPreviewSnapshot = broadcastDraftSignature();
+  renderBroadcastPreviewAction();
   const preview = $('bcPreview'); if (preview) preview.hidden = false;
   const card = preview?.querySelector('.bc-preview-card');
   // Same trap as every other dialog (/assets/dialog.js).
@@ -1027,7 +1099,39 @@ function closeBroadcastPreview(){
   const preview = $('bcPreview'); if (preview) preview.hidden = true;
   if (bcPreviewFocusTrap) { bcPreviewFocusTrap(); bcPreviewFocusTrap = null; }
 }
+function renderBroadcastPreviewAction(){
+  const scheduled = isScheduleSelected();
+  const when = scheduled ? formatBroadcastDate(getScheduledAt()) : 'now';
+  const n = __bcAudience ?? '–';
+  const whenEl = $('bcPreviewWhen');
+  if (whenEl) whenEl.textContent = scheduled ? 'Scheduled to go at '+when+' local time.' : 'This will send immediately.';
+  const label = $('bcPreviewScheduleLabel'); if (label) label.textContent = getScheduledAt() ? formatBroadcastDate(getScheduledAt()) : '(choose a time above)';
+  const confirmBtn = $('bcConfirmBtn');
+  if (confirmBtn) confirmBtn.textContent = scheduled
+    ? 'Schedule for '+when+' — '+n+' subscribers'
+    : 'Send to '+n+' subscribers now — cannot be undone';
+  document.querySelectorAll('input[name="bcPreviewWhen"]').forEach(r => { r.checked = (r.value === (scheduled ? 'schedule' : 'now')); });
+}
+function selectBroadcastWhen(input){
+  const value = input.value;
+  const source = document.querySelector('input[name="bcWhen"][value="'+value+'"]');
+  if (source) source.checked = true;
+  updateScheduleInputState();
+  saveBroadcastDraft();
+  if (value === 'schedule' && !getScheduledAt()) {
+    closeBroadcastPreview();
+    setFormStatus('bcFormStatus','Choose a scheduled time, then review again.',true);
+    return;
+  }
+  __bcPreviewSnapshot = broadcastDraftSignature();
+  renderBroadcastPreviewAction();
+}
 async function confirmSendBroadcast(btn){
+  if (!__bcPreviewSnapshot || __bcPreviewSnapshot !== broadcastDraftSignature()) {
+    closeBroadcastPreview();
+    setFormStatus('bcFormStatus','The draft changed after preview. Review it again before sending.',true);
+    return;
+  }
   const body = ($('bcBody')?.value || '').trim();
   const botId = ($('bcBotSelect')?.value || '').trim() || firstBotId;
   if (!botId || !body) return;
@@ -1037,8 +1141,9 @@ async function confirmSendBroadcast(btn){
   const scheduledAt = isScheduleSelected() ? getScheduledAt() : null;
   const segment = buildSegmentFromForm();
   const r = await api('/broadcasts',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({bot_id:botId, body, media_url: mediaUrl, scheduled_at: scheduledAt, segment})});
-  if (r.error) { restoreBtn(btn); setFormStatus('bcFormStatus', r.error + ' — click Send again to retry.', true); return; }
-  clearBroadcastForm(); closeBroadcastPreview(); setFormStatus('bcFormStatus', isScheduleSelected() ? 'Broadcast scheduled' : 'Broadcast sent', false); restoreBtn(btn); loadExtras();
+  if (r.error) { restoreBtn(btn); setFormStatus('bcFormStatus', r.error + ' — review the draft and try again.', true); return; }
+  const wasScheduled = isScheduleSelected();
+  clearBroadcastForm(); closeBroadcastPreview(); setFormStatus('bcFormStatus', wasScheduled ? 'Broadcast scheduled' : 'Broadcast sent', false); restoreBtn(btn); loadExtras();
 }
 async function sendBroadcast(btn){ openBroadcastPreview(); }
 // Send a single test copy of the broadcast to one chat ID before blasting.
@@ -1107,6 +1212,7 @@ async function handleAction(e) {
   const NO_LOADING = action === 'copyLink' || action === 'selectBot'
     || action === 'testMessage' || action === 'cancelTestMessage'
     || action === 'sendBroadcast' || action === 'openBroadcastPreview' || action === 'closeBroadcastPreview'
+    || action === 'selectBroadcastWhen' || action === 'viewBroadcast' || action === 'closeBroadcastDetail'
     || action === 'viewCommand' || action === 'closeCommandPreview'
     || action === 'wizardNext' || action === 'wizardPrev';
   if (!NO_LOADING) setLoading(target);
@@ -1133,8 +1239,11 @@ async function handleAction(e) {
     else if (action === 'openBroadcastPreview') { e.preventDefault(); openBroadcastPreview(); }
     else if (action === 'confirmBroadcast') { e.preventDefault(); await confirmSendBroadcast(target); }
     else if (action === 'closeBroadcastPreview') { e.preventDefault(); closeBroadcastPreview(); }
+    else if (action === 'selectBroadcastWhen') { e.preventDefault(); selectBroadcastWhen(target); }
     else if (action === 'testBroadcast') { e.preventDefault(); await testBroadcast(target); }
     else if (action === 'cancelBroadcast') { e.preventDefault(); await cancelBroadcast(target); }
+    else if (action === 'viewBroadcast') { e.preventDefault(); openBroadcastDetail(target.dataset.id); }
+    else if (action === 'closeBroadcastDetail') { e.preventDefault(); closeBroadcastDetail(); }
     else if (action === 'copyLink') { e.preventDefault(); await copyLink(target); }
     else if (action === 'toggleOffer') { e.preventDefault(); await toggleOffer(target); }
     else if (action === 'toggleCommand') { e.preventDefault(); await toggleCommand(target); }
@@ -1179,19 +1288,19 @@ if (logoutForm) {
 const botSelect = $('botSelect');
 if (botSelect) botSelect.addEventListener('change', (e) => { selectBotById(e.target.value); });
 const bcBotSelect = $('bcBotSelect');
-if (bcBotSelect) bcBotSelect.addEventListener('change', (e) => { firstBotId = e.target.value; saveBroadcastDraft(); updateAudience(); });
+if (bcBotSelect) bcBotSelect.addEventListener('change', (e) => { firstBotId = e.target.value; saveBroadcastDraft(); updateAudience(); invalidateBroadcastPreview(); });
 const bcTestChat = $('bcTestChat');
 if (bcTestChat) bcTestChat.addEventListener('input', saveBroadcastDraft);
 ['bcLang','bcMinLastSeen','bcFirstSeen','bcUsername'].forEach(id => {
   const el = $(id);
-  if (el) el.addEventListener('input', () => { saveBroadcastDraft(); updateAudience(); });
+  if (el) el.addEventListener('input', () => { saveBroadcastDraft(); updateAudience(); invalidateBroadcastPreview(); });
 });
-['bcBody','bcImage','bcSchedule'].forEach(id => {
-  const el = $(id);
-  if (el) el.addEventListener('input', saveBroadcastDraft);
-});
+  ['bcBody','bcImage','bcSchedule'].forEach(id => {
+    const el = $(id);
+    if (el) el.addEventListener('input', () => { saveBroadcastDraft(); invalidateBroadcastPreview(); });
+  });
 document.querySelectorAll('input[name="bcWhen"]').forEach(radio => {
-  radio.addEventListener('change', () => { updateScheduleInputState(); saveBroadcastDraft(); });
+  radio.addEventListener('change', () => { updateScheduleInputState(); saveBroadcastDraft(); invalidateBroadcastPreview(); });
 });
 window.addEventListener('beforeunload', (e) => {
   const body = ($('bcBody')?.value || '').trim();

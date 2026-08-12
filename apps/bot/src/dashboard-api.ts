@@ -678,14 +678,19 @@ export function buildDashboardApi(): Hono<{ Bindings: DashApiBindings; Variables
   // ---- broadcasts ----
   api.get("/broadcasts", async (c) => {
     const rows = await query(
-      `SELECT b.id, b.body, b.media_url, b.status, b.scheduled_at, b.sent_at,
-              b.segment, b.total_count, b.sent_count, b.fail_count, bo.username AS bot_username
+      `SELECT b.id, b.bot_id, b.body, b.media_url, b.buttons, b.status, b.scheduled_at, b.sent_at,
+              b.created_at, b.segment, b.audience_filter_snapshot, b.total_count, b.sent_count, b.fail_count,
+              bo.username AS bot_username
          FROM broadcasts b JOIN bots bo ON bo.id = b.bot_id
         WHERE bo.owner_id = $1
         ORDER BY b.created_at DESC LIMIT 20`,
       [c.get("uid")]
     );
-    return c.json(rows.map((r: any) => ({ ...r, segment: parseSegment(r.segment) })));
+    return c.json(rows.map((r: any) => ({
+      ...r,
+      segment: parseSegment(r.segment),
+      audience_filter_snapshot: r.audience_filter_snapshot ?? null,
+    })));
   });
 
   // How many subscribers a broadcast would reach (active, non-blocked),
@@ -729,10 +734,10 @@ export function buildDashboardApi(): Hono<{ Bindings: DashApiBindings; Variables
 
     const segmentValue = normalizeSegment(segment);
     const row = await one(
-      `INSERT INTO broadcasts (bot_id, body, media_url, status, scheduled_at, segment)
-       VALUES ($1, $2, $3, 'scheduled', $4, $5)
+      `INSERT INTO broadcasts (bot_id, body, media_url, status, scheduled_at, segment, audience_filter_snapshot)
+       VALUES ($1, $2, $3, 'scheduled', $4, $5, $6::jsonb)
        RETURNING id, status`,
-      [bot_id, body.trim(), media_url ?? null, scheduled_at ?? null, segmentValue]
+      [bot_id, body.trim(), media_url ?? null, scheduled_at ?? null, segmentValue, segment ? JSON.stringify(segment) : JSON.stringify({})]
     );
     return c.json({ ...row, segment: parseSegment(segmentValue) });
   });

@@ -50,7 +50,7 @@ export function broadcastsPanel(): string {
       <span class="muted text-sm">or send a test copy to</span>
       <input class="input-w-sm" id="bcTestChat" inputmode="numeric" aria-errormessage="bcTestChat-error" placeholder="your chat ID">
       <span id="bcTestChat-error" class="field-err" role="alert"></span>
-      <button class="ghost" data-action="testBroadcast" type="button">Send test</button>
+      <button class="ghost bc-test-action" data-action="testBroadcast" type="button">Send rehearsal to my chat</button>
     </div>
 
     <div id="bcSummary" class="bc-summary" hidden>
@@ -61,7 +61,13 @@ export function broadcastsPanel(): string {
     <div id="bcPreview" class="bc-preview" role="dialog" aria-modal="true" aria-labelledby="bcPreviewTitle" aria-describedby="bcPreviewDesc" hidden>
       <div class="bc-preview-card">
         <h3 id="bcPreviewTitle">Preview broadcast</h3>
-        <p id="bcPreviewDesc">This will send to <b id="bcPreviewCount">–</b> subscribers.</p>
+        <p id="bcPreviewDesc" class="bc-preview-audience"><b id="bcPreviewCount">–</b> subscribers</p>
+        <p id="bcPreviewWhen" class="bc-preview-when"></p>
+        <fieldset class="bc-preview-choice">
+          <legend>Choose the final action</legend>
+          <label><input type="radio" name="bcPreviewWhen" value="now" data-action="selectBroadcastWhen" checked /> Send now</label>
+          <label><input type="radio" name="bcPreviewWhen" value="schedule" data-action="selectBroadcastWhen" /> Schedule <span id="bcPreviewScheduleLabel"></span></label>
+        </fieldset>
         <div class="bc-preview-msg" id="bcPreviewBody" role="document"></div>
         <div class="bc-preview-img" id="bcPreviewImg" hidden></div>
         <div class="bc-preview-actions">
@@ -77,7 +83,13 @@ export function broadcastsPanel(): string {
     <p id="bcFormStatus" class="form-status" role="alert" aria-live="polite"></p>
 
     <p class="muted hint">Use <code>{name}</code> to include the subscriber's first name. Get your chat ID by sending <code>/start</code> to <a href="https://t.me/userinfobot" target="_blank" rel="noopener">@userinfobot</a>. Scheduled broadcasts can be cancelled until they start sending.</p>
-    <div class="tbl-scroll"><table class="mt-md"><thead><tr><th>Message</th><th>Bot</th><th>Status</th><th>Scheduled</th><th>Sent</th><th>Failed</th><th><span class="sr-only">Actions</span></th></tr></thead>
+    <div id="bcDetail" class="bc-detail" role="dialog" aria-modal="true" aria-labelledby="bcDetailTitle" hidden>
+      <div class="bc-detail-card">
+        <div class="bc-detail-head"><h3 id="bcDetailTitle">Broadcast record</h3><button class="ghost" data-action="closeBroadcastDetail" type="button">Close</button></div>
+        <div id="bcDetailBody"></div>
+      </div>
+    </div>
+    <div class="tbl-scroll"><table class="mt-md"><thead><tr><th>Status</th><th>Audience</th><th>Message</th><th>Bot</th><th>Scheduled</th><th>Sent</th><th>Failed</th><th><span class="sr-only">Actions</span></th></tr></thead>
     <tbody id="bcList"></tbody></table></div>
   </div>`;
 }

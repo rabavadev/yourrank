@@ -230,9 +230,29 @@ const BOT_BASE_CSS = `
   .bc-preview-card { width:100%; max-width:480px; background:var(--panel); border:1px solid var(--border); border-radius:12px; padding:22px; box-shadow:0 16px 38px -10px rgba(0,0,0,.5); }
   .bc-preview-card h3 { margin:0 0 8px; }
   .bc-preview-card p { color:var(--dim); margin:0 0 14px; }
+  .bc-preview-audience { color:var(--fg) !important; font-size:20px; font-weight:700; }
+  .bc-preview-when { color:var(--fg) !important; font-weight:600; }
+  .bc-preview-choice { border:1px solid var(--border); border-radius:8px; padding:10px 12px; margin:0 0 14px; display:flex; gap:12px; flex-wrap:wrap; }
+  .bc-preview-choice legend { color:var(--dim); font-size:12px; padding:0 4px; }
+  .bc-preview-choice label { cursor:pointer; font-weight:600; }
   .bc-preview-msg { background:var(--bg); border:1px solid var(--border); border-radius:8px; padding:12px; margin-bottom:14px; white-space:pre-wrap; word-break:break-word; }
   .bc-preview-img img { max-width:100%; border-radius:8px; margin-bottom:14px; display:block; }
-  .bc-preview-actions { display:flex; gap:10px; justify-content:flex-end; }
+  .bc-preview-actions { display:flex; gap:10px; justify-content:flex-end; flex-wrap:wrap; }
+  .bc-preview-actions button { flex:1 1 180px; min-height:44px; }
+  .bc-test-action { font-weight:600; }
+  .bc-detail { position:fixed; inset:0; background:rgba(0,0,0,.7); display:flex; align-items:center; justify-content:center; padding:18px; z-index:100; }
+  .bc-detail[hidden] { display:none; }
+  .bc-detail-card { width:100%; max-width:620px; max-height:calc(100vh - 36px); overflow:auto; background:var(--panel); border:1px solid var(--border); border-radius:12px; padding:22px; box-shadow:0 16px 38px -10px rgba(0,0,0,.5); }
+  .bc-detail-head { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:16px; }
+  .bc-detail-head h3 { margin:0; }
+  .bc-detail-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; margin-bottom:16px; }
+  .bc-detail-item { min-width:0; }
+  .bc-detail-item dt { color:var(--dim); font-size:12px; margin-bottom:3px; }
+  .bc-detail-item dd { margin:0; overflow-wrap:anywhere; }
+  .bc-detail-message { white-space:pre-wrap; overflow-wrap:anywhere; background:var(--bg); border:1px solid var(--border); border-radius:8px; padding:12px; margin:8px 0 14px; }
+  .bc-detail-image { max-width:100%; max-height:220px; border-radius:8px; display:block; margin-top:8px; }
+  .bc-detail-buttons { margin:8px 0 14px; padding-left:18px; }
+  @media (max-width:600px) { .bc-detail-grid { grid-template-columns:1fr; } }
 
   /* broadcast segment & schedule controls */
   .bc-segment { margin:10px 0; color:var(--dim); border:1px solid var(--border); border-radius:8px; padding:10px 12px; }
