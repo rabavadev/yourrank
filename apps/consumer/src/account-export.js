@@ -2,6 +2,7 @@ import { query, exec } from "../../../shared/db.js";
 import { logAudit } from "../../../shared/audit.js";
 
 const PAGE_SIZE = 500;
+const PART_SIZE = 8 * 1024 * 1024;
 const EXPORT_VERSION = "account-export-v1";
 const TABLES = [
   "exportedAt", "user", "sites", "players", "archives", "subscriptions",
@@ -24,7 +25,7 @@ class NdjsonWriter {
   }
 
   async start() {
-    this.upload = this.bucket.createMultipartUpload(this.key, {
+    this.upload = await this.bucket.createMultipartUpload(this.key, {
       httpMetadata: { contentType: "application/x-ndjson; charset=utf-8" },
     });
   }
@@ -45,14 +46,23 @@ class NdjsonWriter {
 
   async write(line) {
     const bytes = this.encoder.encode(line);
-    this.buffers.push(bytes);
-    this.bytes += bytes.byteLength;
-    if (this.bytes >= 8 * 1024 * 1024) await this.flush();
+    for (let offset = 0; offset < bytes.byteLength;) {
+      const length = Math.min(PART_SIZE - this.bytes, bytes.byteLength - offset);
+      this.buffers.push(bytes.subarray(offset, offset + length));
+      this.bytes += length;
+      offset += length;
+      if (this.bytes === PART_SIZE) await this.flush();
+    }
   }
 
   async complete() {
     await this.flush();
     await this.upload.complete(this.parts);
+  }
+
+  async abort() {
+    if (!this.upload) return;
+    await this.upload.abort().catch(() => {});
   }
 }
 
@@ -61,11 +71,12 @@ async function emitPages(writer, table, sql, params, key = "id", read = query) {
   let count = 0;
   for (;;) {
     const pageSql = cursor
-      ? `${sql} AND ${key} > $${params.length + 1} ORDER BY ${key} ASC LIMIT ${PAGE_SIZE}`
-      : `${sql} ORDER BY ${key} ASC LIMIT ${PAGE_SIZE}`;
+      ? `SELECT * FROM (${sql}) AS export_page WHERE ${key} > $${params.length + 1} ORDER BY ${key} ASC LIMIT ${PAGE_SIZE}`
+      : `SELECT * FROM (${sql}) AS export_page ORDER BY ${key} ASC LIMIT ${PAGE_SIZE}`;
     const rows = await read(pageSql, cursor ? [...params, cursor] : params);
     for (const row of rows) {
-      await writer.write(JSON.stringify({ table, row }) + "\n");
+      const artifactRow = table === "sessions" ? (({ token, ...safeRow }) => safeRow)(row) : row;
+      await writer.write(JSON.stringify({ table, row: artifactRow }) + "\n");
       count++;
     }
     if (rows.length < PAGE_SIZE) return count;
@@ -78,8 +89,8 @@ async function emitTuplePages(writer, table, sql, params, keys, read = query) {
   let count = 0;
   for (;;) {
     const pageSql = cursor
-      ? `${sql} AND (${keys.join(", ")}) > (${keys.map((_, i) => `$${params.length + i + 1}`).join(", ")}) ORDER BY ${keys.join(", ")} ASC LIMIT ${PAGE_SIZE}`
-      : `${sql} ORDER BY ${keys.join(", ")} ASC LIMIT ${PAGE_SIZE}`;
+      ? `SELECT * FROM (${sql}) AS export_page WHERE (${keys.join(", ")}) > (${keys.map((_, i) => `$${params.length + i + 1}`).join(", ")}) ORDER BY ${keys.join(", ")} ASC LIMIT ${PAGE_SIZE}`
+      : `SELECT * FROM (${sql}) AS export_page ORDER BY ${keys.join(", ")} ASC LIMIT ${PAGE_SIZE}`;
     const rows = await read(pageSql, cursor ? [...params, ...cursor] : params);
     for (const row of rows) {
       await writer.write(JSON.stringify({ table, row }) + "\n");
@@ -95,8 +106,8 @@ async function collectIds(sql, params, key = "id", read = query) {
   let cursor = null;
   for (;;) {
     const pageSql = cursor
-      ? `${sql} AND ${key} > $${params.length + 1} ORDER BY ${key} ASC LIMIT ${PAGE_SIZE}`
-      : `${sql} ORDER BY ${key} ASC LIMIT ${PAGE_SIZE}`;
+      ? `SELECT * FROM (${sql}) AS export_page WHERE ${key} > $${params.length + 1} ORDER BY ${key} ASC LIMIT ${PAGE_SIZE}`
+      : `SELECT * FROM (${sql}) AS export_page ORDER BY ${key} ASC LIMIT ${PAGE_SIZE}`;
     const rows = await read(pageSql, cursor ? [...params, cursor] : params);
     ids.push(...rows.map((row) => row[key]));
     if (rows.length < PAGE_SIZE) return ids;
@@ -216,6 +227,7 @@ export async function processAccountExport(event, env, {
     await logAuditImpl({ actorId: userId, action: "account_export_completed", entityType: "account_export", entityId: exportId, details: { export_id: exportId, status: "completed" } });
   } catch (error) {
     console.error("account export failed:", String(error?.message || error));
+    await writer.abort();
     await write(
       `UPDATE account_export_jobs SET status='failed', error=$1, completed_at=now()
          WHERE id=$2 AND user_id=$3`,

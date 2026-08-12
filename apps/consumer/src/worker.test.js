@@ -30,11 +30,17 @@ describe("queue batch processing", () => {
 describe("account export artifacts", () => {
   it("writes a manifest with exactly the synchronous export collections", async () => {
     const chunks = [];
+    const uploads = [];
     const bucket = {
-      createMultipartUpload() {
+      async createMultipartUpload() {
         return {
-          async uploadPart(_part, body) { chunks.push(new TextDecoder().decode(body)); return { partNumber: _part, etag: "etag" }; },
+          async uploadPart(_part, body) {
+            chunks.push(new TextDecoder().decode(body));
+            uploads.push(body.byteLength);
+            return { partNumber: _part, etag: "etag" };
+          },
           async complete() {},
+          async abort() { throw new Error("should not abort"); },
         };
       },
     };
@@ -59,5 +65,103 @@ describe("account export artifacts", () => {
       "adminAudit", "supportMessages", "siteStatsHourly", "siteReferrers",
     ]);
     expect(lines.slice(1).map((line) => line.table)).toEqual(["user", "sites"]);
+    expect(uploads.length).toBe(1);
+  });
+
+  it("never emits session tokens and safely paginates OR-filtered collections", async () => {
+    const lines = [];
+    const bucket = {
+      async createMultipartUpload() {
+        return {
+          async uploadPart(_part, body) { lines.push(...new TextDecoder().decode(body).trim().split("\n")); return { partNumber: _part, etag: "etag" }; },
+          async complete() {},
+          async abort() {},
+        };
+      },
+    };
+    const referralRows = Array.from({ length: 501 }, (_, i) => ({ id: `ref-${i}`, referrer_id: "user-1", referred_id: `other-${i}`, reward_days: 1, created_at: "2026-01-01" }));
+    const adminRows = Array.from({ length: 501 }, (_, i) => ({ id: `audit-${i}`, admin_id: "user-1", target_user_id: `other-${i}`, action: "view", details: {}, created_at: "2026-01-01" }));
+    const read = async (sql, params = []) => {
+      if (sql.includes("FROM users")) return [{ id: "user-1" }];
+      if (sql.includes("FROM sites")) return [];
+      if (sql.includes("COUNT(*)")) return [{ count: "501" }];
+      if (sql.includes("FROM sessions")) return [{ token: "secret-session-token", created_at: "2026-01-01", expires_at: "2026-02-01", twofa_verified: false }];
+      if (sql.includes("FROM referral_rewards")) {
+        return params.length > 1 ? referralRows.slice(500) : referralRows.slice(0, 500);
+      }
+      if (sql.includes("FROM admin_audit")) {
+        return params.length > 1 ? adminRows.slice(500) : adminRows.slice(0, 500);
+      }
+      return [];
+    };
+    const write = async (sql) => sql.includes("RETURNING id") ? [{ id: "job-1" }] : [];
+    await processAccountExport(
+      { exportId: "job-1", userId: "user-1" },
+      { ACCOUNT_EXPORTS: bucket },
+      { queryImpl: read, execImpl: write, logAuditImpl: async () => {} }
+    );
+    const parsed = lines.map((line) => JSON.parse(line));
+    const session = parsed.find((line) => line.table === "sessions");
+    expect(session.row).toEqual({ created_at: "2026-01-01", expires_at: "2026-02-01", twofa_verified: false });
+    expect(JSON.stringify(parsed)).not.toContain("secret-session-token");
+    expect(parsed.filter((line) => line.table === "referralRewards")).toHaveLength(501);
+    expect(parsed.filter((line) => line.table === "adminAudit")).toHaveLength(501);
+  });
+
+  it("aborts an incomplete multipart upload when export processing fails", async () => {
+    let aborted = false;
+    const bucket = {
+      async createMultipartUpload() {
+        return {
+          async uploadPart() { return { partNumber: 1, etag: "etag" }; },
+          async complete() {},
+          async abort() { aborted = true; },
+        };
+      },
+    };
+    const read = async (sql) => {
+      if (sql.includes("FROM users")) return [{ id: "user-1" }];
+      if (sql.includes("FROM sites")) return [];
+      if (sql.includes("COUNT(*)")) return [{ count: "0" }];
+      if (sql.includes("FROM players")) throw new Error("database unavailable");
+      return [];
+    };
+    const write = async (sql) => sql.includes("RETURNING id") ? [{ id: "job-1" }] : [];
+    await processAccountExport(
+      { exportId: "job-1", userId: "user-1" },
+      { ACCOUNT_EXPORTS: bucket },
+      { queryImpl: read, execImpl: write, logAuditImpl: async () => {} }
+    );
+    expect(aborted).toBe(true);
+  });
+
+  it("uploads fixed-size multipart parts except for the final part", async () => {
+    const partSizes = [];
+    const bucket = {
+      async createMultipartUpload() {
+        return {
+          async uploadPart(partNumber, body) {
+            partSizes.push([partNumber, body.byteLength]);
+            return { partNumber, etag: "etag" };
+          },
+          async complete() {},
+          async abort() {},
+        };
+      },
+    };
+    const read = async (sql) => {
+      if (sql.includes("FROM users")) return [{ id: "user-1", email: "x".repeat(8 * 1024 * 1024) }];
+      if (sql.includes("FROM sites")) return [];
+      if (sql.includes("COUNT(*)")) return [{ count: "0" }];
+      return [];
+    };
+    const write = async (sql) => sql.includes("RETURNING id") ? [{ id: "job-1" }] : [];
+    await processAccountExport(
+      { exportId: "job-1", userId: "user-1" },
+      { ACCOUNT_EXPORTS: bucket },
+      { queryImpl: read, execImpl: write, logAuditImpl: async () => {} }
+    );
+    expect(partSizes.length).toBeGreaterThan(1);
+    expect(partSizes.slice(0, -1).every(([, size]) => size === 8 * 1024 * 1024)).toBe(true);
   });
 });
