@@ -31,11 +31,13 @@ for (const [p, entry] of Object.entries(ASSETS)) {
   ETAGS[p] = `"${contentHash(entry[0])}"`;
 }
 
-export function serveStaticAsset(path, request) {
-  const entry = ASSETS[path];
+export function serveStaticAsset(path, request, assets = ASSETS) {
+  const entry = assets[path];
   if (!entry) return new Response("not found", { status: 404 });
 
-  const etag = ETAGS[path];
+  const etag = assets === ASSETS
+    ? ETAGS[path]
+    : `"${contentHash(entry[0])}"`;
   const headers = {
     "content-type": MIME[entry[1]],
     "cache-control": "public, no-cache",

@@ -1,15 +1,9 @@
 // Unit tests for the score postback handler.
-// Uses bun:test + mock.module to isolate from DB / KV.
+// Uses injected collaborators to isolate from DB / KV.
 //
 // Run: bun test src/__tests__/scores.test.js
 
-import { mock, test, expect, describe, beforeEach, beforeAll, afterAll, jest } from "bun:test";
-
-// ── resolve dep paths before any mock.module calls ────────────────────────
-const _sessionUrl   = import.meta.resolve("../../../../shared/session.js");
-const _dbUrl        = import.meta.resolve("../../../../shared/db.js");
-const _cryptoUrl    = import.meta.resolve("../../../../shared/crypto.js");
-const _postbackUrl  = import.meta.resolve("../../../../shared/postback.js");
+import { test, expect, describe, beforeEach, beforeAll, afterAll, jest } from "bun:test";
 
 // ── shared state that individual tests can override ────────────────────────
 let _rateLimitCount = 0;
@@ -18,7 +12,7 @@ let _ownerRow = null;
 let _existingSiteRow = null;
 let _saveSiteResult = {};
 
-mock.module(_dbUrl, () => ({
+const dbDeps = ({
   one: (sql, _params) => {
     if (sql.includes("FROM sites") && sql.includes("s.user_id")) return Promise.resolve(_siteRow);
     if (sql.includes("plan_expires_at"))    return Promise.resolve(_ownerRow);
@@ -29,9 +23,9 @@ mock.module(_dbUrl, () => ({
   query: () => Promise.resolve([]),
   getSql: () => { throw new Error("getSql should not be called in scores unit tests"); },
   withTransaction: async (fn) => fn({ one: () => Promise.resolve(null), exec: () => Promise.resolve(), query: () => Promise.resolve([]) }),
-}));
+});
 
-mock.module(_sessionUrl, () => ({
+const sessionDeps = ({
     createSession:          () => Promise.resolve("mock-token"),
     destroySession:         () => Promise.resolve(),
     destroyAllUserSessions: () => Promise.resolve(),
@@ -44,12 +38,12 @@ mock.module(_sessionUrl, () => ({
     cookieClearLegacy: () => "sess=; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=0",
     SESSION_ROTATE_AFTER_S: 86400,
     SESSION_TTL_S: 2592000, // 30 days
-    }));
+    });
 
   // Mock crypto.js so HMAC verification always passes in tests
   // Include the full crypto API so later tests in the same process don't see
-  // a partial crypto module (bun:test mock.module state can persist across files).
-mock.module(_cryptoUrl, () => ({
+  // a partial crypto module cannot leak into other tests.
+const cryptoDeps = ({
   decryptToken: (enc) => enc,
   encryptToken: (s) => s,
   reencryptToken: (s) => s,
@@ -64,12 +58,12 @@ mock.module(_cryptoUrl, () => ({
   newWebhookSecret: () => "secret",
   hashToken: async (s) => "hash:" + s,
   hashIp: async (ip) => ip,
-}));
+});
 
 // Include the full postback API so later tests in the same process (e.g. the
 // coverage run that loads every file together) don't see a partial module —
-// bun:test mock.module state can persist across files.
-mock.module(_postbackUrl, () => ({
+// Keep the full postback collaborator surface local to this test.
+const postbackDeps = ({
   POSTBACK_SUNSET: "2026-10-01",
   unsignedPostbacksEnabled: (value) => value !== "false" && value !== "0",
   findPostbackOwner: async () => _siteRow ? { id: "key-id", userId: _siteRow.user_id } : null,
@@ -79,11 +73,17 @@ mock.module(_postbackUrl, () => ({
   revokePostbackKeys: async () => 0,
   computeReplayHash: async () => "replay-hash",
   recordReplayHash: async () => true,
-}));
+});
 
 const { handleScores } = await import("../handlers/scores.js");
 const invokeScores = (request, env) =>
-  handleScores(request, env, { saveSiteImpl: async () => _saveSiteResult });
+  handleScores(request, env, {
+    ...dbDeps,
+    ...sessionDeps,
+    ...cryptoDeps,
+    ...postbackDeps,
+    saveSiteImpl: async () => _saveSiteResult,
+  });
 
 // QA-006: Freeze the clock so Date.now()-based tests are deterministic
 const FROZEN_TIME = new Date("2025-06-15T12:00:00Z").getTime();

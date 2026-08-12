@@ -36,6 +36,9 @@ jobs:
         working-directory: apps/leaderboard
         run: bun run lint
 
+      - name: Reject global leaderboard test mocks
+        run: bun run check:leaderboard-test-mocks
+
   typecheck:
     name: Typecheck
     runs-on: ubuntu-latest

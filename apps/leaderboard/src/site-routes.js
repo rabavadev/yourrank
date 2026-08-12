@@ -3,16 +3,16 @@
 // primary domain, plus the matching paths on custom domains. It enforces
 // section visibility server-side, resolves the viewer session, and renders
 // the shared site shell.
-import { getPublicSite } from "./site.js";
-import { resolveViewer } from "../../../shared/viewer-session.js";
-import { createQueueProducer } from "../../../shared/queue-producer.js";
-import { bumpStat } from "./stats.js";
-import { hashToken } from "../../../shared/crypto.js";
+import { getPublicSite as defaultGetPublicSite } from "./site.js";
+import { resolveViewer as defaultResolveViewer } from "../../../shared/viewer-session.js";
+import { createQueueProducer as defaultCreateQueueProducer } from "../../../shared/queue-producer.js";
+import { bumpStat as defaultBumpStat } from "./stats.js";
+import { hashToken as defaultHashToken } from "../../../shared/crypto.js";
 import { HTML, withNonce, notFoundPage, pendingVerificationPage, error500Page } from "./middleware/headers.js";
 import { generateCsrfToken, csrfCookie } from "./middleware/csrf.js";
-import { renderPasswordGate } from "./password-gate.js";
-import { renderSite } from "./site-render.js";
-import { getViewerSiteData } from "./site-data.js";
+import { renderPasswordGate as defaultRenderPasswordGate } from "./password-gate.js";
+import { renderSite as defaultRenderSite } from "./site-render.js";
+import { getViewerSiteData as defaultGetViewerSiteData } from "./site-data.js";
 import {
   cachedPublicBoardResponse,
   getPublicBoardCache,
@@ -45,12 +45,12 @@ export function parseSitePath(path, isCustomDomain, customSlug) {
   return null;
 }
 
-function enqueueBump(env, ctx, siteId, field, referer, visitorHash) {
-  const producer = createQueueProducer(
+function enqueueBump(env, ctx, siteId, field, referer, visitorHash, deps) {
+  const producer = deps.createQueueProducer(
     env.EVENTS_QUEUE,
     async (event) => {
       if (event.type === "bump") {
-        await bumpStat(event.siteId, event.field, event.referer, event.visitorHash);
+        await deps.bumpStat(event.siteId, event.field, event.referer, event.visitorHash);
       }
     }
   );
@@ -58,7 +58,7 @@ function enqueueBump(env, ctx, siteId, field, referer, visitorHash) {
   ctx.waitUntil(p);
 }
 
-async function bumpView(env, ctx, request, siteId, slug, headers) {
+async function bumpView(env, ctx, request, siteId, slug, headers, deps) {
   const cookies = request.headers.get("cookie") || "";
   let vid = "";
   let consent = "";
@@ -74,17 +74,28 @@ async function bumpView(env, ctx, request, siteId, slug, headers) {
     vid = crypto.randomUUID();
     headers.append("set-cookie", `yr_vid=${vid}; Path=/; Max-Age=31536000; SameSite=Lax; Secure`);
   }
-  const visitorHash = await hashToken(`${vid}:${siteId}`);
+  const visitorHash = await deps.hashToken(`${vid}:${siteId}`);
   const viewCookieName = `__v_${slug}`;
   const alreadyViewed = new RegExp(`(?:^|;\\s*)${viewCookieName}=`).test(cookies);
   if (!alreadyViewed) {
     const ref = request.headers.get("referer") || "";
-    enqueueBump(env, ctx, siteId, "views", ref, visitorHash);
+    enqueueBump(env, ctx, siteId, "views", ref, visitorHash, deps);
     headers.append("set-cookie", `${viewCookieName}=1; Path=/${slug}; Max-Age=86400; SameSite=Lax; Secure`);
   }
 }
 
-export async function renderSiteRoute({ request, env, ctx, nonce, slug, section, isCustomDomain }) {
+export async function renderSiteRoute({ request, env, ctx, nonce, slug, section, isCustomDomain, deps = {} }) {
+  const {
+    getPublicSite = defaultGetPublicSite,
+    resolveViewer = defaultResolveViewer,
+    createQueueProducer = defaultCreateQueueProducer,
+    bumpStat = defaultBumpStat,
+    hashToken = defaultHashToken,
+    renderPasswordGate = defaultRenderPasswordGate,
+    renderSite = defaultRenderSite,
+    getViewerSiteData = defaultGetViewerSiteData,
+  } = deps;
+  const collaborators = { createQueueProducer, bumpStat, hashToken };
   setRequestMetrics({ route: `/site/${section}`, site: slug });
   const cacheableRequest = isPublicBoardCacheRequest(request, section);
   const HTML_N = withNonce(HTML, nonce);
@@ -143,7 +154,7 @@ export async function renderSiteRoute({ request, env, ctx, nonce, slug, section,
     }
 
     if (section === "home" || section === "leaderboard") {
-      await bumpView(env, ctx, request, r.id, slug, respHeaders);
+      await bumpView(env, ctx, request, r.id, slug, respHeaders, collaborators);
     }
 
     const html = await renderSite({

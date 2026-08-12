@@ -1,8 +1,8 @@
 // Public contact/support form handler.
 // Stores the message and emails the support inbox when RESEND_API_KEY is set.
 import { json, bad, rateLimitHeaders, clientIp, rateLimit, readJson } from "../auth.js";
-import { sendEmail } from "../email.js";
-import { exec } from "../../../../shared/db.js";
+import { sendEmail as defaultSendEmail } from "../email.js";
+import { exec as defaultExec } from "../../../../shared/db.js";
 
 const MAX_LEN = 4000;
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -16,10 +16,15 @@ const CONTEXT_LABELS = {
   billing: "Billing",
 };
 
-export async function handleContact(request, env) {
+export async function handleContact(request, env, deps = {}) {
+  const {
+    rateLimit: rateLimitImpl = rateLimit,
+    sendEmail: sendEmailImpl = defaultSendEmail,
+    exec: execImpl = defaultExec,
+  } = deps;
   // Rate-limit by IP: 3 submissions per 5 minutes.
   const ip = clientIp(request);
-  const rl = await rateLimit(env, `contact:${ip}`, 3, 300);
+  const rl = await rateLimitImpl(env, `contact:${ip}`, 3, 300);
   if (!rl.ok) return bad("Too many messages. Please wait a few minutes.", 429, rateLimitHeaders(rl));
 
   const body = await readJson(request);
@@ -46,7 +51,7 @@ export async function handleContact(request, env) {
   const storedSubject = `${category ? `[${category}] ` : ""}${subject || defaultSubject}`;
 
   try {
-    await exec(
+    await execImpl(
       `INSERT INTO support_messages (name, email, subject, message, ip_hash)
        VALUES ($1, $2, $3, $4, $5)`,
       [name, email, storedSubject, message, await hashIp(ip)]
@@ -57,7 +62,7 @@ export async function handleContact(request, env) {
   }
 
   const supportEmail = env.SUPPORT_EMAIL || "contact@yourrank.site";
-  await sendEmail(env, {
+  await sendEmailImpl(env, {
     to: supportEmail,
     subject: `[YourRank] ${storedSubject} from ${name}`,
     text: `Name: ${name}\nEmail: ${email}\nSubject: ${storedSubject}\n\n${message}`,

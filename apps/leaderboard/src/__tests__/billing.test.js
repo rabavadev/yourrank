@@ -1,20 +1,9 @@
 // Billing unit tests — effectivePlan, PLAN_LIMITS, PLAN_PRICES, priceUsd
 // All pure functions live in shared/plans.js (no DB dependency, no mocks needed).
 // billing.js re-exports them for production code, but tests import from source directly
-// to avoid mock.module issues in bun v1.2.x CI.
+// to avoid process-global test state in aggregate CI.
 
-import { mock, test, expect, describe, beforeAll, afterAll, jest } from "bun:test";
-
-// Mock shared/db.js before importing anything else — shared/plans.js is CJS and
-// will load db.js into the module cache, breaking mocks in other test files.
-const _dbUrl = import.meta.resolve("../../../../shared/db.js");
-mock.module(_dbUrl, () => ({
-  query: () => Promise.resolve([]),
-  one: () => Promise.resolve(null),
-  exec: () => Promise.resolve(),
-  getSql: () => { throw new Error("getSql should not be called in unit tests"); },
-  withTransaction: async (fn) => fn({ one: () => Promise.resolve(null), exec: () => Promise.resolve(), query: () => Promise.resolve([]) }),
-}));
+import { test, expect, describe, beforeAll, afterAll, jest } from "bun:test";
 
 const {
   effectivePlan,

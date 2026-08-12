@@ -30,11 +30,16 @@ These mirror the `PR Check` workflow. A `.githooks/pre-commit` hook (enabled by
 
 ## Gotchas
 
-- Leaderboard tests use process-global `mock.module`; run them **one file at a
-  time** (`bun run test` and CI both do). Running `bun test src/__tests__` all at
-  once corrupts mocks and produces misleading failures.
+- Global module mocks are disallowed in leaderboard tests. Bun's
+  `mock.module` is process-global, so one test can replace a shared dependency
+  for every later test in an aggregate run and produce misleading failures.
+  Inject collaborators into the function under test instead; production
+  defaults must remain unchanged. A temporary allowlist is enforced by
+  `bun run check:leaderboard-test-mocks` for legacy tests that remain isolated
+  from aggregate coverage; it must only shrink.
 - Coverage gate is >= 60% lines on the leaderboard suite, excluding
-  `audit-validation.test.js` (which is run only in isolation).
+  `audit-validation.test.js`, `credits-loop.test.js`, `public-stream-version.test.js`,
+  and `sites-handlers.test.js` (which are run only in isolation).
 - After editing anything under `shared/`, run `node build-shared.mjs` so the
   Workers pick up the recompiled `.js`.
 - Caches in the Workers are per-isolate L1 only (no KV/L2); invalidation clears

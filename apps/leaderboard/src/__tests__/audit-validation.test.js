@@ -9,12 +9,15 @@ const dbUrl     = import.meta.resolve("../../../../shared/db.js");
 const dbUrlTs   = import.meta.resolve("../../../../shared/db.ts");
 const sessUrl   = import.meta.resolve("../../../../shared/session.js");
 const sessUrlTs = import.meta.resolve("../../../../shared/session.ts");
+const realDb = await import(dbUrl);
+const realSession = await import(sessUrl);
 
 const mockExec  = mock(() => Promise.resolve());
 const mockOne   = mock(() => Promise.resolve(null));
 const mockQuery = mock(() => Promise.resolve([]));
 
 const dbMock = () => ({
+  ...realDb,
   one: (...a) => mockOne(...a),
   exec: (...a) => mockExec(...a),
   query: (...a) => mockQuery(...a),
@@ -28,6 +31,7 @@ const USER_ROW = {
 };
 
 const sessMock = () => ({
+  ...realSession,
   createSession: () => Promise.resolve("tok"),
   destroySession: () => Promise.resolve(),
   destroyAllUserSessions: () => Promise.resolve(),
@@ -49,8 +53,8 @@ const sessMock = () => ({
   SESSION_TTL_S: 2592000,
 });
 
-mock.module(dbUrl, dbMock);
-mock.module(dbUrlTs, dbMock);
+mock.module(dbUrl, () => ({ ...realDb, ...dbMock() }));
+mock.module(dbUrlTs, () => ({ ...realDb, ...dbMock() }));
 mock.module(sessUrl, sessMock);
 mock.module(sessUrlTs, sessMock);
 

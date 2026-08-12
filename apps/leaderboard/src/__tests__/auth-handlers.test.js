@@ -1,11 +1,6 @@
 import { describe, test, expect, mock, beforeEach } from "bun:test";
 
-// Mock shared DB + session before auth handlers import.
-const dbUrl   = import.meta.resolve("../../../../shared/db.js");
-const dbUrlTs = import.meta.resolve("../../../../shared/db.ts");
-const sessUrl   = import.meta.resolve("../../../../shared/session.js");
-const sessUrlTs = import.meta.resolve("../../../../shared/session.ts");
-
+// Collaborators are injected into the handler under test.
 const mockOne = mock(() => Promise.resolve(null));
 const mockUnsafe = mock(() => Promise.resolve());
 const mockExec = mock(() => Promise.resolve());
@@ -13,7 +8,7 @@ const mockQuery = mock(() => Promise.resolve([]));
 const mockCreateSession = mock(() => Promise.resolve("new-session"));
 const mockDestroyAllUserSessions = mock(() => Promise.resolve());
 
-mock.module(dbUrl, () => ({
+const db = {
   one: (...args) => mockOne(...args),
   exec: (...args) => mockExec(...args),
   query: (...args) => mockQuery(...args),
@@ -24,21 +19,8 @@ mock.module(dbUrl, () => ({
     unsafe: (...a) => mockUnsafe(...a),
   }),
   getSql: () => null,
-}));
-mock.module(dbUrlTs, () => ({
-  one: (...args) => mockOne(...args),
-  exec: (...args) => mockExec(...args),
-  query: (...args) => mockQuery(...args),
-  withTransaction: async (fn) => fn({
-    one: (...a) => mockOne(...a),
-    exec: (...a) => mockExec(...a),
-    query: (...a) => mockQuery(...a),
-    unsafe: (...a) => mockUnsafe(...a),
-  }),
-  getSql: () => null,
-}));
-
-mock.module(sessUrl, () => ({
+};
+const session = {
   createSession: (...args) => mockCreateSession(...args),
   destroySession: () => Promise.resolve(),
   destroyAllUserSessions: (...args) => mockDestroyAllUserSessions(...args),
@@ -51,23 +33,10 @@ mock.module(sessUrl, () => ({
   cookieClearLegacy: () => "sess=",
   SESSION_ROTATE_AFTER_S: 86400,
   SESSION_TTL_S: 2592000,
-}));
-mock.module(sessUrlTs, () => ({
-  createSession: (...args) => mockCreateSession(...args),
-  destroySession: () => Promise.resolve(),
-  destroyAllUserSessions: (...args) => mockDestroyAllUserSessions(...args),
-  cookieSet: (t) => `yr_session=${t}`,
-  cookieClear: () => "yr_session=",
-  readToken: () => null,
-  resolveSession: () => Promise.resolve({ userId: null, cookie: null }),
-  loadUser: () => Promise.resolve(null),
-  hasLegacyCookie: () => false,
-  cookieClearLegacy: () => "sess=",
-  SESSION_ROTATE_AFTER_S: 86400,
-  SESSION_TTL_S: 2592000,
-}));
+};
 
-import { handleReset } from "../handlers/auth.js";
+import { handleReset as handleResetImpl } from "../handlers/auth.js";
+const handleReset = (request, env) => handleResetImpl(request, env, { ...db, ...session });
 
 function req({ token = "valid-token", password = "newpassword123" } = {}) {
   const request = new Request("https://test.com/api/auth/reset", {

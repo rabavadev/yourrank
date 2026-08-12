@@ -1,15 +1,16 @@
 // Public API handlers for leaderboard data access
-import { getPublicSite, getPublicStreamVersion } from "../site.js";
-import { getStats, isStatementTimeout } from "../stats.js";
-import { rateLimit, rateLimitHeaders, clientIp, json, bad } from "../auth.js";
-import { one } from "../../../../shared/db.js";
+import { getPublicSite as defaultGetPublicSite, getPublicStreamVersion as defaultGetPublicStreamVersion } from "../site.js";
+import { getStats as defaultGetStats, isStatementTimeout as defaultIsStatementTimeout } from "../stats.js";
+import { rateLimit as defaultRateLimit, rateLimitHeaders, clientIp as defaultClientIp, json, bad } from "../auth.js";
+import { one as defaultOne } from "../../../../shared/db.js";
 import { demoLeaderboardData } from "../demo-data.js";
 
 /**
  * Handle GET /api/public/:slug/standings
  * Returns full standings JSON for embedding / Telegram bot queries
  */
-export async function handlePublicStandings(request, env, ctx) {
+export async function handlePublicStandings(request, env, ctx, deps = {}) {
+  const { getPublicSite = defaultGetPublicSite, rateLimit = defaultRateLimit, clientIp = defaultClientIp } = deps;
   try {
     const slug = ctx.slug;
     const rl = await rateLimit(env, `pub-standings:${clientIp(request)}`, 100, 60);
@@ -68,7 +69,8 @@ export async function handlePublicStandings(request, env, ctx) {
  * Handle GET /api/public/:slug/players
  * Returns lightweight players-only endpoint for live polling
  */
-export async function handlePublicPlayers(request, env, ctx) {
+export async function handlePublicPlayers(request, env, ctx, deps = {}) {
+  const { getPublicSite = defaultGetPublicSite, rateLimit = defaultRateLimit, clientIp = defaultClientIp, one = defaultOne } = deps;
   try {
     const slug = ctx.slug;
     const ip = clientIp(request);
@@ -139,7 +141,8 @@ export async function handlePublicPlayers(request, env, ctx) {
  * Handle GET /api/public/:slug/stream
  * Server-Sent Events for live leaderboard updates (replaces 30s polling).
  */
-export async function handlePublicStream(request, env, ctx) {
+export async function handlePublicStream(request, env, ctx, deps = {}) {
+  const { getPublicSite = defaultGetPublicSite, getPublicStreamVersion = defaultGetPublicStreamVersion, rateLimit = defaultRateLimit, clientIp = defaultClientIp } = deps;
   try {
     const slug = ctx.slug;
     const rl = await rateLimit(env, `pub-stream:${clientIp(request)}`, 60, 60);
@@ -206,7 +209,8 @@ function getPublicStreamInterval(env) {
  * Handle GET /api/public/:slug/rank?user=X
  * Returns plain-text rank lookup for Nightbot / Streamlabs custom commands
  */
-export async function handlePublicRank(request, env, ctx) {
+export async function handlePublicRank(request, env, ctx, deps = {}) {
+  const { getPublicSite = defaultGetPublicSite, rateLimit = defaultRateLimit, clientIp = defaultClientIp } = deps;
   try {
     const slug = ctx.slug;
     const userParam = new URL(request.url).searchParams.get("user") || "";
@@ -305,7 +309,8 @@ export async function handlePublicRank(request, env, ctx) {
  * Handle GET /api/public/:slug (generic endpoint)
  * Returns the full leaderboard data as JSON
  */
-export async function handlePublicData(request, env, ctx) {
+export async function handlePublicData(request, env, ctx, deps = {}) {
+  const { getPublicSite = defaultGetPublicSite, rateLimit = defaultRateLimit, clientIp = defaultClientIp } = deps;
   try {
     const slug = ctx.slug;
     const rl = await rateLimit(env, `pub-data:${clientIp(request)}`, 120, 60);
@@ -330,7 +335,8 @@ export async function handlePublicData(request, env, ctx) {
  * Public stats page for publishers/streamers to share.
  * Returns summary counts and a 14-day views series.
  */
-export async function handlePublicStats(request, env, ctx) {
+export async function handlePublicStats(request, env, ctx, deps = {}) {
+  const { getPublicSite = defaultGetPublicSite, getStats = defaultGetStats, isStatementTimeout = defaultIsStatementTimeout, rateLimit = defaultRateLimit, clientIp = defaultClientIp } = deps;
   try {
     const slug = ctx.slug;
     const rl = await rateLimit(env, `pub-stats:${clientIp(request)}`, 60, 60);

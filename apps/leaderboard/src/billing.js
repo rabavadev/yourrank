@@ -1,13 +1,16 @@
 // Billing: NOWPayments (crypto) + manual activation. Plan logic lives here.
-import { json, bad, ok, uuid, requireUser, safeEqual, readJson, rateLimit } from "./auth.js";
-import { one, query, exec, withTransaction } from "../../../shared/db.js";
-import { logAudit } from "../../../shared/audit.js";
-import { logProviderEvent } from "../../../shared/provider-events.js";
+import { json, bad, ok, uuid, requireUser, safeEqual as defaultSafeEqual, readJson, rateLimit } from "./auth.js";
+import { one as defaultOne, query, exec, withTransaction as defaultWithTransaction } from "../../../shared/db.js";
+import { logAudit as defaultLogAudit } from "../../../shared/audit.js";
+import { logProviderEvent as defaultLogProviderEvent } from "../../../shared/provider-events.js";
 
 // Plan definitions imported from shared source of truth.
 // Re-exported here for backward compatibility with any local imports.
 import { PLAN_LIMITS as _PL, BOARD_LIMITS as _BL, PLAN_PRICES as _PP, PLAN_META as _PM, computeProratedExpiry as _computeProratedExpiry, CREDITS_REWARD_LIMITS as _CRL, CREDITS_SHOP_LIMITS as _CSL, CREDITS_PENDING_REDEMPTIONS_LIMITS as _CPRL, CREDITS_REDEMPTIONS_PER_30D_LIMITS as _CR30L, CREDITS_VIEWERS_PER_30D_LIMITS as _CVL } from "../../../shared/plans.js";
 import { sendReceiptEmail } from "./email.js";
+const withTransaction = defaultWithTransaction;
+const one = defaultOne;
+const logAudit = defaultLogAudit;
 export const PLAN_LIMITS = _PL;
 export const BOARD_LIMITS = _BL;
 export const PLAN_PRICES = _PP;
@@ -332,7 +335,13 @@ async function hmacSha512Hex(secret, msg) {
 }
 
 // POST /api/billing/ipn — NOWPayments calls this on every payment status change.
-export async function handleIpn(request, env, ctx) {
+export async function handleIpn(request, env, ctx, {
+  safeEqual = defaultSafeEqual,
+  one = defaultOne,
+  withTransaction = defaultWithTransaction,
+  logAudit = defaultLogAudit,
+  logProviderEvent = defaultLogProviderEvent,
+} = {}) {
   if (!env.NOWPAYMENTS_IPN_SECRET) return bad("not configured", 503);
   const raw = await request.text();
   let body;

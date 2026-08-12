@@ -1,14 +1,14 @@
 // Score postback handler (authenticated via X-Postback-Key + HMAC-SHA256 signature)
-import { json, bad, rateLimit, rateLimitHeaders } from "../auth.js";
-import { saveSite } from "../site.js";
+import { json, bad, rateLimit as defaultRateLimit, rateLimitHeaders } from "../auth.js";
+import { saveSite as defaultSaveSite } from "../site.js";
 import { effectivePlan, PLAN_LIMITS } from "../../../../shared/plans.js";
-import { one } from "../../../../shared/db.js";
-import { verifyHmacSha256Hex } from "../../../../shared/crypto.js";
+import { one as defaultOne } from "../../../../shared/db.js";
+import { verifyHmacSha256Hex as defaultVerifyHmacSha256Hex } from "../../../../shared/crypto.js";
 import {
-  computeReplayHash,
-  findPostbackOwner,
-  logPostbackIntake,
-  recordReplayHash,
+  computeReplayHash as defaultComputeReplayHash,
+  findPostbackOwner as defaultFindPostbackOwner,
+  logPostbackIntake as defaultLogPostbackIntake,
+  recordReplayHash as defaultRecordReplayHash,
 } from "../../../../shared/postback.js";
 import { z } from "../../../../shared/validation.js";
 
@@ -59,7 +59,16 @@ const scoreBodySchema = z
   });
 // POST /api/scores — authenticated by X-Postback-Key header + X-Postback-Signature HMAC.
 // Validates key against sites table, checks Pro plan gate, replaces player list.
-export async function handleScores(request, env, { saveSiteImpl = saveSite } = {}) {
+export async function handleScores(request, env, {
+  saveSiteImpl = defaultSaveSite,
+  rateLimit = defaultRateLimit,
+  one = defaultOne,
+  verifyHmacSha256Hex = defaultVerifyHmacSha256Hex,
+  computeReplayHash = defaultComputeReplayHash,
+  findPostbackOwner = defaultFindPostbackOwner,
+  logPostbackIntake = defaultLogPostbackIntake,
+  recordReplayHash = defaultRecordReplayHash,
+} = {}) {
   try {
     const postbackKey = request.headers.get("x-postback-key");
     if (!postbackKey) return bad("Missing X-Postback-Key header.", 401);

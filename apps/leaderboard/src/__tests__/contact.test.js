@@ -1,24 +1,12 @@
 // Tests for the public contact/support endpoint.
 import { describe, it, expect, mock, beforeEach } from "bun:test";
 
-// Mock DB so contact handler doesn't need a real Postgres.
-const dbUrl = import.meta.resolve("../../../../shared/db.js");
-const dbUrlTs = import.meta.resolve("../../../../shared/db.ts");
-
 const mockExec = mock(() => Promise.resolve());
 
-const dbMock = () => ({
-  one: mock(() => Promise.resolve(null)),
-  exec: mockExec,
-  query: mock(() => Promise.resolve([])),
-  getSql: () => null,
-  withTransaction: async (fn) => fn({ one: () => Promise.resolve(null), exec: () => Promise.resolve(), query: () => Promise.resolve([]) }),
-});
-
-mock.module(dbUrl, dbMock);
-mock.module(dbUrlTs, dbMock);
-
-import { handleContact } from "../handlers/contact.js";
+const sendEmail = mock(() => Promise.resolve());
+const rateLimit = mock(() => Promise.resolve({ ok: true, limit: 3, remaining: 2, retryAfter: 0 }));
+import { handleContact as handleContactImpl } from "../handlers/contact.js";
+const handleContact = (request, env) => handleContactImpl(request, env, { exec: mockExec, sendEmail, rateLimit });
 
 function postReq(body) {
   return new Request("http://localhost/api/contact", {

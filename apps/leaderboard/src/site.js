@@ -156,7 +156,7 @@ export function invalidateUserCache(env, uid) {
   siteCache.delete(`user_boards:${uid}`);
 }
 
-export async function getPublicStreamVersion(siteId) {
+export async function getPublicStreamVersion(siteId, { one: oneImpl = one } = {}) {
   const cached = publicStreamVersionCache.get(siteId);
   if (cached && cached.expires > Date.now()) return cached.value;
 
@@ -166,7 +166,7 @@ export async function getPublicStreamVersion(siteId) {
 
   const p = (async () => {
     try {
-      const row = await one("SELECT max(updated_at) AS m FROM players WHERE site_id=$1", [siteId]);
+      const row = await oneImpl("SELECT max(updated_at) AS m FROM players WHERE site_id=$1", [siteId]);
       const value = row?.m ? new Date(row.m).toISOString() : "0";
       publicStreamVersionCache.set(siteId, { value, expires: Date.now() + PUBLIC_STREAM_VERSION_TTL });
       evictOldest(publicStreamVersionCache, SITE_CACHE_MAX);
