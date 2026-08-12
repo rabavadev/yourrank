@@ -86,6 +86,11 @@ import {
   handleGamesFairness,
   handleGamesFairnessRotate,
 } from "./handlers/games.js";
+import {
+  handleCreateViewerExportJob,
+  handleViewerExportStatus,
+  handleViewerExportDownload,
+} from "./handlers/viewer-export.js";
 import { handleApiDocs, handleOpenApiJson } from "./handlers/docs.js";
 import { handleCheckout, handleCheckoutLifetime, handleIpn, handleCancel, handleUserPayments, handlePendingPayment, handleAccountUsage } from "./billing.js";
 import {
@@ -199,6 +204,9 @@ export const ROUTES = [
   { path: "/api/viewer/me", method: "GET", handler: withHandler(handleViewerMe) },
   { path: "/api/viewer/site", method: "GET", handler: withHandler(handleViewerSite) },
   { path: "/api/viewer/redeem", method: "POST", handler: withHandler(handleViewerRedeem) },
+  { path: "/api/viewer/export", method: "POST", handler: withHandler(handleCreateViewerExportJob) },
+  { path: "/api/viewer/export/:id/status", method: "GET", handler: withHandler(handleViewerExportStatus) },
+  { path: "/api/viewer/export/:id/download", method: "GET", handler: withHandler(handleViewerExportDownload) },
 
   // Streamer viewer-auth toggles
   { path: "/api/credits/viewer-auth", method: "POST", handler: withHandler(handleCreditsViewerAuth) },
