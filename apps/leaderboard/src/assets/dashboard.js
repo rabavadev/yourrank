@@ -9,7 +9,7 @@ import { checkout, fitDesignPreview, loadCreditsStatus, loadHistory, loadStats, 
 import { renderOverviewSummary } from "./dashboard/overview.js";
 import { renderReferrals } from "./dashboard/referrals.js";
 import { initPerformance } from "./dashboard/performance.js";
-import { setupSettingsScreen, wireAccount } from "./dashboard/account.js";
+import { setupSettingsScreen } from "./dashboard/account.js";
 import { initGames } from "./dashboard/games.js";
 import { updateProfileMenu } from "./dashboard/profile-menu.js";
 
@@ -207,9 +207,7 @@ async function init() {
   // it lands set-up boards on Home and drafts on the editor they still need.
   const route = currentRoute();
   const planParam = urlParams.get("plan");
-  const landing = route.page !== "home"
-    ? route.page
-    : (planParam ? "settings" : (isBoardSetup(p) ? "home" : "board"));
+  const landing = route.page !== "home" ? route.page : (isBoardSetup(p) ? "home" : "board");
   const hash = route.tab || location.hash.replace("#", "");
   if (document.querySelector(`section[data-page="${landing}"]`)) navTo(landing, hash);
   if (planParam) {
@@ -228,9 +226,7 @@ async function init() {
   loadStats();
   loadCreditsStatus();
   wireStreamerHud();
-  wireAccount();
-  const settingsRoute = currentRoute();
-  setupSettingsScreen(p, settingsRoute.page === "settings" && settingsRoute.tab === "board" ? "plan" : undefined);
+  setupSettingsScreen(p);
 
   // The save bar, unload guard and preview react to the same notification in
   // dashboard/site.js; this only adds the debounced overview refresh.

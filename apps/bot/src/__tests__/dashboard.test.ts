@@ -132,7 +132,7 @@ describe("dashboard views", () => {
     expect(html).toContain('data-action="sendBroadcast"');
     expect(html).toContain('data-action="logout"');
     expect(html).not.toContain('<div class="panel" data-page="settings">');
-    expect(html).toContain("Manage postbacks in Account");
+    expect(html).toContain("Manage postbacks in settings");
     expect(html).toContain("postbackStatus");
     expect(html).toContain("Click metrics cover the last 90 days");
     expect(html).toContain("Reported revenue");

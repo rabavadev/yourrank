@@ -166,66 +166,7 @@ export function wireAccount() {
   loadSessions();
 }
 
-const SETTINGS_SUBLINES = {
-  plan: "Manage your subscription, account connections, and safety settings",
-  account: "Manage your subscription, account connections, and safety settings",
-  security: "Configure server credentials, notification targets, and restrictive boundaries",
-  domain: "Manage the custom domain for your public leaderboard",
-  support: "Get help and manage the tools around your public leaderboard",
-};
-
-function settingsMeter(name, used, limit) {
-  if (used == null || limit == null) return "";
-  const pct = limit > 0 ? Math.round((used / limit) * 100) : 0;
-  const warn = limit > 0 && pct >= 80;
-  return `<div class="v3-settings-meter"><div class="v3-meter-lbl"><span>${name}</span><span class="v3-meter-val${warn ? " v3-meter-val--warn" : ""}">${used} / ${limit}</span></div><div class="v3-meter${warn ? " v3-meter--warn" : ""}"><i style="width:${Math.min(100, pct)}%"></i></div></div>`;
-}
-
-async function loadSettingsUsage() {
-  const wrap = $("settingsUsage");
-  if (!wrap) return;
-  setState({ USAGE_STATUS: "loading" });
-  setBlockLoading(wrap, { lines: 4 });
-  try {
-    const res = await fetch("/api/account/usage", { credentials: "include" });
-    const data = await res.json();
-    if (!res.ok || !data) throw new Error("usage request failed");
-    setState({ USAGE_STATUS: "ready" });
-    const rows = [
-      settingsMeter("Players per board", data.leaderboard?.players?.used, data.leaderboard?.players?.limit),
-      settingsMeter("Active boards", data.leaderboard?.boards?.used, data.leaderboard?.boards?.limit),
-    ];
-    if (data.credits) rows.push(
-      settingsMeter("Credit rules", data.credits.rewardMappings?.used, data.credits.rewardMappings?.limit),
-      settingsMeter("Active shop items", data.credits.shopItems?.used, data.credits.shopItems?.limit),
-      settingsMeter("Pending shop redemptions", data.credits.pendingRedemptions?.used, data.credits.pendingRedemptions?.limit),
-      settingsMeter("Shop redemptions fulfilled this month", data.credits.redemptionsPer30Days?.used, data.credits.redemptionsPer30Days?.limit),
-      settingsMeter("New viewers this month", data.credits.newViewersPer30Days?.used, data.credits.newViewersPer30Days?.limit),
-    );
-    wrap.innerHTML = rows.join("") || '<p class="v3-settings-inline">No usage data yet.</p>';
-    wrap.removeAttribute("aria-busy");
-  } catch (err) {
-    setState({ USAGE_STATUS: "error" });
-    logError("settings-usage", err);
-    wrap.innerHTML = '<p class="v3-settings-inline v3-settings-inline--error">Couldn’t load usage. Try again later.</p>';
-  }
-}
-
-function renderSettingsPlan() {
-  const plan = state.ME?.plan || null;
-  const label = plan === "pro" ? "PRO PLAN" : plan === "starter" ? "STARTER PLAN" : plan ? `${plan.toUpperCase()} PLAN` : "—";
-  const chip = $("settingsPlanChip");
-  const price = $("settingsPlanPrice");
-  const renewal = $("settingsPlanRenewal");
-  if (chip) chip.textContent = label;
-  if (price) price.textContent = plan === "free" ? "Free" : state.ME?.proPrice ? `$${state.ME.proPrice}/month` : "—";
-  if (renewal) {
-    const expiry = state.ME?.planExpiresAt ? new Date(state.ME.planExpiresAt).toLocaleDateString() : "";
-    renewal.textContent = state.ME?.isTrial ? `Your trial is active${expiry ? ` until ${expiry}` : ""}.` : expiry ? `Your subscription renews automatically on ${expiry}.` : "—";
-  }
-}
-
-function wireSettingsTabs(initialTab = "plan") {
+function wireSettingsTabs(initialTab = "access") {
   const tabs = [...document.querySelectorAll("[data-settings-tab]")];
   const panels = [...document.querySelectorAll("[data-settings-panel]")];
   if (!tabs.length) return;
@@ -238,8 +179,6 @@ function wireSettingsTabs(initialTab = "plan") {
       if (active && focus) tab.focus();
     });
     panels.forEach((panel) => { panel.hidden = panel.dataset.settingsPanel !== key; });
-    const subline = $("settingsSubline");
-    if (subline) subline.textContent = SETTINGS_SUBLINES[key] || SETTINGS_SUBLINES.plan;
   };
   tabs.forEach((tab, index) => {
     tab.addEventListener("click", () => select(tab.dataset.settingsTab));
@@ -250,24 +189,7 @@ function wireSettingsTabs(initialTab = "plan") {
       select(tabs[next].dataset.settingsTab, true);
     });
   });
-  document.querySelectorAll("[data-settings-jump]").forEach((link) => link.addEventListener("click", (event) => {
-    event.preventDefault();
-    select(link.dataset.settingsJump);
-  }));
   select(initialTab);
-}
-
-async function loadSettingsProviders() {
-  const toggle = $("settingsKickLogin");
-  if (!toggle) return;
-  try {
-    const res = await fetch("/api/credits/status", { credentials: "include" });
-    const data = await res.json();
-    toggle.checked = data?.viewerAuth?.kick === true;
-  } catch (err) {
-    logError("settings-providers", err);
-    toggle.checked = false;
-  }
 }
 
 function wireSettingsDanger() {
@@ -326,12 +248,11 @@ function wireSettingsWebhook(sitePayload) {
   sync();
 }
 
-export function setupSettingsScreen(sitePayload, initialTab = "plan") {
+// Board settings (`/dashboard/settings/board`). Plan, usage and account-level
+// providers live in the account settings document, not here.
+export function setupSettingsScreen(sitePayload, initialTab = "access") {
   if (!document.querySelector('[data-page="settings"]')) return;
   wireSettingsTabs(initialTab);
-  renderSettingsPlan();
-  loadSettingsUsage();
-  loadSettingsProviders();
   wireSettingsDanger();
   wireSettingsBoardAccess();
   wireSettingsWebhook(sitePayload);
