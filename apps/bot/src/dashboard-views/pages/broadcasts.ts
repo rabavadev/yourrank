@@ -2,9 +2,14 @@
 export function broadcastsPanel(): string {
   return `
   <div class="panel" data-page="broadcasts"><h2>Broadcast to subscribers</h2>
-    <div id="bcGate" class="muted mb-sm"></div>
     <p class="muted" id="bcDraftStatus" hidden>Draft loaded from your last visit.</p>
+    <div id="bcSetupState" class="empty">
+      <h3>Connect a bot to send broadcasts</h3>
+      <p class="muted">Your subscribers will appear here after you connect a Telegram bot.</p>
+      <a class="btn" href="/bot/bots">Go to Bots</a>
+    </div>
 
+    <div id="bcComposer" hidden>
     <div class="bc-step" data-step="1">
       <h3>1. Composer</h3>
       <label class="sr-only" for="bcBody">Message</label>
@@ -75,6 +80,7 @@ export function broadcastsPanel(): string {
           <button data-action="confirmBroadcast" type="button" id="bcConfirmBtn">Send now</button>
         </div>
       </div>
+    </div>
     </div>
 
     <div class="inline-row">

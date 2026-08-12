@@ -207,10 +207,11 @@ function wizardPrev(btn){ showWizardStep(Number(btn.dataset.step) - 1); }
 
 let firstBotId = null;
 let custBotId = null;
+const requestedBotId = new URLSearchParams(location.search).get('bot');
 
 // Every panel ships a static "Loading…" placeholder; if the load fails they
 // have to say so instead of claiming to load forever.
-const LOADING_SLOTS = [['botList',0],['ovBots',0],['ovOffers',0],['postbackStatus',0],['offers',9],['cmdList',5],['subSources',2]];
+const LOADING_SLOTS = [['botList',0],['ovBots',0],['ovOffers',0],['postbackStatusOffers',0],['postbackStatusSettings',0],['offers',9],['cmdList',5],['subSources',2]];
 function loadErrorMarkup(msg, action){
   return '<div class="empty empty--error"><span class="empty__icon" aria-hidden="true">\u26a0</span>' +
     esc(msg) +
@@ -226,8 +227,10 @@ function showLoadError(msg){
   }
 }
 function showPostbackError(msg){
-  const el = $('postbackStatus');
-  if (el) el.innerHTML = loadErrorMarkup(msg || "Couldn't load postback status.", 'retryPostbacks');
+  ['postbackStatusOffers','postbackStatusSettings'].forEach(id => {
+    const el = $(id);
+    if (el) el.innerHTML = loadErrorMarkup(msg || "Couldn't load postback status.", 'retryPostbacks');
+  });
 }
 
 async function load() {
@@ -488,15 +491,13 @@ async function loadExtras(){
 }
 
 function renderPostbackStatus(pb){
-  const el = $('postbackStatus');
-  if (!el) return;
-  if (!pb || pb.error) { el.textContent = 'Could not load postback status.'; return; }
-  if (pb.active) {
-    const at = pb.createdAt ? new Date(pb.createdAt).toLocaleString(undefined,{dateStyle:'short',timeStyle:'short'}) : 'active';
-    el.innerHTML = '<span class="badge ok">Active</span> Postback key created '+esc(at)+'. Full setup is in Account → Postbacks.';
-  } else {
-    el.innerHTML = '<span class="badge off">Not configured</span> Set up postbacks in Account → Postbacks to receive conversion events.';
-  }
+  const els = ['postbackStatusOffers','postbackStatusSettings'].map(id => $(id)).filter(Boolean);
+  if (!els.length) return;
+  if (!pb || pb.error) { els.forEach(el => { el.textContent = 'Could not load postback status.'; }); return; }
+  const html = pb.active
+    ? '<span class="badge ok">Active</span> Postback key created '+esc(pb.createdAt ? new Date(pb.createdAt).toLocaleString(undefined,{dateStyle:'short',timeStyle:'short'}) : 'active')+'. Full setup is in Account → Postbacks.'
+    : '<span class="badge off">Not configured</span> Set up postbacks in Account → Postbacks to receive conversion events.';
+  els.forEach(el => { el.innerHTML = html; });
 }
 
 async function copyLink(target){ const ok = await copyWithFallback(location.origin+'/r/'+target.dataset.slug); toast(ok ? 'Link copied' : 'Copy failed — copy the URL manually'); }
@@ -672,7 +673,7 @@ function renderBots(bots, loadCmds = true){
               (isActive ? '<button class="ghost" data-action="syncCommands" data-id="'+esc(b.id)+'" type="button">Sync commands</button>' : '')+
               (isActive ? '<button class="ghost" data-action="disconnectBot" data-id="'+esc(b.id)+'" type="button">Disconnect</button>'
                         : '<button class="ghost" data-action="reconnectBot" data-id="'+esc(b.id)+'" type="button">Reconnect</button>')+
-              (isActive ? '<button class="ghost" data-action="selectBot" data-id="'+esc(b.id)+'" type="button">Edit commands</button>' : '')+
+              (isActive ? '<a class="ghost" href="/bot/commands?bot='+encodeURIComponent(b.id)+'">Edit commands</a>' : '')+
               (isActive && page === 'bots' ? '<button class="ghost" data-action="testMessage" data-id="'+esc(b.id)+'" type="button">Test message</button>' : '')+
               (page === 'bots' ? '<button class="danger" data-action="deleteBot" data-id="'+esc(b.id)+'" type="button">Delete</button>' : '')+
             '</div>'+
@@ -692,7 +693,8 @@ function renderBots(bots, loadCmds = true){
   if (bcBotSelect) { bcBotSelect.innerHTML = botOptions || '<option value="">No bots</option>'; }
 
   firstBotId = bots[0]?.id ?? null;
-  if ((!custBotId || !bots.some(b => b.id === custBotId)) && firstBotId) custBotId = firstBotId;
+  const requestedBot = requestedBotId && bots.find(b => b.id === requestedBotId);
+  if ((!custBotId || !bots.some(b => b.id === custBotId)) && (requestedBot?.id || firstBotId)) custBotId = requestedBot?.id || firstBotId;
   if (!bots.length) custBotId = null;
   if (botSelect && custBotId) botSelect.value = custBotId;
   if (bcBotSelect && firstBotId) bcBotSelect.value = firstBotId;
@@ -707,7 +709,7 @@ function renderBots(bots, loadCmds = true){
   if (cf) cf.classList.toggle('hidden', bots.filter(b => b.status === 'active').length >= __maxBots);
 
   // customize panel (only on pages that show it)
-  if ($('customizePanel') && (page === 'bots' || page === 'commands')) {
+  if ($('customizePanel') && page === 'commands') {
     const bot = custBotId ? (bots.find(b => b.id === custBotId) || bots[0]) : null;
     if (bot) {
       $('customizePanel').classList.remove('hidden');
@@ -720,28 +722,14 @@ function renderBots(bots, loadCmds = true){
 
   // Hide the "connect a bot first" hint once the user has a bot.
   const commandsHint = $('commandsEmptyHint');
-  if (commandsHint) commandsHint.classList.toggle('hidden', bots.length > 0);
+  if (commandsHint) commandsHint.classList.toggle('hidden', page !== 'commands' || bots.length > 0);
 }
 
 function setBroadcastAvailability(hasBots){
-  const gate = $('bcGate');
-  if (gate) {
-    gate.innerHTML = hasBots
-      ? ''
-      : 'No bot is connected yet. Follow the setup steps in <a href="/bot/bots">Bots</a>, starting with <a href="https://t.me/BotFather" target="_blank" rel="noopener">Open @BotFather</a>.';
-  }
-  const panel = document.querySelector('[data-page="broadcasts"]');
-  if (!panel) return;
-  ['bcBody','bcImage','bcBotSelect','bcLang','bcMinLastSeen','bcFirstSeen','bcUsername',
-    'bcSchedule','bcTestChat','bcReviewBtn'].forEach(id => {
-    const el = $(id);
-    if (el) el.disabled = !hasBots;
-  });
-  panel.querySelectorAll('input[name="bcWhen"],[data-action="openBroadcastPreview"],[data-action="testBroadcast"]').forEach(el => {
-    el.disabled = !hasBots;
-  });
-  const audience = $('bcAudience');
-  if (!hasBots && audience) audience.textContent = 'Connect a bot to choose an audience.';
+  const setup = $('bcSetupState');
+  const composer = $('bcComposer');
+  if (setup) setup.hidden = hasBots;
+  if (composer) composer.hidden = !hasBots;
 }
 
 // A disconnected bot can't be customized — reflect that by disabling the
@@ -763,8 +751,13 @@ function selectBotById(id){
   if (bot) { custBotId = id; }
   const botSelect = $('botSelect');
   if (botSelect && id) botSelect.value = id;
+  if (bot && page === 'commands') {
+    const url = new URL(location.href);
+    url.searchParams.set('bot', id);
+    history.replaceState(null, '', url.pathname + url.search + url.hash);
+  }
   if ($('customizePanel')) {
-    $('customizePanel').classList.toggle('hidden', !id);
+    $('customizePanel').classList.toggle('hidden', page !== 'commands' || !id);
     if (bot) applyCustomizeState(bot);
     loadCommands();
   }
@@ -864,6 +857,7 @@ async function addCommand(btn){
   renderCmdButtons();
   renderCommands();
   $('cmdName').value=''; $('cmdResp').value=''; toast('Command saved'); restoreBtn(btn);
+  if (r.warning) toast(r.warning);
 }
 async function toggleCommand(target){
   const on = target.dataset.active === 'true';
@@ -874,6 +868,7 @@ async function toggleCommand(target){
   if (i >= 0) __commands[i] = r;
   renderCommands();
   restoreBtn(target);
+  if (r.warning) toast(r.warning);
 }
 async function deleteCommand(target){
   const c = __commands.find(x => x.id === target.dataset.id);
@@ -883,7 +878,7 @@ async function deleteCommand(target){
   if (r.error) { restoreBtn(target); return toast(r.error); }
   __commands = __commands.filter(c => c.id !== target.dataset.id);
   renderCommands();
-  toast('Command deleted'); restoreBtn(target);
+  toast(r.warning || 'Command deleted'); restoreBtn(target);
 }
 function openCommandPreview(id){
   const c = __commands.find(x => x.id === id);

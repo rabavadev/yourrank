@@ -557,10 +557,16 @@ export function buildDashboardApi(): Hono<{ Bindings: DashApiBindings; Variables
   ]);
 
   // Re-register the bot's Telegram command menu after a custom-command change.
-  // Best-effort: a Telegram failure must not fail the dashboard request.
-  const resyncCommands = async (botId: string) => {
-    try { await syncMyCommandsForBot(botId); }
-    catch (err) { console.error("[commands] setMyCommands sync failed:", errMessage(err)); }
+  // The database mutation still succeeds if Telegram is unavailable, but the
+  // caller receives a warning so the two command stores cannot drift silently.
+  const resyncCommands = async (botId: string): Promise<string | null> => {
+    try {
+      await syncMyCommandsForBot(botId);
+      return null;
+    } catch (err) {
+      console.error("[commands] setMyCommands sync failed:", errMessage(err));
+      return "Telegram's command menu could not be updated. Use Sync commands in Bots to retry.";
+    }
   };
   // Strip a leading slash / @mention / args and lowercase, matching exactly how
   // the bot engine derives the command name from an incoming message.
@@ -616,8 +622,8 @@ export function buildDashboardApi(): Hono<{ Bindings: DashApiBindings; Variables
        RETURNING id, command, response, is_enabled, buttons`,
       [c.req.param("id"), cmd, response.trim(), cleanButtons]
     );
-    await resyncCommands(c.req.param("id"));
-    return c.json(row);
+    const warning = await resyncCommands(c.req.param("id"));
+    return c.json(warning ? { ...row, warning } : row);
   });
 
   // Toggle or edit a command. Ownership is enforced by joining bots.owner_id.
@@ -638,19 +644,24 @@ export function buildDashboardApi(): Hono<{ Bindings: DashApiBindings; Variables
         RETURNING bc.id, bc.bot_id, bc.command, bc.response, bc.is_enabled, bc.buttons`,
       [is_enabled ?? null, response?.trim() ?? null, cleanButtons, c.req.param("id"), c.get("uid")]
     ) as { id: string; bot_id: string; command: string; response: string; is_enabled: boolean; buttons: any } | undefined;
-    if (row) await resyncCommands(row.bot_id);
-    return row ? c.json(row) : c.json({ error: "command not found" }, 404);
+    if (row) {
+      const warning = await resyncCommands(row.bot_id);
+      return c.json(warning ? { ...row, warning } : row);
+    }
+    return c.json({ error: "command not found" }, 404);
   });
 
   // Delete a command.
   api.delete("/commands/:id", async (c) => {
-    const row = await one(
+    const row = await one<{ bot_id: string }>(
       `DELETE FROM bot_commands bc USING bots b
         WHERE bc.id = $1 AND bc.bot_id = b.id AND b.owner_id = $2
-        RETURNING bc.id`,
+        RETURNING bc.id, bc.bot_id`,
       [c.req.param("id"), c.get("uid")]
     );
-    return row ? c.json({ ok: true }) : c.json({ error: "command not found" }, 404);
+    if (!row) return c.json({ error: "command not found" }, 404);
+    const warning = await resyncCommands(row.bot_id);
+    return c.json(warning ? { ok: true, warning } : { ok: true });
   });
 
   // ---- plan & billing ----

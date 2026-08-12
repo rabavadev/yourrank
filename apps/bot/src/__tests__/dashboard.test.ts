@@ -45,6 +45,7 @@ const telegramMock = () => ({
   deleteWebhook: () => Promise.resolve(true),
   getWebhookInfo: () => Promise.resolve({ url: "https://yourrank.site/hook/secret", pending_update_count: 0 }),
   sendMessage: () => Promise.resolve({ message_id: 1, chat: { id: 123456 } }),
+  setMyCommands: () => Promise.resolve(true),
 });
 
 mock.module(dbUrl, dbMock);
@@ -136,8 +137,10 @@ describe("dashboard views", () => {
     const html = appHtml({ display_name: "Test", email: "test@example.com", plan: "free" }, "https://yourrank.site");
     expect((html.match(/<summary>Metric glossary<\/summary>/g) || []).length).toBe(1);
     expect(html).toContain('id="bcList"');
+    expect(html).toContain('id="bcSetupState"');
+    expect(html).toContain('id="bcComposer" hidden');
     expect(clientScriptSource()).toContain("No broadcasts yet. Connect a bot in Bots to send your first message.");
-    expect(clientScriptSource()).toContain('href="https://t.me/BotFather"');
+    expect(html).toContain('href="https://t.me/BotFather"');
   });
 
   it("gates empty list controls and avoids page-zero pagination", () => {
@@ -146,6 +149,7 @@ describe("dashboard views", () => {
     expect(js).toContain("this.controls.hidden = this.all.length === 0");
     expect(js).toContain("this.pageInfo.textContent = total ? 'Page '+this.page+' of '+this.totalPages+' ('+total+')' : ''");
     expect(js).toContain("setBroadcastAvailability(bots.length > 0)");
+    expect(js).toContain("page !== 'commands' || bots.length > 0");
     expect(js).toContain("const readRequest = !opts || !opts.method || opts.method.toUpperCase() === 'GET'");
     expect(js).toContain("const requestOpts = controller");
   });
@@ -196,6 +200,19 @@ describe("dashboard views", () => {
     );
     expect(html).toContain('id="testMsgPanel" hidden');
     expect(clientScriptSource()).toContain("if (!__testBotId) return toast('Select a bot first')");
+  });
+
+  it("keeps command editing on Commands and preserves selected bot context", () => {
+    const html = appHtml(
+      { display_name: "Test", email: "test@example.com", plan: "free" },
+      "https://yourrank.site",
+      "nonce123",
+      "commands"
+    );
+    expect(html).toContain('id="botSelect"');
+    expect(html).toContain('data-page="commands" id="customizePanel"');
+    expect(clientScriptSource()).toContain('/bot/commands?bot=');
+    expect(clientScriptSource()).toContain("requestedBotId");
   });
 
   it("appHtml renders each page with its own page key and includes the .hidden rule", () => {
@@ -413,6 +430,30 @@ describe("buildDashboard", () => {
     const body = (await res.json()) as any;
     expect(body.ok).toBe(true);
     expect(body.message_id).toBe(1);
+  });
+
+  it("DELETE /dash/api/commands/:id resyncs Telegram's command menu", async () => {
+    mockOne.mockImplementation((sql: string) => {
+      if (sql.includes("SELECT status FROM users")) return Promise.resolve({ status: "active" });
+      if (sql.includes("DELETE FROM bot_commands")) return Promise.resolve({ id: "c-1", bot_id: "b-1" });
+      if (sql.includes("SELECT token_encrypted FROM bots WHERE id = $1 AND status = 'active'")) {
+        return Promise.resolve({ token_encrypted: "enc:123456:ABC-DEF" });
+      }
+      return Promise.resolve(null);
+    });
+    mockQuery.mockImplementation((sql: string) => {
+      if (sql.includes("FROM sessions")) return Promise.resolve([{ user_id: "u-1", created_at: new Date(), age: 0 }]);
+      if (sql.includes("FROM bot_commands")) return Promise.resolve([]);
+      return Promise.resolve([]);
+    });
+    const req = new Request("http://localhost:8787/dash/api/commands/c-1", {
+      method: "DELETE",
+      headers: { origin: "https://yourrank.site", cookie: "yr_session=token123" },
+    });
+    const res = await app.fetch(req, testEnv);
+    expect(res.status).toBe(200);
+    expect(await res.json() as any).toEqual({ ok: true });
+    expect(mockQuery.mock.calls.some(([sql]) => typeof sql === "string" && sql.includes("FROM bot_commands"))).toBe(true);
   });
 
   it("GET /dash/api/broadcasts/audience returns the reachable subscriber count", async () => {
