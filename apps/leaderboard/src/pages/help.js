@@ -115,7 +115,8 @@ function helpHubContent() {
   <h2 id="help-account">Account, plan, and integrations</h2>
   <p>Account-level settings live separately from board-level settings.</p>
   <ul class="operator-help-list">
-    <li><a href="/dashboard/settings">Board settings</a><span>Manage board integrations, viewer login providers, notifications, domain, and support resources.</span></li>
+    <li><a href="/dashboard/settings">Account settings</a><span>Manage account-level settings, plan access, connections, and account data.</span></li>
+    <li><a href="/dashboard/settings/board">Board settings</a><span>Manage the selected board’s integrations, viewer login providers, notifications, domain, and support resources.</span></li>
     <li><a href="/account/plan">Plan and billing</a><span>Manage the account subscription and review plan access.</span></li>
     <li><a href="/account/profile">Profile</a><span>Update account profile information.</span></li>
     <li><a href="/account/connected">Connected accounts</a><span>Review connected account providers.</span></li>
