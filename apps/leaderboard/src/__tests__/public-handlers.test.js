@@ -16,10 +16,11 @@ const dbOne = mock(() => Promise.resolve(null));
 
 const mockSiteData = {
   brand: { name: "Test Casino", casino: "Stake", period: "Monthly", prizePool: "$10,000" },
+  playerCount: 3,
   players: [
-    { name: "Alice", wagered: 50000, prize: "$5,000" },
-    { name: "Bob", wagered: 30000, prize: "$3,000" },
-    { name: "Charlie", wagered: 10000, prize: "$1,000" },
+    { name: "Alice", wagered: 50000, prize: "$5,000", rank: 1 },
+    { name: "Bob", wagered: 30000, prize: "$3,000", rank: 2 },
+    { name: "Charlie", wagered: 10000, prize: "$1,000", rank: 3 },
   ],
   endsAt: new Date(Date.now() + 86400000).toISOString(),
 };
@@ -86,21 +87,27 @@ const clearVersionCache = mock(() => {});
 const streamVersion = mock(() => Promise.resolve("2026-01-01T00:00:00.000Z"));
 
 mock.module(siteUrl, () => ({
-  getPublicSite: (_env, slug, _request) => {
+  getPublicSite: (_env, slug, _request, options) => {
     if (slug === "nonexistent") return null;
     if (slug === "suspended") return { suspended: true, data: {} };
     if (slug === "protected") return { requiresPassword: true, id: "site-1", slug: "protected" };
-    return { id: "site-1", data: mockSiteData, plan: "pro", suspended: false };
+    const data = options
+      ? { ...mockSiteData, players: mockSiteData.players.slice(Number(options.offset) || 0, (Number(options.offset) || 0) + (Number(options.limit) || 100)) }
+      : mockSiteData;
+    return { id: "site-1", data, plan: "pro", suspended: false };
   },
   getPublicStreamVersion: streamVersion,
   clearPublicStreamVersionCache: clearVersionCache,
 }));
 mock.module(siteUrlTs, () => ({
-  getPublicSite: (_env, slug, _request) => {
+  getPublicSite: (_env, slug, _request, options) => {
     if (slug === "nonexistent") return null;
     if (slug === "suspended") return { suspended: true, data: {} };
     if (slug === "protected") return { requiresPassword: true, id: "site-1", slug: "protected" };
-    return { id: "site-1", data: mockSiteData, plan: "pro", suspended: false };
+    const data = options
+      ? { ...mockSiteData, players: mockSiteData.players.slice(Number(options.offset) || 0, (Number(options.offset) || 0) + (Number(options.limit) || 100)) }
+      : mockSiteData;
+    return { id: "site-1", data, plan: "pro", suspended: false };
   },
   getPublicStreamVersion: streamVersion,
   clearPublicStreamVersionCache: clearVersionCache,
@@ -159,6 +166,21 @@ describe("handlePublicPlayers", () => {
     expect(body.players).toHaveLength(3);
     // Sorted by wagered descending
     expect(body.players[0].wagered).toBeGreaterThanOrEqual(body.players[1].wagered);
+  });
+
+  it("returns truthful pagination metadata and global ranks", async () => {
+    const env = mockEnv();
+    const res = await handlePublicPlayers(
+      req("https://test.com/api/public/testboard/players?limit=2&offset=1"),
+      env,
+      { slug: "testboard" }
+    );
+    const body = await res.json();
+    expect(body.total).toBe(3);
+    expect(body.offset).toBe(1);
+    expect(body.limit).toBe(2);
+    expect(body.hasMore).toBe(false);
+    expect(body.players.map((p) => p.rank)).toEqual([2, 3]);
   });
 
   it("returns 404 for nonexistent slug", async () => {

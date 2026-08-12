@@ -52,6 +52,31 @@ describe("renderLeaderboard — configured board", async () => {
   test("uses the casino-branded title", async () => {
     expect(html).toContain("<title>BigStreamer | Stake Leaderboard</title>");
   });
+  test("leaves a small board unchanged and does not show pagination", async () => {
+    expect(html).toContain("1 players");
+    expect(html).not.toContain("data-load-more");
+  });
+});
+
+describe("renderLeaderboard — bounded large board", async () => {
+  const players = Array.from({ length: 150 }, (_, i) => ({
+    name: `player-${i + 1}`,
+    wagered: 150 - i,
+    prize: 0,
+    rank: i + 1,
+  }));
+  const html = await renderLeaderboard({
+    ...configured,
+    players,
+    playerCount: players.length,
+  }, { slug: "large", nonce: "n" });
+
+  test("renders only the first page while retaining the real total", async () => {
+    expect(html).toContain("150 players");
+    expect(html).toContain('data-position="100"');
+    expect(html).not.toContain('data-position="101"');
+    expect(html).toContain('data-load-more');
+  });
 });
 
 describe("renderLeaderboard — multi-board hub tabs", async () => {

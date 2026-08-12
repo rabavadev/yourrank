@@ -39,7 +39,7 @@ const spec = {
     "/api/public/{slug}/players": {
       get: {
         summary: "Lightweight players list",
-        description: "Returns only the sorted player array.",
+        description: "Returns a paginated sorted player page. Use limit, offset, and search for subsequent pages or board-wide name search.",
         parameters: [{ $ref: "#/components/parameters/Slug" }],
         responses: {
           200: { description: "Players array", content: { "application/json": { schema: { type: "object", properties: { players: { type: "array", items: { $ref: "#/components/schemas/Player" } } } } } } },

@@ -97,7 +97,7 @@ export async function renderSiteRoute({ request, env, ctx, nonce, slug, section,
       }
     }
 
-    const r = await getPublicSite(env, slug, request);
+    const r = await getPublicSite(env, slug, request, { limit: 100, offset: 0 });
     if (r && r.requiresPassword) {
       return new Response(renderPasswordGate(r, { nonce, isCustomDomain }), { headers: respHeaders });
     }
