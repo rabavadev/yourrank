@@ -105,8 +105,8 @@ fixed monthly estimate until exports are enabled and measured.
 3. Create these two buckets, using the names exactly:
    - `yourrank-account-exports`
    - `yourrank-account-exports-staging`
-4. Ask for, or apply, the small repository change that restores the R2
-   bindings and removes the deliberate deferral.
+4. Revert **PR #441**, “Defer unavailable R2 export bindings”. This restores
+   the R2 bindings and turns the export feature on.
 
 The Cloudflare API cannot enable R2. If an API attempt returns **code 10042**,
 “Please enable R2 through the Cloudflare Dashboard,” use the dashboard steps
@@ -338,11 +338,9 @@ The expected failure chain is:
    blindly.
 2. Identify whether one board or route dominates `site` and `route`.
 3. Pause a load test or nonessential bulk job.
-4. If the stream kill switch has been enabled, use it to shed SSE connections;
-   a 503 with `Retry-After` is safer than a reconnect storm.
-5. Do not raise Hyperdrive's connection limit unless Supabase has already been
+4. Do not raise Hyperdrive's connection limit unless Supabase has already been
    upgraded and still has connection headroom.
-6. Record the time, affected board(s), CPU, active connections, p95 duration,
+5. Record the time, affected board(s), CPU, active connections, p95 duration,
    and error count before changing capacity settings.
 
 This is why the runbook says to measure first: a larger pool cannot fix a
@@ -351,9 +349,8 @@ service into a full outage.
 
 ## Existing detailed references
 
-- Capacity audit (`/home/ubuntu/audit/CAPACITY_AUDIT.md`) — measurements,
-  assumptions, arithmetic, and the complete bottleneck analysis on the
-  operations box.
+- [Capacity audit](CAPACITY_AUDIT.md) — measurements, assumptions, arithmetic,
+  and the complete bottleneck analysis.
 - [Load-test harness](load-test.js) — guarded k6 stages for isolated staging.
 - [Per-tenant request metrics](tenant-request-metrics.md) — metric fields and
   log queries.
