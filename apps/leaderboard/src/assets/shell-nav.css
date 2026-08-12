@@ -12,12 +12,12 @@
 }
 .gm-shell-nav--light{
   --gm-bg:#fafafa; --gm-panel:#ffffff; --gm-line:#e4e4e7; --gm-line-2:#d4d4d8;
-  --gm-ink:#191919; --gm-ink-soft:#55555c; --gm-ink-mute:#55555c;
+  --gm-ink:#191919; --gm-ink-soft:#55555c; --gm-ink-mute:#707070;
   --gm-accent:#5b5bf5; --gm-accent-ink:#ffffff;
 }
 .gm-shell-nav--dark{
   --gm-bg:var(--yr-color-chrome-3); --gm-panel:var(--yr-color-chrome-6); --gm-line:var(--yr-color-chrome-line-4); --gm-line-2:var(--yr-color-chrome-line-3);
-  --gm-ink:var(--yr-color-chrome-ink); --gm-ink-soft:var(--yr-color-chrome-ink-2); --gm-ink-mute:var(--yr-color-text-muted);
+  --gm-ink:var(--yr-color-chrome-ink); --gm-ink-soft:var(--yr-color-chrome-ink-2); --gm-ink-mute:var(--yr-color-chrome-ink-4);
   --gm-accent:var(--yr-color-action); --gm-accent-ink:var(--yr-color-text-inverse);
 }
 .gm-shell-nav{position:sticky;top:0;z-index:50;background:var(--gm-bg);
