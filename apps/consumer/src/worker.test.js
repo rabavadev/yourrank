@@ -225,6 +225,8 @@ describe("account export artifacts", () => {
     expect(artifact).not.toContain("KICK-RAW-PAYLOAD-SECRET");
     expect(artifact).not.toContain("RAW-VISITOR-HASH-SECRET");
     expect(artifact).not.toContain("must-drop");
+    expect(artifact).not.toContain("viewer-name");
+    expect(artifact).not.toContain("Telegram Viewer");
     expect(artifact).not.toContain("RAW-VISITOR-HASH-SECRET");
     expect(artifact).not.toContain("PROVIDER-RAW-PAYLOAD-SECRET");
     expect(row("siteVisitorStats")).toEqual(expect.objectContaining({ visitor_count: 1, sessions: 2 }));

@@ -397,7 +397,7 @@ export async function processAccountExport(event, env, {
         async (row) => ({
           history_ref: await pseudonymise("username-history:", row.id),
           viewer_ref: await pseudonymise("viewer:", row.viewer_id),
-          username: row.username,
+          username_ref: await pseudonymise("viewer-username:", row.username),
           seen_at: row.seen_at,
         }))
       : 0;
@@ -461,7 +461,7 @@ export async function processAccountExport(event, env, {
           site_id: row.site_id,
           bot_id: row.bot_id,
           viewer_ref: await pseudonymise("telegram-viewer:", String(row.tg_user_id)),
-          player_name: row.player_name,
+          has_player_name: Boolean(row.player_name),
           created_at: row.created_at,
         }))
       : 0;
