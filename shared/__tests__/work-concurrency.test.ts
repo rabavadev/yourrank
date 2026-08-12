@@ -11,16 +11,14 @@ describe("mapWithConcurrency", () => {
       peak = Math.max(peak, active);
       await new Promise((resolve) => setTimeout(resolve, 2));
       active--;
-      if (value === 3) {
-        seen.push(value);
-        return null;
-      }
+      if (value === 3) throw new Error("one worker failed");
       seen.push(value);
       return value * 2;
     });
 
     expect(peak).toBeLessThanOrEqual(2);
-    expect(results).toEqual([2, 4, null, 8, 10]);
-    expect(seen).toHaveLength(5);
+    expect(results).toEqual([2, 4, undefined, 8, 10]);
+    expect(seen).toHaveLength(4);
+    expect(seen).toContain(5);
   });
 });

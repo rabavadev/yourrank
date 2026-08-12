@@ -50,13 +50,15 @@ export async function processAutoResetSite(env, site) {
     // archive commits, the marker prevents the next cron run from archiving
     // the same period again.
     const claimed = await one(
-      `UPDATE sites
-          SET auto_reset_last_run_at = ends_at
-        WHERE id = $1
-          AND auto_reset_enabled = true
-          AND ends_at IS NOT NULL
-          AND (auto_reset_last_run_at IS NULL OR auto_reset_last_run_at < ends_at)
-        RETURNING id, ends_at`,
+      `UPDATE sites AS s
+          SET auto_reset_last_run_at = s.ends_at
+         FROM sites AS old
+        WHERE old.id = s.id
+          AND s.id = $1
+          AND s.auto_reset_enabled = true
+          AND s.ends_at IS NOT NULL
+          AND (s.auto_reset_last_run_at IS NULL OR s.auto_reset_last_run_at < s.ends_at)
+      RETURNING s.id, s.ends_at, old.auto_reset_last_run_at AS prev`,
       [site.id]
     );
     if (!claimed) return;
@@ -69,10 +71,7 @@ export async function processAutoResetSite(env, site) {
     const result = await createArchive(env, site.user_id, { label, clear, siteId: site.id });
     if (result.error) {
       console.error(`[auto-reset] archive failed for site ${site.id}: ${result.error}`);
-      await exec(
-        `UPDATE sites SET auto_reset_last_run_at = NULL WHERE id = $1 AND auto_reset_last_run_at = ends_at`,
-        [site.id]
-      );
+      await restoreAutoResetMarker(site.id, claimed.prev);
       return;
     }
 
@@ -91,4 +90,14 @@ export async function processAutoResetSite(env, site) {
   } catch (err) {
     console.error(`[auto-reset] failed for site ${site.id}:`, err);
   }
+}
+
+export async function restoreAutoResetMarker(siteId, previousValue, execute = exec) {
+  await execute(
+    `UPDATE sites
+        SET auto_reset_last_run_at = $2
+      WHERE id = $1
+        AND auto_reset_last_run_at = ends_at`,
+    [siteId, previousValue ?? null]
+  );
 }
