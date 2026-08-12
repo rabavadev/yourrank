@@ -80,6 +80,10 @@ jobs:
       - name: Build shared TypeScript
         run: node build-shared.mjs
 
+      - name: Build leaderboard assets
+        working-directory: apps/leaderboard
+        run: node build-assets.js
+
       - name: Run all tests
         run: bun run test
 
