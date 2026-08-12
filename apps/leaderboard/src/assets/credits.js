@@ -67,7 +67,7 @@ function setCreditsPanelLoading(loading) {
   }
 }
 function usageCls(used, limit) { const pct = limit > 0 ? Math.round((used / limit) * 100) : 0; return limit > 0 && used >= limit ? "cr-usage-over" : limit > 0 && pct >= 80 ? "cr-usage-near" : ""; }
-function usageCard(used, limit, name) { const cls = usageCls(used, limit); return `<div class="cr-usage-card"><div class="hint">${esc(name)}</div><div class="cr-usage-number${cls ? ` ${cls}` : ""}">${used} / ${limit}</div>${cls ? '<a href="/account/plan" class="cr-usage-upgrade">Upgrade plan</a>' : ""}</div>`; }
+function usageCard(used, limit, name) { const cls = usageCls(used, limit); return `<div class="cr-usage-card"><div class="hint">${esc(name)}</div><div class="cr-usage-number${cls ? ` ${cls}` : ""}">${used} / ${limit}</div>${cls ? '<a href="/dashboard/settings/plan" class="cr-usage-upgrade">Upgrade plan</a>' : ""}</div>`; }
 function draftKey(id) { return `yr:credits:draft:${id}`; }
 function debounce(fn, ms) { let timer; return (...args) => { clearTimeout(timer); timer = setTimeout(() => fn(...args), ms); }; }
 function saveFormDraft(formId, id) {

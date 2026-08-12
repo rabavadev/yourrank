@@ -30,6 +30,11 @@
   --v3-danger: var(--yr-color-danger);
   --v3-warn: var(--yr-color-warning);
   --v3-green: var(--yr-color-live);
+  /* Fills stay bright; the -ink variants are what labels use, because the
+     fills do not reach 4.5:1 on the light main surface. */
+  --v3-danger-ink: var(--yr-color-danger-text);
+  --v3-warn-ink: var(--yr-color-warning-text);
+  --v3-green-ink: var(--yr-color-live-text);
 
   --v3-radius: 12px;
   --v3-radius-sm: var(--yr-control-radius, 8px);
@@ -425,7 +430,7 @@ body[data-wide] .v3-dash .lb-main {
 }
 
 .v3-dash .lb-status--pending {
-  color: var(--v3-warn);
+  color: var(--v3-warn-ink);
   background: var(--yr-color-warning-soft-2);
   border-color: var(--yr-color-warning-line-3);
 }
@@ -1094,7 +1099,7 @@ body[data-wide] .v3-dash .lb-main {
 .v3-dash .v3-table tbody tr:hover td { background: var(--yr-color-bg); }
 .v3-dash .v3-table tbody tr.is-sel td { background: var(--v3-accent-soft); }
 .v3-dash .v3-table .num { font-family: var(--v3-mono); text-align: right; }
-.v3-dash .v3-table .num--accent { color: var(--v3-warn); }
+.v3-dash .v3-table .num--accent { color: var(--v3-warn-ink); }
 .v3-dash .v3-table input[type="checkbox"] { accent-color: var(--v3-accent); width: 15px; height: 15px; }
 
 .v3-dash .v3-table-foot {
@@ -1266,7 +1271,7 @@ body[data-wide] .v3-dash .lb-main {
 
 .v3-dash .v3-meter--warn > i { background: var(--v3-warn); }
 .v3-dash .v3-meter--warn + .v3-meter-lbl .v3-meter-val,
-.v3-dash .v3-meter-val--warn { color: var(--v3-warn); }
+.v3-dash .v3-meter-val--warn { color: var(--v3-warn-ink); }
 
 /* ---------- Status bar (overview footer) ---------- */
 .v3-dash .v3-statusbar {
@@ -1289,7 +1294,7 @@ body[data-wide] .v3-dash .lb-main {
   font: 600 11px var(--v3-mono);
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: var(--v3-danger);
+  color: var(--v3-danger-ink);
 }
 
 @media (max-width: 980px) {
@@ -1661,7 +1666,7 @@ body[data-wide] .v3-dash .lb-main {
 
 .v3-dash .v3-players[data-egroup="players"] .v3-head { margin-bottom: 18px; }
 .v3-dash .v3-players[data-egroup="players"] .v3-head-sub { margin-top: 4px; }
-.v3-dash .v3-players-limit { margin-left: 4px; color: var(--v3-warn); }
+.v3-dash .v3-players-limit { margin-left: 4px; color: var(--v3-warn-ink); }
 .v3-dash .v3-players-upgrade { margin-left: 8px; color: var(--v3-main-ink); font-family: var(--v3-mono); text-decoration: underline; }
 
 .v3-dash .v3-players-bar {
@@ -1785,7 +1790,7 @@ body[data-wide] .v3-dash .lb-main {
 .v3-dash .v3-players-table td.rank { font: 400 12px var(--v3-mono); color: var(--v3-main-ink-soft); }
 .v3-dash .v3-players-table td:nth-child(3) { font-weight: 700; }
 .v3-dash .v3-players-table td:nth-child(4) { font-family: var(--v3-mono); }
-.v3-dash .v3-players-table td:nth-child(5) { color: var(--v3-warn); font-family: var(--v3-mono); }
+.v3-dash .v3-players-table td:nth-child(5) { color: var(--v3-warn-ink); font-family: var(--v3-mono); }
 .v3-dash .v3-players-table tbody tr.is-sel:hover td { background: var(--v3-accent-soft); }
 
 .v3-dash .v3-players-table input:not([type="checkbox"]) {
@@ -1829,7 +1834,7 @@ body[data-wide] .v3-dash .lb-main {
   visibility: hidden;
   opacity: 0;
   pointer-events: none;
-  color: var(--v3-danger);
+  color: var(--v3-danger-ink);
   font-size: 18px;
 }
 .v3-dash .v3-players-table tr:hover .row-x,
@@ -2009,7 +2014,7 @@ body[data-wide] .v3-dash .lb-main {
 .v3-dash .cr-shop-delete { width: 24px; height: 24px; padding: 0; border: 1px solid var(--v3-main-line); border-radius: 6px; background: var(--v3-main-panel); color: var(--v3-main-ink-soft); font-size: 17px; line-height: 1; cursor: pointer; opacity: 0; }
 .v3-dash .cr-shop-card:hover .cr-shop-delete,
 .v3-dash .cr-shop-delete:focus-visible { opacity: 1; }
-.v3-dash .cr-shop-delete:hover { color: var(--v3-danger); border-color: var(--v3-danger); }
+.v3-dash .cr-shop-delete:hover { color: var(--v3-danger-ink); border-color: var(--v3-danger); }
 .v3-dash .cr-shop-card-actions { display: none; }
 .v3-dash .v3-tabs { max-width: 100%; overflow-x: auto; overflow-y: hidden; flex-wrap: nowrap; scrollbar-width: thin; }
 .v3-dash .v3-tab { flex: 0 0 auto; }
@@ -2058,6 +2063,17 @@ body[data-wide] .v3-dash .lb-main {
 .v3-dash .v3-settings .v3-head { margin-bottom: 26px; }
 .v3-dash .v3-settings .v3-head h1 { margin: 0; font: 700 34px/1.15 var(--v3-sans); color: var(--v3-main-ink); }
 .v3-dash .v3-settings .v3-head-sub { margin: 8px 0 0; color: var(--v3-main-ink-soft); font-size: 14px; }
+.v3-dash .v3-settings .v3-head-sub a { color: var(--v3-accent); }
+/* Breadcrumbs sit above the page title on every screen deeper than Overview.
+   The bento is a 12-column grid, so a trail dropped straight into it has to
+   span the full row instead of taking one column. */
+.v3-dash .lb-bento > .v3-crumbs,
+.v3-dash .lb-bento > .v3-stack { grid-column: 1 / -1; }
+.v3-dash .v3-stack { display: flex; flex-direction: column; gap: 18px; min-width: 0; }
+.v3-dash .v3-crumbs { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; font-size: 13px; color: var(--v3-main-ink-soft); }
+.v3-dash .v3-crumbs a { color: var(--v3-main-ink-soft); text-decoration: none; }
+.v3-dash .v3-crumbs a:hover { color: var(--v3-main-ink); text-decoration: underline; }
+.v3-dash .v3-crumb-sep { color: var(--v3-main-line-2); }
 .v3-dash .v3-settings .v3-tabs { margin-bottom: 28px; }
 .v3-dash .v3-settings-panel { display: grid; gap: 16px; }
 .v3-dash .v3-settings-card { padding: 24px; border: 1px solid var(--v3-main-line); border-radius: var(--v3-radius); background: var(--v3-main-panel); }
@@ -2102,9 +2118,9 @@ body[data-wide] .v3-dash .lb-main {
 .v3-dash .v3-set-btn--dark { background: var(--v3-chrome); color: var(--v3-ink); }
 .v3-dash .v3-set-btn--outline { border-color: var(--v3-main-line-2); background: var(--v3-main-panel); color: var(--v3-main-ink); }
 .v3-dash .v3-set-btn--danger { background: var(--v3-danger); color: var(--yr-color-text-inverse); }
-.v3-dash .v3-set-btn--danger-outline { border-color: var(--v3-danger); background: transparent; color: var(--v3-danger); }
+.v3-dash .v3-set-btn--danger-outline { border-color: var(--v3-danger); background: transparent; color: var(--v3-danger-ink); }
 .v3-dash .v3-settings-inline { padding: 8px 0; color: var(--v3-main-ink-mute); font-size: 13px; }
-.v3-dash .v3-settings-inline--error { color: var(--v3-danger); }
+.v3-dash .v3-settings-inline--error { color: var(--v3-danger-ink); }
 @media (max-width: 700px) {
   .v3-dash .v3-plan-card,
   .v3-dash .v3-settings-row { align-items: flex-start; flex-wrap: wrap; }
@@ -2200,7 +2216,7 @@ body[data-wide] .v3-dash .lb-main {
 }
 
 /* Account billing and postback cards retained from the shared account body. */
-.v3-dash .hint--error { color: var(--v3-danger); }
+.v3-dash .hint--error { color: var(--v3-danger-ink); }
 
 .v3-dash #acc-app {
   grid-column: 1 / -1;

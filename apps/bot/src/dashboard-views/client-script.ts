@@ -1301,17 +1301,17 @@ async function handleAction(e) {
 
 document.addEventListener('click', handleAction);
 // Mobile sidebar drawer: toggle with the hamburger, close when tapping outside, trap focus.
-const menuBtn = $('menuBtn');
-const side = $('side');
+const menuBtn = $('lbMenu');
+const side = $('lbSide');
 if (menuBtn && side) {
-  menuBtn.setAttribute('aria-expanded', String(side.classList.contains('open')));
-  menuBtn.addEventListener('click', (e) => { e.stopPropagation(); side.classList.toggle('open'); menuBtn.setAttribute('aria-expanded', String(side.classList.contains('open'))); });
+  menuBtn.setAttribute('aria-expanded', String(side.classList.contains('is-open')));
+  menuBtn.addEventListener('click', (e) => { e.stopPropagation(); side.classList.toggle('is-open'); menuBtn.setAttribute('aria-expanded', String(side.classList.contains('is-open'))); });
   document.addEventListener('click', (e) => {
-    if (side.classList.contains('open') && !side.contains(e.target) && e.target !== menuBtn) { side.classList.remove('open'); menuBtn.setAttribute('aria-expanded','false'); }
+    if (side.classList.contains('is-open') && !side.contains(e.target) && e.target !== menuBtn) { side.classList.remove('is-open'); menuBtn.setAttribute('aria-expanded','false'); }
   });
   document.addEventListener('keydown', (e) => {
-    if (!side.classList.contains('open')) return;
-    if (e.key === 'Escape') { side.classList.remove('open'); menuBtn.setAttribute('aria-expanded','false'); menuBtn.focus(); return; }
+    if (!side.classList.contains('is-open')) return;
+    if (e.key === 'Escape') { side.classList.remove('is-open'); menuBtn.setAttribute('aria-expanded','false'); menuBtn.focus(); return; }
     if (e.key !== 'Tab') return;
     const focusable = Array.from(side.querySelectorAll('a, button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])')).filter(el => !el.disabled && el.offsetParent !== null);
     if (focusable.length === 0) return;

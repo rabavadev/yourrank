@@ -1,16 +1,14 @@
 import { describe, it, expect } from "bun:test";
-import {
-  profilePage,
-  planPage,
-  postbacksPage,
-  connectedPage,
-  dataPage,
-} from "../pages/account-pages.js";
+import { settingsWidgets } from "../pages/account-pages.js";
+import { UnifiedSettingsPage } from "../pages/account.jsx";
 
+// The widgets are the settings page's panels; the standalone `/account/*`
+// documents they used to also render are gone, so these assert the hooks on
+// the widget bodies themselves.
 const pages = [
   {
-    key: "profile",
-    html: profilePage,
+    key: "account",
+    html: settingsWidgets.account,
     ids: [
       "profile",
       "accCurrentPassword",
@@ -24,7 +22,7 @@ const pages = [
   },
   {
     key: "plan",
-    html: planPage,
+    html: settingsWidgets.plan,
     ids: [
       "plan",
       "planSummary",
@@ -47,7 +45,7 @@ const pages = [
   },
   {
     key: "postbacks",
-    html: postbacksPage,
+    html: settingsWidgets.postbacks,
     ids: [
       "postbacks",
       "postbackStatusCard",
@@ -76,12 +74,12 @@ const pages = [
   },
   {
     key: "connected",
-    html: connectedPage,
+    html: settingsWidgets.connected,
     ids: ["connected", "connectedAccounts"],
   },
   {
     key: "data",
-    html: dataPage,
+    html: settingsWidgets.data,
     ids: [
       "data",
       "accExportData",
@@ -98,22 +96,32 @@ const pages = [
   },
 ];
 
-describe("account pages", () => {
+describe("settings panels", () => {
   for (const { key, html, ids } of pages) {
-    it(`${key} renders its wrapper and client hooks`, () => {
-      expect(html).toContain(`<div id="acc-app" data-acc-tab="${key}">`);
+    it(`${key} renders its client hooks`, () => {
       expect(html.length).toBeGreaterThan(100);
       for (const id of ids) expect(html).toContain(`id="${id}"`);
     });
   }
 
-  it("renders the delete-account modal only on the data page", () => {
-    expect(dataPage).toContain('id="deleteAccountModal"');
-    expect(dataPage).toContain('id="deleteAccountConfirm"');
+  it("renders the delete-account modal only in the data panel", () => {
+    expect(settingsWidgets.data).toContain('id="deleteAccountModal"');
+    expect(settingsWidgets.data).toContain('id="deleteAccountConfirm"');
     for (const { key, html } of pages) {
       if (key === "data") continue;
       expect(html).not.toContain('id="deleteAccountModal"');
       expect(html).not.toContain('id="deleteAccountConfirm"');
     }
+  });
+
+  it("serves every panel from the one settings document", async () => {
+    const html = await UnifiedSettingsPage({ activePath: "/dashboard/settings/plan", tab: "plan", user: { email: "a@b.c" } }).toString();
+    for (const key of ["account", "plan", "connections", "data"]) {
+      expect(html).toContain(`href="/dashboard/settings/${key}"`);
+      expect(html).toContain(`data-settings-panel="${key}"`);
+    }
+    // Board-level settings are a separate destination, not a fifth tab.
+    expect(html).toContain('href="/dashboard/settings/board"');
+    expect(html).not.toContain("/account/profile");
   });
 });

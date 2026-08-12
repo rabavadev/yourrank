@@ -44,7 +44,6 @@ import {
 import { sameOrigin, verifyTelegramLogin } from "./dashboard-auth.js";
 import { buildDashboardApi } from "./dashboard-api.js";
 import { loginHtml, appHtml, clientScriptSource } from "./dashboard-views.js";
-import { shellNavHtml } from "../../../shared/shell-nav.js";
 import { rateLimit, type RateLimitKV } from "./ratelimit.js";
 import { errMessage } from "./errors.js";
 
@@ -187,14 +186,9 @@ export function buildDashboard(): Hono<DashEnv> {
       `SELECT display_name, email, plan FROM users WHERE id=$1`,
       [uid]
     );
-    const nav = shellNavHtml({
-      activePath: c.req.path,
-      user,
-      logoutAction: "/bot/auth/logout",
-      accountHref: "/account",
-      theme: "light",
-    });
-    return c.html(appHtml(user ?? { display_name: "", email: "", plan: "free" }, config.publicBaseUrl, c.get("cspNonce"), page, nav));
+    // The page renders the dashboard rail and its own topbar/account menu, so
+    // it no longer stacks the marketing-style product header on top.
+    return c.html(appHtml(user ?? { display_name: "", email: "", plan: "free" }, config.publicBaseUrl, c.get("cspNonce"), page));
   };
 
   app.get("/dashboard", (c) => dashboardPage(c, "overview"));

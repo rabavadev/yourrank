@@ -9,7 +9,7 @@ function render(pageKey, user) {
   return html.replace(
     "<!--GM_NAV-->",
     user
-      ? shellNavHtml({ activePath: "/help/support", user, accountHref: "/account/profile" })
+      ? shellNavHtml({ activePath: "/help/support", user, accountHref: "/dashboard/settings" })
       : publicNavHtml({ activePath: "/help/support" })
   );
 }

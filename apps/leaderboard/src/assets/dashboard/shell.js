@@ -96,7 +96,9 @@ export async function requestDashboardRoute(page, tab = "", { replace = false, q
   navigationPending = true;
   try {
     if (!await allowNavigation()) return false;
-    if (reload) {
+    // Each section is its own document now, so only moves inside the section
+    // this document was served for stay client-side.
+    if (reload || !document.querySelector(`section[data-page="${page}"]`)) {
       location.href = destination;
       return true;
     }
@@ -320,6 +322,8 @@ export function setupShell() {
   }
   backdrop.addEventListener("click", () => closeDrawer());
 
+  // Sidebar links are plain links to other documents; they only need
+  // interception when they move within this one (and to guard unsaved work).
   document.querySelectorAll(".lb-nav[data-nav]").forEach((link) => link.addEventListener("click", (e) => {
     const href = link.getAttribute("href") || "";
     const route = parseDashboardPath(new URL(href, location.origin).pathname);

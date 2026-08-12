@@ -60,6 +60,34 @@ describe("design tokens", () => {
     expect(declared(sources.app, "--accent")).toBe("#5b5bf5");
   });
 
+  // The status fills (#16c784, #f59e0b) are ~2:1 on the light surfaces, so they
+  // may only be used for backgrounds; the -text/-ink variants are what labels
+  // use and they have to stay legible in both Workers.
+  const STATUS_TEXT = {
+    live: { app: "--yr-color-live-text", bot: "--green-ink" },
+    warning: { app: "--yr-color-warning-text", bot: "--warn-ink" },
+    danger: { app: "--yr-color-danger-text", bot: "--red-ink" },
+  };
+
+  function contrast(hexA, hexB) {
+    const lum = (hex) => {
+      const [r, g, b] = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255);
+      const f = (c) => (c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4);
+      return 0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(b);
+    };
+    const [hi, lo] = [lum(hexA), lum(hexB)].sort((a, b) => b - a);
+    return (hi + 0.05) / (lo + 0.05);
+  }
+
+  for (const [name, names] of Object.entries(STATUS_TEXT)) {
+    it(`${name} status text is legible and identical in both Workers`, () => {
+      const value = declared(sources.app, names.app);
+      expect(declared(sources.bot, names.bot)).toBe(value);
+      // #f7f7f8 is the darkest light surface these run on.
+      expect(contrast(value, "#f7f7f8")).toBeGreaterThanOrEqual(4.5);
+    });
+  }
+
   it("uses the Kick brand token for the public accent fallback", () => {
     expect(declared(sources.publicShell, "--yr-accent")).toBe("var(--yr-color-brand-kick)");
     expect(sources.publicShell).toContain("--yr-color-brand-kick: #53fc18");

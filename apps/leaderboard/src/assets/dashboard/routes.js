@@ -14,7 +14,10 @@ export const SECTIONS = {
   boards: { path: "/dashboard/boards", title: "All boards" },
   games: { path: "/dashboard/games", title: "Public page sections & Games" },
   performance: { path: "/dashboard/analytics", title: "Analytics", tabs: ["activity", "referrals", "events"] },
-  settings: { path: "/dashboard/settings", title: "Settings", tabs: ["account", "plan", "connections", "data"] },
+  // Account settings (`/dashboard/settings` and its tabs) are their own
+  // documents, served by the Worker. This section is the *selected board's*
+  // settings, which is all this document knows how to render.
+  settings: { path: "/dashboard/settings/board", title: "Board settings" },
 };
 
 // Names we have shipped links for, in copy, e-mails and older builds.
@@ -41,7 +44,6 @@ export function defaultTab(page) {
 
 /** `("board", "players") → "/dashboard/editor/players"` */
 export function dashboardPath(page, tab = "") {
-  if (page === "settings" && tab === "board") return "/dashboard/settings/board";
   const section = SECTIONS[resolveSection(page) || "home"];
   const tabs = section.tabs || [];
   return tabs.includes(tab) ? `${section.path}/${tab}` : section.path;
@@ -51,7 +53,11 @@ export function dashboardPath(page, tab = "") {
 export function parseDashboardPath(pathname) {
   const clean = pathname.replace(/\/+$/, "") || "/dashboard";
   if (clean === "/dashboard" || clean === "/dashboard.html") return { page: "home", tab: "" };
-  if (clean === "/dashboard/settings/board") return { page: "settings", tab: "board" };
+  if (clean === "/dashboard/settings/board") return { page: "settings", tab: "" };
+  // The account settings document owns every other `/dashboard/settings` URL.
+  // Returning a route for them made the shell intercept the sidebar link and
+  // show this document's board settings instead of navigating to that page.
+  if (clean === "/dashboard/settings" || clean.startsWith("/dashboard/settings/")) return null;
   if (!clean.startsWith("/dashboard/")) return null;
   const [head, tail] = clean.slice("/dashboard/".length).split("/");
   const page = resolveSection(head);

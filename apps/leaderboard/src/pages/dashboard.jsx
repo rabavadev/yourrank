@@ -16,6 +16,30 @@ export const dashboardConfig = {
 const EDITOR_TABS = ["setup", "players", "design", "share", "history"];
 const ANALYTICS_TABS = ["activity", "referrals", "events"];
 
+// Each route serves one section, so the trail is derived from the route rather
+// than hand-written per screen — every page below Overview says where it is.
+const SECTION_CRUMBS = {
+  board: { label: "Editor", href: "/dashboard/editor" },
+  games: { label: "Public page", href: "/dashboard/games" },
+  performance: { label: "Analytics", href: "/dashboard/analytics/activity" },
+  settings: { label: "Board settings", href: "/dashboard/settings/board" },
+  boards: { label: "Boards", href: "/dashboard/boards" },
+};
+const TAB_LABELS = {
+  setup: "Setup", players: "Players", design: "Design", share: "Share", history: "History",
+  activity: "Activity", referrals: "Referrals", events: "Events",
+};
+
+function dashboardCrumbs(activeNav, activeHash) {
+  const section = SECTION_CRUMBS[activeNav];
+  if (!section) return null;
+  const trail = [{ label: "Dashboard", href: "/dashboard" }];
+  const tab = TAB_LABELS[activeHash];
+  trail.push(tab ? section : { label: section.label });
+  if (tab) trail.push({ label: tab });
+  return trail;
+}
+
 function dashboardShellRoute(activePath = "") {
   const pathname = String(activePath || "").split("?")[0].replace(/\/+$/, "") || "/dashboard";
   if (pathname === "/dashboard" || pathname === "/dashboard.html") return { activeNav: "home", activeHash: "" };
@@ -29,40 +53,28 @@ function dashboardShellRoute(activePath = "") {
   }
   if (pathname.startsWith("/dashboard/games")) return { activeNav: "games", activeHash: "" };
   if (pathname.startsWith("/dashboard/settings")) return { activeNav: "settings", activeHash: "" };
-  if (pathname.startsWith("/dashboard/boards")) return { activeNav: "home", activeHash: "" };
+  if (pathname.startsWith("/dashboard/boards")) return { activeNav: "boards", activeHash: "" };
   return { activeNav: "home", activeHash: "" };
 }
 
-export function DashboardContent({ user, activePath } = {}) {
-  const { activeNav, activeHash } = dashboardShellRoute(activePath);
-  const analyticsTab = activeNav === "performance" ? activeHash || "activity" : "activity";
+
+// Each route serves only its own section: the dashboard used to ship every
+// screen in one document and let JavaScript reveal one, which put seven <h1>s
+// and the whole editor form on every page and made `/dashboard` render the
+// editor. The editor and the selected board's settings stay together because
+// they share one save pipeline (`collect()` reads the editor form).
+const ROUTE_SECTIONS = {
+  home: ["home"],
+  board: ["board", "settings"],
+  settings: ["board", "settings"],
+  games: ["games"],
+  performance: ["performance"],
+  boards: ["boards"],
+};
+
+function OverviewSection({ active } = {}) {
   return (
-    <>
-      <div id="loading" class="lb-bento pt-24">
-<div class="lb-widget lb-widget--full d-flex justify-between items-center gap-12 flex-wrap">
-<div class="d-flex flex-col gap-8">
-<div class="skeleton skeleton-text--lg" style="width:160px"></div>
-<div class="skeleton skeleton-text--sm" style="width:240px"></div>
-</div>
-<div class="skeleton skeleton-text" style="width:90px"></div>
-</div>
-<div class="lb-widget lb-widget--full">
-<div class="kpi-row">
-<div class="kpi-card"><div class="skeleton skeleton-text" style="width:70px"></div><div class="skeleton skeleton-text--lg" style="width:50px;margin-top:10px"></div></div>
-<div class="kpi-card"><div class="skeleton skeleton-text" style="width:70px"></div><div class="skeleton skeleton-text--lg" style="width:50px;margin-top:10px"></div></div>
-<div class="kpi-card"><div class="skeleton skeleton-text" style="width:70px"></div><div class="skeleton skeleton-text--lg" style="width:50px;margin-top:10px"></div></div>
-<div class="kpi-card"><div class="skeleton skeleton-text" style="width:70px"></div><div class="skeleton skeleton-text--lg" style="width:50px;margin-top:10px"></div></div>
-</div>
-</div>
-<div class="lb-widget lb-widget--wide"><div class="skeleton skeleton-block" style="height:180px"></div></div>
-<div class="lb-widget lb-widget--narrow"><div class="skeleton skeleton-block" style="height:180px"></div></div>
-<div class="lb-widget lb-widget--narrow"><div class="skeleton skeleton-block" style="height:180px"></div></div>
-<div class="lb-widget lb-widget--half"><div class="skeleton skeleton-block" style="height:140px"></div></div>
-<div class="lb-widget lb-widget--half"><div class="skeleton skeleton-block" style="height:140px"></div></div>
-</div>
-<DashboardShell activeNav={activeNav} activeHash={activeHash} boardContext="full" footer="dashboard" initiallyHidden user={user}>
-<div class="lb-widget lb-widget--full lb-widget--danger" id="verifyBanner" hidden style="margin:0 0 24px"><h2>Verify your email</h2><p class="card-sub">Your leaderboard won't be public until you confirm your email address. Check your inbox for the link, or <a href="/verify-email">request a new one</a>.</p></div>
-<section class="lb-page is-on" data-page="home">
+<section class={active ? "lb-page is-on" : "lb-page"} data-page="home">
 <div class="v3-head"><h1>Overview</h1><p class="v3-head-sub" id="ovHeadSub">Complete setup to go live</p></div>
 <div id="ovOnboardingBento" hidden>
 <div class="ov-setup">
@@ -82,7 +94,12 @@ export function DashboardContent({ user, activePath } = {}) {
 <div class="v3-statusbar" id="ovStatusbar"><span><i class="ov-status-dot"></i><b id="ovPublishedStatus">Published</b></span><span class="ov-status-sep">|</span><span><i class="ov-status-dot"></i><b id="ovKickStatus">Kick Connected</b></span><span class="ov-status-sep">|</span><span id="ovTrackedPlayers"></span><span class="v3-statusbar-end" id="ovMetricsStatus"></span></div>
 </div></div>
 </section>
-<section class="lb-page" data-page="board">
+  );
+}
+
+function EditorSection({ active } = {}) {
+  return (
+<section class={active ? "lb-page is-on" : "lb-page"} data-page="board">
 
 <h1 class="sr-only">Board</h1>
 <nav class="editor-steps v3-tabs" id="editorTabs" aria-label="Editor steps">
@@ -168,10 +185,10 @@ export function DashboardContent({ user, activePath } = {}) {
 </details></div>
 <div class="field"><label for="f_font">Font</label><select id="f_font"><option value="Inter">Inter — Default</option><option value="Oswald">Oswald — Bold & Sporty</option><option value="Playfair Display">Playfair Display — Premium & Elegant</option><option value="Rajdhani">Rajdhani — Techy & Esports</option><option value="Bebas Neue">Bebas Neue — Impact & Hype</option></select><span class="hint">Changes the personality of your public page text.</span></div>
 </div></div>
-<div class="empty upsell-card" id="brandLock" hidden>Branding is a Pro feature. <a href="/account/plan?from=branding" id="brandUpgrade">Upgrade to unlock it</a>.</div></div>
+<div class="empty upsell-card" id="brandLock" hidden>Branding is a Pro feature. <a href="/dashboard/settings/plan?from=branding" id="brandUpgrade">Upgrade to unlock it</a>.</div></div>
 <div class="card" data-egroup="design" id="sectionsCard"><h2>Page blocks <span class="pill pill--info ml-6">PRO</span></h2><p class="card-sub">Choose which blocks appear on your public leaderboard page. Turn blocks off to build a leaner layout.</p>
 <div id="sectionsBody"><div class="sections-editor" id="sectionsList"></div></div>
-<div class="empty upsell-card" id="sectionsLock" hidden>Page block controls are a Pro feature. <a href="/account/plan?from=sections" id="sectionsUpgrade">Upgrade to unlock them</a>.</div></div>
+<div class="empty upsell-card" id="sectionsLock" hidden>Page block controls are a Pro feature. <a href="/dashboard/settings/plan?from=sections" id="sectionsUpgrade">Upgrade to unlock them</a>.</div></div>
 <div class="card" data-egroup="design" id="prizesCard"><h2>Prize display <span class="pill pill--info ml-6">PRO</span></h2><p class="card-sub">Customize how prizes, currency and the countdown appear on your public page.</p>
 <div id="prizesBody">
 <div class="grid2">
@@ -182,7 +199,7 @@ export function DashboardContent({ user, activePath } = {}) {
 </div>
 <label class="hint chk"><input type="checkbox" id="f_hidePrizeAmounts" /> Hide prize amounts on the public page</label>
 </div>
-<div class="empty upsell-card" id="prizesLock" hidden>Prize customization is a Pro feature. <a href="/account/plan?from=prizes" id="prizesUpgrade">Upgrade to unlock it</a>.</div></div>
+<div class="empty upsell-card" id="prizesLock" hidden>Prize customization is a Pro feature. <a href="/dashboard/settings/plan?from=prizes" id="prizesUpgrade">Upgrade to unlock it</a>.</div></div>
 <div class="design-group-heading" data-egroup="design"><h3>Content</h3></div>
 <div class="card" data-egroup="design" id="socialsCard"><h2>Social links</h2><p class="card-sub">Add the links to your channels. Turn a network <b>on</b> to show it on your public page; turn it <b>off</b> to hide it.</p>
 <div class="socials-editor" id="socialsList"></div></div>
@@ -221,7 +238,12 @@ export function DashboardContent({ user, activePath } = {}) {
 </div>
 </div>
 </section>
-<section class="lb-page" data-page="games">
+  );
+}
+
+function GamesSection({ active } = {}) {
+  return (
+<section class={active ? "lb-page is-on" : "lb-page"} data-page="games">
 <div class="v3-games-page">
   <header class="v3-head">
     <h1>Public page sections &amp; Games</h1>
@@ -247,7 +269,12 @@ export function DashboardContent({ user, activePath } = {}) {
   </div>
 </div>
 </section>
-<section class="lb-page" data-page="performance">
+  );
+}
+
+function AnalyticsSection({ active } = {}) {
+  return (
+<section class={active ? "lb-page is-on" : "lb-page"} data-page="performance">
 <div class="v3-analytics-page">
   <header class="v3-head"><h1>Analytics</h1><p class="v3-head-sub">Track real-time viewer actions, clicks, and conversion performance</p></header>
   <div class="v3-analytics-scope"><span id="perfScope"><span id="perfBoardName">Active board</span> · Last <span id="perfRangeLabel">14</span> days · <span id="perfLocalTime" title="Daily and hourly activity buckets are aggregated in UTC.">Times in UTC</span></span><div id="perfRangeFilter" class="v3-range-filter" role="group" aria-label="Date range"><button class="v3-range-btn" type="button" data-range="7">7d</button><button class="v3-range-btn is-active" type="button" data-range="14">14d</button><button class="v3-range-btn" type="button" data-range="30">30d</button></div></div>
@@ -275,36 +302,41 @@ export function DashboardContent({ user, activePath } = {}) {
   <details class="metric-glossary"><summary>Metric glossary</summary><dl><div><dt>Views</dt><dd>Total page loads of your public leaderboard.</dd></div><div><dt>Clicks</dt><dd>Clicks on your tracked referral or share links.</dd></div><div><dt>Copies</dt><dd>Times a visitor copied your page URL or a share link.</dd></div><div><dt>CTR</dt><dd>Click-through rate: clicks ÷ views in the selected date range.</dd></div><div><dt>Referrers</dt><dd>Domains that sent traffic to your page, when the browser reports them.</dd></div><div><dt>Events</dt><dd>Recent postbacks, score updates and link copies recorded for this board.</dd></div></dl></details>
 </div>
 </section>
-<section class="lb-page" data-page="settings">
+  );
+}
+
+function BoardSettingsSection({ active } = {}) {
+  return (
+<section class={active ? "lb-page is-on" : "lb-page"} data-page="settings">
 <div class="v3-settings">
-  <div class="v3-head"><h1>Settings</h1><p class="v3-head-sub" id="settingsSubline">Manage your subscription, account connections, and safety settings</p></div>
-  <div class="v3-tabs" role="tablist" aria-label="Settings sections">
-    <button class="v3-tab is-on" id="settingsTabPlan" type="button" role="tab" aria-selected="true" aria-controls="settingsPanelPlan" data-settings-tab="plan">Plan &amp; Usage</button>
-    <button class="v3-tab" id="settingsTabAccount" type="button" role="tab" aria-selected="false" aria-controls="settingsPanelAccount" data-settings-tab="account">Account</button>
-    <button class="v3-tab" id="settingsTabSecurity" type="button" role="tab" aria-selected="false" aria-controls="settingsPanelSecurity" data-settings-tab="security">Security</button>
+  <header class="v3-head">
+    <h1>Board settings</h1>
+    <p class="v3-head-sub" id="settingsSubline">These settings belong to the board selected above. Your plan, password, billing and postback keys live in <a href="/dashboard/settings">account settings</a>.</p>
+  </header>
+  <div class="v3-tabs" role="tablist" aria-label="Board settings sections">
+    <button class="v3-tab is-on" id="settingsTabAccess" type="button" role="tab" aria-selected="true" aria-controls="settingsPanelAccess" data-settings-tab="access">Access &amp; alerts</button>
+    <button class="v3-tab" id="settingsTabIntegrations" type="button" role="tab" aria-selected="false" aria-controls="settingsPanelIntegrations" data-settings-tab="integrations">Integrations</button>
     <button class="v3-tab" id="settingsTabDomain" type="button" role="tab" aria-selected="false" aria-controls="settingsPanelDomain" data-settings-tab="domain">Domain</button>
     <button class="v3-tab" id="settingsTabSupport" type="button" role="tab" aria-selected="false" aria-controls="settingsPanelSupport" data-settings-tab="support">Support</button>
   </div>
-  <section class="v3-settings-panel" id="settingsPanelPlan" role="tabpanel" aria-labelledby="settingsTabPlan" data-settings-panel="plan">
-    <div class="v3-settings-card v3-plan-card"><div><div class="v3-settings-plan-row"><span class="v3-chip v3-chip--pro" id="settingsPlanChip">—</span><span class="v3-settings-price" id="settingsPlanPrice">—</span></div><p class="v3-settings-card-sub" id="settingsPlanRenewal">—</p></div><a class="v3-set-btn v3-set-btn--outline" href="/account/plan" id="settingsManagePlan">Manage subscription</a></div>
-    <div class="v3-settings-card"><div class="v3-settings-card-head"><div><h2>Platform Limits</h2></div></div><div class="v3-set-meters" id="settingsUsage"><span class="skeleton v3-skel-meter" aria-hidden="true"></span><span class="skeleton v3-skel-meter" aria-hidden="true"></span><span class="skeleton v3-skel-meter" aria-hidden="true"></span></div></div>
-    <div class="v3-settings-card"><div class="v3-settings-card-head"><div><h2>Account Providers &amp; Schedulers</h2></div></div><div class="v3-settings-group-label">VIEWER LOGIN PROVIDERS</div><div class="v3-settings-row"><div><b>Kick Authentication</b><p>Allow viewers to sign in natively using Kick OAuth services. <a href="/dashboard/rewards/channel">Configure in Integrations</a></p></div><input class="v3-toggle" id="settingsKickLogin" type="checkbox" aria-label="Allow viewers to log in with Kick" disabled /></div><div class="v3-settings-row"><div><b>Discord Integration</b><p>Allow viewers to link Discord accounts to trace server roles.</p></div><a class="v3-set-btn v3-set-btn--outline" href="#settingsPanelSecurity" data-settings-jump="security">Webhook settings</a></div></div>
-  </section>
-  <section class="v3-settings-panel" id="settingsPanelAccount" role="tabpanel" aria-labelledby="settingsTabAccount" data-settings-panel="account" hidden>
-    <div class="v3-settings-card"><div class="v3-settings-card-head"><div><h2>Account security</h2><p>Update your password and review active sessions.</p></div></div><div class="v3-settings-form-grid"><label>Current password<input type="password" id="accCurrentPassword" autocomplete="current-password" /></label><label>New password<input type="password" id="accNewPassword" autocomplete="new-password" minlength="8" /></label></div><div class="v3-settings-actions"><button class="v3-set-btn v3-set-btn--dark" id="accChangePassword" type="button">Update password</button><span class="v3-settings-status" id="accPasswordStatus" role="status"></span></div><div class="v3-settings-divider"></div><div class="v3-settings-row"><div><b>Active sessions</b><p>Sign out every other device while keeping this one active.</p></div><button class="v3-set-btn v3-set-btn--outline" id="accRevokeSessions" type="button">Sign out other sessions</button></div><div id="accSessions" class="v3-settings-sessions"><span class="skeleton v3-skel-line" aria-hidden="true"></span><span class="skeleton v3-skel-line" aria-hidden="true"></span></div><p class="v3-settings-status" id="accSessionsStatus" role="status"></p></div>
-    <div class="v3-settings-card"><div class="v3-settings-card-head"><div><h2>Integrations</h2><p>Stream tools, postbacks, Kick rewards and legal pages.</p></div></div><div class="v3-settings-row"><div><b>Kick rewards</b><p>Let viewers earn credits by redeeming Kick channel rewards.</p><span class="v3-settings-muted" id="kickStatus"><span class="skeleton skeleton-text" aria-hidden="true"></span></span></div><a class="v3-set-btn v3-set-btn--outline" href="/dashboard/rewards/channel" id="kickRewardsLink">Open Integrations</a></div><div class="v3-settings-row"><div><b>Postbacks</b><p id="postbackStatus">Receive automatic score updates from your sponsor.</p></div><a class="v3-set-btn v3-set-btn--outline" href="/account/postbacks">Manage postbacks</a></div><div class="v3-settings-divider"></div><div class="v3-settings-notify-account"><label class="v3-settings-label" for="f_tgChatId">Telegram chat/group ID</label><input id="f_tgChatId" placeholder="-1001234567890" /><label class="v3-settings-check"><input type="checkbox" id="f_tgNotify" /> Enable Telegram notifications</label><button class="v3-set-btn v3-set-btn--outline" id="testTelegram" type="button">Test Telegram</button><span class="v3-settings-status" id="testTelegramStatus" role="status"></span></div><div class="v3-settings-divider"></div><div class="v3-settings-legal"><h3>Compliance</h3><div id="legalList"></div><div id="legalFooterPreview" class="v3-settings-muted"></div></div></div>
-  </section>
-  <section class="v3-settings-panel" id="settingsPanelSecurity" role="tabpanel" aria-labelledby="settingsTabSecurity" data-settings-panel="security" hidden>
+  <section class="v3-settings-panel" id="settingsPanelAccess" role="tabpanel" aria-labelledby="settingsTabAccess" data-settings-panel="access">
     <div class="v3-settings-card"><div class="v3-settings-row"><div><h2>Board access</h2><p>Password protection applies to the selected board, not your account.</p></div><a class="v3-set-btn v3-set-btn--outline" id="settingsBoardAccessLink" href="/dashboard/editor/setup">Open Board → Setup → Access</a></div></div>
-    <div class="v3-settings-card"><div class="v3-settings-row v3-settings-row--top"><div><h2>Webhook Notifications <span class="v3-chip v3-chip--pro">PRO</span></h2><p>Receive alerts when your leaderboard resets or a player reaches the top 3.</p></div><input class="v3-toggle" id="settingsWebhookEnabled" type="checkbox" aria-label="Enable webhook notifications" /></div><div class="v3-settings-notify-body" id="notifyBody"><div class="v3-settings-inline-form"><input id="f_webhook" aria-label="Discord webhook URL" placeholder="https://discord.com/api/webhooks/..." /><button class="v3-set-btn v3-set-btn--outline" id="testDiscord" type="button">Test webhook</button><span class="v3-settings-status" id="testDiscordStatus" role="status"></span></div></div><div class="v3-settings-inline" id="notifyLock" hidden>Notifications are a Pro feature. <a href="/account/plan?from=notifications">Upgrade to unlock them</a>.</div></div>
+    <div class="v3-settings-card"><div class="v3-settings-row v3-settings-row--top"><div><h2>Webhook Notifications <span class="v3-chip v3-chip--pro">PRO</span></h2><p>Receive alerts when your leaderboard resets or a player reaches the top 3.</p></div><input class="v3-toggle" id="settingsWebhookEnabled" type="checkbox" aria-label="Enable webhook notifications" /></div><div class="v3-settings-notify-body" id="notifyBody"><div class="v3-settings-inline-form"><input id="f_webhook" aria-label="Discord webhook URL" placeholder="https://discord.com/api/webhooks/..." /><button class="v3-set-btn v3-set-btn--outline" id="testDiscord" type="button">Test webhook</button><span class="v3-settings-status" id="testDiscordStatus" role="status"></span></div></div><div class="v3-settings-inline" id="notifyLock" hidden>Notifications are a Pro feature. <a href="/dashboard/settings/plan?from=notifications">Upgrade to unlock them</a>.</div></div>
     <div class="v3-settings-card v3-danger-card"><div class="v3-danger-lbl">DANGER ZONE</div><div class="v3-settings-row"><div><b>Reset All Leaderboard Data</b><p>Instantly wipes all player scores, wagers, and redemption history. This action cannot be undone.</p></div><button class="v3-set-btn v3-set-btn--danger-outline" id="settingsResetData" type="button">Reset data</button></div><div class="v3-settings-row"><div><b>Delete this board</b><p>Permanently delete this board configuration. This action cannot be undone.</p></div><button class="v3-set-btn v3-set-btn--danger" id="settingsDeleteBoard" type="button">Delete board</button></div></div>
   </section>
-  <section class="v3-settings-panel" id="settingsPanelDomain" role="tabpanel" aria-labelledby="settingsTabDomain" data-settings-panel="domain" hidden><div class="v3-settings-card"><div class="v3-settings-card-head"><div><h2>Custom Domain</h2><p>Point your domain to your public board and provision TLS.</p></div></div><div id="domainBody"><label class="v3-settings-label" for="f_domain">Your domain</label><input id="f_domain" placeholder="board.mystream.com" /><p class="v3-settings-muted">Point a CNAME record to <span class="mono">yourrank.site</span>, then verify.</p><button class="v3-set-btn v3-set-btn--dark" id="domainVerify" type="button">Verify &amp; Provision TLS</button><div id="domainStatus" class="v3-settings-status" role="status"></div></div><div class="v3-settings-inline" id="domainLock" hidden>Custom domains are a Pro feature. <a href="/account/plan?from=domain">Upgrade to unlock it</a>.</div></div></section>
+  <section class="v3-settings-panel" id="settingsPanelIntegrations" role="tabpanel" aria-labelledby="settingsTabIntegrations" data-settings-panel="integrations" hidden>
+    <div class="v3-settings-card"><div class="v3-settings-card-head"><div><h2>Integrations</h2><p>Stream tools, Kick rewards and the legal pages shown on this board.</p></div></div><div class="v3-settings-row"><div><b>Kick rewards</b><p>Let viewers earn credits by redeeming Kick channel rewards.</p><span class="v3-settings-muted" id="kickStatus"><span class="skeleton skeleton-text" aria-hidden="true"></span></span></div><a class="v3-set-btn v3-set-btn--outline" href="/dashboard/rewards/channel" id="kickRewardsLink">Open Kick channel</a></div><div class="v3-settings-row"><div><b>Postbacks</b><p id="postbackStatus">Receive automatic score updates from your sponsor.</p></div><a class="v3-set-btn v3-set-btn--outline" href="/dashboard/settings/connections">Manage postbacks</a></div><div class="v3-settings-divider"></div><div class="v3-settings-notify-account"><label class="v3-settings-label" for="f_tgChatId">Telegram chat/group ID</label><input id="f_tgChatId" placeholder="-1001234567890" /><label class="v3-settings-check"><input type="checkbox" id="f_tgNotify" /> Enable Telegram notifications</label><button class="v3-set-btn v3-set-btn--outline" id="testTelegram" type="button">Test Telegram</button><span class="v3-settings-status" id="testTelegramStatus" role="status"></span></div><div class="v3-settings-divider"></div><div class="v3-settings-legal"><h3>Compliance</h3><div id="legalList"></div><div id="legalFooterPreview" class="v3-settings-muted"></div></div></div>
+  </section>
+  <section class="v3-settings-panel" id="settingsPanelDomain" role="tabpanel" aria-labelledby="settingsTabDomain" data-settings-panel="domain" hidden><div class="v3-settings-card"><div class="v3-settings-card-head"><div><h2>Custom Domain</h2><p>Point your domain to your public board and provision TLS.</p></div></div><div id="domainBody"><label class="v3-settings-label" for="f_domain">Your domain</label><input id="f_domain" placeholder="board.mystream.com" /><p class="v3-settings-muted">Point a CNAME record to <span class="mono">yourrank.site</span>, then verify.</p><button class="v3-set-btn v3-set-btn--dark" id="domainVerify" type="button">Verify &amp; Provision TLS</button><div id="domainStatus" class="v3-settings-status" role="status"></div></div><div class="v3-settings-inline" id="domainLock" hidden>Custom domains are a Pro feature. <a href="/dashboard/settings/plan?from=domain">Upgrade to unlock it</a>.</div></div></section>
   <section class="v3-settings-panel" id="settingsPanelSupport" role="tabpanel" aria-labelledby="settingsTabSupport" data-settings-panel="support" hidden><div class="v3-settings-card"><div class="v3-settings-card-head"><div><h2>Support &amp; Resources</h2><p>Find help and manage the tools around your public board.</p></div></div><div class="v3-settings-row"><div><b>OBS Overlay</b><p>Copy the overlay URL, embed code and share links.</p></div><a class="v3-set-btn v3-set-btn--outline" href="/dashboard/editor/share">Open Board → Share</a></div><div class="v3-settings-row"><div><b>Need help?</b><p>Read the operator help hub or contact support.</p></div><a class="v3-set-btn v3-set-btn--outline" href="/help">Open help hub</a><a class="v3-set-btn v3-set-btn--outline" href="/help/support">Contact support</a></div></div></section>
 </div>
 </section>
+  );
+}
 
-<section class="lb-page" data-page="boards">
+function BoardsSection({ active } = {}) {
+  return (
+<section class={active ? "lb-page is-on" : "lb-page"} data-page="boards">
  <header class="v3-head v3-head--row"><div><h1>All boards</h1><p class="v3-head-sub">Manage all your leaderboards from one place.</p></div><button class="btn btn--sm btn--accent" id="addBoardFromBoards" type="button">+ New board</button></header>
  <div class="card">
 <div class="list-controls"><input type="search" id="boardsSearch" class="list-search" placeholder="Find board…" aria-label="Find board" /></div>
@@ -317,8 +349,54 @@ export function DashboardContent({ user, activePath } = {}) {
 <div id="boardsEmpty" class="v3-empty" hidden></div>
 </div>
 </section>
+  );
+}
 
-      <div class="savebar" id="savebar" hidden><span class="savebar-hint">Unsaved changes</span><span class="savebar-ts" id="editorTimestamp"></span><button class="btn btn--accent" id="save" type="button">Save changes</button></div>
+const SECTIONS = {
+  home: OverviewSection,
+  board: EditorSection,
+  games: GamesSection,
+  performance: AnalyticsSection,
+  settings: BoardSettingsSection,
+  boards: BoardsSection,
+};
+
+export function DashboardContent({ user, activePath } = {}) {
+  const { activeNav, activeHash } = dashboardShellRoute(activePath);
+  const sections = ROUTE_SECTIONS[activeNav] || ROUTE_SECTIONS.home;
+  const hasEditor = sections.includes("board");
+  return (
+    <>
+      <div id="loading" class="lb-bento pt-24">
+<div class="lb-widget lb-widget--full d-flex justify-between items-center gap-12 flex-wrap">
+<div class="d-flex flex-col gap-8">
+<div class="skeleton skeleton-text--lg" style="width:160px"></div>
+<div class="skeleton skeleton-text--sm" style="width:240px"></div>
+</div>
+<div class="skeleton skeleton-text" style="width:90px"></div>
+</div>
+<div class="lb-widget lb-widget--full">
+<div class="kpi-row">
+<div class="kpi-card"><div class="skeleton skeleton-text" style="width:70px"></div><div class="skeleton skeleton-text--lg" style="width:50px;margin-top:10px"></div></div>
+<div class="kpi-card"><div class="skeleton skeleton-text" style="width:70px"></div><div class="skeleton skeleton-text--lg" style="width:50px;margin-top:10px"></div></div>
+<div class="kpi-card"><div class="skeleton skeleton-text" style="width:70px"></div><div class="skeleton skeleton-text--lg" style="width:50px;margin-top:10px"></div></div>
+<div class="kpi-card"><div class="skeleton skeleton-text" style="width:70px"></div><div class="skeleton skeleton-text--lg" style="width:50px;margin-top:10px"></div></div>
+</div>
+</div>
+<div class="lb-widget lb-widget--wide"><div class="skeleton skeleton-block" style="height:180px"></div></div>
+<div class="lb-widget lb-widget--narrow"><div class="skeleton skeleton-block" style="height:180px"></div></div>
+<div class="lb-widget lb-widget--narrow"><div class="skeleton skeleton-block" style="height:180px"></div></div>
+<div class="lb-widget lb-widget--half"><div class="skeleton skeleton-block" style="height:140px"></div></div>
+<div class="lb-widget lb-widget--half"><div class="skeleton skeleton-block" style="height:140px"></div></div>
+</div>
+<DashboardShell activeNav={activeNav} activeHash={activeHash} boardContext="full" crumbs={dashboardCrumbs(activeNav, activeHash)} footer="dashboard" initiallyHidden user={user}>
+<div class="lb-widget lb-widget--full lb-widget--danger" id="verifyBanner" hidden style="margin:0 0 24px"><h2>Verify your email</h2><p class="card-sub">Your leaderboard won't be public until you confirm your email address. Check your inbox for the link, or <a href="/verify-email">request a new one</a>.</p></div>
+{sections.map((key) => {
+  const Section = SECTIONS[key];
+  return <Section active={key === activeNav} />;
+})}
+{hasEditor ? 
+<div class="savebar" id="savebar" hidden><span class="savebar-hint">Unsaved changes</span><span class="savebar-ts" id="editorTimestamp"></span><button class="btn btn--accent" id="save" type="button">Save changes</button></div> : null}
     </DashboardShell>
     </>
   );

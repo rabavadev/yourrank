@@ -124,15 +124,32 @@ describe("dashboard views", () => {
     expect(html).not.toContain("onblur=");
   });
 
+  it("renders the Telegram pages in the shared dashboard shell", () => {
+    const html = appHtml({ display_name: "Test", email: "test@example.com", plan: "free" }, "https://yourrank.site", "nonce123", "offers");
+    // Same rail, topbar and stylesheets as the leaderboard dashboard.
+    expect(html).toContain('<aside class="lb-side" id="lbSide"');
+    expect(html).toContain('<link rel="stylesheet" href="/assets/dashboard-v3.css">');
+    expect(html).toContain('class="lb-nav" href="/dashboard" data-nav="back"');
+    expect(html).toContain('data-nav="offers" aria-current="page"');
+    expect(html).toContain('<nav class="v3-crumbs" aria-label="Breadcrumb">');
+    // One shell, not the product header stacked on a second rail.
+    expect(html).not.toContain("gm-shell-nav");
+    expect(html).not.toContain('<aside class="side"');
+    expect((html.match(/<main/g) || []).length).toBe(1);
+    expect((html.match(/<h1/g) || []).length).toBe(1);
+  });
+
   it("appHtml loads the external client script and keeps markup data-action based", () => {
     const html = appHtml({ display_name: "Test", email: "test@example.com", plan: "free" }, "https://yourrank.site", "nonce123");
     expect(html).toContain('<script src="/bot/dash/client.js"></script>');
     expect(html).toContain('data-action="connectBot"');
     expect(html).toContain('data-action="createOffer"');
     expect(html).toContain('data-action="sendBroadcast"');
-    expect(html).toContain('data-action="logout"');
+    // Signing out is the dashboard shell's account menu (a POST form) now that
+    // /bot/* renders in that shell instead of its own rail.
+    expect(html).toContain('action="/bot/auth/logout"');
     expect(html).not.toContain('<div class="panel" data-page="settings">');
-    expect(html).toContain("Manage postbacks in Account");
+    expect(html).toContain("Manage postbacks in settings");
     expect(html).toContain("postbackStatus");
     expect(html).toContain("Click metrics cover the last 90 days");
     expect(html).toContain("Reported revenue");
@@ -317,7 +334,7 @@ describe("buildDashboard", () => {
     const html = await res.text();
     expect(html).toContain('<script src="/bot/dash/client.js"></script>');
     expect(html).toContain('data-action="connectBot"');
-    expect(html).toContain('data-action="logout"');
+    expect(html).toContain('action="/bot/auth/logout"');
     expect(html).not.toContain("onclick=");
 
     const csp = res.headers.get("content-security-policy") || "";

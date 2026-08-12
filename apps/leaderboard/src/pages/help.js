@@ -120,11 +120,10 @@ function helpHubContent() {
   <ul class="operator-help-list">
     <li><a href="/dashboard/settings">Account settings</a><span>Manage account-level settings, plan access, connections, and account data.</span></li>
     <li><a href="/dashboard/settings/board">Board settings</a><span>Manage the selected board’s integrations, viewer login providers, notifications, domain, and support resources.</span></li>
-    <li><a href="/account/plan">Plan and billing</a><span>Manage the account subscription and review plan access.</span></li>
-    <li><a href="/account/profile">Profile</a><span>Update account profile information.</span></li>
-    <li><a href="/account/connected">Connected accounts</a><span>Review connected account providers.</span></li>
-    <li><a href="/account/postbacks">Postbacks</a><span>Configure signed score postbacks for supported integrations.</span></li>
-    <li><a href="/account/data">Danger zone</a><span>Export account data or manage account deletion.</span></li>
+    <li><a href="/dashboard/settings/plan">Plan and billing</a><span>Manage the account subscription and review plan access.</span></li>
+    <li><a href="/dashboard/settings/account">Account</a><span>Change your password and review active sessions.</span></li>
+    <li><a href="/dashboard/settings/connections">Connected accounts and postbacks</a><span>Review connected providers and configure signed score postbacks.</span></li>
+    <li><a href="/dashboard/settings/data">Data and danger zone</a><span>Export account data or delete the account.</span></li>
   </ul>
 </section>
 
