@@ -87,7 +87,7 @@ After the Phase 2 UX and product restructuring, the following QA items were comp
 - `/dashboard/editor` → `/dashboard?nav=board`
 - `/dashboard/editor/:tab` → `/dashboard?nav=board#:tab` (`setup`, `players`, `design`, `share`, `history`)
 - `/dashboard/boards` → `/dashboard?nav=boards`
-- `/dashboard/settings` → `/dashboard?nav=settings`
+- `/dashboard?nav=settings` → `/dashboard/settings`
 - `/dashboard/setup` → `/dashboard`
 - `/dashboard/bot/setup` → `/bot/dashboard`
 - `/dashboard/support` → `/contact?type=support&area=dashboard&return=/dashboard`

@@ -1,6 +1,6 @@
 // Account settings: password, sessions, data export.
 import { $, getCsrf, logError, showConfirmModal } from "./utils.js";
-import { setState, state } from "./state.js";
+import { markDirty, setState, state } from "./state.js";
 import { renderEmpty, setBlockLoading } from "./states.js";
 
 async function jsonPost(path, body) {
@@ -295,39 +295,34 @@ function wireSettingsDanger() {
   });
 }
 
-function wireSettingsPassword(site) {
-  const save = $("settingsPasswordSave");
-  const toggle = $("settingsPasswordEnabled");
-  const input = $("settingsPassword");
-  const status = $("settingsPasswordStatus");
-  if (!save || !toggle || !input) return;
-  toggle.checked = !!site?.passwordProtected;
-  toggle.addEventListener("change", () => { input.disabled = !toggle.checked; });
-  input.disabled = !toggle.checked;
-  save.addEventListener("click", () => {
-    const editorToggle = $("f_password_enabled");
-    const editorInput = $("f_password");
-    if (editorToggle) editorToggle.checked = toggle.checked;
-    if (editorInput && input.value.trim()) editorInput.value = input.value.trim();
-    const editorSave = $("save");
-    if (editorSave) {
-      editorSave.click();
-      if (status) status.textContent = "Saving…";
-    } else if (status) status.textContent = "Open Board → Setup to save password protection.";
-  });
+function wireSettingsBoardAccess() {
+  if (!state.ACTIVE_SITE_ID) return;
+  const board = encodeURIComponent(state.ACTIVE_SITE_ID);
+  const accessLink = $("settingsBoardAccessLink");
+  if (accessLink) accessLink.href = `/dashboard/editor/setup?board=${board}`;
+  const playerFieldsLink = $("playerFieldsLink");
+  if (playerFieldsLink) playerFieldsLink.href = `/dashboard/editor/players?board=${board}`;
 }
 
-function wireSettingsWebhook() {
+function wireSettingsWebhook(sitePayload) {
   const toggle = $("settingsWebhookEnabled");
   const body = $("notifyBody");
   if (!toggle || !body) return;
   const webhook = $("f_webhook");
-  toggle.checked = !!webhook?.value;
+  toggle.checked = sitePayload?.notify?.discord_webhook_url === true || webhook?.dataset.configured === "true";
   const sync = () => {
+    if (!toggle.checked && webhook) {
+      webhook.value = "";
+      webhook.dataset.configured = "false";
+    }
     body.classList.toggle("is-disabled", !toggle.checked);
     body.querySelectorAll("input, button").forEach((el) => { el.disabled = !toggle.checked; });
   };
-  toggle.addEventListener("change", sync);
+  toggle.addEventListener("change", () => { sync(); markDirty(); });
+  webhook?.addEventListener("input", () => {
+    webhook.dataset.configured = webhook.value.trim() ? "true" : "false";
+    markDirty();
+  });
   sync();
 }
 
@@ -338,6 +333,6 @@ export function setupSettingsScreen(sitePayload) {
   loadSettingsUsage();
   loadSettingsProviders();
   wireSettingsDanger();
-  wireSettingsPassword(sitePayload);
-  wireSettingsWebhook();
+  wireSettingsBoardAccess();
+  wireSettingsWebhook(sitePayload);
 }

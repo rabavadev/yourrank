@@ -5,7 +5,6 @@ import { botsPanel } from "./pages/bots.js";
 import { commandsPanel } from "./pages/commands.js";
 import { offersPanel } from "./pages/offers.js";
 import { broadcastsPanel } from "./pages/broadcasts.js";
-import { settingsPanel } from "./pages/settings.js";
 import { dashClientScript } from "./client-script.js";
 
 export function appHtml(
@@ -29,7 +28,6 @@ ${sideNav(page, user)}
   ${commandsPanel()}
   ${offersPanel(publicBaseUrl)}
   ${broadcastsPanel()}
-  ${settingsPanel(publicBaseUrl)}
 </div></div></main>
 <div id="toast" class="hidden" role="status" aria-live="polite"></div>
 ${dashClientScript()}`,

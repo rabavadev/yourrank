@@ -34,8 +34,8 @@ function renderPageBlocks() {
   const current = { ...DEFAULT_SECTIONS, ...(state.EXTRA?.sections || {}) };
   list.innerHTML = BLOCK_ROWS.map(([key, label]) => `<label><span>${label}</span><input class="v3-toggle" type="checkbox" ${current[key] !== false ? "checked" : ""} disabled aria-disabled="true" /></label>`).join("");
   if (note) note.textContent = isPro()
-    ? "Edit block visibility in the Page design editor."
-    : "Block visibility is available on Pro plans. Current board settings are shown.";
+    ? "Edit page blocks in the Design editor."
+    : "Page block visibility is available on Pro plans. Current board settings are shown.";
 }
 
 function siteSections() {
@@ -79,13 +79,13 @@ async function saveSection(input) {
       body: JSON.stringify({ siteId: state.ACTIVE_SITE_ID, siteSections: next }),
     }).then(guardAuth);
     const body = await res.json();
-    if (!res.ok || !body.ok) throw new Error(body.error || "Could not save site sections.");
+    if (!res.ok || !body.ok) throw new Error(body.error || "Could not save viewer pages.");
     state.EXTRA.siteSections = { ...state.EXTRA.siteSections, shop: next.shop, games: next.games, me: next.credits };
-    showToast("Site sections saved.", "success");
+    showToast("Viewer pages saved.", "success");
   } catch (err) {
     input.checked = previous;
     logError("save-site-sections", err);
-    showToast(err.message || "Could not save site sections.");
+    showToast(err.message || "Could not save viewer pages.");
   } finally {
     input.disabled = false;
   }
