@@ -1,6 +1,9 @@
 import { describe, expect, it, mock } from "bun:test";
 import type { Update } from "grammy/types";
-import { gateAndDeferTelegramUpdate } from "../telegram-webhook.js";
+import {
+  gateAndDeferTelegramUpdate,
+  recoverTelegramWebhookUpdates,
+} from "../telegram-webhook.js";
 
 function update(update_id: number): Update {
   return { update_id } as Update;
@@ -23,6 +26,7 @@ describe("Telegram webhook admission", () => {
       botId: "bot-a",
       update: update(7),
       claim,
+      complete: async () => {},
       process: async () => { processed.push(7); },
       waitUntil,
     })).toBe("claimed");
@@ -54,6 +58,7 @@ describe("Telegram webhook admission", () => {
         botId,
         update: update(9),
         claim,
+        complete: async () => {},
         process: async () => { processed.push(botId); },
         waitUntil,
       });
@@ -70,6 +75,7 @@ describe("Telegram webhook admission", () => {
       botId: "bot-a",
       update: update(11),
       claim: async () => true,
+      complete: async () => {},
       process: () => handler,
       waitUntil: (promise) => { deferred = promise; },
     });
@@ -89,6 +95,7 @@ describe("Telegram webhook admission", () => {
       botId: "bot-a",
       update: update(13),
       claim: async () => true,
+      complete: async () => {},
       process: async () => { throw new Error("handler failed"); },
       waitUntil: (promise) => { deferred = promise; },
       logger: { error },
@@ -105,5 +112,27 @@ describe("Telegram webhook admission", () => {
       process: async () => {},
       waitUntil: () => {},
     })).rejects.toThrow("database unavailable");
+  });
+
+  it("retries claimed-but-unfinished updates but never completed rows", async () => {
+    const rows = [
+      { bot_id: "bot-a", update_id: 21, update_json: update(21), status: "processing" },
+      { bot_id: "bot-a", update_id: 22, update_json: update(22), status: "completed" },
+    ];
+    const processed: number[] = [];
+    const completed: string[] = [];
+
+    const recovered = await recoverTelegramWebhookUpdates({
+      findRecoverable: async () => rows
+        .filter((row) => row.status === "processing")
+        .map(({ bot_id, update_id, update_json }) => ({ bot_id, update_id, update_json })),
+      loadBot: async (botId) => ({ id: botId }),
+      process: async (_bot, current) => { processed.push(current.update_id); },
+      complete: async (botId, updateId) => { completed.push(`${botId}:${updateId}`); },
+    });
+
+    expect(recovered).toBe(1);
+    expect(processed).toEqual([21]);
+    expect(completed).toEqual(["bot-a:21"]);
   });
 });

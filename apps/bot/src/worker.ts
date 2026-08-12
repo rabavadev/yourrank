@@ -162,11 +162,25 @@ export default {
           // logged for observability.
           (async () => {
             try {
+              const { getBotById, handleUpdateForBot } = await import("./botEngine.js");
+              const { recoverTelegramWebhookUpdates } = await import("./telegram-webhook.js");
+              const recovered = await recoverTelegramWebhookUpdates({
+                loadBot: getBotById,
+                process: (bot, update) => handleUpdateForBot(bot as any, update, env),
+              });
+              console.log(`[cron 0 3 * * *] Telegram webhook recovery: ${recovered} update(s) recovered`);
+            } catch (err) {
+              console.error("[cron] Telegram webhook recovery failed:", err);
+            }
+          })(),
+          (async () => {
+            try {
               const result = await dbExec(
                 `WITH s AS (DELETE FROM sessions WHERE expires_at < now() RETURNING 1),
                       r AS (DELETE FROM password_resets WHERE expires_at < now() RETURNING 1),
                       t AS (DELETE FROM telegram_webhook_updates
-                            WHERE received_at < now() - interval '2 days'
+                            WHERE (status = 'completed' AND completed_at < now() - interval '2 days')
+                               OR (status = 'processing' AND claimed_at < now() - interval '7 days')
                             RETURNING 1)
                  SELECT (SELECT count(*)::int FROM s) AS sessions_deleted,
                         (SELECT count(*)::int FROM r) AS resets_deleted,
@@ -195,7 +209,7 @@ export default {
         // Log any rejections and alert via Discord — allSettled never throws
         const failures = results.filter(r => r.status === "rejected");
         if (failures.length > 0) {
-          const failedTasks = ["rollupClicks", "ensureCurrentMonthPartition", "ensureNextMonthPartition", "sendExpiryWarnings", "downgradeExpired", "cleanupOldClicks", "authCleanup", "onboardingEmails"]
+          const failedTasks = ["rollupClicks", "ensureCurrentMonthPartition", "ensureNextMonthPartition", "sendExpiryWarnings", "downgradeExpired", "cleanupOldClicks", "telegramWebhookRecovery", "authCleanup", "onboardingEmails"]
             .filter((_, i) => results[i].status === "rejected");
           const reasons = failures.map(f => String((f as PromiseRejectedResult).reason?.message || f.reason)).join("; ");
           console.error(`[cron 0 3 * * *] ${failures.length} task(s) failed: ${failedTasks.join(", ")} — ${reasons}`);
