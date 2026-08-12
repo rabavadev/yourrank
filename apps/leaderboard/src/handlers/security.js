@@ -115,7 +115,9 @@ function exportField(key, value, first) {
   return `${first ? "" : ","}${JSON.stringify(key)}:${encoded}`;
 }
 
-async function* exportJsonChunks(userId, exportId) {
+async function* exportJsonChunks(userId, exportId, { oneImpl = one, queryImpl = query } = {}) {
+  const one = oneImpl;
+  const query = queryImpl;
   let first = true;
   const field = async function* (key, value) {
     const chunk = exportField(key, value, first);
@@ -234,18 +236,23 @@ async function* exportJsonChunks(userId, exportId) {
   yield exportEncoder.encode("}}");
 }
 
-export async function handleExportData(request, env) {
+export async function handleExportData(request, env, {
+  currentUserImpl = currentUser,
+  rateLimitImpl = rateLimit,
+  oneImpl = one,
+  queryImpl = query,
+} = {}) {
   try {
-    const user = await currentUser(request, env);
+    const user = await currentUserImpl(request, env);
     if (!user) return bad("unauthorized", 401);
-    const rl = await rateLimit(env, `account-export:${user.id}`, 2, 3600);
+    const rl = await rateLimitImpl(env, `account-export:${user.id}`, 2, 3600);
     if (!rl.ok) return bad("Too many exports. Try again later.", 429, rateLimitHeaders(rl));
 
     const exportId = `${Date.now()}-${user.id}`;
     const stream = new ReadableStream({
       async start(controller) {
         try {
-          for await (const chunk of exportJsonChunks(user.id, exportId)) {
+          for await (const chunk of exportJsonChunks(user.id, exportId, { oneImpl, queryImpl })) {
             controller.enqueue(chunk);
           }
           controller.close();

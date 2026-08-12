@@ -1,9 +1,5 @@
 import { describe, it, expect, mock, beforeEach } from "bun:test";
-
-const dbUrl = import.meta.resolve("../../../../shared/db.js");
-const dbUrlTs = import.meta.resolve("../../../../shared/db.ts");
-const authUrl = import.meta.resolve("../auth.js");
-const authUrlTs = import.meta.resolve("../auth.ts");
+import { handleExportData } from "../handlers/security.js";
 
 const USER = {
   id: "user-1",
@@ -41,57 +37,17 @@ const mockRateLimit = mock(() => Promise.resolve({
   retryAfter: 0,
 }));
 
-const dbMock = () => ({
-  one: (...args) => mockOne(...args),
-  exec: mock(() => Promise.resolve()),
-  query: (...args) => mockQuery(...args),
+const request = () => new Request("https://yourrank.site/api/account/export", {
+  method: "GET",
+  headers: { cookie: "yr_session=token" },
 });
-const authMock = () => ({
-  currentUser: mock(() => Promise.resolve(USER)),
-  createSession: mock(() => Promise.resolve("token")),
-  readToken: mock(() => "token"),
-  cookieSet: mock(() => "cookie"),
-  destroyAllUserSessions: mock(() => Promise.resolve()),
-  json: (data, status = 200, headers = {}) => new Response(JSON.stringify(data), {
-    status,
-    headers: { "content-type": "application/json; charset=utf-8", ...headers },
-  }),
-  bad: (message, status = 400, headers = {}) => new Response(JSON.stringify({ ok: false, error: message }), {
-    status,
-    headers: { "content-type": "application/json", ...headers },
-  }),
-  ok: (data) => new Response(JSON.stringify({ ok: true, ...data }), {
-    headers: { "content-type": "application/json" },
-  }),
-  readJson: mock(() => Promise.resolve(null)),
-  rateLimit: (...args) => mockRateLimit(...args),
-  rateLimitHeaders: (rl) => ({
-    "X-RateLimit-Limit": String(rl.limit),
-    "X-RateLimit-Remaining": String(rl.remaining),
-    ...(rl.retryAfter > 0 ? { "Retry-After": String(rl.retryAfter) } : {}),
-  }),
-  clientIp: mock(() => "127.0.0.1"),
-  hashPassword: mock(() => Promise.resolve({ hash: "hash", salt: "salt" })),
-  verifyPassword: mock(() => Promise.resolve({ ok: true })),
+const env = () => ({ HYPERDRIVE: { connectionString: "postgresql://mock" } });
+const deps = () => ({
+  currentUserImpl: async () => USER,
+  rateLimitImpl: mockRateLimit,
+  oneImpl: mockOne,
+  queryImpl: mockQuery,
 });
-
-mock.module(dbUrl, dbMock);
-mock.module(dbUrlTs, dbMock);
-mock.module(authUrl, authMock);
-mock.module(authUrlTs, authMock);
-
-import { handleExportData } from "../handlers/security.js";
-
-function request() {
-  return new Request("https://yourrank.site/api/account/export", {
-    method: "GET",
-    headers: { cookie: "yr_session=token" },
-  });
-}
-
-function env() {
-  return { HYPERDRIVE: { connectionString: "postgresql://mock" } };
-}
 
 describe("handleExportData", () => {
   beforeEach(() => {
@@ -113,7 +69,7 @@ describe("handleExportData", () => {
     Date.prototype.toISOString = () => "2024-07-03T12:00:00.000Z";
 
     try {
-      const res = await handleExportData(request(), env());
+      const res = await handleExportData(request(), env(), deps());
       expect(res.status).toBe(200);
       expect(res.headers.get("content-type")).toBe("application/json; charset=utf-8");
       expect(res.headers.get("content-disposition")).toBe(
@@ -167,7 +123,7 @@ describe("handleExportData", () => {
       retryAfter: 1800,
     });
 
-    const res = await handleExportData(request(), env());
+    const res = await handleExportData(request(), env(), deps());
     expect(res.status).toBe(429);
     expect(res.headers.get("X-RateLimit-Limit")).toBe("2");
     expect(res.headers.get("X-RateLimit-Remaining")).toBe("0");
