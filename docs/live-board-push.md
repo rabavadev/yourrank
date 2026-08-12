@@ -12,7 +12,7 @@ environment without changing application code or the wire format:
 | --- | --- | --- |
 | `LIVE_BOARD_PUSH_ENABLED` | `false` | When `true`, routes each board's stream through its board Durable Object. When `false`, the existing per-connection polling path is used. |
 | `LIVE_BOARD_FALLBACK_POLL_MS` | `60000` | Durable Object self-healing poll interval while a board has subscribers. The poll re-checks authorization and visibility as well as board data. |
-| `LIVE_BOARD_MAX_SUBSCRIBERS` | `10000` | Maximum concurrent SSE subscribers for one board Durable Object. Additional connections receive `503` and `Retry-After: 30`. |
+| `LIVE_BOARD_MAX_SUBSCRIBERS` | `1000` | Maximum concurrent SSE subscribers for one board Durable Object. Additional connections receive `503` and `Retry-After: 30`. This is a conservative starting dial, not a guarantee of one DO's capacity: the real ceiling is governed by Durable Object CPU/memory, open-connection, and network limits under the board's workload. Raise it only after measuring a representative board in staging. |
 | `LIVE_BOARD_STREAM_KILL_SWITCH` | `false` | When `true`, all public SSE connections receive `503` and `Retry-After: 30`, causing clients to use their existing backoff rather than holding streams open. |
 
 The per-IP stream connection rate limit remains in force regardless of these

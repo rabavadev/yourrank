@@ -150,7 +150,7 @@ export async function recordConversion(
   if (notify) {
     for (const resolvedSiteId of notifiedSiteIds) {
       try {
-        void Promise.resolve(notify(resolvedSiteId, new Date().toISOString())).catch((error) => {
+        void Promise.resolve(notify(resolvedSiteId)).catch((error) => {
           console.error("[conversion] live board notification failed:", String(error instanceof Error ? error.message : error));
         });
       } catch (error) {

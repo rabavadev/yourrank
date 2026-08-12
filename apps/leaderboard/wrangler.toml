@@ -59,7 +59,7 @@ RL_FAIL_OPEN = "false"  # Block requests when the rate-limit backend is down (fa
 LIVE_BOARD_PUSH_ENABLED = "false"
 LIVE_BOARD_STREAM_KILL_SWITCH = "false"
 LIVE_BOARD_FALLBACK_POLL_MS = "60000"
-LIVE_BOARD_MAX_SUBSCRIBERS = "10000"
+LIVE_BOARD_MAX_SUBSCRIBERS = "1000"
 REQUEST_METRICS = "true"  # Set false to disable per-request capacity telemetry.
 POSTBACK_UNSIGNED_ENABLED = "false"  # Signed postbacks only.
 # Production session cookie is scoped to the apex domain so it is shared across
@@ -111,7 +111,7 @@ POSTBACK_UNSIGNED_ENABLED = "true"
 LIVE_BOARD_PUSH_ENABLED = "false"
 LIVE_BOARD_STREAM_KILL_SWITCH = "false"
 LIVE_BOARD_FALLBACK_POLL_MS = "60000"
-LIVE_BOARD_MAX_SUBSCRIBERS = "10000"
+LIVE_BOARD_MAX_SUBSCRIBERS = "1000"
 # Staging cookies must not be visible to the production apex domain.
 SESSION_COOKIE_DOMAIN = ".staging.yourrank.site"
 

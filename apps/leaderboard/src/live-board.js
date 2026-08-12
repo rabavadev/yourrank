@@ -76,7 +76,6 @@ export class LiveBoard {
     });
     this.subscribers.set(id, {
       controller: controllerRef,
-      request,
       siteId,
       slug,
       close: () => {
@@ -103,7 +102,13 @@ export class LiveBoard {
     } catch {
       return new Response("invalid notification", { status: 400 });
     }
-    if (!body?.siteId || !body?.version) return new Response("invalid notification", { status: 400 });
+    if (!body?.siteId) return new Response("invalid notification", { status: 400 });
+    if (!body.version) {
+      const pendingVersion = await this.state.storage.get("pendingVersion");
+      await this.state.storage.put("pendingRefresh", true);
+      await this.refresh(pendingVersion || null, !pendingVersion);
+      return new Response("ok");
+    }
     const version = String(body.version);
     const pendingVersion = await this.state.storage.get("pendingVersion");
     const requiredVersion = pendingVersion && String(pendingVersion) > version
@@ -116,17 +121,31 @@ export class LiveBoard {
   }
 
   async alarm() {
+    await this.state.storage.delete("alarmAt");
     const pendingVersion = await this.state.storage.get("pendingVersion");
-    await this.refresh(pendingVersion || null);
-    if (this.subscribers.size && !(await this.state.storage.get("pendingVersion"))) this.schedulePoll();
+    const pendingRefresh = await this.state.storage.get("pendingRefresh");
+    await this.refresh(pendingVersion || null, !!pendingRefresh);
+    if (
+      this.subscribers.size
+      && !(await this.state.storage.get("pendingVersion"))
+      && !(await this.state.storage.get("pendingRefresh"))
+    ) this.schedulePoll();
   }
 
   schedulePoll() {
     if (!this.subscribers.size) return;
     const when = Date.now() + liveBoardFallbackPollMs(this.env);
-    this.state.storage.setAlarm(when).catch((error) => {
+    this.scheduleAlarm(when).catch((error) => {
       console.error("[live-board] alarm failed:", String(error?.message || error));
     });
+  }
+
+  async scheduleAlarm(when) {
+    const current = await this.state.storage.get("alarmAt");
+    // Durable Objects have one alarm slot: preserve whichever deadline is soonest.
+    if (current && Number(current) <= when) return;
+    await this.state.storage.put("alarmAt", when);
+    await this.state.storage.setAlarm(when);
   }
 
   format(payload) {
@@ -147,30 +166,32 @@ export class LiveBoard {
     };
   }
 
-  async refresh(requiredVersion) {
+  async refresh(requiredVersion, force = false) {
     if (!this.subscribers.size || this.refreshing) return this.refreshing;
     this.refreshing = (async () => {
       const first = this.subscribers.values().next().value;
       if (!first) return;
-      const snapshot = await this.readSnapshot(first.request, first.siteId, first.slug);
+      const snapshot = await this.readSnapshot(null, first.siteId, first.slug);
       if (snapshot.error) {
         for (const subscriber of [...this.subscribers.values()]) subscriber.close();
         await this.state.storage.delete("pendingVersion");
+        await this.state.storage.delete("pendingRefresh");
         return;
       }
       if (requiredVersion && snapshot.payload.updatedAt < requiredVersion) {
         const attempt = Number(await this.state.storage.get("retryAttempt")) || 0;
         if (attempt < RETRY_DELAYS_MS.length) {
           await this.state.storage.put("retryAttempt", attempt + 1);
-          await this.state.storage.setAlarm(Date.now() + RETRY_DELAYS_MS[attempt]);
+          await this.scheduleAlarm(Date.now() + RETRY_DELAYS_MS[attempt]);
         } else {
           await this.state.storage.delete("pendingVersion");
           await this.state.storage.delete("retryAttempt");
         }
         return;
       }
-      if (!requiredVersion && snapshot.payload.updatedAt === this.lastVersion) return;
+      if (!force && !requiredVersion && snapshot.payload.updatedAt === this.lastVersion) return;
       await this.state.storage.delete("pendingVersion");
+      await this.state.storage.delete("pendingRefresh");
       await this.state.storage.delete("retryAttempt");
       this.lastVersion = snapshot.payload.updatedAt;
       const message = new TextEncoder().encode(this.format(snapshot.payload));

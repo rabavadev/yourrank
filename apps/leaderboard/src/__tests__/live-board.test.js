@@ -35,9 +35,10 @@ function makeBoard({ versions = ["v1"], getPublicSite, max = 10 } = {}) {
   return { board, state };
 }
 
-async function connect(board) {
+async function connect(board, cookie = "board_password=valid") {
+  const headers = cookie ? { cookie } : {};
   const response = await board.fetch(new Request("https://do/connect?site=site-1&slug=board", {
-    headers: { cookie: "board_password=valid" },
+    headers,
   }));
   return { response, reader: response.body?.getReader() };
 }
@@ -77,13 +78,15 @@ describe("LiveBoard Durable Object", () => {
     expect((await connection.reader.read()).done).toBe(true);
   });
 
-  it("closes every subscriber when the board becomes password protected", async () => {
+  it("closes authorized and unauthorized subscribers when the board becomes password protected", async () => {
     let protectedBoard = false;
     const { board } = makeBoard({
       getPublicSite: async () => protectedBoard ? { requiresPassword: true } : siteSnapshot(),
     });
-    const connection = await connect(board);
-    await connection.reader.read();
+    const authorized = await connect(board, "board_password=valid");
+    const unauthorized = await connect(board, "");
+    await authorized.reader.read();
+    await unauthorized.reader.read();
     protectedBoard = true;
 
     await board.fetch(new Request("https://do/notify", {
@@ -91,7 +94,8 @@ describe("LiveBoard Durable Object", () => {
       body: JSON.stringify({ siteId: "site-1", version: "v2" }),
     }));
 
-    expect((await connection.reader.read()).done).toBe(true);
+    expect((await authorized.reader.read()).done).toBe(true);
+    expect((await unauthorized.reader.read()).done).toBe(true);
   });
 
   it("refuses connections over the per-board subscriber cap", async () => {
@@ -134,5 +138,19 @@ describe("LiveBoard Durable Object", () => {
     await board.alarm();
     const update = await connection.reader.read();
     expect(new TextDecoder().decode(update.value)).toContain('"updatedAt":"v2"');
+  });
+
+  it("refreshes unversioned notifications without inventing a timestamp", async () => {
+    const { board } = makeBoard({ versions: ["v1", "v1"] });
+    const connection = await connect(board);
+    await connection.reader.read();
+
+    await board.fetch(new Request("https://do/notify", {
+      method: "POST",
+      body: JSON.stringify({ siteId: "site-1" }),
+    }));
+
+    const update = await connection.reader.read();
+    expect(new TextDecoder().decode(update.value)).toContain('"updatedAt":"v1"');
   });
 });

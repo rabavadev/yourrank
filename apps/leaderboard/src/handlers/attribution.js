@@ -268,6 +268,6 @@ export async function handlePostback(request, env) {
     }
   }
 
-  await recordConversion(owner.userId, out, siteId, (id, version) => notifyLiveBoard(env, id, version));
+  await recordConversion(owner.userId, out, siteId, (id) => notifyLiveBoard(env, id));
   return json({ ok: true }, 200, legacyHeaders);
 }

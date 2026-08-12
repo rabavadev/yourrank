@@ -1,5 +1,5 @@
 const DEFAULT_FALLBACK_POLL_MS = 60_000;
-const DEFAULT_MAX_SUBSCRIBERS = 10_000;
+const DEFAULT_MAX_SUBSCRIBERS = 1_000;
 const RETRY_AFTER_SECONDS = 30;
 
 function numberEnv(env, name, fallback, minimum = 1) {
@@ -27,14 +27,16 @@ export function liveBoardRetryAfter() {
   return RETRY_AFTER_SECONDS;
 }
 
-export async function notifyLiveBoard(env, siteId, version = new Date().toISOString()) {
+export async function notifyLiveBoard(env, siteId, version) {
   try {
     if (!liveBoardPushEnabled(env) || !env?.LIVE_BOARD_DO || !siteId) return;
     const id = env.LIVE_BOARD_DO.idFromName(String(siteId));
+    const body = { siteId: String(siteId) };
+    if (version) body.version = String(version);
     await env.LIVE_BOARD_DO.get(id).fetch("https://live-board/notify", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ siteId: String(siteId), version }),
+      body: JSON.stringify(body),
     });
   } catch (error) {
     console.error("[live-board] notification failed:", String(error?.message || error));
