@@ -37,8 +37,43 @@ import { handleDashboardPreview } from "./handlers/preview.js";
 import { demoLeaderboardData } from "./demo-data.js";
 import { parseDashboardPath, dashboardPath, resolveSection } from "./assets/dashboard/routes.js";
 import { deferClickWrite, trackedDestination } from "./tracked-redirect.js";
+import { setRequestMetrics } from "../../../shared/request-id.js";
 
 const LEGAL_PAGES = new Set(["terms", "privacy", "responsible", "cookies", "refund", "contact"]);
+const NON_SITE_PATHS = new Set([
+  "api", "auth", "dashboard", "login", "logout", "signup", "verify-email",
+  "account", "contact", "faq", "reviews", "cookies", "privacy", "terms",
+  "responsible", "refund", "setup", "demo", "go", "logo", "favicon.ico",
+]);
+const PUBLIC_API_OPERATIONS = new Set(["standings", "players", "stream", "rank", "data", "stats"]);
+const SITE_SECTIONS = new Set(["home", "leaderboard", "shop", "games", "me"]);
+
+function telemetryRoute(path) {
+  const parts = path.split("/").filter(Boolean);
+  if (parts[0] === "api") {
+    if (parts[1] === "public" && PUBLIC_API_OPERATIONS.has(parts[3])) {
+      return "/api/public/:slug/" + parts[3];
+    }
+    if (parts[1] && NON_SITE_PATHS.has(parts[1])) return "/api/" + parts[1];
+    return "/other";
+  }
+  if (parts[0] === "go") return "/go/:slug";
+  if (parts[0] === "logo") return "/logo/:slug";
+  if (parts.length >= 2 && parts[1] === "player") return "/:slug/player/:name";
+  if (parts.length >= 2 && SITE_SECTIONS.has(parts[1])) return "/:slug/" + parts[1];
+  if (parts.length === 1 && !NON_SITE_PATHS.has(parts[0])) return "/:slug";
+  if (parts.length === 1 && NON_SITE_PATHS.has(parts[0])) return "/" + parts[0];
+  return "/other";
+}
+
+function telemetrySite(path) {
+  const publicPath = path.match(/^\/api\/public\/([^/]+)/i);
+  const redirectPath = path.match(/^\/go\/([^/]+)/i);
+  if (publicPath?.[1]) return publicPath[1].toLowerCase();
+  if (redirectPath?.[1]) return redirectPath[1].toLowerCase();
+  const first = path.split("/").filter(Boolean)[0]?.toLowerCase();
+  return first && !NON_SITE_PATHS.has(first) ? first : undefined;
+}
 
 
 function enqueueBump(env, ctx, siteId, field, referer = null, visitorHash = null) {
@@ -135,7 +170,7 @@ export default {
       }
     }
     return response;
-  }),
+  }, { telemetry: true }),
 
   scheduled: handleScheduled,
 };
@@ -226,6 +261,10 @@ async function handleRequest(request, env, ctx, meta) {
       const path = url.pathname;
       const method = request.method === "HEAD" ? "GET" : request.method;
       const host = (request.headers.get("host") || "").toLowerCase().split(":")[0];
+      setRequestMetrics({
+        route: telemetryRoute(path),
+        site: telemetrySite(path),
+      });
 
       // --- custom domain resolution ---
       // If the Host header is not our primary domain, check if it maps to a

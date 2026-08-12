@@ -183,6 +183,23 @@ describe("handlePublicPlayers", () => {
     expect(body.players.map((p) => p.rank)).toEqual([2, 3]);
   });
 
+  it("keeps search requests on a separate generous limit", async () => {
+    const env = mockEnv();
+    for (let i = 0; i < 60; i++) {
+      const res = await handlePublicPlayers(
+        req("https://test.com/api/public/testboard/players?search=alice"),
+        env,
+        { slug: "testboard" }
+      );
+      expect(res.status).toBe(200);
+    }
+    const limited = await handlePublicPlayers(
+      req("https://test.com/api/public/testboard/players?search=alice"),
+      env,
+      { slug: "testboard" }
+    );
+    expect(limited.status).toBe(429);
+  });
   it("returns 404 for nonexistent slug", async () => {
     const env = mockEnv();
     const res = await handlePublicPlayers(req("https://test.com/api/public/nonexistent/players"), env, { slug: "nonexistent" });
