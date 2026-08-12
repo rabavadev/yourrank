@@ -1,6 +1,6 @@
 // Public API handlers for leaderboard data access
 import { getPublicSite, getPublicStreamVersion } from "../site.js";
-import { getStats } from "../stats.js";
+import { getStats, isStatementTimeout } from "../stats.js";
 import { rateLimit, rateLimitHeaders, clientIp, json, bad } from "../auth.js";
 import { one } from "../../../../shared/db.js";
 import { demoLeaderboardData } from "../demo-data.js";
@@ -361,6 +361,7 @@ export async function handlePublicStats(request, env, ctx) {
     }, 200, { "cache-control": "public, max-age=60", ...rateLimitHeaders(rl) });
   } catch (e) {
     console.error("[public/stats]", String(e?.message || e));
+    if (isStatementTimeout(e)) return bad("Analytics are temporarily unavailable. Try again shortly.", 503);
     return bad("Something went wrong. Try again.", 500);
   }
 }

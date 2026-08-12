@@ -70,6 +70,11 @@ function isConnError(e: any): boolean {
   );
 }
 
+function isStatementTimeout(e: any): boolean {
+  return String(e?.code ?? "") === "57014" ||
+    /statement timeout|canceling statement due to statement timeout/i.test(String(e?.message || e));
+}
+
 // ----------------------------------------------------------------------------
 // Public API - reads (safe to retry)
 // ----------------------------------------------------------------------------
@@ -88,6 +93,7 @@ export async function query<T = Record<string, unknown>>(
       return rows.map((r: any) => ({ ...r })) as unknown as T[];
     } catch (e: any) {
       lastErr = e;
+      if (isStatementTimeout(e)) throw e;
       const msg = String(e?.message || e);
       // Don't retry on constraint violations - these are application errors
       if (/23505|23514|23503|23502|23P01/.test(msg)) throw e;

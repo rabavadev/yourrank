@@ -3,17 +3,31 @@ import { query } from "../../../shared/db.js";
 import { bumpStat, todayUTC } from "../../../shared/stats.js";
 export { bumpStat, todayUTC };
 
+const ANALYTICS_TIMEOUT = "SET statement_timeout = '5000ms';";
+
+export function isStatementTimeout(err) {
+  return String(err?.code ?? "") === "57014" ||
+    /statement timeout|canceling statement due to statement timeout/i.test(String(err?.message || err));
+}
+
+function analyticsQuery(text, params) {
+  // Hyperdrive supports SET for the duration of a single query and resets it
+  // when the pooled connection is returned. Do not wrap the parallel reads in
+  // a shared transaction: that would hold an origin connection unnecessarily.
+  return query(`${ANALYTICS_TIMEOUT}\n${text}`, params);
+}
+
 // Last 30 days of rows plus rolled-up totals for the dashboard.
 export async function getStats(env, siteId) {
   const since = new Date(Date.now() - 29 * 86400e3).toISOString().slice(0, 10);
   // day comes back as a DATE — normalise to a 'YYYY-MM-DD' string so the
   // client-side comparisons/lookups below keep matching.
   const [rows, visitorRows, scrollRows] = await Promise.all([
-    Promise.resolve(query(
+    Promise.resolve(analyticsQuery(
       "SELECT to_char(day, 'YYYY-MM-DD') AS day, views, copies, clicks, conversions, revenue FROM site_stats WHERE site_id=$1 AND day>=$2 ORDER BY day ASC",
       [siteId, since]
     )).then((r) => r || []),
-    Promise.resolve(query(
+    Promise.resolve(analyticsQuery(
       `SELECT
          COUNT(*) FILTER (WHERE first_seen >= now() - interval '30 days')::int AS new_visitors,
          COUNT(*) FILTER (WHERE first_seen < now() - interval '30 days' AND last_seen >= now() - interval '30 days')::int AS returning_visitors,
@@ -21,7 +35,7 @@ export async function getStats(env, siteId) {
        FROM site_visitors WHERE site_id=$1 AND last_seen >= now() - interval '30 days'`,
       [siteId]
     )).then((r) => r?.[0]),
-    Promise.resolve(query(
+    Promise.resolve(analyticsQuery(
       `SELECT bucket, COALESCE(SUM(count), 0)::int AS total
          FROM site_scroll_depth
         WHERE site_id=$1 AND day >= now() - interval '30 days'
@@ -73,7 +87,7 @@ export async function getStats(env, siteId) {
 export async function getHeatmap(env, siteId) {
   try {
     const since = new Date(Date.now() - 29 * 86400e3).toISOString().slice(0, 10);
-    const rows = await query(
+    const rows = await analyticsQuery(
       "SELECT day_of_week, hour, SUM(views)::int AS views FROM site_stats_hourly WHERE site_id=$1 AND day>=$2 GROUP BY day_of_week, hour",
       [siteId, since]
     );
@@ -87,6 +101,7 @@ export async function getHeatmap(env, siteId) {
     return grid;
   } catch (err) {
     console.error("[getHeatmap]: failed", err);
+    if (isStatementTimeout(err)) throw err;
     return Array.from({ length: 7 }, () => Array(24).fill(0));
   }
 }
@@ -95,13 +110,14 @@ export async function getHeatmap(env, siteId) {
 export async function getTopReferrers(env, siteId) {
   try {
     const since = new Date(Date.now() - 29 * 86400e3).toISOString().slice(0, 10);
-    const rows = await query(
+    const rows = await analyticsQuery(
       "SELECT domain, SUM(count)::int AS total FROM site_referrers WHERE site_id=$1 AND day>=$2 GROUP BY domain ORDER BY total DESC LIMIT 5",
       [siteId, since]
     );
     return (rows || []).map(r => ({ domain: r.domain, count: Number(r.total) || 0 }));
   } catch (err) {
     console.error("[getTopReferrers]: failed", err);
+    if (isStatementTimeout(err)) throw err;
     return [];
   }
 }

@@ -8,6 +8,9 @@ compatibility_date = "2025-07-01"
 # v1 (nodejs_compat) works; if you hit module-polyfill issues on deploy, bump
 # to nodejs_compat_v2 and a newer compatibility_date per Cloudflare's guidance.
 compatibility_flags = ["nodejs_compat"]
+# Dashboard and public routes perform several sequential Hyperdrive reads.
+# Smart Placement keeps this request path near the Supabase origin.
+placement = { mode = "smart" }
 
 # This Worker owns the ROOT of the zone. The bot Worker claims the more-specific
 # /bot/*, /hook/*, /r/*, /pb/*, /billing/hook/* prefixes; more-specific wins, so

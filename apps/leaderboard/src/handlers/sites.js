@@ -1,7 +1,7 @@
 // Site handlers: get, put, list, create, archive, stats, heatmap, notifications, custom domain
 import { requireUser, json, bad, ok, readJson, rateLimit, rateLimitHeaders, slugify, clientIp } from "../auth.js";
 import { getByUser, getUserSite, getUserSiteById, getUserBoardsList, createBoard, duplicateBoard, createArchive, deleteArchive, deleteBoard, setActiveBoard, updateSiteTheme, invalidateSiteCache, invalidateUserCache, getBoardById, saveSite, fromJsonb } from "../site.js";
-import { bumpStat, getStats, getHeatmap, getTopReferrers } from "../stats.js";
+import { bumpStat, getStats, getHeatmap, getTopReferrers, isStatementTimeout } from "../stats.js";
 import { effectivePlan, PLAN_LIMITS, BOARD_LIMITS } from "../../../../shared/plans.js";
 import { templateCatalog } from "../templates/index.js";
 import { one, exec, query } from "../../../../shared/db.js";
@@ -48,7 +48,12 @@ export async function handleStats(request, env) {
   const siteId = url.searchParams.get("siteId");
   const site = siteId ? await getBoardById(env, user.id, siteId) : await getByUser(env, user.id);
   if (!site) return bad("no site", 404);
-  return json({ ok: true, stats: await getStats(env, site.id) });
+  try {
+    return json({ ok: true, stats: await getStats(env, site.id) });
+  } catch (err) {
+    if (isStatementTimeout(err)) return bad("Analytics are temporarily unavailable. Try again shortly.", 503);
+    throw err;
+  }
 }
 
 export async function handleExportStats(request, env, {
@@ -125,11 +130,16 @@ export async function handleHeatmap(request, env) {
   const siteId = url.searchParams.get("siteId");
   const site = siteId ? await getBoardById(env, user.id, siteId) : await getByUser(env, user.id);
   if (!site) return bad("no site", 404);
-  const [heatmap, referrers] = await Promise.all([
-    getHeatmap(env, site.id),
-    getTopReferrers(env, site.id),
-  ]);
-  return json({ ok: true, heatmap, referrers });
+  try {
+    const [heatmap, referrers] = await Promise.all([
+      getHeatmap(env, site.id),
+      getTopReferrers(env, site.id),
+    ]);
+    return json({ ok: true, heatmap, referrers });
+  } catch (err) {
+    if (isStatementTimeout(err)) return bad("Analytics are temporarily unavailable. Try again shortly.", 503);
+    throw err;
+  }
 }
 
 export async function handleTrackCopy(request, env, ctx) {
