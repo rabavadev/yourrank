@@ -49,10 +49,29 @@ import {
 
 const MAX_IDEMPOTENCY_KEY = 100;
 
-async function resolveSite(request, env, slug) {
+const defaultDependencies = {
+  getPublicSite,
+  requireViewer,
+  rateLimit,
+  ensureSeed,
+  getFairness,
+  getGameSettings,
+  getOwnedRound,
+  getSiteGamesConfig,
+  getSiteViewer,
+  listHistory,
+  listRevealedSeeds,
+  placeBet,
+  revealTile,
+  rotateSeed,
+  setRoundOutcome,
+  settleRound,
+};
+
+async function resolveSite(request, env, slug, deps) {
   const clean = String(slug || "").trim().toLowerCase();
   if (!clean) return { error: bad("slug required") };
-  const site = await getPublicSite(env, clean, request);
+  const site = await deps.getPublicSite(env, clean, request);
   if (site && site.requiresPassword) return { error: bad("Password required.", 401) };
   if (!site || site.suspended) return { error: bad("site not found", 404) };
   return { site };
@@ -62,12 +81,12 @@ async function resolveSite(request, env, slug) {
  * Resolve site + the viewer's membership row for a wagering request.
  * Never trusts any client-supplied viewer identity.
  */
-async function requirePlayer(request, env, slug) {
-  const { viewer, res } = await requireViewer(request, env);
+async function requirePlayer(request, env, slug, deps) {
+  const { viewer, res } = await deps.requireViewer(request, env);
   if (res) return { error: res };
-  const { site, error } = await resolveSite(request, env, slug);
+  const { site, error } = await resolveSite(request, env, slug, deps);
   if (error) return { error };
-  const player = await getSiteViewer(site.id, viewer.id);
+  const player = await deps.getSiteViewer(site.id, viewer.id);
   if (!player) return { error: bad("No credits on this board yet.", 400) };
   if (player.blocked) return { error: bad("viewer blocked", 403) };
   return { viewer, site, player };
@@ -106,15 +125,15 @@ function publicRound(round, { includeOutcome }) {
 // ---------------------------------------------------------------------------
 // GET /api/games/config?slug=
 // ---------------------------------------------------------------------------
-export async function handleGamesConfig(request, env) {
+export async function handleGamesConfig(request, env, deps = defaultDependencies) {
   const url = new URL(request.url);
   const slug = url.searchParams.get("slug");
-  const { site, error } = await resolveSite(request, env, slug);
+  const { site, error } = await resolveSite(request, env, slug, deps);
   if (error) return error;
 
-  if (!(await rateLimit(env, `games:config:${site.id}`, 120, 60)).ok) return bad("rate limited", 429);
+  if (!(await deps.rateLimit(env, `games:config:${site.id}`, 120, 60)).ok) return bad("rate limited", 429);
 
-  const config = await getSiteGamesConfig(site.id);
+  const config = await deps.getSiteGamesConfig(site.id);
   const games = config.games
     .filter((g) => g.enabled)
     .map((g) => ({
@@ -146,9 +165,9 @@ export async function handleGamesConfig(request, env) {
 // ---------------------------------------------------------------------------
 // POST /api/games/bet
 // ---------------------------------------------------------------------------
-export async function handleGamesBet(request, env) {
+export async function handleGamesBet(request, env, deps = defaultDependencies) {
   const body = request.validatedBody || (await readJson(request));
-  const { site, player, error } = await requirePlayer(request, env, body?.slug);
+  const { site, player, error } = await requirePlayer(request, env, body?.slug, deps);
   if (error) return error;
 
   const game = String(body?.game || "");
@@ -158,19 +177,19 @@ export async function handleGamesBet(request, env) {
   const idempotencyKey = idempotencyKeyOf(body);
   if (!idempotencyKey) return bad("idempotencyKey required");
 
-  if (!(await rateLimit(env, `games:bet:${site.id}:${player.id}`, 30, 60)).ok) {
+  if (!(await deps.rateLimit(env, `games:bet:${site.id}:${player.id}`, 30, 60)).ok) {
     return bad("rate limited", 429);
   }
 
-  const settings = await getGameSettings(site.id, game);
+  const settings = await deps.getGameSettings(site.id, game);
   if (!settings || !settings.enabled) return bad("game disabled", 403);
 
   const validated = validateParams(game, body?.params, settings.houseEdgeBps);
   if (!validated.ok) return bad(validated.error);
 
-  await ensureSeed(player.id);
+  await deps.ensureSeed(player.id);
 
-  const result = await placeBet({
+  const result = await deps.placeBet({
     siteId: site.id,
     siteViewerId: player.id,
     game,
@@ -186,7 +205,7 @@ export async function handleGamesBet(request, env) {
   // Idempotent retry that already produced (and possibly settled) a round:
   // return the stored state instead of resolving anything again.
   if (result.replayed && result.outcomeRecorded) {
-    const round = await getOwnedRound(result.roundId, player.id);
+    const round = await deps.getOwnedRound(result.roundId, player.id);
     return ok({ round: publicRound(round, { includeOutcome: true }), balance: result.balance, replayed: true });
   }
 
@@ -197,7 +216,7 @@ export async function handleGamesBet(request, env) {
     { serverSeed: result.serverSeed, clientSeed: result.clientSeed, nonce: result.nonce },
     validated.params
   );
-  await setRoundOutcome(result.roundId, outcome);
+  await deps.setRoundOutcome(result.roundId, outcome);
 
   if (isMultiStep(game)) {
     // Mines: the layout stays secret until the round ends.
@@ -223,7 +242,7 @@ export async function handleGamesBet(request, env) {
   }
 
   const payout = payoutForBet(bet, multiplier);
-  const settled = await settleRound(result.roundId, multiplier, payout, outcome);
+  const settled = await deps.settleRound(result.roundId, multiplier, payout, outcome);
   if (!settled.ok) return bad(settled.error, 500);
 
   return ok({
@@ -247,9 +266,9 @@ export async function handleGamesBet(request, env) {
 // ---------------------------------------------------------------------------
 // POST /api/games/mines/reveal
 // ---------------------------------------------------------------------------
-export async function handleGamesMinesReveal(request, env) {
+export async function handleGamesMinesReveal(request, env, deps = defaultDependencies) {
   const body = request.validatedBody || (await readJson(request));
-  const { site, player, error } = await requirePlayer(request, env, body?.slug);
+  const { site, player, error } = await requirePlayer(request, env, body?.slug, deps);
   if (error) return error;
 
   const roundId = String(body?.roundId || "").trim();
@@ -257,11 +276,11 @@ export async function handleGamesMinesReveal(request, env) {
   if (!roundId) return bad("roundId required");
   if (!Number.isInteger(tile) || tile < 0 || tile >= MINES_GRID_SIZE) return bad("invalid tile");
 
-  if (!(await rateLimit(env, `games:reveal:${site.id}:${player.id}`, 120, 60)).ok) {
+  if (!(await deps.rateLimit(env, `games:reveal:${site.id}:${player.id}`, 120, 60)).ok) {
     return bad("rate limited", 429);
   }
 
-  const round = await getOwnedRound(roundId, player.id);
+  const round = await deps.getOwnedRound(roundId, player.id);
   if (!round || round.game !== "mines") return bad("round not found", 404);
   if (round.state !== "open") return bad("round already settled", 409);
   if (!round.outcome) return bad("round not ready", 409);
@@ -272,12 +291,12 @@ export async function handleGamesMinesReveal(request, env) {
 
   const already = (round.revealed || []).includes(tile);
   // Re-revealing the same tile is a no-op, which makes a client retry safe.
-  const revealed = already ? round.revealed : await revealTile(roundId, player.id, tile);
+  const revealed = already ? round.revealed : await deps.revealTile(roundId, player.id, tile);
   if (!revealed) return bad("round already settled", 409);
 
   if (minePositions.includes(tile)) {
     // Mine hit: the round is over, so the full layout becomes public.
-    const settled = await settleRound(roundId, 0, 0);
+    const settled = await deps.settleRound(roundId, 0, 0);
     return ok({
       roundId,
       tile,
@@ -309,19 +328,19 @@ export async function handleGamesMinesReveal(request, env) {
 // ---------------------------------------------------------------------------
 // POST /api/games/mines/cashout
 // ---------------------------------------------------------------------------
-export async function handleGamesMinesCashout(request, env) {
+export async function handleGamesMinesCashout(request, env, deps = defaultDependencies) {
   const body = request.validatedBody || (await readJson(request));
-  const { site, player, error } = await requirePlayer(request, env, body?.slug);
+  const { site, player, error } = await requirePlayer(request, env, body?.slug, deps);
   if (error) return error;
 
   const roundId = String(body?.roundId || "").trim();
   if (!roundId) return bad("roundId required");
 
-  if (!(await rateLimit(env, `games:cashout:${site.id}:${player.id}`, 60, 60)).ok) {
+  if (!(await deps.rateLimit(env, `games:cashout:${site.id}:${player.id}`, 60, 60)).ok) {
     return bad("rate limited", 429);
   }
 
-  const round = await getOwnedRound(roundId, player.id);
+  const round = await deps.getOwnedRound(roundId, player.id);
   if (!round || round.game !== "mines") return bad("round not found", 404);
   if (!round.outcome) return bad("round not ready", 409);
 
@@ -346,7 +365,7 @@ export async function handleGamesMinesCashout(request, env) {
 
   const multiplier = cashoutMultiplier(gridSize, mines, safeRevealed, round.house_edge_bps);
   const payout = payoutForBet(Number(round.bet), multiplier);
-  const settled = await settleRound(roundId, multiplier, payout);
+  const settled = await deps.settleRound(roundId, multiplier, payout);
   if (!settled.ok) return bad(settled.error, 409);
 
   return ok({
@@ -363,17 +382,17 @@ export async function handleGamesMinesCashout(request, env) {
 // ---------------------------------------------------------------------------
 // GET /api/games/history?slug=&limit=
 // ---------------------------------------------------------------------------
-export async function handleGamesHistory(request, env) {
+export async function handleGamesHistory(request, env, deps = defaultDependencies) {
   const url = new URL(request.url);
-  const { site, player, error } = await requirePlayer(request, env, url.searchParams.get("slug"));
+  const { site, player, error } = await requirePlayer(request, env, url.searchParams.get("slug"), deps);
   if (error) return error;
 
-  if (!(await rateLimit(env, `games:history:${site.id}:${player.id}`, 60, 60)).ok) {
+  if (!(await deps.rateLimit(env, `games:history:${site.id}:${player.id}`, 60, 60)).ok) {
     return bad("rate limited", 429);
   }
 
   const limit = Number(url.searchParams.get("limit")) || 25;
-  const rounds = await listHistory(player.id, limit);
+  const rounds = await deps.listHistory(player.id, limit);
   return ok({
     rounds: rounds.map((r) => publicRound(r, { includeOutcome: true })),
   });
@@ -382,17 +401,17 @@ export async function handleGamesHistory(request, env) {
 // ---------------------------------------------------------------------------
 // GET /api/games/fairness?slug=
 // ---------------------------------------------------------------------------
-export async function handleGamesFairness(request, env) {
+export async function handleGamesFairness(request, env, deps = defaultDependencies) {
   const url = new URL(request.url);
-  const { site, player, error } = await requirePlayer(request, env, url.searchParams.get("slug"));
+  const { site, player, error } = await requirePlayer(request, env, url.searchParams.get("slug"), deps);
   if (error) return error;
 
-  if (!(await rateLimit(env, `games:fairness:${site.id}:${player.id}`, 60, 60)).ok) {
+  if (!(await deps.rateLimit(env, `games:fairness:${site.id}:${player.id}`, 60, 60)).ok) {
     return bad("rate limited", 429);
   }
 
-  const current = (await getFairness(player.id)) || (await ensureSeed(player.id));
-  const revealed = await listRevealedSeeds(player.id);
+  const current = (await deps.getFairness(player.id)) || (await deps.ensureSeed(player.id));
+  const revealed = await deps.listRevealedSeeds(player.id);
   // `serverSeed` is intentionally absent: only its hash is public until rotation.
   return ok({ current, revealed });
 }
@@ -400,17 +419,17 @@ export async function handleGamesFairness(request, env) {
 // ---------------------------------------------------------------------------
 // POST /api/games/fairness/rotate
 // ---------------------------------------------------------------------------
-export async function handleGamesFairnessRotate(request, env) {
+export async function handleGamesFairnessRotate(request, env, deps = defaultDependencies) {
   const body = request.validatedBody || (await readJson(request));
-  const { site, player, error } = await requirePlayer(request, env, body?.slug);
+  const { site, player, error } = await requirePlayer(request, env, body?.slug, deps);
   if (error) return error;
 
-  if (!(await rateLimit(env, `games:rotate:${site.id}:${player.id}`, 10, 60)).ok) {
+  if (!(await deps.rateLimit(env, `games:rotate:${site.id}:${player.id}`, 10, 60)).ok) {
     return bad("rate limited", 429);
   }
 
-  await ensureSeed(player.id);
-  const rotated = await rotateSeed(player.id, body?.clientSeed);
+  await deps.ensureSeed(player.id);
+  const rotated = await deps.rotateSeed(player.id, body?.clientSeed);
   if (!rotated.ok) return bad(rotated.error, 409);
   return ok(rotated.result);
 }

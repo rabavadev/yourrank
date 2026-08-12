@@ -7,31 +7,9 @@
 //
 // Run: bun test src/__tests__/games-handlers.test.js
 
-import { describe, it, expect, mock, beforeEach } from "bun:test";
+import { describe, it, expect, beforeEach } from "bun:test";
 
-// ── Mocks ──────────────────────────────────────────────────────────────
 let currentViewer = { id: "viewer-1" };
-mock.module(import.meta.resolve("../handlers/viewer-auth.js"), () => ({
-  requireViewer: async () => (currentViewer
-    ? { viewer: currentViewer, cookie: null, res: null }
-    : { viewer: null, cookie: null, res: new Response(JSON.stringify({ ok: false, error: "unauthorized" }), { status: 401 }) }),
-}));
-
-const dbMock = () => ({
-  one: async () => null,
-  query: async () => [],
-  exec: async () => [],
-  withTransaction: async (fn) => fn({ one: async () => null, query: async () => [], unsafe: async () => [] }),
-});
-mock.module(import.meta.resolve("../../../../shared/db.js"), dbMock);
-mock.module(import.meta.resolve("../../../../shared/db.ts"), dbMock);
-
-mock.module(import.meta.resolve("../site.js"), () => ({
-  getPublicSite: async (_env, slug) => {
-    if (slug === "missing") return null;
-    return { id: "site-1", data: { slug }, plan: "pro", suspended: false };
-  },
-}));
 
 // In-memory games store. Each test tweaks `state` to script a scenario.
 const state = {
@@ -65,7 +43,15 @@ function openMinesRound(overrides = {}) {
   };
 }
 
-mock.module(import.meta.resolve("../../../../shared/games/store.js"), () => ({
+const testDependencies = {
+  getPublicSite: async (_env, slug) => {
+    if (slug === "missing") return null;
+    return { id: "site-1", data: { slug }, plan: "pro", suspended: false };
+  },
+  requireViewer: async () => (currentViewer
+    ? { viewer: currentViewer, cookie: null, res: null }
+    : { viewer: null, cookie: null, res: new Response(JSON.stringify({ ok: false, error: "unauthorized" }), { status: 401 }) }),
+  rateLimit: async () => ({ ok: true }),
   getSiteGamesConfig: async () => ({
     siteId: "site-1",
     gamesEnabled: true,
@@ -97,17 +83,25 @@ mock.module(import.meta.resolve("../../../../shared/games/store.js"), () => ({
   getOwnedRound: async () => state.round,
   revealTile: async (_id, _sv, tile) => [...(state.round.revealed || []), tile],
   listHistory: async () => [state.round],
-}));
+};
 
 const {
-  handleGamesConfig,
-  handleGamesBet,
-  handleGamesMinesReveal,
-  handleGamesMinesCashout,
-  handleGamesHistory,
-  handleGamesFairness,
-  handleGamesFairnessRotate,
+  handleGamesConfig: handleGamesConfigImpl,
+  handleGamesBet: handleGamesBetImpl,
+  handleGamesMinesReveal: handleGamesMinesRevealImpl,
+  handleGamesMinesCashout: handleGamesMinesCashoutImpl,
+  handleGamesHistory: handleGamesHistoryImpl,
+  handleGamesFairness: handleGamesFairnessImpl,
+  handleGamesFairnessRotate: handleGamesFairnessRotateImpl,
 } = await import("../handlers/games.js");
+
+const handleGamesConfig = (request, env) => handleGamesConfigImpl(request, env, testDependencies);
+const handleGamesBet = (request, env) => handleGamesBetImpl(request, env, testDependencies);
+const handleGamesMinesReveal = (request, env) => handleGamesMinesRevealImpl(request, env, testDependencies);
+const handleGamesMinesCashout = (request, env) => handleGamesMinesCashoutImpl(request, env, testDependencies);
+const handleGamesHistory = (request, env) => handleGamesHistoryImpl(request, env, testDependencies);
+const handleGamesFairness = (request, env) => handleGamesFairnessImpl(request, env, testDependencies);
+const handleGamesFairnessRotate = (request, env) => handleGamesFairnessRotateImpl(request, env, testDependencies);
 
 function env() {
   const store = new Map();
