@@ -11,6 +11,48 @@ expires after seven days. One pending or processing export is reused, and
 creation is limited to two requests per viewer per hour. Status and download
 requests are limited to 60 per viewer per minute.
 
+## R2 availability
+
+The `ACCOUNT_EXPORTS` R2 binding is deliberately deferred until R2 is enabled
+for the Cloudflare account. While it is absent, viewer export requests fail
+immediately with a temporary-unavailability message; no pending job is
+created, and no download is presented.
+
+After enabling R2, restore these exact blocks:
+
+`apps/leaderboard/wrangler.toml` production:
+
+```toml
+[[r2_buckets]]
+binding = "ACCOUNT_EXPORTS"
+bucket_name = "yourrank-account-exports"
+```
+
+`apps/leaderboard/wrangler.toml` staging:
+
+```toml
+[[env.staging.r2_buckets]]
+binding = "ACCOUNT_EXPORTS"
+bucket_name = "yourrank-account-exports-staging"
+```
+
+`apps/consumer/wrangler.toml` production:
+
+```toml
+[[r2_buckets]]
+binding = "ACCOUNT_EXPORTS"
+bucket_name = "yourrank-account-exports"
+```
+
+The consumer configuration currently has no staging environment. If one is
+introduced, restore this binding inside its `env.staging` section:
+
+```toml
+[[env.staging.r2_buckets]]
+binding = "ACCOUNT_EXPORTS"
+bucket_name = "yourrank-account-exports-staging"
+```
+
 ## Collections
 
 The viewer artifact contains only the requesting viewer's records:

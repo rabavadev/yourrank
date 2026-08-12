@@ -32,6 +32,15 @@ describe("viewer export ownership and lifecycle", () => {
     expect(d.state.sent[0].viewerId).toBe("viewer-1");
   });
 
+  it("fails immediately when the R2 binding is unavailable without creating a job", async () => {
+    const d = deps();
+    const res = await handleCreateViewerExportJob(new Request("https://yourrank.site/api/viewer/export", { method: "POST" }), {}, d);
+    expect(res.status).toBe(503);
+    expect(await res.text()).toContain("temporarily unavailable");
+    expect(d.state.execs).toHaveLength(0);
+    expect(d.state.sent).toHaveLength(0);
+  });
+
   it("makes foreign and nonexistent status jobs indistinguishable", async () => {
     const d = deps({ oneImpl: async () => null });
     const foreign = await handleViewerExportStatus(request(), env, { slug: "foreign" }, d);

@@ -34,6 +34,15 @@ describe("async account export", () => {
     expect(d.state.execs).toHaveLength(1);
   });
 
+  it("fails immediately when the R2 binding is unavailable without creating a job", async () => {
+    const d = deps();
+    const res = await handleCreateExportJob(request(), {}, d);
+    expect(res.status).toBe(503);
+    expect(await res.text()).toContain("temporarily unavailable");
+    expect(d.state.execs).toHaveLength(0);
+    expect(d.state.sent).toHaveLength(0);
+  });
+
   it("reuses an existing pending request", async () => {
     const d = deps();
     d.oneImpl = async () => ({ id: "existing", status: "pending", created_at: "now", expires_at: "later" });
