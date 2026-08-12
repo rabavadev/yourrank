@@ -43,13 +43,13 @@ page.
 - Sidebar: fixed, 260px, black, full height under the topbar. Top: `ACTIVE BOARD`
   mono label card with the board name, a stepper chevron and a full-width
   `+ New board` outline button. Then the nav: Overview, Leaderboard, Page,
-  Rewards (Redemptions, Shop, Credit rules), Audience (Viewers, Credit activity), Games, Analytics, Past periods, Settings — 24px icons, active item
+  Credits (Redemptions, Shop, Credit rules, Viewers, Credit activity), Games, Analytics, Past periods, Settings — 24px icons, active item
   has a 3px accent left bar, `#1A1A1A` fill and accent icon. Bottom: accent
   `View live page ↗` link and the `VIP PRO / Active` usage card with the API
   usage meter.
 - Content: 32px padding. Page title 34px/700 with a mono or prose sub-line under
   it. Cards are white, 1px hairline, 12px radius, no shadow at rest.
-- Tab bars (`Site`, `Rewards`, `Audience`, `Analytics`, `Settings`) are text tabs with
+- Tab bars (`Site`, `Credits`, `Analytics`, `Settings`) are text tabs with
   a 2px underline on the active tab, sitting on a full-width hairline.
 - Tables: mono uppercase headers on `#FAFAFA`, 1px row hairlines, 41px rows,
   right-aligned numeric columns in mono, row hover `#FAFAFA`, selected row

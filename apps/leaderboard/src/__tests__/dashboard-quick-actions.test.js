@@ -38,10 +38,9 @@ describe("dashboard overview quick actions", () => {
     expect(html).toContain('>Overview</a>');
     expect(html).toContain('>Leaderboard</a>');
     expect(html).toContain('>Settings</a>');
-    expect(html).toContain('>REWARDS</div>');
+    expect(html).toContain('>CREDITS</div>');
     expect(html).toContain('>Redemptions</a>');
     expect(html).toContain('>Credit rules</a>');
-    expect(html).toContain('>AUDIENCE</div>');
   });
 
   it("leads with the Board editor and still exposes editor sub-sections", () => {

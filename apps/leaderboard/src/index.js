@@ -724,7 +724,7 @@ async function handleRequest(request, env, ctx, meta) {
         if (tab === "maps" || tab === "rewards") return redirectKeepingSearch("/dashboard/rewards/rules", url);
         if (tab === "viewers") return redirectKeepingSearch("/dashboard/audience/viewers", url);
         if (tab === "history") return redirectKeepingSearch("/dashboard/audience/activity", url);
-        const map = { rules: "rewardsMaps", shop: "rewardsShop", redemptions: "rewardsRedemptions" };
+        const map = { rules: "rewardsRules", shop: "rewardsShop", redemptions: "rewardsRedemptions" };
         const pageKey = map[tab];
         if (!pageKey) return Response.redirect(new URL("/dashboard/rewards/redemptions", url), 302);
         return renderDashboardPage(pageKey, "rewards_render_failed");
