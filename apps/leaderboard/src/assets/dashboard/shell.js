@@ -110,9 +110,6 @@ export function openDrawer() {
     for (const child of container.children) {
       if (child === side) continue;
       if (child.contains(side)) inertSiblings(child);
-      else if (child.classList.contains("lb-main")) {
-        for (const descendant of child.children) descendant.inert = true;
-      }
       else child.inert = true;
     }
   };
