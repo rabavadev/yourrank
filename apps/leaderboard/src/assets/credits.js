@@ -1,7 +1,7 @@
-import { showConfirmModal, showPromptModal, ListController, logError, showLoadError, clearLoadError } from "./dashboard/utils.js";
+import { showConfirmModal, showPromptModal, ListController, logError, clearLoadError } from "./dashboard/utils.js";
 import { openDrawer, closeDrawer } from "./dashboard/shell.js";
 import { setState } from "./dashboard/state.js";
-import { UNKNOWN, emptyStateHtml, renderEmpty, setMetricLoading, setRowsLoading } from "./dashboard/states.js";
+import { UNKNOWN, emptyStateHtml, renderEmpty, renderError, setBlockLoading, setMetricLoading, setRowsLoading } from "./dashboard/states.js";
 import { updateProfileMenu } from "./dashboard/profile-menu.js";
 
 const $ = (id) => document.getElementById(id);
@@ -39,7 +39,7 @@ function preserveSiteContextLinks() {
     "/dashboard/rewards/rules",
     "/dashboard/audience/viewers",
     "/dashboard/audience/activity",
-    "/dashboard/settings/integrations",
+    "/dashboard/rewards/channel",
   ]);
   document.querySelectorAll("a[href]").forEach((link) => {
     const raw = link.getAttribute("href");
@@ -58,6 +58,14 @@ function setLoading(idOrEl, loading, text = "Loading…") {
   else { el.disabled = false; el.removeAttribute("aria-busy"); el.classList.remove("btn--loading"); el.textContent = el.dataset.origText || el.textContent; delete el.dataset.origText; }
 }
 function setGlobalLoading(loading) { if ($("cr-loading")) $("cr-loading").hidden = !loading; }
+function setCreditsPanelLoading(loading) {
+  const panel = $("cr-empty");
+  if (!panel) return;
+  if (loading) {
+    panel.hidden = false;
+    setBlockLoading(panel, { lines: 3 });
+  }
+}
 function usageCls(used, limit) { const pct = limit > 0 ? Math.round((used / limit) * 100) : 0; return limit > 0 && used >= limit ? "cr-usage-over" : limit > 0 && pct >= 80 ? "cr-usage-near" : ""; }
 function usageCard(used, limit, name) { const cls = usageCls(used, limit); return `<div class="cr-usage-card"><div class="hint">${esc(name)}</div><div class="cr-usage-number${cls ? ` ${cls}` : ""}">${used} / ${limit}</div>${cls ? '<a href="/account/plan" class="cr-usage-upgrade">Upgrade plan</a>' : ""}</div>`; }
 function draftKey(id) { return `yr:credits:draft:${id}`; }
@@ -191,7 +199,7 @@ function render() {
   if (current === "redemptions") {
     renderOnboarding();
     const channel = $("cr-redemption-channel");
-    if (state.channel?.externalId) { channel.innerHTML = `● Connected to @${esc(state.channel.name || state.channel.externalId)}`; channel.className = "v3-chip v3-chip--refunded"; } else { channel.innerHTML = '<a href="/dashboard/settings/integrations">Not connected · Connect in Integrations</a>'; channel.className = "v3-chip v3-chip--cancelled"; }
+    if (state.channel?.externalId) { channel.innerHTML = `● Connected to @${esc(state.channel.name || state.channel.externalId)}`; channel.className = "v3-chip v3-chip--refunded"; } else { channel.innerHTML = '<a href="/dashboard/rewards/channel">Not connected · Connect Kick</a>'; channel.className = "v3-chip v3-chip--cancelled"; }
     $("cr-pending-counter").textContent = `${metric(usage.pendingRedemptions)} / ${metric(limits.pendingRedemptions)}`; $("cr-fulfilled-counter").textContent = `${metric(usage.redemptionsPer30Days)} / ${metric(limits.redemptionsPer30Days)}`;
     const redemptions = state.redemptions || [];
     if (!redemptionCtrl) { redemptionCtrl = new ListController({ root: $("cr-redemptions"), tbody: "cr-redemption-list", emptyEl: $("cr-redemption-empty"), emptySpec: { icon: "archive", title: "No shop redemptions yet", body: "Viewer shop redemption requests will appear here." }, items: redemptions, perPage: 15, searchFn: (r) => `${r.kick_username || r.kick_user_id} ${r.item_name} ${r.status}`, sortOptions: [{ key: "time", label: "Newest", fn: (a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0) }, { key: "cost", label: "Cost", fn: (a, b) => (b.cost || 0) - (a.cost || 0) }, { key: "status", label: "Status", fn: (a, b) => (a.status || "").localeCompare(b.status || "") }], emptyAllText: "No shop redemptions yet.", emptyText: "No matching shop redemptions.", renderItem: (r) => renderRedemptionRow(r), onRender: () => wireDynamicActions() }); mountListControls($("cr-redemptions"), $("cr-redemption-toolbar"), $("cr-redemption-foot")); }
@@ -390,6 +398,7 @@ async function toggleReward(id, trigger) {
 async function load() {
   clearLoadError($("cr-empty"), false);
   setState({ CREDITS_STATUS: "loading" });
+  setCreditsPanelLoading(true);
   setMetricLoading($("cr-pending-counter"));
   setMetricLoading($("cr-fulfilled-counter"));
   rewardCtrl?.setLoading(true);
@@ -408,7 +417,7 @@ async function load() {
   } catch (err) {
     setState({ CREDITS_STATUS: "error" });
     logError("load-credits-dashboard", err);
-    showLoadError($("cr-empty"), "your credits dashboard", load);
+    renderError($("cr-empty"), { title: "Couldn't load your credits dashboard", body: "Your rewards data could not be loaded.", retry: () => load().catch(() => {}) });
     $("cr-app").hidden = false;
     throw err;
   } finally { setGlobalLoading(false); }
@@ -539,7 +548,7 @@ function renderHistory(data) {
   const list = $("cr-history-list");
   const empty = $("cr-history-empty");
   if (!list) return;
-  list.innerHTML = boards.map((b) => `<tr><td><b>${esc(b.name || b.slug)}</b><br><span class="hint">${esc(b.slug)}</span></td><td class="num">${b.balance}</td><td class="num">${b.totalEarned}</td><td class="num">${b.totalSpent}</td><td class="num">${b.redemptionsPending}</td><td class="num">${b.redemptionsTotal}</td><td class="ta-r"><a class="btn btn--sm" href="/dashboard/settings/integrations?siteId=${esc(b.siteId)}">Integrations</a></td></tr>`).join("");
+  list.innerHTML = boards.map((b) => `<tr><td><b>${esc(b.name || b.slug)}</b><br><span class="hint">${esc(b.slug)}</span></td><td class="num">${b.balance}</td><td class="num">${b.totalEarned}</td><td class="num">${b.totalSpent}</td><td class="num">${b.redemptionsPending}</td><td class="num">${b.redemptionsTotal}</td><td class="ta-r"><a class="btn btn--sm" href="/dashboard/rewards/channel?siteId=${esc(b.siteId)}">Connect Kick</a></td></tr>`).join("");
   if (empty) {
     empty.innerHTML = boards.length ? "" : emptyStateHtml({ icon: "users", title: "No boards found", body: "This viewer has no activity on your boards." });
     empty.hidden = boards.length > 0;

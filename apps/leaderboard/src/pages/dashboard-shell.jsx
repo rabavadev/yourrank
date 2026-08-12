@@ -1,25 +1,19 @@
 /** @jsxRuntime automatic */
 /** @jsxImportSource hono/jsx */
 
-import { profileMenuHtml } from "../../../../shared/shell-nav.js";
+import { NAV_LINKS, activeKey, profileMenuHtml } from "../../../../shared/shell-nav.js";
 
-const CREDITS_NAV_KEYS = new Set(["redemptions", "shop", "rules", "viewers", "history"]);
+const CREDITS_NAV_KEYS = new Set(["credits", "channel", "redemptions", "shop", "rules", "viewers", "history"]);
 
 const DASHBOARD_NAV = [
   ["home", "Overview", "/dashboard", '<rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/>'],
   { type: "group", label: "BOARD" },
-  ["board", "Players", "/dashboard/editor", '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>', "players"],
-  ["board", "Design", "/dashboard/editor/design", '<rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/>', "design"],
+  ["board", "Editor", "/dashboard/editor", '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>'],
   { type: "group", label: "CREDITS" },
-  ["redemptions", "Redemptions", "/dashboard/rewards/redemptions", '<path d="M6 2v4"/><path d="M18 2v4"/><rect width="16" height="16" x="4" y="4" rx="2"/><path d="M4 10h16"/><path d="M8 14h.01"/><path d="M12 14h.01"/><path d="M16 14h.01"/>'],
-  ["shop", "Shop", "/dashboard/rewards/shop", '<path d="M3 9h18"/><path d="M5 9v10h14V9"/><path d="m4 9 2-5h12l2 5"/><path d="M9 14h6"/>'],
-  ["rules", "Credit rules", "/dashboard/rewards/rules", '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>'],
-  ["viewers", "Viewers", "/dashboard/audience/viewers", '<path d="M2 12s3-5 10-5 10 5 10 5-3 5-10 5-10-5-10-5Z"/><circle cx="12" cy="12" r="2"/>'],
-  ["history", "Credit activity", "/dashboard/audience/activity", '<path d="M4 18V6"/><path d="M4 18h16"/><path d="m7 14 3-3 3 2 5-5"/>'],
+  ["credits", "Credits", "/dashboard/rewards/redemptions", '<path d="M6 2v4"/><path d="M18 2v4"/><rect width="16" height="16" x="4" y="4" rx="2"/><path d="M4 10h16"/><path d="M8 14h.01"/><path d="M12 14h.01"/><path d="M16 14h.01"/>'],
   ["games", "Games", "/dashboard/games", '<circle cx="12" cy="12" r="10"/><path d="m14.31 8 5.74 9.94"/><path d="M9.69 8h11.48"/><path d="m7.38 12 5.74-9.94"/><path d="M9.69 16 3.95 6.06"/><path d="M14.31 16H2.83"/><path d="m16.62 12-5.74 9.94"/>'],
   ["performance", "Analytics", "/dashboard/analytics/activity", '<path d="M3 3v18h18"/><path d="m7 12 4-4 4 4 5-5"/>', "activity"],
-  ["board", "Past periods", "/dashboard/editor/history", '<circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>', "history"],
-  ["settings", "Settings", "/dashboard/settings", '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82V9a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83 2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 0 0 1 2 2v.09A1.65 1.65 0 0 0 15 4.6a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>'],
+  ["settings", "Settings", "/dashboard/settings", '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 0-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 0 0 0 2 2v.09A1.65 1.65 0 0 0 15 4.6a1.65 1.65 0 0 0 1.82-.33l-.06-.06a1.65 1.65 0 0 0 2.83 2.83l.06.06A1.65 1.65 0 0 0 19.4 9H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>']
 ];
 
 const ACCOUNT_NAV = [
@@ -36,20 +30,30 @@ function SidebarBoard({ boardContext }) {
   }
   return <div class="lb-side-head"><div class="lb-side-board">
     <div class="lb-board-row-head"><div><span class="label" id="activeBoardLabel">Active board</span><div class="lb-active-name" id="activeBoardName">…</div><div class="lb-active-meta" id="activeBoardMeta"></div></div>
-      {boardContext === "full" && <button class="btn btn--sm lb-board-new-side" id="newBoardSide" type="button" title="New board" aria-label="New board">+</button>}
     </div>
-    {boardContext === "full" && <><button class="btn btn--sm btn--ghost lb-board-add" id="addBoardBtn" type="button">+ New board</button><button class="lb-linkbtn lb-board-manage" id="manageBoardsBtn" type="button">Manage boards</button>
+    {boardContext === "full" && <><button class="lb-linkbtn lb-board-manage" id="manageBoardsBtn" type="button">Manage boards</button>
       <div class="board-upsell" id="boardLimitUpsell" role="status" hidden><div><b id="boardLimitTitle">Need another leaderboard?</b><p class="hint" id="boardLimitText"></p></div><a class="btn btn--sm btn--accent" id="boardLimitCta" href="/dashboard/settings">Upgrade plan</a></div>
       <div class="lb-board-form" id="newBoardForm" hidden><div class="field field-flex"><label for="nb_name">Board name</label><input id="nb_name" placeholder="Summer Race 2026" /></div><div class="field field-flex"><label for="nb_slug">URL slug</label><input id="nb_slug" placeholder="summer-race-2026" /></div><div class="field field-flex"><label for="nb_casino">Sponsor / prize source</label><input id="nb_casino" placeholder="Your brand or sponsor" /></div><div class="field field-flex"><label for="nb_code">Referral or promo code</label><input id="nb_code" placeholder="OPTIONAL" /></div><div class="lb-board-form-actions"><button class="btn btn--sm btn--accent" id="nb_create" type="button">Create</button><button class="btn btn--sm btn--ghost" id="nb_cancel" type="button">Cancel</button><div class="hint w-full" id="nb_err" role="alert" aria-live="assertive"></div></div></div>
     </>}
   </div></div>;
 }
 
+function ProductNav({ boardContext, footer }) {
+  const activePath = boardContext === "none" ? "/account/profile" : footer === "rewards" ? "/dashboard/rewards/redemptions" : "/dashboard";
+  const active = activeKey(activePath);
+  return <nav class="lb-product-nav" aria-label="Product">
+    <span class="label">Product</span>
+    {NAV_LINKS.map(({ key, label, href }) => <a class={"lb-product-link" + (key === active ? " is-on" : "")} href={href} aria-current={key === active ? "page" : undefined}>{label}</a>)}
+  </nav>;
+}
+
 function SidebarFooter({ boardContext, footer }) {
-  if (footer === "account") return null;
-  return <div class="lb-side-foot"><a class="btn btn--sm btn--accent lb-live-btn" id="liveLink" href="#" target="_blank" rel="noopener noreferrer">View live page ↗</a>
-    {footer === "rewards" ? <div class="lb-usage" id="planUsage"><div class="lb-usage-head"><span class="lb-usage-lbl" id="planBadge">FREE PLAN</span><span class="lb-usage-val">Active</span></div><div class="lb-usage-meta">Redemptions <span id="usageAmount">0</span> / <span id="usageLimit">0</span></div><div class="lb-usage-bar" aria-hidden="true"><i id="usageFill" style="width:0%"></i></div></div> : <><div class="lb-usage" id="planUsage" hidden><div class="lb-usage-head"><span class="lb-usage-lbl">VIP PRO</span><span class="lb-usage-val">Active</span></div><div class="lb-usage-meta">API Usage <span id="usageAmount">0</span> / <span id="usageLimit">0</span> req</div><div class="lb-usage-bar" aria-hidden="true"><i id="usageFill" style="width:0%"></i></div></div><span class="label" id="planBadge">FREE PLAN</span></>}
-  </div>;
+  return <>
+    <ProductNav boardContext={boardContext} footer={footer} />
+    {footer !== "account" && <div class="lb-side-foot"><a class="btn btn--sm btn--accent lb-live-btn" id="liveLink" href="#" target="_blank" rel="noopener noreferrer">View live page ↗</a>
+      {footer === "rewards" ? <div class="lb-usage" id="planUsage"><div class="lb-usage-head"><span class="lb-usage-lbl" id="planBadge">FREE PLAN</span><span class="lb-usage-val">Active</span></div><div class="lb-usage-meta">Redemptions <span id="usageAmount">0</span> / <span id="usageLimit">0</span></div><div class="lb-usage-bar" aria-hidden="true"><i id="usageFill" style="width:0%"></i></div></div> : <><div class="lb-usage" id="planUsage" hidden><div class="lb-usage-head"><span class="lb-usage-lbl">VIP PRO</span><span class="lb-usage-val">Active</span></div><div class="lb-usage-meta">API Usage <span id="usageAmount">0</span> / <span id="usageLimit">0</span> req</div><div class="lb-usage-bar" aria-hidden="true"><i id="usageFill" style="width:0%"></i></div></div><span class="label" id="planBadge">FREE PLAN</span></>}
+    </div>}
+  </>;
 }
 
 export function DashboardShell({ activeNav = "home", activeHash = "", boardContext = "full", footer = "dashboard", title = "", rootId, initiallyHidden = false, user, children }) {
@@ -68,8 +72,8 @@ export function DashboardShell({ activeNav = "home", activeHash = "", boardConte
             ? <div class="lb-nav-group-label" role="heading" aria-level="2">{item.label}</div>
             : (() => {
               const [key, label, href, path, hash] = item;
-              const active = activeNav === key && (!hash || activeHash === hash);
-              const child = CREDITS_NAV_KEYS.has(key);
+              const active = (activeNav === key || (key === "credits" && CREDITS_NAV_KEYS.has(activeNav))) && (!hash || activeHash === hash);
+              const child = key !== "credits" && CREDITS_NAV_KEYS.has(key);
               return <a class={"lb-nav" + (active ? " is-on" : "") + (child ? " lb-nav-child" : "")} href={href} data-nav={key} data-hash={hash} aria-current={active ? "page" : undefined}><Icon path={path} />{label}</a>;
             })())}
         </nav>

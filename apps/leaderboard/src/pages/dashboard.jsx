@@ -7,13 +7,35 @@ export const dashboardConfig = {
   title: "Dashboard · YourRank",
   canonical: "https://yourrank.site/dashboard",
   styles: ["/assets/app.css", "/assets/shell-nav.css", "/assets/dashboard-v3.css", "/assets/ui.css"],
-  scripts: ['<script src="/assets/dashboard.js?v=13" type="module"></script>', '<script src="/assets/shell-nav.js?v=1" defer></script>'],
+  scripts: ['<script src="/assets/dashboard.js?v=13" type="module"></script>', '<script src="/assets/dashboard/preview-tabs.js?v=1" type="module"></script>', '<script src="/assets/shell-nav.js?v=1" defer></script>'],
   nav: false,
   footer: false,
   wide: true,
 };
 
-export function DashboardContent({ user } = {}) {
+const EDITOR_TABS = ["setup", "players", "design", "share", "history"];
+const ANALYTICS_TABS = ["activity", "referrals", "events"];
+
+function dashboardShellRoute(activePath = "") {
+  const pathname = String(activePath || "").split("?")[0].replace(/\/+$/, "") || "/dashboard";
+  if (pathname === "/dashboard" || pathname === "/dashboard.html") return { activeNav: "home", activeHash: "" };
+  if (pathname.startsWith("/dashboard/editor")) {
+    const tab = pathname.split("/")[3] || "setup";
+    return { activeNav: "board", activeHash: EDITOR_TABS.includes(tab) ? tab : "setup" };
+  }
+  if (pathname.startsWith("/dashboard/analytics")) {
+    const tab = pathname.split("/")[3] || "activity";
+    return { activeNav: "performance", activeHash: ANALYTICS_TABS.includes(tab) ? tab : "activity" };
+  }
+  if (pathname.startsWith("/dashboard/games")) return { activeNav: "games", activeHash: "" };
+  if (pathname.startsWith("/dashboard/settings")) return { activeNav: "settings", activeHash: "" };
+  if (pathname.startsWith("/dashboard/boards")) return { activeNav: "home", activeHash: "" };
+  return { activeNav: "home", activeHash: "" };
+}
+
+export function DashboardContent({ user, activePath } = {}) {
+  const { activeNav, activeHash } = dashboardShellRoute(activePath);
+  const analyticsTab = activeNav === "performance" ? activeHash || "activity" : "activity";
   return (
     <>
       <div id="loading" class="lb-bento pt-24">
@@ -38,7 +60,7 @@ export function DashboardContent({ user } = {}) {
 <div class="lb-widget lb-widget--half"><div class="skeleton skeleton-block" style="height:140px"></div></div>
 <div class="lb-widget lb-widget--half"><div class="skeleton skeleton-block" style="height:140px"></div></div>
 </div>
-<DashboardShell activeNav="home" boardContext="full" footer="dashboard" initiallyHidden user={user}>
+<DashboardShell activeNav={activeNav} activeHash={activeHash} boardContext="full" footer="dashboard" initiallyHidden user={user}>
 <div class="lb-widget lb-widget--full lb-widget--danger" id="verifyBanner" hidden style="margin:0 0 24px"><h2>Verify your email</h2><p class="card-sub">Your leaderboard won't be public until you confirm your email address. Check your inbox for the link, or <a href="/verify-email">request a new one</a>.</p></div>
 <section class="lb-page is-on" data-page="home">
 <div class="lb-phead"><button class="lb-menu" id="lbMenu" type="button" aria-label="Show sections" aria-expanded="false" aria-controls="lbSide">☰</button></div>
@@ -65,13 +87,13 @@ export function DashboardContent({ user } = {}) {
 <div class="lb-phead"><button class="lb-menu" type="button" aria-label="Show sections" data-menu aria-expanded="false" aria-controls="lbSide">☰</button></div>
 
 <h1 class="sr-only">Board</h1>
-<div class="editor-steps v3-tabs" id="editorTabs" role="tablist" aria-label="Editor steps">
-  <button class="editor-step v3-tab is-active" type="button" role="tab" aria-selected="true" data-egroup="setup"><span class="step-num">1</span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="4" x2="4" y1="21" y2="14"/><line x1="4" x2="4" y1="10" y2="3"/><line x1="12" x2="12" y1="21" y2="12"/><line x1="12" x2="12" y1="8" y2="3"/><line x1="20" x2="20" y1="21" y2="16"/><line x1="20" x2="20" y1="12" y2="3"/><line x1="9" x2="15" y1="8" y2="8"/><line x1="1" x2="7" y1="14" y2="14"/><line x1="17" x2="23" y1="16" y2="16"/></svg> Setup</button>
-  <button class="editor-step v3-tab" type="button" role="tab" aria-selected="false" data-egroup="players"><span class="step-num">2</span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg> Players</button>
-  <button class="editor-step v3-tab" type="button" role="tab" aria-selected="false" data-egroup="design"><span class="step-num">3</span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg> Design</button>
-  <button class="editor-step v3-tab" type="button" role="tab" aria-selected="false" data-egroup="share"><span class="step-num">4</span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" x2="12" y1="2" y2="15"/></svg> Share</button>
-  <button class="editor-step v3-tab" type="button" role="tab" aria-selected="false" data-egroup="history"><span class="step-num">5</span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3v5a5 5 0 0 0 5 5h10a5 5 0 0 1 5 5v5"/><path d="M12 12 7 7l5-5"/><path d="M12 12 17 7l5 5"/></svg> Past periods</button>
-  </div>
+<nav class="editor-steps v3-tabs" id="editorTabs" aria-label="Editor steps">
+  <a class="editor-step v3-tab is-active" href="/dashboard/editor/setup" data-egroup="setup"><span class="step-num">1</span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="4" x2="4" y1="21" y2="14"/><line x1="4" x2="4" y1="10" y2="3"/><line x1="12" x2="12" y1="21" y2="12"/><line x1="12" x2="12" y1="8" y2="3"/><line x1="20" x2="20" y1="21" y2="16"/><line x1="20" x2="20" y1="12" y2="3"/><line x1="9" x2="15" y1="8" y2="8"/><line x1="1" x2="7" y1="14" y2="14"/><line x1="17" x2="23" y1="16" y2="16"/></svg> Setup</a>
+  <a class="editor-step v3-tab" href="/dashboard/editor/players" data-egroup="players"><span class="step-num">2</span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg> Players</a>
+  <a class="editor-step v3-tab" href="/dashboard/editor/design" data-egroup="design"><span class="step-num">3</span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg> Design</a>
+  <a class="editor-step v3-tab" href="/dashboard/editor/share" data-egroup="share"><span class="step-num">4</span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" x2="12" y1="2" y2="15"/></svg> Share</a>
+  <a class="editor-step v3-tab" href="/dashboard/editor/history" data-egroup="history"><span class="step-num">5</span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3v5a5 5 0 0 0 5 5h10a5 5 0 0 1 5 5v5"/><path d="M12 12 7 7l5-5"/><path d="M12 12 17 7l5 5"/></svg> Past periods</a>
+  </nav>
 <div class="design-grid">
 <div class="design-controls">
 <div class="card" data-egroup="setup"><h2>Details</h2><p class="card-sub">The headline details on your page.</p><div class="grid2">
@@ -233,10 +255,10 @@ export function DashboardContent({ user } = {}) {
 <div class="v3-analytics-page">
   <header class="v3-head"><h1>Analytics</h1><p class="v3-head-sub">Track real-time viewer actions, clicks, and conversion performance</p></header>
   <div class="v3-analytics-scope"><span id="perfScope"><span id="perfBoardName">Active board</span> · Last <span id="perfRangeLabel">14</span> days · <span id="perfLocalTime" title="Daily and hourly activity buckets are aggregated in UTC.">Times in UTC</span></span><div id="perfRangeFilter" class="v3-range-filter" role="group" aria-label="Date range"><button class="v3-range-btn" type="button" data-range="7">7d</button><button class="v3-range-btn is-active" type="button" data-range="14">14d</button><button class="v3-range-btn" type="button" data-range="30">30d</button></div></div>
-  <nav class="v3-tabs" aria-label="Analytics sections" role="tablist">
-    <a class="v3-tab" href="/dashboard/analytics/activity" data-perf-tab="activity" role="tab">Activity</a>
-    <a class="v3-tab" href="/dashboard/analytics/referrals" data-perf-tab="referrals" role="tab">Referrals</a>
-    <a class="v3-tab" href="/dashboard/analytics/events" data-perf-tab="events" role="tab">Events</a>
+  <nav class="v3-tabs" aria-label="Analytics sections">
+    <a class="v3-tab" href="/dashboard/analytics/activity" data-perf-tab="activity">Activity</a>
+    <a class="v3-tab" href="/dashboard/analytics/referrals" data-perf-tab="referrals">Referrals</a>
+    <a class="v3-tab" href="/dashboard/analytics/events" data-perf-tab="events">Events</a>
   </nav>
   <div class="v3-kpi-grid">
     <div class="v3-kpi-card"><div class="v3-kpi-label">VIEWS <span title="Total times your public page was loaded." aria-label="Metric help">[?]</span></div><div class="v3-kpi-value-row"><strong id="perfKpiViews"><span class="skeleton v3-skel-kpi" aria-hidden="true"></span></strong><span class="v3-delta" id="perfKpiViewsDelta"></span></div></div>
@@ -271,11 +293,11 @@ export function DashboardContent({ user } = {}) {
   <section class="v3-settings-panel" id="settingsPanelPlan" role="tabpanel" aria-labelledby="settingsTabPlan" data-settings-panel="plan">
     <div class="v3-settings-card v3-plan-card"><div><div class="v3-settings-plan-row"><span class="v3-chip v3-chip--pro" id="settingsPlanChip">—</span><span class="v3-settings-price" id="settingsPlanPrice">—</span></div><p class="v3-settings-card-sub" id="settingsPlanRenewal">—</p></div><a class="v3-set-btn v3-set-btn--outline" href="/account/plan" id="settingsManagePlan">Manage subscription</a></div>
     <div class="v3-settings-card"><div class="v3-settings-card-head"><div><h2>Platform Limits</h2></div></div><div class="v3-set-meters" id="settingsUsage"><span class="skeleton v3-skel-meter" aria-hidden="true"></span><span class="skeleton v3-skel-meter" aria-hidden="true"></span><span class="skeleton v3-skel-meter" aria-hidden="true"></span></div></div>
-    <div class="v3-settings-card"><div class="v3-settings-card-head"><div><h2>Account Providers &amp; Schedulers</h2></div></div><div class="v3-settings-group-label">VIEWER LOGIN PROVIDERS</div><div class="v3-settings-row"><div><b>Kick Authentication</b><p>Allow viewers to sign in natively using Kick OAuth services. <a href="/dashboard/settings/integrations">Configure in Integrations</a></p></div><input class="v3-toggle" id="settingsKickLogin" type="checkbox" aria-label="Allow viewers to log in with Kick" disabled /></div><div class="v3-settings-row"><div><b>Discord Integration</b><p>Allow viewers to link Discord accounts to trace server roles.</p></div><a class="v3-set-btn v3-set-btn--outline" href="#settingsPanelSecurity" data-settings-jump="security">Webhook settings</a></div></div>
+    <div class="v3-settings-card"><div class="v3-settings-card-head"><div><h2>Account Providers &amp; Schedulers</h2></div></div><div class="v3-settings-group-label">VIEWER LOGIN PROVIDERS</div><div class="v3-settings-row"><div><b>Kick Authentication</b><p>Allow viewers to sign in natively using Kick OAuth services. <a href="/dashboard/rewards/channel">Configure in Integrations</a></p></div><input class="v3-toggle" id="settingsKickLogin" type="checkbox" aria-label="Allow viewers to log in with Kick" disabled /></div><div class="v3-settings-row"><div><b>Discord Integration</b><p>Allow viewers to link Discord accounts to trace server roles.</p></div><a class="v3-set-btn v3-set-btn--outline" href="#settingsPanelSecurity" data-settings-jump="security">Webhook settings</a></div></div>
   </section>
   <section class="v3-settings-panel" id="settingsPanelAccount" role="tabpanel" aria-labelledby="settingsTabAccount" data-settings-panel="account" hidden>
     <div class="v3-settings-card"><div class="v3-settings-card-head"><div><h2>Account security</h2><p>Update your password and review active sessions.</p></div></div><div class="v3-settings-form-grid"><label>Current password<input type="password" id="accCurrentPassword" autocomplete="current-password" /></label><label>New password<input type="password" id="accNewPassword" autocomplete="new-password" minlength="8" /></label></div><div class="v3-settings-actions"><button class="v3-set-btn v3-set-btn--dark" id="accChangePassword" type="button">Update password</button><span class="v3-settings-status" id="accPasswordStatus" role="status"></span></div><div class="v3-settings-divider"></div><div class="v3-settings-row"><div><b>Active sessions</b><p>Sign out every other device while keeping this one active.</p></div><button class="v3-set-btn v3-set-btn--outline" id="accRevokeSessions" type="button">Sign out other sessions</button></div><div id="accSessions" class="v3-settings-sessions"><span class="skeleton v3-skel-line" aria-hidden="true"></span><span class="skeleton v3-skel-line" aria-hidden="true"></span></div><p class="v3-settings-status" id="accSessionsStatus" role="status"></p></div>
-    <div class="v3-settings-card"><div class="v3-settings-card-head"><div><h2>Integrations</h2><p>Stream tools, postbacks, Kick rewards and legal pages.</p></div></div><div class="v3-settings-row"><div><b>Kick rewards</b><p>Let viewers earn credits by redeeming Kick channel rewards.</p><span class="v3-settings-muted" id="kickStatus"><span class="skeleton skeleton-text" aria-hidden="true"></span></span></div><a class="v3-set-btn v3-set-btn--outline" href="/dashboard/settings/integrations" id="kickRewardsLink">Open Integrations</a></div><div class="v3-settings-row"><div><b>Postbacks</b><p id="postbackStatus">Receive automatic score updates from your sponsor.</p></div><a class="v3-set-btn v3-set-btn--outline" href="/account/postbacks">Manage postbacks</a></div><div class="v3-settings-divider"></div><div class="v3-settings-notify-account"><label class="v3-settings-label" for="f_tgChatId">Telegram chat/group ID</label><input id="f_tgChatId" placeholder="-1001234567890" /><label class="v3-settings-check"><input type="checkbox" id="f_tgNotify" /> Enable Telegram notifications</label><button class="v3-set-btn v3-set-btn--outline" id="testTelegram" type="button">Test Telegram</button><span class="v3-settings-status" id="testTelegramStatus" role="status"></span></div><div class="v3-settings-divider"></div><div class="v3-settings-legal"><h3>Compliance</h3><div id="legalList"></div><div id="legalFooterPreview" class="v3-settings-muted"></div></div></div>
+    <div class="v3-settings-card"><div class="v3-settings-card-head"><div><h2>Integrations</h2><p>Stream tools, postbacks, Kick rewards and legal pages.</p></div></div><div class="v3-settings-row"><div><b>Kick rewards</b><p>Let viewers earn credits by redeeming Kick channel rewards.</p><span class="v3-settings-muted" id="kickStatus"><span class="skeleton skeleton-text" aria-hidden="true"></span></span></div><a class="v3-set-btn v3-set-btn--outline" href="/dashboard/rewards/channel" id="kickRewardsLink">Open Integrations</a></div><div class="v3-settings-row"><div><b>Postbacks</b><p id="postbackStatus">Receive automatic score updates from your sponsor.</p></div><a class="v3-set-btn v3-set-btn--outline" href="/account/postbacks">Manage postbacks</a></div><div class="v3-settings-divider"></div><div class="v3-settings-notify-account"><label class="v3-settings-label" for="f_tgChatId">Telegram chat/group ID</label><input id="f_tgChatId" placeholder="-1001234567890" /><label class="v3-settings-check"><input type="checkbox" id="f_tgNotify" /> Enable Telegram notifications</label><button class="v3-set-btn v3-set-btn--outline" id="testTelegram" type="button">Test Telegram</button><span class="v3-settings-status" id="testTelegramStatus" role="status"></span></div><div class="v3-settings-divider"></div><div class="v3-settings-legal"><h3>Compliance</h3><div id="legalList"></div><div id="legalFooterPreview" class="v3-settings-muted"></div></div></div>
   </section>
   <section class="v3-settings-panel" id="settingsPanelSecurity" role="tabpanel" aria-labelledby="settingsTabSecurity" data-settings-panel="security" hidden>
     <div class="v3-settings-card"><div class="v3-settings-row"><div><h2>Board access</h2><p>Password protection applies to the selected board, not your account.</p></div><a class="v3-set-btn v3-set-btn--outline" id="settingsBoardAccessLink" href="/dashboard/editor/setup">Open Board → Setup → Access</a></div></div>
@@ -288,8 +310,9 @@ export function DashboardContent({ user } = {}) {
 </section>
 
 <section class="lb-page" data-page="boards">
-<div class="lb-phead"><button class="lb-menu" type="button" aria-label="Show sections" data-menu aria-expanded="false" aria-controls="lbSide">☰</button><button class="btn btn--sm" id="addBoardFromBoards" type="button">+ New board</button></div>
-<div class="card">
+<div class="lb-phead"><button class="lb-menu" type="button" aria-label="Show sections" data-menu aria-expanded="false" aria-controls="lbSide">☰</button><button class="btn btn--sm btn--accent" id="addBoardFromBoards" type="button">+ New board</button></div>
+ <header class="v3-head"><h1>All boards</h1><p class="v3-head-sub">Manage all your leaderboards from one place.</p></header>
+ <div class="card">
 <div class="list-controls"><input type="search" id="boardsSearch" class="list-search" placeholder="Find board…" aria-label="Find board" /></div>
 <div class="board-table-wrap">
 <table class="board-table">

@@ -1,6 +1,6 @@
 import { $, logError, showLoadError, clearLoadError } from "./utils.js";
 import { setState, state } from "./state.js";
-import { renderEmpty, setMetricLoading, setMetricValue, setRowsLoading } from "./states.js";
+import { renderEmpty, renderError, setMetricLoading, setMetricValue, setRowsLoading } from "./states.js";
 
 const DOW = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
@@ -38,10 +38,20 @@ function wireTabs() {
   page.querySelectorAll("[data-perf-tab]").forEach((tab) => tab.addEventListener("click", (event) => {
     event.preventDefault();
     const target = tab.dataset.perfTab;
-    if (window.navTo) window.navTo("performance", target);
+    const nextPath = `/dashboard/analytics/${target}${location.search}`;
+    if (nextPath !== location.pathname + location.search) history.pushState({}, "", nextPath);
+    window.dispatchEvent(new CustomEvent("yr-nav", { detail: { page: "performance", hash: target } }));
     showTab(target);
   }));
   showTab((location.pathname.match(/\/analytics\/([^/]+)/) || [])[1] || "activity");
+  if (!page._routeTabsWired) {
+    page._routeTabsWired = true;
+    window.addEventListener("popstate", () => {
+      if (location.pathname.startsWith("/dashboard/analytics")) {
+        showTab((location.pathname.match(/\/analytics\/([^/]+)/) || [])[1] || "activity");
+      }
+    });
+  }
 }
 
 function showTab(tab) {
@@ -158,7 +168,10 @@ async function loadHeatmap() {
     setState({ HEATMAP_STATUS: "error" });
     logError("load-heatmap", error);
     const grid = $("perfHeatmapGrid");
-    if (grid) grid.innerHTML = `<p class="empty empty--error">Couldn't load your activity map.</p>`;
+    if (grid) {
+      grid.removeAttribute("aria-busy");
+      renderError(grid, { title: "Couldn't load your activity map.", retry: loadHeatmap });
+    }
     showLoadError($("perfReferrersEmpty"), "your traffic sources", loadHeatmap);
   } finally {
     wrap._loading = false;

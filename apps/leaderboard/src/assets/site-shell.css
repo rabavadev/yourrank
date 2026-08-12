@@ -5,6 +5,7 @@
    small stylesheet and no third-party CDN.
 
    Palette is fixed dark; only --yr-accent follows the streamer's brand colour.
+   Intentional brand boundary: this dark branded console is for public viewer pages; operator/marketing UI remains light.
    Every length below is the mockup's computed value (Tailwind scale: 1 = 4px). */
 
 .yr-site {
@@ -285,11 +286,12 @@
 .yr-label { font-size: 11px; line-height: 1.2; text-transform: uppercase; letter-spacing: 0.2em; color: var(--yr-mute); font-weight: 700; margin-bottom: 8px; }
 .yr-big { font-family: var(--yr-mono); font-size: 48px; line-height: 1; font-weight: 700; letter-spacing: -0.05em; }
 
+/* Public viewer controls intentionally retain the dark branded geometry; focus, disabled, and loading states follow the shared action contract. */
 .yr-btn {
-  height: 48px; padding: 0 24px; display: inline-flex; align-items: center; justify-content: center;
+  min-height: 48px; height: 48px; padding: 0 24px; display: inline-flex; align-items: center; justify-content: center;
   background: #fff; color: #000; border-radius: 2px;
   font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.2em;
-  transition: background 0.3s;
+  transition: background 0.3s, border-color 0.15s, opacity 0.15s, filter 0.15s;
 }
 .yr-btn:hover { background: var(--yr-accent); color: #fff; }
 .yr-btn--ghost { background: transparent; color: #fff; border: 1px solid var(--yr-edge); }
@@ -340,7 +342,7 @@
 .yr-feed-kind { font-size: 11px; line-height: 16px; font-weight: 700; color: #fff; }
 .yr-feed-time { font-size: 11px; line-height: 1.2; font-family: var(--yr-mono); color: var(--yr-mute); white-space: nowrap; }
 .yr-feed-time.yr-prize-value { font-size: 18px; line-height: 1.2; font-weight: 700; letter-spacing: -0.02em; color: var(--yr-gold); }
-.yr-feed-txt { font-size: 11px; line-height: 1.625; color: var(--yr-mute); }
+.yr-feed-txt { font-family: var(--yr-sans); font-size: 13px; line-height: 1.5; color: var(--yr-mute); }
 .yr-pos { color: var(--yr-accent); }
 .yr-neg { color: #fff; }
 
@@ -370,16 +372,22 @@
 .yr-flag--ghost { background: rgba(0, 0, 0, 0.6); color: var(--yr-faint); border: 1px solid var(--yr-edge); }
 .yr-item-body { padding: 20px; display: flex; flex-direction: column; flex: 1; }
 .yr-item-h { font-size: 14px; line-height: 20px; font-weight: 700; margin-bottom: 4px; }
-.yr-item-p { font-size: 11px; line-height: 16px; color: var(--yr-faint); margin-bottom: 16px; }
+.yr-item-p { font-family: var(--yr-sans); font-size: 13px; line-height: 1.5; color: var(--yr-faint); margin-bottom: 16px; }
 .yr-meter { height: 2px; background: rgba(255, 255, 255, 0.1); margin: 0 0 16px; }
 .yr-meter i { display: block; height: 100%; background: var(--yr-accent); }
 .yr-item-foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-top: 16px; border-top: 1px solid var(--yr-edge); margin-top: auto; }
 .yr-cost { font-family: var(--yr-mono); font-size: 12px; color: #fff; }
 .yr-cost i { font-size: 11px; color: var(--yr-mute); font-style: normal; }
-.yr-act { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--yr-accent); transition: color 0.15s; }
-.yr-act:hover { color: #fff; }
+.yr-act { min-height: 44px; padding: 0 14px; display: inline-flex; align-items: center; justify-content: center; border: 1px solid var(--yr-edge); font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--yr-accent); transition: color 0.15s, border-color 0.15s, background 0.15s, opacity 0.15s, filter 0.15s; }
+.yr-act:hover { color: #fff; border-color: rgba(255, 255, 255, 0.3); }
+.yr-btn:focus-visible, .yr-act:focus-visible { outline: 2px solid var(--yr-accent); outline-offset: 2px; }
+.yr-btn:disabled, .yr-btn[aria-disabled="true"], .yr-btn[aria-busy="true"], .yr-act:disabled, .yr-act[aria-disabled="true"], .yr-act[aria-busy="true"] { opacity: 0.45; cursor: not-allowed; }
+.yr-btn[aria-busy="true"], .yr-act[aria-busy="true"] { cursor: wait; }
+.yr-act.is-success { color: #000; background: var(--yr-accent); border-color: var(--yr-accent); }
 .yr-act--off { color: var(--yr-faint); cursor: not-allowed; }
 .yr-act--off:hover { color: var(--yr-faint); }
+.yr-btn.btn--loading::before, .yr-act.btn--loading::before { content: ""; width: 14px; height: 14px; margin-right: 8px; border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%; animation: yr-spin .7s linear infinite; }
+@keyframes yr-spin { to { transform: rotate(360deg); } }
 
 /* ── Tabs, tables, lists ─────────────────────────────────────────────── */
 
@@ -392,7 +400,11 @@
 .yr-tab:hover { color: #fff; }
 .yr-tab.is-on { color: #fff; border-bottom-color: var(--yr-accent); }
 
+.yr-table-wrap { position: relative; max-width: 100%; overflow-x: auto; }
+.yr-table-wrap::after { content: ""; position: absolute; top: 0; right: 0; bottom: 0; width: 18px; pointer-events: none; background: linear-gradient(to right, transparent, rgba(10, 10, 10, 0.7)); opacity: 0; transition: opacity 0.15s; }
+.yr-table-wrap[data-overflow="true"]::after { opacity: 1; }
 .yr-table { width: 100%; border-collapse: collapse; }
+.yr-table caption { text-align: left; }
 .yr-table th {
   font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.2em;
   color: var(--yr-mute); text-align: left; padding: 12px 24px;
@@ -414,7 +426,7 @@
 .yr-list > * + * { border-top: 1px solid var(--yr-edge-soft); }
 .yr-list-item { padding: 16px 24px; display: flex; align-items: center; justify-content: space-between; gap: 24px; }
 .yr-list-h { font-size: 11px; line-height: 16px; font-weight: 700; color: #fff; margin-bottom: 4px; }
-.yr-list-p { font-size: 11px; line-height: 16px; color: var(--yr-mute); }
+.yr-list-p { font-family: var(--yr-sans); font-size: 13px; line-height: 1.5; color: var(--yr-mute); }
 .yr-tag {
   font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em;
   padding: 4px 8px; border: 1px solid var(--yr-edge); color: var(--yr-faint); white-space: nowrap;
@@ -422,9 +434,9 @@
 .yr-tag--pending { color: var(--yr-gold); border-color: rgba(231, 181, 60, 0.4); }
 .yr-tag--done { color: var(--yr-accent); border-color: var(--yr-accent); }
 
-.yr-fine { font-size: 11px; line-height: 1.625; color: var(--yr-mute); max-width: 70ch; }
-.yr-note { font-size: 11px; line-height: 1.625; color: var(--yr-faint); }
-.yr-empty { padding: 40px 24px; text-align: center; font-size: 12px; text-transform: uppercase; letter-spacing: 0.2em; color: var(--yr-faint); font-weight: 700; }
+.yr-fine { font-family: var(--yr-sans); font-size: 13px; line-height: 1.5; color: var(--yr-mute); max-width: 70ch; }
+.yr-note { font-family: var(--yr-sans); font-size: 13px; line-height: 1.5; color: var(--yr-faint); }
+.yr-empty { padding: 40px 24px; text-align: center; font-family: var(--yr-sans); font-size: 13px; line-height: 1.5; color: var(--yr-faint); font-weight: 600; }
 
 .yr-gate { border: 1px solid var(--yr-edge); background: var(--yr-panel); padding: 40px; text-align: center; }
 .yr-gate h2 { font-size: 20px; line-height: 28px; font-weight: 700; margin-bottom: 8px; }
@@ -436,6 +448,11 @@
 .yr-foot-links a:hover { color: #fff; }
 
 .yr-scrim { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.6); z-index: 20; }
+.yr-search-status, .yr-redeem-status { min-height: 20px; padding: 8px 24px; color: var(--yr-mute); font-size: 12px; line-height: 1.5; }
+.yr-search-status:empty, .yr-redeem-status:empty { display: none; }
+.yr-search-status.is-error, .yr-redeem-status.is-error { color: #fff; }
+.yr-search-retry { margin-left: 12px; min-height: 40px; padding: 0 14px; border: 1px solid var(--yr-edge); color: var(--yr-accent); font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; }
+.yr-search-retry:hover { color: #fff; border-color: rgba(255, 255, 255, 0.3); }
 
 .yr-modal {
   border: 1px solid var(--yr-edge); background: var(--yr-panel); color: #fff;
@@ -515,7 +532,7 @@
   .yr-h1 { font-size: 24px; line-height: 32px; }
   .yr-big { font-size: 40px; }
   .yr-header-r { gap: 16px; }
-  .yr-panel { overflow-x: auto; }
+  .yr-table { min-width: 620px; }
   .yr-table th, .yr-table td { padding: 12px 16px; white-space: nowrap; }
   .yr-feed-item, .yr-list-item { padding: 16px; }
   .yr-panel-head, .yr-panel-pad { padding: 16px; }

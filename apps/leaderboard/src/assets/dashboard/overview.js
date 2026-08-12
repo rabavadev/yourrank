@@ -4,21 +4,38 @@ import { state, boardStatus } from "./state.js";
 import { renderEmpty, setMetricLoading, setMetricUnknown, setMetricValue } from "./states.js";
 
 const ACTIVITY_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>';
-const LOCK_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect width="16" height="11" x="4" y="11" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>';
+const SETUP_STEPS = [
+  { key: "brand", required: true, href: "/dashboard/editor#setup", action: "Set up" },
+  { key: "players", required: true, href: "/dashboard/editor#players", action: "Add players" },
+  { key: "kick", required: true, href: "/dashboard/rewards/channel", action: "Connect Kick" },
+  { key: "configure", required: true, href: "/dashboard/editor#design", action: "Open Design" },
+  { key: "publish", required: true, href: "/dashboard/editor#setup", action: "Publish / verify" },
+];
 
 function isBoardSetup() {
   const steps = computeSetupSteps();
-  return steps.brand && steps.players && steps.publish;
+  return SETUP_STEPS.every(({ key, required }) => !required || steps[key]);
 }
 
 function computeSetupSteps() {
   const o = state.ONBOARDING || {};
-  const brand = Boolean($("f_name")?.value.trim() || o.brand);
+  // Keep this in lockstep with onboardingForSite: a board name alone is not
+  // enough; the board also needs a sponsor/prize source or promo code.
+  const name = $("f_name")?.value.trim();
+  const casino = $("f_casino")?.value.trim();
+  const code = $("f_code")?.value.trim();
+  const brand = Boolean(o.brand || (name && (casino || code)));
   const players = currentPlayers().length > 0 || o.players;
   const kick = Boolean(state.CREDITS?.channel?.externalId);
-  const configure = false; // reserved until branding is confirmed
+  const branding = state.CURRENT_BRANDING || {};
+  const hasSocial = (state.EXTRA?.socials || []).some((social) => social.enabled && social.url && social.url !== "#");
+  const configure = Boolean(
+    o.configure || o.design ||
+    $("f_tagline")?.value.trim() || $("f_cta")?.value.trim() || $("f_blurb")?.value.trim() ||
+    hasSocial || branding.accentA || branding.accentB || (branding.font && branding.font !== "Inter")
+  );
   const status = boardStatus();
-  const publish = status.published;
+  const publish = status.live;
   return { brand, players, kick, configure, publish };
 }
 
@@ -28,12 +45,19 @@ function setStepDone(el, done) {
   el.textContent = done ? "✓" : "";
 }
 
-function setSetupStatus(el, done) {
+function setSetupStatus(el, done, step) {
   if (!el) return;
   const mark = el.parentElement?.querySelector(".ov-step-icon");
   if (mark) setStepDone(mark, done);
   el.classList.toggle("is-done", done);
-  el.textContent = done ? "COMPLETED" : "TODO";
+  if (done) {
+    el.textContent = "COMPLETED";
+    el.removeAttribute("aria-label");
+    return;
+  }
+  const label = step?.action || "Continue";
+  el.innerHTML = `<a class="ov-setup-action" href="${step?.href || "#"}">${label} →</a>`;
+  el.setAttribute("aria-label", `${label} required`);
 }
 
 export function renderOverviewSummary() {
@@ -50,24 +74,20 @@ export function renderOverviewSummary() {
     }
     // Setup progress
     const steps = computeSetupSteps();
-    const stepOrder = ["brand", "players", "kick", "configure", "publish"];
-    const completed = stepOrder.filter((k) => steps[k]).length;
+    const stepOrder = SETUP_STEPS.map(({ key }) => key);
+    const completed = stepOrder.filter((key) => steps[key]).length;
     const countEl = $("ovSetupCount");
     const fillEl = $("ovSetupFill");
     if (countEl) countEl.textContent = `${completed} of 5 complete`;
     if (fillEl) fillEl.style.width = `${(completed / 5) * 100}%`;
-    setSetupStatus($("ovStepBrandStatus"), steps.brand);
-    setSetupStatus($("ovStepPlayersStatus"), steps.players);
-    setSetupStatus($("ovStepKickStatus"), steps.kick);
-    setSetupStatus($("ovStepConfigureStatus"), steps.configure);
-    setSetupStatus($("ovStepPublishStatus"), steps.publish);
-    const firstIncomplete = ["brand", "players", "kick", "configure", "publish"].find((key) => !steps[key]);
-    if (firstIncomplete === "players") {
-      $("ovStepPlayersStatus").innerHTML = '<a class="ov-setup-action" href="/dashboard/editor#players">Add players →</a>';
-    }
-    if (!steps.publish && firstIncomplete !== "publish") {
-      $("ovStepPublishStatus").innerHTML = `<span class="ov-setup-lock" aria-label="Locked">${LOCK_ICON}</span>`;
-    }
+    const statusEls = {
+      brand: $("ovStepBrandStatus"),
+      players: $("ovStepPlayersStatus"),
+      kick: $("ovStepKickStatus"),
+      configure: $("ovStepConfigureStatus"),
+      publish: $("ovStepPublishStatus"),
+    };
+    SETUP_STEPS.forEach((step) => setSetupStatus(statusEls[step.key], steps[step.key], step));
     const statsReady = state.STATS_STATUS === "ready" && state.STATS;
     const creditsReady = state.CREDITS_STATUS === "ready" && state.CREDITS;
     const days = statsReady ? state.STATS.days : [];

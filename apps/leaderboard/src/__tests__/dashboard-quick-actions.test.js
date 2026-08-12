@@ -36,13 +36,16 @@ describe("dashboard overview quick actions", () => {
     // Icons are real inline SVGs, not emoji.
     expect(html).not.toContain('aria-hidden="true">🔌</span>');
     expect(html).toContain('>Overview</a>');
-    expect(html).toContain('>Players</a>');
-    expect(html).toContain('>Design</a>');
+    // Consolidated IA (audit item 15): one Editor destination, one Credits
+    // parent; Players/Design/Past periods live as editor-internal tabs.
+    expect(html).toContain('>Editor</a>');
     expect(html).toContain('>Settings</a>');
     expect(html).toContain('>BOARD</div>');
     expect(html).toContain('>CREDITS</div>');
-    expect(html).toContain('>Redemptions</a>');
-    expect(html).toContain('>Credit rules</a>');
+    expect(html).toContain('>Credits</a>');
+    // Editor sub-sections remain reachable as internal tab links.
+    expect(html).toContain('/dashboard/editor/players');
+    expect(html).toContain('/dashboard/editor/design');
     expect(html).not.toContain('>REWARDS</div>');
     expect(html).not.toContain('>AUDIENCE</div>');
   });

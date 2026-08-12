@@ -1,8 +1,76 @@
 // Dashboard shell: sidebar navigation and mobile drawer.
 import { $ } from "./utils.js";
+import { clearDirty, state, subscribe } from "./state.js";
 import { renderOverviewSummary } from "./overview.js";
 import { fitDesignPreview, loadStats, refreshDesignPreview } from "./site.js";
 import { SECTIONS, dashboardPath, defaultTab, parseDashboardPath } from "./routes.js";
+
+let navigationPending = false;
+let lastRouteUrl = location.pathname + location.search;
+
+function ensureDialog() {
+  if (window.YRDialog) return Promise.resolve(window.YRDialog);
+  return new Promise((resolve, reject) => {
+    const script = document.createElement("script");
+    script.src = "/assets/dialog.js";
+    script.onload = () => resolve(window.YRDialog);
+    script.onerror = reject;
+    document.head.appendChild(script);
+  });
+}
+
+async function chooseDirtyAction() {
+  const dialog = await ensureDialog();
+  return new Promise((resolve) => {
+    const modal = dialog.open({
+      title: "Unsaved changes",
+      body: "You have unsaved changes. Save them before leaving, discard them, or cancel navigation?",
+      confirmText: "Save",
+      cancelText: "Cancel",
+      escapeValue: "cancel",
+      confirmValue: () => "save",
+      onClose: (value) => resolve(value || "cancel"),
+      render: (card) => {
+        const discard = document.createElement("button");
+        discard.type = "button";
+        discard.className = "btn btn--sm btn--danger danger dirty-discard";
+        discard.textContent = "Discard";
+        card.appendChild(discard);
+        return discard;
+      },
+    });
+    modal.el.querySelector(".dirty-discard")?.addEventListener("click", () => modal.close("discard"));
+  });
+}
+
+function saveDraftBeforeNavigation() {
+  return new Promise((resolve) => {
+    if (!state._dirty) { resolve(true); return; }
+    let done = false;
+    const finish = (ok) => {
+      if (done) return;
+      done = true;
+      unsubscribe?.();
+      clearTimeout(timer);
+      resolve(ok);
+    };
+    const unsubscribe = subscribe((keys) => {
+      if (keys.includes("_dirty") && !state._dirty) finish(true);
+    });
+    const timer = setTimeout(() => finish(false), 15000);
+    const save = $("save");
+    if (!save || save.disabled) { finish(false); return; }
+    save.click();
+  });
+}
+
+async function allowNavigation() {
+  if (!state._dirty) return true;
+  const action = await chooseDirtyAction();
+  if (action === "discard") { clearDirty(); return true; }
+  if (action === "save") return saveDraftBeforeNavigation();
+  return false;
+}
 
 
 const AREA_MAP = { home: "leaderboard", board: "leaderboard", boards: "leaderboard", games: "leaderboard", settings: "leaderboard", performance: "analytics" };
@@ -16,11 +84,30 @@ export function currentRoute() {
   return parseDashboardPath(location.pathname) || { page: "home", tab: "" };
 }
 
-function pushRoute(page, tab) {
-  // Keep the query: `?board=<id>` selects which board the dashboard is editing,
-  // so moving between sections must not drop it.
-  const next = dashboardPath(page, tab) + location.search;
-  if (next !== location.pathname + location.search) history.pushState({}, "", next);
+function routeDestination(page, tab = "", query = location.search) {
+  const suffix = query ? (String(query).startsWith("?") ? String(query) : `?${query}`) : "";
+  return dashboardPath(page, tab || defaultHash(page)) + suffix;
+}
+
+export async function requestDashboardRoute(page, tab = "", { replace = false, query = location.search, reload = false } = {}) {
+  if (navigationPending) return false;
+  const destination = routeDestination(page, tab, query);
+  if (destination === location.pathname + location.search) return true;
+  navigationPending = true;
+  try {
+    if (!await allowNavigation()) return false;
+    if (reload) {
+      location.href = destination;
+      return true;
+    }
+    if (replace) history.replaceState(history.state || {}, "", destination);
+    else history.pushState({}, "", destination);
+    lastRouteUrl = destination;
+    navTo(page, tab);
+    return true;
+  } finally {
+    navigationPending = false;
+  }
 }
 function prefersReducedMotion() {
   return window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -202,8 +289,7 @@ export function setupEditorTabs() {
     // Each step is its own URL, so a step can be linked to and Back returns to
     // the previous one instead of leaving the editor entirely.
     buttons.forEach((b) => b.addEventListener("click", () => {
-      show(b.dataset.egroup);
-      pushRoute("board", b.dataset.egroup);
+      requestDashboardRoute("board", b.dataset.egroup);
     }));
     tabs.addEventListener("keydown", (e) => {
       const i = buttons.indexOf(document.activeElement);
@@ -235,15 +321,11 @@ export function setupShell() {
     const route = parseDashboardPath(new URL(href, location.origin).pathname);
     if (!route) return;
     e.preventDefault();
-    const page = link.dataset.nav;
-    const hash = link.dataset.hash || "";
-    pushRoute(page, hash || defaultHash(page));
-    navTo(page, hash);
+    requestDashboardRoute(link.dataset.nav, link.dataset.hash || defaultHash(link.dataset.nav));
   }));
-  document.querySelectorAll("[data-jump]").forEach((el) => el.addEventListener("click", () => {
-    const page = el.dataset.jump;
-    pushRoute(page, defaultHash(page));
-    navTo(page, "");
+  document.querySelectorAll("[data-jump]").forEach((el) => el.addEventListener("click", (e) => {
+    e.preventDefault();
+    requestDashboardRoute(el.dataset.jump, defaultHash(el.dataset.jump));
   }));
   document.querySelectorAll(".lb-menu").forEach((btn) => btn.addEventListener("click", (e) => { e.stopPropagation(); openDrawer(); }));
   document.querySelectorAll("[data-close-side]").forEach((btn) => btn.addEventListener("click", () => closeDrawer()));
@@ -256,17 +338,31 @@ export function setupShell() {
     if (!route) return;
     link.addEventListener("click", (e) => {
       e.preventDefault();
-      pushRoute(route.page, route.tab || defaultHash(route.page));
-      navTo(route.page, route.tab);
+      requestDashboardRoute(route.page, route.tab || defaultHash(route.page));
     });
   });
 
   // The profile dropdown's open/close behaviour ships with the header itself
   // (/assets/shell-nav.js) so it is identical on every Worker.
 
-  // Handle browser back/forward inside the SPA.
-  window.addEventListener("popstate", () => {
+  // Handle browser back/forward inside the SPA. The browser has already moved
+  // the URL when popstate fires, so canceling restores the last rendered URL.
+  window.addEventListener("popstate", async () => {
+    if (navigationPending) return;
+    const destination = location.pathname + location.search;
     const { page, tab } = currentRoute();
+    if (state._dirty) {
+      navigationPending = true;
+      try {
+        if (!await allowNavigation()) {
+          history.pushState(history.state || {}, "", lastRouteUrl);
+          return;
+        }
+      } finally {
+        navigationPending = false;
+      }
+    }
+    lastRouteUrl = destination;
     navTo(page, tab);
   });
 
@@ -275,7 +371,6 @@ export function setupShell() {
     const { page, hash } = e.detail || {};
     if (!page) return;
     e.preventDefault();
-    pushRoute(page, hash || defaultHash(page));
-    navTo(page, hash);
+    requestDashboardRoute(page, hash || defaultHash(page));
   });
 }

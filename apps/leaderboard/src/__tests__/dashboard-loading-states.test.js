@@ -84,7 +84,8 @@ describe("dashboard loading states", () => {
   it("keeps credits load failures plain and retryable", () => {
     const credits = read("credits.js");
     expect(credits).toContain('logError("load-credits-dashboard", err)');
-    expect(credits).toContain('showLoadError($("cr-empty"), "your credits dashboard", load)');
+    expect(credits).toContain('renderError($("cr-empty"), { title: "Couldn\'t load your credits dashboard"');
+    expect(credits).toContain("retry: () => load()");
     expect(credits).not.toContain("err.message}</p>");
     expect(credits).toContain('$("cr-app").hidden = false');
   });

@@ -139,23 +139,29 @@ const connectedWidget = `<div class="lb-widget lb-widget--full" id="connected">
         <p class="hint">Identities are not merged across providers unless you explicitly enable linking.</p>
       </div>`;
 
-const dataWidget = `<div class="lb-widget lb-widget--full lb-widget--danger" id="data">
-        <h2>Account</h2>
-        <p class="card-sub">Export your data or permanently delete your account.</p>
-        <div class="d-flex gap-8 items-center flex-wrap">
-          <button class="btn btn--accent" id="accExportData" type="button">Prepare my data export</button>
-          <span class="hint" id="accExportStatus" role="status" aria-live="polite"></span>
-        </div>
-        <hr class="hr" />
-        <h3 class="m-0 mt-18 mb-4">Danger zone</h3>
-        <p class="card-sub">Permanently delete your account and all associated data. This cannot be undone.</p>
-        <button class="btn btn--danger" id="deleteAccountBtn" type="button">Delete my account</button>
-      </div>`;
+const dataWidget = `<div class="lb-widget lb-widget--full" id="data">
+          <h2>Data and account deletion</h2>
+          <p class="card-sub">Export a copy of your data or permanently delete your account.</p>
+          <section class="account-data-export" aria-labelledby="accountExportTitle">
+            <h3 class="m-0" id="accountExportTitle">Export your data</h3>
+            <p class="card-sub">Prepare a downloadable copy of your account data before making changes.</p>
+            <div class="d-flex gap-8 items-center flex-wrap">
+              <button class="btn btn--accent" id="accExportData" type="button">Prepare my data export</button>
+              <span class="hint" id="accExportStatus" role="status" aria-live="polite"></span>
+            </div>
+          </section>
+          <hr class="hr" />
+          <section class="account-danger-zone" aria-labelledby="accountDangerTitle">
+            <h3 class="m-0 mt-18 mb-4" id="accountDangerTitle">Danger zone: permanently delete your account</h3>
+            <p class="card-sub">Permanently delete your account and all associated data. This cannot be undone.</p>
+            <button class="btn btn--danger" id="deleteAccountBtn" type="button">Delete my account</button>
+          </section>
+        </div>`;
 
-const deleteAccountModal = `<div class="modal" id="deleteAccountModal" role="dialog" aria-modal="true" aria-labelledby="deleteAccountModalTitle" hidden>
+const deleteAccountModal = `<div class="modal" id="deleteAccountModal" role="dialog" aria-modal="true" aria-labelledby="deleteAccountModalTitle" aria-describedby="deleteAccountModalDescription" aria-hidden="true" hidden>
   <div class="modal-card">
     <h3 id="deleteAccountModalTitle">Delete your account?</h3>
-    <p>This will remove all your data — leaderboards, players, archives, subscriptions, and connected bots. This cannot be undone.</p>
+    <p id="deleteAccountModalDescription">This will remove all your data — leaderboards, players, archives, subscriptions, and connected bots. This cannot be undone.</p>
     <div class="field"><label for="deleteAccountConfirm">Type <b>DELETE</b> to confirm</label><input id="deleteAccountConfirm" autocomplete="off" placeholder="DELETE" /></div>
     <div class="field" id="deleteAccountPasswordWrap" hidden><label for="deleteAccountPassword">Enter your password</label><input id="deleteAccountPassword" type="password" autocomplete="current-password" placeholder="Password" /></div>
     <div class="d-flex gap-10 flex-wrap">

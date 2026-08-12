@@ -54,12 +54,12 @@ export function UnifiedSettingsPage({ activePath, user, tab = "account" } = {}) 
         <h1>Settings</h1>
         <p class="card-sub">One place for your account, billing, integrations, and data controls.</p>
       </div>
-      <nav class="v3-tabs account-settings-tabs" aria-label="Settings sections" role="tablist">
-        {SETTINGS_TABS.map(([key, label]) => <a class={"v3-tab" + (key === active ? " is-on" : "")} href={`/dashboard/settings/${key}`} data-settings-tab={key} role="tab" aria-selected={key === active ? "true" : "false"}>{label}</a>)}
+      <nav class="v3-tabs account-settings-tabs" aria-label="Settings sections">
+        {SETTINGS_TABS.map(([key, label]) => <a class={"v3-tab" + (key === active ? " is-on" : "")} href={`/dashboard/settings/${key}`} data-settings-tab={key}>{label}</a>)}
       </nav>
       {settingsPanel("account", `${settingsWidgets.account}<div class="lb-widget lb-widget--full"><h2>Selected board settings</h2><p class="card-sub">Custom domain, board access, notifications, and board content belong to the selected board.</p><a class="btn btn--ghost" href="${boardUrl.pathname + boardUrl.search}">Open board settings</a></div>`)}
       {settingsPanel("plan", settingsWidgets.plan)}
-      {settingsPanel("connections", `${settingsWidgets.postbacks}<div class="lb-widget lb-widget--full"><h2>Connected accounts</h2><p class="card-sub">Streamer identities and board integrations.</p><div id="connectedAccounts"><p class="hint">Loading…</p></div></div><div class="lb-widget lb-widget--full"><h2>Board integrations</h2><p class="card-sub">Kick and Credits configuration belongs to the selected board.</p><a class="btn btn--accent" href="/dashboard/settings/integrations">Open board integrations</a></div>`)}
+      {settingsPanel("connections", `${settingsWidgets.postbacks}<div class="lb-widget lb-widget--full"><h2>Connected accounts</h2><p class="card-sub">Streamer identities and board integrations.</p><div id="connectedAccounts"><p class="hint">Loading…</p></div></div><div class="lb-widget lb-widget--full"><h2>Board integrations</h2><p class="card-sub">Kick and Credits configuration belongs to the selected board.</p><a class="btn btn--accent" href="/dashboard/rewards/channel">Open board integrations</a></div>`)}
       {settingsPanel("data", `${settingsWidgets.data}<div class="lb-widget lb-widget--full lb-widget--danger"><h2>Selected board data</h2><p class="card-sub">These actions affect one selected board, not your account. Open the board tools before making a destructive change.</p><div class="d-flex gap-8 flex-wrap"><a class="btn btn--ghost" href="/dashboard/editor/history">Reset or archive a board</a><a class="btn btn--ghost" href="/dashboard/editor/setup">Delete a board</a></div></div>`)}
     </div>
   </DashboardShell>;

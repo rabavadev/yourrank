@@ -1,6 +1,25 @@
 // Player table, CSV/paste import, and row management.
-import { $, esc, logError, parseAmount } from "./utils.js";
+import { $, esc, logError, parseAmount, showConfirmModal } from "./utils.js";
 import { state, markDirty } from "./state.js";
+
+/**
+ * Commit a change to the in-memory draft through one path. markDirty() keeps
+ * the save bar and preview in sync; the status region is the existing live
+ * announcement surface for the result.
+ */
+export function commitDraftMutation(mutation, message = "Changes made. Save to publish.") {
+  const result = typeof mutation === "function" ? mutation() : undefined;
+  markDirty();
+  if (message) {
+    const status = $("status");
+    if (status) {
+      status.textContent = typeof message === "function" ? message(result) : message;
+      status.hidden = false;
+      status.setAttribute("aria-live", "polite");
+    }
+  }
+  return result;
+}
 
 function currencySymbol() {
   return String($("f_currency")?.value || "$").trim().slice(0, 6) || "$";
@@ -46,7 +65,16 @@ export function playerRow(p = { name: "", wagered: "", prize: "", score: "", han
     name?.focus();
     name?.select();
   });
-  tr.querySelector(".row-x").addEventListener("click", () => { tr.remove(); renumber(); toggleEmpty(); syncSelectAll(); });
+  tr.querySelector(".row-x").addEventListener("click", async () => {
+    const name = tr.querySelector(".p-name")?.value.trim() || "this player";
+    if (!await showConfirmModal("Remove player", `Remove ${name}? You can restore it only by re-adding it before saving.`, "Remove", true)) return;
+    commitDraftMutation(() => {
+      tr.remove();
+      renumber();
+      toggleEmpty();
+      syncSelectAll();
+    }, `${name} removed. Save to publish.`);
+  });
   wireMoneyInput(tr.querySelector(".p-wager"));
   wireMoneyInput(tr.querySelector(".p-prize"));
   return tr;
@@ -209,10 +237,12 @@ $("addRow")?.addEventListener("click", () => {
     setTimeout(() => el.textContent = "", 5000);
     return;
   }
-  $("rows").appendChild(playerRow());
-  renumber();
-  toggleEmpty();
-  applyPlayerFieldVisibility();
+  commitDraftMutation(() => {
+    $("rows").appendChild(playerRow());
+    renumber();
+    toggleEmpty();
+    applyPlayerFieldVisibility();
+  }, "Player added. Save to publish.");
 });
 
 function addQuickRow() {
@@ -226,13 +256,15 @@ function addQuickRow() {
   }
   const wagered = parseFloat($("qa_wager").value.replace(/[$,\s]/g, "")) || 0;
   const prize = parseFloat($("qa_prize").value.replace(/[$,\s]/g, "")) || 0;
-  $("rows").appendChild(playerRow({ name, wagered, prize }));
-  $("qa_name").value = "";
-  $("qa_wager").value = "";
-  $("qa_prize").value = "";
-  renumber();
-  toggleEmpty();
-  applyPlayerFieldVisibility();
+  commitDraftMutation(() => {
+    $("rows").appendChild(playerRow({ name, wagered, prize }));
+    $("qa_name").value = "";
+    $("qa_wager").value = "";
+    $("qa_prize").value = "";
+    renumber();
+    toggleEmpty();
+    applyPlayerFieldVisibility();
+  }, `${name} added. Save to publish.`);
 }
 
 $("qa_add")?.addEventListener("click", addQuickRow);
@@ -344,7 +376,7 @@ export function formatImportSummary(result, imported, skipped, capped) {
 }
 
 $("importPasteBtn")?.addEventListener("click", () => {
-  $("importMenu").hidden = true;
+  closeMenus(false);
   const p = $("importPanel");
   p.hidden = !p.hidden;
   $("gsheetPanel").hidden = true;
@@ -389,7 +421,7 @@ $("importApply")?.addEventListener("click", () => {
   const parsed = result.rows.slice(0, remaining);
   const all = existing.concat(parsed);
   const cut = result.rows.length - parsed.length;
-  renderPlayers(all);
+  commitDraftMutation(() => renderPlayers(all), `${parsed.length} player${parsed.length === 1 ? "" : "s"} imported. Save to publish.`);
   $("importText").value = "";
   $("importPreview").textContent = "0 players detected";
   $("importApply").disabled = true;
@@ -397,7 +429,7 @@ $("importApply")?.addEventListener("click", () => {
   $("status").textContent = formatImportSummary(result, parsed.length, result.rows.length - parsed.length + (result.errors.length ? `${result.errors.length} invalid` : ""), cut) + " — hit Save to publish.";
 });
 
-$("csvImportBtn")?.addEventListener("click", () => { $("importMenu").hidden = true; $("csvFileInput").click(); });
+$("csvImportBtn")?.addEventListener("click", () => { closeMenus(false); $("csvFileInput").click(); });
 
 $("csvFileInput")?.addEventListener("change", () => {
   const f = $("csvFileInput").files[0];
@@ -418,7 +450,7 @@ $("csvFileInput")?.addEventListener("change", () => {
 });
 
 $("csvTemplateBtn")?.addEventListener("click", () => {
-  $("importMenu").hidden = true;
+  closeMenus(false);
   const csv = "name,wagered,prize\nCryptoKing,152000,1500\nLuckyStar,98000,700\nDiceHero,61250,500\nSlotMaster,45000,250\nBetPro,32000,0\n";
   const blob = new Blob([csv], { type: "text/csv" });
   const url = URL.createObjectURL(blob);
@@ -471,7 +503,7 @@ function parseGSheetUrl(raw) {
 }
 
 $("gsheetBtn")?.addEventListener("click", () => {
-  $("importMenu").hidden = true;
+  closeMenus(false);
   const p = $("gsheetPanel");
   p.hidden = !p.hidden;
   if (!p.hidden) $("importPanel").hidden = true;
@@ -565,17 +597,17 @@ $("rows")?.addEventListener("change", (e) => {
   if (e.target?.classList?.contains("row-sel")) syncSelectAll();
 });
 
-$("bulkDelete")?.addEventListener("click", () => {
-  const rows = [...$("rows").children];
-  let removed = 0;
-  for (const row of rows) {
-    if (row.querySelector(".row-sel")?.checked) { row.remove(); removed++; }
-  }
-  if (removed) {
-    renumber(); toggleEmpty(); syncSelectAll();
-    markDirty();
-    $("status").textContent = `${removed} player${removed === 1 ? "" : "s"} removed.`;
-  }
+$("bulkDelete")?.addEventListener("click", async () => {
+  const selected = [...$("rows").children].filter((row) => row.querySelector(".row-sel")?.checked);
+  if (!selected.length) return;
+  const count = selected.length;
+  if (!await showConfirmModal("Remove selected players", `Remove ${count} selected player${count === 1 ? "" : "s"}? You can restore them only by re-adding them before saving.`, "Remove", true)) return;
+  commitDraftMutation(() => {
+    selected.forEach((row) => row.remove());
+    renumber();
+    toggleEmpty();
+    syncSelectAll();
+  }, `${count} player${count === 1 ? "" : "s"} removed. Save to publish.`);
 });
 
 $("bulkClearWager")?.addEventListener("click", () => {
@@ -587,9 +619,7 @@ $("bulkClearWager")?.addEventListener("click", () => {
     }
   }
   if (cleared) {
-    sortRows();
-    markDirty();
-    $("status").textContent = `${cleared} wager${cleared === 1 ? "" : "s"} cleared.`;
+    commitDraftMutation(() => sortRows(), `${cleared} wager${cleared === 1 ? "" : "s"} cleared. Save to publish.`);
   }
 });
 
@@ -621,13 +651,52 @@ $("playersNext")?.addEventListener("click", () => {
   applyRowVisibility();
 });
 
-$("colDropdownBtn")?.addEventListener("click", (e) => {
-  e.stopPropagation();
-  const menu = $("colMenu");
-  if (!menu) return;
-  menu.hidden = !menu.hidden;
-  $("colDropdownBtn").setAttribute("aria-expanded", String(!menu.hidden));
-});
+function setMenuState(trigger, menu, open, { focusFirst = false } = {}) {
+  if (!trigger || !menu) return;
+  menu.hidden = !open;
+  trigger.setAttribute("aria-expanded", String(open));
+  if (open && focusFirst) {
+    menu.querySelector("button:not([disabled]), input:not([disabled]), [href]:not([aria-disabled='true'])")?.focus();
+  }
+}
+
+function closeMenus(returnFocus = false) {
+  const active = document.activeElement;
+  const importMenu = $("importMenu");
+  const colMenu = $("colMenu");
+  const importOpen = importMenu && !importMenu.hidden;
+  const colOpen = colMenu && !colMenu.hidden;
+  if (importMenu) importMenu.hidden = true;
+  if (colMenu) colMenu.hidden = true;
+  $("importMenuBtn")?.setAttribute("aria-expanded", "false");
+  $("colDropdownBtn")?.setAttribute("aria-expanded", "false");
+  if (returnFocus) {
+    const trigger = importOpen ? $("importMenuBtn") : colOpen ? $("colDropdownBtn") : null;
+    if (trigger && (active === importMenu || importMenu?.contains(active) || active === colMenu || colMenu?.contains(active))) trigger.focus();
+  }
+}
+
+function wireMenuA11y(triggerId, menuId) {
+  const trigger = $(triggerId);
+  const menu = $(menuId);
+  if (!trigger || !menu) return;
+  trigger.setAttribute("aria-controls", menuId);
+  trigger.setAttribute("aria-expanded", String(!menu.hidden));
+  trigger.addEventListener("click", (e) => {
+    e.stopPropagation();
+    const open = menu.hidden;
+    closeMenus(false);
+    setMenuState(trigger, menu, open, { focusFirst: open });
+  });
+  menu.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") {
+      e.preventDefault();
+      closeMenus(true);
+    }
+  });
+}
+
+wireMenuA11y("colDropdownBtn", "colMenu");
 
 $("colMenu")?.addEventListener("change", (e) => {
   if (e.target && e.target.dataset && e.target.dataset.col) {
@@ -638,13 +707,6 @@ $("colMenu")?.addEventListener("change", (e) => {
     markDirty();
   }
 });
-
-function closeMenus() {
-  $("importMenu").hidden = true;
-  $("colMenu").hidden = true;
-  $("importMenuBtn")?.setAttribute("aria-expanded", "false");
-  $("colDropdownBtn")?.setAttribute("aria-expanded", "false");
-}
 
 // Close dropdowns when clicking outside
 document.addEventListener("click", (e) => {
@@ -680,24 +742,10 @@ $("emptyPasteBtn")?.addEventListener("click", async () => {
   input.focus();
 });
 
-$("importMenuBtn")?.addEventListener("click", (e) => {
-  e.stopPropagation();
-  const menu = $("importMenu");
-  if (!menu) return;
-  menu.hidden = !menu.hidden;
-  $("importMenuBtn").setAttribute("aria-expanded", String(!menu.hidden));
-});
+wireMenuA11y("importMenuBtn", "importMenu");
 
-["importPasteBtn", "csvImportBtn", "gsheetBtn", "csvTemplateBtn"].forEach((id) => {
-  $(id)?.addEventListener("click", () => {
-    $("importMenu").hidden = true;
-    $("importMenuBtn")?.setAttribute("aria-expanded", "false");
-  });
-});
-
-$("csvExportBtn")?.addEventListener("click", () => {
-  $("importMenu").hidden = true;
-  $("importMenuBtn")?.setAttribute("aria-expanded", "false");
+["importPasteBtn", "csvImportBtn", "gsheetBtn", "csvTemplateBtn", "csvExportBtn"].forEach((id) => {
+  $(id)?.addEventListener("click", () => closeMenus(false));
 });
 
 // Initialize column dropdown state once the DOM is ready.

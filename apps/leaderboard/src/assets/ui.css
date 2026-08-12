@@ -26,6 +26,11 @@
   --yr-control-padding-x: 12px;
   --yr-shadow-sm: 0 1px 2px rgba(0, 0, 0, .05);
   --yr-shadow-lg: 0 12px 32px rgba(0, 0, 0, .12);
+  /* Shared fixed action layers: one bottom offset and stacking model for save/bulk UI. */
+  --yr-fixed-action-bottom: 22px;
+  --yr-fixed-action-stack-offset: 66px;
+  --yr-fixed-action-z: 95;
+  --yr-fixed-action-top-z: 96;
 }
 
 /* ---- screen-reader-only content and the skip link --------------------------
@@ -101,12 +106,17 @@
 
 .btn:hover,
 .yr-ui button:hover { border-color: var(--yr-ink-soft, var(--ink-soft)); }
+.btn:focus-visible,
+.yr-ui button:focus-visible { outline: 2px solid var(--yr-accent, var(--accent)); outline-offset: 2px; }
 .btn:active,
 .yr-ui button:active { transform: translateY(1px); }
 
 .btn:disabled,
 .btn[aria-disabled="true"],
+.btn[aria-busy="true"],
 .yr-ui button:disabled,
+.yr-ui button[aria-disabled="true"],
+.yr-ui button[aria-busy="true"],
 .copy:disabled {
   opacity: .45;
   cursor: not-allowed;
@@ -174,9 +184,11 @@
   .yr-ui button { min-height: var(--yr-control-height-narrow, 44px); }
 }
 
-.btn[aria-busy="true"] { opacity: .65; cursor: wait; }
+.btn[aria-busy="true"],
+.yr-ui button[aria-busy="true"] { opacity: .65; cursor: wait; }
 
-.btn--loading::before {
+.btn--loading::before,
+.yr-ui button.btn--loading::before {
   content: "";
   width: 14px;
   height: 14px;

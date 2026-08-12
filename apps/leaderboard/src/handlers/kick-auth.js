@@ -46,19 +46,19 @@ function redirect(url, status = 302) {
 export async function handleKickAuthStart(request, env) {
   const user = await currentUser(request, env);
   if (user && !(await rateLimit(env, `kick-oauth-start:${user.id}`, 10, 60)).ok) {
-    return redirect("/dashboard/settings/integrations?error=rate_limited");
+    return redirect("/dashboard/rewards/channel?error=rate_limited");
   }
   if (!user) return redirect("/login");
 
   const url = new URL(request.url);
   const siteId = url.searchParams.get("siteId") || user.active_site_id || "";
   if (!siteId) {
-    return redirect("/dashboard/settings/integrations?error=no_site_selected");
+    return redirect("/dashboard/rewards/channel?error=no_site_selected");
   }
 
   const site = await one("SELECT id FROM sites WHERE id=$1 AND user_id=$2", [siteId, user.id]);
   if (!site) {
-    return redirect("/dashboard/settings/integrations?error=site_not_found");
+    return redirect("/dashboard/rewards/channel?error=site_not_found");
   }
 
   try {
@@ -69,7 +69,7 @@ export async function handleKickAuthStart(request, env) {
     return redirect(authorizeURL);
   } catch (err) {
     console.error("[kick-auth] start failed:", err?.message || err);
-    return redirect("/dashboard/settings/integrations?error=kick_auth_failed");
+    return redirect("/dashboard/rewards/channel?error=kick_auth_failed");
   }
 }
 
@@ -83,18 +83,18 @@ export async function handleKickAuthCallback(request, env) {
   const error = url.searchParams.get("error");
 
   if (error) {
-    return redirect(`/dashboard/settings/integrations?error=${encodeURIComponent(error)}`);
+    return redirect(`/dashboard/rewards/channel?error=${encodeURIComponent(error)}`);
   }
   if (!code || !state) {
-    return redirect("/dashboard/settings/integrations?error=missing_oauth_params");
+    return redirect("/dashboard/rewards/channel?error=missing_oauth_params");
   }
 
   const stateData = await getOAuthState(env, state);
   if (!stateData) {
-    return redirect("/dashboard/settings/integrations?error=oauth_state_expired");
+    return redirect("/dashboard/rewards/channel?error=oauth_state_expired");
   }
   if (stateData.userId !== user.id) {
-    return redirect("/dashboard/settings/integrations?error=oauth_user_mismatch");
+    return redirect("/dashboard/rewards/channel?error=oauth_user_mismatch");
   }
 
   await deleteOAuthState(env, state);
@@ -157,10 +157,10 @@ export async function handleKickAuthCallback(request, env) {
     );
     void notifyLiveBoard(env, stateData.siteId);
 
-    return redirect("/dashboard/settings/integrations?kick_connected=1");
+    return redirect("/dashboard/rewards/channel?kick_connected=1");
   } catch (err) {
     console.error("[kick-auth] callback failed:", err?.message || err);
-    return redirect(`/dashboard/settings/integrations?error=${encodeURIComponent(err?.message || "kick_auth_failed")}`);
+    return redirect(`/dashboard/rewards/channel?error=${encodeURIComponent(err?.message || "kick_auth_failed")}`);
   }
 }
 

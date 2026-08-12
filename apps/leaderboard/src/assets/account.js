@@ -2,6 +2,7 @@
 import { $, esc, getCsrf, logError, copyToClipboard, flashButton, showConfirmModal } from "./dashboard/utils.js";
 import { state } from "./dashboard/state.js";
 import { wireAccount } from "./dashboard/account.js";
+import { wireDeleteAccountModal } from "./dashboard/account-delete-modal.js";
 import { openDrawer, closeDrawer } from "./dashboard/shell.js";
 import { checkout, renderPlan, loadHistory, loadPlanUsage, wireDeleteAccount, wireCancelSubscription } from "./dashboard/site.js";
 
@@ -321,6 +322,7 @@ async function init() {
     wirePostbacks();
     await loadConnectedAccounts();
     wireDeleteAccount();
+    wireDeleteAccountModal();
     return;
   }
   if (!tab || tab === "profile") wireAccount();
@@ -336,6 +338,7 @@ async function init() {
   }
   if (!tab || tab === "connected") await loadConnectedAccounts();
   if (!tab || tab === "data") wireDeleteAccount();
+    wireDeleteAccountModal();
 }
 
 if (document.getElementById("acc-app")) init();
