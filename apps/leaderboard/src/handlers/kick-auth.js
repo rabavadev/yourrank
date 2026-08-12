@@ -10,6 +10,7 @@ import {
   subscribeKickWebhookEvent,
   encryptKickToken,
 } from "../../../../shared/kick-oauth.js";
+import { notifyLiveBoard } from "../live-board-config.js";
 
 const OAUTH_TTL = 600; // 10 minutes
 
@@ -154,6 +155,7 @@ export async function handleKickAuthCallback(request, env) {
         WHERE id = $3 AND user_id = $4`,
       [String(kickChannel.broadcaster_user_id), kickChannel.slug || "", stateData.siteId, user.id]
     );
+    void notifyLiveBoard(env, stateData.siteId);
 
     return redirect("/dashboard/settings/integrations?kick_connected=1");
   } catch (err) {
@@ -186,6 +188,7 @@ export async function handleKickAuthDisconnect(request, env) {
         WHERE id = $1 AND user_id = $2`,
       [user.active_site_id, user.id]
     );
+    void notifyLiveBoard(env, user.active_site_id);
   }
 
   return ok({ disconnected: true });

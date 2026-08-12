@@ -41,7 +41,12 @@ function extractPlayerName(q: PostbackQuery): string | null {
  * C-02: Conversion amounts are idempotently projected onto `players` using the
  * same normalized-name identity as saveSite, so postbacks actually update ranks.
  */
-export async function recordConversion(ownerId: string, q: PostbackQuery, siteId?: string | null): Promise<void> {
+export async function recordConversion(
+  ownerId: string,
+  q: PostbackQuery,
+  siteId?: string | null,
+  notify?: (siteId: string, version?: string) => void | Promise<void>,
+): Promise<void> {
   const clickRef = first(q.yr_click) ?? first(q.click_ref) ?? first(q.clickid) ?? first(q.subid) ?? first(q.sub_id) ?? null;
   const event = (first(q.event) ?? first(q.goal) ?? "deposit").toLowerCase().slice(0, 32);
   const rawAmt = first(q.amount) == null ? NaN : Number(first(q.amount));
@@ -50,6 +55,7 @@ export async function recordConversion(ownerId: string, q: PostbackQuery, siteId
   const playerName = extractPlayerName(q);
   const playerNormalized = playerName ? normalizePlayerName(playerName) : null;
   const column = eventToPlayerColumn(event);
+  const notifiedSiteIds = new Set<string>();
 
   await withTransaction(async (tx) => {
     // Attribute to an offer via the click ref when possible.
@@ -116,6 +122,9 @@ export async function recordConversion(ownerId: string, q: PostbackQuery, siteId
          UPDATE sites SET updated_at = now() WHERE id IN (SELECT site_id FROM ins)`,
         [ownerId, playerName, playerNormalized, amount ?? 0, resolvedSiteId]
       );
+      for (const row of upsert || []) {
+        if (row?.site_id) notifiedSiteIds.add(String(row.site_id));
+      }
       // `upsert` result is not needed; the side effect is the projection.
       void upsert;
     }
@@ -127,6 +136,7 @@ export async function recordConversion(ownerId: string, q: PostbackQuery, siteId
     // player-subscription lookup result (if a player was named). Without
     // either, we cannot attribute the conversion to a specific site.
     if (resolvedSiteId) {
+      notifiedSiteIds.add(resolvedSiteId);
       await tx.unsafe(
         `INSERT INTO site_stats (site_id, day, conversions, revenue)
          VALUES ($1, (now() AT TIME ZONE 'UTC')::date, 1, $2::numeric)
@@ -137,4 +147,15 @@ export async function recordConversion(ownerId: string, q: PostbackQuery, siteId
       );
     }
   });
+  if (notify) {
+    for (const resolvedSiteId of notifiedSiteIds) {
+      try {
+        void Promise.resolve(notify(resolvedSiteId, new Date().toISOString())).catch((error) => {
+          console.error("[conversion] live board notification failed:", String(error instanceof Error ? error.message : error));
+        });
+      } catch (error) {
+        console.error("[conversion] live board notification failed:", String(error instanceof Error ? error.message : error));
+      }
+    }
+  }
 }

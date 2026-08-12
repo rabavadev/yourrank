@@ -5,6 +5,7 @@ import { createArchive, getPlayers } from "./site.js";
 import { notifyReset } from "../../../shared/notifications.js";
 import { mapWithConcurrency, SHARED_WORK_CONCURRENCY_LIMIT } from "../../../shared/work-concurrency.js";
 import { restoreAutoResetMarker } from "./auto-reset-claim.js";
+import { notifyLiveBoard } from "./live-board-config.js";
 
 const CLEAR_OPTIONS = new Set(["wagers", "players", "none"]);
 
@@ -81,6 +82,7 @@ export async function processAutoResetSite(env, site) {
       `UPDATE sites SET ends_at = $1, auto_reset_last_run_at = now(), updated_at = now() WHERE id = $2`,
       [nextEnds, site.id]
     );
+    void notifyLiveBoard(env, site.id);
 
     // Fire Discord/Telegram reset notifications if configured.
     await notifyReset({ one }, env, site.id, site.name, top3, site.period || "Monthly").catch((err) => {

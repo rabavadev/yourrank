@@ -5,6 +5,7 @@ import { query, one, exec, withTransaction } from "../../../../shared/db.js";
 import { resolveViewer } from "../../../../shared/viewer-session.js";
 import { rateLimit } from "../../../../shared/ratelimit.js";
 import { setSiteKickChannel } from "../../../../shared/kick-credits.js";
+import { notifyLiveBoard } from "../live-board-config.js";
 import {
   getValidKickAccessToken,
   createKickChannelReward,
@@ -185,6 +186,7 @@ export async function handleCreditsConnect(request, env) {
   if (!externalId) return bad("Kick channel ID is required");
 
   await setSiteKickChannel(site.id, externalId, name);
+  void notifyLiveBoard(env, site.id);
   const row = await one(
     `SELECT kick_channel_linked_at FROM sites WHERE id = $1`,
     [site.id]
@@ -382,8 +384,8 @@ export async function handleCreditsCreateReward(request, env) {
     );
     return { id: rows[0].id };
   });
-
   if (txResult.error) return bad(txResult.error, txResult.status);
+  void notifyLiveBoard(env, site.id);
 
   return ok({
     id: txResult.id,
@@ -772,6 +774,7 @@ export async function handleCreditsViewerAuth(request, env) {
       WHERE id = $4 AND user_id = $5`,
     [kick, discord, publicRedeem, site.id, user.id]
   );
+  void notifyLiveBoard(env, site.id);
 
   return ok({ kick, discord, public: publicRedeem });
 }

@@ -36,6 +36,10 @@ crons = ["* * * * *", "*/5 * * * *", "0 3 * * *"]
 
 
 # --- Durable Object for rate limiting ---
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["RateLimiter"]
+
 [[durable_objects.bindings]]
 name = "RATE_LIMITER_DO"
 class_name = "RateLimiter"
