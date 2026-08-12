@@ -1,17 +1,8 @@
 import { beforeEach, describe, expect, it, mock } from "bun:test";
 
-const authUrl = import.meta.resolve("../auth.js");
-const siteUrl = import.meta.resolve("../site.js");
-
 const mockCurrentUser = mock(() => Promise.resolve({ id: "user-1", plan: "pro", plan_expires_at: Date.now() + 86400000 }));
 const mockGetUserSiteById = mock(() => Promise.resolve(null));
 
-mock.module(authUrl, () => ({
-  currentUser: (...args) => mockCurrentUser(...args),
-}));
-mock.module(siteUrl, () => ({
-  getUserSiteById: (...args) => mockGetUserSiteById(...args),
-}));
 import { handleDashboardPreview } from "../handlers/preview.js";
 
 const SITE = {
@@ -41,7 +32,8 @@ describe("handleDashboardPreview", () => {
     const res = await handleDashboardPreview(
       new Request("https://test.com/dashboard/preview?board=site-1&template=classic"),
       {},
-      "nonce123"
+      "nonce123",
+      { currentUserImpl: (...args) => mockCurrentUser(...args), getUserSiteByIdImpl: (...args) => mockGetUserSiteById(...args) },
     );
     expect(res.status).toBe(302);
     expect(res.headers.get("location")).toBe("https://test.com/login");
@@ -52,7 +44,8 @@ describe("handleDashboardPreview", () => {
     const res = await handleDashboardPreview(
       new Request("https://test.com/dashboard/preview?board=other-site&template=classic"),
       {},
-      "nonce123"
+      "nonce123",
+      { currentUserImpl: (...args) => mockCurrentUser(...args), getUserSiteByIdImpl: (...args) => mockGetUserSiteById(...args) },
     );
     expect(res.status).toBe(404);
     expect(mockGetUserSiteById).toHaveBeenCalledWith({}, "user-1", "other-site", "pro");
@@ -62,7 +55,8 @@ describe("handleDashboardPreview", () => {
     const res = await handleDashboardPreview(
       new Request("https://test.com/dashboard/preview?board=site-1&template=classic&accentA=%2300ffd1&accentB=%23ff2cd0"),
       {},
-      "nonce123"
+      "nonce123",
+      { currentUserImpl: (...args) => mockCurrentUser(...args), getUserSiteByIdImpl: (...args) => mockGetUserSiteById(...args) },
     );
     const html = await res.text();
     expect(res.status).toBe(200);
