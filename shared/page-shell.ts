@@ -147,6 +147,7 @@ const BOT_BASE_CSS = `
   .wrap { max-width:1040px; margin:0 auto; padding:22px 20px 60px; }
   .pagehead { margin-bottom:20px; }
   .pagehead h1 { font-size:20px; } .pagehead p { font-size:13px; color:var(--dim); margin-top:2px; }
+  .tbl-scroll { max-width:100%; overflow-x:auto; -webkit-overflow-scrolling:touch; }
 
   .panel { background:var(--panel); border:1px solid var(--border); border-radius:12px; padding:18px 18px; margin-bottom:18px; }
   h1 { font-size:20px; }
