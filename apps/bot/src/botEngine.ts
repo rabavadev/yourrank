@@ -351,31 +351,36 @@ export function wireHandlers(bot: Bot, botRow: BotRow, env?: any): void {
       return;
     }
 
-    // Get all players sorted by wagered DESC, assign rank
-    // DB-004: LIMIT 1000 to prevent unbounded result sets on large leaderboards
-    const players = await query<{ name: string; wagered: number }>(
-      `SELECT name, wagered FROM players WHERE site_id = $1 ORDER BY wagered DESC LIMIT 1000`,
-      [site.id]
+    // Compute the exact ordinal and total in the database rather than loading
+    // up to 1,000 players into the Worker. The id tie-breaker makes equal
+    // wagered values deterministic while preserving one position per player.
+    const player = await one<{ name: string; wagered: number; rank: number; total: number }>(
+      `SELECT p.name, p.wagered,
+              (
+                SELECT count(*) FROM players ahead
+                 WHERE ahead.site_id = p.site_id
+                   AND (ahead.wagered > p.wagered
+                     OR (ahead.wagered = p.wagered AND ahead.id < p.id))
+              )::int + 1 AS rank,
+              (SELECT count(*) FROM players total WHERE total.site_id = p.site_id)::int AS total
+         FROM players p
+        WHERE p.site_id = $1
+          AND lower(regexp_replace(p.name, '^@', '')) = $2
+        LIMIT 1`,
+      [site.id, username]
     );
 
-    // Match by case-insensitive username against player names
-    const idx = players.findIndex(
-      (p) => p.name.toLowerCase().replace(/^@/, "") === username
-    );
-
-    if (idx === -1) {
+    if (!player) {
       await ctx.reply("You're not on this leaderboard yet. Ask the streamer to add you! 🎯", {
         reply_parameters: { message_id: ctx.message!.message_id, allow_sending_without_reply: true },
       });
       return;
     }
 
-    const rank = idx + 1;
-    const player = players[idx];
     const displayName = site.name || "this streamer";
     const url = config.publicBaseUrl ? `${config.publicBaseUrl}/${site.slug}` : "";
 
-    let msg = `🏆 @${username} is ranked #${rank} of ${players.length} on ${displayName}'s leaderboard! Wagered: ${fmtMoney(player.wagered)}`;
+    let msg = `🏆 @${username} is ranked #${player.rank} of ${player.total} on ${displayName}'s leaderboard! Wagered: ${fmtMoney(player.wagered)}`;
     if (url) msg += `\n\n🔗 ${url}`;
 
     await ctx.reply(msg, {

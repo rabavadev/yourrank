@@ -117,10 +117,12 @@ export async function handleViewerSite(request, env) {
   );
 
   const shopItems = await query(
+    // Defensive ceiling above the Agency plan's 999 active-item contractual limit.
     `SELECT id, name, description, cost, stock, active
        FROM shop_items
       WHERE site_id=$1 AND active=true
-      ORDER BY cost ASC`,
+      ORDER BY cost ASC
+      LIMIT 1024`,
     [site.id]
   );
 

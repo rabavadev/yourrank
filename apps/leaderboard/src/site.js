@@ -194,7 +194,8 @@ const getByUser = (env, uid) => one(`SELECT ${SITE_COLUMNS} FROM sites WHERE use
 
 // Multi-board: returns ALL boards for a user.
 export async function getAllBoards(env, uid) {
-  const rows = await query(`SELECT ${SITE_COLUMNS} FROM sites WHERE user_id=$1 ORDER BY id ASC`, [uid]);
+  // Defensive ceiling above the Agency plan's 99-board contractual limit.
+  const rows = await query(`SELECT ${SITE_COLUMNS} FROM sites WHERE user_id=$1 ORDER BY id ASC LIMIT 128`, [uid]);
   return rows || [];
 }
 
@@ -207,7 +208,8 @@ export async function getBoardById(env, uid, siteId) {
 // can tab across to the streamer's other sponsor leaderboards.
 async function getPublicBoards(env, uid) {
   const rows = await query(
-    "SELECT slug, name FROM sites WHERE user_id=$1 AND published=true ORDER BY board_order ASC, id ASC",
+    // Defensive ceiling above the Agency plan's 99-board contractual limit.
+    "SELECT slug, name FROM sites WHERE user_id=$1 AND published=true ORDER BY board_order ASC, id ASC LIMIT 128",
     [uid]
   );
   return (rows || []).map((r) => ({ slug: r.slug, name: r.name || r.slug }));
@@ -215,7 +217,8 @@ async function getPublicBoards(env, uid) {
 
 export async function getPlayers(env, siteId) {
   const rows = await query(
-    "SELECT name, wagered, prize, score, hands, net_profit, win_rate, change FROM players WHERE site_id=$1 ORDER BY wagered DESC",
+    // Defensive ceiling above the Pro/Agency plan's 9,999-player contractual limit.
+    "SELECT name, wagered, prize, score, hands, net_profit, win_rate, change FROM players WHERE site_id=$1 ORDER BY wagered DESC LIMIT 10000",
     [siteId]
   );
   return rows || [];
