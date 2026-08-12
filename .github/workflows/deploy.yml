@@ -108,6 +108,9 @@ jobs:
             exit 1
           fi
           echo "OK: Test coverage ${COVERAGE}% meets 60% threshold"
+      - name: Build leaderboard
+        working-directory: apps/leaderboard
+        run: node build.js
       - name: Capture current leaderboard version
         id: capture-lb
         continue-on-error: true
