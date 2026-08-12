@@ -85,8 +85,7 @@ async function bumpView(env, ctx, request, siteId, slug, headers) {
 
 export async function renderSiteRoute({ request, env, ctx, nonce, slug, section, isCustomDomain }) {
   const cacheableRequest = isPublicBoardCacheRequest(request, section);
-  const renderNonce = cacheableRequest ? PUBLIC_HTML_NONCE_PLACEHOLDER : nonce;
-  const HTML_N = withNonce(HTML, renderNonce);
+  const HTML_N = withNonce(HTML, nonce);
   const respHeaders = new Headers({ ...HTML_N, "cache-control": "no-store" });
 
   try {
@@ -114,10 +113,12 @@ export async function renderSiteRoute({ request, env, ctx, nonce, slug, section,
       return new Response(notFoundPage(slug, nonce), { status: 404, headers: HTML_N });
     }
 
+    const cacheableSite = cacheableRequest && isPublicBoardCacheSite(r);
     const { viewer, cookie: viewerCookie } = await resolveViewer(request, env);
     if (viewerCookie) respHeaders.append("set-cookie", viewerCookie);
 
-    const csrfToken = cacheableRequest ? PUBLIC_HTML_CSRF_PLACEHOLDER : generateCsrfToken();
+    const renderNonce = cacheableSite ? PUBLIC_HTML_NONCE_PLACEHOLDER : nonce;
+    const csrfToken = cacheableSite ? PUBLIC_HTML_CSRF_PLACEHOLDER : generateCsrfToken();
     respHeaders.append("set-cookie", csrfCookie(csrfToken));
 
     const url = new URL(request.url);
@@ -146,10 +147,16 @@ export async function renderSiteRoute({ request, env, ctx, nonce, slug, section,
       section,
       viewer,
       viewerData,
-      opts: { nonce, homeUrl, slug, isCustomDomain, logoUrl, watermark, csrfToken, boards: r.boards, botUsername: r.botUsername },
+      opts: { nonce: renderNonce, homeUrl, slug, isCustomDomain, logoUrl, watermark, csrfToken, boards: r.boards, botUsername: r.botUsername },
     });
-    const response = new Response(html, { headers: respHeaders });
-    if (cacheableRequest && isPublicBoardCacheSite(r)) {
+    const responseHeaders = cacheableSite
+      ? new Headers({
+        ...Object.fromEntries(respHeaders.entries()),
+        ...withNonce(HTML, PUBLIC_HTML_NONCE_PLACEHOLDER),
+      })
+      : respHeaders;
+    const response = new Response(html, { headers: responseHeaders });
+    if (cacheableSite) {
       if (ctx?.waitUntil) ctx.waitUntil(putPublicBoardCache(request, response));
       else await putPublicBoardCache(request, response);
       const servedCsrfToken = generateCsrfToken();
