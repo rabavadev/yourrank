@@ -5,7 +5,7 @@
 //   3. All errors caught, reported to Sentry + Discord, and returned as 500
 //   4. Structured JSON logging on every error
 
-import { generateRequestId, createLogger, installConsoleRedirect, runWithLogger } from "./request-id.js";
+import { generateRequestId, createLogger, getRequestMetrics, installConsoleRedirect, runWithLogger } from "./request-id.js";
 import { sendErrorToDiscord } from "./monitoring.js";
 import { errMessage, errStack } from "./errors.js";
 
@@ -63,6 +63,17 @@ export function withWorkerFetch(workerName: string, handler: FetchHandler) {
     return runWithLogger(log, async () => {
       try {
         const response = await handler(request, env, ctx, { sentry, log, reqId });
+        if (workerName === "leaderboard") {
+          const metrics = getRequestMetrics();
+          log.info("request_metrics", {
+            route: metrics?.route || new URL(request.url).pathname,
+            site: metrics?.site || null,
+            db_queries: metrics?.dbQueries || 0,
+            duration_ms: Date.now() - (metrics?.startedAt || Date.now()),
+            cache: metrics?.cache || "bypass",
+            payload_bytes: metrics?.payloadBytes || null,
+          });
+        }
         // Response.redirect() creates responses with immutable headers.
         // Clone to get mutable headers before setting X-Request-Id.
         const mutable = new Response(response.body, response);
