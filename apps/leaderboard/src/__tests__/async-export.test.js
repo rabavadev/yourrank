@@ -67,4 +67,25 @@ describe("async account export", () => {
     const status = await handleExportJobStatus(request("GET"), env, { slug: "job-1" }, failed);
     expect((await status.json()).status).toBe("failed");
   });
+
+  it("returns a clear not-found response when the completed artifact is missing", async () => {
+    const d = deps({
+      oneImpl: async () => ({ id: "job-1", status: "completed", artifact_key: "missing-key", expires_at: new Date(Date.now() + 10000).toISOString() }),
+    });
+    const missingObjectEnv = { ACCOUNT_EXPORTS: { get: async () => null } };
+    const res = await handleExportJobDownload(request("GET"), missingObjectEnv, { slug: "job-1" }, d);
+    expect(res.status).toBe(404);
+    expect(await res.text()).toContain("no longer available");
+  });
+
+  it("fails the job visibly when queue admission fails", async () => {
+    const d = deps({
+      sendImpl: async () => { throw new Error("queue unavailable"); },
+    });
+    const res = await handleCreateExportJob(request(), env, d);
+    expect(res.status).toBe(503);
+    expect(await res.text()).toContain("Could not start data export");
+    expect(d.state.execs).toHaveLength(2);
+    expect(d.state.execs[1]).toEqual(["queue unavailable", d.state.execs[0][0]]);
+  });
 });
