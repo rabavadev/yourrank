@@ -23,9 +23,11 @@ routes = [
 # --- Durable Objects ---
 # Set RL_BACKEND=do to use DO instead of KV for rate limiting.
 # Keeps fail-open behavior if DO is unreachable.
+# RateLimiter predates this stanza and is already live on this script, so it must
+# not be declared as a new class: only LiveBoard is being introduced here.
 [[migrations]]
 tag = "v1"
-new_sqlite_classes = ["RateLimiter", "LiveBoard"]
+new_sqlite_classes = ["LiveBoard"]
 
 [[durable_objects.bindings]]
 name = "RATE_LIMITER_DO"
@@ -117,7 +119,7 @@ SESSION_COOKIE_DOMAIN = ".staging.yourrank.site"
 
 [[env.staging.migrations]]
 tag = "v1"
-new_sqlite_classes = ["RateLimiter", "LiveBoard"]
+new_sqlite_classes = ["LiveBoard"]
 
 
 [[env.staging.durable_objects.bindings]]
