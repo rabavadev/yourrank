@@ -2,6 +2,8 @@ import postgres from "postgres";
 export declare function getSql(): ReturnType<typeof postgres>;
 /** Execute a SQL read query with automatic retry on connection errors. */
 export declare function query<T = Record<string, unknown>>(text: string, params?: unknown[]): Promise<T[]>;
+/** Execute one read with a transaction-local statement timeout. */
+export declare function queryWithTimeout<T = Record<string, unknown>>(text: string, params?: unknown[], timeoutMs?: number): Promise<T[]>;
 /** Execute a SQL read query and return the first row, or undefined if no rows. */
 export declare function one<T = Record<string, unknown>>(text: string, params?: unknown[]): Promise<T | undefined>;
 /** Execute a SQL write statement. NO automatic retry — caller handles idempotency. */

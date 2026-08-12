@@ -2,6 +2,9 @@ name = "yourrank-bot"
 main = "src/worker.ts"
 compatibility_date = "2025-07-01"
 compatibility_flags = ["nodejs_compat"]
+# Dashboard APIs and webhook handlers perform sequential Hyperdrive reads.
+# Smart Placement reduces the repeated EU-origin round trips for those paths.
+placement = { mode = "smart" }
 
 [vars]
 PUBLIC_BASE_URL = "https://yourrank.site"
