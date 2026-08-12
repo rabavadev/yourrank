@@ -133,7 +133,7 @@ function accentInkFor(accent) {
   return accent === PUBLIC_ACCENT_DEFAULT.value ? PUBLIC_ACCENT_DEFAULT.ink : accentInk(accent);
 }
 
-function money(currency, n) {
+export function formatMoney(currency, n) {
   const cur = String(currency || "$").slice(0, 6);
   return `${cur}${formatNumber(Math.round(Number(n) || 0))}`;
 }
@@ -419,18 +419,18 @@ export async function renderSite({ r, section, viewer, viewerData, opts }) {
   const balance = Number(viewerOnSite?.balance || 0);
   const kickUrl = (Array.isArray(data.socials) ? data.socials : []).find((s) => /kick/i.test(s?.type || s?.name || ""))?.url;
 
-  const sectionUrl = `${homeUrl}${siteSectionHref(section, slug, isCustomDomain)}`;
+  const sectionUrl = `${homeUrl}${siteSectionHref(section || "home", slug, isCustomDomain)}`;
   const canonicalUrl = esc(sectionUrl);
   const returnTo = sectionUrl;
 
   const titleBase = esc(b.name || slug);
   const sectionTitle = SECTION_TITLES[section] || section;
-  const title = section === "home"
+  const title = opts.pageTitle || (section === "home"
     ? `${titleBase} — ${esc(b.tagline || "Leaderboard & Rewards")}`
-    : `${sectionTitle} · ${titleBase}`;
-  const desc = section === "home"
+    : `${sectionTitle} · ${titleBase}`);
+  const desc = opts.pageDescription || (section === "home"
     ? `${titleBase}'s viewer site — ${esc(b.tagline || "compete on the leaderboard, earn free credits and redeem rewards.")}`
-    : `${sectionTitle} for ${titleBase}'s viewer site.`;
+    : `${sectionTitle} for ${titleBase}'s viewer site.`);
   const ogImageUrl = logoUrl ? esc(logoUrl) : `${homeUrl}/og.png`;
 
   const ctx = {
@@ -439,12 +439,12 @@ export async function renderSite({ r, section, viewer, viewerData, opts }) {
     returnTo, nonce, watermark,
   };
 
-  const mainInner = section === "home" ? homeMain(ctx)
+  const mainInner = section == null && typeof opts.contentHtml === "string" ? opts.contentHtml : (section === "home" ? homeMain(ctx)
     : section === "leaderboard" ? boardMain(ctx)
     : section === "shop" ? shopMain(ctx)
     : section === "games" ? gamesMain(ctx)
     : section === "me" ? meMain(ctx)
-    : `<div class="yr-empty">Section not found</div>`;
+    : `<div class="yr-empty">Section not found</div>`);
 
   const footer = siteFooter({ data, b, siteSections, slug, isCustomDomain, homeUrl, watermark });
 
@@ -586,7 +586,7 @@ ${creditsChart(series)}
         title: "Top of the board",
         meta: `<a class="yr-sec-link" href="${boardHref}">All</a>`,
         body: players.length
-          ? `<div class="yr-feed yr-noscroll">${players.slice(0, 8).map((p, i) => `<div class="yr-feed-item"><div class="yr-feed-top"><span class="yr-feed-kind">${String(Number(p.rank) || i + 1).padStart(2, "0")} · ${esc(p.name)}</span><span class="yr-feed-time yr-prize-value">${esc(money(data.brand?.currency, p.wagered))}</span></div></div>`).join("")}</div>`
+          ? `<div class="yr-feed yr-noscroll">${players.slice(0, 8).map((p, i) => `<div class="yr-feed-item"><div class="yr-feed-top"><span class="yr-feed-kind">${String(Number(p.rank) || i + 1).padStart(2, "0")} · ${esc(p.name)}</span><span class="yr-feed-time yr-prize-value">${esc(formatMoney(data.brand?.currency, p.wagered))}</span></div></div>`).join("")}</div>`
           : `<div class="yr-empty">No players yet</div>`,
       })}</div>`;
 
@@ -632,16 +632,16 @@ function boardMain(ctx) {
     return `<div class="yr-card yr-lb${first ? " yr-card--on" : ""}">
 <div class="yr-card-top"><span class="yr-label${first ? " is-accent" : ""}">#${rank}</span>${first ? ICONS.crown : ICONS.medal}</div>
 <p class="yr-card-name"><a href="${playerHref(p.name)}">${esc(p.name)}</a></p>
-<p class="yr-num">${esc(money(currency, p.wagered))}</p>
-<p class="yr-sub">${wagerLabel}${!hidePrizes && p.prize ? ` · <span class="yr-gold">${esc(money(currency, p.prize))}</span>` : ""}</p>
+<p class="yr-num">${esc(formatMoney(currency, p.wagered))}</p>
+<p class="yr-sub">${wagerLabel}${!hidePrizes && p.prize ? ` · <span class="yr-gold">${esc(formatMoney(currency, p.prize))}</span>` : ""}</p>
 </div>`;
   }).join("");
 
   const rows = players.map((p, i) => `<tr data-name="${esc(String(p.name || "").toLowerCase())}" data-position="${Number(p.rank) || i + 1}">
 <td class="yr-idx">${String(Number(p.rank) || i + 1).padStart(2, "0")}</td>
 <td><a href="${playerHref(p.name)}">${esc(p.name)}</a></td>
-<td class="yr-mono yr-r">${esc(money(currency, p.wagered))}</td>
-<td class="yr-mono yr-r${!hidePrizes && p.prize ? " yr-gold" : ""}">${hidePrizes ? "—" : (p.prize ? esc(money(currency, p.prize)) : "—")}</td>
+<td class="yr-mono yr-r">${esc(formatMoney(currency, p.wagered))}</td>
+<td class="yr-mono yr-r${!hidePrizes && p.prize ? " yr-gold" : ""}">${hidePrizes ? "—" : (p.prize ? esc(formatMoney(currency, p.prize)) : "—")}</td>
 </tr>`).join("");
 
   const table = players.length
