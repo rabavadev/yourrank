@@ -4,8 +4,7 @@ import { markDirty, setState, state, subscribe } from "./dashboard/state.js";
 import { currentRoute, navTo, setupShell } from "./dashboard/shell.js";
 import { renderBoardSwitcher, renderSidebarBoardSwitcher, renderBoardsPage } from "./dashboard/boards.js";
 import { renderPlayers } from "./dashboard/players.js";
-import { wireDeleteAccountModal } from "./dashboard/account-delete-modal.js";
-import { checkout, fitDesignPreview, loadCreditsStatus, loadHistory, loadStats, refreshDesignPreview, renderArchives, renderBranding, renderDomain, renderDomainStatus, renderBoardStatus, renderEditorTimestamps, renderEmbedShare, renderLegal, renderNotifications, renderOverlay, renderPlan, renderPlayerFields, renderPrizes, renderSections, renderSocials, wireCancelSubscription, wireDeleteAccount } from "./dashboard/site.js";
+import { fitDesignPreview, loadCreditsStatus, loadStats, refreshDesignPreview, renderArchives, renderBranding, renderDomain, renderDomainStatus, renderBoardStatus, renderEditorTimestamps, renderEmbedShare, renderLegal, renderNotifications, renderOverlay, renderPlayerFields, renderPrizes, renderSections, renderSocials } from "./dashboard/site.js";
 import { renderOverviewSummary } from "./dashboard/overview.js";
 import { renderReferrals } from "./dashboard/referrals.js";
 import { initPerformance } from "./dashboard/performance.js";
@@ -21,10 +20,23 @@ async function init() {
   const emailEl = $("userEmail"); if (emailEl) emailEl.textContent = state.ME.email;
   updateProfileMenu(state.ME);
   if (state.ME.isAdmin) { const adminEl = $("adminLink"); if (adminEl) adminEl.hidden = false; }
-  renderPlan();
-  loadHistory();
+
+  // Each route serves only its own sections now, so a screen's setup only runs
+  // when that screen is in the document.
+  const hasSection = (name) => !!document.querySelector(`section[data-page="${name}"]`);
+  const hasEditor = hasSection("board");
+  const hasBoardSettings = hasSection("settings");
 
   const urlParams = new URLSearchParams(location.search);
+  // Plan and billing live in the account settings document; a `?plan=` on the
+  // dashboard is an old checkout link.
+  const planParam = urlParams.get("plan");
+  if (planParam) {
+    location.href = planParam.toLowerCase() === "agency"
+      ? "/help/support?area=billing"
+      : `/dashboard/settings/plan?plan=${encodeURIComponent(planParam)}`;
+    return;
+  }
   const requestedSiteId = urlParams.get("board") || null;
   const apiUrl = requestedSiteId ? `/api/site?siteId=${encodeURIComponent(requestedSiteId)}` : "/api/site";
   const loading = $("loading");
@@ -64,7 +76,7 @@ async function init() {
   state.IS_DRAFT = !!p.isDraft;
   state.ONBOARDING = p.onboarding || {};
 
-  renderEditorTimestamps();
+  if (hasEditor) renderEditorTimestamps();
   renderBoardSwitcher();
   renderSidebarBoardSwitcher();
   document.querySelectorAll("#newBoardSide, #addBoardBtn").forEach((btn) => {
@@ -73,66 +85,103 @@ async function init() {
       btn.addEventListener("click", () => $("newBoard")?.click());
     }
   });
-  renderBoardsPage();
+  if (hasSection("boards")) renderBoardsPage();
   const d = p.data || {};
   const b = d.brand || {};
   state.EXTRA = { chips: d.partner?.chips, whyStats: d.whyStats, rules: d.rules, socials: p.socials || d.socials || [], sections: d.sections, siteSections: d.siteSections || {}, playerFields: d.playerFields || {}, text: (d.branding && d.branding.text) || {}, legal: d.legal || {} };
-  $("f_name").value = b.name || "";
-  $("f_tagline").value = b.tagline || "";
-  $("f_casino").value = b.casino || "";
-  $("f_code").value = b.code || "";
-  $("f_cta").value = b.ctaUrl || "";
-  $("f_pool").value = b.prizePool || "";
-  $("f_period").value = b.period || "Monthly";
-  $("f_ends").value = toLocalInput(d.endsAt);
-  const endsHint = $("f_ends_hint");
-  const endsInput = $("f_ends");
-  const renderEndsHint = () => {
-    if (!endsHint) return;
-    const zone = getViewerTimeZone();
-    const instant = endsInput?.value ? fromLocalInput(endsInput.value, zone) : new Date().toISOString();
-    const label = zone ? timeZoneLabel(instant, zone) : "";
-    endsHint.textContent = label
-      ? `When the leaderboard resets, shown in ${label}. Powers the live timer.`
-      : `When the leaderboard resets, shown in ${zone ? "your timezone" : "your browser's timezone"}. Powers the live timer.`;
-  };
-  renderEndsHint();
-  endsInput?.addEventListener("change", renderEndsHint);
-  $("f_blurb").value = d.partner?.blurb || "";
-  renderPlayers(d.players || []);
-  renderPlayerFields();
-  renderBranding(d.branding || {});
-  renderPrizes(d.prizes || d.branding?.prizes || {});
-  renderArchives(p.archives || []);
-  renderDomain();
-  renderOverlay();
-  renderNotifications(p.notify || {});
-  renderSocials();
-  renderSections();
-  renderLegal();
-  renderEmbedShare();
-  const iframe = $("designPreview");
-  if (iframe) iframe.addEventListener("load", fitDesignPreview);
-  document.querySelectorAll(".preview-tab").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      document.querySelectorAll(".preview-tab").forEach((b) => {
-        b.classList.remove("is-active");
-        b.setAttribute("aria-selected", "false");
+  if (hasEditor) {
+    $("f_name").value = b.name || "";
+    $("f_tagline").value = b.tagline || "";
+    $("f_casino").value = b.casino || "";
+    $("f_code").value = b.code || "";
+    $("f_cta").value = b.ctaUrl || "";
+    $("f_pool").value = b.prizePool || "";
+    $("f_period").value = b.period || "Monthly";
+    $("f_ends").value = toLocalInput(d.endsAt);
+    const endsHint = $("f_ends_hint");
+    const endsInput = $("f_ends");
+    const renderEndsHint = () => {
+      if (!endsHint) return;
+      const zone = getViewerTimeZone();
+      const instant = endsInput?.value ? fromLocalInput(endsInput.value, zone) : new Date().toISOString();
+      const label = zone ? timeZoneLabel(instant, zone) : "";
+      endsHint.textContent = label
+        ? `When the leaderboard resets, shown in ${label}. Powers the live timer.`
+        : `When the leaderboard resets, shown in ${zone ? "your timezone" : "your browser's timezone"}. Powers the live timer.`;
+    };
+    renderEndsHint();
+    endsInput?.addEventListener("change", renderEndsHint);
+    $("f_blurb").value = d.partner?.blurb || "";
+    renderPlayers(d.players || []);
+    renderPlayerFields();
+    renderBranding(d.branding || {});
+    renderPrizes(d.prizes || d.branding?.prizes || {});
+    renderArchives(p.archives || []);
+    renderOverlay();
+    renderSocials();
+    renderSections();
+    renderEmbedShare();
+    const iframe = $("designPreview");
+    if (iframe) iframe.addEventListener("load", fitDesignPreview);
+    document.querySelectorAll(".preview-tab").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        document.querySelectorAll(".preview-tab").forEach((b2) => {
+          b2.classList.remove("is-active");
+          b2.setAttribute("aria-selected", "false");
+        });
+        btn.classList.add("is-active");
+        btn.setAttribute("aria-selected", "true");
+        refreshDesignPreview();
       });
-      btn.classList.add("is-active");
-      btn.setAttribute("aria-selected", "true");
-      refreshDesignPreview();
     });
-  });
-  let resizeTimer;
-  window.addEventListener("resize", () => {
-    clearTimeout(resizeTimer);
-    resizeTimer = setTimeout(fitDesignPreview, 150);
-  });
-  const editorNav = document.querySelector('[data-nav="board"]');
-  if (editorNav) editorNav.addEventListener("click", () => setTimeout(fitDesignPreview, 0));
-  if (p.customDomain !== undefined) $("f_domain").value = p.customDomain || "";
-  if (p.customDomain && p.domainStatus) renderDomainStatus(p.domainStatus, "");
+    let resizeTimer;
+    window.addEventListener("resize", () => {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(fitDesignPreview, 150);
+    });
+    const arToggle = $("f_auto_reset");
+    const arClear = $("f_auto_reset_clear");
+    if (arToggle) {
+      arToggle.checked = !!(p.autoReset && p.autoReset.enabled);
+      if (arClear) {
+        arClear.value = (p.autoReset && p.autoReset.clear) || "wagers";
+        arClear.disabled = !arToggle.checked;
+      }
+      arToggle.addEventListener("change", () => { if (arClear) arClear.disabled = !arToggle.checked; });
+    }
+    const pwEnabled = $("f_password_enabled");
+    const pwInput = $("f_password");
+    if (pwEnabled) {
+      pwEnabled.checked = !!p.passwordProtected;
+      if (pwInput) pwInput.disabled = !pwEnabled.checked;
+      pwEnabled.addEventListener("change", () => { if (pwInput) pwInput.disabled = !pwEnabled.checked; });
+    }
+    $("a_label").placeholder = new Date().toLocaleString("en-US", { month: "long", year: "numeric", timeZone: "UTC" });
+    const embedTextarea = $("embedCode");
+    if (embedTextarea) {
+      embedTextarea.value = `<iframe src="https://${location.host}/${state.SLUG}/embed" width="100%" height="640" frameborder="0" loading="lazy" title="${esc(state.SLUG)} leaderboard"></iframe>`;
+    }
+    const embedPreview = $("embedPreview");
+    if (embedPreview) { embedPreview.href = `/${state.SLUG}/embed`; embedPreview.target = "_blank"; }
+    const copyEmbed = $("copyEmbed");
+    if (copyEmbed && !copyEmbed._wired) {
+      copyEmbed._wired = true;
+      copyEmbed.addEventListener("click", async () => {
+        if (!embedTextarea) return;
+        const ok = await copyToClipboard(embedTextarea.value);
+        flashButton(copyEmbed, ok ? "Copied!" : "Copy failed");
+      });
+    }
+  }
+
+  if (hasBoardSettings) {
+    renderDomain();
+    renderNotifications(p.notify || {});
+    renderLegal();
+    if (p.customDomain !== undefined) $("f_domain").value = p.customDomain || "";
+    if (p.customDomain && p.domainStatus) renderDomainStatus(p.domainStatus, "");
+  }
+
   const pubToggle = $("pubToggle");
   if (pubToggle) pubToggle.checked = state.PUBLISHED;
   function updatePublishHint() {
@@ -145,24 +194,6 @@ async function init() {
   }
   if (pubToggle) pubToggle.addEventListener("change", () => { setState({ _dirty: true }); updatePublishHint(); });
   updatePublishHint();
-  const arToggle = $("f_auto_reset");
-  const arClear = $("f_auto_reset_clear");
-  if (arToggle) {
-    arToggle.checked = !!(p.autoReset && p.autoReset.enabled);
-    if (arClear) {
-      arClear.value = (p.autoReset && p.autoReset.clear) || "wagers";
-      arClear.disabled = !arToggle.checked;
-    }
-    arToggle.addEventListener("change", () => { if (arClear) arClear.disabled = !arToggle.checked; });
-  }
-  const pwEnabled = $("f_password_enabled");
-  const pwInput = $("f_password");
-  if (pwEnabled) {
-    pwEnabled.checked = !!p.passwordProtected;
-    if (pwInput) pwInput.disabled = !pwEnabled.checked;
-    pwEnabled.addEventListener("change", () => { if (pwInput) pwInput.disabled = !pwEnabled.checked; });
-  }
-  $("a_label").placeholder = new Date().toLocaleString("en-US", { month: "long", year: "numeric", timeZone: "UTC" });
   const liveUrl = "/" + state.SLUG;
   const liveLink = $("liveLink");
   if (liveLink) { liveLink.href = liveUrl; liveLink.title = location.host + liveUrl; }
@@ -179,65 +210,47 @@ async function init() {
       flashButton(editorCopyLink, ok ? "Copied!" : "Copy failed");
     });
   }
-  const embedCode = `<iframe src="https://${location.host}/${state.SLUG}/embed" width="100%" height="640" frameborder="0" loading="lazy" title="${esc(state.SLUG)} leaderboard"></iframe>`;
-  const embedTextarea = $("embedCode");
-  if (embedTextarea) embedTextarea.value = embedCode;
-  const embedPreview = $("embedPreview");
-  if (embedPreview) { embedPreview.href = `/${state.SLUG}/embed`; embedPreview.target = "_blank"; }
-  const copyEmbed = $("copyEmbed");
-  if (copyEmbed && !copyEmbed._wired) {
-    copyEmbed._wired = true;
-    copyEmbed.addEventListener("click", async () => {
-      if (!embedTextarea) return;
-      const ok = await copyToClipboard(embedTextarea.value);
-      flashButton(copyEmbed, ok ? "Copied!" : "Copy failed");
-    });
-  }
   $("loading").hidden = true;
   $("dash").hidden = false;
   setupShell();
-  initGames();
-  wireCancelSubscription();
-  wireDeleteAccount();
-    wireDeleteAccountModal();
   // Boards nav is redundant for solo streamers — the sidebar board switcher covers it.
   const boardsNav = document.querySelector(".lb-nav--boards");
   if (boardsNav) boardsNav.hidden = state.BOARDS.length < 2;
-  // The URL decides which section opens; /dashboard itself has no section, so
-  // it lands set-up boards on Home and drafts on the editor they still need.
+  // The URL says which section this document is: `/dashboard` is the Overview,
+  // not "whichever screen we guess you need".
   const route = currentRoute();
-  const planParam = urlParams.get("plan");
-  const landing = route.page !== "home" ? route.page : (isBoardSetup(p) ? "home" : "board");
   const hash = route.tab || location.hash.replace("#", "");
-  if (document.querySelector(`section[data-page="${landing}"]`)) navTo(landing, hash);
-  if (planParam) {
-    if (planParam.toLowerCase() === "agency") location.href = "/help/support?area=billing";
-    else checkout(planParam);
-  }
-  // The iframe starts empty: render the preview once so the editor never opens
-  // on a blank frame.
-  if (document.querySelector('section[data-page="board"].is-on')) {
+  navTo(route.page, hash);
+  if (hasEditor) {
+    // The iframe starts empty: render the preview once so the editor never
+    // opens on a blank frame.
     refreshDesignPreview();
+    wireStreamerHud();
   }
-
-  renderOverviewSummary();
-  renderReferrals();
-  initPerformance();
-  loadStats();
-  loadCreditsStatus();
-  wireStreamerHud();
-  setupSettingsScreen(p);
+  if (hasSection("games")) initGames();
+  if (hasSection("home")) renderOverviewSummary();
+  if (hasSection("performance")) {
+    renderReferrals();
+    initPerformance();
+  }
+  if (hasSection("home") || hasSection("performance")) loadStats();
+  if (hasBoardSettings) {
+    loadCreditsStatus();
+    setupSettingsScreen(p);
+  }
 
   // The save bar, unload guard and preview react to the same notification in
   // dashboard/site.js; this only adds the debounced overview refresh.
-  let dirtyTimer;
-  subscribe((keys) => {
-    if (!keys.includes("draft")) return;
-    clearTimeout(dirtyTimer);
-    dirtyTimer = setTimeout(renderOverviewSummary, 150);
-  });
+  if (hasSection("home")) {
+    let dirtyTimer;
+    subscribe((keys) => {
+      if (!keys.includes("draft")) return;
+      clearTimeout(dirtyTimer);
+      dirtyTimer = setTimeout(renderOverviewSummary, 150);
+    });
+  }
 
-  window.addEventListener("message", (e) => {
+  if (hasEditor) window.addEventListener("message", (e) => {
     if (e.data?.type === "yr_edit_request") {
       const { key, value, extra } = e.data;
       if (value !== undefined) {
@@ -288,21 +301,6 @@ async function init() {
   if (urlParams.get("upgraded")) {
     $("status").textContent = "Payment received — Pro activates once the network confirms (usually minutes).";
   }
-}
-
-function isBoardSetup(p) {
-  const d = p.data || {};
-  const b = d.brand || {};
-  const players = d.players || [];
-  const o = p.onboarding || {};
-  // Keep in lockstep with overview.js computeSetupSteps: a board name alone is
-  // not enough; the board also needs a sponsor/prize source or promo code.
-  // Kick/configure are checked on the Overview itself — they need async state
-  // that is not loaded yet when this landing decision runs.
-  const brandDone = o.brand || Boolean(b.name && (b.casino || b.code));
-  const playersDone = o.players || players.length > 0;
-  const sharedDone = o.shared || p.published !== false;
-  return brandDone && playersDone && sharedDone;
 }
 
 function wireStreamerHud() {

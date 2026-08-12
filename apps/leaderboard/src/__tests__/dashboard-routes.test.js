@@ -49,6 +49,16 @@ describe("dashboard routes", () => {
     expect(defaultTab("settings")).toBe("");
   });
 
+  it("loads a new document when the target section is not in this one", () => {
+    const shell = readFileSync(new URL("../assets/dashboard/shell.js", import.meta.url), "utf8");
+    expect(shell).toContain('if (reload || !document.querySelector(`section[data-page="${page}"]`)) {');
+    const boot = readFileSync(new URL("../assets/dashboard.js", import.meta.url), "utf8");
+    // Setup only runs for the sections this document actually has.
+    expect(boot).toContain("const hasEditor = hasSection(\"board\")");
+    expect(boot).toContain("navTo(route.page, hash)");
+    expect(boot).not.toContain("isBoardSetup");
+  });
+
   it("no longer navigates through ?nav=", () => {
     for (const file of ["../assets/dashboard/shell.js", "../assets/dashboard.js", "../pages/dashboard.jsx"]) {
       const src = readFileSync(new URL(file, import.meta.url), "utf8");

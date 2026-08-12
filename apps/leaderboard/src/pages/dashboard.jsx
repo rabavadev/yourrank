@@ -29,40 +29,28 @@ function dashboardShellRoute(activePath = "") {
   }
   if (pathname.startsWith("/dashboard/games")) return { activeNav: "games", activeHash: "" };
   if (pathname.startsWith("/dashboard/settings")) return { activeNav: "settings", activeHash: "" };
-  if (pathname.startsWith("/dashboard/boards")) return { activeNav: "home", activeHash: "" };
+  if (pathname.startsWith("/dashboard/boards")) return { activeNav: "boards", activeHash: "" };
   return { activeNav: "home", activeHash: "" };
 }
 
-export function DashboardContent({ user, activePath } = {}) {
-  const { activeNav, activeHash } = dashboardShellRoute(activePath);
-  const analyticsTab = activeNav === "performance" ? activeHash || "activity" : "activity";
+
+// Each route serves only its own section: the dashboard used to ship every
+// screen in one document and let JavaScript reveal one, which put seven <h1>s
+// and the whole editor form on every page and made `/dashboard` render the
+// editor. The editor and the selected board's settings stay together because
+// they share one save pipeline (`collect()` reads the editor form).
+const ROUTE_SECTIONS = {
+  home: ["home"],
+  board: ["board", "settings"],
+  settings: ["board", "settings"],
+  games: ["games"],
+  performance: ["performance"],
+  boards: ["boards"],
+};
+
+function OverviewSection({ active } = {}) {
   return (
-    <>
-      <div id="loading" class="lb-bento pt-24">
-<div class="lb-widget lb-widget--full d-flex justify-between items-center gap-12 flex-wrap">
-<div class="d-flex flex-col gap-8">
-<div class="skeleton skeleton-text--lg" style="width:160px"></div>
-<div class="skeleton skeleton-text--sm" style="width:240px"></div>
-</div>
-<div class="skeleton skeleton-text" style="width:90px"></div>
-</div>
-<div class="lb-widget lb-widget--full">
-<div class="kpi-row">
-<div class="kpi-card"><div class="skeleton skeleton-text" style="width:70px"></div><div class="skeleton skeleton-text--lg" style="width:50px;margin-top:10px"></div></div>
-<div class="kpi-card"><div class="skeleton skeleton-text" style="width:70px"></div><div class="skeleton skeleton-text--lg" style="width:50px;margin-top:10px"></div></div>
-<div class="kpi-card"><div class="skeleton skeleton-text" style="width:70px"></div><div class="skeleton skeleton-text--lg" style="width:50px;margin-top:10px"></div></div>
-<div class="kpi-card"><div class="skeleton skeleton-text" style="width:70px"></div><div class="skeleton skeleton-text--lg" style="width:50px;margin-top:10px"></div></div>
-</div>
-</div>
-<div class="lb-widget lb-widget--wide"><div class="skeleton skeleton-block" style="height:180px"></div></div>
-<div class="lb-widget lb-widget--narrow"><div class="skeleton skeleton-block" style="height:180px"></div></div>
-<div class="lb-widget lb-widget--narrow"><div class="skeleton skeleton-block" style="height:180px"></div></div>
-<div class="lb-widget lb-widget--half"><div class="skeleton skeleton-block" style="height:140px"></div></div>
-<div class="lb-widget lb-widget--half"><div class="skeleton skeleton-block" style="height:140px"></div></div>
-</div>
-<DashboardShell activeNav={activeNav} activeHash={activeHash} boardContext="full" footer="dashboard" initiallyHidden user={user}>
-<div class="lb-widget lb-widget--full lb-widget--danger" id="verifyBanner" hidden style="margin:0 0 24px"><h2>Verify your email</h2><p class="card-sub">Your leaderboard won't be public until you confirm your email address. Check your inbox for the link, or <a href="/verify-email">request a new one</a>.</p></div>
-<section class="lb-page is-on" data-page="home">
+<section class={active ? "lb-page is-on" : "lb-page"} data-page="home">
 <div class="v3-head"><h1>Overview</h1><p class="v3-head-sub" id="ovHeadSub">Complete setup to go live</p></div>
 <div id="ovOnboardingBento" hidden>
 <div class="ov-setup">
@@ -82,7 +70,12 @@ export function DashboardContent({ user, activePath } = {}) {
 <div class="v3-statusbar" id="ovStatusbar"><span><i class="ov-status-dot"></i><b id="ovPublishedStatus">Published</b></span><span class="ov-status-sep">|</span><span><i class="ov-status-dot"></i><b id="ovKickStatus">Kick Connected</b></span><span class="ov-status-sep">|</span><span id="ovTrackedPlayers"></span><span class="v3-statusbar-end" id="ovMetricsStatus"></span></div>
 </div></div>
 </section>
-<section class="lb-page" data-page="board">
+  );
+}
+
+function EditorSection({ active } = {}) {
+  return (
+<section class={active ? "lb-page is-on" : "lb-page"} data-page="board">
 
 <h1 class="sr-only">Board</h1>
 <nav class="editor-steps v3-tabs" id="editorTabs" aria-label="Editor steps">
@@ -221,7 +214,12 @@ export function DashboardContent({ user, activePath } = {}) {
 </div>
 </div>
 </section>
-<section class="lb-page" data-page="games">
+  );
+}
+
+function GamesSection({ active } = {}) {
+  return (
+<section class={active ? "lb-page is-on" : "lb-page"} data-page="games">
 <div class="v3-games-page">
   <header class="v3-head">
     <h1>Public page sections &amp; Games</h1>
@@ -247,7 +245,12 @@ export function DashboardContent({ user, activePath } = {}) {
   </div>
 </div>
 </section>
-<section class="lb-page" data-page="performance">
+  );
+}
+
+function AnalyticsSection({ active } = {}) {
+  return (
+<section class={active ? "lb-page is-on" : "lb-page"} data-page="performance">
 <div class="v3-analytics-page">
   <header class="v3-head"><h1>Analytics</h1><p class="v3-head-sub">Track real-time viewer actions, clicks, and conversion performance</p></header>
   <div class="v3-analytics-scope"><span id="perfScope"><span id="perfBoardName">Active board</span> · Last <span id="perfRangeLabel">14</span> days · <span id="perfLocalTime" title="Daily and hourly activity buckets are aggregated in UTC.">Times in UTC</span></span><div id="perfRangeFilter" class="v3-range-filter" role="group" aria-label="Date range"><button class="v3-range-btn" type="button" data-range="7">7d</button><button class="v3-range-btn is-active" type="button" data-range="14">14d</button><button class="v3-range-btn" type="button" data-range="30">30d</button></div></div>
@@ -275,7 +278,12 @@ export function DashboardContent({ user, activePath } = {}) {
   <details class="metric-glossary"><summary>Metric glossary</summary><dl><div><dt>Views</dt><dd>Total page loads of your public leaderboard.</dd></div><div><dt>Clicks</dt><dd>Clicks on your tracked referral or share links.</dd></div><div><dt>Copies</dt><dd>Times a visitor copied your page URL or a share link.</dd></div><div><dt>CTR</dt><dd>Click-through rate: clicks ÷ views in the selected date range.</dd></div><div><dt>Referrers</dt><dd>Domains that sent traffic to your page, when the browser reports them.</dd></div><div><dt>Events</dt><dd>Recent postbacks, score updates and link copies recorded for this board.</dd></div></dl></details>
 </div>
 </section>
-<section class="lb-page" data-page="settings">
+  );
+}
+
+function BoardSettingsSection({ active } = {}) {
+  return (
+<section class={active ? "lb-page is-on" : "lb-page"} data-page="settings">
 <div class="v3-settings">
   <header class="v3-head">
     <nav class="v3-crumbs" aria-label="Breadcrumb"><a href="/dashboard/settings">Settings</a><span class="v3-crumb-sep" aria-hidden="true">/</span><span aria-current="page">Board settings</span></nav>
@@ -300,8 +308,12 @@ export function DashboardContent({ user, activePath } = {}) {
   <section class="v3-settings-panel" id="settingsPanelSupport" role="tabpanel" aria-labelledby="settingsTabSupport" data-settings-panel="support" hidden><div class="v3-settings-card"><div class="v3-settings-card-head"><div><h2>Support &amp; Resources</h2><p>Find help and manage the tools around your public board.</p></div></div><div class="v3-settings-row"><div><b>OBS Overlay</b><p>Copy the overlay URL, embed code and share links.</p></div><a class="v3-set-btn v3-set-btn--outline" href="/dashboard/editor/share">Open Board → Share</a></div><div class="v3-settings-row"><div><b>Need help?</b><p>Read the operator help hub or contact support.</p></div><a class="v3-set-btn v3-set-btn--outline" href="/help">Open help hub</a><a class="v3-set-btn v3-set-btn--outline" href="/help/support">Contact support</a></div></div></section>
 </div>
 </section>
+  );
+}
 
-<section class="lb-page" data-page="boards">
+function BoardsSection({ active } = {}) {
+  return (
+<section class={active ? "lb-page is-on" : "lb-page"} data-page="boards">
  <header class="v3-head v3-head--row"><div><h1>All boards</h1><p class="v3-head-sub">Manage all your leaderboards from one place.</p></div><button class="btn btn--sm btn--accent" id="addBoardFromBoards" type="button">+ New board</button></header>
  <div class="card">
 <div class="list-controls"><input type="search" id="boardsSearch" class="list-search" placeholder="Find board…" aria-label="Find board" /></div>
@@ -314,8 +326,54 @@ export function DashboardContent({ user, activePath } = {}) {
 <div id="boardsEmpty" class="v3-empty" hidden></div>
 </div>
 </section>
+  );
+}
 
-      <div class="savebar" id="savebar" hidden><span class="savebar-hint">Unsaved changes</span><span class="savebar-ts" id="editorTimestamp"></span><button class="btn btn--accent" id="save" type="button">Save changes</button></div>
+const SECTIONS = {
+  home: OverviewSection,
+  board: EditorSection,
+  games: GamesSection,
+  performance: AnalyticsSection,
+  settings: BoardSettingsSection,
+  boards: BoardsSection,
+};
+
+export function DashboardContent({ user, activePath } = {}) {
+  const { activeNav, activeHash } = dashboardShellRoute(activePath);
+  const sections = ROUTE_SECTIONS[activeNav] || ROUTE_SECTIONS.home;
+  const hasEditor = sections.includes("board");
+  return (
+    <>
+      <div id="loading" class="lb-bento pt-24">
+<div class="lb-widget lb-widget--full d-flex justify-between items-center gap-12 flex-wrap">
+<div class="d-flex flex-col gap-8">
+<div class="skeleton skeleton-text--lg" style="width:160px"></div>
+<div class="skeleton skeleton-text--sm" style="width:240px"></div>
+</div>
+<div class="skeleton skeleton-text" style="width:90px"></div>
+</div>
+<div class="lb-widget lb-widget--full">
+<div class="kpi-row">
+<div class="kpi-card"><div class="skeleton skeleton-text" style="width:70px"></div><div class="skeleton skeleton-text--lg" style="width:50px;margin-top:10px"></div></div>
+<div class="kpi-card"><div class="skeleton skeleton-text" style="width:70px"></div><div class="skeleton skeleton-text--lg" style="width:50px;margin-top:10px"></div></div>
+<div class="kpi-card"><div class="skeleton skeleton-text" style="width:70px"></div><div class="skeleton skeleton-text--lg" style="width:50px;margin-top:10px"></div></div>
+<div class="kpi-card"><div class="skeleton skeleton-text" style="width:70px"></div><div class="skeleton skeleton-text--lg" style="width:50px;margin-top:10px"></div></div>
+</div>
+</div>
+<div class="lb-widget lb-widget--wide"><div class="skeleton skeleton-block" style="height:180px"></div></div>
+<div class="lb-widget lb-widget--narrow"><div class="skeleton skeleton-block" style="height:180px"></div></div>
+<div class="lb-widget lb-widget--narrow"><div class="skeleton skeleton-block" style="height:180px"></div></div>
+<div class="lb-widget lb-widget--half"><div class="skeleton skeleton-block" style="height:140px"></div></div>
+<div class="lb-widget lb-widget--half"><div class="skeleton skeleton-block" style="height:140px"></div></div>
+</div>
+<DashboardShell activeNav={activeNav} activeHash={activeHash} boardContext="full" footer="dashboard" initiallyHidden user={user}>
+<div class="lb-widget lb-widget--full lb-widget--danger" id="verifyBanner" hidden style="margin:0 0 24px"><h2>Verify your email</h2><p class="card-sub">Your leaderboard won't be public until you confirm your email address. Check your inbox for the link, or <a href="/verify-email">request a new one</a>.</p></div>
+{sections.map((key) => {
+  const Section = SECTIONS[key];
+  return <Section active={key === activeNav} />;
+})}
+{hasEditor ? 
+<div class="savebar" id="savebar" hidden><span class="savebar-hint">Unsaved changes</span><span class="savebar-ts" id="editorTimestamp"></span><button class="btn btn--accent" id="save" type="button">Save changes</button></div> : null}
     </DashboardShell>
     </>
   );

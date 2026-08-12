@@ -5,8 +5,8 @@ import { PAGES } from "../pages.jsx";
 const siteJs = readFileSync(new URL("../assets/dashboard/site.js", import.meta.url), "utf8");
 const utilsJs = readFileSync(new URL("../assets/dashboard/utils.js", import.meta.url), "utf8");
 
-function dashboardHtml() {
-  return PAGES.dashboard.Component().toString();
+function dashboardHtml(activePath = "/dashboard") {
+  return PAGES.dashboard.Component({ activePath }).toString();
 }
 
 describe("dashboard overview quick actions", () => {
@@ -39,20 +39,37 @@ describe("dashboard overview quick actions", () => {
     // Consolidated IA (audit item 15): one Editor destination, one Credits
     // parent; Players/Design/Past periods live as editor-internal tabs.
     expect(html).toContain('>Editor</a>');
-    expect(html).toContain('>Settings</a>');
+    expect(html).toContain('>Board settings</a>');
+    expect(html).toContain('>Account settings</a>');
     expect(html).toContain('>BOARD</div>');
     expect(html).toContain('>CREDITS</div>');
     expect(html).toContain('>Credits</a>');
     // Editor sub-sections remain reachable as internal tab links.
-    expect(html).toContain('/dashboard/editor/players');
-    expect(html).toContain('/dashboard/editor/design');
+    const editor = dashboardHtml("/dashboard/editor");
+    expect(editor).toContain('/dashboard/editor/players');
+    expect(editor).toContain('/dashboard/editor/design');
     expect(html).not.toContain('>REWARDS</div>');
     expect(html).not.toContain('>AUDIENCE</div>');
   });
 
+  it("serves only the section the URL addresses", () => {
+    const overview = dashboardHtml();
+    // The whole app used to ship in one document and be revealed by JS, so
+    // `/dashboard` carried the editor form and seven <h1>s.
+    expect(overview).toContain('data-page="home"');
+    expect(overview).not.toContain('data-page="board"');
+    expect(overview).not.toContain('id="designPreview"');
+    expect(overview).not.toContain('id="savebar"');
+    expect((overview.match(/<h1/g) || []).length).toBe(1);
+    const games = dashboardHtml("/dashboard/games");
+    expect(games).toContain('data-page="games"');
+    expect(games).not.toContain('data-page="home"');
+  });
+
   it("leads with the Board editor and still exposes editor sub-sections", () => {
-    const html = dashboardHtml();
-    expect(html).toContain('<section class="lb-page" data-page="board">');
+    const html = dashboardHtml("/dashboard/editor");
+    expect(html).toContain('data-page="board"');
+    expect(html).toContain('id="savebar"');
     expect(html).toContain('class="design-grid"');
     expect(html).toContain('id="designPreview"');
     expect(html).toContain('class="editor-steps v3-tabs"');
