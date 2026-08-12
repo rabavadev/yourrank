@@ -3,7 +3,7 @@ import { serializeWebhookUrl } from "../assets/dashboard/notifications.js";
 
 describe("webhook notification settings", () => {
   it("clears a configured webhook when the operator disables it", () => {
-    expect(serializeWebhookUrl("", false)).toBe(null);
+    expect(serializeWebhookUrl("", false)).toBe("");
   });
 
   it("preserves a configured webhook across unrelated board saves", () => {

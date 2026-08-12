@@ -203,7 +203,7 @@ export function buildDashboard(): Hono<DashEnv> {
     const target = new URL("/dashboard/settings", c.req.url);
     for (const [key, value] of new URL(c.req.url).searchParams) target.searchParams.set(key, value);
     target.searchParams.set("from", "bot");
-    return c.redirect(target.toString(), 302);
+    return c.redirect(target.pathname + target.search, 302);
   });
 
   return app;

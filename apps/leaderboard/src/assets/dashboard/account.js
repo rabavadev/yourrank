@@ -296,9 +296,12 @@ function wireSettingsDanger() {
 }
 
 function wireSettingsBoardAccess() {
-  const link = $("settingsBoardAccessLink");
-  if (!link || !state.ACTIVE_SITE_ID) return;
-  link.href = `/dashboard/editor/setup?board=${encodeURIComponent(state.ACTIVE_SITE_ID)}`;
+  if (!state.ACTIVE_SITE_ID) return;
+  const board = encodeURIComponent(state.ACTIVE_SITE_ID);
+  const accessLink = $("settingsBoardAccessLink");
+  if (accessLink) accessLink.href = `/dashboard/editor/setup?board=${board}`;
+  const playerFieldsLink = $("playerFieldsLink");
+  if (playerFieldsLink) playerFieldsLink.href = `/dashboard/editor/players?board=${board}`;
 }
 
 function wireSettingsWebhook(sitePayload) {
