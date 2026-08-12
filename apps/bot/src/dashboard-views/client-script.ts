@@ -730,24 +730,6 @@ function setBroadcastAvailability(hasBots){
   const composer = $('bcComposer');
   if (setup) setup.hidden = hasBots;
   if (composer) composer.hidden = !hasBots;
-  const gate = $('bcGate');
-  if (gate) {
-    gate.innerHTML = hasBots
-      ? ''
-      : 'No bot is connected yet. Follow the setup steps in <a href="/bot/bots">Bots</a>, starting with <a href="https://t.me/BotFather" target="_blank" rel="noopener">Open @BotFather</a>.';
-  }
-  const panel = document.querySelector('[data-page="broadcasts"]');
-  if (!panel) return;
-  ['bcBody','bcImage','bcBotSelect','bcLang','bcMinLastSeen','bcFirstSeen','bcUsername',
-    'bcSchedule','bcTestChat','bcReviewBtn'].forEach(id => {
-    const el = $(id);
-    if (el) el.disabled = !hasBots;
-  });
-  panel.querySelectorAll('input[name="bcWhen"],[data-action="openBroadcastPreview"],[data-action="testBroadcast"]').forEach(el => {
-    el.disabled = !hasBots;
-  });
-  const audience = $('bcAudience');
-  if (!hasBots && audience) audience.textContent = 'Connect a bot to choose subscribers.';
 }
 
 // A disconnected bot can't be customized — reflect that by disabling the
