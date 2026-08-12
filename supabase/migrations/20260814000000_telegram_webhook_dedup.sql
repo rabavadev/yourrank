@@ -6,8 +6,9 @@ CREATE TABLE IF NOT EXISTS public.telegram_webhook_updates (
   received_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   claimed_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   completed_at TIMESTAMPTZ,
+  abandoned_at TIMESTAMPTZ,
   status TEXT NOT NULL DEFAULT 'processing'
-    CHECK (status IN ('processing', 'completed')),
+    CHECK (status IN ('processing', 'completed', 'abandoned')),
   PRIMARY KEY (bot_id, update_id)
 );
 

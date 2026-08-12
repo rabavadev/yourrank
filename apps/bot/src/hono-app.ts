@@ -1,4 +1,4 @@
-import { Hono } from "hono";
+import { Hono, type ExecutionContext as HonoExecutionContext } from "hono";
 import type { Update } from "grammy/types";
 import { config } from "./config.js";
 import { exec, one, query } from "../../../shared/db.js";
@@ -132,7 +132,8 @@ export function buildHonoApp(): Hono<{ Bindings: Bindings }> {
     if (!row || row.status === "revoked") return c.body(null, 404);
     const update = await c.req.json<Update>();
     try {
-      const executionCtx = (c as any).executionCtx;
+      let executionCtx: HonoExecutionContext | undefined;
+      try { executionCtx = c.executionCtx; } catch { /* not on Workers */ }
       await gateAndDeferTelegramUpdate({
         botId: row.id,
         update,
@@ -188,8 +189,8 @@ export function buildHonoApp(): Hono<{ Bindings: Bindings }> {
         }
       }
     );
-    let ctx: any = null;
-    try { ctx = (c as any).executionCtx; } catch { /* not on Workers */ }
+    let ctx: HonoExecutionContext | undefined;
+    try { ctx = c.executionCtx; } catch { /* not on Workers */ }
     const bg = ctx?.waitUntil
       ? (p: Promise<unknown>) => ctx.waitUntil(p)
       : (p: Promise<unknown>) => void p.catch((err) => { console.error("[clickLog]: background logging failed", err); });

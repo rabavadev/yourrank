@@ -114,25 +114,28 @@ describe("Telegram webhook admission", () => {
     })).rejects.toThrow("database unavailable");
   });
 
-  it("retries claimed-but-unfinished updates but never completed rows", async () => {
+  it("recovers fresh unfinished updates, abandons stale ones, and skips completed rows", async () => {
     const rows = [
-      { bot_id: "bot-a", update_id: 21, update_json: update(21), status: "processing" },
-      { bot_id: "bot-a", update_id: 22, update_json: update(22), status: "completed" },
+      { bot_id: "bot-a", update_id: 21, update_json: update(21), status: "processing" as const },
+      { bot_id: "bot-a", update_id: 22, update_json: update(22), status: "abandoned" as const },
+      { bot_id: "bot-a", update_id: 23, update_json: update(23), status: "completed" as const },
     ];
     const processed: number[] = [];
     const completed: string[] = [];
+    const errors: unknown[][] = [];
 
     const recovered = await recoverTelegramWebhookUpdates({
-      findRecoverable: async () => rows
-        .filter((row) => row.status === "processing")
-        .map(({ bot_id, update_id, update_json }) => ({ bot_id, update_id, update_json })),
+      findRecoverable: async () => rows,
       loadBot: async (botId) => ({ id: botId }),
       process: async (_bot, current) => { processed.push(current.update_id); },
       complete: async (botId, updateId) => { completed.push(`${botId}:${updateId}`); },
+      logger: { error: (...args) => errors.push(args) },
     });
 
     expect(recovered).toBe(1);
     expect(processed).toEqual([21]);
     expect(completed).toEqual(["bot-a:21"]);
+    expect(errors).toHaveLength(1);
+    expect(String(errors[0][0])).toContain("abandoned stale update");
   });
 });

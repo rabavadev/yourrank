@@ -5,6 +5,7 @@ type WebhookUpdateRow = {
   bot_id: string;
   update_id: number;
   update_json: Update;
+  status: "processing" | "completed" | "abandoned";
 };
 
 export async function claimTelegramUpdate(
@@ -36,15 +37,29 @@ export async function completeTelegramUpdate(botId: string, updateId: number): P
 
 async function findRecoverableTelegramUpdates(): Promise<WebhookUpdateRow[]> {
   return query<WebhookUpdateRow>(
-    `UPDATE telegram_webhook_updates
-        SET claimed_at = now()
-      WHERE status = 'processing'
-        AND claimed_at < now() - interval '5 minutes'
-      RETURNING bot_id, update_id, update_json`,
+    `WITH abandoned AS (
+       UPDATE telegram_webhook_updates
+          SET status = 'abandoned',
+              abandoned_at = now()
+        WHERE status = 'processing'
+          AND claimed_at < now() - interval '1 hour'
+        RETURNING bot_id, update_id, update_json, status
+     ),
+     recoverable AS (
+       UPDATE telegram_webhook_updates
+          SET claimed_at = now()
+        WHERE status = 'processing'
+          AND claimed_at < now() - interval '5 minutes'
+          AND claimed_at >= now() - interval '1 hour'
+        RETURNING bot_id, update_id, update_json, status
+     )
+     SELECT * FROM recoverable
+     UNION ALL
+     SELECT * FROM abandoned`,
   );
 }
 
-export async function recoverTelegramWebhookUpdates({
+export async function recoverTelegramWebhookUpdates<TBot extends object>({
   findRecoverable = findRecoverableTelegramUpdates,
   complete = completeTelegramUpdate,
   loadBot,
@@ -53,13 +68,20 @@ export async function recoverTelegramWebhookUpdates({
 }: {
   findRecoverable?: () => Promise<WebhookUpdateRow[]>;
   complete?: (botId: string, updateId: number) => Promise<void>;
-  loadBot: (botId: string) => Promise<unknown>;
-  process: (bot: unknown, update: Update) => Promise<void>;
+  loadBot: (botId: string) => Promise<TBot | undefined>;
+  process: (bot: TBot, update: Update) => Promise<void>;
   logger?: Pick<Console, "error">;
 }): Promise<number> {
   const rows = await findRecoverable();
   let recovered = 0;
   for (const row of rows) {
+    if (row.status === "abandoned") {
+      logger.error(
+        `[telegram webhook] abandoned stale update for bot ${row.bot_id}, update ${row.update_id}`,
+      );
+      continue;
+    }
+    if (row.status === "completed") continue;
     try {
       const bot = await loadBot(row.bot_id);
       if (!bot) {
