@@ -1,34 +1,22 @@
-import { describe, it, expect, mock, beforeEach } from "bun:test";
-
-const dbUrl = import.meta.resolve("../db.js");
-const dbUrlTs = import.meta.resolve("../db.ts");
-const realDb = await import(dbUrl);
+import { describe, it, expect, beforeEach } from "bun:test";
 
 const execCalls: { text: string; params: unknown[] }[] = [];
-const mockExec = mock((text: string, params: unknown[]) => {
+const mockExec = (text: string, params: unknown[]) => {
   execCalls.push({ text, params });
   return Promise.resolve([]);
-});
-
-const dbMock = () => ({
-  ...realDb,
-  exec: mockExec,
-  query: mock(() => Promise.resolve([])),
-  one: mock(() => Promise.resolve(undefined)),
-  getSql: () => null,
-  withTransaction: async (fn: any) => fn({ unsafe: mockExec, one: mockExec, query: mockExec }),
-});
-
-mock.module(dbUrl, dbMock);
-mock.module(dbUrlTs, dbMock);
+};
 
 import { logAudit } from "../audit.js";
 
 describe("logAudit", () => {
   beforeEach(() => {
     execCalls.length = 0;
-    mockExec.mockClear?.();
   });
+
+  const deps = {
+    exec: mockExec,
+    getLogger: () => ({ error: () => {} }),
+  };
 
   it("writes an INSERT into audit_log with the actor/action/entity", async () => {
     const request = new Request("https://example.test/api/site", {
@@ -41,7 +29,7 @@ describe("logAudit", () => {
       entityId: "site-1",
       request,
       details: { board_id: "site-1", board_slug: "myboard" },
-    });
+    }, deps);
 
     expect(execCalls.length).toBe(1);
     expect(execCalls[0].text).toMatch(/INSERT INTO audit_log/);
@@ -70,7 +58,7 @@ describe("logAudit", () => {
         api_key: "another-key",
         unexpected: "should-not-appear",
       },
-    });
+    }, deps);
 
     expect(execCalls.length).toBe(1);
     const details = execCalls[0].params[4] as Record<string, unknown>;
@@ -90,7 +78,7 @@ describe("logAudit", () => {
       entityType: "payment",
       entityId: "rk_123",
       details: { amount: 29, provider: "nowpayments", plan: "pro", status: "finished" },
-    });
+    }, deps);
 
     const details = execCalls[0].params[4] as Record<string, unknown>;
     expect(details.amount).toBe(29);
@@ -100,20 +88,10 @@ describe("logAudit", () => {
   });
 
   it("does not throw when the DB write fails", async () => {
-    const failingExec = mock((text: string, params: unknown[]) => Promise.reject(new Error("audit table missing")));
-    mock.module(dbUrl, () => ({
-      ...realDb,
-      exec: failingExec,
-      query: mock(() => Promise.resolve([])),
-      one: mock(() => Promise.resolve(undefined)),
-    }));
-    mock.module(dbUrlTs, () => ({
-      ...realDb,
-      exec: failingExec,
-      query: mock(() => Promise.resolve([])),
-      one: mock(() => Promise.resolve(undefined)),
-    }));
-
-    await expect(logAudit({ actorId: "user-1", action: "board_create" })).resolves.toBeUndefined();
+    const failingExec = () => Promise.reject(new Error("audit table missing"));
+    await expect(logAudit(
+      { actorId: "user-1", action: "board_create" },
+      { exec: failingExec, getLogger: () => ({ error: () => {} }) },
+    )).resolves.toBeUndefined();
   });
 });

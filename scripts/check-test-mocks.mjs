@@ -1,7 +1,6 @@
 import { readdir, readFile } from "node:fs/promises";
 
 const allowed = new Map([
-  ["shared/__tests__/audit.test.ts", "DB failure-path tests need a process-local fake"],
   ["shared/__tests__/session.test.ts", "Session tests need an in-memory DB fake"],
   ["apps/bot/src/__tests__/bot-commands.test.ts", "Bot command tests need DB and crypto fakes"],
   ["apps/bot/src/__tests__/bot-engine.test.ts", "Conversion tests need DB and crypto fakes"],
