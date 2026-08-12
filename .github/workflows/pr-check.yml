@@ -83,7 +83,7 @@ jobs:
           set -o pipefail
           # These tests use process-global module mocks and are already run in
           # isolation above; loading them with other files corrupts mock state.
-          mapfile -t COVERAGE_FILES < <(find src/__tests__ -name '*.test.js' ! -name 'audit-validation.test.js' ! -name 'credits-loop.test.js' ! -name 'public-stream-version.test.js' -print | sort)
+          mapfile -t COVERAGE_FILES < <(node ../../scripts/coverage-files.mjs)
           bun test --coverage "${COVERAGE_FILES[@]}" 2>&1 | tee /tmp/coverage.txt
           COVERAGE=$(grep "All files" /tmp/coverage.txt | head -1 | awk -F'|' '{gsub(/[^0-9.]/, "", $3); print $3}')
           if [ -z "$COVERAGE" ]; then
