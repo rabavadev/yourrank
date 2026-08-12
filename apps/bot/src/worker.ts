@@ -164,12 +164,16 @@ export default {
             try {
               const result = await dbExec(
                 `WITH s AS (DELETE FROM sessions WHERE expires_at < now() RETURNING 1),
-                      r AS (DELETE FROM password_resets WHERE expires_at < now() RETURNING 1)
+                      r AS (DELETE FROM password_resets WHERE expires_at < now() RETURNING 1),
+                      t AS (DELETE FROM telegram_webhook_updates
+                            WHERE received_at < now() - interval '2 days'
+                            RETURNING 1)
                  SELECT (SELECT count(*)::int FROM s) AS sessions_deleted,
-                        (SELECT count(*)::int FROM r) AS resets_deleted`
+                        (SELECT count(*)::int FROM r) AS resets_deleted,
+                        (SELECT count(*)::int FROM t) AS webhook_updates_deleted`
               );
               const row = result?.[0] ?? {};
-              console.log(`[cron 0 3 * * *] auth cleanup: deleted ${row.sessions_deleted ?? 0} expired sessions, ${row.resets_deleted ?? 0} expired password resets`);
+              console.log(`[cron 0 3 * * *] auth cleanup: deleted ${row.sessions_deleted ?? 0} expired sessions, ${row.resets_deleted ?? 0} expired password resets, ${row.webhook_updates_deleted ?? 0} Telegram webhook updates`);
             } catch (err) {
               console.error("[cron] auth cleanup failed:", err);
               // Non-critical — don't fail the whole cron batch

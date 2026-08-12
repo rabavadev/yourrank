@@ -4,6 +4,7 @@ import { config } from "./config.js";
 import { exec, one, query } from "../../../shared/db.js";
 import { safeEqual, encryptToken, reencryptToken, isCurrentVersion, hashIp, newClickRef, newLinkSlug, newWebhookSecret, verifyHmacSha256Hex } from "../../../shared/crypto.js";
 import { getBotBySecret, handleUpdateForBot } from "./botEngine.js";
+import { gateAndDeferTelegramUpdate } from "./telegram-webhook.js";
 import { getMe, setWebhook } from "./telegram.js";
 import { buildDashboard } from "./dashboard.js";
 import { logMinimizedClick } from "./clicks.js";
@@ -130,7 +131,22 @@ export function buildHonoApp(): Hono<{ Bindings: Bindings }> {
     const row = await getBotBySecret(secret);
     if (!row || row.status === "revoked") return c.body(null, 404);
     const update = await c.req.json<Update>();
-    await handleUpdateForBot(row, update, c.env);
+    try {
+      const executionCtx = (c as any).executionCtx;
+      await gateAndDeferTelegramUpdate({
+        botId: row.id,
+        update,
+        process: () => handleUpdateForBot(row, update, c.env),
+        waitUntil: executionCtx?.waitUntil
+          ? (promise) => executionCtx.waitUntil(promise)
+          : (promise) => void promise.catch((err) => {
+            console.error("[telegram webhook] background processing failed:", err);
+          }),
+      });
+    } catch (err) {
+      console.error("[telegram webhook] update admission failed:", err);
+      return c.body(null, 503);
+    }
     return c.body(null, 200);
   });
 
