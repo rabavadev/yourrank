@@ -32,7 +32,11 @@ type FetchHandler = (
   extras: WorkerContext
 ) => Promise<Response>;
 
-export function withWorkerFetch(workerName: string, handler: FetchHandler) {
+interface WorkerOptions {
+  telemetry?: boolean;
+}
+
+export function withWorkerFetch(workerName: string, handler: FetchHandler, options: WorkerOptions = {}) {
   return async function fetch(
     request: Request,
     env: Record<string, any>,
@@ -63,10 +67,10 @@ export function withWorkerFetch(workerName: string, handler: FetchHandler) {
     return runWithLogger(log, async () => {
       try {
         const response = await handler(request, env, ctx, { sentry, log, reqId });
-        if (workerName === "leaderboard") {
+        if (options.telemetry === true && env.REQUEST_METRICS === "true") {
           const metrics = getRequestMetrics();
           log.info("request_metrics", {
-            route: metrics?.route || new URL(request.url).pathname,
+            route: metrics?.route || "other",
             site: metrics?.site || null,
             db_queries: metrics?.dbQueries || 0,
             duration_ms: Date.now() - (metrics?.startedAt || Date.now()),

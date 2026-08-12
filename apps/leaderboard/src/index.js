@@ -45,19 +45,25 @@ const NON_SITE_PATHS = new Set([
   "account", "contact", "faq", "reviews", "cookies", "privacy", "terms",
   "responsible", "refund", "setup", "demo", "go", "logo", "favicon.ico",
 ]);
+const PUBLIC_API_OPERATIONS = new Set(["standings", "players", "stream", "rank", "data", "stats"]);
+const SITE_SECTIONS = new Set(["home", "leaderboard", "shop", "games", "me"]);
 
 function telemetryRoute(path) {
   const parts = path.split("/").filter(Boolean);
   if (parts[0] === "api") {
-    if (parts[1] === "public" && parts[3]) return "/api/public/:slug/" + parts[3];
-    return "/" + parts.slice(0, 3).join("/");
+    if (parts[1] === "public" && PUBLIC_API_OPERATIONS.has(parts[3])) {
+      return "/api/public/:slug/" + parts[3];
+    }
+    if (parts[1] && NON_SITE_PATHS.has(parts[1])) return "/api/" + parts[1];
+    return "/other";
   }
   if (parts[0] === "go") return "/go/:slug";
   if (parts[0] === "logo") return "/logo/:slug";
   if (parts.length >= 2 && parts[1] === "player") return "/:slug/player/:name";
-  if (parts.length >= 2) return "/:slug/" + parts[1];
+  if (parts.length >= 2 && SITE_SECTIONS.has(parts[1])) return "/:slug/" + parts[1];
   if (parts.length === 1 && !NON_SITE_PATHS.has(parts[0])) return "/:slug";
-  return "/" + parts.join("/");
+  if (parts.length === 1 && NON_SITE_PATHS.has(parts[0])) return "/" + parts[0];
+  return "/other";
 }
 
 function telemetrySite(path) {
@@ -164,7 +170,7 @@ export default {
       }
     }
     return response;
-  }),
+  }, { telemetry: true }),
 
   scheduled: handleScheduled,
 };
