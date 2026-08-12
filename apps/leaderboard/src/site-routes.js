@@ -13,6 +13,15 @@ import { generateCsrfToken, csrfCookie } from "./middleware/csrf.js";
 import { renderPasswordGate } from "./render.jsx";
 import { renderSite } from "./site-render.js";
 import { getViewerSiteData } from "./site-data.js";
+import {
+  cachedPublicBoardResponse,
+  getPublicBoardCache,
+  isPublicBoardCacheRequest,
+  isPublicBoardCacheSite,
+  PUBLIC_HTML_CSRF_PLACEHOLDER,
+  PUBLIC_HTML_NONCE_PLACEHOLDER,
+  putPublicBoardCache,
+} from "./public-html-cache.js";
 
 const SECTIONS = new Set(["home", "leaderboard", "shop", "games", "me"]);
 
@@ -75,10 +84,19 @@ async function bumpView(env, ctx, request, siteId, slug, headers) {
 }
 
 export async function renderSiteRoute({ request, env, ctx, nonce, slug, section, isCustomDomain }) {
+  const cacheableRequest = isPublicBoardCacheRequest(request, section);
   const HTML_N = withNonce(HTML, nonce);
   const respHeaders = new Headers({ ...HTML_N, "cache-control": "no-store" });
 
   try {
+    if (cacheableRequest) {
+      const cached = await getPublicBoardCache(request);
+      if (cached) {
+        const csrfToken = generateCsrfToken();
+        return cachedPublicBoardResponse(cached, nonce, csrfToken, csrfCookie(csrfToken));
+      }
+    }
+
     const r = await getPublicSite(env, slug, request);
     if (r && r.requiresPassword) {
       return new Response(renderPasswordGate(r, { nonce, isCustomDomain }), { headers: respHeaders });
@@ -95,10 +113,12 @@ export async function renderSiteRoute({ request, env, ctx, nonce, slug, section,
       return new Response(notFoundPage(slug, nonce), { status: 404, headers: HTML_N });
     }
 
+    const cacheableSite = cacheableRequest && isPublicBoardCacheSite(r);
     const { viewer, cookie: viewerCookie } = await resolveViewer(request, env);
     if (viewerCookie) respHeaders.append("set-cookie", viewerCookie);
 
-    const csrfToken = generateCsrfToken();
+    const renderNonce = cacheableSite ? PUBLIC_HTML_NONCE_PLACEHOLDER : nonce;
+    const csrfToken = cacheableSite ? PUBLIC_HTML_CSRF_PLACEHOLDER : generateCsrfToken();
     respHeaders.append("set-cookie", csrfCookie(csrfToken));
 
     const url = new URL(request.url);
@@ -127,9 +147,22 @@ export async function renderSiteRoute({ request, env, ctx, nonce, slug, section,
       section,
       viewer,
       viewerData,
-      opts: { nonce, homeUrl, slug, isCustomDomain, logoUrl, watermark, csrfToken, boards: r.boards, botUsername: r.botUsername },
+      opts: { nonce: renderNonce, homeUrl, slug, isCustomDomain, logoUrl, watermark, csrfToken, boards: r.boards, botUsername: r.botUsername },
     });
-    return new Response(html, { headers: respHeaders });
+    const responseHeaders = cacheableSite
+      ? new Headers({
+        ...Object.fromEntries(respHeaders.entries()),
+        ...withNonce(HTML, PUBLIC_HTML_NONCE_PLACEHOLDER),
+      })
+      : respHeaders;
+    const response = new Response(html, { headers: responseHeaders });
+    if (cacheableSite) {
+      if (ctx?.waitUntil) ctx.waitUntil(putPublicBoardCache(request, response));
+      else await putPublicBoardCache(request, response);
+      const servedCsrfToken = generateCsrfToken();
+      return cachedPublicBoardResponse(response, nonce, servedCsrfToken, csrfCookie(servedCsrfToken));
+    }
+    return response;
   } catch (err) {
     console.error("[site-routes]", String(err?.message || err), err?.stack);
     return new Response(error500Page(nonce), { status: 500, headers: HTML_N });

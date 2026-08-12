@@ -9,6 +9,7 @@ import { createQueueProducer } from "../../../shared/queue-producer.js";
 import { encrypt } from "../../../shared/crypto.js";
 import { verifyBoardPasswordCookie } from "./board-password.js";
 import { detectImageMime, validateLogoData } from "./logo-validation.js";
+import { invalidatePublicBoardCache } from "./public-html-cache.js";
 
 export { detectImageMime, validateLogoData };
 
@@ -415,6 +416,8 @@ export async function getPublicSite(env, slug, request = null) {
     return {
       id: site.id,
       userId: site.user_id,
+      published: !!site.published,
+      isDraft: !!site.is_draft,
       data: publicShape(site, players, archives, !!site.has_logo),
       plan,
       boards,
@@ -1114,6 +1117,14 @@ export async function saveSite(env, user, payload, siteId, request = null) {
   }
   // Return updated site data including new timestamp for optimistic concurrency
   const updatedSite = await getBoardById(env, uid, site.id);
+  invalidatePublicBoardCache(
+    `yourrank.site/${site.slug}`,
+    `yourrank.site/${site.slug}/leaderboard`,
+    slugRename ? `yourrank.site/${slugRename}` : null,
+    slugRename ? `yourrank.site/${slugRename}/leaderboard` : null,
+    site.custom_domain ? `${site.custom_domain}/` : null,
+    site.custom_domain ? `${site.custom_domain}/leaderboard` : null,
+  );
 
   // Build a concise list of what changed for the audit log
   const changes = [];
