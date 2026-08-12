@@ -14,7 +14,7 @@ import { privacyPage } from "./pages/privacy.js";
 import { responsiblePage } from "./pages/responsible.js";
 import { refundPage } from "./pages/refund.js";
 import { cookiesPage } from "./pages/cookies.js";
-import { helpSupportPage, helpFeedbackPage } from "./pages/help.js";
+import { helpHubPage, helpSupportPage, helpFeedbackPage } from "./pages/help.js";
 import { pricingPage } from "./pages/pricing.js";
 import { docsPage } from "./pages/docs.js";
 import {
@@ -70,6 +70,7 @@ export const PAGES = {
   cookies: cookiesPage,
   helpSupport: helpSupportPage,
   helpFeedback: helpFeedbackPage,
+  helpHub: helpHubPage,
   pricing: pricingPage,
   rewardsChannel: { config: rewardsChannelConfig, Component: RewardsChannelPage },
   rewardsRules: { config: rewardsRulesConfig, Component: RewardsRulesPage },

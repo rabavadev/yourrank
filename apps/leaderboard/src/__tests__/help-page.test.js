@@ -1,5 +1,3 @@
-// Help used to render its own standalone page: it dropped the app shell and
-// offered a "Sign in" button to users who were already signed in.
 import { describe, it, expect } from "bun:test";
 import { PAGES } from "../pages.jsx";
 import { leaderboardPageHtml } from "../../../../shared/page-shell.js";
@@ -19,6 +17,20 @@ function render(pageKey, user) {
 const user = { display_name: "Streamer One", email: "streamer@example.com", plan: "pro" };
 
 describe("help pages", () => {
+  it("renders the operator help hub in both shells", () => {
+    const signedIn = render("helpHub", user);
+    const signedOut = render("helpHub", null);
+    for (const html of [signedIn, signedOut]) {
+      expect(html).toContain("Operator help");
+      expect(html).toContain('href="/help/support"');
+      expect(html).toContain('href="/help/feedback"');
+      expect(html).toContain('href="/dashboard/rewards/rules"');
+    }
+    expect(signedIn).toContain("Streamer One");
+    expect(signedIn).not.toContain(">Sign in<");
+    expect(signedOut).toContain(">Sign in<");
+  });
+
   for (const key of ["helpSupport", "helpFeedback"]) {
     it(`${key} renders the app header for a signed-in streamer`, () => {
       const html = render(key, user);

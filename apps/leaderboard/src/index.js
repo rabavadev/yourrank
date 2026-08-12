@@ -790,8 +790,13 @@ async function handleRequest(request, env, ctx, meta) {
         }
         return Response.redirect(redirectUrl, 302);
       }
-      if (path === "/help" || path === "/help.html") {
-        return Response.redirect(new URL("/help/support", url), 302);
+      if (path === "/help.html") {
+        return Response.redirect(new URL("/help", url), 302);
+      }
+      if (path === "/help") {
+        const helpUser = await currentUser(request, env).catch(() => null);
+        const helpHtml = await renderHtmlPage(PAGES.helpHub, { activePath: "/help", user: helpUser || undefined, theme: "dark" });
+        return new Response(addCookieConsent(helpHtml), { headers: { ...HTML_N, ...csrfHeader } });
       }
       if (path.startsWith("/help/")) {
         const tab = path.slice("/help/".length).split("?")[0];
