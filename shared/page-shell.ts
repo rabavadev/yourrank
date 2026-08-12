@@ -118,7 +118,7 @@ const BOT_BASE_CSS = `
   /* One palette across both Workers — see apps/leaderboard/src/assets/app.css.
      tokens.test.js fails if these copies drift again. */
   :root { --bg:#fafafa; --panel:#ffffff; --panel-2:#f7f7f8; --border:#e4e4e7; --border-2:#d4d4d8;
-          --fg:#191919; --dim:#55555c; --mute:#82828a;
+          --fg:#191919; --dim:#55555c; --mute:#707070;
           --accent:#5b5bf5; --accent-ink:#ffffff; --green:#16c784; --red:#ef4444;
           --mono:"IBM Plex Mono","JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
           --sans:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
@@ -148,7 +148,7 @@ const BOT_BASE_CSS = `
   .pagehead { margin-bottom:20px; }
   .pagehead h1 { font-size:20px; } .pagehead p { font-size:13px; color:var(--dim); margin-top:2px; }
 
-  .panel { background:var(--panel); border:1px solid var(--border); border-radius:14px; padding:18px 18px; margin-bottom:18px; box-shadow:var(--yr-shadow); }
+  .panel { background:var(--panel); border:1px solid var(--border); border-radius:12px; padding:18px 18px; margin-bottom:18px; }
   h1 { font-size:20px; }
   h2 { font-size:12px; letter-spacing:.03em; text-transform:uppercase; margin-bottom:12px; color:var(--dim); font-weight:600; }
   h3 { color:var(--fg); }
@@ -274,13 +274,13 @@ const BOT_DASH_V2_CSS = `
   .pagehead h1 { font-size: 22px; font-weight: 700; letter-spacing: -0.02em; }
   .pagehead p { font-size: 13px; color: var(--yr-ink-soft); margin-top: 4px; }
 
-  .panel, .kpi, .qa a, .step, .bot-card, .bc-segment {
+  .kpi, .qa a, .step, .bot-card, .bc-segment {
     background: var(--yr-panel);
     border: 1px solid var(--yr-line);
     border-radius: var(--yr-radius);
     box-shadow: var(--yr-shadow);
   }
-  .panel { padding: 18px; margin-bottom: 16px; }
+  .panel { padding: 18px; margin-bottom: 16px; border-radius: 12px; }
   .kpi { padding: 16px; }
   /* auto-fit rather than a fixed 4 + a breakpoint: the cards reflow to 2 and
      then 1 column on their own, so nothing is crushed on a phone. */
@@ -311,10 +311,10 @@ const BOT_DASH_V2_CSS = `
   .wizard-step[hidden] { display:none; }
   .bc-segment { padding: 12px 14px; }
 
-  h2 { font-size: 12px; text-transform: uppercase; letter-spacing: 0.03em; color: var(--yr-ink-soft); margin-bottom: 14px; font-weight: 600; }
+  h2 { font-size: 12px; text-transform: uppercase; letter-spacing: 0.03em; color: var(--yr-ink-mute); margin-bottom: 14px; font-weight: 600; }
   h3 { color: var(--yr-ink); font-size: 14px; font-weight: 600; }
 
-  table th { color: var(--yr-ink-soft); font-weight: 500; font-size: 12px; border-bottom: 1px solid var(--yr-line); }
+  table th { color: var(--yr-ink-mute); font-weight: 500; font-size: 12px; border-bottom: 1px solid var(--yr-line); }
   table td { border-bottom: 1px solid var(--yr-line); }
 
   input, textarea, select { background: var(--yr-panel); border: 1px solid var(--yr-line-2); border-radius: var(--yr-control-radius); min-height: var(--yr-control-height); padding: 0 var(--yr-control-padding-x); font: 14px/1.2 var(--yr-sans); }
@@ -324,9 +324,9 @@ const BOT_DASH_V2_CSS = `
   .shell { display: flex; gap: 24px; align-items: flex-start; max-width: 1440px; margin: 0 auto; padding: 24px 28px 80px; }
   .side { flex: 0 0 240px; position: sticky; top: 86px; display: flex; flex-direction: column; gap: 6px; height: auto; max-height: calc(100vh - 110px); overflow-y: auto; padding: 18px; background: var(--yr-panel); border: 1px solid var(--yr-line); border-radius: var(--yr-radius); box-shadow: var(--yr-shadow); }
   .side-head { border-bottom: 1px solid var(--yr-line); margin-bottom: 6px; padding: 0 4px 16px; }
-  .side-head .label { font-family: var(--yr-mono); font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--yr-ink-soft); }
+  .side-head .label { font-family: var(--yr-mono); font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--yr-ink-mute); }
   .side-active-name { font-weight: 700; font-size: 15px; color: var(--yr-ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 2px; }
-  .side-active-meta { font-size: 12px; color: var(--yr-ink-soft); margin-top: 2px; }
+  .side-active-meta { font-size: 12px; color: var(--yr-ink-mute); margin-top: 2px; }
   .side .snav { display: flex; flex-direction: column; gap: 2px; }
   .side .snav a { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: 10px; color: var(--yr-ink-soft); text-decoration: none; font-size: 14px; }
   .side .snav a .ic { width: 18px; height: 18px; flex: none; display: inline-flex; }
