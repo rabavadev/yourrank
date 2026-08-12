@@ -169,11 +169,19 @@ STAGE=T0 k6 run docs/load-test.js
 ```
 
 To run one mixed stage, set `STAGE=T1` through `STAGE=T7`; it ramps to that
-stage's target, holds for the audit duration, and ramps down. Threshold
-failures require investigation: board-render p95 under 1.5 seconds, regular
-request errors under 1%, and early SSE closes under 5%. The k6 summary reports
-p50/p95/p99 timings; correlate it with Worker CPU, Hyperdrive pool errors,
-Supabase CPU/connections, and queue backlog as described in the audit.
+stage's target, holds for the audit duration, and ramps down. HTTP 429
+responses are expected when many VUs share the load generator's source IP:
+the harness accepts them, excludes them from the regular request failure
+threshold, and reports their share in the `rate_limited` metric (tagged by
+surface). This does not weaken application limits. To measure origin capacity
+instead of limiter shedding, run from distributed source IPs or arrange
+rate-limit keys that distinguish the load-generator clients; alternatively,
+reduce the search/pagination request share and interpret the shed rate
+separately. Threshold failures still require investigation: board-render p95
+under 1.5 seconds, regular non-429 request errors under 1%, and early SSE
+closes under 5%. The k6 summary reports p50/p95/p99 timings; correlate it with
+Worker CPU, Hyperdrive pool errors, Supabase CPU/connections, and queue backlog
+as described in the audit.
 **Never point this harness at production.**
 
 ## Provenance

@@ -55,6 +55,14 @@ function sseStages() {
 
 const boardRender = new Trend("board_render_duration", true);
 const sseUnhealthy = new Rate("sse_unhealthy_rate");
+const rateLimited = new Rate("rate_limited");
+
+// k6 normally counts HTTP 429 responses as request failures. They are an
+// expected capacity-shedding outcome for this harness, so exclude only 429
+// from the built-in failure metric and track it separately below.
+http.setResponseCallback((response) => (
+  response.status === 429 || (response.status >= 200 && response.status < 400)
+));
 
 export const options = {
   stages: STAGE === "T0" ? sseStages() : mixedStages(),
@@ -70,7 +78,11 @@ const boardUrl = `${base}/${encodeURIComponent(BOARD_SLUG)}`;
 const apiUrl = `${base}/api/public/${encodeURIComponent(BOARD_SLUG)}`;
 
 function regularRequest(response, label, expected) {
-  check(response, { [`${label}: expected status`]: (r) => expected(r.status) }, { kind: "regular" });
+  const limited = response.status === 429;
+  rateLimited.add(limited, { surface: label });
+  check(response, {
+    [`${label}: expected status or limiter shed`]: (r) => limited || expected(r.status),
+  }, { kind: "regular", surface: label });
 }
 
 function holdSse() {
