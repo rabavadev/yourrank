@@ -84,6 +84,11 @@ jobs:
         working-directory: apps/leaderboard
         run: |
           set -o pipefail
+          # The coverage invocation is a separate Bun process from the test
+          # runner; regenerate shared JS so it cannot load stale exports.
+          cd ../..
+          node build-shared.mjs
+          cd apps/leaderboard
           # These tests use process-global module mocks and are already run in
           # isolation above; loading them with other files corrupts mock state.
           mapfile -t COVERAGE_FILES < <(node ../../scripts/coverage-files.mjs)
