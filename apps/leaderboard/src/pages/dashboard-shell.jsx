@@ -15,6 +15,7 @@ const DASHBOARD_NAV = [
   { type: "group", label: "BOARD" },
   ["board", "Editor", "/dashboard/editor", '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>'],
   ["games", "Public page", "/dashboard/games", '<rect width="18" height="14" x="3" y="5" rx="2"/><path d="M3 10h18"/><path d="M9 10v9"/>'],
+  ["settings", "Board settings", "/dashboard/settings/board", null],
   { type: "group", label: "CREDITS" },
   ["credits", "Credits", "/dashboard/rewards/redemptions", '<path d="M6 2v4"/><path d="M18 2v4"/><rect width="16" height="16" x="4" y="4" rx="2"/><path d="M4 10h16"/><path d="M8 14h.01"/><path d="M12 14h.01"/><path d="M16 14h.01"/>'],
   ["shop", "Shop", "/dashboard/rewards/shop", null],
@@ -24,11 +25,12 @@ const DASHBOARD_NAV = [
   ["channel", "Kick channel", "/dashboard/rewards/channel", null],
   { type: "group", label: "GROW" },
   ["performance", "Analytics", "/dashboard/analytics/activity", '<path d="M3 3v18h18"/><path d="m7 12 4-4 4 4 5-5"/>', "activity"],
-  ["settings", "Settings", "/dashboard/settings", GEAR_ICON]
+  ["account", "Account settings", "/dashboard/settings", GEAR_ICON]
 ];
 
 const ACCOUNT_NAV = [
-  ["settings", "Settings", "/dashboard/settings", GEAR_ICON],
+  ["account", "Account settings", "/dashboard/settings", GEAR_ICON],
+  ["back", "Back to dashboard", "/dashboard", null],
 ];
 
 function Icon({ path }) {
@@ -51,12 +53,12 @@ function SidebarBoard({ boardContext }) {
 }
 
 // Cross-product switcher. The leaderboard sections above are this app; these
-// links leave it (Telegram bots, account, help), so only the ones that aren't
-// already a sidebar destination are listed.
-const PRODUCT_NAV_KEYS = new Set(["bot", "account", "help"]);
+// links leave it (Telegram bots, help), so only the ones that aren't already a
+// sidebar destination are listed.
+const PRODUCT_NAV_KEYS = new Set(["bot", "help"]);
 
 function ProductNav({ boardContext, footer }) {
-  const activePath = boardContext === "none" ? "/account/profile" : footer === "rewards" ? "/dashboard/rewards/redemptions" : "/dashboard";
+  const activePath = boardContext === "none" ? "/dashboard/settings" : footer === "rewards" ? "/dashboard/rewards/redemptions" : "/dashboard";
   const active = activeKey(activePath);
   return <nav class="lb-product-nav" aria-label="Product">
     <span class="label">Product</span>
@@ -75,7 +77,7 @@ function SidebarFooter({ boardContext, footer }) {
 
 export function DashboardShell({ activeNav = "home", activeHash = "", boardContext = "full", footer = "dashboard", title = "", rootId, initiallyHidden = false, user, children }) {
   const navItems = boardContext === "none" ? ACCOUNT_NAV : DASHBOARD_NAV;
-  const activePath = boardContext === "none" ? `/account/${activeNav}` : CREDITS_NAV_KEYS.has(activeNav) ? "/dashboard/rewards/redemptions" : "/dashboard";
+  const activePath = boardContext === "none" ? "/dashboard/settings" : CREDITS_NAV_KEYS.has(activeNav) ? "/dashboard/rewards/redemptions" : "/dashboard";
   const shellId = rootId || (boardContext === "none" ? "account-dash" : "dash");
   const profile = profileMenuHtml({ activePath, user, standalone: true, dynamicIdentity: true });
   return <div class="v3-dash" id={shellId} hidden={initiallyHidden}>

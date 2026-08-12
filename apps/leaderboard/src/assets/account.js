@@ -308,37 +308,20 @@ async function init() {
   state.ME = me.user;
   setUserName();
 
-  const tab = currentTab();
+  // One settings document holds every panel, so everything is wired once.
   wireUnifiedSettingsTabs();
-  if (tab === "settings") {
-    wireAccount();
-    renderPlan();
-    const plan = new URLSearchParams(location.search).get("plan")?.toLowerCase();
-    if (["starter", "pro", "lifetime"].includes(plan)) checkout(plan);
-    loadPlanUsage();
-    loadHistory();
-    wireCancelSubscription();
-    await loadPostbacks();
-    wirePostbacks();
-    await loadConnectedAccounts();
-    wireDeleteAccount();
-    wireDeleteAccountModal();
-    return;
-  }
-  if (!tab || tab === "profile") wireAccount();
-  if (!tab || tab === "plan") {
-    renderPlan();
-    loadPlanUsage();
-    loadHistory();
-    wireCancelSubscription();
-  }
-  if (!tab || tab === "postbacks") {
-    await loadPostbacks();
-    wirePostbacks();
-  }
-  if (!tab || tab === "connected") await loadConnectedAccounts();
-  if (!tab || tab === "data") wireDeleteAccount();
-    wireDeleteAccountModal();
+  wireAccount();
+  renderPlan();
+  const plan = new URLSearchParams(location.search).get("plan")?.toLowerCase();
+  if (["starter", "pro", "lifetime"].includes(plan)) checkout(plan);
+  loadPlanUsage();
+  loadHistory();
+  wireCancelSubscription();
+  await loadPostbacks();
+  wirePostbacks();
+  await loadConnectedAccounts();
+  wireDeleteAccount();
+  wireDeleteAccountModal();
 }
 
 if (document.getElementById("acc-app")) init();

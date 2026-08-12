@@ -537,7 +537,7 @@ async function handleRequest(request, env, ctx, meta) {
 
       // --- helper for rendering strings or JSX pages ---
       const renderHtmlPage = async (pageObj, { reqId, activePath, user, theme, accountHref, logoutAction, tab } = {}) => {
-        const navOpts = activePath && user ? { activePath, user, theme, accountHref: accountHref || "/account/profile", logoutAction } : null;
+        const navOpts = activePath && user ? { activePath, user, theme, accountHref: accountHref || "/dashboard/settings", logoutAction } : null;
         // Pages reachable signed-out (Help) still get a header — the anonymous
         // variant of the same shell rather than a separate marketing top bar.
         const navHtml = () => (navOpts ? shellNavHtml(navOpts) : publicNavHtml({ activePath, theme }));
@@ -664,7 +664,10 @@ async function handleRequest(request, env, ctx, meta) {
         // the URL a user copies is the URL they can share.
         const legacy = resolveSection(url.searchParams.get("nav"));
         if (legacy) {
-          const target = new URL(dashboardPath(legacy), url);
+          // `?nav=billing|integrations|manage|settings` all meant the account
+          // settings, which are their own document now; `settings` inside the
+          // dashboard document is the selected board's own settings.
+          const target = new URL(legacy === "settings" ? "/dashboard/settings" : dashboardPath(legacy), url);
           for (const [k, v] of url.searchParams) if (k !== "nav") target.searchParams.set(k, v);
           return Response.redirect(target, 302);
         }
@@ -686,8 +689,10 @@ async function handleRequest(request, env, ctx, meta) {
           return new Response(error500Page(nonce), { status: 500, headers: HTML_N });
         }
       }
+      // `/account/*` was a second settings implementation; the canonical one is
+      // `/dashboard/settings/*`, so every old URL redirects into its tab.
       if (path === "/account" || path === "/account.html") {
-        return redirectKeepingSearch("/account/profile", url);
+        return redirectKeepingSearch("/dashboard/settings", url);
       }
       if (path.startsWith("/account/")) {
         const tab = path.slice("/account/".length).split("?")[0];

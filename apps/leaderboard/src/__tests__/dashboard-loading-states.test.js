@@ -48,7 +48,7 @@ describe("dashboard loading states", () => {
     expect(site).toContain("setState({ STATS_STATUS: \"loading\" })");
     expect(site).toContain("setState({ STATS: s, STATS_STATUS: \"ready\" })");
     expect(site).toContain("setState({ CREDITS_STATUS: \"loading\" })");
-    expect(account).toContain("setState({ USAGE_STATUS: \"loading\" })");
+    expect(site).toContain("setState({ USAGE_STATUS: \"loading\" })");
     expect(account).toContain("setState({ SESSIONS_STATUS: \"loading\" })");
     expect(games).toContain("setState({ GAMES_STATUS: \"loading\" })");
     expect(performance).toContain("setState({ HEATMAP_STATUS: \"loading\" })");
