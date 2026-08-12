@@ -65,11 +65,6 @@ jobs:
         run: bun audit --audit-level moderate --ignore=GHSA-f88m-g3jw-g9cj --ignore=GHSA-mh99-v99m-4gvg
         # sharp <0.35.0 (transitive via wrangler, dev-only) and brace-expansion <=5.0.7
         # (transitive via eslint, dev-only) are tracked separately; both are build-time-only.
-      - name: Build shared TypeScript
-        run: node build-shared.mjs
-      - name: Build leaderboard assets
-        working-directory: apps/leaderboard
-        run: node build-assets.js
       - name: Run tests
         run: bun run test
       - name: Syntax-check client assets
@@ -154,8 +149,6 @@ jobs:
         run: bun audit --audit-level moderate --ignore=GHSA-f88m-g3jw-g9cj --ignore=GHSA-mh99-v99m-4gvg
         # sharp <0.35.0 (transitive via wrangler, dev-only) and brace-expansion <=5.0.7
         # (transitive via eslint, dev-only) are tracked separately; both are build-time-only.
-      - name: Build shared TypeScript
-        run: node build-shared.mjs
       - name: Run bot tests
         run: bun run test
       - name: Typecheck bot
