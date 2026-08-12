@@ -10,7 +10,7 @@ import { bumpStat } from "./stats.js";
 import { hashToken } from "../../../shared/crypto.js";
 import { HTML, withNonce, notFoundPage, pendingVerificationPage, error500Page } from "./middleware/headers.js";
 import { generateCsrfToken, csrfCookie } from "./middleware/csrf.js";
-import { renderPasswordGate } from "./render.jsx";
+import { renderPasswordGate } from "./password-gate.js";
 import { renderSite } from "./site-render.js";
 import { getViewerSiteData } from "./site-data.js";
 import {

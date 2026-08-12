@@ -425,12 +425,12 @@ export async function renderSite({ r, section, viewer, viewerData, opts }) {
 
   const titleBase = esc(b.name || slug);
   const sectionTitle = SECTION_TITLES[section] || section;
-  const title = section === "home"
+  const title = opts.pageTitle || (section === "home"
     ? `${titleBase} — ${esc(b.tagline || "Leaderboard & Rewards")}`
-    : `${sectionTitle} · ${titleBase}`;
-  const desc = section === "home"
+    : `${sectionTitle} · ${titleBase}`);
+  const desc = opts.pageDescription || (section === "home"
     ? `${titleBase}'s viewer site — ${esc(b.tagline || "compete on the leaderboard, earn free credits and redeem rewards.")}`
-    : `${sectionTitle} for ${titleBase}'s viewer site.`;
+    : `${sectionTitle} for ${titleBase}'s viewer site.`);
   const ogImageUrl = logoUrl ? esc(logoUrl) : `${homeUrl}/og.png`;
 
   const ctx = {
@@ -439,12 +439,12 @@ export async function renderSite({ r, section, viewer, viewerData, opts }) {
     returnTo, nonce, watermark,
   };
 
-  const mainInner = section === "home" ? homeMain(ctx)
+  const mainInner = opts.contentHtml || (section === "home" ? homeMain(ctx)
     : section === "leaderboard" ? boardMain(ctx)
     : section === "shop" ? shopMain(ctx)
     : section === "games" ? gamesMain(ctx)
     : section === "me" ? meMain(ctx)
-    : `<div class="yr-empty">Section not found</div>`;
+    : `<div class="yr-empty">Section not found</div>`);
 
   const footer = siteFooter({ data, b, siteSections, slug, isCustomDomain, homeUrl, watermark });
 
