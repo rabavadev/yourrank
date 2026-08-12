@@ -130,7 +130,9 @@ describe("dashboard views", () => {
     expect(html).toContain('data-action="connectBot"');
     expect(html).toContain('data-action="createOffer"');
     expect(html).toContain('data-action="sendBroadcast"');
-    expect(html).toContain('data-action="logout"');
+    // Signing out is the dashboard shell's account menu (a POST form) now that
+    // /bot/* renders in that shell instead of its own rail.
+    expect(html).toContain('action="/bot/auth/logout"');
     expect(html).not.toContain('<div class="panel" data-page="settings">');
     expect(html).toContain("Manage postbacks in settings");
     expect(html).toContain("postbackStatus");
@@ -317,7 +319,7 @@ describe("buildDashboard", () => {
     const html = await res.text();
     expect(html).toContain('<script src="/bot/dash/client.js"></script>');
     expect(html).toContain('data-action="connectBot"');
-    expect(html).toContain('data-action="logout"');
+    expect(html).toContain('action="/bot/auth/logout"');
     expect(html).not.toContain("onclick=");
 
     const csp = res.headers.get("content-security-policy") || "";

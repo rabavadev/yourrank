@@ -2,6 +2,8 @@
 /** @jsxImportSource hono/jsx */
 
 import { NAV_LINKS, activeKey, profileMenuHtml } from "../../../../shared/shell-nav.js";
+import { raw } from "hono/html";
+import { navListHtml } from "../../../../shared/dashboard-chrome.js";
 
 const CREDITS_NAV_KEYS = new Set(["credits", "channel", "redemptions", "shop", "rules", "viewers", "history"]);
 
@@ -32,11 +34,6 @@ const ACCOUNT_NAV = [
   ["account", "Account settings", "/dashboard/settings", GEAR_ICON],
   ["back", "Back to dashboard", "/dashboard", null],
 ];
-
-function Icon({ path }) {
-  if (!path) return null;
-  return <span class="lb-nav-ic" aria-hidden="true" dangerouslySetInnerHTML={{ __html: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">${path}</svg>` }} />;
-}
 
 function SidebarBoard({ boardContext }) {
   if (boardContext === "none") {
@@ -86,16 +83,17 @@ export function DashboardShell({ activeNav = "home", activeHash = "", boardConte
       <aside class="lb-side" id="lbSide" aria-label={boardContext === "none" ? "Account sections" : "Dashboard sections"}>
         <SidebarBoard boardContext={boardContext} />
         <button class="lb-side-close" type="button" aria-label="Close navigation" data-close-side>×</button>
-        <nav class="lb-side-group lb-side-nav" data-area="all" aria-label={boardContext === "none" ? "Account" : "Dashboard"}>
-          {navItems.map((item) => item.type === "group"
-            ? <div class="lb-nav-group-label" role="heading" aria-level="2">{item.label}</div>
+        {raw(navListHtml(
+          navItems.map((item) => item.type === "group"
+            ? { group: item.label }
             : (() => {
               const [key, label, href, path, hash] = item;
-              const active = (activeNav === key || (key === "credits" && (activeNav === "redemptions" || activeNav === "credits"))) && (!hash || activeHash === hash);
-              const child = key !== "credits" && CREDITS_NAV_KEYS.has(key);
-              return <a class={"lb-nav" + (active ? " is-on" : "") + (child ? " lb-nav-child" : "")} href={href} data-nav={key} data-hash={hash} aria-current={active ? "page" : undefined}><Icon path={path} />{label}</a>;
-            })())}
-        </nav>
+              return { key, label, href, icon: path, hash, child: key !== "credits" && CREDITS_NAV_KEYS.has(key) };
+            })()),
+          activeNav === "redemptions" ? "credits" : activeNav,
+          activeHash,
+          boardContext === "none" ? "Account" : "Dashboard"
+        ))}
         <SidebarFooter boardContext={boardContext} footer={footer} />
       </aside>
       <div class="lb-main">

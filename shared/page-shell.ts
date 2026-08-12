@@ -398,6 +398,8 @@ export interface BotPageOpts {
   page: string;
   nonce?: string;
   nav?: string;
+  /** Page renders the shared dashboard rail/topbar, so it needs its stylesheets. */
+  dashboardChrome?: boolean;
   content: string;
 }
 
@@ -405,13 +407,18 @@ export interface BotPageOpts {
 export function botPageHtml(opts: BotPageOpts): string {
   const nonceAttr = opts.nonce ? ` nonce="${esc(opts.nonce)}"` : "";
   const nav = opts.nav || "";
+  // The dashboard stylesheets come first so the bot's own component CSS still
+  // wins for its panels; only the shell chrome comes from the shared sheets.
+  const chromeCss = opts.dashboardChrome
+    ? '<link rel="stylesheet" href="/assets/app.css"><link rel="stylesheet" href="/assets/dashboard-v3.css">'
+    : "";
   return `<!doctype html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Streamer Dashboard</title>${GOOGLE_FONTS}<style${nonceAttr}>${BOT_STYLE_ATTR_CSS}${BOT_BASE_CSS}${BOT_DASH_V2_CSS}</style><link rel="stylesheet" href="/assets/ui.css">${nav ? '<link rel="stylesheet" href="/assets/shell-nav.css">' : ""}</head><body class="yr-ui" data-page="${esc(opts.page)}">
+<title>Streamer Dashboard</title>${GOOGLE_FONTS}${chromeCss}<style${nonceAttr}>${BOT_STYLE_ATTR_CSS}${BOT_BASE_CSS}${BOT_DASH_V2_CSS}</style><link rel="stylesheet" href="/assets/ui.css"><link rel="stylesheet" href="/assets/shell-nav.css"></head><body class="yr-ui" data-page="${esc(opts.page)}">
 <a href="#main-content" class="skip-link">Skip to main content</a>
 ${nav}
 ${opts.content}
-${nav ? '<script src="/assets/shell-nav.js" defer></script>' : ""}
+<script src="/assets/shell-nav.js" defer></script>
 <script src="/assets/dialog.js" defer></script>
 </body></html>`;
 }
