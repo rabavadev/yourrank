@@ -74,6 +74,9 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
+      - name: Build shared TypeScript
+        run: node build-shared.mjs
+
       - name: Run all tests
         run: bun run test
 
