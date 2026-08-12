@@ -1,3 +1,5 @@
+import { setRequestMetrics } from "../../../shared/request-id.js";
+
 export const PUBLIC_HTML_NONCE_PLACEHOLDER = "__YOURRANK_PUBLIC_NONCE__";
 export const PUBLIC_HTML_CSRF_PLACEHOLDER = "__YOURRANK_PUBLIC_CSRF__";
 const PUBLIC_HTML_CACHE_CONTROL = "no-store";
@@ -98,6 +100,7 @@ export function cachedPublicBoardResponse(cached, nonce, csrfToken, csrfCookieHe
     const csp = headers.get("content-security-policy");
     if (csp) headers.set("content-security-policy", csp.split(PUBLIC_HTML_NONCE_PLACEHOLDER).join(nonce || ""));
     headers.set("cache-control", PUBLIC_HTML_CACHE_CONTROL);
+    setRequestMetrics({ payloadBytes: new TextEncoder().encode(body).byteLength });
     return new Response(body, { status: cached.status, statusText: cached.statusText, headers });
   });
 }

@@ -18,6 +18,7 @@
 // ============================================================================
 
 import postgres from "postgres";
+import { incrementDbQueries } from "./request-id.js";
 
 // ----------------------------------------------------------------------------
 // Configuration
@@ -82,6 +83,7 @@ export async function query<T = Record<string, unknown>>(
   for (let attempt = 0; attempt < 3; attempt++) {
     const sql = createSql();
     try {
+      incrementDbQueries();
       const rows = await sql.unsafe(text, params as any[]);
       return rows.map((r: any) => ({ ...r })) as unknown as T[];
     } catch (e: any) {
@@ -125,6 +127,7 @@ export async function one<T = Record<string, unknown>>(
 export async function exec(text: string, params: unknown[] = []): Promise<any> {
   const sql = createSql();
   try {
+    incrementDbQueries();
     const rows = await sql.unsafe(text, params as any[]);
     return rows.map((r: any) => ({ ...r }));
   } catch (e: any) {
@@ -169,14 +172,17 @@ export async function withTransaction<R>(fn: (tx: Tx) => Promise<R>): Promise<R>
       const result = await sql.begin(async (sqlTx: any) => {
         const tx: Tx = {
           async query<T = Record<string, unknown>>(text: string, params: unknown[] = []) {
+            incrementDbQueries();
             const rows = (await sqlTx.unsafe(text, params as any[])) as unknown[];
             return rows.map((r) => ({ ...(r as Record<string, unknown>) })) as unknown as T[];
           },
           async one<T = Record<string, unknown>>(text: string, params: unknown[] = []): Promise<T | undefined> {
+            incrementDbQueries();
             const rows = (await sqlTx.unsafe(text, params as any[])) as unknown[];
             return rows[0] ? ({ ...(rows[0] as Record<string, unknown>) } as T) : undefined;
           },
           async unsafe(text: string, params: unknown[] = []) {
+            incrementDbQueries();
             const rows = (await sqlTx.unsafe(text, params as any[])) as any[];
             return rows.map((r) => ({ ...r }));
           },

@@ -22,6 +22,7 @@ import {
   PUBLIC_HTML_NONCE_PLACEHOLDER,
   putPublicBoardCache,
 } from "./public-html-cache.js";
+import { setRequestMetrics } from "../../../shared/request-id.js";
 
 const SECTIONS = new Set(["home", "leaderboard", "shop", "games", "me"]);
 
@@ -84,6 +85,7 @@ async function bumpView(env, ctx, request, siteId, slug, headers) {
 }
 
 export async function renderSiteRoute({ request, env, ctx, nonce, slug, section, isCustomDomain }) {
+  setRequestMetrics({ route: `/site/${section}`, site: slug });
   const cacheableRequest = isPublicBoardCacheRequest(request, section);
   const HTML_N = withNonce(HTML, nonce);
   const respHeaders = new Headers({ ...HTML_N, "cache-control": "no-store" });
@@ -92,9 +94,11 @@ export async function renderSiteRoute({ request, env, ctx, nonce, slug, section,
     if (cacheableRequest) {
       const cached = await getPublicBoardCache(request);
       if (cached) {
+        setRequestMetrics({ cache: "hit" });
         const csrfToken = generateCsrfToken();
         return cachedPublicBoardResponse(cached, nonce, csrfToken, csrfCookie(csrfToken));
       }
+      setRequestMetrics({ cache: "miss" });
     }
 
     const r = await getPublicSite(env, slug, request, { limit: 100, offset: 0 });
@@ -156,6 +160,7 @@ export async function renderSiteRoute({ request, env, ctx, nonce, slug, section,
       })
       : respHeaders;
     const response = new Response(html, { headers: responseHeaders });
+    setRequestMetrics({ payloadBytes: new TextEncoder().encode(html).byteLength });
     if (cacheableSite) {
       if (ctx?.waitUntil) ctx.waitUntil(putPublicBoardCache(request, response));
       else await putPublicBoardCache(request, response);
