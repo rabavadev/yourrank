@@ -9,6 +9,7 @@ import { encrypt } from "../../../shared/crypto.js";
 import { verifyBoardPasswordCookie } from "./board-password.js";
 import { detectImageMime, validateLogoData } from "./logo-validation.js";
 import { invalidatePublicBoardCache } from "./public-html-cache.js";
+import { notifyLiveBoard } from "./live-board-config.js";
 
 export { detectImageMime, validateLogoData };
 
@@ -177,6 +178,22 @@ export async function getPublicStreamVersion(siteId, { one: oneImpl = one } = {}
   })();
   publicStreamVersionInflight.set(siteId, p);
   return p;
+}
+
+export async function getPublicLiveBoardVersion(siteId, { one: oneImpl = one } = {}) {
+  const row = await oneImpl(
+    `SELECT GREATEST(
+       s.updated_at,
+       COALESCE(MAX(p.updated_at), s.updated_at)
+     ) AS m,
+     now() AS _fresh
+       FROM sites s
+       LEFT JOIN players p ON p.site_id = s.id
+      WHERE s.id=$1
+      GROUP BY s.updated_at`,
+    [siteId]
+  );
+  return row?.m ? new Date(row.m).toISOString() : "0";
 }
 
 export function clearPublicStreamVersionCache() {
@@ -455,7 +472,9 @@ export function publicShape(site, players, archives = [], hasLogo = false, playe
 }
 
 export async function getPublicSite(env, slug, request = null, playerOptions = null) {
-    const site = await getBySlug(env, slug);
+    const site = playerOptions?.fresh
+      ? await one(`SELECT ${SITE_COLUMNS}, now() AS _fresh FROM sites WHERE slug=$1`, [slug])
+      : await getBySlug(env, slug);
     if (!site || !site.published) return null;
     if (site.password_hash && !(request && await verifyBoardPasswordCookie(request, site))) {
       return { requiresPassword: true, id: site.id, slug: site.slug, name: site.name };
@@ -785,10 +804,12 @@ export async function createArchive(env, uid, { label, clear, siteId } = {}, req
     }
     if (clear === "players") await tx.unsafe("DELETE FROM players WHERE site_id=$1", [site.id]);
     else if (clear === "wagers") await tx.unsafe("UPDATE players SET wagered=0 WHERE site_id=$1", [site.id]);
+    await tx.unsafe("UPDATE sites SET updated_at=now() WHERE id=$1", [site.id]);
   });
 
   if (emptyBoard) return { error: "Nothing to archive — the board is empty." };
   if (limitReached) return { error: `Archive limit reached (${maxArchives}). Delete an old one first. Upgrade for more.` };
+  void notifyLiveBoard(env, site.id);
   await logAudit({
     actorId: uid,
     action: "archive_create",
@@ -1188,6 +1209,7 @@ export async function saveSite(env, user, payload, siteId, request = null) {
   }
   // Return updated site data including new timestamp for optimistic concurrency
   const updatedSite = await getBoardById(env, uid, site.id);
+  void notifyLiveBoard(env, site.id, updatedSite?.updated_at || new Date().toISOString());
   invalidatePublicBoardCache(
     `yourrank.site/${site.slug}`,
     `yourrank.site/${site.slug}/leaderboard`,
@@ -1315,6 +1337,7 @@ export async function updateSiteTheme(env, user, payload = {}, request = null) {
     "UPDATE sites SET theme_json=$1::jsonb, updated_at=now() WHERE id=$2 AND user_id=$3",
     [theme, site.id, user.id]
   );
+  void notifyLiveBoard(env, site.id);
   invalidateSiteCache(env, site.slug, user.id, site.id);
   invalidateUserCache(env, user.id);
   await logAudit({

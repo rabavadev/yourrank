@@ -4,6 +4,15 @@ import { getStats as defaultGetStats, isStatementTimeout as defaultIsStatementTi
 import { rateLimit as defaultRateLimit, rateLimitHeaders, clientIp as defaultClientIp, json, bad } from "../auth.js";
 import { one as defaultOne } from "../../../../shared/db.js";
 import { demoLeaderboardData } from "../demo-data.js";
+import {
+  connectLiveBoard,
+} from "../live-board.js";
+import {
+  liveBoardPushEnabled,
+  liveBoardResponse,
+  liveBoardRetryAfter,
+  liveBoardStreamDisabled,
+} from "../live-board-config.js";
 
 /**
  * Handle GET /api/public/:slug/standings
@@ -147,9 +156,21 @@ export async function handlePublicStream(request, env, ctx, deps = {}) {
     const slug = ctx.slug;
     const rl = await rateLimit(env, `pub-stream:${clientIp(request)}`, 60, 60);
     if (!rl.ok) return bad("Rate limit exceeded. Try again shortly.", 429, rateLimitHeaders(rl));
+    if (liveBoardStreamDisabled(env)) {
+      const headers = new Headers(rateLimitHeaders(rl));
+      headers.set("retry-after", String(liveBoardRetryAfter()));
+      return new Response("Live board streams are temporarily unavailable.", {
+        status: 503,
+        headers,
+      });
+    }
     const r = await getPublicSite(env, slug, request);
     if (!r || r.suspended) return bad("not found", 404);
     if (r.requiresPassword) return bad("Password required.", 401);
+    if (liveBoardPushEnabled(env) && env.LIVE_BOARD_DO) {
+      const pushed = await connectLiveBoard(request, env, r.id, slug);
+      return liveBoardResponse(pushed, rateLimitHeaders(rl));
+    }
     const siteId = r.id;
     let lastTs = "";
     let closed = false;

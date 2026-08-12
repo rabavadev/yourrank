@@ -210,6 +210,13 @@ describe("handlePublicStream", () => {
     expect(res.status).toBe(404);
   });
 
+  it("sheds streams with the kill switch and tells clients to back off", async () => {
+    const env = { ...mockEnv(), LIVE_BOARD_STREAM_KILL_SWITCH: "true" };
+    const res = await handlePublicStream(req("https://test.com/api/public/testboard/stream"), env, { slug: "testboard" });
+    expect(res.status).toBe(503);
+    expect(res.headers.get("retry-after")).toBe("30");
+  });
+
   it("pushes the full payload when the player timestamp changes", async () => {
     streamVersion.mockResolvedValueOnce("2026-01-01T00:00:00.000Z");
     const env = mockEnv();

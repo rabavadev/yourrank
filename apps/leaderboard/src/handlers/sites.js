@@ -9,6 +9,7 @@ import { buildTop3Embed, sendDiscordWebhook, sendTelegramMessage } from "../../.
 import { decryptToken, decrypt } from "../../../../shared/crypto.js";
 import { PLATFORM_HOST } from "../constants.js";
 import { invalidateCustomDomain } from "../middleware/custom-domain.js";
+import { notifyLiveBoard } from "../live-board-config.js";
 
 function getTokenEncKey() {
   const hex = (typeof process !== "undefined" && process.env?.TOKEN_ENC_KEY) || "";
@@ -486,6 +487,7 @@ export async function handleDomainVerify(request, env) {
         "UPDATE sites SET custom_domain=NULL, custom_hostname_id=NULL, domain_status='pending', updated_at=now() WHERE id=$1",
         [site.id]
       );
+      void notifyLiveBoard(env, site.id);
       invalidateSiteCache(env, site.slug);
       invalidateUserCache(env, user.id);
       invalidateCustomDomain(existing?.custom_domain);
@@ -507,6 +509,7 @@ export async function handleDomainVerify(request, env) {
     if (!cfToken) {
       // Fallback: just save the domain without TLS provisioning
       await exec("UPDATE sites SET custom_domain=$1, custom_hostname_id=NULL, domain_status='pending', updated_at=now() WHERE id=$2", [domain, site.id]);
+      void notifyLiveBoard(env, site.id);
       invalidateSiteCache(env, site.slug);
       invalidateUserCache(env, user.id);
       invalidateCustomDomain(domain);
@@ -583,6 +586,7 @@ export async function handleDomainVerify(request, env) {
       console.error("[domain] CF error:", errMsg);
       // Save domain even if CF fails, for manual resolution
       await exec("UPDATE sites SET custom_domain=$1, custom_hostname_id=NULL, domain_status='error', updated_at=now() WHERE id=$2", [domain, site.id]);
+      void notifyLiveBoard(env, site.id);
       invalidateSiteCache(env, site.slug);
       invalidateUserCache(env, user.id);
       invalidateCustomDomain(existing?.custom_domain, domain);
@@ -598,6 +602,7 @@ export async function handleDomainVerify(request, env) {
       "UPDATE sites SET custom_domain=$1, custom_hostname_id=$2, domain_status=$3, updated_at=now() WHERE id=$4",
       [domain, chId, dbStatus, site.id]
     );
+    void notifyLiveBoard(env, site.id);
 
     invalidateSiteCache(env, site.slug);
     invalidateUserCache(env, user.id);

@@ -2,6 +2,7 @@ import { destroySession, cookieClear, readToken, RESERVED, currentUser, hasLegac
 import { sendErrorToDiscord } from "../../../shared/monitoring.js";
 import { withWorkerFetch } from "../../../shared/with-worker.js";
 import { RateLimiter } from "../../../shared/rate-limiter-do.js";
+import { LiveBoard } from "./live-board.js";
 import { populateEnv } from "../../../shared/env.js";
 import { fromJsonb, getPublicSite, getBySlug, getClickRedirectSite, getArchiveSnapshots, ARCHIVE_LIMITS, PUBLIC_ARCHIVE_LIMIT } from "./site.js";
 import { parseSitePath, renderSiteRoute } from "./site-routes.js";
@@ -1159,4 +1160,4 @@ a{color:#5b5bf5;text-decoration:none;font-weight:600}</style></head><body>
 }
 
 // Durable Object classes must be exported from the main module.
-export { RateLimiter };
+export { RateLimiter, LiveBoard };

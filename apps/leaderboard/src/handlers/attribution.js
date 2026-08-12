@@ -14,6 +14,7 @@ import {
   unsignedPostbacksEnabled,
 } from "../../../../shared/postback.js";
 import { recordConversion } from "../../../../shared/conversions.js";
+import { notifyLiveBoard } from "../live-board-config.js";
 import { effectivePlan } from "../../../../shared/plans.js";
 
 const MAX_DAYS = 365;
@@ -267,6 +268,6 @@ export async function handlePostback(request, env) {
     }
   }
 
-  await recordConversion(owner.userId, out, siteId);
+  await recordConversion(owner.userId, out, siteId, (id) => notifyLiveBoard(env, id));
   return json({ ok: true }, 200, legacyHeaders);
 }

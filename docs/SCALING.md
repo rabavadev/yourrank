@@ -196,9 +196,14 @@ rough cost directions, not quotes.
 
 **Change these in roughly this order:**
 
-1. Replace the current periodic live-board polling with push updates, such as a
-   Durable Object fan-out. A push update tells connected browsers only when a
-   board changes, instead of every browser asking repeatedly.
+1. Enable the board Durable Object fan-out after staging measurement. It is
+   disabled by default and retains the existing SSE wire contract. Configure
+   `LIVE_BOARD_PUSH_ENABLED`, `LIVE_BOARD_FALLBACK_POLL_MS`, and
+   `LIVE_BOARD_MAX_SUBSCRIBERS`; use `LIVE_BOARD_STREAM_KILL_SWITCH` to shed
+   SSE without a deploy. See [Live-board stream controls](live-board-push.md).
+   A push update tells connected browsers only when a board changes, instead of
+   every browser asking repeatedly. The DO still performs one bounded,
+   per-board fallback poll while subscribers are active.
 2. Add a per-board stream limit and a WAF (Web Application Firewall) rule.
    This stops one abusive or viral board from consuming the whole database.
 3. Move analytics to maintained rollups and keep the five-second timeout.
