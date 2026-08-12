@@ -14,13 +14,10 @@
 import {
   logoSrcSet,
   renderLegalSidebar,
-  esc as renderEsc,
-  safeUrl as renderSafeUrl,
-} from "./render.jsx";
+  esc,
+  safeUrl,
+} from "./public-render-helpers.js";
 import { gamesIslandHead, gamesIslandMount } from "./games-embed.js";
-
-const esc = renderEsc;
-const safeUrl = renderSafeUrl;
 
 const SECTION_LABELS = {
   home: "Home",
@@ -133,7 +130,7 @@ function accentInkFor(accent) {
   return accent === PUBLIC_ACCENT_DEFAULT.value ? PUBLIC_ACCENT_DEFAULT.ink : accentInk(accent);
 }
 
-function money(currency, n) {
+export function formatMoney(currency, n) {
   const cur = String(currency || "$").slice(0, 6);
   return `${cur}${formatNumber(Math.round(Number(n) || 0))}`;
 }
@@ -419,18 +416,18 @@ export async function renderSite({ r, section, viewer, viewerData, opts }) {
   const balance = Number(viewerOnSite?.balance || 0);
   const kickUrl = (Array.isArray(data.socials) ? data.socials : []).find((s) => /kick/i.test(s?.type || s?.name || ""))?.url;
 
-  const sectionUrl = `${homeUrl}${siteSectionHref(section, slug, isCustomDomain)}`;
+  const sectionUrl = `${homeUrl}${siteSectionHref(section || "home", slug, isCustomDomain)}`;
   const canonicalUrl = esc(sectionUrl);
   const returnTo = sectionUrl;
 
   const titleBase = esc(b.name || slug);
   const sectionTitle = SECTION_TITLES[section] || section;
-  const title = section === "home"
+  const title = opts.pageTitle || (section === "home"
     ? `${titleBase} — ${esc(b.tagline || "Leaderboard & Rewards")}`
-    : `${sectionTitle} · ${titleBase}`;
-  const desc = section === "home"
+    : `${sectionTitle} · ${titleBase}`);
+  const desc = opts.pageDescription || (section === "home"
     ? `${titleBase}'s viewer site — ${esc(b.tagline || "compete on the leaderboard, earn free credits and redeem rewards.")}`
-    : `${sectionTitle} for ${titleBase}'s viewer site.`;
+    : `${sectionTitle} for ${titleBase}'s viewer site.`);
   const ogImageUrl = logoUrl ? esc(logoUrl) : `${homeUrl}/og.png`;
 
   const ctx = {
@@ -439,12 +436,12 @@ export async function renderSite({ r, section, viewer, viewerData, opts }) {
     returnTo, nonce, watermark,
   };
 
-  const mainInner = section === "home" ? homeMain(ctx)
+  const mainInner = section == null && typeof opts.contentHtml === "string" ? opts.contentHtml : (section === "home" ? homeMain(ctx)
     : section === "leaderboard" ? boardMain(ctx)
     : section === "shop" ? shopMain(ctx)
     : section === "games" ? gamesMain(ctx)
     : section === "me" ? meMain(ctx)
-    : `<div class="yr-empty">Section not found</div>`;
+    : `<div class="yr-empty">Section not found</div>`);
 
   const footer = siteFooter({ data, b, siteSections, slug, isCustomDomain, homeUrl, watermark });
 
@@ -476,18 +473,18 @@ ${mainInner}
 ${footer}
 </main>
 </div>
-${feedbackModal({ slug, siteName: b.name || slug })}
+${feedbackModal({ slug })}
 <script src="/assets/site-shell.js" nonce="${nonce}" defer></script>
 </body></html>`;
 
   return head + body;
 }
 
-function feedbackModal({ slug, siteName }) {
+function feedbackModal({ slug }) {
   return `<dialog id="yr-feedback" class="yr-modal" aria-label="Send feedback">
 <form class="yr-modal-in" method="dialog">
 <h2>Send feedback</h2>
-<p class="yr-note">Tell ${esc(siteName)} what works and what doesn't. No contact details needed.</p>
+<p class="yr-note">Tell us what works and what doesn't. No contact details needed.</p>
 <textarea name="message" rows="5" minlength="10" maxlength="2000" placeholder="What's working? What's not?" required aria-label="Your feedback"></textarea>
 <p class="yr-modal-status" id="yr-feedback-status" role="status" aria-live="polite"></p>
 <div class="yr-modal-acts">
@@ -524,6 +521,7 @@ function homeMain(ctx) {
   const redemptions = viewerData?.redemptions || [];
   const pending = redemptions.filter((x) => x.status === "pending").length;
   const shopEnabled = siteSections.shop !== false;
+  const emptyBoard = players.length === 0 && items.length === 0;
 
   const eyebrow = [esc(period).toUpperCase(), cd ? `ENDS IN ${cd.text.toUpperCase()}` : ""].filter(Boolean).join(" · ");
 
@@ -534,7 +532,9 @@ function homeMain(ctx) {
 
   const heroRight = viewer
     ? `<div class="yr-hero-r">${heroStat("Loyalty credits", formatNumber(balance))}${shopEnabled ? `<a class="yr-btn" href="${shopHref}">Spend credits</a>` : ""}</div>`
-    : `<div class="yr-hero-r">${heroStat(pool ? "Prize pool" : "Players", pool ? esc(pool) : formatNumber(players.length))}${signInButton(r, returnTo)}</div>`;
+    : emptyBoard
+      ? `<div class="yr-hero-r">${signInButton(r, returnTo)}</div>`
+      : `<div class="yr-hero-r">${heroStat(pool ? "Prize pool" : "Players", pool ? esc(pool) : formatNumber(players.length))}${signInButton(r, returnTo)}</div>`;
 
   const lede = viewer
     ? `Redeem a channel-point reward on Kick and credits land here automatically.${nextReward ? ` <b>${formatNumber(Number(nextReward.cost) - balance)}</b> more credits unlocks ${esc(nextReward.name)}.` : ""}`
@@ -554,10 +554,10 @@ function homeMain(ctx) {
         kpi("Pending rewards", "hourglass", formatNumber(pending), pending ? `${esc(b.name || slug)} fulfils by hand` : "Nothing waiting"),
       ].join("")
     : [
-        kpi(pool ? "Prize pool" : "Board", "trophy", pool ? esc(pool) : esc(period), `${esc(period)} leaderboard`),
+        pool ? null : kpi("Board", "trophy", esc(period), `${esc(period)} leaderboard`),
         kpi("Players", "chart", formatNumber(players.length), "On the current board"),
         kpi("Resets in", "hourglass", cd ? cd.text : "—", cd ? "End of period" : "No reset date set"),
-      ].join("");
+      ].filter(Boolean).join("");
 
   const series = dailyEarned(ledger);
   const chartOrHow = viewer
@@ -570,9 +570,9 @@ ${creditsChart(series)}
         meta: "Free · no purchase",
         pad: true,
         body: `<ol class="yr-lede yr-steps">
-<li>Watch on Kick and redeem one of ${esc(b.name || slug)}'s channel-point rewards.</li>
+<li>Watch on Kick and redeem one of the channel-point rewards.</li>
 <li>Credits land on this site automatically — nothing to type in, no codes.</li>
-<li>Spend them in the shop. ${esc(b.name || slug)} fulfils every reward by hand, and cancelled rewards are refunded in full.</li>
+<li>Spend them in the shop. The streamer fulfils every reward by hand, and cancelled rewards are refunded in full.</li>
 </ol>`,
       })}</div>`;
 
@@ -586,7 +586,7 @@ ${creditsChart(series)}
         title: "Top of the board",
         meta: `<a class="yr-sec-link" href="${boardHref}">All</a>`,
         body: players.length
-          ? `<div class="yr-feed yr-noscroll">${players.slice(0, 8).map((p, i) => `<div class="yr-feed-item"><div class="yr-feed-top"><span class="yr-feed-kind">${String(Number(p.rank) || i + 1).padStart(2, "0")} · ${esc(p.name)}</span><span class="yr-feed-time yr-prize-value">${esc(money(data.brand?.currency, p.wagered))}</span></div></div>`).join("")}</div>`
+          ? `<div class="yr-feed yr-noscroll">${players.slice(0, 8).map((p, i) => `<div class="yr-feed-item"><div class="yr-feed-top"><span class="yr-feed-kind">${String(Number(p.rank) || i + 1).padStart(2, "0")} · ${esc(p.name)}</span><span class="yr-feed-time yr-prize-value">${esc(formatMoney(data.brand?.currency, p.wagered))}</span></div></div>`).join("")}</div>`
           : `<div class="yr-empty">No players yet</div>`,
       })}</div>`;
 
@@ -597,8 +597,13 @@ ${creditsChart(series)}
       })).join("")}</div></div>`
     : "";
 
+  if (emptyBoard) {
+    return `${heroHtml}
+<div class="yr-empty">This board has no players or rewards yet</div>`;
+  }
+
   return `${heroHtml}
-<div class="yr-g3">${kpis}</div>
+${kpis ? `<div class="yr-g3">${kpis}</div>` : ""}
 <div class="yr-g12">${chartOrHow}${rightCol}</div>
 ${featured}`;
 }
@@ -632,16 +637,16 @@ function boardMain(ctx) {
     return `<div class="yr-card yr-lb${first ? " yr-card--on" : ""}">
 <div class="yr-card-top"><span class="yr-label${first ? " is-accent" : ""}">#${rank}</span>${first ? ICONS.crown : ICONS.medal}</div>
 <p class="yr-card-name"><a href="${playerHref(p.name)}">${esc(p.name)}</a></p>
-<p class="yr-num">${esc(money(currency, p.wagered))}</p>
-<p class="yr-sub">${wagerLabel}${!hidePrizes && p.prize ? ` · <span class="yr-gold">${esc(money(currency, p.prize))}</span>` : ""}</p>
+<p class="yr-num">${esc(formatMoney(currency, p.wagered))}</p>
+<p class="yr-sub">${wagerLabel}${!hidePrizes && p.prize ? ` · <span class="yr-gold">${esc(formatMoney(currency, p.prize))}</span>` : ""}</p>
 </div>`;
   }).join("");
 
   const rows = players.map((p, i) => `<tr data-name="${esc(String(p.name || "").toLowerCase())}" data-position="${Number(p.rank) || i + 1}">
 <td class="yr-idx">${String(Number(p.rank) || i + 1).padStart(2, "0")}</td>
 <td><a href="${playerHref(p.name)}">${esc(p.name)}</a></td>
-<td class="yr-mono yr-r">${esc(money(currency, p.wagered))}</td>
-<td class="yr-mono yr-r${!hidePrizes && p.prize ? " yr-gold" : ""}">${hidePrizes ? "—" : (p.prize ? esc(money(currency, p.prize)) : "—")}</td>
+<td class="yr-mono yr-r">${esc(formatMoney(currency, p.wagered))}</td>
+<td class="yr-mono yr-r${!hidePrizes && p.prize ? " yr-gold" : ""}">${hidePrizes ? "—" : (p.prize ? esc(formatMoney(currency, p.prize)) : "—")}</td>
 </tr>`).join("");
 
   const table = players.length
@@ -677,15 +682,17 @@ function shopMain(ctx) {
     : (r.viewerDiscordAuthEnabled ? `/api/viewer/auth/discord?returnTo=${encodeURIComponent(returnTo)}` : "/me");
 
   const heroHtml = hero({
-    eyebrow: `${formatNumber(items.length)} REWARDS${viewer && pending ? ` · ${pending} PENDING` : ""}`,
+    eyebrow: items.length ? `${formatNumber(items.length)} REWARDS${viewer && pending ? ` · ${pending} PENDING` : ""}` : "REWARDS",
     title: "Rewards",
-    lede: `${esc(b.name || slug)} hands every one of these over personally. Credits are deducted when you redeem and returned in full if it's cancelled.`,
+    lede: items.length
+      ? `${esc(b.name || slug)} hands every one of these over personally. Credits are deducted when you redeem and returned in full if it's cancelled.`
+      : "Rewards will appear here when the streamer adds them.",
     right: viewer
       ? `<div class="yr-hero-r yr-hero-r--stack">${heroStat("Loyalty credits", formatNumber(balance))}</div>`
       : `<div class="yr-hero-r">${signInButton(r, returnTo)}</div>`,
   });
 
-  const blockedNote = viewerOnSite?.blocked
+  const blockedNote = items.length && viewerOnSite?.blocked
     ? `<div class="yr-card yr-lb"><p class="yr-label">Redeeming disabled</p><p class="yr-note">${esc(viewerOnSite.block_reason || "The streamer has paused redemptions for your account.")}</p></div>`
     : "";
 
@@ -768,6 +775,7 @@ function meMain(ctx) {
 
   const ledger = viewerData?.ledger || [];
   const redemptions = viewerData?.redemptions || [];
+  const emptyCredits = ledger.length === 0 && redemptions.length === 0 && Number(balance || 0) === 0;
   const earned7 = dailyEarned(ledger).reduce((a, d) => a + d.value, 0);
   const shopHref = `${homeUrl}${siteSectionHref("shop", slug, isCustomDomain)}`;
 
@@ -777,6 +785,11 @@ function meMain(ctx) {
     lede: `Every credit here came from ${esc(b.name || slug)}'s Kick channel-point rewards. ${esc(CREDITS_DISCLAIMER)}`,
     right: `<div class="yr-hero-r">${heroStat("Balance", formatNumber(balance))}${siteSections.shop !== false ? `<a class="yr-btn" href="${shopHref}">Spend credits</a>` : ""}</div>`,
   });
+
+  if (emptyCredits) {
+    return `${heroHtml}
+<div class="yr-empty">No credit activity or redemptions yet</div>`;
+  }
 
   const kpis = [
     kpi("Credits / 7d", "chart", `+${formatNumber(earned7)}`, `${ledger.length} recent credit events`, { accent: true }),

@@ -56,10 +56,7 @@ describe("shared UI primitives", () => {
   // scoped rules like `.perf-filter .btn` only position it and are fine.
   const OWNED = new Set([".btn", ".btn--accent", ".btn--ghost", ".btn--danger", ".btn--sm", ".btn--xs", ".badge", ".tbl-scroll", ".modal", ".modal-card", ".modal-input", ".modal-actions", ".empty", ".error-state", ".sr-only", ".skip-link"]);
 
-  // leaderboard.css is the public board's own design system: those pages are the
-  // customer's branded site, not our app chrome, so they deliberately do not
-  // share these primitives.
-  for (const sheet of sheets.filter((s) => s !== "ui.css" && s !== "leaderboard.css")) {
+  for (const sheet of sheets.filter((s) => s !== "ui.css")) {
     it(`${sheet} does not redefine them`, () => {
       const clashes = selectorsOf(fs.readFileSync(path.join(assetsDir, sheet), "utf8")).filter((s) =>
         OWNED.has(s.replace(/^\.v2-dash\s+/, "").replace(/:[a-z-]+(\([^)]*\))?$/, ""))

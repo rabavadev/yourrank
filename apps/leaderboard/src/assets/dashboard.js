@@ -4,7 +4,7 @@ import { markDirty, setState, state, subscribe } from "./dashboard/state.js";
 import { currentRoute, navTo, setupShell } from "./dashboard/shell.js";
 import { renderBoardSwitcher, renderSidebarBoardSwitcher, renderBoardsPage } from "./dashboard/boards.js";
 import { renderPlayers } from "./dashboard/players.js";
-import { checkout, fitDesignPreview, loadCreditsStatus, loadHistory, loadStats, refreshDesignPreview, renderArchives, renderBranding, renderDomain, renderDomainStatus, renderBoardStatus, renderEditorTimestamps, renderEmbedShare, renderLegal, renderNotifications, renderOverlay, renderPlan, renderPlayerFields, renderPrizes, renderSections, renderSocials, renderTemplateText, wireCancelSubscription, wireDeleteAccount } from "./dashboard/site.js";
+import { checkout, fitDesignPreview, loadCreditsStatus, loadHistory, loadStats, refreshDesignPreview, renderArchives, renderBranding, renderDomain, renderDomainStatus, renderBoardStatus, renderEditorTimestamps, renderEmbedShare, renderLegal, renderNotifications, renderOverlay, renderPlan, renderPlayerFields, renderPrizes, renderSections, renderSocials, wireCancelSubscription, wireDeleteAccount } from "./dashboard/site.js";
 import { renderOverviewSummary } from "./dashboard/overview.js";
 import { renderReferrals } from "./dashboard/referrals.js";
 import { initPerformance } from "./dashboard/performance.js";
@@ -36,7 +36,6 @@ async function init() {
   state.SLUG = p.slug;
   state.ACTIVE_SITE_ID = p.siteId || null;
   state.BOARDS = p.boards || [];
-  state.TEMPLATE_CATALOG = Array.isArray(p.templates) ? p.templates : [];
   state.SITE_UPDATED_AT = p.updatedAt || null;
   state.PUBLISHED_AT = p.publishedAt || null;
   state.PUBLISHED = !!p.published;
@@ -88,7 +87,6 @@ async function init() {
   renderNotifications(p.notify || {});
   renderSocials();
   renderSections();
-  renderTemplateText();
   renderLegal();
   renderEmbedShare();
   const iframe = $("designPreview");
