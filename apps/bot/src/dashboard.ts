@@ -84,7 +84,10 @@ export function buildDashboard(): Hono<DashEnv> {
     await next();
     if (!c.res.headers.has("Content-Security-Policy")) {
       // M-02: nonce-only script-src and style-src. No 'unsafe-eval' or 'unsafe-inline'.
-      c.header("Content-Security-Policy", `default-src 'self'; script-src 'self' 'nonce-${nonce}' https://telegram.org; style-src 'self' 'nonce-${nonce}'; img-src 'self' data: https:; connect-src 'self' https://telegram.org; frame-src https://telegram.org https://oauth.telegram.org;`);
+      // The Google Fonts stylesheet/files are allowed by origin (same list the
+      // leaderboard Worker uses) so the shared page shell renders in Inter here
+      // too instead of falling back to a system font.
+      c.header("Content-Security-Policy", `default-src 'self'; script-src 'self' 'nonce-${nonce}' https://telegram.org; style-src 'self' 'nonce-${nonce}' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://telegram.org; frame-src https://telegram.org https://oauth.telegram.org;`);
     }
     c.res.headers.set("Cache-Control", "no-store, no-cache, must-revalidate");
     // SEC-104: Clear legacy 'sess' cookie
@@ -177,7 +180,7 @@ export function buildDashboard(): Hono<DashEnv> {
       // The Telegram Login Widget (telegram-widget.js) uses eval internally,
       // so the login page needs 'unsafe-eval' in script-src. Authenticated
       // dashboard pages keep the stricter nonce-only CSP.
-      c.header("Content-Security-Policy", `default-src 'self'; script-src 'self' 'unsafe-eval' 'nonce-${c.get("cspNonce")}' https://telegram.org; style-src 'self' 'nonce-${c.get("cspNonce")}'; img-src 'self' data: https:; connect-src 'self' https://telegram.org; frame-src https://telegram.org https://oauth.telegram.org;`);
+      c.header("Content-Security-Policy", `default-src 'self'; script-src 'self' 'unsafe-eval' 'nonce-${c.get("cspNonce")}' https://telegram.org; style-src 'self' 'nonce-${c.get("cspNonce")}' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://telegram.org; frame-src https://telegram.org https://oauth.telegram.org;`);
       return c.html(loginHtml(loginBotUsername, devLogin, c.get("cspNonce")));
     }
     const user = await one<{ display_name: string; email: string; plan: string }>(

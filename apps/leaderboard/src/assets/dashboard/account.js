@@ -41,7 +41,7 @@ async function loadSessions() {
       return;
     }
     let html =
-      '<div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Started</th><th>Expires</th><th></th></tr></thead><tbody>';
+      '<div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Started</th><th>Expires</th><th><span class="sr-only">Actions</span></th></tr></thead><tbody>';
     for (const s of data.sessions) {
       const label = s.current ? '<span class="pill pill--info">This device</span>' : "";
       const created = s.createdAt ? new Date(s.createdAt).toLocaleString() : "—";

@@ -78,12 +78,22 @@ export async function handleSignup(request, env, ctx) {
     const name = String(body.name || "").trim();
     const refCode = String(body.ref || "").trim().toLowerCase();
     const defaultName = name || email.split("@")[0] || "my-board";
-    let slug = slugify(body.slug || defaultName);
+    // A URL the streamer typed is a choice, not a suggestion: signup used to
+    // silently hand out `<slug>-2` (or a random suffix for reserved words), so
+    // people learned their public URL only after their first share link failed.
+    const requestedSlug = slugify(body.slug || "");
+    let slug = requestedSlug || slugify(defaultName);
     if (!isEmail(email)) return bad("Enter a valid email");
     if (password.length < 8) return bad("Password must be at least 8 characters");
+    if (requestedSlug && RESERVED.has(requestedSlug)) {
+      return json({ ok: false, error: "That page URL is reserved. Pick another.", field: "slug" }, 400);
+    }
     if (!slug || RESERVED.has(slug)) slug = `${slug || "site"}-${Math.random().toString(36).slice(2, 6)}`;
     const existing = await findUserByEmail(email);
     if (existing) return bad("If this email isn't already registered, check your inbox to confirm.");
+    if (requestedSlug && await findSiteBySlug(requestedSlug)) {
+      return json({ ok: false, error: "That page URL is already taken. Pick another.", field: "slug" }, 400);
+    }
     let finalSlug = slug;
     for (let n = 2; ; n++) { const c = await findSiteBySlug(finalSlug); if (!c) break; finalSlug = `${slug}-${n}`; }
     const displayName = name || defaultName;

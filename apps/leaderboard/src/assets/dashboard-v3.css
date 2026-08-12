@@ -1004,6 +1004,13 @@ body[data-wide] .v3-dash .lb-main {
 
 /* ---------- Page header ---------- */
 .v3-dash .v3-head { margin: 0 0 24px; }
+.v3-dash .v3-head--row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
 .v3-dash .v3-head h1 {
   margin: 0;
   font-size: 34px;
@@ -2285,3 +2292,93 @@ body[data-wide] .v3-dash .lb-main {
 }
 .v3-inline-save[data-state="error"] { color: var(--danger, #b42318); }
 .v3-inline-save[data-state="saved"] { color: var(--success, #067647); }
+
+/* ---------- Cross-product switcher (sidebar footer) ----------
+   These links had no rules at all, so they inherited the light-theme body ink
+   (#191919) on the near-black rail — 1.12:1, i.e. invisible. */
+.v3-dash .lb-product-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding-top: 14px;
+  border-top: 1px solid var(--v3-chrome-line);
+}
+
+.v3-dash .lb-product-nav .label { padding: 0 12px 6px; }
+
+.v3-dash .lb-product-link {
+  display: flex;
+  align-items: center;
+  min-height: 40px;
+  padding: 8px 12px;
+  border-radius: var(--v3-radius-sm);
+  color: var(--v3-ink-soft);
+  font: 500 14px var(--v3-sans);
+  text-decoration: none;
+  transition: background .15s, color .15s;
+}
+
+.v3-dash .lb-product-link:hover,
+.v3-dash .lb-product-link:focus-visible {
+  background: var(--v3-chrome-2);
+  color: var(--v3-ink);
+}
+
+.v3-dash .lb-product-link.is-on,
+.v3-dash .lb-product-link[aria-current="page"] {
+  background: var(--v3-chrome-2);
+  color: var(--v3-ink);
+  font-weight: 600;
+}
+
+/* ---------- Mobile section drawer ----------
+   The ☰ used to sit in the page body, so it scrolled away and left no way to
+   change section. It now lives in the fixed topbar. */
+.v3-dash .lb-topbar-menu { display: none; }
+
+@media (max-width: 980px) {
+  .v3-dash .lb-topbar-menu {
+    display: inline-grid;
+    place-items: center;
+    width: var(--tap, 44px);
+    height: var(--tap, 44px);
+    flex: 0 0 auto;
+    border: 1px solid var(--v3-chrome-line-2);
+    border-radius: var(--v3-radius-sm);
+    background: var(--v3-chrome-2);
+    color: var(--v3-ink);
+    font-size: 18px;
+    cursor: pointer;
+  }
+  .v3-dash .lb-phead { display: none; }
+  /* Keep the board switcher reachable on mobile — it is the page context. */
+  .v3-dash .lb-topbar-hud { display: flex; gap: 8px; flex: 1 1 auto; min-width: 0; }
+  .v3-dash .lb-topbar-hud .lb-board-select { min-width: 0; width: 100%; }
+  .v3-dash .lb-board-select-lbl { display: none; }
+  .v3-dash .lb-brand-txt { display: none; }
+}
+
+/* ---------- Touch targets ---------- */
+@media (max-width: 980px) {
+  .v3-dash .editor-step,
+  .v3-dash .v3-tab,
+  .v3-dash .v3-range-btn {
+    min-height: var(--tap, 44px);
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .v3-dash .v3-tabs { overflow-x: auto; }
+  .v3-dash input[type="checkbox"]:not(.v3-toggle) {
+    width: 20px;
+    height: 20px;
+  }
+  .v3-dash .v3-menu-item { min-height: var(--tap, 44px); }
+  /* Player names were clipping to two characters because every column shared
+     the same shrink factor in a narrow scroll container. */
+  .v3-dash .v3-players-table th,
+  .v3-dash .v3-players-table td { white-space: nowrap; }
+  .v3-dash .v3-players-table th:nth-child(3),
+  .v3-dash .v3-players-table td:nth-child(3) { min-width: 140px; }
+  .v3-dash .v3-players-table .p-name { min-width: 120px; }
+}

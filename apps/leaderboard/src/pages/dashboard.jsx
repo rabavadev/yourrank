@@ -63,7 +63,6 @@ export function DashboardContent({ user, activePath } = {}) {
 <DashboardShell activeNav={activeNav} activeHash={activeHash} boardContext="full" footer="dashboard" initiallyHidden user={user}>
 <div class="lb-widget lb-widget--full lb-widget--danger" id="verifyBanner" hidden style="margin:0 0 24px"><h2>Verify your email</h2><p class="card-sub">Your leaderboard won't be public until you confirm your email address. Check your inbox for the link, or <a href="/verify-email">request a new one</a>.</p></div>
 <section class="lb-page is-on" data-page="home">
-<div class="lb-phead"><button class="lb-menu" id="lbMenu" type="button" aria-label="Show sections" aria-expanded="false" aria-controls="lbSide">☰</button></div>
 <div class="v3-head"><h1>Overview</h1><p class="v3-head-sub" id="ovHeadSub">Complete setup to go live</p></div>
 <div id="ovOnboardingBento" hidden>
 <div class="ov-setup">
@@ -84,7 +83,6 @@ export function DashboardContent({ user, activePath } = {}) {
 </div></div>
 </section>
 <section class="lb-page" data-page="board">
-<div class="lb-phead"><button class="lb-menu" type="button" aria-label="Show sections" data-menu aria-expanded="false" aria-controls="lbSide">☰</button></div>
 
 <h1 class="sr-only">Board</h1>
 <nav class="editor-steps v3-tabs" id="editorTabs" aria-label="Editor steps">
@@ -107,7 +105,7 @@ export function DashboardContent({ user, activePath } = {}) {
 <div class="field"><label for="f_pool">Prize pool</label><input id="f_pool" placeholder="$500" /></div>
 <div class="field"><label for="f_period">Period</label><select id="f_period"><option>Weekly</option><option selected>Monthly</option><option>Season</option></select></div>
 <div class="field"><label for="f_ends">Countdown ends</label><input id="f_ends" type="datetime-local" /><span class="hint" id="f_ends_hint">When the leaderboard resets, shown in your timezone. Powers the live timer.</span></div>
-<div class="field field--full"><label class="chk"><input type="checkbox" id="f_auto_reset" /> Auto-reset when countdown ends</label><select id="f_auto_reset_clear" disabled class="mt-8"><option value="wagers">Reset wagers to 0</option><option value="players">Clear all players</option><option value="none">Keep board as-is</option></select><span class="hint">Archives the finished period and extends the end date by one period automatically.</span></div></div></div>
+<div class="field field--full"><label class="chk"><input type="checkbox" id="f_auto_reset" /> Auto-reset when countdown ends</label><label class="sr-only" for="f_auto_reset_clear">What to reset when the countdown ends</label><select id="f_auto_reset_clear" disabled class="mt-8"><option value="wagers">Reset wagers to 0</option><option value="players">Clear all players</option><option value="none">Keep board as-is</option></select><span class="hint">Archives the finished period and extends the end date by one period automatically.</span></div></div></div>
 <div class="card" data-egroup="setup"><h2>Access</h2><p class="card-sub">Publishing and password protection.</p>
 <div class="field field--full"><label class="chk"><input type="checkbox" id="f_password_enabled" /> Password-protect this board</label><input id="f_password" type="password" placeholder="Leave blank to keep current password" disabled class="mt-8" /><span class="hint">Visitors must enter this password before seeing the leaderboard or using the public API.</span></div>
 <p class="hint mt-14">Publishing is controlled by the <b>Published</b> toggle in the sidebar.</p></div>
@@ -224,7 +222,6 @@ export function DashboardContent({ user, activePath } = {}) {
 </div>
 </section>
 <section class="lb-page" data-page="games">
-<div class="lb-phead"><button class="lb-menu" type="button" aria-label="Show sections" data-menu aria-expanded="false" aria-controls="lbSide">☰</button></div>
 <div class="v3-games-page">
   <header class="v3-head">
     <h1>Public page sections &amp; Games</h1>
@@ -251,7 +248,6 @@ export function DashboardContent({ user, activePath } = {}) {
 </div>
 </section>
 <section class="lb-page" data-page="performance">
-<div class="lb-phead"><button class="lb-menu" type="button" aria-label="Show sections" data-menu aria-expanded="false" aria-controls="lbSide">☰</button></div>
 <div class="v3-analytics-page">
   <header class="v3-head"><h1>Analytics</h1><p class="v3-head-sub">Track real-time viewer actions, clicks, and conversion performance</p></header>
   <div class="v3-analytics-scope"><span id="perfScope"><span id="perfBoardName">Active board</span> · Last <span id="perfRangeLabel">14</span> days · <span id="perfLocalTime" title="Daily and hourly activity buckets are aggregated in UTC.">Times in UTC</span></span><div id="perfRangeFilter" class="v3-range-filter" role="group" aria-label="Date range"><button class="v3-range-btn" type="button" data-range="7">7d</button><button class="v3-range-btn is-active" type="button" data-range="14">14d</button><button class="v3-range-btn" type="button" data-range="30">30d</button></div></div>
@@ -280,7 +276,6 @@ export function DashboardContent({ user, activePath } = {}) {
 </div>
 </section>
 <section class="lb-page" data-page="settings">
-<div class="lb-phead"><button class="lb-menu" type="button" aria-label="Show sections" data-menu aria-expanded="false" aria-controls="lbSide">☰</button></div>
 <div class="v3-settings">
   <div class="v3-head"><h1>Settings</h1><p class="v3-head-sub" id="settingsSubline">Manage your subscription, account connections, and safety settings</p></div>
   <div class="v3-tabs" role="tablist" aria-label="Settings sections">
@@ -310,8 +305,7 @@ export function DashboardContent({ user, activePath } = {}) {
 </section>
 
 <section class="lb-page" data-page="boards">
-<div class="lb-phead"><button class="lb-menu" type="button" aria-label="Show sections" data-menu aria-expanded="false" aria-controls="lbSide">☰</button><button class="btn btn--sm btn--accent" id="addBoardFromBoards" type="button">+ New board</button></div>
- <header class="v3-head"><h1>All boards</h1><p class="v3-head-sub">Manage all your leaderboards from one place.</p></header>
+ <header class="v3-head v3-head--row"><div><h1>All boards</h1><p class="v3-head-sub">Manage all your leaderboards from one place.</p></div><button class="btn btn--sm btn--accent" id="addBoardFromBoards" type="button">+ New board</button></header>
  <div class="card">
 <div class="list-controls"><input type="search" id="boardsSearch" class="list-search" placeholder="Find board…" aria-label="Find board" /></div>
 <div class="board-table-wrap">
