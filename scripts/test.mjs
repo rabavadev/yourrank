@@ -10,6 +10,10 @@ function runCmd(command, args, cwd) {
   }
 }
 
+// Build every generated artifact consumed by the aggregate test runner before
+// any suite starts. This keeps direct callers, CI, and deploy jobs equivalent.
+runCmd("node", ["build.js"], "apps/leaderboard");
+
 // 1. Run shared tests
 runCmd("bun", ["test", "shared/__tests__/"]);
 
