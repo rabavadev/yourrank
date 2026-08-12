@@ -1,11 +1,14 @@
 # Per-tenant request metrics
 
-The leaderboard Worker emits one structured `request_metrics` log line after
-each request. The fields are:
+When enabled with `REQUEST_METRICS=true`, the leaderboard Worker emits one
+structured `request_metrics` log line after each request. The explicit wrapper
+option and this environment flag can disable emission without a code change.
+The fields are:
 
 - `site`: public board slug when the request is tenant-scoped (no viewer ID,
   email, player name, cookie, or secret is included).
-- `route`: normalized route template without tenant or player path values.
+- `route`: normalized route template without tenant or player path values;
+  unrecognised paths are grouped as `other` to keep cardinality bounded.
 - `db_queries`: SQL statements issued by the shared database layer, including
   transaction statements and retry attempts.
 - `duration_ms`: wall-clock request duration.
