@@ -1,9 +1,8 @@
 import { currentUser } from "../auth.js";
 import { effectivePlan } from "../../../../shared/plans.js";
 import { getUserSiteById, FONT_KEYS } from "../site.js";
-import { renderLeaderboard } from "../render.jsx";
+import { renderSite } from "../site-render.js";
 import { SECURE_HTML, withNonce } from "../middleware/headers.js";
-import { validTemplate } from "../templates/index.js";
 
 const HEX = /^#[0-9a-fA-F]{6}$/;
 
@@ -20,7 +19,6 @@ export async function handleDashboardPreview(request, env, nonce, {
   const site = await getUserSiteByIdImpl(env, user.id, siteId, plan);
   if (!site) return new Response("not found", { status: 404 });
 
-  const template = validTemplate(url.searchParams.get("template"));
   const accentA = url.searchParams.get("accentA");
   const accentB = url.searchParams.get("accentB");
   const font = url.searchParams.get("font");
@@ -41,7 +39,7 @@ export async function handleDashboardPreview(request, env, nonce, {
   }
 
   const mergedData = { ...site.data, ...draftData };
-  const branding = { ...mergedData.branding, template };
+  const branding = { ...mergedData.branding };
   if (plan !== "free" && HEX.test(accentA || "") && HEX.test(accentB || "")) {
     branding.accentA = accentA;
     branding.accentB = accentB;
@@ -50,22 +48,39 @@ export async function handleDashboardPreview(request, env, nonce, {
     branding.font = font;
   }
   const watermark = plan === "free" ? true : (mergedData.sections?.poweredBy === true);
-  let html = await renderLeaderboard({ ...mergedData, branding }, {
-    watermark,
-    homeUrl: url.origin,
-    slug: "",
-    nonce,
-    preview: true,
-    previewDevice: device,
-    logoUrl: plan !== "free" && site.data.branding?.hasLogo ? `/logo/${site.slug}` : null,
+  const previewData = { ...mergedData, branding };
+  let html = await renderSite({
+    r: {
+      ...site,
+      plan,
+      data: previewData,
+      viewerKickAuthEnabled: false,
+      viewerDiscordAuthEnabled: false,
+    },
+    section: "home",
+    viewer: null,
+    viewerData: null,
+    opts: {
+      homeUrl: url.origin,
+      slug: site.slug,
+      isCustomDomain: false,
+      nonce,
+      logoUrl: plan !== "free" && site.data.branding?.hasLogo ? `/logo/${site.slug}` : null,
+      watermark,
+      preview: true,
+      previewDevice: device,
+    },
   });
 
+  const previewMinWidth = device === "mobile" ? 390 : 1100;
+  const editableSelectors = ".yr-brand, .yr-h1, .yr-lede, .yr-hero-r .yr-big";
+  html = html.replace("</head>", `<style nonce="${nonce}">
+    html, body { min-width: ${previewMinWidth}px; overflow: hidden; }
+    ${editableSelectors} { cursor: text; transition: outline 0.15s ease, outline-offset 0.15s ease; }
+    ${editableSelectors.split(", ").map(s => s + ":hover").join(", ")} { outline: 2px dashed rgba(91,91,245,0.4); outline-offset: 3px; border-radius: 4px; }
+  </style></head>`);
+
   if (device === "desktop") {
-    const editableSelectors = "[data-brand-name], [data-casino], .hero-name, .hero-sub, .clock-sub";
-    html = html.replace('</head>', `<style nonce="${nonce}">
-      ${editableSelectors} { cursor: text; transition: outline 0.15s ease, outline-offset 0.15s ease; }
-      ${editableSelectors.split(", ").map(s => s + ":hover").join(", ")} { outline: 2px dashed rgba(91,91,245,0.4); outline-offset: 3px; border-radius: 4px; }
-    </style></head>`);
     html = html.replace('</body>', `<script nonce="${nonce}">
       document.addEventListener("click", (e) => {
         const targetSelectors = "${editableSelectors}";
@@ -101,10 +116,9 @@ export async function handleDashboardPreview(request, env, nonce, {
               let key = null;
               let extra = null;
               
-              if (el.matches("[data-brand-name], .hero-name")) key = "f_name";
-              else if (el.matches(".hero-sub")) key = "f_tagline";
-              else if (el.matches("[data-casino]")) key = "f_casino";
-              else if (el.matches(".clock-sub")) key = "f_pool";
+              if (el.matches(".yr-brand, .yr-h1")) key = "f_name";
+              else if (el.matches(".yr-lede")) key = "f_tagline";
+              else if (el.matches(".yr-hero-r .yr-big")) key = "f_pool";
               
               if (key) {
                 window.parent.postMessage({ type: "yr_edit_request", key, value: newText, extra }, "*");

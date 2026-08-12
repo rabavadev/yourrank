@@ -60,9 +60,9 @@ describe("handleDashboardPreview", () => {
     );
     const html = await res.text();
     expect(res.status).toBe(200);
-    expect(html).toContain('data-template="classic"');
-    expect(html).toContain('data-preview');
-    expect(html).toContain("--cy:#00ffd1");
+    expect(html).toContain('class="yr-site"');
+    expect(html).toContain("Actual Board");
+    expect(html).toContain("--yr-accent:#00ffd1");
     expect(html).toContain("Actual Player");
     expect(SITE.data.branding).toEqual({
       template: "classic",

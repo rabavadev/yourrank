@@ -7,6 +7,7 @@ import { fromJsonb, getPublicSite, getBySlug, getClickRedirectSite, getArchiveSn
 import { renderEmbed, renderHallOfFame, renderLeaderboard, renderLegalPage, renderPasswordGate, renderPlayerProfile, renderStreamerProfile } from "./render.jsx";
 import { renderPublicCreditsPage } from "./public-credits.js";
 import { parseSitePath, renderSiteRoute } from "./site-routes.js";
+import { renderSite } from "./site-render.js";
 import { viewerDashboardPage } from "./pages/viewer-dashboard.js";
 import { verifyEmailPageHtml } from "./pages/verify-email.js";
 import { verifyEmailToken } from "./handlers/auth.js";
@@ -826,8 +827,25 @@ async function handleRequest(request, env, ctx, meta) {
       // --- permanent demo leaderboard (always works, no DB needed) ---
       if (method === "GET" && path === "/demo") {
         return new Response(
-          await renderLeaderboard(demoLeaderboardData(), {
-            watermark: false, homeUrl: url.origin, slug: "demo", nonce, demo: true,
+          await renderSite({
+            r: {
+              id: "demo",
+              slug: "demo",
+              plan: "pro",
+              data: demoLeaderboardData(),
+              viewerKickAuthEnabled: false,
+              viewerDiscordAuthEnabled: false,
+            },
+            section: "home",
+            viewer: null,
+            viewerData: null,
+            opts: {
+              watermark: false,
+              homeUrl: url.origin,
+              slug: "demo",
+              isCustomDomain: false,
+              nonce,
+            },
           }),
           { headers: { ...HTML_N, "cache-control": "no-store" } }
         );
