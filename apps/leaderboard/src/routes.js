@@ -11,7 +11,8 @@ import {
   handleVerifyEmail, handleResendVerification, handleDemoLogin
 } from "./handlers/auth.js";
 import {
-  handleChangePassword, handleListSessions, handleRevokeOtherSessions, handleExportData
+  handleChangePassword, handleListSessions, handleRevokeOtherSessions,
+  handleCreateExportJob, handleExportJobStatus, handleExportJobDownload
 } from "./handlers/security.js";
 import {
   handleTelegramLink, handleTelegramUnlink, handleTelegramStatus
@@ -119,7 +120,9 @@ export const ROUTES = [
   { path: "/api/auth/sessions/revoke-others", method: "POST", handler: withHandler(handleRevokeOtherSessions) },
 
   // Data export
-  { path: "/api/account/export", method: "GET", handler: withHandler(handleExportData) },
+  { path: "/api/account/export", method: "POST", handler: withHandler(handleCreateExportJob) },
+  { path: "/api/account/export/:id/status", method: "GET", handler: withHandler(handleExportJobStatus) },
+  { path: "/api/account/export/:id/download", method: "GET", handler: withHandler(handleExportJobDownload) },
   
   // Telegram identity linking
   { path: "/api/auth/telegram/link", method: "POST", handler: withHandler(handleTelegramLink) },

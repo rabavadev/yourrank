@@ -29,7 +29,8 @@ import {
 import { handlePublicApiPreflight } from "./middleware/public-api.js";
 import { findSiteLogoData, findSiteStatus, findUserTotpSecret } from "./data/sites.js";
 import { detectImageMime } from "./site.js";
-import { one } from "../../../shared/db.js";
+import { one, query, exec } from "../../../shared/db.js";
+import { logAudit } from "../../../shared/audit.js";
 import { loadPlatformIdentity, getPlatformIdentity } from "./platform-identity.js";
 import { applyLegalIdentity } from "./pages/legal-helper.js";
 import { hashToken, newClickRef } from "../../../shared/crypto.js";
@@ -199,6 +200,41 @@ async function handleScheduled(event, env, ctx) {
         }
       })
     );
+    ctx.waitUntil(cleanupExpiredAccountExports(env).catch((err) => {
+      console.error("[scheduled] account export cleanup failed:", String(err?.message || err));
+    }));
+  }
+}
+
+async function cleanupExpiredAccountExports(env) {
+  const stale = await query(
+    `SELECT id, user_id FROM account_export_jobs
+      WHERE status='processing' AND started_at < now() - INTERVAL '15 minutes'
+      ORDER BY started_at ASC LIMIT 100`,
+    []
+  );
+  for (const job of stale) {
+    await exec(
+      `UPDATE account_export_jobs
+          SET status='failed', error='Export worker stopped before completion', completed_at=now()
+        WHERE id=$1 AND status='processing'`,
+      [job.id]
+    );
+    await logAudit({ actorId: job.user_id, action: "account_export_failed", entityType: "account_export", entityId: job.id, details: { export_id: job.id, status: "failed" } });
+  }
+  for (;;) {
+    const expired = await query(
+      "SELECT id, artifact_key FROM account_export_jobs WHERE expires_at <= now() ORDER BY expires_at ASC LIMIT 100",
+      []
+    );
+    if (!expired.length) return;
+    if (env.ACCOUNT_EXPORTS) {
+      for (const job of expired) {
+        if (job.artifact_key) await env.ACCOUNT_EXPORTS.delete(job.artifact_key).catch(() => {});
+      }
+    }
+    await exec("DELETE FROM account_export_jobs WHERE id = ANY($1)", [expired.map((job) => job.id)]);
+    if (expired.length < 100) return;
   }
 }
 

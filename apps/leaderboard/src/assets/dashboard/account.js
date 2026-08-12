@@ -103,31 +103,57 @@ function wireRevokeSessions() {
 function wireExport() {
   const btn = $("accExportData");
   if (!btn) return;
+  let timer = null;
+  const renderJob = (job) => {
+    const status = $("accExportStatus");
+    if (!status) return;
+    if (job.status === "completed") {
+      status.innerHTML = `<a href="/api/account/export/${encodeURIComponent(job.exportId)}/download">Download your export</a>`;
+      btn.disabled = false;
+    } else if (job.status === "failed" || job.status === "expired") {
+      status.innerHTML = `${job.status === "failed" ? "Export failed." : "Export expired."} <button type="button" class="btn btn--sm btn--ghost" id="accExportRetry">Try again</button>`;
+      $("accExportRetry")?.addEventListener("click", () => btn.click(), { once: true });
+      btn.disabled = false;
+    } else {
+      setStatus(status, "Preparing export… this page will update when it is ready.", false);
+      btn.disabled = true;
+    }
+  };
+  const poll = async (exportId) => {
+    try {
+      const res = await fetch(`/api/account/export/${encodeURIComponent(exportId)}/status`, { credentials: "include" });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.ok) throw new Error(data.message || "Could not load export status.");
+      renderJob(data);
+      if (!["completed", "failed", "expired"].includes(data.status)) timer = setTimeout(() => poll(exportId), 2000);
+    } catch (e) {
+      logError("exportStatus", e);
+      setStatus($("accExportStatus"), "Could not check export status. Refresh to try again.", true);
+      btn.disabled = false;
+    }
+  };
   btn.addEventListener("click", async () => {
     const status = $("accExportStatus");
-    setStatus(status, "Preparing download…", false);
+    if (timer) clearTimeout(timer);
+    setStatus(status, "Starting export…", false);
+    btn.disabled = true;
     try {
-      const res = await fetch("/api/account/export", { credentials: "include" });
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        setStatus(status, data?.message || "Export failed.", true);
+      const res = await fetch("/api/account/export", {
+        method: "POST",
+        credentials: "include",
+        headers: { "x-csrf-token": getCsrf() },
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.ok) {
+        renderJob({ status: "failed", message: data?.message });
         return;
       }
-      const blob = await res.blob();
-      const disp = res.headers.get("content-disposition") || "";
-      let filename = "yourrank-export.json";
-      const m = disp.match(/filename="?([^"]+)"?/);
-      if (m) filename = m[1];
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = filename;
-      a.click();
-      URL.revokeObjectURL(url);
-      setStatus(status, "Download started.", false);
+      renderJob(data);
+      poll(data.exportId);
     } catch (e) {
       logError("exportData", e);
       setStatus(status, "Download failed.", true);
+      btn.disabled = false;
     }
   });
 }

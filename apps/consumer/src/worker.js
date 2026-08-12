@@ -11,6 +11,7 @@ import { parseQueueEvent } from "../../../shared/queue-producer.js";
 import { processKickRewardRedemption } from "../../../shared/kick-credits.js";
 import { RateLimiter } from "../../../shared/rate-limiter-do.js";
 import { mapWithConcurrency, SHARED_WORK_CONCURRENCY_LIMIT } from "../../../shared/work-concurrency.js";
+import { processAccountExport } from "./account-export.js";
 
 const db = { one, query };
 
@@ -92,6 +93,10 @@ async function handleEvent(input, tokenCache, env) {
         eventType: body.eventType,
         payload: body.payload,
       }, env);
+      break;
+    }
+    case "account-export": {
+      await processAccountExport(body, env);
       break;
     }
     default: {

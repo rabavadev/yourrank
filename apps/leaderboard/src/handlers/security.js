@@ -6,6 +6,8 @@ import {
   json, bad, ok, readJson, rateLimit, rateLimitHeaders, clientIp, hashPassword, verifyPassword,
 } from "../auth.js";
 import { updateUserPassword } from "../data/auth.js";
+import { createQueueProducer } from "../../../../shared/queue-producer.js";
+import { logAudit } from "../../../../shared/audit.js";
 
 const MIN_PASSWORD_LENGTH = 8;
 
@@ -273,5 +275,127 @@ export async function handleExportData(request, env, {
   } catch (e) {
     console.error("data export failed:", String(e?.message || e));
     return bad("Data export failed. Please try again.", 500);
+  }
+}
+
+const EXPORT_TTL_SECONDS = 7 * 24 * 60 * 60;
+
+export async function handleCreateExportJob(request, env, {
+  currentUserImpl = currentUser,
+  rateLimitImpl = rateLimit,
+  oneImpl = one,
+  execImpl = exec,
+  sendImpl,
+  logAuditImpl = logAudit,
+} = {}) {
+  try {
+    const user = await currentUserImpl(request, env);
+    if (!user) return bad("unauthorized", 401);
+    if (!env.ACCOUNT_EXPORTS) {
+      console.error("account export unavailable: ACCOUNT_EXPORTS R2 binding is not configured");
+      return bad("Data export is temporarily unavailable. Please try again later.", 503);
+    }
+    const rl = await rateLimitImpl(env, `account-export:${user.id}`, 2, 3600);
+    if (!rl.ok) return bad("Too many exports. Try again later.", 429, rateLimitHeaders(rl));
+
+    const existing = await oneImpl(
+      `SELECT id, status, created_at, expires_at, error FROM account_export_jobs
+         WHERE user_id=$1 AND status IN ('pending', 'processing') AND expires_at > now()
+         ORDER BY created_at DESC LIMIT 1`,
+      [user.id]
+    );
+    if (existing) return ok({ exportId: existing.id, status: existing.status, createdAt: existing.created_at, expiresAt: existing.expires_at });
+
+    const exportId = crypto.randomUUID();
+    try {
+      await execImpl(
+        `INSERT INTO account_export_jobs (id, user_id, status, expires_at)
+         VALUES ($1, $2, 'pending', now() + make_interval(secs => $3))`,
+        [exportId, user.id, EXPORT_TTL_SECONDS]
+      );
+    } catch (error) {
+      if (!/duplicate|unique/i.test(String(error?.message || error))) throw error;
+      const duplicate = await oneImpl(
+        `SELECT id, status, created_at, expires_at FROM account_export_jobs
+           WHERE user_id=$1 AND status IN ('pending', 'processing') AND expires_at > now()
+           ORDER BY created_at DESC LIMIT 1`,
+        [user.id]
+      );
+      if (duplicate) return ok({ exportId: duplicate.id, status: duplicate.status, createdAt: duplicate.created_at, expiresAt: duplicate.expires_at });
+      throw error;
+    }
+    await logAuditImpl({ actorId: user.id, action: "account_export_requested", entityType: "account_export", entityId: exportId, request, details: { export_id: exportId, status: "pending" } });
+    try {
+      if (sendImpl) await sendImpl({ type: "account-export", exportId, userId: user.id });
+      else {
+        const producer = createQueueProducer(env.EVENTS_QUEUE, async () => {
+          throw new Error("EVENTS_QUEUE binding is not configured");
+        });
+        await producer.send({ type: "account-export", exportId, userId: user.id });
+      }
+    } catch (error) {
+      await execImpl("UPDATE account_export_jobs SET status='failed', error=$1, completed_at=now() WHERE id=$2", [String(error?.message || error).slice(0, 500), exportId]).catch(() => {});
+      await logAuditImpl({ actorId: user.id, action: "account_export_failed", entityType: "account_export", entityId: exportId, request, details: { export_id: exportId, status: "failed" } });
+      console.error("account export enqueue failed:", String(error?.message || error));
+      return bad("Could not start data export. Please try again.", 503);
+    }
+    return ok({ exportId, status: "pending" });
+  } catch (e) {
+    console.error("account export job creation failed:", String(e?.message || e));
+    return bad("Could not start data export. Please try again.", 500);
+  }
+}
+
+export async function handleExportJobStatus(request, env, ctx, {
+  currentUserImpl = currentUser,
+  oneImpl = one,
+} = {}) {
+  try {
+    const user = await currentUserImpl(request, env);
+    if (!user) return bad("unauthorized", 401);
+    const id = ctx?.slug || new URL(request.url).searchParams.get("id");
+    const job = await oneImpl(
+      `SELECT id, status, error, manifest, created_at, started_at, completed_at, expires_at
+         FROM account_export_jobs WHERE id=$1 AND user_id=$2`,
+      [id, user.id]
+    );
+    if (!job) return bad("not found", 404);
+    if (new Date(job.expires_at).getTime() <= Date.now()) return ok({ exportId: job.id, status: "expired", expiresAt: job.expires_at });
+    return ok({ exportId: job.id, status: job.status, error: job.error, manifest: job.manifest, createdAt: job.created_at, startedAt: job.started_at, completedAt: job.completed_at, expiresAt: job.expires_at });
+  } catch (e) {
+    console.error("account export status failed:", String(e?.message || e));
+    return bad("Could not load export status.", 500);
+  }
+}
+
+export async function handleExportJobDownload(request, env, ctx, {
+  currentUserImpl = currentUser,
+  oneImpl = one,
+} = {}) {
+  try {
+    const user = await currentUserImpl(request, env);
+    if (!user) return bad("unauthorized", 401);
+    const id = ctx?.slug || new URL(request.url).searchParams.get("id");
+    const job = await oneImpl(
+      `SELECT id, status, artifact_key, expires_at FROM account_export_jobs WHERE id=$1 AND user_id=$2`,
+      [id, user.id]
+    );
+    if (!job || job.status !== "completed" || !job.artifact_key || new Date(job.expires_at).getTime() <= Date.now()) return bad("Export is not available.", 404);
+    if (!env.ACCOUNT_EXPORTS) {
+      console.error("account export download unavailable: ACCOUNT_EXPORTS R2 binding is not configured");
+      return bad("Data export is temporarily unavailable.", 503);
+    }
+    const object = await env.ACCOUNT_EXPORTS.get(job.artifact_key);
+    if (!object) return bad("Export artifact is no longer available.", 404);
+    return new Response(object.body, {
+      status: 200,
+      headers: {
+        "content-type": "application/x-ndjson; charset=utf-8",
+        "content-disposition": `attachment; filename="yourrank-export-${job.id}.ndjson"`,
+      },
+    });
+  } catch (e) {
+    console.error("account export download failed:", String(e?.message || e));
+    return bad("Could not download export.", 500);
   }
 }
