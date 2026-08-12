@@ -28,9 +28,9 @@ export interface NavLink {
 }
 
 export const NAV_LINKS: NavLink[] = [
-  { key: "leaderboard", label: "Leaderboard",  href: "/dashboard",                    match: ["/dashboard"],                    top: true },
+  { key: "leaderboard", label: "Leaderboards", href: "/dashboard",                    match: ["/dashboard"],                    top: true },
   { key: "bot",         label: "Telegram",     href: "/bot/dashboard",                match: ["/bot"],                            top: true },
-  { key: "rewards",     label: "Credits",       href: "/dashboard/rewards/redemptions", match: ["/dashboard/rewards"],              top: true },
+  { key: "rewards",     label: "Rewards",       href: "/dashboard/rewards/redemptions", match: ["/dashboard/rewards"],              top: true },
   { key: "account",     label: "Account",      href: "/account/profile",            match: ["/account"],                      top: true },
   { key: "help",        label: "Help",         href: "/help/support",                match: ["/help", "/contact"], top: true },
 ];
