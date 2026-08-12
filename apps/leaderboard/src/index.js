@@ -4,7 +4,6 @@ import { withWorkerFetch } from "../../../shared/with-worker.js";
 import { RateLimiter } from "../../../shared/rate-limiter-do.js";
 import { populateEnv } from "../../../shared/env.js";
 import { fromJsonb, getPublicSite, getBySlug, getClickRedirectSite, getArchiveSnapshots, ARCHIVE_LIMITS, PUBLIC_ARCHIVE_LIMIT } from "./site.js";
-import { renderLeaderboard } from "./render.jsx";
 import { parseSitePath, renderSiteRoute } from "./site-routes.js";
 import { renderSite } from "./site-render.js";
 import { viewerDashboardPage } from "./pages/viewer-dashboard.js";
@@ -1116,12 +1115,21 @@ a{color:#5b5bf5;text-decoration:none;font-weight:600}</style></head><body>
             respHeaders.append("set-cookie", `${viewCookieName}=1; Path=/${slug}; Max-Age=86400; SameSite=Lax; Secure`);
           }
         }
-        const paid = r.plan !== "free";
-        const watermark = !paid ? true : (r.data.sections?.poweredBy === true);
         return new Response(
-          await renderLeaderboard(r.data, {
-            watermark, homeUrl: url.origin, slug, nonce, boards: r.boards, isCustomDomain: false,
-            logoUrl: paid && r.data.branding?.hasLogo ? `${url.origin}/logo/${slug}` : null,
+          await renderSite({
+            r,
+            section: "home",
+            viewer: null,
+            viewerData: null,
+            opts: {
+              homeUrl: url.origin,
+              slug,
+              nonce,
+              isCustomDomain: false,
+              logoUrl: r.plan !== "free" && r.data.branding?.hasLogo
+                ? `${url.origin}/logo/${slug}`
+                : null,
+            },
           }),
           { headers: respHeaders }
         );

@@ -445,7 +445,7 @@ export function collect() {
   if (state.ACTIVE_SITE_ID) out.siteId = state.ACTIVE_SITE_ID;
   if (state.SITE_UPDATED_AT) out.expectedUpdatedAt = state.SITE_UPDATED_AT;
   if (state.ME && state.ME.plan !== "free") {
-    out.branding = { accentA: $("c_a").value, accentB: $("c_b").value, font: $("f_font")?.value || state.CURRENT_BRANDING?.font || "Inter", options: state.CURRENT_BRANDING?.options || {} };
+    out.branding = { accentA: $("c_a").value, accentB: $("c_b").value, font: $("f_font")?.value || state.CURRENT_BRANDING?.font || "Inter" };
     if (state.LOGO !== undefined) out.branding.logo = state.LOGO;
   }
   if (isPro()) {
@@ -460,10 +460,6 @@ export function collect() {
       },
     };
   }
-  const tplEl = $("f_template");
-  if (tplEl) out.branding = { ...(out.branding || {}), template: tplEl.value };
-  collectTemplateText();
-  if (state.EXTRA.text && Object.keys(state.EXTRA.text).length) out.branding = { ...(out.branding || {}), text: state.EXTRA.text };
   out.notify = {
     discord_webhook_url: $("f_webhook")?.value.trim() || null,
     telegram_chat_id: $("f_tgChatId")?.value.trim() || null,
@@ -478,118 +474,20 @@ export function collect() {
   return out;
 }
 
-/* --- templates + branding --- */
-function currentTemplate() {
-  return state.TEMPLATE_CATALOG.find((template) => template.id === state.CURRENT_BRANDING.template) || state.TEMPLATE_CATALOG[0];
-}
-
-function previewUrl(template, accentA, accentB, font, device = "desktop") {
-  const params = new URLSearchParams({ board: state.ACTIVE_SITE_ID, template });
-  if (accentA && accentB) { params.set("accentA", accentA); params.set("accentB", accentB); }
-  if (font) params.set("font", font);
-  if (device) params.set("device", device);
-  return "/dashboard/preview?" + params.toString();
-}
-
-// Lazily boot template-preview iframes only when their card scrolls into view.
-// The gallery can hold ~25 templates; booting every iframe at once (even with
-// loading="lazy", which is unreliable for in-page galleries) causes real jank.
-let _previewObserver = null;
-function _lazyPreviewObserver() {
-  if (_previewObserver || typeof IntersectionObserver === "undefined") return _previewObserver;
-  _previewObserver = new IntersectionObserver((entries, obs) => {
-    for (const entry of entries) {
-      if (!entry.isIntersecting) continue;
-      const iframe = entry.target;
-      if (iframe.dataset.preview && !iframe.src) iframe.src = iframe.dataset.preview;
-      obs.unobserve(iframe);
-    }
-  }, { rootMargin: "300px 0px" });
-  return _previewObserver;
-}
-
-function _observePreview(iframe, url) {
-  iframe.dataset.preview = url;
-  const obs = _lazyPreviewObserver();
-  // No IntersectionObserver support → load immediately so previews still show.
-  if (!obs) { iframe.src = url; return; }
-  obs.observe(iframe);
-}
-
-function _buildCard(template) {
-  const selected = template.id === state.CURRENT_BRANDING.template;
-  const defaultPreset = template.presets?.[0] || {};
-  const accentA = selected && state.CURRENT_BRANDING.accentA ? state.CURRENT_BRANDING.accentA : defaultPreset.accentA;
-  const accentB = selected && state.CURRENT_BRANDING.accentB ? state.CURRENT_BRANDING.accentB : defaultPreset.accentB;
-  const font = state.CURRENT_BRANDING.font || "Inter";
-  const isPaid = state.ME?.plan !== "free";
-
-  const card = document.createElement("article");
-  card.className = ["template-card", selected ? "is-selected" : ""].filter(Boolean).join(" ");
-  card.dataset.template = template.id;
-
-  // Badges
-  const badges = [];
-
-  // Color swatches — inline presets
-  let presetsHtml = "";
-  if (template.presets?.length) {
-    const swatches = template.presets.map((p) => {
-      const activeSwatch = selected
-        && p.accentA?.toLowerCase() === (state.CURRENT_BRANDING.accentA || "").toLowerCase()
-        && p.accentB?.toLowerCase() === (state.CURRENT_BRANDING.accentB || "").toLowerCase();
-      return `<button class="template-preset-btn${activeSwatch ? " is-active" : ""}" data-accent-a="${esc(p.accentA)}" data-accent-b="${esc(p.accentB)}" data-preset-name="${esc(p.name)}" type="button" title="${esc(p.name)}"${!isPaid ? ' data-free="1"' : ""}><span class="template-preset-swatch" style="--sa:${esc(p.accentA)};--sb:${esc(p.accentB)}"></span><span class="template-preset-label">${esc(p.name)}</span></button>`;
-    }).join("");
-    presetsHtml = `<div class="template-presets">${swatches}</div>`;
-  }
-
-  card.innerHTML = `
-<div class="template-preview"><iframe loading="lazy" tabindex="-1" aria-hidden="true" title="${esc(template.name)} preview"></iframe></div>
-<div class="template-card-body">
-${badges.length ? `<div class="template-badge-row">${badges.join("")}</div>` : ""}
-<div class="template-meta"><div class="template-meta-text"><b>${esc(template.name)}</b><span>${esc(template.description)}</span></div><button class="btn btn--sm${selected ? " btn--accent" : ""} template-apply-btn" type="button" aria-pressed="${selected}">${selected ? "✓ Applied" : "Apply"}</button></div>
-${presetsHtml}
-</div>`;
-
-  const iframe = card.querySelector("iframe");
-  _observePreview(iframe, previewUrl(template.id, accentA, accentB, font, "desktop"));
-
-  // Apply on preview click or button click
-  const applyDefault = () => applyTemplate(template);
-  card.querySelector(".template-apply-btn").addEventListener("click", applyDefault);
-  card.querySelector(".template-preview").addEventListener("click", applyDefault);
-
-  // Swatch click — applies template + color in one gesture
-  card.querySelectorAll(".template-preset-btn").forEach((btn) => {
-    btn.addEventListener("click", (e) => {
-      e.stopPropagation();
-      if (!isPaid && btn.dataset.free) {
-        const status = $("templateStatus") || $("status");
-        if (status) status.textContent = "Custom colors are a Pro feature — upgrade to unlock all palettes.";
-        // Still apply the template with default colors
-        applyTemplate(template);
-        return;
-      }
-      applyTheme(template.id, btn.dataset.accentA, btn.dataset.accentB, btn.dataset.presetName);
-    });
-  });
-
-  return card;
-}
-
-function renderTemplateGallery() {
-  const gallery = $("templateGallery");
-  if (!gallery) return;
-  gallery.innerHTML = "";
-  state.TEMPLATE_CATALOG.forEach((template) => gallery.appendChild(_buildCard(template)));
-}
+/* --- branding --- */
+const COLOR_PRESETS = [
+  { name: "Indigo", accentA: "#5b5bf5", accentB: "#7b7bf8" },
+  { name: "Cyan", accentA: "#06b6d4", accentB: "#42e6ff" },
+  { name: "Sunset", accentA: "#ff7a59", accentB: "#ff4d9d" },
+  { name: "Emerald", accentA: "#3cf2b1", accentB: "#35a7ff" },
+  { name: "Gold", accentA: "#ffd15c", accentB: "#ff9f43" },
+];
 
 function renderColorPresets() {
   const list = $("colorPresets");
-  const template = currentTemplate();
-  if (!list || !template) return;
+  if (!list) return;
   list.innerHTML = "";
-  (template.presets || []).forEach((preset) => {
+  COLOR_PRESETS.forEach((preset) => {
     const active = preset.accentA.toLowerCase() === String(state.CURRENT_BRANDING.accentA || "").toLowerCase()
       && preset.accentB.toLowerCase() === String(state.CURRENT_BRANDING.accentB || "").toLowerCase();
     const button = document.createElement("button");
@@ -598,7 +496,7 @@ function renderColorPresets() {
     button.setAttribute("aria-pressed", String(active));
     button.innerHTML = `<span class="preset-swatch"><i data-color="${esc(preset.accentA)}"></i><i data-color="${esc(preset.accentB)}"></i></span><span>${esc(preset.name)}</span>`;
     button.querySelectorAll("[data-color]").forEach((swatch) => { swatch.style.background = swatch.dataset.color; });
-    button.addEventListener("click", () => applyTheme(template.id, preset.accentA, preset.accentB, preset.name));
+    button.addEventListener("click", () => applyTheme(preset.accentA, preset.accentB, preset.name));
     list.appendChild(button);
   });
 }
@@ -629,7 +527,6 @@ export function updateDesignPreview() {
   const editorVisible = document.querySelector('section[data-page="board"].is-on');
   if (!editorVisible) return;
 
-  const tpl = state.CURRENT_BRANDING.template || currentTemplate()?.id || "classic";
   const active = document.querySelector(".preview-tab.is-active");
   const device = active?.dataset.device || "desktop";
 
@@ -657,7 +554,7 @@ export function updateDesignPreview() {
   _previewTimeout = setTimeout(() => {
     try {
       const draft = collect();
-      const url = previewUrl(tpl, null, null, null, device);
+      const url = "/dashboard/preview?" + new URLSearchParams({ board: state.ACTIVE_SITE_ID, device }).toString();
       if (!_previewForm) {
         _previewForm = document.createElement("form");
         _previewForm.method = "post";
@@ -771,78 +668,11 @@ export function renderEditorTimestamps() {
 }
 
 function updateThemeSelection() {
-  const tpl = $("f_template"); if (tpl) tpl.value = state.CURRENT_BRANDING.template;
   if (state.CURRENT_BRANDING.accentA) $("c_a").value = state.CURRENT_BRANDING.accentA;
   if (state.CURRENT_BRANDING.accentB) $("c_b").value = state.CURRENT_BRANDING.accentB;
   const font = $("f_font"); if (font) font.value = state.CURRENT_BRANDING.font || "Inter";
-  renderTemplateGallery();
   renderColorPresets();
-  renderTemplateOptions();
   updateDesignPreview();
-}
-
-/* --- per-template options (schema-driven) ---
-   The dashboard never hardcodes per-template controls: it reads the active
-   template's `schema` from the catalog and auto-builds the form. Values live
-   in state.CURRENT_BRANDING.options and are validated server-side on save. */
-function renderTemplateOptions() {
-  const wrap = $("templateOptions");
-  if (!wrap) return;
-  const template = currentTemplate();
-  const schema = (template && template.schema) || {};
-  const keys = Object.keys(schema).filter((k) => schema[k] && typeof schema[k] === "object");
-  wrap.innerHTML = "";
-  if (!keys.length) { wrap.hidden = true; return; }
-  wrap.hidden = false;
-  const paid = state.ME && state.ME.plan !== "free";
-  const saved = state.CURRENT_BRANDING.options || {};
-
-  const head = document.createElement("div");
-  head.className = "tpl-opt-head";
-  head.innerHTML = `<span class="tpl-opt-title">${esc(template.name)} options</span>${paid
-    ? `<span class="hint">Changes preview instantly — save to publish.</span>`
-    : `<span class="hint">Pro feature. <a href="/dashboard/settings">Upgrade to unlock</a>.</span>`}`;
-  wrap.appendChild(head);
-
-  const list = document.createElement("div");
-  list.className = "tpl-opt-list";
-  for (const key of keys) {
-    const field = schema[key];
-    const value = Object.hasOwn(saved, key) ? saved[key] : field.default;
-    const id = `opt_${key}`;
-    const row = document.createElement("div");
-    row.className = "tpl-opt";
-    const label = `<div class="tpl-opt-label"><span class="tpl-opt-name">${esc(field.label || key)}</span>${field.hint ? `<span class="tpl-opt-hint">${esc(field.hint)}</span>` : ""}</div>`;
-    const apply = (v) => {
-      state.CURRENT_BRANDING.options = { ...(state.CURRENT_BRANDING.options || {}), [key]: v };
-      markDirty();
-    };
-    if (field.type === "toggle") {
-      row.innerHTML = `${label}<label class="switch" title="Toggle ${esc(field.label || key)}"><input type="checkbox" id="${id}"${value ? " checked" : ""}${paid ? "" : " disabled"} /><span class="switch-track"></span></label>`;
-      row.querySelector("input").addEventListener("change", (e) => apply(e.target.checked));
-    } else if (field.type === "select") {
-      const pills = (field.options || [])
-        .map((o) => `<button type="button" class="tpl-seg-btn${o === value ? " is-active" : ""}" data-val="${esc(o)}"${paid ? "" : " disabled"}>${esc(o)}</button>`)
-        .join("");
-      row.innerHTML = `${label}<div class="tpl-seg" role="group" aria-label="${esc(field.label || key)}">${pills}</div>`;
-      row.querySelectorAll(".tpl-seg-btn").forEach((btn) =>
-        btn.addEventListener("click", () => {
-          row.querySelectorAll(".tpl-seg-btn").forEach((b) => b.classList.toggle("is-active", b === btn));
-          apply(btn.dataset.val);
-        })
-      );
-    } else if (field.type === "color") {
-      row.innerHTML = `${label}<span class="tpl-color"><span class="tpl-color-hex" id="${id}_hex">${esc(String(value || "#000000"))}</span><input type="color" id="${id}" value="${esc(String(value || "#000000"))}"${paid ? "" : " disabled"} /></span>`;
-      const input = row.querySelector("input");
-      const hex = row.querySelector(`#${id}_hex`);
-      // "input" fires while dragging the picker so the preview feels alive.
-      const onInput = () => { if (hex) hex.textContent = input.value; apply(input.value); };
-      input.addEventListener("input", onInput);
-      input.addEventListener("change", onInput);
-    } else continue;
-    list.appendChild(row);
-  }
-  wrap.appendChild(list);
 }
 
 function _beforeUnloadGuard(e) {
@@ -863,46 +693,31 @@ subscribe((keys) => {
   if (keys.includes("draft")) updateDesignPreview();
 });
 
-export function applyTheme(template, accentA, accentB, label, font = null) {
+export function applyTheme(accentA, accentB, label, font = null) {
   const selectedFont = font || $("f_font")?.value || state.CURRENT_BRANDING?.font || "Inter";
-  const templateChanged = template !== state.CURRENT_BRANDING.template;
-  state.CURRENT_BRANDING = { ...state.CURRENT_BRANDING, template, font: selectedFont };
-  // Options are per-template: switching designs drops the previous
-  // template's knobs so stale keys never leak across designs.
-  if (templateChanged) state.CURRENT_BRANDING.options = {};
+  state.CURRENT_BRANDING = { ...state.CURRENT_BRANDING, font: selectedFont };
   if (state.ME.plan !== "free" && accentA && accentB) {
     state.CURRENT_BRANDING.accentA = accentA;
     state.CURRENT_BRANDING.accentB = accentB;
   }
-  const tplEl = $("f_template"); if (tplEl) tplEl.value = template;
   if (state.ME.plan !== "free" && accentA && accentB) {
     $("c_a").value = accentA;
     $("c_b").value = accentB;
   }
   const fontEl = $("f_font"); if (fontEl) fontEl.value = selectedFont;
-  const active = state.BOARDS.find((b) => b.id === state.ACTIVE_SITE_ID);
-  if (active) active.template = template;
   updateThemeSelection();
-  renderTemplateText();
   renderSidebarBoardSwitcher();
   renderBoardsPage();
-  const status = $("templateStatus");
-  if (status) status.textContent = `${label || currentTemplate()?.name || "Design"} selected — click Save changes to publish.`;
+  const status = $("status");
+  if (status && label) status.textContent = `${label} palette selected — click Save changes to publish.`;
   markDirty();
-}
-
-function applyTemplate(template) {
-  const preset = template.presets?.[0];
-  applyTheme(template.id, preset?.accentA, preset?.accentB, template.name);
 }
 
 export function renderBranding(br) {
   state.CURRENT_BRANDING = {
-    template: br.template || "classic",
     accentA: br.accentA || null,
     accentB: br.accentB || null,
     font: br.font || "Inter",
-    options: (br.options && typeof br.options === "object") ? br.options : {},
   };
   const paid = state.ME.plan !== "free";
   $("brandBody").hidden = !paid;
@@ -959,9 +774,9 @@ $("logoFile")?.addEventListener("change", () => {
   img.src = URL.createObjectURL(f);
   $("logoFile").value = "";
 });
-$("applyCustomColors")?.addEventListener("click", () => applyTheme(state.CURRENT_BRANDING?.template, $("c_a")?.value, $("c_b")?.value, "Custom colors"));
-$("colorsReset")?.addEventListener("click", () => { const preset = currentTemplate()?.presets?.[0]; if (preset && state.CURRENT_BRANDING?.template) applyTheme(state.CURRENT_BRANDING.template, preset.accentA, preset.accentB, preset.name); });
-$("f_font")?.addEventListener("change", () => applyTheme(state.CURRENT_BRANDING?.template, $("c_a")?.value, $("c_b")?.value, "Font"));
+$("applyCustomColors")?.addEventListener("click", () => applyTheme($("c_a")?.value, $("c_b")?.value, "Custom colors"));
+$("colorsReset")?.addEventListener("click", () => applyTheme(COLOR_PRESETS[0].accentA, COLOR_PRESETS[0].accentB, COLOR_PRESETS[0].name));
+$("f_font")?.addEventListener("change", () => applyTheme($("c_a")?.value, $("c_b")?.value, "Font"));
 
 export function renderNotifications(n) {
   const paid = state.ME.plan !== "free";
@@ -1106,43 +921,6 @@ export function renderPlayerFields() {
   list.addEventListener("input", onPlayerFieldChange);
   list.addEventListener("change", onPlayerFieldChange);
   collectPlayerFields();
-}
-
-export function collectTemplateText() {
-  const list = $("textList");
-  if (!list) return;
-  const text = {};
-  for (const row of list.querySelectorAll("[data-text-key]")) {
-    const key = row.dataset.textKey;
-    const val = row.querySelector(".text-value")?.value ?? "";
-    if (val.trim()) text[key] = val.trim();
-  }
-  state.EXTRA.text = text;
-}
-
-export function renderTemplateText() {
-  const list = $("textList");
-  if (!list) return;
-  const template = currentTemplate();
-  const defaults = template?.textDefaults || {};
-  const current = state.EXTRA?.text || {};
-  const keys = Object.keys(defaults);
-  if (!keys.length) {
-    list.innerHTML = `<p class="hint">This design does not have editable text slots.</p>`;
-    return;
-  }
-  list.innerHTML = keys.map((key) => {
-    const def = defaults[key];
-    const val = current[key] ?? "";
-    const label = key.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
-    return `<div class="text-row" data-text-key="${esc(key)}">
-<label class="text-label" for="text_${esc(key)}">${esc(label)}</label>
-<input id="text_${esc(key)}" class="text-value" type="text" placeholder="${esc(def)}" value="${esc(val)}" />
-</div>`;
-  }).join("");
-  list.addEventListener("input", collectTemplateText);
-  list.addEventListener("change", collectTemplateText);
-  collectTemplateText();
 }
 
 export function renderLegal() {
