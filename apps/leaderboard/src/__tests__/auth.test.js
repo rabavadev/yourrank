@@ -15,6 +15,7 @@ const {
   safeEqual,
   isEmail,
   slugify,
+  RESERVED,
 } = await import("../auth.js");
 
 // ── hashPassword ───────────────────────────────────────────────────────────
@@ -218,5 +219,15 @@ describe("slugify", () => {
 
   test("strips unicode non-word chars", () => {
     expect(slugify("café latte")).toBe("caf-latte");
+  });
+});
+
+describe("RESERVED", () => {
+  test("reserves every slug the Worker already serves itself", () => {
+    // /demo is a virtual board rendered without a DB row, so a signup that took
+    // the slug got a public page it could never reach.
+    for (const slug of ["demo", "dashboard", "account", "bot", "api", "login"]) {
+      expect(RESERVED.has(slug)).toBe(true);
+    }
   });
 });

@@ -5,22 +5,34 @@ import { NAV_LINKS, activeKey, profileMenuHtml } from "../../../../shared/shell-
 
 const CREDITS_NAV_KEYS = new Set(["credits", "channel", "redemptions", "shop", "rules", "viewers", "history"]);
 
+// Lucide "settings" gear. The previous inline copy had malformed arc commands
+// ("2 0 0 1-2 2" — a missing radius), which browsers reject with "<path>
+// attribute d: Expected arc flag" and then drop the whole icon.
+const GEAR_ICON = '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>';
+
 const DASHBOARD_NAV = [
   ["home", "Overview", "/dashboard", '<rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/>'],
   { type: "group", label: "BOARD" },
   ["board", "Editor", "/dashboard/editor", '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>'],
+  ["games", "Public page", "/dashboard/games", '<rect width="18" height="14" x="3" y="5" rx="2"/><path d="M3 10h18"/><path d="M9 10v9"/>'],
   { type: "group", label: "CREDITS" },
   ["credits", "Credits", "/dashboard/rewards/redemptions", '<path d="M6 2v4"/><path d="M18 2v4"/><rect width="16" height="16" x="4" y="4" rx="2"/><path d="M4 10h16"/><path d="M8 14h.01"/><path d="M12 14h.01"/><path d="M16 14h.01"/>'],
-  ["games", "Games", "/dashboard/games", '<circle cx="12" cy="12" r="10"/><path d="m14.31 8 5.74 9.94"/><path d="M9.69 8h11.48"/><path d="m7.38 12 5.74-9.94"/><path d="M9.69 16 3.95 6.06"/><path d="M14.31 16H2.83"/><path d="m16.62 12-5.74 9.94"/>'],
+  ["shop", "Shop", "/dashboard/rewards/shop", null],
+  ["rules", "Credit rules", "/dashboard/rewards/rules", null],
+  ["viewers", "Viewers", "/dashboard/audience/viewers", null],
+  ["history", "Credit activity", "/dashboard/audience/activity", null],
+  ["channel", "Kick channel", "/dashboard/rewards/channel", null],
+  { type: "group", label: "GROW" },
   ["performance", "Analytics", "/dashboard/analytics/activity", '<path d="M3 3v18h18"/><path d="m7 12 4-4 4 4 5-5"/>', "activity"],
-  ["settings", "Settings", "/dashboard/settings", '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 0-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 0 0 0 2 2v.09A1.65 1.65 0 0 0 15 4.6a1.65 1.65 0 0 0 1.82-.33l-.06-.06a1.65 1.65 0 0 0 2.83 2.83l.06.06A1.65 1.65 0 0 0 19.4 9H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>']
+  ["settings", "Settings", "/dashboard/settings", GEAR_ICON]
 ];
 
 const ACCOUNT_NAV = [
-  ["settings", "Settings", "/dashboard/settings", '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06A1.65 1.65 0 0 0 15 19.4a1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09A1.65 1.65 0 0 0 15 4.6a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9H21a2 2 0 0 1 2 2 2 2 0 0 1 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>'],
+  ["settings", "Settings", "/dashboard/settings", GEAR_ICON],
 ];
 
 function Icon({ path }) {
+  if (!path) return null;
   return <span class="lb-nav-ic" aria-hidden="true" dangerouslySetInnerHTML={{ __html: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">${path}</svg>` }} />;
 }
 
@@ -38,12 +50,17 @@ function SidebarBoard({ boardContext }) {
   </div></div>;
 }
 
+// Cross-product switcher. The leaderboard sections above are this app; these
+// links leave it (Telegram bots, account, help), so only the ones that aren't
+// already a sidebar destination are listed.
+const PRODUCT_NAV_KEYS = new Set(["bot", "account", "help"]);
+
 function ProductNav({ boardContext, footer }) {
   const activePath = boardContext === "none" ? "/account/profile" : footer === "rewards" ? "/dashboard/rewards/redemptions" : "/dashboard";
   const active = activeKey(activePath);
   return <nav class="lb-product-nav" aria-label="Product">
     <span class="label">Product</span>
-    {NAV_LINKS.map(({ key, label, href }) => <a class={"lb-product-link" + (key === active ? " is-on" : "")} href={href} aria-current={key === active ? "page" : undefined}>{label}</a>)}
+    {NAV_LINKS.filter(({ key }) => PRODUCT_NAV_KEYS.has(key)).map(({ key, label, href }) => <a class={"lb-product-link" + (key === active ? " is-on" : "")} href={href} aria-current={key === active ? "page" : undefined}>{label}</a>)}
   </nav>;
 }
 
@@ -72,7 +89,7 @@ export function DashboardShell({ activeNav = "home", activeHash = "", boardConte
             ? <div class="lb-nav-group-label" role="heading" aria-level="2">{item.label}</div>
             : (() => {
               const [key, label, href, path, hash] = item;
-              const active = (activeNav === key || (key === "credits" && CREDITS_NAV_KEYS.has(activeNav))) && (!hash || activeHash === hash);
+              const active = (activeNav === key || (key === "credits" && (activeNav === "redemptions" || activeNav === "credits"))) && (!hash || activeHash === hash);
               const child = key !== "credits" && CREDITS_NAV_KEYS.has(key);
               return <a class={"lb-nav" + (active ? " is-on" : "") + (child ? " lb-nav-child" : "")} href={href} data-nav={key} data-hash={hash} aria-current={active ? "page" : undefined}><Icon path={path} />{label}</a>;
             })())}
@@ -81,12 +98,12 @@ export function DashboardShell({ activeNav = "home", activeHash = "", boardConte
       </aside>
       <div class="lb-main">
         <header class="lb-topbar" id="lbTopbar">
+          <button class="lb-menu lb-topbar-menu" id="lbMenu" type="button" aria-label="Show sections" aria-expanded="false" aria-controls="lbSide">☰</button>
           <a class="lb-brand" href="/dashboard" aria-label="YourRank dashboard"><span class="lb-brand-mark">Y</span><span class="lb-brand-txt">YourRank</span></a>
           {boardContext !== "none" && <div class="lb-topbar-hud"><div class="lb-board-select-wrap"><span class="lb-board-select-lbl" aria-hidden="true">Board:</span><select class="lb-board-select" id="sidebarBoardSelect" aria-label="Switch board"></select>{boardContext === "full" && <button class="btn btn--sm lb-board-new" id="newBoard" type="button" title="New board" aria-label="New board">+</button>}</div></div>}
           <div class="lb-topbar-actions">{title && <h1 class="lb-topbar-title" id="lbTopbarTitle" tabindex="-1">{title}</h1>}{boardContext !== "none" && <><span class="lb-status" id="lbTopbarStatus">—</span>{boardContext === "full" && <label class="lb-pub-toggle" title="When checked, saving makes the board public at /your-slug"><input type="checkbox" id="pubToggle" checked /> <span class="lb-pub-lbl">Publish board</span></label>}</>}<div class="gm-profile-host" dangerouslySetInnerHTML={{ __html: profile }}></div></div>
         </header>
-        {boardContext !== "full" && <div class="lb-phead"><button class="lb-menu" id="lbMenu" type="button" aria-label="Show sections" aria-expanded="false" aria-controls="lbSide">☰</button></div>}
-        <main class="lb-bento" id={boardContext === "selector" ? "cr-main" : undefined}>{children}</main>
+        <div class="lb-bento" id={boardContext === "selector" ? "cr-main" : undefined}>{children}</div>
       </div>
     </div>
   </div>;

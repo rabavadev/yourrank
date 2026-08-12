@@ -276,7 +276,11 @@ export function setupEditorTabs() {
       buttons.forEach((b) => {
         const on = b.dataset.egroup === group;
         b.classList.toggle("is-active", on);
-        b.setAttribute("aria-selected", String(on));
+        // The steps are links to their own URLs, not `role="tab"` controls, so
+        // the current one is marked with aria-current; aria-selected is not
+        // allowed on a plain link and screen readers ignore it there.
+        if (on) b.setAttribute("aria-current", "page");
+        else b.removeAttribute("aria-current");
       });
       if (controls) {
         controls.querySelectorAll("[data-egroup]").forEach((el) => {

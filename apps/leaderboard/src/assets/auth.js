@@ -115,7 +115,7 @@ if (nameInput && slugInput) {
   nameInput.addEventListener("input", () => { if (!userEditedSlug) { slugInput.value = slugify(nameInput.value); updateSlugPreview(); } });
 }
 if (slugInput) {
-  slugInput.addEventListener("input", () => { userEditedSlug = true; updateSlugPreview(); });
+  slugInput.addEventListener("input", () => { userEditedSlug = true; updateSlugPreview(); clearFieldError("slug"); });
 }
 const PLAN_NAMES = { free: "Free", starter: "Starter", pro: "Pro", agency: "Agency", lifetime: "Lifetime Pro" };
 if (mode === "signup" && PLAN_NAMES[planParam]) {
@@ -166,7 +166,16 @@ form.addEventListener("submit", async (e) => {
   try {
     const res = await fetch(endpoint, { method: "POST", credentials: "include", headers: { "content-type": "application/json", "x-csrf-token": getCsrf() }, body: JSON.stringify(payload) });
     const data = await res.json();
-    if (!res.ok || !data.ok) { errEl.textContent = data.error || "Something went wrong."; submit.disabled = false; submit.textContent = orig; return; }
+    if (!res.ok || !data.ok) {
+      // Field-scoped failures (e.g. a taken page URL) belong next to the input,
+      // not only in the form-level error line.
+      if (data.field) {
+        setFieldError(data.field, data.error || "Invalid value");
+        document.getElementById(data.field)?.focus();
+      }
+      errEl.textContent = data.field ? "" : (data.error || "Something went wrong.");
+      submit.disabled = false; submit.textContent = orig; return;
+    }
     if (mode === "forgot") {
       if (msgEl) { msgEl.hidden = false; msgEl.textContent = "Done. If that account exists, a reset link is on its way. Check spam too."; }
       form.querySelector("input").disabled = true;

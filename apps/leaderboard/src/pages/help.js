@@ -23,6 +23,9 @@ function helpContent({ active, h1, intro, kind, subjectPlaceholder, messagePlace
     <nav class="lb-side-group" aria-label="Help">
       ${tabsHtml(active)}
     </nav>
+    <nav class="lb-side-group lb-side-back" aria-label="Leave help">
+      <a class="lb-nav" href="/dashboard">&larr; Back to dashboard</a>
+    </nav>
     <button class="lb-side-close" type="button" aria-label="Close navigation" data-close-side>×</button>
   </aside>
   <div class="lb-main">

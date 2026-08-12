@@ -36,6 +36,10 @@ import { applyLegalIdentity } from "./pages/legal-helper.js";
 import { hashToken, newClickRef } from "../../../shared/crypto.js";
 import { handleDashboardPreview } from "./handlers/preview.js";
 import { demoLeaderboardData } from "./demo-data.js";
+
+// Sections the virtual /demo board renders. `games` is off in the demo data,
+// so its shell never links there.
+const DEMO_SECTIONS = new Set(["leaderboard", "shop", "me"]);
 import { renderPasswordGate } from "./password-gate.js";
 import {
   renderNewEmbed,
@@ -846,7 +850,18 @@ async function handleRequest(request, env, ctx, meta) {
       }
 
       // --- permanent demo leaderboard (always works, no DB needed) ---
-      if (method === "GET" && path === "/demo") {
+      // The demo board is virtual (no DB row), so the sections and legal pages
+      // its own shell links to have to be served here too — otherwise
+      // /demo/leaderboard, /demo/shop, /demo/me and every footer legal link
+      // 404 and the demo tour is a dead end.
+      const demoSub = method === "GET" && path.startsWith("/demo/")
+        ? path.slice("/demo/".length).replace(/\/+$/, "")
+        : "";
+      if (demoSub && LEGAL_PAGES.has(demoSub)) {
+        return Response.redirect(`${url.origin}/${demoSub}`, 302);
+      }
+      if (method === "GET" && (path === "/demo" || DEMO_SECTIONS.has(demoSub))) {
+        const demoSection = path === "/demo" ? "home" : demoSub;
         return new Response(
           await renderSite({
             r: {
@@ -857,7 +872,7 @@ async function handleRequest(request, env, ctx, meta) {
               viewerKickAuthEnabled: false,
               viewerDiscordAuthEnabled: false,
             },
-            section: "home",
+            section: demoSection,
             viewer: null,
             viewerData: null,
             opts: {

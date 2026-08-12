@@ -94,3 +94,27 @@ describe("shared UI primitives", () => {
     expect(botCss).not.toMatch(/\n\s*\.badge\s*\{/);
   });
 });
+
+describe("nonce'd CSP pages", () => {
+  // /docs is served with the nonce'd header (style-src 'self' 'nonce-…'), which
+  // drops inline <style> blocks — the page shipped unstyled in production.
+  it("keeps the docs page CSS in a stylesheet, not an inline block", () => {
+    const docs = fs.readFileSync(path.resolve(import.meta.dir, "../pages/docs.js"), "utf8");
+    expect(docs).toContain('href="/assets/docs.css"');
+    expect(docs).not.toContain("<style>");
+    expect(sheets).toContain("docs.css");
+  });
+
+  it("allows the shared shell's font origins in the bot CSP", () => {
+    const botDash = fs.readFileSync(
+      path.resolve(import.meta.dir, "../../../bot/src/dashboard.ts"),
+      "utf8"
+    );
+    const policies = botDash.match(/default-src 'self';[^`]*/g) || [];
+    expect(policies.length).toBeGreaterThan(0);
+    for (const policy of policies) {
+      expect(policy).toContain("https://fonts.googleapis.com");
+      expect(policy).toContain("font-src 'self' https://fonts.gstatic.com");
+    }
+  });
+});
