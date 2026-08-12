@@ -36,6 +36,9 @@ jobs:
         working-directory: apps/leaderboard
         run: bun run lint
 
+      - name: Reject global leaderboard test mocks
+        run: bun run check:leaderboard-test-mocks
+
   typecheck:
     name: Typecheck
     runs-on: ubuntu-latest
@@ -76,6 +79,10 @@ jobs:
 
       - name: Build shared TypeScript
         run: node build-shared.mjs
+
+      - name: Build leaderboard assets
+        working-directory: apps/leaderboard
+        run: node build-assets.js
 
       - name: Run all tests
         run: bun run test

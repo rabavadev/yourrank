@@ -13,39 +13,42 @@ import { describe, it, expect, mock } from "bun:test";
 // `currentTx` is swappable so individual tests can script the transaction.
 let currentTx = { unsafe: mock(async () => []) };
 const dbUrl = import.meta.resolve("../../../../shared/db.js");
-mock.module(dbUrl, () => ({
+const realDb = await import(dbUrl);
+const authUrl = import.meta.resolve("../auth.js");
+const realAuth = await import(authUrl);
+
+// Provider-event ledger + audit log: recorded calls let tests assert on them.
+const providerEventCalls = [];
+const auditCalls = [];
+const providerEventsUrl = import.meta.resolve("../../../../shared/provider-events.js");
+const realProviderEvents = await import(providerEventsUrl);
+const auditUrl = import.meta.resolve("../../../../shared/audit.js");
+const realAudit = await import(auditUrl);
+const billingDeps = {
+  ...realDb,
+  ...realAuth,
+  ...realProviderEvents,
+  ...realAudit,
   getSql: () => ({ begin: async (fn) => fn(currentTx) }),
   query: mock(async () => []),
   one: mock(async () => null),
   exec: mock(async () => {}),
   withTransaction: async (fn) => fn(currentTx),
-}));
-
-// Mock auth module
-mock.module("./auth.js", () => ({
   json: (data, status = 200) => new Response(JSON.stringify(data), { status }),
   bad: (msg, status = 400) => new Response(JSON.stringify({ error: msg }), { status }),
   ok: () => new Response(JSON.stringify({ ok: true })),
   safeEqual: (a, b) => a === b,
-}));
-
-// Provider-event ledger + audit log: recorded calls let tests assert on them.
-const providerEventCalls = [];
-const auditCalls = [];
-mock.module(import.meta.resolve("../../../../shared/provider-events.js"), () => ({
   logProviderEvent: async (_tx, input) => { providerEventCalls.push(input); return true; },
-}));
-mock.module(import.meta.resolve("../../../../shared/audit.js"), () => ({
   logAudit: async (input) => { auditCalls.push(input); },
-}));
+};
+const { handleIpn: handleIpnImpl } = await import("../billing.js");
+const handleIpn = (request, env, ctx) => handleIpnImpl(request, env, ctx, billingDeps);
 
 describe("IPN idempotency", () => {
   it("duplicate IPN with already-paid status does not double-activate", async () => {
     // Simulate: payment already in "confirmed" status
     // Second IPN arrives with same status
     // Should NOT activate plan again
-
-    const { handleIpn } = await import("../billing.js");
 
     // This test verifies the code path exists:
     // if (PAID.includes(status) && !PAID.includes(pay.status))
@@ -56,7 +59,6 @@ describe("IPN idempotency", () => {
   });
 
   it("IPN handler returns 200 for unknown order_id (prevents enumeration)", async () => {
-    const { handleIpn } = await import("../billing.js");
     expect(typeof handleIpn).toBe("function");
     // The handler returns { code: 200 } when pay is not found
     // This prevents attackers from discovering valid order IDs
@@ -86,7 +88,6 @@ describe("IPN pending statuses", () => {
     providerEventCalls.length = 0;
     auditCalls.length = 0;
 
-    const { handleIpn } = await import("../billing.js");
     const body = {
       payment_id: "np_123",
       order_id: "yr_abc",

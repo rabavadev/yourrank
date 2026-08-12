@@ -7,11 +7,6 @@
 
 import { describe, it, expect, mock } from "bun:test";
 
-// ── Mock shared modules ────────────────────────────────────────────────
-const dbUrl    = import.meta.resolve("../../../../shared/db.js");
-const dbUrlTs  = import.meta.resolve("../../../../shared/db.ts");
-const sessUrl  = import.meta.resolve("../../../../shared/session.js");
-const sessUrlTs = import.meta.resolve("../../../../shared/session.ts");
 const dbOne = mock(() => Promise.resolve(null));
 
 const mockSiteData = {
@@ -25,41 +20,13 @@ const mockSiteData = {
   endsAt: new Date(Date.now() + 86400000).toISOString(),
 };
 
-const dbMock = () => ({
-  one: dbOne,
-  exec: mock(() => Promise.resolve()),
-  query: mock(() => Promise.resolve([])),
-  getSql: () => null,
-  withTransaction: async (fn) => fn({ one: () => Promise.resolve(null), exec: () => Promise.resolve(), query: () => Promise.resolve([]) }),
-});
-const sessMock = () => ({
-  createSession: () => Promise.resolve("tok"),
-  destroySession: () => Promise.resolve(),
-  destroyAllUserSessions: () => Promise.resolve(),
-  cookieSet: (t) => `yr_session=${t}`,
-  cookieClear: () => "yr_session=",
-  readToken: () => null,
-  hasLegacyCookie: () => false,
-  cookieClearLegacy: () => "sess=",
-  // SEC-107: shared session module now resolves via resolveSession + loadUser
-  resolveSession: (_req) => Promise.resolve({
-    userId: null,
-    uid: null,
-    cookie: null,
-    rotatedCookie: null,
-  }),
-  loadUser: (_env, _userId) => Promise.resolve(null),
-  SESSION_ROTATE_AFTER_S: 86400,
-  SESSION_TTL_S: 2592000,
-});
-
-mock.module(dbUrl, dbMock);
-mock.module(dbUrlTs, dbMock);
-mock.module(sessUrl, sessMock);
-mock.module(sessUrlTs, sessMock);
-
-// ── Import after mocks ─────────────────────────────────────────────────
-import { handlePublicStandings, handlePublicPlayers, handlePublicRank, handlePublicData, handlePublicStream } from "../handlers/public.js";
+import {
+  handlePublicStandings as handlePublicStandingsImpl,
+  handlePublicPlayers as handlePublicPlayersImpl,
+  handlePublicRank as handlePublicRankImpl,
+  handlePublicData as handlePublicDataImpl,
+  handlePublicStream as handlePublicStreamImpl,
+} from "../handlers/public.js";
 
 // Helper: build a minimal Request
 function req(url, method = "GET") {
@@ -79,14 +46,10 @@ function mockEnv(siteData = mockSiteData) {
   };
 }
 
-// Patch getPublicSite to return mock data (we need to intercept at the site.js level)
-// Since handlers import getPublicSite from "../site.js", we mock the site module
-const siteUrl = import.meta.resolve("../site.js");
-const siteUrlTs = import.meta.resolve("../site.ts");
 const clearVersionCache = mock(() => {});
 const streamVersion = mock(() => Promise.resolve("2026-01-01T00:00:00.000Z"));
 
-mock.module(siteUrl, () => ({
+const siteDeps = {
   getPublicSite: (_env, slug, _request, options) => {
     if (slug === "nonexistent") return null;
     if (slug === "suspended") return { suspended: true, data: {} };
@@ -98,20 +61,18 @@ mock.module(siteUrl, () => ({
   },
   getPublicStreamVersion: streamVersion,
   clearPublicStreamVersionCache: clearVersionCache,
-}));
-mock.module(siteUrlTs, () => ({
-  getPublicSite: (_env, slug, _request, options) => {
-    if (slug === "nonexistent") return null;
-    if (slug === "suspended") return { suspended: true, data: {} };
-    if (slug === "protected") return { requiresPassword: true, id: "site-1", slug: "protected" };
-    const data = options
-      ? { ...mockSiteData, players: mockSiteData.players.slice(Number(options.offset) || 0, (Number(options.offset) || 0) + (Number(options.limit) || 100)) }
-      : mockSiteData;
-    return { id: "site-1", data, plan: "pro", suspended: false };
+  rateLimit: async (_env, key) => {
+    const count = Number(String(key).includes("search") ? (siteDeps.searchCount = (siteDeps.searchCount || 0) + 1) : 0);
+    return { ok: count < 61, limit: 60, remaining: Math.max(0, 60 - count), retryAfter: 1 };
   },
-  getPublicStreamVersion: streamVersion,
-  clearPublicStreamVersionCache: clearVersionCache,
-}));
+  clientIp: () => "test-ip",
+  one: dbOne,
+};
+const handlePublicStandings = (request, env, ctx) => handlePublicStandingsImpl(request, env, ctx, siteDeps);
+const handlePublicPlayers = (request, env, ctx) => handlePublicPlayersImpl(request, env, ctx, siteDeps);
+const handlePublicRank = (request, env, ctx) => handlePublicRankImpl(request, env, ctx, siteDeps);
+const handlePublicData = (request, env, ctx) => handlePublicDataImpl(request, env, ctx, siteDeps);
+const handlePublicStream = (request, env, ctx) => handlePublicStreamImpl(request, env, ctx, siteDeps);
 
 // ── handlePublicStandings ──────────────────────────────────────────────
 describe("handlePublicStandings", () => {

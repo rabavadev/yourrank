@@ -67,6 +67,9 @@ jobs:
         # (transitive via eslint, dev-only) are tracked separately; both are build-time-only.
       - name: Build shared TypeScript
         run: node build-shared.mjs
+      - name: Build leaderboard assets
+        working-directory: apps/leaderboard
+        run: node build-assets.js
       - name: Run tests
         run: bun run test
       - name: Syntax-check client assets

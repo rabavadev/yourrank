@@ -8,6 +8,7 @@ const excluded = new Set([
   "audit-validation.test.js",
   "credits-loop.test.js",
   "public-stream-version.test.js",
+  "sites-handlers.test.js",
 ]);
 
 for (const file of fs.readdirSync(testDir).sort()) {

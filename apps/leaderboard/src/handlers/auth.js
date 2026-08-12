@@ -1,4 +1,4 @@
-import { withTransaction, one, exec } from "../../../../shared/db.js";
+import { withTransaction as defaultWithTransaction, one as defaultOne, exec as defaultExec } from "../../../../shared/db.js";
 // Authentication handlers for signup, login, logout, password reset
 import { hashPassword, verifyPassword, uuid, newToken, createSession, destroySession, destroyAllUserSessions, currentUser, isEmail, slugify, RESERVED, cookieSet, cookieClear, readToken, json, bad, ok, readJson, rateLimit, clientIp, generateUniqueReferralCode } from "../auth.js";
 import { hashToken } from "../../../../shared/crypto.js";
@@ -10,6 +10,18 @@ import { getEnabledFeatureKeys } from "../../../../shared/features.js";
 import {
   findUserByEmail, findSiteBySlug, findUserByReferralCode, createUser
 } from "../data/auth.js";
+
+const defaultDependencies = {
+  withTransaction: defaultWithTransaction,
+  one: defaultOne,
+  exec: defaultExec,
+  destroyAllUserSessions,
+  createSession,
+  cookieSet,
+};
+const withTransaction = defaultWithTransaction;
+const one = defaultOne;
+const exec = defaultExec;
 
 const REFERRAL_REWARD_DAYS = 31;
 const REFERRAL_MAX_EXTENSION_DAYS = 365;
@@ -316,7 +328,7 @@ export async function handleForgot(request, env) {
 
 // POST /api/auth/reset — { token, password }
 // SEC-702: Wrap in try/catch that redacts the reset token before logging.
-export async function handleReset(request, env) {
+export async function handleReset(request, env, deps = defaultDependencies) {
   try {
     const body = await readJson(request);
     const token = String(body?.token || "");
@@ -324,12 +336,12 @@ export async function handleReset(request, env) {
     if (!token) return bad("Missing reset token");
     if (password.length < 8) return bad("Password must be at least 8 characters");
     const tokenHash = await hashToken(token);
-    const resetRow = await one("SELECT user_id FROM password_resets WHERE token=$1 AND expires_at > now()", [tokenHash]);
+    const resetRow = await deps.one("SELECT user_id FROM password_resets WHERE token=$1 AND expires_at > now()", [tokenHash]);
     const userId = resetRow?.user_id ?? null;
     if (!userId) return bad("This reset link is invalid or expired. Ask for a new one.", 400);
     const { hash, salt } = await hashPassword(password);
     // H-09: update password + delete reset token atomically.
-    await withTransaction(async (tx) => {
+    await deps.withTransaction(async (tx) => {
       await tx.unsafe("UPDATE users SET password_hash=$1, password_salt=$2, updated_at=now() WHERE id=$3", [hash, salt, userId]);
       await tx.unsafe("DELETE FROM password_resets WHERE token=$1", [tokenHash]);
     });
@@ -337,9 +349,9 @@ export async function handleReset(request, env) {
     // Without this, a stolen session survives a victim-initiated reset for up to
     // the 30-day KV TTL. The per-user token index in shared/session.js makes this
     // possible without a schema change.
-    await destroyAllUserSessions(env, userId);
-    const session = await createSession(env, userId);
-    return json({ ok: true }, 200, { "set-cookie": cookieSet(session, env) });
+    await deps.destroyAllUserSessions(env, userId);
+    const session = await deps.createSession(env, userId);
+    return json({ ok: true }, 200, { "set-cookie": deps.cookieSet(session, env) });
   } catch (e) {
     // SEC-702: Never log the reset token — redact it from any error context.
     console.error("reset failed:", String(e?.message || e).replace(/[a-f0-9]{32,}/gi, '[REDACTED]'));
@@ -349,12 +361,12 @@ export async function handleReset(request, env) {
 
 // Verifies an email token. Shared by the POST API and the server-rendered
 // GET /verify-email page so verification never depends on client JavaScript.
-export async function verifyEmailToken(token) {
+export async function verifyEmailToken(token, deps = defaultDependencies) {
   const value = String(token || "").trim();
   if (!value) return { ok: false, status: 400, error: "Verification token required" };
   try {
     const tokenHash = await hashToken(value);
-    const user = await one(
+    const user = await deps.one(
       "SELECT id, email_verification_sent_at FROM users WHERE email_verification_token_hash=$1 AND email_verified=false",
       [tokenHash]
     );
@@ -365,7 +377,7 @@ export async function verifyEmailToken(token) {
         return { ok: false, status: 410, error: "Verification link has expired. Please sign in to request a new one." };
       }
     }
-    await exec(
+    await deps.exec(
       "UPDATE users SET email_verified=true, email_verification_token_hash=NULL, email_verification_sent_at=NULL WHERE id=$1",
       [user.id]
     );

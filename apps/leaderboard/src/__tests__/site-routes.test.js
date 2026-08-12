@@ -4,52 +4,13 @@
 //
 // Run: bun test src/__tests__/site-routes.test.js
 
-import { describe, it, expect, mock } from "bun:test";
+import { describe, it, expect } from "bun:test";
 import { detectImageMime, validateLogoData } from "../logo-validation.js";
 
 // ── Helper: resolve module paths the same way the source files do ───────
-function local(p) { return import.meta.resolve(`../${p}.js`); }
-function shared(p) { return import.meta.resolve(`../../../../shared/${p}.js`); }
-function sharedTs(p) { return import.meta.resolve(`../../../../shared/${p}.ts`); }
-
 // ── Shared module mocks ────────────────────────────────────────────────
 const viewerByRequest = new Map();
-
-mock.module(shared("viewer-session"), () => ({
-  resolveViewer: (req, _env) => Promise.resolve(viewerByRequest.get(req) || { viewer: null, cookie: null }),
-}));
-mock.module(sharedTs("viewer-session"), () => ({
-  resolveViewer: (req, _env) => Promise.resolve(viewerByRequest.get(req) || { viewer: null, cookie: null }),
-}));
-
-// Include the full crypto API so later tests in the same process don't see a partial module.
-const cryptoMock = () => ({
-  encryptToken: (s) => s,
-  decryptToken: (enc) => enc,
-  reencryptToken: (s) => s,
-  isCurrentVersion: () => true,
-  encrypt: (s) => s,
-  decrypt: (s) => s,
-  safeEqual: (a, b) => a === b,
-  bytesToHex: (bytes) => Buffer.from(bytes).toString("hex"),
-  hexToBytes: (hex) => Uint8Array.from(Buffer.from(hex, "hex")),
-  hashIp: async (ip) => ip,
-  hashToken: () => Promise.resolve("hash"),
-  newWebhookSecret: () => "secret",
-  newLinkSlug: () => "slug",
-  newClickRef: () => "ref",
-  newPostbackKey: () => "pbkey",
-  verifyHmacSha256Hex: async () => true,
-});
-mock.module(shared("crypto"), cryptoMock);
-mock.module(sharedTs("crypto"), cryptoMock);
-
-mock.module(shared("queue-producer"), () => ({
-  createQueueProducer: () => ({ send: () => Promise.resolve() }),
-}));
-mock.module(sharedTs("queue-producer"), () => ({
-  createQueueProducer: () => ({ send: () => Promise.resolve() }),
-}));
+const routeViewer = (req) => Promise.resolve(viewerByRequest.get(req) || { viewer: null, cookie: null });
 
 // ── Mock site.js (constants + getPublicSite) ──────────────────────────
 const DEFAULT_EXTRA = {
@@ -122,7 +83,7 @@ function makeSite(slug, sections) {
   };
 }
 
-mock.module(local("site"), () => ({
+const routeSite = {
   DEFAULT_EXTRA,
   FONT_FAMILIES,
   getPublicSite: (_env, slug, _request) => {
@@ -138,10 +99,10 @@ mock.module(local("site"), () => ({
   ARCHIVE_LIMITS: { free: 6, starter: 6, pro: 12, agency: 24 },
   detectImageMime,
   validateLogoData,
-}));
+};
 
 // ── Mock site-data.js to avoid DB queries for viewer data ───────────────
-mock.module(local("site-data"), () => ({
+const routeSiteData = {
   getShopItems: () => Promise.resolve(SHOP_ITEMS),
   getViewerSiteData: (_siteId, viewerId, opts) => {
     if (!viewerId) {
@@ -154,13 +115,21 @@ mock.module(local("site-data"), () => ({
       ledger: opts?.ledger ? [{ id: "l-1", type: "earn", amount: 50, description: "Stream", created_at: new Date().toISOString() }] : [],
     });
   },
-}));
+};
 
 // ── Mock stats.js to avoid shared module loading in tests ────────────────
-mock.module(local("stats"), () => ({ bumpStat: () => Promise.resolve() }));
+const routeDeps = {
+  getPublicSite: routeSite.getPublicSite,
+  resolveViewer: routeViewer,
+  createQueueProducer: () => ({ send: () => Promise.resolve() }),
+  bumpStat: () => Promise.resolve(),
+  hashToken: async () => "hash",
+  getViewerSiteData: routeSiteData.getViewerSiteData,
+};
 
 // ── Import after mocks ─────────────────────────────────────────────────
-import { parseSitePath, renderSiteRoute } from "../site-routes.js";
+import { parseSitePath, renderSiteRoute as renderSiteRouteImpl } from "../site-routes.js";
+const renderSiteRoute = (args) => renderSiteRouteImpl({ ...args, deps: routeDeps });
 
 function req(url, opts = {}) {
   const request = new Request(url, { method: opts.method || "GET", headers: opts.headers || {} });

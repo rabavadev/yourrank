@@ -1,14 +1,10 @@
 import { describe, test, expect, mock, beforeEach } from "bun:test";
 
-// Mock shared DB before the auth handlers import it.
-const dbUrl = import.meta.resolve("../../../../shared/db.js");
-const dbUrlTs = import.meta.resolve("../../../../shared/db.ts");
-
 const mockOne = mock(() => Promise.resolve(null));
 const mockExec = mock(() => Promise.resolve());
 const mockQuery = mock(() => Promise.resolve([]));
 
-const dbModule = () => ({
+const dbModule = {
   one: (...args) => mockOne(...args),
   exec: (...args) => mockExec(...args),
   query: (...args) => mockQuery(...args),
@@ -18,11 +14,9 @@ const dbModule = () => ({
     query: (...a) => mockQuery(...a),
   }),
   getSql: () => null,
-});
-mock.module(dbUrl, dbModule);
-mock.module(dbUrlTs, dbModule);
-
-import { verifyEmailToken } from "../handlers/auth.js";
+};
+import { verifyEmailToken as verifyEmailTokenImpl } from "../handlers/auth.js";
+const verifyEmailToken = (token) => verifyEmailTokenImpl(token, dbModule);
 import { verifyEmailPageHtml } from "../pages/verify-email.js";
 
 describe("verifyEmailToken", () => {

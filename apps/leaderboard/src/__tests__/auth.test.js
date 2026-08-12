@@ -4,45 +4,11 @@
 // Run: bun test src/__tests__/auth.test.js
 //   or: bun test   (from apps/leaderboard/)
 
-import { mock, test, expect, describe } from "bun:test";
+import { test, expect, describe } from "bun:test";
 
 // ── stub heavy deps so auth.js loads without a real DB or session KV ──────
 // We use import.meta.resolve() to get the exact resolved URL that auth.js will
 // request, so the mock intercepts regardless of CJS/ESM interop quirks.
-const dbUrl      = import.meta.resolve("../../../../shared/db.js");
-const sessionUrl = import.meta.resolve("../../../../shared/session.js");
-
-mock.module(dbUrl, () => ({
-  one:   () => Promise.resolve(null),
-  exec:  () => Promise.resolve(),
-  query: () => Promise.resolve([]),
-  getSql: () => { throw new Error("getSql should not be called in auth unit tests"); },
-  withTransaction: async (fn) => fn({ one: () => Promise.resolve(null), exec: () => Promise.resolve(), query: () => Promise.resolve([]) }),
-}));
-
-mock.module(sessionUrl, () => ({
-    createSession:          () => Promise.resolve("mock-session-token"),
-    destroySession:         () => Promise.resolve(),
-    destroyAllUserSessions: () => Promise.resolve(),
-    cookieSet:  (t) => `yr_session=${t}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=2592000`,
-    cookieClear: ()  => "yr_session=; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=0",
-    readToken:  (_req) => null,
-    KV_PREFIX:  "session:",
-    // SEC-104
-    hasLegacyCookie:  (_req) => false,
-    cookieClearLegacy: () => "sess=; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=0",
-    // SEC-107: shared session module now resolves via resolveSession + loadUser
-    resolveSession: (_req) => Promise.resolve({
-      userId: null,
-      uid: null,
-      cookie: null,
-      rotatedCookie: null,
-    }),
-    loadUser: (_env, _userId) => Promise.resolve(null),
-    SESSION_ROTATE_AFTER_S: 86400,
-    SESSION_TTL_S: 2592000, // 30 days
-    }));
-
 const {
   hashPassword,
   verifyPassword,

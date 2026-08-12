@@ -10,6 +10,11 @@ const siteUrl = import.meta.resolve("../site.js");
 const siteUrlTs = import.meta.resolve("../site.ts");
 const viewerAuthUrl = import.meta.resolve("../handlers/viewer-auth.js");
 const authUrl = import.meta.resolve("../auth.js");
+const realDb = await import(dbUrl);
+const realViewerSession = await import(viewerSessionUrl);
+const realSite = await import(siteUrl);
+const realViewerAuth = await import(viewerAuthUrl);
+const realAuth = await import(authUrl);
 
 const siteFixture = {
   id: "site-1",
@@ -72,26 +77,30 @@ const db = {
   getSql: () => null,
 };
 
-mock.module(dbUrl, () => db);
-mock.module(dbUrlTs, () => db);
+mock.module(dbUrl, () => ({ ...realDb, ...db }));
+mock.module(dbUrlTs, () => ({ ...realDb, ...db }));
 
 const viewerSessionState = { viewer: null };
-mock.module(viewerSessionUrl, () => ({ resolveViewer: async () => ({ viewer: viewerSessionState.viewer, cookie: null }) }));
-mock.module(viewerSessionUrlTs, () => ({ resolveViewer: async () => ({ viewer: viewerSessionState.viewer, cookie: null }) }));
+mock.module(viewerSessionUrl, () => ({ ...realViewerSession, resolveViewer: async () => ({ viewer: viewerSessionState.viewer, cookie: null }) }));
+mock.module(viewerSessionUrlTs, () => ({ ...realViewerSession, resolveViewer: async () => ({ viewer: viewerSessionState.viewer, cookie: null }) }));
 mock.module(siteUrl, () => ({
+  ...realSite,
   getPublicSite: async (_env, slug) => (slug === "missing" ? null : siteFixture),
   getByUser: async () => siteFixture,
   getBoardById: async () => boardResult,
 }));
 mock.module(siteUrlTs, () => ({
+  ...realSite,
   getPublicSite: async (_env, slug) => (slug === "missing" ? null : siteFixture),
   getByUser: async () => siteFixture,
   getBoardById: async () => boardResult,
 }));
 mock.module(viewerAuthUrl, () => ({
+  ...realViewerAuth,
   requireViewer: async () => ({ viewer: { id: "viewer-1", kick_user_id: "kick-1", kick_username: "alice" }, cookie: null, res: null }),
 }));
 mock.module(authUrl, () => ({
+  ...realAuth,
   requireUser: async () => ({ user: userFixture, res: null }),
   bad: (error, status = 400) => new Response(JSON.stringify({ error }), { status, headers: { "content-type": "application/json" } }),
   ok: (body) => new Response(JSON.stringify(body), { status: 200, headers: { "content-type": "application/json" } }),
