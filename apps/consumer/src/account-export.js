@@ -174,6 +174,7 @@ export async function processAccountExport(event, env, {
       siteReferrers: siteIds.length ? await count("site_referrers", "site_id = ANY($1)", [siteIds]) : 0,
     };
     await writer.start();
+    const actualCounts = { exportedAt: 1, user: userRows.length };
     await writer.write(JSON.stringify({
       manifest: {
         exportId, userId, exportVersion: EXPORT_VERSION,
@@ -181,13 +182,13 @@ export async function processAccountExport(event, env, {
       },
     }) + "\n");
     for (const row of userRows) await writer.write(JSON.stringify({ table: "user", row }) + "\n");
-    await emitPages(writer, "sites", `SELECT id, slug, name, tagline, casino, code, cta_url, prize_pool, period, ends_at,
+    actualCounts.sites = await emitPages(writer, "sites", `SELECT id, slug, name, tagline, casino, code, cta_url, prize_pool, period, ends_at,
       reset_note, blurb, extra_json, published, theme_json, updated_at, custom_domain,
       domain_status, suspended, telegram_chat_id, telegram_notify
       FROM sites WHERE user_id=$1`, [userId], "id", read);
 
-    await emitPages(writer, "players", "SELECT * FROM players WHERE " + siteFilter, [siteIds], "id", read);
-    await emitPages(writer, "archives", "SELECT * FROM archives WHERE " + siteFilter, [siteIds], "id", read);
+    actualCounts.players = await emitPages(writer, "players", "SELECT * FROM players WHERE " + siteFilter, [siteIds], "id", read);
+    actualCounts.archives = await emitPages(writer, "archives", "SELECT * FROM archives WHERE " + siteFilter, [siteIds], "id", read);
 
     const accountSpecs = [
       ["subscriptions", "SELECT id, plan, status, provider, current_period_end, created_at FROM subscriptions WHERE user_id=$1", "id"],
@@ -204,19 +205,31 @@ export async function processAccountExport(event, env, {
       ["adminAudit", "SELECT id, admin_id, target_user_id, action, details, ip_address, user_agent, created_at FROM admin_audit WHERE admin_id=$1 OR target_user_id=$1", "id"],
       ["supportMessages", "SELECT id, name, email, subject, message, status, ip_hash, created_at, updated_at FROM support_messages WHERE user_id=$1", "id"],
     ];
-    for (const [table, sql, key] of accountSpecs) await emitPages(writer, table, sql, [userId], key, read);
+    for (const [table, sql, key] of accountSpecs) actualCounts[table] = await emitPages(writer, table, sql, [userId], key, read);
 
-    if (offerIds.length) await emitPages(writer, "shortLinks", "SELECT sl.id, sl.offer_id, sl.slug, sl.source, sl.created_at FROM short_links sl WHERE sl.offer_id = ANY($1)", [offerIds], "id", read);
+    actualCounts.shortLinks = offerIds.length
+      ? await emitPages(writer, "shortLinks", "SELECT sl.id, sl.offer_id, sl.slug, sl.source, sl.created_at FROM short_links sl WHERE sl.offer_id = ANY($1)", [offerIds], "id", read)
+      : 0;
+    actualCounts.botCommands = 0;
+    actualCounts.broadcasts = 0;
+    actualCounts.botSubscribers = 0;
     if (botIds.length) {
-      await emitPages(writer, "botCommands", "SELECT id, bot_id, command, response, offer_id, is_enabled FROM bot_commands WHERE bot_id = ANY($1)", [botIds], "id", read);
-      await emitPages(writer, "broadcasts", "SELECT id, bot_id, status, body, media_url, buttons, scheduled_at, sent_at, total_count, sent_count, fail_count, segment, created_at FROM broadcasts WHERE bot_id = ANY($1)", [botIds], "id", read);
-      await emitPages(writer, "botSubscribers", "SELECT id, bot_id, tg_user_id, tg_username, first_name, language, is_blocked, first_seen, last_seen FROM bot_subscribers WHERE bot_id = ANY($1)", [botIds], "id", read);
+      actualCounts.botCommands = await emitPages(writer, "botCommands", "SELECT id, bot_id, command, response, offer_id, is_enabled FROM bot_commands WHERE bot_id = ANY($1)", [botIds], "id", read);
+      actualCounts.broadcasts = await emitPages(writer, "broadcasts", "SELECT id, bot_id, status, body, media_url, buttons, scheduled_at, sent_at, total_count, sent_count, fail_count, segment, created_at FROM broadcasts WHERE bot_id = ANY($1)", [botIds], "id", read);
+      actualCounts.botSubscribers = await emitPages(writer, "botSubscribers", "SELECT id, bot_id, tg_user_id, tg_username, first_name, language, is_blocked, first_seen, last_seen FROM bot_subscribers WHERE bot_id = ANY($1)", [botIds], "id", read);
     }
+    actualCounts.siteStatsHourly = 0;
+    actualCounts.siteReferrers = 0;
     if (siteIds.length) {
-      await emitTuplePages(writer, "siteStatsHourly", "SELECT site_id, day, hour, day_of_week, views FROM site_stats_hourly WHERE site_id = ANY($1)", [siteIds], ["site_id", "day", "hour"], read);
-      await emitTuplePages(writer, "siteReferrers", "SELECT site_id, day, domain, count FROM site_referrers WHERE site_id = ANY($1)", [siteIds], ["site_id", "day", "domain"], read);
+      actualCounts.siteStatsHourly = await emitTuplePages(writer, "siteStatsHourly", "SELECT site_id, day, hour, day_of_week, views FROM site_stats_hourly WHERE site_id = ANY($1)", [siteIds], ["site_id", "day", "hour"], read);
+      actualCounts.siteReferrers = await emitTuplePages(writer, "siteReferrers", "SELECT site_id, day, domain, count FROM site_referrers WHERE site_id = ANY($1)", [siteIds], ["site_id", "day", "domain"], read);
     }
 
+    await writer.write(JSON.stringify({
+      trailer: {
+        exportId, exportVersion: EXPORT_VERSION, complete: true, rowCounts: actualCounts,
+      },
+    }) + "\n");
     await writer.complete();
     const manifest = { exportId, userId, exportVersion: EXPORT_VERSION, generatedAt: new Date().toISOString(), tables: TABLES, rowCounts: counts };
     await write(

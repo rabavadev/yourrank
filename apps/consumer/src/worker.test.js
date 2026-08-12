@@ -64,7 +64,9 @@ describe("account export artifacts", () => {
       "featureOverrides", "onboardingEmails", "referralRewards", "auditLog",
       "adminAudit", "supportMessages", "siteStatsHourly", "siteReferrers",
     ]);
-    expect(lines.slice(1).map((line) => line.table)).toEqual(["user", "sites"]);
+    expect(lines.slice(1).map((line) => line.table || (line.trailer && "trailer"))).toEqual(["user", "sites", "trailer"]);
+    expect(lines.at(-1).trailer.complete).toBe(true);
+    expect(lines.at(-1).trailer.rowCounts).toMatchObject({ user: 1, sites: 1 });
     expect(uploads.length).toBe(1);
   });
 
