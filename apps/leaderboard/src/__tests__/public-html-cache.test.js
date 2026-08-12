@@ -3,6 +3,9 @@ import {
   isPublicBoardCacheRequest,
   isPublicBoardCacheSite,
   publicBoardCacheKey,
+  cachedPublicBoardResponse,
+  PUBLIC_HTML_CSRF_PLACEHOLDER,
+  PUBLIC_HTML_NONCE_PLACEHOLDER,
   publicHtmlCacheControl,
 } from "../public-html-cache.js";
 
@@ -46,6 +49,30 @@ describe("public HTML cache boundary", () => {
   });
 
   it("uses the agreed edge-cache policy", () => {
-    expect(publicHtmlCacheControl()).toBe("public, max-age=0, s-maxage=15, stale-while-revalidate=60");
+    expect(publicHtmlCacheControl()).toBe("no-store");
+  });
+
+  it("hydrates a fresh nonce in both the body and CSP on every serve", async () => {
+    const cached = new Response(
+      `<script nonce="${PUBLIC_HTML_NONCE_PLACEHOLDER}">const csrf="${PUBLIC_HTML_CSRF_PLACEHOLDER}";</script>
+       <meta name="csrf-token" content="${PUBLIC_HTML_CSRF_PLACEHOLDER}" />`,
+      { headers: {
+        "content-security-policy": `script-src 'self' 'nonce-${PUBLIC_HTML_NONCE_PLACEHOLDER}'`,
+        "cache-control": "no-store",
+      } }
+    );
+    const first = await cachedPublicBoardResponse(cached.clone(), "nonce-one", "csrf-one", "csrf-cookie-one");
+    const second = await cachedPublicBoardResponse(cached.clone(), "nonce-two", "csrf-two", "csrf-cookie-two");
+    const firstBody = await first.text();
+    const secondBody = await second.text();
+    expect(firstBody).toContain('nonce="nonce-one"');
+    expect(firstBody).toContain('csrf="csrf-one"');
+    expect(firstBody).toContain('content="csrf-one"');
+    expect(first.headers.get("content-security-policy")).toContain("'nonce-nonce-one'");
+    expect(secondBody).toContain('nonce="nonce-two"');
+    expect(secondBody).toContain('csrf="csrf-two"');
+    expect(secondBody).toContain('content="csrf-two"');
+    expect(second.headers.get("content-security-policy")).toContain("'nonce-nonce-two'");
+    expect(first.headers.get("content-security-policy")).not.toBe(second.headers.get("content-security-policy"));
   });
 });

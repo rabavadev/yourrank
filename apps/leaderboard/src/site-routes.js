@@ -18,7 +18,8 @@ import {
   getPublicBoardCache,
   isPublicBoardCacheRequest,
   isPublicBoardCacheSite,
-  publicHtmlCacheControl,
+  PUBLIC_HTML_CSRF_PLACEHOLDER,
+  PUBLIC_HTML_NONCE_PLACEHOLDER,
   putPublicBoardCache,
 } from "./public-html-cache.js";
 
@@ -83,16 +84,17 @@ async function bumpView(env, ctx, request, siteId, slug, headers) {
 }
 
 export async function renderSiteRoute({ request, env, ctx, nonce, slug, section, isCustomDomain }) {
-  const HTML_N = withNonce(HTML, nonce);
+  const cacheableRequest = isPublicBoardCacheRequest(request, section);
+  const renderNonce = cacheableRequest ? PUBLIC_HTML_NONCE_PLACEHOLDER : nonce;
+  const HTML_N = withNonce(HTML, renderNonce);
   const respHeaders = new Headers({ ...HTML_N, "cache-control": "no-store" });
 
   try {
-    const cacheableRequest = isPublicBoardCacheRequest(request, section);
     if (cacheableRequest) {
       const cached = await getPublicBoardCache(request);
       if (cached) {
         const csrfToken = generateCsrfToken();
-        return cachedPublicBoardResponse(cached, csrfToken, csrfCookie(csrfToken));
+        return cachedPublicBoardResponse(cached, nonce, csrfToken, csrfCookie(csrfToken));
       }
     }
 
@@ -115,7 +117,7 @@ export async function renderSiteRoute({ request, env, ctx, nonce, slug, section,
     const { viewer, cookie: viewerCookie } = await resolveViewer(request, env);
     if (viewerCookie) respHeaders.append("set-cookie", viewerCookie);
 
-    const csrfToken = generateCsrfToken();
+    const csrfToken = cacheableRequest ? PUBLIC_HTML_CSRF_PLACEHOLDER : generateCsrfToken();
     respHeaders.append("set-cookie", csrfCookie(csrfToken));
 
     const url = new URL(request.url);
@@ -148,10 +150,10 @@ export async function renderSiteRoute({ request, env, ctx, nonce, slug, section,
     });
     const response = new Response(html, { headers: respHeaders });
     if (cacheableRequest && isPublicBoardCacheSite(r)) {
-      respHeaders.set("cache-control", publicHtmlCacheControl());
-      response.headers.set("cache-control", publicHtmlCacheControl());
       if (ctx?.waitUntil) ctx.waitUntil(putPublicBoardCache(request, response));
       else await putPublicBoardCache(request, response);
+      const servedCsrfToken = generateCsrfToken();
+      return cachedPublicBoardResponse(response, nonce, servedCsrfToken, csrfCookie(servedCsrfToken));
     }
     return response;
   } catch (err) {

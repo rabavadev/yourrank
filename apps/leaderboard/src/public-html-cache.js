@@ -1,4 +1,6 @@
-const PUBLIC_HTML_CACHE_CONTROL = "public, max-age=0, s-maxage=15, stale-while-revalidate=60";
+export const PUBLIC_HTML_NONCE_PLACEHOLDER = "__YOURRANK_PUBLIC_NONCE__";
+export const PUBLIC_HTML_CSRF_PLACEHOLDER = "__YOURRANK_PUBLIC_CSRF__";
+const PUBLIC_HTML_CACHE_CONTROL = "no-store";
 const PUBLIC_HTML_CACHE_KEY_PREFIX = "https://yourrank.site/__public-board-cache/";
 
 function cacheApi() {
@@ -76,16 +78,25 @@ export async function invalidatePublicBoardCache(...hostsAndPaths) {
   }
 }
 
-export function cachedPublicBoardResponse(cached, csrfToken, csrfCookieHeader) {
+export function cachedPublicBoardResponse(cached, nonce, csrfToken, csrfCookieHeader) {
   return cached.text().then((html) => {
-    const body = csrfToken
-      ? html.replace(
-        /(<meta\s+name="csrf-token"\s+content=")[^"]*(")/,
-        `$1${csrfToken}$2`
-      )
-      : html;
+    const body = html
+      .split(PUBLIC_HTML_NONCE_PLACEHOLDER).join(nonce || "")
+      .split(PUBLIC_HTML_CSRF_PLACEHOLDER).join(csrfToken || "");
     const headers = new Headers(cached.headers);
-    if (csrfCookieHeader) headers.set("set-cookie", csrfCookieHeader);
+    const existingCookies = headers.get("set-cookie");
+    headers.delete("set-cookie");
+    if (existingCookies) {
+      const hydratedCookies = existingCookies.split(PUBLIC_HTML_CSRF_PLACEHOLDER).join(csrfToken || "");
+      headers.set("set-cookie", hydratedCookies);
+      if (!/(?:^|[,;]\s*)__csrf=/.test(hydratedCookies) && csrfCookieHeader) {
+        headers.append("set-cookie", csrfCookieHeader);
+      }
+    } else if (csrfCookieHeader) {
+      headers.set("set-cookie", csrfCookieHeader);
+    }
+    const csp = headers.get("content-security-policy");
+    if (csp) headers.set("content-security-policy", csp.split(PUBLIC_HTML_NONCE_PLACEHOLDER).join(nonce || ""));
     headers.set("cache-control", PUBLIC_HTML_CACHE_CONTROL);
     return new Response(body, { status: cached.status, statusText: cached.statusText, headers });
   });
