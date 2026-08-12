@@ -233,13 +233,56 @@ async function getPublicBoards(env, uid) {
   return (rows || []).map((r) => ({ slug: r.slug, name: r.name || r.slug }));
 }
 
-export async function getPlayers(env, siteId) {
+export async function getPlayers(env, siteId, options = {}) {
+  const limit = Math.min(10000, Math.max(1, Number(options.limit) || 10000));
+  const offset = Math.max(0, Number(options.offset) || 0);
+  const search = String(options.search || "").trim().toLowerCase().replace(/\s+/g, " ");
+  const sql = search
+    ? `WITH matches AS (
+         SELECT id, name, normalized_name, wagered, prize, score, hands, net_profit, win_rate, change
+           FROM players
+          WHERE site_id=$1 AND normalized_name LIKE '%' || $2 || '%'
+          ORDER BY wagered DESC, id ASC
+          LIMIT 10000
+       )
+       SELECT name, wagered, prize, score, hands, net_profit, win_rate, change,
+              (SELECT count(*) FROM players better
+                WHERE better.site_id=$1
+                  AND (better.wagered > matches.wagered
+                    OR (better.wagered = matches.wagered AND better.id < matches.id)))::int + 1 AS rank
+         FROM matches
+        ORDER BY rank
+        LIMIT $3 OFFSET $4`
+    : `SELECT name, wagered, prize, score, hands, net_profit, win_rate, change, rank
+         FROM (
+           SELECT name, normalized_name, wagered, prize, score, hands, net_profit, win_rate, change,
+                  ROW_NUMBER() OVER (ORDER BY wagered DESC, id ASC)::int AS rank
+             FROM (
+               -- Defensive ceiling above the Pro/Agency plan's 9,999-player contractual limit.
+               SELECT id, name, normalized_name, wagered, prize, score, hands, net_profit, win_rate, change
+                 FROM players
+                WHERE site_id=$1
+                ORDER BY wagered DESC, id ASC
+                LIMIT 10000
+             ) bounded
+         ) ranked
+        WHERE ($2 = '' OR normalized_name LIKE '%' || $2 || '%')
+        ORDER BY rank
+        LIMIT $3 OFFSET $4`;
   const rows = await query(
-    // Defensive ceiling above the Pro/Agency plan's 9,999-player contractual limit.
-    "SELECT name, wagered, prize, score, hands, net_profit, win_rate, change FROM players WHERE site_id=$1 ORDER BY wagered DESC LIMIT 10000",
-    [siteId]
+    sql,
+    [siteId, search, limit, offset]
   );
   return rows || [];
+}
+
+async function getPlayerCount(siteId, search = "") {
+  const normalizedSearch = String(search || "").trim().toLowerCase().replace(/\s+/g, " ");
+  const row = await one(
+    "SELECT count(*)::int AS count FROM players WHERE site_id=$1 AND ($2 = '' OR normalized_name LIKE '%' || $2 || '%')",
+    [siteId, normalizedSearch]
+  );
+  return Number(row?.count) || 0;
 }
 
 const HEX = /^#[0-9a-fA-F]{6}$/;
@@ -360,7 +403,7 @@ async function getArchivePlayerCounts(env, siteId, limit = 6) {
   return rows || [];
 }
 
-export function publicShape(site, players, archives = [], hasLogo = false) {
+export function publicShape(site, players, archives = [], hasLogo = false, playerCount = null) {
   const rawExtra = fromJsonb(site.extra_json);
   const extra = (rawExtra && typeof rawExtra === "object") ? rawExtra : {};
   const m = { ...DEFAULT_EXTRA, ...extra };
@@ -383,6 +426,7 @@ export function publicShape(site, players, archives = [], hasLogo = false) {
     whyStats: m.whyStats, rules: m.rules, socials: (m.socials || []).filter(s => s.enabled !== false),
     branding: { hasLogo, accentA: theme.accentA, accentB: theme.accentB, template: theme.template, text: theme.text, font: theme.font, options: theme.options },
     pastWinners: archives.map(archiveShape),
+    playerCount: Number.isFinite(Number(playerCount)) ? Number(playerCount) : players.length,
     players: players.map((p, i) => ({
       name: p.name,
       wagered: p.wagered,
@@ -392,6 +436,7 @@ export function publicShape(site, players, archives = [], hasLogo = false) {
       netProfit: p.net_profit,
       winRate: p.win_rate,
       change: p.change,
+      rank: Number(p.rank) || i + 1,
       streak: playerStreak(p, i, archives),
     })),
     sections: m.sections || DEFAULT_EXTRA.sections,
@@ -407,7 +452,7 @@ export function publicShape(site, players, archives = [], hasLogo = false) {
   };
 }
 
-export async function getPublicSite(env, slug, request = null) {
+export async function getPublicSite(env, slug, request = null, playerOptions = null) {
     const site = await getBySlug(env, slug);
     if (!site || !site.published) return null;
     if (site.password_hash && !(request && await verifyBoardPasswordCookie(request, site))) {
@@ -428,18 +473,27 @@ export async function getPublicSite(env, slug, request = null) {
     if (owner && !owner.email_verified) return { suspended: true, pendingVerification: true };
     const plan = effectivePlan(owner);
     const archiveLimit = Math.min(ARCHIVE_LIMITS[plan] || 6, PUBLIC_ARCHIVE_LIMIT);
-    const [players, archives, boards, bot] = await Promise.all([
-      getPlayers(env, site.id),
+    const boundedPlayers = playerOptions && Number.isFinite(Number(playerOptions.limit));
+    const totalCountPromise = boundedPlayers ? getPlayerCount(site.id) : Promise.resolve(null);
+    const matchCountPromise = boundedPlayers && String(playerOptions.search || "").trim()
+      ? getPlayerCount(site.id, playerOptions.search)
+      : totalCountPromise;
+    const [players, playerCount, playerMatchCount, archives, boards, bot] = await Promise.all([
+      getPlayers(env, site.id, boundedPlayers ? playerOptions : undefined),
+      totalCountPromise,
+      matchCountPromise,
       getArchives(env, site.id, archiveLimit), // DB-003-v8: fetch only what the public page renders
       getPublicBoards(env, site.user_id),
       one("SELECT username FROM bots WHERE owner_id=$1 LIMIT 1", [site.user_id]),
     ]);
+    const data = publicShape(site, players, archives, !!site.has_logo, playerCount);
+    if (boundedPlayers) data.playerMatchCount = playerMatchCount;
     return {
       id: site.id,
       userId: site.user_id,
       published: !!site.published,
       isDraft: !!site.is_draft,
-      data: publicShape(site, players, archives, !!site.has_logo),
+      data,
       plan,
       boards,
       botUsername: bot?.username || null,

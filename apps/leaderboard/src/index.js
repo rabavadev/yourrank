@@ -765,7 +765,7 @@ async function handleRequest(request, env, ctx, meta) {
           const overlayHtml = PAGES.overlay(demoLeaderboardData(), { slug: "demo", nonce });
           return new Response(overlayHtml, { headers: { ...HTML_N, "cache-control": "no-store" } });
         }
-        const r = await getPublicSite(env, slug, request);
+        const r = await getPublicSite(env, slug, request, { limit: 100, offset: 0 });
         if (!r || r.suspended || r.requiresPassword) return new Response(notFoundPage(slug, nonce), { status: 404, headers: HTML_N });
         const paid = r.plan !== "free";
         if (!paid) {

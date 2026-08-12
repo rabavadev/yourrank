@@ -18,8 +18,8 @@ export async function handlePublicStandings(request, env, ctx) {
     // Demo board has no DB row — serve static demo data.
     if (slug === "demo") {
       const d = demoLeaderboardData();
-      const sorted = (d.players || []).slice().sort((a, b) => (b.wagered || 0) - (a.wagered || 0));
-      const players = sorted.map((p, i) => ({ name: p.name, wagered: p.wagered, prize: p.prize, position: i + 1 }));
+      const sorted = (d.players || []).slice().sort((a, b) => (a.rank || 0) - (b.rank || 0));
+      const players = sorted.map((p, i) => ({ name: p.name, wagered: p.wagered, prize: p.prize, position: Number(p.rank) || i + 1 }));
       const endsAt = d.endsAt || null;
       let countdown = null;
       if (endsAt) {
@@ -41,8 +41,8 @@ export async function handlePublicStandings(request, env, ctx) {
     if (r && r.requiresPassword) return bad("Password required.", 401);
     if (!r || r.suspended) return bad("not found", 404);
     const d = r.data;
-    const sorted = (d.players || []).slice().sort((a, b) => (b.wagered || 0) - (a.wagered || 0));
-    const players = sorted.map((p, i) => ({ name: p.name, wagered: p.wagered, prize: p.prize, position: i + 1 }));
+    const sorted = (d.players || []).slice().sort((a, b) => (a.rank || 0) - (b.rank || 0));
+    const players = sorted.map((p, i) => ({ name: p.name, wagered: p.wagered, prize: p.prize, position: Number(p.rank) || i + 1 }));
     const endsAt = d.endsAt || null;
     let countdown = null;
     if (endsAt) {
@@ -77,16 +77,24 @@ export async function handlePublicPlayers(request, env, ctx) {
     // Demo board has no DB row — serve static demo data.
     if (slug === "demo") {
       const d = demoLeaderboardData();
-      const players = (d.players || []).slice().sort((a, b) => b.wagered - a.wagered);
-      return json({ players }, 200, { "cache-control": "public, max-age=10", ...rateLimitHeaders(rl) });
+      const url = new URL(request.url);
+      const limit = Math.min(100, Math.max(1, Number(url.searchParams.get("limit")) || 100));
+      const offset = Math.max(0, Number(url.searchParams.get("offset")) || 0);
+      const search = String(url.searchParams.get("search") || "").trim().toLowerCase();
+      const all = (d.players || []).slice().sort((a, b) => b.wagered - a.wagered);
+      const filtered = search ? all.filter((p) => String(p.name || "").toLowerCase().includes(search)) : all;
+      const players = filtered.slice(offset, offset + limit).map((p) => ({ ...p, rank: all.indexOf(p) + 1 }));
+      return json({ players, total: all.length, offset, limit, hasMore: offset + players.length < filtered.length },
+        200, { "cache-control": "public, max-age=10", ...rateLimitHeaders(rl) });
     }
 
-    const r = await getPublicSite(env, slug, request);
+    const url = new URL(request.url);
+    const limit = Math.min(100, Math.max(1, Number(url.searchParams.get("limit")) || 100));
+    const offset = Math.max(0, Number(url.searchParams.get("offset")) || 0);
+    const search = String(url.searchParams.get("search") || "").trim().toLowerCase().replace(/\s+/g, " ");
+    const r = await getPublicSite(env, slug, request, { limit, offset, search });
     if (r && r.requiresPassword) return bad("Password required.", 401);
     if (!r || r.suspended) return bad("not found", 404);
-    const url = new URL(request.url);
-    const limit = Math.min(9999, Math.max(0, Number(url.searchParams.get("limit")) || 0)) || undefined;
-
     // C-11 / M-13: cheap ETag based on the most recent player mutation. This lets
     // the client skip DOM churn and the server skip serializing unchanged boards.
     const version = await one(
@@ -94,15 +102,30 @@ export async function handlePublicPlayers(request, env, ctx) {
       [r.id]
     );
     const maxTs = version?.m ? new Date(version.m).toISOString() : "0";
-    const etag = `W/"${slug}-${maxTs}-${version?.c || 0}${limit ? `-l${limit}` : ""}"`;
+    const etag = `W/"${slug}-${maxTs}-${version?.c || 0}-l${limit}-o${offset}-q${encodeURIComponent(search)}"`;
     const ifNoneMatch = request.headers.get("if-none-match");
     if (ifNoneMatch === etag) {
       return new Response(null, { status: 304, headers: { "cache-control": "public, max-age=10", etag, ...rateLimitHeaders(rl) } });
     }
 
-    let players = (r.data.players || []).slice().sort((a, b) => b.wagered - a.wagered);
-    if (limit && players.length > limit) players = players.slice(0, limit);
-    return json({ players }, 200, { "cache-control": "public, max-age=10", etag, ...rateLimitHeaders(rl) });
+    const players = (r.data.players || []).map((p) => ({
+      name: p.name,
+      wagered: p.wagered,
+      prize: p.prize,
+      score: p.score,
+      hands: p.hands,
+      netProfit: p.netProfit,
+      winRate: p.winRate,
+      change: p.change,
+      rank: p.rank,
+    }));
+    return json({
+      players,
+      total: r.data.playerCount,
+      offset,
+      limit,
+      hasMore: offset + players.length < (r.data.playerMatchCount ?? r.data.playerCount),
+    }, 200, { "cache-control": "public, max-age=10", etag, ...rateLimitHeaders(rl) });
   } catch (e) {
     console.error("[public/players]", String(e?.message || e));
     return bad("Something went wrong. Try again.", 500);
@@ -132,13 +155,13 @@ export async function handlePublicStream(request, env, ctx) {
         const newTs = await getPublicStreamVersion(siteId);
         if (newTs !== lastTs) {
           lastTs = newTs;
-          const data = await getPublicSite(env, slug, request);
+          const data = await getPublicSite(env, slug, request, { limit: 100, offset: 0 });
           if (!data || data.suspended || data.requiresPassword) {
             closed = true;
             controller.close();
             return;
           }
-          const payload = JSON.stringify({ players: data.data.players, updatedAt: newTs });
+          const payload = JSON.stringify({ players: data.data.players, total: data.data.playerCount, updatedAt: newTs });
           controller.enqueue(enc.encode(`data: ${payload}\n\n`));
         }
       } catch (e) {

@@ -98,7 +98,7 @@ function shareScriptNonce(nonce) {
 // compose() assembles them, dispatched by composeMain() via the registry.
 // ---------------------------------------------------------------------------
 function buildParts(c, overrides = {}) {
-  const { b, hasCasino, casino, period, pool, hasCta, ctaHref, hasPartner, hasCode, code, blurb, chips = [], whyStats, socials, prizes, currency, hidePrizeAmounts, players: rawPlayers, slug = "", isCustomDomain = false } = c;
+  const { b, hasCasino, casino, period, pool, hasCta, ctaHref, hasPartner, hasCode, code, blurb, chips = [], whyStats, socials, prizes, currency, hidePrizeAmounts, players: rawPlayers, playerCount: rawPlayerCount, slug = "", isCustomDomain = false } = c;
   const name = esc(b.name);
   const cur = esc(String(currency || b.currency || "$").slice(0, 6));
   const hidePrizes = hidePrizeAmounts || b.hidePrizeAmounts || false;
@@ -130,8 +130,8 @@ ${whyStats.length ? `<div class="pcol pcol-why"><span class="pcol-label">Why ${h
   // Server-render player rows, top3, and count so crawlers, no-JS users,
   // and social previews see a populated board. leaderboard.js overwrites
   // these containers on hydration (it uses innerHTML).
-  const sortedPlayers = Array.isArray(rawPlayers) ? rawPlayers.slice().sort((a, b) => (b.wagered || 0) - (a.wagered || 0)) : [];
-  const playerCount = sortedPlayers.length;
+  const sortedPlayers = Array.isArray(rawPlayers) ? rawPlayers.slice().sort((a, b) => (a.rank || 0) - (b.rank || 0)).slice(0, 100) : [];
+  const playerCount = Number.isFinite(Number(rawPlayerCount)) ? Number(rawPlayerCount) : sortedPlayers.length;
   const sCount = String(playerCount);
   const cur2 = esc(String(currency || b.currency || "$").slice(0, 6));
   const initials = (name) => { const parts = String(name || "").trim().split(/\s+/); return (parts[0]?.[0] || "?") + (parts[1]?.[0] || ""); };
@@ -156,10 +156,11 @@ ${whyStats.length ? `<div class="pcol pcol-why"><span class="pcol-label">Why ${h
       <span class="tr-wager" role="cell"><span class="w-lg">${moneyS(pl.wagered)}</span><span class="w-sm">${moneyShortS(pl.wagered)}</span></span>${prize}<span class="tr-bar" aria-hidden="true"><i></i></span></div>`;
   });
   const top3Srv = sortedPlayers.slice(0, 3).map((pl, i) => top3CardFn(pl, i + 1, partHelpers)).join("");
-  const rowsSrv = sortedPlayers.slice(3).map((pl, i) => rowFn(pl, i + 4, partHelpers)).join("");
+  const rowsSrv = sortedPlayers.slice(3).map((pl, i) => rowFn(pl, Number(pl.rank) || i + 4, partHelpers)).join("");
 
   const table = `<div class="table" role="table" aria-label="Leaderboard standings"><div class="t-head" role="row"><span role="columnheader">#</span><span role="columnheader">Player</span><span class="ta-r" role="columnheader">${wagerLabel}</span><span class="ta-r" role="columnheader">${prizeLabel}</span></div>
-<div class="t-rows" role="rowgroup" data-rows>${rowsSrv}</div></div>`;
+<div class="t-rows" role="rowgroup" data-rows>${rowsSrv}</div></div>
+${playerCount > sortedPlayers.length ? `<div class="board-pagination"><button class="btn btn--sm" type="button" data-load-more>Load more</button><span data-load-more-status role="status" aria-live="polite"></span></div>` : ""}`;
   const rules = `<details class="rules"><summary>Leaderboard rules — scoring and reset details</summary><ol class="rules-list" data-rules></ol></details>`;
   const pastSec = `<section id="past" class="past-sec" data-past hidden><h2 class="sec-title center">Past Winners</h2><p class="sec-sub center">Every closed-out period, on the record.</p>
 <div class="past-grid" data-past-grid></div></section>`;
@@ -171,7 +172,7 @@ ${whyStats.length ? `<div class="pcol pcol-why"><span class="pcol-label">Why ${h
   const periodSpan = `<span data-period>${esc(period)}</span>`;
   const payouts = hidePrizes ? `<div class="payouts" data-payouts hidden data-hide-prizes></div>` : `<div class="payouts" data-payouts hidden></div>`;
   const top3 = `<div class="top3" data-top3 data-hide-prizes="${hidePrizes ? "true" : "false"}">${top3Srv}</div>`;
-  return { ...c, name, streamWindow, ctaBtn, joinLabel, timerGrid, partnerPanel, announce, payouts, top3, findRank, table, rules, pastSec, socialsSec, titleGroup, poolSpan, periodSpan, cur, hidePrizes, hasPool, pool, prizePoolLabel, countdownLabel, payoutsLabel, sCount };
+  return { ...c, name, streamWindow, ctaBtn, joinLabel, timerGrid, partnerPanel, announce, payouts, top3, findRank, table, rules, pastSec, socialsSec, titleGroup, poolSpan, periodSpan, cur, hidePrizes, hasPool, pool, prizePoolLabel, countdownLabel, payoutsLabel, sCount, playerCount };
 }
 
 // Each template owns its page structure: the registry maps template id to
@@ -368,7 +369,7 @@ document.addEventListener("click", (e) => {
 });
 </script>` : "";
 
-  const mainHtml = await composeMain(tpl, buildParts({ b, esc, heroLogo, hasCasino, casino, period, pool, hasCta, ctaHref, hasPartner, hasCode, code, blurb, chips, whyStats, socials, prizes: data.prizes, currency: data.brand?.currency, hidePrizeAmounts: data.brand?.hidePrizeAmounts, players: data.players, slug: opts.slug || "", isCustomDomain: !!opts.isCustomDomain, options: tplOptions }, templateParts(tpl)), textOverrides);
+  const mainHtml = await composeMain(tpl, buildParts({ b, esc, heroLogo, hasCasino, casino, period, pool, hasCta, ctaHref, hasPartner, hasCode, code, blurb, chips, whyStats, socials, prizes: data.prizes, currency: data.brand?.currency, hidePrizeAmounts: data.brand?.hidePrizeAmounts, players: data.players, playerCount: data.playerCount, slug: opts.slug || "", isCustomDomain: !!opts.isCustomDomain, options: tplOptions }, templateParts(tpl)), textOverrides);
 
   // Shell chrome belongs to the template (see defaultHeader/defaultFooter).
   const shellParts = {
