@@ -62,7 +62,7 @@ export function broadcastsPanel(): string {
       <div class="bc-preview-card">
         <h3 id="bcPreviewTitle">Preview broadcast</h3>
         <p id="bcPreviewDesc" class="bc-preview-audience"><b id="bcPreviewCount">–</b> subscribers</p>
-        <p id="bcPreviewWhen" class="bc-preview-when"></p>
+        <p id="bcPreviewTiming" class="bc-preview-when"></p>
         <fieldset class="bc-preview-choice">
           <legend>Choose the final action</legend>
           <label><input type="radio" name="bcPreviewWhen" value="now" data-action="selectBroadcastWhen" checked /> Send now</label>

@@ -230,8 +230,8 @@ const BOT_BASE_CSS = `
   .bc-preview-card { width:100%; max-width:480px; background:var(--panel); border:1px solid var(--border); border-radius:12px; padding:22px; box-shadow:0 16px 38px -10px rgba(0,0,0,.5); }
   .bc-preview-card h3 { margin:0 0 8px; }
   .bc-preview-card p { color:var(--dim); margin:0 0 14px; }
-  .bc-preview-audience { color:var(--fg) !important; font-size:20px; font-weight:700; }
-  .bc-preview-when { color:var(--fg) !important; font-weight:600; }
+  .bc-preview-card p.bc-preview-audience { color:var(--fg); font-size:20px; font-weight:700; }
+  .bc-preview-card p.bc-preview-when { color:var(--fg); font-weight:600; }
   .bc-preview-choice { border:1px solid var(--border); border-radius:8px; padding:10px 12px; margin:0 0 14px; display:flex; gap:12px; flex-wrap:wrap; }
   .bc-preview-choice legend { color:var(--dim); font-size:12px; padding:0 4px; }
   .bc-preview-choice label { cursor:pointer; font-weight:600; }

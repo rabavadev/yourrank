@@ -363,17 +363,26 @@ function broadcastAudienceText(b){
   const label = formatSegmentLabel(b.audience_filter_snapshot || b.segment) || 'all subscribers';
   return label+' · '+n+' recipients';
 }
+let bcDetailFocusTrap = null;
+let bcDetailTrigger = null;
+function renderBroadcastButtons(value){
+  if (!Array.isArray(value)) return value == null ? '<span class="muted">No buttons recorded</span>' : '<pre class="bc-detail-message">'+esc(JSON.stringify(value, null, 2))+'</pre>';
+  const rows = value.flatMap(row => Array.isArray(row) ? row : [row]);
+  if (!rows.length) return '<span class="muted">No buttons recorded</span>';
+  if (!rows.every(button => button && typeof button === 'object' && (button.label || button.text) && button.url)) {
+    return '<pre class="bc-detail-message">'+esc(JSON.stringify(value, null, 2))+'</pre>';
+  }
+  return '<ul class="bc-detail-buttons">'+rows.map(button => '<li><b>'+esc(button.label || button.text)+'</b> — '+esc(button.url)+'</li>').join('')+'</ul>';
+}
 function openBroadcastDetail(id){
   const b = __broadcasts.find(x => x.id === id);
   if (!b) return toast('Broadcast record not found');
   const body = $('bcDetailBody');
   if (!body) return;
-  const buttons = Array.isArray(b.buttons) ? b.buttons : [];
   const filter = b.audience_filter_snapshot;
   const filterText = filter ? (formatSegmentLabel(filter) || 'All subscribers') : 'Filter snapshot not retained for this older broadcast.';
   const image = b.media_url ? '<img class="bc-detail-image" src="'+esc(b.media_url)+'" alt="Broadcast image" />' : '<span class="muted">No image</span>';
-  const buttonValue = b.buttons == null ? null : JSON.stringify(b.buttons, null, 2);
-  const buttonHtml = buttonValue ? '<pre class="bc-detail-message">'+esc(buttonValue)+'</pre>' : '<span class="muted">No buttons recorded</span>';
+  const buttonHtml = renderBroadcastButtons(b.buttons);
   body.innerHTML =
     '<dl class="bc-detail-grid">'+
       '<div class="bc-detail-item"><dt>Bot</dt><dd>'+esc(b.bot_username || '—')+'</dd></div>'+
@@ -389,9 +398,20 @@ function openBroadcastDetail(id){
     '<h4>Image</h4>'+image+(b.media_url ? '<p><a href="'+esc(b.media_url)+'" target="_blank" rel="noreferrer">'+esc(b.media_url)+'</a></p>' : '')+
     '<h4>Buttons</h4>'+buttonHtml+
     '<p class="muted">Recipient list is not retained.</p>';
-  const detail = $('bcDetail'); if (detail) detail.hidden = false;
+  const detail = $('bcDetail');
+  if (detail) {
+    bcDetailTrigger = document.activeElement;
+    detail.hidden = false;
+    const card = detail.querySelector('.bc-detail-card');
+    bcDetailFocusTrap = card && window.YRDialog ? window.YRDialog.trap(card, closeBroadcastDetail) : null;
+  }
 }
-function closeBroadcastDetail(){ const detail = $('bcDetail'); if (detail) detail.hidden = true; }
+function closeBroadcastDetail(){
+  const detail = $('bcDetail'); if (detail) detail.hidden = true;
+  if (bcDetailFocusTrap) { bcDetailFocusTrap(); bcDetailFocusTrap = null; }
+  if (bcDetailTrigger && bcDetailTrigger.focus) bcDetailTrigger.focus();
+  bcDetailTrigger = null;
+}
 function renderOffers(){
   const offersEl = $('offers');
   if (!offersEl) return;
@@ -1103,7 +1123,7 @@ function renderBroadcastPreviewAction(){
   const scheduled = isScheduleSelected();
   const when = scheduled ? formatBroadcastDate(getScheduledAt()) : 'now';
   const n = __bcAudience ?? '–';
-  const whenEl = $('bcPreviewWhen');
+  const whenEl = $('bcPreviewTiming');
   if (whenEl) whenEl.textContent = scheduled ? 'Scheduled to go at '+when+' local time.' : 'This will send immediately.';
   const label = $('bcPreviewScheduleLabel'); if (label) label.textContent = getScheduledAt() ? formatBroadcastDate(getScheduledAt()) : '(choose a time above)';
   const confirmBtn = $('bcConfirmBtn');
@@ -1295,10 +1315,10 @@ if (bcTestChat) bcTestChat.addEventListener('input', saveBroadcastDraft);
   const el = $(id);
   if (el) el.addEventListener('input', () => { saveBroadcastDraft(); updateAudience(); invalidateBroadcastPreview(); });
 });
-  ['bcBody','bcImage','bcSchedule'].forEach(id => {
-    const el = $(id);
-    if (el) el.addEventListener('input', () => { saveBroadcastDraft(); invalidateBroadcastPreview(); });
-  });
+['bcBody','bcImage','bcSchedule'].forEach(id => {
+  const el = $(id);
+  if (el) el.addEventListener('input', () => { saveBroadcastDraft(); invalidateBroadcastPreview(); });
+});
 document.querySelectorAll('input[name="bcWhen"]').forEach(radio => {
   radio.addEventListener('change', () => { updateScheduleInputState(); saveBroadcastDraft(); invalidateBroadcastPreview(); });
 });
