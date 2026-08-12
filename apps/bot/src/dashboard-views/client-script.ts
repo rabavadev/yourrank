@@ -211,7 +211,7 @@ const requestedBotId = new URLSearchParams(location.search).get('bot');
 
 // Every panel ships a static "Loading…" placeholder; if the load fails they
 // have to say so instead of claiming to load forever.
-const LOADING_SLOTS = [['botList',0],['ovBots',0],['ovOffers',0],['postbackStatusOffers',0],['postbackStatusSettings',0],['offers',9],['cmdList',5],['subSources',2]];
+const LOADING_SLOTS = [['botList',0],['ovBots',0],['ovOffers',0],['postbackStatusOffers',0],['postbackStatusSettings',0],['offers',11],['cmdList',5],['subSources',2]];
 function loadErrorMarkup(msg, action){
   return '<div class="empty empty--error"><span class="empty__icon" aria-hidden="true">\u26a0</span>' +
     esc(msg) +
@@ -335,10 +335,24 @@ async function loadSubscribers(bots){
 function offerRow(o){
   const ctr = o.ctr != null ? ((o.ctr)*100).toFixed(1) : '0.0';
   const cr = o.cr != null ? ((o.cr)*100).toFixed(1) : '0.0';
+  const revenue = Array.isArray(o.reported_revenue) && o.reported_revenue.length
+    ? o.reported_revenue.map(function(r){
+        const amount = Number(r.amount);
+        const currency = String(r.currency || 'Unknown');
+        if (!Number.isFinite(amount)) return esc(currency);
+        try {
+          return esc(new Intl.NumberFormat(undefined, { style: 'currency', currency }).format(amount));
+        } catch {
+          return esc(amount.toFixed(2)+' '+currency);
+        }
+      }).join('<br>')
+    : '—';
+  const lastActivity = o.last_activity_at ? fmtTime(o.last_activity_at) : '—';
   return '<td><b>'+esc(o.casino)+'</b><br><span class="muted">'+esc(o.label)+'</span></td>'+
   '<td>'+(o.slug?'<span class="copy" data-action="copyLink" data-slug="'+esc(o.slug)+'" title="Copy tracked link">'+esc('/r/'+o.slug)+'</span> <button class="ghost btn--xs" data-action="copyLink" data-slug="'+esc(o.slug)+'" type="button" aria-label="Copy link">Copy</button>':'–')+'</td>'+
   '<td>'+esc(String(o.clicks))+'</td><td>'+esc(String(o.unique_clicks))+'</td>'+
   '<td>'+esc(ctr)+'%</td><td>'+esc(cr)+'%</td><td>'+esc(String(o.conversions||0))+'</td>'+
+  '<td>'+revenue+'</td><td>'+esc(lastActivity)+'</td>'+
   '<td class="'+(o.is_active?'ok':'off')+'">'+(o.is_active?'active':'off')+'</td>'+
   '<td><button class="ghost" data-action="toggleOffer" data-id="'+esc(o.id)+'" data-active="'+(!o.is_active)+'">'+(o.is_active?'Disable':'Enable')+'</button></td>';
 }
@@ -495,8 +509,8 @@ function renderPostbackStatus(pb){
   if (!els.length) return;
   if (!pb || pb.error) { els.forEach(el => { el.textContent = 'Could not load postback status.'; }); return; }
   const html = pb.active
-    ? '<span class="badge ok">Active</span> Postback key created '+esc(pb.createdAt ? new Date(pb.createdAt).toLocaleString(undefined,{dateStyle:'short',timeStyle:'short'}) : 'active')+'. Full setup is in Account → Postbacks.'
-    : '<span class="badge off">Not configured</span> Set up postbacks in Account → Postbacks to receive conversion events.';
+    ? '<span class="badge ok">Active</span> Account postbacks are configured ('+esc(pb.createdAt ? new Date(pb.createdAt).toLocaleString(undefined,{dateStyle:'short',timeStyle:'short'}) : 'active')+'). This does not indicate that an individual offer is converting.'
+    : '<span class="badge off">Not configured</span> Account postbacks are not configured. Set them up in Account → Postbacks to receive conversion events.';
   els.forEach(el => { el.innerHTML = html; });
 }
 
