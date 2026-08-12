@@ -111,7 +111,7 @@ const BOT_STYLE_ATTR_CSS = `
 .chart-axis { display:flex;justify-content:space-between;font-size:11px }
 .divider { margin:14px 0 0;border:0;border-top:1px solid var(--border) }
 .pre-wrap { white-space:pre-wrap }
-.style-warn { color:var(--red); font-size:13px; margin-top:6px }
+.style-warn { color:var(--red-ink); font-size:13px; margin-top:6px }
 `;
 
 const BOT_BASE_CSS = `
@@ -120,6 +120,9 @@ const BOT_BASE_CSS = `
   :root { --bg:#fafafa; --panel:#ffffff; --panel-2:#f7f7f8; --border:#e4e4e7; --border-2:#d4d4d8;
           --fg:#191919; --dim:#55555c; --mute:#707070;
           --accent:#5b5bf5; --accent-ink:#ffffff; --green:#16c784; --red:#ef4444;
+          /* Status text on a light surface: the fills above are ~2:1, these are the
+             >= 4.5:1 equivalents. Same values as app.css --yr-color-*-text. */
+          --green-ink:#0d7a4d; --red-ink:#c22626; --warn-ink:#8a5a00;
           --mono:"IBM Plex Mono","JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
           --sans:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
           --yr-bg:var(--bg); --yr-panel:var(--panel); --yr-panel-2:var(--panel-2); --yr-line:var(--border); --yr-line-2:var(--border-2);
@@ -162,7 +165,7 @@ const BOT_BASE_CSS = `
   table { width:100%; border-collapse:collapse; font-size:14px; }
   th, td { text-align:left; padding:9px 10px; border-bottom:1px solid var(--border); }
   th { color:var(--dim); font-weight:500; font-size:12px; }
-  .muted { color:var(--dim); } .ok { color:var(--green); } .off { color:var(--red); }
+  .muted { color:var(--dim); } .ok { color:var(--green-ink); } .off { color:var(--red-ink); }
   .row { display:flex; gap:14px; flex-wrap:wrap; } .row > * { flex:1; min-width:220px; }
   .stat { font-size:28px; font-weight:700; } .copy { cursor:pointer; text-decoration:underline dotted; }
   #toast { position:fixed; bottom:20px; left:50%; transform:translateX(-50%); background:var(--accent);
@@ -187,7 +190,7 @@ const BOT_BASE_CSS = `
   .kpi .lbl { font-size:12px; color:var(--dim); }
   .kpi .stat { font:700 30px/1.1 var(--mono); letter-spacing:-.02em; margin-top:6px; }
   .kpi .sub { font-size:12px; color:var(--dim); margin-top:5px; min-height:16px; }
-  .kpi .sub .up { color:var(--green); }
+  .kpi .sub .up { color:var(--green-ink); }
 
   /* ---- two-column content grid ---- */
   .grid2 { display:grid; grid-template-columns:1.6fr 1fr; gap:18px; }
@@ -210,7 +213,7 @@ const BOT_BASE_CSS = `
   .step .t { font-weight:600; font-size:14px; margin:3px 0; }
   .step .d { font-size:12px; color:var(--dim); }
   .step.done { opacity:.55; }
-  .step.done .t::before { content:"\\2713 "; color:var(--green); }
+  .step.done .t::before { content:"\\2713 "; color:var(--green-ink); }
 
   .bot-card { display:flex; flex-direction:column; gap:12px; margin-bottom:12px;
               padding:12px; border:1px solid var(--border); border-radius:8px; }
