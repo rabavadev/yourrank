@@ -16,7 +16,7 @@
   --v3-chrome-line-2: var(--yr-color-chrome-line-2);
   --v3-ink: var(--yr-color-text-inverse);
   --v3-ink-soft: var(--yr-color-chrome-ink-3);
-  --v3-ink-mute: var(--yr-color-chrome-ink-4);
+  --v3-ink-mute: var(--yr-color-chrome-ink-3);
 
   --v3-main-bg: var(--yr-color-bg-2);
   --v3-main-panel: var(--yr-color-surface);
@@ -31,7 +31,7 @@
   --v3-green: var(--yr-color-live);
 
   --v3-radius: 12px;
-  --v3-radius-sm: 8px;
+  --v3-radius-sm: var(--yr-control-radius, 8px);
   --v3-radius-xs: 6px;
   --v3-shadow: 0 1px 2px var(--yr-color-shadow);
   --v3-shadow-lg: 0 12px 32px var(--yr-color-shadow-4);
@@ -181,7 +181,7 @@ body:has(.v3-dash) > .lb-backdrop { z-index: 80; }
 }
 
 .v3-dash .lb-side .label {
-  font: 600 10px var(--v3-mono);
+  font: 600 11px var(--v3-mono);
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--v3-ink-mute);
@@ -272,7 +272,7 @@ body:has(.v3-dash) > .lb-backdrop { z-index: 80; }
 
 .v3-dash .lb-nav-group-label {
   color: var(--v3-ink-mute);
-  font: 600 10px var(--v3-mono);
+  font: 600 11px var(--v3-mono);
   letter-spacing: .14em;
   padding: 14px 12px 4px;
 }
@@ -298,6 +298,7 @@ body:has(.v3-dash) > .lb-backdrop { z-index: 80; }
   background: transparent;
   border: 1px solid var(--v3-chrome-line-2);
   color: var(--v3-accent);
+  font-size: 14px;
   width: 100%;
 }
 
@@ -611,6 +612,7 @@ body[data-wide] .v3-dash .lb-main {
   width: 100%;
   margin-top: 12px;
   justify-content: center;
+  font-size: 14px;
   background: transparent;
   border-color: var(--v3-chrome-line-2);
   color: var(--v3-ink-soft);
@@ -822,7 +824,7 @@ body[data-wide] .v3-dash .lb-main {
 
 .v3-dash #activeBoardLabel {
   display: block;
-  font: 600 10px var(--v3-mono);
+  font: 600 11px var(--v3-mono);
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--v3-ink-mute);
@@ -1421,10 +1423,10 @@ body[data-wide] .v3-dash .lb-main {
 .v3-dash section[data-page="board"] .field input:not([type="checkbox"]):not([type="color"]),
 .v3-dash section[data-page="board"] .field select,
 .v3-dash section[data-page="board"] .field textarea {
-  min-height: 34px;
-  padding: 7px 12px;
+  min-height: var(--yr-control-height, 40px);
+  padding: 0 var(--yr-control-padding-x, 12px);
   border: 1px solid var(--v3-main-line);
-  border-radius: var(--v3-radius-sm);
+  border-radius: var(--yr-control-radius, 8px);
   background: var(--v3-main-panel);
   color: var(--v3-main-ink);
   font: 400 14px var(--v3-sans);
@@ -1432,7 +1434,17 @@ body[data-wide] .v3-dash .lb-main {
 
 .v3-dash section[data-page="board"] .field textarea {
   min-height: 68px;
+  padding-top: 8px;
+  padding-bottom: 8px;
   resize: vertical;
+}
+
+@media (max-width: 768px) {
+  .v3-dash section[data-page="board"] .field input:not([type="checkbox"]):not([type="color"]),
+  .v3-dash section[data-page="board"] .field select,
+  .v3-dash section[data-page="board"] .field textarea {
+    min-height: var(--yr-control-height-narrow, 44px);
+  }
 }
 
 .v3-dash section[data-page="board"] .grid2 {
