@@ -3,17 +3,16 @@
 
 import { profileMenuHtml } from "../../../../shared/shell-nav.js";
 
-const REWARDS_NAV_KEYS = new Set(["redemptions", "shop", "maps", "viewers", "history"]);
+const CREDITS_NAV_KEYS = new Set(["redemptions", "shop", "rules", "viewers", "history"]);
 
 const DASHBOARD_NAV = [
   ["home", "Overview", "/dashboard", '<rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/>'],
   ["board", "Leaderboard", "/dashboard/editor", '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>', "players"],
   ["board", "Site", "/dashboard/editor/design", '<rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/>', "design"],
-  { type: "group", label: "REWARDS" },
+  { type: "group", label: "CREDITS" },
   ["redemptions", "Redemptions", "/dashboard/rewards/redemptions", '<path d="M6 2v4"/><path d="M18 2v4"/><rect width="16" height="16" x="4" y="4" rx="2"/><path d="M4 10h16"/><path d="M8 14h.01"/><path d="M12 14h.01"/><path d="M16 14h.01"/>'],
   ["shop", "Shop", "/dashboard/rewards/shop", '<path d="M3 9h18"/><path d="M5 9v10h14V9"/><path d="m4 9 2-5h12l2 5"/><path d="M9 14h6"/>'],
-  ["maps", "Credit rules", "/dashboard/rewards/rules", '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>'],
-  { type: "group", label: "AUDIENCE" },
+  ["rules", "Credit rules", "/dashboard/rewards/rules", '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>'],
   ["viewers", "Viewers", "/dashboard/audience/viewers", '<path d="M2 12s3-5 10-5 10 5 10 5-3 5-10 5-10-5-10-5Z"/><circle cx="12" cy="12" r="2"/>'],
   ["history", "Credit activity", "/dashboard/audience/activity", '<path d="M4 18V6"/><path d="M4 18h16"/><path d="m7 14 3-3 3 2 5-5"/>'],
   ["games", "Games", "/dashboard/games", '<circle cx="12" cy="12" r="10"/><path d="m14.31 8 5.74 9.94"/><path d="M9.69 8h11.48"/><path d="m7.38 12 5.74-9.94"/><path d="M9.69 16 3.95 6.06"/><path d="M14.31 16H2.83"/><path d="m16.62 12-5.74 9.94"/>'],
@@ -54,7 +53,7 @@ function SidebarFooter({ boardContext, footer }) {
 
 export function DashboardShell({ activeNav = "home", activeHash = "", boardContext = "full", footer = "dashboard", title = "", rootId, initiallyHidden = false, user, children }) {
   const navItems = boardContext === "none" ? ACCOUNT_NAV : DASHBOARD_NAV;
-  const activePath = boardContext === "none" ? `/account/${activeNav}` : REWARDS_NAV_KEYS.has(activeNav) ? "/dashboard/rewards/redemptions" : "/dashboard";
+  const activePath = boardContext === "none" ? `/account/${activeNav}` : CREDITS_NAV_KEYS.has(activeNav) ? "/dashboard/rewards/redemptions" : "/dashboard";
   const shellId = rootId || (boardContext === "none" ? "account-dash" : "dash");
   const profile = profileMenuHtml({ activePath, user, standalone: true, dynamicIdentity: true });
   return <div class="v3-dash" id={shellId} hidden={initiallyHidden}>
@@ -69,7 +68,7 @@ export function DashboardShell({ activeNav = "home", activeHash = "", boardConte
             : (() => {
               const [key, label, href, path, hash] = item;
               const active = activeNav === key && (!hash || activeHash === hash);
-              const child = REWARDS_NAV_KEYS.has(key);
+              const child = CREDITS_NAV_KEYS.has(key);
               return <a class={"lb-nav" + (active ? " is-on" : "") + (child ? " lb-nav-child" : "")} href={href} data-nav={key} data-hash={hash} aria-current={active ? "page" : undefined}><Icon path={path} />{label}</a>;
             })())}
         </nav>

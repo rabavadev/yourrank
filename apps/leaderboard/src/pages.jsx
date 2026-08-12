@@ -19,8 +19,7 @@ import { pricingPage } from "./pages/pricing.js";
 import { docsPage } from "./pages/docs.js";
 import {
   RewardsChannelPage,
-  RewardsRewardsPage,
-  RewardsMapsPage,
+  RewardsRulesPage,
   RewardsShopPage,
   RewardsViewersPage,
   RewardsRedemptionsPage,
@@ -28,8 +27,7 @@ import {
 } from "./pages/rewards.jsx";
 import {
   rewardsChannelConfig,
-  rewardsRewardsConfig,
-  rewardsMapsConfig,
+  rewardsRulesConfig,
   rewardsShopConfig,
   rewardsViewersConfig,
   rewardsRedemptionsConfig,
@@ -74,8 +72,7 @@ export const PAGES = {
   helpFeedback: helpFeedbackPage,
   pricing: pricingPage,
   rewardsChannel: { config: rewardsChannelConfig, Component: RewardsChannelPage },
-  rewardsRewards: { config: rewardsRewardsConfig, Component: RewardsRewardsPage },
-  rewardsMaps: { config: rewardsMapsConfig, Component: RewardsMapsPage },
+  rewardsRules: { config: rewardsRulesConfig, Component: RewardsRulesPage },
   rewardsShop: { config: rewardsShopConfig, Component: RewardsShopPage },
   rewardsViewers: { config: rewardsViewersConfig, Component: RewardsViewersPage },
   rewardsRedemptions: { config: rewardsRedemptionsConfig, Component: RewardsRedemptionsPage },

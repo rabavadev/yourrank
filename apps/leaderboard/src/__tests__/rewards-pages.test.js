@@ -1,18 +1,23 @@
 import { describe, it, expect } from "bun:test";
 import {
   RewardsChannelPage,
-  RewardsRewardsPage,
-  RewardsMapsPage,
+  RewardsRulesPage,
   RewardsShopPage,
   RewardsViewersPage,
   RewardsRedemptionsPage,
   RewardsHistoryPage,
 } from "../pages/rewards.jsx";
+import {
+  rewardsRulesConfig,
+  rewardsShopConfig,
+  rewardsViewersConfig,
+  rewardsRedemptionsConfig,
+  rewardsHistoryConfig,
+} from "../pages/rewards.jsx";
 
 const pages = [
   ["channel", RewardsChannelPage],
-  ["rewards", RewardsRewardsPage],
-  ["maps", RewardsMapsPage],
+  ["rules", RewardsRulesPage],
   ["shop", RewardsShopPage],
   ["viewers", RewardsViewersPage],
   ["redemptions", RewardsRedemptionsPage],
@@ -27,4 +32,10 @@ describe("server-rendered rewards pages", () => {
       expect(html).not.toContain(`<div data-cr-tab="${tab}">`);
     });
   }
+
+  it("uses Credits as the canonical group for every operator destination", () => {
+    for (const config of [rewardsRulesConfig, rewardsShopConfig, rewardsViewersConfig, rewardsRedemptionsConfig, rewardsHistoryConfig]) {
+      expect(config.title).toContain("· Credits ·");
+    }
+  });
 });

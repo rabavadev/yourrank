@@ -30,6 +30,26 @@ let wired = false;
 const tab = () => $("cr-app")?.dataset.crTab || "";
 const siteQuery = () => new URLSearchParams(location.search).get("siteId");
 const sitePath = (path) => `${path}${siteQuery() ? `${path.includes("?") ? "&" : "?"}siteId=${encodeURIComponent(siteQuery())}` : ""}`;
+function preserveSiteContextLinks() {
+  const siteId = siteQuery();
+  if (!siteId) return;
+  const destinations = new Set([
+    "/dashboard/rewards/redemptions",
+    "/dashboard/rewards/shop",
+    "/dashboard/rewards/rules",
+    "/dashboard/audience/viewers",
+    "/dashboard/audience/activity",
+    "/dashboard/settings/integrations",
+  ]);
+  document.querySelectorAll("a[href]").forEach((link) => {
+    const raw = link.getAttribute("href");
+    if (!raw || raw.startsWith("#")) return;
+    const target = new URL(raw, location.origin);
+    if (!destinations.has(target.pathname) || target.searchParams.has("siteId")) return;
+    target.searchParams.set("siteId", siteId);
+    link.href = `${target.pathname}${target.search}${target.hash}`;
+  });
+}
 function setStatus(id, msg, error = false) { const el = $(id); if (!el) return; el.textContent = msg; el.className = error ? "status error" : "status"; if (!error) setTimeout(() => { el.textContent = ""; }, 3000); }
 function setLoading(idOrEl, loading, text = "Loading…") {
   const el = typeof idOrEl === "string" ? $(idOrEl) : idOrEl;
@@ -91,6 +111,7 @@ async function loadBoardShell() {
   $("activeBoardName").textContent = board.name || board.slug || "Board"; $("activeBoardMeta").textContent = board.slug ? `yourrank.site/${board.slug}` : "";
   $("lbTopbarStatus").textContent = board.published ? "LIVE" : "NOT LIVE"; $("lbTopbarStatus").className = `lb-status ${board.published ? "lb-status--live" : "lb-status--draft"}`;
   $("planBadge").textContent = `${String(board.plan || user.plan || "free").toUpperCase()} PLAN`; if (board.slug) $("liveLink").href = `/${board.slug}`;
+  preserveSiteContextLinks();
 }
 function renderShellUsage() {
   const used = state.usage?.redemptionsPer30Days;
@@ -148,7 +169,7 @@ function render() {
     const auth = state.viewerAuth || {};
     $("cr-viewer-auth-kick").checked = auth.kick !== false; $("cr-viewer-auth-discord").checked = auth.discord !== false; $("cr-viewer-auth-public").checked = auth.public !== false;
   }
-  if (current === "maps" || current === "rewards") {
+  if (current === "rules") {
     for (const id of ["cr-reward-submit", "cr-reward-create-submit"]) { const el = $(id); if (el) { el.disabled = rewardAtLimit; el.title = rewardAtLimit ? "Upgrade your plan to add more credit rules" : ""; } }
     const mappings = state.mappings || [];
     if (!rewardCtrl) { rewardCtrl = new ListController({ root: $("cr-rewards"), tbody: "cr-reward-list", emptyEl: $("cr-reward-empty"), emptySpec: { icon: "link", title: "No credit rules yet", body: "Set how Kick rewards award credits to your viewers.", actions: [{ label: "Create credit rule", href: "/dashboard/rewards/rules#cr-reward-form", accent: true }] }, items: mappings, perPage: 10, searchFn: (m) => `${m.kick_reward_title} ${m.kick_reward_id} ${m.kick_reward_cost} ${m.credits}`, sortOptions: [{ key: "cost", label: "Kick cost", fn: (a, b) => (b.kick_reward_cost || 0) - (a.kick_reward_cost || 0) }, { key: "credits", label: "Credits", fn: (a, b) => (b.credits || 0) - (a.credits || 0) }, { key: "active", label: "Active first", fn: (a, b) => Number(b.active) - Number(a.active) }], emptyAllText: "No credit rules yet.", emptyText: "No matching credit rules.", renderItem: (m) => renderRewardRow(m), onRender: () => wireDynamicActions() }); mountListControls($("cr-rewards"), $("cr-mapping-toolbar"), $("cr-mapping-foot")); }
@@ -255,7 +276,7 @@ function renderCreditsByDay(rows) {
   container.setAttribute("aria-label", `Bar chart of credits across ${days.length} days with activity. Total: ${allTotal} credits.`);
 }
 function prefillEditFromQuery() {
-  if (tab() !== "maps") return;
+  if (tab() !== "rules") return;
   const id = new URLSearchParams(location.search).get("edit");
   const m = (state.mappings || []).find((x) => String(x.id) === String(id));
   if (!m) return;
@@ -382,6 +403,7 @@ async function load() {
     render();
     if (tab() === "history") await loadActivity({ reset: true });
     if (tab() === "viewers" && $("cr-analytics")) await loadAnalytics();
+    preserveSiteContextLinks();
     $("cr-app").hidden = false; $("cr-empty").hidden = true;
   } catch (err) {
     setState({ CREDITS_STATUS: "error" });
