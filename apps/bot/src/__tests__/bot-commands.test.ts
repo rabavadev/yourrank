@@ -7,11 +7,14 @@ const dbUrl = import.meta.resolve("../../../../shared/db.js");
 const dbUrlTs = import.meta.resolve("../../../../shared/db.ts");
 const cryptoUrl = import.meta.resolve("../../../../shared/crypto.js");
 const cryptoUrlTs = import.meta.resolve("../../../../shared/crypto.ts");
+const realDb = await import(dbUrl);
+const realCrypto = await import(cryptoUrl);
 
 const mockQuery = mock<(...args: any[]) => Promise<any>>(() => Promise.resolve([]));
 const mockOne = mock<(...args: any[]) => Promise<any>>(() => Promise.resolve(null));
 
 const dbMock = () => ({
+  ...realDb,
   one: (...args: any[]) => mockOne(...args),
   exec: (..._args: any[]) => Promise.resolve(undefined),
   query: (..._args: any[]) => mockQuery(..._args),
@@ -20,6 +23,7 @@ const dbMock = () => ({
 });
 
 const cryptoMock = () => ({
+  ...realCrypto,
   decryptToken: (enc: string) => enc,
   encryptToken: (s: string) => s,
   hashToken: async (s: string) => "hash:" + s,

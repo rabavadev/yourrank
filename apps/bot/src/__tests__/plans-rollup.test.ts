@@ -8,12 +8,14 @@ import { describe, it, expect, mock } from "bun:test";
 // ── Mock DB ────────────────────────────────────────────────────────────
 const dbUrl   = import.meta.resolve("../../../../shared/db.js");
 const dbUrlTs = import.meta.resolve("../../../../shared/db.ts");
+const realDb = await import(dbUrl);
 
 const mockOne = mock((..._args: any[]): Promise<any> => Promise.resolve(null));
 const mockExec = mock((..._args: any[]): Promise<any> => Promise.resolve(undefined));
 const mockQuery = mock((..._args: any[]): Promise<any> => Promise.resolve([]));
 
 const dbMock = () => ({
+  ...realDb,
   one: (..._args: any[]) => mockOne(..._args),
   exec: (..._args: any[]) => mockExec(..._args),
   query: (..._args: any[]) => mockQuery(..._args),
@@ -26,7 +28,9 @@ mock.module(dbUrlTs, dbMock);
 // Mock crypto
 const cryptoUrl   = import.meta.resolve("../../../../shared/crypto.js");
 const cryptoUrlTs = import.meta.resolve("../../../../shared/crypto.ts");
+const realCrypto = await import(cryptoUrl);
 const cryptoMock = () => ({
+  ...realCrypto,
   decryptToken: (enc: string) => enc,
   encryptToken: (s: string) => s,
   hashToken: async (s: string) => "hash:" + s,

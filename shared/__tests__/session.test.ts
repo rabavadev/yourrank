@@ -8,6 +8,7 @@ import type { SessionEnv, UserRecord } from '../session';
 // Mock the DB before importing session.ts so we never try to connect to Postgres.
 const dbUrl    = import.meta.resolve('../db.js');
 const dbUrlTs  = import.meta.resolve('../db.ts');
+const realDb = await import(dbUrl);
 
 interface SessionRow {
   user_id: string;
@@ -24,6 +25,7 @@ const resetStores = () => {
 };
 
 const dbMock = () => ({
+  ...realDb,
   one: async (sql: string, params: unknown[]) => {
     if (/users/i.test(sql) && params[0]) {
       return users.get(String(params[0])) ?? null;

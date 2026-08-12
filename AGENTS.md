@@ -30,13 +30,14 @@ These mirror the `PR Check` workflow. A `.githooks/pre-commit` hook (enabled by
 
 ## Gotchas
 
-- Global module mocks are disallowed in leaderboard tests. Bun's
+- Global module mocks are disallowed in shared and Worker tests. Bun's
   `mock.module` is process-global, so one test can replace a shared dependency
   for every later test in an aggregate run and produce misleading failures.
   Inject collaborators into the function under test instead; production
-  defaults must remain unchanged. A temporary allowlist is enforced by
-  `bun run check:leaderboard-test-mocks` for legacy tests that remain isolated
-  from aggregate coverage; it must only shrink.
+  defaults must remain unchanged. When a test genuinely needs a module fake,
+  spread the real module exports and override only the collaborators it uses.
+  A temporary, documented allowlist is enforced by
+  `bun run check:test-mocks`; it must only shrink.
 - Coverage gate is >= 60% lines on the leaderboard suite, excluding
   `audit-validation.test.js`, `credits-loop.test.js`, `public-stream-version.test.js`,
   and `sites-handlers.test.js` (which are run only in isolation).
