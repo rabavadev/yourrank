@@ -6,7 +6,7 @@ import { dashboardPath, parseDashboardPath, resolveSection, defaultTab } from ".
 
 describe("dashboard routes", () => {
   it("round-trips every section and sub-tab", () => {
-    for (const [page, tab] of [["home", ""], ["board", "players"], ["boards", ""], ["games", ""], ["performance", "referrals"], ["settings", "connections"]]) {
+    for (const [page, tab] of [["home", ""], ["board", "players"], ["boards", ""], ["games", ""], ["performance", "referrals"], ["settings", ""]]) {
       expect(parseDashboardPath(dashboardPath(page, tab))).toEqual({ page, tab });
     }
   });
@@ -16,14 +16,14 @@ describe("dashboard routes", () => {
     expect(parseDashboardPath("/dashboard/editor/design")).toEqual({ page: "board", tab: "design" });
   });
 
-  it("addresses every unified settings tab explicitly", () => {
-    for (const tab of ["account", "plan", "connections", "data"]) {
-      expect(dashboardPath("settings", tab)).toBe(`/dashboard/settings/${tab}`);
-      expect(parseDashboardPath(`/dashboard/settings/${tab}`)).toEqual({ page: "settings", tab });
+  it("leaves the account settings document to the Worker", () => {
+    // Account settings are their own pages: if the shell claimed them it would
+    // intercept the sidebar link and show board settings instead.
+    for (const tab of ["", "/account", "/plan", "/connections", "/data", "/integrations"]) {
+      expect(parseDashboardPath(`/dashboard/settings${tab}`)).toBeNull();
     }
-    expect(parseDashboardPath("/dashboard/settings/integrations")).toBeNull();
-    expect(dashboardPath("settings", "board")).toBe("/dashboard/settings/board");
-    expect(parseDashboardPath("/dashboard/settings/board")).toEqual({ page: "settings", tab: "board" });
+    expect(dashboardPath("settings")).toBe("/dashboard/settings/board");
+    expect(parseDashboardPath("/dashboard/settings/board")).toEqual({ page: "settings", tab: "" });
   });
 
   it("keeps the links we have already shipped working", () => {
@@ -46,7 +46,7 @@ describe("dashboard routes", () => {
   it("defaults a section to its first tab", () => {
     expect(defaultTab("performance")).toBe("activity");
     expect(defaultTab("board")).toBe("setup");
-    expect(defaultTab("settings")).toBe("account");
+    expect(defaultTab("settings")).toBe("");
   });
 
   it("no longer navigates through ?nav=", () => {

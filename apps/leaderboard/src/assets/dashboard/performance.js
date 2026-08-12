@@ -11,7 +11,7 @@ export function initPerformance() {
     icon: "link",
     title: "No events yet",
     body: "Postbacks and score updates will appear once a sponsor sends them.",
-    actions: [{ label: "Set up postbacks", href: "/account/postbacks", accent: true }],
+    actions: [{ label: "Set up postbacks", href: "/dashboard/settings/connections", accent: true }],
   });
   const local = $("perfLocalTime");
   if (local) local.textContent = "Times in UTC";

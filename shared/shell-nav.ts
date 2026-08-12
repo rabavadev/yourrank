@@ -31,7 +31,7 @@ export const NAV_LINKS: NavLink[] = [
   { key: "leaderboard", label: "Leaderboards", href: "/dashboard",                    match: ["/dashboard"],                    top: true },
   { key: "bot",         label: "Telegram",     href: "/bot/dashboard",                match: ["/bot"],                            top: true },
   { key: "rewards",     label: "Rewards",       href: "/dashboard/rewards/redemptions", match: ["/dashboard/rewards"],              top: true },
-  { key: "account",     label: "Account",      href: "/account/profile",            match: ["/account"],                      top: true },
+  { key: "account",     label: "Account",      href: "/dashboard/settings",            match: ["/dashboard/settings", "/account"], top: true },
   { key: "help",        label: "Help",         href: "/help/support",                match: ["/help", "/contact"], top: true },
 ];
 
@@ -47,6 +47,10 @@ export function activeKey(activePath: string): string | null {
   if (pathname.startsWith("/help")) return "help";
   if (pathname.startsWith("/contact")) return "help";
 
+  // Account settings are a `/dashboard/` URL but belong to the account tab.
+  if (pathname === "/dashboard/settings" || pathname.startsWith("/dashboard/settings/")) {
+    return pathname === "/dashboard/settings/board" ? "leaderboard" : "account";
+  }
   if (pathname === "/dashboard" || pathname.startsWith("/dashboard/")) {
     if (pathname === "/dashboard/credits" || pathname.startsWith("/dashboard/credits") || pathname.startsWith("/dashboard/rewards") || pathname.startsWith("/dashboard/audience")) return "rewards";
     return "leaderboard";
@@ -101,7 +105,7 @@ export function profileMenuHtml(opts: ShellNavOpts & { mobileTabs?: string; stan
   const area = encodeURIComponent(active || "dashboard");
   const returnTo = encodeURIComponent(opts.activePath || "/dashboard");
   const helpQuery = `area=${area}&amp;return=${returnTo}`;
-  const accountHref = esc(opts.accountHref || opts.settingsHref || "/account/profile");
+  const accountHref = esc(opts.accountHref || opts.settingsHref || "/dashboard/settings");
   const profileClass = opts.standalone ? "gm-profile gm-profile--standalone" : "gm-profile";
   const identityAttr = opts.dynamicIdentity ? " data-profile-name" : "";
   const profileNav = opts.mobileTabs ? `<div class="gm-profile-nav">${opts.mobileTabs}</div>` : "";

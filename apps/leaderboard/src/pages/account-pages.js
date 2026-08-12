@@ -123,7 +123,7 @@ const postbacksWidget = `<div class="lb-widget lb-widget--full" id="postbacks">
 
         <div id="postbackUpgrade" hidden>
           <p class="hint">Postbacks are a paid feature. Upgrade to Pro to generate keys and view conversions.</p>
-          <a class="btn btn--accent" href="/account/plan">See plans</a>
+          <a class="btn btn--accent" href="/dashboard/settings/plan">See plans</a>
         </div>
 
         <hr class="hr" />
@@ -181,13 +181,3 @@ export const settingsWidgets = {
   data: dataWidget + deleteAccountModal,
 };
 
-function accountPage(tab, body) {
-  if (!body) throw new Error("account page \"" + tab + "\" has an empty body");
-  return `<div id="acc-app" data-acc-tab="${tab}">${body}</div>`;
-}
-
-export const profilePage = accountPage("profile", profileWidget);
-export const planPage = accountPage("plan", planWidget);
-export const postbacksPage = accountPage("postbacks", postbacksWidget);
-export const connectedPage = accountPage("connected", connectedWidget);
-export const dataPage = accountPage("data", dataWidget + deleteAccountModal);

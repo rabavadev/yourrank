@@ -2058,6 +2058,13 @@ body[data-wide] .v3-dash .lb-main {
 .v3-dash .v3-settings .v3-head { margin-bottom: 26px; }
 .v3-dash .v3-settings .v3-head h1 { margin: 0; font: 700 34px/1.15 var(--v3-sans); color: var(--v3-main-ink); }
 .v3-dash .v3-settings .v3-head-sub { margin: 8px 0 0; color: var(--v3-main-ink-soft); font-size: 14px; }
+.v3-dash .v3-settings .v3-head-sub a { color: var(--v3-accent); }
+/* Breadcrumb: board settings sit under the account settings page, and the
+   selected board is only editable from inside the dashboard document. */
+.v3-dash .v3-crumbs { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; font-size: 13px; color: var(--v3-main-ink-soft); }
+.v3-dash .v3-crumbs a { color: var(--v3-main-ink-soft); text-decoration: none; }
+.v3-dash .v3-crumbs a:hover { color: var(--v3-main-ink); text-decoration: underline; }
+.v3-dash .v3-crumb-sep { color: var(--v3-main-line-2); }
 .v3-dash .v3-settings .v3-tabs { margin-bottom: 28px; }
 .v3-dash .v3-settings-panel { display: grid; gap: 16px; }
 .v3-dash .v3-settings-card { padding: 24px; border: 1px solid var(--v3-main-line); border-radius: var(--v3-radius); background: var(--v3-main-panel); }
