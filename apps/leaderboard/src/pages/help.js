@@ -1,4 +1,4 @@
-// Help center pages: Support and Feedback with a persistent sidebar.
+// Help center pages: an operator hub plus Support and Feedback forms.
 // Rendered through the shared page shell so a signed-in streamer keeps the app
 // header (and their session) instead of landing on a marketing page that offers
 // them a "Sign in" button.
@@ -70,6 +70,82 @@ function helpPage(opts) {
     Component: () => helpContent(opts),
   };
 }
+
+function helpHubContent() {
+  return `<div class="operator-help" id="help-hub">
+<h1>Operator help</h1>
+<p class="operator-help-lead">Find the dashboard page for the task you are doing now. These instructions follow the controls and routes currently in YourRank.</p>
+
+<section class="operator-help-section" aria-labelledby="help-board">
+  <h2 id="help-board">Board and public page</h2>
+  <p>Use the Board editor to configure the public page visitors see.</p>
+  <ul class="operator-help-list">
+    <li><a href="/dashboard/editor">Set up a board</a><span>Open the editor. Its tabs cover setup, players, design, sharing, and history.</span></li>
+    <li><a href="/dashboard/editor#players">Manage players</a><span>Add and update the ranked rows used by the leaderboard.</span></li>
+    <li><a href="/dashboard/editor/design">Change design</a><span>Edit the public page’s branding and visual settings in Design.</span></li>
+    <li><a href="/dashboard/editor/share">Share the public page</a><span>Find the public URL, OBS overlay URL, embed code, and share links.</span></li>
+  </ul>
+</section>
+
+<section class="operator-help-section" aria-labelledby="help-credits">
+  <h2 id="help-credits">Credits and viewer fulfilment</h2>
+  <p>Credits come from Kick channel-point rewards and can be spent on shop items.</p>
+  <ul class="operator-help-list">
+    <li><a href="/dashboard/settings/integrations">Connect Kick</a><span>Link the Kick channel so channel-point reward redemptions can become credits.</span></li>
+    <li><a href="/dashboard/rewards/rules">Create a credit rule</a><span>Choose a Kick reward and set how many credits it awards.</span></li>
+    <li><a href="/dashboard/rewards/shop">Add a shop item</a><span>Create something viewers can unlock with their credits.</span></li>
+    <li><a href="/dashboard/rewards/redemptions">Process shop redemptions</a><span>Review pending viewer requests and approve or cancel them.</span></li>
+    <li><a href="/dashboard/audience/viewers">Check viewer balances</a><span>See viewer balances, total earned, total spent, and recent earning activity.</span></li>
+    <li><a href="/dashboard/audience/activity">Review credit activity</a><span>Filter the board’s credit events by viewer and event type.</span></li>
+  </ul>
+</section>
+
+<section class="operator-help-section" aria-labelledby="help-telegram">
+  <h2 id="help-telegram">Telegram bot</h2>
+  <p>The bot dashboard separates the bot connection, its replies, and messages to subscribers.</p>
+  <ul class="operator-help-list">
+    <li><a href="/bot/bots">Connect a Telegram bot</a><span>Add the bot token in Bots, then manage the connected bot there.</span></li>
+    <li><a href="/bot/commands">Edit commands</a><span>Change the replies your bot sends when viewers type a command.</span></li>
+    <li><a href="/bot/broadcasts">Send a broadcast</a><span>Compose a message to subscribers, preview it, send a rehearsal to your chat, then send now or schedule it.</span></li>
+    <li><a href="/bot/offers">Manage offers</a><span>Create offers with tracked links for your community.</span></li>
+  </ul>
+</section>
+
+<section class="operator-help-section" aria-labelledby="help-account">
+  <h2 id="help-account">Account, plan, and integrations</h2>
+  <p>Account-level settings live separately from board-level settings.</p>
+  <ul class="operator-help-list">
+    <li><a href="/dashboard/settings">Board settings</a><span>Manage board integrations, viewer login providers, notifications, domain, and support resources.</span></li>
+    <li><a href="/account/plan">Plan and billing</a><span>Manage the account subscription and review plan access.</span></li>
+    <li><a href="/account/profile">Profile</a><span>Update account profile information.</span></li>
+    <li><a href="/account/connected">Connected accounts</a><span>Review connected account providers.</span></li>
+    <li><a href="/account/postbacks">Postbacks</a><span>Configure signed score postbacks for supported integrations.</span></li>
+    <li><a href="/account/data">Danger zone</a><span>Export account data or manage account deletion.</span></li>
+  </ul>
+</section>
+
+<div class="operator-help-actions">
+  <a class="btn btn--accent" href="/help/support">Contact support</a>
+  <a class="btn" href="/help/feedback">Give feedback</a>
+</div>
+</div>`;
+}
+
+export const helpHubPage = {
+  config: {
+    title: "Operator help · YourRank",
+    canonical: "https://yourrank.site/help",
+    description: "Task-oriented help for YourRank operators managing boards, credits, Telegram bots, offers, and account settings.",
+    robots: "index, follow",
+    styles: ["/assets/app.css", "/assets/shell-nav.css", "/assets/ui.css"],
+    scripts: [],
+    mainClass: "wrap",
+    nav: true,
+    footer: true,
+    wide: true,
+  },
+  Component: () => helpHubContent(),
+};
 
 export const helpSupportPage = helpPage({
   active: "support",
