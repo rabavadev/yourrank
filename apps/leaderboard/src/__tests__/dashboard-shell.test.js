@@ -43,6 +43,23 @@ describe("signed-in shell navigation", () => {
     expect(html).toContain('data-nav="viewers" aria-current="page"');
   });
 
+  it("renders the collapsible creator workspace shell", () => {
+    const html = renderPage(RewardsViewersPage);
+    expect(html).toContain("data-collapse-side");
+    expect(html).toContain('aria-controls="lbSide"');
+    expect(html).toContain('class="lb-side-profile"');
+    expect(html).toContain("Creator workspace");
+    expect(html).toContain("seed 562938e8");
+  });
+
+  it("loads the authenticated v4 layer after shared primitives", () => {
+    for (const key of ["dashboard", "rewardsRedemptions", "settingsUnified", "helpHub", "helpSupport"]) {
+      const styles = PAGES[key].config.styles;
+      expect(styles.at(-1)).toBe("/assets/dashboard-v4.css");
+    }
+    expect(String(PAGES.index)).not.toContain("/assets/dashboard-v4.css");
+  });
+
   it("keeps one main landmark and a topbar drawer trigger", () => {
     const html = renderPage(RewardsViewersPage);
     // The page shell already wraps the content in <main id="main-content">, so
@@ -51,32 +68,101 @@ describe("signed-in shell navigation", () => {
     expect(html).toContain('class="lb-menu lb-topbar-menu" id="lbMenu"');
   });
 
-  it("does not repeat leaderboard sections in the product switcher", () => {
+  it("groups site context, availability, and publishing in one command bar", () => {
+    const html = PAGES.dashboard.Component({ activePath: "/dashboard", user }).toString();
+    expect(html).toContain('class="lb-site-command"');
+    expect(html).toContain('id="sidebarBoardSelect" aria-label="Switch site"');
+    expect(html).toContain('id="lbTopbarSitePath"');
+    expect(html).toContain('class="lb-availability"');
+    expect(html).toContain('id="lbTopbarStatus"');
+    expect(html).toContain('id="publishAction" type="button"');
+    expect(html).toContain('id="pubToggle" hidden');
+    expect(html).not.toContain('class="lb-pub-toggle"');
+  });
+
+  it("composes the Overview as a 12-column run sheet", () => {
+    const html = PAGES.dashboard.Component({ activePath: "/dashboard", user }).toString();
+    expect(html).toContain('id="ovCommandGrid"');
+    expect(html).toContain('id="ovOnboardingBento" hidden');
+    expect(html).toContain('id="ovActiveBento"');
+    expect(html).toContain('class="ov-summary-actions"');
+    expect(html).toContain('class="ov-setup-row" id="ovStepBrand" href="/dashboard/editor/setup"');
+    expect(html).toContain("Your leaderboard");
+  });
+
+  it("lists all three peer products in the switcher", () => {
     const html = renderPage(RewardsViewersPage);
-    expect(html).not.toContain('class="lb-product-link" href="/dashboard"');
-    // Settings is a rail destination now, so it is not repeated here either.
+    // Sites, Telegram, and Credits & Shop are peer products; the switcher always
+    // shows all three so the operator can move between them from anywhere.
+    expect(html).toContain('class="lb-product-link" href="/dashboard"');
+    expect(html).toContain('class="lb-product-link" href="/dashboard/telegram"');
+    expect(html).toContain('class="lb-product-link is-on" href="/dashboard/rewards/redemptions"');
+    // Settings is a rail destination, not a product, so it is not repeated here.
     expect(html).not.toContain('class="lb-product-link" href="/dashboard/settings"');
-    expect(html).toContain('class="lb-product-link" href="/bot/dashboard"');
   });
 
-  it("separates account settings from the selected board's settings", () => {
+  it("keeps every signed-in feature visible from every dashboard page", () => {
     const html = renderPage(RewardsViewersPage);
-    expect(html).toContain('href="/dashboard/settings/board"');
-    expect(html).toContain('href="/dashboard/settings"');
-    expect(html).not.toContain('href="/account/');
+    for (const href of [
+      "/dashboard/editor/setup",
+      "/dashboard/editor/players",
+      "/dashboard/editor/design",
+      "/dashboard/games",
+      "/dashboard/editor/share",
+      "/dashboard/editor/history",
+      "/dashboard/boards",
+      "/dashboard/analytics/activity",
+      "/dashboard/rewards/redemptions",
+      "/dashboard/rewards/shop",
+      "/dashboard/rewards/rules",
+      "/dashboard/audience/viewers",
+      "/dashboard/audience/activity",
+      "/dashboard/rewards/channel",
+      "/dashboard/settings/board",
+      "/dashboard/settings",
+      "/help",
+    ]) expect(html).toContain(`href="${href}"`);
   });
 
-  it("gives the account settings page a way back to the dashboard", () => {
+  it("uses plain-language navigation labels", () => {
+    const html = renderPage(RewardsViewersPage);
+    expect(html).toContain(">Theme &amp; styling</a>");
+    expect(html).toContain(">Earning rules</a>");
+    expect(html).toContain(">Help &amp; support</a>");
+    expect(html).toContain('data-nav="account"');
+  });
+
+  it("keeps every signed-in feature visible from account settings", () => {
     const html = renderPage(UnifiedSettingsPage);
-    expect(html).toContain('data-nav="back"');
+    for (const href of [
+      "/dashboard",
+      "/dashboard/editor/setup",
+      "/dashboard/editor/players",
+      "/dashboard/editor/design",
+      "/dashboard/games",
+      "/dashboard/editor/share",
+      "/dashboard/editor/history",
+      "/dashboard/boards",
+      "/dashboard/analytics/activity",
+      "/dashboard/rewards/redemptions",
+      "/dashboard/rewards/shop",
+      "/dashboard/rewards/rules",
+      "/dashboard/audience/viewers",
+      "/dashboard/audience/activity",
+      "/dashboard/rewards/channel",
+      "/dashboard/settings/board",
+      "/dashboard/settings",
+      "/help",
+    ]) expect(html).toContain(`href="${href}"`);
     expect(html).toContain('data-nav="account" aria-current="page"');
+    expect((html.match(/<h1\b/g) || []).length).toBe(1);
+    expect(html).not.toContain('data-nav="back"');
   });
 
   it("puts a breadcrumb trail on every leaf page", () => {
     const viewers = renderPage(RewardsViewersPage);
     expect(viewers).toContain('<nav class="v3-crumbs" aria-label="Breadcrumb">');
-    expect(viewers).toContain('<a href="/dashboard">Dashboard</a>');
-    expect(viewers).toContain('<a href="/dashboard/rewards/redemptions">Credits</a>');
+    expect(viewers).toContain('<a href="/dashboard/rewards/redemptions">Credits &amp; Shop</a>');
     expect(viewers).toContain('<span aria-current="page">Viewers</span>');
 
     const settings = renderPage(UnifiedSettingsPage);
@@ -85,11 +171,27 @@ describe("signed-in shell navigation", () => {
 
   it("trails dashboard sections and editor steps from the route", () => {
     const editor = PAGES.dashboard.Component({ activePath: "/dashboard/editor/design" }).toString();
-    expect(editor).toContain('<a href="/dashboard/editor">Editor</a>');
-    expect(editor).toContain('<span aria-current="page">Design</span>');
+    expect(editor).toContain('<a href="/dashboard/editor">Leaderboard</a>');
+    expect(editor).toContain('<span aria-current="page">Theme &amp; styling</span>');
+    expect(editor).toContain('href="/dashboard/editor/design" data-nav="board" data-hash="design" aria-current="page"');
 
     // Overview is the top level, so it gets no trail.
     expect(PAGES.dashboard.Component({ activePath: "/dashboard" }).toString())
       .not.toContain('class="v3-crumbs"');
+  });
+
+  it("marks exactly one visible editor feature as current", () => {
+    const html = PAGES.dashboard.Component({ activePath: "/dashboard/editor/players", user }).toString();
+    expect(html).toContain('href="/dashboard/editor/players" data-nav="board" data-hash="players" aria-current="page"');
+    expect((html.match(/data-nav="board"[^>]*aria-current="page"/g) || []).length).toBe(1);
+  });
+
+  it("keeps operational data visible while launch setup is incomplete", () => {
+    const html = PAGES.dashboard.Component({ activePath: "/dashboard", user }).toString();
+    expect(html).toContain('id="ovOnboardingBento" hidden');
+    expect(html).toContain('id="ovActiveBento"');
+    expect(html).not.toContain('id="ovActiveBento" hidden');
+    expect(html).toContain("0 of 3 done");
+    expect(html).not.toContain('id="ovStepKickStatus"');
   });
 });

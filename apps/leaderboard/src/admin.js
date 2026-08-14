@@ -37,8 +37,8 @@ export async function requireAdmin(request, env) {
     return { admin: null, res: bad("Too many requests. Try again later.", 429) };
   }
   const u = await currentUser(request, env);
-  if (!u) return { admin: null, res: bad("unauthorized", 401) };
-  if (!u.is_admin) return { admin: null, res: bad("forbidden", 403) };
+  if (!u) return { admin: null, res: bad("You need to sign in to access this page.", 401) };
+  if (!u.is_admin) return { admin: null, res: bad("You don't have permission to access this page.", 403) };
   return { admin: u, res: null };
 }
 
@@ -81,30 +81,42 @@ async function clearSession2faForUser(userId) {
 // session must record a twofa_verified_at timestamp. Sensitive actions require a
 // fresh verification (within STEPUP_FRESH_S); we check the timestamp before
 // authorization instead of clearing the flag after use.
+// B-06: Human-readable messages for auth error codes so users never see
+// raw snake_case strings in the UI if the client doesn't map them.
+const AUTH_ERRORS = {
+  "2fa_setup_required": "Two-factor authentication setup is required before continuing.",
+  "2fa_locked":         "Too many failed attempts. Your account is temporarily locked.",
+  "2fa_required":       "Please complete two-factor authentication to continue.",
+  "2fa_stale":          "Your 2FA session has expired. Please verify again.",
+};
+function authError(code, status) {
+  return bad(AUTH_ERRORS[code] || "An authentication error occurred.", status);
+}
+
 export async function requireAdminWith2fa(request, env, requireFresh = false) {
   const { admin, res } = await requireAdmin(request, env);
   if (res) return { admin: null, res };
 
   const user = await one("SELECT totp_secret, totp_locked_until FROM users WHERE id=$1", [admin.id]);
   if (!user?.totp_secret) {
-    return { admin: null, res: bad("2fa_setup_required", 403) };
+    return { admin: null, res: authError("2fa_setup_required", 403) };
   }
 
   if (user.totp_locked_until && new Date(user.totp_locked_until) > new Date()) {
-    return { admin: null, res: bad("2fa_locked", 423) };
+    return { admin: null, res: authError("2fa_locked", 423) };
   }
 
   const token = readToken(request);
   const tokenHash = token ? await hashToken(token) : null;
   const tfaRow = tokenHash ? await one("SELECT twofa_verified_at FROM sessions WHERE token=$1", [tokenHash]) : null;
   if (!tfaRow?.twofa_verified_at) {
-    return { admin: null, res: bad("2fa_required", 403) };
+    return { admin: null, res: authError("2fa_required", 403) };
   }
 
   if (requireFresh) {
     const verifiedAt = new Date(tfaRow.twofa_verified_at).getTime();
     if (Date.now() - verifiedAt > STEPUP_FRESH_S * 1000) {
-      return { admin: null, res: bad("2fa_stale", 403) };
+      return { admin: null, res: authError("2fa_stale", 403) };
     }
   }
 

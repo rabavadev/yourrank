@@ -17,6 +17,21 @@ Guidance for automated agents and new contributors working in this repo.
 - Bun `>= 1.3.0` (CI pins `1.3.0`), Node `>= 20`.
 - Cloudflare Workers (Wrangler), Supabase/Postgres, Cloudflare Queues.
 
+## Product and frontend design
+
+- For UI/UX, frontend, redesign, navigation, layout, user-flow, or information-
+  architecture work, load and actively apply both project skills:
+  `.agents/skills/impeccable/SKILL.md` and
+  `.agents/skills/frontend-design/SKILL.md`.
+- Use Impeccable for product shaping, journey analysis, interaction quality,
+  responsive behavior, accessibility, and implementation rigor. Use Frontend
+  Design in the same task to establish a distinctive, subject-specific visual
+  direction rather than a templated dashboard aesthetic.
+- Treat the existing interface as evidence, not as the design source of truth.
+  Inspect the connected journey and shared patterns, then fix underlying UX,
+  navigation, hierarchy, or product-architecture problems when they affect the
+  requested work.
+
 ## Checks (run from repo root before committing)
 
 ```bash

@@ -73,9 +73,9 @@ async function allowNavigation() {
 }
 
 
-const AREA_MAP = { home: "leaderboard", board: "leaderboard", boards: "leaderboard", games: "leaderboard", settings: "leaderboard", performance: "analytics" };
+const AREA_MAP = { home: "sites", board: "sites", boards: "sites", games: "sites", settings: "sites", performance: "sites" };
 
-export function areaForPage(page) { return AREA_MAP[page] || "leaderboard"; }
+export function areaForPage(page) { return AREA_MAP[page] || "sites"; }
 
 function defaultHash(page) { return defaultTab(page); }
 
@@ -129,10 +129,9 @@ export function setActiveSideNav(page, hash = "") {
   // Keep the shared product top-nav in sync when navigating inside the SPA.
   document.querySelectorAll(".gm-tab").forEach((t) => {
     const href = t.getAttribute("href") || "";
-    const isActive = (area === "leaderboard" && href === "/dashboard") ||
-                     (area === "analytics" && href.startsWith("/dashboard/analytics")) ||
-                     (area === "rewards" && href.startsWith("/dashboard/rewards")) ||
-                     (area === "bot" && href.startsWith("/bot"));
+    const isActive = (area === "sites" && href === "/dashboard") ||
+                     (area === "credits" && href.startsWith("/dashboard/rewards")) ||
+                     (area === "telegram" && href.startsWith("/bot"));
     t.classList.toggle("gm-tab--active", isActive);
   });
 }
@@ -285,7 +284,7 @@ export function setupEditorTabs() {
         else b.removeAttribute("aria-current");
       });
       if (controls) {
-        controls.querySelectorAll("[data-egroup]").forEach((el) => {
+        controls.querySelectorAll("[data-egroup]:not(.editor-step)").forEach((el) => {
           el.hidden = el.dataset.egroup !== group;
         });
       }

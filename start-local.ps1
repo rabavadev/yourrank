@@ -3,16 +3,19 @@ param(
   [switch]$stop
 )
 
+$root = $PSScriptRoot
 $pgBin = "$env:USERPROFILE\.local\pgsql\pgsql\bin"
 $pgData = "$env:USERPROFILE\.local\pgsql\data"
-$node22 = "$env:USERPROFILE\.local\node22\node-v22.14.0-win-x64"
+$nodeDir = "C:\Program Files\nodejs"
 $bunDir = "$env:USERPROFILE\.bun\bin"
-$wrangler = "C:\yourrank\node_modules\.bin\wrangler.exe"
-$root = "C:\yourrank"
+$wrangler = "$root\node_modules\.bin\wrangler.exe"
+$nodeExe = "$nodeDir\node.exe"
+$logs = "$root\.local-logs"
 
-$env:Path = "$node22;$bunDir;$root\node_modules\.bin;$env:Path"
+$env:Path = "$nodeDir;$bunDir;$root\node_modules\.bin;$env:Path"
 $env:CLOUDFLARE_HYPERDRIVE_LOCAL_CONNECTION_STRING_HYPERDRIVE = "postgresql://postgres:postgres@localhost:5432/yourrank"
 $env:DATABASE_URL = "postgresql://postgres:postgres@localhost:5432/yourrank"
+$env:SESSION_COOKIE_DOMAIN = "localhost"
 
 if ($stop) {
   Write-Host "[stop] Stopping Workers..."
@@ -24,8 +27,8 @@ if ($stop) {
 }
 
 # 1. Start Postgres if not running
-$pgRunning = & "$pgBin\pg_isready.exe" -h localhost 2>&1 | Select-String "accepting"
-if (-not $pgRunning) {
+& "$pgBin\pg_isready.exe" -h localhost -q 2>&1 | Out-Null
+if ($LASTEXITCODE -ne 0) {
   Write-Host "[db] Starting Postgres..."
   & "$pgBin\pg_ctl.exe" -D "$pgData" -l "$pgData\logfile.log" start 2>&1 | Out-Null
   Start-Sleep -Seconds 3
@@ -41,25 +44,24 @@ if ($bot -and -not (Test-Path "$root\apps\bot\.dev.vars")) {
 
 # 3. Build shared modules
 Write-Host "[build] Compiling shared TypeScript..."
-$nodeExe = "$node22\node.exe"
 & $nodeExe "$root\build-shared.mjs" 2>&1 | Out-Null
 
 # 4. Build leaderboard assets
 Write-Host "[build] Bundling leaderboard assets..."
-Set-Location "$root\apps\leaderboard"
 & $nodeExe "$root\apps\leaderboard\build.js" 2>&1 | Out-Null
 
 # 5. Start Workers
+New-Item -ItemType Directory -Force -Path $logs | Out-Null
 Write-Host "[dev] Starting leaderboard Worker on http://localhost:8787"
-$lbJob = Start-Process -WindowStyle Hidden -FilePath $wrangler -ArgumentList @("dev", "--port", "8787", "--ip", "127.0.0.1") -WorkingDirectory "$root\apps\leaderboard" -PassThru
+$lbJob = Start-Process -WindowStyle Hidden -FilePath $wrangler -ArgumentList @("dev", "--port", "8787", "--ip", "127.0.0.1") -WorkingDirectory "$root\apps\leaderboard" -RedirectStandardOutput "$logs\lb.log" -RedirectStandardError "$logs\lb.err.log" -PassThru
 
 if ($bot) {
   Write-Host "[dev] Starting bot Worker on http://localhost:8788"
-  $botJob = Start-Process -WindowStyle Hidden -FilePath $wrangler -ArgumentList @("dev", "--port", "8788", "--ip", "127.0.0.1") -WorkingDirectory "$root\apps\bot" -PassThru
+  $botJob = Start-Process -WindowStyle Hidden -FilePath $wrangler -ArgumentList @("dev", "--port", "8788", "--ip", "127.0.0.1") -WorkingDirectory "$root\apps\bot" -RedirectStandardOutput "$logs\bot.log" -RedirectStandardError "$logs\bot.err.log" -PassThru
 }
 
 Write-Host ""
-Write-Host "[dev] Both Workers running:"
+Write-Host "[dev] Workers starting (logs in $logs):"
 Write-Host "      Leaderboard → http://localhost:8787"
 if ($bot) { Write-Host "      Bot         → http://localhost:8788" }
 Write-Host "[dev] Press Ctrl+C to stop (or run: start-local.ps1 -stop)"

@@ -9,25 +9,18 @@ const ICONS: Record<string, string> = {
 };
 
 export const pageLinks = [
-  { key: "overview", label: "Overview", href: "/bot/dashboard", sub: "Your bot at a glance — last 14 days" },
-  { key: "bots", label: "Bots", href: "/bot/bots", sub: "Connect and customize your Telegram bots" },
-  { key: "offers", label: "Offers", href: "/bot/offers", sub: "Your casino links — clicks are tracked automatically" },
-  { key: "commands", label: "Commands", href: "/bot/commands", sub: "Replies your bot sends when viewers type /something" },
-  { key: "broadcasts", label: "Broadcasts", href: "/bot/broadcasts", sub: "Send a message to your subscribers" },
+  { key: "overview", label: "Home", href: "/bot/dashboard", sub: "Your bot at a glance — last 14 days" },
+  { key: "bots", label: "Telegram bots", href: "/bot/bots", sub: "Connect and customize your Telegram bots" },
+  { key: "commands", label: "Replies & commands", href: "/bot/commands", sub: "Replies your bot sends when viewers type /something" },
+  { key: "offers", label: "Tracked offers", href: "/bot/offers", sub: "Your casino links — clicks are tracked automatically" },
+  { key: "broadcasts", label: "Broadcast messages", href: "/bot/broadcasts", sub: "Send a message to your subscribers" },
 ];
 
-/**
- * The Telegram pages sit in the same rail as the leaderboard dashboard, under
- * their own group, with a link back to the board dashboard so /bot/* is never
- * a dead end.
- */
+/** Telegram-local navigation; the shared suite shell owns product and account links. */
 export function botNavItems(): NavItem[] {
   return [
-    { key: "back", label: "Back to board dashboard", href: "/dashboard", icon: '<path d="M19 12H5"/><path d="m12 19-7-7 7-7"/>' },
     { group: "TELEGRAM" },
     ...pageLinks.map((p) => ({ key: p.key, label: p.label, href: p.href, icon: ICONS[p.key] })),
-    { group: "ACCOUNT" },
-    { key: "account", label: "Account settings", href: "/dashboard/settings", icon: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>' },
   ];
 }
 

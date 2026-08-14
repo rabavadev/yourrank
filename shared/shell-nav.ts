@@ -1,7 +1,7 @@
 // ============================================================================
 //  YourRank — SHARED DASHBOARD SHELL / TOP NAV  (bot Worker, TypeScript)
 //
-//  Renders the same sticky header (Leaderboards | Telegram | Rewards |
+//  Renders the same sticky header (Sites | Telegram | Credits & Shop |
 //  Account | Help) so the bot dashboard at /bot/dashboard feels like the same app.
 //
 //  The stylesheet and behaviour live in the leaderboard Worker's static
@@ -28,11 +28,11 @@ export interface NavLink {
 }
 
 export const NAV_LINKS: NavLink[] = [
-  { key: "leaderboard", label: "Leaderboards", href: "/dashboard",                    match: ["/dashboard"],                    top: true },
-  { key: "bot",         label: "Telegram",     href: "/bot/dashboard",                match: ["/bot"],                            top: true },
-  { key: "rewards",     label: "Rewards",       href: "/dashboard/rewards/redemptions", match: ["/dashboard/rewards"],              top: true },
-  { key: "account",     label: "Account",      href: "/dashboard/settings",            match: ["/dashboard/settings", "/account"], top: true },
-  { key: "help",        label: "Help",         href: "/help/support",                match: ["/help", "/contact"], top: true },
+  { key: "sites",    label: "Sites",          href: "/dashboard",                       match: ["/dashboard"],                    top: true },
+  { key: "telegram", label: "Telegram",       href: "/dashboard/telegram",              match: ["/dashboard/telegram", "/bot"],  top: true },
+  { key: "credits",  label: "Credits & Shop", href: "/dashboard/rewards/redemptions",   match: ["/dashboard/rewards", "/dashboard/credits", "/dashboard/audience"], top: true },
+  { key: "account",  label: "Account",        href: "/dashboard/settings",              match: ["/dashboard/settings", "/account"], top: true },
+  { key: "help",     label: "Help",           href: "/help/support",                    match: ["/help", "/contact"],             top: true },
 ];
 
 export function activeKey(activePath: string): string | null {
@@ -42,18 +42,19 @@ export function activeKey(activePath: string): string | null {
   const search = qIndex >= 0 ? raw.slice(qIndex + 1) : "";
   const nav = new URLSearchParams(search).get("nav");
 
-  if (pathname.startsWith("/bot")) return "bot";
+  if (pathname.startsWith("/bot") || pathname.startsWith("/dashboard/telegram")) return "telegram";
   if (pathname.startsWith("/account")) return "account";
   if (pathname.startsWith("/help")) return "help";
   if (pathname.startsWith("/contact")) return "help";
 
   // Account settings are a `/dashboard/` URL but belong to the account tab.
   if (pathname === "/dashboard/settings" || pathname.startsWith("/dashboard/settings/")) {
-    return pathname === "/dashboard/settings/board" ? "leaderboard" : "account";
+    return pathname === "/dashboard/settings/board" ? "sites" : "account";
   }
   if (pathname === "/dashboard" || pathname.startsWith("/dashboard/")) {
-    if (pathname === "/dashboard/credits" || pathname.startsWith("/dashboard/credits") || pathname.startsWith("/dashboard/rewards") || pathname.startsWith("/dashboard/audience")) return "rewards";
-    return "leaderboard";
+    if (pathname.startsWith("/dashboard/telegram")) return "telegram";
+    if (pathname.startsWith("/dashboard/credits") || pathname.startsWith("/dashboard/rewards") || pathname.startsWith("/dashboard/audience")) return "credits";
+    return "sites";
   }
 
   // Fallback to longest literal prefix match for public / marketing pages.
@@ -119,13 +120,16 @@ export function profileMenuHtml(opts: ShellNavOpts & { mobileTabs?: string; stan
         <div class="gm-profile-menu">
           ${profileNav}
           <div class="gm-profile-id"><span class="gm-profile-id-name"${identityAttr}>${name}</span>${badge}</div>
+          <button class="gm-profile-link" id="yrThemeToggle" type="button"><span class="gm-profile-ic"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg></span>Toggle Theme</button>
           <a class="gm-profile-link" href="${accountHref}"><span class="gm-profile-ic"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9c-.18-.7-.43-1.36-.79-1.95a2 2 0 0 1 .63-2.75l.06-.06a2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33h.09A1.65 1.65 0 0 0 9 4.6V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09c0 .66.25 1.28.67 1.75h.09a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V15z"/></svg></span>Account</a>
-          <a class="gm-profile-link" href="/help/support?${helpQuery}"><span class="gm-profile-ic"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></span>Support</a>
-          <a class="gm-profile-link gm-profile-link--accent" href="/help/feedback?${helpQuery}"><span class="gm-profile-ic"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></span>Feedback</a>
+          <a class="gm-profile-link" href="/help/support?${helpQuery}" data-open-support><span class="gm-profile-ic"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></span>Support</a>
+          <a class="gm-profile-link gm-profile-link--accent" href="/help/feedback?${helpQuery}" data-open-feedback><span class="gm-profile-ic"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></span>Feedback</a>
           <form method="POST" action="${esc(opts.logoutAction || "/logout")}" class="gm-logout-form"><button class="gm-logout" type="submit"><span class="gm-profile-ic"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg></span>Sign out</button></form>
         </div>
       </details>`;
 }
+
+import { brandMarkSvg } from "./brand-assets.js";
 
 /**
  * Signed-out variant of the same header. Pages that can be reached by both
@@ -139,11 +143,11 @@ export function publicNavHtml(opts: { activePath?: string; theme?: "light" | "da
   return `<header class="gm-shell-nav gm-shell-nav--${theme}" data-theme="${theme}">
   <div class="gm-shell-inner">
     <a class="gm-brand" href="/">
-      <span class="gm-brand-mark">YR</span>
+      <span class="gm-brand-mark">${brandMarkSvg()}</span>
       <span class="gm-brand-word">YourRank</span>
     </a>
     <div class="gm-tabs-wrap">
-      <nav class="gm-tabs" aria-label="Board">
+      <nav class="gm-tabs" aria-label="Site">
         <a class="gm-tab" href="/pricing">Pricing</a>
         <a class="gm-tab" href="/docs">Docs</a>
       </nav>

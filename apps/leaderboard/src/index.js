@@ -54,7 +54,7 @@ import { setRequestMetrics } from "../../../shared/request-id.js";
 
 const LEGAL_PAGES = new Set(["terms", "privacy", "responsible", "cookies", "refund", "contact"]);
 const NON_SITE_PATHS = new Set([
-  "api", "auth", "dashboard", "login", "logout", "signup", "verify-email",
+  "api", "auth", "dashboard", "login", "logout", "signup", "verify-email", "invite",
   "account", "contact", "faq", "reviews", "cookies", "privacy", "terms",
   "responsible", "refund", "setup", "demo", "go", "logo", "favicon.ico",
 ]);
@@ -621,16 +621,25 @@ async function handleRequest(request, env, ctx, meta) {
         const html = addCookieConsent(await renderHtmlPage(verifyEmailPageHtml(verifyState)));
         return new Response(html, { status, headers: { ...SECURE_HTML, ...csrfHeader } });
       }
+      const inviteMatch = path.match(/^\/invite\/([a-zA-Z0-9_-]+)$/);
+      if (inviteMatch) {
+        const token = inviteMatch[1];
+        const { getInviteByToken } = await import("../../../shared/team.js");
+        const invite = await getInviteByToken(token);
+        const user = await currentUser(request, env);
+        const html = addCookieConsent(await renderHtmlPage(PAGES.invite, { invite, token, user }));
+        return new Response(html, { headers: { ...SECURE_HTML, ...csrfHeader } });
+      }
       // Connect Kick lives under Rewards now; keep the old URL working.
       if (path === "/dashboard/settings/integrations") {
         return redirectKeepingSearch("/dashboard/rewards/channel", url);
       }
-      if (path === "/dashboard/settings" || /^\/dashboard\/settings\/(account|plan|connections|data)$/.test(path)) {
+      if (path === "/dashboard/settings" || /^\/dashboard\/settings\/(account|team|plan|connections|data)$/.test(path)) {
         const pathTab = path.split("/").pop();
         const requestedTab = pathTab === "settings"
           ? (url.searchParams.get("tab") || (url.searchParams.has("plan") ? "plan" : null))
           : pathTab;
-        const tab = ["account", "plan", "connections", "data"].includes(requestedTab) ? requestedTab : "account";
+        const tab = ["account", "team", "plan", "connections", "data"].includes(requestedTab) ? requestedTab : "account";
         const user = await currentUser(request, env);
         if (!user) return Response.redirect(new URL("/login", url), 302);
         const html = addCookieConsent(await renderHtmlPage(PAGES.settingsUnified, {
@@ -709,9 +718,24 @@ async function handleRequest(request, env, ctx, meta) {
           return new Response(error500Page(nonce), { status: 500, headers: HTML_N });
         }
       }
-      // Analytics and billing have been folded into the unified dashboard.
-      if (path === "/dashboard/bot/setup") {
-        return Response.redirect(new URL("/bot/dashboard", url), 302);
+      // Telegram Bot Workspace routes
+      if (path === "/dashboard/telegram" || path === "/dashboard/telegram/overview" || path === "/bot/dashboard") {
+        return renderDashboardPage("telegramOverview", "telegram_render_failed");
+      }
+      if (path === "/dashboard/telegram/bots" || path === "/bot/bots") {
+        return renderDashboardPage("telegramBots", "telegram_render_failed");
+      }
+      if (path === "/dashboard/telegram/commands" || path === "/bot/commands") {
+        return renderDashboardPage("telegramCommands", "telegram_render_failed");
+      }
+      if (path === "/dashboard/telegram/offers" || path === "/bot/offers") {
+        return renderDashboardPage("telegramOffers", "telegram_render_failed");
+      }
+      if (path === "/dashboard/telegram/broadcasts" || path === "/bot/broadcasts") {
+        return renderDashboardPage("telegramBroadcasts", "telegram_render_failed");
+      }
+      if (path === "/dashboard/bot/setup" || path === "/bot") {
+        return Response.redirect(new URL("/dashboard/telegram", url), 302);
       }
       if (path === "/dashboard/setup") {
         return Response.redirect(new URL("/dashboard", url), 302);
@@ -724,6 +748,9 @@ async function handleRequest(request, env, ctx, meta) {
       }
       if (path === "/dashboard/credits") {
         return redirectKeepingSearch("/dashboard/rewards/channel", url);
+      }
+      if (path === "/dashboard/giveaways") {
+        return renderDashboardPage("giveaways", "giveaways_render_failed");
       }
       if (path === "/dashboard/rewards") {
         return redirectKeepingSearch("/dashboard/rewards/redemptions", url);
@@ -930,12 +957,13 @@ async function handleRequest(request, env, ctx, meta) {
       if (method === "GET" && /^\/[^/]+\/overlay$/.test(path)) {
         let slug;
         try { slug = decodeURIComponent(path.slice(1).split("/")[0]).toLowerCase(); } catch { return new Response(notFoundPage("", nonce), { status: 404, headers: HTML_N }); }
-        if (RESERVED.has(slug)) return new Response(notFoundPage(slug, nonce), { status: 404, headers: HTML_N });
+        const layout = url.searchParams.get("layout") || "card";
         // Demo overlay: use hardcoded data (no DB)
         if (slug === "demo") {
-          const overlayHtml = PAGES.overlay(demoLeaderboardData(), { slug: "demo", nonce });
+          const overlayHtml = PAGES.overlay(demoLeaderboardData(), { slug: "demo", nonce, layout });
           return new Response(overlayHtml, { headers: { ...HTML_N, "cache-control": "no-store" } });
         }
+        if (RESERVED.has(slug)) return new Response(notFoundPage(slug, nonce), { status: 404, headers: HTML_N });
         const r = await getPublicSite(env, slug, request, { limit: 100, offset: 0 });
         if (!r || r.suspended || r.requiresPassword) return new Response(notFoundPage(slug, nonce), { status: 404, headers: HTML_N });
         const paid = r.plan !== "free";
@@ -951,7 +979,7 @@ a{color:#5b5bf5;text-decoration:none;font-weight:600}</style></head><body>
 </body></html>`;
           return new Response(upsell, { headers: { ...HTML_N, "cache-control": "no-store" } });
         }
-        const overlayHtml = PAGES.overlay(r.data, { slug, nonce });
+        const overlayHtml = PAGES.overlay(r.data, { slug, nonce, layout });
         return new Response(overlayHtml, { headers: { ...HTML_N, "cache-control": "no-store" } });
       }
 

@@ -1,7 +1,7 @@
 import { $, getCsrf, guardAuth, logError, showToast } from "./utils.js";
-import { setState, state } from "./state.js";
+import { setState, state, subscribe } from "./state.js";
 import { DEFAULT_SECTIONS, isPro } from "./site.js";
-import { renderEmpty, renderError, setBlockLoading, setBlockReady } from "./states.js";
+import { renderError, setBlockLoading, setBlockReady } from "./states.js";
 
 const GAME_ROWS = [
   { key: "plinko", label: "Plinko", description: "A pachinko-style game with multiplier rewards." },
@@ -177,7 +177,10 @@ function renderGames(settings) {
     const disabled = game.disabled ? "disabled" : "";
     const details = game.disabled
       ? `<span class="v3-game-coming">Coming soon</span>`
-      : `<span class="v3-game-max" ${row.enabled ? "" : "hidden"}><label for="gameMax-${game.key}">Max Bet</label><input id="gameMax-${game.key}" class="v3-number-input" type="number" min="1" step="1" inputmode="numeric" placeholder="100" value="${row.maxBet || ""}" data-game-max="${game.key}" /><span>cr</span></span>`;
+      : `<div class="v3-game-controls" ${row.enabled ? "" : "hidden"}>
+          <span class="v3-game-max"><label for="gameMax-${game.key}">Max Bet</label><input id="gameMax-${game.key}" class="v3-number-input" type="number" min="1" step="1" inputmode="numeric" placeholder="100" value="${row.maxBet || ""}" data-game-max="${game.key}" /><span>cr</span></span>
+          <button type="button" class="btn btn--xs btn--ghost v3-game-test-btn" data-test-game="${game.key}">Test in Simulator 🎮</button>
+        </div>`;
     return `<div class="v3-game-row ${game.disabled ? "is-disabled" : ""}" data-game="${game.key}">
       <div class="v3-game-main"><div><strong>${game.label}</strong><span>${game.description}</span><small class="v3-inline-save" data-game-status="${game.key}" role="status" aria-live="polite"></small></div><input class="v3-toggle" type="checkbox" data-game-toggle="${game.key}" ${row.enabled ? "checked" : ""} ${disabled} aria-label="Enable ${game.label}"></div>
       <div class="v3-game-details">${details}</div>
@@ -187,7 +190,7 @@ function renderGames(settings) {
     input.addEventListener("change", () => {
       const game = input.dataset.gameToggle;
       const row = byGame.get(game) || { minBet: 1, maxBet: 1, houseEdgeBps: 100, dailyLossCap: null };
-      const details = input.closest("[data-game]")?.querySelector(".v3-game-max");
+      const details = input.closest("[data-game]")?.querySelector(".v3-game-controls");
       if (details) details.hidden = !input.checked;
       setInlineSave(input, "Saving…");
       const previousValue = input.checked ? "false" : "true";
@@ -227,17 +230,85 @@ async function loadGames() {
     setState({ GAMES_STATUS: "ready" });
     const settings = body.settings || [];
     const list = $("gameSettingRows");
-    if (!settings.length) {
-      renderEmpty(list, { icon: "chart", title: "No game settings yet", body: "Game settings will appear here when your board supports credit games." });
-      return;
-    }
     setBlockReady(list);
     renderGames(settings);
+    updateSimulator();
   } catch (err) {
     setState({ GAMES_STATUS: "error" });
     logError("load-game-settings", err);
     renderError($("gameSettingRows"), { title: "Couldn't load game settings", body: "Your game settings could not be loaded.", retry: loadGames });
   }
+}
+
+let activeSimulatorGame = "mines";
+
+function setSimulatorGame(gameId) {
+  activeSimulatorGame = gameId || "mines";
+  const siteId = state.ACTIVE_SITE_ID || "";
+  const slug = state.SLUG || state.EXTRA?.slug || "";
+  const iframe = $("gamesSimulatorIframe");
+  const popout = $("gamesPopoutLink");
+  const previewBtn = $("gamesPreviewBtn");
+
+  const embedUrl = siteId
+    ? `/dashboard/preview?board=${encodeURIComponent(siteId)}&section=games&demo=1&embed=1&game=${encodeURIComponent(activeSimulatorGame)}`
+    : (slug ? `/${encodeURIComponent(slug)}/games?demo=1&embed=1&game=${encodeURIComponent(activeSimulatorGame)}` : "");
+  const liveUrl = slug ? `/${encodeURIComponent(slug)}/games` : "#";
+
+  if (iframe && embedUrl) {
+    if (iframe.dataset.currentSrc !== embedUrl) {
+      iframe.dataset.currentSrc = embedUrl;
+      iframe.src = embedUrl;
+    }
+  }
+  if (popout && embedUrl) popout.href = embedUrl;
+  if (previewBtn) previewBtn.href = liveUrl;
+
+  document.querySelectorAll("[data-preview-game]").forEach((tab) => {
+    const isCurrent = tab.dataset.previewGame === activeSimulatorGame;
+    tab.classList.toggle("is-active", isCurrent);
+    tab.setAttribute("aria-selected", String(isCurrent));
+  });
+}
+
+function updateSimulator() {
+  setSimulatorGame(activeSimulatorGame);
+}
+
+function setupSimulator() {
+  if (setupSimulator._wired) return;
+  setupSimulator._wired = true;
+
+  subscribe((keys) => {
+    if (keys.includes("SLUG") || keys.includes("ACTIVE_SITE_ID") || keys.includes("GAMES_STATUS")) {
+      updateSimulator();
+    }
+  });
+
+  document.querySelectorAll("[data-preview-game]").forEach((tab) => {
+    tab.addEventListener("click", () => {
+      setSimulatorGame(tab.dataset.previewGame);
+    });
+  });
+
+  const resetBtn = $("gamesResetDemo");
+  resetBtn?.addEventListener("click", () => {
+    const iframe = $("gamesSimulatorIframe");
+    if (iframe && iframe.dataset.currentSrc) {
+      iframe.src = iframe.dataset.currentSrc + "&_t=" + Date.now();
+      showToast("Demo balance reset to 2,500 credits", "success");
+    }
+  });
+
+  document.addEventListener("click", (e) => {
+    const testBtn = e.target.closest("[data-test-game]");
+    if (!testBtn) return;
+    const game = testBtn.getAttribute("data-test-game");
+    if (game) {
+      setSimulatorGame(game);
+      $("gamesSimulatorIframe")?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }
+  });
 }
 
 export function initGames() {
@@ -247,9 +318,12 @@ export function initGames() {
   renderPageBlocks();
   setBlockLoading($("gameSettingRows"), { lines: GAME_ROWS.length });
   loadGames();
+  setupSimulator();
+  updateSimulator();
   window.addEventListener("yr-games-visible", () => {
     renderSections();
     renderPageBlocks();
     loadGames();
+    updateSimulator();
   });
 }

@@ -129,7 +129,10 @@ describe("dashboard views", () => {
     // Same rail, topbar and stylesheets as the leaderboard dashboard.
     expect(html).toContain('<aside class="lb-side" id="lbSide"');
     expect(html).toContain('<link rel="stylesheet" href="/assets/dashboard-v3.css">');
-    expect(html).toContain('class="lb-nav" href="/dashboard" data-nav="back"');
+    // Cross-product switching lives in the shared product nav (Sites / Telegram
+    // / Credits & Shop), not a one-off back link.
+    expect(html).toContain('class="lb-product-link" href="/dashboard"');
+    expect(html).toContain('class="lb-product-link is-on" href="/bot/dashboard"');
     expect(html).toContain('data-nav="offers" aria-current="page"');
     expect(html).toContain('<nav class="v3-crumbs" aria-label="Breadcrumb">');
     // One shell, not the product header stacked on a second rail.
@@ -139,37 +142,43 @@ describe("dashboard views", () => {
     expect((html.match(/<h1/g) || []).length).toBe(1);
   });
 
+  // Each Telegram route is its own document and renders only its own panel, so
+  // action markup is asserted per page rather than all on one stacked document.
   it("appHtml loads the external client script and keeps markup data-action based", () => {
-    const html = appHtml({ display_name: "Test", email: "test@example.com", plan: "free" }, "https://yourrank.site", "nonce123");
-    expect(html).toContain('<script src="/bot/dash/client.js"></script>');
-    expect(html).toContain('data-action="connectBot"');
-    expect(html).toContain('data-action="createOffer"');
-    expect(html).toContain('data-action="sendBroadcast"');
+    const user = { display_name: "Test", email: "test@example.com", plan: "free" };
+    const overview = appHtml(user, "https://yourrank.site", "nonce123", "overview");
+    expect(overview).toContain('<script src="/bot/dash/client.js"></script>');
     // Signing out is the dashboard shell's account menu (a POST form) now that
     // /bot/* renders in that shell instead of its own rail.
-    expect(html).toContain('action="/bot/auth/logout"');
-    expect(html).not.toContain('<div class="panel" data-page="settings">');
-    expect(html).toContain("Manage postbacks in settings");
-    expect(html).toContain("postbackStatus");
-    expect(html).toContain("Click metrics cover the last 90 days");
-    expect(html).toContain("Reported revenue");
-    expect(html).toContain("Last activity");
-    expect(html).toContain('colspan="11"');
-    expect(html).toContain('nonce="nonce123"');
-    expect(html).not.toContain("gm-shell-nav");
-    expect(html).not.toContain("onclick=");
-    expect(html).not.toContain("onfocus=");
-    expect(html).not.toContain("onblur=");
+    expect(overview).toContain('action="/bot/auth/logout"');
+    expect(overview).not.toContain('<div class="panel" data-page="settings">');
+    expect(overview).toContain('nonce="nonce123"');
+    expect(overview).not.toContain("gm-shell-nav");
+    expect(overview).not.toContain("onclick=");
+    expect(overview).not.toContain("onfocus=");
+    expect(overview).not.toContain("onblur=");
+
+    expect(appHtml(user, "https://yourrank.site", "nonce123", "bots")).toContain('data-action="connectBot"');
+    const offers = appHtml(user, "https://yourrank.site", "nonce123", "offers");
+    expect(offers).toContain('data-action="createOffer"');
+    expect(offers).toContain("postbackStatus");
+    expect(offers).toContain("Click metrics cover the last 90 days");
+    expect(offers).toContain("Reported revenue");
+    expect(offers).toContain("Last activity");
+    expect(offers).toContain('colspan="11"');
+    expect(appHtml(user, "https://yourrank.site", "nonce123", "broadcasts")).toContain('data-action="sendBroadcast"');
   });
 
   it("renders one offers metric glossary and bot setup guidance for empty broadcasts", () => {
-    const html = appHtml({ display_name: "Test", email: "test@example.com", plan: "free" }, "https://yourrank.site");
-    expect((html.match(/<summary>Metric glossary<\/summary>/g) || []).length).toBe(1);
-    expect(html).toContain('id="bcList"');
-    expect(html).toContain('id="bcSetupState"');
-    expect(html).toContain('id="bcComposer" hidden');
-    expect(clientScriptSource()).toContain("No broadcasts yet. Connect a bot in Bots to send your first message.");
-    expect(html).toContain('href="https://t.me/BotFather"');
+    const user = { display_name: "Test", email: "test@example.com", plan: "free" };
+    const offers = appHtml(user, "https://yourrank.site", "nonce123", "offers");
+    expect((offers.match(/<summary[^>]*>Metric glossary<\/summary>/g) || []).length).toBe(1);
+    const broadcasts = appHtml(user, "https://yourrank.site", "nonce123", "broadcasts");
+    expect(broadcasts).toContain('id="bcList"');
+    expect(broadcasts).toContain('id="bcSetupState"');
+    expect(broadcasts).toMatch(/id="bcComposer"[^>]*\shidden/);
+    expect(clientScriptSource()).toContain("No broadcasts yet. Connect an active bot to send your first message.");
+    expect(appHtml(user, "https://yourrank.site", "nonce123", "bots")).toContain('href="https://t.me/BotFather"');
   });
 
   it("gates empty list controls and avoids page-zero pagination", () => {
@@ -180,7 +189,9 @@ describe("dashboard views", () => {
     expect(js).toContain("last_activity_at");
     expect(js).toContain("This does not indicate that an individual offer is converting.");
     expect(js).toContain("this.pageInfo.textContent = total ? 'Page '+this.page+' of '+this.totalPages+' ('+total+')' : ''");
-    expect(js).toContain("setBroadcastAvailability(bots.length > 0)");
+    // Broadcasts need an active bot, so availability keys off activeBots — a
+    // disconnected or revoked bot must not unlock the composer.
+    expect(js).toContain("setBroadcastAvailability(activeBots.length > 0)");
     expect(js).toContain("page !== 'commands' || bots.length > 0");
     expect(js).toContain("const readRequest = !opts || !opts.method || opts.method.toUpperCase() === 'GET'");
     expect(js).toContain("const requestOpts = controller");
@@ -242,7 +253,10 @@ describe("dashboard views", () => {
       "commands"
     );
     expect(html).toContain('id="botSelect"');
-    expect(html).toContain('data-page="commands" id="customizePanel"');
+    // The commands panel renders only on the commands route; its wrapper carries
+    // the page key and the customize card inside it is what gets toggled.
+    expect(html).toContain('data-page="commands"');
+    expect(html).toContain('id="customizePanel"');
     expect(clientScriptSource()).toContain('/bot/commands?bot=');
     expect(clientScriptSource()).toContain("requestedBotId");
   });
@@ -333,7 +347,8 @@ describe("buildDashboard", () => {
     expect(res.status).toBe(200);
     const html = await res.text();
     expect(html).toContain('<script src="/bot/dash/client.js"></script>');
-    expect(html).toContain('data-action="connectBot"');
+    // The overview route renders the overview panel; connecting a bot lives on
+    // the Bots page, so assert the shell + account menu here instead.
     expect(html).toContain('action="/bot/auth/logout"');
     expect(html).not.toContain("onclick=");
 

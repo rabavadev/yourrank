@@ -285,7 +285,9 @@ export function parseAmount(str) {
 }
 
 export function currentPlayers() {
-  return [...$("rows").children].map((tr) => ({
+  const rows = $("rows");
+  if (!rows) return Array.isArray(state.PLAYERS) ? state.PLAYERS : [];
+  return [...rows.children].map((tr) => ({
     name: tr.querySelector(".p-name").value.trim(),
     wagered: parseAmount(tr.querySelector(".p-wager").value),
     prize: parseAmount(tr.querySelector(".p-prize").value),

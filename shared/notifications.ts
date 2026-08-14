@@ -132,6 +132,28 @@ export function buildTop3Embed(
   };
 }
 
+/**
+ * Build a Discord embed for a shop redemption event.
+ */
+export function buildRedemptionEmbed(
+  siteName: string,
+  viewerName: string,
+  itemName: string,
+  cost: number
+): Record<string, unknown> {
+  return {
+    title: "🎁 New Reward Redeemed!",
+    description: `**${viewerName}** redeemed **${itemName}** on **${siteName}**`,
+    color: 0x315cff, // Cobalt
+    fields: [
+      { name: "Reward Item", value: itemName, inline: true },
+      { name: "Cost", value: `${Number(cost).toLocaleString("en-US")} pts`, inline: true },
+    ],
+    timestamp: new Date().toISOString(),
+    footer: { text: "YourRank Rewards" },
+  };
+}
+
 // ----------------------------------------------------------------------------
 // Telegram helpers
 // ----------------------------------------------------------------------------

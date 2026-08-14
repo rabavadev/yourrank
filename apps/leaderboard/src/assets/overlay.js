@@ -69,6 +69,7 @@
 
   // --- Render top N players with FLIP animation ---
   let prevRanks = {};
+  let prevWagers = {};
 
   function renderPlayers(players) {
     const sorted = players.slice().sort((a, b) => b.wagered - a.wagered).slice(0, TOP_N);
@@ -88,11 +89,13 @@
       const rank = i + 1;
       const medal = rank === 1 ? "🥇" : rank === 2 ? "🥈" : rank === 3 ? "🥉" : "#" + rank;
       const isNew = !prevRanks[p.name];
+      const scoreChanged = prevWagers[p.name] !== undefined && prevWagers[p.name] !== p.wagered;
       const movedUp = prevRanks[p.name] && prevRanks[p.name] > rank;
       const movedDown = prevRanks[p.name] && prevRanks[p.name] < rank;
       const dirClass = movedUp ? "ov-moved-up" : movedDown ? "ov-moved-down" : "";
+      const flashClass = scoreChanged ? "ov-score-flash" : "";
       const entryClass = isNew ? "ov-enter" : "";
-      return `<div class="ov-row ${dirClass} ${entryClass}" data-name="${esc(p.name)}">
+      return `<div class="ov-row ${dirClass} ${flashClass} ${entryClass}" data-name="${esc(p.name)}">
         <span class="ov-medal">${medal}</span>
         <span class="ov-name">${esc(p.name)}</span>
         <span class="ov-wager">${fmtMoney(p.wagered)}</span>
@@ -126,9 +129,13 @@
       }
     });
 
-    // Track previous ranks
+    // Track previous ranks and wagers
     prevRanks = {};
-    sorted.forEach((p, i) => { prevRanks[p.name] = i + 1; });
+    prevWagers = {};
+    sorted.forEach((p, i) => {
+      prevRanks[p.name] = i + 1;
+      prevWagers[p.name] = p.wagered;
+    });
 
     // Update count
     const countEl = document.getElementById("ov-count");

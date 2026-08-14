@@ -8,6 +8,7 @@
   var side = document.getElementById("yr-side");
   var scrim = document.getElementById("yr-scrim");
   var menu = document.getElementById("yr-menu");
+  var sideClose = document.getElementById("yr-side-close");
   var region = document.querySelector(".yr-region");
   var sideOpener = null;
   var bodyOverflow = "";
@@ -55,6 +56,7 @@
   }
 
   if (menu) menu.addEventListener("click", function () { (side && side.hasAttribute("data-open")) ? closeSide() : openSide(); });
+  if (sideClose) sideClose.addEventListener("click", closeSide);
   if (scrim) scrim.addEventListener("click", closeSide);
   document.addEventListener("keydown", function (e) {
     if (e.key === "Escape" && dialog && dialog.open) {
@@ -213,6 +215,12 @@
     });
   }
 
+  // ── Authenticated public actions ────────────────────────────────────
+  var readCsrfToken = function () {
+    var csrfEl = document.querySelector('meta[name="csrf-token"]');
+    return (csrfEl && csrfEl.content) || "";
+  };
+
   // ── Shop: redeem ────────────────────────────────────────────────────
   var redeemStatus = document.getElementById("yr-redeem-status");
   var setRedeemStatus = function (message, isError) {
@@ -233,7 +241,7 @@
       fetch("/api/viewer/redeem", {
         method: "POST",
         credentials: "same-origin",
-        headers: { "content-type": "application/json" },
+        headers: { "content-type": "application/json", "x-csrf-token": readCsrfToken() },
         body: JSON.stringify({ slug: slug, shopItemId: btn.dataset.redeem }),
       })
         .then(function (res) { return res.json().catch(function () { return {}; }).then(function (data) { return { ok: res.ok, data: data }; }); })
@@ -317,13 +325,12 @@
         if (statusEl) statusEl.textContent = "Please write at least 10 characters.";
         return;
       }
-      var csrfEl = document.querySelector('meta[name="csrf-token"]');
       btn.disabled = true;
       btn.textContent = "Sending…";
       fetch("/api/feedback", {
         method: "POST",
         credentials: "same-origin",
-        headers: { "content-type": "application/json", "x-csrf-token": (csrfEl && csrfEl.content) || "" },
+        headers: { "content-type": "application/json", "x-csrf-token": readCsrfToken() },
         body: JSON.stringify({ slug: form.slug.value, message: message }),
       })
         .then(function (res) { return res.json().catch(function () { return {}; }).then(function (data) { return { ok: res.ok, data: data }; }); })

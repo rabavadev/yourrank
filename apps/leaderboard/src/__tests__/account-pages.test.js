@@ -120,7 +120,7 @@ describe("settings panels", () => {
       expect(html).toContain(`href="/dashboard/settings/${key}"`);
       expect(html).toContain(`data-settings-panel="${key}"`);
     }
-    // Board-level settings are a separate destination, not a fifth tab.
+    // Site-level settings are a separate destination, not a fifth tab.
     expect(html).toContain('href="/dashboard/settings/board"');
     expect(html).not.toContain("/account/profile");
   });

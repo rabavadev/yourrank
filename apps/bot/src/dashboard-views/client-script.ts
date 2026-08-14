@@ -3,7 +3,15 @@ export function clientScriptSource(): string {
   return `const $ = (id) => document.getElementById(id);
 const setText = (id, v) => { const el = $(id); if (el) el.textContent = v; };
 const setHtml = (id, v) => { const el = $(id); if (el) el.innerHTML = v; };
-function toast(msg) { const t=$('toast'); t.textContent=msg; t.classList.remove('hidden'); setTimeout(()=>t.classList.add('hidden'),2500); }
+function toast(msg) {
+  const t = $('status');
+  if (!t) return;
+  t.textContent = msg;
+  t.className = 'toast';
+  t.hidden = false;
+  clearTimeout(t._toastTimeout);
+  t._toastTimeout = setTimeout(() => { t.hidden = true; }, 4000);
+}
 // The dialog itself is /assets/dialog.js, shared with the leaderboard Worker.
 function confirmModal(title, body, confirmText, isDanger) {
   return window.YRDialog.confirm({ title: title, body: body, confirmText: confirmText, danger: isDanger });
@@ -180,7 +188,10 @@ let submitting = false;
 const page = document.body.dataset.page || 'overview';
 let __lastBots = [];
 let __offers = [];
+let __planInfo = null;
 let __maxBots = Infinity;
+let __maxOffers = Infinity;
+let __canBroadcast = false;
 let __testBotId = null;
 
 function showPage(p) {
@@ -206,6 +217,7 @@ function wizardNext(btn){ showWizardStep(Number(btn.dataset.step) + 1); }
 function wizardPrev(btn){ showWizardStep(Number(btn.dataset.step) - 1); }
 
 let firstBotId = null;
+let firstBroadcastBotId = null;
 let custBotId = null;
 const requestedBotId = new URLSearchParams(location.search).get('bot');
 
@@ -280,6 +292,7 @@ async function load() {
 
   __offers = offers || [];
   renderOffers();
+  if (__planInfo) renderPlanState(__planInfo);
 }
 
 // Compact bot + offer summaries and the setup checklist (overview only).
@@ -454,54 +467,92 @@ function renderOffers(){
   }
 }
 
+function renderPlanState(plan){
+  if (!plan || !plan.current) return;
+  __planInfo = plan;
+  const cur = plan.current;
+  __maxBots = typeof cur.maxBots === 'number' ? cur.maxBots : Infinity;
+  __maxOffers = typeof cur.maxOffers === 'number' ? cur.maxOffers : Infinity;
+  __canBroadcast = cur.broadcasts === true;
+  const label = esc(cur.label || cur.tier || 'Current');
+  const manageUrl = esc(plan.upgradeUrl || '/dashboard/settings');
+  const activeBots = __lastBots.filter(b => b.status === 'active');
+  const botAtLimit = activeBots.length >= __maxBots;
+  const botState = $('botPlanState');
+  if (botState) {
+    botState.innerHTML = '<b>'+label+' plan:</b> '+activeBots.length+' of '+__maxBots+' bot slots used. Disconnected bots do not count.'+
+      (botAtLimit ? ' <a href="'+manageUrl+'">Upgrade or manage your plan to connect another bot.</a>' : '');
+  }
+  const connect = $('connectWizard');
+  if (connect) connect.classList.toggle('hidden', botAtLimit);
+
+  const offerAtLimit = __offers.length >= __maxOffers;
+  const offerState = $('offerPlanState');
+  if (offerState) {
+    offerState.innerHTML = '<b>'+label+' plan:</b> '+__offers.length+' of '+__maxOffers+' offer slots used.'+
+      (offerAtLimit ? ' <a href="'+manageUrl+'">Upgrade or manage your plan to add another offer.</a>' : '');
+  }
+  const offerForm = $('offerCreateForm');
+  if (offerForm) offerForm.querySelectorAll('input, button').forEach(el => { el.disabled = offerAtLimit; });
+
+  const bcState = $('bcPlanState');
+  if (bcState) {
+    bcState.innerHTML = __canBroadcast
+      ? '<b>'+label+' plan:</b> Broadcast messages are included.'
+      : '<b>'+label+' plan:</b> Broadcast messages require a plan with broadcast access. <a href="'+manageUrl+'">Upgrade to compose a broadcast.</a>';
+    if (plan.warning) bcState.innerHTML += ' '+esc(plan.warning);
+  }
+  setBroadcastAvailability(activeBots.length > 0);
+}
+
 async function loadExtras(){
   const bcListLoading = $('bcList');
   if (bcListLoading) bcListLoading.innerHTML = '<tr><td colspan="8" class="muted">Loading broadcasts…</td></tr>';
   const [plan, bcs, pbStatus] = await Promise.all([api('/plan'), api('/broadcasts'), api('/postback-status')]);
+  const errors = [plan.error, bcs.error, pbStatus.error].filter(Boolean);
+
+  if (plan.error) {
+    const state = $('bcPlanState');
+    if (state) state.textContent = "Couldn't load plan access. Reload before composing a broadcast.";
+  } else {
+    renderPlanState(plan);
+  }
+
   if (bcs.error) {
     const bcList = $('bcList');
     if (bcList) {
       const colCount = bcList.closest('table')?.querySelectorAll('thead th').length || 1;
       bcList.innerHTML = '<tr><td colspan="' + colCount + '">' + loadErrorMarkup(bcs.error || "Couldn’t load broadcast history.", 'retryBroadcasts') + '</td></tr>';
     }
-  }
-  if (plan.error || bcs.error || pbStatus.error) {
-    const error = plan.error || bcs.error || pbStatus.error;
-    toast(error);
-    if (pbStatus.error) showPostbackError("Couldn't load postback status.");
-    return;
-  }
-  renderPostbackStatus(pbStatus);
-
-  const cur = plan?.current;
-  if (cur && typeof cur.maxBots === 'number') {
-    __maxBots = cur.maxBots;
-    const cf = $('connectWizard');
-    if (cf) cf.classList.toggle('hidden', __lastBots.filter(b => b.status === 'active').length >= __maxBots);
-  }
-
-  __broadcasts = bcs || [];
-  const bcList = $('bcList');
-  if (bcList) {
-    if (!__broadcastsCtrl) {
-      __broadcastsCtrl = new ListController({
-        tbody: 'bcList', items: __broadcasts, perPage: 10,
-        searchFn: function(b){ return [b.body, b.bot_username, b.status, formatSegmentLabel(b.segment)].filter(Boolean).join(' '); },
-        sortOptions: [
-          { key: 'time', label: 'Newest', fn: function(a,b){ return new Date(b.created_at || b.scheduled_at || 0) - new Date(a.created_at || a.scheduled_at || 0); } },
-          { key: 'status', label: 'Status', fn: function(a,b){ return (a.status||'').localeCompare(b.status||''); } },
-          { key: 'sent', label: 'Sent', fn: function(a,b){ return (b.sent_count||0) - (a.sent_count||0); } }
-        ],
-        emptyAllText: 'No broadcasts yet. Connect a bot in Bots to send your first message.', emptyText: 'No matching broadcasts.',
-        searchPlaceholder: 'Search broadcasts…',
-        renderItem: broadcastRow
-      });
-    } else {
-      __broadcastsCtrl.setItems(__broadcasts);
+  } else {
+    __broadcasts = bcs || [];
+    const bcList = $('bcList');
+    if (bcList) {
+      if (!__broadcastsCtrl) {
+        __broadcastsCtrl = new ListController({
+          tbody: 'bcList', items: __broadcasts, perPage: 10,
+          searchFn: function(b){ return [b.body, b.bot_username, b.status, formatSegmentLabel(b.segment)].filter(Boolean).join(' '); },
+          sortOptions: [
+            { key: 'time', label: 'Newest', fn: function(a,b){ return new Date(b.created_at || b.scheduled_at || 0) - new Date(a.created_at || a.scheduled_at || 0); } },
+            { key: 'status', label: 'Status', fn: function(a,b){ return (a.status||'').localeCompare(b.status||''); } },
+            { key: 'sent', label: 'Sent', fn: function(a,b){ return (b.sent_count||0) - (a.sent_count||0); } }
+          ],
+          emptyAllText: 'No broadcasts yet. Connect an active bot to send your first message.', emptyText: 'No matching broadcasts.',
+          searchPlaceholder: 'Search broadcasts…',
+          renderItem: broadcastRow
+        });
+      } else {
+        __broadcastsCtrl.setItems(__broadcasts);
+      }
     }
   }
 
-  if (typeof markStep === 'function') markStep('stepPb', !!pbStatus?.active);
+  if (pbStatus.error) showPostbackError("Couldn't load postback status.");
+  else {
+    renderPostbackStatus(pbStatus);
+    if (typeof markStep === 'function') markStep('stepPb', !!pbStatus?.active);
+  }
+  if (errors.length) toast(errors[0]);
 }
 
 function renderPostbackStatus(pb){
@@ -534,6 +585,8 @@ function updateOfferPreview(){
   const wrap = $('offerPreview');
   if (!wrap) return;
   if (!casino && !label && !url) { wrap.hidden = true; return; }
+  const title = $('offerPreviewTitle'); if (title) title.textContent = 'Link preview';
+  const actions = $('offerCreatedActions'); if (actions) actions.hidden = true;
   const parts = [];
   if (label) parts.push(label);
   if (casino) parts.push('at ' + casino);
@@ -542,7 +595,10 @@ function updateOfferPreview(){
   const line = parts.join(' ');
   const urlEl = $('offerPreviewUrl');
   const textEl = $('offerPreviewText');
-  if (urlEl) urlEl.textContent = url || 'https://yourrank.site/r/<short-link-will-appear-here>';
+  if (urlEl) {
+    urlEl.textContent = url || 'https://yourrank.site/r/<short-link-will-appear-here>';
+    urlEl.href = url || '';
+  }
   if (textEl) textEl.textContent = line || 'Offer preview will appear here';
   wrap.hidden = false;
 }
@@ -556,9 +612,25 @@ async function createOffer(btn){
   setLoading(btn, 'Creating…');
   const r = await api('/offers',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)});
   if (r.error) { restoreBtn(btn); setFieldErr('oLabel', r.error + ' — click Create again to retry.'); return; }
+  const trackedLink = String(r.tracked_link || '');
+  const summary = [body.label, body.casino ? 'at '+body.casino : ''].filter(Boolean).join(' ');
   ['oCasino','oLabel','oUrl','oCode','oBonus'].forEach(id=>$(id).value='');
-  const wrap = $('offerPreview'); if (wrap) wrap.hidden = true;
-  toast('Offer created'); restoreBtn(btn); load();
+  const wrap = $('offerPreview'); if (wrap) wrap.hidden = false;
+  const title = $('offerPreviewTitle'); if (title) title.textContent = 'Tracked link ready';
+  const urlEl = $('offerPreviewUrl');
+  if (urlEl) { urlEl.textContent = trackedLink; urlEl.href = trackedLink; }
+  const textEl = $('offerPreviewText'); if (textEl) textEl.textContent = summary;
+  const actions = $('offerCreatedActions');
+  if (actions) {
+    actions.hidden = false;
+    const copy = actions.querySelector('[data-action="copyCreatedOffer"]');
+    if (copy) copy.dataset.link = trackedLink;
+  }
+  toast('Offer created — tracked link ready'); restoreBtn(btn); load();
+}
+async function copyCreatedOffer(target){
+  const ok = await copyWithFallback(target.dataset.link || '');
+  toast(ok ? 'Tracked link copied' : 'Copy failed — select the tracked link and copy it manually');
 }
 async function connectBot(btn){
   clearFieldErr('botToken');
@@ -602,7 +674,7 @@ async function checkHealth(target){
   toast(summary + ' — see details below');
 }
 async function disconnectBot(btn){
-  if (!await confirmModal('Disconnect bot', 'It will stop responding, but your offers, commands and subscriber history stay in YourRank. Your token is removed from our servers.', 'Disconnect', true)) return;
+  if (!await confirmModal('Disconnect bot', 'It will stop responding, but your offers, commands and subscriber history stay in YourRank. Your encrypted token is retained so you can reconnect without pasting it again.', 'Disconnect', true)) return;
   setLoading(btn, 'Disconnecting…');
   const r = await api('/bots/'+btn.dataset.id+'/disconnect',{method:'POST'});
   if (r.error) { restoreBtn(btn); return toast(r.error); }
@@ -702,25 +774,27 @@ function renderBots(bots, loadCmds = true){
 
   const botSelect = $('botSelect');
   const bcBotSelect = $('bcBotSelect');
+  const activeBots = bots.filter(b => b.status === 'active');
   const botOptions = bots.map(b => '<option value="'+esc(b.id)+'">@'+esc(b.username)+' ('+esc(b.status)+')</option>').join('');
+  const broadcastBotOptions = activeBots.map(b => '<option value="'+esc(b.id)+'">@'+esc(b.username)+'</option>').join('');
   if (botSelect) { botSelect.innerHTML = botOptions || '<option value="">No bots</option>'; }
-  if (bcBotSelect) { bcBotSelect.innerHTML = botOptions || '<option value="">No bots</option>'; }
+  if (bcBotSelect) { bcBotSelect.innerHTML = broadcastBotOptions || '<option value="">No active bots</option>'; }
 
-  firstBotId = bots[0]?.id ?? null;
+  firstBotId = activeBots[0]?.id ?? bots[0]?.id ?? null;
+  firstBroadcastBotId = activeBots[0]?.id ?? null;
   const requestedBot = requestedBotId && bots.find(b => b.id === requestedBotId);
   if ((!custBotId || !bots.some(b => b.id === custBotId)) && (requestedBot?.id || firstBotId)) custBotId = requestedBot?.id || firstBotId;
   if (!bots.length) custBotId = null;
   if (botSelect && custBotId) botSelect.value = custBotId;
-  if (bcBotSelect && firstBotId) bcBotSelect.value = firstBotId;
-  setBroadcastAvailability(bots.length > 0);
-  if (bcBotSelect && firstBotId) updateAudience();
   loadBroadcastDraft();
+  if (bcBotSelect && !bcBotSelect.value && firstBroadcastBotId) bcBotSelect.value = firstBroadcastBotId;
+  if (bcBotSelect) firstBroadcastBotId = bcBotSelect.value || firstBroadcastBotId;
+  setBroadcastAvailability(activeBots.length > 0);
+  if (bcBotSelect && firstBroadcastBotId) updateAudience();
+  else updateAudience();
   updateScheduleInputState();
   showTimezone();
-
-  // Hide the connect form once the plan's active-bot slots are full.
-  const cf = $('connectWizard');
-  if (cf) cf.classList.toggle('hidden', bots.filter(b => b.status === 'active').length >= __maxBots);
+  if (__planInfo) renderPlanState(__planInfo);
 
   // customize panel (only on pages that show it)
   if ($('customizePanel') && page === 'commands') {
@@ -739,11 +813,11 @@ function renderBots(bots, loadCmds = true){
   if (commandsHint) commandsHint.classList.toggle('hidden', page !== 'commands' || bots.length > 0);
 }
 
-function setBroadcastAvailability(hasBots){
+function setBroadcastAvailability(hasActiveBots){
   const setup = $('bcSetupState');
   const composer = $('bcComposer');
-  if (setup) setup.hidden = hasBots;
-  if (composer) composer.hidden = !hasBots;
+  if (setup) setup.hidden = !__canBroadcast || hasActiveBots;
+  if (composer) composer.hidden = !__canBroadcast || !hasActiveBots;
 }
 
 // A disconnected bot can't be customized — reflect that by disabling the
@@ -782,11 +856,10 @@ async function saveWelcome(btn){
   clearFieldErr('welcomeMsg');
   if (!custBotId) return toast('Select a bot first');
   const text = $('welcomeMsg').value.trim();
-  if (!text) { setFieldErr('welcomeMsg','Enter a welcome message'); return; }
   setLoading(btn, 'Saving…');
   const r = await api('/bots/'+custBotId,{method:'PATCH',headers:{'content-type':'application/json'},body:JSON.stringify({welcome_message:text||null})});
   if (r.error) { restoreBtn(btn); setFieldErr('welcomeMsg', r.error + ' — click Save again to retry.'); return; }
-  toast('Welcome message saved'); restoreBtn(btn);
+  toast(text ? 'Welcome message saved' : 'Default welcome message restored'); restoreBtn(btn);
 }
 let __commands = [];
 let __cmdButtons = [];
@@ -929,6 +1002,8 @@ async function testCommand(target){
 }
 
 let __bcAudience = null;
+let __bcAudienceTimer = null;
+let __bcAudienceRequest = 0;
 let __bcPreviewSnapshot = null;
 const BC_DRAFT_KEY = 'yr_bc_draft';
 function buildSegmentFromForm(){
@@ -965,7 +1040,7 @@ function formatSegmentLabel(segment){
 function broadcastDraftSignature(){
   return JSON.stringify({
     body: ($('bcBody')?.value || '').trim(),
-    botId: ($('bcBotSelect')?.value || '').trim() || firstBotId,
+    botId: ($('bcBotSelect')?.value || '').trim() || firstBroadcastBotId,
     mediaUrl: ($('bcImage')?.value || '').trim() || null,
     segment: buildSegmentFromForm(),
     when: isScheduleSelected() ? 'schedule' : 'now',
@@ -980,7 +1055,7 @@ function invalidateBroadcastPreview(){
   setFormStatus('bcFormStatus','The draft changed after preview. Review it again before sending.',true);
 }
 function getBotNameForBroadcast(){
-  const botId = $('bcBotSelect')?.value || firstBotId;
+  const botId = $('bcBotSelect')?.value || firstBroadcastBotId;
   const select = $('bcBotSelect');
   if (!select || !botId) return '';
   const opt = Array.from(select.options).find(o => o.value === botId);
@@ -991,7 +1066,7 @@ function saveBroadcastDraft(){
     const draft = {
       body: ($('bcBody')?.value || ''),
       image: ($('bcImage')?.value || ''),
-      botId: ($('bcBotSelect')?.value || firstBotId || ''),
+      botId: ($('bcBotSelect')?.value || firstBroadcastBotId || ''),
       lang: ($('bcLang')?.value || ''),
       minLast: ($('bcMinLastSeen')?.value || ''),
       firstSeen: ($('bcFirstSeen')?.value || ''),
@@ -1073,19 +1148,43 @@ function showTimezone(){
   el.innerHTML = 'Your timezone: <b>'+esc(name)+' (UTC'+sign+h+':'+m+')</b>';
 }
 // Show how many subscribers the selected bot would reach, so the streamer
-// knows the blast size before committing.
-async function updateAudience(){
+// knows the blast size before committing. Sequence and signature checks ensure
+// a slower response for old filters can never replace the current estimate.
+async function updateAudience(requestId){
   const el = $('bcAudience');
   if (!el) return;
-  const botId = $('bcBotSelect')?.value || firstBotId;
-  if (!botId) { __bcAudience = null; el.innerHTML = 'Select a bot to see how many subscribers it will reach.'; return; }
+  const currentRequest = requestId == null ? ++__bcAudienceRequest : requestId;
+  const botId = $('bcBotSelect')?.value || firstBroadcastBotId;
+  if (!botId) {
+    if (currentRequest === __bcAudienceRequest) {
+      __bcAudience = null;
+      el.textContent = 'Connect or reconnect a bot to estimate an audience.';
+    }
+    return;
+  }
   const segment = buildSegmentFromForm();
+  const signature = botId+'|'+JSON.stringify(segment);
+  el.textContent = 'Updating subscriber count…';
   const qs = '/broadcasts/audience?bot_id='+encodeURIComponent(botId)+(segment ? '&segment='+encodeURIComponent(JSON.stringify(segment)) : '');
   const r = await api(qs);
-  if (!r || r.error) { __bcAudience = null; return; }
+  const currentBotId = $('bcBotSelect')?.value || firstBroadcastBotId;
+  const currentSignature = currentBotId+'|'+JSON.stringify(buildSegmentFromForm());
+  if (currentRequest !== __bcAudienceRequest || signature !== currentSignature) return;
+  if (!r || r.error) {
+    __bcAudience = null;
+    el.textContent = 'Could not estimate this audience. Change a filter or try again.';
+    return;
+  }
   __bcAudience = r.count;
   const label = formatSegmentLabel(segment);
   el.innerHTML = 'This'+(label?' <span class="muted">('+esc(label)+')</span>':'')+' will send to <b>'+esc(String(r.count))+'</b> subscriber'+(r.count===1?'':'s')+'.';
+}
+function scheduleAudienceUpdate(){
+  clearTimeout(__bcAudienceTimer);
+  __bcAudience = null;
+  const requestId = ++__bcAudienceRequest;
+  const el = $('bcAudience'); if (el) el.textContent = 'Updating subscriber count…';
+  __bcAudienceTimer = setTimeout(() => { updateAudience(requestId); }, 250);
 }
 function buildSummaryHtml(){
   const body = ($('bcBody')?.value || '').trim();
@@ -1106,10 +1205,11 @@ function buildSummaryHtml(){
 let bcPreviewFocusTrap = null;
 function openBroadcastPreview(){
   clearFieldErr('bcBody'); clearFieldErr('bcBotSelect'); clearFormStatus('bcFormStatus');
+  if (!__canBroadcast) { setFormStatus('bcFormStatus','Upgrade your plan to compose broadcast messages.',true); return; }
   const body = ($('bcBody')?.value || '').trim();
   if (!body) { setFieldErr('bcBody','Write a message first'); setFormStatus('bcFormStatus','Write a message first',true); return; }
-  const botId = ($('bcBotSelect')?.value || '').trim() || firstBotId;
-  if (!botId) { setFieldErr('bcBotSelect','Select a bot first'); setFormStatus('bcFormStatus','Select a bot first',true); return; }
+  const botId = ($('bcBotSelect')?.value || '').trim() || firstBroadcastBotId;
+  if (!botId) { setFieldErr('bcBotSelect','Select an active bot first'); setFormStatus('bcFormStatus','Select a bot first',true); return; }
   const n = __bcAudience;
   if (typeof n !== 'number') { setFormStatus('bcFormStatus','Wait for the subscriber count to finish loading, then review again.',true); return; }
   if (typeof n === 'number' && n === 0) { setFormStatus('bcFormStatus','This segment has no subscribers yet — nobody would receive it.',true); return; }
@@ -1142,12 +1242,12 @@ function renderBroadcastPreviewAction(){
   const when = scheduled ? formatBroadcastDate(getScheduledAt()) : 'now';
   const n = __bcAudience ?? '–';
   const whenEl = $('bcPreviewTiming');
-  if (whenEl) whenEl.textContent = scheduled ? 'Scheduled to go at '+when+' local time.' : 'This will send immediately.';
+  if (whenEl) whenEl.textContent = scheduled ? 'Scheduled to go at '+when+' local time.' : 'This broadcast will be queued immediately.';
   const label = $('bcPreviewScheduleLabel'); if (label) label.textContent = getScheduledAt() ? formatBroadcastDate(getScheduledAt()) : '(choose a time above)';
   const confirmBtn = $('bcConfirmBtn');
   if (confirmBtn) confirmBtn.textContent = scheduled
     ? 'Schedule for '+when+' — '+n+' subscribers'
-    : 'Send to '+n+' subscribers now — cannot be undone';
+    : 'Queue for '+n+' subscribers now — cannot be undone';
   document.querySelectorAll('input[name="bcPreviewWhen"]').forEach(r => { r.checked = (r.value === (scheduled ? 'schedule' : 'now')); });
 }
 function selectBroadcastWhen(input){
@@ -1171,9 +1271,9 @@ async function confirmSendBroadcast(btn){
     return;
   }
   const body = ($('bcBody')?.value || '').trim();
-  const botId = ($('bcBotSelect')?.value || '').trim() || firstBotId;
+  const botId = ($('bcBotSelect')?.value || '').trim() || firstBroadcastBotId;
   if (!botId || !body) return;
-  setLoading(btn, 'Sending…');
+  setLoading(btn, isScheduleSelected() ? 'Scheduling…' : 'Queueing…');
   clearFormStatus('bcFormStatus');
   const mediaUrl = ($('bcImage')?.value || '').trim() || null;
   const scheduledAt = isScheduleSelected() ? getScheduledAt() : null;
@@ -1181,7 +1281,7 @@ async function confirmSendBroadcast(btn){
   const r = await api('/broadcasts',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({bot_id:botId, body, media_url: mediaUrl, scheduled_at: scheduledAt, segment})});
   if (r.error) { restoreBtn(btn); setFormStatus('bcFormStatus', r.error + ' — review the draft and try again.', true); return; }
   const wasScheduled = isScheduleSelected();
-  clearBroadcastForm(); closeBroadcastPreview(); setFormStatus('bcFormStatus', wasScheduled ? 'Broadcast scheduled' : 'Broadcast sent', false); restoreBtn(btn); loadExtras();
+  clearBroadcastForm(); closeBroadcastPreview(); setFormStatus('bcFormStatus', wasScheduled ? 'Broadcast scheduled' : 'Broadcast queued', false); restoreBtn(btn); loadExtras();
 }
 async function sendBroadcast(btn){ openBroadcastPreview(); }
 // Send a single test copy of the broadcast to one chat ID before blasting.
@@ -1189,8 +1289,8 @@ async function testBroadcast(btn){
   clearFieldErr('bcBody'); clearFieldErr('bcBotSelect'); clearFieldErr('bcTestChat'); clearFormStatus('bcFormStatus');
   const body = $('bcBody').value.trim();
   if (!body) { setFieldErr('bcBody','Write a message first'); setFormStatus('bcFormStatus','Write a message first',true); return; }
-  const botId = $('bcBotSelect')?.value || firstBotId;
-  if (!botId) { setFieldErr('bcBotSelect','Select a bot first'); setFormStatus('bcFormStatus','Select a bot first',true); return; }
+  const botId = $('bcBotSelect')?.value || firstBroadcastBotId;
+  if (!botId) { setFieldErr('bcBotSelect','Select an active bot first'); setFormStatus('bcFormStatus','Select a bot first',true); return; }
   const chatId = Number(($('bcTestChat')?.value || '').trim());
   if (!chatId || isNaN(chatId)) { setFieldErr('bcTestChat','Enter a valid numeric chat ID'); setFormStatus('bcFormStatus','Enter a valid chat ID',true); return; }
   setLoading(btn, 'Sending…');
@@ -1243,11 +1343,11 @@ async function handleAction(e) {
   if (action === 'toggleToken') { e.preventDefault(); toggleToken(target); return; }
   if (action === 'retryLoad') { e.preventDefault(); location.reload(); return; }
   if (action === 'retryPostbacks') { e.preventDefault(); loadExtras(); return; }
-  if (submitting && action !== 'copyLink') return;
+  if (submitting && action !== 'copyLink' && action !== 'copyCreatedOffer') return;
   submitting = true;
   // Show a loading state on the clicked control for every network-backed action.
   // Pure client-side actions (copy, local bot selection) don't need it.
-  const NO_LOADING = action === 'copyLink' || action === 'selectBot'
+  const NO_LOADING = action === 'copyLink' || action === 'copyCreatedOffer' || action === 'selectBot'
     || action === 'testMessage' || action === 'cancelTestMessage'
     || action === 'sendBroadcast' || action === 'openBroadcastPreview' || action === 'closeBroadcastPreview'
     || action === 'selectBroadcastWhen' || action === 'viewBroadcast' || action === 'closeBroadcastDetail'
@@ -1284,6 +1384,7 @@ async function handleAction(e) {
     else if (action === 'closeBroadcastDetail') { e.preventDefault(); closeBroadcastDetail(); }
     else if (action === 'retryBroadcasts') { e.preventDefault(); loadExtras(); }
     else if (action === 'copyLink') { e.preventDefault(); await copyLink(target); }
+    else if (action === 'copyCreatedOffer') { e.preventDefault(); await copyCreatedOffer(target); }
     else if (action === 'toggleOffer') { e.preventDefault(); await toggleOffer(target); }
     else if (action === 'toggleCommand') { e.preventDefault(); await toggleCommand(target); }
     else if (action === 'deleteCommand') { e.preventDefault(); await deleteCommand(target); }
@@ -1327,12 +1428,12 @@ if (logoutForm) {
 const botSelect = $('botSelect');
 if (botSelect) botSelect.addEventListener('change', (e) => { selectBotById(e.target.value); });
 const bcBotSelect = $('bcBotSelect');
-if (bcBotSelect) bcBotSelect.addEventListener('change', (e) => { firstBotId = e.target.value; saveBroadcastDraft(); updateAudience(); invalidateBroadcastPreview(); });
+if (bcBotSelect) bcBotSelect.addEventListener('change', (e) => { firstBroadcastBotId = e.target.value; saveBroadcastDraft(); scheduleAudienceUpdate(); invalidateBroadcastPreview(); });
 const bcTestChat = $('bcTestChat');
 if (bcTestChat) bcTestChat.addEventListener('input', saveBroadcastDraft);
 ['bcLang','bcMinLastSeen','bcFirstSeen','bcUsername'].forEach(id => {
   const el = $(id);
-  if (el) el.addEventListener('input', () => { saveBroadcastDraft(); updateAudience(); invalidateBroadcastPreview(); });
+  if (el) el.addEventListener('input', () => { saveBroadcastDraft(); scheduleAudienceUpdate(); invalidateBroadcastPreview(); });
 });
 ['bcBody','bcImage','bcSchedule'].forEach(id => {
   const el = $(id);

@@ -8,6 +8,20 @@
 // ============================================================================
 
 import { profileMenuHtml, type ShellUser } from "./shell-nav.js";
+import { brandMarkSvg } from "./brand-assets.js";
+
+const DESIGN_CONTRACT = `<!--
+THESIS: A creator run-sheet workspace turns dashboard state into the next clear action; it refuses the generic dark tile wall.
+OWN-WORLD: Cool-gray canvas, white 12-column modules, deep-navy production rail, cobalt actions, and narrow status cue bands.
+STORY: A non-technical streamer sees what is live, what needs attention, acts immediately, and can reach every feature from one rail.
+FIRST VIEWPORT: Fixed branded rail at left; operational topbar above a status cue, three KPIs, and an asymmetric activity workspace; primary action sits beside the page title.
+FORM: Creator Run-Sheet workspace, selected direction, seed 562938e8.
+FINISH: unreviewed and undocumented is unfinished; this build ends with the finish review, the verdict, and DESIGN.md
+-->`;
+
+const MENU_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>';
+const CLOSE_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>';
+const COLLAPSE_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>';
 
 export type NavItem = NavLinkItem | NavGroupItem;
 
@@ -50,7 +64,7 @@ export function navListHtml(
     const cls = `lb-nav${isActive ? " is-on" : ""}${item.child ? " lb-nav-child" : ""}`;
     const hash = item.hash ? ` data-hash="${esc(item.hash)}"` : "";
     return `<a class="${cls}" href="${esc(item.href)}" data-nav="${esc(item.key)}"${hash}` +
-      `${isActive ? ' aria-current="page"' : ""}>${navIconHtml(item.icon)}${esc(item.label)}</a>`;
+      `${isActive ? ' aria-current="page"' : ""} title="${esc(item.label)}">${navIconHtml(item.icon)}${esc(item.label)}</a>`;
   }).join("");
   return `<nav class="lb-side-group lb-side-nav" data-area="all" aria-label="${esc(label)}">${links}</nav>`;
 }
@@ -90,22 +104,31 @@ export interface ChromeOpts {
   /** Cross-product links rendered under the rail. */
   productLinks?: { label: string; href: string; active?: boolean }[];
   title?: string;
+  titleId?: string;
   subtitle?: string;
+  subtitleId?: string;
   crumbs?: Crumb[];
   user?: ShellUser;
   activePath?: string;
   logoutAction?: string;
   /** Extra markup for the rail footer (e.g. a log out button). */
   footHtml?: string;
+  /** Move account controls to the bottom of the workspace rail. */
+  railProfile?: boolean;
+  /** Enable the persisted desktop rail-collapse control. */
+  collapsible?: boolean;
+  /** The surrounding document already provides the main landmark. */
+  embeddedInMain?: boolean;
   content: string;
 }
 
 function productNavHtml(links: ChromeOpts["productLinks"]): string {
   if (!links || !links.length) return "";
-  const items = links.map((l) =>
-    `<a class="lb-product-link${l.active ? " is-on" : ""}" href="${esc(l.href)}"` +
-    `${l.active ? ' aria-current="page"' : ""}>${esc(l.label)}</a>`
-  ).join("");
+  const items = links.map((l) => {
+    const mark = l.label.toLowerCase().startsWith("telegram") ? "T" : l.label.toLowerCase().startsWith("credits") ? "C" : "S";
+    return `<a class="lb-product-link${l.active ? " is-on" : ""}" href="${esc(l.href)}"` +
+      `${l.active ? ' aria-current="page"' : ""} title="${esc(l.label)}"><span class="lb-product-mark" aria-hidden="true">${mark}</span><span class="lb-product-label">${esc(l.label)}</span></a>`;
+  }).join("");
   return `<nav class="lb-product-nav" aria-label="Product"><span class="label">Product</span>${items}</nav>`;
 }
 
@@ -129,32 +152,47 @@ export function dashboardChromeHtml(opts: ChromeOpts): string {
     : "";
   const crumbs = crumbsHtml(opts.crumbs || []);
   const title = opts.title
-    ? `<div class="v3-head">${crumbs}<h1>${esc(opts.title)}</h1>` +
-      (opts.subtitle ? `<p class="v3-head-sub">${esc(opts.subtitle)}</p>` : "") +
+    ? `<div class="v3-head">${crumbs}<h1${opts.titleId ? ` id="${esc(opts.titleId)}"` : ""}>${esc(opts.title)}</h1>` +
+      (opts.subtitle ? `<p class="v3-head-sub"${opts.subtitleId ? ` id="${esc(opts.subtitleId)}"` : ""}>${esc(opts.subtitle)}</p>` : "") +
       `</div>`
     : "";
-  return `<div class="v3-dash" id="dash">
+  const sideProfile = opts.railProfile ? `<div class="lb-side-profile">${profile}</div>` : "";
+  const topProfile = opts.railProfile ? "" : `<div class="gm-profile-host">${profile}</div>`;
+  const collapse = opts.collapsible
+    ? `<button class="lb-side-collapse" type="button" aria-label="Collapse navigation" aria-pressed="false" aria-controls="lbSide" data-collapse-side>${COLLAPSE_ICON}</button>`
+    : "";
+  const contentOpen = opts.embeddedInMain
+    ? '<div class="lb-bento" id="workspace-content">'
+    : '<main class="lb-bento" id="main-content">';
+  const contentClose = opts.embeddedInMain ? "</div>" : "</main>";
+  return `<div class="v3-dash" id="dash"${opts.railProfile ? ' data-auth-workspace="true"' : ""} data-shell-drawer="shared">
+${DESIGN_CONTRACT}
 <div class="toast" id="status" role="status" aria-live="polite"></div>
 <div class="lb-shell">
 <aside class="lb-side" id="lbSide" aria-label="${esc(opts.navLabel || "Dashboard")} sections">
+<div class="lb-side-brandrow">
+<a class="lb-side-brand" href="/dashboard" aria-label="YourRank dashboard"><span class="lb-brand-mark">${brandMarkSvg()}</span><span class="lb-side-brandcopy"><b>YourRank</b><small>Creator workspace</small></span></a>
+${collapse}
+<button class="lb-side-close" type="button" aria-label="Close navigation" data-close-side="true">${CLOSE_ICON}</button>
+</div>
 ${head}
-<button class="lb-side-close" type="button" aria-label="Close navigation" data-close-side="true">×</button>
 ${navListHtml(opts.nav, opts.active, opts.activeHash || "", opts.navLabel || "Dashboard")}
 ${productNavHtml(opts.productLinks)}
 ${opts.footHtml ? `<div class="lb-side-foot">${opts.footHtml}</div>` : ""}
+${sideProfile}
 </aside>
 <div class="lb-main">
 <header class="lb-topbar" id="lbTopbar">
-<button class="lb-menu lb-topbar-menu" id="lbMenu" type="button" aria-label="Show sections" aria-expanded="false" aria-controls="lbSide">☰</button>
-<a class="lb-brand" href="/dashboard" aria-label="YourRank dashboard"><span class="lb-brand-mark">Y</span><span class="lb-brand-txt">YourRank</span></a>
-<div class="lb-topbar-actions"><div class="gm-profile-host">${profile}</div></div>
+<button class="lb-menu lb-topbar-menu" id="lbMenu" type="button" aria-label="Show sections" aria-expanded="false" aria-controls="lbSide">${MENU_ICON}</button>
+<a class="lb-brand" href="/dashboard" aria-label="YourRank dashboard"><span class="lb-brand-mark">${brandMarkSvg()}</span><span class="lb-brand-txt">YourRank</span></a>
+<div class="lb-topbar-actions">${topProfile}</div>
 </header>
-<main class="lb-bento" id="main-content">
+${contentOpen}
 <div class="v3-stack">
 ${title}
 ${opts.content}
 </div>
-</main>
+${contentClose}
 </div>
 </div>
 </div>`;

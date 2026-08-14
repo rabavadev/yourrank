@@ -1,9 +1,9 @@
 // Multi-section, branded streamer site shell (Home, Leaderboard, Shop, Games,
-// My Credits).
+// Board credits).
 //
-// The chrome is the approved "console" design: a fixed 260px sidebar, a 72px
-// utility header, near-black panels with hairline borders and one accent
-// colour. It ships as a single stylesheet (/assets/site-shell.css) plus a small
+// The chrome is a live-production credential system: a fixed navigation rail,
+// an operational header, asphalt panels, cobalt actions and a board-specific
+// accent cue. It ships as a single stylesheet (/assets/site-shell.css) plus a small
 // progressive-enhancement script (/assets/site-shell.js) — no CDN, no runtime
 // CSS framework, no chart library.
 //
@@ -18,30 +18,41 @@ import {
   safeUrl,
 } from "./public-render-helpers.js";
 import { gamesIslandHead, gamesIslandMount } from "./games-embed.js";
+import { generateAvatarSvg } from "../../../shared/avatar.js";
 
+// C-02: SECTION_TITLES was an exact duplicate of SECTION_LABELS — removed.
 const SECTION_LABELS = {
   home: "Home",
   leaderboard: "Leaderboard",
   shop: "Shop",
   games: "Games",
-  me: "My Credits",
+  me: "Board credits",
 };
 
-const SECTION_TITLES = {
-  home: "Home",
-  leaderboard: "Leaderboard",
-  shop: "Shop",
-  games: "Games",
-  me: "My Credits",
-};
-
-const HEX = /^#[0-9a-fA-F]{6}$/;
+// C-10: Widened to accept 3-, 6-, and 8-digit hex values.
+const HEX = /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/;
 const PUBLIC_ACCENT_DEFAULT = {
-  value: "var(--yr-color-brand-kick)",
+  value: "var(--yr-color-board-accent)",
   ink: "#000000",
 };
 const CREDITS_DISCLAIMER = "Credits are free loyalty points earned from channel-point redemptions. No purchase, no cash value, no cashout.";
-const FONTS_HREF = "https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap";
+
+// B-01: Build font URL dynamically from the board's active font choice so that
+// boards using Oswald, Playfair Display, Rajdhani or Bebas Neue actually load.
+const FONT_GF_PARAMS = {
+  Inter:              "family=Inter:wght@400;500;600;700",
+  Oswald:             "family=Oswald:wght@400;500;600;700",
+  "Playfair Display": "family=Playfair+Display:wght@400;500;600;700",
+  Rajdhani:           "family=Rajdhani:wght@400;500;600;700",
+  "Bebas Neue":       "family=Bebas+Neue",
+};
+const FIRA_PARAMS = "family=Fira+Code:wght@400;500;600;700&family=Fira+Sans:wght@300;400;500;600;700";
+
+function buildFontsHref(font) {
+  const custom = font && font !== "Fira Sans" ? FONT_GF_PARAMS[font] : null;
+  const params = custom ? `${FIRA_PARAMS}&${custom}` : FIRA_PARAMS;
+  return `https://fonts.googleapis.com/css2?${params}&display=swap`;
+}
 
 /* ── tiny inline icon set (replaces the mockup's Font Awesome) ────────── */
 const S = 'viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"';
@@ -54,15 +65,16 @@ const ICONS = {
   book: `<svg ${S}><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v15H6.5A2.5 2.5 0 0 0 4 20.5z"/><path d="M4 18.5V5.5"/></svg>`,
   kick: `<svg ${S}><path d="M6 4v16"/><path d="M18 4l-7 8 7 8"/></svg>`,
   search: `<svg ${S}><circle cx="11" cy="11" r="7"/><path d="M16.5 16.5 21 21"/></svg>`,
-  bell: `<svg ${S}><path d="M6 9a6 6 0 0 1 12 0c0 5 2 6 2 6H4s2-1 2-6"/><path d="M10 19a2 2 0 0 0 4 0"/></svg>`,
+  account: `<svg ${S}><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>`,
   bars: `<svg ${S}><path d="M3 6h18M3 12h18M3 18h18"/></svg>`,
+  close: `<svg ${S}><path d="m6 6 12 12M18 6 6 18"/></svg>`,
   chart: `<svg ${S}><path d="M3 3v18h18"/><path d="M7 15l4-5 3 3 5-7"/></svg>`,
   trophy: `<svg ${S}><path d="M8 21h8M12 17v4"/><path d="M7 4h10v5a5 5 0 0 1-10 0z"/></svg>`,
   hourglass: `<svg ${S}><path d="M7 3h10M7 21h10"/><path d="M8 3c0 4 4 5 4 9s-4 5-4 9"/><path d="M16 3c0 4-4 5-4 9s4 5 4 9"/></svg>`,
   arrow: `<svg ${S}><path d="M5 12h14M13 6l6 6-6 6"/></svg>`,
   crown: `<svg ${S}><path d="M4 18h16"/><path d="M4 18 3 7l5 4 4-6 4 6 5-4-1 11"/></svg>`,
   medal: `<svg ${S}><circle cx="12" cy="15" r="5"/><path d="M8 4h8l-2.5 6h-3z"/></svg>`,
-  bomb: `<svg ${S}><circle cx="10" cy="14" r="6"/><path d="M15 9l2-2M17 5l1.5 1.5M20 8l1.5-1.5"/></svg>`,
+  
   gift: `<svg ${S}><rect x="3" y="8" width="18" height="12" rx="1"/><path d="M12 8v12M3 13h18"/><path d="M12 8S10.5 4 8.5 4a2 2 0 0 0 0 4z"/><path d="M12 8s1.5-4 3.5-4a2 2 0 0 1 0 4z"/></svg>`,
 };
 
@@ -101,16 +113,11 @@ function agoStamp(d) {
   return `${Math.floor(hours / 24)}D_AGO`;
 }
 
-function initials(name) {
-  const parts = String(name || "").trim().split(/\s+/);
-  return ((parts[0]?.[0] || "") + (parts[1]?.[0] || "")).toUpperCase() || "?";
-}
-
 function sectionList(sections) {
   return ["home", "leaderboard", "shop", "games", "me"].filter((s) => sections[s] !== false);
 }
 
-/** Streamer accent, falling back to the design's default lime. */
+/** Streamer accent, falling back to the public viewer's cobalt board cue. */
 function accentColor(br, options) {
   const candidates = [br?.accentA, options?.accent];
   for (const c of candidates) {
@@ -170,6 +177,7 @@ function sidebar({ b, slug, section, siteSections, homeUrl, isCustomDomain, logo
   const resources = [
     kickUrl ? `<a class="yr-nav-a" href="${kickUrl}" target="_blank" rel="noopener">${ICONS.kick} Watch on Kick</a>` : "",
     hasCta && casino ? `<a class="yr-nav-a" href="${ctaHref}" target="_blank" rel="noopener">${ICONS.gift} Join ${esc(casino)}</a>` : "",
+    viewer ? `<a class="yr-nav-a" href="/me">${ICONS.account} All boards &amp; account</a>` : "",
     `<button class="yr-nav-a" type="button" data-feedback-open>${ICONS.book} Send feedback</button>`,
   ].filter(Boolean).join("");
 
@@ -178,12 +186,13 @@ function sidebar({ b, slug, section, siteSections, homeUrl, isCustomDomain, logo
     : "";
   const name = esc(b.name || slug);
 
+  const boardCreditsHref = `${homeUrl}${siteSectionHref("me", slug, isCustomDomain)}`;
   const foot = viewer
-    ? `<div class="yr-user"><span class="yr-user-l"><span class="yr-ava">${avatarHtml(viewer)}</span><span><span class="yr-user-name">${esc(viewerName(viewer))}</span><span class="yr-user-sub">Signed in with ${viewer.kick_username ? "Kick" : "Discord"}</span></span></span></div>`
-    : `<a class="yr-user" href="${homeUrl}${siteSectionHref("me", slug, isCustomDomain)}"><span class="yr-user-l"><span class="yr-ava">?</span><span><span class="yr-user-name">Guest</span><span class="yr-user-sub">Not signed in</span></span></span></a>`;
+    ? `<a class="yr-user" href="${boardCreditsHref}"><span class="yr-user-l"><span class="yr-ava">${avatarHtml(viewer)}</span><span><span class="yr-user-name">${esc(viewerName(viewer))}</span><span class="yr-user-sub">Credits on this board</span></span></span><span class="yr-user-go" aria-hidden="true">${ICONS.arrow}</span></a>`
+    : `<a class="yr-user" href="${boardCreditsHref}"><span class="yr-user-l"><span class="yr-ava">?</span><span><span class="yr-user-name">Board credits</span><span class="yr-user-sub">Sign in to view balance</span></span></span><span class="yr-user-go" aria-hidden="true">${ICONS.arrow}</span></a>`;
 
   return `<aside class="yr-side" id="yr-side" aria-label="Site sections" tabindex="-1">
-<div class="yr-side-head"><a class="yr-brand" href="${homeUrl}${siteSectionHref("home", slug, isCustomDomain)}">${mark}${name}</a><span class="yr-live" aria-hidden="true"><i></i><b></b></span><span class="yr-live-txt">Live</span></div>
+<div class="yr-side-head"><div class="yr-board-id"><a class="yr-brand" href="${homeUrl}${siteSectionHref("home", slug, isCustomDomain)}">${mark}${name}</a><span class="yr-board-kind">Public board</span></div><button class="yr-side-close" id="yr-side-close" type="button" aria-label="Close sections">${ICONS.close}</button></div>
 <nav class="yr-nav yr-noscroll" aria-label="Sections">
 ${items}
 <div class="yr-nav-group">Resources</div>
@@ -201,24 +210,27 @@ function viewerName(viewer) {
 function avatarHtml(viewer) {
   return viewer?.avatar_url
     ? `<img src="${esc(viewer.avatar_url)}" alt="" />`
-    : esc(initials(viewerName(viewer)));
+    : generateAvatarSvg(viewerName(viewer), 26);
 }
 
 function header({ r, viewer, balance, returnTo, searchable, homeUrl, slug, isCustomDomain }) {
+  // U-02 / 1.14: The non-searchable state was an <a> that looked like an <input>.
+  // Now it is an unambiguous labelled link, clearly distinct from the real input.
+  // L-03 / 1.13: Removed the floating bare ${ICONS.search} SVG between the menu
+  // button and the search input — it had no wrapper and produced a stray flex item.
   const search = searchable
-    ? `<input class="yr-search" id="yr-search" type="search" placeholder="Search the board…" aria-label="Search the board" autocomplete="off" />`
-    : `<a class="yr-search yr-search--link" href="${homeUrl}${siteSectionHref("leaderboard", slug, isCustomDomain)}">Search the board…</a>`;
+    ? `<label class="yr-search-label sr-only" for="yr-search">Search the board</label><input class="yr-search" id="yr-search" type="search" placeholder="Search the board…" aria-label="Search the board" autocomplete="off" />`
+    : `<a class="yr-search-link" href="${homeUrl}${siteSectionHref("leaderboard", slug, isCustomDomain)}" aria-label="Go to leaderboard">${ICONS.search}<span>Leaderboard</span></a>`;
 
   const right = viewer
-    ? `<a class="yr-bell" href="${homeUrl}${siteSectionHref("me", slug, isCustomDomain)}" aria-label="Credit activity">${ICONS.bell}<i></i></a>
+    ? `<a class="yr-account-link" href="/me" aria-label="All boards and global viewer account">${ICONS.account}<span>All boards</span></a>
 <span class="yr-vr"></span>
-<a class="yr-bal" href="${homeUrl}${siteSectionHref("me", slug, isCustomDomain)}"><span class="yr-bal-txt"><span class="yr-bal-num">${formatNumber(balance)}</span><span class="yr-bal-unit">Creds</span></span><span class="yr-ava">${avatarHtml(viewer)}</span></a>`
+<a class="yr-bal" href="${homeUrl}${siteSectionHref("me", slug, isCustomDomain)}" aria-label="Credits on this board: ${formatNumber(balance)}"><span class="yr-bal-txt"><span class="yr-bal-num">${formatNumber(balance)}</span><span class="yr-bal-unit">Board CR</span></span><span class="yr-ava">${avatarHtml(viewer)}</span></a>`
     : signInLink(r, returnTo, "yr-btn yr-btn--ghost");
 
   return `<header class="yr-header">
 <div class="yr-header-l">
 <button class="yr-menu" id="yr-menu" type="button" aria-label="Open sections" aria-controls="yr-side" aria-expanded="false">${ICONS.bars}</button>
-${ICONS.search}
 ${search}
 </div>
 <div class="yr-header-r">${right}</div>
@@ -247,10 +259,9 @@ function signInButton(r, returnTo) {
 
 function hero({ eyebrow, title, lede, right }) {
   return `<section class="yr-hero">
-<div class="yr-hero-blob" aria-hidden="true"></div>
 <div class="yr-hero-l">
-${eyebrow ? `<p class="yr-eyebrow"><i aria-hidden="true"></i>${esc(eyebrow)}</p>` : ""}
 <h1 class="yr-h1">${esc(title)}</h1>
+${eyebrow ? `<p class="yr-cue">${esc(eyebrow)}</p>` : ""}
 ${lede ? `<p class="yr-lede">${lede}</p>` : ""}
 </div>
 ${right || ""}
@@ -282,8 +293,11 @@ function sectionHead(title, right = "") {
   return `<div class="yr-sec-head"><h2 class="yr-sec-title">${esc(title)}</h2>${right}</div>`;
 }
 
-/** Inline 7-day area chart. No chart library: one path, one average line. */
+/** Inline 7-day line chart. No chart library: one path, one average line. */
 function creditsChart(series) {
+  const CHART_GRID_COLOR = "#2b2b30";
+  const CHART_AVG_COLOR  = "#3d3d45";
+
   const w = 800;
   const h = 320;
   const padL = 8;
@@ -295,19 +309,16 @@ function creditsChart(series) {
   const y = (v) => (h - padB) - (v / max) * (h - padB - 16);
   const pts = values.map((v, i) => `${(padL + i * step).toFixed(1)},${y(v).toFixed(1)}`);
   const line = `M${pts.join("L")}`;
-  const area = `${line}L${(padL + (values.length - 1) * step).toFixed(1)},${h - padB}L${padL},${h - padB}Z`;
   const grid = [0.25, 0.5, 0.75, 1].map((f) => {
     const gy = (y(max * f)).toFixed(1);
-    return `<line x1="${padL}" x2="${w - padL}" y1="${gy}" y2="${gy}" stroke="#1f2937" stroke-width="1" vector-effect="non-scaling-stroke" />`;
+    return `<line x1="${padL}" x2="${w - padL}" y1="${gy}" y2="${gy}" stroke="${CHART_GRID_COLOR}" stroke-width="1" vector-effect="non-scaling-stroke" />`;
   }).join("");
   const labels = series.map((p) => `<span>${esc(p.label)}</span>`).join("");
   return `<div class="yr-chart">
 <svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" role="img" aria-label="Credits earned per day, last 7 days">
-<defs><linearGradient id="yr-fill" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--yr-accent)" stop-opacity="0.25" /><stop offset="1" stop-color="var(--yr-accent)" stop-opacity="0" /></linearGradient></defs>
 ${grid}
-<path d="${area}" fill="url(#yr-fill)" />
-<path d="${line}" fill="none" stroke="var(--yr-accent)" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linejoin="round" />
-<line x1="${padL}" x2="${w - padL}" y1="${y(avg).toFixed(1)}" y2="${y(avg).toFixed(1)}" stroke="#374151" stroke-width="1" stroke-dasharray="4 4" vector-effect="non-scaling-stroke" />
+<path d="${line}" fill="none" stroke="var(--yr-accent-readable)" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linejoin="round" />
+<line x1="${padL}" x2="${w - padL}" y1="${y(avg).toFixed(1)}" y2="${y(avg).toFixed(1)}" stroke="${CHART_AVG_COLOR}" stroke-width="1" stroke-dasharray="4 4" vector-effect="non-scaling-stroke" />
 </svg>
 <div class="yr-legend yr-legend--x">${labels}</div>
 </div>`;
@@ -375,8 +386,12 @@ function rewardCard({ item, viewer, balance, blocked, signIn }) {
   else if (short > 0) action = `<span class="yr-act yr-act--off">${formatNumber(short)} short</span>`;
   else action = `<button class="yr-act" type="button" data-redeem="${esc(item.id)}" data-reward-name="${esc(item.name)}" data-reward-cost="${cost}">Redeem</button>`;
 
-  const meter = viewer && inStock && short > 0 && cost > 0
-    ? `<div class="yr-meter" aria-hidden="true"><i data-fill="${Math.min(100, Math.round((balance / cost) * 20) * 5)}"></i></div>`
+  // A-08: was aria-hidden="true" with no alternative; replaced with a proper progressbar.
+  const fill = viewer && inStock && short > 0 && cost > 0
+    ? Math.min(100, Math.round((balance / cost) * 20) * 5)
+    : null;
+  const meter = fill !== null
+    ? `<div class="yr-meter" role="progressbar" aria-valuenow="${fill}" aria-valuemin="0" aria-valuemax="100" aria-label="Reward progress: ${fill}%"><i data-fill="${fill}"></i></div>`
     : "";
 
   return `<article class="yr-item${off ? " yr-item--off" : ""}">
@@ -421,7 +436,7 @@ export async function renderSite({ r, section, viewer, viewerData, opts }) {
   const returnTo = sectionUrl;
 
   const titleBase = esc(b.name || slug);
-  const sectionTitle = SECTION_TITLES[section] || section;
+  const sectionTitle = SECTION_LABELS[section] || section;
   const title = opts.pageTitle || (section === "home"
     ? `${titleBase} — ${esc(b.tagline || "Leaderboard & Rewards")}`
     : `${sectionTitle} · ${titleBase}`);
@@ -433,7 +448,7 @@ export async function renderSite({ r, section, viewer, viewerData, opts }) {
   const ctx = {
     r, data, b, br, section, siteSections, slug, isCustomDomain, homeUrl, logoUrl,
     viewer, viewerData, viewerOnSite, balance, casino, pool, period, ctaHref, hasCta,
-    returnTo, nonce, watermark,
+    returnTo, nonce, watermark, isDemo: !!opts.isDemo,
   };
 
   const mainInner = section == null && typeof opts.contentHtml === "string" ? opts.contentHtml : (section === "home" ? homeMain(ctx)
@@ -445,6 +460,11 @@ export async function renderSite({ r, section, viewer, viewerData, opts }) {
 
   const footer = siteFooter({ data, b, siteSections, slug, isCustomDomain, homeUrl, watermark });
 
+  // B-01: Dynamic font URL based on board's active font.
+  const fontsHref = buildFontsHref(data.theme?.font);
+  // U-01: Compute ink once and share between .yr-site and #gx-root.
+  const accentInkValue = accentInkFor(accent);
+
   const head = `<!DOCTYPE html>
 <html lang="en"><head>
 <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -453,16 +473,24 @@ export async function renderSite({ r, section, viewer, viewerData, opts }) {
 <link rel="canonical" href="${canonicalUrl}" /><meta property="og:url" content="${canonicalUrl}" />
 <meta name="twitter:card" content="${logoUrl ? "summary_large_image" : "summary"}" /><meta name="twitter:title" content="${titleBase}" /><meta name="twitter:description" content="${esc(desc)}" /><meta property="og:image" content="${ogImageUrl}" /><meta name="twitter:image" content="${ogImageUrl}" />
 <link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="${FONTS_HREF}" rel="stylesheet" media="print" data-async />
+<link href="${fontsHref}" rel="stylesheet" media="print" data-async />
 <script nonce="${nonce}">document.querySelector('link[data-async]').onload=function(){this.media='all'};</script>
-<noscript><link href="${FONTS_HREF}" rel="stylesheet" /></noscript>
+<noscript><link href="${fontsHref}" rel="stylesheet" /></noscript>
 <link rel="stylesheet" href="/assets/site-shell.css" />
 ${section === "games" ? gamesIslandHead() : ""}
-<style nonce="${nonce}" data-theme-tokens>.yr-site{--yr-accent:${accent}}${section === "games" ? `#gx-root{--gx-accent:${accent};--gx-accent-ink:${accentInkFor(accent)}}` : ""}</style>
+<style nonce="${nonce}" data-theme-tokens>.yr-site{--yr-accent:${accent};--yr-accent-ink:${accentInkValue}}${section === "games" ? `#gx-root{--gx-accent:${accent};--gx-accent-ink:${accentInkValue}}` : ""}</style>
 ${opts.csrfToken ? `<meta name="csrf-token" content="${esc(opts.csrfToken)}" />` : ""}
 </head>`;
 
   const body = `<body class="yr-site" data-section="${esc(section)}" data-slug="${esc(slug)}" data-custom-domain="${isCustomDomain ? "true" : "false"}" data-currency="${esc(data.brand?.currency || "$")}">
+<!-- PUBLIC-VIEWER-DIRECTION
+THESIS: A production cue sheet for following one board, not a generic gaming dashboard.
+OWN-WORLD: Asphalt surfaces, fog-white type, cobalt actions, board-accent credentials, orange warnings, mint success, 6–10px geometry.
+STORY: Identify the board, follow standings, use board credits, and reach the global viewer account without losing scope.
+FIRST VIEWPORT: Board credential rail, operational header, then one bordered briefing field with the current page task and action.
+FORM: Brief-pinned live-production credential system; no concept roll.
+FINISH: unreviewed and undocumented is unfinished; this build ends with the finish review, the verdict, and DESIGN.md
+-->
 <a class="yr-sr" href="#main-content">Skip to content</a>
 ${sidebar({ b, slug, section, siteSections, homeUrl, isCustomDomain, logoUrl, viewer, balance, ctaHref, hasCta, casino, kickUrl: kickUrl ? safeUrl(kickUrl) : null })}
 <div class="yr-region">
@@ -481,9 +509,10 @@ ${feedbackModal({ slug })}
 }
 
 function feedbackModal({ slug }) {
-  return `<dialog id="yr-feedback" class="yr-modal" aria-label="Send feedback">
+  // A-07: dialog now uses aria-labelledby to bind the heading correctly.
+  return `<dialog id="yr-feedback" class="yr-modal" aria-labelledby="yr-feedback-title">
 <form class="yr-modal-in" method="dialog">
-<h2>Send feedback</h2>
+<h2 id="yr-feedback-title">Send feedback</h2>
 <p class="yr-note">Tell us what works and what doesn't. No contact details needed.</p>
 <textarea name="message" rows="5" minlength="10" maxlength="2000" placeholder="What's working? What's not?" required aria-label="Your feedback"></textarea>
 <p class="yr-modal-status" id="yr-feedback-status" role="status" aria-live="polite"></p>
@@ -643,7 +672,9 @@ function boardMain(ctx) {
   }).join("");
 
   const rows = players.map((p, i) => `<tr data-name="${esc(String(p.name || "").toLowerCase())}" data-position="${Number(p.rank) || i + 1}">
-<td class="yr-idx">${String(Number(p.rank) || i + 1).padStart(2, "0")}</td>
+  // U-09: Removed .padStart(2,"0") — leading zeros cause AT to say "zero one".
+  // Alignment is preserved via CSS tabular-nums on .yr-idx.
+<td class="yr-idx">${Number(p.rank) || i + 1}</td>
 <td><a href="${playerHref(p.name)}">${esc(p.name)}</a></td>
 <td class="yr-mono yr-r">${esc(formatMoney(currency, p.wagered))}</td>
 <td class="yr-mono yr-r${!hidePrizes && p.prize ? " yr-gold" : ""}">${hidePrizes ? "—" : (p.prize ? esc(formatMoney(currency, p.prize)) : "—")}</td>
@@ -746,11 +777,6 @@ function gamesMain(ctx) {
       : `<div class="yr-hero-r">${signInButton(r, returnTo)}</div>`,
   });
 
-  if (!viewer) {
-    return `${heroHtml}
-<div class="yr-gate"><h2>Sign in to play originals</h2><p>Rounds are tied to your account and settled on the server. They cost credits only — no money in, no money out.</p>${signInButton(r, returnTo)}</div>`;
-  }
-
   const mount = gamesIslandMount({
     slug,
     nonce,
@@ -759,20 +785,26 @@ function gamesMain(ctx) {
     creditsUrl: `${homeUrl}${siteSectionHref("me", slug, isCustomDomain)}`,
     signInUrl: `/api/viewer/auth/kick?returnTo=${encodeURIComponent(returnTo)}`,
     header: false,
+    demoAllowed: true,
   });
+
+  if (!viewer && !ctx.isDemo) {
+    return `${heroHtml}
+<div class="yr-gate"><h2>Sign in to play originals</h2><p>Rounds are tied to your account and settled on the server. They cost credits only — no money in, no money out.</p>${signInButton(r, returnTo)}</div>`;
+  }
 
   return `${heroHtml}
 ${sectionHead("Available games", `<span class="yr-panel-meta">Server decided · provably fair</span>`)}
 ${mount}`;
 }
 
-/* ── My Credits ───────────────────────────────────────────────────────── */
+/* ── Board credits ────────────────────────────────────────────────────── */
 
 function meMain(ctx) {
   const { r, b, slug, viewer, viewerData, viewerOnSite, balance, returnTo, homeUrl, isCustomDomain, siteSections } = ctx;
   if (!viewer) {
-    return `${hero({ eyebrow: "LOYALTY CREDITS", title: "My Credits", lede: "Sign in to see your balance, credit history and reward redemptions.", right: `<div class="yr-hero-r">${signInButton(r, returnTo)}</div>` })}
-<div class="yr-gate"><h2>Sign in to see your credits</h2><p>${esc(CREDITS_DISCLAIMER)}</p>${signInButton(r, returnTo)}</div>`;
+    return `${hero({ eyebrow: "THIS BOARD ONLY", title: "Board credits", lede: "Sign in to see the balance, credit history and reward redemptions tied to this board.", right: `<div class="yr-hero-r">${signInButton(r, returnTo)}</div>` })}
+<div class="yr-gate"><h2>Sign in to see board credits</h2><p>${esc(CREDITS_DISCLAIMER)}</p>${signInButton(r, returnTo)}</div>`;
   }
 
   const ledger = viewerData?.ledger || [];
@@ -782,10 +814,10 @@ function meMain(ctx) {
   const shopHref = `${homeUrl}${siteSectionHref("shop", slug, isCustomDomain)}`;
 
   const heroHtml = hero({
-    eyebrow: "LOYALTY CREDITS",
-    title: viewerName(viewer),
-    lede: `Every credit here came from ${esc(b.name || slug)}'s Kick channel-point rewards. ${esc(CREDITS_DISCLAIMER)}`,
-    right: `<div class="yr-hero-r">${heroStat("Balance", formatNumber(balance))}${siteSections.shop !== false ? `<a class="yr-btn" href="${shopHref}">Spend credits</a>` : ""}</div>`,
+    eyebrow: "THIS BOARD ONLY",
+    title: "Board credits",
+    lede: `Signed in as <b>${esc(viewerName(viewer))}</b>. Every credit here came from ${esc(b.name || slug)}'s Kick channel-point rewards. <a class="yr-inline-link" href="/me">View all boards and your global account</a>. ${esc(CREDITS_DISCLAIMER)}`,
+    right: `<div class="yr-hero-r">${heroStat("Balance on this board", formatNumber(balance))}${siteSections.shop !== false ? `<a class="yr-btn" href="${shopHref}">Spend credits</a>` : ""}</div>`,
   });
 
   if (emptyCredits) {

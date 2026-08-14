@@ -41,12 +41,12 @@ async function loadSessions() {
       return;
     }
     let html =
-      '<div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Started</th><th>Expires</th><th><span class="sr-only">Actions</span></th></tr></thead><tbody>';
+      '<div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Device / Started</th><th>Expires</th><th class="ta-r">Status</th></tr></thead><tbody>';
     for (const s of data.sessions) {
-      const label = s.current ? '<span class="pill pill--info">This device</span>' : "";
-      const created = s.createdAt ? new Date(s.createdAt).toLocaleString() : "—";
-      const expires = s.expiresAt ? new Date(s.expiresAt).toLocaleString() : "—";
-      html += `<tr><td>${created}</td><td>${expires}</td><td class="ta-r">${label}</td></tr>`;
+      const label = s.current ? '<span class="pill pill--good">● Current device (Active)</span>' : '<span class="pill pill--muted">Other browser</span>';
+      const created = s.createdAt ? new Date(s.createdAt).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" }) : "—";
+      const expires = s.expiresAt ? new Date(s.expiresAt).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" }) : "—";
+      html += `<tr><td><div class="session-device-cell"><strong>💻 Web Session</strong><span class="hint">${created}</span></div></td><td><span class="hint">${expires}</span></td><td class="ta-r">${label}</td></tr>`;
     }
     html += "</tbody></table></div>";
     list.innerHTML = html;
@@ -58,9 +58,38 @@ async function loadSessions() {
   }
 }
 
+function wirePasswordToggles() {
+  document.querySelectorAll("[data-pwd-toggle]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const targetId = btn.getAttribute("data-pwd-toggle");
+      const input = targetId ? document.getElementById(targetId) : null;
+      if (!input) return;
+      const isPassword = input.type === "password";
+      input.type = isPassword ? "text" : "password";
+      const eyeOpen = btn.querySelector(".eye-open");
+      const eyeClosed = btn.querySelector(".eye-closed");
+      if (eyeOpen && eyeClosed) {
+        eyeOpen.style.display = isPassword ? "none" : "";
+        eyeClosed.style.display = isPassword ? "" : "none";
+      }
+      btn.setAttribute("aria-label", isPassword ? "Hide password" : "Show password");
+    });
+  });
+
+  const newPwdInput = $("accNewPassword");
+  const reqLen = $("pwdReqLength");
+  if (newPwdInput && reqLen) {
+    newPwdInput.addEventListener("input", () => {
+      const met = newPwdInput.value.length >= 8;
+      reqLen.classList.toggle("is-met", met);
+    });
+  }
+}
+
 function wireChangePassword() {
   const save = $("accChangePassword");
   if (!save) return;
+  wirePasswordToggles();
   save.addEventListener("click", async () => {
     const status = $("accPasswordStatus");
     const current = $("accCurrentPassword").value.trim();

@@ -4,15 +4,42 @@ import { markDirty, setState, state, subscribe } from "./dashboard/state.js";
 import { currentRoute, navTo, setupShell } from "./dashboard/shell.js";
 import { renderBoardSwitcher, renderSidebarBoardSwitcher, renderBoardsPage } from "./dashboard/boards.js";
 import { renderPlayers } from "./dashboard/players.js";
-import { fitDesignPreview, loadCreditsStatus, loadStats, refreshDesignPreview, renderArchives, renderBranding, renderDomain, renderDomainStatus, renderBoardStatus, renderEditorTimestamps, renderEmbedShare, renderLegal, renderNotifications, renderOverlay, renderPlayerFields, renderPrizes, renderSections, renderSocials } from "./dashboard/site.js";
+import { fitDesignPreview, loadCreditsStatus, loadStats, refreshDesignPreview, renderArchives, renderBranding, renderDomain, renderDomainStatus, renderBoardStatus, renderEditorTimestamps, renderEmbedShare, renderLegal, renderNotifications, renderOverlay, renderPlayerFields, renderPrizes, renderSections, renderSocials, wirePublishAction } from "./dashboard/site.js";
 import { renderOverviewSummary } from "./dashboard/overview.js";
 import { renderReferrals } from "./dashboard/referrals.js";
 import { initPerformance } from "./dashboard/performance.js";
 import { setupSettingsScreen } from "./dashboard/account.js";
 import { initGames } from "./dashboard/games.js";
 import { updateProfileMenu } from "./dashboard/profile-menu.js";
+import "./dashboard/help-drawer.js";
+import "./dashboard/command-palette.js";
+
+const LOADING_MESSAGES = [
+  "Loading your workspace…",
+  "Preparing rank insights…",
+  "Setting up your dashboard…",
+];
+let loadingMessageTimer;
+
+function startLoadingCopy() {
+  clearInterval(loadingMessageTimer);
+  let index = 0;
+  const label = $("loadingStatus");
+  if (!label) return;
+  label.textContent = LOADING_MESSAGES[index];
+  loadingMessageTimer = setInterval(() => {
+    index = (index + 1) % LOADING_MESSAGES.length;
+    label.textContent = LOADING_MESSAGES[index];
+  }, 1200);
+}
+
+function stopLoadingCopy() {
+  clearInterval(loadingMessageTimer);
+  loadingMessageTimer = undefined;
+}
 
 async function init() {
+  startLoadingCopy();
   let me;
   try { me = await (await fetch("/api/auth/me")).json(); } catch (err) { logError("auth/me", err); me = null; }
   if (!me || !me.ok || !me.user) { location.href = "/login"; return; }
@@ -42,8 +69,11 @@ async function init() {
   const loading = $("loading");
   const renderSiteLoadError = (message) => {
     const detail = message || "The board service returned an unexpected response.";
+    stopLoadingCopy();
     if (loading) {
-      loading.innerHTML = `<div class="error-state" role="alert"><span class="error-icon" aria-hidden="true">⚠</span><p>Couldn't load your board.</p><p class="hint">${esc(detail)}</p><button class="btn btn--sm" id="retryBtn" type="button">Retry</button><a class="btn btn--sm btn--ghost" href="/dashboard">Open dashboard</a></div>`;
+      loading.classList.add("is-error");
+      loading.setAttribute("aria-busy", "false");
+      loading.innerHTML = `<div class="error-state" role="alert"><span class="error-icon" aria-hidden="true">!</span><p>Couldn't load your board.</p><p class="hint">${esc(detail)}</p><button class="btn btn--sm" id="retryBtn" type="button">Retry</button><a class="btn btn--sm btn--ghost" href="/dashboard">Open dashboard</a></div>`;
     }
     const status = $("status");
     if (status) {
@@ -89,6 +119,25 @@ async function init() {
   const d = p.data || {};
   const b = d.brand || {};
   state.EXTRA = { chips: d.partner?.chips, whyStats: d.whyStats, rules: d.rules, socials: p.socials || d.socials || [], sections: d.sections, siteSections: d.siteSections || {}, playerFields: d.playerFields || {}, text: (d.branding && d.branding.text) || {}, legal: d.legal || {} };
+  state.PLAYERS = Array.isArray(d.players) ? d.players : [];
+  document.querySelectorAll("a[href]").forEach((link) => {
+    if (!state.ACTIVE_SITE_ID) return;
+    if (link.dataset.productLink === "sites") {
+      link.href = `/dashboard?board=${encodeURIComponent(state.ACTIVE_SITE_ID)}`;
+      return;
+    }
+    const target = new URL(link.getAttribute("href"), location.origin);
+    const creditsPath = target.pathname.startsWith("/dashboard/rewards/") || target.pathname.startsWith("/dashboard/audience/");
+    const sitePath = target.pathname === "/dashboard" || target.pathname === "/dashboard/boards" || target.pathname === "/dashboard/games" || target.pathname === "/dashboard/settings/board" || target.pathname.startsWith("/dashboard/editor/") || target.pathname.startsWith("/dashboard/analytics/");
+    if (creditsPath) {
+      target.searchParams.set("siteId", state.ACTIVE_SITE_ID);
+    } else if (sitePath) {
+      target.searchParams.set("board", state.ACTIVE_SITE_ID);
+    } else {
+      return;
+    }
+    link.href = `${target.pathname}${target.search}${target.hash}`;
+  });
   if (hasEditor) {
     $("f_name").value = b.name || "";
     $("f_tagline").value = b.tagline || "";
@@ -184,16 +233,7 @@ async function init() {
 
   const pubToggle = $("pubToggle");
   if (pubToggle) pubToggle.checked = state.PUBLISHED;
-  function updatePublishHint() {
-    const btn = $("save");
-    const hint = document.querySelector(".savebar-hint");
-    if (!btn || !hint) return;
-    const willPublish = pubToggle?.checked && !state.PUBLISHED;
-    btn.textContent = willPublish ? "Save & publish" : "Save changes";
-    hint.textContent = willPublish ? "This board will go live when you save" : "Unsaved changes";
-  }
-  if (pubToggle) pubToggle.addEventListener("change", () => { setState({ _dirty: true }); updatePublishHint(); });
-  updatePublishHint();
+  wirePublishAction();
   const liveUrl = "/" + state.SLUG;
   const liveLink = $("liveLink");
   if (liveLink) { liveLink.href = liveUrl; liveLink.title = location.host + liveUrl; }
@@ -210,12 +250,13 @@ async function init() {
       flashButton(editorCopyLink, ok ? "Copied!" : "Copy failed");
     });
   }
+  stopLoadingCopy();
+  $("loading").setAttribute("aria-busy", "false");
   $("loading").hidden = true;
   $("dash").hidden = false;
   setupShell();
-  // Boards nav is redundant for solo streamers — the sidebar board switcher covers it.
-  const boardsNav = document.querySelector(".lb-nav--boards");
-  if (boardsNav) boardsNav.hidden = state.BOARDS.length < 2;
+  // Keep every feature visible. Manage sites is useful even with one site because
+  // it is also where the operator creates the next one.
   // The URL says which section this document is: `/dashboard` is the Overview,
   // not "whichever screen we guess you need".
   const route = currentRoute();
@@ -234,8 +275,8 @@ async function init() {
     initPerformance();
   }
   if (hasSection("home") || hasSection("performance")) loadStats();
+  if (hasSection("home") || hasBoardSettings) loadCreditsStatus();
   if (hasBoardSettings) {
-    loadCreditsStatus();
     setupSettingsScreen(p);
   }
 

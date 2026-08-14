@@ -1,103 +1,199 @@
-// index page
+// YourRank marketing homepage
 export const landingPage = `<!DOCTYPE html>
 <html lang="en"><head>
 <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>YourRank — Streamer suite: leaderboards, Telegram bot, viewer rewards</title>
-<meta name="description" content="All-in-one suite for streamers: branded leaderboards, a Telegram bot with tracked offers, and a viewer rewards shop powered by Kick channel points." />
+<title>YourRank — Sites, Telegram, Credits &amp; Shop for streamers</title>
+<meta name="description" content="YourRank connects a branded streamer site, Telegram community tools, and Kick-powered viewer credits and shop in one simple suite." />
 <link rel="canonical" href="https://yourrank.site/" />
-<meta property="og:title" content="YourRank — Streamer suite: leaderboards, Telegram bot, viewer rewards">
-<meta property="og:description" content="Branded leaderboards, Telegram bot, and a rewards shop for streamers. Built for Kick, Discord, and communities.">
+<meta property="og:title" content="YourRank — Keep your community loop moving">
+<meta property="og:description" content="Launch a streamer site, activate viewers on Telegram, and bring them back with Credits &amp; Shop." />
 <meta property="og:url" content="https://yourrank.site/">
 <meta property="og:type" content="website">
 <meta name="twitter:card" content="summary_large_image" />
-<meta name="twitter:title" content="YourRank — Streamer suite" />
-<meta name="twitter:description" content="Branded leaderboards, Telegram bot, and a rewards shop for streamers." />
+<meta name="twitter:title" content="YourRank — Sites, Telegram, Credits &amp; Shop" />
+<meta name="twitter:description" content="One streamer suite for the full community loop: attract, activate, return." />
 <meta property="og:image" content="https://yourrank.site/og.png" />
-<meta name="twitter:image" content="https://yourrank.site/og.png" />
 <link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&amp;family=JetBrains+Mono:wght@500;700&amp;display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="/assets/ui.css" /><link rel="stylesheet" href="/assets/landing.css" />
-<script type="application/ld+json">{"@context":"https://schema.org","@type":"Organization","name":"YourRank","url":"https://yourrank.site","description":"All-in-one streamer suite: branded leaderboards, Telegram bot, and viewer rewards & shop.","areaServed":"Worldwide","knowsAbout":["leaderboards","streaming","Kick","Discord","Telegram bot","community tools","viewer rewards"],"contactPoint":{"@type":"ContactPoint","contactType":"customer service","email":"contact@yourrank.site","availableLanguage":["English"]}}</script>
-</head><body>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"Organization","name":"YourRank","url":"https://yourrank.site","description":"A streamer community suite connecting Sites, Telegram, and Credits & Shop.","areaServed":"Worldwide","knowsAbout":["streamer sites","leaderboards","Kick","Discord","Telegram bots","community rewards"],"contactPoint":{"@type":"ContactPoint","contactType":"customer service","email":"contact@yourrank.site","availableLanguage":["English"]}}</script>
+</head><body class="landing-page">
+<!-- THESIS: YourRank is the live run-of-show for the community loop and refuses the generic three-card creator-SaaS homepage. OWN-WORLD: asphalt and fog surfaces, cobalt cue paths, orange warnings, mint completed states, credential labels, sharp 8px controls. STORY: see the full loop, choose a launch goal, start free or explore the live demo. FIRST VIEWPORT: wordmark and simple nav above a two-column thesis; left contains headline and actions, right is a connected three-channel operating flow, with the primary action visible without scrolling. FORM: live-production cue sheet, grounded candidate 3, seed 5919f06e. FINISH: unreviewed and undocumented is unfinished; this build ends with the finish review, the verdict, and DESIGN.md. -->
 <noscript><div class="noscript-card">
 <p class="noscript-title">YourRank</p>
-<p>Leaderboards, Telegram bot, and viewer rewards for streamers and communities. JavaScript is required for the full experience.</p>
-<a href="/signup">Create your free page</a>
+<p>Sites, Telegram, and Credits &amp; Shop for streamers and communities. JavaScript is only needed for enhanced navigation and motion.</p>
+<a href="/signup">Start free</a>
 </div></noscript>
 <a href="#main-content" class="sr-only skip-link">Skip to content</a>
-<header><div class="wrap">
-<nav class="top"><div class="brand">Your<b>Rank</b></div>
+<header class="landing-header"><div class="wrap">
+<nav class="top" aria-label="Primary"><a class="brand" href="/" aria-label="YourRank home">Your<b>Rank</b></a>
 <button class="nav-toggle" aria-label="Toggle menu" aria-expanded="false"><svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button>
-<div class="links"><a href="#products">Products</a><a href="#how">How it works</a><a href="#pricing">Pricing</a><a href="/login">Sign in</a><a href="/signup" class="btn btn--accent">Create your free page</a></div></nav>
+<div class="links"><a href="#products">The loop</a><a href="#goals">Launch goals</a><a href="#proof">Demo</a><a href="/pricing">Pricing</a><a href="/login">Sign in</a><a href="/signup" class="btn btn--accent">Start free</a></div></nav>
 </div></header>
 <main id="main-content">
-<section class="hero"><div>
-<p class="label mb-18">Engagement toolkit for streamers and communities</p>
-<h1>Turn your stream into a community people want to join.</h1>
-<p class="lead">YourRank is one dashboard with three tools: a branded leaderboard, a Telegram bot with tracked offers, and a rewards &amp; shop powered by Kick channel points. No code, no hosting, no card to start.</p>
-<div class="cta"><a href="/signup" class="btn btn--accent">Create your free page</a><a href="/demo" class="btn btn--ghost">Try a demo →</a></div>
-<ul class="trust-line"><li>Free forever</li><li>7-day Pro trial</li><li>No card</li><li>Entertainment only</li></ul>
-<p class="fine">YourRank is an entertainment platform — we don't take bets or pay prizes.</p></div>
-<div class="spec"><div class="spec-h"><span>yourrank.site/demo</span><span class="dot">● live</span></div>
-<div class="spec-row"><span>Leaderboards</span><span>1 included</span></div>
-<div class="spec-row"><span>Telegram bot</span><span>turn on anytime</span></div>
-<div class="spec-row"><span>Rewards &amp; Shop</span><span>Kick connected</span></div>
-<div class="spec-row"><span>Updates</span><span>instant</span></div></div></section>
-<section id="use-cases" class="proof"><div class="wrap">
-<p class="proof-metric"><b>Built for creators who want more engagement</b> — one dashboard, live everywhere.</p>
-<ul class="proof-logos" aria-label="Use cases">
-<li>Streamers</li><li>Kick creators</li><li>Telegram communities</li><li>Affiliate races</li>
-</ul></div></section>
-<section id="products"><div class="wrap"><h2 class="sec">Three products, one dashboard</h2><p class="sec-sub">Turn on the tools you need. All of them share the same account, plan, and public URL.</p>
-<div class="product-grid">
-<div class="product-card"><h3><a href="#leaderboards">Leaderboards</a></h3><p>Branded public pages with scores, countdowns, player standings, and referral tracking. No code, no hosting.</p><a href="/demo" class="product-link">See a demo →</a></div>
-<div class="product-card"><h3><a href="#telegram">Telegram bot</a></h3><p>Publish offers, track clicks and conversions, broadcast to your community, and reward engagement automatically.</p><a href="/signup" class="product-link">Add to your suite →</a></div>
-<div class="product-card"><h3><a href="#rewards">Rewards &amp; Shop</a></h3><p>Connect your Kick channel, set credit rules for channel-point rewards, and let viewers spend credits on shop items you control.</p><a href="/signup" class="product-link">Start rewarding viewers →</a></div>
-</div></div></section>
-<section id="how"><div class="wrap"><h2 class="sec">How it works</h2><p class="sec-sub">Three steps. No build tools, no redeploys, nothing to host yourself.</p>
-<div class="steps">
-<div class="step"><div class="n">01</div><div><h3>Create your account</h3><p>Pick a handle. That becomes your public hub. A sample leaderboard is created for you as a draft.</p></div></div>
-<div class="step"><div class="n">02</div><div><h3>Choose your tools</h3><p>Leaderboard, Telegram bot, Rewards &amp; Shop — turn on the ones you need and connect Kick or Discord.</p></div></div>
-<div class="step"><div class="n">03</div><div><h3>Share and grow</h3><p>Share your public pages. Update standings, broadcast offers, and let viewers redeem credits in real time.</p></div></div>
-</div></div></section>
-<section id="postbacks"><div class="wrap"><h2 class="sec">Works with the tools you already use</h2><p class="sec-sub">Feed player scores, offer conversions, and Kick channel events into YourRank automatically. Your boards, bot messages, and viewer balances stay in sync.</p>
-<div class="steps">
-<div class="step"><div class="n n--ico"><svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg></div><div><h3>Automatic updates</h3><p>Post scores from your own backend, a Google Sheet, or an external feed. Your standings stay accurate without you lifting a finger.</p></div></div>
-<div class="step"><div class="n n--ico"><svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 2v6M15 2v6M6 8h12v3a6 6 0 01-12 0V8zM12 17v5"/></svg></div><div><h3>Connect any data source</h3><p>Any service that can call a URL or export a CSV can feed YourRank. No lock-in to a single provider.</p></div></div>
-<div class="step"><div class="n n--ico"><svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></div><div><h3>No spreadsheets, no copy-paste</h3><p>Forget manually updating player scores. The postback system does it in real time — one source of truth, zero human error.</p></div></div>
-<div class="step"><div class="n n--ico"><svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></div><div><h3>Built-in analytics</h3><p>Track views, clicks, conversions, and referrers from your dashboard. See what's working and where your traffic comes from.</p></div></div>
-</div></div></section>
-<section id="integrations"><div class="wrap"><h2 class="sec">Integrations</h2><p class="sec-sub">YourRank connects with the platforms your community already uses.</p>
-<ul class="integration-list">
-<li>Kick</li><li>Telegram</li><li>Discord</li><li>OBS</li><li>Google Sheets</li><li>API / Webhooks</li>
-</ul></div></section>
-<section id="example"><div class="wrap"><h2 class="sec">A real page</h2><p class="sec-sub">This is a live leaderboard running on YourRank. Yours works the same way.</p>
-<div class="example"><div class="bar"><span>yourrank.site/demo</span><span>live</span></div>
-<iframe src="/demo" loading="lazy" title="Example leaderboard"></iframe></div></div></section>
-<section id="trust" class="testimonial"><div class="wrap">
-<figure class="quote"><blockquote>"Start free, no card required, and no made-up numbers on your page. YourRank gives you a clean suite of tools you actually control."</blockquote>
-<figcaption><span class="quote-who">YourRank</span><span class="quote-handle">Built for streamers and communities</span></figcaption></figure>
-</div></section>
-<section id="pricing"><div class="wrap"><h2 class="sec">Pricing</h2><p class="sec-sub">Start free. Each paid plan unlocks more leaderboards, Telegram bots, offers, credit rules, and shop items. Try Pro free for 7 days — paid plans billed in crypto.</p>
-<div class="pricing-grid pricing-grid--4">
-<div class="price-card"><div class="price-head"><h3>Free</h3><div class="price-amount">$0</div><div class="price-period">forever</div></div><ul class="price-features"><li>1 leaderboard</li><li>Up to 10 players</li><li>1 Telegram bot</li><li>Up to 3 tracked offers</li><li>Up to 3 credit rules</li><li>Up to 5 shop items</li><li>YourRank badge on your page</li><li>Basic analytics (7 days)</li><li>Live countdown &amp; auto-sort</li></ul><a href="/signup?plan=free" class="btn btn--sm price-cta">Start free</a></div>
-<div class="price-card"><div class="price-head"><h3>Starter</h3><div class="price-amount">$12<span>/30 days</span></div></div><ul class="price-features"><li>1 leaderboard</li><li>Up to 25 players</li><li>1 Telegram bot</li><li>Up to 3 tracked offers</li><li>Up to 3 credit rules</li><li>Up to 5 shop items</li><li>No YourRank badge</li><li>Full analytics (30 days)</li><li>CSV import</li></ul><a href="/signup?plan=starter" class="btn btn--sm price-cta">Choose Starter</a></div>
-<div class="price-card price-card--popular"><div class="price-badge">Most Popular</div><div class="price-head"><h3>Pro</h3><div class="price-amount">$29<span>/30 days</span></div></div><ul class="price-features"><li>Up to 3 leaderboards</li><li>Up to 9,999 players</li><li>Up to 3 Telegram bots</li><li>Up to 50 tracked offers</li><li>Up to 50 credit rules</li><li>Up to 100 shop items</li><li>No YourRank badge</li><li>Custom domain</li><li>OBS overlay widget</li><li>Discord webhooks</li><li>Signed score API</li><li>Priority support</li></ul><a href="/signup?plan=pro" class="btn btn--sm btn--accent price-cta">Go Pro</a></div>
-<div class="price-card"><div class="price-head"><h3>Agency</h3><div class="price-amount">$79<span>/30 days</span></div></div><ul class="price-features"><li>Up to 99 leaderboards</li><li>Up to 9,999 players per board</li><li>Up to 25 Telegram bots</li><li>Up to 999 tracked offers</li><li>Up to 999 credit rules</li><li>Up to 999 shop items</li><li>White-label branding</li><li>Everything in Pro</li><li>Dedicated support</li></ul><a href="/help/support?area=billing" class="btn btn--sm price-cta">Contact us</a></div>
+<section class="hero">
+<div class="hero-copy">
+<h1>Live <span class="hero-rotator-wrap"><span class="hero-rotator" id="heroRotator">Leaderboards</span></span> &amp; Viewer Rewards for Streamers.</h1>
+<p class="lead">Launch a branded community site, activate viewers on Telegram, and reward regular chatters with Kick-connected channel points &amp; shop redemptions in minutes.</p>
+<div class="cta"><a href="/signup" class="btn btn--accent">Start your community loop</a><a href="/demo" class="btn btn--ghost">Explore the live demo</a></div>
+<ul class="trust-line"><li>2-MINUTE SETUP</li><li>NO CARD REQUIRED</li><li>OBS BROADCAST READY</li></ul>
+<p class="fine">For entertainment and community engagement only. YourRank does not take bets or pay prizes.</p>
 </div>
-<div class="lifetime-banner"><div class="lifetime-banner-txt"><span class="lifetime-banner-lead">Prefer to pay once?</span> <b>Lifetime Pro</b> — every Pro feature, no monthly bills. <span class="lifetime-banner-price">$149<small> one-time</small></span></div><a href="/signup?plan=lifetime" class="btn btn--accent lifetime-banner-cta">Get Lifetime Pro</a></div>
-<p class="pay-note">Paid plans billed in crypto (BTC · ETH · USDT · 100+ more). Card checkout coming soon.</p>
-<p class="sec-sub sec-sub--mt"><a href="/pricing">Compare every plan &amp; feature →</a></p></div></section>
-<section id="start"><div class="wrap"><h2 class="sec">Ready to start?</h2><p class="sec-sub">Create your free page in under a minute. No credit card needed.</p>
-<div class="cta cta-wrap"><a href="/signup" class="btn btn--accent btn--cta-lg">Create your free page</a></div>
-<ul class="trust-line trust-line--center"><li>Free forever</li><li>7-day Pro trial</li><li>No card</li></ul></div></section>
+<figure class="signal-flow" aria-labelledby="signal-flow-title">
+<figcaption class="signal-head"><span id="signal-flow-title">Community run-of-show</span><span>Capability walkthrough</span></figcaption>
+<div class="signal-canvas">
+<div class="signal-path" aria-hidden="true"><span class="signal-pulse"></span></div>
+<section class="flow-stage flow-stage--sites" aria-label="Sites attracts viewers">
+<div class="flow-channel"><span class="flow-index">CH 1</span><strong>Sites</strong><span class="flow-state flow-state--live">Published</span></div>
+<div class="flow-body"><p>Give every link one destination.</p><ul><li>Branded public site</li><li>Live leaderboard</li><li>Offers and viewer access</li></ul></div>
+<div class="flow-cue">Attract</div>
+</section>
+<section class="flow-stage flow-stage--telegram" aria-label="Telegram activates viewers">
+<div class="flow-channel"><span class="flow-index">CH 2</span><strong>Telegram</strong><span class="flow-state">Connected</span></div>
+<div class="flow-body"><p>Reach the people who opted in.</p><ul><li>Commands</li><li>Broadcasts</li><li>Tracked offers</li></ul></div>
+<div class="flow-cue">Activate</div>
+</section>
+<section class="flow-stage flow-stage--credits" aria-label="Credits and Shop brings viewers back">
+<div class="flow-channel"><span class="flow-index">CH 3</span><strong>Credits &amp; Shop</strong><span class="flow-state flow-state--done">Ready</span></div>
+<div class="flow-body"><p>Turn participation into a reason to return.</p><ul><li>Kick earning rules</li><li>Viewer balances</li><li>Shop redemptions</li></ul></div>
+<div class="flow-cue">Return</div>
+</section>
+</div>
+<p class="signal-note"><span>Signal path</span> Sites → Telegram → Credits &amp; Shop → back to your next stream</p>
+</figure>
+</section>
+<section class="loop-strip" aria-label="YourRank community loop"><div class="wrap">
+<p><strong>Attract</strong><span>A home worth sharing</span></p><span class="loop-connector" aria-hidden="true"></span><p><strong>Activate</strong><span>A direct line to viewers</span></p><span class="loop-connector" aria-hidden="true"></span><p><strong>Return</strong><span>A reason to come back</span></p>
+</div></section>
+<section id="goals" class="goal-section"><div class="wrap goal-layout">
+<div class="section-intro"><h2 class="sec">What do you want to launch first?</h2><p class="sec-sub">Choose the outcome that matters now. Your account keeps the other two channels ready when you need them.</p></div>
+<div class="goal-board" aria-label="Launch goals">
+<article class="goal-row goal-row--site"><div class="credential"><span>Launch pass</span><b>SITES</b></div><div><h3>Give your community one public home</h3><p>Publish a branded site with standings, countdowns, offers, and viewer access—without building or hosting it yourself.</p></div><a href="/signup" class="goal-action">Launch a community site<span aria-hidden="true">→</span></a></article>
+<article class="goal-row goal-row--telegram"><div class="credential"><span>Launch pass</span><b>TELEGRAM</b></div><div><h3>Reach viewers between streams</h3><p>Connect a bot, set useful commands, share tracked offers, and send broadcasts to subscribers.</p></div><a href="/signup" class="goal-action">Connect Telegram<span aria-hidden="true">→</span></a></article>
+<article class="goal-row goal-row--credits"><div class="credential"><span>Launch pass</span><b>CREDITS</b></div><div><h3>Reward the people who keep showing up</h3><p>Connect Kick, decide how channel rewards earn credits, add shop items, and fulfil viewer redemptions.</p></div><a href="/signup" class="goal-action">Set up viewer rewards<span aria-hidden="true">→</span></a></article>
+</div>
+</div></section>
+<section id="products" class="product-section"><div class="wrap">
+<div class="section-intro section-intro--wide"><h2 class="sec">One account. One continuous run.</h2><p class="sec-sub">Each product works on its own. Together, they close the gap between the moment someone finds you and the reason they return.</p></div>
+<div class="cue-sheet">
+<div class="cue-sheet-head"><span>Operator cue sheet</span><span>Three channels / one community</span></div>
+<ol class="cue-list">
+<li><div class="cue-time">AT<br />TRACT</div><div class="cue-product"><span>Sites</span><strong>Publish the destination</strong></div><p>Your logo, content, leaderboard, countdown, offers, games, and viewer access live at a shareable YourRank address or custom domain.</p><span class="cue-output">Public site</span></li>
+<li><div class="cue-time">AC<br />TIVATE</div><div class="cue-product"><span>Telegram</span><strong>Open the return channel</strong></div><p>Connect your bot, create commands and tracked offers, manage subscribers, and broadcast when there is something worth coming back for.</p><span class="cue-output">Direct reach</span></li>
+<li><div class="cue-time">RE<br />TURN</div><div class="cue-product"><span>Credits &amp; Shop</span><strong>Make participation count</strong></div><p>Map Kick rewards to credits, show viewer balances, manage shop inventory, and move redemptions from pending to fulfilled.</p><span class="cue-output cue-output--done">Loop closed</span></li>
+</ol>
+</div>
+</div></section>
+<section id="proof" class="proof-section"><div class="wrap proof-layout">
+<div class="proof-copy"><h2 class="sec">Inspect the product, not a promise.</h2><p class="sec-sub">The live demo is a working YourRank public site. It shows the same page structure, standings, countdown, offers, and viewer routes an operator can publish.</p>
+<dl class="capability-ledger">
+<div><dt>Sites</dt><dd>Public pages, standings, countdowns, offers, referrals, and analytics</dd></div>
+<div><dt>Telegram</dt><dd>Bots, commands, subscribers, broadcasts, tracked clicks, and conversions</dd></div>
+<div><dt>Credits</dt><dd>Kick earning rules, balances, shop inventory, redemptions, and fulfilment</dd></div>
+</dl>
+<a href="/demo" class="btn btn--accent">Open the live demo</a>
+</div>
+<div class="demo-frame"><div class="demo-bar"><span>yourrank.site/demo</span><span class="demo-status">Demo route</span></div><iframe src="/demo" loading="lazy" title="Live YourRank public site demo"></iframe></div>
+</div></section>
+<section id="gallery" class="gallery-section" aria-label="Visual Showcase"><div class="wrap">
+<div class="section-intro"><h2 class="sec">Built for high-energy streamer communities</h2><p class="sec-sub">From esports tournaments to live Kick casino races, YourRank adapts to your community's style with custom themes.</p></div>
+<div class="elastic-gallery" id="elasticGallery">
+  <div class="eg-item" data-id="01">
+    <div class="eg-bg" style="background-image:url('https://images.pexels.com/photos/3052361/pexels-photo-3052361.jpeg')"></div>
+    <div class="eg-overlay"></div>
+    <div class="eg-content">
+      <div class="eg-active-content">
+        <span class="eg-tag">Tournaments</span>
+        <h3 class="eg-title">Neon Cyber</h3>
+        <span class="eg-cta">View Setup ↗</span>
+      </div>
+      <div class="eg-inactive-content">
+        <span class="eg-vertical-text">Neon Cyber</span>
+        <span class="eg-mobile-id">01</span>
+      </div>
+    </div>
+  </div>
+  <div class="eg-item" data-id="02">
+    <div class="eg-bg" style="background-image:url('https://images.pexels.com/photos/2224424/pexels-photo-2224424.jpeg')"></div>
+    <div class="eg-overlay"></div>
+    <div class="eg-content">
+      <div class="eg-active-content">
+        <span class="eg-tag">Leaderboards</span>
+        <h3 class="eg-title">Urban Race</h3>
+        <span class="eg-cta">View Setup ↗</span>
+      </div>
+      <div class="eg-inactive-content">
+        <span class="eg-vertical-text">Urban Race</span>
+        <span class="eg-mobile-id">02</span>
+      </div>
+    </div>
+  </div>
+  <div class="eg-item is-active" data-id="03">
+    <div class="eg-bg" style="background-image:url('https://images.pexels.com/photos/2387873/pexels-photo-2387873.jpeg')"></div>
+    <div class="eg-overlay"></div>
+    <div class="eg-content">
+      <div class="eg-active-content">
+        <span class="eg-tag">Kick Rewards</span>
+        <h3 class="eg-title">Abstract Fluid</h3>
+        <span class="eg-cta">View Setup ↗</span>
+      </div>
+      <div class="eg-inactive-content">
+        <span class="eg-vertical-text">Abstract Fluid</span>
+        <span class="eg-mobile-id">03</span>
+      </div>
+    </div>
+  </div>
+  <div class="eg-item" data-id="04">
+    <div class="eg-bg" style="background-image:url('https://images.pexels.com/photos/167699/pexels-photo-167699.jpeg')"></div>
+    <div class="eg-overlay"></div>
+    <div class="eg-content">
+      <div class="eg-active-content">
+        <span class="eg-tag">Telegram Bots</span>
+        <h3 class="eg-title">Silent Nature</h3>
+        <span class="eg-cta">View Setup ↗</span>
+      </div>
+      <div class="eg-inactive-content">
+        <span class="eg-vertical-text">Silent Nature</span>
+        <span class="eg-mobile-id">04</span>
+      </div>
+    </div>
+  </div>
+  <div class="eg-item" data-id="05">
+    <div class="eg-bg" style="background-image:url('https://images.pexels.com/photos/2582937/pexels-photo-2582937.jpeg')"></div>
+    <div class="eg-overlay"></div>
+    <div class="eg-content">
+      <div class="eg-active-content">
+        <span class="eg-tag">Mini-Games</span>
+        <h3 class="eg-title">Future Tech</h3>
+        <span class="eg-cta">View Setup ↗</span>
+      </div>
+      <div class="eg-inactive-content">
+        <span class="eg-vertical-text">Future Tech</span>
+        <span class="eg-mobile-id">05</span>
+      </div>
+    </div>
+  </div>
+</div>
+</div></section>
+<section id="pricing" class="plan-section"><div class="wrap plan-layout">
+<div class="section-intro"><h2 class="sec">Start free. Add capacity when the run grows.</h2><p class="sec-sub">The homepage stays out of the entitlement business. The pricing page is the current source for plan limits, features, and checkout details.</p></div>
+<div class="plan-preview">
+<div class="plan-free"><span class="plan-label">Free plan</span><strong>$0</strong><p>Launch with all three products inside the Free plan limits. No card required.</p><a href="/signup" class="btn btn--accent">Start free</a></div>
+<div class="plan-paid"><span class="plan-label">When you need more</span><h3>Starter, Pro, and Agency</h3><p>Compare current capacity, operator controls, and plan prices before choosing.</p><a href="/pricing" class="btn btn--ghost">Compare plans and features</a></div>
+</div>
+<p class="payment-note"><strong>Payment note:</strong> Paid access is sold in 30-day periods, billed in crypto, and does not auto-renew. Card checkout is not available yet. A 7-day Pro trial requires no payment up front. Crypto purchases are non-refundable; see the <a href="/refund">refund policy</a>.</p>
+</div></section>
+<section id="start" class="closing-section"><div class="wrap closing-layout">
+<div><h2 class="sec">Choose the first cue. Keep the whole loop in reach.</h2><p>Start with the launch goal you need today. No code, no hosting, no card.</p></div>
+<div class="cta"><a href="/signup" class="btn btn--accent">Start free</a><a href="/demo" class="btn btn--ghost">Explore the live demo</a></div>
+</div></section>
 </main>
-<div class="mobile-cta"><a href="/signup" class="btn btn--accent">Create your free page</a></div>
+<div class="mobile-cta"><a href="/signup" class="btn btn--accent">Start free</a></div>
 <footer class="ftr ftr--platform"><div class="wrap">
 <div class="ftr-top">
-  <div class="ftr-brand"><a class="brand" href="/">Your<b>Rank</b></a><p>Suite for streamers &amp; communities</p></div>
+  <div class="ftr-brand"><a class="brand" href="/">Your<b>Rank</b></a><p>Sites, Telegram, and Credits &amp; Shop for streamers and communities.</p></div>
   <div class="ftr-cols">
-    <div class="ftr-col"><b>Product</b><a href="/#products">Products</a><a href="/#how">How it works</a><a href="/pricing">Pricing</a><a href="/faq">FAQ</a><a href="/docs">API Docs</a><a href="/help/support">Contact</a></div>
+    <div class="ftr-col"><b>Product</b><a href="/#products">The loop</a><a href="/#goals">Launch goals</a><a href="/demo">Live demo</a><a href="/pricing">Pricing</a><a href="/faq">FAQ</a><a href="/docs">API Docs</a><a href="/help/support">Contact</a></div>
     <div class="ftr-col"><b>Legal</b><a href="/terms">Terms of Service</a><a href="/privacy">Privacy Policy</a><a href="/cookies">Cookie Policy</a><a href="/refund">Refund Policy</a><a href="/responsible">Responsible Play</a><a href="/reviews">Reviews</a></div>
   </div>
 </div>

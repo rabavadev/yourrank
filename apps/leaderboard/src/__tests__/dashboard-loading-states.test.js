@@ -6,11 +6,22 @@ import {
   emptyStateHtml,
   metricText,
 } from "../assets/dashboard/states.js";
+import { PAGES } from "../pages.jsx";
 
 const assets = path.resolve(import.meta.dir, "../assets");
 const read = (file) => fs.readFileSync(path.join(assets, file), "utf8");
 
 describe("dashboard loading states", () => {
+  it("announces the initial dashboard and credits loaders", () => {
+    const dashboardHtml = PAGES.dashboard.Component({ activePath: "/dashboard" }).toString();
+    const creditsHtml = PAGES.rewardsRedemptions.Component({}).toString();
+    expect(dashboardHtml).toContain('id="loading" class="yr-workspace-loader" role="status"');
+    expect(dashboardHtml).toContain('id="loadingStatus">Loading your workspace');
+    expect(dashboardHtml).toContain('class="yr-loader-track"');
+    expect(dashboardHtml).toContain('aria-busy="true"');
+    expect(creditsHtml).toContain('id="cr-loading" class="ui-loading" role="status"');
+    expect(creditsHtml).toContain("Loading credits and shop");
+  });
   it("keeps loading, ready zero, and unknown values distinct", () => {
     expect(UNKNOWN).toBe("—");
     expect(metricText("loading", 0)).toBe("");
@@ -79,6 +90,12 @@ describe("dashboard loading states", () => {
     const performance = read("dashboard/performance.js");
     expect(performance).toMatch(/clearLoadError\(empty, false\);\s*renderEmpty\(empty/);
     expect(performance).toContain('setMetricValue(total, String(values.reduce');
+  });
+
+  it("keeps audience insight tabs accessible after client navigation", () => {
+    const performance = read("dashboard/performance.js");
+    expect(performance).toContain('node.setAttribute("aria-current", "page")');
+    expect(performance).toContain('node.removeAttribute("aria-current")');
   });
 
   it("keeps credits load failures plain and retryable", () => {

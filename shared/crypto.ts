@@ -200,6 +200,23 @@ export async function decrypt(blobHex: string, hexKey: string): Promise<string> 
   return new TextDecoder().decode(pt);
 }
 
+/**
+ * Decrypt a stored credential (e.g. a Discord webhook URL) kept as hex
+ * ciphertext. Returns the stored value unchanged when it isn't encrypted
+ * (legacy rows or plaintext migration copies), so callers never crash on
+ * legacy data. Throws only when TOKEN_ENC_KEY is misconfigured.
+ */
+export async function decryptCredential(blobHex: string | null | undefined): Promise<string | null> {
+  if (!blobHex) return null;
+  const hex = (typeof process !== "undefined" && process.env?.TOKEN_ENC_KEY) || "";
+  if (hex.length !== 64) throw new Error("TOKEN_ENC_KEY must be 64 hex characters (32 bytes)");
+  try {
+    return await decrypt(blobHex, hex);
+  } catch {
+    return blobHex;
+  }
+}
+
 // ----------------------------------------------------------------------------
 // Constant-time comparison
 // ----------------------------------------------------------------------------

@@ -13,6 +13,7 @@ import { generateCsrfToken, csrfCookie } from "./middleware/csrf.js";
 import { renderPasswordGate as defaultRenderPasswordGate } from "./password-gate.js";
 import { renderSite as defaultRenderSite } from "./site-render.js";
 import { getViewerSiteData as defaultGetViewerSiteData } from "./site-data.js";
+import { gamesIslandHead, gamesIslandMount } from "./games-embed.js";
 import {
   cachedPublicBoardResponse,
   getPublicBoardCache,
@@ -112,11 +113,14 @@ export async function renderSiteRoute({ request, env, ctx, nonce, slug, section,
       setRequestMetrics({ cache: "miss" });
     }
 
+    const url = new URL(request.url);
+    const isDemo = url.searchParams.get("demo") === "1" || url.searchParams.get("preview") === "1" || url.searchParams.get("embed") === "1";
+
     const r = await getPublicSite(env, slug, request, { limit: 100, offset: 0 });
-    if (r && r.requiresPassword) {
+    if (r && r.requiresPassword && !isDemo) {
       return new Response(renderPasswordGate(r, { nonce, isCustomDomain }), { headers: respHeaders });
     }
-    if (r && r.pendingVerification) {
+    if (r && r.pendingVerification && !isDemo) {
       return new Response(pendingVerificationPage(nonce), { status: 403, headers: HTML_N });
     }
     if (!r || r.suspended) {
@@ -124,7 +128,7 @@ export async function renderSiteRoute({ request, env, ctx, nonce, slug, section,
     }
 
     const siteSections = r.data?.siteSections || { home: true, leaderboard: true, shop: true, games: false, me: true };
-    if (!siteSections[section]) {
+    if (!siteSections[section] && !(section === "games" && isDemo)) {
       return new Response(notFoundPage(slug, nonce), { status: 404, headers: HTML_N });
     }
 
@@ -136,7 +140,6 @@ export async function renderSiteRoute({ request, env, ctx, nonce, slug, section,
     const csrfToken = cacheableSite ? PUBLIC_HTML_CSRF_PLACEHOLDER : generateCsrfToken();
     respHeaders.append("set-cookie", csrfCookie(csrfToken));
 
-    const url = new URL(request.url);
     const homeUrl = url.origin;
     const paid = r.plan !== "free";
     const watermark = !paid;
@@ -157,12 +160,37 @@ export async function renderSiteRoute({ request, env, ctx, nonce, slug, section,
       await bumpView(env, ctx, request, r.id, slug, respHeaders, collaborators);
     }
 
+    if (section === "games" && (url.searchParams.get("embed") === "1" || url.searchParams.get("isolated") === "1")) {
+      const b = r.data?.brand || {};
+      const mount = gamesIslandMount({
+        slug,
+        nonce,
+        siteName: b.name || slug,
+        logoUrl: logoUrl || null,
+        creditsUrl: `/${slug}/credits`,
+        signInUrl: `/api/viewer/auth/kick?returnTo=${encodeURIComponent(`/${slug}/games`)}`,
+        header: false,
+        demoAllowed: true,
+      });
+      const embedHtml = `<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Mini-games Simulator</title>
+${gamesIslandHead()}
+<style nonce="${nonce}">
+  html, body { margin: 0; padding: 0; background: #0c1017; color: #f8fafc; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; overflow-x: hidden; }
+  .gx-embed-wrap { max-width: 100%; margin: 0 auto; padding: 12px; }
+</style>
+</head><body><div class="gx-embed-wrap">${mount}</div></body></html>`;
+      return new Response(embedHtml, { headers: { ...Object.fromEntries(respHeaders.entries()), "content-type": "text/html; charset=utf-8" } });
+    }
+
     const html = await renderSite({
       r,
       section,
       viewer,
       viewerData,
-      opts: { nonce: renderNonce, homeUrl, slug, isCustomDomain, logoUrl, watermark, csrfToken, boards: r.boards, botUsername: r.botUsername },
+      opts: { nonce: renderNonce, homeUrl, slug, isCustomDomain, logoUrl, watermark, csrfToken, boards: r.boards, botUsername: r.botUsername, isDemo },
     });
     const responseHeaders = cacheableSite
       ? new Headers({

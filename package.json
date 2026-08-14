@@ -9,7 +9,16 @@
     "e2e"
   ],
   "dependencies": {
+    "@radix-ui/react-progress": "^1.1.16",
+    "@radix-ui/react-slot": "^1.3.3",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "framer-motion": "^13.1.0",
+    "lucide-react": "^1.31.0",
+    "motion": "^13.1.0",
+    "next": "^16.3.1",
     "postgres": "3.4.9",
+    "tailwind-merge": "^3.6.0",
     "zod": "3.25.76"
   },
   "devDependencies": {
@@ -26,7 +35,7 @@
     "e2e": "cd e2e && bun run test",
     "lint": "(cd apps/bot && bun run lint) && (cd apps/leaderboard && bun run lint)",
     "check:test-mocks": "node scripts/check-test-mocks.mjs",
-    "typecheck": "(cd apps/bot && bun run typecheck) && (cd apps/leaderboard && bunx tsc --noEmit) && (cd apps/leaderboard && bun run typecheck:games) && (cd apps/monitor && bun run typecheck)",
+    "typecheck": "(cd apps/bot && bun run typecheck) && (cd apps/leaderboard && bun x tsc --noEmit) && (cd apps/leaderboard && bun run typecheck:games) && (cd apps/monitor && bun run typecheck)",
     "test": "bun run scripts/test.mjs",
     "prepare": "git config core.hooksPath .githooks || true"
   },

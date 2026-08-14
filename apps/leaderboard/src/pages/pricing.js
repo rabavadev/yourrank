@@ -32,23 +32,48 @@ export const pricingPage = `<!DOCTYPE html><html lang="en"><head>
 <div class="lifetime-banner"><div class="lifetime-banner-txt"><span class="lifetime-banner-lead">Prefer to pay once?</span> <b>Lifetime Pro</b> — every Pro feature, no monthly bills. <span class="lifetime-banner-price">$149<small> one-time</small></span></div><a href="/signup?plan=lifetime" class="btn btn--accent lifetime-banner-cta">Get Lifetime Pro</a></div>
 <p class="pay-note">Paid plans billed in crypto (BTC · ETH · USDT · 100+ more). Card checkout coming soon. <span class="pay-note--trust">7-day Pro trial · No card required · No automatic renewal · Cancel anytime</span></p>
 
-<h2 class="sec mt-64">Compare plans</h2>
-<div class="table-scroll table-scroll--pricing" role="region" aria-label="Plan comparison" tabindex="0">
-<table class="pricing pricing-table">
-<thead><tr><th>Feature</th><th>Free</th><th>Starter</th><th>Pro</th><th>Agency</th></tr></thead>
+<h2 class="sec mt-64">Compare plans in detail</h2>
+<p class="prose-lead prose-lead--sub">Full breakdown of limits, integrations, and tools across all four YourRank tiers.</p>
+<div class="table-scroll table-scroll--pricing pct-container" role="region" aria-label="Plan comparison" tabindex="0">
+<table class="pricing pricing-table pct-table">
+<thead>
+  <tr class="pct-head-row">
+    <th class="pct-col-feature"><span class="pct-head-title">Features &amp; Limits</span><span class="pct-head-sub">Compare all capabilities</span></th>
+    <th class="pct-col-tier"><div class="pct-tier-head"><span class="pct-tier-name">Free</span><span class="pct-tier-price">$0 forever</span><a href="/signup?plan=free" class="btn btn--sm pct-tier-btn">Start Free</a></div></th>
+    <th class="pct-col-tier"><div class="pct-tier-head"><span class="pct-tier-name">Starter</span><span class="pct-tier-price">$12 / 30d</span><a href="/signup?plan=starter" class="btn btn--sm pct-tier-btn">Choose Starter</a></div></th>
+    <th class="pct-col-tier pct-col--popular"><div class="pct-tier-head"><span class="pct-tier-tag">Popular</span><span class="pct-tier-name">Pro</span><span class="pct-tier-price pct-tier-price--pro">$29 / 30d</span><a href="/signup?plan=pro" class="btn btn--sm btn--accent pct-tier-btn">Go Pro</a></div></th>
+    <th class="pct-col-tier"><div class="pct-tier-head"><span class="pct-tier-name">Agency</span><span class="pct-tier-price">$79 / 30d</span><a href="/help/support?area=billing" class="btn btn--sm pct-tier-btn">Contact Us</a></div></th>
+  </tr>
+</thead>
 <tbody>
-<tr><td>Leaderboards</td><td>1</td><td>1</td><td>3</td><td>99</td></tr>
-<tr><td>Players per board</td><td>10</td><td>25</td><td>9,999</td><td>9,999</td></tr>
-<tr><td>Telegram bots</td><td>1</td><td>1</td><td>3</td><td>25</td></tr>
-<tr><td>Tracked offers</td><td>3</td><td>3</td><td>50</td><td>999</td></tr>
-<tr><td>Credit rules</td><td>3</td><td>3</td><td>50</td><td>999</td></tr>
-<tr><td>Items</td><td>5</td><td>5</td><td>100</td><td>999</td></tr>
-<tr><td>Custom domain</td><td>—</td><td>—</td><td>✓</td><td>✓</td></tr>
-<tr><td>OBS overlay</td><td>—</td><td>—</td><td>✓</td><td>✓</td></tr>
-<tr><td>Postback tracking</td><td>Basic</td><td>Basic</td><td>Advanced</td><td>Advanced</td></tr>
-<tr><td>Public read API</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td></tr>
-<tr><td>Signed score API</td><td>—</td><td>—</td><td>✓</td><td>✓</td></tr>
-<tr class="pro-row"><td>Price</td><td>$0</td><td>$12/30 days</td><td>$29/30 days</td><td>$79/30 days</td></tr>
+  <tr class="pct-section-row"><td colspan="5"><strong>Leaderboards &amp; Contests</strong></td></tr>
+  <tr><td class="pct-feat-name">Active leaderboards</td><td>1 board</td><td>1 board</td><td class="pct-col--popular">3 boards</td><td>99 boards</td></tr>
+  <tr><td class="pct-feat-name">Players &amp; scores per board</td><td>Up to 10</td><td>Up to 25</td><td class="pct-col--popular">Up to 9,999</td><td>Up to 9,999</td></tr>
+  <tr><td class="pct-feat-name">Live countdown &amp; auto-sort</td><td><span class="pct-badge pct-badge--check" title="Included">✓</span></td><td><span class="pct-badge pct-badge--check" title="Included">✓</span></td><td class="pct-col--popular"><span class="pct-badge pct-badge--check" title="Included">✓</span></td><td><span class="pct-badge pct-badge--check" title="Included">✓</span></td></tr>
+  <tr><td class="pct-feat-name">Custom domain (CNAME)</td><td><span class="pct-badge pct-badge--cross" title="Not available">—</span></td><td><span class="pct-badge pct-badge--cross" title="Not available">—</span></td><td class="pct-col--popular"><span class="pct-badge pct-badge--check" title="Included">✓</span></td><td><span class="pct-badge pct-badge--check" title="Included">✓</span></td></tr>
+  <tr><td class="pct-feat-name">OBS overlay streaming widget</td><td><span class="pct-badge pct-badge--cross" title="Not available">—</span></td><td><span class="pct-badge pct-badge--cross" title="Not available">—</span></td><td class="pct-col--popular"><span class="pct-badge pct-badge--check" title="Included">✓</span></td><td><span class="pct-badge pct-badge--check" title="Included">✓</span></td></tr>
+  <tr><td class="pct-feat-name">YourRank branding badge</td><td>Required</td><td>Removed</td><td class="pct-col--popular">Removed</td><td>White-label</td></tr>
+
+  <tr class="pct-section-row"><td colspan="5"><strong>Telegram Community Bots</strong></td></tr>
+  <tr><td class="pct-feat-name">Connected Telegram bots</td><td>1 bot</td><td>1 bot</td><td class="pct-col--popular">3 bots</td><td>25 bots</td></tr>
+  <tr><td class="pct-feat-name">Tracked sponsor offers</td><td>Up to 3</td><td>Up to 3</td><td class="pct-col--popular">Up to 50</td><td>Up to 999</td></tr>
+  <tr><td class="pct-feat-name">Custom chat commands (/points, /rules)</td><td><span class="pct-badge pct-badge--check" title="Included">✓</span></td><td><span class="pct-badge pct-badge--check" title="Included">✓</span></td><td class="pct-col--popular"><span class="pct-badge pct-badge--check" title="Included">✓</span></td><td><span class="pct-badge pct-badge--check" title="Included">✓</span></td></tr>
+  <tr><td class="pct-feat-name">Automated broadcasts &amp; alerts</td><td><span class="pct-badge pct-badge--cross" title="Not available">—</span></td><td><span class="pct-badge pct-badge--cross" title="Not available">—</span></td><td class="pct-col--popular"><span class="pct-badge pct-badge--check" title="Included">✓</span></td><td><span class="pct-badge pct-badge--check" title="Included">✓</span></td></tr>
+
+  <tr class="pct-section-row"><td colspan="5"><strong>Viewer Rewards &amp; Shop</strong></td></tr>
+  <tr><td class="pct-feat-name">Credit rules &amp; multipliers</td><td>Up to 3</td><td>Up to 3</td><td class="pct-col--popular">Up to 50</td><td>Up to 999</td></tr>
+  <tr><td class="pct-feat-name">Shop catalog items</td><td>Up to 5</td><td>Up to 5</td><td class="pct-col--popular">Up to 100</td><td>Up to 999</td></tr>
+  <tr><td class="pct-feat-name">Kick &amp; Discord viewer login</td><td><span class="pct-badge pct-badge--check" title="Included">✓</span></td><td><span class="pct-badge pct-badge--check" title="Included">✓</span></td><td class="pct-col--popular"><span class="pct-badge pct-badge--check" title="Included">✓</span></td><td><span class="pct-badge pct-badge--check" title="Included">✓</span></td></tr>
+  <tr><td class="pct-feat-name">Automated fulfillment ledger</td><td><span class="pct-badge pct-badge--cross" title="Not available">—</span></td><td><span class="pct-badge pct-badge--check" title="Included">✓</span></td><td class="pct-col--popular"><span class="pct-badge pct-badge--check" title="Included">✓</span></td><td><span class="pct-badge pct-badge--check" title="Included">✓</span></td></tr>
+
+  <tr class="pct-section-row"><td colspan="5"><strong>Analytics, Security &amp; APIs</strong></td></tr>
+  <tr><td class="pct-feat-name">Analytics data retention</td><td>7 days</td><td>30 days</td><td class="pct-col--popular">Unlimited</td><td>Unlimited</td></tr>
+  <tr><td class="pct-feat-name">Signed Score &amp; Postback API</td><td><span class="pct-badge pct-badge--cross" title="Not available">—</span></td><td><span class="pct-badge pct-badge--cross" title="Not available">—</span></td><td class="pct-col--popular"><span class="pct-badge pct-badge--check" title="Included">✓</span></td><td><span class="pct-badge pct-badge--check" title="Included">✓</span></td></tr>
+  <tr><td class="pct-feat-name">Public read API</td><td><span class="pct-badge pct-badge--check" title="Included">✓</span></td><td><span class="pct-badge pct-badge--check" title="Included">✓</span></td><td class="pct-col--popular"><span class="pct-badge pct-badge--check" title="Included">✓</span></td><td><span class="pct-badge pct-badge--check" title="Included">✓</span></td></tr>
+  <tr><td class="pct-feat-name">Discord webhooks</td><td><span class="pct-badge pct-badge--cross" title="Not available">—</span></td><td><span class="pct-badge pct-badge--cross" title="Not available">—</span></td><td class="pct-col--popular"><span class="pct-badge pct-badge--check" title="Included">✓</span></td><td><span class="pct-badge pct-badge--check" title="Included">✓</span></td></tr>
+  <tr><td class="pct-feat-name">CSV player import &amp; export</td><td><span class="pct-badge pct-badge--cross" title="Not available">—</span></td><td><span class="pct-badge pct-badge--check" title="Included">✓</span></td><td class="pct-col--popular"><span class="pct-badge pct-badge--check" title="Included">✓</span></td><td><span class="pct-badge pct-badge--check" title="Included">✓</span></td></tr>
+  <tr><td class="pct-feat-name">Support level</td><td>Community</td><td>Standard</td><td class="pct-col--popular">Priority 24/7</td><td>Dedicated Manager</td></tr>
+  <tr class="pro-row pct-foot-row"><td><strong>Pricing</strong></td><td>$0</td><td>$12 / 30d</td><td class="pct-col--popular"><strong>$29 / 30d</strong></td><td>$79 / 30d</td></tr>
 </tbody>
 </table>
 </div>

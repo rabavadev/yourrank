@@ -23,6 +23,15 @@ import {
   handleFinishSetup, handlePutTheme, handleDeleteSite, handleSetActive, handleNotifyTest, handleDomainVerify, handleExportStats,
   handleExportPlayers, handlePostSiteSections, handleGetSiteGameSettings, handlePostSiteGameSettings
 } from "./handlers/sites.js";
+import {
+  handleTeamList,
+  handleTeamInvite,
+  handleTeamRevokeInvite,
+  handleTeamRemoveMember,
+  handleTeamUpdateRole,
+  handleTeamAcceptInvite,
+  handleGetInviteInfo,
+} from "./handlers/team.js";
 import { handleTrial } from "./handlers/billing.js";
 import { handleReferrals } from "./handlers/referrals.js";
 import { handleLead } from "./handlers/leads.js";
@@ -42,6 +51,7 @@ import { handleLog } from "./handlers/log.js";
 import { handleScores } from "./handlers/scores.js";
 import { handleQuickAdd } from "./handlers/quick-add.js";
 import { handleKickWebhook } from "./handlers/kick-webhook.js";
+import { handleGiveawayChatroom } from "./handlers/giveaway.js";
 import {
   handleKickAuthStart,
   handleKickAuthCallback,
@@ -157,6 +167,15 @@ export const ROUTES = [
   { path: "/api/site/stats/heatmap", method: "GET", handler: withHandler(handleHeatmap) },
   { path: "/api/site/notify/test", method: "POST", handler: withHandler(handleNotifyTest) },
   { path: "/api/site/domain/verify", method: "POST", handler: withHandler(handleDomainVerify) },
+
+  // Team & moderator routes
+  { path: "/api/site/team", method: "GET", handler: withHandler(handleTeamList) },
+  { path: "/api/site/team/invite", method: "POST", handler: withHandler(handleTeamInvite) },
+  { path: "/api/site/team/invite/revoke", method: "POST", handler: withHandler(handleTeamRevokeInvite) },
+  { path: "/api/site/team/remove", method: "POST", handler: withHandler(handleTeamRemoveMember) },
+  { path: "/api/site/team/role", method: "POST", handler: withHandler(handleTeamUpdateRole) },
+  { path: "/api/site/team/accept-invite", method: "POST", handler: withHandler(handleTeamAcceptInvite) },
+  { path: "/api/site/team/invite-info", method: "GET", handler: withHandler(handleGetInviteInfo) },
   
   // Public routes (CSRF-exempt)
   { path: "/api/lead", method: "POST", handler: withHandler(handleLead) },
@@ -173,6 +192,7 @@ export const ROUTES = [
   { path: "/auth/kick", method: "GET", handler: withHandler(handleKickAuthStart) },
   { path: "/auth/kick/callback", method: "GET", handler: withHandler(handleKickAuthCallback) },
   { path: "/api/kick/disconnect", method: "POST", handler: withHandler(handleKickAuthDisconnect) },
+  { path: "/api/giveaways/chatroom", method: "GET", handler: withHandler(handleGiveawayChatroom) },
 
   // Credits / shop dashboard API
   { path: "/api/credits/status", method: "GET", handler: withHandler(handleCreditsStatus) },

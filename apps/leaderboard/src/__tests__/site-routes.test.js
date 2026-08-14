@@ -268,11 +268,11 @@ describe("logged-out vs logged-in rendering", () => {
     expect(html).toContain("Sign in with Kick");
   });
 
-  it("My Credits is a sign-in prompt when logged out", async () => {
+  it("Board credits is a sign-in prompt when logged out", async () => {
     const res = await renderSiteRoute({ request: req("https://example.com/streamer/me"), env, ctx, nonce: "n", slug: "streamer", section: "me", isCustomDomain: false });
     expect(res.status).toBe(200);
     const html = await res.text();
-    expect(html).toContain("My Credits");
+    expect(html).toContain("Board credits");
     expect(html).toContain("Sign in with Kick");
   });
 
@@ -287,13 +287,13 @@ describe("logged-out vs logged-in rendering", () => {
     expect(html).not.toContain("Sign in with Kick");
   });
 
-  it("logged-in viewers see history and redemptions on My Credits", async () => {
+  it("logged-in viewers see history and redemptions on Board credits", async () => {
     const viewer = { id: "v1", kick_username: "viewer1", avatar_url: null };
     const request = req("https://example.com/streamer/me", { viewer });
     const res = await renderSiteRoute({ request, env, ctx, nonce: "n", slug: "streamer", section: "me", isCustomDomain: false });
     expect(res.status).toBe(200);
     const html = await res.text();
-    expect(html).toContain("My Credits");
+    expect(html).toContain("Board credits");
     expect(html).toContain(">500</p>"); // balance in the hero
     expect(html).toContain("Shoutout"); // redemption
     expect(html).toContain("Stream"); // ledger description
