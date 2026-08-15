@@ -5,7 +5,7 @@
 // ============================================================================
 
 import { requireUser, json, bad, ok, readJson, rateLimit, rateLimitHeaders, clientIp } from "../auth.js";
-import { getSiteById, getByUser } from "../site.js";
+import { getSiteById } from "../site.js";
 import { one as defaultOne } from "../../../../shared/db.js";
 import {
   getSiteRole,
@@ -25,7 +25,6 @@ function getDeps(overrides = {}) {
   const deps = {
     requireUser,
     getSiteById,
-    getByUser,
     one: defaultOne,
     getSiteRole,
     listSiteMembers,
@@ -48,8 +47,11 @@ function getDeps(overrides = {}) {
 }
 
 async function getTeamSiteByUser(env, userId, one) {
+  // Same board the rest of the dashboard defaults to: the active one.
   const owned = await one(
-    "SELECT id FROM sites WHERE user_id=$1 ORDER BY id ASC LIMIT 1",
+    `SELECT id FROM sites WHERE user_id=$1
+      ORDER BY CASE WHEN id=(SELECT active_site_id FROM users WHERE id=$1) THEN 0 ELSE 1 END, id ASC
+      LIMIT 1`,
     [userId],
   );
   if (owned) return owned;
