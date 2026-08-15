@@ -33,7 +33,7 @@ function collectFiles(dir) {
     const full = path.join(dir, entry.name);
     if (entry.isDirectory()) {
       results.push(...collectFiles(full));
-    } else if (/\.(js|css)$/.test(entry.name)) {
+    } else if (/\.(js|css|webp)$/.test(entry.name)) {
       results.push(path.relative(assetsDir, full).replace(/\\/g, "/"));
     }
   }
@@ -44,10 +44,11 @@ const files = collectFiles(assetsDir);
 let outSrc = "// Auto-generated. Do not edit. Asset files inlined as strings.\n";
 outSrc += "export const ASSETS = {\n";
 for (const rel of files) {
-  const content = fs.readFileSync(path.join(assetsDir, rel), "utf8");
   const ext = path.extname(rel);
+  const isBinary = ext === ".webp";
+  const content = fs.readFileSync(path.join(assetsDir, rel), isBinary ? "base64" : "utf8");
   const webPath = "/assets/" + rel;
-  outSrc += `  ${JSON.stringify(webPath)}: [${JSON.stringify(content)}, ${JSON.stringify(ext)}],\n`;
+  outSrc += `  ${JSON.stringify(webPath)}: [${JSON.stringify(content)}, ${JSON.stringify(ext)}, ${JSON.stringify(isBinary ? "base64" : "utf8")}],\n`;
 }
 outSrc += "};\n";
 fs.writeFileSync(out, outSrc);

@@ -27,7 +27,7 @@ export const reviewsPage = `<!DOCTYPE html><html lang="en"><head>
 <meta name="twitter:title" content="Reviews · YourRank" />
 <meta name="twitter:description" content="Leave a review for YourRank on Google." />
 <link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@125,700..800&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="/assets/ui.css" /><link rel="stylesheet" href="/assets/landing.css" />
 <script type="application/ld+json">${gbpStructuredData}</script>
 </head><body>

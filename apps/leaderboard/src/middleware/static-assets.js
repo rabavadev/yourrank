@@ -12,6 +12,7 @@ const MIME = {
   ".js": "application/javascript; charset=utf-8",
   ".json": "application/json; charset=utf-8", 
   ".svg": "image/svg+xml",
+  ".webp": "image/webp",
 };
 
 // FNV-1a 32-bit hash — synchronous, dependency-free, good enough to detect
@@ -40,7 +41,7 @@ export function serveStaticAsset(path, request, assets = ASSETS) {
     : `"${contentHash(entry[0])}"`;
   const headers = {
     "content-type": MIME[entry[1]],
-    "cache-control": "public, no-cache",
+    "cache-control": entry[1] === ".webp" ? "public, max-age=604800" : "public, no-cache",
     "etag": etag,
   };
 
@@ -48,5 +49,8 @@ export function serveStaticAsset(path, request, assets = ASSETS) {
   if (inm && inm.split(",").some((t) => t.replace(/^W\//, "").trim() === etag)) {
     return new Response(null, { status: 304, headers });
   }
-  return new Response(entry[0], { headers });
+  const body = entry[2] === "base64"
+    ? Uint8Array.from(atob(entry[0]), (character) => character.charCodeAt(0))
+    : entry[0];
+  return new Response(body, { headers });
 }
