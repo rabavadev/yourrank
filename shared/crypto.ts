@@ -211,8 +211,7 @@ export async function decryptCredential(blobHex: string | null | undefined): Pro
   const value = String(blobHex).trim();
   const hex = (typeof process !== "undefined" && process.env?.TOKEN_ENC_KEY) || "";
   if (hex.length !== 64) throw new Error("TOKEN_ENC_KEY must be 64 hex characters (32 bytes)");
-  const ciphertext = value.startsWith("v1:") ? value.slice(3) : value;
-  if (!/^[0-9a-f]+$/i.test(ciphertext) || ciphertext.length < 56 || ciphertext.length % 2 !== 0) {
+  if (!/^[0-9a-f]+$/i.test(value) || value.length < 56 || value.length % 2 !== 0) {
     return value;
   }
   try {

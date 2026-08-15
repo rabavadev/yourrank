@@ -611,7 +611,13 @@ async function handleRequest(request, env, ctx, meta) {
           const result = await verifyEmailToken(token);
           if (result.ok) {
             const user = await currentUser(request, env);
-            if (user) return Response.redirect(new URL("/dashboard?verified=1", url), 302);
+            if (user) {
+              const next = url.searchParams.get("next") || "";
+              const safeNext = next.startsWith("/") && !next.startsWith("//") && !/^[a-z][a-z\d+.-]*:/i.test(next)
+                ? next
+                : "/dashboard?verified=1";
+              return Response.redirect(new URL(safeNext, url), 302);
+            }
             verifyState = { message: "Email confirmed. Sign in below to finish setting up your page." };
           } else {
             verifyState = { message: "We couldn't confirm your email.", error: result.error, showResend: true };

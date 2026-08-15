@@ -131,6 +131,31 @@ describe("createSiteInvite & lifecycle", () => {
     expect(res.inviteId).toBe("inv-123");
   });
 
+  it("rotates an existing pending invite instead of creating a duplicate", async () => {
+    let updateParams: any[] | undefined;
+    const fakeOne = async (sql: string) => {
+      if (sql.includes("FROM sites WHERE id=$1")) return { user_id: "owner-1" };
+      if (sql.includes("FROM users WHERE lower(email)=$1")) return null;
+      if (sql.includes("FROM site_invites WHERE site_id=$1")) return { id: "inv-existing" };
+      return null;
+    };
+    const fakeExec = async (_sql: string, params?: any[]) => {
+      updateParams = params;
+      return { count: 1 };
+    };
+
+    const res = await createSiteInvite("site-1", "owner-1", "newmod@example.com", "manager", {
+      one: fakeOne as any,
+      exec: fakeExec as any,
+    });
+    expect(res.ok).toBe(true);
+    expect(res.inviteId).toBe("inv-existing");
+    expect(res.token).toBeDefined();
+    expect(updateParams?.[0]).toBeDefined();
+    expect(updateParams?.[1]).toBe("manager");
+    expect(updateParams?.[2]).toBe("inv-existing");
+  });
+
   it("accepts a valid invite token", async () => {
     let insertedMember: any = null;
     let updatedInvite: any = null;

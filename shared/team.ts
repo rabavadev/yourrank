@@ -247,20 +247,24 @@ export async function createSiteInvite(
     }
   }
 
-  // Check if an active pending invite already exists
-  const existingInvite = await one<{ id: string }>(
-    "SELECT id FROM site_invites WHERE site_id=$1 AND lower(email)=$2 AND status='pending' AND expires_at > now()",
-    [siteId, cleanEmail]
-  );
-  if (existingInvite) {
-    return { ok: false, error: "An invitation is already pending for this email.", code: "already_pending" };
-  }
-
   // Generate a cryptographically random token
   const rawBytes = new Uint8Array(24);
   crypto.getRandomValues(rawBytes);
   const token = Buffer.from(rawBytes).toString("base64url");
   const tokenHash = await hashToken(token);
+
+  // Rotate an active pending invite so the owner can resend a lost link.
+  const existingInvite = await one<{ id: string }>(
+    "SELECT id FROM site_invites WHERE site_id=$1 AND lower(email)=$2 AND status='pending' AND expires_at > now()",
+    [siteId, cleanEmail]
+  );
+  if (existingInvite) {
+    await exec(
+      "UPDATE site_invites SET token_hash=$1, expires_at=now() + interval '7 days', role=$2 WHERE id=$3",
+      [tokenHash, role, existingInvite.id]
+    );
+    return { ok: true, token, inviteId: existingInvite.id };
+  }
 
   const created = await one<{ id: string }>(
     `INSERT INTO site_invites (site_id, email, role, token_hash, invited_by, status, expires_at)

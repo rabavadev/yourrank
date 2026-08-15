@@ -9,6 +9,7 @@ import {
   handleTeamAcceptInvite,
   handleGetInviteInfo,
 } from "../handlers/team.js";
+import { InvitePage } from "../pages/invite.jsx";
 
 describe("Team API Handlers", () => {
   const allowRateLimit = async () => ({ ok: true, remaining: 29, limit: 30, retryAfter: 0 });
@@ -39,7 +40,8 @@ describe("Team API Handlers", () => {
     const site = { id: "site-1" };
     const deps = {
       requireUser: async () => ({ user, res: null }),
-      getBoardById: async () => site,
+      getSiteById: async (env, siteId) => siteId === site.id ? site : null,
+      getByUser: async () => null,
       getSiteRole: async () => "moderator",
       listSiteMembers: async () => [],
       listSiteInvites: async () => [],
@@ -82,7 +84,7 @@ describe("Team API Handlers", () => {
   it("returns 404 for a non-member instead of exposing team existence", async () => {
     const deps = {
       requireUser: async () => ({ user: { id: "outsider" }, res: null }),
-      getBoardById: async () => null,
+      getSiteById: async () => null,
       getSiteRole: async () => null,
     };
     const res = await handleTeamList(
@@ -91,6 +93,22 @@ describe("Team API Handlers", () => {
       deps,
     );
     expect(res.status).toBe(404);
+  });
+
+  it("preserves the invite after signed-out visitors authenticate", () => {
+    const html = String(InvitePage({
+      invite: {
+        siteName: "Board",
+        ownerName: "Owner",
+        role: "moderator",
+        status: "pending",
+        expiresAt: new Date(Date.now() + 86400000).toISOString(),
+      },
+      token: "invite-token",
+      user: null,
+    }));
+    expect(html).toContain("/login?next=%2Finvite%2Finvite-token");
+    expect(html).toContain("/signup?next=%2Finvite%2Finvite-token");
   });
 
   it("rejects unauthorized calls on team endpoints", async () => {

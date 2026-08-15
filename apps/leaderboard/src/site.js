@@ -250,6 +250,10 @@ export async function getBoardById(env, uid, siteId) {
   return null;
 }
 
+export async function getSiteById(env, siteId) {
+  return one(`SELECT ${SITE_COLUMNS} FROM sites WHERE id=$1`, [siteId]);
+}
+
 // Public "hub": the owner's published boards, so a visitor on one board's page
 // can tab across to the streamer's other sponsor leaderboards.
 async function getPublicBoards(env, uid) {

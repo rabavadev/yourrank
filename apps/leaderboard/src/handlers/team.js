@@ -5,7 +5,7 @@
 // ============================================================================
 
 import { requireUser, json, bad, ok, readJson, rateLimit, rateLimitHeaders, clientIp } from "../auth.js";
-import { getBoardById, getByUser } from "../site.js";
+import { getSiteById, getByUser } from "../site.js";
 import {
   getSiteRole,
   canRoleManageTeam,
@@ -23,7 +23,7 @@ import { PLATFORM_HOST } from "../constants.js";
 function getDeps(overrides = {}) {
   return {
     requireUser,
-    getBoardById,
+    getSiteById,
     getByUser,
     getSiteRole,
     listSiteMembers,
@@ -43,7 +43,7 @@ function getDeps(overrides = {}) {
 
 async function resolveTeamSite(env, user, siteId, deps) {
   const site = siteId
-    ? await deps.getBoardById(env, user.id, siteId)
+    ? await deps.getSiteById(env, siteId)
     : await deps.getByUser(env, user.id);
   if (!site) return null;
   const role = await deps.getSiteRole(site.id, user.id);
