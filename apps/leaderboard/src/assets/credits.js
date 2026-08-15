@@ -3,6 +3,8 @@ import { openDrawer, closeDrawer } from "./dashboard/shell.js";
 import { setState } from "./dashboard/state.js";
 import { UNKNOWN, emptyStateHtml, renderEmpty, renderError, setBlockLoading, setMetricLoading, setRowsLoading } from "./dashboard/states.js";
 import { updateProfileMenu } from "./dashboard/profile-menu.js";
+import "./dashboard/help-drawer.js";
+import "./dashboard/command-palette.js";
 
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
@@ -31,9 +33,13 @@ const tab = () => $("cr-app")?.dataset.crTab || "";
 const siteQuery = () => new URLSearchParams(location.search).get("siteId");
 const sitePath = (path) => `${path}${siteQuery() ? `${path.includes("?") ? "&" : "?"}siteId=${encodeURIComponent(siteQuery())}` : ""}`;
 function preserveSiteContextLinks() {
-  const siteId = siteQuery();
+  const siteId = siteQuery() || activeSiteId;
   if (!siteId) return;
-  const destinations = new Set([
+  const sitesLink = document.querySelector('[data-product-link="sites"]');
+  if (sitesLink) sitesLink.href = `/dashboard?board=${encodeURIComponent(siteId)}`;
+  const creditsLink = document.querySelector('[data-product-link="credits"]');
+  if (creditsLink) creditsLink.href = `/dashboard/rewards/redemptions?siteId=${encodeURIComponent(siteId)}`;
+  const creditsDestinations = new Set([
     "/dashboard/rewards/redemptions",
     "/dashboard/rewards/shop",
     "/dashboard/rewards/rules",
@@ -41,12 +47,24 @@ function preserveSiteContextLinks() {
     "/dashboard/audience/activity",
     "/dashboard/rewards/channel",
   ]);
+  const siteDestinations = new Set([
+    "/dashboard",
+    "/dashboard/games",
+    "/dashboard/analytics/activity",
+    "/dashboard/settings/board",
+    "/dashboard/boards",
+  ]);
   document.querySelectorAll("a[href]").forEach((link) => {
     const raw = link.getAttribute("href");
     if (!raw || raw.startsWith("#")) return;
     const target = new URL(raw, location.origin);
-    if (!destinations.has(target.pathname) || target.searchParams.has("siteId")) return;
-    target.searchParams.set("siteId", siteId);
+    if (creditsDestinations.has(target.pathname) && !target.searchParams.has("siteId")) {
+      target.searchParams.set("siteId", siteId);
+    } else if ((siteDestinations.has(target.pathname) || target.pathname.startsWith("/dashboard/editor/")) && !target.searchParams.has("board")) {
+      target.searchParams.set("board", siteId);
+    } else {
+      return;
+    }
     link.href = `${target.pathname}${target.search}${target.hash}`;
   });
 }
@@ -116,9 +134,30 @@ async function loadBoardShell() {
   activeSiteId = current || "";
   if (select) { select.innerHTML = list.map((b) => `<option value="${esc(b.id || b.siteId)}" ${String(b.id || b.siteId) === String(current) ? "selected" : ""}>${esc(b.name || b.slug || "Board")}</option>`).join(""); select.addEventListener("change", () => { location.href = `${location.pathname}?siteId=${encodeURIComponent(select.value)}`; }); }
   const board = list.find((b) => String(b.id || b.siteId) === String(current)) || list[0] || {};
-  $("activeBoardName").textContent = board.name || board.slug || "Board"; $("activeBoardMeta").textContent = board.slug ? `yourrank.site/${board.slug}` : "";
-  $("lbTopbarStatus").textContent = board.published ? "LIVE" : "NOT LIVE"; $("lbTopbarStatus").className = `lb-status ${board.published ? "lb-status--live" : "lb-status--draft"}`;
-  $("planBadge").textContent = `${String(board.plan || user.plan || "free").toUpperCase()} PLAN`; if (board.slug) $("liveLink").href = `/${board.slug}`;
+  $("activeBoardName").textContent = board.name || board.slug || "Site"; $("activeBoardMeta").textContent = board.slug ? `yourrank.site/${board.slug}` : "";
+  const topbarPath = $("lbTopbarSitePath"); if (topbarPath) topbarPath.textContent = board.slug ? `/${board.slug}` : "";
+  const live = Boolean(board.published) && user.emailVerified !== false;
+  const pendingVerification = Boolean(board.published) && user.emailVerified === false;
+  const status = $("lbTopbarStatus");
+  if (status) {
+    status.textContent = live ? "Public" : pendingVerification ? "Email verification needed" : "Private";
+    status.className = `lb-status ${live ? "lb-status--live" : pendingVerification ? "lb-status--pending" : "lb-status--draft"}`;
+  }
+  $("planBadge").textContent = `${String(board.plan || user.plan || "free").toUpperCase()} PLAN`;
+  const publicLink = $("liveLink");
+  if (publicLink) {
+    if (live && board.slug) {
+      publicLink.href = `/${board.slug}`;
+      publicLink.textContent = "Open public page ↗";
+      publicLink.target = "_blank";
+      publicLink.rel = "noopener noreferrer";
+    } else {
+      publicLink.href = pendingVerification ? "/verify-email" : `/dashboard/editor/share?board=${encodeURIComponent(current || "")}`;
+      publicLink.textContent = pendingVerification ? "Verify email to publish" : "Publish your site";
+      publicLink.removeAttribute("target");
+      publicLink.removeAttribute("rel");
+    }
+  }
   preserveSiteContextLinks();
 }
 function renderShellUsage() {
@@ -251,11 +290,11 @@ async function loadAnalytics() {
 function renderAnalytics() {
   const a = state.analytics; if (!a) return;
   const s = a.summary || {};
-  $("cr-stat-earned").textContent = `${s.periodEarned ?? "—"} (all time: ${s.allTimeEarned ?? "—"})`;
-  $("cr-stat-spent").textContent = `${s.periodSpent ?? "—"} (all time: ${s.allTimeSpent ?? "—"})`;
-  $("cr-stat-redemptions").textContent = s.redemptionsTotal ?? "—";
-  $("cr-stat-pending").textContent = s.redemptionsPending ?? "—";
-  $("cr-stat-balance").textContent = s.viewerBalance ?? "—";
+  $("cr-stat-earned").innerHTML = `${s.periodEarned ?? 0} <small class="kpi-sub">All time: ${s.allTimeEarned ?? 0}</small>`;
+  $("cr-stat-spent").innerHTML = `${s.periodSpent ?? 0} <small class="kpi-sub">All time: ${s.allTimeSpent ?? 0}</small>`;
+  $("cr-stat-redemptions").textContent = s.redemptionsTotal ?? 0;
+  $("cr-stat-pending").textContent = s.redemptionsPending ?? 0;
+  $("cr-stat-balance").textContent = s.viewerBalance ?? 0;
   const label = $("cr-analytics-days-label"); if (label) label.textContent = String(Number($("cr-analytics-days")?.value) || 30);
   const items = a.topItems || [];
   $("cr-top-items-list").innerHTML = items.map((i) => `<tr><td>${esc(i.name)}</td><td class="num">${i.redemptions}</td><td class="num">${i.credits_spent}</td></tr>`).join("");

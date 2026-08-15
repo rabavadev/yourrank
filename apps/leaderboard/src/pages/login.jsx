@@ -76,3 +76,5 @@ export function LoginPage() {
     </html>
   );
 }
+
+export const loginPage = { Component: LoginPage };

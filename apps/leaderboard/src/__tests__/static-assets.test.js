@@ -49,4 +49,14 @@ describe("serveStaticAsset caching", () => {
   it("404s an unknown asset", () => {
     expect(serveStaticAsset("/assets/nope.css", reqWith(), testAssets).status).toBe(404);
   });
+
+  it("serves the invite and theme scripts from the bundled asset map", () => {
+    const assets = {
+      ...testAssets,
+      "/assets/invite.js": ["document.body.dataset.invite = 'ready';", ".js"],
+      "/assets/theme.js": ["document.documentElement.dataset.theme = 'dark';", ".js"],
+    };
+    expect(serveStaticAsset("/assets/invite.js", new Request("https://test.com/assets/invite.js"), assets).status).toBe(200);
+    expect(serveStaticAsset("/assets/theme.js", new Request("https://test.com/assets/theme.js"), assets).status).toBe(200);
+  });
 });

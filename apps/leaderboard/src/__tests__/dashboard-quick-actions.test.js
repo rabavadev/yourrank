@@ -4,6 +4,11 @@ import { PAGES } from "../pages.jsx";
 
 const siteJs = readFileSync(new URL("../assets/dashboard/site.js", import.meta.url), "utf8");
 const utilsJs = readFileSync(new URL("../assets/dashboard/utils.js", import.meta.url), "utf8");
+const overviewJs = readFileSync(new URL("../assets/dashboard/overview.js", import.meta.url), "utf8");
+const dashboardJs = readFileSync(new URL("../assets/dashboard.js", import.meta.url), "utf8");
+const creditsJs = readFileSync(new URL("../assets/credits.js", import.meta.url), "utf8");
+const performanceJs = readFileSync(new URL("../assets/dashboard/performance.js", import.meta.url), "utf8");
+const dashboardCss = readFileSync(new URL("../assets/dashboard-v3.css", import.meta.url), "utf8");
 
 function dashboardHtml(activePath = "/dashboard") {
   return PAGES.dashboard.Component({ activePath }).toString();
@@ -18,7 +23,54 @@ describe("dashboard overview quick actions", () => {
     expect(html).toContain('id="ovStepPublish"');
     expect(html).toContain('id="ovActivityList"');
     expect(html).toContain('id="ovTopPlayers"');
-    expect(html).toContain('id="ovStatusbar"');
+    expect(html).toContain('class="ov-summary"');
+    expect(html).toContain('id="ovPrimaryAction"');
+    expect(html).toContain('href="#publish"');
+    expect(html).toContain('class="ov-card-empty" id="ovActivityEmpty"');
+  });
+
+  it("routes unverified users to email confirmation without a duplicate Overview banner", () => {
+    expect(overviewJs).toContain("status.published && !status.emailVerified");
+    expect(overviewJs).toContain("const needsVerification = !status.emailVerified");
+    expect(overviewJs).toContain("const readyToPublish = steps.brand && steps.players");
+    expect(overviewJs).toContain("const verificationIsNext = pendingVerification || (readyToPublish && needsVerification)");
+    expect(overviewJs).toContain('verificationIsNext ? "/verify-email"');
+    expect(overviewJs).toContain('verificationIsNext ? "Confirm email"');
+    expect(siteJs).toContain("s.emailVerified || Boolean(document.querySelector");
+    expect(siteJs).toContain("export function wirePublishAction");
+    expect(siteJs).toContain("requestPublicationChange");
+  });
+
+  it("preserves the selected site across Sites and Credits", () => {
+    expect(dashboardJs).toContain('target.searchParams.set("siteId", state.ACTIVE_SITE_ID)');
+    expect(dashboardJs).toContain('target.searchParams.set("board", state.ACTIVE_SITE_ID)');
+    expect(dashboardJs).toContain('target.pathname.startsWith("/dashboard/editor/")');
+    expect(dashboardJs).toContain('target.pathname.startsWith("/dashboard/analytics/")');
+    expect(creditsJs).toContain('`/dashboard?board=${encodeURIComponent(siteId)}`');
+    expect(creditsJs).toContain('target.pathname.startsWith("/dashboard/editor/")');
+    expect(creditsJs).toContain('target.searchParams.set("board", siteId)');
+    expect(creditsJs).toContain('target.searchParams.set("siteId", siteId)');
+  });
+
+  it("reports public site availability truthfully from Credits", () => {
+    expect(creditsJs).toContain("Boolean(board.published) && user.emailVerified !== false");
+    expect(creditsJs).toContain('live ? "Public" : pendingVerification ? "Email verification needed" : "Private"');
+    expect(creditsJs).toContain('pendingVerification ? "/verify-email"');
+    expect(creditsJs).toContain('pendingVerification ? "Verify email to publish" : "Publish your site"');
+  });
+
+  it("keeps tablet navigation closable", () => {
+    expect(dashboardCss).toMatch(/@media \(max-width: 980px\)[\s\S]*?\.v3-dash \.lb-side-close \{[\s\S]*?display: inline-flex;[\s\S]*?width: 44px;[\s\S]*?height: 44px;/);
+  });
+
+  it("keeps account plan panels readable on the dark dashboard", () => {
+    expect(dashboardCss).toMatch(/\.v3-dash \.plan-usage-row \{[\s\S]*?background: var\(--v3-chrome-3\);/);
+    expect(dashboardCss).toMatch(/\.v3-dash \.plan-pending,[\s\S]*?\.v3-dash \.plan-cancel \{[\s\S]*?background: var\(--v3-chrome-3\);/);
+  });
+
+  it("announces the active audience insight tab", () => {
+    expect(performanceJs).toContain('node.setAttribute("aria-current", "page")');
+    expect(performanceJs).toContain('node.removeAttribute("aria-current")');
   });
 
   it("copies the live page URL from the editor Share tab", () => {
@@ -36,20 +88,19 @@ describe("dashboard overview quick actions", () => {
     // Icons are real inline SVGs, not emoji.
     expect(html).not.toContain('aria-hidden="true">🔌</span>');
     expect(html).toContain('>Overview</a>');
-    // Consolidated IA (audit item 15): one Editor destination, one Credits
-    // parent; Players/Design/Past periods live as editor-internal tabs.
-    expect(html).toContain('>Editor</a>');
-    expect(html).toContain('>Board settings</a>');
-    expect(html).toContain('>Account settings</a>');
-    expect(html).toContain('>BOARD</div>');
-    expect(html).toContain('>CREDITS</div>');
-    expect(html).toContain('>Credits</a>');
-    // Editor sub-sections remain reachable as internal tab links.
-    const editor = dashboardHtml("/dashboard/editor");
-    expect(editor).toContain('/dashboard/editor/players');
-    expect(editor).toContain('/dashboard/editor/design');
-    expect(html).not.toContain('>REWARDS</div>');
-    expect(html).not.toContain('>AUDIENCE</div>');
+    // Every feature remains visible in one grouped list instead of being hidden
+    // behind workspace switches or editor tabs.
+    for (const label of [
+      "Site details", "Racers &amp; scores", "Theme &amp; styling", "Mini-games",
+      "Overlay &amp; share", "Past winners", "Traffic &amp; stats", "Viewer balances",
+      "Reward orders", "Rewards catalog", "Earning rules", "Points ledger",
+      "Kick connection", "Leaderboard settings", "All sites", "Account &amp; billing",
+      "Help &amp; support",
+    ]) expect(html).toContain(`>${label}</a>`);
+    expect(html).toContain('>LEADERBOARD</div>');
+    expect(html).toContain('>COMMUNITY &amp; REWARDS</div>');
+    expect(html).toContain('>TELEGRAM BOT</div>');
+    expect(html).toContain('>SETTINGS &amp; SITES</div>');
   });
 
   it("serves only the section the URL addresses", () => {
@@ -66,7 +117,7 @@ describe("dashboard overview quick actions", () => {
     expect(games).not.toContain('data-page="home"');
   });
 
-  it("leads with the Board editor and still exposes editor sub-sections", () => {
+  it("keeps every site editor section directly available", () => {
     const html = dashboardHtml("/dashboard/editor");
     expect(html).toContain('data-page="board"');
     expect(html).toContain('id="savebar"');

@@ -206,11 +206,20 @@ export function renderSidebarBoardSwitcher() {
   const nameEl = $("activeBoardName");
   const metaEl = $("activeBoardMeta");
   const sel = $("sidebarBoardSelect");
+  const topbarPath = $("lbTopbarSitePath");
   const manage = $("manageBoardsBtn");
   const allBoardsNav = $("allBoardsNav");
   const allBoardsCount = $("allBoardsCount");
   const active = state.BOARDS.find((b) => b.id === state.ACTIVE_SITE_ID);
   if (nameEl) nameEl.textContent = active?.name || "…";
+  const avatarEl = $("wsAvatar");
+  if (avatarEl && active?.name) {
+    avatarEl.textContent = active.name.trim().charAt(0).toUpperCase() || "Y";
+  }
+  const planEl = $("wsPlanBadge");
+  if (planEl) {
+    planEl.textContent = state.USER?.plan ? `${state.USER.plan.toUpperCase()} PLAN` : "ACTIVE SITE";
+  }
   if (metaEl) {
     if (active) {
       const parts = [`/${active.slug}`, active.casino, active.code].filter(Boolean);
@@ -219,6 +228,7 @@ export function renderSidebarBoardSwitcher() {
       metaEl.textContent = "";
     }
   }
+  if (topbarPath) topbarPath.textContent = active?.slug ? `/${active.slug}` : "Address unavailable";
   if (sel) {
     sel.innerHTML = "";
     if (!state.BOARDS.length) {
@@ -231,7 +241,7 @@ export function renderSidebarBoardSwitcher() {
       state.BOARDS.forEach((b) => {
         const opt = document.createElement("option");
         opt.value = b.id;
-        opt.textContent = `${b.name} /${b.slug}`;
+        opt.textContent = b.name;
         opt.selected = b.id === state.ACTIVE_SITE_ID;
         sel.appendChild(opt);
       });

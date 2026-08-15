@@ -10,8 +10,8 @@ export function initPerformance() {
   renderEmpty($("eventsEmpty"), {
     icon: "link",
     title: "No events yet",
-    body: "Postbacks and score updates will appear once a sponsor sends them.",
-    actions: [{ label: "Set up postbacks", href: "/dashboard/settings/connections", accent: true }],
+    body: "Automatic score updates will appear once a sponsor sends them.",
+    actions: [{ label: "Set up score updates", href: "/dashboard/settings/connections", accent: true }],
   });
   const local = $("perfLocalTime");
   if (local) local.textContent = "Times in UTC";
@@ -56,7 +56,12 @@ function wireTabs() {
 
 function showTab(tab) {
   const active = ["activity", "referrals", "events"].includes(tab) ? tab : "activity";
-  document.querySelectorAll("[data-perf-tab]").forEach((node) => node.classList.toggle("is-on", node.dataset.perfTab === active));
+  document.querySelectorAll("[data-perf-tab]").forEach((node) => {
+    const selected = node.dataset.perfTab === active;
+    node.classList.toggle("is-on", selected);
+    if (selected) node.setAttribute("aria-current", "page");
+    else node.removeAttribute("aria-current");
+  });
   const panels = { activity: ["perf-activity", "perf-heatmap"], referrals: ["perf-referrals", "perf-referrers"], events: ["perf-events"] };
   Object.entries(panels).forEach(([name, ids]) => ids.forEach((id) => { const node = $(id); if (node) node.hidden = name !== active; }));
 }
@@ -82,7 +87,7 @@ export function renderPerformance(stats) {
   const rangeLabel = $("perfRangeLabel");
   if (rangeLabel) rangeLabel.textContent = String(range);
   const board = $("perfBoardName");
-  if (board) board.textContent = state.SLUG || "Active board";
+  if (board) board.textContent = state.SLUG || "Active site";
   renderChart(days);
   renderActivity(days);
   loadHeatmap();
@@ -184,7 +189,7 @@ function renderHeatmap(matrix) {
   const values = matrix.flat().map((value) => Number(value) || 0);
   const total = values.reduce((sum, value) => sum + value, 0);
   if (total === 0) {
-    renderEmpty(grid, { icon: "chart", title: "No hourly activity yet", body: "Views by day and hour will appear here once your board gets traffic." });
+    renderEmpty(grid, { icon: "chart", title: "No hourly activity yet", body: "Views by day and hour will appear here once your site gets traffic." });
     return;
   }
   let html = `<div class="heatmap-corner"></div>`;

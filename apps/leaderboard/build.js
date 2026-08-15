@@ -6,7 +6,7 @@ import { execSync } from "node:child_process";
 // Step 1: Compile shared TypeScript to JavaScript
 console.log("Compiling shared TypeScript...");
 try {
-  execSync("node ../../build-shared.mjs", { stdio: "inherit" });
+  execSync("bun ../../build-shared.mjs", { stdio: "inherit" });
   console.log("TypeScript compilation complete");
 } catch (error) {
   console.error("TypeScript compilation failed:", error);
@@ -17,7 +17,7 @@ try {
 // build-games.mjs for why the games get a bundler and no other page does).
 console.log("Bundling games island...");
 try {
-  execSync("node build-games.mjs", { stdio: "inherit" });
+  execSync("bun build-games.mjs", { stdio: "inherit" });
 } catch (error) {
   console.error("Games island build failed:", error);
   process.exit(1);

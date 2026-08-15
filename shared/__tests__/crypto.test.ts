@@ -11,6 +11,7 @@ import {
   decryptToken,
   encrypt,
   decrypt,
+  decryptCredential,
   verifyHmacSha256Hex,
   safeEqual,
   newLinkSlug,
@@ -98,6 +99,16 @@ describe('encrypt / decrypt (generic hex API)', () => {
     const ciphertext = await encrypt('test', hexKey);
     // v1: = 76 31 3a in hex
     expect(ciphertext.startsWith('76313a')).toBe(true);
+  });
+});
+
+describe('decryptCredential', () => {
+  it('returns legacy plaintext values unchanged', async () => {
+    expect(await decryptCredential('https://discord.example/webhook')).toBe('https://discord.example/webhook');
+  });
+
+  it('returns null instead of using malformed ciphertext as a credential', async () => {
+    expect(await decryptCredential('a'.repeat(64))).toBeNull();
   });
 });
 

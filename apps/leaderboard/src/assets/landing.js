@@ -58,3 +58,84 @@ if (pricingSec && "IntersectionObserver" in window) {
   }, { threshold: 0.15 });
   io2.observe(pricingSec);
 }
+
+// Animated hero rotator
+const heroRotator = document.getElementById("heroRotator");
+if (heroRotator && !reduceMotion) {
+  const titles = [
+    "Leaderboards",
+    "Community Races",
+    "Telegram Bots",
+    "Stream Contests",
+    "Live Standings"
+  ];
+  let idx = 0;
+  setInterval(() => {
+    heroRotator.classList.add("hero-rotator--out");
+    setTimeout(() => {
+      idx = (idx + 1) % titles.length;
+      heroRotator.textContent = titles[idx];
+      heroRotator.classList.remove("hero-rotator--out");
+      heroRotator.classList.add("hero-rotator--in");
+      setTimeout(() => {
+        heroRotator.classList.remove("hero-rotator--in");
+      }, 300);
+    }, 280);
+  }, 2400);
+}
+
+// Interactive Elastic Gallery
+const egContainer = document.getElementById("elasticGallery");
+if (egContainer) {
+  const items = egContainer.querySelectorAll(".eg-item");
+  items.forEach((item) => {
+    const activate = () => {
+      items.forEach((i) => i.classList.remove("is-active"));
+      item.classList.add("is-active");
+    };
+    item.addEventListener("mouseenter", activate);
+    item.addEventListener("click", activate);
+  });
+}
+
+// Interactive & animated signal flow cards
+const flowStages = document.querySelectorAll(".signal-flow .flow-stage");
+if (flowStages.length > 0 && !reduceMotion) {
+  let activeStageIdx = 0;
+  let flowTimer = null;
+
+  const setStageActive = (index) => {
+    flowStages.forEach((stg, i) => {
+      stg.classList.toggle("is-active", i === index);
+    });
+  };
+
+  const startFlowCycle = () => {
+    if (flowTimer) clearInterval(flowTimer);
+    flowTimer = setInterval(() => {
+      activeStageIdx = (activeStageIdx + 1) % flowStages.length;
+      setStageActive(activeStageIdx);
+    }, 2400);
+  };
+
+  setStageActive(0);
+  startFlowCycle();
+
+  flowStages.forEach((stage, i) => {
+    stage.addEventListener("mouseenter", () => {
+      clearInterval(flowTimer);
+      activeStageIdx = i;
+      setStageActive(i);
+    });
+    stage.addEventListener("mouseleave", () => {
+      startFlowCycle();
+    });
+    stage.addEventListener("click", () => {
+      activeStageIdx = i;
+      setStageActive(i);
+    });
+  });
+}
+
+
+

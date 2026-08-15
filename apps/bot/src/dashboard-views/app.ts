@@ -8,6 +8,17 @@ import { offersPanel } from "./pages/offers.js";
 import { broadcastsPanel } from "./pages/broadcasts.js";
 import { dashClientScript } from "./client-script.js";
 
+function panelHtml(page: string, publicBaseUrl: string): string {
+  switch (page) {
+    case "bots": return botsPanel();
+    case "commands": return commandsPanel();
+    case "offers": return offersPanel(publicBaseUrl);
+    case "broadcasts": return broadcastsPanel();
+    case "overview":
+    default: return overviewPanel();
+  }
+}
+
 export function appHtml(
   user: { display_name: string; email: string; plan: string },
   publicBaseUrl: string,
@@ -26,24 +37,24 @@ export function appHtml(
     headName: user.display_name || "Streamer",
     headMeta: `${(user.plan || "free").replace(/^./, (c) => c.toUpperCase())} plan`,
     productLinks: [
-      { label: "Leaderboards", href: "/dashboard" },
-      { label: "Help", href: "/help/support" },
+      { label: "Sites", href: "/dashboard" },
+      { label: "Telegram", href: "/bot/dashboard", active: true },
+      { label: "Credits & Shop", href: "/dashboard/rewards/redemptions" },
     ],
     title: meta.label,
     subtitle: meta.sub,
     crumbs: [
-      { label: "Dashboard", href: "/dashboard" },
       { label: "Telegram", href: "/bot/dashboard" },
       { label: meta.label },
     ],
     user,
     activePath: "/bot/dashboard",
     logoutAction: "/bot/auth/logout",
-    content: `${overviewPanel()}
-  ${botsPanel()}
-  ${commandsPanel()}
-  ${offersPanel(publicBaseUrl)}
-  ${broadcastsPanel()}`,
+    // Each Telegram page is its own document (nav links are full loads), so
+    // render only the active panel. This keeps one panel's slow or failed data
+    // from bloating or breaking the others, and matches the SPA section model
+    // the leaderboard dashboard already uses.
+    content: panelHtml(page, publicBaseUrl),
   });
   return botPageHtml({
     user,
@@ -52,7 +63,6 @@ export function appHtml(
     nav,
     dashboardChrome: true,
     content: `${chrome}
-<div id="toast" class="hidden" role="status" aria-live="polite"></div>
 ${dashClientScript()}`,
   });
 }

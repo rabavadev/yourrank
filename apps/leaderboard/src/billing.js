@@ -567,8 +567,10 @@ function paymentStatusMessage(status) {
   switch (String(status || "").toLowerCase()) {
     case "failed":
     case "expired":
+    case "canceled":
     case "cancelled":
     case "refunded":
+      // U-11: Both spellings accepted for compatibility; canonical is "canceled".
       return "No charge was made.";
     case "waiting":
     case "confirming":
@@ -580,7 +582,8 @@ function paymentStatusMessage(status) {
     case "manual":
       return "Payment completed.";
     default:
-      return "";
+      // B-03: Unknown status no longer renders as a blank table cell.
+      return "Status unknown";
   }
 }
 
@@ -607,19 +610,30 @@ export async function handleAccountUsage(request, env) {
       activeSite ? getSiteCreditsUsage(activeSite.id) : null,
     ]);
 
+    // U-08: Added isLimitReached and pct so the client doesn't need to recompute.
     return ok({
       plan,
       leaderboard: {
-        boards: { used: siteIds.length, limit: _BL[plan] },
-        players: { used: playerCount?.count || 0, limit: _PL[plan] },
+        boards: {
+          used: siteIds.length,
+          limit: _BL[plan],
+          isLimitReached: siteIds.length >= (_BL[plan] ?? Infinity),
+          pct: Math.round((siteIds.length / (_BL[plan] || 1)) * 100),
+        },
+        players: {
+          used: playerCount?.count || 0,
+          limit: _PL[plan],
+          isLimitReached: (playerCount?.count || 0) >= (_PL[plan] ?? Infinity),
+          pct: Math.round(((playerCount?.count || 0) / (_PL[plan] || 1)) * 100),
+        },
       },
       credits: activeSite
         ? {
-            rewardMappings: { used: creditsUsage.rewardMappings, limit: _CRL[plan] },
-            shopItems: { used: creditsUsage.shopItems, limit: _CSL[plan] },
-            pendingRedemptions: { used: creditsUsage.pendingRedemptions, limit: _CPRL[plan] },
-            redemptionsPer30Days: { used: creditsUsage.redemptionsPer30Days, limit: _CR30L[plan] },
-            newViewersPer30Days: { used: creditsUsage.newViewersPer30Days, limit: _CVL[plan] },
+            rewardMappings: { used: creditsUsage.rewardMappings, limit: _CRL[plan], isLimitReached: creditsUsage.rewardMappings >= (_CRL[plan] ?? Infinity) },
+            shopItems: { used: creditsUsage.shopItems, limit: _CSL[plan], isLimitReached: creditsUsage.shopItems >= (_CSL[plan] ?? Infinity) },
+            pendingRedemptions: { used: creditsUsage.pendingRedemptions, limit: _CPRL[plan], isLimitReached: creditsUsage.pendingRedemptions >= (_CPRL[plan] ?? Infinity) },
+            redemptionsPer30Days: { used: creditsUsage.redemptionsPer30Days, limit: _CR30L[plan], isLimitReached: creditsUsage.redemptionsPer30Days >= (_CR30L[plan] ?? Infinity) },
+            newViewersPer30Days: { used: creditsUsage.newViewersPer30Days, limit: _CVL[plan], isLimitReached: creditsUsage.newViewersPer30Days >= (_CVL[plan] ?? Infinity) },
           }
         : null,
       limits: {

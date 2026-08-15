@@ -26,6 +26,24 @@ document.querySelectorAll("[data-pw-toggle]").forEach(btn => {
 const mode = { "/signup": "signup", "/forgot": "forgot", "/reset": "reset" }[location.pathname] || "login";
 const urlParams = new URLSearchParams(location.search);
 const planParam = urlParams.get("plan") || "";
+function safeNextPath(value) {
+  if (!value) return "";
+  try {
+    const u = new URL(value, location.origin);
+    if (u.origin !== location.origin) return "";
+    const path = u.pathname;
+    const allowedExact = new Set([
+      "/dashboard",
+      "/dashboard/settings",
+      "/help/support",
+      "/verify-email"
+    ]);
+    const allowedPrefixes = ["/dashboard/"];
+    if (allowedExact.has(path) || allowedPrefixes.some(prefix => path.startsWith(prefix))) return path;
+  } catch (_) {}
+  return "";
+}
+const nextPath = safeNextPath(urlParams.get("next") || "");
 const form = document.getElementById("form");
 const errEl = document.getElementById("err");
 function getCsrf() { const m = document.cookie.match(/(?:^|;\s*)__csrf=([^;]+)/); return m ? m[1] : ""; }
@@ -183,7 +201,7 @@ form.addEventListener("submit", async (e) => {
       return;
     }
     if (data.needsVerification) {
-      location.href = "/verify-email";
+      location.href = nextPath ? `/verify-email?next=${encodeURIComponent(nextPath)}` : "/verify-email";
       return;
     }
     if (mode === "signup") {
@@ -191,9 +209,9 @@ form.addEventListener("submit", async (e) => {
       if (["starter", "pro"].includes(p)) location.href = `/dashboard/settings?plan=${encodeURIComponent(p)}`;
       else if (p === "lifetime") location.href = "/dashboard/settings?plan=lifetime";
       else if (p === "agency") location.href = "/help/support?area=billing";
-      else location.href = "/dashboard";
+      else location.href = nextPath || "/dashboard";
     } else {
-      location.href = "/dashboard";
+      location.href = nextPath || "/dashboard";
     }
   } catch (_) { errEl.textContent = "Network error. Try again."; submit.disabled = false; submit.textContent = orig; }
 });

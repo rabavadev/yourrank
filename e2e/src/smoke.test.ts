@@ -1,3 +1,5 @@
+/// <reference types="bun-types" />
+
 import { describe, it, expect, beforeAll, afterAll } from "bun:test";
 import { Client, hmacSha256, randomId } from "./client.js";
 
@@ -23,6 +25,50 @@ const password = "TestPass1234";
 const name = "E2E Test";
 const slug = `e2e-${id}`;
 
+const SIGNED_IN_DESTINATIONS = [
+  "/dashboard",
+  "/dashboard/editor/setup",
+  "/dashboard/editor/players",
+  "/dashboard/editor/design",
+  "/dashboard/games",
+  "/dashboard/editor/share",
+  "/dashboard/editor/history",
+  "/dashboard/boards",
+  "/dashboard/analytics/activity",
+  "/dashboard/audience/viewers",
+  "/dashboard/rewards/redemptions",
+  "/dashboard/rewards/shop",
+  "/dashboard/rewards/rules",
+  "/dashboard/audience/activity",
+  "/dashboard/rewards/channel",
+  "/dashboard/settings/board",
+  "/dashboard/settings",
+  "/help",
+] as const;
+
+const AUTHENTICATED_DASHBOARD_ROUTES = [
+  ["/dashboard", "board"],
+  ["/dashboard/editor/setup", "board"],
+  ["/dashboard/editor/players", "board"],
+  ["/dashboard/editor/design", "board"],
+  ["/dashboard/games", "board"],
+  ["/dashboard/editor/share", "board"],
+  ["/dashboard/editor/history", "board"],
+  ["/dashboard/boards", "board"],
+  ["/dashboard/analytics/activity", "board"],
+  ["/dashboard/settings/board", "board"],
+  ["/dashboard/audience/viewers", "siteId"],
+  ["/dashboard/rewards/redemptions", "siteId"],
+  ["/dashboard/rewards/shop", "siteId"],
+  ["/dashboard/rewards/rules", "siteId"],
+  ["/dashboard/audience/activity", "siteId"],
+  ["/dashboard/rewards/channel", "siteId"],
+  ["/dashboard/settings/account", "board"],
+  ["/dashboard/settings/plan", "board"],
+  ["/dashboard/settings/connections", "board"],
+  ["/dashboard/settings/data", "board"],
+] as const;
+
 let client: Client;
 let primarySlug: string;
 let primarySiteId: string | undefined;
@@ -36,15 +82,14 @@ describe("YourRank E2E smoke", () => {
   beforeAll(async () => {
     client = new Client(BASE_URL);
 
+    // Prime the CSRF cookie before the first mutating request.
+    await client.get("/");
     const signup = await client.post("/api/auth/signup", { email, password, name, slug });
     if (!signup.json?.ok) {
       throw new Error(`signup failed: ${signup.status} ${signup.body}`);
     }
     accountCreated = true;
     primarySlug = signup.json.user.slug;
-
-    // Load CSRF cookie from a page response.
-    await client.get("/");
 
     const login = await client.post("/api/auth/login", { email, password });
     if (!login.json?.ok) {
@@ -182,6 +227,42 @@ describe("YourRank E2E smoke", () => {
       const res = await client.get("/api/site/list");
       expect(res.status).toBe(200);
       expect(res.json?.boards?.length).toBeGreaterThanOrEqual(2);
+    });
+  });
+
+  describe("authenticated dashboard journey", () => {
+    beforeAll(async () => {
+      if (primarySiteId) return;
+      const res = await client.get("/api/site");
+      if (!res.json?.ok || !res.json?.siteId) {
+        throw new Error(`site lookup failed: ${res.status} ${res.body}`);
+      }
+      primarySiteId = res.json.siteId;
+    });
+
+    for (const [path, siteParam] of AUTHENTICATED_DASHBOARD_ROUTES) {
+      it(`GET ${path} keeps every signed-in feature directly available`, async () => {
+        expect(primarySiteId).toBeDefined();
+        const route = `${path}?${siteParam}=${encodeURIComponent(primarySiteId || "")}`;
+        const res = await client.get(route);
+        expect(res.status).toBe(200);
+        expect(res.body).toContain('id="lbSide"');
+        expect(res.body).toContain('data-close-side');
+        for (const destination of SIGNED_IN_DESTINATIONS) {
+          expect(res.body).toContain(`href="${destination}"`);
+        }
+      });
+    }
+
+    it("GET /help keeps the full dashboard journey and local help actions", async () => {
+      const res = await client.get("/help");
+      expect(res.status).toBe(200);
+      expect(res.body).toContain('data-nav="help" aria-current="page"');
+      expect(res.body).toContain('data-nav="support"');
+      expect(res.body).toContain('data-nav="feedback"');
+      for (const destination of SIGNED_IN_DESTINATIONS) {
+        expect(res.body).toContain(`href="${destination}"`);
+      }
     });
   });
 

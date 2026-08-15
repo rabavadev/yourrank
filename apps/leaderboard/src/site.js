@@ -85,12 +85,14 @@ export const DEFAULT_EXTRA = {
     change: true,
   },
   legal: {
-    terms: "", termsEnabled: true,
-    privacy: "", privacyEnabled: true,
-    responsible: "", responsibleEnabled: true,
-    cookies: "", cookiesEnabled: true,
-    refund: "", refundEnabled: true,
-    contact: "", contactEnabled: true,
+    // B-02: Default to false so new boards don't ship with dead footer links.
+    // Streamers opt in by writing content and enabling each page individually.
+    terms: "",        termsEnabled: false,
+    privacy: "",      privacyEnabled: false,
+    responsible: "",  responsibleEnabled: false,
+    cookies: "",      cookiesEnabled: false,
+    refund: "",       refundEnabled: false,
+    contact: "",      contactEnabled: false,
   },
 };
 
@@ -224,7 +226,11 @@ export async function getClickRedirectSite(env, slug, request = null) {
 // Multi-board: returns the ACTIVE board for a user (or the first board if none set).
 // Not cached: the dashboard reads this on every load and must see the latest saves
 // immediately, even when the request hits a different worker isolate.
-const getByUser = (env, uid) => one(`SELECT ${SITE_COLUMNS} FROM sites WHERE user_id=$1 ORDER BY CASE WHEN id=(SELECT active_site_id FROM users WHERE id=$1) THEN 0 ELSE 1 END, id ASC LIMIT 1`, [uid]);
+const getByUser = async (env, uid) => {
+  const owned = await one(`SELECT ${SITE_COLUMNS} FROM sites WHERE user_id=$1 ORDER BY CASE WHEN id=(SELECT active_site_id FROM users WHERE id=$1) THEN 0 ELSE 1 END, id ASC LIMIT 1`, [uid]);
+  if (owned) return owned;
+  return one(`SELECT ${SITE_COLUMNS} FROM sites s JOIN site_members sm ON sm.site_id=s.id WHERE sm.user_id=$1 ORDER BY s.id ASC LIMIT 1`, [uid]);
+};
 
 // Multi-board: returns ALL boards for a user.
 export async function getAllBoards(env, uid) {
@@ -233,9 +239,19 @@ export async function getAllBoards(env, uid) {
   return rows || [];
 }
 
-// Multi-board: returns a specific board by site ID (only if owned by user).
+// Multi-board: returns a specific board by site ID (if owned or member).
 export async function getBoardById(env, uid, siteId) {
-  return one(`SELECT ${SITE_COLUMNS} FROM sites WHERE id=$1 AND user_id=$2`, [siteId, uid]);
+  const owned = await one(`SELECT ${SITE_COLUMNS} FROM sites WHERE id=$1 AND user_id=$2`, [siteId, uid]);
+  if (owned) return owned;
+  const member = await one("SELECT role FROM site_members WHERE site_id=$1 AND user_id=$2", [siteId, uid]);
+  if (member) {
+    return one(`SELECT ${SITE_COLUMNS} FROM sites WHERE id=$1`, [siteId]);
+  }
+  return null;
+}
+
+export async function getSiteById(env, siteId) {
+  return one(`SELECT ${SITE_COLUMNS} FROM sites WHERE id=$1`, [siteId]);
 }
 
 // Public "hub": the owner's published boards, so a visitor on one board's page
@@ -305,7 +321,7 @@ async function getPlayerCount(siteId, search = "") {
   return Number(row?.count) || 0;
 }
 
-const HEX = /^#[0-9a-fA-F]{6}$/;
+const HEX = /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/;
 
 // theme_json / extra_json / snapshot_json are JSONB. postgres.js returns them
 // already parsed (object/array). But a value that is pre-stringified with
@@ -320,12 +336,14 @@ export function fromJsonb(value) {
   return value;
 }
 
+// C-06: Added proper CSS generic fallback stacks so browsers FOUT to a sane
+// generic font rather than the arbitrary system default when the webfont fails.
 export const FONT_FAMILIES = {
-  Inter: "Inter",
-  Oswald: "Oswald",
-  "Playfair Display": "'Playfair Display'",
-  Rajdhani: "Rajdhani",
-  "Bebas Neue": "'Bebas Neue'",
+  Inter:              "'Inter', system-ui, -apple-system, sans-serif",
+  Oswald:             "'Oswald', system-ui, sans-serif",
+  "Playfair Display": "'Playfair Display', Georgia, serif",
+  Rajdhani:           "'Rajdhani', system-ui, sans-serif",
+  "Bebas Neue":       "'Bebas Neue', system-ui, sans-serif",
 };
 export const FONT_KEYS = Object.keys(FONT_FAMILIES);
 
@@ -337,32 +355,40 @@ const DEFAULT_PRIZES = {
   payoutsLabel: "Payouts",
   wagerLabel: "Wagered",
   prizeLabel: "Prize",
-  wagerTotalLabel: "Total Wager",
+  wagerTotalLabel: "Wager total",
 };
+// C-01: Single source of truth for prize label sanitization.
+// Previously duplicated verbatim across parseTheme, saveSite, and updateSiteTheme.
+const PRIZE_LABEL_MAX = 40;
+const CURRENCY_MAX = 6;
+
+function parsePrizes(rawPrizes) {
+  const raw = (rawPrizes && typeof rawPrizes === "object") ? rawPrizes : {};
+  return {
+    prizePoolLabel:  String(raw.prizePoolLabel  || DEFAULT_PRIZES.prizePoolLabel).slice(0, PRIZE_LABEL_MAX),
+    countdownLabel:  String(raw.countdownLabel  || DEFAULT_PRIZES.countdownLabel).slice(0, PRIZE_LABEL_MAX),
+    currency:        String(raw.currency        || DEFAULT_PRIZES.currency).slice(0, CURRENCY_MAX),
+    hidePrizeAmounts: raw.hidePrizeAmounts === true,
+    payoutsLabel:    String(raw.payoutsLabel    || DEFAULT_PRIZES.payoutsLabel).slice(0, PRIZE_LABEL_MAX),
+    wagerLabel:      String(raw.wagerLabel      || DEFAULT_PRIZES.wagerLabel).slice(0, PRIZE_LABEL_MAX),
+    prizeLabel:      String(raw.prizeLabel      || DEFAULT_PRIZES.prizeLabel).slice(0, PRIZE_LABEL_MAX),
+    wagerTotalLabel: String(raw.wagerTotalLabel || DEFAULT_PRIZES.wagerTotalLabel).slice(0, PRIZE_LABEL_MAX),
+  };
+}
+
 
 function parseTheme(site) {
   const raw = fromJsonb(site.theme_json);
   const t = (raw && typeof raw === "object") ? raw : {};
   const font = FONT_KEYS.includes(t.font) ? t.font : "Inter";
-  const rawPrizes = (t.prizes && typeof t.prizes === "object") ? t.prizes : {};
-  const prizes = {
-    prizePoolLabel: String(rawPrizes.prizePoolLabel || DEFAULT_PRIZES.prizePoolLabel).slice(0, 40),
-    countdownLabel: String(rawPrizes.countdownLabel || DEFAULT_PRIZES.countdownLabel).slice(0, 40),
-    currency: String(rawPrizes.currency || DEFAULT_PRIZES.currency).slice(0, 6),
-    hidePrizeAmounts: rawPrizes.hidePrizeAmounts === true,
-    payoutsLabel: String(rawPrizes.payoutsLabel || DEFAULT_PRIZES.payoutsLabel).slice(0, 40),
-    wagerLabel: String(rawPrizes.wagerLabel || DEFAULT_PRIZES.wagerLabel).slice(0, 40),
-    prizeLabel: String(rawPrizes.prizeLabel || DEFAULT_PRIZES.prizeLabel).slice(0, 40),
-    wagerTotalLabel: String(rawPrizes.wagerTotalLabel || DEFAULT_PRIZES.wagerTotalLabel).slice(0, 40),
-  };
+  // C-01: Use shared parsePrizes helper instead of inline duplication.
+  const prizes = parsePrizes((t.prizes && typeof t.prizes === "object") ? t.prizes : {});
   return {
     accentA: HEX.test(t.accentA || "") ? t.accentA : null,
     accentB: HEX.test(t.accentB || "") ? t.accentB : null,
-    // Stored template ids are retained for compatibility but ignored by the
-    // public renderer, which now has one canonical shell.
-    template: "classic",
+    // B-04: template and text are acknowledged dead fields; removed from the
+    // returned object to avoid propagating them through the render path.
     options: {},
-    text: (t.text && typeof t.text === "object") ? t.text : {},
     font,
     prizes,
   };
@@ -552,14 +578,23 @@ export async function getUserSite(env, uid, plan) {
       };
     }
 
-// Multi-board: return a summary list of all boards for a user.
+// Multi-board: return a summary list of all boards for a user (owned and delegated).
 export async function getUserBoardsList(env, uid) {
   const rows = await query(
     `SELECT s.id, s.slug, s.name, s.casino, s.code, s.published, s.is_draft, s.board_order, s.theme_json,
+            'owner' AS user_role, NULL AS owner_name,
             (SELECT COUNT(*) FROM players p WHERE p.site_id = s.id) AS player_count
        FROM sites s
       WHERE s.user_id=$1
-      ORDER BY s.board_order ASC, s.id ASC`,
+     UNION ALL
+     SELECT s.id, s.slug, s.name, s.casino, s.code, s.published, s.is_draft, s.board_order, s.theme_json,
+            sm.role AS user_role, u.display_name AS owner_name,
+            (SELECT COUNT(*) FROM players p WHERE p.site_id = s.id) AS player_count
+       FROM site_members sm
+       JOIN sites s ON s.id = sm.site_id
+       JOIN users u ON u.id = s.user_id
+      WHERE sm.user_id=$1
+      ORDER BY board_order ASC, id ASC`,
     [uid]
   );
   return (rows || []).map((b) => {
@@ -575,6 +610,8 @@ export async function getUserBoardsList(env, uid) {
       players: Number(b.player_count) || 0,
       template: theme.template,
       boardOrder: b.board_order || 0,
+      userRole: b.user_role || "owner",
+      ownerName: b.owner_name || null,
     };
   });
 }
@@ -877,6 +914,9 @@ export async function saveSite(env, user, payload, siteId, request = null) {
   if (payload.slug != null) {
     const next = slugify(payload.slug);
     if (next && next !== site.slug) {
+      if (site.user_id !== uid) {
+        return { error: "Only the site owner can rename the site URL.", code: "forbidden" };
+      }
       if (RESERVED.has(next)) return { error: "That URL is reserved. Pick another.", code: "slug_reserved" };
       const taken = await one("SELECT id FROM sites WHERE slug=$1", [next]);
       if (taken && taken.id !== site.id) return { error: "That URL is already taken. Pick another.", code: "slug_taken" };
@@ -899,13 +939,17 @@ export async function saveSite(env, user, payload, siteId, request = null) {
   
   // Plan gate: player count is the paid lever.
   if (typeof user === "object" && Array.isArray(payload.players)) {
-    const plan = effectivePlan(user);
+    let effectiveSitePlan = plan;
+    if (site.user_id !== uid) {
+      const owner = await one("SELECT plan, (EXTRACT(EPOCH FROM plan_expires_at) * 1000)::double precision AS plan_expires_at, status FROM users WHERE id=$1", [site.user_id]);
+      if (owner) effectiveSitePlan = effectivePlan(owner);
+    }
     const validPlayersForLimit = payload.players.filter((p) => p && p.name && normalizePlayerName(p.name) !== "");
-    if (validPlayersForLimit.length > PLAN_LIMITS[plan]) {
+    if (validPlayersForLimit.length > PLAN_LIMITS[effectiveSitePlan]) {
       return {
-        error: plan === "pro" || plan === "agency"
-          ? `Your plan allows up to ${PLAN_LIMITS[plan]} players.`
-          : `Your plan allows up to ${PLAN_LIMITS[plan]} players. Upgrade for more.`,
+        error: effectiveSitePlan === "pro" || effectiveSitePlan === "agency"
+          ? `Your plan allows up to ${PLAN_LIMITS[effectiveSitePlan]} players.`
+          : `Your plan allows up to ${PLAN_LIMITS[effectiveSitePlan]} players. Upgrade for more.`,
         code: "player_limit",
       };
     }
@@ -1026,21 +1070,13 @@ export async function saveSite(env, user, payload, siteId, request = null) {
       if (validated.error) return { error: validated.error, code: "invalid_logo" };
       logoData = validated.dataUri;
     }
-    const t = { text: themeObj.text };
+    const t = {};
     if (HEX.test(br.accentA || "")) t.accentA = br.accentA;
     if (HEX.test(br.accentB || "")) t.accentB = br.accentB;
     if (FONT_KEYS.includes(br.font || "")) t.font = br.font;
     if (isProPlan(plan) && br.prizes && typeof br.prizes === "object") {
-      t.prizes = {
-        prizePoolLabel: String(br.prizes.prizePoolLabel || DEFAULT_PRIZES.prizePoolLabel).slice(0, 40),
-        countdownLabel: String(br.prizes.countdownLabel || DEFAULT_PRIZES.countdownLabel).slice(0, 40),
-        currency: String(br.prizes.currency || DEFAULT_PRIZES.currency).slice(0, 6),
-        hidePrizeAmounts: br.prizes.hidePrizeAmounts === true,
-        payoutsLabel: String(br.prizes.payoutsLabel || DEFAULT_PRIZES.payoutsLabel).slice(0, 40),
-        wagerLabel: String(br.prizes.wagerLabel || DEFAULT_PRIZES.wagerLabel).slice(0, 40),
-        prizeLabel: String(br.prizes.prizeLabel || DEFAULT_PRIZES.prizeLabel).slice(0, 40),
-        wagerTotalLabel: String(br.prizes.wagerTotalLabel || DEFAULT_PRIZES.wagerTotalLabel).slice(0, 40),
-      };
+      // C-01: Use shared parsePrizes helper.
+      t.prizes = parsePrizes(br.prizes);
     }
     themeObj = t;
   }
@@ -1308,7 +1344,7 @@ export async function updateSiteTheme(env, user, payload = {}, request = null) {
   if (!site) return { error: "no site" };
   const rawTheme = fromJsonb(site.theme_json);
   const theme = (rawTheme && typeof rawTheme === "object") ? { ...rawTheme } : {};
-  theme.template = "classic";
+  // B-04: template is a dead field; not written back to the stored object.
   const plan = effectivePlan(user);
   if (plan !== "free" && (payload.accentA != null || payload.accentB != null)) {
     if (!HEX.test(payload.accentA || "") || !HEX.test(payload.accentB || "")) {
@@ -1321,16 +1357,8 @@ export async function updateSiteTheme(env, user, payload = {}, request = null) {
     theme.font = payload.font;
   }
   if (isProPlan(plan) && payload.prizes && typeof payload.prizes === "object") {
-    theme.prizes = {
-      prizePoolLabel: String(payload.prizes.prizePoolLabel || DEFAULT_PRIZES.prizePoolLabel).slice(0, 40),
-      countdownLabel: String(payload.prizes.countdownLabel || DEFAULT_PRIZES.countdownLabel).slice(0, 40),
-      currency: String(payload.prizes.currency || DEFAULT_PRIZES.currency).slice(0, 6),
-      hidePrizeAmounts: payload.prizes.hidePrizeAmounts === true,
-      payoutsLabel: String(payload.prizes.payoutsLabel || DEFAULT_PRIZES.payoutsLabel).slice(0, 40),
-      wagerLabel: String(payload.prizes.wagerLabel || DEFAULT_PRIZES.wagerLabel).slice(0, 40),
-      prizeLabel: String(payload.prizes.prizeLabel || DEFAULT_PRIZES.prizeLabel).slice(0, 40),
-      wagerTotalLabel: String(payload.prizes.wagerTotalLabel || DEFAULT_PRIZES.wagerTotalLabel).slice(0, 40),
-    };
+    // C-01: Use shared parsePrizes helper.
+    theme.prizes = parsePrizes(payload.prizes);
   }
 
   await exec(

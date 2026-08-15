@@ -1,4 +1,5 @@
 // Account page entry point: profile, plan, postbacks, danger zone.
+import "./dashboard/help-drawer.js";
 import { $, esc, getCsrf, logError, copyToClipboard, flashButton, showConfirmModal } from "./dashboard/utils.js";
 import { state } from "./dashboard/state.js";
 import { wireAccount } from "./dashboard/account.js";
@@ -16,9 +17,12 @@ function setStatus(message, isError) {
   setTimeout(() => { el.hidden = true; }, 4000);
 }
 
-async function jsonReq(method, path) {
+async function jsonReq(method, path, body = null) {
   const headers = { "x-csrf-token": getCsrf() };
-  const res = await fetch(path, { method, credentials: "include", headers });
+  if (body) headers["content-type"] = "application/json";
+  const options = { method, credentials: "include", headers };
+  if (body) options.body = JSON.stringify(body);
+  const res = await fetch(path, options);
   let data = {};
   if (res.headers.get("content-type")?.includes("application/json")) {
     data = await res.json().catch(() => ({}));
@@ -240,7 +244,18 @@ function wireUnifiedSettingsTabs() {
 
 function setUserName() {
   const userName = $("accUserName");
-  if (userName && state.ME) userName.textContent = state.ME.display_name || state.ME.email || "Account";
+  const email = state.ME?.email || "";
+  const name = state.ME?.display_name || (email ? email.split("@")[0] : "Account");
+  if (userName && state.ME) userName.textContent = state.ME.display_name || email || "Account";
+
+  const sumName = $("accSummaryName");
+  if (sumName && state.ME) sumName.textContent = name;
+  const sumEmail = $("accSummaryEmail");
+  if (sumEmail && email) sumEmail.textContent = email;
+  const sumAvatar = $("accSummaryAvatar");
+  if (sumAvatar && name) sumAvatar.textContent = name[0].toUpperCase();
+  const sumPlan = $("accSummaryPlan");
+  if (sumPlan && state.ME?.plan) sumPlan.textContent = (state.ME.plan.name || "Active").toUpperCase();
 }
 
 function renderConnectedAccounts(data) {
@@ -300,6 +315,238 @@ function wireSectionDrawer() {
   });
 }
 
+function renderTeam(data) {
+  const membersEl = $("teamMembersList");
+  const invitesEl = $("teamInvitesList");
+  if (!membersEl || !invitesEl) return;
+
+  if (!data || !data.ok) {
+    membersEl.innerHTML = `<p class="hint">${esc(data?.error || "Could not load team members.")}</p>`;
+    invitesEl.innerHTML = `<p class="hint">Unavailable</p>`;
+    return;
+  }
+
+  const { members = [], invites = [], canManageTeam } = data;
+
+  // Render active members
+  if (members.length === 0) {
+    membersEl.innerHTML = `<p class="hint">No team members found.</p>`;
+  } else {
+    membersEl.innerHTML = `
+      <div class="admin-table-wrap">
+        <table class="admin-table">
+          <thead>
+            <tr>
+              <th>Member</th>
+              <th>Role</th>
+              <th>Joined</th>
+              ${canManageTeam ? '<th>Actions</th>' : ''}
+            </tr>
+          </thead>
+          <tbody>
+            ${members.map((m) => `
+              <tr>
+                <td>
+                  <div class="d-flex items-center gap-8">
+                    <span style="display:inline-flex;width:28px;height:28px;border-radius:50%;background:rgba(255,255,255,0.1);align-items:center;justify-content:center;font-size:12px;">👤</span>
+                    <div>
+                      <strong>${esc(m.displayName || m.email.split('@')[0])}</strong><br/>
+                      <span class="hint">${esc(m.email)}</span>
+                    </div>
+                  </div>
+                </td>
+                <td>
+                  <span class="pill ${m.role === 'owner' ? 'pill--accent' : m.role === 'manager' ? 'pill--good' : 'pill--muted'}">
+                    ${esc(m.role.toUpperCase())}
+                  </span>
+                </td>
+                <td><span class="hint">${fmtDateTime(m.createdAt)}</span></td>
+                ${canManageTeam ? `
+                  <td>
+                    ${m.role === 'owner' ? '<span class="hint">Site Owner</span>' : `
+                      <div class="d-flex gap-6">
+                        <select class="field-select team-role-select" data-user-id="${esc(m.userId)}" style="padding:4px 8px;font-size:12px;">
+                          <option value="moderator" ${m.role === 'moderator' ? 'selected' : ''}>Moderator</option>
+                          <option value="manager" ${m.role === 'manager' ? 'selected' : ''}>Manager</option>
+                        </select>
+                        <button class="btn btn--sm btn--danger team-remove-btn" data-user-id="${esc(m.userId)}" type="button">Remove</button>
+                      </div>
+                    `}
+                  </td>
+                ` : ''}
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
+    `;
+  }
+
+  // Render pending invites
+  if (invites.length === 0) {
+    invitesEl.innerHTML = `<p class="hint">No pending invitations.</p>`;
+  } else {
+    invitesEl.innerHTML = `
+      <div class="admin-table-wrap">
+        <table class="admin-table">
+          <thead>
+            <tr>
+              <th>Invited Email</th>
+              <th>Role</th>
+              <th>Expires</th>
+              <th>Invite Link</th>
+              ${canManageTeam ? '<th>Action</th>' : ''}
+            </tr>
+          </thead>
+          <tbody>
+            ${invites.map((inv) => `
+              <tr>
+                <td><strong>${esc(inv.email)}</strong></td>
+                <td><span class="pill pill--good">${esc(inv.role)}</span></td>
+                <td><span class="hint">${fmtDateTime(inv.expiresAt)}</span></td>
+                <td>
+                  <div class="d-flex gap-6 items-center">
+                    ${inv.inviteUrl
+                      ? `<button class="btn btn--sm ic-btn team-copy-invite-btn" data-url="${esc(inv.inviteUrl)}" type="button">Copy link</button>`
+                      : '<span class="hint">Link shown once when created</span>'}
+                  </div>
+                </td>
+                ${canManageTeam ? `
+                  <td>
+                    <button class="btn btn--sm btn--ghost team-revoke-invite-btn" data-invite-id="${esc(inv.id)}" type="button">Revoke</button>
+                  </td>
+                ` : ''}
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
+    `;
+  }
+
+  // Attach action listeners
+  if (canManageTeam) {
+    document.querySelectorAll(".team-role-select").forEach((sel) => {
+      sel.addEventListener("change", async () => {
+        const targetUserId = sel.getAttribute("data-user-id");
+        const newRole = sel.value;
+        const res = await jsonReq("POST", "/api/site/team/role", { targetUserId, role: newRole });
+        if (res.ok) {
+          setStatus("Role updated successfully");
+          loadTeam();
+        } else {
+          setStatus(res.data?.error || "Failed to update role", true);
+          loadTeam();
+        }
+      });
+    });
+
+    document.querySelectorAll(".team-remove-btn").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        if (!confirm("Are you sure you want to remove this member?")) return;
+        const targetUserId = btn.getAttribute("data-user-id");
+        const res = await jsonReq("POST", "/api/site/team/remove", { targetUserId });
+        if (res.ok) {
+          setStatus("Member removed");
+          loadTeam();
+        } else {
+          setStatus(res.data?.error || "Failed to remove member", true);
+        }
+      });
+    });
+
+    document.querySelectorAll(".team-revoke-invite-btn").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const inviteId = btn.getAttribute("data-invite-id");
+        const res = await jsonReq("POST", "/api/site/team/invite/revoke", { inviteId });
+        if (res.ok) {
+          setStatus("Invitation revoked");
+          loadTeam();
+        } else {
+          setStatus(res.data?.error || "Failed to revoke invite", true);
+        }
+      });
+    });
+  }
+
+  document.querySelectorAll(".team-copy-invite-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const url = btn.getAttribute("data-url");
+      if (url) {
+        copyToClipboard(url);
+        flashButton(btn, "Copied!");
+      }
+    });
+  });
+}
+
+async function loadTeam() {
+  const r = await jsonReq("GET", "/api/site/team");
+  renderTeam(r.ok ? r.data : { ok: false, error: r.data?.error || "Failed to load team" });
+}
+
+function wireTeam() {
+  const openBtn = $("btnOpenInviteModal");
+  const modal = $("inviteMemberModal");
+  const closeBtn = $("btnCloseInviteModal");
+  const sendBtn = $("btnSendInvite");
+  const emailInput = $("inviteEmail");
+  const roleSelect = $("inviteRole");
+  const statusEl = $("inviteModalStatus");
+  const resultWrap = $("inviteResultWrap");
+  const linkInput = $("inviteLinkInput");
+  const copyBtn = $("btnCopyInviteLink");
+
+  if (!openBtn || !modal) return;
+
+  openBtn.addEventListener("click", () => {
+    modal.hidden = false;
+    if (emailInput) emailInput.value = "";
+    if (statusEl) statusEl.textContent = "";
+    if (resultWrap) resultWrap.hidden = true;
+    if (sendBtn) sendBtn.disabled = false;
+  });
+
+  closeBtn?.addEventListener("click", () => {
+    modal.hidden = true;
+    loadTeam();
+  });
+
+  sendBtn?.addEventListener("click", async () => {
+    const email = emailInput?.value?.trim();
+    const role = roleSelect?.value || "moderator";
+    if (!email || !email.includes("@")) {
+      if (statusEl) statusEl.textContent = "Please enter a valid email.";
+      return;
+    }
+
+    sendBtn.disabled = true;
+    sendBtn.textContent = "Creating...";
+
+    const res = await jsonReq("POST", "/api/site/team/invite", { email, role });
+    sendBtn.disabled = false;
+    sendBtn.textContent = "Create Invitation";
+
+    if (res.ok) {
+      if (statusEl) statusEl.textContent = "Invitation ready!";
+      if (resultWrap && linkInput) {
+        linkInput.value = res.data?.inviteUrl || "";
+        resultWrap.hidden = false;
+      }
+      loadTeam();
+    } else {
+      if (statusEl) statusEl.textContent = res.data?.error || "Failed to create invitation.";
+    }
+  });
+
+  copyBtn?.addEventListener("click", () => {
+    if (linkInput?.value) {
+      copyToClipboard(linkInput.value);
+      flashButton(copyBtn, "Copied!");
+    }
+  });
+}
+
 async function init() {
   wireSectionDrawer();
   let me;
@@ -311,6 +558,8 @@ async function init() {
   // One settings document holds every panel, so everything is wired once.
   wireUnifiedSettingsTabs();
   wireAccount();
+  wireTeam();
+  await loadTeam();
   renderPlan();
   const plan = new URLSearchParams(location.search).get("plan")?.toLowerCase();
   if (["starter", "pro", "lifetime"].includes(plan)) checkout(plan);

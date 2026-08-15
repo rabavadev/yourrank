@@ -5,6 +5,8 @@ import { rateLimit } from "../../../../shared/ratelimit.js";
 import { getPublicSite } from "../site.js";
 import { requireViewer } from "./viewer-auth.js";
 import { bad, ok } from "../auth.js";
+import { decryptCredential } from "../../../../shared/crypto.js";
+import { buildRedemptionEmbed, sendDiscordWebhook } from "../../../../shared/notifications.js";
 import {
   CREDITS_PENDING_REDEMPTIONS_LIMITS,
   CREDITS_REDEMPTIONS_PER_30D_LIMITS,
@@ -276,9 +278,27 @@ export async function handleViewerRedeem(request, env) {
       ]
     );
 
-    return { redemptionId: redemptionRows[0].id, balance: updatedViewer.balance };
+    return { redemptionId: redemptionRows[0].id, balance: updatedViewer.balance, itemName: item.name, itemCost: item.cost };
   });
 
   if (txResult.error) return bad(txResult.error, txResult.status);
-  return ok(txResult);
+
+  // Asynchronously notify streamer via Discord webhook if configured
+  (async () => {
+    try {
+      const siteRow = await one("SELECT discord_webhook_url_enc FROM sites WHERE id=$1", [r.id]);
+      if (siteRow?.discord_webhook_url_enc) {
+        const webhookUrl = await decryptCredential(siteRow.discord_webhook_url_enc);
+        if (webhookUrl) {
+          const viewerName = viewer.kick_username || viewer.discord_username || "Viewer";
+          const embed = buildRedemptionEmbed(r.name || slug, viewerName, txResult.itemName || "Shop Item", txResult.itemCost || 0);
+          await sendDiscordWebhook(webhookUrl, embed);
+        }
+      }
+    } catch (e) {
+      console.error("[redeem-notify] failed to dispatch webhook:", e?.message || e);
+    }
+  })();
+
+  return ok({ redemptionId: txResult.redemptionId, balance: txResult.balance });
 }

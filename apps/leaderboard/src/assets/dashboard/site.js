@@ -1,5 +1,5 @@
 // Site editing: plan, branding/theme, save, archive, domain, overlay, notifications.
-import { $, esc, fromLocalInput, getCsrf, guardAuth, logError, timeZoneOffsetLabel, parseAmount, showConfirmModal, copyToClipboard, flashButton, showLoadError, clearLoadError } from "./utils.js";
+import { $, esc, fromLocalInput, getCsrf, guardAuth, logError, timeZoneOffsetLabel, parseAmount, showConfirmModal, showToast, copyToClipboard, flashButton, showLoadError, clearLoadError } from "./utils.js";
 import { serializeWebhookUrl } from "./notifications.js";
 import { state, boardStatus, markDirty, setState, subscribe } from "./state.js";
 import { renderEmpty } from "./states.js";
@@ -7,6 +7,7 @@ import { renderBoardSwitcher, renderBoardsPage, renderSidebarBoardSwitcher } fro
 import { renderOverviewSummary } from "./overview.js";
 import { renderPerformance, renderPerformanceLoading } from "./performance.js";
 import { applyPlayerFieldVisibility, commitDraftMutation, renderPlayers, renumber, toggleEmpty } from "./players.js";
+import { requestPublicationChange } from "./publication.js";
 
 export const DEFAULT_SECTIONS = {
   hero: true,
@@ -625,7 +626,7 @@ export function refreshDesignPreview() {
 // banner and share affordances can never contradict each other.
 export function renderBoardStatus() {
   const s = boardStatus();
-  const LABELS = { draft: "Not live", unpublished: "Not live", pending: "Not live", published: "Live" };
+  const LABELS = { draft: "Draft", unpublished: "Not live", pending: "Verify email", published: "Live" };
   const TITLES = {
     draft: "Not visible to visitors",
     unpublished: "Not visible to visitors",
@@ -643,13 +644,95 @@ export function renderBoardStatus() {
     badge.title = parts.join(" · ");
   }
   const banner = $("verifyBanner");
-  if (banner) banner.hidden = s.emailVerified;
+  if (banner) banner.hidden = s.emailVerified || Boolean(document.querySelector('section[data-page="home"]'));
+  const publishLabel = $("lbPublishLabel");
+  if (publishLabel) publishLabel.textContent = s.published ? "Unpublish" : "Publish site";
+  const publishAction = $("publishAction");
+  if (publishAction) {
+    publishAction.className = `lb-publish-action${s.published ? " lb-publish-action--secondary" : ""}`;
+    publishAction.title = s.published ? "Take this site offline" : "Make this site available to visitors";
+    publishAction.setAttribute("aria-label", s.published ? "Unpublish site" : "Publish site");
+  }
+  const publishToggle = $("pubToggle");
+  if (publishToggle && !state._dirty) publishToggle.checked = s.published;
   // "View live" must not be offered while the public URL would not resolve.
   for (const id of ["liveLink", "editorLiveLink", "previewLiveLink"]) {
     const link = $(id);
     if (link) link.hidden = !s.live;
   }
   return s;
+}
+
+export function wirePublishAction({ fetchImpl = fetch, confirmAction = showConfirmModal, toast = showToast } = {}) {
+  const button = $("publishAction");
+  if (!button || button._wired) return;
+  button._wired = true;
+  button.addEventListener("click", async () => {
+    const nextPublished = !state.PUBLISHED;
+    let confirmed = false;
+    try {
+      confirmed = await confirmAction(
+        nextPublished ? "Publish site" : "Unpublish site",
+        nextPublished
+          ? (boardStatus().emailVerified
+            ? "Make this site public now? Anyone with the link will be able to visit it."
+            : "Publish this site now? It will open to visitors as soon as you confirm your email.")
+          : "Take this site offline? Your settings and player data will stay saved.",
+        nextPublished ? "Publish" : "Unpublish",
+        !nextPublished,
+      );
+    } catch (err) {
+      logError("publication-confirmation", err);
+      toast("Could not open the confirmation. Try again.");
+      return;
+    }
+    if (!confirmed) return;
+
+    const editorSave = $("save");
+    const compatibilityToggle = $("pubToggle");
+    if (state._dirty && editorSave && compatibilityToggle) {
+      compatibilityToggle.checked = nextPublished;
+      editorSave.click();
+      return;
+    }
+
+    button.disabled = true;
+    button.setAttribute("aria-busy", "true");
+    if ($("lbPublishLabel")) $("lbPublishLabel").textContent = nextPublished ? "Publishing…" : "Unpublishing…";
+    try {
+      const data = await requestPublicationChange({
+        published: nextPublished,
+        siteId: state.ACTIVE_SITE_ID,
+        expectedUpdatedAt: state.SITE_UPDATED_AT,
+        csrfToken: getCsrf(),
+        fetchImpl: (...args) => Promise.resolve(fetchImpl(...args)).then(guardAuth),
+      });
+      setState({
+        PUBLISHED: nextPublished,
+        IS_DRAFT: nextPublished ? false : state.IS_DRAFT,
+        SITE_UPDATED_AT: data.updatedAt || state.SITE_UPDATED_AT,
+        PUBLISHED_AT: data.publishedAt || state.PUBLISHED_AT,
+        SLUG: data.slug || state.SLUG,
+      });
+      const active = state.BOARDS.find((board) => board.id === state.ACTIVE_SITE_ID);
+      if (active) active.published = nextPublished;
+      renderBoardSwitcher();
+      renderSidebarBoardSwitcher();
+      renderBoardsPage();
+      renderBoardStatus();
+      renderOverviewSummary();
+      toast(nextPublished
+        ? (boardStatus().live ? "Published. Your site is now live." : "Published. Confirm your email to open it to visitors.")
+        : "Site unpublished. Your content and players are still saved.", "success");
+    } catch (err) {
+      logError(nextPublished ? "publish-site" : "unpublish-site", err);
+      toast(err.message || (nextPublished ? "Could not publish this site." : "Could not unpublish this site."));
+    } finally {
+      button.disabled = false;
+      button.removeAttribute("aria-busy");
+      renderBoardStatus();
+    }
+  });
 }
 
 export function renderEditorTimestamps() {
@@ -698,11 +781,10 @@ subscribe((keys) => {
 export function applyTheme(accentA, accentB, label, font = null) {
   const selectedFont = font || $("f_font")?.value || state.CURRENT_BRANDING?.font || "Inter";
   state.CURRENT_BRANDING = { ...state.CURRENT_BRANDING, font: selectedFont };
-  if (state.ME.plan !== "free" && accentA && accentB) {
+  const isPaid = state.ME.plan !== "free";
+  if (isPaid && accentA && accentB) {
     state.CURRENT_BRANDING.accentA = accentA;
     state.CURRENT_BRANDING.accentB = accentB;
-  }
-  if (state.ME.plan !== "free" && accentA && accentB) {
     $("c_a").value = accentA;
     $("c_b").value = accentB;
   }
@@ -711,7 +793,11 @@ export function applyTheme(accentA, accentB, label, font = null) {
   renderSidebarBoardSwitcher();
   renderBoardsPage();
   const status = $("status");
-  if (status && label) status.textContent = `${label} palette selected — click Save changes to publish.`;
+  if (status && label) {
+    status.textContent = isPaid
+      ? `${label} palette selected — click Save changes to publish.`
+      : `${label} previewed — upgrade to Pro to publish custom brand palettes.`;
+  }
   markDirty();
 }
 
@@ -1040,7 +1126,8 @@ export async function loadCreditsStatus() {
     statusEl.innerHTML = '<span class="skeleton v3-skel-line" aria-hidden="true"></span>';
   }
   try {
-    const res = await fetch("/api/credits/status");
+    const creditsUrl = state.ACTIVE_SITE_ID ? `/api/credits/status?siteId=${encodeURIComponent(state.ACTIVE_SITE_ID)}` : "/api/credits/status";
+    const res = await fetch(creditsUrl);
     const data = await res.json();
     setState({ CREDITS: data, CREDITS_STATUS: "ready" });
     renderOverviewSummary();
@@ -1157,7 +1244,9 @@ $("a_go")?.addEventListener("click", async () => {
 });
 
 $("save")?.addEventListener("click", async () => {
-  const btn = $("save"), status = $("status"); btn.disabled = true; btn.textContent = "Saving…"; status.textContent = "";
+  const btn = $("save"), status = $("status"), publishAction = $("publishAction");
+  btn.disabled = true; btn.textContent = "Saving…"; status.textContent = "";
+  if (publishAction) { publishAction.disabled = true; publishAction.setAttribute("aria-busy", "true"); }
   const limitEl = $("limitMsg"); if (limitEl) limitEl.textContent = "";
   let justPublished = false;
   try {
@@ -1180,7 +1269,7 @@ $("save")?.addEventListener("click", async () => {
       renderBoardStatus();
       renderOverviewSummary();
       const active = state.BOARDS.find((b) => b.id === state.ACTIVE_SITE_ID);
-      if (active) { active.name = payload.name; active.casino = payload.brand?.casino || active.casino; active.code = payload.brand?.code || active.code; }
+      if (active) { active.name = payload.name; active.casino = payload.brand?.casino || active.casino; active.code = payload.brand?.code || active.code; active.published = !!payload.published; }
       renderBoardSwitcher();
       renderSidebarBoardSwitcher();
       renderBoardsPage();
@@ -1189,6 +1278,7 @@ $("save")?.addEventListener("click", async () => {
     } else status.textContent = d.error || "Save failed.";
   } catch (err) { logError("save", err); status.textContent = "Network error."; }
   btn.disabled = false; btn.textContent = "Save changes";
+  if (publishAction) { publishAction.disabled = false; publishAction.removeAttribute("aria-busy"); }
   const savedMsg = status.textContent;
   if (justPublished || savedMsg === "Saved. Your page is updated.") {
     setTimeout(() => { if (status.textContent === savedMsg) status.textContent = ""; }, 6000);

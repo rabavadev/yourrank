@@ -46,7 +46,11 @@ export function setMetricValue(el, text) {
 }
 
 export function setMetricUnknown(el) {
-  setMetricValue(el, UNKNOWN);
+  if (!el) return;
+  el.removeAttribute("aria-busy");
+  el.setAttribute("data-metric-unavailable", "true");
+  el.title = "Data unavailable — stats may still be loading or analytics isn't configured yet.";
+  el.innerHTML = `<span class="metric-unavailable" aria-label="Data unavailable">${UNKNOWN}</span>`;
 }
 
 export function setRowsLoading(tbody, { cols = 1, rows = 3 } = {}) {

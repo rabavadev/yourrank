@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&family=Fira+Sans:wght@300;400;500;600;700&display=swap');
+
 /* YourRank UI primitives — the one definition of the components that appear in
    both Workers. Served by the leaderboard Worker and linked by both shells, the
    same way /assets/shell-nav.css is.
@@ -31,6 +33,12 @@
   --yr-fixed-action-stack-offset: 66px;
   --yr-fixed-action-z: 95;
   --yr-fixed-action-top-z: 96;
+}
+
+@media (pointer: coarse) {
+  :root {
+    --yr-control-height: 44px;
+  }
 }
 
 /* ---- screen-reader-only content and the skip link --------------------------
@@ -101,15 +109,18 @@
   color: var(--yr-ink, var(--ink));
   cursor: pointer;
   text-decoration: none;
-  transition: background-color .15s, border-color .15s, opacity .15s, filter .15s;
+  transition: background-color .15s ease-out, border-color .15s ease-out, opacity .15s ease-out, filter .15s ease-out, transform .15s cubic-bezier(0.16,1,0.3,1), box-shadow .15s ease-out;
 }
 
 .btn:hover,
-.yr-ui button:hover { border-color: var(--yr-ink-soft, var(--ink-soft)); }
+.yr-ui button:hover { 
+  border-color: var(--yr-ink-soft, var(--ink-soft)); 
+  background-color: color-mix(in srgb, var(--yr-ink, var(--ink)) 5%, transparent);
+}
 .btn:focus-visible,
-.yr-ui button:focus-visible { outline: 2px solid var(--yr-accent, var(--accent)); outline-offset: 2px; }
+.yr-ui button:focus-visible { outline: none; box-shadow: 0 0 0 3px color-mix(in srgb, var(--yr-accent, var(--accent)) 40%, transparent), inset 0 0 0 1px rgba(255, 255, 255, 0.2); }
 .btn:active,
-.yr-ui button:active { transform: translateY(1px); }
+.yr-ui button:active { transform: translateY(2px) scale(0.96); box-shadow: none; }
 
 .btn:disabled,
 .btn[aria-disabled="true"],
@@ -134,7 +145,9 @@
 
 .btn--accent:hover,
 .yr-ui button:not(.ghost):not(.danger):not(.plain):hover {
-  filter: brightness(1.08);
+  filter: brightness(1.15);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px color-mix(in srgb, var(--yr-accent, var(--accent)) 40%, transparent);
   border-color: var(--yr-accent, var(--accent));
 }
 
@@ -225,7 +238,7 @@
 .tbl-scroll {
   position: relative;
   overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
+  
   margin: 0 -18px;
   padding: 0 18px;
 }

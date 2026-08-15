@@ -1,11 +1,11 @@
 // Aggregator: per-page modules re-exported as PAGES
 
 import { landingPage } from "./pages/landing.js";
-import { LoginPage } from "./pages/login.jsx";
+import { loginPage } from "./pages/login.jsx";
 import { forgotPage } from "./pages/forgot.js";
 import { resetPage } from "./pages/reset.js";
 import { signupPage } from "./pages/signup.js";
-import { dashboardConfig, DashboardContent } from "./pages/dashboard.jsx";
+import { dashboardPage } from "./pages/dashboard.jsx";
 import { adminPage } from "./pages/admin.js";
 import { admin2faPage } from "./pages/admin-2fa.js";
 import { overlayPage } from "./pages/overlay.js";
@@ -18,33 +18,36 @@ import { helpHubPage, helpSupportPage, helpFeedbackPage } from "./pages/help.js"
 import { pricingPage } from "./pages/pricing.js";
 import { docsPage } from "./pages/docs.js";
 import {
-  RewardsChannelPage,
-  RewardsRulesPage,
-  RewardsShopPage,
-  RewardsViewersPage,
-  RewardsRedemptionsPage,
-  RewardsHistoryPage,
+  rewardsChannelPage,
+  rewardsRulesPage,
+  rewardsShopPage,
+  rewardsViewersPage,
+  rewardsRedemptionsPage,
+  rewardsHistoryPage,
 } from "./pages/rewards.jsx";
-import {
-  rewardsChannelConfig,
-  rewardsRulesConfig,
-  rewardsShopConfig,
-  rewardsViewersConfig,
-  rewardsRedemptionsConfig,
-  rewardsHistoryConfig,
-} from "./pages/rewards.jsx";
-import { UnifiedSettingsPage, settingsConfig } from "./pages/account.jsx";
+import { settingsUnifiedPage } from "./pages/account.jsx";
 import { faqPage } from "./pages/faq.js";
 import { reviewsPage } from "./pages/reviews.js";
+import { invitePage } from "./pages/invite.jsx";
+import { giveawaysPage } from "./pages/giveaways.jsx";
+
+import {
+  telegramOverviewRoute,
+  telegramBotsRoute,
+  telegramCommandsRoute,
+  telegramOffersRoute,
+  telegramBroadcastsRoute,
+} from "./pages/telegram.jsx";
 
 export const PAGES = {
   index: landingPage,
   docs: docsPage,
-  login: { Component: LoginPage },
+  login: loginPage,
   forgot: forgotPage,
   reset: resetPage,
   signup: signupPage,
-  dashboard: { config: dashboardConfig, Component: DashboardContent },
+  dashboard: dashboardPage,
+  giveaways: giveawaysPage,
   admin: adminPage,
   admin2fa: admin2faPage,
   overlay: overlayPage,
@@ -57,13 +60,19 @@ export const PAGES = {
   helpFeedback: helpFeedbackPage,
   helpHub: helpHubPage,
   pricing: pricingPage,
-  rewardsChannel: { config: rewardsChannelConfig, Component: RewardsChannelPage },
-  rewardsRules: { config: rewardsRulesConfig, Component: RewardsRulesPage },
-  rewardsShop: { config: rewardsShopConfig, Component: RewardsShopPage },
-  rewardsViewers: { config: rewardsViewersConfig, Component: RewardsViewersPage },
-  rewardsRedemptions: { config: rewardsRedemptionsConfig, Component: RewardsRedemptionsPage },
-  rewardsHistory: { config: rewardsHistoryConfig, Component: RewardsHistoryPage },
-  settingsUnified: { config: settingsConfig, Component: UnifiedSettingsPage },
+  rewardsChannel: rewardsChannelPage,
+  rewardsRules: rewardsRulesPage,
+  rewardsShop: rewardsShopPage,
+  rewardsViewers: rewardsViewersPage,
+  rewardsRedemptions: rewardsRedemptionsPage,
+  rewardsHistory: rewardsHistoryPage,
+  telegramOverview: telegramOverviewRoute,
+  telegramBots: telegramBotsRoute,
+  telegramCommands: telegramCommandsRoute,
+  telegramOffers: telegramOffersRoute,
+  telegramBroadcasts: telegramBroadcastsRoute,
+  settingsUnified: settingsUnifiedPage,
   faq: faqPage,
   reviews: reviewsPage,
+  invite: invitePage,
 };

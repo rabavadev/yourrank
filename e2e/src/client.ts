@@ -95,7 +95,7 @@ export class Client {
     return this.req("GET", path, opts);
   }
 
-  post(path: string, body?: any, opts?: { headers?: Record<string, string> }) {
+  post(path: string, body?: any, opts?: { headers?: Record<string, string>; skipCsrf?: boolean }) {
     return this.req("POST", path, { ...opts, body });
   }
 

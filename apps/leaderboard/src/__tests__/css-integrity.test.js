@@ -1,4 +1,4 @@
-// A stray closing brace in dashboard-v2.css silently un-wrapped a
+// A stray closing brace in dashboard-v3.css silently un-wrapped a
 // `@media (max-width: …)` block, so the editor's "stack the live preview below
 // the controls" rule applied at every width and the split-screen editor was
 // single-column on desktop. Unbalanced braces do not throw anywhere — CSS just
@@ -14,7 +14,8 @@ const stripped = (css) => css.replace(/\/\*[\s\S]*?\*\//g, "").replace(/(["'])(?
 
 describe("stylesheets", () => {
   it("finds the dashboard stylesheets", () => {
-    expect(sheets).toContain("dashboard-v2.css");
+    expect(sheets).toContain("dashboard-v3.css");
+    expect(sheets).toContain("dashboard-v4.css");
     expect(sheets).toContain("app.css");
   });
 
@@ -33,7 +34,31 @@ describe("stylesheets", () => {
   }
 });
 
-// The same button had three definitions (app.css, dashboard-v2.css and the bot
+describe("authenticated dashboard v4 contract", () => {
+  const css = fs.readFileSync(path.join(assetsDir, "dashboard-v4.css"), "utf8");
+  const shellJs = fs.readFileSync(path.join(assetsDir, "shell-nav.js"), "utf8");
+
+  it("uses a 12-column workspace with a 24px gutter", () => {
+    expect(css).toMatch(/grid-template-columns:\s*repeat\(12,\s*minmax\(0,\s*1fr\)\)/);
+    expect(css).toMatch(/\.v3-dash\[data-auth-workspace\] \.lb-bento\s*\{[\s\S]*?gap:\s*24px/);
+  });
+
+  it("does not use absolute positioning for v4 structure", () => {
+    expect(css).not.toMatch(/position:\s*absolute/);
+  });
+
+  it("keeps desktop collapse persistent and mobile drawers independent", () => {
+    expect(shellJs).toContain('var collapseKey = "yr-side-collapsed"');
+    expect(shellJs).toContain('root.setAttribute("data-side-collapsed", "true")');
+    expect(shellJs).toContain('data-shell-drawer="shared"');
+    expect(shellJs).toContain("trapDrawerFocus");
+    expect(css).toContain('@media (min-width: 981px)');
+    expect(css).toContain('@media (max-width: 980px)');
+    expect(css).toContain('.v3-dash[data-auth-workspace] .lb-side.is-open');
+  });
+});
+
+// The same button had three definitions (app.css, dashboard-v3.css and the bot
 // shell's inlined CSS) that merged by cascade order, so a change to one of them
 // only changed the component on some pages. They live in ui.css now.
 describe("shared UI primitives", () => {

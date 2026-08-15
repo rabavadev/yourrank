@@ -75,6 +75,31 @@ export function playerRow(p = { name: "", wagered: "", prize: "", score: "", han
       syncSelectAll();
     }, `${name} removed. Save to publish.`);
   });
+  // Wire spreadsheet-style keyboard navigation (ArrowDown, ArrowUp, Enter)
+  tr.querySelectorAll("input").forEach((inp) => {
+    inp.addEventListener("keydown", (e) => {
+      if (e.key === "ArrowDown" || (e.key === "Enter" && !e.shiftKey)) {
+        const nextTr = tr.nextElementSibling;
+        if (nextTr) {
+          const className = Array.from(inp.classList).find((c) => c.startsWith("p-"));
+          if (className) {
+            e.preventDefault();
+            nextTr.querySelector(`.${className}`)?.focus();
+          }
+        }
+      } else if (e.key === "ArrowUp") {
+        const prevTr = tr.previousElementSibling;
+        if (prevTr) {
+          const className = Array.from(inp.classList).find((c) => c.startsWith("p-"));
+          if (className) {
+            e.preventDefault();
+            prevTr.querySelector(`.${className}`)?.focus();
+          }
+        }
+      }
+    });
+  });
+
   wireMoneyInput(tr.querySelector(".p-wager"));
   wireMoneyInput(tr.querySelector(".p-prize"));
   return tr;

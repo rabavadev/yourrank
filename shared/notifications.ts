@@ -12,28 +12,8 @@
 //  module allows both Workers to send notifications consistently.
 // ============================================================================
 
-import { decryptToken, decrypt } from "./crypto.js";
+import { decryptToken, decryptCredential } from "./crypto.js";
 import { errMessage } from "./errors.js";
-
-// ----------------------------------------------------------------------------
-// Encryption helper for notification credentials stored as hex ciphertext.
-// ----------------------------------------------------------------------------
-
-function getEncKey(): string {
-  const hex = (typeof process !== "undefined" && process.env?.TOKEN_ENC_KEY) || "";
-  if (hex.length !== 64) throw new Error("TOKEN_ENC_KEY must be 64 hex characters (32 bytes)");
-  return hex;
-}
-
-async function decryptCredential(blobHex: string | null | undefined): Promise<string | null> {
-  if (!blobHex) return null;
-  try {
-    return await decrypt(blobHex, getEncKey());
-  } catch {
-    // Legacy or unencrypted value (e.g. migration copy); return as-is.
-    return blobHex;
-  }
-}
 
 // ----------------------------------------------------------------------------
 // Telegram Markdown escaping
@@ -129,6 +109,28 @@ export function buildTop3Embed(
     ],
     timestamp: new Date().toISOString(),
     footer: { text: "YourRank" },
+  };
+}
+
+/**
+ * Build a Discord embed for a shop redemption event.
+ */
+export function buildRedemptionEmbed(
+  siteName: string,
+  viewerName: string,
+  itemName: string,
+  cost: number
+): Record<string, unknown> {
+  return {
+    title: "🎁 New Reward Redeemed!",
+    description: `**${viewerName}** redeemed **${itemName}** on **${siteName}**`,
+    color: 0x315cff, // Cobalt
+    fields: [
+      { name: "Reward Item", value: itemName, inline: true },
+      { name: "Cost", value: `${Number(cost).toLocaleString("en-US")} pts`, inline: true },
+    ],
+    timestamp: new Date().toISOString(),
+    footer: { text: "YourRank Rewards" },
   };
 }
 

@@ -1,19 +1,57 @@
 // Account page bodies, one directly-authored template per tab.
 // The surrounding chrome (sidebar, topbar, titles) lives in account.jsx.
 
-const profileWidget = `<div class="lb-widget lb-widget--full" id="profile">
-        <h2>Profile</h2>
-        <p class="card-sub">Your password and active sessions.</p>
-        <div class="field"><label for="accCurrentPassword">Current password</label><input type="password" id="accCurrentPassword" autocomplete="current-password" /></div>
-        <div class="field"><label for="accNewPassword">New password</label><input type="password" id="accNewPassword" autocomplete="new-password" minlength="8" /></div>
-        <div class="d-flex gap-8 items-center flex-wrap">
-          <button class="btn btn--accent" id="accChangePassword" type="button">Update password</button>
-          <span class="hint" id="accPasswordStatus" role="status" aria-live="polite"></span>
+const profileWidget = `<div class="lb-widget lb-widget--full acc-card-security" id="profile">
+        <div class="acc-card-header">
+          <div class="acc-card-icon-wrap" aria-hidden="true">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          </div>
+          <div>
+            <h2>Password &amp; Security</h2>
+            <p class="card-sub">Manage your account authentication credentials and login password.</p>
+          </div>
+        </div>
+        <div class="acc-form-wrap">
+          <div class="field">
+            <label for="accCurrentPassword">Current password</label>
+            <div class="field-password-wrap">
+              <input type="password" id="accCurrentPassword" autocomplete="current-password" placeholder="••••••••" />
+              <button class="btn-pwd-toggle" type="button" data-pwd-toggle="accCurrentPassword" aria-label="Toggle current password visibility" tabindex="-1">
+                <svg class="eye-open" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+                <svg class="eye-closed" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none"><path d="m15 18-.722-3.25"/><path d="M2 8a10.645 10.645 0 0 0 20 0"/><path d="m20 15-1.726-2.05"/><path d="m4 15 1.726-2.05"/><path d="m9 18 .722-3.25"/></svg>
+              </button>
+            </div>
+          </div>
+          <div class="field">
+            <label for="accNewPassword">New password</label>
+            <div class="field-password-wrap">
+              <input type="password" id="accNewPassword" autocomplete="new-password" minlength="8" placeholder="At least 8 characters" />
+              <button class="btn-pwd-toggle" type="button" data-pwd-toggle="accNewPassword" aria-label="Toggle new password visibility" tabindex="-1">
+                <svg class="eye-open" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+                <svg class="eye-closed" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none"><path d="m15 18-.722-3.25"/><path d="M2 8a10.645 10.645 0 0 0 20 0"/><path d="m20 15-1.726-2.05"/><path d="m4 15 1.726-2.05"/><path d="m9 18 .722-3.25"/></svg>
+              </button>
+            </div>
+            <div class="pwd-reqs" id="pwdReqs" aria-live="polite">
+              <span class="pwd-req" id="pwdReqLength"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/></svg> Minimum 8 characters</span>
+            </div>
+          </div>
+          <div class="d-flex gap-8 items-center flex-wrap mt-6">
+            <button class="btn btn--accent" id="accChangePassword" type="button">Update password</button>
+            <span class="hint" id="accPasswordStatus" role="status" aria-live="polite"></span>
+          </div>
         </div>
         <hr class="hr" />
-        <div class="d-flex justify-between items-center mb-12"><h3 class="m-0">Active sessions</h3><button class="btn btn--ghost btn--sm" id="accRevokeSessions" type="button">Sign out other sessions</button></div>
-        <div id="accSessions"><p class="hint">Loading…</p></div>
-        <p class="hint" id="accSessionsStatus" role="status" aria-live="polite"></p>
+        <div class="acc-sessions-section">
+          <div class="d-flex justify-between items-center mb-12 flex-wrap gap-8">
+            <div>
+              <h3 class="m-0">Active sessions</h3>
+              <p class="card-sub m-0 mt-2">Web browsers and devices currently signed in to your account.</p>
+            </div>
+            <button class="btn btn--ghost btn--sm" id="accRevokeSessions" type="button">Sign out other sessions</button>
+          </div>
+          <div id="accSessions"><p class="hint">Loading sessions…</p></div>
+          <p class="hint" id="accSessionsStatus" role="status" aria-live="polite"></p>
+        </div>
       </div>`;
 
 const planWidget = `<div class="lb-widget lb-widget--full" id="plan">
@@ -61,8 +99,8 @@ const planWidget = `<div class="lb-widget lb-widget--full" id="plan">
       </div>`;
 
 const postbacksWidget = `<div class="lb-widget lb-widget--full" id="postbacks">
-        <h2>Attribution / Postbacks</h2>
-        <p class="card-sub">Let your sponsor or affiliate manager send conversion events straight to YourRank.</p>
+        <h2>Auto-Sync Sponsor Wagers &amp; Scores</h2>
+        <p class="card-sub">Automatically update player wager ranks and track viewer signups directly from your casino or brand sponsor.</p>
 
         <div id="postbackStatusCard" class="card card--status" hidden>
           <div class="d-flex items-center gap-8">
@@ -73,36 +111,36 @@ const postbacksWidget = `<div class="lb-widget lb-widget--full" id="postbacks">
         </div>
 
         <div id="postbackShareCard" hidden>
-          <h3 class="m-0 mt-18 mb-8">What to send your affiliate manager</h3>
-          <p class="hint">This block is safe to copy — it does <b>not</b> contain your secret key.</p>
+          <h3 class="m-0 mt-18 mb-8">What to send your sponsor or affiliate manager</h3>
+          <p class="hint">Give this secure integration link to your affiliate manager or sponsor developer. It connects to your leaderboard without exposing your private account password.</p>
           <div class="field">
-            <label>Signed endpoint URL</label>
+            <label>Sponsor Integration Link</label>
             <div class="d-flex gap-8 items-center flex-wrap">
               <code id="postbackSigned" class="overlay-url"></code>
-              <button class="btn btn--sm btn--accent ic-btn" id="postbackCopySigned" type="button">Copy</button>
+              <button class="btn btn--sm btn--accent ic-btn" id="postbackCopySigned" type="button">Copy link</button>
             </div>
           </div>
           <div class="field">
-            <label>How to sign</label>
-            <p class="hint">Sign the raw query string with <code>HMAC-SHA256</code> keyed by the postback key we gave you, then send it as the <code>X-Postback-Signature</code> header.</p>
-            <button class="btn btn--sm btn--ghost" id="postbackCopyManager" type="button">Copy full setup for affiliate manager</button>
+            <label>Integration Signature Guide</label>
+            <p class="hint">Your sponsor signs the request query string with <code>HMAC-SHA256</code> using your private access key, then sends it in the <code>X-Postback-Signature</code> header.</p>
+            <button class="btn btn--sm btn--ghost" id="postbackCopyManager" type="button">Copy full setup guide for sponsor</button>
           </div>
           <div class="field">
-            <label>Test connection</label>
-            <p class="hint">Send a sample conversion to confirm the endpoint is reachable and the signature is accepted.</p>
-            <button class="btn btn--sm" id="postbackTest" type="button">Send test conversion</button>
+            <label>Test Live Sync</label>
+            <p class="hint">Send a simulated player wager event to verify your leaderboard updates in real time.</p>
+            <button class="btn btn--sm" id="postbackTest" type="button">Send test wager event</button>
             <span class="hint" id="postbackTestStatus" role="status" aria-live="polite"></span>
           </div>
         </div>
 
         <div id="postbackKeyCard" hidden>
-          <h3 class="m-0 mt-18 mb-8">Key management</h3>
-          <p class="hint">Keep the key private. Rotating revokes the old key immediately.</p>
+          <h3 class="m-0 mt-18 mb-8">Private Sponsor Access Key</h3>
+          <p class="hint">Keep this key confidential. Only share it with trusted sponsor integrations. Rotating revokes the previous key instantly.</p>
           <div class="field">
-            <label>Postback key</label>
+            <label>Private API Key</label>
             <div class="d-flex gap-8 items-center flex-wrap">
               <code id="postbackKey" class="overlay-url"></code>
-              <button class="btn btn--sm btn--accent ic-btn" id="postbackCopyKey" type="button">Copy</button>
+              <button class="btn btn--sm btn--accent ic-btn" id="postbackCopyKey" type="button">Copy key</button>
               <button class="btn btn--sm" id="postbackRotate" type="button">Rotate key</button>
               <button class="btn btn--sm btn--danger" id="postbackRevoke" type="button">Revoke key</button>
             </div>
@@ -122,14 +160,14 @@ const postbacksWidget = `<div class="lb-widget lb-widget--full" id="postbacks">
         </details>
 
         <div id="postbackUpgrade" hidden>
-          <p class="hint">Postbacks are a paid feature. Upgrade to Pro to generate keys and view conversions.</p>
+          <p class="hint">Automatic score updates are a paid feature. Upgrade to Pro to create connection keys and view live wagers.</p>
           <a class="btn btn--accent" href="/dashboard/settings/plan">See plans</a>
         </div>
 
         <hr class="hr" />
-        <h3 class="m-0 mt-18 mb-4">Recent conversions</h3>
-        <div class="admin-table-wrap"><table class="admin-table" id="conversionsTable"><thead><tr><th>Time</th><th>Event</th><th>Amount</th><th>Currency</th><th>Offer</th></tr></thead><tbody id="conversionsBody"></tbody></table></div>
-        <p class="empty" id="conversionsEmpty" hidden>No conversions yet.</p>
+        <h3 class="m-0 mt-18 mb-4">Recent Sponsor Activity &amp; Wagers</h3>
+        <div class="admin-table-wrap"><table class="admin-table" id="conversionsTable"><thead><tr><th>Time</th><th>Event</th><th>Wager / Amount</th><th>Currency</th><th>Campaign / Offer</th></tr></thead><tbody id="conversionsBody"></tbody></table></div>
+        <p class="empty" id="conversionsEmpty" hidden>No sponsor wager events received yet.</p>
       </div>`;
 
 const connectedWidget = `<div class="lb-widget lb-widget--full" id="connected">
@@ -140,21 +178,21 @@ const connectedWidget = `<div class="lb-widget lb-widget--full" id="connected">
       </div>`;
 
 const dataWidget = `<div class="lb-widget lb-widget--full" id="data">
-          <h2>Data and account deletion</h2>
-          <p class="card-sub">Export a copy of your data or permanently delete your account.</p>
+          <h2>Account Data &amp; Backup</h2>
+          <p class="card-sub">Download complete backups of your leaderboards, wagers, and creator settings, or manage account deletion.</p>
           <section class="account-data-export" aria-labelledby="accountExportTitle">
-            <h3 class="m-0" id="accountExportTitle">Export your data</h3>
-            <p class="card-sub">Prepare a downloadable copy of your account data before making changes.</p>
+            <h3 class="m-0" id="accountExportTitle">Download Creator Backup</h3>
+            <p class="card-sub">Generate a full downloadable JSON backup including all your leaderboard configurations, player history, rewards shop items, and analytics.</p>
             <div class="d-flex gap-8 items-center flex-wrap">
-              <button class="btn btn--accent" id="accExportData" type="button">Prepare my data export</button>
+              <button class="btn btn--accent" id="accExportData" type="button">Generate Account Backup</button>
               <span class="hint" id="accExportStatus" role="status" aria-live="polite"></span>
             </div>
           </section>
           <hr class="hr" />
           <section class="account-danger-zone" aria-labelledby="accountDangerTitle">
-            <h3 class="m-0 mt-18 mb-4" id="accountDangerTitle">Danger zone: permanently delete your account</h3>
-            <p class="card-sub">Permanently delete your account and all associated data. This cannot be undone.</p>
-            <button class="btn btn--danger" id="deleteAccountBtn" type="button">Delete my account</button>
+            <h3 class="m-0 mt-18 mb-4" id="accountDangerTitle">Permanently delete creator account</h3>
+            <p class="card-sub">Permanently delete your master streamer account and all live leaderboards. This action is irreversible.</p>
+            <button class="btn btn--danger" id="deleteAccountBtn" type="button">Delete Creator Account</button>
           </section>
         </div>`;
 
@@ -173,8 +211,119 @@ const deleteAccountModal = `<div class="modal" id="deleteAccountModal" role="dia
 </div>
 `;
 
+const teamWidget = `<div class="lb-widget lb-widget--full" id="team">
+        <div class="d-flex justify-between items-center mb-16 flex-wrap gap-12">
+          <div>
+            <h2 class="m-0">Team &amp; Moderators</h2>
+            <p class="card-sub m-0 mt-2">Delegate leaderboard score updates and shop fulfillment to trusted mods without sharing your login or billing credentials.</p>
+          </div>
+          <button class="btn btn--accent" id="btnOpenInviteModal" type="button">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true" style="margin-right:6px;vertical-align:-2px"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Add Moderator / Manager
+          </button>
+        </div>
+
+        <div class="acc-team-section">
+          <h3 class="m-0 mb-8">Active Team Members</h3>
+          <div id="teamMembersList">
+            <p class="hint">Loading team members…</p>
+          </div>
+        </div>
+
+        <hr class="hr" />
+
+        <div class="acc-team-section">
+          <h3 class="m-0 mb-8">Pending Invitations</h3>
+          <div id="teamInvitesList">
+            <p class="hint">No pending invitations.</p>
+          </div>
+        </div>
+
+        <hr class="hr" />
+
+        <div class="acc-team-roles-guide">
+          <h3 class="m-0 mb-8">Role Permissions Overview</h3>
+          <div class="admin-table-wrap">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th>Capability</th>
+                  <th>Owner (You)</th>
+                  <th>Manager</th>
+                  <th>Moderator (Mod)</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><strong>Leaderboards &amp; Scores</strong><br/><span class="hint">Update players, wagers, reset period</span></td>
+                  <td><span class="pill pill--good">Full access</span></td>
+                  <td><span class="pill pill--good">Full access</span></td>
+                  <td><span class="pill pill--good">Full access</span></td>
+                </tr>
+                <tr>
+                  <td><strong>Credits &amp; Shop Fulfillment</strong><br/><span class="hint">Approve/fulfill viewer reward redemptions</span></td>
+                  <td><span class="pill pill--good">Full access</span></td>
+                  <td><span class="pill pill--good">Full access</span></td>
+                  <td><span class="pill pill--good">Full access</span></td>
+                </tr>
+                <tr>
+                  <td><strong>Telegram Bot</strong><br/><span class="hint">Manage commands, promo offers, broadcasts</span></td>
+                  <td><span class="pill pill--good">Full access</span></td>
+                  <td><span class="pill pill--good">Full access</span></td>
+                  <td><span class="pill pill--muted">No access</span></td>
+                </tr>
+                <tr>
+                  <td><strong>Billing &amp; Subscription</strong><br/><span class="hint">Payment methods, crypto checkouts, plans</span></td>
+                  <td><span class="pill pill--good">Full access</span></td>
+                  <td><span class="pill pill--muted">No access</span></td>
+                  <td><span class="pill pill--muted">No access</span></td>
+                </tr>
+                <tr>
+                  <td><strong>Account Security &amp; Credentials</strong><br/><span class="hint">Change password, email, delete site</span></td>
+                  <td><span class="pill pill--good">Full access</span></td>
+                  <td><span class="pill pill--muted">No access</span></td>
+                  <td><span class="pill pill--muted">No access</span></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+<div class="modal" id="inviteMemberModal" role="dialog" aria-modal="true" aria-labelledby="inviteModalTitle" hidden>
+  <div class="modal-card">
+    <h3 id="inviteModalTitle">Invite Team Member</h3>
+    <p class="card-sub">Invite a moderator or manager to help operate this site. They will receive a unique link to join.</p>
+    <div class="field">
+      <label for="inviteEmail">Member email</label>
+      <input id="inviteEmail" type="email" placeholder="mod@example.com" required />
+    </div>
+    <div class="field">
+      <label for="inviteRole">Assigned Role</label>
+      <select id="inviteRole" class="field-select">
+        <option value="moderator" selected>Moderator (Can update leaderboards &amp; fulfill shop redemptions)</option>
+        <option value="manager">Manager (Can manage leaderboards, shop, and Telegram bot)</option>
+      </select>
+    </div>
+    <div class="d-flex gap-10 flex-wrap mt-14">
+      <button class="btn btn--accent" id="btnSendInvite" type="button">Create Invitation</button>
+      <button class="btn btn--ghost" id="btnCloseInviteModal" type="button">Cancel</button>
+    </div>
+    <p class="status" id="inviteModalStatus" role="status" aria-live="polite"></p>
+    <div id="inviteResultWrap" class="mt-14" hidden>
+      <label>Shareable Invite Link</label>
+      <div class="d-flex gap-8 items-center flex-wrap">
+        <input type="text" id="inviteLinkInput" readonly style="flex:1;background:rgba(0,0,0,0.3);color:#fff;" />
+        <button class="btn btn--sm" id="btnCopyInviteLink" type="button">Copy Link</button>
+      </div>
+      <p class="hint">This link is valid for 7 days.</p>
+    </div>
+  </div>
+</div>`;
+
 export const settingsWidgets = {
   account: profileWidget,
+  team: teamWidget,
   plan: planWidget,
   postbacks: postbacksWidget,
   connected: connectedWidget,
