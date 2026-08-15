@@ -6,6 +6,7 @@
 
 import { requireUser, json, bad, ok, readJson, rateLimit, rateLimitHeaders, clientIp } from "../auth.js";
 import { getSiteById, getByUser } from "../site.js";
+import { one as defaultOne } from "../../../../shared/db.js";
 import {
   getSiteRole,
   canRoleManageTeam,
@@ -21,10 +22,11 @@ import {
 import { PLATFORM_HOST } from "../constants.js";
 
 function getDeps(overrides = {}) {
-  return {
+  const deps = {
     requireUser,
     getSiteById,
     getByUser,
+    one: defaultOne,
     getSiteRole,
     listSiteMembers,
     listSiteInvites,
@@ -39,12 +41,33 @@ function getDeps(overrides = {}) {
     clientIp,
     ...overrides,
   };
+  if (!overrides.getTeamSiteByUser) {
+    deps.getTeamSiteByUser = (env, userId) => getTeamSiteByUser(env, userId, deps.one);
+  }
+  return deps;
+}
+
+async function getTeamSiteByUser(env, userId, one) {
+  const owned = await one(
+    "SELECT id FROM sites WHERE user_id=$1 ORDER BY id ASC LIMIT 1",
+    [userId],
+  );
+  if (owned) return owned;
+  return one(
+    `SELECT s.id
+       FROM sites s
+       JOIN site_members sm ON sm.site_id=s.id
+      WHERE sm.user_id=$1
+      ORDER BY sm.created_at ASC, s.id ASC
+      LIMIT 1`,
+    [userId],
+  );
 }
 
 async function resolveTeamSite(env, user, siteId, deps) {
   const site = siteId
     ? await deps.getSiteById(env, siteId)
-    : await deps.getByUser(env, user.id);
+    : await deps.getTeamSiteByUser(env, user.id);
   if (!site) return null;
   const role = await deps.getSiteRole(site.id, user.id);
   return role ? { site, role } : null;

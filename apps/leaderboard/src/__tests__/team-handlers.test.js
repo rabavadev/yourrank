@@ -81,6 +81,32 @@ describe("Team API Handlers", () => {
     }
   });
 
+  it("resolves a member-owned-free account through its earliest membership", async () => {
+    const calls = [];
+    const deps = {
+      requireUser: async () => ({ user: { id: "moderator-1" }, res: null }),
+      one: async (sql, params) => {
+        calls.push([sql, params]);
+        if (sql.includes("FROM sites WHERE user_id=$1")) return null;
+        if (sql.includes("FROM sites s") && sql.includes("site_members")) return { id: "site-member-first" };
+        return null;
+      },
+      getSiteRole: async (siteId, userId) => siteId === "site-member-first" && userId === "moderator-1" ? "moderator" : null,
+      listSiteMembers: async () => [],
+      listSiteInvites: async () => [],
+    };
+
+    const res = await handleTeamList(
+      new Request("https://yourrank.site/api/site/team"),
+      {},
+      deps,
+    );
+    expect(res.status).toBe(200);
+    expect((await res.json()).siteId).toBe("site-member-first");
+    expect(calls).toHaveLength(2);
+    expect(calls[1][1]).toEqual(["moderator-1"]);
+  });
+
   it("returns 404 for a non-member instead of exposing team existence", async () => {
     const deps = {
       requireUser: async () => ({ user: { id: "outsider" }, res: null }),
