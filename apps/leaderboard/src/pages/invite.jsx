@@ -114,35 +114,7 @@ export function InvitePage({ invite, token, user } = {}) {
           </div>
         </main>
 
-        <script dangerouslySetInnerHTML={{ __html: `
-          const btn = document.getElementById('btnAcceptInvite');
-          if (btn) {
-            btn.addEventListener('click', async () => {
-              const token = btn.getAttribute('data-token');
-              btn.disabled = true;
-              btn.textContent = 'Accepting...';
-              try {
-                const res = await fetch('/api/site/team/accept-invite', {
-                  method: 'POST',
-                  headers: { 'content-type': 'application/json' },
-                  body: JSON.stringify({ token })
-                });
-                const data = await res.json();
-                if (data.ok) {
-                  window.location.href = '/dashboard';
-                } else {
-                  alert(data.error || 'Failed to accept invitation');
-                  btn.disabled = false;
-                  btn.textContent = 'Accept Invitation & Open Dashboard';
-                }
-              } catch (err) {
-                alert('Network error. Please try again.');
-                btn.disabled = false;
-                btn.textContent = 'Accept Invitation & Open Dashboard';
-              }
-            });
-          }
-        ` }} />
+        <script src="/assets/invite.js" defer></script>
       </body>
     </html>
   );

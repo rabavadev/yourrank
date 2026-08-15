@@ -1,4 +1,4 @@
-import { destroySession, cookieClear, readToken, RESERVED, currentUser, hasLegacyCookie, cookieClearLegacy, rateLimit, clientIp } from "./auth.js";
+import { destroySession, cookieClear, readToken, RESERVED, currentUser, hasLegacyCookie, cookieClearLegacy, rateLimit, rateLimitHeaders, clientIp } from "./auth.js";
 import { sendErrorToDiscord } from "../../../shared/monitoring.js";
 import { withWorkerFetch } from "../../../shared/with-worker.js";
 import { RateLimiter } from "../../../shared/rate-limiter-do.js";
@@ -624,11 +624,29 @@ async function handleRequest(request, env, ctx, meta) {
       const inviteMatch = path.match(/^\/invite\/([a-zA-Z0-9_-]+)$/);
       if (inviteMatch) {
         const token = inviteMatch[1];
+        const inviteRl = await rateLimit(env, `team-invite-page:${clientIp(request)}`, 30, 900);
+        if (!inviteRl.ok) {
+          return new Response("Invitation is not available.", {
+            status: 404,
+            headers: { ...SECURE_HTML, ...rateLimitHeaders(inviteRl) },
+          });
+        }
         const { getInviteByToken } = await import("../../../shared/team.js");
         const invite = await getInviteByToken(token);
+        const validInvite = invite &&
+          invite.status === "pending" &&
+          new Date(invite.expiresAt).getTime() >= Date.now();
+        if (!validInvite) {
+          return new Response("Invitation is not available.", {
+            status: 404,
+            headers: { ...SECURE_HTML, ...rateLimitHeaders(inviteRl) },
+          });
+        }
         const user = await currentUser(request, env);
         const html = addCookieConsent(await renderHtmlPage(PAGES.invite, { invite, token, user }));
-        return new Response(html, { headers: { ...SECURE_HTML, ...csrfHeader } });
+        return new Response(html, {
+          headers: { ...SECURE_HTML, ...csrfHeader, ...rateLimitHeaders(inviteRl) },
+        });
       }
       // Connect Kick lives under Rewards now; keep the old URL working.
       if (path === "/dashboard/settings/integrations") {

@@ -8,6 +8,7 @@
 // ============================================================================
 
 import { one as defaultOne, query as defaultQuery, exec as defaultExec, withTransaction as defaultWithTransaction } from "./db.js";
+import { hashToken } from "./crypto.js";
 
 export type SiteRole = "owner" | "manager" | "moderator";
 
@@ -28,7 +29,6 @@ export interface SiteInviteInfo {
   siteId: string;
   email: string;
   role: SiteRole;
-  token: string;
   status: "pending" | "accepted" | "revoked" | "expired";
   expiresAt: string;
   createdAt: string;
@@ -180,13 +180,12 @@ export async function listSiteInvites(
     site_id: string;
     email: string;
     role: SiteRole;
-    token: string;
     status: "pending" | "accepted" | "revoked" | "expired";
     expires_at: string;
     created_at: string;
     invited_by: string;
   }>(
-    `SELECT id, site_id, email, role, token, status, expires_at, created_at, invited_by
+    `SELECT id, site_id, email, role, status, expires_at, created_at, invited_by
        FROM site_invites
       WHERE site_id=$1 AND status='pending' AND expires_at > now()
       ORDER BY created_at DESC`,
@@ -198,7 +197,6 @@ export async function listSiteInvites(
     siteId: r.site_id,
     email: r.email,
     role: r.role,
-    token: r.token,
     status: r.status,
     expiresAt: r.expires_at,
     createdAt: r.created_at,
@@ -250,27 +248,28 @@ export async function createSiteInvite(
   }
 
   // Check if an active pending invite already exists
-  const existingInvite = await one<{ id: string; token: string }>(
-    "SELECT id, token FROM site_invites WHERE site_id=$1 AND lower(email)=$2 AND status='pending' AND expires_at > now()",
+  const existingInvite = await one<{ id: string }>(
+    "SELECT id FROM site_invites WHERE site_id=$1 AND lower(email)=$2 AND status='pending' AND expires_at > now()",
     [siteId, cleanEmail]
   );
   if (existingInvite) {
-    return { ok: true, token: existingInvite.token, inviteId: existingInvite.id };
+    return { ok: false, error: "An invitation is already pending for this email.", code: "already_pending" };
   }
 
   // Generate a cryptographically random token
   const rawBytes = new Uint8Array(24);
   crypto.getRandomValues(rawBytes);
   const token = Buffer.from(rawBytes).toString("base64url");
+  const tokenHash = await hashToken(token);
 
-  const created = await one<{ id: string; token: string }>(
-    `INSERT INTO site_invites (site_id, email, role, token, invited_by, status, expires_at)
+  const created = await one<{ id: string }>(
+    `INSERT INTO site_invites (site_id, email, role, token_hash, invited_by, status, expires_at)
      VALUES ($1, $2, $3, $4, $5, 'pending', now() + interval '7 days')
-     RETURNING id, token`,
-    [siteId, cleanEmail, role, token, inviterId]
+     RETURNING id`,
+    [siteId, cleanEmail, role, tokenHash, inviterId]
   );
 
-  return { ok: true, token: created?.token || token, inviteId: created?.id };
+  return { ok: true, token, inviteId: created?.id };
 }
 
 /**
@@ -359,7 +358,6 @@ export async function getInviteByToken(
     site_id: string;
     email: string;
     role: SiteRole;
-    token: string;
     status: "pending" | "accepted" | "revoked" | "expired";
     expires_at: string;
     created_at: string;
@@ -368,13 +366,13 @@ export async function getInviteByToken(
     site_slug: string;
     owner_name: string | null;
   }>(
-    `SELECT si.id, si.site_id, si.email, si.role, si.token, si.status, si.expires_at, si.created_at, si.invited_by,
+    `SELECT si.id, si.site_id, si.email, si.role, si.status, si.expires_at, si.created_at, si.invited_by,
             s.name AS site_name, s.slug AS site_slug, u.display_name AS owner_name
        FROM site_invites si
        JOIN sites s ON s.id = si.site_id
        JOIN users u ON u.id = s.user_id
-      WHERE si.token = $1`,
-    [token]
+      WHERE si.token_hash = $1`,
+    [await hashToken(token)]
   );
 
   if (!row) return null;
@@ -384,7 +382,6 @@ export async function getInviteByToken(
     siteId: row.site_id,
     email: row.email,
     role: row.role,
-    token: row.token,
     status: row.status,
     expiresAt: row.expires_at,
     createdAt: row.created_at,
@@ -416,8 +413,8 @@ export async function acceptSiteInvite(
     expires_at: string;
     invited_by: string;
   }>(
-    "SELECT id, site_id, email, role, status, expires_at, invited_by FROM site_invites WHERE token=$1",
-    [token]
+    "SELECT id, site_id, email, role, status, expires_at, invited_by FROM site_invites WHERE token_hash=$1",
+    [await hashToken(token)]
   );
 
   if (!invite) {
@@ -426,6 +423,11 @@ export async function acceptSiteInvite(
 
   if (invite.status === "revoked") {
     return { ok: false, error: "This invitation has been revoked by the site owner.", code: "revoked" };
+  }
+
+  const user = await one<{ email: string }>("SELECT email FROM users WHERE id=$1", [userId]);
+  if (!user || user.email.trim().toLowerCase() !== invite.email.trim().toLowerCase()) {
+    return { ok: false, error: "This invitation was issued for a different email address.", code: "email_mismatch" };
   }
 
   if (invite.status === "accepted") {

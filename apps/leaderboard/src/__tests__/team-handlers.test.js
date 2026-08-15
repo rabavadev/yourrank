@@ -1,4 +1,5 @@
 import { describe, it, expect } from "bun:test";
+import { readFileSync } from "node:fs";
 import {
   handleTeamList,
   handleTeamInvite,
@@ -10,10 +11,86 @@ import {
 } from "../handlers/team.js";
 
 describe("Team API Handlers", () => {
-  it("handleGetInviteInfo returns 400 when token is missing", async () => {
+  const allowRateLimit = async () => ({ ok: true, remaining: 29, limit: 30, retryAfter: 0 });
+  const headers = (rl) => ({ "X-RateLimit-Limit": String(rl.limit) });
+
+  it("returns one generic response for missing invite metadata", async () => {
     const badReq = new Request("https://yourrank.site/api/site/team/invite-info");
-    const badRes = await handleGetInviteInfo(badReq, {});
-    expect(badRes.status).toBe(400);
+    const badRes = await handleGetInviteInfo(badReq, {}, {
+      rateLimit: allowRateLimit,
+      rateLimitHeaders: headers,
+      getInviteByToken: async () => null,
+    });
+    expect(badRes.status).toBe(404);
+    expect(await badRes.json()).toEqual({ ok: false, error: "Invitation is not available." });
+  });
+
+  it("ships invite acceptance as an external CSP-compatible CSRF-aware asset", () => {
+    const page = readFileSync(new URL("../pages/invite.jsx", import.meta.url), "utf8");
+    const script = readFileSync(new URL("../assets/invite.js", import.meta.url), "utf8");
+    expect(page).toContain('<script src="/assets/invite.js" defer></script>');
+    expect(page).not.toContain("<script dangerouslySetInnerHTML");
+    expect(script).toContain('"x-csrf-token": getCsrf()');
+    expect(script).toContain('window.location.assign("/dashboard")');
+  });
+
+  it("allows a moderator to read the team list but blocks every mutation", async () => {
+    const user = { id: "moderator-1", email: "mod@example.com" };
+    const site = { id: "site-1" };
+    const deps = {
+      requireUser: async () => ({ user, res: null }),
+      getBoardById: async () => site,
+      getSiteRole: async () => "moderator",
+      listSiteMembers: async () => [],
+      listSiteInvites: async () => [],
+      rateLimit: allowRateLimit,
+      rateLimitHeaders: headers,
+      createSiteInvite: async () => ({ ok: true }),
+      revokeSiteInvite: async () => ({ ok: true }),
+      removeSiteMember: async () => ({ ok: true }),
+      updateSiteMemberRole: async () => ({ ok: true }),
+    };
+
+    const listRes = await handleTeamList(
+      new Request("https://yourrank.site/api/site/team?siteId=site-1"),
+      {},
+      deps,
+    );
+    expect(listRes.status).toBe(200);
+    expect((await listRes.json()).currentRole).toBe("moderator");
+
+    const requests = [
+      [handleTeamInvite, { siteId: "site-1", email: "other@example.com" }],
+      [handleTeamRevokeInvite, { siteId: "site-1", inviteId: "invite-1" }],
+      [handleTeamRemoveMember, { siteId: "site-1", targetUserId: "other-user" }],
+      [handleTeamUpdateRole, { siteId: "site-1", targetUserId: "other-user", role: "manager" }],
+    ];
+    for (const [handler, body] of requests) {
+      const res = await handler(
+        new Request("https://yourrank.site/api/site/team/action", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify(body),
+        }),
+        {},
+        deps,
+      );
+      expect(res.status).toBe(403);
+    }
+  });
+
+  it("returns 404 for a non-member instead of exposing team existence", async () => {
+    const deps = {
+      requireUser: async () => ({ user: { id: "outsider" }, res: null }),
+      getBoardById: async () => null,
+      getSiteRole: async () => null,
+    };
+    const res = await handleTeamList(
+      new Request("https://yourrank.site/api/site/team?siteId=site-1"),
+      {},
+      deps,
+    );
+    expect(res.status).toBe(404);
   });
 
   it("rejects unauthorized calls on team endpoints", async () => {

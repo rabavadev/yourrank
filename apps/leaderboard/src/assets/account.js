@@ -406,7 +406,9 @@ function renderTeam(data) {
                 <td><span class="hint">${fmtDateTime(inv.expiresAt)}</span></td>
                 <td>
                   <div class="d-flex gap-6 items-center">
-                    <button class="btn btn--sm ic-btn team-copy-invite-btn" data-url="${esc(inv.inviteUrl)}" type="button">Copy link</button>
+                    ${inv.inviteUrl
+                      ? `<button class="btn btn--sm ic-btn team-copy-invite-btn" data-url="${esc(inv.inviteUrl)}" type="button">Copy link</button>`
+                      : '<span class="hint">Link shown once when created</span>'}
                   </div>
                 </td>
                 ${canManageTeam ? `
@@ -572,4 +574,3 @@ async function init() {
 }
 
 if (document.getElementById("acc-app")) init();
-

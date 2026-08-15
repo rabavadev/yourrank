@@ -208,12 +208,18 @@ export async function decrypt(blobHex: string, hexKey: string): Promise<string> 
  */
 export async function decryptCredential(blobHex: string | null | undefined): Promise<string | null> {
   if (!blobHex) return null;
+  const value = String(blobHex).trim();
   const hex = (typeof process !== "undefined" && process.env?.TOKEN_ENC_KEY) || "";
   if (hex.length !== 64) throw new Error("TOKEN_ENC_KEY must be 64 hex characters (32 bytes)");
+  const ciphertext = value.startsWith("v1:") ? value.slice(3) : value;
+  if (!/^[0-9a-f]+$/i.test(ciphertext) || ciphertext.length < 56 || ciphertext.length % 2 !== 0) {
+    return value;
+  }
   try {
-    return await decrypt(blobHex, hex);
-  } catch {
-    return blobHex;
+    return await decrypt(value, hex);
+  } catch (error) {
+    console.error("[crypto] credential decryption failed:", String((error as Error)?.message || error));
+    return null;
   }
 }
 

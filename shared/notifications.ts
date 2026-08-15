@@ -12,28 +12,8 @@
 //  module allows both Workers to send notifications consistently.
 // ============================================================================
 
-import { decryptToken, decrypt } from "./crypto.js";
+import { decryptToken, decryptCredential } from "./crypto.js";
 import { errMessage } from "./errors.js";
-
-// ----------------------------------------------------------------------------
-// Encryption helper for notification credentials stored as hex ciphertext.
-// ----------------------------------------------------------------------------
-
-function getEncKey(): string {
-  const hex = (typeof process !== "undefined" && process.env?.TOKEN_ENC_KEY) || "";
-  if (hex.length !== 64) throw new Error("TOKEN_ENC_KEY must be 64 hex characters (32 bytes)");
-  return hex;
-}
-
-async function decryptCredential(blobHex: string | null | undefined): Promise<string | null> {
-  if (!blobHex) return null;
-  try {
-    return await decrypt(blobHex, getEncKey());
-  } catch {
-    // Legacy or unencrypted value (e.g. migration copy); return as-is.
-    return blobHex;
-  }
-}
 
 // ----------------------------------------------------------------------------
 // Telegram Markdown escaping

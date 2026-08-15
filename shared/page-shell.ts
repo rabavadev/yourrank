@@ -25,7 +25,7 @@ const GOOGLE_FONTS =
   '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />' +
   '<link href="https://fonts.googleapis.com/css2?family=Fira+Sans:wght@400;500;600;700;800&family=Fira+Code:wght@500;700&display=swap" rel="stylesheet" />';
 
-const THEME_SCRIPT = `<script>
+const THEME_SCRIPT = (nonce = "") => `<script${nonce ? ` nonce="${esc(nonce)}"` : ""}>
   try {
     const t = localStorage.getItem('yr-theme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
     if (t === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
@@ -79,7 +79,7 @@ export function leaderboardPageHtml(opts: LeaderboardPageOpts): string {
 <title>${esc(opts.title)}</title>
 ${reqIdMeta}
 ${description}<meta name="robots" content="${esc(opts.robots || "noindex, nofollow")}" /><link rel="canonical" href="${esc(opts.canonical)}" />${GOOGLE_FONTS}
-${THEME_SCRIPT}
+<script src="/assets/theme.js" defer></script>
 ${styles}
 </head><body${bodyAttr}>
 <noscript><div class="noscript-msg">${noscript}</div></noscript>
@@ -204,7 +204,7 @@ export function botPageHtml(opts: BotPageOpts): string {
     : "";
   return `<!doctype html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Streamer Dashboard</title>${GOOGLE_FONTS}${THEME_SCRIPT}${chromeCss}<style${nonceAttr}>${BOT_STYLE_ATTR_CSS}${BOT_BASE_CSS}${BOT_DASH_V2_CSS}</style><link rel="stylesheet" href="/assets/ui.css"><link rel="stylesheet" href="/assets/shell-nav.css"></head><body class="yr-ui" data-page="${esc(opts.page)}">
+<title>Streamer Dashboard</title>${GOOGLE_FONTS}${THEME_SCRIPT(opts.nonce)}${chromeCss}<style${nonceAttr}>${BOT_STYLE_ATTR_CSS}${BOT_BASE_CSS}${BOT_DASH_V2_CSS}</style><link rel="stylesheet" href="/assets/ui.css"><link rel="stylesheet" href="/assets/shell-nav.css"></head><body class="yr-ui" data-page="${esc(opts.page)}">
 <a href="#main-content" class="skip-link">Skip to main content</a>
 ${nav}
 ${opts.content}

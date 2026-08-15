@@ -136,7 +136,7 @@ describe("createSiteInvite & lifecycle", () => {
     let updatedInvite: any = null;
 
     const fakeOne = async (sql: string) => {
-      if (sql.includes("FROM site_invites WHERE token=$1")) {
+      if (sql.includes("FROM site_invites WHERE token_hash=$1")) {
         return {
           id: "inv-123",
           site_id: "site-1",
@@ -147,6 +147,7 @@ describe("createSiteInvite & lifecycle", () => {
           invited_by: "owner-1",
         };
       }
+      if (sql.includes("FROM users WHERE id=$1")) return { email: " NEWMOD@EXAMPLE.COM " };
       return null;
     };
 
@@ -168,6 +169,28 @@ describe("createSiteInvite & lifecycle", () => {
     expect(insertedMember[0]).toBe("site-1");
     expect(insertedMember[1]).toBe("user-mod-1");
     expect(updatedInvite).toBeDefined();
+  });
+
+  it("rejects an invite when the accepting account email does not match", async () => {
+    const fakeOne = async (sql: string) => {
+      if (sql.includes("FROM site_invites WHERE token_hash=$1")) {
+        return {
+          id: "inv-123",
+          site_id: "site-1",
+          email: "invited@example.com",
+          role: "moderator",
+          status: "pending",
+          expires_at: new Date(Date.now() + 86400000).toISOString(),
+          invited_by: "owner-1",
+        };
+      }
+      if (sql.includes("FROM users WHERE id=$1")) return { email: "different@example.com" };
+      return null;
+    };
+
+    const res = await acceptSiteInvite("tok-abc", "user-mod-1", { one: fakeOne as any });
+    expect(res.ok).toBe(false);
+    expect(res.code).toBe("email_mismatch");
   });
 
   it("rejects revoked or expired invites", async () => {

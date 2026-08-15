@@ -17,7 +17,7 @@ CREATE TABLE IF NOT EXISTS public.site_invites (
     site_id UUID NOT NULL REFERENCES public.sites(id) ON DELETE CASCADE,
     email TEXT NOT NULL,
     role TEXT NOT NULL DEFAULT 'moderator' CHECK (role IN ('moderator', 'manager')),
-    token TEXT NOT NULL UNIQUE,
+    token_hash TEXT NOT NULL UNIQUE,
     invited_by UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
     status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'accepted', 'revoked', 'expired')),
     expires_at TIMESTAMPTZ NOT NULL DEFAULT (now() + interval '7 days'),
@@ -26,7 +26,7 @@ CREATE TABLE IF NOT EXISTS public.site_invites (
 
 CREATE INDEX IF NOT EXISTS idx_site_members_user_id ON public.site_members(user_id);
 CREATE INDEX IF NOT EXISTS idx_site_members_site_id ON public.site_members(site_id);
-CREATE INDEX IF NOT EXISTS idx_site_invites_token ON public.site_invites(token);
+CREATE INDEX IF NOT EXISTS idx_site_invites_token_hash ON public.site_invites(token_hash);
 CREATE INDEX IF NOT EXISTS idx_site_invites_site_status ON public.site_invites(site_id, status);
 
 -- Enable RLS

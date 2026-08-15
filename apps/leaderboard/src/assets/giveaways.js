@@ -268,7 +268,9 @@
     textSpan.className = "gw-chat-text";
 
     if (isMatch) {
-      textSpan.innerHTML = `<mark>${escapeHtml(content)}</mark>`;
+      const mark = document.createElement("mark");
+      mark.textContent = content;
+      textSpan.replaceChildren(mark);
     } else {
       textSpan.textContent = ` ${content}`;
     }
@@ -315,22 +317,53 @@
 
     const defaultAvatar = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%2394a3b8'%3E%3Cpath d='M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z'/%3E%3C/svg%3E";
 
-    tr.innerHTML = `
-      <td class="ta-c" style="color: #64748b;">${index}</td>
-      <td>
-        <div class="gw-entrant-user">
-          <img class="gw-entrant-avatar" src="${entrant.avatar || defaultAvatar}" alt="" onerror="this.src='${defaultAvatar}'" />
-          <a class="gw-entrant-name" href="https://kick.com/${encodeURIComponent(entrant.username)}" target="_blank" rel="noopener">${escapeHtml(entrant.username)}</a>
-        </div>
-      </td>
-      <td><span class="gw-entrant-msg">${escapeHtml(entrant.message)}</span></td>
-      <td style="color: #64748b; font-size: 12px;">${entrant.time}</td>
-      <td class="ta-r">
-        <button class="btn btn--sm btn--ghost btn--danger-text" type="button" data-remove-id="${entrant.id}" title="Remove entrant">✕</button>
-      </td>
-    `;
+    const numberCell = document.createElement("td");
+    numberCell.className = "ta-c";
+    numberCell.style.color = "#64748b";
+    numberCell.textContent = String(index);
 
-    tr.querySelector("[data-remove-id]")?.addEventListener("click", () => {
+    const userCell = document.createElement("td");
+    const userWrap = document.createElement("div");
+    userWrap.className = "gw-entrant-user";
+    const avatar = document.createElement("img");
+    avatar.className = "gw-entrant-avatar";
+    avatar.src = safeAvatarUrl(entrant.avatar, defaultAvatar);
+    avatar.alt = "";
+    avatar.addEventListener("error", () => {
+      avatar.src = defaultAvatar;
+    }, { once: true });
+    const userLink = document.createElement("a");
+    userLink.className = "gw-entrant-name";
+    userLink.href = safeKickProfileUrl(entrant.username);
+    userLink.target = "_blank";
+    userLink.rel = "noopener";
+    userLink.textContent = entrant.username;
+    userWrap.append(avatar, userLink);
+    userCell.append(userWrap);
+
+    const messageCell = document.createElement("td");
+    const message = document.createElement("span");
+    message.className = "gw-entrant-msg";
+    message.textContent = entrant.message;
+    messageCell.append(message);
+
+    const timeCell = document.createElement("td");
+    timeCell.style.color = "#64748b";
+    timeCell.style.fontSize = "12px";
+    timeCell.textContent = entrant.time;
+
+    const actionCell = document.createElement("td");
+    actionCell.className = "ta-r";
+    const removeButton = document.createElement("button");
+    removeButton.className = "btn btn--sm btn--ghost btn--danger-text";
+    removeButton.type = "button";
+    removeButton.dataset.removeId = String(entrant.id);
+    removeButton.title = "Remove entrant";
+    removeButton.textContent = "✕";
+    actionCell.append(removeButton);
+
+    tr.append(numberCell, userCell, messageCell, timeCell, actionCell);
+    removeButton.addEventListener("click", () => {
       removeEntrant(entrant.id);
     });
 
@@ -439,7 +472,7 @@
     $("gw-winner-name").textContent = winner.username;
     $("gw-winner-msg").textContent = `"${winner.message}"`;
     $("gw-winner-time").textContent = `Entered at ${winner.time}`;
-    $("gw-winner-avatar").src = winner.avatar || defaultAvatar;
+    $("gw-winner-avatar").src = safeAvatarUrl(winner.avatar, defaultAvatar);
 
     showcase.hidden = false;
     showcase.scrollIntoView({ behavior: "smooth", block: "nearest" });
@@ -505,6 +538,19 @@
     return String(str || "").replace(/[&<>"']/g, (s) =>
       ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[s] || s)
     );
+  }
+
+  function safeAvatarUrl(value, fallback) {
+    try {
+      const url = new URL(String(value || ""), window.location.origin);
+      if (url.protocol === "https:" && url.hostname === "files.kick.com") return url.href;
+    } catch {}
+    return fallback;
+  }
+
+  function safeKickProfileUrl(username) {
+    const value = String(username || "").trim();
+    return `https://kick.com/${encodeURIComponent(value)}`;
   }
 
   if (document.readyState === "loading") {

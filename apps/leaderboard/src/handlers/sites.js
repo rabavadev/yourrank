@@ -6,21 +6,10 @@ import { effectivePlan, PLAN_LIMITS, BOARD_LIMITS } from "../../../../shared/pla
 import { one, exec, query } from "../../../../shared/db.js";
 import { logAudit } from "../../../../shared/audit.js";
 import { buildTop3Embed, sendDiscordWebhook, sendTelegramMessage } from "../../../../shared/notifications.js";
-import { decryptToken, decrypt } from "../../../../shared/crypto.js";
+import { decryptToken, decryptCredential } from "../../../../shared/crypto.js";
 import { PLATFORM_HOST } from "../constants.js";
 import { invalidateCustomDomain } from "../middleware/custom-domain.js";
 import { notifyLiveBoard } from "../live-board-config.js";
-
-function getTokenEncKey() {
-  const hex = (typeof process !== "undefined" && process.env?.TOKEN_ENC_KEY) || "";
-  if (hex.length !== 64) throw new Error("TOKEN_ENC_KEY must be 64 hex characters (32 bytes)");
-  return hex;
-}
-
-async function decryptCredential(blobHex) {
-  if (!blobHex) return null;
-  try { return await decrypt(blobHex, getTokenEncKey()); } catch { return blobHex; }
-}
 
 async function onboardingForSite(env, site, userId, plan) {
   const [bot, postback, players, firstView] = await Promise.all([
