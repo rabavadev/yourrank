@@ -27,8 +27,21 @@ const mode = { "/signup": "signup", "/forgot": "forgot", "/reset": "reset" }[loc
 const urlParams = new URLSearchParams(location.search);
 const planParam = urlParams.get("plan") || "";
 function safeNextPath(value) {
-  if (!value || !value.startsWith("/") || value.startsWith("//") || /^[a-z][a-z\d+.-]*:/i.test(value)) return "";
-  return value;
+  if (!value) return "";
+  try {
+    const u = new URL(value, location.origin);
+    if (u.origin !== location.origin) return "";
+    const path = u.pathname;
+    const allowedExact = new Set([
+      "/dashboard",
+      "/dashboard/settings",
+      "/help/support",
+      "/verify-email"
+    ]);
+    const allowedPrefixes = ["/dashboard/"];
+    if (allowedExact.has(path) || allowedPrefixes.some(prefix => path.startsWith(prefix))) return path;
+  } catch (_) {}
+  return "";
 }
 const nextPath = safeNextPath(urlParams.get("next") || "");
 const form = document.getElementById("form");
