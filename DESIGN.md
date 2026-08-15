@@ -148,9 +148,13 @@ independent of the operator accent.
   replacement without introducing a new font-loading path. Type is made distinct
   through hierarchy: compact rail labels, high-contrast module headings, tabular
   numeric KPIs, and plain-language labels for non-technical streamers.
-- **Marketing cue-sheet:** Barlow Condensed (display), Atkinson Hyperlegible
-  (body), and Roboto Mono, scoped under `.landing-page` and loaded by
-  `landing.js`.
+- **Marketing stream-day scoreboard:** Archivo Expanded (display), Inter (body),
+  and JetBrains Mono (figures and labels), scoped under `.landing-page` and
+  shared by the pricing, FAQ, and reviews sheets through `landing.css`.
+  Marketing uses a near-achromatic Court Black / Deck / Well palette with
+  cobalt actions, a tally-red on-air cue, amber scoreboard figures, and mint
+  fulfilled states. Its signature is the live board in the homepage hero:
+  split-flap word changes, a reordering standings list, and a countdown.
 - **Public board:** Fira Sans / Fira Code loaded by `site-render.js`, with the
   board's own accent applied on top.
 

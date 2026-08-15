@@ -59,4 +59,16 @@ describe("serveStaticAsset caching", () => {
     expect(serveStaticAsset("/assets/invite.js", new Request("https://test.com/assets/invite.js"), assets).status).toBe(200);
     expect(serveStaticAsset("/assets/theme.js", new Request("https://test.com/assets/theme.js"), assets).status).toBe(200);
   });
+
+  it("serves WebP media with binary content and revalidatable caching", async () => {
+    const assets = {
+      ...testAssets,
+      "/assets/leaderboards-640.webp": ["UklGRg==", ".webp", "base64"],
+    };
+    const res = serveStaticAsset("/assets/leaderboards-640.webp", new Request("https://test.com/assets/leaderboards-640.webp"), assets);
+    expect(res.status).toBe(200);
+    expect(res.headers.get("content-type")).toBe("image/webp");
+  expect(res.headers.get("cache-control")).toContain("max-age=604800");
+    expect(new Uint8Array(await res.arrayBuffer())).toEqual(new Uint8Array([0x52, 0x49, 0x46, 0x46]));
+  });
 });

@@ -14,192 +14,59 @@ export const landingPage = `<!DOCTYPE html>
 <meta name="twitter:description" content="One streamer suite for the full community loop: attract, activate, return." />
 <meta property="og:image" content="https://yourrank.site/og.png" />
 <link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&amp;family=JetBrains+Mono:wght@500;700&amp;display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@125,700..800&amp;family=Inter:wght@400;500;600;700;800&amp;family=JetBrains+Mono:wght@500;700&amp;display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="/assets/ui.css" /><link rel="stylesheet" href="/assets/landing.css" />
 <script type="application/ld+json">{"@context":"https://schema.org","@type":"Organization","name":"YourRank","url":"https://yourrank.site","description":"A streamer community suite connecting Sites, Telegram, and Credits & Shop.","areaServed":"Worldwide","knowsAbout":["streamer sites","leaderboards","Kick","Discord","Telegram bots","community rewards"],"contactPoint":{"@type":"ContactPoint","contactType":"customer service","email":"contact@yourrank.site","availableLanguage":["English"]}}</script>
 </head><body class="landing-page">
-<!-- THESIS: YourRank is the live run-of-show for the community loop and refuses the generic three-card creator-SaaS homepage. OWN-WORLD: asphalt and fog surfaces, cobalt cue paths, orange warnings, mint completed states, credential labels, sharp 8px controls. STORY: see the full loop, choose a launch goal, start free or explore the live demo. FIRST VIEWPORT: wordmark and simple nav above a two-column thesis; left contains headline and actions, right is a connected three-channel operating flow, with the primary action visible without scrolling. FORM: live-production cue sheet, grounded candidate 3, seed 5919f06e. FINISH: unreviewed and undocumented is unfinished; this build ends with the finish review, the verdict, and DESIGN.md. -->
-<noscript><div class="noscript-card">
-<p class="noscript-title">YourRank</p>
-<p>Sites, Telegram, and Credits &amp; Shop for streamers and communities. JavaScript is only needed for enhanced navigation and motion.</p>
-<a href="/signup">Start free</a>
-</div></noscript>
+<noscript><div class="noscript-card"><p class="noscript-title">YourRank</p><p>Sites, Telegram, and Credits &amp; Shop for streamers and communities. JavaScript is only needed for enhanced navigation and motion.</p><a href="/signup">Start free</a></div></noscript>
 <a href="#main-content" class="sr-only skip-link">Skip to content</a>
-<header class="landing-header"><div class="wrap">
-<nav class="top" aria-label="Primary"><a class="brand" href="/" aria-label="YourRank home">Your<b>Rank</b></a>
+<header class="landing-header"><div class="wrap"><nav class="top" aria-label="Primary">
+<a class="brand" href="/" aria-label="YourRank home">Your<b>Rank</b></a>
 <button class="nav-toggle" aria-label="Toggle menu" aria-expanded="false"><svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button>
-<div class="links"><a href="#products">The loop</a><a href="#goals">Launch goals</a><a href="#proof">Demo</a><a href="/pricing">Pricing</a><a href="/login">Sign in</a><a href="/signup" class="btn btn--accent">Start free</a></div></nav>
-</div></header>
+<div class="links"><a href="#products">The loop</a><a href="#goals">Launch goals</a><a href="#proof">Demo</a><a href="/pricing">Pricing</a><a href="/login">Sign in</a><a href="/signup" class="btn btn--accent">Start free</a></div>
+</nav></div></header>
 <main id="main-content">
-<section class="hero">
-<div class="hero-copy">
-<h1>Live <span class="hero-rotator-wrap"><span class="hero-rotator" id="heroRotator">Leaderboards</span></span> &amp; Viewer Rewards for Streamers.</h1>
-<p class="lead">Launch a branded community site, activate viewers on Telegram, and reward regular chatters with Kick-connected channel points &amp; shop redemptions in minutes.</p>
-<div class="cta"><a href="/signup" class="btn btn--accent">Start your community loop</a><a href="/demo" class="btn btn--ghost">Explore the live demo</a></div>
-<ul class="trust-line"><li>2-MINUTE SETUP</li><li>NO CARD REQUIRED</li><li>OBS BROADCAST READY</li></ul>
-<p class="fine">For entertainment and community engagement only. YourRank does not take bets or pay prizes.</p>
-</div>
-<figure class="signal-flow" aria-labelledby="signal-flow-title">
-<figcaption class="signal-head"><span id="signal-flow-title">Community run-of-show</span><span>Capability walkthrough</span></figcaption>
-<div class="signal-canvas">
-<div class="signal-path" aria-hidden="true"><span class="signal-pulse"></span></div>
-<section class="flow-stage flow-stage--sites" aria-label="Sites attracts viewers">
-<div class="flow-channel"><span class="flow-index">CH 1</span><strong>Sites</strong><span class="flow-state flow-state--live">Published</span></div>
-<div class="flow-body"><p>Give every link one destination.</p><ul><li>Branded public site</li><li>Live leaderboard</li><li>Offers and viewer access</li></ul></div>
-<div class="flow-cue">Attract</div>
+<section class="hero wrap">
+<div class="hero-copy"><p class="live-kicker"><span class="live-dot" aria-hidden="true"></span> YourRank / live community suite</p>
+<p class="hero-demo-pill"><a href="/demo">See a live board — the demo is the real product <span aria-hidden="true">↗</span></a></p>
+<h1>Live <span class="hero-rotator-wrap" aria-live="polite"><span class="hero-rotator" id="heroRotator"><span class="hero-word is-active">leaderboards</span><span class="hero-word">credits</span><span class="hero-word">giveaways</span><span class="hero-word">rewards</span><span class="hero-word">standings</span></span></span><br />for your chat.</h1>
+<p class="lead">Attract viewers with a home worth sharing. Activate them between streams. Give regulars a reason to return.</p>
+<div class="cta"><a href="/signup" class="btn btn--accent">Start free</a><a href="/demo" class="btn btn--ghost">Explore the live demo <span aria-hidden="true">↗</span></a></div>
+<ul class="trust-line"><li>No card required</li><li>Built for live communities</li><li>Entertainment only</li></ul>
+<p class="fine">For entertainment and community engagement only. YourRank does not take bets or pay prizes.</p></div>
+<figure class="scoreboard" aria-labelledby="scoreboard-title">
+<figcaption class="scoreboard-head"><span><span class="live-dot" aria-hidden="true"></span><strong id="scoreboard-title">ON AIR</strong></span><span class="mono">NEXT FLIP <b id="flipClock">00:12</b></span></figcaption>
+<div class="scoreboard-meta"><span>LIVE STANDINGS / KICK CREDITS</span><span class="mono">BOARD 001</span></div>
+<ol class="board-rows" id="boardRows">
+<li class="board-row board-row--up"><span class="rank mono">01</span><span class="movement" aria-label="Moved up">▲</span><span class="handle">nightowl</span><span class="points mono">12,560</span><span class="credit-mark" aria-hidden="true"></span></li>
+<li class="board-row"><span class="rank mono">02</span><span class="movement" aria-hidden="true"></span><span class="handle">pixelpilot</span><span class="points mono">9,870</span><span class="credit-mark" aria-hidden="true"></span></li>
+<li class="board-row"><span class="rank mono">03</span><span class="movement" aria-hidden="true"></span><span class="handle">moxie_live</span><span class="points mono">7,230</span><span class="credit-mark" aria-hidden="true"></span></li>
+<li class="board-row"><span class="rank mono">04</span><span class="movement" aria-hidden="true"></span><span class="handle">arcade_ally</span><span class="points mono">6,410</span><span class="credit-mark" aria-hidden="true"></span></li>
+</ol><div class="scoreboard-foot"><span>Auto-sorted standings</span><span class="mono">SYNCED</span></div></figure>
 </section>
-<section class="flow-stage flow-stage--telegram" aria-label="Telegram activates viewers">
-<div class="flow-channel"><span class="flow-index">CH 2</span><strong>Telegram</strong><span class="flow-state">Connected</span></div>
-<div class="flow-body"><p>Reach the people who opted in.</p><ul><li>Commands</li><li>Broadcasts</li><li>Tracked offers</li></ul></div>
-<div class="flow-cue">Activate</div>
-</section>
-<section class="flow-stage flow-stage--credits" aria-label="Credits and Shop brings viewers back">
-<div class="flow-channel"><span class="flow-index">CH 3</span><strong>Credits &amp; Shop</strong><span class="flow-state flow-state--done">Ready</span></div>
-<div class="flow-body"><p>Turn participation into a reason to return.</p><ul><li>Kick earning rules</li><li>Viewer balances</li><li>Shop redemptions</li></ul></div>
-<div class="flow-cue">Return</div>
-</section>
-</div>
-<p class="signal-note"><span>Signal path</span> Sites → Telegram → Credits &amp; Shop → back to your next stream</p>
-</figure>
-</section>
-<section class="loop-strip" aria-label="YourRank community loop"><div class="wrap">
-<p><strong>Attract</strong><span>A home worth sharing</span></p><span class="loop-connector" aria-hidden="true"></span><p><strong>Activate</strong><span>A direct line to viewers</span></p><span class="loop-connector" aria-hidden="true"></span><p><strong>Return</strong><span>A reason to come back</span></p>
-</div></section>
-<section id="goals" class="goal-section"><div class="wrap goal-layout">
-<div class="section-intro"><h2 class="sec">What do you want to launch first?</h2><p class="sec-sub">Choose the outcome that matters now. Your account keeps the other two channels ready when you need them.</p></div>
-<div class="goal-board" aria-label="Launch goals">
-<article class="goal-row goal-row--site"><div class="credential"><span>Launch pass</span><b>SITES</b></div><div><h3>Give your community one public home</h3><p>Publish a branded site with standings, countdowns, offers, and viewer access—without building or hosting it yourself.</p></div><a href="/signup" class="goal-action">Launch a community site<span aria-hidden="true">→</span></a></article>
-<article class="goal-row goal-row--telegram"><div class="credential"><span>Launch pass</span><b>TELEGRAM</b></div><div><h3>Reach viewers between streams</h3><p>Connect a bot, set useful commands, share tracked offers, and send broadcasts to subscribers.</p></div><a href="/signup" class="goal-action">Connect Telegram<span aria-hidden="true">→</span></a></article>
-<article class="goal-row goal-row--credits"><div class="credential"><span>Launch pass</span><b>CREDITS</b></div><div><h3>Reward the people who keep showing up</h3><p>Connect Kick, decide how channel rewards earn credits, add shop items, and fulfil viewer redemptions.</p></div><a href="/signup" class="goal-action">Set up viewer rewards<span aria-hidden="true">→</span></a></article>
-</div>
-</div></section>
-<section id="products" class="product-section"><div class="wrap">
-<div class="section-intro section-intro--wide"><h2 class="sec">One account. One continuous run.</h2><p class="sec-sub">Each product works on its own. Together, they close the gap between the moment someone finds you and the reason they return.</p></div>
-<div class="cue-sheet">
-<div class="cue-sheet-head"><span>Operator cue sheet</span><span>Three channels / one community</span></div>
-<ol class="cue-list">
-<li><div class="cue-time">AT<br />TRACT</div><div class="cue-product"><span>Sites</span><strong>Publish the destination</strong></div><p>Your logo, content, leaderboard, countdown, offers, games, and viewer access live at a shareable YourRank address or custom domain.</p><span class="cue-output">Public site</span></li>
-<li><div class="cue-time">AC<br />TIVATE</div><div class="cue-product"><span>Telegram</span><strong>Open the return channel</strong></div><p>Connect your bot, create commands and tracked offers, manage subscribers, and broadcast when there is something worth coming back for.</p><span class="cue-output">Direct reach</span></li>
-<li><div class="cue-time">RE<br />TURN</div><div class="cue-product"><span>Credits &amp; Shop</span><strong>Make participation count</strong></div><p>Map Kick rewards to credits, show viewer balances, manage shop inventory, and move redemptions from pending to fulfilled.</p><span class="cue-output cue-output--done">Loop closed</span></li>
-</ol>
-</div>
-</div></section>
-<section id="proof" class="proof-section"><div class="wrap proof-layout">
-<div class="proof-copy"><h2 class="sec">Inspect the product, not a promise.</h2><p class="sec-sub">The live demo is a working YourRank public site. It shows the same page structure, standings, countdown, offers, and viewer routes an operator can publish.</p>
-<dl class="capability-ledger">
-<div><dt>Sites</dt><dd>Public pages, standings, countdowns, offers, referrals, and analytics</dd></div>
-<div><dt>Telegram</dt><dd>Bots, commands, subscribers, broadcasts, tracked clicks, and conversions</dd></div>
-<div><dt>Credits</dt><dd>Kick earning rules, balances, shop inventory, redemptions, and fulfilment</dd></div>
-</dl>
-<a href="/demo" class="btn btn--accent">Open the live demo</a>
-</div>
-<div class="demo-frame"><div class="demo-bar"><span>yourrank.site/demo</span><span class="demo-status">Demo route</span></div><iframe src="/demo" loading="lazy" title="Live YourRank public site demo"></iframe></div>
-</div></section>
-<section id="gallery" class="gallery-section" aria-label="Visual Showcase"><div class="wrap">
-<div class="section-intro"><h2 class="sec">Built for high-energy streamer communities</h2><p class="sec-sub">From esports tournaments to live Kick casino races, YourRank adapts to your community's style with custom themes.</p></div>
-<div class="elastic-gallery" id="elasticGallery">
-  <div class="eg-item" data-id="01">
-    <div class="eg-bg" style="background-image:url('https://images.pexels.com/photos/3052361/pexels-photo-3052361.jpeg')"></div>
-    <div class="eg-overlay"></div>
-    <div class="eg-content">
-      <div class="eg-active-content">
-        <span class="eg-tag">Tournaments</span>
-        <h3 class="eg-title">Neon Cyber</h3>
-        <span class="eg-cta">View Setup ↗</span>
-      </div>
-      <div class="eg-inactive-content">
-        <span class="eg-vertical-text">Neon Cyber</span>
-        <span class="eg-mobile-id">01</span>
-      </div>
-    </div>
-  </div>
-  <div class="eg-item" data-id="02">
-    <div class="eg-bg" style="background-image:url('https://images.pexels.com/photos/2224424/pexels-photo-2224424.jpeg')"></div>
-    <div class="eg-overlay"></div>
-    <div class="eg-content">
-      <div class="eg-active-content">
-        <span class="eg-tag">Leaderboards</span>
-        <h3 class="eg-title">Urban Race</h3>
-        <span class="eg-cta">View Setup ↗</span>
-      </div>
-      <div class="eg-inactive-content">
-        <span class="eg-vertical-text">Urban Race</span>
-        <span class="eg-mobile-id">02</span>
-      </div>
-    </div>
-  </div>
-  <div class="eg-item is-active" data-id="03">
-    <div class="eg-bg" style="background-image:url('https://images.pexels.com/photos/2387873/pexels-photo-2387873.jpeg')"></div>
-    <div class="eg-overlay"></div>
-    <div class="eg-content">
-      <div class="eg-active-content">
-        <span class="eg-tag">Kick Rewards</span>
-        <h3 class="eg-title">Abstract Fluid</h3>
-        <span class="eg-cta">View Setup ↗</span>
-      </div>
-      <div class="eg-inactive-content">
-        <span class="eg-vertical-text">Abstract Fluid</span>
-        <span class="eg-mobile-id">03</span>
-      </div>
-    </div>
-  </div>
-  <div class="eg-item" data-id="04">
-    <div class="eg-bg" style="background-image:url('https://images.pexels.com/photos/167699/pexels-photo-167699.jpeg')"></div>
-    <div class="eg-overlay"></div>
-    <div class="eg-content">
-      <div class="eg-active-content">
-        <span class="eg-tag">Telegram Bots</span>
-        <h3 class="eg-title">Silent Nature</h3>
-        <span class="eg-cta">View Setup ↗</span>
-      </div>
-      <div class="eg-inactive-content">
-        <span class="eg-vertical-text">Silent Nature</span>
-        <span class="eg-mobile-id">04</span>
-      </div>
-    </div>
-  </div>
-  <div class="eg-item" data-id="05">
-    <div class="eg-bg" style="background-image:url('https://images.pexels.com/photos/2582937/pexels-photo-2582937.jpeg')"></div>
-    <div class="eg-overlay"></div>
-    <div class="eg-content">
-      <div class="eg-active-content">
-        <span class="eg-tag">Mini-Games</span>
-        <h3 class="eg-title">Future Tech</h3>
-        <span class="eg-cta">View Setup ↗</span>
-      </div>
-      <div class="eg-inactive-content">
-        <span class="eg-vertical-text">Future Tech</span>
-        <span class="eg-mobile-id">05</span>
-      </div>
-    </div>
-  </div>
-</div>
-</div></section>
-<section id="pricing" class="plan-section"><div class="wrap plan-layout">
-<div class="section-intro"><h2 class="sec">Start free. Add capacity when the run grows.</h2><p class="sec-sub">The homepage stays out of the entitlement business. The pricing page is the current source for plan limits, features, and checkout details.</p></div>
-<div class="plan-preview">
-<div class="plan-free"><span class="plan-label">Free plan</span><strong>$0</strong><p>Launch with all three products inside the Free plan limits. No card required.</p><a href="/signup" class="btn btn--accent">Start free</a></div>
-<div class="plan-paid"><span class="plan-label">When you need more</span><h3>Starter, Pro, and Agency</h3><p>Compare current capacity, operator controls, and plan prices before choosing.</p><a href="/pricing" class="btn btn--ghost">Compare plans and features</a></div>
-</div>
-<p class="payment-note"><strong>Payment note:</strong> Paid access is sold in 30-day periods, billed in crypto, and does not auto-renew. Card checkout is not available yet. A 7-day Pro trial requires no payment up front. Crypto purchases are non-refundable; see the <a href="/refund">refund policy</a>.</p>
-</div></section>
-<section id="start" class="closing-section"><div class="wrap closing-layout">
-<div><h2 class="sec">Choose the first cue. Keep the whole loop in reach.</h2><p>Start with the launch goal you need today. No code, no hosting, no card.</p></div>
-<div class="cta"><a href="/signup" class="btn btn--accent">Start free</a><a href="/demo" class="btn btn--ghost">Explore the live demo</a></div>
-</div></section>
-</main>
-<div class="mobile-cta"><a href="/signup" class="btn btn--accent">Start free</a></div>
-<footer class="ftr ftr--platform"><div class="wrap">
-<div class="ftr-top">
-  <div class="ftr-brand"><a class="brand" href="/">Your<b>Rank</b></a><p>Sites, Telegram, and Credits &amp; Shop for streamers and communities.</p></div>
-  <div class="ftr-cols">
-    <div class="ftr-col"><b>Product</b><a href="/#products">The loop</a><a href="/#goals">Launch goals</a><a href="/demo">Live demo</a><a href="/pricing">Pricing</a><a href="/faq">FAQ</a><a href="/docs">API Docs</a><a href="/help/support">Contact</a></div>
-    <div class="ftr-col"><b>Legal</b><a href="/terms">Terms of Service</a><a href="/privacy">Privacy Policy</a><a href="/cookies">Cookie Policy</a><a href="/refund">Refund Policy</a><a href="/responsible">Responsible Play</a><a href="/reviews">Reviews</a></div>
-  </div>
-</div>
-<p class="ftr-affiliate">{{AFFILIATE_DISCLOSURE}}</p>
-<p class="ftr-copy">© <span id="yr"></span> {{COMPANY_NAME}} · <a href="mailto:{{SUPPORT_EMAIL}}">{{SUPPORT_EMAIL}}</a></p>
-<p class="ftr-fine">18+ · For entertainment purposes only. Play responsibly.</p>
-</div></footer>
-<script src="/assets/landing.js?v=3"></script>
-</body></html>`;
+<section class="ticker" tabindex="0" aria-label="YourRank live loop"><div class="ticker-rail"><div class="ticker-track"><span>SHARE THE HOME</span><i aria-hidden="true">◆</i><span>ACTIVATE THE CHAT</span><i aria-hidden="true">◆</i><span>REWARD THE REGULARS</span><i aria-hidden="true">◆</i><span>SHARE THE HOME</span><i aria-hidden="true">◆</i><span>ACTIVATE THE CHAT</span><i aria-hidden="true">◆</i><span>REWARD THE REGULARS</span><i aria-hidden="true">◆</i></div><div class="ticker-track ticker-track--reverse"><span>LIVE STANDINGS</span><i aria-hidden="true">◆</i><span>CHAT REWARDS</span><i aria-hidden="true">◆</i><span>RETURN VISITS</span><i aria-hidden="true">◆</i><span>LIVE STANDINGS</span><i aria-hidden="true">◆</i><span>CHAT REWARDS</span><i aria-hidden="true">◆</i><span>RETURN VISITS</span><i aria-hidden="true">◆</i></div></div></section>
+<section id="products" class="products-section gallery-section"><div class="wrap"><div class="section-heading"><h2 class="reveal">The products are live, not abstract.</h2><p>Open the surface your community needs, then keep the whole loop in reach.</p></div>
+<div class="feature-gallery" data-gallery>
+<a class="feature-panel is-active reveal" href="/demo" tabindex="0"><span class="feature-spine"><span class="mono">01 / SITES</span><strong>Live leaderboards</strong></span><span class="feature-plate"><img src="/assets/media/leaderboards-640.webp" srcset="/assets/media/leaderboards-640.webp 640w, /assets/media/leaderboards-1280.webp 1280w" width="1280" height="720" loading="lazy" decoding="async" alt="YourRank live leaderboard standings with ranked viewers" /></span><span class="feature-caption"><span class="feature-copy"><span class="mono">SITES / LIVE</span><strong>Live leaderboards</strong><em>Standings that update while you stream</em></span><span class="feature-arrow" aria-hidden="true">↗</span></span></a>
+<a class="feature-panel reveal" href="/signup" tabindex="0"><span class="feature-spine"><span class="mono">02 / CREDITS</span><strong>Kick credits</strong></span><span class="feature-plate"><img src="/assets/media/kick-credits-640.webp" srcset="/assets/media/kick-credits-640.webp 640w, /assets/media/kick-credits-1280.webp 1280w" width="1280" height="720" loading="lazy" decoding="async" alt="YourRank Kick credits activity flowing into viewer balances" /></span><span class="feature-caption"><span class="feature-copy"><span class="mono">CREDITS / KICK</span><strong>Kick credits</strong><em>Channel-point activity becomes credits</em></span><span class="feature-arrow" aria-hidden="true">↗</span></span></a>
+<a class="feature-panel reveal" href="/signup" tabindex="0"><span class="feature-spine"><span class="mono">03 / CHAT</span><strong>Giveaways</strong></span><span class="feature-plate"><img src="/assets/media/giveaways-640.webp" srcset="/assets/media/giveaways-640.webp 640w, /assets/media/giveaways-1280.webp 1280w" width="1280" height="720" loading="lazy" decoding="async" alt="YourRank giveaway entry collection from a chat keyword" /></span><span class="feature-caption"><span class="feature-copy"><span class="mono">GIVEAWAYS / CHAT</span><strong>Giveaways</strong><em>A chat keyword collects entries</em></span><span class="feature-arrow" aria-hidden="true">↗</span></span></a>
+<a class="feature-panel reveal" href="/signup" tabindex="0"><span class="feature-spine"><span class="mono">04 / FULFIL</span><strong>Credits &amp; Shop</strong></span><span class="feature-plate"><img src="/assets/media/shop-640.webp" srcset="/assets/media/shop-640.webp 640w, /assets/media/shop-1280.webp 1280w" width="1280" height="720" loading="lazy" decoding="async" alt="YourRank credits shop with viewer redemption items" /></span><span class="feature-caption"><span class="feature-copy"><span class="mono">SHOP / FULFIL</span><strong>Credits &amp; Shop</strong><em>Viewers redeem, you fulfil</em></span><span class="feature-arrow" aria-hidden="true">↗</span></span></a>
+<a class="feature-panel reveal" href="/signup" tabindex="0"><span class="feature-spine"><span class="mono">05 / ROUNDS</span><strong>Mini games</strong></span><span class="feature-plate"><img src="/assets/media/mini-games-640.webp" srcset="/assets/media/mini-games-640.webp 640w, /assets/media/mini-games-1280.webp 1280w" width="1280" height="720" loading="lazy" decoding="async" alt="YourRank mini games including dice, mines and plinko rounds" /></span><span class="feature-caption"><span class="feature-copy"><span class="mono">GAMES / ROUNDS</span><strong>Mini games</strong><em>Dice, mines and plinko rounds</em></span><span class="feature-arrow" aria-hidden="true">↗</span></span></a>
+</div></div></section>
+<section id="goals" class="goals-section"><div class="wrap"><div class="section-heading"><h2 class="reveal">What do you want to launch first?</h2><p>Start with the outcome you need today. The rest of the suite stays ready.</p></div>
+<div class="launch-passes"><article class="launch-pass reveal"><span class="pass-mark mono">SITES</span><div><h3>One public home for your community</h3><p>Share a branded destination for players, offers, countdowns, and viewer access.</p></div><a href="/signup" class="arrow-link">Open Sites setup <span aria-hidden="true">↗</span></a></article>
+<article class="launch-pass reveal"><span class="pass-mark mono">TELEGRAM</span><div><h3>A direct line between streams</h3><p>Connect a bot, useful commands, tracked offers, and broadcasts to subscribers.</p></div><a href="/signup" class="arrow-link">Connect Telegram <span aria-hidden="true">↗</span></a></article>
+<article class="launch-pass reveal"><span class="pass-mark mono">CREDITS</span><div><h3>Rewards for the regulars</h3><p>Map Kick rewards to credits, add shop items, and manage viewer redemptions.</p></div><a href="/signup" class="arrow-link">Configure Credits <span aria-hidden="true">↗</span></a></article></div></div></section>
+<section class="products-section rundown-section"><div class="wrap"><div class="section-heading"><h2 class="reveal">One account. One run-sheet.</h2><p>The suite keeps the path from discovery to participation to return in one place.</p></div>
+<div class="rundown"><div class="rundown-head mono"><span>OPERATOR RUNDOWN</span><span>THREE CHANNELS / ONE COMMUNITY</span></div>
+<ol class="rundown-list"><li class="rundown-row reveal"><span class="rundown-cue mono">AT<br />TRACT</span><div><span class="product-name">Sites</span><h3>Publish the destination</h3><p>Your logo, content, leaderboard, countdown, offers, games, and viewer access at a shareable address.</p></div><span class="rundown-output">PUBLIC SITE</span></li>
+<li class="rundown-row reveal"><span class="rundown-cue mono">AC<br />TIVATE</span><div><span class="product-name">Telegram</span><h3>Open the return channel</h3><p>Manage commands, tracked offers, subscribers, and broadcasts when there is something worth returning for.</p></div><span class="rundown-output">DIRECT REACH</span></li>
+<li class="rundown-row reveal"><span class="rundown-cue mono">RE<br />TURN</span><div><span class="product-name">Credits &amp; Shop</span><h3>Make participation count</h3><p>Map Kick rewards to credits, show balances, manage inventory, and move redemptions to fulfilled.</p></div><span class="rundown-output rundown-output--done">LOOP CLOSED</span></li></ol></div></div></section>
+<section id="proof" class="proof-section"><div class="wrap proof-layout"><div><div class="section-heading"><h2>Inspect the product, not a promise.</h2><p>The live demo is a working YourRank public site. See standings, countdowns, offers, and viewer routes in the real product.</p></div><dl class="ledger"><div><dt class="mono">SITES</dt><dd>Public pages, standings, countdowns, offers, referrals, and analytics</dd></div><div><dt class="mono">TELEGRAM</dt><dd>Bots, commands, subscribers, broadcasts, tracked clicks, and conversions</dd></div><div><dt class="mono">CREDITS</dt><dd>Kick earning rules, balances, shop inventory, redemptions, and fulfilment</dd></div></dl><a href="/demo" class="btn btn--accent">Open the live demo</a></div>
+<div class="monitor"><div class="monitor-bar"><span class="mono">yourrank.site/demo</span><span class="monitor-live"><span class="live-dot" aria-hidden="true"></span> DEMO ROUTE</span></div><iframe src="/demo" loading="lazy" title="Live YourRank public site demo"></iframe></div></div></section>
+<section id="pricing" class="pricing-preview"><div class="wrap"><div class="section-heading"><h2>Start free. Add capacity when the run grows.</h2><p>The pricing page is the source for current plan limits, features, and checkout details.</p></div><div class="price-preview-grid"><article class="preview-card reveal"><span class="card-label mono">FREE / FOREVER</span><strong>$0</strong><p>1 leaderboard · up to 10 players · 1 Telegram bot · up to 5 shop items</p><a href="/signup?plan=free" class="btn btn--ghost">Start free</a></article><article class="preview-card reveal"><span class="card-label mono">STARTER / 30 DAYS</span><strong>$12</strong><p>1 leaderboard · up to 25 players · CSV import · full analytics (30 days)</p><a href="/signup?plan=starter" class="btn btn--ghost">Choose Starter</a></article><article class="preview-card preview-card--paid reveal"><span class="card-label mono">PRO / 30 DAYS · POPULAR</span><strong>$29</strong><p>Up to 3 leaderboards · up to 9,999 players · custom domain · OBS overlay</p><a href="/signup?plan=pro" class="btn btn--accent">Go Pro</a></article><article class="preview-card reveal"><span class="card-label mono">AGENCY / 30 DAYS</span><strong>$79</strong><p>Up to 99 leaderboards · up to 9,999 players per board · white-label branding</p><a href="/help/support?area=billing" class="btn btn--ghost">Contact us</a></article></div><p class="payment-note"><strong>Payment note:</strong> Paid access is sold in 30-day periods, billed in crypto, and does not auto-renew. Card checkout is not available yet. A 7-day Pro trial requires no payment up front. Crypto purchases are non-refundable; see the <a href="/refund">refund policy</a>.</p></div></section>
+<section class="faq-preview"><div class="wrap"><div class="section-heading"><h2>Questions before going live.</h2><p>Short answers for the first setup. <a href="/faq">See the full FAQ</a>.</p></div><div class="faq-list"><details class="faq-item reveal"><summary>What is YourRank?</summary><p>YourRank is an all-in-one suite for streamers and communities: branded leaderboards, a Telegram bot with tracked offers, and viewer Rewards &amp; Shop powered by Kick channel points.</p></details><details class="faq-item reveal"><summary>Is YourRank free?</summary><p>Yes. The Free plan includes one leaderboard, one Telegram bot, tracked offers, credit rules, shop items, and basic analytics.</p></details><details class="faq-item reveal"><summary>How do viewers earn credits?</summary><p>Streamers connect a Kick channel and create credit rules for channel-point rewards. When a viewer redeems a reward on Kick, YourRank credits the viewer automatically.</p></details><details class="faq-item reveal"><summary>Do I need to write code?</summary><p>No. You create a page, customize it, and share the URL. The Telegram bot and Kick connection are configured from the dashboard.</p></details><details class="faq-item reveal"><summary>What payment methods do you accept?</summary><p>Paid plans are billed in crypto (BTC, ETH, USDT and 100+ more) through NOWPayments. Card checkout is not available yet.</p></details></div></div></section>
+<section class="closing-section"><div class="wrap closing-layout"><div><h2>Choose the first cue. Keep the whole loop in reach.</h2><p>Start with the launch goal you need today. No code, no hosting, no card.</p></div><div class="cta"><a href="/signup" class="btn btn--accent">Start free</a><a href="/demo" class="btn btn--ghost">Explore the live demo</a></div></div></section>
+</main><div class="mobile-cta"><a href="/signup" class="btn btn--accent">Start free</a></div>
+<footer class="ftr ftr--platform"><div class="wrap"><div class="ftr-top"><div class="ftr-brand"><a class="brand" href="/">Your<b>Rank</b></a><p>Sites, Telegram, and Credits &amp; Shop for streamers and communities.</p></div><div class="ftr-cols"><div class="ftr-col"><b>Product</b><a href="/#products">The loop</a><a href="/#goals">Launch goals</a><a href="/demo">Live demo</a><a href="/pricing">Pricing</a><a href="/faq">FAQ</a><a href="/docs">API Docs</a><a href="/help/support">Contact</a></div><div class="ftr-col"><b>Legal</b><a href="/terms">Terms of Service</a><a href="/privacy">Privacy Policy</a><a href="/cookies">Cookie Policy</a><a href="/refund">Refund Policy</a><a href="/responsible">Responsible Play</a><a href="/reviews">Reviews</a></div></div></div><p class="ftr-affiliate">{{AFFILIATE_DISCLOSURE}}</p><p class="ftr-copy">© <span id="yr"></span> {{COMPANY_NAME}} · <a href="mailto:{{SUPPORT_EMAIL}}">{{SUPPORT_EMAIL}}</a></p><p class="ftr-fine">18+ · For entertainment purposes only. Play responsibly.</p></div></footer>
+<script src="/assets/landing.js?v=4"></script></body></html>`;
