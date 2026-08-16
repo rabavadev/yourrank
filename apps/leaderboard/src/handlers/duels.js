@@ -4,7 +4,7 @@ import {
   one as defaultOne,
   query as defaultQuery,
   withTransaction as defaultWithTransaction,
-} from "../../../../shared/db.js";
+} from "@yourrank/shared/db";
 
 function getCryptoRandomRoll() {
   const arr = new Uint32Array(1);

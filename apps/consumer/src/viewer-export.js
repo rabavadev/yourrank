@@ -1,5 +1,5 @@
-import { query, exec } from "../../../shared/db.js";
-import { logAudit } from "../../../shared/audit.js";
+import { query, exec } from "@yourrank/shared/db";
+import { logAudit } from "@yourrank/shared/audit";
 
 const PAGE_SIZE = 500;
 const PART_SIZE = 8 * 1024 * 1024;

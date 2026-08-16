@@ -7,8 +7,8 @@ Guidance for automated agents and new contributors working in this repo.
 - `apps/leaderboard` — public leaderboard + dashboard Worker (JavaScript, `src/`).
 - `apps/bot` — Telegram bot + streamer dashboard Worker (TypeScript, `src/`).
 - `apps/monitor` — uptime/monitor Worker.
-- `shared/` — TypeScript modules shared across Workers, compiled to ignored
-  `shared/*.js`. Edit the `.ts`; never edit the generated `.js`.
+- `packages/shared/` — TypeScript modules shared across Workers and the Next.js app,
+  built to `packages/shared/dist`. Edit the `.ts` and run `bun run --cwd packages/shared build`.
 - `e2e/` — end-to-end tests.
 - `supabase/migrations/` — SQL migrations (`YYYYMMDDHHMMSS_description.sql`).
 
@@ -56,8 +56,8 @@ These mirror the `PR Check` workflow. A `.githooks/pre-commit` hook (enabled by
 - Coverage gate is >= 60% lines on the leaderboard suite, excluding
   `audit-validation.test.js`, `credits-loop.test.js`, `public-stream-version.test.js`,
   and `sites-handlers.test.js` (which are run only in isolation).
-- After editing anything under `shared/`, run `node build-shared.mjs` so the
-  Workers pick up the recompiled `.js`.
+- After editing anything under `packages/shared/`, run `bun run --cwd packages/shared build` so the
+  Workers and `apps/web` pick up the recompiled `.js`.
 - Caches in the Workers are per-isolate L1 only (no KV/L2); invalidation clears
   the current isolate, and other isolates go stale until their TTL expires.
 

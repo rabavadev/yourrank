@@ -10,12 +10,16 @@ function runCmd(command, args, cwd) {
   }
 }
 
-// Build every generated artifact consumed by the aggregate test runner before
-// any suite starts. This keeps direct callers, CI, and deploy jobs equivalent.
+// Build the shared workspace package first; apps/leaderboard's build also
+// builds it, but doing it up-front keeps direct callers, CI, and deploy jobs
+// equivalent and makes generated `.js`/`.d.ts` available to all suites.
+runCmd("bun", ["run", "build"], "packages/shared");
+
+// Build leaderboard assets (also ensures shared is up to date).
 runCmd("node", ["build.js"], "apps/leaderboard");
 
 // 1. Run shared tests
-runCmd("bun", ["test", "shared/__tests__/"]);
+runCmd("bun", ["test", "src/__tests__/"], "packages/shared");
 
 // 2. Run queue consumer tests
 runCmd("bun", ["test", "src/worker.test.js"], "apps/consumer");

@@ -1,16 +1,16 @@
 // Dashboard API for the Kick credits / shop system.
 import { requireUser, bad, ok, readJson } from "../auth.js";
 import { getByUser, getBoardById, getPublicSite } from "../site.js";
-import { query, one, exec, withTransaction } from "../../../../shared/db.js";
-import { resolveViewer } from "../../../../shared/viewer-session.js";
-import { rateLimit } from "../../../../shared/ratelimit.js";
-import { setSiteKickChannel } from "../../../../shared/kick-credits.js";
+import { query, one, exec, withTransaction } from "@yourrank/shared/db";
+import { resolveViewer } from "@yourrank/shared/viewer-session";
+import { rateLimit } from "@yourrank/shared/ratelimit";
+import { setSiteKickChannel } from "@yourrank/shared/kick-credits";
 import { notifyLiveBoard } from "../live-board-config.js";
 import {
   getValidKickAccessToken,
   createKickChannelReward,
   fetchKickCurrentChannel,
-} from "../../../../shared/kick-oauth.js";
+} from "@yourrank/shared/kick-oauth";
 import {
   effectivePlan,
   CREDITS_REWARD_LIMITS,
@@ -18,7 +18,7 @@ import {
   CREDITS_PENDING_REDEMPTIONS_LIMITS,
   CREDITS_REDEMPTIONS_PER_30D_LIMITS,
   CREDITS_VIEWERS_PER_30D_LIMITS,
-} from "../../../../shared/plans.js";
+} from "@yourrank/shared/plans";
 
 function getSite(env, user, url) {
   const siteId = url.searchParams.get("siteId");

@@ -12,7 +12,7 @@ import { describe, it, expect, mock } from "bun:test";
 // module (shared/db.js four levels up); a wrong path silently mocks nothing.
 // `currentTx` is swappable so individual tests can script the transaction.
 let currentTx = { unsafe: mock(async () => []) };
-const dbUrl = import.meta.resolve("../../../../shared/db.js");
+const dbUrl = import.meta.resolve("@yourrank/shared/db");
 const realDb = await import(dbUrl);
 const authUrl = import.meta.resolve("../auth.js");
 const realAuth = await import(authUrl);
@@ -20,9 +20,9 @@ const realAuth = await import(authUrl);
 // Provider-event ledger + audit log: recorded calls let tests assert on them.
 const providerEventCalls = [];
 const auditCalls = [];
-const providerEventsUrl = import.meta.resolve("../../../../shared/provider-events.js");
+const providerEventsUrl = import.meta.resolve("@yourrank/shared/provider-events");
 const realProviderEvents = await import(providerEventsUrl);
-const auditUrl = import.meta.resolve("../../../../shared/audit.js");
+const auditUrl = import.meta.resolve("@yourrank/shared/audit");
 const realAudit = await import(auditUrl);
 const billingDeps = {
   ...realDb,

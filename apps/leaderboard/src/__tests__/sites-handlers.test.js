@@ -7,10 +7,10 @@
 import { describe, it, expect, mock, beforeEach } from "bun:test";
 
 // ── Mock shared modules ────────────────────────────────────────────────
-const dbUrl    = import.meta.resolve("../../../../shared/db.js");
-const dbUrlTs  = import.meta.resolve("../../../../shared/db.ts");
-const sessUrl  = import.meta.resolve("../../../../shared/session.js");
-const sessUrlTs = import.meta.resolve("../../../../shared/session.ts");
+const dbUrl    = import.meta.resolve("@yourrank/shared/db");
+const dbUrlTs  = import.meta.resolve("@yourrank/shared/db");
+const sessUrl  = import.meta.resolve("@yourrank/shared/session");
+const sessUrlTs = import.meta.resolve("@yourrank/shared/session");
 const realDb = await import(dbUrl);
 const realSession = await import(sessUrl);
 

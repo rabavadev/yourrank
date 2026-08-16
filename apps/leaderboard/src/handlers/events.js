@@ -6,9 +6,9 @@ import {
   query as defaultQuery,
   exec as defaultExec,
   withTransaction as defaultWithTransaction,
-} from "../../../../shared/db.js";
-import { rateLimit as defaultRateLimit } from "../../../../shared/ratelimit.js";
-import { logAudit as defaultLogAudit } from "../../../../shared/audit.js";
+} from "@yourrank/shared/db";
+import { rateLimit as defaultRateLimit } from "@yourrank/shared/ratelimit";
+import { logAudit as defaultLogAudit } from "@yourrank/shared/audit";
 
 function getCryptoRandomInt(max) {
   const arr = new Uint32Array(1);

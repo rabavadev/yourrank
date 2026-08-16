@@ -1,8 +1,8 @@
 // Auth helpers for the Worker.
-import { one, withTransaction } from "../../../shared/db.js";
-import { rateLimit as kvRateLimit } from "../../../shared/ratelimit.js";
+import { one, withTransaction } from "@yourrank/shared/db";
+import { rateLimit as kvRateLimit } from "@yourrank/shared/ratelimit";
 // SHARED cross-Worker session: same cookie (yr_session) + same Postgres
-// sessions table as the bot Worker. See ../../../shared/session.ts
+// sessions table as the bot Worker. See packages/shared/src/session.ts
 import {
   createSession as _createSession,
   destroySession as _destroySession,
@@ -16,7 +16,7 @@ import {
   cookieClearLegacy,
   SESSION_TTL_S,
   SESSION_ROTATE_AFTER_S,
-} from "../../../shared/session.js";
+} from "@yourrank/shared/session";
 
 // Re-export session primitives so callers that import from auth.js still work.
 export const readToken = (req) => {

@@ -1,4 +1,4 @@
-import { exec, query } from "../../../shared/db.js";
+import { exec, query } from "@yourrank/shared/db";
 import type { Update } from "grammy/types";
 
 type WebhookUpdateRow = {

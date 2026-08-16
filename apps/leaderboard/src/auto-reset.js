@@ -1,9 +1,9 @@
 // Auto-reset scheduler: closes out and archives boards whose countdown has expired
 // when the streamer has enabled auto-reset. Runs from the scheduled Worker event.
-import { query, exec, one } from "../../../shared/db.js";
+import { query, exec, one } from "@yourrank/shared/db";
 import { createArchive, getPlayers } from "./site.js";
-import { notifyReset } from "../../../shared/notifications.js";
-import { mapWithConcurrency, SHARED_WORK_CONCURRENCY_LIMIT } from "../../../shared/work-concurrency.js";
+import { notifyReset } from "@yourrank/shared/notifications";
+import { mapWithConcurrency, SHARED_WORK_CONCURRENCY_LIMIT } from "@yourrank/shared/work-concurrency";
 import { restoreAutoResetMarker } from "./auto-reset-claim.js";
 import { notifyLiveBoard } from "./live-board-config.js";
 

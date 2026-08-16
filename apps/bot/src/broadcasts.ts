@@ -1,5 +1,5 @@
-import { one, query } from "../../../shared/db.js";
-import { decryptToken } from "../../../shared/crypto.js";
+import { one, query } from "@yourrank/shared/db";
+import { decryptToken } from "@yourrank/shared/crypto";
 import { parseSegment, buildSegmentWhere } from "./broadcast-segment.js";
 
 /** Escape user content for Telegram HTML parse_mode */

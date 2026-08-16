@@ -18,7 +18,7 @@ import {
   safeUrl,
 } from "./public-render-helpers.js";
 import { gamesIslandHead, gamesIslandMount } from "./games-embed.js";
-import { generateAvatarSvg } from "../../../shared/avatar.js";
+import { generateAvatarSvg } from "@yourrank/shared/avatar";
 
 // C-02: SECTION_TITLES was an exact duplicate of SECTION_LABELS — removed.
 const SECTION_LABELS = {

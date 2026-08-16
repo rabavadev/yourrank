@@ -1,7 +1,7 @@
 // Attribution analytics and casino postback endpoint.
 import { json, bad, requireUser, rateLimit } from "../auth.js";
-import { one, query } from "../../../../shared/db.js";
-import { verifyHmacSha256Hex } from "../../../../shared/crypto.js";
+import { one, query } from "@yourrank/shared/db";
+import { verifyHmacSha256Hex } from "@yourrank/shared/crypto";
 import {
   POSTBACK_SUNSET,
   computeReplayHash,
@@ -12,10 +12,10 @@ import {
   recordReplayHash,
   revokePostbackKeys,
   unsignedPostbacksEnabled,
-} from "../../../../shared/postback.js";
-import { recordConversion } from "../../../../shared/conversions.js";
+} from "@yourrank/shared/postback";
+import { recordConversion } from "@yourrank/shared/conversions";
 import { notifyLiveBoard } from "../live-board-config.js";
-import { effectivePlan } from "../../../../shared/plans.js";
+import { effectivePlan } from "@yourrank/shared/plans";
 
 const MAX_DAYS = 365;
 

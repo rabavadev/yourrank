@@ -1,4 +1,4 @@
-import { leaderboardPageHtml } from "../../../../shared/page-shell.js";
+import { leaderboardPageHtml } from "@yourrank/shared/page-shell";
 
 export const viewerDashboardPage = leaderboardPageHtml({
   title: "My credits · YourRank",

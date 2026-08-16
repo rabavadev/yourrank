@@ -1,5 +1,5 @@
 # Test files and local-development placeholders contain fake credentials.
-shared/__tests__/
+packages/shared/src/__tests__/
 apps/**/__tests__/
 *.example
 *.md

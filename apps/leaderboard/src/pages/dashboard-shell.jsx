@@ -1,10 +1,10 @@
 /** @jsxRuntime automatic */
 /** @jsxImportSource hono/jsx */
 
-import { NAV_LINKS, activeKey, profileMenuHtml } from "../../../../shared/shell-nav.js";
+import { NAV_LINKS, activeKey, profileMenuHtml } from "@yourrank/shared/shell-nav";
 import { raw } from "hono/html";
-import { crumbsHtml, navListHtml } from "../../../../shared/dashboard-chrome.js";
-import { brandMarkSvg } from "../../../../shared/brand-assets.js";
+import { crumbsHtml, navListHtml } from "@yourrank/shared/dashboard-chrome";
+import { brandMarkSvg } from "@yourrank/shared/brand-assets";
 
 const CREDITS_NAV_KEYS = new Set(["credits", "channel", "redemptions", "shop", "rules", "viewers", "history", "rewards", "audience"]);
 const TELEGRAM_NAV_KEYS = new Set(["telegram", "tg_overview", "tg_bots", "tg_commands", "tg_offers", "tg_broadcasts"]);

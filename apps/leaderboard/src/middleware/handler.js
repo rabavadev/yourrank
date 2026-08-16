@@ -14,8 +14,8 @@
 // `meta` is the object passed by withWorkerFetch: { sentry, log, reqId }.
 
 import { bad } from "../auth.js";
-import { getLogger } from "../../../../shared/request-id.js";
-import { handlerSchemas, validateJson } from "../../../../shared/validation.js";
+import { getLogger } from "@yourrank/shared/request-id";
+import { handlerSchemas, validateJson } from "@yourrank/shared/validation";
 
 const VALIDATE_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
 

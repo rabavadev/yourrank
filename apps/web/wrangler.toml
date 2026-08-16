@@ -1,0 +1,24 @@
+name = "yourrank-web"
+main = ".open-next/worker.js"
+compatibility_date = "2026-08-16"
+compatibility_flags = ["nodejs_compat"]
+
+# Run the worker before serving static assets so Next.js middleware and dynamic
+# routes (dashboard, custom-domain public boards) always execute.
+[assets]
+directory = ".open-next/assets"
+binding = "ASSETS"
+run_worker_first = true
+
+[vars]
+API_BASE_URL = "https://yourrank.site"
+
+[[services]]
+binding = "API"
+service = "yourrank-site"
+
+[[hyperdrive]]
+binding = "HYPERDRIVE"
+id = "9e5b625bfdd84cd691b44c4780bdaf13"
+# Local dev fallback (override with CLOUDFLARE_HYPERDRIVE_LOCAL_CONNECTION_STRING_HYPERDRIVE)
+localConnectionString = "postgresql://postgres:password@localhost:5432/yourrank"

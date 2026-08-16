@@ -1,9 +1,9 @@
 // Public viewer feedback handler.
 // Submits feedback tied to the current site and (optionally) signed-in viewer.
 import { bad, json, readJson, rateLimit, clientIp, rateLimitHeaders } from "../auth.js";
-import { exec } from "../../../../shared/db.js";
+import { exec } from "@yourrank/shared/db";
 import { getBySlug } from "../site.js";
-import { resolveViewer } from "../../../../shared/viewer-session.js";
+import { resolveViewer } from "@yourrank/shared/viewer-session";
 
 const MIN_LEN = 10;
 const MAX_LEN = 2000;

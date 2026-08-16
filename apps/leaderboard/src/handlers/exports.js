@@ -3,7 +3,7 @@ import { requireUser as defaultRequireUser, bad } from "../auth.js";
 import { getByUser as defaultGetByUser, getBoardById as defaultGetBoardById } from "../site.js";
 import {
   query as defaultQuery,
-} from "../../../../shared/db.js";
+} from "@yourrank/shared/db";
 
 function csvEscape(val) {
   if (val === null || val === undefined) return '""';

@@ -1,4 +1,4 @@
-import { setRequestMetrics } from "../../../shared/request-id.js";
+import { setRequestMetrics } from "@yourrank/shared/request-id";
 
 export const PUBLIC_HTML_NONCE_PLACEHOLDER = "__YOURRANK_PUBLIC_NONCE__";
 export const PUBLIC_HTML_CSRF_PLACEHOLDER = "__YOURRANK_PUBLIC_CSRF__";

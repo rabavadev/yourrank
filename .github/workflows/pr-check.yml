@@ -28,12 +28,20 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
+      - name: Build shared
+        working-directory: packages/shared
+        run: bun run build
+
       - name: Lint bot
         working-directory: apps/bot
         run: bun run lint
 
       - name: Lint leaderboard
         working-directory: apps/leaderboard
+        run: bun run lint
+
+      - name: Lint web
+        working-directory: apps/web
         run: bun run lint
 
       - name: Reject undocumented global test mocks
@@ -52,16 +60,24 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
+      - name: Build shared
+        working-directory: packages/shared
+        run: bun run build
+
       - name: Typecheck bot
         working-directory: apps/bot
         run: bun run typecheck
 
       - name: Typecheck leaderboard
         working-directory: apps/leaderboard
-        run: bunx tsc --noEmit
+        run: bun run typecheck:games
 
       - name: Typecheck monitor
         working-directory: apps/monitor
+        run: bun run typecheck
+
+      - name: Typecheck web
+        working-directory: apps/web
         run: bun run typecheck
 
   test:
@@ -112,6 +128,10 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
+      - name: Build shared
+        working-directory: packages/shared
+        run: bun run build
+
       - name: Build leaderboard
         working-directory: apps/leaderboard
         run: node build.js
@@ -119,6 +139,10 @@ jobs:
       - name: Build bot
         working-directory: apps/bot
         run: bun run typecheck
+
+      - name: Build web
+        working-directory: apps/web
+        run: bun run build:worker
 
   audit:
     name: Dependency Audit
@@ -198,10 +222,14 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
+      - name: Build shared
+        working-directory: packages/shared
+        run: bun run build
+
       - name: Games wagering tests (against migrated schema)
         env:
           GAMES_TEST_DATABASE_URL: postgres://postgres:test@localhost:5432/yourrank_test
-        run: bun test shared/__tests__/games-wagering.test.ts
+        run: bun test packages/shared/src/__tests__/games-wagering.test.ts
 
       - name: Verify schema consistency
         env:

@@ -3,7 +3,7 @@
 // server seed, or the mine layout of an open round).
 //
 // The DB-level money guarantees (atomic debit, idempotency, concurrency) are
-// covered against a real Postgres in shared/__tests__/games-wagering.test.ts.
+// covered against a real Postgres in packages/shared/src/__tests__/games-wagering.test.ts.
 //
 // Run: bun test src/__tests__/games-handlers.test.js
 

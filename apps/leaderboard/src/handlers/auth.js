@@ -1,12 +1,12 @@
-import { withTransaction as defaultWithTransaction, one as defaultOne, exec as defaultExec } from "../../../../shared/db.js";
+import { withTransaction as defaultWithTransaction, one as defaultOne, exec as defaultExec } from "@yourrank/shared/db";
 // Authentication handlers for signup, login, logout, password reset
 import { hashPassword, verifyPassword, uuid, newToken, createSession, destroySession, destroyAllUserSessions, currentUser, isEmail, slugify, RESERVED, cookieSet, cookieClear, readToken, json, bad, ok, readJson, rateLimit, clientIp, generateUniqueReferralCode } from "../auth.js";
-import { hashToken } from "../../../../shared/crypto.js";
-import { trackActivation } from "../../../../shared/activation-funnel.js";
+import { hashToken } from "@yourrank/shared/crypto";
+import { trackActivation } from "@yourrank/shared/activation-funnel";
 import { createBoard, getUserBoardsList } from "../site.js";
 import { sendEmail, resetEmail, sendOnboardingEmail, sendVerificationEmail } from "../email.js";
-import { effectivePlan, PLAN_LIMITS, BOARD_LIMITS, priceUsd } from "../../../../shared/plans.js";
-import { getEnabledFeatureKeys } from "../../../../shared/features.js";
+import { effectivePlan, PLAN_LIMITS, BOARD_LIMITS, priceUsd } from "@yourrank/shared/plans";
+import { getEnabledFeatureKeys } from "@yourrank/shared/features";
 import {
   findUserByEmail, findSiteBySlug, findUserByReferralCode, createUser
 } from "../data/auth.js";

@@ -1,7 +1,7 @@
 // Referral dashboard API: returns the authenticated user's referral link and stats.
 import { requireUser, json, bad } from "../auth.js";
-import { query, one } from "../../../../shared/db.js";
-import { PLAN_PRICES } from "../../../../shared/plans.js";
+import { query, one } from "@yourrank/shared/db";
+import { PLAN_PRICES } from "@yourrank/shared/plans";
 
 const REWARD_DAYS = 31;
 

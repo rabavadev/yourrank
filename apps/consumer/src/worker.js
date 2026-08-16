@@ -2,15 +2,15 @@
 //
 // Processes click, conversion, analytics (bump), and notification events durably
 // off the request thread. Failed messages are retried and routed to the DLQ.
-import { one, query, exec } from "../../../shared/db.js";
-import { recordConversion } from "../../../shared/conversions.js";
-import { logMinimizedClick } from "../../../shared/clicks.js";
-import { bumpStat } from "../../../shared/stats.js";
-import { dispatchNotifyEvent } from "../../../shared/notifications.js";
-import { parseQueueEvent } from "../../../shared/queue-producer.js";
-import { processKickRewardRedemption } from "../../../shared/kick-credits.js";
-import { RateLimiter } from "../../../shared/rate-limiter-do.js";
-import { mapWithConcurrency, SHARED_WORK_CONCURRENCY_LIMIT } from "../../../shared/work-concurrency.js";
+import { one, query, exec } from "@yourrank/shared/db";
+import { recordConversion } from "@yourrank/shared/conversions";
+import { logMinimizedClick } from "@yourrank/shared/clicks";
+import { bumpStat } from "@yourrank/shared/stats";
+import { dispatchNotifyEvent } from "@yourrank/shared/notifications";
+import { parseQueueEvent } from "@yourrank/shared/queue-producer";
+import { processKickRewardRedemption } from "@yourrank/shared/kick-credits";
+import { RateLimiter } from "@yourrank/shared/rate-limiter-do";
+import { mapWithConcurrency, SHARED_WORK_CONCURRENCY_LIMIT } from "@yourrank/shared/work-concurrency";
 import { processAccountExport } from "./account-export.js";
 import { processViewerExport } from "./viewer-export.js";
 

@@ -2,11 +2,11 @@
 import { requireUser, json, bad, ok, readJson, rateLimit, rateLimitHeaders, slugify, clientIp } from "../auth.js";
 import { getByUser, getUserSite, getUserSiteById, getUserBoardsList, createBoard, duplicateBoard, createArchive, deleteArchive, deleteBoard, setActiveBoard, updateSiteTheme, invalidateSiteCache, invalidateUserCache, getBoardById, saveSite, fromJsonb } from "../site.js";
 import { bumpStat, getStats, getHeatmap, getTopReferrers, isStatementTimeout } from "../stats.js";
-import { effectivePlan, PLAN_LIMITS, BOARD_LIMITS } from "../../../../shared/plans.js";
-import { one, exec, query } from "../../../../shared/db.js";
-import { logAudit } from "../../../../shared/audit.js";
-import { buildTop3Embed, sendDiscordWebhook, sendTelegramMessage } from "../../../../shared/notifications.js";
-import { decryptToken, decryptCredential } from "../../../../shared/crypto.js";
+import { effectivePlan, PLAN_LIMITS, BOARD_LIMITS } from "@yourrank/shared/plans";
+import { one, exec, query } from "@yourrank/shared/db";
+import { logAudit } from "@yourrank/shared/audit";
+import { buildTop3Embed, sendDiscordWebhook, sendTelegramMessage } from "@yourrank/shared/notifications";
+import { decryptToken, decryptCredential } from "@yourrank/shared/crypto";
 import { PLATFORM_HOST } from "../constants.js";
 import { invalidateCustomDomain } from "../middleware/custom-domain.js";
 import { notifyLiveBoard } from "../live-board-config.js";
@@ -28,7 +28,7 @@ async function onboardingForSite(env, site, userId, plan) {
   };
 }
 
-import { createQueueProducer } from "../../../../shared/queue-producer.js";
+import { createQueueProducer } from "@yourrank/shared/queue-producer";
 
 export async function handleStats(request, env) {
   const { user, res } = await requireUser(request, env);

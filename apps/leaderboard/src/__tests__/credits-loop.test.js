@@ -1,11 +1,11 @@
 import { describe, it, expect, mock, beforeEach } from "bun:test";
 
 // Resolve module URLs we need to mock before any handler imports.
-const dbUrl = import.meta.resolve("../../../../shared/db.js");
-const dbUrlTs = import.meta.resolve("../../../../shared/db.ts");
+const dbUrl = import.meta.resolve("@yourrank/shared/db");
+const dbUrlTs = import.meta.resolve("@yourrank/shared/db");
 
-const viewerSessionUrl = import.meta.resolve("../../../../shared/viewer-session.js");
-const viewerSessionUrlTs = import.meta.resolve("../../../../shared/viewer-session.ts");
+const viewerSessionUrl = import.meta.resolve("@yourrank/shared/viewer-session");
+const viewerSessionUrlTs = import.meta.resolve("@yourrank/shared/viewer-session");
 const siteUrl = import.meta.resolve("../site.js");
 const siteUrlTs = import.meta.resolve("../site.ts");
 const viewerAuthUrl = import.meta.resolve("../handlers/viewer-auth.js");
@@ -117,7 +117,7 @@ import {
   handleCreditsReconcile,
   handleCreditsActivity,
 } from "../handlers/credits.js";
-import { processKickRewardRedemption } from "../../../../shared/kick-credits.js";
+import { processKickRewardRedemption } from "@yourrank/shared/kick-credits";
 
 function resetDb() {
   db.calls.length = 0;

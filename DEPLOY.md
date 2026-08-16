@@ -107,8 +107,8 @@ just stop moving.
 wrangler queues create yourrank-events
 wrangler queues create yourrank-events-dlq
 
-# from the repo root — the consumer imports shared/*.js, so build shared first
-node build-shared.mjs
+# from the repo root — the consumer imports @yourrank/shared, so build shared first
+bun run --cwd packages/shared build
 cd apps/consumer && wrangler deploy
 ```
 Secrets (optional): `wrangler secret put DISCORD_MONITORING_WEBHOOK` — pings

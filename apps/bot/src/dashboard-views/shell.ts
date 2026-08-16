@@ -1,4 +1,4 @@
-import type { NavItem } from "../../../../shared/dashboard-chrome.js";
+import type { NavItem } from "@yourrank/shared/dashboard-chrome";
 
 const ICONS: Record<string, string> = {
   overview: '<path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/>',

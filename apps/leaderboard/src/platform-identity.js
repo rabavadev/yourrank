@@ -1,6 +1,6 @@
 // Platform identity (legal company details + public disclosures).
 // Cached per-isolate; reloads when the admin updates it.
-import { one, exec } from "../../../shared/db.js";
+import { one, exec } from "@yourrank/shared/db";
 
 const CACHE_TTL_MS = 60_000;
 let cache = null;

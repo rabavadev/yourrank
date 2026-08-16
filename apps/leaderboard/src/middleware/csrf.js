@@ -1,4 +1,4 @@
-import { safeEqual } from "../../../../shared/crypto.js";
+import { safeEqual } from "@yourrank/shared/crypto";
 
 // SEC-108: CSRF token helpers. Tokens are stored in a __csrf cookie (readable
 // by JS) and must be echoed in a X-CSRF-Token header on every state-changing

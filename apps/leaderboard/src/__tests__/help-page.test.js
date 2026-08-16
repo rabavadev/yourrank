@@ -1,6 +1,6 @@
 import { describe, it, expect } from "bun:test";
 import { PAGES } from "../pages.jsx";
-import { leaderboardPageHtml } from "../../../../shared/page-shell.js";
+import { leaderboardPageHtml } from "@yourrank/shared/page-shell";
 
 // Help renders inside the signed-in app rail (`dashboardChromeHtml`), not the
 // marketing top nav, so a signed-in streamer keeps their session and never hits

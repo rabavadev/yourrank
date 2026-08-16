@@ -12,7 +12,7 @@ const {
   BOARD_LIMITS,
   PLAN_PRICES,
   PLAN_META,
-} = await import("../../../../shared/plans.js");
+} = await import("@yourrank/shared/plans");
 
 // QA-006: Freeze the clock so Date.now()-based tests are deterministic
 const FROZEN_TIME = new Date("2025-06-15T12:00:00Z").getTime();

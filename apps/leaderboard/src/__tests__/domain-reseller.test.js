@@ -2,7 +2,7 @@ import { describe, it, expect } from "bun:test";
 import {
   MockDomainProvider,
   TLD_PRICING,
-} from "../../../../shared/domain-provider.js";
+} from "@yourrank/shared/domain-provider";
 
 describe("Domain Reseller Provider Layer", () => {
   const provider = new MockDomainProvider();

@@ -4,10 +4,10 @@
 // section visibility server-side, resolves the viewer session, and renders
 // the shared site shell.
 import { getPublicSite as defaultGetPublicSite } from "./site.js";
-import { resolveViewer as defaultResolveViewer } from "../../../shared/viewer-session.js";
-import { createQueueProducer as defaultCreateQueueProducer } from "../../../shared/queue-producer.js";
+import { resolveViewer as defaultResolveViewer } from "@yourrank/shared/viewer-session";
+import { createQueueProducer as defaultCreateQueueProducer } from "@yourrank/shared/queue-producer";
 import { bumpStat as defaultBumpStat } from "./stats.js";
-import { hashToken as defaultHashToken } from "../../../shared/crypto.js";
+import { hashToken as defaultHashToken } from "@yourrank/shared/crypto";
 import { HTML, withNonce, notFoundPage, pendingVerificationPage, error500Page } from "./middleware/headers.js";
 import { generateCsrfToken, csrfCookie } from "./middleware/csrf.js";
 import { renderPasswordGate as defaultRenderPasswordGate } from "./password-gate.js";
@@ -23,7 +23,7 @@ import {
   PUBLIC_HTML_NONCE_PLACEHOLDER,
   putPublicBoardCache,
 } from "./public-html-cache.js";
-import { setRequestMetrics } from "../../../shared/request-id.js";
+import { setRequestMetrics } from "@yourrank/shared/request-id";
 
 const SECTIONS = new Set(["home", "leaderboard", "shop", "games", "me"]);
 

@@ -1,11 +1,11 @@
 // Site + players data helpers for the Worker.
-import { effectivePlan, PLAN_LIMITS, BOARD_LIMITS } from "../../../shared/plans.js";
-import { query, one, exec, withTransaction } from "../../../shared/db.js";
-import { detectTop3Changes, dispatchNotifyEvent, getRankChangedPlayerNames } from "../../../shared/notifications.js";
+import { effectivePlan, PLAN_LIMITS, BOARD_LIMITS } from "@yourrank/shared/plans";
+import { query, one, exec, withTransaction } from "@yourrank/shared/db";
+import { detectTop3Changes, dispatchNotifyEvent, getRankChangedPlayerNames } from "@yourrank/shared/notifications";
 import { RESERVED, slugify, hashPassword } from "./auth.js";
-import { logAudit } from "../../../shared/audit.js";
-import { createQueueProducer } from "../../../shared/queue-producer.js";
-import { encrypt } from "../../../shared/crypto.js";
+import { logAudit } from "@yourrank/shared/audit";
+import { createQueueProducer } from "@yourrank/shared/queue-producer";
+import { encrypt } from "@yourrank/shared/crypto";
 import { verifyBoardPasswordCookie } from "./board-password.js";
 import { detectImageMime, validateLogoData } from "./logo-validation.js";
 import { invalidatePublicBoardCache } from "./public-html-cache.js";
