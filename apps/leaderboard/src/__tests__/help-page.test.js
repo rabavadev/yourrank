@@ -35,22 +35,16 @@ describe("help pages", () => {
     expect(signedIn).toContain('data-auth-workspace="true"');
     expect(signedOut).not.toContain('data-auth-workspace="true"');
     for (const href of [
-      "/dashboard/editor/setup",
       "/dashboard/editor/players",
       "/dashboard/editor/design",
       "/dashboard/games",
-      "/dashboard/editor/share",
-      "/dashboard/editor/history",
-      "/dashboard/boards",
-      "/dashboard/analytics/activity",
-      "/dashboard/audience/viewers",
+      "/dashboard/giveaways",
       "/dashboard/rewards/redemptions",
-      "/dashboard/rewards/shop",
-      "/dashboard/rewards/rules",
-      "/dashboard/audience/activity",
-      "/dashboard/rewards/channel",
-      "/dashboard/settings/board",
+      "/dashboard/audience/viewers",
+      "/dashboard/telegram",
+      "/dashboard/boards",
       "/dashboard/settings",
+      "/help",
     ]) expect(signedIn).toContain(`href="${href}"`);
     expect(signedIn).toContain('data-nav="help" aria-current="page"');
     expect(signedIn).toContain('data-nav="support"');

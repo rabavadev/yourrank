@@ -4,6 +4,7 @@
 
 import { json, bad, requireUser, readJson } from "../auth.js";
 import { query, one } from "../../../../shared/db.js";
+import { safeEqual } from "../../../../shared/crypto.js";
 
 /**
  * POST /api/auth/telegram/link
@@ -25,7 +26,7 @@ export async function handleTelegramLink(request, env) {
 
   const { id, first_name, last_name, username, photo_url, auth_date, hash } = body;
 
-  if (!id || !hash || !auth_date) {
+  if (!id || !hash || !auth_date || typeof hash !== "string") {
     return bad("Missing required Telegram fields (id, hash, auth_date)");
   }
 
@@ -40,10 +41,7 @@ export async function handleTelegramLink(request, env) {
   const key = await crypto.subtle.importKey("raw", secretKey, { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
   const sig = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(checkString));
   const expected = Buffer.from(sig).toString("hex");
-  let diff = 0;
-  for (let i = 0; i < expected.length; i++) diff |= expected.charCodeAt(i) ^ hash.charCodeAt(i);
-  const isValid = diff === 0;
-  if (!isValid) return bad("Invalid Telegram signature", 401);
+  if (!safeEqual(expected, hash)) return bad("Invalid Telegram signature", 401);
 
   // Check freshness (5 minutes max)
   const age = Math.floor(Date.now() / 1000) - Number(auth_date);

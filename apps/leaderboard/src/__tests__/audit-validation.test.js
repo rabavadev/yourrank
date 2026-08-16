@@ -141,27 +141,25 @@ describe("updateSiteTheme validation and plan behavior", () => {
     mockOne.mockResolvedValueOnce(SITE);
     const r = await updateSiteTheme(mockEnv(), USER_ROW, {
       siteId: "site-1",
-      template: "classic",
+      template: "cyber_arcade",
       accentA: "#00ffd1",
       accentB: "#ff2cd0",
     });
     expect(r.ok).toBe(true);
-    // Passed as a plain object (not a pre-stringified string) so postgres.js
-    // stores it as a real JSONB object rather than a double-encoded string.
     const savedTheme = mockExec.mock.calls[0][1][0];
     expect(savedTheme).toEqual({
-      template: "classic",
+      template: "cyber_arcade",
       accentA: "#111111",
       accentB: "#222222",
     });
   });
 
-  it("validates and saves accent overrides on paid plans", async () => {
+  it("validates and saves accent and template overrides on paid plans", async () => {
     mockOne.mockResolvedValueOnce(SITE);
     const paidUser = { ...USER_ROW, plan: "pro", plan_expires_at: Date.now() + 86_400_000 };
     const invalid = await updateSiteTheme(mockEnv(), paidUser, {
       siteId: "site-1",
-      template: "classic",
+      template: "esports_pro",
       accentA: "red",
       accentB: "#ff2cd0",
     });
@@ -171,14 +169,14 @@ describe("updateSiteTheme validation and plan behavior", () => {
     mockOne.mockResolvedValueOnce(SITE);
     const valid = await updateSiteTheme(mockEnv(), paidUser, {
       siteId: "site-1",
-      template: "classic",
+      template: "esports_pro",
       accentA: "#00ffd1",
       accentB: "#ff2cd0",
     });
     expect(valid.ok).toBe(true);
     const savedTheme = mockExec.mock.calls[0][1][0];
     expect(savedTheme).toEqual({
-      template: "classic",
+      template: "esports_pro",
       accentA: "#00ffd1",
       accentB: "#ff2cd0",
     });

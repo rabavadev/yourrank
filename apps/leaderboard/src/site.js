@@ -377,17 +377,21 @@ function parsePrizes(rawPrizes) {
 }
 
 
+export const VALID_TEMPLATES = ["cyber_arcade", "esports_pro", "creator_glass", "classic"];
+
 function parseTheme(site) {
   const raw = fromJsonb(site.theme_json);
   const t = (raw && typeof raw === "object") ? raw : {};
   const font = FONT_KEYS.includes(t.font) ? t.font : "Inter";
+  const template = VALID_TEMPLATES.includes(t.template)
+    ? (t.template === "classic" ? "cyber_arcade" : t.template)
+    : "cyber_arcade";
   // C-01: Use shared parsePrizes helper instead of inline duplication.
   const prizes = parsePrizes((t.prizes && typeof t.prizes === "object") ? t.prizes : {});
   return {
+    template,
     accentA: HEX.test(t.accentA || "") ? t.accentA : null,
     accentB: HEX.test(t.accentB || "") ? t.accentB : null,
-    // B-04: template and text are acknowledged dead fields; removed from the
-    // returned object to avoid propagating them through the render path.
     options: {},
     font,
     prizes,
@@ -681,7 +685,7 @@ export async function createBoard(env, uid, { slug, name, casino = "", code = ""
     entityId: siteId,
     request,
     details: { board_id: siteId, board_slug: slug, name: name || slug, casino: cleanCasino, code: cleanCode, published, is_draft },
-  });
+  }, { exec: dbExec });
   return { ok: true, id: siteId, slug };
 }
 
@@ -1071,6 +1075,11 @@ export async function saveSite(env, user, payload, siteId, request = null) {
       logoData = validated.dataUri;
     }
     const t = {};
+    if (br.template && VALID_TEMPLATES.includes(br.template)) {
+      t.template = br.template === "classic" ? "cyber_arcade" : br.template;
+    } else if (themeObj.template) {
+      t.template = themeObj.template;
+    }
     if (HEX.test(br.accentA || "")) t.accentA = br.accentA;
     if (HEX.test(br.accentB || "")) t.accentB = br.accentB;
     if (FONT_KEYS.includes(br.font || "")) t.font = br.font;
@@ -1344,7 +1353,9 @@ export async function updateSiteTheme(env, user, payload = {}, request = null) {
   if (!site) return { error: "no site" };
   const rawTheme = fromJsonb(site.theme_json);
   const theme = (rawTheme && typeof rawTheme === "object") ? { ...rawTheme } : {};
-  // B-04: template is a dead field; not written back to the stored object.
+  if (payload.template && VALID_TEMPLATES.includes(payload.template)) {
+    theme.template = payload.template === "classic" ? "cyber_arcade" : payload.template;
+  }
   const plan = effectivePlan(user);
   if (plan !== "free" && (payload.accentA != null || payload.accentB != null)) {
     if (!HEX.test(payload.accentA || "") || !HEX.test(payload.accentB || "")) {

@@ -24,15 +24,31 @@ const PALETTE_ICONS = {
 const COMMANDS = [
   { id: "act-save", title: "Save & Publish Standings", group: "Actions", icon: PALETTE_ICONS.publish, action: () => $("save")?.click() },
   { id: "act-publish", title: "Toggle Public Site Live / Offline", group: "Actions", icon: PALETTE_ICONS.publish, action: () => $("publishAction")?.click() },
-  { id: "act-obs-card", title: "Copy OBS Podium Overlay URL", group: "Actions", icon: PALETTE_ICONS.copy, action: async () => {
+  { id: "act-obs-pred", title: "Copy OBS Live Prediction HUD Overlay URL", group: "OBS Overlays", icon: PALETTE_ICONS.copy, action: async () => {
+    const url = location.origin + "/overlay/prediction?site=" + (state.SLUG || "");
+    await copyToClipboard(url);
+    showToast("OBS Live Prediction HUD URL copied!", "info");
+  }},
+  { id: "act-obs-alerts", title: "Copy OBS Stream Alerts & Sound Chime URL", group: "OBS Overlays", icon: PALETTE_ICONS.copy, action: async () => {
+    const url = location.origin + "/overlay/alerts?site=" + (state.SLUG || "");
+    await copyToClipboard(url);
+    showToast("OBS Stream Alerts URL copied!", "info");
+  }},
+  { id: "act-obs-card", title: "Copy OBS Podium Overlay URL", group: "OBS Overlays", icon: PALETTE_ICONS.copy, action: async () => {
     const url = location.origin + "/" + (state.SLUG || "") + "/overlay";
     await copyToClipboard(url);
     showToast("OBS Podium URL copied!", "info");
   }},
-  { id: "act-obs-ticker", title: "Copy OBS Horizontal Ticker URL", group: "Actions", icon: PALETTE_ICONS.copy, action: async () => {
+  { id: "act-obs-ticker", title: "Copy OBS Horizontal Ticker URL", group: "OBS Overlays", icon: PALETTE_ICONS.copy, action: async () => {
     const url = location.origin + "/" + (state.SLUG || "") + "/overlay?layout=ticker";
     await copyToClipboard(url);
     showToast("OBS Ticker URL copied!", "info");
+  }},
+  { id: "act-export-winners", title: "Download Raffle Winners CSV Report", group: "Reports", icon: PALETTE_ICONS.share, action: () => {
+    window.open("/api/export/raffle-winners.csv?siteId=" + (state.SITE_ID || ""), "_blank");
+  }},
+  { id: "act-export-drops", title: "Download Drop Claims CSV Report", group: "Reports", icon: PALETTE_ICONS.share, action: () => {
+    window.open("/api/export/drop-claims.csv?siteId=" + (state.SITE_ID || ""), "_blank");
   }},
   { id: "act-public", title: "Open Live Public Site", group: "Actions", icon: PALETTE_ICONS.external, action: () => {
     window.open("/" + (state.SLUG || ""), "_blank");

@@ -13,19 +13,48 @@ import { DashboardShell } from "./dashboard-shell.jsx";
 
 const PAGES = { channel: channelPage, rules: rulesPage, shop: shopPage, viewers: viewersPage, redemptions: redemptionsPage, history: historyPage };
 
-// Every credits screen is two levels deep, so each one says where it sits and
-// how to get back up rather than relying on the rail alone.
-const CRUMB_LABELS = { channel: "Kick connection", rules: "Earning rules", shop: "Shop", viewers: "Viewers", redemptions: "Redemptions", history: "Activity" };
+const CRUMB_LABELS = { channel: "Kick connection", rules: "Earning rules", shop: "Catalog", viewers: "Viewers", redemptions: "Orders", history: "Activity ledger" };
 
 function crumbsFor(tab) {
-  const trail = [{ label: "Credits & Shop", href: "/dashboard/rewards/redemptions" }];
+  const trail = [{ label: "Rewards & Shop", href: "/dashboard/rewards/redemptions" }];
   return tab === "redemptions" ? trail.map((c) => ({ label: c.label })) : [...trail, { label: CRUMB_LABELS[tab] || tab }];
+}
+
+const REWARDS_TABS = [
+  { key: "redemptions", label: "Orders", href: "/dashboard/rewards/redemptions" },
+  { key: "shop", label: "Catalog", href: "/dashboard/rewards/shop" },
+  { key: "rules", label: "Earning rules", href: "/dashboard/rewards/rules" },
+  { key: "channel", label: "Kick connection", href: "/dashboard/rewards/channel" },
+];
+
+const AUDIENCE_TABS = [
+  { key: "viewers", label: "Viewer balances", href: "/dashboard/audience/viewers" },
+  { key: "history", label: "Activity ledger", href: "/dashboard/audience/activity" },
+];
+
+function SubTabs({ tab, isAudience }) {
+  const tabs = isAudience ? AUDIENCE_TABS : REWARDS_TABS;
+  return (
+    <nav class="v3-tabs" aria-label="Section navigation" style="margin-bottom: 20px;">
+      {tabs.map((t) => (
+        <a
+          class={"v3-tab" + (t.key === tab ? " is-on" : "")}
+          href={t.href}
+          aria-current={t.key === tab ? "page" : undefined}
+        >
+          {t.label}
+        </a>
+      ))}
+    </nav>
+  );
 }
 
 function RewardsPage({ tab, activeNav = tab, boardContext = "selector", footer = "rewards", user }) {
   const body = PAGES[tab] || channelPage;
+  const isAudience = tab === "viewers" || tab === "history";
   return <DashboardShell activeNav={activeNav} boardContext={boardContext} crumbs={crumbsFor(tab)} footer={footer} rootId="cr-dash" user={user}>
     <div class="cr-workspace-content">
+      <SubTabs tab={tab} isAudience={isAudience} />
       <div id="cr-loading" class="ui-loading" role="status" aria-live="polite" aria-busy="true" hidden><div class="ui-loading__spinner"></div><span class="sr-only">Loading credits and shop…</span></div>
       <div id="cr-app" data-cr-tab={tab} hidden dangerouslySetInnerHTML={{ __html: body }}></div>
       <div id="cr-empty" class="empty" hidden><p>Loading your credits dashboard…</p></div>
@@ -54,4 +83,3 @@ export const rewardsShopPage = { config: rewardsShopConfig, Component: RewardsSh
 export const rewardsViewersPage = { config: rewardsViewersConfig, Component: RewardsViewersPage };
 export const rewardsRedemptionsPage = { config: rewardsRedemptionsConfig, Component: RewardsRedemptionsPage };
 export const rewardsHistoryPage = { config: rewardsHistoryConfig, Component: RewardsHistoryPage };
-

@@ -24,15 +24,19 @@ describe("server-rendered dashboard profile", () => {
 });
 
 describe("signed-in shell navigation", () => {
-  it("links every credit surface from the rail", () => {
+  it("links every major product surface from the rail", () => {
     const html = renderPage(RewardsViewersPage);
     for (const href of [
+      "/dashboard/editor/players",
+      "/dashboard/editor/design",
+      "/dashboard/games",
+      "/dashboard/giveaways",
       "/dashboard/rewards/redemptions",
-      "/dashboard/rewards/shop",
-      "/dashboard/rewards/rules",
       "/dashboard/audience/viewers",
-      "/dashboard/audience/activity",
-      "/dashboard/rewards/channel",
+      "/dashboard/telegram",
+      "/dashboard/boards",
+      "/dashboard/settings",
+      "/help",
     ]) {
       expect(html).toContain(`href="${href}"`);
     }
@@ -104,21 +108,14 @@ describe("signed-in shell navigation", () => {
   it("keeps every signed-in feature visible from every dashboard page", () => {
     const html = renderPage(RewardsViewersPage);
     for (const href of [
-      "/dashboard/editor/setup",
       "/dashboard/editor/players",
       "/dashboard/editor/design",
       "/dashboard/games",
-      "/dashboard/editor/share",
-      "/dashboard/editor/history",
-      "/dashboard/boards",
-      "/dashboard/analytics/activity",
+      "/dashboard/giveaways",
       "/dashboard/rewards/redemptions",
-      "/dashboard/rewards/shop",
-      "/dashboard/rewards/rules",
       "/dashboard/audience/viewers",
-      "/dashboard/audience/activity",
-      "/dashboard/rewards/channel",
-      "/dashboard/settings/board",
+      "/dashboard/telegram",
+      "/dashboard/boards",
       "/dashboard/settings",
       "/help",
     ]) expect(html).toContain(`href="${href}"`);
@@ -126,8 +123,8 @@ describe("signed-in shell navigation", () => {
 
   it("uses plain-language navigation labels", () => {
     const html = renderPage(RewardsViewersPage);
-    expect(html).toContain(">Theme &amp; styling</a>");
-    expect(html).toContain(">Earning rules</a>");
+    expect(html).toContain(">Theme &amp; overlays</a>");
+    expect(html).toContain(">Rewards &amp; shop</a>");
     expect(html).toContain(">Help &amp; support</a>");
     expect(html).toContain('data-nav="account"');
   });
@@ -136,21 +133,14 @@ describe("signed-in shell navigation", () => {
     const html = renderPage(UnifiedSettingsPage);
     for (const href of [
       "/dashboard",
-      "/dashboard/editor/setup",
       "/dashboard/editor/players",
       "/dashboard/editor/design",
       "/dashboard/games",
-      "/dashboard/editor/share",
-      "/dashboard/editor/history",
-      "/dashboard/boards",
-      "/dashboard/analytics/activity",
+      "/dashboard/giveaways",
       "/dashboard/rewards/redemptions",
-      "/dashboard/rewards/shop",
-      "/dashboard/rewards/rules",
       "/dashboard/audience/viewers",
-      "/dashboard/audience/activity",
-      "/dashboard/rewards/channel",
-      "/dashboard/settings/board",
+      "/dashboard/telegram",
+      "/dashboard/boards",
       "/dashboard/settings",
       "/help",
     ]) expect(html).toContain(`href="${href}"`);
@@ -162,7 +152,7 @@ describe("signed-in shell navigation", () => {
   it("puts a breadcrumb trail on every leaf page", () => {
     const viewers = renderPage(RewardsViewersPage);
     expect(viewers).toContain('<nav class="v3-crumbs" aria-label="Breadcrumb">');
-    expect(viewers).toContain('<a href="/dashboard/rewards/redemptions">Credits &amp; Shop</a>');
+    expect(viewers).toContain('<a href="/dashboard/rewards/redemptions">Rewards &amp; Shop</a>');
     expect(viewers).toContain('<span aria-current="page">Viewers</span>');
 
     const settings = renderPage(UnifiedSettingsPage);
