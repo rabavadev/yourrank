@@ -42,9 +42,9 @@ if ($bot -and -not (Test-Path "$root\apps\bot\.dev.vars")) {
   Copy-Item "$root\apps\bot\.dev.vars.example" "$root\apps\bot\.dev.vars"
 }
 
-# 3. Build shared modules
-Write-Host "[build] Compiling shared TypeScript..."
-& $nodeExe "$root\build-shared.mjs" 2>&1 | Out-Null
+# 3. Build shared workspace package
+Write-Host "[build] Compiling packages/shared..."
+& bun run --cwd "$root\packages\shared" build 2>&1 | Out-Null
 
 # 4. Build leaderboard assets (build.js resolves paths relative to apps/leaderboard)
 Write-Host "[build] Bundling leaderboard assets..."

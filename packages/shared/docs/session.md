@@ -115,7 +115,7 @@ does not store sessions anymore.
 Keep the leaderboard's existing `hashPassword` / `verifyPassword` (they are
 correct and DB-agnostic). Only the **session** functions change: swap the old
 `createSession` / `readToken` / `currentUser` from `auth.js` for the ones in
-`shared/session.js`. The current cookie name is `yr_session`.
+`@yourrank/shared/session`. The current cookie name is `yr_session`.
 
 ### Migration grace period (completed)
 Legacy `rk_session` / `gm_session` cookies (backed by the old `SESSIONS` KV)

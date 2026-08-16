@@ -2,7 +2,7 @@
 import { ok, bad } from "../auth.js";
 import {
   one as defaultOne,
-} from "../../../../shared/db.js";
+} from "@yourrank/shared/db";
 
 function esc(str) {
   return String(str || "").replace(/[&<>"']/g, (c) => ({

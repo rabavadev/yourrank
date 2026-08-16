@@ -1,6 +1,6 @@
 import { requireUser, json, bad, readJson, rateLimit } from "../auth.js";
 import { getBoardById, getPlayers, saveSite } from "../site.js";
-import { logAudit } from "../../../../shared/audit.js";
+import { logAudit } from "@yourrank/shared/audit";
 
 // POST /api/sites/:id/quick-add
 // Takes { name: "Steve", amount: 500 }

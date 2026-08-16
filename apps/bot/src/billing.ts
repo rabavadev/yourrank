@@ -1,4 +1,4 @@
-import { query } from "../../../shared/db.js";
+import { query } from "@yourrank/shared/db";
 
 /**
  * Subscription expiry management.

@@ -63,7 +63,7 @@ describe("authenticated dashboard v4 contract", () => {
 // only changed the component on some pages. They live in ui.css now.
 describe("shared UI primitives", () => {
   const ui = fs.readFileSync(path.join(assetsDir, "ui.css"), "utf8");
-  const botShell = fs.readFileSync(path.resolve(import.meta.dir, "../../../../shared/page-shell.ts"), "utf8");
+  const botShell = fs.readFileSync(path.resolve(import.meta.dir, "../../../../packages/shared/src/page-shell.ts"), "utf8");
 
   it("defines the button component", () => {
     expect(ui).toMatch(/\.btn,\s*\.yr-ui button\s*\{/);

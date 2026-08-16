@@ -2,7 +2,7 @@
 // Stores the message and emails the support inbox when RESEND_API_KEY is set.
 import { json, bad, rateLimitHeaders, clientIp, rateLimit, readJson } from "../auth.js";
 import { sendEmail as defaultSendEmail } from "../email.js";
-import { exec as defaultExec } from "../../../../shared/db.js";
+import { exec as defaultExec } from "@yourrank/shared/db";
 
 const MAX_LEN = 4000;
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;

@@ -1,9 +1,9 @@
 import { destroySession, cookieClear, readToken, RESERVED, currentUser, hasLegacyCookie, cookieClearLegacy, rateLimit, rateLimitHeaders, clientIp } from "./auth.js";
-import { sendErrorToDiscord } from "../../../shared/monitoring.js";
-import { withWorkerFetch } from "../../../shared/with-worker.js";
-import { RateLimiter } from "../../../shared/rate-limiter-do.js";
+import { sendErrorToDiscord } from "@yourrank/shared/monitoring";
+import { withWorkerFetch } from "@yourrank/shared/with-worker";
+import { RateLimiter } from "@yourrank/shared/rate-limiter-do";
 import { LiveBoard } from "./live-board.js";
-import { populateEnv } from "../../../shared/env.js";
+import { populateEnv } from "@yourrank/shared/env";
 import { fromJsonb, getPublicSite, getBySlug, getClickRedirectSite, getArchiveSnapshots, ARCHIVE_LIMITS, PUBLIC_ARCHIVE_LIMIT } from "./site.js";
 import { parseSitePath, renderSiteRoute } from "./site-routes.js";
 import { renderSite } from "./site-render.js";
@@ -12,11 +12,11 @@ import { verifyEmailPageHtml } from "./pages/verify-email.js";
 import { verifyEmailToken } from "./handlers/auth.js";
 import { verifyBoardPassword, issueBoardPasswordToken, boardPasswordSetCookieHeader } from "./board-password.js";
 import { PAGES } from "./pages.jsx";
-import { leaderboardPageHtml } from "../../../shared/page-shell.js";
+import { leaderboardPageHtml } from "@yourrank/shared/page-shell";
 import { bumpStat } from "./stats.js";
 import { runAutoReset } from "./auto-reset.js";
-import { createQueueProducer } from "../../../shared/queue-producer.js";
-import { shellNavHtml, publicNavHtml } from "../../../shared/shell-nav.js";
+import { createQueueProducer } from "@yourrank/shared/queue-producer";
+import { shellNavHtml, publicNavHtml } from "@yourrank/shared/shell-nav";
 import apiApp from "./router.js";
 import { OG_IMAGE_PNG_BASE64 } from "./og-image.js";
 import {
@@ -29,11 +29,11 @@ import {
 import { handlePublicApiPreflight } from "./middleware/public-api.js";
 import { findSiteLogoData, findSiteStatus, findUserTotpSecret } from "./data/sites.js";
 import { detectImageMime } from "./site.js";
-import { one, query, exec } from "../../../shared/db.js";
-import { logAudit } from "../../../shared/audit.js";
+import { one, query, exec } from "@yourrank/shared/db";
+import { logAudit } from "@yourrank/shared/audit";
 import { loadPlatformIdentity, getPlatformIdentity } from "./platform-identity.js";
 import { applyLegalIdentity } from "./pages/legal-helper.js";
-import { hashToken, newClickRef } from "../../../shared/crypto.js";
+import { hashToken, newClickRef } from "@yourrank/shared/crypto";
 import { handleDashboardPreview } from "./handlers/preview.js";
 import { demoLeaderboardData } from "./demo-data.js";
 
@@ -50,7 +50,7 @@ import {
 } from "./auxiliary-renderers.js";
 import { parseDashboardPath, dashboardPath, resolveSection } from "./assets/dashboard/routes.js";
 import { deferClickWrite, trackedDestination } from "./tracked-redirect.js";
-import { setRequestMetrics } from "../../../shared/request-id.js";
+import { setRequestMetrics } from "@yourrank/shared/request-id";
 
 const LEGAL_PAGES = new Set(["terms", "privacy", "responsible", "cookies", "refund", "contact"]);
 const NON_SITE_PATHS = new Set([
@@ -637,7 +637,7 @@ async function handleRequest(request, env, ctx, meta) {
             headers: { ...SECURE_HTML, ...rateLimitHeaders(inviteRl) },
           });
         }
-        const { getInviteByToken } = await import("../../../shared/team.js");
+        const { getInviteByToken } = await import("@yourrank/shared/team");
         const invite = await getInviteByToken(token);
         const validInvite = invite &&
           invite.status === "pending" &&

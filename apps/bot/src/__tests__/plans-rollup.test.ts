@@ -6,8 +6,8 @@
 import { describe, it, expect, mock } from "bun:test";
 
 // ── Mock DB ────────────────────────────────────────────────────────────
-const dbUrl   = import.meta.resolve("../../../../shared/db.js");
-const dbUrlTs = import.meta.resolve("../../../../shared/db.ts");
+const dbUrl   = import.meta.resolve("@yourrank/shared/db");
+const dbUrlTs = import.meta.resolve("@yourrank/shared/db");
 const realDb = await import(dbUrl);
 
 const mockOne = mock((..._args: any[]): Promise<any> => Promise.resolve(null));
@@ -26,8 +26,8 @@ mock.module(dbUrl, dbMock);
 mock.module(dbUrlTs, dbMock);
 
 // Mock crypto
-const cryptoUrl   = import.meta.resolve("../../../../shared/crypto.js");
-const cryptoUrlTs = import.meta.resolve("../../../../shared/crypto.ts");
+const cryptoUrl   = import.meta.resolve("@yourrank/shared/crypto");
+const cryptoUrlTs = import.meta.resolve("@yourrank/shared/crypto");
 const realCrypto = await import(cryptoUrl);
 const cryptoMock = () => ({
   ...realCrypto,
@@ -55,7 +55,7 @@ mock.module(cryptoUrlTs, cryptoMock);
 
 // ── Import after mocks ─────────────────────────────────────────────────
 import { PLANS } from "../plans.js";
-import { effectivePlan, PLAN_LIMITS, BOARD_LIMITS } from "../../../../shared/plans.js";
+import { effectivePlan, PLAN_LIMITS, BOARD_LIMITS } from "@yourrank/shared/plans";
 
 // ── PLANS constant (bot-specific) ──────────────────────────────────────
 describe("PLANS constant", () => {

@@ -1,6 +1,6 @@
 // Originals engine: fairness determinism, verifiability, and RTP sanity.
 //
-// Run: bun test shared/__tests__/games-engine.test.ts
+// Run: bun test packages/shared/src/__tests__/games-engine.test.ts
 
 import { describe, it, expect } from "bun:test";
 import {

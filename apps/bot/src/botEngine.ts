@@ -23,8 +23,8 @@ function buildCommandKeyboard(buttons: unknown): InlineKeyboard | undefined {
   return kb;
 }
 
-import { one, query } from "../../../shared/db.js";
-import { decryptToken } from "../../../shared/crypto.js";
+import { one, query } from "@yourrank/shared/db";
+import { decryptToken } from "@yourrank/shared/crypto";
 import { config } from "./config.js";
 import { rateLimit } from "./ratelimit.js";
 import { setMyCommands } from "./telegram.js";

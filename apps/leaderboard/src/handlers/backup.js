@@ -1,5 +1,5 @@
 // Backup health and verification recording.
-import { one, query } from "../../../../shared/db.js";
+import { one, query } from "@yourrank/shared/db";
 import { currentUser, json, bad, readJson } from "../auth.js";
 
 const BACKUP_VERIFICATION_LIMIT_HOURS = Number(process.env.BACKUP_VERIFICATION_LIMIT_HOURS || 168);

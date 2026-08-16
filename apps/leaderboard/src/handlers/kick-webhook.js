@@ -2,13 +2,13 @@
 // Keeps the request thread thin: verify the signature, filter the event, then
 // drop it onto the shared events queue. The consumer durably grants credits.
 import { json, bad } from "../auth.js";
-import { createQueueProducer } from "../../../../shared/queue-producer.js";
+import { createQueueProducer } from "@yourrank/shared/queue-producer";
 import {
   verifyKickWebhookSignature,
   isCreditableKickStatus,
   isReversibleKickStatus,
   processKickRewardRedemption,
-} from "../../../../shared/kick-credits.js";
+} from "@yourrank/shared/kick-credits";
 
 const KICK_REWARD_EVENT = "channel.reward.redemption.updated";
 const KICK_WEBHOOK_MAX_AGE_MS = 5 * 60 * 1000;

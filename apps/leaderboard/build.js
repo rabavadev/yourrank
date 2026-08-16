@@ -3,13 +3,13 @@ import fs from "node:fs";
 import path from "node:path";
 import { execSync } from "node:child_process";
 
-// Step 1: Compile shared TypeScript to JavaScript
-console.log("Compiling shared TypeScript...");
+// Step 1: Build the shared workspace package
+console.log("Building shared package...");
 try {
-  execSync("bun ../../build-shared.mjs", { stdio: "inherit" });
-  console.log("TypeScript compilation complete");
+  execSync("bun run --cwd ../../packages/shared build", { stdio: "inherit" });
+  console.log("Shared package build complete");
 } catch (error) {
-  console.error("TypeScript compilation failed:", error);
+  console.error("Shared package build failed:", error);
   process.exit(1);
 }
 

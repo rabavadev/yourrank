@@ -4,9 +4,9 @@ import { getByUser as defaultGetByUser, getBoardById as defaultGetBoardById } fr
 import {
   one as defaultOne,
   withTransaction as defaultWithTransaction,
-} from "../../../../shared/db.js";
-import { rateLimit as defaultRateLimit } from "../../../../shared/ratelimit.js";
-import { logAudit as defaultLogAudit } from "../../../../shared/audit.js";
+} from "@yourrank/shared/db";
+import { rateLimit as defaultRateLimit } from "@yourrank/shared/ratelimit";
+import { logAudit as defaultLogAudit } from "@yourrank/shared/audit";
 
 const DEFAULT_SEGMENTS = [
   { id: "s1", label: "+100 Pts", type: "points", value: 100, color: "#2f6bff", weight: 25 },

@@ -13,8 +13,8 @@
   },
   "private": true,
   "scripts": {
-    "build": "node build.js && tsc",
-    "predeploy": "node build.js && tsc",
+    "build": "node build.js",
+    "predeploy": "node build.js",
     "deploy": "wrangler deploy",
     "dev": "wrangler dev",
     "test": "node ../../scripts/test-leaderboard.mjs",
@@ -24,6 +24,7 @@
   "type": "module",
   "dependencies": {
     "@preact/signals": "2.10.1",
+    "@yourrank/shared": "workspace:*",
     "hono": "^4.13.0",
     "postgres": "^3.4.9",
     "preact": "10.29.7",

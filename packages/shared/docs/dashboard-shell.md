@@ -69,8 +69,8 @@ Pulled from `apps/leaderboard/src/assets/app.css`:
 ## Integration — leaderboard Worker (`/dashboard`, JS)
 
 ```js
-import { shellNavHtml, SHELL_NAV_CSS } from "../shared/shell-nav.js";
-import { currentUser } from "../shared/session.js";
+import { shellNavHtml, SHELL_NAV_CSS } from "@yourrank/shared/shell-nav";
+import { currentUser } from "@yourrank/shared/session";
 
 async function dashboardPage(req, env, url) {
   const user = await currentUser(req, env, (env, uid) => loadUserById(env, uid));
@@ -96,8 +96,8 @@ The bot's `dashboard.ts` currently renders `APP_HTML` at `/dashboard`. Under the
 merge it moves to `/bot/dashboard` (see `routing.md`) and gains the shell:
 
 ```ts
-import { shellNavHtml, SHELL_NAV_CSS } from "../shared/shell-nav.js"; // .js path, ESM
-import { currentUserIdFromHeader } from "../shared/session.js";
+import { shellNavHtml, SHELL_NAV_CSS } from "@yourrank/shared/shell-nav";
+import { currentUserIdFromHeader } from "@yourrank/shared/session";
 
 app.get("/bot/dashboard", async (c) => {
   const uid = await currentUserIdFromHeader(c.req.header("cookie"), c.env as any);
@@ -127,21 +127,11 @@ Notes for the bot side:
 
 ---
 
-## Shared-code delivery (no monorepo build assumed)
+## Shared-code delivery
 
-The user's constraint is "no builds, no babysitting". Two low-friction options:
-
-1. **Copy on deploy (simplest):** keep `shared/shell-nav.js` and `.ts` as the
-   canonical pair; each app imports via a relative path if the repos are vendored
-   into one deploy tree, or a tiny prepublish copy step drops the file into each
-   app's `src/`. Since the module is a pure string+function with no deps, copying
-   is safe.
-2. **Path import (if both apps live under `/workspace/projects/yourrank/apps/`):**
-   import directly with `../../shared/shell-nav.js`. Wrangler bundles it into
-   each Worker at deploy. Preferred — one source of truth, no copy drift.
-
-Either way, `.js` and `.ts` must stay behaviourally identical; the CSS block is
-duplicated verbatim in both — a 30-second diff check on any change.
+Import the shared modules from the `@yourrank/shared` workspace package. The
+package is built by `bun run --cwd packages/shared build` and consumed by both
+Workers and `apps/web` through the workspace link, so the source cannot drift.
 
 ---
 

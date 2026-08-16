@@ -1,5 +1,5 @@
-import { botPageHtml } from "../../../../shared/page-shell.js";
-import { dashboardChromeHtml } from "../../../../shared/dashboard-chrome.js";
+import { botPageHtml } from "@yourrank/shared/page-shell";
+import { dashboardChromeHtml } from "@yourrank/shared/dashboard-chrome";
 import { botNavItems, pageMeta } from "./shell.js";
 import { overviewPanel } from "./pages/overview.js";
 import { botsPanel } from "./pages/bots.js";

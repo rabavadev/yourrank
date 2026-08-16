@@ -7,7 +7,7 @@
 // This test catches RLS policy regressions: if any policy is
 // loosened, this test fails.
 //
-// Run: SUPABASE_URL=... SUPABASE_ANON_KEY=... bun test shared/__tests__/rls-isolation.test.ts
+// Run: SUPABASE_URL=... SUPABASE_ANON_KEY=... bun test packages/shared/src/__tests__/rls-isolation.test.ts
 // ============================================================
 
 import { describe, it, expect } from "bun:test";

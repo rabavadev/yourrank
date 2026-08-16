@@ -2,11 +2,11 @@
 import { json, bad, ok, readJson, newToken, readToken, currentUser, destroyAllUserSessions, clientIp, rateLimit } from "./auth.js";
 import { activatePlan, PRO_DAYS } from "./billing.js";
 import { sendEmail, resetEmail } from "./email.js";
-import { query, one, exec } from "../../../shared/db.js";
-import { logAudit } from "../../../shared/audit.js";
+import { query, one, exec } from "@yourrank/shared/db";
+import { logAudit } from "@yourrank/shared/audit";
 import { generateSecret, verifyCode, generateOtpauthUri } from "./totp.js";
-import { encrypt, decrypt, hashToken, bytesToHex, safeEqual } from "../../../shared/crypto.js";
-import { listFeatureFlags, setFeatureFlag, setUserFeatureOverride } from "../../../shared/features.js";
+import { encrypt, decrypt, hashToken, bytesToHex, safeEqual } from "@yourrank/shared/crypto";
+import { listFeatureFlags, setFeatureFlag, setUserFeatureOverride } from "@yourrank/shared/features";
 import { loadPlatformIdentity, getPlatformIdentity, updatePlatformIdentity, isIdentityComplete } from "./platform-identity.js";
 
 // QUALITY-007: Named timing constants (no magic numbers)

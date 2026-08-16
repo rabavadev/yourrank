@@ -2,7 +2,7 @@
 import { getPublicSite as defaultGetPublicSite, getPublicStreamVersion as defaultGetPublicStreamVersion } from "../site.js";
 import { getStats as defaultGetStats, isStatementTimeout as defaultIsStatementTimeout } from "../stats.js";
 import { rateLimit as defaultRateLimit, rateLimitHeaders, clientIp as defaultClientIp, json, bad } from "../auth.js";
-import { one as defaultOne } from "../../../../shared/db.js";
+import { one as defaultOne } from "@yourrank/shared/db";
 import { demoLeaderboardData } from "../demo-data.js";
 import {
   connectLiveBoard,

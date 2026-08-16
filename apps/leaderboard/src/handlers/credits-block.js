@@ -1,7 +1,7 @@
 // Block / unblock / flag a viewer for anti-fraud purposes.
 import { requireUser, bad, ok, readJson } from "../auth.js";
 import { getByUser, getBoardById } from "../site.js";
-import { exec } from "../../../../shared/db.js";
+import { exec } from "@yourrank/shared/db";
 
 function getSite(env, user, url) {
   const siteId = url.searchParams.get("siteId");

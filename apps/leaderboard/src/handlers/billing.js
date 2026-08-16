@@ -1,8 +1,8 @@
 // Billing handlers: trial activation
 import { requireUser, json, bad } from "../auth.js";
 import { activatePro } from "../billing.js";
-import { effectivePlan } from "../../../../shared/plans.js";
-import { logAudit } from "../../../../shared/audit.js";
+import { effectivePlan } from "@yourrank/shared/plans";
+import { logAudit } from "@yourrank/shared/audit";
 
 // POST /api/billing/trial — start a free 7-day Pro trial (one-time per user).
 export async function handleTrial(request, env) {

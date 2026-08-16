@@ -1,9 +1,9 @@
-import { one } from "../../../shared/db.js";
-import { BOT_PLANS } from "../../../shared/plans.js";
-import type { BotPlanDef, PlanTier } from "../../../shared/plans.js";
+import { one } from "@yourrank/shared/db";
+import { BOT_PLANS } from "@yourrank/shared/plans";
+import type { BotPlanDef, PlanTier } from "@yourrank/shared/plans";
 
 // Re-export for consumers that import from this module.
-export type { BotPlanDef, PlanTier } from "../../../shared/plans.js";
+export type { BotPlanDef, PlanTier } from "@yourrank/shared/plans";
 export const PLANS = BOT_PLANS;
 
 /**
@@ -79,9 +79,9 @@ export async function checkFeature(
 export async function withPlanLimit<R>(
   userId: string,
   kind: "bots" | "offers",
-  fn: (tx: import("../../../shared/db.js").Tx) => Promise<R>
+  fn: (tx: import("@yourrank/shared/db").Tx) => Promise<R>
 ): Promise<{ error: string } | { result: R }> {
-  const { withTransaction } = await import("../../../shared/db.js");
+  const { withTransaction } = await import("@yourrank/shared/db");
   // Two stable int4 keys from userId + kind. Postgres pg_advisory_xact_lock
   // takes bigint; we pack (userIdHashHi, kindHashLo) into a stable pair.
   const kindId = kind === "bots" ? 1 : 2;

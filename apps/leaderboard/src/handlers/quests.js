@@ -4,7 +4,7 @@ import {
   one as defaultOne,
   query as defaultQuery,
   withTransaction as defaultWithTransaction,
-} from "../../../../shared/db.js";
+} from "@yourrank/shared/db";
 
 const DEFAULT_DAILY_QUEST_TEMPLATES = [
   { quest_key: "watch_30m", title: "⏱️ Watch stream for 30 minutes", target_count: 30, reward_xp: 60, reward_points: 25 },

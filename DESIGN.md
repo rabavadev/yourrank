@@ -293,8 +293,8 @@ Key interaction contracts:
   `body:has(.v3-dash[data-auth-workspace])` so public/homepage/anonymous surfaces
   do not inherit authenticated styling.
 - Do not use `position: absolute` for v4 structural layout.
-- Do not edit generated `shared/*.js` directly. Edit `shared/*.ts`, then run
-  `node build-shared.mjs`.
+- Do not edit generated `packages/shared/dist/*.js` directly. Edit `packages/shared/src/*.ts`, then run
+  `bun run --cwd packages/shared build`.
 - Never remove or hide signed-in feature routes to simplify the rail. Simplify by
   grouping, labeling, progressive disclosure, and better hierarchy.
 - Public homepage and viewer-facing pages are outside this authenticated

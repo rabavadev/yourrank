@@ -1,13 +1,13 @@
 // Test for Telegram login widget verification — tests the ACTUAL
 // verifyTelegramLogin function from dashboard-auth.ts, not a reimplementation.
 //
-// Run: bun test shared/__tests__/telegram-login.test.ts
+// Run: bun test packages/shared/src/__tests__/telegram-login.test.ts
 //   or: bun test              (from apps/bot/)
 
 import { describe, test, expect } from "bun:test";
 
 // Import the real function
-import { verifyTelegramLogin } from "../../apps/bot/src/dashboard-auth.js";
+import { verifyTelegramLogin } from "../../../../apps/bot/src/dashboard-auth.ts";
 
 const BOT_TOKEN = "123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11";
 

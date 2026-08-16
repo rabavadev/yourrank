@@ -1,17 +1,17 @@
 // Viewer-facing dashboard API: cross-board credits, per-board shop, and redeem.
 
-import { one, query, withTransaction } from "../../../../shared/db.js";
-import { rateLimit } from "../../../../shared/ratelimit.js";
+import { one, query, withTransaction } from "@yourrank/shared/db";
+import { rateLimit } from "@yourrank/shared/ratelimit";
 import { getPublicSite } from "../site.js";
 import { requireViewer } from "./viewer-auth.js";
 import { bad, ok } from "../auth.js";
-import { decryptCredential } from "../../../../shared/crypto.js";
-import { buildRedemptionEmbed, sendDiscordWebhook } from "../../../../shared/notifications.js";
+import { decryptCredential } from "@yourrank/shared/crypto";
+import { buildRedemptionEmbed, sendDiscordWebhook } from "@yourrank/shared/notifications";
 import {
   CREDITS_PENDING_REDEMPTIONS_LIMITS,
   CREDITS_REDEMPTIONS_PER_30D_LIMITS,
   effectivePlan,
-} from "../../../../shared/plans.js";
+} from "@yourrank/shared/plans";
 
 export async function handleViewerMe(request, env) {
   const { viewer, res } = await requireViewer(request, env);

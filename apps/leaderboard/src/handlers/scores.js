@@ -1,16 +1,16 @@
 // Score postback handler (authenticated via X-Postback-Key + HMAC-SHA256 signature)
 import { json, bad, rateLimit as defaultRateLimit, rateLimitHeaders } from "../auth.js";
 import { saveSite as defaultSaveSite } from "../site.js";
-import { effectivePlan, PLAN_LIMITS } from "../../../../shared/plans.js";
-import { one as defaultOne } from "../../../../shared/db.js";
-import { verifyHmacSha256Hex as defaultVerifyHmacSha256Hex } from "../../../../shared/crypto.js";
+import { effectivePlan, PLAN_LIMITS } from "@yourrank/shared/plans";
+import { one as defaultOne } from "@yourrank/shared/db";
+import { verifyHmacSha256Hex as defaultVerifyHmacSha256Hex } from "@yourrank/shared/crypto";
 import {
   computeReplayHash as defaultComputeReplayHash,
   findPostbackOwner as defaultFindPostbackOwner,
   logPostbackIntake as defaultLogPostbackIntake,
   recordReplayHash as defaultRecordReplayHash,
-} from "../../../../shared/postback.js";
-import { z } from "../../../../shared/validation.js";
+} from "@yourrank/shared/postback";
+import { z } from "@yourrank/shared/validation";
 
 const scoreNumber = z
   .union([z.number(), z.string()])

@@ -10,7 +10,7 @@
 //    docker run -d --name yr-pg -e POSTGRES_PASSWORD=pg -p 55432:5432 postgres:16
 //    createdb / psql -f every supabase/migrations/*.sql in order, then
 //    GAMES_TEST_DATABASE_URL=postgres://postgres:pg@localhost:55432/yourrank_test \
-//      bun test shared/__tests__/games-wagering.test.ts
+//      bun test packages/shared/src/__tests__/games-wagering.test.ts
 // ============================================================================
 
 import { describe, it, expect, beforeAll, afterAll } from "bun:test";

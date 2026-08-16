@@ -5,7 +5,7 @@ import {
   COOKIE_NAME,
   type UserRecord,
   type SessionEnv,
-} from "../../../../shared/session.js";
+} from "@yourrank/shared/session";
 
 function getDatabaseUrl(env: Record<string, unknown>): string {
   const hyperdrive = env.HYPERDRIVE as { connectionString?: string } | undefined;

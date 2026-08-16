@@ -8,11 +8,11 @@
 // Copy every binding the app reads onto process.env so shared modules (which
 // read process.env, not c.env) work unchanged. Called from BOTH fetch and
 // scheduled — they MUST populate the same set, or a binding set in only one
-import { sendCronSummaryToDiscord } from "../../../shared/monitoring.js";
-import { withWorkerFetch } from "../../../shared/with-worker.js";
-import { RateLimiter } from "../../../shared/rate-limiter-do.js";
-import { populateEnv } from "../../../shared/env.js";
-import { exec as dbExec } from "../../../shared/db.js";
+import { sendCronSummaryToDiscord } from "@yourrank/shared/monitoring";
+import { withWorkerFetch } from "@yourrank/shared/with-worker";
+import { RateLimiter } from "@yourrank/shared/rate-limiter-do";
+import { populateEnv } from "@yourrank/shared/env";
+import { exec as dbExec } from "@yourrank/shared/db";
 import { Toucan } from "toucan-js";
 import type { BotRow } from "./botEngine.js";
 
@@ -129,7 +129,7 @@ export default {
           })(),
           (async () => {
             try {
-              const { sendExpiryWarnings } = await import("../../../shared/email.js");
+              const { sendExpiryWarnings } = await import("@yourrank/shared/email");
               const origin = env.PUBLIC_BASE_URL || process.env.PUBLIC_BASE_URL || "https://yourrank.site";
               const { sent, skipped } = await sendExpiryWarnings(env, { origin });
               console.log(`[cron 0 3 * * *] sendExpiryWarnings: ${sent} sent, ${skipped} skipped`);
@@ -198,7 +198,7 @@ export default {
           // Onboarding email sequence: Day 0 (welcome), Day 3 (bot/offers), Day 7 (upgrade)
           (async () => {
             try {
-              const { sendPendingOnboardingEmails } = await import("../../../shared/email.js");
+              const { sendPendingOnboardingEmails } = await import("@yourrank/shared/email");
               const { sent, skipped } = await sendPendingOnboardingEmails(env);
               console.log(`[cron 0 3 * * *] onboarding emails: ${sent} sent, ${skipped} skipped`);
             } catch (err) {

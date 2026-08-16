@@ -8,7 +8,7 @@ import { join } from "node:path";
 
 const views = join(import.meta.dir, "..", "dashboard-views");
 const pages = join(views, "pages");
-const shell = join(import.meta.dir, "..", "..", "..", "..", "shared", "page-shell.ts");
+const shell = join(import.meta.dir, "..", "..", "..", "..", "packages", "shared", "src", "page-shell.ts");
 
 const viewFiles = [
   ...readdirSync(views).filter((f) => f.endsWith(".ts")).map((f) => join(views, f)),

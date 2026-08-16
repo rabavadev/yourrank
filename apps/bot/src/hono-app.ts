@@ -1,8 +1,8 @@
 import { Hono, type ExecutionContext as HonoExecutionContext } from "hono";
 import type { Update } from "grammy/types";
 import { config } from "./config.js";
-import { exec, one, query } from "../../../shared/db.js";
-import { safeEqual, encryptToken, reencryptToken, isCurrentVersion, hashIp, newClickRef, newLinkSlug, newWebhookSecret, verifyHmacSha256Hex } from "../../../shared/crypto.js";
+import { exec, one, query } from "@yourrank/shared/db";
+import { safeEqual, encryptToken, reencryptToken, isCurrentVersion, hashIp, newClickRef, newLinkSlug, newWebhookSecret, verifyHmacSha256Hex } from "@yourrank/shared/crypto";
 import { getBotBySecret, handleUpdateForBot } from "./botEngine.js";
 import { gateAndDeferTelegramUpdate } from "./telegram-webhook.js";
 import { getMe, setWebhook } from "./telegram.js";
@@ -10,8 +10,8 @@ import { buildDashboard } from "./dashboard.js";
 import { logMinimizedClick } from "./clicks.js";
 import { withPlanLimit } from "./plans.js";
 import { rateLimit, type RateLimitKV } from "./ratelimit.js";
-import { createQueueProducer, type QueueEvent } from "../../../shared/queue-producer.js";
-import { recordConversion, type PostbackQuery } from "../../../shared/conversions.js";
+import { createQueueProducer, type QueueEvent } from "@yourrank/shared/queue-producer";
+import { recordConversion, type PostbackQuery } from "@yourrank/shared/conversions";
 import {
   POSTBACK_SUNSET,
   computeReplayHash,
@@ -19,7 +19,7 @@ import {
   logPostbackIntake,
   recordReplayHash,
   unsignedPostbacksEnabled,
-} from "../../../shared/postback.js";
+} from "@yourrank/shared/postback";
 import { validatedBody, adminUserSchema, adminBotSchema, adminOfferSchema } from "./validation.js";
 import { errMessage } from "./errors.js";
 

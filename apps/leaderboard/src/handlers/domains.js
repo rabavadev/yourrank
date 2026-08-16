@@ -1,12 +1,12 @@
 // Domain purchase, automated DNS setup, and transfer management API handlers.
 import { requireUser, ok, bad, readJson } from "../auth.js";
 import { getByUser, getBoardById, invalidateSiteCache, invalidateUserCache } from "../site.js";
-import { one, exec, withTransaction } from "../../../../shared/db.js";
-import { getDomainProvider, SUPPORTED_TLDS } from "../../../../shared/domain-provider.js";
-import { rateLimit } from "../../../../shared/ratelimit.js";
+import { one, exec, withTransaction } from "@yourrank/shared/db";
+import { getDomainProvider, SUPPORTED_TLDS } from "@yourrank/shared/domain-provider";
+import { rateLimit } from "@yourrank/shared/ratelimit";
 import { PLATFORM_HOST } from "../constants.js";
 import { invalidateCustomDomain } from "../middleware/custom-domain.js";
-import { logAudit } from "../../../../shared/audit.js";
+import { logAudit } from "@yourrank/shared/audit";
 
 const DOMAIN_REGEX = /^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)*\.[a-z]{2,}$/;
 

@@ -3,7 +3,7 @@
 
 import { raw } from "hono/html";
 import { DashboardShell } from "./dashboard-shell.jsx";
-import { brandLoaderLogoSvg } from "../../../../shared/brand-assets.js";
+import { brandLoaderLogoSvg } from "@yourrank/shared/brand-assets";
 
 export const dashboardConfig = {
   title: "Dashboard · YourRank",

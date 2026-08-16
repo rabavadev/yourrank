@@ -1,4 +1,4 @@
-import { dashboardChromeHtml } from "../../../../shared/dashboard-chrome.js";
+import { dashboardChromeHtml } from "@yourrank/shared/dashboard-chrome";
 import { dashboardNavItems } from "./dashboard-shell.jsx";
 
 // Help center pages: an operator hub plus Support and Feedback forms.

@@ -20,7 +20,7 @@
 //   GET  /dash/api/bots        list own bots
 //   POST /dash/api/bots        connect a bot (paste BotFather token)
 //
-// Session: SHARED KV-backed session (see ../../../shared/session.ts). The token
+// Session: SHARED KV-backed session (see packages/shared/src/session.ts). The token
 // is a random opaque id; DB sessions table maps token -> user UUID in
 // namespace, which is bound to the SAME id as the leaderboard Worker so one
 // login works across both Workers. Cookie name yr_session, Domain=.yourrank.site.
@@ -29,7 +29,7 @@
 // ------------------------------------------------------------------
 import { Hono } from "hono";
 import { config } from "./config.js";
-import { one } from "../../../shared/db.js";
+import { one } from "@yourrank/shared/db";
 import {
   createSession,
   destroySession,
@@ -40,7 +40,7 @@ import {
   hasLegacyCookie,
   cookieClearLegacy,
   type SessionEnv,
-} from "../../../shared/session.js";
+} from "@yourrank/shared/session";
 import { sameOrigin, verifyTelegramLogin } from "./dashboard-auth.js";
 import { buildDashboardApi } from "./dashboard-api.js";
 import { loginHtml, appHtml, clientScriptSource } from "./dashboard-views.js";

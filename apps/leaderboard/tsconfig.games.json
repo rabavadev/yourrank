@@ -1,5 +1,5 @@
 {
-  "//": "Typechecks the games island. The root tsconfig.json compiles shared/*.ts for the Worker and deliberately excludes src/, so the island needs its own DOM-flavoured config.",
+  "//": "Typechecks the games Preact island. The shared package is built separately, so the island needs its own DOM-flavoured config.",
   "compilerOptions": {
     "target": "ES2022",
     "lib": ["ES2022", "DOM", "DOM.Iterable"],

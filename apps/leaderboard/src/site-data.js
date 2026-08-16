@@ -1,5 +1,5 @@
 // Per-site viewer data helpers for the public site shell.
-import { one, query } from "../../../shared/db.js";
+import { one, query } from "@yourrank/shared/db";
 
 export async function getShopItems(siteId) {
   return query(

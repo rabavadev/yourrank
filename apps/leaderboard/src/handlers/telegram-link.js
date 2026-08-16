@@ -3,8 +3,8 @@
 // After linking, the bot dashboard can use the main session.
 
 import { json, bad, requireUser, readJson } from "../auth.js";
-import { query, one } from "../../../../shared/db.js";
-import { safeEqual } from "../../../../shared/crypto.js";
+import { query, one } from "@yourrank/shared/db";
+import { safeEqual } from "@yourrank/shared/crypto";
 
 /**
  * POST /api/auth/telegram/link

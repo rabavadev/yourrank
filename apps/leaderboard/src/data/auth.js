@@ -1,5 +1,5 @@
 // Data access layer for authentication operations
-import { one, exec } from "../../../../shared/db.js";
+import { one, exec } from "@yourrank/shared/db";
 
 export async function findUserByEmail(email) {
   return await one("SELECT id FROM users WHERE email=$1", [email]);

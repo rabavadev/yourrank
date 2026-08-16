@@ -11,6 +11,6 @@
     "forceConsistentCasingInFileNames": true,
     "types": ["bun-types"]
   },
-  "include": ["src", "../../shared"],
-  "exclude": ["../../shared/__tests__"]
+  "include": ["src"],
+  "exclude": ["node_modules", "dist"]
 }

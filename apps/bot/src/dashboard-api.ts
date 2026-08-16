@@ -3,21 +3,21 @@
 
 import { Hono } from "hono";
 import { config } from "./config.js";
-import { one, query, exec } from "../../../shared/db.js";
-import { encryptToken, decryptToken, newLinkSlug, newWebhookSecret } from "../../../shared/crypto.js";
+import { one, query, exec } from "@yourrank/shared/db";
+import { encryptToken, decryptToken, newLinkSlug, newWebhookSecret } from "@yourrank/shared/crypto";
 import {
   POSTBACK_SUNSET,
   createPostbackKey,
   getActivePostbackKey,
   revokePostbackKeys,
-} from "../../../shared/postback.js";
+} from "@yourrank/shared/postback";
 import { getMe, setWebhook, deleteWebhook, getWebhookInfo, sendMessage, sendPhoto } from "./telegram.js";
 import { syncMyCommands, syncMyCommandsForBot } from "./botEngine.js";
 import { withPlanLimit, getUserPlan } from "./plans.js";
 import { checkFeature, PLANS } from "./plans.js";
 import { rateLimit } from "./ratelimit.js";
 import { sameOrigin } from "./dashboard-auth.js";
-import { resolveSession, type SessionEnv } from "../../../shared/session.js";
+import { resolveSession, type SessionEnv } from "@yourrank/shared/session";
 import { type RateLimitKV } from "./ratelimit.js";
 import { validatedBody, offerCreateSchema, offerToggleSchema, botCreateSchema, botWelcomeSchema, testMessageSchema, commandCreateSchema, commandUpdateSchema, broadcastSchema, broadcastSegmentSchema } from "./validation.js";
 import { normalizeSegment, parseSegment, buildSegmentWhere } from "./broadcast-segment.js";

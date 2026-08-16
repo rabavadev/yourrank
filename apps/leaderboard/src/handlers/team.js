@@ -6,7 +6,7 @@
 
 import { requireUser, json, bad, ok, readJson, rateLimit, rateLimitHeaders, clientIp } from "../auth.js";
 import { getSiteById } from "../site.js";
-import { one as defaultOne } from "../../../../shared/db.js";
+import { one as defaultOne } from "@yourrank/shared/db";
 import {
   getSiteRole,
   canRoleManageTeam,
@@ -18,7 +18,7 @@ import {
   updateSiteMemberRole,
   getInviteByToken,
   acceptSiteInvite,
-} from "../../../../shared/team.js";
+} from "@yourrank/shared/team";
 import { PLATFORM_HOST } from "../constants.js";
 
 function getDeps(overrides = {}) {

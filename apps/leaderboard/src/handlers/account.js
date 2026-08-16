@@ -1,14 +1,14 @@
 // Account-level API: postback keys, conversion log, profile data.
 import { json, bad, requireUser, rateLimit } from "../auth.js";
-import { one, query } from "../../../../shared/db.js";
-import { effectivePlan } from "../../../../shared/plans.js";
+import { one, query } from "@yourrank/shared/db";
+import { effectivePlan } from "@yourrank/shared/plans";
 import { handlePostback } from "./attribution.js";
 import {
   POSTBACK_SUNSET,
   createPostbackKey,
   getActivePostbackKey,
   revokePostbackKeys,
-} from "../../../../shared/postback.js";
+} from "@yourrank/shared/postback";
 
 function postbackObject(url, key) {
   return {

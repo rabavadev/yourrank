@@ -5,8 +5,8 @@ import {
   one as defaultOne,
   query as defaultQuery,
   withTransaction as defaultWithTransaction,
-} from "../../../../shared/db.js";
-import { logAudit as defaultLogAudit } from "../../../../shared/audit.js";
+} from "@yourrank/shared/db";
+import { logAudit as defaultLogAudit } from "@yourrank/shared/audit";
 
 /**
  * GET /api/tournaments — List tournaments for site

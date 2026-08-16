@@ -1,6 +1,6 @@
 // Kick OAuth 2.1 flow for streamers linking their Kick channel.
 import { currentUser, requireUser, ok, rateLimit } from "../auth.js";
-import { one, exec } from "../../../../shared/db.js";
+import { one, exec } from "@yourrank/shared/db";
 import {
   generatePKCE,
   buildKickAuthorizeURL,
@@ -9,7 +9,7 @@ import {
   fetchKickCurrentChannel,
   subscribeKickWebhookEvent,
   encryptKickToken,
-} from "../../../../shared/kick-oauth.js";
+} from "@yourrank/shared/kick-oauth";
 import { notifyLiveBoard } from "../live-board-config.js";
 
 const OAUTH_TTL = 600; // 10 minutes

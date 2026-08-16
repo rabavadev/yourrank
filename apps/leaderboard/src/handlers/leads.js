@@ -1,6 +1,6 @@
 // Lead submission handler
 import { json, bad, readJson, rateLimitHeaders, rateLimit, clientIp, uuid } from "../auth.js";
-import { exec } from "../../../../shared/db.js";
+import { exec } from "@yourrank/shared/db";
 
 export async function handleLead(request, env) {
   try {

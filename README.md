@@ -140,7 +140,7 @@ For webhook testing during local debug, the bot app will need a public tunnel (e
 # Deploy all three Workers (leaderboard + bot + queue consumer)
 cd apps/leaderboard && wrangler deploy
 cd apps/bot && wrangler deploy
-node build-shared.mjs && cd apps/consumer && wrangler deploy
+bun run --cwd packages/shared build && cd apps/consumer && wrangler deploy
 ```
 
 See **DEPLOY.md** for first-time Cloudflare setup (routes, KV namespaces, Hyperdrive, secrets).

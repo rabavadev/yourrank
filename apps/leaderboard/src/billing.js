@@ -1,12 +1,12 @@
 // Billing: NOWPayments (crypto) + manual activation. Plan logic lives here.
 import { json, bad, ok, uuid, requireUser, safeEqual as defaultSafeEqual, readJson, rateLimit } from "./auth.js";
-import { one as defaultOne, query, exec, withTransaction as defaultWithTransaction } from "../../../shared/db.js";
-import { logAudit as defaultLogAudit } from "../../../shared/audit.js";
-import { logProviderEvent as defaultLogProviderEvent } from "../../../shared/provider-events.js";
+import { one as defaultOne, query, exec, withTransaction as defaultWithTransaction } from "@yourrank/shared/db";
+import { logAudit as defaultLogAudit } from "@yourrank/shared/audit";
+import { logProviderEvent as defaultLogProviderEvent } from "@yourrank/shared/provider-events";
 
 // Plan definitions imported from shared source of truth.
 // Re-exported here for backward compatibility with any local imports.
-import { PLAN_LIMITS as _PL, BOARD_LIMITS as _BL, PLAN_PRICES as _PP, PLAN_META as _PM, computeProratedExpiry as _computeProratedExpiry, CREDITS_REWARD_LIMITS as _CRL, CREDITS_SHOP_LIMITS as _CSL, CREDITS_PENDING_REDEMPTIONS_LIMITS as _CPRL, CREDITS_REDEMPTIONS_PER_30D_LIMITS as _CR30L, CREDITS_VIEWERS_PER_30D_LIMITS as _CVL } from "../../../shared/plans.js";
+import { PLAN_LIMITS as _PL, BOARD_LIMITS as _BL, PLAN_PRICES as _PP, PLAN_META as _PM, computeProratedExpiry as _computeProratedExpiry, CREDITS_REWARD_LIMITS as _CRL, CREDITS_SHOP_LIMITS as _CSL, CREDITS_PENDING_REDEMPTIONS_LIMITS as _CPRL, CREDITS_REDEMPTIONS_PER_30D_LIMITS as _CR30L, CREDITS_VIEWERS_PER_30D_LIMITS as _CVL } from "@yourrank/shared/plans";
 import { sendReceiptEmail } from "./email.js";
 const withTransaction = defaultWithTransaction;
 const one = defaultOne;
@@ -33,7 +33,7 @@ function advisoryKey(userId) {
 // priceUsd returns the price for the given plan tier (or the env override for pro).
 // priceUsd and effectivePlan are pure functions in shared/plans.js (no DB dependency).
 // Re-exported here for backward compatibility.
-import { priceUsd as _priceUsd, effectivePlan as _effectivePlan } from "../../../shared/plans.js";
+import { priceUsd as _priceUsd, effectivePlan as _effectivePlan } from "@yourrank/shared/plans";
 export const priceUsd = _priceUsd;
 export const effectivePlan = _effectivePlan;
 

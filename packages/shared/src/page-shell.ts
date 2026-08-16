@@ -4,7 +4,7 @@
 //  Deduplicates the outer HTML boilerplate (head, skip link, top nav, <main>)
 //  for dashboard pages so the leaderboard and bot shells can't drift again.
 //
-//  These modules are compiled to shared/*.js by `node build-shared.mjs`.
+//  These modules are built to packages/shared/dist/*.js by `tsc -p tsconfig.json`.
 // ============================================================================
 
 import { type ShellUser } from "./shell-nav.js";

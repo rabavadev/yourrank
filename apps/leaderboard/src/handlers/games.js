@@ -18,7 +18,7 @@
 import { bad, ok, readJson } from "../auth.js";
 import { getPublicSite } from "../site.js";
 import { requireViewer } from "./viewer-auth.js";
-import { rateLimit } from "../../../../shared/ratelimit.js";
+import { rateLimit } from "@yourrank/shared/ratelimit";
 import {
   GAME_KEYS,
   isGameKey,
@@ -30,7 +30,7 @@ import {
   validateParams,
   isMultiStep,
   MINES_GRID_SIZE,
-} from "../../../../shared/games/index.js";
+} from "@yourrank/shared/games/index";
 import {
   ensureSeed,
   getFairness,
@@ -45,7 +45,7 @@ import {
   rotateSeed,
   setRoundOutcome,
   settleRound,
-} from "../../../../shared/games/store.js";
+} from "@yourrank/shared/games/store";
 
 const MAX_IDEMPOTENCY_KEY = 100;
 

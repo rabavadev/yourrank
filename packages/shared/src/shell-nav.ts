@@ -6,11 +6,10 @@
 //
 //  The stylesheet and behaviour live in the leaderboard Worker's static
 //  assets (/assets/shell-nav.css, /assets/shell-nav.js) and are linked by
-//  shared/page-shell.ts, so every page renders the same header from one source.
+//  packages/shared/src/page-shell.ts, so every page renders the same header from one source.
 //
 //  Usage (bot Worker dashboard.ts):
-//    import { shellNavHtml } from "../shared/shell-nav.js";
-//    // (import path ends in .js even from .ts under NodeNext/Workers ESM)
+//    import { shellNavHtml } from "@yourrank/shared/shell-nav";
 //    botPageHtml({ nav: shellNavHtml({ activePath: "/bot/dashboard", user }), ... })
 // ============================================================================
 

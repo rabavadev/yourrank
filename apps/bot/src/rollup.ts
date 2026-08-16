@@ -1,4 +1,4 @@
-import { query, exec } from "../../../shared/db.js";
+import { query, exec } from "@yourrank/shared/db";
 
 // ------------------------------------------------------------------
 // Nightly maintenance (Cron Trigger, once a day):

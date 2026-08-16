@@ -1,6 +1,6 @@
 // Per-site daily analytics. Cheap upsert counters in Postgres — no external service.
-import { queryWithTimeout } from "../../../shared/db.js";
-import { bumpStat, todayUTC } from "../../../shared/stats.js";
+import { queryWithTimeout } from "@yourrank/shared/db";
+import { bumpStat, todayUTC } from "@yourrank/shared/stats";
 export { bumpStat, todayUTC };
 
 export function isStatementTimeout(err) {

@@ -1,13 +1,13 @@
 // Security center handlers: password change, active sessions, and GDPR/CCPA export.
-import { one, exec, query } from "../../../../shared/db.js";
-import { hashToken } from "../../../../shared/crypto.js";
+import { one, exec, query } from "@yourrank/shared/db";
+import { hashToken } from "@yourrank/shared/crypto";
 import {
   currentUser, createSession, readToken, cookieSet, destroyAllUserSessions,
   json, bad, ok, readJson, rateLimit, rateLimitHeaders, clientIp, hashPassword, verifyPassword,
 } from "../auth.js";
 import { updateUserPassword } from "../data/auth.js";
-import { createQueueProducer } from "../../../../shared/queue-producer.js";
-import { logAudit } from "../../../../shared/audit.js";
+import { createQueueProducer } from "@yourrank/shared/queue-producer";
+import { logAudit } from "@yourrank/shared/audit";
 
 const MIN_PASSWORD_LENGTH = 8;
 

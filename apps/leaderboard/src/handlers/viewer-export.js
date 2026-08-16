@@ -1,7 +1,7 @@
-import { one, exec } from "../../../../shared/db.js";
-import { createQueueProducer } from "../../../../shared/queue-producer.js";
-import { logAudit } from "../../../../shared/audit.js";
-import { rateLimit } from "../../../../shared/ratelimit.js";
+import { one, exec } from "@yourrank/shared/db";
+import { createQueueProducer } from "@yourrank/shared/queue-producer";
+import { logAudit } from "@yourrank/shared/audit";
+import { rateLimit } from "@yourrank/shared/ratelimit";
 import { bad, ok, rateLimitHeaders } from "../auth.js";
 import { requireViewer } from "./viewer-auth.js";
 

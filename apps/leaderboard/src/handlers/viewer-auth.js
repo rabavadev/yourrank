@@ -1,15 +1,15 @@
 // Viewer OAuth login: Kick and Discord.
 // Separate from streamer OAuth so viewers get their own /me dashboard.
 
-import { one, exec } from "../../../../shared/db.js";
-import { encryptKickToken, buildKickViewerAuthorizeURL, exchangeKickViewerCode, fetchKickCurrentUser } from "../../../../shared/kick-oauth.js";
+import { one, exec } from "@yourrank/shared/db";
+import { encryptKickToken, buildKickViewerAuthorizeURL, exchangeKickViewerCode, fetchKickCurrentUser } from "@yourrank/shared/kick-oauth";
 import {
   buildDiscordAuthorizeURL,
   exchangeDiscordCode,
   fetchDiscordCurrentUser,
   encryptDiscordToken,
   discordAvatarUrl,
-} from "../../../../shared/discord-oauth.js";
+} from "@yourrank/shared/discord-oauth";
 import {
   resolveViewer,
   createViewerSession,
@@ -17,7 +17,7 @@ import {
   viewerCookieSet,
   viewerCookieClear,
   readViewerToken,
-} from "../../../../shared/viewer-session.js";
+} from "@yourrank/shared/viewer-session";
 import { bad, json, rateLimit, clientIp } from "../auth.js";
 
 const OAUTH_TTL = 600; // 10 minutes
@@ -80,7 +80,7 @@ export async function handleKickViewerAuthStart(request, env) {
   const returnTo = safeReturnTo(url.searchParams.get("returnTo"), origin);
   const redirectUri = `${origin}/api/viewer/auth/kick/callback`;
 
-  const { generatePKCE } = await import("../../../../shared/kick-oauth.js");
+  const { generatePKCE } = await import("@yourrank/shared/kick-oauth");
   const { codeVerifier, codeChallenge } = await generatePKCE();
   const state = randomState();
   await storeOAuthState(env, state, { provider: "kick", codeVerifier, returnTo, origin, redirectUri });

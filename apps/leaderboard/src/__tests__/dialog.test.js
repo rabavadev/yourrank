@@ -9,7 +9,7 @@ const assetsDir = path.resolve(import.meta.dir, "../assets");
 const dialog = fs.readFileSync(path.join(assetsDir, "dialog.js"), "utf8");
 const utils = fs.readFileSync(path.join(assetsDir, "dashboard/utils.js"), "utf8");
 const botClient = fs.readFileSync(path.resolve(import.meta.dir, "../../../bot/src/dashboard-views/client-script.ts"), "utf8");
-const botShell = fs.readFileSync(path.resolve(import.meta.dir, "../../../../shared/page-shell.ts"), "utf8");
+const botShell = fs.readFileSync(path.resolve(import.meta.dir, "../../../../packages/shared/src/page-shell.ts"), "utf8");
 
 describe("the dialog primitive", () => {
   it("traps Tab, closes on Escape and restores focus", () => {

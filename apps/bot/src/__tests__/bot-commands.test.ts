@@ -3,10 +3,10 @@
 import { describe, it, expect, mock, beforeEach } from "bun:test";
 import { Bot } from "grammy";
 
-const dbUrl = import.meta.resolve("../../../../shared/db.js");
-const dbUrlTs = import.meta.resolve("../../../../shared/db.ts");
-const cryptoUrl = import.meta.resolve("../../../../shared/crypto.js");
-const cryptoUrlTs = import.meta.resolve("../../../../shared/crypto.ts");
+const dbUrl = import.meta.resolve("@yourrank/shared/db");
+const dbUrlTs = import.meta.resolve("@yourrank/shared/db");
+const cryptoUrl = import.meta.resolve("@yourrank/shared/crypto");
+const cryptoUrlTs = import.meta.resolve("@yourrank/shared/crypto");
 const realDb = await import(dbUrl);
 const realCrypto = await import(cryptoUrl);
 

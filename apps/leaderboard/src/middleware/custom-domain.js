@@ -1,6 +1,6 @@
 // Custom domain resolution with in-memory caching
 // Maps custom domain hostnames to site slugs for serving leaderboards on custom domains
-import { one } from "../../../../shared/db.js";
+import { one } from "@yourrank/shared/db";
 import { PLATFORM_HOST } from "../constants.js";
 
 // Per-isolate L1 cache. Invalidation (invalidateCustomDomain) only clears the
