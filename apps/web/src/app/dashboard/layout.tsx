@@ -1,5 +1,6 @@
 import { getCurrentUser } from "@/lib/session";
 import { DashboardNav } from "./DashboardNav";
+import { LogoutButton } from "./LogoutButton";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -16,12 +17,9 @@ export default async function DashboardLayout({ children }: DashboardLayoutProps
         <header className="sticky top-0 z-10 flex h-[76px] items-center justify-between border-b border-line bg-surface/90 px-8 backdrop-blur-sm">
           <h1 className="text-lg font-semibold text-ink">Creator workspace</h1>
           {user ? (
-            <a
-              href="/api/auth/logout"
-              className="text-sm font-medium text-ink-soft hover:text-ink"
-            >
+            <LogoutButton className="text-sm font-medium text-ink-soft hover:text-ink">
               Sign out
-            </a>
+            </LogoutButton>
           ) : (
             <a href="/login" className="text-sm font-medium text-cobalt hover:underline">
               Sign in

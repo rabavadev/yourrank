@@ -1,4 +1,5 @@
 import { getCurrentUser, type UserRecord } from "@/lib/session";
+import { LogoutButton } from "../LogoutButton";
 
 export const dynamic = "force-dynamic";
 
@@ -70,12 +71,9 @@ export default async function SettingsPage() {
           You are signed in as <span className="text-ink">{user.email}</span>.
         </p>
         <div className="mt-4">
-          <a
-            href="/api/auth/logout"
-            className="inline-flex items-center justify-center rounded-lg border border-line bg-surface px-4 py-2 text-sm font-medium text-ink hover:bg-surface-soft"
-          >
+          <LogoutButton className="inline-flex items-center justify-center rounded-lg border border-line bg-surface px-4 py-2 text-sm font-medium text-ink hover:bg-surface-soft">
             Sign out
-          </a>
+          </LogoutButton>
         </div>
       </div>
     </section>
