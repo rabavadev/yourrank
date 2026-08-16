@@ -28,7 +28,22 @@ export function verifyCsrf(req) {
 }
 
 // CSRF-exempt paths (public endpoints or webhooks without an active session)
-export const CSRF_EXEMPT = new Set(["/api/billing/ipn", "/api/lead", "/api/track/copy", "/api/scores", "/api/postback", "/api/csp-report", "/webhooks/kick"]);
+export const CSRF_EXEMPT = new Set([
+  "/api/billing/ipn",
+  "/api/lead",
+  "/api/track/copy",
+  "/api/scores",
+  "/api/postback",
+  "/api/csp-report",
+  "/webhooks/kick",
+  // Unauthenticated auth endpoints: callers do not have a CSRF cookie yet.
+  "/api/auth/login",
+  "/api/auth/signup",
+  "/api/auth/forgot",
+  "/api/auth/reset",
+  "/api/auth/verify",
+  "/api/auth/resend-verification",
+]);
 
 export function shouldRequireCsrf(method, path) {
   if (!["POST", "PUT", "DELETE", "PATCH"].includes(method)) return false;
