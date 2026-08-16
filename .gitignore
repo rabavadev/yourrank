@@ -27,7 +27,7 @@ components.json
 components/
 lib/
 tailwind.config.js
-tsconfig.json
+/tsconfig.json
 
 # impeccable-ignore-start
 # Ephemeral output, runtime state, and per-developer overrides.
