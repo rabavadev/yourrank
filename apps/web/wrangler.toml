@@ -10,6 +10,13 @@ directory = ".open-next/assets"
 binding = "ASSETS"
 run_worker_first = true
 
+[vars]
+API_BASE_URL = "https://yourrank.site"
+
+[[services]]
+binding = "API"
+service = "yourrank-site"
+
 [[hyperdrive]]
 binding = "HYPERDRIVE"
 id = "9e5b625bfdd84cd691b44c4780bdaf13"
