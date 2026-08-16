@@ -53,6 +53,67 @@ import { handleQuickAdd } from "./handlers/quick-add.js";
 import { handleKickWebhook } from "./handlers/kick-webhook.js";
 import { handleGiveawayChatroom } from "./handlers/giveaway.js";
 import {
+  handleDomainSearch,
+  handleDomainPurchase,
+  handleGetMyDomain,
+  handleDomainToggleLock,
+  handleDomainTransferAuthCode,
+} from "./handlers/domains.js";
+import {
+  handleGetRaffles,
+  handleCreateRaffle,
+  handleDrawRaffle,
+  handleGetCodeDrops,
+  handleCreateCodeDrop,
+  handleClaimCodeDrop,
+} from "./handlers/events.js";
+import {
+  handleGetPredictions,
+  handleCreatePrediction,
+  handleLockPrediction,
+  handleSettlePrediction,
+  handleCancelPrediction,
+  handlePlaceBet,
+} from "./handlers/predictions.js";
+import {
+  handleGetWheelConfig,
+  handleUpdateWheelConfig,
+  handleSpinWheel,
+} from "./handlers/wheel.js";
+import {
+  handleGetSeason,
+  handleCreateSeason,
+  handleClaimTierReward,
+  handleAwardXp,
+} from "./handlers/battlepass.js";
+import {
+  handleOverlayPredictionPage,
+  handleOverlayAlertsPage,
+  handleGetActiveEvents,
+} from "./handlers/overlays.js";
+import {
+  handleGetDailyQuests,
+  handleClaimQuestReward,
+  handleTrackQuestProgress,
+} from "./handlers/quests.js";
+import {
+  handleGetDuels,
+  handleCreateDuel,
+  handleAcceptDuel,
+  handleDeclineDuel,
+} from "./handlers/duels.js";
+import {
+  handleGetTournaments,
+  handleCreateTournament,
+  handleUpdateMatchScore,
+  handleGetBracket,
+} from "./handlers/tournaments.js";
+import {
+  handleExportRaffleWinnersCsv,
+  handleExportDropClaimsCsv,
+  handleExportPredictionsCsv,
+} from "./handlers/exports.js";
+import {
   handleKickAuthStart,
   handleKickAuthCallback,
   handleKickAuthDisconnect,
@@ -168,6 +229,13 @@ export const ROUTES = [
   { path: "/api/site/notify/test", method: "POST", handler: withHandler(handleNotifyTest) },
   { path: "/api/site/domain/verify", method: "POST", handler: withHandler(handleDomainVerify) },
 
+  // Domain search, purchase, and transfer routes
+  { path: "/api/domains/search", method: "POST", handler: withHandler(handleDomainSearch) },
+  { path: "/api/domains/purchase", method: "POST", handler: withHandler(handleDomainPurchase) },
+  { path: "/api/domains/my-domain", method: "GET", handler: withHandler(handleGetMyDomain) },
+  { path: "/api/domains/toggle-lock", method: "POST", handler: withHandler(handleDomainToggleLock) },
+  { path: "/api/domains/transfer-auth-code", method: "POST", handler: withHandler(handleDomainTransferAuthCode) },
+
   // Team & moderator routes
   { path: "/api/site/team", method: "GET", handler: withHandler(handleTeamList) },
   { path: "/api/site/team/invite", method: "POST", handler: withHandler(handleTeamInvite) },
@@ -193,6 +261,60 @@ export const ROUTES = [
   { path: "/auth/kick/callback", method: "GET", handler: withHandler(handleKickAuthCallback) },
   { path: "/api/kick/disconnect", method: "POST", handler: withHandler(handleKickAuthDisconnect) },
   { path: "/api/giveaways/chatroom", method: "GET", handler: withHandler(handleGiveawayChatroom) },
+  
+  // Community Events: Raffles & Flash Code Drops
+  { path: "/api/events/raffles", method: "GET", handler: withHandler(handleGetRaffles) },
+  { path: "/api/events/raffles", method: "POST", handler: withHandler(handleCreateRaffle) },
+  { path: "/api/events/raffles/draw", method: "POST", handler: withHandler(handleDrawRaffle) },
+  { path: "/api/events/drops", method: "GET", handler: withHandler(handleGetCodeDrops) },
+  { path: "/api/events/drops", method: "POST", handler: withHandler(handleCreateCodeDrop) },
+  { path: "/api/events/drops/claim", method: "POST", handler: withHandler(handleClaimCodeDrop) },
+
+  // Live Predictions & Betting
+  { path: "/api/predictions", method: "GET", handler: withHandler(handleGetPredictions) },
+  { path: "/api/predictions", method: "POST", handler: withHandler(handleCreatePrediction) },
+  { path: "/api/predictions/:id/lock", method: "POST", handler: withHandler(handleLockPrediction) },
+  { path: "/api/predictions/:id/settle", method: "POST", handler: withHandler(handleSettlePrediction) },
+  { path: "/api/predictions/:id/cancel", method: "POST", handler: withHandler(handleCancelPrediction) },
+  { path: "/api/predictions/bet", method: "POST", handler: withHandler(handlePlaceBet) },
+
+  // Lucky Wheel Game
+  { path: "/api/games/wheel/config", method: "GET", handler: withHandler(handleGetWheelConfig) },
+  { path: "/api/games/wheel/config", method: "POST", handler: withHandler(handleUpdateWheelConfig) },
+  { path: "/api/games/wheel/spin", method: "POST", handler: withHandler(handleSpinWheel) },
+
+  // Seasonal Battle Pass & Progression
+  { path: "/api/battlepass/season", method: "GET", handler: withHandler(handleGetSeason) },
+  { path: "/api/battlepass/season", method: "POST", handler: withHandler(handleCreateSeason) },
+  { path: "/api/battlepass/claim", method: "POST", handler: withHandler(handleClaimTierReward) },
+  { path: "/api/battlepass/award-xp", method: "POST", handler: withHandler(handleAwardXp) },
+
+  // OBS Live Stream Overlays & Alerts
+  { path: "/overlay/prediction", method: "GET", handler: withHandler(handleOverlayPredictionPage) },
+  { path: "/overlay/alerts", method: "GET", handler: withHandler(handleOverlayAlertsPage) },
+  { path: "/api/overlays/active-events", method: "GET", handler: withHandler(handleGetActiveEvents) },
+
+  // Daily Quests & Streaks
+  { path: "/api/quests/daily", method: "GET", handler: withHandler(handleGetDailyQuests) },
+  { path: "/api/quests/claim", method: "POST", handler: withHandler(handleClaimQuestReward) },
+  { path: "/api/quests/progress", method: "POST", handler: withHandler(handleTrackQuestProgress) },
+
+  // Viewer 1v1 Duels
+  { path: "/api/duels/active", method: "GET", handler: withHandler(handleGetDuels) },
+  { path: "/api/duels/create", method: "POST", handler: withHandler(handleCreateDuel) },
+  { path: "/api/duels/:id/accept", method: "POST", handler: withHandler(handleAcceptDuel) },
+  { path: "/api/duels/:id/decline", method: "POST", handler: withHandler(handleDeclineDuel) },
+
+  // Tournaments & Elimination Brackets
+  { path: "/api/tournaments", method: "GET", handler: withHandler(handleGetTournaments) },
+  { path: "/api/tournaments", method: "POST", handler: withHandler(handleCreateTournament) },
+  { path: "/api/tournaments/:id/score", method: "POST", handler: withHandler(handleUpdateMatchScore) },
+  { path: "/api/tournaments/:id/bracket", method: "GET", handler: withHandler(handleGetBracket) },
+
+  // One-Click CSV Data Exports
+  { path: "/api/export/raffle-winners.csv", method: "GET", handler: withHandler(handleExportRaffleWinnersCsv) },
+  { path: "/api/export/drop-claims.csv", method: "GET", handler: withHandler(handleExportDropClaimsCsv) },
+  { path: "/api/export/predictions.csv", method: "GET", handler: withHandler(handleExportPredictionsCsv) },
 
   // Credits / shop dashboard API
   { path: "/api/credits/status", method: "GET", handler: withHandler(handleCreditsStatus) },
@@ -207,6 +329,7 @@ export const ROUTES = [
   { path: "/api/credits/viewer/history", method: "GET", handler: withHandler(handleCreditsViewerHistory) },
   { path: "/api/credits/activity", method: "GET", handler: withHandler(handleCreditsActivity) },
   { path: "/api/credits/viewers/:id/balance", method: "POST", handler: withHandler(handleCreditsAdjustBalance) },
+  { path: "/api/credits/tip", method: "POST", handler: withHandler(handleCreditsAdjustBalance) },
   { path: "/api/credits/reconcile", method: "GET", handler: withHandler(handleCreditsReconcile) },
   { path: "/api/credits/viewers/:id/block", method: "POST", handler: withHandler(handleCreditsBlockViewer) },
 

@@ -46,9 +46,14 @@ if ($bot -and -not (Test-Path "$root\apps\bot\.dev.vars")) {
 Write-Host "[build] Compiling shared TypeScript..."
 & $nodeExe "$root\build-shared.mjs" 2>&1 | Out-Null
 
-# 4. Build leaderboard assets
+# 4. Build leaderboard assets (build.js resolves paths relative to apps/leaderboard)
 Write-Host "[build] Bundling leaderboard assets..."
-& $nodeExe "$root\apps\leaderboard\build.js" 2>&1 | Out-Null
+Push-Location "$root\apps\leaderboard"
+try {
+  & $nodeExe "$root\apps\leaderboard\build.js" 2>&1 | Out-Null
+} finally {
+  Pop-Location
+}
 
 # 5. Start Workers
 New-Item -ItemType Directory -Force -Path $logs | Out-Null

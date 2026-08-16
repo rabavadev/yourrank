@@ -172,7 +172,10 @@ const metric = (value) => value == null ? UNKNOWN : value;
 function renderRewardRow(m) {
   return `<td><b>${esc(m.kick_reward_title)}</b><br><span class="hint">${esc(m.kick_reward_id)}</span></td><td class="hint">Kick reward redeemed · ${m.kick_reward_cost} points</td><td class="num"><b>+${m.credits} credits</b></td><td><input class="v3-toggle" type="checkbox" ${m.active ? "checked" : ""} data-toggle-reward="${esc(m.id)}" /></td><td class="ta-r"><button class="btn btn--sm" data-edit-reward="${esc(m.id)}">Edit</button> <button class="btn btn--sm btn--danger" data-del-reward="${esc(m.id)}">Delete</button></td>`;
 }
-function renderViewerRow(v) { return `<td>${esc(v.kick_username || v.kick_user_id)}${v.blocked ? ' <span class="v3-chip v3-chip--cancelled">blocked</span>' : ""}</td><td class="num">${v.balance}</td><td class="num">${v.total_earned}</td><td class="num">${v.total_spent}</td><td>${fmtDate(v.last_earned_at || v.created_at)}</td><td class="ta-r"><button class="btn btn--sm ${v.blocked ? "btn--accent" : "btn--danger"}" data-block="${esc(v.id)}" data-blocked="${v.blocked ? "1" : ""}">${v.blocked ? "Unblock" : "Block"}</button></td>`; }
+function renderViewerRow(v) {
+  const uname = v.kick_username || v.kick_user_id || "Viewer";
+  return `<td>${esc(uname)}${v.blocked ? ' <span class="v3-chip v3-chip--cancelled">blocked</span>' : ""}</td><td class="num"><b>${v.balance}</b></td><td class="num">${v.total_earned}</td><td class="num">${v.total_spent}</td><td>${fmtDate(v.last_earned_at || v.created_at)}</td><td class="ta-r"><button class="btn btn--sm btn--accent" data-tip-viewer="${esc(v.id)}" data-viewer-name="${esc(uname)}" data-viewer-balance="${v.balance}" title="Tip points to @${esc(uname)}">🎁 Tip</button> <button class="btn btn--sm ${v.blocked ? "btn--accent" : "btn--danger"}" data-block="${esc(v.id)}" data-blocked="${v.blocked ? "1" : ""}">${v.blocked ? "Unblock" : "Block"}</button></td>`;
+}
 function renderRedemptionRow(r) { return `<td><b>${esc(r.kick_username || r.kick_user_id)}</b></td><td>${esc(r.item_name)}</td><td class="num"><b>${r.cost}</b><span class="hint">cr</span></td><td>${statusChip(r.status)}</td><td title="${esc(fmtDate(r.created_at))}">${relative(r.created_at)}</td><td class="ta-r">${r.status === "pending" ? `<button class="btn btn--sm" data-cancel="${esc(r.id)}">Cancel</button> <button class="btn btn--sm btn--accent" data-fulfill="${esc(r.id)}">Fulfil</button>` : ""}</td>`; }
 function renderShopCards(items) {
   const root = $("cr-shop-list"); if (!root) return;
@@ -183,7 +186,10 @@ function renderShopCards(items) {
   const pages = Math.max(1, Math.ceil(sorted.length / 10)); shopPage = Math.min(shopPage, pages);
   const pageItems = sorted.slice((shopPage - 1) * 10, shopPage * 10);
   $("cr-shop-empty").hidden = filtered.length > 0;
-  root.innerHTML = pageItems.map((i) => `<article class="cr-shop-card${i.active ? "" : " is-inactive"}"><div class="cr-shop-card-head"><button class="cr-shop-card-title" type="button" data-edit-shop="${esc(i.id)}">${esc(i.name)}</button><div class="cr-shop-card-controls"><button class="cr-shop-delete" type="button" data-del-shop="${esc(i.id)}" aria-label="Disable ${esc(i.name)}" title="Disable ${esc(i.name)}">×</button><input class="v3-toggle" type="checkbox" ${i.active ? "checked" : ""} data-toggle-shop="${esc(i.id)}" aria-label="Toggle ${esc(i.name)}" /></div></div><p>${esc(i.description || "")}</p><hr /><div class="cr-shop-card-foot"><b>${i.cost} <small>cr</small></b><span>Stock: ${i.stock === null ? "∞" : `${i.stock} left`}</span></div></article>`).join("");
+  root.innerHTML = pageItems.map((i) => {
+    const imgHtml = (i.image_url || i.image || i.imageUrl) ? `<div class="cr-shop-card-thumb"><img src="${esc(i.image_url || i.image || i.imageUrl)}" alt="${esc(i.name)}" /></div>` : "";
+    return `<article class="cr-shop-card${i.active ? "" : " is-inactive"}">${imgHtml}<div class="cr-shop-card-head"><button class="cr-shop-card-title" type="button" data-edit-shop="${esc(i.id)}">${esc(i.name)}</button><div class="cr-shop-card-controls"><button class="cr-shop-delete" type="button" data-del-shop="${esc(i.id)}" aria-label="Disable ${esc(i.name)}" title="Disable ${esc(i.name)}">×</button><input class="v3-toggle" type="checkbox" ${i.active ? "checked" : ""} data-toggle-shop="${esc(i.id)}" aria-label="Toggle ${esc(i.name)}" /></div></div><p>${esc(i.description || "")}</p><hr /><div class="cr-shop-card-foot"><b>${i.cost} <small>cr</small></b><span>Stock: ${i.stock === null ? "∞" : `${i.stock} left`}</span></div></article>`;
+  }).join("");
   const controls = $("cr-shop-controls"); if (controls) { controls.querySelector("[data-shop-page]").textContent = filtered.length ? `Page ${shopPage} of ${pages} (${filtered.length})` : ""; controls.querySelector("[data-shop-prev]").disabled = shopPage <= 1; controls.querySelector("[data-shop-next]").disabled = shopPage >= pages; }
   wireDynamicActions();
 }
@@ -360,6 +366,7 @@ function wireDynamicActions() {
   document.querySelectorAll("[data-fulfill]:not([data-wired])").forEach((b) => { b.dataset.wired = "1"; b.addEventListener("click", () => updateRedemption(b.dataset.fulfill, "fulfilled", b)); });
   document.querySelectorAll("[data-cancel]:not([data-wired])").forEach((b) => { b.dataset.wired = "1"; b.addEventListener("click", () => updateRedemption(b.dataset.cancel, "cancelled", b)); });
   document.querySelectorAll("[data-block]:not([data-wired])").forEach((b) => { b.dataset.wired = "1"; b.addEventListener("click", () => toggleBlock(b.dataset.block, b.dataset.blocked === "1", b)); });
+  document.querySelectorAll("[data-tip-viewer]:not([data-wired])").forEach((b) => { b.dataset.wired = "1"; b.addEventListener("click", () => openTip(b.dataset.tipViewer, b.dataset.viewerName)); });
   document.querySelectorAll("[data-toggle-shop]:not([data-wired])").forEach((b) => { b.dataset.wired = "1"; b.addEventListener("change", () => toggleShop(b.dataset.toggleShop, b)); });
   document.querySelectorAll("[data-toggle-reward]:not([data-wired])").forEach((b) => { b.dataset.wired = "1"; b.addEventListener("change", () => toggleReward(b.dataset.toggleReward, b)); });
 }
@@ -388,9 +395,48 @@ let drawerTrigger;
 function openShop(item, trigger) {
   drawerTrigger = trigger || $("cr-shop-new");
   $("cr-shop")?.classList.add("has-drawer");
-  $("cr-shop-drawer").hidden = false; $("cr-shop-drawer-title").textContent = item ? "Edit item" : "Create item"; $("cr-shop-item-id").value = item?.id || ""; $("cr-shop-name").value = item?.name || ""; $("cr-shop-desc").value = item?.description || ""; $("cr-shop-cost").value = item?.cost || 100; $("cr-shop-stock").value = item?.stock === null ? "" : (item?.stock ?? ""); $("cr-shop-active").checked = item?.active !== false; $("cr-shop-name").focus();
+  $("cr-shop-drawer").hidden = false; $("cr-shop-drawer-title").textContent = item ? "Edit item" : "Create item"; $("cr-shop-item-id").value = item?.id || ""; $("cr-shop-name").value = item?.name || ""; $("cr-shop-desc").value = item?.description || ""; $("cr-shop-cost").value = item?.cost || 100; $("cr-shop-stock").value = item?.stock === null ? "" : (item?.stock ?? ""); $("cr-shop-active").checked = item?.active !== false; 
+  const imgData = item?.image_url || item?.image || item?.imageUrl || "";
+  const imgInput = $("cr-shop-image-data");
+  if (imgInput) imgInput.value = imgData;
+  const dropContent = $("cr-shop-drop-content");
+  const previewWrap = $("cr-shop-preview-wrap");
+  const previewImg = $("cr-shop-preview-img");
+  const progbar = $("cr-shop-progbar");
+  const nameEl = $("cr-shop-filename");
+  const sizeEl = $("cr-shop-filesize");
+  if (imgData && previewImg && previewWrap && dropContent) {
+    previewImg.src = imgData;
+    if (nameEl) nameEl.textContent = item?.name || "Uploaded image";
+    if (sizeEl) sizeEl.textContent = "Saved";
+    if (progbar) progbar.hidden = true;
+    dropContent.hidden = true;
+    previewWrap.hidden = false;
+  } else if (previewWrap && dropContent) {
+    previewWrap.hidden = true;
+    dropContent.hidden = false;
+  }
+  $("cr-shop-name").focus(); 
 }
 function closeShop() { $("cr-shop-drawer").hidden = true; $("cr-shop")?.classList.remove("has-drawer"); drawerTrigger?.focus(); }
+function openTip(viewerId, username) {
+  const drawer = $("cr-tip-drawer");
+  if (!drawer) return;
+  drawer.hidden = false;
+  $("cr-viewers")?.classList.add("has-drawer");
+  $("cr-tip-viewer-id").value = viewerId || "";
+  $("cr-tip-username").value = username || "";
+  $("cr-tip-amount").value = "100";
+  $("cr-tip-reason").value = "";
+  setStatus("cr-tip-status", "");
+  $("cr-tip-amount").focus();
+}
+function closeTip() {
+  const drawer = $("cr-tip-drawer");
+  if (!drawer) return;
+  drawer.hidden = true;
+  $("cr-viewers")?.classList.remove("has-drawer");
+}
 let activePopover;
 function closePopover(result = false) {
   if (!activePopover) return;
@@ -486,11 +532,124 @@ function wireActions() {
     catch (err) { setStatus("cr-reward-create-status", err.message, true); } finally { setLoading(btn, false); }
   });
   $("cr-shop-new")?.addEventListener("click", () => openShop()); document.querySelector("[data-cr-shop-create]")?.addEventListener("click", () => openShop()); $("cr-shop-close")?.addEventListener("click", closeShop); $("cr-shop-cancel")?.addEventListener("click", closeShop);
+
+  // Shop Item Image Uploader
+  const uploadZone = $("cr-shop-upload-zone");
+  const fileInput = $("cr-shop-file-input");
+  const browseBtn = $("cr-shop-browse-btn");
+  const removeImgBtn = $("cr-shop-remove-img");
+  const dropContent = $("cr-shop-drop-content");
+  const previewWrap = $("cr-shop-preview-wrap");
+  const previewImg = $("cr-shop-preview-img");
+  const nameEl = $("cr-shop-filename");
+  const sizeEl = $("cr-shop-filesize");
+  const progbar = $("cr-shop-progbar");
+  const progfill = $("cr-shop-progfill");
+
+  const handleFile = (file) => {
+    if (!file || !file.type.startsWith("image/")) {
+      setStatus("cr-shop-status", "Please select a valid image file (PNG, JPG, WebP, GIF).", true);
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      setStatus("cr-shop-status", "Image file must be 5 MB or smaller.", true);
+      return;
+    }
+    const reader = new FileReader();
+    if (progbar) progbar.hidden = false;
+    if (progfill) progfill.style.width = "0%";
+
+    reader.onload = (e) => {
+      const dataUrl = e.target.result;
+      const imgDataInput = $("cr-shop-image-data");
+      if (imgDataInput) imgDataInput.value = dataUrl;
+      if (previewImg) previewImg.src = dataUrl;
+      if (nameEl) nameEl.textContent = file.name;
+      const sizeStr = file.size < 1024 * 1024 ? `${(file.size / 1024).toFixed(1)} KB` : `${(file.size / (1024 * 1024)).toFixed(2)} MB`;
+      if (sizeEl) sizeEl.textContent = sizeStr;
+      if (dropContent) dropContent.hidden = true;
+      if (previewWrap) previewWrap.hidden = false;
+
+      if (progfill) {
+        progfill.style.width = "100%";
+        setTimeout(() => { if (progbar) progbar.hidden = true; }, 400);
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
+  uploadZone?.addEventListener("dragover", (e) => { e.preventDefault(); uploadZone.classList.add("is-dragover"); });
+  uploadZone?.addEventListener("dragleave", () => uploadZone.classList.remove("is-dragover"));
+  uploadZone?.addEventListener("drop", (e) => {
+    e.preventDefault();
+    uploadZone.classList.remove("is-dragover");
+    const dropped = e.dataTransfer?.files?.[0];
+    if (dropped) handleFile(dropped);
+  });
+  uploadZone?.addEventListener("click", (e) => {
+    if (e.target !== removeImgBtn && !removeImgBtn?.contains(e.target)) {
+      fileInput?.click();
+    }
+  });
+  browseBtn?.addEventListener("click", (e) => { e.stopPropagation(); fileInput?.click(); });
+  fileInput?.addEventListener("change", (e) => {
+    const f = e.target.files?.[0];
+    if (f) handleFile(f);
+  });
+  removeImgBtn?.addEventListener("click", (e) => {
+    e.stopPropagation();
+    const imgDataInput = $("cr-shop-image-data");
+    if (imgDataInput) imgDataInput.value = "";
+    if (fileInput) fileInput.value = "";
+    if (previewWrap) previewWrap.hidden = true;
+    if (dropContent) dropContent.hidden = false;
+  });
   $("cr-shop-form")?.addEventListener("submit", async (e) => {
     e.preventDefault(); const btn = e.submitter || $("cr-shop-submit"); setLoading(btn, true, "Saving…");
-    try { await api("POST", sitePath("/api/credits/shop"), { id: $("cr-shop-item-id").value || undefined, name: $("cr-shop-name").value.trim(), description: $("cr-shop-desc").value.trim(), cost: Number($("cr-shop-cost").value), stock: $("cr-shop-stock").value === "" ? null : Number($("cr-shop-stock").value), active: $("cr-shop-active").checked }); setStatus("cr-shop-status", "Shop item saved."); closeShop(); await load(); }
+    try { await api("POST", sitePath("/api/credits/shop"), { id: $("cr-shop-item-id").value || undefined, name: $("cr-shop-name").value.trim(), description: $("cr-shop-desc").value.trim(), imageUrl: $("cr-shop-image-data")?.value || undefined, cost: Number($("cr-shop-cost").value), stock: $("cr-shop-stock").value === "" ? null : Number($("cr-shop-stock").value), active: $("cr-shop-active").checked }); setStatus("cr-shop-status", "Shop item saved."); closeShop(); await load(); }
     catch (err) { setStatus("cr-shop-status", err.message, true); } finally { setLoading(btn, false); }
   });
+  $("cr-tip-open-btn")?.addEventListener("click", () => openTip("", ""));
+  $("cr-tip-close")?.addEventListener("click", closeTip);
+  $("cr-tip-cancel")?.addEventListener("click", closeTip);
+  document.querySelectorAll(".cr-tip-preset").forEach((b) => b.addEventListener("click", () => {
+    const amt = b.dataset.amount;
+    const input = $("cr-tip-amount");
+    if (input && amt) input.value = amt;
+  }));
+  $("cr-tip-form")?.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const btn = e.submitter || $("cr-tip-submit");
+    const viewerId = $("cr-tip-viewer-id").value;
+    const username = $("cr-tip-username").value.trim();
+    const amount = Number($("cr-tip-amount").value);
+    const reason = $("cr-tip-reason").value.trim();
+
+    if (!amount || amount <= 0) {
+      setStatus("cr-tip-status", "Please enter a positive amount of points.", true);
+      return;
+    }
+    if (!reason) {
+      setStatus("cr-tip-status", "Please provide a reason for the tip.", true);
+      return;
+    }
+
+    setLoading(btn, true, "Sending…");
+    try {
+      const endpoint = viewerId ? sitePath(`/api/credits/viewers/${encodeURIComponent(viewerId)}/balance`) : sitePath("/api/credits/tip");
+      await api("POST", endpoint, { delta: amount, reason, kickUsername: username });
+      setStatus("cr-tip-status", `Successfully sent +${amount} credits to @${username || "viewer"}! 🎁`);
+      setTimeout(() => {
+        closeTip();
+        load();
+      }, 900);
+    } catch (err) {
+      setStatus("cr-tip-status", err.message, true);
+    } finally {
+      setLoading(btn, false);
+    }
+  });
+
   $("cr-viewer-auth-form")?.addEventListener("submit", async (e) => {
     e.preventDefault(); const btn = e.submitter || $("cr-viewer-auth-submit"); setLoading(btn, true, "Saving…");
     try { state.viewerAuth = await api("POST", "/api/credits/viewer-auth", { kick: $("cr-viewer-auth-kick").checked, discord: $("cr-viewer-auth-discord").checked, public: $("cr-viewer-auth-public").checked }); setStatus("cr-viewer-auth-status", "Viewer login settings saved."); }

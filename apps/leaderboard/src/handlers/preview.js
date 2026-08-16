@@ -150,7 +150,7 @@ ${gamesIslandHead()}
               else if (el.matches(".yr-hero-r .yr-big")) key = "f_pool";
               
               if (key) {
-                window.parent.postMessage({ type: "yr_edit_request", key, value: newText, extra }, "*");
+                window.parent.postMessage({ type: "yr_edit_request", key, value: newText, extra }, window.location.origin);
               }
             }
           };
@@ -169,7 +169,8 @@ ${gamesIslandHead()}
       });
       
       window.addEventListener("message", (e) => {
-        if (e.data?.type === "yr_preview_update") {
+        if (e.origin !== window.location.origin) return;
+        if (e.data?.type === "yr_preview_update" && typeof e.data?.html === "string") {
           const parser = new DOMParser();
           const newDoc = parser.parseFromString(e.data.html, "text/html");
           document.body.innerHTML = newDoc.body.innerHTML;

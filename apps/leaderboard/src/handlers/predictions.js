@@ -1,0 +1,433 @@
+// Live Predictions & Voting Handlers.
+import { requireUser as defaultRequireUser, ok, bad, readJson } from "../auth.js";
+import { getByUser as defaultGetByUser, getBoardById as defaultGetBoardById } from "../site.js";
+import {
+  one as defaultOne,
+  query as defaultQuery,
+  exec as defaultExec,
+  withTransaction as defaultWithTransaction,
+} from "../../../../shared/db.js";
+import { logAudit as defaultLogAudit } from "../../../../shared/audit.js";
+
+/**
+ * GET /api/predictions — List predictions for the site
+ */
+export async function handleGetPredictions(request, env, deps = {}) {
+  const {
+    requireUser = defaultRequireUser,
+    getByUser = defaultGetByUser,
+    getBoardById = defaultGetBoardById,
+    query = defaultQuery,
+  } = deps;
+
+  const { user, res } = await requireUser(request, env);
+  if (res) return res;
+
+  const url = new URL(request.url);
+  const siteId = url.searchParams.get("siteId");
+  const site = siteId ? await getBoardById(env, user.id, siteId) : await getByUser(env, user.id);
+  if (!site) return bad("Site not found", 404);
+
+  const predictions = await query(
+    `SELECT p.id, p.title, p.options, p.status, p.winning_option_id, p.total_pool,
+            p.min_bet, p.max_bet, p.lock_at, p.settled_at, p.created_at,
+            (SELECT count(DISTINCT site_viewer_id) FROM prediction_bets WHERE prediction_id=p.id) AS participant_count,
+            (SELECT count(*) FROM prediction_bets WHERE prediction_id=p.id) AS total_bets_count
+       FROM predictions p
+      WHERE p.site_id=$1
+      ORDER BY p.created_at DESC LIMIT 50`,
+    [site.id]
+  );
+
+  return ok({ predictions: predictions || [] });
+}
+
+/**
+ * POST /api/predictions — Create a new prediction
+ */
+export async function handleCreatePrediction(request, env, deps = {}) {
+  const {
+    requireUser = defaultRequireUser,
+    getByUser = defaultGetByUser,
+    getBoardById = defaultGetBoardById,
+    one = defaultOne,
+    logAudit = defaultLogAudit,
+  } = deps;
+
+  const { user, res } = await requireUser(request, env);
+  if (res) return res;
+
+  const body = await readJson(request);
+  const title = String(body?.title || "").trim();
+  if (!title) return bad("Prediction title is required.");
+
+  // Options validation (minimum 2 options)
+  const rawOptions = Array.isArray(body?.options) ? body.options : [
+    { id: "yes", label: "Yes / نعم" },
+    { id: "no", label: "No / لا" },
+  ];
+
+  if (rawOptions.length < 2) return bad("At least 2 options are required.");
+
+  const options = rawOptions.map((opt, idx) => ({
+    id: String(opt.id || `opt_${idx + 1}`).trim().toLowerCase(),
+    label: String(opt.label || `Option ${idx + 1}`).trim().slice(0, 80),
+    total_points: 0,
+    total_bets: 0,
+  }));
+
+  const minBet = Math.max(1, parseInt(body?.minBet, 10) || 10);
+  const maxBet = Math.max(minBet, parseInt(body?.maxBet, 10) || 1000);
+  const lockMinutes = parseInt(body?.lockMinutes, 10) || 5;
+  const lockAt = lockMinutes > 0 ? new Date(Date.now() + lockMinutes * 60000).toISOString() : null;
+
+  const url = new URL(request.url);
+  const siteId = body?.siteId || url.searchParams.get("siteId");
+  const site = siteId ? await getBoardById(env, user.id, siteId) : await getByUser(env, user.id);
+  if (!site) return bad("Site not found", 404);
+
+  const result = await one(
+    `INSERT INTO predictions (site_id, title, options, min_bet, max_bet, lock_at)
+     VALUES ($1, $2, $3, $4, $5, $6)
+     RETURNING id, title, options, status, total_pool, min_bet, max_bet, lock_at, created_at`,
+    [site.id, title, JSON.stringify(options), minBet, maxBet, lockAt]
+  );
+
+  await logAudit({
+    actorId: user.id,
+    action: "prediction_create",
+    entityType: "prediction",
+    entityId: result.id,
+    request,
+    details: { title, minBet, maxBet, optionsCount: options.length },
+  });
+
+  return ok({ prediction: result, message: "Live prediction created! 🔮" });
+}
+
+/**
+ * POST /api/predictions/:id/lock — Lock betting on prediction
+ */
+export async function handleLockPrediction(request, env, deps = {}) {
+  const {
+    requireUser = defaultRequireUser,
+    one = defaultOne,
+    exec = defaultExec,
+    logAudit = defaultLogAudit,
+  } = deps;
+
+  const { user, res } = await requireUser(request, env);
+  if (res) return res;
+
+  const body = await readJson(request);
+  const predictionId = String(body?.predictionId || "").trim();
+  if (!predictionId) return bad("Prediction ID is required.");
+
+  const pred = await one(
+    `SELECT p.id, p.status FROM predictions p
+       JOIN sites s ON s.id = p.site_id
+      WHERE p.id=$1 AND s.user_id=$2`,
+    [predictionId, user.id]
+  );
+
+  if (!pred) return bad("Prediction not found or access denied.", 404);
+  if (pred.status !== "open") return bad("Prediction is not currently open.", 400);
+
+  await exec("UPDATE predictions SET status='locked', updated_at=now() WHERE id=$1", [predictionId]);
+
+  await logAudit({
+    actorId: user.id,
+    action: "prediction_lock",
+    entityType: "prediction",
+    entityId: predictionId,
+    request,
+    details: {},
+  });
+
+  return ok({ predictionId, status: "locked", message: "Prediction locked. No more bets accepted." });
+}
+
+/**
+ * POST /api/predictions/:id/settle — Settle prediction and distribute proportional payouts
+ */
+export async function handleSettlePrediction(request, env, deps = {}) {
+  const {
+    requireUser = defaultRequireUser,
+    one = defaultOne,
+    query = defaultQuery,
+    withTransaction = defaultWithTransaction,
+    logAudit = defaultLogAudit,
+  } = deps;
+
+  const { user, res } = await requireUser(request, env);
+  if (res) return res;
+
+  const body = await readJson(request);
+  const predictionId = String(body?.predictionId || "").trim();
+  const winningOptionId = String(body?.winningOptionId || "").trim().toLowerCase();
+
+  if (!predictionId || !winningOptionId) {
+    return bad("Prediction ID and winning option ID are required.");
+  }
+
+  const pred = await one(
+    `SELECT p.id, p.site_id, p.title, p.options, p.status, p.total_pool
+       FROM predictions p
+       JOIN sites s ON s.id = p.site_id
+      WHERE p.id=$1 AND s.user_id=$2`,
+    [predictionId, user.id]
+  );
+
+  if (!pred) return bad("Prediction not found or access denied.", 404);
+  if (pred.status === "settled" || pred.status === "cancelled") {
+    return bad("Prediction has already been resolved or cancelled.", 400);
+  }
+
+  const bets = await query(
+    `SELECT b.id, b.site_viewer_id, b.viewer_id, b.option_id, b.amount
+       FROM prediction_bets b
+      WHERE b.prediction_id=$1`,
+    [predictionId]
+  );
+
+  const winningBets = bets.filter((b) => b.option_id === winningOptionId);
+  const totalPool = pred.total_pool || 0;
+  const winningTotal = winningBets.reduce((sum, b) => sum + b.amount, 0);
+
+  const results = await withTransaction(async (tx) => {
+    // 1. If no winning bets, refund everyone
+    if (winningTotal === 0 || winningBets.length === 0) {
+      for (const bet of bets) {
+        await tx.unsafe(
+          "UPDATE site_viewers SET balance = balance + $1, updated_at=now() WHERE id=$2",
+          [bet.amount, bet.site_viewer_id]
+        );
+        await tx.unsafe(
+          `INSERT INTO credit_ledger (site_viewer_id, type, amount, description)
+           VALUES ($1, 'refund', $2, $3)`,
+          [bet.site_viewer_id, bet.amount, `Prediction Refund (No Winners): ${pred.title}`]
+        );
+      }
+      await tx.unsafe(
+        "UPDATE predictions SET status='settled', winning_option_id=$1, settled_at=now(), updated_at=now() WHERE id=$2",
+        [winningOptionId, predictionId]
+      );
+      return { totalWinners: 0, totalPayout: 0, refunded: true };
+    }
+
+    // 2. Distribute proportional dynamic payout
+    let totalDistributed = 0;
+    for (const winBet of winningBets) {
+      const share = winBet.amount / winningTotal;
+      const payout = Math.floor(share * totalPool);
+      totalDistributed += payout;
+
+      await tx.unsafe(
+        "UPDATE prediction_bets SET payout=$1 WHERE id=$2",
+        [payout, winBet.id]
+      );
+
+      await tx.unsafe(
+        "UPDATE site_viewers SET balance = balance + $1, total_earned = total_earned + $1, updated_at=now() WHERE id=$2",
+        [payout, winBet.site_viewer_id]
+      );
+
+      await tx.unsafe(
+        `INSERT INTO credit_ledger (site_viewer_id, type, amount, description)
+         VALUES ($1, 'win', $2, $3)`,
+        [winBet.site_viewer_id, payout, `Prediction Payout (${winningOptionId.toUpperCase()}): ${pred.title}`]
+      );
+    }
+
+    await tx.unsafe(
+      "UPDATE predictions SET status='settled', winning_option_id=$1, settled_at=now(), updated_at=now() WHERE id=$2",
+      [winningOptionId, predictionId]
+    );
+
+    return { totalWinners: winningBets.length, totalPayout: totalDistributed, refunded: false };
+  });
+
+  await logAudit({
+    actorId: user.id,
+    action: "prediction_settle",
+    entityType: "prediction",
+    entityId: predictionId,
+    request,
+    details: { winningOptionId, totalWinners: results.totalWinners, totalPayout: results.totalPayout },
+  });
+
+  return ok({
+    predictionId,
+    status: "settled",
+    winningOptionId,
+    totalWinners: results.totalWinners,
+    totalPayout: results.totalPayout,
+    message: results.refunded
+      ? "No bets were placed on the winning option; all bets were refunded."
+      : `🎉 Prediction settled! Distributed ${results.totalPayout} credits to ${results.totalWinners} winners!`,
+  });
+}
+
+/**
+ * POST /api/predictions/:id/cancel — Cancel prediction and refund all bets
+ */
+export async function handleCancelPrediction(request, env, deps = {}) {
+  const {
+    requireUser = defaultRequireUser,
+    one = defaultOne,
+    query = defaultQuery,
+    withTransaction = defaultWithTransaction,
+    logAudit = defaultLogAudit,
+  } = deps;
+
+  const { user, res } = await requireUser(request, env);
+  if (res) return res;
+
+  const body = await readJson(request);
+  const predictionId = String(body?.predictionId || "").trim();
+  if (!predictionId) return bad("Prediction ID is required.");
+
+  const pred = await one(
+    `SELECT p.id, p.title, p.status FROM predictions p
+       JOIN sites s ON s.id = p.site_id
+      WHERE p.id=$1 AND s.user_id=$2`,
+    [predictionId, user.id]
+  );
+
+  if (!pred) return bad("Prediction not found or access denied.", 404);
+  if (pred.status === "settled" || pred.status === "cancelled") {
+    return bad("Prediction is already resolved or cancelled.", 400);
+  }
+
+  const bets = await query(
+    `SELECT b.id, b.site_viewer_id, b.amount FROM prediction_bets b WHERE b.prediction_id=$1`,
+    [predictionId]
+  );
+
+  await withTransaction(async (tx) => {
+    for (const bet of bets) {
+      await tx.unsafe(
+        "UPDATE site_viewers SET balance = balance + $1, updated_at=now() WHERE id=$2",
+        [bet.amount, bet.site_viewer_id]
+      );
+      await tx.unsafe(
+        `INSERT INTO credit_ledger (site_viewer_id, type, amount, description)
+         VALUES ($1, 'refund', $2, $3)`,
+        [bet.site_viewer_id, bet.amount, `Cancelled Prediction Refund: ${pred.title}`]
+      );
+    }
+    await tx.unsafe("UPDATE predictions SET status='cancelled', updated_at=now() WHERE id=$1", [predictionId]);
+  });
+
+  await logAudit({
+    actorId: user.id,
+    action: "prediction_cancel",
+    entityType: "prediction",
+    entityId: predictionId,
+    request,
+    details: { betsRefunded: bets.length },
+  });
+
+  return ok({ predictionId, status: "cancelled", message: `Prediction cancelled and ${bets.length} bets refunded.` });
+}
+
+/**
+ * POST /api/predictions/bet — Viewer places a wager on an option
+ */
+export async function handlePlaceBet(request, env, deps = {}) {
+  const {
+    one = defaultOne,
+    withTransaction = defaultWithTransaction,
+  } = deps;
+
+  const body = await readJson(request);
+  const predictionId = String(body?.predictionId || "").trim();
+  const optionId = String(body?.optionId || "").trim().toLowerCase();
+  const amount = parseInt(body?.amount, 10) || 0;
+  const viewerId = String(body?.viewerId || "").trim();
+
+  if (!predictionId || !optionId || amount <= 0 || !viewerId) {
+    return bad("Prediction, option, positive amount, and viewerId are required.");
+  }
+
+  const pred = await one(
+    "SELECT id, site_id, title, options, status, min_bet, max_bet, lock_at FROM predictions WHERE id=$1",
+    [predictionId]
+  );
+
+  if (!pred) return bad("Prediction not found.", 404);
+  if (pred.status !== "open") return bad("Betting on this prediction is closed.", 400);
+
+  if (pred.lock_at && new Date(pred.lock_at).getTime() < Date.now()) {
+    return bad("Prediction betting time has ended.", 400);
+  }
+
+  if (amount < pred.min_bet || amount > pred.max_bet) {
+    return bad(`Bet amount must be between ${pred.min_bet} and ${pred.max_bet} points.`);
+  }
+
+  const siteViewer = await one(
+    "SELECT id, balance FROM site_viewers WHERE site_id=$1 AND viewer_id=$2",
+    [pred.site_id, viewerId]
+  );
+
+  if (!siteViewer) return bad("Viewer not found on this site.", 404);
+  if ((siteViewer.balance || 0) < amount) {
+    return bad(`Insufficient credits. You have ${siteViewer.balance || 0} pts.`);
+  }
+
+  const outcome = await withTransaction(async (tx) => {
+    // Deduct viewer balance
+    await tx.unsafe(
+      "UPDATE site_viewers SET balance = balance - $1, updated_at=now() WHERE id=$2",
+      [amount, siteViewer.id]
+    );
+
+    // Insert bet
+    const bet = await tx.one(
+      `INSERT INTO prediction_bets (prediction_id, site_viewer_id, viewer_id, option_id, amount)
+       VALUES ($1, $2, $3, $4, $5)
+       RETURNING id, amount, option_id, created_at`,
+      [pred.id, siteViewer.id, viewerId, optionId, amount]
+    );
+
+    // Update prediction pool & option stats
+    const rawOpts = typeof pred.options === "string" ? JSON.parse(pred.options) : (pred.options || []);
+    const updatedOpts = rawOpts.map((opt) => {
+      if (opt.id === optionId) {
+        return {
+          ...opt,
+          total_points: (opt.total_points || 0) + amount,
+          total_bets: (opt.total_bets || 0) + 1,
+        };
+      }
+      return opt;
+    });
+
+    await tx.unsafe(
+      "UPDATE predictions SET total_pool = total_pool + $1, options = $2, updated_at=now() WHERE id=$3",
+      [amount, JSON.stringify(updatedOpts), pred.id]
+    );
+
+    await tx.unsafe(
+      `INSERT INTO credit_ledger (site_viewer_id, type, amount, description)
+       VALUES ($1, 'bet', $2, $3)`,
+      [siteViewer.id, -amount, `Prediction Bet (${optionId.toUpperCase()}): ${pred.title}`]
+    );
+
+    return {
+      betId: bet.id,
+      amount,
+      newBalance: siteViewer.balance - amount,
+      options: updatedOpts,
+    };
+  });
+
+  return ok({
+    betId: outcome.betId,
+    amount: outcome.amount,
+    newBalance: outcome.newBalance,
+    options: outcome.options,
+    message: `Bet placed: ${amount} points on ${optionId.toUpperCase()}! 🔮`,
+  });
+}

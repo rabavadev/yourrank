@@ -1,5 +1,5 @@
 // Dashboard shell: sidebar navigation and mobile drawer.
-import { $ } from "./utils.js";
+import { $, copyToClipboard, showToast } from "./utils.js";
 import { clearDirty, state, subscribe } from "./state.js";
 import { renderOverviewSummary } from "./overview.js";
 import { fitDesignPreview, loadStats, refreshDesignPreview } from "./site.js";
@@ -288,6 +288,17 @@ export function setupEditorTabs() {
           el.hidden = el.dataset.egroup !== group;
         });
       }
+      const TAB_NAME_MAP = {
+        setup: "Site details",
+        players: "Racers & scores",
+        design: "Theme & styling",
+        share: "Overlay & share",
+        history: "Past winners",
+      };
+      const crumbCurrent = document.querySelector(".v3-crumbs span[aria-current='page']");
+      if (crumbCurrent) {
+        crumbCurrent.textContent = TAB_NAME_MAP[group] || buttons.find((b) => b.dataset.egroup === group)?.textContent.trim() || group;
+      }
       // The preview measures off the visible column height; re-fit after toggling.
       setTimeout(fitDesignPreview, 0);
     }
@@ -371,6 +382,26 @@ export function setupShell() {
     }
     lastRouteUrl = destination;
     navTo(page, tab);
+  });
+
+  // OBS Overlays Quick-Copy Hub buttons
+  $("ov-btn-copy-pred-hud")?.addEventListener("click", async () => {
+    const slug = state.SLUG || "";
+    const url = `${location.origin}/overlay/prediction?site=${slug}`;
+    await copyToClipboard(url);
+    showToast("OBS Live Prediction HUD URL copied to clipboard!", "success");
+  });
+  $("ov-btn-copy-alerts")?.addEventListener("click", async () => {
+    const slug = state.SLUG || "";
+    const url = `${location.origin}/overlay/alerts?site=${slug}`;
+    await copyToClipboard(url);
+    showToast("OBS Stream Alerts & Chimes URL copied to clipboard!", "success");
+  });
+  $("ov-btn-copy-ticker")?.addEventListener("click", async () => {
+    const slug = state.SLUG || "";
+    const url = `${location.origin}/${slug}/overlay?layout=ticker`;
+    await copyToClipboard(url);
+    showToast("OBS Leaderboard Ticker URL copied to clipboard!", "success");
   });
 
   // Allow nested dashboard modules to request navigation without a circular import.

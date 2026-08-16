@@ -1,11 +1,11 @@
 import type { NavItem } from "../../../../shared/dashboard-chrome.js";
 
 const ICONS: Record<string, string> = {
-  overview: '<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/>',
-  bots: '<rect x="4" y="6" width="16" height="12" rx="2"/><circle cx="9" cy="12" r="1"/><circle cx="15" cy="12" r="1"/><path d="M9 15h6"/><path d="M12 6V4"/>',
-  offers: '<rect x="3" y="8" width="18" height="13" rx="2"/><path d="M12 8V3"/><path d="M8 3h8"/>',
-  commands: '<path d="M7 21 17 3"/><rect x="3" y="3" width="4" height="4" rx="1"/><rect x="17" y="17" width="4" height="4" rx="1"/>',
-  broadcasts: '<path d="M3 11l18-5v12L3 13v-2z"/><circle cx="11" cy="11" r="2"/>',
+  overview: '<path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/>',
+  bots: '<rect width="16" height="12" x="4" y="8" rx="2"/><path d="M12 2v6M9 2h6M2 14h2M20 14h2M9 13v2M15 13v2"/>',
+  offers: '<path d="M12 2H2v10l9.29 9.29c.94.94 2.48.94 3.42 0l6.58-6.58c.94-.94.94-2.48 0-3.42L12 2Z"/><circle cx="7" cy="7" r=".5" fill="currentColor"/>',
+  commands: '<rect width="18" height="18" x="3" y="3" rx="3"/><path d="m8 10 2 2-2 2M13 14h3"/>',
+  broadcasts: '<path d="m3 11 18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/>',
 };
 
 export const pageLinks = [

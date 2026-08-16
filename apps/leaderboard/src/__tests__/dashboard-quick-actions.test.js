@@ -83,18 +83,16 @@ describe("dashboard overview quick actions", () => {
     const html = dashboardHtml();
     expect(html).toContain('data-nav="home"');
     expect(html).toContain('data-nav="board"');
-    expect(html).toContain('data-nav="settings"');
+    expect(html).toContain('data-nav="account"');
     expect(html).toContain('lb-side-group');
     // Icons are real inline SVGs, not emoji.
     expect(html).not.toContain('aria-hidden="true">🔌</span>');
     expect(html).toContain('>Overview</a>');
-    // Every feature remains visible in one grouped list instead of being hidden
-    // behind workspace switches or editor tabs.
     for (const label of [
-      "Site details", "Racers &amp; scores", "Theme &amp; styling", "Mini-games",
-      "Overlay &amp; share", "Past winners", "Traffic &amp; stats", "Viewer balances",
-      "Reward orders", "Rewards catalog", "Earning rules", "Points ledger",
-      "Kick connection", "Leaderboard settings", "All sites", "Account &amp; billing",
+      "Racers &amp; scores", "Theme &amp; overlays", "Mini-games &amp; history",
+      "Live giveaways", "Rewards &amp; shop", "Viewer points &amp; stats",
+      "Telegram bot",
+      "Sites &amp; integrations", "Account &amp; billing",
       "Help &amp; support",
     ]) expect(html).toContain(`>${label}</a>`);
     expect(html).toContain('>LEADERBOARD</div>');

@@ -447,7 +447,12 @@ export function collect() {
   if (state.ACTIVE_SITE_ID) out.siteId = state.ACTIVE_SITE_ID;
   if (state.SITE_UPDATED_AT) out.expectedUpdatedAt = state.SITE_UPDATED_AT;
   if (state.ME && state.ME.plan !== "free") {
-    out.branding = { accentA: $("c_a").value, accentB: $("c_b").value, font: $("f_font")?.value || state.CURRENT_BRANDING?.font || "Inter" };
+    out.branding = {
+      template: state.CURRENT_BRANDING?.template || "cyber_arcade",
+      accentA: $("c_a").value,
+      accentB: $("c_b").value,
+      font: $("f_font")?.value || state.CURRENT_BRANDING?.font || "Inter",
+    };
     if (state.LOGO !== undefined) out.branding.logo = state.LOGO;
   }
   if (isPro()) {
@@ -756,6 +761,12 @@ function updateThemeSelection() {
   if (state.CURRENT_BRANDING.accentA) $("c_a").value = state.CURRENT_BRANDING.accentA;
   if (state.CURRENT_BRANDING.accentB) $("c_b").value = state.CURRENT_BRANDING.accentB;
   const font = $("f_font"); if (font) font.value = state.CURRENT_BRANDING.font || "Inter";
+  const activeTpl = state.CURRENT_BRANDING.template || "cyber_arcade";
+  document.querySelectorAll("#templateSelectorGrid [data-template]").forEach((btn) => {
+    const isSel = btn.dataset.template === activeTpl;
+    btn.classList.toggle("is-selected", isSel);
+    btn.setAttribute("aria-pressed", String(isSel));
+  });
   renderColorPresets();
   updateDesignPreview();
 }
@@ -803,6 +814,7 @@ export function applyTheme(accentA, accentB, label, font = null) {
 
 export function renderBranding(br) {
   state.CURRENT_BRANDING = {
+    template: br.template || "cyber_arcade",
     accentA: br.accentA || null,
     accentB: br.accentB || null,
     font: br.font || "Inter",
@@ -865,6 +877,17 @@ $("logoFile")?.addEventListener("change", () => {
 $("applyCustomColors")?.addEventListener("click", () => applyTheme($("c_a")?.value, $("c_b")?.value, "Custom colors"));
 $("colorsReset")?.addEventListener("click", () => applyTheme(COLOR_PRESETS[0].accentA, COLOR_PRESETS[0].accentB, COLOR_PRESETS[0].name));
 $("f_font")?.addEventListener("change", () => applyTheme($("c_a")?.value, $("c_b")?.value, "Font"));
+
+document.querySelectorAll("#templateSelectorGrid [data-template]").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    const tpl = btn.dataset.template;
+    state.CURRENT_BRANDING = { ...state.CURRENT_BRANDING, template: tpl };
+    updateThemeSelection();
+    markDirty();
+    const status = $("status");
+    if (status) status.textContent = `Template switched — click Save changes to publish.`;
+  });
+});
 
 export function renderNotifications(n) {
   const paid = state.ME.plan !== "free";
@@ -1063,13 +1086,187 @@ export function renderOverlay() {
   }
 }
 
-export function renderDomain() {
+export async function renderDomain() {
   const pro = state.ME.plan === "pro" || state.ME.plan === "agency";
   const domainBody = $("domainBody");
   const domainLock = $("domainLock");
   if (domainBody) domainBody.hidden = !pro;
   if (domainLock) domainLock.hidden = pro;
 
+  // Load existing domain status
+  try {
+    const activeSiteParam = state.ACTIVE_SITE_ID ? `?siteId=${encodeURIComponent(state.ACTIVE_SITE_ID)}` : "";
+    const res = await fetch(`/api/domains/my-domain${activeSiteParam}`, {
+      credentials: "include",
+      headers: { "x-csrf-token": getCsrf() },
+    });
+    const data = await res.json();
+    if (data.ok && data.customDomain) {
+      $("domainManageCard")?.removeAttribute("hidden");
+      if ($("domainManageName")) $("domainManageName").textContent = data.customDomain;
+      if ($("domainManageExpiry")) {
+        $("domainManageExpiry").textContent = data.order?.expires_at ? new Date(data.order.expires_at).toLocaleDateString() : "Managed externally";
+      }
+      if ($("domainManageLockStatus")) {
+        $("domainManageLockStatus").textContent = data.order?.locked ? "🔒 Enabled (Protected)" : "🔓 Unlocked (Ready for transfer)";
+      }
+      if ($("domainToggleLockBtn")) {
+        $("domainToggleLockBtn").textContent = data.order?.locked ? "Unlock for transfer" : "Lock domain";
+        $("domainToggleLockBtn").onclick = async () => {
+          $("domainManageStatus").textContent = "Updating lock status…";
+          try {
+            const lRes = await fetch("/api/domains/toggle-lock", {
+              method: "POST",
+              credentials: "include",
+              headers: { "content-type": "application/json", "x-csrf-token": getCsrf() },
+              body: JSON.stringify({ domain: data.customDomain, lock: !data.order?.locked }),
+            });
+            const lData = await lRes.json();
+            if (lData.ok) {
+              $("domainManageStatus").textContent = lData.message;
+              await renderDomain();
+            } else {
+              $("domainManageStatus").textContent = lData.error || "Failed to update lock.";
+            }
+          } catch (e) {
+            $("domainManageStatus").textContent = "Network error.";
+          }
+        };
+      }
+      if ($("domainGetAuthCodeBtn")) {
+        $("domainGetAuthCodeBtn").onclick = async () => {
+          $("domainManageStatus").textContent = "Requesting EPP Auth code…";
+          try {
+            const aRes = await fetch("/api/domains/transfer-auth-code", {
+              method: "POST",
+              credentials: "include",
+              headers: { "content-type": "application/json", "x-csrf-token": getCsrf() },
+              body: JSON.stringify({ domain: data.customDomain }),
+            });
+            const aData = await aRes.json();
+            if (aData.ok) {
+              $("domainManageStatus").innerHTML = `<b>EPP Transfer Code:</b> <code class="domain-auth-code">${esc(aData.authCode)}</code><br><small class="muted">${esc(aData.icannNote)}</small>`;
+            } else {
+              $("domainManageStatus").textContent = aData.error || "Failed to retrieve transfer code.";
+            }
+          } catch (e) {
+            $("domainManageStatus").textContent = "Network error.";
+          }
+        };
+      }
+      if ($("domainDisconnectBtn")) {
+        $("domainDisconnectBtn").onclick = async () => {
+          if (!confirm(`Are you sure you want to disconnect ${data.customDomain} from this leaderboard?`)) return;
+          $("domainManageStatus").textContent = "Disconnecting…";
+          try {
+            const dRes = await fetch("/api/site/domain/verify", {
+              method: "POST",
+              credentials: "include",
+              headers: { "content-type": "application/json", "x-csrf-token": getCsrf() },
+              body: JSON.stringify({ remove: true, siteId: state.ACTIVE_SITE_ID }),
+            });
+            const dData = await dRes.json();
+            if (dData.ok) {
+              $("domainManageCard")?.setAttribute("hidden", "true");
+              $("domainManageStatus").textContent = "Domain disconnected.";
+              await renderDomain();
+            }
+          } catch (e) {
+            $("domainManageStatus").textContent = "Network error disconnecting domain.";
+          }
+        };
+      }
+    } else {
+      $("domainManageCard")?.setAttribute("hidden", "true");
+    }
+  } catch (err) {
+    logError("domain-status", err);
+  }
+
+  // Domain search & 1-click purchase wiring
+  const searchBtn = $("domainSearchBtn");
+  const searchInput = $("domainSearchInput");
+  const resultsContainer = $("domainSearchResults");
+
+  const runSearch = async () => {
+    const query = searchInput?.value.trim().toLowerCase();
+    if (!query) return;
+    $("domainSearchStatus").textContent = "Searching available domains…";
+    searchBtn.disabled = true;
+    try {
+      const sRes = await fetch("/api/domains/search", {
+        method: "POST",
+        credentials: "include",
+        headers: { "content-type": "application/json", "x-csrf-token": getCsrf() },
+        body: JSON.stringify({ query }),
+      });
+      const sData = await sRes.json();
+      if (sData.ok && sData.results) {
+        $("domainSearchStatus").textContent = "";
+        resultsContainer.removeAttribute("hidden");
+        resultsContainer.innerHTML = sData.results.map((r) => `
+          <div class="domain-result-card ${r.available ? "is-available" : "is-taken"}">
+            <div class="domain-result-name">
+              <strong>${esc(r.domain)}</strong>
+              <span class="domain-tld-badge">.${esc(r.tld)}</span>
+            </div>
+            <div class="domain-result-action">
+              <span class="domain-result-price">${r.available ? esc(r.priceFormatted) : "Taken"}</span>
+              ${r.available ? `<button class="btn btn--sm btn--accent" data-buy-domain="${esc(r.domain)}" data-price="${esc(r.priceFormatted)}">Buy & Connect</button>` : `<span class="domain-taken-lbl">Unavailable</span>`}
+            </div>
+          </div>
+        `).join("");
+
+        // Wire purchase buttons
+        resultsContainer.querySelectorAll("[data-buy-domain]").forEach((b) => {
+          b.addEventListener("click", async () => {
+            const domainToBuy = b.dataset.buyDomain;
+            const price = b.dataset.price;
+            if (!confirm(`Register and connect ${domainToBuy} for ${price}? Automated DNS and SSL will be configured immediately.`)) return;
+            b.disabled = true;
+            b.textContent = "Registering…";
+            $("domainSearchStatus").textContent = `Registering ${domainToBuy} and provisioning SSL certificate…`;
+            try {
+              const pRes = await fetch("/api/domains/purchase", {
+                method: "POST",
+                credentials: "include",
+                headers: { "content-type": "application/json", "x-csrf-token": getCsrf() },
+                body: JSON.stringify({ domain: domainToBuy, siteId: state.ACTIVE_SITE_ID }),
+              });
+              const pData = await pRes.json();
+              if (pData.ok) {
+                $("domainSearchStatus").innerHTML = `✅ <span class="domain-ok">${esc(pData.message)}</span>`;
+                resultsContainer.setAttribute("hidden", "true");
+                await renderDomain();
+              } else {
+                $("domainSearchStatus").innerHTML = `❌ <span class="domain-error">${esc(pData.error || "Purchase failed.")}</span>`;
+                b.disabled = false;
+                b.textContent = "Buy & Connect";
+              }
+            } catch (err) {
+              $("domainSearchStatus").innerHTML = `<span class="domain-error">Network error.</span>`;
+              b.disabled = false;
+              b.textContent = "Buy & Connect";
+            }
+          });
+        });
+      } else {
+        $("domainSearchStatus").textContent = sData.error || "Search failed.";
+      }
+    } catch (err) {
+      logError("domain-search", err);
+      $("domainSearchStatus").textContent = "Network error searching domains.";
+    } finally {
+      searchBtn.disabled = false;
+    }
+  };
+
+  if (searchBtn && searchInput) {
+    searchBtn.onclick = runSearch;
+    searchInput.onkeydown = (e) => { if (e.key === "Enter") { e.preventDefault(); runSearch(); } };
+  }
+
+  // Connect existing domain verification
   const verifyBtn = $("domainVerify");
   if (verifyBtn) {
     verifyBtn.onclick = async () => {
@@ -1089,6 +1286,7 @@ export function renderDomain() {
         const d = await res.json();
         if (d.ok) {
           renderDomainStatus(d.status, d.message);
+          await renderDomain();
         } else {
           $("domainStatus").innerHTML = `<span class="domain-error">${esc(d.error || "Verification failed.")}</span>`;
         }

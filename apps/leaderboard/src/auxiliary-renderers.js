@@ -1,4 +1,5 @@
 import { formatMoney, renderSite } from "./site-render.js";
+import { safeUrl } from "./public-render-helpers.js";
 
 function esc(s) {
   return String(s ?? "").replace(/[&<>"']/g, (c) => ({
@@ -95,12 +96,15 @@ export function renderNewHallOfFame(data, opts) {
 export function renderNewStreamerProfile(data, opts) {
   const r = record(data, opts);
   const profileData = r.data || {};
-  const socials = (profileData.socials || []).filter((s) => s.enabled !== false && s.url);
+  const socials = (profileData.socials || [])
+    .filter((s) => s.enabled !== false && s.url)
+    .map((s) => ({ ...s, safeHref: safeUrl(s.url) }))
+    .filter((s) => s.safeHref !== "#");
   const boards = (r.boards || []).filter((b) => b.slug && b.name);
   // A-01: aria-hidden on eyebrow <i> icon.
   // A-04: Channel links use <ul><li><a> instead of bare <a> divs for list semantics.
   // A-06: target="_blank" links now include noreferrer and a sr-only new-tab warning.
-  const content = `<div class="yr-hero"><p class="yr-eyebrow"><i aria-hidden="true"></i>STREAMER PROFILE</p><h1 class="yr-h1">${esc(profileData.brand?.name || r.slug)}</h1><p class="yr-lede">${esc(profileData.brand?.tagline || "No profile description yet.")}</p></div><div class="yr-g12"><section class="yr-c8 yr-card yr-lb"><h2 class="yr-panel-title">Channel links</h2>${socials.length ? `<ul class="yr-g3" role="list">${socials.map((s) => `<li><a class="yr-btn" href="${esc(s.url)}" target="_blank" rel="noopener noreferrer">${esc(s.name || s.brand || "Channel")}<span class="sr-only"> (opens in a new tab)</span></a></li>`).join("")}</ul>` : '<p class="yr-empty">No channel links yet.</p>'}</section><section class="yr-c4 yr-card yr-lb"><h2 class="yr-panel-title">Leaderboards</h2>${boards.length ? `<ul class="yr-list" role="list">${boards.map((b) => `<li><a class="yr-list-item" href="/${esc(b.slug)}"><span class="yr-list-h">${esc(b.name)}</span><span class="yr-tag">Open</span></a></li>`).join("")}</ul>` : '<p class="yr-empty">No public leaderboards yet.</p>'}</section></div>`;
+  const content = `<div class="yr-hero"><p class="yr-eyebrow"><i aria-hidden="true"></i>STREAMER PROFILE</p><h1 class="yr-h1">${esc(profileData.brand?.name || r.slug)}</h1><p class="yr-lede">${esc(profileData.brand?.tagline || "No profile description yet.")}</p></div><div class="yr-g12"><section class="yr-c8 yr-card yr-lb"><h2 class="yr-panel-title">Channel links</h2>${socials.length ? `<ul class="yr-g3" role="list">${socials.map((s) => `<li><a class="yr-btn" href="${s.safeHref}" target="_blank" rel="noopener noreferrer">${esc(s.name || s.brand || "Channel")}<span class="sr-only"> (opens in a new tab)</span></a></li>`).join("")}</ul>` : '<p class="yr-empty">No channel links yet.</p>'}</section><section class="yr-c4 yr-card yr-lb"><h2 class="yr-panel-title">Leaderboards</h2>${boards.length ? `<ul class="yr-list" role="list">${boards.map((b) => `<li><a class="yr-list-item" href="/${esc(b.slug)}"><span class="yr-list-h">${esc(b.name)}</span><span class="yr-tag">Open</span></a></li>`).join("")}</ul>` : '<p class="yr-empty">No public leaderboards yet.</p>'}</section></div>`;
   return shell({ r, ...opts, contentHtml: content, title: `${profileData.brand?.name || r.slug} · Streamer profile`, description: `Streamer profile for ${profileData.brand?.name || r.slug}.` });
 }
 

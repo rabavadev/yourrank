@@ -46,7 +46,7 @@ const FONT_GF_PARAMS = {
   Rajdhani:           "family=Rajdhani:wght@400;500;600;700",
   "Bebas Neue":       "family=Bebas+Neue",
 };
-const FIRA_PARAMS = "family=Fira+Code:wght@400;500;600;700&family=Fira+Sans:wght@300;400;500;600;700";
+const FIRA_PARAMS = "family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&family=Fira+Code:wght@400;500;600;700&family=Fira+Sans:wght@300;400;500;600;700";
 
 function buildFontsHref(font) {
   const custom = font && font !== "Fira Sans" ? FONT_GF_PARAMS[font] : null;
@@ -482,7 +482,9 @@ ${section === "games" ? gamesIslandHead() : ""}
 ${opts.csrfToken ? `<meta name="csrf-token" content="${esc(opts.csrfToken)}" />` : ""}
 </head>`;
 
-  const body = `<body class="yr-site" data-section="${esc(section)}" data-slug="${esc(slug)}" data-custom-domain="${isCustomDomain ? "true" : "false"}" data-currency="${esc(data.brand?.currency || "$")}">
+  const template = data.theme?.template || data.brand?.template || "cyber_arcade";
+
+  const body = `<body class="yr-site" data-template="${esc(template)}" data-section="${esc(section)}" data-slug="${esc(slug)}" data-custom-domain="${isCustomDomain ? "true" : "false"}" data-currency="${esc(data.brand?.currency || "$")}">
 <!-- PUBLIC-VIEWER-DIRECTION
 THESIS: A production cue sheet for following one board, not a generic gaming dashboard.
 OWN-WORLD: Asphalt surfaces, fog-white type, cobalt actions, board-accent credentials, orange warnings, mint success, 6–10px geometry.
@@ -813,6 +815,44 @@ function meMain(ctx) {
   const earned7 = dailyEarned(ledger).reduce((a, d) => a + d.value, 0);
   const shopHref = `${homeUrl}${siteSectionHref("shop", slug, isCustomDomain)}`;
 
+  const gamerCard = `
+<div class="yr-card yr-gamer-card mb-16">
+  <div class="yr-gamer-card-head">
+    <div class="yr-gamer-id">
+      <span class="yr-gamer-ava">${avatarHtml(viewer)}</span>
+      <div>
+        <h2 class="yr-gamer-name">${esc(viewerName(viewer))}</h2>
+        <span class="yr-gamer-badge">🎖️ VIP Community Member</span>
+      </div>
+    </div>
+    <div class="yr-gamer-streak">
+      <span class="yr-streak-flame">🔥</span>
+      <div>
+        <strong>Active Streak</strong>
+        <span>Daily rewards active</span>
+      </div>
+    </div>
+  </div>
+  <div class="yr-gamer-stats-grid">
+    <div class="yr-gstat-item">
+      <span class="yr-gstat-lbl">Board Balance</span>
+      <strong class="yr-gstat-val yr-pos">${formatNumber(balance)} CR</strong>
+    </div>
+    <div class="yr-gstat-item">
+      <span class="yr-gstat-lbl">Lifetime Earned</span>
+      <strong class="yr-gstat-val">${formatNumber(viewerOnSite?.total_earned || 0)} CR</strong>
+    </div>
+    <div class="yr-gstat-item">
+      <span class="yr-gstat-lbl">Shop Redemptions</span>
+      <strong class="yr-gstat-val">${formatNumber(redemptions.length)} Rewards</strong>
+    </div>
+    <div class="yr-gstat-item">
+      <span class="yr-gstat-lbl">Events &amp; Duels</span>
+      <strong class="yr-gstat-val">Active</strong>
+    </div>
+  </div>
+</div>`;
+
   const heroHtml = hero({
     eyebrow: "THIS BOARD ONLY",
     title: "Board credits",
@@ -860,6 +900,7 @@ function meMain(ctx) {
   });
 
   return `${heroHtml}
+${gamerCard}
 <div class="yr-g3">${kpis}</div>
 ${historyPanel}
 ${redemptionsPanel}`;
