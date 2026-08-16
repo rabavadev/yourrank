@@ -338,12 +338,20 @@
   // Interactive Telegram Bot Quick Commands
   const chatContainer = document.getElementById("simChatContainer");
   const cmdPills = document.querySelectorAll("[data-chat-cmd]");
-  const botReplies = {
-    "/points": "Hey @pixelpilot! Your current balance is <strong>9,870 points</strong> (#02 on the leaderboard). Top player is @nightowl with 12,560 pts.",
-    "/rank": "📊 You are ranked <strong>#02</strong> out of 342 active stream viewers!",
-    "/shop": "👑 Shop Items Available: VIP Discord Role (800 pts) · Custom Chat Emote (1,200 pts) · Stream Shoutout (2,000 pts).",
-    "/rules": "📜 Standings reset monthly. Every Kick sub = 500 pts. Redemptions close at midnight on Sunday!"
-  };
+  function getReply(cmd) {
+    switch (cmd) {
+      case "/points":
+        return "Hey @pixelpilot! Your current balance is <strong>9,870 points</strong> (#02 on the leaderboard). Top player is @nightowl with 12,560 pts.";
+      case "/rank":
+        return "📊 You are ranked <strong>#02</strong> out of 342 active stream viewers!";
+      case "/shop":
+        return "👑 Shop Items Available: VIP Discord Role (800 pts) · Custom Chat Emote (1,200 pts) · Stream Shoutout (2,000 pts).";
+      case "/rules":
+        return "📜 Standings reset monthly. Every Kick sub = 500 pts. Redemptions close at midnight on Sunday!";
+      default:
+        return "Command executed.";
+    }
+  }
 
   cmdPills.forEach((pill) => {
     pill.addEventListener("click", () => {
@@ -353,7 +361,9 @@
       // Add user message
       const userBubble = document.createElement("div");
       userBubble.className = "chat-bubble chat-bubble--user";
-      userBubble.innerHTML = `<code>${cmd}</code>`;
+      const code = document.createElement("code");
+      code.textContent = cmd;
+      userBubble.appendChild(code);
       chatContainer.appendChild(userBubble);
 
       // Typing indicator
@@ -367,7 +377,9 @@
         if (typingBubble.parentNode) typingBubble.parentNode.removeChild(typingBubble);
         const botBubble = document.createElement("div");
         botBubble.className = "chat-bubble chat-bubble--bot";
-        botBubble.innerHTML = `<p>${botReplies[cmd] || "Command executed."}</p>`;
+        const p = document.createElement("p");
+        p.innerHTML = getReply(cmd);
+        botBubble.appendChild(p);
         chatContainer.appendChild(botBubble);
         chatContainer.scrollTop = chatContainer.scrollHeight;
       }, 450);

@@ -324,6 +324,12 @@ export async function handleOverlayAlertsPage(request, env, deps = {}) {
     const siteSlug = ${JSON.stringify(site.slug)};
     let lastAlertId = null;
 
+    function esc(s) {
+      return String(s || '').replace(/[&<>"']/g, function(c) {
+        return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+      });
+    }
+
     // Web Audio Synthesizer Chime for alerts
     function playAlertChime() {
       try {
@@ -355,11 +361,11 @@ export async function handleOverlayAlertsPage(request, env, deps = {}) {
       const container = document.getElementById('alert-container');
       container.innerHTML = \`
         <div class="alert-box">
-          <div class="alert-icon">\${icon || '🎉'}</div>
+          <div class="alert-icon">\${esc(icon || '🎉')}</div>
           <div class="alert-content">
-            <h3>\${title}</h3>
-            <div class="alert-user">\${user}</div>
-            <div class="alert-sub">\${desc}</div>
+            <h3>\${esc(title)}</h3>
+            <div class="alert-user">\${esc(user)}</div>
+            <div class="alert-sub">\${esc(desc)}</div>
           </div>
         </div>
       \`;
