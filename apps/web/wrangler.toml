@@ -3,6 +3,11 @@ main = ".open-next/worker.js"
 compatibility_date = "2026-08-16"
 compatibility_flags = ["nodejs_compat"]
 
+# Shadow-test URL for the Next.js app before switching www/app traffic.
+[[routes]]
+pattern = "next.yourrank.site"
+custom_domain = true
+
 # Run the worker before serving static assets so Next.js middleware and dynamic
 # routes (dashboard, custom-domain public boards) always execute.
 [assets]
