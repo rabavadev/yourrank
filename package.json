@@ -6,6 +6,8 @@
     "apps/leaderboard",
     "apps/bot",
     "apps/monitor",
+    "apps/web",
+    "packages/*",
     "e2e"
   ],
   "dependencies": {
@@ -41,13 +43,11 @@
     "e2e": "cd e2e && bun run test",
     "lint": "(cd apps/bot && bun run lint) && (cd apps/leaderboard && bun run lint)",
     "check:test-mocks": "node scripts/check-test-mocks.mjs",
-    "typecheck": "(cd apps/bot && bun run typecheck) && (cd apps/leaderboard && bun x tsc --noEmit) && (cd apps/leaderboard && bun run typecheck:games) && (cd apps/monitor && bun run typecheck)",
+    "typecheck": "(cd apps/bot && bun run typecheck) && (cd apps/leaderboard && bun x tsc --noEmit) && (cd apps/leaderboard && bun run typecheck:games) && (cd apps/monitor && bun run typecheck) && (cd apps/web && bun run typecheck)",
     "test": "bun run scripts/test.mjs",
     "prepare": "git config core.hooksPath .githooks || true"
   },
   "overrides": {
-    "undici": ">=7.29.0",
-    "brace-expansion": ">=5.0.9",
     "js-yaml": ">=4.3.1"
   }
 }

@@ -1,0 +1,13 @@
+@import "tailwindcss";
+
+@theme {
+  --color-canvas: #F5F7FB;
+  --color-surface: #FFFFFF;
+  --color-surface-soft: #F8FAFC;
+  --color-ink: #172033;
+  --color-ink-soft: #667085;
+  --color-line: #E5E7EB;
+  --color-navy: #101C33;
+  --color-navy-raised: #182843;
+  --color-cobalt: #315CFF;
+}

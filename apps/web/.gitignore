@@ -1,0 +1,19 @@
+# Next.js / OpenNext
+/.next/
+/.open-next/
+/out/
+
+# Dependencies
+/node_modules
+
+# Env / local
+.env*.local
+.dev.vars
+
+# TypeScript
+*.tsbuildinfo
+next-env.d.ts
+cloudflare-env.d.ts
+
+# Un-ignore the local lib/ directory so shared helpers are tracked
+!src/lib/

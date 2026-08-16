@@ -36,6 +36,10 @@ jobs:
         working-directory: apps/leaderboard
         run: bun run lint
 
+      - name: Lint web
+        working-directory: apps/web
+        run: bun run lint
+
       - name: Reject undocumented global test mocks
         run: bun run check:test-mocks
 
@@ -62,6 +66,10 @@ jobs:
 
       - name: Typecheck monitor
         working-directory: apps/monitor
+        run: bun run typecheck
+
+      - name: Typecheck web
+        working-directory: apps/web
         run: bun run typecheck
 
   test:
@@ -119,6 +127,10 @@ jobs:
       - name: Build bot
         working-directory: apps/bot
         run: bun run typecheck
+
+      - name: Build web
+        working-directory: apps/web
+        run: bun run build
 
   audit:
     name: Dependency Audit
