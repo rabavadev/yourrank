@@ -169,17 +169,6 @@ async function init() {
     renderEmbedShare();
     const iframe = $("designPreview");
     if (iframe) iframe.addEventListener("load", fitDesignPreview);
-    document.querySelectorAll(".preview-tab").forEach((btn) => {
-      btn.addEventListener("click", () => {
-        document.querySelectorAll(".preview-tab").forEach((b2) => {
-          b2.classList.remove("is-active");
-          b2.setAttribute("aria-selected", "false");
-        });
-        btn.classList.add("is-active");
-        btn.setAttribute("aria-selected", "true");
-        refreshDesignPreview();
-      });
-    });
     let resizeTimer;
     window.addEventListener("resize", () => {
       clearTimeout(resizeTimer);

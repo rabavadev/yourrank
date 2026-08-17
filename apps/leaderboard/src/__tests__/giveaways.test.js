@@ -6,6 +6,8 @@ import { giveawaysHtml } from "../pages/giveaway-pages.js";
 
 const gamesSource = readFileSync(new URL("../assets/dashboard/games.js", import.meta.url), "utf8");
 const siteSource = readFileSync(new URL("../assets/dashboard/site.js", import.meta.url), "utf8");
+const dashboardSource = readFileSync(new URL("../assets/dashboard.js", import.meta.url), "utf8");
+const previewTabsSource = readFileSync(new URL("../assets/dashboard/preview-tabs.js", import.meta.url), "utf8");
 
 describe("Giveaway Chatroom Handler", () => {
   const allowRateLimit = async () => ({ ok: true, remaining: 59, limit: 60, retryAfter: 0 });
@@ -75,5 +77,10 @@ describe("Giveaway Chatroom Handler", () => {
     const submitIndex = siteSource.indexOf("_previewForm.submit()");
     expect(resetIndex).toBeGreaterThanOrEqual(0);
     expect(submitIndex).toBeGreaterThan(resetIndex);
+  });
+
+  it("keeps preview device tabs under a single controller", () => {
+    expect(dashboardSource).not.toContain('querySelectorAll(".preview-tab")');
+    expect(previewTabsSource).not.toContain("stopImmediatePropagation");
   });
 });
