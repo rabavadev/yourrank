@@ -192,6 +192,42 @@ export const readJson = async (req) => {
   if (req.validatedBody !== undefined) return req.validatedBody;
   try { return await req.json(); } catch { return null; }
 };
+export const readJsonLimited = async (req, maxBytes) => {
+  if (req.validatedBody !== undefined) return { value: req.validatedBody, tooLarge: false };
+  const contentLength = Number(req.headers.get("content-length"));
+  if (Number.isFinite(contentLength) && contentLength > maxBytes) return { value: null, tooLarge: true };
+  if (!req.body) return { value: null, tooLarge: false };
+
+  const reader = req.body.getReader();
+  const chunks = [];
+  let total = 0;
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      total += value.byteLength;
+      if (total > maxBytes) {
+        await reader.cancel();
+        return { value: null, tooLarge: true };
+      }
+      chunks.push(value);
+    }
+  } finally {
+    reader.releaseLock();
+  }
+
+  const bytes = new Uint8Array(total);
+  let offset = 0;
+  for (const chunk of chunks) {
+    bytes.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  try {
+    return { value: JSON.parse(new TextDecoder().decode(bytes)), tooLarge: false };
+  } catch {
+    return { value: null, tooLarge: false };
+  }
+};
 
 
 export async function handleAccountDelete(request, env) {
