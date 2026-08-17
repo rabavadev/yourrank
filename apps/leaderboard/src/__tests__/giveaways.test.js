@@ -68,8 +68,8 @@ describe("Giveaway Chatroom Handler", () => {
   });
 
   it("keeps preview frame navigations out of browser history", () => {
-    expect(gamesSource).toContain("loadSimulatorFrame(iframe, embedUrl)");
-    expect(gamesSource).not.toMatch(/\biframe\.src\s*=/);
+    expect(gamesSource).toContain("loadSimulatorFrame(iframe, embedUrl);");
+    expect(gamesSource).toContain('loadSimulatorFrame(iframe, iframe.dataset.currentSrc + "&_t=" + Date.now());');
 
     const resetIndex = siteSource.indexOf("if (!resetPreviewFrame()) return;");
     const submitIndex = siteSource.indexOf("_previewForm.submit()");

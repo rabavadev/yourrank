@@ -273,8 +273,11 @@ let activeSimulatorGame = "mines";
  */
 function loadSimulatorFrame(iframe, url) {
   const frameWindow = iframe.contentWindow;
-  if (!frameWindow || typeof frameWindow.location?.replace !== "function") return;
-  frameWindow.location.replace(url);
+  if (frameWindow && typeof frameWindow.location?.replace === "function") {
+    frameWindow.location.replace(url);
+    return;
+  }
+  iframe.setAttribute("src", url);
 }
 
 function setSimulatorGame(gameId) {

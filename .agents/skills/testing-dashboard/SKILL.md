@@ -249,9 +249,16 @@ local-dev artifact, not a product bug — verify public sections by entering
 
 Seeded data covers players, shop items and viewer balances but not events or
 raffles. `"No events yet"` with populated KPI cards above it, and
-`"No past raffles yet."`, are legitimate. A genuine defect looks like the
-giveaway history tables: `class="gw-table"` has **no** CSS rule
-(`grep -rn '\.gw-table\s*{' apps/leaderboard/src/assets/` returns nothing, only
-`.gw-table-actions`), so all four history tables render their `<th>`s as one
-run-on bold line. Verify styling claims against the *served* asset:
-`curl -s http://localhost:8787/assets/giveaways.css | grep -c 'gw-table {'`.
+`"No past raffles yet."`, are legitimate. To investigate a suspected styling
+defect, first resolve which class the rendered markup actually uses, then
+check the served stylesheet for a rule matching that class. For example:
+
+```bash
+curl -s http://localhost:8787/assets/<served-stylesheet>.css \
+  | grep -c '<resolved-class-selector>'
+```
+
+The giveaway history tables were a past example of this class of defect: their
+markup used an unstyled table class until the markup was switched to the
+canonical table classes. Always verify the current rendered class and served
+CSS rather than relying on an old source-level claim.
