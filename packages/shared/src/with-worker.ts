@@ -5,10 +5,16 @@
 //   3. All errors caught, reported to Sentry + Discord, and returned as 500
 //   4. Structured JSON logging on every error
 
-import { generateRequestId, createLogger, getRequestMetrics, installConsoleRedirect, runWithLogger } from "./request-id.js";
+import {
+  generateRequestId,
+  createLogger,
+  getRequestMetrics,
+  installConsoleRedirect,
+  runRequestCleanup,
+  runWithLogger,
+} from "./request-id.js";
 import { sendErrorToDiscord } from "./monitoring.js";
 import { errMessage, errStack } from "./errors.js";
-import { releaseRequestDbClient } from "./db.js";
 
 // One-time install: raw console.* inside a request context now flow through
 // the request-scoped logger with levels and sampling.
@@ -118,7 +124,7 @@ export function withWorkerFetch(workerName: string, handler: FetchHandler, optio
           headers: errHeaders,
         });
       } finally {
-        await releaseRequestDbClient();
+        await runRequestCleanup();
       }
     });
   };

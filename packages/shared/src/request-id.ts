@@ -67,6 +67,17 @@ export interface RequestDbState {
   retired: Map<RequestDbClient, number>;
 }
 
+type RequestCleanup = () => Promise<void> | void;
+let requestCleanup: RequestCleanup | null = null;
+
+export function registerRequestCleanup(cleanup: RequestCleanup): void {
+  requestCleanup = cleanup;
+}
+
+export async function runRequestCleanup(): Promise<void> {
+  await requestCleanup?.();
+}
+
 // Capture the original console methods before anything monkey-patches them.
 const CONSOLE = {
   log: console.log.bind(console),

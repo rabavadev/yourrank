@@ -19,7 +19,13 @@
 // ============================================================================
 
 import postgres from "postgres";
-import { getRequestDbState, incrementDbQueries, type RequestDbClient, type RequestDbState } from "./request-id.js";
+import {
+  getRequestDbState,
+  incrementDbQueries,
+  registerRequestCleanup,
+  type RequestDbClient,
+  type RequestDbState,
+} from "./request-id.js";
 
 // ----------------------------------------------------------------------------
 // Configuration
@@ -134,6 +140,8 @@ export async function releaseRequestDbClient(): Promise<void> {
     await endSql(sql);
   }
 }
+
+registerRequestCleanup(releaseRequestDbClient);
 
 // Deprecated helper; creates a new sql client. Callers are responsible for
 // calling sql.end() when done. Prefer withTransaction() for transactions.
