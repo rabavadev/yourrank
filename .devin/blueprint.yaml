@@ -1,4 +1,4 @@
-# Devin environment blueprint for rabavadev/yourrank
+# Devin environment blueprint for yourrank/yourrank
 # https://docs.devin.ai/onboard-devin/environment-yaml
 initialize: |
   # Install Bun (used for install, build, lint, and test)

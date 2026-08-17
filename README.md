@@ -64,7 +64,7 @@ Start with **ARCHITECTURE.md**, then **DEPLOY.md**.
 ### Clone & Install
 
 ```bash
-git clone https://github.com/rabavadev/yourrank.git
+git clone https://github.com/yourrank/yourrank.git
 cd yourrank
 bun install
 ```
