@@ -2,10 +2,12 @@ import { apiGet } from "@/lib/api";
 import type { AdminOverview } from "@/lib/types";
 import { Card } from "../dashboard/_components/Card";
 import Link from "next/link";
+import { requireCurrentUser } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminPage() {
+  await requireCurrentUser("/admin");
   const result = await apiGet<AdminOverview>("/api/admin/overview");
 
   if (!result.ok) {

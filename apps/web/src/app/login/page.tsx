@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { safeNextPath } from "@yourrank/shared/safe-next";
 import { LoginForm } from "./LoginForm";
 
 export const metadata: Metadata = {
@@ -14,7 +15,7 @@ interface LoginPageProps {
 export default async function LoginPage({ searchParams }: LoginPageProps) {
   const params = await searchParams;
   const nextValue = params?.next;
-  const next = Array.isArray(nextValue) ? nextValue[0] : nextValue;
+  const next = safeNextPath(Array.isArray(nextValue) ? nextValue[0] : nextValue);
   return (
     <main className="flex min-h-screen bg-canvas">
       <aside className="hidden w-1/2 flex-col justify-between bg-navy p-12 text-white lg:flex">

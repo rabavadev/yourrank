@@ -54,6 +54,8 @@ import { deferClickWrite, trackedDestination } from "./tracked-redirect.js";
 import { setRequestMetrics } from "@yourrank/shared/request-id";
 import { evaluateConsumerHealth } from "./consumer-health.js";
 import { readDlqHealth } from "./dlq-health.js";
+import { proxyMarketingHome } from "./marketing-proxy.js";
+import { safeNextPath } from "@yourrank/shared/safe-next";
 
 const LEGAL_PAGES = new Set(["terms", "privacy", "responsible", "cookies", "refund", "contact"]);
 const NON_SITE_PATHS = new Set([
@@ -611,7 +613,13 @@ async function handleRequest(request, env, ctx, meta) {
 
       if (path === "/" || path === "/index.html") {
         if (host === PLATFORM_HOST) {
-          return Response.redirect("https://app.yourrank.site/", 301);
+          const fallback = async () => new Response(addCookieConsent(await renderHtmlPage(PAGES.index)), { headers: { ...HTML_N, ...csrfHeader } });
+          return proxyMarketingHome({
+            request,
+            binding: env.MARKETING,
+            fallback,
+            workerLog,
+          });
         }
         return new Response(addCookieConsent(await renderHtmlPage(PAGES.index)), { headers: { ...HTML_N, ...csrfHeader } });
       }
@@ -636,9 +644,7 @@ async function handleRequest(request, env, ctx, meta) {
             const user = await currentUser(request, env);
             if (user) {
               const next = url.searchParams.get("next") || "";
-              const safeNext = next.startsWith("/") && !next.startsWith("//") && !/^[a-z][a-z\d+.-]*:/i.test(next)
-                ? next
-                : "/dashboard?verified=1";
+              const safeNext = safeNextPath(next, "/dashboard?verified=1");
               return Response.redirect(new URL(safeNext, url), 302);
             }
             verifyState = { message: "Email confirmed. Sign in below to finish setting up your page." };

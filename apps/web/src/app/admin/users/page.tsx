@@ -2,6 +2,7 @@ import { apiGet } from "@/lib/api";
 import type { AdminUsersResponse } from "@/lib/types";
 import { AdminUsersForm } from "./AdminUsersForm";
 import { Card } from "../../dashboard/_components/Card";
+import { requireCurrentUser } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
 
@@ -16,8 +17,10 @@ export default async function AdminUsersPage({ searchParams }: AdminUsersPagePro
   if (q) params.set("q", q);
   if (status) params.set("status", status);
   if (plan) params.set("plan", plan);
+  const query = params.toString();
+  await requireCurrentUser(`/admin/users${query ? `?${query}` : ""}`);
 
-  const result = await apiGet<AdminUsersResponse>(`/api/admin/users?${params.toString()}`);
+  const result = await apiGet<AdminUsersResponse>(`/api/admin/users?${query}`);
 
   if (!result.ok) {
     return <p className="text-sm text-red-600">{result.error}</p>;

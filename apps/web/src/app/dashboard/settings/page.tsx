@@ -1,4 +1,4 @@
-import { getCurrentUser, type UserRecord } from "@/lib/session";
+import { getCurrentUser, requireCurrentUser, type UserRecord } from "@/lib/session";
 import { LogoutButton } from "../LogoutButton";
 
 export const dynamic = "force-dynamic";
@@ -25,17 +25,7 @@ export default async function SettingsPage() {
   }
 
   if (!user) {
-    return (
-      <section className="max-w-2xl">
-        <h2 className="text-2xl font-bold text-ink">Account & billing</h2>
-        <p className="mt-4 text-ink-soft">
-          Not signed in.{" "}
-          <a href="/login?next=/dashboard/settings" className="font-medium text-cobalt hover:underline">
-            Sign in
-          </a>
-        </p>
-      </section>
-    );
+    user = await requireCurrentUser("/dashboard/settings", user);
   }
 
   return (
