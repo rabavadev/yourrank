@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 import { Hero } from "@/components/home/hero";
 import {
   FinalCta,
@@ -6,6 +7,9 @@ import {
   PillarMarquee,
   ProductsSection,
 } from "@/components/home/sections";
+import { getCurrentUser } from "@/lib/session";
+
+export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: "YourRank — Keep your community loop moving",
@@ -15,7 +19,7 @@ export const metadata: Metadata = {
     title: "YourRank — Keep your community loop moving",
     description:
       "Launch a streamer site, activate viewers on Telegram, and bring them back with Credits & Shop.",
-    url: "https://yourrank.site/",
+    url: "https://app.yourrank.site/",
     type: "website",
     images: ["https://yourrank.site/og.png"],
   },
@@ -29,7 +33,12 @@ const NAV_LINKS = [
   { label: "FAQ", href: "/faq" },
 ];
 
-export default function HomePage() {
+export default async function HomePage() {
+  const user = await getCurrentUser();
+  if (user) {
+    redirect("/dashboard");
+  }
+
   return (
     <div className="min-h-screen bg-devin-surface text-devin-ink">
       <header className="fixed inset-x-0 top-0 z-50 border-b border-devin-line bg-devin-surface/80 backdrop-blur-md">
