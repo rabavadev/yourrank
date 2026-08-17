@@ -2,19 +2,20 @@
 import { withTransaction } from "./db.js";
 import { hashIp } from "./crypto.js";
 
-async function insertClick(
+export async function insertClick(
   shortLinkId: string,
   ipH: Buffer,
   userAgent: string | null,
   referer: string | null,
   country: string | null,
   tgUserId: number | null,
-  clickRef: string | null = null
+  clickRef: string | null = null,
+  { withTransactionImpl = withTransaction }: { withTransactionImpl?: typeof withTransaction } = {}
 ): Promise<void> {
   try {
-    await withTransaction(async (tx) => {
+    await withTransactionImpl(async (tx) => {
       const lockResult = await tx.one<{ lock_acquired: boolean }>(
-        `SELECT acquire_click_uniqueness_lock($1, $2) AS lock_acquired`,
+        `SELECT acquire_click_uniqueness_lock($1, encode($2, 'hex')) AS lock_acquired`,
         [shortLinkId, ipH]
       );
 

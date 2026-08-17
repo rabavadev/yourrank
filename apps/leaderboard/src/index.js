@@ -52,6 +52,7 @@ import {
 import { parseDashboardPath, dashboardPath, resolveSection } from "./assets/dashboard/routes.js";
 import { deferClickWrite, trackedDestination } from "./tracked-redirect.js";
 import { setRequestMetrics } from "@yourrank/shared/request-id";
+import { evaluateConsumerHealth } from "./consumer-health.js";
 
 const LEGAL_PAGES = new Set(["terms", "privacy", "responsible", "cookies", "refund", "contact"]);
 const NON_SITE_PATHS = new Set([
@@ -503,21 +504,22 @@ async function handleRequest(request, env, ctx, meta) {
         // Surface analytics consumer health. If the consumer stops processing,
         // dashboard analytics silently starve; this makes that outage visible.
         try {
-          const hb = await one("SELECT EXTRACT(EPOCH FROM (now() - last_seen))::int AS seconds_ago, processed_count, failed_count FROM consumer_heartbeat WHERE name='consumer'");
+          const hb = await one("SELECT EXTRACT(EPOCH FROM (now() - last_seen))::int AS seconds_ago, processed_count, failed_count, last_failure_at, last_success_at FROM consumer_heartbeat WHERE name='consumer'");
           const consumerStaleSeconds = 600; // 10 minutes without a batch is an outage
           if (hb) {
             // A brand-new deploy has no queue events yet, so the heartbeat row
             // may be stale even though the consumer is healthy. Once it has
             // processed any events we start enforcing freshness.
-            const processedAny = Number(hb.processed_count) > 0 || Number(hb.failed_count) > 0;
-            const healthy = !processedAny || hb.seconds_ago < consumerStaleSeconds;
+            const consumerHealth = evaluateConsumerHealth(hb, Date.now(), consumerStaleSeconds);
             result.consumer = {
-              healthy,
+              healthy: consumerHealth.healthy,
               last_seen: Number(hb.seconds_ago),
               processed_count: Number(hb.processed_count),
               failed_count: Number(hb.failed_count),
+              last_failure_at: consumerHealth.last_failure_at,
+              last_success_at: consumerHealth.last_success_at,
             };
-            if (!healthy) result.status = "degraded";
+            if (!consumerHealth.healthy) result.status = "degraded";
           } else {
             result.consumer = { healthy: false, last_seen: null, note: "no heartbeat row" };
             result.status = "degraded";

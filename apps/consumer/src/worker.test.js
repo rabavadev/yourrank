@@ -1,10 +1,53 @@
 import { describe, expect, it } from "bun:test";
-import { processQueueMessages } from "./worker.js";
+import { handleDlq, handleEvent, processQueueMessages } from "./worker.js";
 import { processAccountExport } from "./account-export.js";
 
 function message(id) {
   return { id, acked: 0, retried: 0, ack() { this.acked++; }, retry() { this.retried++; } };
 }
+
+describe("analytics queue events", () => {
+  it("forwards the visitor hash to bumpStat", async () => {
+    const calls = [];
+    await handleEvent({
+      type: "bump",
+      siteId: "site-1",
+      field: "views",
+      referer: "https://example.com",
+      visitorHash: "hash-1",
+      timestamp: 1,
+    }, new Map(), {}, {
+      bumpStatImpl: async (...args) => calls.push(args),
+    });
+    expect(calls).toEqual([["site-1", "views", "https://example.com", "hash-1"]]);
+  });
+});
+
+describe("dead-letter queue persistence", () => {
+  it("persists each message before acknowledging it", async () => {
+    const calls = [];
+    const msg = { id: "message-1", body: { type: "bump", siteId: "site-1" }, acked: 0, retried: 0,
+      ack() { this.acked++; }, retry() { this.retried++; } };
+    await handleDlq({ queue: "events-dlq", messages: [msg] }, {}, undefined, {
+      execImpl: async (...args) => calls.push(args),
+      alertImpl: async () => {},
+    });
+    expect(calls[0][0]).toContain("queue_dlq_events");
+    expect(msg.acked).toBe(1);
+    expect(msg.retried).toBe(0);
+  });
+
+  it("retries instead of acknowledging when persistence fails", async () => {
+    const msg = { id: "message-2", body: { type: "click" }, acked: 0, retried: 0,
+      ack() { this.acked++; }, retry() { this.retried++; } };
+    await handleDlq({ queue: "events-dlq", messages: [msg] }, {}, undefined, {
+      execImpl: async () => { throw new Error("database unavailable"); },
+      alertImpl: async () => {},
+    });
+    expect(msg.acked).toBe(0);
+    expect(msg.retried).toBe(1);
+  });
+});
 
 describe("queue batch processing", () => {
   it("bounds concurrency and retries only the failed message once", async () => {
