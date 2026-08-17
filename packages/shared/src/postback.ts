@@ -156,6 +156,21 @@ export async function recordReplayHash(
   }
 }
 
+// Compensating action for a replay claim whose conversion never became durable.
+export async function releaseReplayHash(
+  userId: string,
+  replayHash: string,
+  { execImpl = exec }: { execImpl?: typeof exec } = {},
+): Promise<boolean> {
+  const result = await execImpl(
+    `DELETE FROM postback_replay_guard
+       WHERE user_id = $1 AND replay_hash = $2
+       RETURNING id`,
+    [userId, replayHash]
+  );
+  return Array.isArray(result) && result.length > 0;
+}
+
 const REPLAY_PURGE_BATCH_SIZE = 1000;
 const REPLAY_PURGE_MAX_BATCHES = 1000;
 
