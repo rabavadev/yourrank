@@ -66,7 +66,7 @@ export default async function HomePage() {
             </a>
             <a
               href="/signup"
-              className="rounded bg-devin-ink px-3.5 py-1.5 text-sm font-medium text-devin-surface transition-colors hover:bg-black"
+              className="rounded-full bg-devin-dark px-3.5 py-1.5 text-sm font-medium text-devin-surface transition-colors hover:bg-black"
             >
               Start free
             </a>

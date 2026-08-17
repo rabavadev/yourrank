@@ -24,8 +24,9 @@ ui-ux-pro-max-skill-main/
 .postman/
 postman/
 components.json
-components/
-lib/
+# scoped to repo root so apps/*/src/components and src/lib stay tracked
+/components/
+/lib/
 tailwind.config.js
 /tsconfig.json
 

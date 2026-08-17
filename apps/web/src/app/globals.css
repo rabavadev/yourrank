@@ -1,5 +1,14 @@
 @import "tailwindcss";
 
+/*
+ * The root .gitignore ignores components/ and lib/ globally, and Tailwind v4
+ * skips gitignored paths during automatic content detection. Without these
+ * @source directives, every class used only inside src/components or src/lib
+ * is silently dropped from the compiled CSS.
+ */
+@source "../components";
+@source "../lib";
+
 @theme {
   --color-canvas: #F5F7FB;
   --color-surface: #FFFFFF;
@@ -17,11 +26,16 @@
   --color-devin-surface: #FCFCFC;
   --color-devin-ink: #191919;
   --color-devin-ink-soft: #5C5C5C;
+  --color-devin-muted: #989898;
+  --color-devin-dark: #121111;
   --color-devin-secondary: #EFEFEF;
   --color-devin-line: rgba(0, 0, 0, 0.15);
+  --color-devin-line-soft: rgba(0, 0, 0, 0.08);
 
   --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-geist-mono), ui-monospace, "SF Mono", monospace;
+
+  --ease-devin: cubic-bezier(0.2, 0.7, 0.2, 1);
 
   --animate-marquee: marquee 32s linear infinite;
 
@@ -29,6 +43,116 @@
     to {
       transform: translateX(-50%);
     }
+  }
+}
+
+html,
+body {
+  /* belt-and-braces against any child wider than the viewport */
+  overflow-x: clip;
+}
+
+/* ---------------------------------------------------------------------------
+ * Entrance animations are pure CSS on purpose.
+ * Content is never gated behind client JS: if hydration is slow or a chunk
+ * fails, the page still renders. Keyframes run on first paint, no JS needed.
+ * ------------------------------------------------------------------------- */
+
+@keyframes devin-enter {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes devin-enter-scale {
+  from {
+    opacity: 0;
+    transform: translateY(28px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* hero entrance: pass per-element delay via --d */
+.anim-enter {
+  opacity: 0;
+  animation: devin-enter 0.65s var(--ease-devin) both;
+  animation-delay: var(--d, 0s);
+}
+
+.anim-enter-scale {
+  opacity: 0;
+  animation: devin-enter-scale 0.9s var(--ease-devin) both;
+  animation-delay: var(--d, 0s);
+}
+
+/* word-by-word headline reveal */
+.anim-word {
+  display: inline-block;
+  opacity: 0;
+  animation: devin-enter 0.65s var(--ease-devin) both;
+  animation-delay: var(--d, 0s);
+  will-change: transform;
+}
+
+/* ---------------------------------------------------------------------------
+ * Scroll reveals via CSS scroll-driven animations.
+ * Supported browsers (Chrome/Edge/Safari): sections fade-rise as they enter.
+ * Unsupported browsers: @supports fails, content is simply visible. No JS,
+ * no IntersectionObserver, no hidden-forever failure mode.
+ * ------------------------------------------------------------------------- */
+
+@media (prefers-reduced-motion: no-preference) {
+  @supports (animation-timeline: view()) {
+    .reveal {
+      animation: devin-enter 0.7s var(--ease-devin) both;
+      animation-timeline: view();
+      animation-range: entry 0% entry 45%;
+    }
+
+    .reveal-stagger > * {
+      animation: devin-enter 0.7s var(--ease-devin) both;
+      animation-timeline: view();
+      animation-range: entry 0% entry 45%;
+    }
+
+    /* offset the range per child for a stagger effect without JS */
+    .reveal-stagger > *:nth-child(2) {
+      animation-range: entry 8% entry 53%;
+    }
+    .reveal-stagger > *:nth-child(3) {
+      animation-range: entry 16% entry 61%;
+    }
+    .reveal-stagger > *:nth-child(4) {
+      animation-range: entry 24% entry 69%;
+    }
+    .reveal-stagger > *:nth-child(5) {
+      animation-range: entry 32% entry 77%;
+    }
+    .reveal-stagger > *:nth-child(6) {
+      animation-range: entry 40% entry 85%;
+    }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .anim-enter,
+  .anim-enter-scale,
+  .anim-word {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+
+  .animate-marquee {
+    animation: none !important;
   }
 }
 
@@ -47,8 +171,23 @@
   filter: blur(40px);
 }
 
+/* live dot pulse, CSS instead of framer-motion */
+@keyframes devin-pulse-dot {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.25;
+  }
+}
+
+.anim-pulse-dot {
+  animation: devin-pulse-dot 1.6s ease-in-out infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .animate-marquee {
-    animation: none !important;
+  .anim-pulse-dot {
+    animation: none;
   }
 }

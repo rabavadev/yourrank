@@ -1,4 +1,4 @@
-import { Reveal, Stagger, StaggerItem } from "./reveal";
+import { Reveal, Stagger } from "./reveal";
 
 const MARQUEE_ITEMS = [
   "Sites",
@@ -10,9 +10,11 @@ const MARQUEE_ITEMS = [
 ];
 
 export function PillarMarquee() {
-  const doubled = [...MARQUEE_ITEMS, ...MARQUEE_ITEMS];
   return (
-    <section className="border-y border-devin-line bg-devin-surface py-5">
+    <section
+      aria-label="Product pillars"
+      className="overflow-hidden border-y border-devin-line-soft bg-devin-surface py-5"
+    >
       <div
         className="overflow-hidden"
         style={{
@@ -22,15 +24,19 @@ export function PillarMarquee() {
             "linear-gradient(90deg, transparent, black 15%, black 85%, transparent)",
         }}
       >
-        <div className="animate-marquee flex w-max items-center gap-10">
-          {doubled.map((item, i) => (
-            <span
-              key={`${item}-${i}`}
-              className="flex items-center gap-10 whitespace-nowrap font-mono text-sm text-devin-ink-soft"
-            >
-              {item}
-              <span className="h-1 w-1 rounded-full bg-devin-ink-soft/40" aria-hidden="true" />
-            </span>
+        <div className="animate-marquee flex w-max items-center">
+          {[0, 1].map((half) => (
+            <div key={half} className="flex items-center" aria-hidden={half === 1}>
+              {MARQUEE_ITEMS.map((item) => (
+                <span
+                  key={`${half}-${item}`}
+                  className="flex items-center whitespace-nowrap font-mono text-sm text-devin-ink-soft"
+                >
+                  <span className="px-6">{item}</span>
+                  <span className="h-1 w-1 rounded-full bg-devin-muted/50" aria-hidden="true" />
+                </span>
+              ))}
+            </div>
           ))}
         </div>
       </div>
@@ -58,7 +64,7 @@ const STEPS = [
 
 export function LoopSection() {
   return (
-    <section className="bg-devin-surface px-6 py-24 sm:py-32">
+    <section className="bg-devin-surface px-6 py-24 sm:py-28">
       <div className="mx-auto max-w-5xl">
         <Reveal>
           <p className="font-mono text-xs uppercase tracking-widest text-devin-primary">
@@ -69,13 +75,13 @@ export function LoopSection() {
           </h2>
         </Reveal>
 
-        <Stagger className="mt-16 grid gap-px overflow-hidden rounded-lg border border-devin-line bg-devin-line sm:grid-cols-3">
+        <Stagger className="mt-16 grid gap-px overflow-hidden rounded-2xl border border-devin-line-soft bg-devin-line-soft sm:grid-cols-3">
           {STEPS.map((step) => (
-            <StaggerItem key={step.n} className="bg-devin-surface p-8">
-              <p className="font-mono text-xs text-devin-ink-soft">{step.n}</p>
+            <div key={step.n} className="bg-devin-surface p-6 sm:p-8">
+              <p className="font-mono text-xs text-devin-muted">{step.n}</p>
               <h3 className="mt-3 text-lg font-medium text-devin-ink">{step.title}</h3>
               <p className="mt-2 text-[15px] leading-relaxed text-devin-ink-soft">{step.body}</p>
-            </StaggerItem>
+            </div>
           ))}
         </Stagger>
       </div>
@@ -109,7 +115,7 @@ const PRODUCTS = [
 
 export function ProductsSection() {
   return (
-    <section className="border-t border-devin-line bg-devin-secondary/40 px-6 py-24 sm:py-32">
+    <section className="border-t border-devin-line-soft bg-devin-secondary/40 px-6 py-24 sm:py-28">
       <div className="mx-auto max-w-5xl">
         <Reveal>
           <p className="font-mono text-xs uppercase tracking-widest text-devin-primary">
@@ -122,24 +128,23 @@ export function ProductsSection() {
 
         <Stagger className="mt-16 grid gap-4 sm:grid-cols-3">
           {PRODUCTS.map((p) => (
-            <StaggerItem key={p.tag}>
-              <a
-                href={p.href}
-                className="group flex h-full flex-col rounded-lg border border-devin-line bg-devin-surface p-8 transition-all duration-300 hover:-translate-y-1 hover:border-devin-ink/30 hover:shadow-[0_16px_48px_-16px_rgba(25,25,25,0.18)]"
-              >
-                <p className="font-mono text-[11px] tracking-widest text-devin-ink-soft">{p.tag}</p>
-                <h3 className="mt-4 text-xl font-medium leading-snug text-devin-ink">{p.title}</h3>
-                <p className="mt-3 flex-1 text-[15px] leading-relaxed text-devin-ink-soft">
-                  {p.body}
-                </p>
-                <span className="mt-6 inline-flex items-center gap-1.5 text-[15px] font-medium text-devin-primary">
-                  {p.cta}
-                  <span className="transition-transform duration-300 group-hover:translate-x-1">
-                    →
-                  </span>
+            <a
+              key={p.tag}
+              href={p.href}
+              className="group flex h-full flex-col rounded-2xl border border-devin-line-soft bg-devin-surface p-6 transition-all duration-300 hover:-translate-y-1 hover:border-devin-ink/30 sm:p-8"
+            >
+              <p className="font-mono text-[11px] tracking-widest text-devin-muted">{p.tag}</p>
+              <h3 className="mt-4 text-xl font-medium leading-snug text-devin-ink">{p.title}</h3>
+              <p className="mt-3 flex-1 text-[15px] leading-relaxed text-devin-ink-soft">
+                {p.body}
+              </p>
+              <span className="mt-6 inline-flex items-center gap-1.5 text-[15px] font-medium text-devin-primary">
+                {p.cta}
+                <span className="transition-transform duration-300 group-hover:translate-x-1">
+                  →
                 </span>
-              </a>
-            </StaggerItem>
+              </span>
+            </a>
           ))}
         </Stagger>
       </div>
@@ -149,7 +154,7 @@ export function ProductsSection() {
 
 export function FinalCta() {
   return (
-    <section className="relative overflow-hidden border-t border-devin-line bg-devin-surface px-6 py-28 sm:py-36">
+    <section className="relative overflow-hidden border-t border-devin-line-soft bg-devin-surface px-6 py-24 sm:py-28">
       <div className="hero-grid-bg pointer-events-none absolute inset-0" aria-hidden="true" />
       <div className="relative mx-auto max-w-3xl text-center">
         <Reveal>
@@ -159,16 +164,16 @@ export function FinalCta() {
           <p className="mx-auto mt-6 max-w-md text-lg text-devin-ink-soft">
             No code, no hosting, no card required.
           </p>
-          <div className="mt-9 flex flex-wrap items-center justify-center gap-3">
+          <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
             <a
               href="/signup"
-              className="rounded bg-devin-primary px-5 py-2.5 text-[15px] font-medium text-white transition-colors hover:bg-devin-primary-hover"
+              className="rounded-sm bg-devin-primary px-[15px] py-2 text-[15px] font-medium text-white transition-colors hover:bg-devin-primary-hover"
             >
               Start free
             </a>
             <a
               href="/demo"
-              className="rounded border border-devin-line bg-devin-surface px-5 py-2.5 text-[15px] font-medium text-devin-ink transition-colors hover:border-devin-ink/40"
+              className="rounded-sm border border-devin-line bg-devin-surface px-[15px] py-2 text-[15px] font-medium text-devin-ink transition-colors hover:border-devin-ink/40"
             >
               Explore the live demo
             </a>

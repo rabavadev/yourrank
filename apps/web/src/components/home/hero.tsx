@@ -1,24 +1,25 @@
-"use client";
-
-import { motion } from "framer-motion";
-import { DEVIN_EASE } from "./reveal";
+import { Fragment } from "react";
 
 const HEADLINE = "Turn viewers into a community that returns.";
 
+/**
+ * Word-by-word headline reveal, pure CSS.
+ * Words render visible in SSR and animate on first paint via keyframes,
+ * so the headline can never be stuck invisible behind dead client JS.
+ */
 function WordStagger({ text }: { text: string }) {
+  const words = text.split(" ");
   return (
     <>
-      {text.split(" ").map((word, i) => (
-        <motion.span
-          key={`${word}-${i}`}
-          className="inline-block will-change-transform"
-          initial={{ opacity: 0, y: 24 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.65, delay: 0.08 + i * 0.06, ease: DEVIN_EASE }}
-        >
-          {word}
-          {i < text.split(" ").length - 1 ? " " : ""}
-        </motion.span>
+      {words.map((word, i) => (
+        <Fragment key={`${word}-${i}`}>
+          <span
+            className="anim-word"
+            style={{ "--d": `${0.1 + i * 0.06}s` } as React.CSSProperties}
+          >
+            {word}
+          </span>{" "}
+        </Fragment>
       ))}
     </>
   );
@@ -34,57 +35,51 @@ const LEADERBOARD_ROWS = [
 
 function DashboardMock() {
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 48, scale: 0.97 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
-      transition={{ duration: 0.9, delay: 0.85, ease: DEVIN_EASE }}
-      className="relative mx-auto mt-16 w-full max-w-3xl overflow-hidden rounded-lg border border-devin-line bg-white text-left shadow-[0_24px_80px_-24px_rgba(25,25,25,0.25)]"
+    <div
+      className="anim-enter-scale relative mx-auto mt-16 w-full max-w-3xl overflow-hidden rounded-2xl border border-devin-line bg-devin-surface text-left"
+      style={{ "--d": "0.85s" } as React.CSSProperties}
     >
       {/* browser chrome */}
-      <div className="flex items-center gap-2 border-b border-devin-line px-4 py-3">
+      <div className="flex items-center gap-2 border-b border-devin-line-soft px-4 py-3">
         <span className="h-2.5 w-2.5 rounded-full bg-devin-secondary" />
         <span className="h-2.5 w-2.5 rounded-full bg-devin-secondary" />
         <span className="h-2.5 w-2.5 rounded-full bg-devin-secondary" />
-        <span className="ml-3 font-mono text-xs text-devin-ink-soft">yourrank.site/dashboard</span>
+        <span className="ml-3 truncate font-mono text-xs text-devin-muted">
+          yourrank.site/dashboard
+        </span>
       </div>
 
       <div className="p-5 sm:p-6">
-        <div className="mb-4 flex items-center justify-between">
-          <div>
-            <p className="font-mono text-[11px] uppercase tracking-widest text-devin-ink-soft">
+        <div className="mb-4 flex items-center justify-between gap-3">
+          <div className="min-w-0">
+            <p className="font-mono text-[11px] uppercase tracking-widest text-devin-muted">
               Creator workspace
             </p>
-            <p className="text-sm font-medium text-devin-ink">Demo Board</p>
+            <p className="truncate text-sm font-medium text-devin-ink">Demo Board</p>
           </div>
-          <span className="flex items-center gap-1.5 rounded-full border border-devin-line px-2.5 py-1 font-mono text-[11px] text-devin-ink">
-            <motion.span
-              className="h-1.5 w-1.5 rounded-full bg-devin-primary"
-              animate={{ opacity: [1, 0.25, 1] }}
-              transition={{ duration: 1.6, repeat: Infinity, ease: "easeInOut" }}
-            />
+          <span className="flex shrink-0 items-center gap-1.5 rounded-full border border-devin-line px-2.5 py-1 font-mono text-[11px] text-devin-ink">
+            <span className="anim-pulse-dot h-1.5 w-1.5 rounded-full bg-devin-primary" />
             LIVE
           </span>
         </div>
 
-        <div className="divide-y divide-devin-line/60 rounded-md border border-devin-line">
+        <div className="divide-y divide-devin-line-soft rounded-md border border-devin-line-soft">
           {LEADERBOARD_ROWS.map((row, i) => (
-            <motion.div
+            <div
               key={row.rank}
-              className="flex items-center justify-between px-4 py-2.5"
-              initial={{ opacity: 0, x: -12 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.5, delay: 1.15 + i * 0.12, ease: DEVIN_EASE }}
+              className="anim-enter grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 px-4 py-2.5"
+              style={{ "--d": `${1.15 + i * 0.12}s` } as React.CSSProperties}
             >
-              <span className="flex items-center gap-3">
-                <span className="font-mono text-xs text-devin-ink-soft">{row.rank}</span>
-                <span className="text-sm text-devin-ink">{row.name}</span>
+              <span className="font-mono text-xs text-devin-muted">{row.rank}</span>
+              <span className="truncate text-sm text-devin-ink">{row.name}</span>
+              <span className="font-mono text-sm whitespace-nowrap text-devin-ink">
+                {row.points} pts
               </span>
-              <span className="font-mono text-sm text-devin-ink">{row.points} pts</span>
-            </motion.div>
+            </div>
           ))}
         </div>
       </div>
-    </motion.div>
+    </div>
   );
 }
 
@@ -98,14 +93,10 @@ export function Hero() {
       />
 
       <div className="relative mx-auto max-w-4xl text-center">
-        <motion.div
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, ease: DEVIN_EASE }}
-        >
+        <div className="anim-enter">
           <a
             href="/demo"
-            className="inline-flex items-center gap-2 rounded-full border border-devin-line bg-white px-3.5 py-1.5 text-[13px] text-devin-ink transition-colors hover:border-devin-ink/40"
+            className="inline-flex items-center gap-2 rounded-full border border-devin-line bg-devin-surface px-3.5 py-1.5 text-[13px] text-devin-ink transition-colors hover:border-devin-ink/40"
           >
             <span className="relative flex h-1.5 w-1.5">
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-devin-primary opacity-60" />
@@ -113,50 +104,44 @@ export function Hero() {
             </span>
             The Streamer Community Suite · V4 Live
           </a>
-        </motion.div>
+        </div>
 
-        <h1 className="mt-7 text-[clamp(2.75rem,6.5vw,4.4rem)] font-medium leading-[1.02] tracking-[-0.02em] text-devin-ink">
+        <h1 className="mt-7 text-[clamp(2.5rem,6.5vw,4.4rem)] font-medium leading-[1.04] tracking-[-0.02em] text-devin-ink">
           <WordStagger text={HEADLINE} />
         </h1>
 
-        <motion.p
-          className="mx-auto mt-6 max-w-xl text-lg leading-relaxed text-devin-ink-soft"
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.7, delay: 0.55, ease: DEVIN_EASE }}
+        <p
+          className="anim-enter mx-auto mt-6 max-w-xl text-lg leading-relaxed text-devin-ink-soft"
+          style={{ "--d": "0.55s" } as React.CSSProperties}
         >
           YourRank connects your public site, Telegram community, and Kick-powered
           viewer credits and shop in one unified workspace.
-        </motion.p>
+        </p>
 
-        <motion.div
-          className="mt-9 flex flex-wrap items-center justify-center gap-3"
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.7, delay: 0.7, ease: DEVIN_EASE }}
+        <div
+          className="anim-enter mt-8 flex flex-wrap items-center justify-center gap-3"
+          style={{ "--d": "0.7s" } as React.CSSProperties}
         >
           <a
             href="/signup"
-            className="rounded bg-devin-primary px-5 py-2.5 text-[15px] font-medium text-white transition-colors hover:bg-devin-primary-hover"
+            className="rounded-sm bg-devin-primary px-[15px] py-2 text-[15px] font-medium text-white transition-colors hover:bg-devin-primary-hover"
           >
             Build your community hub
           </a>
           <a
             href="/demo"
-            className="rounded border border-devin-line bg-devin-surface px-5 py-2.5 text-[15px] font-medium text-devin-ink transition-colors hover:border-devin-ink/40"
+            className="rounded-sm border border-devin-line bg-devin-surface px-[15px] py-2 text-[15px] font-medium text-devin-ink transition-colors hover:border-devin-ink/40"
           >
             Explore the live demo
           </a>
-        </motion.div>
+        </div>
 
-        <motion.p
-          className="mt-6 font-mono text-xs text-devin-ink-soft"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.7, delay: 0.85 }}
+        <p
+          className="anim-enter mt-6 font-mono text-xs text-devin-muted"
+          style={{ "--d": "0.85s" } as React.CSSProperties}
         >
           For entertainment and community engagement only. No bets, no cash prizes.
-        </motion.p>
+        </p>
       </div>
 
       <div className="relative">
