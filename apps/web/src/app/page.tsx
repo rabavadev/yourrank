@@ -9,6 +9,8 @@ import {
 } from "@/components/home/sections";
 import { getCurrentUser } from "@/lib/session";
 
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
   title: "YourRank — Keep your community loop moving",
   description:
