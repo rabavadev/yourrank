@@ -21,7 +21,7 @@ on:
         type: string
       skip_migrations:
         description: "Intentionally skip pushing migrations before rollback"
-        required: true
+        required: false
         default: false
         type: boolean
 
@@ -81,6 +81,7 @@ jobs:
       - name: Record intentional migration skip
         if: inputs.skip_migrations == true
         run: echo "::warning::Migration push intentionally skipped by the operator."
+
       - name: Rollback deploy
         working-directory: apps/${{ inputs.worker }}
         run: |
