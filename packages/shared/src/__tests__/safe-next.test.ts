@@ -8,6 +8,11 @@ describe("safe next paths", () => {
     expect(isSafeNextPath("//evil.com")).toBe(false);
     expect(isSafeNextPath("https://evil.com")).toBe(false);
     expect(isSafeNextPath("javascript:alert(1)")).toBe(false);
+    expect(isSafeNextPath("/\\evil.com")).toBe(false);
+    expect(isSafeNextPath("/\\\\evil.com")).toBe(false);
+    expect(isSafeNextPath("/\thttps://evil.com")).toBe(false);
+    expect(isSafeNextPath("/\nhttps://evil.com")).toBe(false);
+    expect(isSafeNextPath("/\revil.com")).toBe(false);
     expect(isSafeNextPath("")).toBe(false);
     expect(safeNextPath("https://evil.com")).toBe("/dashboard");
   });
