@@ -35,7 +35,7 @@ export async function handleGetRaffles(request, env, deps = {}) {
   const siteId = url.searchParams.get("siteId");
   const site = siteId ? await getBoardById(env, user.id, siteId) : await getByUser(env, user.id);
   if (!site) return bad("Site not found", 404);
-  const authorization = await requireSiteCapability(request, env, user, site, "canRoleManageBoard");
+  const authorization = await requireSiteCapability(user, site, "canRoleManageBoard");
   if (authorization.res) return authorization.res;
 
   const raffles = await query(
@@ -78,7 +78,7 @@ export async function handleCreateRaffle(request, env, deps = {}) {
   const siteId = body?.siteId || url.searchParams.get("siteId");
   const site = siteId ? await getBoardById(env, user.id, siteId) : await getByUser(env, user.id);
   if (!site) return bad("Site not found", 404);
-  const authorization = await requireSiteCapability(request, env, user, site, "canRoleManageBoard");
+  const authorization = await requireSiteCapability(user, site, "canRoleManageBoard");
   if (authorization.res) return authorization.res;
 
   const endsAt = body?.endsAt ? new Date(body.endsAt).toISOString() : null;
@@ -209,7 +209,7 @@ export async function handleGetCodeDrops(request, env, deps = {}) {
   const siteId = url.searchParams.get("siteId");
   const site = siteId ? await getBoardById(env, user.id, siteId) : await getByUser(env, user.id);
   if (!site) return bad("Site not found", 404);
-  const authorization = await requireSiteCapability(request, env, user, site, "canRoleManageBoard");
+  const authorization = await requireSiteCapability(user, site, "canRoleManageBoard");
   if (authorization.res) return authorization.res;
 
   const drops = await query(
@@ -251,7 +251,7 @@ export async function handleCreateCodeDrop(request, env, deps = {}) {
   const siteId = body?.siteId || url.searchParams.get("siteId");
   const site = siteId ? await getBoardById(env, user.id, siteId) : await getByUser(env, user.id);
   if (!site) return bad("Site not found", 404);
-  const authorization = await requireSiteCapability(request, env, user, site, "canRoleManageBoard");
+  const authorization = await requireSiteCapability(user, site, "canRoleManageBoard");
   if (authorization.res) return authorization.res;
 
   try {

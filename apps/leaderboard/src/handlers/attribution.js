@@ -16,8 +16,6 @@ import {
 import { recordConversion } from "@yourrank/shared/conversions";
 import { notifyLiveBoard } from "../live-board-config.js";
 import { effectivePlan } from "@yourrank/shared/plans";
-import { getByUser } from "../site.js";
-import { requireSiteCapability } from "../site-authorization.js";
 
 const MAX_DAYS = 365;
 
@@ -80,9 +78,6 @@ async function getAttributionRows(env, userId, days) {
 export async function handleAttribution(request, env) {
   const { user, res } = await requireUser(request, env);
   if (!user) return res;
-  const site = await getByUser(env, user.id);
-  const authorization = await requireSiteCapability(request, env, user, site, "canRoleManageBilling");
-  if (authorization.res) return authorization.res;
   if (!(await rateLimit(env, `attribution:${user.id}`, 120, 60)).ok) {
     return bad("Too many requests. Try again later.", 429);
   }
@@ -120,9 +115,6 @@ export async function handleAttribution(request, env) {
 export async function handleAttributionExport(request, env) {
   const { user, res } = await requireUser(request, env);
   if (!user) return res;
-  const site = await getByUser(env, user.id);
-  const authorization = await requireSiteCapability(request, env, user, site, "canRoleManageBilling");
-  if (authorization.res) return authorization.res;
   if (!(await rateLimit(env, `attribution-export:${user.id}`, 30, 60)).ok) {
     return bad("Too many requests. Try again later.", 429);
   }
@@ -161,9 +153,6 @@ export async function handleAttributionExport(request, env) {
 export async function handleRotatePostbackKey(request, env) {
   const { user, res } = await requireUser(request, env);
   if (!user) return res;
-  const site = await getByUser(env, user.id);
-  const authorization = await requireSiteCapability(request, env, user, site, "canRoleManageBilling");
-  if (authorization.res) return authorization.res;
   if (effectivePlan(user) === "free") return bad("Postbacks require a paid plan.", 402);
   if (!(await rateLimit(env, `rotate-pb:${user.id}`, 10, 60)).ok) {
     return bad("Too many rotations. Try again later.", 429);
@@ -186,9 +175,6 @@ export async function handleRotatePostbackKey(request, env) {
 export async function handleRevokePostbackKey(request, env) {
   const { user, res } = await requireUser(request, env);
   if (!user) return res;
-  const site = await getByUser(env, user.id);
-  const authorization = await requireSiteCapability(request, env, user, site, "canRoleManageBilling");
-  if (authorization.res) return authorization.res;
   await revokePostbackKeys(user.id);
   return json({ ok: true });
 }

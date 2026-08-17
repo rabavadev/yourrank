@@ -47,7 +47,7 @@ export async function handleExportRaffleWinnersCsv(request, env, deps = {}) {
   const siteId = url.searchParams.get("siteId");
   const site = siteId ? await getBoardById(env, user.id, siteId) : await getByUser(env, user.id);
   if (!site) return bad("Site not found", 404);
-  const authorization = await requireSiteCapability(request, env, user, site, "canRoleManageBilling");
+  const authorization = await requireSiteCapability(user, site, "canRoleManageBilling");
   if (authorization.res) return authorization.res;
 
   const raffles = await query(
@@ -91,7 +91,7 @@ export async function handleExportDropClaimsCsv(request, env, deps = {}) {
   const siteId = url.searchParams.get("siteId");
   const site = siteId ? await getBoardById(env, user.id, siteId) : await getByUser(env, user.id);
   if (!site) return bad("Site not found", 404);
-  const authorization = await requireSiteCapability(request, env, user, site, "canRoleManageBilling");
+  const authorization = await requireSiteCapability(user, site, "canRoleManageBilling");
   if (authorization.res) return authorization.res;
 
   const claims = await query(
@@ -133,7 +133,7 @@ export async function handleExportPredictionsCsv(request, env, deps = {}) {
   const siteId = url.searchParams.get("siteId");
   const site = siteId ? await getBoardById(env, user.id, siteId) : await getByUser(env, user.id);
   if (!site) return bad("Site not found", 404);
-  const authorization = await requireSiteCapability(request, env, user, site, "canRoleManageBilling");
+  const authorization = await requireSiteCapability(user, site, "canRoleManageBilling");
   if (authorization.res) return authorization.res;
 
   const predictions = await query(

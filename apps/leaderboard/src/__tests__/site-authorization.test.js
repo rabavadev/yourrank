@@ -13,8 +13,6 @@ describe("site authorization", () => {
   it("allows a direct owner for every capability", async () => {
     for (const [capability] of capabilities) {
       const result = await requireSiteCapability(
-        new Request("https://example.test"),
-        {},
         { id: "owner" },
         { id: "site", user_id: "owner" },
         capability,
@@ -29,8 +27,6 @@ describe("site authorization", () => {
     for (const [capability, allowed] of capabilities) {
       for (const role of ["owner", "manager", "moderator"]) {
         const result = await requireSiteCapability(
-          new Request("https://example.test"),
-          {},
           { id: role },
           { id: "site", user_id: "different-owner" },
           capability,

@@ -31,17 +31,23 @@ async function onboardingForSite(env, site, userId, plan) {
 
 import { createQueueProducer } from "@yourrank/shared/queue-producer";
 
-export async function handleStats(request, env) {
-  const { user, res } = await requireUser(request, env);
+export async function handleStats(request, env, {
+  requireUserImpl = requireUser,
+  getByUserImpl = getByUser,
+  getBoardByIdImpl = getBoardById,
+  getStatsImpl = getStats,
+  requireSiteCapabilityImpl = requireSiteCapability,
+} = {}) {
+  const { user, res } = await requireUserImpl(request, env);
   if (res) return res;
   const url = new URL(request.url);
   const siteId = url.searchParams.get("siteId");
-  const site = siteId ? await getBoardById(env, user.id, siteId) : await getByUser(env, user.id);
+  const site = siteId ? await getBoardByIdImpl(env, user.id, siteId) : await getByUserImpl(env, user.id);
   if (!site) return bad("no site", 404);
-  const authorization = await requireSiteCapability(request, env, user, site, "canRoleManageBilling");
+  const authorization = await requireSiteCapabilityImpl(user, site, "canRoleManageBoard");
   if (authorization.res) return authorization.res;
   try {
-    return json({ ok: true, stats: await getStats(env, site.id) });
+    return json({ ok: true, stats: await getStatsImpl(env, site.id) });
   } catch (err) {
     if (isStatementTimeout(err)) return bad("Analytics are temporarily unavailable. Try again shortly.", 503);
     throw err;
@@ -54,6 +60,7 @@ export async function handleExportStats(request, env, {
   getByUserImpl = getByUser,
   getBoardByIdImpl = getBoardById,
   getStatsImpl = getStats,
+  requireSiteCapabilityImpl = requireSiteCapability,
 } = {}) {
   const { user, res } = await requireUserImpl(request, env);
   if (res) return res;
@@ -63,7 +70,7 @@ export async function handleExportStats(request, env, {
   const siteId = url.searchParams.get("siteId");
   const site = siteId ? await getBoardByIdImpl(env, user.id, siteId) : await getByUserImpl(env, user.id);
   if (!site) return bad("no site", 404);
-  const authorization = await requireSiteCapability(request, env, user, site, "canRoleManageBilling");
+  const authorization = await requireSiteCapabilityImpl(user, site, "canRoleManageBilling");
   if (authorization.res) return authorization.res;
   const stats = await getStatsImpl(env, site.id);
   const rows = (stats?.days || []).map((d) => [d.day, d.views, d.copies, d.clicks, d.conversions || 0, d.revenue || 0].join(","));
@@ -93,7 +100,7 @@ export async function handleExportPlayers(request, env, {
   const siteId = url.searchParams.get("siteId");
   const site = siteId ? await getBoardByIdImpl(env, user.id, siteId) : await getByUserImpl(env, user.id);
   if (!site) return bad("no site", 404);
-  const authorization = await requireSiteCapability(request, env, user, site, "canRoleManageBoard");
+  const authorization = await requireSiteCapability(user, site, "canRoleManageBoard");
   if (authorization.res) return authorization.res;
   const rows = await queryImpl(
     "SELECT name, wagered, prize, score, hands, net_profit, win_rate, change FROM players WHERE site_id=$1 ORDER BY sort ASC",
@@ -119,19 +126,26 @@ export async function handleExportPlayers(request, env, {
   });
 }
 
-export async function handleHeatmap(request, env) {
-  const { user, res } = await requireUser(request, env);
+export async function handleHeatmap(request, env, {
+  requireUserImpl = requireUser,
+  getByUserImpl = getByUser,
+  getBoardByIdImpl = getBoardById,
+  getHeatmapImpl = getHeatmap,
+  getTopReferrersImpl = getTopReferrers,
+  requireSiteCapabilityImpl = requireSiteCapability,
+} = {}) {
+  const { user, res } = await requireUserImpl(request, env);
   if (res) return res;
   const url = new URL(request.url);
   const siteId = url.searchParams.get("siteId");
-  const site = siteId ? await getBoardById(env, user.id, siteId) : await getByUser(env, user.id);
+  const site = siteId ? await getBoardByIdImpl(env, user.id, siteId) : await getByUserImpl(env, user.id);
   if (!site) return bad("no site", 404);
-  const authorization = await requireSiteCapability(request, env, user, site, "canRoleManageBilling");
+  const authorization = await requireSiteCapabilityImpl(user, site, "canRoleManageBoard");
   if (authorization.res) return authorization.res;
   try {
     const [heatmap, referrers] = await Promise.all([
-      getHeatmap(env, site.id),
-      getTopReferrers(env, site.id),
+      getHeatmapImpl(env, site.id),
+      getTopReferrersImpl(env, site.id),
     ]);
     return json({ ok: true, heatmap, referrers });
   } catch (err) {
@@ -229,29 +243,44 @@ export async function handleCreateBoard(request, env) {
 }
 
 // POST /api/site/archive — { label?, clear: "wagers"|"players"|"none" }
-export async function handleArchive(request, env) {
-  const { user, res } = await requireUser(request, env);
+export async function handleArchive(request, env, {
+  requireUserImpl = requireUser,
+  rateLimitImpl = rateLimit,
+  getByUserImpl = getByUser,
+  getBoardByIdImpl = getBoardById,
+  createArchiveImpl = createArchive,
+  requireSiteCapabilityImpl = requireSiteCapability,
+} = {}) {
+  const { user, res } = await requireUserImpl(request, env);
   if (res) return res;
   if (user.status === "suspended") return bad("This account is suspended.", 403);
-  if (!(await rateLimit(env, `archive:${user.id}`, 10, 3600)).ok) return bad("Too many archive actions. Try again later.", 429);
+  if (!(await rateLimitImpl(env, `archive:${user.id}`, 10, 3600)).ok) return bad("Too many archive actions. Try again later.", 429);
   const body = (await readJson(request)) || {};
-  const site = body.siteId ? await getBoardById(env, user.id, body.siteId) : await getByUser(env, user.id);
-  const authorization = await requireSiteCapability(request, env, user, site, "canRoleManageBilling");
-  if (authorization.res) return authorization.res;
-  const r = await createArchive(env, user.id, { label: body.label, clear: body.clear, siteId: body.siteId }, request);
+  const site = body.siteId ? await getBoardByIdImpl(env, user.id, body.siteId) : await getByUserImpl(env, user.id);
+  if (site) {
+    const authorization = await requireSiteCapabilityImpl(user, site, "canRoleManageBoard");
+    if (authorization.res) return authorization.res;
+  }
+  const r = await createArchiveImpl(env, user.id, { label: body.label, clear: body.clear, siteId: body.siteId }, request);
   return r.error ? bad(r.error, 400) : json({ ok: true, label: r.label });
 }
 
 // POST /api/site/archive/delete — { id }
-export async function handleArchiveDelete(request, env) {
-  const { user, res } = await requireUser(request, env);
+export async function handleArchiveDelete(request, env, {
+  requireUserImpl = requireUser,
+  getByUserImpl = getByUser,
+  deleteArchiveImpl = deleteArchive,
+} = {}) {
+  const { user, res } = await requireUserImpl(request, env);
   if (res) return res;
   const body = (await readJson(request)) || {};
   if (!body.id) return bad("id required");
-  const site = await getByUser(env, user.id);
-  const authorization = await requireSiteCapability(request, env, user, site, "canRoleManageBilling");
-  if (authorization.res) return authorization.res;
-  const r = await deleteArchive(env, user.id, body.id);
+  const site = await getByUserImpl(env, user.id);
+  if (site) {
+    const authorization = await requireSiteCapability(user, site, "canRoleManageBilling");
+    if (authorization.res) return authorization.res;
+  }
+  const r = await deleteArchiveImpl(env, user.id, body.id);
   if (!r.error) {
     await logAudit({
       actorId: user.id,
@@ -275,7 +304,7 @@ export async function handleRestoreArchive(request, env) {
   if (!body.archiveId) return bad("archiveId required");
   const site = body.siteId ? await getBoardById(env, user.id, body.siteId) : await getByUser(env, user.id);
   if (!site) return bad("no site");
-  const authorization = await requireSiteCapability(request, env, user, site, "canRoleManageBoard");
+  const authorization = await requireSiteCapability(user, site, "canRoleManageBoard");
   if (authorization.res) return authorization.res;
   const archive = await one("SELECT snapshot_json FROM archives WHERE id=$1 AND site_id=$2", [body.archiveId, site.id]);
   if (!archive) return bad("Archive not found.");
@@ -305,7 +334,9 @@ export async function handleRestoreArchive(request, env) {
   return json({ ok: true, players: players.length });
 }
 
-export async function handlePutSite(request, env) {
+export async function handlePutSite(request, env, {
+  requireSiteCapabilityImpl = requireSiteCapability,
+} = {}) {
   const { user, res } = await requireUser(request, env);
   if (res) return res;
   if (user.status === "suspended") return bad("This account is suspended.", 403);
@@ -314,27 +345,35 @@ export async function handlePutSite(request, env) {
   const payload = await readJson(request);
   if (!payload) return bad("Invalid request");
   const site = payload.siteId ? await getBoardById(env, user.id, payload.siteId) : await getByUser(env, user.id);
-  const authorization = await requireSiteCapability(request, env, user, site, "canRoleManageBot");
-  if (authorization.res) return authorization.res;
+  if (site) {
+    const authorization = await requireSiteCapabilityImpl(user, site, "canRoleManageBot");
+    if (authorization.res) return authorization.res;
+  }
   const r = await saveSite(env, user, payload, payload.siteId || null, request);
   return r.error ? bad(r.error, 400) : json({ ok: true, updatedAt: r.updatedAt, publishedAt: r.publishedAt, slug: r.slug, siteId: r.siteId });
 }
 
 // POST /api/site/finish — mark the wizard-created board as finished.
-export async function handleFinishSetup(request, env) {
+export async function handleFinishSetup(request, env, {
+  requireSiteCapabilityImpl = requireSiteCapability,
+} = {}) {
   const { user, res } = await requireUser(request, env);
   if (res) return res;
   if (user.status === "suspended") return bad("This account is suspended.", 403);
   if (!(await rateLimit(env, `finish-setup:${user.id}`, 10, 60)).ok) return bad("Too many requests. Try again shortly.", 429);
   const payload = await readJson(request) || {};
   const site = payload.siteId ? await getBoardById(env, user.id, payload.siteId) : await getByUser(env, user.id);
-  const authorization = await requireSiteCapability(request, env, user, site, "canRoleManageBot");
-  if (authorization.res) return authorization.res;
+  if (site) {
+    const authorization = await requireSiteCapabilityImpl(user, site, "canRoleManageBot");
+    if (authorization.res) return authorization.res;
+  }
   const r = await saveSite(env, user, { isDraft: false, published: true }, payload.siteId || null, request);
   return r.error ? bad(r.error, 400) : json({ ok: true, updatedAt: r.updatedAt, publishedAt: r.publishedAt, slug: r.slug, siteId: r.siteId });
 }
 
-export async function handlePutTheme(request, env) {
+export async function handlePutTheme(request, env, {
+  requireSiteCapabilityImpl = requireSiteCapability,
+} = {}) {
   const { user, res } = await requireUser(request, env);
   if (res) return res;
   if (user.status === "suspended") return bad("This account is suspended.", 403);
@@ -342,24 +381,32 @@ export async function handlePutTheme(request, env) {
   const payload = await readJson(request);
   if (!payload) return bad("Invalid request");
   const site = payload.siteId ? await getBoardById(env, user.id, payload.siteId) : await getByUser(env, user.id);
-  const authorization = await requireSiteCapability(request, env, user, site, "canRoleManageBot");
-  if (authorization.res) return authorization.res;
+  if (site) {
+    const authorization = await requireSiteCapabilityImpl(user, site, "canRoleManageBot");
+    if (authorization.res) return authorization.res;
+  }
   const r = await updateSiteTheme(env, user, payload, request);
   return r.error ? bad(r.error, 400) : json({ ok: true, branding: r.branding });
 }
 
 // DELETE /api/site — { siteId }
-export async function handleDeleteSite(request, env) {
-  const { user, res } = await requireUser(request, env);
+export async function handleDeleteSite(request, env, {
+  requireUserImpl = requireUser,
+  rateLimitImpl = rateLimit,
+  getBoardByIdImpl = getBoardById,
+  deleteBoardImpl = deleteBoard,
+  requireSiteCapabilityImpl = requireSiteCapability,
+} = {}) {
+  const { user, res } = await requireUserImpl(request, env);
   if (res) return res;
   if (user.status === "suspended") return bad("This account is suspended.", 403);
-  if (!(await rateLimit(env, `delete-site:${user.id}`, 10, 60)).ok) return bad("Too many delete actions. Try again later.", 429);
+  if (!(await rateLimitImpl(env, `delete-site:${user.id}`, 10, 60)).ok) return bad("Too many delete actions. Try again later.", 429);
   const body = await readJson(request);
   if (!body || !body.siteId) return bad("siteId required");
-  const site = await getBoardById(env, user.id, body.siteId);
-  const authorization = await requireSiteCapability(request, env, user, site, "canRoleManageBilling");
+  const site = await getBoardByIdImpl(env, user.id, body.siteId);
+  const authorization = await requireSiteCapabilityImpl(user, site, "canRoleManageBilling");
   if (authorization.res) return authorization.res;
-  const r = await deleteBoard(env, user.id, body.siteId, request);
+  const r = await deleteBoardImpl(env, user.id, body.siteId, request);
   return r.error ? bad(r.error, 400) : json({ ok: true });
 }
 
@@ -376,7 +423,9 @@ export async function handleSetActive(request, env) {
 }
 
 // POST /api/site/duplicate — { siteId }
-export async function handleDuplicateBoard(request, env) {
+export async function handleDuplicateBoard(request, env, {
+  requireSiteCapabilityImpl = requireSiteCapability,
+} = {}) {
   const { user, res } = await requireUser(request, env);
   if (res) return res;
   if (user.status === "suspended") return bad("This account is suspended.", 403);
@@ -384,7 +433,7 @@ export async function handleDuplicateBoard(request, env) {
   const body = await readJson(request);
   if (!body || !body.siteId) return bad("siteId required");
   const site = await getBoardById(env, user.id, body.siteId);
-  const authorization = await requireSiteCapability(request, env, user, site, "canRoleManageBilling");
+  const authorization = await requireSiteCapabilityImpl(user, site, "canRoleManageBilling");
   if (authorization.res) return authorization.res;
   const r = await duplicateBoard(env, user.id, body.siteId, request);
   return r.error ? bad(r.error, 400) : json({ ok: true, id: r.id, slug: r.slug });
@@ -403,7 +452,7 @@ export async function handleNotifyTest(request, env) {
 
   const site = await getByUser(env, user.id);
   if (!site) return bad("No site found", 404);
-  const authorization = await requireSiteCapability(request, env, user, site, "canRoleManageBot");
+  const authorization = await requireSiteCapability(user, site, "canRoleManageBot");
   if (authorization.res) return authorization.res;
 
   if (channel === "discord") {
@@ -479,7 +528,7 @@ export async function handleDomainVerify(request, env) {
     const siteId = body.siteId || null;
     const site = siteId ? await getBoardById(env, user.id, siteId) : await getByUser(env, user.id);
     if (!site) return bad("No site found", 404);
-    const authorization = await requireSiteCapability(request, env, user, site, "canRoleManageBilling");
+    const authorization = await requireSiteCapability(user, site, "canRoleManageBilling");
     if (authorization.res) return authorization.res;
 
     const zoneId = env.CF_ZONE_ID;
@@ -657,8 +706,10 @@ export async function handlePostSiteSections(request, env) {
   if (!payload || typeof payload.siteSections !== "object") return bad("siteSections required");
   const siteId = payload.siteId || null;
   const site = siteId ? await getBoardById(env, user.id, siteId) : await getByUser(env, user.id);
-  const authorization = await requireSiteCapability(request, env, user, site, "canRoleManageBot");
-  if (authorization.res) return authorization.res;
+  if (site) {
+    const authorization = await requireSiteCapability(user, site, "canRoleManageBot");
+    if (authorization.res) return authorization.res;
+  }
   const r = await saveSite(env, user, { siteSections: payload.siteSections }, siteId, request);
   return r.error ? bad(r.error, 400) : json({ ok: true, updatedAt: r.updatedAt, siteId: r.siteId });
 }
@@ -671,7 +722,7 @@ export async function handleGetSiteGameSettings(request, env) {
   const siteId = url.searchParams.get("siteId");
   const site = siteId ? await getBoardById(env, user.id, siteId) : await getByUser(env, user.id);
   if (!site) return bad("no site", 404);
-  const authorization = await requireSiteCapability(request, env, user, site, "canRoleManageBot");
+  const authorization = await requireSiteCapability(user, site, "canRoleManageBot");
   if (authorization.res) return authorization.res;
   const rows = await query(
     `SELECT game, enabled, min_bet AS "minBet", max_bet AS "maxBet", house_edge_bps AS "houseEdgeBps", daily_loss_cap AS "dailyLossCap"
@@ -691,7 +742,7 @@ export async function handlePostSiteGameSettings(request, env) {
   if (!body || !body.siteId || !body.game) return bad("siteId and game required");
   const site = await getBoardById(env, user.id, body.siteId);
   if (!site) return bad("no site", 404);
-  const authorization = await requireSiteCapability(request, env, user, site, "canRoleManageBot");
+  const authorization = await requireSiteCapability(user, site, "canRoleManageBot");
   if (authorization.res) return authorization.res;
   if (!GAME_KEYS.has(body.game)) return bad("invalid game", 400);
 

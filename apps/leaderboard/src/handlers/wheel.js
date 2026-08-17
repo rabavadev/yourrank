@@ -99,7 +99,7 @@ export async function handleUpdateWheelConfig(request, env, deps = {}) {
   const siteId = body?.siteId || url.searchParams.get("siteId");
   const site = siteId ? await getBoardById(env, user.id, siteId) : await getByUser(env, user.id);
   if (!site) return bad("Site not found", 404);
-  const authorization = await requireSiteCapability(request, env, user, site, "canRoleManageBot");
+  const authorization = await requireSiteCapability(user, site, "canRoleManageBot");
   if (authorization.res) return authorization.res;
 
   const result = await one(

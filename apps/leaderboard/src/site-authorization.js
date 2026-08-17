@@ -17,8 +17,6 @@ const CAPABILITY_CHECKS = {
 };
 
 export async function requireSiteCapability(
-  request,
-  env,
   user,
   site,
   capability,

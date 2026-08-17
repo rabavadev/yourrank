@@ -30,7 +30,7 @@ export async function handleQuickAdd(request, env) {
   // Fetch current site state
   const site = await getBoardById(env, user.id, siteId);
   if (!site) return bad("Board not found", 404);
-  const authorization = await requireSiteCapability(request, env, user, site, "canRoleManageBoard");
+  const authorization = await requireSiteCapability(user, site, "canRoleManageBoard");
   if (authorization.res) return authorization.res;
 
   // getBoardById returns the raw sites row; players live in the players table.

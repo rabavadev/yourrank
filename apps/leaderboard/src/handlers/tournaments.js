@@ -66,7 +66,7 @@ export async function handleCreateTournament(request, env, deps = {}) {
   const siteId = body?.siteId || url.searchParams.get("siteId");
   const site = siteId ? await getBoardById(env, user.id, siteId) : await getByUser(env, user.id);
   if (!site) return bad("Site not found", 404);
-  const authorization = await requireSiteCapability(request, env, user, site, "canRoleManageBoard");
+  const authorization = await requireSiteCapability(user, site, "canRoleManageBoard");
   if (authorization.res) return authorization.res;
 
   const totalRounds = Math.log2(bracketSize);

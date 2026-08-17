@@ -99,8 +99,6 @@ export async function handleDomainPurchase(request, env, {
     const site = siteId ? await getBoardByIdImpl(env, user.id, siteId) : await getByUserImpl(env, user.id);
     if (!site) return bad("No site found for this account.", 404);
     const authorization = await requireSiteCapabilityImpl(
-      request,
-      env,
       user,
       site,
       "canRoleManageBilling"
@@ -245,8 +243,6 @@ export async function handleGetMyDomain(request, env, {
     const site = siteId ? await getBoardByIdImpl(env, user.id, siteId) : await getByUserImpl(env, user.id);
     if (!site) return bad("Site not found", 404);
     const authorization = await requireSiteCapabilityImpl(
-      request,
-      env,
       user,
       site,
       "canRoleManageBilling"
@@ -297,7 +293,7 @@ export async function handleDomainToggleLock(request, env, {
     );
     if (!order) return bad("You do not own this domain through YourRank.", 404);
     const site = await getBoardById(env, user.id, order.site_id);
-    const authorization = await requireSiteCapabilityImpl(request, env, user, site, "canRoleManageBilling");
+    const authorization = await requireSiteCapabilityImpl(user, site, "canRoleManageBilling");
     if (authorization.res) return authorization.res;
 
     const provider = getDomainProviderImpl(env);
@@ -351,7 +347,7 @@ export async function handleDomainTransferAuthCode(request, env, {
     );
     if (!order) return bad("You do not own this domain through YourRank.", 404);
     const site = await getBoardById(env, user.id, order.site_id);
-    const authorization = await requireSiteCapabilityImpl(request, env, user, site, "canRoleManageBilling");
+    const authorization = await requireSiteCapabilityImpl(user, site, "canRoleManageBilling");
     if (authorization.res) return authorization.res;
 
     // Check ICANN 60-day rule for newly registered domains

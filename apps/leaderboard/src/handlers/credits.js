@@ -95,7 +95,7 @@ export async function handleCreditsStatus(request, env) {
   const url = new URL(request.url);
   const site = await getSite(env, user, url);
   if (!site) return bad("no site", 404);
-  const authorization = await requireSiteCapability(request, env, user, site, "canRoleManageCredits");
+  const authorization = await requireSiteCapability(user, site, "canRoleManageCredits");
   if (authorization.res) return authorization.res;
   if (!(await rateLimit(env, `credits:status:${user.id}`, 60, 60)).ok) return bad("Too many requests.", 429);
 
@@ -181,7 +181,7 @@ export async function handleCreditsConnect(request, env) {
   const url = new URL(request.url);
   const site = await getSite(env, user, url);
   if (!site) return bad("no site", 404);
-  const authorization = await requireSiteCapability(request, env, user, site, "canRoleManageCredits");
+  const authorization = await requireSiteCapability(user, site, "canRoleManageCredits");
   if (authorization.res) return authorization.res;
   if (!(await rateLimit(env, `credits:connect:${user.id}`, 10, 60)).ok) return bad("Too many requests.", 429);
 
@@ -205,7 +205,7 @@ export async function handleCreditsSaveReward(request, env) {
   const url = new URL(request.url);
   const site = await getSite(env, user, url);
   if (!site) return bad("no site", 404);
-  const authorization = await requireSiteCapability(request, env, user, site, "canRoleManageCredits");
+  const authorization = await requireSiteCapability(user, site, "canRoleManageCredits");
   if (authorization.res) return authorization.res;
   if (!(await rateLimit(env, `credits:reward:${user.id}`, 20, 60)).ok) return bad("Too many requests.", 429);
 
@@ -273,7 +273,7 @@ export async function handleCreditsCreateReward(request, env) {
   const url = new URL(request.url);
   const site = await getSite(env, user, url);
   if (!site) return bad("no site", 404);
-  const authorization = await requireSiteCapability(request, env, user, site, "canRoleManageCredits");
+  const authorization = await requireSiteCapability(user, site, "canRoleManageCredits");
   if (authorization.res) return authorization.res;
   if (!(await rateLimit(env, `credits:reward-create:${user.id}`, 5, 60)).ok) return bad("Too many requests.", 429);
 
@@ -414,7 +414,7 @@ export async function handleCreditsDeleteReward(request, env, ctx) {
   const url = new URL(request.url);
   const site = await getSite(env, user, url);
   if (!site) return bad("no site", 404);
-  const authorization = await requireSiteCapability(request, env, user, site, "canRoleManageCredits");
+  const authorization = await requireSiteCapability(user, site, "canRoleManageCredits");
   if (authorization.res) return authorization.res;
 
   if (!(await rateLimit(env, `credits:reward-del:${user.id}`, 20, 60)).ok) return bad("Too many requests.", 429);
@@ -436,7 +436,7 @@ export async function handleCreditsSaveShopItem(request, env) {
   const url = new URL(request.url);
   const site = await getSite(env, user, url);
   if (!site) return bad("no site", 404);
-  const authorization = await requireSiteCapability(request, env, user, site, "canRoleManageCredits");
+  const authorization = await requireSiteCapability(user, site, "canRoleManageCredits");
   if (authorization.res) return authorization.res;
   if (!(await rateLimit(env, `credits:shop:${user.id}`, 20, 60)).ok) return bad("Too many requests.", 429);
 
@@ -498,7 +498,7 @@ export async function handleCreditsDeleteShopItem(request, env, ctx) {
   const url = new URL(request.url);
   const site = await getSite(env, user, url);
   if (!site) return bad("no site", 404);
-  const authorization = await requireSiteCapability(request, env, user, site, "canRoleManageCredits");
+  const authorization = await requireSiteCapability(user, site, "canRoleManageCredits");
   if (authorization.res) return authorization.res;
   if (!(await rateLimit(env, `credits:shop-del:${user.id}`, 20, 60)).ok) return bad("Too many requests.", 429);
 
@@ -522,7 +522,7 @@ export async function handleCreditsUpdateRedemption(request, env, ctx) {
   const url = new URL(request.url);
   const site = await getSite(env, user, url);
   if (!site) return bad("no site", 404);
-  const authorization = await requireSiteCapability(request, env, user, site, "canRoleManageCredits");
+  const authorization = await requireSiteCapability(user, site, "canRoleManageCredits");
   if (authorization.res) return authorization.res;
   if (!(await rateLimit(env, `credits:redeem-update:${user.id}`, 30, 60)).ok) return bad("Too many requests.", 429);
 
@@ -647,7 +647,7 @@ export async function handleCreditsActivity(request, env) {
 
   const site = await getBoardById(env, user.id, siteId);
   if (!site) return bad("no site", 404);
-  const authorization = await requireSiteCapability(request, env, user, site, "canRoleManageCredits");
+  const authorization = await requireSiteCapability(user, site, "canRoleManageCredits");
   if (authorization.res) return authorization.res;
 
   const rawLimit = url.searchParams.get("limit");
@@ -777,7 +777,7 @@ export async function handleCreditsViewerAuth(request, env) {
   const url = new URL(request.url);
   const site = await getSite(env, user, url);
   if (!site) return bad("no site", 404);
-  const authorization = await requireSiteCapability(request, env, user, site, "canRoleManageCredits");
+  const authorization = await requireSiteCapability(user, site, "canRoleManageCredits");
   if (authorization.res) return authorization.res;
   if (!(await rateLimit(env, `credits:auth-toggle:${user.id}`, 10, 60)).ok) return bad("Too many requests.", 429);
 
@@ -806,7 +806,7 @@ export async function handleCreditsAnalytics(request, env) {
   const url = new URL(request.url);
   const site = await getSite(env, user, url);
   if (!site) return bad("no site", 404);
-  const authorization = await requireSiteCapability(request, env, user, site, "canRoleManageCredits");
+  const authorization = await requireSiteCapability(user, site, "canRoleManageCredits");
   if (authorization.res) return authorization.res;
   if (!(await rateLimit(env, `credits:analytics:${user.id}`, 30, 60)).ok) return bad("Too many requests.", 429);
 
@@ -943,7 +943,7 @@ export async function handleCreditsAdjustBalance(request, env, ctx) {
   const url = new URL(request.url);
   const site = await getSite(env, user, url);
   if (!site) return bad("no site", 404);
-  const authorization = await requireSiteCapability(request, env, user, site, "canRoleManageCredits");
+  const authorization = await requireSiteCapability(user, site, "canRoleManageCredits");
   if (authorization.res) return authorization.res;
   if (!(await rateLimit(env, `credits:adjust:${user.id}`, 30, 60)).ok) return bad("Too many requests.", 429);
 
@@ -1054,7 +1054,7 @@ export async function handleCreditsReconcile(request, env) {
   const url = new URL(request.url);
   const site = await getSite(env, user, url);
   if (!site) return bad("no site", 404);
-  const authorization = await requireSiteCapability(request, env, user, site, "canRoleManageCredits");
+  const authorization = await requireSiteCapability(user, site, "canRoleManageCredits");
   if (authorization.res) return authorization.res;
   if (!(await rateLimit(env, `credits:reconcile:${user.id}`, 10, 60)).ok) return bad("Too many requests.", 429);
 
