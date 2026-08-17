@@ -5,7 +5,7 @@ import { state } from "./dashboard/state.js";
 import { wireAccount } from "./dashboard/account.js";
 import { wireDeleteAccountModal } from "./dashboard/account-delete-modal.js";
 import { openDrawer, closeDrawer } from "./dashboard/shell.js";
-import { checkout, renderPlan, loadHistory, loadPlanUsage, wireDeleteAccount, wireCancelSubscription } from "./dashboard/site.js";
+import { checkout, renderPlan, loadHistory, loadPlanUsage, wireCancelSubscription } from "./dashboard/site.js";
 
 const statusEl = () => $("status");
 function setStatus(message, isError) {
@@ -569,7 +569,6 @@ async function init() {
   await loadPostbacks();
   wirePostbacks();
   await loadConnectedAccounts();
-  wireDeleteAccount();
   wireDeleteAccountModal();
 }
 

@@ -1,6 +1,10 @@
 import { describe, it, expect } from "bun:test";
+import { readFileSync } from "node:fs";
 import { settingsWidgets } from "../pages/account-pages.js";
 import { UnifiedSettingsPage } from "../pages/account.jsx";
+
+const accountSource = readFileSync(new URL("../assets/account.js", import.meta.url), "utf8");
+const siteSource = readFileSync(new URL("../assets/dashboard/site.js", import.meta.url), "utf8");
 
 // The widgets are the settings page's panels; the standalone `/account/*`
 // documents they used to also render are gone, so these assert the hooks on
@@ -112,6 +116,11 @@ describe("settings panels", () => {
       expect(html).not.toContain('id="deleteAccountModal"');
       expect(html).not.toContain('id="deleteAccountConfirm"');
     }
+  });
+
+  it("keeps delete-account wiring under one controller", () => {
+    expect(siteSource).not.toMatch(/\bwireDeleteAccount\b/);
+    expect(accountSource).not.toMatch(/\bwireDeleteAccount\b/);
   });
 
   it("serves every panel from the one settings document", async () => {

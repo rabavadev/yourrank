@@ -313,68 +313,6 @@ export function wireCancelSubscription() {
   });
 }
 
-export function wireDeleteAccount() {
-  const btn = $("deleteAccountBtn");
-  const modal = $("deleteAccountModal");
-  const confirmInput = $("deleteAccountConfirm");
-  const passwordWrap = $("deleteAccountPasswordWrap");
-  const passwordInput = $("deleteAccountPassword");
-  const confirmBtn = $("deleteAccountConfirmBtn");
-  const cancelBtn = $("deleteAccountCancelBtn");
-  const status = $("deleteAccountModalStatus");
-  if (!btn || !modal || !confirmInput || !confirmBtn || !cancelBtn) return;
-  if (wireDeleteAccount._wired) return;
-  wireDeleteAccount._wired = true;
-  const close = () => {
-    modal.hidden = true;
-    confirmInput.value = "";
-    if (passwordInput) passwordInput.value = "";
-    if (passwordWrap) passwordWrap.hidden = true;
-    if (status) status.textContent = "";
-    if (confirmBtn) { confirmBtn.disabled = false; confirmBtn.textContent = "Delete my account"; }
-  };
-  btn.addEventListener("click", () => {
-    confirmInput.value = "";
-    if (passwordInput) passwordInput.value = "";
-    if (passwordWrap) passwordWrap.hidden = true;
-    if (status) status.textContent = "";
-    modal.hidden = false;
-    confirmInput.focus();
-  });
-  cancelBtn.addEventListener("click", close);
-  confirmBtn.addEventListener("click", async () => {
-    if (status) status.textContent = "";
-    if (confirmInput.value.trim() !== "DELETE") { if (status) status.textContent = "Type DELETE exactly to confirm."; return; }
-    const password = passwordWrap && !passwordWrap.hidden && passwordInput ? passwordInput.value.trim() : "";
-    if (passwordWrap && !passwordWrap.hidden && !password) { if (status) status.textContent = "Enter your password."; return; }
-    confirmBtn.disabled = true; confirmBtn.textContent = "Deleting...";
-    try {
-      const res = await fetch("/api/account/delete", {
-        method: "POST",
-        credentials: "include",
-        headers: { "content-type": "application/json", "x-csrf-token": getCsrf() },
-        body: JSON.stringify(password ? { password } : {})
-      });
-      const d = await res.json();
-      if (res.status === 400 && d.error && d.error.includes("Password required")) {
-        if (passwordWrap) passwordWrap.hidden = false;
-        if (status) status.textContent = "Enter your password to confirm deletion.";
-        confirmBtn.disabled = false; confirmBtn.textContent = "Delete my account";
-        if (passwordInput) passwordInput.focus();
-        return;
-      }
-      if (res.ok && d.ok) {
-        if (status) status.textContent = "Account deleted. Redirecting...";
-        location.href = "/";
-        return;
-      }
-      if (status) status.textContent = d.error || "Deletion failed. Try again.";
-    } catch (err) { logError("delete-account", err); if (status) status.textContent = "Couldn't delete account. Try again."; }
-    confirmBtn.disabled = false; confirmBtn.textContent = "Delete my account";
-  });
-  modal.addEventListener("click", (e) => { if (e.target === modal) close(); });
-}
-
 export function collect() {
   const players = [...$("rows").children].map((tr) => {
     const p = {

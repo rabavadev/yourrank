@@ -1,6 +1,4 @@
 // Keyboard-accessible lifecycle for the server-rendered account deletion dialog.
-// This intentionally owns the modal when account.js/site.js also loads: the
-// first listener stops the legacy click handlers from opening a second lifecycle.
 const FOCUSABLE = 'button,[href],input,select,textarea,[tabindex]:not([tabindex="-1"])';
 
 function csrfToken() {
@@ -46,7 +44,6 @@ export function wireDeleteAccountModal() {
   };
   const open = (event) => {
     event.preventDefault();
-    event.stopImmediatePropagation();
     restoreTarget = event.currentTarget;
     reset();
     modal.hidden = false;
@@ -70,7 +67,6 @@ export function wireDeleteAccountModal() {
   };
   const submit = async (event) => {
     event?.preventDefault();
-    event?.stopImmediatePropagation();
     if (busy || !valid()) return;
     busy = true;
     confirmBtn.disabled = true;
@@ -131,15 +127,13 @@ export function wireDeleteAccountModal() {
     else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
   }
 
-  opener.addEventListener("click", open, true);
-  cancelBtn.addEventListener("click", (event) => { event.preventDefault(); event.stopImmediatePropagation(); close(); }, true);
-  confirmBtn.addEventListener("click", submit, true);
+  opener.addEventListener("click", open);
+  cancelBtn.addEventListener("click", (event) => { event.preventDefault(); close(); });
+  confirmBtn.addEventListener("click", submit);
   modal.addEventListener("click", (event) => {
     if (event.target !== modal) return;
     event.preventDefault();
-    event.stopImmediatePropagation();
     close();
-  }, true);
+  });
   modal.setAttribute("aria-hidden", "true");
 }
-
