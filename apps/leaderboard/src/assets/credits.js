@@ -134,7 +134,7 @@ async function loadBoardShell() {
   activeSiteId = current || "";
   if (select) { select.innerHTML = list.map((b) => `<option value="${esc(b.id || b.siteId)}" ${String(b.id || b.siteId) === String(current) ? "selected" : ""}>${esc(b.name || b.slug || "Board")}</option>`).join(""); select.addEventListener("change", () => { location.href = `${location.pathname}?siteId=${encodeURIComponent(select.value)}`; }); }
   const board = list.find((b) => String(b.id || b.siteId) === String(current)) || list[0] || {};
-  $("activeBoardName").textContent = board.name || board.slug || "Site"; $("activeBoardMeta").textContent = board.slug ? `yourrank.site/${board.slug}` : "";
+  $("activeBoardName").textContent = board.name || board.slug || "Site";
   const topbarPath = $("lbTopbarSitePath"); if (topbarPath) topbarPath.textContent = board.slug ? `/${board.slug}` : "";
   const live = Boolean(board.published) && user.emailVerified !== false;
   const pendingVerification = Boolean(board.published) && user.emailVerified === false;

@@ -159,8 +159,6 @@ export function navTo(page, hash = "") {
   if (page === "board") setTimeout(refreshDesignPreview, 0);
   const title = SECTIONS[page]?.title || page;
   document.title = `${title} · YourRank`;
-  const topbarTitle = $("lbTopbarTitle");
-  if (topbarTitle) { topbarTitle.textContent = title; topbarTitle.focus({ preventScroll: true }); }
 
   // Sync editor sub-tabs when navigating directly to a sub-group.
   if (page === "board") {
