@@ -130,8 +130,7 @@ export function setActiveSideNav(page, hash = "") {
   document.querySelectorAll(".gm-tab").forEach((t) => {
     const href = t.getAttribute("href") || "";
     const isActive = (area === "sites" && href === "/dashboard") ||
-                     (area === "credits" && href.startsWith("/dashboard/rewards")) ||
-                     (area === "telegram" && href.startsWith("/bot"));
+                     (area === "credits" && href.startsWith("/dashboard/rewards"));
     t.classList.toggle("gm-tab--active", isActive);
   });
 }

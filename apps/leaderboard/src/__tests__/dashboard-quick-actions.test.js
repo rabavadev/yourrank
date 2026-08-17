@@ -97,7 +97,6 @@ describe("dashboard overview quick actions", () => {
     ]) expect(html).toContain(`>${label}</a>`);
     expect(html).toContain('>LEADERBOARD</div>');
     expect(html).toContain('>COMMUNITY &amp; REWARDS</div>');
-    expect(html).toContain('>TELEGRAM BOT</div>');
     expect(html).toContain('>SETTINGS &amp; SITES</div>');
   });
 

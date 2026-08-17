@@ -64,7 +64,7 @@ const COMMANDS = [
   { id: "nav-games", title: "Mini-games & Interactive Simulator", group: "Navigation", icon: PALETTE_ICONS.games, action: () => location.href = "/dashboard/games" },
   { id: "nav-analytics", title: "Traffic & Analytics", group: "Navigation", icon: PALETTE_ICONS.analytics, action: () => location.href = "/dashboard/analytics/activity" },
   { id: "nav-rewards", title: "Viewer Rewards & Shop", group: "Navigation", icon: PALETTE_ICONS.rewards, action: () => location.href = "/dashboard/rewards/shop" },
-  { id: "nav-telegram", title: "Telegram Bot Console", group: "Navigation", icon: PALETTE_ICONS.bot, action: () => location.href = "/dashboard/telegram" },
+  { id: "nav-telegram", title: "Telegram Bot Console", group: "Navigation", icon: PALETTE_ICONS.bot, action: () => location.href = "/bot/dashboard" },
   { id: "nav-settings", title: "Site Settings & Domain", group: "Navigation", icon: PALETTE_ICONS.settings, action: () => location.href = "/dashboard/settings/board" },
   { id: "nav-billing", title: "Plans & Billing", group: "Navigation", icon: PALETTE_ICONS.settings, action: () => location.href = "/dashboard/settings/plan" },
   { id: "act-support", title: "Help & Support Drawer", group: "Support", icon: PALETTE_ICONS.help, action: () => $("openHelpDrawerBtn")?.click() }
@@ -259,4 +259,3 @@ if (document.readyState === "loading") {
 
 // Export trigger for UI buttons
 export { openPalette, closePalette };
-
