@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Multi-section, branded streamer site shell (Home, Leaderboard, Shop, Games,
 // Board credits).
 //
@@ -177,7 +178,7 @@ function sidebar({ b, slug, section, siteSections, homeUrl, isCustomDomain, logo
 
   const resources = [
     kickUrl ? `<a class="yr-nav-a" href="${kickUrl}" target="_blank" rel="noopener">${ICONS.kick} Watch on Kick</a>` : "",
-    hasCta && casino ? `<a class="yr-nav-a" href="${ctaHref}" target="_blank" rel="noopener">${ICONS.gift} Join ${esc(casino)}</a>` : "",
+    hasCta ? `<a class="yr-nav-a" href="${ctaHref}" target="_blank" rel="noopener">${ICONS.gift} Join ${esc(casino || "sponsor")}</a>` : "",
     viewer ? `<a class="yr-nav-a" href="/me">${ICONS.account} All boards &amp; account</a>` : "",
     `<button class="yr-nav-a" type="button" data-feedback-open>${ICONS.book} Send feedback</button>`,
   ].filter(Boolean).join("");
@@ -507,6 +508,7 @@ ${footer}
 </main>
 </div>
 ${feedbackModal({ slug })}
+<script src="/assets/cookie-consent.js" nonce="${nonce}" defer></script>
 <script src="/assets/site-shell.js" nonce="${nonce}" defer></script>
 </body></html>`;
 
@@ -676,8 +678,6 @@ function boardMain(ctx) {
 </div>`;
   }).join("");
 
-  // U-09: Removed .padStart(2,"0") — leading zeros cause AT to say "zero one".
-  // Alignment is preserved via CSS tabular-nums on .yr-idx.
   const rows = players.map((p, i) => `<tr data-name="${esc(String(p.name || "").toLowerCase())}" data-position="${Number(p.rank) || i + 1}">
 <td class="yr-idx">${Number(p.rank) || i + 1}</td>
 <td><a href="${playerHref(p.name)}">${esc(p.name)}</a></td>

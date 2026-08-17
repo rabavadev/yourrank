@@ -1,4 +1,4 @@
-import { renderSite } from "@/lib/site-render";
+import { renderSite } from "@yourrank/shared/site-render";
 import { getPublicSite } from "@/lib/site";
 import { setDatabaseUrl } from "@/lib/db";
 import { renderPasswordGate } from "@/lib/password-gate";

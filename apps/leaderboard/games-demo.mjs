@@ -17,7 +17,7 @@ import fs from "node:fs";
 import http from "node:http";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { gamesIslandHead, gamesIslandMount } from "./src/games-embed.js";
+import { gamesIslandHead, gamesIslandMount } from "@yourrank/shared/games-embed";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const assets = path.join(here, "src/assets");

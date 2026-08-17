@@ -1,7 +1,7 @@
 import { describe, expect, it } from "bun:test";
 import { renderNewEmbed, renderNewHallOfFame, renderNewLegalPage, renderNewPlayerProfile, renderNewStreamerProfile } from "../auxiliary-renderers.js";
 import { renderPasswordGate } from "../password-gate.js";
-import { renderSite } from "../site-render.js";
+import { renderSite } from "@yourrank/shared/site-render";
 
 const record = {
   slug: "demo-board",

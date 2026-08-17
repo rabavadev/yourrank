@@ -6,7 +6,7 @@ import { LiveBoard } from "./live-board.js";
 import { populateEnv } from "@yourrank/shared/env";
 import { fromJsonb, getPublicSite, getBySlug, getClickRedirectSite, getArchiveSnapshots, ARCHIVE_LIMITS, PUBLIC_ARCHIVE_LIMIT } from "./site.js";
 import { parseSitePath, renderSiteRoute } from "./site-routes.js";
-import { renderSite } from "./site-render.js";
+import { renderSite } from "@yourrank/shared/site-render";
 import { viewerDashboardPage } from "./pages/viewer-dashboard.js";
 import { verifyEmailPageHtml } from "./pages/verify-email.js";
 import { verifyEmailToken } from "./handlers/auth.js";

@@ -12,9 +12,9 @@ import { hashToken as defaultHashToken } from "@yourrank/shared/crypto";
 import { HTML, withNonce, notFoundPage, pendingVerificationPage, error500Page } from "./middleware/headers.js";
 import { generateCsrfToken, csrfCookie } from "./middleware/csrf.js";
 import { renderPasswordGate as defaultRenderPasswordGate } from "./password-gate.js";
-import { renderSite as defaultRenderSite } from "./site-render.js";
+import { renderSite as defaultRenderSite } from "@yourrank/shared/site-render";
 import { getViewerSiteData as defaultGetViewerSiteData } from "./site-data.js";
-import { gamesIslandHead, gamesIslandMount } from "./games-embed.js";
+import { gamesIslandHead, gamesIslandMount } from "@yourrank/shared/games-embed";
 import {
   cachedPublicBoardResponse,
   getPublicBoardCache,
