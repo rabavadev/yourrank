@@ -86,6 +86,10 @@ DEMO_USER_EMAIL = "demo@yourrank.site"
 # GBP_PHOTO_URL = "https://yourrank.site/og.png"
 # Set SENTRY_DSN via `wrangler secret put SENTRY_DSN` when ready
 
+[[services]]
+binding = "MARKETING"
+service = "yourrank-web"
+
 # --- Secrets (set via `wrangler secret put <NAME>`), NOT stored here: ---
 #   DATABASE_URL            (fallback if Hyperdrive isn't bound)
 #   NOWPAYMENTS_API_KEY

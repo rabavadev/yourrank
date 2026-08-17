@@ -1,4 +1,4 @@
-import { getCurrentUser, type UserRecord } from "@/lib/session";
+import { getCurrentUser, requireCurrentUser, type UserRecord } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
 
@@ -24,17 +24,7 @@ export default async function DashboardPage() {
   }
 
   if (!user) {
-    return (
-      <section className="max-w-3xl">
-        <h2 className="text-2xl font-bold text-ink">Overview</h2>
-        <p className="mt-4 text-ink-soft">
-          Not signed in.{" "}
-          <a href="/login?next=/dashboard" className="font-medium text-cobalt hover:underline">
-            Sign in
-          </a>
-        </p>
-      </section>
-    );
+    user = await requireCurrentUser("/dashboard", user);
   }
 
   return (

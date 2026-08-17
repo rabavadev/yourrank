@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { safeNextPath } from "@yourrank/shared/safe-next";
 
 function EyeIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
@@ -69,7 +70,7 @@ export function LoginForm({ next = "/dashboard" }: LoginFormProps) {
         setError(data.error || "Sign in failed. Please try again.");
         return;
       }
-      router.push(next);
+      router.push(safeNextPath(next));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Network error. Please try again.");
     } finally {

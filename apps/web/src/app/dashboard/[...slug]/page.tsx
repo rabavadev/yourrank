@@ -20,6 +20,7 @@ import { TelegramBroadcastsPage } from "../_components/TelegramBroadcastsPage";
 import { AnalyticsActivityPage } from "../_components/AnalyticsActivityPage";
 import { AnalyticsReferralsPage } from "../_components/AnalyticsReferralsPage";
 import { AnalyticsEventsPage } from "../_components/AnalyticsEventsPage";
+import { requireCurrentUser } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
 
@@ -31,6 +32,8 @@ interface DashboardPageProps {
 export default async function DashboardPage({ params, searchParams }: DashboardPageProps) {
   const { slug } = await params;
   const { siteId } = await searchParams;
+  const query = siteId ? `?siteId=${encodeURIComponent(siteId)}` : "";
+  await requireCurrentUser(`/dashboard/${slug.join("/")}${query}`);
 
   const key = slug.join("/");
 

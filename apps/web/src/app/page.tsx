@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
+import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { Hero } from "@/components/home/hero";
 import {
   FinalCta,
@@ -19,9 +21,12 @@ export const metadata: Metadata = {
     title: "YourRank — Keep your community loop moving",
     description:
       "Launch a streamer site, activate viewers on Telegram, and bring them back with Credits & Shop.",
-    url: "https://app.yourrank.site/",
+    url: "https://yourrank.site/",
     type: "website",
     images: ["https://yourrank.site/og.png"],
+  },
+  alternates: {
+    canonical: "https://yourrank.site/",
   },
 };
 
@@ -34,9 +39,18 @@ const NAV_LINKS = [
 ];
 
 export default async function HomePage() {
+  const requestHeaders = await headers();
   const user = await getCurrentUser();
   if (user) {
     redirect("/dashboard");
+  }
+  if (requestHeaders.get("x-yr-marketing") !== "1") {
+    const { env } = await getCloudflareContext({ async: true });
+    const configuredOrigin = (env as Record<string, unknown>).MARKETING_ORIGIN;
+    const origin = typeof configuredOrigin === "string" && configuredOrigin
+      ? configuredOrigin
+      : "https://yourrank.site";
+    redirect(new URL("/", origin).toString());
   }
 
   return (
