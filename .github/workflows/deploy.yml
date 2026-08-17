@@ -24,6 +24,8 @@ concurrency:
 jobs:
   migrate:
     runs-on: ubuntu-latest
+    outputs:
+      applied: ${{ steps.push-migrations.outputs.applied }}
     steps:
       - uses: actions/checkout@v7
       - name: Install Supabase CLI
@@ -32,6 +34,7 @@ jobs:
           version: 2.39.2
 
       - name: Link project and push migrations
+        id: push-migrations
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
           SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
@@ -42,7 +45,18 @@ jobs:
             exit 1
           fi
           if supabase link --project-ref lygcqzjxlqbvymkfjvel --password "$SUPABASE_DB_PASSWORD"; then
-            supabase db push --include-all
+            if OUTPUT=$(supabase db push --include-all 2>&1); then
+              printf '%s\n' "$OUTPUT"
+            else
+              STATUS=$?
+              printf '%s\n' "$OUTPUT"
+              exit "$STATUS"
+            fi
+            if printf '%s\n' "$OUTPUT" | grep -Eiq 'no changes|up to date'; then
+              echo "applied=false" >> "$GITHUB_OUTPUT"
+            else
+              echo "applied=true" >> "$GITHUB_OUTPUT"
+            fi
             echo "Migrations applied successfully"
           else
             echo "::error::supabase link failed — check SUPABASE_DB_PASSWORD and project ref"
@@ -293,12 +307,26 @@ jobs:
 
       - name: "Smoke: DB connectivity (yourrank.site/health)"
         run: |
-          BODY=$(curl -s -L --max-time 20 https://yourrank.site/health || true)
-          if echo "$BODY" | grep -qi 'ok'; then
-            echo "OK: /health returned ok"
-          else
-            echo "FAIL: /health did not contain 'ok' — response: $BODY"
+          RESPONSE=$(curl -sS -L --max-time 20 -w '\n%{http_code}' https://yourrank.site/health || true)
+          STATUS=$(printf '%s\n' "$RESPONSE" | tail -n1)
+          BODY=$(printf '%s\n' "$RESPONSE" | sed '$d')
+          if [ "$STATUS" != "200" ]; then
+            echo "FAIL: /health returned HTTP $STATUS (expected 200) — response: $BODY"
             exit 1
+          fi
+          if ! printf '%s' "$BODY" | jq empty >/dev/null 2>&1; then
+            echo "FAIL: /health returned unparseable JSON — response: $BODY"
+            exit 1
+          fi
+          if [ "$(printf '%s' "$BODY" | jq -r '.db')" != "true" ]; then
+            echo "FAIL: /health reported db != true — response: $BODY"
+            exit 1
+          fi
+          HEALTH_STATUS=$(printf '%s' "$BODY" | jq -r '.status // empty')
+          if [ "$HEALTH_STATUS" = "degraded" ]; then
+            echo "::warning::/health is degraded by a downstream signal: $BODY"
+          else
+            echo "OK: /health returned HTTP 200 with db=true"
           fi
 
       - name: Summarise failure
@@ -349,8 +377,8 @@ jobs:
   # Cloudflare deployment — no manual intervention needed.
   # -----------------------------------------------------------------
   rollback:
-    needs: [deploy-leaderboard, deploy-bot, deploy-consumer, smoke-test]
-    if: always() && (needs.smoke-test.result == 'failure' || contains(needs.*.result, 'failure'))
+    needs: [migrate, deploy-leaderboard, deploy-bot, deploy-consumer, smoke-test]
+    if: always() && needs.migrate.result == 'success' && needs.smoke-test.result == 'failure'
     runs-on: ubuntu-latest
     environment: production
     steps:
@@ -359,7 +387,18 @@ jobs:
         with:
           bun-version: '1.3.0'
 
+      - name: Warn if schema is ahead of rolled-back code
+        if: needs.migrate.outputs.applied == 'true'
+        run: |
+          echo "::warning::Migrations were applied before rollback; the database schema is ahead of the rolled-back code and needs manual review."
+          {
+            echo "## Rollback schema warning"
+            echo ""
+            echo "Migrations were applied before rollback. The database schema is now ahead of the rolled-back code and needs manual review."
+          } >> "$GITHUB_STEP_SUMMARY"
+
       - name: Rollback leaderboard worker
+        if: ${{ always() && needs.deploy-leaderboard.result == 'success' }}
         uses: cloudflare/wrangler-action@ebbaa1584979971c8614a24965b4405ff95890e0
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
@@ -369,6 +408,7 @@ jobs:
           wranglerVersion: "4.106.0"
 
       - name: Rollback bot worker
+        if: ${{ always() && needs.deploy-bot.result == 'success' }}
         uses: cloudflare/wrangler-action@ebbaa1584979971c8614a24965b4405ff95890e0
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
@@ -378,6 +418,7 @@ jobs:
           wranglerVersion: "4.106.0"
 
       - name: Rollback consumer worker
+        if: ${{ always() && needs.deploy-consumer.result == 'success' }}
         uses: cloudflare/wrangler-action@ebbaa1584979971c8614a24965b4405ff95890e0
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}

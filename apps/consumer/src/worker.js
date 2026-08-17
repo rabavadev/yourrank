@@ -147,7 +147,29 @@ export async function processQueueMessages(messages, handler) {
   return { processed, failed };
 }
 
+export async function refreshConsumerHeartbeat(execImpl = exec) {
+  try {
+    await execImpl(
+      `INSERT INTO consumer_heartbeat (name, last_seen, processed_count, failed_count)
+       VALUES ('consumer', now(), 0, 0)
+       ON CONFLICT (name) DO UPDATE SET last_seen = now()`,
+      []
+    );
+  } catch (hbErr) {
+    console.error(JSON.stringify({
+      event: "consumer_heartbeat_refresh_failed",
+      error: hbErr instanceof Error ? hbErr.message : String(hbErr),
+      ts: new Date().toISOString(),
+    }));
+  }
+}
+
 export default {
+  async scheduled(_event, env) {
+    setProcessEnv(env);
+    await refreshConsumerHeartbeat();
+  },
+
   async queue(batch, env, ctx) {
     setProcessEnv(env);
 
@@ -211,9 +233,8 @@ export default {
     setProcessEnv(env);
     const url = new URL(request.url);
     if (url.pathname === "/health" || url.pathname === "/consumer/health") {
-      // Update the heartbeat when the monitor pings this endpoint. This keeps
-      // the dashboard /health check green during idle queue periods without
-      // requiring a cron trigger on the queue consumer.
+      // This probe heartbeat records endpoint reachability separately from the
+      // scheduled consumer heartbeat, which is traffic-independent.
       try {
         await exec(
           `INSERT INTO consumer_heartbeat (name, last_seen, processed_count, failed_count)

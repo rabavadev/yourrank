@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { handleDlq, handleEvent, processQueueMessages } from "./worker.js";
+import { handleDlq, handleEvent, processQueueMessages, refreshConsumerHeartbeat } from "./worker.js";
 import { processAccountExport } from "./account-export.js";
 
 function message(id) {
@@ -67,6 +67,26 @@ describe("queue batch processing", () => {
     expect(messages.filter((msg) => msg.acked === 1)).toHaveLength(4);
     expect(messages.filter((msg) => msg.retried === 1)).toHaveLength(1);
     expect(messages.every((msg) => msg.acked + msg.retried === 1)).toBe(true);
+  });
+});
+
+describe("consumer heartbeat", () => {
+  it("refreshes last_seen without changing processed or failed counts", async () => {
+    const row = { last_seen: 0, processed_count: 17, failed_count: 4 };
+    const calls = [];
+    await refreshConsumerHeartbeat(async (sql, params) => {
+      calls.push([sql, params]);
+      row.last_seen++;
+    });
+
+    expect(calls).toHaveLength(1);
+    expect(calls[0][0]).toBe(
+      `INSERT INTO consumer_heartbeat (name, last_seen, processed_count, failed_count)
+       VALUES ('consumer', now(), 0, 0)
+       ON CONFLICT (name) DO UPDATE SET last_seen = now()`
+    );
+    expect(calls[0][1]).toEqual([]);
+    expect(row).toEqual({ last_seen: 1, processed_count: 17, failed_count: 4 });
   });
 });
 

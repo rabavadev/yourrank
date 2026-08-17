@@ -3,8 +3,8 @@ main = "src/worker.js"
 compatibility_date = "2025-07-01"
 compatibility_flags = ["nodejs_compat"]
 
-# Expose /health on the main domain so the uptime monitor can ping the consumer
-# directly and keep the dashboard heartbeat fresh without a cron trigger.
+# Expose /health on the main domain so the uptime monitor can record endpoint
+# reachability separately from the traffic-independent consumer liveness cron.
 routes = [
   { pattern = "yourrank.site/consumer/*", zone_name = "yourrank.site" },
 ]
@@ -17,6 +17,9 @@ head_sampling_rate = 1
 enabled = true
 head_sampling_rate = 1
 invocation_logs = true
+
+[triggers]
+crons = ["*/5 * * * *"]
 
 # Tell Cloudflare to provision the RateLimiter Durable Object class on first deploy.
 [[migrations]]
