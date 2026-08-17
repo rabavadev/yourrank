@@ -1,6 +1,6 @@
 # YourRank — Production Capacity & Scalability Audit
 
-Repository: `https://github.com/rabavadev/yourrank` (audited from the repository checkout, default branch, no files modified)
+Repository: `https://github.com/yourrank/yourrank` (audited from the repository checkout, default branch, no files modified)
 Method: full static read of the four Workers, `shared/`, 95 SQL migrations, all four `wrangler.toml`, frontend assets, plus verification of Cloudflare/Supabase published limits.
 Raw evidence inventory (routes, per-route SQL, schema, indexes, caches, limiters, queues, cron, external services): `inventory.md` next to this file.
 

@@ -57,7 +57,7 @@ These live in the encrypted vault attached to the Worker, not in the repo.
 
 ## 2. GitHub Actions secrets
 
-For CI to deploy the Workers automatically from `rabavadev/yourrank` on push.
+For CI to deploy the Workers automatically from `yourrank/yourrank` on push.
 Set in: repo → Settings → Secrets and variables → Actions → New repository secret.
 
 | Secret | Purpose |
@@ -69,7 +69,7 @@ Set in: repo → Settings → Secrets and variables → Actions → New reposito
 
 That's it for Actions. The Worker runtime secrets (`NOWPAYMENTS_*`, `TOKEN_ENC_KEY`, etc.) are **not** put in GitHub — they're set directly on the Workers via `wrangler secret put`, and CI just ships code (secrets persist across deploys).
 
-> The GitHub deploy token itself (the PAT for `rabavadev`) is **not** a GitHub Actions secret — it's only needed if an Action pushes to other repos. For deploying your own Workers you only need the Cloudflare and Supabase secrets above.
+> The GitHub deploy token itself (the PAT for `yourrank`) is **not** a GitHub Actions secret — it's only needed if an Action pushes to other repos. For deploying your own Workers you only need the Cloudflare and Supabase secrets above.
 
 ---
 
