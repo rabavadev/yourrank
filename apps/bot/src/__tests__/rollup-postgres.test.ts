@@ -201,6 +201,8 @@ describeDb("rollupClicks against Postgres", () => {
 
   it("keeps the 90-day daily boundary and removes older rows and raw clicks", async () => {
     await withFixture(async ({ linkIds: [link] }) => {
+      const [boundary] = await sql`
+        SELECT (CURRENT_DATE - 90)::text AS day`;
       await sql`
         INSERT INTO click_daily (day, short_link_id, clicks, unique_clicks)
         VALUES
@@ -218,12 +220,14 @@ describeDb("rollupClicks against Postgres", () => {
         SELECT day::text FROM click_daily
          WHERE short_link_id = ${link}
          ORDER BY day`;
-      expect(daily.map(({ day }) => day)).toEqual([expect.any(String)]);
+      expect(daily.map(({ day }) => day)).toEqual([boundary.day]);
       const raw = await sql`
-        SELECT count(*)::int AS count
+        SELECT count(*)::int AS count,
+               bool_and(ts >= now() - interval '90 days') AS inside_window
           FROM clicks
          WHERE short_link_id = ${link}`;
       expect(raw[0].count).toBe(1);
+      expect(raw[0].inside_window).toBe(true);
     });
   });
 
