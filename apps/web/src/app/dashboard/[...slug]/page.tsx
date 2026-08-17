@@ -1,47 +1,43 @@
-import { getCurrentUser } from "@/lib/session";
+import { BoardsPage } from "../_components/BoardsPage";
+import { EditorPlayersPage } from "../_components/EditorPlayersPage";
+import { EditorDesignPage } from "../_components/EditorDesignPage";
+import { GamesPage } from "../_components/GamesPage";
+import { GiveawaysPage } from "../_components/GiveawaysPage";
+import { RewardsPage } from "../_components/RewardsPage";
+import { AudienceViewersPage } from "../_components/AudienceViewersPage";
+import { TelegramPage } from "../_components/TelegramPage";
 
 export const dynamic = "force-dynamic";
 
-interface PlaceholderPageProps {
+interface DashboardPageProps {
   params: Promise<{ slug: string[] }>;
+  searchParams: Promise<{ siteId?: string }>;
 }
 
-function titleFromSlug(slug: string[]): string {
-  return slug
-    .map((s) => s.replace(/-/g, " "))
-    .map((s) => s.charAt(0).toUpperCase() + s.slice(1))
-    .join(" · ");
-}
-
-export default async function PlaceholderPage({ params }: PlaceholderPageProps) {
+export default async function DashboardPage({ params, searchParams }: DashboardPageProps) {
   const { slug } = await params;
-  const user = await getCurrentUser();
-  const title = titleFromSlug(slug);
+  const { siteId } = await searchParams;
 
-  return (
-    <section className="max-w-2xl">
-      <h2 className="text-2xl font-bold text-ink">{title}</h2>
-      <p className="mt-2 text-ink-soft">
-        This dashboard section has not been migrated to the new workspace yet.
-      </p>
+  const key = slug.join("/");
 
-      {!user && (
-        <p className="mt-4 text-ink-soft">
-          <a href="/login" className="font-medium text-cobalt hover:underline">
-            Sign in
-          </a>{" "}
-          to continue.
-        </p>
-      )}
-
-      <div className="mt-6">
-        <a
-          href="/dashboard"
-          className="inline-flex items-center justify-center rounded-lg bg-cobalt px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-cobalt/90"
-        >
-          Back to Overview
-        </a>
-      </div>
-    </section>
-  );
+  switch (key) {
+    case "boards":
+      return <BoardsPage />;
+    case "editor/players":
+      return <EditorPlayersPage siteId={siteId} />;
+    case "editor/design":
+      return <EditorDesignPage siteId={siteId} />;
+    case "games":
+      return <GamesPage siteId={siteId} />;
+    case "giveaways":
+      return <GiveawaysPage />;
+    case "rewards":
+      return <RewardsPage siteId={siteId} />;
+    case "audience/viewers":
+      return <AudienceViewersPage siteId={siteId} />;
+    case "telegram":
+      return <TelegramPage />;
+    default:
+      return <div className="text-ink-soft">This dashboard section is not yet available in the new workspace.</div>;
+  }
 }
