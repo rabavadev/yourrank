@@ -7,6 +7,18 @@ One platform for casino streamers, merged from two products:
 
 **One account. One dashboard. Two products.** A streamer signs up once and manages both their leaderboard and their Telegram bot from a single dashboard, backed by one Supabase Postgres database.
 
+## Frontend boundary
+
+The apex `yourrank.site` Leaderboard Worker is the canonical application
+surface: marketing pages, auth, dashboard, account/settings, help, admin,
+public boards, and APIs all live there. `apps/web` contains only the animated
+marketing homepage. The apex proxies `/` and its `/_next/*` assets to that
+homepage; it does not proxy any other application surface.
+
+Requests to `app.yourrank.site` and `next.yourrank.site` are redirected to the
+same path on `yourrank.site`. The homepage proxy carries an internal marker so
+the proxied request can render without being redirected back to the apex.
+
 ## Repo layout
 
 ```text

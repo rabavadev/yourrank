@@ -6,6 +6,14 @@ description: |
 
 # Testing the YourRank dashboard locally
 
+The canonical dashboard and all application routes are served by the
+`apps/leaderboard` Worker at `yourrank.site`. `apps/web` is not a dashboard or
+API frontend; it contains only the animated homepage and is reached through
+the apex Worker proxy. Direct `app.yourrank.site` and `next.yourrank.site`
+requests redirect to the apex unless they carry the internal marketing proxy
+marker. Dashboard, auth, account/settings, public-board, help, admin, and API
+testing therefore stays on the Leaderboard Worker.
+
 ## Devin Secrets Needed
 
 None for the local flow itself, but the Workers expect `.dev.vars` files under `apps/leaderboard/` and `apps/bot/`. If they are missing, copy the `.dev.vars.example` files and fill in:

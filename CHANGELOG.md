@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+- Canonicalized frontend ownership: the apex Leaderboard Worker owns the full
+  application, while `apps/web` now serves only the proxied marketing homepage.
 - Hardcheck v5: 7 P0/P1 fixes (setup wizard, WCAG contrast, archive limit, notification settings)
 - Hardcheck v5: Security hardening (admin TOTP rate limit, Sentry context tags)
 - Hardcheck v5: Dashboard fixes (notification save, test buttons, overlay upgrade link)

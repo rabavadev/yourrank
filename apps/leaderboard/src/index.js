@@ -611,17 +611,11 @@ async function handleRequest(request, env, ctx, meta) {
       const csrfToken = generateCsrfToken();
       const csrfHeader = { "set-cookie": csrfCookie(csrfToken) };
 
+      if (host === PLATFORM_HOST && path.startsWith("/_next/")) {
+        return proxyMarketingHome({ request, binding: env.MARKETING, workerLog });
+      }
       if (path === "/" || path === "/index.html") {
-        if (host === PLATFORM_HOST) {
-          const fallback = async () => new Response(addCookieConsent(await renderHtmlPage(PAGES.index)), { headers: { ...HTML_N, ...csrfHeader } });
-          return proxyMarketingHome({
-            request,
-            binding: env.MARKETING,
-            fallback,
-            workerLog,
-          });
-        }
-        return new Response(addCookieConsent(await renderHtmlPage(PAGES.index)), { headers: { ...HTML_N, ...csrfHeader } });
+        return proxyMarketingHome({ request, binding: env.MARKETING, workerLog });
       }
       if (path === "/login" || path === "/login.html") return new Response(addCookieConsent(await renderHtmlPage(PAGES.login)), { headers: { ...SECURE_HTML, ...csrfHeader } });
       // POST /logout only (BE-003). Previously GET, which allowed CSRF via
