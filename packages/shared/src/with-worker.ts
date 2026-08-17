@@ -5,7 +5,14 @@
 //   3. All errors caught, reported to Sentry + Discord, and returned as 500
 //   4. Structured JSON logging on every error
 
-import { generateRequestId, createLogger, getRequestMetrics, installConsoleRedirect, runWithLogger } from "./request-id.js";
+import {
+  generateRequestId,
+  createLogger,
+  getRequestMetrics,
+  installConsoleRedirect,
+  runRequestCleanup,
+  runWithLogger,
+} from "./request-id.js";
 import { sendErrorToDiscord } from "./monitoring.js";
 import { errMessage, errStack } from "./errors.js";
 
@@ -116,6 +123,8 @@ export function withWorkerFetch(workerName: string, handler: FetchHandler, optio
           status: 500,
           headers: errHeaders,
         });
+      } finally {
+        await runRequestCleanup();
       }
     });
   };
