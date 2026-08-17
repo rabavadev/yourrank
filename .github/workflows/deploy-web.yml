@@ -37,6 +37,21 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
+      - name: Build shared
+        working-directory: packages/shared
+        run: bun run build
+
+      - name: Lint
+        working-directory: apps/web
+        run: bun run lint
+
+      - name: Typecheck
+        working-directory: apps/web
+        run: bun run typecheck
+
+      - name: Test
+        run: bun run test
+
       - name: Build web worker
         working-directory: apps/web
         run: bun run build:worker
