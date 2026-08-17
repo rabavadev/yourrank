@@ -191,6 +191,6 @@ as described in the audit.
 
 ## Provenance
 
-Merged from `yourrank/yourrank` (leaderboards, D1→Postgres ported) and
+Merged from `rabavadev/yourrank` (leaderboards, D1→Postgres ported) and
 the bot engine (already on Workers/Postgres). The leaderboard's D1/SQLite
 data layer was rewritten to share the bot's Postgres.
