@@ -280,8 +280,18 @@ export async function currentUserId(req: Request, env: SessionEnv): Promise<stri
 export async function loadUser(env: SessionEnv, userId: string): Promise<UserRecord | null> {
   try {
     return (await one<UserRecord>(
-      `SELECT id, email, display_name, slug, plan, plan_expires_at, status, is_admin
-         FROM users WHERE id = $1`,
+      `SELECT u.id, u.email, u.display_name,
+              COALESCE(sa.slug, sf.slug, '') AS slug,
+              u.plan, u.plan_expires_at, u.status, u.is_admin
+         FROM users u
+         LEFT JOIN sites sa ON sa.id = u.active_site_id AND sa.user_id = u.id
+         LEFT JOIN LATERAL (
+           SELECT s.slug FROM sites s
+            WHERE s.user_id = u.id
+            ORDER BY s.board_order NULLS LAST, s.updated_at ASC, s.slug ASC
+            LIMIT 1
+         ) sf ON true
+        WHERE u.id = $1`,
       [userId]
     )) ?? null;
   } catch (e) {
