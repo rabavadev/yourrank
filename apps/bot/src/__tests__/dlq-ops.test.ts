@@ -52,15 +52,23 @@ describe("DLQ replay operations", () => {
   it("counts invalid bodies without sending them", async () => {
     let claimed = false;
     const sent: unknown[] = [];
-    const result = await replayDlq({
-      sendImpl: async (body) => { sent.push(body); },
-    }, {
-      queryImpl: async () => [row({ type: "not-a-queue-event" })],
-      execImpl: async () => {
-        claimed = true;
-        return [{ replay_attempts: 1 }];
-      },
-    });
+    const logs: unknown[][] = [];
+    const originalError = console.error;
+    console.error = (...args) => { logs.push(args); };
+    let result;
+    try {
+      result = await replayDlq({
+        sendImpl: async (body) => { sent.push(body); },
+      }, {
+        queryImpl: async () => [row({ type: "not-a-queue-event" })],
+        execImpl: async () => {
+          claimed = true;
+          return [{ replay_attempts: 1 }];
+        },
+      });
+    } finally {
+      console.error = originalError;
+    }
 
     expect(result).toEqual({
       replayed: { count: 0, ids: [] },
@@ -70,6 +78,12 @@ describe("DLQ replay operations", () => {
     });
     expect(claimed).toBe(true);
     expect(sent).toEqual([]);
+    expect(JSON.parse(String(logs[0][0]))).toMatchObject({
+      ctx: "dlq-replay",
+      outcome: "invalid",
+      message_id: "message-1",
+    });
+    expect(JSON.parse(String(logs[0][0])).error).toContain("Invalid");
   });
 
   it("does not select rows at or above maxAttempts", async () => {
@@ -118,15 +132,23 @@ describe("DLQ replay operations", () => {
 
   it("leaves a claimed row pending when sending fails", async () => {
     const execs: unknown[][] = [];
-    const result = await replayDlq({
-      sendImpl: async () => { throw new Error("queue unavailable"); },
-    }, {
-      queryImpl: async () => [row()],
-      execImpl: async (...args) => {
-        execs.push(args);
-        return [{ replay_attempts: 1 }];
-      },
-    });
+    const logs: unknown[][] = [];
+    const originalError = console.error;
+    console.error = (...args) => { logs.push(args); };
+    let result;
+    try {
+      result = await replayDlq({
+        sendImpl: async () => { throw new Error("queue unavailable"); },
+      }, {
+        queryImpl: async () => [row()],
+        execImpl: async (...args) => {
+          execs.push(args);
+          return [{ replay_attempts: 1 }];
+        },
+      });
+    } finally {
+      console.error = originalError;
+    }
 
     expect(result).toEqual({
       replayed: { count: 0, ids: [] },
@@ -135,6 +157,12 @@ describe("DLQ replay operations", () => {
       failed: { count: 1, ids: ["message-1"] },
     });
     expect(execs).toHaveLength(1);
+    expect(JSON.parse(String(logs[0][0]))).toMatchObject({
+      ctx: "dlq-replay",
+      outcome: "failed",
+      message_id: "message-1",
+      error: "queue unavailable",
+    });
   });
 
   it("serves replay through the authenticated admin route", async () => {

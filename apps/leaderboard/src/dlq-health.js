@@ -1,4 +1,5 @@
 import { one } from "@yourrank/shared/db";
+import { errMessage } from "@yourrank/shared/errors";
 
 const DLQ_HEALTH_LIMIT = 1000;
 
@@ -17,8 +18,13 @@ export async function readDlqHealth(
     const row = await queryImpl(DLQ_HEALTH_SQL, [limit]);
     const pending = Number(row?.pending || 0);
     const oldestPendingAt = row?.oldest_received_at ?? null;
-    const oldestPendingAgeSeconds = oldestPendingAt
-      ? Math.max(0, Math.floor((Date.now() - Date.parse(oldestPendingAt)) / 1000))
+    const oldestPendingMs = oldestPendingAt instanceof Date
+      ? oldestPendingAt.getTime()
+      : oldestPendingAt
+        ? Date.parse(oldestPendingAt)
+        : NaN;
+    const oldestPendingAgeSeconds = Number.isFinite(oldestPendingMs)
+      ? Math.max(0, Math.floor((Date.now() - oldestPendingMs) / 1000))
       : null;
     return {
       pending,
@@ -28,7 +34,13 @@ export async function readDlqHealth(
       degraded: pending >= threshold,
       error: null,
     };
-  } catch {
+  } catch (err) {
+    console.error(JSON.stringify({
+      level: "error",
+      ctx: "dlq-health",
+      outcome: "probe_failed",
+      error: errMessage(err),
+    }));
     return {
       pending: null,
       oldest_pending_at: null,

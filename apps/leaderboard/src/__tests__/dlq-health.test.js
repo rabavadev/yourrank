@@ -20,12 +20,12 @@ describe("DLQ health", () => {
   it("reports an under-threshold backlog without degrading", async () => {
     const health = await readDlqHealth(async () => ({
       pending: 12,
-      oldest_received_at: "2026-08-25T01:00:00Z",
+      oldest_received_at: new Date("2026-08-25T01:00:00Z"),
     }), 100);
 
     expect(health).toMatchObject({
       pending: 12,
-      oldest_pending_at: "2026-08-25T01:00:00Z",
+      oldest_pending_at: new Date("2026-08-25T01:00:00Z"),
       oldest_pending_age_seconds: expect.any(Number),
       pending_capped: false,
       degraded: false,
@@ -42,9 +42,17 @@ describe("DLQ health", () => {
   });
 
   it("keeps a query failure from breaking health", async () => {
-    const health = await readDlqHealth(async () => {
-      throw new Error("database unavailable");
-    });
+    const logs = [];
+    const originalError = console.error;
+    console.error = (...args) => logs.push(args);
+    let health;
+    try {
+      health = await readDlqHealth(async () => {
+        throw new Error("database unavailable");
+      });
+    } finally {
+      console.error = originalError;
+    }
 
     expect(health).toEqual({
       pending: null,
@@ -53,6 +61,11 @@ describe("DLQ health", () => {
       pending_capped: false,
       degraded: false,
       error: "probe_failed",
+    });
+    expect(JSON.parse(String(logs[0][0]))).toMatchObject({
+      ctx: "dlq-health",
+      outcome: "probe_failed",
+      error: "database unavailable",
     });
   });
 });

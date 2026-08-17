@@ -1,5 +1,6 @@
 import { exec, query } from "@yourrank/shared/db";
 import { queueEventSchema } from "@yourrank/shared/queue-producer";
+import { errMessage } from "./errors.js";
 
 const DLQ_SUMMARY_SQL = `SELECT event_type,
        count(*)::int AS pending,
@@ -133,8 +134,15 @@ export async function replayDlq(
     let valid = true;
     try {
       parsedBody = queueEventSchema.parse(row.body);
-    } catch {
+    } catch (err) {
       valid = false;
+      console.error(JSON.stringify({
+        level: "error",
+        ctx: "dlq-replay",
+        outcome: "invalid",
+        message_id: row.message_id,
+        error: errMessage(err),
+      }));
     }
 
     try {
@@ -151,7 +159,14 @@ export async function replayDlq(
       await options.sendImpl(parsedBody, row);
       await execImpl(DLQ_MARK_REPLAYED_SQL, [row.message_id]);
       result.replayed.push(row.message_id);
-    } catch {
+    } catch (err) {
+      console.error(JSON.stringify({
+        level: "error",
+        ctx: "dlq-replay",
+        outcome: "failed",
+        message_id: row.message_id,
+        error: errMessage(err),
+      }));
       result.failed.push(row.message_id);
     }
   }
