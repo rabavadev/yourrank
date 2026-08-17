@@ -6,7 +6,7 @@ const siteJs = readFileSync(new URL("../assets/dashboard/site.js", import.meta.u
 const utilsJs = readFileSync(new URL("../assets/dashboard/utils.js", import.meta.url), "utf8");
 const overviewJs = readFileSync(new URL("../assets/dashboard/overview.js", import.meta.url), "utf8");
 const dashboardJs = readFileSync(new URL("../assets/dashboard.js", import.meta.url), "utf8");
-const creditsJs = readFileSync(new URL("../assets/credits.js", import.meta.url), "utf8");
+const boardShellJs = readFileSync(new URL("../assets/dashboard/board-shell.js", import.meta.url), "utf8");
 const performanceJs = readFileSync(new URL("../assets/dashboard/performance.js", import.meta.url), "utf8");
 const dashboardCss = readFileSync(new URL("../assets/dashboard-v3.css", import.meta.url), "utf8");
 
@@ -46,17 +46,17 @@ describe("dashboard overview quick actions", () => {
     expect(dashboardJs).toContain('target.searchParams.set("board", state.ACTIVE_SITE_ID)');
     expect(dashboardJs).toContain('target.pathname.startsWith("/dashboard/editor/")');
     expect(dashboardJs).toContain('target.pathname.startsWith("/dashboard/analytics/")');
-    expect(creditsJs).toContain('`/dashboard?board=${encodeURIComponent(siteId)}`');
-    expect(creditsJs).toContain('target.pathname.startsWith("/dashboard/editor/")');
-    expect(creditsJs).toContain('target.searchParams.set("board", siteId)');
-    expect(creditsJs).toContain('target.searchParams.set("siteId", siteId)');
+    expect(boardShellJs).toContain('`/dashboard?board=${encodeURIComponent(siteId)}`');
+    expect(boardShellJs).toContain('target.pathname.startsWith("/dashboard/editor/")');
+    expect(boardShellJs).toContain('target.searchParams.set("board", siteId)');
+    expect(boardShellJs).toContain('target.searchParams.set("siteId", siteId)');
   });
 
   it("reports public site availability truthfully from Credits", () => {
-    expect(creditsJs).toContain("Boolean(board.published) && user.emailVerified !== false");
-    expect(creditsJs).toContain('live ? "Public" : pendingVerification ? "Email verification needed" : "Private"');
-    expect(creditsJs).toContain('pendingVerification ? "/verify-email"');
-    expect(creditsJs).toContain('pendingVerification ? "Verify email to publish" : "Publish your site"');
+    expect(boardShellJs).toContain("Boolean(board.published) && user.emailVerified !== false");
+    expect(boardShellJs).toContain('live ? "Public" : pendingVerification ? "Email verification needed" : "Private"');
+    expect(boardShellJs).toContain('pendingVerification ? "/verify-email"');
+    expect(boardShellJs).toContain('pendingVerification ? "Verify email to publish" : "Publish your site"');
   });
 
   it("keeps tablet navigation closable", () => {
