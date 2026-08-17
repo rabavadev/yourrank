@@ -19,6 +19,7 @@ import { createQueueProducer } from "@yourrank/shared/queue-producer";
 import { shellNavHtml, publicNavHtml } from "@yourrank/shared/shell-nav";
 import apiApp from "./router.js";
 import { OG_IMAGE_PNG_BASE64 } from "./og-image.js";
+import { PLATFORM_HOST } from "./constants.js";
 import {
   generateCsrfToken, csrfCookie,
   resolveCustomDomain, isCustomHost,
@@ -591,7 +592,12 @@ async function handleRequest(request, env, ctx, meta) {
       const csrfToken = generateCsrfToken();
       const csrfHeader = { "set-cookie": csrfCookie(csrfToken) };
 
-      if (path === "/" || path === "/index.html") return new Response(addCookieConsent(await renderHtmlPage(PAGES.index)), { headers: { ...HTML_N, ...csrfHeader } });
+      if (path === "/" || path === "/index.html") {
+        if (host === PLATFORM_HOST) {
+          return Response.redirect("https://app.yourrank.site/", 301);
+        }
+        return new Response(addCookieConsent(await renderHtmlPage(PAGES.index)), { headers: { ...HTML_N, ...csrfHeader } });
+      }
       if (path === "/login" || path === "/login.html") return new Response(addCookieConsent(await renderHtmlPage(PAGES.login)), { headers: { ...SECURE_HTML, ...csrfHeader } });
       // POST /logout only (BE-003). Previously GET, which allowed CSRF via
       // <img src="/logout">. Now only POST is accepted. The in-page buttons
