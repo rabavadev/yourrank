@@ -6,6 +6,7 @@
 import { getPublicSite as defaultGetPublicSite } from "./site.js";
 import { resolveViewer as defaultResolveViewer } from "@yourrank/shared/viewer-session";
 import { createQueueProducer as defaultCreateQueueProducer } from "@yourrank/shared/queue-producer";
+import { decideBoardView } from "@yourrank/shared/board-views";
 import { bumpStat as defaultBumpStat } from "./stats.js";
 import { hashToken as defaultHashToken } from "@yourrank/shared/crypto";
 import { HTML, withNonce, notFoundPage, pendingVerificationPage, error500Page } from "./middleware/headers.js";
@@ -60,28 +61,15 @@ function enqueueBump(env, ctx, siteId, field, referer, visitorHash, deps) {
 }
 
 async function bumpView(env, ctx, request, siteId, slug, headers, deps) {
-  const cookies = request.headers.get("cookie") || "";
-  let vid = "";
-  let consent = "";
-  for (const c of cookies.split(";")) {
-    const [k, v] = c.trim().split("=");
-    if (k === "yr_vid") vid = decodeURIComponent(v || "");
-    if (k === "yr_consent") consent = decodeURIComponent(v || "");
-  }
-  const analyticsAllowed = consent === "all";
-  if (!analyticsAllowed) return;
-
-  if (!vid) {
-    vid = crypto.randomUUID();
-    headers.append("set-cookie", `yr_vid=${vid}; Path=/; Max-Age=31536000; SameSite=Lax; Secure`);
-  }
-  const visitorHash = await deps.hashToken(`${vid}:${siteId}`);
-  const viewCookieName = `__v_${slug}`;
-  const alreadyViewed = new RegExp(`(?:^|;\\s*)${viewCookieName}=`).test(cookies);
-  if (!alreadyViewed) {
-    const ref = request.headers.get("referer") || "";
-    enqueueBump(env, ctx, siteId, "views", ref, visitorHash, deps);
-    headers.append("set-cookie", `${viewCookieName}=1; Path=/${slug}; Max-Age=86400; SameSite=Lax; Secure`);
+  const decision = await decideBoardView({
+    request,
+    siteId,
+    slug,
+    hashToken: deps.hashToken,
+  });
+  for (const cookie of decision.setCookies) headers.append("set-cookie", cookie);
+  if (decision.shouldBump) {
+    enqueueBump(env, ctx, siteId, "views", decision.referer, decision.visitorHash, deps);
   }
 }
 

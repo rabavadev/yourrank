@@ -424,9 +424,9 @@ export async function renderSite({ r, section, viewer, viewerData, opts }) {
   const casino = String(b.casino || "").trim();
   const pool = String(b.prizePool || "").trim();
   const period = String(b.period || "Monthly");
-  const ctaDest = String(b.ctaUrl || "").trim();
-  const ctaHref = ctaDest ? safeUrl(ctaDest) : null;
-  const hasCta = !!ctaHref;
+  const ctaDest = b.ctaUrl;
+  const ctaHref = slug ? esc(`/go/${slug}`) : safeUrl(ctaDest);
+  const hasCta = !!(ctaDest || casino);
   const accent = accentColor(br, br.options);
 
   const viewerOnSite = viewerData?.viewerOnSite || null;
@@ -508,6 +508,7 @@ ${footer}
 </main>
 </div>
 ${feedbackModal({ slug })}
+<script src="/assets/cookie-consent.js" nonce="${nonce}" defer></script>
 <script src="/assets/site-shell.js" nonce="${nonce}" defer></script>
 </body></html>`;
 

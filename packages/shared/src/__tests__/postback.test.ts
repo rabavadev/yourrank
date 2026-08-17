@@ -3,6 +3,7 @@ import {
   logPostbackIntake,
   purgeExpiredReplayHashes,
   recordReplayHash,
+  releaseReplayHash,
   unsignedPostbacksEnabled,
 } from "../postback.js";
 
@@ -64,6 +65,28 @@ describe("postback replay guard", () => {
 
     expect(reclaimed).toBe(true);
     expect(sql).toContain("WHERE postback_replay_guard.expires_at <= now()");
+  });
+
+  it("releases a claimed hash when the conversion is not durable", async () => {
+    const calls: unknown[][] = [];
+    const released = await releaseReplayHash("user-1", "hash-1", {
+      execImpl: async (...args) => {
+        calls.push(args);
+        return [{ id: "replay-1" }];
+      },
+    });
+
+    expect(released).toBe(true);
+    expect(calls[0][0]).toContain("DELETE FROM postback_replay_guard");
+    expect(calls[0][1]).toEqual(["user-1", "hash-1"]);
+  });
+
+  it("reports when no replay hash was released", async () => {
+    const released = await releaseReplayHash("user-1", "hash-1", {
+      execImpl: async () => [],
+    });
+
+    expect(released).toBe(false);
   });
 
   it("purges expired hashes in bounded batches", async () => {

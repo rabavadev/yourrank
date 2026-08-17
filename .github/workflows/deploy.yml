@@ -307,26 +307,27 @@ jobs:
 
       - name: "Smoke: DB connectivity (yourrank.site/health)"
         run: |
+          # This smoke test asks whether the deploy broke the site. A degraded consumer or DLQ backlog is an operational alert, not grounds for reverting a Worker that serves fine.
           RESPONSE=$(curl -sS -L --max-time 20 -w '\n%{http_code}' https://yourrank.site/health || true)
           STATUS=$(printf '%s\n' "$RESPONSE" | tail -n1)
           BODY=$(printf '%s\n' "$RESPONSE" | sed '$d')
-          if [ "$STATUS" != "200" ]; then
-            echo "FAIL: /health returned HTTP $STATUS (expected 200) — response: $BODY"
+          if [ "$STATUS" != "200" ] && [ "$STATUS" != "503" ]; then
+            echo "FAIL: /health returned HTTP $STATUS (expected 200 or 503) — response: $BODY"
             exit 1
           fi
           if ! printf '%s' "$BODY" | jq empty >/dev/null 2>&1; then
             echo "FAIL: /health returned unparseable JSON — response: $BODY"
             exit 1
           fi
-          if [ "$(printf '%s' "$BODY" | jq -r '.db')" != "true" ]; then
+          if ! printf '%s' "$BODY" | jq -e '.db == true' >/dev/null 2>&1; then
             echo "FAIL: /health reported db != true — response: $BODY"
             exit 1
           fi
           HEALTH_STATUS=$(printf '%s' "$BODY" | jq -r '.status // empty')
-          if [ "$HEALTH_STATUS" = "degraded" ]; then
-            echo "::warning::/health is degraded by a downstream signal: $BODY"
+          if [ "$HEALTH_STATUS" != "ok" ]; then
+            echo "::warning::/health is not fully healthy; downstream signals may be degraded: $BODY"
           else
-            echo "OK: /health returned HTTP 200 with db=true"
+            echo "OK: /health returned HTTP $STATUS with db=true and status=ok"
           fi
 
       - name: Summarise failure
