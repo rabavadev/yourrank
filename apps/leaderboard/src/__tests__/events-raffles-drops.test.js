@@ -140,6 +140,10 @@ describe("Community Events: Raffles & Flash Code Drops", () => {
     expect(body.status).toBe("drawn");
     expect(["Alice", "Bob", "Charlie"]).toContain(body.winnerName);
     expect([1, 2, 3]).toContain(body.winnerTicketNumber);
+    const ticketSql = mockQuery.mock.calls[0][0];
+    expect(ticketSql).toContain("COALESCE(v.kick_username, 'Viewer') AS viewer_name");
+    expect(ticketSql).not.toContain("v.username");
+    expect(ticketSql).not.toContain("v.display_name");
   });
 
   it("handleCreateCodeDrop creates a drop code with custom reward and claims limit", async () => {

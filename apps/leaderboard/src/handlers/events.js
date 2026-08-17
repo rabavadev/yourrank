@@ -135,7 +135,7 @@ export async function handleDrawRaffle(request, env, deps = {}) {
 
   const tickets = await query(
     `SELECT t.id, t.ticket_number, t.viewer_id, t.site_viewer_id,
-            COALESCE(v.display_name, v.username, 'Viewer') AS viewer_name
+            COALESCE(v.kick_username, 'Viewer') AS viewer_name
        FROM raffle_tickets t
        LEFT JOIN viewers v ON v.id = t.viewer_id
       WHERE t.raffle_id=$1
