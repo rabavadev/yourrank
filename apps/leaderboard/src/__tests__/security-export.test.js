@@ -77,6 +77,10 @@ describe("handleExportData", () => {
       );
 
       const actual = await res.text();
+      const userSql = mockOne.mock.calls[0][0];
+      expect(userSql).toContain("telegram_user_id");
+      expect(userSql).toContain("telegram_username");
+      expect(userSql).not.toContain("telegram_id");
       const expected = JSON.stringify({
         ok: true,
         exportId: "1720000000000-user-1",
