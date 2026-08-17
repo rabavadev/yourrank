@@ -48,6 +48,7 @@ describe("dashboard routes", () => {
     expect(LEGACY_TELEGRAM_REDIRECTS).toEqual({
       "/dashboard/telegram": "/bot/dashboard",
       "/dashboard/telegram/overview": "/bot/dashboard",
+      "/dashboard/bot/setup": "/bot/dashboard",
       "/dashboard/telegram/bots": "/bot/bots",
       "/dashboard/telegram/commands": "/bot/commands",
       "/dashboard/telegram/offers": "/bot/offers",
