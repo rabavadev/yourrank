@@ -190,7 +190,7 @@ export async function handleGetSite(request, env) {
   if (!s) return bad("No site for this account", 404);
   const boards = await getUserBoardsList(env, user.id);
   const onboarding = await onboardingForSite(env, s, user.id, plan);
-  return json({ ok: true, slug: s.slug, published: s.published, isDraft: s.is_draft, plan: plan, data: s.data, socials: s.socials, notify: s.notify || {}, archives: s.archives, boards, siteId: s.id, customDomain: s.customDomain || "", domainStatus: s.domainStatus || "pending", onboarding, updatedAt: s.updated_at, publishedAt: s.published_at }, 200, { "cache-control": "no-store, no-cache, must-revalidate" });
+  return json({ ok: true, slug: s.slug, published: s.published, isDraft: s.is_draft, plan: plan, data: s.data, socials: s.socials, notify: s.notify || {}, archives: (s.archives || []).map((a) => ({ id: a.id, label: a.label, at: a.created_at, players: a.player_count, createdAt: a.created_at ? new Date(a.created_at).toISOString() : null, winnerName: a.winner_name, playerCount: a.player_count })), boards, siteId: s.id, customDomain: s.customDomain || "", domainStatus: s.domainStatus || "pending", onboarding, updatedAt: s.updated_at, publishedAt: s.published_at, passwordProtected: !!(s.password_hash && s.password_salt), autoReset: { enabled: !!s.auto_reset_enabled, clear: s.auto_reset_clear || "wagers" } }, 200, { "cache-control": "no-store, no-cache, must-revalidate" });
 }
 
 export async function handleListBoards(request, env) {
