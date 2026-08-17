@@ -17,6 +17,11 @@ invocation_logs = true
 pattern = "app.yourrank.site"
 custom_domain = true
 
+# Legacy host retained solely so middleware can redirect it to the apex.
+[[routes]]
+pattern = "next.yourrank.site"
+custom_domain = true
+
 # Run the worker before serving static assets so middleware executes.
 [assets]
 directory = ".open-next/assets"
