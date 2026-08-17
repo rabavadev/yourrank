@@ -122,3 +122,57 @@ For bot dev login, also add to `apps/bot/.dev.vars`:
 - Public board: `http://localhost:8787/<slug>`
 - Bot dashboard: `http://localhost:8788/bot/dashboard`
 - Local DB: `postgresql://postgres:postgres@localhost:5432/yourrank`
+
+## Testing the canonical apex frontend + marketing homepage proxy
+
+The apex Worker (`apps/leaderboard`) proxies `/` and `/_next/*` to the
+`apps/web` marketing Worker via the `MARKETING` service binding. To exercise
+that proxy locally both Workers must run in one Wrangler session:
+
+```bash
+export PATH="$HOME/.nvm/versions/node/v22.12.0/bin:$HOME/.local/bin:$PATH"
+export CLOUDFLARE_HYPERDRIVE_LOCAL_CONNECTION_STRING_HYPERDRIVE="postgresql://postgres:postgres@localhost:5432/yourrank"
+export DATABASE_URL="$CLOUDFLARE_HYPERDRIVE_LOCAL_CONNECTION_STRING_HYPERDRIVE"
+npx wrangler dev -c apps/leaderboard/wrangler.toml -c apps/web/wrangler.toml --port 8787
+```
+
+Build `apps/web` first (`opennextjs-cloudflare build`) so `.open-next/worker.js`
+exists. Check the startup banner: `env.MARKETING (yourrank-web) ... [not connected]`
+means the proxy will return 503.
+
+Gotchas that cost time here:
+
+- `npx bun ...` and `npx opennextjs-cloudflare ...` may fail with
+  `npm error could not determine executable to run`. Use the local binaries
+  instead: `/home/ubuntu/.local/bin/bun` and
+  `apps/web/node_modules/.bin/opennextjs-cloudflare`.
+- The installed `workerd` may reject `apps/web`'s `compatibility_date`
+  (e.g. "supports up to 2026-07-07"). Temporarily lower the date in
+  `apps/web/wrangler.toml` to run locally and revert before reporting; never
+  commit that change.
+- `wrangler dev` derives the request Host from the config's `routes`, so the
+  incoming `Host:` header is ignored. Consequences:
+  - Worker redirects built with `new URL("/login", url)` come back as absolute
+    `http://yourrank.site/...` on localhost and the browser leaves your local
+    server. Verify redirect *paths* with `curl -w '%{redirect_url}'` instead.
+  - To prove the `apps/web` middleware host gate, run the web Worker twice:
+    default (`Host` becomes `app.yourrank.site`, unmarked ⇒ 301) and with
+    `--host yourrank.site` (unmarked ⇒ 200).
+  - A marked request bypasses the redirect:
+    `curl -H 'x-yr-marketing: 1' http://127.0.0.1:8788/`.
+- Failure path: run a leaderboard-only `wrangler dev` on another port. Kill all
+  `workerd` processes and `rm -f ~/.config/.wrangler/registry/*` first, or a
+  stale registered `yourrank-web` will still satisfy the binding and you will
+  see 200 HTML instead of the expected plain `503 marketing service unavailable`.
+- Tailwind v4 in `apps/web` auto-detects sources relative to
+  `src/app/globals.css`, so classes used only in `src/components/**` can be
+  missing from the built CSS and the homepage renders unstyled while all
+  `/_next/static/*` assets still return 200. Verify visually, and check the
+  built CSS directly:
+  `grep -c 'text-center' apps/web/.open-next/assets/_next/static/chunks/*.css`.
+  Adding `@source "../components";` after `@import "tailwindcss";` is the likely fix.
+- The dashboard sidebar account menu (sign out) opens *below* the fold in a
+  1024x768-scaled viewport. Zoom the page out (`ctrl+minus` twice) to reach it.
+- When typing passwords with the `computer` tool, `!` can be dropped by
+  `type`; send it as a separate `key` action (`exclam`) and use the eye toggle
+  to confirm the field contents.
