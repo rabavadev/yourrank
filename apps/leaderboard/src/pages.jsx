@@ -1,6 +1,5 @@
 // Aggregator: per-page modules re-exported as PAGES
 
-import { landingPage } from "./pages/landing.js";
 import { loginPage } from "./pages/login.jsx";
 import { forgotPage } from "./pages/forgot.js";
 import { resetPage } from "./pages/reset.js";
@@ -40,7 +39,6 @@ import {
 } from "./pages/telegram.jsx";
 
 export const PAGES = {
-  index: landingPage,
   docs: docsPage,
   login: loginPage,
   forgot: forgotPage,

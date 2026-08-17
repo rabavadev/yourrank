@@ -1,7 +1,5 @@
 import type { Metadata } from "next";
-import { headers } from "next/headers";
 import { redirect } from "next/navigation";
-import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { Hero } from "@/components/home/hero";
 import {
   FinalCta,
@@ -39,18 +37,9 @@ const NAV_LINKS = [
 ];
 
 export default async function HomePage() {
-  const requestHeaders = await headers();
   const user = await getCurrentUser();
   if (user) {
     redirect("/dashboard");
-  }
-  if (requestHeaders.get("x-yr-marketing") !== "1") {
-    const { env } = await getCloudflareContext({ async: true });
-    const configuredOrigin = (env as Record<string, unknown>).MARKETING_ORIGIN;
-    const origin = typeof configuredOrigin === "string" && configuredOrigin
-      ? configuredOrigin
-      : "https://yourrank.site";
-    redirect(new URL("/", origin).toString());
   }
 
   return (

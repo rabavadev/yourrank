@@ -61,7 +61,6 @@ describe("signed-in shell navigation", () => {
       const styles = PAGES[key].config.styles;
       expect(styles.at(-1)).toBe("/assets/dashboard-v4.css");
     }
-    expect(String(PAGES.index)).not.toContain("/assets/dashboard-v4.css");
   });
 
   it("keeps one main landmark and a topbar drawer trigger", () => {

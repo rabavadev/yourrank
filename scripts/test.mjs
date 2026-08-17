@@ -33,4 +33,7 @@ runCmd("node", ["scripts/test-leaderboard.mjs"]);
 // 5. Run monitor tests
 runCmd("bun", ["run", "test"], "apps/monitor");
 
+// 6. Run the canonical marketing homepage tests
+runCmd("bun", ["run", "test"], "apps/web");
+
 console.log("\n✅ All tests passed successfully!");

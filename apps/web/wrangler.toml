@@ -3,7 +3,7 @@ main = ".open-next/worker.js"
 compatibility_date = "2026-08-16"
 compatibility_flags = ["nodejs_compat"]
 
-# Primary app domain for the Next.js dashboard and marketing surfaces.
+# Primary app domain for the Next.js marketing homepage.
 [observability]
 enabled = true
 head_sampling_rate = 1
@@ -17,33 +17,16 @@ invocation_logs = true
 pattern = "app.yourrank.site"
 custom_domain = true
 
-# Legacy shadow-test domain redirects to the primary app domain.
+# Legacy host retained solely so middleware can redirect it to the apex.
 [[routes]]
 pattern = "next.yourrank.site"
 custom_domain = true
 
-# Run the worker before serving static assets so Next.js middleware and dynamic
-# routes (dashboard, custom-domain public boards) always execute.
+# Run the worker before serving static assets so middleware executes.
 [assets]
 directory = ".open-next/assets"
 binding = "ASSETS"
 run_worker_first = true
-
-[vars]
-API_BASE_URL = "https://yourrank.site"
-MARKETING_ORIGIN = "https://yourrank.site"
-
-[[services]]
-binding = "API"
-service = "yourrank-site"
-
-[[services]]
-binding = "BOT_API"
-service = "yourrank-bot"
-
-[[queues.producers]]
-queue = "yourrank-events"
-binding = "EVENTS_QUEUE"
 
 [[hyperdrive]]
 binding = "HYPERDRIVE"

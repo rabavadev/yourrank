@@ -55,6 +55,7 @@ import { setRequestMetrics } from "@yourrank/shared/request-id";
 import { evaluateConsumerHealth } from "./consumer-health.js";
 import { readDlqHealth } from "./dlq-health.js";
 import { proxyMarketingHome } from "./marketing-proxy.js";
+import { redirectToLogin } from "./login-redirect.js";
 import { safeNextPath } from "@yourrank/shared/safe-next";
 
 const LEGAL_PAGES = new Set(["terms", "privacy", "responsible", "cookies", "refund", "contact"]);
@@ -591,7 +592,7 @@ async function handleRequest(request, env, ctx, meta) {
       const renderDashboardPage = async (pageKey, logLabel) => {
         try {
           const user = await currentUser(request, env);
-          if (!user) return Response.redirect(new URL("/login", url), 302);
+          if (!user) return redirectToLogin(url);
           const html = addCookieConsent(await renderHtmlPage(PAGES[pageKey], {
             activePath: url.pathname + url.search,
             user,
@@ -611,17 +612,11 @@ async function handleRequest(request, env, ctx, meta) {
       const csrfToken = generateCsrfToken();
       const csrfHeader = { "set-cookie": csrfCookie(csrfToken) };
 
+      if (host === PLATFORM_HOST && path.startsWith("/_next/")) {
+        return proxyMarketingHome({ request, binding: env.MARKETING, workerLog });
+      }
       if (path === "/" || path === "/index.html") {
-        if (host === PLATFORM_HOST) {
-          const fallback = async () => new Response(addCookieConsent(await renderHtmlPage(PAGES.index)), { headers: { ...HTML_N, ...csrfHeader } });
-          return proxyMarketingHome({
-            request,
-            binding: env.MARKETING,
-            fallback,
-            workerLog,
-          });
-        }
-        return new Response(addCookieConsent(await renderHtmlPage(PAGES.index)), { headers: { ...HTML_N, ...csrfHeader } });
+        return proxyMarketingHome({ request, binding: env.MARKETING, workerLog });
       }
       if (path === "/login" || path === "/login.html") return new Response(addCookieConsent(await renderHtmlPage(PAGES.login)), { headers: { ...SECURE_HTML, ...csrfHeader } });
       // POST /logout only (BE-003). Previously GET, which allowed CSRF via
@@ -694,7 +689,7 @@ async function handleRequest(request, env, ctx, meta) {
           : pathTab;
         const tab = ["account", "team", "plan", "connections", "data"].includes(requestedTab) ? requestedTab : "account";
         const user = await currentUser(request, env);
-        if (!user) return Response.redirect(new URL("/login", url), 302);
+        if (!user) return redirectToLogin(url);
         const html = addCookieConsent(await renderHtmlPage(PAGES.settingsUnified, {
           activePath: url.pathname + url.search,
           user,
@@ -735,7 +730,7 @@ async function handleRequest(request, env, ctx, meta) {
         }
         try {
           const user = await currentUser(request, env);
-          if (!user) return Response.redirect(new URL("/login", url), 302);
+          if (!user) return redirectToLogin(url);
           const html = addCookieConsent(await renderHtmlPage(PAGES.dashboard, {
             activePath: url.pathname + url.search,
             user,

@@ -1,10 +1,10 @@
 const MARKETING_HOST = "app.yourrank.site";
 const MARKETING_MARKER = "x-yr-marketing";
 
-export async function proxyMarketingHome({ request, binding, fallback, workerLog }) {
+export async function proxyMarketingHome({ request, binding, workerLog }) {
   if (!binding) {
     workerLog?.warn("marketing_proxy_unavailable", {});
-    return fallback();
+    return new Response("marketing service unavailable", { status: 503 });
   }
 
   try {
@@ -22,11 +22,11 @@ export async function proxyMarketingHome({ request, binding, fallback, workerLog
     const response = await binding.fetch(upstream);
     if (response.status >= 500) {
       workerLog?.warn("marketing_proxy_degraded", { status: response.status });
-      return fallback();
+      return new Response("marketing service unavailable", { status: 503 });
     }
     return response;
   } catch (error) {
     workerLog?.error("marketing_proxy_failed", { error: String(error?.message || error) });
-    return fallback();
+    return new Response("marketing service unavailable", { status: 503 });
   }
 }
