@@ -51,7 +51,7 @@ describe("OBS Live Overlays Suite", () => {
       one: mock()
         .mockResolvedValueOnce(SITE) // find site
         .mockResolvedValueOnce({ id: "pred-1", title: "Win game?", status: "open", total_pool: 200 }) // active pred
-        .mockResolvedValueOnce({ id: "red-1", username: "alice", title: "VIP Badge", created_at: new Date().toISOString() }), // latest redemption
+        .mockResolvedValueOnce({ id: "red-1", kick_username: "alice", item_name: "VIP Badge", created_at: new Date().toISOString() }), // latest redemption
       query: mock(),
       rateLimit: mock().mockResolvedValue({ ok: true }),
       clientIp: mock().mockReturnValue("127.0.0.1"),
@@ -64,6 +64,12 @@ describe("OBS Live Overlays Suite", () => {
     expect(body.ok).toBe(true);
     expect(body.activePrediction.title).toBe("Win game?");
     expect(body.latestAlert.username).toBe("alice");
+    expect(body.latestAlert.description).toBe("VIP Badge");
+    const redemptionSql = deps.one.mock.calls[2][0];
+    expect(redemptionSql).toContain("WHERE sv.site_id=$1");
+    expect(redemptionSql).not.toContain("r.site_id");
+    expect(redemptionSql).not.toContain("v.username");
+    expect(redemptionSql).not.toContain("s.title");
   });
 
   it("rejects rate-limited overlay requests before running site queries", async () => {

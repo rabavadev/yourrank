@@ -76,6 +76,13 @@ describe("Enterprise Exports & Streamer Reports", () => {
     expect(csvText).toContain('"Drop Code","Points Awarded","Viewer Username","Claimed Timestamp"');
     expect(csvText).toContain('"SUMMER500"');
     expect(csvText).toContain('"lucky_viewer"');
+    expect(csvText).toContain('"2026-08-16T15:30:00.000Z"');
+    const claimsSql = mockQuery.mock.calls[0][0];
+    expect(claimsSql).toContain("v.kick_username AS username");
+    expect(claimsSql).toContain("cdc.created_at AS claimed_at");
+    expect(claimsSql).not.toContain("v.username");
+    expect(claimsSql).not.toContain("v.display_name");
+    expect(claimsSql).not.toContain("cdc.claimed_at");
   });
 
   it("exports predictions and payouts report as CSV", async () => {

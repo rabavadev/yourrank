@@ -447,12 +447,12 @@ export async function handleGetActiveEvents(request, env, deps = {}) {
 
   // 2. Latest redemption / alert
   const latestRedemption = await one(
-    `SELECT r.id, r.created_at, v.username, s.title
+    `SELECT r.id, r.created_at, v.kick_username, i.name AS item_name
        FROM redemptions r
        JOIN site_viewers sv ON sv.id = r.site_viewer_id
        JOIN viewers v ON v.id = sv.viewer_id
-       JOIN shop_items s ON s.id = r.shop_item_id
-      WHERE r.site_id=$1
+       JOIN shop_items i ON i.id = r.shop_item_id
+      WHERE sv.site_id=$1
       ORDER BY r.created_at DESC LIMIT 1`,
     [site.id]
   );
@@ -462,8 +462,8 @@ export async function handleGetActiveEvents(request, env, deps = {}) {
     latestAlert = {
       id: latestRedemption.id,
       title: "Reward Redeemed!",
-      username: latestRedemption.username,
-      description: latestRedemption.title,
+      username: latestRedemption.kick_username,
+      description: latestRedemption.item_name,
       icon: "🎁",
       time: latestRedemption.created_at,
     };
