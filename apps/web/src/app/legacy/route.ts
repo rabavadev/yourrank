@@ -1,4 +1,4 @@
-import { landingPage } from "../../../leaderboard/src/pages/landing.js";
+import { landingPage } from "../../../../leaderboard/src/pages/landing.js";
 import { marketingResponse } from "@/lib/marketing";
 
 export const dynamic = "force-dynamic";

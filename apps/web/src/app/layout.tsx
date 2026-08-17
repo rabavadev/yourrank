@@ -1,5 +1,18 @@
 import type { Metadata } from "next";
+import { Inter, Geist_Mono } from "next/font/google";
 import "./globals.css";
+
+const inter = Inter({
+  subsets: ["latin"],
+  variable: "--font-inter",
+  display: "swap",
+});
+
+const geistMono = Geist_Mono({
+  subsets: ["latin"],
+  variable: "--font-geist-mono",
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   title: "YourRank — Sites, Telegram, Credits & Shop for streamers",
@@ -13,8 +26,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body className="bg-canvas text-ink antialiased">{children}</body>
+    <html lang="en" className={`${inter.variable} ${geistMono.variable}`}>
+      <body className="bg-canvas text-ink font-sans antialiased">{children}</body>
     </html>
   );
 }
