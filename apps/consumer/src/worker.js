@@ -49,7 +49,7 @@ async function alertDiscord(webhook, batch) {
   }
 }
 
-async function handleDlq(batch, env, ctx) {
+export async function handleDlq(batch, env, ctx, { execImpl = exec, alertImpl = alertDiscord } = {}) {
   for (const msg of batch.messages) {
     console.error(JSON.stringify({
       event: "queue_dlq_received",
@@ -58,12 +58,29 @@ async function handleDlq(batch, env, ctx) {
       message_type: msg.body?.type ?? "unknown",
       ts: new Date().toISOString(),
     }));
-    msg.ack();
+    try {
+      await execImpl(
+        `INSERT INTO queue_dlq_events (message_id, queue_name, event_type, body)
+         VALUES ($1, $2, $3, $4::jsonb)
+         ON CONFLICT (message_id) DO NOTHING`,
+        [msg.id, batch.queue, msg.body?.type ?? "unknown", JSON.stringify(msg.body)]
+      );
+      msg.ack();
+    } catch (err) {
+      console.error(JSON.stringify({
+        event: "queue_dlq_persist_failed",
+        queue: batch.queue,
+        message_id: msg.id,
+        error: err instanceof Error ? err.message : String(err),
+        ts: new Date().toISOString(),
+      }));
+      msg.retry();
+    }
   }
-  ctx?.waitUntil(alertDiscord(env.DISCORD_MONITORING_WEBHOOK, batch));
+  ctx?.waitUntil(alertImpl(env.DISCORD_MONITORING_WEBHOOK, batch));
 }
 
-async function handleEvent(input, tokenCache, env) {
+export async function handleEvent(input, tokenCache, env, { bumpStatImpl = bumpStat } = {}) {
   const body = parseQueueEvent(input);
 
   switch (body.type) {
@@ -81,7 +98,7 @@ async function handleEvent(input, tokenCache, env) {
       break;
     }
     case "bump": {
-      await bumpStat(body.siteId, body.field, body.referer ?? null);
+      await bumpStatImpl(body.siteId, body.field, body.referer ?? null, body.visitorHash ?? null);
       break;
     }
     case "notify": {
@@ -168,12 +185,17 @@ export default {
     // This lets the monitor detect a silent outage instead of waiting for stale analytics.
     try {
       await exec(
-        `INSERT INTO consumer_heartbeat (name, last_seen, processed_count, failed_count)
-         VALUES ('consumer', now(), $1, $2)
+        `INSERT INTO consumer_heartbeat
+           (name, last_seen, processed_count, failed_count, last_failure_at, last_success_at)
+         VALUES ('consumer', now(), $1, $2,
+                 CASE WHEN $2 > 0 THEN now() ELSE NULL END,
+                 CASE WHEN $1 > 0 THEN now() ELSE NULL END)
          ON CONFLICT (name) DO UPDATE
          SET last_seen = now(),
              processed_count = consumer_heartbeat.processed_count + EXCLUDED.processed_count,
-             failed_count = consumer_heartbeat.failed_count + EXCLUDED.failed_count`,
+             failed_count = consumer_heartbeat.failed_count + EXCLUDED.failed_count,
+             last_failure_at = CASE WHEN EXCLUDED.failed_count > 0 THEN now() ELSE consumer_heartbeat.last_failure_at END,
+             last_success_at = CASE WHEN EXCLUDED.processed_count > 0 THEN now() ELSE consumer_heartbeat.last_success_at END`,
         [processed, failed]
       );
     } catch (hbErr) {
@@ -195,7 +217,7 @@ export default {
       try {
         await exec(
           `INSERT INTO consumer_heartbeat (name, last_seen, processed_count, failed_count)
-           VALUES ('consumer', now(), 0, 0)
+           VALUES ('consumer_probe', now(), 0, 0)
            ON CONFLICT (name) DO UPDATE
            SET last_seen = now()`,
           []

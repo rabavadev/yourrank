@@ -29,6 +29,7 @@ const bumpEventSchema = z.object({
   siteId: id,
   field: z.enum(["views", "copies", "clicks"]),
   referer: z.string().max(2_048).nullable(),
+  visitorHash: z.string().max(128).nullable().optional(),
   timestamp,
 }).strict();
 
@@ -82,6 +83,12 @@ const accountExportEventSchema = z.object({
   userId: id,
 }).strict();
 
+const viewerExportEventSchema = z.object({
+  type: z.literal("viewer-export"),
+  exportId: id,
+  viewerId: id,
+}).strict();
+
 export const queueEventSchema = z.union([
   clickEventSchema,
   conversionEventSchema,
@@ -91,6 +98,7 @@ export const queueEventSchema = z.union([
   playerRankNotifyEventSchema,
   kickRewardRedemptionEventSchema,
   accountExportEventSchema,
+  viewerExportEventSchema,
 ]);
 
 export type QueueEvent = z.infer<typeof queueEventSchema>;
@@ -103,6 +111,7 @@ export type NotifyEvent =
   | z.infer<typeof playerRankNotifyEventSchema>;
 export type KickRewardRedemptionEvent = z.infer<typeof kickRewardRedemptionEventSchema>;
 export type AccountExportEvent = z.infer<typeof accountExportEventSchema>;
+export type ViewerExportEvent = z.infer<typeof viewerExportEventSchema>;
 
 export function parseQueueEvent(input: unknown): QueueEvent {
   return queueEventSchema.parse(input);

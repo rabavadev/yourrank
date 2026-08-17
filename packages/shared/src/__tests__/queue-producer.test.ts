@@ -27,6 +27,29 @@ describe("parseQueueEvent", () => {
   it("rejects unknown event types", () => {
     expect(() => parseQueueEvent({ type: "unexpected" })).toThrow();
   });
+
+  it("accepts bump events with visitor hashes", () => {
+    expect(parseQueueEvent({
+      type: "bump",
+      siteId: "site-1",
+      field: "views",
+      referer: null,
+      visitorHash: "b".repeat(64),
+      timestamp: 1,
+    })).toMatchObject({ type: "bump", visitorHash: "b".repeat(64) });
+  });
+
+  it("accepts viewer export events", () => {
+    expect(parseQueueEvent({
+      type: "viewer-export",
+      exportId: "export-1",
+      viewerId: "viewer-1",
+    })).toEqual({
+      type: "viewer-export",
+      exportId: "export-1",
+      viewerId: "viewer-1",
+    });
+  });
 });
 
 describe("createQueueProducer", () => {
