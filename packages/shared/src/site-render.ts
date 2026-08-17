@@ -177,7 +177,7 @@ function sidebar({ b, slug, section, siteSections, homeUrl, isCustomDomain, logo
   })).join("");
 
   const resources = [
-    kickUrl ? `<a class="yr-nav-a" href="${kickUrl}" target="_blank" rel="noopener">${ICONS.kick} Watch on Kick</a>` : "",
+    kickUrl && kickUrl !== "#" ? `<a class="yr-nav-a" href="${kickUrl}" target="_blank" rel="noopener">${ICONS.kick} Watch on Kick</a>` : "",
     hasCta && casino ? `<a class="yr-nav-a" href="${ctaHref}" target="_blank" rel="noopener">${ICONS.gift} Join ${esc(casino)}</a>` : "",
     viewer ? `<a class="yr-nav-a" href="/me">${ICONS.account} All boards &amp; account</a>` : "",
     `<button class="yr-nav-a" type="button" data-feedback-open>${ICONS.book} Send feedback</button>`,
