@@ -251,6 +251,24 @@ describe("logged-out vs logged-in rendering", () => {
     expect(lbHtml).toContain("Sign in with Kick");
   });
 
+  it("does not emit renderer comments inside leaderboard rows", async () => {
+    const res = await renderSiteRoute({
+      request: req("https://example.com/streamer/leaderboard"),
+      env,
+      ctx,
+      nonce: "n",
+      slug: "streamer",
+      section: "leaderboard",
+      isCustomDomain: false,
+    });
+    const html = await res.text();
+    const rows = html.match(/<tbody data-rows>([\s\S]*?)<\/tbody>/)?.[1] || "";
+    const rowBodies = [...rows.matchAll(/<tr[^>]*>([\s\S]*?)<td/g)].map((match) => match[1]);
+    expect(rowBodies.length).toBeGreaterThan(0);
+    expect(rowBodies.join("")).not.toContain("U-09");
+    expect(rowBodies.join("")).not.toContain("//");
+  });
+
   it("shop is browsable logged out with sign-in CTAs instead of redeem buttons", async () => {
     const res = await renderSiteRoute({ request: req("https://example.com/streamer/shop"), env, ctx, nonce: "n", slug: "streamer", section: "shop", isCustomDomain: false });
     expect(res.status).toBe(200);

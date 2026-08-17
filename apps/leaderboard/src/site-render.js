@@ -673,9 +673,9 @@ function boardMain(ctx) {
 </div>`;
   }).join("");
 
-  const rows = players.map((p, i) => `<tr data-name="${esc(String(p.name || "").toLowerCase())}" data-position="${Number(p.rank) || i + 1}">
   // U-09: Removed .padStart(2,"0") — leading zeros cause AT to say "zero one".
   // Alignment is preserved via CSS tabular-nums on .yr-idx.
+  const rows = players.map((p, i) => `<tr data-name="${esc(String(p.name || "").toLowerCase())}" data-position="${Number(p.rank) || i + 1}">
 <td class="yr-idx">${Number(p.rank) || i + 1}</td>
 <td><a href="${playerHref(p.name)}">${esc(p.name)}</a></td>
 <td class="yr-mono yr-r">${esc(formatMoney(currency, p.wagered))}</td>

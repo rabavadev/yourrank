@@ -508,6 +508,7 @@ ${footer}
 </main>
 </div>
 ${feedbackModal({ slug })}
+<script src="/assets/cookie-consent.js" nonce="${nonce}" defer></script>
 <script src="/assets/site-shell.js" nonce="${nonce}" defer></script>
 </body></html>`;
 
