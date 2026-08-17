@@ -7,6 +7,8 @@ import { rateLimit } from "@yourrank/shared/ratelimit";
 import { PLATFORM_HOST } from "../constants.js";
 import { invalidateCustomDomain } from "../middleware/custom-domain.js";
 import { logAudit } from "@yourrank/shared/audit";
+import { effectivePlan, BOARD_LIMITS } from "@yourrank/shared/plans";
+import { requireSiteCapability } from "../site-authorization.js";
 
 const DOMAIN_REGEX = /^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)*\.[a-z]{2,}$/;
 
@@ -64,14 +66,22 @@ export async function handleDomainSearch(request, env) {
 /**
  * POST /api/domains/purchase — Purchase a domain with instant 1-click CNAME DNS & SSL linking
  */
-export async function handleDomainPurchase(request, env) {
+export async function handleDomainPurchase(request, env, {
+  requireUserImpl = requireUser,
+  rateLimitImpl = rateLimit,
+  getByUserImpl = getByUser,
+  getBoardByIdImpl = getBoardById,
+  oneImpl = one,
+  getDomainProviderImpl = getDomainProvider,
+  requireSiteCapabilityImpl = requireSiteCapability,
+} = {}) {
   try {
-    const { user, res } = await requireUser(request, env);
+    const { user, res } = await requireUserImpl(request, env);
     if (res) return res;
 
     if (user.status === "suspended") return bad("This account is suspended.", 403);
 
-    const rl = await rateLimit(env, `domain:purchase:${user.id}`, 5, 300);
+    const rl = await rateLimitImpl(env, `domain:purchase:${user.id}`, 5, 300);
     if (!rl.ok) return bad("Too many domain purchase attempts. Please try again later.", 429);
 
     const body = await readJson(request);
@@ -86,16 +96,38 @@ export async function handleDomainPurchase(request, env) {
 
     const url = new URL(request.url);
     const siteId = body?.siteId || url.searchParams.get("siteId");
-    const site = siteId ? await getBoardById(env, user.id, siteId) : await getByUser(env, user.id);
+    const site = siteId ? await getBoardByIdImpl(env, user.id, siteId) : await getByUserImpl(env, user.id);
     if (!site) return bad("No site found for this account.", 404);
+    const authorization = await requireSiteCapabilityImpl(
+      user,
+      site,
+      "canRoleManageBilling"
+    );
+    if (authorization.res) return authorization.res;
+
+    const plan = effectivePlan(user);
+    if (plan !== "pro" && plan !== "agency") return bad("Custom domains are a Pro feature.", 403);
+    const activeOrderFilter = "status NOT IN ('cancelled', 'expired') AND expires_at > now()";
+    const siteOrder = await oneImpl(
+      `SELECT id FROM domain_orders WHERE site_id=$1 AND ${activeOrderFilter} LIMIT 1`,
+      [site.id]
+    );
+    if (siteOrder) return bad("This site already has an active domain order.", 400);
+    const userOrderCount = await oneImpl(
+      `SELECT count(*)::int AS count FROM domain_orders WHERE user_id=$1 AND ${activeOrderFilter}`,
+      [user.id]
+    );
+    if (Number(userOrderCount?.count || 0) >= (BOARD_LIMITS[plan] || 1)) {
+      return bad(`Your plan allows up to ${BOARD_LIMITS[plan]} active domain orders.`, 400);
+    }
 
     // Check if domain is already owned in our database
-    const existingOrder = await one("SELECT id, user_id FROM domain_orders WHERE domain=$1", [domain]);
+    const existingOrder = await oneImpl("SELECT id, user_id FROM domain_orders WHERE domain=$1", [domain]);
     if (existingOrder) {
       return bad("This domain has already been purchased or is currently active.", 400);
     }
 
-    const provider = getDomainProvider(env);
+    const provider = getDomainProviderImpl(env);
     const check = await provider.checkAvailability(domain);
     if (!check.available) {
       return bad("This domain is no longer available for registration.", 400);
@@ -197,15 +229,25 @@ export async function handleDomainPurchase(request, env) {
 /**
  * GET /api/domains/my-domain — Get active custom domain details & transfer status for current site/user
  */
-export async function handleGetMyDomain(request, env) {
+export async function handleGetMyDomain(request, env, {
+  getByUserImpl = getByUser,
+  getBoardByIdImpl = getBoardById,
+  requireSiteCapabilityImpl = requireSiteCapability,
+} = {}) {
   try {
     const { user, res } = await requireUser(request, env);
     if (res) return res;
 
     const url = new URL(request.url);
     const siteId = url.searchParams.get("siteId");
-    const site = siteId ? await getBoardById(env, user.id, siteId) : await getByUser(env, user.id);
+    const site = siteId ? await getBoardByIdImpl(env, user.id, siteId) : await getByUserImpl(env, user.id);
     if (!site) return bad("Site not found", 404);
+    const authorization = await requireSiteCapabilityImpl(
+      user,
+      site,
+      "canRoleManageBilling"
+    );
+    if (authorization.res) return authorization.res;
 
     const order = await one(
       `SELECT id, domain, provider, status, auto_renew, locked, expires_at, created_at
@@ -230,7 +272,10 @@ export async function handleGetMyDomain(request, env) {
 /**
  * POST /api/domains/toggle-lock — Enable/disable ICANN registrar transfer lock
  */
-export async function handleDomainToggleLock(request, env) {
+export async function handleDomainToggleLock(request, env, {
+  getDomainProviderImpl = getDomainProvider,
+  requireSiteCapabilityImpl = requireSiteCapability,
+} = {}) {
   try {
     const { user, res } = await requireUser(request, env);
     if (res) return res;
@@ -243,12 +288,15 @@ export async function handleDomainToggleLock(request, env) {
     const lock = Boolean(body?.lock);
 
     const order = await one(
-      "SELECT id, domain FROM domain_orders WHERE domain=$1 AND user_id=$2 AND status='active'",
+      "SELECT id, site_id, domain FROM domain_orders WHERE domain=$1 AND user_id=$2 AND status='active'",
       [domain, user.id]
     );
     if (!order) return bad("You do not own this domain through YourRank.", 404);
+    const site = await getBoardById(env, user.id, order.site_id);
+    const authorization = await requireSiteCapabilityImpl(user, site, "canRoleManageBilling");
+    if (authorization.res) return authorization.res;
 
-    const provider = getDomainProvider(env);
+    const provider = getDomainProviderImpl(env);
     await provider.setTransferLock(domain, lock);
 
     await exec("UPDATE domain_orders SET locked=$1, updated_at=now() WHERE id=$2", [lock, order.id]);
@@ -276,7 +324,10 @@ export async function handleDomainToggleLock(request, env) {
 /**
  * POST /api/domains/transfer-auth-code — Retrieve EPP Authorization code to transfer domain out
  */
-export async function handleDomainTransferAuthCode(request, env) {
+export async function handleDomainTransferAuthCode(request, env, {
+  getDomainProviderImpl = getDomainProvider,
+  requireSiteCapabilityImpl = requireSiteCapability,
+} = {}) {
   try {
     const { user, res } = await requireUser(request, env);
     if (res) return res;
@@ -291,10 +342,13 @@ export async function handleDomainTransferAuthCode(request, env) {
     }
 
     const order = await one(
-      "SELECT id, domain, created_at FROM domain_orders WHERE domain=$1 AND user_id=$2 AND status='active'",
+      "SELECT id, site_id, domain, created_at FROM domain_orders WHERE domain=$1 AND user_id=$2 AND status='active'",
       [domain, user.id]
     );
     if (!order) return bad("You do not own this domain through YourRank.", 404);
+    const site = await getBoardById(env, user.id, order.site_id);
+    const authorization = await requireSiteCapabilityImpl(user, site, "canRoleManageBilling");
+    if (authorization.res) return authorization.res;
 
     // Check ICANN 60-day rule for newly registered domains
     const createdTime = new Date(order.created_at).getTime();
@@ -302,7 +356,7 @@ export async function handleDomainTransferAuthCode(request, env) {
     const isWithinSixtyDays = Date.now() - createdTime < sixtyDaysMs;
     const unlockDate = new Date(createdTime + sixtyDaysMs).toISOString().split("T")[0];
 
-    const provider = getDomainProvider(env);
+    const provider = getDomainProviderImpl(env);
     const result = await provider.getTransferAuthCode(domain);
 
     await logAudit({

@@ -1,6 +1,7 @@
 // Seasonal Battle Pass & Viewer Progression Handlers.
 import { requireUser as defaultRequireUser, ok, bad, readJson } from "../auth.js";
 import { getByUser as defaultGetByUser, getBoardById as defaultGetBoardById } from "../site.js";
+import { requireSiteCapability } from "../site-authorization.js";
 import {
   one as defaultOne,
   exec as defaultExec,
@@ -128,6 +129,8 @@ export async function handleCreateSeason(request, env, deps = {}) {
   const siteId = body?.siteId || url.searchParams.get("siteId");
   const site = siteId ? await getBoardById(env, user.id, siteId) : await getByUser(env, user.id);
   if (!site) return bad("Site not found", 404);
+  const authorization = await requireSiteCapability(user, site, "canRoleManageBot");
+  if (authorization.res) return authorization.res;
 
   // Close previous active seasons
   await exec("UPDATE seasons SET status='ended', updated_at=now() WHERE site_id=$1 AND status='active'", [site.id]);
@@ -240,16 +243,24 @@ export async function handleClaimTierReward(request, env, deps = {}) {
  */
 export async function handleAwardXp(request, env, deps = {}) {
   const {
+    requireUser = defaultRequireUser,
+    getByUser = defaultGetByUser,
+    getBoardById = defaultGetBoardById,
     one = defaultOne,
     withTransaction = defaultWithTransaction,
   } = deps;
 
+  const { user, res } = await requireUser(request, env);
+  if (res) return res;
   const body = await readJson(request);
   const siteId = String(body?.siteId || "").trim();
   const viewerId = String(body?.viewerId || "").trim();
   const xpAmount = Math.max(1, parseInt(body?.xp, 10) || 50);
 
   if (!siteId || !viewerId) return bad("siteId and viewerId are required.");
+  const site = siteId ? await getBoardById(env, user.id, siteId) : await getByUser(env, user.id);
+  const authorization = await requireSiteCapability(user, site, "canRoleManageCredits");
+  if (authorization.res) return authorization.res;
 
   const season = await one("SELECT id, tiers_json FROM seasons WHERE site_id=$1 AND status='active' ORDER BY season_number DESC LIMIT 1", [siteId]);
   if (!season) return ok({ message: "No active season for XP." });

@@ -1,6 +1,7 @@
 // Live Predictions & Voting Handlers.
 import { requireUser as defaultRequireUser, ok, bad, readJson } from "../auth.js";
 import { getByUser as defaultGetByUser, getBoardById as defaultGetBoardById } from "../site.js";
+import { requireSiteCapability } from "../site-authorization.js";
 import {
   one as defaultOne,
   query as defaultQuery,
@@ -27,6 +28,8 @@ export async function handleGetPredictions(request, env, deps = {}) {
   const siteId = url.searchParams.get("siteId");
   const site = siteId ? await getBoardById(env, user.id, siteId) : await getByUser(env, user.id);
   if (!site) return bad("Site not found", 404);
+  const authorization = await requireSiteCapability(user, site, "canRoleManageBoard");
+  if (authorization.res) return authorization.res;
 
   const predictions = await query(
     `SELECT p.id, p.title, p.options, p.status, p.winning_option_id, p.total_pool,
@@ -85,6 +88,8 @@ export async function handleCreatePrediction(request, env, deps = {}) {
   const siteId = body?.siteId || url.searchParams.get("siteId");
   const site = siteId ? await getBoardById(env, user.id, siteId) : await getByUser(env, user.id);
   if (!site) return bad("Site not found", 404);
+  const authorization = await requireSiteCapability(user, site, "canRoleManageBoard");
+  if (authorization.res) return authorization.res;
 
   const result = await one(
     `INSERT INTO predictions (site_id, title, options, min_bet, max_bet, lock_at)

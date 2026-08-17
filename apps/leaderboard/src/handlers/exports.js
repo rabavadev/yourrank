@@ -1,6 +1,7 @@
 // One-Click CSV Data Exports for Streamers.
 import { requireUser as defaultRequireUser, bad } from "../auth.js";
 import { getByUser as defaultGetByUser, getBoardById as defaultGetBoardById } from "../site.js";
+import { requireSiteCapability } from "../site-authorization.js";
 import {
   query as defaultQuery,
 } from "@yourrank/shared/db";
@@ -46,6 +47,8 @@ export async function handleExportRaffleWinnersCsv(request, env, deps = {}) {
   const siteId = url.searchParams.get("siteId");
   const site = siteId ? await getBoardById(env, user.id, siteId) : await getByUser(env, user.id);
   if (!site) return bad("Site not found", 404);
+  const authorization = await requireSiteCapability(user, site, "canRoleManageBilling");
+  if (authorization.res) return authorization.res;
 
   const raffles = await query(
     `SELECT r.title, r.ticket_cost, r.status, r.winner_name, r.drawn_at, r.created_at,
@@ -88,6 +91,8 @@ export async function handleExportDropClaimsCsv(request, env, deps = {}) {
   const siteId = url.searchParams.get("siteId");
   const site = siteId ? await getBoardById(env, user.id, siteId) : await getByUser(env, user.id);
   if (!site) return bad("Site not found", 404);
+  const authorization = await requireSiteCapability(user, site, "canRoleManageBilling");
+  if (authorization.res) return authorization.res;
 
   const claims = await query(
     `SELECT cd.code, cd.points_reward, v.username, cdc.claimed_at
@@ -128,6 +133,8 @@ export async function handleExportPredictionsCsv(request, env, deps = {}) {
   const siteId = url.searchParams.get("siteId");
   const site = siteId ? await getBoardById(env, user.id, siteId) : await getByUser(env, user.id);
   if (!site) return bad("Site not found", 404);
+  const authorization = await requireSiteCapability(user, site, "canRoleManageBilling");
+  if (authorization.res) return authorization.res;
 
   const predictions = await query(
     `SELECT p.title, p.status, p.winning_option_id, p.total_pool, p.settled_at, p.created_at,

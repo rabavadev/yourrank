@@ -2,6 +2,7 @@
 import { requireUser, bad, ok, readJson } from "../auth.js";
 import { getByUser, getBoardById } from "../site.js";
 import { exec } from "@yourrank/shared/db";
+import { requireSiteCapability } from "../site-authorization.js";
 
 function getSite(env, user, url) {
   const siteId = url.searchParams.get("siteId");
@@ -14,6 +15,8 @@ export async function handleCreditsBlockViewer(request, env, ctx) {
   const url = new URL(request.url);
   const site = await getSite(env, user, url);
   if (!site) return bad("no site", 404);
+  const authorization = await requireSiteCapability(user, site, "canRoleManageCredits");
+  if (authorization.res) return authorization.res;
 
   const id = ctx?.slug || url.pathname.split("/").pop();
   const body = await readJson(request);
