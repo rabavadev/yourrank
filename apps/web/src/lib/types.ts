@@ -403,11 +403,11 @@ export interface ReferralsResponse {
 
 export interface ConversionRow {
   event: string;
-  amount: string;
-  currency: string;
-  click_ref: string;
+  amount: string | null;
+  currency: string | null;
+  click_ref: string | null;
   at: string;
-  offer: string;
+  offer: string | null;
 }
 
 export interface ConversionsResponse {
@@ -445,11 +445,19 @@ export interface TelegramBotCommand {
 export interface TelegramOffer {
   id: string;
   label: string;
+  casino: string;
+  promo_code: string;
+  bonus_text: string;
   referral_url: string;
   is_active: boolean;
   clicks: number;
   unique_clicks: number;
-  short_link: string;
+  conversions: number;
+  reported_revenue: { currency: string; amount: number }[];
+  slug: string;
+  last_activity_at: string | null;
+  ctr: number;
+  cr: number;
 }
 
 export interface TelegramBroadcast {
@@ -515,6 +523,14 @@ export interface AdminUsersResponse {
   pageSize: number;
   total: number;
   filters: { q: string; status: string; plan: string };
+}
+
+export interface Admin2FAStatus {
+  enabled: boolean;
+  verified: boolean;
+  fresh: boolean;
+  locked: boolean;
+  recoveryCodesRemaining: number;
 }
 
 export interface AdminLead {
@@ -639,3 +655,5 @@ export interface TwoFactorVerifyResponse {
   verified: boolean;
   recoveryCodes?: string[];
 }
+
+

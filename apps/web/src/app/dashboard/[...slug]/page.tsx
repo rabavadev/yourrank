@@ -6,9 +6,20 @@ import { EditorSharePage } from "../_components/EditorSharePage";
 import { EditorHistoryPage } from "../_components/EditorHistoryPage";
 import { GamesPage } from "../_components/GamesPage";
 import { GiveawaysPage } from "../_components/GiveawaysPage";
-import { RewardsPage } from "../_components/RewardsPage";
+import { RewardsChannelPage } from "../_components/RewardsChannelPage";
+import { RewardsRulesPage } from "../_components/RewardsRulesPage";
+import { RewardsShopPage } from "../_components/RewardsShopPage";
+import { RewardsRedemptionsPage } from "../_components/RewardsRedemptionsPage";
+import { RewardsHistoryPage } from "../_components/RewardsHistoryPage";
 import { AudienceViewersPage } from "../_components/AudienceViewersPage";
 import { TelegramPage } from "../_components/TelegramPage";
+import { TelegramBotsPage } from "../_components/TelegramBotsPage";
+import { TelegramCommandsPage } from "../_components/TelegramCommandsPage";
+import { TelegramOffersPage } from "../_components/TelegramOffersPage";
+import { TelegramBroadcastsPage } from "../_components/TelegramBroadcastsPage";
+import { AnalyticsActivityPage } from "../_components/AnalyticsActivityPage";
+import { AnalyticsReferralsPage } from "../_components/AnalyticsReferralsPage";
+import { AnalyticsEventsPage } from "../_components/AnalyticsEventsPage";
 
 export const dynamic = "force-dynamic";
 
@@ -41,11 +52,34 @@ export default async function DashboardPage({ params, searchParams }: DashboardP
     case "giveaways":
       return <GiveawaysPage />;
     case "rewards":
-      return <RewardsPage siteId={siteId} />;
+    case "rewards/channel":
+      return <RewardsChannelPage siteId={siteId} />;
+    case "rewards/rules":
+      return <RewardsRulesPage siteId={siteId} />;
+    case "rewards/shop":
+      return <RewardsShopPage siteId={siteId} />;
+    case "rewards/redemptions":
+      return <RewardsRedemptionsPage siteId={siteId} />;
+    case "rewards/history":
+      return <RewardsHistoryPage siteId={siteId} />;
     case "audience/viewers":
       return <AudienceViewersPage siteId={siteId} />;
     case "telegram":
       return <TelegramPage />;
+    case "telegram/bots":
+      return <TelegramBotsPage />;
+    case "telegram/commands":
+      return <TelegramCommandsPage />;
+    case "telegram/offers":
+      return <TelegramOffersPage />;
+    case "telegram/broadcasts":
+      return <TelegramBroadcastsPage />;
+    case "analytics/activity":
+      return <AnalyticsActivityPage siteId={siteId} />;
+    case "analytics/referrals":
+      return <AnalyticsReferralsPage />;
+    case "analytics/events":
+      return <AnalyticsEventsPage />;
     default:
       return <div className="text-ink-soft">This dashboard section is not yet available in the new workspace.</div>;
   }

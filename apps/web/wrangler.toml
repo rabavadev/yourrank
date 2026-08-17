@@ -3,7 +3,12 @@ main = ".open-next/worker.js"
 compatibility_date = "2026-08-16"
 compatibility_flags = ["nodejs_compat"]
 
-# Shadow-test URL for the Next.js app before switching www/app traffic.
+# Primary app domain for the Next.js dashboard and marketing surfaces.
+[[routes]]
+pattern = "app.yourrank.site"
+custom_domain = true
+
+# Legacy shadow-test domain redirects to the primary app domain.
 [[routes]]
 pattern = "next.yourrank.site"
 custom_domain = true
@@ -21,6 +26,10 @@ API_BASE_URL = "https://yourrank.site"
 [[services]]
 binding = "API"
 service = "yourrank-site"
+
+[[services]]
+binding = "BOT_API"
+service = "yourrank-bot"
 
 [[hyperdrive]]
 binding = "HYPERDRIVE"

@@ -7,6 +7,7 @@ interface NavItem {
   href: string;
   label: string;
   icon: React.ReactNode;
+  adminOnly?: boolean;
 }
 
 interface NavGroup {
@@ -94,6 +95,14 @@ function SettingsIcon() {
   );
 }
 
+function AdminIcon() {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+    </svg>
+  );
+}
+
 function HelpIcon() {
   return (
     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -116,19 +125,36 @@ const GROUPS: NavGroup[] = [
     ],
   },
   {
+    label: "ANALYTICS",
+    items: [
+      { href: "/dashboard/analytics/activity", label: "Activity", icon: <OverviewIcon /> },
+      { href: "/dashboard/analytics/referrals", label: "Referrals", icon: <UsersIcon /> },
+      { href: "/dashboard/analytics/events", label: "Events", icon: <GiveawayIcon /> },
+    ],
+  },
+  {
     label: "COMMUNITY & REWARDS",
     items: [
       { href: "/dashboard/giveaways", label: "Live giveaways", icon: <GiveawayIcon /> },
-      { href: "/dashboard/rewards", label: "Rewards & shop", icon: <ShopIcon /> },
+      { href: "/dashboard/rewards/channel", label: "Rewards & shop", icon: <ShopIcon /> },
       { href: "/dashboard/audience/viewers", label: "Viewer points", icon: <ViewersIcon /> },
     ],
   },
-  { label: "TELEGRAM", items: [{ href: "/dashboard/telegram", label: "Telegram bot", icon: <TelegramIcon /> }] },
+  {
+    label: "TELEGRAM",
+    items: [
+      { href: "/dashboard/telegram/bots", label: "Bots", icon: <TelegramIcon /> },
+      { href: "/dashboard/telegram/commands", label: "Commands", icon: <OverviewIcon /> },
+      { href: "/dashboard/telegram/offers", label: "Offers", icon: <ShopIcon /> },
+      { href: "/dashboard/telegram/broadcasts", label: "Broadcasts", icon: <UsersIcon /> },
+    ],
+  },
   {
     label: "SETTINGS & SITES",
     items: [
       { href: "/dashboard/boards", label: "Sites", icon: <BoardsIcon /> },
       { href: "/dashboard/settings", label: "Account & billing", icon: <SettingsIcon /> },
+      { href: "/admin", label: "Admin", icon: <AdminIcon />, adminOnly: true },
       { href: "https://yourrank.site/help/support", label: "Help & support", icon: <HelpIcon /> },
     ],
   },
@@ -141,7 +167,7 @@ function isActive(pathname: string, href: string): boolean {
 }
 
 interface DashboardNavProps {
-  user?: { display_name?: string | null; email: string; plan: string } | null;
+  user?: { display_name?: string | null; email: string; plan: string; is_admin?: boolean } | null;
 }
 
 export function DashboardNav({ user }: DashboardNavProps) {
@@ -164,7 +190,7 @@ export function DashboardNav({ user }: DashboardNavProps) {
               {group.label}
             </p>
             <ul className="space-y-0.5">
-              {group.items.map((item) => {
+              {group.items.filter((item) => !item.adminOnly || user?.is_admin).map((item) => {
                 const active = isActive(pathname, item.href);
                 const external = item.href.startsWith("https://");
                 return (

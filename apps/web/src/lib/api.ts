@@ -20,7 +20,7 @@ export async function apiRequest(path: string, init?: RequestInit): Promise<Resp
   const { env } = await getCloudflareContext({ async: true });
   const cookieStore = await cookies();
   const cookieHeader = cookieStore.toString();
-  const host = (await headers()).get("host") || "next.yourrank.site";
+  const host = (await headers()).get("host") || "app.yourrank.site";
 
   const url = new URL(path, `https://${host}`);
   const reqHeaders = new Headers(init?.headers);
@@ -109,7 +109,7 @@ export async function botApiRequest(path: string, init?: RequestInit): Promise<R
   const { env } = await getCloudflareContext({ async: true });
   const cookieStore = await cookies();
   const cookieHeader = cookieStore.toString();
-  const host = (await headers()).get("host") || "next.yourrank.site";
+  const host = (await headers()).get("host") || "app.yourrank.site";
 
   const fullPath = botPath(path);
   const url = new URL(fullPath, BOT_API_FALLBACK_BASE);
