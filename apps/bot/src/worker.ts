@@ -161,6 +161,17 @@ export default {
               throw err;
             }
           })(),
+          (async () => {
+            try {
+              const { purgeExpiredReplayHashes } = await import("@yourrank/shared/postback");
+              const deleted = await purgeExpiredReplayHashes();
+              console.log(`[cron 0 3 * * *] purgeExpiredReplayHashes: deleted ${deleted} replay hashes`);
+              return deleted;
+            } catch (err) {
+              console.error("[cron 0 3 * * *] purgeExpiredReplayHashes failed:", err);
+              throw err;
+            }
+          })(),
           // DB-101: Data retention — delete click_daily rows older than 90 days
           (async () => {
             try {
@@ -211,7 +222,7 @@ export default {
         // Log any rejections and alert via Discord — allSettled never throws
         const failures = results.filter(r => r.status === "rejected");
         if (failures.length > 0) {
-          const failedTasks = ["rollupClicks", "ensureCurrentMonthPartition", "ensureNextMonthPartition", "sendExpiryWarnings", "downgradeExpired", "cleanupOldClicks", "authCleanup", "onboardingEmails"]
+          const failedTasks = ["rollupClicks", "ensureCurrentMonthPartition", "ensureNextMonthPartition", "sendExpiryWarnings", "downgradeExpired", "purgeExpiredReplayHashes", "cleanupOldClicks", "authCleanup", "onboardingEmails"]
             .filter((_, i) => results[i].status === "rejected");
           const reasons = failures.map(f => String((f as PromiseRejectedResult).reason?.message || f.reason)).join("; ");
           console.error(`[cron 0 3 * * *] ${failures.length} task(s) failed: ${failedTasks.join(", ")} — ${reasons}`);

@@ -9,6 +9,15 @@ routes = [
   { pattern = "yourrank.site/consumer/*", zone_name = "yourrank.site" },
 ]
 
+[observability]
+enabled = true
+head_sampling_rate = 1
+
+[observability.logs]
+enabled = true
+head_sampling_rate = 1
+invocation_logs = true
+
 # Tell Cloudflare to provision the RateLimiter Durable Object class on first deploy.
 [[migrations]]
 tag = "v1"
