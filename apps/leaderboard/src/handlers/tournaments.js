@@ -1,6 +1,7 @@
 // Tournament & Elimination Brackets Handlers.
 import { requireUser as defaultRequireUser, ok, bad, readJson } from "../auth.js";
 import { getByUser as defaultGetByUser, getBoardById as defaultGetBoardById } from "../site.js";
+import { requireSiteCapability } from "../site-authorization.js";
 import {
   one as defaultOne,
   query as defaultQuery,
@@ -65,6 +66,8 @@ export async function handleCreateTournament(request, env, deps = {}) {
   const siteId = body?.siteId || url.searchParams.get("siteId");
   const site = siteId ? await getBoardById(env, user.id, siteId) : await getByUser(env, user.id);
   if (!site) return bad("Site not found", 404);
+  const authorization = await requireSiteCapability(request, env, user, site, "canRoleManageBoard");
+  if (authorization.res) return authorization.res;
 
   const totalRounds = Math.log2(bracketSize);
 

@@ -1,6 +1,7 @@
 // Lucky Wheel Interactive Game Handlers.
 import { requireUser as defaultRequireUser, ok, bad, readJson } from "../auth.js";
 import { getByUser as defaultGetByUser, getBoardById as defaultGetBoardById } from "../site.js";
+import { requireSiteCapability } from "../site-authorization.js";
 import {
   one as defaultOne,
   withTransaction as defaultWithTransaction,
@@ -98,6 +99,8 @@ export async function handleUpdateWheelConfig(request, env, deps = {}) {
   const siteId = body?.siteId || url.searchParams.get("siteId");
   const site = siteId ? await getBoardById(env, user.id, siteId) : await getByUser(env, user.id);
   if (!site) return bad("Site not found", 404);
+  const authorization = await requireSiteCapability(request, env, user, site, "canRoleManageBot");
+  if (authorization.res) return authorization.res;
 
   const result = await one(
     `INSERT INTO wheel_configs (site_id, spin_cost, enabled, segments_json, updated_at)

@@ -1,6 +1,7 @@
 // Community Events Handlers: Raffles (Ticket Draws) & Flash Code Drops.
 import { requireUser as defaultRequireUser, ok, bad, readJson } from "../auth.js";
 import { getByUser as defaultGetByUser, getBoardById as defaultGetBoardById } from "../site.js";
+import { requireSiteCapability } from "../site-authorization.js";
 import {
   one as defaultOne,
   query as defaultQuery,
@@ -34,6 +35,8 @@ export async function handleGetRaffles(request, env, deps = {}) {
   const siteId = url.searchParams.get("siteId");
   const site = siteId ? await getBoardById(env, user.id, siteId) : await getByUser(env, user.id);
   if (!site) return bad("Site not found", 404);
+  const authorization = await requireSiteCapability(request, env, user, site, "canRoleManageBoard");
+  if (authorization.res) return authorization.res;
 
   const raffles = await query(
     `SELECT r.id, r.title, r.description, r.ticket_cost, r.max_tickets_per_viewer, r.status,
@@ -75,6 +78,8 @@ export async function handleCreateRaffle(request, env, deps = {}) {
   const siteId = body?.siteId || url.searchParams.get("siteId");
   const site = siteId ? await getBoardById(env, user.id, siteId) : await getByUser(env, user.id);
   if (!site) return bad("Site not found", 404);
+  const authorization = await requireSiteCapability(request, env, user, site, "canRoleManageBoard");
+  if (authorization.res) return authorization.res;
 
   const endsAt = body?.endsAt ? new Date(body.endsAt).toISOString() : null;
 
@@ -204,6 +209,8 @@ export async function handleGetCodeDrops(request, env, deps = {}) {
   const siteId = url.searchParams.get("siteId");
   const site = siteId ? await getBoardById(env, user.id, siteId) : await getByUser(env, user.id);
   if (!site) return bad("Site not found", 404);
+  const authorization = await requireSiteCapability(request, env, user, site, "canRoleManageBoard");
+  if (authorization.res) return authorization.res;
 
   const drops = await query(
     `SELECT id, code, points_reward, max_claims, claimed_count, status, expires_at, created_at
@@ -244,6 +251,8 @@ export async function handleCreateCodeDrop(request, env, deps = {}) {
   const siteId = body?.siteId || url.searchParams.get("siteId");
   const site = siteId ? await getBoardById(env, user.id, siteId) : await getByUser(env, user.id);
   if (!site) return bad("Site not found", 404);
+  const authorization = await requireSiteCapability(request, env, user, site, "canRoleManageBoard");
+  if (authorization.res) return authorization.res;
 
   try {
     const result = await one(

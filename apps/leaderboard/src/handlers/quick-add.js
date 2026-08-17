@@ -1,6 +1,7 @@
 import { requireUser, json, bad, readJson, rateLimit } from "../auth.js";
 import { getBoardById, getPlayers, saveSite } from "../site.js";
 import { logAudit } from "@yourrank/shared/audit";
+import { requireSiteCapability } from "../site-authorization.js";
 
 // POST /api/sites/:id/quick-add
 // Takes { name: "Steve", amount: 500 }
@@ -29,6 +30,8 @@ export async function handleQuickAdd(request, env) {
   // Fetch current site state
   const site = await getBoardById(env, user.id, siteId);
   if (!site) return bad("Board not found", 404);
+  const authorization = await requireSiteCapability(request, env, user, site, "canRoleManageBoard");
+  if (authorization.res) return authorization.res;
 
   // getBoardById returns the raw sites row; players live in the players table.
   const rows = await getPlayers(env, site.id);
