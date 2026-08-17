@@ -186,7 +186,7 @@ export async function sendExpiryWarnings(env: EmailEnv, opts: { origin?: string 
       WHERE u.plan_expires_at IS NOT NULL
         AND u.plan_expires_at <= now() + interval '7 days'
         AND u.plan_expires_at >= now() - interval '7 days'
-        AND u.plan <> 'lifetime'
+        AND u.plan <> 'free'
       ORDER BY u.plan_expires_at`,
     []
   );
