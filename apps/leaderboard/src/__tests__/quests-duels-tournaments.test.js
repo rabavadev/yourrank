@@ -44,6 +44,7 @@ describe("Quests, Duels & Tournaments Suite", () => {
       one: mockOne,
       unsafe: mockExec,
     }));
+    mockExec.mockResolvedValue([{}]);
 
     deps = {
       requireUser: mock().mockResolvedValue({ user: USER, res: null }),
@@ -54,6 +55,8 @@ describe("Quests, Duels & Tournaments Suite", () => {
       exec: mockExec,
       logAudit: mockLogAudit,
       withTransaction: mockWithTransaction,
+      requireViewer: mock().mockResolvedValue({ viewer: { id: "v-1" }, res: null }),
+      rateLimit: mock().mockResolvedValue({ ok: true }),
     };
   });
 
@@ -84,6 +87,8 @@ describe("Quests, Duels & Tournaments Suite", () => {
       mockOne.mockResolvedValueOnce({ id: "q-1", site_id: "site-456", title: "Watch stream", reward_xp: 50, reward_points: 20 }); // quest
       mockOne.mockResolvedValueOnce({ id: "sv-1", balance: 100 }); // site_viewer
       mockOne.mockResolvedValueOnce({ id: "vq-1", current_progress: 30, completed: true, claimed: false }); // vq
+      mockOne.mockResolvedValueOnce({ id: "vq-1" }); // guarded claim update
+      mockOne.mockResolvedValueOnce({ id: "sv-1", balance: 120 }); // credit update
 
       const req = new Request("http://localhost/api/quests/claim", {
         method: "POST",
@@ -117,6 +122,39 @@ describe("Quests, Duels & Tournaments Suite", () => {
       expect(body.progress).toBe(5);
       expect(body.completed).toBe(true);
     });
+
+    it("rejects quest claims without a viewer session", async () => {
+      deps.requireViewer.mockResolvedValue({ viewer: null, res: new Response(null, { status: 401 }) });
+      const res = await handleClaimQuestReward(new Request("http://localhost/api/quests/claim", {
+        method: "POST",
+        body: JSON.stringify({ questId: "q-1", viewerId: "attacker" }),
+      }), mockEnv(), deps);
+      expect(res.status).toBe(401);
+    });
+
+    it("uses the session viewer instead of the claim body viewerId", async () => {
+      deps.requireViewer.mockResolvedValue({ viewer: { id: "session-viewer" }, res: null });
+      mockOne.mockResolvedValueOnce({ id: "q-1", site_id: "site-456", title: "Watch stream", reward_xp: 50, reward_points: 20 });
+      mockOne.mockResolvedValueOnce({ id: "sv-1", balance: 100 });
+      mockOne.mockResolvedValueOnce({ id: "vq-1", current_progress: 30, completed: true, claimed: false });
+
+      await handleClaimQuestReward(new Request("http://localhost/api/quests/claim", {
+        method: "POST",
+        body: JSON.stringify({ questId: "q-1", viewerId: "attacker" }),
+      }), mockEnv(), deps);
+
+      expect(mockOne.mock.calls[1][1]).toEqual(["site-456", "session-viewer"]);
+      expect(mockOne.mock.calls[2][1]).toEqual(["q-1", "session-viewer"]);
+    });
+
+    it("rejects quest progress without a viewer session", async () => {
+      deps.requireViewer.mockResolvedValue({ viewer: null, res: new Response(null, { status: 401 }) });
+      const res = await handleTrackQuestProgress(new Request("http://localhost/api/quests/progress", {
+        method: "POST",
+        body: JSON.stringify({ siteId: "site-456", viewerId: "attacker", questKey: "chat_5_msgs" }),
+      }), mockEnv(), deps);
+      expect(res.status).toBe(401);
+    });
   });
 
   // --- VIEWER 1v1 DUELS ---
@@ -140,6 +178,7 @@ describe("Quests, Duels & Tournaments Suite", () => {
       mockOne.mockResolvedValueOnce({ id: "sv-1", balance: 100 }); // challenger sv
       mockOne.mockResolvedValueOnce({ id: "v-2", username: "rival" }); // target viewer
       mockOne.mockResolvedValueOnce({ id: "sv-2", balance: 100 }); // target sv
+      mockOne.mockResolvedValueOnce({ id: "sv-1", balance: 50 }); // guarded debit update
       mockOne.mockResolvedValueOnce({ id: "duel-1", wager_amount: 50, status: "pending" }); // insert duel in tx
 
       const req = new Request("http://localhost/api/duels/create", {
@@ -161,6 +200,7 @@ describe("Quests, Duels & Tournaments Suite", () => {
     });
 
     it("accepts a duel, executes provably fair roll and awards 2x pot to winner", async () => {
+      deps.requireViewer.mockResolvedValue({ viewer: { id: "v-2" }, res: null });
       mockOne.mockResolvedValueOnce({
         id: "duel-1",
         site_id: "site-456",
@@ -174,6 +214,7 @@ describe("Quests, Duels & Tournaments Suite", () => {
         target_name: "bob",
       }); // find duel
       mockOne.mockResolvedValueOnce({ id: "sv-2", balance: 100 }); // target sv balance
+      mockOne.mockResolvedValueOnce({ id: "sv-2", balance: 50 }); // guarded debit update
 
       const req = new Request("http://localhost/api/duels/duel-1/accept", {
         method: "POST",
@@ -190,6 +231,7 @@ describe("Quests, Duels & Tournaments Suite", () => {
     });
 
     it("declines a duel and refunds challenger wager", async () => {
+      deps.requireViewer.mockResolvedValue({ viewer: { id: "v-2" }, res: null });
       mockOne.mockResolvedValueOnce({
         id: "duel-1",
         challenger_site_viewer_id: "sv-1",
@@ -210,6 +252,61 @@ describe("Quests, Duels & Tournaments Suite", () => {
       const body = await res.json();
       expect(body.ok).toBe(true);
       expect(body.status).toBe("declined");
+    });
+
+    it("rejects duel actions without a viewer session", async () => {
+      deps.requireViewer.mockResolvedValue({ viewer: null, res: new Response(null, { status: 401 }) });
+      for (const handler of [handleCreateDuel, handleAcceptDuel, handleDeclineDuel]) {
+        const res = await handler(new Request("http://localhost/api/duels/action", {
+          method: "POST",
+          body: JSON.stringify({ site: "streamer", duelId: "duel-1", viewerId: "attacker", challengerViewerId: "attacker", targetUsername: "rival", wagerAmount: 10 }),
+        }), mockEnv(), deps);
+        expect(res.status).toBe(401);
+      }
+    });
+
+    it("returns insufficient credits and writes no duel ledger when the guarded debit updates zero rows", async () => {
+      mockOne.mockResolvedValueOnce(SITE);
+      mockOne.mockResolvedValueOnce({ id: "sv-1", balance: 100 });
+      mockOne.mockResolvedValueOnce({ id: "v-2", username: "rival" });
+      mockOne.mockResolvedValueOnce({ id: "sv-2", balance: 100 });
+      mockOne.mockResolvedValueOnce(null); // guarded debit update
+
+      const res = await handleCreateDuel(new Request("http://localhost/api/duels/create", {
+        method: "POST",
+        body: JSON.stringify({ site: "streamer", challengerViewerId: "attacker", targetUsername: "rival", wagerAmount: 50 }),
+      }), mockEnv(), deps);
+
+      expect(res.status).toBe(400);
+      expect((await res.json()).error).toContain("Insufficient credits");
+      expect(mockExec).toHaveBeenCalledTimes(0);
+    });
+
+    it("returns insufficient credits and writes no accept ledger when the guarded debit updates zero rows", async () => {
+      deps.requireViewer.mockResolvedValue({ viewer: { id: "v-2" }, res: null });
+      mockOne.mockResolvedValueOnce({
+        id: "duel-1",
+        site_id: "site-456",
+        challenger_viewer_id: "v-1",
+        challenger_site_viewer_id: "sv-1",
+        target_viewer_id: "v-2",
+        target_site_viewer_id: "sv-2",
+        wager_amount: 50,
+        status: "pending",
+        challenger_name: "alice",
+        target_name: "bob",
+      });
+      mockOne.mockResolvedValueOnce({ id: "sv-2", balance: 100 });
+      mockOne.mockResolvedValueOnce(null); // guarded debit update
+
+      const res = await handleAcceptDuel(new Request("http://localhost/api/duels/duel-1/accept", {
+        method: "POST",
+        body: JSON.stringify({ duelId: "duel-1", viewerId: "attacker" }),
+      }), mockEnv(), deps);
+
+      expect(res.status).toBe(400);
+      expect((await res.json()).error).toContain("Insufficient credits");
+      expect(mockExec).toHaveBeenCalledTimes(0);
     });
   });
 

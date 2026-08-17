@@ -11,6 +11,7 @@ import {
   cookieClear as _cookieClear,
   // SEC-107: session resolution (DB-backed, handles rotation + TTL refresh)
   resolveSession as _resolveSession,
+  readToken as _readToken,
   // SEC-104: legacy cookie helpers
   hasLegacyCookie,
   cookieClearLegacy,
@@ -19,14 +20,10 @@ import {
 } from "@yourrank/shared/session";
 
 // Re-export session primitives so callers that import from auth.js still work.
-export const readToken = (req) => {
-  const h = req.headers.get("cookie") || "";
-  for (const name of ["yr_session", "gm_session"]) {
-    const m = h.match(new RegExp(`(?:^|;\\s*)${name}=([^;]+)`));
-    if (m) return decodeURIComponent(m[1]);
-  }
-  return null;
-};
+// Token reading MUST come from the shared module: it applies the
+// LEGACY_GM_SESSION_CUTOFF, so a local copy would keep honouring the retired
+// gm_session cookie after resolveSession() has stopped accepting it.
+export const readToken = (req) => _readToken(req);
 export { SESSION_TTL_S, SESSION_ROTATE_AFTER_S };
 
 const hex = (buf) => [...buf].map(b => b.toString(16).padStart(2, '0')).join('');

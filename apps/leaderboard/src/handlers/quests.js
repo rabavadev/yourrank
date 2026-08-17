@@ -5,6 +5,8 @@ import {
   query as defaultQuery,
   withTransaction as defaultWithTransaction,
 } from "@yourrank/shared/db";
+import { requireViewer as defaultRequireViewer } from "./viewer-auth.js";
+import { rateLimit as defaultRateLimit } from "@yourrank/shared/ratelimit";
 
 const DEFAULT_DAILY_QUEST_TEMPLATES = [
   { quest_key: "watch_30m", title: "⏱️ Watch stream for 30 minutes", target_count: 30, reward_xp: 60, reward_points: 25 },
@@ -19,11 +21,13 @@ export async function handleGetDailyQuests(request, env, deps = {}) {
   const {
     one = defaultOne,
     query = defaultQuery,
+    requireViewer = defaultRequireViewer,
   } = deps;
 
   const url = new URL(request.url);
   const siteSlugOrId = url.searchParams.get("site") || url.searchParams.get("siteId");
-  const viewerId = url.searchParams.get("viewerId");
+  const { viewer } = await requireViewer(request, env);
+  const viewerId = viewer?.id || null;
 
   if (!siteSlugOrId) return bad("Site identifier is required.");
 
@@ -122,15 +126,23 @@ export async function handleClaimQuestReward(request, env, deps = {}) {
   const {
     one = defaultOne,
     withTransaction = defaultWithTransaction,
+    requireViewer = defaultRequireViewer,
+    rateLimit = defaultRateLimit,
   } = deps;
+
+  const { viewer, res } = await requireViewer(request, env);
+  if (res) return res;
 
   const body = await readJson(request);
   const questId = String(body?.questId || "").trim();
-  const viewerId = String(body?.viewerId || "").trim();
+  const viewerId = viewer.id;
 
-  if (!questId || !viewerId) {
-    return bad("questId and viewerId are required.");
+  if (!questId) {
+    return bad("questId is required.");
   }
+
+  const rl = await rateLimit(env, `quest:claim:${viewerId}`, 10, 60);
+  if (!rl.ok) return bad("Too many attempts. Please wait a minute.", 429);
 
   const quest = await one(
     "SELECT id, site_id, title, reward_xp, reward_points FROM daily_quests WHERE id=$1",
@@ -154,13 +166,19 @@ export async function handleClaimQuestReward(request, env, deps = {}) {
   }
 
   const outcome = await withTransaction(async (tx) => {
-    await tx.unsafe("UPDATE viewer_daily_quests SET claimed=true, updated_at=now() WHERE id=$1", [vq.id]);
+    const claimedRow = await tx.one(
+      "UPDATE viewer_daily_quests SET claimed=true, updated_at=now() WHERE id=$1 AND claimed=false RETURNING id",
+      [vq.id]
+    );
+    if (!claimedRow) return { error: "You have already claimed this quest reward today!", status: 400 };
 
+    let balance = siteViewer.balance || 0;
     if (quest.reward_points > 0) {
-      await tx.unsafe(
-        "UPDATE site_viewers SET balance = balance + $1, total_earned = total_earned + $1, updated_at=now() WHERE id=$2",
+      const updatedViewer = await tx.one(
+        "UPDATE site_viewers SET balance = balance + $1, total_earned = total_earned + $1, updated_at=now() WHERE id=$2 RETURNING id, balance",
         [quest.reward_points, siteViewer.id]
       );
+      balance = updatedViewer.balance;
 
       await tx.unsafe(
         `INSERT INTO credit_ledger (site_viewer_id, type, amount, description)
@@ -170,9 +188,10 @@ export async function handleClaimQuestReward(request, env, deps = {}) {
     }
 
     return {
-      newBalance: (siteViewer.balance || 0) + quest.reward_points,
+      newBalance: balance,
     };
   });
+  if (outcome.error) return bad(outcome.error, outcome.status);
 
   return ok({
     questId,
@@ -190,15 +209,23 @@ export async function handleTrackQuestProgress(request, env, deps = {}) {
   const {
     one = defaultOne,
     withTransaction = defaultWithTransaction,
+    requireViewer = defaultRequireViewer,
+    rateLimit = defaultRateLimit,
   } = deps;
+
+  const { viewer, res } = await requireViewer(request, env);
+  if (res) return res;
 
   const body = await readJson(request);
   const siteId = String(body?.siteId || "").trim();
-  const viewerId = String(body?.viewerId || "").trim();
+  const viewerId = viewer.id;
   const questKey = String(body?.questKey || "").trim();
   const amount = Math.max(1, parseInt(body?.amount, 10) || 1);
 
-  if (!siteId || !viewerId || !questKey) return bad("siteId, viewerId, and questKey are required.");
+  if (!siteId || !questKey) return bad("siteId and questKey are required.");
+
+  const rl = await rateLimit(env, `quest:progress:${viewerId}`, 30, 60);
+  if (!rl.ok) return bad("Too many attempts. Please wait a minute.", 429);
 
   const quest = await one(
     "SELECT id, target_count FROM daily_quests WHERE site_id=$1 AND quest_key=$2 AND active_date = CURRENT_DATE",
