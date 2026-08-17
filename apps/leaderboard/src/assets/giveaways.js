@@ -37,10 +37,12 @@ import { loadBoardShell, sitePath } from "./dashboard/board-shell.js";
   // DOM Elements
   const $ = (id) => document.getElementById(id);
 
-  async function init() {
-    await loadBoardShell();
+  function init() {
+    // Wire the giveaway UI first so a failing shell request can never leave the
+    // page unresponsive.
     wireEvents();
     autoFillChannel();
+    loadBoardShell().catch(() => {});
   }
 
   async function autoFillChannel() {
@@ -1535,11 +1537,11 @@ import { loadBoardShell, sitePath } from "./dashboard/board-shell.js";
 
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", () => {
-      init().catch(() => {});
+      init();
       initEventsHub();
     });
   } else {
-    init().catch(() => {});
+    init();
     initEventsHub();
   }
 })();
