@@ -13,9 +13,6 @@ export function initPerformance() {
     body: "Automatic score updates will appear once a sponsor sends them.",
     actions: [{ label: "Set up score updates", href: "/dashboard/settings/connections", accent: true }],
   });
-  const local = $("perfLocalTime");
-  if (local) local.textContent = "Times in UTC";
-  local?.setAttribute("title", "Daily and hourly activity buckets are aggregated in UTC.");
 }
 
 function wireRangeFilter() {

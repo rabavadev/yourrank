@@ -5,30 +5,6 @@ import { requestDashboardRoute } from "./shell.js";
 import { renderEmpty } from "./states.js";
 
 export function renderBoardSwitcher() {
-  const list = $("boardList");
-  if (list) {
-    list.innerHTML = "";
-    state.BOARDS.forEach((b) => {
-      const el = document.createElement("div");
-      const isActive = b.id === state.ACTIVE_SITE_ID;
-      el.className = "board-item" + (isActive ? " board-item--active" : "");
-      const sponsor = [b.casino, b.code].filter(Boolean).join(" · ");
-      const editHref = `/dashboard/editor?board=${encodeURIComponent(b.id)}`;
-      el.innerHTML = `<div class="board-info"><div class="board-row-top"><span class="board-slug">/${esc(b.slug)}</span><span class="board-name">${esc(b.name)}</span></div>${sponsor ? `<div class="board-sponsor">${esc(sponsor)}</div>` : ""}</div><span class="board-actions"><a class="btn btn--sm btn--ghost" data-action="edit" href="${editHref}">Edit</a>${isActive ? '<span class="board-badge">editing</span>' : '<button class="btn btn--sm" data-action="setActive" title="Set as active board" aria-label="Set as active board" type="button">★</button><button class="btn btn--sm" data-action="delete" title="Delete board" aria-label="Delete board" type="button">×</button>'}</span>`;
-      el.querySelector('[data-action="edit"]')?.addEventListener("click", (e) => {
-        e.preventDefault();
-        requestDashboardRoute("board", "", { query: `board=${encodeURIComponent(b.id)}`, reload: true });
-      });
-      el.querySelector('[data-action="setActive"]')?.addEventListener("click", () => setActiveBoard(b.id));
-      el.querySelector('[data-action="delete"]')?.addEventListener("click", () => deleteBoard(b.id));
-      list.appendChild(el);
-    });
-    const countEl = $("boardCount");
-    if (countEl) {
-      const limit = state.ME?.limits?.boards || 1;
-      countEl.textContent = state.BOARDS.length + " / " + limit + " boards";
-    }
-  }
   const newBtn = $("newBoard");
   if (newBtn) {
     const limit = state.ME?.limits?.boards || 1;
@@ -204,12 +180,9 @@ export async function duplicateBoard(siteId) {
 
 export function renderSidebarBoardSwitcher() {
   const nameEl = $("activeBoardName");
-  const metaEl = $("activeBoardMeta");
   const sel = $("sidebarBoardSelect");
   const topbarPath = $("lbTopbarSitePath");
   const manage = $("manageBoardsBtn");
-  const allBoardsNav = $("allBoardsNav");
-  const allBoardsCount = $("allBoardsCount");
   const active = state.BOARDS.find((b) => b.id === state.ACTIVE_SITE_ID);
   if (nameEl) nameEl.textContent = active?.name || "…";
   const avatarEl = $("wsAvatar");
@@ -219,14 +192,6 @@ export function renderSidebarBoardSwitcher() {
   const planEl = $("wsPlanBadge");
   if (planEl) {
     planEl.textContent = state.USER?.plan ? `${state.USER.plan.toUpperCase()} PLAN` : "ACTIVE SITE";
-  }
-  if (metaEl) {
-    if (active) {
-      const parts = [`/${active.slug}`, active.casino, active.code].filter(Boolean);
-      metaEl.textContent = parts.join(" · ");
-    } else {
-      metaEl.textContent = "";
-    }
   }
   if (topbarPath) topbarPath.textContent = active?.slug ? `/${active.slug}` : "Address unavailable";
   if (sel) {
@@ -253,8 +218,6 @@ export function renderSidebarBoardSwitcher() {
     }
   }
   if (manage) manage.onclick = () => requestDashboardRoute("boards");
-  if (allBoardsNav) allBoardsNav.hidden = false;
-  if (allBoardsCount) allBoardsCount.textContent = state.BOARDS.length;
 }
 
 export function renderBoardsPage() {

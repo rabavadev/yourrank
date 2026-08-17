@@ -1,10 +1,10 @@
 // Dashboard entry point. Coordinates data loading and initial render across modules.
-import { $, esc, fromLocalInput, getCsrf, getViewerTimeZone, logError, timeZoneLabel, toLocalInput, copyToClipboard, flashButton, showToast } from "./dashboard/utils.js";
+import { $, esc, fromLocalInput, getViewerTimeZone, logError, timeZoneLabel, toLocalInput } from "./dashboard/utils.js";
 import { markDirty, setState, state, subscribe } from "./dashboard/state.js";
 import { currentRoute, navTo, setupShell } from "./dashboard/shell.js";
 import { renderBoardSwitcher, renderSidebarBoardSwitcher, renderBoardsPage } from "./dashboard/boards.js";
 import { renderPlayers } from "./dashboard/players.js";
-import { fitDesignPreview, loadCreditsStatus, loadStats, refreshDesignPreview, renderArchives, renderBranding, renderDomain, renderDomainStatus, renderBoardStatus, renderEditorTimestamps, renderEmbedShare, renderLegal, renderNotifications, renderOverlay, renderPlayerFields, renderPrizes, renderSections, renderSocials, wirePublishAction } from "./dashboard/site.js";
+import { fitDesignPreview, loadCreditsStatus, loadStats, refreshDesignPreview, renderArchives, renderBranding, renderDomain, renderDomainStatus, renderBoardStatus, renderEditorTimestamps, renderEmbedShare, renderLegal, renderNotifications, renderPrizes, renderSections, renderSocials, wirePublishAction } from "./dashboard/site.js";
 import { renderOverviewSummary } from "./dashboard/overview.js";
 import { renderReferrals } from "./dashboard/referrals.js";
 import { initPerformance } from "./dashboard/performance.js";
@@ -46,7 +46,6 @@ async function init() {
   state.ME = me.user;
   const emailEl = $("userEmail"); if (emailEl) emailEl.textContent = state.ME.email;
   updateProfileMenu(state.ME);
-  if (state.ME.isAdmin) { const adminEl = $("adminLink"); if (adminEl) adminEl.hidden = false; }
 
   // Each route serves only its own sections now, so a screen's setup only runs
   // when that screen is in the document.
@@ -162,11 +161,9 @@ async function init() {
     endsInput?.addEventListener("change", renderEndsHint);
     $("f_blurb").value = d.partner?.blurb || "";
     renderPlayers(d.players || []);
-    renderPlayerFields();
     renderBranding(d.branding || {});
     renderPrizes(d.prizes || d.branding?.prizes || {});
     renderArchives(p.archives || []);
-    renderOverlay();
     renderSocials();
     renderSections();
     renderEmbedShare();
@@ -206,21 +203,6 @@ async function init() {
       pwEnabled.addEventListener("change", () => { if (pwInput) pwInput.disabled = !pwEnabled.checked; });
     }
     $("a_label").placeholder = new Date().toLocaleString("en-US", { month: "long", year: "numeric", timeZone: "UTC" });
-    const embedTextarea = $("embedCode");
-    if (embedTextarea) {
-      embedTextarea.value = `<iframe src="https://${location.host}/${state.SLUG}/embed" width="100%" height="640" frameborder="0" loading="lazy" title="${esc(state.SLUG)} leaderboard"></iframe>`;
-    }
-    const embedPreview = $("embedPreview");
-    if (embedPreview) { embedPreview.href = `/${state.SLUG}/embed`; embedPreview.target = "_blank"; }
-    const copyEmbed = $("copyEmbed");
-    if (copyEmbed && !copyEmbed._wired) {
-      copyEmbed._wired = true;
-      copyEmbed.addEventListener("click", async () => {
-        if (!embedTextarea) return;
-        const ok = await copyToClipboard(embedTextarea.value);
-        flashButton(copyEmbed, ok ? "Copied!" : "Copy failed");
-      });
-    }
   }
 
   if (hasBoardSettings) {
@@ -238,18 +220,8 @@ async function init() {
   const liveLink = $("liveLink");
   if (liveLink) { liveLink.href = liveUrl; liveLink.title = location.host + liveUrl; }
   renderBoardStatus();
-  const editorLiveLink = $("editorLiveLink");
-  if (editorLiveLink) { editorLiveLink.href = liveUrl; editorLiveLink.title = location.host + liveUrl; }
   const previewLiveLink = $("previewLiveLink");
   if (previewLiveLink) { previewLiveLink.href = liveUrl; previewLiveLink.title = location.host + liveUrl; }
-  const editorCopyLink = $("editorCopyLink");
-  if (editorCopyLink && !editorCopyLink._wired) {
-    editorCopyLink._wired = true;
-    editorCopyLink.addEventListener("click", async () => {
-      const ok = await copyToClipboard(location.origin + "/" + state.SLUG);
-      flashButton(editorCopyLink, ok ? "Copied!" : "Copy failed");
-    });
-  }
   stopLoadingCopy();
   $("loading").setAttribute("aria-busy", "false");
   $("loading").hidden = true;
@@ -345,49 +317,6 @@ async function init() {
 }
 
 function wireStreamerHud() {
-  const form = document.getElementById("hudQuickAdd");
-  const addBtn = document.getElementById("hudAddBtn");
-  const copyObs = document.getElementById("hudCopyObs");
-
-  if (form) {
-    form.addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const name = document.getElementById("hudName").value;
-      const amount = document.getElementById("hudAmount").value;
-      if (!name || !state.ACTIVE_SITE_ID) return;
-
-      addBtn.disabled = true;
-      addBtn.textContent = "Updating...";
-      try {
-        const res = await fetch(`/api/sites/${state.ACTIVE_SITE_ID}/quick-add`, {
-          method: "POST",
-          headers: { "content-type": "application/json", "x-csrf-token": getCsrf() },
-          body: JSON.stringify({ name, amount })
-        });
-        if (res.ok) {
-          // Immediately reload page to show updated table/preview
-          location.reload();
-        } else {
-          const d = await res.json().catch(() => ({}));
-          showToast(d.error || "Failed to update player", "error");
-          addBtn.disabled = false;
-          addBtn.textContent = "Update";
-        }
-      } catch (err) {
-        showToast("Network error", "error");
-        addBtn.disabled = false;
-        addBtn.textContent = "Update";
-      }
-    });
-  }
-
-  if (copyObs) {
-    copyObs.addEventListener("click", async () => {
-      const ok = await copyToClipboard(location.origin + "/" + state.SLUG + "/overlay");
-      flashButton(copyObs, ok ? "✓ Copied" : "Copy failed", 2000);
-    });
-  }
-
   window.addEventListener("message", (e) => {
     if (e.data?.type === "yr_click_player") {
       const name = e.data.name;
