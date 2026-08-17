@@ -6,6 +6,15 @@ compatibility_flags = ["nodejs_compat"]
 # Smart Placement reduces the repeated EU-origin round trips for those paths.
 placement = { mode = "smart" }
 
+[observability]
+enabled = true
+head_sampling_rate = 1
+
+[observability.logs]
+enabled = true
+head_sampling_rate = 1
+invocation_logs = true
+
 [vars]
 PUBLIC_BASE_URL = "https://yourrank.site"
 RL_BACKEND = "do"  # Change to "kv" to use KV for rate limiting
@@ -75,6 +84,15 @@ routes = [
   { pattern = "staging.yourrank.site/pb/*",          zone_name = "yourrank.site" },
   { pattern = "staging.yourrank.site/billing/hook/*", zone_name = "yourrank.site" },
 ]
+
+[env.staging.observability]
+enabled = true
+head_sampling_rate = 1
+
+[env.staging.observability.logs]
+enabled = true
+head_sampling_rate = 1
+invocation_logs = true
 
 [env.staging.triggers]
 crons = []

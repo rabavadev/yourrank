@@ -25,6 +25,15 @@ routes = [
 # Keeps fail-open behavior if DO is unreachable.
 # RateLimiter predates this stanza and is already live on this script, so it must
 # not be declared as a new class: only LiveBoard is being introduced here.
+[observability]
+enabled = true
+head_sampling_rate = 1
+
+[observability.logs]
+enabled = true
+head_sampling_rate = 1
+invocation_logs = true
+
 [[migrations]]
 tag = "v1"
 new_sqlite_classes = ["LiveBoard"]
@@ -106,6 +115,15 @@ compatibility_flags = ["nodejs_compat"]
 routes = [
   { pattern = "staging.yourrank.site/*", zone_name = "yourrank.site" },
 ]
+
+[env.staging.observability]
+enabled = true
+head_sampling_rate = 1
+
+[env.staging.observability.logs]
+enabled = true
+head_sampling_rate = 1
+invocation_logs = true
 
 [env.staging.vars]
 APP_NAME = "YourRank (Staging)"

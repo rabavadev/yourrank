@@ -4,6 +4,15 @@ compatibility_date = "2026-08-16"
 compatibility_flags = ["nodejs_compat"]
 
 # Primary app domain for the Next.js dashboard and marketing surfaces.
+[observability]
+enabled = true
+head_sampling_rate = 1
+
+[observability.logs]
+enabled = true
+head_sampling_rate = 1
+invocation_logs = true
+
 [[routes]]
 pattern = "app.yourrank.site"
 custom_domain = true

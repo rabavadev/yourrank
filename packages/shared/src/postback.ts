@@ -133,18 +133,52 @@ export async function revokePostbackKeys(userId: string, keyId?: string | null):
   return Array.isArray(result) ? result.length : 0;
 }
 
-export async function recordReplayHash(userId: string, replayHash: string, ttlSec = DEFAULT_TTL_S): Promise<boolean> {
+export async function recordReplayHash(
+  userId: string,
+  replayHash: string,
+  ttlSec = DEFAULT_TTL_S,
+  { execImpl = exec }: { execImpl?: typeof exec } = {},
+): Promise<boolean> {
   try {
-    await exec(
+    const result = await execImpl(
       `INSERT INTO postback_replay_guard (user_id, replay_hash, expires_at)
-       VALUES ($1, $2, now() + make_interval(secs => $3))`,
+       VALUES ($1, $2, now() + make_interval(secs => $3))
+       ON CONFLICT (user_id, replay_hash) DO UPDATE
+         SET expires_at = now() + make_interval(secs => $3)
+         WHERE postback_replay_guard.expires_at <= now()
+       RETURNING id`,
       [userId, replayHash, ttlSec]
     );
-    return true;
+    return Array.isArray(result) && result.length > 0;
   } catch (e: any) {
     if (e?.code === "23505") return false;
     throw e;
   }
+}
+
+const REPLAY_PURGE_BATCH_SIZE = 1000;
+const REPLAY_PURGE_MAX_BATCHES = 1000;
+
+export async function purgeExpiredReplayHashes(
+  batchSize = REPLAY_PURGE_BATCH_SIZE,
+  { execImpl = exec }: { execImpl?: typeof exec } = {},
+): Promise<number> {
+  const size = Math.max(1, Math.floor(batchSize));
+  let deleted = 0;
+  for (let batch = 0; batch < REPLAY_PURGE_MAX_BATCHES; batch += 1) {
+    const rows = await execImpl(
+      `DELETE FROM postback_replay_guard
+       WHERE ctid IN (
+         SELECT ctid FROM postback_replay_guard WHERE expires_at <= now() LIMIT $1
+       )
+       RETURNING id`,
+      [size]
+    );
+    const count = Array.isArray(rows) ? rows.length : 0;
+    deleted += count;
+    if (count < size) break;
+  }
+  return deleted;
 }
 
 export async function computeReplayHash(payload: Record<string, string | string[] | undefined>): Promise<string> {

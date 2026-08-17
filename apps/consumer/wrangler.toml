@@ -10,6 +10,15 @@ routes = [
 ]
 
 # Tell Cloudflare to provision the RateLimiter Durable Object class on first deploy.
+[observability]
+enabled = true
+head_sampling_rate = 1
+
+[observability.logs]
+enabled = true
+head_sampling_rate = 1
+invocation_logs = true
+
 [[migrations]]
 tag = "v1"
 new_sqlite_classes = ["RateLimiter"]
