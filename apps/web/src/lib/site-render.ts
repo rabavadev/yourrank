@@ -80,8 +80,9 @@ const ICONS = {
 };
 
 export function siteSectionHref(section, slug, isCustomDomain) {
+  const s = encodeURIComponent(slug || "");
   if (isCustomDomain) return section === "home" ? "/" : `/${section}`;
-  return section === "home" ? `/${slug}` : `/${slug}/${section}`;
+  return section === "home" ? `/${s}` : `/${s}/${section}`;
 }
 
 function formatNumber(n) {
@@ -177,7 +178,7 @@ function sidebar({ b, slug, section, siteSections, homeUrl, isCustomDomain, logo
 
   const resources = [
     kickUrl ? `<a class="yr-nav-a" href="${kickUrl}" target="_blank" rel="noopener">${ICONS.kick} Watch on Kick</a>` : "",
-    hasCta && casino ? `<a class="yr-nav-a" href="${ctaHref}" target="_blank" rel="noopener">${ICONS.gift} Join ${esc(casino)}</a>` : "",
+    hasCta ? `<a class="yr-nav-a" href="${ctaHref}" target="_blank" rel="noopener">${ICONS.gift} Join ${esc(casino || "sponsor")}</a>` : "",
     viewer ? `<a class="yr-nav-a" href="/me">${ICONS.account} All boards &amp; account</a>` : "",
     `<button class="yr-nav-a" type="button" data-feedback-open>${ICONS.book} Send feedback</button>`,
   ].filter(Boolean).join("");
@@ -423,9 +424,9 @@ export async function renderSite({ r, section, viewer, viewerData, opts }) {
   const casino = String(b.casino || "").trim();
   const pool = String(b.prizePool || "").trim();
   const period = String(b.period || "Monthly");
-  const ctaDest = b.ctaUrl;
-  const ctaHref = slug ? esc(`/go/${slug}`) : safeUrl(ctaDest);
-  const hasCta = !!(ctaDest || casino);
+  const ctaDest = String(b.ctaUrl || "").trim();
+  const ctaHref = ctaDest ? safeUrl(ctaDest) : null;
+  const hasCta = !!ctaHref;
   const accent = accentColor(br, br.options);
 
   const viewerOnSite = viewerData?.viewerOnSite || null;
@@ -436,14 +437,16 @@ export async function renderSite({ r, section, viewer, viewerData, opts }) {
   const canonicalUrl = esc(sectionUrl);
   const returnTo = sectionUrl;
 
-  const titleBase = esc(b.name || slug);
-  const sectionTitle = SECTION_LABELS[section] || section;
+  const rawTitleBase = String(b.name || slug || "YourRank");
+  const titleBase = esc(rawTitleBase);
+  const sectionTitle = esc(SECTION_LABELS[section] || section || "");
   const title = opts.pageTitle || (section === "home"
     ? `${titleBase} — ${esc(b.tagline || "Leaderboard & Rewards")}`
     : `${sectionTitle} · ${titleBase}`);
-  const desc = opts.pageDescription || (section === "home"
-    ? `${titleBase}'s viewer site — ${esc(b.tagline || "compete on the leaderboard, earn free credits and redeem rewards.")}`
-    : `${sectionTitle} for ${titleBase}'s viewer site.`);
+  const rawDesc = opts.pageDescription || (section === "home"
+    ? `${rawTitleBase}'s viewer site — ${b.tagline || "compete on the leaderboard, earn free credits and redeem rewards."}`
+    : `${SECTION_LABELS[section] || section} for ${rawTitleBase}'s viewer site.`);
+  const desc = esc(rawDesc);
   const ogImageUrl = logoUrl ? esc(logoUrl) : `${homeUrl}/og.png`;
 
   const ctx = {
@@ -469,10 +472,10 @@ export async function renderSite({ r, section, viewer, viewerData, opts }) {
   const head = `<!DOCTYPE html>
 <html lang="en"><head>
 <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>${title}</title><meta name="description" content="${esc(desc)}" />
-<meta property="og:title" content="${titleBase}" /><meta property="og:description" content="${esc(desc)}" /><meta property="og:type" content="website" />
+<title>${title}</title><meta name="description" content="${desc}" />
+<meta property="og:title" content="${titleBase}" /><meta property="og:description" content="${desc}" /><meta property="og:type" content="website" />
 <link rel="canonical" href="${canonicalUrl}" /><meta property="og:url" content="${canonicalUrl}" />
-<meta name="twitter:card" content="${logoUrl ? "summary_large_image" : "summary"}" /><meta name="twitter:title" content="${titleBase}" /><meta name="twitter:description" content="${esc(desc)}" /><meta property="og:image" content="${ogImageUrl}" /><meta name="twitter:image" content="${ogImageUrl}" />
+<meta name="twitter:card" content="${logoUrl ? "summary_large_image" : "summary"}" /><meta name="twitter:title" content="${titleBase}" /><meta name="twitter:description" content="${desc}" /><meta property="og:image" content="${ogImageUrl}" /><meta name="twitter:image" content="${ogImageUrl}" />
 <link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="${fontsHref}" rel="stylesheet" media="print" data-async />
 <script nonce="${nonce}">document.querySelector('link[data-async]').onload=function(){this.media='all'};</script>
@@ -555,7 +558,7 @@ function homeMain(ctx) {
   const shopEnabled = siteSections.shop !== false;
   const emptyBoard = players.length === 0 && items.length === 0;
 
-  const eyebrow = [esc(period).toUpperCase(), cd ? `ENDS IN ${cd.text.toUpperCase()}` : ""].filter(Boolean).join(" · ");
+  const eyebrow = [period.toUpperCase(), cd ? `ENDS IN ${cd.text.toUpperCase()}` : ""].filter(Boolean).join(" · ");
 
   // "N more credits unlocks X" — the closest reward the viewer cannot afford yet.
   const nextReward = viewer
@@ -570,7 +573,7 @@ function homeMain(ctx) {
 
   const lede = viewer
     ? `Redeem a channel-point reward on Kick and credits land here automatically.${nextReward ? ` <b>${formatNumber(Number(nextReward.cost) - balance)}</b> more credits unlocks ${esc(nextReward.name)}.` : ""}`
-    : `${esc(b.tagline || `Compete on the ${esc(period).toLowerCase()} leaderboard and turn free channel-point credits into real rewards.`)}`;
+    : esc(b.tagline || `Compete on the ${period.toLowerCase()} leaderboard and turn free channel-point credits into real rewards.`);
 
   const heroHtml = hero({
     eyebrow,
@@ -675,8 +678,6 @@ function boardMain(ctx) {
   }).join("");
 
   const rows = players.map((p, i) => `<tr data-name="${esc(String(p.name || "").toLowerCase())}" data-position="${Number(p.rank) || i + 1}">
-  // U-09: Removed .padStart(2,"0") — leading zeros cause AT to say "zero one".
-  // Alignment is preserved via CSS tabular-nums on .yr-idx.
 <td class="yr-idx">${Number(p.rank) || i + 1}</td>
 <td><a href="${playerHref(p.name)}">${esc(p.name)}</a></td>
 <td class="yr-mono yr-r">${esc(formatMoney(currency, p.wagered))}</td>

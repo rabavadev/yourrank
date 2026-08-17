@@ -281,7 +281,7 @@ export async function getPublicSite(
   if (!site || !site.published) return null;
 
   if (site.password_hash && !(request && await verifyBoardPasswordCookie(request, site))) {
-    return { requiresPassword: true, id: site.id, slug: site.slug, name: site.name };
+    return { requiresPassword: true, id: site.id, slug: site.slug, name: site.name, passwordHash: site.password_hash, passwordSalt: site.password_salt };
   }
 
   const owner = await one(

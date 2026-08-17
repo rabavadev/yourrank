@@ -5,6 +5,7 @@ import type { TelegramBroadcast, TelegramBot } from "@/lib/types";
 import { createBroadcast, deleteBroadcast, type TelegramResult } from "../telegram-actions";
 import { Card } from "./Card";
 import { DataTable } from "./DataTable";
+import { TimezoneOffsetField } from "./TimezoneOffsetField";
 
 interface TelegramBroadcastsFormProps {
   broadcasts: TelegramBroadcast[];
@@ -52,6 +53,7 @@ export function TelegramBroadcastsForm({ broadcasts, bots }: TelegramBroadcastsF
           <div>
             <label htmlFor="scheduled_at" className="block text-sm font-medium text-ink">Schedule for (optional, local time)</label>
             <input id="scheduled_at" name="scheduled_at" type="datetime-local" className="mt-1 block w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm text-ink focus:border-cobalt focus:outline-none focus:ring-1 focus:ring-cobalt" />
+            <TimezoneOffsetField name="scheduledAtOffset" />
           </div>
           <button
             type="submit"

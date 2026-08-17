@@ -50,14 +50,7 @@ function SocialField({ social }: SocialFieldProps) {
   );
 }
 
-function formatDateTimeLocal(iso: string | null | undefined): string {
-  if (!iso) return "";
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return "";
-  const offset = d.getTimezoneOffset();
-  const local = new Date(d.getTime() - offset * 60 * 1000);
-  return local.toISOString().slice(0, 16);
-}
+import { DateTimeLocalField } from "./DateTimeLocalField";
 
 export function EditorSetupForm({ siteId, site }: EditorSetupFormProps) {
   const [state, action, pending] = useActionState<SaveSiteResult, FormData>(saveSite, { ok: false });
@@ -125,10 +118,7 @@ export function EditorSetupForm({ siteId, site }: EditorSetupFormProps) {
       <div>
         <h3 className="text-sm font-semibold uppercase tracking-wider text-ink-soft">Schedule & reset</h3>
         <div className="mt-4 grid gap-4 md:grid-cols-2">
-          <div>
-            <label htmlFor="endsAt" className="block text-sm font-medium text-ink">Ends at</label>
-            <input id="endsAt" name="endsAt" type="datetime-local" defaultValue={formatDateTimeLocal(site.data.endsAt)} className="mt-1 block w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm text-ink focus:border-cobalt focus:outline-none focus:ring-1 focus:ring-cobalt" />
-          </div>
+          <DateTimeLocalField name="endsAt" label="Ends at" defaultIso={site.data.endsAt} />
           <div className="flex items-center gap-4">
             <div className="flex-1">
               <label htmlFor="autoReset.clear" className="block text-sm font-medium text-ink">Auto-reset clears</label>

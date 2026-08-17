@@ -12,6 +12,10 @@ function cookieName(slug: string) {
   return `${TOKEN_PREFIX}${slug}`;
 }
 
+function bytesToHex(b: ArrayBuffer) {
+  return [...new Uint8Array(b)].map((x) => x.toString(16).padStart(2, "0")).join("");
+}
+
 async function hmacSha256Hex(keyString: string, message: string) {
   const key = await crypto.subtle.importKey(
     "raw",
@@ -21,7 +25,7 @@ async function hmacSha256Hex(keyString: string, message: string) {
     ["sign"],
   );
   const sig = await crypto.subtle.sign("HMAC", key, enc.encode(message));
-  return Buffer.from(sig).toString("hex");
+  return bytesToHex(sig);
 }
 
 export async function verifyBoardPassword(password: string, site: { password_hash?: string; password_salt?: string }) {

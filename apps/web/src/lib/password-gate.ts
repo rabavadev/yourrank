@@ -7,8 +7,8 @@ function esc(s) {
 
 export function renderPasswordGate(site, opts, error = "") {
   const name = esc(site.name || "Private board");
-  const slug = esc(site.slug || "");
-  const action = opts.isCustomDomain ? "/password" : `/${slug}/password`;
+  const slug = String(site.slug || "");
+  const action = opts.isCustomDomain ? "/password" : `/${encodeURIComponent(slug)}/password`;
   const nonce = esc(opts.nonce || "");
   return `<!DOCTYPE html>
 <html lang="en"><head>
