@@ -53,6 +53,7 @@ import { parseDashboardPath, dashboardPath, resolveSection } from "./assets/dash
 import { deferClickWrite, trackedDestination } from "./tracked-redirect.js";
 import { setRequestMetrics } from "@yourrank/shared/request-id";
 import { evaluateConsumerHealth } from "./consumer-health.js";
+import { readDlqHealth } from "./dlq-health.js";
 
 const LEGAL_PAGES = new Set(["terms", "privacy", "responsible", "cookies", "refund", "contact"]);
 const NON_SITE_PATHS = new Set([
@@ -530,6 +531,20 @@ async function handleRequest(request, env, ctx, meta) {
           result.consumer = { healthy: false, error: "probe_failed" };
           result.status = "degraded";
         }
+
+        const dlqThresholdRaw = Number(env.DLQ_HEALTH_DEGRADE_THRESHOLD ?? "100");
+        const dlqThreshold = Number.isFinite(dlqThresholdRaw) && dlqThresholdRaw >= 1
+          ? Math.floor(dlqThresholdRaw)
+          : 100;
+        const dlq = await readDlqHealth(one, dlqThreshold);
+        result.dlq = {
+          pending: dlq.pending,
+          oldest_pending_at: dlq.oldest_pending_at,
+          oldest_pending_age_seconds: dlq.oldest_pending_age_seconds,
+          pending_capped: dlq.pending_capped,
+        };
+        if (dlq.error) result.dlq.error = dlq.error;
+        if (dlq.degraded) result.status = "degraded";
 
         const status = result.status === "ok" ? 200 : 503;
         return new Response(JSON.stringify(result), {

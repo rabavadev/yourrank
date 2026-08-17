@@ -11,6 +11,7 @@ import { logMinimizedClick } from "./clicks.js";
 import { withPlanLimit } from "./plans.js";
 import { rateLimit, type RateLimitKV } from "./ratelimit.js";
 import { createQueueProducer, type QueueEvent } from "@yourrank/shared/queue-producer";
+import { getDlqPage, replayDlq, type DlqDb } from "./dlq-ops.js";
 import { recordConversion, type PostbackQuery } from "@yourrank/shared/conversions";
 import {
   POSTBACK_SUNSET,
@@ -72,7 +73,7 @@ async function bodyExceedsLimit(req: Request, maxBytes: number): Promise<boolean
   return false;
 }
 
-export function buildHonoApp(): Hono<{ Bindings: Bindings }> {
+export function buildHonoApp({ dlqDb = {} }: { dlqDb?: DlqDb } = {}): Hono<{ Bindings: Bindings }> {
   const app = new Hono<{ Bindings: Bindings }>();
 
   // Global error handler — Hono's default returns text/plain "Internal Server
@@ -454,6 +455,38 @@ export function buildHonoApp(): Hono<{ Bindings: Bindings }> {
         GROUP BY o.id, o.label, c.name ORDER BY clicks DESC`,
       [owner_id, days]
     ));
+  });
+
+  api.get("/dlq", async (c) => {
+    const limit = Number(c.req.query("limit") ?? "50");
+    const includeBody = ["1", "true", "yes"].includes((c.req.query("include_body") ?? "").toLowerCase());
+    const page = await getDlqPage(limit, includeBody, dlqDb);
+    return c.json(page);
+  });
+
+  api.post("/dlq/replay", async (c) => {
+    let body: { messageIds?: string[]; limit?: number; maxAttempts?: number };
+    try {
+      body = await c.req.json();
+    } catch {
+      return c.json({ error: "invalid JSON body" }, 400);
+    }
+    if (!body || typeof body !== "object") return c.json({ error: "JSON object required" }, 400);
+    if (body.messageIds !== undefined && !Array.isArray(body.messageIds)) {
+      return c.json({ error: "messageIds must be an array" }, 400);
+    }
+
+    const result = await replayDlq({
+      messageIds: body.messageIds,
+      limit: body.limit,
+      maxAttempts: body.maxAttempts,
+      sendImpl: async (event) => {
+        if (!c.env.EVENTS_QUEUE) throw new Error("EVENTS_QUEUE binding is not configured");
+        await c.env.EVENTS_QUEUE.send(event);
+      },
+    }, dlqDb);
+    console.log(JSON.stringify({ event: "dlq_replay", ...result }));
+    return c.json(result);
   });
 
   // POST /api/reencrypt — re-encrypt all bot tokens with the current key.
