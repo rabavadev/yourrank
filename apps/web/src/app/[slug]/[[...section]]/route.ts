@@ -2,6 +2,12 @@ import { renderSite } from "@/lib/site-render";
 import { getPublicSite } from "@/lib/site";
 import { setDatabaseUrl } from "@/lib/db";
 import { renderPasswordGate } from "@/lib/password-gate";
+import { proxyToWorker } from "@/lib/proxy";
+import {
+  verifyBoardPassword,
+  issueBoardPasswordToken,
+  boardPasswordSetCookieHeader,
+} from "@/lib/board-password";
 
 interface RouteParams {
   params: Promise<{ slug: string; section?: string[] }>;
@@ -72,15 +78,62 @@ async function renderBoard(
 export async function GET(request: Request, { params }: RouteParams) {
   const { slug, section } = await params;
   const s = (section && section[0]) || "home";
+  if (s === "overlay") {
+    return proxyToWorker(request, `/${slug}/overlay`);
+  }
   return renderBoard(request, slug, s);
 }
 
 export async function HEAD(request: Request, { params }: RouteParams) {
   const { slug, section } = await params;
   const s = (section && section[0]) || "home";
+  if (s === "overlay") {
+    return proxyToWorker(request, `/${slug}/overlay`);
+  }
   const response = await renderBoard(request, slug, s);
   return new Response(null, {
     status: response.status,
     headers: response.headers,
+  });
+}
+
+export async function POST(request: Request, { params }: RouteParams) {
+  const { slug, section } = await params;
+  const s = (section && section[0]) || "home";
+  if (s === "overlay") {
+    return proxyToWorker(request, `/${slug}/overlay`);
+  }
+
+  await setDatabaseUrl();
+  const r = await getPublicSite(slug, request, { limit: 100, offset: 0 });
+  if (!r || r.requiresPassword === false) {
+    return new Response("Not found", { status: 404 });
+  }
+
+  const form = await request.formData();
+  const password = String(form.get("password") || "");
+  const ok = await verifyBoardPassword(password, {
+    password_hash: r.passwordHash,
+    password_salt: r.passwordSalt,
+  });
+  if (!ok) {
+    return new Response(
+      renderPasswordGate(r, { nonce: nonce(), isCustomDomain: false }, "Incorrect password."),
+      {
+        status: 401,
+        headers: { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" },
+      },
+    );
+  }
+
+  const token = await issueBoardPasswordToken({ password_hash: r.passwordHash, slug });
+  const cookie = boardPasswordSetCookieHeader({ password_hash: r.passwordHash, slug }, token, { isCustomDomain: false });
+  return new Response(null, {
+    status: 302,
+    headers: {
+      location: `/${slug}`,
+      "set-cookie": cookie,
+      "cache-control": "no-store",
+    },
   });
 }

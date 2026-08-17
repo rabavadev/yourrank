@@ -1,8 +1,33 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useEffect, useState } from "react";
 import { admin2faEnable, admin2faVerify, type Admin2FAResult } from "./actions";
 import { Card } from "../dashboard/_components/Card";
+
+function useQrDataUrl(uri: string | undefined): string | null {
+  const [dataUrl, setDataUrl] = useState<string | null>(null);
+  useEffect(() => {
+    if (!uri || typeof window === "undefined") return;
+    const qr = (window as unknown as Record<string, unknown>).QRCode as { toDataURL?: (text: string, size: number) => string } | undefined;
+    if (qr?.toDataURL) {
+      setDataUrl(qr.toDataURL(uri, 200));
+      return;
+    }
+    const script = document.createElement("script");
+    script.src = "/qrcode.js";
+    script.async = true;
+    script.onload = () => {
+      const loaded = (window as unknown as Record<string, unknown>).QRCode as { toDataURL?: (text: string, size: number) => string } | undefined;
+      if (loaded?.toDataURL) setDataUrl(loaded.toDataURL(uri, 200));
+    };
+    script.onerror = () => setDataUrl(null);
+    document.body.appendChild(script);
+    return () => {
+      document.body.removeChild(script);
+    };
+  }, [uri]);
+  return dataUrl;
+}
 
 interface Admin2FAGateProps {
   enabled: boolean;
@@ -12,6 +37,7 @@ interface Admin2FAGateProps {
 export function Admin2FAGate({ enabled, locked }: Admin2FAGateProps) {
   const [setup, setSetup] = useActionState<Admin2FAResult, FormData>(admin2faEnable, { ok: false });
   const [verifyState, verifyAction, verifyPending] = useActionState<Admin2FAResult, FormData>(admin2faVerify, { ok: false });
+  const qrDataUrl = useQrDataUrl(setup?.ok ? setup.uri : undefined);
 
   if (locked) {
     return (
@@ -36,7 +62,11 @@ export function Admin2FAGate({ enabled, locked }: Admin2FAGateProps) {
         </form>
         {setup?.ok && setup.uri && (
           <div className="mt-6 space-y-4">
-            <img src={setup.uri} alt="2FA QR code" className="h-48 w-48 rounded-lg border border-line" />
+            {qrDataUrl ? (
+              <img src={qrDataUrl} alt="2FA QR code" className="h-48 w-48 rounded-lg border border-line" />
+            ) : (
+              <p className="text-sm text-ink-soft">Loading QR code…</p>
+            )}
             <p className="text-xs text-ink-soft break-all">Secret: {setup.secret}</p>
             <form action={verifyAction} className="space-y-3">
               <input

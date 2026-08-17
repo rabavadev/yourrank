@@ -22,7 +22,7 @@ export default async function AdminPage() {
           { label: "Users", value: users },
           { label: "Paid", value: pro },
           { label: "Leads", value: leads },
-          { label: "Revenue", value: `$${Math.round(revenue)}` },
+          { label: "Revenue", value: `$${Math.round(Number(revenue) || 0)}` },
         ].map((s) => (
           <Card key={s.label} className="p-4">
             <div className="text-2xl font-bold text-ink">{s.value}</div>

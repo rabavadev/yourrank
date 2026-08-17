@@ -1,5 +1,11 @@
 import { cookies, headers } from "next/headers";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
+import {
+  generateCsrfToken,
+  readCsrfToken,
+  csrfCookieDomain,
+  shouldRequireCsrf,
+} from "./csrf";
 
 const API_FALLBACK_BASE = process.env.API_BASE_URL || "https://yourrank.site";
 const BOT_API_FALLBACK_BASE = process.env.BOT_API_BASE_URL || "https://yourrank.site";
@@ -19,11 +25,28 @@ export type ApiResult<T> = ApiSuccess<T> | ApiError;
 export async function apiRequest(path: string, init?: RequestInit): Promise<Response> {
   const { env } = await getCloudflareContext({ async: true });
   const cookieStore = await cookies();
-  const cookieHeader = cookieStore.toString();
   const host = (await headers()).get("host") || "app.yourrank.site";
 
   const url = new URL(path, `https://${host}`);
+  const method = (init?.method || "GET").toUpperCase();
   const reqHeaders = new Headers(init?.headers);
+
+  if (shouldRequireCsrf(method, url.pathname)) {
+    let token = cookieStore.get("__csrf")?.value;
+    if (!token) {
+      token = generateCsrfToken();
+      cookieStore.set("__csrf", token, {
+        domain: csrfCookieDomain(),
+        path: "/",
+        secure: true,
+        sameSite: "lax",
+        maxAge: 86400,
+      });
+    }
+    reqHeaders.set("x-csrf-token", token);
+  }
+
+  const cookieHeader = cookieStore.toString();
   if (cookieHeader) {
     reqHeaders.set("cookie", cookieHeader);
   }

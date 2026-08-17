@@ -484,6 +484,11 @@ export interface TelegramSubscriberStats {
   new_30d: number;
 }
 
+export interface TelegramSubscriberStatsResponse {
+  totals: TelegramSubscriberStats;
+  sources: { source: string; count: number }[];
+}
+
 export interface TelegramDailyStat {
   day: string;
   new_subscribers: number;

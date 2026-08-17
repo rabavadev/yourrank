@@ -195,22 +195,39 @@ export function DashboardNav({ user }: DashboardNavProps) {
                 const external = item.href.startsWith("https://");
                 return (
                   <li key={item.href}>
-                    <a
-                      href={item.href}
-                      target={external ? "_blank" : undefined}
-                      rel={external ? "noopener noreferrer" : undefined}
-                      aria-current={active ? "page" : undefined}
-                      className={`flex items-center gap-3 rounded-lg px-4 py-2.5 text-sm font-medium transition-colors ${
-                        active
-                          ? "bg-navy-raised text-white"
-                          : "text-white/70 hover:bg-white/5 hover:text-white"
-                      }`}
-                    >
-                      <span className={active ? "text-cobalt" : "text-white/50"} aria-hidden="true">
-                        {item.icon}
-                      </span>
-                      {item.label}
-                    </a>
+                    {external ? (
+                      <a
+                        href={item.href}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        aria-current={active ? "page" : undefined}
+                        className={`flex items-center gap-3 rounded-lg px-4 py-2.5 text-sm font-medium transition-colors ${
+                          active
+                            ? "bg-navy-raised text-white"
+                            : "text-white/70 hover:bg-white/5 hover:text-white"
+                        }`}
+                      >
+                        <span className={active ? "text-cobalt" : "text-white/50"} aria-hidden="true">
+                          {item.icon}
+                        </span>
+                        {item.label}
+                      </a>
+                    ) : (
+                      <Link
+                        href={item.href}
+                        aria-current={active ? "page" : undefined}
+                        className={`flex items-center gap-3 rounded-lg px-4 py-2.5 text-sm font-medium transition-colors ${
+                          active
+                            ? "bg-navy-raised text-white"
+                            : "text-white/70 hover:bg-white/5 hover:text-white"
+                        }`}
+                      >
+                        <span className={active ? "text-cobalt" : "text-white/50"} aria-hidden="true">
+                          {item.icon}
+                        </span>
+                        {item.label}
+                      </Link>
+                    )}
                   </li>
                 );
               })}

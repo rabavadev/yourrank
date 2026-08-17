@@ -1,6 +1,7 @@
 "use server";
 
 import { apiGet, apiPost, apiPut } from "@/lib/api";
+import { localDateTimeToUtc } from "@/lib/date";
 import { revalidatePath } from "next/cache";
 
 export interface CreateBoardResult {
@@ -122,7 +123,9 @@ export async function saveSite(_prev: unknown, formData: FormData): Promise<Save
   const resetNote = String(formData.get("resetNote") || "").trim();
   const blurb = String(formData.get("blurb") || "").trim();
 
-  const endsAt = String(formData.get("endsAt") || "").trim() || undefined;
+  const endsAtRaw = String(formData.get("endsAt") || "").trim() || undefined;
+  const endsAtOffset = String(formData.get("endsAtOffset") || "0").trim();
+  const endsAt = endsAtRaw ? localDateTimeToUtc(endsAtRaw, Number(endsAtOffset) || 0) : undefined;
   const autoResetEnabled = formData.get("autoReset.enabled") === "on";
   const autoResetClear = String(formData.get("autoReset.clear") || "wagers").trim() as "wagers" | "players" | "none";
 
@@ -243,15 +246,39 @@ export interface SaveGameSettingsResult {
   error?: string;
 }
 
+type IntParseResult = { ok: true; value: number | null } | { ok: false; error: string };
+
+function parsePositiveInt(value: FormDataEntryValue | null, fallback: number | null): IntParseResult {
+  const raw = String(value ?? "").trim();
+  if (raw === "") return { ok: true, value: fallback };
+  if (!/^\d+$/.test(raw)) return { ok: false, error: "Values must be whole numbers." };
+  const n = Number(raw);
+  if (!Number.isSafeInteger(n) || n < 1) return { ok: false, error: "Value is out of range." };
+  return { ok: true, value: n };
+}
+
 export async function saveGameSettings(_prev: unknown, formData: FormData): Promise<SaveGameSettingsResult> {
   const siteId = String(formData.get("siteId") || "");
   const game = String(formData.get("game") || "");
   const enabled = formData.get("enabled") === "on";
-  const minBet = Number(formData.get("minBet") || "1");
-  const maxBet = Number(formData.get("maxBet") || "1");
-  const houseEdgeBps = Number(formData.get("houseEdgeBps") || "100");
-  const dailyLossCapRaw = String(formData.get("dailyLossCap") || "").trim();
-  const dailyLossCap = dailyLossCapRaw ? Number(dailyLossCapRaw) : null;
+
+  const minBetR = parsePositiveInt(formData.get("minBet"), 1);
+  if (!minBetR.ok) return { ok: false, error: `Min bet: ${minBetR.error}` };
+  const maxBetR = parsePositiveInt(formData.get("maxBet"), 1);
+  if (!maxBetR.ok) return { ok: false, error: `Max bet: ${maxBetR.error}` };
+  const minBet = minBetR.value as number;
+  let maxBet = maxBetR.value as number;
+  if (maxBet < minBet) maxBet = minBet;
+
+  const houseRaw = String(formData.get("houseEdgeBps") || "").trim();
+  const houseEdgeBps = houseRaw === "" ? 100 : Number(houseRaw);
+  if (!Number.isSafeInteger(houseEdgeBps) || houseEdgeBps < 0 || houseEdgeBps > 1000) {
+    return { ok: false, error: "House edge must be a whole number between 0 and 1000." };
+  }
+
+  const dailyLossCapR = parsePositiveInt(formData.get("dailyLossCap"), null);
+  if (!dailyLossCapR.ok) return { ok: false, error: `Daily loss cap: ${dailyLossCapR.error}` };
+  const dailyLossCap = dailyLossCapR.value;
 
   if (!siteId || !game) {
     return { ok: false, error: "Site and game are required." };

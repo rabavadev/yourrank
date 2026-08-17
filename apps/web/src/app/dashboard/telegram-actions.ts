@@ -1,6 +1,7 @@
 "use server";
 
 import { botApiDelete, botApiGet, botApiPatch, botApiPost } from "@/lib/api";
+import { localDateTimeToUtc } from "@/lib/date";
 import { revalidatePath } from "next/cache";
 
 export interface TelegramResult {
@@ -126,7 +127,9 @@ export async function toggleOffer(_prev: unknown, formData: FormData): Promise<T
 export async function createBroadcast(_prev: unknown, formData: FormData): Promise<TelegramResult> {
   const bot_id = String(formData.get("bot_id") || "").trim();
   const body = String(formData.get("body") || "").trim();
-  const scheduled_at = String(formData.get("scheduled_at") || "").trim() || null;
+  const scheduledAtRaw = String(formData.get("scheduled_at") || "").trim() || null;
+  const scheduledAtOffset = String(formData.get("scheduledAtOffset") || "0").trim();
+  const scheduled_at = scheduledAtRaw ? localDateTimeToUtc(scheduledAtRaw, Number(scheduledAtOffset) || 0) : null;
   const media_url = String(formData.get("media_url") || "").trim() || null;
   if (!bot_id || !body) return { ok: false, error: "Bot and message body are required." };
 

@@ -888,7 +888,7 @@ async function handleRequest(request, env, ctx, meta) {
       }
 
       // Pass all /api/ endpoints, Kick webhooks, and auth routes to Hono router.
-      if (path.startsWith("/api/") || path === "/webhooks/kick" || path.startsWith("/auth/")) {
+      if (path.startsWith("/api/") || path.startsWith("/overlay/") || path === "/webhooks/kick" || path.startsWith("/auth/")) {
         const apiResponse = await apiApp.fetch(request, { workerContext: { request, env, ctx, meta } }, ctx);
         // Return the handler's response, INCLUDING a legitimate 404 it produced.
         // Only fall through to page routing when no API route matched at all,
