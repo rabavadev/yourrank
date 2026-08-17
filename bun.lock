@@ -1,5 +1,6 @@
 {
   "lockfileVersion": 1,
+  "configVersion": 0,
   "workspaces": {
     "": {
       "name": "yourrank",
@@ -85,6 +86,7 @@
       "version": "0.1.0",
       "dependencies": {
         "@yourrank/shared": "workspace:*",
+        "framer-motion": "^13.1.0",
         "next": "16.3.0",
         "react": "19.2.8",
         "react-dom": "19.2.8",

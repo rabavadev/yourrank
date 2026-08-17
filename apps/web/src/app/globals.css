@@ -10,4 +10,45 @@
   --color-navy: #101C33;
   --color-navy-raised: #182843;
   --color-cobalt: #315CFF;
+
+  /* devin.ai reference tokens (extracted via Dembrandt) */
+  --color-devin-primary: #2200FF;
+  --color-devin-primary-hover: #1B00CC;
+  --color-devin-surface: #FCFCFC;
+  --color-devin-ink: #191919;
+  --color-devin-ink-soft: #5C5C5C;
+  --color-devin-secondary: #EFEFEF;
+  --color-devin-line: rgba(0, 0, 0, 0.15);
+
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, "SF Mono", monospace;
+
+  --animate-marquee: marquee 32s linear infinite;
+
+  @keyframes marquee {
+    to {
+      transform: translateX(-50%);
+    }
+  }
+}
+
+/* devin-style faint grid backdrop, masked so it fades toward the edges */
+.hero-grid-bg {
+  background-image:
+    linear-gradient(rgba(25, 25, 25, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(25, 25, 25, 0.05) 1px, transparent 1px);
+  background-size: 56px 56px;
+  mask-image: radial-gradient(ellipse 75% 65% at 50% 35%, black 30%, transparent 75%);
+  -webkit-mask-image: radial-gradient(ellipse 75% 65% at 50% 35%, black 30%, transparent 75%);
+}
+
+.hero-glow {
+  background: radial-gradient(closest-side, rgba(34, 0, 255, 0.08), transparent);
+  filter: blur(40px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-marquee {
+    animation: none !important;
+  }
 }
