@@ -176,3 +176,82 @@ Gotchas that cost time here:
 - When typing passwords with the `computer` tool, `!` can be dropped by
   `type`; send it as a separate `key` action (`exclam`) and use the eye toggle
   to confirm the field contents.
+
+## Testing browser history / Back / Forward on the dashboard SPA
+
+Each dashboard section is served as its own document, so the trail is made of
+real navigations — and any iframe on the page contributes to the same joint
+session history: the editor's live preview (a form POST into `designPreview`)
+and the Mini-games simulator each append an entry unless the frame is navigated
+without pushing. Screenshots alone cannot prove history correctness because the
+URL and the rendered section can agree while the history *stack* has been
+corrupted. Always dump the real stack:
+
+```python
+# needs: pip install websocket-client ; Chrome started with --remote-debugging-port
+import json, urllib.request, websocket
+ts = [x for x in json.load(urllib.request.urlopen("http://localhost:29229/json/list"))
+      if x.get("type") == "page"]
+t = [x for x in ts if x["url"].endswith("/dashboard/editor/players")][0]
+ws = websocket.create_connection(t["webSocketDebuggerUrl"], timeout=15,
+                                 suppress_origin=True)  # suppress_origin avoids
+                                                        # --remote-allow-origins
+ws.send(json.dumps({"id": 1, "method": "Page.getNavigationHistory"}))
+while True:
+    m = json.loads(ws.recv())
+    if m.get("id") == 1:
+        r = m["result"]
+        for i, e in enumerate(r["entries"]):
+            print(i, e["url"], "<== CURRENT" if i == r["currentIndex"] else "")
+        break
+```
+
+What to look for, and how to test it:
+
+- Build the trail by *clicking the sidebar* in a brand-new tab, then press Back
+  once and dump the stack. A healthy stack keeps the forward entry and moves
+  `currentIndex` back by one. Symptoms of the known bug class: the forward entry
+  is replaced by a duplicate of the current URL and `currentIndex` sits on the
+  *last* entry, which silently kills the browser Forward button.
+- Cross-check visually by zooming the toolbar (`zoom` region around
+  `[0,28,220,54]`): a greyed-out Forward arrow after a single Back press is the
+  user-visible symptom.
+- Test both a route that embeds an iframe (editor, mini-games) and one that does
+  not (giveaways → rewards): a frame-navigation bug only shows when Back lands
+  *on* the page owning the frame, so a giveaways-only trail can pass while the
+  editor trail fails. Never generalize from one route pair.
+- Chrome reports frame navigations via `Page.frameRequestedNavigation`
+  (`reason: formSubmissionPost` / `scriptInitiated`); a frame navigation right
+  after Back that is not `initialFrameNavigation` is what truncates the forward
+  stack.
+- Beware test-harness noise that looks like a product bug: omnibox autocomplete
+  can append a stale `?board=<old-uuid>`, producing a real `404 /api/site?siteId=…`
+  and a "Couldn't load your board" screen. Always press `Delete` after `type`
+  in the address bar to dismiss the autocomplete suggestion.
+- Only the *last* screenshot of a multi-action `computer` call is returned, so
+  take one screenshot per call when verifying a step-by-step Back/Forward walk.
+- In-page tab strips on Giveaways and Settings do **not** change the URL, so
+  Back cannot restore the previously selected tab and the tab is not
+  deep-linkable. Analytics tabs *do* push real URLs. Confirm which behaviour is
+  intended before filing it as a defect.
+
+## Public board pages under `wrangler dev`
+
+`site-routes.js` builds public nav hrefs from `url.origin` (`const homeUrl =
+url.origin;`). Because `wrangler dev` forces the origin to the configured route
+host, the local public pages emit absolute `http://yourrank.site/...` links, so
+clicking the public sidebar navigates to *production* and 404s. This is a
+local-dev artifact, not a product bug — verify public sections by entering
+`localhost:8787/<slug>[/shop|/me]` directly, and confirm the href source with:
+`curl -s http://localhost:8787/<slug> | grep -oE 'href="[^"]+"' | sort -u`.
+
+## Distinguishing legitimate empty states from defects
+
+Seeded data covers players, shop items and viewer balances but not events or
+raffles. `"No events yet"` with populated KPI cards above it, and
+`"No past raffles yet."`, are legitimate. A genuine defect looks like the
+giveaway history tables: `class="gw-table"` has **no** CSS rule
+(`grep -rn '\.gw-table\s*{' apps/leaderboard/src/assets/` returns nothing, only
+`.gw-table-actions`), so all four history tables render their `<th>`s as one
+run-on bold line. Verify styling claims against the *served* asset:
+`curl -s http://localhost:8787/assets/giveaways.css | grep -c 'gw-table {'`.

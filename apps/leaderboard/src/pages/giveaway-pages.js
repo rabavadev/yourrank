@@ -263,8 +263,8 @@ export const giveawaysHtml = `
           </div>
         </div>
 
-        <div class="gw-table-wrap">
-          <table class="gw-table">
+        <div class="v3-table-scroll">
+          <table class="v3-table">
             <thead>
               <tr>
                 <th style="width: 40px;">#</th>
@@ -320,8 +320,8 @@ export const giveawaysHtml = `
         </div>
       </div>
 
-      <div class="gw-table-wrap">
-        <table class="gw-table">
+      <div class="v3-table-scroll">
+        <table class="v3-table">
           <thead>
             <tr>
               <th>Prize Title</th>
@@ -371,8 +371,8 @@ export const giveawaysHtml = `
         </div>
       </div>
 
-      <div class="gw-table-wrap">
-        <table class="gw-table">
+      <div class="v3-table-scroll">
+        <table class="v3-table">
           <thead>
             <tr>
               <th>Code</th>
@@ -422,8 +422,8 @@ export const giveawaysHtml = `
         </div>
       </div>
 
-      <div class="gw-table-wrap">
-        <table class="gw-table">
+      <div class="v3-table-scroll">
+        <table class="v3-table">
           <thead>
             <tr>
               <th>Prediction Title</th>

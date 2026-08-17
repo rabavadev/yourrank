@@ -524,6 +524,29 @@ function setPreviewSyncStatus(status, syncedAt = _previewSyncedAt) {
   }
 }
 
+/**
+ * Replace the preview frame with a fresh one. A form submission into an
+ * existing frame appends an entry to the joint session history, which both
+ * pollutes Back and truncates the forward stack, so every render targets a
+ * newly created frame whose first navigation replaces instead of pushing.
+ */
+function resetPreviewFrame() {
+  const current = $("designPreview");
+  if (!current) return null;
+  const fresh = document.createElement("iframe");
+  for (const attr of current.attributes) {
+    if (attr.name !== "src") fresh.setAttribute(attr.name, attr.value);
+  }
+  fresh.addEventListener("load", () => {
+    clearTimeout(_previewWatchdog);
+    _previewSyncedAt = Date.now();
+    setPreviewSyncStatus("SYNCED", _previewSyncedAt);
+    fitDesignPreview();
+  });
+  current.replaceWith(fresh);
+  return fresh;
+}
+
 export function updateDesignPreview() {
   const iframe = $("designPreview");
   if (!iframe || !state.ACTIVE_SITE_ID) return;
@@ -539,18 +562,6 @@ export function updateDesignPreview() {
   if (retry && !retry._wired) {
     retry._wired = true;
     retry.addEventListener("click", () => { $("previewError").hidden = true; updateDesignPreview(); });
-  }
-
-  // A preview that never arrives has to say so: the frame is otherwise just a
-  // blank rectangle labelled "Live preview".
-  if (!iframe._wiredWatchdog) {
-    iframe._wiredWatchdog = true;
-    iframe.addEventListener("load", () => {
-      clearTimeout(_previewWatchdog);
-      _previewSyncedAt = Date.now();
-      setPreviewSyncStatus("SYNCED", _previewSyncedAt);
-      fitDesignPreview();
-    });
   }
 
   // Debounce the live preview update so typing doesn't repeatedly re-render.
@@ -573,6 +584,7 @@ export function updateDesignPreview() {
       _previewForm.action = url;
       _previewForm.querySelector("input[name='draft']").value = JSON.stringify(draft);
       setPreviewSyncStatus("SYNCING");
+      if (!resetPreviewFrame()) return;
       _previewForm.submit();
       const errorOverlay = $("previewError");
       if (errorOverlay) errorOverlay.hidden = true;
