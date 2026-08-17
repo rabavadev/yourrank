@@ -1,6 +1,9 @@
 import { BoardsPage } from "../_components/BoardsPage";
 import { EditorPlayersPage } from "../_components/EditorPlayersPage";
 import { EditorDesignPage } from "../_components/EditorDesignPage";
+import { EditorSetupPage } from "../_components/EditorSetupPage";
+import { EditorSharePage } from "../_components/EditorSharePage";
+import { EditorHistoryPage } from "../_components/EditorHistoryPage";
 import { GamesPage } from "../_components/GamesPage";
 import { GiveawaysPage } from "../_components/GiveawaysPage";
 import { RewardsPage } from "../_components/RewardsPage";
@@ -23,10 +26,16 @@ export default async function DashboardPage({ params, searchParams }: DashboardP
   switch (key) {
     case "boards":
       return <BoardsPage />;
+    case "editor/setup":
+      return <EditorSetupPage siteId={siteId} />;
     case "editor/players":
       return <EditorPlayersPage siteId={siteId} />;
     case "editor/design":
       return <EditorDesignPage siteId={siteId} />;
+    case "editor/share":
+      return <EditorSharePage siteId={siteId} />;
+    case "editor/history":
+      return <EditorHistoryPage siteId={siteId} />;
     case "games":
       return <GamesPage siteId={siteId} />;
     case "giveaways":

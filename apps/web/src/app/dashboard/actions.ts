@@ -74,7 +74,8 @@ export async function saveBrand(_prev: unknown, formData: FormData): Promise<Sav
   const result = await apiPut<{ ok: boolean; updatedAt: string; slug: string; siteId: string }>("/api/site", {
     siteId: siteId || undefined,
     name,
-    brand: { name, casino, code, ctaUrl, prizePool, period, tagline, blurb },
+    brand: { name, casino, code, ctaUrl, prizePool, period, tagline },
+    partner: { blurb },
   });
 
   if (!result.ok) {
@@ -82,8 +83,131 @@ export async function saveBrand(_prev: unknown, formData: FormData): Promise<Sav
   }
 
   revalidatePath("/dashboard/editor/design");
+  revalidatePath("/dashboard/editor/setup");
   revalidatePath("/dashboard");
   return { ok: true, updatedAt: result.data.updatedAt };
+}
+
+export interface SaveSiteResult {
+  ok: boolean;
+  error?: string;
+  updatedAt?: string;
+}
+
+function parseSocials(formData: FormData): Array<{ name: string; handle: string; action: string; url: string; brand: string; enabled: boolean }> {
+  const brands = ["Discord", "Kick", "Twitch", "YouTube", "X"];
+  return brands.map((brand) => {
+    const name = String(formData.get(`socials.${brand}.name`) || brand);
+    const handle = String(formData.get(`socials.${brand}.handle`) || "");
+    const action = String(formData.get(`socials.${brand}.action`) || "");
+    const url = String(formData.get(`socials.${brand}.url`) || "");
+    const enabled = formData.get(`socials.${brand}.enabled`) === "on";
+    return { name, handle, action, url, brand: brand.toLowerCase(), enabled };
+  });
+}
+
+export async function saveSite(_prev: unknown, formData: FormData): Promise<SaveSiteResult> {
+  const siteId = String(formData.get("siteId") || "").trim();
+  if (!siteId) {
+    return { ok: false, error: "Site ID is required." };
+  }
+
+  const name = String(formData.get("name") || "").trim();
+  const tagline = String(formData.get("tagline") || "").trim();
+  const casino = String(formData.get("casino") || "").trim();
+  const code = String(formData.get("code") || "").trim();
+  const ctaUrl = String(formData.get("ctaUrl") || "").trim();
+  const prizePool = String(formData.get("prizePool") || "").trim();
+  const period = String(formData.get("period") || "").trim();
+  const resetNote = String(formData.get("resetNote") || "").trim();
+  const blurb = String(formData.get("blurb") || "").trim();
+
+  const endsAt = String(formData.get("endsAt") || "").trim() || undefined;
+  const autoResetEnabled = formData.get("autoReset.enabled") === "on";
+  const autoResetClear = String(formData.get("autoReset.clear") || "wagers").trim() as "wagers" | "players" | "none";
+
+  const passwordProtected = formData.get("passwordProtected") === "on";
+  const passwordRaw = formData.get("password");
+  const password = passwordRaw ? String(passwordRaw).trim() : undefined;
+
+  const socials = parseSocials(formData);
+
+  const body: Record<string, unknown> = {
+    siteId,
+    name,
+    brand: { name, tagline, casino, code, ctaUrl, prizePool, period, resetNote },
+    partner: { blurb },
+    endsAt,
+    autoReset: { enabled: autoResetEnabled, clear: autoResetClear },
+    passwordProtected,
+    socials,
+  };
+
+  if (passwordProtected && password && password.length > 0) {
+    body.password = password;
+  } else if (!passwordProtected) {
+    body.password = null;
+  }
+
+  const result = await apiPut<{ ok: boolean; updatedAt: string; slug: string; siteId: string }>("/api/site", body);
+
+  if (!result.ok) {
+    return { ok: false, error: result.error };
+  }
+
+  revalidatePath("/dashboard/editor/setup");
+  revalidatePath("/dashboard/editor/share");
+  revalidatePath("/dashboard");
+  return { ok: true, updatedAt: result.data.updatedAt };
+}
+
+export interface CreateArchiveResult {
+  ok: boolean;
+  error?: string;
+  label?: string;
+}
+
+export async function createArchive(_prev: unknown, formData: FormData): Promise<CreateArchiveResult> {
+  const siteId = String(formData.get("siteId") || "").trim();
+  const label = String(formData.get("label") || "").trim();
+
+  if (!siteId) {
+    return { ok: false, error: "Site ID is required." };
+  }
+
+  const result = await apiPost<{ ok: boolean; label: string }>("/api/site/archive", { siteId, label });
+
+  if (!result.ok) {
+    return { ok: false, error: result.error };
+  }
+
+  revalidatePath("/dashboard/editor/history");
+  revalidatePath("/dashboard");
+  return { ok: true, label: result.data.label };
+}
+
+export interface DeleteArchiveResult {
+  ok: boolean;
+  error?: string;
+}
+
+export async function deleteArchive(_prev: unknown, formData: FormData): Promise<DeleteArchiveResult> {
+  const siteId = String(formData.get("siteId") || "").trim();
+  const label = String(formData.get("label") || "").trim();
+
+  if (!siteId || !label) {
+    return { ok: false, error: "Site and archive label are required." };
+  }
+
+  const result = await apiPost<{ ok: boolean }>("/api/site/archive/delete", { siteId, label });
+
+  if (!result.ok) {
+    return { ok: false, error: result.error };
+  }
+
+  revalidatePath("/dashboard/editor/history");
+  revalidatePath("/dashboard");
+  return { ok: true };
 }
 
 export interface GiveawayLookupResult {

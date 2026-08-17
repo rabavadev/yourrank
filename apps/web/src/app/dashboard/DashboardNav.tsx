@@ -105,10 +105,13 @@ function HelpIcon() {
 const GROUPS: NavGroup[] = [
   { label: "OVERVIEW", items: [{ href: "/dashboard", label: "Overview", icon: <OverviewIcon /> }] },
   {
-    label: "LEADERBOARD",
+    label: "EDITOR",
     items: [
+      { href: "/dashboard/editor/setup", label: "Site details", icon: <OverviewIcon /> },
       { href: "/dashboard/editor/players", label: "Racers & scores", icon: <UsersIcon /> },
       { href: "/dashboard/editor/design", label: "Theme & overlays", icon: <PaletteIcon /> },
+      { href: "/dashboard/editor/share", label: "Overlay & share", icon: <ShopIcon /> },
+      { href: "/dashboard/editor/history", label: "Past winners", icon: <GiveawayIcon /> },
       { href: "/dashboard/games", label: "Mini-games", icon: <GamesIcon /> },
     ],
   },
