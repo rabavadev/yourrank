@@ -169,8 +169,7 @@ export default {
               return deleted;
             } catch (err) {
               console.error("[cron 0 3 * * *] purgeExpiredReplayHashes failed:", err);
-              await notifyCronFailure(env, event.cron, "purgeExpiredReplayHashes", err);
-              return 0;
+              throw err;
             }
           })(),
           // DB-101: Data retention — delete click_daily rows older than 90 days
