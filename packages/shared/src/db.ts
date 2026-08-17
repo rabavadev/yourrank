@@ -2,9 +2,10 @@
 //  YourRank — SHARED POSTGRES DATA LAYER (TypeScript)
 //
 //  Consolidated postgres.js wrapper used by BOTH Workers:
-//    * New postgres client per request (Cloudflare Workers cannot reuse I/O
-//      objects created in a different request context). Hyperdrive pools the
-//      underlying DB connections, so per-request clients are still fast.
+//    * One postgres client is reused within each request context. Cloudflare
+//      Workers cannot reuse I/O objects across request contexts, so clients
+//      are released when their request finishes. Hyperdrive pools the
+//      underlying DB connections.
 //    * Exposes query<T>()/one<T>() for reads (retries on connection errors)
 //    * Exposes exec()/execOne() for writes (NO retry — callers handle idempotency)
 //    * Supports transactions via withTransaction()
@@ -18,7 +19,7 @@
 // ============================================================================
 
 import postgres from "postgres";
-import { incrementDbQueries } from "./request-id.js";
+import { getRequestDbState, incrementDbQueries, type RequestDbClient, type RequestDbState } from "./request-id.js";
 
 // ----------------------------------------------------------------------------
 // Configuration
@@ -47,6 +48,91 @@ function createSql(): ReturnType<typeof postgres> {
     connect_timeout: 10,
     debug: false,
   });
+}
+
+export interface DbDependencies {
+  createSql?: () => RequestDbClient;
+  sleepImpl?: (ms: number) => Promise<unknown>;
+}
+
+function getCachedSql(): { sql: RequestDbClient; state: RequestDbState } | null {
+  const state = getRequestDbState();
+  if (!state || state.releaseRequested || state.client === null) {
+    return null;
+  }
+  state.inFlight++;
+  return { sql: state.client, state };
+}
+
+function acquireSql(create: () => RequestDbClient): {
+  sql: RequestDbClient;
+  state: RequestDbState | null;
+  cached: boolean;
+} {
+  const cached = getCachedSql();
+  if (cached) return { ...cached, cached: true };
+
+  const state = getRequestDbState();
+  if (!state || state.releaseRequested) {
+    return { sql: create(), state: null, cached: false };
+  }
+  const sql = create();
+  state.client = sql;
+  state.inFlight = 1;
+  return { sql, state, cached: true };
+}
+
+function retireCachedSql(state: RequestDbState, sql: RequestDbClient): void {
+  if (state.client !== sql) return;
+  state.client = null;
+  state.retired.set(sql, state.inFlight);
+  state.inFlight = 0;
+}
+
+async function endSql(sql: RequestDbClient): Promise<void> {
+  await sql.end({ timeout: 0 }).catch(() => {});
+}
+
+async function releaseSql(
+  sql: RequestDbClient,
+  state: RequestDbState | null,
+  cached: boolean,
+): Promise<void> {
+  if (!state || !cached) {
+    await endSql(sql);
+    return;
+  }
+  if (state.client === sql) {
+    state.inFlight--;
+    if (state.releaseRequested && state.inFlight === 0) {
+      state.client = null;
+      await endSql(sql);
+    }
+    return;
+  }
+  const remaining = (state.retired.get(sql) || 1) - 1;
+  if (remaining <= 0) {
+    state.retired.delete(sql);
+    await endSql(sql);
+  } else {
+    state.retired.set(sql, remaining);
+  }
+}
+
+function discardSql(sql: RequestDbClient, state: RequestDbState | null, cached: boolean): void {
+  if (!state || !cached) return;
+  retireCachedSql(state, sql);
+}
+
+export async function releaseRequestDbClient(): Promise<void> {
+  const state = getRequestDbState();
+  if (!state) return;
+  state.releaseRequested = true;
+  if (state.client && state.inFlight === 0) {
+    const sql = state.client;
+    state.client = null;
+    await endSql(sql);
+  }
 }
 
 // Deprecated helper; creates a new sql client. Callers are responsible for
@@ -82,11 +168,12 @@ function isStatementTimeout(e: any): boolean {
 /** Execute a SQL read query with automatic retry on connection errors. */
 export async function query<T = Record<string, unknown>>(
   text: string,
-  params: unknown[] = []
+  params: unknown[] = [],
+  dependencies: DbDependencies = {},
 ): Promise<T[]> {
   let lastErr: any;
   for (let attempt = 0; attempt < 3; attempt++) {
-    const sql = createSql();
+    const { sql, state, cached } = acquireSql(dependencies.createSql ?? createSql);
     try {
       incrementDbQueries();
       const rows = await sql.unsafe(text, params as any[]);
@@ -97,9 +184,10 @@ export async function query<T = Record<string, unknown>>(
       const msg = String(e?.message || e);
       // Don't retry on constraint violations - these are application errors
       if (/23505|23514|23503|23502|23P01/.test(msg)) throw e;
-      if (attempt < 2) await sleep(200 * (attempt + 1));
+      if (isConnError(e)) discardSql(sql, state, cached);
+      if (attempt < 2) await (dependencies.sleepImpl ?? sleep)(200 * (attempt + 1));
     } finally {
-      await sql.end({ timeout: 0 }).catch(() => {});
+      await releaseSql(sql, state, cached);
     }
   }
   throw lastErr;
@@ -127,9 +215,10 @@ export async function queryWithTimeout<T = Record<string, unknown>>(
 /** Execute a SQL read query and return the first row, or undefined if no rows. */
 export async function one<T = Record<string, unknown>>(
   text: string,
-  params: unknown[] = []
+  params: unknown[] = [],
+  dependencies: DbDependencies = {},
 ): Promise<T | undefined> {
-  const rows = await query<T>(text, params);
+  const rows = await query<T>(text, params, dependencies);
   return rows[0];
 }
 
@@ -149,16 +238,21 @@ export async function one<T = Record<string, unknown>>(
 // ----------------------------------------------------------------------------
 
 /** Execute a single SQL write statement. NO retry on connection errors. */
-export async function exec(text: string, params: unknown[] = []): Promise<any> {
-  const sql = createSql();
+export async function exec(
+  text: string,
+  params: unknown[] = [],
+  dependencies: DbDependencies = {},
+): Promise<any> {
+  const { sql, state, cached } = acquireSql(dependencies.createSql ?? createSql);
   try {
     incrementDbQueries();
     const rows = await sql.unsafe(text, params as any[]);
     return rows.map((r: any) => ({ ...r }));
   } catch (e: any) {
+    if (isConnError(e)) discardSql(sql, state, cached);
     throw e;
   } finally {
-    await sql.end({ timeout: 0 }).catch(() => {});
+    await releaseSql(sql, state, cached);
   }
 }
 

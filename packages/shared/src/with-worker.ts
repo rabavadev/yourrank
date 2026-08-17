@@ -8,6 +8,7 @@
 import { generateRequestId, createLogger, getRequestMetrics, installConsoleRedirect, runWithLogger } from "./request-id.js";
 import { sendErrorToDiscord } from "./monitoring.js";
 import { errMessage, errStack } from "./errors.js";
+import { releaseRequestDbClient } from "./db.js";
 
 // One-time install: raw console.* inside a request context now flow through
 // the request-scoped logger with levels and sampling.
@@ -116,6 +117,8 @@ export function withWorkerFetch(workerName: string, handler: FetchHandler, optio
           status: 500,
           headers: errHeaders,
         });
+      } finally {
+        await releaseRequestDbClient();
       }
     });
   };

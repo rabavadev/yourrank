@@ -55,6 +55,18 @@ export interface RequestMetrics {
   payloadBytes?: number;
 }
 
+export interface RequestDbClient {
+  unsafe(text: string, params?: unknown[]): Promise<any[]>;
+  end(options?: { timeout?: number }): Promise<unknown>;
+}
+
+export interface RequestDbState {
+  client: RequestDbClient | null;
+  inFlight: number;
+  releaseRequested: boolean;
+  retired: Map<RequestDbClient, number>;
+}
+
 // Capture the original console methods before anything monkey-patches them.
 const CONSOLE = {
   log: console.log.bind(console),
@@ -105,11 +117,23 @@ export function createLogger(worker: string, reqId: string, env?: LoggerEnv): Lo
 
 // Per-request logger context so any helper can call getLogger() instead of
 // passing a log object through every call stack.
-const loggerStore = new AsyncLocalStorage<{ logger: Logger }>();
+const loggerStore = new AsyncLocalStorage<{ logger: Logger; db: RequestDbState }>();
 const metricsStore = new AsyncLocalStorage<RequestMetrics>();
 
 export function runWithLogger<T>(logger: Logger, fn: () => T): T {
-  return loggerStore.run({ logger }, () => metricsStore.run({ startedAt: Date.now(), dbQueries: 0 }, fn));
+  return loggerStore.run({
+    logger,
+    db: {
+      client: null,
+      inFlight: 0,
+      releaseRequested: false,
+      retired: new Map(),
+    },
+  }, () => metricsStore.run({ startedAt: Date.now(), dbQueries: 0 }, fn));
+}
+
+export function getRequestDbState(): RequestDbState | null {
+  return loggerStore.getStore()?.db || null;
 }
 
 export function getLogger(): Logger {
