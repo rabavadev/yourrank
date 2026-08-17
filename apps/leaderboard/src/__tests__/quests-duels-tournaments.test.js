@@ -57,6 +57,8 @@ describe("Quests, Duels & Tournaments Suite", () => {
       withTransaction: mockWithTransaction,
       requireViewer: mock().mockResolvedValue({ viewer: { id: "v-1" }, res: null }),
       rateLimit: mock().mockResolvedValue({ ok: true }),
+      clientIp: mock().mockReturnValue("127.0.0.1"),
+      requireSiteCapabilityImpl: mock().mockResolvedValue({ res: null }),
     };
   });
 
@@ -362,6 +364,8 @@ describe("Quests, Duels & Tournaments Suite", () => {
         player1_name: "Alice",
         player2_name: "Bob",
         bracket_size: 8,
+        site_id: "site-456",
+        site_user_id: "owner-1",
       }); // find match
 
       const req = new Request("http://localhost/api/tournaments/tourn-1/score", {
@@ -380,6 +384,90 @@ describe("Quests, Duels & Tournaments Suite", () => {
       expect(body.ok).toBe(true);
       expect(body.winnerName).toBe("Alice");
       expect(body.isFinals).toBe(false);
+    });
+
+    it("lets a board-managing team member update a match score", async () => {
+      deps.requireUser = mock().mockResolvedValue({
+        user: { id: "moderator-1", email: "moderator@test.com" },
+        res: null,
+      });
+      deps.requireSiteCapabilityImpl = mock().mockResolvedValue({ res: null, role: "moderator" });
+      mockOne.mockResolvedValueOnce({
+        id: "match-1",
+        tournament_id: "tourn-1",
+        round_number: 1,
+        match_index: 0,
+        player1_name: "Alice",
+        player2_name: "Bob",
+        bracket_size: 8,
+        site_id: "site-456",
+        site_user_id: "owner-1",
+      });
+
+      const res = await handleUpdateMatchScore(
+        new Request("http://localhost/api/tournaments/tourn-1/score", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ matchId: "match-1", player1Score: 3, player2Score: 1 }),
+        }),
+        mockEnv(),
+        deps
+      );
+
+      expect(res.status).toBe(200);
+      expect(deps.requireSiteCapabilityImpl).toHaveBeenCalledWith(
+        { id: "moderator-1", email: "moderator@test.com" },
+        { id: "site-456", user_id: "owner-1" },
+        "canRoleManageBoard"
+      );
+    });
+
+    it("rejects a user without a site role from updating a match score", async () => {
+      deps.requireSiteCapabilityImpl = mock().mockResolvedValue({
+        res: new Response("Forbidden", { status: 403 }),
+      });
+      mockOne.mockResolvedValueOnce({
+        id: "match-1",
+        tournament_id: "tourn-1",
+        round_number: 1,
+        match_index: 0,
+        player1_name: "Alice",
+        player2_name: "Bob",
+        bracket_size: 8,
+        site_id: "site-456",
+        site_user_id: "owner-1",
+      });
+
+      const res = await handleUpdateMatchScore(
+        new Request("http://localhost/api/tournaments/tourn-1/score", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ matchId: "match-1", player1Score: 3, player2Score: 1 }),
+        }),
+        mockEnv(),
+        deps
+      );
+
+      expect(res.status).toBe(403);
+      expect(mockExec).not.toHaveBeenCalled();
+    });
+
+    it("keeps nonexistent matches indistinguishable from unauthorized matches", async () => {
+      mockOne.mockResolvedValueOnce(null);
+
+      const res = await handleUpdateMatchScore(
+        new Request("http://localhost/api/tournaments/tourn-1/score", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ matchId: "missing", player1Score: 3, player2Score: 1 }),
+        }),
+        mockEnv(),
+        deps
+      );
+
+      expect(res.status).toBe(404);
+      expect(await res.text()).toContain("Match not found or unauthorized.");
+      expect(deps.requireSiteCapabilityImpl).not.toHaveBeenCalled();
     });
 
     it("returns bracket tree for spectator viewing", async () => {

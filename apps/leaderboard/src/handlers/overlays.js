@@ -1,8 +1,16 @@
 // OBS Live Overlays & Audio-Visual Alerts Suite.
-import { ok, bad } from "../auth.js";
+import {
+  ok,
+  bad,
+  rateLimit as defaultRateLimit,
+  clientIp as defaultClientIp,
+} from "../auth.js";
 import {
   one as defaultOne,
 } from "@yourrank/shared/db";
+
+const OVERLAY_PAGE_RATE_LIMIT = 120;
+const ACTIVE_EVENTS_RATE_LIMIT = 120;
 
 function esc(str) {
   return String(str || "").replace(/[&<>"']/g, (c) => ({
@@ -14,7 +22,14 @@ function esc(str) {
  * GET /overlay/prediction — Transparent OBS Browser Source for active Prediction HUD
  */
 export async function handleOverlayPredictionPage(request, env, deps = {}) {
-  const { one = defaultOne } = deps;
+  const {
+    one = defaultOne,
+    rateLimit = defaultRateLimit,
+    clientIp = defaultClientIp,
+  } = deps;
+  const rl = await rateLimit(env, `overlay-prediction:${clientIp(request)}`, OVERLAY_PAGE_RATE_LIMIT, 60);
+  if (!rl.ok) return bad("Rate limit exceeded. Try again shortly.", 429);
+
   const url = new URL(request.url);
   const siteSlug = url.searchParams.get("site");
 
@@ -239,7 +254,14 @@ export async function handleOverlayPredictionPage(request, env, deps = {}) {
  * GET /overlay/alerts — Transparent OBS Browser Source for Audio-Visual Alerts & Sound effects
  */
 export async function handleOverlayAlertsPage(request, env, deps = {}) {
-  const { one = defaultOne } = deps;
+  const {
+    one = defaultOne,
+    rateLimit = defaultRateLimit,
+    clientIp = defaultClientIp,
+  } = deps;
+  const rl = await rateLimit(env, `overlay-alerts:${clientIp(request)}`, OVERLAY_PAGE_RATE_LIMIT, 60);
+  if (!rl.ok) return bad("Rate limit exceeded. Try again shortly.", 429);
+
   const url = new URL(request.url);
   const siteSlug = url.searchParams.get("site");
 
@@ -401,7 +423,11 @@ export async function handleOverlayAlertsPage(request, env, deps = {}) {
 export async function handleGetActiveEvents(request, env, deps = {}) {
   const {
     one = defaultOne,
+    rateLimit = defaultRateLimit,
+    clientIp = defaultClientIp,
   } = deps;
+  const rl = await rateLimit(env, `overlay-events:${clientIp(request)}`, ACTIVE_EVENTS_RATE_LIMIT, 60);
+  if (!rl.ok) return bad("Rate limit exceeded. Try again shortly.", 429);
 
   const url = new URL(request.url);
   const siteSlugOrId = url.searchParams.get("site") || url.searchParams.get("siteId");

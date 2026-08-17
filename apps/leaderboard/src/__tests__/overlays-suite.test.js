@@ -15,6 +15,8 @@ describe("OBS Live Overlays Suite", () => {
   it("renders transparent Prediction HUD overlay page with site slug", async () => {
     const deps = {
       one: mock().mockResolvedValueOnce(SITE),
+      rateLimit: mock().mockResolvedValue({ ok: true }),
+      clientIp: mock().mockReturnValue("127.0.0.1"),
     };
 
     const req = new Request("http://localhost/overlay/prediction?site=streamer");
@@ -30,6 +32,8 @@ describe("OBS Live Overlays Suite", () => {
   it("renders transparent Alerts overlay page with sound synthesizer", async () => {
     const deps = {
       one: mock().mockResolvedValueOnce(SITE),
+      rateLimit: mock().mockResolvedValue({ ok: true }),
+      clientIp: mock().mockReturnValue("127.0.0.1"),
     };
 
     const req = new Request("http://localhost/overlay/alerts?site=streamer");
@@ -49,6 +53,8 @@ describe("OBS Live Overlays Suite", () => {
         .mockResolvedValueOnce({ id: "pred-1", title: "Win game?", status: "open", total_pool: 200 }) // active pred
         .mockResolvedValueOnce({ id: "red-1", username: "alice", title: "VIP Badge", created_at: new Date().toISOString() }), // latest redemption
       query: mock(),
+      rateLimit: mock().mockResolvedValue({ ok: true }),
+      clientIp: mock().mockReturnValue("127.0.0.1"),
     };
 
     const req = new Request("http://localhost/api/overlays/active-events?site=streamer");
@@ -58,5 +64,24 @@ describe("OBS Live Overlays Suite", () => {
     expect(body.ok).toBe(true);
     expect(body.activePrediction.title).toBe("Win game?");
     expect(body.latestAlert.username).toBe("alice");
+  });
+
+  it("rejects rate-limited overlay requests before running site queries", async () => {
+    for (const handler of [
+      handleOverlayPredictionPage,
+      handleOverlayAlertsPage,
+      handleGetActiveEvents,
+    ]) {
+      const one = mock();
+      const rateLimit = mock().mockResolvedValue({ ok: false });
+      const res = await handler(
+        new Request("http://localhost/overlay?site=streamer"),
+        mockEnv(),
+        { one, rateLimit, clientIp: () => "127.0.0.1" }
+      );
+
+      expect(res.status).toBe(429);
+      expect(one).not.toHaveBeenCalled();
+    }
   });
 });
