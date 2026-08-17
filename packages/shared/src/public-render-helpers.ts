@@ -11,7 +11,7 @@ export const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({
 
 export const safeUrl = (u) => {
   const s = String(u ?? "").trim();
-  return s && /^(https?:|mailto:|tel:)/i.test(s) ? esc(encodeURI(s)) : null;
+  return s && /^(https?:|mailto:|tel:)/i.test(s) ? esc(encodeURI(s)) : "#";
 };
 
 export function logoSrcSet(baseUrl) {

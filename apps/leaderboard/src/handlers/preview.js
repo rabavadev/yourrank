@@ -1,9 +1,9 @@
 import { currentUser } from "../auth.js";
 import { effectivePlan } from "@yourrank/shared/plans";
 import { getUserSiteById, FONT_KEYS } from "../site.js";
-import { renderSite } from "../site-render.js";
+import { renderSite } from "@yourrank/shared/site-render";
 import { SECURE_HTML, withNonce } from "../middleware/headers.js";
-import { gamesIslandHead, gamesIslandMount } from "../games-embed.js";
+import { gamesIslandHead, gamesIslandMount } from "@yourrank/shared/games-embed";
 
 const HEX = /^#[0-9a-fA-F]{6}$/;
 

@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { gamesIslandHead, gamesIslandMount } from "../games-embed.js";
+import { gamesIslandHead, gamesIslandMount } from "@yourrank/shared/games-embed";
 
 describe("gamesIslandHead", () => {
   test("links the scoped stylesheet only", () => {

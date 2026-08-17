@@ -17,8 +17,8 @@ import {
   renderLegalSidebar,
   esc,
   safeUrl,
-} from "./public-render-helpers";
-import { gamesIslandHead, gamesIslandMount } from "./games-embed";
+} from "./public-render-helpers.js";
+import { gamesIslandHead, gamesIslandMount } from "./games-embed.js";
 import { generateAvatarSvg } from "@yourrank/shared/avatar";
 
 // C-02: SECTION_TITLES was an exact duplicate of SECTION_LABELS — removed.
@@ -177,8 +177,8 @@ function sidebar({ b, slug, section, siteSections, homeUrl, isCustomDomain, logo
   })).join("");
 
   const resources = [
-    kickUrl ? `<a class="yr-nav-a" href="${kickUrl}" target="_blank" rel="noopener">${ICONS.kick} Watch on Kick</a>` : "",
-    hasCta ? `<a class="yr-nav-a" href="${ctaHref}" target="_blank" rel="noopener">${ICONS.gift} Join ${esc(casino || "sponsor")}</a>` : "",
+    kickUrl && kickUrl !== "#" ? `<a class="yr-nav-a" href="${kickUrl}" target="_blank" rel="noopener">${ICONS.kick} Watch on Kick</a>` : "",
+    hasCta && casino ? `<a class="yr-nav-a" href="${ctaHref}" target="_blank" rel="noopener">${ICONS.gift} Join ${esc(casino)}</a>` : "",
     viewer ? `<a class="yr-nav-a" href="/me">${ICONS.account} All boards &amp; account</a>` : "",
     `<button class="yr-nav-a" type="button" data-feedback-open>${ICONS.book} Send feedback</button>`,
   ].filter(Boolean).join("");
@@ -590,7 +590,7 @@ function homeMain(ctx) {
         kpi("Pending rewards", "hourglass", formatNumber(pending), pending ? `${esc(b.name || slug)} fulfils by hand` : "Nothing waiting"),
       ].join("")
     : [
-        pool ? null : kpi("Board", "trophy", esc(period), `${esc(period)} leaderboard`),
+        pool ? null : kpi("Board", "trophy", period, `${period} leaderboard`),
         kpi("Players", "chart", formatNumber(players.length), "On the current board"),
         kpi("Resets in", "hourglass", cd ? cd.text : "—", cd ? "End of period" : "No reset date set"),
       ].filter(Boolean).join("");
@@ -659,7 +659,7 @@ function boardMain(ctx) {
   const playerHref = (name) => isCustomDomain ? `/player/${encodeURIComponent(name)}` : `/${encodeURIComponent(slug)}/player/${encodeURIComponent(name)}`;
 
   const heroHtml = hero({
-    eyebrow: [pool ? `${esc(pool)} ${poolLabel.toUpperCase()}` : "", `${esc(period).toUpperCase()} BOARD`].filter(Boolean).join(" · "),
+    eyebrow: [pool ? `${esc(pool)} ${poolLabel.toUpperCase()}` : "", `${period.toUpperCase()} BOARD`].filter(Boolean).join(" · "),
     title: "Standings",
     lede: `Ranked by ${wagerLabel.toLowerCase()} on ${esc(b.name || slug)}'s board. Prizes are paid by the sponsor and are separate from free loyalty credits.`,
     right: cd

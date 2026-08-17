@@ -1,5 +1,5 @@
-import { formatMoney, renderSite } from "./site-render.js";
-import { safeUrl } from "./public-render-helpers.js";
+import { formatMoney, renderSite } from "@yourrank/shared/site-render";
+import { safeUrl } from "@yourrank/shared/public-render-helpers";
 
 function esc(s) {
   return String(s ?? "").replace(/[&<>"']/g, (c) => ({

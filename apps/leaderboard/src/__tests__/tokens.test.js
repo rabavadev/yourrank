@@ -25,7 +25,7 @@ const sources = {
   landing: read("apps/leaderboard/src/assets/landing.css"),
   ui: read("apps/leaderboard/src/assets/ui.css"),
   publicShell: read("apps/leaderboard/src/assets/site-shell.css"),
-  publicRuntime: read("apps/leaderboard/src/site-render.js"),
+  publicRuntime: read("packages/shared/src/site-render.ts"),
 };
 
 // Only the first declaration matters: later ones may be theme overrides.
