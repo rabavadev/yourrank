@@ -112,7 +112,18 @@ export async function listSiteMembers(
   if (!site) return [];
 
   const owner = await one<{ id: string; email: string; display_name: string | null; slug: string; created_at: string }>(
-    "SELECT id, email, display_name, slug, created_at FROM users WHERE id=$1",
+    `SELECT u.id, u.email, u.display_name,
+            COALESCE(sa.slug, sf.slug, '') AS slug,
+            u.created_at
+       FROM users u
+       LEFT JOIN sites sa ON sa.id = u.active_site_id AND sa.user_id = u.id
+       LEFT JOIN LATERAL (
+         SELECT s.slug FROM sites s
+          WHERE s.user_id = u.id
+          ORDER BY s.board_order NULLS LAST, s.updated_at ASC, s.slug ASC
+          LIMIT 1
+       ) sf ON true
+      WHERE u.id = $1`,
     [site.user_id]
   );
 
@@ -128,9 +139,17 @@ export async function listSiteMembers(
     invited_by: string | null;
   }>(
     `SELECT sm.id, sm.site_id, sm.user_id, sm.role, sm.created_at, sm.invited_by,
-            u.email, u.display_name, u.slug
+            u.email, u.display_name,
+            COALESCE(sa.slug, sf.slug, '') AS slug
        FROM site_members sm
        JOIN users u ON u.id = sm.user_id
+       LEFT JOIN sites sa ON sa.id = u.active_site_id AND sa.user_id = u.id
+       LEFT JOIN LATERAL (
+         SELECT s.slug FROM sites s
+          WHERE s.user_id = u.id
+          ORDER BY s.board_order NULLS LAST, s.updated_at ASC, s.slug ASC
+          LIMIT 1
+       ) sf ON true
       WHERE sm.site_id = $1
       ORDER BY sm.created_at ASC`,
     [siteId]
