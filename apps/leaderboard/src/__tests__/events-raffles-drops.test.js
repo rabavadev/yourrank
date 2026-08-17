@@ -37,6 +37,7 @@ describe("Community Events: Raffles & Flash Code Drops", () => {
       one: mockOne,
       unsafe: mockExec,
     }));
+    mockExec.mockResolvedValue([{}]);
 
     deps = {
       requireUser: mock().mockResolvedValue({ user: USER, res: null }),
@@ -48,6 +49,7 @@ describe("Community Events: Raffles & Flash Code Drops", () => {
       logAudit: mockLogAudit,
       rateLimit: mockRateLimit,
       withTransaction: mockWithTransaction,
+      requireViewer: mock().mockResolvedValue({ viewer: { id: "viewer-123" }, res: null }),
     };
   });
 
@@ -198,6 +200,42 @@ describe("Community Events: Raffles & Flash Code Drops", () => {
     expect(body.error).toContain("already claimed");
   });
 
+  it("does not increment a drop or award credits when the atomic claim conflicts", async () => {
+    mockOne.mockResolvedValueOnce(SITE); // find site
+    mockOne.mockResolvedValueOnce({
+      id: "drop-1",
+      code: "KICK30",
+      points_reward: 30,
+      max_claims: 20,
+      claimed_count: 5,
+      status: "active",
+    }); // find drop
+    mockOne.mockResolvedValueOnce({ id: "sv-1", balance: 100 }); // site_viewer
+    mockOne.mockResolvedValueOnce(null); // not yet claimed in pre-check
+    mockOne.mockResolvedValueOnce({ claimed_count: 5, max_claims: 20 }); // inside tx lock
+    mockOne.mockResolvedValueOnce(null); // ON CONFLICT DO NOTHING
+
+    const res = await handleClaimCodeDrop(new Request("http://localhost/api/events/drops/claim", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ site: "streamer", code: "KICK30" }),
+    }), mockEnv(), deps);
+
+    expect(res.status).toBe(400);
+    expect((await res.json()).error).toContain("already claimed");
+    expect(mockExec).not.toHaveBeenCalled();
+    expect(mockOne.mock.calls.some(([sql]) => String(sql).includes("ON CONFLICT (code_drop_id, viewer_id) DO NOTHING"))).toBe(true);
+  });
+
+  it("handleClaimCodeDrop rejects anonymous callers", async () => {
+    deps.requireViewer.mockResolvedValue({ viewer: null, res: new Response(null, { status: 401 }) });
+    const res = await handleClaimCodeDrop(new Request("http://localhost/api/events/drops/claim", {
+      method: "POST",
+      body: JSON.stringify({ site: "streamer", code: "KICK30", viewerId: "attacker" }),
+    }), mockEnv(), deps);
+    expect(res.status).toBe(401);
+  });
+
   it("handleClaimCodeDrop successfully awards points and increments claims", async () => {
     mockOne.mockResolvedValueOnce(SITE); // find site
     mockOne.mockResolvedValueOnce({
@@ -211,6 +249,8 @@ describe("Community Events: Raffles & Flash Code Drops", () => {
     mockOne.mockResolvedValueOnce({ id: "sv-1", balance: 100 }); // site_viewer
     mockOne.mockResolvedValueOnce(null); // not yet claimed
     mockOne.mockResolvedValueOnce({ claimed_count: 5, max_claims: 20 }); // inside tx lock
+    mockOne.mockResolvedValueOnce({ id: "claim-2" }); // atomic claim insert
+    mockOne.mockResolvedValueOnce({ id: "sv-1", balance: 130 }); // credit update
 
     const req = new Request("http://localhost/api/events/drops/claim", {
       method: "POST",

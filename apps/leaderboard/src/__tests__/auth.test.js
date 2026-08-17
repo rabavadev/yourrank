@@ -16,6 +16,7 @@ const {
   isEmail,
   slugify,
   RESERVED,
+  readToken,
 } = await import("../auth.js");
 
 // ── hashPassword ───────────────────────────────────────────────────────────
@@ -63,6 +64,35 @@ describe("hashPassword", () => {
     const { salt: s2, hash: h2 } = await hashPassword("samepassword");
     expect(s1).not.toBe(s2);
     expect(h1).not.toBe(h2);
+  });
+});
+
+describe("readToken", () => {
+  test("honors the gm_session cutoff while keeping yr_session valid", () => {
+    const previous = process.env.LEGACY_GM_SESSION_CUTOFF;
+    const legacyRequest = new Request("https://example.com", {
+      headers: { Cookie: "gm_session=legacy-token" },
+    });
+    const currentRequest = new Request("https://example.com", {
+      headers: { Cookie: "yr_session=current-token" },
+    });
+
+    try {
+      delete process.env.LEGACY_GM_SESSION_CUTOFF;
+      expect(readToken(legacyRequest)).toBe("legacy-token");
+      expect(readToken(currentRequest)).toBe("current-token");
+
+      process.env.LEGACY_GM_SESSION_CUTOFF = "2099-12-31T23:59:59Z";
+      expect(readToken(legacyRequest)).toBe("legacy-token");
+      expect(readToken(currentRequest)).toBe("current-token");
+
+      process.env.LEGACY_GM_SESSION_CUTOFF = "2000-01-01T00:00:00Z";
+      expect(readToken(legacyRequest)).toBeNull();
+      expect(readToken(currentRequest)).toBe("current-token");
+    } finally {
+      if (previous === undefined) delete process.env.LEGACY_GM_SESSION_CUTOFF;
+      else process.env.LEGACY_GM_SESSION_CUTOFF = previous;
+    }
   });
 });
 
