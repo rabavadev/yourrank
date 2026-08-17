@@ -266,6 +266,20 @@ async function loadGames() {
 
 let activeSimulatorGame = "mines";
 
+/**
+ * Point the simulator frame at `url` without touching the browser history:
+ * assigning `src` appends an entry to the joint session history, which pollutes
+ * Back and truncates the forward stack, so navigate the frame in place.
+ */
+function loadSimulatorFrame(iframe, url) {
+  const frameWindow = iframe.contentWindow;
+  if (frameWindow && typeof frameWindow.location?.replace === "function") {
+    frameWindow.location.replace(url);
+    return;
+  }
+  iframe.setAttribute("src", url);
+}
+
 function setSimulatorGame(gameId) {
   activeSimulatorGame = gameId || "mines";
   const siteId = state.ACTIVE_SITE_ID || "";
@@ -282,7 +296,7 @@ function setSimulatorGame(gameId) {
   if (iframe && embedUrl) {
     if (iframe.dataset.currentSrc !== embedUrl) {
       iframe.dataset.currentSrc = embedUrl;
-      iframe.src = embedUrl;
+      loadSimulatorFrame(iframe, embedUrl);
     }
   }
   if (popout && embedUrl) popout.href = embedUrl;
@@ -319,7 +333,7 @@ function setupSimulator() {
   resetBtn?.addEventListener("click", () => {
     const iframe = $("gamesSimulatorIframe");
     if (iframe && iframe.dataset.currentSrc) {
-      iframe.src = iframe.dataset.currentSrc + "&_t=" + Date.now();
+      loadSimulatorFrame(iframe, iframe.dataset.currentSrc + "&_t=" + Date.now());
       showToast("Demo balance reset to 2,500 credits", "success");
     }
   });
