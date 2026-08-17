@@ -173,6 +173,13 @@ describe("Quests, Duels & Tournaments Suite", () => {
       const body = await res.json();
       expect(body.ok).toBe(true);
       expect(body.duels.length).toBe(1);
+      const duelsSql = mockQuery.mock.calls[0][0];
+      expect(duelsSql).toContain("vc.kick_username AS challenger_name");
+      expect(duelsSql).toContain("vt.kick_username AS target_name");
+      expect(duelsSql).toContain("vw.kick_username AS winner_name");
+      expect(duelsSql).not.toContain("vc.username");
+      expect(duelsSql).not.toContain("vt.username");
+      expect(duelsSql).not.toContain("vw.username");
     });
 
     it("creates a duel challenge and locks challenger wager", async () => {
@@ -230,6 +237,13 @@ describe("Quests, Duels & Tournaments Suite", () => {
       expect(body.ok).toBe(true);
       expect(body.totalPot).toBe(100);
       expect(body.winnerName).toBeTruthy();
+      expect(body.rollDetails.challenger_name).toBe("alice");
+      expect(body.rollDetails.target_name).toBe("bob");
+      const acceptSql = mockOne.mock.calls[0][0];
+      expect(acceptSql).toContain("vc.kick_username AS challenger_name");
+      expect(acceptSql).toContain("vt.kick_username AS target_name");
+      expect(acceptSql).not.toContain("vc.username");
+      expect(acceptSql).not.toContain("vt.username");
     });
 
     it("declines a duel and refunds challenger wager", async () => {

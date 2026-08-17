@@ -32,9 +32,9 @@ export async function handleGetDuels(request, env, deps = {}) {
 
   const duels = await query(
     `SELECT d.id, d.wager_amount, d.status, d.roll_details, d.created_at, d.expires_at,
-            vc.username AS challenger_name,
-            vt.username AS target_name,
-            vw.username AS winner_name
+            vc.kick_username AS challenger_name,
+            vt.kick_username AS target_name,
+            vw.kick_username AS winner_name
        FROM viewer_duels d
        JOIN viewers vc ON vc.id = d.challenger_viewer_id
        JOIN viewers vt ON vt.id = d.target_viewer_id
@@ -152,7 +152,7 @@ export async function handleAcceptDuel(request, env, deps = {}) {
   const duel = await one(
     `SELECT d.id, d.site_id, d.challenger_viewer_id, d.challenger_site_viewer_id,
             d.target_viewer_id, d.target_site_viewer_id, d.wager_amount, d.status,
-            vc.username AS challenger_name, vt.username AS target_name
+            vc.kick_username AS challenger_name, vt.kick_username AS target_name
        FROM viewer_duels d
        JOIN viewers vc ON vc.id = d.challenger_viewer_id
        JOIN viewers vt ON vt.id = d.target_viewer_id
