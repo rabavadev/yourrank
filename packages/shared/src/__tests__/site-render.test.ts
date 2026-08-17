@@ -57,5 +57,8 @@ describe("shared public board renderer", () => {
     expect(html).not.toContain("Join sponsor");
     expect(html).not.toContain("U-09");
     expect(html).not.toContain("// Alignment is preserved");
+    const firstRowPrefix = html.match(/<tr[^>]*>[\s\S]*?<td/)?.[0] || "";
+    expect(firstRowPrefix).not.toContain("U-09");
+    expect(firstRowPrefix).not.toContain("//");
   });
 });
