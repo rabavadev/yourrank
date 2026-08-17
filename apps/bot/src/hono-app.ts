@@ -18,6 +18,7 @@ import {
   computeReplayHash,
   findPostbackOwner,
   logPostbackIntake,
+  type PostbackOwner,
   recordReplayHash,
   releaseReplayHash,
   unsignedPostbacksEnabled,
@@ -49,6 +50,76 @@ type PostbackDeps = {
   recordReplayHash?: typeof recordReplayHash;
   releaseReplayHash?: typeof releaseReplayHash;
 };
+
+type PostbackDeliveryDeps = {
+  computeReplayHash: typeof computeReplayHash;
+  createQueueProducer: typeof createQueueProducer;
+  recordConversion: typeof recordConversion;
+  recordReplayHash: typeof recordReplayHash;
+  releaseReplayHash: typeof releaseReplayHash;
+};
+
+type PostbackDeliveryResult = "delivered" | "duplicate" | "failed";
+
+async function deliverPostbackConversion({
+  owner,
+  query,
+  path,
+  eventsQueue,
+  deps,
+}: {
+  owner: PostbackOwner;
+  query: PostbackQuery;
+  path: "pb_signed" | "pb_legacy";
+  eventsQueue: Bindings["EVENTS_QUEUE"];
+  deps: PostbackDeliveryDeps;
+}): Promise<PostbackDeliveryResult> {
+  const replayHash = await deps.computeReplayHash(query);
+  if (!(await deps.recordReplayHash(owner.userId, replayHash))) return "duplicate";
+
+  const conversionQueue = deps.createQueueProducer(
+    eventsQueue,
+    async (event: QueueEvent) => {
+      if (event.type === "conversion") {
+        await deps.recordConversion(event.ownerId, event.query);
+      }
+    }
+  );
+  try {
+    await conversionQueue.send({
+      type: "conversion",
+      ownerId: owner.userId,
+      query,
+      timestamp: Date.now(),
+    });
+  } catch (error) {
+    const message = errMessage(error);
+    console.error(JSON.stringify({
+      level: "error",
+      event: "postback_conversion_enqueue_failed",
+      path,
+      owner_id: owner.userId,
+      replay_hash: replayHash,
+      error: message,
+      ts: new Date().toISOString(),
+    }));
+    try {
+      await deps.releaseReplayHash(owner.userId, replayHash);
+    } catch (releaseError) {
+      console.error(JSON.stringify({
+        level: "error",
+        event: "postback_replay_release_failed",
+        path,
+        owner_id: owner.userId,
+        replay_hash: replayHash,
+        error: errMessage(releaseError),
+        ts: new Date().toISOString(),
+      }));
+    }
+    return "failed";
+  }
+  return "delivered";
+}
 
 // Admin API abuse guard: cap attempts per IP so a leaked-endpoint brute force
 // against ADMIN_API_KEY can't run unthrottled. Generous enough for real ops use.
@@ -262,50 +333,23 @@ export function buildHonoApp({
     if (!owner) return c.json({ error: "unknown key" }, 404);
     logPostbackIntake("pb_signed", owner, true);
 
-    const replayHash = await computeReplayHashImpl(c.req.query());
-    if (!(await recordReplayHashImpl(owner.userId, replayHash))) {
+    const result = await deliverPostbackConversion({
+      owner,
+      query: c.req.query() as PostbackQuery,
+      path: "pb_signed",
+      eventsQueue: c.env.EVENTS_QUEUE,
+      deps: {
+        computeReplayHash: computeReplayHashImpl,
+        createQueueProducer: createQueueProducerImpl,
+        recordConversion: recordConversionImpl,
+        recordReplayHash: recordReplayHashImpl,
+        releaseReplayHash: releaseReplayHashImpl,
+      },
+    });
+    if (result === "duplicate") {
       return c.json({ error: "duplicate postback" }, 409);
     }
-
-    const conversionQueue = createQueueProducerImpl(
-      c.env.EVENTS_QUEUE,
-      async (event: QueueEvent) => {
-        if (event.type === "conversion") {
-          await recordConversionImpl(event.ownerId, event.query);
-        }
-      }
-    );
-    try {
-      await conversionQueue.send({
-        type: "conversion",
-        ownerId: owner.userId,
-        query: c.req.query() as PostbackQuery,
-        timestamp: Date.now(),
-      });
-    } catch (error) {
-      const message = errMessage(error);
-      console.error(JSON.stringify({
-        level: "error",
-        event: "postback_conversion_enqueue_failed",
-        path: "pb_signed",
-        owner_id: owner.userId,
-        replay_hash: replayHash,
-        error: message,
-        ts: new Date().toISOString(),
-      }));
-      try {
-        await releaseReplayHashImpl(owner.userId, replayHash);
-      } catch (releaseError) {
-        console.error(JSON.stringify({
-          level: "error",
-          event: "postback_replay_release_failed",
-          path: "pb_signed",
-          owner_id: owner.userId,
-          replay_hash: replayHash,
-          error: errMessage(releaseError),
-          ts: new Date().toISOString(),
-        }));
-      }
+    if (result === "failed") {
       return c.json({ error: "conversion delivery failed; please retry" }, 503);
     }
     return c.json({ ok: true });
@@ -334,50 +378,23 @@ export function buildHonoApp({
     if (!owner) return c.json({ error: "unknown key" }, 404);
     logPostbackIntake("pb_legacy", owner, false);
 
-    const replayHash = await computeReplayHashImpl(c.req.query());
-    if (!(await recordReplayHashImpl(owner.userId, replayHash))) {
+    const result = await deliverPostbackConversion({
+      owner,
+      query: c.req.query() as PostbackQuery,
+      path: "pb_legacy",
+      eventsQueue: c.env.EVENTS_QUEUE,
+      deps: {
+        computeReplayHash: computeReplayHashImpl,
+        createQueueProducer: createQueueProducerImpl,
+        recordConversion: recordConversionImpl,
+        recordReplayHash: recordReplayHashImpl,
+        releaseReplayHash: releaseReplayHashImpl,
+      },
+    });
+    if (result === "duplicate") {
       return c.json({ error: "duplicate postback" }, 409);
     }
-
-    const conversionQueue = createQueueProducerImpl(
-      c.env.EVENTS_QUEUE,
-      async (event: QueueEvent) => {
-        if (event.type === "conversion") {
-          await recordConversionImpl(event.ownerId, event.query);
-        }
-      }
-    );
-    try {
-      await conversionQueue.send({
-        type: "conversion",
-        ownerId: owner.userId,
-        query: c.req.query() as PostbackQuery,
-        timestamp: Date.now(),
-      });
-    } catch (error) {
-      const message = errMessage(error);
-      console.error(JSON.stringify({
-        level: "error",
-        event: "postback_conversion_enqueue_failed",
-        path: "pb_legacy",
-        owner_id: owner.userId,
-        replay_hash: replayHash,
-        error: message,
-        ts: new Date().toISOString(),
-      }));
-      try {
-        await releaseReplayHashImpl(owner.userId, replayHash);
-      } catch (releaseError) {
-        console.error(JSON.stringify({
-          level: "error",
-          event: "postback_replay_release_failed",
-          path: "pb_legacy",
-          owner_id: owner.userId,
-          replay_hash: replayHash,
-          error: errMessage(releaseError),
-          ts: new Date().toISOString(),
-        }));
-      }
+    if (result === "failed") {
       return c.json({ error: "conversion delivery failed; please retry" }, 503);
     }
     return c.json({ ok: true });
