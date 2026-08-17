@@ -213,7 +213,7 @@ export async function processAccountExport(event, env, {
   try {
     const pseudonymise = await createPseudonymiser();
     const userCols = `id, email, display_name, telegram_user_id, telegram_username,
-      telegram_id, telegram_linked_at, plan, plan_expires_at, status, is_admin, email_verified,
+      telegram_linked_at, plan, plan_expires_at, status, is_admin, email_verified,
       created_at, updated_at, has_trial, failed_login_count, locked_until`;
     const userRows = await read(`SELECT ${userCols} FROM users WHERE id=$1`, [userId]);
     const siteIds = await collectIds("SELECT id FROM sites WHERE user_id=$1", [userId], "id", read);
