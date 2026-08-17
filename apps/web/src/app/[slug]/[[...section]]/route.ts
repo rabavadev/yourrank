@@ -3,6 +3,11 @@ import { getPublicSite } from "@/lib/site";
 import { setDatabaseUrl } from "@/lib/db";
 import { renderPasswordGate } from "@/lib/password-gate";
 import { proxyToWorker } from "@/lib/proxy";
+import { getCloudflareContext } from "@opennextjs/cloudflare";
+import { createQueueProducer } from "@yourrank/shared/queue-producer";
+import { bumpStat } from "@yourrank/shared/stats";
+import { hashToken } from "@yourrank/shared/crypto";
+import { decideBoardView } from "@yourrank/shared/board-views";
 import {
   verifyBoardPassword,
   issueBoardPasswordToken,
@@ -26,6 +31,7 @@ async function renderBoard(
   section: string,
 ): Promise<Response> {
   await setDatabaseUrl();
+  const { env, ctx } = await getCloudflareContext({ async: true });
   const n = nonce();
 
   const r = await getPublicSite(slug, request, { limit: 100, offset: 0 });
@@ -51,6 +57,38 @@ async function renderBoard(
   }
 
   const homeUrl = new URL(request.url).origin;
+  const responseHeaders = new Headers({
+    "content-type": "text/html; charset=utf-8",
+    "cache-control": "no-store",
+  });
+  if (section === "home" || section === "leaderboard") {
+    const decision = await decideBoardView({
+      request,
+      siteId: r.id,
+      slug,
+      hashToken,
+    });
+    for (const cookie of decision.setCookies) responseHeaders.append("set-cookie", cookie);
+    if (decision.shouldBump) {
+      const producer = createQueueProducer(
+        (env as Record<string, unknown>).EVENTS_QUEUE as Parameters<typeof createQueueProducer>[0],
+        async (event) => {
+          if (event.type === "bump") {
+            await bumpStat(event.siteId, event.field, event.referer, event.visitorHash);
+          }
+        },
+        env,
+      );
+      ctx.waitUntil(producer.send({
+        type: "bump",
+        siteId: r.id,
+        field: "views",
+        referer: decision.referer,
+        visitorHash: decision.visitorHash,
+        timestamp: Date.now(),
+      }));
+    }
+  }
   const html = await renderSite({
     r,
     section,
@@ -68,10 +106,7 @@ async function renderBoard(
   });
 
   return new Response(html, {
-    headers: {
-      "content-type": "text/html; charset=utf-8",
-      "cache-control": "no-store",
-    },
+    headers: responseHeaders,
   });
 }
 
