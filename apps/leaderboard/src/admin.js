@@ -130,7 +130,7 @@ export async function handleOverview(request, env) {
   await logAdminAction(env, admin.id, "overview", null, null, request);
   const [users, pro, leads, revenue] = await Promise.all([
     one("SELECT COUNT(*) n FROM users"),
-    one("SELECT COUNT(*) n FROM users WHERE plan IN ('pro','agency','starter','lifetime') AND status!='suspended'"),
+    one("SELECT COUNT(*) n FROM users WHERE plan IN ('pro','agency','starter') AND status!='suspended'"),
     one("SELECT COUNT(*) n FROM leads"),
     one("SELECT COALESCE(SUM(amount),0) n FROM payments WHERE status IN ('finished','manual')"),
   ]);
