@@ -27,15 +27,12 @@ function setupPreviewTabs() {
     refreshPreview();
   };
 
-  // The legacy dashboard entry also wires these buttons. Capture the click here
-  // so this controller remains the single owner of the device state and refresh.
   tablist.addEventListener("click", (event) => {
     const tab = event.target.closest(".preview-tab");
     if (!tab || !tabs.includes(tab)) return;
     event.preventDefault();
-    event.stopImmediatePropagation();
     setActive(tab);
-  }, true);
+  });
 
   tablist.addEventListener("keydown", (event) => {
     const index = tabs.indexOf(document.activeElement);
