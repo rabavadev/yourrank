@@ -201,10 +201,14 @@ export const readJsonLimited = async (req, maxBytes) => {
   const reader = req.body.getReader();
   const chunks = [];
   let total = 0;
+  let reading = true;
   try {
-    while (true) {
+    while (reading) {
       const { done, value } = await reader.read();
-      if (done) break;
+      if (done) {
+        reading = false;
+        continue;
+      }
       total += value.byteLength;
       if (total > maxBytes) {
         await reader.cancel();
