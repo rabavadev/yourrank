@@ -7,7 +7,7 @@
 
 import { describe, it, expect, mock, beforeEach } from "bun:test";
 
-// ── Mock DB so conversions.ts loads without a real Hyperdrive ──────────
+// ── Mock DB so shared conversions loads without a real Hyperdrive ──────
 // Mock BOTH .js and .ts resolved URLs — bun resolves .js imports to .ts
 const dbUrl = import.meta.resolve("@yourrank/shared/db");
 const dbUrlTs = import.meta.resolve("@yourrank/shared/db");
@@ -64,7 +64,7 @@ mock.module(cryptoUrlTs, cryptoMockFactory);
 
 // ── Import REAL functions after mocks are in place ─────────────────────
 import { esc } from "../botEngine.js";
-import { recordConversion } from "../conversions.js";
+import { recordConversion } from "@yourrank/shared/conversions";
 import { PLAN_LIMITS, BOARD_LIMITS } from "@yourrank/shared/plans";
 import { rateLimit } from "@yourrank/shared/ratelimit";
 

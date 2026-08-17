@@ -10,6 +10,7 @@ import {
 } from "@yourrank/shared/db";
 import { rateLimit as defaultRateLimit } from "@yourrank/shared/ratelimit";
 import { logAudit as defaultLogAudit } from "@yourrank/shared/audit";
+import { requireViewer as defaultRequireViewer } from "./viewer-auth.js";
 
 function getCryptoRandomInt(max) {
   const arr = new Uint32Array(1);
@@ -289,12 +290,16 @@ export async function handleClaimCodeDrop(request, env, deps = {}) {
     exec = defaultExec,
     withTransaction = defaultWithTransaction,
     rateLimit = defaultRateLimit,
+    requireViewer = defaultRequireViewer,
   } = deps;
+
+  const { viewer, res } = await requireViewer(request, env);
+  if (res) return res;
 
   const body = await readJson(request);
   const rawCode = String(body?.code || "").trim().toUpperCase();
   const siteSlugOrId = String(body?.site || body?.siteId || "").trim();
-  const viewerId = String(body?.viewerId || "").trim();
+  const viewerId = viewer.id;
 
   if (!rawCode || !siteSlugOrId) {
     return bad("Code and site are required.");
@@ -302,7 +307,7 @@ export async function handleClaimCodeDrop(request, env, deps = {}) {
 
   // Rate limit claims by IP / viewer to prevent brute forcing
   const clientIp = request.headers.get("cf-connecting-ip") || "anon";
-  const rl = await rateLimit(env, `drop:claim:${clientIp}`, 15, 60);
+  const rl = await rateLimit(env, `drop:claim:${viewerId}:${clientIp}`, 15, 60);
   if (!rl.ok) return bad("Too many attempts. Please wait a minute.", 429);
 
   // Find site
@@ -332,7 +337,6 @@ export async function handleClaimCodeDrop(request, env, deps = {}) {
   }
 
   // Resolve viewer
-  if (!viewerId) return bad("You must be logged in to claim this drop.", 401);
   const siteViewer = await one(
     "SELECT id, balance FROM site_viewers WHERE site_id=$1 AND viewer_id=$2",
     [site.id, viewerId]
@@ -358,6 +362,17 @@ export async function handleClaimCodeDrop(request, env, deps = {}) {
       return { exhausted: true };
     }
 
+    // Claim first: a duplicate conflicts here, so the count below only ever
+    // counts claims that were actually recorded.
+    const claim = await tx.one(
+      `INSERT INTO code_drop_claims (code_drop_id, site_viewer_id, viewer_id, points_awarded)
+       VALUES ($1, $2, $3, $4)
+       ON CONFLICT (code_drop_id, viewer_id) DO NOTHING
+       RETURNING id`,
+      [drop.id, siteViewer.id, viewerId, drop.points_reward]
+    );
+    if (!claim) return { alreadyClaimed: true };
+
     const newClaimedCount = lockedDrop.claimed_count + 1;
     const newStatus = newClaimedCount >= lockedDrop.max_claims ? "exhausted" : "active";
 
@@ -366,13 +381,8 @@ export async function handleClaimCodeDrop(request, env, deps = {}) {
       [newClaimedCount, newStatus, drop.id]
     );
 
-    await tx.unsafe(
-      "INSERT INTO code_drop_claims (code_drop_id, site_viewer_id, viewer_id, points_awarded) VALUES ($1, $2, $3, $4)",
-      [drop.id, siteViewer.id, viewerId, drop.points_reward]
-    );
-
-    await tx.unsafe(
-      "UPDATE site_viewers SET balance = balance + $1, total_earned = total_earned + $1, updated_at=now() WHERE id=$2",
+    const updatedViewer = await tx.one(
+      "UPDATE site_viewers SET balance = balance + $1, total_earned = total_earned + $1, updated_at=now() WHERE id=$2 RETURNING id, balance",
       [drop.points_reward, siteViewer.id]
     );
 
@@ -382,11 +392,14 @@ export async function handleClaimCodeDrop(request, env, deps = {}) {
       [siteViewer.id, drop.points_reward, `Flash Code Drop: ${drop.code}`]
     );
 
-    return { success: true, pointsAwarded: drop.points_reward, newBalance: (siteViewer.balance || 0) + drop.points_reward };
+    return { success: true, pointsAwarded: drop.points_reward, newBalance: updatedViewer.balance };
   });
 
   if (outcome?.exhausted) {
     return bad("All claims for this drop have been taken!", 400);
+  }
+  if (outcome?.alreadyClaimed) {
+    return bad("You have already claimed this drop code!", 400);
   }
 
   return ok({

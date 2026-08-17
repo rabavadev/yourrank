@@ -1,5 +1,5 @@
 // Shared authenticated-shell behaviour: account menu, persisted desktop rail,
-// and the mobile drawer used by string-rendered Help/Telegram pages.
+// and the mobile drawer used by string-rendered Help pages.
 (function () {
   var menus = document.querySelectorAll("details.gm-profile");
   var collapseKey = "yr-side-collapsed";

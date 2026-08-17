@@ -1,25 +1,52 @@
 // Client-side error / log ingestion endpoint.
 // Dashboard JS posts here so client errors are correlated with server logs,
 // Sentry, and the original request ID.
-import { json, bad, rateLimit, clientIp, readJson } from "../auth.js";
+import { json, bad, rateLimit, clientIp, readJsonLimited } from "../auth.js";
 
 const ALLOWED_LEVELS = new Set(["error", "warn", "info"]);
+const MAX_BODY_BYTES = 16 * 1024;
+const LIMITS = {
+  message: 1000,
+  stack: 4000,
+  context: 64,
+  url: 500,
+  clientReqId: 128,
+  userAgent: 256,
+  extraKey: 256,
+};
+
+const truncate = (value, max) => typeof value === "string" ? value.slice(0, max) : undefined;
 
 export async function handleLog(request, env, ctx, meta) {
-  const { log, sentry, reqId } = meta || {};
-  const ip = clientIp(request);
-  const limit = await rateLimit(env, `clientlog:${ip}`, 30, 60);
+  const {
+    log,
+    sentry,
+    reqId,
+    rateLimit: rateLimitImpl = rateLimit,
+    clientIp: clientIpImpl = clientIp,
+    readJsonLimited: readJsonLimitedImpl = readJsonLimited,
+  } = meta || {};
+  const ip = clientIpImpl(request);
+  const limit = await rateLimitImpl(env, `clientlog:${ip}`, 30, 60);
   if (!limit.ok) return bad("Too many logs. Slow down.", 429);
 
-  const body = await readJson(request);
+  const { value: body, tooLarge } = await readJsonLimitedImpl(request, MAX_BODY_BYTES);
+  if (tooLarge) return bad("Request body too large", 413);
   if (!body) return bad("Invalid JSON", 400);
 
   const level = ALLOWED_LEVELS.has(body?.level) ? body.level : "error";
-  const context = typeof body?.context === "string" ? body.context : "dashboard";
-  const message = typeof body?.message === "string" ? body.message : "";
-  const stack = typeof body?.stack === "string" ? body.stack : undefined;
-  const clientReqId = typeof body?.req_id === "string" ? body.req_id : undefined;
-  const extra = body?.extra && typeof body.extra === "object" ? body.extra : {};
+  const context = truncate(body?.context, LIMITS.context) || "dashboard";
+  const message = truncate(body?.message, LIMITS.message) || "";
+  const stack = truncate(body?.stack, LIMITS.stack);
+  const clientReqId = truncate(body?.req_id, LIMITS.clientReqId);
+  const userAgent = truncate(request.headers.get("user-agent") || "", LIMITS.userAgent);
+  const url = truncate(body?.extra?.url, LIMITS.url);
+  const extra = {};
+  if (body?.extra && typeof body.extra === "object" && !Array.isArray(body.extra)) {
+    for (const key of Object.keys(body.extra).slice(0, 20)) {
+      extra[key.slice(0, LIMITS.extraKey)] = String(body.extra[key]).slice(0, LIMITS.extraKey);
+    }
+  }
 
   if (!message) return bad("message is required", 400);
 
@@ -33,8 +60,8 @@ export async function handleLog(request, env, ctx, meta) {
     client_req_id: clientReqId,
     req_id: reqId,
     ip,
-    url: extra?.url,
-    user_agent: request.headers.get("user-agent") || undefined,
+    url,
+    user_agent: userAgent || undefined,
   };
 
   if (log && typeof log[level] === "function") {

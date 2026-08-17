@@ -1,3 +1,5 @@
+import { loadBoardShell, sitePath } from "./dashboard/board-shell.js";
+
 // Client-side script for Live Chat Keyword Listener & Giveaways
 // Connects to Kick's Pusher WebSocket network in real-time
 
@@ -36,8 +38,11 @@
   const $ = (id) => document.getElementById(id);
 
   function init() {
+    // Wire the giveaway UI first so a failing shell request can never leave the
+    // page unresponsive.
     wireEvents();
     autoFillChannel();
+    loadBoardShell().catch(() => {});
   }
 
   async function autoFillChannel() {
@@ -47,11 +52,11 @@
       $("gw-channel-input").value = saved;
     } else {
       try {
-        const res = await fetch("/api/account/details", { headers: { "Accept": "application/json" } });
+        const res = await fetch(sitePath("/api/credits/status"), { headers: { "Accept": "application/json" } });
         if (res.ok) {
           const data = await res.json();
-          if (data.kickChannel?.name) {
-            $("gw-channel-input").value = data.kickChannel.name;
+          if (data.channel?.name) {
+            $("gw-channel-input").value = data.channel.name;
           }
         }
       } catch {
@@ -1540,4 +1545,3 @@
     initEventsHub();
   }
 })();
-

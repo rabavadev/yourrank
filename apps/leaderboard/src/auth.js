@@ -11,6 +11,7 @@ import {
   cookieClear as _cookieClear,
   // SEC-107: session resolution (DB-backed, handles rotation + TTL refresh)
   resolveSession as _resolveSession,
+  readToken as _readToken,
   // SEC-104: legacy cookie helpers
   hasLegacyCookie,
   cookieClearLegacy,
@@ -19,14 +20,10 @@ import {
 } from "@yourrank/shared/session";
 
 // Re-export session primitives so callers that import from auth.js still work.
-export const readToken = (req) => {
-  const h = req.headers.get("cookie") || "";
-  for (const name of ["yr_session", "gm_session"]) {
-    const m = h.match(new RegExp(`(?:^|;\\s*)${name}=([^;]+)`));
-    if (m) return decodeURIComponent(m[1]);
-  }
-  return null;
-};
+// Token reading MUST come from the shared module: it applies the
+// LEGACY_GM_SESSION_CUTOFF, so a local copy would keep honouring the retired
+// gm_session cookie after resolveSession() has stopped accepting it.
+export const readToken = (req) => _readToken(req);
 export { SESSION_TTL_S, SESSION_ROTATE_AFTER_S };
 
 const hex = (buf) => [...buf].map(b => b.toString(16).padStart(2, '0')).join('');
@@ -191,6 +188,46 @@ export function rateLimitHeaders(rl) {
 export const readJson = async (req) => {
   if (req.validatedBody !== undefined) return req.validatedBody;
   try { return await req.json(); } catch { return null; }
+};
+export const readJsonLimited = async (req, maxBytes) => {
+  if (req.validatedBody !== undefined) return { value: req.validatedBody, tooLarge: false };
+  const contentLength = Number(req.headers.get("content-length"));
+  if (Number.isFinite(contentLength) && contentLength > maxBytes) return { value: null, tooLarge: true };
+  if (!req.body) return { value: null, tooLarge: false };
+
+  const reader = req.body.getReader();
+  const chunks = [];
+  let total = 0;
+  let reading = true;
+  try {
+    while (reading) {
+      const { done, value } = await reader.read();
+      if (done) {
+        reading = false;
+        continue;
+      }
+      total += value.byteLength;
+      if (total > maxBytes) {
+        await reader.cancel();
+        return { value: null, tooLarge: true };
+      }
+      chunks.push(value);
+    }
+  } finally {
+    reader.releaseLock();
+  }
+
+  const bytes = new Uint8Array(total);
+  let offset = 0;
+  for (const chunk of chunks) {
+    bytes.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  try {
+    return { value: JSON.parse(new TextDecoder().decode(bytes)), tooLarge: false };
+  } catch {
+    return { value: null, tooLarge: false };
+  }
 };
 
 

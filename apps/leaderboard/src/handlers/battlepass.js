@@ -8,6 +8,8 @@ import {
   withTransaction as defaultWithTransaction,
 } from "@yourrank/shared/db";
 import { logAudit as defaultLogAudit } from "@yourrank/shared/audit";
+import { requireViewer as defaultRequireViewer } from "./viewer-auth.js";
+import { rateLimit as defaultRateLimit } from "@yourrank/shared/ratelimit";
 
 export function generateDefaultTiers() {
   const tiers = [];
@@ -39,11 +41,13 @@ export function generateDefaultTiers() {
 export async function handleGetSeason(request, env, deps = {}) {
   const {
     one = defaultOne,
+    requireViewer = defaultRequireViewer,
   } = deps;
 
   const url = new URL(request.url);
   const siteSlugOrId = url.searchParams.get("site") || url.searchParams.get("siteId");
-  const viewerId = url.searchParams.get("viewerId");
+  const { viewer } = await requireViewer(request, env);
+  const viewerId = viewer?.id || null;
 
   if (!siteSlugOrId) return bad("Site identifier is required.");
 
@@ -166,17 +170,24 @@ export async function handleClaimTierReward(request, env, deps = {}) {
   const {
     one = defaultOne,
     withTransaction = defaultWithTransaction,
+    requireViewer = defaultRequireViewer,
+    rateLimit = defaultRateLimit,
   } = deps;
+
+  const { viewer, res } = await requireViewer(request, env);
+  if (res) return res;
 
   const body = await readJson(request);
   const seasonId = String(body?.seasonId || "").trim();
   const tierLevel = parseInt(body?.tierLevel, 10);
-  const viewerId = String(body?.viewerId || "").trim();
+  const viewerId = viewer.id;
 
-  if (!seasonId || !tierLevel || !viewerId) {
-    return bad("seasonId, tierLevel, and viewerId are required.");
+  if (!seasonId || !tierLevel) {
+    return bad("seasonId and tierLevel are required.");
   }
 
+  const rl = await rateLimit(env, `battlepass:claim:${viewerId}`, 10, 60);
+  if (!rl.ok) return bad("Too many attempts. Please wait a minute.", 429);
   const season = await one("SELECT id, site_id, title, tiers_json FROM seasons WHERE id=$1 AND status='active'", [seasonId]);
   if (!season) return bad("Active season not found.", 404);
 
@@ -205,16 +216,23 @@ export async function handleClaimTierReward(request, env, deps = {}) {
   const outcome = await withTransaction(async (tx) => {
     const updatedClaimed = [...claimed, tierLevel];
 
-    await tx.unsafe(
-      "UPDATE viewer_season_progress SET claimed_tiers = $1, updated_at = now() WHERE id = $2",
-      [JSON.stringify(updatedClaimed), prog.id]
+    const claimedRow = await tx.one(
+      `UPDATE viewer_season_progress
+          SET claimed_tiers = claimed_tiers || $1::jsonb, updated_at = now()
+        WHERE id = $2
+          AND NOT (claimed_tiers @> $3::jsonb)
+       RETURNING id`,
+      [JSON.stringify([tierLevel]), prog.id, JSON.stringify([tierLevel])]
     );
+    if (!claimedRow) return { error: "You have already claimed this milestone reward!", status: 400 };
 
+    let balance = siteViewer.balance || 0;
     if (bonusPoints > 0) {
-      await tx.unsafe(
-        "UPDATE site_viewers SET balance = balance + $1, total_earned = total_earned + $1, updated_at = now() WHERE id = $2",
+      const updatedViewer = await tx.one(
+        "UPDATE site_viewers SET balance = balance + $1, total_earned = total_earned + $1, updated_at = now() WHERE id = $2 RETURNING id, balance",
         [bonusPoints, siteViewer.id]
       );
+      balance = updatedViewer.balance;
 
       await tx.unsafe(
         `INSERT INTO credit_ledger (site_viewer_id, type, amount, description)
@@ -225,9 +243,10 @@ export async function handleClaimTierReward(request, env, deps = {}) {
 
     return {
       claimedTiers: updatedClaimed,
-      newBalance: (siteViewer.balance || 0) + bonusPoints,
+      newBalance: balance,
     };
   });
+  if (outcome.error) return bad(outcome.error, outcome.status);
 
   return ok({
     tierLevel,

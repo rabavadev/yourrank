@@ -6,7 +6,7 @@ import { renderEmpty } from "./states.js";
 import { renderBoardSwitcher, renderBoardsPage, renderSidebarBoardSwitcher } from "./boards.js";
 import { renderOverviewSummary } from "./overview.js";
 import { renderPerformance, renderPerformanceLoading } from "./performance.js";
-import { applyPlayerFieldVisibility, commitDraftMutation, renderPlayers, renumber, toggleEmpty } from "./players.js";
+import { commitDraftMutation, renderPlayers, renumber, toggleEmpty } from "./players.js";
 import { requestPublicationChange } from "./publication.js";
 
 export const DEFAULT_SECTIONS = {
@@ -218,10 +218,6 @@ export function renderPlan() {
 
   // Backfill legacy single-plan elements if they still exist
   if ($("planBadge")) $("planBadge").textContent = (lifetime ? "Lifetime" : plan).toUpperCase() + " PLAN";
-  if ($("planName")) $("planName").textContent = currentName + (isTrial ? " (Trial)" : "");
-  if ($("planMeta")) $("planMeta").textContent = until || `Up to ${state.ME.limits.players} players`;
-  if ($("goPro")) $("goPro").textContent = lifetime ? "Lifetime active" : (plan === "free" ? "Upgrade — plans from $12/mo" : `Extend ${currentName} (+30 days)`);
-
   loadPendingPayment();
 }
 
@@ -661,7 +657,7 @@ export function renderBoardStatus() {
   const publishToggle = $("pubToggle");
   if (publishToggle && !state._dirty) publishToggle.checked = s.published;
   // "View live" must not be offered while the public URL would not resolve.
-  for (const id of ["liveLink", "editorLiveLink", "previewLiveLink"]) {
+  for (const id of ["liveLink", "previewLiveLink"]) {
     const link = $(id);
     if (link) link.hidden = !s.live;
   }
@@ -1003,44 +999,6 @@ export function renderSections() {
   collectSections();
 }
 
-const DEFAULT_PLAYER_FIELDS = {
-  score: { label: "Score", col: "col-score" },
-  hands: { label: "Hands", col: "col-hands" },
-  netProfit: { label: "Net profit", col: "col-net" },
-  winRate: { label: "Win rate", col: "col-win" },
-  change: { label: "Change", col: "col-change" },
-};
-
-function collectPlayerFields() {
-  const list = $("playerFieldsList");
-  if (!list) return;
-  const current = { ...(state.EXTRA?.playerFields || {}) };
-  for (const row of list.querySelectorAll("[data-field]")) {
-    const key = row.dataset.field;
-    current[key] = row.querySelector(".field-toggle")?.checked ?? true;
-  }
-  state.EXTRA.playerFields = current;
-  applyPlayerFieldVisibility(current);
-}
-
-function onPlayerFieldChange() {
-  collectPlayerFields();
-  markDirty();
-}
-
-export function renderPlayerFields() {
-  const list = $("playerFieldsList");
-  if (!list) return;
-  const current = { ...DEFAULT_PLAYER_FIELDS, ...(state.EXTRA?.playerFields || {}) };
-  list.innerHTML = Object.entries(DEFAULT_PLAYER_FIELDS).map(([key, meta]) => `<div class="section-row" data-field="${esc(key)}">
-<span class="section-name">${esc(meta.label)}</span>
-<label class="switch" title="Show in player table"><input type="checkbox" class="field-toggle" ${current[key] !== false ? "checked" : ""} /><span class="switch-track"></span></label>
-</div>`).join("");
-  list.addEventListener("input", onPlayerFieldChange);
-  list.addEventListener("change", onPlayerFieldChange);
-  collectPlayerFields();
-}
-
 export function renderLegal() {
   const list = $("legalList");
   if (!list) return;
@@ -1063,27 +1021,6 @@ export function renderLegal() {
 <textarea id="f_legal_${p.key}" rows="4" placeholder="Leave blank to use the default legal text.">${esc(legal[p.key] || "")}</textarea>
 </div>`;
   }).join("");
-}
-
-export function renderOverlay() {
-  const pro = state.ME.plan === "pro" || state.ME.plan === "agency";
-  const body = $("overlayBody"), lock = $("overlayLock");
-  if (body) body.hidden = !pro;
-  if (lock) lock.hidden = pro;
-  if (!pro) return;
-  const overlayUrl = location.origin + "/" + state.SLUG + "/overlay";
-  const urlEl = $("overlayUrl");
-  if (urlEl) urlEl.textContent = overlayUrl;
-  const preview = $("overlayPreview");
-  if (preview) preview.href = overlayUrl;
-  const copy = $("overlayCopy");
-  if (copy && !copy._wired) {
-    copy._wired = true;
-    copy.addEventListener("click", async () => {
-      const ok = await copyToClipboard(overlayUrl);
-      flashButton(copy, ok ? "Copied!" : "Copy failed");
-    });
-  }
 }
 
 export async function renderDomain() {
@@ -1569,25 +1506,24 @@ export function renderEmbedShare() {
   }
 
 export async function loadStats() {
-      setState({ STATS_STATUS: "loading" });
-      renderPerformanceLoading();
-      const statsUrl = state.ACTIVE_SITE_ID ? `/api/site/stats?siteId=${encodeURIComponent(state.ACTIVE_SITE_ID)}` : "/api/site/stats";
-      let s;
-      try {
-        const r = await fetch(statsUrl);
-        const d = await r.json();
-        if (!r.ok || !d.ok) throw new Error(d.error || `stats ${r.status}`);
-        s = d.stats;
-      } catch (err) {
-        // Returning quietly left "No activity yet" on screen, which reads as a
-        // fact about the account rather than a failed request.
-        logError("load-stats", err);
-        setState({ STATS_STATUS: "error" });
-        showLoadError($("statsEmpty"), "your stats", loadStats);
-        return null;
-      }
+  setState({ STATS_STATUS: "loading" });
+  renderPerformanceLoading();
+  const statsUrl = state.ACTIVE_SITE_ID ? `/api/site/stats?siteId=${encodeURIComponent(state.ACTIVE_SITE_ID)}` : "/api/site/stats";
+  let s;
+  try {
+    const r = await fetch(statsUrl);
+    const d = await r.json();
+    if (!r.ok || !d.ok) throw new Error(d.error || `stats ${r.status}`);
+    s = d.stats;
+  } catch (err) {
+    // Returning quietly left "No activity yet" on screen, which reads as a
+    // fact about the account rather than a failed request.
+    logError("load-stats", err);
+    setState({ STATS_STATUS: "error" });
+    showLoadError($("statsEmpty"), "your stats", loadStats);
+    return null;
+  }
   setState({ STATS: s, STATS_STATUS: "ready" });
-  const fmt = (n) => n >= 10000 ? (n / 1000).toFixed(1).replace(/\.0$/, "") + "k" : String(n);
   const bars = $("statBars"); const days = s.days || [];
   if (bars) {
     const max = Math.max(1, ...days.map((x) => x.views));
@@ -1599,16 +1535,8 @@ export async function loadStats() {
     bars.setAttribute("role", "img");
     const total = days.reduce((a, x) => a + x.views + x.copies + x.clicks, 0);
     bars.setAttribute("aria-label", `Bar chart of daily activity for the last ${days.length} days. Total: ${total} events.`);
-    const statFrom = $("statFrom");
-    if (statFrom && days.length) statFrom.textContent = new Date(days[0].day + "T00:00:00Z").toUTCString().slice(5, 11);
     clearLoadError($("statsEmpty"), s.last30.views === 0 && s.last30.copies === 0 && s.last30.clicks === 0);
   }
-  
-  // Populate HUD
-  const hV = $("hud_views"); if (hV) hV.textContent = fmt(s.last30.views);
-  const hC = $("hud_clicks"); if (hC) hC.textContent = fmt(s.last30.clicks);
-  const hCtr = $("hud_ctr"); if (hCtr) hCtr.textContent = (s.last30.views ? ((s.last30.clicks / s.last30.views) * 100).toFixed(1) : "0.0") + "%";
-  const hS = $("hud_signups"); if (hS) hS.textContent = fmt(s.last30.copies); // Using copies as signups proxy
 
   renderOverviewSummary();
   renderPerformance(s);
@@ -1617,7 +1545,6 @@ export async function loadStats() {
 
 $("logout")?.addEventListener("click", async (e) => { e.preventDefault(); await fetch("/api/auth/logout", { method: "POST", credentials: "include", headers: { "x-csrf-token": getCsrf() } }); location.href = "/login"; });
 $("upgrade")?.addEventListener("click", (e) => { e.preventDefault(); checkout("pro", e.target); });
-$("goPro")?.addEventListener("click", (e) => { e.preventDefault(); checkout("pro", e.target); });
 $("overlayUpgrade")?.addEventListener("click", (e) => { e.preventDefault(); checkout("pro", e.target); });
 $("testDiscord")?.addEventListener("click", async () => {
   const s = $("testDiscordStatus"); if (s) s.textContent = "Sending…";
