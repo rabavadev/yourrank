@@ -50,6 +50,14 @@ describe("dashboard loading states", () => {
     expect(read("dashboard/games.js")).not.toContain("renderGames([])");
   });
 
+  it("does not link to disabled public Games pages", () => {
+    const games = read("dashboard/games.js");
+    expect(games).toContain('previewBtn.removeAttribute("href")');
+    expect(games).toContain('previewBtn.setAttribute("aria-disabled", "true")');
+    expect(games).toContain('previewBtn.textContent = "Games unavailable"');
+    expect(games).toContain("updateSimulator();");
+  });
+
   it("tracks request status around dashboard fetches", () => {
     const site = read("dashboard/site.js");
     const account = read("dashboard/account.js");

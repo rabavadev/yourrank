@@ -37,6 +37,7 @@ import { applyLegalIdentity } from "./pages/legal-helper.js";
 import { hashToken, newClickRef } from "@yourrank/shared/crypto";
 import { handleDashboardPreview } from "./handlers/preview.js";
 import { demoLeaderboardData } from "./demo-data.js";
+import { legacyTelegramRedirect } from "./telegram-routes.js";
 
 // Sections the virtual /demo board renders. `games` is off in the demo data,
 // so its shell never links there.
@@ -766,24 +767,10 @@ async function handleRequest(request, env, ctx, meta) {
           return new Response(error500Page(nonce), { status: 500, headers: HTML_N });
         }
       }
-      // Telegram Bot Workspace routes
-      if (path === "/dashboard/telegram" || path === "/dashboard/telegram/overview" || path === "/bot/dashboard") {
-        return renderDashboardPage("telegramOverview", "telegram_render_failed");
-      }
-      if (path === "/dashboard/telegram/bots" || path === "/bot/bots") {
-        return renderDashboardPage("telegramBots", "telegram_render_failed");
-      }
-      if (path === "/dashboard/telegram/commands" || path === "/bot/commands") {
-        return renderDashboardPage("telegramCommands", "telegram_render_failed");
-      }
-      if (path === "/dashboard/telegram/offers" || path === "/bot/offers") {
-        return renderDashboardPage("telegramOffers", "telegram_render_failed");
-      }
-      if (path === "/dashboard/telegram/broadcasts" || path === "/bot/broadcasts") {
-        return renderDashboardPage("telegramBroadcasts", "telegram_render_failed");
-      }
-      if (path === "/dashboard/bot/setup" || path === "/bot") {
-        return Response.redirect(new URL("/dashboard/telegram", url), 302);
+      // Telegram now lives in the Bot Worker; preserve old leaderboard URLs.
+      const telegramTarget = legacyTelegramRedirect(path);
+      if (telegramTarget) {
+        return Response.redirect(new URL(telegramTarget + url.search, url), 301);
       }
       if (path === "/dashboard/setup") {
         return Response.redirect(new URL("/dashboard", url), 302);
