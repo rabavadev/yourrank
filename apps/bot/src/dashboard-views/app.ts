@@ -26,7 +26,7 @@ function panelHtml(page: string, publicBaseUrl: string): string {
 }
 
 function telegramTabsHtml(page: string): string {
-  return `<nav class="v3-tabs telegram-tabs" aria-label="Messaging pages">${
+  return `<nav class="v3-tabs telegram-tabs" aria-label="Telegram pages">${
     pageLinks.map(({ key, label, href }) =>
       `<a class="v3-tab${key === page ? " is-on" : ""}" href="${href}"${key === page ? ' aria-current="page"' : ""}>${label}</a>`
     ).join("")
