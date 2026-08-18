@@ -24,20 +24,20 @@ function detailsAround(node, label, className) {
 function setupEditorFeatureNavigation() {
   const tabs = document.getElementById("editorTabs");
   const games = tabs?.querySelector('[data-egroup="games"]');
-  if (!tabs || !games || document.querySelector(".editor-site-features")) return;
+  if (!tabs || !games || tabs.querySelector(".editor-site-features-label")) return;
 
-  const features = document.createElement("nav");
-  features.className = "editor-site-features";
-  features.setAttribute("aria-label", "Site features");
+  // Keep the existing link inside the tab container so the editor's keyboard
+  // controller retains its current button order. A visual separator is enough
+  // to make Games read as a site feature rather than another editing step.
   const label = document.createElement("span");
   label.className = "editor-site-features-label";
-  label.textContent = "Site features";
+  label.textContent = "Site feature";
+  label.setAttribute("aria-hidden", "true");
+  tabs.insertBefore(label, games);
 
-  games.className = "editor-site-feature-link";
+  games.classList.add("editor-site-feature-link");
   games.textContent = "Games";
-  games.removeAttribute("aria-current");
-  features.append(label, games);
-  tabs.after(features);
+  games.setAttribute("aria-label", "Games, site feature");
 }
 
 function setupGamesPage() {
