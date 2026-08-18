@@ -845,17 +845,31 @@ body[data-wide] .v3-dash[data-auth-workspace] .lb-main { padding-right: 32px; }
    Collapsed nav items get a CSS tooltip via the title attribute so icon-only
    rail never forces pure recall. */
 @media (min-width: 981px) {
-  .v3-dash[data-auth-workspace][data-side-collapsed="true"],
-  .v3-dash[data-auth-workspace][data-side-collapsed="true"] .lb-side,
-  .v3-dash[data-auth-workspace][data-side-collapsed="true"] .lb-side-brand,
-  .v3-dash[data-auth-workspace][data-side-collapsed="true"] .lb-side-brandcopy,
+  /* One token drives the rail width, so top bar and main follow it. */
+  .v3-dash[data-auth-workspace][data-side-collapsed="true"] {
+    --v3-sidebar-w: 44px;
+  }
+  .v3-dash[data-auth-workspace][data-side-collapsed="true"] .lb-side {
+    padding-inline: 0;
+    align-items: center;
+  }
+  .v3-dash[data-auth-workspace][data-side-collapsed="true"] .lb-side-nav,
   .v3-dash[data-auth-workspace][data-side-collapsed="true"] .lb-side-head,
-  .v3-dash[data-auth-workspace][data-side-collapsed="true"] .lb-side-foot,
+  .v3-dash[data-auth-workspace][data-side-collapsed="true"] .lb-side-foot {
+    width: 44px;
+    align-items: center;
+    padding-inline: 0;
+    margin-inline: auto;
+  }
+  .v3-dash[data-auth-workspace][data-side-collapsed="true"] .lb-side-brandcopy,
   .v3-dash[data-auth-workspace][data-side-collapsed="true"] .gm-who-id,
-  .v3-dash[data-auth-workspace][data-side-collapsed="true"] .gm-profile-chevron,
+  .v3-dash[data-auth-workspace][data-side-collapsed="true"] .gm-profile-chevron {
+    display: none !important;
+  }
+  /* Icon-only rows inside the rail. */
+  .v3-dash[data-auth-workspace][data-side-collapsed="true"] .lb-side-brand,
   .v3-dash[data-auth-workspace][data-side-collapsed="true"] .lb-side-brandrow,
   .v3-dash[data-auth-workspace][data-side-collapsed="true"] .lb-side-collapse,
-  .v3-dash[data-auth-workspace][data-side-collapsed="true"] .lb-side-nav,
   .v3-dash[data-auth-workspace][data-side-collapsed="true"] .lb-nav {
     justify-content: center !important;
     width: 44px !important;
@@ -4674,14 +4688,6 @@ body:has(.v3-dash[data-auth-workspace]) > .lb-backdrop.is-open { opacity: 1; poi
   opacity: .5;
   cursor: not-allowed;
   pointer-events: none;
-}
-
-.v3-dash[data-auth-workspace] .lb-topbar-hud .lb-board-new {
-  width: 28px;
-  height: 28px;
-  border-radius: var(--v3-radius-xs);
-  background: var(--v3-chrome-3);
-  border-color: var(--v3-chrome-line-2);
 }
 
 .v3-dash[data-auth-workspace] .lb-side-board {
