@@ -144,7 +144,8 @@ describe("signed-in shell navigation", () => {
     const viewers = renderPage(RewardsViewersPage);
     expect(viewers).toContain('<nav class="v3-crumbs" aria-label="Breadcrumb">');
     expect(viewers).toContain('<a href="/dashboard/rewards/redemptions">Rewards</a>');
-    expect(viewers).toContain('<span aria-current="page">Viewers</span>');
+    expect(viewers).toContain('<a href="/dashboard/rewards/rules">Credits</a>');
+    expect(viewers).toContain('<span aria-current="page">Viewer balances</span>');
 
     const settings = renderPage(UnifiedSettingsPage);
     expect(settings).toContain('<span aria-current="page">Account</span>');
