@@ -1,6 +1,6 @@
 // Overview page summary tiles / top players / setup checklist.
 import { $, esc, currentPlayers } from "./utils.js";
-import { state, boardStatus, markDirty } from "./state.js";
+import { state, boardStatus } from "./state.js";
 import { renderEmpty, setMetricLoading, setMetricUnknown, setMetricValue } from "./states.js";
 
 const ACTIVITY_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>';
@@ -72,6 +72,13 @@ function setSetupStatus(el, done, step) {
 
 export function renderOverviewSummary() {
     if (!$("ovActiveBento")) return;
+
+    // Stream overlay URLs already live in the Share workflow. Keeping the large
+    // OBS suite on Overview duplicated a technical setup surface and pushed the
+    // creator's status, activity and players below the fold.
+    const streamTools = document.querySelector(".ov-obs-suite-card");
+    if (streamTools) streamTools.hidden = true;
+
     const players = currentPlayers();
     const status = boardStatus();
     const steps = computeSetupSteps();
@@ -170,34 +177,12 @@ export function renderOverviewSummary() {
     else renderEmpty($("ovActivityEmpty"), { icon: "chart", title: "No activity yet", body: "Visits, updates and reward requests will appear here.", actions: [{ label: "Share your site", href: "/dashboard/leaderboard/share" }] });
     const top = [...players].sort((a, b) => b.wagered - a.wagered).slice(0, 5);
     $("ovTopPlayers").innerHTML = top.map((player, i) => `
-      <div class="ov-player-row" data-name="${esc(player.name)}">
+      <div class="ov-player-row">
         <span class="ov-player-rank">#${i + 1}</span>
         <b class="ov-player-name">${esc(player.name)}</b>
         <span class="ov-player-wager">$${Number(player.wagered || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-        <div class="ov-quick-incs">
-          <button type="button" class="ov-inc-btn" data-inc="100" title="Add $100 to ${esc(player.name)}">+100</button>
-          <button type="button" class="ov-inc-btn" data-inc="500" title="Add $500 to ${esc(player.name)}">+500</button>
-          <button type="button" class="ov-inc-btn" data-inc="1000" title="Add $1,000 to ${esc(player.name)}">+1k</button>
-        </div>
       </div>
     `).join("");
-
-    $("ovTopPlayers").querySelectorAll(".ov-inc-btn").forEach((btn) => {
-      btn.addEventListener("click", (e) => {
-        e.stopPropagation();
-        const row = btn.closest(".ov-player-row");
-        const name = row?.dataset?.name;
-        const inc = Number(btn.dataset.inc || 0);
-        if (!name || !inc) return;
-        const playerList = currentPlayers();
-        const target = playerList.find((p) => p.name === name);
-        if (target) {
-          target.wagered = (Number(target.wagered) || 0) + inc;
-          markDirty();
-          renderOverviewSummary();
-        }
-      });
-    });
 
     if (top.length) $("ov_topEmpty").hidden = true;
     else renderEmpty($("ov_topEmpty"), { icon: "users", title: "No players yet", body: "Add the first player to start your leaderboard.", actions: [{ label: "Add players", href: "/dashboard/leaderboard/players" }] });
