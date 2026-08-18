@@ -79,26 +79,24 @@ describe("dashboard overview quick actions", () => {
     expect(siteJs).toContain('copyToClipboard(publicUrl)');
   });
 
-  it("organises navigation into the v3 section list", () => {
+  it("organises navigation into a focused creator section list", () => {
     const html = dashboardHtml();
     expect(html).toContain('data-nav="home"');
     expect(html).toContain('data-nav="board"');
     expect(html).toContain('data-nav="settings"');
     expect(html).toContain('lb-side-group');
-    // Icons are real inline SVGs, not emoji.
     expect(html).not.toContain('aria-hidden="true">🔌</span>');
     expect(html).toContain('>Home</a>');
     for (const label of [
-      "My leaderboard", "Giveaways", "Rewards", "Telegram",
-      "Analytics", "Sites", "Settings", "Help",
+      "Leaderboard", "Giveaways", "Rewards", "Messaging", "Analytics", "Settings",
     ]) expect(html).toContain(`>${label}</a>`);
+    expect(html).not.toContain('>Sites</a>');
+    expect(html).not.toContain('>Help</a>');
     expect(html).not.toContain('lb-nav-group-label');
   });
 
   it("serves only the section the URL addresses", () => {
     const overview = dashboardHtml();
-    // The whole app used to ship in one document and be revealed by JS, so
-    // `/dashboard` carried the editor form and seven <h1>s.
     expect(overview).toContain('data-page="home"');
     expect(overview).not.toContain('data-page="board"');
     expect(overview).not.toContain('id="designPreview"');
