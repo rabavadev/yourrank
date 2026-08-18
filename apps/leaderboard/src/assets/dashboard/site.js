@@ -668,7 +668,8 @@ export function renderBoardStatus() {
   }
   const publishToggle = $("pubToggle");
   if (publishToggle && !state._dirty) publishToggle.checked = s.published;
-  // "View live" must not be offered while the public URL would not resolve.
+  // A "View site" link must never be offered while the public URL would not
+  // resolve; until then the link states what is still missing instead.
   for (const id of ["liveLink", "previewLiveLink"]) {
     const link = $(id);
     if (!link) continue;
