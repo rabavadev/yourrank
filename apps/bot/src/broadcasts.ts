@@ -26,12 +26,32 @@ interface ActiveBroadcast {
   media_url: string | null;
   buttons: unknown;
   segment: string | null;
-  cursor_tg_user_id: number; // Changed from string to number for numeric comparison
+  cursor_tg_user_id: number | string;
   sent_count: number;
   fail_count: number;
 }
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+export function broadcastAtStart(cursor: number | string | null | undefined): boolean {
+  return Number(cursor) === 0;
+}
+
+export function buildBroadcastTotalCountUpdate(
+  segment: ReturnType<typeof parseSegment>,
+  botId: string,
+  broadcastId: string,
+): { text: string; params: unknown[] } {
+  const { clause, values } = buildSegmentWhere(segment, 1);
+  const broadcastIdParam = values.length + 2;
+  return {
+    text: `UPDATE broadcasts SET total_count = (
+         SELECT count(*) FROM bot_subscribers bs
+          WHERE bs.bot_id = $1 AND NOT bs.is_blocked${clause ? ` AND ${clause}` : ""}
+       ) WHERE id = $${broadcastIdParam}`,
+    params: [botId, ...values, broadcastId],
+  };
+}
 
 /**
  * Process one batch of the oldest due broadcast.
@@ -65,15 +85,9 @@ export async function processBroadcastBatch(batchSize = 300): Promise<boolean> {
   const segment = parseSegment(bc.segment);
 
   // Set total on first batch.
-  if (bc.cursor_tg_user_id === 0) {
-    const { clause: countClause, values: countValues } = buildSegmentWhere(segment, 1);
-    await query(
-      `UPDATE broadcasts SET total_count = (
-         SELECT count(*) FROM bot_subscribers bs
-          WHERE bs.bot_id = $1 AND NOT bs.is_blocked${countClause ? ` AND ${countClause}` : ""}
-       ) WHERE id = $2`,
-      [bc.bot_id, ...countValues, bc.id]
-    );
+  if (broadcastAtStart(bc.cursor_tg_user_id)) {
+    const totalCountUpdate = buildBroadcastTotalCountUpdate(segment, bc.bot_id, bc.id);
+    await query(totalCountUpdate.text, totalCountUpdate.params);
   }
 
   // Broadcasts respect the segment filter (language, last_seen window, etc.).
@@ -104,13 +118,13 @@ export async function processBroadcastBatch(batchSize = 300): Promise<boolean> {
     const hasMedia = !!bc.media_url;
     const payload: Record<string, unknown> = hasMedia
       ? {
-          chat_id: sub.tg_user_id, // Already numeric, no need for Number()
+          chat_id: sub.tg_user_id,
           photo: bc.media_url,
           caption: personalized,
           parse_mode: "HTML",
         }
       : {
-          chat_id: sub.tg_user_id, // Already numeric, no need for Number()
+          chat_id: sub.tg_user_id,
           text: personalized,
           parse_mode: "HTML",
         };

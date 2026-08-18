@@ -30,7 +30,7 @@ A streamer signs up **once**. That single account owns both their leaderboard an
                                   │
               ┌───────────────────┴────────────────────┐
               │ route: /,/login,/signup,/dashboard,     │ route: /bot/*, /hook/*,
-              │        /<slug>, /go/<slug>              │        /r/*, /pb/*, /billing/hook/*
+              │        /<slug>, /go/<slug>              │        /r/*, /pb, /pb/*
               ▼                                          ▼
     ┌──────────────────┐                      ┌──────────────────────┐
     │ LEADERBOARD       │                      │ BOT WORKER            │

@@ -123,19 +123,12 @@ Discord when messages exhaust retries and land in the dead-letter queue.
 The consumer has no HTTP routes; it only runs on queue batches. CI deploys it
 automatically (see §7, `deploy-consumer` job).
 Routes are declared in each `wrangler.toml`. Cloudflare sends `/bot/*`, `/hook/*`,
-`/r/*`, `/pb/*`, `/billing/hook/*` to the bot Worker; everything else on
+`/r/*`, `/pb` and `/pb/*` to the bot Worker; everything else on
 `yourrank.site` to the leaderboard Worker. More-specific routes win.
 
 The leaderboard cookie domain comes from `SESSION_COOKIE_DOMAIN` (default
 `.yourrank.site`). It must be the host-wide domain and match the deployed zone,
 or the login cookie is rejected and nobody can log in.
-
-## 6. Point the platform billing bot
-```
-curl -X POST https://yourrank.site/bot/api/billing/setup -H "x-api-key: $ADMIN_API_KEY"
-```
-This sets the billing bot's webhook to `https://yourrank.site/billing/hook/<PLATFORM_WEBHOOK_SECRET>`
-so Stars payments flow back to the app.
 
 ## Notes
 - Streamer bots are BYO-token: each streamer pastes their BotFather token in the
