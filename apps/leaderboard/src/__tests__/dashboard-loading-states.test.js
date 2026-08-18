@@ -107,7 +107,7 @@ describe("dashboard loading states", () => {
   it("resets error presentation before retrying into a normal empty state", () => {
     const performance = read("dashboard/performance.js");
     expect(performance).toMatch(/clearLoadError\(empty, false\);\s*renderEmpty\(empty/);
-    expect(performance).toContain('setMetricValue(total, String(values.reduce');
+    expect(performance).toContain('setMetricValue($("perfTotalViews"), String(values.reduce');
   });
 
   it("keeps audience insight tabs accessible after client navigation", () => {
