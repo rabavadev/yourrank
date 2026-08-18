@@ -124,4 +124,14 @@ describe("settings panels", () => {
     expect(html).toContain('href="/dashboard/settings/board"');
     expect(html).not.toContain("/account/profile");
   });
+
+  it("keeps account settings creator-facing instead of exposing scope jargon", async () => {
+    const html = await UnifiedSettingsPage({ activePath: "/dashboard/settings/account", tab: "account", user: { email: "a@b.c", plan: "pro" } }).toString();
+    expect(html).toContain("Open site settings");
+    expect(html).toContain("Open Help &amp; feedback");
+    expect(html).not.toContain("Global Account Scope");
+    expect(html).not.toContain("Owner / Master");
+    expect(html).not.toContain("Security Posture");
+    expect(html).not.toContain('id="accSummaryAvatar"');
+  });
 });
