@@ -32,6 +32,15 @@ describe("focused editor workspace", () => {
     expect(editorUx).toContain("Choose where you want your leaderboard to appear.");
   });
 
+  it("makes existing player rows read-first until Edit is used", () => {
+    expect(editorUx).toContain("input.readOnly = !editing");
+    expect(editorUx).toContain("input.tabIndex = editing ? 0 : -1");
+    expect(editorUx).toContain("setPlayerRowEditing(row, !name.value.trim())");
+    expect(editorUx).toContain("setPlayerRowEditing(row, true)");
+    expect(editorCss).toContain('#playersTableWrap tbody tr:not(.is-editing) input[class*="p-"]');
+    expect(editorCss).toContain("pointer-events: none");
+  });
+
   it("removes technical preview status noise while keeping the preview itself", () => {
     expect(editorUx).toContain("if (syncChip) syncChip.hidden = true");
     expect(editorUx).toContain("if (syncStrip) syncStrip.hidden = true");
