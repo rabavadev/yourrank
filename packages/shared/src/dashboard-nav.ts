@@ -20,8 +20,8 @@ const DASHBOARD_NAV: NavItem[] = [
   { key: "giveaways", label: "Giveaways", href: "/dashboard/giveaways/chat", icon: NAV_ICONS.giveaways },
   { key: "redemptions", label: "Rewards", href: "/dashboard/rewards/redemptions", icon: NAV_ICONS.shop, productKey: "credits" },
   { key: "telegram", label: "Telegram", href: "/dashboard/telegram", icon: NAV_ICONS.share, productKey: "telegram" },
-  { key: "performance", label: "How it's going", href: "/dashboard/analytics/activity", icon: NAV_ICONS.viewers },
-  { key: "boards", label: "Your leaderboards", href: "/dashboard/leaderboards", icon: NAV_ICONS.boards },
+  { key: "performance", label: "Analytics", href: "/dashboard/analytics/activity", icon: NAV_ICONS.viewers },
+  { key: "boards", label: "Sites", href: "/dashboard/leaderboards", icon: NAV_ICONS.boards },
   { key: "settings", label: "Settings", href: "/dashboard/settings", icon: GEAR_ICON },
   { key: "help", label: "Help", href: "/help", icon: NAV_ICONS.help },
 ];
