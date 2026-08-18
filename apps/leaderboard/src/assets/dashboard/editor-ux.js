@@ -163,6 +163,53 @@ function setupShareWorkspace() {
   else card.appendChild(groups);
 }
 
+function setPlayerRowEditing(row, editing) {
+  row.classList.toggle("is-editing", editing);
+  row.querySelectorAll("input[class*='p-']").forEach((input) => {
+    input.readOnly = !editing;
+    input.tabIndex = editing ? 0 : -1;
+  });
+  const edit = row.querySelector(".row-edit");
+  if (edit) {
+    edit.setAttribute("aria-pressed", String(editing));
+    edit.title = editing ? "Editing player" : "Edit player";
+    edit.setAttribute("aria-label", editing ? "Editing player" : "Edit player");
+  }
+}
+
+function wirePlayerRow(row) {
+  if (!row || row.dataset.readFirstWired === "true") return;
+  const edit = row.querySelector(".row-edit");
+  const name = row.querySelector(".p-name");
+  if (!edit || !name) return;
+  row.dataset.readFirstWired = "true";
+
+  // New blank rows stay editable so Add player still behaves as expected.
+  setPlayerRowEditing(row, !name.value.trim());
+  edit.addEventListener("click", () => {
+    if (row.classList.contains("is-editing")) return;
+    setPlayerRowEditing(row, true);
+    requestAnimationFrame(() => {
+      name.focus();
+      name.select();
+    });
+  });
+}
+
+function setupPlayersReadMode() {
+  const body = document.getElementById("rows");
+  if (!body || body.dataset.readFirstObserver === "true") return;
+  body.dataset.readFirstObserver = "true";
+  body.querySelectorAll(":scope > tr").forEach(wirePlayerRow);
+
+  const observer = new MutationObserver((mutations) => {
+    mutations.forEach((mutation) => mutation.addedNodes.forEach((node) => {
+      if (node.nodeType === Node.ELEMENT_NODE && node.matches?.("tr")) wirePlayerRow(node);
+    }));
+  });
+  observer.observe(body, { childList: true });
+}
+
 function simplifyEditorLabels() {
   document.querySelectorAll('nav[aria-label="My leaderboard pages"]').forEach((nav) => nav.setAttribute("aria-label", "Leaderboard pages"));
   const shareTitle = document.querySelector('[data-egroup="share"] .v3-section-title');
@@ -172,6 +219,7 @@ function simplifyEditorLabels() {
 export function setupEditorWorkspace({ refreshPreview } = {}) {
   ensureStyles();
   setupShareWorkspace();
+  setupPlayersReadMode();
   simplifyEditorLabels();
   setupPreviewDisclosure(refreshPreview);
 }
