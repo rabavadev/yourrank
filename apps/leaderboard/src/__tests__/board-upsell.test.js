@@ -18,6 +18,17 @@ describe("board-limit upsell", () => {
     expect(boardsJs).toContain('newBtn.setAttribute("aria-controls", atLimit ? "boardLimitUpsell" : "newBoardForm")');
   });
 
+  it("supports keyboard and outside-click dismissal with focus restoration", () => {
+    expect(boardsJs).toContain("wireBoardLimitUpsell()");
+    expect(boardsJs).toContain('event.key === "Escape"');
+    expect(boardsJs).toContain('event.preventDefault();');
+    expect(boardsJs).toContain('document.addEventListener("pointerdown"');
+    expect(boardsJs).toContain("!panel.contains(event.target)");
+    expect(boardsJs).toContain('newBtn?.setAttribute("aria-expanded", "false")');
+    expect(boardsJs).toContain("if (wasOpen && restoreFocus) newBtn?.focus()");
+    expect(boardsJs).toContain('else newBtn.setAttribute("aria-expanded", $("boardLimitUpsell")?.hidden ? "false" : "true")');
+  });
+
   it("offers Pro, Agency, or support according to the current plan", () => {
     expect(boardsJs).toContain("Pro unlocks up to 3 independent boards.");
     expect(boardsJs).toContain("Agency supports up to 99 independent leaderboards.");
