@@ -16,6 +16,7 @@ describe("focused editor workspace", () => {
     expect(editorUx).toContain('apply(group !== "design"');
     expect(editorUx).toContain('toggle.textContent = collapsed ? "Show preview" : "Hide preview"');
     expect(editorUx).toContain('grid.dataset.previewCollapsed = collapsed ? "true" : "false"');
+    expect(previewTabs).toContain("if (!previewIsCollapsed()) refreshPreview()");
     expect(editorCss).toContain('.design-grid[data-preview-collapsed="true"]');
     expect(editorCss).toContain("grid-template-columns: minmax(0, 1fr) !important");
   });
