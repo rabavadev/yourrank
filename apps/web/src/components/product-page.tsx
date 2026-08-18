@@ -1,3 +1,4 @@
+import { MagneticCursor } from "./home/magnetic-cursor";
 import { MarketingShell } from "./site-shell";
 
 export type ProductKind = "sites" | "telegram" | "credits";
@@ -142,69 +143,72 @@ function ProductVisual({ kind }: { kind: ProductKind }) {
 
 export function ProductPage({ content }: { content: ProductPageContent }) {
   return (
-    <MarketingShell>
-      <section className="px-6 pb-16 pt-32 sm:pb-24 sm:pt-40">
-        <div className="mx-auto grid max-w-6xl gap-12 lg:grid-cols-[minmax(0,1.35fr)_minmax(300px,.65fr)] lg:items-end">
-          <div>
-            <h1 className="max-w-4xl text-[clamp(3rem,7vw,5.5rem)] font-medium leading-[0.98] tracking-[-0.035em]">
-              {content.title}
-            </h1>
-          </div>
-          <div className="border-t border-devin-ink pt-5">
-            <p className="text-lg leading-relaxed text-devin-ink-soft">{content.intro}</p>
-            <div className="mt-7 flex flex-wrap gap-3">
-              <a href="/signup" className="inline-flex min-h-11 items-center rounded-[2px] bg-devin-primary px-5 py-3 text-sm font-medium text-white hover:bg-devin-primary-hover">Start free</a>
-              <a href="/demo" className="inline-flex min-h-11 items-center rounded-[2px] border border-devin-line px-5 py-3 text-sm font-medium hover:border-devin-ink/40">Explore demo</a>
+    <MagneticCursor>
+      <MarketingShell>
+        <section className="px-6 pb-16 pt-32 sm:pb-24 sm:pt-40">
+          <div className="mx-auto grid max-w-6xl gap-12 lg:grid-cols-[minmax(0,1.35fr)_minmax(300px,.65fr)] lg:items-end">
+            <div>
+              <h1 className="max-w-4xl text-[clamp(3rem,7vw,5.5rem)] font-medium leading-[0.98] tracking-[-0.035em]">
+                {content.title}
+              </h1>
+            </div>
+            <div className="border-t border-devin-ink pt-5">
+              <p className="text-lg leading-relaxed text-devin-ink-soft">{content.intro}</p>
+              <div className="mt-7 flex flex-wrap gap-3">
+                <a href="/signup" data-magnetic className="inline-flex min-h-11 items-center rounded-[2px] bg-devin-primary px-5 py-3 text-sm font-medium text-white transition-colors hover:bg-devin-primary-hover">Start free</a>
+                <a href="/demo" data-magnetic className="inline-flex min-h-11 items-center rounded-[2px] border border-devin-line px-5 py-3 text-sm font-medium transition-colors hover:border-devin-ink/40">Explore demo</a>
+              </div>
             </div>
           </div>
-        </div>
-      </section>
+        </section>
 
-      <section className="px-6 pb-24">
-        <div className="mx-auto max-w-6xl overflow-hidden rounded-[16px] border border-devin-line bg-devin-secondary/25">
-          <div className="flex items-center justify-between border-b border-devin-line px-4 py-3">
-            <div className="flex gap-1.5" aria-hidden="true"><span className="h-2 w-2 rounded-full bg-devin-line" /><span className="h-2 w-2 rounded-full bg-devin-line" /><span className="h-2 w-2 rounded-full bg-devin-line" /></div>
-            <span className="font-mono text-[10px] text-devin-ink-soft">Illustrative workspace · synthetic data</span>
+        <section className="px-6 pb-24">
+          <div className="mx-auto max-w-6xl overflow-hidden rounded-[16px] border border-devin-line bg-devin-secondary/25">
+            <div className="flex items-center justify-between border-b border-devin-line px-4 py-3">
+              <div className="flex gap-1.5" aria-hidden="true"><span className="h-2 w-2 rounded-full bg-devin-line" /><span className="h-2 w-2 rounded-full bg-devin-line" /><span className="h-2 w-2 rounded-full bg-devin-line" /></div>
+              <span className="font-mono text-[10px] text-devin-ink-soft">Illustrative workspace · synthetic data</span>
+            </div>
+            <ProductVisual kind={content.kind} />
           </div>
-          <ProductVisual kind={content.kind} />
-        </div>
-      </section>
+        </section>
 
-      <section className="border-y border-devin-line bg-devin-secondary/35 px-6 py-24 sm:py-32">
-        <div className="mx-auto max-w-6xl">
-          <div className="grid gap-8 lg:grid-cols-2">
-            <h2 className="text-4xl font-medium leading-[1.05] tracking-[-0.02em] sm:text-5xl">How it works.</h2>
-            <p className="max-w-xl text-2xl leading-snug text-devin-ink-soft sm:text-3xl">{content.outcome}</p>
+        <section className="border-y border-devin-line bg-devin-secondary/35 px-6 py-24 sm:py-32">
+          <div className="mx-auto max-w-6xl">
+            <div className="grid gap-8 lg:grid-cols-2">
+              <h2 className="text-4xl font-medium leading-[1.05] tracking-[-0.02em] sm:text-5xl">How it works.</h2>
+              <p className="max-w-xl text-2xl leading-snug text-devin-ink-soft sm:text-3xl">{content.outcome}</p>
+            </div>
+            <ol className="mt-16 border-t border-devin-line">
+              {content.steps.map((step) => (
+                <li key={step.number} className="grid gap-4 border-b border-devin-line py-7 sm:grid-cols-[80px_1fr_1fr] sm:items-start">
+                  <span className="font-mono text-xs text-devin-ink-soft">{step.number}</span>
+                  <h3 className="text-xl font-medium">{step.title}</h3>
+                  <p className="max-w-lg text-[15px] leading-relaxed text-devin-ink-soft">{step.body}</p>
+                </li>
+              ))}
+            </ol>
           </div>
-          <ol className="mt-16 border-t border-devin-line">
-            {content.steps.map((step) => (
-              <li key={step.number} className="grid gap-4 border-b border-devin-line py-7 sm:grid-cols-[80px_1fr_1fr] sm:items-start">
-                <span className="font-mono text-xs text-devin-ink-soft">{step.number}</span>
-                <h3 className="text-xl font-medium">{step.title}</h3>
-                <p className="max-w-lg text-[15px] leading-relaxed text-devin-ink-soft">{step.body}</p>
-              </li>
-            ))}
-          </ol>
-        </div>
-      </section>
+        </section>
 
-      <section className="px-6 py-24 sm:py-32">
-        <div className="mx-auto max-w-6xl">
-          <h2 className="text-3xl font-medium tracking-[-0.02em]">Explore the connected suite.</h2>
-          <div className="mt-8 grid border-y border-devin-line sm:grid-cols-3">
-            {PEERS.map((peer) => (
-              <a
-                key={peer.kind}
-                href={peer.href}
-                aria-current={peer.kind === content.kind ? "page" : undefined}
-                className={`group flex items-center justify-between border-b border-devin-line px-5 py-6 text-lg font-medium last:border-b-0 sm:border-b-0 sm:border-r sm:last:border-r-0 ${peer.kind === content.kind ? 'bg-devin-secondary/40' : 'hover:bg-devin-secondary/25'}`}
-              >
-                {peer.label}<span className="text-devin-primary transition-transform group-hover:translate-x-1">→</span>
-              </a>
-            ))}
+        <section className="px-6 py-24 sm:py-32">
+          <div className="mx-auto max-w-6xl">
+            <h2 className="text-3xl font-medium tracking-[-0.02em]">Explore the connected suite.</h2>
+            <div className="mt-8 grid border-y border-devin-line sm:grid-cols-3">
+              {PEERS.map((peer) => (
+                <a
+                  key={peer.kind}
+                  href={peer.href}
+                  data-magnetic
+                  aria-current={peer.kind === content.kind ? "page" : undefined}
+                  className={`group flex items-center justify-between border-b border-devin-line px-5 py-6 text-lg font-medium transition-colors last:border-b-0 sm:border-b-0 sm:border-r sm:last:border-r-0 ${peer.kind === content.kind ? 'bg-devin-secondary/40' : 'hover:bg-devin-secondary/25'}`}
+                >
+                  {peer.label}<span className="text-devin-primary transition-transform group-hover:translate-x-1">→</span>
+                </a>
+              ))}
+            </div>
           </div>
-        </div>
-      </section>
-    </MarketingShell>
+        </section>
+      </MarketingShell>
+    </MagneticCursor>
   );
 }

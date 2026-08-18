@@ -2,11 +2,15 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { Hero } from "@/components/home/hero";
 import {
-  FinalCta,
-  LoopSection,
-  PillarMarquee,
-  ProductsSection,
+  ComparisonSection,
+  HowItWorks,
+  PricingSnapshot,
+  ProofMarquee,
 } from "@/components/home/sections";
+import { MagneticCursor } from "@/components/home/magnetic-cursor";
+import { WorkspaceScrollReveal } from "@/components/home/container-scroll-animation";
+import { StickyProductStory } from "@/components/home/sticky-scroll-reveal";
+import { MotionFooter } from "@/components/home/motion-footer";
 import { MarketingShell } from "@/components/site-shell";
 import { getCurrentUser } from "@/lib/session";
 
@@ -36,12 +40,17 @@ export default async function HomePage() {
   }
 
   return (
-    <MarketingShell>
-      <Hero />
-      <PillarMarquee />
-      <div id="loop"><LoopSection /></div>
-      <div id="products"><ProductsSection /></div>
-      <FinalCta />
-    </MarketingShell>
+    <MagneticCursor>
+      <MarketingShell footer={false}>
+        <Hero />
+        <WorkspaceScrollReveal />
+        <ProofMarquee />
+        <StickyProductStory />
+        <HowItWorks />
+        <ComparisonSection />
+        <PricingSnapshot />
+        <MotionFooter />
+      </MarketingShell>
+    </MagneticCursor>
   );
 }
