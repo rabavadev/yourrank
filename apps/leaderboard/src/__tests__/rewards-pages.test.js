@@ -43,6 +43,23 @@ describe("server-rendered rewards pages", () => {
     expect(rules).not.toContain(">How viewers earn points</a>");
   });
 
+  it("keeps raw Kick identifiers inside the existing-reward path", () => {
+    const rules = RewardsRulesPage().toString();
+    expect(rules).toContain("Use existing Kick reward");
+    expect(rules).toContain("Create a new Kick reward");
+    expect(rules).toContain("This technical ID is only needed when linking an existing reward manually.");
+    expect(rules).not.toContain("Where to find your Kick Reward ID?");
+    expect(rules).not.toContain("9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d");
+  });
+
+  it("uses credits terminology consistently on viewer balance actions", () => {
+    const viewers = RewardsViewersPage().toString();
+    expect(viewers).toContain(">+ Add credits</button>");
+    expect(viewers).toContain(">Add credits</h2>");
+    expect(viewers).not.toContain("Tip viewer points");
+    expect(viewers).not.toContain("Send credits 🎁");
+  });
+
   it("uses Rewards as the canonical group for creator destinations", () => {
     for (const config of [rewardsChannelConfig, rewardsRulesConfig, rewardsShopConfig, rewardsViewersConfig, rewardsRedemptionsConfig, rewardsHistoryConfig]) {
       expect(config.title).toContain("· Rewards ·");
