@@ -245,6 +245,58 @@ local-dev artifact, not a product bug — verify public sections by entering
 `localhost:8787/<slug>[/shop|/me]` directly, and confirm the href source with:
 `curl -s http://localhost:8787/<slug> | grep -oE 'href="[^"]+"' | sort -u`.
 
+## Collapsed sidebar rail (v4 shell)
+
+The v4 dashboard shell (`src/pages/dashboard-shell.jsx` +
+`src/assets/dashboard-v4.css`) has a collapsible rail. Key handles:
+
+- Toggle: `.lb-side-collapse[data-collapse-side]` (`aria-label` flips between
+  "Collapse navigation" and "Expand navigation").
+- Persistence: `localStorage` key `yr-side-collapsed`; root gets
+  `data-side-collapsed="true"` on `.v3-dash[data-auth-workspace]`.
+- Collapsed state must only redefine `--v3-sidebar-w: 44px`. If a rule ever sets
+  `width`/`height`/`overflow` on the shell root itself, the whole dashboard
+  renders as a ~44x40 blank box. `src/__tests__/css-integrity.test.js` guards
+  this; re-check it after touching the collapsed block.
+- After editing CSS/JS under `src/assets/`, run `cd apps/leaderboard && node build.js`
+  to regenerate `src/assets_bundled.js`, then confirm freshness with
+  `grep -c -- '--v3-sidebar-w: 44px' apps/leaderboard/src/assets_bundled.js`.
+- Verify the regression by collapsing, reloading, and visiting several routes —
+  not just Home. Known-good route set: `/dashboard`,
+  `/dashboard/leaderboard/setup`, `/dashboard/giveaways/chat`,
+  `/dashboard/rewards/redemptions`, `/dashboard/settings`.
+- `.lb-nav-group-label` is taken out of view (not removed) when collapsed so the
+  group keeps its accessible name; a visible clipped "ENGAGE" text means the
+  collapsed block regressed.
+
+## Other topbar / nav handles
+
+- `#topbarCmdTrigger` (⌘K / Ctrl+K palette; Esc closes), `#newBoard`
+  (create-another-site "+"), `#publishAction` (publish, opens a confirm dialog
+  with a `Publish` button), `#lbMenu` (mobile drawer toggle below 981px).
+- On a Free plan at the site limit, `#newBoard` opens an upsell popover instead
+  of a create form; that popover may be clipped and may not dismiss on Escape or
+  outside click.
+
+## Known route/state defects to expect (not caused by UI changes)
+
+- `/dashboard/telegram*` is served by the **bot** Worker (see the zone routes in
+  `apps/bot/wrangler.toml`), not the leaderboard Worker, so it returns 404 on
+  `localhost:8787` while working in production. Test it against the bot Worker on
+  `localhost:8788` instead of filing it as a routing bug.
+- Leaderboard → Share offers an OBS overlay URL (`/<slug>/overlay`) with no Pro
+  badge, but the overlay page itself renders "This is a Pro feature." on Free.
+- Adding a player with only name+amount can persist a derived
+  `net profit = -amount`; verify whether that is intended before filing.
+
+## Collecting console errors and Worker 4xx/5xx
+
+- The wrangler dev log is at `/tmp/wrangler-leaderboard.log` (also
+  `/home/ubuntu/leaderboard-dev.log`). Extract failures with:
+  `grep -E '\b(4[0-9][0-9]|5[0-9][0-9])\b' /tmp/wrangler-leaderboard.log | tail -30`
+- `fonts.googleapis.com` requests always fail in this sandbox (no external
+  egress). Treat `responseStatus: 0` for those as environmental, not a defect.
+
 ## Distinguishing legitimate empty states from defects
 
 Seeded data covers players, shop items and viewer balances but not events or

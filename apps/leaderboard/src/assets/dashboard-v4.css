@@ -866,6 +866,19 @@ body[data-wide] .v3-dash[data-auth-workspace] .lb-main { padding-right: 32px; }
   .v3-dash[data-auth-workspace][data-side-collapsed="true"] .gm-profile-chevron {
     display: none !important;
   }
+  /* The group label still names its nav group for assistive tech, so it is
+     taken out of view rather than removed. */
+  .v3-dash[data-auth-workspace][data-side-collapsed="true"] .lb-nav-group-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+    border: 0;
+  }
   /* Icon-only rows inside the rail. */
   .v3-dash[data-auth-workspace][data-side-collapsed="true"] .lb-side-brand,
   .v3-dash[data-auth-workspace][data-side-collapsed="true"] .lb-side-brandrow,
