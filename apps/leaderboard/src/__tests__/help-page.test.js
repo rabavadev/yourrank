@@ -29,8 +29,8 @@ describe("help pages", () => {
       expect(html).toContain("lb-side");
       expect(html).not.toContain("gm-shell-nav");
     }
-    // Signed-in identity appears in the rail's profile menu, and Help keeps the
-    // same complete feature map as every other authenticated destination.
+    // Signed-in identity appears in the rail's profile menu. The primary rail
+    // stays focused on daily creator work while Help lives in the account menu.
     expect(signedIn).toContain("Streamer One");
     expect(signedIn).toContain('data-auth-workspace="true"');
     expect(signedOut).not.toContain('data-auth-workspace="true"');
@@ -40,11 +40,11 @@ describe("help pages", () => {
       "/dashboard/rewards/redemptions",
       "/dashboard/telegram",
       "/dashboard/analytics/activity",
-      "/dashboard/leaderboards",
       "/dashboard/settings",
-      "/help",
     ]) expect(signedIn).toContain(`href="${href}"`);
-    expect(signedIn).toContain('data-nav="help" aria-current="page"');
+    expect(signedIn).toContain("Help &amp; feedback");
+    expect(signedIn).toContain('href="/help?area=help');
+    expect(signedIn).not.toContain('data-nav="help"');
     expect(signedIn).not.toContain('data-nav="support"');
     expect(signedIn).not.toContain('data-nav="feedback"');
   });
@@ -78,9 +78,11 @@ describe("help pages", () => {
     });
   }
 
-  it("marks the current Help destination without hiding dashboard features", () => {
+  it("keeps Help accessible without adding it back to the primary rail", () => {
     const html = render("helpSupport", user);
-    expect(html).toContain('data-nav="help" aria-current="page"');
+    expect(html).toContain("Help &amp; feedback");
+    expect(html).toContain('href="/help?area=help');
+    expect(html).not.toContain('data-nav="help"');
     expect(html).toContain('data-nav="settings"');
     expect(html).toContain('data-nav="redemptions"');
   });
