@@ -12,6 +12,7 @@ describe("site-scoped creator UX", () => {
     expect(source).toContain('games.textContent = "Games"');
     expect(source).toContain('games.setAttribute("aria-label", "Games, site feature")');
     expect(source).toContain("tabs.insertBefore(label, games)");
+    expect(source).not.toContain("features.append(label, games)");
     expect(css).toContain(".editor-site-features-label");
     expect(css).toContain(".editor-step.editor-site-feature-link");
   });
