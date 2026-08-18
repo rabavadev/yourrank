@@ -2,7 +2,7 @@
    YourRank Originals — games design system.
 
    Scoped entirely under .gx so it can never leak into the dashboard or the
-   public board. It re-uses the product palette (see app.css / dashboard-v2.css)
+   public board. It re-uses the product palette (see app.css / dashboard-v4.css)
    but resolves it to the dark "casino" surface set the games are played on:
    a bright #fafafa page around an animated game board reads as a spreadsheet,
    not a game.

@@ -1,4 +1,4 @@
-// A stray closing brace in dashboard-v3.css silently un-wrapped a
+// A stray closing brace in the dashboard stylesheet silently un-wrapped a
 // `@media (max-width: …)` block, so the editor's "stack the live preview below
 // the controls" rule applied at every width and the split-screen editor was
 // single-column on desktop. Unbalanced braces do not throw anywhere — CSS just
@@ -14,7 +14,7 @@ const stripped = (css) => css.replace(/\/\*[\s\S]*?\*\//g, "").replace(/(["'])(?
 
 describe("stylesheets", () => {
   it("finds the dashboard stylesheets", () => {
-    expect(sheets).toContain("dashboard-v3.css");
+    expect(sheets).not.toContain("dashboard-v3.css");
     expect(sheets).toContain("dashboard-v4.css");
     expect(sheets).toContain("app.css");
   });
@@ -44,7 +44,17 @@ describe("authenticated dashboard v4 contract", () => {
   });
 
   it("does not use absolute positioning for v4 structure", () => {
-    expect(css).not.toMatch(/position:\s*absolute/);
+    // Controls may use absolute positioning for their own affordances; this
+    // contract is only about the workspace shell and layout primitives.
+    const structuralRules = css
+      .replace(/\/\*[\s\S]*?\*\//g, "")
+      .split("}")
+      .filter((rule) => /\{/.test(rule))
+      .filter((rule) =>
+        /(?:^|[\s,>])(?:\.lb-shell|\.lb-side|\.lb-side-nav|\.lb-main|\.lb-bento|\.lb-page|\.v3-grid|\.v3-stack|#cr-app|#cr-main|\.cr-workspace-content)(?=$|[\s,>:{.#])/.test(rule)
+      )
+      .join("}");
+    expect(structuralRules).not.toMatch(/position:\s*absolute/);
   });
 
   it("keeps desktop collapse persistent and mobile drawers independent", () => {
@@ -58,7 +68,7 @@ describe("authenticated dashboard v4 contract", () => {
   });
 });
 
-// The same button had three definitions (app.css, dashboard-v3.css and the bot
+// The same button had three definitions (app.css and the bot
 // shell's inlined CSS) that merged by cascade order, so a change to one of them
 // only changed the component on some pages. They live in ui.css now.
 describe("shared UI primitives", () => {

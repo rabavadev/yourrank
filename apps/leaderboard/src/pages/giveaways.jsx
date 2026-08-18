@@ -29,7 +29,6 @@ export const giveawaysConfig = {
   styles: [
     "/assets/app.css",
     "/assets/shell-nav.css",
-    "/assets/dashboard-v3.css",
     "/assets/ui.css",
     "/assets/dashboard-v4.css",
     "/assets/giveaways.css",

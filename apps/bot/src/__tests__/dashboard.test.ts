@@ -128,7 +128,7 @@ describe("dashboard views", () => {
     const html = appHtml({ display_name: "Test", email: "test@example.com", plan: "free" }, "https://yourrank.site", "nonce123", "offers");
     // Same rail, topbar and stylesheets as the leaderboard dashboard.
     expect(html).toContain('<aside class="lb-side" id="lbSide"');
-    expect(html).toContain('<link rel="stylesheet" href="/assets/shell-nav.css"><link rel="stylesheet" href="/assets/dashboard-v3.css"><link rel="stylesheet" href="/assets/ui.css"><link rel="stylesheet" href="/assets/dashboard-v4.css">');
+    expect(html).toContain('<link rel="stylesheet" href="/assets/shell-nav.css"><link rel="stylesheet" href="/assets/ui.css"><link rel="stylesheet" href="/assets/dashboard-v4.css">');
     // Product context stays on the main rail, without a duplicate Product nav.
     expect(html).not.toContain('class="lb-product-link"');
     expect(html).toContain('data-product-link="telegram"');

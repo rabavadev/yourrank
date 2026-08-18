@@ -8,7 +8,7 @@ const overviewJs = readFileSync(new URL("../assets/dashboard/overview.js", impor
 const dashboardJs = readFileSync(new URL("../assets/dashboard.js", import.meta.url), "utf8");
 const boardShellJs = readFileSync(new URL("../assets/dashboard/board-shell.js", import.meta.url), "utf8");
 const performanceJs = readFileSync(new URL("../assets/dashboard/performance.js", import.meta.url), "utf8");
-const dashboardCss = readFileSync(new URL("../assets/dashboard-v3.css", import.meta.url), "utf8");
+const dashboardCss = readFileSync(new URL("../assets/dashboard-v4.css", import.meta.url), "utf8");
 
 function dashboardHtml(activePath = "/dashboard") {
   return PAGES.dashboard.Component({ activePath }).toString();
@@ -67,12 +67,12 @@ describe("dashboard overview quick actions", () => {
   });
 
   it("keeps tablet navigation closable", () => {
-    expect(dashboardCss).toMatch(/@media \(max-width: 980px\)[\s\S]*?\.v3-dash \.lb-side-close \{[\s\S]*?display: inline-flex;[\s\S]*?width: 44px;[\s\S]*?height: 44px;/);
+    expect(dashboardCss).toMatch(/@media \(max-width: 980px\)[\s\S]*?\.v3-dash\[data-auth-workspace\] \.lb-side-close \{[\s\S]*?display: inline-flex;[\s\S]*?width: 44px;[\s\S]*?height: 44px;/);
   });
 
   it("keeps account plan panels readable on the dark dashboard", () => {
-    expect(dashboardCss).toMatch(/\.v3-dash \.plan-usage-row \{[\s\S]*?background: var\(--v3-chrome-3\);/);
-    expect(dashboardCss).toMatch(/\.v3-dash \.plan-pending,[\s\S]*?\.v3-dash \.plan-cancel \{[\s\S]*?background: var\(--v3-chrome-3\);/);
+    expect(dashboardCss).toMatch(/\.v3-dash\[data-auth-workspace\] \.plan-usage-row \{[\s\S]*?background: var\(--v4-surface\);/);
+    expect(dashboardCss).toMatch(/\.v3-dash\[data-auth-workspace\] \.plan-pending,[\s\S]*?\.v3-dash\[data-auth-workspace\] \.plan-cancel \{[\s\S]*?background: var\(--v4-surface-soft\);/);
   });
 
   it("announces the active audience insight tab", () => {

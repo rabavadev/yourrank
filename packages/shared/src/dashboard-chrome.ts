@@ -4,7 +4,7 @@
 //  The signed-in shell used to exist twice: the leaderboard Worker rendered a
 //  `.lb-side` rail with JSX, and the bot Worker rendered its own `.side` rail
 //  with different CSS, so /bot/* looked like a different (older) product. Both
-//  now render this markup, styled by /assets/dashboard-v3.css.
+//  now render this markup, styled by /assets/dashboard-v4.css.
 // ============================================================================
 
 import { profileMenuHtml, type ShellUser } from "./shell-nav.js";
