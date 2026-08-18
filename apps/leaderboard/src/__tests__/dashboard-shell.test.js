@@ -36,7 +36,7 @@ describe("signed-in shell navigation", () => {
     ]) {
       expect(html).toContain(`href="${href}"`);
     }
-    expect(html).toContain('href="/dashboard/leaderboards">Manage all sites');
+    expect(html).toContain('href="/dashboard/leaderboards">Manage sites');
     expect(html).toContain('href="/help?area=credits');
     expect(html).toContain("Help &amp; feedback");
   });
@@ -102,7 +102,7 @@ describe("signed-in shell navigation", () => {
 
   it("keeps secondary site and help actions accessible without rail duplication", () => {
     const html = renderPage(RewardsViewersPage);
-    expect(html).toContain('href="/dashboard/leaderboards">Manage all sites');
+    expect(html).toContain('href="/dashboard/leaderboards">Manage sites');
     expect(html).toContain('href="/help?area=credits');
     expect(html).toContain("Help &amp; feedback");
     expect(html).not.toContain('data-nav="boards"');
