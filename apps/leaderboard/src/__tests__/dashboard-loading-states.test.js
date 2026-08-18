@@ -35,11 +35,11 @@ describe("dashboard loading states", () => {
       icon: "chart",
       title: "Nothing here",
       body: "Try again later.",
-      actions: [{ label: "Create board", href: "/dashboard/boards", accent: true }],
+      actions: [{ label: "Create board", href: "/dashboard/leaderboards", accent: true }],
     });
     expect(html).toContain("v3-empty");
     expect(html).toContain("Nothing here");
-    expect(html).toContain('href="/dashboard/boards"');
+    expect(html).toContain('href="/dashboard/leaderboards"');
     expect(html).toContain("Create board");
   });
 

@@ -127,7 +127,7 @@ async function init() {
     }
     const target = new URL(link.getAttribute("href"), location.origin);
     const creditsPath = target.pathname.startsWith("/dashboard/rewards/") || target.pathname.startsWith("/dashboard/audience/");
-    const sitePath = target.pathname === "/dashboard" || target.pathname === "/dashboard/boards" || target.pathname === "/dashboard/games" || target.pathname === "/dashboard/settings/board" || target.pathname.startsWith("/dashboard/editor/") || target.pathname.startsWith("/dashboard/analytics/");
+    const sitePath = target.pathname === "/dashboard" || target.pathname === "/dashboard/leaderboards" || target.pathname === "/dashboard/leaderboard" || target.pathname === "/dashboard/games" || target.pathname === "/dashboard/settings/board" || target.pathname.startsWith("/dashboard/leaderboard/") || target.pathname.startsWith("/dashboard/analytics/");
     if (creditsPath) {
       target.searchParams.set("siteId", state.ACTIVE_SITE_ID);
     } else if (sitePath) {

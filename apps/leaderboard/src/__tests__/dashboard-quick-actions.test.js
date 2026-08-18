@@ -44,10 +44,10 @@ describe("dashboard overview quick actions", () => {
   it("preserves the selected site across Sites and Credits", () => {
     expect(dashboardJs).toContain('target.searchParams.set("siteId", state.ACTIVE_SITE_ID)');
     expect(dashboardJs).toContain('target.searchParams.set("board", state.ACTIVE_SITE_ID)');
-    expect(dashboardJs).toContain('target.pathname.startsWith("/dashboard/editor/")');
+    expect(dashboardJs).toContain('target.pathname.startsWith("/dashboard/leaderboard/")');
     expect(dashboardJs).toContain('target.pathname.startsWith("/dashboard/analytics/")');
     expect(boardShellJs).toContain('`/dashboard?board=${encodeURIComponent(siteId)}`');
-    expect(boardShellJs).toContain('target.pathname.startsWith("/dashboard/editor/")');
+    expect(boardShellJs).toContain('target.pathname.startsWith("/dashboard/leaderboard/")');
     expect(boardShellJs).toContain('target.searchParams.set("board", siteId)');
     expect(boardShellJs).toContain('target.searchParams.set("siteId", siteId)');
   });
@@ -83,21 +83,16 @@ describe("dashboard overview quick actions", () => {
     const html = dashboardHtml();
     expect(html).toContain('data-nav="home"');
     expect(html).toContain('data-nav="board"');
-    expect(html).toContain('data-nav="account"');
+    expect(html).toContain('data-nav="settings"');
     expect(html).toContain('lb-side-group');
     // Icons are real inline SVGs, not emoji.
     expect(html).not.toContain('aria-hidden="true">🔌</span>');
-    expect(html).toContain('>Overview</a>');
+    expect(html).toContain('>Home</a>');
     for (const label of [
-      "Racers &amp; scores", "Theme &amp; overlays", "Mini-games &amp; history",
-      "Live giveaways", "Rewards &amp; shop", "Viewer points &amp; stats",
-      "Telegram bot",
-      "Sites &amp; integrations", "Account &amp; billing",
-      "Help &amp; support",
+      "My leaderboard", "Giveaways", "Rewards", "Telegram",
+      "How it&#39;s going", "Your leaderboards", "Settings", "Help",
     ]) expect(html).toContain(`>${label}</a>`);
-    expect(html).toContain('>LEADERBOARD</div>');
-    expect(html).toContain('>COMMUNITY &amp; REWARDS</div>');
-    expect(html).toContain('>SETTINGS &amp; SITES</div>');
+    expect(html).not.toContain('lb-nav-group-label');
   });
 
   it("serves only the section the URL addresses", () => {
@@ -115,7 +110,7 @@ describe("dashboard overview quick actions", () => {
   });
 
   it("keeps every site editor section directly available", () => {
-    const html = dashboardHtml("/dashboard/editor");
+    const html = dashboardHtml("/dashboard/leaderboard");
     expect(html).toContain('data-page="board"');
     expect(html).toContain('id="savebar"');
     expect(html).toContain('class="design-grid"');

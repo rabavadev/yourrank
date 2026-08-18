@@ -50,7 +50,7 @@ import {
   renderNewPlayerProfile,
   renderNewStreamerProfile,
 } from "./auxiliary-renderers.js";
-import { parseDashboardPath, dashboardPath, resolveSection } from "./assets/dashboard/routes.js";
+import { parseDashboardPath, dashboardPath, resolveSection, legacyDashboardPath } from "./assets/dashboard/routes.js";
 import { deferClickWrite, trackedDestination } from "./tracked-redirect.js";
 import { setRequestMetrics } from "@yourrank/shared/request-id";
 import { evaluateConsumerHealth } from "./consumer-health.js";
@@ -710,8 +710,12 @@ async function handleRequest(request, env, ctx, meta) {
         const pageKey = path.endsWith("/viewers") ? "rewardsViewers" : "rewardsHistory";
         return renderDashboardPage(pageKey, "audience_render_failed");
       }
-      // Every dashboard section is a real URL: `/dashboard`, `/dashboard/editor`,
-      // `/dashboard/editor/players`, … The section is rendered client-side, so
+      const legacyDashboard = legacyDashboardPath(path);
+      if (legacyDashboard) {
+        return Response.redirect(new URL(legacyDashboard + url.search, url), 301);
+      }
+      // Every dashboard section is a real URL: `/dashboard`, `/dashboard/leaderboard`,
+      // `/dashboard/leaderboard/players`, … The section is rendered client-side, so
       // they all serve the same document; the shell reads the path on boot.
       const dashboardRoute = parseDashboardPath(path);
       if (dashboardRoute) {

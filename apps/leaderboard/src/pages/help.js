@@ -11,22 +11,7 @@ const TABS = [
 ];
 
 function helpNavigation(user) {
-  if (!user) return TABS;
-  return [
-    ...dashboardNavItems(),
-    { group: "GET HELP" },
-    ...TABS.map((item) => ({ ...item, child: true })),
-  ];
-}
-
-function productLinks(user) {
-  return user
-    ? [
-      { label: "Sites", href: "/dashboard" },
-      { label: "Telegram", href: "/dashboard/telegram" },
-      { label: "Credits & Shop", href: "/dashboard/rewards/redemptions" },
-    ]
-    : [{ label: "Back to dashboard", href: "/dashboard" }];
+  return user ? dashboardNavItems() : TABS;
 }
 
 function helpContent({ active, h1, intro, kind, subjectPlaceholder, messagePlaceholder, user, activePath }) {
@@ -49,7 +34,7 @@ function helpContent({ active, h1, intro, kind, subjectPlaceholder, messagePlace
 
   return dashboardChromeHtml({
     nav: helpNavigation(user),
-    active,
+    active: user ? "help" : active,
     navLabel: user ? "Dashboard" : "Help",
     headLabel: "Help",
     title: h1,
@@ -59,7 +44,6 @@ function helpContent({ active, h1, intro, kind, subjectPlaceholder, messagePlace
     user,
     activePath,
     content,
-    productLinks: productLinks(user),
     railProfile: Boolean(user),
     collapsible: Boolean(user),
     embeddedInMain: true,
@@ -93,10 +77,10 @@ function helpHubContent({ user, activePath }) {
   <h2 id="help-site">Site and public page</h2>
   <p>Use the site editor to configure the public page visitors see.</p>
   <ul class="operator-help-list">
-    <li><a href="/dashboard/editor/setup">Set up a site</a><span>Add the site details, schedule, and visitor access.</span></li>
-    <li><a href="/dashboard/editor/players">Manage players</a><span>Add and update the ranked rows used by the leaderboard.</span></li>
-    <li><a href="/dashboard/editor/design">Change design</a><span>Edit the public page’s branding and visual settings in Design.</span></li>
-    <li><a href="/dashboard/editor/share">Share the public page</a><span>Find the public URL, OBS overlay URL, embed code, and share links.</span></li>
+    <li><a href="/dashboard/leaderboard/setup">Set up a site</a><span>Add the site details, schedule, and visitor access.</span></li>
+    <li><a href="/dashboard/leaderboard/players">Manage players</a><span>Add and update the ranked rows used by the leaderboard.</span></li>
+    <li><a href="/dashboard/leaderboard/design">Change design</a><span>Edit the public page’s branding and visual settings in Design.</span></li>
+    <li><a href="/dashboard/leaderboard/share">Share the public page</a><span>Find the public URL, OBS overlay URL, embed code, and share links.</span></li>
   </ul>
 </section>
 
@@ -126,9 +110,9 @@ function helpHubContent({ user, activePath }) {
 
 <section class="operator-help-section" aria-labelledby="help-account">
   <h2 id="help-account">Account, plan, and connections</h2>
-  <p>Account settings are separate from settings for one selected site.</p>
+  <p>Settings for your account are separate from settings for one selected site.</p>
   <ul class="operator-help-list">
-    <li><a href="/dashboard/settings">Account settings</a><span>Manage account-level settings, plan access, connections, and account data.</span></li>
+    <li><a href="/dashboard/settings">Settings</a><span>Manage account-level settings, plan access, connections, and account data.</span></li>
     <li><a href="/dashboard/settings/board">Site settings</a><span>Manage visitor access, alerts, connected tools, your web address, and support resources for the selected site.</span></li>
     <li><a href="/dashboard/settings/plan">Plan and billing</a><span>Manage the account subscription and review plan access.</span></li>
     <li><a href="/dashboard/settings/account">Account</a><span>Change your password and review active sessions.</span></li>
@@ -153,7 +137,6 @@ function helpHubContent({ user, activePath }) {
     user,
     activePath,
     content,
-    productLinks: productLinks(user),
     railProfile: Boolean(user),
     collapsible: Boolean(user),
     embeddedInMain: true,

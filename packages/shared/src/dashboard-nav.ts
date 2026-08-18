@@ -14,25 +14,18 @@ const NAV_ICONS = {
 
 const GEAR_ICON = '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>';
 
-const DASHBOARD_NAV: (NavItem | { group: string })[] = [
-  { key: "home", label: "Overview", href: "/dashboard", icon: '<rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/>' },
-  { group: "LEADERBOARD" },
-  { key: "board", label: "Racers & scores", href: "/dashboard/editor/players", icon: NAV_ICONS.players, hash: "players" },
-  { key: "board", label: "Theme & overlays", href: "/dashboard/editor/design", icon: NAV_ICONS.design, hash: "design" },
-  { key: "games", label: "Mini-games & history", href: "/dashboard/games", icon: NAV_ICONS.games },
-  { group: "COMMUNITY & REWARDS" },
-  { key: "giveaways", label: "Live giveaways", href: "/dashboard/giveaways", icon: NAV_ICONS.giveaways },
-  { key: "redemptions", label: "Rewards & shop", href: "/dashboard/rewards/redemptions", icon: NAV_ICONS.shop },
-  { key: "viewers", label: "Viewer points & stats", href: "/dashboard/audience/viewers", icon: NAV_ICONS.viewers },
-  { key: "telegram", label: "Telegram bot", href: "/dashboard/telegram", icon: NAV_ICONS.share },
-  { group: "SETTINGS & SITES" },
-  { key: "boards", label: "Sites & integrations", href: "/dashboard/boards", icon: NAV_ICONS.boards },
-  { key: "account", label: "Account & billing", href: "/dashboard/settings", icon: GEAR_ICON },
-  { key: "help", label: "Help & support", href: "/help", icon: NAV_ICONS.help },
+const DASHBOARD_NAV: NavItem[] = [
+  { key: "home", label: "Home", href: "/dashboard", icon: '<rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/>', productKey: "sites" },
+  { key: "board", label: "My leaderboard", href: "/dashboard/leaderboard/players", icon: NAV_ICONS.players },
+  { key: "giveaways", label: "Giveaways", href: "/dashboard/giveaways/chat", icon: NAV_ICONS.giveaways },
+  { key: "redemptions", label: "Rewards", href: "/dashboard/rewards/redemptions", icon: NAV_ICONS.shop, productKey: "credits" },
+  { key: "telegram", label: "Telegram", href: "/dashboard/telegram", icon: NAV_ICONS.share, productKey: "telegram" },
+  { key: "performance", label: "How it's going", href: "/dashboard/analytics/activity", icon: NAV_ICONS.viewers },
+  { key: "boards", label: "Your leaderboards", href: "/dashboard/leaderboards", icon: NAV_ICONS.boards },
+  { key: "settings", label: "Settings", href: "/dashboard/settings", icon: GEAR_ICON },
+  { key: "help", label: "Help", href: "/help", icon: NAV_ICONS.help },
 ];
 
 export function dashboardNavItems(): NavItem[] {
-  return DASHBOARD_NAV.map((item) => "group" in item
-    ? { group: item.group }
-    : { ...item });
+  return DASHBOARD_NAV.map((item) => ({ ...item }));
 }
