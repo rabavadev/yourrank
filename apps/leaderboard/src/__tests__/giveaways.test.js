@@ -52,6 +52,15 @@ describe("Giveaway Chatroom Handler", () => {
     expect(source).toContain("safeAvatarUrl(entrant.avatar, defaultAvatar)");
   });
 
+  it("loads the server-rendered giveaway tab on initialization", () => {
+    const source = readFileSync(new URL("../assets/giveaways.js", import.meta.url), "utf8");
+    expect(source).toContain('document.querySelector(".gw-tab-btn.is-active")?.dataset.tab');
+    expect(source).toContain('if (activeTab === "raffles") loadRaffles();');
+    expect(source).toContain('if (activeTab === "drops") loadCodeDrops();');
+    expect(source).toContain('if (activeTab === "preds") loadPredictions();');
+    expect(source).not.toContain('querySelectorAll(".gw-tab-btn").forEach((btn) => {');
+  });
+
   it("renders GiveawaysPage properly", () => {
     const vnode = GiveawaysPage({ user: { id: "u-1", email: "streamer@test.com" } });
     expect(vnode).toBeTruthy();

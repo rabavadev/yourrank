@@ -975,24 +975,12 @@ import { loadBoardShell, sitePath } from "./dashboard/board-shell.js";
   // =========================================================================
 
   function initEventsHub() {
-    // Tab switching
-    document.querySelectorAll(".gw-tab-btn").forEach((btn) => {
-      btn.addEventListener("click", () => {
-        document.querySelectorAll(".gw-tab-btn").forEach((b) => {
-          b.classList.toggle("is-active", b === btn);
-          b.setAttribute("aria-selected", String(b === btn));
-        });
-        const tab = btn.dataset.tab;
-        document.querySelectorAll(".gw-tab-pane").forEach((pane) => {
-          const isTarget = pane.id === `pane-${tab}`;
-          pane.hidden = !isTarget;
-          pane.classList.toggle("is-active", isTarget);
-        });
-        if (tab === "raffles") loadRaffles();
-        if (tab === "drops") loadCodeDrops();
-        if (tab === "preds") loadPredictions();
-      });
-    });
+    // The server renders the active tab and its pane. Tab links own navigation
+    // so deep links and browser history remain the source of truth.
+    const activeTab = document.querySelector(".gw-tab-btn.is-active")?.dataset.tab || "chat";
+    if (activeTab === "raffles") loadRaffles();
+    if (activeTab === "drops") loadCodeDrops();
+    if (activeTab === "preds") loadPredictions();
 
     // Preset chips (custom-first: updates the target input without locking it)
     document.querySelectorAll(".gw-chip").forEach((chip) => {

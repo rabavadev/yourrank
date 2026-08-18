@@ -968,6 +968,7 @@
   color: var(--v4-ink-soft, #64748b);
   font-size: 13.5px;
   font-weight: 600;
+  text-decoration: none;
   cursor: pointer;
   transition: all 140ms ease;
 }
@@ -1283,5 +1284,4 @@
   background: rgba(47, 107, 255, 0.04);
   border-color: var(--brand-accent, #2f6bff);
 }
-
 
