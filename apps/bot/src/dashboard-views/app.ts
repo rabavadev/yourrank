@@ -26,7 +26,7 @@ function panelHtml(page: string, publicBaseUrl: string): string {
 }
 
 function telegramTabsHtml(page: string): string {
-  return `<nav class="v3-tabs telegram-tabs" aria-label="Telegram pages">${
+  return `<nav class="v3-tabs telegram-tabs" aria-label="Messaging pages">${
     pageLinks.map(({ key, label, href }) =>
       `<a class="v3-tab${key === page ? " is-on" : ""}" href="${href}"${key === page ? ' aria-current="page"' : ""}>${label}</a>`
     ).join("")
@@ -44,29 +44,26 @@ export function appHtml(
 ): string {
   const meta = pageMeta(page);
   const pagePath = page === "overview" ? canonicalPath : `${canonicalPath}/${page}`;
-  // The Telegram pages render in the leaderboard dashboard's shell (same rail,
-  // topbar and account menu) instead of a second, older-looking one.
+  // Messaging keeps the same dashboard shell and creator vocabulary even though
+  // the existing routes and provider integration remain Telegram-backed.
   const chrome = dashboardChromeHtml({
     nav: botNavItems(),
     active: "telegram",
-    navLabel: "Telegram",
-    railHeadHtml: `<div class="lb-ws-switcher"><a class="lb-ws-card" href="/dashboard/leaderboards"><div class="lb-ws-avatar">${esc((context.siteName || "S").slice(0, 1).toUpperCase())}</div><div class="lb-ws-meta"><span class="lb-ws-name">${esc(context.siteName || "No site connected")}</span><span class="lb-ws-plan">Active site</span></div></a></div>`,
+    navLabel: "Messaging",
+    railHeadHtml: `<div class="lb-ws-switcher"><a class="lb-ws-card" href="/dashboard/leaderboards"><div class="lb-ws-avatar">${esc((context.siteName || "S").slice(0, 1).toUpperCase())}</div><div class="lb-ws-meta"><span class="lb-ws-name">${esc(context.siteName || "No site connected")}</span><span class="lb-ws-plan">Current site</span></div></a></div>`,
     title: meta.label,
     subtitle: meta.sub,
     crumbs: [
-      { label: "Telegram", href: "/dashboard/telegram" },
+      { label: "Messaging", href: "/dashboard/telegram" },
       { label: meta.label },
     ],
     user,
-    topbarHtml: `<div class="lb-topbar-hud"><div class="lb-account-hud"><span class="lb-hud-icon" aria-hidden="true">◎</span><div class="lb-hud-details"><span class="lb-board-select-lbl">CURRENT BOT</span>${context.botUsername ? `<span class="lb-account-title">@${esc(context.botUsername)} <span class="lb-status">${esc(context.botStatus || "active")}</span></span>` : `<a class="lb-account-title" href="/dashboard/telegram/bots">No bot connected · Connect one</a>`}</div></div></div>`,
+    topbarHtml: `<div class="lb-topbar-hud"><div class="lb-account-hud"><span class="lb-hud-icon" aria-hidden="true">◎</span><div class="lb-hud-details"><span class="lb-board-select-lbl">Bot</span>${context.botUsername ? `<span class="lb-account-title">@${esc(context.botUsername)} <span class="lb-status">${esc(context.botStatus || "active")}</span></span>` : `<a class="lb-account-title" href="/dashboard/telegram/bots">No bot connected · Connect one</a>`}</div></div></div>`,
     activePath: pagePath,
     railProfile: true,
     collapsible: true,
     logoutAction: "/bot/auth/logout",
-    // Each Telegram page is its own document (nav links are full loads), so
-    // render only the active panel. This keeps one panel's slow or failed data
-    // from bloating or breaking the others, and matches the SPA section model
-    // the leaderboard dashboard already uses.
+    // Each messaging page is its own document, so render only the active panel.
     content: `${telegramTabsHtml(page)}${panelHtml(page, publicBaseUrl)}`,
   });
   return botPageHtml({
