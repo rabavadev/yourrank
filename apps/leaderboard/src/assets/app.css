@@ -9,9 +9,9 @@
    The scoped hook families (--yr-x, --v3-x, --gm-x) re-bind to these tokens;
    nothing re-binds a --yr-color-x, so a rule can reference one and get the same
    value in every scope. Roles, not appearances: a later dark theme flips the
-   values here. The nine base tokens stay duplicated across app.css,
-   dashboard-v2.css, shell-nav.css and shared/page-shell.ts because the bot
-   Worker cannot link this sheet; tokens.test.js guards those copies. */
+   values here. The nine base tokens are repeated in app.css, dashboard-v4.css,
+   shell-nav.css and shared/page-shell.ts because the bot Worker cannot link this
+   sheet; tokens.test.js guards those copies. */
 :root {
   /* bg */
   --yr-color-bg: var(--bg);
@@ -1306,14 +1306,14 @@ html{color-scheme:light}
 /* Operator help hub */
 .operator-help{max-width:980px;margin:0 auto;padding:36px 0 72px}
 .operator-help h1{margin:0;font-size:clamp(2rem,4vw,3.25rem);letter-spacing:-.04em}
-.operator-help-lead{max-width:680px;margin:12px 0 34px;color:var(--muted,#687080);font-size:1.05rem;line-height:1.65}
+.operator-help-lead{max-width:680px;margin:12px 0 34px;color:var(--ink-mute);font-size:1.05rem;line-height:1.65}
 .operator-help-section{padding:28px 0;border-top:1px solid var(--line,#e5e7eb)}
 .operator-help-section h2{margin:0 0 8px;font-size:1.2rem}
-.operator-help-section>p{margin:0 0 16px;color:var(--muted,#687080);line-height:1.55}
+.operator-help-section>p{margin:0 0 16px;color:var(--ink-mute);line-height:1.55}
 .operator-help-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px 28px;margin:0;padding:0;list-style:none}
 .operator-help-list li{padding:12px 0;border-bottom:1px solid var(--line,#e5e7eb)}
 .operator-help-list a{font-weight:650}
-.operator-help-list span{display:block;margin-top:4px;color:var(--muted,#687080);font-size:.93rem;line-height:1.45}
+.operator-help-list span{display:block;margin-top:4px;color:var(--ink-mute);font-size:.93rem;line-height:1.45}
 .operator-help-actions{display:flex;gap:12px;flex-wrap:wrap;margin-top:24px}
 @media (max-width:640px){.operator-help{padding:24px 0 48px}.operator-help-list{grid-template-columns:1fr}}
 

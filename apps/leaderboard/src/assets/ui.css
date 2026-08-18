@@ -5,7 +5,7 @@
    same way /assets/shell-nav.css is.
 
    Before this file a button had three definitions: `.btn` in app.css, a partial
-   `.v2-dash .btn` override in dashboard-v2.css that silently merged with it, and
+   contextual dashboard button rules in dashboard-v4.css, and
    a bare `button` element rule inlined in the bot shell — so the same action
    looked like three different products. Add component styles here, not there.
 

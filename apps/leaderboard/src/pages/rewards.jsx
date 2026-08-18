@@ -63,7 +63,7 @@ export function RewardsViewersPage({ user } = {}) { return <RewardsPage tab="vie
 export function RewardsRedemptionsPage({ user } = {}) { return <RewardsPage tab="redemptions" activeNav="redemptions" user={user} />; }
 export function RewardsHistoryPage({ user } = {}) { return <RewardsPage tab="history" activeNav="history" user={user} />; }
 
-const rewardsConfigBase = { styles: ["/assets/app.css", "/assets/shell-nav.css", "/assets/dashboard-v3.css", "/assets/ui.css", "/assets/dashboard-v4.css"], scripts: ['<script src="/assets/credits.js?v=4" type="module"></script>', '<script src="/assets/shell-nav.js?v=2" defer></script>'], nav: false, footer: false, wide: true };
+const rewardsConfigBase = { styles: ["/assets/app.css", "/assets/shell-nav.css", "/assets/ui.css", "/assets/dashboard-v4.css"], scripts: ['<script src="/assets/credits.js?v=4" type="module"></script>', '<script src="/assets/shell-nav.js?v=2" defer></script>'], nav: false, footer: false, wide: true };
 export const rewardsChannelConfig = { ...rewardsConfigBase, title: "Connect Kick · Credits · YourRank", canonical: "https://yourrank.site/dashboard/rewards/channel" };
 export const rewardsRulesConfig = { ...rewardsConfigBase, title: "Credit rules · Credits · YourRank", canonical: "https://yourrank.site/dashboard/rewards/rules" };
 export const rewardsShopConfig = { ...rewardsConfigBase, title: "Shop · Credits · YourRank", canonical: "https://yourrank.site/dashboard/rewards/shop" };

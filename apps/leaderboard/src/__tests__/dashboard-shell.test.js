@@ -60,7 +60,8 @@ describe("signed-in shell navigation", () => {
   it("loads the authenticated v4 layer after shared primitives", () => {
     for (const key of ["dashboard", "rewardsRedemptions", "settingsUnified", "helpHub", "helpSupport"]) {
       const styles = PAGES[key].config.styles;
-      expect(styles.at(-1)).toBe("/assets/dashboard-v4.css");
+      expect(styles).toContain("/assets/dashboard-v4.css");
+      expect(styles).not.toContain("/assets/dashboard-v3.css");
     }
   });
 

@@ -131,9 +131,9 @@ const BOT_STYLE_ATTR_CSS = `
 .input-w-sm { max-width:150px }
 .link-block { display:block;font-size:13px;color:var(--accent) }
 .chart-axis { display:flex;justify-content:space-between;font-size:11px }
-.divider { margin:14px 0 0;border:0;border-top:1px solid var(--border) }
+.divider { margin:14px 0 0;border:0;border-top:1px solid var(--v3-main-line) }
 .pre-wrap { white-space:pre-wrap }
-.style-warn { color:var(--red-ink); font-size:13px; margin-top:6px }
+.style-warn { color:var(--v3-danger-ink); font-size:13px; margin-top:6px }
 `;
 
 const BOT_BASE_CSS = `
@@ -209,7 +209,7 @@ export function botPageHtml(opts: BotPageOpts): string {
   // Bot component CSS is emitted before the shared dashboard sheets so the
   // shell chrome remains identical to the leaderboard while panel rules work.
   const chromeCss = opts.dashboardChrome
-    ? '<link rel="stylesheet" href="/assets/app.css"><link rel="stylesheet" href="/assets/shell-nav.css"><link rel="stylesheet" href="/assets/dashboard-v3.css"><link rel="stylesheet" href="/assets/ui.css"><link rel="stylesheet" href="/assets/dashboard-v4.css"><link rel="stylesheet" href="/assets/devin-system.css">'
+    ? '<link rel="stylesheet" href="/assets/app.css"><link rel="stylesheet" href="/assets/shell-nav.css"><link rel="stylesheet" href="/assets/ui.css"><link rel="stylesheet" href="/assets/dashboard-v4.css"><link rel="stylesheet" href="/assets/devin-system.css">'
     : "";
   return `<!doctype html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">

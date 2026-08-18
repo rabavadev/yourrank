@@ -521,7 +521,7 @@
 
 .gw-entrant-name {
   font-weight: 600;
-  color: var(--text, var(--v4-ink));
+  color: var(--v4-ink);
 }
 
 .gw-entrant-name:hover {
@@ -1244,7 +1244,7 @@
 
 .gw-pred-pool-badge small {
   font-size: 11px;
-  color: var(--v4-mute, var(--v4-ink-mute));
+  color: var(--v4-ink-mute);
   text-transform: uppercase;
 }
 
@@ -1280,7 +1280,7 @@
 
 .gw-pred-stats-row span {
   font-size: 11px;
-  color: var(--v4-mute, var(--v4-ink-mute));
+  color: var(--v4-ink-mute);
 }
 
 .gw-pred-footer {

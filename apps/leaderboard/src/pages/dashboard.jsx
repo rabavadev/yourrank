@@ -9,7 +9,7 @@ import { parseDashboardPath } from "../assets/dashboard/routes.js";
 export const dashboardConfig = {
   title: "Dashboard · YourRank",
   canonical: "https://yourrank.site/dashboard",
-  styles: ["/assets/app.css", "/assets/shell-nav.css", "/assets/dashboard-v3.css", "/assets/ui.css", "/assets/dashboard-v4.css"],
+  styles: ["/assets/app.css", "/assets/shell-nav.css", "/assets/ui.css", "/assets/dashboard-v4.css"],
   scripts: ['<script src="/assets/dashboard.js?v=15" type="module"></script>', '<script src="/assets/dashboard/preview-tabs.js?v=1" type="module"></script>', '<script src="/assets/shell-nav.js?v=2" defer></script>'],
   nav: false,
   footer: false,
