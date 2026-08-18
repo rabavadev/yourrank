@@ -27,14 +27,12 @@ describe("signed-in shell navigation", () => {
   it("links every major product surface from the rail", () => {
     const html = renderPage(RewardsViewersPage);
     for (const href of [
-      "/dashboard/editor/players",
-      "/dashboard/editor/design",
-      "/dashboard/games",
-      "/dashboard/giveaways",
+      "/dashboard/leaderboard/players",
+      "/dashboard/giveaways/chat",
       "/dashboard/rewards/redemptions",
-      "/dashboard/audience/viewers",
       "/dashboard/telegram",
-      "/dashboard/boards",
+      "/dashboard/analytics/activity",
+      "/dashboard/leaderboards",
       "/dashboard/settings",
       "/help",
     ]) {
@@ -44,7 +42,7 @@ describe("signed-in shell navigation", () => {
 
   it("marks the open credit surface as current", () => {
     const html = renderPage(RewardsViewersPage);
-    expect(html).toContain('data-nav="viewers" aria-current="page"');
+    expect(html).toContain('data-nav="redemptions" data-hash="viewers" aria-current="page"');
   });
 
   it("renders the collapsible creator workspace shell", () => {
@@ -89,61 +87,52 @@ describe("signed-in shell navigation", () => {
     expect(html).toContain('id="ovOnboardingBento" hidden');
     expect(html).toContain('id="ovActiveBento"');
     expect(html).toContain('class="ov-summary-actions"');
-    expect(html).toContain('class="ov-setup-row" id="ovStepBrand" href="/dashboard/editor/setup"');
+    expect(html).toContain('class="ov-setup-row" id="ovStepBrand" href="/dashboard/leaderboard/setup"');
     expect(html).toContain("Your leaderboard");
   });
 
-  it("lists all three peer products in the switcher", () => {
+  it("does not duplicate peer products below the rail", () => {
     const html = renderPage(RewardsViewersPage);
-    // Sites, Telegram, and Credits & Shop are peer products; the switcher always
-    // shows all three so the operator can move between them from anywhere.
-    expect(html).toContain('class="lb-product-link" href="/dashboard"');
-    expect(html).toContain('class="lb-product-link" href="/dashboard/telegram"');
-    expect(html).toContain('class="lb-product-link is-on" href="/dashboard/rewards/redemptions"');
-    // Settings is a rail destination, not a product, so it is not repeated here.
-    expect(html).not.toContain('class="lb-product-link" href="/dashboard/settings"');
+    expect(html).not.toContain('class="lb-product-link"');
+    expect(html).toContain('data-product-link="credits"');
   });
 
   it("keeps every signed-in feature visible from every dashboard page", () => {
     const html = renderPage(RewardsViewersPage);
     for (const href of [
-      "/dashboard/editor/players",
-      "/dashboard/editor/design",
-      "/dashboard/games",
-      "/dashboard/giveaways",
+      "/dashboard/leaderboard/players",
+      "/dashboard/giveaways/chat",
       "/dashboard/rewards/redemptions",
-      "/dashboard/audience/viewers",
       "/dashboard/telegram",
-      "/dashboard/boards",
+      "/dashboard/analytics/activity",
+      "/dashboard/leaderboards",
       "/dashboard/settings",
       "/help",
     ]) expect(html).toContain(`href="${href}"`);
   });
 
   it("uses plain-language navigation labels", () => {
-    const html = renderPage(RewardsViewersPage);
-    expect(html).toContain(">Theme &amp; overlays</a>");
-    expect(html).toContain(">Rewards &amp; shop</a>");
-    expect(html).toContain(">Help &amp; support</a>");
-    expect(html).toContain('data-nav="account"');
+    const html = PAGES.dashboard.Component({ activePath: "/dashboard/leaderboard/design", user }).toString();
+    expect(html).toContain(">Look</a>");
+    expect(html).toContain(">Rewards</a>");
+    expect(html).toContain(">Help</a>");
+    expect(html).toContain('data-nav="settings"');
   });
 
   it("keeps every signed-in feature visible from account settings", () => {
     const html = renderPage(UnifiedSettingsPage);
     for (const href of [
       "/dashboard",
-      "/dashboard/editor/players",
-      "/dashboard/editor/design",
-      "/dashboard/games",
-      "/dashboard/giveaways",
+      "/dashboard/leaderboard/players",
+      "/dashboard/giveaways/chat",
       "/dashboard/rewards/redemptions",
-      "/dashboard/audience/viewers",
       "/dashboard/telegram",
-      "/dashboard/boards",
+      "/dashboard/analytics/activity",
+      "/dashboard/leaderboards",
       "/dashboard/settings",
       "/help",
     ]) expect(html).toContain(`href="${href}"`);
-    expect(html).toContain('data-nav="account" aria-current="page"');
+    expect(html).toContain('data-nav="settings" data-hash="account" aria-current="page"');
     expect((html.match(/<h1\b/g) || []).length).toBe(1);
     expect(html).not.toContain('data-nav="back"');
   });
@@ -159,10 +148,10 @@ describe("signed-in shell navigation", () => {
   });
 
   it("trails dashboard sections and editor steps from the route", () => {
-    const editor = PAGES.dashboard.Component({ activePath: "/dashboard/editor/design" }).toString();
-    expect(editor).toContain('<a href="/dashboard/editor">Leaderboard</a>');
-    expect(editor).toContain('<span aria-current="page">Theme &amp; styling</span>');
-    expect(editor).toContain('href="/dashboard/editor/design" data-nav="board" data-hash="design" aria-current="page"');
+    const editor = PAGES.dashboard.Component({ activePath: "/dashboard/leaderboard/design" }).toString();
+    expect(editor).toContain('<a href="/dashboard/leaderboard/players">My leaderboard</a>');
+    expect(editor).toContain('<span aria-current="page">Look</span>');
+    expect(editor).toContain('href="/dashboard/leaderboard/design" data-nav="board" data-hash="design" aria-current="page"');
 
     // Overview is the top level, so it gets no trail.
     expect(PAGES.dashboard.Component({ activePath: "/dashboard" }).toString())
@@ -170,9 +159,9 @@ describe("signed-in shell navigation", () => {
   });
 
   it("marks exactly one visible editor feature as current", () => {
-    const html = PAGES.dashboard.Component({ activePath: "/dashboard/editor/players", user }).toString();
-    expect(html).toContain('href="/dashboard/editor/players" data-nav="board" data-hash="players" aria-current="page"');
-    expect((html.match(/data-nav="board"[^>]*aria-current="page"/g) || []).length).toBe(1);
+    const html = PAGES.dashboard.Component({ activePath: "/dashboard/leaderboard/players", user }).toString();
+    expect(html).toContain('href="/dashboard/leaderboard/players" data-nav="board" data-hash="players" aria-current="page"');
+    expect((html.match(/data-nav="board"[^>]*aria-current="page"/g) || []).length).toBe(2);
   });
 
   it("keeps operational data visible while launch setup is incomplete", () => {

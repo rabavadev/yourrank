@@ -286,10 +286,10 @@ export function setupEditorTabs() {
         });
       }
       const TAB_NAME_MAP = {
-        setup: "Site details",
-        players: "Racers & scores",
-        design: "Theme & styling",
-        share: "Overlay & share",
+        setup: "Basics",
+        players: "Players & scores",
+        design: "Look",
+        share: "Share",
         history: "Past winners",
       };
       const crumbCurrent = document.querySelector(".v3-crumbs span[aria-current='page']");

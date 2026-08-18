@@ -33,6 +33,7 @@ export interface NavLinkItem {
   icon?: string | null;
   hash?: string;
   child?: boolean;
+  productKey?: string;
 }
 
 export interface NavGroupItem {
@@ -56,15 +57,16 @@ export function navListHtml(
   activeHash = "",
   label = "Dashboard"
 ): string {
-  const links = items.map((item) => {
+  const links = items.filter((item) => !("child" in item) || !item.child || item.key === active).map((item) => {
     if ("group" in item) {
       return `<div class="lb-nav-group-label" role="heading" aria-level="2">${esc(item.group)}</div>`;
     }
     const isActive = item.key === active && (!item.hash || activeHash === item.hash);
     const cls = `lb-nav${isActive ? " is-on" : ""}${item.child ? " lb-nav-child" : ""}`;
     const hash = item.hash ? ` data-hash="${esc(item.hash)}"` : "";
+    const product = item.productKey ? ` data-product-link="${esc(item.productKey)}"` : "";
     return `<a class="${cls}" href="${esc(item.href)}" data-nav="${esc(item.key)}"${hash}` +
-      `${isActive ? ' aria-current="page"' : ""} title="${esc(item.label)}">${navIconHtml(item.icon)}${esc(item.label)}</a>`;
+      `${product}${isActive ? ' aria-current="page"' : ""} title="${esc(item.label)}">${navIconHtml(item.icon)}${esc(item.label)}</a>`;
   }).join("");
   return `<nav class="lb-side-group lb-side-nav" data-area="all" aria-label="${esc(label)}">${links}</nav>`;
 }
@@ -103,8 +105,6 @@ export interface ChromeOpts {
   headMeta?: string;
   railHeadHtml?: string;
   topbarHtml?: string;
-  /** Cross-product links rendered under the rail. */
-  productLinks?: { label: string; href: string; active?: boolean }[];
   title?: string;
   titleId?: string;
   subtitle?: string;
@@ -122,16 +122,6 @@ export interface ChromeOpts {
   /** The surrounding document already provides the main landmark. */
   embeddedInMain?: boolean;
   content: string;
-}
-
-function productNavHtml(links: ChromeOpts["productLinks"]): string {
-  if (!links || !links.length) return "";
-  const items = links.map((l) => {
-    const mark = l.label.toLowerCase().startsWith("telegram") ? "T" : l.label.toLowerCase().startsWith("credits") ? "C" : "S";
-    return `<a class="lb-product-link${l.active ? " is-on" : ""}" href="${esc(l.href)}"` +
-      `${l.active ? ' aria-current="page"' : ""} title="${esc(l.label)}"><span class="lb-product-mark" aria-hidden="true">${mark}</span><span class="lb-product-label">${esc(l.label)}</span></a>`;
-  }).join("");
-  return `<nav class="lb-product-nav" aria-label="Product"><span class="label">Product</span>${items}</nav>`;
 }
 
 /**
@@ -179,7 +169,6 @@ ${collapse}
 </div>
 ${head}
 ${navListHtml(opts.nav, opts.active, opts.activeHash || "", opts.navLabel || "Dashboard")}
-${productNavHtml(opts.productLinks)}
 ${opts.footHtml ? `<div class="lb-side-foot">${opts.footHtml}</div>` : ""}
 ${sideProfile}
 </aside>

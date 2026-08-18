@@ -4,6 +4,7 @@
 import { raw } from "hono/html";
 import { DashboardShell } from "./dashboard-shell.jsx";
 import { brandLoaderLogoSvg } from "@yourrank/shared/brand-assets";
+import { parseDashboardPath } from "../assets/dashboard/routes.js";
 
 export const dashboardConfig = {
   title: "Dashboard · YourRank",
@@ -21,15 +22,15 @@ const ANALYTICS_TABS = ["activity", "referrals", "events"];
 // Each route serves one section, so the trail is derived from the route rather
 // than hand-written per screen — every page below Overview says where it is.
 const SECTION_CRUMBS = {
-  board: { label: "Leaderboard", href: "/dashboard/editor" },
+  board: { label: "My leaderboard", href: "/dashboard/leaderboard/players" },
   games: { label: "Mini-games", href: "/dashboard/games" },
   performance: { label: "Analytics", href: "/dashboard/analytics/activity" },
   settings: { label: "Leaderboard settings", href: "/dashboard/settings/board" },
-  boards: { label: "All sites", href: "/dashboard/boards" },
+  boards: { label: "Your leaderboards", href: "/dashboard/leaderboards" },
 };
 const TAB_LABELS = {
-  setup: "Site details", players: "Racers & scores", design: "Theme & styling", share: "Overlay & share", history: "Past winners",
-  activity: "Traffic & activity", referrals: "Referral program", events: "System log",
+  setup: "Basics", players: "Players & scores", design: "Look", share: "Share", history: "Past winners",
+  activity: "Visitors", referrals: "Where they came from", events: "Events",
 };
 
 function dashboardCrumbs(activeNav, activeHash) {
@@ -46,18 +47,19 @@ function dashboardCrumbs(activeNav, activeHash) {
 
 function dashboardShellRoute(activePath = "") {
   const pathname = String(activePath || "").split("?")[0].replace(/\/+$/, "") || "/dashboard";
-  if (pathname === "/dashboard" || pathname === "/dashboard.html") return { activeNav: "home", activeHash: "" };
-  if (pathname.startsWith("/dashboard/editor")) {
-    const tab = pathname.split("/")[3] || "setup";
-    return { activeNav: "board", activeHash: EDITOR_TABS.includes(tab) ? tab : "setup" };
+  const route = parseDashboardPath(pathname);
+  if (!route) {
+    if (pathname.startsWith("/dashboard/settings/")) {
+      return { activeNav: "account", activeHash: pathname.split("/")[3] || "account" };
+    }
+    return { activeNav: "home", activeHash: "" };
   }
-  if (pathname.startsWith("/dashboard/analytics")) {
-    const tab = pathname.split("/")[3] || "activity";
-    return { activeNav: "performance", activeHash: ANALYTICS_TABS.includes(tab) ? tab : "activity" };
-  }
-  if (pathname.startsWith("/dashboard/games")) return { activeNav: "games", activeHash: "" };
-  if (pathname.startsWith("/dashboard/settings")) return { activeNav: "settings", activeHash: "" };
-  if (pathname.startsWith("/dashboard/boards")) return { activeNav: "boards", activeHash: "" };
+  if (route.page === "home") return { activeNav: "home", activeHash: "" };
+  if (route.page === "board") return { activeNav: "board", activeHash: route.tab || "setup" };
+  if (route.page === "games") return { activeNav: "games", activeHash: "games" };
+  if (route.page === "performance") return { activeNav: "performance", activeHash: route.tab || "activity" };
+  if (route.page === "settings") return { activeNav: "settings", activeHash: "board" };
+  if (route.page === "boards") return { activeNav: "boards", activeHash: "" };
   return { activeNav: "home", activeHash: "" };
 }
 
@@ -81,13 +83,13 @@ function OverviewSection({ active } = {}) {
 <section class={active ? "lb-page is-on" : "lb-page"} data-page="home">
 <header class="v3-head ov-head"><h1>Your leaderboard</h1><p class="v3-head-sub" id="ovHeadSub">Here's what's happening with your site.</p></header>
 <div class="ov-command-grid" id="ovCommandGrid">
-<section class="ov-summary" aria-label="Your site status"><div class="ov-summary-copy"><span class="ov-summary-status"><i aria-hidden="true"></i><span id="ovPublishedStatus">Checking your site…</span></span><h2 id="ovSiteState">Getting things ready…</h2><p id="ovSiteStateMeta">We’ll show the best next step here.</p></div><div class="ov-summary-actions"><a class="v3-btn v3-btn--accent" id="ovPrimaryAction" href="/dashboard/editor/setup">Continue setup</a><div class="ov-summary-links"><a href="/dashboard/editor/setup">Edit site</a><a href="/dashboard/editor/share">Share site</a></div></div></section>
+<section class="ov-summary" aria-label="Your site status"><div class="ov-summary-copy"><span class="ov-summary-status"><i aria-hidden="true"></i><span id="ovPublishedStatus">Checking your site…</span></span><h2 id="ovSiteState">Getting things ready…</h2><p id="ovSiteStateMeta">We’ll show the best next step here.</p></div><div class="ov-summary-actions"><a class="v3-btn v3-btn--accent" id="ovPrimaryAction" href="/dashboard/leaderboard/setup">Continue setup</a><div class="ov-summary-links"><a href="/dashboard/leaderboard/setup">Edit site</a><a href="/dashboard/leaderboard/share">Share site</a></div></div></section>
 <aside id="ovOnboardingBento" hidden>
 <div class="ov-setup">
 <div class="ov-setup-progress"><div class="ov-setup-head"><div><h2>Launch checklist</h2><p>Complete the essentials, then publish.</p></div><span class="ov-setup-count" id="ovSetupCount">0 of 3 done</span></div><div class="ov-setup-bar" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="3" aria-labelledby="ovSetupCount" id="ovSetupBar"><i id="ovSetupFill"></i></div></div>
 <div class="ov-setup-list" id="ovChecklist">
-<a class="ov-setup-row" id="ovStepBrand" href="/dashboard/editor/setup"><span class="ov-step-icon" aria-hidden="true"></span><span class="ov-step-body"><b>Name your leaderboard</b><span class="hint">Add your name, sponsor, and prize details</span></span><span class="ov-step-status" id="ovStepBrandStatus">Add details →</span></a>
-<a class="ov-setup-row" id="ovStepPlayers" href="/dashboard/editor/players"><span class="ov-step-icon" aria-hidden="true"></span><span class="ov-step-body"><b>Add your players</b><span class="hint">Import a spreadsheet or add them one by one</span></span><span class="ov-step-status" id="ovStepPlayersStatus">Add players →</span></a>
+<a class="ov-setup-row" id="ovStepBrand" href="/dashboard/leaderboard/setup"><span class="ov-step-icon" aria-hidden="true"></span><span class="ov-step-body"><b>Name your leaderboard</b><span class="hint">Add your name, sponsor, and prize details</span></span><span class="ov-step-status" id="ovStepBrandStatus">Add details →</span></a>
+<a class="ov-setup-row" id="ovStepPlayers" href="/dashboard/leaderboard/players"><span class="ov-step-icon" aria-hidden="true"></span><span class="ov-step-body"><b>Add your players</b><span class="hint">Import a spreadsheet or add them one by one</span></span><span class="ov-step-status" id="ovStepPlayersStatus">Add players →</span></a>
 <a class="ov-setup-row" id="ovStepPublish" href="#publish"><span class="ov-step-icon" aria-hidden="true"></span><span class="ov-step-body"><b>Go live</b><span class="hint">Publish your page so your audience can see it</span></span><span class="ov-step-status" id="ovStepPublishStatus">Publish site →</span></a>
 </div>
 </div></aside>
@@ -98,7 +100,7 @@ function OverviewSection({ active } = {}) {
     <span class="kpi-lbl" id="ovLblPlayers">Players &amp; Racers</span>
     <div class="kpi-value-row">
       <span class="kpi-val" id="ovPlayersCount" aria-labelledby="ovLblPlayers"><span class="skeleton v3-skel-kpi" aria-hidden="true"></span></span>
-      <a class="kpi-action" href="/dashboard/editor/players">Manage →</a>
+      <a class="kpi-action" href="/dashboard/leaderboard/players">Manage →</a>
     </div>
   </div>
   <div class="kpi-card">
@@ -124,7 +126,7 @@ function OverviewSection({ active } = {}) {
       <h2>🎬 OBS Live Stream Overlays</h2>
       <p class="v3-head-sub">Paste transparent browser sources directly into OBS Studio or Streamlabs.</p>
     </div>
-    <a class="btn btn--sm btn--ghost" href="/dashboard/editor/design">Theme Studio →</a>
+    <a class="btn btn--sm btn--ghost" href="/dashboard/leaderboard/design">Theme Studio →</a>
   </div>
   <div class="ov-obs-grid">
     <div class="ov-obs-item">
@@ -154,7 +156,7 @@ function OverviewSection({ active } = {}) {
   </div>
 </section>
 
-<div class="ov-live-grid"><section class="ov-live-card" aria-label="Recent activity"><div class="ov-live-card-head"><h2>Recent activity</h2><button class="lb-cardlink kpi-action ov-analytics-link" id="ovAnalyticsLink" type="button" data-jump="performance">See full stats →</button></div><div class="ov-activity-list" id="ovActivityList"></div><div class="ov-card-empty" id="ovActivityEmpty" hidden></div></section><section class="ov-live-card" aria-label="Top players"><div class="ov-live-card-head"><h2>Top players</h2><a class="kpi-action" href="/dashboard/editor/players">All players →</a></div><div class="ov-players-list" id="ovTopPlayers"></div><div class="ov-card-empty" id="ov_topEmpty" hidden></div></section></div>
+<div class="ov-live-grid"><section class="ov-live-card" aria-label="Recent activity"><div class="ov-live-card-head"><h2>Recent activity</h2><button class="lb-cardlink kpi-action ov-analytics-link" id="ovAnalyticsLink" type="button" data-jump="performance">See full stats →</button></div><div class="ov-activity-list" id="ovActivityList"></div><div class="ov-card-empty" id="ovActivityEmpty" hidden></div></section><section class="ov-live-card" aria-label="Top players"><div class="ov-live-card-head"><h2>Top players</h2><a class="kpi-action" href="/dashboard/leaderboard/players">All players →</a></div><div class="ov-players-list" id="ovTopPlayers"></div><div class="ov-card-empty" id="ov_topEmpty" hidden></div></section></div>
 </div></div>
 </section>
   );
@@ -168,11 +170,11 @@ function EditorSection({ active } = {}) {
 <div class="design-controls">
 <h1 class="sr-only">Site</h1>
 <nav class="editor-steps v3-tabs" id="editorTabs" aria-label="Editor steps">
-  <a class="editor-step v3-tab is-active" href="/dashboard/editor/setup" data-egroup="setup">Site details</a>
-  <a class="editor-step v3-tab" href="/dashboard/editor/players" data-egroup="players">Racers &amp; scores</a>
-  <a class="editor-step v3-tab" href="/dashboard/editor/design" data-egroup="design">Theme &amp; styling</a>
-  <a class="editor-step v3-tab" href="/dashboard/editor/share" data-egroup="share">Overlay &amp; share</a>
-  <a class="editor-step v3-tab" href="/dashboard/editor/history" data-egroup="history">Past winners</a>
+  <a class="editor-step v3-tab is-active" href="/dashboard/leaderboard/setup" data-egroup="setup">Basics</a>
+  <a class="editor-step v3-tab" href="/dashboard/leaderboard/players" data-egroup="players">Players &amp; scores</a>
+  <a class="editor-step v3-tab" href="/dashboard/leaderboard/design" data-egroup="design">Look</a>
+  <a class="editor-step v3-tab" href="/dashboard/leaderboard/share" data-egroup="share">Share</a>
+  <a class="editor-step v3-tab" href="/dashboard/leaderboard/history" data-egroup="history">Past winners</a>
 </nav>
 <div class="card" data-egroup="setup"><h2>Your leaderboard info</h2><p class="card-sub">This is what visitors see when they open your site.</p><div class="grid2">
 <div class="field"><label for="f_name">Leaderboard name</label><input id="f_name" /></div>
@@ -231,7 +233,7 @@ function EditorSection({ active } = {}) {
 </div>
 <div class="v3-bulkbar" id="bulkActions" role="toolbar" aria-label="Bulk actions" hidden><span class="v3-bulkbar-mark" aria-hidden="true"></span><span id="bulkCount" role="status" aria-live="polite" aria-atomic="true">0 players selected</span><span class="v3-bulkbar-sep" aria-hidden="true"></span><button class="v3-btn v3-btn--dark" id="bulkClearWager" type="button">Reset scores to zero</button><button class="v3-btn v3-btn--danger" id="bulkDelete" type="button">Remove selected players</button></div>
 </div>
-<div class="card" data-egroup="design" id="playerFieldsCard"><h2>Player table columns</h2><p class="card-sub">Choose which extra columns show on the player table.</p><a class="btn btn--sm btn--ghost" id="playerFieldsLink" href="/dashboard/editor/players">Manage columns in Players →</a></div>
+<div class="card" data-egroup="design" id="playerFieldsCard"><h2>Player table columns</h2><p class="card-sub">Choose which extra columns show on the player table.</p><a class="btn btn--sm btn--ghost" id="playerFieldsLink" href="/dashboard/leaderboard/players">Manage columns in Players →</a></div>
 <div class="design-group-heading" data-egroup="design"><h3>Appearance</h3></div>
 <div class="card" data-egroup="design" id="brandCard"><h2>Your brand <span class="pill pill--info ml-6">PRO</span></h2><p class="card-sub">Add your logo and pick your colors. Upgrade to Pro to customize.</p>
 <div id="brandBody">
@@ -431,7 +433,7 @@ function BoardSettingsSection({ active } = {}) {
     <button class="v3-tab" id="settingsTabSupport" type="button" role="tab" aria-selected="false" aria-controls="settingsPanelSupport" data-settings-tab="support">Support</button>
   </div>
   <section class="v3-settings-panel" id="settingsPanelAccess" role="tabpanel" aria-labelledby="settingsTabAccess" data-settings-panel="access">
-    <div class="v3-settings-card"><div class="v3-settings-row"><div><h2>Visibility &amp; password</h2><p>You can require a password before anyone can view this leaderboard.</p></div><a class="v3-set-btn v3-set-btn--outline" id="settingsBoardAccessLink" href="/dashboard/editor/setup">Change access settings</a></div></div>
+    <div class="v3-settings-card"><div class="v3-settings-row"><div><h2>Visibility &amp; password</h2><p>You can require a password before anyone can view this leaderboard.</p></div><a class="v3-set-btn v3-set-btn--outline" id="settingsBoardAccessLink" href="/dashboard/leaderboard/setup">Change access settings</a></div></div>
     <div class="v3-settings-card"><div class="v3-settings-row v3-settings-row--top"><div><h2>Discord notifications <span class="v3-chip v3-chip--pro">PRO</span></h2><p>Get a Discord message when your leaderboard resets or a player reaches the top 3.</p></div><input class="v3-toggle" id="settingsWebhookEnabled" type="checkbox" aria-label="Enable Discord notifications" /></div><div class="v3-settings-notify-body" id="notifyBody"><div class="v3-settings-inline-form"><input id="f_webhook" aria-label="Discord connection URL" placeholder="Paste your Discord webhook URL here" /><button class="v3-set-btn v3-set-btn--outline" id="testDiscord" type="button">Send test message</button><span class="v3-settings-status" id="testDiscordStatus" role="status"></span></div></div><div class="v3-settings-inline" id="notifyLock" hidden>Notifications are a Pro feature. <a href="/dashboard/settings/plan?from=notifications">Upgrade to unlock them</a>.</div></div>
     <div class="v3-settings-card v3-danger-card"><div class="v3-danger-lbl">DANGER ZONE</div><div class="v3-settings-row"><div><b>Wipe all scores and history</b><p>Deletes all player scores, prize amounts, and activity history. This cannot be undone.</p></div><button class="v3-set-btn v3-set-btn--danger-outline" id="settingsResetData" type="button">Reset everything</button></div><div class="v3-settings-row"><div><b>Delete this site</b><p>Permanently delete this site and its settings. This action cannot be undone.</p></div><button class="v3-set-btn v3-set-btn--danger" id="settingsDeleteBoard" type="button">Delete site</button></div></div>
   </section>
@@ -494,7 +496,7 @@ function BoardSettingsSection({ active } = {}) {
       <div class="v3-settings-inline" id="domainLock" hidden>Custom domains are a Pro feature. <a href="/dashboard/settings/plan?from=domain">Upgrade to unlock it</a>.</div>
     </div>
   </section>
-  <section class="v3-settings-panel" id="settingsPanelSupport" role="tabpanel" aria-labelledby="settingsTabSupport" data-settings-panel="support" hidden><div class="v3-settings-card"><div class="v3-settings-card-head"><div><h2>Help &amp; support</h2><p>Find help and manage the tools around your public site.</p></div></div><div class="v3-settings-row"><div><b>Stream overlay</b><p>Get your stream overlay link and embed code.</p></div><a class="v3-set-btn v3-set-btn--outline" href="/dashboard/editor/share">Go to sharing</a></div><div class="v3-settings-row"><div><b>Need help?</b><p>Read the operator help hub or contact support.</p></div><a class="v3-set-btn v3-set-btn--outline" href="/help">Open help hub</a><a class="v3-set-btn v3-set-btn--outline" href="/help/support">Contact support</a></div></div></section>
+  <section class="v3-settings-panel" id="settingsPanelSupport" role="tabpanel" aria-labelledby="settingsTabSupport" data-settings-panel="support" hidden><div class="v3-settings-card"><div class="v3-settings-card-head"><div><h2>Help &amp; support</h2><p>Find help and manage the tools around your public site.</p></div></div><div class="v3-settings-row"><div><b>Stream overlay</b><p>Get your stream overlay link and embed code.</p></div><a class="v3-set-btn v3-set-btn--outline" href="/dashboard/leaderboard/share">Go to sharing</a></div><div class="v3-settings-row"><div><b>Need help?</b><p>Read the operator help hub or contact support.</p></div><a class="v3-set-btn v3-set-btn--outline" href="/help">Open help hub</a><a class="v3-set-btn v3-set-btn--outline" href="/help/support">Contact support</a></div></div></section>
 </div>
 </section>
   );

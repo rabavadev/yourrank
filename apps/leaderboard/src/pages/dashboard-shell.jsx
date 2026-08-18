@@ -1,7 +1,7 @@
 /** @jsxRuntime automatic */
 /** @jsxImportSource hono/jsx */
 
-import { NAV_LINKS, activeKey, profileMenuHtml } from "@yourrank/shared/shell-nav";
+import { profileMenuHtml } from "@yourrank/shared/shell-nav";
 import { dashboardNavItems as sharedDashboardNavItems } from "@yourrank/shared/dashboard-nav";
 import { raw } from "hono/html";
 import { crumbsHtml, navListHtml } from "@yourrank/shared/dashboard-chrome";
@@ -25,23 +25,20 @@ export function dashboardNavItems() {
 }
 
 export function mapActiveNav(nav, hash) {
-  if (nav === "board") return "board";
-  if (nav === "games") return "games";
+  if (nav === "board" || nav === "games") return "board";
   if (nav === "giveaways") return "giveaways";
-  if (nav === "redemptions" || nav === "shop" || nav === "rules" || nav === "channel" || nav === "rewards") return "redemptions";
-  if (nav === "viewers" || nav === "activity" || nav === "performance" || nav === "audience" || nav === "history") return "viewers";
-  if (nav === "boards" || nav === "settings") return "boards";
-  if (nav === "account") return "account";
+  if (nav === "redemptions" || nav === "shop" || nav === "rules" || nav === "channel" || nav === "rewards" || nav === "viewers" || nav === "activity" || nav === "performance" || nav === "audience" || nav === "history") return nav === "performance" ? "performance" : "redemptions";
+  if (nav === "boards") return "boards";
+  if (nav === "settings" || nav === "account") return "settings";
   if (nav === "help") return "help";
   return nav || "home";
 }
 
 export function mapActiveHash(nav, hash) {
-  if (nav === "board") {
-    if (hash === "setup" || hash === "players") return "players";
-    if (hash === "design" || hash === "share") return "design";
-    return hash;
-  }
+  if (nav === "games") return "games";
+  if (nav === "settings" && !hash) return "board";
+  if (nav === "account" && !hash) return "account";
+  if (nav === "history") return "activity";
   return hash;
 }
 
@@ -67,7 +64,7 @@ function SidebarBoard({ boardContext }) {
       <svg class="lb-ws-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
     </div>
     <div class="lb-ws-menu" id="wsMenu" hidden>
-      <a class="lb-ws-action" id="manageBoardsBtn" href="/dashboard/boards">Manage all sites →</a>
+      <a class="lb-ws-action" id="manageBoardsBtn" href="/dashboard/leaderboards">Manage all sites →</a>
       <a class="lb-ws-action" href="/dashboard/settings/board">Site settings →</a>
     </div>
     {boardContext === "full" && <><div class="board-upsell" id="boardLimitUpsell" role="status" hidden><div><b id="boardLimitTitle">Need another site?</b><p class="hint" id="boardLimitText"></p></div><a class="btn btn--sm btn--accent" id="boardLimitCta" href="/dashboard/settings">Upgrade plan</a></div>
@@ -76,23 +73,8 @@ function SidebarBoard({ boardContext }) {
   </div>;
 }
 
-// Cross-product switcher. All three peer products are always listed so the
-// operator can move between Sites, Telegram, and Credits & Shop from anywhere.
-const PRODUCT_NAV_KEYS = new Set(["sites", "telegram", "credits"]);
-const PRODUCT_MARKS = { sites: "S", telegram: "T", credits: "C" };
-
-function ProductNav({ boardContext, footer }) {
-  const activePath = boardContext === "none" ? "/dashboard/settings" : footer === "rewards" ? "/dashboard/rewards/redemptions" : "/dashboard";
-  const active = activeKey(activePath);
-  return <nav class="lb-product-nav" aria-label="YourRank products">
-    <span class="label">Products</span>
-    {NAV_LINKS.filter(({ key }) => PRODUCT_NAV_KEYS.has(key)).map(({ key, label, href }) => <a class={"lb-product-link" + (key === active ? " is-on" : "")} href={href} data-product-link={key} aria-current={key === active ? "page" : undefined} title={label}><span class="lb-product-mark" aria-hidden="true">{PRODUCT_MARKS[key]}</span><span class="lb-product-label">{label}</span></a>)}
-  </nav>;
-}
-
 function SidebarFooter({ boardContext, footer, profile }) {
   return <>
-    <ProductNav boardContext={boardContext} footer={footer} />
     {footer !== "account" && <div class="lb-side-foot"><a class="btn btn--sm btn--accent lb-live-btn" id="liveLink" href="#" target="_blank" rel="noopener noreferrer">Open public page ↗</a>
       {footer === "rewards" ? <div class="lb-usage" id="planUsage"><div class="lb-usage-head"><span class="lb-usage-lbl" id="planBadge">FREE PLAN</span><span class="lb-usage-val">Active</span></div><div class="lb-usage-meta">Redemptions <span id="usageAmount">0</span> / <span id="usageLimit">0</span></div><div class="lb-usage-bar" aria-hidden="true"><i id="usageFill"></i></div></div> : <><div class="lb-usage" id="planUsage" hidden><div class="lb-usage-head"><span class="lb-usage-lbl" id="planBadge">FREE PLAN</span><span class="lb-usage-val">Active</span></div><div class="lb-usage-meta">Usage <span id="usageAmount">0</span> / <span id="usageLimit">0</span></div><div class="lb-usage-bar" aria-hidden="true"><i id="usageFill"></i></div></div></>}
     </div>}

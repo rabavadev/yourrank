@@ -45,7 +45,7 @@ export function UnifiedSettingsPage({ activePath, user, tab = "account" } = {}) 
           {settingsPanel("team", settingsWidgets.team)}
           {settingsPanel("plan", settingsWidgets.plan)}
           {settingsPanel("connections", `${settingsWidgets.postbacks}<div class="lb-widget lb-widget--full"><h2>Connected accounts</h2><p class="card-sub">Streamer identities and connected services.</p><div id="connectedAccounts"><p class="hint">Loading…</p></div></div><div class="lb-widget lb-widget--full"><h2>Site connections</h2><p class="card-sub">Kick and Credits settings belong to the selected site.</p><a class="btn btn--accent" href="/dashboard/rewards/channel">Open site connections</a></div>`)}
-          {settingsPanel("data", `${settingsWidgets.data}<div class="lb-widget lb-widget--full lb-widget--danger"><h2>Selected site data</h2><p class="card-sub">These actions affect one selected site, not your whole account. Open the site tools before making a destructive change.</p><div class="d-flex gap-8 flex-wrap"><a class="btn btn--ghost" href="/dashboard/editor/history">Reset or archive a site</a><a class="btn btn--ghost" href="/dashboard/editor/setup">Delete a site</a></div></div>`)}
+          {settingsPanel("data", `${settingsWidgets.data}<div class="lb-widget lb-widget--full lb-widget--danger"><h2>Selected site data</h2><p class="card-sub">These actions affect one selected site, not your whole account. Open the site tools before making a destructive change.</p><div class="d-flex gap-8 flex-wrap"><a class="btn btn--ghost" href="/dashboard/leaderboard/history">Reset or archive a site</a><a class="btn btn--ghost" href="/dashboard/leaderboard/setup">Delete a site</a></div></div>`)}
         </div>
         <aside class="account-settings-sidebar" aria-label="Account summary">
           <div class="account-summary-card">
@@ -98,4 +98,3 @@ export const settingsConfig = {
 };
 
 export const settingsUnifiedPage = { config: settingsConfig, Component: UnifiedSettingsPage };
-

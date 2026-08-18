@@ -10,8 +10,8 @@
 
 export const SECTIONS = {
   home: { path: "/dashboard", title: "Overview" },
-  board: { path: "/dashboard/editor", title: "Editor", tabs: ["setup", "players", "design", "share", "history"] },
-  boards: { path: "/dashboard/boards", title: "All boards" },
+  board: { path: "/dashboard/leaderboard", title: "My leaderboard", tabs: ["setup", "players", "design", "share", "history"] },
+  boards: { path: "/dashboard/leaderboards", title: "Your leaderboards" },
   games: { path: "/dashboard/games", title: "Public page sections & Games" },
   performance: { path: "/dashboard/analytics", title: "Analytics", tabs: ["activity", "referrals", "events"] },
   // Account settings (`/dashboard/settings` and its tabs) are their own
@@ -24,6 +24,8 @@ export const SECTIONS = {
 export const SECTION_ALIASES = {
   overview: "home",
   editor: "board",
+  leaderboard: "board",
+  leaderboards: "boards",
   analytics: "performance",
   growth: "performance",
   referrals: "performance",
@@ -31,6 +33,15 @@ export const SECTION_ALIASES = {
   manage: "settings",
   billing: "settings",
 };
+
+export function legacyDashboardPath(pathname) {
+  const clean = pathname.replace(/\/+$/, "") || "/dashboard";
+  if (clean === "/dashboard/editor" || clean.startsWith("/dashboard/editor/")) {
+    return `/dashboard/leaderboard${clean.slice("/dashboard/editor".length)}`;
+  }
+  if (clean === "/dashboard/boards") return "/dashboard/leaderboards";
+  return "";
+}
 
 export function resolveSection(name) {
   if (!name) return "";
@@ -42,14 +53,14 @@ export function defaultTab(page) {
   return SECTIONS[page]?.tabs?.[0] || "";
 }
 
-/** `("board", "players") → "/dashboard/editor/players"` */
+/** `("board", "players") → "/dashboard/leaderboard/players" */
 export function dashboardPath(page, tab = "") {
   const section = SECTIONS[resolveSection(page) || "home"];
   const tabs = section.tabs || [];
   return tabs.includes(tab) ? `${section.path}/${tab}` : section.path;
 }
 
-/** `"/dashboard/editor/players" → { page: "board", tab: "players" }`, or null. */
+/** `"/dashboard/leaderboard/players" → { page: "board", tab: "players" }`, or null. */
 export function parseDashboardPath(pathname) {
   const clean = pathname.replace(/\/+$/, "") || "/dashboard";
   if (clean === "/dashboard" || clean === "/dashboard.html") return { page: "home", tab: "" };

@@ -40,14 +40,10 @@ export function appHtml(
   // topbar and account menu) instead of a second, older-looking one.
   const chrome = dashboardChromeHtml({
     nav: botNavItems(),
-    active: page === "overview" ? "telegram-overview" : `telegram-${page}`,
+    active: "telegram",
+    activeHash: page,
     navLabel: "Telegram",
-    railHeadHtml: `<div class="lb-ws-switcher"><a class="lb-ws-card" href="/dashboard/boards"><div class="lb-ws-avatar">${esc((context.siteName || "S").slice(0, 1).toUpperCase())}</div><div class="lb-ws-meta"><span class="lb-ws-name">${esc(context.siteName || "No site connected")}</span><span class="lb-ws-plan">Active site</span></div></a></div>`,
-    productLinks: [
-      { label: "Sites", href: "/dashboard" },
-      { label: "Telegram", href: "/dashboard/telegram", active: true },
-      { label: "Credits & Shop", href: "/dashboard/rewards/redemptions" },
-    ],
+    railHeadHtml: `<div class="lb-ws-switcher"><a class="lb-ws-card" href="/dashboard/leaderboards"><div class="lb-ws-avatar">${esc((context.siteName || "S").slice(0, 1).toUpperCase())}</div><div class="lb-ws-meta"><span class="lb-ws-name">${esc(context.siteName || "No site connected")}</span><span class="lb-ws-plan">Active site</span></div></a></div>`,
     title: meta.label,
     subtitle: meta.sub,
     crumbs: [

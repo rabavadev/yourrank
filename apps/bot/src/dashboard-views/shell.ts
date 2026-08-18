@@ -13,18 +13,7 @@ export const pageLinks = [
 
 /** Shared dashboard navigation with Telegram's pages nested under its product entry. */
 export function botNavItems(): NavItem[] {
-  return dashboardNavItems().flatMap((item) => {
-    if (!("key" in item) || item.key !== "telegram") return [item];
-    return [
-      { ...item, key: "telegram-overview" },
-      ...pageLinks.filter((p) => p.key !== "overview").map((p) => ({
-        key: `telegram-${p.key}`,
-        label: p.label,
-        href: p.href,
-        child: true,
-      })),
-    ];
-  });
+  return dashboardNavItems();
 }
 
 export function pageMeta(active: string): { label: string; sub: string } {

@@ -38,7 +38,8 @@ export function preserveSiteContextLinks(activeSiteId = "") {
     "/dashboard/games",
     "/dashboard/analytics/activity",
     "/dashboard/settings/board",
-    "/dashboard/boards",
+    "/dashboard/leaderboards",
+    "/dashboard/leaderboard",
   ]);
   document.querySelectorAll("a[href]").forEach((link) => {
     const raw = link.getAttribute("href");
@@ -46,7 +47,7 @@ export function preserveSiteContextLinks(activeSiteId = "") {
     const target = new URL(raw, location.origin);
     if (creditsDestinations.has(target.pathname) && !target.searchParams.has("siteId")) {
       target.searchParams.set("siteId", siteId);
-    } else if ((siteDestinations.has(target.pathname) || target.pathname.startsWith("/dashboard/editor/")) && !target.searchParams.has("board")) {
+    } else if ((siteDestinations.has(target.pathname) || target.pathname.startsWith("/dashboard/leaderboard/")) && !target.searchParams.has("board")) {
       target.searchParams.set("board", siteId);
     } else {
       return;
@@ -89,7 +90,7 @@ export async function loadBoardShell({ request: requestFn = boardApi } = {}) {
       publicLink.target = "_blank";
       publicLink.rel = "noopener noreferrer";
     } else {
-      publicLink.href = pendingVerification ? "/verify-email" : `/dashboard/editor/share?board=${encodeURIComponent(current || "")}`;
+      publicLink.href = pendingVerification ? "/verify-email" : `/dashboard/leaderboard/share?board=${encodeURIComponent(current || "")}`;
       publicLink.textContent = pendingVerification ? "Verify email to publish" : "Publish your site";
       publicLink.removeAttribute("target");
       publicLink.removeAttribute("rel");

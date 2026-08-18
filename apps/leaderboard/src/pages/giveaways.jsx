@@ -9,6 +9,7 @@ export function GiveawaysPage({ user, tab = "chat" } = {}) {
   return (
     <DashboardShell
       activeNav="giveaways"
+      activeHash={tab}
       boardContext="selector"
       crumbs={crumbs}
       footer="rewards"

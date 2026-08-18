@@ -52,7 +52,7 @@ function SubTabs({ tab, isAudience }) {
 function RewardsPage({ tab, activeNav = tab, boardContext = "selector", footer = "rewards", user }) {
   const body = PAGES[tab] || channelPage;
   const isAudience = tab === "viewers" || tab === "history";
-  return <DashboardShell activeNav={activeNav} boardContext={boardContext} crumbs={crumbsFor(tab)} footer={footer} rootId="cr-dash" user={user}>
+  return <DashboardShell activeNav={activeNav} activeHash={tab === "history" ? "activity" : tab} boardContext={boardContext} crumbs={crumbsFor(tab)} footer={footer} rootId="cr-dash" user={user}>
     <div class="cr-workspace-content">
       <SubTabs tab={tab} isAudience={isAudience} />
       <div id="cr-loading" class="ui-loading" role="status" aria-live="polite" aria-busy="true" hidden><div class="ui-loading__spinner"></div><span class="sr-only">Loading credits and shop…</span></div>
