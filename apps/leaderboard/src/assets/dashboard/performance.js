@@ -3,11 +3,7 @@ import { setState, state } from "./state.js";
 import { renderEmpty, renderError, setMetricLoading, setMetricValue, setRowsLoading } from "./states.js";
 
 const DOW = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-const TAB_LABELS = {
-  activity: "Visitors",
-  referrals: "Where they came from",
-  events: "Events",
-};
+const TAB_LABELS = { activity: "Visitors", referrals: "Where they came from", events: "Events" };
 
 export function initPerformance() {
   wireRangeFilter();
@@ -49,11 +45,18 @@ function wireTabs() {
   if (!page._routeTabsWired) {
     page._routeTabsWired = true;
     window.addEventListener("popstate", () => {
-      if (location.pathname.startsWith("/dashboard/analytics")) {
-        showTab((location.pathname.match(/\/analytics\/([^/]+)/) || [])[1] || "activity");
-      }
+      if (location.pathname.startsWith("/dashboard/analytics")) showTab((location.pathname.match(/\/analytics\/([^/]+)/) || [])[1] || "activity");
     });
   }
+}
+
+function totals(days) {
+  return days.reduce((acc, day) => {
+    acc.views += Number(day.views) || 0;
+    acc.clicks += Number(day.clicks) || 0;
+    acc.copies += Number(day.copies) || 0;
+    return acc;
+  }, { views: 0, clicks: 0, copies: 0 });
 }
 
 function hasCurrentTraffic() {
@@ -71,21 +74,15 @@ function showTab(tab) {
     if (selected) node.setAttribute("aria-current", "page");
     else node.removeAttribute("aria-current");
   });
-
-  // Referral rewards are an account/plan concern, not analytics. Keep this tab
-  // about traffic sources only instead of mixing product promotion into stats.
   const referralPromo = $("perf-referrals");
   if (referralPromo) referralPromo.hidden = true;
-
   const panels = { activity: ["perf-activity"], referrals: ["perf-referrers"], events: ["perf-events"] };
   Object.entries(panels).forEach(([name, ids]) => ids.forEach((id) => {
     const node = $(id);
     if (node) node.hidden = name !== active;
   }));
-
   const heatmap = $("perf-heatmap");
   if (heatmap) heatmap.hidden = active !== "activity" || !hasCurrentTraffic();
-
   const crumb = document.querySelector('.v3-crumbs span[aria-current="page"]');
   if (crumb) crumb.textContent = TAB_LABELS[active];
 }
@@ -114,26 +111,13 @@ export function renderPerformance(stats) {
   const ctr = currentTotals.views ? currentTotals.clicks / currentTotals.views * 100 : 0;
   const priorCtr = previousTotals.views ? previousTotals.clicks / previousTotals.views * 100 : 0;
   setKpi("perfKpiCtr", `${ctr.toFixed(1)}%`, previousTotals.views ? `${(ctr - priorCtr).toFixed(1)} pp` : "");
-  const rangeLabel = $("perfRangeLabel");
-  if (rangeLabel) rangeLabel.textContent = String(range);
-  const board = $("perfBoardName");
-  if (board) board.textContent = state.SLUG || "Active site";
+  if ($("perfRangeLabel")) $("perfRangeLabel").textContent = String(range);
+  if ($("perfBoardName")) $("perfBoardName").textContent = state.SLUG || "Active site";
 
   renderChart(days, hasTraffic);
   renderActivity(hasTraffic ? days : []);
   if (hasTraffic) loadHeatmap();
-
-  const currentTab = document.querySelector('[data-perf-tab][aria-current="page"]')?.dataset?.perfTab || "activity";
-  showTab(currentTab);
-}
-
-function totals(days) {
-  return days.reduce((acc, day) => {
-    acc.views += Number(day.views) || 0;
-    acc.clicks += Number(day.clicks) || 0;
-    acc.copies += Number(day.copies) || 0;
-    return acc;
-  }, { views: 0, clicks: 0, copies: 0 });
+  showTab(document.querySelector('[data-perf-tab][aria-current="page"]')?.dataset?.perfTab || "activity");
 }
 
 function percentDelta(current, previous) {
@@ -157,11 +141,9 @@ function renderChart(days, hasTraffic) {
   const totalWrap = document.querySelector(".v3-chart-total");
   host.hidden = !hasTraffic;
   if (totalWrap) totalWrap.hidden = !hasTraffic;
-
   if (!hasTraffic) {
     host.innerHTML = "";
-    const total = $("perfTotalViews");
-    if (total) setMetricValue(total, "0");
+    if ($("perfTotalViews")) setMetricValue($("perfTotalViews"), "0");
     clearLoadError(empty, false);
     renderEmpty(empty, {
       icon: "chart",
@@ -171,21 +153,15 @@ function renderChart(days, hasTraffic) {
     });
     return;
   }
-
   const width = 720;
   const height = 220;
   const values = days.map((day) => Number(day.views) || 0);
   const max = Math.max(1, ...values);
   const points = values.map((value, index) => `${(index / Math.max(1, values.length - 1)) * width},${height - 25 - value / max * 170}`).join(" ");
-  const labels = days.map((day, index) => {
-    if (!day.day || index % Math.max(1, Math.ceil(days.length / 7))) return "";
-    return `<text x="${(index / Math.max(1, days.length - 1)) * width}" y="214">${day.day.slice(5)}</text>`;
-  }).join("");
+  const labels = days.map((day, index) => index % Math.max(1, Math.ceil(days.length / 7)) || !day.day ? "" : `<text x="${(index / Math.max(1, days.length - 1)) * width}" y="214">${day.day.slice(5)}</text>`).join("");
   host.innerHTML = `<svg viewBox="0 0 ${width} ${height}" role="img" aria-label="Daily views over time"><g class="v3-chart-grid">${[20, 75, 130, 185].map((y) => `<line x1="0" x2="${width}" y1="${y}" y2="${y}"/>`).join("")}</g><polyline points="${points}" fill="none"/>${labels}</svg>`;
-  const total = $("perfTotalViews");
-  if (total) setMetricValue(total, String(values.reduce((sum, value) => sum + value, 0)));
+  if ($("perfTotalViews")) setMetricValue($("perfTotalViews"), String(values.reduce((sum, value) => sum + value, 0)));
   clearLoadError(empty, false);
-  if (empty) empty.hidden = true;
 }
 
 function renderActivity(days) {
@@ -220,7 +196,6 @@ async function loadHeatmap() {
   } catch (error) {
     setState({ HEATMAP_STATUS: "error" });
     logError("load-heatmap", error);
-    const grid = $("perfHeatmapGrid");
     if (grid) {
       grid.removeAttribute("aria-busy");
       renderError(grid, { title: "Couldn't load your activity map.", retry: loadHeatmap });
@@ -235,12 +210,11 @@ function renderHeatmap(matrix) {
   const grid = $("perfHeatmapGrid");
   if (!grid) return;
   const values = matrix.flat().map((value) => Number(value) || 0);
-  const total = values.reduce((sum, value) => sum + value, 0);
-  if (total === 0) {
+  if (values.reduce((sum, value) => sum + value, 0) === 0) {
     renderEmpty(grid, { icon: "chart", title: "No hourly activity yet", body: "Views by day and hour will appear here once your site gets traffic." });
     return;
   }
-  let html = `<div class="heatmap-corner"></div>`;
+  let html = '<div class="heatmap-corner"></div>';
   for (let hour = 0; hour < 24; hour++) html += hour % 3 === 0 ? `<div class="heatmap-hlabel">${hour}</div>` : "<div></div>";
   for (let day = 0; day < 7; day++) {
     html += `<div class="heatmap-dlabel">${DOW[day]}</div>`;
@@ -257,12 +231,11 @@ function renderReferrers(referrers) {
   body.innerHTML = referrers.map((row) => `<tr><td>${esc(row.domain || "Direct / unknown")}</td><td class="num">${Number(row.count) || 0}</td></tr>`).join("");
   if (referrers.length) {
     clearLoadError($("perfReferrersEmpty"), false);
-    $("perfReferrersEmpty").hidden = true;
-  } else {
-    const empty = $("perfReferrersEmpty");
-    clearLoadError(empty, false);
-    renderEmpty(empty, { icon: "link", title: "No traffic sources yet", body: "Share your site first. Sources will appear here when browsers report where visitors came from." });
+    return;
   }
+  const empty = $("perfReferrersEmpty");
+  clearLoadError(empty, false);
+  renderEmpty(empty, { icon: "link", title: "No traffic sources yet", body: "Share your site first. Sources will appear here when browsers report where visitors came from." });
 }
 
 export function renderPerformanceLoading() {
