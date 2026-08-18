@@ -1,9 +1,16 @@
 name: Deploy web
 
-# Manual deploy for the Next.js web Worker. Will be promoted to auto-deploy on
-# push to main once the yourrank-web Worker and subdomain are live.
+# Deploys the Next.js web Worker (marketing pages served at the apex) on push to
+# main when its sources change, and on demand via workflow_dispatch.
 
 on:
+  push:
+    branches: [main]
+    paths:
+      - "apps/web/**"
+      - "packages/shared/**"
+      - "bun.lock"
+      - ".github/workflows/deploy-web.yml"
   workflow_dispatch:
     inputs:
       environment:
@@ -26,7 +33,7 @@ jobs:
   deploy-web:
     name: Deploy Next.js web app
     runs-on: ubuntu-latest
-    environment: ${{ github.event.inputs.environment }}
+    environment: ${{ github.event.inputs.environment || 'production' }}
     steps:
       - uses: actions/checkout@v7
 
