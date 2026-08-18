@@ -26,9 +26,9 @@ describe("site-limit upsell", () => {
   });
 
   it("does not label the current site as editing or an unpublished site as a draft", () => {
-    expect(boardsJs).toContain('board-table-badge\">Current');
+    expect(boardsJs).toContain('board-table-badge">Current');
     expect(boardsJs).toContain('b.published ? "Published" : "Unpublished"');
-    expect(boardsJs).not.toContain('board-table-badge\">editing');
+    expect(boardsJs).not.toContain('board-table-badge">editing');
     expect(boardsJs).not.toContain('b.published ? "Published" : "Draft"');
   });
 });
