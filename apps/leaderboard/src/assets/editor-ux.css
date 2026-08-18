@@ -1,0 +1,93 @@
+.editor-preview-toggle {
+  margin-left: auto;
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+.design-grid[data-preview-collapsed="true"] {
+  grid-template-columns: minmax(0, 1fr) !important;
+}
+
+.design-grid[data-preview-collapsed="true"] .design-controls {
+  max-width: 100%;
+}
+
+.editor-share-groups {
+  display: grid;
+  gap: 0;
+  margin-top: 18px;
+  border-top: 1px solid var(--line);
+}
+
+.editor-share-group {
+  padding: 18px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.editor-share-group > h3 {
+  margin: 0 0 4px;
+  font-size: 15px;
+}
+
+.editor-share-group > .card-sub {
+  margin: 0 0 14px;
+  max-width: 620px;
+}
+
+.editor-share-group .field:last-child,
+.editor-share-group .share-cards:last-child,
+.editor-share-group .embed-obs-box:last-child {
+  margin-bottom: 0;
+}
+
+.editor-share-details {
+  border-bottom: 1px solid var(--line);
+  padding: 14px 0;
+}
+
+.editor-share-details > summary {
+  cursor: pointer;
+  font-weight: 650;
+  font-size: 14px;
+  list-style-position: outside;
+}
+
+.editor-share-details > .card-sub {
+  margin: 10px 0 14px;
+  max-width: 620px;
+}
+
+.editor-obs-settings {
+  margin-top: 12px;
+  padding-bottom: 0;
+  border-bottom: 0;
+}
+
+.editor-obs-settings > summary {
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.editor-obs-settings[open] > summary {
+  margin-bottom: 10px;
+}
+
+.editor-share-website[open] > summary {
+  margin-bottom: 4px;
+}
+
+.editor-share-groups > #apiAccessDetails {
+  margin-top: 0;
+  border-top: 0;
+}
+
+@media (max-width: 760px) {
+  .editor-preview-toggle {
+    margin-left: 0;
+  }
+
+  .editor-share-group,
+  .editor-share-details {
+    padding-block: 14px;
+  }
+}
