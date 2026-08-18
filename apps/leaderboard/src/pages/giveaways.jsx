@@ -24,7 +24,7 @@ export function GiveawaysPage({ user, tab = "chat" } = {}) {
 }
 
 export const giveawaysConfig = {
-  title: "Live Chat Giveaways · YourRank",
+  title: "Giveaways · YourRank",
   canonical: "https://yourrank.site/dashboard/giveaways",
   styles: [
     "/assets/app.css",
@@ -36,6 +36,7 @@ export const giveawaysConfig = {
   ],
   scripts: [
     '<script src="/assets/giveaways.js?v=1" type="module"></script>',
+    '<script src="/assets/giveaways-ux.js?v=1" type="module"></script>',
     '<script src="/assets/shell-nav.js?v=2" defer></script>',
   ],
   nav: false,
