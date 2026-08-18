@@ -7,11 +7,13 @@ const previewTabs = readFileSync(new URL("../assets/dashboard/preview-tabs.js", 
 const css = readFileSync(new URL("../assets/site-features-ux.css", import.meta.url), "utf8");
 
 describe("site-scoped creator UX", () => {
-  it("separates Games from the core leaderboard editor steps", () => {
-    expect(source).toContain('games.className = "editor-site-feature-link"');
+  it("separates Games visually without removing it from editor keyboard order", () => {
+    expect(source).toContain('games.classList.add("editor-site-feature-link")');
     expect(source).toContain('games.textContent = "Games"');
-    expect(source).toContain('features.setAttribute("aria-label", "Site features")');
-    expect(css).toContain(".editor-site-features");
+    expect(source).toContain('games.setAttribute("aria-label", "Games, site feature")');
+    expect(source).toContain("tabs.insertBefore(label, games)");
+    expect(css).toContain(".editor-site-features-label");
+    expect(css).toContain(".editor-step.editor-site-feature-link");
   });
 
   it("uses creator-facing copy on the Games page", () => {
