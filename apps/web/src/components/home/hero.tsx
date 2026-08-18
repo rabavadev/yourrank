@@ -28,7 +28,7 @@ export function Hero() {
   return (
     <section className="relative overflow-hidden bg-devin-surface px-6 pb-20 pt-28 sm:pb-44 sm:pt-44">
       <div className="relative mx-auto max-w-5xl text-center">
-        <h1 className="mx-auto max-w-[14ch] text-[clamp(3rem,7vw,5.8rem)] font-medium leading-[0.96] tracking-[-0.04em] text-devin-ink">
+        <h1 className="mx-auto max-w-[14ch] text-[clamp(2.75rem,7vw,5.8rem)] font-medium leading-[0.96] tracking-[-0.04em] text-devin-ink">
           <span className="sr-only">Turn viewers into regulars who come back.</span>
           <span aria-hidden="true">
             <span className="block overflow-hidden pb-[0.06em]">
@@ -44,9 +44,9 @@ export function Hero() {
             <span className="block pb-[0.06em]">
               <motion.span
                 className="grid place-items-center text-devin-primary font-semibold"
-                initial={reduceMotion ? false : { y: "105%", opacity: 0.35 }}
+                initial={reduceMotion ? false : { y: "0.35em", opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
-                transition={{ duration: 0.82, delay: 0.17, ease: DEVIN_EASE }}
+                transition={{ duration: 0.58, delay: 0.17, ease: DEVIN_EASE }}
               >
                 <span className="inline-grid place-items-center">
                   <span className="invisible col-start-1 row-start-1 whitespace-nowrap" aria-hidden="true">
@@ -63,7 +63,11 @@ export function Hero() {
                       }}
                       transition={
                         motionEnabled
-                          ? { duration: 0.58, ease: DEVIN_EASE }
+                          ? index === wordState.previous
+                            ? { duration: 0.2, ease: DEVIN_EASE }
+                            : index === wordState.active
+                              ? { duration: 0.34, delay: 0.2, ease: DEVIN_EASE }
+                              : { duration: 0 }
                           : { duration: 0 }
                       }
                     >
