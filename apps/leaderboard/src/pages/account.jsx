@@ -11,7 +11,7 @@ const SETTINGS_TABS = [
   ["team", "Team", '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>'],
   ["plan", "Plan", '<rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/>'],
   ["connections", "Connected apps", '<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>'],
-  ["data", "Data", '<path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" x2="12" y1="9" y2="13"/><line x1="12" x2="12.01" y2="17"/>'],
+  ["data", "Data", '<path d="M4 6h16M4 12h16M4 18h16"/>'],
 ];
 
 function settingsPanel(key, html) {
@@ -23,15 +23,13 @@ export function UnifiedSettingsPage({ activePath, user, tab = "account" } = {}) 
   const activeLabel = SETTINGS_TABS.find(([key]) => key === active)?.[1] || "Account";
   const siteUrl = new URL(activePath || "/dashboard/settings", "https://yourrank.site");
   siteUrl.pathname = "/dashboard/settings/board";
+  const siteSettingsHref = siteUrl.pathname + siteUrl.search;
+
   return <DashboardShell activeNav="account" boardContext="none" crumbs={[{ label: "Settings", href: "/dashboard/settings/account" }, { label: activeLabel }]} footer="account" title="Settings" user={user}>
     <div class="account-body account-settings" id="acc-app" data-acc-tab="settings" data-settings-active={active}>
       <div class="account-settings-head">
-        <div class="account-settings-badge">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-          <span>Global Account Scope</span>
-        </div>
         <h1>{activeLabel}</h1>
-        <p class="card-sub">Your master account, billing, security, and global connections. Settings for one specific site live in <a href={siteUrl.pathname + siteUrl.search}>site settings</a>.</p>
+        <p class="card-sub">Manage your account here. Controls that change one public site live under <a href={siteSettingsHref}>This site</a>.</p>
       </div>
       <nav class="v3-tabs account-settings-tabs" aria-label="Settings sections">
         {SETTINGS_TABS.map(([key, label, iconSvg]) => (
@@ -43,41 +41,24 @@ export function UnifiedSettingsPage({ activePath, user, tab = "account" } = {}) 
       </nav>
       <div class="account-settings-layout">
         <div class="account-settings-main">
-          {settingsPanel("account", `${settingsWidgets.account}<div class="lb-widget lb-widget--full acc-site-scope-card"><div class="acc-site-scope-icon" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 9h18M9 21V9"/></svg></div><div><h2>Selected site settings</h2><p class="card-sub">Your web address, visitor access, alerts, themes, and public content belong to individual sites.</p><a class="btn btn--ghost mt-6" href="${siteUrl.pathname + siteUrl.search}">Open site settings ↗</a></div></div>`)}
+          {settingsPanel("account", settingsWidgets.account)}
           {settingsPanel("team", settingsWidgets.team)}
           {settingsPanel("plan", settingsWidgets.plan)}
           {settingsPanel("connections", `${settingsWidgets.postbacks}<div class="lb-widget lb-widget--full"><h2>Connected accounts</h2><p class="card-sub">Streamer identities and connected services.</p><div id="connectedAccounts"><p class="hint">Loading…</p></div></div><div class="lb-widget lb-widget--full"><h2>Site connections</h2><p class="card-sub">Kick and Credits settings belong to the selected site.</p><a class="btn btn--accent" href="/dashboard/rewards/channel">Open site connections</a></div>`)}
           {settingsPanel("data", `${settingsWidgets.data}<div class="lb-widget lb-widget--full lb-widget--danger"><h2>Selected site data</h2><p class="card-sub">These actions affect one selected site, not your whole account. Open the site tools before making a destructive change.</p><div class="d-flex gap-8 flex-wrap"><a class="btn btn--ghost" href="/dashboard/leaderboard/history">Reset or archive a site</a><a class="btn btn--ghost" href="/dashboard/leaderboard/setup">Delete a site</a></div></div>`)}
         </div>
-        <aside class="account-settings-sidebar" aria-label="Account summary">
+        <aside class="account-settings-sidebar" aria-label="Related settings">
           <div class="account-summary-card">
-            <div class="summary-header">
-              <div class="summary-avatar" id="accSummaryAvatar" aria-hidden="true">👤</div>
-              <div class="summary-user-info">
-                <strong class="summary-name" id="accSummaryName">Account</strong>
-                <span class="summary-email" id="accSummaryEmail">{user?.email || "Signed in"}</span>
-              </div>
-            </div>
-            <div class="summary-divider"></div>
-            <div class="summary-stat-row">
-              <span class="summary-stat-label">Current Plan</span>
-              <span class="summary-stat-value"><span class="pill pill--good" id="accSummaryPlan">{user?.plan?.name || "Active"}</span></span>
-            </div>
-            <div class="summary-stat-row">
-              <span class="summary-stat-label">Account Scope</span>
-              <span class="summary-stat-value">Owner / Master</span>
-            </div>
-            <div class="summary-stat-row">
-              <span class="summary-stat-label">Security Posture</span>
-              <span class="summary-stat-value summary-security-good">● Protected</span>
-            </div>
+            <h2>Site settings</h2>
+            <p class="card-sub">Change the public page, visitor access, alerts, web address, and other settings for the selected site.</p>
             <div class="summary-actions">
-              <a class="btn btn--ghost btn--sm w-full" href="/dashboard/settings/plan">Manage subscription →</a>
+              <a class="btn btn--ghost btn--sm w-full" href={siteSettingsHref}>Open site settings</a>
             </div>
           </div>
           <div class="account-scope-helper">
-            <div class="helper-badge">💡 Tip</div>
-            <p>Looking to configure prizes, change themes, or connect Kick for a specific leaderboard? Head over to <a href={siteUrl.pathname + siteUrl.search}>site settings</a>.</p>
+            <strong>Need help?</strong>
+            <p>Help and feedback are kept in one place so you do not have to hunt through settings.</p>
+            <a href="/help?area=account">Open Help &amp; feedback</a>
           </div>
         </aside>
       </div>
