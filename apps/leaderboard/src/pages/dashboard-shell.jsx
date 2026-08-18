@@ -23,44 +23,17 @@ export function dashboardNavItems() {
 }
 
 export function mapActiveNav(nav) {
-  if (nav === "board" || nav === "games") return "board";
-  if (nav === "giveaways") return "giveaways";
-  if (nav === "redemptions" || nav === "shop" || nav === "rules" || nav === "channel" || nav === "rewards" || nav === "viewers" || nav === "activity" || nav === "performance" || nav === "audience" || nav === "history") return nav === "performance" ? "performance" : "redemptions";
+  if (nav === "board" || nav === "leaderboard") return "board";
+  if (["giveaways", "raffles", "predictions", "drops", "games"].includes(nav)) return nav;
+  if (["activity", "referrals", "performance"].includes(nav)) return "performance";
+  if (nav === "redemptions" || nav === "shop" || nav === "rules" || nav === "channel" || nav === "rewards" || nav === "viewers" || nav === "audience" || nav === "history") return "redemptions";
   if (nav === "boards") return "boards";
-  if (nav === "settings" || nav === "account") return "settings";
-  if (nav === "help") return "help";
+  if (nav === "settings" || nav === "account" || nav === "integrations") return nav === "integrations" ? "integrations" : "settings";
   return nav || "home";
 }
 
-function SidebarBoard({ boardContext }) {
-  if (boardContext === "none") return null;
-
-  return <div class="lb-ws-switcher" id="wsSwitcher">
-    <div class="lb-ws-card" id="wsCard" tabindex="0" role="button" aria-haspopup="true" aria-expanded="false">
-      <div class="lb-ws-avatar" id="wsAvatar">Y</div>
-      <div class="lb-ws-meta">
-        <span class="lb-ws-name" id="activeBoardName">Loading site…</span>
-        <span class="lb-ws-plan" id="wsPlanBadge">Current site</span>
-      </div>
-      <svg class="lb-ws-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
-    </div>
-    <div class="lb-ws-menu" id="wsMenu" hidden>
-      <a class="lb-ws-action" id="manageBoardsBtn" href="/dashboard/leaderboards">Manage sites</a>
-      <a class="lb-ws-action" href="/dashboard/settings/board">Site settings</a>
-    </div>
-    {boardContext === "full" && <><div class="board-upsell" id="boardLimitUpsell" role="status" hidden><div><b id="boardLimitTitle">Need another site?</b><p class="hint" id="boardLimitText"></p></div><a class="btn btn--sm btn--accent" id="boardLimitCta" href="/dashboard/settings">Upgrade plan</a></div>
-      <div class="lb-board-form" id="newBoardForm" hidden><div class="field field-flex"><label for="nb_name">Site name</label><input id="nb_name" placeholder="Summer Race 2026" /></div><div class="field field-flex"><label for="nb_slug">Web address</label><input id="nb_slug" placeholder="summer-race-2026" /></div><div class="field field-flex"><label for="nb_casino">Partner or sponsor</label><input id="nb_casino" placeholder="Your brand or sponsor" /></div><div class="field field-flex"><label for="nb_code">Promo code</label><input id="nb_code" placeholder="Optional" /></div><div class="lb-board-form-actions"><button class="btn btn--sm btn--accent" id="nb_create" type="button">Create site</button><button class="btn btn--sm btn--ghost" id="nb_cancel" type="button">Cancel</button><div class="hint w-full" id="nb_err" role="alert" aria-live="assertive"></div></div></div>
-    </>}
-  </div>;
-}
-
-function SidebarFooter({ boardContext, profile }) {
-  return <>
-    {boardContext !== "none" && <div class="lb-side-foot">
-      <a class="btn btn--sm btn--accent lb-live-btn" id="liveLink" href="#" target="_blank" rel="noopener noreferrer">View public page ↗</a>
-    </div>}
-    <div class="lb-side-profile">{raw(profile)}</div>
-  </>;
+function SidebarFooter({ profile }) {
+  return <div class="lb-side-profile">{raw(profile)}</div>;
 }
 
 export function DashboardShell({ activeNav = "home", boardContext = "full", footer = "dashboard", title = "", crumbs = null, rootId, initiallyHidden = false, user, children }) {
@@ -78,13 +51,12 @@ export function DashboardShell({ activeNav = "home", boardContext = "full", foot
           <button class="lb-side-collapse" type="button" aria-label="Collapse navigation" aria-pressed="false" aria-controls="lbSide" data-collapse-side><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg></button>
           <button class="lb-side-close" type="button" aria-label="Close navigation" data-close-side><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
         </div>
-        <SidebarBoard boardContext={boardContext} />
         {raw(navListHtml(
           dashboardNavItems(),
           mapActiveNav(activeNav),
           "Dashboard"
         ))}
-        <SidebarFooter boardContext={boardContext} profile={profile} />
+        <SidebarFooter profile={profile} />
       </aside>
       <div class="lb-main">
         <header class="lb-topbar" id="lbTopbar">
@@ -98,12 +70,17 @@ export function DashboardShell({ activeNav = "home", boardContext = "full", foot
                   <div class="lb-board-select-row">
                     <select class="lb-board-select" id="sidebarBoardSelect" aria-label="Switch site"></select>
                     <span class="lb-site-path" id="lbTopbarSitePath">Loading address…</span>
+                    <a class="lb-site-settings" href="/dashboard/settings/board">Site settings</a>
                   </div>
                 </div>
                 {boardContext === "full" && (
-                  <button class="lb-board-new" id="newBoard" type="button" title="Create another site" aria-label="Create another site">
-                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
-                  </button>
+                  <>
+                    <button class="lb-board-new" id="newBoard" type="button" title="Create another site" aria-label="Create another site">
+                      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+                    </button>
+                    <div class="board-upsell" id="boardLimitUpsell" role="status" hidden><div><b id="boardLimitTitle">Need another site?</b><p class="hint" id="boardLimitText"></p></div><a class="btn btn--sm btn--accent" id="boardLimitCta" href="/dashboard/settings">Upgrade plan</a></div>
+                    <div class="lb-board-form" id="newBoardForm" hidden><div class="field field-flex"><label for="nb_name">Site name</label><input id="nb_name" placeholder="Summer Race 2026" /></div><div class="field field-flex"><label for="nb_slug">Web address</label><input id="nb_slug" placeholder="summer-race-2026" /></div><div class="field field-flex"><label for="nb_casino">Partner or sponsor</label><input id="nb_casino" placeholder="Your brand or sponsor" /></div><div class="field field-flex"><label for="nb_code">Promo code</label><input id="nb_code" placeholder="Optional" /></div><div class="lb-board-form-actions"><button class="btn btn--sm btn--accent" id="nb_create" type="button">Create site</button><button class="btn btn--sm btn--ghost" id="nb_cancel" type="button">Cancel</button><div class="hint w-full" id="nb_err" role="alert" aria-live="assertive"></div></div></div>
+                  </>
                 )}
               </div>
             </div>
@@ -139,6 +116,7 @@ export function DashboardShell({ activeNav = "home", boardContext = "full", foot
                     <button class="lb-publish-action" id="publishAction" type="button">
                       <span id="lbPublishLabel">Publish site</span>
                     </button>
+                    <a class="lb-live-link" id="liveLink" href="#" target="_blank" rel="noopener noreferrer">View site ↗</a>
                   </>
                 )}
               </div>

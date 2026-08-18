@@ -54,9 +54,13 @@ describe("dashboard overview quick actions", () => {
 
   it("reports public site availability truthfully from Credits", () => {
     expect(boardShellJs).toContain("Boolean(board.published) && user.emailVerified !== false");
-    expect(boardShellJs).toContain('live ? "Public" : pendingVerification ? "Email verification needed" : "Private"');
+    expect(boardShellJs).toContain('live ? "Published" : pendingVerification ? "Verification needed" : "Not published"');
     expect(boardShellJs).toContain('pendingVerification ? "/verify-email"');
-    expect(boardShellJs).toContain('pendingVerification ? "Verify email to publish" : "Publish your site"');
+    expect(boardShellJs).toContain('publicLink.textContent = "View site ↗"');
+    expect(boardShellJs).toContain('publicLink.textContent = pendingVerification ? "Verify email" : "Publish site"');
+    expect(siteJs).toContain('draft: "Not published", unpublished: "Not published", pending: "Verification needed", published: "Published"');
+    expect(siteJs).toContain('s.published ? "Unpublish site" : "Publish site"');
+    expect(siteJs).toContain('nextPublished ? "Publishing…" : "Unpublishing…"');
   });
 
   it("keeps tablet navigation closable", () => {
@@ -88,11 +92,10 @@ describe("dashboard overview quick actions", () => {
     expect(html).not.toContain('aria-hidden="true">🔌</span>');
     expect(html).toContain('>Home</a>');
     for (const label of [
-      "Leaderboard", "Giveaways", "Rewards", "Messaging", "Analytics", "Settings",
+      "Leaderboard", "Giveaways", "Raffles", "Predictions", "Drops", "Games", "Rewards", "Telegram", "Analytics", "Integrations", "Sites", "Settings",
     ]) expect(html).toContain(`>${label}</a>`);
-    expect(html).not.toContain('>Sites</a>');
+    expect(html).toContain(">Engage</div>");
     expect(html).not.toContain('>Help</a>');
-    expect(html).not.toContain('lb-nav-group-label');
   });
 
   it("serves only the section the URL addresses", () => {

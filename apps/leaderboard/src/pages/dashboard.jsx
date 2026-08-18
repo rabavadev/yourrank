@@ -19,38 +19,36 @@ export const dashboardConfig = {
 const EDITOR_TABS = ["setup", "players", "design", "share", "history"];
 const ANALYTICS_TABS = ["activity", "referrals", "events"];
 const BOARD_TABS = [
-  ["setup", "Basics", "/dashboard/leaderboard/setup"],
-  ["players", "Players & scores", "/dashboard/leaderboard/players"],
-  ["design", "Look", "/dashboard/leaderboard/design"],
+  ["setup", "Setup", "/dashboard/leaderboard/setup"],
+  ["players", "Players", "/dashboard/leaderboard/players"],
+  ["design", "Appearance", "/dashboard/leaderboard/design"],
   ["share", "Share", "/dashboard/leaderboard/share"],
-  ["history", "Past winners", "/dashboard/leaderboard/history"],
-  ["games", "Mini-games", "/dashboard/games"],
+  ["history", "History", "/dashboard/leaderboard/history"],
 ];
 const SETTINGS_PAGE_TABS = [
-  ["board", "This site", "/dashboard/settings/board"],
   ["account", "Account", "/dashboard/settings/account"],
   ["team", "Team", "/dashboard/settings/team"],
-  ["plan", "Plan", "/dashboard/settings/plan"],
-  ["connections", "Connected apps", "/dashboard/settings/connections"],
+  ["plan", "Billing", "/dashboard/settings/plan"],
+  ["connections", "Integrations", "/dashboard/settings/connections"],
   ["data", "Data", "/dashboard/settings/data"],
 ];
 
 // Each route serves one section, so the trail is derived from the route rather
 // than hand-written per screen — every page below Overview says where it is.
 const SECTION_CRUMBS = {
-  board: { label: "My leaderboard", href: "/dashboard/leaderboard/players" },
-  games: { label: "Mini-games", href: "/dashboard/games" },
-  performance: { label: "How it's going", href: "/dashboard/analytics/activity" },
-  settings: { label: "This site", href: "/dashboard/settings/board" },
-  boards: { label: "Your leaderboards", href: "/dashboard/leaderboards" },
+  board: { label: "Leaderboard", href: "/dashboard/leaderboard/setup" },
+  games: { label: "Games", href: "/dashboard/games" },
+  performance: { label: "Analytics", href: "/dashboard/analytics/activity" },
+  settings: { label: "Site settings", href: "/dashboard/settings/board" },
+  boards: { label: "Sites", href: "/dashboard/leaderboards" },
 };
 const TAB_LABELS = {
-  setup: "Basics", players: "Players & scores", design: "Look", share: "Share", history: "Past winners",
-  activity: "Visitors", referrals: "Where they came from", events: "Events",
+  setup: "Setup", players: "Players", design: "Appearance", share: "Share", history: "History",
+  activity: "Visitors", referrals: "Sources", events: "Events",
 };
 
 function LeaderboardTabs({ active }) {
-  return <nav class="editor-steps v3-tabs" aria-label="My leaderboard pages">
+  return <nav class="editor-steps v3-tabs" aria-label="Leaderboard pages">
     {BOARD_TABS.map(([key, label, href]) => (
       <a class={"editor-step v3-tab" + (key === active ? " is-active is-on" : "")} href={href} data-egroup={key} aria-current={key === active ? "page" : undefined}>{label}</a>
     ))}
@@ -192,12 +190,12 @@ function EditorSection({ active, activeHash = "setup" } = {}) {
 
 <div class="design-grid">
 <div class="design-controls">
-<nav class="editor-steps v3-tabs" id="editorTabs" aria-label="My leaderboard pages">
+<nav class="editor-steps v3-tabs" id="editorTabs" aria-label="Leaderboard pages">
   {BOARD_TABS.map(([key, label, href]) => (
     <a class={"editor-step v3-tab" + (key === activeHash ? " is-active is-on" : "")} href={href} data-egroup={key} aria-current={key === activeHash ? "page" : undefined}>{label}</a>
   ))}
 </nav>
-<h1 class="v3-section-title" data-egroup="setup">Basics</h1>
+<h1 class="v3-section-title" data-egroup="setup">Setup</h1>
 <div class="card" data-egroup="setup"><h2>Your leaderboard info</h2><p class="card-sub">This is what visitors see when they open your site.</p><div class="grid2">
 <div class="field"><label for="f_name">Leaderboard name</label><input id="f_name" /></div>
 <div class="field"><label for="f_tagline">Tagline</label><input id="f_tagline" placeholder="Stream community leaderboard" /></div>
@@ -320,7 +318,7 @@ function EditorSection({ active, activeHash = "setup" } = {}) {
 <div class="share-cards" id="shareCards"><button class="share-card share-card--x" id="shareX" type="button"><span>Share on X</span></button><button class="share-card share-card--discord" id="shareDiscord" type="button"><span>Share on Discord</span></button><button class="share-card share-card--twitch" id="shareTwitch" type="button"><span>Share on Twitch</span></button><button class="share-card share-card--copy" id="shareCopy" type="button"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg><span>Copy link</span></button></div>
 <details class="api-access-details" id="apiAccessDetails"><summary class="font-14 fw-600">Developer tools</summary><div class="api-access locked" id="apiAccess"><div><b class="font-14">REST API</b><p class="hint mt-4">Use the API to update scores automatically from your own system.</p></div><span class="api-lock-badge"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> Pro</span></div></details>
 </div>
-<div class="card" data-egroup="history"><h1 class="v3-section-title">Past winners</h1><p class="card-sub">End a competition period and save the results. Your current leaderboard will be archived before any changes are made.</p>
+<div class="card" data-egroup="history"><h1 class="v3-section-title">History</h1><p class="card-sub">End a competition period and save the results. Your current leaderboard will be archived before any changes are made.</p>
 <div class="arch-form">
 <div class="field field-flex"><label for="a_label">Name this period</label><input id="a_label" placeholder="July 2026" /></div>
 <div class="field m-0"><label for="a_clear">After archiving</label><select id="a_clear"><option value="wagers">Reset everyone's scores to zero</option><option value="players">Remove all players</option><option value="none">Keep the board as-is</option></select></div>
@@ -356,7 +354,7 @@ function GamesSection({ active } = {}) {
     <LeaderboardTabs active="games" />
     <div class="d-flex justify-between items-center flex-wrap gap-8">
       <div>
-        <h1>Mini-games</h1>
+        <h1>Games</h1>
         <p class="v3-head-sub">Configure credit games and test gameplay in real-time</p>
       </div>
       <div class="d-flex gap-8 items-center">
@@ -395,7 +393,7 @@ function GamesSection({ active } = {}) {
           </div>
         </div>
         <div class="v3-games-preview-frame">
-          <iframe id="gamesSimulatorIframe" src="" title="Live Mini-games preview" sandbox="allow-scripts allow-same-origin allow-forms allow-popups"></iframe>
+          <iframe id="gamesSimulatorIframe" src="" title="Live Games preview" sandbox="allow-scripts allow-same-origin allow-forms allow-popups"></iframe>
         </div>
         <div class="v3-games-preview-foot">
           <span class="v3-hint">⚡ Demo simulator active · Test bets, tile picks, and multipliers</span>
@@ -415,9 +413,9 @@ function AnalyticsSection({ active, activeHash = "activity" } = {}) {
 <div class="v3-analytics-page">
   <header class="v3-head"><h1>{TAB_LABELS[activeHash] || "Visitors"}</h1><p class="v3-head-sub">See how viewers find and interact with your site.</p></header>
   <div class="v3-analytics-scope"><span id="perfScope"><span id="perfBoardName">Active site</span> · Last <span id="perfRangeLabel">14</span> days</span><div id="perfRangeFilter" class="v3-range-filter" role="group" aria-label="Date range"><button class="v3-range-btn" type="button" data-range="7">7d</button><button class="v3-range-btn is-active" type="button" data-range="14">14d</button><button class="v3-range-btn" type="button" data-range="30">30d</button></div></div>
-  <nav class="v3-tabs" aria-label="How it's going pages">
+  <nav class="v3-tabs" aria-label="Analytics pages">
     <a class={"v3-tab" + (activeHash === "activity" ? " is-on" : "")} href="/dashboard/analytics/activity" data-perf-tab="activity" aria-current={activeHash === "activity" ? "page" : undefined}>Visitors</a>
-    <a class={"v3-tab" + (activeHash === "referrals" ? " is-on" : "")} href="/dashboard/analytics/referrals" data-perf-tab="referrals" aria-current={activeHash === "referrals" ? "page" : undefined}>Where they came from</a>
+    <a class={"v3-tab" + (activeHash === "referrals" ? " is-on" : "")} href="/dashboard/analytics/referrals" data-perf-tab="referrals" aria-current={activeHash === "referrals" ? "page" : undefined}>Sources</a>
     <a class={"v3-tab" + (activeHash === "events" ? " is-on" : "")} href="/dashboard/analytics/events" data-perf-tab="events" aria-current={activeHash === "events" ? "page" : undefined}>Events</a>
   </nav>
   <div class="v3-kpi-grid">
@@ -447,7 +445,7 @@ function BoardSettingsSection({ active } = {}) {
 <section class={active ? "lb-page is-on" : "lb-page"} data-page="settings">
 <div class="v3-settings">
   <header class="v3-head">
-    <h1>This site</h1>
+    <h1>Site settings</h1>
     <p class="v3-head-sub" id="settingsSubline">These settings apply to the site selected above. Your plan, account password, billing, and automatic score update keys live in <a href="/dashboard/settings">account settings</a>.</p>
   </header>
   <nav class="v3-tabs account-settings-tabs" aria-label="Settings pages">
@@ -457,7 +455,7 @@ function BoardSettingsSection({ active } = {}) {
   </nav>
   <div class="v3-tabs" role="tablist" aria-label="Site settings sections">
     <button class="v3-tab is-on" id="settingsTabAccess" type="button" role="tab" aria-selected="true" aria-controls="settingsPanelAccess" data-settings-tab="access">Access &amp; alerts</button>
-    <button class="v3-tab" id="settingsTabIntegrations" type="button" role="tab" aria-selected="false" aria-controls="settingsPanelIntegrations" data-settings-tab="integrations">Connected apps</button>
+    <button class="v3-tab" id="settingsTabIntegrations" type="button" role="tab" aria-selected="false" aria-controls="settingsPanelIntegrations" data-settings-tab="integrations">Integrations</button>
     <button class="v3-tab" id="settingsTabDomain" type="button" role="tab" aria-selected="false" aria-controls="settingsPanelDomain" data-settings-tab="domain">Domain</button>
     <button class="v3-tab" id="settingsTabSupport" type="button" role="tab" aria-selected="false" aria-controls="settingsPanelSupport" data-settings-tab="support">Support</button>
   </div>
@@ -467,7 +465,7 @@ function BoardSettingsSection({ active } = {}) {
     <div class="v3-settings-card v3-danger-card"><div class="v3-danger-lbl">DANGER ZONE</div><div class="v3-settings-row"><div><b>Wipe all scores and history</b><p>Deletes all player scores, prize amounts, and activity history. This cannot be undone.</p></div><button class="v3-set-btn v3-set-btn--danger-outline" id="settingsResetData" type="button">Reset everything</button></div><div class="v3-settings-row"><div><b>Delete this site</b><p>Permanently delete this site and its settings. This action cannot be undone.</p></div><button class="v3-set-btn v3-set-btn--danger" id="settingsDeleteBoard" type="button">Delete site</button></div></div>
   </section>
   <section class="v3-settings-panel" id="settingsPanelIntegrations" role="tabpanel" aria-labelledby="settingsTabIntegrations" data-settings-panel="integrations" hidden>
-    <div class="v3-settings-card"><div class="v3-settings-card-head"><div><h2>Connected apps</h2><p>Connect Kick rewards, set up notifications, and add legal pages to your site.</p></div></div><div class="v3-settings-row"><div><b>Kick channel rewards</b><p>Let viewers earn credits by claiming Kick channel rewards.</p><span class="v3-settings-muted" id="kickStatus"><span class="skeleton skeleton-text" aria-hidden="true"></span></span></div><a class="v3-set-btn v3-set-btn--outline" href="/dashboard/rewards/channel" id="kickRewardsLink">Open Kick channel</a></div><div class="v3-settings-row"><div><b>Automatic score updates</b><p id="postbackStatus">Let your sponsor update scores automatically without manual imports.</p></div><a class="v3-set-btn v3-set-btn--outline" href="/dashboard/settings/connections">Set up automatic updates</a></div><div class="v3-settings-divider"></div><div class="v3-settings-notify-account"><label class="v3-settings-label" for="f_tgChatId">Telegram group ID</label><input id="f_tgChatId" placeholder="Enter your group or chat ID" /><p class="v3-settings-muted">You can find your group ID using the @getidsbot on Telegram.</p><label class="v3-settings-check"><input type="checkbox" id="f_tgNotify" /> Send notifications to this Telegram group</label><button class="v3-set-btn v3-set-btn--outline" id="testTelegram" type="button">Send a test message</button><span class="v3-settings-status" id="testTelegramStatus" role="status"></span></div><div class="v3-settings-divider"></div><div class="v3-settings-legal"><h3>Legal pages</h3><div id="legalList"></div><div id="legalFooterPreview" class="v3-settings-muted"></div></div></div>
+    <div class="v3-settings-card"><div class="v3-settings-card-head"><div><h2>Integrations</h2><p>Connect Kick rewards, set up notifications, and add legal pages to your site.</p></div></div><div class="v3-settings-row"><div><b>Kick channel rewards</b><p>Let viewers earn credits by claiming Kick channel rewards.</p><span class="v3-settings-muted" id="kickStatus"><span class="skeleton skeleton-text" aria-hidden="true"></span></span></div><a class="v3-set-btn v3-set-btn--outline" href="/dashboard/rewards/channel" id="kickRewardsLink">Open Kick connection</a></div><div class="v3-settings-row"><div><b>Automatic score updates</b><p id="postbackStatus">Let your sponsor update scores automatically without manual imports.</p></div><a class="v3-set-btn v3-set-btn--outline" href="/dashboard/settings/connections">Set up automatic updates</a></div><div class="v3-settings-divider"></div><div class="v3-settings-notify-account"><label class="v3-settings-label" for="f_tgChatId">Telegram group ID</label><input id="f_tgChatId" placeholder="Enter your group or chat ID" /><p class="v3-settings-muted">You can find your group ID using the @getidsbot on Telegram.</p><label class="v3-settings-check"><input type="checkbox" id="f_tgNotify" /> Send notifications to this Telegram group</label><button class="v3-set-btn v3-set-btn--outline" id="testTelegram" type="button">Send a test message</button><span class="v3-settings-status" id="testTelegramStatus" role="status"></span></div><div class="v3-settings-divider"></div><div class="v3-settings-legal"><h3>Legal pages</h3><div id="legalList"></div><div id="legalFooterPreview" class="v3-settings-muted"></div></div></div>
   </section>
   <section class="v3-settings-panel" id="settingsPanelDomain" role="tabpanel" aria-labelledby="settingsTabDomain" data-settings-panel="domain" hidden>
     <div class="v3-settings-card" id="domainManageCard" hidden>

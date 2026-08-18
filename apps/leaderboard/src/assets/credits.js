@@ -89,14 +89,6 @@ function wireShell() {
   $("lbMenu")?.addEventListener("click", () => openDrawer()); document.querySelector("[data-close-side]")?.addEventListener("click", () => closeDrawer()); backdrop.addEventListener("click", () => closeDrawer());
   document.addEventListener("keydown", (e) => { if (e.key === "Escape" && $("lbSide")?.classList.contains("is-open")) closeDrawer(); });
 }
-function renderShellUsage() {
-  const used = state.usage?.redemptionsPer30Days;
-  const limit = state.limits?.redemptionsPer30Days;
-  const amount = $("usageAmount"); const max = $("usageLimit"); const fill = $("usageFill");
-  if (amount) amount.textContent = used == null ? UNKNOWN : used;
-  if (max) max.textContent = limit == null ? UNKNOWN : limit;
-  if (fill) fill.style.width = `${limit > 0 && used != null ? Math.min(100, (used / limit) * 100) : 0}%`;
-}
 const metric = (value) => value == null ? UNKNOWN : value;
 function renderRewardRow(m) {
   return `<td><b>${esc(m.kick_reward_title)}</b><br><span class="hint">${esc(m.kick_reward_id)}</span></td><td class="hint">Kick reward redeemed · ${m.kick_reward_cost} points</td><td class="num"><b>+${m.credits} credits</b></td><td><input class="v3-toggle" type="checkbox" ${m.active ? "checked" : ""} data-toggle-reward="${esc(m.id)}" /></td><td class="ta-r"><button class="btn btn--sm" data-edit-reward="${esc(m.id)}">Edit</button> <button class="btn btn--sm btn--danger" data-del-reward="${esc(m.id)}">Delete</button></td>`;
@@ -124,7 +116,6 @@ function renderShopCards(items) {
 }
 function render() {
   const usage = state.usage || {}, limits = state.limits || {}, current = tab();
-  renderShellUsage();
   const rewardAtLimit = usage.rewardMappings != null && limits.rewardMappings != null && usage.rewardMappings >= limits.rewardMappings;
   const shopAtLimit = usage.shopItems != null && limits.shopItems != null && usage.shopItems >= limits.shopItems;
   const rewardUsage = $("cr-reward-usage");

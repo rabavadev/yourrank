@@ -285,12 +285,12 @@ export function setupEditorTabs() {
         });
       }
       const TAB_NAME_MAP = {
-        setup: "Basics",
-        players: "Players & scores",
-        design: "Look",
+        setup: "Setup",
+        players: "Players",
+        design: "Appearance",
         share: "Share",
-        history: "Past winners",
-        games: "Mini-games",
+        history: "History",
+        games: "Games",
       };
       const crumbCurrent = document.querySelector(".v3-crumbs span[aria-current='page']");
       if (crumbCurrent) {

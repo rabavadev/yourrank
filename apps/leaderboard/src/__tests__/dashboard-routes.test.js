@@ -62,6 +62,8 @@ describe("dashboard routes", () => {
     }
     expect(legacyTelegramRedirect("/dashboard/telegram")).toBe("");
     const worker = readFileSync(new URL("../index.js", import.meta.url), "utf8");
+    expect(worker).toContain('path === "/dashboard/integrations"');
+    expect(worker).toContain('redirectKeepingSearch("/dashboard/settings/connections", url)');
     for (const alias of ["/bot", "/bot/dashboard", "/bot/bots", "/bot/commands", "/bot/offers", "/bot/broadcasts"]) {
       expect(worker).not.toContain(`path === "${alias}"`);
     }

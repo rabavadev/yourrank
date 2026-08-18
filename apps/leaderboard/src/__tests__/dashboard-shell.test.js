@@ -27,7 +27,7 @@ describe("signed-in shell navigation", () => {
   it("links the primary creator surfaces from the rail", () => {
     const html = renderPage(RewardsViewersPage);
     for (const href of [
-      "/dashboard/leaderboard/players",
+      "/dashboard/leaderboard/setup",
       "/dashboard/giveaways/chat",
       "/dashboard/rewards/redemptions",
       "/dashboard/telegram",
@@ -36,15 +36,15 @@ describe("signed-in shell navigation", () => {
     ]) {
       expect(html).toContain(`href="${href}"`);
     }
-    expect(html).toContain('href="/dashboard/leaderboards">Manage sites');
-    expect(html).toContain('href="/help?area=credits');
+    expect(html).toContain('href="/dashboard/settings/board">Site settings');
+    expect(html).toContain('href="/help/support?area=credits');
     expect(html).toContain("Help &amp; feedback");
   });
 
   it("marks the open credit surface as current", () => {
     const html = renderPage(RewardsViewersPage);
     expect(html).toMatch(/data-nav="redemptions"[^>]*aria-current="page"/);
-    expect(html).not.toContain("lb-nav-child");
+    expect(html).toContain("lb-nav-child");
     expect((html.match(/class="lb-nav[^"]* is-on/g) || []).length).toBe(1);
   });
 
@@ -84,6 +84,25 @@ describe("signed-in shell navigation", () => {
     expect(html).not.toContain('class="lb-pub-toggle"');
   });
 
+  it("keeps site controls out of the rail and limits the account menu", () => {
+    const html = renderPage(RewardsViewersPage);
+    const rail = html.slice(html.indexOf("<aside"), html.indexOf("</aside>"));
+    expect(rail).not.toContain("wsSwitcher");
+    expect(html).not.toContain('id="wsSwitcher"');
+    expect(html).not.toContain('id="wsCard"');
+    expect(html).not.toContain('id="wsMenu"');
+    expect(html).not.toContain('id="manageBoardsBtn"');
+    expect(html).toContain('id="sidebarBoardSelect"');
+    expect((html.match(/class="gm-profile-link"/g) || []).length).toBe(3);
+    expect((html.match(/class="gm-logout"/g) || []).length).toBe(1);
+    expect(html).toContain("Account settings");
+    expect(html).toContain("Appearance");
+    expect(html).toContain("Help &amp; feedback");
+    expect(html).toContain("Sign out");
+    expect((html.match(/<svg\b/g) || []).length).toBeGreaterThanOrEqual(4);
+    expect(html).not.toContain(">Account</a>");
+  });
+
   it("composes the Overview as a 12-column run sheet", () => {
     const html = PAGES.dashboard.Component({ activePath: "/dashboard", user }).toString();
     expect(html).toContain('id="ovCommandGrid"');
@@ -102,19 +121,19 @@ describe("signed-in shell navigation", () => {
 
   it("keeps secondary site and help actions accessible without rail duplication", () => {
     const html = renderPage(RewardsViewersPage);
-    expect(html).toContain('href="/dashboard/leaderboards">Manage sites');
-    expect(html).toContain('href="/help?area=credits');
+    expect(html).toContain('href="/dashboard/settings/board">Site settings');
+    expect(html).toContain('href="/help/support?area=credits');
     expect(html).toContain("Help &amp; feedback");
-    expect(html).not.toContain('data-nav="boards"');
+    expect(html).toContain('data-nav="boards"');
     expect(html).not.toContain('data-nav="help"');
   });
 
   it("uses plain-language navigation labels", () => {
     const html = PAGES.dashboard.Component({ activePath: "/dashboard/leaderboard/design", user }).toString();
-    expect(html).toContain(">Look</a>");
+    expect(html).toContain(">Appearance</a>");
     expect(html).toContain(">Leaderboard</a>");
     expect(html).toContain(">Rewards</a>");
-    expect(html).toContain(">Messaging</a>");
+    expect(html).toContain(">Telegram</a>");
     expect(html).toContain(">Analytics</a>");
     expect(html).toContain("Help &amp; feedback</a>");
     expect(html).toContain('data-nav="settings"');
@@ -124,16 +143,16 @@ describe("signed-in shell navigation", () => {
     const html = renderPage(UnifiedSettingsPage);
     for (const href of [
       "/dashboard",
-      "/dashboard/leaderboard/players",
+      "/dashboard/leaderboard/setup",
       "/dashboard/giveaways/chat",
       "/dashboard/rewards/redemptions",
       "/dashboard/telegram",
       "/dashboard/analytics/activity",
       "/dashboard/settings",
     ]) expect(html).toContain(`href="${href}"`);
-    expect(html).toContain('href="/help?area=account');
+    expect(html).toContain('href="/help/support?area=account');
     expect(html).toContain("Help &amp; feedback");
-    expect(html).not.toContain('data-nav="boards"');
+    expect(html).toContain('data-nav="boards"');
     expect(html).not.toContain('data-nav="help"');
     expect(html).toContain('data-nav="settings" aria-current="page"');
     expect((html.match(/<h1\b/g) || []).length).toBe(1);
@@ -152,8 +171,8 @@ describe("signed-in shell navigation", () => {
 
   it("trails dashboard sections and editor steps from the route", () => {
     const editor = PAGES.dashboard.Component({ activePath: "/dashboard/leaderboard/design" }).toString();
-    expect(editor).toContain('<a href="/dashboard/leaderboard/players">My leaderboard</a>');
-    expect(editor).toContain('<span aria-current="page">Look</span>');
+    expect(editor).toContain('<a href="/dashboard/leaderboard/setup">Leaderboard</a>');
+    expect(editor).toContain('<span aria-current="page">Appearance</span>');
     expect(editor).toContain('href="/dashboard/leaderboard/design" data-egroup="design"');
 
     // Overview is the top level, so it gets no trail.
@@ -163,7 +182,7 @@ describe("signed-in shell navigation", () => {
 
   it("marks exactly one visible editor feature as current", () => {
     const html = PAGES.dashboard.Component({ activePath: "/dashboard/leaderboard/players", user }).toString();
-    expect(html).toContain('href="/dashboard/leaderboard/players" data-nav="board" aria-current="page"');
+    expect(html).toContain('href="/dashboard/leaderboard/setup" data-nav="board" aria-current="page"');
     expect((html.match(/data-nav="board"[^>]*aria-current="page"/g) || []).length).toBe(1);
   });
 

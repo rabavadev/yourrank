@@ -10,8 +10,8 @@
 
 export const SECTIONS = {
   home: { path: "/dashboard", title: "Overview" },
-  board: { path: "/dashboard/leaderboard", title: "My leaderboard", tabs: ["setup", "players", "design", "share", "history"] },
-  boards: { path: "/dashboard/leaderboards", title: "Your leaderboards" },
+  board: { path: "/dashboard/leaderboard", title: "Leaderboard", tabs: ["setup", "players", "design", "share", "history"] },
+  boards: { path: "/dashboard/leaderboards", title: "Sites" },
   games: { path: "/dashboard/games", title: "Public page sections & Games" },
   performance: { path: "/dashboard/analytics", title: "Analytics", tabs: ["activity", "referrals", "events"] },
   // Account settings (`/dashboard/settings` and its tabs) are their own

@@ -3,7 +3,7 @@ import { $, esc, fromLocalInput, getCsrf, guardAuth, logError, timeZoneOffsetLab
 import { serializeWebhookUrl } from "./notifications.js";
 import { state, boardStatus, markDirty, setState, subscribe } from "./state.js";
 import { renderEmpty } from "./states.js";
-import { renderBoardSwitcher, renderBoardsPage, renderSidebarBoardSwitcher } from "./boards.js";
+import { renderBoardSwitcher, renderBoardSelect, renderBoardsPage } from "./boards.js";
 import { renderOverviewSummary } from "./overview.js";
 import { renderPerformance, renderPerformanceLoading } from "./performance.js";
 import { commitDraftMutation, renderPlayers, renumber, toggleEmpty } from "./players.js";
@@ -269,7 +269,7 @@ export async function loadPlanUsage() {
       rows.push({ label: "Credit rules", product: "Credits", used: d.credits.rewardMappings.used, limit: d.credits.rewardMappings.limit });
       rows.push({ label: "Shop items", product: "Credits", used: d.credits.shopItems.used, limit: d.credits.shopItems.limit });
       rows.push({ label: "Pending prize orders", product: "Credits", used: d.credits.pendingRedemptions.used, limit: d.credits.pendingRedemptions.limit });
-      rows.push({ label: "Prize orders / 30 days", product: "Credits", used: d.credits.redemptionsPer30Days.used, limit: d.credits.redemptionsPer30Days.limit });
+      rows.push({ label: "Orders / 30 days", product: "Credits", used: d.credits.redemptionsPer30Days.used, limit: d.credits.redemptionsPer30Days.limit });
       rows.push({ label: "New viewers / 30 days", product: "Credits", used: d.credits.newViewersPer30Days.used, limit: d.credits.newViewersPer30Days.limit });
     }
     wrap.innerHTML = rows.map((r) => {
@@ -639,7 +639,7 @@ export function refreshDesignPreview() {
 // banner and share affordances can never contradict each other.
 export function renderBoardStatus() {
   const s = boardStatus();
-  const LABELS = { draft: "Draft", unpublished: "Not live", pending: "Verify email", published: "Live" };
+  const LABELS = { draft: "Not published", unpublished: "Not published", pending: "Verification needed", published: "Published" };
   const TITLES = {
     draft: "Not visible to visitors",
     unpublished: "Not visible to visitors",
@@ -659,7 +659,7 @@ export function renderBoardStatus() {
   const banner = $("verifyBanner");
   if (banner) banner.hidden = s.emailVerified || Boolean(document.querySelector('section[data-page="home"]'));
   const publishLabel = $("lbPublishLabel");
-  if (publishLabel) publishLabel.textContent = s.published ? "Unpublish" : "Publish site";
+  if (publishLabel) publishLabel.textContent = s.published ? "Unpublish site" : "Publish site";
   const publishAction = $("publishAction");
   if (publishAction) {
     publishAction.className = `lb-publish-action${s.published ? " lb-publish-action--secondary" : ""}`;
@@ -668,10 +668,27 @@ export function renderBoardStatus() {
   }
   const publishToggle = $("pubToggle");
   if (publishToggle && !state._dirty) publishToggle.checked = s.published;
-  // "View live" must not be offered while the public URL would not resolve.
+  // A "View site" link must never be offered while the public URL would not
+  // resolve; until then the link states what is still missing instead.
   for (const id of ["liveLink", "previewLiveLink"]) {
     const link = $(id);
-    if (link) link.hidden = !s.live;
+    if (!link) continue;
+    link.hidden = id === "previewLiveLink" && !s.live;
+    if (id === "liveLink") {
+      link.textContent = s.live ? "View site ↗" : s.published ? "Verify email" : "Publish site";
+      link.href = s.live
+        ? `/${state.SLUG}`
+        : s.published
+          ? "/verify-email"
+          : `/dashboard/leaderboard/share?board=${encodeURIComponent(state.ACTIVE_SITE_ID || "")}`;
+      if (s.live) {
+        link.target = "_blank";
+        link.rel = "noopener noreferrer";
+      } else {
+        link.removeAttribute("target");
+        link.removeAttribute("rel");
+      }
+    }
   }
   return s;
 }
@@ -730,13 +747,18 @@ export function wirePublishAction({ fetchImpl = fetch, confirmAction = showConfi
       const active = state.BOARDS.find((board) => board.id === state.ACTIVE_SITE_ID);
       if (active) active.published = nextPublished;
       renderBoardSwitcher();
-      renderSidebarBoardSwitcher();
+      renderBoardSelect();
       renderBoardsPage();
       renderBoardStatus();
       renderOverviewSummary();
-      toast(nextPublished
-        ? (boardStatus().live ? "Published. Your site is now live." : "Published. Confirm your email to open it to visitors.")
-        : "Site unpublished. Your content and players are still saved.", "success");
+      toast(
+        nextPublished
+          ? (boardStatus().emailVerified
+            ? "Published"
+            : "Published — Your site will open to visitors after you confirm your email.")
+          : "Saved",
+        "success",
+      );
     } catch (err) {
       logError(nextPublished ? "publish-site" : "unpublish-site", err);
       toast(err.message || (nextPublished ? "Could not publish this site." : "Could not unpublish this site."));
@@ -809,7 +831,7 @@ export function applyTheme(accentA, accentB, label, font = null) {
   }
   const fontEl = $("f_font"); if (fontEl) fontEl.value = selectedFont;
   updateThemeSelection();
-  renderSidebarBoardSwitcher();
+  renderBoardSelect();
   renderBoardsPage();
   const status = $("status");
   if (status && label) {
@@ -1403,11 +1425,9 @@ $("save")?.addEventListener("click", async () => {
     if (res.ok && d.ok) {
       justPublished = !!payload.published && !state.PUBLISHED;
       setState({ _dirty: false, PUBLISHED: !!payload.published });
-      status.textContent = justPublished
-        ? (boardStatus().live
-          ? "Saved and published. Your board is now live."
-          : "Saved. Your board goes live as soon as you confirm your email.")
-        : "Saved. Your page is updated.";
+      status.textContent = justPublished && !boardStatus().emailVerified
+        ? "Published — Your site will open to visitors after you confirm your email."
+        : "Saved";
       if (d.updatedAt) setState({ SITE_UPDATED_AT: d.updatedAt });
       if (d.publishedAt) setState({ PUBLISHED_AT: d.publishedAt });
       const saveBtn = $("save"); if (saveBtn) saveBtn.textContent = "Save changes";
@@ -1418,7 +1438,7 @@ $("save")?.addEventListener("click", async () => {
       const active = state.BOARDS.find((b) => b.id === state.ACTIVE_SITE_ID);
       if (active) { active.name = payload.name; active.casino = payload.brand?.casino || active.casino; active.code = payload.brand?.code || active.code; active.published = !!payload.published; }
       renderBoardSwitcher();
-      renderSidebarBoardSwitcher();
+      renderBoardSelect();
       renderBoardsPage();
       // Close the 2-click loop: refresh the live preview so the edit shows immediately.
       updateDesignPreview();
@@ -1427,7 +1447,7 @@ $("save")?.addEventListener("click", async () => {
   btn.disabled = false; btn.textContent = "Save changes";
   if (publishAction) { publishAction.disabled = false; publishAction.removeAttribute("aria-busy"); }
   const savedMsg = status.textContent;
-  if (justPublished || savedMsg === "Saved. Your page is updated.") {
+  if (justPublished || savedMsg === "Saved") {
     setTimeout(() => { if (status.textContent === savedMsg) status.textContent = ""; }, 6000);
   }
 });

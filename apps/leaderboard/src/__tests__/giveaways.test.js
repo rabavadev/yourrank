@@ -65,7 +65,7 @@ describe("Giveaway Chatroom Handler", () => {
     const vnode = GiveawaysPage({ user: { id: "u-1", email: "streamer@test.com" } });
     expect(vnode).toBeTruthy();
     const html = vnode.toString();
-    expect(html).toContain("Chat giveaways");
+    expect(html).toContain("Giveaways");
     expect(html).toContain("gw-setup-form");
     expect(html).toContain("gw-chat-feed");
     expect(html).toContain("gw-roller");
