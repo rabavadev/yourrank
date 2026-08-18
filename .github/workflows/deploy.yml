@@ -251,13 +251,21 @@ jobs:
           echo "OK: leaderboard HTTP $STATUS"
 
       - name: "Smoke: pricing page"
+        # /pricing is served by the web Worker via the marketing proxy; the web
+        # Worker deploys in a parallel workflow, so retry while it catches up.
         run: |
-          STATUS=$(curl -s -o /dev/null -w "%{http_code}" -L --max-time 20 https://yourrank.site/pricing)
-          if [ "$STATUS" != "200" ]; then
-            echo "FAIL: pricing returned HTTP $STATUS (expected 200)"
-            exit 1
-          fi
-          echo "OK: pricing HTTP $STATUS"
+          MAX_RETRIES=12
+          for i in $(seq 1 $MAX_RETRIES); do
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" -L --max-time 20 https://yourrank.site/pricing || true)
+            if [ "$STATUS" = "200" ]; then
+              echo "OK: pricing HTTP $STATUS (attempt $i)"
+              exit 0
+            fi
+            echo "Attempt $i/$MAX_RETRIES: HTTP $STATUS — retrying in 15s…"
+            sleep 15
+          done
+          echo "FAIL: pricing not returning 200 after $MAX_RETRIES attempts"
+          exit 1
 
       - name: "Smoke: contact page"
         run: |
@@ -281,14 +289,27 @@ jobs:
             exit 1
           fi
 
-      - name: "Smoke: bot dashboard"
+      - name: "Smoke: Telegram dashboard"
         run: |
-          STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 20 https://yourrank.site/bot/dashboard)
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 20 https://yourrank.site/dashboard/telegram)
           if [ "$STATUS" != "200" ]; then
-            echo "FAIL: bot dashboard returned HTTP $STATUS (expected 200)"
+            echo "FAIL: Telegram dashboard returned HTTP $STATUS (expected 200)"
             exit 1
           fi
-          echo "OK: bot dashboard HTTP $STATUS"
+          echo "OK: Telegram dashboard HTTP $STATUS"
+
+      - name: "Smoke: legacy bot dashboard redirect"
+        run: |
+          read -r STATUS LOCATION <<<"$(curl -s -o /dev/null -w "%{http_code} %{redirect_url}" --max-time 20 https://yourrank.site/bot/dashboard)"
+          case "$STATUS:$LOCATION" in
+            30[12]:*/dashboard/telegram)
+              echo "OK: /bot/dashboard redirects to $LOCATION (HTTP $STATUS)"
+              ;;
+            *)
+              echo "FAIL: /bot/dashboard returned HTTP $STATUS to '$LOCATION' (expected a redirect to /dashboard/telegram)"
+              exit 1
+              ;;
+          esac
 
       - name: "Smoke: consumer health ping"
         run: |

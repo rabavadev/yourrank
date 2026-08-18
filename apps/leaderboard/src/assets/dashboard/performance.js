@@ -4,9 +4,9 @@ import { renderEmpty, renderError, setMetricLoading, setMetricValue, setRowsLoad
 
 const DOW = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const TAB_LABELS = {
-  activity: "Traffic & activity",
-  referrals: "Referral program",
-  events: "System log",
+  activity: "Visitors",
+  referrals: "Where they came from",
+  events: "Events",
 };
 
 export function initPerformance() {
@@ -217,7 +217,7 @@ function renderReferrers(referrers) {
   } else {
     const empty = $("perfReferrersEmpty");
     clearLoadError(empty, false);
-    renderEmpty(empty, { icon: "link", title: "No referrer data yet", body: "Add ?ref=your-source to your share link to track sources." });
+    renderEmpty(empty, { icon: "link", title: "No referrer data yet", body: "Open the Share tab to copy your link. When someone visits from a shared link, their source will appear here." });
   }
 }
 

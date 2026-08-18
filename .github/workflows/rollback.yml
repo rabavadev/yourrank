@@ -99,7 +99,7 @@ jobs:
           if [ "${{ inputs.worker }}" = "leaderboard" ]; then
             URL="https://yourrank.site/"
           elif [ "${{ inputs.worker }}" = "bot" ]; then
-            URL="https://yourrank.site/bot/dashboard"
+            URL="https://yourrank.site/dashboard/telegram"
           else
             echo "No public HTTP route for ${{ inputs.worker }}; deploy success is the rollback check."
             exit 0

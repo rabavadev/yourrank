@@ -5,26 +5,15 @@ import { dashboardNavItems } from "@yourrank/shared/dashboard-nav";
 
 export const pageLinks = [
   { key: "overview", label: "Overview", href: "/dashboard/telegram", sub: "Your bot at a glance — last 14 days" },
-  { key: "bots", label: "Telegram bots", href: "/dashboard/telegram/bots", sub: "Connect and customize your Telegram bots" },
-  { key: "commands", label: "Replies & commands", href: "/dashboard/telegram/commands", sub: "Replies your bot sends when viewers type /something" },
-  { key: "offers", label: "Tracked offers", href: "/dashboard/telegram/offers", sub: "Your casino links — clicks are tracked automatically" },
-  { key: "broadcasts", label: "Broadcast messages", href: "/dashboard/telegram/broadcasts", sub: "Send a message to your subscribers" },
+  { key: "bots", label: "Bot", href: "/dashboard/telegram/bots", sub: "Connect and customize your Telegram bot" },
+  { key: "commands", label: "Replies", href: "/dashboard/telegram/commands", sub: "Replies your bot sends when viewers type /something" },
+  { key: "offers", label: "Offers", href: "/dashboard/telegram/offers", sub: "Your tracked offers — clicks are tracked automatically" },
+  { key: "broadcasts", label: "Messages", href: "/dashboard/telegram/broadcasts", sub: "Send a message to your subscribers" },
 ];
 
 /** Shared dashboard navigation with Telegram's pages nested under its product entry. */
 export function botNavItems(): NavItem[] {
-  return dashboardNavItems().flatMap((item) => {
-    if (!("key" in item) || item.key !== "telegram") return [item];
-    return [
-      { ...item, key: "telegram-overview" },
-      ...pageLinks.filter((p) => p.key !== "overview").map((p) => ({
-        key: `telegram-${p.key}`,
-        label: p.label,
-        href: p.href,
-        child: true,
-      })),
-    ];
-  });
+  return dashboardNavItems();
 }
 
 export function pageMeta(active: string): { label: string; sub: string } {

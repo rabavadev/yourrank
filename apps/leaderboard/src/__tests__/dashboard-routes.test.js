@@ -2,7 +2,7 @@
 // parse those URLs from routes.js, so these assertions cover both sides.
 import { describe, it, expect } from "bun:test";
 import { readFileSync } from "node:fs";
-import { dashboardPath, parseDashboardPath, resolveSection, defaultTab } from "../assets/dashboard/routes.js";
+import { dashboardPath, parseDashboardPath, resolveSection, defaultTab, legacyDashboardPath } from "../assets/dashboard/routes.js";
 import { LEGACY_TELEGRAM_REDIRECTS, legacyTelegramRedirect } from "../telegram-routes.js";
 
 describe("dashboard routes", () => {
@@ -13,8 +13,8 @@ describe("dashboard routes", () => {
   });
 
   it("addresses the editor steps individually", () => {
-    expect(dashboardPath("board", "design")).toBe("/dashboard/editor/design");
-    expect(parseDashboardPath("/dashboard/editor/design")).toEqual({ page: "board", tab: "design" });
+    expect(dashboardPath("board", "design")).toBe("/dashboard/leaderboard/design");
+    expect(parseDashboardPath("/dashboard/leaderboard/design")).toEqual({ page: "board", tab: "design" });
   });
 
   it("leaves the account settings document to the Worker", () => {
@@ -39,7 +39,9 @@ describe("dashboard routes", () => {
 
   it("rejects paths that are not sections", () => {
     expect(parseDashboardPath("/dashboard/rewards/channel")).toBeNull();
-    expect(parseDashboardPath("/dashboard/editor/nope")).toBeNull();
+    expect(parseDashboardPath("/dashboard/leaderboard/nope")).toBeNull();
+    expect(legacyDashboardPath("/dashboard/editor/design")).toBe("/dashboard/leaderboard/design");
+    expect(legacyDashboardPath("/dashboard/boards")).toBe("/dashboard/leaderboards");
     expect(parseDashboardPath("/account/profile")).toBeNull();
     expect(parseDashboardPath("/dashboard/")).toEqual({ page: "home", tab: "" });
   });

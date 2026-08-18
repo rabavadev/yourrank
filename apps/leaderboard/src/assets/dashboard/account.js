@@ -250,9 +250,9 @@ function wireSettingsBoardAccess() {
   if (!state.ACTIVE_SITE_ID) return;
   const board = encodeURIComponent(state.ACTIVE_SITE_ID);
   const accessLink = $("settingsBoardAccessLink");
-  if (accessLink) accessLink.href = `/dashboard/editor/setup?board=${board}`;
+  if (accessLink) accessLink.href = `/dashboard/leaderboard/setup?board=${board}`;
   const playerFieldsLink = $("playerFieldsLink");
-  if (playerFieldsLink) playerFieldsLink.href = `/dashboard/editor/players?board=${board}`;
+  if (playerFieldsLink) playerFieldsLink.href = `/dashboard/leaderboard/players?board=${board}`;
 }
 
 function wireSettingsWebhook(sitePayload) {

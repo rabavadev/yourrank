@@ -1,20 +1,20 @@
 // Markup for Giveaways & Community Events Hub (Chat Giveaways, Ticket Raffles, Flash Code Drops)
 
 const GIVEAWAY_TABS = [
-  ["chat", "🎁 Live Chat Giveaways"],
-  ["raffles", "🎟️ Ticket Raffles"],
-  ["drops", "⚡ Flash Code Drops"],
-  ["preds", "🔮 Predictions & Betting"],
+  ["chat", "Chat giveaways"],
+  ["raffles", "Ticket raffles"],
+  ["drops", "Code drops"],
+  ["preds", "Predictions"],
 ];
 
 export function renderGiveawaysHtml(activeTab = "chat") {
   const active = GIVEAWAY_TABS.some(([tab]) => tab === activeTab) ? activeTab : "chat";
   const tabs = GIVEAWAY_TABS.map(([tab, label]) => `
-  <a class="gw-tab-btn${tab === active ? " is-active" : ""}" id="tab-btn-${tab}" href="/dashboard/giveaways/${tab}" data-tab="${tab}" role="tab" aria-selected="${tab === active ? "true" : "false"}">${label}</a>`).join("");
+  <a class="gw-tab-btn v3-tab${tab === active ? " is-active is-on" : ""}" id="tab-btn-${tab}" href="/dashboard/giveaways/${tab}" data-tab="${tab}" role="tab" aria-selected="${tab === active ? "true" : "false"}"${tab === active ? ' aria-current="page"' : ""}>${label}</a>`).join("");
   return `
 <div class="v3-head">
   <div class="v3-head-col">
-    <h1>Giveaways &amp; Community Events</h1>
+  <h1>${GIVEAWAY_TABS.find(([tab]) => tab === active)?.[1] || "Chat giveaways"}</h1>
     <p class="v3-head-sub">Engage your viewers with live chat giveaways, loyalty point ticket raffles, and flash drop claim codes.</p>
   </div>
   <div class="d-flex gap-8 items-center flex-wrap">
@@ -23,7 +23,7 @@ export function renderGiveawaysHtml(activeTab = "chat") {
 </div>
 
 <!-- Segmented Navigation Tabs -->
-<div class="gw-nav-tabs" role="tablist" aria-label="Event types">
+<div class="gw-nav-tabs v3-tabs" role="tablist" aria-label="Giveaways pages">
 ${tabs}
 </div>
 

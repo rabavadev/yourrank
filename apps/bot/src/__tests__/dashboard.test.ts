@@ -129,11 +129,12 @@ describe("dashboard views", () => {
     // Same rail, topbar and stylesheets as the leaderboard dashboard.
     expect(html).toContain('<aside class="lb-side" id="lbSide"');
     expect(html).toContain('<link rel="stylesheet" href="/assets/shell-nav.css"><link rel="stylesheet" href="/assets/dashboard-v3.css"><link rel="stylesheet" href="/assets/ui.css"><link rel="stylesheet" href="/assets/dashboard-v4.css">');
-    // Cross-product switching lives in the shared product nav (Sites / Telegram
-    // / Credits & Shop), not a one-off back link.
-    expect(html).toContain('class="lb-product-link" href="/dashboard"');
-    expect(html).toContain('class="lb-product-link is-on" href="/dashboard/telegram"');
-    expect(html).toContain('data-nav="telegram-offers" aria-current="page"');
+    // Product context stays on the main rail, without a duplicate Product nav.
+    expect(html).not.toContain('class="lb-product-link"');
+    expect(html).toContain('data-product-link="telegram"');
+    expect(html).toMatch(/data-nav="telegram"[^>]*aria-current="page"/);
+    expect(html).toContain('<nav class="v3-tabs telegram-tabs" aria-label="Telegram pages"');
+    expect(html).toContain('href="/dashboard/telegram/offers" aria-current="page">Offers</a>');
     expect(html).toContain('<nav class="v3-crumbs" aria-label="Breadcrumb">');
     // One shell, not the product header stacked on a second rail.
     expect(html).not.toContain("gm-shell-nav");
@@ -368,7 +369,7 @@ describe("buildDashboard", () => {
       headers: { cookie: "yr_session=token123" },
     }), testEnv);
     expect(page.status).toBe(200);
-    expect((await page.text())).toContain("Telegram bots");
+    expect((await page.text())).toContain(">Bot<");
     const canonicalDevLogin = await canonical.fetch(new Request("http://localhost:8788/auth/dev", {
       method: "POST",
       headers: { "content-type": "application/json", origin: "http://localhost:8788" },

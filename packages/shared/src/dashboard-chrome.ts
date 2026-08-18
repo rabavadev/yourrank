@@ -23,20 +23,15 @@ const MENU_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M
 const CLOSE_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>';
 const COLLAPSE_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>';
 
-export type NavItem = NavLinkItem | NavGroupItem;
+export type NavItem = NavLinkItem;
 
 export interface NavLinkItem {
   key: string;
   label: string;
   href: string;
-  /** Inner SVG path markup; omitted for child links, which are unindented text. */
+  /** Inner SVG path markup for the section row. */
   icon?: string | null;
-  hash?: string;
-  child?: boolean;
-}
-
-export interface NavGroupItem {
-  group: string;
+  productKey?: string;
 }
 
 function esc(s: unknown): string {
@@ -53,18 +48,14 @@ export function navIconHtml(path?: string | null): string {
 export function navListHtml(
   items: NavItem[],
   active: string,
-  activeHash = "",
   label = "Dashboard"
 ): string {
   const links = items.map((item) => {
-    if ("group" in item) {
-      return `<div class="lb-nav-group-label" role="heading" aria-level="2">${esc(item.group)}</div>`;
-    }
-    const isActive = item.key === active && (!item.hash || activeHash === item.hash);
-    const cls = `lb-nav${isActive ? " is-on" : ""}${item.child ? " lb-nav-child" : ""}`;
-    const hash = item.hash ? ` data-hash="${esc(item.hash)}"` : "";
-    return `<a class="${cls}" href="${esc(item.href)}" data-nav="${esc(item.key)}"${hash}` +
-      `${isActive ? ' aria-current="page"' : ""} title="${esc(item.label)}">${navIconHtml(item.icon)}${esc(item.label)}</a>`;
+    const isActive = item.key === active;
+    const product = item.productKey ? ` data-product-link="${esc(item.productKey)}"` : "";
+    const cls = `lb-nav${isActive ? " is-on" : ""}`;
+    return `<a class="${cls}" href="${esc(item.href)}" data-nav="${esc(item.key)}"` +
+      `${product}${isActive ? ' aria-current="page"' : ""} title="${esc(item.label)}">${navIconHtml(item.icon)}${esc(item.label)}</a>`;
   }).join("");
   return `<nav class="lb-side-group lb-side-nav" data-area="all" aria-label="${esc(label)}">${links}</nav>`;
 }
@@ -95,7 +86,6 @@ export interface ChromeOpts {
   /** Rail contents, in order. */
   nav: NavItem[];
   active: string;
-  activeHash?: string;
   navLabel?: string;
   /** Rail header: label above a name (e.g. "Telegram" / the streamer). */
   headLabel?: string;
@@ -103,8 +93,6 @@ export interface ChromeOpts {
   headMeta?: string;
   railHeadHtml?: string;
   topbarHtml?: string;
-  /** Cross-product links rendered under the rail. */
-  productLinks?: { label: string; href: string; active?: boolean }[];
   title?: string;
   titleId?: string;
   subtitle?: string;
@@ -122,16 +110,6 @@ export interface ChromeOpts {
   /** The surrounding document already provides the main landmark. */
   embeddedInMain?: boolean;
   content: string;
-}
-
-function productNavHtml(links: ChromeOpts["productLinks"]): string {
-  if (!links || !links.length) return "";
-  const items = links.map((l) => {
-    const mark = l.label.toLowerCase().startsWith("telegram") ? "T" : l.label.toLowerCase().startsWith("credits") ? "C" : "S";
-    return `<a class="lb-product-link${l.active ? " is-on" : ""}" href="${esc(l.href)}"` +
-      `${l.active ? ' aria-current="page"' : ""} title="${esc(l.label)}"><span class="lb-product-mark" aria-hidden="true">${mark}</span><span class="lb-product-label">${esc(l.label)}</span></a>`;
-  }).join("");
-  return `<nav class="lb-product-nav" aria-label="Product"><span class="label">Product</span>${items}</nav>`;
 }
 
 /**
@@ -178,8 +156,7 @@ ${collapse}
 <button class="lb-side-close" type="button" aria-label="Close navigation" data-close-side="true">${CLOSE_ICON}</button>
 </div>
 ${head}
-${navListHtml(opts.nav, opts.active, opts.activeHash || "", opts.navLabel || "Dashboard")}
-${productNavHtml(opts.productLinks)}
+${navListHtml(opts.nav, opts.active, opts.navLabel || "Dashboard")}
 ${opts.footHtml ? `<div class="lb-side-foot">${opts.footHtml}</div>` : ""}
 ${sideProfile}
 </aside>

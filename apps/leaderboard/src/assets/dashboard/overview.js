@@ -5,8 +5,8 @@ import { renderEmpty, setMetricLoading, setMetricUnknown, setMetricValue } from 
 
 const ACTIVITY_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>';
 const SETUP_STEPS = [
-  { key: "brand", required: true, href: "/dashboard/editor/setup", action: "Add details" },
-  { key: "players", required: true, href: "/dashboard/editor/players", action: "Add players" },
+  { key: "brand", required: true, href: "/dashboard/leaderboard/setup", action: "Add details" },
+  { key: "players", required: true, href: "/dashboard/leaderboard/players", action: "Add players" },
   { key: "publish", required: true, href: "#publish", action: "Publish site" },
 ];
 
@@ -92,7 +92,7 @@ export function renderOverviewSummary() {
     if (primaryAction) {
       const verificationIsNext = pendingVerification || (readyToPublish && needsVerification);
       const publicationIsNext = !verificationIsNext && firstIncomplete?.key === "publish";
-      primaryAction.href = status.live ? `/${state.SLUG}` : verificationIsNext ? "/verify-email" : publicationIsNext ? "#publish" : firstIncomplete?.href || "/dashboard/editor/setup";
+      primaryAction.href = status.live ? `/${state.SLUG}` : verificationIsNext ? "/verify-email" : publicationIsNext ? "#publish" : firstIncomplete?.href || "/dashboard/leaderboard/setup";
       primaryAction.textContent = status.live ? "View your site ↗" : verificationIsNext ? "Confirm email" : firstIncomplete?.action || "Edit site";
       primaryAction.dataset.publicationAction = publicationIsNext ? "true" : "false";
       wirePublicationLink(primaryAction);
@@ -167,7 +167,7 @@ export function renderOverviewSummary() {
     ].filter((item) => item.at).sort((a, b) => new Date(b.at) - new Date(a.at)).slice(0, 5);
     $("ovActivityList").innerHTML = activity.map((item) => `<div class="ov-activity-row"><span class="ov-activity-icon">${ACTIVITY_ICON}</span><span class="ov-activity-copy"><b>${esc(item.title)}</b><span>${esc(item.sub)}</span></span><time>${relative(item.at)}</time></div>`).join("");
     if (activity.length) $("ovActivityEmpty").hidden = true;
-    else renderEmpty($("ovActivityEmpty"), { icon: "chart", title: "No activity yet", body: "Visits, updates and reward requests will appear here.", actions: [{ label: "Share your site", href: "/dashboard/editor/share" }] });
+    else renderEmpty($("ovActivityEmpty"), { icon: "chart", title: "No activity yet", body: "Visits, updates and reward requests will appear here.", actions: [{ label: "Share your site", href: "/dashboard/leaderboard/share" }] });
     const top = [...players].sort((a, b) => b.wagered - a.wagered).slice(0, 5);
     $("ovTopPlayers").innerHTML = top.map((player, i) => `
       <div class="ov-player-row" data-name="${esc(player.name)}">
@@ -200,6 +200,6 @@ export function renderOverviewSummary() {
     });
 
     if (top.length) $("ov_topEmpty").hidden = true;
-    else renderEmpty($("ov_topEmpty"), { icon: "users", title: "No players yet", body: "Add the first player to start your leaderboard.", actions: [{ label: "Add players", href: "/dashboard/editor/players" }] });
+    else renderEmpty($("ov_topEmpty"), { icon: "users", title: "No players yet", body: "Add the first player to start your leaderboard.", actions: [{ label: "Add players", href: "/dashboard/leaderboard/players" }] });
     $("ovPublishedStatus").textContent = status.live ? "Public" : status.published ? "Email verification needed" : "Private draft";
   }

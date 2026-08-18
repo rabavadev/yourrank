@@ -35,20 +35,18 @@ describe("help pages", () => {
     expect(signedIn).toContain('data-auth-workspace="true"');
     expect(signedOut).not.toContain('data-auth-workspace="true"');
     for (const href of [
-      "/dashboard/editor/players",
-      "/dashboard/editor/design",
-      "/dashboard/games",
-      "/dashboard/giveaways",
+      "/dashboard/leaderboard/players",
+      "/dashboard/giveaways/chat",
       "/dashboard/rewards/redemptions",
-      "/dashboard/audience/viewers",
       "/dashboard/telegram",
-      "/dashboard/boards",
+      "/dashboard/analytics/activity",
+      "/dashboard/leaderboards",
       "/dashboard/settings",
       "/help",
     ]) expect(signedIn).toContain(`href="${href}"`);
     expect(signedIn).toContain('data-nav="help" aria-current="page"');
-    expect(signedIn).toContain('data-nav="support"');
-    expect(signedIn).toContain('data-nav="feedback"');
+    expect(signedIn).not.toContain('data-nav="support"');
+    expect(signedIn).not.toContain('data-nav="feedback"');
   });
 
   for (const key of ["helpSupport", "helpFeedback"]) {
@@ -82,8 +80,8 @@ describe("help pages", () => {
 
   it("marks the current Help destination without hiding dashboard features", () => {
     const html = render("helpSupport", user);
-    expect(html).toContain('data-nav="support" aria-current="page"');
-    expect(html).toContain('data-nav="account"');
+    expect(html).toContain('data-nav="help" aria-current="page"');
+    expect(html).toContain('data-nav="settings"');
     expect(html).toContain('data-nav="redemptions"');
   });
 });

@@ -86,7 +86,7 @@
               <div class="yr-guide-info">
                 <strong>Setting up your Leaderboard</strong>
                 <p>Set title, sponsor banner, countdown timer, and custom URL.</p>
-                <a href="/dashboard/editor/setup" class="yr-guide-link">Go to Site Details →</a>
+                <a href="/dashboard/leaderboard/setup" class="yr-guide-link">Go to Site Details →</a>
               </div>
             </div>
 
@@ -97,7 +97,7 @@
               <div class="yr-guide-info">
                 <strong>Managing Players &amp; Scores</strong>
                 <p>Inline spreadsheet editing, bulk score additions, and CSV imports.</p>
-                <a href="/dashboard/editor/players" class="yr-guide-link">Go to Players →</a>
+                <a href="/dashboard/leaderboard/players" class="yr-guide-link">Go to Players Editor →</a>
               </div>
             </div>
 
@@ -108,7 +108,7 @@
               <div class="yr-guide-info">
                 <strong>Adding to OBS Browser Source</strong>
                 <p>Open the Share tab, copy your OBS link, then add it in OBS as a browser source set to 1100px.</p>
-                <a href="/dashboard/editor/share" class="yr-guide-link">Get OBS URL &amp; Embed →</a>
+                <a href="/dashboard/leaderboard/share" class="yr-guide-link">Get OBS URL &amp; Embed →</a>
               </div>
             </div>
 

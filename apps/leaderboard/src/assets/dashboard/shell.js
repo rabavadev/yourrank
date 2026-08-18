@@ -115,13 +115,12 @@ function prefersReducedMotion() {
   return window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 }
 
-export function setActiveSideNav(page, hash = "") {
+export function setActiveSideNav(page) {
   const area = areaForPage(page);
   document.querySelectorAll(".lb-side-group").forEach((g) => { g.hidden = (g.dataset.area !== area && g.dataset.area !== "all"); });
   document.querySelectorAll(".lb-nav").forEach((n) => {
     const navPage = n.dataset.nav;
-    const navHash = n.dataset.hash || "";
-    const active = navPage === page && (!navHash || navHash === hash);
+    const active = navPage === page;
     n.classList.toggle("is-on", active);
     if (active) n.setAttribute("aria-current", "page");
     else n.removeAttribute("aria-current");
@@ -286,11 +285,12 @@ export function setupEditorTabs() {
         });
       }
       const TAB_NAME_MAP = {
-        setup: "Site details",
+        setup: "Basics",
         players: "Players & scores",
-        design: "Theme & styling",
-        share: "Overlay & share",
+        design: "Look",
+        share: "Share",
         history: "Past winners",
+        games: "Mini-games",
       };
       const crumbCurrent = document.querySelector(".v3-crumbs span[aria-current='page']");
       if (crumbCurrent) {
@@ -301,7 +301,9 @@ export function setupEditorTabs() {
     }
     // Each step is its own URL, so a step can be linked to and Back returns to
     // the previous one instead of leaving the editor entirely.
-    buttons.forEach((b) => b.addEventListener("click", () => {
+    buttons.forEach((b) => b.addEventListener("click", (e) => {
+      if (b.dataset.egroup === "games") return;
+      e.preventDefault();
       requestDashboardRoute("board", b.dataset.egroup);
     }));
     tabs.addEventListener("keydown", (e) => {
