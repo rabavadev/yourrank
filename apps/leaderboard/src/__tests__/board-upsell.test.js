@@ -8,8 +8,8 @@ function dashboardHtml() {
   return PAGES.dashboard.Component().toString();
 }
 
-describe("board-limit upsell", () => {
-  it("keeps a visible New board action with an accessible upsell target", () => {
+describe("site-limit upsell", () => {
+  it("keeps a visible New site action with an accessible upsell target", () => {
     const html = dashboardHtml();
     expect(html).toContain('id="newBoard"');
     expect(html).toContain('id="boardLimitUpsell" role="status" hidden');
@@ -18,9 +18,17 @@ describe("board-limit upsell", () => {
     expect(boardsJs).toContain('newBtn.setAttribute("aria-controls", atLimit ? "boardLimitUpsell" : "newBoardForm")');
   });
 
-  it("offers Pro, Agency, or support according to the current plan", () => {
-    expect(boardsJs).toContain("Pro unlocks up to 3 independent boards.");
-    expect(boardsJs).toContain("Agency supports up to 99 independent leaderboards.");
+  it("offers Pro, Agency, or support using creator-facing site language", () => {
+    expect(boardsJs).toContain("Pro unlocks up to 3 sites.");
+    expect(boardsJs).toContain("Agency supports up to 99 sites.");
     expect(boardsJs).toContain('cta: "Contact support"');
+    expect(boardsJs).not.toContain("independent boards");
+  });
+
+  it("does not label the current site as editing or an unpublished site as a draft", () => {
+    expect(boardsJs).toContain('board-table-badge\">Current');
+    expect(boardsJs).toContain('b.published ? "Published" : "Unpublished"');
+    expect(boardsJs).not.toContain('board-table-badge\">editing');
+    expect(boardsJs).not.toContain('b.published ? "Published" : "Draft"');
   });
 });
