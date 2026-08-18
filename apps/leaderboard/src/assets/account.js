@@ -25,14 +25,30 @@ async function wireObsTools() {
     ["ov-btn-copy-ticker", (slug) => `${location.origin}/${slug}/overlay?layout=ticker`, "OBS Leaderboard Ticker URL copied to clipboard!"],
   ];
   if (!buttons.some(([id]) => $(id))) return;
+  const siteSelect = $("obsSiteSelect");
+  const siteHint = $("obsSiteHint");
   try {
     const response = await jsonReq("GET", "/api/site/list");
     const sites = response.ok ? response.data?.sites || response.data?.boards || [] : [];
     const selectedId = new URLSearchParams(location.search).get("siteId");
     const site = sites.find((item) => String(item.id || item.siteId) === String(selectedId)) || sites[0];
+    if (siteSelect) {
+      siteSelect.innerHTML = sites.map((item) => {
+        const id = item.id || item.siteId;
+        return `<option value="${esc(id)}"${String(id) === String(site?.id || site?.siteId) ? " selected" : ""}>${esc(item.name || item.slug || "Site")}</option>`;
+      }).join("");
+      siteSelect.disabled = !sites.length;
+      siteSelect.addEventListener("change", () => {
+        const next = new URL(location.href);
+        next.searchParams.set("siteId", siteSelect.value);
+        location.assign(next.pathname + next.search);
+      });
+    }
     obsSlug = site?.slug || "";
+    if (siteHint) siteHint.textContent = site ? `Links below use ${site.name || site.slug || "this site"}.` : "Create a site before copying an overlay link.";
   } catch (error) {
     logError("load-obs-site", error);
+    if (siteHint) siteHint.textContent = "Could not load your sites. Try again before copying an overlay link.";
   }
   buttons.forEach(([id, makeUrl, message]) => {
     const button = $(id);

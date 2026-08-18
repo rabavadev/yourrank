@@ -101,12 +101,21 @@ export function renderOverviewSummary() {
     if (barEl) barEl.setAttribute("aria-valuenow", String(completed));
     const setupMessage = $("ovSetupMessage");
     const setupAction = $("ovSetupAction");
-    if (setupMessage) setupMessage.textContent = firstIncomplete ? `Next: ${firstIncomplete.action.toLowerCase()}.` : "Your essentials are ready.";
+    if (setupMessage) {
+      const setupCopy = firstIncomplete?.key === "brand"
+        ? "Add your site details to get started."
+        : firstIncomplete?.key === "players"
+          ? "Add players to your leaderboard."
+          : firstIncomplete?.key === "publish"
+            ? "Your essentials are ready. Publish when you’re ready."
+            : "Your essentials are ready.";
+      setupMessage.textContent = setupCopy;
+    }
     if (setupAction) {
-      setupAction.href = firstIncomplete?.href || "/dashboard";
-      setupAction.textContent = firstIncomplete?.action || "View your site";
-      setupAction.dataset.publicationAction = firstIncomplete?.key === "publish" ? "true" : "false";
-      if (firstIncomplete?.key === "publish") wirePublicationLink(setupAction);
+      setupAction.href = firstIncomplete?.href || (status.live ? `/${state.SLUG || ""}` : "#publish");
+      setupAction.textContent = firstIncomplete?.action || (status.live ? "View your site" : "Publish site");
+      setupAction.dataset.publicationAction = firstIncomplete?.key === "publish" || (!firstIncomplete && !status.live) ? "true" : "false";
+      if (setupAction.dataset.publicationAction === "true") wirePublicationLink(setupAction);
     }
     const statsReady = state.STATS_STATUS === "ready" && state.STATS;
     const days = statsReady ? state.STATS.days : [];

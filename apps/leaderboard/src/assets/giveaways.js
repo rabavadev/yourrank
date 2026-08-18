@@ -1,5 +1,5 @@
 import { loadBoardShell, sitePath } from "./dashboard/board-shell.js";
-import { UNKNOWN, inlineStateHtml } from "./dashboard/states.js";
+import { inlineStateHtml } from "./dashboard/states.js";
 
 // Client-side script for Live Chat Keyword Listener & Giveaways
 // Connects to Kick's Pusher WebSocket network in real-time
@@ -605,10 +605,10 @@ import { UNKNOWN, inlineStateHtml } from "./dashboard/states.js";
 
   function updateEntrantsCount() {
     const count = entrants.length;
-    $("gw-stat-entrants").textContent = count ? count.toLocaleString() : UNKNOWN;
-    $("gw-table-count").textContent = count ? count.toLocaleString() : UNKNOWN;
-    if ($("gw-stat-verified")) $("gw-stat-verified").textContent = count ? verifiedCount.toLocaleString() : UNKNOWN;
-    if ($("gw-stat-flagged")) $("gw-stat-flagged").textContent = flaggedCount ? flaggedCount.toLocaleString() : UNKNOWN;
+    $("gw-stat-entrants").textContent = count.toLocaleString();
+    $("gw-table-count").textContent = count.toLocaleString();
+    if ($("gw-stat-verified")) $("gw-stat-verified").textContent = verifiedCount.toLocaleString();
+    if ($("gw-stat-flagged")) $("gw-stat-flagged").textContent = flaggedCount.toLocaleString();
 
     const rollBtn = $("gw-roll-btn");
     const exportBtn = $("gw-export-btn");

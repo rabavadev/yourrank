@@ -78,8 +78,9 @@ export function renderPerformance(stats) {
   const all = Array.isArray(stats.days) ? stats.days : [];
   const days = all.slice(-range);
   const hasData = days.some((day) => Number(day.views) || Number(day.clicks) || Number(day.copies));
-  if ($("perfRangeFilter")) $("perfRangeFilter").hidden = !hasData;
-  if ($("perfExport")) $("perfExport").hidden = !hasData;
+  const hasAnyData = all.some((day) => Number(day.views) || Number(day.clicks) || Number(day.copies));
+  if ($("perfRangeFilter")) $("perfRangeFilter").hidden = !hasAnyData;
+  if ($("perfExport")) $("perfExport").hidden = !hasAnyData;
   const previous = all.slice(Math.max(0, all.length - range * 2), Math.max(0, all.length - range));
   const currentTotals = totals(days);
   const previousTotals = totals(previous);
@@ -98,8 +99,8 @@ export function renderPerformance(stats) {
   if (rangeLabel) rangeLabel.textContent = String(range);
   const board = $("perfBoardName");
   if (board) board.textContent = state.SLUG || "Active site";
-  renderChart(days);
-  renderActivity(days);
+  renderChart(days, hasAnyData);
+  renderActivity(days, hasAnyData);
   loadHeatmap();
 }
 
@@ -126,7 +127,7 @@ function setKpi(id, value, change) {
   }
 }
 
-function renderChart(days) {
+function renderChart(days, hasAnyData = false) {
   const host = $("statBars");
   if (!host) return;
   const total = $("perfTotalViews");
@@ -135,7 +136,12 @@ function renderChart(days) {
   if (!hasData) {
     host.innerHTML = "";
     host.hidden = true;
-    renderEmpty(empty, { kind: "empty", title: "No visitor activity yet", body: "Share your site link to start recording visits.", compact: true });
+    renderEmpty(empty, {
+      kind: "empty",
+      title: hasAnyData ? "No visitor activity in this range" : "No visitor activity yet",
+      body: hasAnyData ? "Try a wider date range to see your site's history." : "Share your site link to start recording visits.",
+      compact: true,
+    });
     return;
   }
   host.hidden = false;
@@ -158,7 +164,7 @@ function renderChart(days) {
   }
 }
 
-function renderActivity(days) {
+function renderActivity(days, hasAnyData = false) {
   const body = $("perfActivityBody");
   if (!body) return;
   const hasData = days.some((day) => Number(day.views) || Number(day.clicks) || Number(day.copies));
@@ -167,7 +173,12 @@ function renderActivity(days) {
   if (!hasData) {
     body.innerHTML = "";
     if (table) table.hidden = true;
-    renderEmpty(empty, { kind: "empty", title: "No daily visits yet", body: "This table will fill in after people visit your site.", compact: true });
+    renderEmpty(empty, {
+      kind: "empty",
+      title: hasAnyData ? "No daily visits in this range" : "No daily visits yet",
+      body: hasAnyData ? "Try a wider date range to see your site's history." : "This table will fill in after people visit your site.",
+      compact: true,
+    });
     return;
   }
   if (table) table.hidden = false;

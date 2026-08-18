@@ -2161,7 +2161,6 @@ body[data-wide] .v3-dash[data-auth-workspace] .lb-main { padding-right: 32px; }
 .v3-dash[data-auth-workspace] .v3-state-inline-copy b { color: var(--v4-ink); font-size: 13px; }
 .v3-dash[data-auth-workspace] .v3-state-inline-copy span { font-size: 12px; line-height: 1.4; }
 .v3-dash[data-auth-workspace] .v3-state-inline .v3-btn { flex: 0 0 auto; }
-.v3-dash[data-auth-workspace] .v3-table-foot { border-color: var(--v4-line); background: var(--v4-surface-soft); color: var(--v4-ink-soft); }
 .v3-dash[data-auth-workspace] .v3-empty,
 .v3-dash[data-auth-workspace] .empty {
   display: flex;
@@ -3040,8 +3039,7 @@ body[data-wide] .v3-dash[data-auth-workspace] .lb-main { padding-right: 32px; }
 .v3-dash[data-auth-workspace] .cr-upload-name { font-size: 12.5px; font-weight: 600; color: var(--v4-ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .v3-dash[data-auth-workspace] .cr-upload-size { font-size: 11px; color: var(--v4-ink-soft); }
 .v3-dash[data-auth-workspace] .cr-upload-progbar { width: 100%; height: 4px; background: var(--v4-line); border-radius: var(--v4-radius-control); overflow: hidden; margin-top: 4px; }
-.v3-dash[data-auth-workspace] .cr-upload-progbar-fill,
-.v3-dash[data-auth-workspace] .cr-shop-progbar-fill { width: 100%; height: 100%; background: var(--v4-cobalt); transition: width 0.3s ease; }
+.v3-dash[data-auth-workspace] .cr-upload-progbar-fill { width: 100%; height: 100%; background: var(--v4-cobalt); transform: scaleX(0); transform-origin: left; transition: transform 0.3s ease; }
 .v3-dash[data-auth-workspace] .cr-upload-remove { background: transparent; border: none; font-size: 18px; color: var(--v4-ink-soft); cursor: pointer; padding: 4px 8px; border-radius: var(--v4-radius-control); }
 .v3-dash[data-auth-workspace] .cr-upload-remove:hover { background: #fee2e2; color: #dc2626; }
 .v3-dash[data-auth-workspace] .cr-tip-presets { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 4px; }
