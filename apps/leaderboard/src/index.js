@@ -60,11 +60,12 @@ import { redirectToLogin } from "./login-redirect.js";
 import { safeNextPath } from "@yourrank/shared/safe-next";
 
 const LEGAL_PAGES = new Set(["terms", "privacy", "responsible", "cookies", "refund", "contact"]);
-const MARKETING_PAGES = new Set(["/", "/index.html", "/sites", "/telegram", "/credits", "/pricing", "/overlays", "/games", "/switch", "/docs", "/faq", "/about"]);
+const MARKETING_PAGES = new Set(["/", "/index.html", "/sites", "/telegram", "/credits", "/pricing", "/overlays", "/games", "/switch", "/docs", "/faq", "/about", "/changelog", "/brand", "/status"]);
 const NON_SITE_PATHS = new Set([
   "api", "auth", "dashboard", "login", "logout", "signup", "verify-email", "invite",
   "account", "contact", "faq", "reviews", "cookies", "privacy", "terms",
   "responsible", "refund", "setup", "demo", "sites", "telegram", "credits", "pricing", "overlays", "games", "switch", "docs", "about", "go", "logo", "favicon.ico",
+  "changelog", "brand", "status",
 ]);
 const PUBLIC_API_OPERATIONS = new Set(["standings", "players", "stream", "rank", "data", "stats"]);
 const SITE_SECTIONS = new Set(["home", "leaderboard", "shop", "games", "me"]);
@@ -615,7 +616,7 @@ async function handleRequest(request, env, ctx, meta) {
       const csrfToken = generateCsrfToken();
       const csrfHeader = { "set-cookie": csrfCookie(csrfToken) };
 
-      if (host === PLATFORM_HOST && path.startsWith("/_next/")) {
+      if (host === PLATFORM_HOST && (path.startsWith("/_next/") || path.startsWith("/brand/"))) {
         return proxyMarketingHome({ request, binding: env.MARKETING, workerLog });
       }
       if (host === PLATFORM_HOST && MARKETING_PAGES.has(path)) {

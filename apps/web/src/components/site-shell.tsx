@@ -135,6 +135,9 @@ export function SiteFooter() {
           <a href="/about" className="text-devin-ink hover:text-devin-primary">About</a>
           <a href="/docs" className="text-devin-ink hover:text-devin-primary">Docs</a>
           <a href="/faq" className="text-devin-ink hover:text-devin-primary">FAQ</a>
+          <a href="/changelog" className="text-devin-ink hover:text-devin-primary">Changelog</a>
+          <a href="/status" className="text-devin-ink hover:text-devin-primary">Status</a>
+          <a href="/brand" className="text-devin-ink hover:text-devin-primary">Brand</a>
           <a href="/contact" className="text-devin-ink hover:text-devin-primary">Contact</a>
         </div>
       </div>
