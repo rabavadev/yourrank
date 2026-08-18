@@ -29,6 +29,14 @@ describe("dashboard overview quick actions", () => {
     expect(html).toContain('class="ov-card-empty" id="ovActivityEmpty"');
   });
 
+  it("keeps advanced stream setup and score editing off the Overview", () => {
+    expect(overviewJs).toContain('document.querySelector(".ov-obs-suite-card")');
+    expect(overviewJs).toContain("streamTools.hidden = true");
+    expect(overviewJs).not.toContain("ov-inc-btn");
+    expect(overviewJs).not.toContain("markDirty");
+    expect(overviewJs).toContain('href: "/dashboard/leaderboard/share"');
+  });
+
   it("routes unverified users to email confirmation without a duplicate Overview banner", () => {
     expect(overviewJs).toContain("status.published && !status.emailVerified");
     expect(overviewJs).toContain("const needsVerification = !status.emailVerified");
