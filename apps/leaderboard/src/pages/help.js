@@ -110,9 +110,9 @@ function helpHubContent({ user, activePath }) {
 
 <section class="operator-help-section" aria-labelledby="help-account">
   <h2 id="help-account">Account, plan, and connections</h2>
-  <p>Account settings are separate from settings for one selected site.</p>
+  <p>Settings for your account are separate from settings for one selected site.</p>
   <ul class="operator-help-list">
-    <li><a href="/dashboard/settings">Account settings</a><span>Manage account-level settings, plan access, connections, and account data.</span></li>
+    <li><a href="/dashboard/settings">Settings</a><span>Manage account-level settings, plan access, connections, and account data.</span></li>
     <li><a href="/dashboard/settings/board">Site settings</a><span>Manage visitor access, alerts, connected tools, your web address, and support resources for the selected site.</span></li>
     <li><a href="/dashboard/settings/plan">Plan and billing</a><span>Manage the account subscription and review plan access.</span></li>
     <li><a href="/dashboard/settings/account">Account</a><span>Change your password and review active sessions.</span></li>

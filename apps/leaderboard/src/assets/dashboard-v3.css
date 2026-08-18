@@ -2318,7 +2318,8 @@ body[data-wide] .v3-dash .lb-main {
   padding: 10px 12px;
   border: 1px solid var(--v3-main-line);
   border-radius: var(--v3-radius-sm);
-  background: var(--v3-chrome-3);
+    background: var(--v3-main-surface);
+    color: var(--v3-main-ink);
 }
 
 .v3-dash .plan-usage-meta {

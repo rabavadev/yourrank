@@ -42,7 +42,9 @@ describe("signed-in shell navigation", () => {
 
   it("marks the open credit surface as current", () => {
     const html = renderPage(RewardsViewersPage);
-    expect(html).toContain('data-nav="redemptions" data-hash="viewers" aria-current="page"');
+    expect(html).toMatch(/data-nav="redemptions"[^>]*aria-current="page"/);
+    expect(html).not.toContain("lb-nav-child");
+    expect((html.match(/class="lb-nav[^"]* is-on/g) || []).length).toBe(1);
   });
 
   it("renders the collapsible creator workspace shell", () => {
@@ -132,7 +134,7 @@ describe("signed-in shell navigation", () => {
       "/dashboard/settings",
       "/help",
     ]) expect(html).toContain(`href="${href}"`);
-    expect(html).toContain('data-nav="settings" data-hash="account" aria-current="page"');
+    expect(html).toContain('data-nav="settings" aria-current="page"');
     expect((html.match(/<h1\b/g) || []).length).toBe(1);
     expect(html).not.toContain('data-nav="back"');
   });
@@ -140,18 +142,18 @@ describe("signed-in shell navigation", () => {
   it("puts a breadcrumb trail on every leaf page", () => {
     const viewers = renderPage(RewardsViewersPage);
     expect(viewers).toContain('<nav class="v3-crumbs" aria-label="Breadcrumb">');
-    expect(viewers).toContain('<a href="/dashboard/rewards/redemptions">Rewards &amp; Shop</a>');
+    expect(viewers).toContain('<a href="/dashboard/rewards/redemptions">Rewards</a>');
     expect(viewers).toContain('<span aria-current="page">Viewers</span>');
 
     const settings = renderPage(UnifiedSettingsPage);
-    expect(settings).toContain('<span aria-current="page">Account settings</span>');
+    expect(settings).toContain('<span aria-current="page">Account</span>');
   });
 
   it("trails dashboard sections and editor steps from the route", () => {
     const editor = PAGES.dashboard.Component({ activePath: "/dashboard/leaderboard/design" }).toString();
     expect(editor).toContain('<a href="/dashboard/leaderboard/players">My leaderboard</a>');
     expect(editor).toContain('<span aria-current="page">Look</span>');
-    expect(editor).toContain('href="/dashboard/leaderboard/design" data-nav="board" data-hash="design" aria-current="page"');
+    expect(editor).toContain('href="/dashboard/leaderboard/design" data-egroup="design"');
 
     // Overview is the top level, so it gets no trail.
     expect(PAGES.dashboard.Component({ activePath: "/dashboard" }).toString())
@@ -160,8 +162,8 @@ describe("signed-in shell navigation", () => {
 
   it("marks exactly one visible editor feature as current", () => {
     const html = PAGES.dashboard.Component({ activePath: "/dashboard/leaderboard/players", user }).toString();
-    expect(html).toContain('href="/dashboard/leaderboard/players" data-nav="board" data-hash="players" aria-current="page"');
-    expect((html.match(/data-nav="board"[^>]*aria-current="page"/g) || []).length).toBe(2);
+    expect(html).toContain('href="/dashboard/leaderboard/players" data-nav="board" aria-current="page"');
+    expect((html.match(/data-nav="board"[^>]*aria-current="page"/g) || []).length).toBe(1);
   });
 
   it("keeps operational data visible while launch setup is incomplete", () => {

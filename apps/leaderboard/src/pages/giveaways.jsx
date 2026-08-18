@@ -5,11 +5,11 @@ import { DashboardShell } from "./dashboard-shell.jsx";
 import { renderGiveawaysHtml } from "./giveaway-pages.js";
 
 export function GiveawaysPage({ user, tab = "chat" } = {}) {
-  const crumbs = [{ label: "Community & Rewards", href: "/dashboard/audience/viewers" }, { label: "Live giveaways" }];
+  const labels = { chat: "Chat giveaways", raffles: "Ticket raffles", drops: "Code drops", preds: "Predictions" };
+  const crumbs = [{ label: "Giveaways", href: "/dashboard/giveaways/chat" }, { label: labels[tab] || labels.chat }];
   return (
     <DashboardShell
       activeNav="giveaways"
-      activeHash={tab}
       boardContext="selector"
       crumbs={crumbs}
       footer="rewards"

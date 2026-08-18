@@ -24,7 +24,7 @@ export function dashboardNavItems() {
   return sharedDashboardNavItems();
 }
 
-export function mapActiveNav(nav, hash) {
+export function mapActiveNav(nav) {
   if (nav === "board" || nav === "games") return "board";
   if (nav === "giveaways") return "giveaways";
   if (nav === "redemptions" || nav === "shop" || nav === "rules" || nav === "channel" || nav === "rewards" || nav === "viewers" || nav === "activity" || nav === "performance" || nav === "audience" || nav === "history") return nav === "performance" ? "performance" : "redemptions";
@@ -32,14 +32,6 @@ export function mapActiveNav(nav, hash) {
   if (nav === "settings" || nav === "account") return "settings";
   if (nav === "help") return "help";
   return nav || "home";
-}
-
-export function mapActiveHash(nav, hash) {
-  if (nav === "games") return "games";
-  if (nav === "settings" && !hash) return "board";
-  if (nav === "account" && !hash) return "account";
-  if (nav === "history") return "activity";
-  return hash;
 }
 
 function SidebarBoard({ boardContext }) {
@@ -82,7 +74,7 @@ function SidebarFooter({ boardContext, footer, profile }) {
   </>;
 }
 
-export function DashboardShell({ activeNav = "home", activeHash = "", boardContext = "full", footer = "dashboard", title = "", crumbs = null, rootId, initiallyHidden = false, user, children }) {
+export function DashboardShell({ activeNav = "home", boardContext = "full", footer = "dashboard", title = "", crumbs = null, rootId, initiallyHidden = false, user, children }) {
   const activePath = boardContext === "none" ? "/dashboard/settings" : CREDITS_NAV_KEYS.has(activeNav) ? "/dashboard/rewards/redemptions" : "/dashboard";
   const shellId = rootId || (boardContext === "none" ? "account-dash" : "dash");
   const profile = profileMenuHtml({ activePath, user, standalone: true, dynamicIdentity: true });
@@ -100,8 +92,7 @@ export function DashboardShell({ activeNav = "home", activeHash = "", boardConte
         <SidebarBoard boardContext={boardContext} />
         {raw(navListHtml(
           dashboardNavItems(),
-          mapActiveNav(activeNav, activeHash),
-          mapActiveHash(activeNav, activeHash),
+          mapActiveNav(activeNav),
           "Dashboard"
         ))}
         <SidebarFooter boardContext={boardContext} footer={footer} profile={profile} />
@@ -142,7 +133,7 @@ export function DashboardShell({ activeNav = "home", activeHash = "", boardConte
                 </span>
                 <div class="lb-hud-details">
                   <span class="lb-board-select-lbl">{footer === "help" ? "Help & Support" : "Account Settings"}</span>
-                  <span class="lb-account-title">{title || "Account settings"}</span>
+                  <span class="lb-account-title">{title || "Settings"}</span>
                 </div>
               </div>
             </div>

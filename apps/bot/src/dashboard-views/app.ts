@@ -25,6 +25,21 @@ function panelHtml(page: string, publicBaseUrl: string): string {
   }
 }
 
+function telegramTabsHtml(page: string): string {
+  const tabs = [
+    ["overview", "Overview", "/dashboard/telegram"],
+    ["bots", "Bot", "/dashboard/telegram/bots"],
+    ["commands", "Replies", "/dashboard/telegram/commands"],
+    ["offers", "Offers", "/dashboard/telegram/offers"],
+    ["broadcasts", "Messages", "/dashboard/telegram/broadcasts"],
+  ] as const;
+  return `<nav class="v3-tabs telegram-tabs" aria-label="Telegram pages">${
+    tabs.map(([key, label, href]) =>
+      `<a class="v3-tab${key === page ? " is-on" : ""}" href="${href}"${key === page ? ' aria-current="page"' : ""}>${label}</a>`
+    ).join("")
+  }</nav>`;
+}
+
 export function appHtml(
   user: { display_name: string; email: string; plan: string },
   publicBaseUrl: string,
@@ -41,7 +56,6 @@ export function appHtml(
   const chrome = dashboardChromeHtml({
     nav: botNavItems(),
     active: "telegram",
-    activeHash: page,
     navLabel: "Telegram",
     railHeadHtml: `<div class="lb-ws-switcher"><a class="lb-ws-card" href="/dashboard/leaderboards"><div class="lb-ws-avatar">${esc((context.siteName || "S").slice(0, 1).toUpperCase())}</div><div class="lb-ws-meta"><span class="lb-ws-name">${esc(context.siteName || "No site connected")}</span><span class="lb-ws-plan">Active site</span></div></a></div>`,
     title: meta.label,
@@ -60,7 +74,7 @@ export function appHtml(
     // render only the active panel. This keeps one panel's slow or failed data
     // from bloating or breaking the others, and matches the SPA section model
     // the leaderboard dashboard already uses.
-    content: panelHtml(page, publicBaseUrl),
+    content: `${telegramTabsHtml(page)}${panelHtml(page, publicBaseUrl)}`,
   });
   return botPageHtml({
     user,
