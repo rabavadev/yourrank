@@ -7,14 +7,15 @@ import { renderEmpty } from "./states.js";
 export function renderBoardSwitcher() {
   const newBtn = $("newBoard");
   if (newBtn) {
+    wireBoardLimitUpsell();
     const limit = state.ME?.limits?.boards || 1;
     const atLimit = state.BOARDS.length >= limit;
     newBtn.hidden = false;
     newBtn.classList.toggle("btn--ghost", atLimit);
     newBtn.title = atLimit ? "Plan limit reached — see upgrade options" : "";
-    newBtn.setAttribute("aria-expanded", "false");
     newBtn.setAttribute("aria-controls", atLimit ? "boardLimitUpsell" : "newBoardForm");
     if (!atLimit) hideBoardLimitUpsell();
+    else newBtn.setAttribute("aria-expanded", $("boardLimitUpsell")?.hidden ? "false" : "true");
     newBtn.onclick = () => {
       if (atLimit) { showBoardLimitUpsell(); return; }
       hideBoardLimitUpsell();
@@ -90,6 +91,7 @@ function boardLimitOffer() {
 function showBoardLimitUpsell() {
   const panel = $("boardLimitUpsell");
   if (!panel) return;
+  wireBoardLimitUpsell();
   const offer = boardLimitOffer();
   $("boardLimitTitle").textContent = offer.title;
   $("boardLimitText").textContent = offer.text;
@@ -100,9 +102,31 @@ function showBoardLimitUpsell() {
   $("boardLimitCta")?.focus();
 }
 
-function hideBoardLimitUpsell() {
+function hideBoardLimitUpsell(restoreFocus = true) {
   const panel = $("boardLimitUpsell");
+  const wasOpen = !!panel && !panel.hidden;
   if (panel) panel.hidden = true;
+  const newBtn = $("newBoard");
+  newBtn?.setAttribute("aria-expanded", "false");
+  if (wasOpen && restoreFocus) newBtn?.focus();
+}
+
+function wireBoardLimitUpsell() {
+  const panel = $("boardLimitUpsell");
+  const newBtn = $("newBoard");
+  if (!panel || !newBtn || panel._wired) return;
+  panel._wired = true;
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && !panel.hidden) {
+      event.preventDefault();
+      hideBoardLimitUpsell();
+    }
+  });
+  document.addEventListener("pointerdown", (event) => {
+    if (!panel.hidden && !panel.contains(event.target) && event.target !== newBtn) {
+      hideBoardLimitUpsell();
+    }
+  });
 }
 
 export async function deleteBoard(siteId) {

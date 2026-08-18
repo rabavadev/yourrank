@@ -1,6 +1,7 @@
 import { describe, expect, it } from "bun:test";
 import { readFileSync } from "node:fs";
 import { PAGES } from "../pages.jsx";
+import { effectivePlan } from "@yourrank/shared/plans";
 
 const siteJs = readFileSync(new URL("../assets/dashboard/site.js", import.meta.url), "utf8");
 const utilsJs = readFileSync(new URL("../assets/dashboard/utils.js", import.meta.url), "utf8");
@@ -9,6 +10,7 @@ const dashboardJs = readFileSync(new URL("../assets/dashboard.js", import.meta.u
 const boardShellJs = readFileSync(new URL("../assets/dashboard/board-shell.js", import.meta.url), "utf8");
 const performanceJs = readFileSync(new URL("../assets/dashboard/performance.js", import.meta.url), "utf8");
 const dashboardCss = readFileSync(new URL("../assets/dashboard-v4.css", import.meta.url), "utf8");
+const workerIndex = readFileSync(new URL("../index.js", import.meta.url), "utf8");
 
 function dashboardHtml(activePath = "/dashboard") {
   return PAGES.dashboard.Component({ activePath }).toString();
@@ -84,6 +86,24 @@ describe("dashboard overview quick actions", () => {
     expect(utilsJs).toContain('navigator.clipboard.writeText');
     expect(siteJs).toContain('const shareCopy = $("shareCopy")');
     expect(siteJs).toContain('copyToClipboard(publicUrl)');
+  });
+
+  it("matches the server's effective-plan OBS overlay gate", () => {
+    expect(dashboardHtml("/dashboard/leaderboard/share")).toContain('id="embedObsLock"');
+    expect(siteJs).toContain('const overlayAccess = state.ME?.plan !== "free"');
+    expect(siteJs).toContain('obsLink.textContent = overlayAccess ? obsUrl : ""');
+    expect(siteJs).toContain("obsBox.hidden = !overlayAccess");
+    expect(siteJs).toContain("obsLock.hidden = overlayAccess");
+    expect(dashboardHtml("/dashboard/leaderboard/share")).toContain("Stream overlays are available on Starter and higher plans.");
+    expect(dashboardHtml("/dashboard/leaderboard/share")).toContain('href="/dashboard/settings/plan?from=overlay"');
+    expect(dashboardHtml("/dashboard/leaderboard/share")).toContain('>Upgrade your plan</a> to add this leaderboard to OBS, Streamlabs, or another streaming app.');
+    expect(siteJs).toContain("if (overlayAccess && obsCopy && !obsCopy._wired)");
+    expect(siteJs).not.toContain("obsLock.innerHTML");
+    expect(workerIndex).toContain('const paid = r.plan !== "free"');
+    const future = Date.now() + 86_400_000;
+    for (const [plan, expected] of [["free", false], ["starter", true], ["pro", true], ["agency", true], ["lifetime", false]]) {
+      expect(effectivePlan({ plan, status: "active", plan_expires_at: future }) !== "free").toBe(expected);
+    }
   });
 
   it("organises navigation into a focused creator section list", () => {

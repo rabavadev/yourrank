@@ -83,6 +83,48 @@ describe("authenticated dashboard v4 contract", () => {
     expect(sizingDeclarations).toEqual([]);
     expect(ruleBlocks.some(({ declarations }) => /--v3-sidebar-w:\s*44px\s*;/.test(declarations))).toBe(true);
   });
+
+  it("keeps mobile top-bar controls on the light surface and allows reflow", () => {
+    const baseTopbar = css.match(/\.v3-dash\[data-auth-workspace\] \.lb-topbar\s*\{([^{}]*)\}/)?.[1] || "";
+    const menuRule = [...css.matchAll(/\.v3-dash\[data-auth-workspace\] \.lb-topbar-menu\s*\{([^{}]*)\}/g)]
+      .map(([, declarations]) => declarations)
+      .join("\n");
+    expect(menuRule).toContain("var(--v4-line)");
+    expect(menuRule).toContain("var(--v4-surface)");
+    expect(menuRule).toContain("var(--v4-ink)");
+    expect(menuRule).not.toContain("var(--v3-chrome-line-2)");
+    expect(menuRule).not.toContain("var(--v3-chrome-2)");
+    expect(baseTopbar).toContain("inset: 0 0 auto var(--v3-sidebar-w)");
+    expect(baseTopbar).toContain("box-sizing: border-box");
+    expect(baseTopbar).not.toMatch(/\b(?:top|left|right|width|margin|box-sizing)\s*:[^;]*!important/);
+    const mobileTopbar = [...css.matchAll(/\.v3-dash\[data-auth-workspace\] \.lb-topbar\s*\{([^{}]*)\}/g)]
+      .map(([, declarations]) => declarations)
+      .find((declarations) => declarations.includes("inset: 0 0 auto 0")) || "";
+    expect(mobileTopbar).toContain("inset: 0 0 auto 0");
+    expect(mobileTopbar).not.toMatch(/\b(?:top|left|right|width|margin|box-sizing)\s*:[^;]*!important/);
+    const narrowStart = css.indexOf("@media (max-width: 700px) {");
+    const narrowEnd = css.indexOf("\n@media", narrowStart + 1);
+    const narrowShell = css.slice(narrowStart, narrowEnd < 0 ? undefined : narrowEnd);
+    expect(narrowShell).toContain(".v3-dash[data-auth-workspace] { --v3-topbar-h: 153px; }");
+    expect(narrowShell).toContain("height: var(--v3-topbar-h)");
+    expect(narrowShell).toContain("min-height: var(--v3-topbar-h)");
+    expect(narrowShell).toContain("padding: calc(var(--v3-topbar-h) + 24px)");
+    expect(narrowShell).not.toContain("min-height: 112px");
+    expect(narrowShell).not.toContain("padding: 136px");
+    const compactTablet = css.slice(css.indexOf("@media (max-width: 1050px) and (min-width: 981px) {"), css.indexOf("\n@media", css.indexOf("@media (max-width: 1050px) and (min-width: 981px) {") + 1));
+    expect(compactTablet).toContain(".lb-topbar-cmd { width: 130px");
+    expect(compactTablet).toContain(".lb-topbar-cmd kbd { display: none; }");
+    expect(compactTablet).toContain(".lb-availability { gap: 4px; }");
+    expect(css).toMatch(/@media \(max-width: 700px\) \{[\s\S]*?\.lb-topbar\s*\{[\s\S]*?flex-wrap:\s*wrap/);
+    expect(css).toMatch(/@media \(max-width: 700px\) \{[\s\S]*?\.lb-topbar-hud\s*\{[\s\S]*?flex:\s*1 0 100%/);
+  });
+
+  it("does not retain selectors proven unused in the dashboard source tree", () => {
+    expect(css).not.toMatch(/\.lb-board-new-side\b/);
+    expect(css).not.toMatch(/\.lb-board-add\b/);
+    expect(css).not.toMatch(/\.v3-statusbar\b/);
+    expect(css).toMatch(/\.lb-side-board\b/);
+  });
 });
 
 // The same button had three definitions (app.css and the bot

@@ -1470,12 +1470,27 @@ export function renderEmbedShare() {
       });
     }
 
-    // OBS URL
+    // The server exposes overlays for every non-Free effective plan.
     const obsUrl = origin + "/" + slug + "/overlay";
+    const overlayAccess = state.ME?.plan !== "free";
+    const obsBox = $("embedObsUrl")?.closest(".embed-obs-box");
+    const obsLock = $("embedObsLock");
+    if (obsLock) {
+      obsLock.hidden = overlayAccess;
+      const upgrade = $("overlayUpgrade");
+      if (upgrade && !upgrade._wired) {
+        upgrade._wired = true;
+        upgrade.addEventListener("click", (event) => {
+          event.preventDefault();
+          checkout("pro", event.currentTarget);
+        });
+      }
+    }
+    if (obsBox) obsBox.hidden = !overlayAccess;
     const obsLink = $("embedObsUrl");
-    if (obsLink) obsLink.textContent = obsUrl;
+    if (obsLink) obsLink.textContent = overlayAccess ? obsUrl : "";
     const obsCopy = $("embedObsCopy");
-    if (obsCopy && !obsCopy._wired) {
+    if (overlayAccess && obsCopy && !obsCopy._wired) {
       obsCopy._wired = true;
       obsCopy.addEventListener("click", async () => {
         const ok = await copyToClipboard(obsUrl);
@@ -1532,8 +1547,7 @@ export function renderEmbedShare() {
     // API access (unlock for Pro)
     const apiEl = $("apiAccess");
     if (apiEl) {
-      const pro = state.ME?.plan === "pro" || state.ME?.plan === "agency";
-      apiEl.classList.toggle("locked", !pro);
+      apiEl.classList.toggle("locked", !isPro());
     }
   }
 
@@ -1577,7 +1591,6 @@ export async function loadStats() {
 
 $("logout")?.addEventListener("click", async (e) => { e.preventDefault(); await fetch("/api/auth/logout", { method: "POST", credentials: "include", headers: { "x-csrf-token": getCsrf() } }); location.href = "/login"; });
 $("upgrade")?.addEventListener("click", (e) => { e.preventDefault(); checkout("pro", e.target); });
-$("overlayUpgrade")?.addEventListener("click", (e) => { e.preventDefault(); checkout("pro", e.target); });
 $("testDiscord")?.addEventListener("click", async () => {
   const s = $("testDiscordStatus"); if (s) s.textContent = "Sending…";
   try {
