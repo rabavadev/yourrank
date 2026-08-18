@@ -2,11 +2,14 @@
 // The preview renderer reads the active tab's data-device/data-width attributes,
 // so this controller owns the accessible tab state and asks the existing refresh
 // path to re-render and re-fit the frame.
+import { setupEditorWorkspace } from "./editor-ux.js";
 
 function refreshPreview() {
-  // Load lazily so the controller can be used independently of dashboard boot
-  // timing and does not make the page wait on preview code before the tabs work.
   return import("./site.js").then(({ refreshDesignPreview }) => refreshDesignPreview());
+}
+
+function previewIsCollapsed() {
+  return document.querySelector(".design-grid")?.dataset.previewCollapsed === "true";
 }
 
 function setupPreviewTabs() {
@@ -24,7 +27,7 @@ function setupPreviewTabs() {
       tab.setAttribute("aria-selected", String(active));
       tab.tabIndex = active ? 0 : -1;
     });
-    refreshPreview();
+    if (!previewIsCollapsed()) refreshPreview();
   };
 
   tablist.addEventListener("click", (event) => {
@@ -52,7 +55,12 @@ function setupPreviewTabs() {
   setActive(tabs.find((tab) => tab.classList.contains("is-active")) || tabs[0]);
 }
 
-if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", setupPreviewTabs, { once: true });
-else setupPreviewTabs();
+function bootEditorUi() {
+  setupEditorWorkspace({ refreshPreview });
+  setupPreviewTabs();
+}
 
-export { setupPreviewTabs };
+if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", bootEditorUi, { once: true });
+else bootEditorUi();
+
+export { setupPreviewTabs, bootEditorUi };
