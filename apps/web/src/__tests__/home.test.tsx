@@ -11,9 +11,9 @@ describe("Home & Product components", () => {
   it("renders the rotating hero words with one accessible headline", () => {
     const html = renderToString(<Hero />);
 
-    expect(html).toContain("Turn viewers into a community that returns.");
-    for (const word of ["community", "crew", "fanbase", "regulars"]) {
-      expect(html).toContain(word);
+    expect(html).toContain("Turn viewers into regulars who come back.");
+    for (const word of ["regulars", "fans", "subscribers", "superfans"]) {
+      expect(html).toMatch(new RegExp(`>${word}<`));
     }
   });
 
