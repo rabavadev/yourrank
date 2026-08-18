@@ -1,7 +1,7 @@
 import { MagneticCursor } from "./home/magnetic-cursor";
 import { MarketingShell } from "./site-shell";
 
-export type ProductKind = "sites" | "telegram" | "credits";
+export type ProductKind = "sites" | "telegram" | "credits" | "overlays" | "games";
 
 export interface ProductPageContent {
   kind: ProductKind;
@@ -15,6 +15,8 @@ const PEERS = [
   { label: "Sites", href: "/sites", kind: "sites" },
   { label: "Telegram", href: "/telegram", kind: "telegram" },
   { label: "Credits & Shop", href: "/credits", kind: "credits" },
+  { label: "Overlays", href: "/overlays", kind: "overlays" },
+  { label: "Games", href: "/games", kind: "games" },
 ] as const;
 
 function SitesVisual() {
@@ -135,9 +137,84 @@ function CreditsVisual() {
   );
 }
 
+function OverlaysVisual() {
+  const ranks = [
+    ["01", "Alex", "9,500"],
+    ["02", "Bree", "7,200"],
+    ["03", "Casey", "5,400"],
+  ];
+  return (
+    <div className="grid min-h-[430px] md:grid-cols-[1fr_240px]">
+      <div className="relative flex items-end border-b border-devin-line bg-devin-ink p-5 sm:p-8 md:border-b-0 md:border-r">
+        <span className="absolute left-5 top-5 inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 font-mono text-[10px] uppercase tracking-widest text-white sm:left-8 sm:top-8">
+          <span className="h-1.5 w-1.5 rounded-full bg-red-500" /> Live
+        </span>
+        <div className="w-full max-w-sm rounded-[10px] bg-black/70 p-4 text-white backdrop-blur">
+          <div className="flex items-center justify-between border-b border-white/10 pb-2">
+            <span className="font-mono text-[10px] uppercase tracking-widest text-white/60">Standings</span>
+            <span className="font-mono text-[10px] text-white/60">Ends 04d 12h</span>
+          </div>
+          <div className="mt-2 divide-y divide-white/10">
+            {ranks.map(([rank, name, points]) => (
+              <div key={rank} className="grid grid-cols-[32px_1fr_auto] items-center py-2 text-sm">
+                <span className="font-mono text-xs text-white/50">{rank}</span>
+                <span className="font-medium">{name}</span>
+                <span className="font-mono text-xs">{points} pts</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+      <aside className="bg-devin-secondary/20 p-5">
+        <p className="font-mono text-[10px] uppercase tracking-widest text-devin-ink-soft">Browser source</p>
+        <dl className="mt-6 grid gap-5 text-sm">
+          <div><dt className="text-devin-ink-soft">Layout</dt><dd className="mt-1 font-medium">Card · Ticker · Bar</dd></div>
+          <div><dt className="text-devin-ink-soft">Data</dt><dd className="mt-1 font-medium">Live standings</dd></div>
+          <div><dt className="text-devin-ink-soft">Weight</dt><dd className="mt-1 font-medium">Plain HTML &amp; CSS</dd></div>
+          <div><dt className="text-devin-ink-soft">Setup</dt><dd className="mt-1 font-medium">One URL in OBS</dd></div>
+        </dl>
+      </aside>
+    </div>
+  );
+}
+
+function GamesVisual() {
+  const games = [
+    { name: "Mines", detail: "Pick tiles, dodge the mines" },
+    { name: "Plinko", detail: "Drop the ball, follow the bounce" },
+    { name: "Dice", detail: "Roll over or under a target" },
+  ];
+  return (
+    <div className="min-h-[430px] bg-white p-5 sm:p-8">
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <p className="font-mono text-[10px] uppercase tracking-widest text-devin-primary">Community games</p>
+          <h2 className="mt-2 text-2xl font-medium">Play with credits, not money.</h2>
+        </div>
+        <span className="rounded-full border border-devin-line px-3 py-1 font-mono text-[10px] uppercase tracking-widest text-devin-ink-soft">Provably fair</span>
+      </div>
+      <div className="mt-6 grid gap-px overflow-hidden rounded-[2px] border border-devin-line bg-devin-line sm:grid-cols-3">
+        {games.map((game) => (
+          <div key={game.name} className="bg-white p-5">
+            <p className="text-lg font-medium">{game.name}</p>
+            <p className="mt-2 text-sm leading-relaxed text-devin-ink-soft">{game.detail}</p>
+            <span className="mt-5 inline-block rounded-[2px] bg-devin-secondary px-3 py-1.5 font-mono text-[10px] uppercase tracking-widest text-devin-ink-soft">Credits only</span>
+          </div>
+        ))}
+      </div>
+      <div className="mt-6 rounded-[2px] border border-devin-line bg-devin-secondary/25 p-5">
+        <p className="font-mono text-[10px] uppercase tracking-widest text-devin-ink-soft">Fairness check</p>
+        <p className="mt-2 font-mono text-xs text-devin-ink-soft">server seed hash · a97f…c21e — revealed after each round</p>
+      </div>
+    </div>
+  );
+}
+
 function ProductVisual({ kind }: { kind: ProductKind }) {
   if (kind === "telegram") return <TelegramVisual />;
   if (kind === "credits") return <CreditsVisual />;
+  if (kind === "overlays") return <OverlaysVisual />;
+  if (kind === "games") return <GamesVisual />;
   return <SitesVisual />;
 }
 
@@ -193,7 +270,7 @@ export function ProductPage({ content }: { content: ProductPageContent }) {
         <section className="px-6 py-24 sm:py-32">
           <div className="mx-auto max-w-6xl">
             <h2 className="text-3xl font-medium tracking-[-0.02em]">Explore the connected suite.</h2>
-            <div className="mt-8 grid border-y border-devin-line sm:grid-cols-3">
+            <div className="mt-8 grid border-y border-devin-line sm:grid-cols-3 lg:grid-cols-5">
               {PEERS.map((peer) => (
                 <a
                   key={peer.kind}
