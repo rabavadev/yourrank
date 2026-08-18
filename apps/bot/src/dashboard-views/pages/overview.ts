@@ -1,13 +1,29 @@
 // Messaging overview page panels.
-export function overviewPanel(): string {
+export function overviewPanel({ hasBot = true }: { hasBot?: boolean } = {}): string {
+  if (!hasBot) {
+    return `
+  <div class="lb-bento" data-page="overview">
+    <section class="lb-widget lb-widget--full" aria-labelledby="messagingSetupTitle">
+      <div class="v3-empty">
+        <div class="v3-empty-ic" aria-hidden="true">◎</div>
+        <h2 id="messagingSetupTitle">Connect your bot to start Messaging</h2>
+        <p>Connect one Telegram bot first. After that you can set auto replies, send broadcasts, and share offers from this workspace.</p>
+        <div class="v3-empty-actions">
+          <a class="btn btn--accent" href="/dashboard/telegram/bots">Connect bot</a>
+        </div>
+      </div>
+    </section>
+  </div>`;
+  }
+
   return `
   <div class="lb-bento" data-page="overview">
     <div class="lb-widget lb-widget--full" aria-label="Quick actions">
       <div class="d-flex flex-wrap gap-12">
-        <a href="/dashboard/telegram/bots" class="btn btn--ghost d-flex flex-col items-start gap-4 bot-quick-action"><span class="font-600 text-sm">Connect your bot</span><span class="muted text-xs">Start here if Messaging is not connected yet</span></a>
         <a href="/dashboard/telegram/broadcasts" class="btn btn--ghost d-flex flex-col items-start gap-4 bot-quick-action"><span class="font-600 text-sm">Send a broadcast</span><span class="muted text-xs">Message your subscribers</span></a>
         <a href="/dashboard/telegram/commands" class="btn btn--ghost d-flex flex-col items-start gap-4 bot-quick-action"><span class="font-600 text-sm">Edit auto replies</span><span class="muted text-xs">Change what your bot says</span></a>
         <a href="/dashboard/telegram/offers" class="btn btn--ghost d-flex flex-col items-start gap-4 bot-quick-action"><span class="font-600 text-sm">Create an offer</span><span class="muted text-xs">Make a tracked link to share</span></a>
+        <a href="/dashboard/telegram/bots" class="btn btn--ghost d-flex flex-col items-start gap-4 bot-quick-action"><span class="font-600 text-sm">Manage bot</span><span class="muted text-xs">Check the Telegram connection</span></a>
       </div>
     </div>
 
@@ -26,7 +42,7 @@ export function overviewPanel(): string {
       <svg id="chart" role="img" aria-label="Daily clicks chart" width="100%" height="120" preserveAspectRatio="none"></svg>
       <div id="chartLabels" class="muted d-flex justify-between text-xs mt-sm"></div>
     </div>
-    
+
     <div class="lb-widget lb-widget--half">
       <div class="mb-md"><h2>Where subscribers came from</h2></div>
       <table class="v3-table"><thead><tr><th>Source</th><th class="num">Subscribers</th></tr></thead>
@@ -38,7 +54,7 @@ export function overviewPanel(): string {
       <div class="d-flex justify-between items-center mb-md"><h2>Your bots</h2><a href="/dashboard/telegram/bots" class="text-xs">Manage</a></div>
       <div id="ovBots" class="muted">Loading…</div>
     </div>
-    
+
     <div class="lb-widget lb-widget--half">
       <div class="d-flex justify-between items-center mb-md"><h2>Top offers</h2><a href="/dashboard/telegram/offers" class="text-xs">View offers</a></div>
       <div id="ovOffers" class="muted">Loading…</div>
