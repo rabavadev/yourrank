@@ -73,14 +73,6 @@ export function DashboardShell({ activeNav = "home", boardContext = "full", foot
                     <a class="lb-site-settings" href="/dashboard/settings/board">Site settings</a>
                   </div>
                 </div>
-                <div class="lb-ws-switcher" id="wsSwitcher">
-                  <div class="lb-ws-card" id="wsCard" hidden>
-                    <div class="lb-ws-avatar" id="wsAvatar">Y</div>
-                    <span class="lb-ws-name" id="activeBoardName">Loading site…</span>
-                    <span class="lb-ws-plan" id="wsPlanBadge">Current site</span>
-                  </div>
-                  <div class="lb-ws-menu" id="wsMenu" hidden><a id="manageBoardsBtn" href="/dashboard/leaderboards">Manage sites</a></div>
-                </div>
                 {boardContext === "full" && (
                   <>
                     <button class="lb-board-new" id="newBoard" type="button" title="Create another site" aria-label="Create another site">

@@ -2,7 +2,7 @@
 import { $, esc, fromLocalInput, getViewerTimeZone, logError, timeZoneLabel, toLocalInput } from "./dashboard/utils.js";
 import { markDirty, setState, state, subscribe } from "./dashboard/state.js";
 import { currentRoute, navTo, setupShell } from "./dashboard/shell.js";
-import { renderBoardSwitcher, renderSidebarBoardSwitcher, renderBoardsPage } from "./dashboard/boards.js";
+import { renderBoardSwitcher, renderBoardSelect, renderBoardsPage } from "./dashboard/boards.js";
 import { renderPlayers } from "./dashboard/players.js";
 import { fitDesignPreview, loadCreditsStatus, loadStats, refreshDesignPreview, renderArchives, renderBranding, renderDomain, renderDomainStatus, renderBoardStatus, renderEditorTimestamps, renderEmbedShare, renderLegal, renderNotifications, renderPrizes, renderSections, renderSocials, wirePublishAction } from "./dashboard/site.js";
 import { renderOverviewSummary } from "./dashboard/overview.js";
@@ -107,7 +107,7 @@ async function init() {
 
   if (hasEditor) renderEditorTimestamps();
   renderBoardSwitcher();
-  renderSidebarBoardSwitcher();
+  renderBoardSelect();
   document.querySelectorAll("#newBoardSide, #addBoardBtn").forEach((btn) => {
     if (btn && !btn._wired) {
       btn._wired = true;

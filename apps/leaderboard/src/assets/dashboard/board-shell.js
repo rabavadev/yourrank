@@ -69,15 +69,13 @@ export async function loadBoardShell({ request: requestFn = boardApi } = {}) {
     select.addEventListener("change", () => { location.href = `${location.pathname}?siteId=${encodeURIComponent(select.value)}`; });
   }
   const board = list.find((b) => String(b.id || b.siteId) === String(current)) || list[0] || {};
-  const name = $("activeBoardName");
-  if (name) name.textContent = board.name || board.slug || "Site";
   const topbarPath = $("lbTopbarSitePath");
   if (topbarPath) topbarPath.textContent = board.slug ? `/${board.slug}` : "";
   const live = Boolean(board.published) && user.emailVerified !== false;
   const pendingVerification = Boolean(board.published) && user.emailVerified === false;
   const status = $("lbTopbarStatus");
   if (status) {
-    status.textContent = live || pendingVerification ? "Published" : "Unpublished changes";
+    status.textContent = live ? "Published" : pendingVerification ? "Verification needed" : "Not published";
     status.className = `lb-status ${live ? "lb-status--live" : pendingVerification ? "lb-status--pending" : "lb-status--draft"}`;
   }
   const planBadge = $("planBadge");
@@ -91,7 +89,7 @@ export async function loadBoardShell({ request: requestFn = boardApi } = {}) {
       publicLink.rel = "noopener noreferrer";
     } else {
       publicLink.href = pendingVerification ? "/verify-email" : `/dashboard/leaderboard/share?board=${encodeURIComponent(current || "")}`;
-      publicLink.textContent = "View site ↗";
+      publicLink.textContent = pendingVerification ? "Verify email" : "Publish site";
       publicLink.removeAttribute("target");
       publicLink.removeAttribute("rel");
     }

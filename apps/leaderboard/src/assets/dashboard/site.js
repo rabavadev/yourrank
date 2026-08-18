@@ -3,7 +3,7 @@ import { $, esc, fromLocalInput, getCsrf, guardAuth, logError, timeZoneOffsetLab
 import { serializeWebhookUrl } from "./notifications.js";
 import { state, boardStatus, markDirty, setState, subscribe } from "./state.js";
 import { renderEmpty } from "./states.js";
-import { renderBoardSwitcher, renderBoardsPage, renderSidebarBoardSwitcher } from "./boards.js";
+import { renderBoardSwitcher, renderBoardSelect, renderBoardsPage } from "./boards.js";
 import { renderOverviewSummary } from "./overview.js";
 import { renderPerformance, renderPerformanceLoading } from "./performance.js";
 import { commitDraftMutation, renderPlayers, renumber, toggleEmpty } from "./players.js";
@@ -639,7 +639,7 @@ export function refreshDesignPreview() {
 // banner and share affordances can never contradict each other.
 export function renderBoardStatus() {
   const s = boardStatus();
-  const LABELS = { draft: "Unpublished changes", unpublished: "Unpublished changes", pending: "Published", published: "Published" };
+  const LABELS = { draft: "Not published", unpublished: "Not published", pending: "Verification needed", published: "Published" };
   const TITLES = {
     draft: "Not visible to visitors",
     unpublished: "Not visible to visitors",
@@ -659,19 +659,35 @@ export function renderBoardStatus() {
   const banner = $("verifyBanner");
   if (banner) banner.hidden = s.emailVerified || Boolean(document.querySelector('section[data-page="home"]'));
   const publishLabel = $("lbPublishLabel");
-  if (publishLabel) publishLabel.textContent = s.published ? "Published" : "Unpublished changes";
+  if (publishLabel) publishLabel.textContent = s.published ? "Unpublish site" : "Publish site";
   const publishAction = $("publishAction");
   if (publishAction) {
     publishAction.className = `lb-publish-action${s.published ? " lb-publish-action--secondary" : ""}`;
     publishAction.title = s.published ? "Take this site offline" : "Make this site available to visitors";
-    publishAction.setAttribute("aria-label", s.published ? "Published" : "Unpublished changes");
+    publishAction.setAttribute("aria-label", s.published ? "Unpublish site" : "Publish site");
   }
   const publishToggle = $("pubToggle");
   if (publishToggle && !state._dirty) publishToggle.checked = s.published;
   // "View live" must not be offered while the public URL would not resolve.
   for (const id of ["liveLink", "previewLiveLink"]) {
     const link = $(id);
-    if (link) link.hidden = !s.live;
+    if (!link) continue;
+    link.hidden = id === "previewLiveLink" && !s.live;
+    if (id === "liveLink") {
+      link.textContent = s.live ? "View site ↗" : s.published ? "Verify email" : "Publish site";
+      link.href = s.live
+        ? `/${state.SLUG}`
+        : s.published
+          ? "/verify-email"
+          : `/dashboard/leaderboard/share?board=${encodeURIComponent(state.ACTIVE_SITE_ID || "")}`;
+      if (s.live) {
+        link.target = "_blank";
+        link.rel = "noopener noreferrer";
+      } else {
+        link.removeAttribute("target");
+        link.removeAttribute("rel");
+      }
+    }
   }
   return s;
 }
@@ -711,7 +727,7 @@ export function wirePublishAction({ fetchImpl = fetch, confirmAction = showConfi
 
     button.disabled = true;
     button.setAttribute("aria-busy", "true");
-    if ($("lbPublishLabel")) $("lbPublishLabel").textContent = "Publishing…";
+    if ($("lbPublishLabel")) $("lbPublishLabel").textContent = nextPublished ? "Publishing…" : "Unpublishing…";
     try {
       const data = await requestPublicationChange({
         published: nextPublished,
@@ -730,11 +746,18 @@ export function wirePublishAction({ fetchImpl = fetch, confirmAction = showConfi
       const active = state.BOARDS.find((board) => board.id === state.ACTIVE_SITE_ID);
       if (active) active.published = nextPublished;
       renderBoardSwitcher();
-      renderSidebarBoardSwitcher();
+      renderBoardSelect();
       renderBoardsPage();
       renderBoardStatus();
       renderOverviewSummary();
-      toast(nextPublished ? "Published" : "Saved", "success");
+      toast(
+        nextPublished
+          ? (boardStatus().emailVerified
+            ? "Published"
+            : "Published — Your site will open to visitors after you confirm your email.")
+          : "Saved",
+        "success",
+      );
     } catch (err) {
       logError(nextPublished ? "publish-site" : "unpublish-site", err);
       toast(err.message || (nextPublished ? "Could not publish this site." : "Could not unpublish this site."));
@@ -807,7 +830,7 @@ export function applyTheme(accentA, accentB, label, font = null) {
   }
   const fontEl = $("f_font"); if (fontEl) fontEl.value = selectedFont;
   updateThemeSelection();
-  renderSidebarBoardSwitcher();
+  renderBoardSelect();
   renderBoardsPage();
   const status = $("status");
   if (status && label) {
@@ -1401,7 +1424,9 @@ $("save")?.addEventListener("click", async () => {
     if (res.ok && d.ok) {
       justPublished = !!payload.published && !state.PUBLISHED;
       setState({ _dirty: false, PUBLISHED: !!payload.published });
-      status.textContent = "Saved";
+      status.textContent = justPublished && !boardStatus().emailVerified
+        ? "Published — Your site will open to visitors after you confirm your email."
+        : "Saved";
       if (d.updatedAt) setState({ SITE_UPDATED_AT: d.updatedAt });
       if (d.publishedAt) setState({ PUBLISHED_AT: d.publishedAt });
       const saveBtn = $("save"); if (saveBtn) saveBtn.textContent = "Save changes";
@@ -1412,7 +1437,7 @@ $("save")?.addEventListener("click", async () => {
       const active = state.BOARDS.find((b) => b.id === state.ACTIVE_SITE_ID);
       if (active) { active.name = payload.name; active.casino = payload.brand?.casino || active.casino; active.code = payload.brand?.code || active.code; active.published = !!payload.published; }
       renderBoardSwitcher();
-      renderSidebarBoardSwitcher();
+      renderBoardSelect();
       renderBoardsPage();
       // Close the 2-click loop: refresh the live preview so the edit shows immediately.
       updateDesignPreview();

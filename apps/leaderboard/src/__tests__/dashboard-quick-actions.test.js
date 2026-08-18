@@ -54,9 +54,13 @@ describe("dashboard overview quick actions", () => {
 
   it("reports public site availability truthfully from Credits", () => {
     expect(boardShellJs).toContain("Boolean(board.published) && user.emailVerified !== false");
-    expect(boardShellJs).toContain('live || pendingVerification ? "Published" : "Unpublished changes"');
+    expect(boardShellJs).toContain('live ? "Published" : pendingVerification ? "Verification needed" : "Not published"');
     expect(boardShellJs).toContain('pendingVerification ? "/verify-email"');
     expect(boardShellJs).toContain('publicLink.textContent = "View site ↗"');
+    expect(boardShellJs).toContain('publicLink.textContent = pendingVerification ? "Verify email" : "Publish site"');
+    expect(siteJs).toContain('draft: "Not published", unpublished: "Not published", pending: "Verification needed", published: "Published"');
+    expect(siteJs).toContain('s.published ? "Unpublish site" : "Publish site"');
+    expect(siteJs).toContain('nextPublished ? "Publishing…" : "Unpublishing…"');
   });
 
   it("keeps tablet navigation closable", () => {

@@ -88,13 +88,19 @@ describe("signed-in shell navigation", () => {
     const html = renderPage(RewardsViewersPage);
     const rail = html.slice(html.indexOf("<aside"), html.indexOf("</aside>"));
     expect(rail).not.toContain("wsSwitcher");
-    expect(html).toContain('id="wsSwitcher"');
+    expect(html).not.toContain('id="wsSwitcher"');
+    expect(html).not.toContain('id="wsCard"');
+    expect(html).not.toContain('id="wsMenu"');
+    expect(html).not.toContain('id="manageBoardsBtn"');
+    expect(html).toContain('id="sidebarBoardSelect"');
     expect((html.match(/class="gm-profile-link"/g) || []).length).toBe(3);
     expect((html.match(/class="gm-logout"/g) || []).length).toBe(1);
     expect(html).toContain("Account settings");
     expect(html).toContain("Appearance");
     expect(html).toContain("Help &amp; feedback");
     expect(html).toContain("Sign out");
+    expect((html.match(/<svg\b/g) || []).length).toBeGreaterThanOrEqual(4);
+    expect(html).not.toContain(">Account</a>");
   });
 
   it("composes the Overview as a 12-column run sheet", () => {

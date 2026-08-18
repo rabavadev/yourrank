@@ -122,7 +122,7 @@ export async function deleteBoard(siteId) {
       if (idx >= 0) state.BOARDS.splice(idx, 1);
       if (siteId === state.ACTIVE_SITE_ID) { requestDashboardRoute("home", "", { query: "", reload: true }); return; }
       renderBoardSwitcher();
-      renderSidebarBoardSwitcher();
+      renderBoardSelect();
       renderBoardsPage();
       $("status").textContent = "Board deleted.";
     } else {
@@ -143,7 +143,7 @@ export async function setActiveBoard(siteId) {
     if (res.ok && d.ok) {
       state.ACTIVE_SITE_ID = siteId;
       renderBoardSwitcher();
-      renderSidebarBoardSwitcher();
+      renderBoardSelect();
       $("status").textContent = "Active board updated.";
     } else {
       $("status").textContent = d.error || "Could not set active board.";
@@ -178,21 +178,10 @@ export async function duplicateBoard(siteId) {
   } catch (err) { logError("duplicate-board", err); $("status").textContent = "Network error."; }
 }
 
-export function renderSidebarBoardSwitcher() {
-  const nameEl = $("activeBoardName");
+export function renderBoardSelect() {
   const sel = $("sidebarBoardSelect");
   const topbarPath = $("lbTopbarSitePath");
-  const manage = $("manageBoardsBtn");
   const active = state.BOARDS.find((b) => b.id === state.ACTIVE_SITE_ID);
-  if (nameEl) nameEl.textContent = active?.name || "…";
-  const avatarEl = $("wsAvatar");
-  if (avatarEl && active?.name) {
-    avatarEl.textContent = active.name.trim().charAt(0).toUpperCase() || "Y";
-  }
-  const planEl = $("wsPlanBadge");
-  if (planEl) {
-    planEl.textContent = state.USER?.plan ? `${state.USER.plan.toUpperCase()} PLAN` : "ACTIVE SITE";
-  }
   if (topbarPath) topbarPath.textContent = active?.slug ? `/${active.slug}` : "Web address unavailable";
   if (sel) {
     sel.innerHTML = "";
@@ -217,7 +206,6 @@ export function renderSidebarBoardSwitcher() {
       };
     }
   }
-  if (manage) manage.onclick = () => requestDashboardRoute("boards");
 }
 
 export function renderBoardsPage() {

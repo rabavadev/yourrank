@@ -39,7 +39,7 @@ const SECTION_CRUMBS = {
   board: { label: "Leaderboard", href: "/dashboard/leaderboard/setup" },
   games: { label: "Games", href: "/dashboard/games" },
   performance: { label: "Analytics", href: "/dashboard/analytics/activity" },
-  settings: { label: "Settings", href: "/dashboard/settings" },
+  settings: { label: "Site settings", href: "/dashboard/settings/board" },
   boards: { label: "Sites", href: "/dashboard/leaderboards" },
 };
 const TAB_LABELS = {
@@ -445,7 +445,7 @@ function BoardSettingsSection({ active } = {}) {
 <section class={active ? "lb-page is-on" : "lb-page"} data-page="settings">
 <div class="v3-settings">
   <header class="v3-head">
-    <h1>Settings</h1>
+    <h1>Site settings</h1>
     <p class="v3-head-sub" id="settingsSubline">These settings apply to the site selected above. Your plan, account password, billing, and automatic score update keys live in <a href="/dashboard/settings">account settings</a>.</p>
   </header>
   <nav class="v3-tabs account-settings-tabs" aria-label="Settings pages">
