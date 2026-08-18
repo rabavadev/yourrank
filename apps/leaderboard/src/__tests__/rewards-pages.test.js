@@ -1,4 +1,5 @@
 import { describe, it, expect } from "bun:test";
+import { readFileSync } from "node:fs";
 import {
   RewardsChannelPage,
   RewardsRulesPage,
@@ -13,6 +14,8 @@ import {
   rewardsRedemptionsConfig,
   rewardsHistoryConfig,
 } from "../pages/rewards.jsx";
+
+const rewardsUxSource = readFileSync(new URL("../assets/rewards-ux.js", import.meta.url), "utf8");
 
 const pages = [
   ["channel", RewardsChannelPage],
@@ -58,6 +61,14 @@ describe("server-rendered rewards pages", () => {
     expect(viewers).toContain(">Add credits</h2>");
     expect(viewers).not.toContain("Tip viewer points");
     expect(viewers).not.toContain("Send credits 🎁");
+  });
+
+  it("cleans up client-rendered reward IDs and credit actions", () => {
+    expect(rewardsRulesConfig.scripts.join("\n")).toContain("/assets/rewards-ux.js");
+    expect(rewardsUxSource).toContain('technicalId.hidden = true');
+    expect(rewardsUxSource).toContain('button.textContent = "Add credits"');
+    expect(rewardsUxSource).toContain("Enter a positive credit amount.");
+    expect(rewardsUxSource).toContain("Added +${success[1]} credits");
   });
 
   it("uses Rewards as the canonical group for creator destinations", () => {
