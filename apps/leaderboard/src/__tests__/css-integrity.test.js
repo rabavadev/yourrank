@@ -66,6 +66,23 @@ describe("authenticated dashboard v4 contract", () => {
     expect(css).toContain('@media (max-width: 980px)');
     expect(css).toContain('.v3-dash[data-auth-workspace] .lb-side.is-open');
   });
+
+  it("keeps collapsed-rail sizing off the workspace root", () => {
+    const collapsedRoot = '.v3-dash[data-auth-workspace][data-side-collapsed="true"]';
+    const ruleBlocks = [...css.replace(/\/\*[\s\S]*?\*\//g, "").matchAll(/([^{}]+)\{([^{}]*)\}/g)]
+      .map(([, selectors, declarations]) => ({
+        selectors: selectors.split(",").map((selector) => selector.trim()),
+        declarations,
+      }))
+      .filter(({ selectors }) => selectors.includes(collapsedRoot));
+    const sizingDeclarations = ruleBlocks
+      .map(({ declarations }) => declarations)
+      .filter((declarations) => /\b(?:width|height|overflow)\s*:/.test(declarations));
+
+    // The shell root carries the rail-width token; child rail controls own icon sizing.
+    expect(sizingDeclarations).toEqual([]);
+    expect(ruleBlocks.some(({ declarations }) => /--v3-sidebar-w:\s*44px\s*;/.test(declarations))).toBe(true);
+  });
 });
 
 // The same button had three definitions (app.css and the bot
