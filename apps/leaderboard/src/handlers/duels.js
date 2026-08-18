@@ -86,7 +86,7 @@ export async function handleCreateDuel(request, env, deps = {}) {
     return bad(`Insufficient credits. You need ${wagerAmount} pts to challenge (you have ${challengerSv.balance || 0} pts).`);
   }
 
-  const targetViewer = await one("SELECT id, username FROM viewers WHERE lower(username)=$1", [targetUsername]);
+  const targetViewer = await one("SELECT id, kick_username FROM viewers WHERE lower(kick_username)=$1", [targetUsername]);
   if (!targetViewer) return bad(`Viewer @${targetUsername} not found.`, 404);
   if (targetViewer.id === challengerViewerId) return bad("You cannot duel yourself!", 400);
 
@@ -113,7 +113,7 @@ export async function handleCreateDuel(request, env, deps = {}) {
     await tx.unsafe(
       `INSERT INTO credit_ledger (site_viewer_id, type, amount, description)
        VALUES ($1, 'bet', $2, $3)`,
-      [challengerSv.id, -wagerAmount, `Duel Challenge against @${targetViewer.username} (${wagerAmount} pts)`]
+      [challengerSv.id, -wagerAmount, `Duel Challenge against @${targetViewer.kick_username} (${wagerAmount} pts)`]
     );
 
     return { duel, balance: updatedChallenger.balance };
@@ -122,7 +122,7 @@ export async function handleCreateDuel(request, env, deps = {}) {
 
   return ok({
     duel: result.duel,
-    message: `⚔️ Duel challenge sent to @${targetViewer.username} for ${wagerAmount} pts! Waiting for acceptance...`,
+    message: `⚔️ Duel challenge sent to @${targetViewer.kick_username} for ${wagerAmount} pts! Waiting for acceptance...`,
   });
 }
 
