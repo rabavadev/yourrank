@@ -7,9 +7,10 @@ const previewTabs = readFileSync(new URL("../assets/dashboard/preview-tabs.js", 
 const editorCss = readFileSync(new URL("../assets/editor-ux.css", import.meta.url), "utf8");
 
 describe("focused editor workspace", () => {
-  it("boots the editor enhancement from the existing preview controller", () => {
+  it("boots the editor enhancement and its styles from the existing preview controller", () => {
     expect(previewTabs).toContain('import { setupEditorWorkspace } from "./editor-ux.js"');
     expect(previewTabs).toContain("setupEditorWorkspace({ refreshPreview })");
+    expect(editorUx).toContain('/assets/editor-ux.css?v=1');
   });
 
   it("keeps the live preview optional outside Appearance", () => {
