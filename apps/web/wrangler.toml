@@ -32,4 +32,4 @@ run_worker_first = true
 binding = "HYPERDRIVE"
 id = "9e5b625bfdd84cd691b44c4780bdaf13"
 # Local dev fallback (override with CLOUDFLARE_HYPERDRIVE_LOCAL_CONNECTION_STRING_HYPERDRIVE)
-localConnectionString = "postgresql://postgres:password@localhost:5432/yourrank"
+localConnectionString = "postgresql://postgres:postgres@localhost:5432/yourrank"

@@ -968,18 +968,27 @@
   color: var(--v4-ink-soft, #64748b);
   font-size: 13.5px;
   font-weight: 600;
+  text-decoration: none;
   cursor: pointer;
   transition: all 140ms ease;
 }
 .gw-tab-btn:hover {
   background: var(--v4-surface-soft, #f8fafc);
-  color: var(--v4-ink, #0f172a);
 }
 .gw-tab-btn.is-active {
   background: #ffffff;
   border-color: var(--v4-line, #e2e8f0);
-  color: var(--v4-cobalt, #2f6bff);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+/* Tabs are anchors, so their ink has to outrank the workspace link colour. */
+.v3-dash[data-auth-workspace] .gw-tab-btn {
+  color: var(--v4-ink-soft, #64748b);
+}
+.v3-dash[data-auth-workspace] .gw-tab-btn:hover {
+  color: var(--v4-ink, #0f172a);
+}
+.v3-dash[data-auth-workspace] .gw-tab-btn.is-active {
+  color: var(--v4-cobalt, #2f6bff);
 }
 
 .gw-tab-pane { display: none; }
@@ -1283,5 +1292,3 @@
   background: rgba(47, 107, 255, 0.04);
   border-color: var(--brand-accent, #2f6bff);
 }
-
-

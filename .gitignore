@@ -25,10 +25,8 @@ ui-ux-pro-max-skill-main/
 .postman/
 postman/
 components.json
-components/
-!apps/web/src/components/
-!apps/web/src/components/**/*.tsx
-lib/
+/components/
+/lib/
 tailwind.config.js
 /tsconfig.json
 

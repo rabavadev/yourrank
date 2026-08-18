@@ -2,7 +2,7 @@ import { describe, it, expect } from "bun:test";
 import { readFileSync } from "node:fs";
 import { handleGiveawayChatroom } from "../handlers/giveaway.js";
 import { GiveawaysPage } from "../pages/giveaways.jsx";
-import { giveawaysHtml } from "../pages/giveaway-pages.js";
+import { giveawaysHtml, renderGiveawaysHtml } from "../pages/giveaway-pages.js";
 
 const gamesSource = readFileSync(new URL("../assets/dashboard/games.js", import.meta.url), "utf8");
 const siteSource = readFileSync(new URL("../assets/dashboard/site.js", import.meta.url), "utf8");
@@ -52,6 +52,15 @@ describe("Giveaway Chatroom Handler", () => {
     expect(source).toContain("safeAvatarUrl(entrant.avatar, defaultAvatar)");
   });
 
+  it("loads the server-rendered giveaway tab on initialization", () => {
+    const source = readFileSync(new URL("../assets/giveaways.js", import.meta.url), "utf8");
+    expect(source).toContain('document.querySelector(".gw-tab-btn.is-active")?.dataset.tab');
+    expect(source).toContain('if (activeTab === "raffles") loadRaffles();');
+    expect(source).toContain('if (activeTab === "drops") loadCodeDrops();');
+    expect(source).toContain('if (activeTab === "preds") loadPredictions();');
+    expect(source).not.toContain('querySelectorAll(".gw-tab-btn").forEach((btn) => {');
+  });
+
   it("renders GiveawaysPage properly", () => {
     const vnode = GiveawaysPage({ user: { id: "u-1", email: "streamer@test.com" } });
     expect(vnode).toBeTruthy();
@@ -60,6 +69,15 @@ describe("Giveaway Chatroom Handler", () => {
     expect(html).toContain("gw-setup-form");
     expect(html).toContain("gw-chat-feed");
     expect(html).toContain("gw-roller");
+  });
+
+  it("renders each giveaway tab as a deep-linkable active server view", () => {
+    const html = renderGiveawaysHtml("raffles");
+    expect(html).toContain('href="/dashboard/giveaways/raffles"');
+    expect(html).toContain('id="tab-btn-raffles"');
+    expect(html).toContain('id="pane-raffles"');
+    expect(html).toContain('class="gw-tab-pane is-active" id="pane-raffles"');
+    expect(html).toContain('class="gw-tab-pane" id="pane-chat" hidden');
   });
 
   it("keeps giveaway history tables on the canonical table markup", () => {

@@ -2,9 +2,9 @@
 /** @jsxImportSource hono/jsx */
 
 import { DashboardShell } from "./dashboard-shell.jsx";
-import { giveawaysHtml } from "./giveaway-pages.js";
+import { renderGiveawaysHtml } from "./giveaway-pages.js";
 
-export function GiveawaysPage({ user } = {}) {
+export function GiveawaysPage({ user, tab = "chat" } = {}) {
   const crumbs = [{ label: "Community & Rewards", href: "/dashboard/audience/viewers" }, { label: "Live giveaways" }];
   return (
     <DashboardShell
@@ -16,7 +16,7 @@ export function GiveawaysPage({ user } = {}) {
       user={user}
     >
       <div class="gw-workspace-content">
-        <div id="gw-app" dangerouslySetInnerHTML={{ __html: giveawaysHtml }}></div>
+        <div id="gw-app" dangerouslySetInnerHTML={{ __html: renderGiveawaysHtml(tab) }}></div>
       </div>
     </DashboardShell>
   );
