@@ -12,15 +12,15 @@ const assets = path.resolve(import.meta.dir, "../assets");
 const read = (file) => fs.readFileSync(path.join(assets, file), "utf8");
 
 describe("dashboard loading states", () => {
-  it("announces the initial dashboard and credits loaders", () => {
+  it("announces the initial dashboard and rewards loaders", () => {
     const dashboardHtml = PAGES.dashboard.Component({ activePath: "/dashboard" }).toString();
-    const creditsHtml = PAGES.rewardsRedemptions.Component({}).toString();
+    const rewardsHtml = PAGES.rewardsRedemptions.Component({}).toString();
     expect(dashboardHtml).toContain('id="loading" class="yr-workspace-loader" role="status"');
     expect(dashboardHtml).toContain('id="loadingStatus">Loading your workspace');
     expect(dashboardHtml).toContain('class="yr-loader-track"');
     expect(dashboardHtml).toContain('aria-busy="true"');
-    expect(creditsHtml).toContain('id="cr-loading" class="ui-loading" role="status"');
-    expect(creditsHtml).toContain("Loading credits and shop");
+    expect(rewardsHtml).toContain('id="cr-loading" class="ui-loading" role="status"');
+    expect(rewardsHtml).toContain("Loading rewards");
   });
   it("keeps loading, ready zero, and unknown values distinct", () => {
     expect(UNKNOWN).toBe("—");
@@ -35,12 +35,12 @@ describe("dashboard loading states", () => {
       icon: "chart",
       title: "Nothing here",
       body: "Try again later.",
-      actions: [{ label: "Create board", href: "/dashboard/leaderboards", accent: true }],
+      actions: [{ label: "Create site", href: "/dashboard/leaderboards", accent: true }],
     });
     expect(html).toContain("v3-empty");
     expect(html).toContain("Nothing here");
     expect(html).toContain('href="/dashboard/leaderboards"');
-    expect(html).toContain("Create board");
+    expect(html).toContain("Create site");
   });
 
   it("does not seed asynchronous surfaces with invented values", () => {
@@ -94,6 +94,16 @@ describe("dashboard loading states", () => {
     expect(pages).not.toContain("Loading your credits dashboard");
   });
 
+  it("uses one focused analytics empty state before traffic exists", () => {
+    const performance = read("dashboard/performance.js");
+    expect(performance).toContain('title: "No traffic yet"');
+    expect(performance).toContain('label: "Share your site"');
+    expect(performance).toContain('kpis.hidden = !hasTraffic');
+    expect(performance).toContain('activityTable.hidden = !hasTraffic');
+    expect(performance).toContain('heatmap.hidden = active !== "activity" || !hasCurrentTraffic()');
+    expect(performance).toContain('if (referralPromo) referralPromo.hidden = true');
+  });
+
   it("resets error presentation before retrying into a normal empty state", () => {
     const performance = read("dashboard/performance.js");
     expect(performance).toMatch(/clearLoadError\(empty, false\);\s*renderEmpty\(empty/);
@@ -137,7 +147,7 @@ describe("dashboard loading states", () => {
     expect(pages).not.toContain('class="v3-chip v3-chip--refunded">● Connected to @');
   });
 
-  it("preserves shared boards empty markup while filtering", () => {
+  it("preserves shared site empty markup while filtering", () => {
     const boards = read("dashboard/boards.js");
     const account = read("dashboard/account.js");
     const utils = read("dashboard/utils.js");
