@@ -18,14 +18,16 @@ describe("dashboard overview quick actions", () => {
   it("puts the main tasks one click from the Overview", () => {
     const html = dashboardHtml();
     expect(html).toContain('ov-setup');
-    expect(html).toContain('id="ovStepBrand"');
-    expect(html).toContain('id="ovStepPlayers"');
-    expect(html).toContain('id="ovStepPublish"');
+    expect(html).toContain('id="ovSetupMessage"');
+    expect(html).toContain('id="ovSetupAction"');
+    expect(html).not.toContain('id="ovStepBrand"');
+    expect(html).not.toContain('id="ovStepPlayers"');
+    expect(html).not.toContain('id="ovStepPublish"');
     expect(html).toContain('id="ovActivityList"');
     expect(html).toContain('id="ovTopPlayers"');
     expect(html).toContain('class="ov-summary"');
     expect(html).toContain('id="ovPrimaryAction"');
-    expect(html).toContain('href="#publish"');
+    expect(html).toContain('href="/dashboard/leaderboard/setup"');
     expect(html).toContain('class="ov-card-empty" id="ovActivityEmpty"');
   });
 

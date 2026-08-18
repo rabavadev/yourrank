@@ -1,4 +1,5 @@
 import { loadBoardShell, sitePath } from "./dashboard/board-shell.js";
+import { UNKNOWN, inlineStateHtml } from "./dashboard/states.js";
 
 // Client-side script for Live Chat Keyword Listener & Giveaways
 // Connects to Kick's Pusher WebSocket network in real-time
@@ -604,10 +605,10 @@ import { loadBoardShell, sitePath } from "./dashboard/board-shell.js";
 
   function updateEntrantsCount() {
     const count = entrants.length;
-    $("gw-stat-entrants").textContent = count.toLocaleString();
-    $("gw-table-count").textContent = count.toLocaleString();
-    if ($("gw-stat-verified")) $("gw-stat-verified").textContent = verifiedCount.toLocaleString();
-    if ($("gw-stat-flagged")) $("gw-stat-flagged").textContent = flaggedCount.toLocaleString();
+    $("gw-stat-entrants").textContent = count ? count.toLocaleString() : UNKNOWN;
+    $("gw-table-count").textContent = count ? count.toLocaleString() : UNKNOWN;
+    if ($("gw-stat-verified")) $("gw-stat-verified").textContent = count ? verifiedCount.toLocaleString() : UNKNOWN;
+    if ($("gw-stat-flagged")) $("gw-stat-flagged").textContent = flaggedCount ? flaggedCount.toLocaleString() : UNKNOWN;
 
     const rollBtn = $("gw-roll-btn");
     const exportBtn = $("gw-export-btn");
@@ -1056,11 +1057,7 @@ import { loadBoardShell, sitePath } from "./dashboard/board-shell.js";
 
     if (active.length === 0) {
       activeList.innerHTML = `
-        <div class="v3-empty">
-          <div class="v3-empty-ic">🎟️</div>
-          <h2>No active raffles</h2>
-          <p>Create a raffle to let your viewers buy tickets with their loyalty credits.</p>
-        </div>`;
+        ${inlineStateHtml({ kind: "empty", title: "No active raffles", body: "Create a raffle to let viewers buy tickets with their loyalty credits." })}`;
     } else {
       activeList.innerHTML = active.map((r) => `
         <div class="gw-raffle-card" data-raffle-id="${esc(r.id)}">
@@ -1094,7 +1091,7 @@ import { loadBoardShell, sitePath } from "./dashboard/board-shell.js";
     }
 
     if (past.length === 0) {
-      pastList.innerHTML = `<tr><td colspan="5" class="ta-c font-muted" style="padding: 24px;">No past raffles yet.</td></tr>`;
+      pastList.innerHTML = `<tr><td colspan="5">${inlineStateHtml({ kind: "empty", title: "No past raffles yet", body: "Completed raffles will appear here." })}</td></tr>`;
     } else {
       pastList.innerHTML = past.map((r) => `
         <tr>
@@ -1187,11 +1184,7 @@ import { loadBoardShell, sitePath } from "./dashboard/board-shell.js";
 
     if (active.length === 0) {
       activeList.innerHTML = `
-        <div class="v3-empty">
-          <div class="v3-empty-ic">⚡</div>
-          <h2>No active flash drops</h2>
-          <p>Launch a flash drop code to reward active stream viewers in real time.</p>
-        </div>`;
+        ${inlineStateHtml({ kind: "empty", title: "No active flash drops", body: "Launch a flash drop code to reward active stream viewers in real time." })}`;
     } else {
       activeList.innerHTML = active.map((d) => {
         const pct = Math.min(100, Math.round(((d.claimed_count || 0) / (d.max_claims || 1)) * 100));
@@ -1229,7 +1222,7 @@ import { loadBoardShell, sitePath } from "./dashboard/board-shell.js";
     }
 
     if (past.length === 0) {
-      pastList.innerHTML = `<tr><td colspan="5" class="ta-c font-muted" style="padding: 24px;">No drops created yet.</td></tr>`;
+      pastList.innerHTML = `<tr><td colspan="5">${inlineStateHtml({ kind: "empty", title: "No drops created yet", body: "Completed drops will appear here." })}</td></tr>`;
     } else {
       pastList.innerHTML = past.map((d) => `
         <tr>
@@ -1297,11 +1290,7 @@ import { loadBoardShell, sitePath } from "./dashboard/board-shell.js";
 
     if (active.length === 0) {
       activeList.innerHTML = `
-        <div class="v3-empty">
-          <div class="v3-empty-ic">🔮</div>
-          <h2>No active predictions</h2>
-          <p>Launch a live prediction to let viewers wager their loyalty points on your stream match outcomes.</p>
-        </div>`;
+        ${inlineStateHtml({ kind: "empty", title: "No active predictions", body: "Launch a live prediction to let viewers wager their loyalty points on your stream match outcomes." })}`;
     } else {
       activeList.innerHTML = active.map((p) => {
         const rawOpts = typeof p.options === "string" ? JSON.parse(p.options) : (p.options || []);
@@ -1373,7 +1362,7 @@ import { loadBoardShell, sitePath } from "./dashboard/board-shell.js";
     }
 
     if (past.length === 0) {
-      pastList.innerHTML = `<tr><td colspan="6" class="ta-c font-muted" style="padding: 24px;">No predictions created yet.</td></tr>`;
+      pastList.innerHTML = `<tr><td colspan="6">${inlineStateHtml({ kind: "empty", title: "No predictions created yet", body: "Completed predictions will appear here." })}</td></tr>`;
     } else {
       pastList.innerHTML = past.map((p) => {
         return `

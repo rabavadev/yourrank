@@ -1,6 +1,6 @@
 import { $, logError, showLoadError, clearLoadError } from "./utils.js";
 import { setState, state } from "./state.js";
-import { renderEmpty, renderError, setMetricLoading, setMetricValue, setRowsLoading } from "./states.js";
+import { renderEmpty, renderError, setMetricLoading, setMetricUnknown, setMetricValue, setRowsLoading } from "./states.js";
 
 const DOW = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const TAB_LABELS = {
@@ -15,7 +15,8 @@ export function initPerformance() {
   renderEmpty($("eventsEmpty"), {
     icon: "link",
     title: "No events yet",
-    body: "Automatic score updates will appear once a sponsor sends them.",
+    body: "Score updates and link shares will appear here after your site records its first event.",
+    compact: true,
     actions: [{ label: "Set up score updates", href: "/dashboard/settings/connections", accent: true }],
   });
 }
@@ -76,18 +77,23 @@ export function renderPerformance(stats) {
   const range = state.PERF_RANGE || 14;
   const all = Array.isArray(stats.days) ? stats.days : [];
   const days = all.slice(-range);
-  const hasData = all.length > 0;
+  const hasData = days.some((day) => Number(day.views) || Number(day.clicks) || Number(day.copies));
   if ($("perfRangeFilter")) $("perfRangeFilter").hidden = !hasData;
   if ($("perfExport")) $("perfExport").hidden = !hasData;
   const previous = all.slice(Math.max(0, all.length - range * 2), Math.max(0, all.length - range));
   const currentTotals = totals(days);
   const previousTotals = totals(previous);
-  setKpi("perfKpiViews", currentTotals.views, percentDelta(currentTotals.views, previousTotals.views));
-  setKpi("perfKpiClicks", currentTotals.clicks, percentDelta(currentTotals.clicks, previousTotals.clicks));
-  setKpi("perfKpiCopies", currentTotals.copies, percentDelta(currentTotals.copies, previousTotals.copies));
-  const ctr = currentTotals.views ? currentTotals.clicks / currentTotals.views * 100 : 0;
-  const priorCtr = previousTotals.views ? previousTotals.clicks / previousTotals.views * 100 : 0;
-  setKpi("perfKpiCtr", `${ctr.toFixed(1)}%`, previousTotals.views ? `${(ctr - priorCtr).toFixed(1)} pp` : "");
+  if (hasData) {
+    setKpi("perfKpiViews", currentTotals.views, percentDelta(currentTotals.views, previousTotals.views));
+    setKpi("perfKpiClicks", currentTotals.clicks, percentDelta(currentTotals.clicks, previousTotals.clicks));
+    setKpi("perfKpiCopies", currentTotals.copies, percentDelta(currentTotals.copies, previousTotals.copies));
+    const ctr = currentTotals.views ? currentTotals.clicks / currentTotals.views * 100 : 0;
+    const priorCtr = previousTotals.views ? previousTotals.clicks / previousTotals.views * 100 : 0;
+    setKpi("perfKpiCtr", `${ctr.toFixed(1)}%`, previousTotals.views ? `${(ctr - priorCtr).toFixed(1)} pp` : "");
+  } else {
+    ["perfKpiViews", "perfKpiClicks", "perfKpiCopies", "perfKpiCtr", "perfTotalViews"].forEach((id) => setMetricUnknown($(id)));
+    ["perfKpiViewsDelta", "perfKpiClicksDelta", "perfKpiCopiesDelta", "perfKpiCtrDelta"].forEach((id) => { const el = $(id); if (el) el.textContent = ""; });
+  }
   const rangeLabel = $("perfRangeLabel");
   if (rangeLabel) rangeLabel.textContent = String(range);
   const board = $("perfBoardName");
@@ -123,6 +129,16 @@ function setKpi(id, value, change) {
 function renderChart(days) {
   const host = $("statBars");
   if (!host) return;
+  const total = $("perfTotalViews");
+  const hasData = days.some((day) => Number(day.views) || Number(day.clicks) || Number(day.copies));
+  const empty = $("statsEmpty");
+  if (!hasData) {
+    host.innerHTML = "";
+    host.hidden = true;
+    renderEmpty(empty, { kind: "empty", title: "No visitor activity yet", body: "Share your site link to start recording visits.", compact: true });
+    return;
+  }
+  host.hidden = false;
   const width = 720;
   const height = 220;
   const values = days.map((day) => Number(day.views) || 0);
@@ -133,20 +149,29 @@ function renderChart(days) {
     return `<text x="${(index / Math.max(1, days.length - 1)) * width}" y="214">${day.day.slice(5)}</text>`;
   }).join("");
   host.innerHTML = `<svg viewBox="0 0 ${width} ${height}" role="img" aria-label="Daily views over time"><g class="v3-chart-grid">${[20, 75, 130, 185].map((y) => `<line x1="0" x2="${width}" y1="${y}" y2="${y}"/>`).join("")}</g><polyline points="${points}" fill="none"/>${labels}</svg>`;
-  const total = $("perfTotalViews");
   if (total) setMetricValue(total, String(values.reduce((sum, value) => sum + value, 0)));
   if (values.some(Boolean)) {
     clearLoadError($("statsEmpty"), false);
   } else {
-    const empty = $("statsEmpty");
     clearLoadError(empty, false);
-    renderEmpty(empty, { icon: "chart", title: "No activity yet", body: "Share your page link in your stream panels and Discord to get it moving." });
+    renderEmpty(empty, { kind: "empty", title: "No visitor activity yet", body: "Share your site link to start recording visits.", compact: true });
   }
 }
 
 function renderActivity(days) {
   const body = $("perfActivityBody");
   if (!body) return;
+  const hasData = days.some((day) => Number(day.views) || Number(day.clicks) || Number(day.copies));
+  const table = body.closest("table");
+  const empty = $("perfActivityEmpty");
+  if (!hasData) {
+    body.innerHTML = "";
+    if (table) table.hidden = true;
+    renderEmpty(empty, { kind: "empty", title: "No daily visits yet", body: "This table will fill in after people visit your site.", compact: true });
+    return;
+  }
+  if (table) table.hidden = false;
+  clearLoadError(empty, false);
   body.removeAttribute("aria-busy");
   body.innerHTML = [...days].reverse().map((day) => {
     const views = Number(day.views) || 0;
@@ -193,7 +218,7 @@ function renderHeatmap(matrix) {
   const values = matrix.flat().map((value) => Number(value) || 0);
   const total = values.reduce((sum, value) => sum + value, 0);
   if (total === 0) {
-    renderEmpty(grid, { icon: "chart", title: "No hourly activity yet", body: "Views by day and hour will appear here once your site gets traffic." });
+    renderEmpty(grid, { kind: "empty", title: "No hourly activity yet", body: "Views by day and hour will appear after your site gets traffic.", compact: true });
     return;
   }
   let html = `<div class="heatmap-corner"></div>`;
@@ -209,15 +234,17 @@ function renderHeatmap(matrix) {
 function renderReferrers(referrers) {
   const body = $("perfReferrersBody");
   if (!body) return;
+  const table = body.closest("table");
   body.removeAttribute("aria-busy");
   body.innerHTML = referrers.map((row) => `<tr><td>${row.domain}</td><td class="num">${row.count}</td></tr>`).join("");
   if (referrers.length) {
     clearLoadError($("perfReferrersEmpty"), false);
-    $("perfReferrersEmpty").hidden = true;
+    if (table) table.hidden = false;
   } else {
     const empty = $("perfReferrersEmpty");
     clearLoadError(empty, false);
-    renderEmpty(empty, { icon: "link", title: "No referrer data yet", body: "Open the Share tab to copy your link. When someone visits from a shared link, their source will appear here." });
+    if (table) table.hidden = true;
+    renderEmpty(empty, { kind: "empty", title: "No traffic sources yet", body: "Sources will appear after visitors arrive from a shared link.", compact: true });
   }
 }
 

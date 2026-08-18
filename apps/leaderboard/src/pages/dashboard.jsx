@@ -108,12 +108,7 @@ function OverviewSection({ active } = {}) {
 <section class="ov-summary" aria-label="Your site status"><div class="ov-summary-copy"><span class="ov-summary-status"><i aria-hidden="true"></i><span id="ovPublishedStatus">Checking your site…</span></span><h2 id="ovSiteState">Getting things ready…</h2><p id="ovSiteStateMeta">We’ll show the best next step here.</p></div><div class="ov-summary-actions"><a class="v3-btn v3-btn--accent" id="ovPrimaryAction" href="/dashboard/leaderboard/setup">Continue setup</a><div class="ov-summary-links"><a href="/dashboard/leaderboard/setup">Edit site</a><a href="/dashboard/leaderboard/share">Share site</a></div></div></section>
 <aside id="ovOnboardingBento" hidden>
 <div class="ov-setup">
-<div class="ov-setup-progress"><div class="ov-setup-head"><div><h2>Launch checklist</h2><p>Complete the essentials, then publish.</p></div><span class="ov-setup-count" id="ovSetupCount">0 of 3 done</span></div><div class="ov-setup-bar" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="3" aria-labelledby="ovSetupCount" id="ovSetupBar"><i id="ovSetupFill"></i></div></div>
-<div class="ov-setup-list" id="ovChecklist">
-<a class="ov-setup-row" id="ovStepBrand" href="/dashboard/leaderboard/setup"><span class="ov-step-icon" aria-hidden="true"></span><span class="ov-step-body"><b>Name your leaderboard</b><span class="hint">Add your name, sponsor, and prize details</span></span><span class="ov-step-status" id="ovStepBrandStatus">Add details →</span></a>
-<a class="ov-setup-row" id="ovStepPlayers" href="/dashboard/leaderboard/players"><span class="ov-step-icon" aria-hidden="true"></span><span class="ov-step-body"><b>Add your players</b><span class="hint">Import a spreadsheet or add them one by one</span></span><span class="ov-step-status" id="ovStepPlayersStatus">Add players →</span></a>
-<a class="ov-setup-row" id="ovStepPublish" href="#publish"><span class="ov-step-icon" aria-hidden="true"></span><span class="ov-step-body"><b>Go live</b><span class="hint">Publish your page so your audience can see it</span></span><span class="ov-step-status" id="ovStepPublishStatus">Publish site →</span></a>
-</div>
+<div class="ov-setup-progress"><div class="ov-setup-head"><div><h2>Finish setup</h2><p id="ovSetupMessage">Complete the essentials, then publish.</p></div><span class="ov-setup-count" id="ovSetupCount">0 of 3 done</span></div><div class="ov-setup-bar" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="3" aria-labelledby="ovSetupCount" id="ovSetupBar"><i id="ovSetupFill"></i></div><a class="v3-btn v3-btn--sm v3-btn--accent" id="ovSetupAction" href="/dashboard/leaderboard/setup">Continue setup</a></div>
 </div></aside>
 </div>
 <div id="ovActiveBento"><div class="ov-live" aria-label="Site performance">
@@ -140,43 +135,6 @@ function OverviewSection({ active } = {}) {
     </div>
   </div>
 </div>
-
-{/* OBS Overlays & Live Stream Quick Bar */}
-<section class="v3-table-card ov-obs-suite-card mt-16" aria-label="OBS Live Stream Overlays">
-  <div class="v3-section-head">
-    <div>
-      <h2>🎬 OBS Live Stream Overlays</h2>
-      <p class="v3-head-sub">Paste transparent browser sources directly into OBS Studio or Streamlabs.</p>
-    </div>
-    <a class="btn btn--sm btn--ghost" href="/dashboard/leaderboard/design">Theme Studio →</a>
-  </div>
-  <div class="ov-obs-grid">
-    <div class="ov-obs-item">
-      <div class="ov-obs-info">
-        <span class="ov-obs-tag">PREDICTIONS HUD</span>
-        <strong>🔮 Live Betting Overlay</strong>
-        <p>Live Yes/No odds bar &amp; countdown timer on stream.</p>
-      </div>
-      <button class="btn btn--sm btn--accent" id="ov-btn-copy-pred-hud" type="button">📋 Copy OBS Link</button>
-    </div>
-    <div class="ov-obs-item">
-      <div class="ov-obs-info">
-        <span class="ov-obs-tag">SOUND ALERTS</span>
-        <strong>🔔 Stream Alerts &amp; Chimes</strong>
-        <p>Audio chimes &amp; popup cards for prize orders &amp; winners.</p>
-      </div>
-      <button class="btn btn--sm btn--accent" id="ov-btn-copy-alerts" type="button">📋 Copy OBS Link</button>
-    </div>
-    <div class="ov-obs-item">
-      <div class="ov-obs-info">
-        <span class="ov-obs-tag">PODIUM TICKER</span>
-        <strong>🏆 Leaderboard Bar</strong>
-        <p>Horizontal scrolling ticker of top racers &amp; points.</p>
-      </div>
-      <button class="btn btn--sm btn--accent" id="ov-btn-copy-ticker" type="button">📋 Copy OBS Link</button>
-    </div>
-  </div>
-</section>
 
 <div class="ov-live-grid"><section class="ov-live-card" aria-label="Recent activity"><div class="ov-live-card-head"><h2>Recent activity</h2><button class="lb-cardlink kpi-action ov-analytics-link" id="ovAnalyticsLink" type="button" data-jump="performance">See full stats →</button></div><div class="ov-activity-list" id="ovActivityList"></div><div class="ov-card-empty" id="ovActivityEmpty" hidden></div></section><section class="ov-live-card" aria-label="Top players"><div class="ov-live-card-head"><h2>Top players</h2><a class="kpi-action" href="/dashboard/leaderboard/players">All players →</a></div><div class="ov-players-list" id="ovTopPlayers"></div><div class="ov-card-empty" id="ov_topEmpty" hidden></div></section></div>
 </div></div>
@@ -426,12 +384,12 @@ function AnalyticsSection({ active, activeHash = "activity" } = {}) {
   </div>
   <div class="v3-perf-panel" data-perf-panel="activity" id="perf-activity">
     <div class="v3-table-card v3-chart-card"><div class="v3-card-head"><h2>Page visits over time</h2><span class="v3-chart-total">Total visits: <b id="perfTotalViews"><span class="skeleton v3-skel-kpi" aria-hidden="true"></span></b></span></div><div id="statBars" class="v3-line-chart" role="img" aria-label="Daily visits over time"></div><div class="v3-empty" id="statsEmpty" hidden></div></div>
-    <div class="v3-table-card v3-activity-table-card"><div class="v3-card-head"><h2>Day by day</h2><a class="v3-btn" href="/api/site/stats/export" id="perfExport">Export CSV</a></div><div class="v3-table-scroll"><table class="v3-table"><thead><tr><th>Date</th><th class="num">Visits</th><th class="num">Link clicks</th><th class="num">Link shares</th><th class="num">Share rate (%)</th></tr></thead><tbody id="perfActivityBody"></tbody></table></div></div>
+    <div class="v3-table-card v3-activity-table-card"><div class="v3-card-head"><h2>Day by day</h2><a class="v3-btn" href="/api/site/stats/export" id="perfExport">Export CSV</a></div><div class="v3-table-scroll"><table class="v3-table"><thead><tr><th>Date</th><th class="num">Visits</th><th class="num">Link clicks</th><th class="num">Link shares</th><th class="num">Share rate (%)</th></tr></thead><tbody id="perfActivityBody"></tbody></table></div><div class="v3-empty" id="perfActivityEmpty" hidden></div></div>
     <div class="v3-table-card" id="perf-heatmap"><div class="v3-card-head"><div><h2>When visitors come</h2><p class="v3-head-sub">Which days and times get the most traffic.</p></div></div><div class="heatmap-wrap"><div class="heatmap" id="perfHeatmapGrid"><span class="skeleton v3-skel-heatmap" aria-hidden="true"></span></div></div></div>
   </div>
   <div class="v3-perf-panel" data-perf-panel="referrals" id="perf-referrals" hidden>
     <div class="v3-table-card"><div class="v3-card-head"><div><h2>Earn free Pro days</h2><p class="v3-head-sub">Share your link. Every sign-up adds 31 days of Pro.</p></div></div><div class="v3-ref-link-row"><input id="refLink" readonly aria-label="Your referral link" value="" /><button class="v3-btn v3-btn--accent" id="refCopy" type="button">Copy link</button></div><div class="v3-stat-tiles"><div><b id="refCount"><span class="skeleton v3-skel-kpi" aria-hidden="true"></span></b><span>Streamers joined</span></div><div><b id="refDays"><span class="skeleton v3-skel-kpi" aria-hidden="true"></span></b><span>Free Pro days earned</span></div><div><b id="refSaved"><span class="skeleton v3-skel-kpi" aria-hidden="true"></span></b><span>Estimated value</span></div></div><p id="refStatus" role="status" aria-live="polite"></p></div>
-    <div class="v3-table-card" id="perf-referrers"><div class="v3-card-head"><h2>Where your visitors come from</h2></div><div class="v3-table-scroll"><table class="v3-table"><thead><tr><th>DOMAIN</th><th class="num">VISITS</th></tr></thead><tbody id="perfReferrersBody"></tbody></table></div><p class="v3-empty-copy" id="perfReferrersEmpty" hidden>Open the Share tab to copy your link. When someone visits from a shared link, their source will appear here.</p></div>
+    <div class="v3-table-card" id="perf-referrers"><div class="v3-card-head"><h2>Where your visitors come from</h2></div><div class="v3-table-scroll"><table class="v3-table"><thead><tr><th>DOMAIN</th><th class="num">VISITS</th></tr></thead><tbody id="perfReferrersBody"></tbody></table></div><div class="v3-empty" id="perfReferrersEmpty" hidden></div></div>
   </div>
   <div class="v3-perf-panel" data-perf-panel="events" id="perf-events" hidden><div class="v3-table-card"><div class="v3-card-head"><h2>Activity log</h2><p class="v3-head-sub">A record of recent automatic score updates and link shares.</p></div><ul class="events-list" id="eventsList"></ul><div class="v3-empty" id="eventsEmpty"></div></div></div>
   <details class="metric-glossary"><summary>What these numbers mean</summary><dl><div><dt>Page visits</dt><dd>How many times someone opened your public leaderboard page.</dd></div><div><dt>Sponsor link clicks</dt><dd>How many times someone clicked your sponsor or share link.</dd></div><div><dt>Times link was shared</dt><dd>How many times someone copied your link to share it.</dd></div><div><dt>Share rate (%)</dt><dd>The percentage of visitors who clicked your share link.</dd></div><div><dt>Traffic sources</dt><dd>Websites that sent viewers to your site, when their browser reports them.</dd></div><div><dt>Activity log</dt><dd>Recent automatic score updates and link shares recorded for this site.</dd></div></dl></details>
@@ -465,7 +423,7 @@ function BoardSettingsSection({ active } = {}) {
     <div class="v3-settings-card v3-danger-card"><div class="v3-danger-lbl">DANGER ZONE</div><div class="v3-settings-row"><div><b>Wipe all scores and history</b><p>Deletes all player scores, prize amounts, and activity history. This cannot be undone.</p></div><button class="v3-set-btn v3-set-btn--danger-outline" id="settingsResetData" type="button">Reset everything</button></div><div class="v3-settings-row"><div><b>Delete this site</b><p>Permanently delete this site and its settings. This action cannot be undone.</p></div><button class="v3-set-btn v3-set-btn--danger" id="settingsDeleteBoard" type="button">Delete site</button></div></div>
   </section>
   <section class="v3-settings-panel" id="settingsPanelIntegrations" role="tabpanel" aria-labelledby="settingsTabIntegrations" data-settings-panel="integrations" hidden>
-    <div class="v3-settings-card"><div class="v3-settings-card-head"><div><h2>Integrations</h2><p>Connect Kick rewards, set up notifications, and add legal pages to your site.</p></div></div><div class="v3-settings-row"><div><b>Kick channel rewards</b><p>Let viewers earn credits by claiming Kick channel rewards.</p><span class="v3-settings-muted" id="kickStatus"><span class="skeleton skeleton-text" aria-hidden="true"></span></span></div><a class="v3-set-btn v3-set-btn--outline" href="/dashboard/rewards/channel" id="kickRewardsLink">Open Kick connection</a></div><div class="v3-settings-row"><div><b>Automatic score updates</b><p id="postbackStatus">Let your sponsor update scores automatically without manual imports.</p></div><a class="v3-set-btn v3-set-btn--outline" href="/dashboard/settings/connections">Set up automatic updates</a></div><div class="v3-settings-divider"></div><div class="v3-settings-notify-account"><label class="v3-settings-label" for="f_tgChatId">Telegram group ID</label><input id="f_tgChatId" placeholder="Enter your group or chat ID" /><p class="v3-settings-muted">You can find your group ID using the @getidsbot on Telegram.</p><label class="v3-settings-check"><input type="checkbox" id="f_tgNotify" /> Send notifications to this Telegram group</label><button class="v3-set-btn v3-set-btn--outline" id="testTelegram" type="button">Send a test message</button><span class="v3-settings-status" id="testTelegramStatus" role="status"></span></div><div class="v3-settings-divider"></div><div class="v3-settings-legal"><h3>Legal pages</h3><div id="legalList"></div><div id="legalFooterPreview" class="v3-settings-muted"></div></div></div>
+    <div class="v3-settings-card"><div class="v3-settings-card-head"><div><h2>Integrations</h2><p>Connect Kick rewards, set up notifications, and add legal pages to your site.</p></div></div><div class="v3-settings-row"><div><b>Kick channel rewards</b><p>Let viewers earn credits by claiming Kick channel rewards.</p><span class="v3-settings-muted" id="kickStatus"><span class="skeleton skeleton-text" aria-hidden="true"></span></span></div><a class="v3-set-btn v3-set-btn--outline" href="/dashboard/rewards/channel" id="kickRewardsLink">Open Kick connection</a></div><div class="v3-settings-row"><div><b>Automatic score updates</b><p id="postbackStatus">Let your sponsor update scores automatically without manual imports.</p></div><a class="v3-set-btn v3-set-btn--outline" href="/dashboard/settings/connections">Set up automatic updates</a></div><div class="v3-settings-divider"></div><div class="v3-settings-divider"></div><div class="v3-settings-notify-account"><label class="v3-settings-label" for="f_tgChatId">Telegram group ID</label><input id="f_tgChatId" placeholder="Enter your group or chat ID" /><p class="v3-settings-muted">You can find your group ID using the @getidsbot on Telegram.</p><label class="v3-settings-check"><input type="checkbox" id="f_tgNotify" /> Send notifications to this Telegram group</label><button class="v3-set-btn v3-set-btn--outline" id="testTelegram" type="button">Send a test message</button><span class="v3-settings-status" id="testTelegramStatus" role="status"></span></div><div class="v3-settings-divider"></div><div class="v3-settings-legal"><h3>Legal pages</h3><div id="legalList"></div><div id="legalFooterPreview" class="v3-settings-muted"></div></div></div>
   </section>
   <section class="v3-settings-panel" id="settingsPanelDomain" role="tabpanel" aria-labelledby="settingsTabDomain" data-settings-panel="domain" hidden>
     <div class="v3-settings-card" id="domainManageCard" hidden>

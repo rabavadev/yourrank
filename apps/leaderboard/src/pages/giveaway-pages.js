@@ -171,7 +171,7 @@ ${tabs}
         </div>
         <div class="gw-feed-container" id="gw-chat-feed" aria-live="polite">
           <div class="gw-feed-empty" id="gw-feed-empty">
-            Connect to start viewing incoming stream chat messages…
+            Kick connection needed to view incoming stream chat messages.
           </div>
         </div>
       </section>
@@ -279,10 +279,8 @@ ${tabs}
           </table>
         </div>
 
-        <div class="v3-empty" id="gw-entrants-empty">
-          <div class="v3-empty-ic">🎁</div>
-          <h2>No entrants yet</h2>
-          <p>Start listening to chat, tell your viewers to type your keyword, and they will appear here live in real time.</p>
+        <div class="v3-state-inline" id="gw-entrants-empty" role="status">
+          <span class="v3-state-inline-copy"><b>No entrants yet</b><span>Connect Kick and start listening to chat to collect entries.</span></span>
         </div>
       </section>
     </div>

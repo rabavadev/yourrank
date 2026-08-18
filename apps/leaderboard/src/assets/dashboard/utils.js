@@ -429,6 +429,7 @@ export class ListController {
       const colCount = this.tbody?.closest("table")?.querySelectorAll("thead th").length || 1;
       this.tbody.innerHTML = "";
       if (this.emptyEl && this.all.length === 0 && !this.query) {
+        this.emptySpec.compact = true;
         renderEmpty(this.emptyEl, this.emptySpec);
       } else {
         this.tbody.innerHTML = `<tr><td colspan="${colCount}" class="muted">${esc(msg)}</td></tr>`;
