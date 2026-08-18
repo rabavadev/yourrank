@@ -198,7 +198,7 @@ async function redeem(shopItemId, btn) {
   if (!slug) return;
   const item = (state.current.shopItems || []).find((i) => i.id === shopItemId);
   if (!item) return;
-  if (!await showConfirmModal("Confirm redemption", `Spend ${item.cost} credits on ${item.name}?`, "Redeem", false)) return;
+  if (!await showConfirmModal("Confirm prize order", `Spend ${item.cost} credits on ${item.name}?`, "Place order", false)) return;
   if (btn) setLoading(btn, true, "Redeeming…");
 
   try {
@@ -242,7 +242,7 @@ $("vd-switch")?.addEventListener("click", async () => {
   location.href = "/me";
 });
 
-// Show any OAuth error in the URL.
+// Show any sign-in error in the URL.
 const urlParams = new URLSearchParams(window.location.search);
 if (urlParams.get("error")) {
   setStatus("vd-login-status", "Login failed: " + urlParams.get("error"), true);

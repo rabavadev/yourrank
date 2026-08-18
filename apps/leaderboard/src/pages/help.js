@@ -104,10 +104,10 @@ function helpHubContent({ user, activePath }) {
   <h2 id="help-credits">Credits and viewer fulfilment</h2>
   <p>Credits come from Kick channel-point rewards and can be spent on shop items.</p>
   <ul class="operator-help-list">
-    <li><a href="/dashboard/rewards/channel">Connect Kick</a><span>Link the Kick channel so channel-point reward redemptions can become credits.</span></li>
+    <li><a href="/dashboard/rewards/channel">Connect Kick</a><span>Link the Kick channel so channel-point reward claims can become credits.</span></li>
     <li><a href="/dashboard/rewards/rules">Create a credit rule</a><span>Choose a Kick reward and set how many credits it awards.</span></li>
     <li><a href="/dashboard/rewards/shop">Add a shop item</a><span>Create something viewers can unlock with their credits.</span></li>
-    <li><a href="/dashboard/rewards/redemptions">Process shop redemptions</a><span>Review pending viewer requests and approve or cancel them.</span></li>
+    <li><a href="/dashboard/rewards/redemptions">Process prize orders</a><span>Review pending viewer requests and approve or cancel them.</span></li>
     <li><a href="/dashboard/audience/viewers">Check viewer balances</a><span>See viewer balances, total earned, total spent, and recent earning activity.</span></li>
     <li><a href="/dashboard/audience/activity">Review credit activity</a><span>Filter the site’s credit events by viewer and event type.</span></li>
   </ul>
@@ -117,7 +117,7 @@ function helpHubContent({ user, activePath }) {
   <h2 id="help-telegram">Telegram bot</h2>
   <p>The bot dashboard separates the bot connection, its replies, and messages to subscribers.</p>
   <ul class="operator-help-list">
-    <li><a href="/dashboard/telegram/bots">Connect a Telegram bot</a><span>Add the bot token in Bots, then manage the connected bot there.</span></li>
+    <li><a href="/dashboard/telegram/bots">Connect a Telegram bot</a><span>Add the connect code in Bots, then manage the connected bot there.</span></li>
     <li><a href="/dashboard/telegram/commands">Edit commands</a><span>Change the replies your bot sends when viewers type a command.</span></li>
     <li><a href="/dashboard/telegram/broadcasts">Send a broadcast</a><span>Compose a message to subscribers, preview it, send a rehearsal to your chat, then send now or schedule it.</span></li>
     <li><a href="/dashboard/telegram/offers">Manage offers</a><span>Create offers with tracked links for your community.</span></li>

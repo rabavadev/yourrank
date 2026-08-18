@@ -58,7 +58,7 @@ const COMMANDS = [
     showToast("Demo balance refilled to 2,500 credits", "success");
   }},
   { id: "nav-overview", title: "Overview (Run-Sheet)", group: "Navigation", icon: PALETTE_ICONS.overview, action: () => navTo("home") },
-  { id: "nav-players", title: "Leaderboard & Standings", group: "Navigation", icon: PALETTE_ICONS.leaderboard, action: () => navTo("board", "players") },
+  { id: "nav-players", title: "Players & standings", group: "Navigation", icon: PALETTE_ICONS.leaderboard, action: () => navTo("board", "players") },
   { id: "nav-setup", title: "Site Details & Schedule", group: "Navigation", icon: PALETTE_ICONS.details, action: () => navTo("board", "setup") },
   { id: "nav-design", title: "Theme & Styling / Live Preview", group: "Navigation", icon: PALETTE_ICONS.design, action: () => navTo("board", "design") },
   { id: "nav-games", title: "Mini-games & Interactive Simulator", group: "Navigation", icon: PALETTE_ICONS.games, action: () => location.href = "/dashboard/games" },

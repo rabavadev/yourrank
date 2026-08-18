@@ -287,7 +287,7 @@ export function setupEditorTabs() {
       }
       const TAB_NAME_MAP = {
         setup: "Site details",
-        players: "Racers & scores",
+        players: "Players & scores",
         design: "Theme & styling",
         share: "Overlay & share",
         history: "Past winners",

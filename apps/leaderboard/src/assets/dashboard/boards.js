@@ -35,7 +35,7 @@ export function renderBoardSwitcher() {
   if (createBtn) createBtn.onclick = async () => {
     const name = $("nb_name").value.trim();
     let slug = $("nb_slug").value.trim() || slugify(name);
-    if (!slug) { $("nb_err").textContent = "Enter a name or slug."; return; }
+    if (!slug) { $("nb_err").textContent = "Enter a name or web address."; return; }
     const casino = $("nb_casino").value.trim();
     if (!casino) { $("nb_err").textContent = "Enter a casino name."; return; }
     $("nb_err").textContent = "Creating…";
@@ -193,7 +193,7 @@ export function renderSidebarBoardSwitcher() {
   if (planEl) {
     planEl.textContent = state.USER?.plan ? `${state.USER.plan.toUpperCase()} PLAN` : "ACTIVE SITE";
   }
-  if (topbarPath) topbarPath.textContent = active?.slug ? `/${active.slug}` : "Address unavailable";
+  if (topbarPath) topbarPath.textContent = active?.slug ? `/${active.slug}` : "Web address unavailable";
   if (sel) {
     sel.innerHTML = "";
     if (!state.BOARDS.length) {

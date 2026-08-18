@@ -95,9 +95,9 @@
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
               </div>
               <div class="yr-guide-info">
-                <strong>Managing Racers &amp; Scores</strong>
+                <strong>Managing Players &amp; Scores</strong>
                 <p>Inline spreadsheet editing, bulk score additions, and CSV imports.</p>
-                <a href="/dashboard/editor/players" class="yr-guide-link">Go to Players Editor →</a>
+                <a href="/dashboard/editor/players" class="yr-guide-link">Go to Players →</a>
               </div>
             </div>
 
@@ -107,7 +107,7 @@
               </div>
               <div class="yr-guide-info">
                 <strong>Adding to OBS Browser Source</strong>
-                <p>Add <code>/your-slug/overlay</code> as an 1100px browser source on stream.</p>
+                <p>Add <code>/your-web-address/overlay</code> as an 1100px browser source on stream.</p>
                 <a href="/dashboard/editor/share" class="yr-guide-link">Get OBS URL &amp; Embed →</a>
               </div>
             </div>
@@ -118,7 +118,7 @@
               </div>
               <div class="yr-guide-info">
                 <strong>Kick Loyalty Points &amp; Rewards</strong>
-                <p>Link Kick channel, create point rules, and manage shop redemptions.</p>
+                <p>Link Kick channel, create earning rules, and manage prize orders.</p>
                 <a href="/dashboard/rewards/channel" class="yr-guide-link">Connect Kick Channel →</a>
               </div>
             </div>
@@ -129,7 +129,7 @@
               </div>
               <div class="yr-guide-info">
                 <strong>Telegram Community Bot</strong>
-                <p>Connect bot API token, customize /commands, and send broadcasts.</p>
+                <p>Connect your bot with a connect code, customize /commands, and send broadcasts.</p>
                 <a href="/dashboard/telegram" class="yr-guide-link">Open Telegram Bot →</a>
               </div>
             </div>

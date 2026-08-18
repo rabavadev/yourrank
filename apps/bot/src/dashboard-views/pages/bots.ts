@@ -10,18 +10,18 @@ export function botsPanel(): string {
       <div class="wizard mt-lg" id="connectWizard">
         <div class="wizard-step" data-step="1">
           <h3>1. Get a bot from @BotFather</h3>
-          <p class="muted">Open BotFather in Telegram, create a new bot, and copy the API token. Keep the token secret — only you and YourRank need it.</p>
+          <p class="muted">Open BotFather in Telegram, create a new bot, and copy the connect code. Keep it secret — only you and YourRank need it.</p>
           <div class="d-flex gap-8 mt-sm">
             <a href="https://t.me/BotFather" target="_blank" rel="noopener" class="btn">Open @BotFather</a>
-            <button type="button" class="btn btn--ghost" data-action="wizardNext" data-step="1">I have a token →</button>
+            <button type="button" class="btn btn--ghost" data-action="wizardNext" data-step="1">I have a connect code →</button>
           </div>
         </div>
 
         <div class="wizard-step" data-step="2" hidden>
-          <h3>2. Paste your bot token</h3>
+          <h3>2. Paste your connect code</h3>
           <p class="muted">Your full token is encrypted on our side. We only display the last 4 characters so you can recognise it.</p>
           <div class="d-flex flex-col gap-8 mt-sm bot-connect-fields">
-            <label class="sr-only" for="botToken">Bot Token</label>
+            <label class="sr-only" for="botToken">Connect code</label>
             <div class="d-flex gap-8">
               <input class="v3-input bot-token-input" id="botToken" type="password" autocomplete="off" placeholder="123456:ABC-...">
               <button class="btn btn--ghost" data-action="toggleToken" type="button" aria-label="Show token">Show</button>

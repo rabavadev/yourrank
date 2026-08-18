@@ -89,10 +89,10 @@ describe("dashboard overview quick actions", () => {
     expect(html).not.toContain('aria-hidden="true">🔌</span>');
     expect(html).toContain('>Overview</a>');
     for (const label of [
-      "Racers &amp; scores", "Theme &amp; overlays", "Mini-games &amp; history",
-      "Live giveaways", "Rewards &amp; shop", "Viewer points &amp; stats",
+      "Players &amp; scores", "Theme &amp; overlays", "Mini-games &amp; history",
+      "Live giveaways", "Rewards &amp; shop", "Viewers",
       "Telegram bot",
-      "Sites &amp; integrations", "Account &amp; billing",
+      "Sites &amp; connected apps", "Account &amp; billing",
       "Help &amp; support",
     ]) expect(html).toContain(`>${label}</a>`);
     expect(html).toContain('>LEADERBOARD</div>');

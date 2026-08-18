@@ -86,7 +86,7 @@ function renderPostback(pb, status, upgrade) {
     const hint = $("postbackStatusHint");
     if (dot) dot.className = "status-dot status-dot--off";
     if (text) text.textContent = "Not configured";
-    if (hint) hint.textContent = "Generate a postback key to start receiving conversions.";
+    if (hint) hint.textContent = "Create a deposit tracking key to start receiving sign-up updates.";
     return;
   }
 
@@ -115,14 +115,14 @@ async function loadPostbacks() {
     const res = await fetch("/api/account/postbacks", { credentials: "include" });
     const data = await res.json().catch(() => ({}));
     if (!res.ok || !data.ok) {
-      setStatus(data.error || "Could not load postbacks.", true);
+      setStatus(data.error || "Could not load deposit tracking.", true);
       return;
     }
     renderPostback(data.postback, data.status, data.upgrade);
     renderConversions(data.conversions);
   } catch (e) {
     logError("loadPostbacks", e);
-    setStatus("Could not load postbacks.", true);
+    setStatus("Could not load deposit tracking. Try again.", true);
   }
 }
 
@@ -146,7 +146,7 @@ function wirePostbacks() {
     manager.addEventListener("click", async () => {
       const signed = $("postbackSigned");
       if (!signed) return;
-      const text = `Signed endpoint: ${signed.textContent}\nMethod: POST\nSign the raw query string with HMAC-SHA256 keyed by your postback key, then send the hex signature as the X-Postback-Signature header.\nAlso include X-Postback-Key with your key.\nLegacy unsigned URL: ${$("postbackLegacy")?.textContent || "deprecated"} (sunset ${$("postbackLegacy")?.textContent ? "2026-10-01" : ""})`;
+      const text = `Deposit tracking link: ${signed.textContent}\nMethod: POST\nSign the raw query string with HMAC-SHA256 using your deposit tracking key, then send the hex signature in the X-Postback-Signature header.\nAlso include X-Postback-Key with your key.\nLegacy unsigned link: ${$("postbackLegacy")?.textContent || "deprecated"} (sunset ${$("postbackLegacy")?.textContent ? "2026-10-01" : ""})`;
       const ok = await copyToClipboard(text);
       flashButton(manager, ok ? "Copied!" : "Copy failed");
     });
@@ -157,13 +157,13 @@ function wirePostbacks() {
 
   if (rotate) {
     rotate.addEventListener("click", async () => {
-      if (!await showConfirmModal("Rotate postback key", "This will revoke the existing key immediately. Any in-flight conversions using the old key will fail.", "Rotate", true)) return;
+      if (!await showConfirmModal("Rotate deposit tracking key", "This will revoke the existing key immediately. Any sign-up updates using the old key will fail.", "Rotate", true)) return;
       rotate.disabled = true;
       const result = await jsonReq("POST", "/api/account/postbacks/rotate");
       rotate.disabled = false;
       if (result.ok && result.data.postback) {
         renderPostback(result.data.postback, "pending", false);
-        setStatus("Postback key rotated.", false);
+        setStatus("Deposit tracking key rotated.", false);
       } else {
         setStatus(result.data?.error || "Could not rotate key.", true);
       }
@@ -172,14 +172,14 @@ function wirePostbacks() {
 
   if (revoke) {
     revoke.addEventListener("click", async () => {
-      if (!await showConfirmModal("Revoke postback key", "Casino updates will stop until a new key is created.", "Revoke", true)) return;
+      if (!await showConfirmModal("Revoke deposit tracking key", "Casino updates will stop until a new key is created.", "Revoke", true)) return;
       revoke.disabled = true;
       const result = await jsonReq("DELETE", "/api/account/postbacks");
       revoke.disabled = false;
       if (result.ok) {
         renderPostback(null, "not_configured", false);
         renderConversions([]);
-        setStatus("Postback key revoked.", false);
+        setStatus("Deposit tracking key revoked.", false);
       } else {
         setStatus(result.data?.error || "Could not revoke key.", true);
       }
@@ -278,7 +278,7 @@ function renderConnectedAccounts(data) {
   }
 
   if (sites.length > 0) {
-    html += `<h3 class="m-0 mt-18 mb-4">Per-board integrations</h3><table class="admin-table"><thead><tr><th>Board</th><th>Kick channel</th><th>Discord webhook</th><th>Telegram chat</th></tr></thead><tbody>`;
+    html += `<h3 class="m-0 mt-18 mb-4">Per-board connected apps</h3><table class="admin-table"><thead><tr><th>Board</th><th>Kick channel</th><th>Discord connection</th><th>Telegram chat</th></tr></thead><tbody>`;
     for (const s of sites) {
       html += `<tr>
         <td><a href="/${esc(s.slug)}">${esc(s.name || s.slug)}</a></td>

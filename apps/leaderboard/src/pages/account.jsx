@@ -9,7 +9,7 @@ const SETTINGS_TABS = [
   ["account", "Profile & Security", '<path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>'],
   ["team", "Team & Mods", '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>'],
   ["plan", "Plan & Billing", '<rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/>'],
-  ["connections", "Sponsors & Integrations", '<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>'],
+  ["connections", "Sponsors & connected apps", '<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>'],
   ["data", "Backup & Danger Zone", '<path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" x2="12" y1="9" y2="13"/><line x1="12" x2="12.01" y1="17" y2="17"/>'],
 ];
 
@@ -44,7 +44,7 @@ export function UnifiedSettingsPage({ activePath, user, tab = "account" } = {}) 
           {settingsPanel("account", `${settingsWidgets.account}<div class="lb-widget lb-widget--full acc-site-scope-card"><div class="acc-site-scope-icon" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 9h18M9 21V9"/></svg></div><div><h2>Selected site settings</h2><p class="card-sub">Your web address, visitor access, alerts, themes, and public content belong to individual sites.</p><a class="btn btn--ghost mt-6" href="${siteUrl.pathname + siteUrl.search}">Open site settings ↗</a></div></div>`)}
           {settingsPanel("team", settingsWidgets.team)}
           {settingsPanel("plan", settingsWidgets.plan)}
-          {settingsPanel("connections", `${settingsWidgets.postbacks}<div class="lb-widget lb-widget--full"><h2>Connected accounts</h2><p class="card-sub">Streamer identities and connected services.</p><div id="connectedAccounts"><p class="hint">Loading…</p></div></div><div class="lb-widget lb-widget--full"><h2>Site connections</h2><p class="card-sub">Kick and Credits settings belong to the selected site.</p><a class="btn btn--accent" href="/dashboard/rewards/channel">Open site connections</a></div>`)}
+          {settingsPanel("connections", `${settingsWidgets.postbacks}<div class="lb-widget lb-widget--full"><h2>Connected accounts</h2><p class="card-sub">Streamer identities and connected apps.</p><div id="connectedAccounts"><p class="hint">Loading…</p></div></div><div class="lb-widget lb-widget--full"><h2>Site connections</h2><p class="card-sub">Kick and Credits settings belong to the selected site.</p><a class="btn btn--accent" href="/dashboard/rewards/channel">Open site connections</a></div>`)}
           {settingsPanel("data", `${settingsWidgets.data}<div class="lb-widget lb-widget--full lb-widget--danger"><h2>Selected site data</h2><p class="card-sub">These actions affect one selected site, not your whole account. Open the site tools before making a destructive change.</p><div class="d-flex gap-8 flex-wrap"><a class="btn btn--ghost" href="/dashboard/editor/history">Reset or archive a site</a><a class="btn btn--ghost" href="/dashboard/editor/setup">Delete a site</a></div></div>`)}
         </div>
         <aside class="account-settings-sidebar" aria-label="Account summary">
@@ -98,4 +98,3 @@ export const settingsConfig = {
 };
 
 export const settingsUnifiedPage = { config: settingsConfig, Component: UnifiedSettingsPage };
-

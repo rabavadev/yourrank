@@ -74,7 +74,7 @@ export const rewardsChannelConfig = { ...rewardsConfigBase, title: "Connect Kick
 export const rewardsRulesConfig = { ...rewardsConfigBase, title: "Credit rules · Credits · YourRank", canonical: "https://yourrank.site/dashboard/rewards/rules" };
 export const rewardsShopConfig = { ...rewardsConfigBase, title: "Shop · Credits · YourRank", canonical: "https://yourrank.site/dashboard/rewards/shop" };
 export const rewardsViewersConfig = { ...rewardsConfigBase, title: "Viewers · Credits · YourRank", canonical: "https://yourrank.site/dashboard/audience/viewers" };
-export const rewardsRedemptionsConfig = { ...rewardsConfigBase, title: "Shop redemptions · Credits · YourRank", canonical: "https://yourrank.site/dashboard/rewards/redemptions" };
+export const rewardsRedemptionsConfig = { ...rewardsConfigBase, title: "Prize orders · Credits · YourRank", canonical: "https://yourrank.site/dashboard/rewards/redemptions" };
 export const rewardsHistoryConfig = { ...rewardsConfigBase, title: "Credit activity · Credits · YourRank", canonical: "https://yourrank.site/dashboard/audience/activity" };
 
 export const rewardsChannelPage = { config: rewardsChannelConfig, Component: RewardsChannelPage };
