@@ -23,7 +23,7 @@ const MENU_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M
 const CLOSE_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>';
 const COLLAPSE_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>';
 
-export type NavItem = NavLinkItem | NavGroupItem;
+export type NavItem = NavLinkItem;
 
 export interface NavLinkItem {
   key: string;
@@ -32,10 +32,6 @@ export interface NavLinkItem {
   /** Inner SVG path markup for the section row. */
   icon?: string | null;
   productKey?: string;
-}
-
-export interface NavGroupItem {
-  group: string;
 }
 
 function esc(s: unknown): string {
@@ -55,9 +51,6 @@ export function navListHtml(
   label = "Dashboard"
 ): string {
   const links = items.map((item) => {
-    if ("group" in item) {
-      return `<div class="lb-nav-group-label" role="heading" aria-level="2">${esc(item.group)}</div>`;
-    }
     const isActive = item.key === active;
     const product = item.productKey ? ` data-product-link="${esc(item.productKey)}"` : "";
     const cls = `lb-nav${isActive ? " is-on" : ""}`;

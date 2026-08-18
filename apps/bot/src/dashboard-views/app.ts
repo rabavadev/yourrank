@@ -1,6 +1,6 @@
 import { botPageHtml } from "@yourrank/shared/page-shell";
 import { dashboardChromeHtml } from "@yourrank/shared/dashboard-chrome";
-import { botNavItems, pageMeta } from "./shell.js";
+import { botNavItems, pageLinks, pageMeta } from "./shell.js";
 import { overviewPanel } from "./pages/overview.js";
 import { botsPanel } from "./pages/bots.js";
 import { commandsPanel } from "./pages/commands.js";
@@ -26,15 +26,8 @@ function panelHtml(page: string, publicBaseUrl: string): string {
 }
 
 function telegramTabsHtml(page: string): string {
-  const tabs = [
-    ["overview", "Overview", "/dashboard/telegram"],
-    ["bots", "Bot", "/dashboard/telegram/bots"],
-    ["commands", "Replies", "/dashboard/telegram/commands"],
-    ["offers", "Offers", "/dashboard/telegram/offers"],
-    ["broadcasts", "Messages", "/dashboard/telegram/broadcasts"],
-  ] as const;
   return `<nav class="v3-tabs telegram-tabs" aria-label="Telegram pages">${
-    tabs.map(([key, label, href]) =>
+    pageLinks.map(({ key, label, href }) =>
       `<a class="v3-tab${key === page ? " is-on" : ""}" href="${href}"${key === page ? ' aria-current="page"' : ""}>${label}</a>`
     ).join("")
   }</nav>`;

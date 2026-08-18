@@ -1,7 +1,7 @@
 // Global Command Palette (Ctrl+K / ⌘K) for Tier-1 Developer Experience
 import { $, copyToClipboard, showToast } from "./utils.js";
 import { state } from "./state.js";
-import { navTo } from "./shell.js";
+import { requestDashboardRoute } from "./shell.js";
 
 const PALETTE_ICONS = {
   overview: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg>`,
@@ -22,52 +22,58 @@ const PALETTE_ICONS = {
 };
 
 const COMMANDS = [
-  { id: "act-save", title: "Save & Publish Standings", group: "Actions", icon: PALETTE_ICONS.publish, action: () => $("save")?.click() },
-  { id: "act-publish", title: "Toggle Public Site Live / Offline", group: "Actions", icon: PALETTE_ICONS.publish, action: () => $("publishAction")?.click() },
-  { id: "act-obs-pred", title: "Copy OBS Live Prediction HUD Overlay URL", group: "OBS Overlays", icon: PALETTE_ICONS.copy, action: async () => {
+  { id: "act-save", title: "Save & publish standings", group: "Actions", icon: PALETTE_ICONS.publish, action: () => $("save")?.click() },
+  { id: "act-publish", title: "Toggle public site live / offline", group: "Actions", icon: PALETTE_ICONS.publish, action: () => $("publishAction")?.click() },
+  { id: "act-obs-pred", title: "Copy OBS live prediction HUD overlay URL", group: "OBS overlays", icon: PALETTE_ICONS.copy, action: async () => {
     const url = location.origin + "/overlay/prediction?site=" + (state.SLUG || "");
     await copyToClipboard(url);
-    showToast("OBS Live Prediction HUD URL copied!", "info");
+    showToast("OBS live prediction HUD URL copied!", "info");
   }},
-  { id: "act-obs-alerts", title: "Copy OBS Stream Alerts & Sound Chime URL", group: "OBS Overlays", icon: PALETTE_ICONS.copy, action: async () => {
+  { id: "act-obs-alerts", title: "Copy OBS stream alerts & sound chime URL", group: "OBS overlays", icon: PALETTE_ICONS.copy, action: async () => {
     const url = location.origin + "/overlay/alerts?site=" + (state.SLUG || "");
     await copyToClipboard(url);
-    showToast("OBS Stream Alerts URL copied!", "info");
+    showToast("OBS stream alerts URL copied!", "info");
   }},
-  { id: "act-obs-card", title: "Copy OBS Podium Overlay URL", group: "OBS Overlays", icon: PALETTE_ICONS.copy, action: async () => {
+  { id: "act-obs-card", title: "Copy OBS podium overlay URL", group: "OBS overlays", icon: PALETTE_ICONS.copy, action: async () => {
     const url = location.origin + "/" + (state.SLUG || "") + "/overlay";
     await copyToClipboard(url);
-    showToast("OBS Podium URL copied!", "info");
+    showToast("OBS podium URL copied!", "info");
   }},
-  { id: "act-obs-ticker", title: "Copy OBS Horizontal Ticker URL", group: "OBS Overlays", icon: PALETTE_ICONS.copy, action: async () => {
+  { id: "act-obs-ticker", title: "Copy OBS horizontal ticker URL", group: "OBS overlays", icon: PALETTE_ICONS.copy, action: async () => {
     const url = location.origin + "/" + (state.SLUG || "") + "/overlay?layout=ticker";
     await copyToClipboard(url);
-    showToast("OBS Ticker URL copied!", "info");
+    showToast("OBS ticker URL copied!", "info");
   }},
-  { id: "act-export-winners", title: "Download Raffle Winners CSV Report", group: "Reports", icon: PALETTE_ICONS.share, action: () => {
+  { id: "act-export-winners", title: "Download raffle winners CSV report", group: "Reports", icon: PALETTE_ICONS.share, action: () => {
     window.open("/api/export/raffle-winners.csv?siteId=" + (state.SITE_ID || ""), "_blank");
   }},
-  { id: "act-export-drops", title: "Download Drop Claims CSV Report", group: "Reports", icon: PALETTE_ICONS.share, action: () => {
+  { id: "act-export-drops", title: "Download drop claims CSV report", group: "Reports", icon: PALETTE_ICONS.share, action: () => {
     window.open("/api/export/drop-claims.csv?siteId=" + (state.SITE_ID || ""), "_blank");
   }},
-  { id: "act-public", title: "Open Live Public Site", group: "Actions", icon: PALETTE_ICONS.external, action: () => {
+  { id: "act-public", title: "Open live public site", group: "Actions", icon: PALETTE_ICONS.external, action: () => {
     window.open("/" + (state.SLUG || ""), "_blank");
   }},
-  { id: "act-reset-demo", title: "Reset Mini-games Demo Credits (2,500 cr)", group: "Actions", icon: PALETTE_ICONS.refresh, action: () => {
+  { id: "act-reset-demo", title: "Reset mini-games demo credits (2,500 cr)", group: "Actions", icon: PALETTE_ICONS.refresh, action: () => {
     $("gamesResetDemo")?.click();
     showToast("Demo balance refilled to 2,500 credits", "success");
   }},
-  { id: "nav-overview", title: "Overview (Run-Sheet)", group: "Navigation", icon: PALETTE_ICONS.overview, action: () => navTo("home") },
-  { id: "nav-players", title: "Leaderboard & Standings", group: "Navigation", icon: PALETTE_ICONS.leaderboard, action: () => navTo("board", "players") },
-  { id: "nav-setup", title: "Site Details & Schedule", group: "Navigation", icon: PALETTE_ICONS.details, action: () => navTo("board", "setup") },
-  { id: "nav-design", title: "Theme & Styling / Live Preview", group: "Navigation", icon: PALETTE_ICONS.design, action: () => navTo("board", "design") },
-  { id: "nav-games", title: "Mini-games & Interactive Simulator", group: "Navigation", icon: PALETTE_ICONS.games, action: () => location.href = "/dashboard/games" },
-  { id: "nav-analytics", title: "Traffic & Analytics", group: "Navigation", icon: PALETTE_ICONS.analytics, action: () => location.href = "/dashboard/analytics/activity" },
-  { id: "nav-rewards", title: "Rewards", group: "Navigation", icon: PALETTE_ICONS.rewards, action: () => location.href = "/dashboard/rewards/shop" },
-  { id: "nav-telegram", title: "Telegram Bot Console", group: "Navigation", icon: PALETTE_ICONS.bot, action: () => location.href = "/dashboard/telegram" },
-  { id: "nav-settings", title: "Site Settings & Domain", group: "Navigation", icon: PALETTE_ICONS.settings, action: () => location.href = "/dashboard/settings/board" },
-  { id: "nav-billing", title: "Plans & Billing", group: "Navigation", icon: PALETTE_ICONS.settings, action: () => location.href = "/dashboard/settings/plan" },
-  { id: "act-support", title: "Help & Support Drawer", group: "Support", icon: PALETTE_ICONS.help, action: () => $("openHelpDrawerBtn")?.click() }
+  { id: "nav-home", title: "Home", group: "Navigation", icon: PALETTE_ICONS.overview, keywords: "overview run-sheet", action: () => requestDashboardRoute("home") },
+  { id: "nav-board", title: "My leaderboard", group: "Navigation", icon: PALETTE_ICONS.leaderboard, keywords: "leaderboard standings", action: () => requestDashboardRoute("board", "players") },
+  { id: "nav-setup", title: "Basics", group: "Navigation", icon: PALETTE_ICONS.details, keywords: "site details schedule", action: () => requestDashboardRoute("board", "setup") },
+  { id: "nav-players", title: "Players & scores", group: "Navigation", icon: PALETTE_ICONS.leaderboard, keywords: "leaderboard standings", action: () => requestDashboardRoute("board", "players") },
+  { id: "nav-design", title: "Look", group: "Navigation", icon: PALETTE_ICONS.design, keywords: "theme styling live preview", action: () => requestDashboardRoute("board", "design") },
+  { id: "nav-share", title: "Share", group: "Navigation", icon: PALETTE_ICONS.share, action: () => requestDashboardRoute("board", "share") },
+  { id: "nav-history", title: "Past winners", group: "Navigation", icon: PALETTE_ICONS.leaderboard, keywords: "history", action: () => requestDashboardRoute("board", "history") },
+  { id: "nav-games", title: "Mini-games", group: "Navigation", icon: PALETTE_ICONS.games, keywords: "interactive simulator games", action: () => location.href = "/dashboard/games" },
+  { id: "nav-giveaways", title: "Giveaways", group: "Navigation", icon: PALETTE_ICONS.rewards, keywords: "raffles drops predictions", action: () => location.href = "/dashboard/giveaways/chat" },
+  { id: "nav-analytics", title: "How it's going", group: "Navigation", icon: PALETTE_ICONS.analytics, keywords: "traffic analytics visitors referrals events", action: () => location.href = "/dashboard/analytics/activity" },
+  { id: "nav-rewards", title: "Rewards", group: "Navigation", icon: PALETTE_ICONS.rewards, keywords: "shop orders points", action: () => location.href = "/dashboard/rewards/redemptions" },
+  { id: "nav-telegram", title: "Telegram", group: "Navigation", icon: PALETTE_ICONS.bot, keywords: "bot console", action: () => location.href = "/dashboard/telegram" },
+  { id: "nav-boards", title: "Your leaderboards", group: "Navigation", icon: PALETTE_ICONS.overview, keywords: "sites boards", action: () => location.href = "/dashboard/leaderboards" },
+  { id: "nav-settings", title: "Settings", group: "Navigation", icon: PALETTE_ICONS.settings, keywords: "site settings domain account", action: () => location.href = "/dashboard/settings" },
+  { id: "nav-site-settings", title: "This site", group: "Navigation", icon: PALETTE_ICONS.settings, keywords: "site settings domain", action: () => location.href = "/dashboard/settings/board" },
+  { id: "nav-plan", title: "Plan", group: "Navigation", icon: PALETTE_ICONS.settings, keywords: "plans billing", action: () => location.href = "/dashboard/settings/plan" },
+  { id: "act-support", title: "Help & support drawer", group: "Support", icon: PALETTE_ICONS.help, action: () => $("openHelpDrawerBtn")?.click() }
 ];
 
 let paletteEl = null;
@@ -141,7 +147,9 @@ function onSearchInput() {
     filteredCommands = [...COMMANDS];
   } else {
     filteredCommands = COMMANDS.filter((cmd) =>
-      cmd.title.toLowerCase().includes(query) || cmd.group.toLowerCase().includes(query)
+      cmd.title.toLowerCase().includes(query) ||
+      cmd.group.toLowerCase().includes(query) ||
+      (cmd.keywords || "").toLowerCase().includes(query)
     );
   }
   activeIndex = 0;
