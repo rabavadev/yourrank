@@ -132,6 +132,8 @@ export function SiteFooter() {
           <p className="mb-1 font-mono text-[11px] uppercase tracking-widest text-devin-ink-soft">Company</p>
           <a href="/pricing" className="text-devin-ink hover:text-devin-primary">Pricing</a>
           <a href="/switch" className="text-devin-ink hover:text-devin-primary">Why switch</a>
+          <a href="/about" className="text-devin-ink hover:text-devin-primary">About</a>
+          <a href="/docs" className="text-devin-ink hover:text-devin-primary">Docs</a>
           <a href="/faq" className="text-devin-ink hover:text-devin-primary">FAQ</a>
           <a href="/changelog" className="text-devin-ink hover:text-devin-primary">Changelog</a>
           <a href="/status" className="text-devin-ink hover:text-devin-primary">Status</a>
