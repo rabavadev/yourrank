@@ -957,7 +957,7 @@
   border-bottom: 1px solid var(--v4-line, #e2e8f0);
   padding-bottom: 12px;
 }
-.v3-dash[data-auth-workspace] .gw-tab-btn {
+.gw-tab-btn {
   display: inline-flex;
   align-items: center;
   gap: 8px;
@@ -972,15 +972,23 @@
   cursor: pointer;
   transition: all 140ms ease;
 }
-.v3-dash[data-auth-workspace] .gw-tab-btn:hover {
+.gw-tab-btn:hover {
   background: var(--v4-surface-soft, #f8fafc);
+}
+.gw-tab-btn.is-active {
+  background: #ffffff;
+  border-color: var(--v4-line, #e2e8f0);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+/* Tabs are anchors, so their ink has to outrank the workspace link colour. */
+.v3-dash[data-auth-workspace] .gw-tab-btn {
+  color: var(--v4-ink-soft, #64748b);
+}
+.v3-dash[data-auth-workspace] .gw-tab-btn:hover {
   color: var(--v4-ink, #0f172a);
 }
 .v3-dash[data-auth-workspace] .gw-tab-btn.is-active {
-  background: #ffffff;
-  border-color: var(--v4-line, #e2e8f0);
   color: var(--v4-cobalt, #2f6bff);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
 .gw-tab-pane { display: none; }
