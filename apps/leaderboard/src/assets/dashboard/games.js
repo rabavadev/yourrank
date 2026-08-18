@@ -47,6 +47,29 @@ function siteSections() {
   };
 }
 
+export function setGamesPreviewState(previewBtn, enabled, liveUrl) {
+  if (!previewBtn) return;
+  if (enabled && liveUrl) {
+    previewBtn.href = liveUrl;
+    previewBtn.setAttribute("target", "_blank");
+    previewBtn.setAttribute("rel", "noopener noreferrer");
+    previewBtn.textContent = "Open on Public Site ↗";
+    previewBtn.removeAttribute("aria-disabled");
+    previewBtn.removeAttribute("role");
+    previewBtn.removeAttribute("tabindex");
+    previewBtn.removeAttribute("title");
+    return;
+  }
+  previewBtn.removeAttribute("href");
+  previewBtn.removeAttribute("target");
+  previewBtn.removeAttribute("rel");
+  previewBtn.setAttribute("role", "button");
+  previewBtn.setAttribute("aria-disabled", "true");
+  previewBtn.setAttribute("tabindex", "0");
+  previewBtn.setAttribute("title", "Enable the Games section below to open the public Games page.");
+  previewBtn.textContent = "Games unavailable";
+}
+
 function renderSections() {
   const list = $("gamesSectionRows");
   if (!list) return;
@@ -89,6 +112,7 @@ async function saveSection(input) {
     const body = await res.json();
     if (!res.ok || !body.ok) throw new Error(body.error || "Could not save viewer pages.");
     state.EXTRA.siteSections = { ...state.EXTRA.siteSections, shop: next.shop, games: next.games, me: next.credits };
+    updateSimulator();
     setInlineSave(input, "Saved");
     showToast("Public page sections saved.", "success");
   } catch (err) {
@@ -242,6 +266,20 @@ async function loadGames() {
 
 let activeSimulatorGame = "mines";
 
+/**
+ * Point the simulator frame at `url` without touching the browser history:
+ * assigning `src` appends an entry to the joint session history, which pollutes
+ * Back and truncates the forward stack, so navigate the frame in place.
+ */
+function loadSimulatorFrame(iframe, url) {
+  const frameWindow = iframe.contentWindow;
+  if (frameWindow && typeof frameWindow.location?.replace === "function") {
+    frameWindow.location.replace(url);
+    return;
+  }
+  iframe.setAttribute("src", url);
+}
+
 function setSimulatorGame(gameId) {
   activeSimulatorGame = gameId || "mines";
   const siteId = state.ACTIVE_SITE_ID || "";
@@ -258,11 +296,11 @@ function setSimulatorGame(gameId) {
   if (iframe && embedUrl) {
     if (iframe.dataset.currentSrc !== embedUrl) {
       iframe.dataset.currentSrc = embedUrl;
-      iframe.src = embedUrl;
+      loadSimulatorFrame(iframe, embedUrl);
     }
   }
   if (popout && embedUrl) popout.href = embedUrl;
-  if (previewBtn) previewBtn.href = liveUrl;
+  setGamesPreviewState(previewBtn, siteSections().games && Boolean(slug), liveUrl);
 
   document.querySelectorAll("[data-preview-game]").forEach((tab) => {
     const isCurrent = tab.dataset.previewGame === activeSimulatorGame;
@@ -295,7 +333,7 @@ function setupSimulator() {
   resetBtn?.addEventListener("click", () => {
     const iframe = $("gamesSimulatorIframe");
     if (iframe && iframe.dataset.currentSrc) {
-      iframe.src = iframe.dataset.currentSrc + "&_t=" + Date.now();
+      loadSimulatorFrame(iframe, iframe.dataset.currentSrc + "&_t=" + Date.now());
       showToast("Demo balance reset to 2,500 credits", "success");
     }
   });

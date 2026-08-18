@@ -33,7 +33,7 @@ describe("signed-in shell navigation", () => {
       "/dashboard/giveaways",
       "/dashboard/rewards/redemptions",
       "/dashboard/audience/viewers",
-      "/dashboard/telegram",
+      "/bot/dashboard",
       "/dashboard/boards",
       "/dashboard/settings",
       "/help",
@@ -61,7 +61,6 @@ describe("signed-in shell navigation", () => {
       const styles = PAGES[key].config.styles;
       expect(styles.at(-1)).toBe("/assets/dashboard-v4.css");
     }
-    expect(String(PAGES.index)).not.toContain("/assets/dashboard-v4.css");
   });
 
   it("keeps one main landmark and a topbar drawer trigger", () => {
@@ -99,7 +98,7 @@ describe("signed-in shell navigation", () => {
     // Sites, Telegram, and Credits & Shop are peer products; the switcher always
     // shows all three so the operator can move between them from anywhere.
     expect(html).toContain('class="lb-product-link" href="/dashboard"');
-    expect(html).toContain('class="lb-product-link" href="/dashboard/telegram"');
+    expect(html).toContain('class="lb-product-link" href="/bot/dashboard"');
     expect(html).toContain('class="lb-product-link is-on" href="/dashboard/rewards/redemptions"');
     // Settings is a rail destination, not a product, so it is not repeated here.
     expect(html).not.toContain('class="lb-product-link" href="/dashboard/settings"');
@@ -114,7 +113,7 @@ describe("signed-in shell navigation", () => {
       "/dashboard/giveaways",
       "/dashboard/rewards/redemptions",
       "/dashboard/audience/viewers",
-      "/dashboard/telegram",
+      "/bot/dashboard",
       "/dashboard/boards",
       "/dashboard/settings",
       "/help",
@@ -139,7 +138,7 @@ describe("signed-in shell navigation", () => {
       "/dashboard/giveaways",
       "/dashboard/rewards/redemptions",
       "/dashboard/audience/viewers",
-      "/dashboard/telegram",
+      "/bot/dashboard",
       "/dashboard/boards",
       "/dashboard/settings",
       "/help",

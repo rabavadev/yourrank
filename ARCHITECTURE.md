@@ -2,6 +2,20 @@
 
 One platform for casino streamers. Two products, one account, one dashboard.
 
+## Frontend boundary
+
+There is one canonical application frontend: the `apps/leaderboard` Worker on
+`yourrank.site`. It owns the homepage entrypoint's surrounding application,
+marketing subpages, auth, dashboard, account/settings, help, admin, public
+boards, and APIs. `apps/web` is intentionally reduced to the animated
+marketing homepage only. The apex Worker proxies `/` and the homepage's
+`/_next/*` assets to that app.
+
+`app.yourrank.site` and `next.yourrank.site` do not serve application routes.
+They return a 301 to the equivalent apex path. The homepage proxy sends
+`x-yr-marketing: 1`; the Next middleware permits only marked requests so the
+internal proxy cannot loop.
+
 - **Leaderboards**: hosted, editable public leaderboard page per streamer at `yourrank.site/<slug>`.
 - **Telegram bots**: multi-tenant bot engine, promo-code delivery, tracked referral links, click/conversion analytics.
 

@@ -1,5 +1,12 @@
 // Tournament & Elimination Brackets Handlers.
-import { requireUser as defaultRequireUser, ok, bad, readJson } from "../auth.js";
+import {
+  requireUser as defaultRequireUser,
+  ok,
+  bad,
+  readJson,
+  rateLimit as defaultRateLimit,
+  clientIp as defaultClientIp,
+} from "../auth.js";
 import { getByUser as defaultGetByUser, getBoardById as defaultGetBoardById } from "../site.js";
 import { requireSiteCapability } from "../site-authorization.js";
 import {
@@ -9,6 +16,8 @@ import {
 } from "@yourrank/shared/db";
 import { logAudit as defaultLogAudit } from "@yourrank/shared/audit";
 
+const TOURNAMENT_READ_RATE_LIMIT = 60;
+
 /**
  * GET /api/tournaments — List tournaments for site
  */
@@ -16,7 +25,11 @@ export async function handleGetTournaments(request, env, deps = {}) {
   const {
     one = defaultOne,
     query = defaultQuery,
+    rateLimit = defaultRateLimit,
+    clientIp = defaultClientIp,
   } = deps;
+  const rl = await rateLimit(env, `tournaments:${clientIp(request)}`, TOURNAMENT_READ_RATE_LIMIT, 60);
+  if (!rl.ok) return bad("Rate limit exceeded. Try again shortly.", 429);
 
   const url = new URL(request.url);
   const siteSlugOrId = url.searchParams.get("site") || url.searchParams.get("siteId");
@@ -128,6 +141,7 @@ export async function handleUpdateMatchScore(request, env, deps = {}) {
     one = defaultOne,
     withTransaction = defaultWithTransaction,
     logAudit = defaultLogAudit,
+    requireSiteCapabilityImpl = requireSiteCapability,
   } = deps;
 
   const { user, res } = await requireUser(request, env);
@@ -142,15 +156,21 @@ export async function handleUpdateMatchScore(request, env, deps = {}) {
 
   const match = await one(
     `SELECT tm.id, tm.tournament_id, tm.round_number, tm.match_index, tm.player1_name, tm.player2_name,
-            t.site_id, t.bracket_size
-       FROM tournament_matches tm
-       JOIN tournaments t ON t.id = tm.tournament_id
-       JOIN sites s ON s.id = t.site_id
-      WHERE tm.id=$1 AND s.user_id=$2`,
-    [matchId, user.id]
+            t.site_id, t.bracket_size, s.user_id AS site_user_id
+      FROM tournament_matches tm
+      JOIN tournaments t ON t.id = tm.tournament_id
+      JOIN sites s ON s.id = t.site_id
+      WHERE tm.id=$1`,
+    [matchId]
   );
 
   if (!match) return bad("Match not found or unauthorized.", 404);
+  const authorization = await requireSiteCapabilityImpl(
+    user,
+    { id: match.site_id, user_id: match.site_user_id },
+    "canRoleManageBoard"
+  );
+  if (authorization.res) return authorization.res;
   if (p1Score === p2Score) return bad("Scores cannot be tied. A winner must be decided.", 400);
 
   const winnerName = p1Score > p2Score ? match.player1_name : match.player2_name;
@@ -219,7 +239,11 @@ export async function handleGetBracket(request, env, deps = {}) {
   const {
     one = defaultOne,
     query = defaultQuery,
+    rateLimit = defaultRateLimit,
+    clientIp = defaultClientIp,
   } = deps;
+  const rl = await rateLimit(env, `tournament-bracket:${clientIp(request)}`, TOURNAMENT_READ_RATE_LIMIT, 60);
+  if (!rl.ok) return bad("Rate limit exceeded. Try again shortly.", 429);
 
   const url = new URL(request.url);
   const tournamentId = url.pathname.split("/")[3] || url.searchParams.get("id");

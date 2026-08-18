@@ -7,6 +7,9 @@ Guidance for automated agents and new contributors working in this repo.
 - `apps/leaderboard` — public leaderboard + dashboard Worker (JavaScript, `src/`).
 - `apps/bot` — Telegram bot + streamer dashboard Worker (TypeScript, `src/`).
 - `apps/monitor` — uptime/monitor Worker.
+- `apps/web` — OpenNext marketing homepage only; the apex Leaderboard Worker
+  proxies `/` and `/_next/*` assets to it. `app.yourrank.site` and
+  `next.yourrank.site` redirect to the apex for unmarked requests.
 - `packages/shared/` — TypeScript modules shared across Workers and the Next.js app,
   built to `packages/shared/dist`. Edit the `.ts` and run `bun run --cwd packages/shared build`.
 - `e2e/` — end-to-end tests.

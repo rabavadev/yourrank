@@ -8,6 +8,7 @@ import {
 } from "@yourrank/shared/db";
 import { rateLimit as defaultRateLimit } from "@yourrank/shared/ratelimit";
 import { logAudit as defaultLogAudit } from "@yourrank/shared/audit";
+import { requireViewer as defaultRequireViewer } from "./viewer-auth.js";
 
 const DEFAULT_SEGMENTS = [
   { id: "s1", label: "+100 Pts", type: "points", value: 100, color: "#2f6bff", weight: 25 },
@@ -131,14 +132,18 @@ export async function handleSpinWheel(request, env, deps = {}) {
     one = defaultOne,
     withTransaction = defaultWithTransaction,
     rateLimit = defaultRateLimit,
+    requireViewer = defaultRequireViewer,
   } = deps;
+
+  const { viewer, res } = await requireViewer(request, env);
+  if (res) return res;
 
   const body = await readJson(request);
   const siteSlugOrId = String(body?.site || body?.siteId || "").trim();
-  const viewerId = String(body?.viewerId || "").trim();
+  const viewerId = viewer.id;
 
-  if (!siteSlugOrId || !viewerId) {
-    return bad("Site and viewerId are required.");
+  if (!siteSlugOrId) {
+    return bad("Site is required.");
   }
 
   // Rate limit spins per viewer/IP
@@ -177,10 +182,11 @@ export async function handleSpinWheel(request, env, deps = {}) {
 
   const outcome = await withTransaction(async (tx) => {
     // Deduct cost and add winning points
-    await tx.unsafe(
-      "UPDATE site_viewers SET balance = balance + $1, total_earned = total_earned + $2, updated_at=now() WHERE id=$3",
-      [pointsDelta, won.type === "points" ? won.value : 0, siteViewer.id]
+    const updatedViewer = await tx.one(
+      "UPDATE site_viewers SET balance = balance + $1, total_earned = total_earned + $2, updated_at=now() WHERE id=$3 AND balance >= $4 RETURNING id, balance",
+      [pointsDelta, won.type === "points" ? won.value : 0, siteViewer.id, spinCost]
     );
+    if (!updatedViewer) return { error: `Insufficient credits. You need ${spinCost} pts to spin (you have ${siteViewer.balance || 0} pts).`, status: 400 };
 
     // Record in wheel_spins history
     await tx.unsafe(
@@ -197,9 +203,10 @@ export async function handleSpinWheel(request, env, deps = {}) {
     );
 
     return {
-      newBalance: (siteViewer.balance || 0) + pointsDelta,
+      newBalance: updatedViewer.balance,
     };
   });
+  if (outcome.error) return bad(outcome.error, outcome.status);
 
   return ok({
     winningIndex,

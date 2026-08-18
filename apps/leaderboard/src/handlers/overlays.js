@@ -1,8 +1,16 @@
 // OBS Live Overlays & Audio-Visual Alerts Suite.
-import { ok, bad } from "../auth.js";
+import {
+  ok,
+  bad,
+  rateLimit as defaultRateLimit,
+  clientIp as defaultClientIp,
+} from "../auth.js";
 import {
   one as defaultOne,
 } from "@yourrank/shared/db";
+
+const OVERLAY_PAGE_RATE_LIMIT = 120;
+const ACTIVE_EVENTS_RATE_LIMIT = 120;
 
 function esc(str) {
   return String(str || "").replace(/[&<>"']/g, (c) => ({
@@ -14,7 +22,14 @@ function esc(str) {
  * GET /overlay/prediction — Transparent OBS Browser Source for active Prediction HUD
  */
 export async function handleOverlayPredictionPage(request, env, deps = {}) {
-  const { one = defaultOne } = deps;
+  const {
+    one = defaultOne,
+    rateLimit = defaultRateLimit,
+    clientIp = defaultClientIp,
+  } = deps;
+  const rl = await rateLimit(env, `overlay-prediction:${clientIp(request)}`, OVERLAY_PAGE_RATE_LIMIT, 60);
+  if (!rl.ok) return bad("Rate limit exceeded. Try again shortly.", 429);
+
   const url = new URL(request.url);
   const siteSlug = url.searchParams.get("site");
 
@@ -239,7 +254,14 @@ export async function handleOverlayPredictionPage(request, env, deps = {}) {
  * GET /overlay/alerts — Transparent OBS Browser Source for Audio-Visual Alerts & Sound effects
  */
 export async function handleOverlayAlertsPage(request, env, deps = {}) {
-  const { one = defaultOne } = deps;
+  const {
+    one = defaultOne,
+    rateLimit = defaultRateLimit,
+    clientIp = defaultClientIp,
+  } = deps;
+  const rl = await rateLimit(env, `overlay-alerts:${clientIp(request)}`, OVERLAY_PAGE_RATE_LIMIT, 60);
+  if (!rl.ok) return bad("Rate limit exceeded. Try again shortly.", 429);
+
   const url = new URL(request.url);
   const siteSlug = url.searchParams.get("site");
 
@@ -401,7 +423,11 @@ export async function handleOverlayAlertsPage(request, env, deps = {}) {
 export async function handleGetActiveEvents(request, env, deps = {}) {
   const {
     one = defaultOne,
+    rateLimit = defaultRateLimit,
+    clientIp = defaultClientIp,
   } = deps;
+  const rl = await rateLimit(env, `overlay-events:${clientIp(request)}`, ACTIVE_EVENTS_RATE_LIMIT, 60);
+  if (!rl.ok) return bad("Rate limit exceeded. Try again shortly.", 429);
 
   const url = new URL(request.url);
   const siteSlugOrId = url.searchParams.get("site") || url.searchParams.get("siteId");
@@ -421,12 +447,12 @@ export async function handleGetActiveEvents(request, env, deps = {}) {
 
   // 2. Latest redemption / alert
   const latestRedemption = await one(
-    `SELECT r.id, r.created_at, v.username, s.title
+    `SELECT r.id, r.created_at, v.kick_username, i.name AS item_name
        FROM redemptions r
        JOIN site_viewers sv ON sv.id = r.site_viewer_id
        JOIN viewers v ON v.id = sv.viewer_id
-       JOIN shop_items s ON s.id = r.shop_item_id
-      WHERE r.site_id=$1
+       JOIN shop_items i ON i.id = r.shop_item_id
+      WHERE sv.site_id=$1
       ORDER BY r.created_at DESC LIMIT 1`,
     [site.id]
   );
@@ -436,8 +462,8 @@ export async function handleGetActiveEvents(request, env, deps = {}) {
     latestAlert = {
       id: latestRedemption.id,
       title: "Reward Redeemed!",
-      username: latestRedemption.username,
-      description: latestRedemption.title,
+      username: latestRedemption.kick_username,
+      description: latestRedemption.item_name,
       icon: "🎁",
       time: latestRedemption.created_at,
     };

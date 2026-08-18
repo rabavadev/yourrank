@@ -9,6 +9,8 @@ import {
   withTransaction as defaultWithTransaction,
 } from "@yourrank/shared/db";
 import { logAudit as defaultLogAudit } from "@yourrank/shared/audit";
+import { requireViewer as defaultRequireViewer } from "./viewer-auth.js";
+import { rateLimit as defaultRateLimit } from "@yourrank/shared/ratelimit";
 
 /**
  * GET /api/predictions — List predictions for the site
@@ -343,17 +345,25 @@ export async function handlePlaceBet(request, env, deps = {}) {
   const {
     one = defaultOne,
     withTransaction = defaultWithTransaction,
+    requireViewer = defaultRequireViewer,
+    rateLimit = defaultRateLimit,
   } = deps;
+
+  const { viewer, res } = await requireViewer(request, env);
+  if (res) return res;
 
   const body = await readJson(request);
   const predictionId = String(body?.predictionId || "").trim();
   const optionId = String(body?.optionId || "").trim().toLowerCase();
   const amount = parseInt(body?.amount, 10) || 0;
-  const viewerId = String(body?.viewerId || "").trim();
+  const viewerId = viewer.id;
 
-  if (!predictionId || !optionId || amount <= 0 || !viewerId) {
-    return bad("Prediction, option, positive amount, and viewerId are required.");
+  if (!predictionId || !optionId || amount <= 0) {
+    return bad("Prediction, option, and positive amount are required.");
   }
+
+  const rl = await rateLimit(env, `prediction:bet:${viewerId}`, 30, 60);
+  if (!rl.ok) return bad("Too many attempts. Please wait a minute.", 429);
 
   const pred = await one(
     "SELECT id, site_id, title, options, status, min_bet, max_bet, lock_at FROM predictions WHERE id=$1",
@@ -383,10 +393,11 @@ export async function handlePlaceBet(request, env, deps = {}) {
 
   const outcome = await withTransaction(async (tx) => {
     // Deduct viewer balance
-    await tx.unsafe(
-      "UPDATE site_viewers SET balance = balance - $1, updated_at=now() WHERE id=$2",
+    const updatedViewer = await tx.one(
+      "UPDATE site_viewers SET balance = balance - $1, updated_at=now() WHERE id=$2 AND balance >= $1 RETURNING id, balance",
       [amount, siteViewer.id]
     );
+    if (!updatedViewer) return { error: `Insufficient credits. You have ${siteViewer.balance || 0} pts.`, status: 400 };
 
     // Insert bet
     const bet = await tx.one(
@@ -423,10 +434,11 @@ export async function handlePlaceBet(request, env, deps = {}) {
     return {
       betId: bet.id,
       amount,
-      newBalance: siteViewer.balance - amount,
+      newBalance: updatedViewer.balance,
       options: updatedOpts,
     };
   });
+  if (outcome.error) return bad(outcome.error, outcome.status);
 
   return ok({
     betId: outcome.betId,

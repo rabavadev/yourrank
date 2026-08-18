@@ -5,6 +5,8 @@ import {
   query as defaultQuery,
   withTransaction as defaultWithTransaction,
 } from "@yourrank/shared/db";
+import { requireViewer as defaultRequireViewer } from "./viewer-auth.js";
+import { rateLimit as defaultRateLimit } from "@yourrank/shared/ratelimit";
 
 function getCryptoRandomRoll() {
   const arr = new Uint32Array(1);
@@ -30,9 +32,9 @@ export async function handleGetDuels(request, env, deps = {}) {
 
   const duels = await query(
     `SELECT d.id, d.wager_amount, d.status, d.roll_details, d.created_at, d.expires_at,
-            vc.username AS challenger_name,
-            vt.username AS target_name,
-            vw.username AS winner_name
+            vc.kick_username AS challenger_name,
+            vt.kick_username AS target_name,
+            vw.kick_username AS winner_name
        FROM viewer_duels d
        JOIN viewers vc ON vc.id = d.challenger_viewer_id
        JOIN viewers vt ON vt.id = d.target_viewer_id
@@ -52,17 +54,25 @@ export async function handleCreateDuel(request, env, deps = {}) {
   const {
     one = defaultOne,
     withTransaction = defaultWithTransaction,
+    requireViewer = defaultRequireViewer,
+    rateLimit = defaultRateLimit,
   } = deps;
+
+  const { viewer, res } = await requireViewer(request, env);
+  if (res) return res;
 
   const body = await readJson(request);
   const siteSlugOrId = String(body?.site || body?.siteId || "").trim();
-  const challengerViewerId = String(body?.challengerViewerId || "").trim();
+  const challengerViewerId = viewer.id;
   const targetUsername = String(body?.targetUsername || "").trim().toLowerCase();
   const wagerAmount = parseInt(body?.wagerAmount, 10) || 0;
 
-  if (!siteSlugOrId || !challengerViewerId || !targetUsername || wagerAmount <= 0) {
-    return bad("site, challengerViewerId, targetUsername, and positive wagerAmount are required.");
+  if (!siteSlugOrId || !targetUsername || wagerAmount <= 0) {
+    return bad("site, targetUsername, and positive wagerAmount are required.");
   }
+
+  const rl = await rateLimit(env, `duel:create:${challengerViewerId}`, 10, 60);
+  if (!rl.ok) return bad("Too many attempts. Please wait a minute.", 429);
 
   const site = await one("SELECT id, name FROM sites WHERE slug=$1 OR id::text=$1", [siteSlugOrId]);
   if (!site) return bad("Site not found.", 404);
@@ -76,7 +86,7 @@ export async function handleCreateDuel(request, env, deps = {}) {
     return bad(`Insufficient credits. You need ${wagerAmount} pts to challenge (you have ${challengerSv.balance || 0} pts).`);
   }
 
-  const targetViewer = await one("SELECT id, username FROM viewers WHERE lower(username)=$1", [targetUsername]);
+  const targetViewer = await one("SELECT id, kick_username FROM viewers WHERE lower(kick_username)=$1", [targetUsername]);
   if (!targetViewer) return bad(`Viewer @${targetUsername} not found.`, 404);
   if (targetViewer.id === challengerViewerId) return bad("You cannot duel yourself!", 400);
 
@@ -87,11 +97,11 @@ export async function handleCreateDuel(request, env, deps = {}) {
   }
 
   const result = await withTransaction(async (tx) => {
-    // Lock challenger balance
-    await tx.unsafe(
-      "UPDATE site_viewers SET balance = balance - $1, updated_at=now() WHERE id=$2",
+    const updatedChallenger = await tx.one(
+      "UPDATE site_viewers SET balance = balance - $1, updated_at=now() WHERE id=$2 AND balance >= $1 RETURNING id, balance",
       [wagerAmount, challengerSv.id]
     );
+    if (!updatedChallenger) return { error: `Insufficient credits. You need ${wagerAmount} pts to challenge (you have ${challengerSv.balance || 0} pts).`, status: 400 };
 
     const duel = await tx.one(
       `INSERT INTO viewer_duels (site_id, challenger_viewer_id, challenger_site_viewer_id, target_viewer_id, target_site_viewer_id, wager_amount)
@@ -103,15 +113,16 @@ export async function handleCreateDuel(request, env, deps = {}) {
     await tx.unsafe(
       `INSERT INTO credit_ledger (site_viewer_id, type, amount, description)
        VALUES ($1, 'bet', $2, $3)`,
-      [challengerSv.id, -wagerAmount, `Duel Challenge against @${targetViewer.username} (${wagerAmount} pts)`]
+      [challengerSv.id, -wagerAmount, `Duel Challenge against @${targetViewer.kick_username} (${wagerAmount} pts)`]
     );
 
-    return duel;
+    return { duel, balance: updatedChallenger.balance };
   });
+  if (result.error) return bad(result.error, result.status);
 
   return ok({
-    duel: result,
-    message: `⚔️ Duel challenge sent to @${targetViewer.username} for ${wagerAmount} pts! Waiting for acceptance...`,
+    duel: result.duel,
+    message: `⚔️ Duel challenge sent to @${targetViewer.kick_username} for ${wagerAmount} pts! Waiting for acceptance...`,
   });
 }
 
@@ -122,18 +133,26 @@ export async function handleAcceptDuel(request, env, deps = {}) {
   const {
     one = defaultOne,
     withTransaction = defaultWithTransaction,
+    requireViewer = defaultRequireViewer,
+    rateLimit = defaultRateLimit,
   } = deps;
+
+  const { viewer, res } = await requireViewer(request, env);
+  if (res) return res;
 
   const body = await readJson(request);
   const duelId = String(body?.duelId || "").trim();
-  const targetViewerId = String(body?.viewerId || "").trim();
+  const targetViewerId = viewer.id;
 
-  if (!duelId || !targetViewerId) return bad("duelId and viewerId are required.");
+  if (!duelId) return bad("duelId is required.");
+
+  const rl = await rateLimit(env, `duel:accept:${targetViewerId}`, 10, 60);
+  if (!rl.ok) return bad("Too many attempts. Please wait a minute.", 429);
 
   const duel = await one(
     `SELECT d.id, d.site_id, d.challenger_viewer_id, d.challenger_site_viewer_id,
             d.target_viewer_id, d.target_site_viewer_id, d.wager_amount, d.status,
-            vc.username AS challenger_name, vt.username AS target_name
+            vc.kick_username AS challenger_name, vt.kick_username AS target_name
        FROM viewer_duels d
        JOIN viewers vc ON vc.id = d.challenger_viewer_id
        JOIN viewers vt ON vt.id = d.target_viewer_id
@@ -171,12 +190,12 @@ export async function handleAcceptDuel(request, env, deps = {}) {
     target_name: duel.target_name,
   };
 
-  await withTransaction(async (tx) => {
-    // 1. Deduct target balance
-    await tx.unsafe(
-      "UPDATE site_viewers SET balance = balance - $1, updated_at=now() WHERE id=$2",
+  const result = await withTransaction(async (tx) => {
+    const updatedTarget = await tx.one(
+      "UPDATE site_viewers SET balance = balance - $1, updated_at=now() WHERE id=$2 AND balance >= $1 RETURNING id, balance",
       [duel.wager_amount, targetSv.id]
     );
+    if (!updatedTarget) return { error: `Insufficient credits. You need ${duel.wager_amount} pts to accept.`, status: 400 };
 
     // 2. Award total pot to winner
     await tx.unsafe(
@@ -204,7 +223,9 @@ export async function handleAcceptDuel(request, env, deps = {}) {
         WHERE id=$3`,
       [winnerViewerId, JSON.stringify(rollDetails), duel.id]
     );
+    return { balance: updatedTarget.balance };
   });
+  if (result.error) return bad(result.error, result.status);
 
   return ok({
     duelId: duel.id,
@@ -223,13 +244,21 @@ export async function handleDeclineDuel(request, env, deps = {}) {
   const {
     one = defaultOne,
     withTransaction = defaultWithTransaction,
+    requireViewer = defaultRequireViewer,
+    rateLimit = defaultRateLimit,
   } = deps;
+
+  const { viewer, res } = await requireViewer(request, env);
+  if (res) return res;
 
   const body = await readJson(request);
   const duelId = String(body?.duelId || "").trim();
-  const viewerId = String(body?.viewerId || "").trim();
+  const viewerId = viewer.id;
 
-  if (!duelId || !viewerId) return bad("duelId and viewerId are required.");
+  if (!duelId) return bad("duelId is required.");
+
+  const rl = await rateLimit(env, `duel:decline:${viewerId}`, 10, 60);
+  if (!rl.ok) return bad("Too many attempts. Please wait a minute.", 429);
 
   const duel = await one(
     "SELECT id, challenger_site_viewer_id, challenger_viewer_id, target_viewer_id, wager_amount, status FROM viewer_duels WHERE id=$1",

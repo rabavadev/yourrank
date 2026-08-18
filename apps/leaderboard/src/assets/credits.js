@@ -2,7 +2,7 @@ import { showConfirmModal, showPromptModal, ListController, logError, clearLoadE
 import { openDrawer, closeDrawer } from "./dashboard/shell.js";
 import { setState } from "./dashboard/state.js";
 import { UNKNOWN, emptyStateHtml, renderEmpty, renderError, setBlockLoading, setMetricLoading, setRowsLoading } from "./dashboard/states.js";
-import { updateProfileMenu } from "./dashboard/profile-menu.js";
+import { loadBoardShell, preserveSiteContextLinks, sitePath, siteQuery } from "./dashboard/board-shell.js";
 import "./dashboard/help-drawer.js";
 import "./dashboard/command-palette.js";
 
@@ -30,44 +30,6 @@ let shopSearch = "";
 let shopSort = "cost";
 let wired = false;
 const tab = () => $("cr-app")?.dataset.crTab || "";
-const siteQuery = () => new URLSearchParams(location.search).get("siteId");
-const sitePath = (path) => `${path}${siteQuery() ? `${path.includes("?") ? "&" : "?"}siteId=${encodeURIComponent(siteQuery())}` : ""}`;
-function preserveSiteContextLinks() {
-  const siteId = siteQuery() || activeSiteId;
-  if (!siteId) return;
-  const sitesLink = document.querySelector('[data-product-link="sites"]');
-  if (sitesLink) sitesLink.href = `/dashboard?board=${encodeURIComponent(siteId)}`;
-  const creditsLink = document.querySelector('[data-product-link="credits"]');
-  if (creditsLink) creditsLink.href = `/dashboard/rewards/redemptions?siteId=${encodeURIComponent(siteId)}`;
-  const creditsDestinations = new Set([
-    "/dashboard/rewards/redemptions",
-    "/dashboard/rewards/shop",
-    "/dashboard/rewards/rules",
-    "/dashboard/audience/viewers",
-    "/dashboard/audience/activity",
-    "/dashboard/rewards/channel",
-  ]);
-  const siteDestinations = new Set([
-    "/dashboard",
-    "/dashboard/games",
-    "/dashboard/analytics/activity",
-    "/dashboard/settings/board",
-    "/dashboard/boards",
-  ]);
-  document.querySelectorAll("a[href]").forEach((link) => {
-    const raw = link.getAttribute("href");
-    if (!raw || raw.startsWith("#")) return;
-    const target = new URL(raw, location.origin);
-    if (creditsDestinations.has(target.pathname) && !target.searchParams.has("siteId")) {
-      target.searchParams.set("siteId", siteId);
-    } else if ((siteDestinations.has(target.pathname) || target.pathname.startsWith("/dashboard/editor/")) && !target.searchParams.has("board")) {
-      target.searchParams.set("board", siteId);
-    } else {
-      return;
-    }
-    link.href = `${target.pathname}${target.search}${target.hash}`;
-  });
-}
 function setStatus(id, msg, error = false) { const el = $(id); if (!el) return; el.textContent = msg; el.className = error ? "status error" : "status"; if (!error) setTimeout(() => { el.textContent = ""; }, 3000); }
 function setLoading(idOrEl, loading, text = "Loading…") {
   const el = typeof idOrEl === "string" ? $(idOrEl) : idOrEl;
@@ -126,39 +88,6 @@ function wireShell() {
   const backdrop = document.querySelector(".lb-backdrop") || document.body.appendChild(Object.assign(document.createElement("div"), { className: "lb-backdrop" }));
   $("lbMenu")?.addEventListener("click", () => openDrawer()); document.querySelector("[data-close-side]")?.addEventListener("click", () => closeDrawer()); backdrop.addEventListener("click", () => closeDrawer());
   document.addEventListener("keydown", (e) => { if (e.key === "Escape" && $("lbSide")?.classList.contains("is-open")) closeDrawer(); });
-}
-async function loadBoardShell() {
-  const [me, boards] = await Promise.all([api("GET", "/api/auth/me"), api("GET", "/api/site/list")]);
-  const user = me.user || {}; updateProfileMenu(user);
-  const list = boards.sites || boards.boards || boards || []; const current = siteQuery() || list[0]?.id || list[0]?.siteId; const select = $("sidebarBoardSelect");
-  activeSiteId = current || "";
-  if (select) { select.innerHTML = list.map((b) => `<option value="${esc(b.id || b.siteId)}" ${String(b.id || b.siteId) === String(current) ? "selected" : ""}>${esc(b.name || b.slug || "Board")}</option>`).join(""); select.addEventListener("change", () => { location.href = `${location.pathname}?siteId=${encodeURIComponent(select.value)}`; }); }
-  const board = list.find((b) => String(b.id || b.siteId) === String(current)) || list[0] || {};
-  $("activeBoardName").textContent = board.name || board.slug || "Site"; $("activeBoardMeta").textContent = board.slug ? `yourrank.site/${board.slug}` : "";
-  const topbarPath = $("lbTopbarSitePath"); if (topbarPath) topbarPath.textContent = board.slug ? `/${board.slug}` : "";
-  const live = Boolean(board.published) && user.emailVerified !== false;
-  const pendingVerification = Boolean(board.published) && user.emailVerified === false;
-  const status = $("lbTopbarStatus");
-  if (status) {
-    status.textContent = live ? "Public" : pendingVerification ? "Email verification needed" : "Private";
-    status.className = `lb-status ${live ? "lb-status--live" : pendingVerification ? "lb-status--pending" : "lb-status--draft"}`;
-  }
-  $("planBadge").textContent = `${String(board.plan || user.plan || "free").toUpperCase()} PLAN`;
-  const publicLink = $("liveLink");
-  if (publicLink) {
-    if (live && board.slug) {
-      publicLink.href = `/${board.slug}`;
-      publicLink.textContent = "Open public page ↗";
-      publicLink.target = "_blank";
-      publicLink.rel = "noopener noreferrer";
-    } else {
-      publicLink.href = pendingVerification ? "/verify-email" : `/dashboard/editor/share?board=${encodeURIComponent(current || "")}`;
-      publicLink.textContent = pendingVerification ? "Verify email to publish" : "Publish your site";
-      publicLink.removeAttribute("target");
-      publicLink.removeAttribute("rel");
-    }
-  }
-  preserveSiteContextLinks();
 }
 function renderShellUsage() {
   const used = state.usage?.redemptionsPer30Days;
@@ -491,7 +420,8 @@ async function load() {
   redemptionCtrl?.setLoading(true);
   setGlobalLoading(true);
   try {
-    await loadBoardShell();
+    const shell = await loadBoardShell({ request: api });
+    activeSiteId = shell.activeSiteId;
     state = await api("GET", sitePath("/api/credits/status"));
     setState({ CREDITS_STATUS: "ready" });
     render();

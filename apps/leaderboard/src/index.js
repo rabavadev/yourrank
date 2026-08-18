@@ -37,6 +37,7 @@ import { applyLegalIdentity } from "./pages/legal-helper.js";
 import { hashToken, newClickRef } from "@yourrank/shared/crypto";
 import { handleDashboardPreview } from "./handlers/preview.js";
 import { demoLeaderboardData } from "./demo-data.js";
+import { legacyTelegramRedirect } from "./telegram-routes.js";
 
 // Sections the virtual /demo board renders. `games` is off in the demo data,
 // so its shell never links there.
@@ -54,6 +55,9 @@ import { deferClickWrite, trackedDestination } from "./tracked-redirect.js";
 import { setRequestMetrics } from "@yourrank/shared/request-id";
 import { evaluateConsumerHealth } from "./consumer-health.js";
 import { readDlqHealth } from "./dlq-health.js";
+import { proxyMarketingHome } from "./marketing-proxy.js";
+import { redirectToLogin } from "./login-redirect.js";
+import { safeNextPath } from "@yourrank/shared/safe-next";
 
 const LEGAL_PAGES = new Set(["terms", "privacy", "responsible", "cookies", "refund", "contact"]);
 const NON_SITE_PATHS = new Set([
@@ -589,7 +593,7 @@ async function handleRequest(request, env, ctx, meta) {
       const renderDashboardPage = async (pageKey, logLabel) => {
         try {
           const user = await currentUser(request, env);
-          if (!user) return Response.redirect(new URL("/login", url), 302);
+          if (!user) return redirectToLogin(url);
           const html = addCookieConsent(await renderHtmlPage(PAGES[pageKey], {
             activePath: url.pathname + url.search,
             user,
@@ -609,11 +613,11 @@ async function handleRequest(request, env, ctx, meta) {
       const csrfToken = generateCsrfToken();
       const csrfHeader = { "set-cookie": csrfCookie(csrfToken) };
 
+      if (host === PLATFORM_HOST && path.startsWith("/_next/")) {
+        return proxyMarketingHome({ request, binding: env.MARKETING, workerLog });
+      }
       if (path === "/" || path === "/index.html") {
-        if (host === PLATFORM_HOST) {
-          return Response.redirect("https://app.yourrank.site/", 301);
-        }
-        return new Response(addCookieConsent(await renderHtmlPage(PAGES.index)), { headers: { ...HTML_N, ...csrfHeader } });
+        return proxyMarketingHome({ request, binding: env.MARKETING, workerLog });
       }
       if (path === "/login" || path === "/login.html") return new Response(addCookieConsent(await renderHtmlPage(PAGES.login)), { headers: { ...SECURE_HTML, ...csrfHeader } });
       // POST /logout only (BE-003). Previously GET, which allowed CSRF via
@@ -636,9 +640,7 @@ async function handleRequest(request, env, ctx, meta) {
             const user = await currentUser(request, env);
             if (user) {
               const next = url.searchParams.get("next") || "";
-              const safeNext = next.startsWith("/") && !next.startsWith("//") && !/^[a-z][a-z\d+.-]*:/i.test(next)
-                ? next
-                : "/dashboard?verified=1";
+              const safeNext = safeNextPath(next, "/dashboard?verified=1");
               return Response.redirect(new URL(safeNext, url), 302);
             }
             verifyState = { message: "Email confirmed. Sign in below to finish setting up your page." };
@@ -688,7 +690,7 @@ async function handleRequest(request, env, ctx, meta) {
           : pathTab;
         const tab = ["account", "team", "plan", "connections", "data"].includes(requestedTab) ? requestedTab : "account";
         const user = await currentUser(request, env);
-        if (!user) return Response.redirect(new URL("/login", url), 302);
+        if (!user) return redirectToLogin(url);
         const html = addCookieConsent(await renderHtmlPage(PAGES.settingsUnified, {
           activePath: url.pathname + url.search,
           user,
@@ -729,7 +731,7 @@ async function handleRequest(request, env, ctx, meta) {
         }
         try {
           const user = await currentUser(request, env);
-          if (!user) return Response.redirect(new URL("/login", url), 302);
+          if (!user) return redirectToLogin(url);
           const html = addCookieConsent(await renderHtmlPage(PAGES.dashboard, {
             activePath: url.pathname + url.search,
             user,
@@ -765,24 +767,10 @@ async function handleRequest(request, env, ctx, meta) {
           return new Response(error500Page(nonce), { status: 500, headers: HTML_N });
         }
       }
-      // Telegram Bot Workspace routes
-      if (path === "/dashboard/telegram" || path === "/dashboard/telegram/overview" || path === "/bot/dashboard") {
-        return renderDashboardPage("telegramOverview", "telegram_render_failed");
-      }
-      if (path === "/dashboard/telegram/bots" || path === "/bot/bots") {
-        return renderDashboardPage("telegramBots", "telegram_render_failed");
-      }
-      if (path === "/dashboard/telegram/commands" || path === "/bot/commands") {
-        return renderDashboardPage("telegramCommands", "telegram_render_failed");
-      }
-      if (path === "/dashboard/telegram/offers" || path === "/bot/offers") {
-        return renderDashboardPage("telegramOffers", "telegram_render_failed");
-      }
-      if (path === "/dashboard/telegram/broadcasts" || path === "/bot/broadcasts") {
-        return renderDashboardPage("telegramBroadcasts", "telegram_render_failed");
-      }
-      if (path === "/dashboard/bot/setup" || path === "/bot") {
-        return Response.redirect(new URL("/dashboard/telegram", url), 302);
+      // Telegram now lives in the Bot Worker; preserve old leaderboard URLs.
+      const telegramTarget = legacyTelegramRedirect(path);
+      if (telegramTarget) {
+        return Response.redirect(new URL(telegramTarget + url.search, url), 301);
       }
       if (path === "/dashboard/setup") {
         return Response.redirect(new URL("/dashboard", url), 302);

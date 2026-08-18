@@ -1,4 +1,5 @@
 import { headers } from "next/headers";
+import { redirect } from "next/navigation";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 import {
   currentUser,
@@ -6,6 +7,7 @@ import {
   type UserRecord,
   type SessionEnv,
 } from "@yourrank/shared/session";
+import { safeNextPath } from "@yourrank/shared/safe-next";
 
 function getDatabaseUrl(env: Record<string, unknown>): string {
   const hyperdrive = env.HYPERDRIVE as { connectionString?: string } | undefined;
@@ -44,6 +46,15 @@ export async function getCurrentUser(): Promise<UserRecord | null> {
   };
 
   return currentUser(request, sessionEnv);
+}
+
+export async function requireCurrentUser(
+  currentPath: string,
+  user?: UserRecord | null,
+): Promise<UserRecord> {
+  const resolvedUser = user === undefined ? await getCurrentUser() : user;
+  if (resolvedUser) return resolvedUser;
+  redirect(`/login?next=${encodeURIComponent(safeNextPath(currentPath))}`);
 }
 
 export { COOKIE_NAME, type UserRecord };

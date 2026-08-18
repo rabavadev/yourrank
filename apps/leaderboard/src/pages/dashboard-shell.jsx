@@ -7,7 +7,6 @@ import { crumbsHtml, navListHtml } from "@yourrank/shared/dashboard-chrome";
 import { brandMarkSvg } from "@yourrank/shared/brand-assets";
 
 const CREDITS_NAV_KEYS = new Set(["credits", "channel", "redemptions", "shop", "rules", "viewers", "history", "rewards", "audience"]);
-const TELEGRAM_NAV_KEYS = new Set(["telegram", "tg_overview", "tg_bots", "tg_commands", "tg_offers", "tg_broadcasts"]);
 
 const DESIGN_CONTRACT = `<!--
 THESIS: A creator run-sheet workspace turns dashboard state into the next clear action; it refuses the generic dark tile wall.
@@ -33,10 +32,6 @@ const NAV_ICONS = {
   activity: '<path d="M3 12h4l2-6 4 12 2-6h6"/>',
   channel: '<path d="M8 12a4 4 0 0 1 4-4h3a4 4 0 0 1 0 8h-3"/><path d="M16 12a4 4 0 0 1-4 4H9a4 4 0 0 1 0-8h3"/>',
   giveaways: '<path d="M20 12v10H4V12"/><path d="M2 7h20v5H2z"/><path d="M12 22V7"/><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/>',
-  tg_bots: '<rect width="16" height="12" x="4" y="8" rx="2"/><path d="M12 2v6M9 2h6M2 14h2M20 14h2M9 13v2M15 13v2"/>',
-  tg_commands: '<rect width="18" height="18" x="3" y="3" rx="3"/><path d="m8 10 2 2-2 2M13 14h3"/>',
-  tg_offers: '<path d="M12 2H2v10l9.29 9.29c.94.94 2.48.94 3.42 0l6.58-6.58c.94-.94.94-2.48 0-3.42L12 2Z"/><circle cx="7" cy="7" r=".5" fill="currentColor"/>',
-  tg_broadcasts: '<path d="m3 11 18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/>',
   help: '<circle cx="12" cy="12" r="10"/><path d="M9.1 9a3 3 0 1 1 5.8 1c0 2-3 2-3 4M12 18h.01"/>'
 };
 
@@ -53,8 +48,7 @@ const DASHBOARD_NAV = [
   ["giveaways", "Live giveaways", "/dashboard/giveaways", NAV_ICONS.giveaways],
   ["redemptions", "Rewards & shop", "/dashboard/rewards/redemptions", NAV_ICONS.shop],
   ["viewers", "Viewer points & stats", "/dashboard/audience/viewers", NAV_ICONS.viewers],
-  { type: "group", label: "TELEGRAM BOT" },
-  ["telegram", "Telegram bot", "/dashboard/telegram", NAV_ICONS.tg_bots],
+  ["telegram", "Telegram bot", "/bot/dashboard", NAV_ICONS.share],
   { type: "group", label: "SETTINGS & SITES" },
   ["boards", "Sites & integrations", "/dashboard/boards", NAV_ICONS.boards],
   ["account", "Account & billing", "/dashboard/settings", GEAR_ICON],
@@ -76,7 +70,6 @@ export function mapActiveNav(nav, hash) {
   if (nav === "giveaways") return "giveaways";
   if (nav === "redemptions" || nav === "shop" || nav === "rules" || nav === "channel" || nav === "rewards") return "redemptions";
   if (nav === "viewers" || nav === "activity" || nav === "performance" || nav === "audience" || nav === "history") return "viewers";
-  if (nav === "telegram" || nav === "tg_overview" || nav === "tg_bots" || nav === "tg_commands" || nav === "tg_offers" || nav === "tg_broadcasts") return "telegram";
   if (nav === "boards" || nav === "settings") return "boards";
   if (nav === "account") return "account";
   if (nav === "help") return "help";
@@ -129,7 +122,7 @@ const PRODUCT_NAV_KEYS = new Set(["sites", "telegram", "credits"]);
 const PRODUCT_MARKS = { sites: "S", telegram: "T", credits: "C" };
 
 function ProductNav({ boardContext, footer }) {
-  const activePath = boardContext === "none" ? "/dashboard/settings" : footer === "telegram" ? "/dashboard/telegram" : footer === "rewards" ? "/dashboard/rewards/redemptions" : "/dashboard";
+  const activePath = boardContext === "none" ? "/dashboard/settings" : footer === "rewards" ? "/dashboard/rewards/redemptions" : "/dashboard";
   const active = activeKey(activePath);
   return <nav class="lb-product-nav" aria-label="YourRank products">
     <span class="label">Products</span>
@@ -148,7 +141,7 @@ function SidebarFooter({ boardContext, footer, profile }) {
 }
 
 export function DashboardShell({ activeNav = "home", activeHash = "", boardContext = "full", footer = "dashboard", title = "", crumbs = null, rootId, initiallyHidden = false, user, children }) {
-  const activePath = boardContext === "none" ? "/dashboard/settings" : TELEGRAM_NAV_KEYS.has(activeNav) ? "/dashboard/telegram" : CREDITS_NAV_KEYS.has(activeNav) ? "/dashboard/rewards/redemptions" : "/dashboard";
+  const activePath = boardContext === "none" ? "/dashboard/settings" : CREDITS_NAV_KEYS.has(activeNav) ? "/dashboard/rewards/redemptions" : "/dashboard";
   const shellId = rootId || (boardContext === "none" ? "account-dash" : "dash");
   const profile = profileMenuHtml({ activePath, user, standalone: true, dynamicIdentity: true });
 
@@ -199,17 +192,15 @@ export function DashboardShell({ activeNav = "home", activeHash = "", boardConte
             <div class="lb-topbar-hud">
               <div class="lb-account-hud">
                 <span class="lb-hud-icon" aria-hidden="true">
-                  {footer === "telegram" ? (
-                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>
-                  ) : footer === "help" ? (
+                  {footer === "help" ? (
                     <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.1 9a3 3 0 1 1 5.8 1c0 2-3 2-3 4M12 18h.01"/></svg>
                   ) : (
                     <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
                   )}
                 </span>
                 <div class="lb-hud-details">
-                  <span class="lb-board-select-lbl">{footer === "telegram" ? "Telegram Bot Workspace" : footer === "help" ? "Help & Support" : "Account Settings"}</span>
-                  <span class="lb-account-title">{title || (footer === "telegram" ? "Telegram workspace" : "Account settings")}</span>
+                  <span class="lb-board-select-lbl">{footer === "help" ? "Help & Support" : "Account Settings"}</span>
+                  <span class="lb-account-title">{title || "Account settings"}</span>
                 </div>
               </div>
             </div>

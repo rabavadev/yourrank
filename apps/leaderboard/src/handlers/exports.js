@@ -95,12 +95,12 @@ export async function handleExportDropClaimsCsv(request, env, deps = {}) {
   if (authorization.res) return authorization.res;
 
   const claims = await query(
-    `SELECT cd.code, cd.points_reward, v.username, cdc.claimed_at
+    `SELECT cd.code, cd.points_reward, v.kick_username AS username, cdc.created_at AS claimed_at
        FROM code_drop_claims cdc
        JOIN code_drops cd ON cd.id = cdc.code_drop_id
        JOIN viewers v ON v.id = cdc.viewer_id
       WHERE cd.site_id=$1
-      ORDER BY cdc.claimed_at DESC`,
+      ORDER BY cdc.created_at DESC`,
     [site.id]
   );
 

@@ -48,6 +48,7 @@ describe("Predictions, Lucky Wheel & Seasonal Battle Pass", () => {
       one: mockOne,
       unsafe: mockExec,
     }));
+    mockExec.mockResolvedValue([{}]);
 
     deps = {
       requireUser: mock().mockResolvedValue({ user: USER, res: null }),
@@ -59,6 +60,7 @@ describe("Predictions, Lucky Wheel & Seasonal Battle Pass", () => {
       logAudit: mockLogAudit,
       rateLimit: mockRateLimit,
       withTransaction: mockWithTransaction,
+      requireViewer: mock().mockResolvedValue({ viewer: { id: "v-1" }, res: null }),
     };
   });
 
@@ -105,6 +107,7 @@ describe("Predictions, Lucky Wheel & Seasonal Battle Pass", () => {
         lock_at: null,
       }); // find pred
       mockOne.mockResolvedValueOnce({ id: "sv-1", balance: 200 }); // find site_viewer
+      mockOne.mockResolvedValueOnce({ id: "sv-1", balance: 150 }); // guarded debit update
       mockOne.mockResolvedValueOnce({ id: "bet-1" }); // insert bet in tx
 
       const req = new Request("http://localhost/api/predictions/bet", {
@@ -124,6 +127,33 @@ describe("Predictions, Lucky Wheel & Seasonal Battle Pass", () => {
       expect(body.ok).toBe(true);
       expect(body.amount).toBe(50);
       expect(body.newBalance).toBe(150);
+    });
+
+    it("rejects prediction bets without a viewer session", async () => {
+      deps.requireViewer.mockResolvedValue({ viewer: null, res: new Response(null, { status: 401 }) });
+      const res = await handlePlaceBet(new Request("http://localhost/api/predictions/bet", {
+        method: "POST",
+        body: JSON.stringify({ predictionId: "pred-1", optionId: "yes", amount: 50, viewerId: "attacker" }),
+      }), mockEnv(), deps);
+      expect(res.status).toBe(401);
+    });
+
+    it("returns insufficient credits and writes no bet when the guarded debit updates zero rows", async () => {
+      mockOne.mockResolvedValueOnce({
+        id: "pred-1", site_id: "site-456", title: "Win match?", options: [{ id: "yes" }],
+        status: "open", min_bet: 10, max_bet: 500, lock_at: null,
+      });
+      mockOne.mockResolvedValueOnce({ id: "sv-1", balance: 200 });
+      mockOne.mockResolvedValueOnce(null); // guarded debit update
+
+      const res = await handlePlaceBet(new Request("http://localhost/api/predictions/bet", {
+        method: "POST",
+        body: JSON.stringify({ predictionId: "pred-1", optionId: "yes", amount: 50, viewerId: "attacker" }),
+      }), mockEnv(), deps);
+
+      expect(res.status).toBe(400);
+      expect((await res.json()).error).toContain("Insufficient credits");
+      expect(mockExec).toHaveBeenCalledTimes(0);
     });
 
     it("creates a live prediction with custom options and bet limits", async () => {
@@ -240,6 +270,7 @@ describe("Predictions, Lucky Wheel & Seasonal Battle Pass", () => {
         ],
       }); // wheel config
       mockOne.mockResolvedValueOnce({ id: "sv-1", balance: 100 }); // site_viewer
+      mockOne.mockResolvedValueOnce({ id: "sv-1", balance: 170 }); // guarded debit/reward update
 
       const req = new Request("http://localhost/api/games/wheel/spin", {
         method: "POST",
@@ -257,6 +288,31 @@ describe("Predictions, Lucky Wheel & Seasonal Battle Pass", () => {
       expect(body.winningIndex).toBe(0);
       expect(body.segment.label).toBe("+100 Pts");
       expect(body.newBalance).toBe(170); // 100 - 30 + 100 = 170
+    });
+
+    it("rejects wheel spins without a viewer session", async () => {
+      deps.requireViewer.mockResolvedValue({ viewer: null, res: new Response(null, { status: 401 }) });
+      const res = await handleSpinWheel(new Request("http://localhost/api/games/wheel/spin", {
+        method: "POST",
+        body: JSON.stringify({ site: "streamer", viewerId: "attacker" }),
+      }), mockEnv(), deps);
+      expect(res.status).toBe(401);
+    });
+
+    it("returns insufficient credits and writes no spin rows when the guarded debit updates zero rows", async () => {
+      mockOne.mockResolvedValueOnce(SITE);
+      mockOne.mockResolvedValueOnce({ spin_cost: 30, enabled: true, segments_json: [{ id: "s1", label: "+100", type: "points", value: 100, weight: 100 }] });
+      mockOne.mockResolvedValueOnce({ id: "sv-1", balance: 100 });
+      mockOne.mockResolvedValueOnce(null); // guarded debit/reward update
+
+      const res = await handleSpinWheel(new Request("http://localhost/api/games/wheel/spin", {
+        method: "POST",
+        body: JSON.stringify({ site: "streamer", viewerId: "attacker" }),
+      }), mockEnv(), deps);
+
+      expect(res.status).toBe(400);
+      expect((await res.json()).error).toContain("Insufficient credits");
+      expect(mockExec).toHaveBeenCalledTimes(0);
     });
 
     it("updates wheel config with custom spin cost and segments", async () => {
@@ -332,6 +388,32 @@ describe("Predictions, Lucky Wheel & Seasonal Battle Pass", () => {
       expect(body.season.seasonNumber).toBe(1);
     });
 
+    it("uses the session viewer instead of the season query viewerId", async () => {
+      deps.requireViewer.mockResolvedValue({ viewer: { id: "session-viewer" }, res: null });
+      mockOne.mockResolvedValueOnce(SITE);
+      mockOne.mockResolvedValueOnce({
+        id: "season-1",
+        season_number: 1,
+        title: "Season 1",
+        status: "active",
+        tiers_json: [],
+      });
+      mockOne.mockResolvedValueOnce({ current_level: 3, current_xp: 250, claimed_tiers: [] });
+
+      await handleGetSeason(new Request("http://localhost/api/battlepass/season?site=streamer&viewerId=attacker"), mockEnv(), deps);
+
+      expect(mockOne.mock.calls[2][1]).toEqual(["season-1", "session-viewer"]);
+    });
+
+    it("rejects milestone claims without a viewer session", async () => {
+      deps.requireViewer.mockResolvedValue({ viewer: null, res: new Response(null, { status: 401 }) });
+      const res = await handleClaimTierReward(new Request("http://localhost/api/battlepass/claim", {
+        method: "POST",
+        body: JSON.stringify({ seasonId: "season-1", tierLevel: 5, viewerId: "attacker" }),
+      }), mockEnv(), deps);
+      expect(res.status).toBe(401);
+    });
+
     it("claims milestone tier reward when level requirement is met", async () => {
       mockOne.mockResolvedValueOnce({
         id: "season-1",
@@ -342,6 +424,8 @@ describe("Predictions, Lucky Wheel & Seasonal Battle Pass", () => {
       }); // season
       mockOne.mockResolvedValueOnce({ id: "sv-1", balance: 500 }); // site_viewer
       mockOne.mockResolvedValueOnce({ id: "prog-1", current_level: 5, claimed_tiers: [] }); // progress
+      mockOne.mockResolvedValueOnce({ id: "prog-1" }); // guarded claim update
+      mockOne.mockResolvedValueOnce({ id: "sv-1", balance: 750 }); // credit update
 
       const req = new Request("http://localhost/api/battlepass/claim", {
         method: "POST",

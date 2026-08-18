@@ -209,9 +209,9 @@ export default {
       await exec(
         `INSERT INTO consumer_heartbeat
            (name, last_seen, processed_count, failed_count, last_failure_at, last_success_at)
-         VALUES ('consumer', now(), $1, $2,
-                 CASE WHEN $2 > 0 THEN now() ELSE NULL END,
-                 CASE WHEN $1 > 0 THEN now() ELSE NULL END)
+         VALUES ('consumer', now(), $1::bigint, $2::bigint,
+                 CASE WHEN $2::bigint > 0 THEN now() ELSE NULL END,
+                 CASE WHEN $1::bigint > 0 THEN now() ELSE NULL END)
          ON CONFLICT (name) DO UPDATE
          SET last_seen = now(),
              processed_count = consumer_heartbeat.processed_count + EXCLUDED.processed_count,

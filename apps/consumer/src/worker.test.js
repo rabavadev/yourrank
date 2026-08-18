@@ -91,6 +91,39 @@ describe("consumer heartbeat", () => {
 });
 
 describe("account export artifacts", () => {
+  it("selects only canonical user identity columns", async () => {
+    let usersSql = "";
+    const bucket = {
+      async createMultipartUpload() {
+        return {
+          async uploadPart() { return { partNumber: 1, etag: "etag" }; },
+          async complete() {},
+          async abort() {},
+        };
+      },
+    };
+    const read = async (sql) => {
+      if (sql.includes("FROM users")) {
+        usersSql = sql;
+        return [{ id: "user-1" }];
+      }
+      if (sql.includes("FROM sites")) return [];
+      if (sql.includes("COUNT(*)")) return [{ count: "0" }];
+      return [];
+    };
+    const write = async (sql) => sql.includes("RETURNING id") ? [{ id: "job-1" }] : [];
+
+    await processAccountExport(
+      { exportId: "job-1", userId: "user-1" },
+      { ACCOUNT_EXPORTS: bucket },
+      { queryImpl: read, execImpl: write, logAuditImpl: async () => {} }
+    );
+
+    expect(usersSql).toContain("telegram_user_id");
+    expect(usersSql).toContain("telegram_username");
+    expect(usersSql).not.toContain("telegram_id");
+  });
+
   it("writes a manifest with exactly the synchronous export collections", async () => {
     const chunks = [];
     const uploads = [];

@@ -12,6 +12,13 @@ Everything runs on managed edge infra: Cloudflare Workers (stateless, auto-scale
 - Supabase project **yourrank** (you have this).
 - `wrangler` authed to the account.
 
+The canonical application is the Leaderboard Worker on `yourrank.site`.
+`apps/web` is a separately deployed OpenNext Worker containing only the
+marketing homepage; the Leaderboard Worker proxies `/` and `/_next/*` assets
+to it. Its `app.yourrank.site` custom domain is an internal proxy target:
+unmarked requests on `app.yourrank.site` and `next.yourrank.site` 301 to the
+equivalent `yourrank.site` path.
+
 ## 1. Database (once)
 Apply migrations via Supabase CLI:
 ```bash
@@ -216,4 +223,3 @@ Before announcing the site:
 ## 10. One-click dashboard demo
 
 Set `ALLOW_DEMO_LOGIN = "true"` in `apps/leaderboard/wrangler.toml` and visit `/auth/demo`. It creates a single demo user (`demo@yourrank.site` by default) with a sample board and logs the browser into the dashboard. Keep this `false` in production unless you intend to let anyone access a shared demo account.
-

@@ -1,6 +1,5 @@
 // Aggregator: per-page modules re-exported as PAGES
 
-import { landingPage } from "./pages/landing.js";
 import { loginPage } from "./pages/login.jsx";
 import { forgotPage } from "./pages/forgot.js";
 import { resetPage } from "./pages/reset.js";
@@ -31,16 +30,7 @@ import { reviewsPage } from "./pages/reviews.js";
 import { invitePage } from "./pages/invite.jsx";
 import { giveawaysPage } from "./pages/giveaways.jsx";
 
-import {
-  telegramOverviewRoute,
-  telegramBotsRoute,
-  telegramCommandsRoute,
-  telegramOffersRoute,
-  telegramBroadcastsRoute,
-} from "./pages/telegram.jsx";
-
 export const PAGES = {
-  index: landingPage,
   docs: docsPage,
   login: loginPage,
   forgot: forgotPage,
@@ -66,11 +56,6 @@ export const PAGES = {
   rewardsViewers: rewardsViewersPage,
   rewardsRedemptions: rewardsRedemptionsPage,
   rewardsHistory: rewardsHistoryPage,
-  telegramOverview: telegramOverviewRoute,
-  telegramBots: telegramBotsRoute,
-  telegramCommands: telegramCommandsRoute,
-  telegramOffers: telegramOffersRoute,
-  telegramBroadcasts: telegramBroadcastsRoute,
   settingsUnified: settingsUnifiedPage,
   faq: faqPage,
   reviews: reviewsPage,

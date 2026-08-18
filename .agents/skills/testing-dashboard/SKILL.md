@@ -6,6 +6,14 @@ description: |
 
 # Testing the YourRank dashboard locally
 
+The canonical dashboard and all application routes are served by the
+`apps/leaderboard` Worker at `yourrank.site`. `apps/web` is not a dashboard or
+API frontend; it contains only the animated homepage and is reached through
+the apex Worker proxy. Direct `app.yourrank.site` and `next.yourrank.site`
+requests redirect to the apex unless they carry the internal marketing proxy
+marker. Dashboard, auth, account/settings, public-board, help, admin, and API
+testing therefore stays on the Leaderboard Worker.
+
 ## Devin Secrets Needed
 
 None for the local flow itself, but the Workers expect `.dev.vars` files under `apps/leaderboard/` and `apps/bot/`. If they are missing, copy the `.dev.vars.example` files and fill in:
@@ -114,3 +122,143 @@ For bot dev login, also add to `apps/bot/.dev.vars`:
 - Public board: `http://localhost:8787/<slug>`
 - Bot dashboard: `http://localhost:8788/bot/dashboard`
 - Local DB: `postgresql://postgres:postgres@localhost:5432/yourrank`
+
+## Testing the canonical apex frontend + marketing homepage proxy
+
+The apex Worker (`apps/leaderboard`) proxies `/` and `/_next/*` to the
+`apps/web` marketing Worker via the `MARKETING` service binding. To exercise
+that proxy locally both Workers must run in one Wrangler session:
+
+```bash
+export PATH="$HOME/.nvm/versions/node/v22.12.0/bin:$HOME/.local/bin:$PATH"
+export CLOUDFLARE_HYPERDRIVE_LOCAL_CONNECTION_STRING_HYPERDRIVE="postgresql://postgres:postgres@localhost:5432/yourrank"
+export DATABASE_URL="$CLOUDFLARE_HYPERDRIVE_LOCAL_CONNECTION_STRING_HYPERDRIVE"
+npx wrangler dev -c apps/leaderboard/wrangler.toml -c apps/web/wrangler.toml --port 8787
+```
+
+Build `apps/web` first (`opennextjs-cloudflare build`) so `.open-next/worker.js`
+exists. Check the startup banner: `env.MARKETING (yourrank-web) ... [not connected]`
+means the proxy will return 503.
+
+Gotchas that cost time here:
+
+- `npx bun ...` and `npx opennextjs-cloudflare ...` may fail with
+  `npm error could not determine executable to run`. Use the local binaries
+  instead: `/home/ubuntu/.local/bin/bun` and
+  `apps/web/node_modules/.bin/opennextjs-cloudflare`.
+- The installed `workerd` may reject `apps/web`'s `compatibility_date`
+  (e.g. "supports up to 2026-07-07"). Temporarily lower the date in
+  `apps/web/wrangler.toml` to run locally and revert before reporting; never
+  commit that change.
+- `wrangler dev` derives the request Host from the config's `routes`, so the
+  incoming `Host:` header is ignored. Consequences:
+  - Worker redirects built with `new URL("/login", url)` come back as absolute
+    `http://yourrank.site/...` on localhost and the browser leaves your local
+    server. Verify redirect *paths* with `curl -w '%{redirect_url}'` instead.
+  - To prove the `apps/web` middleware host gate, run the web Worker twice:
+    default (`Host` becomes `app.yourrank.site`, unmarked ⇒ 301) and with
+    `--host yourrank.site` (unmarked ⇒ 200).
+  - A marked request bypasses the redirect:
+    `curl -H 'x-yr-marketing: 1' http://127.0.0.1:8788/`.
+- Failure path: run a leaderboard-only `wrangler dev` on another port. Kill all
+  `workerd` processes and `rm -f ~/.config/.wrangler/registry/*` first, or a
+  stale registered `yourrank-web` will still satisfy the binding and you will
+  see 200 HTML instead of the expected plain `503 marketing service unavailable`.
+- Tailwind v4 in `apps/web` auto-detects sources relative to
+  `src/app/globals.css`, so classes used only in `src/components/**` can be
+  missing from the built CSS and the homepage renders unstyled while all
+  `/_next/static/*` assets still return 200. Verify visually, and check the
+  built CSS directly:
+  `grep -c 'text-center' apps/web/.open-next/assets/_next/static/chunks/*.css`.
+  Adding `@source "../components";` after `@import "tailwindcss";` is the likely fix.
+- The dashboard sidebar account menu (sign out) opens *below* the fold in a
+  1024x768-scaled viewport. Zoom the page out (`ctrl+minus` twice) to reach it.
+- When typing passwords with the `computer` tool, `!` can be dropped by
+  `type`; send it as a separate `key` action (`exclam`) and use the eye toggle
+  to confirm the field contents.
+
+## Testing browser history / Back / Forward on the dashboard SPA
+
+Each dashboard section is served as its own document, so the trail is made of
+real navigations — and any iframe on the page contributes to the same joint
+session history: the editor's live preview (a form POST into `designPreview`)
+and the Mini-games simulator each append an entry unless the frame is navigated
+without pushing. Screenshots alone cannot prove history correctness because the
+URL and the rendered section can agree while the history *stack* has been
+corrupted. Always dump the real stack:
+
+```python
+# needs: pip install websocket-client ; Chrome started with --remote-debugging-port
+import json, urllib.request, websocket
+ts = [x for x in json.load(urllib.request.urlopen("http://localhost:29229/json/list"))
+      if x.get("type") == "page"]
+t = [x for x in ts if x["url"].endswith("/dashboard/editor/players")][0]
+ws = websocket.create_connection(t["webSocketDebuggerUrl"], timeout=15,
+                                 suppress_origin=True)  # suppress_origin avoids
+                                                        # --remote-allow-origins
+ws.send(json.dumps({"id": 1, "method": "Page.getNavigationHistory"}))
+while True:
+    m = json.loads(ws.recv())
+    if m.get("id") == 1:
+        r = m["result"]
+        for i, e in enumerate(r["entries"]):
+            print(i, e["url"], "<== CURRENT" if i == r["currentIndex"] else "")
+        break
+```
+
+What to look for, and how to test it:
+
+- Build the trail by *clicking the sidebar* in a brand-new tab, then press Back
+  once and dump the stack. A healthy stack keeps the forward entry and moves
+  `currentIndex` back by one. Symptoms of the known bug class: the forward entry
+  is replaced by a duplicate of the current URL and `currentIndex` sits on the
+  *last* entry, which silently kills the browser Forward button.
+- Cross-check visually by zooming the toolbar (`zoom` region around
+  `[0,28,220,54]`): a greyed-out Forward arrow after a single Back press is the
+  user-visible symptom.
+- Test both a route that embeds an iframe (editor, mini-games) and one that does
+  not (giveaways → rewards): a frame-navigation bug only shows when Back lands
+  *on* the page owning the frame, so a giveaways-only trail can pass while the
+  editor trail fails. Never generalize from one route pair.
+- Chrome reports frame navigations via `Page.frameRequestedNavigation`
+  (`reason: formSubmissionPost` / `scriptInitiated`); a frame navigation right
+  after Back that is not `initialFrameNavigation` is what truncates the forward
+  stack.
+- Beware test-harness noise that looks like a product bug: omnibox autocomplete
+  can append a stale `?board=<old-uuid>`, producing a real `404 /api/site?siteId=…`
+  and a "Couldn't load your board" screen. Always press `Delete` after `type`
+  in the address bar to dismiss the autocomplete suggestion.
+- Only the *last* screenshot of a multi-action `computer` call is returned, so
+  take one screenshot per call when verifying a step-by-step Back/Forward walk.
+- In-page tab strips on Giveaways and Settings do **not** change the URL, so
+  Back cannot restore the previously selected tab and the tab is not
+  deep-linkable. Analytics tabs *do* push real URLs. Confirm which behaviour is
+  intended before filing it as a defect.
+
+## Public board pages under `wrangler dev`
+
+`site-routes.js` builds public nav hrefs from `url.origin` (`const homeUrl =
+url.origin;`). Because `wrangler dev` forces the origin to the configured route
+host, the local public pages emit absolute `http://yourrank.site/...` links, so
+clicking the public sidebar navigates to *production* and 404s. This is a
+local-dev artifact, not a product bug — verify public sections by entering
+`localhost:8787/<slug>[/shop|/me]` directly, and confirm the href source with:
+`curl -s http://localhost:8787/<slug> | grep -oE 'href="[^"]+"' | sort -u`.
+
+## Distinguishing legitimate empty states from defects
+
+Seeded data covers players, shop items and viewer balances but not events or
+raffles. `"No events yet"` with populated KPI cards above it, and
+`"No past raffles yet."`, are legitimate. To investigate a suspected styling
+defect, first resolve which class the rendered markup actually uses, then
+check the served stylesheet for a rule matching that class. For example:
+
+```bash
+curl -s http://localhost:8787/assets/<served-stylesheet>.css \
+  | grep -c '<resolved-class-selector>'
+```
+
+The giveaway history tables were a past example of this class of defect: their
+markup used an unstyled table class until the markup was switched to the
+canonical table classes. Always verify the current rendered class and served
+CSS rather than relying on an old source-level claim.
