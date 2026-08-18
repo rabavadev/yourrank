@@ -283,22 +283,6 @@ body:has(.v3-dash) > .lb-backdrop { z-index: 900; }
   margin: 0;
 }
 
-.v3-dash .lb-nav-group-label {
-  color: var(--v3-ink-mute);
-  font: 600 12px/1.2 var(--v3-sans);
-  letter-spacing: .1em;
-  text-transform: uppercase;
-  padding: 14px 12px 4px;
-}
-
-.v3-dash .lb-nav-child {
-  padding-left: 24px;
-}
-
-.v3-dash .lb-nav-group-label ~ .lb-nav-group-label {
-  margin-top: 6px;
-}
-
 .v3-dash .lb-side-foot {
   margin-top: auto;
   padding-top: 16px;
@@ -2361,44 +2345,6 @@ body[data-wide] .v3-dash .lb-main {
 .v3-inline-save[data-state="error"] { color: var(--danger, #b42318); }
 .v3-inline-save[data-state="saved"] { color: var(--success, #067647); }
 
-/* ---------- Cross-product switcher (sidebar footer) ----------
-   These links had no rules at all, so they inherited the light-theme body ink
-   (#191919) on the near-black rail — 1.12:1, i.e. invisible. */
-.v3-dash .lb-product-nav {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  padding-top: 14px;
-  border-top: 1px solid var(--v3-chrome-line);
-}
-
-.v3-dash .lb-product-nav .label { padding: 0 12px 6px; }
-
-.v3-dash .lb-product-link {
-  display: flex;
-  align-items: center;
-  min-height: 40px;
-  padding: 8px 12px;
-  border-radius: var(--v3-radius-sm);
-  color: var(--v3-ink-soft);
-  font: 500 14px var(--v3-sans);
-  text-decoration: none;
-  transition: background .15s, color .15s;
-}
-
-.v3-dash .lb-product-link:hover,
-.v3-dash .lb-product-link:focus-visible {
-  background: var(--v3-chrome-2);
-  color: var(--v3-ink);
-}
-
-.v3-dash .lb-product-link.is-on,
-.v3-dash .lb-product-link[aria-current="page"] {
-  background: var(--v3-chrome-2);
-  color: var(--v3-ink);
-  font-weight: 600;
-}
-
 /* ---------- Mobile section drawer ----------
    The ☰ used to sit in the page body, so it scrolled away and left no way to
    change section. It now lives in the fixed topbar. */
@@ -2455,7 +2401,6 @@ body[data-wide] .v3-dash .lb-main {
    of oversized controls. Mobile restores full touch targets below. */
 .v3-dash .lb-side-nav { gap: 0; }
 .v3-dash .lb-side-nav .lb-nav { height: 34px; padding: 0 10px; gap: 9px; font-size: 13px; }
-.v3-dash .lb-side-nav .lb-nav-group-label { padding: 13px 10px 5px; font-size: 10px; letter-spacing: .09em; }
 @media (max-width: 980px) {
   .v3-dash .lb-side-nav .lb-nav { min-height: 44px; height: 44px; }
 }
