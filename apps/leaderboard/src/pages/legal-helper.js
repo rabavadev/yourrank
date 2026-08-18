@@ -1,5 +1,6 @@
 // Shared legal page shell helper
 // NOTE: fill in company identity from Dashboard → Admin → Identity before going live.
+import { DEVIN_DESIGN_CONTRACT } from "@yourrank/shared/page-shell";
 
 export function applyLegalIdentity(html, identity) {
   const i = identity || {};
@@ -65,7 +66,7 @@ export const legal = (title, updated, body, pagePath, desc) => `<!DOCTYPE html><
 <meta name="description" content="${desc || title}" />
 <link rel="canonical" href="https://yourrank.site/${pagePath}" /><link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
-<link rel="stylesheet" href="/assets/app.css" /><link rel="stylesheet" href="/assets/ui.css" /></head><body>
+<link rel="stylesheet" href="/assets/app.css" /><link rel="stylesheet" href="/assets/ui.css" /><link rel="stylesheet" href="/assets/devin-system.css" /></head><body>${DEVIN_DESIGN_CONTRACT}
 <a href="#main-content" class="sr-only skip-link">Skip to content</a>
 ${platformHeader()}
 <main class="legal" id="main-content"><h1>${title}</h1><p class="legal-updated">Last updated: ${updated}</p>

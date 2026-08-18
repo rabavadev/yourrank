@@ -1,0 +1,442 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-08-17T23:57:55Z",
+  "title": "Design System: YourRank Connected Suite",
+  "extensions": {
+    "colorMeta": {
+      "primary": {
+        "role": "primary",
+        "displayName": "Electric Violet",
+        "canonical": "#2200FF",
+        "tonalRamp": [
+          "color-mix(in srgb, #2200FF 55%, black)",
+          "color-mix(in srgb, #2200FF 70%, black)",
+          "color-mix(in srgb, #2200FF 85%, black)",
+          "#2200FF",
+          "color-mix(in srgb, #2200FF 85%, white)",
+          "color-mix(in srgb, #2200FF 65%, white)",
+          "color-mix(in srgb, #2200FF 40%, white)",
+          "color-mix(in srgb, #2200FF 15%, white)"
+        ]
+      },
+      "primary-hover": {
+        "role": "primary",
+        "displayName": "Deep Violet",
+        "canonical": "#1B00CC",
+        "tonalRamp": [
+          "color-mix(in srgb, #1B00CC 55%, black)",
+          "color-mix(in srgb, #1B00CC 70%, black)",
+          "color-mix(in srgb, #1B00CC 85%, black)",
+          "#1B00CC",
+          "color-mix(in srgb, #1B00CC 85%, white)",
+          "color-mix(in srgb, #1B00CC 65%, white)",
+          "color-mix(in srgb, #1B00CC 40%, white)",
+          "color-mix(in srgb, #1B00CC 15%, white)"
+        ]
+      },
+      "production-chrome": {
+        "role": "neutral",
+        "displayName": "Production Black",
+        "canonical": "#121111",
+        "tonalRamp": [
+          "#121111",
+          "#252323",
+          "#3D3A3A",
+          "#5C5858",
+          "#7D7878",
+          "#A5A1A1",
+          "#D0CECE",
+          "#F3F2F2"
+        ]
+      },
+      "production-chrome-raised": {
+        "role": "neutral",
+        "displayName": "Raised Production Black",
+        "canonical": "#232323",
+        "tonalRamp": [
+          "#161616",
+          "#232323",
+          "#3A3A3A",
+          "#575757",
+          "#777777",
+          "#A0A0A0",
+          "#CDCDCD",
+          "#F2F2F2"
+        ]
+      },
+      "ink": {
+        "role": "neutral",
+        "displayName": "Ink Black",
+        "canonical": "#191919",
+        "tonalRamp": [
+          "#141414",
+          "#262626",
+          "#3F3F3F",
+          "#5C5C5C",
+          "#7D7D7D",
+          "#A4A4A4",
+          "#CFCFCF",
+          "#F2F2F2"
+        ]
+      },
+      "ink-muted": {
+        "role": "neutral",
+        "displayName": "Operational Gray",
+        "canonical": "#5C5C5C",
+        "tonalRamp": [
+          "#202020",
+          "#353535",
+          "#494949",
+          "#5C5C5C",
+          "#777777",
+          "#999999",
+          "#C5C5C5",
+          "#EEEEEE"
+        ]
+      },
+      "ink-faint": {
+        "role": "neutral",
+        "displayName": "Metadata Gray",
+        "canonical": "#6B6B6B",
+        "tonalRamp": [
+          "#222222",
+          "#393939",
+          "#505050",
+          "#6B6B6B",
+          "#858585",
+          "#A5A5A5",
+          "#CCCCCC",
+          "#F0F0F0"
+        ]
+      },
+      "field": {
+        "role": "neutral",
+        "displayName": "White Field",
+        "canonical": "#FFFFFF",
+        "tonalRamp": [
+          "#262626",
+          "#4D4D4D",
+          "#737373",
+          "#999999",
+          "#BFBFBF",
+          "#D9D9D9",
+          "#EFEFEF",
+          "#FFFFFF"
+        ]
+      },
+      "surface": {
+        "role": "neutral",
+        "displayName": "Paper Surface",
+        "canonical": "#FCFCFC",
+        "tonalRamp": [
+          "#252525",
+          "#4B4B4B",
+          "#717171",
+          "#979797",
+          "#BDBDBD",
+          "#D7D7D7",
+          "#ECECEC",
+          "#FCFCFC"
+        ]
+      },
+      "surface-inset": {
+        "role": "neutral",
+        "displayName": "Inset Gray",
+        "canonical": "#EFEFEF",
+        "tonalRamp": [
+          "#242424",
+          "#484848",
+          "#6C6C6C",
+          "#8F8F8F",
+          "#B3B3B3",
+          "#CECECE",
+          "#E2E2E2",
+          "#EFEFEF"
+        ]
+      },
+      "line": {
+        "role": "neutral",
+        "displayName": "Hairline",
+        "canonical": "rgba(0, 0, 0, 0.12)",
+        "tonalRamp": [
+          "rgba(0, 0, 0, 0.72)",
+          "rgba(0, 0, 0, 0.56)",
+          "rgba(0, 0, 0, 0.40)",
+          "rgba(0, 0, 0, 0.28)",
+          "rgba(0, 0, 0, 0.20)",
+          "rgba(0, 0, 0, 0.12)",
+          "rgba(0, 0, 0, 0.08)",
+          "rgba(0, 0, 0, 0.04)"
+        ]
+      },
+      "line-soft": {
+        "role": "neutral",
+        "displayName": "Soft Hairline",
+        "canonical": "rgba(0, 0, 0, 0.08)",
+        "tonalRamp": [
+          "rgba(0, 0, 0, 0.64)",
+          "rgba(0, 0, 0, 0.48)",
+          "rgba(0, 0, 0, 0.32)",
+          "rgba(0, 0, 0, 0.20)",
+          "rgba(0, 0, 0, 0.14)",
+          "rgba(0, 0, 0, 0.08)",
+          "rgba(0, 0, 0, 0.05)",
+          "rgba(0, 0, 0, 0.025)"
+        ]
+      },
+      "success": {
+        "role": "tertiary",
+        "displayName": "Success Green",
+        "canonical": "#1F8A68",
+        "tonalRamp": [
+          "color-mix(in srgb, #1F8A68 55%, black)",
+          "color-mix(in srgb, #1F8A68 70%, black)",
+          "color-mix(in srgb, #1F8A68 85%, black)",
+          "#1F8A68",
+          "color-mix(in srgb, #1F8A68 85%, white)",
+          "color-mix(in srgb, #1F8A68 65%, white)",
+          "color-mix(in srgb, #1F8A68 40%, white)",
+          "color-mix(in srgb, #1F8A68 15%, white)"
+        ]
+      },
+      "warning": {
+        "role": "tertiary",
+        "displayName": "Warning Amber",
+        "canonical": "#B76A12",
+        "tonalRamp": [
+          "color-mix(in srgb, #B76A12 55%, black)",
+          "color-mix(in srgb, #B76A12 70%, black)",
+          "color-mix(in srgb, #B76A12 85%, black)",
+          "#B76A12",
+          "color-mix(in srgb, #B76A12 85%, white)",
+          "color-mix(in srgb, #B76A12 65%, white)",
+          "color-mix(in srgb, #B76A12 40%, white)",
+          "color-mix(in srgb, #B76A12 15%, white)"
+        ]
+      },
+      "danger": {
+        "role": "tertiary",
+        "displayName": "Danger Red",
+        "canonical": "#B42318",
+        "tonalRamp": [
+          "color-mix(in srgb, #B42318 55%, black)",
+          "color-mix(in srgb, #B42318 70%, black)",
+          "color-mix(in srgb, #B42318 85%, black)",
+          "#B42318",
+          "color-mix(in srgb, #B42318 85%, white)",
+          "color-mix(in srgb, #B42318 65%, white)",
+          "color-mix(in srgb, #B42318 40%, white)",
+          "color-mix(in srgb, #B42318 15%, white)"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display",
+        "purpose": "Outcome-led marketing hero statements only."
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "Section transitions and major product explanations."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Module and product-surface titles."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Interface copy, product explanation, and reading text."
+      },
+      "label": {
+        "displayName": "Label / Mono",
+        "purpose": "Real state, numbers, paths, timestamps, and compact metadata."
+      }
+    },
+    "shadows": [
+      {
+        "name": "overlay",
+        "value": "0 16px 48px rgba(18, 17, 17, 0.14)",
+        "purpose": "Dialogs and floating menus only."
+      },
+      {
+        "name": "action-hover",
+        "value": "0 4px 12px color-mix(in srgb, #2200FF 40%, transparent)",
+        "purpose": "Brief interactive lift on shared primary actions."
+      }
+    ],
+    "motion": [
+      {
+        "name": "state-fast",
+        "value": "150ms ease-out",
+        "purpose": "Button, border, color, and opacity state changes."
+      },
+      {
+        "name": "drawer",
+        "value": "220ms cubic-bezier(0.22, 1, 0.36, 1)",
+        "purpose": "Operator and public navigation drawers."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "compact",
+        "value": "480px"
+      },
+      {
+        "name": "sm",
+        "value": "640px"
+      },
+      {
+        "name": "marketing-mobile",
+        "value": "720px"
+      },
+      {
+        "name": "public-rail",
+        "value": "768px"
+      },
+      {
+        "name": "workspace-rail",
+        "value": "980px"
+      },
+      {
+        "name": "lg",
+        "value": "1024px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The electric-violet action used for the clearest next step.",
+      "html": "<button class=\"ds-btn-primary\" type=\"button\">Start free</button>",
+      "css": ".ds-btn-primary { display:inline-flex; min-height:44px; align-items:center; justify-content:center; border:1px solid var(--devin-primary, #2200FF); border-radius:2px; background:var(--devin-primary, #2200FF); color:#FFFFFF; padding:12px 20px; font:500 14px/1.2 Inter, system-ui, sans-serif; cursor:pointer; transition:background-color 150ms ease-out, transform 150ms cubic-bezier(0.16,1,0.3,1); } .ds-btn-primary:hover { background:var(--devin-primary-hover, #1B00CC); border-color:var(--devin-primary-hover, #1B00CC); } .ds-btn-primary:focus-visible { outline:2px solid var(--devin-primary, #2200FF); outline-offset:2px; } .ds-btn-primary:active { transform:translateY(1px); }"
+    },
+    {
+      "name": "Dark Header Action",
+      "kind": "button",
+      "refersTo": "button-dark",
+      "description": "The persistent high-contrast entry action in compact marketing chrome.",
+      "html": "<a class=\"ds-btn-dark\" href=\"#\">Start free</a>",
+      "css": ".ds-btn-dark { display:inline-flex; min-height:44px; align-items:center; justify-content:center; border-radius:2px; background:var(--devin-ink, #191919); color:var(--devin-surface, #FCFCFC); padding:12px 16px; font:500 14px/1.2 Inter, system-ui, sans-serif; text-decoration:none; transition:background-color 150ms ease-out; } .ds-btn-dark:hover { background:#000000; } .ds-btn-dark:focus-visible { outline:2px solid var(--devin-primary, #2200FF); outline-offset:2px; } .ds-btn-dark:active { background:#121111; }"
+    },
+    {
+      "name": "Secondary Button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "A bordered alternative for exploration, cancellation, and non-primary actions.",
+      "html": "<button class=\"ds-btn-secondary\" type=\"button\">Explore demo</button>",
+      "css": ".ds-btn-secondary { display:inline-flex; min-height:44px; align-items:center; justify-content:center; border:1px solid var(--devin-line, rgba(0,0,0,0.12)); border-radius:2px; background:var(--devin-bg, #FFFFFF); color:var(--devin-ink, #191919); padding:12px 20px; font:500 14px/1.2 Inter, system-ui, sans-serif; cursor:pointer; transition:background-color 150ms ease-out, border-color 150ms ease-out; } .ds-btn-secondary:hover { background:var(--devin-surface-2, #EFEFEF); border-color:rgba(0,0,0,0.28); } .ds-btn-secondary:focus-visible { outline:2px solid var(--devin-primary, #2200FF); outline-offset:2px; } .ds-btn-secondary:active { background:#E5E5E5; }"
+    },
+    {
+      "name": "Text Field",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "A labeled white field with a hairline boundary and violet focus.",
+      "html": "<label class=\"ds-field\"><span>Email</span><input type=\"email\" placeholder=\"you@example.com\"></label>",
+      "css": ".ds-field { display:grid; gap:8px; color:var(--devin-ink, #191919); font:500 13px/1.3 Inter, system-ui, sans-serif; } .ds-field input { min-height:44px; border:1px solid var(--devin-line, rgba(0,0,0,0.12)); border-radius:6px; background:var(--devin-bg, #FFFFFF); color:var(--devin-ink, #191919); padding:12px 14px; font:400 15px/1.3 Inter, system-ui, sans-serif; box-shadow:none; } .ds-field input:hover { border-color:rgba(0,0,0,0.24); } .ds-field input:focus-visible { border-color:var(--devin-primary, #2200FF); outline:2px solid color-mix(in srgb, var(--devin-primary, #2200FF) 16%, transparent); outline-offset:0; }"
+    },
+    {
+      "name": "Surface Card",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "A flat paper module that keeps truthful state and the next action together.",
+      "html": "<section class=\"ds-card\"><div class=\"ds-card-head\"><h3>Current site</h3><span>Published</span></div><p>Demo Community is live and ready to share.</p></section>",
+      "css": ".ds-card { max-width:420px; border:1px solid var(--devin-line-soft, rgba(0,0,0,0.08)); border-radius:16px; background:var(--devin-surface, #FCFCFC); color:var(--devin-ink, #191919); padding:24px; box-shadow:none; font-family:Inter, system-ui, sans-serif; } .ds-card-head { display:flex; align-items:center; justify-content:space-between; gap:16px; margin-bottom:12px; } .ds-card h3 { margin:0; font-size:20px; font-weight:500; letter-spacing:-0.02em; } .ds-card-head span { border-radius:200px; background:var(--devin-surface-2, #EFEFEF); padding:4px 8px; color:var(--devin-ink, #191919); font:600 11px/1.2 \"Geist Mono\", ui-monospace, monospace; } .ds-card p { margin:0; color:var(--devin-muted, #5C5C5C); font-size:15px; line-height:1.5; } .ds-card:focus-within { outline:2px solid var(--devin-primary, #2200FF); outline-offset:2px; }"
+    },
+    {
+      "name": "Status Chip",
+      "kind": "chip",
+      "refersTo": "status-chip",
+      "description": "A compact text-plus-dot state indicator; color supplements the label.",
+      "html": "<span class=\"ds-status\" role=\"status\">Published</span>",
+      "css": ".ds-status { display:inline-flex; align-items:center; gap:6px; min-height:32px; border:1px solid color-mix(in srgb, #1F8A68 28%, white); border-radius:200px; background:color-mix(in srgb, #1F8A68 9%, white); color:#176B52; padding:4px 10px; font:600 11px/1.2 \"Geist Mono\", ui-monospace, monospace; text-transform:uppercase; letter-spacing:0.04em; } .ds-status::before { content:\"\"; width:6px; height:6px; border-radius:50%; background:#1F8A68; } .ds-status:hover { border-color:#1F8A68; } .ds-status:focus-visible { outline:2px solid var(--devin-primary, #2200FF); outline-offset:2px; }"
+    },
+    {
+      "name": "Marketing Navigation",
+      "kind": "nav",
+      "description": "Compact suite navigation with quiet links and a persistent dark entry action.",
+      "html": "<nav class=\"ds-nav\" aria-label=\"Main navigation\"><a class=\"ds-nav-brand\" href=\"#\">YourRank</a><div><a aria-current=\"page\" href=\"#\">Products</a><a href=\"#\">Pricing</a><a class=\"ds-nav-cta\" href=\"#\">Start free</a></div></nav>",
+      "css": ".ds-nav { display:flex; min-height:72px; align-items:center; justify-content:space-between; gap:24px; border-bottom:1px solid var(--devin-line-soft, rgba(0,0,0,0.08)); background:rgba(252,252,252,0.95); padding:12px 24px; font-family:Inter, system-ui, sans-serif; } .ds-nav a { color:var(--devin-muted, #5C5C5C); font-size:14px; text-decoration:none; } .ds-nav > div { display:flex; align-items:center; gap:24px; } .ds-nav .ds-nav-brand { color:var(--devin-ink, #191919); font-size:15px; font-weight:600; letter-spacing:-0.02em; } .ds-nav a:hover, .ds-nav a[aria-current=\"page\"] { color:var(--devin-ink, #191919); } .ds-nav .ds-nav-cta { display:inline-flex; min-height:44px; align-items:center; border-radius:2px; background:var(--devin-ink, #191919); color:var(--devin-surface, #FCFCFC); padding:8px 14px; } .ds-nav a:focus-visible { outline:2px solid var(--devin-primary, #2200FF); outline-offset:2px; }"
+    },
+    {
+      "name": "Divided Data Surface",
+      "kind": "custom",
+      "description": "The recurring row pattern for standings, rewards, workflow steps, and operational data.",
+      "html": "<div class=\"ds-data\"><div><span>01</span><strong>Alex</strong><code>9,500 pts</code></div><div><span>02</span><strong>Bree</strong><code>7,200 pts</code></div></div>",
+      "css": ".ds-data { max-width:520px; border-top:1px solid var(--devin-line, rgba(0,0,0,0.12)); border-bottom:1px solid var(--devin-line, rgba(0,0,0,0.12)); background:var(--devin-bg, #FFFFFF); color:var(--devin-ink, #191919); font-family:Inter, system-ui, sans-serif; } .ds-data > div { display:grid; grid-template-columns:42px 1fr auto; align-items:center; gap:12px; min-height:52px; border-top:1px solid var(--devin-line-soft, rgba(0,0,0,0.08)); padding:12px 0; } .ds-data > div:first-child { border-top:0; } .ds-data span, .ds-data code { color:var(--devin-muted, #5C5C5C); font:500 12px/1.2 \"Geist Mono\", ui-monospace, monospace; } .ds-data strong { font-size:14px; font-weight:500; } .ds-data > div:hover { background:color-mix(in srgb, var(--devin-surface-2, #EFEFEF) 45%, transparent); } .ds-data > div:focus-within { outline:2px solid var(--devin-primary, #2200FF); outline-offset:2px; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Quiet Control Field",
+    "overview": "YourRank uses one calm, high-contrast language to make a connected three-product suite immediately legible. The devin.ai reference supplies material discipline and hierarchy—near-white fields, black type, electric-violet actions, precise dividers, compact controls—while YourRank keeps its own identity, direct language, and product truth.\n\nThe system spans three distinct contexts without becoming three visual brands. Marketing explains and demonstrates Sites, Telegram, and Credits & Shop; the operator workspace places a black production rail around a light working field; public streamer sites keep a streamer-selected accent inside the same light material system. Transparent OBS overlays and isolated games remain intentional context-specific exceptions.\n\nThe product demonstration and the user's state carry each screen. Decoration stays quiet so the current state, the next action, and the relationship among the three peer products remain obvious.",
+    "keyCharacteristics": [
+      "Near-white reading fields, ink-black type, and electric-violet action cues.",
+      "A black production rail around light operator workspaces.",
+      "Hairline dividers and shared outer boundaries instead of nested card stacks.",
+      "Compact identity, clear purpose, visible action, and readable state in the first viewport.",
+      "Sites, Telegram, and Credits & Shop presented as peer products under one account."
+    ],
+    "rules": [
+      {
+        "name": "The Two Accent Rule",
+        "body": "Electric Violet belongs to YourRank actions and focus; the public `--yr-accent` belongs to the streamer's local identity. Do not replace one with the other.",
+        "section": "colors"
+      },
+      {
+        "name": "The State, Not Decoration Rule",
+        "body": "Success, warning, and danger appear in status text, dots, narrow cue bands, and alerts—not as ornamental card themes.",
+        "section": "colors"
+      },
+      {
+        "name": "The Plain Speech Rule",
+        "body": "Interface copy names the visible outcome—Players, Commands, Broadcasts, Rewards, Fulfilment—not the underlying infrastructure.",
+        "section": "typography"
+      },
+      {
+        "name": "The Mono Has a Job Rule",
+        "body": "Monospace is reserved for data, state, paths, timestamps, compact labels, and technical metadata; it is not decorative display type.",
+        "section": "typography"
+      },
+      {
+        "name": "The First Viewport Rule",
+        "body": "Every primary route starts with compact identity, one decisive purpose, a visible next action, and enough real or explicitly illustrative product state to understand the surface.",
+        "section": "layout"
+      },
+      {
+        "name": "The One Suite Rule",
+        "body": "Global product switching, account, and help remain consistent; local site and bot context never disappears in the name of simplification.",
+        "section": "layout"
+      },
+      {
+        "name": "The Hairline Before Shadow Rule",
+        "body": "Use boundaries and tonal layering for structure; add shadow only when a surface temporarily sits above the page or an action is responding to interaction.",
+        "section": "elevation"
+      },
+      {
+        "name": "The Restrained Geometry Rule",
+        "body": "Corners communicate scale and role: near-square actions, small-radius fields, large-radius modules, and pills only for genuinely compact status or navigation objects.",
+        "section": "shapes"
+      },
+      {
+        "name": "The State Before Action Rule",
+        "body": "When state affects a decision, show the truthful state immediately beside or before the action—published before Publish site, draft before Send, queued before Complete.",
+        "section": "components"
+      }
+    ],
+    "dos": [
+      "**Do** keep Sites, Telegram, and Credits & Shop visible as peer products under one account.",
+      "**Do** let real user data or clearly labeled synthetic product demonstrations carry the visual hierarchy.",
+      "**Do** use shared outer boundaries, internal dividers, and readable state before introducing another container.",
+      "**Do** preserve visible focus, semantic status announcements, reduced-motion behavior, and 44px touch targets where practical.",
+      "**Do** keep public streamer accent separate from YourRank's product-action violet."
+    ],
+    "donts": [
+      "**Don't** introduce decorative gradients, glass effects, glow fields, or floating metric-card walls into normal product surfaces.",
+      "**Don't** use semantic colors as decoration or communicate state by color alone.",
+      "**Don't** hide the primary action or product switcher when the layout collapses.",
+      "**Don't** turn mono labels, uppercase captions, or numbered markers into decoration; each must encode actual state, scope, sequence, or data.",
+      "**Don't** invent testimonials, customer logos, metrics, billing promises, or performance claims that the product evidence does not support."
+    ]
+  }
+}

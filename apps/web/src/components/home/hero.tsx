@@ -12,7 +12,7 @@ function WordStagger({ text }: { text: string }) {
         <motion.span
           key={`${word}-${i}`}
           className="inline-block will-change-transform"
-          initial={{ opacity: 0, y: 24 }}
+          initial={false}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.65, delay: 0.08 + i * 0.06, ease: DEVIN_EASE }}
         >
@@ -35,17 +35,17 @@ const LEADERBOARD_ROWS = [
 function DashboardMock() {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 48, scale: 0.97 }}
+      initial={false}
       animate={{ opacity: 1, y: 0, scale: 1 }}
       transition={{ duration: 0.9, delay: 0.85, ease: DEVIN_EASE }}
-      className="relative mx-auto mt-16 w-full max-w-3xl overflow-hidden rounded-lg border border-devin-line bg-white text-left shadow-[0_24px_80px_-24px_rgba(25,25,25,0.25)]"
+      className="relative mx-auto mt-16 w-full max-w-3xl overflow-hidden rounded-lg border border-devin-line bg-white text-left"
     >
       {/* browser chrome */}
       <div className="flex items-center gap-2 border-b border-devin-line px-4 py-3">
         <span className="h-2.5 w-2.5 rounded-full bg-devin-secondary" />
         <span className="h-2.5 w-2.5 rounded-full bg-devin-secondary" />
         <span className="h-2.5 w-2.5 rounded-full bg-devin-secondary" />
-        <span className="ml-3 font-mono text-xs text-devin-ink-soft">yourrank.site/dashboard</span>
+        <span className="ml-3 font-mono text-xs text-devin-ink-soft">Illustrative preview · synthetic data</span>
       </div>
 
       <div className="p-5 sm:p-6">
@@ -58,7 +58,7 @@ function DashboardMock() {
           </div>
           <span className="flex items-center gap-1.5 rounded-full border border-devin-line px-2.5 py-1 font-mono text-[11px] text-devin-ink">
             <motion.span
-              className="h-1.5 w-1.5 rounded-full bg-devin-primary"
+              className="yr-live-dot h-1.5 w-1.5 rounded-full bg-devin-primary"
               animate={{ opacity: [1, 0.25, 1] }}
               transition={{ duration: 1.6, repeat: Infinity, ease: "easeInOut" }}
             />
@@ -71,7 +71,7 @@ function DashboardMock() {
             <motion.div
               key={row.rank}
               className="flex items-center justify-between px-4 py-2.5"
-              initial={{ opacity: 0, x: -12 }}
+              initial={false}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.5, delay: 1.15 + i * 0.12, ease: DEVIN_EASE }}
             >
@@ -99,16 +99,16 @@ export function Hero() {
 
       <div className="relative mx-auto max-w-4xl text-center">
         <motion.div
-          initial={{ opacity: 0, y: 12 }}
+          initial={false}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, ease: DEVIN_EASE }}
         >
           <a
             href="/demo"
-            className="inline-flex items-center gap-2 rounded-full border border-devin-line bg-white px-3.5 py-1.5 text-[13px] text-devin-ink transition-colors hover:border-devin-ink/40"
+            className="inline-flex min-h-11 items-center gap-2 rounded-full border border-devin-line bg-white px-3.5 py-1.5 text-[13px] text-devin-ink transition-colors hover:border-devin-ink/40"
           >
             <span className="relative flex h-1.5 w-1.5">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-devin-primary opacity-60" />
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-devin-primary opacity-60 motion-reduce:animate-none" />
               <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-devin-primary" />
             </span>
             The Streamer Community Suite · V4 Live
@@ -121,7 +121,7 @@ export function Hero() {
 
         <motion.p
           className="mx-auto mt-6 max-w-xl text-lg leading-relaxed text-devin-ink-soft"
-          initial={{ opacity: 0, y: 16 }}
+          initial={false}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, delay: 0.55, ease: DEVIN_EASE }}
         >
@@ -131,19 +131,19 @@ export function Hero() {
 
         <motion.div
           className="mt-9 flex flex-wrap items-center justify-center gap-3"
-          initial={{ opacity: 0, y: 16 }}
+          initial={false}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, delay: 0.7, ease: DEVIN_EASE }}
         >
           <a
             href="/signup"
-            className="rounded bg-devin-primary px-5 py-2.5 text-[15px] font-medium text-white transition-colors hover:bg-devin-primary-hover"
+            className="inline-flex min-h-11 items-center rounded bg-devin-primary px-5 py-2.5 text-[15px] font-medium text-white transition-colors hover:bg-devin-primary-hover"
           >
             Build your community hub
           </a>
           <a
             href="/demo"
-            className="rounded border border-devin-line bg-devin-surface px-5 py-2.5 text-[15px] font-medium text-devin-ink transition-colors hover:border-devin-ink/40"
+            className="inline-flex min-h-11 items-center rounded border border-devin-line bg-devin-surface px-5 py-2.5 text-[15px] font-medium text-devin-ink transition-colors hover:border-devin-ink/40"
           >
             Explore the live demo
           </a>
@@ -151,7 +151,7 @@ export function Hero() {
 
         <motion.p
           className="mt-6 font-mono text-xs text-devin-ink-soft"
-          initial={{ opacity: 0 }}
+          initial={false}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.7, delay: 0.85 }}
         >

@@ -64,19 +64,19 @@ export function withNonce(headers, nonce) {
 // is light with the brand blue, so landing on one felt like leaving the site.
 // Self-contained on purpose: these also serve custom domains and must render
 // even when nothing else about the request worked.
-const STATUS_CSS = `:root{--bg:#fafafa;--panel:#fff;--line:#e4e4e7;--ink:#191919;--dim:#55555c;--accent:#5b5bf5;--accent-ink:#fff}
+const STATUS_CSS = `:root{--bg:#fff;--panel:#fcfcfc;--line:rgba(0,0,0,.12);--ink:#191919;--dim:#5c5c5c;--accent:#2200ff;--accent-ink:#fff}
 *{box-sizing:border-box;margin:0}
 body{background:var(--bg);color:var(--ink);font:15px/1.6 "Inter",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:24px;gap:22px}
-.brand{font-weight:800;font-size:20px;letter-spacing:-.03em;color:var(--ink);text-decoration:none}
-.brand b{color:var(--accent)}
-.card{width:100%;max-width:460px;background:var(--panel);border:1px solid var(--line);border-radius:14px;box-shadow:0 1px 2px rgba(0,0,0,.05);padding:32px;text-align:center}
-h1{font-size:20px;font-weight:700;letter-spacing:-.02em;margin-bottom:8px}
+.brand{font-weight:600;font-size:20px;letter-spacing:-.03em;color:var(--ink);text-decoration:none}
+.brand b{color:inherit;font-weight:600}
+.card{width:100%;max-width:460px;background:var(--panel);border:1px solid var(--line);border-radius:16px;box-shadow:none;padding:32px;text-align:center}
+h1{font-size:28px;line-height:1.1;font-weight:500;letter-spacing:-.03em;margin-bottom:12px}
 p{color:var(--dim);font-size:14px}
 p+p{margin-top:8px}
-p a{color:var(--accent);font-weight:600}
+p a{color:var(--ink);font-weight:500;text-underline-offset:4px}
 code{font-family:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,monospace;font-size:13px;background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:1px 6px;word-break:break-all}
 .actions{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:20px}
-.btn{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:10px 18px;border-radius:10px;border:1px solid var(--line);background:var(--panel);color:var(--ink);font-weight:600;font-size:14px;text-decoration:none}
+.btn{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:10px 18px;border-radius:2px;border:1px solid var(--line);background:var(--panel);color:var(--ink);font-weight:500;font-size:14px;text-decoration:none}
 .btn--accent{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
 .btn:hover{border-color:var(--accent)}`;
 

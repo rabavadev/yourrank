@@ -12,7 +12,7 @@ import { verifyEmailPageHtml } from "./pages/verify-email.js";
 import { verifyEmailToken } from "./handlers/auth.js";
 import { verifyBoardPassword, issueBoardPasswordToken, boardPasswordSetCookieHeader } from "./board-password.js";
 import { PAGES } from "./pages.jsx";
-import { leaderboardPageHtml } from "@yourrank/shared/page-shell";
+import { DEVIN_DESIGN_CONTRACT, leaderboardPageHtml } from "@yourrank/shared/page-shell";
 import { bumpStat } from "./stats.js";
 import { runAutoReset } from "./auto-reset.js";
 import { createQueueProducer } from "@yourrank/shared/queue-producer";
@@ -60,10 +60,11 @@ import { redirectToLogin } from "./login-redirect.js";
 import { safeNextPath } from "@yourrank/shared/safe-next";
 
 const LEGAL_PAGES = new Set(["terms", "privacy", "responsible", "cookies", "refund", "contact"]);
+const MARKETING_PAGES = new Set(["/", "/index.html", "/sites", "/telegram", "/credits"]);
 const NON_SITE_PATHS = new Set([
   "api", "auth", "dashboard", "login", "logout", "signup", "verify-email", "invite",
   "account", "contact", "faq", "reviews", "cookies", "privacy", "terms",
-  "responsible", "refund", "setup", "demo", "go", "logo", "favicon.ico",
+  "responsible", "refund", "setup", "demo", "sites", "telegram", "credits", "go", "logo", "favicon.ico",
 ]);
 const PUBLIC_API_OPERATIONS = new Set(["standings", "players", "stream", "rank", "data", "stats"]);
 const SITE_SECTIONS = new Set(["home", "leaderboard", "shop", "games", "me"]);
@@ -616,7 +617,7 @@ async function handleRequest(request, env, ctx, meta) {
       if (host === PLATFORM_HOST && path.startsWith("/_next/")) {
         return proxyMarketingHome({ request, binding: env.MARKETING, workerLog });
       }
-      if (path === "/" || path === "/index.html") {
+      if (host === PLATFORM_HOST && MARKETING_PAGES.has(path)) {
         return proxyMarketingHome({ request, binding: env.MARKETING, workerLog });
       }
       if (path === "/login" || path === "/login.html") return new Response(addCookieConsent(await renderHtmlPage(PAGES.login)), { headers: { ...SECURE_HTML, ...csrfHeader } });
@@ -818,7 +819,7 @@ async function handleRequest(request, env, ctx, meta) {
 <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Invalid link · YourRank</title>
 <meta name="robots" content="noindex, nofollow" />
-<link rel="stylesheet" href="/assets/app.css" /><link rel="stylesheet" href="/assets/ui.css" /></head><body>
+<link rel="stylesheet" href="/assets/app.css" /><link rel="stylesheet" href="/assets/ui.css" /><link rel="stylesheet" href="/assets/devin-system.css" /></head><body>${DEVIN_DESIGN_CONTRACT}
 <a href="#main-content" class="sr-only skip-link">Skip to content</a>
 <div class="auth-wrap"><aside class="auth-side"><div><div class="brand">Your<b>Rank</b></div></div>
 <div><h1>That link doesn't work.</h1><p>This reset link is missing, expired, or already used. Request a fresh one below.</p></div>

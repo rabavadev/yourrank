@@ -1,4 +1,6 @@
 // Public API documentation page
+import { DEVIN_DESIGN_CONTRACT } from "@yourrank/shared/page-shell";
+
 const body = `
 <nav class="docs-toc" aria-label="Documentation sections">
   <a href="#getting-started">Getting started</a>
@@ -87,8 +89,8 @@ export const docsPage = `<!DOCTYPE html><html lang="en"><head>
 <meta name="description" content="YourRank public API documentation with endpoints, examples, chat bot commands, and OpenAPI spec." />
 <link rel="canonical" href="https://yourrank.site/docs" /><link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
-<link rel="stylesheet" href="/assets/app.css" /><link rel="stylesheet" href="/assets/ui.css" /><link rel="stylesheet" href="/assets/docs.css" />
-</head><body>
+<link rel="stylesheet" href="/assets/app.css" /><link rel="stylesheet" href="/assets/ui.css" /><link rel="stylesheet" href="/assets/docs.css" /><link rel="stylesheet" href="/assets/devin-system.css" />
+</head><body>${DEVIN_DESIGN_CONTRACT}
 <a href="#main-content" class="sr-only skip-link">Skip to content</a>
 <header class="topbar"><a class="brand" href="/">Your<b>Rank</b></a>
 <div class="topbar-right"><a href="/login" class="btn btn--sm btn--ghost">Sign in</a></div></header>

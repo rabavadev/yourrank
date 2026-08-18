@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@source "../components";
 
 @theme {
   --color-canvas: #F5F7FB;
@@ -32,23 +33,30 @@
   }
 }
 
-/* devin-style faint grid backdrop, masked so it fades toward the edges */
+/* The reference stays materially quiet: product UI and typography carry it. */
 .hero-grid-bg {
-  background-image:
-    linear-gradient(rgba(25, 25, 25, 0.05) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(25, 25, 25, 0.05) 1px, transparent 1px);
-  background-size: 56px 56px;
-  mask-image: radial-gradient(ellipse 75% 65% at 50% 35%, black 30%, transparent 75%);
-  -webkit-mask-image: radial-gradient(ellipse 75% 65% at 50% 35%, black 30%, transparent 75%);
+  background: transparent;
 }
 
 .hero-glow {
-  background: radial-gradient(closest-side, rgba(34, 0, 255, 0.08), transparent);
-  filter: blur(40px);
+  display: none;
 }
 
+html { background: #FCFCFC; scroll-behavior: smooth; }
+body { min-width: 320px; text-rendering: optimizeLegibility; }
+::selection { background: #2200FF; color: #FFFFFF; }
+* { scrollbar-color: rgba(25, 25, 25, 0.3) transparent; }
+*:focus-visible { outline: 2px solid #2200FF; outline-offset: 3px; }
+a { text-underline-offset: 4px; }
+
 @media (prefers-reduced-motion: reduce) {
-  .animate-marquee {
-    animation: none !important;
+  html { scroll-behavior: auto; }
+  *, *::before, *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
+  .animate-marquee { animation: none !important; }
+  .yr-live-dot { opacity: 1 !important; }
 }
