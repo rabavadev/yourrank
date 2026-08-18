@@ -321,10 +321,7 @@ function renderOverviewSummary(bots, offers){
         }).join('')
       : '<p class="muted text-sm">No offers yet. <a href="/dashboard/telegram/offers">Create one →</a></p>';
   }
-  markStep('stepBot', (bots||[]).some(b=>b.status==='active'));
-  markStep('stepOffer', (offers||[]).length > 0);
 }
-function markStep(id, done){ const el = $(id); if (el) el.classList.toggle('done', !!done); }
 
 // Subscriber totals + deep-link attribution (overview only).
 async function loadSubscribers(bots){
@@ -547,10 +544,7 @@ async function loadExtras(){
   }
 
   if (pbStatus.error) showPostbackError("Couldn't load deposit tracking status.");
-  else {
-    renderPostbackStatus(pbStatus);
-    if (typeof markStep === 'function') markStep('stepPb', !!pbStatus?.active);
-  }
+  else renderPostbackStatus(pbStatus);
   if (errors.length) toast(errors[0]);
 }
 
@@ -1316,6 +1310,8 @@ function restoreBtn(el) {
 }
 
 function boot(){
+  const overviewTargets = ['chart','totClicks','subSources','ovBots','ovOffers'];
+  if (page === 'overview' && !overviewTargets.some((id) => $(id))) return;
   load().catch((err) => { console.error('[dashboard load]', err); showLoadError(); });
   loadExtras();
 }
