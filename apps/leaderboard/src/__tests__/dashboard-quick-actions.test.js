@@ -90,7 +90,7 @@ describe("dashboard overview quick actions", () => {
     expect(html).toContain('>Home</a>');
     for (const label of [
       "My leaderboard", "Giveaways", "Rewards", "Telegram",
-      "How it&#39;s going", "Your leaderboards", "Settings", "Help",
+      "Analytics", "Sites", "Settings", "Help",
     ]) expect(html).toContain(`>${label}</a>`);
     expect(html).not.toContain('lb-nav-group-label');
   });
