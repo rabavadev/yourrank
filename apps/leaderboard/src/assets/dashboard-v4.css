@@ -1409,12 +1409,14 @@ body[data-wide] .v3-dash[data-auth-workspace] .lb-main { padding-right: 32px; }
 .v3-dash[data-auth-workspace] .ov-command-grid { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 0; overflow: hidden; border: 1px solid var(--v4-line); border-radius: var(--v4-radius); background: #ffffff; }
 .v3-dash[data-auth-workspace] .ov-summary { grid-column: span 7; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 24px; min-width: 0; padding: var(--yr-space-lg) 28px; background: var(--v4-cobalt-soft); }
 .v3-dash[data-auth-workspace] .ov-command-grid.is-setup-complete .ov-summary { grid-column: 1 / -1; }
-.v3-dash[data-auth-workspace] #ovOnboardingBento { grid-column: span 5; min-width: 0; border-left: 1px solid var(--v4-line); }
+.v3-dash[data-auth-workspace] #ovOnboardingBento { grid-column: 1 / -1; min-width: 0; border-left: 0; }
 .v3-dash[data-auth-workspace] .ov-summary.is-attention { background: #fffaf2; }
 .v3-dash[data-auth-workspace] .ov-summary.is-live { background: #f6fcf9; }
 /* Status pill */
 .v3-dash[data-auth-workspace] .ov-summary-status { display: inline-flex; align-items: center; gap: 8px; min-height: 24px; padding: 2px 8px; border-radius: var(--v4-radius-sm); background: var(--v4-cobalt-soft); color: var(--v4-cobalt-hover); font-size: 11px; font-weight: 700; }
 .v3-dash[data-auth-workspace] .ov-summary-status i { width: 7px; height: 7px; border-radius: 50%; background: var(--v4-cobalt); }
+.v3-dash[data-auth-workspace] .ov-setup.is-attention .ov-summary-status { background: var(--v4-warning-soft); color: #8d4f0c; }
+.v3-dash[data-auth-workspace] .ov-setup.is-attention .ov-summary-status i { background: var(--v4-warning); animation: none; }
 /* Live pulse: the status dot animates when the site is published */
 .v3-dash[data-auth-workspace] .ov-summary.is-live .ov-summary-status i { animation: ov-live-pulse 2s ease-in-out infinite; }
 @keyframes ov-live-pulse { 0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(31, 138, 104, 0.45); } 50% { opacity: 0.85; box-shadow: 0 0 0 5px rgba(31, 138, 104, 0); } }

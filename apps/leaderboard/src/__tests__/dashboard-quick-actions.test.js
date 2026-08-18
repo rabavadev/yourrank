@@ -25,8 +25,9 @@ describe("dashboard overview quick actions", () => {
     expect(html).not.toContain('id="ovStepPublish"');
     expect(html).toContain('id="ovActivityList"');
     expect(html).toContain('id="ovTopPlayers"');
-    expect(html).toContain('class="ov-summary"');
-    expect(html).toContain('id="ovPrimaryAction"');
+    expect(html).not.toContain('class="ov-summary"');
+    expect(html).toContain('id="ovPublishedStatus"');
+    expect(html).not.toContain('id="ovPrimaryAction"');
     expect(html).toContain('href="/dashboard/leaderboard/setup"');
     expect(html).toContain('class="ov-card-empty" id="ovActivityEmpty"');
   });

@@ -673,7 +673,7 @@ export function renderBoardStatus() {
   for (const id of ["liveLink", "previewLiveLink"]) {
     const link = $(id);
     if (!link) continue;
-    link.hidden = id === "previewLiveLink" && !s.live;
+    link.hidden = id === "liveLink" ? !s.live && !s.published : !s.live;
     if (id === "liveLink") {
       link.textContent = s.live ? "View site ↗" : s.published ? "Verify email" : "Publish site";
       link.href = s.live

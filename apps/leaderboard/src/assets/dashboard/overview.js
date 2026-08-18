@@ -62,34 +62,17 @@ export function renderOverviewSummary() {
     const onboardBento = $("ovOnboardingBento");
     const activeBento = $("ovActiveBento");
     const commandGrid = $("ovCommandGrid");
-    if (onboardBento) onboardBento.hidden = done;
+    const showSetup = !done || pendingVerification;
+    if (onboardBento) onboardBento.hidden = !showSetup;
+    const setupCard = onboardBento?.querySelector(".ov-setup");
+    setupCard?.classList.toggle("is-attention", pendingVerification);
     if (activeBento) activeBento.hidden = false;
+    if (commandGrid) commandGrid.hidden = !showSetup;
     commandGrid?.classList.toggle("is-setup-complete", done);
-    const primaryAction = $("ovPrimaryAction");
-    if (primaryAction) {
-      const verificationIsNext = pendingVerification || (readyToPublish && needsVerification);
-      const publicationIsNext = !verificationIsNext && firstIncomplete?.key === "publish";
-      primaryAction.href = status.live ? `/${state.SLUG}` : verificationIsNext ? "/verify-email" : publicationIsNext ? "#publish" : firstIncomplete?.href || "/dashboard/leaderboard/setup";
-      primaryAction.textContent = status.live ? "View your site ↗" : verificationIsNext ? "Confirm email" : firstIncomplete?.action || "Edit site";
-      primaryAction.dataset.publicationAction = publicationIsNext ? "true" : "false";
-      wirePublicationLink(primaryAction);
-      if (status.live) {
-        primaryAction.target = "_blank";
-        primaryAction.rel = "noopener noreferrer";
-      } else {
-        primaryAction.removeAttribute("target");
-        primaryAction.removeAttribute("rel");
-      }
-    }
     const siteState = $("ovSiteState");
     if (siteState) {
-      siteState.textContent = status.live ? "Your site is live" : pendingVerification ? "Confirm your email to open the site" : readyToPublish && needsVerification ? "Confirm your email before launch" : readyToPublish ? "Your site is ready to publish" : "Finish the essentials, then go live";
-      const summary = siteState.closest(".ov-summary");
-      summary?.classList.toggle("is-live", status.live);
-      summary?.classList.toggle("is-attention", pendingVerification || (readyToPublish && needsVerification));
+      siteState.textContent = pendingVerification ? "Confirm your email before launch" : readyToPublish ? "Your site is ready to publish" : "Finish the essentials";
     }
-    const siteStateMeta = $("ovSiteStateMeta");
-    if (siteStateMeta) siteStateMeta.textContent = status.live ? `People can visit yourrank.site/${state.SLUG}.` : pendingVerification ? "Your site is published and will open as soon as you confirm your email." : readyToPublish && needsVerification ? "Your setup is saved. Confirm now so publishing is frictionless." : readyToPublish ? "Everything required is in place. You can still edit before publishing." : `Next: ${firstIncomplete?.action || "continue setup"}.`;
     // Setup progress
     const stepOrder = SETUP_STEPS.map(({ key }) => key);
     const completed = stepOrder.filter((key) => steps[key]).length;
@@ -102,7 +85,9 @@ export function renderOverviewSummary() {
     const setupMessage = $("ovSetupMessage");
     const setupAction = $("ovSetupAction");
     if (setupMessage) {
-      const setupCopy = firstIncomplete?.key === "brand"
+      const setupCopy = pendingVerification
+        ? "Your site is published, but email confirmation is still required."
+        : firstIncomplete?.key === "brand"
         ? "Add your site details to get started."
         : firstIncomplete?.key === "players"
           ? "Add players to your leaderboard."
@@ -112,10 +97,12 @@ export function renderOverviewSummary() {
       setupMessage.textContent = setupCopy;
     }
     if (setupAction) {
-      setupAction.href = firstIncomplete?.href || (status.live ? `/${state.SLUG || ""}` : "#publish");
-      setupAction.textContent = firstIncomplete?.action || (status.live ? "View your site" : "Publish site");
-      setupAction.dataset.publicationAction = firstIncomplete?.key === "publish" || (!firstIncomplete && !status.live) ? "true" : "false";
-      if (setupAction.dataset.publicationAction === "true") wirePublicationLink(setupAction);
+      const verificationIsNext = pendingVerification || (readyToPublish && needsVerification);
+      const publicationIsNext = !verificationIsNext && firstIncomplete?.key === "publish";
+      setupAction.href = verificationIsNext ? "/verify-email" : publicationIsNext ? "#publish" : firstIncomplete?.href || "/dashboard/leaderboard/setup";
+      setupAction.textContent = verificationIsNext ? "Confirm email" : firstIncomplete?.action || "Edit site";
+      setupAction.dataset.publicationAction = publicationIsNext ? "true" : "false";
+      if (publicationIsNext) wirePublicationLink(setupAction);
     }
     const statsReady = state.STATS_STATUS === "ready" && state.STATS;
     const days = statsReady ? state.STATS.days : [];
