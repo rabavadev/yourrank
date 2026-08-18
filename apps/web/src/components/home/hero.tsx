@@ -31,7 +31,7 @@ export function Hero() {
         <h1 className="mx-auto max-w-[14ch] text-[clamp(3rem,7vw,5.8rem)] font-medium leading-[0.96] tracking-[-0.04em] text-devin-ink">
           <span className="sr-only">Turn viewers into regulars who come back.</span>
           <span aria-hidden="true">
-            <span className="block whitespace-nowrap overflow-hidden pb-[0.06em]">
+            <span className="block overflow-hidden pb-[0.06em]">
               <motion.span
                 className="block"
                 initial={reduceMotion ? false : { y: "105%", opacity: 0.35 }}
@@ -41,7 +41,7 @@ export function Hero() {
                 Turn viewers into
               </motion.span>
             </span>
-            <span className="block whitespace-nowrap overflow-hidden pb-[0.06em]">
+            <span className="block pb-[0.06em]">
               <motion.span
                 className="grid place-items-center text-devin-primary font-semibold"
                 initial={reduceMotion ? false : { y: "105%", opacity: 0.35 }}
@@ -56,14 +56,14 @@ export function Hero() {
                     <motion.span
                       key={word}
                       className="col-start-1 row-start-1 whitespace-nowrap"
-                      initial={{ y: index === 0 ? 0 : "105%", opacity: index === 0 ? 1 : 0 }}
+                      initial={{ y: index === 0 ? 0 : "0.35em", opacity: index === 0 ? 1 : 0 }}
                       animate={{
-                        y: index === wordState.active ? 0 : index === wordState.previous ? "-105%" : "105%",
+                        y: index === wordState.active ? 0 : index === wordState.previous ? "-0.35em" : "0.35em",
                         opacity: index === wordState.active ? 1 : 0,
                       }}
                       transition={
                         motionEnabled
-                          ? { duration: 0.65, ease: DEVIN_EASE }
+                          ? { duration: 0.58, ease: DEVIN_EASE }
                           : { duration: 0 }
                       }
                     >
@@ -73,7 +73,7 @@ export function Hero() {
                 </span>
               </motion.span>
             </span>
-            <span className="block whitespace-nowrap overflow-hidden pb-[0.06em]">
+            <span className="block overflow-hidden pb-[0.06em]">
               <motion.span
                 className="block"
                 initial={reduceMotion ? false : { y: "105%", opacity: 0.35 }}
