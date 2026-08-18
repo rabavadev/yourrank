@@ -1,17 +1,15 @@
 import type { NavItem } from "@yourrank/shared/dashboard-chrome";
 import { dashboardNavItems } from "@yourrank/shared/dashboard-nav";
 
-
-
 export const pageLinks = [
-  { key: "overview", label: "Overview", href: "/dashboard/telegram", sub: "Your bot at a glance — last 14 days" },
-  { key: "bots", label: "Bot", href: "/dashboard/telegram/bots", sub: "Connect and customize your Telegram bot" },
-  { key: "commands", label: "Replies", href: "/dashboard/telegram/commands", sub: "Replies your bot sends when viewers type /something" },
-  { key: "offers", label: "Offers", href: "/dashboard/telegram/offers", sub: "Your tracked offers — clicks are tracked automatically" },
-  { key: "broadcasts", label: "Messages", href: "/dashboard/telegram/broadcasts", sub: "Send a message to your subscribers" },
+  { key: "overview", label: "Overview", href: "/dashboard/telegram", sub: "Your messaging setup and recent activity" },
+  { key: "bots", label: "Bot", href: "/dashboard/telegram/bots", sub: "Connect and manage your Telegram bot" },
+  { key: "commands", label: "Auto replies", href: "/dashboard/telegram/commands", sub: "Automatic replies your bot sends to viewer commands" },
+  { key: "offers", label: "Offers", href: "/dashboard/telegram/offers", sub: "Create and manage shareable tracked offers" },
+  { key: "broadcasts", label: "Broadcasts", href: "/dashboard/telegram/broadcasts", sub: "Send updates to your subscribers" },
 ];
 
-/** Shared dashboard navigation with Telegram's pages nested under its product entry. */
+/** Shared dashboard navigation with Messaging's pages nested under its product entry. */
 export function botNavItems(): NavItem[] {
   return dashboardNavItems();
 }
