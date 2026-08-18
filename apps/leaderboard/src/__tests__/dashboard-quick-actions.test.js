@@ -8,6 +8,7 @@ const overviewJs = readFileSync(new URL("../assets/dashboard/overview.js", impor
 const dashboardJs = readFileSync(new URL("../assets/dashboard.js", import.meta.url), "utf8");
 const boardShellJs = readFileSync(new URL("../assets/dashboard/board-shell.js", import.meta.url), "utf8");
 const performanceJs = readFileSync(new URL("../assets/dashboard/performance.js", import.meta.url), "utf8");
+const previewTabsJs = readFileSync(new URL("../assets/dashboard/preview-tabs.js", import.meta.url), "utf8");
 const dashboardCss = readFileSync(new URL("../assets/dashboard-v3.css", import.meta.url), "utf8");
 
 function dashboardHtml(activePath = "/dashboard") {
@@ -35,6 +36,13 @@ describe("dashboard overview quick actions", () => {
     expect(overviewJs).not.toContain("ov-inc-btn");
     expect(overviewJs).not.toContain("markDirty");
     expect(overviewJs).toContain('href: "/dashboard/leaderboard/share"');
+  });
+
+  it("shows the large live preview by default only where it is useful", () => {
+    expect(previewTabsJs).toContain('const shouldOpen = group === "design" || manuallyOpened');
+    expect(previewTabsJs).toContain('toggle.textContent = visible ? "Hide preview" : "Show preview"');
+    expect(previewTabsJs).toContain('toggle.setAttribute("aria-expanded", String(visible))');
+    expect(previewTabsJs).toContain('preview.id = "editorPreviewPanel"');
   });
 
   it("routes unverified users to email confirmation without a duplicate Overview banner", () => {
