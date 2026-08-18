@@ -12,12 +12,12 @@ export const SECTIONS = {
   home: { path: "/dashboard", title: "Overview" },
   board: { path: "/dashboard/leaderboard", title: "Leaderboard", tabs: ["setup", "players", "design", "share", "history"] },
   boards: { path: "/dashboard/leaderboards", title: "Sites" },
-  games: { path: "/dashboard/games", title: "Public page sections & Games" },
+  games: { path: "/dashboard/games", title: "Games" },
   performance: { path: "/dashboard/analytics", title: "Analytics", tabs: ["activity", "referrals", "events"] },
   // Account settings (`/dashboard/settings` and its tabs) are their own
-  // documents, served by the Worker. This section is the *selected board's*
+  // documents, served by the Worker. This section is the selected site's
   // settings, which is all this document knows how to render.
-  settings: { path: "/dashboard/settings/board", title: "Board settings" },
+  settings: { path: "/dashboard/settings/board", title: "Site settings" },
 };
 
 // Names we have shipped links for, in copy, e-mails and older builds.
@@ -67,7 +67,7 @@ export function parseDashboardPath(pathname) {
   if (clean === "/dashboard/settings/board") return { page: "settings", tab: "" };
   // The account settings document owns every other `/dashboard/settings` URL.
   // Returning a route for them made the shell intercept the sidebar link and
-  // show this document's board settings instead of navigating to that page.
+  // show this document's site settings instead of navigating to that page.
   if (clean === "/dashboard/settings" || clean.startsWith("/dashboard/settings/")) return null;
   if (!clean.startsWith("/dashboard/")) return null;
   const [head, tail] = clean.slice("/dashboard/".length).split("/");
