@@ -12,8 +12,9 @@ function tidyRewardRows(root = document) {
 function tidyViewerActions(root = document) {
   root.querySelectorAll("[data-tip-viewer]").forEach((button) => {
     const viewer = button.dataset.viewerName || "viewer";
-    button.textContent = "Add credits";
-    button.title = `Add credits for @${viewer}`;
+    if (button.textContent !== "Add credits") button.textContent = "Add credits";
+    const title = `Add credits for @${viewer}`;
+    if (button.title !== title) button.title = title;
   });
 }
 
