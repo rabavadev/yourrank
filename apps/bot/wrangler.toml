@@ -6,6 +6,24 @@ compatibility_flags = ["nodejs_compat"]
 # Smart Placement reduces the repeated EU-origin round trips for those paths.
 placement = { mode = "smart" }
 
+# Serve the bot Worker under the /bot, /hook, /r, /pb, /billing and
+# /dashboard/telegram prefixes on the main zone. More-specific routes win, so
+# the leaderboard Worker keeps the root.
+# Keep this list above every table header: in TOML a top-level key written after
+# one belongs to that table, so Wrangler would read no zone routes at all and
+# deploy the Worker with only its workers.dev hostname.
+routes = [
+  { pattern = "yourrank.site/bot",                 zone_name = "yourrank.site" },
+  { pattern = "yourrank.site/bot/*",               zone_name = "yourrank.site" },
+  { pattern = "yourrank.site/dashboard/telegram*", zone_name = "yourrank.site" },
+  { pattern = "yourrank.site/hook/*",              zone_name = "yourrank.site" },
+  { pattern = "yourrank.site/billing/hook/*",      zone_name = "yourrank.site" },
+  { pattern = "yourrank.site/r/*",                 zone_name = "yourrank.site" },
+  { pattern = "yourrank.site/pb",                  zone_name = "yourrank.site" },
+  { pattern = "yourrank.site/pb*",                 zone_name = "yourrank.site" },
+  { pattern = "yourrank.site/pb/*",                zone_name = "yourrank.site" },
+]
+
 [observability]
 enabled = true
 head_sampling_rate = 1
@@ -22,18 +40,6 @@ RL_FAIL_OPEN = "false"  # Block requests when the rate-limit backend is down (fa
 POSTBACK_UNSIGNED_ENABLED = "false"  # Signed postbacks only.
 SESSION_COOKIE_DOMAIN = ".yourrank.site"
 # Set SENTRY_DSN via `wrangler secret put SENTRY_DSN` when ready
-
-# Serve the bot Worker under the /bot, /hook, /r, /pb, /billing prefixes on the
-# main zone. More-specific routes win, so the leaderboard Worker keeps the root.
-routes = [
-  { pattern = "yourrank.site/bot",           zone_name = "yourrank.site" },
-  { pattern = "yourrank.site/bot/*",         zone_name = "yourrank.site" },
-  { pattern = "yourrank.site/dashboard/telegram*", zone_name = "yourrank.site" },
-  { pattern = "yourrank.site/hook/*",        zone_name = "yourrank.site" },
-  { pattern = "yourrank.site/r/*",           zone_name = "yourrank.site" },
-  { pattern = "yourrank.site/pb",            zone_name = "yourrank.site" },
-  { pattern = "yourrank.site/pb/*",          zone_name = "yourrank.site" },
-]
 
 [[queues.producers]]
 queue = "yourrank-events"
