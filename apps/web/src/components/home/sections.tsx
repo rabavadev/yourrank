@@ -61,10 +61,7 @@ export function LoopSection() {
     <section className="bg-devin-surface px-6 py-24 sm:py-32">
       <div className="mx-auto max-w-5xl">
         <Reveal>
-          <p className="font-mono text-xs uppercase tracking-widest text-devin-primary">
-            The closed engagement loop
-          </p>
-          <h2 className="mt-4 max-w-xl text-4xl font-medium leading-[1.1] tracking-[-0.01em] text-devin-ink sm:text-5xl">
+          <h2 className="max-w-xl text-4xl font-medium leading-[1.1] tracking-[-0.01em] text-devin-ink sm:text-5xl">
             The community loop stays connected.
           </h2>
         </Reveal>
@@ -112,10 +109,7 @@ export function ProductsSection() {
     <section className="border-t border-devin-line bg-devin-secondary/40 px-6 py-24 sm:py-32">
       <div className="mx-auto max-w-5xl">
         <Reveal>
-          <p className="font-mono text-xs uppercase tracking-widest text-devin-primary">
-            Product pillars
-          </p>
-          <h2 className="mt-4 max-w-xl text-4xl font-medium leading-[1.1] tracking-[-0.01em] text-devin-ink sm:text-5xl">
+          <h2 className="max-w-xl text-4xl font-medium leading-[1.1] tracking-[-0.01em] text-devin-ink sm:text-5xl">
             Three products. One continuous community.
           </h2>
         </Reveal>
@@ -125,7 +119,7 @@ export function ProductsSection() {
             <StaggerItem key={p.tag}>
               <a
                 href={p.href}
-                className="group flex h-full flex-col rounded-lg border border-devin-line bg-devin-surface p-8 transition-all duration-300 hover:-translate-y-1 hover:border-devin-ink/30 hover:shadow-[0_16px_48px_-16px_rgba(25,25,25,0.18)]"
+                className="group flex h-full flex-col rounded-lg border border-devin-line bg-devin-surface p-8 transition-colors duration-300 hover:border-devin-ink/30"
               >
                 <p className="font-mono text-[11px] tracking-widest text-devin-ink-soft">{p.tag}</p>
                 <h3 className="mt-4 text-xl font-medium leading-snug text-devin-ink">{p.title}</h3>

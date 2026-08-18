@@ -9,6 +9,15 @@
 
 import { type ShellUser } from "./shell-nav.js";
 
+export const DEVIN_DESIGN_CONTRACT = `<!--
+THESIS: One quiet, high-contrast language makes the connected YourRank suite immediately legible.
+OWN-WORLD: Near-white fields, black type, electric-violet actions, hairline dividers, restrained geometry, and readable product surfaces.
+STORY: A visitor or operator understands the current state, finds the next action, and keeps product context without relearning the interface.
+FIRST VIEWPORT: Compact product identity, decisive page purpose, a visible primary action, and essential product state appear before supporting detail.
+FORM: Devin-reference suite system, seed 562938e8; devin.ai governs material and hierarchy while YourRank branding, copy, and product truth remain original.
+FINISH: Every shipped surface is reviewed at desktop and mobile, documented in DESIGN.md, and held to the shared accessibility and responsive floor.
+-->`;
+
 
 function esc(s: unknown): string {
   return String(s ?? "").replace(/[&<>"']/g, (ch) =>
@@ -57,7 +66,7 @@ export function leaderboardPageHtml(opts: LeaderboardPageOpts): string {
   const description = opts.description ? `<meta name="description" content="${esc(opts.description)}" />` : "";
   const styles = (opts.styles || ["/assets/app.css", "/assets/shell-nav.css", "/assets/ui.css"])
     .map((href) => `<link rel="stylesheet" href="${esc(href)}" />`)
-    .join("");
+    .join("") + '<link rel="stylesheet" href="/assets/devin-system.css" />';
   const scripts = (opts.scripts || []).join("");
   const noscript =
     opts.noscript ||
@@ -81,7 +90,7 @@ ${reqIdMeta}
 ${description}<meta name="robots" content="${esc(opts.robots || "noindex, nofollow")}" /><link rel="canonical" href="${esc(opts.canonical)}" />${GOOGLE_FONTS}
 <script src="/assets/theme.js" defer></script>
 ${styles}
-</head><body${bodyAttr}>
+</head><body${bodyAttr}>${DEVIN_DESIGN_CONTRACT}
 <noscript><div class="noscript-msg">${noscript}</div></noscript>
 <a href="#main-content" class="sr-only skip-link">Skip to content</a>
 ${navPlaceholder}
@@ -204,7 +213,7 @@ export function botPageHtml(opts: BotPageOpts): string {
     : "";
   return `<!doctype html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Streamer Dashboard</title>${GOOGLE_FONTS}${THEME_SCRIPT(opts.nonce)}${chromeCss}<style${nonceAttr}>${BOT_STYLE_ATTR_CSS}${BOT_BASE_CSS}${BOT_DASH_V2_CSS}</style><link rel="stylesheet" href="/assets/ui.css"><link rel="stylesheet" href="/assets/shell-nav.css"></head><body class="yr-ui" data-page="${esc(opts.page)}">
+<title>Streamer Dashboard</title>${GOOGLE_FONTS}${THEME_SCRIPT(opts.nonce)}${chromeCss}<style${nonceAttr}>${BOT_STYLE_ATTR_CSS}${BOT_BASE_CSS}${BOT_DASH_V2_CSS}</style><link rel="stylesheet" href="/assets/ui.css"><link rel="stylesheet" href="/assets/shell-nav.css"><link rel="stylesheet" href="/assets/devin-system.css"></head><body class="yr-ui" data-page="${esc(opts.page)}">${DEVIN_DESIGN_CONTRACT}
 <a href="#main-content" class="skip-link">Skip to main content</a>
 ${nav}
 ${opts.content}

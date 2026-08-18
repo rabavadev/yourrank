@@ -1,4 +1,5 @@
 node_modules/
+npm-cache/
 dist/
 .dev.vars
 .wrangler/
@@ -25,6 +26,8 @@ ui-ux-pro-max-skill-main/
 postman/
 components.json
 components/
+!apps/web/src/components/
+!apps/web/src/components/**/*.tsx
 lib/
 tailwind.config.js
 /tsconfig.json
@@ -47,4 +50,5 @@ tailwind.config.js
 .impeccable/live/deferred-svelte-component-accepts.json
 .impeccable/live/*.png
 .impeccable/critique/
+.impeccable/review/
 # impeccable-ignore-end

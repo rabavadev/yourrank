@@ -481,6 +481,7 @@ export async function renderSite({ r, section, viewer, viewerData, opts }) {
 <script nonce="${nonce}">document.querySelector('link[data-async]').onload=function(){this.media='all'};</script>
 <noscript><link href="${fontsHref}" rel="stylesheet" /></noscript>
 <link rel="stylesheet" href="/assets/site-shell.css" />
+<link rel="stylesheet" href="/assets/devin-system.css" />
 ${section === "games" ? gamesIslandHead() : ""}
 <style nonce="${nonce}" data-theme-tokens>.yr-site{--yr-accent:${accent};--yr-accent-ink:${accentInkValue}}${section === "games" ? `#gx-root{--gx-accent:${accent};--gx-accent-ink:${accentInkValue}}` : ""}</style>
 ${opts.csrfToken ? `<meta name="csrf-token" content="${esc(opts.csrfToken)}" />` : ""}

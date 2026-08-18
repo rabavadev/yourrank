@@ -13,6 +13,7 @@ exports[`shared public board renderer keeps the fixed fixture HTML stable 1`] = 
 <script nonce="fixed-nonce">document.querySelector('link[data-async]').onload=function(){this.media='all'};</script>
 <noscript><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&family=Fira+Code:wght@400;500;600;700&family=Fira+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet" /></noscript>
 <link rel="stylesheet" href="/assets/site-shell.css" />
+<link rel="stylesheet" href="/assets/devin-system.css" />
 
 <style nonce="fixed-nonce" data-theme-tokens>.yr-site{--yr-accent:var(--yr-color-board-accent);--yr-accent-ink:#000000}</style>
 

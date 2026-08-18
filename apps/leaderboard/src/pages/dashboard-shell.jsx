@@ -10,12 +10,11 @@ const CREDITS_NAV_KEYS = new Set(["credits", "channel", "redemptions", "shop", "
 
 const DESIGN_CONTRACT = `<!--
 THESIS: A creator run-sheet workspace turns dashboard state into the next clear action; it refuses the generic dark tile wall.
-OWN-WORLD: Scoreboard Editorial — chalk-paper canvas, ink production rail, cobalt actions, amber rank cues, mint completed states, and precise hairline rules.
+OWN-WORLD: Devin-reference operating system — quiet near-white fields, an ink production rail, electric-violet actions, restrained geometry, and precise hairline rules.
 STORY: A non-technical streamer sees what is live, what needs attention, acts immediately, and can reach every feature from one rail.
 FIRST VIEWPORT: Fixed branded rail at left; operational topbar above one launch run-sheet, a divided KPI band, and a compact 8/4 activity and players workspace.
-FORM: Scoreboard Editorial identity layered onto the Creator Run-Sheet workspace, seed 562938e8.
-BOUNDARY: Identity styling is scoped to data-auth-workspace and data-identity=scoreboard-editorial; public viewer and marketing surfaces remain unchanged.
-FINISH: unreviewed and undocumented is unfinished; this build ends with the finish review, the verdict, and DESIGN.md
+FORM: Devin-reference identity layered onto the Creator Run-Sheet workspace, seed 562938e8; the devin.ai reference governs material and hierarchy while YourRank content and branding remain original.
+FINISH: Every shipped surface is reviewed at desktop and mobile, documented in DESIGN.md, and held to the shared accessibility and responsive floor.
 -->`;
 
 const NAV_ICONS = {
@@ -145,7 +144,7 @@ export function DashboardShell({ activeNav = "home", activeHash = "", boardConte
   const shellId = rootId || (boardContext === "none" ? "account-dash" : "dash");
   const profile = profileMenuHtml({ activePath, user, standalone: true, dynamicIdentity: true });
 
-  return <div class="v3-dash" id={shellId} data-auth-workspace="true" data-identity="scoreboard-editorial" hidden={initiallyHidden}>
+  return <div class="v3-dash" id={shellId} data-auth-workspace="true" data-identity="devin-reference" hidden={initiallyHidden}>
     {raw(DESIGN_CONTRACT)}
     <div class="toast" id="status" role="status" aria-live="polite"></div>
     <div class="lb-shell">

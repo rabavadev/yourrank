@@ -26,6 +26,7 @@ export function InvitePage({ invite, token, user } = {}) {
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
         <link rel="stylesheet" href="/assets/app.css" />
         <link rel="stylesheet" href="/assets/ui.css" />
+        <link rel="stylesheet" href="/assets/devin-system.css" />
         <style dangerouslySetInnerHTML={{ __html: `
           .invite-shell { min-height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 24px; background: radial-gradient(circle at 50% 10%, rgba(234, 179, 8, 0.08) 0%, rgba(15, 23, 42, 0) 60%), #0b0f19; }
           .invite-card { max-width: 480px; width: 100%; background: #131b2e; border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 16px; padding: 32px; box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5); text-align: center; }

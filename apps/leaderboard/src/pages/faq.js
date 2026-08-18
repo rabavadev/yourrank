@@ -1,4 +1,6 @@
 // FAQ page — answer-engine optimization (FAQPage schema)
+import { DEVIN_DESIGN_CONTRACT } from "@yourrank/shared/page-shell";
+
 export const paymentMethodsAnswer = "Paid plans are billed in crypto (BTC, ETH, USDT and 100+ more) through NOWPayments. Card checkout is not available yet.";
 
 const faqs = [
@@ -34,9 +36,9 @@ export const faqPage = `<!DOCTYPE html><html lang="en"><head>
 <meta name="twitter:description" content="Answers to common questions about YourRank leaderboards, Telegram bot, credits, and pricing." />
 <link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
-<link rel="stylesheet" href="/assets/ui.css" /><link rel="stylesheet" href="/assets/landing.css" />
+<link rel="stylesheet" href="/assets/ui.css" /><link rel="stylesheet" href="/assets/landing.css" /><link rel="stylesheet" href="/assets/devin-system.css" />
 <script type="application/ld+json">${faqStructuredData}</script>
-</head><body class="marketing-page marketing-page--faq" data-identity="devin-reference">
+</head><body class="marketing-page marketing-page--faq" data-identity="devin-reference">${DEVIN_DESIGN_CONTRACT}
 <a href="#main-content" class="sr-only skip-link">Skip to content</a>
 <header><nav class="top wrap"><a href="/" class="brand" aria-label="YourRank home"><span class="brand-icon-wrap" aria-hidden="true"><svg class="brand-svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg></span><span class="brand-text">Your<b>Rank</b></span></a>
 <button class="nav-toggle" aria-label="Toggle menu" aria-expanded="false"><svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button>

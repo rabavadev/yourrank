@@ -14,6 +14,7 @@ export function renderPasswordGate(site, opts, error = "") {
 <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>${name} · Password required</title>
 <link rel="stylesheet" href="/assets/site-shell.css" />
+<link rel="stylesheet" href="/assets/devin-system.css" />
 <style nonce="${nonce}">
 .yr-gate-wrap{min-height:100vh;display:grid;place-items:center;padding:24px}
 .yr-gate-card{width:min(100%,440px);border:1px solid var(--yr-edge);background:var(--yr-panel);padding:32px}

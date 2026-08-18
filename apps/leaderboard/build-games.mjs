@@ -29,25 +29,52 @@ const outdir = path.join(here, "src/assets/games");
 fs.rmSync(outdir, { recursive: true, force: true });
 fs.mkdirSync(outdir, { recursive: true });
 
-const result = await esbuild.build({
-  entryPoints: [entry],
-  outdir,
-  bundle: true,
-  splitting: true,
-  format: "esm",
-  target: ["es2020", "chrome100", "safari15", "firefox100"],
-  minify: true,
-  legalComments: "none",
-  jsx: "automatic",
-  jsxImportSource: "preact",
-  entryNames: "games",
-  chunkNames: "[name]-[hash]",
-  define: { "process.env.NODE_ENV": '"production"' },
-  metafile: true,
-});
+let outputSizes;
+try {
+  const result = await esbuild.build({
+    entryPoints: [entry],
+    outdir,
+    bundle: true,
+    splitting: true,
+    format: "esm",
+    target: ["es2020", "chrome100", "safari15", "firefox100"],
+    minify: true,
+    legalComments: "none",
+    jsx: "automatic",
+    jsxImportSource: "preact",
+    entryNames: "games",
+    chunkNames: "[name]-[hash]",
+    define: { "process.env.NODE_ENV": '"production"' },
+    metafile: true,
+  });
+  outputSizes = Object.entries(result.metafile.outputs)
+    .map(([file, meta]) => `${path.basename(file)} ${(meta.bytes / 1024).toFixed(1)}kB`);
+} catch (error) {
+  // Some locked-down Windows environments allow Bun to read the workspace but
+  // deny the child esbuild executable the same path. Keep esbuild as the normal
+  // build and use Bun's in-process bundler only for that failure mode.
+  if (typeof Bun === "undefined" || typeof Bun.build !== "function") throw error;
+  console.warn("esbuild unavailable; using Bun's in-process games bundler");
+  fs.rmSync(outdir, { recursive: true, force: true });
+  fs.mkdirSync(outdir, { recursive: true });
+  const result = await Bun.build({
+    entrypoints: [entry],
+    outdir,
+    splitting: true,
+    format: "esm",
+    target: "browser",
+    minify: true,
+    naming: { entry: "games.[ext]", chunk: "[name]-[hash].[ext]" },
+    define: { "process.env.NODE_ENV": '"production"' },
+  });
+  if (!result.success) {
+    for (const log of result.logs) console.error(log);
+    throw error;
+  }
+  outputSizes = result.outputs.map((output) =>
+    `${path.basename(output.path)} ${(output.size / 1024).toFixed(1)}kB`
+  );
+}
 
-const sizes = Object.entries(result.metafile.outputs)
-  .map(([file, meta]) => `${path.basename(file)} ${(meta.bytes / 1024).toFixed(1)}kB`)
-  .sort()
-  .join(", ");
+const sizes = outputSizes.sort().join(", ");
 console.log(`games island: ${sizes}`);

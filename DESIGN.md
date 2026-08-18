@@ -1,309 +1,273 @@
-# DESIGN.md
-
-The design system for YourRank. This document is the source of truth for the
-product's visual identity and information architecture. It documents what the
-code actually ships, not an aspirational future state.
-
-Read this together with `PRODUCT.md` (what the product is and who it serves)
-and `AGENTS.md` (how to work in the repo).
-
+---
+name: YourRank Connected Suite
+description: A quiet, high-contrast operating language for Sites, Telegram, and Credits & Shop.
+colors:
+  primary: "#2200FF"
+  primary-hover: "#1B00CC"
+  production-chrome: "#121111"
+  production-chrome-raised: "#232323"
+  ink: "#191919"
+  ink-muted: "#5C5C5C"
+  ink-faint: "#6B6B6B"
+  field: "#FFFFFF"
+  surface: "#FCFCFC"
+  surface-inset: "#EFEFEF"
+  line: "rgba(0, 0, 0, 0.12)"
+  line-soft: "rgba(0, 0, 0, 0.08)"
+  success: "#1F8A68"
+  warning: "#B76A12"
+  danger: "#B42318"
+typography:
+  display:
+    fontFamily: "Inter, Fira Sans, system-ui, -apple-system, Segoe UI, sans-serif"
+    fontSize: "clamp(3rem, 7vw, 5.5rem)"
+    fontWeight: 500
+    lineHeight: 0.98
+    letterSpacing: "-0.035em"
+  headline:
+    fontFamily: "Inter, Fira Sans, system-ui, -apple-system, Segoe UI, sans-serif"
+    fontSize: "clamp(2.25rem, 5vw, 3rem)"
+    fontWeight: 500
+    lineHeight: 1.05
+    letterSpacing: "-0.02em"
+  title:
+    fontFamily: "Inter, Fira Sans, system-ui, -apple-system, Segoe UI, sans-serif"
+    fontSize: "1.5rem"
+    fontWeight: 500
+    lineHeight: 1.2
+    letterSpacing: "-0.02em"
+  body:
+    fontFamily: "Inter, Fira Sans, system-ui, -apple-system, Segoe UI, sans-serif"
+    fontSize: "1rem"
+    fontWeight: 400
+    lineHeight: 1.5
+    letterSpacing: "normal"
+  label:
+    fontFamily: "Geist Mono, Fira Code, IBM Plex Mono, JetBrains Mono, ui-monospace, monospace"
+    fontSize: "0.6875rem"
+    fontWeight: 600
+    lineHeight: 1.3
+    letterSpacing: "0.1em"
+rounded:
+  control: "2px"
+  small: "6px"
+  card: "16px"
+  pill: "200px"
+spacing:
+  xs: "4px"
+  sm: "8px"
+  md: "12px"
+  base: "16px"
+  lg: "24px"
+  xl: "32px"
+  xxl: "48px"
+  section: "64px"
+  section-lg: "96px"
+components:
+  button-primary:
+    backgroundColor: "{colors.primary}"
+    textColor: "{colors.field}"
+    rounded: "{rounded.control}"
+    padding: "12px 20px"
+    height: "44px"
+  button-primary-hover:
+    backgroundColor: "{colors.primary-hover}"
+    textColor: "{colors.field}"
+    rounded: "{rounded.control}"
+  button-dark:
+    backgroundColor: "{colors.ink}"
+    textColor: "{colors.surface}"
+    rounded: "{rounded.control}"
+    padding: "12px 16px"
+    height: "44px"
+  button-secondary:
+    backgroundColor: "{colors.field}"
+    textColor: "{colors.ink}"
+    rounded: "{rounded.control}"
+    padding: "12px 20px"
+    height: "44px"
+  input:
+    backgroundColor: "{colors.field}"
+    textColor: "{colors.ink}"
+    rounded: "{rounded.small}"
+    padding: "12px 14px"
+    height: "44px"
+  card:
+    backgroundColor: "{colors.surface}"
+    textColor: "{colors.ink}"
+    rounded: "{rounded.card}"
+    padding: "24px"
+  status-chip:
+    backgroundColor: "{colors.surface-inset}"
+    textColor: "{colors.ink}"
+    rounded: "{rounded.pill}"
+    padding: "4px 8px"
 ---
 
-## 1. Product shape
-
-YourRank is **one account with three peer products**:
-
-| Product | Surface | Who |
-| --- | --- | --- |
-| **Sites** | `/dashboard` | The streamer builds and operates a public leaderboard/community site. |
-| **Telegram** | `/bot/dashboard` | The streamer runs a Telegram bot (replies, offers, broadcasts). |
-| **Credits & Shop** | `/dashboard/rewards/*` | Viewers earn credits from Kick channel-point activity and spend them in the board shop. |
-
-These three are peers under one signed-in account. The public, viewer-facing
-side of Sites and Credits is a **separate surface** (`/[:slug]/*`) with its own
-branding — see §3.
-
-**IA rules that must hold:**
-
-- The signed-in shell exposes the three products as a product switcher
-  (`Sites / Telegram / Credits & Shop`) plus Account and Help access. There is
-  exactly one Account destination family.
-- No dead ends: every signed-in destination has an obvious way back or onward.
-  Leaf pages render a breadcrumb trail (`crumbsHtml`) so the user always knows
-  where they are. A one-item trail renders nothing because it is the product
-  home.
-- **Help lives inside the app rail for signed-in streamers**, not as a marketing
-  dead end. A signed-in streamer keeps their app chrome, account identity, and a
-  path back to the dashboard. Anonymous Help remains outside the authenticated
-  v4 visual world.
-- Two-click principle: primary operator tasks should be reachable in roughly two
-  actions from the product home, using smart defaults over configuration.
-- Features are grouped, not hidden. The authenticated rail must keep all major
-  dashboard, editor, analytics, credits, settings, and help destinations visible
-  and discoverable.
-
----
-
-## 2. Authenticated dashboard thesis
-
-The signed-in leaderboard experience now uses the **Creator Run-Sheet workspace**
-(seed `562938e8`, Operate mode):
-
-> A non-technical streamer should see what is live, what needs attention, and the
-> next useful action without understanding the system architecture.
-
-This replaces the generic dark tile dashboard. The dashboard is not a metrics
-wall; it is an operating workspace for streamers preparing and running a live
-community board.
-
-**Shipped first viewport:**
-
-- Fixed branded rail on the left.
-- One high-contrast site command bar: current site, public path, availability,
-  create-site action, and a real Publish/Unpublish command are aligned as two
-  stable groups instead of scattered across the header. Publishing is never
-  represented as a settings toggle.
-- A compact Overview heading leads into one 12-column launch run-sheet. Status,
-  the next action, progress, and the three setup steps share one divided surface
-  instead of competing hero and checklist cards.
-- Verification is consolidated into the launch run-sheet on Overview; other
-  routes use one compact notice instead of a full-width warning card.
-- A concise divided KPI band and one asymmetric activity surface follow
-  immediately. Recent Activity and Top Players use a shared outer boundary with
-  an internal divider rather than separate floating cards.
-- Primary actions live inside the launch module or the relevant section, not
-  beside a generic page title or on a separate dead-end screen.
-
-The contract is embedded in authenticated shell markup in
-`apps/leaderboard/src/pages/dashboard-shell.jsx` and `shared/dashboard-chrome.ts`.
-
----
-
-## 3. Surfaces and boundaries
-
-YourRank has three visual surfaces that intentionally do different jobs:
-
-1. **Authenticated leaderboard workspace** (`/dashboard`, `/dashboard/*`,
-   `/dashboard/rewards/*`, signed-in Help). Light Creator Run-Sheet workspace
-   styled by `apps/leaderboard/src/assets/dashboard-v4.css`, scoped to
-   `.v3-dash[data-auth-workspace]`.
-2. **Legacy/base operator layer**. `dashboard-v3.css` remains underneath as the
-   compatibility/base layer for older dashboard markup and non-v4 app surfaces.
-   V4 overrides it only when the authenticated shell sets
-   `data-auth-workspace="true"`.
-3. **Public viewer surface** (`/[:slug]/*`). Streamer-branded board pages —
-   leaderboard, shop, games, board credits — keep their own public identity and
-   per-board accent.
-
-Marketing/public homepage surfaces are not part of the authenticated v4 scope and
-must not be restyled as a side effect of dashboard work. Anonymous Help is not
-v4-auth styled.
-
----
-
-## 4. Color
-
-### Authenticated Creator Run-Sheet palette
-
-| Token | Value | Role |
-| --- | --- | --- |
-| `--v4-canvas` | `#F5F7FB` | Cool-gray app background. |
-| `--v4-surface` | `#FFFFFF` | Main cards/modules. |
-| `--v4-surface-soft` | `#F8FAFC` | Soft inset areas. |
-| `--v4-ink` | `#172033` | Primary text on light surfaces. |
-| `--v4-ink-soft` | `#667085` | Secondary explanatory text. |
-| `--v4-line` | `#E5E7EB` | Card borders and separators. |
-| `--v4-navy` | `#101C33` | Fixed production rail. |
-| `--v4-navy-raised` | `#182843` | Active/raised rail states. |
-| `--v4-cobalt` | `#315CFF` | Primary product action. |
-
-Cobalt `#315CFF` is the single product action color for the authenticated
-leaderboard workspace and shared controls. It is confident and operational, not a
-random blue/purple gradient system.
-
-### Authenticated status colors
-
-V4 uses darker status colors for text on the light dashboard surface:
-
-- success `#1F8A68`, soft fill `#EAF7F2`
-- warning `#B76A12`, soft fill `#FFF6E8`
-- danger `#B42318`, soft fill `#FFF0EE`
-
-Status should read as a cue, not decoration. Use narrow cue bands, badges, dots,
-and concise text labels. Do not use thick rainbow borders or decorative glows.
-
-### Public board accent is a separate axis
-
-A board's public pages are branded to the **streamer's** color, not the product
-cobalt. `site-render.js` resolves `--yr-accent: var(--yr-color-board-accent)` at
-runtime and computes `--yr-accent-ink` for contrast. This axis must stay
-independent of the operator accent.
-
----
-
-## 5. Typography
-
-- **Authenticated leaderboard workspace:** uses the existing dashboard font stack
-  (`--v3-sans`, `--v3-mono`) so the v4 layer can ship as a focused CSS/shell
-  replacement without introducing a new font-loading path. Type is made distinct
-  through hierarchy: compact rail labels, high-contrast module headings, tabular
-  numeric KPIs, and plain-language labels for non-technical streamers.
-- **Marketing stream-day scoreboard:** Archivo Expanded (display), Inter (body),
-  and JetBrains Mono (figures and labels), scoped under `.landing-page` and
-  shared by the pricing, FAQ, and reviews sheets through `landing.css`.
-  Marketing uses a near-achromatic Court Black / Deck / Well palette with
-  cobalt actions, a tally-red on-air cue, amber scoreboard figures, and mint
-  fulfilled states. Its signature is the live board in the homepage hero:
-  split-flap word changes, a reordering standings list, and a countdown.
-- **Public board:** Fira Sans / Fira Code loaded by `site-render.js`, with the
-  board's own accent applied on top.
-
-Copy should name what users understand: Players, Look & feel, Share your site,
-Past winners, Rewards shop, How viewers earn. Avoid exposing implementation
-terms in navigation.
-
----
-
-## 6. Layout and navigation
-
-### Fixed authenticated rail
-
-`DashboardShell` and `dashboardChromeHtml` render a fixed left rail for signed-in
-app surfaces:
-
-- Expanded width: `272px`.
-- Collapsed desktop width: `80px` via `data-side-collapsed="true"`.
-- Collapse state persists in `localStorage` under `yr-side-collapsed`.
-- Brand at the top: YourRank / Creator workspace.
-- Grouped feature navigation in the middle.
-- Product switcher for Sites, Telegram, Credits & Shop.
-- Profile menu at the bottom via `.lb-side-profile`.
-- Mobile rail becomes a drawer with Escape close, focus return, and focus trap.
-
-The rail may collapse, but features must remain reachable and recognizable via
-icons, titles, active states, and the grouped structure. Do not delete feature
-links to make the UI look simpler.
-
-### Workspace grid
-
-The authenticated content area uses a 12-column CSS grid with a `24px` gutter:
-
-```css
-.v3-dash[data-auth-workspace] .lb-bento {
-  display: grid;
-  grid-template-columns: repeat(12, minmax(0, 1fr));
-  gap: 24px;
-}
-```
-
-Modules span columns; they must not rely on structural absolute positioning.
-Desktop layouts can use asymmetric 8/4 or 7/5 splits. Tablet and mobile stack
-into fewer columns with the same spacing rhythm.
-
-### Overview hierarchy
-
-The Overview is a run-sheet, not a dump:
-
-- `section[data-page="home"]` is itself a 12-column grid with a `24px` gap.
-- The heading is compact and does not compete with launch readiness.
-- One bordered launch run-sheet uses a 7/5 internal split: status and next action
-  on the left, progress and interactive setup rows on the right. The internal
-  divider replaces nested card borders. After publishing, the checklist
-  collapses and status uses the full row without growing into a sparse hero.
-- The real Publish/Unpublish command calls the site API. In the editor it includes
-  unsaved changes through the existing save path; on Overview it updates status,
-  activity, site links, and notifications without a detour.
-- KPI row is a compact strip: one white bordered module divided into concise KPI
-  cells, not three floating shadow cards competing for attention.
-- Main activity uses one asymmetric 8/4 surface. Recent Activity and Top Players
-  are divided sections, and confirmed-empty states stay short, explanatory, and
-  actionable rather than enforcing chart-sized minimum heights.
-- Quick actions stay close to the moment where the streamer needs them.
-
----
-
-## 7. Geometry, spacing, and elevation
-
-- Authenticated card/module radius: `12px`.
-- Small control radius: `8px`.
-- Content gap: `24px`.
-- Module padding: generally `18–24px`, dropping to `18–20px` on small screens.
-- Card/module border: `1px solid #E5E7EB`; use internal dividers when adjacent
-  information belongs to one workflow.
-- Card rest shadow: `0 1px 2px rgba(16, 24, 40, 0.06)`, used only when elevation
-  communicates separation. Overview bands rely on borders and alignment.
-- Overlay shadow: `0 16px 48px rgba(16, 24, 40, 0.18)`.
-
-Elevation is functional. Cards are bordered and quiet; menus and drawers can rise
-above the page. Avoid glassmorphism, meaningless gradients, arbitrary glows, and
-excessively rounded AI-dashboard tiles.
-
----
-
-## 8. Components and states
-
-Shared primitives live in `ui.css` and are the **one definition** used by both
-Workers for buttons (`.btn` / `.yr-ui button`), badges, dialogs (`.modal`),
-tables (`.tbl-scroll`), and empty/error states (`.empty` / `.empty--error` /
-`.error-state`). Add shared component styles there, not in per-Worker sheets.
-
-Authenticated v4 modules wrap standalone features in clean cards:
-
-- white surface
-- 12px radius
-- subtle border
-- restrained shadow
-- clear heading + supporting copy
-- visible hover/focus states for clickable elements
-
-Key interaction contracts:
-
-- **Empty vs error are different.** "You have nothing yet" (`.empty`, dashed)
-  must never be shown when a load failed (`.empty--error`, solid danger border).
-- **Loading is branded and announced.** The Dashboard opens with the dark-navy
-  YourRank mark, a restrained cobalt progress line, and rotating workspace copy.
-  Remote card/table values use layout-matching light skeletons so dimensions do
-  not jump when data arrives. Dashboard and Credits initial loaders retain
-  `role="status"`, `aria-live="polite"`, and `aria-busy="true"`.
-- **Feedback:** async actions surface through the toast (`#status`,
-  `role="status"`) or inline `.err[role="alert"]`.
-- **Touch targets** are 44px minimum on coarse pointers / narrow screens.
-- Tabs and client navigation must update `aria-current="page"` so the streamer
-  can tell where they are after navigation.
-
----
-
-## 9. Accessibility and responsive behavior
-
-- Every page opens with a skip link; `.sr-only` lives in `ui.css` so it exists on
-  marketing pages too.
-- Active navigation uses `aria-current="page"`.
-- Focus states are visible and consistent.
-- The mobile drawer traps focus, closes with Escape, and returns focus to the
-  opener.
-- Small screens hide non-essential topbar labels before controls collide.
-- The dashboard must handle loading, empty, error, signed-out, long text, large
-  datasets, tablet, and mobile states — not only the ideal state.
-
----
-
-## 10. Guardrails
-
-- `dashboard-v4.css` must stay scoped to `.v3-dash[data-auth-workspace]` or
-  `body:has(.v3-dash[data-auth-workspace])` so public/homepage/anonymous surfaces
-  do not inherit authenticated styling.
-- Do not use `position: absolute` for v4 structural layout.
-- Do not edit generated `packages/shared/dist/*.js` directly. Edit `packages/shared/src/*.ts`, then run
-  `bun run --cwd packages/shared build`.
-- Never remove or hide signed-in feature routes to simplify the rail. Simplify by
-  grouping, labeling, progressive disclosure, and better hierarchy.
-- Public homepage and viewer-facing pages are outside this authenticated
-  dashboard redesign unless a task explicitly targets them.
-- Run `bun run lint`, `bun run typecheck`, and `bun run test` before committing.
-
----
-
-*Redesign direction seed: Creator Run-Sheet workspace, seed `562938e8`, Operate
-mode. Current verdict: authenticated dashboard ships as a light, fixed-rail,
-12-column workspace with cobalt actions and navy production chrome; v3 remains a
-legacy/base layer underneath the scoped v4 system.*
+# Design System: YourRank Connected Suite
+
+## Overview
+
+**Creative North Star: "The Quiet Control Field"**
+
+YourRank uses one calm, high-contrast language to make a connected three-product suite immediately legible. The devin.ai reference supplies material discipline and hierarchy—near-white fields, black type, electric-violet actions, precise dividers, compact controls—while YourRank keeps its own identity, direct language, and product truth.
+
+The system spans three distinct contexts without becoming three visual brands. Marketing explains and demonstrates Sites, Telegram, and Credits & Shop; the operator workspace places a black production rail around a light working field; public streamer sites keep a streamer-selected accent inside the same light material system. Transparent OBS overlays and isolated games remain intentional context-specific exceptions.
+
+The product demonstration and the user's state carry each screen. Decoration stays quiet so the current state, the next action, and the relationship among the three peer products remain obvious.
+
+**Key Characteristics:**
+
+- Near-white reading fields, ink-black type, and electric-violet action cues.
+- A black production rail around light operator workspaces.
+- Hairline dividers and shared outer boundaries instead of nested card stacks.
+- Compact identity, clear purpose, visible action, and readable state in the first viewport.
+- Sites, Telegram, and Credits & Shop presented as peer products under one account.
+
+## Colors
+
+The palette is deliberately narrow: violet carries product action, black and near-whites establish hierarchy, and semantic colors report operational state.
+
+### Primary
+
+- **Electric Violet:** Primary calls to action, focus indicators, active product cues, links that need emphasis, and small live-state markers.
+- **Deep Violet:** Hover and pressed treatment for violet actions.
+
+### Neutral
+
+- **Production Black:** The signed-in workspace rail and other unmistakable production chrome.
+- **Raised Production Black:** Active navigation rows and quiet raised regions inside dark chrome.
+- **Ink Black:** Primary text and dark marketing actions.
+- **Operational Gray:** Supporting copy and secondary labels that must remain comfortably readable.
+- **Metadata Gray:** Quiet labels, timestamps, and compact supporting state.
+- **White Field:** The page canvas and input field.
+- **Paper Surface:** Cards, sticky bars, reading surfaces, and operator modules.
+- **Inset Gray:** Selected rows, muted controls, and shallow inset regions.
+- **Hairline / Soft Hairline:** Standard boundaries and lighter internal dividers.
+
+### Tertiary
+
+- **Success Green:** Completed, live, and healthy states.
+- **Warning Amber:** Queued, pending, draft, and attention states.
+- **Danger Red:** Destructive actions and errors only.
+
+### Named Rules
+
+**The Two Accent Rule.** Electric Violet belongs to YourRank actions and focus; the public `--yr-accent` belongs to the streamer's local identity. Do not replace one with the other.
+
+**The State, Not Decoration Rule.** Success, warning, and danger appear in status text, dots, narrow cue bands, and alerts—not as ornamental card themes.
+
+## Typography
+
+**Display Font:** Inter, falling back to Fira Sans and the system sans stack
+
+**Body Font:** Inter, falling back to Fira Sans and the system sans stack
+
+**Label/Mono Font:** Geist Mono, falling back through Fira Code, IBM Plex Mono, JetBrains Mono, and the system monospace stack
+
+**Character:** Neutral sans typography gives the product a precise, contemporary voice without competing with data. Tight, medium-weight display type creates decisive marketing hierarchy; monospaced type marks real state, numbers, paths, timestamps, and compact metadata.
+
+### Hierarchy
+
+- **Display** (500, fluid 3–5.5rem, 0.98 line-height): Outcome-led marketing hero statements, balanced to short line lengths.
+- **Headline** (500, fluid 2.25–3rem, 1.05 line-height): Section transitions and major product explanations.
+- **Title** (500, 1.5rem, 1.2 line-height): Module and product-surface titles.
+- **Body** (400, 1rem, 1.5 line-height): Product explanation and interface copy; explanatory reading text stays near 65–72 characters per line.
+- **Label** (600, 0.6875rem, 0.1em tracking): Uppercase only when the label encodes real product scope, state, time, or data structure.
+
+### Named Rules
+
+**The Plain Speech Rule.** Interface copy names the visible outcome—Players, Commands, Broadcasts, Rewards, Fulfilment—not the underlying infrastructure.
+
+**The Mono Has a Job Rule.** Monospace is reserved for data, state, paths, timestamps, compact labels, and technical metadata; it is not decorative display type.
+
+## Layout
+
+Marketing and product education use a centered reading frame of approximately 1152–1200px with 24px side padding, spacious 64–96px section intervals, and an editorial sequence: compact header, decisive heading, short explanation and action, then a large readable product surface. The first viewport visibly demonstrates the product instead of delaying it behind decorative copy.
+
+The authenticated workspace uses a fixed 272px production rail, a compact top bar, and a 12-column light working field. Sites, Telegram, and Credits & Shop remain reachable from the same product switcher; site or bot context stays visibly local. Comparable operational data uses divided rows, tables, and 8/4 or 12-column modules rather than isolated metric tiles.
+
+At narrow widths, marketing navigation becomes a disclosed menu while the primary Start free action remains visible. Operator and public rails become drawers, page padding contracts to 12–24px, multi-column layouts stack, and wide tables scroll inside their own container. Touch targets reach 44px on coarse pointers and mobile layouts remain usable at 320px.
+
+**The First Viewport Rule.** Every primary route starts with compact identity, one decisive purpose, a visible next action, and enough real or explicitly illustrative product state to understand the surface.
+
+**The One Suite Rule.** Global product switching, account, and help remain consistent; local site and bot context never disappears in the name of simplification.
+
+## Elevation & Depth
+
+The system is flat by default. White and near-white surfaces separate through hairline borders, shared outer boundaries, internal dividers, and tonal shifts. Cards and product previews rest without shadow. Elevation is reserved for temporary overlays, menus, and brief interactive lift; the standard overlay shadow is a soft black 16px/48px spread, while focus is expressed with a violet outline rather than depth.
+
+### Shadow Vocabulary
+
+- **Overlay:** A broad, soft shadow for dialogs and floating menus; never for ordinary cards.
+- **Action hover:** A small violet-tinted lift on shared primary controls; it disappears on active and disabled states.
+
+### Named Rules
+
+**The Hairline Before Shadow Rule.** Use boundaries and tonal layering for structure; add shadow only when a surface temporarily sits above the page or an action is responding to interaction.
+
+## Shapes
+
+Geometry is restrained and role-based. Primary actions and compact controls are nearly square; fields and small identity marks receive a gentle curve; cards and substantial reading surfaces use the larger soft corner; pills are limited to statuses and compact navigation. Adjacent information in one workflow shares an outer boundary and internal dividers rather than accumulating nested rounded containers.
+
+**The Restrained Geometry Rule.** Corners communicate scale and role: near-square actions, small-radius fields, large-radius modules, and pills only for genuinely compact status or navigation objects.
+
+## Components
+
+### Buttons
+
+- **Shape:** Primary and marketing actions use a near-square corner; standard marketing actions retain a 44px minimum target.
+- **Primary:** Electric Violet with white text and compact 12px × 20px padding.
+- **Dark:** Ink Black with a near-white label for the persistent header action.
+- **Secondary / Ghost:** White or transparent with Ink Black text and a hairline border.
+- **Hover / Focus / Active:** Primary actions deepen to Deep Violet, shared operator actions may lift by 1px, focus receives a visible violet ring, and active controls settle rather than float.
+- **Disabled / Busy:** Preserve the component footprint, lower opacity, remove lift, change the cursor, and expose busy state semantically.
+
+### Chips
+
+- **Style:** Compact status and navigation chips use the pill radius, short padding, and either an inset neutral fill or a semantic border/text pairing.
+- **State:** Live, pending, completed, and unavailable remain textually explicit; color never carries the state alone.
+
+### Cards / Containers
+
+- **Corner Style:** Soft card corner for marketing previews, operator modules, auth panels, and public viewer containers.
+- **Background:** Paper Surface on a White Field, with Inset Gray for selected or recessed regions.
+- **Shadow Strategy:** Flat at rest; use the Elevation rules only for temporary layers.
+- **Border:** Soft Hairline around the outer module; Hairline or Soft Hairline dividers within it.
+- **Internal Padding:** Usually 24px, expanding to 28–32px for spacious marketing and authentication surfaces.
+
+### Inputs / Fields
+
+- **Style:** White field, readable Ink Black text, visible label, Hairline border, small corner, and a 44px target where practical.
+- **Focus:** Border shifts to Electric Violet with a visible two-pixel violet outline or soft violet focus ring.
+- **Error / Disabled:** Error copy stays adjacent to the field and uses a semantic alert treatment; disabled fields remain legible and visibly unavailable.
+
+### Navigation
+
+Marketing navigation is compact and quiet, with muted default text, ink hover, explicit current-page state, a persistent primary action, and a disclosed mobile menu. Operator navigation lives in Production Black, uses text plus line icons, and marks the active destination with Raised Production Black and a narrow violet inset cue. The cross-product switcher always exposes Sites, Telegram, and Credits & Shop.
+
+### Divided Data Surface
+
+Leaderboard rows, reward catalogs, KPI bands, workflow steps, and operational tables share one outer boundary and separate comparable items with hairlines. Labels and numbers use the mono role only where it improves scanning; overflow stays inside the surface on small screens.
+
+### Named Rules
+
+**The State Before Action Rule.** When state affects a decision, show the truthful state immediately beside or before the action—published before Publish site, draft before Send, queued before Complete.
+
+## Do's and Don'ts
+
+### Do:
+
+- **Do** keep Sites, Telegram, and Credits & Shop visible as peer products under one account.
+- **Do** let real user data or clearly labeled synthetic product demonstrations carry the visual hierarchy.
+- **Do** use shared outer boundaries, internal dividers, and readable state before introducing another container.
+- **Do** preserve visible focus, semantic status announcements, reduced-motion behavior, and 44px touch targets where practical.
+- **Do** keep public streamer accent separate from YourRank's product-action violet.
+
+### Don't:
+
+- **Don't** introduce decorative gradients, glass effects, glow fields, or floating metric-card walls into normal product surfaces.
+- **Don't** use semantic colors as decoration or communicate state by color alone.
+- **Don't** hide the primary action or product switcher when the layout collapses.
+- **Don't** turn mono labels, uppercase captions, or numbered markers into decoration; each must encode actual state, scope, sequence, or data.
+- **Don't** invent testimonials, customer logos, metrics, billing promises, or performance claims that the product evidence does not support.

@@ -53,4 +53,20 @@ describe("apex marketing proxy", () => {
     expect(forwarded.url).toBe("https://app.yourrank.site/_next/static/chunks/home.js");
     expect(forwarded.headers.get("x-yr-marketing")).toBe("1");
   });
+
+  it("preserves marketing product routes", async () => {
+    const productRequest = new Request("https://yourrank.site/telegram");
+    let forwarded;
+    await proxyMarketingHome({
+      request: productRequest,
+      binding: {
+        fetch: async (upstream) => {
+          forwarded = upstream;
+          return new Response("product", { status: 200 });
+        },
+      },
+    });
+
+    expect(forwarded.url).toBe("https://app.yourrank.site/telegram");
+  });
 });
