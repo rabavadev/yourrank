@@ -1,6 +1,6 @@
 // Overview page summary tiles / top players / setup checklist.
 import { $, esc, currentPlayers } from "./utils.js";
-import { state, boardStatus, markDirty } from "./state.js";
+import { state, boardStatus } from "./state.js";
 import { renderEmpty, setMetricLoading, setMetricUnknown, setMetricValue } from "./states.js";
 
 const ACTIVITY_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>';
@@ -17,12 +17,12 @@ function isBoardSetup() {
 
 function computeSetupSteps() {
   const o = state.ONBOARDING || {};
-  // Keep this in lockstep with onboardingForSite: a board name alone is not
-  // enough; the board also needs a sponsor/prize source or promo code.
+  // Keep this in lockstep with onboardingForSite: a site name alone is not
+  // enough; the site also needs a sponsor/prize source or promo code.
   const name = $("f_name")?.value.trim();
-  const casino = $("f_casino")?.value.trim();
+  const sponsor = $("f_casino")?.value.trim();
   const code = $("f_code")?.value.trim();
-  const brand = Boolean(o.brand || (name && (casino || code)));
+  const brand = Boolean(o.brand || (name && (sponsor || code)));
   const players = currentPlayers().length > 0 || o.players;
   const kick = Boolean(state.CREDITS?.channel?.externalId);
   const branding = state.CURRENT_BRANDING || {};
@@ -70,8 +70,47 @@ function setSetupStatus(el, done, step) {
   }
 }
 
+function compactStreamTools() {
+  const card = document.querySelector(".ov-obs-suite-card");
+  if (!card || card.dataset.compact === "true") return;
+  card.dataset.compact = "true";
+
+  const title = card.querySelector(".v3-section-head h2");
+  if (title) title.textContent = "Stream tools";
+  const sub = card.querySelector(".v3-section-head .v3-head-sub");
+  if (sub) sub.textContent = "Optional OBS browser sources for your stream.";
+  const theme = card.querySelector(".v3-section-head a");
+  if (theme) theme.textContent = "Customize overlays";
+
+  const items = [...card.querySelectorAll(".ov-obs-item")];
+  const itemCopy = [
+    ["Prediction status overlay", "Show the current prediction state and timer on stream."],
+    ["Stream alerts", "Show alerts for prize orders and winners."],
+    ["Leaderboard bar", "Show a compact ticker of the current leaders."],
+  ];
+  items.forEach((item, index) => {
+    const strong = item.querySelector("strong");
+    const body = item.querySelector("p");
+    const button = item.querySelector("button");
+    if (strong && itemCopy[index]) strong.textContent = itemCopy[index][0];
+    if (body && itemCopy[index]) body.textContent = itemCopy[index][1];
+    if (button) button.textContent = "Copy OBS link";
+  });
+
+  const grid = card.querySelector(".ov-obs-grid");
+  if (!grid) return;
+  const details = document.createElement("details");
+  details.className = "cr-advanced ov-stream-tools-disclosure";
+  const summary = document.createElement("summary");
+  summary.textContent = "Show stream tools";
+  details.appendChild(summary);
+  grid.before(details);
+  details.appendChild(grid);
+}
+
 export function renderOverviewSummary() {
     if (!$("ovActiveBento")) return;
+    compactStreamTools();
     const players = currentPlayers();
     const status = boardStatus();
     const steps = computeSetupSteps();
@@ -113,7 +152,6 @@ export function renderOverviewSummary() {
     }
     const siteStateMeta = $("ovSiteStateMeta");
     if (siteStateMeta) siteStateMeta.textContent = status.live ? `People can visit yourrank.site/${state.SLUG}.` : pendingVerification ? "Your site is published and will open as soon as you confirm your email." : readyToPublish && needsVerification ? "Your setup is saved. Confirm now so publishing is frictionless." : readyToPublish ? "Everything required is in place. You can still edit before publishing." : `Next: ${firstIncomplete?.action || "continue setup"}.`;
-    // Setup progress
     const stepOrder = SETUP_STEPS.map(({ key }) => key);
     const completed = stepOrder.filter((key) => steps[key]).length;
     const countEl = $("ovSetupCount");
@@ -174,30 +212,8 @@ export function renderOverviewSummary() {
         <span class="ov-player-rank">#${i + 1}</span>
         <b class="ov-player-name">${esc(player.name)}</b>
         <span class="ov-player-wager">$${Number(player.wagered || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-        <div class="ov-quick-incs">
-          <button type="button" class="ov-inc-btn" data-inc="100" title="Add $100 to ${esc(player.name)}">+100</button>
-          <button type="button" class="ov-inc-btn" data-inc="500" title="Add $500 to ${esc(player.name)}">+500</button>
-          <button type="button" class="ov-inc-btn" data-inc="1000" title="Add $1,000 to ${esc(player.name)}">+1k</button>
-        </div>
       </div>
     `).join("");
-
-    $("ovTopPlayers").querySelectorAll(".ov-inc-btn").forEach((btn) => {
-      btn.addEventListener("click", (e) => {
-        e.stopPropagation();
-        const row = btn.closest(".ov-player-row");
-        const name = row?.dataset?.name;
-        const inc = Number(btn.dataset.inc || 0);
-        if (!name || !inc) return;
-        const playerList = currentPlayers();
-        const target = playerList.find((p) => p.name === name);
-        if (target) {
-          target.wagered = (Number(target.wagered) || 0) + inc;
-          markDirty();
-          renderOverviewSummary();
-        }
-      });
-    });
 
     if (top.length) $("ov_topEmpty").hidden = true;
     else renderEmpty($("ov_topEmpty"), { icon: "users", title: "No players yet", body: "Add the first player to start your leaderboard.", actions: [{ label: "Add players", href: "/dashboard/leaderboard/players" }] });
