@@ -30,7 +30,7 @@ shared as described in the other specs.
 | `/bot/dash/api/*`   | bot dashboard JSON API                         |
 | `/hook/*`           | Telegram webhook (per-bot secret)              |
 | `/r/*`              | tracked affiliate redirect                     |
-| `/pb/*`             | casino postbacks                               |
+| `/pb`, `/pb/*`      | casino postbacks                               |
 
 ---
 
@@ -46,8 +46,8 @@ routes = [
   { pattern = "yourrank.site/bot/*",         zone_name = "yourrank.site" },
   { pattern = "yourrank.site/hook/*",        zone_name = "yourrank.site" },
   { pattern = "yourrank.site/r/*",           zone_name = "yourrank.site" },
+  { pattern = "yourrank.site/pb",            zone_name = "yourrank.site" },
   { pattern = "yourrank.site/pb/*",          zone_name = "yourrank.site" },
-  { pattern = "yourrank.site/billing/hook/*",zone_name = "yourrank.site" },
 ]
 ```
 
@@ -75,7 +75,7 @@ matches.
 Rules that keep this unambiguous:
 1. The leaderboard Worker owns exactly one broad pattern: `yourrank.site/*`.
 2. Every bot path is a **distinct top-level prefix** (`/bot`, `/hook`, `/r`,
-   `/pb`, `/billing/hook`) so `/prefix/*` is strictly more specific than `/*`.
+   `/pb`) so `/prefix/*` is strictly more specific than `/*`.
 3. **Never** give the bot Worker a bare `yourrank.site/*` — that would make
    dispatch order-dependent and non-deterministic. Only the leaderboard gets the
    wildcard.
@@ -112,7 +112,7 @@ prefixes** so a public leaderboard slug can never collide with a bot route:
 ```
 add: "bot", "hook", "r", "pb", "health"
 ```
-(`billing` is already reserved, which also covers `/billing/hook`.)
+(`billing` remains reserved for the leaderboard billing paths.)
 
 ---
 
@@ -136,8 +136,8 @@ curl -sI https://yourrank.site/some-streamer     # -> leaderboard public page
 curl -sI https://yourrank.site/bot/dashboard    # -> bot (Bot tab)
 curl -sI https://yourrank.site/hook/abc          # -> bot (401 without secret = correct)
 curl -sI https://yourrank.site/r/xyz             # -> bot (302 redirect or 404)
+curl -sI https://yourrank.site/pb                # -> bot
 curl -sI https://yourrank.site/pb/key            # -> bot
-curl -sI https://yourrank.site/billing/hook/s    # -> bot (401 = correct)
 ```
 Then log in on `/dashboard`, click the **Bot** tab, and confirm no second login
 is required — that proves the shared `yr_session` cookie + Postgres `sessions`

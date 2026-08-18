@@ -285,12 +285,11 @@ export async function createSiteInvite(
     return { ok: true, token, inviteId: existingInvite.id };
   }
 
-  const created = await one<{ id: string }>(
-    `INSERT INTO site_invites (site_id, email, role, token_hash, invited_by, status, expires_at)
+  const insertSql = `INSERT INTO site_invites (site_id, email, role, token_hash, invited_by, status, expires_at)
      VALUES ($1, $2, $3, $4, $5, 'pending', now() + interval '7 days')
-     RETURNING id`,
-    [siteId, cleanEmail, role, tokenHash, inviterId]
-  );
+     RETURNING id`;
+  const insertParams = [siteId, cleanEmail, role, tokenHash, inviterId];
+  const created = (await exec(insertSql, insertParams))[0] as { id: string } | undefined;
 
   return { ok: true, token, inviteId: created?.id };
 }

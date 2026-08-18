@@ -781,12 +781,13 @@ export function buildDashboardApi(): Hono<{ Bindings: DashApiBindings; Variables
     if (!bot) return c.json({ error: "bot not found" }, 404);
 
     const segmentValue = normalizeSegment(segment);
-    const row = await one(
+    const rows = await exec(
       `INSERT INTO broadcasts (bot_id, body, media_url, status, scheduled_at, segment, audience_filter_snapshot)
        VALUES ($1, $2, $3, 'scheduled', $4, $5, $6::jsonb)
        RETURNING id, status`,
       [bot_id, body.trim(), media_url ?? null, scheduled_at ?? null, segmentValue, segment ? JSON.stringify(segment) : JSON.stringify({})]
     );
+    const row = rows[0];
     return c.json({ ...row, segment: parseSegment(segmentValue) });
   });
 

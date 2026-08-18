@@ -30,8 +30,8 @@ routes = [
   { pattern = "yourrank.site/bot/*",         zone_name = "yourrank.site" },
   { pattern = "yourrank.site/hook/*",        zone_name = "yourrank.site" },
   { pattern = "yourrank.site/r/*",           zone_name = "yourrank.site" },
+  { pattern = "yourrank.site/pb",            zone_name = "yourrank.site" },
   { pattern = "yourrank.site/pb/*",          zone_name = "yourrank.site" },
-  { pattern = "yourrank.site/billing/hook/*", zone_name = "yourrank.site" },
 ]
 
 [[queues.producers]]
@@ -63,8 +63,6 @@ id = "9e5b625bfdd84cd691b44c4780bdaf13"
 #   IP_HASH_SALT            # salts hashed visitor IPs
 #   LOGIN_BOT_TOKEN         # @BotFather token for the Telegram Login widget (/bot dashboard)
 #   LOGIN_BOT_USERNAME      # the login bot's @username (the widget needs it)
-#   PLATFORM_BOT_TOKEN      # the YourRank platform bot (Telegram Stars billing)
-#   PLATFORM_WEBHOOK_SECRET # billing webhook secret
 #   RESEND_API_KEY          # transactional email for onboarding sequence
 #   MAIL_FROM               # From: address for Resend, e.g. "YourRank <hey@yourrank.site>"
 
@@ -81,8 +79,8 @@ routes = [
   { pattern = "staging.yourrank.site/bot/*",         zone_name = "yourrank.site" },
   { pattern = "staging.yourrank.site/hook/*",        zone_name = "yourrank.site" },
   { pattern = "staging.yourrank.site/r/*",           zone_name = "yourrank.site" },
+  { pattern = "staging.yourrank.site/pb",            zone_name = "yourrank.site" },
   { pattern = "staging.yourrank.site/pb/*",          zone_name = "yourrank.site" },
-  { pattern = "staging.yourrank.site/billing/hook/*", zone_name = "yourrank.site" },
 ]
 
 [env.staging.observability]

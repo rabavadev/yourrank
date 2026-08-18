@@ -154,8 +154,6 @@ echo ""
 echo "── 11. Webhooks ──"
 # Telegram webhook — bad secret → 401 (secret header mismatch)
 test_route POST "/hook/testsecret" "Telegram webhook (bad secret → 401)" 401
-# Billing webhook — bad secret → 401
-test_route POST "/billing/hook/testsecret" "Billing webhook (bad secret → 401)" 401
 # Postback — no headers → 400
 test_route_body POST "/pb" "Postback (no headers → 400)" 400 '{}'
 # Legacy postback — no key in URL → 404
