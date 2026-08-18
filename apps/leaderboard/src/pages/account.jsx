@@ -6,7 +6,6 @@ import { settingsWidgets } from "./account-pages.js";
 import { DashboardShell } from "./dashboard-shell.jsx";
 
 const SETTINGS_TABS = [
-  ["board", "This site", '<rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 9h18M9 21V9"/>'],
   ["account", "Account", '<path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>'],
   ["team", "Team", '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>'],
   ["plan", "Plan", '<rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/>'],
@@ -29,11 +28,11 @@ export function UnifiedSettingsPage({ activePath, user, tab = "account" } = {}) 
     <div class="account-body account-settings" id="acc-app" data-acc-tab="settings" data-settings-active={active}>
       <div class="account-settings-head">
         <h1>{activeLabel}</h1>
-        <p class="card-sub">Manage your account here. Controls that change one public site live under <a href={siteSettingsHref}>This site</a>.</p>
+        <p class="card-sub">Manage your account here. Controls that change one public site live in <a href={siteSettingsHref}>site settings</a>.</p>
       </div>
-      <nav class="v3-tabs account-settings-tabs" aria-label="Settings sections">
+      <nav class="v3-tabs account-settings-tabs" aria-label="Account settings sections">
         {SETTINGS_TABS.map(([key, label, iconSvg]) => (
-          <a class={"v3-tab" + (key === active ? " is-on" : "")} href={key === "board" ? "/dashboard/settings/board" : `/dashboard/settings/${key}`} data-settings-tab={key} aria-current={key === active ? "page" : undefined}>
+          <a class={"v3-tab" + (key === active ? " is-on" : "")} href={`/dashboard/settings/${key}`} data-settings-tab={key} aria-current={key === active ? "page" : undefined}>
             <svg class="tab-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">{raw(iconSvg)}</svg>
             <span>{label}</span>
           </a>
