@@ -6,8 +6,7 @@ import {
   RewardsViewersPage,
   RewardsRedemptionsPage,
   RewardsHistoryPage,
-} from "../pages/rewards.jsx";
-import {
+  rewardsChannelConfig,
   rewardsRulesConfig,
   rewardsShopConfig,
   rewardsViewersConfig,
@@ -33,9 +32,20 @@ describe("server-rendered rewards pages", () => {
     });
   }
 
-  it("uses Credits as the canonical group for every operator destination", () => {
-    for (const config of [rewardsRulesConfig, rewardsShopConfig, rewardsViewersConfig, rewardsRedemptionsConfig, rewardsHistoryConfig]) {
-      expect(config.title).toContain("· Credits ·");
+  it("groups the rewards workspace around creator tasks", () => {
+    const rules = RewardsRulesPage().toString();
+    for (const label of ["Prize orders", "Shop", "Credits", "Activity"]) {
+      expect(rules).toContain(`>${label}</a>`);
+    }
+    for (const label of ["Earning rules", "Kick connection", "Viewer balances"]) {
+      expect(rules).toContain(`>${label}</a>`);
+    }
+    expect(rules).not.toContain(">How viewers earn points</a>");
+  });
+
+  it("uses Rewards as the canonical group for creator destinations", () => {
+    for (const config of [rewardsChannelConfig, rewardsRulesConfig, rewardsShopConfig, rewardsViewersConfig, rewardsRedemptionsConfig, rewardsHistoryConfig]) {
+      expect(config.title).toContain("· Rewards ·");
     }
   });
 });
