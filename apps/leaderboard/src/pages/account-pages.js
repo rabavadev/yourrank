@@ -83,7 +83,7 @@ const planWidget = `<div class="lb-widget lb-widget--full" id="plan">
             <li>You keep your current plan features until the expiry date shown above.</li>
             <li>After expiry, your account reverts to Free and paid features stop working.</li>
             <li>If you are over Free limits (boards, players, credit rules, items), you won't be able to add more until you upgrade again.</li>
-            <li>Existing leaderboard data, viewers and redemptions are never deleted by a downgrade.</li>
+            <li>Existing leaderboard data, viewers and prize orders are never deleted by a downgrade.</li>
           </ul>
           <p class="hint" id="cancelStatus" role="status" aria-live="polite"></p>
           <button class="btn btn--sm btn--danger" id="cancelBtn" type="button">Cancel subscription</button>
@@ -99,8 +99,8 @@ const planWidget = `<div class="lb-widget lb-widget--full" id="plan">
       </div>`;
 
 const postbacksWidget = `<div class="lb-widget lb-widget--full" id="postbacks">
-        <h2>Auto-Sync Sponsor Wagers &amp; Scores</h2>
-        <p class="card-sub">Automatically update player wager ranks and track viewer signups directly from your casino or brand sponsor.</p>
+        <h2>Automatic sponsor score updates</h2>
+        <p class="card-sub">Automatically update player scores and track viewer sign-ups directly from your casino or brand sponsor.</p>
 
         <div id="postbackStatusCard" class="card card--status" hidden>
           <div class="d-flex items-center gap-8">
@@ -112,32 +112,32 @@ const postbacksWidget = `<div class="lb-widget lb-widget--full" id="postbacks">
 
         <div id="postbackShareCard" hidden>
           <h3 class="m-0 mt-18 mb-8">What to send your sponsor or affiliate manager</h3>
-          <p class="hint">Give this secure integration link to your affiliate manager or sponsor developer. It connects to your leaderboard without exposing your private account password.</p>
+          <p class="hint">Give this secure deposit tracking link to your affiliate manager or sponsor developer. It connects to your leaderboard without exposing your private account password.</p>
           <div class="field">
-            <label>Sponsor Integration Link</label>
+              <label>Deposit tracking link</label>
             <div class="d-flex gap-8 items-center flex-wrap">
               <code id="postbackSigned" class="overlay-url"></code>
               <button class="btn btn--sm btn--accent ic-btn" id="postbackCopySigned" type="button">Copy link</button>
             </div>
           </div>
           <div class="field">
-            <label>Integration Signature Guide</label>
-            <p class="hint">Your sponsor signs the request query string with <code>HMAC-SHA256</code> using your private access key, then sends it in the <code>X-Postback-Signature</code> header.</p>
+            <label>Deposit tracking setup guide</label>
+            <p class="hint">Your sponsor uses this guide to send confirmed deposit information to your leaderboard.</p>
             <button class="btn btn--sm btn--ghost" id="postbackCopyManager" type="button">Copy full setup guide for sponsor</button>
           </div>
           <div class="field">
-            <label>Test Live Sync</label>
-            <p class="hint">Send a simulated player wager event to verify your leaderboard updates in real time.</p>
-            <button class="btn btn--sm" id="postbackTest" type="button">Send test wager event</button>
+            <label>Test live updates</label>
+            <p class="hint">Send a simulated player score update to verify your leaderboard updates in real time.</p>
+            <button class="btn btn--sm" id="postbackTest" type="button">Send test score update</button>
             <span class="hint" id="postbackTestStatus" role="status" aria-live="polite"></span>
           </div>
         </div>
 
         <div id="postbackKeyCard" hidden>
-          <h3 class="m-0 mt-18 mb-8">Private Sponsor Access Key</h3>
-          <p class="hint">Keep this key confidential. Only share it with trusted sponsor integrations. Rotating revokes the previous key instantly.</p>
+          <h3 class="m-0 mt-18 mb-8">Private sponsor access key</h3>
+          <p class="hint">Keep this key confidential. Only share it with trusted connected apps. Rotating revokes the previous key instantly.</p>
           <div class="field">
-            <label>Private API Key</label>
+            <label>Secret key</label>
             <div class="d-flex gap-8 items-center flex-wrap">
               <code id="postbackKey" class="overlay-url"></code>
               <button class="btn btn--sm btn--accent ic-btn" id="postbackCopyKey" type="button">Copy key</button>
@@ -148,38 +148,38 @@ const postbacksWidget = `<div class="lb-widget lb-widget--full" id="postbacks">
         </div>
 
         <details class="adv" id="postbackAdvanced" hidden>
-          <summary>Advanced configuration</summary>
+            <summary>Advanced settings</summary>
           <div class="field mt-14">
-            <label>Legacy URL (sunset {{NEXT_YEAR}})</label>
+            <label>Legacy link (sunset {{NEXT_YEAR}})</label>
             <div class="d-flex gap-8 items-center flex-wrap">
               <code id="postbackLegacy" class="overlay-url"></code>
               <button class="btn btn--sm ic-btn" id="postbackCopyLegacy" type="button">Copy</button>
             </div>
-            <p class="hint">Unsigned postbacks are deprecated and will be rejected unless your worker explicitly enables legacy mode.</p>
+            <p class="hint">This older link is kept for compatibility and may stop working after the date shown above.</p>
           </div>
         </details>
 
         <div id="postbackUpgrade" hidden>
-          <p class="hint">Automatic score updates are a paid feature. Upgrade to Pro to create connection keys and view live wagers.</p>
+          <p class="hint">Automatic score updates are a paid feature. Upgrade to Pro to create connection keys and view live score updates.</p>
           <a class="btn btn--accent" href="/dashboard/settings/plan">See plans</a>
         </div>
 
         <hr class="hr" />
-        <h3 class="m-0 mt-18 mb-4">Recent Sponsor Activity &amp; Wagers</h3>
-        <div class="admin-table-wrap"><table class="admin-table" id="conversionsTable"><thead><tr><th>Time</th><th>Event</th><th>Wager / Amount</th><th>Currency</th><th>Campaign / Offer</th></tr></thead><tbody id="conversionsBody"></tbody></table></div>
-        <p class="empty" id="conversionsEmpty" hidden>No sponsor wager events received yet.</p>
+        <h3 class="m-0 mt-18 mb-4">Recent sponsor activity</h3>
+        <div class="admin-table-wrap"><table class="admin-table" id="conversionsTable"><thead><tr><th>Time</th><th>Event</th><th>Score / Amount</th><th>Currency</th><th>Campaign / Offer</th></tr></thead><tbody id="conversionsBody"></tbody></table></div>
+        <p class="empty" id="conversionsEmpty" hidden>No sponsor activity yet. Connect deposit tracking to see updates here.</p>
       </div>`;
 
 const connectedWidget = `<div class="lb-widget lb-widget--full" id="connected">
         <h2>Connected accounts</h2>
-        <p class="card-sub">Accounts and integrations linked to your streamer profile.</p>
+        <p class="card-sub">Accounts and connected apps linked to your streamer profile.</p>
         <div id="connectedAccounts"><p class="hint">Loading…</p></div>
         <p class="hint">Identities are not merged across providers unless you explicitly enable linking.</p>
       </div>`;
 
 const dataWidget = `<div class="lb-widget lb-widget--full" id="data">
-          <h2>Account Data &amp; Backup</h2>
-          <p class="card-sub">Download complete backups of your leaderboards, wagers, and creator settings, or manage account deletion.</p>
+          <h2>Account data &amp; backup</h2>
+          <p class="card-sub">Download complete backups of your leaderboards, scores, and creator settings, or manage account deletion.</p>
           <section class="account-data-export" aria-labelledby="accountExportTitle">
             <h3 class="m-0" id="accountExportTitle">Download Creator Backup</h3>
             <p class="card-sub">Generate a full downloadable JSON backup including all your leaderboard configurations, player history, rewards shop items, and analytics.</p>
@@ -255,13 +255,13 @@ const teamWidget = `<div class="lb-widget lb-widget--full" id="team">
               </thead>
               <tbody>
                 <tr>
-                  <td><strong>Leaderboards &amp; Scores</strong><br/><span class="hint">Update players, wagers, reset period</span></td>
+                  <td><strong>Leaderboards &amp; scores</strong><br/><span class="hint">Update players, scores, reset period</span></td>
                   <td><span class="pill pill--good">Full access</span></td>
                   <td><span class="pill pill--good">Full access</span></td>
                   <td><span class="pill pill--good">Full access</span></td>
                 </tr>
                 <tr>
-                  <td><strong>Credits &amp; Shop Fulfillment</strong><br/><span class="hint">Approve/fulfill viewer reward redemptions</span></td>
+                  <td><strong>Credits &amp; shop fulfilment</strong><br/><span class="hint">Approve and fulfil viewer prize orders</span></td>
                   <td><span class="pill pill--good">Full access</span></td>
                   <td><span class="pill pill--good">Full access</span></td>
                   <td><span class="pill pill--good">Full access</span></td>
@@ -301,7 +301,7 @@ const teamWidget = `<div class="lb-widget lb-widget--full" id="team">
     <div class="field">
       <label for="inviteRole">Assigned Role</label>
       <select id="inviteRole" class="field-select">
-        <option value="moderator" selected>Moderator (Can update leaderboards &amp; fulfill shop redemptions)</option>
+        <option value="moderator" selected>Moderator (Can update leaderboards and fulfil shop orders)</option>
         <option value="manager">Manager (Can manage leaderboards, shop, and Telegram bot)</option>
       </select>
     </div>
@@ -329,4 +329,3 @@ export const settingsWidgets = {
   connected: connectedWidget,
   data: dataWidget + deleteAccountModal,
 };
-

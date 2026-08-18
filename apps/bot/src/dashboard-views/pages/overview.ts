@@ -16,7 +16,7 @@ export function overviewPanel(): string {
       <p class="muted text-xs mb-lg" id="ovScope">Metrics for all connected bots over the last 14 days. Times are local.</p>
       <div class="kpi-row">
         <div class="kpi-card" title="Total clicks on tracked offer links"><div class="kpi-lbl">Clicks · 14d</div><div class="kpi-val" id="totClicks">–</div><div class="kpi-sub" id="clicksSub"></div></div>
-        <div class="kpi-card" title="Unique users who clicked tracked offer links"><div class="kpi-lbl">Unique · 14d</div><div class="kpi-val" id="totUnique">–</div><div class="kpi-sub" id="uniqueSub"></div></div>
+        <div class="kpi-card" title="People who clicked tracked offer links in the last 14 days"><div class="kpi-lbl">People who clicked (last 14 days)</div><div class="kpi-val" id="totUnique">–</div><div class="kpi-sub" id="uniqueSub"></div></div>
         <div class="kpi-card" title="Users who started a conversation with any of your bots"><div class="kpi-lbl">Subscribers</div><div class="kpi-val" id="totSubs">–</div><div class="kpi-sub" id="subsNew"></div></div>
         <div class="kpi-card" title="Offers currently marked active"><div class="kpi-lbl">Active offers</div><div class="kpi-val" id="totOffers">–</div><div class="kpi-sub" id="offersSub"></div></div>
       </div>
@@ -32,7 +32,7 @@ export function overviewPanel(): string {
       <div class="mb-md"><h2>Where subscribers came from</h2></div>
       <table class="v3-table"><thead><tr><th>Source</th><th class="num">Subscribers</th></tr></thead>
       <tbody id="subSources"><tr><td colspan="2" class="muted">Loading…</td></tr></tbody></table>
-      <p class="muted hint mt-sm">Share <code id="deepLinkExample">t.me/&lt;yourbot&gt;?start=twitch</code> to tag a source. <b>direct</b> = no link.</p>
+      <p class="muted hint mt-sm">Share <code id="deepLinkExample">t.me/&lt;yourbot&gt;?start=twitch</code> to tag a source. <b>Came on their own</b> means no tagged link.</p>
     </div>
 
     <div class="lb-widget lb-widget--half">
@@ -48,9 +48,9 @@ export function overviewPanel(): string {
     <div class="lb-widget lb-widget--full">
       <div class="mb-md"><h2>Finish setup</h2></div>
       <div class="d-flex gap-16 flex-wrap" id="ovSetup">
-        <div class="step p-16 flex-1 bg-panel border radius-md" id="stepBot"><div class="text-xs muted font-mono mb-sm">STEP 1</div><div class="font-600 mb-sm text-sm">Connect a bot</div><div class="text-xs muted">Add your Telegram bot token in <a href="/dashboard/telegram/bots">Bots</a>.</div></div>
+        <div class="step p-16 flex-1 bg-panel border radius-md" id="stepBot"><div class="text-xs muted font-mono mb-sm">STEP 1</div><div class="font-600 mb-sm text-sm">Connect a bot</div><div class="text-xs muted">Add your Telegram connect code in <a href="/dashboard/telegram/bots">Bots</a>.</div></div>
         <div class="step p-16 flex-1 bg-panel border radius-md" id="stepOffer"><div class="text-xs muted font-mono mb-sm">STEP 2</div><div class="font-600 mb-sm text-sm">Create an offer</div><div class="text-xs muted">Add a casino offer with a tracked link in <a href="/dashboard/telegram/offers">Offers</a>.</div></div>
-        <div class="step p-16 flex-1 bg-panel border radius-md" id="stepPb"><div class="text-xs muted font-mono mb-sm">STEP 3</div><div class="font-600 mb-sm text-sm">Track deposits</div><div class="text-xs muted">See which clicks turn into deposits \u2014 set it up in <a href="/dashboard/settings/connections">Settings → Integrations</a>.</div></div>
+        <div class="step p-16 flex-1 bg-panel border radius-md" id="stepPb"><div class="text-xs muted font-mono mb-sm">STEP 3</div><div class="font-600 mb-sm text-sm">Track deposits</div><div class="text-xs muted">See which clicks turn into deposits \u2014 set it up in <a href="/dashboard/settings/connections">Settings → Connected apps</a>.</div></div>
       </div>
     </div>
   </div>`;

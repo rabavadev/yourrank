@@ -105,7 +105,7 @@ function renderViewerRow(v) {
   const uname = v.kick_username || v.kick_user_id || "Viewer";
   return `<td>${esc(uname)}${v.blocked ? ' <span class="v3-chip v3-chip--cancelled">blocked</span>' : ""}</td><td class="num"><b>${v.balance}</b></td><td class="num">${v.total_earned}</td><td class="num">${v.total_spent}</td><td>${fmtDate(v.last_earned_at || v.created_at)}</td><td class="ta-r"><button class="btn btn--sm btn--accent" data-tip-viewer="${esc(v.id)}" data-viewer-name="${esc(uname)}" data-viewer-balance="${v.balance}" title="Tip points to @${esc(uname)}">🎁 Tip</button> <button class="btn btn--sm ${v.blocked ? "btn--accent" : "btn--danger"}" data-block="${esc(v.id)}" data-blocked="${v.blocked ? "1" : ""}">${v.blocked ? "Unblock" : "Block"}</button></td>`;
 }
-function renderRedemptionRow(r) { return `<td><b>${esc(r.kick_username || r.kick_user_id)}</b></td><td>${esc(r.item_name)}</td><td class="num"><b>${r.cost}</b><span class="hint">cr</span></td><td>${statusChip(r.status)}</td><td title="${esc(fmtDate(r.created_at))}">${relative(r.created_at)}</td><td class="ta-r">${r.status === "pending" ? `<button class="btn btn--sm" data-cancel="${esc(r.id)}">Cancel</button> <button class="btn btn--sm btn--accent" data-fulfill="${esc(r.id)}">Fulfil</button>` : ""}</td>`; }
+function renderRedemptionRow(r) { return `<td><b>${esc(r.kick_username || r.kick_user_id)}</b></td><td>${esc(r.item_name)}</td><td class="num"><b>${r.cost}</b><span class="hint">credits</span></td><td>${statusChip(r.status)}</td><td title="${esc(fmtDate(r.created_at))}">${relative(r.created_at)}</td><td class="ta-r">${r.status === "pending" ? `<button class="btn btn--sm" data-cancel="${esc(r.id)}">Cancel</button> <button class="btn btn--sm btn--accent" data-fulfill="${esc(r.id)}">Fulfil</button>` : ""}</td>`; }
 function renderShopCards(items) {
   const root = $("cr-shop-list"); if (!root) return;
   ensureShopControls(items.length > 0);
@@ -147,7 +147,7 @@ function render() {
     $("cr-channel-name").textContent = state.channel?.name || ""; $("cr-channel-id-input").value = state.channel?.externalId || ""; $("cr-channel-name-input").value = state.channel?.name || "";
     const expiry = state.channel?.tokenExpiresAt;
     $("cr-channel-token").textContent = expiry ? (new Date(expiry) > new Date() ? `Token valid · expires in ${Math.max(1, Math.ceil((new Date(expiry) - Date.now()) / 86400000))} days` : "Token expired · reconnect") : "No Kick token · connect Kick";
-    $("cr-usage").innerHTML = [usageCard(metric(usage.rewardMappings), metric(limits.rewardMappings), "credit rules"), usageCard(metric(usage.shopItems), metric(limits.shopItems), "items"), usageCard(metric(usage.pendingRedemptions), metric(limits.pendingRedemptions), "pending redemptions"), usageCard(metric(usage.redemptionsPer30Days), metric(limits.redemptionsPer30Days), "redemptions / 30 days"), usageCard(metric(usage.newViewersPer30Days), metric(limits.newViewersPer30Days), "new viewers / 30 days")].join("");
+    $("cr-usage").innerHTML = [usageCard(metric(usage.rewardMappings), metric(limits.rewardMappings), "credit rules"), usageCard(metric(usage.shopItems), metric(limits.shopItems), "items"), usageCard(metric(usage.pendingRedemptions), metric(limits.pendingRedemptions), "pending prize orders"), usageCard(metric(usage.redemptionsPer30Days), metric(limits.redemptionsPer30Days), "prize orders / 30 days"), usageCard(metric(usage.newViewersPer30Days), metric(limits.newViewersPer30Days), "new viewers / 30 days")].join("");
     const auth = state.viewerAuth || {};
     $("cr-viewer-auth-kick").checked = auth.kick !== false; $("cr-viewer-auth-discord").checked = auth.discord !== false; $("cr-viewer-auth-public").checked = auth.public !== false;
   }
@@ -176,7 +176,7 @@ function render() {
     if (state.channel?.externalId) { channel.innerHTML = `● Connected to @${esc(state.channel.name || state.channel.externalId)}`; channel.className = "v3-chip v3-chip--refunded"; } else { channel.innerHTML = '<a href="/dashboard/rewards/channel">Not connected · Connect Kick</a>'; channel.className = "v3-chip v3-chip--cancelled"; }
     $("cr-pending-counter").textContent = `${metric(usage.pendingRedemptions)} / ${metric(limits.pendingRedemptions)}`; $("cr-fulfilled-counter").textContent = `${metric(usage.redemptionsPer30Days)} / ${metric(limits.redemptionsPer30Days)}`;
     const redemptions = state.redemptions || [];
-    if (!redemptionCtrl) { redemptionCtrl = new ListController({ root: $("cr-redemptions"), tbody: "cr-redemption-list", emptyEl: $("cr-redemption-empty"), emptySpec: { icon: "archive", title: "No shop redemptions yet", body: "Viewer shop redemption requests will appear here." }, items: redemptions, perPage: 15, searchFn: (r) => `${r.kick_username || r.kick_user_id} ${r.item_name} ${r.status}`, sortOptions: [{ key: "time", label: "Newest", fn: (a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0) }, { key: "cost", label: "Cost", fn: (a, b) => (b.cost || 0) - (a.cost || 0) }, { key: "status", label: "Status", fn: (a, b) => (a.status || "").localeCompare(b.status || "") }], emptyAllText: "No shop redemptions yet.", emptyText: "No matching shop redemptions.", renderItem: (r) => renderRedemptionRow(r), onRender: () => wireDynamicActions() }); mountListControls($("cr-redemptions"), $("cr-redemption-toolbar"), $("cr-redemption-foot")); }
+    if (!redemptionCtrl) { redemptionCtrl = new ListController({ root: $("cr-redemptions"), tbody: "cr-redemption-list", emptyEl: $("cr-redemption-empty"), emptySpec: { icon: "archive", title: "No prize orders yet", body: "Viewer prize orders will appear here when someone places an order." }, items: redemptions, perPage: 15, searchFn: (r) => `${r.kick_username || r.kick_user_id} ${r.item_name} ${r.status}`, sortOptions: [{ key: "time", label: "Newest", fn: (a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0) }, { key: "cost", label: "Cost", fn: (a, b) => (b.cost || 0) - (a.cost || 0) }, { key: "status", label: "Status", fn: (a, b) => (a.status || "").localeCompare(b.status || "") }], emptyAllText: "No prize orders yet. Add a shop item so viewers can place an order.", emptyText: "No matching prize orders.", renderItem: (r) => renderRedemptionRow(r), onRender: () => wireDynamicActions() }); mountListControls($("cr-redemptions"), $("cr-redemption-toolbar"), $("cr-redemption-foot")); }
     else redemptionCtrl.setItems(redemptions);
   }
   if (current === "history") {
@@ -274,7 +274,7 @@ async function delReward(id, trigger) {
   catch (err) { setStatus("cr-reward-status", err.message, true); } finally { setLoading(trigger, false); }
 }
 async function delShop(id, trigger) {
-  if (!await showConfirmModal("Disable item", "Disable this item? It will no longer be redeemable, but past redemptions stay in credit activity.", "Disable", true)) return;
+  if (!await showConfirmModal("Disable item", "Disable this item? It will no longer be available, but past prize orders stay in credit activity.", "Disable", true)) return;
   setLoading(trigger, true, "Deleting…");
   try { await api("DELETE", sitePath(`/api/credits/shop/${encodeURIComponent(id)}`)); await load(); }
   catch (err) { setStatus("cr-shop-status", err.message, true); } finally { setLoading(trigger, false); }
@@ -388,7 +388,7 @@ function confirmPopover(trigger, title, body) {
 }
 async function updateRedemption(id, status, trigger) {
   const body = status === "cancelled" ? "This restores the viewer’s credits and returns one item to stock." : "This marks the item as fulfilled.";
-  if (!await confirmPopover(trigger, status === "cancelled" ? "Cancel redemption" : "Fulfil redemption", body)) return;
+  if (!await confirmPopover(trigger, status === "cancelled" ? "Cancel prize order" : "Fulfil prize order", body)) return;
   setLoading(trigger, true, "Saving…");
   try { await api("POST", sitePath(`/api/credits/redemptions/${encodeURIComponent(id)}`), { status }); await load(); }
   catch (err) { setStatus("cr-redemption-status", err.message, true); } finally { setLoading(trigger, false); }

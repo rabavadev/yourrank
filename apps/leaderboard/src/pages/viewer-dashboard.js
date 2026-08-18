@@ -48,7 +48,7 @@ export const viewerDashboardPage = leaderboardPageHtml({
 
   <section class="card" id="vd-boards-card" hidden>
     <h2>Your boards</h2>
-    <p class="card-sub">Each card shows your credits for a streamer's board. Select one to view the shop and your redemptions.</p>
+    <p class="card-sub">Each card shows your credits for a streamer's board. Select one to view the shop and your prize orders.</p>
     <div id="vd-boards"></div>
     <p class="empty" id="vd-boards-empty" hidden>You don't have credits on any board yet. Redeem a Kick channel reward covered by a credit rule to earn some.</p>
   </section>
@@ -68,9 +68,9 @@ export const viewerDashboardPage = leaderboardPageHtml({
     <div id="vd-shop-list"></div>
     <p class="empty" id="vd-shop-empty" hidden>No items available.</p>
 
-    <h3 class="mt-24">Your redemptions</h3>
+    <h3 class="mt-24">Your prize orders</h3>
     <div id="vd-redemptions-list"></div>
-    <p class="empty" id="vd-redemptions-empty" hidden>No redemptions yet.</p>
+    <p class="empty" id="vd-redemptions-empty" hidden>No prize orders yet. Place an order from the shop to see it here.</p>
     <p class="hint"><b>Pending</b> = waiting for the streamer; <b>Fulfilled</b> = approved; <b>Cancelled</b> = refunded.</p>
   </section>
 </main>

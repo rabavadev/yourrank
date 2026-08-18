@@ -64,8 +64,8 @@ export function broadcastsPanel(): string {
             <label class="muted text-xs" for="bcSchedule">Scheduled time</label>
             <input class="v3-input" id="bcSchedule" type="datetime-local" disabled />
           </div>
-          <p class="muted text-sm mt-sm" id="bcTimezone">Your timezone: <b>detecting…</b></p>
-          <p class="muted text-sm" id="bcUtcHint" hidden>UTC equivalent: <b></b></p>
+            <p class="muted text-sm mt-sm" id="bcTimezone">Times use your local time.</p>
+          <p class="muted text-sm" id="bcUtcHint" hidden>Time shown for reference: <b></b></p>
         </div>
 
         <div class="bc-step" data-step="4">

@@ -241,7 +241,7 @@ function showLoadError(msg){
 function showPostbackError(msg){
   ['postbackStatusOffers','postbackStatusSettings'].forEach(id => {
     const el = $(id);
-    if (el) el.innerHTML = loadErrorMarkup(msg || "Couldn't load postback status.", 'retryPostbacks');
+    if (el) el.innerHTML = loadErrorMarkup(msg || "Couldn't load deposit tracking status. Try again.", 'retryPostbacks');
   });
 }
 
@@ -259,8 +259,7 @@ async function load() {
 
   // overview stats
   if (page === 'overview') {
-    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || 'local';
-    setHtml('ovScope', 'Metrics for all connected bots over the last 14 days. Timezone: <code>' + esc(tz) + '</code>.');
+    setHtml('ovScope', 'Metrics for all connected bots over the last 14 days, shown in your local time.');
     const totClicks = (daily||[]).reduce((s,d)=>s+d.clicks,0);
     const totUnique = (daily||[]).reduce((s,d)=>s+d.unique_clicks,0);
     const activeOffers = (offers||[]).filter(o=>o.is_active).length;
@@ -304,7 +303,7 @@ function renderOverviewSummary(bots, offers){
       ? list.map(b=>{
           const on = b.status === 'active';
           return '<div class="lrow"><div class="l"><div class="nm">@'+esc(b.username)+'</div>'+
-            '<div class="ds">'+(on?'webhook active':'disconnected')+'</div></div>'+
+            '<div class="ds">'+(on?'connected and working':'not connected yet')+'</div></div>'+
             '<span class="badge '+(on?'on':'off')+'">'+(on?'active':'off')+'</span></div>';
         }).join('')
       : '<p class="muted text-sm">No bot connected yet. <a href="/dashboard/telegram/bots">Connect one →</a></p>';
@@ -317,7 +316,7 @@ function renderOverviewSummary(bots, offers){
           const on = o.is_active;
           const cr = o.cr != null ? ((o.cr)*100).toFixed(1) : '0.0';
           return '<div class="lrow"><div class="l"><div class="nm">'+esc(o.casino)+'</div>'+
-            '<div class="ds">'+esc(o.label||'')+' · '+esc(String(o.clicks||0))+' clicks · '+esc(String(o.conversions||0))+' conv · '+esc(cr)+'% CR</div></div>'+
+            '<div class="ds">'+esc(o.label||'')+' · '+esc(String(o.clicks||0))+' clicks · '+esc(String(o.conversions||0))+' of '+esc(String(o.unique_clicks||0))+' signed up</div></div>'+
             '<span class="badge '+(on?'on':'off')+'">'+(on?'active':'off')+'</span></div>';
         }).join('')
       : '<p class="muted text-sm">No offers yet. <a href="/dashboard/telegram/offers">Create one →</a></p>';
@@ -333,11 +332,11 @@ async function loadSubscribers(bots){
   if (!s || s.error) return;
   const t = s.totals || {};
   setText('totSubs', t.active ?? 0);
-  setText('subsNew', (t.new_7d ?? 0) > 0 ? '+' + (t.new_7d ?? 0) + ' new in 7d' : 'no new in 7d');
+  setText('subsNew', (t.new_7d ?? 0) > 0 ? '+' + (t.new_7d ?? 0) + ' new in the last 7 days' : 'No new subscribers in the last 7 days');
   const rows = (s.sources || []);
   setHtml('subSources', rows.length
     ? rows.map(r=>'<tr><td>'+esc(r.source)+'</td><td class="num">'+esc(String(r.count))+'</td></tr>').join('')
-    : '<tr><td colspan="2" class="muted">No subscribers yet. Share your bot link to get your first one.</td></tr>');
+    : '<tr><td colspan="2" class="muted">No subscribers yet. Share your bot link to get your first subscriber.</td></tr>');
   const active = (bots || []).find(b=>b.status==='active' && b.username);
   if (active) setText('deepLinkExample', 't.me/'+active.username+'?start=twitch');
 }
@@ -453,7 +452,7 @@ function renderOffers(){
         { key: 'clicks', label: 'Clicks', fn: function(a,b){ return (b.clicks||0) - (a.clicks||0); } },
         { key: 'unique', label: 'Unique clicks', fn: function(a,b){ return (b.unique_clicks||0) - (a.unique_clicks||0); } },
         { key: 'ctr', label: 'CTR', fn: function(a,b){ return (b.ctr||0) - (a.ctr||0); } },
-        { key: 'cr', label: 'CR', fn: function(a,b){ return (b.cr||0) - (a.cr||0); } },
+        { key: 'cr', label: 'Sign-up rate', fn: function(a,b){ return (b.cr||0) - (a.cr||0); } },
         { key: 'conversions', label: 'Conversions', fn: function(a,b){ return (b.conversions||0) - (a.conversions||0); } },
         { key: 'active', label: 'Active first', fn: function(a,b){ return Number(b.is_active) - Number(a.is_active); } }
       ],
@@ -547,7 +546,7 @@ async function loadExtras(){
     }
   }
 
-  if (pbStatus.error) showPostbackError("Couldn't load postback status.");
+  if (pbStatus.error) showPostbackError("Couldn't load deposit tracking status.");
   else {
     renderPostbackStatus(pbStatus);
     if (typeof markStep === 'function') markStep('stepPb', !!pbStatus?.active);
@@ -558,10 +557,10 @@ async function loadExtras(){
 function renderPostbackStatus(pb){
   const els = ['postbackStatusOffers','postbackStatusSettings'].map(id => $(id)).filter(Boolean);
   if (!els.length) return;
-  if (!pb || pb.error) { els.forEach(el => { el.textContent = 'Could not load postback status.'; }); return; }
+  if (!pb || pb.error) { els.forEach(el => { el.textContent = 'Could not load deposit tracking status. Try again.'; }); return; }
   const html = pb.active
-    ? '<span class="badge ok">Active</span> Account postbacks are configured ('+esc(pb.createdAt ? new Date(pb.createdAt).toLocaleString(undefined,{dateStyle:'short',timeStyle:'short'}) : 'active')+'). This does not indicate that an individual offer is converting.'
-    : '<span class="badge off">Not configured</span> Account postbacks are not configured. Set them up in Account → Postbacks to receive conversion events.';
+    ? '<span class="badge ok">Connected and working</span> Deposit tracking is configured ('+esc(pb.createdAt ? new Date(pb.createdAt).toLocaleString(undefined,{dateStyle:'short',timeStyle:'short'}) : 'active')+'). This does not indicate that an individual offer is converting.'
+    : '<span class="badge off">Not connected yet</span> Deposit tracking is not configured. Set it up in Account → Connected apps to receive sign-up events.';
   els.forEach(el => { el.innerHTML = html; });
 }
 
@@ -635,7 +634,7 @@ async function copyCreatedOffer(target){
 async function connectBot(btn){
   clearFieldErr('botToken');
   const token = $('botToken').value.trim();
-  if (!token) { setFieldErr('botToken','Paste a bot token first'); return; }
+  if (!token) { setFieldErr('botToken','Paste a connect code first'); return; }
   showWizardStep(3);
   const status = $('connectStatus'); if (status) { status.className = 'muted'; status.textContent = 'Checking token with Telegram…'; }
   const r = await api('/bots',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({token, welcome_message:$('botWelcome').value.trim()||undefined})});
@@ -658,10 +657,10 @@ async function checkHealth(target){
   const wrap = $('health-'+id);
   if (details && wrap) {
     const action = r.configured
-      ? (r.last_error ? 'Your bot had an error. Try clicking <b>Reconnect</b> to reset the webhook.' : 'Webhook looks good. If messages stop arriving, click <b>Reconnect</b>.')
-      : 'Webhook is missing. Click <b>Reconnect</b> to register it with Telegram.';
+      ? (r.last_error ? 'Your bot had an error. Try clicking <b>Reconnect</b> to restore the connection.' : 'Connected and working. If messages stop arriving, click <b>Reconnect</b>.')
+      : 'Not connected yet. Click <b>Reconnect</b> to restore the connection with Telegram.';
     details.innerHTML = '<ul>'+
-      '<li><b>Webhook URL:</b> '+(r.url ? esc(r.url) : 'none')+'</li>'+
+      '<li><b>Connection link:</b> '+(r.url ? esc(r.url) : 'none')+'</li>'+
       '<li><b>Pending updates:</b> '+esc(String(r.pending_updates))+'</li>'+
       (r.last_error ? '<li><b>Last error:</b> '+esc(r.last_error)+(r.last_error_at ? ' <span class="muted">('+esc(fmtTime(r.last_error_at))+')</span>' : '')+'</li>' : '')+
       '</ul><p>'+action+'</p>';
@@ -669,8 +668,8 @@ async function checkHealth(target){
     wrap.open = true;
   }
   const summary = r.configured
-    ? 'Webhook OK' + (r.last_error ? ' (had an error)' : '')
-    : 'Webhook missing';
+    ? 'Connected and working' + (r.last_error ? ' (had an error)' : '')
+    : 'Not connected yet';
   toast(summary + ' — see details below');
 }
 async function disconnectBot(btn){
@@ -678,7 +677,7 @@ async function disconnectBot(btn){
   setLoading(btn, 'Disconnecting…');
   const r = await api('/bots/'+btn.dataset.id+'/disconnect',{method:'POST'});
   if (r.error) { restoreBtn(btn); return toast(r.error); }
-  toast(r.webhook_removed ? 'Bot disconnected' : 'Bot disconnected, but the Telegram webhook could not be removed. Delete it manually in @BotFather if needed.');
+  toast(r.webhook_removed ? 'Bot disconnected' : 'Bot disconnected, but Telegram could not remove the connection. Delete it manually in @BotFather if needed.');
   const bot = __lastBots.find(b => b.id === btn.dataset.id); if (bot) bot.status = 'revoked';
   restoreBtn(btn); renderBots(__lastBots, false);
 }
@@ -755,7 +754,7 @@ function renderBots(bots, loadCmds = true){
               '<div class="muted hint">'+esc(syncLabel)+' · updated '+esc(fmtTime(b.updated_at))+'</div>'+
             '</div>'+
             '<div class="actions">'+
-              (isActive ? '<button class="ghost" data-action="checkHealth" data-id="'+esc(b.id)+'" type="button">Check webhook</button>' : '')+
+              (isActive ? '<button class="ghost" data-action="checkHealth" data-id="'+esc(b.id)+'" type="button">Check connection</button>' : '')+
               (isActive ? '<button class="ghost" data-action="syncCommands" data-id="'+esc(b.id)+'" type="button">Sync commands</button>' : '')+
               (isActive ? '<button class="ghost" data-action="disconnectBot" data-id="'+esc(b.id)+'" type="button">Disconnect</button>'
                         : '<button class="ghost" data-action="reconnectBot" data-id="'+esc(b.id)+'" type="button">Reconnect</button>')+
@@ -765,7 +764,7 @@ function renderBots(bots, loadCmds = true){
             '</div>'+
             '<details class="health-details" id="health-'+esc(b.id)+'" hidden>'+
               '<summary>Technical details</summary>'+
-              '<div class="health-body" id="health-body-'+esc(b.id)+'">Click <b>Check webhook</b> to load the latest status.</div>'+
+              '<div class="health-body" id="health-body-'+esc(b.id)+'">Click <b>Check connection</b> to load the latest status.</div>'+
             '</details>'+
           '</div>';
         }).join('')
@@ -1140,12 +1139,7 @@ function updateUtcHint(){
 function showTimezone(){
   const el = $('bcTimezone');
   if (!el) return;
-  const name = Intl.DateTimeFormat().resolvedOptions().timeZone;
-  const offset = -new Date().getTimezoneOffset();
-  const sign = offset >= 0 ? '+' : '-';
-  const h = String(Math.floor(Math.abs(offset) / 60)).padStart(2, '0');
-  const m = String(Math.abs(offset) % 60).padStart(2, '0');
-  el.innerHTML = 'Your timezone: <b>'+esc(name)+' (UTC'+sign+h+':'+m+')</b>';
+  el.textContent = 'Times use your local time.';
 }
 // Show how many subscribers the selected bot would reach, so the streamer
 // knows the blast size before committing. Sequence and signature checks ensure

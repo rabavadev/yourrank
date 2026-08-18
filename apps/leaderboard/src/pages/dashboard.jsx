@@ -121,7 +121,7 @@ function OverviewSection({ active } = {}) {
 <div id="ovActiveBento"><div class="ov-live" aria-label="Site performance">
 <div class="kpi-row">
   <div class="kpi-card">
-    <span class="kpi-lbl" id="ovLblPlayers">Players &amp; Racers</span>
+    <span class="kpi-lbl" id="ovLblPlayers">Players</span>
     <div class="kpi-value-row">
       <span class="kpi-val" id="ovPlayersCount" aria-labelledby="ovLblPlayers"><span class="skeleton v3-skel-kpi" aria-hidden="true"></span></span>
       <a class="kpi-action" href="/dashboard/leaderboard/players">Manage →</a>
@@ -165,7 +165,7 @@ function OverviewSection({ active } = {}) {
       <div class="ov-obs-info">
         <span class="ov-obs-tag">SOUND ALERTS</span>
         <strong>🔔 Stream Alerts &amp; Chimes</strong>
-        <p>Audio chimes &amp; popup cards for shop redemptions &amp; winners.</p>
+        <p>Audio chimes &amp; popup cards for prize orders &amp; winners.</p>
       </div>
       <button class="btn btn--sm btn--accent" id="ov-btn-copy-alerts" type="button">📋 Copy OBS Link</button>
     </div>
@@ -208,7 +208,7 @@ function EditorSection({ active, activeHash = "setup" } = {}) {
 <div class="card" data-egroup="setup"><h2>Race schedule</h2><p class="card-sub">Set when your leaderboard competition ends.</p><div class="grid2">
 <div class="field"><label for="f_pool">Prize pool</label><input id="f_pool" placeholder="$500" /></div>
 <div class="field"><label for="f_period">Race runs</label><select id="f_period"><option>Weekly</option><option selected>Monthly</option><option>Season</option></select></div>
-<div class="field"><label for="f_ends">Race ends on</label><input id="f_ends" type="datetime-local" /><span class="hint" id="f_ends_hint">When the leaderboard resets, shown in your timezone. Powers the live timer.</span></div>
+<div class="field"><label for="f_ends">Race ends on</label><input id="f_ends" type="datetime-local" /><span class="hint" id="f_ends_hint">When the leaderboard resets, shown in your local time. Powers the live timer.</span></div>
 <div class="field field--full"><label class="chk"><input type="checkbox" id="f_auto_reset" /> Automatically start a new race when this one ends</label><label class="sr-only" for="f_auto_reset_clear">What to reset when the race ends</label><select id="f_auto_reset_clear" disabled class="mt-8"><option value="wagers">Reset everyone's scores to zero</option><option value="players">Remove all players and start fresh</option><option value="none">Keep everything as-is</option></select><span class="hint">Your current standings will be saved automatically before the reset.</span></div></div></div>
 <div class="card" data-egroup="setup"><h2>Access &amp; visibility</h2><p class="card-sub">Control who can see your leaderboard.</p>
 <div class="field field--full"><label class="chk"><input type="checkbox" id="f_password_enabled" /> Require a password to view this site</label><input id="f_password" type="password" placeholder="Leave blank to keep current password" disabled class="mt-8" /><span class="hint">Visitors must enter this password before seeing the leaderboard.</span></div>
@@ -457,7 +457,7 @@ function BoardSettingsSection({ active } = {}) {
   </nav>
   <div class="v3-tabs" role="tablist" aria-label="Site settings sections">
     <button class="v3-tab is-on" id="settingsTabAccess" type="button" role="tab" aria-selected="true" aria-controls="settingsPanelAccess" data-settings-tab="access">Access &amp; alerts</button>
-    <button class="v3-tab" id="settingsTabIntegrations" type="button" role="tab" aria-selected="false" aria-controls="settingsPanelIntegrations" data-settings-tab="integrations">Integrations</button>
+    <button class="v3-tab" id="settingsTabIntegrations" type="button" role="tab" aria-selected="false" aria-controls="settingsPanelIntegrations" data-settings-tab="integrations">Connected apps</button>
     <button class="v3-tab" id="settingsTabDomain" type="button" role="tab" aria-selected="false" aria-controls="settingsPanelDomain" data-settings-tab="domain">Domain</button>
     <button class="v3-tab" id="settingsTabSupport" type="button" role="tab" aria-selected="false" aria-controls="settingsPanelSupport" data-settings-tab="support">Support</button>
   </div>
@@ -467,7 +467,7 @@ function BoardSettingsSection({ active } = {}) {
     <div class="v3-settings-card v3-danger-card"><div class="v3-danger-lbl">DANGER ZONE</div><div class="v3-settings-row"><div><b>Wipe all scores and history</b><p>Deletes all player scores, prize amounts, and activity history. This cannot be undone.</p></div><button class="v3-set-btn v3-set-btn--danger-outline" id="settingsResetData" type="button">Reset everything</button></div><div class="v3-settings-row"><div><b>Delete this site</b><p>Permanently delete this site and its settings. This action cannot be undone.</p></div><button class="v3-set-btn v3-set-btn--danger" id="settingsDeleteBoard" type="button">Delete site</button></div></div>
   </section>
   <section class="v3-settings-panel" id="settingsPanelIntegrations" role="tabpanel" aria-labelledby="settingsTabIntegrations" data-settings-panel="integrations" hidden>
-    <div class="v3-settings-card"><div class="v3-settings-card-head"><div><h2>Connected tools</h2><p>Connect Kick rewards, set up notifications, and add legal pages to your site.</p></div></div><div class="v3-settings-row"><div><b>Kick channel rewards</b><p>Let viewers earn credits by redeeming Kick channel rewards.</p><span class="v3-settings-muted" id="kickStatus"><span class="skeleton skeleton-text" aria-hidden="true"></span></span></div><a class="v3-set-btn v3-set-btn--outline" href="/dashboard/rewards/channel" id="kickRewardsLink">Open Kick channel</a></div><div class="v3-settings-row"><div><b>Auto-update scores</b><p id="postbackStatus">Let your sponsor push scores automatically without manual imports.</p></div><a class="v3-set-btn v3-set-btn--outline" href="/dashboard/settings/connections">Set up auto-updates</a></div><div class="v3-settings-divider"></div><div class="v3-settings-notify-account"><label class="v3-settings-label" for="f_tgChatId">Telegram group ID</label><input id="f_tgChatId" placeholder="Enter your group or chat ID" /><p class="v3-settings-muted">You can find your group ID using the @getidsbot on Telegram.</p><label class="v3-settings-check"><input type="checkbox" id="f_tgNotify" /> Send notifications to this Telegram group</label><button class="v3-set-btn v3-set-btn--outline" id="testTelegram" type="button">Send a test message</button><span class="v3-settings-status" id="testTelegramStatus" role="status"></span></div><div class="v3-settings-divider"></div><div class="v3-settings-legal"><h3>Legal pages</h3><div id="legalList"></div><div id="legalFooterPreview" class="v3-settings-muted"></div></div></div>
+    <div class="v3-settings-card"><div class="v3-settings-card-head"><div><h2>Connected apps</h2><p>Connect Kick rewards, set up notifications, and add legal pages to your site.</p></div></div><div class="v3-settings-row"><div><b>Kick channel rewards</b><p>Let viewers earn credits by claiming Kick channel rewards.</p><span class="v3-settings-muted" id="kickStatus"><span class="skeleton skeleton-text" aria-hidden="true"></span></span></div><a class="v3-set-btn v3-set-btn--outline" href="/dashboard/rewards/channel" id="kickRewardsLink">Open Kick channel</a></div><div class="v3-settings-row"><div><b>Automatic score updates</b><p id="postbackStatus">Let your sponsor update scores automatically without manual imports.</p></div><a class="v3-set-btn v3-set-btn--outline" href="/dashboard/settings/connections">Set up automatic updates</a></div><div class="v3-settings-divider"></div><div class="v3-settings-notify-account"><label class="v3-settings-label" for="f_tgChatId">Telegram group ID</label><input id="f_tgChatId" placeholder="Enter your group or chat ID" /><p class="v3-settings-muted">You can find your group ID using the @getidsbot on Telegram.</p><label class="v3-settings-check"><input type="checkbox" id="f_tgNotify" /> Send notifications to this Telegram group</label><button class="v3-set-btn v3-set-btn--outline" id="testTelegram" type="button">Send a test message</button><span class="v3-settings-status" id="testTelegramStatus" role="status"></span></div><div class="v3-settings-divider"></div><div class="v3-settings-legal"><h3>Legal pages</h3><div id="legalList"></div><div id="legalFooterPreview" class="v3-settings-muted"></div></div></div>
   </section>
   <section class="v3-settings-panel" id="settingsPanelDomain" role="tabpanel" aria-labelledby="settingsTabDomain" data-settings-panel="domain" hidden>
     <div class="v3-settings-card" id="domainManageCard" hidden>

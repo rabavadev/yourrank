@@ -12,7 +12,7 @@ const GAME_ROWS = [
 
 const sectionRows = [
   ["shop", "Shop", "Let viewers browse and redeem your shop items.", "Turning off removes Shop from navigation and disables the /shop URL."],
-  ["credits", "Credits", "Let viewers see their balance and redemption history.", "Turning off removes Credits from navigation and disables the /credits URL."],
+  ["credits", "Credits", "Let viewers see their balance and prize order history.", "Turning off removes Credits from navigation and disables the /credits URL."],
   ["games", "Games", "Let viewers play credit-based games on your board.", "Turning off removes Games from navigation and disables the /games URL."],
 ];
 
@@ -24,7 +24,7 @@ const BLOCK_ROWS = [
   ["socials", "Social widgets"],
   ["share", "Share button"],
   ["countdown", "Countdown timer"],
-  ["cta", "Call to action"],
+  ["cta", "Button"],
 ];
 
 function renderPageBlocks() {

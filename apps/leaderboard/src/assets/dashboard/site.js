@@ -268,8 +268,8 @@ export async function loadPlanUsage() {
     if (d.credits) {
       rows.push({ label: "Credit rules", product: "Credits", used: d.credits.rewardMappings.used, limit: d.credits.rewardMappings.limit });
       rows.push({ label: "Shop items", product: "Credits", used: d.credits.shopItems.used, limit: d.credits.shopItems.limit });
-      rows.push({ label: "Pending shop redemptions", product: "Credits", used: d.credits.pendingRedemptions.used, limit: d.credits.pendingRedemptions.limit });
-      rows.push({ label: "Shop redemptions / 30 days", product: "Credits", used: d.credits.redemptionsPer30Days.used, limit: d.credits.redemptionsPer30Days.limit });
+      rows.push({ label: "Pending prize orders", product: "Credits", used: d.credits.pendingRedemptions.used, limit: d.credits.pendingRedemptions.limit });
+      rows.push({ label: "Prize orders / 30 days", product: "Credits", used: d.credits.redemptionsPer30Days.used, limit: d.credits.redemptionsPer30Days.limit });
       rows.push({ label: "New viewers / 30 days", product: "Credits", used: d.credits.newViewersPer30Days.used, limit: d.credits.newViewersPer30Days.limit });
     }
     wrap.innerHTML = rows.map((r) => {
@@ -906,7 +906,7 @@ export function renderNotifications(n) {
     wh.dataset.configured = n.discord_webhook_url ? "true" : "false";
     if (n.discord_webhook_url) {
       wh.value = "";
-      wh.placeholder = "Webhook configured ✓ (enter new URL to change)";
+      wh.placeholder = "Connected and working ✓ (enter a new URL to change)";
     }
   }
   const tg = $("f_tgNotify"); if (tg) tg.checked = !!n.telegram_notify;
@@ -1282,13 +1282,13 @@ export async function loadCreditsStatus() {
     if (statusEl) statusEl.textContent = connected
       ? `Connected to ${data.channel?.name || "your Kick channel"}. ${data.usage?.rewardMappings == null ? "—" : data.usage.rewardMappings} credit rules active.`
       : "Connect your Kick channel in the Credits area to start giving viewers credits.";
-    if (linkEl) linkEl.textContent = connected ? "Manage Integrations →" : "Open Integrations →";
+    if (linkEl) linkEl.textContent = connected ? "Manage connected apps →" : "Open connected apps →";
   } catch (err) {
     setState({ CREDITS_STATUS: "error" });
     logError("credits/status", err);
     if (statusEl) {
       statusEl.removeAttribute("aria-busy");
-      statusEl.textContent = "Could not load integrations status.";
+      statusEl.textContent = "Could not load connected apps status. Try again.";
     }
   }
 }

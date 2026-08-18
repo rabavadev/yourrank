@@ -160,7 +160,7 @@ export function renderOverviewSummary() {
       return minutes < 60 ? `${minutes}m ago` : minutes < 1440 ? `${Math.floor(minutes / 60)}h ago` : `${Math.floor(minutes / 1440)}d ago`;
     };
     const activity = [
-      ...(state.CREDITS?.redemptions || []).map((item) => ({ at: item.created_at, title: item.kick_username || "Viewer", sub: `${item.item_name || "Shop item"} requested` })),
+      ...(state.CREDITS?.redemptions || []).map((item) => ({ at: item.created_at, title: item.kick_username || "Viewer", sub: `${item.item_name || "Shop item"} ordered` })),
       ...(state.CREDITS?.viewers || []).map((item) => ({ at: item.created_at, title: item.kick_username || "Viewer", sub: "Joined via Kick sign-in" })),
       ...(state.PUBLISHED_AT ? [{ at: state.PUBLISHED_AT, title: "YourRank", sub: "Site published" }] : []),
       ...(state.SITE_UPDATED_AT ? [{ at: state.SITE_UPDATED_AT, title: "YourRank", sub: "Site updated" }] : []),
