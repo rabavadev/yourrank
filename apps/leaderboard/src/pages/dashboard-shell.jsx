@@ -18,8 +18,6 @@ FORM: Devin-reference identity layered onto the Creator Run-Sheet workspace, see
 FINISH: Every shipped surface is reviewed at desktop and mobile, documented in DESIGN.md, and held to the shared accessibility and responsive floor.
 -->`;
 
-
-
 export function dashboardNavItems() {
   return sharedDashboardNavItems();
 }
@@ -35,29 +33,20 @@ export function mapActiveNav(nav) {
 }
 
 function SidebarBoard({ boardContext }) {
-  if (boardContext === "none") {
-    return <div class="lb-ws-switcher" id="wsSwitcher">
-      <div class="lb-ws-card" id="wsCard">
-        <div class="lb-ws-avatar" id="wsAvatar">A</div>
-        <div class="lb-ws-meta">
-          <span class="lb-ws-name" id="accUserName">Your Account</span>
-          <span class="lb-ws-plan">Active</span>
-        </div>
-      </div>
-    </div>;
-  }
+  if (boardContext === "none") return null;
+
   return <div class="lb-ws-switcher" id="wsSwitcher">
     <div class="lb-ws-card" id="wsCard" tabindex="0" role="button" aria-haspopup="true" aria-expanded="false">
       <div class="lb-ws-avatar" id="wsAvatar">Y</div>
       <div class="lb-ws-meta">
         <span class="lb-ws-name" id="activeBoardName">Loading site…</span>
-        <span class="lb-ws-plan" id="wsPlanBadge">Active Site</span>
+        <span class="lb-ws-plan" id="wsPlanBadge">Current site</span>
       </div>
       <svg class="lb-ws-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
     </div>
     <div class="lb-ws-menu" id="wsMenu" hidden>
-      <a class="lb-ws-action" id="manageBoardsBtn" href="/dashboard/leaderboards">Manage all sites →</a>
-      <a class="lb-ws-action" href="/dashboard/settings/board">Site settings →</a>
+      <a class="lb-ws-action" id="manageBoardsBtn" href="/dashboard/leaderboards">Manage sites</a>
+      <a class="lb-ws-action" href="/dashboard/settings/board">Site settings</a>
     </div>
     {boardContext === "full" && <><div class="board-upsell" id="boardLimitUpsell" role="status" hidden><div><b id="boardLimitTitle">Need another site?</b><p class="hint" id="boardLimitText"></p></div><a class="btn btn--sm btn--accent" id="boardLimitCta" href="/dashboard/settings">Upgrade plan</a></div>
       <div class="lb-board-form" id="newBoardForm" hidden><div class="field field-flex"><label for="nb_name">Site name</label><input id="nb_name" placeholder="Summer Race 2026" /></div><div class="field field-flex"><label for="nb_slug">Web address</label><input id="nb_slug" placeholder="summer-race-2026" /></div><div class="field field-flex"><label for="nb_casino">Partner or sponsor</label><input id="nb_casino" placeholder="Your brand or sponsor" /></div><div class="field field-flex"><label for="nb_code">Promo code</label><input id="nb_code" placeholder="Optional" /></div><div class="lb-board-form-actions"><button class="btn btn--sm btn--accent" id="nb_create" type="button">Create site</button><button class="btn btn--sm btn--ghost" id="nb_cancel" type="button">Cancel</button><div class="hint w-full" id="nb_err" role="alert" aria-live="assertive"></div></div></div>
@@ -65,10 +54,10 @@ function SidebarBoard({ boardContext }) {
   </div>;
 }
 
-function SidebarFooter({ boardContext, footer, profile }) {
+function SidebarFooter({ boardContext, profile }) {
   return <>
-    {footer !== "account" && <div class="lb-side-foot"><a class="btn btn--sm btn--accent lb-live-btn" id="liveLink" href="#" target="_blank" rel="noopener noreferrer">Open public page ↗</a>
-      {footer === "rewards" ? <div class="lb-usage" id="planUsage"><div class="lb-usage-head"><span class="lb-usage-lbl" id="planBadge">FREE PLAN</span><span class="lb-usage-val">Active</span></div><div class="lb-usage-meta">Prize orders <span id="usageAmount">0</span> / <span id="usageLimit">0</span></div><div class="lb-usage-bar" aria-hidden="true"><i id="usageFill"></i></div></div> : <><div class="lb-usage" id="planUsage" hidden><div class="lb-usage-head"><span class="lb-usage-lbl" id="planBadge">FREE PLAN</span><span class="lb-usage-val">Active</span></div><div class="lb-usage-meta">Usage <span id="usageAmount">0</span> / <span id="usageLimit">0</span></div><div class="lb-usage-bar" aria-hidden="true"><i id="usageFill"></i></div></div></>}
+    {boardContext !== "none" && <div class="lb-side-foot">
+      <a class="btn btn--sm btn--accent lb-live-btn" id="liveLink" href="#" target="_blank" rel="noopener noreferrer">View public page ↗</a>
     </div>}
     <div class="lb-side-profile">{raw(profile)}</div>
   </>;
@@ -95,7 +84,7 @@ export function DashboardShell({ activeNav = "home", boardContext = "full", foot
           mapActiveNav(activeNav),
           "Dashboard"
         ))}
-        <SidebarFooter boardContext={boardContext} footer={footer} profile={profile} />
+        <SidebarFooter boardContext={boardContext} profile={profile} />
       </aside>
       <div class="lb-main">
         <header class="lb-topbar" id="lbTopbar">
@@ -104,11 +93,8 @@ export function DashboardShell({ activeNav = "home", boardContext = "full", foot
           {boardContext !== "none" ? (
             <div class="lb-topbar-hud">
               <div class="lb-site-command">
-                <span class="lb-site-command-icon" aria-hidden="true">
-                  <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 8h10M7 12h6"/></svg>
-                </span>
                 <div class="lb-board-select-wrap">
-                  <span class="lb-board-select-lbl">Current site</span>
+                  <span class="lb-board-select-lbl">Site</span>
                   <div class="lb-board-select-row">
                     <select class="lb-board-select" id="sidebarBoardSelect" aria-label="Switch site"></select>
                     <span class="lb-site-path" id="lbTopbarSitePath">Loading address…</span>
@@ -128,20 +114,20 @@ export function DashboardShell({ activeNav = "home", boardContext = "full", foot
                   {footer === "help" ? (
                     <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.1 9a3 3 0 1 1 5.8 1c0 2-3 2-3 4M12 18h.01"/></svg>
                   ) : (
-                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 0-2.83 0l-.06.06a1.65 1.65 0 0 1-1.82.33 1.65 1.65 0 0 1-1-1.51V21a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V9a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V15z"/></svg>
                   )}
                 </span>
                 <div class="lb-hud-details">
-                  <span class="lb-board-select-lbl">{footer === "help" ? "Help & Support" : "Account Settings"}</span>
+                  <span class="lb-board-select-lbl">{footer === "help" ? "Help & support" : "Account settings"}</span>
                   <span class="lb-account-title">{title || "Settings"}</span>
                 </div>
               </div>
             </div>
           )}
           <div class="lb-topbar-actions">
-            <button class="lb-topbar-cmd" type="button" id="topbarCmdTrigger" aria-label="Search commands (⌘K or Ctrl+K)" title="Press ⌘K or Ctrl+K to search">
+            <button class="lb-topbar-cmd" type="button" id="topbarCmdTrigger" aria-label="Search (⌘K or Ctrl+K)" title="Press ⌘K or Ctrl+K to search">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
-              <span>Search commands…</span>
+              <span>Search…</span>
               <kbd>⌘K</kbd>
             </button>
             {boardContext !== "none" && (
