@@ -84,13 +84,13 @@ jobs:
             exit 1
           fi
 
-      - name: "Smoke: staging dashboard"
+      - name: "Smoke: staging Telegram dashboard"
         run: |
-          STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 20 https://staging.yourrank.site/bot/dashboard || true)
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 20 https://staging.yourrank.site/dashboard/telegram || true)
           if [ "$STATUS" = "200" ]; then
-            echo "OK: staging dashboard HTTP $STATUS"
+            echo "OK: staging Telegram dashboard HTTP $STATUS"
           else
-            echo "WARNING: staging dashboard returned HTTP $STATUS"
+            echo "WARNING: staging Telegram dashboard returned HTTP $STATUS"
             exit 1
           fi
 
