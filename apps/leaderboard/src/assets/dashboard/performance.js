@@ -1,4 +1,4 @@
-import { $, logError, showLoadError, clearLoadError } from "./utils.js";
+import { $, esc, logError, showLoadError, clearLoadError } from "./utils.js";
 import { setState, state } from "./state.js";
 import { renderEmpty, renderError, setMetricLoading, setMetricValue, setRowsLoading } from "./states.js";
 
@@ -56,6 +56,13 @@ function wireTabs() {
   }
 }
 
+function hasCurrentTraffic() {
+  const range = state.PERF_RANGE || 14;
+  const all = Array.isArray(state.STATS?.days) ? state.STATS.days : [];
+  const current = totals(all.slice(-range));
+  return current.views > 0 || current.clicks > 0 || current.copies > 0;
+}
+
 function showTab(tab) {
   const active = ["activity", "referrals", "events"].includes(tab) ? tab : "activity";
   document.querySelectorAll("[data-perf-tab]").forEach((node) => {
@@ -64,8 +71,21 @@ function showTab(tab) {
     if (selected) node.setAttribute("aria-current", "page");
     else node.removeAttribute("aria-current");
   });
-  const panels = { activity: ["perf-activity", "perf-heatmap"], referrals: ["perf-referrals", "perf-referrers"], events: ["perf-events"] };
-  Object.entries(panels).forEach(([name, ids]) => ids.forEach((id) => { const node = $(id); if (node) node.hidden = name !== active; }));
+
+  // Referral rewards are an account/plan concern, not analytics. Keep this tab
+  // about traffic sources only instead of mixing product promotion into stats.
+  const referralPromo = $("perf-referrals");
+  if (referralPromo) referralPromo.hidden = true;
+
+  const panels = { activity: ["perf-activity"], referrals: ["perf-referrers"], events: ["perf-events"] };
+  Object.entries(panels).forEach(([name, ids]) => ids.forEach((id) => {
+    const node = $(id);
+    if (node) node.hidden = name !== active;
+  }));
+
+  const heatmap = $("perf-heatmap");
+  if (heatmap) heatmap.hidden = active !== "activity" || !hasCurrentTraffic();
+
   const crumb = document.querySelector('.v3-crumbs span[aria-current="page"]');
   if (crumb) crumb.textContent = TAB_LABELS[active];
 }
@@ -76,12 +96,18 @@ export function renderPerformance(stats) {
   const range = state.PERF_RANGE || 14;
   const all = Array.isArray(stats.days) ? stats.days : [];
   const days = all.slice(-range);
-  const hasData = all.length > 0;
-  if ($("perfRangeFilter")) $("perfRangeFilter").hidden = !hasData;
-  if ($("perfExport")) $("perfExport").hidden = !hasData;
   const previous = all.slice(Math.max(0, all.length - range * 2), Math.max(0, all.length - range));
   const currentTotals = totals(days);
   const previousTotals = totals(previous);
+  const hasTraffic = currentTotals.views > 0 || currentTotals.clicks > 0 || currentTotals.copies > 0;
+
+  if ($("perfRangeFilter")) $("perfRangeFilter").hidden = !hasTraffic;
+  if ($("perfExport")) $("perfExport").hidden = !hasTraffic;
+  const kpis = document.querySelector(".v3-analytics-page .v3-kpi-grid");
+  if (kpis) kpis.hidden = !hasTraffic;
+  const activityTable = document.querySelector(".v3-activity-table-card");
+  if (activityTable) activityTable.hidden = !hasTraffic;
+
   setKpi("perfKpiViews", currentTotals.views, percentDelta(currentTotals.views, previousTotals.views));
   setKpi("perfKpiClicks", currentTotals.clicks, percentDelta(currentTotals.clicks, previousTotals.clicks));
   setKpi("perfKpiCopies", currentTotals.copies, percentDelta(currentTotals.copies, previousTotals.copies));
@@ -92,9 +118,13 @@ export function renderPerformance(stats) {
   if (rangeLabel) rangeLabel.textContent = String(range);
   const board = $("perfBoardName");
   if (board) board.textContent = state.SLUG || "Active site";
-  renderChart(days);
-  renderActivity(days);
-  loadHeatmap();
+
+  renderChart(days, hasTraffic);
+  renderActivity(hasTraffic ? days : []);
+  if (hasTraffic) loadHeatmap();
+
+  const currentTab = document.querySelector('[data-perf-tab][aria-current="page"]')?.dataset?.perfTab || "activity";
+  showTab(currentTab);
 }
 
 function totals(days) {
@@ -120,9 +150,28 @@ function setKpi(id, value, change) {
   }
 }
 
-function renderChart(days) {
+function renderChart(days, hasTraffic) {
   const host = $("statBars");
   if (!host) return;
+  const empty = $("statsEmpty");
+  const totalWrap = document.querySelector(".v3-chart-total");
+  host.hidden = !hasTraffic;
+  if (totalWrap) totalWrap.hidden = !hasTraffic;
+
+  if (!hasTraffic) {
+    host.innerHTML = "";
+    const total = $("perfTotalViews");
+    if (total) setMetricValue(total, "0");
+    clearLoadError(empty, false);
+    renderEmpty(empty, {
+      icon: "chart",
+      title: "No traffic yet",
+      body: "Share your public page first. Analytics will fill in after people start visiting.",
+      actions: [{ label: "Share your site", href: "/dashboard/leaderboard/share", accent: true }],
+    });
+    return;
+  }
+
   const width = 720;
   const height = 220;
   const values = days.map((day) => Number(day.views) || 0);
@@ -135,13 +184,8 @@ function renderChart(days) {
   host.innerHTML = `<svg viewBox="0 0 ${width} ${height}" role="img" aria-label="Daily views over time"><g class="v3-chart-grid">${[20, 75, 130, 185].map((y) => `<line x1="0" x2="${width}" y1="${y}" y2="${y}"/>`).join("")}</g><polyline points="${points}" fill="none"/>${labels}</svg>`;
   const total = $("perfTotalViews");
   if (total) setMetricValue(total, String(values.reduce((sum, value) => sum + value, 0)));
-  if (values.some(Boolean)) {
-    clearLoadError($("statsEmpty"), false);
-  } else {
-    const empty = $("statsEmpty");
-    clearLoadError(empty, false);
-    renderEmpty(empty, { icon: "chart", title: "No activity yet", body: "Share your page link in your stream panels and Discord to get it moving." });
-  }
+  clearLoadError(empty, false);
+  if (empty) empty.hidden = true;
 }
 
 function renderActivity(days) {
@@ -210,18 +254,20 @@ function renderReferrers(referrers) {
   const body = $("perfReferrersBody");
   if (!body) return;
   body.removeAttribute("aria-busy");
-  body.innerHTML = referrers.map((row) => `<tr><td>${row.domain}</td><td class="num">${row.count}</td></tr>`).join("");
+  body.innerHTML = referrers.map((row) => `<tr><td>${esc(row.domain || "Direct / unknown")}</td><td class="num">${Number(row.count) || 0}</td></tr>`).join("");
   if (referrers.length) {
     clearLoadError($("perfReferrersEmpty"), false);
     $("perfReferrersEmpty").hidden = true;
   } else {
     const empty = $("perfReferrersEmpty");
     clearLoadError(empty, false);
-    renderEmpty(empty, { icon: "link", title: "No referrer data yet", body: "Open the Share tab to copy your link. When someone visits from a shared link, their source will appear here." });
+    renderEmpty(empty, { icon: "link", title: "No traffic sources yet", body: "Share your site first. Sources will appear here when browsers report where visitors came from." });
   }
 }
 
 export function renderPerformanceLoading() {
+  const kpis = document.querySelector(".v3-analytics-page .v3-kpi-grid");
+  if (kpis) kpis.hidden = false;
   ["perfKpiViews", "perfKpiClicks", "perfKpiCopies", "perfKpiCtr", "perfTotalViews"].forEach((id) => setMetricLoading($(id)));
   setRowsLoading($("perfActivityBody"), { cols: 5, rows: 4 });
 }
