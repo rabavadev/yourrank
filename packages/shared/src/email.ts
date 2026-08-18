@@ -64,7 +64,7 @@ export function onboardingEmail(day: 0 | 3 | 7, user: OnboardingOptions) {
   const origin = user.origin || "https://yourrank.site";
   const dashboard = `${origin}/dashboard`;
   const billing = `${origin}/dashboard?nav=manage`;
-  const botDashboard = `${origin}/bot/dashboard`;
+  const botDashboard = `${origin}/dashboard/telegram`;
 
   if (day === 0) {
     const subject = "Welcome to YourRank — set up your first leaderboard";

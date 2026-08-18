@@ -307,7 +307,7 @@ function renderOverviewSummary(bots, offers){
             '<div class="ds">'+(on?'webhook active':'disconnected')+'</div></div>'+
             '<span class="badge '+(on?'on':'off')+'">'+(on?'active':'off')+'</span></div>';
         }).join('')
-      : '<p class="muted text-sm">No bot connected yet. <a href="/bot/bots">Connect one →</a></p>';
+      : '<p class="muted text-sm">No bot connected yet. <a href="/dashboard/telegram/bots">Connect one →</a></p>';
   }
   const oo = $('ovOffers');
   if (oo) {
@@ -320,7 +320,7 @@ function renderOverviewSummary(bots, offers){
             '<div class="ds">'+esc(o.label||'')+' · '+esc(String(o.clicks||0))+' clicks · '+esc(String(o.conversions||0))+' conv · '+esc(cr)+'% CR</div></div>'+
             '<span class="badge '+(on?'on':'off')+'">'+(on?'active':'off')+'</span></div>';
         }).join('')
-      : '<p class="muted text-sm">No offers yet. <a href="/bot/offers">Create one →</a></p>';
+      : '<p class="muted text-sm">No offers yet. <a href="/dashboard/telegram/offers">Create one →</a></p>';
   }
   markStep('stepBot', (bots||[]).some(b=>b.status==='active'));
   markStep('stepOffer', (offers||[]).length > 0);
@@ -759,7 +759,7 @@ function renderBots(bots, loadCmds = true){
               (isActive ? '<button class="ghost" data-action="syncCommands" data-id="'+esc(b.id)+'" type="button">Sync commands</button>' : '')+
               (isActive ? '<button class="ghost" data-action="disconnectBot" data-id="'+esc(b.id)+'" type="button">Disconnect</button>'
                         : '<button class="ghost" data-action="reconnectBot" data-id="'+esc(b.id)+'" type="button">Reconnect</button>')+
-              (isActive ? '<a class="ghost" href="/bot/commands?bot='+encodeURIComponent(b.id)+'">Edit commands</a>' : '')+
+              (isActive ? '<a class="btn btn--ghost" href="/dashboard/telegram/commands?bot='+encodeURIComponent(b.id)+'">Edit commands</a>' : '')+
               (isActive && page === 'bots' ? '<button class="ghost" data-action="testMessage" data-id="'+esc(b.id)+'" type="button">Test message</button>' : '')+
               (page === 'bots' ? '<button class="danger" data-action="deleteBot" data-id="'+esc(b.id)+'" type="button">Delete</button>' : '')+
             '</div>'+

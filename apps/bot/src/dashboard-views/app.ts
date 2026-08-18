@@ -8,6 +8,12 @@ import { offersPanel } from "./pages/offers.js";
 import { broadcastsPanel } from "./pages/broadcasts.js";
 import { dashClientScript } from "./client-script.js";
 
+function esc(value: unknown): string {
+  return String(value ?? "").replace(/[&<>"']/g, (ch) => (
+    { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" } as Record<string, string>
+  )[ch]);
+}
+
 function panelHtml(page: string, publicBaseUrl: string): string {
   switch (page) {
     case "bots": return botsPanel();
@@ -24,31 +30,35 @@ export function appHtml(
   publicBaseUrl: string,
   nonce?: string,
   page = "overview",
-  nav?: string
+  nav?: string,
+  canonicalPath = "/dashboard/telegram",
+  context: { botUsername?: string | null; botStatus?: string | null; siteName?: string | null } = {},
 ): string {
   const meta = pageMeta(page);
+  const pagePath = page === "overview" ? canonicalPath : `${canonicalPath}/${page}`;
   // The Telegram pages render in the leaderboard dashboard's shell (same rail,
   // topbar and account menu) instead of a second, older-looking one.
   const chrome = dashboardChromeHtml({
     nav: botNavItems(),
-    active: page,
+    active: page === "overview" ? "telegram-overview" : `telegram-${page}`,
     navLabel: "Telegram",
-    headLabel: "Telegram",
-    headName: user.display_name || "Streamer",
-    headMeta: `${(user.plan || "free").replace(/^./, (c) => c.toUpperCase())} plan`,
+    railHeadHtml: `<div class="lb-ws-switcher"><a class="lb-ws-card" href="/dashboard/boards"><div class="lb-ws-avatar">${esc((context.siteName || "S").slice(0, 1).toUpperCase())}</div><div class="lb-ws-meta"><span class="lb-ws-name">${esc(context.siteName || "No site connected")}</span><span class="lb-ws-plan">Active site</span></div></a></div>`,
     productLinks: [
       { label: "Sites", href: "/dashboard" },
-      { label: "Telegram", href: "/bot/dashboard", active: true },
+      { label: "Telegram", href: "/dashboard/telegram", active: true },
       { label: "Credits & Shop", href: "/dashboard/rewards/redemptions" },
     ],
     title: meta.label,
     subtitle: meta.sub,
     crumbs: [
-      { label: "Telegram", href: "/bot/dashboard" },
+      { label: "Telegram", href: "/dashboard/telegram" },
       { label: meta.label },
     ],
     user,
-    activePath: "/bot/dashboard",
+    topbarHtml: `<div class="lb-topbar-hud"><div class="lb-account-hud"><span class="lb-hud-icon" aria-hidden="true">◎</span><div class="lb-hud-details"><span class="lb-board-select-lbl">CURRENT BOT</span>${context.botUsername ? `<span class="lb-account-title">@${esc(context.botUsername)} <span class="lb-status">${esc(context.botStatus || "active")}</span></span>` : `<a class="lb-account-title" href="/dashboard/telegram/bots">No bot connected · Connect one</a>`}</div></div></div>`,
+    activePath: pagePath,
+    railProfile: true,
+    collapsible: true,
     logoutAction: "/bot/auth/logout",
     // Each Telegram page is its own document (nav links are full loads), so
     // render only the active panel. This keeps one panel's slow or failed data

@@ -46,18 +46,19 @@ describe("dashboard routes", () => {
 
   it("maps legacy Telegram pages to the canonical Bot Worker", () => {
     expect(LEGACY_TELEGRAM_REDIRECTS).toEqual({
-      "/dashboard/telegram": "/bot/dashboard",
-      "/dashboard/telegram/overview": "/bot/dashboard",
-      "/dashboard/bot/setup": "/bot/dashboard",
-      "/dashboard/telegram/bots": "/bot/bots",
-      "/dashboard/telegram/commands": "/bot/commands",
-      "/dashboard/telegram/offers": "/bot/offers",
-      "/dashboard/telegram/broadcasts": "/bot/broadcasts",
+      "/bot": "/dashboard/telegram",
+      "/bot/dashboard": "/dashboard/telegram",
+      "/bot/bots": "/dashboard/telegram/bots",
+      "/bot/commands": "/dashboard/telegram/commands",
+      "/bot/offers": "/dashboard/telegram/offers",
+      "/bot/broadcasts": "/dashboard/telegram/broadcasts",
+      "/dashboard/telegram/overview": "/dashboard/telegram",
+      "/dashboard/bot/setup": "/dashboard/telegram",
     });
     for (const [legacy, canonical] of Object.entries(LEGACY_TELEGRAM_REDIRECTS)) {
       expect(legacyTelegramRedirect(legacy)).toBe(canonical);
     }
-    expect(legacyTelegramRedirect("/bot/dashboard")).toBe("");
+    expect(legacyTelegramRedirect("/dashboard/telegram")).toBe("");
     const worker = readFileSync(new URL("../index.js", import.meta.url), "utf8");
     for (const alias of ["/bot", "/bot/dashboard", "/bot/bots", "/bot/commands", "/bot/offers", "/bot/broadcasts"]) {
       expect(worker).not.toContain(`path === "${alias}"`);

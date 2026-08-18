@@ -89,7 +89,7 @@ After the Phase 2 UX and product restructuring, the following QA items were comp
 - `/dashboard/boards` → `/dashboard?nav=boards`
 - `/dashboard?nav=settings` → `/dashboard/settings`
 - `/dashboard/setup` → `/dashboard`
-- `/dashboard/bot/setup` → `/bot/dashboard`
+- `/dashboard/bot/setup` → `/dashboard/telegram`
 - `/dashboard/support` → `/contact?type=support&area=dashboard&return=/dashboard`
 - `/dashboard/security` → `/account/profile`
 

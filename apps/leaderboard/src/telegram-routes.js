@@ -1,11 +1,12 @@
 export const LEGACY_TELEGRAM_REDIRECTS = Object.freeze({
-  "/dashboard/telegram": "/bot/dashboard",
-  "/dashboard/telegram/overview": "/bot/dashboard",
-  "/dashboard/bot/setup": "/bot/dashboard",
-  "/dashboard/telegram/bots": "/bot/bots",
-  "/dashboard/telegram/commands": "/bot/commands",
-  "/dashboard/telegram/offers": "/bot/offers",
-  "/dashboard/telegram/broadcasts": "/bot/broadcasts",
+  "/bot": "/dashboard/telegram",
+  "/bot/dashboard": "/dashboard/telegram",
+  "/bot/bots": "/dashboard/telegram/bots",
+  "/bot/commands": "/dashboard/telegram/commands",
+  "/bot/offers": "/dashboard/telegram/offers",
+  "/bot/broadcasts": "/dashboard/telegram/broadcasts",
+  "/dashboard/telegram/overview": "/dashboard/telegram",
+  "/dashboard/bot/setup": "/dashboard/telegram",
 });
 
 export function legacyTelegramRedirect(pathname) {

@@ -206,14 +206,14 @@ export interface BotPageOpts {
 export function botPageHtml(opts: BotPageOpts): string {
   const nonceAttr = opts.nonce ? ` nonce="${esc(opts.nonce)}"` : "";
   const nav = opts.nav || "";
-  // The dashboard stylesheets come first so the bot's own component CSS still
-  // wins for its panels; only the shell chrome comes from the shared sheets.
+  // Bot component CSS is emitted before the shared dashboard sheets so the
+  // shell chrome remains identical to the leaderboard while panel rules work.
   const chromeCss = opts.dashboardChrome
-    ? '<link rel="stylesheet" href="/assets/app.css"><link rel="stylesheet" href="/assets/dashboard-v3.css">'
+    ? '<link rel="stylesheet" href="/assets/app.css"><link rel="stylesheet" href="/assets/shell-nav.css"><link rel="stylesheet" href="/assets/dashboard-v3.css"><link rel="stylesheet" href="/assets/ui.css"><link rel="stylesheet" href="/assets/dashboard-v4.css"><link rel="stylesheet" href="/assets/devin-system.css">'
     : "";
   return `<!doctype html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Streamer Dashboard</title>${GOOGLE_FONTS}${THEME_SCRIPT(opts.nonce)}${chromeCss}<style${nonceAttr}>${BOT_STYLE_ATTR_CSS}${BOT_BASE_CSS}${BOT_DASH_V2_CSS}</style><link rel="stylesheet" href="/assets/ui.css"><link rel="stylesheet" href="/assets/shell-nav.css"><link rel="stylesheet" href="/assets/devin-system.css"></head><body class="yr-ui" data-page="${esc(opts.page)}">${DEVIN_DESIGN_CONTRACT}
+<title>Streamer Dashboard</title>${GOOGLE_FONTS}${THEME_SCRIPT(opts.nonce)}<style${nonceAttr}>${BOT_STYLE_ATTR_CSS}${BOT_BASE_CSS}${BOT_DASH_V2_CSS}</style>${chromeCss}</head><body class="yr-ui" data-page="${esc(opts.page)}">${DEVIN_DESIGN_CONTRACT}
 <a href="#main-content" class="skip-link">Skip to main content</a>
 ${nav}
 ${opts.content}

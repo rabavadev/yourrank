@@ -122,8 +122,8 @@ Secrets (optional): `wrangler secret put DISCORD_MONITORING_WEBHOOK` — pings
 Discord when messages exhaust retries and land in the dead-letter queue.
 The consumer has no HTTP routes; it only runs on queue batches. CI deploys it
 automatically (see §7, `deploy-consumer` job).
-Routes are declared in each `wrangler.toml`. Cloudflare sends `/bot/*`, `/hook/*`,
-`/r/*`, `/pb` and `/pb/*` to the bot Worker; everything else on
+Routes are declared in each `wrangler.toml`. Cloudflare sends `/bot/*`,
+`/dashboard/telegram*`, `/hook/*`, `/r/*`, `/pb` and `/pb/*` to the bot Worker; everything else on
 `yourrank.site` to the leaderboard Worker. More-specific routes win.
 
 The leaderboard cookie domain comes from `SESSION_COOKIE_DOMAIN` (default

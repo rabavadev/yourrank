@@ -60,8 +60,9 @@ type DashBindings = SessionEnv & {
 };
 type DashEnv = { Bindings: DashBindings; Variables: { cspNonce: string } };
 
-export function buildDashboard(): Hono<DashEnv> {
+export function buildDashboard(opts: { canonical?: boolean; legacyPages?: boolean } = {}): Hono<DashEnv> {
   const app = new Hono<DashEnv>();
+  const canonical = opts.canonical === true;
 
   // Global error handler — same reason as buildHonoApp: Hono's default
   // text/plain 500 breaks the dashboard's api() JSON parse.
@@ -95,6 +96,7 @@ export function buildDashboard(): Hono<DashEnv> {
     }
   });
 
+  if (!canonical) {
   // ---- auth ----
   // BE-005: Rate-limit the Telegram login endpoint to prevent brute-force
   // signature forgery attempts (60 req/min per IP).
@@ -153,7 +155,7 @@ export function buildDashboard(): Hono<DashEnv> {
     // JSON for the dashboard JS client; HTML redirect for the shared nav form.
     const accept = c.req.header("accept") || "";
     if (accept.includes("application/json")) return c.json({ ok: true });
-    return c.redirect("/bot/dashboard");
+    return c.redirect("/dashboard/telegram");
   });
 
   // ---- session-scoped API ----
@@ -167,6 +169,7 @@ export function buildDashboard(): Hono<DashEnv> {
       "Cache-Control": "no-store, no-cache, must-revalidate",
     })
   );
+  }
 
   // ---- HTML ----
   const dashboardPage = async (c: any, page: string) => {
@@ -182,21 +185,39 @@ export function buildDashboard(): Hono<DashEnv> {
       c.header("Content-Security-Policy", `default-src 'self'; script-src 'self' 'unsafe-eval' 'nonce-${c.get("cspNonce")}' https://telegram.org; style-src 'self' 'nonce-${c.get("cspNonce")}' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://telegram.org; frame-src https://telegram.org https://oauth.telegram.org;`);
       return c.html(loginHtml(loginBotUsername, devLogin, c.get("cspNonce")));
     }
-    const user = await one<{ display_name: string; email: string; plan: string }>(
-      `SELECT display_name, email, plan FROM users WHERE id=$1`,
+    const user = await one<{ display_name: string; email: string; plan: string; bot_username: string | null; bot_status: string | null; site_name: string | null }>(
+      `SELECT u.display_name, u.email, u.plan,
+              (SELECT b.username FROM bots b WHERE b.owner_id = u.id ORDER BY b.created_at ASC LIMIT 1) AS bot_username,
+              (SELECT b.status FROM bots b WHERE b.owner_id = u.id ORDER BY b.created_at ASC LIMIT 1) AS bot_status,
+              (SELECT s.name FROM sites s WHERE s.user_id = u.id ORDER BY s.board_order ASC, s.updated_at ASC LIMIT 1) AS site_name
+       FROM users u WHERE u.id=$1`,
       [uid]
     );
     // The page renders the dashboard rail and its own topbar/account menu, so
     // it no longer stacks the marketing-style product header on top.
-    return c.html(appHtml(user ?? { display_name: "", email: "", plan: "free" }, config.publicBaseUrl, c.get("cspNonce"), page));
+    return c.html(appHtml(
+      user ?? { display_name: "", email: "", plan: "free" },
+      config.publicBaseUrl,
+      c.get("cspNonce"),
+      page,
+      undefined,
+      "/dashboard/telegram",
+      { botUsername: user?.bot_username, botStatus: user?.bot_status, siteName: user?.site_name },
+    ));
   };
 
-  app.get("/dashboard", (c) => dashboardPage(c, "overview"));
-  app.get("/bots", (c) => dashboardPage(c, "bots"));
-  app.get("/offers", (c) => dashboardPage(c, "offers"));
-  app.get("/commands", (c) => dashboardPage(c, "commands"));
-  app.get("/broadcasts", (c) => dashboardPage(c, "broadcasts"));
-  app.get("/settings", (c) => {
+  const pageRoute = (page: string) => {
+    if (opts.legacyPages) {
+      return (c: any) => c.redirect(`/dashboard/telegram${page === "overview" ? "" : `/${page}`}`, 301);
+    }
+    return (c: any) => dashboardPage(c, page);
+  };
+  app.get(canonical ? "/" : "/dashboard", pageRoute("overview"));
+  app.get("/bots", pageRoute("bots"));
+  app.get("/offers", pageRoute("offers"));
+  app.get("/commands", pageRoute("commands"));
+  app.get("/broadcasts", pageRoute("broadcasts"));
+  if (!canonical) app.get("/settings", (c) => {
     const target = new URL("/dashboard/settings", c.req.url);
     for (const [key, value] of new URL(c.req.url).searchParams) target.searchParams.set(key, value);
     target.searchParams.set("from", "bot");

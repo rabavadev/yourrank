@@ -128,12 +128,12 @@ describe("dashboard views", () => {
     const html = appHtml({ display_name: "Test", email: "test@example.com", plan: "free" }, "https://yourrank.site", "nonce123", "offers");
     // Same rail, topbar and stylesheets as the leaderboard dashboard.
     expect(html).toContain('<aside class="lb-side" id="lbSide"');
-    expect(html).toContain('<link rel="stylesheet" href="/assets/dashboard-v3.css">');
+    expect(html).toContain('<link rel="stylesheet" href="/assets/shell-nav.css"><link rel="stylesheet" href="/assets/dashboard-v3.css"><link rel="stylesheet" href="/assets/ui.css"><link rel="stylesheet" href="/assets/dashboard-v4.css">');
     // Cross-product switching lives in the shared product nav (Sites / Telegram
     // / Credits & Shop), not a one-off back link.
     expect(html).toContain('class="lb-product-link" href="/dashboard"');
-    expect(html).toContain('class="lb-product-link is-on" href="/bot/dashboard"');
-    expect(html).toContain('data-nav="offers" aria-current="page"');
+    expect(html).toContain('class="lb-product-link is-on" href="/dashboard/telegram"');
+    expect(html).toContain('data-nav="telegram-offers" aria-current="page"');
     expect(html).toContain('<nav class="v3-crumbs" aria-label="Breadcrumb">');
     // One shell, not the product header stacked on a second rail.
     expect(html).not.toContain("gm-shell-nav");
@@ -257,7 +257,7 @@ describe("dashboard views", () => {
     // the page key and the customize card inside it is what gets toggled.
     expect(html).toContain('data-page="commands"');
     expect(html).toContain('id="customizePanel"');
-    expect(clientScriptSource()).toContain('/bot/commands?bot=');
+    expect(clientScriptSource()).toContain('/dashboard/telegram/commands?bot=');
     expect(clientScriptSource()).toContain("requestedBotId");
   });
 
@@ -328,11 +328,11 @@ describe("buildDashboard", () => {
     expect(res.headers.get("set-cookie")).toContain("yr_session");
   });
 
-  it("POST /auth/logout redirects to /bot/dashboard for form/logout button submission", async () => {
+  it("POST /auth/logout redirects to /dashboard/telegram for form/logout button submission", async () => {
     const req = new Request("http://localhost:8787/auth/logout", { method: "POST" });
     const res = await app.fetch(req, testEnv);
     expect(res.status).toBe(302);
-    expect(res.headers.get("location")).toBe("/bot/dashboard");
+    expect(res.headers.get("location")).toBe("/dashboard/telegram");
   });
 
   it("GET /dashboard returns the app HTML when authenticated", async () => {
@@ -356,6 +356,30 @@ describe("buildDashboard", () => {
     const m = csp.match(/nonce-([a-f0-9]+)/);
     expect(m).toBeTruthy();
     expect(html).toContain(`nonce="${m![1]}"`);
+  });
+
+  it("serves canonical Telegram pages and permanently redirects legacy page routes", async () => {
+    mockQuery.mockImplementation((sql: string) => {
+      if (sql.includes("FROM sessions")) return Promise.resolve([{ user_id: "u-1", created_at: new Date(), age: 0 }]);
+      return Promise.resolve([]);
+    });
+    const canonical = buildDashboard({ canonical: true });
+    const page = await canonical.fetch(new Request("http://localhost:8788/bots", {
+      headers: { cookie: "yr_session=token123" },
+    }), testEnv);
+    expect(page.status).toBe(200);
+    expect((await page.text())).toContain("Telegram bots");
+    const canonicalDevLogin = await canonical.fetch(new Request("http://localhost:8788/auth/dev", {
+      method: "POST",
+      headers: { "content-type": "application/json", origin: "http://localhost:8788" },
+      body: JSON.stringify({ telegram_user_id: 123456 }),
+    }), testEnv);
+    expect(canonicalDevLogin.status).toBe(404);
+
+    const legacy = buildDashboard({ legacyPages: true });
+    const redirect = await legacy.fetch(new Request("http://localhost:8788/dashboard"), testEnv);
+    expect(redirect.status).toBe(301);
+    expect(redirect.headers.get("location")).toBe("/dashboard/telegram");
   });
 
   it("POST /dash/api/bots connects a bot and returns its info", async () => {

@@ -130,7 +130,7 @@
               <div class="yr-guide-info">
                 <strong>Telegram Community Bot</strong>
                 <p>Connect bot API token, customize /commands, and send broadcasts.</p>
-                <a href="/bot/dashboard" class="yr-guide-link">Open Telegram Bot →</a>
+                <a href="/dashboard/telegram" class="yr-guide-link">Open Telegram Bot →</a>
               </div>
             </div>
 

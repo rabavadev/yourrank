@@ -42,7 +42,7 @@ Sticky top bar, 56px, containing:
 | Tab         | href                    | Served by          |
 |-------------|-------------------------|--------------------|
 | Leaderboard | `/dashboard`            | Leaderboard Worker |
-| Bot         | `/bot/dashboard`        | Bot Worker         |
+| Telegram bot | `/dashboard/telegram`  | Bot Worker         |
 | Logout      | `/logout`               | Leaderboard Worker |
 
 > Analytics + Billing live on the leaderboard Worker because that's where the
@@ -90,16 +90,16 @@ ${shellNavHtml({ activePath: url.pathname, user })}
 }
 ```
 
-## Integration — bot Worker (`/bot/dashboard`, TS)
+## Integration — bot Worker (`/dashboard/telegram`, TS)
 
 The bot's `dashboard.ts` currently renders `APP_HTML` at `/dashboard`. Under the
-merge it moves to `/bot/dashboard` (see `routing.md`) and gains the shell:
+merge it moves to `/dashboard/telegram` (see `routing.md`) and gains the shell:
 
 ```ts
 import { shellNavHtml, SHELL_NAV_CSS } from "@yourrank/shared/shell-nav";
 import { currentUserIdFromHeader } from "@yourrank/shared/session";
 
-app.get("/bot/dashboard", async (c) => {
+app.get("/dashboard/telegram", async (c) => {
   const uid = await currentUserIdFromHeader(c.req.header("cookie"), c.env as any);
   if (!uid) return c.redirect("/login");                    // login lives on leaderboard
   const user = await one(`SELECT display_name, email, plan FROM users WHERE id=$1`, [uid]);
@@ -108,7 +108,7 @@ app.get("/bot/dashboard", async (c) => {
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>YourRank — Bot</title>
 <style>${SHELL_NAV_CSS}${BASE_CSS}</style></head><body>
-${shellNavHtml({ activePath: "/bot/dashboard", user })}
+${shellNavHtml({ activePath: "/dashboard/telegram", user })}
 <main class="gm-shell-main">
   ${BOT_DASHBOARD_BODY}   <!-- the existing APP_HTML body, minus its old header -->
 </main>

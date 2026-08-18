@@ -100,8 +100,8 @@ async function runChecks(env: Env): Promise<CheckResult[]> {
     checkEndpoint(`${base}/`, { method: "GET" }, "GET / (landing)"),
     // 3. GET /bot/health (bot worker + DB)
     checkEndpoint(`${base}/bot/health`, { method: "GET" }, "GET /bot/health"),
-    // 4. GET /bot/dashboard (bot dashboard + Telegram login widget)
-    checkEndpoint(`${base}/bot/dashboard`, { method: "GET" }, "GET /bot/dashboard"),
+    // 4. GET /dashboard/telegram (bot dashboard + Telegram login widget)
+    checkEndpoint(`${base}/dashboard/telegram`, { method: "GET" }, "GET /dashboard/telegram"),
   ];
 
   // 5. GET /r/<known-slug> — only if a slug is configured; 302/307 are expected

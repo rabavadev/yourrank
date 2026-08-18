@@ -101,6 +101,8 @@ export interface ChromeOpts {
   headLabel?: string;
   headName?: string;
   headMeta?: string;
+  railHeadHtml?: string;
+  topbarHtml?: string;
   /** Cross-product links rendered under the rail. */
   productLinks?: { label: string; href: string; active?: boolean }[];
   title?: string;
@@ -144,12 +146,12 @@ export function dashboardChromeHtml(opts: ChromeOpts): string {
     logoutAction: opts.logoutAction,
     standalone: true,
   });
-  const head = opts.headLabel || opts.headName
+  const head = opts.railHeadHtml || (opts.headLabel || opts.headName
     ? `<div class="lb-side-head"><span class="label">${esc(opts.headLabel || "")}</span>` +
       `<div class="lb-active-name">${esc(opts.headName || "")}</div>` +
       (opts.headMeta ? `<div class="lb-active-meta">${esc(opts.headMeta)}</div>` : "") +
       `</div>`
-    : "";
+    : "");
   const crumbs = crumbsHtml(opts.crumbs || []);
   const title = opts.title
     ? `<div class="v3-head">${crumbs}<h1${opts.titleId ? ` id="${esc(opts.titleId)}"` : ""}>${esc(opts.title)}</h1>` +
@@ -185,7 +187,7 @@ ${sideProfile}
 <header class="lb-topbar" id="lbTopbar">
 <button class="lb-menu lb-topbar-menu" id="lbMenu" type="button" aria-label="Show sections" aria-expanded="false" aria-controls="lbSide">${MENU_ICON}</button>
 <a class="lb-brand" href="/dashboard" aria-label="YourRank dashboard"><span class="lb-brand-mark">${brandMarkSvg()}</span><span class="lb-brand-txt">YourRank</span></a>
-<div class="lb-topbar-actions">${topProfile}</div>
+<div class="lb-topbar-actions">${opts.topbarHtml || topProfile}</div>
 </header>
 ${contentOpen}
 <div class="v3-stack">

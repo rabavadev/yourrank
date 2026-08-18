@@ -4,7 +4,7 @@ export function commandsPanel(): string {
   <div class="lb-bento" data-page="commands">
     <div class="lb-widget lb-widget--full" id="commandsEmptyHint">
       <div class="mb-md"><h2>Commands</h2></div>
-      <p class="muted">Connect a bot first — do that in <a href="/bot/bots">Bots</a>.</p>
+      <p class="muted">Connect a bot first — do that in <a href="/dashboard/telegram/bots">Bots</a>.</p>
     </div>
 
     <div class="lb-widget lb-widget--full" id="customizePanel">

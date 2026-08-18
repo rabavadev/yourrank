@@ -26,7 +26,8 @@ shared as described in the other specs.
 ### → BOT Worker
 | Path                | Purpose                                        |
 |---------------------|------------------------------------------------|
-| `/bot/dashboard`    | unified dashboard — **Bot tab**                |
+| `/dashboard/telegram` | unified dashboard — **Telegram bot tab**     |
+| `/dashboard/telegram/*` | Telegram bot pages                        |
 | `/bot/dash/api/*`   | bot dashboard JSON API                         |
 | `/hook/*`           | Telegram webhook (per-bot secret)              |
 | `/r/*`              | tracked affiliate redirect                     |
@@ -43,7 +44,9 @@ leaderboard Worker take the **catch-all**.
 ### Bot Worker — `apps/bot/wrangler.toml`
 ```toml
 routes = [
+  { pattern = "yourrank.site/bot",           zone_name = "yourrank.site" },
   { pattern = "yourrank.site/bot/*",         zone_name = "yourrank.site" },
+  { pattern = "yourrank.site/dashboard/telegram*", zone_name = "yourrank.site" },
   { pattern = "yourrank.site/hook/*",        zone_name = "yourrank.site" },
   { pattern = "yourrank.site/r/*",           zone_name = "yourrank.site" },
   { pattern = "yourrank.site/pb",            zone_name = "yourrank.site" },
@@ -67,7 +70,7 @@ Also add `yourrank.site` and `www` as zone DNS + the workers routes; the apex
 ## 3. Precedence — the gotcha
 
 **Cloudflare routes are matched most-specific-first.** A request to
-`yourrank.site/bot/dashboard` matches *both* `yourrank.site/bot/*` (bot) and
+`yourrank.site/dashboard/telegram` matches *both* `yourrank.site/dashboard/telegram*` (bot) and
 `yourrank.site/*` (leaderboard). Cloudflare picks the **longer / more specific**
 pattern → the bot Worker. The leaderboard's `/*` only wins when no bot pattern
 matches.
@@ -83,7 +86,7 @@ Rules that keep this unambiguous:
    Worker, `curl -sI https://yourrank.site/anything-else` the leaderboard.
 
 > Note: `*` in a Worker route matches across `/` (it is not a single path
-> segment). So `yourrank.site/bot/*` covers `/bot/dashboard` **and**
+> segment). So `yourrank.site/bot/*` covers `/bot/dash/api/*` **and**
 > `/bot/dash/api/offers`. Good — one pattern per bot prefix suffices.
 
 ---
@@ -96,7 +99,7 @@ prefixes** that are already unique.
 
 | Collision                        | Before (both apps)                         | Resolution |
 |----------------------------------|--------------------------------------------|------------|
-| **`/dashboard`**                 | leaderboard `/dashboard` **and** bot `/dashboard` | Bot moves to **`/bot/dashboard`**. Leaderboard keeps `/dashboard`. |
+| **`/dashboard/telegram`**        | leaderboard catch-all and bot dashboard          | Bot claims the more-specific `/dashboard/telegram*` route. |
 | **Bot API `/dash/api/*`**        | bot only, but sits at root                  | Move to **`/bot/dash/api/*`** so it's inside the bot route prefix. Update the dashboard client's `fetch('/dash/api'+path)` → `fetch('/bot/dash/api'+path)`. |
 | **Bot `/auth/*`** (telegram/dev/logout) | bot root `/auth/telegram`, `/auth/logout` | Fold into the merged auth. Telegram-login endpoint moves to **`/bot/auth/telegram`** (still under the bot route) *or* is served by the leaderboard's `/login` page which hosts the widget. Logout is unified at leaderboard **`/logout`**; drop the bot's `/auth/logout`. |
 | **Bot root redirect `/` → `/dashboard`** | bot's `app.get("/", redirect)` | **Remove.** `/` is the leaderboard landing page. The bot Worker no longer owns `/`. |
@@ -119,7 +122,7 @@ add: "bot", "hook", "r", "pb", "health"
 ## 5. Same-origin = no CORS
 
 All of the above are on `yourrank.site`. The dashboard shell's Bot tab is a
-plain navigation from `/dashboard` → `/bot/dashboard` (same origin), and the bot
+plain navigation from `/dashboard` → `/dashboard/telegram` (same origin), and the bot
 dashboard's own client fetches to `/bot/dash/api/*` are same-origin too. **No
 CORS headers are needed anywhere.** The only cross-*Worker* boundary is which
 script Cloudflare runs; the browser sees one origin throughout. This is why the
@@ -133,7 +136,7 @@ cross-origin plumbing.
 curl -sI https://yourrank.site/                 # -> leaderboard
 curl -sI https://yourrank.site/dashboard        # -> leaderboard (Leaderboard tab)
 curl -sI https://yourrank.site/some-streamer     # -> leaderboard public page
-curl -sI https://yourrank.site/bot/dashboard    # -> bot (Bot tab)
+curl -sI https://yourrank.site/dashboard/telegram # -> bot (Telegram tab)
 curl -sI https://yourrank.site/hook/abc          # -> bot (401 without secret = correct)
 curl -sI https://yourrank.site/r/xyz             # -> bot (302 redirect or 404)
 curl -sI https://yourrank.site/pb                # -> bot
