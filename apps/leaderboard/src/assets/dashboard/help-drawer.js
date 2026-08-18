@@ -107,7 +107,7 @@
               </div>
               <div class="yr-guide-info">
                 <strong>Adding to OBS Browser Source</strong>
-                <p>Add <code>/your-web-address/overlay</code> as an 1100px browser source on stream.</p>
+                <p>Open the Share tab, copy your OBS link, then add it in OBS as a browser source set to 1100px.</p>
                 <a href="/dashboard/editor/share" class="yr-guide-link">Get OBS URL &amp; Embed →</a>
               </div>
             </div>
