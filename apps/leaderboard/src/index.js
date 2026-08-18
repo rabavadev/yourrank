@@ -60,11 +60,11 @@ import { redirectToLogin } from "./login-redirect.js";
 import { safeNextPath } from "@yourrank/shared/safe-next";
 
 const LEGAL_PAGES = new Set(["terms", "privacy", "responsible", "cookies", "refund", "contact"]);
-const MARKETING_PAGES = new Set(["/", "/index.html", "/sites", "/telegram", "/credits"]);
+const MARKETING_PAGES = new Set(["/", "/index.html", "/sites", "/telegram", "/credits", "/pricing"]);
 const NON_SITE_PATHS = new Set([
   "api", "auth", "dashboard", "login", "logout", "signup", "verify-email", "invite",
   "account", "contact", "faq", "reviews", "cookies", "privacy", "terms",
-  "responsible", "refund", "setup", "demo", "sites", "telegram", "credits", "go", "logo", "favicon.ico",
+  "responsible", "refund", "setup", "demo", "sites", "telegram", "credits", "pricing", "go", "logo", "favicon.ico",
 ]);
 const PUBLIC_API_OPERATIONS = new Set(["standings", "players", "stream", "rank", "data", "stats"]);
 const SITE_SECTIONS = new Set(["home", "leaderboard", "shop", "games", "me"]);
@@ -894,7 +894,7 @@ async function handleRequest(request, env, ctx, meta) {
         return new Response(addCookieConsent(helpHtml), { headers: { ...HTML_N, ...csrfHeader } });
       }
       if (path === "/docs") return new Response(addCookieConsent(await renderHtmlPage(PAGES.docs)), { headers: { ...HTML_N, ...csrfHeader } });
-      if (path === "/pricing" || path === "/pricing.html") return new Response(addCookieConsent(await renderHtmlPage(PAGES.pricing)), { headers: { ...HTML_N, ...csrfHeader } });
+      if (path === "/pricing.html") return Response.redirect(`${url.origin}/pricing`, 301);
       if (path === "/faq" || path === "/faq.html") return new Response(addCookieConsent(await renderHtmlPage(PAGES.faq)), { headers: { ...HTML_N, ...csrfHeader } });
       if (path === "/reviews" || path === "/reviews.html") return new Response(addCookieConsent(await renderHtmlPage(PAGES.reviews)), { headers: { ...HTML_N, ...csrfHeader } });
       if (path === "/cookies" || path === "/cookies.html") return new Response(addCookieConsent(await renderHtmlPage(PAGES.cookies)), { headers: { ...HTML_N, ...csrfHeader } });

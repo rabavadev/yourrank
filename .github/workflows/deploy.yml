@@ -251,13 +251,21 @@ jobs:
           echo "OK: leaderboard HTTP $STATUS"
 
       - name: "Smoke: pricing page"
+        # /pricing is served by the web Worker via the marketing proxy; the web
+        # Worker deploys in a parallel workflow, so retry while it catches up.
         run: |
-          STATUS=$(curl -s -o /dev/null -w "%{http_code}" -L --max-time 20 https://yourrank.site/pricing)
-          if [ "$STATUS" != "200" ]; then
-            echo "FAIL: pricing returned HTTP $STATUS (expected 200)"
-            exit 1
-          fi
-          echo "OK: pricing HTTP $STATUS"
+          MAX_RETRIES=12
+          for i in $(seq 1 $MAX_RETRIES); do
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" -L --max-time 20 https://yourrank.site/pricing || true)
+            if [ "$STATUS" = "200" ]; then
+              echo "OK: pricing HTTP $STATUS (attempt $i)"
+              exit 0
+            fi
+            echo "Attempt $i/$MAX_RETRIES: HTTP $STATUS — retrying in 15s…"
+            sleep 15
+          done
+          echo "FAIL: pricing not returning 200 after $MAX_RETRIES attempts"
+          exit 1
 
       - name: "Smoke: contact page"
         run: |
