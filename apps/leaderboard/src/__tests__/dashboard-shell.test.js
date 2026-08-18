@@ -109,7 +109,9 @@ describe("signed-in shell navigation", () => {
     expect(html).toContain('id="ovOnboardingBento" hidden');
     expect(html).toContain('id="ovActiveBento"');
     expect(html).toContain('class="ov-summary-actions"');
-    expect(html).toContain('class="ov-setup-row" id="ovStepBrand" href="/dashboard/leaderboard/setup"');
+    expect(html).toContain('id="ovSetupMessage"');
+    expect(html).toContain('id="ovSetupAction"');
+    expect(html).not.toContain('id="ovStepBrand"');
     expect(html).toContain("Your leaderboard");
   });
 

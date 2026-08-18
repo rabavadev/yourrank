@@ -37,12 +37,6 @@ function computeSetupSteps() {
   return { brand, players, kick, configure, publish };
 }
 
-function setStepDone(el, done) {
-  if (!el) return;
-  el.classList.toggle("is-done", done);
-  el.textContent = done ? "✓" : "";
-}
-
 function wirePublicationLink(link) {
   if (!link || link._publicationWired) return;
   link._publicationWired = true;
@@ -51,23 +45,6 @@ function wirePublicationLink(link) {
     event.preventDefault();
     $("publishAction")?.click();
   });
-}
-
-function setSetupStatus(el, done, step) {
-  if (!el) return;
-  const row = el.closest(".ov-setup-row");
-  const mark = row?.querySelector(".ov-step-icon");
-  if (mark) setStepDone(mark, done);
-  row?.classList.toggle("is-done", done);
-  el.classList.toggle("is-done", done);
-  const label = step?.action || "Continue";
-  el.textContent = done ? "Done" : `${label} →`;
-  if (row) {
-    row.href = step?.href || "#";
-    row.dataset.publicationAction = step?.key === "publish" && !done ? "true" : "false";
-    row.setAttribute("aria-label", done ? `${row.querySelector("b")?.textContent || label}, done` : `${label}, required`);
-    wirePublicationLink(row);
-  }
 }
 
 export function renderOverviewSummary() {
@@ -85,34 +62,17 @@ export function renderOverviewSummary() {
     const onboardBento = $("ovOnboardingBento");
     const activeBento = $("ovActiveBento");
     const commandGrid = $("ovCommandGrid");
-    if (onboardBento) onboardBento.hidden = done;
+    const showSetup = !done || pendingVerification;
+    if (onboardBento) onboardBento.hidden = !showSetup;
+    const setupCard = onboardBento?.querySelector(".ov-setup");
+    setupCard?.classList.toggle("is-attention", pendingVerification);
     if (activeBento) activeBento.hidden = false;
+    if (commandGrid) commandGrid.hidden = !showSetup;
     commandGrid?.classList.toggle("is-setup-complete", done);
-    const primaryAction = $("ovPrimaryAction");
-    if (primaryAction) {
-      const verificationIsNext = pendingVerification || (readyToPublish && needsVerification);
-      const publicationIsNext = !verificationIsNext && firstIncomplete?.key === "publish";
-      primaryAction.href = status.live ? `/${state.SLUG}` : verificationIsNext ? "/verify-email" : publicationIsNext ? "#publish" : firstIncomplete?.href || "/dashboard/leaderboard/setup";
-      primaryAction.textContent = status.live ? "View your site ↗" : verificationIsNext ? "Confirm email" : firstIncomplete?.action || "Edit site";
-      primaryAction.dataset.publicationAction = publicationIsNext ? "true" : "false";
-      wirePublicationLink(primaryAction);
-      if (status.live) {
-        primaryAction.target = "_blank";
-        primaryAction.rel = "noopener noreferrer";
-      } else {
-        primaryAction.removeAttribute("target");
-        primaryAction.removeAttribute("rel");
-      }
-    }
     const siteState = $("ovSiteState");
     if (siteState) {
-      siteState.textContent = status.live ? "Your site is live" : pendingVerification ? "Confirm your email to open the site" : readyToPublish && needsVerification ? "Confirm your email before launch" : readyToPublish ? "Your site is ready to publish" : "Finish the essentials, then go live";
-      const summary = siteState.closest(".ov-summary");
-      summary?.classList.toggle("is-live", status.live);
-      summary?.classList.toggle("is-attention", pendingVerification || (readyToPublish && needsVerification));
+      siteState.textContent = pendingVerification ? "Confirm your email before launch" : readyToPublish ? "Your site is ready to publish" : "Finish the essentials";
     }
-    const siteStateMeta = $("ovSiteStateMeta");
-    if (siteStateMeta) siteStateMeta.textContent = status.live ? `People can visit yourrank.site/${state.SLUG}.` : pendingVerification ? "Your site is published and will open as soon as you confirm your email." : readyToPublish && needsVerification ? "Your setup is saved. Confirm now so publishing is frictionless." : readyToPublish ? "Everything required is in place. You can still edit before publishing." : `Next: ${firstIncomplete?.action || "continue setup"}.`;
     // Setup progress
     const stepOrder = SETUP_STEPS.map(({ key }) => key);
     const completed = stepOrder.filter((key) => steps[key]).length;
@@ -122,14 +82,31 @@ export function renderOverviewSummary() {
     if (countEl) countEl.textContent = `${completed} of ${stepOrder.length} done`;
     if (fillEl) fillEl.style.transform = `scaleX(${completed / stepOrder.length})`;
     if (barEl) barEl.setAttribute("aria-valuenow", String(completed));
-    const statusEls = {
-      brand: $("ovStepBrandStatus"),
-      players: $("ovStepPlayersStatus"),
-      publish: $("ovStepPublishStatus"),
-    };
-    SETUP_STEPS.forEach((step) => setSetupStatus(statusEls[step.key], steps[step.key], step));
+    const setupMessage = $("ovSetupMessage");
+    const setupAction = $("ovSetupAction");
+    if (setupMessage) {
+      const setupCopy = pendingVerification
+        ? "Your site is published, but email confirmation is still required."
+        : firstIncomplete?.key === "brand"
+        ? "Add your site details to get started."
+        : firstIncomplete?.key === "players"
+          ? "Add players to your leaderboard."
+          : firstIncomplete?.key === "publish"
+            ? "Your essentials are ready. Publish when you’re ready."
+            : "Your essentials are ready.";
+      setupMessage.textContent = setupCopy;
+    }
+    if (setupAction) {
+      const verificationIsNext = pendingVerification || (readyToPublish && needsVerification);
+      const publicationIsNext = !verificationIsNext && firstIncomplete?.key === "publish";
+      setupAction.href = verificationIsNext ? "/verify-email" : publicationIsNext ? "#publish" : firstIncomplete?.href || "/dashboard/leaderboard/setup";
+      setupAction.textContent = verificationIsNext ? "Confirm email" : firstIncomplete?.action || "Edit site";
+      setupAction.dataset.publicationAction = publicationIsNext ? "true" : "false";
+      if (publicationIsNext) wirePublicationLink(setupAction);
+    }
     const statsReady = state.STATS_STATUS === "ready" && state.STATS;
     const days = statsReady ? state.STATS.days : [];
+    const hasStatsActivity = days.some((day) => Number(day.views) || Number(day.clicks) || Number(day.copies));
     const sum = (field, list = days) => list.reduce((total, day) => total + Number(day[field] || 0), 0);
     const number = (value) => value == null ? "—" : Number(value).toLocaleString("en-US");
     const delta = (field) => {
@@ -141,7 +118,7 @@ export function renderOverviewSummary() {
     if (state.STATS_STATUS === "loading") {
       setMetricLoading($("ovViews14"));
       setMetricLoading($("ovCopies14"));
-    } else if (statsReady) {
+    } else if (statsReady && hasStatsActivity) {
       setMetricValue($("ovViews14"), number(sum("views")));
       setMetricValue($("ovCopies14"), number(sum("copies")));
     } else {
@@ -167,7 +144,7 @@ export function renderOverviewSummary() {
     ].filter((item) => item.at).sort((a, b) => new Date(b.at) - new Date(a.at)).slice(0, 5);
     $("ovActivityList").innerHTML = activity.map((item) => `<div class="ov-activity-row"><span class="ov-activity-icon">${ACTIVITY_ICON}</span><span class="ov-activity-copy"><b>${esc(item.title)}</b><span>${esc(item.sub)}</span></span><time>${relative(item.at)}</time></div>`).join("");
     if (activity.length) $("ovActivityEmpty").hidden = true;
-    else renderEmpty($("ovActivityEmpty"), { icon: "chart", title: "No activity yet", body: "Visits, updates and reward requests will appear here.", actions: [{ label: "Share your site", href: "/dashboard/leaderboard/share" }] });
+    else renderEmpty($("ovActivityEmpty"), { kind: "empty", title: "No activity yet", body: "Visits, updates and reward requests will appear here.", compact: true, actions: [{ label: "Share your site", href: "/dashboard/leaderboard/share" }] });
     const top = [...players].sort((a, b) => b.wagered - a.wagered).slice(0, 5);
     $("ovTopPlayers").innerHTML = top.map((player, i) => `
       <div class="ov-player-row" data-name="${esc(player.name)}">
@@ -200,6 +177,6 @@ export function renderOverviewSummary() {
     });
 
     if (top.length) $("ov_topEmpty").hidden = true;
-    else renderEmpty($("ov_topEmpty"), { icon: "users", title: "No players yet", body: "Add the first player to start your leaderboard.", actions: [{ label: "Add players", href: "/dashboard/leaderboard/players" }] });
+    else renderEmpty($("ov_topEmpty"), { kind: "empty", title: "No players yet", body: "Add the first player to start your leaderboard.", compact: true, actions: [{ label: "Add players", href: "/dashboard/leaderboard/players" }] });
     $("ovPublishedStatus").textContent = status.live ? "Published" : status.published ? "Verification needed" : "Not published";
   }

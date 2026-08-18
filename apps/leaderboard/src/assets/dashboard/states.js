@@ -1,5 +1,14 @@
 export const UNKNOWN = "—";
 
+export const STATE_VOCABULARY = Object.freeze({
+  loading: { title: "Loading…", body: "This panel is still loading." },
+  error: { title: "Couldn't load this panel", body: "Try again to reload it." },
+  empty: { title: "Nothing here yet", body: "This will fill in once there is activity." },
+  setup: { title: "Connection needed", body: "Connect the required service to start using this panel." },
+  locked: { title: "Plan limit reached", body: "Upgrade your plan to continue." },
+  verification: { title: "Verification needed", body: "Confirm your email to continue." },
+});
+
 const esc = (value) => String(value ?? "").replace(/[&<>"']/g, (char) => ({
   "&": "&amp;",
   "<": "&lt;",
@@ -27,6 +36,26 @@ export function emptyStateHtml({ icon = "chart", title, body, actions = [] }) {
     }).join("")}</div>`
     : "";
   return `<div class="v3-empty"><span class="v3-empty-ic">${iconHtml}</span><h2>${esc(title)}</h2>${body ? `<p>${esc(body)}</p>` : ""}${actionHtml}</div>`;
+}
+
+export function inlineStateHtml({ kind = "empty", title, body, actions = [] } = {}) {
+  const copy = STATE_VOCABULARY[kind] || STATE_VOCABULARY.empty;
+  const action = actions[0];
+  const actionHtml = action
+    ? action.href
+      ? `<a class="v3-btn v3-btn--sm${action.accent ? " v3-btn--accent" : ""}" href="${esc(action.href)}">${esc(action.label)}</a>`
+      : `<button class="v3-btn v3-btn--sm${action.accent ? " v3-btn--accent" : ""}" type="button"${action.id ? ` id="${esc(action.id)}"` : ""}>${esc(action.label)}</button>`
+    : "";
+  return `<div class="v3-state-inline" data-state="${esc(kind)}" role="${kind === "error" ? "alert" : "status"}"><span class="v3-state-inline-copy"><b>${esc(title || copy.title)}</b>${body || copy.body ? `<span>${esc(body || copy.body)}</span>` : ""}</span>${actionHtml}</div>`;
+}
+
+export function renderInlineState(el, spec = {}) {
+  if (!el) return;
+  el.removeAttribute("aria-busy");
+  el.innerHTML = inlineStateHtml(spec);
+  el.hidden = false;
+  const action = el.querySelector("button[id]");
+  if (action && spec.actions?.[0]?.onClick) action.addEventListener("click", spec.actions[0].onClick, { once: true });
 }
 
 export function metricText(status, value) {
@@ -89,6 +118,6 @@ export function renderError(el, { title = "Couldn't load this panel", body = "Tr
 export function renderEmpty(el, spec) {
   if (!el) return;
   el.removeAttribute("aria-busy");
-  el.innerHTML = emptyStateHtml(spec);
+  el.innerHTML = spec?.compact ? inlineStateHtml(spec) : emptyStateHtml(spec);
   el.hidden = false;
 }

@@ -8,6 +8,7 @@ import { openDrawer, closeDrawer } from "./dashboard/shell.js";
 import { checkout, renderPlan, loadHistory, loadPlanUsage, wireDeleteAccount, wireCancelSubscription } from "./dashboard/site.js";
 
 const statusEl = () => $("status");
+let obsSlug = "";
 function setStatus(message, isError) {
   const el = statusEl();
   if (!el) return;
@@ -15,6 +16,54 @@ function setStatus(message, isError) {
   el.className = isError ? "toast toast--error" : "toast toast--success";
   el.hidden = false;
   setTimeout(() => { el.hidden = true; }, 4000);
+}
+
+async function wireObsTools() {
+  const buttons = [
+    ["ov-btn-copy-pred-hud", (slug) => `${location.origin}/overlay/prediction?site=${slug}`, "OBS Live Prediction HUD URL copied to clipboard!"],
+    ["ov-btn-copy-alerts", (slug) => `${location.origin}/overlay/alerts?site=${slug}`, "OBS Stream Alerts & Chimes URL copied to clipboard!"],
+    ["ov-btn-copy-ticker", (slug) => `${location.origin}/${slug}/overlay?layout=ticker`, "OBS Leaderboard Ticker URL copied to clipboard!"],
+  ];
+  if (!buttons.some(([id]) => $(id))) return;
+  const siteSelect = $("obsSiteSelect");
+  const siteHint = $("obsSiteHint");
+  try {
+    const response = await jsonReq("GET", "/api/site/list");
+    const sites = response.ok ? response.data?.sites || response.data?.boards || [] : [];
+    const selectedId = new URLSearchParams(location.search).get("siteId");
+    const site = sites.find((item) => String(item.id || item.siteId) === String(selectedId)) || sites[0];
+    if (siteSelect) {
+      siteSelect.innerHTML = sites.map((item) => {
+        const id = item.id || item.siteId;
+        return `<option value="${esc(id)}"${String(id) === String(site?.id || site?.siteId) ? " selected" : ""}>${esc(item.name || item.slug || "Site")}</option>`;
+      }).join("");
+      siteSelect.disabled = !sites.length;
+      siteSelect.addEventListener("change", () => {
+        const next = new URL(location.href);
+        next.searchParams.set("siteId", siteSelect.value);
+        location.assign(next.pathname + next.search);
+      });
+    }
+    obsSlug = site?.slug || "";
+    if (siteHint) siteHint.textContent = site ? `Links below use ${site.name || site.slug || "this site"}.` : "Create a site before copying an overlay link.";
+  } catch (error) {
+    logError("load-obs-site", error);
+    if (siteHint) siteHint.textContent = "Could not load your sites. Try again before copying an overlay link.";
+  }
+  buttons.forEach(([id, makeUrl, message]) => {
+    const button = $(id);
+    if (!button || button._wired) return;
+    button._wired = true;
+    button.addEventListener("click", async () => {
+      if (!obsSlug) {
+        setStatus("Select a site before copying an OBS link.", true);
+        return;
+      }
+      const copied = await copyToClipboard(makeUrl(obsSlug));
+      flashButton(button, copied ? "Copied!" : "Copy failed");
+      if (copied) setStatus(message, false);
+    });
+  });
 }
 
 async function jsonReq(method, path, body = null) {
@@ -554,6 +603,7 @@ async function init() {
   if (!me || !me.ok || !me.user) { location.href = "/login"; return; }
   state.ME = me.user;
   setUserName();
+  await wireObsTools();
 
   // One settings document holds every panel, so everything is wired once.
   wireUnifiedSettingsTabs();

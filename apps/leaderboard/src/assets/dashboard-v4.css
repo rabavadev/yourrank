@@ -1409,12 +1409,14 @@ body[data-wide] .v3-dash[data-auth-workspace] .lb-main { padding-right: 32px; }
 .v3-dash[data-auth-workspace] .ov-command-grid { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 0; overflow: hidden; border: 1px solid var(--v4-line); border-radius: var(--v4-radius); background: #ffffff; }
 .v3-dash[data-auth-workspace] .ov-summary { grid-column: span 7; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 24px; min-width: 0; padding: var(--yr-space-lg) 28px; background: var(--v4-cobalt-soft); }
 .v3-dash[data-auth-workspace] .ov-command-grid.is-setup-complete .ov-summary { grid-column: 1 / -1; }
-.v3-dash[data-auth-workspace] #ovOnboardingBento { grid-column: span 5; min-width: 0; border-left: 1px solid var(--v4-line); }
+.v3-dash[data-auth-workspace] #ovOnboardingBento { grid-column: 1 / -1; min-width: 0; border-left: 0; }
 .v3-dash[data-auth-workspace] .ov-summary.is-attention { background: #fffaf2; }
 .v3-dash[data-auth-workspace] .ov-summary.is-live { background: #f6fcf9; }
 /* Status pill */
 .v3-dash[data-auth-workspace] .ov-summary-status { display: inline-flex; align-items: center; gap: 8px; min-height: 24px; padding: 2px 8px; border-radius: var(--v4-radius-sm); background: var(--v4-cobalt-soft); color: var(--v4-cobalt-hover); font-size: 11px; font-weight: 700; }
 .v3-dash[data-auth-workspace] .ov-summary-status i { width: 7px; height: 7px; border-radius: 50%; background: var(--v4-cobalt); }
+.v3-dash[data-auth-workspace] .ov-setup.is-attention .ov-summary-status { background: var(--v4-warning-soft); color: #8d4f0c; }
+.v3-dash[data-auth-workspace] .ov-setup.is-attention .ov-summary-status i { background: var(--v4-warning); animation: none; }
 /* Live pulse: the status dot animates when the site is published */
 .v3-dash[data-auth-workspace] .ov-summary.is-live .ov-summary-status i { animation: ov-live-pulse 2s ease-in-out infinite; }
 @keyframes ov-live-pulse { 0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(31, 138, 104, 0.45); } 50% { opacity: 0.85; box-shadow: 0 0 0 5px rgba(31, 138, 104, 0); } }
@@ -1435,6 +1437,7 @@ body[data-wide] .v3-dash[data-auth-workspace] .lb-main { padding-right: 32px; }
 .v3-dash[data-auth-workspace] .ov-setup-count { color: var(--v4-ink-soft); font-size: 11px; font-weight: 650; white-space: nowrap; }
 .v3-dash[data-auth-workspace] .ov-setup-bar { height: 4px; margin-top: 10px; overflow: hidden; border-radius: var(--v4-radius-control); background: var(--v4-line); }
 .v3-dash[data-auth-workspace] .ov-setup-bar i { display: block; height: 100%; border-radius: inherit; background: var(--v4-cobalt); transform-origin: left; transition: transform 180ms ease-out; }
+.v3-dash[data-auth-workspace] .ov-setup-progress > .v3-btn { margin-top: 10px; }
 .v3-dash[data-auth-workspace] .ov-setup-list { border-top: 1px solid var(--v4-line); }
 .v3-dash[data-auth-workspace] .ov-setup-row { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 10px; min-height: 48px; padding: 7px 18px; border-top: 1px solid var(--v4-line); background: #ffffff; color: var(--v4-ink); text-decoration: none; }
 .v3-dash[data-auth-workspace] .ov-setup-row:first-child { border-top: 0; }
@@ -2144,7 +2147,22 @@ body[data-wide] .v3-dash[data-auth-workspace] .lb-main { padding-right: 32px; }
 }
 
 .v3-dash[data-auth-workspace] .v3-table-foot { border-color: var(--v4-line); background: var(--v4-surface-soft); color: var(--v4-ink-soft); }
-.v3-dash[data-auth-workspace] .v3-table-foot { border-color: var(--v4-line); background: var(--v4-surface-soft); color: var(--v4-ink-soft); }
+.v3-dash[data-auth-workspace] .v3-state-inline {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 52px;
+  padding: 10px 12px;
+  border: 1px solid var(--v4-line);
+  border-radius: var(--v4-radius);
+  background: var(--v4-surface-soft);
+  color: var(--v4-ink-soft);
+}
+.v3-dash[data-auth-workspace] .v3-state-inline-copy { display: grid; gap: 2px; min-width: 0; }
+.v3-dash[data-auth-workspace] .v3-state-inline-copy b { color: var(--v4-ink); font-size: 13px; }
+.v3-dash[data-auth-workspace] .v3-state-inline-copy span { font-size: 12px; line-height: 1.4; }
+.v3-dash[data-auth-workspace] .v3-state-inline .v3-btn { flex: 0 0 auto; }
 .v3-dash[data-auth-workspace] .v3-empty,
 .v3-dash[data-auth-workspace] .empty {
   display: flex;
@@ -2158,6 +2176,16 @@ body[data-wide] .v3-dash[data-auth-workspace] .lb-main { padding-right: 32px; }
   text-align: center;
   color: var(--v4-ink-soft);
 }
+.v3-dash[data-auth-workspace] .v3-empty:has(> .v3-state-inline[data-state]) {
+  display: block;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  text-align: left;
+}
+.v3-dash[data-auth-workspace] .heatmap:has(> .v3-state-inline[data-state]) > .v3-state-inline { grid-column: 1 / -1; }
 .v3-dash[data-auth-workspace] .v3-empty-ic {
   display: grid;
   place-items: center;
@@ -3023,7 +3051,7 @@ body[data-wide] .v3-dash[data-auth-workspace] .lb-main { padding-right: 32px; }
 .v3-dash[data-auth-workspace] .cr-upload-name { font-size: 12.5px; font-weight: 600; color: var(--v4-ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .v3-dash[data-auth-workspace] .cr-upload-size { font-size: 11px; color: var(--v4-ink-soft); }
 .v3-dash[data-auth-workspace] .cr-upload-progbar { width: 100%; height: 4px; background: var(--v4-line); border-radius: var(--v4-radius-control); overflow: hidden; margin-top: 4px; }
-.v3-dash[data-auth-workspace] .cr-upload-progbar-fill { width: 100%; height: 100%; background: var(--v4-cobalt); transition: width 0.3s ease; }
+.v3-dash[data-auth-workspace] .cr-upload-progbar-fill { width: 100%; height: 100%; background: var(--v4-cobalt); transform: scaleX(0); transform-origin: left; transition: transform 0.3s ease; }
 .v3-dash[data-auth-workspace] .cr-upload-remove { background: transparent; border: none; font-size: 18px; color: var(--v4-ink-soft); cursor: pointer; padding: 4px 8px; border-radius: var(--v4-radius-control); }
 .v3-dash[data-auth-workspace] .cr-upload-remove:hover { background: #fee2e2; color: #dc2626; }
 .v3-dash[data-auth-workspace] .cr-tip-presets { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 4px; }

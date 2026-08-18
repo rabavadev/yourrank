@@ -1,7 +1,7 @@
 import { showConfirmModal, showPromptModal, ListController, logError, clearLoadError } from "./dashboard/utils.js";
 import { openDrawer, closeDrawer } from "./dashboard/shell.js";
 import { setState } from "./dashboard/state.js";
-import { UNKNOWN, emptyStateHtml, renderEmpty, renderError, setBlockLoading, setMetricLoading, setRowsLoading } from "./dashboard/states.js";
+import { UNKNOWN, inlineStateHtml, renderEmpty, renderError, setBlockLoading, setMetricLoading, setMetricUnknown, setRowsLoading } from "./dashboard/states.js";
 import { loadBoardShell, preserveSiteContextLinks, sitePath, siteQuery } from "./dashboard/board-shell.js";
 import "./dashboard/help-drawer.js";
 import "./dashboard/command-palette.js";
@@ -106,7 +106,18 @@ function renderShopCards(items) {
   const sorted = [...filtered].sort((a, b) => shopSort === "active" ? Number(b.active) - Number(a.active) : shopSort === "stock" ? ((b.stock ?? Infinity) - (a.stock ?? Infinity)) : (b.cost || 0) - (a.cost || 0));
   const pages = Math.max(1, Math.ceil(sorted.length / 10)); shopPage = Math.min(shopPage, pages);
   const pageItems = sorted.slice((shopPage - 1) * 10, shopPage * 10);
-  $("cr-shop-empty").hidden = filtered.length > 0;
+  if (filtered.length) {
+    $("cr-shop-empty").hidden = true;
+  } else {
+    renderEmpty($("cr-shop-empty"), {
+      kind: "empty",
+      title: "No shop items yet",
+      body: "Create a shop item viewers can redeem with credits.",
+      compact: true,
+      actions: [{ label: "Create shop item", id: "crShopEmptyCreate", accent: true }],
+    });
+    $("crShopEmptyCreate")?.addEventListener("click", () => openShop(), { once: true });
+  }
   root.innerHTML = pageItems.map((i) => {
     const imgHtml = (i.image_url || i.image || i.imageUrl) ? `<div class="cr-shop-card-thumb"><img src="${esc(i.image_url || i.image || i.imageUrl)}" alt="${esc(i.name)}" /></div>` : "";
     return `<article class="cr-shop-card${i.active ? "" : " is-inactive"}">${imgHtml}<div class="cr-shop-card-head"><button class="cr-shop-card-title" type="button" data-edit-shop="${esc(i.id)}">${esc(i.name)}</button><div class="cr-shop-card-controls"><button class="cr-shop-delete" type="button" data-del-shop="${esc(i.id)}" aria-label="Disable ${esc(i.name)}" title="Disable ${esc(i.name)}">×</button><input class="v3-toggle" type="checkbox" ${i.active ? "checked" : ""} data-toggle-shop="${esc(i.id)}" aria-label="Toggle ${esc(i.name)}" /></div></div><p>${esc(i.description || "")}</p><hr /><div class="cr-shop-card-foot"><b>${i.cost} <small>cr</small></b><span>Stock: ${i.stock === null ? "∞" : `${i.stock} left`}</span></div></article>`;
@@ -119,7 +130,7 @@ function render() {
   const rewardAtLimit = usage.rewardMappings != null && limits.rewardMappings != null && usage.rewardMappings >= limits.rewardMappings;
   const shopAtLimit = usage.shopItems != null && limits.shopItems != null && usage.shopItems >= limits.shopItems;
   const rewardUsage = $("cr-reward-usage");
-  if (rewardUsage) rewardUsage.textContent = `${metric(usage.rewardMappings)} / ${metric(limits.rewardMappings)} credit rules`;
+  if (rewardUsage) rewardUsage.innerHTML = `${metric(usage.rewardMappings)} / ${metric(limits.rewardMappings)} credit rules${rewardAtLimit ? ' · <a href="/dashboard/settings/plan">Plan limit reached — upgrade plan</a>' : ""}`;
   const addMapping = $("cr-add-mapping");
   if (addMapping) {
     addMapping.classList.toggle("is-disabled", rewardAtLimit);
@@ -145,19 +156,19 @@ function render() {
   if (current === "rules") {
     for (const id of ["cr-reward-submit", "cr-reward-create-submit"]) { const el = $(id); if (el) { el.disabled = rewardAtLimit; el.title = rewardAtLimit ? "Upgrade your plan to add more credit rules" : ""; } }
     const mappings = state.mappings || [];
-    if (!rewardCtrl) { rewardCtrl = new ListController({ root: $("cr-rewards"), tbody: "cr-reward-list", emptyEl: $("cr-reward-empty"), emptySpec: { icon: "link", title: "No credit rules yet", body: "Set how Kick rewards award credits to your viewers.", actions: [{ label: "Create credit rule", href: "/dashboard/rewards/rules#cr-reward-form", accent: true }] }, items: mappings, perPage: 10, searchFn: (m) => `${m.kick_reward_title} ${m.kick_reward_id} ${m.kick_reward_cost} ${m.credits}`, sortOptions: [{ key: "cost", label: "Kick cost", fn: (a, b) => (b.kick_reward_cost || 0) - (a.kick_reward_cost || 0) }, { key: "credits", label: "Credits", fn: (a, b) => (b.credits || 0) - (a.credits || 0) }, { key: "active", label: "Active first", fn: (a, b) => Number(b.active) - Number(a.active) }], emptyAllText: "No credit rules yet.", emptyText: "No matching credit rules.", renderItem: (m) => renderRewardRow(m), onRender: () => wireDynamicActions() }); mountListControls($("cr-rewards"), $("cr-mapping-toolbar"), $("cr-mapping-foot")); }
+    if (!rewardCtrl) { rewardCtrl = new ListController({ root: $("cr-rewards"), tbody: "cr-reward-list", emptyEl: $("cr-reward-empty"), emptySpec: { kind: "empty", title: "No credit rules yet", body: "Set how Kick rewards award credits to your viewers.", compact: true, actions: [{ label: "Create credit rule", href: "/dashboard/rewards/rules#cr-reward-form", accent: true }] }, items: mappings, perPage: 10, searchFn: (m) => `${m.kick_reward_title} ${m.kick_reward_id} ${m.kick_reward_cost} ${m.credits}`, sortOptions: [{ key: "cost", label: "Kick cost", fn: (a, b) => (b.kick_reward_cost || 0) - (a.kick_reward_cost || 0) }, { key: "credits", label: "Credits", fn: (a, b) => (b.credits || 0) - (a.credits || 0) }, { key: "active", label: "Active first", fn: (a, b) => Number(b.active) - Number(a.active) }], emptyAllText: "No credit rules yet.", emptyText: "No matching credit rules.", renderItem: (m) => renderRewardRow(m), onRender: () => wireDynamicActions() }); mountListControls($("cr-rewards"), $("cr-mapping-toolbar"), $("cr-mapping-foot")); }
     else rewardCtrl.setItems(mappings);
     prefillEditFromQuery();
   }
   if (current === "shop") {
-    $("cr-shop-usage").textContent = `${metric(usage.shopItems)} / ${metric(limits.shopItems)} active items`;
+    $("cr-shop-usage").innerHTML = `${metric(usage.shopItems)} / ${metric(limits.shopItems)} active items${shopAtLimit ? ' · <a href="/dashboard/settings/plan">Plan limit reached — upgrade plan</a>' : ""}`;
     const submit = $("cr-shop-submit"); if (submit) { submit.disabled = shopAtLimit; submit.title = shopAtLimit ? "Upgrade your plan to add more items" : ""; }
     const create = $("cr-shop-new"); if (create) { create.disabled = shopAtLimit; create.title = shopAtLimit ? "Upgrade your plan to add more items" : ""; }
     shopItemsView = state.shopItems || []; renderShopCards(shopItemsView);
   }
   if (current === "viewers") {
     const viewers = state.viewers || [];
-    if (!viewerCtrl) { viewerCtrl = new ListController({ root: $("cr-viewers"), tbody: "cr-viewer-list", emptyEl: $("cr-viewer-empty"), emptySpec: { icon: "users", title: "No viewers yet", body: "Viewer balances will appear after viewers earn or spend credits." }, items: viewers, perPage: 15, searchFn: (v) => `${v.kick_username || v.kick_user_id} ${v.block_reason || ""} ${v.blocked ? "blocked" : ""}`, sortOptions: [{ key: "balance", label: "Balance", fn: (a, b) => (b.balance || 0) - (a.balance || 0) }, { key: "earned", label: "Earned", fn: (a, b) => (b.total_earned || 0) - (a.total_earned || 0) }, { key: "spent", label: "Spent", fn: (a, b) => (b.total_spent || 0) - (a.total_spent || 0) }, { key: "last", label: "Last earned", fn: (a, b) => new Date(b.last_earned_at || b.created_at || 0) - new Date(a.last_earned_at || a.created_at || 0) }], emptyAllText: "No viewers yet.", emptyText: "No matching viewers.", renderItem: (v) => renderViewerRow(v), onRender: () => wireDynamicActions() }); }
+    if (!viewerCtrl) { viewerCtrl = new ListController({ root: $("cr-viewers"), tbody: "cr-viewer-list", emptyEl: $("cr-viewer-empty"), emptySpec: { kind: "empty", title: "No viewers yet", body: "Viewer balances will appear after viewers earn or spend credits.", compact: true }, items: viewers, perPage: 15, searchFn: (v) => `${v.kick_username || v.kick_user_id} ${v.block_reason || ""} ${v.blocked ? "blocked" : ""}`, sortOptions: [{ key: "balance", label: "Balance", fn: (a, b) => (b.balance || 0) - (a.balance || 0) }, { key: "earned", label: "Earned", fn: (a, b) => (b.total_earned || 0) - (a.total_earned || 0) }, { key: "spent", label: "Spent", fn: (a, b) => (b.total_spent || 0) - (a.total_spent || 0) }, { key: "last", label: "Last earned", fn: (a, b) => new Date(b.last_earned_at || b.created_at || 0) - new Date(a.last_earned_at || a.created_at || 0) }], emptyAllText: "No viewers yet.", emptyText: "No matching viewers.", renderItem: (v) => renderViewerRow(v), onRender: () => wireDynamicActions() }); }
     else viewerCtrl.setItems(viewers);
     renderAnalytics();
   }
@@ -167,7 +178,7 @@ function render() {
     if (state.channel?.externalId) { channel.innerHTML = `● Connected to @${esc(state.channel.name || state.channel.externalId)}`; channel.className = "v3-chip v3-chip--refunded"; } else { channel.innerHTML = '<a href="/dashboard/rewards/channel">Not connected · Connect Kick</a>'; channel.className = "v3-chip v3-chip--cancelled"; }
     $("cr-pending-counter").textContent = `${metric(usage.pendingRedemptions)} / ${metric(limits.pendingRedemptions)}`; $("cr-fulfilled-counter").textContent = `${metric(usage.redemptionsPer30Days)} / ${metric(limits.redemptionsPer30Days)}`;
     const redemptions = state.redemptions || [];
-    if (!redemptionCtrl) { redemptionCtrl = new ListController({ root: $("cr-redemptions"), tbody: "cr-redemption-list", emptyEl: $("cr-redemption-empty"), emptySpec: { icon: "archive", title: "No prize orders yet", body: "Viewer prize orders will appear here when someone places an order." }, items: redemptions, perPage: 15, searchFn: (r) => `${r.kick_username || r.kick_user_id} ${r.item_name} ${r.status}`, sortOptions: [{ key: "time", label: "Newest", fn: (a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0) }, { key: "cost", label: "Cost", fn: (a, b) => (b.cost || 0) - (a.cost || 0) }, { key: "status", label: "Status", fn: (a, b) => (a.status || "").localeCompare(b.status || "") }], emptyAllText: "No prize orders yet. Add a shop item so viewers can place an order.", emptyText: "No matching prize orders.", renderItem: (r) => renderRedemptionRow(r), onRender: () => wireDynamicActions() }); mountListControls($("cr-redemptions"), $("cr-redemption-toolbar"), $("cr-redemption-foot")); }
+    if (!redemptionCtrl) { redemptionCtrl = new ListController({ root: $("cr-redemptions"), tbody: "cr-redemption-list", emptyEl: $("cr-redemption-empty"), emptySpec: { kind: "empty", title: "No prize orders yet", body: "Orders will appear after a viewer redeems a shop item.", compact: true }, items: redemptions, perPage: 15, searchFn: (r) => `${r.kick_username || r.kick_user_id} ${r.item_name} ${r.status}`, sortOptions: [{ key: "time", label: "Newest", fn: (a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0) }, { key: "cost", label: "Cost", fn: (a, b) => (b.cost || 0) - (a.cost || 0) }, { key: "status", label: "Status", fn: (a, b) => (a.status || "").localeCompare(b.status || "") }], emptyAllText: "No prize orders yet.", emptyText: "No matching prize orders.", renderItem: (r) => renderRedemptionRow(r), onRender: () => wireDynamicActions() }); mountListControls($("cr-redemptions"), $("cr-redemption-toolbar"), $("cr-redemption-foot")); }
     else redemptionCtrl.setItems(redemptions);
   }
   if (current === "history") {
@@ -216,17 +227,23 @@ async function loadAnalytics() {
 function renderAnalytics() {
   const a = state.analytics; if (!a) return;
   const s = a.summary || {};
-  $("cr-stat-earned").innerHTML = `${s.periodEarned ?? 0} <small class="kpi-sub">All time: ${s.allTimeEarned ?? 0}</small>`;
-  $("cr-stat-spent").innerHTML = `${s.periodSpent ?? 0} <small class="kpi-sub">All time: ${s.allTimeSpent ?? 0}</small>`;
-  $("cr-stat-redemptions").textContent = s.redemptionsTotal ?? 0;
-  $("cr-stat-pending").textContent = s.redemptionsPending ?? 0;
-  $("cr-stat-balance").textContent = s.viewerBalance ?? 0;
+  const hasActivity = (a.topItems || []).length > 0 || (a.creditsByDay || []).length > 0 ||
+    [s.periodEarned, s.periodSpent, s.redemptionsTotal, s.redemptionsPending, s.viewerBalance].some((value) => Number(value) > 0);
+  if (hasActivity) {
+    $("cr-stat-earned").innerHTML = `${s.periodEarned ?? 0} <small class="kpi-sub">All time: ${s.allTimeEarned ?? 0}</small>`;
+    $("cr-stat-spent").innerHTML = `${s.periodSpent ?? 0} <small class="kpi-sub">All time: ${s.allTimeSpent ?? 0}</small>`;
+    $("cr-stat-redemptions").textContent = s.redemptionsTotal ?? 0;
+    $("cr-stat-pending").textContent = s.redemptionsPending ?? 0;
+    $("cr-stat-balance").textContent = s.viewerBalance ?? 0;
+  } else {
+    ["cr-stat-earned", "cr-stat-spent", "cr-stat-redemptions", "cr-stat-pending", "cr-stat-balance"].forEach((id) => setMetricUnknown($(id)));
+  }
   const label = $("cr-analytics-days-label"); if (label) label.textContent = String(Number($("cr-analytics-days")?.value) || 30);
   const items = a.topItems || [];
   $("cr-top-items-list").innerHTML = items.map((i) => `<tr><td>${esc(i.name)}</td><td class="num">${i.redemptions}</td><td class="num">${i.credits_spent}</td></tr>`).join("");
   const topEmpty = $("cr-top-items-empty");
   if (items.length) topEmpty.hidden = true;
-  else renderEmpty(topEmpty, { icon: "archive", title: "No items redeemed yet", body: "Redeemed items will appear here." });
+  else renderEmpty(topEmpty, { kind: "empty", title: "No items redeemed yet", body: "Orders will appear after viewers redeem a shop item.", compact: true });
   renderCreditsByDay(a.creditsByDay || []);
 }
 function renderCreditsByDay(rows) {
@@ -234,7 +251,7 @@ function renderCreditsByDay(rows) {
   container.innerHTML = ""; container.removeAttribute("role"); container.removeAttribute("aria-label"); container.removeAttribute("aria-busy");
   const empty = $("cr-credits-by-day-empty");
   if (!rows.length) {
-    renderEmpty(empty, { icon: "chart", title: "No credit activity for this period", body: "Try a longer range or create credit rules and items." });
+    renderEmpty(empty, { kind: "empty", title: "No credit activity for this period", body: "Activity will appear after viewers earn or spend credits.", compact: true });
     return;
   }
   empty.hidden = true;
@@ -452,7 +469,7 @@ function wireActions() {
     try { await api("POST", sitePath("/api/credits/rewards/create"), { title: $("cr-reward-create-title").value.trim(), cost: Number($("cr-reward-create-cost").value), credits: Number($("cr-reward-create-credits").value), description: $("cr-reward-create-desc").value.trim(), backgroundColor: $("cr-reward-create-color").value }); setStatus("cr-reward-create-status", "Kick reward created and mapped to a credit rule."); $("cr-reward-create-form").reset(); $("cr-reward-create-color").value = "#00e701"; await load(); }
     catch (err) { setStatus("cr-reward-create-status", err.message, true); } finally { setLoading(btn, false); }
   });
-  $("cr-shop-new")?.addEventListener("click", () => openShop()); document.querySelector("[data-cr-shop-create]")?.addEventListener("click", () => openShop()); $("cr-shop-close")?.addEventListener("click", closeShop); $("cr-shop-cancel")?.addEventListener("click", closeShop);
+  $("cr-shop-new")?.addEventListener("click", () => openShop()); $("cr-shop-close")?.addEventListener("click", closeShop); $("cr-shop-cancel")?.addEventListener("click", closeShop);
 
   // Shop Item Image Uploader
   const uploadZone = $("cr-shop-upload-zone");
@@ -478,7 +495,7 @@ function wireActions() {
     }
     const reader = new FileReader();
     if (progbar) progbar.hidden = false;
-    if (progfill) progfill.style.width = "0%";
+    if (progfill) progfill.style.transform = "scaleX(0)";
 
     reader.onload = (e) => {
       const dataUrl = e.target.result;
@@ -492,7 +509,7 @@ function wireActions() {
       if (previewWrap) previewWrap.hidden = false;
 
       if (progfill) {
-        progfill.style.width = "100%";
+        progfill.style.transform = "scaleX(1)";
         setTimeout(() => { if (progbar) progbar.hidden = true; }, 400);
       }
     };
@@ -603,7 +620,7 @@ async function loadActivity({ reset }) {
     const more = $("cr-history-load-more");
     if (list) list.innerHTML = "";
     if (empty) {
-      empty.innerHTML = emptyStateHtml({ icon: "archive", title: "No board selected", body: "Select a board to view its credit activity." });
+      empty.innerHTML = inlineStateHtml({ kind: "setup", title: "Select a site", body: "Select a site to view its credit activity." });
       empty.hidden = false;
     }
     if (more) more.hidden = true;
@@ -649,7 +666,7 @@ function renderActivity() {
   if (!activityEvents.length) {
     list.innerHTML = "";
     if (empty) {
-      empty.innerHTML = emptyStateHtml({ icon: "chart", title: "No credit activity found", body: "Try another viewer or event type." });
+      empty.innerHTML = inlineStateHtml({ kind: "empty", title: "No credit activity found", body: "Try another viewer or event type." });
       empty.hidden = false;
     }
   } else {
@@ -669,7 +686,7 @@ function renderHistory(data) {
   if (!list) return;
   list.innerHTML = boards.map((b) => `<tr><td><b>${esc(b.name || b.slug)}</b><br><span class="hint">${esc(b.slug)}</span></td><td class="num">${b.balance}</td><td class="num">${b.totalEarned}</td><td class="num">${b.totalSpent}</td><td class="num">${b.redemptionsPending}</td><td class="num">${b.redemptionsTotal}</td><td class="ta-r"><a class="btn btn--sm" href="/dashboard/rewards/channel?siteId=${esc(b.siteId)}">Connect Kick</a></td></tr>`).join("");
   if (empty) {
-    empty.innerHTML = boards.length ? "" : emptyStateHtml({ icon: "users", title: "No boards found", body: "This viewer has no activity on your boards." });
+    empty.innerHTML = boards.length ? "" : inlineStateHtml({ kind: "empty", title: "No sites found", body: "This viewer has no activity on your sites." });
     empty.hidden = boards.length > 0;
   }
 }

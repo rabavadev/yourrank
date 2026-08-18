@@ -673,7 +673,7 @@ export function renderBoardStatus() {
   for (const id of ["liveLink", "previewLiveLink"]) {
     const link = $(id);
     if (!link) continue;
-    link.hidden = id === "previewLiveLink" && !s.live;
+    link.hidden = id === "liveLink" ? !s.live && !s.published : !s.live;
     if (id === "liveLink") {
       link.textContent = s.live ? "View site ↗" : s.published ? "Verify email" : "Publish site";
       link.href = s.live
@@ -1318,7 +1318,7 @@ export async function loadCreditsStatus() {
 /* --- past winners / close out --- */
 export function renderArchives(list) {
   const box = $("archList"); box.innerHTML = "";
-  if (list.length) $("archEmpty").hidden = true;
+  if (list.length) clearLoadError($("archEmpty"), false);
   else renderEmpty($("archEmpty"), { icon: "archive", title: "No closed-out periods yet", body: "Your first one will show up here and on your page." });
   list.forEach((a) => {
     const row = document.createElement("div"); row.className = "arch-row";
