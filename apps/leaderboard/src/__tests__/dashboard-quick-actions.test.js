@@ -53,7 +53,7 @@ describe("dashboard overview quick actions", () => {
     expect(overviewJs).not.toContain("ov-quick-incs");
     expect(overviewJs).not.toContain("ov-inc-btn");
     expect(overviewJs).not.toContain("markDirty");
-    expect(overviewJs).toContain('href="/dashboard/leaderboard/players">All players');
+    expect(dashboardHtml()).toContain('href="/dashboard/leaderboard/players">All players');
   });
 
   it("preserves the selected site across Sites and Credits", () => {
