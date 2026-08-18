@@ -41,6 +41,21 @@ describe("dashboard overview quick actions", () => {
     expect(siteJs).toContain("requestPublicationChange");
   });
 
+  it("keeps optional stream tools available without letting them dominate the overview", () => {
+    expect(overviewJs).toContain('title.textContent = "Stream tools"');
+    expect(overviewJs).toContain('summary.textContent = "Show stream tools"');
+    expect(overviewJs).toContain('strong.textContent = itemCopy[index][0]');
+    expect(overviewJs).toContain('button.textContent = "Copy OBS link"');
+    expect(overviewJs).toContain("Prediction status overlay");
+  });
+
+  it("keeps top players read-only on the overview", () => {
+    expect(overviewJs).not.toContain("ov-quick-incs");
+    expect(overviewJs).not.toContain("ov-inc-btn");
+    expect(overviewJs).not.toContain("markDirty");
+    expect(overviewJs).toContain('href="/dashboard/leaderboard/players">All players');
+  });
+
   it("preserves the selected site across Sites and Credits", () => {
     expect(dashboardJs).toContain('target.searchParams.set("siteId", state.ACTIVE_SITE_ID)');
     expect(dashboardJs).toContain('target.searchParams.set("board", state.ACTIVE_SITE_ID)');
