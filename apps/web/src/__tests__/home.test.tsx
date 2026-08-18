@@ -2,11 +2,21 @@
 
 import { describe, expect, it } from "bun:test";
 import { renderToString } from "react-dom/server";
+import { Hero } from "../components/home/hero";
 import { WorkspacePreview } from "../components/home/workspace-preview";
 import { ProofMarquee, HowItWorks, ComparisonSection, PricingSnapshot } from "../components/home/sections";
 import { ProductPage } from "../components/product-page";
 
 describe("Home & Product components", () => {
+  it("renders the rotating hero words with one accessible headline", () => {
+    const html = renderToString(<Hero />);
+
+    expect(html).toContain("Turn viewers into a community that returns.");
+    for (const word of ["community", "crew", "fanbase", "regulars"]) {
+      expect(html).toContain(word);
+    }
+  });
+
   it("renders WorkspacePreview with overview stats and player standings", () => {
     const html = renderToString(<WorkspacePreview />);
     expect(html).toContain("YourRank");
