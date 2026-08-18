@@ -1,0 +1,65 @@
+/// <reference types="@types/bun" />
+
+import { describe, expect, it } from "bun:test";
+import { renderToString } from "react-dom/server";
+import { WorkspacePreview } from "../components/home/workspace-preview";
+import { ProofMarquee, HowItWorks, ComparisonSection, PricingSnapshot } from "../components/home/sections";
+import { ProductPage } from "../components/product-page";
+
+describe("Home & Product components", () => {
+  it("renders WorkspacePreview with overview stats and player standings", () => {
+    const html = renderToString(<WorkspacePreview />);
+    expect(html).toContain("YourRank");
+    expect(html).toContain("Kick Sub Race");
+    expect(html).toContain("NovaByte");
+    expect(html).toContain("Page views");
+    expect(html).toContain("Subscribers");
+  });
+
+  it("renders ProofMarquee with product capabilities", () => {
+    const html = renderToString(<ProofMarquee />);
+    expect(html).toContain("Branded community sites");
+    expect(html).toContain("Telegram commands");
+    expect(html).toContain("Viewer credits");
+  });
+
+  it("renders HowItWorks loop steps", () => {
+    const html = renderToString(<HowItWorks />);
+    expect(html).toContain("Publish");
+    expect(html).toContain("Activate");
+    expect(html).toContain("Reward");
+  });
+
+  it("renders ComparisonSection with YourRank vs Manual Stack", () => {
+    const html = renderToString(<ComparisonSection />);
+    expect(html).toContain("YourRank");
+    expect(html).toContain("A manual stack");
+    expect(html).toContain("Connected by design");
+  });
+
+  it("renders PricingSnapshot with plan tiers", () => {
+    const html = renderToString(<PricingSnapshot />);
+    expect(html).toContain("Start with the community you have");
+    expect(html).toContain("Free");
+    expect(html).toContain("Pro");
+  });
+
+  it("renders ProductPage with content and steps", () => {
+    const html = renderToString(
+      <ProductPage
+        content={{
+          kind: "sites",
+          title: "Give your community a place worth returning to.",
+          intro: "Publish a branded destination.",
+          outcome: "From a blank page to a live community destination.",
+          steps: [
+            { number: "01", title: "Choose the experience", body: "Set the public sections." },
+          ],
+        }}
+      />
+    );
+    expect(html).toContain("Give your community a place worth returning to.");
+    expect(html).toContain("Choose the experience");
+    expect(html).toContain("Explore the connected suite.");
+  });
+});

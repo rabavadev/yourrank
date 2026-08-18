@@ -25,7 +25,7 @@ runCmd("bun", ["test", "src/__tests__/"], "packages/shared");
 runCmd("bun", ["test", "src/worker.test.js"], "apps/consumer");
 
 // 3. Run bot tests
-runCmd("bun", ["test"], "apps/bot");
+runCmd("bun", ["test", "src/__tests__/"], "apps/bot");
 
 // 4. Run leaderboard tests one by one to avoid mock.module cross-contamination
 runCmd("node", ["scripts/test-leaderboard.mjs"]);

@@ -46,8 +46,58 @@ html { background: #FCFCFC; scroll-behavior: smooth; }
 body { min-width: 320px; text-rendering: optimizeLegibility; }
 ::selection { background: #2200FF; color: #FFFFFF; }
 * { scrollbar-color: rgba(25, 25, 25, 0.3) transparent; }
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { border: 2px solid #FCFCFC; border-radius: 999px; background: rgba(25, 25, 25, 0.24); }
 *:focus-visible { outline: 2px solid #2200FF; outline-offset: 3px; }
 a { text-underline-offset: 4px; }
+
+.yr-magnetic-cursor,
+.yr-cursor-pulse {
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 1000;
+  pointer-events: none;
+  border-radius: 999px;
+}
+
+.yr-magnetic-cursor {
+  width: 18px;
+  height: 18px;
+  border: 1px solid transparent;
+  background: #2200FF;
+  opacity: 0;
+  will-change: transform, opacity, background-color, border-color;
+}
+
+.yr-cursor-pulse {
+  width: 18px;
+  height: 18px;
+  border: 1px solid #2200FF;
+}
+
+html[data-yr-cursor="active"] body,
+html[data-yr-cursor="active"] a,
+html[data-yr-cursor="active"] button,
+html[data-yr-cursor="active"] [data-magnetic] {
+  cursor: none;
+}
+
+html[data-yr-cursor="active"] input,
+html[data-yr-cursor="active"] textarea,
+html[data-yr-cursor="active"] [contenteditable="true"] {
+  cursor: text;
+}
+
+@media (max-width: 700px) {
+  .yr-cinematic-footer { position: absolute; }
+}
+
+@media (pointer: coarse) {
+  .yr-magnetic-cursor,
+  .yr-cursor-pulse { display: none; }
+}
 
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
@@ -59,4 +109,6 @@ a { text-underline-offset: 4px; }
   }
   .animate-marquee { animation: none !important; }
   .yr-live-dot { opacity: 1 !important; }
+  .yr-magnetic-cursor,
+  .yr-cursor-pulse { display: none !important; }
 }

@@ -62,7 +62,7 @@ export function SiteHeader() {
             href="/signup"
             className="inline-flex min-h-11 items-center rounded-[2px] bg-devin-ink px-3.5 py-2 text-sm font-medium text-devin-surface transition-colors hover:bg-black"
           >
-            Start free
+            Get started
           </a>
           <button
             type="button"
@@ -141,7 +141,7 @@ export function SiteFooter() {
   );
 }
 
-export function MarketingShell({ children }: { children: ReactNode }) {
+export function MarketingShell({ children, footer = true }: { children: ReactNode; footer?: boolean }) {
   return (
     <div className="min-h-screen bg-devin-surface text-devin-ink">
       <a
@@ -152,7 +152,7 @@ export function MarketingShell({ children }: { children: ReactNode }) {
       </a>
       <SiteHeader />
       <main id="main-content" tabIndex={-1}>{children}</main>
-      <SiteFooter />
+      {footer && <SiteFooter />}
     </div>
   );
 }
