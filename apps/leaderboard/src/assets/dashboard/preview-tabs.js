@@ -3,6 +3,7 @@
 // so this controller owns the accessible tab state and asks the existing refresh
 // path to re-render and re-fit the frame.
 import { setupEditorWorkspace } from "./editor-ux.js";
+import { setupSiteFeaturesUx } from "./site-features-ux.js";
 
 function refreshPreview() {
   // Load lazily so the controller can be used independently of dashboard boot
@@ -58,6 +59,7 @@ function setupPreviewTabs() {
 }
 
 function bootEditorUi() {
+  setupSiteFeaturesUx();
   setupEditorWorkspace({ refreshPreview });
   setupPreviewTabs();
 }
