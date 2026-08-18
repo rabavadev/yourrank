@@ -125,10 +125,13 @@ export function SiteFooter() {
           <a href="/sites" className="text-devin-ink hover:text-devin-primary">Sites</a>
           <a href="/telegram" className="text-devin-ink hover:text-devin-primary">Telegram</a>
           <a href="/credits" className="text-devin-ink hover:text-devin-primary">Credits &amp; Shop</a>
+          <a href="/overlays" className="text-devin-ink hover:text-devin-primary">Overlays</a>
+          <a href="/games" className="text-devin-ink hover:text-devin-primary">Games</a>
         </div>
         <div className="grid content-start gap-2 text-sm">
           <p className="mb-1 font-mono text-[11px] uppercase tracking-widest text-devin-ink-soft">Company</p>
           <a href="/pricing" className="text-devin-ink hover:text-devin-primary">Pricing</a>
+          <a href="/switch" className="text-devin-ink hover:text-devin-primary">Why switch</a>
           <a href="/faq" className="text-devin-ink hover:text-devin-primary">FAQ</a>
           <a href="/contact" className="text-devin-ink hover:text-devin-primary">Contact</a>
         </div>
