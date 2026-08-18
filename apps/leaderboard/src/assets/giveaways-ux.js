@@ -7,8 +7,13 @@ function text(id, value) {
   if (node) node.textContent = value;
 }
 
-function wrapAdvancedRules() {
+function activeChatPane() {
   const pane = document.getElementById("pane-chat");
+  return pane && !pane.hidden ? pane : null;
+}
+
+function wrapAdvancedRules() {
+  const pane = activeChatPane();
   const form = document.getElementById("gw-setup-form");
   if (!pane || !form || form.querySelector(".gw-advanced-entry-rules")) return;
 
@@ -36,8 +41,7 @@ function wrapAdvancedRules() {
 }
 
 function simplifyChatCopy() {
-  const pane = document.getElementById("pane-chat");
-  if (!pane) return;
+  if (!activeChatPane()) return;
 
   const pageIntro = document.querySelector("#gw-app > .v3-head .v3-head-sub");
   if (pageIntro) pageIntro.textContent = "Collect keyword entries from Kick chat and draw a winner.";
@@ -68,9 +72,9 @@ function simplifyChatCopy() {
   text("gw-btn-copy-winner", "Copy winner info");
 
   const entrantTitle = document.querySelector("#gw-entrants-card h2");
-  if (entrantTitle) {
-    const count = document.getElementById("gw-count-header");
-    entrantTitle.innerHTML = `Entries (<span id="gw-count-header">${count?.textContent || "0"}</span>)`;
+  const count = document.getElementById("gw-count-header");
+  if (entrantTitle && count && entrantTitle.firstChild?.nodeType === Node.TEXT_NODE) {
+    entrantTitle.firstChild.textContent = "Entries (";
   }
   const entrantSub = document.querySelector("#gw-entrants-card .v3-section-head .v3-head-sub");
   if (entrantSub) entrantSub.textContent = "Viewers who typed the entry keyword.";
