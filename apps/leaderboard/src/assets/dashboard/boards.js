@@ -1,4 +1,4 @@
-// Board switcher, creation, duplication, deletion, and the board list page.
+// Site switcher, creation, duplication, deletion, and the site list page.
 import { $, esc, getCsrf, guardAuth, logError, slugify, showConfirmModal } from "./utils.js";
 import { state } from "./state.js";
 import { requestDashboardRoute } from "./shell.js";
@@ -37,7 +37,7 @@ export function renderBoardSwitcher() {
     let slug = $("nb_slug").value.trim() || slugify(name);
     if (!slug) { $("nb_err").textContent = "Enter a name or web address."; return; }
     const casino = $("nb_casino").value.trim();
-    if (!casino) { $("nb_err").textContent = "Enter a casino name."; return; }
+    if (!casino) { $("nb_err").textContent = "Enter a sponsor or partner name."; return; }
     $("nb_err").textContent = "Creating…";
     createBtn.disabled = true;
     try {
@@ -52,7 +52,7 @@ export function renderBoardSwitcher() {
         showBoardLimitUpsell();
         createBtn.disabled = false;
       } else {
-        $("nb_err").textContent = d.error || "Creation failed.";
+        $("nb_err").textContent = d.error || "Could not create the site.";
         createBtn.disabled = false;
       }
     } catch (err) { logError("new-board", err); $("nb_err").textContent = "Network error."; createBtn.disabled = false; }
@@ -64,24 +64,24 @@ function boardLimitOffer() {
   const limit = state.ME?.limits?.boards || 1;
   if (plan === "agency") {
     return {
-      title: `You've reached ${limit} boards`,
-      text: "Need a higher limit? Contact support and tell us how many boards your team manages.",
+      title: `You've reached your ${limit}-site limit`,
+      text: "Need more sites? Contact support and tell us how many your team manages.",
       cta: "Contact support",
       href: "/help/support?area=billing&return=/dashboard",
     };
   }
   if (plan === "pro") {
     return {
-      title: `You've reached ${limit} boards`,
-      text: "Agency supports up to 99 independent leaderboards.",
+      title: `You've reached your ${limit}-site limit`,
+      text: "Agency supports up to 99 sites.",
       cta: "View Agency plan",
       href: "/dashboard/settings",
     };
   }
   const planName = plan === "starter" ? "Starter" : "Free";
   return {
-    title: "Need another leaderboard?",
-    text: `${planName} includes ${limit} board. Pro unlocks up to 3 independent boards.`,
+    title: "Need another site?",
+    text: `${planName} includes ${limit} site. Pro unlocks up to 3 sites.`,
     cta: "Upgrade to Pro",
     href: "/dashboard/settings",
   };
@@ -108,7 +108,7 @@ function hideBoardLimitUpsell() {
 export async function deleteBoard(siteId) {
   const board = state.BOARDS.find((b) => b.id === siteId);
   if (!board) return;
-  if (!await showConfirmModal("Delete board", `Delete board /${board.slug}? This cannot be undone.`, "Delete", true)) return;
+  if (!await showConfirmModal("Delete site", `Delete ${board.name || `/${board.slug}`}? This cannot be undone.`, "Delete site", true)) return;
   try {
     const res = await fetch("/api/site", {
       method: "DELETE",
@@ -124,9 +124,9 @@ export async function deleteBoard(siteId) {
       renderBoardSwitcher();
       renderSidebarBoardSwitcher();
       renderBoardsPage();
-      $("status").textContent = "Board deleted.";
+      $("status").textContent = "Site deleted.";
     } else {
-      $("status").textContent = d.error || "Could not delete board.";
+      $("status").textContent = d.error || "Could not delete the site.";
     }
   } catch (err) { logError("delete-board", err); $("status").textContent = "Network error."; }
 }
@@ -144,9 +144,9 @@ export async function setActiveBoard(siteId) {
       state.ACTIVE_SITE_ID = siteId;
       renderBoardSwitcher();
       renderSidebarBoardSwitcher();
-      $("status").textContent = "Active board updated.";
+      $("status").textContent = "Current site updated.";
     } else {
-      $("status").textContent = d.error || "Could not set active board.";
+      $("status").textContent = d.error || "Could not switch sites.";
     }
   } catch (err) { logError("set-active-board", err); $("status").textContent = "Network error."; }
 }
@@ -159,7 +159,7 @@ export function openNewBoardForm() {
 export async function duplicateBoard(siteId) {
   const board = state.BOARDS.find((b) => b.id === siteId);
   if (!board) return;
-  if (!await showConfirmModal("Duplicate board", `Duplicate /${board.slug}? This creates an unpublished copy with the same design and players.`, "Duplicate", false)) return;
+  if (!await showConfirmModal("Duplicate site", `Duplicate ${board.name || `/${board.slug}`}? The copy starts unpublished with the same design and players.`, "Duplicate site", false)) return;
   try {
     const res = await fetch("/api/site/duplicate", {
       method: "POST",
@@ -173,7 +173,7 @@ export async function duplicateBoard(siteId) {
     } else if (d.code === "board_limit") {
       showBoardLimitUpsell();
     } else {
-      $("status").textContent = d.error || "Could not duplicate board.";
+      $("status").textContent = d.error || "Could not duplicate the site.";
     }
   } catch (err) { logError("duplicate-board", err); $("status").textContent = "Network error."; }
 }
@@ -190,15 +190,13 @@ export function renderSidebarBoardSwitcher() {
     avatarEl.textContent = active.name.trim().charAt(0).toUpperCase() || "Y";
   }
   const planEl = $("wsPlanBadge");
-  if (planEl) {
-    planEl.textContent = state.USER?.plan ? `${state.USER.plan.toUpperCase()} PLAN` : "ACTIVE SITE";
-  }
+  if (planEl) planEl.textContent = "Current site";
   if (topbarPath) topbarPath.textContent = active?.slug ? `/${active.slug}` : "Web address unavailable";
   if (sel) {
     sel.innerHTML = "";
     if (!state.BOARDS.length) {
       const opt = document.createElement("option");
-      opt.textContent = "No boards";
+      opt.textContent = "No sites";
       opt.value = "";
       sel.appendChild(opt);
       sel.disabled = true;
@@ -229,7 +227,7 @@ export function renderBoardsPage() {
   const controls = $("boardsSearch")?.closest(".list-controls");
   if (controls) controls.hidden = state.BOARDS.length === 0;
   if (!state.BOARDS.length) {
-    renderEmpty(empty, { icon: "archive", title: "No boards yet", body: "Create one to get started.", actions: [{ label: "Create board", id: "boardsCreateEmpty", accent: true }] });
+    renderEmpty(empty, { icon: "archive", title: "No sites yet", body: "Create your first site to get started.", actions: [{ label: "Create site", id: "boardsCreateEmpty", accent: true }] });
     $("boardsCreateEmpty")?.addEventListener("click", openNewBoardForm);
   } else {
     if (empty) empty.hidden = true;
@@ -237,14 +235,12 @@ export function renderBoardsPage() {
       const tr = document.createElement("tr");
       const isActive = b.id === state.ACTIVE_SITE_ID;
       const statusClass = b.published ? "pill--good" : "pill--muted";
-      const statusText = b.published ? "Published" : "Draft";
-      tr.innerHTML = `<td><a class="board-table-name${isActive ? ' board-table-name--active' : ''}" href="/dashboard?board=${encodeURIComponent(b.id)}">${esc(b.name)}${isActive ? '<span class="board-table-badge">editing</span>' : ''}</a></td><td>${esc(b.casino || "")}${b.code ? `<span class="mono"> · ${esc(b.code)}</span>` : ""}</td><td><a class="mono" href="/${esc(b.slug)}" target="_blank">/${esc(b.slug)}</a></td><td>${b.players || 0}</td><td><span class="pill ${statusClass}">${statusText}</span></td><td class="ta-r"><button class="btn btn--xs btn--ghost" data-action="edit" type="button">Edit</button><button class="btn btn--xs" data-action="dup" type="button">Duplicate</button><button class="btn btn--xs btn--danger" data-action="del" type="button">Delete</button></td>`;
+      const statusText = b.published ? "Published" : "Unpublished";
+      tr.innerHTML = `<td><a class="board-table-name${isActive ? ' board-table-name--active' : ''}" href="/dashboard?board=${encodeURIComponent(b.id)}">${esc(b.name)}${isActive ? '<span class="board-table-badge">Current</span>' : ''}</a></td><td>${esc(b.casino || "")}${b.code ? `<span class="mono"> · ${esc(b.code)}</span>` : ""}</td><td><a class="mono" href="/${esc(b.slug)}" target="_blank" rel="noopener noreferrer">/${esc(b.slug)}</a></td><td>${b.players || 0}</td><td><span class="pill ${statusClass}">${statusText}</span></td><td class="ta-r"><button class="btn btn--xs btn--ghost" data-action="edit" type="button">Edit</button><button class="btn btn--xs btn--ghost" data-action="dup" type="button">Duplicate</button><button class="btn btn--xs btn--danger" data-action="del" type="button">Delete</button></td>`;
       tr.querySelector(".board-table-name")?.addEventListener("click", (e) => {
         e.preventDefault();
         requestDashboardRoute("home", "", { query: `board=${encodeURIComponent(b.id)}`, reload: true });
       });
-      // "Edit" now has an address to go to, so it opens the editor rather than
-      // whichever section the smart landing picks.
       tr.querySelector('[data-action="edit"]')?.addEventListener("click", () => { requestDashboardRoute("board", "", { query: `board=${encodeURIComponent(b.id)}`, reload: true }); });
       tr.querySelector('[data-action="dup"]')?.addEventListener("click", () => { duplicateBoard(b.id); });
       tr.querySelector('[data-action="del"]')?.addEventListener("click", () => { deleteBoard(b.id); });
@@ -272,8 +268,8 @@ function filterBoards() {
       empty.hidden = true;
     } else {
       renderEmpty(empty, q
-        ? { icon: "archive", title: "No boards match your search.", body: "Try a different search." }
-        : { icon: "archive", title: "No boards yet", body: "Create one to get started.", actions: [{ label: "Create board", id: "boardsCreateEmpty", accent: true }] });
+        ? { icon: "archive", title: "No sites match your search.", body: "Try a different search." }
+        : { icon: "archive", title: "No sites yet", body: "Create your first site to get started.", actions: [{ label: "Create site", id: "boardsCreateEmpty", accent: true }] });
       if (!q) $("boardsCreateEmpty")?.addEventListener("click", openNewBoardForm);
     }
   }
