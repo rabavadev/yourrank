@@ -17,17 +17,19 @@ function render(pageKey, user) {
 const user = { display_name: "Streamer One", email: "streamer@example.com", plan: "pro" };
 
 describe("help pages", () => {
-  it("renders the operator help hub in both shells", () => {
+  it("renders the creator help hub in both shells", () => {
     const signedIn = render("helpHub", user);
     const signedOut = render("helpHub", null);
     for (const html of [signedIn, signedOut]) {
-      expect(html).toContain("Operator help");
+      expect(html).toContain("Help &amp; feedback");
+      expect(html).toContain("Choose what you are trying to do");
       expect(html).toContain('href="/help/support"');
       expect(html).toContain('href="/help/feedback"');
       expect(html).toContain('href="/dashboard/rewards/rules"');
       // Help lives in the app rail, not the marketing top nav.
       expect(html).toContain("lb-side");
       expect(html).not.toContain("gm-shell-nav");
+      expect(html).not.toContain("Operator help");
     }
     // Signed-in identity appears in the rail's profile menu. The primary rail
     // stays focused on daily creator work while Help lives in the account menu.
@@ -77,6 +79,12 @@ describe("help pages", () => {
       expect(html).toContain('href="/dashboard"');
     });
   }
+
+  it("does not promise an unverified support response time", () => {
+    const html = render("helpSupport", user);
+    expect(html).toContain("We'll reply by email");
+    expect(html).not.toContain("usually within 1 business day");
+  });
 
   it("keeps Help accessible without adding it back to the primary rail", () => {
     const html = render("helpSupport", user);
