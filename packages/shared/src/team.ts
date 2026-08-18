@@ -289,9 +289,7 @@ export async function createSiteInvite(
      VALUES ($1, $2, $3, $4, $5, 'pending', now() + interval '7 days')
      RETURNING id`;
   const insertParams = [siteId, cleanEmail, role, tokenHash, inviterId];
-  const created = one !== defaultOne && exec === defaultExec
-    ? await one<{ id: string }>(insertSql, insertParams)
-    : (await exec(insertSql, insertParams))[0] as { id: string } | undefined;
+  const created = (await exec(insertSql, insertParams))[0] as { id: string } | undefined;
 
   return { ok: true, token, inviteId: created?.id };
 }

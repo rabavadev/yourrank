@@ -7,15 +7,6 @@ export interface EmailEnv {
   MAIL_FROM?: string;
 }
 
-export const expiryWarningQuery = `SELECT u.id, u.email, u.display_name, u.plan,
-            u.plan_expires_at,
-            FLOOR(EXTRACT(EPOCH FROM (u.plan_expires_at - now())) / 86400)::int AS days_left
-       FROM users u
-      WHERE u.plan_expires_at IS NOT NULL
-        AND u.plan_expires_at <= now() + interval '7 days'
-        AND u.plan_expires_at >= now() - interval '7 days'
-      ORDER BY u.plan_expires_at`;
-
 export interface EmailPayload {
   to: string;
   subject: string;
@@ -188,7 +179,14 @@ export async function sendExpiryWarnings(env: EmailEnv, opts: { origin?: string 
   const origin = opts.origin || "https://yourrank.site";
 
   const rows = await query<ExpiryUser>(
-    expiryWarningQuery,
+    `SELECT u.id, u.email, u.display_name, u.plan,
+            u.plan_expires_at,
+            FLOOR(EXTRACT(EPOCH FROM (u.plan_expires_at - now())) / 86400)::int AS days_left
+       FROM users u
+      WHERE u.plan_expires_at IS NOT NULL
+        AND u.plan_expires_at <= now() + interval '7 days'
+        AND u.plan_expires_at >= now() - interval '7 days'
+      ORDER BY u.plan_expires_at`,
     []
   );
 

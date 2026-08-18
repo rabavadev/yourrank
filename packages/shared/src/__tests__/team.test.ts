@@ -119,13 +119,19 @@ describe("createSiteInvite & lifecycle", () => {
       if (sql.includes("FROM sites WHERE id=$1")) return { user_id: "owner-1" };
       if (sql.includes("FROM users WHERE lower(email)=$1")) return null;
       if (sql.includes("FROM site_invites WHERE site_id=$1")) return null;
-      if (sql.includes("INSERT INTO site_invites")) {
-        return { id: "inv-123", token: params?.[3] };
-      }
       return null;
     };
+    const fakeExec = async (sql: string, params?: any[]) => {
+      if (sql.includes("INSERT INTO site_invites")) {
+        return [{ id: "inv-123", token: params?.[3] }];
+      }
+      return [];
+    };
 
-    const res = await createSiteInvite("site-1", "owner-1", "newmod@example.com", "moderator", { one: fakeOne as any });
+    const res = await createSiteInvite("site-1", "owner-1", "newmod@example.com", "moderator", {
+      one: fakeOne as any,
+      exec: fakeExec as any,
+    });
     expect(res.ok).toBe(true);
     expect(res.token).toBeDefined();
     expect(res.inviteId).toBe("inv-123");
