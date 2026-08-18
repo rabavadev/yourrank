@@ -14,7 +14,6 @@ import { responsiblePage } from "./pages/responsible.js";
 import { refundPage } from "./pages/refund.js";
 import { cookiesPage } from "./pages/cookies.js";
 import { helpHubPage, helpSupportPage, helpFeedbackPage } from "./pages/help.js";
-import { pricingPage } from "./pages/pricing.js";
 import { docsPage } from "./pages/docs.js";
 import {
   rewardsChannelPage,
@@ -49,7 +48,6 @@ export const PAGES = {
   helpSupport: helpSupportPage,
   helpFeedback: helpFeedbackPage,
   helpHub: helpHubPage,
-  pricing: pricingPage,
   rewardsChannel: rewardsChannelPage,
   rewardsRules: rewardsRulesPage,
   rewardsShop: rewardsShopPage,
