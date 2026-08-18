@@ -8,20 +8,26 @@ import { offersPanel } from "./pages/offers.js";
 import { broadcastsPanel } from "./pages/broadcasts.js";
 import { dashClientScript } from "./client-script.js";
 
+type DashboardContext = {
+  botUsername?: string | null;
+  botStatus?: string | null;
+  siteName?: string | null;
+};
+
 function esc(value: unknown): string {
   return String(value ?? "").replace(/[&<>"']/g, (ch) => (
     { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" } as Record<string, string>
   )[ch]);
 }
 
-function panelHtml(page: string, publicBaseUrl: string): string {
+function panelHtml(page: string, publicBaseUrl: string, context: DashboardContext): string {
   switch (page) {
     case "bots": return botsPanel();
     case "commands": return commandsPanel();
     case "offers": return offersPanel(publicBaseUrl);
     case "broadcasts": return broadcastsPanel();
     case "overview":
-    default: return overviewPanel();
+    default: return overviewPanel({ hasBot: Boolean(context.botUsername) });
   }
 }
 
@@ -40,7 +46,7 @@ export function appHtml(
   page = "overview",
   nav?: string,
   canonicalPath = "/dashboard/telegram",
-  context: { botUsername?: string | null; botStatus?: string | null; siteName?: string | null } = {},
+  context: DashboardContext = {},
 ): string {
   const meta = pageMeta(page);
   const pagePath = page === "overview" ? canonicalPath : `${canonicalPath}/${page}`;
@@ -64,7 +70,7 @@ export function appHtml(
     collapsible: true,
     logoutAction: "/bot/auth/logout",
     // Each messaging page is its own document, so render only the active panel.
-    content: `${telegramTabsHtml(page)}${panelHtml(page, publicBaseUrl)}`,
+    content: `${telegramTabsHtml(page)}${panelHtml(page, publicBaseUrl, context)}`,
   });
   return botPageHtml({
     user,
