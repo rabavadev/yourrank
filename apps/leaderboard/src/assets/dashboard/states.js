@@ -103,6 +103,7 @@ export function setBlockReady(el) {
 
 export function renderError(el, { title = "Couldn't load this panel", body = "Try again to reload it.", retry, retryLabel = "Try again" } = {}) {
   if (!el) return;
+  el.classList.remove("v3-empty--compact-host");
   el.removeAttribute("aria-busy");
   el.setAttribute("role", "alert");
   el.innerHTML = emptyStateHtml({
@@ -117,6 +118,7 @@ export function renderError(el, { title = "Couldn't load this panel", body = "Tr
 
 export function renderEmpty(el, spec) {
   if (!el) return;
+  el.classList.toggle("v3-empty--compact-host", Boolean(spec?.compact));
   el.removeAttribute("aria-busy");
   el.innerHTML = spec?.compact ? inlineStateHtml(spec) : emptyStateHtml(spec);
   el.hidden = false;

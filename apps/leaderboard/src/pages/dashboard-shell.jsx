@@ -116,7 +116,7 @@ export function DashboardShell({ activeNav = "home", boardContext = "full", foot
                     <button class="lb-publish-action" id="publishAction" type="button">
                       <span id="lbPublishLabel">Publish site</span>
                     </button>
-                    <a class="lb-live-link" id="liveLink" href="#" target="_blank" rel="noopener noreferrer">View site ↗</a>
+                    <a class="lb-live-link" id="liveLink" href="#" hidden>View site ↗</a>
                   </>
                 )}
               </div>

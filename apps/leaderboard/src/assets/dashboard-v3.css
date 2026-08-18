@@ -1264,6 +1264,16 @@ body[data-wide] .v3-dash .lb-main {
 .v3-dash .v3-empty h2 { font-size: 17px; font-weight: 700; margin: 0; }
 .v3-dash .v3-empty p { margin: 0; font-size: 14px; color: var(--v3-main-ink-soft); }
 .v3-dash .v3-empty-actions { display: flex; gap: 10px; margin-top: 16px; }
+.v3-dash .v3-empty--compact-host {
+  display: block;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  text-align: left;
+}
+.v3-dash .heatmap > .v3-state-inline { grid-column: 1 / -1; }
 .v3-skel-kpi { width: 3.5em; height: 1.1em; margin: 0; }
 .v3-skel-line { width: 12rem; height: 1em; margin: 5px 0; }
 .v3-skel-meter { width: 11rem; height: 1em; margin: 4px 0; }

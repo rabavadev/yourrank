@@ -54,6 +54,7 @@ export function showToast(message, type = "error") {
  */
 export function showLoadError(el, what, retry) {
   if (!el) return;
+  el.classList.remove("v3-empty--compact-host");
   if (el.dataset.emptyHtml === undefined) {
     el.dataset.emptyHtml = el.innerHTML;
     el.dataset.emptyClass = el.className;

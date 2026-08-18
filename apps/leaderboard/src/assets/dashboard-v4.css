@@ -2176,6 +2176,16 @@ body[data-wide] .v3-dash[data-auth-workspace] .lb-main { padding-right: 32px; }
   text-align: center;
   color: var(--v4-ink-soft);
 }
+.v3-dash[data-auth-workspace] .v3-empty--compact-host {
+  display: block;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  text-align: left;
+}
+.v3-dash[data-auth-workspace] .heatmap > .v3-state-inline { grid-column: 1 / -1; }
 .v3-dash[data-auth-workspace] .v3-empty-ic {
   display: grid;
   place-items: center;
