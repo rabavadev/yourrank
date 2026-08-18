@@ -10,7 +10,7 @@ export function broadcastsPanel(): string {
       <div id="bcSetupState" class="empty bg-panel border radius-md p-24 text-center mt-md" hidden>
         <h3>Connect a bot to send broadcasts</h3>
         <p class="muted mt-sm mb-md">Your subscribers will appear here after you connect a Telegram bot.</p>
-        <a class="btn btn--accent" href="/bot/bots">Go to Bots</a>
+        <a class="btn btn--accent" href="/dashboard/telegram/bots">Go to Bots</a>
       </div>
 
       <div id="bcComposer" class="d-flex flex-col gap-24 mt-md" hidden>

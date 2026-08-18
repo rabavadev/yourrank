@@ -359,8 +359,8 @@ describe("YourRank E2E smoke", () => {
       expect(res.json?.db).toBe(true);
     });
 
-    it("GET /bot/dashboard loads the bot dashboard", async () => {
-      const res = await client.get("/bot/dashboard");
+    it("GET /dashboard/telegram loads the bot dashboard", async () => {
+      const res = await client.get("/dashboard/telegram");
       expect(res.status).toBe(200);
       expect(res.body).toContain("Streamer Dashboard");
     });

@@ -2,7 +2,7 @@
 //  YourRank — SHARED DASHBOARD SHELL / TOP NAV  (bot Worker, TypeScript)
 //
 //  Renders the same sticky header (Sites | Telegram | Credits & Shop |
-//  Account | Help) so the bot dashboard at /bot/dashboard feels like the same app.
+//  Account | Help) so the Telegram dashboard feels like the same app.
 //
 //  The stylesheet and behaviour live in the leaderboard Worker's static
 //  assets (/assets/shell-nav.css, /assets/shell-nav.js) and are linked by
@@ -10,7 +10,7 @@
 //
 //  Usage (bot Worker dashboard.ts):
 //    import { shellNavHtml } from "@yourrank/shared/shell-nav";
-//    botPageHtml({ nav: shellNavHtml({ activePath: "/bot/dashboard", user }), ... })
+//    botPageHtml({ nav: shellNavHtml({ activePath: "/dashboard/telegram", user }), ... })
 // ============================================================================
 
 export interface ShellUser {
@@ -28,7 +28,7 @@ export interface NavLink {
 
 export const NAV_LINKS: NavLink[] = [
   { key: "sites",    label: "Sites",          href: "/dashboard",                       match: ["/dashboard"],                    top: true },
-  { key: "telegram", label: "Telegram",       href: "/bot/dashboard",                   match: ["/dashboard/telegram", "/bot"],  top: true },
+  { key: "telegram", label: "Telegram",       href: "/dashboard/telegram",              match: ["/dashboard/telegram", "/bot"],  top: true },
   { key: "credits",  label: "Credits & Shop", href: "/dashboard/rewards/redemptions",   match: ["/dashboard/rewards", "/dashboard/credits", "/dashboard/audience"], top: true },
   { key: "account",  label: "Account",        href: "/dashboard/settings",              match: ["/dashboard/settings", "/account"], top: true },
   { key: "help",     label: "Help",           href: "/help/support",                    match: ["/help", "/contact"],             top: true },

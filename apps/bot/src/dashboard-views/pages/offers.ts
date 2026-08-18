@@ -73,7 +73,7 @@ export function offersPanel(publicBaseUrl: string): string {
         <p id="offerPreviewText" class="text-sm">—</p>
         <div id="offerCreatedActions" class="d-flex flex-wrap gap-8 mt-md" hidden>
           <button class="btn btn--accent" data-action="copyCreatedOffer" type="button">Copy tracked link</button>
-          <a class="btn btn--ghost" href="/bot/commands">Add it to a reply</a>
+          <a class="btn btn--ghost" href="/dashboard/telegram/commands">Add it to a reply</a>
         </div>
       </div>
     </div>

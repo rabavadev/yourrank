@@ -137,9 +137,11 @@ echo ""
 
 # ── 9. BOT DASHBOARD ───────────────────────────────────────
 echo "── 9. Bot Dashboard ──"
-test_route GET "/bot/dashboard" "Bot dashboard page" 200
-# /bot root should redirect to /bot/dashboard
-test_route GET "/bot" "Bot root → redirect" 302
+test_route GET "/dashboard/telegram" "Bot dashboard page" 200
+test_route GET "/dashboard/telegram/bots" "Bot bots page" 200
+# Legacy bot pages redirect permanently into the dashboard namespace.
+test_route GET "/bot/dashboard" "Legacy bot dashboard → redirect" 301
+test_route GET "/bot" "Bot root → redirect" 301
 echo ""
 
 # ── 10. Bot API ──────────────────────────────────────────────

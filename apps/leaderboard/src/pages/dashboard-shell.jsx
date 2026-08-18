@@ -2,6 +2,7 @@
 /** @jsxImportSource hono/jsx */
 
 import { NAV_LINKS, activeKey, profileMenuHtml } from "@yourrank/shared/shell-nav";
+import { dashboardNavItems as sharedDashboardNavItems } from "@yourrank/shared/dashboard-nav";
 import { raw } from "hono/html";
 import { crumbsHtml, navListHtml } from "@yourrank/shared/dashboard-chrome";
 import { brandMarkSvg } from "@yourrank/shared/brand-assets";
@@ -17,50 +18,10 @@ FORM: Devin-reference identity layered onto the Creator Run-Sheet workspace, see
 FINISH: Every shipped surface is reviewed at desktop and mobile, documented in DESIGN.md, and held to the shared accessibility and responsive floor.
 -->`;
 
-const NAV_ICONS = {
-  details: '<path d="M4 5h16v14H4z"/><path d="M8 9h8M8 13h5"/>',
-  players: '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/>',
-  design: '<path d="M12 3a9 9 0 1 0 9 9c0-1.1-.9-2-2-2h-1.5a2.5 2.5 0 0 1-2.5-2.5V6a3 3 0 0 0-3-3z"/><circle cx="7.5" cy="10.5" r=".5"/><circle cx="10.5" cy="7.5" r=".5"/><circle cx="7.5" cy="15.5" r=".5"/>',
-  games: '<path d="M6 11h4M8 9v4"/><path d="M15 12h.01M18 10h.01"/><path d="M17.3 5H6.7A4.7 4.7 0 0 0 2 9.7v4.6A4.7 4.7 0 0 0 6.7 19h10.6a4.7 4.7 0 0 0 4.7-4.7V9.7A4.7 4.7 0 0 0 17.3 5z"/>',
-  share: '<circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.6 10.5 6.8-4M8.6 13.5l6.8 4"/>',
-  history: '<path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5M12 7v5l3 2"/>',
-  boards: '<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>',
-  viewers: '<path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12z"/><circle cx="12" cy="12" r="2.5"/>',
-  shop: '<path d="M3 9l2-5h14l2 5"/><path d="M5 13v7h14v-7M9 20v-5h6v5"/><path d="M3 9a3 3 0 0 0 6 0 3 3 0 0 0 6 0 3 3 0 0 0 6 0"/>',
-  rules: '<path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>',
-  activity: '<path d="M3 12h4l2-6 4 12 2-6h6"/>',
-  channel: '<path d="M8 12a4 4 0 0 1 4-4h3a4 4 0 0 1 0 8h-3"/><path d="M16 12a4 4 0 0 1-4 4H9a4 4 0 0 1 0-8h3"/>',
-  giveaways: '<path d="M20 12v10H4V12"/><path d="M2 7h20v5H2z"/><path d="M12 22V7"/><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/>',
-  help: '<circle cx="12" cy="12" r="10"/><path d="M9.1 9a3 3 0 1 1 5.8 1c0 2-3 2-3 4M12 18h.01"/>'
-};
 
-const GEAR_ICON = '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>';
-
-// Streamlined, intent-focused navigation architecture (Linear / Stripe studio model)
-const DASHBOARD_NAV = [
-  ["home", "Overview", "/dashboard", '<rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/>'],
-  { type: "group", label: "LEADERBOARD" },
-  ["board", "Racers & scores", "/dashboard/editor/players", NAV_ICONS.players, "players"],
-  ["board", "Theme & overlays", "/dashboard/editor/design", NAV_ICONS.design, "design"],
-  ["games", "Mini-games & history", "/dashboard/games", NAV_ICONS.games],
-  { type: "group", label: "COMMUNITY & REWARDS" },
-  ["giveaways", "Live giveaways", "/dashboard/giveaways", NAV_ICONS.giveaways],
-  ["redemptions", "Rewards & shop", "/dashboard/rewards/redemptions", NAV_ICONS.shop],
-  ["viewers", "Viewer points & stats", "/dashboard/audience/viewers", NAV_ICONS.viewers],
-  ["telegram", "Telegram bot", "/bot/dashboard", NAV_ICONS.share],
-  { type: "group", label: "SETTINGS & SITES" },
-  ["boards", "Sites & integrations", "/dashboard/boards", NAV_ICONS.boards],
-  ["account", "Account & billing", "/dashboard/settings", GEAR_ICON],
-  ["help", "Help & support", "/help", NAV_ICONS.help]
-];
 
 export function dashboardNavItems() {
-  return DASHBOARD_NAV.map((item) => item.type === "group"
-    ? { group: item.label }
-    : (() => {
-      const [key, label, href, path, hash] = item;
-      return { key, label, href, icon: path, hash };
-    })());
+  return sharedDashboardNavItems();
 }
 
 export function mapActiveNav(nav, hash) {

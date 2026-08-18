@@ -23,7 +23,7 @@ function productLinks(user) {
   return user
     ? [
       { label: "Sites", href: "/dashboard" },
-      { label: "Telegram", href: "/bot/dashboard" },
+      { label: "Telegram", href: "/dashboard/telegram" },
       { label: "Credits & Shop", href: "/dashboard/rewards/redemptions" },
     ]
     : [{ label: "Back to dashboard", href: "/dashboard" }];
@@ -117,10 +117,10 @@ function helpHubContent({ user, activePath }) {
   <h2 id="help-telegram">Telegram bot</h2>
   <p>The bot dashboard separates the bot connection, its replies, and messages to subscribers.</p>
   <ul class="operator-help-list">
-    <li><a href="/bot/bots">Connect a Telegram bot</a><span>Add the bot token in Bots, then manage the connected bot there.</span></li>
-    <li><a href="/bot/commands">Edit commands</a><span>Change the replies your bot sends when viewers type a command.</span></li>
-    <li><a href="/bot/broadcasts">Send a broadcast</a><span>Compose a message to subscribers, preview it, send a rehearsal to your chat, then send now or schedule it.</span></li>
-    <li><a href="/bot/offers">Manage offers</a><span>Create offers with tracked links for your community.</span></li>
+    <li><a href="/dashboard/telegram/bots">Connect a Telegram bot</a><span>Add the bot token in Bots, then manage the connected bot there.</span></li>
+    <li><a href="/dashboard/telegram/commands">Edit commands</a><span>Change the replies your bot sends when viewers type a command.</span></li>
+    <li><a href="/dashboard/telegram/broadcasts">Send a broadcast</a><span>Compose a message to subscribers, preview it, send a rehearsal to your chat, then send now or schedule it.</span></li>
+    <li><a href="/dashboard/telegram/offers">Manage offers</a><span>Create offers with tracked links for your community.</span></li>
   </ul>
 </section>
 

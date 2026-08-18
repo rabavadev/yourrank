@@ -41,7 +41,7 @@ describe("help pages", () => {
       "/dashboard/giveaways",
       "/dashboard/rewards/redemptions",
       "/dashboard/audience/viewers",
-      "/bot/dashboard",
+      "/dashboard/telegram",
       "/dashboard/boards",
       "/dashboard/settings",
       "/help",

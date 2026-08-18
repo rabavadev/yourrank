@@ -623,8 +623,9 @@ export function buildHonoApp({
   //    Worker, which owns the root of yourrank.site. Cloudflare routes
   //    /bot/* to this Worker (see wrangler.toml).
   // =================================================================
-  app.route("/bot", buildDashboard());
-  app.get("/bot", (c) => c.redirect("/bot/dashboard"));
+  app.route("/bot", buildDashboard({ legacyPages: true }));
+  app.route("/dashboard/telegram", buildDashboard({ canonical: true }));
+  app.get("/bot", (c) => c.redirect("/dashboard/telegram", 301));
 
   return app;
 }

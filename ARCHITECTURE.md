@@ -29,8 +29,8 @@ A streamer signs up **once**. That single account owns both their leaderboard an
                           yourrank.site  (one Cloudflare zone)
                                   │
               ┌───────────────────┴────────────────────┐
-              │ route: /,/login,/signup,/dashboard,     │ route: /bot/*, /hook/*,
-              │        /<slug>, /go/<slug>              │        /r/*, /pb, /pb/*
+              │ route: /,/login,/signup,/dashboard,     │ route: /bot/*, /dashboard/telegram*,
+              │        /<slug>, /go/<slug>              │        /hook/*, /r/*, /pb, /pb/*
               ▼                                          ▼
     ┌──────────────────┐                      ┌──────────────────────┐
     │ LEADERBOARD       │                      │ BOT WORKER            │

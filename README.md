@@ -36,8 +36,8 @@ yourrank/
     │   ├── src/             SSR pages, dashboard, password auth, NOWPayments
     │   └── wrangler.toml    route: yourrank.site/*
     ├── bot/                 Cloudflare Worker (TS + Hono + grammY)
-    │   ├── src/             /bot/*, /hook/*, /r/*, /pb/*
-    │   └── wrangler.toml    routes: /bot/*, /hook/*, /r/*, /pb/*
+    │   ├── src/             /bot/*, /dashboard/telegram*, /hook/*, /r/*, /pb, /pb/*
+    │   └── wrangler.toml    routes: /bot/*, /dashboard/telegram*, /hook/*, /r/*, /pb, /pb/*
     └── consumer/            Cloudflare Queue consumer (no HTTP routes)
         ├── src/worker.js    drains yourrank-events: clicks, conversions,
         │                    analytics bumps, notifications; DLQ → Discord alert
@@ -135,7 +135,7 @@ done
 # Leaderboard app (yourrank.site/*)
 cd apps/leaderboard && bun run dev
 
-# Bot app (/bot/*, /hook/*, /r/*, /pb/*)
+# Bot app (/bot/*, /dashboard/telegram*, /hook/*, /r/*, /pb, /pb/*)
 cd apps/bot && bun run dev
 ```
 

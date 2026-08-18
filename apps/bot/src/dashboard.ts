@@ -60,8 +60,9 @@ type DashBindings = SessionEnv & {
 };
 type DashEnv = { Bindings: DashBindings; Variables: { cspNonce: string } };
 
-export function buildDashboard(): Hono<DashEnv> {
+export function buildDashboard(opts: { canonical?: boolean; legacyPages?: boolean } = {}): Hono<DashEnv> {
   const app = new Hono<DashEnv>();
+  const canonical = opts.canonical === true;
 
   // Global error handler — same reason as buildHonoApp: Hono's default
   // text/plain 500 breaks the dashboard's api() JSON parse.
@@ -95,78 +96,84 @@ export function buildDashboard(): Hono<DashEnv> {
     }
   });
 
-  // ---- auth ----
-  // BE-005: Rate-limit the Telegram login endpoint to prevent brute-force
-  // signature forgery attempts (60 req/min per IP).
-  app.post("/auth/telegram", async (c) => {
-    const ip = c.req.header("cf-connecting-ip") || "0.0.0.0";
-    const rlResult = await rateLimit(c.env, `bot-dash:${ip}`, 20, 60);
-    if (!rlResult.ok) return c.json({ error: "rate limit exceeded", retryAfter: rlResult.retryAfter }, 429);
-    if (!sameOrigin(c.req.raw, config.publicBaseUrl)) return c.json({ error: "cross-origin request rejected" }, 403);
-    const loginBotToken = process.env.LOGIN_BOT_TOKEN;
-    if (!loginBotToken) return c.json({ error: "telegram login not configured" }, 501);
-    const data = await c.req.json();
-    if (!(await verifyTelegramLogin(data, loginBotToken)))
-      return c.json({ error: "bad telegram signature" }, 401);
+  const registerAuthAndApi = (target: Hono<DashEnv>) => {
+    // ---- auth ----
+    // BE-005: Rate-limit the Telegram login endpoint to prevent brute-force
+    // signature forgery attempts (60 req/min per IP).
+    target.post("/auth/telegram", async (c) => {
+      const ip = c.req.header("cf-connecting-ip") || "0.0.0.0";
+      const rlResult = await rateLimit(c.env, `bot-dash:${ip}`, 20, 60);
+      if (!rlResult.ok) return c.json({ error: "rate limit exceeded", retryAfter: rlResult.retryAfter }, 429);
+      if (!sameOrigin(c.req.raw, config.publicBaseUrl)) return c.json({ error: "cross-origin request rejected" }, 403);
+      const loginBotToken = process.env.LOGIN_BOT_TOKEN;
+      if (!loginBotToken) return c.json({ error: "telegram login not configured" }, 501);
+      const data = await c.req.json();
+      if (!(await verifyTelegramLogin(data, loginBotToken)))
+        return c.json({ error: "bad telegram signature" }, 401);
 
-    const name = [data.first_name, data.last_name].filter(Boolean).join(" ") || data.username || String(data.id);
-    const row = (await one<{ id: string; status: string }>(
-      `INSERT INTO users (telegram_user_id, display_name)
-       VALUES ($1, $2)
-       ON CONFLICT (telegram_user_id) DO UPDATE SET display_name = EXCLUDED.display_name, updated_at = now()
-       RETURNING id, status`,
-      [data.id, name]
-    ))!;
-    if (row.status === "suspended") return c.json({ error: "account suspended" }, 403);
-    const token = await createSession(c.env, row.id);
-    c.header("Set-Cookie", cookieSet(token, c.env));
-    return c.json({ ok: true });
-  });
+      const name = [data.first_name, data.last_name].filter(Boolean).join(" ") || data.username || String(data.id);
+      const row = (await one<{ id: string; status: string }>(
+        `INSERT INTO users (telegram_user_id, display_name)
+         VALUES ($1, $2)
+         ON CONFLICT (telegram_user_id) DO UPDATE SET display_name = EXCLUDED.display_name, updated_at = now()
+         RETURNING id, status`,
+        [data.id, name]
+      ))!;
+      if (row.status === "suspended") return c.json({ error: "account suspended" }, 403);
+      const token = await createSession(c.env, row.id);
+      c.header("Set-Cookie", cookieSet(token, c.env));
+      return c.json({ ok: true });
+    });
 
-  app.post("/auth/dev", async (c) => {
-    if (process.env.ALLOW_DEV_LOGIN !== "1") return c.json({ error: "disabled" }, 403);
-    // Dev login blindly trusts a telegram_user_id and hands back that user's
-    // session, so it is an ATO primitive if reachable. Restrict HARD:
-    //  - REQUIRE an Origin header and require it to be localhost (curl/local
-    //    dev only). sameOrigin()'s missing-Origin bypass is deliberately NOT
-    //    applied here, since that bypass is exactly how a remote attacker would
-    //    reach dev login with curl-equivalent tooling.
-    //  - Never enable ALLOW_DEV_LOGIN in production.
-    const origin = c.req.raw.headers.get("origin") ?? "";
-    const isLocal =
-      /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin);
-    if (!isLocal) return c.json({ error: "dev login is local-only" }, 403);
-    const { telegram_user_id, display_name } = await c.req.json<{ telegram_user_id: number; display_name?: string }>();
-    const row = (await one<{ id: string }>(
-      `INSERT INTO users (telegram_user_id, display_name) VALUES ($1, $2)
-       ON CONFLICT (telegram_user_id) DO UPDATE SET updated_at = now() RETURNING id`,
-      [telegram_user_id, display_name ?? `dev-${telegram_user_id}`]
-    ))!;
-    const token = await createSession(c.env, row.id);
-    c.header("Set-Cookie", cookieSet(token, c.env));
-    return c.json({ ok: true });
-  });
+    target.post("/auth/dev", async (c) => {
+      if (process.env.ALLOW_DEV_LOGIN !== "1") return c.json({ error: "disabled" }, 403);
+      // Dev login blindly trusts a telegram_user_id and hands back that user's
+      // session, so it is an ATO primitive if reachable. Restrict HARD:
+      //  - REQUIRE an Origin header and require it to be localhost (curl/local
+      //    dev only). sameOrigin()'s missing-Origin bypass is deliberately NOT
+      //    applied here, since that bypass is exactly how a remote attacker would
+      //    reach dev login with curl-equivalent tooling.
+      //  - Never enable ALLOW_DEV_LOGIN in production.
+      const origin = c.req.raw.headers.get("origin") ?? "";
+      const isLocal =
+        /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin);
+      if (!isLocal) return c.json({ error: "dev login is local-only" }, 403);
+      const { telegram_user_id, display_name } = await c.req.json<{ telegram_user_id: number; display_name?: string }>();
+      const row = (await one<{ id: string }>(
+        `INSERT INTO users (telegram_user_id, display_name) VALUES ($1, $2)
+         ON CONFLICT (telegram_user_id) DO UPDATE SET updated_at = now() RETURNING id`,
+        [telegram_user_id, display_name ?? `dev-${telegram_user_id}`]
+      ))!;
+      const token = await createSession(c.env, row.id);
+      c.header("Set-Cookie", cookieSet(token, c.env));
+      return c.json({ ok: true });
+    });
 
-  app.post("/auth/logout", async (c) => {
-    await destroySession(c.env, readToken(c.req.raw));
-    c.header("Set-Cookie", cookieClear(c.env));
-    // JSON for the dashboard JS client; HTML redirect for the shared nav form.
-    const accept = c.req.header("accept") || "";
-    if (accept.includes("application/json")) return c.json({ ok: true });
-    return c.redirect("/bot/dashboard");
-  });
+    target.post("/auth/logout", async (c) => {
+      await destroySession(c.env, readToken(c.req.raw));
+      c.header("Set-Cookie", cookieClear(c.env));
+      // JSON for the dashboard JS client; HTML redirect for the shared nav form.
+      const accept = c.req.header("accept") || "";
+      if (accept.includes("application/json")) return c.json({ ok: true });
+      return c.redirect("/dashboard/telegram");
+    });
 
-  // ---- session-scoped API ----
-  const api = buildDashboardApi();
-  app.route("/dash/api", api);
+    // ---- session-scoped API ----
+    const api = buildDashboardApi();
+    target.route("/dash/api", api);
 
-  // ---- static client JS (external so CSP nonce cannot block it) ----
-  app.get("/dash/client.js", (c) =>
-    c.body(clientScriptSource(), 200, {
-      "Content-Type": "application/javascript; charset=utf-8",
-      "Cache-Control": "no-store, no-cache, must-revalidate",
-    })
-  );
+    // ---- static client JS (external so CSP nonce cannot block it) ----
+    target.get("/dash/client.js", (c) =>
+      c.body(clientScriptSource(), 200, {
+        "Content-Type": "application/javascript; charset=utf-8",
+        "Cache-Control": "no-store, no-cache, must-revalidate",
+      })
+    );
+  };
+
+  if (!canonical) {
+    registerAuthAndApi(app);
+  }
 
   // ---- HTML ----
   const dashboardPage = async (c: any, page: string) => {
@@ -182,26 +189,46 @@ export function buildDashboard(): Hono<DashEnv> {
       c.header("Content-Security-Policy", `default-src 'self'; script-src 'self' 'unsafe-eval' 'nonce-${c.get("cspNonce")}' https://telegram.org; style-src 'self' 'nonce-${c.get("cspNonce")}' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://telegram.org; frame-src https://telegram.org https://oauth.telegram.org;`);
       return c.html(loginHtml(loginBotUsername, devLogin, c.get("cspNonce")));
     }
-    const user = await one<{ display_name: string; email: string; plan: string }>(
-      `SELECT display_name, email, plan FROM users WHERE id=$1`,
+    const user = await one<{ display_name: string; email: string; plan: string; bot_username: string | null; bot_status: string | null; site_name: string | null }>(
+      `SELECT u.display_name, u.email, u.plan,
+              (SELECT b.username FROM bots b WHERE b.owner_id = u.id ORDER BY b.created_at ASC LIMIT 1) AS bot_username,
+              (SELECT b.status FROM bots b WHERE b.owner_id = u.id ORDER BY b.created_at ASC LIMIT 1) AS bot_status,
+              (SELECT s.name FROM sites s WHERE s.user_id = u.id ORDER BY s.board_order ASC, s.id ASC LIMIT 1) AS site_name
+       FROM users u WHERE u.id=$1`,
       [uid]
     );
     // The page renders the dashboard rail and its own topbar/account menu, so
     // it no longer stacks the marketing-style product header on top.
-    return c.html(appHtml(user ?? { display_name: "", email: "", plan: "free" }, config.publicBaseUrl, c.get("cspNonce"), page));
+    return c.html(appHtml(
+      user ?? { display_name: "", email: "", plan: "free" },
+      config.publicBaseUrl,
+      c.get("cspNonce"),
+      page,
+      undefined,
+      "/dashboard/telegram",
+      { botUsername: user?.bot_username, botStatus: user?.bot_status, siteName: user?.site_name },
+    ));
   };
 
-  app.get("/dashboard", (c) => dashboardPage(c, "overview"));
-  app.get("/bots", (c) => dashboardPage(c, "bots"));
-  app.get("/offers", (c) => dashboardPage(c, "offers"));
-  app.get("/commands", (c) => dashboardPage(c, "commands"));
-  app.get("/broadcasts", (c) => dashboardPage(c, "broadcasts"));
-  app.get("/settings", (c) => {
-    const target = new URL("/dashboard/settings", c.req.url);
-    for (const [key, value] of new URL(c.req.url).searchParams) target.searchParams.set(key, value);
-    target.searchParams.set("from", "bot");
-    return c.redirect(target.pathname + target.search, 302);
-  });
+  const pageRoute = (page: string) => {
+    if (opts.legacyPages) {
+      return (c: any) => c.redirect(`/dashboard/telegram${page === "overview" ? "" : `/${page}`}`, 301);
+    }
+    return (c: any) => dashboardPage(c, page);
+  };
+  app.get(canonical ? "/" : "/dashboard", pageRoute("overview"));
+  app.get("/bots", pageRoute("bots"));
+  app.get("/offers", pageRoute("offers"));
+  app.get("/commands", pageRoute("commands"));
+  app.get("/broadcasts", pageRoute("broadcasts"));
+  if (!canonical) {
+    app.get("/settings", (c) => {
+      const target = new URL("/dashboard/settings", c.req.url);
+      for (const [key, value] of new URL(c.req.url).searchParams) target.searchParams.set(key, value);
+      target.searchParams.set("from", "bot");
+      return c.redirect(target.pathname + target.search, 302);
+    });
+  }
 
   return app;
 }
