@@ -29,7 +29,7 @@ function crumbsFor(tab) {
   if (tab === "redemptions") return trail.map((c) => ({ label: c.label }));
   if (CREDIT_TABS.has(tab)) {
     trail.push({ label: "Credits", href: "/dashboard/rewards/rules" });
-    if (tab !== "rules") trail.push({ label: CRUMB_LABELS[tab] || tab });
+    trail.push({ label: CRUMB_LABELS[tab] || tab });
     return trail;
   }
   return [...trail, { label: CRUMB_LABELS[tab] || tab }];
