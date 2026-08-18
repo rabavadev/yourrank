@@ -17,20 +17,22 @@ function render(pageKey, user) {
 const user = { display_name: "Streamer One", email: "streamer@example.com", plan: "pro" };
 
 describe("help pages", () => {
-  it("renders the operator help hub in both shells", () => {
+  it("renders the creator help hub in both shells", () => {
     const signedIn = render("helpHub", user);
     const signedOut = render("helpHub", null);
     for (const html of [signedIn, signedOut]) {
-      expect(html).toContain("Operator help");
+      expect(html).toContain("Help &amp; feedback");
+      expect(html).toContain("Choose what you are trying to do");
       expect(html).toContain('href="/help/support"');
       expect(html).toContain('href="/help/feedback"');
       expect(html).toContain('href="/dashboard/rewards/rules"');
       // Help lives in the app rail, not the marketing top nav.
       expect(html).toContain("lb-side");
       expect(html).not.toContain("gm-shell-nav");
+      expect(html).not.toContain("Operator help");
     }
-    // Signed-in identity appears in the rail's profile menu, and Help keeps the
-    // same complete feature map as every other authenticated destination.
+    // Signed-in identity appears in the rail's profile menu. The primary rail
+    // stays focused on daily creator work while Help lives in the account menu.
     expect(signedIn).toContain("Streamer One");
     expect(signedIn).toContain('data-auth-workspace="true"');
     expect(signedOut).not.toContain('data-auth-workspace="true"');
@@ -40,11 +42,11 @@ describe("help pages", () => {
       "/dashboard/rewards/redemptions",
       "/dashboard/telegram",
       "/dashboard/analytics/activity",
-      "/dashboard/leaderboards",
       "/dashboard/settings",
-      "/help",
     ]) expect(signedIn).toContain(`href="${href}"`);
-    expect(signedIn).toContain('data-nav="help" aria-current="page"');
+    expect(signedIn).toContain("Help &amp; feedback");
+    expect(signedIn).toContain('href="/help?area=help');
+    expect(signedIn).not.toContain('data-nav="help"');
     expect(signedIn).not.toContain('data-nav="support"');
     expect(signedIn).not.toContain('data-nav="feedback"');
   });
@@ -78,9 +80,17 @@ describe("help pages", () => {
     });
   }
 
-  it("marks the current Help destination without hiding dashboard features", () => {
+  it("does not promise an unverified support response time", () => {
     const html = render("helpSupport", user);
-    expect(html).toContain('data-nav="help" aria-current="page"');
+    expect(html).toContain("We'll reply by email");
+    expect(html).not.toContain("usually within 1 business day");
+  });
+
+  it("keeps Help accessible without adding it back to the primary rail", () => {
+    const html = render("helpSupport", user);
+    expect(html).toContain("Help &amp; feedback");
+    expect(html).toContain('href="/help?area=help');
+    expect(html).not.toContain('data-nav="help"');
     expect(html).toContain('data-nav="settings"');
     expect(html).toContain('data-nav="redemptions"');
   });

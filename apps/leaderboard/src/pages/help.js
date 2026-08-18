@@ -1,10 +1,9 @@
 import { dashboardChromeHtml } from "@yourrank/shared/dashboard-chrome";
 import { dashboardNavItems } from "./dashboard-shell.jsx";
 
-// Help center pages: an operator hub plus Support and Feedback forms.
+// Help center pages: a creator-facing hub plus Support and Feedback forms.
 // Rendered through the shared page shell so a signed-in streamer keeps the app
-// header (and their session) instead of landing on a marketing page that offers
-// them a "Sign in" button.
+// context instead of landing on a separate marketing page.
 const TABS = [
   { key: "support", label: "Support", href: "/help/support", icon: '<path d="M4 4h16v12H7l-3 3z"/><path d="M8 8h8M8 12h5"/>' },
   { key: "feedback", label: "Feedback", href: "/help/feedback", icon: '<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/>' },
@@ -35,8 +34,8 @@ function helpContent({ active, h1, intro, kind, subjectPlaceholder, messagePlace
   return dashboardChromeHtml({
     nav: helpNavigation(user),
     active: user ? "help" : active,
-    navLabel: user ? "Dashboard" : "Help",
-    headLabel: "Help",
+    navLabel: user ? "Dashboard" : "Help & feedback",
+    headLabel: "Help & feedback",
     title: h1,
     titleId: "contactTitle",
     subtitle: intro,
@@ -49,7 +48,6 @@ function helpContent({ active, h1, intro, kind, subjectPlaceholder, messagePlace
     embeddedInMain: true,
   });
 }
-
 
 function helpPage(opts) {
   return {
@@ -71,7 +69,7 @@ function helpPage(opts) {
 
 function helpHubContent({ user, activePath }) {
   const content = `<div class="operator-help" id="help-hub">
-<p class="operator-help-lead">Find the dashboard page for the task you are doing now. These instructions follow the controls and routes currently in YourRank.</p>
+<p class="operator-help-lead">Choose what you are trying to do and jump straight to the right place.</p>
 
 <section class="operator-help-section" aria-labelledby="help-site">
   <h2 id="help-site">Site and public page</h2>
@@ -79,45 +77,44 @@ function helpHubContent({ user, activePath }) {
   <ul class="operator-help-list">
     <li><a href="/dashboard/leaderboard/setup">Set up a site</a><span>Add the site details, schedule, and visitor access.</span></li>
     <li><a href="/dashboard/leaderboard/players">Manage players</a><span>Add and update the ranked rows used by the leaderboard.</span></li>
-    <li><a href="/dashboard/leaderboard/design">Change design</a><span>Edit the public page’s branding and visual settings in Design.</span></li>
-    <li><a href="/dashboard/leaderboard/share">Share the public page</a><span>Find the public URL, OBS overlay URL, embed code, and share links.</span></li>
+    <li><a href="/dashboard/leaderboard/design">Change design</a><span>Edit the public page’s branding and visual settings.</span></li>
+    <li><a href="/dashboard/leaderboard/share">Share the public page</a><span>Find the public URL, stream overlay, embed code, and share links.</span></li>
   </ul>
 </section>
 
 <section class="operator-help-section" aria-labelledby="help-credits">
   <h2 id="help-credits">Credits and viewer fulfilment</h2>
-  <p>Credits come from Kick channel-point rewards and can be spent on shop items.</p>
+  <p>Manage how credits are earned, what viewers can unlock, and pending requests.</p>
   <ul class="operator-help-list">
-    <li><a href="/dashboard/rewards/channel">Connect Kick</a><span>Link the Kick channel so channel-point reward claims can become credits.</span></li>
+    <li><a href="/dashboard/rewards/channel">Connect Kick</a><span>Link the Kick channel used for credit rewards.</span></li>
     <li><a href="/dashboard/rewards/rules">Create a credit rule</a><span>Choose a Kick reward and set how many credits it awards.</span></li>
     <li><a href="/dashboard/rewards/shop">Add a shop item</a><span>Create something viewers can unlock with their credits.</span></li>
     <li><a href="/dashboard/rewards/redemptions">Process prize orders</a><span>Review pending viewer requests and approve or cancel them.</span></li>
-    <li><a href="/dashboard/audience/viewers">Check viewer balances</a><span>See viewer balances, total earned, total spent, and recent earning activity.</span></li>
-    <li><a href="/dashboard/audience/activity">Review credit activity</a><span>Filter the site’s credit events by viewer and event type.</span></li>
+    <li><a href="/dashboard/audience/viewers">Check viewer balances</a><span>See viewer balances and recent earning activity.</span></li>
+    <li><a href="/dashboard/audience/activity">Review credit activity</a><span>Filter credit events by viewer and event type.</span></li>
   </ul>
 </section>
 
 <section class="operator-help-section" aria-labelledby="help-telegram">
-  <h2 id="help-telegram">Telegram bot</h2>
-  <p>The bot dashboard separates the bot connection, its replies, and messages to subscribers.</p>
+  <h2 id="help-telegram">Messaging</h2>
+  <p>Connect your Telegram bot, manage replies, and send messages to subscribers.</p>
   <ul class="operator-help-list">
-    <li><a href="/dashboard/telegram/bots">Connect a Telegram bot</a><span>Add the connect code in Bots, then manage the connected bot there.</span></li>
+    <li><a href="/dashboard/telegram/bots">Connect a Telegram bot</a><span>Add the connect code, then manage the connected bot.</span></li>
     <li><a href="/dashboard/telegram/commands">Edit commands</a><span>Change the replies your bot sends when viewers type a command.</span></li>
-    <li><a href="/dashboard/telegram/broadcasts">Send a broadcast</a><span>Compose a message to subscribers, preview it, send a rehearsal to your chat, then send now or schedule it.</span></li>
-    <li><a href="/dashboard/telegram/offers">Manage offers</a><span>Create offers with tracked links for your community.</span></li>
+    <li><a href="/dashboard/telegram/broadcasts">Send a broadcast</a><span>Compose, preview, and send or schedule a subscriber message.</span></li>
+    <li><a href="/dashboard/telegram/offers">Manage offers</a><span>Manage the offers available to your community.</span></li>
   </ul>
 </section>
 
 <section class="operator-help-section" aria-labelledby="help-account">
-  <h2 id="help-account">Account, plan, and connections</h2>
-  <p>Settings for your account are separate from settings for one selected site.</p>
+  <h2 id="help-account">Account and settings</h2>
+  <p>Account settings are separate from settings for one selected site.</p>
   <ul class="operator-help-list">
-    <li><a href="/dashboard/settings">Settings</a><span>Manage account-level settings, plan access, connections, and account data.</span></li>
-    <li><a href="/dashboard/settings/board">Site settings</a><span>Manage visitor access, alerts, connected tools, your web address, and support resources for the selected site.</span></li>
-    <li><a href="/dashboard/settings/plan">Plan and billing</a><span>Manage the account subscription and review plan access.</span></li>
     <li><a href="/dashboard/settings/account">Account</a><span>Change your password and review active sessions.</span></li>
-    <li><a href="/dashboard/settings/connections">Connected accounts and score updates</a><span>Review connected services and configure automatic sponsor score updates.</span></li>
-    <li><a href="/dashboard/settings/data">Data and danger zone</a><span>Export account data or delete the account.</span></li>
+    <li><a href="/dashboard/settings/board">This site</a><span>Manage visitor access, alerts, connected tools, and the web address for the selected site.</span></li>
+    <li><a href="/dashboard/settings/plan">Plan</a><span>Manage the subscription and review plan access.</span></li>
+    <li><a href="/dashboard/settings/connections">Connected apps</a><span>Review connected services.</span></li>
+    <li><a href="/dashboard/settings/data">Data</a><span>Export account data or manage account deletion.</span></li>
   </ul>
 </section>
 
@@ -130,10 +127,10 @@ function helpHubContent({ user, activePath }) {
   return dashboardChromeHtml({
     nav: helpNavigation(user),
     active: user ? "help" : "",
-    navLabel: user ? "Dashboard" : "Help",
-    headLabel: "Help",
-    title: "Operator help",
-    subtitle: "Find the dashboard page for the task you are doing now.",
+    navLabel: user ? "Dashboard" : "Help & feedback",
+    headLabel: "Help & feedback",
+    title: "Help & feedback",
+    subtitle: "Find the right place for a task, contact support, or share feedback.",
     user,
     activePath,
     content,
@@ -145,9 +142,9 @@ function helpHubContent({ user, activePath }) {
 
 export const helpHubPage = {
   config: {
-    title: "Operator help · YourRank",
+    title: "Help & feedback · YourRank",
     canonical: "https://yourrank.site/help",
-    description: "Task-oriented help for YourRank operators managing sites, credits, Telegram bots, offers, and account settings.",
+    description: "Task-oriented help for creators using YourRank sites, rewards, messaging, analytics, and account settings.",
     robots: "index, follow",
     styles: ["/assets/app.css", "/assets/dashboard-v3.css", "/assets/shell-nav.css", "/assets/ui.css", "/assets/dashboard-v4.css"],
     scripts: ['<script src="/assets/shell-nav.js?v=2" defer></script>'],
@@ -165,7 +162,7 @@ export const helpSupportPage = helpPage({
   description: "Get help with YourRank. Questions, feedback, and support.",
   canonical: "https://yourrank.site/help/support",
   h1: "Contact support",
-  intro: "Tell us what went wrong or what you need help with. We'll reply by email — usually within 1 business day.",
+  intro: "Tell us what went wrong or what you need help with. We'll reply by email.",
   kind: "support",
   subjectPlaceholder: "What do you need help with?",
   messagePlaceholder: "Describe the problem and what you expected to happen...",

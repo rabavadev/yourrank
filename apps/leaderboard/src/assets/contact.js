@@ -20,16 +20,18 @@ const helpTab = helpApp?.dataset?.helpTab;
 const requestedType = helpTab || params.get("type");
 const requestedArea = params.get("area");
 const requestedReturn = params.get("return");
-const allowedAreas = new Set(["dashboard", "leaderboard", "bot", "analytics", "attribution", "billing"]);
-const allowedReturnTargets = new Map([
-  ["dashboard", "/dashboard"],
-  ["leaderboard", "/leaderboard"],
-  ["bot", "/bot"],
-  ["analytics", "/analytics"],
-  ["attribution", "/attribution"],
-  ["billing", "/billing"],
-  ["home", "/"],
-]);
+const allowedAreas = new Set(["dashboard", "leaderboard", "bot", "analytics", "attribution", "billing", "account", "credits", "help"]);
+
+function safeReturnTarget(value) {
+  if (!value) return "";
+  try {
+    const url = new URL(value, location.origin);
+    if (url.origin !== location.origin || !url.pathname.startsWith("/")) return "";
+    return `${url.pathname}${url.search}${url.hash}`;
+  } catch {
+    return "";
+  }
+}
 
 function applyContext() {
   const type = requestedType === "feedback" ? "feedback" : "support";
@@ -49,7 +51,7 @@ function applyContext() {
       ? "Share an idea, frustration, or feature request..."
       : "Describe the problem and what you expected to happen...";
   }
-  const safeReturn = allowedReturnTargets.get(requestedReturn || "");
+  const safeReturn = safeReturnTarget(requestedReturn);
   if (safeReturn && back && backWrap) {
     back.href = safeReturn;
     backWrap.hidden = false;

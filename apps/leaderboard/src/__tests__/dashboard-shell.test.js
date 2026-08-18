@@ -24,7 +24,7 @@ describe("server-rendered dashboard profile", () => {
 });
 
 describe("signed-in shell navigation", () => {
-  it("links every major product surface from the rail", () => {
+  it("links the primary creator surfaces from the rail", () => {
     const html = renderPage(RewardsViewersPage);
     for (const href of [
       "/dashboard/leaderboard/players",
@@ -32,12 +32,13 @@ describe("signed-in shell navigation", () => {
       "/dashboard/rewards/redemptions",
       "/dashboard/telegram",
       "/dashboard/analytics/activity",
-      "/dashboard/leaderboards",
       "/dashboard/settings",
-      "/help",
     ]) {
       expect(html).toContain(`href="${href}"`);
     }
+    expect(html).toContain('href="/dashboard/leaderboards">Manage sites');
+    expect(html).toContain('href="/help?area=credits');
+    expect(html).toContain("Help &amp; feedback");
   });
 
   it("marks the open credit surface as current", () => {
@@ -99,29 +100,27 @@ describe("signed-in shell navigation", () => {
     expect(html).toContain('data-product-link="credits"');
   });
 
-  it("keeps every signed-in feature visible from every dashboard page", () => {
+  it("keeps secondary site and help actions accessible without rail duplication", () => {
     const html = renderPage(RewardsViewersPage);
-    for (const href of [
-      "/dashboard/leaderboard/players",
-      "/dashboard/giveaways/chat",
-      "/dashboard/rewards/redemptions",
-      "/dashboard/telegram",
-      "/dashboard/analytics/activity",
-      "/dashboard/leaderboards",
-      "/dashboard/settings",
-      "/help",
-    ]) expect(html).toContain(`href="${href}"`);
+    expect(html).toContain('href="/dashboard/leaderboards">Manage sites');
+    expect(html).toContain('href="/help?area=credits');
+    expect(html).toContain("Help &amp; feedback");
+    expect(html).not.toContain('data-nav="boards"');
+    expect(html).not.toContain('data-nav="help"');
   });
 
   it("uses plain-language navigation labels", () => {
     const html = PAGES.dashboard.Component({ activePath: "/dashboard/leaderboard/design", user }).toString();
     expect(html).toContain(">Look</a>");
+    expect(html).toContain(">Leaderboard</a>");
     expect(html).toContain(">Rewards</a>");
-    expect(html).toContain(">Help</a>");
+    expect(html).toContain(">Messaging</a>");
+    expect(html).toContain(">Analytics</a>");
+    expect(html).toContain("Help &amp; feedback</a>");
     expect(html).toContain('data-nav="settings"');
   });
 
-  it("keeps every signed-in feature visible from account settings", () => {
+  it("keeps primary creator surfaces and account help accessible from settings", () => {
     const html = renderPage(UnifiedSettingsPage);
     for (const href of [
       "/dashboard",
@@ -130,10 +129,12 @@ describe("signed-in shell navigation", () => {
       "/dashboard/rewards/redemptions",
       "/dashboard/telegram",
       "/dashboard/analytics/activity",
-      "/dashboard/leaderboards",
       "/dashboard/settings",
-      "/help",
     ]) expect(html).toContain(`href="${href}"`);
+    expect(html).toContain('href="/help?area=account');
+    expect(html).toContain("Help &amp; feedback");
+    expect(html).not.toContain('data-nav="boards"');
+    expect(html).not.toContain('data-nav="help"');
     expect(html).toContain('data-nav="settings" aria-current="page"');
     expect((html.match(/<h1\b/g) || []).length).toBe(1);
     expect(html).not.toContain('data-nav="back"');

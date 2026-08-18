@@ -114,14 +114,25 @@ describe("settings panels", () => {
     }
   });
 
-  it("serves every panel from the one settings document", async () => {
+  it("serves every account panel from the one settings document", async () => {
     const html = await UnifiedSettingsPage({ activePath: "/dashboard/settings/plan", tab: "plan", user: { email: "a@b.c" } }).toString();
     for (const key of ["account", "plan", "connections", "data"]) {
       expect(html).toContain(`href="/dashboard/settings/${key}"`);
       expect(html).toContain(`data-settings-panel="${key}"`);
     }
-    // Site-level settings are a separate destination, not a fifth tab.
+    // Site-level settings are a separate destination, not an account tab.
     expect(html).toContain('href="/dashboard/settings/board"');
+    expect(html).not.toContain('data-settings-tab="board"');
     expect(html).not.toContain("/account/profile");
+  });
+
+  it("keeps account settings creator-facing instead of exposing scope jargon", async () => {
+    const html = await UnifiedSettingsPage({ activePath: "/dashboard/settings/account", tab: "account", user: { email: "a@b.c", plan: "pro" } }).toString();
+    expect(html).toContain("Open site settings");
+    expect(html).toContain("Open Help &amp; feedback");
+    expect(html).not.toContain("Global Account Scope");
+    expect(html).not.toContain("Owner / Master");
+    expect(html).not.toContain("Security Posture");
+    expect(html).not.toContain('id="accSummaryAvatar"');
   });
 });
