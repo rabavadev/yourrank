@@ -1,6 +1,17 @@
 // Markup for Giveaways & Community Events Hub (Chat Giveaways, Ticket Raffles, Flash Code Drops)
 
-export const giveawaysHtml = `
+const GIVEAWAY_TABS = [
+  ["chat", "🎁 Live Chat Giveaways"],
+  ["raffles", "🎟️ Ticket Raffles"],
+  ["drops", "⚡ Flash Code Drops"],
+  ["preds", "🔮 Predictions & Betting"],
+];
+
+export function renderGiveawaysHtml(activeTab = "chat") {
+  const active = GIVEAWAY_TABS.some(([tab]) => tab === activeTab) ? activeTab : "chat";
+  const tabs = GIVEAWAY_TABS.map(([tab, label]) => `
+  <a class="gw-tab-btn${tab === active ? " is-active" : ""}" id="tab-btn-${tab}" href="/dashboard/giveaways/${tab}" data-tab="${tab}" role="tab" aria-selected="${tab === active ? "true" : "false"}">${label}</a>`).join("");
+  return `
 <div class="v3-head">
   <div class="v3-head-col">
     <h1>Giveaways &amp; Community Events</h1>
@@ -13,24 +24,13 @@ export const giveawaysHtml = `
 
 <!-- Segmented Navigation Tabs -->
 <div class="gw-nav-tabs" role="tablist" aria-label="Event types">
-  <button class="gw-tab-btn is-active" id="tab-btn-chat" data-tab="chat" type="button" role="tab" aria-selected="true">
-    🎁 Live Chat Giveaways
-  </button>
-  <button class="gw-tab-btn" id="tab-btn-raffles" data-tab="raffles" type="button" role="tab" aria-selected="false">
-    🎟️ Ticket Raffles
-  </button>
-  <button class="gw-tab-btn" id="tab-btn-drops" data-tab="drops" type="button" role="tab" aria-selected="false">
-    ⚡ Flash Code Drops
-  </button>
-  <button class="gw-tab-btn" id="tab-btn-preds" data-tab="preds" type="button" role="tab" aria-selected="false">
-    🔮 Predictions &amp; Betting
-  </button>
+${tabs}
 </div>
 
 <!-- =========================================================================
      TAB 1: LIVE CHAT GIVEAWAYS
      ========================================================================= -->
-<div class="gw-tab-pane is-active" id="pane-chat">
+<div class="gw-tab-pane${active === "chat" ? " is-active" : ""}" id="pane-chat"${active === "chat" ? "" : " hidden"}>
   <div class="gw-layout">
     <!-- Left Column: Setup, Anti-Alt Shield & Live Feed -->
     <div class="gw-sidebar">
@@ -292,7 +292,7 @@ export const giveawaysHtml = `
 <!-- =========================================================================
      TAB 2: TICKET RAFFLES
      ========================================================================= -->
-<div class="gw-tab-pane" id="pane-raffles" hidden>
+<div class="gw-tab-pane${active === "raffles" ? " is-active" : ""}" id="pane-raffles"${active === "raffles" ? "" : " hidden"}>
   <div class="gw-events-grid">
     <section class="v3-table-card gw-card">
       <div class="v3-section-head">
@@ -343,7 +343,7 @@ export const giveawaysHtml = `
 <!-- =========================================================================
      TAB 3: FLASH CODE DROPS
      ========================================================================= -->
-<div class="gw-tab-pane" id="pane-drops" hidden>
+<div class="gw-tab-pane${active === "drops" ? " is-active" : ""}" id="pane-drops"${active === "drops" ? "" : " hidden"}>
   <div class="gw-events-grid">
     <section class="v3-table-card gw-card">
       <div class="v3-section-head">
@@ -394,7 +394,7 @@ export const giveawaysHtml = `
 <!-- =========================================================================
      TAB 4: LIVE PREDICTIONS & BETTING
      ========================================================================= -->
-<div class="gw-tab-pane" id="pane-preds" hidden>
+<div class="gw-tab-pane${active === "preds" ? " is-active" : ""}" id="pane-preds"${active === "preds" ? "" : " hidden"}>
   <div class="gw-events-grid">
     <section class="v3-table-card gw-card">
       <div class="v3-section-head">
@@ -702,3 +702,6 @@ export const giveawaysHtml = `
   </div>
 </div>
 `;
+}
+
+export const giveawaysHtml = renderGiveawaysHtml();

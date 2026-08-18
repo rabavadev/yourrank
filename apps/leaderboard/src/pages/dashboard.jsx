@@ -23,7 +23,7 @@ const ANALYTICS_TABS = ["activity", "referrals", "events"];
 const SECTION_CRUMBS = {
   board: { label: "Leaderboard", href: "/dashboard/editor" },
   games: { label: "Mini-games", href: "/dashboard/games" },
-  performance: { label: "Traffic & stats", href: "/dashboard/analytics/activity" },
+  performance: { label: "Analytics", href: "/dashboard/analytics/activity" },
   settings: { label: "Leaderboard settings", href: "/dashboard/settings/board" },
   boards: { label: "All sites", href: "/dashboard/boards" },
 };

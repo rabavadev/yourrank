@@ -2,7 +2,7 @@ import { describe, it, expect } from "bun:test";
 import { readFileSync } from "node:fs";
 import { handleGiveawayChatroom } from "../handlers/giveaway.js";
 import { GiveawaysPage } from "../pages/giveaways.jsx";
-import { giveawaysHtml } from "../pages/giveaway-pages.js";
+import { giveawaysHtml, renderGiveawaysHtml } from "../pages/giveaway-pages.js";
 
 const gamesSource = readFileSync(new URL("../assets/dashboard/games.js", import.meta.url), "utf8");
 const siteSource = readFileSync(new URL("../assets/dashboard/site.js", import.meta.url), "utf8");
@@ -60,6 +60,15 @@ describe("Giveaway Chatroom Handler", () => {
     expect(html).toContain("gw-setup-form");
     expect(html).toContain("gw-chat-feed");
     expect(html).toContain("gw-roller");
+  });
+
+  it("renders each giveaway tab as a deep-linkable active server view", () => {
+    const html = renderGiveawaysHtml("raffles");
+    expect(html).toContain('href="/dashboard/giveaways/raffles"');
+    expect(html).toContain('id="tab-btn-raffles"');
+    expect(html).toContain('id="pane-raffles"');
+    expect(html).toContain('class="gw-tab-pane is-active" id="pane-raffles"');
+    expect(html).toContain('class="gw-tab-pane" id="pane-chat" hidden');
   });
 
   it("keeps giveaway history tables on the canonical table markup", () => {

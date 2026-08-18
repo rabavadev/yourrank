@@ -591,7 +591,7 @@ async function handleRequest(request, env, ctx, meta) {
           return applyPlaceholders(content);
         }
       }
-      const renderDashboardPage = async (pageKey, logLabel) => {
+      const renderDashboardPage = async (pageKey, logLabel, tab) => {
         try {
           const user = await currentUser(request, env);
           if (!user) return redirectToLogin(url);
@@ -599,7 +599,8 @@ async function handleRequest(request, env, ctx, meta) {
             activePath: url.pathname + url.search,
             user,
             reqId: reqId || "",
-            theme: "light"
+            theme: "light",
+            tab,
           }));
           return new Response(html, { headers: { ...SECURE_HTML, ...csrfHeader, "cache-control": "no-store, no-cache, must-revalidate" } });
         } catch (e) {
@@ -786,7 +787,14 @@ async function handleRequest(request, env, ctx, meta) {
         return redirectKeepingSearch("/dashboard/rewards/channel", url);
       }
       if (path === "/dashboard/giveaways") {
-        return renderDashboardPage("giveaways", "giveaways_render_failed");
+        return redirectKeepingSearch("/dashboard/giveaways/chat", url);
+      }
+      if (path.startsWith("/dashboard/giveaways/")) {
+        const tab = path.slice("/dashboard/giveaways/".length);
+        if (["chat", "raffles", "drops", "preds"].includes(tab)) {
+          return renderDashboardPage("giveaways", "giveaways_render_failed", tab);
+        }
+        return redirectKeepingSearch("/dashboard/giveaways/chat", url);
       }
       if (path === "/dashboard/rewards") {
         return redirectKeepingSearch("/dashboard/rewards/redemptions", url);

@@ -25,7 +25,7 @@ function getDatabaseUrl(env: Record<string, unknown>): string {
   );
 }
 
-export async function getCurrentUser(): Promise<UserRecord | null> {
+async function getCurrentUserStrict(): Promise<UserRecord | null> {
   const { env } = await getCloudflareContext({ async: true });
   const databaseUrl = getDatabaseUrl(env as Record<string, unknown>);
 
@@ -48,11 +48,20 @@ export async function getCurrentUser(): Promise<UserRecord | null> {
   return currentUser(request, sessionEnv);
 }
 
+export async function getCurrentUser(): Promise<UserRecord | null> {
+  try {
+    return await getCurrentUserStrict();
+  } catch (error) {
+    console.error("[session] optional current-user lookup failed:", error);
+    return null;
+  }
+}
+
 export async function requireCurrentUser(
   currentPath: string,
   user?: UserRecord | null,
 ): Promise<UserRecord> {
-  const resolvedUser = user === undefined ? await getCurrentUser() : user;
+  const resolvedUser = user === undefined ? await getCurrentUserStrict() : user;
   if (resolvedUser) return resolvedUser;
   redirect(`/login?next=${encodeURIComponent(safeNextPath(currentPath))}`);
 }
