@@ -96,7 +96,7 @@ function helpHubContent({ user, activePath }) {
 </section>
 
 <section class="operator-help-section" aria-labelledby="help-telegram">
-  <h2 id="help-telegram">Messaging</h2>
+  <h2 id="help-telegram">Telegram</h2>
   <p>Connect your Telegram bot, manage replies, and send messages to subscribers.</p>
   <ul class="operator-help-list">
     <li><a href="/dashboard/telegram/bots">Connect a Telegram bot</a><span>Add the connect code, then manage the connected bot.</span></li>
@@ -111,9 +111,9 @@ function helpHubContent({ user, activePath }) {
   <p>Account settings are separate from settings for one selected site.</p>
   <ul class="operator-help-list">
     <li><a href="/dashboard/settings/account">Account</a><span>Change your password and review active sessions.</span></li>
-    <li><a href="/dashboard/settings/board">This site</a><span>Manage visitor access, alerts, connected tools, and the web address for the selected site.</span></li>
+    <li><a href="/dashboard/settings/board">Site settings</a><span>Manage visitor access, alerts, connected tools, and the web address for the selected site.</span></li>
     <li><a href="/dashboard/settings/plan">Plan</a><span>Manage the subscription and review plan access.</span></li>
-    <li><a href="/dashboard/settings/connections">Connected apps</a><span>Review connected services.</span></li>
+    <li><a href="/dashboard/settings/connections">Integrations</a><span>Review connected services.</span></li>
     <li><a href="/dashboard/settings/data">Data</a><span>Export account data or manage account deletion.</span></li>
   </ul>
 </section>

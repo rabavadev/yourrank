@@ -706,7 +706,8 @@ async function handleRequest(request, env, ctx, meta) {
       if (path === "/dashboard/billing") return redirectKeepingSearch("/dashboard/settings/plan", url);
       if (path === "/dashboard/attribution") return redirectKeepingSearch("/dashboard/settings/connections", url);
       if (path === "/dashboard/security") return redirectKeepingSearch("/dashboard/settings/account", url);
-      if (path === "/dashboard/integrations" || path === "/dashboard/manage") return redirectKeepingSearch("/dashboard/settings", url);
+      if (path === "/dashboard/integrations") return redirectKeepingSearch("/dashboard/settings/connections", url);
+      if (path === "/dashboard/manage") return redirectKeepingSearch("/dashboard/settings", url);
       if (path === "/dashboard/audience/viewers" || path === "/dashboard/audience/activity") {
         const pageKey = path.endsWith("/viewers") ? "rewardsViewers" : "rewardsHistory";
         return renderDashboardPage(pageKey, "audience_render_failed");

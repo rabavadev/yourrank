@@ -23,8 +23,6 @@ const MENU_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M
 const CLOSE_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>';
 const COLLAPSE_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>';
 
-export type NavItem = NavLinkItem;
-
 export interface NavLinkItem {
   key: string;
   label: string;
@@ -33,6 +31,15 @@ export interface NavLinkItem {
   icon?: string | null;
   productKey?: string;
 }
+
+export interface NavGroupItem {
+  key: string;
+  label: string;
+  kind: "group";
+  children: NavLinkItem[];
+}
+
+export type NavItem = NavLinkItem | NavGroupItem;
 
 function esc(s: unknown): string {
   return String(s ?? "").replace(/[&<>"']/g, (ch) =>
@@ -50,12 +57,19 @@ export function navListHtml(
   active: string,
   label = "Dashboard"
 ): string {
-  const links = items.map((item) => {
+  const linkHtml = (item: NavLinkItem, nested = false) => {
     const isActive = item.key === active;
     const product = item.productKey ? ` data-product-link="${esc(item.productKey)}"` : "";
-    const cls = `lb-nav${isActive ? " is-on" : ""}`;
+    const cls = `lb-nav${nested ? " lb-nav-child" : ""}${isActive ? " is-on" : ""}`;
     return `<a class="${cls}" href="${esc(item.href)}" data-nav="${esc(item.key)}"` +
       `${product}${isActive ? ' aria-current="page"' : ""} title="${esc(item.label)}">${navIconHtml(item.icon)}${esc(item.label)}</a>`;
+  };
+  const links = items.map((item) => {
+    if ("kind" in item && item.kind === "group") {
+      const groupId = `lb-nav-group-${item.key}`;
+      return `<div class="lb-nav-group" role="group" aria-labelledby="${esc(groupId)}"><div class="lb-nav-group-label" id="${esc(groupId)}">${esc(item.label)}</div><div class="lb-nav-group-items">${item.children.map((child) => linkHtml(child, true)).join("")}</div></div>`;
+    }
+    return linkHtml(item as NavLinkItem);
   }).join("");
   return `<nav class="lb-side-group lb-side-nav" data-area="all" aria-label="${esc(label)}">${links}</nav>`;
 }

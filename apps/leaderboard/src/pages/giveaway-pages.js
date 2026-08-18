@@ -1,9 +1,9 @@
 // Markup for Giveaways & Community Events Hub (Chat Giveaways, Ticket Raffles, Flash Code Drops)
 
 const GIVEAWAY_TABS = [
-  ["chat", "Chat giveaways"],
-  ["raffles", "Ticket raffles"],
-  ["drops", "Code drops"],
+  ["chat", "Giveaways"],
+  ["raffles", "Raffles"],
+  ["drops", "Drops"],
   ["preds", "Predictions"],
 ];
 
@@ -14,7 +14,7 @@ export function renderGiveawaysHtml(activeTab = "chat") {
   return `
 <div class="v3-head">
   <div class="v3-head-col">
-  <h1>${GIVEAWAY_TABS.find(([tab]) => tab === active)?.[1] || "Chat giveaways"}</h1>
+  <h1>${GIVEAWAY_TABS.find(([tab]) => tab === active)?.[1] || "Giveaways"}</h1>
     <p class="v3-head-sub">Engage your viewers with live chat giveaways, loyalty point ticket raffles, and flash drop claim codes.</p>
   </div>
   <div class="d-flex gap-8 items-center flex-wrap">

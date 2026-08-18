@@ -269,7 +269,7 @@ export async function loadPlanUsage() {
       rows.push({ label: "Credit rules", product: "Credits", used: d.credits.rewardMappings.used, limit: d.credits.rewardMappings.limit });
       rows.push({ label: "Shop items", product: "Credits", used: d.credits.shopItems.used, limit: d.credits.shopItems.limit });
       rows.push({ label: "Pending prize orders", product: "Credits", used: d.credits.pendingRedemptions.used, limit: d.credits.pendingRedemptions.limit });
-      rows.push({ label: "Prize orders / 30 days", product: "Credits", used: d.credits.redemptionsPer30Days.used, limit: d.credits.redemptionsPer30Days.limit });
+      rows.push({ label: "Orders / 30 days", product: "Credits", used: d.credits.redemptionsPer30Days.used, limit: d.credits.redemptionsPer30Days.limit });
       rows.push({ label: "New viewers / 30 days", product: "Credits", used: d.credits.newViewersPer30Days.used, limit: d.credits.newViewersPer30Days.limit });
     }
     wrap.innerHTML = rows.map((r) => {
@@ -639,7 +639,7 @@ export function refreshDesignPreview() {
 // banner and share affordances can never contradict each other.
 export function renderBoardStatus() {
   const s = boardStatus();
-  const LABELS = { draft: "Draft", unpublished: "Not live", pending: "Verify email", published: "Live" };
+  const LABELS = { draft: "Unpublished changes", unpublished: "Unpublished changes", pending: "Published", published: "Published" };
   const TITLES = {
     draft: "Not visible to visitors",
     unpublished: "Not visible to visitors",
@@ -659,12 +659,12 @@ export function renderBoardStatus() {
   const banner = $("verifyBanner");
   if (banner) banner.hidden = s.emailVerified || Boolean(document.querySelector('section[data-page="home"]'));
   const publishLabel = $("lbPublishLabel");
-  if (publishLabel) publishLabel.textContent = s.published ? "Unpublish" : "Publish site";
+  if (publishLabel) publishLabel.textContent = s.published ? "Published" : "Unpublished changes";
   const publishAction = $("publishAction");
   if (publishAction) {
     publishAction.className = `lb-publish-action${s.published ? " lb-publish-action--secondary" : ""}`;
     publishAction.title = s.published ? "Take this site offline" : "Make this site available to visitors";
-    publishAction.setAttribute("aria-label", s.published ? "Unpublish site" : "Publish site");
+    publishAction.setAttribute("aria-label", s.published ? "Published" : "Unpublished changes");
   }
   const publishToggle = $("pubToggle");
   if (publishToggle && !state._dirty) publishToggle.checked = s.published;
@@ -711,7 +711,7 @@ export function wirePublishAction({ fetchImpl = fetch, confirmAction = showConfi
 
     button.disabled = true;
     button.setAttribute("aria-busy", "true");
-    if ($("lbPublishLabel")) $("lbPublishLabel").textContent = nextPublished ? "Publishing…" : "Unpublishing…";
+    if ($("lbPublishLabel")) $("lbPublishLabel").textContent = "Publishing…";
     try {
       const data = await requestPublicationChange({
         published: nextPublished,
@@ -734,9 +734,7 @@ export function wirePublishAction({ fetchImpl = fetch, confirmAction = showConfi
       renderBoardsPage();
       renderBoardStatus();
       renderOverviewSummary();
-      toast(nextPublished
-        ? (boardStatus().live ? "Published. Your site is now live." : "Published. Confirm your email to open it to visitors.")
-        : "Site unpublished. Your content and players are still saved.", "success");
+      toast(nextPublished ? "Published" : "Saved", "success");
     } catch (err) {
       logError(nextPublished ? "publish-site" : "unpublish-site", err);
       toast(err.message || (nextPublished ? "Could not publish this site." : "Could not unpublish this site."));
@@ -1403,11 +1401,7 @@ $("save")?.addEventListener("click", async () => {
     if (res.ok && d.ok) {
       justPublished = !!payload.published && !state.PUBLISHED;
       setState({ _dirty: false, PUBLISHED: !!payload.published });
-      status.textContent = justPublished
-        ? (boardStatus().live
-          ? "Saved and published. Your board is now live."
-          : "Saved. Your board goes live as soon as you confirm your email.")
-        : "Saved. Your page is updated.";
+      status.textContent = "Saved";
       if (d.updatedAt) setState({ SITE_UPDATED_AT: d.updatedAt });
       if (d.publishedAt) setState({ PUBLISHED_AT: d.publishedAt });
       const saveBtn = $("save"); if (saveBtn) saveBtn.textContent = "Save changes";
@@ -1427,7 +1421,7 @@ $("save")?.addEventListener("click", async () => {
   btn.disabled = false; btn.textContent = "Save changes";
   if (publishAction) { publishAction.disabled = false; publishAction.removeAttribute("aria-busy"); }
   const savedMsg = status.textContent;
-  if (justPublished || savedMsg === "Saved. Your page is updated.") {
+  if (justPublished || savedMsg === "Saved") {
     setTimeout(() => { if (status.textContent === savedMsg) status.textContent = ""; }, 6000);
   }
 });

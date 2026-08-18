@@ -45,7 +45,7 @@ describe("help pages", () => {
       "/dashboard/settings",
     ]) expect(signedIn).toContain(`href="${href}"`);
     expect(signedIn).toContain("Help &amp; feedback");
-    expect(signedIn).toContain('href="/help?area=help');
+    expect(signedIn).toContain('href="/help/support?area=help');
     expect(signedIn).not.toContain('data-nav="help"');
     expect(signedIn).not.toContain('data-nav="support"');
     expect(signedIn).not.toContain('data-nav="feedback"');
@@ -89,7 +89,7 @@ describe("help pages", () => {
   it("keeps Help accessible without adding it back to the primary rail", () => {
     const html = render("helpSupport", user);
     expect(html).toContain("Help &amp; feedback");
-    expect(html).toContain('href="/help?area=help');
+    expect(html).toContain('href="/help/support?area=help');
     expect(html).not.toContain('data-nav="help"');
     expect(html).toContain('data-nav="settings"');
     expect(html).toContain('data-nav="redemptions"');

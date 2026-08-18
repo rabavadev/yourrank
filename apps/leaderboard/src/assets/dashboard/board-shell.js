@@ -77,7 +77,7 @@ export async function loadBoardShell({ request: requestFn = boardApi } = {}) {
   const pendingVerification = Boolean(board.published) && user.emailVerified === false;
   const status = $("lbTopbarStatus");
   if (status) {
-    status.textContent = live ? "Public" : pendingVerification ? "Email verification needed" : "Private";
+    status.textContent = live || pendingVerification ? "Published" : "Unpublished changes";
     status.className = `lb-status ${live ? "lb-status--live" : pendingVerification ? "lb-status--pending" : "lb-status--draft"}`;
   }
   const planBadge = $("planBadge");
@@ -86,12 +86,12 @@ export async function loadBoardShell({ request: requestFn = boardApi } = {}) {
   if (publicLink) {
     if (live && board.slug) {
       publicLink.href = `/${board.slug}`;
-      publicLink.textContent = "Open public page ↗";
+      publicLink.textContent = "View site ↗";
       publicLink.target = "_blank";
       publicLink.rel = "noopener noreferrer";
     } else {
       publicLink.href = pendingVerification ? "/verify-email" : `/dashboard/leaderboard/share?board=${encodeURIComponent(current || "")}`;
-      publicLink.textContent = pendingVerification ? "Verify email to publish" : "Publish your site";
+      publicLink.textContent = "View site ↗";
       publicLink.removeAttribute("target");
       publicLink.removeAttribute("rel");
     }

@@ -214,7 +214,7 @@
             <div class="field">
               <label class="mb-4 d-block">Quick topic tags</label>
               <div class="yr-feedback-tags">
-                <button type="button" class="yr-tag-prompt" data-insert="[Mini-games] ">⚡ Mini-games</button>
+                <button type="button" class="yr-tag-prompt" data-insert="[Games] ">⚡ Games</button>
                 <button type="button" class="yr-tag-prompt" data-insert="[Design] ">🎨 Custom Styling</button>
                 <button type="button" class="yr-tag-prompt" data-insert="[Telegram] ">🤖 Telegram Bot</button>
                 <button type="button" class="yr-tag-prompt" data-insert="[Rewards] ">🎁 Loyalty &amp; Shop</button>

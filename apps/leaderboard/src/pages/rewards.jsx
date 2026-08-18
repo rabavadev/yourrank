@@ -13,7 +13,7 @@ import { DashboardShell } from "./dashboard-shell.jsx";
 
 const PAGES = { channel: channelPage, rules: rulesPage, shop: shopPage, viewers: viewersPage, redemptions: redemptionsPage, history: historyPage };
 
-const CRUMB_LABELS = { channel: "Kick connection", rules: "How viewers earn points", shop: "Shop", viewers: "Viewers", redemptions: "Prize orders", history: "Activity" };
+const CRUMB_LABELS = { channel: "Kick connection", rules: "Points", shop: "Shop", viewers: "Viewers", redemptions: "Orders", history: "Activity" };
 
 function crumbsFor(tab) {
   const trail = [{ label: "Rewards", href: "/dashboard/rewards/redemptions" }];
@@ -21,10 +21,9 @@ function crumbsFor(tab) {
 }
 
 const REWARDS_TABS = [
-  { key: "redemptions", label: "Prize orders", href: "/dashboard/rewards/redemptions" },
+  { key: "redemptions", label: "Orders", href: "/dashboard/rewards/redemptions" },
   { key: "shop", label: "Shop", href: "/dashboard/rewards/shop" },
-  { key: "rules", label: "How viewers earn points", href: "/dashboard/rewards/rules" },
-  { key: "channel", label: "Kick connection", href: "/dashboard/rewards/channel" },
+  { key: "rules", label: "Points", href: "/dashboard/rewards/rules" },
   { key: "viewers", label: "Viewers", href: "/dashboard/audience/viewers" },
   { key: "history", label: "Activity", href: "/dashboard/audience/activity" },
 ];
@@ -69,7 +68,7 @@ export const rewardsChannelConfig = { ...rewardsConfigBase, title: "Connect Kick
 export const rewardsRulesConfig = { ...rewardsConfigBase, title: "Credit rules · Credits · YourRank", canonical: "https://yourrank.site/dashboard/rewards/rules" };
 export const rewardsShopConfig = { ...rewardsConfigBase, title: "Shop · Credits · YourRank", canonical: "https://yourrank.site/dashboard/rewards/shop" };
 export const rewardsViewersConfig = { ...rewardsConfigBase, title: "Viewers · Credits · YourRank", canonical: "https://yourrank.site/dashboard/audience/viewers" };
-export const rewardsRedemptionsConfig = { ...rewardsConfigBase, title: "Prize orders · Credits · YourRank", canonical: "https://yourrank.site/dashboard/rewards/redemptions" };
+export const rewardsRedemptionsConfig = { ...rewardsConfigBase, title: "Orders · Credits · YourRank", canonical: "https://yourrank.site/dashboard/rewards/redemptions" };
 export const rewardsHistoryConfig = { ...rewardsConfigBase, title: "Credit activity · Credits · YourRank", canonical: "https://yourrank.site/dashboard/audience/activity" };
 
 export const rewardsChannelPage = { config: rewardsChannelConfig, Component: RewardsChannelPage };

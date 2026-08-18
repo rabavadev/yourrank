@@ -8,8 +8,8 @@ import { DashboardShell } from "./dashboard-shell.jsx";
 const SETTINGS_TABS = [
   ["account", "Account", '<path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>'],
   ["team", "Team", '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>'],
-  ["plan", "Plan", '<rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/>'],
-  ["connections", "Connected apps", '<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>'],
+  ["plan", "Billing", '<rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/>'],
+  ["connections", "Integrations", '<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>'],
   ["data", "Data", '<path d="M4 6h16M4 12h16M4 18h16"/>'],
 ];
 
@@ -24,7 +24,7 @@ export function UnifiedSettingsPage({ activePath, user, tab = "account" } = {}) 
   siteUrl.pathname = "/dashboard/settings/board";
   const siteSettingsHref = siteUrl.pathname + siteUrl.search;
 
-  return <DashboardShell activeNav="account" boardContext="none" crumbs={[{ label: "Settings", href: "/dashboard/settings/account" }, { label: activeLabel }]} footer="account" title="Settings" user={user}>
+  return <DashboardShell activeNav={active === "connections" ? "integrations" : "account"} boardContext="none" crumbs={[{ label: "Settings", href: "/dashboard/settings/account" }, { label: activeLabel }]} footer="account" title="Settings" user={user}>
     <div class="account-body account-settings" id="acc-app" data-acc-tab="settings" data-settings-active={active}>
       <div class="account-settings-head">
         <h1>{activeLabel}</h1>
@@ -43,7 +43,7 @@ export function UnifiedSettingsPage({ activePath, user, tab = "account" } = {}) 
           {settingsPanel("account", settingsWidgets.account)}
           {settingsPanel("team", settingsWidgets.team)}
           {settingsPanel("plan", settingsWidgets.plan)}
-          {settingsPanel("connections", `${settingsWidgets.postbacks}<div class="lb-widget lb-widget--full"><h2>Connected accounts</h2><p class="card-sub">Streamer identities and connected services.</p><div id="connectedAccounts"><p class="hint">Loading…</p></div></div><div class="lb-widget lb-widget--full"><h2>Site connections</h2><p class="card-sub">Kick and Credits settings belong to the selected site.</p><a class="btn btn--accent" href="/dashboard/rewards/channel">Open site connections</a></div>`)}
+          {settingsPanel("connections", `${settingsWidgets.postbacks}<div class="lb-widget lb-widget--full"><h2>Connected accounts</h2><p class="card-sub">Streamer identities and connected services.</p><div id="connectedAccounts"><p class="hint">Loading…</p></div></div><div class="lb-widget lb-widget--full"><h2>Site connections</h2><p class="card-sub">Kick and Credits settings belong to the selected site.</p><a class="btn btn--accent" href="/dashboard/rewards/channel">Open Kick connection</a></div>`)}
           {settingsPanel("data", `${settingsWidgets.data}<div class="lb-widget lb-widget--full lb-widget--danger"><h2>Selected site data</h2><p class="card-sub">These actions affect one selected site, not your whole account. Open the site tools before making a destructive change.</p><div class="d-flex gap-8 flex-wrap"><a class="btn btn--ghost" href="/dashboard/leaderboard/history">Reset or archive a site</a><a class="btn btn--ghost" href="/dashboard/leaderboard/setup">Delete a site</a></div></div>`)}
         </div>
         <aside class="account-settings-sidebar" aria-label="Related settings">
@@ -57,7 +57,7 @@ export function UnifiedSettingsPage({ activePath, user, tab = "account" } = {}) 
           <div class="account-scope-helper">
             <strong>Need help?</strong>
             <p>Help and feedback are kept in one place so you do not have to hunt through settings.</p>
-            <a href="/help?area=account">Open Help &amp; feedback</a>
+            <a href="/help/support?area=account">Open Help &amp; feedback</a>
           </div>
         </aside>
       </div>

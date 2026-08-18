@@ -109,6 +109,22 @@ export function profileMenuHtml(opts: ShellNavOpts & { mobileTabs?: string; stan
   const profileClass = opts.standalone ? "gm-profile gm-profile--standalone" : "gm-profile";
   const identityAttr = opts.dynamicIdentity ? " data-profile-name" : "";
   const profileNav = opts.mobileTabs ? `<div class="gm-profile-nav">${opts.mobileTabs}</div>` : "";
+  const menuIcon = '<span class="gm-profile-ic" aria-hidden="true">•</span>';
+  if (opts.activePath !== "__legacy_profile_menu__") return `<details class="${profileClass}">
+        <summary class="gm-profile-trigger">
+          <span class="gm-who-avatar" aria-hidden="true">${esc(initial)}</span>
+          <span class="gm-who-id"><span class="gm-who-name"${identityAttr}>${name}</span>${badge}</span>
+          <span class="gm-profile-chevron" aria-hidden="true">⌄</span>
+        </summary>
+        <div class="gm-profile-menu">
+          ${profileNav}
+          <div class="gm-profile-id"><span class="gm-profile-id-name"${identityAttr}>${name}</span>${badge}</div>
+          <a class="gm-profile-link" href="${accountHref}">${menuIcon}Account settings</a>
+          <button class="gm-profile-link" id="yrThemeToggle" type="button">${menuIcon}Appearance</button>
+          <a class="gm-profile-link" href="/help/support?${helpQuery}" data-open-support>${menuIcon}Help &amp; feedback</a>
+          <form method="POST" action="${esc(opts.logoutAction || "/logout")}" class="gm-logout-form"><button class="gm-logout" type="submit">${menuIcon}Sign out</button></form>
+        </div>
+      </details>`;
 
   return `<details class="${profileClass}">
         <summary class="gm-profile-trigger">
@@ -119,7 +135,7 @@ export function profileMenuHtml(opts: ShellNavOpts & { mobileTabs?: string; stan
         <div class="gm-profile-menu">
           ${profileNav}
           <div class="gm-profile-id"><span class="gm-profile-id-name"${identityAttr}>${name}</span>${badge}</div>
-          <button class="gm-profile-link" id="yrThemeToggle" type="button"><span class="gm-profile-ic"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg></span>Appearance</button>
+          <a class="gm-profile-link" href="${accountHref}"><span class="gm-profile-ic"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/></svg></span>Account settings</a>
           <a class="gm-profile-link" href="${accountHref}"><span class="gm-profile-ic"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9c-.18-.7-.43-1.36-.79-1.95a2 2 0 0 1 .63-2.75l.06-.06a2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33h.09A1.65 1.65 0 0 0 9 4.6V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09c0 .66.25 1.28.67 1.75h.09a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V15z"/></svg></span>Account</a>
           <a class="gm-profile-link" href="/help?${helpQuery}"><span class="gm-profile-ic"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></span>Help &amp; feedback</a>
           <form method="POST" action="${esc(opts.logoutAction || "/logout")}" class="gm-logout-form"><button class="gm-logout" type="submit"><span class="gm-profile-ic"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg></span>Sign out</button></form>

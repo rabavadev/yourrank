@@ -201,5 +201,5 @@ export function renderOverviewSummary() {
 
     if (top.length) $("ov_topEmpty").hidden = true;
     else renderEmpty($("ov_topEmpty"), { icon: "users", title: "No players yet", body: "Add the first player to start your leaderboard.", actions: [{ label: "Add players", href: "/dashboard/leaderboard/players" }] });
-    $("ovPublishedStatus").textContent = status.live ? "Public" : status.published ? "Email verification needed" : "Private draft";
+  $("ovPublishedStatus").textContent = status.published ? "Published" : "Unpublished changes";
   }
