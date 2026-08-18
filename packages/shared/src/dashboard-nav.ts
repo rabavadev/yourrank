@@ -7,23 +7,19 @@ const NAV_ICONS = {
   share: '<circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.6 10.5 6.8-4M8.6 13.5l6.8 4"/>',
   giveaways: '<path d="M20 12v10H4V12"/><path d="M2 7h20v5H2z"/><path d="M12 22V7"/><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/>',
   shop: '<path d="M3 9l2-5h14l2 5"/><path d="M5 13v7h14v-7M9 20v-5h6v5"/><path d="M3 9a3 3 0 0 0 6 0 3 3 0 0 0 6 0 3 3 0 0 0 6 0"/>',
-  boards: '<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>',
   viewers: '<path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12z"/><circle cx="12" cy="12" r="2.5"/>',
-  help: '<circle cx="12" cy="12" r="10"/><path d="M9.1 9a3 3 0 1 1 5.8 1c0 2-3 2-3 4M12 18h.01"/>',
 };
 
 const GEAR_ICON = '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>';
 
 const DASHBOARD_NAV: NavItem[] = [
   { key: "home", label: "Home", href: "/dashboard", icon: '<rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/>', productKey: "sites" },
-  { key: "board", label: "My leaderboard", href: "/dashboard/leaderboard/players", icon: NAV_ICONS.players },
+  { key: "board", label: "Leaderboard", href: "/dashboard/leaderboard/players", icon: NAV_ICONS.players },
   { key: "giveaways", label: "Giveaways", href: "/dashboard/giveaways/chat", icon: NAV_ICONS.giveaways },
   { key: "redemptions", label: "Rewards", href: "/dashboard/rewards/redemptions", icon: NAV_ICONS.shop, productKey: "credits" },
-  { key: "telegram", label: "Telegram", href: "/dashboard/telegram", icon: NAV_ICONS.share, productKey: "telegram" },
+  { key: "telegram", label: "Messaging", href: "/dashboard/telegram", icon: NAV_ICONS.share, productKey: "telegram" },
   { key: "performance", label: "Analytics", href: "/dashboard/analytics/activity", icon: NAV_ICONS.viewers },
-  { key: "boards", label: "Sites", href: "/dashboard/leaderboards", icon: NAV_ICONS.boards },
   { key: "settings", label: "Settings", href: "/dashboard/settings", icon: GEAR_ICON },
-  { key: "help", label: "Help", href: "/help", icon: NAV_ICONS.help },
 ];
 
 export function dashboardNavItems(): NavItem[] {
