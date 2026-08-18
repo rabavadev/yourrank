@@ -95,7 +95,7 @@ function OverviewSection({ active } = {}) {
 <div id="ovActiveBento"><div class="ov-live" aria-label="Site performance">
 <div class="kpi-row">
   <div class="kpi-card">
-    <span class="kpi-lbl" id="ovLblPlayers">Players &amp; Racers</span>
+    <span class="kpi-lbl" id="ovLblPlayers">Players</span>
     <div class="kpi-value-row">
       <span class="kpi-val" id="ovPlayersCount" aria-labelledby="ovLblPlayers"><span class="skeleton v3-skel-kpi" aria-hidden="true"></span></span>
       <a class="kpi-action" href="/dashboard/editor/players">Manage →</a>
@@ -169,7 +169,7 @@ function EditorSection({ active } = {}) {
 <h1 class="sr-only">Site</h1>
 <nav class="editor-steps v3-tabs" id="editorTabs" aria-label="Editor steps">
   <a class="editor-step v3-tab is-active" href="/dashboard/editor/setup" data-egroup="setup">Site details</a>
-  <a class="editor-step v3-tab" href="/dashboard/editor/players" data-egroup="players">Racers &amp; scores</a>
+  <a class="editor-step v3-tab" href="/dashboard/editor/players" data-egroup="players">Players &amp; scores</a>
   <a class="editor-step v3-tab" href="/dashboard/editor/design" data-egroup="design">Theme &amp; styling</a>
   <a class="editor-step v3-tab" href="/dashboard/editor/share" data-egroup="share">Overlay &amp; share</a>
   <a class="editor-step v3-tab" href="/dashboard/editor/history" data-egroup="history">Past winners</a>
@@ -191,7 +191,7 @@ function EditorSection({ active } = {}) {
 <p class="hint mt-14">Use the <b>Publish</b> button at the top right to make your site live.</p></div>
 <div class="v3-players" data-egroup="players">
 <div class="v3-head">
-<h1>Racers &amp; scores</h1>
+<h1>Players &amp; scores</h1>
 <p class="v3-head-sub v3-head-sub--mono"><span id="pCount">0</span> / <span id="pLimit">0</span> racers on your leaderboard <span id="limitHint" class="v3-players-limit"></span> <a class="v3-players-upgrade" id="playerLimitUpgrade" href="/dashboard/settings" hidden>Upgrade</a></p>
 </div>
 <div class="v3-players-bar">
