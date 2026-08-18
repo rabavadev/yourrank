@@ -502,6 +502,7 @@ body:has(.v3-dash[data-auth-workspace]) .lb-shell,
 .v3-dash[data-auth-workspace] .lb-live-btn { width: 100%; min-height: 34px; border-color: rgba(255, 255, 255, 0.24); background: var(--v4-navy-raised); color: #ffffff; font-size: 12px; }
 .v3-dash[data-auth-workspace] .lb-live-btn:hover { border-color: rgba(255, 255, 255, 0.4); background: var(--v4-navy-raised); color: #ffffff; }
 .v3-dash[data-auth-workspace] .lb-usage { color: var(--v4-navy-soft); }
+.v3-dash[data-auth-workspace] .lb-usage-lbl { color: var(--v4-cobalt-on-chrome); }
 
 .v3-dash[data-auth-workspace] .lb-side-profile { min-width: 0; padding-top: 8px; border-top: 1px solid var(--v4-navy-line); }
 .v3-dash[data-auth-workspace] .lb-side-profile .gm-profile { width: 100%; --gm-panel: #ffffff; --gm-ink: var(--v4-ink); --gm-ink-soft: var(--v4-ink-mute); --gm-line: var(--v4-surface-soft); --gm-line-2: var(--v4-line); --gm-accent: var(--v4-cobalt); }
