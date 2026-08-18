@@ -1,13 +1,14 @@
 import { describe, it, expect } from "bun:test";
 import { readFileSync } from "node:fs";
 import { handleGiveawayChatroom } from "../handlers/giveaway.js";
-import { GiveawaysPage } from "../pages/giveaways.jsx";
+import { GiveawaysPage, giveawaysConfig } from "../pages/giveaways.jsx";
 import { giveawaysHtml, renderGiveawaysHtml } from "../pages/giveaway-pages.js";
 
 const gamesSource = readFileSync(new URL("../assets/dashboard/games.js", import.meta.url), "utf8");
 const siteSource = readFileSync(new URL("../assets/dashboard/site.js", import.meta.url), "utf8");
 const dashboardSource = readFileSync(new URL("../assets/dashboard.js", import.meta.url), "utf8");
 const previewTabsSource = readFileSync(new URL("../assets/dashboard/preview-tabs.js", import.meta.url), "utf8");
+const giveawayUxSource = readFileSync(new URL("../assets/giveaways-ux.js", import.meta.url), "utf8");
 
 describe("Giveaway Chatroom Handler", () => {
   const allowRateLimit = async () => ({ ok: true, remaining: 59, limit: 60, retryAfter: 0 });
@@ -69,6 +70,15 @@ describe("Giveaway Chatroom Handler", () => {
     expect(html).toContain("gw-setup-form");
     expect(html).toContain("gw-chat-feed");
     expect(html).toContain("gw-roller");
+  });
+
+  it("loads the creator-facing chat giveaway enhancement", () => {
+    expect(giveawaysConfig.title).toBe("Giveaways · YourRank");
+    expect(giveawaysConfig.scripts.join("\n")).toContain("/assets/giveaways-ux.js");
+    expect(giveawayUxSource).toContain("Advanced entry rules");
+    expect(giveawayUxSource).toContain("Start collecting entries");
+    expect(giveawayUxSource).toContain("Draw winner");
+    expect(giveawayUxSource).toContain("The defaults work for a normal keyword giveaway.");
   });
 
   it("renders each giveaway tab as a deep-linkable active server view", () => {
