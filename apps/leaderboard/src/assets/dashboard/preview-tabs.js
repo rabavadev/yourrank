@@ -10,6 +10,10 @@ function refreshPreview() {
   return import("./site.js").then(({ refreshDesignPreview }) => refreshDesignPreview());
 }
 
+function previewIsCollapsed() {
+  return document.querySelector(".design-grid")?.dataset.previewCollapsed === "true";
+}
+
 function setupPreviewTabs() {
   const tablist = document.querySelector('.preview-tabs[role="tablist"]');
   if (!tablist || tablist._previewTabsWired) return;
@@ -25,7 +29,7 @@ function setupPreviewTabs() {
       tab.setAttribute("aria-selected", String(active));
       tab.tabIndex = active ? 0 : -1;
     });
-    refreshPreview();
+    if (!previewIsCollapsed()) refreshPreview();
   };
 
   tablist.addEventListener("click", (event) => {
@@ -54,8 +58,8 @@ function setupPreviewTabs() {
 }
 
 function bootEditorUi() {
-  setupPreviewTabs();
   setupEditorWorkspace({ refreshPreview });
+  setupPreviewTabs();
 }
 
 if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", bootEditorUi, { once: true });
