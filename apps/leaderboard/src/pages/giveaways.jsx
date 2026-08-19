@@ -5,11 +5,11 @@ import { DashboardShell } from "./dashboard-shell.jsx";
 import { renderGiveawaysHtml } from "./giveaway-pages.js";
 
 export function GiveawaysPage({ user, tab = "chat" } = {}) {
-  const labels = { chat: "Giveaways", raffles: "Raffles", drops: "Drops", preds: "Predictions" };
+  const labels = { chat: "Giveaways", raffles: "Raffles", drops: "Drops", preds: "Predictions", tournaments: "Tournaments" };
   const crumbs = [{ label: "Engage", href: "/dashboard/giveaways" }, { label: labels[tab] || labels.chat }];
   return (
     <DashboardShell
-      activeNav={tab === "chat" ? "giveaways" : tab === "preds" ? "predictions" : tab}
+      activeNav={tab === "chat" || tab === "tournaments" ? "giveaways" : tab === "preds" ? "predictions" : tab}
       activePath={`/dashboard/giveaways/${tab}`}
       boardContext="selector"
       crumbs={crumbs}
@@ -36,6 +36,7 @@ export const giveawaysConfig = {
   ],
   scripts: [
     '<script src="/assets/giveaways.js?v=1" type="module"></script>',
+    '<script src="/assets/tournaments.js?v=1" type="module"></script>',
     '<script src="/assets/shell-nav.js?v=2" defer></script>',
   ],
   nav: false,

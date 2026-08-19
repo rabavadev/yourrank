@@ -107,6 +107,15 @@ import {
   handleCreateTournament,
   handleUpdateMatchScore,
   handleGetBracket,
+  handleOpenTournamentSignups,
+  handleLockTournamentSignups,
+  handleUpdateTournamentSettings,
+  handleListTournamentEntries,
+  handleAddTournamentEntry,
+  handleRemoveTournamentEntry,
+  handleBlockTournamentEntry,
+  handleRestoreTournamentEntry,
+  handleRandomPickTournamentEntries,
 } from "./handlers/tournaments.js";
 import {
   handleExportRaffleWinnersCsv,
@@ -310,6 +319,15 @@ export const ROUTES = [
   { path: "/api/tournaments", method: "POST", handler: withHandler(handleCreateTournament) },
   { path: "/api/tournaments/:id/score", method: "POST", handler: withHandler(handleUpdateMatchScore) },
   { path: "/api/tournaments/:id/bracket", method: "GET", handler: withHandler(handleGetBracket) },
+  { path: "/api/tournaments/:id/signups/open", method: "POST", handler: withHandler(handleOpenTournamentSignups) },
+  { path: "/api/tournaments/:id/signups/lock", method: "POST", handler: withHandler(handleLockTournamentSignups) },
+  { path: "/api/tournaments/:id/settings", method: "POST", handler: withHandler(handleUpdateTournamentSettings) },
+  { path: "/api/tournaments/:id/entries", method: "GET", handler: withHandler(handleListTournamentEntries) },
+  { path: "/api/tournaments/:id/entries", method: "POST", handler: withHandler(handleAddTournamentEntry) },
+  { path: "/api/tournaments/:id/entries/:entryId/remove", method: "POST", handler: withHandler(handleRemoveTournamentEntry) },
+  { path: "/api/tournaments/:id/entries/:entryId/block", method: "POST", handler: withHandler(handleBlockTournamentEntry) },
+  { path: "/api/tournaments/:id/entries/:entryId/restore", method: "POST", handler: withHandler(handleRestoreTournamentEntry) },
+  { path: "/api/tournaments/:id/entries/random-pick", method: "POST", handler: withHandler(handleRandomPickTournamentEntries) },
 
   // One-Click CSV Data Exports
   { path: "/api/export/raffle-winners.csv", method: "GET", handler: withHandler(handleExportRaffleWinnersCsv) },

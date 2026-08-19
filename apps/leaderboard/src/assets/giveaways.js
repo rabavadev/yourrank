@@ -1,13 +1,11 @@
 import { loadBoardShell, sitePath } from "./dashboard/board-shell.js";
 import { inlineStateHtml } from "./dashboard/states.js";
+import { computeTrustScore, connectKickChat } from "./chat-entry.js";
 
 // Client-side script for Live Chat Keyword Listener & Giveaways
 // Connects to Kick's Pusher WebSocket network in real-time
 
 (function () {
-  const PUSHER_APP_KEY = "eb1d5f283081a78b932c";
-  const PUSHER_WS_URL = `wss://ws-us2.pusher.com/app/${PUSHER_APP_KEY}?protocol=7&client=js&version=8.4.0-rc2&flash=false`;
-
   // State
   let ws = null;
   let isListening = false;
@@ -165,19 +163,9 @@ import { inlineStateHtml } from "./dashboard/states.js";
       try { ws.close(); } catch {}
     }
 
-    ws = new WebSocket(PUSHER_WS_URL);
-
-    ws.onopen = () => {
-      // Subscribe to Kick chatroom channel
-      const subscribeMsg = {
-        event: "pusher:subscribe",
-        data: {
-          auth: "",
-          channel: `chatrooms.${chatroomId}.v2`,
-        },
-      };
-      ws.send(JSON.stringify(subscribeMsg));
-
+    ws = connectKickChat({
+      chatroomId,
+      onOpen: () => {
       isListening = true;
       setStatus("live", "Live & Listening");
       setListeningButtonState(true);
@@ -188,39 +176,19 @@ import { inlineStateHtml } from "./dashboard/states.js";
       timerInterval = setInterval(updateTimer, 1000);
 
       appendChatSystemMessage(`Connected to Kick chatroom (${channelName}). Listening for "${targetKeyword}" with Anti-Alt Shield…`);
-    };
-
-    ws.onmessage = (event) => {
-      try {
-        const msg = JSON.parse(event.data);
-
-        // Handle Pusher heartbeat ping
-        if (msg.event === "pusher:ping") {
-          ws.send(JSON.stringify({ event: "pusher:pong", data: {} }));
-          return;
-        }
-
-        // Handle Chat message event
-        if (msg.event === "App\\Events\\ChatMessageEvent") {
-          const chatData = typeof msg.data === "string" ? JSON.parse(msg.data) : msg.data;
-          handleIncomingChatMessage(chatData);
-        }
-      } catch (err) {
-        console.warn("[giveaway] websocket message parse error:", err);
-      }
-    };
-
-    ws.onerror = (err) => {
-      console.error("[giveaway] websocket error:", err);
-      setStatus("error", "WS Error");
-    };
-
-    ws.onclose = () => {
+      },
+      onMessage: handleIncomingChatMessage,
+      onError: (error) => {
+        console.error("[giveaway] websocket error:", error);
+        setStatus("error", "WS Error");
+      },
+      onClose: () => {
       if (isListening) {
         stopListening();
         appendChatSystemMessage("Disconnected from Kick chatroom.");
       }
-    };
+      },
+    });
   }
 
   function stopListening() {
@@ -243,51 +211,6 @@ import { inlineStateHtml } from "./dashboard/states.js";
       button.classList.toggle("btn--accent", !listening);
       button.classList.toggle("btn--danger", listening);
     }
-  }
-
-  // Smart Anti-Alt & Sybil Scoring Heuristic Engine
-  function computeTrustScore(username, content, timestamp) {
-    let score = 75; // baseline healthy score
-    let sybilFlag = false;
-
-    // 1. Burst Cluster Detection (Alt farm bot flood check)
-    // If >= 3 entrants arrive within 600ms of each other
-    const recentCluster = recentEntryTimestamps.filter((t) => (timestamp - t) < 600).length;
-    if (recentCluster >= 3) {
-      score -= 35;
-      sybilFlag = true;
-    } else if (recentCluster >= 1) {
-      score -= 10;
-    } else {
-      score += 10;
-    }
-
-    // 2. Chat history presence in this stream
-    const priorChats = chatHistory.get(username.toLowerCase()) || 0;
-    if (priorChats >= 3) {
-      score += 15; // frequent active viewer
-    } else if (priorChats >= 1) {
-      score += 8;
-    } else {
-      score -= 10; // only arrived for keyword
-    }
-
-    // 3. Username entropy / auto-generated bot suffix patterns
-    if (/\d{4,}$/.test(username)) {
-      score -= 15;
-    }
-    if (/^(user|kick|guest|alt|bot|test)\d+/i.test(username)) {
-      score -= 25;
-      sybilFlag = true;
-    }
-
-    // 4. Past winners list check
-    if (pastWinners.has(username.toLowerCase())) {
-      score -= 35;
-    }
-
-    const finalScore = Math.max(10, Math.min(99, score));
-    return { trustScore: finalScore, sybilFlag };
   }
 
   function handleIncomingChatMessage(chatData) {
@@ -346,7 +269,11 @@ import { inlineStateHtml } from "./dashboard/states.js";
       recentEntryTimestamps.push(now);
       if (recentEntryTimestamps.length > 50) recentEntryTimestamps.shift();
 
-      const { trustScore, sybilFlag } = computeTrustScore(username, content, now);
+      const { trustScore, sybilFlag } = computeTrustScore(username, content, now, {
+        chatHistory,
+        recentEntryTimestamps,
+        pastWinners,
+      });
 
       const badges = sender.identity?.badges || sender.badges || [];
       const isSub = badges.some((b) => b.type === "subscriber" || b.type === "founder" || b.type === "sub_gifter");
@@ -982,6 +909,12 @@ import { inlineStateHtml } from "./dashboard/states.js";
     // The server renders the active tab and its pane. Tab links own navigation
     // so deep links and browser history remain the source of truth.
     const activeTab = document.querySelector(".gw-tab-btn.is-active")?.dataset.tab || "chat";
+    const tabs = document.querySelector(".gw-nav-tabs");
+    const activeTabLink = tabs?.querySelector(".gw-tab-btn.is-active");
+    if (tabs && activeTabLink) {
+      const targetLeft = activeTabLink.offsetLeft - (tabs.clientWidth - activeTabLink.offsetWidth) / 2;
+      tabs.scrollTo({ left: Math.max(0, targetLeft), behavior: "auto" });
+    }
     if (activeTab === "raffles") loadRaffles();
     if (activeTab === "drops") loadCodeDrops();
     if (activeTab === "preds") loadPredictions();

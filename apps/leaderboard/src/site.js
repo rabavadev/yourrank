@@ -586,12 +586,14 @@ export async function getUserSite(env, uid, plan) {
 export async function getUserBoardsList(env, uid) {
   const rows = await query(
     `SELECT s.id, s.slug, s.name, s.casino, s.code, s.published, s.is_draft, s.board_order, s.theme_json,
+            s.kick_channel_external_id, s.kick_channel_name,
             'owner' AS user_role, NULL AS owner_name,
             (SELECT COUNT(*) FROM players p WHERE p.site_id = s.id) AS player_count
        FROM sites s
       WHERE s.user_id=$1
      UNION ALL
      SELECT s.id, s.slug, s.name, s.casino, s.code, s.published, s.is_draft, s.board_order, s.theme_json,
+            s.kick_channel_external_id, s.kick_channel_name,
             sm.role AS user_role, u.display_name AS owner_name,
             (SELECT COUNT(*) FROM players p WHERE p.site_id = s.id) AS player_count
        FROM site_members sm
@@ -613,6 +615,8 @@ export async function getUserBoardsList(env, uid) {
       isDraft: !!b.is_draft,
       players: Number(b.player_count) || 0,
       template: theme.template,
+      kickChannelExternalId: b.kick_channel_external_id || null,
+      kickChannelName: b.kick_channel_name || null,
       boardOrder: b.board_order || 0,
       userRole: b.user_role || "owner",
       ownerName: b.owner_name || null,

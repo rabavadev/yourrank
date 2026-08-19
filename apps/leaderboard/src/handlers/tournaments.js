@@ -17,6 +17,44 @@ import {
 import { logAudit as defaultLogAudit } from "@yourrank/shared/audit";
 
 const TOURNAMENT_READ_RATE_LIMIT = 60;
+const ENTRY_SOURCES = new Set(["chat", "page", "manual", "leaderboard"]);
+
+function tournamentIdFromRequest(request) {
+  return new URL(request.url).pathname.split("/")[3] || "";
+}
+
+function clampTrustScore(value) {
+  if (value === null || value === undefined || value === "") return null;
+  const score = Number(value);
+  return Number.isFinite(score) ? Math.max(0, Math.min(100, Math.round(score))) : null;
+}
+
+async function getTournamentForMutation(request, user, one, requireSiteCapabilityImpl) {
+  const tournamentId = tournamentIdFromRequest(request);
+  if (!tournamentId) return { error: bad("tournamentId is required.") };
+
+  const tournament = await one(
+    `SELECT t.*, s.user_id AS site_user_id
+       FROM tournaments t
+       JOIN sites s ON s.id=t.site_id
+      WHERE t.id=$1`,
+    [tournamentId]
+  );
+  if (!tournament) return { error: bad("Tournament not found.", 404) };
+
+  const authorization = await requireSiteCapabilityImpl(
+    user,
+    { id: tournament.site_id, user_id: tournament.site_user_id },
+    "canRoleManageBoard"
+  );
+  if (authorization.res) return { error: authorization.res };
+  return { tournament };
+}
+
+function entryStateFor(tournament, eligibleCount) {
+  if (tournament.entry_cap && eligibleCount >= tournament.entry_cap) return "waitlist";
+  return "pending";
+}
 
 /**
  * GET /api/tournaments — List tournaments for site
@@ -39,7 +77,9 @@ export async function handleGetTournaments(request, env, deps = {}) {
   if (!site) return bad("Site not found.", 404);
 
   const tournaments = await query(
-    `SELECT id, title, game_name, bracket_size, status, winner_name, created_at
+    `SELECT id, title, game_name, bracket_size, status, winner_name, created_at,
+            signup_state, entry_cap, format, anti_alt_enabled, require_login,
+            min_credits, entry_fee, entry_keyword
        FROM tournaments
       WHERE site_id=$1
       ORDER BY created_at DESC LIMIT 20`,
@@ -59,6 +99,7 @@ export async function handleCreateTournament(request, env, deps = {}) {
     getBoardById = defaultGetBoardById,
     withTransaction = defaultWithTransaction,
     logAudit = defaultLogAudit,
+    requireSiteCapabilityImpl = requireSiteCapability,
   } = deps;
 
   const { user, res } = await requireUser(request, env);
@@ -68,10 +109,21 @@ export async function handleCreateTournament(request, env, deps = {}) {
   const title = String(body?.title || "").trim() || "Community Tournament";
   const gameName = String(body?.gameName || "Game").trim();
   const bracketSize = [4, 8, 16, 32].includes(parseInt(body?.bracketSize, 10)) ? parseInt(body?.bracketSize, 10) : 8;
+  const tournamentFormat = ["bracket", "1v1", "2v2"].includes(body?.format) ? body.format : "bracket";
+  const entryCap = body?.entryCap === "" || body?.entryCap === null || body?.entryCap === undefined
+    ? null
+    : Math.max(1, parseInt(body.entryCap, 10) || 1);
+  const antiAltEnabled = body?.antiAltEnabled === true;
+  const requireLogin = body?.requireLogin === true;
+  const minCredits = Math.max(0, parseInt(body?.minCredits, 10) || 0);
+  const entryFee = Math.max(0, parseInt(body?.entryFee, 10) || 0);
+  const entryKeyword = String(body?.entryKeyword || "!join").trim().slice(0, 40) || "!join";
 
   const rawParticipants = Array.isArray(body?.participants) ? body.participants : [];
-  const participants = rawParticipants.slice(0, bracketSize).map((p, i) => String(p || `Player ${i + 1}`).trim());
-  while (participants.length < bracketSize) {
+  const participants = rawParticipants.length
+    ? rawParticipants.slice(0, bracketSize).map((p, i) => String(p || `Player ${i + 1}`).trim())
+    : [];
+  while (participants.length > 0 && participants.length < bracketSize) {
     participants.push(`Player ${participants.length + 1}`);
   }
 
@@ -79,42 +131,58 @@ export async function handleCreateTournament(request, env, deps = {}) {
   const siteId = body?.siteId || url.searchParams.get("siteId");
   const site = siteId ? await getBoardById(env, user.id, siteId) : await getByUser(env, user.id);
   if (!site) return bad("Site not found", 404);
-  const authorization = await requireSiteCapability(user, site, "canRoleManageBoard");
+  const authorization = await requireSiteCapabilityImpl(user, site, "canRoleManageBoard");
   if (authorization.res) return authorization.res;
 
   const totalRounds = Math.log2(bracketSize);
 
   const result = await withTransaction(async (tx) => {
     const tourn = await tx.one(
-      `INSERT INTO tournaments (site_id, title, game_name, bracket_size, status, participants_json)
-       VALUES ($1, $2, $3, $4, 'active', $5)
-       RETURNING id, title, game_name, bracket_size, status, created_at`,
-      [site.id, title, gameName, bracketSize, JSON.stringify(participants)]
+      `INSERT INTO tournaments
+        (site_id, title, game_name, bracket_size, status, participants_json,
+         entry_cap, format, anti_alt_enabled, require_login, min_credits, entry_fee, entry_keyword)
+       VALUES ($1, $2, $3, $4, 'active', $5, $6, $7, $8, $9, $10, $11, $12)
+       RETURNING id, title, game_name, bracket_size, status, signup_state, entry_cap,
+              format, anti_alt_enabled, require_login, min_credits, entry_fee, entry_keyword, created_at`,
+      [
+        site.id,
+        title,
+        gameName,
+        bracketSize,
+        JSON.stringify(participants),
+        entryCap,
+        tournamentFormat,
+        antiAltEnabled,
+        requireLogin,
+        minCredits,
+        entryFee,
+        entryKeyword,
+      ]
     );
 
-    // Generate matches for Round 1
-    const round1MatchCount = bracketSize / 2;
-    for (let m = 0; m < round1MatchCount; m++) {
-      const p1 = participants[m * 2];
-      const p2 = participants[m * 2 + 1];
-      await tx.unsafe(
-        `INSERT INTO tournament_matches (tournament_id, round_number, match_index, player1_name, player2_name, status)
-         VALUES ($1, 1, $2, $3, $4, 'pending')`,
-        [tourn.id, m, p1, p2]
-      );
-    }
-
-    // Generate empty matches for subsequent rounds
-    let currentMatchCount = round1MatchCount / 2;
-    for (let r = 2; r <= totalRounds; r++) {
-      for (let m = 0; m < currentMatchCount; m++) {
+    if (participants.length > 0) {
+      // Generate matches for Round 1
+      const round1MatchCount = bracketSize / 2;
+      for (let m = 0; m < round1MatchCount; m++) {
         await tx.unsafe(
           `INSERT INTO tournament_matches (tournament_id, round_number, match_index, player1_name, player2_name, status)
-           VALUES ($1, $2, $3, 'TBD', 'TBD', 'pending')`,
-          [tourn.id, r, m]
+           VALUES ($1, 1, $2, $3, $4, 'pending')`,
+          [tourn.id, m, participants[m * 2], participants[m * 2 + 1]]
         );
       }
-      currentMatchCount = currentMatchCount / 2;
+
+      // Generate empty matches for subsequent rounds
+      let currentMatchCount = round1MatchCount / 2;
+      for (let r = 2; r <= totalRounds; r++) {
+        for (let m = 0; m < currentMatchCount; m++) {
+          await tx.unsafe(
+            `INSERT INTO tournament_matches (tournament_id, round_number, match_index, player1_name, player2_name, status)
+             VALUES ($1, $2, $3, 'TBD', 'TBD', 'pending')`,
+            [tourn.id, r, m]
+          );
+        }
+        currentMatchCount = currentMatchCount / 2;
+      }
     }
 
     return tourn;
@@ -126,10 +194,445 @@ export async function handleCreateTournament(request, env, deps = {}) {
     entityType: "tournament",
     entityId: result.id,
     request,
-    details: { title, gameName, bracketSize },
+    details: { title, gameName, bracketSize, tournamentFormat, entryCap, entryKeyword },
   });
 
-  return ok({ tournament: result, message: `🏆 Tournament ${title} created with ${bracketSize} players!` });
+  return ok({
+    tournament: result,
+    message: participants.length
+      ? `🏆 Tournament ${title} created with ${participants.length} players!`
+      : `🏆 Tournament ${title} is ready for signups.`,
+  });
+}
+
+async function updateSignupState(request, env, state, deps = {}) {
+  const {
+    requireUser = defaultRequireUser,
+    one = defaultOne,
+    logAudit = defaultLogAudit,
+    requireSiteCapabilityImpl = requireSiteCapability,
+  } = deps;
+  const { user, res } = await requireUser(request, env);
+  if (res) return res;
+
+  const access = await getTournamentForMutation(request, user, one, requireSiteCapabilityImpl);
+  if (access.error) return access.error;
+  const result = await one(
+    `UPDATE tournaments
+        SET signup_state=$1, updated_at=now()
+      WHERE id=$2
+      RETURNING id, signup_state, entry_cap, entry_keyword`,
+    [state, access.tournament.id]
+  );
+  await logAudit({
+    actorId: user.id,
+    action: `tournament_signups_${state}`,
+    entityType: "tournament",
+    entityId: access.tournament.id,
+    request,
+    details: { signupState: state },
+  });
+  return ok({ tournament: result });
+}
+
+export function handleOpenTournamentSignups(request, env, deps = {}) {
+  return updateSignupState(request, env, "open", deps);
+}
+
+export function handleLockTournamentSignups(request, env, deps = {}) {
+  return updateSignupState(request, env, "locked", deps);
+}
+
+/**
+ * POST /api/tournaments/:id/settings — Update the quiet tournament options.
+ */
+export async function handleUpdateTournamentSettings(request, env, deps = {}) {
+  const {
+    requireUser = defaultRequireUser,
+    one = defaultOne,
+    logAudit = defaultLogAudit,
+    requireSiteCapabilityImpl = requireSiteCapability,
+  } = deps;
+  const { user, res } = await requireUser(request, env);
+  if (res) return res;
+
+  const access = await getTournamentForMutation(request, user, one, requireSiteCapabilityImpl);
+  if (access.error) return access.error;
+  const body = await readJson(request) || {};
+  const updates = [];
+  const values = [];
+  const addUpdate = (column, value) => {
+    updates.push(`${column}=$${values.length + 1}`);
+    values.push(value);
+  };
+  if (Object.prototype.hasOwnProperty.call(body, "format")) {
+    addUpdate("format", ["bracket", "1v1", "2v2"].includes(body.format) ? body.format : "bracket");
+  }
+  if (Object.prototype.hasOwnProperty.call(body, "entryCap")) {
+    addUpdate(
+      "entry_cap",
+      body.entryCap === "" || body.entryCap === null
+        ? null
+        : Math.max(1, parseInt(body.entryCap, 10) || 1)
+    );
+  }
+  if (Object.prototype.hasOwnProperty.call(body, "antiAltEnabled")) {
+    addUpdate("anti_alt_enabled", body.antiAltEnabled === true);
+  }
+  if (Object.prototype.hasOwnProperty.call(body, "requireLogin")) {
+    addUpdate("require_login", body.requireLogin === true);
+  }
+  if (Object.prototype.hasOwnProperty.call(body, "minCredits")) {
+    addUpdate("min_credits", Math.max(0, parseInt(body.minCredits, 10) || 0));
+  }
+  if (Object.prototype.hasOwnProperty.call(body, "entryFee")) {
+    addUpdate("entry_fee", Math.max(0, parseInt(body.entryFee, 10) || 0));
+  }
+  if (Object.prototype.hasOwnProperty.call(body, "entryKeyword")) {
+    addUpdate("entry_keyword", String(body.entryKeyword || "!join").trim().slice(0, 40) || "!join");
+  }
+
+  let tournament = access.tournament;
+  if (updates.length) {
+    values.push(access.tournament.id);
+    tournament = await one(
+      `UPDATE tournaments
+          SET ${updates.join(", ")}, updated_at=now()
+        WHERE id=$${values.length}
+        RETURNING id, title, game_name, signup_state, entry_cap, format,
+                  anti_alt_enabled, require_login, min_credits, entry_fee, entry_keyword`,
+      values
+    );
+    await logAudit({
+      actorId: user.id,
+      action: "tournament_settings_update",
+      entityType: "tournament",
+      entityId: access.tournament.id,
+      request,
+      details: { fields: updates.map((update) => update.split("=")[0]) },
+    });
+  }
+  return ok({ tournament });
+}
+
+/**
+ * GET /api/tournaments/:id/entries — Private, rate-limited streamer entry list.
+ */
+export async function handleListTournamentEntries(request, env, deps = {}) {
+  const {
+    requireUser = defaultRequireUser,
+    one = defaultOne,
+    query = defaultQuery,
+    rateLimit = defaultRateLimit,
+    clientIp = defaultClientIp,
+    requireSiteCapabilityImpl = requireSiteCapability,
+  } = deps;
+  const { user, res } = await requireUser(request, env);
+  if (res) return res;
+  const tournamentId = tournamentIdFromRequest(request);
+  if (!tournamentId) return bad("tournamentId is required.");
+  const access = await getTournamentForMutation(request, user, one, requireSiteCapabilityImpl);
+  if (access.error) return access.error;
+  const rl = await rateLimit(env, `tournament-entries:${clientIp(request)}`, TOURNAMENT_READ_RATE_LIMIT, 60);
+  if (!rl.ok) return bad("Rate limit exceeded. Try again shortly.", 429);
+
+  const tournament = access.tournament;
+  const entries = await query(
+    `SELECT id, display_name, viewer_id, source, status, trust_score, alt_flag, alt_reason,
+            team_no, created_at, updated_at
+       FROM tournament_entries
+      WHERE tournament_id=$1
+      ORDER BY CASE WHEN $2::boolean AND alt_flag THEN 0 ELSE 1 END,
+               created_at ASC`,
+    [tournamentId, tournament.anti_alt_enabled === true]
+  );
+  const counts = await one(
+    `SELECT count(*) FILTER (WHERE status IN ('pending', 'confirmed', 'selected'))::integer AS active,
+            count(*) FILTER (WHERE status='waitlist')::integer AS waitlist,
+            count(*) FILTER (WHERE status='removed')::integer AS removed,
+            count(*) FILTER (WHERE status='blocked')::integer AS blocked
+       FROM tournament_entries
+      WHERE tournament_id=$1`,
+    [tournamentId]
+  );
+  return ok({ tournament, entries: entries || [], counts: counts || { active: 0, waitlist: 0, removed: 0, blocked: 0 } });
+}
+
+/**
+ * POST /api/tournaments/:id/entries — Add one streamer-sourced entry.
+ */
+export async function handleAddTournamentEntry(request, env, deps = {}) {
+  const {
+    requireUser = defaultRequireUser,
+    one = defaultOne,
+    withTransaction = defaultWithTransaction,
+    logAudit = defaultLogAudit,
+    requireSiteCapabilityImpl = requireSiteCapability,
+  } = deps;
+  const { user, res } = await requireUser(request, env);
+  if (res) return res;
+  const body = await readJson(request);
+  const displayName = String(body?.displayName || "").trim().slice(0, 80);
+  if (!displayName) return bad("displayName is required.");
+  const source = ENTRY_SOURCES.has(body?.source) ? body.source : "manual";
+  const trustScore = clampTrustScore(body?.trustScore);
+  const altFlag = body?.altFlag === true;
+  const altReason = altFlag ? String(body?.altReason || "Looks similar to another account.").trim().slice(0, 240) : null;
+  const viewerId = body?.viewerId ? String(body.viewerId).trim() : null;
+
+  const access = await getTournamentForMutation(request, user, one, requireSiteCapabilityImpl);
+  if (access.error) return access.error;
+
+  let result;
+  try {
+    result = await withTransaction(async (tx) => {
+      const tournament = await tx.one(
+        `SELECT id, signup_state, entry_cap
+           FROM tournaments
+          WHERE id=$1
+          FOR UPDATE`,
+        [access.tournament.id]
+      );
+      if (!tournament) return { error: "Tournament not found.", status: 404 };
+
+      const existing = await tx.one(
+        `SELECT id, display_name, status, source, trust_score, alt_flag, alt_reason, created_at
+           FROM tournament_entries
+          WHERE tournament_id=$1 AND lower(display_name)=lower($2)
+          FOR UPDATE`,
+        [tournament.id, displayName]
+      );
+      if (existing?.status === "blocked") {
+        return { error: "This name has been blocked from the tournament.", status: 409 };
+      }
+      if (existing && existing.status !== "removed") {
+        return { entry: existing, duplicate: true };
+      }
+
+      const eligible = await tx.one(
+        `SELECT count(*)::integer AS count
+           FROM tournament_entries
+          WHERE tournament_id=$1 AND status IN ('pending', 'confirmed', 'selected')`,
+        [tournament.id]
+      );
+      const status = entryStateFor(tournament, eligible?.count || 0);
+      if (status === "waitlist" && tournament.signup_state === "open" && tournament.entry_cap) {
+        await tx.one(
+          "UPDATE tournaments SET signup_state='locked', updated_at=now() WHERE id=$1 RETURNING id",
+          [tournament.id]
+        );
+      }
+
+      if (existing) {
+        return {
+          entry: await tx.one(
+            `UPDATE tournament_entries
+                SET display_name=$1, viewer_id=$2, source=$3, status=$4, trust_score=$5,
+                    alt_flag=$6, alt_reason=$7, updated_at=now()
+              WHERE id=$8
+              RETURNING id, tournament_id, display_name, viewer_id, source, status,
+                        trust_score, alt_flag, alt_reason, team_no, created_at, updated_at`,
+            [displayName, viewerId, source, status, trustScore, altFlag, altReason, existing.id]
+          ),
+          duplicate: false,
+        };
+      }
+      return {
+        entry: await tx.one(
+          `INSERT INTO tournament_entries
+             (tournament_id, display_name, viewer_id, source, status, trust_score, alt_flag, alt_reason)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+           RETURNING id, tournament_id, display_name, viewer_id, source, status,
+                     trust_score, alt_flag, alt_reason, team_no, created_at, updated_at`,
+          [tournament.id, displayName, viewerId, source, status, trustScore, altFlag, altReason]
+        ),
+        duplicate: false,
+      };
+    });
+  } catch (error) {
+    if (error?.code === "23505") return bad("This name is already entered.", 409);
+    throw error;
+  }
+  if (result.error) return bad(result.error, result.status);
+  if (!result.duplicate) {
+    await logAudit({
+      actorId: user.id,
+      action: "tournament_entry_add",
+      entityType: "tournament_entry",
+      entityId: result.entry.id,
+      request,
+      details: { tournamentId: access.tournament.id, source, altFlag, status: result.entry.status },
+    });
+  }
+  return ok({ entry: result.entry, duplicate: result.duplicate });
+}
+
+async function updateTournamentEntryStatus(request, env, nextStatus, deps = {}) {
+  const {
+    requireUser = defaultRequireUser,
+    one = defaultOne,
+    withTransaction = defaultWithTransaction,
+    logAudit = defaultLogAudit,
+    requireSiteCapabilityImpl = requireSiteCapability,
+  } = deps;
+  const { user, res } = await requireUser(request, env);
+  if (res) return res;
+  const access = await getTournamentForMutation(request, user, one, requireSiteCapabilityImpl);
+  if (access.error) return access.error;
+  const entryId = new URL(request.url).pathname.split("/")[5] || "";
+  if (!entryId) return bad("entryId is required.");
+
+  const result = await withTransaction(async (tx) => {
+    const tournament = await tx.one(
+      "SELECT id, signup_state, entry_cap FROM tournaments WHERE id=$1 FOR UPDATE",
+      [access.tournament.id]
+    );
+    const existing = await tx.one(
+      "SELECT id, status FROM tournament_entries WHERE id=$1 AND tournament_id=$2 FOR UPDATE",
+      [entryId, access.tournament.id]
+    );
+    if (!tournament || !existing) return { error: "Entry not found.", status: 404 };
+    if (!["removed", "blocked"].includes(nextStatus)) return { error: "Unsupported entry state.", status: 400 };
+
+    const entry = await tx.one(
+      `UPDATE tournament_entries
+          SET status=$1, updated_at=now()
+        WHERE id=$2
+        RETURNING id, tournament_id, display_name, source, status, trust_score, alt_flag, alt_reason,
+                  team_no, created_at, updated_at`,
+      [nextStatus, entryId]
+    );
+    return { entry };
+  });
+  if (result.error) return bad(result.error, result.status);
+  await logAudit({
+    actorId: user.id,
+    action: `tournament_entry_${nextStatus}`,
+    entityType: "tournament_entry",
+    entityId: result.entry.id,
+    request,
+    details: { tournamentId: access.tournament.id, status: nextStatus },
+  });
+  return ok({ entry: result.entry });
+}
+
+export function handleRemoveTournamentEntry(request, env, deps = {}) {
+  return updateTournamentEntryStatus(request, env, "removed", deps);
+}
+
+export function handleBlockTournamentEntry(request, env, deps = {}) {
+  return updateTournamentEntryStatus(request, env, "blocked", deps);
+}
+
+export async function handleRestoreTournamentEntry(request, env, deps = {}) {
+  const {
+    requireUser = defaultRequireUser,
+    one = defaultOne,
+    withTransaction = defaultWithTransaction,
+    logAudit = defaultLogAudit,
+    requireSiteCapabilityImpl = requireSiteCapability,
+  } = deps;
+  const { user, res } = await requireUser(request, env);
+  if (res) return res;
+  const access = await getTournamentForMutation(request, user, one, requireSiteCapabilityImpl);
+  if (access.error) return access.error;
+  const entryId = new URL(request.url).pathname.split("/")[5] || "";
+  const result = await withTransaction(async (tx) => {
+    const tournament = await tx.one(
+      "SELECT id, signup_state, entry_cap FROM tournaments WHERE id=$1 FOR UPDATE",
+      [access.tournament.id]
+    );
+    const existing = await tx.one(
+      "SELECT id, display_name, status FROM tournament_entries WHERE id=$1 AND tournament_id=$2 FOR UPDATE",
+      [entryId, access.tournament.id]
+    );
+    if (!tournament || !existing) return { error: "Entry not found.", status: 404 };
+    if (!["removed", "blocked"].includes(existing.status)) return { error: "Entry is already active.", status: 400 };
+    const count = await tx.one(
+      `SELECT count(*)::integer AS count FROM tournament_entries
+        WHERE tournament_id=$1 AND status IN ('pending', 'confirmed', 'selected')`,
+      [tournament.id]
+    );
+    const status = entryStateFor(tournament, count?.count || 0);
+    const entry = await tx.one(
+      `UPDATE tournament_entries SET status=$1, updated_at=now() WHERE id=$2
+       RETURNING id, tournament_id, display_name, source, status, trust_score, alt_flag, alt_reason,
+                 team_no, created_at, updated_at`,
+      [status, entryId]
+    );
+    return { entry };
+  });
+  if (result.error) return bad(result.error, result.status);
+  await logAudit({
+    actorId: user.id,
+    action: "tournament_entry_restore",
+    entityType: "tournament_entry",
+    entityId: result.entry.id,
+    request,
+    details: { tournamentId: access.tournament.id, status: result.entry.status },
+  });
+  return ok({ entry: result.entry });
+}
+
+export async function handleRandomPickTournamentEntries(request, env, deps = {}) {
+  const {
+    requireUser = defaultRequireUser,
+    one = defaultOne,
+    withTransaction = defaultWithTransaction,
+    logAudit = defaultLogAudit,
+    requireSiteCapabilityImpl = requireSiteCapability,
+  } = deps;
+  const { user, res } = await requireUser(request, env);
+  if (res) return res;
+  const body = await readJson(request);
+  const requestedCount = parseInt(body?.count, 10);
+  if (!Number.isInteger(requestedCount) || requestedCount <= 0) {
+    return bad("count must be a positive integer.");
+  }
+  const count = Math.min(1000, requestedCount);
+  const access = await getTournamentForMutation(request, user, one, requireSiteCapabilityImpl);
+  if (access.error) return access.error;
+
+  const result = await withTransaction(async (tx) => {
+    const available = await tx.one(
+      `SELECT count(*)::integer AS count FROM tournament_entries
+        WHERE tournament_id=$1 AND status IN ('pending', 'confirmed')`,
+      [access.tournament.id]
+    );
+    if ((available?.count || 0) < count) {
+      return { error: `Only ${available?.count || 0} eligible entries are available.`, status: 400 };
+    }
+    const picked = await tx.query(
+      `SELECT id, tournament_id, display_name, source, status, trust_score, alt_flag, alt_reason,
+              team_no, created_at, updated_at
+         FROM tournament_entries
+        WHERE tournament_id=$1 AND status IN ('pending', 'confirmed')
+        ORDER BY random()
+        LIMIT $2
+        FOR UPDATE`,
+      [access.tournament.id, count]
+    );
+    const ids = (picked || []).map((entry) => entry.id);
+    const selected = await tx.query(
+      `UPDATE tournament_entries
+          SET status='selected', updated_at=now()
+        WHERE id = ANY($1::uuid[])
+        RETURNING id, tournament_id, display_name, source, status, trust_score, alt_flag, alt_reason,
+                  team_no, created_at, updated_at`,
+      [ids]
+    );
+    return { entries: selected || [] };
+  });
+  if (result.error) return bad(result.error, result.status);
+  await logAudit({
+    actorId: user.id,
+    action: "tournament_entries_random_pick",
+    entityType: "tournament",
+    entityId: access.tournament.id,
+    request,
+    details: { count: result.entries.length },
+  });
+  return ok({ entries: result.entries });
 }
 
 /**

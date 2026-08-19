@@ -5,6 +5,7 @@ export const GIVEAWAY_TABS = [
   ["raffles", "Raffles"],
   ["drops", "Drops"],
   ["preds", "Predictions"],
+  ["tournaments", "Tournaments"],
 ];
 
 export function renderGiveawaysHtml(activeTab = "chat") {
@@ -15,9 +16,11 @@ export function renderGiveawaysHtml(activeTab = "chat") {
 <div class="v3-head">
   <div class="v3-head-col">
   <h1>${GIVEAWAY_TABS.find(([tab]) => tab === active)?.[1] || "Giveaways"}</h1>
-    <p class="v3-head-sub">Engage your viewers with live chat giveaways, loyalty point ticket raffles, and flash drop claim codes.</p>
+    <p class="v3-head-sub">${active === "tournaments"
+      ? "Let viewers join from chat, then curate the list before you pick."
+      : "Engage your viewers with live chat giveaways, loyalty point ticket raffles, and flash drop claim codes."}</p>
   </div>
-  <div class="d-flex gap-8 items-center flex-wrap">
+  <div class="d-flex gap-8 items-center flex-wrap"${active === "tournaments" ? ' hidden' : ""}>
     <button class="btn btn--sm btn--accent" id="btn-open-event-drawer" type="button">+ Create Event</button>
   </div>
 </div>
@@ -679,6 +682,80 @@ ${tabs}
         <button class="btn btn--accent" id="cd-submit" type="submit"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m13 2-9 12h7l-1 8 9-12h-7l1-8Z"/></svg> Launch Drop</button>
       </div>
     </form>
+  </div>
+</div>
+
+<!-- =========================================================================
+     TAB 5: TOURNAMENT ENTRIES
+     ========================================================================= -->
+<div class="gw-tab-pane${active === "tournaments" ? " is-active" : ""}" id="pane-tournaments"${active === "tournaments" ? "" : " hidden"}>
+  <div id="tournament-app" class="tournament-app">
+    <div class="tournament-toolbar">
+      <div>
+        <p class="tournament-step-label" id="tournament-step-label">Ready when you are</p>
+        <p class="tournament-count" id="tournament-count" aria-live="polite">No tournament yet</p>
+        <p class="tournament-message" id="tournament-message" role="status" aria-live="polite" hidden></p>
+        <label class="tournament-channel-field" for="tournament-chat-channel">
+          <span>Kick channel for chat joins</span>
+          <input id="tournament-chat-channel" type="text" placeholder="Your channel name" autocomplete="off" />
+        </label>
+      </div>
+      <div class="tournament-primary-wrap">
+        <label class="tournament-pick-count" id="tournament-pick-count-wrap" hidden>
+          <span>Pick</span>
+          <input id="tournament-pick-count" type="number" min="1" value="1" inputmode="numeric" />
+        </label>
+        <button class="btn btn--accent" id="tournament-primary" type="button">Set up a tournament</button>
+        <button class="btn btn--ghost tournament-secondary-action" id="tournament-reopen" type="button" hidden>Reopen signups</button>
+        <button class="btn btn--ghost tournament-secondary-action" id="tournament-new" type="button" hidden>Start new tournament</button>
+      </div>
+    </div>
+
+    <div id="tournament-empty" hidden></div>
+    <section class="tournament-list-card" id="tournament-list-card" aria-labelledby="tournament-list-heading">
+      <div class="tournament-list-head">
+        <div>
+          <h2 id="tournament-list-heading">Entry list</h2>
+          <p class="tournament-muted">Names appear here as viewers use your join command.</p>
+        </div>
+        <span class="tournament-live-dot" id="tournament-chat-status">Chat off</span>
+      </div>
+      <div class="tournament-entries" id="tournament-entries">
+        <div id="tournament-entries-empty" hidden></div>
+        <ul class="tournament-entry-list" id="tournament-entry-list" aria-label="Tournament entries"></ul>
+      </div>
+    </section>
+
+    <details class="tournament-settings" id="tournament-settings">
+      <summary>Settings <span>Format, cap, anti-alt and chat command</span></summary>
+      <form id="tournament-settings-form" class="tournament-settings-grid">
+        <div class="field">
+          <label for="tournament-format">Format</label>
+          <select id="tournament-format" name="format" class="v3-select">
+            <option value="bracket">Bracket</option>
+            <option value="1v1">1v1</option>
+            <option value="2v2">2v2 teams</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="tournament-entry-cap">Entry cap</label>
+          <input id="tournament-entry-cap" name="entryCap" type="number" min="1" placeholder="No limit" />
+          <span class="hint">Extra viewers wait when the cap is full.</span>
+        </div>
+        <div class="field">
+          <label for="tournament-keyword">Chat command</label>
+          <input id="tournament-keyword" name="entryKeyword" type="text" value="!join" maxlength="40" />
+        </div>
+        <div class="field tournament-toggle-field">
+          <label for="tournament-anti-alt">Flag likely duplicate accounts</label>
+          <input id="tournament-anti-alt" name="antiAltEnabled" type="checkbox" class="v3-toggle" />
+          <span class="hint">Flags are shown for you to review; they never reject someone automatically.</span>
+        </div>
+        <div class="tournament-settings-actions">
+          <button class="btn btn--ghost" type="submit">Save settings</button>
+        </div>
+      </form>
+    </details>
   </div>
 </div>
 
