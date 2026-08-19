@@ -796,7 +796,7 @@ async function handleRequest(request, env, ctx, meta) {
       }
       if (path.startsWith("/dashboard/giveaways/")) {
         const tab = path.slice("/dashboard/giveaways/".length);
-        if (["chat", "raffles", "drops", "preds"].includes(tab)) {
+        if (["chat", "raffles", "drops", "preds", "tournaments"].includes(tab)) {
           return renderDashboardPage("giveaways", "giveaways_render_failed", tab);
         }
         return redirectKeepingSearch("/dashboard/giveaways/chat", url);

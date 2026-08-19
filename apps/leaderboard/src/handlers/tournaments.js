@@ -78,7 +78,9 @@ export async function handleGetTournaments(request, env, deps = {}) {
   if (!site) return bad("Site not found.", 404);
 
   const tournaments = await query(
-    `SELECT id, title, game_name, bracket_size, status, winner_name, created_at
+    `SELECT id, title, game_name, bracket_size, status, winner_name, created_at,
+            signup_state, entry_cap, format, anti_alt_enabled, require_login,
+            min_credits, entry_fee, entry_keyword
        FROM tournaments
       WHERE site_id=$1
       ORDER BY created_at DESC LIMIT 20`,
