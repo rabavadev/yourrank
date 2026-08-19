@@ -1,13 +1,14 @@
 // Overview page summary tiles / top players / setup checklist.
 import { $, esc, currentPlayers } from "./utils.js";
-import { state, boardStatus, markDirty } from "./state.js";
+import { state, setState, boardStatus, markDirty } from "./state.js";
 import { renderEmpty, setMetricLoading, setMetricUnknown, setMetricValue } from "./states.js";
 
 const ACTIVITY_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>';
 const SETUP_STEPS = [
-  { key: "brand", required: true, href: "/dashboard/leaderboard/setup", action: "Add details" },
-  { key: "players", required: true, href: "/dashboard/leaderboard/players", action: "Add players" },
-  { key: "publish", required: true, href: "#publish", action: "Publish site" },
+  { key: "brand", required: true, label: "Add site details", description: "Name your site and add its sponsor details.", href: "/dashboard/leaderboard/setup", action: "Add site details" },
+  { key: "players", required: true, label: "Add players", description: "Give your leaderboard its first standings.", href: "/dashboard/leaderboard/players", action: "Add players" },
+  { key: "configure", required: true, label: "Customize how it looks", description: "Make the public page feel like your brand.", href: "/dashboard/leaderboard/design", action: "Customize appearance" },
+  { key: "publish", required: true, label: "Publish your site", description: "Open the finished leaderboard to visitors.", href: "#publish", action: "Publish site" },
 ];
 
 function isBoardSetup() {
@@ -47,13 +48,57 @@ function wirePublicationLink(link) {
   });
 }
 
+function siteScopedPath(path) {
+  if (!state.ACTIVE_SITE_ID) return path;
+  const url = new URL(path, location.origin);
+  url.searchParams.set("siteId", state.ACTIVE_SITE_ID);
+  return `${url.pathname}${url.search}${url.hash}`;
+}
+
+async function fetchOverviewJson(path) {
+  const response = await fetch(siteScopedPath(path), { credentials: "same-origin" });
+  const data = await response.json();
+  if (!response.ok || !data?.ok) throw new Error(data?.error || `overview request failed (${response.status})`);
+  return data;
+}
+
+export async function loadOverviewLiveData() {
+  const [giveawayResult, creditsResult] = await Promise.allSettled([
+    Promise.all([
+      fetchOverviewJson("/api/events/raffles"),
+      fetchOverviewJson("/api/events/drops"),
+      fetchOverviewJson("/api/predictions"),
+    ]),
+    fetchOverviewJson("/api/credits/analytics"),
+  ]);
+  if (giveawayResult.status === "fulfilled") {
+    const [raffles, drops, predictions] = giveawayResult.value;
+    setState({
+      GIVEAWAYS: {
+        raffles: raffles.raffles || [],
+        drops: drops.drops || [],
+        predictions: predictions.predictions || [],
+      },
+      GIVEAWAYS_STATUS: "ready",
+    });
+  } else {
+    setState({ GIVEAWAYS_STATUS: "error" });
+  }
+  if (creditsResult.status === "fulfilled") {
+    setState({ CREDITS_ANALYTICS: creditsResult.value, CREDITS_ANALYTICS_STATUS: "ready" });
+  } else {
+    setState({ CREDITS_ANALYTICS_STATUS: "error" });
+  }
+  renderOverviewSummary();
+}
+
 export function renderOverviewSummary() {
     if (!$("ovActiveBento")) return;
     const players = currentPlayers();
     const status = boardStatus();
     const steps = computeSetupSteps();
     const done = isBoardSetup();
-    const readyToPublish = steps.brand && steps.players;
+    const readyToPublish = steps.brand && steps.players && steps.configure;
     const firstIncomplete = SETUP_STEPS.find((step) => !steps[step.key]);
     const pendingVerification = status.published && !status.emailVerified;
     const needsVerification = !status.emailVerified;
@@ -70,9 +115,7 @@ export function renderOverviewSummary() {
     if (commandGrid) commandGrid.hidden = !showSetup;
     commandGrid?.classList.toggle("is-setup-complete", done);
     const siteState = $("ovSiteState");
-    if (siteState) {
-      siteState.textContent = pendingVerification ? "Confirm your email before launch" : readyToPublish ? "Your site is ready to publish" : "Finish the essentials";
-    }
+    if (siteState) siteState.textContent = pendingVerification ? "Confirm your email before launch" : "Finish setup";
     // Setup progress
     const stepOrder = SETUP_STEPS.map(({ key }) => key);
     const completed = stepOrder.filter((key) => steps[key]).length;
@@ -91,9 +134,11 @@ export function renderOverviewSummary() {
         ? "Add your site details to get started."
         : firstIncomplete?.key === "players"
           ? "Add players to your leaderboard."
-          : firstIncomplete?.key === "publish"
-            ? "Your essentials are ready. Publish when you’re ready."
-            : "Your essentials are ready.";
+          : firstIncomplete?.key === "configure"
+            ? "Customize the look of your public site."
+            : firstIncomplete?.key === "publish"
+              ? "Your essentials are ready. Publish when you’re ready."
+              : "Your essentials are ready.";
       setupMessage.textContent = setupCopy;
     }
     if (setupAction) {
@@ -103,6 +148,20 @@ export function renderOverviewSummary() {
       setupAction.textContent = verificationIsNext ? "Confirm email" : firstIncomplete?.action || "Edit site";
       setupAction.dataset.publicationAction = publicationIsNext ? "true" : "false";
       if (publicationIsNext) wirePublicationLink(setupAction);
+    }
+    const setupList = $("ovSetupList");
+    if (setupList) {
+      const nextKey = firstIncomplete?.key;
+      setupList.innerHTML = SETUP_STEPS.map((step) => {
+        const complete = Boolean(steps[step.key]);
+        const next = !complete && step.key === nextKey;
+        const stateLabel = complete ? "Done" : next ? "Next" : "Not started";
+        const rowClass = `ov-setup-row${complete ? " is-done" : ""}${next ? " is-next" : ""}`;
+        const href = step.key === "publish" ? "#publish" : step.href;
+        const publicationAttribute = step.key === "publish" ? ' data-publication-action="true"' : "";
+        return `<li><a class="${rowClass}" href="${href}" data-setup-step="${step.key}" data-setup-state="${complete ? "done" : next ? "next" : "not-started"}"${publicationAttribute}><span class="ov-step-icon${complete ? " is-done" : ""}" aria-hidden="true">${complete ? "✓" : ""}</span><span class="ov-step-body"><b>${step.label}</b><span class="hint">${step.description}</span></span><span class="ov-step-status${complete ? " is-done" : ""}" aria-hidden="true">${stateLabel}</span><span class="sr-only">${stateLabel}</span></a></li>`;
+      }).join("");
+      setupList.querySelectorAll("[data-publication-action='true']").forEach(wirePublicationLink);
     }
     const statsReady = state.STATS_STATUS === "ready" && state.STATS;
     const days = statsReady ? state.STATS.days : [];
@@ -117,21 +176,39 @@ export function renderOverviewSummary() {
     setMetricValue($("ovPlayersCount"), number(players.length));
     if (state.STATS_STATUS === "loading") {
       setMetricLoading($("ovViews14"));
-      setMetricLoading($("ovCopies14"));
     } else if (statsReady && hasStatsActivity) {
       setMetricValue($("ovViews14"), number(sum("views")));
-      setMetricValue($("ovCopies14"), number(sum("copies")));
     } else {
       setMetricUnknown($("ovViews14"));
-      setMetricUnknown($("ovCopies14"));
+    }
+    if (state.GIVEAWAYS_STATUS === "loading") {
+      setMetricLoading($("ovActiveGiveaway"));
+    } else if (state.GIVEAWAYS_STATUS === "ready") {
+      const activeGiveaways = [
+        ...(state.GIVEAWAYS?.raffles || []).filter((item) => item.status === "active"),
+        ...(state.GIVEAWAYS?.drops || []).filter((item) => item.status === "active"),
+        ...(state.GIVEAWAYS?.predictions || []).filter((item) => item.status === "open" || item.status === "locked"),
+      ];
+      setMetricValue($("ovActiveGiveaway"), number(activeGiveaways.length));
+    } else {
+      setMetricUnknown($("ovActiveGiveaway"));
+    }
+    const creditsEnabled = state.CREDITS_PRODUCT_ENABLED === true;
+    const creditsCard = $("ovCreditsCard");
+    const kpiRow = $("ovKpiRow");
+    if (creditsCard) creditsCard.hidden = !creditsEnabled;
+    kpiRow?.classList.toggle("has-credits", creditsEnabled);
+    if (state.CREDITS_ANALYTICS_STATUS === "loading" && creditsEnabled) {
+      setMetricLoading($("ovCreditsUsed"));
+    } else if (state.CREDITS_ANALYTICS_STATUS === "ready" && creditsEnabled) {
+      setMetricValue($("ovCreditsUsed"), number(state.CREDITS_ANALYTICS?.summary?.allTimeSpent));
+    } else if (creditsEnabled) {
+      setMetricUnknown($("ovCreditsUsed"));
     }
     const deltaMarkup = (value, previous, recent) => previous === 0 && recent === 0 ? "" : `<span class="v3-delta${value < 0 ? " v3-delta--down" : ""}" title="vs previous 7 days">${value >= 0 ? "+" : ""}${value.toFixed(1)}%</span>`;
     const viewPrevious = sum("views", days.slice(0, 7));
     const viewRecent = sum("views", days.slice(-7));
-    const copyPrevious = sum("copies", days.slice(0, 7));
-    const copyRecent = sum("copies", days.slice(-7));
     $("ovViewsDelta").innerHTML = deltaMarkup(delta("views"), viewPrevious, viewRecent);
-    $("ovCopiesDelta").innerHTML = deltaMarkup(delta("copies"), copyPrevious, copyRecent);
     const relative = (iso) => {
       const minutes = Math.max(0, Math.floor((Date.now() - new Date(iso).getTime()) / 60000));
       return minutes < 60 ? `${minutes}m ago` : minutes < 1440 ? `${Math.floor(minutes / 60)}h ago` : `${Math.floor(minutes / 1440)}d ago`;
@@ -144,7 +221,7 @@ export function renderOverviewSummary() {
     ].filter((item) => item.at).sort((a, b) => new Date(b.at) - new Date(a.at)).slice(0, 5);
     $("ovActivityList").innerHTML = activity.map((item) => `<div class="ov-activity-row"><span class="ov-activity-icon">${ACTIVITY_ICON}</span><span class="ov-activity-copy"><b>${esc(item.title)}</b><span>${esc(item.sub)}</span></span><time>${relative(item.at)}</time></div>`).join("");
     if (activity.length) $("ovActivityEmpty").hidden = true;
-    else renderEmpty($("ovActivityEmpty"), { kind: "empty", title: "No activity yet", body: "Visits, updates and reward requests will appear here.", compact: true, actions: [{ label: "Share your site", href: "/dashboard/leaderboard/share" }] });
+    else renderEmpty($("ovActivityEmpty"), { kind: "empty", title: "No activity yet", body: "Visits, updates and reward requests will appear here.", compactHeading: true, actions: [{ label: "Share your site", href: "/dashboard/leaderboard/share" }] });
     const top = [...players].sort((a, b) => b.wagered - a.wagered).slice(0, 5);
     $("ovTopPlayers").innerHTML = top.map((player, i) => `
       <div class="ov-player-row" data-name="${esc(player.name)}">
@@ -177,6 +254,6 @@ export function renderOverviewSummary() {
     });
 
     if (top.length) $("ov_topEmpty").hidden = true;
-    else renderEmpty($("ov_topEmpty"), { kind: "empty", title: "No players yet", body: "Add the first player to start your leaderboard.", compact: true, actions: [{ label: "Add players", href: "/dashboard/leaderboard/players" }] });
+    else renderEmpty($("ov_topEmpty"), { kind: "empty", title: "No players yet", body: "Add the first player to start your leaderboard.", compactHeading: true, actions: [{ label: "Add players", href: "/dashboard/leaderboard/players" }] });
     $("ovPublishedStatus").textContent = status.live ? "Published" : status.published ? "Verification needed" : "Not published";
   }

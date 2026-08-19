@@ -1298,7 +1298,7 @@ export async function loadCreditsStatus() {
     const creditsUrl = state.ACTIVE_SITE_ID ? `/api/credits/status?siteId=${encodeURIComponent(state.ACTIVE_SITE_ID)}` : "/api/credits/status";
     const res = await fetch(creditsUrl);
     const data = await res.json();
-    setState({ CREDITS: data, CREDITS_STATUS: "ready" });
+    setState({ CREDITS: data, CREDITS_STATUS: "ready", CREDITS_PRODUCT_ENABLED: data.enabled === true });
     renderOverviewSummary();
     const connected = Boolean(data.channel?.externalId);
     if (statusEl) statusEl.textContent = connected
@@ -1308,6 +1308,7 @@ export async function loadCreditsStatus() {
   } catch (err) {
     setState({ CREDITS_STATUS: "error" });
     logError("credits/status", err);
+    renderOverviewSummary();
     if (statusEl) {
       statusEl.removeAttribute("aria-busy");
       statusEl.textContent = "Could not load connected apps status. Try again.";

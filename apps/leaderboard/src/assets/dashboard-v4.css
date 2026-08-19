@@ -1566,7 +1566,7 @@ body[data-wide] .v3-dash[data-auth-workspace] .lb-main { padding-right: var(--v3
 .v3-dash[data-auth-workspace] .ov-setup-bar { height: 4px; margin-top: 10px; overflow: hidden; border-radius: var(--v4-radius-control); background: var(--v4-line); }
 .v3-dash[data-auth-workspace] .ov-setup-bar i { display: block; height: 100%; border-radius: inherit; background: var(--v4-cobalt); transform-origin: left; transition: transform 180ms ease-out; }
 .v3-dash[data-auth-workspace] .ov-setup-progress > .v3-btn { margin-top: 10px; }
-.v3-dash[data-auth-workspace] .ov-setup-list { border-top: 1px solid var(--v4-line); }
+.v3-dash[data-auth-workspace] .ov-setup-list { margin: 0; padding: 0; list-style: none; border-top: 1px solid var(--v4-line); }
 .v3-dash[data-auth-workspace] .ov-setup-row { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 10px; min-height: 48px; padding: 7px 18px; border-top: 1px solid var(--v4-line); background: #ffffff; color: var(--v4-ink); text-decoration: none; }
 .v3-dash[data-auth-workspace] .ov-setup-row:first-child { border-top: 0; }
 .v3-dash[data-auth-workspace] .ov-setup-row:hover { background: var(--v4-cobalt-soft); }
@@ -1583,6 +1583,7 @@ body[data-wide] .v3-dash[data-auth-workspace] .lb-main { padding-right: var(--v3
 .v3-dash[data-auth-workspace] .ov-live { display: grid; gap: 16px; flex-direction: column; }
 .v3-dash[data-auth-workspace] #ovActiveBento { grid-column: 1 / -1; min-width: 0; }
 .v3-dash[data-auth-workspace] .ov-live .kpi-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0; margin: 0; overflow: hidden; border: 1px solid var(--v4-line); border-radius: var(--v4-radius); background: #ffffff; }
+.v3-dash[data-auth-workspace] .ov-live .kpi-row.has-credits { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 .v3-dash[data-auth-workspace] .v3-kpi-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; margin: 0; }
 .v3-dash[data-auth-workspace] .ov-live .kpi-card { min-height: 74px; padding: 12px 16px; border: 0; border-left: 1px solid var(--v4-line); border-radius: 0; background: transparent; box-shadow: none; justify-content: space-between; }
 .v3-dash[data-auth-workspace] .ov-live .kpi-card:first-child { border-left: 0; }
@@ -1600,7 +1601,7 @@ body[data-wide] .v3-dash[data-auth-workspace] .lb-main { padding-right: var(--v3
 .v3-dash[data-auth-workspace] .metric-unavailable { color: var(--v4-ink-soft); font-size: 0.85em; cursor: help; }
 .v3-dash[data-auth-workspace] [data-metric-unavailable="true"] { opacity: 0.7; }
 /* Tier C: Activity + Players grid */
-.v3-dash[data-auth-workspace] .ov-live-grid { display: grid; grid-template-columns: minmax(0, 8fr) minmax(280px, 4fr); gap: 0; overflow: hidden; border: 1px solid var(--v4-line); border-radius: var(--v4-radius); background: #ffffff; min-height: 330px; }
+.v3-dash[data-auth-workspace] .ov-live-grid { display: grid; grid-template-columns: minmax(0, 8fr) minmax(280px, 4fr); gap: 0; overflow: hidden; border: 1px solid var(--v4-line); border-radius: var(--v4-radius); background: #ffffff; }
 .v3-dash[data-auth-workspace] .ov-live-card { min-width: 0; padding: 18px 20px; border: 0; border-radius: 0; background: transparent; }
 .v3-dash[data-auth-workspace] .ov-live-card:first-child { border-right: 1px solid var(--v4-line); }
 .v3-dash[data-auth-workspace] .ov-live-card h2,
@@ -1624,6 +1625,10 @@ body[data-wide] .v3-dash[data-auth-workspace] .lb-main { padding-right: var(--v3
 .v3-dash[data-auth-workspace] .ov-card-empty .v3-empty p { font-size: 12px; }
 .v3-dash[data-auth-workspace] .ov-card-empty .v3-empty-actions { grid-column: 3; grid-row: 1 / 3; margin: 0; }
 .v3-dash[data-auth-workspace] .ov-card-empty .v3-empty-actions .v3-btn { min-height: 34px; padding-inline: 10px; font-size: 11px; }
+.v3-dash[data-auth-workspace] .ov-card-empty > .v3-empty--compact-heading { display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-rows: auto auto; align-items: center; column-gap: 12px; row-gap: 2px; min-height: 0; padding: 14px 0 0; text-align: left; }
+.v3-dash[data-auth-workspace] .ov-card-empty .v3-empty--compact-heading h2 { grid-column: 1; margin: 0; }
+.v3-dash[data-auth-workspace] .ov-card-empty .v3-empty--compact-heading p { grid-column: 1; margin: 0; }
+.v3-dash[data-auth-workspace] .ov-card-empty .v3-empty--compact-heading .v3-empty-actions { grid-column: 2; grid-row: 1 / 3; margin: 0; }
 
 /* Editor and content management */
 .v3-dash[data-auth-workspace] section[data-page="board"] .design-grid { display: grid; grid-template-columns: minmax(0, 8fr) minmax(360px, 4fr); gap: 24px; align-items: start; }
@@ -3612,7 +3617,8 @@ body:has(.v3-dash[data-auth-workspace]) > .lb-backdrop.is-open { opacity: 1; poi
   .v3-dash[data-auth-workspace] .ov-setup-head { flex-direction: column; }
   .v3-dash[data-auth-workspace] .ov-setup-row { grid-template-columns: auto minmax(0, 1fr); padding-inline: 18px; }
   .v3-dash[data-auth-workspace] .ov-step-status { grid-column: 2; }
-  .v3-dash[data-auth-workspace] .ov-live .kpi-row { grid-template-columns: 1fr; }
+  .v3-dash[data-auth-workspace] .ov-live .kpi-row,
+  .v3-dash[data-auth-workspace] .ov-live .kpi-row.has-credits { grid-template-columns: 1fr; }
   .v3-dash[data-auth-workspace] .ov-live .kpi-card { border-top: 1px solid var(--v4-line); border-left: 0; }
   .v3-dash[data-auth-workspace] .ov-live .kpi-card:first-child { border-top: 0; }
   .v3-dash[data-auth-workspace] .v3-kpi-grid,
@@ -3622,6 +3628,8 @@ body:has(.v3-dash[data-auth-workspace]) > .lb-backdrop.is-open { opacity: 1; poi
   .v3-dash[data-auth-workspace] .ov-card-empty > .v3-empty { grid-template-columns: 32px minmax(0, 1fr); min-height: 96px; }
   .v3-dash[data-auth-workspace] .ov-card-empty .v3-empty-ic { width: 32px; height: 32px; }
   .v3-dash[data-auth-workspace] .ov-card-empty .v3-empty-actions { grid-column: 2; grid-row: 3; margin-top: 8px; }
+  .v3-dash[data-auth-workspace] .ov-card-empty > .v3-empty--compact-heading { grid-template-columns: minmax(0, 1fr) auto; min-height: 0; }
+  .v3-dash[data-auth-workspace] .ov-card-empty .v3-empty--compact-heading .v3-empty-actions { grid-column: 2; grid-row: 1 / 3; margin: 0; }
   .v3-dash[data-auth-workspace] .v3-analytics-scope { align-items: stretch; flex-direction: column; }
   .v3-dash[data-auth-workspace] .v3-range-filter { width: 100%; }
   .v3-dash[data-auth-workspace] .v3-range-btn { flex: 1; }

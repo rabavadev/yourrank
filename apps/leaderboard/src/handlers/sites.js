@@ -19,8 +19,9 @@ async function onboardingForSite(env, site, userId, plan) {
     one("SELECT COUNT(*)::int AS n FROM players WHERE site_id=$1", [site.id]),
     one("SELECT 1 FROM site_stats WHERE site_id=$1 LIMIT 1", [site.id]),
   ]);
+  const brand = site.data?.brand || site;
   return {
-    brand: !!(site.name?.trim() && (site.casino?.trim() || site.code?.trim())),
+    brand: !!(brand.name?.trim() && (brand.casino?.trim() || brand.code?.trim())),
     players: (players?.n || 0) > 0,
     botConnected: !!bot,
     shared: !!site.published && !!firstView,

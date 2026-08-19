@@ -118,6 +118,19 @@ export function renderError(el, { title = "Couldn't load this panel", body = "Tr
 export function renderEmpty(el, spec) {
   if (!el) return;
   el.removeAttribute("aria-busy");
-  el.innerHTML = spec?.compact ? inlineStateHtml(spec) : emptyStateHtml(spec);
+  el.innerHTML = spec?.compactHeading ? compactHeadingHtml(spec) : spec?.compact ? inlineStateHtml(spec) : emptyStateHtml(spec);
   el.hidden = false;
+}
+
+function compactHeadingHtml({ title, body, actions = [] } = {}) {
+  const actionHtml = actions.length
+    ? `<div class="v3-empty-actions">${actions.map((action) => {
+      const tag = action.href ? "a" : "button";
+      const attrs = action.href
+        ? `href="${esc(action.href)}"`
+        : `type="button"${action.id ? ` id="${esc(action.id)}"` : ""}`;
+      return `<${tag} class="v3-btn${action.accent ? " v3-btn--accent" : ""}" ${attrs}>${esc(action.label)}</${tag}>`;
+    }).join("")}</div>`
+    : "";
+  return `<div class="v3-empty v3-empty--compact-heading"><h2>${esc(title)}</h2>${body ? `<p>${esc(body)}</p>` : ""}${actionHtml}</div>`;
 }

@@ -5,7 +5,7 @@ import { currentRoute, navTo, setupShell } from "./dashboard/shell.js";
 import { renderBoardSwitcher, renderBoardSelect, renderBoardsPage } from "./dashboard/boards.js";
 import { renderPlayers } from "./dashboard/players.js";
 import { fitDesignPreview, loadCreditsStatus, loadStats, refreshDesignPreview, renderArchives, renderBranding, renderDomain, renderDomainStatus, renderBoardStatus, renderEditorTimestamps, renderEmbedShare, renderLegal, renderNotifications, renderPrizes, renderSections, renderSocials, wirePublishAction } from "./dashboard/site.js";
-import { renderOverviewSummary } from "./dashboard/overview.js";
+import { loadOverviewLiveData, renderOverviewSummary } from "./dashboard/overview.js";
 import { renderReferrals } from "./dashboard/referrals.js";
 import { initPerformance } from "./dashboard/performance.js";
 import { setupSettingsScreen } from "./dashboard/account.js";
@@ -147,6 +147,7 @@ async function init() {
   const d = p.data || {};
   const b = d.brand || {};
   state.EXTRA = { chips: d.partner?.chips, whyStats: d.whyStats, rules: d.rules, socials: p.socials || d.socials || [], sections: d.sections, siteSections: d.siteSections || {}, playerFields: d.playerFields || {}, text: (d.branding && d.branding.text) || {}, legal: d.legal || {} };
+  state.CURRENT_BRANDING = d.branding || state.CURRENT_BRANDING;
   state.PLAYERS = Array.isArray(d.players) ? d.players : [];
   document.querySelectorAll("a[href]").forEach((link) => {
     if (!state.ACTIVE_SITE_ID) return;
@@ -266,6 +267,16 @@ async function init() {
   }
   if (hasSection("home") || hasSection("performance")) loadStats();
   if (hasSection("home") || hasBoardSettings) loadCreditsStatus();
+  if (hasSection("home")) {
+    loadOverviewLiveData().catch((err) => {
+      logError("overview/live", err);
+      try {
+        renderOverviewSummary();
+      } catch (renderErr) {
+        logError("overview/render", renderErr);
+      }
+    });
+  }
   if (hasBoardSettings) {
     setupSettingsScreen(p);
   }
