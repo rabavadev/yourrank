@@ -2,12 +2,13 @@
 // parse those URLs from routes.js, so these assertions cover both sides.
 import { describe, it, expect } from "bun:test";
 import { readFileSync } from "node:fs";
+import { ACCOUNT_SECTION_PATHS } from "@yourrank/shared/dashboard-nav";
 import { dashboardPath, parseDashboardPath, resolveSection, defaultTab, legacyDashboardPath } from "../assets/dashboard/routes.js";
 import { LEGACY_TELEGRAM_REDIRECTS, legacyTelegramRedirect } from "../telegram-routes.js";
 
 describe("dashboard routes", () => {
   it("round-trips every section and sub-tab", () => {
-    for (const [page, tab] of [["home", ""], ["board", "players"], ["boards", ""], ["games", ""], ["performance", "referrals"], ["settings", ""]]) {
+    for (const [page, tab] of [["home", ""], ["board", "players"], ["boards", ""], ["games", ""], ["performance", "referrals"], ["site", ""]]) {
       expect(parseDashboardPath(dashboardPath(page, tab))).toEqual({ page, tab });
     }
   });
@@ -24,7 +25,7 @@ describe("dashboard routes", () => {
       expect(parseDashboardPath(`/dashboard/settings${tab}`)).toBeNull();
     }
     expect(dashboardPath("settings")).toBe("/dashboard/settings/board");
-    expect(parseDashboardPath("/dashboard/settings/board")).toEqual({ page: "settings", tab: "" });
+    expect(parseDashboardPath("/dashboard/settings/board")).toEqual({ page: "site", tab: "" });
   });
 
   it("keeps the links we have already shipped working", () => {
@@ -32,7 +33,16 @@ describe("dashboard routes", () => {
     // e-mails land on the section they meant rather than on a 404.
     expect(resolveSection("overview")).toBe("home");
     expect(resolveSection("analytics")).toBe("performance");
-    expect(resolveSection("billing")).toBe("settings");
+    expect(resolveSection("billing")).toBe("plan");
+    expect(resolveSection("integrations")).toBe("connections");
+    expect(resolveSection("settings")).toBe("site");
+    expect(dashboardPath("billing")).toBe("/dashboard/settings/plan");
+    expect(dashboardPath("integrations")).toBe("/dashboard/settings/connections");
+    expect(ACCOUNT_SECTION_PATHS.billing).toBe(dashboardPath("billing"));
+    expect(ACCOUNT_SECTION_PATHS.integrations).toBe(dashboardPath("integrations"));
+    const worker = readFileSync(new URL("../index.js", import.meta.url), "utf8");
+    expect(worker).toContain("ACCOUNT_SECTION_PATHS[legacyNav]");
+    expect(worker).not.toContain("legacyAccountPaths");
     expect(resolveSection("editor")).toBe("board");
     expect(dashboardPath("performance")).toBe("/dashboard/analytics");
   });

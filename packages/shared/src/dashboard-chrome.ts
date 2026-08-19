@@ -177,7 +177,7 @@ ${sideProfile}
 <div class="lb-main">
 <header class="lb-topbar" id="lbTopbar">
 <button class="lb-menu lb-topbar-menu" id="lbMenu" type="button" aria-label="Show sections" aria-expanded="false" aria-controls="lbSide">${MENU_ICON}</button>
-<a class="lb-brand" href="/dashboard" aria-label="YourRank dashboard"><span class="lb-brand-mark">${brandMarkSvg()}</span><span class="lb-brand-txt">YourRank</span></a>
+${opts.railProfile ? "" : `<a class="lb-brand" href="/dashboard" aria-label="YourRank dashboard"><span class="lb-brand-mark">${brandMarkSvg()}</span><span class="lb-brand-txt">YourRank</span></a>`}
 <div class="lb-topbar-actions">${opts.topbarHtml || topProfile}</div>
 </header>
 ${contentOpen}

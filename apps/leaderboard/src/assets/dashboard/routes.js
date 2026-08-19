@@ -8,6 +8,12 @@
 //
 // No browser globals at module scope: the Worker imports this too.
 
+import {
+  ACCOUNT_SECTION_PATHS,
+  NAV_OWNER_MAP,
+  navOwner,
+} from "@yourrank/shared/dashboard-nav";
+
 export const SECTIONS = {
   home: { path: "/dashboard", title: "Overview" },
   board: { path: "/dashboard/leaderboard", title: "Leaderboard", tabs: ["setup", "players", "design", "share", "history"] },
@@ -15,10 +21,14 @@ export const SECTIONS = {
   games: { path: "/dashboard/games", title: "Public page sections & Games" },
   performance: { path: "/dashboard/analytics", title: "Analytics", tabs: ["activity", "referrals", "events"] },
   // Account settings (`/dashboard/settings` and its tabs) are their own
-  // documents, served by the Worker. This section is the *selected board's*
-  // settings, which is all this document knows how to render.
-  settings: { path: "/dashboard/settings/board", title: "Board settings" },
+  // documents, served by the Worker. This section is the selected site's
+  // settings, which is all this document knows to render.
+  site: { path: "/dashboard/settings/board", title: "Site settings" },
 };
+
+export const MANAGE_SITES_VALUE = "__manage_sites__";
+
+export { ACCOUNT_SECTION_PATHS, NAV_OWNER_MAP, navOwner };
 
 // Names we have shipped links for, in copy, e-mails and older builds.
 export const SECTION_ALIASES = {
@@ -29,9 +39,10 @@ export const SECTION_ALIASES = {
   analytics: "performance",
   growth: "performance",
   referrals: "performance",
-  integrations: "settings",
-  manage: "settings",
-  billing: "settings",
+  integrations: "connections",
+  manage: "site",
+  billing: "plan",
+  settings: "site",
 };
 
 export function legacyDashboardPath(pathname) {
@@ -46,7 +57,7 @@ export function legacyDashboardPath(pathname) {
 export function resolveSection(name) {
   if (!name) return "";
   const key = SECTION_ALIASES[name] || name;
-  return SECTIONS[key] ? key : "";
+  return SECTIONS[key] || ACCOUNT_SECTION_PATHS[key] ? key : "";
 }
 
 export function defaultTab(page) {
@@ -55,7 +66,9 @@ export function defaultTab(page) {
 
 /** `("board", "players") → "/dashboard/leaderboard/players" */
 export function dashboardPath(page, tab = "") {
-  const section = SECTIONS[resolveSection(page) || "home"];
+  const resolved = resolveSection(page) || "home";
+  if (ACCOUNT_SECTION_PATHS[resolved]) return ACCOUNT_SECTION_PATHS[resolved];
+  const section = SECTIONS[resolved];
   const tabs = section.tabs || [];
   return tabs.includes(tab) ? `${section.path}/${tab}` : section.path;
 }
@@ -64,7 +77,7 @@ export function dashboardPath(page, tab = "") {
 export function parseDashboardPath(pathname) {
   const clean = pathname.replace(/\/+$/, "") || "/dashboard";
   if (clean === "/dashboard" || clean === "/dashboard.html") return { page: "home", tab: "" };
-  if (clean === "/dashboard/settings/board") return { page: "settings", tab: "" };
+  if (clean === "/dashboard/settings/board") return { page: "site", tab: "" };
   // The account settings document owns every other `/dashboard/settings` URL.
   // Returning a route for them made the shell intercept the sidebar link and
   // show this document's board settings instead of navigating to that page.
@@ -73,6 +86,7 @@ export function parseDashboardPath(pathname) {
   const [head, tail] = clean.slice("/dashboard/".length).split("/");
   const page = resolveSection(head);
   if (!page) return null;
+  if (ACCOUNT_SECTION_PATHS[page]) return null;
   const tabs = SECTIONS[page].tabs || [];
   if (tail && !tabs.includes(tail)) return null;
   return { page, tab: tail || "" };

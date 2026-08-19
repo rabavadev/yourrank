@@ -3,7 +3,7 @@ import { $, copyToClipboard, showToast } from "./utils.js";
 import { clearDirty, state, subscribe } from "./state.js";
 import { renderOverviewSummary } from "./overview.js";
 import { fitDesignPreview, loadStats, refreshDesignPreview } from "./site.js";
-import { SECTIONS, dashboardPath, defaultTab, parseDashboardPath } from "./routes.js";
+import { SECTIONS, dashboardPath, defaultTab, navOwner, parseDashboardPath } from "./routes.js";
 
 let navigationPending = false;
 let lastRouteUrl = location.pathname + location.search;
@@ -73,7 +73,7 @@ async function allowNavigation() {
 }
 
 
-const AREA_MAP = { home: "sites", board: "sites", boards: "sites", games: "sites", settings: "sites", performance: "sites" };
+const AREA_MAP = { home: "sites", board: "sites", boards: "sites", games: "sites", site: "sites", performance: "sites" };
 
 export function areaForPage(page) { return AREA_MAP[page] || "sites"; }
 
@@ -120,7 +120,7 @@ export function setActiveSideNav(page) {
   document.querySelectorAll(".lb-side-group").forEach((g) => { g.hidden = (g.dataset.area !== area && g.dataset.area !== "all"); });
   document.querySelectorAll(".lb-nav").forEach((n) => {
     const navPage = n.dataset.nav;
-    const active = navPage === page;
+    const active = navPage === navOwner(page);
     n.classList.toggle("is-on", active);
     if (active) n.setAttribute("aria-current", "page");
     else n.removeAttribute("aria-current");

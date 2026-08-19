@@ -51,6 +51,7 @@ import {
   renderNewStreamerProfile,
 } from "./auxiliary-renderers.js";
 import { parseDashboardPath, dashboardPath, resolveSection, legacyDashboardPath } from "./assets/dashboard/routes.js";
+import { ACCOUNT_SECTION_PATHS } from "@yourrank/shared/dashboard-nav";
 import { deferClickWrite, trackedDestination } from "./tracked-redirect.js";
 import { setRequestMetrics } from "@yourrank/shared/request-id";
 import { evaluateConsumerHealth } from "./consumer-health.js";
@@ -728,12 +729,10 @@ async function handleRequest(request, env, ctx, meta) {
         }
         // `?nav=` was the old address of a section. Send it to the real one so
         // the URL a user copies is the URL they can share.
-        const legacy = resolveSection(url.searchParams.get("nav"));
+        const legacyNav = url.searchParams.get("nav");
+        const legacy = resolveSection(legacyNav);
         if (legacy) {
-          // `?nav=billing|integrations|manage|settings` all meant the account
-          // settings, which are their own document now; `settings` inside the
-          // dashboard document is the selected board's own settings.
-          const target = new URL(legacy === "settings" ? "/dashboard/settings" : dashboardPath(legacy), url);
+          const target = new URL(ACCOUNT_SECTION_PATHS[legacyNav] || dashboardPath(legacy), url);
           for (const [k, v] of url.searchParams) if (k !== "nav") target.searchParams.set(k, v);
           return Response.redirect(target, 302);
         }

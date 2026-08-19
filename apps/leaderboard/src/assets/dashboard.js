@@ -96,7 +96,7 @@ async function init() {
   // when that screen is in the document.
   const hasSection = (name) => !!document.querySelector(`section[data-page="${name}"]`);
   const hasEditor = hasSection("board");
-  const hasBoardSettings = hasSection("settings");
+  const hasBoardSettings = hasSection("site");
 
   const urlParams = new URLSearchParams(location.search);
   // Plan and billing live in the account settings document; a `?plan=` on the
@@ -143,12 +143,6 @@ async function init() {
   if (hasEditor) renderEditorTimestamps();
   renderBoardSwitcher();
   renderBoardSelect();
-  document.querySelectorAll("#newBoardSide, #addBoardBtn").forEach((btn) => {
-    if (btn && !btn._wired) {
-      btn._wired = true;
-      btn.addEventListener("click", () => $("newBoard")?.click());
-    }
-  });
   if (hasSection("boards")) renderBoardsPage();
   const d = p.data || {};
   const b = d.brand || {};

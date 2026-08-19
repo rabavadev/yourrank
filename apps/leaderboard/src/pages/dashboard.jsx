@@ -39,7 +39,7 @@ const SECTION_CRUMBS = {
   board: { label: "Leaderboard", href: "/dashboard/leaderboard/setup" },
   games: { label: "Games", href: "/dashboard/games" },
   performance: { label: "Analytics", href: "/dashboard/analytics/activity" },
-  settings: { label: "Site settings", href: "/dashboard/settings/board" },
+  site: { label: "Site", href: "/dashboard/settings/board" },
   boards: { label: "Sites", href: "/dashboard/leaderboards" },
 };
 const TAB_LABELS = {
@@ -48,7 +48,7 @@ const TAB_LABELS = {
 };
 
 function LeaderboardTabs({ active }) {
-  return <nav class="editor-steps v3-tabs" aria-label="Leaderboard pages">
+  return <nav class="editor-steps v3-tabs" id="editorTabs" aria-label="Leaderboard pages">
     {BOARD_TABS.map(([key, label, href]) => (
       <a class={"editor-step v3-tab" + (key === active ? " is-active is-on" : "")} href={href} data-egroup={key} aria-current={key === active ? "page" : undefined}>{label}</a>
     ))}
@@ -80,7 +80,7 @@ function dashboardShellRoute(activePath = "") {
   if (route.page === "board") return { activeNav: "board", activeHash: route.tab || "setup" };
   if (route.page === "games") return { activeNav: "games", activeHash: "games" };
   if (route.page === "performance") return { activeNav: "performance", activeHash: route.tab || "activity" };
-  if (route.page === "settings") return { activeNav: "settings", activeHash: "board" };
+  if (route.page === "site") return { activeNav: "site", activeHash: "board" };
   if (route.page === "boards") return { activeNav: "boards", activeHash: "" };
   return { activeNav: "home", activeHash: "" };
 }
@@ -93,8 +93,8 @@ function dashboardShellRoute(activePath = "") {
 // they share one save pipeline (`collect()` reads the editor form).
 const ROUTE_SECTIONS = {
   home: ["home"],
-  board: ["board", "settings"],
-  settings: ["board", "settings"],
+  board: ["board", "site"],
+  site: ["board", "site"],
   games: ["games"],
   performance: ["performance"],
   boards: ["boards"],
@@ -141,17 +141,13 @@ function OverviewSection({ active } = {}) {
   );
 }
 
-function EditorSection({ active, activeHash = "setup" } = {}) {
+function EditorSection({ active, activeHash = "setup", showTabs = active } = {}) {
   return (
 <section class={active ? "lb-page is-on" : "lb-page"} data-page="board">
 
 <div class="design-grid">
 <div class="design-controls">
-<nav class="editor-steps v3-tabs" id="editorTabs" aria-label="Leaderboard pages">
-  {BOARD_TABS.map(([key, label, href]) => (
-    <a class={"editor-step v3-tab" + (key === activeHash ? " is-active is-on" : "")} href={href} data-egroup={key} aria-current={key === activeHash ? "page" : undefined}>{label}</a>
-  ))}
-</nav>
+{showTabs ? <LeaderboardTabs active={activeHash} /> : null}
 <h1 class="v3-section-title" data-egroup="setup">Setup</h1>
 <div class="card" data-egroup="setup"><h2>Your leaderboard info</h2><p class="card-sub">This is what visitors see when they open your site.</p><div class="grid2">
 <div class="field"><label for="f_name">Leaderboard name</label><input id="f_name" /></div>
@@ -309,7 +305,6 @@ function GamesSection({ active } = {}) {
   return (
 <section class={active ? "lb-page is-on" : "lb-page"} data-page="games">
 <div class="v3-games-page">
-    <LeaderboardTabs active="games" />
     <div class="d-flex justify-between items-center flex-wrap gap-8">
       <div>
         <h1>Games</h1>
@@ -400,7 +395,7 @@ function AnalyticsSection({ active, activeHash = "activity" } = {}) {
 
 function BoardSettingsSection({ active } = {}) {
   return (
-<section class={active ? "lb-page is-on" : "lb-page"} data-page="settings">
+<section class={active ? "lb-page is-on" : "lb-page"} data-page="site">
 <div class="v3-settings">
   <header class="v3-head">
     <h1>Site settings</h1>
@@ -490,12 +485,14 @@ function BoardSettingsSection({ active } = {}) {
 function BoardsSection({ active } = {}) {
   return (
 <section class={active ? "lb-page is-on" : "lb-page"} data-page="boards">
- <header class="v3-head v3-head--row"><div><h1>All sites</h1><p class="v3-head-sub">Choose, create, and manage your public sites.</p></div><button class="btn btn--sm btn--accent" id="addBoardFromBoards" type="button">+ New site</button></header>
+ <header class="v3-head v3-head--row"><div><h1>Sites</h1><p class="v3-head-sub">Choose, create, and manage your public sites.</p></div><button class="btn btn--sm btn--accent" id="newBoard" type="button" title="Create another site">+ New site</button></header>
+ <div class="board-upsell" id="boardLimitUpsell" role="status" hidden><div><b id="boardLimitTitle">Need another site?</b><p class="hint" id="boardLimitText"></p></div><a class="btn btn--sm btn--accent" id="boardLimitCta" href="/dashboard/settings">Upgrade plan</a></div>
+ <div class="lb-board-form" id="newBoardForm" hidden><div class="field field-flex"><label for="nb_name">Site name</label><input id="nb_name" placeholder="Summer Race 2026" /></div><div class="field field-flex"><label for="nb_slug">Web address</label><input id="nb_slug" placeholder="summer-race-2026" /></div><div class="field field-flex"><label for="nb_casino">Partner or sponsor</label><input id="nb_casino" placeholder="Your brand or sponsor" /></div><div class="field field-flex"><label for="nb_code">Promo code</label><input id="nb_code" placeholder="Optional" /></div><div class="lb-board-form-actions"><button class="btn btn--sm btn--accent" id="nb_create" type="button">Create site</button><button class="btn btn--sm btn--ghost" id="nb_cancel" type="button">Cancel</button><div class="hint w-full" id="nb_err" role="alert" aria-live="assertive"></div></div></div>
  <div class="card">
 <div class="list-controls"><input type="search" id="boardsSearch" class="list-search" placeholder="Find site…" aria-label="Find site" /></div>
 <div class="board-table-wrap">
 <table class="board-table">
-<thead><tr><th>Site</th><th>Sponsor</th><th>URL</th><th>Players</th><th>Status</th><th class="ta-r">Actions</th></tr></thead>
+<thead><tr><th>Site</th><th>Sponsor</th><th>Web address</th><th>Players</th><th>Status</th><th class="ta-r">Actions</th></tr></thead>
 <tbody id="boardsBody"></tbody>
 </table>
 </div>
@@ -510,7 +507,7 @@ const SECTIONS = {
   board: EditorSection,
   games: GamesSection,
   performance: AnalyticsSection,
-  settings: BoardSettingsSection,
+  site: BoardSettingsSection,
   boards: BoardsSection,
 };
 
@@ -530,10 +527,10 @@ export function DashboardContent({ user, activePath } = {}) {
 </div>
 <DashboardShell activeNav={activeNav} boardContext="full" crumbs={dashboardCrumbs(activeNav, activeHash)} footer="dashboard" initiallyHidden user={user}>
 <div class="lb-notice lb-notice--verification" id="verifyBanner" hidden><span class="lb-notice-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 6h16v12H4z"/><path d="m4 7 8 6 8-6"/></svg></span><div class="lb-notice-copy"><strong>Confirm your email to go live</strong><span>Your work is saved. Confirm your address before visitors can open the site.</span></div><a class="btn btn--sm btn--ghost" href="/verify-email">Send verification link</a></div>
-{sections.map((key) => {
-  const Section = SECTIONS[key];
-  return <Section active={key === activeNav} activeHash={activeHash} />;
-})}
+  {sections.map((key) => {
+    const Section = SECTIONS[key];
+    return <Section active={key === activeNav} activeHash={activeHash} showTabs={activeNav === "board"} />;
+  })}
 {hasEditor ? 
 <div class="savebar" id="savebar" hidden><span class="savebar-hint">Unsaved changes</span><span class="savebar-ts" id="editorTimestamp"></span><button class="btn btn--accent" id="save" type="button">Save changes</button></div> : null}
     </DashboardShell>

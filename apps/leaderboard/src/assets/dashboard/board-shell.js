@@ -4,9 +4,9 @@ import {
   loginRedirectPath,
   withDashboardTimeout,
 } from "./request.js";
+import { renderSiteSelector } from "./site-selector.js";
 
 const $ = (id) => document.getElementById(id);
-const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const csrf = () => document.cookie.match(/(?:^|;\s*)__csrf=([^;]+)/)?.[1] || "";
 
 async function boardApi(method, path) {
@@ -79,13 +79,15 @@ export async function loadBoardShell({ request: requestFn = boardApi } = {}) {
   const current = siteQuery() || list[0]?.id || list[0]?.siteId;
   const select = $("sidebarBoardSelect");
   const activeSiteId = current || "";
-  if (select) {
-    select.innerHTML = list.map((b) => `<option value="${esc(b.id || b.siteId)}" ${String(b.id || b.siteId) === String(current) ? "selected" : ""}>${esc(b.name || b.slug || "Board")}</option>`).join("");
-    select.addEventListener("change", () => { location.href = `${location.pathname}?siteId=${encodeURIComponent(select.value)}`; });
-  }
+  renderSiteSelector({
+    select,
+    sites: list,
+    activeId: activeSiteId,
+    onSelect: (id) => {
+      location.href = `${location.pathname}?siteId=${encodeURIComponent(id)}`;
+    },
+  });
   const board = list.find((b) => String(b.id || b.siteId) === String(current)) || list[0] || {};
-  const topbarPath = $("lbTopbarSitePath");
-  if (topbarPath) topbarPath.textContent = board.slug ? `/${board.slug}` : "";
   const live = Boolean(board.published) && user.emailVerified !== false;
   const pendingVerification = Boolean(board.published) && user.emailVerified === false;
   const status = $("lbTopbarStatus");
