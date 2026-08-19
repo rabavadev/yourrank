@@ -1,18 +1,28 @@
 import { updateProfileMenu } from "./profile-menu.js";
+import {
+  fetchDashboardJson,
+  loginRedirectPath,
+  withDashboardTimeout,
+} from "./request.js";
 
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const csrf = () => document.cookie.match(/(?:^|;\s*)__csrf=([^;]+)/)?.[1] || "";
 
 async function boardApi(method, path) {
-  const res = await fetch(path, { method, credentials: "same-origin", headers: { "x-csrf-token": csrf() } });
-  const data = await res.json().catch(() => ({}));
-  if (res.status === 401) {
-    location.href = "/login";
-    throw new Error("Session expired");
+  try {
+    const { body } = await fetchDashboardJson(path, {
+      method,
+      credentials: "same-origin",
+      headers: { "x-csrf-token": csrf() },
+    });
+    return body;
+  } catch (error) {
+    if (error?.code === "AUTH") {
+      location.href = loginRedirectPath(location);
+    }
+    throw error;
   }
-  if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
-  return data;
 }
 
 export const siteQuery = () => new URLSearchParams(location.search).get("siteId");
@@ -57,8 +67,12 @@ export function preserveSiteContextLinks(activeSiteId = "") {
 }
 
 export async function loadBoardShell({ request: requestFn = boardApi } = {}) {
-  const [me, boards] = await Promise.all([requestFn("GET", "/api/auth/me"), requestFn("GET", "/api/site/list")]);
-  const user = me.user || {};
+  const request = requestFn === boardApi
+    ? requestFn
+    : (method, path) => withDashboardTimeout(() => requestFn(method, path));
+  const [me, boards] = await Promise.all([request("GET", "/api/auth/me"), request("GET", "/api/site/list")]);
+  if (!me?.user) throw new Error("The authentication response was invalid.");
+  const user = me.user;
   updateProfileMenu(user);
   const list = boards.sites || boards.boards || boards || [];
   const current = siteQuery() || list[0]?.id || list[0]?.siteId;

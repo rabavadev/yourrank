@@ -4,7 +4,7 @@ import { loginPage } from "./pages/login.jsx";
 import { forgotPage } from "./pages/forgot.js";
 import { resetPage } from "./pages/reset.js";
 import { signupPage } from "./pages/signup.js";
-import { dashboardPage } from "./pages/dashboard.jsx";
+import { dashboardPage, dashboardNotFoundPage } from "./pages/dashboard.jsx";
 import { adminPage } from "./pages/admin.js";
 import { admin2faPage } from "./pages/admin-2fa.js";
 import { overlayPage } from "./pages/overlay.js";
@@ -36,6 +36,7 @@ export const PAGES = {
   reset: resetPage,
   signup: signupPage,
   dashboard: dashboardPage,
+  dashboardNotFound: dashboardNotFoundPage,
   giveaways: giveawaysPage,
   admin: adminPage,
   admin2fa: admin2faPage,

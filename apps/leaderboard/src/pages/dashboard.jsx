@@ -541,4 +541,34 @@ export function DashboardContent({ user, activePath } = {}) {
   );
 }
 
+export function DashboardNotFoundContent({ user } = {}) {
+  return (
+    <DashboardShell activeNav="home" boardContext="none" footer="dashboard" rootId="dashboard-not-found" user={user}>
+      <section class="lb-page is-on" data-page="not-found">
+        <header class="v3-head">
+          <p class="v3-head-kicker">404 · Dashboard</p>
+          <h1>This dashboard page doesn't exist</h1>
+          <p class="v3-head-sub">The address may be outdated, or the page may have moved.</p>
+        </header>
+        <div class="card">
+          <h2>Try one of these destinations</h2>
+          <nav class="v3-tabs" aria-label="Dashboard destinations">
+            <a class="v3-tab is-on" href="/dashboard">Overview</a>
+            <a class="v3-tab" href="/dashboard/leaderboard/setup">Leaderboard</a>
+            <a class="v3-tab" href="/dashboard/leaderboards">Sites</a>
+            <a class="v3-tab" href="/dashboard/settings/account">Settings</a>
+          </nav>
+        </div>
+      </section>
+    </DashboardShell>
+  );
+}
+
+export const dashboardNotFoundConfig = {
+  ...dashboardConfig,
+  title: "Dashboard page not found · YourRank",
+  scripts: ['<script src="/assets/shell-nav.js?v=2" defer></script>'],
+};
+
 export const dashboardPage = { config: dashboardConfig, Component: DashboardContent };
+export const dashboardNotFoundPage = { config: dashboardNotFoundConfig, Component: DashboardNotFoundContent };

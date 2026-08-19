@@ -11,6 +11,11 @@ import { initPerformance } from "./dashboard/performance.js";
 import { setupSettingsScreen } from "./dashboard/account.js";
 import { initGames } from "./dashboard/games.js";
 import { updateProfileMenu } from "./dashboard/profile-menu.js";
+import {
+  DashboardRequestError,
+  fetchDashboardJson,
+  loginRedirectPath,
+} from "./dashboard/request.js";
 import "./dashboard/help-drawer.js";
 import "./dashboard/command-palette.js";
 
@@ -38,11 +43,51 @@ function stopLoadingCopy() {
   loadingMessageTimer = undefined;
 }
 
+let initialLoadingMarkup = "";
+
+function renderDashboardLoadState(mode, {
+  title = "Couldn't load your dashboard.",
+  detail = "The dashboard service returned an unexpected response.",
+} = {}) {
+  const loading = $("loading");
+  if (!loading) return;
+  if (!initialLoadingMarkup) initialLoadingMarkup = loading.innerHTML;
+  if (mode === "loader") {
+    loading.classList.remove("is-error");
+    loading.setAttribute("aria-busy", "true");
+    loading.hidden = false;
+    loading.innerHTML = initialLoadingMarkup || '<span class="sr-only">Loading your dashboard…</span><p id="loadingStatus">Loading your workspace…</p>';
+    return;
+  }
+  stopLoadingCopy();
+  loading.classList.add("is-error");
+  loading.hidden = false;
+  loading.setAttribute("aria-busy", "false");
+  loading.innerHTML = `<div class="error-state" role="alert"><span class="error-icon" aria-hidden="true">!</span><p>${esc(title)}</p><p class="hint">${esc(detail)}</p><button class="btn btn--sm" id="retryBtn" type="button">Retry</button><a class="btn btn--sm btn--ghost" href="/dashboard">Open dashboard</a></div>`;
+  $("retryBtn")?.addEventListener("click", () => init());
+}
+
 async function init() {
+  renderDashboardLoadState("loader");
   startLoadingCopy();
   let me;
-  try { me = await (await fetch("/api/auth/me")).json(); } catch (err) { logError("auth/me", err); me = null; }
-  if (!me || !me.ok || !me.user) { location.href = "/login"; return; }
+  try {
+    ({ body: me } = await fetchDashboardJson("/api/auth/me", { credentials: "same-origin" }));
+    if (!me?.ok || !me.user) {
+      throw new DashboardRequestError("The authentication response was invalid.", { code: "INVALID_RESPONSE" });
+    }
+  } catch (err) {
+    if (err?.code === "AUTH") {
+      location.href = loginRedirectPath(location);
+      return;
+    }
+    logError("auth/me", err);
+    renderDashboardLoadState("error", {
+      title: "Couldn't start your dashboard.",
+      detail: err?.message || "Network error while checking your session.",
+    });
+    return;
+  }
   state.ME = me.user;
   const emailEl = $("userEmail"); if (emailEl) emailEl.textContent = state.ME.email;
   updateProfileMenu(state.ME);
@@ -65,15 +110,9 @@ async function init() {
   }
   const requestedSiteId = urlParams.get("board") || null;
   const apiUrl = requestedSiteId ? `/api/site?siteId=${encodeURIComponent(requestedSiteId)}` : "/api/site";
-  const loading = $("loading");
   const renderSiteLoadError = (message) => {
     const detail = message || "The board service returned an unexpected response.";
-    stopLoadingCopy();
-    if (loading) {
-      loading.classList.add("is-error");
-      loading.setAttribute("aria-busy", "false");
-      loading.innerHTML = `<div class="error-state" role="alert"><span class="error-icon" aria-hidden="true">!</span><p>Couldn't load your board.</p><p class="hint">${esc(detail)}</p><button class="btn btn--sm" id="retryBtn" type="button">Retry</button><a class="btn btn--sm btn--ghost" href="/dashboard">Open dashboard</a></div>`;
-    }
+    renderDashboardLoadState("error", { title: "Couldn't load your board.", detail });
     const status = $("status");
     if (status) {
       status.textContent = `Couldn't load your board: ${detail}`;
@@ -81,15 +120,11 @@ async function init() {
       status.setAttribute("aria-live", "assertive");
       status.hidden = false;
     }
-    $("retryBtn")?.addEventListener("click", () => init());
   };
   let p;
   try {
-    const res = await fetch(apiUrl);
-    let body;
-    try { body = await res.json(); } catch (err) { throw new Error(`The board service returned invalid data${res.status ? ` (HTTP ${res.status})` : ""}.`); }
-    if (!res.ok || !body?.ok) throw new Error(body?.error || `The board service returned HTTP ${res.status}.`);
-    p = body;
+    ({ body: p } = await fetchDashboardJson(apiUrl, { credentials: "same-origin" }));
+    if (!p?.ok) throw new DashboardRequestError(p?.error || "The board service returned an unexpected response.", { code: "REQUEST_FAILED" });
   } catch (err) {
     logError("site", err);
     if (state.ME.isAdmin && err?.message?.includes("HTTP 404")) { location.href = "/admin"; return; }

@@ -85,6 +85,25 @@ describe("dashboard routes", () => {
     expect(boot).not.toContain("isBoardSetup");
   });
 
+  it("keeps unknown dashboard paths inside the authenticated dashboard boundary", () => {
+    const worker = readFileSync(new URL("../index.js", import.meta.url), "utf8");
+    const boundaryStart = worker.indexOf('if (path.startsWith("/dashboard/")) {', worker.indexOf("An unknown tab under a real section"));
+    const boundaryEnd = worker.indexOf('if (path === "/me"', boundaryStart);
+    const boundary = worker.slice(boundaryStart, boundaryEnd);
+    expect(worker).toContain("PAGES.dashboardNotFound");
+    expect(worker).toContain("status: 404");
+    expect(worker).toContain("if (!user) return redirectToLogin(url);");
+    expect(boundary).toContain("PAGES.dashboardNotFound");
+    expect(boundary).not.toContain("notFoundPage(");
+    expect(boundaryStart).toBeGreaterThan(-1);
+    expect(boundaryStart).toBeLessThan(worker.indexOf("notFoundPage(", boundaryStart));
+  });
+
+  it("keeps dashboard query parameters through client-side login", () => {
+    const auth = readFileSync(new URL("../assets/auth.js", import.meta.url), "utf8");
+    expect(auth).toContain("return path + u.search");
+  });
+
   it("no longer navigates through ?nav=", () => {
     for (const file of ["../assets/dashboard/shell.js", "../assets/dashboard.js", "../pages/dashboard.jsx"]) {
       const src = readFileSync(new URL(file, import.meta.url), "utf8");

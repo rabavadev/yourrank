@@ -3,6 +3,7 @@ import { openDrawer, closeDrawer } from "./dashboard/shell.js";
 import { setState } from "./dashboard/state.js";
 import { UNKNOWN, inlineStateHtml, renderEmpty, renderError, setBlockLoading, setMetricLoading, setMetricUnknown, setRowsLoading } from "./dashboard/states.js";
 import { loadBoardShell, preserveSiteContextLinks, sitePath, siteQuery } from "./dashboard/board-shell.js";
+import { fetchDashboardJson, loginRedirectPath } from "./dashboard/request.js";
 import "./dashboard/help-drawer.js";
 import "./dashboard/command-palette.js";
 
@@ -15,9 +16,13 @@ const LEDGER_EVENT_LABELS = Object.freeze({ earn: "Earned", spend: "Spent", rede
 async function api(method, path, body) {
   const opts = { method, credentials: "same-origin", headers: { "x-csrf-token": csrf() } };
   if (body) { opts.headers["content-type"] = "application/json"; opts.body = JSON.stringify(body); }
-  const res = await fetch(path, opts); const data = await res.json().catch(() => ({}));
-  if (res.status === 401) { location.href = "/login"; throw new Error("Session expired"); }
-  if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`); return data;
+  try {
+    const { body: data } = await fetchDashboardJson(path, opts);
+    return data;
+  } catch (error) {
+    if (error?.code === "AUTH") location.href = loginRedirectPath(location);
+    throw error;
+  }
 }
 let state = {};
 let viewerCtrl, redemptionCtrl, rewardCtrl;
