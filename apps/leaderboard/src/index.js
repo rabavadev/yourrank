@@ -51,6 +51,7 @@ import {
   renderNewStreamerProfile,
 } from "./auxiliary-renderers.js";
 import { parseDashboardPath, dashboardPath, resolveSection, legacyDashboardPath } from "./assets/dashboard/routes.js";
+import { ACCOUNT_SECTION_PATHS } from "@yourrank/shared/dashboard-nav";
 import { deferClickWrite, trackedDestination } from "./tracked-redirect.js";
 import { setRequestMetrics } from "@yourrank/shared/request-id";
 import { evaluateConsumerHealth } from "./consumer-health.js";
@@ -731,13 +732,7 @@ async function handleRequest(request, env, ctx, meta) {
         const legacyNav = url.searchParams.get("nav");
         const legacy = resolveSection(legacyNav);
         if (legacy) {
-          const legacyAccountPaths = {
-            billing: "/dashboard/settings/plan",
-            integrations: "/dashboard/settings/connections",
-            manage: "/dashboard/settings",
-            settings: "/dashboard/settings",
-          };
-          const target = new URL(legacyAccountPaths[legacyNav] || dashboardPath(legacy), url);
+          const target = new URL(ACCOUNT_SECTION_PATHS[legacyNav] || dashboardPath(legacy), url);
           for (const [k, v] of url.searchParams) if (k !== "nav") target.searchParams.set(k, v);
           return Response.redirect(target, 302);
         }

@@ -20,8 +20,23 @@ function collectFiles(dir) {
   return results;
 }
 
+const IMPORT_SPECIFIER_RE = /\b(?:import|export)\s+(?:[\s\S]*?\sfrom\s+)?["']([^"']+)["']/g;
+const DYNAMIC_IMPORT_RE = /\bimport\s*\(\s*["']([^"']+)["']\s*\)/g;
+
+function isBareSpecifier(specifier) {
+  return !specifier.startsWith(".") && !specifier.startsWith("/") && !specifier.startsWith("#");
+}
+
+export function hasBareImport(source) {
+  return [IMPORT_SPECIFIER_RE, DYNAMIC_IMPORT_RE].some((pattern) => {
+    pattern.lastIndex = 0;
+    return [...source.matchAll(pattern)].some((match) => isBareSpecifier(match[1]));
+  });
+}
+
 async function assetContent(rel) {
-  if (rel === "dashboard/routes.js") {
+  const source = fs.readFileSync(path.join(assetsDir, rel), "utf8");
+  if (path.extname(rel) === ".js" && hasBareImport(source)) {
     const result = await bundle({
       entryPoints: [path.join(assetsDir, rel)],
       bundle: true,
@@ -31,7 +46,7 @@ async function assetContent(rel) {
     });
     return result.outputFiles[0].text;
   }
-  return fs.readFileSync(path.join(assetsDir, rel), "utf8");
+  return source;
 }
 
 export async function writeAssetBundle() {

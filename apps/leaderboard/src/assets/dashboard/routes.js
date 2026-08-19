@@ -8,7 +8,11 @@
 //
 // No browser globals at module scope: the Worker imports this too.
 
-import { NAV_OWNER_MAP, navOwner } from "@yourrank/shared/dashboard-nav";
+import {
+  ACCOUNT_SECTION_PATHS,
+  NAV_OWNER_MAP,
+  navOwner,
+} from "@yourrank/shared/dashboard-nav";
 
 export const SECTIONS = {
   home: { path: "/dashboard", title: "Overview" },
@@ -24,7 +28,7 @@ export const SECTIONS = {
 
 export const MANAGE_SITES_VALUE = "__manage_sites__";
 
-export { NAV_OWNER_MAP, navOwner };
+export { ACCOUNT_SECTION_PATHS, NAV_OWNER_MAP, navOwner };
 
 // Names we have shipped links for, in copy, e-mails and older builds.
 export const SECTION_ALIASES = {
@@ -39,11 +43,6 @@ export const SECTION_ALIASES = {
   manage: "site",
   billing: "plan",
   settings: "site",
-};
-
-const ACCOUNT_SECTION_PATHS = {
-  plan: "/dashboard/settings/plan",
-  connections: "/dashboard/settings/connections",
 };
 
 export function legacyDashboardPath(pathname) {

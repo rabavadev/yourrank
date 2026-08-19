@@ -73,6 +73,15 @@ export const NAV_OWNER_MAP = {
   billing: "settings",
 } as const;
 
+export const ACCOUNT_SECTION_PATHS = {
+  plan: "/dashboard/settings/plan",
+  connections: "/dashboard/settings/connections",
+  billing: "/dashboard/settings/plan",
+  integrations: "/dashboard/settings/connections",
+  manage: "/dashboard/settings",
+  settings: "/dashboard/settings",
+} as const;
+
 export function navOwner(nav: string | null | undefined): string {
   return NAV_OWNER_MAP[nav as keyof typeof NAV_OWNER_MAP] || nav || "home";
 }

@@ -2,6 +2,7 @@
 // parse those URLs from routes.js, so these assertions cover both sides.
 import { describe, it, expect } from "bun:test";
 import { readFileSync } from "node:fs";
+import { ACCOUNT_SECTION_PATHS } from "@yourrank/shared/dashboard-nav";
 import { dashboardPath, parseDashboardPath, resolveSection, defaultTab, legacyDashboardPath } from "../assets/dashboard/routes.js";
 import { LEGACY_TELEGRAM_REDIRECTS, legacyTelegramRedirect } from "../telegram-routes.js";
 
@@ -37,6 +38,11 @@ describe("dashboard routes", () => {
     expect(resolveSection("settings")).toBe("site");
     expect(dashboardPath("billing")).toBe("/dashboard/settings/plan");
     expect(dashboardPath("integrations")).toBe("/dashboard/settings/connections");
+    expect(ACCOUNT_SECTION_PATHS.billing).toBe(dashboardPath("billing"));
+    expect(ACCOUNT_SECTION_PATHS.integrations).toBe(dashboardPath("integrations"));
+    const worker = readFileSync(new URL("../index.js", import.meta.url), "utf8");
+    expect(worker).toContain("ACCOUNT_SECTION_PATHS[legacyNav]");
+    expect(worker).not.toContain("legacyAccountPaths");
     expect(resolveSection("editor")).toBe("board");
     expect(dashboardPath("performance")).toBe("/dashboard/analytics");
   });
