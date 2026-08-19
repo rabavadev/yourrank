@@ -6,7 +6,7 @@ import { dashboardNavItems as sharedDashboardNavItems } from "@yourrank/shared/d
 import { raw } from "hono/html";
 import { crumbsHtml, navListHtml } from "@yourrank/shared/dashboard-chrome";
 import { brandMarkSvg } from "@yourrank/shared/brand-assets";
-import { navOwner } from "../assets/dashboard/routes.js";
+import { navOwner } from "@yourrank/shared/dashboard-nav";
 
 const CREDITS_NAV_KEYS = new Set(["credits", "channel", "redemptions", "shop", "rules", "viewers", "history", "rewards", "audience"]);
 
@@ -63,7 +63,6 @@ export function DashboardShell({ activeNav = "home", boardContext = "full", foot
                   <span class="lb-board-select-lbl">Current site</span>
                   <div class="lb-board-select-row">
                     <select class="lb-board-select" id="sidebarBoardSelect" aria-label="Switch site"></select>
-                    <span class="lb-site-path" id="lbTopbarSitePath">Web address</span>
                   </div>
                 </div>
               </div>

@@ -8,6 +8,7 @@ import { NAV_OWNER_MAP, navOwner, parseDashboardPath } from "../assets/dashboard
 const user = { display_name: "Test operator", plan: "pro" };
 const worker = readFileSync(new URL("../index.js", import.meta.url), "utf8");
 const dashboardJs = readFileSync(new URL("../assets/dashboard.js", import.meta.url), "utf8");
+const assetBundle = readFileSync(new URL("../assets_bundled.js", import.meta.url), "utf8");
 const boardsJs = readFileSync(new URL("../assets/dashboard/boards.js", import.meta.url), "utf8");
 const boardShellJs = readFileSync(new URL("../assets/dashboard/board-shell.js", import.meta.url), "utf8");
 const siteSelectorJs = readFileSync(new URL("../assets/dashboard/site-selector.js", import.meta.url), "utf8");
@@ -60,7 +61,8 @@ describe("dashboard navigation ownership", () => {
     expect(boardShellJs).toContain("renderSiteSelector({");
     expect(boardsJs).not.toContain("MANAGE_SITES_VALUE");
     expect(boardShellJs).not.toContain("MANAGE_SITES_VALUE");
-    expect(boardShellJs).toContain('topbarPath: $("lbTopbarSitePath")');
+    expect(boardShellJs).not.toContain("topbarPath");
+    expect(siteSelectorJs).not.toContain("topbarPath");
   });
 
   it("renders leaderboard tabs only on leaderboard routes", () => {
@@ -93,7 +95,7 @@ describe("dashboard navigation ownership", () => {
       ["performance", "performance"],
       ["telegram", "telegram"],
       ["boards", "site"],
-      ["settings", "site"],
+      ["settings", "settings"],
       ["account", "settings"],
       ["connections", "settings"],
       ["integrations", "settings"],
@@ -113,8 +115,13 @@ describe("dashboard navigation ownership", () => {
   });
 
   it("uses one shared active-navigation map in server and client code", () => {
+    const shell = readFileSync(new URL("../pages/dashboard-shell.jsx", import.meta.url), "utf8");
+    expect(shell).toContain('from "@yourrank/shared/dashboard-nav"');
+    expect(shell).not.toContain("../assets/dashboard/routes.js");
     expect(readFileSync(new URL("../assets/dashboard/shell.js", import.meta.url), "utf8"))
       .not.toContain("const NAV_OWNER_MAP");
+    expect(assetBundle).not.toContain("@yourrank/shared/dashboard-nav");
+    expect(assetBundle).toContain('"/assets/dashboard/routes.js"');
     for (const [route] of Object.entries(NAV_OWNER_MAP)) {
       expect(mapActiveNav(route)).toBe(navOwner(route));
     }
@@ -122,9 +129,12 @@ describe("dashboard navigation ownership", () => {
 
   it("keeps the site address quiet in the topbar", () => {
     const html = dashboardHtml("/dashboard");
-    expect(html).toContain(">Web address</span>");
-    expect(html).not.toContain("Web address loading");
-    expect(siteSelectorJs).toContain('topbarPath.textContent = "Web address"');
-    expect(boardShellJs).not.toContain("Web address: /");
+    const share = dashboardHtml("/dashboard/leaderboard/share");
+    expect(html).not.toContain('id="lbTopbarSitePath"');
+    expect(html).not.toContain(">Web address</span>");
+    expect(siteSelectorJs).not.toContain("Web address");
+    expect(boardShellJs).not.toContain("Web address");
+    expect(share).toContain('id="embedPublicLink"');
+    expect(share).toContain('id="embedPublicCopy"');
   });
 });

@@ -42,6 +42,41 @@ const DASHBOARD_NAV: NavItem[] = [
   { key: "settings", label: "Settings", href: "/dashboard/settings", icon: GEAR_ICON },
 ];
 
+export const NAV_OWNER_MAP = {
+  board: "board",
+  leaderboard: "board",
+  giveaways: "giveaways",
+  raffles: "raffles",
+  predictions: "predictions",
+  drops: "drops",
+  games: "games",
+  activity: "performance",
+  referrals: "performance",
+  performance: "performance",
+  redemptions: "redemptions",
+  shop: "redemptions",
+  rules: "redemptions",
+  channel: "redemptions",
+  rewards: "redemptions",
+  viewers: "redemptions",
+  audience: "redemptions",
+  history: "redemptions",
+  boards: "site",
+  site: "site",
+  settings: "settings",
+  account: "settings",
+  team: "settings",
+  plan: "settings",
+  connections: "settings",
+  data: "settings",
+  integrations: "settings",
+  billing: "settings",
+} as const;
+
+export function navOwner(nav: string | null | undefined): string {
+  return NAV_OWNER_MAP[nav as keyof typeof NAV_OWNER_MAP] || nav || "home";
+}
+
 export function dashboardNavItems(): NavItem[] {
   return DASHBOARD_NAV.map((item) => ({ ...item }));
 }

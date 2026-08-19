@@ -32,8 +32,11 @@ describe("dashboard routes", () => {
     // e-mails land on the section they meant rather than on a 404.
     expect(resolveSection("overview")).toBe("home");
     expect(resolveSection("analytics")).toBe("performance");
-    expect(resolveSection("billing")).toBe("site");
+    expect(resolveSection("billing")).toBe("plan");
+    expect(resolveSection("integrations")).toBe("connections");
     expect(resolveSection("settings")).toBe("site");
+    expect(dashboardPath("billing")).toBe("/dashboard/settings/plan");
+    expect(dashboardPath("integrations")).toBe("/dashboard/settings/connections");
     expect(resolveSection("editor")).toBe("board");
     expect(dashboardPath("performance")).toBe("/dashboard/analytics");
   });

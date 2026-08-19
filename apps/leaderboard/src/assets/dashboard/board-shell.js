@@ -83,7 +83,6 @@ export async function loadBoardShell({ request: requestFn = boardApi } = {}) {
     select,
     sites: list,
     activeId: activeSiteId,
-    topbarPath: $("lbTopbarSitePath"),
     onSelect: (id) => {
       location.href = `${location.pathname}?siteId=${encodeURIComponent(id)}`;
     },

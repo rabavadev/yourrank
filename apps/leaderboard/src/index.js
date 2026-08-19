@@ -731,10 +731,13 @@ async function handleRequest(request, env, ctx, meta) {
         const legacyNav = url.searchParams.get("nav");
         const legacy = resolveSection(legacyNav);
         if (legacy) {
-          // These old names addressed account settings; `site` is now the
-          // selected site's settings section in the dashboard document.
-          const accountSettingsNav = ["billing", "integrations", "manage", "settings"].includes(legacyNav);
-          const target = new URL(accountSettingsNav ? "/dashboard/settings" : dashboardPath(legacy), url);
+          const legacyAccountPaths = {
+            billing: "/dashboard/settings/plan",
+            integrations: "/dashboard/settings/connections",
+            manage: "/dashboard/settings",
+            settings: "/dashboard/settings",
+          };
+          const target = new URL(legacyAccountPaths[legacyNav] || dashboardPath(legacy), url);
           for (const [k, v] of url.searchParams) if (k !== "nav") target.searchParams.set(k, v);
           return Response.redirect(target, 302);
         }

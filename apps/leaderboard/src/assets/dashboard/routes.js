@@ -8,6 +8,8 @@
 //
 // No browser globals at module scope: the Worker imports this too.
 
+import { NAV_OWNER_MAP, navOwner } from "@yourrank/shared/dashboard-nav";
+
 export const SECTIONS = {
   home: { path: "/dashboard", title: "Overview" },
   board: { path: "/dashboard/leaderboard", title: "Leaderboard", tabs: ["setup", "players", "design", "share", "history"] },
@@ -22,39 +24,7 @@ export const SECTIONS = {
 
 export const MANAGE_SITES_VALUE = "__manage_sites__";
 
-export const NAV_OWNER_MAP = {
-  board: "board",
-  leaderboard: "board",
-  giveaways: "giveaways",
-  raffles: "raffles",
-  predictions: "predictions",
-  drops: "drops",
-  games: "games",
-  activity: "performance",
-  referrals: "performance",
-  performance: "performance",
-  redemptions: "redemptions",
-  shop: "redemptions",
-  rules: "redemptions",
-  channel: "redemptions",
-  rewards: "redemptions",
-  viewers: "redemptions",
-  audience: "redemptions",
-  history: "redemptions",
-  boards: "site",
-  site: "site",
-  settings: "site",
-  account: "settings",
-  team: "settings",
-  plan: "settings",
-  connections: "settings",
-  data: "settings",
-  integrations: "settings",
-};
-
-export function navOwner(nav) {
-  return NAV_OWNER_MAP[nav] || nav || "home";
-}
+export { NAV_OWNER_MAP, navOwner };
 
 // Names we have shipped links for, in copy, e-mails and older builds.
 export const SECTION_ALIASES = {
@@ -65,10 +35,15 @@ export const SECTION_ALIASES = {
   analytics: "performance",
   growth: "performance",
   referrals: "performance",
-  integrations: "site",
+  integrations: "connections",
   manage: "site",
-  billing: "site",
+  billing: "plan",
   settings: "site",
+};
+
+const ACCOUNT_SECTION_PATHS = {
+  plan: "/dashboard/settings/plan",
+  connections: "/dashboard/settings/connections",
 };
 
 export function legacyDashboardPath(pathname) {
@@ -83,7 +58,7 @@ export function legacyDashboardPath(pathname) {
 export function resolveSection(name) {
   if (!name) return "";
   const key = SECTION_ALIASES[name] || name;
-  return SECTIONS[key] ? key : "";
+  return SECTIONS[key] || ACCOUNT_SECTION_PATHS[key] ? key : "";
 }
 
 export function defaultTab(page) {
@@ -92,7 +67,9 @@ export function defaultTab(page) {
 
 /** `("board", "players") → "/dashboard/leaderboard/players" */
 export function dashboardPath(page, tab = "") {
-  const section = SECTIONS[resolveSection(page) || "home"];
+  const resolved = resolveSection(page) || "home";
+  if (ACCOUNT_SECTION_PATHS[resolved]) return ACCOUNT_SECTION_PATHS[resolved];
+  const section = SECTIONS[resolved];
   const tabs = section.tabs || [];
   return tabs.includes(tab) ? `${section.path}/${tab}` : section.path;
 }
@@ -110,6 +87,7 @@ export function parseDashboardPath(pathname) {
   const [head, tail] = clean.slice("/dashboard/".length).split("/");
   const page = resolveSection(head);
   if (!page) return null;
+  if (ACCOUNT_SECTION_PATHS[page]) return null;
   const tabs = SECTIONS[page].tabs || [];
   if (tail && !tabs.includes(tail)) return null;
   return { page, tab: tail || "" };

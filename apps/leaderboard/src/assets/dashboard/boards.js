@@ -209,7 +209,6 @@ export function renderBoardSelect() {
     select: sel,
     sites: state.BOARDS,
     activeId: state.ACTIVE_SITE_ID,
-    topbarPath: $("lbTopbarSitePath"),
     onSelect: (id) => requestDashboardRoute("home", "", { query: `board=${encodeURIComponent(id)}`, reload: true }),
   });
 }

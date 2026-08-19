@@ -1,14 +1,7 @@
 import { MANAGE_SITES_VALUE } from "./routes.js";
+import { esc } from "./utils.js";
 
-const esc = (value) => String(value ?? "").replace(/[&<>"']/g, (char) => ({
-  "&": "&amp;",
-  "<": "&lt;",
-  ">": "&gt;",
-  '"': "&quot;",
-  "'": "&#39;",
-}[char]));
-
-export function renderSiteSelector({ select, sites = [], activeId = "", onSelect, topbarPath } = {}) {
+export function renderSiteSelector({ select, sites = [], activeId = "", onSelect } = {}) {
   if (!select) return;
   const list = Array.isArray(sites) ? sites : [];
   select.innerHTML = list.length
@@ -31,17 +24,4 @@ export function renderSiteSelector({ select, sites = [], activeId = "", onSelect
     }
     if (id && id !== String(activeId)) onSelect?.(id);
   };
-
-  const active = list.find((site) => String(site.id || site.siteId) === String(activeId)) || list[0];
-  if (topbarPath) {
-    if (active?.slug) {
-      topbarPath.textContent = "Web address";
-      topbarPath.title = `Web address: /${active.slug}`;
-      topbarPath.setAttribute("aria-label", `Web address: /${active.slug}`);
-    } else {
-      topbarPath.textContent = "Web address unavailable";
-      topbarPath.removeAttribute("title");
-      topbarPath.setAttribute("aria-label", "Web address unavailable");
-    }
-  }
 }
