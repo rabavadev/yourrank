@@ -85,6 +85,15 @@ describe("signed-in shell navigation", () => {
     expect(html).not.toContain('class="lb-pub-toggle"');
   });
 
+  it("renders unknown dashboard routes in the canonical shell", () => {
+    const html = PAGES.dashboardNotFound.Component({ user }).toString();
+    expect(html).toContain('data-auth-workspace="true"');
+    expect(html).toMatch(/This dashboard page doesn(?:&#39;|')t exist/);
+    expect(html).toContain('href="/dashboard/leaderboard/setup"');
+    expect(html).not.toContain("No leaderboard here");
+    expect(PAGES.dashboardNotFound.config.scripts.join("")).not.toContain("dashboard.js");
+  });
+
   it("keeps site controls out of the rail and limits the account menu", () => {
     const html = renderPage(RewardsViewersPage);
     const rail = html.slice(html.indexOf("<aside"), html.indexOf("</aside>"));

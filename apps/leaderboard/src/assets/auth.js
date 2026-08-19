@@ -39,7 +39,7 @@ function safeNextPath(value) {
       "/verify-email"
     ]);
     const allowedPrefixes = ["/dashboard/"];
-    if (allowedExact.has(path) || allowedPrefixes.some(prefix => path.startsWith(prefix))) return path;
+    if (allowedExact.has(path) || allowedPrefixes.some(prefix => path.startsWith(prefix))) return path + u.search;
   } catch (_) {}
   return "";
 }

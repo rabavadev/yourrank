@@ -9,6 +9,11 @@ import path from "node:path";
 
 const assetsDir = path.resolve(import.meta.dir, "../assets");
 const sheets = fs.readdirSync(assetsDir).filter((f) => f.endsWith(".css"));
+const cookieScript = fs.readFileSync(path.join(assetsDir, "cookie-consent.js"), "utf8");
+const appCss = fs.readFileSync(path.join(assetsDir, "app.css"), "utf8");
+const headersSource = fs.readFileSync(path.resolve(import.meta.dir, "../middleware/headers.js"), "utf8");
+const indexSource = fs.readFileSync(path.resolve(import.meta.dir, "../index.js"), "utf8");
+const siteRenderSource = fs.readFileSync(path.resolve(import.meta.dir, "../../../../packages/shared/src/site-render.ts"), "utf8");
 
 const stripped = (css) => css.replace(/\/\*[\s\S]*?\*\//g, "").replace(/(["'])(?:\\.|(?!\1)[^\\])*\1/g, '""');
 
@@ -17,6 +22,38 @@ describe("stylesheets", () => {
     expect(sheets).not.toContain("dashboard-v3.css");
     expect(sheets).toContain("dashboard-v4.css");
     expect(sheets).toContain("app.css");
+    expect(sheets).toContain("cookie-consent.css");
+  });
+
+  it("keeps cookie consent self-contained on every injection surface", () => {
+    expect(cookieScript).toContain('stylesheetHref = "/assets/cookie-consent.css"');
+    expect(cookieScript).toContain('rel = "stylesheet"');
+    expect(cookieScript).toContain("yr-consent");
+    expect(cookieScript).not.toContain("cookie-open");
+    expect(cookieScript).not.toMatch(/\bbtn(?:--|["'])/);
+    expect(appCss).not.toContain("cookie-banner");
+    expect(appCss).not.toContain("cookie-open");
+    expect(headersSource).toContain('/assets/cookie-consent.js');
+    expect(indexSource).toContain("addCookieConsent");
+    expect(siteRenderSource).toContain('/assets/cookie-consent.js');
+    const addConsentSource = indexSource.slice(indexSource.indexOf("function addCookieConsent"), indexSource.indexOf("const MAX_BODY_BYTES"));
+    expect(addConsentSource).not.toContain('/assets/app.css"');
+    expect(headersSource.slice(headersSource.indexOf("function statusPage"), headersSource.indexOf("const HOME_BTN"))).not.toContain('/assets/app.css"');
+    expect(siteRenderSource).not.toContain('/assets/app.css"');
+  });
+
+  it("keeps the consent banner viewport-bound and usable on narrow screens", () => {
+    const consentCss = fs.readFileSync(path.join(assetsDir, "cookie-consent.css"), "utf8");
+    expect(consentCss).toContain("position: fixed");
+    expect(consentCss).toContain("max-width: 100vw");
+    expect(consentCss).toContain("env(safe-area-inset-right)");
+    expect(consentCss).toContain("env(safe-area-inset-bottom)");
+    expect(consentCss).toContain("env(safe-area-inset-left)");
+    expect(consentCss).not.toContain("env(safe-area-inset-top)");
+    expect(consentCss).toContain("var(--z-toast, 200)");
+    expect(consentCss).toContain("min-height: 44px");
+    expect(consentCss).toContain("@media (max-width: 360px)");
+    expect(consentCss).toContain(":focus-visible");
   });
 
   for (const sheet of sheets) {

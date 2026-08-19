@@ -11,6 +11,7 @@ import { serveStaticAsset } from "../middleware/static-assets.js";
 
 const testAssets = {
   "/assets/app.css": ["/* app.css */ .x{}", ".css"],
+  "/assets/cookie-consent.css": [".yr-consent { position: fixed; }", ".css"],
   "/assets/dashboard.js": ["/* dashboard.js */ console.log(1)", ".js"],
 };
 
@@ -25,6 +26,13 @@ describe("serveStaticAsset caching", () => {
     expect(cc).not.toMatch(/max-age=\s*(?!0)\d/); // no long max-age
     expect(res.headers.get("etag")).toBeTruthy();
     expect(res.headers.get("content-type")).toMatch(/text\/css/);
+  });
+
+  it("serves the consent stylesheet as CSS", () => {
+    const res = serveStaticAsset("/assets/cookie-consent.css", reqWith(), testAssets);
+    expect(res.status).toBe(200);
+    expect(res.headers.get("content-type")).toBe("text/css; charset=utf-8");
+    expect(res.headers.get("cache-control")).toContain("no-cache");
   });
 
   it("returns 304 when If-None-Match matches the current ETag", async () => {

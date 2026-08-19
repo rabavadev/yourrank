@@ -822,6 +822,26 @@ async function handleRequest(request, env, ctx, meta) {
         const section = resolveSection(path.slice("/dashboard/".length).split("/")[0]);
         if (section) return Response.redirect(new URL(dashboardPath(section), url), 302);
       }
+      if (path.startsWith("/dashboard/")) {
+        const user = await currentUser(request, env);
+        if (!user) return redirectToLogin(url);
+        try {
+          const html = addCookieConsent(await renderHtmlPage(PAGES.dashboardNotFound, {
+            activePath: url.pathname + url.search,
+            user,
+            reqId: reqId || "",
+            theme: "light",
+          }));
+          return new Response(html, {
+            status: 404,
+            headers: { ...SECURE_HTML, ...csrfHeader, "cache-control": "no-store, no-cache, must-revalidate" },
+          });
+        } catch (e) {
+          if (workerLog) workerLog.error("dashboard_not_found_render_failed", { error: String(e?.message || e) });
+          else console.error("dashboard not found render failed:", String(e?.message || e));
+          return new Response(error500Page(nonce), { status: 500, headers: HTML_N });
+        }
+      }
       if (path === "/me" || path === "/me.html") {
         return new Response(addCookieConsent(fillYear(viewerDashboardPage)), { headers: { ...HTML_N, ...csrfHeader, "cache-control": "no-store, no-cache, must-revalidate" } });
       }
