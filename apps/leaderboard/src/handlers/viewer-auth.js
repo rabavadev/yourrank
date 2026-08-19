@@ -20,6 +20,14 @@ import {
 } from "@yourrank/shared/viewer-session";
 import { bad, json, rateLimit, clientIp } from "../auth.js";
 import { consumeOAuthState, storeOAuthState } from "@yourrank/shared/oauth-state";
+import { resolveCustomDomain } from "../middleware/custom-domain.js";
+import { PLATFORM_HOST } from "../constants.js";
+
+const KICK_VIEWER_HANDOFF_PROVIDER = "kick_viewer_handoff";
+const KICK_VIEWER_HANDOFF_TTL_SECONDS = 90;
+export const KICK_VIEWER_STATE_PREFIX = "viewer_";
+const APEX_ORIGIN = `https://${PLATFORM_HOST}`;
+const CUSTOM_DOMAIN_RETURN_PATHS = new Set(["/", "/leaderboard", "/shop", "/games", "/me"]);
 
 function randomState() {
   const bytes = crypto.getRandomValues(new Uint8Array(32));
@@ -28,6 +36,12 @@ function randomState() {
 
 function redirect(url, headers = {}, status = 302) {
   return new Response(null, { status, headers: { location: url, ...headers } });
+}
+
+function errorRedirect(code, origin = "") {
+  const target = origin ? new URL("/me", origin) : new URL("/me", APEX_ORIGIN);
+  target.searchParams.set("error", code);
+  return redirect(origin && origin !== APEX_ORIGIN ? target.toString() : `${target.pathname}${target.search}`);
 }
 
 function safeReturnTo(raw, allowedOrigin, fallback = "/me") {
@@ -44,6 +58,89 @@ function safeReturnTo(raw, allowedOrigin, fallback = "/me") {
     }
   }
   return fallback;
+}
+
+function safeCustomDomainReturnTo(raw, allowedOrigin) {
+  const apexFallback = safeApexViewerReturnTo(raw);
+  if (apexFallback) return apexFallback;
+  const rawValue = String(raw || "").trim();
+  if (rawValue.startsWith("//") || rawValue.startsWith("/\\")) {
+    return `${APEX_ORIGIN}/me`;
+  }
+  if (rawValue && !rawValue.startsWith("/")) {
+    try {
+      const parsed = new URL(rawValue, allowedOrigin);
+      if (parsed.origin !== allowedOrigin) return `${APEX_ORIGIN}/me`;
+    } catch {
+      return `${APEX_ORIGIN}/me`;
+    }
+  }
+  const candidate = safeReturnTo(raw, allowedOrigin);
+  try {
+    const parsed = new URL(candidate, allowedOrigin);
+    const path = parsed.pathname.replace(/\/+$/, "") || "/";
+    if (parsed.origin !== allowedOrigin || !CUSTOM_DOMAIN_RETURN_PATHS.has(path)) {
+      return `${APEX_ORIGIN}/me`;
+    }
+    return `${path}${parsed.search}${parsed.hash}`;
+  } catch {
+    return `${APEX_ORIGIN}/me`;
+  }
+}
+
+function safeApexViewerReturnTo(raw) {
+  try {
+    const parsed = new URL(String(raw || ""));
+    if (parsed.origin !== APEX_ORIGIN || parsed.pathname !== "/me") return "";
+    return parsed.toString();
+  } catch {
+    return "";
+  }
+}
+
+function safeViewerReturnTo(raw, targetOrigin, sourceOrigin = targetOrigin) {
+  if (sourceOrigin !== targetOrigin) return "/me";
+  return isCookieCoveredOrigin(targetOrigin)
+    ? safeReturnTo(raw, targetOrigin)
+    : safeCustomDomainReturnTo(raw, targetOrigin);
+}
+
+function isCookieCoveredOrigin(origin) {
+  try {
+    const hostname = new URL(origin).hostname.toLowerCase();
+    return hostname === PLATFORM_HOST || hostname.endsWith(`.${PLATFORM_HOST}`);
+  } catch {
+    return false;
+  }
+}
+
+async function resolveViewerOrigin(rawOrigin, env, resolveCustomDomainImpl = resolveCustomDomain) {
+  let parsed;
+  try {
+    parsed = new URL(String(rawOrigin || ""));
+  } catch {
+    return APEX_ORIGIN;
+  }
+  if (parsed.protocol !== "https:") return APEX_ORIGIN;
+  const hostname = parsed.hostname.toLowerCase();
+  if (hostname === PLATFORM_HOST || hostname.endsWith(`.${PLATFORM_HOST}`)) {
+    return parsed.origin;
+  }
+  try {
+    if (await resolveCustomDomainImpl(env, hostname)) return parsed.origin;
+  } catch {
+    // Invalid or unavailable custom domains fall back to the platform origin.
+  }
+  return APEX_ORIGIN;
+}
+
+function viewerReturnLocation(stateData, targetOrigin) {
+  const returnTo = safeViewerReturnTo(stateData?.returnTo, targetOrigin, stateData?.origin);
+  try {
+    return new URL(returnTo, targetOrigin).toString();
+  } catch {
+    return `${targetOrigin}/me`;
+  }
 }
 
 export async function requireViewer(req, env) {
@@ -68,11 +165,11 @@ export async function handleKickViewerAuthStart(request, env, deps = {}) {
   const url = new URL(request.url);
   const origin = url.origin;
   const returnTo = safeReturnTo(url.searchParams.get("returnTo"), origin);
-  const redirectUri = `${origin}/api/viewer/auth/kick/callback`;
+  const redirectUri = env.KICK_REDIRECT_URI || "https://yourrank.site/auth/kick/callback";
 
   const { codeVerifier, codeChallenge } = await generatePKCEImpl();
-  const state = randomState();
-  await storeOAuthStateImpl("kick", state, { provider: "kick", codeVerifier, returnTo, origin, redirectUri });
+  const state = `${KICK_VIEWER_STATE_PREFIX}${randomState()}`;
+  await storeOAuthStateImpl("kick", state, { provider: "kick", flow: "viewer", codeVerifier, returnTo, origin, redirectUri });
 
   const authorizeURL = buildKickViewerAuthorizeURLImpl(env, state, codeChallenge, undefined, redirectUri);
   return redirect(authorizeURL);
@@ -88,22 +185,33 @@ export async function handleKickViewerAuthCallback(request, env, deps = {}) {
     exec: execImpl = exec,
     createViewerSession: createViewerSessionImpl = createViewerSession,
     viewerCookieSet: viewerCookieSetImpl = viewerCookieSet,
+    stateData: injectedStateData = null,
+    stateConsumed: stateConsumedImpl = false,
+    resolveCustomDomain: resolveCustomDomainImpl = resolveCustomDomain,
+    storeOAuthState: storeOAuthStateImpl = storeOAuthState,
   } = deps;
   const url = new URL(request.url);
   const code = url.searchParams.get("code");
   const state = url.searchParams.get("state");
   const error = url.searchParams.get("error");
 
-  if (error) {
-    return redirect(`/me?error=${encodeURIComponent(error)}`);
-  }
-  if (!code || !state) {
-    return redirect(`/me?error=${encodeURIComponent("missing_oauth_params")}`);
+  if (!state) {
+    return errorRedirect(error ? (error === "access_denied" ? "access_denied" : "kick_auth_failed") : "missing_oauth_params");
   }
 
-  const stateData = await consumeOAuthStateImpl("kick", state);
+  const stateData = stateConsumedImpl
+    ? injectedStateData
+    : injectedStateData || await consumeOAuthStateImpl("kick", state);
   if (!stateData) {
-    return redirect(`/me?error=${encodeURIComponent("oauth_state_expired")}`);
+    return errorRedirect("oauth_state_expired");
+  }
+
+  const targetOrigin = await resolveViewerOrigin(stateData.origin, env, resolveCustomDomainImpl);
+  if (error) {
+    return errorRedirect(error === "access_denied" ? "access_denied" : "kick_auth_failed", targetOrigin);
+  }
+  if (!code) {
+    return errorRedirect("missing_oauth_params", targetOrigin);
   }
 
   try {
@@ -179,11 +287,52 @@ export async function handleKickViewerAuthCallback(request, env, deps = {}) {
       }
     }
 
-    const sessionToken = await createViewerSessionImpl(env, viewerId);
-    return redirect(safeReturnTo(stateData.returnTo, stateData.origin), { "set-cookie": viewerCookieSetImpl(sessionToken, env, request) });
+    if (isCookieCoveredOrigin(targetOrigin) || url.origin === targetOrigin) {
+      const sessionToken = await createViewerSessionImpl(env, viewerId);
+      return redirect(viewerReturnLocation(stateData, targetOrigin), { "set-cookie": viewerCookieSetImpl(sessionToken, env, request) });
+    }
+
+    const handoff = randomState();
+    await storeOAuthStateImpl(
+      KICK_VIEWER_HANDOFF_PROVIDER,
+      handoff,
+      { viewerId, returnTo: safeViewerReturnTo(stateData.returnTo, targetOrigin, stateData.origin), origin: targetOrigin },
+      { ttlSeconds: KICK_VIEWER_HANDOFF_TTL_SECONDS },
+    );
+    const handoffUrl = new URL("/api/viewer/auth/kick/handoff", targetOrigin);
+    handoffUrl.searchParams.set("handoff", handoff);
+    return redirect(handoffUrl.toString());
   } catch (err) {
     console.error("[viewer-auth] kick callback failed:", err?.message || err);
-    return redirect("/me?error=kick_auth_failed");
+    return errorRedirect("kick_auth_failed", targetOrigin);
+  }
+}
+
+export async function handleKickViewerAuthHandoff(request, env, deps = {}) {
+  const {
+    consumeOAuthState: consumeOAuthStateImpl = consumeOAuthState,
+    createViewerSession: createViewerSessionImpl = createViewerSession,
+    viewerCookieSet: viewerCookieSetImpl = viewerCookieSet,
+    resolveCustomDomain: resolveCustomDomainImpl = resolveCustomDomain,
+  } = deps;
+  const url = new URL(request.url);
+  const handoff = url.searchParams.get("handoff");
+  const stateData = handoff
+    ? await consumeOAuthStateImpl(KICK_VIEWER_HANDOFF_PROVIDER, handoff)
+    : null;
+  const targetOrigin = stateData?.origin === url.origin
+    ? await resolveViewerOrigin(url.origin, env, resolveCustomDomainImpl)
+    : APEX_ORIGIN;
+  if (!stateData || targetOrigin !== url.origin || !stateData.viewerId) {
+    return errorRedirect("oauth_state_expired");
+  }
+  try {
+    const sessionToken = await createViewerSessionImpl(env, stateData.viewerId);
+    const location = safeViewerReturnTo(stateData.returnTo, url.origin, stateData.origin);
+    return redirect(location, { "set-cookie": viewerCookieSetImpl(sessionToken, env, request) });
+  } catch (err) {
+    console.error("[viewer-auth] kick handoff failed:", err?.message || err);
+    return errorRedirect("kick_auth_failed", url.origin);
   }
 }
 

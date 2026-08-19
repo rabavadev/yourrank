@@ -129,6 +129,7 @@ const routeDeps = {
 
 // ── Import after mocks ─────────────────────────────────────────────────
 import { parseSitePath, renderSiteRoute as renderSiteRouteImpl } from "../site-routes.js";
+import { handleRequest, isCustomViewerAuthPath } from "../index.js";
 const renderSiteRoute = (args) => renderSiteRouteImpl({ ...args, deps: routeDeps });
 
 function req(url, opts = {}) {
@@ -174,6 +175,33 @@ describe("parseSitePath", () => {
     expect(parseSitePath("/", true, "foo")).toEqual({ slug: "foo", section: "home" });
     expect(parseSitePath("/shop", true, "foo")).toEqual({ slug: "foo", section: "shop" });
     expect(parseSitePath("/unknown", true, "foo")).toBeNull();
+  });
+
+  it("passes only viewer Kick auth paths through custom-domain routing", () => {
+    expect(isCustomViewerAuthPath("GET", "/api/viewer/auth/kick")).toBe(true);
+    expect(isCustomViewerAuthPath("GET", "/api/viewer/auth/kick/callback")).toBe(true);
+    expect(isCustomViewerAuthPath("GET", "/api/viewer/auth/kick/handoff")).toBe(true);
+    expect(isCustomViewerAuthPath("POST", "/api/viewer/auth/kick/handoff")).toBe(false);
+    expect(isCustomViewerAuthPath("GET", "/api/dashboard/status")).toBe(false);
+  });
+
+  it("routes the custom-domain viewer handoff through the normal handler", async () => {
+    const apiApp = {
+      fetch: async (request) => {
+        expect(new URL(request.url).pathname).toBe("/api/viewer/auth/kick/handoff");
+        return new Response("viewer handoff handler", { status: 200 });
+      },
+    };
+    const response = await handleRequest(
+      req("https://streamer.example/api/viewer/auth/kick/handoff?handoff=test"),
+      {},
+      ctx,
+      {},
+      { resolveCustomDomain: async () => "streamer", apiApp },
+    );
+
+    expect(response.status).toBe(200);
+    expect(await response.text()).toBe("viewer handoff handler");
   });
 });
 
@@ -284,6 +312,14 @@ describe("logged-out vs logged-in rendering", () => {
     const html = await res.text();
     expect(html).toContain("Sign in to play originals");
     expect(html).toContain("Sign in with Kick");
+  });
+
+  it("uses a custom-domain-served return path for the games sign-in CTA", async () => {
+    const res = await renderSiteRoute({ request: req("https://streamer.example/games"), env, ctx, nonce: "n", slug: "streamer", section: "games", isCustomDomain: true });
+    expect(res.status).toBe(200);
+    const html = await res.text();
+    expect(html).toContain("returnTo=https%3A%2F%2Fstreamer.example%2Fgames");
+    expect(html).not.toContain("returnTo=https%3A%2F%2Fstreamer.example%2Fstreamer%2Fgames");
   });
 
   it("Board credits is a sign-in prompt when logged out", async () => {

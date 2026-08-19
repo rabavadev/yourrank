@@ -4,6 +4,7 @@ export const OAUTH_STATE_TTL_SECONDS = 600;
 
 export interface OAuthStateDependencies {
   withTransaction?: typeof defaultWithTransaction;
+  ttlSeconds?: number;
 }
 
 function normalizedPayload(payload: unknown): unknown {
@@ -14,7 +15,7 @@ export async function storeOAuthState(
   provider: string,
   state: string,
   payload: unknown,
-  { withTransaction = defaultWithTransaction }: OAuthStateDependencies = {},
+  { withTransaction = defaultWithTransaction, ttlSeconds = OAUTH_STATE_TTL_SECONDS }: OAuthStateDependencies = {},
 ): Promise<void> {
   const normalizedProvider = String(provider || "").trim();
   const normalizedState = String(state || "").trim();
@@ -22,6 +23,7 @@ export async function storeOAuthState(
     throw new Error("OAuth state requires a provider and state.");
   }
 
+  const ttl = Number.isFinite(ttlSeconds) && ttlSeconds > 0 ? Math.floor(ttlSeconds) : OAUTH_STATE_TTL_SECONDS;
   await withTransaction(async (tx: Tx) => {
     await tx.unsafe("DELETE FROM public.oauth_states WHERE expires_at <= now()");
     await tx.unsafe(
@@ -32,7 +34,7 @@ export async function storeOAuthState(
              payload = EXCLUDED.payload,
              created_at = EXCLUDED.created_at,
              expires_at = EXCLUDED.expires_at`,
-      [normalizedState, normalizedProvider, normalizedPayload(payload), OAUTH_STATE_TTL_SECONDS],
+      [normalizedState, normalizedProvider, normalizedPayload(payload), ttl],
     );
   });
 }

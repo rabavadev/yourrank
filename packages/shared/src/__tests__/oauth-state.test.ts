@@ -39,6 +39,13 @@ describe("OAuth state storage", () => {
     expect(db.calls[1].sql).toContain("DELETE FROM public.oauth_states");
   });
 
+  test("supports a short custom TTL for one-time handoffs", async () => {
+    const db = transactionDb();
+    await storeOAuthState("kick_viewer_handoff", "handoff-1", { viewerId: "viewer-1" }, { ...db, ttlSeconds: 90 });
+
+    expect(db.calls[1].params).toEqual(["handoff-1", "kick_viewer_handoff", { viewerId: "viewer-1" }, 90]);
+  });
+
   test("rejects expired, missing, invalid, and wrong-provider state", async () => {
     const expired = transactionDb();
     await expect(consumeOAuthState("kick", "expired", expired)).resolves.toBeNull();

@@ -72,7 +72,7 @@ function getConfig(env: any): KickOAuthConfig {
 function getViewerConfig(env: any): KickOAuthConfig {
   const clientId = env.KICK_CLIENT_ID;
   const clientSecret = env.KICK_CLIENT_SECRET;
-  const redirectUri = env.KICK_VIEWER_REDIRECT_URI || "https://yourrank.site/api/viewer/auth/kick/callback";
+  const redirectUri = env.KICK_REDIRECT_URI || "https://yourrank.site/auth/kick/callback";
   if (!clientId || !clientSecret) {
     throw new Error("KICK_CLIENT_ID and KICK_CLIENT_SECRET are required");
   }

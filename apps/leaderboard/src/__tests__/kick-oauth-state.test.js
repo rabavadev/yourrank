@@ -1,6 +1,11 @@
 import { describe, expect, test } from "bun:test";
 import { handleKickAuthCallback, handleKickAuthDisconnect, handleKickAuthStart } from "../handlers/kick-auth.js";
-import { handleKickViewerAuthCallback, handleKickViewerAuthStart } from "../handlers/viewer-auth.js";
+import {
+  handleKickViewerAuthCallback,
+  handleKickViewerAuthHandoff,
+  handleKickViewerAuthStart,
+  KICK_VIEWER_STATE_PREFIX,
+} from "../handlers/viewer-auth.js";
 
 const user = { id: "user-1" };
 const site = { id: "site-1", user_id: "owner-1" };
@@ -53,7 +58,197 @@ describe("Kick OAuth state integration seams", () => {
     expect(calls).toHaveLength(2);
     expect(calls.map(([provider]) => provider)).toEqual(["kick", "kick"]);
     expect(calls[0][2]).toMatchObject({ siteId: "site-1", userId: "user-1" });
-    expect(calls[1][2]).toMatchObject({ codeVerifier: "verifier", redirectUri: "https://test.local/api/viewer/auth/kick/callback" });
+    expect(calls[1][2]).toMatchObject({
+      flow: "viewer",
+      codeVerifier: "verifier",
+      redirectUri: "https://yourrank.site/auth/kick/callback",
+    });
+    expect(calls[1][1]).toMatch(KICK_VIEWER_STATE_PREFIX);
+  });
+
+  test("viewer start uses the registered Kick callback URI from env", async () => {
+    let authorizeArgs;
+    const response = await handleKickViewerAuthStart(request("/api/viewer/auth/kick?returnTo=/me"), {}, {
+      rateLimit: noRateLimit,
+      clientIp: () => "127.0.0.1",
+      storeOAuthState: async () => {},
+      generatePKCE: pkce,
+      buildKickViewerAuthorizeURL: (...args) => {
+        authorizeArgs = args;
+        return "https://kick.test/authorize";
+      },
+    });
+
+    expect(response.status).toBe(302);
+    expect(authorizeArgs[4]).toBe("https://yourrank.site/auth/kick/callback");
+  });
+
+  test("the canonical callback dispatches a viewer state after consuming it once", async () => {
+    let consumed = 0;
+    let dispatched;
+    const response = await handleKickAuthCallback(request("/auth/kick/callback?code=code&state=state"), {}, {
+      consumeOAuthState: async () => {
+        consumed += 1;
+        return { flow: "viewer", codeVerifier: "verifier", origin: "https://yourrank.site", returnTo: "/me" };
+      },
+      viewerCallback: async (_request, _env, deps) => {
+        dispatched = deps.stateData;
+        expect(deps.stateConsumed).toBe(true);
+        return new Response(null, { status: 302, headers: { location: "https://yourrank.site/me" } });
+      },
+      currentUser: async () => {
+        throw new Error("viewer dispatch must not require a streamer session");
+      },
+    });
+
+    expect(response.status).toBe(302);
+    expect(consumed).toBe(1);
+    expect(dispatched).toMatchObject({ flow: "viewer" });
+  });
+
+  test("expired viewer state uses its public prefix without consuming twice", async () => {
+    let consumed = 0;
+    const response = await handleKickAuthCallback(
+      request(`/auth/kick/callback?code=code&state=${KICK_VIEWER_STATE_PREFIX}expired`),
+      {},
+      {
+        consumeOAuthState: async () => {
+          consumed += 1;
+          return null;
+        },
+        currentUser: async () => {
+          throw new Error("expired viewer state must not require a streamer session");
+        },
+      },
+    );
+
+    expect(response.headers.get("location")).toBe("/me?error=oauth_state_expired");
+    expect(consumed).toBe(1);
+  });
+
+  test("expired unprefixed state keeps streamer callback behavior", async () => {
+    let consumed = 0;
+    const response = await handleKickAuthCallback(
+      request("/auth/kick/callback?code=code&state=expired"),
+      {},
+      {
+        consumeOAuthState: async () => {
+          consumed += 1;
+          return null;
+        },
+        currentUser: async () => null,
+      },
+    );
+
+    expect(response.headers.get("location")).toBe("/login");
+    expect(consumed).toBe(1);
+  });
+
+  test("viewer callback sets a cookie directly for a cookie-covered origin", async () => {
+    const response = await handleKickViewerAuthCallback(request("/auth/kick/callback?code=code&state=state"), {}, {
+      stateData: { flow: "viewer", codeVerifier: "verifier", origin: "https://streamer.yourrank.site", returnTo: "/me" },
+      exchangeKickViewerCode: async () => ({ access_token: "access" }),
+      fetchKickCurrentUser: async () => ({ user_id: 42, name: "viewer" }),
+      encryptKickToken: async (value) => `enc:${value}`,
+      one: async () => null,
+      exec: async (sql) => sql.includes("INSERT INTO viewers") ? [{ id: "viewer-1" }] : [],
+      createViewerSession: async () => "session-token",
+      viewerCookieSet: (token) => `yr_viewer=${token}; Domain=.yourrank.site`,
+    });
+
+    expect(response.headers.get("location")).toBe("https://streamer.yourrank.site/me");
+    expect(response.headers.get("set-cookie")).toContain("yr_viewer=session-token");
+  });
+
+  test("viewer callback creates a short-lived custom-domain handoff", async () => {
+    let handoffArgs;
+    const response = await handleKickViewerAuthCallback(request("/auth/kick/callback?code=code&state=state"), {}, {
+      stateData: { flow: "viewer", codeVerifier: "verifier", origin: "https://streamer.example", returnTo: "/me" },
+      exchangeKickViewerCode: async () => ({ access_token: "access" }),
+      fetchKickCurrentUser: async () => ({ user_id: 42, name: "viewer" }),
+      encryptKickToken: async (value) => `enc:${value}`,
+      one: async () => null,
+      exec: async (sql) => sql.includes("INSERT INTO viewers") ? [{ id: "viewer-1" }] : [],
+      resolveCustomDomain: async () => "streamer",
+      storeOAuthState: async (...args) => { handoffArgs = args; },
+    });
+
+    expect(response.headers.get("location")).toMatch(/^https:\/\/streamer\.example\/api\/viewer\/auth\/kick\/handoff\?handoff=/);
+    expect(handoffArgs[0]).toBe("kick_viewer_handoff");
+    expect(handoffArgs[2]).toMatchObject({ viewerId: "viewer-1", origin: "https://streamer.example" });
+    expect(handoffArgs[3]).toMatchObject({ ttlSeconds: 90 });
+  });
+
+  test("custom-domain handoffs only retain served site destinations", async () => {
+    let handoffArgs;
+    const response = await handleKickViewerAuthCallback(
+      request("/auth/kick/callback?code=code&state=state"),
+      {},
+      {
+        stateData: {
+          flow: "viewer",
+          codeVerifier: "verifier",
+          origin: "https://streamer.example",
+          returnTo: "/dashboard",
+        },
+        exchangeKickViewerCode: async () => ({ access_token: "access" }),
+        fetchKickCurrentUser: async () => ({ user_id: 42, name: "viewer" }),
+        encryptKickToken: async (value) => `enc:${value}`,
+        one: async () => null,
+        exec: async (sql) => sql.includes("INSERT INTO viewers") ? [{ id: "viewer-1" }] : [],
+        resolveCustomDomain: async () => "streamer",
+        storeOAuthState: async (...args) => { handoffArgs = args; },
+      },
+    );
+
+    expect(response.status).toBe(302);
+    expect(handoffArgs[2]).toMatchObject({
+      viewerId: "viewer-1",
+      returnTo: "https://yourrank.site/me",
+      origin: "https://streamer.example",
+    });
+  });
+
+  test("viewer handoffs are single-use and host-bound", async () => {
+    const rejected = await handleKickViewerAuthHandoff(new Request("https://other.example/api/viewer/auth/kick/handoff?handoff=x"), {}, {
+      consumeOAuthState: async () => {
+        return { viewerId: "viewer-1", origin: "https://streamer.example", returnTo: "/me" };
+      },
+      createViewerSession: async () => "session-token",
+      viewerCookieSet: (token) => `yr_viewer=${token}`,
+    });
+    let consumes = 0;
+    const deps = {
+      consumeOAuthState: async () => {
+        consumes += 1;
+        return consumes === 1 ? { viewerId: "viewer-1", origin: "https://streamer.example", returnTo: "/me" } : null;
+      },
+      createViewerSession: async () => "session-token",
+      viewerCookieSet: (token) => `yr_viewer=${token}`,
+      resolveCustomDomain: async () => "streamer",
+    };
+    const accepted = await handleKickViewerAuthHandoff(new Request("https://streamer.example/api/viewer/auth/kick/handoff?handoff=x"), {}, deps);
+    const replayed = await handleKickViewerAuthHandoff(new Request("https://streamer.example/api/viewer/auth/kick/handoff?handoff=x"), {}, deps);
+
+    expect(rejected.headers.get("location")).toContain("error=oauth_state_expired");
+    expect(accepted.headers.get("location")).toBe("/me");
+    expect(accepted.headers.get("set-cookie")).toBe("yr_viewer=session-token");
+    expect(replayed.headers.get("location")).toContain("error=oauth_state_expired");
+  });
+
+  test("expired viewer handoffs are rejected without creating a session", async () => {
+    let created = false;
+    const response = await handleKickViewerAuthHandoff(new Request("https://streamer.example/api/viewer/auth/kick/handoff?handoff=expired"), {}, {
+      consumeOAuthState: async () => null,
+      createViewerSession: async () => {
+        created = true;
+        return "session-token";
+      },
+      resolveCustomDomain: async () => "streamer",
+    });
+
+    expect(response.headers.get("location")).toContain("error=oauth_state_expired");
+    expect(created).toBe(false);
   });
 
   test("resolves the active owned site when the start URL omits siteId", async () => {
