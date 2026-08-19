@@ -183,7 +183,7 @@ export async function handleKickViewerAuthCallback(request, env, deps = {}) {
     return redirect(safeReturnTo(stateData.returnTo, stateData.origin), { "set-cookie": viewerCookieSetImpl(sessionToken, env, request) });
   } catch (err) {
     console.error("[viewer-auth] kick callback failed:", err?.message || err);
-    return redirect(`/me?error=${encodeURIComponent(err?.message || "kick_auth_failed")}`);
+    return redirect("/me?error=kick_auth_failed");
   }
 }
 
@@ -300,7 +300,7 @@ export async function handleDiscordViewerAuthCallback(request, env) {
     return redirect(safeReturnTo(stateData.returnTo, stateData.origin), { "set-cookie": viewerCookieSet(sessionToken, env, request) });
   } catch (err) {
     console.error("[viewer-auth] discord callback failed:", err?.message || err);
-    return redirect(`/me?error=${encodeURIComponent(err?.message || "discord_auth_failed")}`);
+    return redirect("/me?error=discord_auth_failed");
   }
 }
 

@@ -65,5 +65,7 @@ describe("server-rendered rewards pages", () => {
     expect(rewardsClientSource).toContain('params.get("kick_connected")');
     expect(rewardsClientSource).toContain('clean.searchParams.delete("error")');
     expect(rewardsClientSource).toContain('setStatus("cr-channel-status"');
+    expect(rewardsClientSource).toContain("applyOAuthContext();");
+    expect(rewardsClientSource.indexOf("applyOAuthContext();")).toBeLessThan(rewardsClientSource.indexOf("const shell = await loadBoardShell"));
   });
 });

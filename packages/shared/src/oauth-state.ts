@@ -23,9 +23,9 @@ export async function storeOAuthState(
   }
 
   await withTransaction(async (tx: Tx) => {
-    await tx.unsafe("DELETE FROM oauth_states WHERE expires_at <= now()");
+    await tx.unsafe("DELETE FROM public.oauth_states WHERE expires_at <= now()");
     await tx.unsafe(
-      `INSERT INTO oauth_states (state, provider, payload, created_at, expires_at)
+      `INSERT INTO public.oauth_states (state, provider, payload, created_at, expires_at)
        VALUES ($1, $2, $3::jsonb, now(), now() + ($4 * interval '1 second'))
        ON CONFLICT (state) DO UPDATE
          SET provider = EXCLUDED.provider,
@@ -47,7 +47,7 @@ export async function consumeOAuthState(
   if (!normalizedProvider || !normalizedState) return null;
 
   const rows = await withTransaction((tx: Tx) => tx.unsafe(
-    `DELETE FROM oauth_states
+    `DELETE FROM public.oauth_states
       WHERE state=$1
         AND provider=$2
         AND expires_at > now()

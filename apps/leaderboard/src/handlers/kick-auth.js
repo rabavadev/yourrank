@@ -1,6 +1,6 @@
 // Kick OAuth 2.1 flow for streamers linking their Kick channel.
 import { currentUser, requireUser, ok, bad, readJson, rateLimit } from "../auth.js";
-import { one, exec } from "@yourrank/shared/db";
+import { one, exec, withTransaction } from "@yourrank/shared/db";
 import { requireSiteCapability } from "../site-authorization.js";
 import { consumeOAuthState, storeOAuthState } from "@yourrank/shared/oauth-state";
 import {
@@ -29,6 +29,28 @@ function channelRedirect(params, siteId = "") {
   return `/dashboard/rewards/channel?${query}`;
 }
 
+async function resolveDefaultKickSite(oneImpl, userId) {
+  const owned = await oneImpl(
+    `SELECT id, user_id
+       FROM sites
+      WHERE user_id=$1
+      ORDER BY CASE WHEN id=(SELECT active_site_id FROM users WHERE id=$1) THEN 0 ELSE 1 END,
+               id ASC
+      LIMIT 1`,
+    [userId]
+  );
+  if (owned) return owned;
+  return oneImpl(
+    `SELECT s.id, s.user_id
+       FROM sites s
+       JOIN site_members sm ON sm.site_id=s.id
+      WHERE sm.user_id=$1
+      ORDER BY s.id ASC
+      LIMIT 1`,
+    [userId]
+  );
+}
+
 export async function handleKickAuthStart(request, env, deps = {}) {
   const {
     currentUser: currentUserImpl = currentUser,
@@ -46,12 +68,15 @@ export async function handleKickAuthStart(request, env, deps = {}) {
   }
 
   const url = new URL(request.url);
-  const siteId = url.searchParams.get("siteId") || "";
+  let siteId = url.searchParams.get("siteId") || "";
+  let site = siteId
+    ? await oneImpl("SELECT id, user_id FROM sites WHERE id=$1", [siteId])
+    : await resolveDefaultKickSite(oneImpl, user.id);
+  siteId = site?.id || "";
   if (!siteId) {
     return redirect(channelRedirect({ error: "no_site_selected" }));
   }
 
-  const site = await oneImpl("SELECT id, user_id FROM sites WHERE id=$1", [siteId]);
   if (!site) {
     return redirect(channelRedirect({ error: "site_not_found" }, siteId));
   }
@@ -172,7 +197,7 @@ export async function handleKickAuthCallback(request, env, deps = {}) {
     return redirect(channelRedirect({ kick_connected: "1" }, stateData.siteId));
   } catch (err) {
     console.error("[kick-auth] callback failed:", err?.message || err);
-    return redirect(channelRedirect({ error: err?.message || "kick_auth_failed" }, stateData.siteId));
+    return redirect(channelRedirect({ error: "kick_auth_failed" }, stateData.siteId));
   }
 }
 
@@ -180,7 +205,7 @@ export async function handleKickAuthDisconnect(request, env, deps = {}) {
   const {
     requireUser: requireUserImpl = requireUser,
     one: oneImpl = one,
-    exec: execImpl = exec,
+    withTransaction: withTransactionImpl = withTransaction,
     requireSiteCapability: requireSiteCapabilityImpl = requireSiteCapability,
     readJson: readJsonImpl = readJson,
   } = deps;
@@ -196,29 +221,43 @@ export async function handleKickAuthDisconnect(request, env, deps = {}) {
   const authorization = await requireSiteCapabilityImpl(user, site, "canRoleManageBoard");
   if (authorization.res) return authorization.res;
 
-  await execImpl(
-    `UPDATE users
-        SET kick_user_id = null,
-            kick_username = null,
-            kick_access_token_enc = null,
-            kick_refresh_token_enc = null,
-            kick_token_expires_at = null,
-            kick_linked_at = null,
-            updated_at = now()
-      WHERE id = $1`,
-    [user.id]
-  );
-
-  await execImpl(
-    `UPDATE sites
-        SET kick_channel_external_id = null,
-            kick_channel_name = null,
-            kick_channel_linked_at = null,
-            updated_at = now()
-      WHERE id = $1`,
-    [site.id]
-  );
+  const result = await withTransactionImpl(async (tx) => {
+    await tx.unsafe("SELECT id FROM public.sites WHERE id=$1 FOR UPDATE", [site.id]);
+    const otherSite = await tx.one(
+      `SELECT id
+         FROM public.sites
+        WHERE user_id=$1
+          AND id<>$2
+          AND kick_channel_external_id IS NOT NULL
+        LIMIT 1`,
+      [user.id, site.id]
+    );
+    if (!otherSite) {
+      await tx.unsafe(
+        `UPDATE public.users
+            SET kick_user_id = null,
+                kick_username = null,
+                kick_access_token_enc = null,
+                kick_refresh_token_enc = null,
+                kick_token_expires_at = null,
+                kick_linked_at = null,
+                updated_at = now()
+          WHERE id = $1`,
+        [user.id]
+      );
+    }
+    await tx.unsafe(
+      `UPDATE public.sites
+          SET kick_channel_external_id = null,
+              kick_channel_name = null,
+              kick_channel_linked_at = null,
+              updated_at = now()
+        WHERE id = $1`,
+      [site.id]
+    );
+    return { accountDisconnected: !otherSite };
+  });
   void notifyLiveBoard(env, site.id);
 
-  return ok({ disconnected: true });
+  return ok({ disconnected: true, accountDisconnected: result?.accountDisconnected !== false });
 }

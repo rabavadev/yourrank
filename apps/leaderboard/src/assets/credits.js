@@ -27,6 +27,7 @@ async function api(method, path, body) {
 let state = {};
 let viewerCtrl, redemptionCtrl, rewardCtrl;
 let activeSiteId = "";
+let pendingOAuthFeedback = null;
 let activityEvents = [];
 let activityCursor = null;
 let activityLoading = false;
@@ -49,27 +50,37 @@ const OAUTH_MESSAGES = Object.freeze({
   oauth_user_mismatch: "This connection started in another account. Try again.",
   access_denied: "Kick connection was cancelled.",
 });
-function showOAuthMessage() {
-  const params = new URLSearchParams(location.search);
-  const error = params.get("error");
-  const connected = params.get("kick_connected") === "1";
-  if (!error && !connected) return;
+function showOAuthMessage({ finalize = false } = {}) {
+  if (!pendingOAuthFeedback) {
+    const params = new URLSearchParams(location.search);
+    const error = params.get("error");
+    const connected = params.get("kick_connected") === "1";
+    if (!error && !connected) return;
+    pendingOAuthFeedback = { error, connected };
+    const clean = new URL(location.href);
+    clean.searchParams.delete("error");
+    clean.searchParams.delete("kick_connected");
+    history.replaceState({}, "", `${clean.pathname}${clean.search}${clean.hash}`);
+  }
+  const { error, connected } = pendingOAuthFeedback;
   if (error) {
     setStatus("cr-channel-status", OAUTH_MESSAGES[error] || "Kick connection could not be completed. Try again.", true);
   } else {
     const channel = state.channel?.name ? `@${state.channel.name}` : "your channel";
     setStatus("cr-channel-status", `Connected to ${channel} on Kick.`, false);
   }
-  const clean = new URL(location.href);
-  clean.searchParams.delete("error");
-  clean.searchParams.delete("kick_connected");
-  history.replaceState({}, "", `${clean.pathname}${clean.search}${clean.hash}`);
+  if (error || finalize) pendingOAuthFeedback = null;
 }
 function updateKickAuthLinks() {
   for (const id of ["cr-channel-connect", "cr-channel-reconnect"]) {
     const link = $(id);
     if (link) link.href = authPath("/auth/kick");
   }
+}
+function applyOAuthContext() {
+  if (!activeSiteId) activeSiteId = siteQuery() || "";
+  updateKickAuthLinks();
+  showOAuthMessage();
 }
 function setLoading(idOrEl, loading, text = "Loading…") {
   const el = typeof idOrEl === "string" ? $(idOrEl) : idOrEl;
@@ -475,6 +486,7 @@ async function toggleReward(id, trigger) {
 }
 async function load() {
   clearLoadError($("cr-empty"), false);
+  applyOAuthContext();
   setState({ CREDITS_STATUS: "loading" });
   setCreditsPanelLoading(true);
   setMetricLoading($("cr-pending-counter"));
@@ -486,16 +498,17 @@ async function load() {
   try {
     const shell = await loadBoardShell({ request: api });
     activeSiteId = shell.activeSiteId;
+    updateKickAuthLinks();
     state = await api("GET", sitePath("/api/credits/status"));
     setState({ CREDITS_STATUS: "ready" });
     render();
-    updateKickAuthLinks();
-    showOAuthMessage();
+    showOAuthMessage({ finalize: true });
     if (tab() === "history") await loadActivity({ reset: true });
     if (tab() === "viewers" && $("cr-analytics")) await loadAnalytics();
     preserveSiteContextLinks();
     $("cr-app").hidden = false; $("cr-empty").hidden = true;
   } catch (err) {
+    showOAuthMessage({ finalize: true });
     setState({ CREDITS_STATUS: "error" });
     logError("load-credits-dashboard", err);
     renderError($("cr-empty"), { title: "Couldn't load your credits dashboard", body: "Your rewards data could not be loaded.", retry: () => load().catch(() => {}) });

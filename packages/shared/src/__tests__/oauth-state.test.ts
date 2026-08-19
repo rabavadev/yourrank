@@ -23,8 +23,8 @@ describe("OAuth state storage", () => {
     await storeOAuthState("kick", "state-1", { codeVerifier: "verifier", siteId: "site-1" }, db);
 
     expect(db.calls).toHaveLength(2);
-    expect(db.calls[0].sql).toContain("DELETE FROM oauth_states WHERE expires_at <= now()");
-    expect(db.calls[1].sql).toContain("INSERT INTO oauth_states");
+    expect(db.calls[0].sql).toContain("DELETE FROM public.oauth_states WHERE expires_at <= now()");
+    expect(db.calls[1].sql).toContain("INSERT INTO public.oauth_states");
     expect(db.calls[1].params).toEqual(["state-1", "kick", { codeVerifier: "verifier", siteId: "site-1" }, 600]);
   });
 
@@ -34,9 +34,9 @@ describe("OAuth state storage", () => {
     await expect(consumeOAuthState("kick", "state-1", db)).resolves.toEqual({ userId: "user-1" });
     await expect(consumeOAuthState("kick", "state-1", db)).resolves.toBeNull();
 
-    expect(db.calls[0].sql).toContain("DELETE FROM oauth_states");
+    expect(db.calls[0].sql).toContain("DELETE FROM public.oauth_states");
     expect(db.calls[0].sql).toContain("expires_at > now()");
-    expect(db.calls[1].sql).toContain("DELETE FROM oauth_states");
+    expect(db.calls[1].sql).toContain("DELETE FROM public.oauth_states");
   });
 
   test("rejects expired, missing, invalid, and wrong-provider state", async () => {
