@@ -36,6 +36,41 @@ let shopSort = "cost";
 let wired = false;
 const tab = () => $("cr-app")?.dataset.crTab || "";
 function setStatus(id, msg, error = false) { const el = $(id); if (!el) return; el.textContent = msg; el.className = error ? "status error" : "status"; if (!error) setTimeout(() => { el.textContent = ""; }, 3000); }
+function authPath(path) {
+  return activeSiteId ? `${path}?siteId=${encodeURIComponent(activeSiteId)}` : path;
+}
+const OAUTH_MESSAGES = Object.freeze({
+  no_site_selected: "Select a site before connecting Kick.",
+  site_not_found: "That site is no longer available. Select another site.",
+  site_not_authorized: "You do not have permission to connect Kick for this site.",
+  rate_limited: "Too many connection attempts. Try again shortly.",
+  missing_oauth_params: "Kick did not return the information needed. Try again.",
+  oauth_state_expired: "That took too long — try connecting again.",
+  oauth_user_mismatch: "This connection started in another account. Try again.",
+  access_denied: "Kick connection was cancelled.",
+});
+function showOAuthMessage() {
+  const params = new URLSearchParams(location.search);
+  const error = params.get("error");
+  const connected = params.get("kick_connected") === "1";
+  if (!error && !connected) return;
+  if (error) {
+    setStatus("cr-channel-status", OAUTH_MESSAGES[error] || "Kick connection could not be completed. Try again.", true);
+  } else {
+    const channel = state.channel?.name ? `@${state.channel.name}` : "your channel";
+    setStatus("cr-channel-status", `Connected to ${channel} on Kick.`, false);
+  }
+  const clean = new URL(location.href);
+  clean.searchParams.delete("error");
+  clean.searchParams.delete("kick_connected");
+  history.replaceState({}, "", `${clean.pathname}${clean.search}${clean.hash}`);
+}
+function updateKickAuthLinks() {
+  for (const id of ["cr-channel-connect", "cr-channel-reconnect"]) {
+    const link = $(id);
+    if (link) link.href = authPath("/auth/kick");
+  }
+}
 function setLoading(idOrEl, loading, text = "Loading…") {
   const el = typeof idOrEl === "string" ? $(idOrEl) : idOrEl;
   if (!el) return;
@@ -454,6 +489,8 @@ async function load() {
     state = await api("GET", sitePath("/api/credits/status"));
     setState({ CREDITS_STATUS: "ready" });
     render();
+    updateKickAuthLinks();
+    showOAuthMessage();
     if (tab() === "history") await loadActivity({ reset: true });
     if (tab() === "viewers" && $("cr-analytics")) await loadAnalytics();
     preserveSiteContextLinks();
@@ -477,7 +514,7 @@ function wireActions() {
   });
   $("cr-channel-disconnect")?.addEventListener("click", async (e) => {
     const btn = e.currentTarget; setLoading(btn, true, "Disconnecting…");
-    try { await api("POST", "/api/kick/disconnect"); state.channel = { externalId: null, name: null }; render(); setStatus("cr-channel-status", "Disconnected."); }
+    try { await api("POST", sitePath("/api/kick/disconnect")); state.channel = { externalId: null, name: null }; render(); setStatus("cr-channel-status", "Disconnected."); }
     catch (err) { setStatus("cr-channel-status", err.message, true); } finally { setLoading(btn, false); }
   });
   $("cr-reward-form")?.addEventListener("submit", async (e) => {

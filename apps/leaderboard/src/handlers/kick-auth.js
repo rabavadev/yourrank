@@ -1,6 +1,8 @@
 // Kick OAuth 2.1 flow for streamers linking their Kick channel.
-import { currentUser, requireUser, ok, rateLimit } from "../auth.js";
+import { currentUser, requireUser, ok, bad, readJson, rateLimit } from "../auth.js";
 import { one, exec } from "@yourrank/shared/db";
+import { requireSiteCapability } from "../site-authorization.js";
+import { consumeOAuthState, storeOAuthState } from "@yourrank/shared/oauth-state";
 import {
   generatePKCE,
   buildKickAuthorizeURL,
@@ -12,69 +14,76 @@ import {
 } from "@yourrank/shared/kick-oauth";
 import { notifyLiveBoard } from "../live-board-config.js";
 
-const OAUTH_TTL = 600; // 10 minutes
-
 function randomState() {
   const bytes = crypto.getRandomValues(new Uint8Array(32));
   return Buffer.from(bytes).toString("hex");
-}
-
-async function storeOAuthState(env, state, data) {
-  if (!env.SESSIONS) throw new Error("SESSIONS KV binding is not configured");
-  await env.SESSIONS.put(`kick-oauth:${state}`, JSON.stringify(data), { expirationTtl: OAUTH_TTL });
-}
-
-async function getOAuthState(env, state) {
-  if (!env.SESSIONS) return null;
-  const raw = await env.SESSIONS.get(`kick-oauth:${state}`);
-  if (!raw) return null;
-  try {
-    return JSON.parse(raw);
-  } catch {
-    return null;
-  }
-}
-
-async function deleteOAuthState(env, state) {
-  if (env.SESSIONS) await env.SESSIONS.delete(`kick-oauth:${state}`);
 }
 
 function redirect(url, status = 302) {
   return new Response(null, { status, headers: { location: url } });
 }
 
-export async function handleKickAuthStart(request, env) {
-  const user = await currentUser(request, env);
-  if (user && !(await rateLimit(env, `kick-oauth-start:${user.id}`, 10, 60)).ok) {
-    return redirect("/dashboard/rewards/channel?error=rate_limited");
-  }
+function channelRedirect(params, siteId = "") {
+  const query = new URLSearchParams(params);
+  if (siteId) query.set("siteId", siteId);
+  return `/dashboard/rewards/channel?${query}`;
+}
+
+export async function handleKickAuthStart(request, env, deps = {}) {
+  const {
+    currentUser: currentUserImpl = currentUser,
+    rateLimit: rateLimitImpl = rateLimit,
+    one: oneImpl = one,
+    requireSiteCapability: requireSiteCapabilityImpl = requireSiteCapability,
+    storeOAuthState: storeOAuthStateImpl = storeOAuthState,
+    generatePKCE: generatePKCEImpl = generatePKCE,
+    buildKickAuthorizeURL: buildKickAuthorizeURLImpl = buildKickAuthorizeURL,
+  } = deps;
+  const user = await currentUserImpl(request, env);
   if (!user) return redirect("/login");
+  if (!(await rateLimitImpl(env, `kick-oauth-start:${user.id}`, 10, 60)).ok) {
+    return redirect(channelRedirect({ error: "rate_limited" }));
+  }
 
   const url = new URL(request.url);
-  const siteId = url.searchParams.get("siteId") || user.active_site_id || "";
+  const siteId = url.searchParams.get("siteId") || "";
   if (!siteId) {
-    return redirect("/dashboard/rewards/channel?error=no_site_selected");
+    return redirect(channelRedirect({ error: "no_site_selected" }));
   }
 
-  const site = await one("SELECT id FROM sites WHERE id=$1 AND user_id=$2", [siteId, user.id]);
+  const site = await oneImpl("SELECT id, user_id FROM sites WHERE id=$1", [siteId]);
   if (!site) {
-    return redirect("/dashboard/rewards/channel?error=site_not_found");
+    return redirect(channelRedirect({ error: "site_not_found" }, siteId));
   }
+  const authorization = await requireSiteCapabilityImpl(user, site, "canRoleManageBoard");
+  if (authorization.res) return redirect(channelRedirect({ error: "site_not_authorized" }, siteId));
 
   try {
-    const { codeVerifier, codeChallenge } = await generatePKCE();
+    const { codeVerifier, codeChallenge } = await generatePKCEImpl();
     const state = randomState();
-    await storeOAuthState(env, state, { codeVerifier, siteId, userId: user.id });
-    const authorizeURL = buildKickAuthorizeURL(env, state, codeChallenge);
+    await storeOAuthStateImpl("kick", state, { codeVerifier, siteId, userId: user.id });
+    const authorizeURL = buildKickAuthorizeURLImpl(env, state, codeChallenge);
     return redirect(authorizeURL);
   } catch (err) {
     console.error("[kick-auth] start failed:", err?.message || err);
-    return redirect("/dashboard/rewards/channel?error=kick_auth_failed");
+    return redirect(channelRedirect({ error: "kick_auth_failed" }, siteId));
   }
 }
 
-export async function handleKickAuthCallback(request, env) {
-  const user = await currentUser(request, env);
+export async function handleKickAuthCallback(request, env, deps = {}) {
+  const {
+    currentUser: currentUserImpl = currentUser,
+    one: oneImpl = one,
+    exec: execImpl = exec,
+    requireSiteCapability: requireSiteCapabilityImpl = requireSiteCapability,
+    consumeOAuthState: consumeOAuthStateImpl = consumeOAuthState,
+    exchangeKickCode: exchangeKickCodeImpl = exchangeKickCode,
+    fetchKickCurrentUser: fetchKickCurrentUserImpl = fetchKickCurrentUser,
+    fetchKickCurrentChannel: fetchKickCurrentChannelImpl = fetchKickCurrentChannel,
+    subscribeKickWebhookEvent: subscribeKickWebhookEventImpl = subscribeKickWebhookEvent,
+    encryptKickToken: encryptKickTokenImpl = encryptKickToken,
+  } = deps;
+  const user = await currentUserImpl(request, env);
   if (!user) return redirect("/login");
 
   const url = new URL(request.url);
@@ -83,31 +92,34 @@ export async function handleKickAuthCallback(request, env) {
   const error = url.searchParams.get("error");
 
   if (error) {
-    return redirect(`/dashboard/rewards/channel?error=${encodeURIComponent(error)}`);
+    return redirect(channelRedirect({ error }));
   }
   if (!code || !state) {
-    return redirect("/dashboard/rewards/channel?error=missing_oauth_params");
+    return redirect(channelRedirect({ error: "missing_oauth_params" }));
   }
 
-  const stateData = await getOAuthState(env, state);
+  const stateData = await consumeOAuthStateImpl("kick", state);
   if (!stateData) {
-    return redirect("/dashboard/rewards/channel?error=oauth_state_expired");
+    return redirect(channelRedirect({ error: "oauth_state_expired" }));
   }
   if (stateData.userId !== user.id) {
-    return redirect("/dashboard/rewards/channel?error=oauth_user_mismatch");
+    return redirect(channelRedirect({ error: "oauth_user_mismatch" }, stateData.siteId));
   }
 
-  await deleteOAuthState(env, state);
+  const site = await oneImpl("SELECT id, user_id FROM sites WHERE id=$1", [stateData.siteId]);
+  if (!site) return redirect(channelRedirect({ error: "site_not_found" }, stateData.siteId));
+  const authorization = await requireSiteCapabilityImpl(user, site, "canRoleManageBoard");
+  if (authorization.res) return redirect(channelRedirect({ error: "site_not_authorized" }, stateData.siteId));
 
   try {
-    const tokens = await exchangeKickCode(env, code, stateData.codeVerifier);
+    const tokens = await exchangeKickCodeImpl(env, code, stateData.codeVerifier);
     if (!tokens.access_token) {
       throw new Error("Kick did not return an access token");
     }
 
     const [kickUser, kickChannel] = await Promise.all([
-      fetchKickCurrentUser(tokens.access_token),
-      fetchKickCurrentChannel(tokens.access_token),
+      fetchKickCurrentUserImpl(tokens.access_token),
+      fetchKickCurrentChannelImpl(tokens.access_token),
     ]);
     if (!kickUser || !kickChannel) {
       throw new Error("Could not fetch Kick user or channel");
@@ -115,18 +127,18 @@ export async function handleKickAuthCallback(request, env) {
 
     // Subscribe to the channel-point reward redemption event.
     try {
-      await subscribeKickWebhookEvent(tokens.access_token, "channel.reward.redemption.updated");
+      await subscribeKickWebhookEventImpl(tokens.access_token, "channel.reward.redemption.updated");
     } catch (subErr) {
       console.warn("[kick-auth] event subscription failed:", subErr?.message || subErr);
     }
 
-    const accessEnc = await encryptKickToken(tokens.access_token);
-    const refreshEnc = tokens.refresh_token ? await encryptKickToken(tokens.refresh_token) : null;
+    const accessEnc = await encryptKickTokenImpl(tokens.access_token);
+    const refreshEnc = tokens.refresh_token ? await encryptKickTokenImpl(tokens.refresh_token) : null;
     const expiresAt = tokens.expires_in
       ? new Date(Date.now() + tokens.expires_in * 1000).toISOString()
       : null;
 
-    await exec(
+    await execImpl(
       `UPDATE users
           SET kick_user_id = $1,
               kick_username = $2,
@@ -146,50 +158,67 @@ export async function handleKickAuthCallback(request, env) {
       ]
     );
 
-    await exec(
+    await execImpl(
       `UPDATE sites
           SET kick_channel_external_id = $1,
               kick_channel_name = $2,
               kick_channel_linked_at = now(),
               updated_at = now()
-        WHERE id = $3 AND user_id = $4`,
-      [String(kickChannel.broadcaster_user_id), kickChannel.slug || "", stateData.siteId, user.id]
+        WHERE id = $3`,
+      [String(kickChannel.broadcaster_user_id), kickChannel.slug || "", stateData.siteId]
     );
     void notifyLiveBoard(env, stateData.siteId);
 
-    return redirect("/dashboard/rewards/channel?kick_connected=1");
+    return redirect(channelRedirect({ kick_connected: "1" }, stateData.siteId));
   } catch (err) {
     console.error("[kick-auth] callback failed:", err?.message || err);
-    return redirect(`/dashboard/rewards/channel?error=${encodeURIComponent(err?.message || "kick_auth_failed")}`);
+    return redirect(channelRedirect({ error: err?.message || "kick_auth_failed" }, stateData.siteId));
   }
 }
 
-export async function handleKickAuthDisconnect(request, env) {
-  const { user, res } = await requireUser(request, env);
+export async function handleKickAuthDisconnect(request, env, deps = {}) {
+  const {
+    requireUser: requireUserImpl = requireUser,
+    one: oneImpl = one,
+    exec: execImpl = exec,
+    requireSiteCapability: requireSiteCapabilityImpl = requireSiteCapability,
+    readJson: readJsonImpl = readJson,
+  } = deps;
+  const { user, res } = await requireUserImpl(request, env);
   if (res) return res;
 
-  await exec(
+  const url = new URL(request.url);
+  const body = await readJsonImpl(request);
+  const siteId = url.searchParams.get("siteId") || body?.siteId || "";
+  if (!siteId) return bad("Select a site before disconnecting Kick.");
+  const site = await oneImpl("SELECT id, user_id FROM sites WHERE id=$1", [siteId]);
+  if (!site) return bad("Site not found.", 404);
+  const authorization = await requireSiteCapabilityImpl(user, site, "canRoleManageBoard");
+  if (authorization.res) return authorization.res;
+
+  await execImpl(
     `UPDATE users
-        SET kick_access_token_enc = null,
+        SET kick_user_id = null,
+            kick_username = null,
+            kick_access_token_enc = null,
             kick_refresh_token_enc = null,
             kick_token_expires_at = null,
+            kick_linked_at = null,
             updated_at = now()
       WHERE id = $1`,
     [user.id]
   );
 
-  if (user.active_site_id) {
-    await exec(
-      `UPDATE sites
-          SET kick_channel_external_id = null,
-              kick_channel_name = null,
-              kick_channel_linked_at = null,
-              updated_at = now()
-        WHERE id = $1 AND user_id = $2`,
-      [user.active_site_id, user.id]
-    );
-    void notifyLiveBoard(env, user.active_site_id);
-  }
+  await execImpl(
+    `UPDATE sites
+        SET kick_channel_external_id = null,
+            kick_channel_name = null,
+            kick_channel_linked_at = null,
+            updated_at = now()
+      WHERE id = $1`,
+    [site.id]
+  );
+  void notifyLiveBoard(env, site.id);
 
   return ok({ disconnected: true });
 }
