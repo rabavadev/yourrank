@@ -10,6 +10,7 @@
 
 import {
   ACCOUNT_SECTION_PATHS,
+  LEGACY_ACCOUNT_PATHS,
   NAV_OWNER_MAP,
   navOwner,
 } from "@yourrank/shared/dashboard-nav";
@@ -28,7 +29,7 @@ export const SECTIONS = {
 
 export const MANAGE_SITES_VALUE = "__manage_sites__";
 
-export { ACCOUNT_SECTION_PATHS, NAV_OWNER_MAP, navOwner };
+export { ACCOUNT_SECTION_PATHS, LEGACY_ACCOUNT_PATHS, NAV_OWNER_MAP, navOwner };
 
 // Names we have shipped links for, in copy, e-mails and older builds.
 export const SECTION_ALIASES = {

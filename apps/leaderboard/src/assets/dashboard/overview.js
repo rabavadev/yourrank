@@ -149,7 +149,7 @@ export function renderOverviewSummary() {
     $("ovTopPlayers").innerHTML = top.map((player, i) => `
       <div class="ov-player-row" data-name="${esc(player.name)}">
         <span class="ov-player-rank">#${i + 1}</span>
-        <b class="ov-player-name">${esc(player.name)}</b>
+        <b class="ov-player-name" title="${esc(player.name)}">${esc(player.name)}</b>
         <span class="ov-player-wager">$${Number(player.wagered || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
         <div class="ov-quick-incs">
           <button type="button" class="ov-inc-btn" data-inc="100" title="Add $100 to ${esc(player.name)}">+100</button>
