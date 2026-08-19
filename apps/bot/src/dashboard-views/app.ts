@@ -33,7 +33,7 @@ function panelHtml(page: string, publicBaseUrl: string, context: DashboardContex
 
 function telegramTabsHtml(page: string): string {
   return `<nav class="v3-tabs telegram-tabs" aria-label="Telegram pages">${
-    pageLinks.map(({ key, label, href }) =>
+    pageLinks.filter(({ key }) => key !== "overview").map(({ key, label, href }) =>
       `<a class="v3-tab${key === page ? " is-on" : ""}" href="${href}"${key === page ? ' aria-current="page"' : ""}>${label}</a>`
     ).join("")
   }</nav>`;
@@ -64,7 +64,7 @@ export function appHtml(
       { label: meta.label },
     ],
     user,
-    topbarHtml: `<div class="lb-topbar-hud"><div class="lb-account-hud"><span class="lb-hud-icon" aria-hidden="true">◎</span><div class="lb-hud-details"><span class="lb-board-select-lbl">CURRENT BOT</span>${context.botUsername ? `<span class="lb-account-title">@${esc(context.botUsername)} <span class="lb-status">${esc(context.botStatus || "active")}</span></span>` : `<a class="lb-account-title" href="/dashboard/telegram/bots">No bot connected · Connect one</a>`}</div></div></div>`,
+    topbarHtml: `<div class="lb-topbar-hud"><div class="lb-account-hud"><span class="lb-hud-icon" aria-hidden="true">◎</span><div class="lb-hud-details"><span class="lb-board-select-lbl">CURRENT BOT</span>${context.botUsername ? `<span class="lb-account-title">@${esc(context.botUsername)} <span class="lb-status">${esc(context.botStatus || "active")}</span></span>` : `<span class="lb-account-title">No bot connected · Connect one</span>`}</div></div></div>`,
     activePath: pagePath,
     railProfile: true,
     collapsible: true,

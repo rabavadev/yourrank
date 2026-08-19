@@ -99,11 +99,11 @@ describe("signed-in shell navigation", () => {
   it("links the primary creator surfaces from the rail", () => {
     const html = renderPage(RewardsViewersPage);
     for (const href of [
-      "/dashboard/leaderboard/setup",
-      "/dashboard/giveaways/chat",
-      "/dashboard/rewards/redemptions",
+      "/dashboard/leaderboard",
+      "/dashboard/giveaways",
+      "/dashboard/rewards",
       "/dashboard/telegram",
-      "/dashboard/analytics/activity",
+      "/dashboard/analytics",
       "/dashboard/settings/board",
       "/dashboard/settings",
     ]) {
@@ -177,9 +177,9 @@ describe("signed-in shell navigation", () => {
     expect(html).not.toContain('id="wsMenu"');
     expect(html).not.toContain('id="manageBoardsBtn"');
     expect(html).toContain('id="sidebarBoardSelect"');
-    expect((html.match(/class="gm-profile-link"/g) || []).length).toBe(3);
+    expect((html.match(/class="gm-profile-link"/g) || []).length).toBe(2);
     expect((html.match(/class="gm-logout"/g) || []).length).toBe(1);
-    expect(html).toContain("Account settings");
+    expect(html).not.toContain("Account settings");
     expect(html).toContain("Appearance");
     expect(html).toContain("Help &amp; feedback");
     expect(html).toContain("Sign out");
@@ -230,11 +230,11 @@ describe("signed-in shell navigation", () => {
     const html = renderPage(UnifiedSettingsPage);
     for (const href of [
       "/dashboard",
-      "/dashboard/leaderboard/setup",
-      "/dashboard/giveaways/chat",
-      "/dashboard/rewards/redemptions",
+      "/dashboard/leaderboard",
+      "/dashboard/giveaways",
+      "/dashboard/rewards",
       "/dashboard/telegram",
-      "/dashboard/analytics/activity",
+      "/dashboard/analytics",
       "/dashboard/settings",
     ]) expect(html).toContain(`href="${href}"`);
     expect(html).toContain('href="/help/support?area=account');
@@ -249,7 +249,7 @@ describe("signed-in shell navigation", () => {
   it("puts a breadcrumb trail on every leaf page", () => {
     const viewers = renderPage(RewardsViewersPage);
     expect(viewers).toContain('<nav class="v3-crumbs" aria-label="Breadcrumb">');
-    expect(viewers).toContain('<a href="/dashboard/rewards/redemptions">Rewards</a>');
+    expect(viewers).toContain('<a href="/dashboard/rewards">Rewards</a>');
     expect(viewers).toContain('<span aria-current="page">Viewers</span>');
 
     const settings = renderPage(UnifiedSettingsPage);
@@ -258,7 +258,7 @@ describe("signed-in shell navigation", () => {
 
   it("trails dashboard sections and editor steps from the route", () => {
     const editor = PAGES.dashboard.Component({ activePath: "/dashboard/leaderboard/design" }).toString();
-    expect(editor).toContain('<a href="/dashboard/leaderboard/setup">Leaderboard</a>');
+    expect(editor).toContain('<a href="/dashboard/leaderboard">Leaderboard</a>');
     expect(editor).toContain('<span aria-current="page">Appearance</span>');
     expect(editor).toContain('href="/dashboard/leaderboard/design" data-egroup="design"');
 
@@ -269,7 +269,7 @@ describe("signed-in shell navigation", () => {
 
   it("marks exactly one visible editor feature as current", () => {
     const html = PAGES.dashboard.Component({ activePath: "/dashboard/leaderboard/players", user }).toString();
-    expect(html).toContain('href="/dashboard/leaderboard/setup" data-nav="board" aria-current="page"');
+    expect(html).toContain('href="/dashboard/leaderboard" data-nav="board" aria-current="page"');
     expect((html.match(/data-nav="board"[^>]*aria-current="page"/g) || []).length).toBe(1);
   });
 

@@ -15,26 +15,16 @@ const GEAR_ICON = '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 
 
 const DASHBOARD_NAV: NavItem[] = [
   { key: "home", label: "Home", href: "/dashboard", icon: '<rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/>', productKey: "sites" },
-  { key: "board", label: "Leaderboard", href: "/dashboard/leaderboard/setup", icon: NAV_ICONS.players },
-  {
-    key: "engage",
-    label: "Engage",
-    kind: "group",
-    children: [
-      { key: "giveaways", label: "Giveaways", href: "/dashboard/giveaways/chat", icon: NAV_ICONS.giveaways },
-      { key: "raffles", label: "Raffles", href: "/dashboard/giveaways/raffles", icon: NAV_ICONS.giveaways },
-      { key: "predictions", label: "Predictions", href: "/dashboard/giveaways/preds", icon: NAV_ICONS.viewers },
-      { key: "drops", label: "Drops", href: "/dashboard/giveaways/drops", icon: NAV_ICONS.share },
-    ],
-  },
+  { key: "board", label: "Leaderboard", href: "/dashboard/leaderboard", icon: NAV_ICONS.players },
+  { key: "engage", label: "Engage", href: "/dashboard/giveaways", icon: NAV_ICONS.giveaways },
   { key: "games", label: "Games", href: "/dashboard/games", icon: NAV_ICONS.games },
-  { key: "redemptions", label: "Rewards", href: "/dashboard/rewards/redemptions", icon: NAV_ICONS.shop, productKey: "credits" },
+  { key: "redemptions", label: "Rewards", href: "/dashboard/rewards", icon: NAV_ICONS.shop, productKey: "credits" },
   {
     key: "audience",
     label: "Audience",
     kind: "group",
     children: [
-      { key: "performance", label: "Analytics", href: "/dashboard/analytics/activity", icon: NAV_ICONS.viewers },
+      { key: "performance", label: "Analytics", href: "/dashboard/analytics", icon: NAV_ICONS.viewers },
       { key: "telegram", label: "Telegram", href: "/dashboard/telegram", icon: NAV_ICONS.share, productKey: "telegram" },
     ],
   },
@@ -45,10 +35,11 @@ const DASHBOARD_NAV: NavItem[] = [
 export const NAV_OWNER_MAP = {
   board: "board",
   leaderboard: "board",
-  giveaways: "giveaways",
-  raffles: "raffles",
-  predictions: "predictions",
-  drops: "drops",
+  engage: "engage",
+  giveaways: "engage",
+  raffles: "engage",
+  predictions: "engage",
+  drops: "engage",
   games: "games",
   activity: "performance",
   referrals: "performance",

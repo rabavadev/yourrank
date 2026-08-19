@@ -37,11 +37,11 @@ describe("help pages", () => {
     expect(signedIn).toContain('data-auth-workspace="true"');
     expect(signedOut).not.toContain('data-auth-workspace="true"');
     for (const href of [
-      "/dashboard/leaderboard/players",
-      "/dashboard/giveaways/chat",
-      "/dashboard/rewards/redemptions",
+      "/dashboard/leaderboard",
+      "/dashboard/giveaways",
+      "/dashboard/rewards",
       "/dashboard/telegram",
-      "/dashboard/analytics/activity",
+      "/dashboard/analytics",
       "/dashboard/settings",
     ]) expect(signedIn).toContain(`href="${href}"`);
     expect(signedIn).toContain("Help &amp; feedback");

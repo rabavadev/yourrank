@@ -69,6 +69,14 @@ These mirror the `PR Check` workflow. A `.githooks/pre-commit` hook (enabled by
 
 ## Gotchas
 
+### Dashboard chrome ownership
+
+The sidebar owns section roots, page subnavigation owns tabs, and the topbar
+owns context, search, and actions rather than duplicate destinations.
+Breadcrumbs may show ancestry but never link the active page. The rendered
+invariant and Worker route-coverage gate live in
+`apps/leaderboard/src/__tests__/dashboard-chrome-ownership.test.js`.
+
 - Global module mocks are disallowed in shared and Worker tests. Bun's
   `mock.module` is process-global, so one test can replace a shared dependency
   for every later test in an aggregate run and produce misleading failures.

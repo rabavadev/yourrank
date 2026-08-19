@@ -16,11 +16,11 @@ const PAGES = { channel: channelPage, rules: rulesPage, shop: shopPage, viewers:
 const CRUMB_LABELS = { channel: "Kick connection", rules: "Points", shop: "Shop", viewers: "Viewers", redemptions: "Orders", history: "Activity" };
 
 function crumbsFor(tab) {
-  const trail = [{ label: "Rewards", href: "/dashboard/rewards/redemptions" }];
+  const trail = [{ label: "Rewards", href: "/dashboard/rewards" }];
   return tab === "redemptions" ? trail.map((c) => ({ label: c.label })) : [...trail, { label: CRUMB_LABELS[tab] || tab }];
 }
 
-const REWARDS_TABS = [
+export const REWARDS_TABS = [
   { key: "redemptions", label: "Orders", href: "/dashboard/rewards/redemptions" },
   { key: "shop", label: "Shop", href: "/dashboard/rewards/shop" },
   { key: "rules", label: "Points", href: "/dashboard/rewards/rules" },
@@ -46,7 +46,12 @@ function SubTabs({ tab }) {
 
 function RewardsPage({ tab, activeNav = tab, boardContext = "selector", footer = "rewards", user }) {
   const body = PAGES[tab] || channelPage;
-  return <DashboardShell activeNav={activeNav} boardContext={boardContext} crumbs={crumbsFor(tab)} footer={footer} rootId="cr-dash" user={user}>
+  const activePath = tab === "viewers"
+    ? "/dashboard/audience/viewers"
+    : tab === "history"
+      ? "/dashboard/audience/activity"
+      : `/dashboard/rewards/${tab}`;
+  return <DashboardShell activeNav={activeNav} activePath={activePath} boardContext={boardContext} crumbs={crumbsFor(tab)} footer={footer} rootId="cr-dash" user={user}>
     <div class="cr-workspace-content">
       <SubTabs tab={tab} />
       <div id="cr-loading" class="ui-loading" role="status" aria-live="polite" aria-busy="true" hidden><div class="ui-loading__spinner"></div><span class="sr-only">Loading credits and shop…</span></div>

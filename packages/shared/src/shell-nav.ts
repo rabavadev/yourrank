@@ -110,7 +110,7 @@ export function profileMenuHtml(opts: ShellNavOpts & { mobileTabs?: string; stan
   const profileClass = opts.standalone ? "gm-profile gm-profile--standalone" : "gm-profile";
   const identityAttr = opts.dynamicIdentity ? " data-profile-name" : "";
   const profileNav = opts.mobileTabs ? `<div class="gm-profile-nav">${opts.mobileTabs}</div>` : "";
-  return `<details class="${profileClass}">
+  const profileHtml = `<details class="${profileClass}">
         <summary class="gm-profile-trigger">
           <span class="gm-who-avatar" aria-hidden="true">${esc(initial)}</span>
           <span class="gm-who-id"><span class="gm-who-name"${identityAttr}>${name}</span>${badge}</span>
@@ -125,6 +125,11 @@ export function profileMenuHtml(opts: ShellNavOpts & { mobileTabs?: string; stan
           <form method="POST" action="${esc(opts.logoutAction || "/logout")}" class="gm-logout-form"><button class="gm-logout" type="submit"><span class="gm-profile-ic"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg></span>Sign out</button></form>
         </div>
       </details>`;
+  if (!opts.standalone) return profileHtml;
+  const accountStart = profileHtml.indexOf(`<a class="gm-profile-link" href="${accountHref}">`);
+  if (accountStart < 0) return profileHtml;
+  const accountEnd = profileHtml.indexOf("</a>", accountStart) + 4;
+  return profileHtml.slice(0, accountStart) + profileHtml.slice(accountEnd);
 }
 
 import { brandMarkSvg } from "./brand-assets.js";
