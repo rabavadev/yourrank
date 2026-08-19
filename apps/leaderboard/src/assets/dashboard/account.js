@@ -280,7 +280,7 @@ function wireSettingsWebhook(sitePayload) {
 // Board settings (`/dashboard/settings/board`). Plan, usage and account-level
 // providers live in the account settings document, not here.
 export function setupSettingsScreen(sitePayload, initialTab = "access") {
-  if (!document.querySelector('[data-page="settings"]')) return;
+  if (!document.querySelector('[data-page="site"]')) return;
   wireSettingsTabs(initialTab);
   wireSettingsDanger();
   wireSettingsBoardAccess();

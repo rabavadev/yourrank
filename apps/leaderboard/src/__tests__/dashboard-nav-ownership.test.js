@@ -3,13 +3,14 @@ import { readFileSync } from "node:fs";
 import { dashboardNavItems } from "@yourrank/shared/dashboard-nav";
 import { PAGES } from "../pages.jsx";
 import { mapActiveNav } from "../pages/dashboard-shell.jsx";
-import { parseDashboardPath } from "../assets/dashboard/routes.js";
+import { NAV_OWNER_MAP, navOwner, parseDashboardPath } from "../assets/dashboard/routes.js";
 
 const user = { display_name: "Test operator", plan: "pro" };
 const worker = readFileSync(new URL("../index.js", import.meta.url), "utf8");
 const dashboardJs = readFileSync(new URL("../assets/dashboard.js", import.meta.url), "utf8");
 const boardsJs = readFileSync(new URL("../assets/dashboard/boards.js", import.meta.url), "utf8");
 const boardShellJs = readFileSync(new URL("../assets/dashboard/board-shell.js", import.meta.url), "utf8");
+const siteSelectorJs = readFileSync(new URL("../assets/dashboard/site-selector.js", import.meta.url), "utf8");
 
 function dashboardHtml(activePath) {
   return PAGES.dashboard.Component({ activePath, user }).toString();
@@ -50,17 +51,23 @@ describe("dashboard navigation ownership", () => {
     expect(sites).toContain('id="newBoard"');
     expect(sites).toContain('id="newBoardForm"');
     expect(sites).toContain('id="boardLimitUpsell"');
+    expect(sites).not.toContain('aria-label="Create another site"');
+    expect(sites).toContain('title="Create another site">+ New site');
     expect(dashboardJs).not.toContain("#newBoardSide, #addBoardBtn");
     expect(boardsJs).not.toContain("addBoardFromBoards");
     expect(boardsJs).toContain('const newBtn = $("newBoard")');
-    expect(boardsJs).toContain("Manage all sites");
-    expect(boardShellJs).toContain("Manage all sites");
+    expect(boardsJs).toContain("renderSiteSelector({");
+    expect(boardShellJs).toContain("renderSiteSelector({");
+    expect(boardsJs).not.toContain("MANAGE_SITES_VALUE");
+    expect(boardShellJs).not.toContain("MANAGE_SITES_VALUE");
+    expect(boardShellJs).toContain('topbarPath: $("lbTopbarSitePath")');
   });
 
   it("renders leaderboard tabs only on leaderboard routes", () => {
     for (const path of ["/dashboard", "/dashboard/games", "/dashboard/analytics/activity", "/dashboard/leaderboards", "/dashboard/settings/board"]) {
       expect(dashboardHtml(path)).not.toContain('aria-label="Leaderboard pages"');
     }
+    expect(dashboardHtml("/dashboard/settings/board")).toContain('id="savebar"');
     expect(dashboardHtml("/dashboard/leaderboard/setup")).toContain('aria-label="Leaderboard pages"');
   });
 
@@ -96,11 +103,28 @@ describe("dashboard navigation ownership", () => {
       ["viewers", "redemptions"],
       ["history", "redemptions"],
     ]) {
-      expect(keys.has(mapActiveNav(route))).toBe(true);
-      expect(mapActiveNav(route)).toBe(owner);
+      expect(navOwner(route)).toBe(owner);
+      expect(mapActiveNav(route)).toBe(navOwner(route));
+      expect(keys.has(NAV_OWNER_MAP[route] || route)).toBe(true);
     }
     for (const path of ["/dashboard", "/dashboard/leaderboard/setup", "/dashboard/games", "/dashboard/analytics/activity", "/dashboard/leaderboards", "/dashboard/settings/board"]) {
       expect((dashboardHtml(path).match(/class="lb-nav[^"]* is-on/g) || []).length).toBe(1);
     }
+  });
+
+  it("uses one shared active-navigation map in server and client code", () => {
+    expect(readFileSync(new URL("../assets/dashboard/shell.js", import.meta.url), "utf8"))
+      .not.toContain("const NAV_OWNER_MAP");
+    for (const [route] of Object.entries(NAV_OWNER_MAP)) {
+      expect(mapActiveNav(route)).toBe(navOwner(route));
+    }
+  });
+
+  it("keeps the site address quiet in the topbar", () => {
+    const html = dashboardHtml("/dashboard");
+    expect(html).toContain(">Web address</span>");
+    expect(html).not.toContain("Web address loading");
+    expect(siteSelectorJs).toContain('topbarPath.textContent = "Web address"');
+    expect(boardShellJs).not.toContain("Web address: /");
   });
 });

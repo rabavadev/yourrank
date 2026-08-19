@@ -7,7 +7,7 @@ import { LEGACY_TELEGRAM_REDIRECTS, legacyTelegramRedirect } from "../telegram-r
 
 describe("dashboard routes", () => {
   it("round-trips every section and sub-tab", () => {
-    for (const [page, tab] of [["home", ""], ["board", "players"], ["boards", ""], ["games", ""], ["performance", "referrals"], ["settings", ""]]) {
+    for (const [page, tab] of [["home", ""], ["board", "players"], ["boards", ""], ["games", ""], ["performance", "referrals"], ["site", ""]]) {
       expect(parseDashboardPath(dashboardPath(page, tab))).toEqual({ page, tab });
     }
   });
@@ -24,7 +24,7 @@ describe("dashboard routes", () => {
       expect(parseDashboardPath(`/dashboard/settings${tab}`)).toBeNull();
     }
     expect(dashboardPath("settings")).toBe("/dashboard/settings/board");
-    expect(parseDashboardPath("/dashboard/settings/board")).toEqual({ page: "settings", tab: "" });
+    expect(parseDashboardPath("/dashboard/settings/board")).toEqual({ page: "site", tab: "" });
   });
 
   it("keeps the links we have already shipped working", () => {
@@ -32,7 +32,8 @@ describe("dashboard routes", () => {
     // e-mails land on the section they meant rather than on a 404.
     expect(resolveSection("overview")).toBe("home");
     expect(resolveSection("analytics")).toBe("performance");
-    expect(resolveSection("billing")).toBe("settings");
+    expect(resolveSection("billing")).toBe("site");
+    expect(resolveSection("settings")).toBe("site");
     expect(resolveSection("editor")).toBe("board");
     expect(dashboardPath("performance")).toBe("/dashboard/analytics");
   });

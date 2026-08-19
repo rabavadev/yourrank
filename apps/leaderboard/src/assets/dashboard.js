@@ -96,7 +96,7 @@ async function init() {
   // when that screen is in the document.
   const hasSection = (name) => !!document.querySelector(`section[data-page="${name}"]`);
   const hasEditor = hasSection("board");
-  const hasBoardSettings = hasSection("settings");
+  const hasBoardSettings = hasSection("site");
 
   const urlParams = new URLSearchParams(location.search);
   // Plan and billing live in the account settings document; a `?plan=` on the

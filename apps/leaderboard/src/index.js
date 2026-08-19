@@ -728,12 +728,13 @@ async function handleRequest(request, env, ctx, meta) {
         }
         // `?nav=` was the old address of a section. Send it to the real one so
         // the URL a user copies is the URL they can share.
-        const legacy = resolveSection(url.searchParams.get("nav"));
+        const legacyNav = url.searchParams.get("nav");
+        const legacy = resolveSection(legacyNav);
         if (legacy) {
-          // `?nav=billing|integrations|manage|settings` all meant the account
-          // settings, which are their own document now; `settings` inside the
-          // dashboard document is the selected board's own settings.
-          const target = new URL(legacy === "settings" ? "/dashboard/settings" : dashboardPath(legacy), url);
+          // These old names addressed account settings; `site` is now the
+          // selected site's settings section in the dashboard document.
+          const accountSettingsNav = ["billing", "integrations", "manage", "settings"].includes(legacyNav);
+          const target = new URL(accountSettingsNav ? "/dashboard/settings" : dashboardPath(legacy), url);
           for (const [k, v] of url.searchParams) if (k !== "nav") target.searchParams.set(k, v);
           return Response.redirect(target, 302);
         }

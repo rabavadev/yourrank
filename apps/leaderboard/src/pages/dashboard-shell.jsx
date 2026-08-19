@@ -6,6 +6,7 @@ import { dashboardNavItems as sharedDashboardNavItems } from "@yourrank/shared/d
 import { raw } from "hono/html";
 import { crumbsHtml, navListHtml } from "@yourrank/shared/dashboard-chrome";
 import { brandMarkSvg } from "@yourrank/shared/brand-assets";
+import { navOwner } from "../assets/dashboard/routes.js";
 
 const CREDITS_NAV_KEYS = new Set(["credits", "channel", "redemptions", "shop", "rules", "viewers", "history", "rewards", "audience"]);
 
@@ -23,14 +24,7 @@ export function dashboardNavItems() {
 }
 
 export function mapActiveNav(nav) {
-  if (nav === "board" || nav === "leaderboard") return "board";
-  if (["giveaways", "raffles", "predictions", "drops", "games"].includes(nav)) return nav;
-  if (["activity", "referrals", "performance"].includes(nav)) return "performance";
-  if (nav === "redemptions" || nav === "shop" || nav === "rules" || nav === "channel" || nav === "rewards" || nav === "viewers" || nav === "audience" || nav === "history") return "redemptions";
-  if (nav === "boards" || nav === "site") return "site";
-  if (nav === "settings") return "site";
-  if (["account", "team", "plan", "connections", "data", "integrations"].includes(nav)) return "settings";
-  return nav || "home";
+  return navOwner(nav);
 }
 
 function SidebarFooter({ profile }) {
@@ -69,7 +63,7 @@ export function DashboardShell({ activeNav = "home", boardContext = "full", foot
                   <span class="lb-board-select-lbl">Current site</span>
                   <div class="lb-board-select-row">
                     <select class="lb-board-select" id="sidebarBoardSelect" aria-label="Switch site"></select>
-                    <span class="lb-site-path" id="lbTopbarSitePath">Web address loading…</span>
+                    <span class="lb-site-path" id="lbTopbarSitePath">Web address</span>
                   </div>
                 </div>
               </div>

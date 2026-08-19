@@ -79,7 +79,7 @@ describe("signed-in shell navigation", () => {
     expect(html).toContain('class="lb-site-command"');
     expect(html).toContain('id="sidebarBoardSelect" aria-label="Switch site"');
     expect(html).toContain('id="lbTopbarSitePath"');
-    expect(html).toContain("Web address loading");
+    expect(html).toContain(">Web address</span>");
     expect(html).toContain('class="lb-availability"');
     expect(html).toContain('id="lbTopbarStatus"');
     expect(html).toContain('id="publishAction" type="button"');
