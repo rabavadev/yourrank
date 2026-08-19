@@ -35,7 +35,7 @@ export function emptyStateHtml({ icon = "chart", title, body, actions = [] }) {
       return `<${tag} class="v3-btn${action.accent ? " v3-btn--accent" : ""}" ${attrs}>${esc(action.label)}</${tag}>`;
     }).join("")}</div>`
     : "";
-  return `<div class="v3-empty"><span class="v3-empty-ic">${iconHtml}</span><h3>${esc(title)}</h3>${body ? `<p>${esc(body)}</p>` : ""}${actionHtml}</div>`;
+  return `<div class="v3-empty"><span class="v3-empty-ic">${iconHtml}</span><h2>${esc(title)}</h2>${body ? `<p>${esc(body)}</p>` : ""}${actionHtml}</div>`;
 }
 
 export function inlineStateHtml({ kind = "empty", title, body, actions = [] } = {}) {

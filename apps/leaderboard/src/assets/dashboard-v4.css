@@ -5007,8 +5007,10 @@ body:has(.v3-dash[data-auth-workspace]) > .lb-backdrop.is-open { opacity: 1; poi
   border-bottom: 1px solid var(--v3-main-line);
 }
 
-.v3-dash[data-auth-workspace] section[data-page="board"] .design-group-heading h3 {
+.v3-dash[data-auth-workspace] section[data-page="board"] .design-group-heading h2 {
   margin: 0;
+  font-size: var(--v4-type-section-size);
+  line-height: var(--v4-type-section-leading);
 }
 
 .v3-dash[data-auth-workspace] section[data-page="board"] .preview-header {
@@ -5571,6 +5573,7 @@ body:has(.v3-dash[data-auth-workspace]) > .lb-backdrop.is-open { opacity: 1; poi
 .v3-dash[data-auth-workspace] .v3-settings-card.v3-danger-card { border-color: var(--v3-danger);
 }
 
+.v3-dash[data-auth-workspace] .v3-settings-card h2,
 .v3-dash[data-auth-workspace] .v3-settings-card h3 { margin: 0 0 14px; font-size: var(--v4-type-card-size); line-height: var(--v4-type-card-leading);
 }
 

@@ -15,8 +15,6 @@ const V4_ACCENT = "#2200ff";
 const sources = {
   app: read("apps/leaderboard/src/assets/app.css"),
   dashboard: read("apps/leaderboard/src/assets/dashboard-v4.css"),
-  dashboardStates: read("apps/leaderboard/src/assets/dashboard/states.js"),
-  dashboardPage: read("apps/leaderboard/src/pages/dashboard.jsx"),
   landing: read("apps/leaderboard/src/assets/landing.css"),
   ui: read("apps/leaderboard/src/assets/ui.css"),
   publicShell: read("apps/leaderboard/src/assets/site-shell.css"),
@@ -82,9 +80,16 @@ describe("design tokens", () => {
     expect(scale).not.toMatch(/\.v3-section-head h2[\s\S]*?font-size:\s*var\(--v4-type-card-size\)/);
     expect(sources.dashboard).toContain("font: 700 var(--v4-type-page-size)/var(--v4-type-page-leading) var(--v3-sans);");
     expect(sources.dashboard).not.toMatch(/\.v3-dash\[data-auth-workspace\] \.v3-head h1\s*\{\s*font-size:\s*(?:26|28)px/);
-    expect(sources.dashboardStates).not.toContain("<h2");
-    expect(sources.dashboardPage).not.toMatch(/<div class="card"[^>]*><h2\b/);
-    expect(sources.dashboardPage).not.toContain("<h2");
+    const designGroupHeading = sources.dashboard.match(
+      /\.v3-dash\[data-auth-workspace\] section\[data-page="board"\] \.design-group-heading h2\s*\{([^}]*)\}/
+    )?.[1] || "";
+    expect(designGroupHeading).toContain("font-size: var(--v4-type-section-size);");
+    expect(designGroupHeading).toContain("line-height: var(--v4-type-section-leading);");
+    expect(designGroupHeading).not.toContain("font-size: var(--v4-type-card-size);");
+    const cardHeading = sources.dashboard.match(
+      /\.v3-dash\[data-auth-workspace\] \.card > h2,[\s\S]*?\{([^}]*)\}/
+    )?.[1] || "";
+    expect(cardHeading).toContain("font-size: var(--v4-type-card-size);");
     const headingSizes = [...sources.dashboard.matchAll(/([^{}]+)\{([^{}]*)\}/g)]
       .filter(([, selector]) => /(?:^|[\s>+~,.])h[1-6](?:$|[\s.#:>+~,.])/.test(selector))
       .flatMap(([, , declarations]) => [

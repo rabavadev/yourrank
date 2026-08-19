@@ -9,6 +9,63 @@ function renderPage(Component) {
   return Component({ reqId: "test-request", user }).toString();
 }
 
+function visibleHeadings(html, { group = "", performancePanel = "" } = {}) {
+  const tokenRe = /<\/?[^>]+>/g;
+  const stack = [];
+  const headings = [];
+  let match;
+  while ((match = tokenRe.exec(html))) {
+    const token = match[0];
+    const closing = /^<\//.test(token);
+    if (!closing) {
+      const tag = token.match(/^<([a-z0-9-]+)/i)?.[1]?.toLowerCase();
+      if (!tag || token.startsWith("<!")) continue;
+      const ownGroup = token.match(/\bdata-egroup="([^"]+)"/)?.[1] || "";
+      const ownPanel = token.match(/\bdata-perf-panel="([^"]+)"/)?.[1] || "";
+      const inactivePage = /\bclass="[^"]*\blb-page\b[^"]*"/.test(token)
+        && !/\bclass="[^"]*\bis-on\b[^"]*"/.test(token);
+      const hidden = (/\bhidden(?:\s|=|>)/.test(token) && !/\bid="dash"/.test(token)) || inactivePage;
+      const parent = stack[stack.length - 1];
+      const entry = {
+        tag,
+        group: ownGroup || parent?.group || "",
+        performancePanel: ownPanel || parent?.performancePanel || "",
+        hidden: hidden || Boolean(parent?.hidden),
+        textStart: match.index + token.length,
+      };
+      stack.push(entry);
+      if (/^(area|base|br|col|embed|hr|img|input|link|meta|param|source|track|wbr)$/.test(tag) || /\/>$/.test(token)) {
+        stack.pop();
+      }
+      continue;
+    }
+    const tag = token.match(/^<\/([a-z0-9-]+)/i)?.[1]?.toLowerCase();
+    if (!tag) continue;
+    let entry;
+    while (stack.length) {
+      entry = stack.pop();
+      if (entry.tag === tag) break;
+    }
+    if (!entry || !/^h[1-6]$/.test(entry.tag)) continue;
+    const text = html.slice(entry.textStart, match.index).replace(/<[^>]*>/g, "").replace(/\s+/g, " ").trim();
+    if (entry.hidden || (group && entry.group && entry.group !== group) || (performancePanel && entry.performancePanel && entry.performancePanel !== performancePanel)) continue;
+    headings.push({ tag: entry.tag, text });
+  }
+  return headings;
+}
+
+function expectHeadingOutline(html, options) {
+  const headings = visibleHeadings(html, options);
+  expect(headings.filter(({ tag }) => tag === "h1"), options.activePath).toHaveLength(1);
+  expect(headings[0]?.tag, options.activePath).toBe("h1");
+  for (let i = 1; i < headings.length; i += 1) {
+    const previous = Number(headings[i - 1].tag.slice(1));
+    const current = Number(headings[i].tag.slice(1));
+    expect(current).toBeLessThanOrEqual(previous + 1);
+  }
+  return headings;
+}
+
 describe("server-rendered dashboard profile", () => {
   it("passes the caller user through a Rewards/Audience page", () => {
     const html = renderPage(RewardsViewersPage);
@@ -208,5 +265,22 @@ describe("signed-in shell navigation", () => {
     expect(html).not.toContain('id="ovActiveBento" hidden');
     expect(html).toContain("0 of 3 done");
     expect(html).not.toContain('id="ovStepKickStatus"');
+  });
+
+  it("keeps one page heading and a contiguous outline on every dashboard view", () => {
+    const routes = [
+      ["/dashboard", {}],
+      ["/dashboard/leaderboard", { group: "setup" }],
+      ["/dashboard/leaderboard/players", { group: "players" }],
+      ["/dashboard/leaderboard/design", { group: "design" }],
+      ["/dashboard/leaderboard/share", { group: "share" }],
+      ["/dashboard/analytics", { performancePanel: "activity" }],
+      ["/dashboard/games", {}],
+      ["/dashboard/settings/board", {}],
+    ];
+    for (const [activePath, options] of routes) {
+      const html = PAGES.dashboard.Component({ activePath, user }).toString();
+      expectHeadingOutline(html, { ...options, activePath });
+    }
   });
 });
