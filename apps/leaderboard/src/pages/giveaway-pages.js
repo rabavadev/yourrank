@@ -706,7 +706,8 @@ ${tabs}
           <input id="tournament-pick-count" type="number" min="1" value="1" inputmode="numeric" />
         </label>
         <button class="btn btn--accent" id="tournament-primary" type="button">Set up a tournament</button>
-        <button class="btn btn--ghost" id="tournament-new" type="button" hidden>Start new tournament</button>
+        <button class="btn btn--ghost tournament-secondary-action" id="tournament-reopen" type="button" hidden>Reopen signups</button>
+        <button class="btn btn--ghost tournament-secondary-action" id="tournament-new" type="button" hidden>Start new tournament</button>
       </div>
     </div>
 

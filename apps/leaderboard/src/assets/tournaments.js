@@ -111,8 +111,8 @@ function renderEntries() {
         <div class="tournament-entry-main">
           <strong>${esc(entry.display_name)}</strong>
           <span>${esc(SOURCE_LABELS[entry.source] || entry.source)} · ${esc(status)}</span>
+          ${flagged ? `<div class="tournament-entry-flag"><b>Review flag</b><span>— ${esc(entry.alt_reason || "Possible duplicate account.")}</span></div>` : ""}
         </div>
-        ${flagged ? `<div class="tournament-entry-flag"><b>Review flag</b><span>${esc(entry.alt_reason || "Possible duplicate account.")}</span></div>` : ""}
         <div class="tournament-entry-actions">${action}</div>
       </li>`;
   }).join("");
@@ -143,7 +143,6 @@ function renderTournament() {
   empty.hidden = true;
   listCard.hidden = false;
   settings.hidden = false;
-  $("tournament-new").hidden = false;
   if (channelField) channelField.hidden = false;
   const activeCount = entries.filter((entry) => ["pending", "confirmed", "selected"].includes(entry.status)).length;
   const eligibleCount = entries.filter((entry) => ["pending", "confirmed"].includes(entry.status)).length;
@@ -158,6 +157,9 @@ function renderTournament() {
   if (tournament.signup_state === "open") primary.dataset.action = "lock";
   else if (eligibleCount) primary.dataset.action = "pick";
   else primary.dataset.action = "open";
+  primary.hidden = primary.dataset.action === "open" && entries.length === 0;
+  $("tournament-reopen").hidden = tournament.signup_state === "open" || eligibleCount === 0;
+  $("tournament-new").hidden = entries.length === 0 && tournament.signup_state !== "locked";
 
   $("tournament-format").value = tournament.format || "bracket";
   $("tournament-entry-cap").value = tournament.entry_cap || "";
@@ -309,6 +311,21 @@ async function handlePrimary() {
   }
 }
 
+async function reopenSignups() {
+  if (!tournament) return;
+  if (!$("tournament-chat-channel")?.value.trim()) {
+    setMessage("Add your Kick channel before opening signups.", true);
+    $("tournament-chat-channel")?.focus();
+    return;
+  }
+  await api(`/api/tournaments/${encodeURIComponent(tournament.id)}/signups/open`, {
+    method: "POST",
+    body: "{}",
+  });
+  await loadTournament();
+  return startChat();
+}
+
 async function handleEntryAction(button) {
   const action = button.dataset.entryAction;
   const entryId = encodeURIComponent(button.dataset.entryId || "");
@@ -364,12 +381,13 @@ async function init() {
 }
 
 document.addEventListener("click", async (event) => {
-  const target = event.target.closest?.("#tournament-primary, #tournament-new, #tournament-create-empty, #tournament-empty-action, #tournament-retry, [data-entry-action]");
+  const target = event.target.closest?.("#tournament-primary, #tournament-reopen, #tournament-new, #tournament-create-empty, #tournament-empty-action, #tournament-retry, [data-entry-action]");
   if (!target || !$("tournament-app")) return;
   event.preventDefault();
   try {
     if (target.id === "tournament-retry") return init();
     if (target.matches("[data-entry-action]")) return await handleEntryAction(target);
+    if (target.id === "tournament-reopen") return await reopenSignups();
     if (target.id === "tournament-create-empty") return await createTournament();
     if (target.id === "tournament-new") return await createTournament();
     if (target.id === "tournament-empty-action" && tournament?.signup_state === "open") {

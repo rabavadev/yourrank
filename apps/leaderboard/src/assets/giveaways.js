@@ -909,6 +909,12 @@ import { computeTrustScore, connectKickChat } from "./chat-entry.js";
     // The server renders the active tab and its pane. Tab links own navigation
     // so deep links and browser history remain the source of truth.
     const activeTab = document.querySelector(".gw-tab-btn.is-active")?.dataset.tab || "chat";
+    const tabs = document.querySelector(".gw-nav-tabs");
+    const activeTabLink = tabs?.querySelector(".gw-tab-btn.is-active");
+    if (tabs && activeTabLink) {
+      const targetLeft = activeTabLink.offsetLeft - (tabs.clientWidth - activeTabLink.offsetWidth) / 2;
+      tabs.scrollTo({ left: Math.max(0, targetLeft), behavior: "auto" });
+    }
     if (activeTab === "raffles") loadRaffles();
     if (activeTab === "drops") loadCodeDrops();
     if (activeTab === "preds") loadPredictions();
