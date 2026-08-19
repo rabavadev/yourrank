@@ -40,6 +40,7 @@ export const NAV_OWNER_MAP = {
   raffles: "engage",
   predictions: "engage",
   drops: "engage",
+  tournaments: "engage",
   games: "games",
   activity: "performance",
   referrals: "performance",
