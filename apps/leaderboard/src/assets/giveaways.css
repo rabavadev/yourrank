@@ -1138,6 +1138,17 @@
   font-size: 12px;
 }
 
+.tournament-message {
+  max-width: 36rem;
+  margin: 8px 0 0;
+  color: var(--v4-ink-soft, var(--v4-ink-mute));
+  font-size: 12px;
+}
+
+.tournament-message.is-error {
+  color: #b42318;
+}
+
 .tournament-primary-wrap {
   display: flex;
   align-items: center;
@@ -1194,6 +1205,12 @@
 .tournament-entries {
   display: flex;
   flex-direction: column;
+}
+
+.tournament-entry-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
 }
 
 .tournament-entry-row {
@@ -1307,14 +1324,16 @@
 
 .tournament-channel-field {
   display: flex;
-  align-items: center;
-  gap: 8px;
+  align-items: flex-start;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 12px;
   color: var(--v4-ink-mute, #6b7280);
   font-size: 12px;
 }
 
 .tournament-channel-field input {
-  width: 150px;
+  width: min(260px, 100%);
 }
 
 @media (max-width: 640px) {
@@ -1327,10 +1346,11 @@
 
   .tournament-primary-wrap {
     width: 100%;
+    flex-wrap: wrap;
   }
 
   .tournament-primary-wrap .btn {
-    flex: 1;
+    flex: 1 1 100%;
   }
 
   .tournament-entry-row {
@@ -1358,8 +1378,6 @@
 
   .tournament-channel-field {
     width: 100%;
-    align-items: flex-start;
-    flex-direction: column;
   }
 
   .tournament-channel-field input {

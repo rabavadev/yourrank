@@ -52,7 +52,6 @@ async function getTournamentForMutation(request, user, one, requireSiteCapabilit
 }
 
 function entryStateFor(tournament, eligibleCount) {
-  if (tournament.signup_state !== "open") return "waitlist";
   if (tournament.entry_cap && eligibleCount >= tournament.entry_cap) return "waitlist";
   return "pending";
 }
@@ -100,6 +99,7 @@ export async function handleCreateTournament(request, env, deps = {}) {
     getBoardById = defaultGetBoardById,
     withTransaction = defaultWithTransaction,
     logAudit = defaultLogAudit,
+    requireSiteCapabilityImpl = requireSiteCapability,
   } = deps;
 
   const { user, res } = await requireUser(request, env);
@@ -120,8 +120,10 @@ export async function handleCreateTournament(request, env, deps = {}) {
   const entryKeyword = String(body?.entryKeyword || "!join").trim().slice(0, 40) || "!join";
 
   const rawParticipants = Array.isArray(body?.participants) ? body.participants : [];
-  const participants = rawParticipants.slice(0, bracketSize).map((p, i) => String(p || `Player ${i + 1}`).trim());
-  while (participants.length < bracketSize) {
+  const participants = rawParticipants.length
+    ? rawParticipants.slice(0, bracketSize).map((p, i) => String(p || `Player ${i + 1}`).trim())
+    : [];
+  while (participants.length > 0 && participants.length < bracketSize) {
     participants.push(`Player ${participants.length + 1}`);
   }
 
@@ -129,7 +131,7 @@ export async function handleCreateTournament(request, env, deps = {}) {
   const siteId = body?.siteId || url.searchParams.get("siteId");
   const site = siteId ? await getBoardById(env, user.id, siteId) : await getByUser(env, user.id);
   if (!site) return bad("Site not found", 404);
-  const authorization = await requireSiteCapability(user, site, "canRoleManageBoard");
+  const authorization = await requireSiteCapabilityImpl(user, site, "canRoleManageBoard");
   if (authorization.res) return authorization.res;
 
   const totalRounds = Math.log2(bracketSize);
@@ -158,29 +160,29 @@ export async function handleCreateTournament(request, env, deps = {}) {
       ]
     );
 
-    // Generate matches for Round 1
-    const round1MatchCount = bracketSize / 2;
-    for (let m = 0; m < round1MatchCount; m++) {
-      const p1 = participants[m * 2];
-      const p2 = participants[m * 2 + 1];
-      await tx.unsafe(
-        `INSERT INTO tournament_matches (tournament_id, round_number, match_index, player1_name, player2_name, status)
-         VALUES ($1, 1, $2, $3, $4, 'pending')`,
-        [tourn.id, m, p1, p2]
-      );
-    }
-
-    // Generate empty matches for subsequent rounds
-    let currentMatchCount = round1MatchCount / 2;
-    for (let r = 2; r <= totalRounds; r++) {
-      for (let m = 0; m < currentMatchCount; m++) {
+    if (participants.length > 0) {
+      // Generate matches for Round 1
+      const round1MatchCount = bracketSize / 2;
+      for (let m = 0; m < round1MatchCount; m++) {
         await tx.unsafe(
           `INSERT INTO tournament_matches (tournament_id, round_number, match_index, player1_name, player2_name, status)
-           VALUES ($1, $2, $3, 'TBD', 'TBD', 'pending')`,
-          [tourn.id, r, m]
+           VALUES ($1, 1, $2, $3, $4, 'pending')`,
+          [tourn.id, m, participants[m * 2], participants[m * 2 + 1]]
         );
       }
-      currentMatchCount = currentMatchCount / 2;
+
+      // Generate empty matches for subsequent rounds
+      let currentMatchCount = round1MatchCount / 2;
+      for (let r = 2; r <= totalRounds; r++) {
+        for (let m = 0; m < currentMatchCount; m++) {
+          await tx.unsafe(
+            `INSERT INTO tournament_matches (tournament_id, round_number, match_index, player1_name, player2_name, status)
+             VALUES ($1, $2, $3, 'TBD', 'TBD', 'pending')`,
+            [tourn.id, r, m]
+          );
+        }
+        currentMatchCount = currentMatchCount / 2;
+      }
     }
 
     return tourn;
@@ -195,7 +197,12 @@ export async function handleCreateTournament(request, env, deps = {}) {
     details: { title, gameName, bracketSize, tournamentFormat, entryCap, entryKeyword },
   });
 
-  return ok({ tournament: result, message: `🏆 Tournament ${title} created with ${bracketSize} players!` });
+  return ok({
+    tournament: result,
+    message: participants.length
+      ? `🏆 Tournament ${title} created with ${participants.length} players!`
+      : `🏆 Tournament ${title} is ready for signups.`,
+  });
 }
 
 async function updateSignupState(request, env, state, deps = {}) {
@@ -249,70 +256,87 @@ export async function handleUpdateTournamentSettings(request, env, deps = {}) {
   const { user, res } = await requireUser(request, env);
   if (res) return res;
 
-  const body = await readJson(request);
-  const format = ["bracket", "1v1", "2v2"].includes(body?.format) ? body.format : "bracket";
-  const entryCap = body?.entryCap === "" || body?.entryCap === null || body?.entryCap === undefined
-    ? null
-    : Math.max(1, parseInt(body.entryCap, 10) || 1);
-  const minCredits = Math.max(0, parseInt(body?.minCredits, 10) || 0);
-  const entryFee = Math.max(0, parseInt(body?.entryFee, 10) || 0);
-  const entryKeyword = String(body?.entryKeyword || "!join").trim().slice(0, 40) || "!join";
-
   const access = await getTournamentForMutation(request, user, one, requireSiteCapabilityImpl);
   if (access.error) return access.error;
-  const tournament = await one(
-    `UPDATE tournaments
-        SET format=$1, entry_cap=$2, anti_alt_enabled=$3, require_login=$4,
-            min_credits=$5, entry_fee=$6, entry_keyword=$7, updated_at=now()
-      WHERE id=$8
-      RETURNING id, title, game_name, signup_state, entry_cap, format,
-                anti_alt_enabled, require_login, min_credits, entry_fee, entry_keyword`,
-    [
-      format,
-      entryCap,
-      body?.antiAltEnabled === true,
-      body?.requireLogin === true,
-      minCredits,
-      entryFee,
-      entryKeyword,
-      access.tournament.id,
-    ]
-  );
-  await logAudit({
-    actorId: user.id,
-    action: "tournament_settings_update",
-    entityType: "tournament",
-    entityId: access.tournament.id,
-    request,
-    details: { format, entryCap, antiAltEnabled: body?.antiAltEnabled === true, entryKeyword },
-  });
+  const body = await readJson(request) || {};
+  const updates = [];
+  const values = [];
+  const addUpdate = (column, value) => {
+    updates.push(`${column}=$${values.length + 1}`);
+    values.push(value);
+  };
+  if (Object.prototype.hasOwnProperty.call(body, "format")) {
+    addUpdate("format", ["bracket", "1v1", "2v2"].includes(body.format) ? body.format : "bracket");
+  }
+  if (Object.prototype.hasOwnProperty.call(body, "entryCap")) {
+    addUpdate(
+      "entry_cap",
+      body.entryCap === "" || body.entryCap === null
+        ? null
+        : Math.max(1, parseInt(body.entryCap, 10) || 1)
+    );
+  }
+  if (Object.prototype.hasOwnProperty.call(body, "antiAltEnabled")) {
+    addUpdate("anti_alt_enabled", body.antiAltEnabled === true);
+  }
+  if (Object.prototype.hasOwnProperty.call(body, "requireLogin")) {
+    addUpdate("require_login", body.requireLogin === true);
+  }
+  if (Object.prototype.hasOwnProperty.call(body, "minCredits")) {
+    addUpdate("min_credits", Math.max(0, parseInt(body.minCredits, 10) || 0));
+  }
+  if (Object.prototype.hasOwnProperty.call(body, "entryFee")) {
+    addUpdate("entry_fee", Math.max(0, parseInt(body.entryFee, 10) || 0));
+  }
+  if (Object.prototype.hasOwnProperty.call(body, "entryKeyword")) {
+    addUpdate("entry_keyword", String(body.entryKeyword || "!join").trim().slice(0, 40) || "!join");
+  }
+
+  let tournament = access.tournament;
+  if (updates.length) {
+    values.push(access.tournament.id);
+    tournament = await one(
+      `UPDATE tournaments
+          SET ${updates.join(", ")}, updated_at=now()
+        WHERE id=$${values.length}
+        RETURNING id, title, game_name, signup_state, entry_cap, format,
+                  anti_alt_enabled, require_login, min_credits, entry_fee, entry_keyword`,
+      values
+    );
+    await logAudit({
+      actorId: user.id,
+      action: "tournament_settings_update",
+      entityType: "tournament",
+      entityId: access.tournament.id,
+      request,
+      details: { fields: updates.map((update) => update.split("=")[0]) },
+    });
+  }
   return ok({ tournament });
 }
 
 /**
- * GET /api/tournaments/:id/entries — Rate-limited entry list.
+ * GET /api/tournaments/:id/entries — Private, rate-limited streamer entry list.
  */
 export async function handleListTournamentEntries(request, env, deps = {}) {
   const {
+    requireUser = defaultRequireUser,
     one = defaultOne,
     query = defaultQuery,
     rateLimit = defaultRateLimit,
     clientIp = defaultClientIp,
+    requireSiteCapabilityImpl = requireSiteCapability,
   } = deps;
+  const { user, res } = await requireUser(request, env);
+  if (res) return res;
   const tournamentId = tournamentIdFromRequest(request);
   if (!tournamentId) return bad("tournamentId is required.");
+  const access = await getTournamentForMutation(request, user, one, requireSiteCapabilityImpl);
+  if (access.error) return access.error;
   const rl = await rateLimit(env, `tournament-entries:${clientIp(request)}`, TOURNAMENT_READ_RATE_LIMIT, 60);
   if (!rl.ok) return bad("Rate limit exceeded. Try again shortly.", 429);
 
-  const tournament = await one(
-    `SELECT id, site_id, title, game_name, status, signup_state, entry_cap, format,
-            anti_alt_enabled, require_login, min_credits, entry_fee, entry_keyword
-       FROM tournaments
-      WHERE id=$1`,
-    [tournamentId]
-  );
-  if (!tournament) return bad("Tournament not found.", 404);
-
+  const tournament = access.tournament;
   const entries = await query(
     `SELECT id, display_name, viewer_id, source, status, trust_score, alt_flag, alt_reason,
             team_no, created_at, updated_at

@@ -17,6 +17,14 @@ const SOURCE_LABELS = {
   manual: "Added by you",
   leaderboard: "Leaderboard",
 };
+const STATUS_LABELS = {
+  pending: "Waiting",
+  confirmed: "Ready",
+  selected: "Picked",
+  waitlist: "Waiting for a spot",
+  removed: "Removed",
+  blocked: "Blocked",
+};
 
 let siteId = "";
 let board = {};
@@ -25,6 +33,9 @@ let entries = [];
 let chatConnection = null;
 let chatHistory = new Map();
 let recentEntryTimestamps = [];
+let entriesRefreshTimer = null;
+let entriesRefreshRunning = false;
+let entriesRefreshQueued = false;
 
 function apiPath(path) {
   return siteId ? `${path}${path.includes("?") ? "&" : "?"}siteId=${encodeURIComponent(siteId)}` : path;
@@ -53,6 +64,14 @@ function setChatStatus(text, live = false) {
   status.classList.toggle("is-live", live);
 }
 
+function setMessage(text = "", error = false) {
+  const message = $("tournament-message");
+  if (!message) return;
+  message.textContent = text;
+  message.hidden = !text;
+  message.className = `tournament-message${error ? " is-error" : ""}`;
+}
+
 function stopChat() {
   chatConnection?.close();
   chatConnection = null;
@@ -60,10 +79,13 @@ function stopChat() {
 }
 
 function renderEntries() {
-  const container = $("tournament-entries");
-  if (!container) return;
+  const empty = $("tournament-entries-empty");
+  const list = $("tournament-entry-list");
+  if (!empty || !list) return;
   if (!entries.length) {
-    renderEmpty(container, {
+    list.hidden = true;
+    empty.hidden = false;
+    renderEmpty(empty, {
       compactHeading: true,
       title: tournament?.signup_state === "open" ? "Waiting for viewers" : "No entries yet",
       body: tournament?.signup_state === "open"
@@ -74,22 +96,25 @@ function renderEntries() {
     return;
   }
 
-  container.removeAttribute("aria-busy");
-  container.innerHTML = entries.map((entry) => {
+  empty.hidden = true;
+  list.hidden = false;
+  list.innerHTML = entries.map((entry) => {
     const flagged = tournament?.anti_alt_enabled && entry.alt_flag;
+    const status = STATUS_LABELS[entry.status] || "Waiting";
+    const name = esc(entry.display_name);
     const action = ["removed", "blocked"].includes(entry.status)
-      ? `<button class="tournament-row-action" type="button" data-entry-action="restore" data-entry-id="${esc(entry.id)}">Restore</button>`
-      : `<button class="tournament-row-action" type="button" data-entry-action="remove" data-entry-id="${esc(entry.id)}">Remove</button>
-         <button class="tournament-row-action tournament-row-action--quiet" type="button" data-entry-action="block" data-entry-id="${esc(entry.id)}">Block</button>`;
+      ? `<button class="tournament-row-action" type="button" data-entry-action="restore" data-entry-id="${esc(entry.id)}" aria-label="Restore ${name}">Restore</button>`
+      : `<button class="tournament-row-action" type="button" data-entry-action="remove" data-entry-id="${esc(entry.id)}" aria-label="Remove ${name}">Remove</button>
+         <button class="tournament-row-action tournament-row-action--quiet" type="button" data-entry-action="block" data-entry-id="${esc(entry.id)}" aria-label="Block ${name}">Block</button>`;
     return `
-      <div class="tournament-entry-row${flagged ? " is-flagged" : ""}" data-entry-id="${esc(entry.id)}">
+      <li class="tournament-entry-row${flagged ? " is-flagged" : ""}" data-entry-id="${esc(entry.id)}">
         <div class="tournament-entry-main">
           <strong>${esc(entry.display_name)}</strong>
-          <span>${esc(SOURCE_LABELS[entry.source] || entry.source)}${entry.status !== "pending" ? ` · ${esc(entry.status)}` : ""}</span>
+          <span>${esc(SOURCE_LABELS[entry.source] || entry.source)} · ${esc(status)}</span>
         </div>
-        ${flagged ? `<div class="tournament-entry-flag" role="status"><b>Review</b><span>${esc(entry.alt_reason || "Possible duplicate account.")}</span></div>` : ""}
+        ${flagged ? `<div class="tournament-entry-flag"><b>Review flag</b><span>${esc(entry.alt_reason || "Possible duplicate account.")}</span></div>` : ""}
         <div class="tournament-entry-actions">${action}</div>
-      </div>`;
+      </li>`;
   }).join("");
 }
 
@@ -99,10 +124,13 @@ function renderTournament() {
   const settings = $("tournament-settings");
   const primary = $("tournament-primary");
   const pickWrap = $("tournament-pick-count-wrap");
+  const channelField = $("tournament-chat-channel")?.closest(".tournament-channel-field");
   if (!tournament) {
     listCard.hidden = true;
     settings.hidden = true;
     primary.hidden = true;
+    $("tournament-new").hidden = true;
+    if (channelField) channelField.hidden = true;
     renderEmpty(empty, {
       compactHeading: true,
       title: "Start a tournament",
@@ -115,6 +143,8 @@ function renderTournament() {
   empty.hidden = true;
   listCard.hidden = false;
   settings.hidden = false;
+  $("tournament-new").hidden = false;
+  if (channelField) channelField.hidden = false;
   const activeCount = entries.filter((entry) => ["pending", "confirmed", "selected"].includes(entry.status)).length;
   const eligibleCount = entries.filter((entry) => ["pending", "confirmed"].includes(entry.status)).length;
   $("tournament-count").textContent = `${activeCount}${tournament.entry_cap ? ` of ${tournament.entry_cap}` : ""} entries`;
@@ -124,7 +154,7 @@ function renderTournament() {
   const picking = tournament.signup_state === "locked" || eligibleCount > 0 && tournament.signup_state !== "open";
   primary.hidden = false;
   pickWrap.hidden = !picking;
-  primary.textContent = tournament.signup_state === "open" ? "Lock signups" : eligibleCount ? "Pick winners" : "Open signups";
+  primary.textContent = tournament.signup_state === "open" ? "Lock signups" : eligibleCount ? "Pick participants" : "Open signups";
   if (tournament.signup_state === "open") primary.dataset.action = "lock";
   else if (eligibleCount) primary.dataset.action = "pick";
   else primary.dataset.action = "open";
@@ -133,7 +163,7 @@ function renderTournament() {
   $("tournament-entry-cap").value = tournament.entry_cap || "";
   $("tournament-keyword").value = tournament.entry_keyword || "!join";
   $("tournament-anti-alt").checked = tournament.anti_alt_enabled === true;
-  $("tournament-chat-channel").value = localStorage.getItem("yr_tournament_channel") || board.slug || "";
+  $("tournament-chat-channel").value = board.kickChannelName || "";
   renderEntries();
 }
 
@@ -146,7 +176,8 @@ async function loadEntries() {
 
 async function loadTournament() {
   const data = await api("/api/tournaments");
-  tournament = data.tournaments?.[0] || null;
+  const tournaments = data.tournaments || [];
+  tournament = tournaments.find((item) => !["completed", "cancelled"].includes(item.status)) || null;
   entries = [];
   if (tournament) await loadEntries();
   else renderTournament();
@@ -168,14 +199,33 @@ async function createTournament() {
   await loadEntries();
 }
 
+async function refreshEntriesSoon() {
+  entriesRefreshQueued = true;
+  clearTimeout(entriesRefreshTimer);
+  entriesRefreshTimer = setTimeout(async () => {
+    entriesRefreshTimer = null;
+    if (entriesRefreshRunning || !entriesRefreshQueued) return;
+    entriesRefreshQueued = false;
+    entriesRefreshRunning = true;
+    try {
+      await loadEntries();
+    } catch (error) {
+      setMessage(error.message || "Could not refresh entries.", true);
+    } finally {
+      entriesRefreshRunning = false;
+      if (entriesRefreshQueued) refreshEntriesSoon();
+    }
+  }, 180);
+}
+
 async function startChat() {
   if (!tournament || tournament.signup_state !== "open" || chatConnection) return;
-  const channel = $("tournament-chat-channel")?.value.trim() || board.slug || "";
+  const channel = $("tournament-chat-channel")?.value.trim() || "";
   if (!channel) {
-    setChatStatus("Add a Kick channel");
+    setMessage("Add your Kick channel before opening signups.", true);
+    $("tournament-chat-channel")?.focus();
     return;
   }
-  localStorage.setItem("yr_tournament_channel", channel);
   setChatStatus("Connecting…");
   try {
     const response = await fetch(`/api/giveaways/chatroom?channel=${encodeURIComponent(channel)}`);
@@ -223,9 +273,11 @@ async function handleChatMessage(chatData) {
         altReason: score.altReason,
       }),
     });
-    await loadEntries();
+    refreshEntriesSoon();
   } catch (error) {
-    if (!String(error.message).toLowerCase().includes("blocked")) console.warn("[tournament] entry failed", error);
+    if (!String(error.message).toLowerCase().includes("blocked")) {
+      setMessage(error.message || "Could not add that entry.", true);
+    }
   }
 }
 
@@ -233,6 +285,11 @@ async function handlePrimary() {
   if (!tournament) return createTournament();
   const action = $("tournament-primary").dataset.action;
   if (action === "open") {
+    if (!$("tournament-chat-channel")?.value.trim()) {
+      setMessage("Add your Kick channel before opening signups.", true);
+      $("tournament-chat-channel")?.focus();
+      return;
+    }
     await api(`/api/tournaments/${encodeURIComponent(tournament.id)}/signups/open`, { method: "POST", body: "{}" });
     await loadTournament();
     return startChat();
@@ -261,6 +318,7 @@ async function handleEntryAction(button) {
     body: "{}",
   });
   await loadEntries();
+  setMessage("");
 }
 
 async function saveSettings(event) {
@@ -280,6 +338,7 @@ async function saveSettings(event) {
     stopChat();
     await startChat();
   }
+  setMessage("");
 }
 
 async function init() {
@@ -289,7 +348,7 @@ async function init() {
     siteId = shell.activeSiteId || "";
     board = shell.board || {};
     $("tournament-settings-form")?.addEventListener("submit", (event) => {
-      saveSettings(event).catch((error) => setChatStatus(error.message || "Could not save settings."));
+      saveSettings(event).catch((error) => setMessage(error.message || "Could not save settings.", true));
     });
     await loadTournament();
     await startChat();
@@ -305,20 +364,21 @@ async function init() {
 }
 
 document.addEventListener("click", async (event) => {
-  const target = event.target.closest?.("#tournament-primary, #tournament-create-empty, #tournament-empty-action, #tournament-retry, [data-entry-action]");
+  const target = event.target.closest?.("#tournament-primary, #tournament-new, #tournament-create-empty, #tournament-empty-action, #tournament-retry, [data-entry-action]");
   if (!target || !$("tournament-app")) return;
   event.preventDefault();
   try {
     if (target.id === "tournament-retry") return init();
     if (target.matches("[data-entry-action]")) return await handleEntryAction(target);
     if (target.id === "tournament-create-empty") return await createTournament();
+    if (target.id === "tournament-new") return await createTournament();
     if (target.id === "tournament-empty-action" && tournament?.signup_state === "open") {
       return $("tournament-chat-channel")?.focus();
     }
     if (target.id === "tournament-empty-action") return await handlePrimary();
     if (target.id === "tournament-primary") return await handlePrimary();
   } catch (error) {
-    setChatStatus(error.message || "Action failed");
+    setMessage(error.message || "Action failed.", true);
   }
 });
 

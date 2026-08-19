@@ -689,11 +689,16 @@ ${tabs}
      TAB 5: TOURNAMENT ENTRIES
      ========================================================================= -->
 <div class="gw-tab-pane${active === "tournaments" ? " is-active" : ""}" id="pane-tournaments"${active === "tournaments" ? "" : " hidden"}>
-  <div id="tournament-app" class="tournament-app" aria-live="polite">
+  <div id="tournament-app" class="tournament-app">
     <div class="tournament-toolbar">
       <div>
         <p class="tournament-step-label" id="tournament-step-label">Ready when you are</p>
         <p class="tournament-count" id="tournament-count" aria-live="polite">No tournament yet</p>
+        <p class="tournament-message" id="tournament-message" role="status" aria-live="polite" hidden></p>
+        <label class="tournament-channel-field" for="tournament-chat-channel">
+          <span>Kick channel for chat joins</span>
+          <input id="tournament-chat-channel" type="text" placeholder="Your channel name" autocomplete="off" />
+        </label>
       </div>
       <div class="tournament-primary-wrap">
         <label class="tournament-pick-count" id="tournament-pick-count-wrap" hidden>
@@ -701,6 +706,7 @@ ${tabs}
           <input id="tournament-pick-count" type="number" min="1" value="1" inputmode="numeric" />
         </label>
         <button class="btn btn--accent" id="tournament-primary" type="button">Set up a tournament</button>
+        <button class="btn btn--ghost" id="tournament-new" type="button" hidden>Start new tournament</button>
       </div>
     </div>
 
@@ -713,7 +719,10 @@ ${tabs}
         </div>
         <span class="tournament-live-dot" id="tournament-chat-status">Chat off</span>
       </div>
-      <div class="tournament-entries" id="tournament-entries"></div>
+      <div class="tournament-entries" id="tournament-entries">
+        <div id="tournament-entries-empty" hidden></div>
+        <ul class="tournament-entry-list" id="tournament-entry-list" aria-label="Tournament entries"></ul>
+      </div>
     </section>
 
     <details class="tournament-settings" id="tournament-settings">
@@ -743,10 +752,6 @@ ${tabs}
         </div>
         <div class="tournament-settings-actions">
           <button class="btn btn--ghost" type="submit">Save settings</button>
-          <label class="tournament-channel-field" for="tournament-chat-channel">
-            <span>Kick channel</span>
-            <input id="tournament-chat-channel" type="text" placeholder="Your channel name" autocomplete="off" />
-          </label>
         </div>
       </form>
     </details>

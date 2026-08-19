@@ -2,10 +2,13 @@ import { describe, expect, it, mock } from "bun:test";
 import {
   handleAddTournamentEntry,
   handleBlockTournamentEntry,
+  handleCreateTournament,
   handleOpenTournamentSignups,
   handleRandomPickTournamentEntries,
+  handleListTournamentEntries,
   handleRemoveTournamentEntry,
   handleRestoreTournamentEntry,
+  handleUpdateTournamentSettings,
 } from "../handlers/tournaments.js";
 
 const USER = { id: "owner-1", email: "owner@example.com" };
@@ -111,6 +114,25 @@ describe("tournament entry lifecycle", () => {
     expect((await response.json()).error).toContain("blocked");
   });
 
+  it("keeps a hand-added entry pending while signups are closed", async () => {
+    const d = deps({
+      oneValues: [TOURNAMENT],
+      txOneValues: [
+        { id: TOURNAMENT.id, signup_state: "closed", entry_cap: null },
+        undefined,
+        { count: 0 },
+        { id: "entry-1", tournament_id: TOURNAMENT.id, display_name: "ManualName", status: "pending" },
+      ],
+    });
+    const response = await handleAddTournamentEntry(
+      request("/api/tournaments/tournament-1/entries", { displayName: "ManualName", source: "manual" }),
+      {},
+      d
+    );
+    expect(response.status).toBe(200);
+    expect((await response.json()).entry.status).toBe("pending");
+  });
+
   it("supports non-destructive remove, block, and restore transitions", async () => {
     for (const [handler, nextStatus] of [
       [handleRemoveTournamentEntry, "removed"],
@@ -178,5 +200,114 @@ describe("tournament entry lifecycle", () => {
     );
     expect(response.status).toBe(403);
     expect(d._mocks.txOne).not.toHaveBeenCalled();
+  });
+
+  it("requires authentication and site ownership to read entries", async () => {
+    const unauthenticated = deps();
+    unauthenticated.requireUser = mock(async () => ({
+      user: null,
+      res: new Response("Unauthorized", { status: 401 }),
+    }));
+    const unauthenticatedResponse = await handleListTournamentEntries(
+      request("/api/tournaments/tournament-1/entries"),
+      {},
+      unauthenticated
+    );
+    expect(unauthenticatedResponse.status).toBe(401);
+    expect(unauthenticated._mocks.one).not.toHaveBeenCalled();
+
+    const foreign = deps({ oneValues: [TOURNAMENT], authorized: false });
+    const foreignResponse = await handleListTournamentEntries(
+      request("/api/tournaments/tournament-1/entries"),
+      {},
+      foreign
+    );
+    expect(foreignResponse.status).toBe(403);
+    expect(foreign._mocks.query).not.toHaveBeenCalled();
+  });
+
+  it("preserves untouched tournament settings during a partial update", async () => {
+    const stored = {
+      ...TOURNAMENT,
+      format: "2v2",
+      entry_cap: 12,
+      anti_alt_enabled: false,
+      require_login: true,
+      min_credits: 25,
+      entry_fee: 10,
+      entry_keyword: "!enter",
+    };
+    const updated = { ...stored, anti_alt_enabled: true };
+    const d = deps({ oneValues: [stored, updated] });
+    const response = await handleUpdateTournamentSettings(
+      request("/api/tournaments/tournament-1/settings", { antiAltEnabled: true }),
+      {},
+      d
+    );
+    expect(response.status).toBe(200);
+    expect((await response.json()).tournament).toEqual(updated);
+    const [sql, params] = d._mocks.one.mock.calls[1];
+    const setClause = sql.split("RETURNING")[0];
+    expect(setClause).toContain("anti_alt_enabled");
+    expect(setClause).not.toContain("require_login");
+    expect(setClause).not.toContain("min_credits");
+    expect(params).toEqual([true, TOURNAMENT.id]);
+  });
+
+  it("does not create fake participants or matches for an entry-list tournament", async () => {
+    const txOne = mock(async () => ({
+      id: "tournament-1",
+      title: "Community Tournament",
+      bracket_size: 8,
+      participants_json: [],
+    }));
+    const txUnsafe = mock(async () => []);
+    const d = {
+      requireUser: mock(async () => ({ user: USER, res: null })),
+      getBoardById: mock(async () => ({ id: "site-1", user_id: USER.id })),
+      requireSiteCapabilityImpl: mock(async () => ({ res: null })),
+      withTransaction: mock(async (fn) => fn({ one: txOne, unsafe: txUnsafe })),
+      logAudit: mock(async () => {}),
+    };
+    const response = await handleCreateTournament(
+      request("/api/tournaments", {
+        siteId: "site-1",
+        title: "Community Tournament",
+        participants: [],
+      }),
+      {},
+      d
+    );
+    expect(response.status).toBe(200);
+    expect(txOne.mock.calls[0][1][4]).toBe("[]");
+    expect(txUnsafe).not.toHaveBeenCalled();
+  });
+
+  it("keeps the legacy participant-provided bracket path", async () => {
+    const txOne = mock(async () => ({
+      id: "tournament-1",
+      title: "Community Tournament",
+      bracket_size: 4,
+      participants_json: ["Alice", "Bob", "Player 3", "Player 4"],
+    }));
+    const txUnsafe = mock(async () => []);
+    const d = {
+      requireUser: mock(async () => ({ user: USER, res: null })),
+      getBoardById: mock(async () => ({ id: "site-1", user_id: USER.id })),
+      requireSiteCapabilityImpl: mock(async () => ({ res: null })),
+      withTransaction: mock(async (fn) => fn({ one: txOne, unsafe: txUnsafe })),
+      logAudit: mock(async () => {}),
+    };
+    const response = await handleCreateTournament(
+      request("/api/tournaments", {
+        siteId: "site-1",
+        bracketSize: 4,
+        participants: ["Alice", "Bob"],
+      }),
+      {},
+      d
+    );
+    expect(response.status).toBe(200);
+    expect(txUnsafe).toHaveBeenCalledTimes(3);
   });
 });
