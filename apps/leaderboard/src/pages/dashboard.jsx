@@ -164,6 +164,7 @@ function EditorSection({ active, activeHash = "setup", showTabs = active } = {})
 <div class="card" data-egroup="setup"><h2>Access &amp; visibility</h2><p class="card-sub">Control who can see your leaderboard.</p>
 <div class="field field--full"><label class="chk"><input type="checkbox" id="f_password_enabled" /> Require a password to view this site</label><input id="f_password" type="password" placeholder="Leave blank to keep current password" disabled class="mt-8" /><span class="hint">Visitors must enter this password before seeing the leaderboard.</span></div>
 <p class="hint mt-14">Use the <b>Publish</b> button at the top right to make your site live.</p></div>
+<h1 class="v3-section-title" data-egroup="design">Look</h1>
 <div class="v3-players" data-egroup="players">
 <div class="v3-head">
 <h1>Players &amp; scores</h1>
@@ -207,8 +208,8 @@ function EditorSection({ active, activeHash = "setup", showTabs = active } = {})
 <div class="v3-bulkbar" id="bulkActions" role="toolbar" aria-label="Bulk actions" hidden><span class="v3-bulkbar-mark" aria-hidden="true"></span><span id="bulkCount" role="status" aria-live="polite" aria-atomic="true">0 players selected</span><span class="v3-bulkbar-sep" aria-hidden="true"></span><button class="v3-btn v3-btn--dark" id="bulkClearWager" type="button">Reset scores to zero</button><button class="v3-btn v3-btn--danger" id="bulkDelete" type="button">Remove selected players</button></div>
 </div>
 <div class="card" data-egroup="design" id="playerFieldsCard"><h2>Player table columns</h2><p class="card-sub">Choose which extra columns show on the player table.</p><a class="btn btn--sm btn--ghost" id="playerFieldsLink" href="/dashboard/leaderboard/players">Manage columns in Players →</a></div>
-<div class="design-group-heading" data-egroup="design"><h3>Appearance</h3></div>
-<div class="card" data-egroup="design" id="brandCard"><h2>Your brand <span class="pill pill--info ml-6">PRO</span></h2><p class="card-sub">Add your logo and pick your colors. Upgrade to Pro to customize.</p>
+<div class="design-group-heading" data-egroup="design"><h2>Appearance</h2></div>
+<div class="card" data-egroup="design" id="brandCard"><h3>Your brand <span class="pill pill--info ml-6">PRO</span></h3><p class="card-sub">Add your logo and pick your colors. Upgrade to Pro to customize.</p>
 <div id="brandBody">
 <div class="grid2">
 <div class="field"><label for="logoFile">Your logo</label>
@@ -244,10 +245,10 @@ function EditorSection({ active, activeHash = "setup", showTabs = active } = {})
 <div class="field"><label for="f_font">Text style</label><select id="f_font"><option value="Inter">Inter — Default</option><option value="Oswald">Oswald — Bold &amp; Sporty</option><option value="Playfair Display">Playfair Display — Premium &amp; Elegant</option><option value="Rajdhani">Rajdhani — Techy &amp; Esports</option><option value="Bebas Neue">Bebas Neue — Impact &amp; Hype</option></select><span class="hint">Changes the personality of your public page text.</span></div>
 </div></div>
 <div class="empty upsell-card" id="brandLock" hidden>Branding is a Pro feature. <a href="/dashboard/settings/plan?from=branding" id="brandUpgrade">Upgrade to Pro to unlock branding</a>.</div></div>
-<div class="card" data-egroup="design" id="sectionsCard"><h2>Layout &amp; blocks <span class="pill pill--info ml-6">PRO</span></h2><p class="card-sub">Choose what appears on your public page.</p>
+<div class="card" data-egroup="design" id="sectionsCard"><h3>Layout &amp; blocks <span class="pill pill--info ml-6">PRO</span></h3><p class="card-sub">Choose what appears on your public page.</p>
 <div id="sectionsBody"><div class="sections-editor" id="sectionsList"></div></div>
 <div class="empty upsell-card" id="sectionsLock" hidden>Page block controls are a Pro feature. <a href="/dashboard/settings/plan?from=sections" id="sectionsUpgrade">Upgrade to unlock them</a>.</div></div>
-<div class="card" data-egroup="design" id="prizesCard"><h2>Prize labels <span class="pill pill--info ml-6">PRO</span></h2><p class="card-sub">Customize the text labels shown next to prizes and the countdown timer.</p>
+<div class="card" data-egroup="design" id="prizesCard"><h3>Prize labels <span class="pill pill--info ml-6">PRO</span></h3><p class="card-sub">Customize the text labels shown next to prizes and the countdown timer.</p>
 <div id="prizesBody">
 <div class="grid2">
 <div class="field"><label for="f_prizePoolLabel">Prize pool label</label><input type="text" id="f_prizePoolLabel" placeholder="Prize pool" /></div>
@@ -258,11 +259,11 @@ function EditorSection({ active, activeHash = "setup", showTabs = active } = {})
 <label class="hint chk"><input type="checkbox" id="f_hidePrizeAmounts" /> Hide exact prize amounts from visitors</label>
 </div>
 <div class="empty upsell-card" id="prizesLock" hidden>Prize customization is a Pro feature. <a href="/dashboard/settings/plan?from=prizes" id="prizesUpgrade">Upgrade to unlock it</a>.</div></div>
-<div class="design-group-heading" data-egroup="design"><h3>Content</h3></div>
-<div class="card" data-egroup="design" id="socialsCard"><h2>Social links</h2><p class="card-sub">Add your social media profiles. Toggle each one on or off to control what appears on your page.</p>
+<div class="design-group-heading" data-egroup="design"><h2>Content</h2></div>
+<div class="card" data-egroup="design" id="socialsCard"><h3>Social links</h3><p class="card-sub">Add your social media profiles. Toggle each one on or off to control what appears on your page.</p>
 <div class="socials-editor" id="socialsList"></div></div>
-<h1 class="v3-section-title" data-egroup="design">Look</h1>
-<div class="card" data-egroup="share" id="embedShareCard"><h1 class="v3-section-title">Share</h1><h2>Share your leaderboard</h2><p class="card-sub">Get your link, add it to your stream, or embed it on a website.</p>
+<h1 class="v3-section-title" data-egroup="share">Share</h1>
+<div class="card" data-egroup="share" id="embedShareCard"><h2>Share your leaderboard</h2><p class="card-sub">Get your link, add it to your stream, or embed it on a website.</p>
 <div class="field"><label>Your public link</label><div class="d-flex gap-8 items-center flex-wrap"><code id="embedPublicLink" class="overlay-url"></code><button class="btn btn--sm btn--accent ic-btn" id="embedPublicCopy" type="button"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg> Copy</button></div></div>
 <div class="embed-obs-box"><div class="d-flex items-center gap-8 mb-8"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect width="20" height="14" x="2" y="3" rx="2" ry="2"/><line x1="8" x2="16" y1="21" y2="21"/><line x1="12" x2="12" y1="17" y2="21"/></svg><b class="font-14">Stream overlay</b></div><p class="hint mb-8">Add this URL as a Browser Source in OBS, Streamlabs, or any streaming software.</p><div class="field mb-8"><div class="d-flex gap-8 items-center flex-wrap"><code id="embedObsUrl" class="overlay-url"></code><button class="btn btn--sm btn--accent ic-btn" id="embedObsCopy" type="button"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg> Copy</button></div></div><div class="embed-obs-row"><div><span class="hint">Width</span><div class="embed-obs-dim" id="embedObsWidth">1100px</div></div><div><span class="hint">Height</span><div class="embed-obs-dim" id="embedObsHeight">auto</div></div></div><div class="embed-tip"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="16" y2="12"/><line x1="12" x2="12.01" y1="8" y2="8"/></svg><span>For best results, uncheck "Shutdown source when not visible" in OBS so the overlay stays live while switching scenes.</span></div></div>
 <div class="empty upsell-card" id="embedObsLock" hidden>Stream overlays are available on Starter and higher plans. <a href="/dashboard/settings/plan?from=overlay" id="overlayUpgrade">Upgrade your plan</a> to add this leaderboard to OBS, Streamlabs, or another streaming app.</div>
@@ -272,7 +273,8 @@ function EditorSection({ active, activeHash = "setup", showTabs = active } = {})
 <div class="share-cards" id="shareCards"><button class="share-card share-card--x" id="shareX" type="button"><span>Share on X</span></button><button class="share-card share-card--discord" id="shareDiscord" type="button"><span>Share on Discord</span></button><button class="share-card share-card--twitch" id="shareTwitch" type="button"><span>Share on Twitch</span></button><button class="share-card share-card--copy" id="shareCopy" type="button"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg><span>Copy link</span></button></div>
 <details class="api-access-details" id="apiAccessDetails"><summary class="font-14 fw-600">Developer tools</summary><div class="api-access locked" id="apiAccess"><div><b class="font-14">REST API</b><p class="hint mt-4">Use the API to update scores automatically from your own system.</p></div><span class="api-lock-badge"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> Pro</span></div></details>
 </div>
-<div class="card" data-egroup="history"><h1 class="v3-section-title">History</h1><p class="card-sub">End a competition period and save the results. Your current leaderboard will be archived before any changes are made.</p>
+<h1 class="v3-section-title" data-egroup="history">History</h1>
+<div class="card" data-egroup="history"><p class="card-sub">End a competition period and save the results. Your current leaderboard will be archived before any changes are made.</p>
 <div class="arch-form">
 <div class="field field-flex"><label for="a_label">Name this period</label><input id="a_label" placeholder="July 2026" /></div>
 <div class="field m-0"><label for="a_clear">After archiving</label><select id="a_clear"><option value="wagers">Reset everyone's scores to zero</option><option value="players">Remove all players</option><option value="none">Keep the board as-is</option></select></div>
@@ -322,12 +324,12 @@ function GamesSection({ active } = {}) {
         <div id="gamesSectionRows"></div>
       </div>
       <div class="v3-table-card v3-game-card">
-        <div class="v3-card-head"><div><h2>Game settings</h2><p class="v3-head-sub">Configure constraints for credit-based viewer games</p></div></div>
+      <div class="v3-card-head"><div><h2>Game settings</h2><p class="v3-head-sub">Configure constraints for credit-based viewer games</p></div></div>
         <div id="gameSettingRows"></div>
         <div class="v3-note">All games use credits only. Outcomes are server-determined and provably fair.</div>
       </div>
       <div class="v3-table-card v3-block-card">
-        <div class="v3-card-head"><div><h2>Page blocks</h2><p class="v3-head-sub">Choose which blocks appear on your leaderboard page</p></div><span class="v3-chip v3-chip--pro">PRO</span></div>
+      <div class="v3-card-head"><div><h2>Page blocks</h2><p class="v3-head-sub">Choose which blocks appear on your leaderboard page</p></div><span class="v3-chip v3-chip--pro">PRO</span></div>
         <div class="v3-block-grid" id="leaderboardBlockRows"></div>
         <div class="v3-note" id="leaderboardBlockNote">Block visibility follows your site settings.</div>
       </div>
@@ -421,7 +423,7 @@ function BoardSettingsSection({ active } = {}) {
     <div class="v3-settings-card"><div class="v3-settings-card-head"><div><h2>Integrations</h2><p>Connect Kick rewards, set up notifications, and add legal pages to your site.</p></div></div><div class="v3-settings-row"><div><b>Kick channel rewards</b><p>Let viewers earn credits by claiming Kick channel rewards.</p><span class="v3-settings-muted" id="kickStatus"><span class="skeleton skeleton-text" aria-hidden="true"></span></span></div><a class="v3-set-btn v3-set-btn--outline" href="/dashboard/rewards/channel" id="kickRewardsLink">Open Kick connection</a></div><div class="v3-settings-row"><div><b>Automatic score updates</b><p id="postbackStatus">Let your sponsor update scores automatically without manual imports.</p></div><a class="v3-set-btn v3-set-btn--outline" href="/dashboard/settings/connections">Set up automatic updates</a></div><div class="v3-settings-divider"></div><div class="v3-settings-notify-account"><label class="v3-settings-label" for="f_tgChatId">Telegram group ID</label><input id="f_tgChatId" placeholder="Enter your group or chat ID" /><p class="v3-settings-muted">You can find your group ID using the @getidsbot on Telegram.</p><label class="v3-settings-check"><input type="checkbox" id="f_tgNotify" /> Send notifications to this Telegram group</label><button class="v3-set-btn v3-set-btn--outline" id="testTelegram" type="button">Send a test message</button><span class="v3-settings-status" id="testTelegramStatus" role="status"></span></div><div class="v3-settings-divider"></div><div class="v3-settings-legal"><h3>Legal pages</h3><div id="legalList"></div><div id="legalFooterPreview" class="v3-settings-muted"></div></div></div>
   </section>
   <section class="v3-settings-panel" id="settingsPanelDomain" role="tabpanel" aria-labelledby="settingsTabDomain" data-settings-panel="domain" hidden>
-    <div class="v3-settings-card" id="domainManageCard" hidden>
+      <div class="v3-settings-card" id="domainManageCard" hidden>
       <div class="v3-settings-card-head">
         <div>
           <h2>Your custom domain</h2>

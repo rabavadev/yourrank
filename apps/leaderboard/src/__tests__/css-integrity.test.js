@@ -131,23 +131,26 @@ describe("authenticated dashboard v4 contract", () => {
     expect(menuRule).toContain("var(--v4-ink)");
     expect(menuRule).not.toContain("var(--v3-chrome-line-2)");
     expect(menuRule).not.toContain("var(--v3-chrome-2)");
-    expect(baseTopbar).toContain("inset: 0 0 auto var(--v3-sidebar-w)");
+    expect(baseTopbar).toContain("position: sticky");
+    expect(baseTopbar).toContain("top: 0");
+    expect(baseTopbar).toContain("margin-inline: calc(-1 * var(--v3-main-pad-inline))");
+    expect(baseTopbar).not.toContain("position: fixed");
+    expect(baseTopbar).not.toContain("inset:");
     expect(baseTopbar).toContain("box-sizing: border-box");
     expect(baseTopbar).not.toMatch(/\b(?:top|left|right|width|margin|box-sizing)\s*:[^;]*!important/);
-    const mobileTopbar = [...css.matchAll(/\.v3-dash\[data-auth-workspace\] \.lb-topbar\s*\{([^{}]*)\}/g)]
-      .map(([, declarations]) => declarations)
-      .find((declarations) => declarations.includes("inset: 0 0 auto 0")) || "";
-    expect(mobileTopbar).toContain("inset: 0 0 auto 0");
-    expect(mobileTopbar).not.toMatch(/\b(?:top|left|right|width|margin|box-sizing)\s*:[^;]*!important/);
     const narrowStart = css.indexOf("@media (max-width: 700px) {");
     const narrowEnd = css.indexOf("\n@media", narrowStart + 1);
     const narrowShell = css.slice(narrowStart, narrowEnd < 0 ? undefined : narrowEnd);
-    expect(narrowShell).toContain(".v3-dash[data-auth-workspace] { --v3-topbar-h: 153px; }");
+    expect(narrowShell).toContain("--v3-topbar-h: 153px");
     expect(narrowShell).toContain("height: var(--v3-topbar-h)");
     expect(narrowShell).toContain("min-height: var(--v3-topbar-h)");
-    expect(narrowShell).toContain("padding: calc(var(--v3-topbar-h) + 24px)");
+    expect(narrowShell).toContain("--v3-main-pad-inline: 16px");
+    expect(narrowShell).toContain("padding-bottom: 48px");
+    expect(narrowShell).toContain("lb-main > .lb-topbar + .lb-bento { padding-top: 24px; }");
     expect(narrowShell).not.toContain("min-height: 112px");
     expect(narrowShell).not.toContain("padding: 136px");
+    expect(css).toContain("animation: workspaceFadeIn");
+    expect(css).toMatch(/@keyframes workspaceFadeIn\s*\{[\s\S]*?opacity:\s*0;[\s\S]*?opacity:\s*1;/);
     const compactTablet = css.slice(css.indexOf("@media (max-width: 1050px) and (min-width: 981px) {"), css.indexOf("\n@media", css.indexOf("@media (max-width: 1050px) and (min-width: 981px) {") + 1));
     expect(compactTablet).toContain(".lb-topbar-cmd { width: 130px");
     expect(compactTablet).toContain(".lb-topbar-cmd kbd { display: none; }");
