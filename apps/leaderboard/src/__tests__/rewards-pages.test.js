@@ -67,5 +67,7 @@ describe("server-rendered rewards pages", () => {
     expect(rewardsClientSource).toContain('setStatus("cr-channel-status"');
     expect(rewardsClientSource).toContain("applyOAuthContext();");
     expect(rewardsClientSource.indexOf("applyOAuthContext();")).toBeLessThan(rewardsClientSource.indexOf("const shell = await loadBoardShell"));
+    expect(rewardsClientSource).toContain('sitePath("/api/kick/disconnect", activeSiteId)');
+    expect(rewardsClientSource).toContain("const statusClearTimers = new Map()");
   });
 });

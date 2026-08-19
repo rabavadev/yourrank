@@ -28,6 +28,7 @@ let state = {};
 let viewerCtrl, redemptionCtrl, rewardCtrl;
 let activeSiteId = "";
 let pendingOAuthFeedback = null;
+const statusClearTimers = new Map();
 let activityEvents = [];
 let activityCursor = null;
 let activityLoading = false;
@@ -36,7 +37,23 @@ let shopSearch = "";
 let shopSort = "cost";
 let wired = false;
 const tab = () => $("cr-app")?.dataset.crTab || "";
-function setStatus(id, msg, error = false) { const el = $(id); if (!el) return; el.textContent = msg; el.className = error ? "status error" : "status"; if (!error) setTimeout(() => { el.textContent = ""; }, 3000); }
+function setStatus(id, msg, error = false) {
+  const el = $(id);
+  if (!el) return;
+  const previousTimer = statusClearTimers.get(id);
+  if (previousTimer) clearTimeout(previousTimer);
+  statusClearTimers.delete(id);
+  el.textContent = msg;
+  el.className = error ? "status error" : "status";
+  if (!error) {
+    const timer = setTimeout(() => {
+      if (statusClearTimers.get(id) !== timer) return;
+      statusClearTimers.delete(id);
+      el.textContent = "";
+    }, 3000);
+    statusClearTimers.set(id, timer);
+  }
+}
 function authPath(path) {
   return activeSiteId ? `${path}?siteId=${encodeURIComponent(activeSiteId)}` : path;
 }
@@ -527,7 +544,7 @@ function wireActions() {
   });
   $("cr-channel-disconnect")?.addEventListener("click", async (e) => {
     const btn = e.currentTarget; setLoading(btn, true, "Disconnecting…");
-    try { await api("POST", sitePath("/api/kick/disconnect")); state.channel = { externalId: null, name: null }; render(); setStatus("cr-channel-status", "Disconnected."); }
+    try { await api("POST", sitePath("/api/kick/disconnect", activeSiteId)); state.channel = { externalId: null, name: null }; render(); setStatus("cr-channel-status", "Disconnected."); }
     catch (err) { setStatus("cr-channel-status", err.message, true); } finally { setLoading(btn, false); }
   });
   $("cr-reward-form")?.addEventListener("submit", async (e) => {

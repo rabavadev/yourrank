@@ -26,7 +26,10 @@ async function boardApi(method, path) {
 }
 
 export const siteQuery = () => new URLSearchParams(location.search).get("siteId");
-export const sitePath = (path) => `${path}${siteQuery() ? `${path.includes("?") ? "&" : "?"}siteId=${encodeURIComponent(siteQuery())}` : ""}`;
+export const sitePath = (path, explicitSiteId = "") => {
+  const siteId = explicitSiteId || siteQuery() || "";
+  return `${path}${siteId ? `${path.includes("?") ? "&" : "?"}siteId=${encodeURIComponent(siteId)}` : ""}`;
+};
 
 export function preserveSiteContextLinks(activeSiteId = "") {
   const siteId = siteQuery() || activeSiteId;
