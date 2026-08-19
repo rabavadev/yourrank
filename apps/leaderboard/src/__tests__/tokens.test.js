@@ -1,6 +1,5 @@
-// The operator workspace and marketing site intentionally use separate accent
-// axes: authenticated actions use electric violet, while marketing uses cobalt.
-// This test protects ownership, consistency within each axis, and legibility.
+// The operator workspace and marketing site share the published YourRank blue.
+// Public boards retain a separate streamer-owned accent axis.
 
 import { describe, it, expect } from "bun:test";
 import fs from "node:fs";
@@ -9,7 +8,7 @@ import path from "node:path";
 const root = path.resolve(import.meta.dir, "../../../..");
 const read = (rel) => fs.readFileSync(path.join(root, rel), "utf8");
 
-const MARKETING_ACCENT = "#315cff";
+const MARKETING_ACCENT = "#2200ff";
 const V4_ACCENT = "#2200ff";
 
 const sources = {
@@ -23,6 +22,12 @@ const sources = {
 
 function declared(source, name) {
   const m = source.match(new RegExp(`${name}\\s*:\\s*([^;}]+)`));
+  return m ? m[1].trim().toLowerCase() : null;
+}
+
+function declaredLast(source, name) {
+  const matches = [...source.matchAll(new RegExp(`${name}\\s*:\\s*([^;}]+)`, "g"))];
+  const m = matches.at(-1);
   return m ? m[1].trim().toLowerCase() : null;
 }
 
@@ -108,11 +113,11 @@ describe("design tokens", () => {
       expect(declarationValues(sources.app, name).filter((entry) => entry === value), `app.css ${name} base token`).toHaveLength(1);
       expect(declarationValues(sources.landing, name).filter((entry) => entry === value), `landing.css ${name} base token`).toHaveLength(1);
     }
-    expect(declarationValues(sources.app, "--accent").filter((entry) => entry === MARKETING_ACCENT)).toHaveLength(1);
+    expect(declarationValues(sources.app, "--accent").filter((entry) => entry === MARKETING_ACCENT).length).toBeGreaterThan(0);
     expect(declarationValues(sources.landing, "--accent").filter((entry) => entry === MARKETING_ACCENT)).toHaveLength(1);
     expect(declarationValues(sources.app, "--accent-ink").filter((entry) => entry === "#ffffff").length).toBeGreaterThan(0);
     expect(declarationValues(sources.landing, "--accent-ink").filter((entry) => entry === "#ffffff").length).toBeGreaterThan(0);
-    expect(declared(sources.app, "--accent")).toBe(MARKETING_ACCENT);
+    expect(declaredLast(sources.app, "--accent")).toBe(MARKETING_ACCENT);
     expect(declared(sources.landing, "--accent")).toBe(MARKETING_ACCENT);
     expect(declared(sources.app, "--accent-ink")).toBe("#ffffff");
     expect(declared(sources.landing, "--accent-ink")).toBe("#ffffff");

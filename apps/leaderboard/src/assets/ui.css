@@ -70,7 +70,7 @@
   align-items: center;
   min-height: var(--tap, 44px);
   padding: 12px 16px;
-  background: var(--yr-accent, var(--accent, #5b5bf5));
+  background: var(--yr-accent, var(--accent, #2200ff));
   color: var(--yr-accent-ink, var(--accent-ink, #fff));
   font-weight: 700;
   text-decoration: none;

@@ -130,7 +130,7 @@ ${gamesIslandHead()}
           selection.removeAllRanges();
           selection.addRange(range);
           
-          el.style.outline = "2px solid #5b5bf5";
+          el.style.outline = "2px solid #2200FF";
           el.style.outlineOffset = "2px";
           el.style.borderRadius = "4px";
           

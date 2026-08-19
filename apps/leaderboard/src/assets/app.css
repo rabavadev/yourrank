@@ -177,9 +177,9 @@
   --ink: #ffffff;
   --ink-soft: #a1a1aa;
   --ink-mute: #71717a;
-  --accent: #5b5bf5;
+  --accent: #2200ff;
   --accent-ink: #ffffff;
-  --accent-soft: rgba(91,91,245,.20);
+  --accent-soft: rgba(34,0,255,.20);
   
   --yr-color-border-soft: rgba(255,255,255,.06);
   --yr-color-surface-soft: rgba(24,24,27,.72);
@@ -190,12 +190,18 @@
   --yr-color-danger-surface-2: #4d1818;
 }
 
+:root {
+  --accent: #2200ff;
+  --link: #2200ff;
+  --accent-soft: color-mix(in srgb, var(--accent) 10%, transparent);
+}
+
 /* -------------------------------------------------------------------------- */
 /*  BASE ELEMENTS                                                             */
 
 
 
-*{box-sizing:border-box}*:focus-visible{outline:2px solid var(--accent,#5b5bf5);outline-offset:2px}html,body{margin:0}
+*{box-sizing:border-box}*:focus-visible{outline:2px solid var(--accent,#2200ff);outline-offset:2px}html,body{margin:0}
 /* The `hidden` attribute must always win: display utilities like .d-flex/.btn
    have the same specificity as the UA [hidden] rule and would otherwise keep
    hidden elements (e.g. the collapsed "New board" form) visible. */

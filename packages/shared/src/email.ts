@@ -110,7 +110,7 @@ export function onboardingEmail(day: 0 | 3 | 7, user: OnboardingOptions) {
   <li>OBS overlay</li>
   <li>Unlimited players</li>
 </ul>
-<p style="margin:24px 0"><a href="${billing}" style="background:#5b5bf5;color:#fff;padding:12px 20px;text-decoration:none;border-radius:6px;display:inline-block;font-weight:600">Start free Pro trial</a></p>
+<p style="margin:24px 0"><a href="${billing}" style="background:#2200FF;color:#fff;padding:12px 20px;text-decoration:none;border-radius:6px;display:inline-block;font-weight:600">Start free Pro trial</a></p>
 <p style="color:#999;font-size:13px">Prefer to own it forever? There's also a one-time lifetime option on the billing page.</p></div>`;
   return { subject, html, text };
 }

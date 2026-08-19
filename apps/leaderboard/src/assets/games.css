@@ -27,7 +27,7 @@
   --gx-ink-mute: #7c7c8c;
 
   /* Overridden inline from the streamer's branding. */
-  --gx-accent: #5b5bf5;
+  --gx-accent: #2200ff;
   --gx-accent-ink: #ffffff;
   --gx-accent-soft: color-mix(in srgb, var(--gx-accent) 16%, transparent);
   --gx-accent-line: color-mix(in srgb, var(--gx-accent) 38%, transparent);

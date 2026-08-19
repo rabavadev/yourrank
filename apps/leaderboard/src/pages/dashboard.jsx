@@ -248,7 +248,7 @@ function EditorSection({ active, activeHash = "setup", showTabs = active } = {})
 <div class="preset-list" id="colorPresets"></div>
 <span class="hint">Pick a color theme for your page.</span>
 <details class="advanced-colors"><summary>Custom colors</summary>
-<div class="color-row"><label for="c_a" class="sr-only">Accent color start</label><input type="color" id="c_a" value="#5b5bf5" /><label for="c_b" class="sr-only">Accent color end</label><input type="color" id="c_b" value="#5b5bf5" /><button class="btn btn--sm btn--ghost" id="applyCustomColors" type="button">Apply colors</button><button class="btn btn--sm btn--ghost" id="colorsReset" type="button">Reset palette</button></div>
+<div class="color-row"><label for="c_a" class="sr-only">Accent color start</label><input type="color" id="c_a" value="#2200FF" /><label for="c_b" class="sr-only">Accent color end</label><input type="color" id="c_b" value="#2200FF" /><button class="btn btn--sm btn--ghost" id="applyCustomColors" type="button">Apply colors</button><button class="btn btn--sm btn--ghost" id="colorsReset" type="button">Reset palette</button></div>
 </details></div>
 <div class="field"><label for="f_font">Text style</label><select id="f_font"><option value="Inter">Inter — Default</option><option value="Oswald">Oswald — Bold &amp; Sporty</option><option value="Playfair Display">Playfair Display — Premium &amp; Elegant</option><option value="Rajdhani">Rajdhani — Techy &amp; Esports</option><option value="Bebas Neue">Bebas Neue — Impact &amp; Hype</option></select><span class="hint">Changes the personality of your public page text.</span></div>
 </div></div>

@@ -10,11 +10,11 @@
   --ink: #191919;
   --ink-soft: #52667a;
   --ink-mute: #78889b;
-  --accent: #315cff;
-  --accent-hover: #337df4;
+  --accent: #2200ff;
+  --accent-hover: #2200ff;
   --accent-ink: #ffffff;
-  --accent-glow: rgba(49, 124, 255, 0.25);
-  --surface-primary: #317cff;
+  --accent-glow: rgba(34, 0, 255, 0.25);
+  --surface-primary: #2200ff;
   --on-primary: #ffffff;
   --ok: #16c784;
   --warn: #f59e0b;
