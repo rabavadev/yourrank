@@ -47,6 +47,11 @@ function esc(s: unknown): string {
   );
 }
 
+function normalizedPath(path: string): string {
+  const raw = String(path || "").split("?")[0].replace(/\/+$/, "");
+  return raw || "/";
+}
+
 export function navIconHtml(path?: string | null): string {
   if (!path) return "";
   return `<span class="lb-nav-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">${path}</svg></span>`;
@@ -84,11 +89,13 @@ export interface Crumb {
  * only within one product area, and several screens (board settings, credit
  * tabs, Telegram pages) are two levels deep.
  */
-export function crumbsHtml(trail: Crumb[]): string {
+export function crumbsHtml(trail: Crumb[], activePath = ""): string {
   if (!trail || trail.length < 2) return "";
+  const active = normalizedPath(activePath);
   const parts = trail.map((c, i) => {
     const last = i === trail.length - 1;
-    const item = last || !c.href
+    const current = Boolean(c.href && normalizedPath(c.href) === active);
+    const item = last || !c.href || current
       ? `<span${last ? ' aria-current="page"' : ""}>${esc(c.label)}</span>`
       : `<a href="${esc(c.href)}">${esc(c.label)}</a>`;
     return i === 0 ? item : `<span class="v3-crumb-sep" aria-hidden="true">/</span>${item}`;
@@ -144,7 +151,7 @@ export function dashboardChromeHtml(opts: ChromeOpts): string {
       (opts.headMeta ? `<div class="lb-active-meta">${esc(opts.headMeta)}</div>` : "") +
       `</div>`
     : "");
-  const crumbs = crumbsHtml(opts.crumbs || []);
+  const crumbs = crumbsHtml(opts.crumbs || [], opts.activePath);
   const title = opts.title
     ? `<div class="v3-head">${crumbs}<h1${opts.titleId ? ` id="${esc(opts.titleId)}"` : ""}>${esc(opts.title)}</h1>` +
       (opts.subtitle ? `<p class="v3-head-sub"${opts.subtitleId ? ` id="${esc(opts.subtitleId)}"` : ""}>${esc(opts.subtitle)}</p>` : "") +

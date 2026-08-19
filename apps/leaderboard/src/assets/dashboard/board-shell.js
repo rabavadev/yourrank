@@ -34,7 +34,7 @@ export function preserveSiteContextLinks(activeSiteId = "") {
   const sitesLink = document.querySelector('[data-product-link="sites"]');
   if (sitesLink) sitesLink.href = `/dashboard?board=${encodeURIComponent(siteId)}`;
   const creditsLink = document.querySelector('[data-product-link="credits"]');
-  if (creditsLink) creditsLink.href = `/dashboard/rewards/redemptions?siteId=${encodeURIComponent(siteId)}`;
+  if (creditsLink) creditsLink.href = `/dashboard/rewards?siteId=${encodeURIComponent(siteId)}`;
   const creditsDestinations = new Set([
     "/dashboard/rewards/redemptions",
     "/dashboard/rewards/shop",

@@ -31,10 +31,10 @@ function SidebarFooter({ profile }) {
   return <div class="lb-side-profile">{raw(profile)}</div>;
 }
 
-export function DashboardShell({ activeNav = "home", boardContext = "full", footer = "dashboard", title = "", crumbs = null, rootId, initiallyHidden = false, user, children }) {
-  const activePath = boardContext === "none" ? "/dashboard/settings" : CREDITS_NAV_KEYS.has(activeNav) ? "/dashboard/rewards/redemptions" : "/dashboard";
+export function DashboardShell({ activeNav = "home", boardContext = "full", footer = "dashboard", title = "", crumbs = null, activePath = "", rootId, initiallyHidden = false, user, children }) {
+  const resolvedActivePath = activePath || (boardContext === "none" ? "/dashboard/settings" : CREDITS_NAV_KEYS.has(activeNav) ? "/dashboard/rewards/redemptions" : "/dashboard");
   const shellId = rootId || (boardContext === "none" ? "account-dash" : "dash");
-  const profile = profileMenuHtml({ activePath, user, standalone: true, dynamicIdentity: true });
+  const profile = profileMenuHtml({ activePath: resolvedActivePath, user, standalone: true, dynamicIdentity: true });
 
   return <div class="v3-dash" id={shellId} data-auth-workspace="true" data-identity="devin-reference" hidden={initiallyHidden}>
     {raw(DESIGN_CONTRACT)}
@@ -106,7 +106,7 @@ export function DashboardShell({ activeNav = "home", boardContext = "full", foot
             )}
           </div>
         </header>
-        <div class="lb-bento" id={boardContext === "selector" ? "cr-main" : undefined}>{crumbs ? raw(crumbsHtml(crumbs)) : null}{children}</div>
+        <div class="lb-bento" id={boardContext === "selector" ? "cr-main" : undefined}>{crumbs ? raw(crumbsHtml(crumbs, resolvedActivePath)) : null}{children}</div>
       </div>
     </div>
   </div>;

@@ -6,10 +6,11 @@ import { renderGiveawaysHtml } from "./giveaway-pages.js";
 
 export function GiveawaysPage({ user, tab = "chat" } = {}) {
   const labels = { chat: "Giveaways", raffles: "Raffles", drops: "Drops", preds: "Predictions" };
-  const crumbs = [{ label: "Giveaways", href: "/dashboard/giveaways/chat" }, { label: labels[tab] || labels.chat }];
+  const crumbs = [{ label: "Engage", href: "/dashboard/giveaways" }, { label: labels[tab] || labels.chat }];
   return (
     <DashboardShell
       activeNav={tab === "chat" ? "giveaways" : tab === "preds" ? "predictions" : tab}
+      activePath={`/dashboard/giveaways/${tab}`}
       boardContext="selector"
       crumbs={crumbs}
       footer="rewards"

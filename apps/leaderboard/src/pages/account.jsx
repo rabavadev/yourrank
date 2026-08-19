@@ -5,7 +5,7 @@ import { raw } from "hono/html";
 import { settingsWidgets } from "./account-pages.js";
 import { DashboardShell } from "./dashboard-shell.jsx";
 
-const SETTINGS_TABS = [
+export const SETTINGS_TABS = [
   ["account", "Account", '<path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>'],
   ["team", "Team", '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>'],
   ["plan", "Billing", '<rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/>'],
@@ -20,16 +20,13 @@ function settingsPanel(key, html) {
 export function UnifiedSettingsPage({ activePath, user, tab = "account" } = {}) {
   const active = SETTINGS_TABS.some(([key]) => key === tab) ? tab : "account";
   const activeLabel = SETTINGS_TABS.find(([key]) => key === active)?.[1] || "Account";
-  const siteUrl = new URL(activePath || "/dashboard/settings", "https://yourrank.site");
-  siteUrl.pathname = "/dashboard/settings/board";
-  const siteSettingsHref = siteUrl.pathname + siteUrl.search;
   const obsTools = `<div class="lb-widget lb-widget--full ov-obs-suite-card"><div class="v3-section-head"><div><h2>OBS Live Stream Overlays</h2><p class="v3-head-sub">Paste transparent browser sources directly into OBS Studio or Streamlabs.</p></div><a class="btn btn--sm btn--ghost" href="/dashboard/leaderboard/design">Theme Studio →</a></div><div class="v3-settings-row"><div><b>Site for these overlay links</b><p class="card-sub" id="obsSiteHint">Loading your sites…</p></div><select id="obsSiteSelect" class="v3-select" aria-label="Site for OBS links"><option>Loading sites…</option></select></div><div class="ov-obs-grid"><div class="ov-obs-item"><div class="ov-obs-info"><span class="ov-obs-tag">PREDICTIONS HUD</span><strong>Live Betting Overlay</strong><p>Live Yes/No odds bar &amp; countdown timer on stream.</p></div><button class="btn btn--sm btn--accent" id="ov-btn-copy-pred-hud" type="button">Copy OBS Link</button></div><div class="ov-obs-item"><div class="ov-obs-info"><span class="ov-obs-tag">SOUND ALERTS</span><strong>Stream Alerts &amp; Chimes</strong><p>Audio chimes &amp; popup cards for prize orders &amp; winners.</p></div><button class="btn btn--sm btn--accent" id="ov-btn-copy-alerts" type="button">Copy OBS Link</button></div><div class="ov-obs-item"><div class="ov-obs-info"><span class="ov-obs-tag">PODIUM TICKER</span><strong>Leaderboard Bar</strong><p>Horizontal scrolling ticker of top racers &amp; points.</p></div><button class="btn btn--sm btn--accent" id="ov-btn-copy-ticker" type="button">Copy OBS Link</button></div></div></div>`;
 
-  return <DashboardShell activeNav={active === "connections" ? "integrations" : "account"} boardContext="none" crumbs={[{ label: "Settings", href: "/dashboard/settings/account" }, { label: activeLabel }]} footer="account" title="Settings" user={user}>
+  return <DashboardShell activeNav={active === "connections" ? "integrations" : "account"} activePath={activePath || `/dashboard/settings/${active}`} boardContext="none" crumbs={[{ label: "Settings", href: "/dashboard/settings" }, { label: activeLabel }]} footer="account" title="Settings" user={user}>
     <div class="account-body account-settings" id="acc-app" data-acc-tab="settings" data-settings-active={active}>
       <div class="account-settings-head">
         <h1>{activeLabel}</h1>
-        <p class="card-sub">Manage your account here. Controls that change one public site live in <a href={siteSettingsHref}>site settings</a>.</p>
+        <p class="card-sub">Manage your account here. Controls that change one public site live in the Site section.</p>
       </div>
       <nav class="v3-tabs account-settings-tabs" aria-label="Account settings sections">
         {SETTINGS_TABS.map(([key, label, iconSvg]) => (
@@ -50,10 +47,7 @@ export function UnifiedSettingsPage({ activePath, user, tab = "account" } = {}) 
         <aside class="account-settings-sidebar" aria-label="Related settings">
           <div class="account-summary-card">
             <h2>Site settings</h2>
-            <p class="card-sub">Change the public page, visitor access, alerts, web address, and other settings for the selected site.</p>
-            <div class="summary-actions">
-              <a class="btn btn--ghost btn--sm w-full" href={siteSettingsHref}>Open site settings</a>
-            </div>
+            <p class="card-sub">Change the public page, visitor access, alerts, web address, and other settings for the selected site. Use the Site section in the sidebar to open these controls.</p>
           </div>
           <div class="account-scope-helper">
             <strong>Need help?</strong>

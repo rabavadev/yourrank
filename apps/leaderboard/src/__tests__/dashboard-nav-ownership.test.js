@@ -80,6 +80,8 @@ describe("dashboard navigation ownership", () => {
       const parsed = parseDashboardPath(path);
       const routeHandled = parsed ||
         (path === "/dashboard/settings" && worker.includes('path === "/dashboard/settings"')) ||
+        (path === "/dashboard/giveaways" && worker.includes('path === "/dashboard/giveaways"')) ||
+        (path === "/dashboard/rewards" && worker.includes('path === "/dashboard/rewards"')) ||
         (path === "/dashboard/telegram" && readFileSync(new URL("../../../bot/src/dashboard-views/app.ts", import.meta.url), "utf8").includes('canonicalPath = "/dashboard/telegram"')) ||
         (path.startsWith("/dashboard/giveaways/") && worker.includes('path.startsWith("/dashboard/giveaways/")')) ||
         (path.startsWith("/dashboard/rewards/") && worker.includes('path.startsWith("/dashboard/rewards/")'));
@@ -105,6 +107,11 @@ describe("dashboard navigation ownership", () => {
       ["shop", "redemptions"],
       ["viewers", "redemptions"],
       ["history", "redemptions"],
+      ["engage", "engage"],
+      ["giveaways", "engage"],
+      ["raffles", "engage"],
+      ["predictions", "engage"],
+      ["drops", "engage"],
     ]) {
       expect(navOwner(route)).toBe(owner);
       expect(mapActiveNav(route)).toBe(navOwner(route));

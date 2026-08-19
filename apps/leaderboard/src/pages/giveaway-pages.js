@@ -1,6 +1,6 @@
 // Markup for Giveaways & Community Events Hub (Chat Giveaways, Ticket Raffles, Flash Code Drops)
 
-const GIVEAWAY_TABS = [
+export const GIVEAWAY_TABS = [
   ["chat", "Giveaways"],
   ["raffles", "Raffles"],
   ["drops", "Drops"],

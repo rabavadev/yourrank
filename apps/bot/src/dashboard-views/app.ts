@@ -64,7 +64,8 @@ export function appHtml(
       { label: meta.label },
     ],
     user,
-    topbarHtml: `<div class="lb-topbar-hud"><div class="lb-account-hud"><span class="lb-hud-icon" aria-hidden="true">◎</span><div class="lb-hud-details"><span class="lb-board-select-lbl">CURRENT BOT</span>${context.botUsername ? `<span class="lb-account-title">@${esc(context.botUsername)} <span class="lb-status">${esc(context.botStatus || "active")}</span></span>` : `<a class="lb-account-title" href="/dashboard/telegram/bots">No bot connected · Connect one</a>`}</div></div></div>`,
+    // This setup CTA is contextual bot state, not a second navigation tree.
+    topbarHtml: `<div class="lb-topbar-hud"><div class="lb-account-hud"><span class="lb-hud-icon" aria-hidden="true">◎</span><div class="lb-hud-details"><span class="lb-board-select-lbl">CURRENT BOT</span>${context.botUsername ? `<span class="lb-account-title">@${esc(context.botUsername)} <span class="lb-status">${esc(context.botStatus || "active")}</span></span>` : `<a class="lb-account-title" href="/dashboard/telegram/bots" data-chrome-contextual-action="true">No bot connected · Connect one</a>`}</div></div></div>`,
     activePath: pagePath,
     railProfile: true,
     collapsible: true,

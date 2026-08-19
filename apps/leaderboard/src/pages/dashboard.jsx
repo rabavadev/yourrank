@@ -16,16 +16,16 @@ export const dashboardConfig = {
   wide: true,
 };
 
-const EDITOR_TABS = ["setup", "players", "design", "share", "history"];
-const ANALYTICS_TABS = ["activity", "referrals", "events"];
-const BOARD_TABS = [
+export const EDITOR_TABS = ["setup", "players", "design", "share", "history"];
+export const ANALYTICS_TABS = ["activity", "referrals", "events"];
+export const BOARD_TABS = [
   ["setup", "Setup", "/dashboard/leaderboard/setup"],
   ["players", "Players", "/dashboard/leaderboard/players"],
   ["design", "Appearance", "/dashboard/leaderboard/design"],
   ["share", "Share", "/dashboard/leaderboard/share"],
   ["history", "History", "/dashboard/leaderboard/history"],
 ];
-const SETTINGS_PAGE_TABS = [
+export const SETTINGS_PAGE_TABS = [
   ["account", "Account", "/dashboard/settings/account"],
   ["team", "Team", "/dashboard/settings/team"],
   ["plan", "Billing", "/dashboard/settings/plan"],
@@ -36,9 +36,9 @@ const SETTINGS_PAGE_TABS = [
 // Each route serves one section, so the trail is derived from the route rather
 // than hand-written per screen — every page below Overview says where it is.
 const SECTION_CRUMBS = {
-  board: { label: "Leaderboard", href: "/dashboard/leaderboard/setup" },
+  board: { label: "Leaderboard", href: "/dashboard/leaderboard" },
   games: { label: "Games", href: "/dashboard/games" },
-  performance: { label: "Analytics", href: "/dashboard/analytics/activity" },
+  performance: { label: "Analytics", href: "/dashboard/analytics" },
   site: { label: "Site", href: "/dashboard/settings/board" },
   boards: { label: "Sites", href: "/dashboard/leaderboards" },
 };
@@ -527,7 +527,7 @@ export function DashboardContent({ user, activePath } = {}) {
 <small>Creator workspace</small>
 </div>
 </div>
-<DashboardShell activeNav={activeNav} boardContext="full" crumbs={dashboardCrumbs(activeNav, activeHash)} footer="dashboard" initiallyHidden user={user}>
+<DashboardShell activeNav={activeNav} activePath={activePath} boardContext="full" crumbs={dashboardCrumbs(activeNav, activeHash)} footer="dashboard" initiallyHidden user={user}>
 <div class="lb-notice lb-notice--verification" id="verifyBanner" hidden><span class="lb-notice-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 6h16v12H4z"/><path d="m4 7 8 6 8-6"/></svg></span><div class="lb-notice-copy"><strong>Confirm your email to go live</strong><span>Your work is saved. Confirm your address before visitors can open the site.</span></div><a class="btn btn--sm btn--ghost" href="/verify-email">Send verification link</a></div>
   {sections.map((key) => {
     const Section = SECTIONS[key];
