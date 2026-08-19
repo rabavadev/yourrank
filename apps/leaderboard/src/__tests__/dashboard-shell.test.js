@@ -278,7 +278,7 @@ describe("signed-in shell navigation", () => {
     expect(html).toContain('id="ovOnboardingBento" hidden');
     expect(html).toContain('id="ovActiveBento"');
     expect(html).not.toContain('id="ovActiveBento" hidden');
-    expect(html).toContain("0 of 3 done");
+    expect(html).toContain("0 of 4 done");
     expect(html).not.toContain('id="ovStepKickStatus"');
   });
 

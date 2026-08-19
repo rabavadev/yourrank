@@ -107,7 +107,8 @@ function OverviewSection({ active } = {}) {
 <div class="ov-command-grid" id="ovCommandGrid">
 <aside id="ovOnboardingBento" hidden>
 <div class="ov-setup">
-<div class="ov-setup-progress"><div class="ov-setup-head"><div class="ov-summary-copy"><span class="ov-summary-status"><i aria-hidden="true"></i><span id="ovPublishedStatus">Checking your site…</span></span><h2 id="ovSiteState">Finish the essentials</h2><p id="ovSetupMessage">Complete the essentials, then publish.</p></div><span class="ov-setup-count" id="ovSetupCount">0 of 3 done</span></div><div class="ov-setup-bar" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="3" aria-labelledby="ovSetupCount" id="ovSetupBar"><i id="ovSetupFill"></i></div><div class="ov-summary-actions"><a class="v3-btn v3-btn--sm v3-btn--accent" id="ovSetupAction" href="/dashboard/leaderboard/setup">Continue setup</a><div class="ov-summary-links"><a href="/dashboard/leaderboard/setup">Edit site</a><a href="/dashboard/leaderboard/share">Share site</a></div></div></div>
+<div class="ov-setup-progress"><div class="ov-setup-head"><div class="ov-summary-copy"><span class="ov-summary-status"><i aria-hidden="true"></i><span id="ovPublishedStatus">Checking your site…</span></span><h2 id="ovSiteState">Finish setup</h2><p id="ovSetupMessage">Complete the essentials, then publish.</p></div><span class="ov-setup-count" id="ovSetupCount">0 of 4 done</span></div><div class="ov-setup-bar" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="4" aria-labelledby="ovSetupCount" id="ovSetupBar"><i id="ovSetupFill"></i></div><div class="ov-summary-actions"><a class="v3-btn v3-btn--sm v3-btn--accent" id="ovSetupAction" href="/dashboard/leaderboard/setup">Continue setup</a><div class="ov-summary-links"><a href="/dashboard/leaderboard/setup">Edit site</a><a href="/dashboard/leaderboard/share">Share site</a></div></div></div>
+<ul class="ov-setup-list" id="ovSetupList" aria-label="Setup steps"></ul>
 </div></aside>
 </div>
 <div id="ovActiveBento"><div class="ov-live" aria-label="Site performance">
@@ -127,10 +128,17 @@ function OverviewSection({ active } = {}) {
     </div>
   </div>
   <div class="kpi-card">
-    <span class="kpi-lbl" id="ovLblCopies">Times shared</span>
+    <span class="kpi-lbl" id="ovLblGiveaway">Active giveaway</span>
     <div class="kpi-value-row">
-      <span class="kpi-val" id="ovCopies14" aria-labelledby="ovLblCopies"><span class="skeleton v3-skel-kpi" aria-hidden="true"></span></span>
-      <span id="ovCopiesDelta"></span>
+      <span class="kpi-val" id="ovActiveGiveaway" aria-labelledby="ovLblGiveaway"><span class="skeleton v3-skel-kpi" aria-hidden="true"></span></span>
+      <span class="kpi-action" title="Active raffles, drops, and predictions currently running.">Now</span>
+    </div>
+  </div>
+  <div class="kpi-card">
+    <span class="kpi-lbl" id="ovLblCredits">Credits used</span>
+    <div class="kpi-value-row">
+      <span class="kpi-val" id="ovCreditsUsed" aria-labelledby="ovLblCredits"><span class="skeleton v3-skel-kpi" aria-hidden="true"></span></span>
+      <span class="kpi-action" title="Credits spent by viewers on this site.">All time</span>
     </div>
   </div>
 </div>

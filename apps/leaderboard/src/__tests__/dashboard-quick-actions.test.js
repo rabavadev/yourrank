@@ -22,9 +22,10 @@ describe("dashboard overview quick actions", () => {
     expect(html).toContain('ov-setup');
     expect(html).toContain('id="ovSetupMessage"');
     expect(html).toContain('id="ovSetupAction"');
-    expect(html).not.toContain('id="ovStepBrand"');
-    expect(html).not.toContain('id="ovStepPlayers"');
-    expect(html).not.toContain('id="ovStepPublish"');
+    expect(html).toContain('<ul class="ov-setup-list" id="ovSetupList" aria-label="Setup steps"></ul>');
+    expect(html).toContain('id="ovActiveGiveaway"');
+    expect(html).toContain('id="ovCreditsUsed"');
+    expect(html).not.toContain("Times shared");
     expect(html).toContain('id="ovActivityList"');
     expect(html).toContain('id="ovTopPlayers"');
     expect(html).not.toContain('class="ov-summary"');
@@ -32,6 +33,23 @@ describe("dashboard overview quick actions", () => {
     expect(html).not.toContain('id="ovPrimaryAction"');
     expect(html).toContain('href="/dashboard/leaderboard/setup"');
     expect(html).toContain('class="ov-card-empty" id="ovActivityEmpty"');
+  });
+
+  it("models Home setup as an accessible four-step launch checklist", () => {
+    const html = dashboardHtml();
+    const setupDefinition = overviewJs.slice(overviewJs.indexOf("const SETUP_STEPS"), overviewJs.indexOf("function isBoardSetup"));
+    expect(dashboardJs).toContain("state.CURRENT_BRANDING = d.branding || state.CURRENT_BRANDING");
+    expect(overviewJs).toContain('key: "brand"');
+    expect(overviewJs).toContain('key: "players"');
+    expect(overviewJs).toContain('key: "configure"');
+    expect(overviewJs).toContain('key: "publish"');
+    expect(overviewJs).toContain('data-setup-state="${complete ? "done" : next ? "next" : "not-started"}"');
+    expect(overviewJs).toContain('GIVEAWAYS_STATUS');
+    expect(overviewJs).toContain('/api/credits/analytics?days=30');
+    expect(overviewJs).toContain('summary?.allTimeSpent');
+    expect(setupDefinition).not.toContain('key: "kick"');
+    expect(html).toContain('id="ovLblGiveaway">Active giveaway</span>');
+    expect(html).toContain('id="ovLblCredits">Credits used</span>');
   });
 
   it("routes unverified users to email confirmation without a duplicate Overview banner", () => {

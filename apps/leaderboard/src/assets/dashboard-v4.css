@@ -1566,7 +1566,7 @@ body[data-wide] .v3-dash[data-auth-workspace] .lb-main { padding-right: var(--v3
 .v3-dash[data-auth-workspace] .ov-setup-bar { height: 4px; margin-top: 10px; overflow: hidden; border-radius: var(--v4-radius-control); background: var(--v4-line); }
 .v3-dash[data-auth-workspace] .ov-setup-bar i { display: block; height: 100%; border-radius: inherit; background: var(--v4-cobalt); transform-origin: left; transition: transform 180ms ease-out; }
 .v3-dash[data-auth-workspace] .ov-setup-progress > .v3-btn { margin-top: 10px; }
-.v3-dash[data-auth-workspace] .ov-setup-list { border-top: 1px solid var(--v4-line); }
+.v3-dash[data-auth-workspace] .ov-setup-list { margin: 0; padding: 0; list-style: none; border-top: 1px solid var(--v4-line); }
 .v3-dash[data-auth-workspace] .ov-setup-row { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 10px; min-height: 48px; padding: 7px 18px; border-top: 1px solid var(--v4-line); background: #ffffff; color: var(--v4-ink); text-decoration: none; }
 .v3-dash[data-auth-workspace] .ov-setup-row:first-child { border-top: 0; }
 .v3-dash[data-auth-workspace] .ov-setup-row:hover { background: var(--v4-cobalt-soft); }
@@ -1582,7 +1582,7 @@ body[data-wide] .v3-dash[data-auth-workspace] .lb-main { padding-right: var(--v3
 /* Tier B: KPI strip — quiet, restrained */
 .v3-dash[data-auth-workspace] .ov-live { display: grid; gap: 16px; flex-direction: column; }
 .v3-dash[data-auth-workspace] #ovActiveBento { grid-column: 1 / -1; min-width: 0; }
-.v3-dash[data-auth-workspace] .ov-live .kpi-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0; margin: 0; overflow: hidden; border: 1px solid var(--v4-line); border-radius: var(--v4-radius); background: #ffffff; }
+.v3-dash[data-auth-workspace] .ov-live .kpi-row { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0; margin: 0; overflow: hidden; border: 1px solid var(--v4-line); border-radius: var(--v4-radius); background: #ffffff; }
 .v3-dash[data-auth-workspace] .v3-kpi-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; margin: 0; }
 .v3-dash[data-auth-workspace] .ov-live .kpi-card { min-height: 74px; padding: 12px 16px; border: 0; border-left: 1px solid var(--v4-line); border-radius: 0; background: transparent; box-shadow: none; justify-content: space-between; }
 .v3-dash[data-auth-workspace] .ov-live .kpi-card:first-child { border-left: 0; }

@@ -17,6 +17,8 @@ export function createDashboardState({ requestId, onSubscriberError = (err) => c
     PUBLISHED: false,
     IS_DRAFT: false,
     STATS_STATUS: "loading",
+    GIVEAWAYS_STATUS: "loading",
+    CREDITS_ANALYTICS_STATUS: "loading",
     CREDITS_STATUS: "loading",
     HEATMAP_STATUS: "loading",
     REFERRALS_STATUS: "loading",
