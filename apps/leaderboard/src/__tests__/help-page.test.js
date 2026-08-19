@@ -1,6 +1,9 @@
 import { describe, it, expect } from "bun:test";
+import { readFileSync } from "node:fs";
 import { PAGES } from "../pages.jsx";
 import { leaderboardPageHtml } from "@yourrank/shared/page-shell";
+
+const contactJs = readFileSync(new URL("../assets/contact.js", import.meta.url), "utf8");
 
 // Help renders inside the signed-in app rail (`dashboardChromeHtml`), not the
 // marketing top nav, so a signed-in streamer keeps their session and never hits
@@ -84,6 +87,14 @@ describe("help pages", () => {
     const html = render("helpSupport", user);
     expect(html).toContain("We'll reply by email");
     expect(html).not.toContain("usually within 1 business day");
+  });
+
+  it("keeps server-rendered support and feedback context intact on the client", () => {
+    expect(contactJs).toContain('import { resolveContactType } from "./contact-context.js";');
+    expect(contactJs).toContain("const serverType = kind?.value;");
+    expect(contactJs).toContain("resolveContactType({ helpTab, queryType: requestedType, serverType })");
+    expect(contactJs).toContain('type === "feedback" ? "Give feedback" : "Contact support"');
+    expect(contactJs).toContain('kind.value = type');
   });
 
   it("keeps Help accessible without adding it back to the primary rail", () => {

@@ -2,6 +2,7 @@ import { describe, expect, it } from "bun:test";
 import { readFileSync } from "node:fs";
 import { PAGES } from "../pages.jsx";
 import { effectivePlan } from "@yourrank/shared/plans";
+import { activityEmptyAction, giveawayAction } from "../assets/dashboard/overview-state.js";
 
 const siteJs = readFileSync(new URL("../assets/dashboard/site.js", import.meta.url), "utf8");
 const utilsJs = readFileSync(new URL("../assets/dashboard/utils.js", import.meta.url), "utf8");
@@ -47,6 +48,27 @@ describe("dashboard overview quick actions", () => {
     expect(html).toContain('id="ovLblCredits">Credits used</span>');
     expect(html).toContain('id="ovCreditsCard" hidden');
     expect(html).toContain('id="ovKpiRow"');
+  });
+
+  it("keeps the giveaway KPI action aligned with every active-count state", () => {
+    expect(giveawayAction(0)).toEqual({ label: "Start a giveaway", href: "/dashboard/giveaways" });
+    expect(giveawayAction(1)).toEqual({ label: "Active now", href: "/dashboard/giveaways" });
+    expect(giveawayAction(12)).toEqual({ label: "Active now", href: "/dashboard/giveaways" });
+  });
+
+  it("matches the empty activity action to publication state", () => {
+    expect(activityEmptyAction(false)).toEqual({ label: "Publish your site", href: "/dashboard/leaderboard/setup" });
+    expect(activityEmptyAction(true)).toEqual({ label: "Share your site", href: "/dashboard/leaderboard/share" });
+  });
+
+  it("keeps Home orientation-only by removing score mutation controls", () => {
+    const html = dashboardHtml();
+    expect(html).not.toContain("ov-inc-btn");
+    expect(html).not.toContain("+100");
+    expect(html).not.toContain("+500");
+    expect(html).not.toContain("+1k");
+    expect(overviewJs).not.toContain("markDirty");
+    expect(overviewJs).not.toContain("querySelectorAll(\".ov-inc-btn\")");
   });
 
   it("routes unverified users to email confirmation without a duplicate Overview banner", () => {

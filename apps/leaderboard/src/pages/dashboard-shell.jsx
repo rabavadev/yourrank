@@ -31,10 +31,11 @@ function SidebarFooter({ profile }) {
   return <div class="lb-side-profile">{raw(profile)}</div>;
 }
 
-export function DashboardShell({ activeNav = "home", boardContext = "full", footer = "dashboard", title = "", crumbs = null, activePath = "", rootId, initiallyHidden = false, user, children }) {
+export function DashboardShell({ activeNav = "home", boardContext = "full", footer = "dashboard", title = "", topbarContext, crumbs = null, activePath = "", rootId, initiallyHidden = false, user, children }) {
   const resolvedActivePath = activePath || (boardContext === "none" ? "/dashboard/settings" : CREDITS_NAV_KEYS.has(activeNav) ? "/dashboard/rewards/redemptions" : "/dashboard");
   const shellId = rootId || (boardContext === "none" ? "account-dash" : "dash");
   const profile = profileMenuHtml({ activePath: resolvedActivePath, user, standalone: true, dynamicIdentity: true });
+  const resolvedTopbarContext = topbarContext ?? (footer === "help" ? "Help & feedback" : "Account settings");
 
   return <div class="v3-dash" id={shellId} data-auth-workspace="true" data-identity="devin-reference" hidden={initiallyHidden}>
     {raw(DESIGN_CONTRACT)}
@@ -67,7 +68,7 @@ export function DashboardShell({ activeNav = "home", boardContext = "full", foot
                 </div>
               </div>
             </div>
-          ) : (
+          ) : resolvedTopbarContext ? (
             <div class="lb-topbar-hud">
               <div class="lb-account-hud">
                 <span class="lb-hud-icon" aria-hidden="true">
@@ -78,12 +79,12 @@ export function DashboardShell({ activeNav = "home", boardContext = "full", foot
                   )}
                 </span>
                 <div class="lb-hud-details">
-                  <span class="lb-board-select-lbl">{footer === "help" ? "Help & feedback" : "Account settings"}</span>
-                  <span class="lb-account-title">{title || "Settings"}</span>
+                  <span class="lb-board-select-lbl">{resolvedTopbarContext}</span>
+                  {title ? <span class="lb-account-title">{title}</span> : null}
                 </div>
               </div>
             </div>
-          )}
+          ) : null}
           <div class="lb-topbar-actions">
             <button class="lb-topbar-cmd" type="button" id="topbarCmdTrigger" aria-label="Search (⌘K or Ctrl+K)" title="Press ⌘K or Ctrl+K to search">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>

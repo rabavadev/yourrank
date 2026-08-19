@@ -1,7 +1,8 @@
 // Overview page summary tiles / top players / setup checklist.
 import { $, esc, currentPlayers } from "./utils.js";
-import { state, setState, boardStatus, markDirty } from "./state.js";
+import { state, setState, boardStatus } from "./state.js";
 import { renderEmpty, setMetricLoading, setMetricUnknown, setMetricValue } from "./states.js";
+import { activityEmptyAction, giveawayAction, visitsMetricState } from "./overview-state.js";
 
 const ACTIVITY_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>';
 const SETUP_STEPS = [
@@ -164,8 +165,7 @@ export function renderOverviewSummary() {
       setupList.querySelectorAll("[data-publication-action='true']").forEach(wirePublicationLink);
     }
     const statsReady = state.STATS_STATUS === "ready" && state.STATS;
-    const days = statsReady ? state.STATS.days : [];
-    const hasStatsActivity = days.some((day) => Number(day.views) || Number(day.clicks) || Number(day.copies));
+    const days = statsReady ? state.STATS?.days || [] : [];
     const sum = (field, list = days) => list.reduce((total, day) => total + Number(day[field] || 0), 0);
     const number = (value) => value == null ? "—" : Number(value).toLocaleString("en-US");
     const delta = (field) => {
@@ -174,15 +174,20 @@ export function renderOverviewSummary() {
       return previous ? ((recent - previous) / previous) * 100 : (recent ? 100 : 0);
     };
     setMetricValue($("ovPlayersCount"), number(players.length));
-    if (state.STATS_STATUS === "loading") {
+    const visits = visitsMetricState({
+      published: status.published,
+      statsStatus: state.STATS_STATUS,
+      stats: state.STATS,
+    });
+    if (visits.kind === "loading") {
       setMetricLoading($("ovViews14"));
-    } else if (statsReady && hasStatsActivity) {
-      setMetricValue($("ovViews14"), number(sum("views")));
     } else {
-      setMetricUnknown($("ovViews14"));
+      setMetricValue($("ovViews14"), typeof visits.value === "number" ? number(visits.value) : visits.value);
     }
+    const giveawayActionEl = $("ovGiveawayAction");
     if (state.GIVEAWAYS_STATUS === "loading") {
       setMetricLoading($("ovActiveGiveaway"));
+      if (giveawayActionEl) giveawayActionEl.hidden = true;
     } else if (state.GIVEAWAYS_STATUS === "ready") {
       const activeGiveaways = [
         ...(state.GIVEAWAYS?.raffles || []).filter((item) => item.status === "active"),
@@ -190,8 +195,15 @@ export function renderOverviewSummary() {
         ...(state.GIVEAWAYS?.predictions || []).filter((item) => item.status === "open" || item.status === "locked"),
       ];
       setMetricValue($("ovActiveGiveaway"), number(activeGiveaways.length));
+      const action = giveawayAction(activeGiveaways.length);
+      if (giveawayActionEl) {
+        giveawayActionEl.hidden = false;
+        giveawayActionEl.href = action.href;
+        giveawayActionEl.textContent = action.label;
+      }
     } else {
       setMetricUnknown($("ovActiveGiveaway"));
+      if (giveawayActionEl) giveawayActionEl.hidden = true;
     }
     const creditsEnabled = state.CREDITS_PRODUCT_ENABLED === true;
     const creditsCard = $("ovCreditsCard");
@@ -221,37 +233,15 @@ export function renderOverviewSummary() {
     ].filter((item) => item.at).sort((a, b) => new Date(b.at) - new Date(a.at)).slice(0, 5);
     $("ovActivityList").innerHTML = activity.map((item) => `<div class="ov-activity-row"><span class="ov-activity-icon">${ACTIVITY_ICON}</span><span class="ov-activity-copy"><b>${esc(item.title)}</b><span>${esc(item.sub)}</span></span><time>${relative(item.at)}</time></div>`).join("");
     if (activity.length) $("ovActivityEmpty").hidden = true;
-    else renderEmpty($("ovActivityEmpty"), { kind: "empty", title: "No activity yet", body: "Visits, updates and reward requests will appear here.", compactHeading: true, actions: [{ label: "Share your site", href: "/dashboard/leaderboard/share" }] });
+    else renderEmpty($("ovActivityEmpty"), { kind: "empty", title: "No activity yet", body: "Visits, updates and reward requests will appear here.", compactHeading: true, actions: [activityEmptyAction(status.published)] });
     const top = [...players].sort((a, b) => b.wagered - a.wagered).slice(0, 5);
     $("ovTopPlayers").innerHTML = top.map((player, i) => `
       <div class="ov-player-row" data-name="${esc(player.name)}">
         <span class="ov-player-rank">#${i + 1}</span>
         <b class="ov-player-name" title="${esc(player.name)}">${esc(player.name)}</b>
         <span class="ov-player-wager">$${Number(player.wagered || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-        <div class="ov-quick-incs">
-          <button type="button" class="ov-inc-btn" data-inc="100" title="Add $100 to ${esc(player.name)}">+100</button>
-          <button type="button" class="ov-inc-btn" data-inc="500" title="Add $500 to ${esc(player.name)}">+500</button>
-          <button type="button" class="ov-inc-btn" data-inc="1000" title="Add $1,000 to ${esc(player.name)}">+1k</button>
-        </div>
       </div>
     `).join("");
-
-    $("ovTopPlayers").querySelectorAll(".ov-inc-btn").forEach((btn) => {
-      btn.addEventListener("click", (e) => {
-        e.stopPropagation();
-        const row = btn.closest(".ov-player-row");
-        const name = row?.dataset?.name;
-        const inc = Number(btn.dataset.inc || 0);
-        if (!name || !inc) return;
-        const playerList = currentPlayers();
-        const target = playerList.find((p) => p.name === name);
-        if (target) {
-          target.wagered = (Number(target.wagered) || 0) + inc;
-          markDirty();
-          renderOverviewSummary();
-        }
-      });
-    });
 
     if (top.length) $("ov_topEmpty").hidden = true;
     else renderEmpty($("ov_topEmpty"), { kind: "empty", title: "No players yet", body: "Add the first player to start your leaderboard.", compactHeading: true, actions: [{ label: "Add players", href: "/dashboard/leaderboard/players" }] });
