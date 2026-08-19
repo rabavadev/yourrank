@@ -225,7 +225,7 @@ function header({ r, viewer, balance, returnTo, searchable, section, homeUrl, sl
   // L-03 / 1.13: Removed the floating bare ${ICONS.search} SVG between the menu
   // button and the search input — it had no wrapper and produced a stray flex item.
   const search = searchable
-    ? `<label class="yr-search-label sr-only" for="yr-search">Search the board</label><input class="yr-search" id="yr-search" type="search" placeholder="Search the board…" aria-label="Search the board" autocomplete="off" />`
+    ? `<label class="yr-search-label yr-sr" for="yr-search">Search the board</label><input class="yr-search" id="yr-search" type="search" placeholder="Search the board…" aria-label="Search the board" autocomplete="off" />`
     : `<a class="yr-search-link" href="${homeUrl}${siteSectionHref("leaderboard", slug, isCustomDomain)}" aria-label="Go to leaderboard">${ICONS.search}<span>${esc(SECTION_LABELS[section] || "Leaderboard")}</span></a>`;
 
   const right = viewer
@@ -417,10 +417,18 @@ function rewardCard({ item, viewer, balance, blocked, signIn }) {
   const meter = fill !== null
     ? `<div class="yr-meter" role="progressbar" aria-valuenow="${fill}" aria-valuemin="0" aria-valuemax="100" aria-label="Reward progress: ${fill}%"><i data-fill="${fill}"></i></div>`
     : "";
+  const image = item.image_url || item.image || item.imageUrl;
+  const art = image
+    ? `<div class="yr-item-art yr-gridbg"><img src="${esc(image)}" alt="" /><span class="yr-shade"></span>${flag}</div>`
+    : "";
+  const inlineFlag = !image && flag
+    ? flag.replace('class="yr-flag', 'class="yr-flag yr-flag--inline')
+    : "";
 
   return `<article class="yr-item${off ? " yr-item--off" : ""}">
-<div class="yr-item-art yr-gridbg">${ICONS.gift}<span class="yr-shade"></span>${flag}</div>
+${art}
 <div class="yr-item-body">
+${inlineFlag}
 <h4 class="yr-item-h">${esc(item.name)}</h4>
 <p class="yr-item-p">${esc(item.description || "Fulfilled by the streamer.")}</p>
 ${meter}
@@ -707,7 +715,7 @@ function boardMain(ctx) {
 </div>`;
   }).join("");
 
-  const rows = players.map((p, i) => `<tr data-player-name="${esc(String(p.name || "").toLowerCase())}" data-name="${esc(String(p.name || "").toLowerCase())}" data-position="${Number(p.rank) || i + 1}">
+  const rows = players.map((p, i) => `<tr data-player-name="${esc(String(p.name || "").toLowerCase())}" data-position="${Number(p.rank) || i + 1}">
 <td class="yr-idx">${Number(p.rank) || i + 1}</td>
 <td><a href="${playerHref(p.name)}">${esc(p.name)}</a></td>
 <td class="yr-mono yr-r">${esc(formatMoney(currency, p.wagered))}</td>
@@ -731,9 +739,10 @@ ${playerCount > players.length ? `<div class="yr-pagination"><button class="yr-b
   const note = data.resetNote ? `<p class="yr-note">${esc(data.resetNote)}</p>` : "";
 
   return `${heroHtml}
+<div data-player-board>
 ${poolPanel}
 ${podium ? `<div class="yr-g3">${podium}</div>` : ""}
-${panel({ title: "Standings", meta: `<span data-player-count-badge>${formatNumber(playerCount)} players</span>`, body: table, foot: note })}`;
+${panel({ title: "Standings", meta: `<span data-player-count-badge>${formatNumber(playerCount)} players</span>`, body: table, foot: note })}</div>`;
 }
 
 /* ── Rewards ──────────────────────────────────────────────────────────── */

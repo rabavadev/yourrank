@@ -374,6 +374,7 @@
 }
 .yr-flag--accent { background: var(--yr-accent); color: var(--yr-accent-ink); }
 .yr-flag--ghost { background: var(--yr-panel); color: var(--yr-faint); border: 1px solid var(--yr-edge); }
+.yr-flag--inline { position: static; align-self: flex-start; margin-bottom: 12px; }
 .yr-item-body { padding: 20px; display: flex; flex-direction: column; flex: 1; }
 .yr-item-h { font-size: 14px; line-height: 20px; font-weight: 700; margin-bottom: 4px; }
 .yr-item-p { font-family: var(--yr-sans); font-size: 13px; line-height: 1.5; color: var(--yr-faint); margin-bottom: 16px; }
@@ -735,5 +736,4 @@
   font-weight: 700;
   color: var(--yr-text, #ffffff);
 }
-
 

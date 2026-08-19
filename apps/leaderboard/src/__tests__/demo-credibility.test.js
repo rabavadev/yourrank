@@ -42,10 +42,16 @@ describe("demo credibility invariants", () => {
     const shell = readFileSync(new URL("../assets/site-shell.js", import.meta.url), "utf8");
 
     expect(markerCount).toBe(expectedRepresentations);
-    expect(shell).toContain('document.querySelectorAll("[data-player-name]")');
+    expect(html).toContain("<div data-player-board>");
+    expect(html).not.toContain('data-name="');
+    expect(shell).toContain('playerBoard.querySelectorAll("[data-player-name]")');
+    expect(shell).not.toContain('document.querySelectorAll("[data-player-name]")');
+    expect(shell).not.toContain('querySelectorAll("tr[data-name]")');
     expect(shell).toContain("representation.dataset.playerName");
     expect(shell).toContain("representation.hidden = representation.dataset.playerName.indexOf(q) === -1");
     expect(shell).toContain("representations().forEach(function (representation) { representation.hidden = false; });");
+    expect(shell).toContain("updatePlayerCount(visiblePlayerCount())");
+    expect(shell).toContain("updatePlayerCount(totalCount)");
   });
 
   it("keeps section identity, Rewards naming, and the shop route compatible", async () => {
@@ -82,5 +88,13 @@ describe("demo credibility invariants", () => {
     expect(home).toContain("Recent activity");
     expect(home).toContain("LIVE GIVEAWAY");
     for (const item of data.shopItems) expect(shop).toContain(item.name);
+    expect(shop).not.toContain("yr-item-art");
+
+    const illustrated = {
+      ...data,
+      shopItems: [{ ...data.shopItems[0], image_url: "https://example.test/reward.png" }],
+    };
+    const illustratedShop = await render("shop", illustrated);
+    expect(illustratedShop).toContain('<img src="https://example.test/reward.png" alt="" />');
   });
 });

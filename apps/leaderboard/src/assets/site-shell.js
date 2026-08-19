@@ -93,13 +93,15 @@
 
   // ── Standings: local filter with server fallback and real pagination ──
   var search = document.getElementById("yr-search");
-  var rowsRoot = document.querySelector("[data-rows]");
+  var playerBoard = document.querySelector("[data-player-board]");
+  var countBadge = playerBoard && playerBoard.querySelector("[data-player-count-badge]");
+  var rowsRoot = playerBoard && playerBoard.querySelector("[data-rows]");
   var loadMore = document.querySelector("[data-load-more]");
   var loadMoreStatus = document.querySelector("[data-load-more-status]");
   var slug = document.body.dataset.slug || "";
   var isCustomDomain = document.body.dataset.customDomain === "true";
-  var loadedCount = rowsRoot ? rowsRoot.querySelectorAll("tr[data-name]").length : 0;
-  var totalCount = Number((document.querySelector("[data-player-count-badge]") || {}).textContent?.replace(/[^\d]/g, "")) || loadedCount;
+  var loadedCount = rowsRoot ? rowsRoot.querySelectorAll("tr[data-player-name]").length : 0;
+  var totalCount = Number((countBadge || {}).textContent?.replace(/[^\d]/g, "")) || loadedCount;
   var activeSearch = "";
   var searchOffset = 0;
   var savedRowsHtml = rowsRoot ? rowsRoot.innerHTML : "";
@@ -111,10 +113,24 @@
   var currency = document.body.dataset.currency || "$";
   var money = function (v) { return currency + Number(v || 0).toLocaleString("en-US", { maximumFractionDigits: 0 }); };
   var esc = function (v) { return String(v == null ? "" : v).replace(/[&<>"']/g, function (c) { return ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]); }); };
+  var representations = function () {
+    return playerBoard ? Array.prototype.slice.call(playerBoard.querySelectorAll("[data-player-name]")) : [];
+  };
+  var visiblePlayerCount = function () {
+    var names = {};
+    representations().forEach(function (representation) {
+      if (!representation.hidden) names[representation.dataset.playerName] = true;
+    });
+    return Object.keys(names).length;
+  };
+  var updatePlayerCount = function (count) {
+    if (!countBadge) return;
+    countBadge.textContent = String(count).replace(/\B(?=(\d{3})+(?!\d))/g, ",") + (count === 1 ? " player" : " players");
+  };
   var rowHtml = function (p) {
     var rank = Number(p.rank) || 0;
     var name = esc(String(p.name || "").toLowerCase());
-    return '<tr data-player-name="' + name + '" data-name="' + name + '" data-position="' + rank + '">' +
+    return '<tr data-player-name="' + name + '" data-position="' + rank + '">' +
       '<td class="yr-idx">' + String(rank).padStart(2, "0") + '</td>' +
       '<td><a href="' + (isCustomDomain ? "/player/" : "/" + encodeURIComponent(slug) + "/player/") + encodeURIComponent(p.name || "") + '">' + esc(p.name) + '</a></td>' +
       '<td class="yr-mono yr-r">' + esc(money(p.wagered)) + '</td>' +
@@ -142,8 +158,7 @@
     totalCount = Number(page.total) || totalCount;
     if (loadMore) loadMore.hidden = !page.hasMore;
   };
-  if (search && rowsRoot) {
-    var representations = function () { return Array.prototype.slice.call(document.querySelectorAll("[data-player-name]")); };
+  if (search && rowsRoot && playerBoard) {
     search.addEventListener("input", function () {
       var q = search.value.trim().toLowerCase();
       activeSearch = q;
@@ -159,16 +174,19 @@
         representation.hidden = !hit;
         if (hit) shown += 1;
       });
+      if (q) updatePlayerCount(visiblePlayerCount());
       if (!q) {
         if (rowsRoot && savedRowsHtml) rowsRoot.innerHTML = savedRowsHtml;
         representations().forEach(function (representation) { representation.hidden = false; });
         loadedCount = rowsRoot.querySelectorAll("tr[data-player-name]").length;
+        updatePlayerCount(totalCount);
         if (loadMore) loadMore.hidden = loadedCount >= totalCount;
         if (empty) empty.hidden = true;
         setSearchStatus("");
         return;
       }
       if (shown > 0) {
+        updatePlayerCount(visiblePlayerCount());
         if (empty) empty.hidden = true;
         setSearchStatus("");
         return;
@@ -184,6 +202,7 @@
           representations().forEach(function (representation) {
             representation.hidden = representation.dataset.playerName.indexOf(q) === -1;
           });
+          updatePlayerCount(visiblePlayerCount());
           if (empty) empty.hidden = found;
           setSearchStatus(found ? "" : "No matches.");
         }).catch(function (err) {
