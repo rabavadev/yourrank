@@ -12,6 +12,7 @@ const assetBundle = readFileSync(new URL("../assets_bundled.js", import.meta.url
 const boardsJs = readFileSync(new URL("../assets/dashboard/boards.js", import.meta.url), "utf8");
 const boardShellJs = readFileSync(new URL("../assets/dashboard/board-shell.js", import.meta.url), "utf8");
 const siteSelectorJs = readFileSync(new URL("../assets/dashboard/site-selector.js", import.meta.url), "utf8");
+const dashboardV4Css = readFileSync(new URL("../assets/dashboard-v4.css", import.meta.url), "utf8");
 
 function dashboardHtml(activePath) {
   return PAGES.dashboard.Component({ activePath, user }).toString();
@@ -136,5 +137,34 @@ describe("dashboard navigation ownership", () => {
     expect(boardShellJs).not.toContain("Web address");
     expect(share).toContain('id="embedPublicLink"');
     expect(share).toContain('id="embedPublicCopy"');
+  });
+
+  it("keeps feature subnavigation in normal document flow", () => {
+    const start = dashboardV4Css.lastIndexOf('section[data-page="board"] .editor-steps');
+    const end = dashboardV4Css.indexOf('.editor-steps::-webkit-scrollbar', start);
+    expect(start).toBeGreaterThan(-1);
+    expect(dashboardV4Css.slice(start, end)).not.toContain("position: sticky");
+  });
+
+  it("aligns the topbar band and content to the main column", () => {
+    expect(dashboardV4Css).toContain("inset: 0 0 auto var(--v3-sidebar-w);");
+    expect(dashboardV4Css).toContain("padding: 0 32px;");
+    expect(dashboardV4Css).toContain(".lb-topbar-hud");
+    expect(dashboardV4Css).toContain(".lb-availability .lb-live-link");
+    expect(dashboardV4Css).toContain(".lb-availability .lb-status--published");
+    expect(dashboardV4Css).toContain(".lb-publish-action--secondary");
+  });
+
+  it("gives identifying names flexible space and full-value hints", () => {
+    expect(dashboardV4Css).toContain(".v3-dash[data-auth-workspace] .v3-players-table td:nth-child(3) {");
+    expect(dashboardV4Css).toContain("width: 34%;");
+    expect(dashboardV4Css).toContain("min-width: 240px;");
+    expect(dashboardV4Css).toContain(".ov-player-name {\n  min-width: 0;");
+    expect(boardsJs).toContain("renderSiteSelector({");
+    expect(siteSelectorJs).toContain("import { esc } from \"./utils.js\";");
+    expect(readFileSync(new URL("../assets/dashboard/players.js", import.meta.url), "utf8"))
+      .toContain('class="p-name" placeholder="Player name" title="${esc(p.name)}"');
+    expect(readFileSync(new URL("../assets/dashboard/overview.js", import.meta.url), "utf8"))
+      .toContain('class="ov-player-name" title="${esc(player.name)}"');
   });
 });

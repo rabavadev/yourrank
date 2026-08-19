@@ -54,6 +54,29 @@ function contrastRatio(foreground, background) {
 }
 
 describe("design tokens", () => {
+  it("defines the complete authenticated workspace type scale", () => {
+    for (const [name, value] of [
+      ["--v4-type-page-size", "34px"],
+      ["--v4-type-page-leading", "40px"],
+      ["--v4-type-section-size", "20px"],
+      ["--v4-type-section-leading", "28px"],
+      ["--v4-type-card-size", "17px"],
+      ["--v4-type-card-leading", "24px"],
+      ["--v4-type-body-size", "15px"],
+      ["--v4-type-body-leading", "22.5px"],
+      ["--v4-type-meta-size", "13px"],
+      ["--v4-type-meta-leading", "18px"],
+    ]) {
+      expect(declared(sources.dashboard, name), name).toBe(value);
+    }
+    const scale = sources.dashboard.slice(sources.dashboard.indexOf("/* Canonical operator workspace type scale. */"));
+    expect(scale).toContain("h1 {\n  font-size: var(--v4-type-page-size);");
+    expect(scale).toContain("h2 {\n  font-size: var(--v4-type-section-size);");
+    expect(scale).toContain("h3,\n.v3-dash[data-auth-workspace] h4");
+    expect(scale).toContain("font-size: var(--v4-type-card-size);");
+    expect(scale).toContain("font-size: var(--v4-type-meta-size);");
+  });
+
   it("keeps each accent and status token owned by one stylesheet", () => {
     for (const name of ["--v4-cobalt", "--v4-cobalt-ink", "--v4-success", "--v4-warning", "--v4-danger"]) {
       expect(declarationCount(sources.dashboard, name), `${name} ownership`).toBe(1);
