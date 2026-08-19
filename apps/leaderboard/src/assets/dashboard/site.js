@@ -1040,7 +1040,7 @@ export function renderLegal() {
   const pages = [
     { key: "terms", label: "Terms of Service" },
     { key: "privacy", label: "Privacy Policy" },
-    { key: "responsible", label: "Responsible Gaming" },
+    { key: "responsible", label: "Responsible Play" },
     { key: "cookies", label: "Cookie Policy" },
     { key: "refund", label: "Refund Policy" },
     { key: "contact", label: "Contact" },

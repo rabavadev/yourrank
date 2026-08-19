@@ -44,6 +44,12 @@ describe("new-shell auxiliary renderers", () => {
     expect(legal).not.toContain('aria-current="page"');
   });
 
+  it("uses the authoritative Responsible Play label", async () => {
+    const legal = await renderNewLegalPage(record.data, "responsible", opts);
+    expect(legal).toContain(">Responsible Play<");
+    expect(legal).not.toContain("Responsible Gaming");
+  });
+
   it("formats player profile currency consistently", async () => {
     const profile = await renderNewPlayerProfile(
       record.data,
@@ -122,7 +128,7 @@ describe("new-shell auxiliary renderers", () => {
       opts,
     });
     expect(shop).toContain("Rewards will appear here when the streamer adds them.");
-    expect(shop).toContain("No rewards in the shop right now");
+    expect(shop).toContain("No rewards available right now");
     expect(shop).not.toContain("All rewards");
     expect(me).toContain("No credit activity or redemptions yet");
     expect(me).not.toContain("Credits / 7d");

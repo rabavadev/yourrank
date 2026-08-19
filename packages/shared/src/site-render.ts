@@ -1,5 +1,5 @@
 // @ts-nocheck
-// Multi-section, branded streamer site shell (Home, Leaderboard, Shop, Games,
+// Multi-section, branded streamer site shell (Home, Leaderboard, Rewards, Games,
 // Board credits).
 //
 // The chrome is a live-production credential system: a fixed navigation rail,
@@ -25,7 +25,7 @@ import { generateAvatarSvg } from "@yourrank/shared/avatar";
 const SECTION_LABELS = {
   home: "Home",
   leaderboard: "Leaderboard",
-  shop: "Shop",
+  shop: "Rewards",
   games: "Games",
   me: "Board credits",
 };
@@ -144,6 +144,10 @@ export function formatMoney(currency, n) {
   return `${cur}${formatNumber(Math.round(Number(n) || 0))}`;
 }
 
+export function prizeCurrency(data) {
+  return String(data?.prizes?.currency || data?.brand?.currency || "$").trim().slice(0, 6) || "$";
+}
+
 function countdownText(endsAt) {
   const end = endsAt ? new Date(endsAt).getTime() : NaN;
   if (Number.isNaN(end)) return null;
@@ -191,7 +195,7 @@ function sidebar({ b, slug, section, siteSections, homeUrl, isCustomDomain, logo
   const boardCreditsHref = `${homeUrl}${siteSectionHref("me", slug, isCustomDomain)}`;
   const foot = viewer
     ? `<a class="yr-user" href="${boardCreditsHref}"><span class="yr-user-l"><span class="yr-ava">${avatarHtml(viewer)}</span><span><span class="yr-user-name">${esc(viewerName(viewer))}</span><span class="yr-user-sub">Credits on this board</span></span></span><span class="yr-user-go" aria-hidden="true">${ICONS.arrow}</span></a>`
-    : `<a class="yr-user" href="${boardCreditsHref}"><span class="yr-user-l"><span class="yr-ava">?</span><span><span class="yr-user-name">Board credits</span><span class="yr-user-sub">Sign in to view balance</span></span></span><span class="yr-user-go" aria-hidden="true">${ICONS.arrow}</span></a>`;
+    : `<a class="yr-user" href="${boardCreditsHref}"><span class="yr-user-l"><span class="yr-ava">?</span><span><span class="yr-user-name">Board credits</span><span class="yr-user-sub">Sign in for credits</span></span></span><span class="yr-user-go" aria-hidden="true">${ICONS.arrow}</span></a>`;
 
   return `<aside class="yr-side" id="yr-side" aria-label="Site sections" tabindex="-1">
 <div class="yr-side-head"><div class="yr-board-id"><a class="yr-brand" href="${homeUrl}${siteSectionHref("home", slug, isCustomDomain)}">${mark}${name}</a><span class="yr-board-kind">Public board</span></div><button class="yr-side-close" id="yr-side-close" type="button" aria-label="Close sections">${ICONS.close}</button></div>
@@ -215,14 +219,14 @@ function avatarHtml(viewer) {
     : generateAvatarSvg(viewerName(viewer), 26);
 }
 
-function header({ r, viewer, balance, returnTo, searchable, homeUrl, slug, isCustomDomain }) {
+function header({ r, viewer, balance, returnTo, searchable, section, homeUrl, slug, isCustomDomain }) {
   // U-02 / 1.14: The non-searchable state was an <a> that looked like an <input>.
   // Now it is an unambiguous labelled link, clearly distinct from the real input.
   // L-03 / 1.13: Removed the floating bare ${ICONS.search} SVG between the menu
   // button and the search input — it had no wrapper and produced a stray flex item.
   const search = searchable
-    ? `<label class="yr-search-label sr-only" for="yr-search">Search the board</label><input class="yr-search" id="yr-search" type="search" placeholder="Search the board…" aria-label="Search the board" autocomplete="off" />`
-    : `<a class="yr-search-link" href="${homeUrl}${siteSectionHref("leaderboard", slug, isCustomDomain)}" aria-label="Go to leaderboard">${ICONS.search}<span>Leaderboard</span></a>`;
+    ? `<label class="yr-search-label yr-sr" for="yr-search">Search the board</label><input class="yr-search" id="yr-search" type="search" placeholder="Search the board…" aria-label="Search the board" autocomplete="off" />`
+    : `<a class="yr-search-link" href="${homeUrl}${siteSectionHref("leaderboard", slug, isCustomDomain)}" aria-label="Go to leaderboard">${ICONS.search}<span>${esc(SECTION_LABELS[section] || "Leaderboard")}</span></a>`;
 
   const right = viewer
     ? `<a class="yr-account-link" href="/me" aria-label="All boards and global viewer account">${ICONS.account}<span>All boards</span></a>
@@ -368,6 +372,24 @@ function activityFeed(ledger) {
   }).join("")}</div>`;
 }
 
+function demoActivityFeed(rows) {
+  if (!rows.length) return `<div class="yr-empty">No demo activity yet</div>`;
+  return `<div class="yr-feed yr-noscroll">${rows.slice(0, 8).map((row) => `<div class="yr-feed-item">
+<div class="yr-feed-top"><span class="yr-feed-kind">${esc(row.kind || "ACTIVITY")}</span><span class="yr-feed-time">${esc(row.when || "RECENTLY")}</span></div>
+<p class="yr-feed-txt">${esc(row.text || "")}</p>
+</div>`).join("")}</div>`;
+}
+
+function demoGiveawayCard(giveaway) {
+  if (!giveaway) return "";
+  return `<div class="yr-card yr-lb">
+<div class="yr-card-top"><span class="yr-label is-accent">LIVE GIVEAWAY</span>${ICONS.gift}</div>
+<p class="yr-card-name">${esc(giveaway.name || "Demo giveaway")}</p>
+<p class="yr-num yr-gold">${esc(giveaway.prize || "Prize")}</p>
+<p class="yr-sub">${esc(giveaway.entries || "Entries open")} · ${esc(giveaway.ends || "Running now")}</p>
+</div>`;
+}
+
 /* ── reward cards ─────────────────────────────────────────────────────── */
 
 function rewardCard({ item, viewer, balance, blocked, signIn }) {
@@ -395,10 +417,18 @@ function rewardCard({ item, viewer, balance, blocked, signIn }) {
   const meter = fill !== null
     ? `<div class="yr-meter" role="progressbar" aria-valuenow="${fill}" aria-valuemin="0" aria-valuemax="100" aria-label="Reward progress: ${fill}%"><i data-fill="${fill}"></i></div>`
     : "";
+  const image = item.image_url || item.image || item.imageUrl;
+  const art = image
+    ? `<div class="yr-item-art yr-gridbg"><img src="${esc(image)}" alt="" /><span class="yr-shade"></span>${flag}</div>`
+    : "";
+  const inlineFlag = !image && flag
+    ? flag.replace('class="yr-flag', 'class="yr-flag yr-flag--inline')
+    : "";
 
   return `<article class="yr-item${off ? " yr-item--off" : ""}">
-<div class="yr-item-art yr-gridbg">${ICONS.gift}<span class="yr-shade"></span>${flag}</div>
+${art}
 <div class="yr-item-body">
+${inlineFlag}
 <h4 class="yr-item-h">${esc(item.name)}</h4>
 <p class="yr-item-p">${esc(item.description || "Fulfilled by the streamer.")}</p>
 ${meter}
@@ -489,7 +519,7 @@ ${opts.csrfToken ? `<meta name="csrf-token" content="${esc(opts.csrfToken)}" />`
 
   const template = data.theme?.template || data.brand?.template || "cyber_arcade";
 
-  const body = `<body class="yr-site" data-template="${esc(template)}" data-section="${esc(section)}" data-slug="${esc(slug)}" data-custom-domain="${isCustomDomain ? "true" : "false"}" data-currency="${esc(data.brand?.currency || "$")}">
+  const body = `<body class="yr-site" data-template="${esc(template)}" data-section="${esc(section)}" data-slug="${esc(slug)}" data-custom-domain="${isCustomDomain ? "true" : "false"}" data-currency="${esc(prizeCurrency(data))}">
 <!-- PUBLIC-VIEWER-DIRECTION
 THESIS: A production cue sheet for following one board, not a generic gaming dashboard.
 OWN-WORLD: Asphalt surfaces, fog-white type, cobalt actions, board-accent credentials, orange warnings, mint success, 6–10px geometry.
@@ -502,7 +532,7 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
 ${sidebar({ b, slug, section, siteSections, homeUrl, isCustomDomain, logoUrl, viewer, balance, ctaHref, hasCta, casino, kickUrl: kickUrl ? safeUrl(kickUrl) : null })}
 <div class="yr-region">
 <div class="yr-gridbg" aria-hidden="true"></div>
-${header({ r, viewer, balance, returnTo, searchable: section === "leaderboard", homeUrl, slug, isCustomDomain })}
+${header({ r, viewer, balance, returnTo, searchable: section === "leaderboard", section, homeUrl, slug, isCustomDomain })}
 <main class="yr-main" id="main-content">
 ${mainInner}
 ${footer}
@@ -553,7 +583,10 @@ function homeMain(ctx) {
   const meHref = `${homeUrl}${siteSectionHref("me", slug, isCustomDomain)}`;
   const cd = countdownText(data.endsAt);
   const players = Array.isArray(data.players) ? data.players : [];
-  const items = (viewerData?.shopItems || []).filter((i) => i.active !== false);
+  const items = (viewerData?.shopItems || data.shopItems || []).filter((i) => i.active !== false);
+  const demoActivity = Array.isArray(data.demoActivity) ? data.demoActivity : [];
+  const demoGiveaway = data.demoGiveaway || null;
+  const currency = prizeCurrency(data);
   const ledger = viewerData?.ledger || [];
   const redemptions = viewerData?.redemptions || [];
   const pending = redemptions.filter((x) => x.status === "pending").length;
@@ -609,7 +642,7 @@ ${creditsChart(series)}
         body: `<ol class="yr-lede yr-steps">
 <li>Watch on Kick and redeem one of the channel-point rewards.</li>
 <li>Credits land on this site automatically — nothing to type in, no codes.</li>
-<li>Spend them in the shop. The streamer fulfils every reward by hand, and cancelled rewards are refunded in full.</li>
+<li>Spend them on rewards. The streamer fulfils every reward by hand, and cancelled rewards are refunded in full.</li>
 </ol>`,
       })}</div>`;
 
@@ -620,15 +653,17 @@ ${creditsChart(series)}
         body: activityFeed(ledger),
       })}</div>`
     : `<div class="yr-c4">${panel({
-        title: "Top of the board",
+        title: demoActivity.length ? "Recent activity" : "Top of the board",
         meta: `<a class="yr-sec-link" href="${boardHref}">All</a>`,
-        body: players.length
-          ? `<div class="yr-feed yr-noscroll">${players.slice(0, 8).map((p, i) => `<div class="yr-feed-item"><div class="yr-feed-top"><span class="yr-feed-kind">${String(Number(p.rank) || i + 1).padStart(2, "0")} · ${esc(p.name)}</span><span class="yr-feed-time yr-prize-value">${esc(formatMoney(data.brand?.currency, p.wagered))}</span></div></div>`).join("")}</div>`
+        body: demoActivity.length
+          ? demoActivityFeed(demoActivity)
+          : players.length
+          ? `<div class="yr-feed yr-noscroll">${players.slice(0, 8).map((p, i) => `<div class="yr-feed-item"><div class="yr-feed-top"><span class="yr-feed-kind">${String(Number(p.rank) || i + 1).padStart(2, "0")} · ${esc(p.name)}</span><span class="yr-feed-time yr-prize-value">${esc(formatMoney(currency, p.wagered))}</span></div></div>`).join("")}</div>`
           : `<div class="yr-empty">No players yet</div>`,
       })}</div>`;
 
   const featured = shopEnabled && items.length
-    ? `<div>${sectionHead("Featured rewards", `<a class="yr-sec-link" href="${shopHref}">Go to shop ${ICONS.arrow}</a>`)}
+    ? `<div>${sectionHead("Featured rewards", `<a class="yr-sec-link" href="${shopHref}">Go to rewards ${ICONS.arrow}</a>`)}
 <div class="yr-g4">${items.slice().sort((x, z) => Number(x.cost) - Number(z.cost)).slice(0, 4).map((item) => rewardCard({
         item, viewer, balance, blocked: viewerOnSite?.blocked, signIn: `/api/viewer/auth/kick?returnTo=${encodeURIComponent(returnTo)}`,
       })).join("")}</div></div>`
@@ -639,9 +674,10 @@ ${creditsChart(series)}
 <div class="yr-empty">This board has no players or rewards yet</div>`;
   }
 
-  return `${heroHtml}
+return `${heroHtml}
 ${kpis ? `<div class="yr-g3">${kpis}</div>` : ""}
 <div class="yr-g12">${chartOrHow}${rightCol}</div>
+${demoGiveaway ? `<div class="yr-g12">${demoGiveawayCard(demoGiveaway)}</div>` : ""}
 ${featured}`;
 }
 
@@ -649,7 +685,7 @@ ${featured}`;
 
 function boardMain(ctx) {
   const { data, b, slug, isCustomDomain, period, pool } = ctx;
-  const currency = data.brand?.currency;
+  const currency = prizeCurrency(data);
   const hidePrizes = !!data.brand?.hidePrizeAmounts;
   const cd = countdownText(data.endsAt);
   const players = (Array.isArray(data.players) ? data.players : []).slice().sort((x, z) => (x.rank || 0) - (z.rank || 0));
@@ -671,7 +707,7 @@ function boardMain(ctx) {
   const podium = players.slice(0, 3).map((p, i) => {
     const rank = Number(p.rank) || i + 1;
     const first = rank === 1;
-    return `<div class="yr-card yr-lb${first ? " yr-card--on" : ""}">
+    return `<div class="yr-card yr-lb${first ? " yr-card--on" : ""}" data-player-name="${esc(String(p.name || "").toLowerCase())}">
 <div class="yr-card-top"><span class="yr-label${first ? " is-accent" : ""}">#${rank}</span>${first ? ICONS.crown : ICONS.medal}</div>
 <p class="yr-card-name"><a href="${playerHref(p.name)}">${esc(p.name)}</a></p>
 <p class="yr-num">${esc(formatMoney(currency, p.wagered))}</p>
@@ -679,7 +715,7 @@ function boardMain(ctx) {
 </div>`;
   }).join("");
 
-  const rows = players.map((p, i) => `<tr data-name="${esc(String(p.name || "").toLowerCase())}" data-position="${Number(p.rank) || i + 1}">
+  const rows = players.map((p, i) => `<tr data-player-name="${esc(String(p.name || "").toLowerCase())}" data-position="${Number(p.rank) || i + 1}">
 <td class="yr-idx">${Number(p.rank) || i + 1}</td>
 <td><a href="${playerHref(p.name)}">${esc(p.name)}</a></td>
 <td class="yr-mono yr-r">${esc(formatMoney(currency, p.wagered))}</td>
@@ -703,16 +739,17 @@ ${playerCount > players.length ? `<div class="yr-pagination"><button class="yr-b
   const note = data.resetNote ? `<p class="yr-note">${esc(data.resetNote)}</p>` : "";
 
   return `${heroHtml}
+<div data-player-board>
 ${poolPanel}
 ${podium ? `<div class="yr-g3">${podium}</div>` : ""}
-${panel({ title: "Standings", meta: `<span data-player-count-badge>${formatNumber(playerCount)} players</span>`, body: table, foot: note })}`;
+${panel({ title: "Standings", meta: `<span data-player-count-badge>${formatNumber(playerCount)} players</span>`, body: table, foot: note })}</div>`;
 }
 
-/* ── Shop ─────────────────────────────────────────────────────────────── */
+/* ── Rewards ──────────────────────────────────────────────────────────── */
 
 function shopMain(ctx) {
-  const { r, b, viewer, viewerData, viewerOnSite, balance, returnTo, slug } = ctx;
-  const items = (viewerData?.shopItems || []).filter((i) => i.active !== false).slice().sort((x, z) => Number(x.cost) - Number(z.cost));
+  const { r, b, data, viewer, viewerData, viewerOnSite, balance, returnTo, slug } = ctx;
+  const items = (viewerData?.shopItems || data.shopItems || []).filter((i) => i.active !== false).slice().sort((x, z) => Number(x.cost) - Number(z.cost));
   const redemptions = viewerData?.redemptions || [];
   const pending = redemptions.filter((x) => x.status === "pending").length;
   const signIn = r.viewerKickAuthEnabled
@@ -737,7 +774,7 @@ function shopMain(ctx) {
   const grid = items.length
     ? `<div>${sectionHead("All rewards", `<span class="yr-panel-meta">Sorted by cost</span>`)}
 <div class="yr-g4">${items.map((item) => rewardCard({ item, viewer, balance, blocked: viewerOnSite?.blocked, signIn })).join("")}</div></div>`
-    : `<div class="yr-empty">No rewards in the shop right now</div>`;
+    : `<div class="yr-empty">No rewards available right now</div>`;
 
   const history = viewer
     ? panel({
@@ -847,7 +884,7 @@ function meMain(ctx) {
       <strong class="yr-gstat-val">${formatNumber(viewerOnSite?.total_earned || 0)} CR</strong>
     </div>
     <div class="yr-gstat-item">
-      <span class="yr-gstat-lbl">Shop Redemptions</span>
+      <span class="yr-gstat-lbl">Reward redemptions</span>
       <strong class="yr-gstat-val">${formatNumber(redemptions.length)} Rewards</strong>
     </div>
     <div class="yr-gstat-item">

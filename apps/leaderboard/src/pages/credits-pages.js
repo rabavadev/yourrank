@@ -21,7 +21,7 @@ const channelSecondary = `<section class="v3-table-card cr-channel-secondary"><d
 const creditRulesPage = (tab) => page(tab, "Points", "Map Kick rewards to credits.", mappingMarkup);
 export const channelPage = page("channel", "Kick connection", "Link your Kick channel and configure Kick rewards for Credits.", `${channel}${channelSecondary}`);
 export const rulesPage = creditRulesPage("rules");
-export const shopPage = page("shop", "Shop", "Manage shop items viewers can redeem with credits.", shop);
+export const shopPage = page("shop", "Rewards", "Manage rewards viewers can redeem with credits.", shop);
 export const viewersPage = page("viewers", "Viewers", "Review viewer balances and credit activity.", viewers);
 export const redemptionsPage = page("redemptions", "Orders", "Approve shop redemptions and keep fulfillment moving.", redemptions);
 export const historyPage = page("history", "Activity", "Review viewer credit transactions across your boards.", history);
