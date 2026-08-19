@@ -11,10 +11,14 @@ import { SECTIONS } from "../assets/dashboard/routes.js";
 
 const user = { display_name: "Test operator", email: "operator@example.com", plan: "pro" };
 const workerSource = readFileSync(new URL("../index.js", import.meta.url), "utf8");
+const PERMITTED_DEFAULT_TAB_ROOTS = new Map([
+  ["/dashboard/telegram", "Telegram Overview is the section-root back-link owned by the sidebar."],
+]);
 
-function linksIn(markup) {
-  return [...markup.matchAll(/<a\b[^>]*\bhref="([^"]+)"/g)]
-    .map((match) => match[1])
+function linksIn(markup, { excludeContextualActions = false } = {}) {
+  return [...markup.matchAll(/<a\b([^>]*?)\bhref="([^"]+)"([^>]*)>/g)]
+    .filter((match) => !excludeContextualActions || !/data-chrome-contextual-action(?:="[^"]*")?/.test(`${match[1]}${match[3]}`))
+    .map((match) => match[2])
     .filter((href) => href && href !== "#");
 }
 
@@ -165,7 +169,8 @@ function ownershipViolations(markup, activePath) {
   const breadcrumbMarkup = breadcrumb(markup);
   const regions = {
     sidebar: linksIn(sidebarMarkup),
-    topbar: linksIn(topbarMarkup),
+    // Contextual setup CTAs are actions, not navigation destinations.
+    topbar: linksIn(topbarMarkup, { excludeContextualActions: true }),
     subnav: linksIn(subnavMarkup),
     breadcrumbs: linksIn(breadcrumbMarkup),
   };
@@ -180,9 +185,17 @@ function ownershipViolations(markup, activePath) {
   }
   const duplicates = [...counts.entries()]
     .filter(([, owners]) => owners.length > 1)
+    .filter(([href, owners]) => !(
+      owners.length === 2
+      && owners.includes("sidebar")
+      && owners.includes("subnav")
+      && PERMITTED_DEFAULT_TAB_ROOTS.has(href)
+    ))
     .map(([href, owners]) => ({ href, owners }));
   const sidebarHrefs = new Set(regions.sidebar);
-  const sidebarSubnav = [...new Set(regions.subnav.filter((href) => sidebarHrefs.has(href)))];
+  const sidebarSubnav = [...new Set(regions.subnav.filter((href) =>
+    sidebarHrefs.has(href) && !PERMITTED_DEFAULT_TAB_ROOTS.has(href)
+  ))];
   const active = normalizedPath(activePath);
   const activeBreadcrumbs = regions.breadcrumbs.filter((href) => normalizedPath(href) === active);
   return {
@@ -279,5 +292,21 @@ describe("dashboard chrome ownership", () => {
       { href: "/dashboard/leaderboard", owners: ["sidebar", "topbar"] },
     ]);
     expect(violations.activeBreadcrumbs).toEqual(["/dashboard/leaderboard/players"]);
+  });
+
+  it("permits only marked contextual topbar actions and the Telegram default-tab back-link", () => {
+    const markup = `
+      <nav class="lb-side-group lb-side-nav"><a href="/dashboard/telegram">Telegram</a></nav>
+      <header class="lb-topbar">
+        <a href="/dashboard/telegram/bots" data-chrome-contextual-action="true">Connect one</a>
+      </header>
+      <nav class="v3-tabs">
+        <a href="/dashboard/telegram">Overview</a>
+        <a href="/dashboard/telegram/bots">Bot</a>
+      </nav>
+    `;
+    const violations = ownershipViolations(markup, "/dashboard/telegram");
+    expect(violations.duplicates).toEqual([]);
+    expect(violations.sidebarSubnav).toEqual([]);
   });
 });

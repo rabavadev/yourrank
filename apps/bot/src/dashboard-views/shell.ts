@@ -5,7 +5,7 @@ import { dashboardNavItems } from "@yourrank/shared/dashboard-nav";
 
 export const pageLinks = [
   { key: "overview", label: "Overview", href: "/dashboard/telegram", sub: "Your bot at a glance — last 14 days" },
-  { key: "bots", label: "Bot", href: "/dashboard/telegram/bots", sub: "Connect and customize your Telegram bot" },
+  { key: "bots", label: "Bots", href: "/dashboard/telegram/bots", sub: "Connect and customize your Telegram bot" },
   { key: "commands", label: "Replies", href: "/dashboard/telegram/commands", sub: "Replies your bot sends when viewers type /something" },
   { key: "offers", label: "Offers", href: "/dashboard/telegram/offers", sub: "Your tracked offers — clicks are tracked automatically" },
   { key: "broadcasts", label: "Messages", href: "/dashboard/telegram/broadcasts", sub: "Send a message to your subscribers" },
