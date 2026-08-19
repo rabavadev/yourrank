@@ -70,6 +70,15 @@ const NON_SITE_PATHS = new Set([
 ]);
 const PUBLIC_API_OPERATIONS = new Set(["standings", "players", "stream", "rank", "data", "stats"]);
 const SITE_SECTIONS = new Set(["home", "leaderboard", "shop", "games", "me"]);
+const CUSTOM_VIEWER_AUTH_PATHS = new Set([
+  "/api/viewer/auth/kick",
+  "/api/viewer/auth/kick/callback",
+  "/api/viewer/auth/kick/handoff",
+]);
+
+export function isCustomViewerAuthPath(method, path) {
+  return method === "GET" && CUSTOM_VIEWER_AUTH_PATHS.has(path);
+}
 
 function telemetryRoute(path) {
   const parts = path.split("/").filter(Boolean);
@@ -330,8 +339,10 @@ async function bodyExceedsLimit(request, maxBytes) {
   return false;
 }
 
-async function handleRequest(request, env, ctx, meta) {
-    const { log: workerLog, reqId } = meta || {};
+export async function handleRequest(request, env, ctx, meta, deps = {}) {
+  const resolveCustomDomainImpl = deps.resolveCustomDomain || resolveCustomDomain;
+  const apiAppImpl = deps.apiApp || apiApp;
+  const { log: workerLog, reqId } = meta || {};
     const nonce = crypto.randomUUID().replace(/-/g, "");
     const HTML_N = withNonce(HTML, nonce);
     try {
@@ -365,8 +376,8 @@ async function handleRequest(request, env, ctx, meta) {
       // If the Host header is not our primary domain, check if it maps to a
       // user's custom domain. If yes, serve their leaderboard at /.
       if (isCustomHost(host)) {
-        const customSlug = await resolveCustomDomain(env, host);
-        if (customSlug) {
+        const customSlug = await resolveCustomDomainImpl(env, host);
+        if (customSlug && !isCustomViewerAuthPath(method, path)) {
           // Serve the leaderboard as if the path were /<slug>
           // Rewrite the URL path internally
           url.pathname = "/" + customSlug;
@@ -933,7 +944,7 @@ async function handleRequest(request, env, ctx, meta) {
 
       // Pass all /api/ endpoints, Kick webhooks, and auth routes to Hono router.
       if (path.startsWith("/api/") || path.startsWith("/overlay/") || path === "/webhooks/kick" || path.startsWith("/auth/")) {
-        const apiResponse = await apiApp.fetch(request, { workerContext: { request, env, ctx, meta } }, ctx);
+        const apiResponse = await apiAppImpl.fetch(request, { workerContext: { request, env, ctx, meta } }, ctx);
         // Return the handler's response, INCLUDING a legitimate 404 it produced.
         // Only fall through to page routing when no API route matched at all,
         // which the router tags with the x-no-api-route sentinel header.

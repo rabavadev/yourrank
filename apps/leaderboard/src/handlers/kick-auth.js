@@ -13,7 +13,7 @@ import {
   encryptKickToken,
 } from "@yourrank/shared/kick-oauth";
 import { notifyLiveBoard } from "../live-board-config.js";
-import { handleKickViewerAuthCallback } from "./viewer-auth.js";
+import { handleKickViewerAuthCallback, KICK_VIEWER_STATE_PREFIX } from "./viewer-auth.js";
 
 function randomState() {
   const bytes = crypto.getRandomValues(new Uint8Array(32));
@@ -124,14 +124,18 @@ export async function handleKickAuthCallback(request, env, deps = {}) {
     return redirect(channelRedirect({ error: "missing_oauth_params" }));
   }
 
+  const isViewerState = state.startsWith(KICK_VIEWER_STATE_PREFIX);
   const stateData = injectedStateData || await consumeOAuthStateImpl("kick", state);
   if (!stateData) {
+    if (isViewerState) {
+      return viewerCallbackImpl(request, env, { ...deps, stateData: null, stateConsumed: true });
+    }
     const user = await currentUserImpl(request, env);
     if (!user) return redirect("/login");
     return redirect(channelRedirect({ error: "oauth_state_expired" }));
   }
   if (stateData.flow === "viewer") {
-    return viewerCallbackImpl(request, env, { ...deps, stateData });
+    return viewerCallbackImpl(request, env, { ...deps, stateData, stateConsumed: true });
   }
 
   const user = await currentUserImpl(request, env);
