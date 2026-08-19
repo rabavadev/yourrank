@@ -35,6 +35,27 @@ Guidance for automated agents and new contributors working in this repo.
   navigation, hierarchy, or product-architecture problems when they affect the
   requested work.
 
+## Engineering skill pack
+
+`.agents/skills/` also carries the vendored
+[coding-agent-prompt-and-skills](https://github.com/rabavadev/coding-agent-prompt-and-skills)
+pack (56 lifecycle skills). Its policy documents live in
+`.agents/coding-agent-pack/`.
+
+- Start non-trivial work by routing through `.agents/skills/using-skills/SKILL.md`,
+  which maps a task type (bug, feature, UI redesign, migration, high-risk
+  backend) to the minimum skill sequence. Load only the skills that sequence
+  selects.
+- `.agents/coding-agent-pack/CONTROLLER.md` holds the always-on policy: inspect
+  the repo before asking, one canonical implementation (no `*-v2`/`*-new`/
+  `*-final` files), root-cause over patch stacking, and runtime evidence before
+  claiming completion.
+- UI/UX work keeps using `impeccable` and `frontend-design` (above) and adds the
+  pack's `frontend-ui-ux`, `design-system`, `component-system`, `accessibility`,
+  `browser-runtime-testing`, `behavior-validation`, and `final-review`.
+- Report completion as `Changed` / `Verified` / `Not verified` /
+  `Risks`; `Verified` means actually executed, not inspected.
+
 ## Checks (run from repo root before committing)
 
 ```bash
