@@ -1,5 +1,7 @@
 /** @jsxRuntime automatic */
 /** @jsxImportSource hono/jsx */
+import { raw } from "hono/html";
+import { brandLockupHtml } from "@yourrank/shared/brand-assets";
 
 export function LoginPage() {
   return (
@@ -19,7 +21,7 @@ export function LoginPage() {
         <a href="#main-content" class="sr-only skip-link">Skip to content</a>
         <div class="auth-wrap">
           <aside class="auth-side">
-            <div><div class="brand">Your<b>Rank</b></div></div>
+            <div>{raw(brandLockupHtml({ className: "brand" }))}</div>
             <div>
               <h2>Your streamer suite, hosted and handled.</h2>
               <p>Leaderboards, Telegram bot, and viewer rewards &amp; shop — all from one dashboard. No code, no redeploys.</p>
@@ -39,7 +41,7 @@ export function LoginPage() {
           </aside>
           <main class="auth-main" id="main-content">
             <div class="auth-card">
-              <a href="/" class="auth-brand-m">Your<b>Rank</b></a>
+              {raw(brandLockupHtml({ className: "auth-brand-m", href: "/" }))}
               <h1>Sign in</h1><p class="sub">Welcome back.</p>
               <form id="form" method="POST" action="/api/auth/login" novalidate>
                 <div class="field">

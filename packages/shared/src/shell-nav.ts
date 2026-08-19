@@ -130,7 +130,7 @@ export function profileMenuHtml(opts: ShellNavOpts & { mobileTabs?: string; stan
   return profileHtml;
 }
 
-import { brandMarkSvg } from "./brand-assets.js";
+import { brandLockupHtml } from "./brand-assets.js";
 
 /**
  * Signed-out variant of the same header. Pages that can be reached by both
@@ -143,10 +143,7 @@ export function publicNavHtml(opts: { activePath?: string; theme?: "light" | "da
   const next = encodeURIComponent(opts.activePath || "/");
   return `<header class="gm-shell-nav gm-shell-nav--${theme}" data-theme="${theme}">
   <div class="gm-shell-inner">
-    <a class="gm-brand" href="/">
-      <span class="gm-brand-mark">${brandMarkSvg()}</span>
-      <span class="gm-brand-word">YourRank</span>
-    </a>
+    ${brandLockupHtml({ className: "gm-brand", href: "/", markClassName: "gm-brand-mark", wordClassName: "gm-brand-word" })}
     <div class="gm-tabs-wrap">
       <nav class="gm-tabs" aria-label="Site">
         <a class="gm-tab" href="/pricing">Pricing</a>
@@ -183,10 +180,7 @@ export function shellNavHtml(opts: ShellNavOpts = {}): string {
 
   return `<header class="${headerClass}" data-theme="${theme}">
   <div class="gm-shell-inner">
-    <a class="gm-brand" href="/dashboard">
-      <span class="gm-brand-mark">YR</span>
-      <span class="gm-brand-word">YourRank</span>
-    </a>
+  ${brandLockupHtml({ className: "gm-brand", href: "/dashboard", markClassName: "gm-brand-mark", wordClassName: "gm-brand-word" })}
     <div class="gm-tabs-wrap">
       <nav class="gm-tabs" aria-label="Dashboard">${tabs}</nav>
     </div>

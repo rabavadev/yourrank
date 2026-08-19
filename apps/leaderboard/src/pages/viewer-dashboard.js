@@ -1,3 +1,4 @@
+import { brandLockupHtml } from "@yourrank/shared/brand-assets";
 import { leaderboardPageHtml } from "@yourrank/shared/page-shell";
 
 export const viewerDashboardPage = leaderboardPageHtml({
@@ -8,7 +9,7 @@ export const viewerDashboardPage = leaderboardPageHtml({
   scripts: ['<script src="/assets/viewer-dashboard.js?v=1" type="module"></script>'],
   content: `
 <header class="gm-shell-nav"><div class="gm-shell-inner">
-  <a class="gm-brand" href="/"><span class="gm-brand-mark">YR</span><span class="gm-brand-word">YourRank</span></a>
+  ${brandLockupHtml({ className: "gm-brand", href: "/", markClassName: "gm-brand-mark", wordClassName: "gm-brand-word" })}
   <nav id="vd-nav" aria-label="Viewer"></nav>
 </div></header>
 

@@ -8,7 +8,7 @@
 // ============================================================================
 
 import { profileMenuHtml, type ShellUser } from "./shell-nav.js";
-import { brandMarkSvg } from "./brand-assets.js";
+import { brandLockupHtml } from "./brand-assets.js";
 
 const DESIGN_CONTRACT = `<!--
 THESIS: A creator run-sheet workspace turns dashboard state into the next clear action; it refuses the generic dark tile wall.
@@ -172,7 +172,7 @@ ${DESIGN_CONTRACT}
 <div class="lb-shell">
 <aside class="lb-side" id="lbSide" aria-label="${esc(opts.navLabel || "Dashboard")} sections">
 <div class="lb-side-brandrow">
-<a class="lb-side-brand" href="/dashboard" aria-label="YourRank dashboard"><span class="lb-brand-mark">${brandMarkSvg()}</span><span class="lb-side-brandcopy"><b>YourRank</b><small>Creator workspace</small></span></a>
+${brandLockupHtml({ className: "lb-side-brand", href: "/dashboard", markClassName: "lb-brand-mark", wordClassName: "lb-side-brandcopy" }).replace("</span></a>", "<small>Creator workspace</small></span></a>")}
 ${collapse}
 <button class="lb-side-close" type="button" aria-label="Close navigation" data-close-side="true">${CLOSE_ICON}</button>
 </div>
@@ -184,7 +184,7 @@ ${sideProfile}
 <div class="lb-main">
 <header class="lb-topbar" id="lbTopbar">
 <button class="lb-menu lb-topbar-menu" id="lbMenu" type="button" aria-label="Show sections" aria-expanded="false" aria-controls="lbSide">${MENU_ICON}</button>
-${opts.railProfile ? "" : `<a class="lb-brand" href="/dashboard" aria-label="YourRank dashboard"><span class="lb-brand-mark">${brandMarkSvg()}</span><span class="lb-brand-txt">YourRank</span></a>`}
+${opts.railProfile ? "" : brandLockupHtml({ className: "lb-brand", href: "/dashboard", markClassName: "lb-brand-mark", wordClassName: "lb-brand-txt" })}
 <div class="lb-topbar-actions">${opts.topbarHtml || topProfile}</div>
 </header>
 ${contentOpen}

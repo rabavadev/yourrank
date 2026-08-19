@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { MagneticCursor } from "@/components/home/magnetic-cursor";
 import { MarketingShell } from "@/components/site-shell";
+import { brandMarkSvg, brandPoweredBySvg, brandWordmarkSvg, BRAND_COLORS } from "@yourrank/shared/brand-assets";
 
 export const metadata: Metadata = {
   title: "Brand — YourRank",
@@ -9,23 +10,27 @@ export const metadata: Metadata = {
 };
 
 const LOGOS = [
-  { name: "Mark — dark", file: "/brand/yourrank-mark-dark.svg", bg: "bg-white", note: "For light backgrounds" },
-  { name: "Mark — light", file: "/brand/yourrank-mark-light.svg", bg: "bg-devin-ink", note: "For dark backgrounds" },
-  { name: "Mark — blue", file: "/brand/yourrank-mark-blue.svg", bg: "bg-white", note: "Accent variant" },
-  { name: "Wordmark — dark", file: "/brand/yourrank-wordmark-dark.svg", bg: "bg-white", note: "For light backgrounds" },
-  { name: "Wordmark — light", file: "/brand/yourrank-wordmark-light.svg", bg: "bg-devin-ink", note: "For dark backgrounds" },
+  { name: "Mark — dark", svg: brandMarkSvg({ variant: "dark" }), bg: "bg-white", note: "For light backgrounds" },
+  { name: "Mark — light", svg: brandMarkSvg({ variant: "light" }), bg: "bg-devin-ink", note: "For dark backgrounds" },
+  { name: "Mark — blue", svg: brandMarkSvg({ variant: "blue" }), bg: "bg-white", note: "Accent variant" },
+  { name: "Wordmark — dark", svg: brandWordmarkSvg({ variant: "dark" }), bg: "bg-white", note: "For light backgrounds" },
+  { name: "Wordmark — light", svg: brandWordmarkSvg({ variant: "light" }), bg: "bg-devin-ink", note: "For dark backgrounds" },
 ];
 
 const BADGES = [
-  { name: "Powered by YourRank — dark", file: "/brand/powered-by-yourrank-dark.svg", bg: "bg-white" },
-  { name: "Powered by YourRank — light", file: "/brand/powered-by-yourrank-light.svg", bg: "bg-devin-secondary/40" },
+  { name: "Powered by YourRank — dark", svg: brandPoweredBySvg({ variant: "dark" }), bg: "bg-white" },
+  { name: "Powered by YourRank — light", svg: brandPoweredBySvg({ variant: "light" }), bg: "bg-devin-secondary/40" },
 ];
 
 const COLORS = [
-  { name: "Primary blue", hex: "#2200FF", className: "bg-devin-primary" },
-  { name: "Ink", hex: "#0A0A0A", className: "bg-devin-ink" },
+  { name: "Primary blue", hex: BRAND_COLORS.blue, className: "bg-devin-primary" },
+  { name: "Ink", hex: BRAND_COLORS.dark, className: "bg-devin-ink" },
   { name: "Surface", hex: "#FCFCFC", className: "bg-devin-surface border border-devin-line" },
 ];
+
+function downloadHref(svg: string) {
+  return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+}
 
 export default function BrandPage() {
   return (
@@ -51,16 +56,19 @@ export default function BrandPage() {
               {LOGOS.map((logo) => (
                 <div key={logo.name} className="bg-white">
                   <div className={`flex h-36 items-center justify-center ${logo.bg}`}>
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={logo.file} alt={logo.name} className="max-h-16 w-auto max-w-[240px]" />
+                    <span aria-label={logo.name} className="max-h-16 w-auto max-w-[240px]" dangerouslySetInnerHTML={{ __html: logo.svg }} />
                   </div>
                   <div className="flex items-center justify-between border-t border-devin-line px-4 py-3">
                     <div>
                       <p className="text-sm font-medium">{logo.name}</p>
                       <p className="text-xs text-devin-ink-soft">{logo.note}</p>
                     </div>
-                    <a href={logo.file} download className="rounded-[2px] border border-devin-line px-3 py-1.5 text-xs font-medium transition-colors hover:border-devin-ink/40">
-                      SVG
+                    <a
+                      className="text-xs text-devin-ink underline underline-offset-4 hover:text-devin-primary"
+                      href={downloadHref(logo.svg)}
+                      download={`${logo.name.toLowerCase().replace(/[^a-z0-9]+/g, "-")}.svg`}
+                    >
+                      Download SVG
                     </a>
                   </div>
                 </div>
@@ -80,13 +88,16 @@ export default function BrandPage() {
               {BADGES.map((badge) => (
                 <div key={badge.name} className="bg-white">
                   <div className={`flex h-28 items-center justify-center ${badge.bg}`}>
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={badge.file} alt={badge.name} className="h-11 w-auto" />
+                    <span aria-label={badge.name} className="h-11 w-auto" dangerouslySetInnerHTML={{ __html: badge.svg }} />
                   </div>
                   <div className="flex items-center justify-between border-t border-devin-line px-4 py-3">
                     <p className="text-sm font-medium">{badge.name}</p>
-                    <a href={badge.file} download className="rounded-[2px] border border-devin-line px-3 py-1.5 text-xs font-medium transition-colors hover:border-devin-ink/40">
-                      SVG
+                    <a
+                      className="text-xs text-devin-ink underline underline-offset-4 hover:text-devin-primary"
+                      href={downloadHref(badge.svg)}
+                      download={`${badge.name.toLowerCase().replace(/[^a-z0-9]+/g, "-")}.svg`}
+                    >
+                      Download SVG
                     </a>
                   </div>
                 </div>

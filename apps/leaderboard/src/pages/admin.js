@@ -1,3 +1,4 @@
+import { brandLockupHtml } from "@yourrank/shared/brand-assets";
 // admin page
 import { DEVIN_DESIGN_CONTRACT } from "@yourrank/shared/page-shell";
 
@@ -10,7 +11,7 @@ export const adminPage = `<!DOCTYPE html><html lang="en"><head>
 <div class="toast" id="status" role="status" aria-live="polite" hidden></div>
 <noscript><div class="noscript-msg"><p>YourRank Admin requires JavaScript</p><p>Please enable JavaScript in your browser settings to use the admin panel.</p></div></noscript>
 <a href="#main-content" class="sr-only skip-link">Skip to content</a>
-<header class="topbar"><div class="brand">Your<b>Rank</b> <span class="label ml-8">ADMIN</span></div>
+<header class="topbar"><div class="brand-lockup">${brandLockupHtml({ className: "brand" })} <span class="label ml-8">ADMIN</span></div>
 <div class="topbar-right"><span class="muted" id="userEmail"></span><a href="/dashboard" class="btn btn--sm btn--ghost">Dashboard</a><a href="#" id="logout" class="btn btn--sm btn--ghost">Sign out</a></div></header>
 <main class="wrap" id="main-content"><div id="loading" class="py-26">
 <div class="mb-18"><div class="skeleton skeleton-text--lg skel-w-160"></div><div class="skeleton skeleton-text--sm skel-w-240 mt-8"></div></div>

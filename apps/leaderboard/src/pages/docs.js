@@ -1,5 +1,6 @@
 // Public API documentation page
 import { DEVIN_DESIGN_CONTRACT } from "@yourrank/shared/page-shell";
+import { brandLockupHtml } from "@yourrank/shared/brand-assets";
 
 const body = `
 <nav class="docs-toc" aria-label="Documentation sections">
@@ -92,7 +93,7 @@ export const docsPage = `<!DOCTYPE html><html lang="en"><head>
 <link rel="stylesheet" href="/assets/app.css" /><link rel="stylesheet" href="/assets/ui.css" /><link rel="stylesheet" href="/assets/docs.css" /><link rel="stylesheet" href="/assets/devin-system.css" />
 </head><body>${DEVIN_DESIGN_CONTRACT}
 <a href="#main-content" class="sr-only skip-link">Skip to content</a>
-<header class="topbar"><a class="brand" href="/">Your<b>Rank</b></a>
+<header class="topbar">${brandLockupHtml({ className: "brand", href: "/" })}
 <div class="topbar-right"><a href="/login" class="btn btn--sm btn--ghost">Sign in</a></div></header>
 <main class="docs-wrap" id="main-content"><h1>API Documentation</h1>
 <p>Read-only public endpoints for leaderboards, plus a signed score postback for Pro/Agency accounts.</p>

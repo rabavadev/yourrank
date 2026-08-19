@@ -210,7 +210,8 @@ a{color:var(--ink);text-decoration:none}a:hover{color:var(--accent)}
 .mono{font-family:var(--mono)}.muted{color:var(--ink-mute)}
 .label{font-family:var(--mono);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-mute)}
 .topbar{display:flex;align-items:center;justify-content:space-between;padding:14px 22px;border-bottom:1px solid var(--line)}
-.brand{font-weight:800;letter-spacing:-.02em;font-size:17px}.brand b{color:var(--accent)}
+.brand{display:inline-flex;align-items:center;gap:8px;font-weight:800;letter-spacing:-.02em;font-size:17px}.brand b{color:var(--accent)}
+.brand .yr-brand-lockup-mark,.auth-brand-m .yr-brand-lockup-mark{display:inline-flex;width:24px;height:24px;color:currentColor}.brand .yr-brand-lockup-mark svg,.auth-brand-m .yr-brand-lockup-mark svg{display:block}
 .topbar-right{display:flex;gap:18px;align-items:center;font-size:13px}
 /* .btn and its variants live in ui.css — the one definition shared with the bot
    Worker. Page-specific button layout (margins, widths) still belongs here. */
@@ -263,7 +264,7 @@ a{color:var(--ink);text-decoration:none}a:hover{color:var(--accent)}
 .pw-req::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--line-2);transition:background .15s}
 .pw-req.met{color:var(--yr-color-live-text)}
 .pw-req.met::before{background:var(--ok)}
-@media(max-width:820px){.auth-wrap{grid-template-columns:1fr}.auth-side{display:none}.auth-brand-m{display:block;margin:0 0 22px;font-weight:800;letter-spacing:-.02em;font-size:20px;color:var(--ink)}.auth-brand-m b{color:var(--accent)}}
+@media(max-width:820px){.auth-wrap{grid-template-columns:1fr}.auth-side{display:none}.auth-brand-m{display:inline-flex;margin:0 0 22px;font-weight:800;letter-spacing:-.02em;font-size:20px;color:var(--ink)}.auth-brand-m b{color:var(--accent)}}
 .wrap{max-width:1600px;margin:0 auto;padding:26px 28px 80px}
 body[data-wide] .wrap{max-width:none;padding:16px 0 80px}
 body[data-wide] .lb-shell{padding:12px 0 40px}

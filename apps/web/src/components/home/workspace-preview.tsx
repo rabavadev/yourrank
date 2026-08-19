@@ -1,11 +1,7 @@
+import { brandMarkSvg } from "@yourrank/shared/brand-assets";
+
 function BrandGlyph() {
-  return (
-    <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5" fill="currentColor">
-      <rect x="3" y="13" width="6" height="8" rx="1" />
-      <rect x="10" y="8" width="6" height="13" rx="1" />
-      <rect x="17" y="3" width="4" height="18" rx="1" />
-    </svg>
-  );
+  return <span className="h-5 w-5" dangerouslySetInnerHTML={{ __html: brandMarkSvg({ className: "h-5 w-5" }) }} />;
 }
 
 function ActivityGlyph({ kind }: { kind: "site" | "telegram" | "credit" }) {

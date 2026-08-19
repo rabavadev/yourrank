@@ -44,7 +44,7 @@ body:has(.v3-dash[data-auth-workspace]) > main > .yr-workspace-loader.is-error .
   display: none;
 }
 .yr-loader-logo-svg {
-  width: 220px;
+  width: 164px;
   height: auto;
   max-width: 82vw;
   filter: none;

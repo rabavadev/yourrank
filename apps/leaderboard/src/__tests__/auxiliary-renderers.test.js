@@ -39,7 +39,7 @@ describe("new-shell auxiliary renderers", () => {
 
   it("keeps auxiliary pages neutral in navigation and preserves free-plan attribution", async () => {
     const legal = await renderNewLegalPage(record.data, "terms", { ...opts, plan: "free" });
-    expect(legal).toContain("Powered by <a");
+    expect(legal).toContain('class="yr-powered-by-link"');
     expect(legal).not.toContain("Not configured");
     expect(legal).not.toContain('aria-current="page"');
   });

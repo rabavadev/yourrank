@@ -8,6 +8,7 @@
 // ============================================================================
 
 import { type ShellUser } from "./shell-nav.js";
+import { brandLockupHtml } from "./brand-assets.js";
 
 export const DEVIN_DESIGN_CONTRACT = `<!--
 THESIS: One quiet, high-contrast language makes the connected YourRank suite immediately legible.
@@ -75,7 +76,7 @@ export function leaderboardPageHtml(opts: LeaderboardPageOpts): string {
   const navScript = opts.nav !== false ? '<script src="/assets/shell-nav.js" defer></script>' : "";
   const footer = opts.footer !== false ? `<footer class="gm-shell-footer">
   <div class="gm-shell-inner">
-    <a class="gm-brand" href="/dashboard"><span class="gm-brand-mark">YR</span><span class="gm-brand-word">YourRank</span></a>
+    ${brandLockupHtml({ className: "gm-brand", href: "/dashboard", markClassName: "gm-brand-mark", wordClassName: "gm-brand-word" })}
     <nav class="gm-shell-footer-links" aria-label="Legal">
       <a href="/terms">Terms</a><a href="/privacy">Privacy</a><a href="/contact">Contact</a><a href="/responsible">Responsible Play</a>
     </nav>

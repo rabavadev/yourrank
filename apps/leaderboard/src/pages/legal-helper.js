@@ -1,6 +1,7 @@
 // Shared legal page shell helper
 // NOTE: fill in company identity from Dashboard → Admin → Identity before going live.
 import { DEVIN_DESIGN_CONTRACT } from "@yourrank/shared/page-shell";
+import { brandLockupHtml } from "@yourrank/shared/brand-assets";
 
 export function applyLegalIdentity(html, identity) {
   const i = identity || {};
@@ -23,7 +24,7 @@ export function applyLegalIdentity(html, identity) {
 }
 
 function platformHeader() {
-  return `<header class="topbar"><a class="brand" href="/">Your<b>Rank</b></a>
+  return `<header class="topbar">${brandLockupHtml({ className: "brand", href: "/" })}
 <div class="topbar-right"><a href="/#how">How it works</a><a href="/pricing">Pricing</a><a href="/login" class="btn btn--sm btn--ghost">Sign in</a><a href="/signup" class="btn btn--sm btn--accent">Create free page</a></div></header>`;
 }
 
@@ -32,7 +33,7 @@ function platformFooter(pagePath) {
   return `<footer class="ftr ftr--platform">
 <div class="ftr-top">
   <div class="ftr-brand">
-    <a class="brand" href="/">Your<b>Rank</b></a>
+    ${brandLockupHtml({ className: "brand", href: "/" })}
     <p>Leaderboards for streamers & communities</p>
   </div>
   <div class="ftr-cols">

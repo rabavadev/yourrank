@@ -1,5 +1,6 @@
 // SEO endpoints: robots.txt, sitemap.xml, favicon.ico
 import { query } from "@yourrank/shared/db";
+import { brandMarkSvg } from "@yourrank/shared/brand-assets";
 
 export function serveRobotsTxt(origin) {
   return new Response(
@@ -72,7 +73,7 @@ ${entries.join("\n")}
 
 export function serveFavicon() {
   return new Response(
-    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1 1"></svg>', 
+    brandMarkSvg({ className: "yourrank-favicon", variant: "blue" }),
     {
       headers: { 
         "content-type": "image/svg+xml", 

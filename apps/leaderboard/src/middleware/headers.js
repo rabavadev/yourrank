@@ -1,4 +1,5 @@
 // HTTP response headers constants
+import { brandLockupHtml } from "@yourrank/shared/brand-assets";
 
 export const MIME = {
   ".css": "text/css; charset=utf-8", 
@@ -67,7 +68,9 @@ export function withNonce(headers, nonce) {
 const STATUS_CSS = `:root{--bg:#fff;--panel:#fcfcfc;--line:rgba(0,0,0,.12);--ink:#191919;--dim:#5c5c5c;--accent:#2200ff;--accent-ink:#fff}
 *{box-sizing:border-box;margin:0}
 body{background:var(--bg);color:var(--ink);font:15px/1.6 "Inter",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:24px;gap:22px}
-.brand{font-weight:600;font-size:20px;letter-spacing:-.03em;color:var(--ink);text-decoration:none}
+.brand{display:inline-flex;align-items:center;gap:8px;font-weight:600;font-size:20px;letter-spacing:-.03em;color:var(--ink);text-decoration:none}
+.brand .yr-brand-lockup-mark{display:inline-flex;width:24px;height:24px;color:currentColor}
+.brand .yr-brand-lockup-mark svg{display:block}
 .brand b{color:inherit;font-weight:600}
 .card{width:100%;max-width:460px;background:var(--panel);border:1px solid var(--line);border-radius:16px;box-shadow:none;padding:32px;text-align:center}
 h1{font-size:28px;line-height:1.1;font-weight:500;letter-spacing:-.03em;margin-bottom:12px}
@@ -86,7 +89,7 @@ function statusPage({ title, heading, body, actions, nonce }) {
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
 <style${n}>${STATUS_CSS}</style></head>
-<body><a class="brand" href="/">Your<b>Rank</b></a>
+<body>${brandLockupHtml({ className: "brand", href: "/" })}
 <main class="card"><h1>${esc(heading)}</h1>${body}
 <div class="actions">${actions}</div></main>
 <script src="/assets/cookie-consent.js" defer></script></body></html>`;

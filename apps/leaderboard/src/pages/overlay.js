@@ -1,4 +1,5 @@
 // overlay page
+import { brandLockupHtml } from "@yourrank/shared/brand-assets";
 export const overlayPage = (data, opts = {}) => {
   const b = data.brand || {};
   const br = data.branding || {};
@@ -56,7 +57,8 @@ html,body{${isTicker ? "width:100%;height:52px;" : "width:320px;"}overflow:hidde
 .ov-wager{font-family:'JetBrains Mono',monospace;font-size:12.5px;font-weight:700;color:${accentA};flex-shrink:0;text-shadow:0 1px 3px rgba(0,0,0,0.6)}
 .ov-footer{display:flex;align-items:center;justify-content:space-between;margin-top:12px;padding-top:8px;border-top:1px solid rgba(255,255,255,0.06)}
 .ov-footer .ov-count{font-size:9.5px;font-weight:600;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:.08em}
-.ov-footer .ov-powered{font-size:9px;font-weight:700;color:rgba(255,255,255,0.25);letter-spacing:.04em}
+.ov-footer .ov-powered{display:inline-flex;align-items:center;gap:5px;font-size:9px;font-weight:700;color:rgba(255,255,255,0.25);letter-spacing:.04em}
+.ov-powered-mark{display:inline-flex;width:14px;height:14px;color:currentColor}.ov-powered-mark svg{display:block}
 .ov-sponsor{display:none;font-size:9.5px;text-align:center;color:rgba(255,255,255,0.45);padding:6px 0;letter-spacing:.04em}
 .ov-sponsor.is-visible{display:block}
 .ov-sponsor a{color:inherit;text-decoration:none}
@@ -104,7 +106,7 @@ ${endsAt ? `<p class="ov-timer-label">${esc(b.prizePool || "")} resets in</p>
 <div class="ov-sponsor" data-ov-sponsor></div>
 <div class="ov-footer">
 <span class="ov-count"><span id="ov-count">${(data.players || []).length}</span> players</span>
-<span class="ov-powered">YourRank</span>
+${brandLockupHtml({ className: "ov-powered", markClassName: "ov-powered-mark", wordClassName: "ov-powered-word" })}
 </div>
 </div>`}
 <div id="ov-config" data-slug="${esc(opts.slug || "")}" data-layout="${esc(opts.layout || "card")}" data-theme="${esc(opts.theme || 'default')}" data-sponsor="${esc(opts.sponsor || "")}" data-sponsor-url="${esc(opts.sponsorUrl || "")}" data-json='${dataJson.replace(/'/g, "&#39;")}' hidden></div>

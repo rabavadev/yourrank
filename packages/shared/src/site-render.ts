@@ -20,6 +20,7 @@ import {
 } from "./public-render-helpers.js";
 import { gamesIslandHead, gamesIslandMount } from "./games-embed.js";
 import { generateAvatarSvg } from "@yourrank/shared/avatar";
+import { brandPoweredBySvg } from "@yourrank/shared/brand-assets";
 
 // C-02: SECTION_TITLES was an exact duplicate of SECTION_LABELS — removed.
 const SECTION_LABELS = {
@@ -540,7 +541,7 @@ function siteFooter({ data, b, siteSections, slug, isCustomDomain, homeUrl, wate
   return `<footer class="yr-foot">
 <p class="yr-fine">${CREDITS_DISCLAIMER}</p>
 <div class="yr-foot-links">${enabled.map((s) => `<a href="${homeUrl}${siteSectionHref(s, slug, isCustomDomain)}">${esc(SECTION_LABELS[s])}</a>`).join("")}${legalLinks}</div>
-<p class="yr-fine">&copy; ${new Date().getFullYear()} ${esc(b.name || slug)}.${watermark ? ` Powered by <a href="${esc(homeUrl || "/")}" target="_blank" rel="noopener">YourRank</a>.` : ""}</p>
+<p class="yr-fine">&copy; ${new Date().getFullYear()} ${esc(b.name || slug)}.${watermark ? ` <a class="yr-powered-by-link" href="${esc(homeUrl || "/")}" target="_blank" rel="noopener">${brandPoweredBySvg({ className: "yr-powered-by yr-powered-by--footer" })}</a>.` : ""}</p>
 </footer>`;
 }
 

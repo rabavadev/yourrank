@@ -18,6 +18,16 @@ export const metadata: Metadata = {
   title: "YourRank — Sites, Telegram, Credits & Shop for streamers",
   description:
     "YourRank connects a branded streamer site, Telegram community tools, and Kick-powered viewer credits and shop in one simple suite.",
+  icons: { icon: "/favicon.ico" },
+  openGraph: {
+    title: "YourRank — Sites, Telegram, Credits & Shop for streamers",
+    description: "YourRank connects a branded streamer site, Telegram community tools, and viewer credits in one simple suite.",
+    images: ["/og.png"],
+  },
+  twitter: {
+    card: "summary_large_image",
+    images: ["/og.png"],
+  },
 };
 
 const DESIGN_CONTRACT = {

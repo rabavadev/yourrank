@@ -1,5 +1,6 @@
 // reset page
 import { DEVIN_DESIGN_CONTRACT } from "@yourrank/shared/page-shell";
+import { brandLockupHtml } from "@yourrank/shared/brand-assets";
 
 export const resetPage = `<!DOCTYPE html><html lang="en"><head>
 <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -8,7 +9,7 @@ export const resetPage = `<!DOCTYPE html><html lang="en"><head>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="/assets/app.css" /><link rel="stylesheet" href="/assets/ui.css" /><link rel="stylesheet" href="/assets/devin-system.css" /></head><body>${DEVIN_DESIGN_CONTRACT}
 <a href="#main-content" class="sr-only skip-link">Skip to content</a>
-<div class="auth-wrap"><aside class="auth-side"><div><div class="brand">Your<b>Rank</b></div></div>
+<div class="auth-wrap"><aside class="auth-side"><div>${brandLockupHtml({ className: "brand" })}</div>
 <div><h1>Set a new password.</h1><p>Pick something you'll remember this time. At least 8 characters.</p></div>
 <div class="feat"></div></aside>
 <main class="auth-main" id="main-content"><div class="auth-card"><h2>New password</h2><p class="sub">Then you're straight back in.</p>

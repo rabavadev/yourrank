@@ -442,6 +442,8 @@
 .yr-tag--done { color: var(--yr-success); border-color: var(--yr-success); }
 
 .yr-fine { font-family: var(--yr-sans); font-size: 13px; line-height: 1.5; color: var(--yr-mute); max-width: 70ch; }
+.yr-powered-by-link { display: inline-flex; align-items: center; vertical-align: middle; }
+.yr-powered-by--footer { width: 116px; height: auto; }
 .yr-note { font-family: var(--yr-sans); font-size: 13px; line-height: 1.5; color: var(--yr-faint); }
 .yr-empty { padding: 40px 24px; text-align: center; font-family: var(--yr-sans); font-size: 13px; line-height: 1.5; color: var(--yr-faint); font-weight: 600; }
 
@@ -735,5 +737,4 @@
   font-weight: 700;
   color: var(--yr-text, #ffffff);
 }
-
 

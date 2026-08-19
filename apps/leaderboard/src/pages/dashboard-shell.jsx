@@ -5,7 +5,7 @@ import { profileMenuHtml } from "@yourrank/shared/shell-nav";
 import { dashboardNavItems as sharedDashboardNavItems } from "@yourrank/shared/dashboard-nav";
 import { raw } from "hono/html";
 import { crumbsHtml, navListHtml } from "@yourrank/shared/dashboard-chrome";
-import { brandMarkSvg } from "@yourrank/shared/brand-assets";
+import { brandLockupHtml } from "@yourrank/shared/brand-assets";
 import { navOwner } from "@yourrank/shared/dashboard-nav";
 
 const CREDITS_NAV_KEYS = new Set(["credits", "channel", "redemptions", "shop", "rules", "viewers", "history", "rewards", "audience"]);
@@ -42,7 +42,7 @@ export function DashboardShell({ activeNav = "home", boardContext = "full", foot
     <div class="lb-shell">
       <aside class="lb-side" id="lbSide" aria-label="Dashboard features">
         <div class="lb-side-brandrow">
-          <a class="lb-side-brand" href="/dashboard" aria-label="YourRank dashboard"><span class="lb-brand-mark">{raw(brandMarkSvg())}</span><span class="lb-side-brandcopy"><b>YourRank</b><small>Creator workspace</small></span></a>
+          {raw(brandLockupHtml({ className: "lb-side-brand", href: "/dashboard", markClassName: "lb-brand-mark", wordClassName: "lb-side-brandcopy" }).replace("</span></a>", "<small>Creator workspace</small></span></a>"))}
           <button class="lb-side-collapse" type="button" aria-label="Collapse navigation" aria-pressed="false" aria-controls="lbSide" data-collapse-side><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg></button>
           <button class="lb-side-close" type="button" aria-label="Close navigation" data-close-side><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
         </div>

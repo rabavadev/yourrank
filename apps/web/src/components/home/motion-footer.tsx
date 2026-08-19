@@ -3,6 +3,7 @@
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useEffect, useRef } from "react";
+import { BRAND_NAME } from "@yourrank/shared/brand-assets";
 
 const FOOTER_LINKS = [
   ["Sites", "/sites"],
@@ -94,7 +95,7 @@ export function MotionFooter() {
         </div>
 
         <div ref={wordmarkRef} aria-hidden="true" className="pointer-events-none absolute -bottom-[0.13em] left-1/2 -translate-x-1/2 select-none whitespace-nowrap text-[22vw] font-semibold leading-none tracking-[-0.07em] text-transparent [-webkit-text-stroke:1px_rgba(255,255,255,0.16)]">
-          YOURRANK
+          {BRAND_NAME.toUpperCase()}
         </div>
       </footer>
     </section>

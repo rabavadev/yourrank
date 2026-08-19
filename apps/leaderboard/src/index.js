@@ -13,6 +13,7 @@ import { verifyEmailToken } from "./handlers/auth.js";
 import { verifyBoardPassword, issueBoardPasswordToken, boardPasswordSetCookieHeader } from "./board-password.js";
 import { PAGES } from "./pages.jsx";
 import { DEVIN_DESIGN_CONTRACT, leaderboardPageHtml } from "@yourrank/shared/page-shell";
+import { brandLockupHtml } from "@yourrank/shared/brand-assets";
 import { bumpStat } from "./stats.js";
 import { runAutoReset } from "./auto-reset.js";
 import { createQueueProducer } from "@yourrank/shared/queue-producer";
@@ -865,7 +866,7 @@ export async function handleRequest(request, env, ctx, meta, deps = {}) {
 <meta name="robots" content="noindex, nofollow" />
 <link rel="stylesheet" href="/assets/app.css" /><link rel="stylesheet" href="/assets/ui.css" /><link rel="stylesheet" href="/assets/devin-system.css" /></head><body>${DEVIN_DESIGN_CONTRACT}
 <a href="#main-content" class="sr-only skip-link">Skip to content</a>
-<div class="auth-wrap"><aside class="auth-side"><div><div class="brand">Your<b>Rank</b></div></div>
+<div class="auth-wrap"><aside class="auth-side"><div>${brandLockupHtml({ className: "brand" })}</div>
 <div><h1>That link doesn't work.</h1><p>This reset link is missing, expired, or already used. Request a fresh one below.</p></div>
 <div class="feat"></div></aside>
 <main class="auth-main" id="main-content"><div class="auth-card"><h2>Invalid reset link</h2>

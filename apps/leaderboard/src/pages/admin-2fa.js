@@ -1,3 +1,4 @@
+import { brandLockupHtml } from "@yourrank/shared/brand-assets";
 // admin2fa page
 import { DEVIN_DESIGN_CONTRACT } from "@yourrank/shared/page-shell";
 
@@ -10,7 +11,7 @@ export const admin2faPage = `<!DOCTYPE html><html lang="en"><head>
 <link rel="stylesheet" href="/assets/admin2fa-styles.css" /><link rel="stylesheet" href="/assets/devin-system.css" /></head><body>${DEVIN_DESIGN_CONTRACT}
 <noscript><div class="noscript-msg"><p>YourRank Admin requires JavaScript</p><p>Please enable JavaScript to verify two-factor authentication.</p></div></noscript>
 <a href="#main-content" class="sr-only skip-link">Skip to content</a>
-<header class="topbar"><div class="brand">Your<b>Rank</b> <span class="label ml-8">ADMIN</span></div>
+<header class="topbar"><div class="brand-lockup">${brandLockupHtml({ className: "brand" })} <span class="label ml-8">ADMIN</span></div>
 <div class="topbar-right"><a href="/dashboard" class="btn btn--sm btn--ghost">Dashboard</a><a href="#" id="logout" class="btn btn--sm btn--ghost">Sign out</a></div></header>
 <main class="wrap" id="main-content">
 <div class="tfa-wrap" id="tfaVerify">
