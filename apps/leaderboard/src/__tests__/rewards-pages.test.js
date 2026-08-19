@@ -27,6 +27,7 @@ const pages = [
 const rewardsMarkupSource = readFileSync(new URL("../pages/credits-pages.js", import.meta.url), "utf8");
 const rewardsClientSource = readFileSync(new URL("../assets/credits.js", import.meta.url), "utf8");
 const dashboardV4Source = readFileSync(new URL("../assets/dashboard-v4.css", import.meta.url), "utf8");
+const viewerClientSource = readFileSync(new URL("../assets/viewer-dashboard.js", import.meta.url), "utf8");
 
 describe("server-rendered rewards pages", () => {
   for (const [tab, render] of pages) {
@@ -69,5 +70,13 @@ describe("server-rendered rewards pages", () => {
     expect(rewardsClientSource.indexOf("applyOAuthContext();")).toBeLessThan(rewardsClientSource.indexOf("const shell = await loadBoardShell"));
     expect(rewardsClientSource).toContain('sitePath("/api/kick/disconnect", activeSiteId)');
     expect(rewardsClientSource).toContain("const statusClearTimers = new Map()");
+  });
+
+  it("maps viewer login errors to plain language and removes the one-time query", () => {
+    expect(viewerClientSource).toContain("LOGIN_ERROR_MESSAGES");
+    expect(viewerClientSource).toContain("That login took too long — try again.");
+    expect(viewerClientSource).toContain('cleanUrl.searchParams.delete("error")');
+    expect(viewerClientSource).toContain("cleanUrl.search");
+    expect(viewerClientSource).not.toContain('"Login failed: " + urlParams.get("error")');
   });
 });

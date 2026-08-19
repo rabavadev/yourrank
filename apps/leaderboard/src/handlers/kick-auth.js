@@ -13,6 +13,7 @@ import {
   encryptKickToken,
 } from "@yourrank/shared/kick-oauth";
 import { notifyLiveBoard } from "../live-board-config.js";
+import { handleKickViewerAuthCallback } from "./viewer-auth.js";
 
 function randomState() {
   const bytes = crypto.getRandomValues(new Uint8Array(32));
@@ -107,25 +108,39 @@ export async function handleKickAuthCallback(request, env, deps = {}) {
     fetchKickCurrentChannel: fetchKickCurrentChannelImpl = fetchKickCurrentChannel,
     subscribeKickWebhookEvent: subscribeKickWebhookEventImpl = subscribeKickWebhookEvent,
     encryptKickToken: encryptKickTokenImpl = encryptKickToken,
+    stateData: injectedStateData = null,
+    viewerCallback: viewerCallbackImpl = handleKickViewerAuthCallback,
   } = deps;
-  const user = await currentUserImpl(request, env);
-  if (!user) return redirect("/login");
 
   const url = new URL(request.url);
   const code = url.searchParams.get("code");
   const state = url.searchParams.get("state");
   const error = url.searchParams.get("error");
 
-  if (error) {
-    return redirect(channelRedirect({ error }));
-  }
-  if (!code || !state) {
+  if (!state) {
+    const user = await currentUserImpl(request, env);
+    if (!user) return redirect("/login");
+    if (error) return redirect(channelRedirect({ error: error === "access_denied" ? "access_denied" : "kick_auth_failed" }));
     return redirect(channelRedirect({ error: "missing_oauth_params" }));
   }
 
-  const stateData = await consumeOAuthStateImpl("kick", state);
+  const stateData = injectedStateData || await consumeOAuthStateImpl("kick", state);
   if (!stateData) {
+    const user = await currentUserImpl(request, env);
+    if (!user) return redirect("/login");
     return redirect(channelRedirect({ error: "oauth_state_expired" }));
+  }
+  if (stateData.flow === "viewer") {
+    return viewerCallbackImpl(request, env, { ...deps, stateData });
+  }
+
+  const user = await currentUserImpl(request, env);
+  if (!user) return redirect("/login");
+  if (error) {
+    return redirect(channelRedirect({ error: error === "access_denied" ? "access_denied" : "kick_auth_failed" }, stateData.siteId));
+  }
+  if (!code) {
+    return redirect(channelRedirect({ error: "missing_oauth_params" }, stateData.siteId));
   }
   if (stateData.userId !== user.id) {
     return redirect(channelRedirect({ error: "oauth_user_mismatch" }, stateData.siteId));

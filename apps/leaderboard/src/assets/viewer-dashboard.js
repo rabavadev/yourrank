@@ -242,11 +242,21 @@ $("vd-switch")?.addEventListener("click", async () => {
   location.href = "/me";
 });
 
-// Show any sign-in error in the URL.
+const LOGIN_ERROR_MESSAGES = Object.freeze({
+  rate_limited: "Too many login attempts. Try again shortly.",
+  missing_oauth_params: "Kick did not return the information needed. Try again.",
+  oauth_state_expired: "That login took too long — try again.",
+  access_denied: "Kick login was cancelled.",
+  kick_auth_failed: "We couldn't complete Kick login. Try again.",
+});
+
+// Show any sign-in error in the URL, then remove the one-time code.
 const urlParams = new URLSearchParams(window.location.search);
 if (urlParams.get("error")) {
-  setStatus("vd-login-status", "Login failed: " + urlParams.get("error"), true);
-  window.history.replaceState({}, "", "/me");
+  setStatus("vd-login-status", LOGIN_ERROR_MESSAGES[urlParams.get("error")] || "We couldn't complete login. Try again.", true);
+  const cleanUrl = new URL(window.location.href);
+  cleanUrl.searchParams.delete("error");
+  window.history.replaceState({}, "", `${cleanUrl.pathname}${cleanUrl.search}${cleanUrl.hash}`);
 }
 
 load().catch((err) => {

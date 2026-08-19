@@ -148,6 +148,7 @@ import { handleCreditsBlockViewer } from "./handlers/credits-block.js";
 import {
   handleKickViewerAuthStart,
   handleKickViewerAuthCallback,
+  handleKickViewerAuthHandoff,
   handleDiscordViewerAuthStart,
   handleDiscordViewerAuthCallback,
   handleViewerLogout,
@@ -357,6 +358,7 @@ export const ROUTES = [
   // Viewer auth (Kick / Discord)
   { path: "/api/viewer/auth/kick", method: "GET", handler: withHandler(handleKickViewerAuthStart) },
   { path: "/api/viewer/auth/kick/callback", method: "GET", handler: withHandler(handleKickViewerAuthCallback) },
+  { path: "/api/viewer/auth/kick/handoff", method: "GET", handler: withHandler(handleKickViewerAuthHandoff) },
   { path: "/api/viewer/auth/discord", method: "GET", handler: withHandler(handleDiscordViewerAuthStart) },
   { path: "/api/viewer/auth/discord/callback", method: "GET", handler: withHandler(handleDiscordViewerAuthCallback) },
   { path: "/api/viewer/logout", method: "POST", handler: withHandler(handleViewerLogout) },
