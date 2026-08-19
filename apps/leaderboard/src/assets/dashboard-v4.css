@@ -2768,6 +2768,7 @@ body[data-wide] .v3-dash[data-auth-workspace] .lb-main { padding-right: 32px; }
 .v3-dash[data-auth-workspace] .cr-workspace-content,
 .v3-dash[data-auth-workspace] .cr-redemptions-wrap,
 .v3-dash[data-auth-workspace] .cr-shop-layout { display: grid; gap: 24px; width: 100%; }
+.v3-dash[data-auth-workspace] .cr-workspace-content { grid-template-columns: minmax(0, 1fr); }
 .v3-dash[data-auth-workspace] .cr-workspace-content .v3-kpi-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
@@ -5242,13 +5243,42 @@ body:has(.v3-dash[data-auth-workspace]) > .lb-backdrop.is-open { opacity: 1; poi
 .v3-dash[data-auth-workspace] .cr-channel-summary > :last-child { margin-left: auto;
 }
 
-.v3-dash[data-auth-workspace] .cr-form-panel { padding: 0 20px 18px;
+.v3-dash[data-auth-workspace] .cr-form-panel { min-width: 0; padding: 0 20px 18px;
 }
 
 .v3-dash[data-auth-workspace] #cr-rewards .cr-form-panel { padding-top: 8px;
 }
 
+.v3-dash[data-auth-workspace] #cr-rewards,
+.v3-dash[data-auth-workspace] #cr-rewards details,
+.v3-dash[data-auth-workspace] #cr-rewards form {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.v3-dash[data-auth-workspace] #cr-rewards .embed-tip span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
 .v3-dash[data-auth-workspace] #cr-rewards .cr-form-panel details + details { margin-top: 6px;
+}
+
+.v3-dash[data-auth-workspace] #cr-rewards .cr-reward-primary {
+  border-color: rgb(var(--v4-cobalt-rgb) / 0.36);
+  box-shadow: 0 0 0 1px rgb(var(--v4-cobalt-rgb) / 0.08);
+}
+
+.v3-dash[data-auth-workspace] #cr-rewards .cr-primary-badge {
+  margin-left: auto;
+  padding: 3px 7px;
+  border-radius: 999px;
+  background: var(--v4-cobalt-soft);
+  color: var(--v4-cobalt);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
 }
 
 .v3-dash[data-auth-workspace] .cr-list-toolbar { display: flex; gap: 8px; padding: 12px 16px; border-bottom: 1px solid var(--v3-main-line);

@@ -7,6 +7,7 @@ import {
   RewardsRedemptionsPage,
   RewardsHistoryPage,
 } from "../pages/rewards.jsx";
+import { readFileSync } from "node:fs";
 import {
   rewardsRulesConfig,
   rewardsShopConfig,
@@ -23,6 +24,9 @@ const pages = [
   ["redemptions", RewardsRedemptionsPage],
   ["history", RewardsHistoryPage],
 ];
+const rewardsMarkupSource = readFileSync(new URL("../pages/credits-pages.js", import.meta.url), "utf8");
+const rewardsClientSource = readFileSync(new URL("../assets/credits.js", import.meta.url), "utf8");
+const dashboardV4Source = readFileSync(new URL("../assets/dashboard-v4.css", import.meta.url), "utf8");
 
 describe("server-rendered rewards pages", () => {
   for (const [tab, render] of pages) {
@@ -37,5 +41,21 @@ describe("server-rendered rewards pages", () => {
     for (const config of [rewardsRulesConfig, rewardsShopConfig, rewardsViewersConfig, rewardsRedemptionsConfig, rewardsHistoryConfig]) {
       expect(config.title).toContain("· Credits ·");
     }
+  });
+
+  it("leads with automatic Kick reward creation while preserving manual entry", () => {
+    const html = RewardsRulesPage().toString();
+    expect(html.indexOf("cr-reward-create-form")).toBeLessThan(html.indexOf("cr-reward-form"));
+    expect(html).toContain('id="cr-add-mapping"');
+    expect(html).toContain("#cr-reward-create-form");
+    expect(html).toContain('id="cr-reward-form"');
+    expect(html).toContain('class="embed-tip cr-reward-id-tip"');
+    expect(rewardsMarkupSource).not.toContain("cr-help-tip");
+    expect(rewardsMarkupSource).not.toContain('style="background:#eff6ff');
+    expect(rewardsClientSource).toContain('revealRewardPanel("cr-reward-create-form", true)');
+    expect(rewardsClientSource).toContain('formId === "cr-reward-form" || formId === "cr-reward-create-form"');
+    expect(dashboardV4Source).toContain("grid-template-columns: minmax(0, 1fr)");
+    expect(dashboardV4Source).toContain("#cr-rewards details");
+    expect(dashboardV4Source).toContain("overflow-wrap: anywhere");
   });
 });

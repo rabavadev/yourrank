@@ -246,13 +246,78 @@
   color: var(--v4-ink-soft, var(--v4-ink-mute));
 }
 
-.gw-actions-row {
+.gw-workspace-content details.gw-setup-advanced {
+  margin-top: 8px;
+}
+
+.gw-setup-advanced summary {
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.gw-advanced-summary-state {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--v4-ink-soft);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.gw-advanced-summary-state svg {
+  color: var(--v4-cobalt);
+}
+
+.gw-setup-advanced-body {
+  padding: 16px;
+}
+
+.gw-setup-advanced-body .gw-options {
+  margin: 0 0 12px;
+}
+
+.gw-security-box .gw-rule-field {
+  margin-top: 10px;
+  margin-bottom: 8px;
+}
+
+.gw-security-box .gw-rule-field--compact {
+  margin-top: 0;
+}
+
+.gw-claim-options {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 12px;
+  padding-top: 16px;
+  border-top: 1px solid var(--v4-line);
+}
+
+.gw-claim-options .cr-toggle-row,
+.gw-claim-options .gw-rule-field {
+  margin: 0;
+}
+
+.gw-code-input {
+  text-transform: uppercase;
+}
+
+.gw-number-col {
+  width: 40px;
+}
+
+.gw-empty-cell {
+  padding: 24px;
+}
+
+.gw-actions {
   display: flex;
   gap: 10px;
   margin-top: 4px;
 }
 
-.gw-actions-row .btn {
+.gw-actions .btn {
   min-height: 42px;
   border-radius: var(--v4-radius-sm);
   font-weight: 600;
@@ -264,19 +329,7 @@
 }
 
 /* Chat Feed */
-.gw-chat-card {
-  display: flex;
-  flex-direction: column;
-  padding: 0 !important;
-  overflow: hidden;
-}
-
-.gw-chat-card .v3-section-head {
-  padding: 18px 20px 14px;
-  margin-bottom: 0;
-}
-
-.gw-chat-feed {
+.gw-feed-container {
   height: 280px;
   overflow-y: auto;
   padding: 12px 16px;
@@ -292,7 +345,7 @@
   border-bottom-right-radius: 12px;
 }
 
-.gw-chat-empty {
+.gw-feed-empty {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -307,6 +360,11 @@
   align-items: flex-start;
   gap: 8px;
   word-break: break-word;
+}
+
+.gw-chat-msg--system {
+  color: var(--v4-ink-mute);
+  font-style: italic;
 }
 
 .gw-chat-user {
@@ -336,25 +394,67 @@
   border-radius: var(--v4-radius-control);
 }
 
-/* KPI Strip */
-.gw-kpis {
-  margin-bottom: 0;
-}
-
 /* Winner Stage */
-.gw-winner-section {
-  position: relative;
-  overflow: hidden;
-}
-
-.gw-winner-ctrls {
+.gw-stage-head {
   display: flex;
-  align-items: center;
-  gap: 12px;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 20px;
 }
 
-.gw-roll-ic {
-  font-size: 18px;
+.gw-metrics-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.gw-stat-pill {
+  display: flex;
+  min-width: 68px;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 8px 10px;
+  border: 1px solid var(--v4-line);
+  border-radius: var(--v4-radius-sm);
+  background: var(--v4-surface-soft);
+}
+
+.gw-stat-val {
+  color: var(--v4-ink);
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.gw-stat-lbl {
+  color: var(--v4-ink-mute);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.gw-stage-body {
+  min-width: 0;
+}
+
+.gw-stage-idle {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.gw-idle-wheel {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 10px;
+}
+
+.gw-idle-icon {
+  display: inline-flex;
+  color: var(--v4-cobalt);
 }
 
 /* Winner Roller Animation Box */
@@ -387,7 +487,10 @@
   font-weight: 800;
   letter-spacing: 0.05em;
   text-transform: uppercase;
-  color: #53fc18;
+  color: var(--v4-success);
+}
+
+.gw-roller-track--spinning {
   animation: gw-roll-blur 0.1s infinite;
 }
 
@@ -398,7 +501,7 @@
 }
 
 /* Winner Result Showcase Card */
-.gw-winner-showcase {
+.gw-winner-stage {
   margin: 16px 20px 20px;
   padding: 28px 24px;
   background: var(--v4-navy);
@@ -409,8 +512,17 @@
   align-items: center;
   text-align: center;
   position: relative;
+  overflow: hidden;
   box-shadow: var(--v4-shadow-overlay);
   animation: gw-winner-pop 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gw-roller-track--spinning,
+  .gw-winner-stage,
+  .gw-winner-crown {
+    animation: none;
+  }
 }
 
 @keyframes gw-winner-pop {
@@ -429,29 +541,32 @@
   100% { transform: translateY(-6px); }
 }
 
-.gw-winner-avatar-wrap {
-  width: 72px;
-  height: 72px;
-  border-radius: 50%;
-  border: 3px solid #34d399;
-  overflow: hidden;
-  margin-bottom: 12px;
-  background: #065f46;
+.gw-winner-podium {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: center;
+  width: 100%;
 }
 
 .gw-winner-avatar {
-  width: 100%;
-  height: 100%;
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  border: 3px solid var(--v4-success);
+  overflow: hidden;
+  margin-bottom: 12px;
+  background: var(--v4-success-soft);
+  display: flex;
+  align-items: center;
+  justify-content: center;
   object-fit: cover;
+  flex-shrink: 0;
 }
 
 .gw-winner-badge {
   display: inline-block;
-  background: #34d399;
-  color: #064e3b;
+  background: var(--v4-success);
+  color: var(--v4-navy-ink);
   font-size: 11px;
   font-weight: 800;
   letter-spacing: 0.08em;
@@ -460,24 +575,22 @@
   margin-bottom: 6px;
 }
 
-.gw-winner-name {
+.gw-winner-meta {
+  width: 100%;
+}
+
+.gw-winner-username {
   font-size: 24px;
   font-weight: 800;
-  color: #ffffff;
+  color: var(--v4-navy-ink);
   margin: 0 0 4px;
 }
 
 .gw-winner-msg {
   font-size: 14px;
-  color: #a7f3d0;
+  color: var(--v4-success-soft);
   font-style: italic;
   margin: 0 0 12px;
-}
-
-.gw-winner-time {
-  font-size: 11px;
-  color: #6ee7b7;
-  margin-bottom: 16px;
 }
 
 .gw-winner-actions {
@@ -486,22 +599,10 @@
 }
 
 /* Participants Table */
-.gw-table-actions {
+.gw-entrants-tools {
   display: flex;
   align-items: center;
   gap: 8px;
-}
-
-.gw-search-input {
-  height: 32px;
-  padding: 0 10px;
-  font-size: 13px;
-  border: 1px solid var(--v4-line-strong);
-  border-radius: var(--v4-radius-sm);
-  outline: none;
-}
-.gw-search-input:focus {
-  border-color: var(--accent, var(--v4-cobalt));
 }
 
 .gw-entrant-user {
@@ -550,9 +651,44 @@
   gap: 12px;
 }
 
+.gw-winner-badges-row--center {
+  justify-content: center;
+}
+
+.gw-claim-box--modal {
+  margin: 0;
+}
+
+.gw-claim-status,
+.gw-claim-status--waiting {
+  color: var(--v4-navy-ink);
+}
+
+.gw-claim-status--confirmed {
+  color: var(--v4-success);
+}
+
+.gw-claim-status--expired {
+  color: var(--v4-danger);
+}
+
+.gw-claim-hint {
+  margin-top: 6px;
+  color: var(--v4-navy-soft);
+  font-size: 11.5px;
+}
+
+.gw-number-cell {
+  color: var(--v4-ink-soft);
+}
+
+.gw-time-cell {
+  color: var(--v4-ink-soft);
+  font-size: 12px;
+}
+
 .gw-sidebar .v3-select,
-.gw-security-box .v3-select,
-.gw-adv-box .v3-select {
+.gw-security-box .v3-select {
   width: 100% !important;
   max-width: 100% !important;
   min-width: 0 !important;
@@ -561,62 +697,6 @@
   overflow: hidden;
   white-space: nowrap;
   font-size: 13px;
-}
-
-.gw-security-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  margin-bottom: 2px;
-}
-
-.gw-sec-title {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--v4-ink);
-}
-.gw-sec-title svg {
-  color: var(--v4-cobalt, var(--v4-cobalt));
-}
-
-/* Advanced Requirements Collapsible Details */
-.gw-adv-box {
-  margin-top: 4px;
-  border: 1px solid var(--v4-line, var(--v4-line));
-  border-radius: var(--v4-radius-sm);
-  background: #ffffff;
-  overflow: hidden;
-}
-
-.gw-adv-summary {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 10px 12px;
-  font-size: 12.5px;
-  font-weight: 600;
-  color: var(--v4-ink-soft);
-  cursor: pointer;
-  user-select: none;
-  background: var(--v4-surface-soft);
-  transition: background 0.15s ease;
-}
-
-.gw-adv-summary:hover {
-  background: var(--v4-surface-strong);
-  color: var(--v4-cobalt, var(--v4-cobalt));
-}
-
-.gw-adv-content {
-  padding: 12px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  border-top: 1px solid var(--v4-line, var(--v4-line));
 }
 
 .gw-sub-badge {
@@ -756,6 +836,18 @@
   width: 100%;
   background: var(--v4-cobalt, var(--v4-cobalt));
   transition: width 1s linear, background 0.3s ease;
+}
+
+.gw-claim-bar-fill--confirmed {
+  background: var(--v4-success);
+}
+
+.gw-claim-bar-fill--warning {
+  background: var(--v4-warning);
+}
+
+.gw-claim-bar-fill--expired {
+  background: var(--v4-danger);
 }
 
 /* Winner Celebration Modal Dialog */

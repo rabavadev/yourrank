@@ -72,35 +72,24 @@ import { inlineStateHtml } from "./dashboard/states.js";
       toggleListening();
     });
 
-    $("gw-roll-btn")?.addEventListener("click", () => rollWinner());
-    $("gw-reroll-btn")?.addEventListener("click", () => rollWinner());
-    $("gw-dismiss-winner")?.addEventListener("click", () => {
-      $("gw-winner-showcase").hidden = true;
-      clearInterval(claimTimerInterval);
-    });
+    $("gw-btn-roll")?.addEventListener("click", () => rollWinner());
+    $("gw-btn-reroll")?.addEventListener("click", () => rollWinner());
+    $("gw-btn-copy-winner")?.addEventListener("click", (e) => copyWinnerDetails(e.currentTarget));
+    $("gw-btn-export")?.addEventListener("click", () => exportCSV());
+    $("gw-btn-reset")?.addEventListener("click", () => clearEntrants());
 
-    $("gw-copy-winner")?.addEventListener("click", () => copyWinnerDetails());
-    $("gw-export-btn")?.addEventListener("click", () => exportCSV());
-    $("gw-clear-btn")?.addEventListener("click", () => clearEntrants());
-    $("gw-clear-chat")?.addEventListener("click", () => clearChatFeed());
-
-    $("gw-search-input")?.addEventListener("input", (e) => {
+    $("gw-search-entrants")?.addEventListener("input", (e) => {
       filterEntrantsTable(e.target.value);
     });
 
     $("gw-opt-antialt")?.addEventListener("change", (e) => {
       const badge = $("gw-shield-status");
+      const summary = $("gw-shield-summary");
       if (badge) {
         badge.textContent = e.target.checked ? "Active" : "Disabled";
         badge.className = e.target.checked ? "pill pill--good" : "pill pill--mute";
       }
-    });
-
-    $("gw-opt-follow-age")?.addEventListener("change", (e) => {
-      const customWrap = $("gw-custom-follow-wrap");
-      if (customWrap) {
-        customWrap.hidden = e.target.value !== "custom";
-      }
+      if (summary) summary.textContent = e.target.checked ? "Fair play active" : "Fair play off";
     });
 
     const closeModal = () => {
@@ -113,7 +102,7 @@ import { inlineStateHtml } from "./dashboard/states.js";
       closeModal();
       rollWinner();
     });
-    $("gw-modal-copy")?.addEventListener("click", () => copyWinnerDetails());
+    $("gw-modal-copy")?.addEventListener("click", (e) => copyWinnerDetails(e.currentTarget));
   }
 
   function setStatus(state, text) {
@@ -136,11 +125,11 @@ import { inlineStateHtml } from "./dashboard/states.js";
     const keyword = $("gw-keyword-input").value.trim();
 
     if (!inputChan) {
-      $("gw-setup-status").textContent = "Please enter a Kick channel name.";
+      $("gw-status-text").textContent = "Please enter a Kick channel name.";
       return;
     }
     if (!keyword) {
-      $("gw-setup-status").textContent = "Please enter a target keyword.";
+      $("gw-status-text").textContent = "Please enter a target keyword.";
       return;
     }
 
@@ -148,7 +137,7 @@ import { inlineStateHtml } from "./dashboard/states.js";
     channelName = inputChan.toLowerCase().replace(/^@/, "");
     localStorage.setItem("yr_gw_channel", channelName);
 
-    $("gw-setup-status").textContent = "Resolving Kick chatroom…";
+    $("gw-status-text").textContent = "Resolving Kick chatroom…";
     setStatus("connecting", "Connecting…");
 
     try {
@@ -156,18 +145,17 @@ import { inlineStateHtml } from "./dashboard/states.js";
       const data = await res.json();
 
       if (!data.ok || !data.chatroomId) {
-        $("gw-setup-status").textContent = data.error || "Could not resolve channel chatroom.";
+        $("gw-status-text").textContent = data.error || "Could not resolve channel chatroom.";
         setStatus("error", "Error");
         return;
       }
 
       chatroomId = data.chatroomId;
-      $("gw-setup-status").textContent = `Connected to ${data.user || channelName}'s chatroom (ID: ${chatroomId})`;
-      $("gw-stat-channel-name").textContent = `@${data.user || channelName}`;
+      $("gw-status-text").textContent = `Connected to ${data.user || channelName}'s chatroom (ID: ${chatroomId})`;
 
       connectWebSocket();
     } catch (err) {
-      $("gw-setup-status").textContent = "Failed to connect to Kick API. Check channel name.";
+      $("gw-status-text").textContent = "Failed to connect to Kick API. Check channel name.";
       setStatus("error", "Error");
     }
   }
@@ -192,9 +180,7 @@ import { inlineStateHtml } from "./dashboard/states.js";
 
       isListening = true;
       setStatus("live", "Live & Listening");
-      $("gw-toggle-text").textContent = "Stop Listening";
-      $("gw-toggle-btn").classList.remove("btn--accent");
-      $("gw-toggle-btn").classList.add("btn--danger");
+      setListeningButtonState(true);
 
       // Start timer
       sessionStartTime = Date.now();
@@ -246,9 +232,17 @@ import { inlineStateHtml } from "./dashboard/states.js";
     clearInterval(timerInterval);
     clearInterval(claimTimerInterval);
     setStatus("idle", "Disconnected");
-    $("gw-toggle-text").textContent = "Start Listening";
-    $("gw-toggle-btn").classList.add("btn--accent");
-    $("gw-toggle-btn").classList.remove("btn--danger");
+    setListeningButtonState(false);
+  }
+
+  function setListeningButtonState(listening) {
+    const label = $("gw-listen-btn-label");
+    const button = $("gw-btn-listen");
+    if (label) label.textContent = listening ? "Stop Listening" : "Connect & Start Listening";
+    if (button) {
+      button.classList.toggle("btn--accent", !listening);
+      button.classList.toggle("btn--danger", listening);
+    }
   }
 
   // Smart Anti-Alt & Sybil Scoring Heuristic Engine
@@ -300,7 +294,8 @@ import { inlineStateHtml } from "./dashboard/states.js";
     if (!chatData || !chatData.content || !chatData.sender) return;
 
     messagesCount++;
-    $("gw-stat-messages").textContent = messagesCount.toLocaleString();
+    const feedCounter = $("gw-feed-counter");
+    if (feedCounter) feedCounter.textContent = `${messagesCount.toLocaleString()} msgs`;
 
     const sender = chatData.sender;
     const username = sender.username || sender.slug || "Anonymous";
@@ -393,18 +388,20 @@ import { inlineStateHtml } from "./dashboard/states.js";
       const countdown = $(countId);
 
       if (status) {
-        status.textContent = `🟢 Confirmed Active! Responded: "${messageText}"`;
-        status.style.color = "#16a34a";
+        status.textContent = `Confirmed active. Responded: "${messageText}"`;
+        status.classList.remove("gw-claim-status--waiting", "gw-claim-status--expired");
+        status.classList.add("gw-claim-status--confirmed");
       }
       if (dot) dot.className = "gw-claim-dot gw-claim-dot--confirmed";
       if (fill) {
-        fill.style.background = "#16a34a";
+        fill.classList.remove("gw-claim-bar-fill--warning", "gw-claim-bar-fill--expired");
+        fill.classList.add("gw-claim-bar-fill--confirmed");
         fill.style.width = "100%";
       }
-      if (countdown) countdown.textContent = "VERIFIED ✓";
+      if (countdown) countdown.textContent = "Verified";
     };
 
-    updateElem("gw-claim-status", "gw-claim-dot", "gw-claim-bar-fill", "gw-claim-countdown");
+    updateElem("gw-claim-status", "gw-claim-dot", "gw-claim-fill", "gw-claim-countdown");
     updateElem("gw-modal-claim-status", "gw-modal-claim-dot", "gw-modal-claim-fill", "gw-modal-claim-countdown");
   }
 
@@ -436,7 +433,7 @@ import { inlineStateHtml } from "./dashboard/states.js";
 
   function appendChatFeedMessage(username, content, isMatch) {
     const feed = $("gw-chat-feed");
-    const empty = $("gw-chat-empty");
+    const empty = $("gw-feed-empty");
     if (empty) empty.remove();
 
     const row = document.createElement("div");
@@ -471,21 +468,14 @@ import { inlineStateHtml } from "./dashboard/states.js";
 
   function appendChatSystemMessage(text) {
     const feed = $("gw-chat-feed");
-    const empty = $("gw-chat-empty");
+    const empty = $("gw-feed-empty");
     if (empty) empty.remove();
 
     const row = document.createElement("div");
-    row.className = "gw-chat-msg";
-    row.style.color = "#94a3b8";
-    row.style.fontStyle = "italic";
-    row.textContent = `⚡ ${text}`;
+    row.className = "gw-chat-msg gw-chat-msg--system";
+    row.textContent = text;
     feed.appendChild(row);
     feed.scrollTop = feed.scrollHeight;
-  }
-
-  function clearChatFeed() {
-    const feed = $("gw-chat-feed");
-    feed.innerHTML = '<div class="gw-chat-empty" id="gw-chat-empty"><p>Chat cleared.</p></div>';
   }
 
   function renderEntrantRow(entrant, index) {
@@ -500,8 +490,7 @@ import { inlineStateHtml } from "./dashboard/states.js";
     const defaultAvatar = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%2394a3b8'%3E%3Cpath d='M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z'/%3E%3C/svg%3E";
 
     const numberCell = document.createElement("td");
-    numberCell.className = "ta-c";
-    numberCell.style.color = "#64748b";
+    numberCell.className = "ta-c gw-number-cell";
     numberCell.textContent = String(index);
 
     const userCell = document.createElement("td");
@@ -525,12 +514,12 @@ import { inlineStateHtml } from "./dashboard/states.js";
     if (entrant.isSub) {
       const subBadge = document.createElement("span");
       subBadge.className = "gw-sub-badge";
-      subBadge.textContent = "⭐ Sub";
+      subBadge.textContent = "Subscriber";
       userWrap.append(subBadge);
     } else if (entrant.isVip) {
       const vipBadge = document.createElement("span");
       vipBadge.className = "gw-vip-badge";
-      vipBadge.textContent = "💎 VIP";
+      vipBadge.textContent = "VIP";
       userWrap.append(vipBadge);
     }
 
@@ -542,13 +531,13 @@ import { inlineStateHtml } from "./dashboard/states.js";
     const score = entrant.trustScore || 75;
     if (score >= 70) {
       trustBadge.className = "gw-trust-badge gw-trust-badge--high";
-      trustBadge.textContent = "🟢 Verified";
+      trustBadge.textContent = "Verified";
     } else if (score >= 50) {
       trustBadge.className = "gw-trust-badge gw-trust-badge--med";
-      trustBadge.textContent = "🟡 Regular";
+      trustBadge.textContent = "Regular";
     } else {
       trustBadge.className = "gw-trust-badge gw-trust-badge--low";
-      trustBadge.textContent = "🔴 Suspected Alt";
+      trustBadge.textContent = "Suspected alt";
     }
     trustCell.append(trustBadge);
 
@@ -559,8 +548,7 @@ import { inlineStateHtml } from "./dashboard/states.js";
     messageCell.append(message);
 
     const timeCell = document.createElement("td");
-    timeCell.style.color = "#64748b";
-    timeCell.style.fontSize = "12px";
+    timeCell.className = "gw-time-cell";
     timeCell.textContent = entrant.time;
 
     const actionCell = document.createElement("td");
@@ -606,13 +594,13 @@ import { inlineStateHtml } from "./dashboard/states.js";
   function updateEntrantsCount() {
     const count = entrants.length;
     $("gw-stat-entrants").textContent = count.toLocaleString();
-    $("gw-table-count").textContent = count.toLocaleString();
+    $("gw-count-header").textContent = count.toLocaleString();
     if ($("gw-stat-verified")) $("gw-stat-verified").textContent = verifiedCount.toLocaleString();
     if ($("gw-stat-flagged")) $("gw-stat-flagged").textContent = flaggedCount.toLocaleString();
 
-    const rollBtn = $("gw-roll-btn");
-    const exportBtn = $("gw-export-btn");
-    const clearBtn = $("gw-clear-btn");
+    const rollBtn = $("gw-btn-roll");
+    const exportBtn = $("gw-btn-export");
+    const clearBtn = $("gw-btn-reset");
     const emptyState = $("gw-entrants-empty");
 
     if (count > 0) {
@@ -636,7 +624,8 @@ import { inlineStateHtml } from "./dashboard/states.js";
     flaggedCount = 0;
     $("gw-entrants-list").innerHTML = "";
     updateEntrantsCount();
-    $("gw-winner-showcase").hidden = true;
+    $("gw-winner-stage").hidden = true;
+    $("gw-stage-idle").hidden = false;
     clearInterval(claimTimerInterval);
   }
 
@@ -654,7 +643,7 @@ import { inlineStateHtml } from "./dashboard/states.js";
 
     const optAntiAlt = $("gw-opt-antialt")?.checked;
     const minTrust = parseInt($("gw-trust-min")?.value || "0", 10);
-    const optExcludePrev = $("gw-opt-exclude-prev")?.checked;
+    const optExcludePrev = $("gw-opt-skip-past")?.checked;
 
     // Advanced requirement controls
     const subsPerk = $("gw-opt-subs-perk")?.value || "all";
@@ -719,26 +708,28 @@ import { inlineStateHtml } from "./dashboard/states.js";
       return;
     }
 
-    const rollBtn = $("gw-roll-btn");
-    const roller = $("gw-roller");
+    const rollBtn = $("gw-btn-roll");
+    const roller = $("gw-stage-idle");
     const track = $("gw-roller-track");
-    const showcase = $("gw-winner-showcase");
+    const showcase = $("gw-winner-stage");
 
     rollBtn.setAttribute("disabled", "true");
     showcase.hidden = true;
     roller.hidden = false;
+    track?.classList.add("gw-roller-track--spinning");
     clearInterval(claimTimerInterval);
 
     // Fast-cycle suspense names for 2.2 seconds
     let count = 0;
     const interval = setInterval(() => {
       const randomCandidate = pool[Math.floor(Math.random() * pool.length)];
-      track.textContent = randomCandidate.username;
+      if (track) track.textContent = randomCandidate.username;
       count++;
     }, 80);
 
     setTimeout(() => {
       clearInterval(interval);
+      track?.classList.remove("gw-roller-track--spinning");
       roller.hidden = true;
       rollBtn.removeAttribute("disabled");
 
@@ -782,17 +773,18 @@ import { inlineStateHtml } from "./dashboard/states.js";
       if (box) box.hidden = false;
       if (status) {
         status.textContent = `Waiting for @${winner.username} to chat...`;
-        status.style.color = statusId.includes("modal") ? "#ffffff" : "#0f172a";
+        status.classList.remove("gw-claim-status--confirmed", "gw-claim-status--expired");
+        status.classList.add("gw-claim-status--waiting");
       }
       if (dot) dot.className = "gw-claim-dot gw-claim-dot--waiting";
       if (count) count.textContent = `${totalSecs}s`;
       if (fill) {
         fill.style.width = "100%";
-        fill.style.background = "var(--v4-cobalt, #2563eb)";
+        fill.classList.remove("gw-claim-bar-fill--confirmed", "gw-claim-bar-fill--warning", "gw-claim-bar-fill--expired");
       }
     };
 
-    setInitial("gw-claim-box", "gw-claim-status", "gw-claim-dot", "gw-claim-countdown", "gw-claim-bar-fill");
+    setInitial("gw-claim-box", "gw-claim-status", "gw-claim-dot", "gw-claim-countdown", "gw-claim-fill");
     setInitial("gw-modal-claim-box", "gw-modal-claim-status", "gw-modal-claim-dot", "gw-modal-claim-countdown", "gw-modal-claim-fill");
 
     clearInterval(claimTimerInterval);
@@ -810,23 +802,28 @@ import { inlineStateHtml } from "./dashboard/states.js";
         if (fill) {
           fill.style.width = `${pct}%`;
           if (claimSecondsRemaining <= 15) {
-            fill.style.background = "#f59e0b";
+            fill.classList.remove("gw-claim-bar-fill--confirmed", "gw-claim-bar-fill--expired");
+            fill.classList.add("gw-claim-bar-fill--warning");
           }
         }
 
         if (claimSecondsRemaining <= 0) {
           if (!winnerClaimed) {
             if (status) {
-              status.textContent = `⚠️ @${winner.username} did not respond within ${totalSecs}s (AFK / Suspected Alt).`;
-              status.style.color = "#dc2626";
+              status.textContent = `@${winner.username} did not respond within ${totalSecs}s (AFK / suspected alt).`;
+              status.classList.remove("gw-claim-status--waiting", "gw-claim-status--confirmed");
+              status.classList.add("gw-claim-status--expired");
             }
             if (dot) dot.className = "gw-claim-dot gw-claim-dot--expired";
-            if (fill) fill.style.background = "#dc2626";
+            if (fill) {
+              fill.classList.remove("gw-claim-bar-fill--confirmed", "gw-claim-bar-fill--warning");
+              fill.classList.add("gw-claim-bar-fill--expired");
+            }
           }
         }
       };
 
-      updateTick("gw-claim-countdown", "gw-claim-bar-fill", "gw-claim-status", "gw-claim-dot");
+      updateTick("gw-claim-countdown", "gw-claim-fill", "gw-claim-status", "gw-claim-dot");
       updateTick("gw-modal-claim-countdown", "gw-modal-claim-fill", "gw-modal-claim-status", "gw-modal-claim-dot");
 
       if (claimSecondsRemaining <= 0) {
@@ -836,17 +833,16 @@ import { inlineStateHtml } from "./dashboard/states.js";
   }
 
   function displayWinner(winner) {
-    const showcase = $("gw-winner-showcase");
+    const showcase = $("gw-winner-stage");
     const modal = $("gw-winner-modal");
     const defaultAvatar = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%2394a3b8'%3E%3Cpath d='M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z'/%3E%3C/svg%3E";
 
     const customRule = $("gw-custom-rule-text")?.value?.trim();
-    const msgText = customRule ? `"${winner.message}" — 📋 Requirement: ${customRule}` : `"${winner.message}"`;
+    const msgText = customRule ? `"${winner.message}" — Requirement: ${customRule}` : `"${winner.message}"`;
 
     // Populate inline showcase
     $("gw-winner-name").textContent = winner.username;
-    $("gw-winner-msg").textContent = msgText;
-    $("gw-winner-time").textContent = `Entered at ${winner.time}`;
+    $("gw-winner-message").textContent = msgText;
     $("gw-winner-avatar").src = safeAvatarUrl(winner.avatar, defaultAvatar);
 
     // Populate Celebration Modal
@@ -856,16 +852,16 @@ import { inlineStateHtml } from "./dashboard/states.js";
 
     const score = winner.trustScore || 75;
     let badgeClass = "gw-trust-badge gw-trust-badge--high";
-    let badgeLabel = "🟢 Verified Viewer";
+    let badgeLabel = "Verified Viewer";
     if (score < 50) {
       badgeClass = "gw-trust-badge gw-trust-badge--low";
-      badgeLabel = "🔴 Suspected Alt";
+      badgeLabel = "Suspected Alt";
     } else if (score < 70) {
       badgeClass = "gw-trust-badge gw-trust-badge--med";
-      badgeLabel = "🟡 Regular Viewer";
+      badgeLabel = "Regular Viewer";
     }
 
-    const trustBadge = $("gw-winner-trust-badge");
+    const trustBadge = $("gw-winner-trust");
     if (trustBadge) {
       trustBadge.textContent = badgeLabel;
       trustBadge.className = badgeClass;
@@ -884,21 +880,28 @@ import { inlineStateHtml } from "./dashboard/states.js";
       appendWinnerChatMessage(winner.username, winner.message, winner.time);
     }
 
-    showcase.hidden = false;
+    if ($("gw-stage-idle")) $("gw-stage-idle").hidden = true;
+    if (showcase) showcase.hidden = false;
     if (modal) modal.hidden = false;
-    showcase.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    if (showcase) showcase.scrollIntoView({ behavior: "smooth", block: "nearest" });
   }
 
-  function copyWinnerDetails() {
+  function flashButtonLabel(button, label, duration = 2000) {
+    if (!button) return;
+    const labelNode = [...button.childNodes].find((node) => node.nodeType === Node.TEXT_NODE);
+    if (!labelNode) return;
+    const original = labelNode.nodeValue;
+    labelNode.nodeValue = ` ${label}`;
+    setTimeout(() => { labelNode.nodeValue = original; }, duration);
+  }
+
+  function copyWinnerDetails(button = $("gw-btn-copy-winner")) {
     if (!currentWinner) return;
     const score = currentWinner.trustScore || 75;
     const status = score >= 70 ? "Verified Viewer" : score >= 50 ? "Regular Viewer" : "Suspected Alt";
-    const text = `🎉 Giveaway Winner: ${currentWinner.username}\nStatus: ${status}\nMessage: "${currentWinner.message}"\nTime: ${currentWinner.time}\nKick Profile: https://kick.com/${currentWinner.username}`;
+    const text = `Giveaway Winner: ${currentWinner.username}\nStatus: ${status}\nMessage: "${currentWinner.message}"\nTime: ${currentWinner.time}\nKick Profile: https://kick.com/${currentWinner.username}`;
     navigator.clipboard.writeText(text).then(() => {
-      const btn = $("gw-copy-winner");
-      const orig = btn.textContent;
-      btn.textContent = "Copied! ✓";
-      setTimeout(() => { btn.textContent = orig; }, 2000);
+      flashButtonLabel(button, "Copied!");
     });
   }
 
@@ -1079,7 +1082,7 @@ import { inlineStateHtml } from "./dashboard/states.js";
           </div>
           <div class="gw-raffle-footer">
             <button class="btn btn--accent btn--draw-raffle" data-id="${esc(r.id)}" type="button">
-              🎉 Draw Random Winner
+              Draw Random Winner
             </button>
           </div>
         </div>
@@ -1099,7 +1102,7 @@ import { inlineStateHtml } from "./dashboard/states.js";
           <td>${r.ticket_cost === 0 ? "Free" : `${r.ticket_cost} pts`}</td>
           <td>${r.total_tickets || 0} tickets</td>
           <td>
-            ${r.winner_name ? `🏆 <strong>${esc(r.winner_name)}</strong> <small>(Ticket #${r.winner_ticket_number})</small>` : "<em>No winner</em>"}
+            ${r.winner_name ? `<strong>${esc(r.winner_name)}</strong> <small>(Ticket #${r.winner_ticket_number})</small>` : "<em>No winner</em>"}
           </td>
           <td>${r.drawn_at ? new Date(r.drawn_at).toLocaleString() : "—"}</td>
         </tr>
@@ -1192,8 +1195,8 @@ import { inlineStateHtml } from "./dashboard/states.js";
           <div class="gw-drop-card">
             <div class="gw-drop-header">
               <div class="d-flex items-center gap-8">
-                <code class="gw-drop-code-badge">⚡ ${esc(d.code)}</code>
-                <button class="btn btn--sm btn--ghost btn--copy-drop" data-code="${esc(d.code)}" type="button">📋 Copy</button>
+                <code class="gw-drop-code-badge">${esc(d.code)}</code>
+                <button class="btn btn--sm btn--ghost btn--copy-drop" data-code="${esc(d.code)}" type="button">Copy</button>
               </div>
               <span class="pill pill--good">+${d.points_reward} pts</span>
             </div>
@@ -1214,9 +1217,7 @@ import { inlineStateHtml } from "./dashboard/states.js";
       activeList.querySelectorAll(".btn--copy-drop").forEach((btn) => {
         btn.addEventListener("click", () => {
           navigator.clipboard?.writeText(btn.dataset.code);
-          const orig = btn.textContent;
-          btn.textContent = "✓ Copied";
-          setTimeout(() => { btn.textContent = orig; }, 1500);
+          flashButtonLabel(btn, "Copied", 1500);
         });
       });
     }
@@ -1300,7 +1301,7 @@ import { inlineStateHtml } from "./dashboard/states.js";
             <div class="gw-pred-header">
               <div>
                 <span class="pill ${p.status === "open" ? "pill--good" : "pill--info"}">
-                  ${p.status === "open" ? "🟢 Betting Open" : "🔒 Betting Locked"}
+                  ${p.status === "open" ? "Betting Open" : "Betting Locked"}
                 </span>
                 <h3 class="gw-pred-title">${esc(p.title)}</h3>
               </div>
@@ -1338,11 +1339,11 @@ import { inlineStateHtml } from "./dashboard/states.js";
             <div class="gw-pred-footer">
               ${p.status === "open" ? `
                 <button class="btn btn--sm btn--ghost btn--lock-pred" data-id="${esc(p.id)}" type="button">
-                  🔒 Lock Betting
+                  Lock Betting
                 </button>
               ` : ""}
               <button class="btn btn--sm btn--accent btn--open-settle" data-id="${esc(p.id)}" type="button">
-                ⚖️ Settle Outcome &amp; Payout
+                Settle Outcome &amp; Payout
               </button>
             </div>
           </div>
@@ -1371,7 +1372,7 @@ import { inlineStateHtml } from "./dashboard/states.js";
             <td><strong>${p.total_pool || 0} pts</strong></td>
             <td>${p.participant_count || 0} bettors</td>
             <td>
-              ${p.winning_option_id ? `<span class="pill pill--good">🏆 ${esc(p.winning_option_id.toUpperCase())}</span>` : "—"}
+              ${p.winning_option_id ? `<span class="pill pill--good">${esc(p.winning_option_id.toUpperCase())}</span>` : "—"}
             </td>
             <td><span class="pill pill--mute">${esc(p.status)}</span></td>
             <td>${new Date(p.created_at).toLocaleString()}</td>
@@ -1386,8 +1387,8 @@ import { inlineStateHtml } from "./dashboard/states.js";
     const title = $("pred-title")?.value?.trim();
     if (!title) return;
 
-    const opt1 = $("pred-opt-1")?.value?.trim() || "Yes / نعم";
-    const opt2 = $("pred-opt-2")?.value?.trim() || "No / لا";
+    const opt1 = $("pred-opt-1")?.value?.trim() || "Yes";
+    const opt2 = $("pred-opt-2")?.value?.trim() || "No";
     const minBet = parseInt($("pred-min-bet")?.value, 10) || 10;
     const maxBet = parseInt($("pred-max-bet")?.value, 10) || 500;
     const lockMinutes = parseInt($("pred-lock-min")?.value, 10) || 5;

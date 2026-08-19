@@ -8,6 +8,23 @@ const gamesSource = readFileSync(new URL("../assets/dashboard/games.js", import.
 const siteSource = readFileSync(new URL("../assets/dashboard/site.js", import.meta.url), "utf8");
 const dashboardSource = readFileSync(new URL("../assets/dashboard.js", import.meta.url), "utf8");
 const previewTabsSource = readFileSync(new URL("../assets/dashboard/preview-tabs.js", import.meta.url), "utf8");
+const giveawaysSource = readFileSync(new URL("../assets/giveaways.js", import.meta.url), "utf8");
+const giveawaysCssSource = readFileSync(new URL("../assets/giveaways.css", import.meta.url), "utf8");
+
+function collectGiveawayClasses(source) {
+  const classes = new Set();
+  for (const match of source.matchAll(/class(?:Name)?\s*=\s*["'`]([^"'`]+)["'`]/g)) {
+    for (const className of match[1].matchAll(/["']?(gw-[A-Za-z0-9_-]+)/g)) {
+      if (!className[1].endsWith("-")) classes.add(className[1]);
+    }
+  }
+  for (const match of source.matchAll(/classList\.(?:add|remove|toggle)\(([^)]*)\)/g)) {
+    for (const className of match[1].matchAll(/["'](gw-[A-Za-z0-9_-]+)["']/g)) {
+      classes.add(className[1]);
+    }
+  }
+  return classes;
+}
 
 describe("Giveaway Chatroom Handler", () => {
   const allowRateLimit = async () => ({ ok: true, remaining: 59, limit: 60, retryAfter: 0 });
@@ -85,6 +102,107 @@ describe("Giveaway Chatroom Handler", () => {
     expect(giveawaysHtml).not.toContain('class="gw-table-wrap"');
     expect(giveawaysHtml.match(/<table\b/g)).toHaveLength(4);
     expect(giveawaysHtml.match(/<div class="v3-table-scroll">\s*<table class="v3-table">/g)).toHaveLength(4);
+  });
+
+  it("keeps setup defaults behind the fair-play disclosure", () => {
+    expect(giveawaysHtml).toContain('<details class="cr-advanced gw-setup-advanced">');
+    expect(giveawaysHtml).toContain('id="gw-shield-status"');
+    expect(giveawaysHtml).toContain('id="gw-opt-unique" checked');
+    expect(giveawaysHtml).toContain('id="gw-opt-antialt" checked');
+    expect(giveawaysHtml).toContain('id="gw-trust-min"');
+    expect(giveawaysHtml).toContain('id="gw-opt-subs-perk"');
+    expect(giveawaysHtml).toContain('id="gw-opt-min-msgs"');
+    expect(giveawaysHtml).toContain('id="gw-opt-skip-past"');
+    expect(giveawaysHtml).toContain('id="gw-opt-claim-req"');
+    expect(giveawaysHtml).toContain('id="gw-opt-claim-duration"');
+    expect(giveawaysHtml).toContain('<option value="60" selected>60 seconds</option>');
+    expect(giveawaysHtml).not.toContain('id="gw-opt-claim-req" checked');
+    expect(giveawaysHtml).toContain('id="gw-custom-rule-text"');
+    expect(giveawaysHtml).toContain('id="gw-roller-track"');
+    expect(giveawaysHtml).toContain('id="gw-winner-stage" role="status" aria-live="polite"');
+    expect(giveawaysHtml).toContain('id="gw-roller-track" aria-hidden="true"');
+    expect(giveawaysCssSource).toContain(".gw-roller-track--spinning");
+    expect(giveawaysCssSource).toContain("color: var(--v4-success)");
+    expect(giveawaysCssSource).toContain("@media (prefers-reduced-motion: reduce)");
+    expect(giveawaysCssSource).toContain(".gw-winner-stage");
+    expect(giveawaysCssSource).toContain(".gw-winner-crown");
+    expect(giveawaysSource).toContain('track?.classList.add("gw-roller-track--spinning")');
+    expect(giveawaysSource).toContain('track?.classList.remove("gw-roller-track--spinning")');
+    expect(giveawaysHtml).not.toContain('id="gw-roller-track" aria-live="polite"');
+    expect(giveawaysHtml).toContain('id="gw-stat-time"');
+    expect(giveawaysHtml).not.toContain("نعم");
+    expect(giveawaysHtml).not.toContain("لا");
+    expect(giveawaysHtml).not.toContain('style="');
+    expect(giveawaysSource).toContain('|| "Yes"');
+    expect(giveawaysSource).toContain('|| "No"');
+    expect(giveawaysSource).toContain('$("gw-shield-summary")');
+    expect(giveawaysSource).toContain('summary.textContent = e.target.checked ? "Fair play active" : "Fair play off"');
+    expect(giveawaysHtml).not.toContain("🎉");
+    expect(giveawaysHtml).not.toContain("💬");
+    expect(giveawaysSource).not.toContain("🎉");
+    expect(giveawaysSource).not.toContain("⚡");
+  });
+
+  it("keeps Giveaway client lookups aligned with the rendered controls", () => {
+    const renderedIds = new Set([...giveawaysHtml.matchAll(/id="([^"]+)"/g)].map((match) => match[1]));
+    const lookupIds = new Set([...giveawaysSource.matchAll(/\$\("([^"]+)"\)/g)].map((match) => match[1]));
+    const missingIds = [...lookupIds].filter((id) => !renderedIds.has(id)).sort();
+
+    expect(missingIds).toEqual([]);
+    expect(giveawaysSource).toContain('$("gw-btn-roll")?.addEventListener("click"');
+    expect(giveawaysSource).toContain('$("gw-btn-reroll")?.addEventListener("click"');
+    expect(giveawaysSource).toContain('$("gw-btn-copy-winner")?.addEventListener("click"');
+    expect(giveawaysSource).toContain('$("gw-search-entrants")?.addEventListener("input"');
+    expect(giveawaysSource).toContain('$("gw-btn-reset")?.addEventListener("click"');
+    expect(giveawaysSource).not.toContain('$("gw-roll-btn")');
+    expect(giveawaysSource).not.toContain('$("gw-reroll-btn")');
+    expect(giveawaysSource).not.toContain('$("gw-copy-winner")');
+    expect(giveawaysSource).not.toContain('$("gw-search-input")');
+    expect(giveawaysSource).not.toContain('$("gw-clear-btn")');
+    expect(giveawaysSource).not.toContain("clearChatFeed");
+    expect(giveawaysSource).not.toContain("lastChild.textContent");
+    expect(giveawaysSource).not.toContain('"gw-claim-bar-fill"');
+    expect(giveawaysSource).toContain('$("gw-winner-stage")');
+    expect(giveawaysSource).toContain('$("gw-stage-idle")');
+    expect(giveawaysSource).toContain('$("gw-listen-btn-label")');
+    expect(giveawaysHtml).toContain('id="gw-roller-track"');
+    expect(giveawaysHtml).toContain('id="gw-stat-time"');
+    expect(giveawaysHtml).toContain('id="gw-opt-claim-duration"');
+    expect(giveawaysHtml).toContain('id="gw-opt-claim-req"');
+    expect(giveawaysHtml).toContain('id="gw-custom-rule-text"');
+  });
+
+  it("keeps Giveaway classes aligned with the canonical stylesheet", () => {
+    const renderedClasses = collectGiveawayClasses(
+      giveawaysHtml + GiveawaysPage({ user: { id: "u-1" } }).toString(),
+    );
+    const controllerClasses = collectGiveawayClasses(giveawaysSource);
+    const stylesheetClasses = new Set(
+      [...giveawaysCssSource.matchAll(/(?<![\w-])\.(gw-[A-Za-z0-9_-]+)/g)].map(
+        (match) => match[1],
+      ),
+    );
+    const missingClasses = [
+      ...new Set([...renderedClasses, ...controllerClasses]),
+    ].filter((className) => !stylesheetClasses.has(className)).sort();
+
+    expect(missingClasses).toEqual([]);
+  });
+
+  it("keeps dynamic Giveaway states on stylesheet classes", () => {
+    expect(giveawaysSource).not.toContain("style.color");
+    expect(giveawaysSource).not.toContain("style.fontStyle");
+    expect(giveawaysSource).toContain("gw-chat-msg--system");
+    expect(giveawaysSource).toContain("gw-claim-status--confirmed");
+    expect(giveawaysSource).toContain("gw-claim-status--expired");
+    expect(giveawaysCssSource).toContain(".gw-chat-msg--system");
+    expect(giveawaysCssSource).toContain(".gw-claim-status--confirmed");
+    expect(giveawaysCssSource).toContain(".gw-claim-status--expired");
+    expect(giveawaysSource).toContain("flashButtonLabel(button, \"Copied!\")");
+    expect(giveawaysSource).not.toContain("Copied! ✓");
+    expect(giveawaysSource).not.toContain("✓ Copied");
+    expect(giveawaysHtml).not.toMatch(/<h2 id="pred-drawer-title"><svg/);
+    expect(giveawaysHtml).toContain("Draw Random Winner");
   });
 
   it("keeps preview frame navigations out of browser history", () => {

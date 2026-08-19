@@ -95,7 +95,7 @@ function renderRewardRow(m) {
 }
 function renderViewerRow(v) {
   const uname = v.kick_username || v.kick_user_id || "Viewer";
-  return `<td>${esc(uname)}${v.blocked ? ' <span class="v3-chip v3-chip--cancelled">blocked</span>' : ""}</td><td class="num"><b>${v.balance}</b></td><td class="num">${v.total_earned}</td><td class="num">${v.total_spent}</td><td>${fmtDate(v.last_earned_at || v.created_at)}</td><td class="ta-r"><button class="btn btn--sm btn--accent" data-tip-viewer="${esc(v.id)}" data-viewer-name="${esc(uname)}" data-viewer-balance="${v.balance}" title="Tip points to @${esc(uname)}">🎁 Tip</button> <button class="btn btn--sm ${v.blocked ? "btn--accent" : "btn--danger"}" data-block="${esc(v.id)}" data-blocked="${v.blocked ? "1" : ""}">${v.blocked ? "Unblock" : "Block"}</button></td>`;
+  return `<td>${esc(uname)}${v.blocked ? ' <span class="v3-chip v3-chip--cancelled">blocked</span>' : ""}</td><td class="num"><b>${v.balance}</b></td><td class="num">${v.total_earned}</td><td class="num">${v.total_spent}</td><td>${fmtDate(v.last_earned_at || v.created_at)}</td><td class="ta-r"><button class="btn btn--sm btn--accent" data-tip-viewer="${esc(v.id)}" data-viewer-name="${esc(uname)}" data-viewer-balance="${v.balance}" title="Tip points to @${esc(uname)}">Tip</button> <button class="btn btn--sm ${v.blocked ? "btn--accent" : "btn--danger"}" data-block="${esc(v.id)}" data-blocked="${v.blocked ? "1" : ""}">${v.blocked ? "Unblock" : "Block"}</button></td>`;
 }
 function renderRedemptionRow(r) { return `<td><b>${esc(r.kick_username || r.kick_user_id)}</b></td><td>${esc(r.item_name)}</td><td class="num"><b>${r.cost}</b><span class="hint">credits</span></td><td>${statusChip(r.status)}</td><td title="${esc(fmtDate(r.created_at))}">${relative(r.created_at)}</td><td class="ta-r">${r.status === "pending" ? `<button class="btn btn--sm" data-cancel="${esc(r.id)}">Cancel</button> <button class="btn btn--sm btn--accent" data-fulfill="${esc(r.id)}">Fulfil</button>` : ""}</td>`; }
 function renderShopCards(items) {
@@ -138,9 +138,7 @@ function render() {
     addMapping.setAttribute("aria-disabled", rewardAtLimit ? "true" : "false");
     addMapping.onclick = rewardAtLimit ? (e) => e.preventDefault() : (e) => {
       e.preventDefault();
-      const details = $("cr-reward-form")?.closest("details");
-      if (details) details.open = true;
-      $("cr-reward-kick-id")?.focus();
+      revealRewardPanel("cr-reward-create-form", true);
     };
   }
   if (current === "channel") {
@@ -156,9 +154,10 @@ function render() {
   if (current === "rules") {
     for (const id of ["cr-reward-submit", "cr-reward-create-submit"]) { const el = $(id); if (el) { el.disabled = rewardAtLimit; el.title = rewardAtLimit ? "Upgrade your plan to add more credit rules" : ""; } }
     const mappings = state.mappings || [];
-    if (!rewardCtrl) { rewardCtrl = new ListController({ root: $("cr-rewards"), tbody: "cr-reward-list", emptyEl: $("cr-reward-empty"), emptySpec: { kind: "empty", title: "No credit rules yet", body: "Set how Kick rewards award credits to your viewers.", compact: true, actions: [{ label: "Create credit rule", href: "/dashboard/rewards/rules#cr-reward-form", accent: true }] }, items: mappings, perPage: 10, searchFn: (m) => `${m.kick_reward_title} ${m.kick_reward_id} ${m.kick_reward_cost} ${m.credits}`, sortOptions: [{ key: "cost", label: "Kick cost", fn: (a, b) => (b.kick_reward_cost || 0) - (a.kick_reward_cost || 0) }, { key: "credits", label: "Credits", fn: (a, b) => (b.credits || 0) - (a.credits || 0) }, { key: "active", label: "Active first", fn: (a, b) => Number(b.active) - Number(a.active) }], emptyAllText: "No credit rules yet.", emptyText: "No matching credit rules.", renderItem: (m) => renderRewardRow(m), onRender: () => wireDynamicActions() }); mountListControls($("cr-rewards"), $("cr-mapping-toolbar"), $("cr-mapping-foot")); }
+    if (!rewardCtrl) { rewardCtrl = new ListController({ root: $("cr-rewards"), tbody: "cr-reward-list", emptyEl: $("cr-reward-empty"), emptySpec: { kind: "empty", title: "No credit rules yet", body: "Set how Kick rewards award credits to your viewers.", compact: true, actions: [{ label: "Create Kick reward", href: "/dashboard/rewards/rules#cr-reward-create-form", accent: true }] }, items: mappings, perPage: 10, searchFn: (m) => `${m.kick_reward_title} ${m.kick_reward_id} ${m.kick_reward_cost} ${m.credits}`, sortOptions: [{ key: "cost", label: "Kick cost", fn: (a, b) => (b.kick_reward_cost || 0) - (a.kick_reward_cost || 0) }, { key: "credits", label: "Credits", fn: (a, b) => (b.credits || 0) - (a.credits || 0) }, { key: "active", label: "Active first", fn: (a, b) => Number(b.active) - Number(a.active) }], emptyAllText: "No credit rules yet.", emptyText: "No matching credit rules.", renderItem: (m) => renderRewardRow(m), onRender: () => wireDynamicActions() }); mountListControls($("cr-rewards"), $("cr-mapping-toolbar"), $("cr-mapping-foot")); }
     else rewardCtrl.setItems(mappings);
     prefillEditFromQuery();
+    revealRewardFromHash();
   }
   if (current === "shop") {
     $("cr-shop-usage").innerHTML = `${metric(usage.shopItems)} / ${metric(limits.shopItems)} active items${shopAtLimit ? ' · <a href="/dashboard/settings/plan">Plan limit reached — upgrade plan</a>' : ""}`;
@@ -264,6 +263,23 @@ function renderCreditsByDay(rows) {
   }).join("");
   container.setAttribute("role", "img"); const allTotal = days.reduce((sum, day) => sum + grouped[day].earn + grouped[day].spend, 0);
   container.setAttribute("aria-label", `Bar chart of credits across ${days.length} days with activity. Total: ${allTotal} credits.`);
+}
+function revealRewardPanel(formId, focus = false) {
+  const form = $(formId);
+  const details = form?.closest("details");
+  if (!form || !details) return;
+  details.parentElement?.querySelectorAll("details").forEach((panel) => {
+    if (panel !== details) panel.open = false;
+  });
+  details.open = true;
+  if (focus) {
+    const firstField = form.querySelector("input:not([type='hidden']), select, textarea");
+    firstField?.focus();
+  }
+}
+function revealRewardFromHash() {
+  const formId = location.hash.slice(1);
+  if (formId === "cr-reward-form" || formId === "cr-reward-create-form") revealRewardPanel(formId);
 }
 function prefillEditFromQuery() {
   if (tab() !== "rules") return;
@@ -576,7 +592,7 @@ function wireActions() {
     try {
       const endpoint = viewerId ? sitePath(`/api/credits/viewers/${encodeURIComponent(viewerId)}/balance`) : sitePath("/api/credits/tip");
       await api("POST", endpoint, { delta: amount, reason, kickUsername: username });
-      setStatus("cr-tip-status", `Successfully sent +${amount} credits to @${username || "viewer"}! 🎁`);
+      setStatus("cr-tip-status", `Successfully sent +${amount} credits to @${username || "viewer"}!`);
       setTimeout(() => {
         closeTip();
         load();
