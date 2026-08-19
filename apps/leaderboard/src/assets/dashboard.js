@@ -267,7 +267,16 @@ async function init() {
   }
   if (hasSection("home") || hasSection("performance")) loadStats();
   if (hasSection("home") || hasBoardSettings) loadCreditsStatus();
-  if (hasSection("home")) loadOverviewLiveData();
+  if (hasSection("home")) {
+    loadOverviewLiveData().catch((err) => {
+      logError("overview/live", err);
+      try {
+        renderOverviewSummary();
+      } catch (renderErr) {
+        logError("overview/render", renderErr);
+      }
+    });
+  }
   if (hasBoardSettings) {
     setupSettingsScreen(p);
   }

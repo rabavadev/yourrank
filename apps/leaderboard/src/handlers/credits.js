@@ -149,6 +149,7 @@ export async function handleCreditsStatus(request, env) {
   const plan = effectivePlan(user);
 
   return ok({
+    enabled: Boolean(site.credits_enabled),
     channel: {
       externalId: channel?.kick_channel_external_id || null,
       name: channel?.kick_channel_name || null,

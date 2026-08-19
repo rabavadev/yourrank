@@ -112,7 +112,7 @@ function OverviewSection({ active } = {}) {
 </div></aside>
 </div>
 <div id="ovActiveBento"><div class="ov-live" aria-label="Site performance">
-<div class="kpi-row">
+<div class="kpi-row" id="ovKpiRow">
   <div class="kpi-card">
     <span class="kpi-lbl" id="ovLblPlayers">Players</span>
     <div class="kpi-value-row">
@@ -131,14 +131,14 @@ function OverviewSection({ active } = {}) {
     <span class="kpi-lbl" id="ovLblGiveaway">Active giveaway</span>
     <div class="kpi-value-row">
       <span class="kpi-val" id="ovActiveGiveaway" aria-labelledby="ovLblGiveaway"><span class="skeleton v3-skel-kpi" aria-hidden="true"></span></span>
-      <span class="kpi-action" title="Active raffles, drops, and predictions currently running.">Now</span>
+      <span class="kpi-action">Active now</span>
     </div>
   </div>
-  <div class="kpi-card">
+  <div class="kpi-card" id="ovCreditsCard" hidden>
     <span class="kpi-lbl" id="ovLblCredits">Credits used</span>
     <div class="kpi-value-row">
       <span class="kpi-val" id="ovCreditsUsed" aria-labelledby="ovLblCredits"><span class="skeleton v3-skel-kpi" aria-hidden="true"></span></span>
-      <span class="kpi-action" title="Credits spent by viewers on this site.">All time</span>
+      <span class="kpi-action">All-time spend</span>
     </div>
   </div>
 </div>
