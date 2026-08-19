@@ -9,6 +9,7 @@ const SURFACE_ROOTS = [
   path.join(ROOT, "packages/shared/src"),
 ];
 const SOURCE_EXTENSIONS = new Set([".js", ".jsx", ".ts", ".tsx"]);
+const BRAND_ASSET_ROOT = path.join(ROOT, "apps/web/public/brand");
 
 function sourceFiles(dir) {
   return fs.readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
@@ -60,5 +61,26 @@ describe("canonical YourRank identity", () => {
       .filter((file) => !fs.readFileSync(file, "utf8").includes("brand-assets"))
       .map((file) => path.relative(ROOT, file));
     expect(violations).toEqual([]);
+  });
+
+  test("published SVGs contain the canonical mark geometry", () => {
+    const markRects = [
+      'x="3" y="13" width="6" height="8" rx="1"',
+      'x="10" y="8" width="6" height="13" rx="1"',
+      'x="17" y="3" width="4" height="18" rx="1"',
+    ];
+    const wordmarkRects = [
+      'x="4" y="17.333" width="8" height="10.667" rx="1.333"',
+      'x="13.333" y="10.667" width="8" height="17.333" rx="1.333"',
+      'x="22.667" y="4" width="5.333" height="24" rx="1.333"',
+    ];
+    for (const file of ["yourrank-mark-dark.svg", "yourrank-mark-light.svg", "yourrank-mark-blue.svg", "powered-by-yourrank-dark.svg", "powered-by-yourrank-light.svg"]) {
+      const source = fs.readFileSync(path.join(BRAND_ASSET_ROOT, file), "utf8");
+      for (const rect of markRects) expect(source, `${file} ${rect}`).toContain(rect);
+    }
+    for (const file of ["yourrank-wordmark-dark.svg", "yourrank-wordmark-light.svg"]) {
+      const source = fs.readFileSync(path.join(BRAND_ASSET_ROOT, file), "utf8");
+      for (const rect of wordmarkRects) expect(source, `${file} ${rect}`).toContain(rect);
+    }
   });
 });

@@ -443,7 +443,11 @@
 
 .yr-fine { font-family: var(--yr-sans); font-size: 13px; line-height: 1.5; color: var(--yr-mute); max-width: 70ch; }
 .yr-powered-by-link { display: inline-flex; align-items: center; vertical-align: middle; }
-.yr-powered-by--footer { width: 116px; height: auto; }
+.yr-powered-by--footer { display: inline-flex; align-items: center; gap: 6px; width: auto; }
+.yr-powered-by-label { font-size: 9px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; }
+.yr-powered-by-lockup { display: inline-flex; align-items: center; gap: 4px; }
+.yr-powered-by-mark { display: block; width: 14px; height: 14px; flex: 0 0 14px; }
+.yr-powered-by-word { font-size: 12px; font-weight: 700; letter-spacing: -0.02em; }
 .yr-note { font-family: var(--yr-sans); font-size: 13px; line-height: 1.5; color: var(--yr-faint); }
 .yr-empty { padding: 40px 24px; text-align: center; font-family: var(--yr-sans); font-size: 13px; line-height: 1.5; color: var(--yr-faint); font-weight: 600; }
 
@@ -737,4 +741,3 @@
   font-weight: 700;
   color: var(--yr-text, #ffffff);
 }
-

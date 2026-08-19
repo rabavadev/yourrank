@@ -43,12 +43,9 @@ body:has(.v3-dash[data-auth-workspace]) > main > .yr-workspace-loader.is-error .
 .yr-loader-glow-halo {
   display: none;
 }
-.yr-loader-logo-svg {
-  width: 164px;
-  height: auto;
-  max-width: 82vw;
-  filter: none;
-}
+.yr-loader-brand-lockup { display: inline-flex; align-items: center; gap: 10px; max-width: 82vw; color: var(--v4-surface-soft); }
+.yr-loader-brand-mark { display: block; width: 34px; height: 34px; flex: 0 0 34px; }
+.yr-loader-brand-word { color: var(--v4-surface-soft); font: 600 30px/1 "Inter", "Fira Sans", system-ui, sans-serif; letter-spacing: -0.04em; }
 .yr-loader-lockup p { min-height: 24px; margin: 10px 0 18px; color: var(--v4-navy-soft); font-size: 14px; }
 .yr-loader-lockup small { margin-top: 12px; color: var(--v4-navy-soft); font: 600 10px/1.3 var(--v3-sans, sans-serif); letter-spacing: 0.12em; text-transform: uppercase; }
 .yr-loader-track { width: 100%; height: 3px; overflow: hidden; border-radius: var(--v4-radius-control); background: rgba(255,255,255,0.12); }

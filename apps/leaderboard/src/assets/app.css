@@ -178,8 +178,12 @@
   --ink-soft: #a1a1aa;
   --ink-mute: #71717a;
   --accent: #2200ff;
+  /* BRAND_COLORS.darkSurface: the canonical blue lightened for dark-surface text and focus. */
+  --accent-text: #756CFF;
+  --accent-fill: #2200ff;
   --accent-ink: #ffffff;
   --accent-soft: rgba(34,0,255,.20);
+  --link: #756CFF;
   
   --yr-color-border-soft: rgba(255,255,255,.06);
   --yr-color-surface-soft: rgba(24,24,27,.72);
@@ -192,8 +196,38 @@
 
 :root {
   --accent: #2200ff;
+  --accent-text: #2200ff;
+  --accent-fill: #2200ff;
   --link: #2200ff;
   --accent-soft: color-mix(in srgb, var(--accent) 10%, transparent);
+}
+
+:root[data-theme="dark"] *:focus-visible { outline-color: var(--accent-text); }
+:root[data-theme="dark"] .field input:focus,
+:root[data-theme="dark"] .field select:focus,
+:root[data-theme="dark"] .field textarea:focus {
+  border-color: var(--accent-text);
+  box-shadow: 0 0 0 1px var(--accent-text), 0 0 12px color-mix(in srgb, var(--accent-text) 20%, transparent);
+}
+:root[data-theme="dark"] .switch input:focus-visible + .switch-track,
+:root[data-theme="dark"] .editor-step:focus-visible,
+:root[data-theme="dark"] .yr-toggle input:focus-visible + .yr-slider {
+  outline-color: var(--accent-text);
+}
+:root[data-theme="dark"] a:hover,
+:root[data-theme="dark"] .brand b,
+:root[data-theme="dark"] .live-link a,
+:root[data-theme="dark"] .sort-ind,
+:root[data-theme="dark"] .tab.is-on,
+:root[data-theme="dark"] .c-accent,
+:root[data-theme="dark"] .back-link,
+:root[data-theme="dark"] .lb-cardlink,
+:root[data-theme="dark"] .lb-linkbtn,
+:root[data-theme="dark"] .plan-summary-value,
+:root[data-theme="dark"] .plan-card-note,
+:root[data-theme="dark"] .api-lock-badge,
+:root[data-theme="dark"] .legal-footer-link {
+  color: var(--accent-text);
 }
 
 /* -------------------------------------------------------------------------- */

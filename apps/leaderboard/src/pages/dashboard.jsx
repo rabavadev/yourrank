@@ -3,7 +3,7 @@
 
 import { raw } from "hono/html";
 import { DashboardShell } from "./dashboard-shell.jsx";
-import { brandLoaderLogoSvg } from "@yourrank/shared/brand-assets";
+import { brandLoaderHtml } from "@yourrank/shared/brand-assets";
 import { parseDashboardPath } from "../assets/dashboard/routes.js";
 
 export const dashboardConfig = {
@@ -529,7 +529,7 @@ export function DashboardContent({ user, activePath } = {}) {
     <>
       <div id="loading" class="yr-workspace-loader" role="status" aria-live="polite" aria-busy="true"><span class="sr-only">Loading your dashboard…</span>
 <div class="yr-loader-lockup">
-{raw(brandLoaderLogoSvg())}
+{raw(brandLoaderHtml({ className: "yr-loader-brand-lockup" }))}
 <p id="loadingStatus">Loading your workspace…</p>
 <div class="yr-loader-track" aria-hidden="true"><i></i></div>
 <small>Creator workspace</small>
