@@ -15,6 +15,8 @@ const V4_ACCENT = "#2200ff";
 const sources = {
   app: read("apps/leaderboard/src/assets/app.css"),
   dashboard: read("apps/leaderboard/src/assets/dashboard-v4.css"),
+  dashboardStates: read("apps/leaderboard/src/assets/dashboard/states.js"),
+  dashboardPage: read("apps/leaderboard/src/pages/dashboard.jsx"),
   landing: read("apps/leaderboard/src/assets/landing.css"),
   ui: read("apps/leaderboard/src/assets/ui.css"),
   publicShell: read("apps/leaderboard/src/assets/site-shell.css"),
@@ -75,6 +77,22 @@ describe("design tokens", () => {
     expect(scale).toContain("h3,\n.v3-dash[data-auth-workspace] h4");
     expect(scale).toContain("font-size: var(--v4-type-card-size);");
     expect(scale).toContain("font-size: var(--v4-type-meta-size);");
+    const sectionHeading = scale.match(/\.v3-dash\[data-auth-workspace\] h2\s*\{([^}]*)\}/)?.[1] || "";
+    expect(sectionHeading).toContain("font-size: var(--v4-type-section-size);");
+    expect(scale).not.toMatch(/\.v3-section-head h2[\s\S]*?font-size:\s*var\(--v4-type-card-size\)/);
+    expect(sources.dashboard).toContain("font: 700 var(--v4-type-page-size)/var(--v4-type-page-leading) var(--v3-sans);");
+    expect(sources.dashboard).not.toMatch(/\.v3-dash\[data-auth-workspace\] \.v3-head h1\s*\{\s*font-size:\s*(?:26|28)px/);
+    expect(sources.dashboardStates).not.toContain("<h2");
+    expect(sources.dashboardPage).not.toMatch(/<div class="card"[^>]*><h2\b/);
+    expect(sources.dashboardPage).not.toContain("<h2");
+    const headingSizes = [...sources.dashboard.matchAll(/([^{}]+)\{([^{}]*)\}/g)]
+      .filter(([, selector]) => /(?:^|[\s>+~,.])h[1-6](?:$|[\s.#:>+~,.])/.test(selector))
+      .flatMap(([, , declarations]) => [
+        ...declarations.matchAll(/font-size:\s*(\d+(?:\.\d+)?)px/g),
+        ...declarations.matchAll(/font:\s*[^;]*?\s(\d+(?:\.\d+)?)px(?:\/|[\s])/g),
+      ])
+      .map(([, size]) => Number(size));
+    expect(headingSizes.every((size) => size >= 15)).toBe(true);
   });
 
   it("keeps each accent and status token owned by one stylesheet", () => {

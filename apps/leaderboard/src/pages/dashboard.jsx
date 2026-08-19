@@ -107,7 +107,7 @@ function OverviewSection({ active } = {}) {
 <div class="ov-command-grid" id="ovCommandGrid">
 <aside id="ovOnboardingBento" hidden>
 <div class="ov-setup">
-<div class="ov-setup-progress"><div class="ov-setup-head"><div class="ov-summary-copy"><span class="ov-summary-status"><i aria-hidden="true"></i><span id="ovPublishedStatus">Checking your site…</span></span><h2 id="ovSiteState">Finish the essentials</h2><p id="ovSetupMessage">Complete the essentials, then publish.</p></div><span class="ov-setup-count" id="ovSetupCount">0 of 3 done</span></div><div class="ov-setup-bar" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="3" aria-labelledby="ovSetupCount" id="ovSetupBar"><i id="ovSetupFill"></i></div><div class="ov-summary-actions"><a class="v3-btn v3-btn--sm v3-btn--accent" id="ovSetupAction" href="/dashboard/leaderboard/setup">Continue setup</a><div class="ov-summary-links"><a href="/dashboard/leaderboard/setup">Edit site</a><a href="/dashboard/leaderboard/share">Share site</a></div></div></div>
+<div class="ov-setup-progress"><div class="ov-setup-head"><div class="ov-summary-copy"><span class="ov-summary-status"><i aria-hidden="true"></i><span id="ovPublishedStatus">Checking your site…</span></span><h3 id="ovSiteState">Finish the essentials</h3><p id="ovSetupMessage">Complete the essentials, then publish.</p></div><span class="ov-setup-count" id="ovSetupCount">0 of 3 done</span></div><div class="ov-setup-bar" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="3" aria-labelledby="ovSetupCount" id="ovSetupBar"><i id="ovSetupFill"></i></div><div class="ov-summary-actions"><a class="v3-btn v3-btn--sm v3-btn--accent" id="ovSetupAction" href="/dashboard/leaderboard/setup">Continue setup</a><div class="ov-summary-links"><a href="/dashboard/leaderboard/setup">Edit site</a><a href="/dashboard/leaderboard/share">Share site</a></div></div></div>
 </div></aside>
 </div>
 <div id="ovActiveBento"><div class="ov-live" aria-label="Site performance">
@@ -135,7 +135,7 @@ function OverviewSection({ active } = {}) {
   </div>
 </div>
 
-<div class="ov-live-grid"><section class="ov-live-card" aria-label="Recent activity"><div class="ov-live-card-head"><h2>Recent activity</h2><button class="lb-cardlink kpi-action ov-analytics-link" id="ovAnalyticsLink" type="button" data-jump="performance">See full stats →</button></div><div class="ov-activity-list" id="ovActivityList"></div><div class="ov-card-empty" id="ovActivityEmpty" hidden></div></section><section class="ov-live-card" aria-label="Top players"><div class="ov-live-card-head"><h2>Top players</h2><a class="kpi-action" href="/dashboard/leaderboard/players">All players →</a></div><div class="ov-players-list" id="ovTopPlayers"></div><div class="ov-card-empty" id="ov_topEmpty" hidden></div></section></div>
+<div class="ov-live-grid"><section class="ov-live-card" aria-label="Recent activity"><div class="ov-live-card-head"><h3>Recent activity</h3><button class="lb-cardlink kpi-action ov-analytics-link" id="ovAnalyticsLink" type="button" data-jump="performance">See full stats →</button></div><div class="ov-activity-list" id="ovActivityList"></div><div class="ov-card-empty" id="ovActivityEmpty" hidden></div></section><section class="ov-live-card" aria-label="Top players"><div class="ov-live-card-head"><h3>Top players</h3><a class="kpi-action" href="/dashboard/leaderboard/players">All players →</a></div><div class="ov-players-list" id="ovTopPlayers"></div><div class="ov-card-empty" id="ov_topEmpty" hidden></div></section></div>
 </div></div>
 </section>
   );
@@ -149,19 +149,19 @@ function EditorSection({ active, activeHash = "setup", showTabs = active } = {})
 <div class="design-controls">
 {showTabs ? <LeaderboardTabs active={activeHash} /> : null}
 <h1 class="v3-section-title" data-egroup="setup">Setup</h1>
-<div class="card" data-egroup="setup"><h2>Your leaderboard info</h2><p class="card-sub">This is what visitors see when they open your site.</p><div class="grid2">
+<div class="card" data-egroup="setup"><h3>Your leaderboard info</h3><p class="card-sub">This is what visitors see when they open your site.</p><div class="grid2">
 <div class="field"><label for="f_name">Leaderboard name</label><input id="f_name" /></div>
 <div class="field"><label for="f_tagline">Tagline</label><input id="f_tagline" placeholder="Stream community leaderboard" /></div>
 <div class="field"><label for="f_casino">Sponsor name</label><input id="f_casino" placeholder="Your brand or sponsor" /></div>
 <div class="field"><label for="f_code">Promo code</label><input id="f_code" placeholder="OPTIONAL" /></div>
 <div class="field"><label for="f_cta">Sponsor website</label><input id="f_cta" placeholder="https://example.com" /></div>
 <div class="field field--full"><label for="f_blurb">About your sponsor</label><textarea id="f_blurb" rows="2" placeholder="Short pitch about the sponsor and your code (optional)."></textarea></div></div></div>
-<div class="card" data-egroup="setup"><h2>Race schedule</h2><p class="card-sub">Set when your leaderboard competition ends.</p><div class="grid2">
+<div class="card" data-egroup="setup"><h3>Race schedule</h3><p class="card-sub">Set when your leaderboard competition ends.</p><div class="grid2">
 <div class="field"><label for="f_pool">Prize pool</label><input id="f_pool" placeholder="$500" /></div>
 <div class="field"><label for="f_period">Race runs</label><select id="f_period"><option>Weekly</option><option selected>Monthly</option><option>Season</option></select></div>
 <div class="field"><label for="f_ends">Race ends on</label><input id="f_ends" type="datetime-local" /><span class="hint" id="f_ends_hint">When the leaderboard resets, shown in your local time. Powers the live timer.</span></div>
 <div class="field field--full"><label class="chk"><input type="checkbox" id="f_auto_reset" /> Automatically start a new race when this one ends</label><label class="sr-only" for="f_auto_reset_clear">What to reset when the race ends</label><select id="f_auto_reset_clear" disabled class="mt-8"><option value="wagers">Reset everyone's scores to zero</option><option value="players">Remove all players and start fresh</option><option value="none">Keep everything as-is</option></select><span class="hint">Your current standings will be saved automatically before the reset.</span></div></div></div>
-<div class="card" data-egroup="setup"><h2>Access &amp; visibility</h2><p class="card-sub">Control who can see your leaderboard.</p>
+<div class="card" data-egroup="setup"><h3>Access &amp; visibility</h3><p class="card-sub">Control who can see your leaderboard.</p>
 <div class="field field--full"><label class="chk"><input type="checkbox" id="f_password_enabled" /> Require a password to view this site</label><input id="f_password" type="password" placeholder="Leave blank to keep current password" disabled class="mt-8" /><span class="hint">Visitors must enter this password before seeing the leaderboard.</span></div>
 <p class="hint mt-14">Use the <b>Publish</b> button at the top right to make your site live.</p></div>
 <div class="v3-players" data-egroup="players">
@@ -184,7 +184,7 @@ function EditorSection({ active, activeHash = "setup", showTabs = active } = {})
 <div class="v3-table-foot" id="playersFoot"><span id="playersShowing">No players</span><span class="v3-pager"><button class="v3-btn v3-btn--sm" id="playersPrev" type="button">Previous</button><button class="v3-btn v3-btn--sm" id="playersNext" type="button">Next</button></span></div>
 <div id="playersEmpty" class="v3-empty" hidden>
 <span class="v3-empty-ic" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>
-<h2>No players yet</h2>
+<h3>No players yet</h3>
 <p>Start by adding players manually, or import them all at once from a spreadsheet.</p>
 <div class="v3-empty-actions"><button class="v3-btn v3-btn--accent" id="emptyImportBtn" type="button">Import players</button><button class="v3-btn" id="emptyPasteBtn" type="button">Paste from clipboard</button></div>
 </div>
@@ -206,9 +206,9 @@ function EditorSection({ active, activeHash = "setup", showTabs = active } = {})
 </div>
 <div class="v3-bulkbar" id="bulkActions" role="toolbar" aria-label="Bulk actions" hidden><span class="v3-bulkbar-mark" aria-hidden="true"></span><span id="bulkCount" role="status" aria-live="polite" aria-atomic="true">0 players selected</span><span class="v3-bulkbar-sep" aria-hidden="true"></span><button class="v3-btn v3-btn--dark" id="bulkClearWager" type="button">Reset scores to zero</button><button class="v3-btn v3-btn--danger" id="bulkDelete" type="button">Remove selected players</button></div>
 </div>
-<div class="card" data-egroup="design" id="playerFieldsCard"><h2>Player table columns</h2><p class="card-sub">Choose which extra columns show on the player table.</p><a class="btn btn--sm btn--ghost" id="playerFieldsLink" href="/dashboard/leaderboard/players">Manage columns in Players →</a></div>
+<div class="card" data-egroup="design" id="playerFieldsCard"><h3>Player table columns</h3><p class="card-sub">Choose which extra columns show on the player table.</p><a class="btn btn--sm btn--ghost" id="playerFieldsLink" href="/dashboard/leaderboard/players">Manage columns in Players →</a></div>
 <div class="design-group-heading" data-egroup="design"><h3>Appearance</h3></div>
-<div class="card" data-egroup="design" id="brandCard"><h2>Your brand <span class="pill pill--info ml-6">PRO</span></h2><p class="card-sub">Add your logo and pick your colors. Upgrade to Pro to customize.</p>
+<div class="card" data-egroup="design" id="brandCard"><h3>Your brand <span class="pill pill--info ml-6">PRO</span></h3><p class="card-sub">Add your logo and pick your colors. Upgrade to Pro to customize.</p>
 <div id="brandBody">
 <div class="grid2">
 <div class="field"><label for="logoFile">Your logo</label>
@@ -244,10 +244,10 @@ function EditorSection({ active, activeHash = "setup", showTabs = active } = {})
 <div class="field"><label for="f_font">Text style</label><select id="f_font"><option value="Inter">Inter — Default</option><option value="Oswald">Oswald — Bold &amp; Sporty</option><option value="Playfair Display">Playfair Display — Premium &amp; Elegant</option><option value="Rajdhani">Rajdhani — Techy &amp; Esports</option><option value="Bebas Neue">Bebas Neue — Impact &amp; Hype</option></select><span class="hint">Changes the personality of your public page text.</span></div>
 </div></div>
 <div class="empty upsell-card" id="brandLock" hidden>Branding is a Pro feature. <a href="/dashboard/settings/plan?from=branding" id="brandUpgrade">Upgrade to Pro to unlock branding</a>.</div></div>
-<div class="card" data-egroup="design" id="sectionsCard"><h2>Layout &amp; blocks <span class="pill pill--info ml-6">PRO</span></h2><p class="card-sub">Choose what appears on your public page.</p>
+<div class="card" data-egroup="design" id="sectionsCard"><h3>Layout &amp; blocks <span class="pill pill--info ml-6">PRO</span></h3><p class="card-sub">Choose what appears on your public page.</p>
 <div id="sectionsBody"><div class="sections-editor" id="sectionsList"></div></div>
 <div class="empty upsell-card" id="sectionsLock" hidden>Page block controls are a Pro feature. <a href="/dashboard/settings/plan?from=sections" id="sectionsUpgrade">Upgrade to unlock them</a>.</div></div>
-<div class="card" data-egroup="design" id="prizesCard"><h2>Prize labels <span class="pill pill--info ml-6">PRO</span></h2><p class="card-sub">Customize the text labels shown next to prizes and the countdown timer.</p>
+<div class="card" data-egroup="design" id="prizesCard"><h3>Prize labels <span class="pill pill--info ml-6">PRO</span></h3><p class="card-sub">Customize the text labels shown next to prizes and the countdown timer.</p>
 <div id="prizesBody">
 <div class="grid2">
 <div class="field"><label for="f_prizePoolLabel">Prize pool label</label><input type="text" id="f_prizePoolLabel" placeholder="Prize pool" /></div>
@@ -259,10 +259,10 @@ function EditorSection({ active, activeHash = "setup", showTabs = active } = {})
 </div>
 <div class="empty upsell-card" id="prizesLock" hidden>Prize customization is a Pro feature. <a href="/dashboard/settings/plan?from=prizes" id="prizesUpgrade">Upgrade to unlock it</a>.</div></div>
 <div class="design-group-heading" data-egroup="design"><h3>Content</h3></div>
-<div class="card" data-egroup="design" id="socialsCard"><h2>Social links</h2><p class="card-sub">Add your social media profiles. Toggle each one on or off to control what appears on your page.</p>
+<div class="card" data-egroup="design" id="socialsCard"><h3>Social links</h3><p class="card-sub">Add your social media profiles. Toggle each one on or off to control what appears on your page.</p>
 <div class="socials-editor" id="socialsList"></div></div>
 <h1 class="v3-section-title" data-egroup="design">Look</h1>
-<div class="card" data-egroup="share" id="embedShareCard"><h1 class="v3-section-title">Share</h1><h2>Share your leaderboard</h2><p class="card-sub">Get your link, add it to your stream, or embed it on a website.</p>
+<div class="card" data-egroup="share" id="embedShareCard"><h1 class="v3-section-title">Share</h1><h3>Share your leaderboard</h3><p class="card-sub">Get your link, add it to your stream, or embed it on a website.</p>
 <div class="field"><label>Your public link</label><div class="d-flex gap-8 items-center flex-wrap"><code id="embedPublicLink" class="overlay-url"></code><button class="btn btn--sm btn--accent ic-btn" id="embedPublicCopy" type="button"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg> Copy</button></div></div>
 <div class="embed-obs-box"><div class="d-flex items-center gap-8 mb-8"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect width="20" height="14" x="2" y="3" rx="2" ry="2"/><line x1="8" x2="16" y1="21" y2="21"/><line x1="12" x2="12" y1="17" y2="21"/></svg><b class="font-14">Stream overlay</b></div><p class="hint mb-8">Add this URL as a Browser Source in OBS, Streamlabs, or any streaming software.</p><div class="field mb-8"><div class="d-flex gap-8 items-center flex-wrap"><code id="embedObsUrl" class="overlay-url"></code><button class="btn btn--sm btn--accent ic-btn" id="embedObsCopy" type="button"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg> Copy</button></div></div><div class="embed-obs-row"><div><span class="hint">Width</span><div class="embed-obs-dim" id="embedObsWidth">1100px</div></div><div><span class="hint">Height</span><div class="embed-obs-dim" id="embedObsHeight">auto</div></div></div><div class="embed-tip"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="16" y2="12"/><line x1="12" x2="12.01" y1="8" y2="8"/></svg><span>For best results, uncheck "Shutdown source when not visible" in OBS so the overlay stays live while switching scenes.</span></div></div>
 <div class="empty upsell-card" id="embedObsLock" hidden>Stream overlays are available on Starter and higher plans. <a href="/dashboard/settings/plan?from=overlay" id="overlayUpgrade">Upgrade your plan</a> to add this leaderboard to OBS, Streamlabs, or another streaming app.</div>
@@ -285,7 +285,7 @@ function EditorSection({ active, activeHash = "setup", showTabs = active } = {})
 <div class="design-preview">
 <div class="card">
 <div class="preview-header">
-<div class="preview-header-text"><h2>Live Preview</h2><p class="preview-sub">Click elements on the board to edit them directly.</p></div>
+<div class="preview-header-text"><h3>Live Preview</h3><p class="preview-sub">Click elements on the board to edit them directly.</p></div>
 <div class="preview-actions">
 <div class="preview-tabs" role="tablist" aria-label="Preview device"><button class="preview-tab is-active" data-width="1100" data-device="desktop" type="button" role="tab" aria-selected="true">Desktop</button><button class="preview-tab" data-width="390" data-device="mobile" type="button" role="tab" aria-selected="false">Mobile</button></div>
 <span class="v3-chip v3-chip--pro preview-sync" id="previewSyncStatus">SYNCED</span>
@@ -322,12 +322,12 @@ function GamesSection({ active } = {}) {
         <div id="gamesSectionRows"></div>
       </div>
       <div class="v3-table-card v3-game-card">
-        <div class="v3-card-head"><div><h2>Game settings</h2><p class="v3-head-sub">Configure constraints for credit-based viewer games</p></div></div>
+        <div class="v3-card-head"><div><h3>Game settings</h3><p class="v3-head-sub">Configure constraints for credit-based viewer games</p></div></div>
         <div id="gameSettingRows"></div>
         <div class="v3-note">All games use credits only. Outcomes are server-determined and provably fair.</div>
       </div>
       <div class="v3-table-card v3-block-card">
-        <div class="v3-card-head"><div><h2>Page blocks</h2><p class="v3-head-sub">Choose which blocks appear on your leaderboard page</p></div><span class="v3-chip v3-chip--pro">PRO</span></div>
+        <div class="v3-card-head"><div><h3>Page blocks</h3><p class="v3-head-sub">Choose which blocks appear on your leaderboard page</p></div><span class="v3-chip v3-chip--pro">PRO</span></div>
         <div class="v3-block-grid" id="leaderboardBlockRows"></div>
         <div class="v3-note" id="leaderboardBlockNote">Block visibility follows your site settings.</div>
       </div>
@@ -336,7 +336,7 @@ function GamesSection({ active } = {}) {
       <div class="v3-table-card v3-games-preview-card">
         <div class="v3-card-head">
           <div>
-            <h2>Live Game Preview</h2>
+            <h3>Live Game Preview</h3>
             <p class="v3-head-sub">Play &amp; test interactive sandbox with 2,500 demo points</p>
           </div>
           <div class="v3-game-preview-tabs" role="tablist" aria-label="Preview game selection">
@@ -378,15 +378,15 @@ function AnalyticsSection({ active, activeHash = "activity" } = {}) {
     <div class="v3-kpi-card"><div class="v3-kpi-label">Share rate (%) <button type="button" class="v3-hint-btn" aria-label="Metric help"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="16" y2="12"/><line x1="12" x2="12.01" y1="8" y2="8"/></svg><span class="v3-tooltip" role="tooltip">The percentage of visitors who clicked your share link.</span></button></div><div class="v3-kpi-value-row"><strong id="perfKpiCtr"><span class="skeleton v3-skel-kpi" aria-hidden="true"></span></strong><span class="v3-delta" id="perfKpiCtrDelta"></span></div></div>
   </div>
   <div class="v3-perf-panel" data-perf-panel="activity" id="perf-activity">
-    <div class="v3-table-card v3-chart-card"><div class="v3-card-head"><h2>Page visits over time</h2><span class="v3-chart-total">Total visits: <b id="perfTotalViews"><span class="skeleton v3-skel-kpi" aria-hidden="true"></span></b></span></div><div id="statBars" class="v3-line-chart" role="img" aria-label="Daily visits over time"></div><div class="v3-empty" id="statsEmpty" hidden></div></div>
-    <div class="v3-table-card v3-activity-table-card"><div class="v3-card-head"><h2>Day by day</h2><a class="v3-btn" href="/api/site/stats/export" id="perfExport">Export CSV</a></div><div class="v3-table-scroll"><table class="v3-table"><thead><tr><th>Date</th><th class="num">Visits</th><th class="num">Link clicks</th><th class="num">Link shares</th><th class="num">Share rate (%)</th></tr></thead><tbody id="perfActivityBody"></tbody></table></div><div class="v3-empty" id="perfActivityEmpty" hidden></div></div>
-    <div class="v3-table-card" id="perf-heatmap"><div class="v3-card-head"><div><h2>When visitors come</h2><p class="v3-head-sub">Which days and times get the most traffic.</p></div></div><div class="heatmap-wrap"><div class="heatmap" id="perfHeatmapGrid"><span class="skeleton v3-skel-heatmap" aria-hidden="true"></span></div></div></div>
+    <div class="v3-table-card v3-chart-card"><div class="v3-card-head"><h3>Page visits over time</h3><span class="v3-chart-total">Total visits: <b id="perfTotalViews"><span class="skeleton v3-skel-kpi" aria-hidden="true"></span></b></span></div><div id="statBars" class="v3-line-chart" role="img" aria-label="Daily visits over time"></div><div class="v3-empty" id="statsEmpty" hidden></div></div>
+    <div class="v3-table-card v3-activity-table-card"><div class="v3-card-head"><h3>Day by day</h3><a class="v3-btn" href="/api/site/stats/export" id="perfExport">Export CSV</a></div><div class="v3-table-scroll"><table class="v3-table"><thead><tr><th>Date</th><th class="num">Visits</th><th class="num">Link clicks</th><th class="num">Link shares</th><th class="num">Share rate (%)</th></tr></thead><tbody id="perfActivityBody"></tbody></table></div><div class="v3-empty" id="perfActivityEmpty" hidden></div></div>
+    <div class="v3-table-card" id="perf-heatmap"><div class="v3-card-head"><div><h3>When visitors come</h3><p class="v3-head-sub">Which days and times get the most traffic.</p></div></div><div class="heatmap-wrap"><div class="heatmap" id="perfHeatmapGrid"><span class="skeleton v3-skel-heatmap" aria-hidden="true"></span></div></div></div>
   </div>
   <div class="v3-perf-panel" data-perf-panel="referrals" id="perf-referrals" hidden>
-    <div class="v3-table-card"><div class="v3-card-head"><div><h2>Earn free Pro days</h2><p class="v3-head-sub">Share your link. Every sign-up adds 31 days of Pro.</p></div></div><div class="v3-ref-link-row"><input id="refLink" readonly aria-label="Your referral link" value="" /><button class="v3-btn v3-btn--accent" id="refCopy" type="button">Copy link</button></div><div class="v3-stat-tiles"><div><b id="refCount"><span class="skeleton v3-skel-kpi" aria-hidden="true"></span></b><span>Streamers joined</span></div><div><b id="refDays"><span class="skeleton v3-skel-kpi" aria-hidden="true"></span></b><span>Free Pro days earned</span></div><div><b id="refSaved"><span class="skeleton v3-skel-kpi" aria-hidden="true"></span></b><span>Estimated value</span></div></div><p id="refStatus" role="status" aria-live="polite"></p></div>
-    <div class="v3-table-card" id="perf-referrers"><div class="v3-card-head"><h2>Where your visitors come from</h2></div><div class="v3-table-scroll"><table class="v3-table"><thead><tr><th>DOMAIN</th><th class="num">VISITS</th></tr></thead><tbody id="perfReferrersBody"></tbody></table></div><div class="v3-empty" id="perfReferrersEmpty" hidden></div></div>
+    <div class="v3-table-card"><div class="v3-card-head"><div><h3>Earn free Pro days</h3><p class="v3-head-sub">Share your link. Every sign-up adds 31 days of Pro.</p></div></div><div class="v3-ref-link-row"><input id="refLink" readonly aria-label="Your referral link" value="" /><button class="v3-btn v3-btn--accent" id="refCopy" type="button">Copy link</button></div><div class="v3-stat-tiles"><div><b id="refCount"><span class="skeleton v3-skel-kpi" aria-hidden="true"></span></b><span>Streamers joined</span></div><div><b id="refDays"><span class="skeleton v3-skel-kpi" aria-hidden="true"></span></b><span>Free Pro days earned</span></div><div><b id="refSaved"><span class="skeleton v3-skel-kpi" aria-hidden="true"></span></b><span>Estimated value</span></div></div><p id="refStatus" role="status" aria-live="polite"></p></div>
+    <div class="v3-table-card" id="perf-referrers"><div class="v3-card-head"><h3>Where your visitors come from</h3></div><div class="v3-table-scroll"><table class="v3-table"><thead><tr><th>DOMAIN</th><th class="num">VISITS</th></tr></thead><tbody id="perfReferrersBody"></tbody></table></div><div class="v3-empty" id="perfReferrersEmpty" hidden></div></div>
   </div>
-  <div class="v3-perf-panel" data-perf-panel="events" id="perf-events" hidden><div class="v3-table-card"><div class="v3-card-head"><h2>Activity log</h2><p class="v3-head-sub">A record of recent automatic score updates and link shares.</p></div><ul class="events-list" id="eventsList"></ul><div class="v3-empty" id="eventsEmpty"></div></div></div>
+  <div class="v3-perf-panel" data-perf-panel="events" id="perf-events" hidden><div class="v3-table-card"><div class="v3-card-head"><h3>Activity log</h3><p class="v3-head-sub">A record of recent automatic score updates and link shares.</p></div><ul class="events-list" id="eventsList"></ul><div class="v3-empty" id="eventsEmpty"></div></div></div>
   <details class="metric-glossary"><summary>What these numbers mean</summary><dl><div><dt>Page visits</dt><dd>How many times someone opened your public leaderboard page.</dd></div><div><dt>Sponsor link clicks</dt><dd>How many times someone clicked your sponsor or share link.</dd></div><div><dt>Times link was shared</dt><dd>How many times someone copied your link to share it.</dd></div><div><dt>Share rate (%)</dt><dd>The percentage of visitors who clicked your share link.</dd></div><div><dt>Traffic sources</dt><dd>Websites that sent viewers to your site, when their browser reports them.</dd></div><div><dt>Activity log</dt><dd>Recent automatic score updates and link shares recorded for this site.</dd></div></dl></details>
 </div>
 </section>
@@ -413,18 +413,18 @@ function BoardSettingsSection({ active } = {}) {
     <button class="v3-tab" id="settingsTabSupport" type="button" role="tab" aria-selected="false" aria-controls="settingsPanelSupport" data-settings-tab="support">Support</button>
   </div>
   <section class="v3-settings-panel" id="settingsPanelAccess" role="tabpanel" aria-labelledby="settingsTabAccess" data-settings-panel="access">
-    <div class="v3-settings-card"><div class="v3-settings-row"><div><h2>Visibility &amp; password</h2><p>You can require a password before anyone can view this leaderboard.</p></div><a class="v3-set-btn v3-set-btn--outline" id="settingsBoardAccessLink" href="/dashboard/leaderboard/setup">Change access settings</a></div></div>
-    <div class="v3-settings-card"><div class="v3-settings-row v3-settings-row--top"><div><h2>Discord notifications <span class="v3-chip v3-chip--pro">PRO</span></h2><p>Get a Discord message when your leaderboard resets or a player reaches the top 3.</p></div><input class="v3-toggle" id="settingsWebhookEnabled" type="checkbox" aria-label="Enable Discord notifications" /></div><div class="v3-settings-notify-body" id="notifyBody"><div class="v3-settings-inline-form"><input id="f_webhook" aria-label="Discord connection URL" placeholder="Paste your Discord webhook URL here" /><button class="v3-set-btn v3-set-btn--outline" id="testDiscord" type="button">Send test message</button><span class="v3-settings-status" id="testDiscordStatus" role="status"></span></div><p class="v3-settings-muted">In Discord, open Channel settings → Integrations → Webhooks, then choose Copy Webhook URL.</p></div><div class="v3-settings-inline" id="notifyLock" hidden>Notifications are a Pro feature. <a href="/dashboard/settings/plan?from=notifications">Upgrade to unlock them</a>.</div></div>
+    <div class="v3-settings-card"><div class="v3-settings-row"><div><h3>Visibility &amp; password</h3><p>You can require a password before anyone can view this leaderboard.</p></div><a class="v3-set-btn v3-set-btn--outline" id="settingsBoardAccessLink" href="/dashboard/leaderboard/setup">Change access settings</a></div></div>
+    <div class="v3-settings-card"><div class="v3-settings-row v3-settings-row--top"><div><h3>Discord notifications <span class="v3-chip v3-chip--pro">PRO</span></h3><p>Get a Discord message when your leaderboard resets or a player reaches the top 3.</p></div><input class="v3-toggle" id="settingsWebhookEnabled" type="checkbox" aria-label="Enable Discord notifications" /></div><div class="v3-settings-notify-body" id="notifyBody"><div class="v3-settings-inline-form"><input id="f_webhook" aria-label="Discord connection URL" placeholder="Paste your Discord webhook URL here" /><button class="v3-set-btn v3-set-btn--outline" id="testDiscord" type="button">Send test message</button><span class="v3-settings-status" id="testDiscordStatus" role="status"></span></div><p class="v3-settings-muted">In Discord, open Channel settings → Integrations → Webhooks, then choose Copy Webhook URL.</p></div><div class="v3-settings-inline" id="notifyLock" hidden>Notifications are a Pro feature. <a href="/dashboard/settings/plan?from=notifications">Upgrade to unlock them</a>.</div></div>
     <div class="v3-settings-card v3-danger-card"><div class="v3-danger-lbl">DANGER ZONE</div><div class="v3-settings-row"><div><b>Wipe all scores and history</b><p>Deletes all player scores, prize amounts, and activity history. This cannot be undone.</p></div><button class="v3-set-btn v3-set-btn--danger-outline" id="settingsResetData" type="button">Reset everything</button></div><div class="v3-settings-row"><div><b>Delete this site</b><p>Permanently delete this site and its settings. This action cannot be undone.</p></div><button class="v3-set-btn v3-set-btn--danger" id="settingsDeleteBoard" type="button">Delete site</button></div></div>
   </section>
   <section class="v3-settings-panel" id="settingsPanelIntegrations" role="tabpanel" aria-labelledby="settingsTabIntegrations" data-settings-panel="integrations" hidden>
-    <div class="v3-settings-card"><div class="v3-settings-card-head"><div><h2>Integrations</h2><p>Connect Kick rewards, set up notifications, and add legal pages to your site.</p></div></div><div class="v3-settings-row"><div><b>Kick channel rewards</b><p>Let viewers earn credits by claiming Kick channel rewards.</p><span class="v3-settings-muted" id="kickStatus"><span class="skeleton skeleton-text" aria-hidden="true"></span></span></div><a class="v3-set-btn v3-set-btn--outline" href="/dashboard/rewards/channel" id="kickRewardsLink">Open Kick connection</a></div><div class="v3-settings-row"><div><b>Automatic score updates</b><p id="postbackStatus">Let your sponsor update scores automatically without manual imports.</p></div><a class="v3-set-btn v3-set-btn--outline" href="/dashboard/settings/connections">Set up automatic updates</a></div><div class="v3-settings-divider"></div><div class="v3-settings-notify-account"><label class="v3-settings-label" for="f_tgChatId">Telegram group ID</label><input id="f_tgChatId" placeholder="Enter your group or chat ID" /><p class="v3-settings-muted">You can find your group ID using the @getidsbot on Telegram.</p><label class="v3-settings-check"><input type="checkbox" id="f_tgNotify" /> Send notifications to this Telegram group</label><button class="v3-set-btn v3-set-btn--outline" id="testTelegram" type="button">Send a test message</button><span class="v3-settings-status" id="testTelegramStatus" role="status"></span></div><div class="v3-settings-divider"></div><div class="v3-settings-legal"><h3>Legal pages</h3><div id="legalList"></div><div id="legalFooterPreview" class="v3-settings-muted"></div></div></div>
+    <div class="v3-settings-card"><div class="v3-settings-card-head"><div><h3>Integrations</h3><p>Connect Kick rewards, set up notifications, and add legal pages to your site.</p></div></div><div class="v3-settings-row"><div><b>Kick channel rewards</b><p>Let viewers earn credits by claiming Kick channel rewards.</p><span class="v3-settings-muted" id="kickStatus"><span class="skeleton skeleton-text" aria-hidden="true"></span></span></div><a class="v3-set-btn v3-set-btn--outline" href="/dashboard/rewards/channel" id="kickRewardsLink">Open Kick connection</a></div><div class="v3-settings-row"><div><b>Automatic score updates</b><p id="postbackStatus">Let your sponsor update scores automatically without manual imports.</p></div><a class="v3-set-btn v3-set-btn--outline" href="/dashboard/settings/connections">Set up automatic updates</a></div><div class="v3-settings-divider"></div><div class="v3-settings-notify-account"><label class="v3-settings-label" for="f_tgChatId">Telegram group ID</label><input id="f_tgChatId" placeholder="Enter your group or chat ID" /><p class="v3-settings-muted">You can find your group ID using the @getidsbot on Telegram.</p><label class="v3-settings-check"><input type="checkbox" id="f_tgNotify" /> Send notifications to this Telegram group</label><button class="v3-set-btn v3-set-btn--outline" id="testTelegram" type="button">Send a test message</button><span class="v3-settings-status" id="testTelegramStatus" role="status"></span></div><div class="v3-settings-divider"></div><div class="v3-settings-legal"><h3>Legal pages</h3><div id="legalList"></div><div id="legalFooterPreview" class="v3-settings-muted"></div></div></div>
   </section>
   <section class="v3-settings-panel" id="settingsPanelDomain" role="tabpanel" aria-labelledby="settingsTabDomain" data-settings-panel="domain" hidden>
     <div class="v3-settings-card" id="domainManageCard" hidden>
       <div class="v3-settings-card-head">
         <div>
-          <h2>Your custom domain</h2>
+          <h3>Your custom domain</h3>
           <p>Active custom domain connected to this site.</p>
         </div>
         <span class="v3-chip v3-chip--fulfilled" id="domainManageBadge">● Active</span>
@@ -445,7 +445,7 @@ function BoardSettingsSection({ active } = {}) {
     <div class="v3-settings-card" id="domainBuyCard">
       <div class="v3-settings-card-head">
         <div>
-          <h2>⚡ Buy a custom domain (1-Click Setup)</h2>
+          <h3>⚡ Buy a custom domain (1-Click Setup)</h3>
           <p>Search, register, and connect your brand domain with instant automated DNS and free SSL.</p>
         </div>
       </div>
@@ -462,7 +462,7 @@ function BoardSettingsSection({ active } = {}) {
     <div class="v3-settings-card" id="domainConnectCard">
       <div class="v3-settings-card-head">
         <div>
-          <h2>Connect an existing domain you already own</h2>
+          <h3>Connect an existing domain you already own</h3>
           <p>If you already purchased a domain on GoDaddy, Namecheap, or Cloudflare, connect it via CNAME.</p>
         </div>
       </div>
@@ -476,7 +476,7 @@ function BoardSettingsSection({ active } = {}) {
       <div class="v3-settings-inline" id="domainLock" hidden>Custom domains are a Pro feature. <a href="/dashboard/settings/plan?from=domain">Upgrade to unlock it</a>.</div>
     </div>
   </section>
-  <section class="v3-settings-panel" id="settingsPanelSupport" role="tabpanel" aria-labelledby="settingsTabSupport" data-settings-panel="support" hidden><div class="v3-settings-card"><div class="v3-settings-card-head"><div><h2>Help &amp; support</h2><p>Find help and manage the tools around your public site.</p></div></div><div class="v3-settings-row"><div><b>Stream overlay</b><p>Get your stream overlay link and embed code.</p></div><a class="v3-set-btn v3-set-btn--outline" href="/dashboard/leaderboard/share">Go to sharing</a></div><div class="v3-settings-row"><div><b>Need help?</b><p>Read the operator help hub or contact support.</p></div><a class="v3-set-btn v3-set-btn--outline" href="/help">Open help hub</a><a class="v3-set-btn v3-set-btn--outline" href="/help/support">Contact support</a></div></div></section>
+  <section class="v3-settings-panel" id="settingsPanelSupport" role="tabpanel" aria-labelledby="settingsTabSupport" data-settings-panel="support" hidden><div class="v3-settings-card"><div class="v3-settings-card-head"><div><h3>Help &amp; support</h3><p>Find help and manage the tools around your public site.</p></div></div><div class="v3-settings-row"><div><b>Stream overlay</b><p>Get your stream overlay link and embed code.</p></div><a class="v3-set-btn v3-set-btn--outline" href="/dashboard/leaderboard/share">Go to sharing</a></div><div class="v3-settings-row"><div><b>Need help?</b><p>Read the operator help hub or contact support.</p></div><a class="v3-set-btn v3-set-btn--outline" href="/help">Open help hub</a><a class="v3-set-btn v3-set-btn--outline" href="/help/support">Contact support</a></div></div></section>
 </div>
 </section>
   );
@@ -548,7 +548,7 @@ export function DashboardNotFoundContent({ user } = {}) {
           <p class="v3-head-sub">The address may be outdated, or the page may have moved.</p>
         </header>
         <div class="card">
-          <h2>Try one of these destinations</h2>
+          <h3>Try one of these destinations</h3>
           <nav class="v3-tabs" aria-label="Dashboard destinations">
             <a class="v3-tab is-on" href="/dashboard">Overview</a>
             <a class="v3-tab" href="/dashboard/leaderboard/setup">Leaderboard</a>
