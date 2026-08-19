@@ -19,16 +19,34 @@ describe("dashboard startup requests", () => {
 
   it("classifies an unauthenticated response and preserves the destination", async () => {
     await expect(fetchDashboardJson("/api/auth/me", {}, {
-      fetchFn: async () => response({ ok: false, error: "Not authenticated" }, 401),
+      fetchFn: async () => response({ ok: false, error: "unauthorized" }, 401),
     })).rejects.toMatchObject({ code: "AUTH", status: 401 });
+    await expect(fetchDashboardJson("/api/auth/me", {}, {
+      fetchFn: async () => response({ ok: false, code: "UNAUTHORIZED" }),
+    })).rejects.toMatchObject({ code: "AUTH", status: 200 });
     expect(loginRedirectPath({ pathname: "/dashboard/settings", search: "?tab=plan" }))
       .toBe("/login?next=%2Fdashboard%2Fsettings%3Ftab%3Dplan");
+  });
+
+  it("does not treat ordinary expired copy as an authentication error", async () => {
+    await expect(fetchDashboardJson("/api/site", {}, {
+      fetchFn: async () => response({
+        ok: false,
+        error: "This trial has expired; login to view upgrade options.",
+      }),
+    })).rejects.toMatchObject({ code: "REQUEST_FAILED", status: 200 });
   });
 
   it("keeps server failures retryable instead of treating them as auth", async () => {
     await expect(fetchDashboardJson("/api/site", {}, {
       fetchFn: async () => response({ ok: false, error: "Database unavailable" }, 500),
     })).rejects.toMatchObject({ code: "SERVER", status: 500 });
+  });
+
+  it("preserves a 404 status for admin routing decisions", async () => {
+    await expect(fetchDashboardJson("/api/site", {}, {
+      fetchFn: async () => response({ ok: false, error: "No board found." }, 404),
+    })).rejects.toMatchObject({ code: "REQUEST_FAILED", status: 404 });
   });
 
   it("classifies a network failure without redirect semantics", async () => {

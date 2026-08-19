@@ -46,10 +46,10 @@ describe("stylesheets", () => {
     const consentCss = fs.readFileSync(path.join(assetsDir, "cookie-consent.css"), "utf8");
     expect(consentCss).toContain("position: fixed");
     expect(consentCss).toContain("max-width: 100vw");
-    expect(consentCss).toContain("env(safe-area-inset-top)");
     expect(consentCss).toContain("env(safe-area-inset-right)");
     expect(consentCss).toContain("env(safe-area-inset-bottom)");
     expect(consentCss).toContain("env(safe-area-inset-left)");
+    expect(consentCss).not.toContain("env(safe-area-inset-top)");
     expect(consentCss).toContain("var(--z-toast, 200)");
     expect(consentCss).toContain("min-height: 44px");
     expect(consentCss).toContain("@media (max-width: 360px)");

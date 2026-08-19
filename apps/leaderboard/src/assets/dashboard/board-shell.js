@@ -67,6 +67,7 @@ export function preserveSiteContextLinks(activeSiteId = "") {
 }
 
 export async function loadBoardShell({ request: requestFn = boardApi } = {}) {
+  // Injected request functions cannot receive the controller signal, so this path is timeout-raced only.
   const request = requestFn === boardApi
     ? requestFn
     : (method, path) => withDashboardTimeout(() => requestFn(method, path));

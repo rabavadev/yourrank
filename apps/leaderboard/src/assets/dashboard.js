@@ -127,7 +127,7 @@ async function init() {
     if (!p?.ok) throw new DashboardRequestError(p?.error || "The board service returned an unexpected response.", { code: "REQUEST_FAILED" });
   } catch (err) {
     logError("site", err);
-    if (state.ME.isAdmin && err?.message?.includes("HTTP 404")) { location.href = "/admin"; return; }
+    if (state.ME.isAdmin && (err?.status === 404 || err?.message?.includes("HTTP 404"))) { location.href = "/admin"; return; }
     renderSiteLoadError(err?.message || "Network error while loading the board.");
     return;
   }

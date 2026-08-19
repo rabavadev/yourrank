@@ -97,6 +97,8 @@ describe("dashboard routes", () => {
     expect(boundary).not.toContain("notFoundPage(");
     expect(boundaryStart).toBeGreaterThan(-1);
     expect(boundaryStart).toBeLessThan(worker.indexOf("notFoundPage(", boundaryStart));
+    expect(readFileSync(new URL("../assets/dashboard.js", import.meta.url), "utf8"))
+      .toContain("err?.status === 404");
   });
 
   it("keeps dashboard query parameters through client-side login", () => {

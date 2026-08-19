@@ -1,6 +1,6 @@
 export const DASHBOARD_REQUEST_TIMEOUT_MS = 10_000;
 
-const AUTH_ERROR_PATTERN = /\b(auth(?:entication|orization)?|unauthori[sz]ed|forbidden|session|sign[ -]?in|login|expired)\b/i;
+const DASHBOARD_AUTH_ERROR_VALUES = new Set(["unauthorized"]);
 
 export class DashboardRequestError extends Error {
   constructor(message, { code = "REQUEST_FAILED", status = 0, cause } = {}) {
@@ -12,8 +12,9 @@ export class DashboardRequestError extends Error {
 }
 
 export function isDashboardAuthError(body) {
-  const detail = body?.error || body?.message || body?.code || "";
-  return AUTH_ERROR_PATTERN.test(String(detail));
+  return [body?.code, body?.error].some((value) => (
+    typeof value === "string" && DASHBOARD_AUTH_ERROR_VALUES.has(value.trim().toLowerCase())
+  ));
 }
 
 export function loginRedirectPath(locationLike = globalThis.location) {
@@ -99,6 +100,12 @@ export async function fetchDashboardJson(input, init = {}, options = {}) {
   if (!response.ok) {
     throw new DashboardRequestError(body?.error || `The server returned HTTP ${response.status}.`, {
       code: response.status >= 500 ? "SERVER" : "REQUEST_FAILED",
+      status: response.status,
+    });
+  }
+  if (body?.ok === false) {
+    throw new DashboardRequestError(body?.error || `The server returned an unsuccessful response (HTTP ${response.status}).`, {
+      code: "REQUEST_FAILED",
       status: response.status,
     });
   }
