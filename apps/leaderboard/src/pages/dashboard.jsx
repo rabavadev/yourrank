@@ -39,7 +39,7 @@ const SECTION_CRUMBS = {
   board: { label: "Leaderboard", href: "/dashboard/leaderboard/setup" },
   games: { label: "Games", href: "/dashboard/games" },
   performance: { label: "Analytics", href: "/dashboard/analytics/activity" },
-  settings: { label: "Site settings", href: "/dashboard/settings/board" },
+  settings: { label: "Site", href: "/dashboard/settings/board" },
   boards: { label: "Sites", href: "/dashboard/leaderboards" },
 };
 const TAB_LABELS = {
@@ -48,7 +48,7 @@ const TAB_LABELS = {
 };
 
 function LeaderboardTabs({ active }) {
-  return <nav class="editor-steps v3-tabs" aria-label="Leaderboard pages">
+  return <nav class="editor-steps v3-tabs" id="editorTabs" aria-label="Leaderboard pages">
     {BOARD_TABS.map(([key, label, href]) => (
       <a class={"editor-step v3-tab" + (key === active ? " is-active is-on" : "")} href={href} data-egroup={key} aria-current={key === active ? "page" : undefined}>{label}</a>
     ))}
@@ -94,7 +94,7 @@ function dashboardShellRoute(activePath = "") {
 const ROUTE_SECTIONS = {
   home: ["home"],
   board: ["board", "settings"],
-  settings: ["board", "settings"],
+  settings: ["settings"],
   games: ["games"],
   performance: ["performance"],
   boards: ["boards"],
@@ -147,11 +147,7 @@ function EditorSection({ active, activeHash = "setup" } = {}) {
 
 <div class="design-grid">
 <div class="design-controls">
-<nav class="editor-steps v3-tabs" id="editorTabs" aria-label="Leaderboard pages">
-  {BOARD_TABS.map(([key, label, href]) => (
-    <a class={"editor-step v3-tab" + (key === activeHash ? " is-active is-on" : "")} href={href} data-egroup={key} aria-current={key === activeHash ? "page" : undefined}>{label}</a>
-  ))}
-</nav>
+<LeaderboardTabs active={activeHash} />
 <h1 class="v3-section-title" data-egroup="setup">Setup</h1>
 <div class="card" data-egroup="setup"><h2>Your leaderboard info</h2><p class="card-sub">This is what visitors see when they open your site.</p><div class="grid2">
 <div class="field"><label for="f_name">Leaderboard name</label><input id="f_name" /></div>
@@ -309,7 +305,6 @@ function GamesSection({ active } = {}) {
   return (
 <section class={active ? "lb-page is-on" : "lb-page"} data-page="games">
 <div class="v3-games-page">
-    <LeaderboardTabs active="games" />
     <div class="d-flex justify-between items-center flex-wrap gap-8">
       <div>
         <h1>Games</h1>
@@ -490,12 +485,14 @@ function BoardSettingsSection({ active } = {}) {
 function BoardsSection({ active } = {}) {
   return (
 <section class={active ? "lb-page is-on" : "lb-page"} data-page="boards">
- <header class="v3-head v3-head--row"><div><h1>All sites</h1><p class="v3-head-sub">Choose, create, and manage your public sites.</p></div><button class="btn btn--sm btn--accent" id="addBoardFromBoards" type="button">+ New site</button></header>
+ <header class="v3-head v3-head--row"><div><h1>Sites</h1><p class="v3-head-sub">Choose, create, and manage your public sites.</p></div><button class="btn btn--sm btn--accent" id="newBoard" type="button" title="Create another site" aria-label="Create another site">+ New site</button></header>
+ <div class="board-upsell" id="boardLimitUpsell" role="status" hidden><div><b id="boardLimitTitle">Need another site?</b><p class="hint" id="boardLimitText"></p></div><a class="btn btn--sm btn--accent" id="boardLimitCta" href="/dashboard/settings">Upgrade plan</a></div>
+ <div class="lb-board-form" id="newBoardForm" hidden><div class="field field-flex"><label for="nb_name">Site name</label><input id="nb_name" placeholder="Summer Race 2026" /></div><div class="field field-flex"><label for="nb_slug">Web address</label><input id="nb_slug" placeholder="summer-race-2026" /></div><div class="field field-flex"><label for="nb_casino">Partner or sponsor</label><input id="nb_casino" placeholder="Your brand or sponsor" /></div><div class="field field-flex"><label for="nb_code">Promo code</label><input id="nb_code" placeholder="Optional" /></div><div class="lb-board-form-actions"><button class="btn btn--sm btn--accent" id="nb_create" type="button">Create site</button><button class="btn btn--sm btn--ghost" id="nb_cancel" type="button">Cancel</button><div class="hint w-full" id="nb_err" role="alert" aria-live="assertive"></div></div></div>
  <div class="card">
 <div class="list-controls"><input type="search" id="boardsSearch" class="list-search" placeholder="Find site…" aria-label="Find site" /></div>
 <div class="board-table-wrap">
 <table class="board-table">
-<thead><tr><th>Site</th><th>Sponsor</th><th>URL</th><th>Players</th><th>Status</th><th class="ta-r">Actions</th></tr></thead>
+<thead><tr><th>Site</th><th>Sponsor</th><th>Web address</th><th>Players</th><th>Status</th><th class="ta-r">Actions</th></tr></thead>
 <tbody id="boardsBody"></tbody>
 </table>
 </div>

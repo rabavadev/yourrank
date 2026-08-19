@@ -5,7 +5,7 @@ import { PAGES } from "../pages.jsx";
 const boardsJs = readFileSync(new URL("../assets/dashboard/boards.js", import.meta.url), "utf8");
 
 function dashboardHtml() {
-  return PAGES.dashboard.Component().toString();
+  return PAGES.dashboard.Component({ activePath: "/dashboard/leaderboards" }).toString();
 }
 
 describe("board-limit upsell", () => {

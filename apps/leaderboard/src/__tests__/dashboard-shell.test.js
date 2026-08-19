@@ -32,11 +32,12 @@ describe("signed-in shell navigation", () => {
       "/dashboard/rewards/redemptions",
       "/dashboard/telegram",
       "/dashboard/analytics/activity",
+      "/dashboard/settings/board",
       "/dashboard/settings",
     ]) {
       expect(html).toContain(`href="${href}"`);
     }
-    expect(html).toContain('href="/dashboard/settings/board">Site settings');
+    expect(html).not.toContain('class="lb-site-settings"');
     expect(html).toContain('href="/help/support?area=credits');
     expect(html).toContain("Help &amp; feedback");
   });
@@ -78,6 +79,7 @@ describe("signed-in shell navigation", () => {
     expect(html).toContain('class="lb-site-command"');
     expect(html).toContain('id="sidebarBoardSelect" aria-label="Switch site"');
     expect(html).toContain('id="lbTopbarSitePath"');
+    expect(html).toContain("Web address loading");
     expect(html).toContain('class="lb-availability"');
     expect(html).toContain('id="lbTopbarStatus"');
     expect(html).toContain('id="publishAction" type="button"');
@@ -133,10 +135,11 @@ describe("signed-in shell navigation", () => {
 
   it("keeps secondary site and help actions accessible without rail duplication", () => {
     const html = renderPage(RewardsViewersPage);
-    expect(html).toContain('href="/dashboard/settings/board">Site settings');
+    expect(html).toContain('data-nav="site"');
+    expect(html).toMatch(/href="\/dashboard\/settings\/board"[^>]*data-nav="site"/);
     expect(html).toContain('href="/help/support?area=credits');
     expect(html).toContain("Help &amp; feedback");
-    expect(html).toContain('data-nav="boards"');
+    expect(html).not.toContain('data-nav="boards"');
     expect(html).not.toContain('data-nav="help"');
   });
 
@@ -164,7 +167,7 @@ describe("signed-in shell navigation", () => {
     ]) expect(html).toContain(`href="${href}"`);
     expect(html).toContain('href="/help/support?area=account');
     expect(html).toContain("Help &amp; feedback");
-    expect(html).toContain('data-nav="boards"');
+    expect(html).not.toContain('data-nav="boards"');
     expect(html).not.toContain('data-nav="help"');
     expect(html).toContain('data-nav="settings" aria-current="page"');
     expect((html.match(/<h1\b/g) || []).length).toBe(1);

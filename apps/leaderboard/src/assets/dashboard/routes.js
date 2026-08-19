@@ -20,6 +20,8 @@ export const SECTIONS = {
   settings: { path: "/dashboard/settings/board", title: "Board settings" },
 };
 
+export const MANAGE_SITES_VALUE = "__manage_sites__";
+
 // Names we have shipped links for, in copy, e-mails and older builds.
 export const SECTION_ALIASES = {
   overview: "home",

@@ -27,8 +27,9 @@ export function mapActiveNav(nav) {
   if (["giveaways", "raffles", "predictions", "drops", "games"].includes(nav)) return nav;
   if (["activity", "referrals", "performance"].includes(nav)) return "performance";
   if (nav === "redemptions" || nav === "shop" || nav === "rules" || nav === "channel" || nav === "rewards" || nav === "viewers" || nav === "audience" || nav === "history") return "redemptions";
-  if (nav === "boards") return "boards";
-  if (nav === "settings" || nav === "account" || nav === "integrations") return nav === "integrations" ? "integrations" : "settings";
+  if (nav === "boards" || nav === "site") return "site";
+  if (nav === "settings") return "site";
+  if (["account", "team", "plan", "connections", "data", "integrations"].includes(nav)) return "settings";
   return nav || "home";
 }
 
@@ -61,27 +62,16 @@ export function DashboardShell({ activeNav = "home", boardContext = "full", foot
       <div class="lb-main">
         <header class="lb-topbar" id="lbTopbar">
           <button class="lb-menu lb-topbar-menu" id="lbMenu" type="button" aria-label="Show sections" aria-expanded="false" aria-controls="lbSide"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
-          <a class="lb-brand" href="/dashboard" aria-label="YourRank dashboard"><span class="lb-brand-mark">{raw(brandMarkSvg())}</span><span class="lb-brand-txt">YourRank</span></a>
           {boardContext !== "none" ? (
             <div class="lb-topbar-hud">
               <div class="lb-site-command">
                 <div class="lb-board-select-wrap">
-                  <span class="lb-board-select-lbl">Site</span>
+                  <span class="lb-board-select-lbl">Current site</span>
                   <div class="lb-board-select-row">
                     <select class="lb-board-select" id="sidebarBoardSelect" aria-label="Switch site"></select>
-                    <span class="lb-site-path" id="lbTopbarSitePath">Loading address…</span>
-                    <a class="lb-site-settings" href="/dashboard/settings/board">Site settings</a>
+                    <span class="lb-site-path" id="lbTopbarSitePath">Web address loading…</span>
                   </div>
                 </div>
-                {boardContext === "full" && (
-                  <>
-                    <button class="lb-board-new" id="newBoard" type="button" title="Create another site" aria-label="Create another site">
-                      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
-                    </button>
-                    <div class="board-upsell" id="boardLimitUpsell" role="status" hidden><div><b id="boardLimitTitle">Need another site?</b><p class="hint" id="boardLimitText"></p></div><a class="btn btn--sm btn--accent" id="boardLimitCta" href="/dashboard/settings">Upgrade plan</a></div>
-                    <div class="lb-board-form" id="newBoardForm" hidden><div class="field field-flex"><label for="nb_name">Site name</label><input id="nb_name" placeholder="Summer Race 2026" /></div><div class="field field-flex"><label for="nb_slug">Web address</label><input id="nb_slug" placeholder="summer-race-2026" /></div><div class="field field-flex"><label for="nb_casino">Partner or sponsor</label><input id="nb_casino" placeholder="Your brand or sponsor" /></div><div class="field field-flex"><label for="nb_code">Promo code</label><input id="nb_code" placeholder="Optional" /></div><div class="lb-board-form-actions"><button class="btn btn--sm btn--accent" id="nb_create" type="button">Create site</button><button class="btn btn--sm btn--ghost" id="nb_cancel" type="button">Cancel</button><div class="hint w-full" id="nb_err" role="alert" aria-live="assertive"></div></div></div>
-                  </>
-                )}
               </div>
             </div>
           ) : (

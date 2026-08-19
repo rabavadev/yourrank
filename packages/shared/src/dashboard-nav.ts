@@ -25,14 +25,20 @@ const DASHBOARD_NAV: NavItem[] = [
       { key: "raffles", label: "Raffles", href: "/dashboard/giveaways/raffles", icon: NAV_ICONS.giveaways },
       { key: "predictions", label: "Predictions", href: "/dashboard/giveaways/preds", icon: NAV_ICONS.viewers },
       { key: "drops", label: "Drops", href: "/dashboard/giveaways/drops", icon: NAV_ICONS.share },
-      { key: "games", label: "Games", href: "/dashboard/games", icon: NAV_ICONS.games },
     ],
   },
+  { key: "games", label: "Games", href: "/dashboard/games", icon: NAV_ICONS.games },
   { key: "redemptions", label: "Rewards", href: "/dashboard/rewards/redemptions", icon: NAV_ICONS.shop, productKey: "credits" },
-  { key: "telegram", label: "Telegram", href: "/dashboard/telegram", icon: NAV_ICONS.share, productKey: "telegram" },
-  { key: "performance", label: "Analytics", href: "/dashboard/analytics/activity", icon: NAV_ICONS.viewers },
-  { key: "integrations", label: "Integrations", href: "/dashboard/settings/connections", icon: NAV_ICONS.share },
-  { key: "boards", label: "Sites", href: "/dashboard/leaderboards", icon: NAV_ICONS.boards },
+  {
+    key: "audience",
+    label: "Audience",
+    kind: "group",
+    children: [
+      { key: "performance", label: "Analytics", href: "/dashboard/analytics/activity", icon: NAV_ICONS.viewers },
+      { key: "telegram", label: "Telegram", href: "/dashboard/telegram", icon: NAV_ICONS.share, productKey: "telegram" },
+    ],
+  },
+  { key: "site", label: "Site", href: "/dashboard/settings/board", icon: NAV_ICONS.boards },
   { key: "settings", label: "Settings", href: "/dashboard/settings", icon: GEAR_ICON },
 ];
 

@@ -115,9 +115,12 @@ describe("dashboard overview quick actions", () => {
     expect(html).not.toContain('aria-hidden="true">🔌</span>');
     expect(html).toContain('>Home</a>');
     for (const label of [
-      "Leaderboard", "Giveaways", "Raffles", "Predictions", "Drops", "Games", "Rewards", "Telegram", "Analytics", "Integrations", "Sites", "Settings",
+      "Leaderboard", "Giveaways", "Raffles", "Predictions", "Drops", "Games", "Rewards", "Telegram", "Analytics", "Site", "Settings",
     ]) expect(html).toContain(`>${label}</a>`);
+    expect(html).toContain(">Audience</div>");
     expect(html).toContain(">Engage</div>");
+    expect(html).not.toContain(">Integrations</a>");
+    expect(html).not.toContain(">Sites</a>");
     expect(html).not.toContain('>Help</a>');
   });
 
@@ -131,6 +134,7 @@ describe("dashboard overview quick actions", () => {
     const games = dashboardHtml("/dashboard/games");
     expect(games).toContain('data-page="games"');
     expect(games).not.toContain('data-page="home"');
+    expect(games).not.toContain('aria-label="Leaderboard pages"');
   });
 
   it("keeps every site editor section directly available", () => {

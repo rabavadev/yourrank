@@ -74,6 +74,7 @@ async function allowNavigation() {
 
 
 const AREA_MAP = { home: "sites", board: "sites", boards: "sites", games: "sites", settings: "sites", performance: "sites" };
+const NAV_OWNER_MAP = { boards: "site", settings: "site" };
 
 export function areaForPage(page) { return AREA_MAP[page] || "sites"; }
 
@@ -120,7 +121,7 @@ export function setActiveSideNav(page) {
   document.querySelectorAll(".lb-side-group").forEach((g) => { g.hidden = (g.dataset.area !== area && g.dataset.area !== "all"); });
   document.querySelectorAll(".lb-nav").forEach((n) => {
     const navPage = n.dataset.nav;
-    const active = navPage === page;
+    const active = navPage === (NAV_OWNER_MAP[page] || page);
     n.classList.toggle("is-on", active);
     if (active) n.setAttribute("aria-current", "page");
     else n.removeAttribute("aria-current");

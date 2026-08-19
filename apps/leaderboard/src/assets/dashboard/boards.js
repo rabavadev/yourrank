@@ -2,6 +2,7 @@
 import { $, esc, getCsrf, guardAuth, logError, slugify, showConfirmModal } from "./utils.js";
 import { state } from "./state.js";
 import { requestDashboardRoute } from "./shell.js";
+import { MANAGE_SITES_VALUE } from "./routes.js";
 import { renderEmpty } from "./states.js";
 
 export function renderBoardSwitcher() {
@@ -206,15 +207,15 @@ export function renderBoardSelect() {
   const sel = $("sidebarBoardSelect");
   const topbarPath = $("lbTopbarSitePath");
   const active = state.BOARDS.find((b) => b.id === state.ACTIVE_SITE_ID);
-  if (topbarPath) topbarPath.textContent = active?.slug ? `/${active.slug}` : "Web address unavailable";
+  if (topbarPath) topbarPath.textContent = active?.slug ? `Web address: /${active.slug}` : "Web address unavailable";
   if (sel) {
     sel.innerHTML = "";
     if (!state.BOARDS.length) {
       const opt = document.createElement("option");
-      opt.textContent = "No boards";
+      opt.textContent = "No sites";
       opt.value = "";
+      opt.disabled = true;
       sel.appendChild(opt);
-      sel.disabled = true;
     } else {
       state.BOARDS.forEach((b) => {
         const opt = document.createElement("option");
@@ -223,19 +224,26 @@ export function renderBoardSelect() {
         opt.selected = b.id === state.ACTIVE_SITE_ID;
         sel.appendChild(opt);
       });
-      sel.disabled = false;
-      sel.onchange = () => {
-        const id = sel.value;
-        if (id && id !== state.ACTIVE_SITE_ID) requestDashboardRoute("home", "", { query: `board=${encodeURIComponent(id)}`, reload: true });
-      };
     }
+    const manage = document.createElement("option");
+    manage.value = MANAGE_SITES_VALUE;
+    manage.textContent = "Manage all sites…";
+    sel.appendChild(manage);
+    sel.disabled = false;
+    sel.onchange = () => {
+      const id = sel.value;
+      if (id === MANAGE_SITES_VALUE) {
+        location.href = "/dashboard/leaderboards";
+      } else if (id && id !== state.ACTIVE_SITE_ID) {
+        requestDashboardRoute("home", "", { query: `board=${encodeURIComponent(id)}`, reload: true });
+      }
+    };
   }
 }
 
 export function renderBoardsPage() {
   const body = $("boardsBody");
   const empty = $("boardsEmpty");
-  const addBtn = $("addBoardFromBoards");
   if (!body) return;
   body.innerHTML = "";
   const controls = $("boardsSearch")?.closest(".list-controls");
@@ -264,7 +272,6 @@ export function renderBoardsPage() {
     });
     filterBoards();
   }
-  if (addBtn) addBtn.onclick = openNewBoardForm;
 }
 
 function filterBoards() {

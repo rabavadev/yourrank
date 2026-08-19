@@ -143,12 +143,6 @@ async function init() {
   if (hasEditor) renderEditorTimestamps();
   renderBoardSwitcher();
   renderBoardSelect();
-  document.querySelectorAll("#newBoardSide, #addBoardBtn").forEach((btn) => {
-    if (btn && !btn._wired) {
-      btn._wired = true;
-      btn.addEventListener("click", () => $("newBoard")?.click());
-    }
-  });
   if (hasSection("boards")) renderBoardsPage();
   const d = p.data || {};
   const b = d.brand || {};
