@@ -9,6 +9,21 @@ function renderPage(Component) {
   return Component({ reqId: "test-request", user }).toString();
 }
 
+function stripTags(value) {
+  let text = "";
+  let inTag = false;
+  for (const char of value) {
+    if (char === "<") {
+      inTag = true;
+    } else if (char === ">") {
+      inTag = false;
+    } else if (!inTag) {
+      text += char;
+    }
+  }
+  return text;
+}
+
 function visibleHeadings(html, { group = "", performancePanel = "" } = {}) {
   const tokenRe = /<\/?[^>]+>/g;
   const stack = [];
@@ -47,7 +62,7 @@ function visibleHeadings(html, { group = "", performancePanel = "" } = {}) {
       if (entry.tag === tag) break;
     }
     if (!entry || !/^h[1-6]$/.test(entry.tag)) continue;
-    const text = html.slice(entry.textStart, match.index).replace(/<[^>]*>/g, "").replace(/\s+/g, " ").trim();
+    const text = stripTags(html.slice(entry.textStart, match.index)).replace(/\s+/g, " ").trim();
     if (entry.hidden || (group && entry.group && entry.group !== group) || (performancePanel && entry.performancePanel && entry.performancePanel !== performancePanel)) continue;
     headings.push({ tag: entry.tag, text });
   }
