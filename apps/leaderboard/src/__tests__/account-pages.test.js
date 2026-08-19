@@ -136,4 +136,26 @@ describe("settings panels", () => {
     expect(html).not.toContain("Security Posture");
     expect(html).not.toContain('id="accSummaryAvatar"');
   });
+
+  it("uses the tab heading and breadcrumb as the only settings identity", async () => {
+    for (const [key, label] of [
+      ["account", "Account"],
+      ["team", "Team"],
+      ["plan", "Billing"],
+      ["connections", "Integrations"],
+      ["data", "Data"],
+    ]) {
+      const html = await UnifiedSettingsPage({
+        activePath: `/dashboard/settings/${key}`,
+        tab: key,
+        user: { email: "a@b.c" },
+      }).toString();
+      expect(html).toContain(`<h1>${label}</h1>`);
+      expect(html).toContain(`Settings</a>`);
+      expect(html).toContain(`>${label}</span>`);
+      expect(html).not.toContain('class="lb-board-select-lbl">Account settings');
+      expect(html).not.toContain('class="lb-account-title"');
+      expect(html).not.toContain("<h2>Site settings</h2>");
+    }
+  });
 });

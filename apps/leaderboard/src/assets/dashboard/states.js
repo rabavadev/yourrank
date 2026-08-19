@@ -65,12 +65,16 @@ export function metricText(status, value) {
 export function setMetricLoading(el) {
   if (!el) return;
   el.setAttribute("aria-busy", "true");
+  el.removeAttribute("data-metric-unavailable");
+  el.removeAttribute("title");
   el.innerHTML = '<span class="skeleton v3-skel-kpi" aria-hidden="true"></span>';
 }
 
 export function setMetricValue(el, text) {
   if (!el) return;
   el.removeAttribute("aria-busy");
+  el.removeAttribute("data-metric-unavailable");
+  el.removeAttribute("title");
   el.textContent = metricText("ready", text);
 }
 

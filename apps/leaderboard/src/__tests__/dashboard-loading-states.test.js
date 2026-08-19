@@ -6,6 +6,7 @@ import {
   emptyStateHtml,
   metricText,
 } from "../assets/dashboard/states.js";
+import { visitsMetricState } from "../assets/dashboard/overview-state.js";
 import { PAGES } from "../pages.jsx";
 
 const assets = path.resolve(import.meta.dir, "../assets");
@@ -28,6 +29,23 @@ describe("dashboard loading states", () => {
     expect(metricText("ready", 0)).toBe("0");
     expect(metricText("ready", "0.0%")).toBe("0.0%");
     expect(metricText("error")).toBe("—");
+  });
+
+  it("keeps Home visits states truthful across publication and stats status", () => {
+    expect(visitsMetricState({ published: false, statsStatus: "loading" })).toEqual({
+      kind: "unpublished",
+      value: "Not published",
+    });
+    expect(visitsMetricState({
+      published: true,
+      statsStatus: "ready",
+      stats: { days: [{ views: 0 }, { views: 0 }] },
+    })).toEqual({ kind: "ready", value: 0 });
+    expect(visitsMetricState({ published: true, statsStatus: "loading" })).toEqual({ kind: "loading" });
+    expect(visitsMetricState({ published: true, statsStatus: "error" })).toEqual({
+      kind: "unavailable",
+      value: "Unavailable",
+    });
   });
 
   it("generates the shared empty state with optional actions", () => {

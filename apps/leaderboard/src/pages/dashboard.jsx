@@ -131,7 +131,7 @@ function OverviewSection({ active } = {}) {
     <span class="kpi-lbl" id="ovLblGiveaway">Active giveaway</span>
     <div class="kpi-value-row">
       <span class="kpi-val" id="ovActiveGiveaway" aria-labelledby="ovLblGiveaway"><span class="skeleton v3-skel-kpi" aria-hidden="true"></span></span>
-      <span class="kpi-action">Active now</span>
+      <a class="kpi-action" id="ovGiveawayAction" href="/dashboard/giveaways">Start a giveaway</a>
     </div>
   </div>
   <div class="kpi-card" id="ovCreditsCard" hidden>

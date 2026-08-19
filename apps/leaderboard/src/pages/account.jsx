@@ -22,7 +22,7 @@ export function UnifiedSettingsPage({ activePath, user, tab = "account" } = {}) 
   const activeLabel = SETTINGS_TABS.find(([key]) => key === active)?.[1] || "Account";
   const obsTools = `<div class="lb-widget lb-widget--full ov-obs-suite-card"><div class="v3-section-head"><div><h2>OBS Live Stream Overlays</h2><p class="v3-head-sub">Paste transparent browser sources directly into OBS Studio or Streamlabs.</p></div><a class="btn btn--sm btn--ghost" href="/dashboard/leaderboard/design">Theme Studio →</a></div><div class="v3-settings-row"><div><b>Site for these overlay links</b><p class="card-sub" id="obsSiteHint">Loading your sites…</p></div><select id="obsSiteSelect" class="v3-select" aria-label="Site for OBS links"><option>Loading sites…</option></select></div><div class="ov-obs-grid"><div class="ov-obs-item"><div class="ov-obs-info"><span class="ov-obs-tag">PREDICTIONS HUD</span><strong>Live Betting Overlay</strong><p>Live Yes/No odds bar &amp; countdown timer on stream.</p></div><button class="btn btn--sm btn--accent" id="ov-btn-copy-pred-hud" type="button">Copy OBS Link</button></div><div class="ov-obs-item"><div class="ov-obs-info"><span class="ov-obs-tag">SOUND ALERTS</span><strong>Stream Alerts &amp; Chimes</strong><p>Audio chimes &amp; popup cards for prize orders &amp; winners.</p></div><button class="btn btn--sm btn--accent" id="ov-btn-copy-alerts" type="button">Copy OBS Link</button></div><div class="ov-obs-item"><div class="ov-obs-info"><span class="ov-obs-tag">PODIUM TICKER</span><strong>Leaderboard Bar</strong><p>Horizontal scrolling ticker of top racers &amp; points.</p></div><button class="btn btn--sm btn--accent" id="ov-btn-copy-ticker" type="button">Copy OBS Link</button></div></div></div>`;
 
-  return <DashboardShell activeNav={active === "connections" ? "integrations" : "account"} activePath={activePath || `/dashboard/settings/${active}`} boardContext="none" crumbs={[{ label: "Settings", href: "/dashboard/settings" }, { label: activeLabel }]} footer="account" title="Settings" user={user}>
+  return <DashboardShell activeNav={active === "connections" ? "integrations" : "account"} activePath={activePath || `/dashboard/settings/${active}`} boardContext="none" crumbs={[{ label: "Settings", href: "/dashboard/settings" }, { label: activeLabel }]} footer="account" topbarContext="" user={user}>
     <div class="account-body account-settings" id="acc-app" data-acc-tab="settings" data-settings-active={active}>
       <div class="account-settings-head">
         <h1>{activeLabel}</h1>
@@ -45,10 +45,6 @@ export function UnifiedSettingsPage({ activePath, user, tab = "account" } = {}) 
           {settingsPanel("data", `${settingsWidgets.data}<div class="lb-widget lb-widget--full lb-widget--danger"><h2>Selected site data</h2><p class="card-sub">These actions affect one selected site, not your whole account. Open the site tools before making a destructive change.</p><div class="d-flex gap-8 flex-wrap"><a class="btn btn--ghost" href="/dashboard/leaderboard/history">Reset or archive a site</a><a class="btn btn--ghost" href="/dashboard/leaderboard/setup">Delete a site</a></div></div>`)}
         </div>
         <aside class="account-settings-sidebar" aria-label="Related settings">
-          <div class="account-summary-card">
-            <h2>Site settings</h2>
-            <p class="card-sub">Change the public page, visitor access, alerts, web address, and other settings for the selected site. Use the Site section in the sidebar to open these controls.</p>
-          </div>
           <div class="account-scope-helper">
             <strong>Need help?</strong>
             <p>Help and feedback are kept in one place so you do not have to hunt through settings.</p>

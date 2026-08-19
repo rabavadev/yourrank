@@ -1,3 +1,5 @@
+import { resolveContactType } from "./contact-context.js";
+
 // Contact form handling
 const form = document.getElementById("contactForm");
 const err = document.getElementById("c_err");
@@ -17,7 +19,8 @@ const back = document.getElementById("c_back");
 const params = new URLSearchParams(location.search);
 const helpApp = document.getElementById("help-app");
 const helpTab = helpApp?.dataset?.helpTab;
-const requestedType = helpTab || params.get("type");
+const requestedType = params.get("type");
+const serverType = kind?.value;
 const requestedArea = params.get("area");
 const requestedReturn = params.get("return");
 const allowedAreas = new Set(["dashboard", "leaderboard", "bot", "analytics", "attribution", "billing", "account", "credits", "help"]);
@@ -34,7 +37,7 @@ function safeReturnTarget(value) {
 }
 
 function applyContext() {
-  const type = requestedType === "feedback" ? "feedback" : "support";
+  const type = resolveContactType({ helpTab, queryType: requestedType, serverType });
   if (kind) kind.value = type;
   if (context) context.value = allowedAreas.has(requestedArea) ? requestedArea : "";
   if (title) title.textContent = type === "feedback" ? "Give feedback" : "Contact support";
