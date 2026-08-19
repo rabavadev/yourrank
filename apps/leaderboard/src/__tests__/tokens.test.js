@@ -54,6 +54,52 @@ function contrastRatio(foreground, background) {
 }
 
 describe("design tokens", () => {
+  it("defines the complete authenticated workspace type scale", () => {
+    for (const [name, value] of [
+      ["--v4-type-page-size", "34px"],
+      ["--v4-type-page-leading", "40px"],
+      ["--v4-type-section-size", "20px"],
+      ["--v4-type-section-leading", "28px"],
+      ["--v4-type-card-size", "17px"],
+      ["--v4-type-card-leading", "24px"],
+      ["--v4-type-body-size", "15px"],
+      ["--v4-type-body-leading", "22.5px"],
+      ["--v4-type-meta-size", "13px"],
+      ["--v4-type-meta-leading", "18px"],
+    ]) {
+      expect(declared(sources.dashboard, name), name).toBe(value);
+    }
+    const scale = sources.dashboard.slice(sources.dashboard.indexOf("/* Canonical operator workspace type scale. */"));
+    expect(scale).toContain("h1 {\n  font-size: var(--v4-type-page-size);");
+    expect(scale).toContain("h2 {\n  font-size: var(--v4-type-section-size);");
+    expect(scale).toContain("h3,\n.v3-dash[data-auth-workspace] h4");
+    expect(scale).toContain("font-size: var(--v4-type-card-size);");
+    expect(scale).toContain("font-size: var(--v4-type-meta-size);");
+    const sectionHeading = scale.match(/\.v3-dash\[data-auth-workspace\] h2\s*\{([^}]*)\}/)?.[1] || "";
+    expect(sectionHeading).toContain("font-size: var(--v4-type-section-size);");
+    expect(scale).not.toMatch(/\.v3-section-head h2[\s\S]*?font-size:\s*var\(--v4-type-card-size\)/);
+    expect(sources.dashboard).toContain("font: 700 var(--v4-type-page-size)/var(--v4-type-page-leading) var(--v3-sans);");
+    expect(sources.dashboard).not.toMatch(/\.v3-dash\[data-auth-workspace\] \.v3-head h1\s*\{\s*font-size:\s*(?:26|28)px/);
+    const designGroupHeading = sources.dashboard.match(
+      /\.v3-dash\[data-auth-workspace\] section\[data-page="board"\] \.design-group-heading h2\s*\{([^}]*)\}/
+    )?.[1] || "";
+    expect(designGroupHeading).toContain("font-size: var(--v4-type-section-size);");
+    expect(designGroupHeading).toContain("line-height: var(--v4-type-section-leading);");
+    expect(designGroupHeading).not.toContain("font-size: var(--v4-type-card-size);");
+    const cardHeading = sources.dashboard.match(
+      /\.v3-dash\[data-auth-workspace\] \.card > h2,[\s\S]*?\{([^}]*)\}/
+    )?.[1] || "";
+    expect(cardHeading).toContain("font-size: var(--v4-type-card-size);");
+    const headingSizes = [...sources.dashboard.matchAll(/([^{}]+)\{([^{}]*)\}/g)]
+      .filter(([, selector]) => /(?:^|[\s>+~,.])h[1-6](?:$|[\s.#:>+~,.])/.test(selector))
+      .flatMap(([, , declarations]) => [
+        ...declarations.matchAll(/font-size:\s*(\d+(?:\.\d+)?)px/g),
+        ...declarations.matchAll(/font:\s*[^;]*?\s(\d+(?:\.\d+)?)px(?:\/|[\s])/g),
+      ])
+      .map(([, size]) => Number(size));
+    expect(headingSizes.every((size) => size >= 15)).toBe(true);
+  });
+
   it("keeps each accent and status token owned by one stylesheet", () => {
     for (const name of ["--v4-cobalt", "--v4-cobalt-ink", "--v4-success", "--v4-warning", "--v4-danger"]) {
       expect(declarationCount(sources.dashboard, name), `${name} ownership`).toBe(1);

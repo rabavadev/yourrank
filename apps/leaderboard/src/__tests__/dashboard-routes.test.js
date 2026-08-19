@@ -2,9 +2,10 @@
 // parse those URLs from routes.js, so these assertions cover both sides.
 import { describe, it, expect } from "bun:test";
 import { readFileSync } from "node:fs";
-import { ACCOUNT_SECTION_PATHS } from "@yourrank/shared/dashboard-nav";
+import { LEGACY_ACCOUNT_PATHS } from "@yourrank/shared/dashboard-nav";
 import { dashboardPath, parseDashboardPath, resolveSection, defaultTab, legacyDashboardPath } from "../assets/dashboard/routes.js";
 import { LEGACY_TELEGRAM_REDIRECTS, legacyTelegramRedirect } from "../telegram-routes.js";
+import worker from "../index.js";
 
 describe("dashboard routes", () => {
   it("round-trips every section and sub-tab", () => {
@@ -28,7 +29,7 @@ describe("dashboard routes", () => {
     expect(parseDashboardPath("/dashboard/settings/board")).toEqual({ page: "site", tab: "" });
   });
 
-  it("keeps the links we have already shipped working", () => {
+  it("keeps the links we have already shipped working", async () => {
     // ?nav= names and older section names still resolve, so old bookmarks and
     // e-mails land on the section they meant rather than on a 404.
     expect(resolveSection("overview")).toBe("home");
@@ -38,11 +39,14 @@ describe("dashboard routes", () => {
     expect(resolveSection("settings")).toBe("site");
     expect(dashboardPath("billing")).toBe("/dashboard/settings/plan");
     expect(dashboardPath("integrations")).toBe("/dashboard/settings/connections");
-    expect(ACCOUNT_SECTION_PATHS.billing).toBe(dashboardPath("billing"));
-    expect(ACCOUNT_SECTION_PATHS.integrations).toBe(dashboardPath("integrations"));
-    const worker = readFileSync(new URL("../index.js", import.meta.url), "utf8");
-    expect(worker).toContain("ACCOUNT_SECTION_PATHS[legacyNav]");
-    expect(worker).not.toContain("legacyAccountPaths");
+    expect(LEGACY_ACCOUNT_PATHS.billing).toBe(dashboardPath("billing"));
+    expect(LEGACY_ACCOUNT_PATHS.integrations).toBe(dashboardPath("integrations"));
+    for (const [nav, expected] of Object.entries(LEGACY_ACCOUNT_PATHS)) {
+      const response = await worker.fetch(new Request(`https://yourrank.test/dashboard?nav=${nav}&from=test`), {}, {});
+      expect(response.status, nav).toBe(302);
+      const location = response.headers.get("location");
+      expect(location, nav).toBe(`https://yourrank.test${expected}?from=test`);
+    }
     expect(resolveSection("editor")).toBe("board");
     expect(dashboardPath("performance")).toBe("/dashboard/analytics");
   });

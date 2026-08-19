@@ -76,6 +76,9 @@ export const NAV_OWNER_MAP = {
 export const ACCOUNT_SECTION_PATHS = {
   plan: "/dashboard/settings/plan",
   connections: "/dashboard/settings/connections",
+} as const;
+
+export const LEGACY_ACCOUNT_PATHS = {
   billing: "/dashboard/settings/plan",
   integrations: "/dashboard/settings/connections",
   manage: "/dashboard/settings",
