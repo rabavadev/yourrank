@@ -2,7 +2,7 @@
 // Separate from streamer OAuth so viewers get their own /me dashboard.
 
 import { one, exec } from "@yourrank/shared/db";
-import { encryptKickToken, buildKickViewerAuthorizeURL, exchangeKickViewerCode, fetchKickCurrentUser } from "@yourrank/shared/kick-oauth";
+import { generatePKCE, encryptKickToken, buildKickViewerAuthorizeURL, exchangeKickViewerCode, fetchKickCurrentUser } from "@yourrank/shared/kick-oauth";
 import {
   buildDiscordAuthorizeURL,
   exchangeDiscordCode,
@@ -19,28 +19,11 @@ import {
   readViewerToken,
 } from "@yourrank/shared/viewer-session";
 import { bad, json, rateLimit, clientIp } from "../auth.js";
-
-const OAUTH_TTL = 600; // 10 minutes
+import { consumeOAuthState, storeOAuthState } from "@yourrank/shared/oauth-state";
 
 function randomState() {
   const bytes = crypto.getRandomValues(new Uint8Array(32));
   return Buffer.from(bytes).toString("hex");
-}
-
-async function storeOAuthState(env, state, data) {
-  if (!env.SESSIONS) throw new Error("SESSIONS KV binding is not configured");
-  await env.SESSIONS.put(`viewer-oauth:${state}`, JSON.stringify(data), { expirationTtl: OAUTH_TTL });
-}
-
-async function getOAuthState(env, state) {
-  if (!env.SESSIONS) return null;
-  const raw = await env.SESSIONS.get(`viewer-oauth:${state}`);
-  if (!raw) return null;
-  try { return JSON.parse(raw); } catch { return null; }
-}
-
-async function deleteOAuthState(env, state) {
-  if (env.SESSIONS) await env.SESSIONS.delete(`viewer-oauth:${state}`);
 }
 
 function redirect(url, headers = {}, status = 302) {
@@ -71,8 +54,15 @@ export async function requireViewer(req, env) {
 
 // --- Kick ---
 
-export async function handleKickViewerAuthStart(request, env) {
-  if (!(await rateLimit(env, `viewer-oauth-start:kick:${clientIp(request)}`, 20, 60)).ok) {
+export async function handleKickViewerAuthStart(request, env, deps = {}) {
+  const {
+    rateLimit: rateLimitImpl = rateLimit,
+    clientIp: clientIpImpl = clientIp,
+    generatePKCE: generatePKCEImpl = generatePKCE,
+    storeOAuthState: storeOAuthStateImpl = storeOAuthState,
+    buildKickViewerAuthorizeURL: buildKickViewerAuthorizeURLImpl = buildKickViewerAuthorizeURL,
+  } = deps;
+  if (!(await rateLimitImpl(env, `viewer-oauth-start:kick:${clientIpImpl(request)}`, 20, 60)).ok) {
     return redirect("/me?error=rate_limited");
   }
   const url = new URL(request.url);
@@ -80,16 +70,25 @@ export async function handleKickViewerAuthStart(request, env) {
   const returnTo = safeReturnTo(url.searchParams.get("returnTo"), origin);
   const redirectUri = `${origin}/api/viewer/auth/kick/callback`;
 
-  const { generatePKCE } = await import("@yourrank/shared/kick-oauth");
-  const { codeVerifier, codeChallenge } = await generatePKCE();
+  const { codeVerifier, codeChallenge } = await generatePKCEImpl();
   const state = randomState();
-  await storeOAuthState(env, state, { provider: "kick", codeVerifier, returnTo, origin, redirectUri });
+  await storeOAuthStateImpl("kick", state, { provider: "kick", codeVerifier, returnTo, origin, redirectUri });
 
-  const authorizeURL = buildKickViewerAuthorizeURL(env, state, codeChallenge, undefined, redirectUri);
+  const authorizeURL = buildKickViewerAuthorizeURLImpl(env, state, codeChallenge, undefined, redirectUri);
   return redirect(authorizeURL);
 }
 
-export async function handleKickViewerAuthCallback(request, env) {
+export async function handleKickViewerAuthCallback(request, env, deps = {}) {
+  const {
+    consumeOAuthState: consumeOAuthStateImpl = consumeOAuthState,
+    exchangeKickViewerCode: exchangeKickViewerCodeImpl = exchangeKickViewerCode,
+    fetchKickCurrentUser: fetchKickCurrentUserImpl = fetchKickCurrentUser,
+    encryptKickToken: encryptKickTokenImpl = encryptKickToken,
+    one: oneImpl = one,
+    exec: execImpl = exec,
+    createViewerSession: createViewerSessionImpl = createViewerSession,
+    viewerCookieSet: viewerCookieSetImpl = viewerCookieSet,
+  } = deps;
   const url = new URL(request.url);
   const code = url.searchParams.get("code");
   const state = url.searchParams.get("state");
@@ -102,38 +101,37 @@ export async function handleKickViewerAuthCallback(request, env) {
     return redirect(`/me?error=${encodeURIComponent("missing_oauth_params")}`);
   }
 
-  const stateData = await getOAuthState(env, state);
-  if (!stateData || stateData.provider !== "kick") {
+  const stateData = await consumeOAuthStateImpl("kick", state);
+  if (!stateData) {
     return redirect(`/me?error=${encodeURIComponent("oauth_state_expired")}`);
   }
-  await deleteOAuthState(env, state);
 
   try {
-    const tokens = await exchangeKickViewerCode(env, code, stateData.codeVerifier, stateData.redirectUri);
+    const tokens = await exchangeKickViewerCodeImpl(env, code, stateData.codeVerifier, stateData.redirectUri);
     if (!tokens.access_token) {
       throw new Error("Kick did not return an access token");
     }
 
-    const kickUser = await fetchKickCurrentUser(tokens.access_token);
+    const kickUser = await fetchKickCurrentUserImpl(tokens.access_token);
     if (!kickUser) {
       throw new Error("Could not fetch Kick user");
     }
 
-    const accessEnc = await encryptKickToken(tokens.access_token);
-    const refreshEnc = tokens.refresh_token ? await encryptKickToken(tokens.refresh_token) : null;
+    const accessEnc = await encryptKickTokenImpl(tokens.access_token);
+    const refreshEnc = tokens.refresh_token ? await encryptKickTokenImpl(tokens.refresh_token) : null;
     const expiresAt = tokens.expires_in ? new Date(Date.now() + tokens.expires_in * 1000).toISOString() : null;
     const kickUserId = String(kickUser.user_id);
     const kickUsername = kickUser.name || "";
     const avatarUrl = kickUser.profile_picture || null;
 
-    const existing = await one("SELECT id, kick_username FROM viewers WHERE kick_user_id=$1", [kickUserId]);
+    const existing = await oneImpl("SELECT id, kick_username FROM viewers WHERE kick_user_id=$1", [kickUserId]);
     let viewerId;
     if (existing) {
       viewerId = existing.id;
       const oldUsername = String(existing.kick_username || "").trim().toLowerCase();
       const newUsername = kickUsername.trim().toLowerCase();
       if (oldUsername && oldUsername !== newUsername) {
-        await exec(
+        await execImpl(
           `INSERT INTO viewer_username_history (viewer_id, username)
            VALUES ($1, $2)
            ON CONFLICT (viewer_id, username)
@@ -141,7 +139,7 @@ export async function handleKickViewerAuthCallback(request, env) {
           [viewerId, oldUsername]
         );
       }
-      await exec(
+      await execImpl(
         `UPDATE viewers
             SET kick_username = $1,
                 kick_access_token_enc = $2,
@@ -154,7 +152,7 @@ export async function handleKickViewerAuthCallback(request, env) {
         [kickUsername, accessEnc, refreshEnc, expiresAt, avatarUrl, viewerId]
       );
       if (newUsername) {
-        await exec(
+        await execImpl(
           `INSERT INTO viewer_username_history (viewer_id, username)
            VALUES ($1, $2)
            ON CONFLICT (viewer_id, username)
@@ -163,7 +161,7 @@ export async function handleKickViewerAuthCallback(request, env) {
         );
       }
     } else {
-      const rows = await exec(
+      const rows = await execImpl(
         `INSERT INTO viewers (kick_user_id, kick_username, kick_access_token_enc, kick_refresh_token_enc, kick_token_expires_at, kick_linked_at, avatar_url)
          VALUES ($1, $2, $3, $4, $5, now(), $6)
          RETURNING id`,
@@ -171,7 +169,7 @@ export async function handleKickViewerAuthCallback(request, env) {
       );
       viewerId = rows[0].id;
       if (kickUsername.trim()) {
-        await exec(
+        await execImpl(
           `INSERT INTO viewer_username_history (viewer_id, username)
            VALUES ($1, $2)
            ON CONFLICT (viewer_id, username)
@@ -181,11 +179,11 @@ export async function handleKickViewerAuthCallback(request, env) {
       }
     }
 
-    const sessionToken = await createViewerSession(env, viewerId);
-    return redirect(safeReturnTo(stateData.returnTo, stateData.origin), { "set-cookie": viewerCookieSet(sessionToken, env, request) });
+    const sessionToken = await createViewerSessionImpl(env, viewerId);
+    return redirect(safeReturnTo(stateData.returnTo, stateData.origin), { "set-cookie": viewerCookieSetImpl(sessionToken, env, request) });
   } catch (err) {
     console.error("[viewer-auth] kick callback failed:", err?.message || err);
-    return redirect(`/me?error=${encodeURIComponent(err?.message || "kick_auth_failed")}`);
+    return redirect("/me?error=kick_auth_failed");
   }
 }
 
@@ -201,7 +199,7 @@ export async function handleDiscordViewerAuthStart(request, env) {
   const redirectUri = `${origin}/api/viewer/auth/discord/callback`;
 
   const state = randomState();
-  await storeOAuthState(env, state, { provider: "discord", returnTo, origin, redirectUri });
+  await storeOAuthState("discord", state, { provider: "discord", returnTo, origin, redirectUri });
 
   const authorizeURL = buildDiscordAuthorizeURL(env, state, undefined, redirectUri);
   return redirect(authorizeURL);
@@ -220,11 +218,10 @@ export async function handleDiscordViewerAuthCallback(request, env) {
     return redirect(`/me?error=${encodeURIComponent("missing_oauth_params")}`);
   }
 
-  const stateData = await getOAuthState(env, state);
-  if (!stateData || stateData.provider !== "discord") {
+  const stateData = await consumeOAuthState("discord", state);
+  if (!stateData) {
     return redirect(`/me?error=${encodeURIComponent("oauth_state_expired")}`);
   }
-  await deleteOAuthState(env, state);
 
   try {
     const tokens = await exchangeDiscordCode(env, code, stateData.redirectUri);
@@ -303,7 +300,7 @@ export async function handleDiscordViewerAuthCallback(request, env) {
     return redirect(safeReturnTo(stateData.returnTo, stateData.origin), { "set-cookie": viewerCookieSet(sessionToken, env, request) });
   } catch (err) {
     console.error("[viewer-auth] discord callback failed:", err?.message || err);
-    return redirect(`/me?error=${encodeURIComponent(err?.message || "discord_auth_failed")}`);
+    return redirect("/me?error=discord_auth_failed");
   }
 }
 

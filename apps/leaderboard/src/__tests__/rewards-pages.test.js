@@ -58,4 +58,16 @@ describe("server-rendered rewards pages", () => {
     expect(dashboardV4Source).toContain("#cr-rewards details");
     expect(dashboardV4Source).toContain("overflow-wrap: anywhere");
   });
+
+  it("surfaces Kick OAuth results in the channel status and cleans one-time params", () => {
+    const html = RewardsChannelPage().toString();
+    expect((html.match(/id="cr-channel-status"/g) || []).length).toBe(1);
+    expect(rewardsClientSource).toContain('params.get("kick_connected")');
+    expect(rewardsClientSource).toContain('clean.searchParams.delete("error")');
+    expect(rewardsClientSource).toContain('setStatus("cr-channel-status"');
+    expect(rewardsClientSource).toContain("applyOAuthContext();");
+    expect(rewardsClientSource.indexOf("applyOAuthContext();")).toBeLessThan(rewardsClientSource.indexOf("const shell = await loadBoardShell"));
+    expect(rewardsClientSource).toContain('sitePath("/api/kick/disconnect", activeSiteId)');
+    expect(rewardsClientSource).toContain("const statusClearTimers = new Map()");
+  });
 });
