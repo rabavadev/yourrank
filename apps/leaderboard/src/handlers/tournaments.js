@@ -552,7 +552,6 @@ export async function handleRandomPickTournamentEntries(request, env, deps = {})
   const {
     requireUser = defaultRequireUser,
     one = defaultOne,
-    query = defaultQuery,
     withTransaction = defaultWithTransaction,
     logAudit = defaultLogAudit,
     requireSiteCapabilityImpl = requireSiteCapability,
