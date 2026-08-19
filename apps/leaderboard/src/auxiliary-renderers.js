@@ -1,4 +1,4 @@
-import { formatMoney, renderSite } from "@yourrank/shared/site-render";
+import { formatMoney, prizeCurrency, renderSite } from "@yourrank/shared/site-render";
 import { safeUrl } from "@yourrank/shared/public-render-helpers";
 
 function esc(s) {
@@ -59,7 +59,7 @@ function legalBody(data, page) {
 export function renderNewLegalPage(data, page, opts) {
   const r = record(data, opts);
   const title = ({
-    terms: "Terms of Service", privacy: "Privacy Policy", responsible: "Responsible Gaming",
+    terms: "Terms of Service", privacy: "Privacy Policy", responsible: "Responsible Play",
     cookies: "Cookie Policy", refund: "Refund & Cancellation", contact: "Contact",
   })[page] || page;
   // A-01: <i> is decorative; aria-hidden prevents screen readers announcing the empty element.
@@ -71,7 +71,7 @@ export function renderNewLegalPage(data, page, opts) {
 export function renderNewPlayerProfile(data, player, history, opts) {
   const r = record(data, opts);
   const p = player || {};
-  const currency = r.data.brand?.currency;
+  const currency = prizeCurrency(r.data);
   const hidePrizes = r.data.prizes?.hidePrizeAmounts === true;
   // A-01: aria-hidden on eyebrow <i> icon.
   // A-02: scope="col" on all <th> cells for correct AT header association.
@@ -115,6 +115,7 @@ export function renderNewEmbed(data, opts) {
   // A-01: aria-hidden on eyebrow <i> icon in the embed shell.
   // A-02: scope="col" on <th> cells.
   // U-07: Empty state uses .empty component.
-  const rows = players.length ? players.map((p, i) => `<tr><td>${i + 1}</td><td>${esc(p.name)}</td><td>${esc(formatMoney(b.currency, p.wagered))}</td><td>${hidePrizes ? "\u2014" : esc(formatMoney(b.currency, p.prize))}</td></tr>`).join("") : '<tr><td colspan="4"><div class="empty">No players yet.</div></td></tr>';
+  const currency = prizeCurrency(data);
+  const rows = players.length ? players.map((p, i) => `<tr><td>${i + 1}</td><td>${esc(p.name)}</td><td>${esc(formatMoney(currency, p.wagered))}</td><td>${hidePrizes ? "\u2014" : esc(formatMoney(currency, p.prize))}</td></tr>`).join("") : '<tr><td colspan="4"><div class="empty">No players yet.</div></td></tr>';
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(b.name || opts.slug)}</title><link rel="stylesheet" href="/assets/site-shell.css"><link rel="stylesheet" href="/assets/devin-system.css"><style nonce="${esc(opts.nonce)}">body{margin:0;background:transparent}.yr-embed{max-width:680px;margin:0 auto;padding:12px}.yr-embed .yr-card{padding:18px}.yr-embed table{width:100%}</style></head><body class="yr-site"><main class="yr-embed"><section class="yr-card yr-lb"><p class="yr-eyebrow"><i aria-hidden="true"></i>${esc(b.period || "CURRENT BOARD")}</p><h1 class="yr-h1">${esc(b.name || opts.slug)}</h1><p class="yr-lede">${esc(b.prizePool || "")}</p><div class="yr-table-wrap"><table class="yr-table"><thead><tr><th scope="col">#</th><th scope="col">Player</th><th scope="col">Wagered</th><th scope="col">Prize</th></tr></thead><tbody>${rows}</tbody></table></div></section></main></body></html>`;
 }

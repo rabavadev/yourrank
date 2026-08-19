@@ -113,7 +113,8 @@
   var esc = function (v) { return String(v == null ? "" : v).replace(/[&<>"']/g, function (c) { return ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]); }); };
   var rowHtml = function (p) {
     var rank = Number(p.rank) || 0;
-    return '<tr data-name="' + esc(String(p.name || "").toLowerCase()) + '" data-position="' + rank + '">' +
+    var name = esc(String(p.name || "").toLowerCase());
+    return '<tr data-player-name="' + name + '" data-name="' + name + '" data-position="' + rank + '">' +
       '<td class="yr-idx">' + String(rank).padStart(2, "0") + '</td>' +
       '<td><a href="' + (isCustomDomain ? "/player/" : "/" + encodeURIComponent(slug) + "/player/") + encodeURIComponent(p.name || "") + '">' + esc(p.name) + '</a></td>' +
       '<td class="yr-mono yr-r">' + esc(money(p.wagered)) + '</td>' +
@@ -142,7 +143,7 @@
     if (loadMore) loadMore.hidden = !page.hasMore;
   };
   if (search && rowsRoot) {
-    var rows = function () { return Array.prototype.slice.call(rowsRoot.querySelectorAll("tr[data-name]")); };
+    var representations = function () { return Array.prototype.slice.call(document.querySelectorAll("[data-player-name]")); };
     search.addEventListener("input", function () {
       var q = search.value.trim().toLowerCase();
       activeSearch = q;
@@ -153,14 +154,15 @@
       searchController = null;
       clearTimeout(searchTimer);
       var shown = 0;
-      rows().forEach(function (row) {
-        var hit = !q || row.dataset.name.indexOf(q) !== -1;
-        row.hidden = !hit;
+      representations().forEach(function (representation) {
+        var hit = !q || representation.dataset.playerName.indexOf(q) !== -1;
+        representation.hidden = !hit;
         if (hit) shown += 1;
       });
       if (!q) {
         if (rowsRoot && savedRowsHtml) rowsRoot.innerHTML = savedRowsHtml;
-        loadedCount = rows().length;
+        representations().forEach(function (representation) { representation.hidden = false; });
+        loadedCount = rowsRoot.querySelectorAll("tr[data-player-name]").length;
         if (loadMore) loadMore.hidden = loadedCount >= totalCount;
         if (empty) empty.hidden = true;
         setSearchStatus("");
@@ -179,6 +181,9 @@
           appendPage(page, true);
           searchOffset = (page.players || []).length;
           var found = (page.players || []).length !== 0;
+          representations().forEach(function (representation) {
+            representation.hidden = representation.dataset.playerName.indexOf(q) === -1;
+          });
           if (empty) empty.hidden = found;
           setSearchStatus(found ? "" : "No matches.");
         }).catch(function (err) {

@@ -988,6 +988,7 @@ export async function handleRequest(request, env, ctx, meta, deps = {}) {
             viewerData: null,
             opts: {
               watermark: false,
+              isDemo: true,
               homeUrl: url.origin,
               slug: "demo",
               isCustomDomain: false,
