@@ -2,7 +2,7 @@ import { describe, it, expect } from "bun:test";
 import { readFileSync } from "node:fs";
 import { handleGiveawayChatroom } from "../handlers/giveaway.js";
 import { GiveawaysPage } from "../pages/giveaways.jsx";
-import { giveawaysHtml, renderGiveawaysHtml } from "../pages/giveaway-pages.js";
+import { giveawaysHtml, renderGiveawayDrawersHtml, renderGiveawaysContentHtml, renderGiveawaysHtml } from "../pages/giveaway-pages.js";
 
 const gamesSource = readFileSync(new URL("../assets/dashboard/games.js", import.meta.url), "utf8");
 const siteSource = readFileSync(new URL("../assets/dashboard/site.js", import.meta.url), "utf8");
@@ -271,10 +271,25 @@ describe("Giveaway Chatroom Handler", () => {
         new Map([...declarations.matchAll(/([\w-]+)\s*:\s*([^;]+);/g)].map(([, name, value]) => [name, value.trim()])),
       );
     }
-    expect(cssRules.get(".gw-drawer-backdrop")?.get("z-index")).toBe("1200");
     expect(cssRules.get(".gw-drawer-body")?.get("overflow")).toBe("hidden");
     expect(cssRules.get(".gw-drawer-fields")?.get("overflow-y")).toBe("auto");
     expect(cssRules.get(".gw-drawer-footer")?.get("flex")).toBe("0 0 auto");
+  });
+
+  it("mounts event drawers outside the content stacking context", () => {
+    const content = renderGiveawaysContentHtml("raffles");
+    const drawers = renderGiveawayDrawersHtml("raffles");
+    expect(content).not.toContain('id="rf-drawer"');
+    expect(drawers).toContain('id="rf-drawer"');
+
+    const page = GiveawaysPage({ user: { id: "u-1", email: "streamer@test.com" }, tab: "raffles" }).toString();
+    const bentoStart = page.indexOf('<div class="lb-bento"');
+    const drawersStart = page.indexOf("<!-- =========================================================================\n     DRAWERS & MODALS");
+    const firstDrawer = page.indexOf('class="gw-drawer-backdrop" id="pred-drawer"');
+    expect(bentoStart).toBeGreaterThanOrEqual(0);
+    expect(drawersStart).toBeGreaterThan(bentoStart);
+    expect(firstDrawer).toBeGreaterThan(drawersStart);
+    expect(page.slice(bentoStart, drawersStart)).toContain("</div>");
   });
 
   it("renders truthful unverified and resend controls", () => {

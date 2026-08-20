@@ -9,13 +9,15 @@ export const GIVEAWAY_TABS = [
 ];
 
 const giveawayPath = (tab) => `/dashboard/giveaways/${tab === "preds" ? "predictions" : tab}`;
+const DRAWERS_MARKER = "<!-- =========================================================================\n     DRAWERS & MODALS";
+const TOURNAMENTS_MARKER = "<!-- =========================================================================\n     TAB 5: TOURNAMENT ENTRIES";
 
 export function renderGiveawaysHtml(activeTab = "chat") {
   const active = GIVEAWAY_TABS.some(([tab]) => tab === activeTab) ? activeTab : "chat";
   const activeLabel = GIVEAWAY_TABS.find(([tab]) => tab === active)?.[1] || "Giveaways";
   const tabs = GIVEAWAY_TABS.map(([tab, label]) => `
   <a class="gw-tab-btn v3-tab${tab === active ? " is-active is-on" : ""}" id="tab-btn-${tab}" href="${giveawayPath(tab)}" data-tab="${tab}" role="tab" aria-selected="${tab === active ? "true" : "false"}"${tab === active ? ' aria-current="page"' : ""}>${label}</a>`).join("");
-  return `
+  const html = `
 <div class="v3-head">
   <div class="v3-head-col">
   <h1>${activeLabel}</h1>
@@ -839,6 +841,23 @@ ${tabs}
   </div>
 </div>
 `;
+  return html;
+}
+
+export function renderGiveawaysContentHtml(activeTab = "chat") {
+  const html = renderGiveawaysHtml(activeTab);
+  const start = html.indexOf(DRAWERS_MARKER);
+  const end = html.indexOf(TOURNAMENTS_MARKER, start);
+  if (start < 0 || end < 0) return html;
+  return `${html.slice(0, start)}${html.slice(end)}`;
+}
+
+export function renderGiveawayDrawersHtml(activeTab = "chat") {
+  const html = renderGiveawaysHtml(activeTab);
+  const start = html.indexOf(DRAWERS_MARKER);
+  const end = html.indexOf(TOURNAMENTS_MARKER, start);
+  if (start < 0 || end < 0) return "";
+  return html.slice(start, end);
 }
 
 export const giveawaysHtml = renderGiveawaysHtml();
