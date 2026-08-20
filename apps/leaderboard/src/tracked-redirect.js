@@ -1,10 +1,12 @@
+import { redirectResponse } from "./login-redirect.js";
+
 export function trackedDestination(origin, slug, ctaUrl, clickRef) {
   if (ctaUrl && /^https:\/\//i.test(ctaUrl)) {
     const dest = new URL(ctaUrl);
     dest.searchParams.set("yr_click", clickRef);
-    return Response.redirect(dest.toString(), 302);
+    return redirectResponse(dest.toString(), 302);
   }
-  return Response.redirect(`${origin}/${slug}`, 302);
+  return redirectResponse(`${origin}/${slug}`, 302);
 }
 
 export function deferClickWrite(ctx, write) {

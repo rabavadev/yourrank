@@ -22,4 +22,10 @@ describe("protected page login redirects", () => {
     expect(response.status).toBe(302);
     expect(response.headers.get("location")).toBe("https://yourrank.site/login");
   });
+
+  it("keeps headers mutable for legacy-cookie cleanup", () => {
+    const response = redirectToLogin(new URL("https://yourrank.site/dashboard"));
+    expect(() => response.headers.append("set-cookie", "sess=; Max-Age=0")).not.toThrow();
+    expect(response.headers.get("set-cookie")).toContain("sess=");
+  });
 });

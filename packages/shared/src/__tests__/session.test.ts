@@ -14,6 +14,8 @@ interface SessionRow {
   user_id: string;
   created_at: string;
   age: number;
+  previous_token?: string;
+  rotated_at?: number;
 }
 
 const sessions = new Map<string, SessionRow>();
@@ -41,16 +43,22 @@ const dbMock = () => ({
     if (/DELETE FROM sessions/i.test(sql)) {
       const [tokenOrUserId] = params as [string];
       for (const [k, v] of sessions.entries()) {
-        if (k === tokenOrUserId || v.user_id === tokenOrUserId) sessions.delete(k);
+        if (k === tokenOrUserId || v.previous_token === tokenOrUserId || v.user_id === tokenOrUserId) sessions.delete(k);
       }
       return;
     }
-    if (/UPDATE sessions SET token/i.test(sql)) {
+    if (/UPDATE sessions[\s\S]*SET token/i.test(sql)) {
       const [newToken, _ttl, oldToken] = params as [string, number, string];
       const row = sessions.get(oldToken);
       if (row) {
         sessions.delete(oldToken);
-        sessions.set(newToken, { ...row, created_at: new Date().toISOString(), age: 0 });
+        sessions.set(newToken, {
+          ...row,
+          previous_token: oldToken,
+          rotated_at: Date.now(),
+          created_at: new Date().toISOString(),
+          age: 0,
+        });
         return [{ token: newToken }];
       }
       return [];
@@ -60,8 +68,21 @@ const dbMock = () => ({
   },
   query: async (sql: string, params: unknown[]) => {
     if (/sessions/i.test(sql) && params[0]) {
-      const row = sessions.get(String(params[0]));
-      if (row) return [{ user_id: row.user_id, created_at: row.created_at, age: row.age }];
+      const token = String(params[0]);
+      const row = [...sessions.values()].find((candidate) =>
+        sessions.get(token) === candidate ||
+        (candidate.previous_token === token &&
+          candidate.rotated_at != null &&
+          Date.now() - candidate.rotated_at <= Number(params[1] || 0) * 1000)
+      );
+      if (row) {
+        return [{
+          user_id: row.user_id,
+          created_at: row.created_at,
+          age: row.age,
+          is_current: row.previous_token !== token,
+        }];
+      }
     }
     return [];
   },
@@ -74,7 +95,7 @@ mock.module(dbUrlTs, dbMock);
 
 const sessionModule = await import('../session');
 const {
-  COOKIE_NAME, SESSION_TTL_S, SESSION_ROTATE_AFTER_S,
+  COOKIE_NAME, SESSION_TTL_S, SESSION_ROTATE_AFTER_S, SESSION_ROTATE_GRACE_S,
   cookieSet, cookieClear, cookieClearLegacy, cookieClearLegacy2,
   readToken, hasLegacyCookie, cookieDomain,
   createSession, destroySession, destroyAllUserSessions,
@@ -115,6 +136,12 @@ describe('SESSION_TTL_S', () => {
 describe('SESSION_ROTATE_AFTER_S', () => {
   it('is 24 hours (86400)', () => {
     expect(SESSION_ROTATE_AFTER_S).toBe(86400);
+  });
+});
+
+describe('SESSION_ROTATE_GRACE_S', () => {
+  it('keeps the previous token valid for two minutes', () => {
+    expect(SESSION_ROTATE_GRACE_S).toBe(120);
   });
 });
 
@@ -342,6 +369,32 @@ describe('resolveSession', () => {
     expect(result.cookie).toContain('yr_session=');
     const oldHash = await hashToken('oldtok');
     expect(sessions.has(oldHash)).toBe(false);
+  });
+
+  it('resolves a previous token during the grace window without rotating again', async () => {
+    setUser('user-1');
+    await setSession('oldtok', 'user-1', SESSION_ROTATE_AFTER_S + 1);
+    const oldRequest = new Request('https://example.com', { headers: { Cookie: 'yr_session=oldtok' } });
+    const rotated = await resolveSession(oldRequest, mockEnv());
+    expect(rotated.cookie).not.toBeNull();
+
+    const graceHit = await resolveSession(oldRequest, mockEnv());
+    expect(graceHit.userId).toBe('user-1');
+    expect(graceHit.cookie).toBeNull();
+    expect(sessions.size).toBe(1);
+  });
+
+  it('rejects a previous token after the grace window expires', async () => {
+    setUser('user-1');
+    await setSession('oldtok', 'user-1', SESSION_ROTATE_AFTER_S + 1);
+    const oldRequest = new Request('https://example.com', { headers: { Cookie: 'yr_session=oldtok' } });
+    await resolveSession(oldRequest, mockEnv());
+    const current = [...sessions.values()][0];
+    current.rotated_at = Date.now() - (SESSION_ROTATE_GRACE_S + 1) * 1000;
+
+    const expired = await resolveSession(oldRequest, mockEnv());
+    expect(expired.userId).toBeNull();
+    expect(expired.cookie).toBeNull();
   });
 });
 

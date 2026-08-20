@@ -4,6 +4,7 @@ import { getUserSiteById, FONT_KEYS } from "../site.js";
 import { renderSite } from "@yourrank/shared/site-render";
 import { SECURE_HTML, withNonce } from "../middleware/headers.js";
 import { gamesIslandHead, gamesIslandMount } from "@yourrank/shared/games-embed";
+import { redirectResponse } from "../login-redirect.js";
 
 const HEX = /^#[0-9a-fA-F]{6}$/;
 
@@ -13,7 +14,7 @@ export async function handleDashboardPreview(request, env, nonce, {
 } = {}) {
   const url = new URL(request.url);
   const user = await currentUserImpl(request, env);
-  if (!user) return Response.redirect(new URL("/login", url), 302);
+  if (!user) return redirectResponse(new URL("/login", url), 302);
   const plan = effectivePlan(user);
   const siteId = url.searchParams.get("board");
   if (!siteId) return new Response("board required", { status: 400 });

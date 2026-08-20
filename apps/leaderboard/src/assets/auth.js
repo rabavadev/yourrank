@@ -145,7 +145,7 @@ if (mode === "signup" && PLAN_NAMES[planParam]) {
   }
 }
 if (mode === "login" || mode === "signup") {
-  fetch("/api/auth/me").then(r => r.json()).then(d => { if (d && d.ok && d.user) location.href = "/dashboard"; }).catch(() => {});
+  fetch("/api/auth/me").then(r => r.json()).then(d => { if (d && d.ok && d.user) location.href = nextPath || "/dashboard"; }).catch(() => {});
 }
 form.addEventListener("submit", async (e) => {
   e.preventDefault(); errEl.textContent = ""; submit.disabled = true;

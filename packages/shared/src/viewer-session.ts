@@ -31,6 +31,7 @@ export interface ViewerRecord {
 export const VIEWER_COOKIE_NAME = "yr_viewer";
 export const VIEWER_SESSION_TTL_S = 30 * 86400;    // 30 days
 export const VIEWER_SESSION_ROTATE_AFTER_S = 86400; // 24 h
+export const VIEWER_SESSION_ROTATE_GRACE_S = 120;
 const VIEWER_COOKIE_DOMAIN = ".yourrank.site";
 
 function bytesToHex(bytes: Uint8Array): string {
@@ -95,7 +96,7 @@ export async function createViewerSession(_env: ViewerSessionEnv, viewerId: stri
 export async function destroyViewerSession(_env: ViewerSessionEnv, token: string | null): Promise<void> {
   if (!token) return;
   const tokenHash = await hashToken(token);
-  await exec("DELETE FROM viewer_sessions WHERE token = $1", [tokenHash]);
+  await exec("DELETE FROM viewer_sessions WHERE token = $1 OR previous_token = $1", [tokenHash]);
 }
 
 interface ResolveResult {
@@ -103,30 +104,48 @@ interface ResolveResult {
   cookie: string | null;
 }
 
-export async function resolveViewerSession(req: Request, env: ViewerSessionEnv): Promise<ResolveResult> {
+interface ViewerSessionResolveDeps {
+  query?: typeof query;
+  exec?: typeof exec;
+}
+
+export async function resolveViewerSession(
+  req: Request,
+  env: ViewerSessionEnv,
+  deps: ViewerSessionResolveDeps = {},
+): Promise<ResolveResult> {
   const token = readViewerToken(req);
   if (!token) return { viewerId: null, cookie: null };
   const tokenHash = await hashToken(token);
+  const queryImpl = deps.query || query;
+  const execImpl = deps.exec || exec;
 
-  const row = await query(
+  const row = await queryImpl(
     `SELECT viewer_id, extract(epoch FROM now() - created_at)::int AS age
+            ,(token = $1) AS is_current
        FROM viewer_sessions
-      WHERE token = $1 AND expires_at > now()`,
-    [tokenHash]
+      WHERE (token = $1 OR (previous_token = $1 AND rotated_at > now() - make_interval(secs => $2)))
+        AND expires_at > now()`,
+    [tokenHash, VIEWER_SESSION_ROTATE_GRACE_S]
   );
   if (!row || row.length === 0) return { viewerId: null, cookie: null };
 
   const viewerId = row[0].viewer_id as string;
   const age = Number(row[0].age || 0);
+  const isCurrent = row[0].is_current !== false;
 
   // Rotate session if older than threshold.
-  if (age > VIEWER_SESSION_ROTATE_AFTER_S) {
+  if (isCurrent && age > VIEWER_SESSION_ROTATE_AFTER_S) {
     try {
       const rotated = newViewerToken();
       const rotatedHash = await hashToken(rotated);
-      const updated = await exec(
+      const updated = await execImpl(
         `UPDATE viewer_sessions
-            SET token = $1, created_at = now(), expires_at = now() + make_interval(secs => $2)
+            SET token = $1,
+                previous_token = $3,
+                rotated_at = now(),
+                created_at = now(),
+                expires_at = now() + make_interval(secs => $2)
           WHERE token = $3
         RETURNING token`,
         [rotatedHash, VIEWER_SESSION_TTL_S, tokenHash]
@@ -140,8 +159,8 @@ export async function resolveViewerSession(req: Request, env: ViewerSessionEnv):
   }
 
   // Sliding-window TTL refresh.
-  exec(
-    "UPDATE viewer_sessions SET expires_at = now() + make_interval(secs => $1) WHERE token = $2",
+  execImpl(
+    "UPDATE viewer_sessions SET expires_at = now() + make_interval(secs => $1) WHERE token = $2 OR previous_token = $2",
     [VIEWER_SESSION_TTL_S, tokenHash]
   ).catch((e) => console.error("[viewer-session] TTL refresh failed:", (e as Error)?.message));
 
