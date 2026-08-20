@@ -7,7 +7,7 @@ const GAME_ROWS = [
   { key: "plinko", label: "Plinko", description: "A pachinko-style game with multiplier rewards." },
   { key: "mines", label: "Mines", description: "Reveal safe tiles and avoid the mines." },
   { key: "dice", label: "Dice", description: "Roll the dice and predict the outcome." },
-  { key: "limbo", label: "Limbo", description: "Coming soon", disabled: true },
+  { key: "limbo", label: "Limbo", description: "", disabled: true },
 ];
 
 const sectionRows = [

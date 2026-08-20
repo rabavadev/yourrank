@@ -7,6 +7,8 @@ import { activityEmptyAction, giveawayAction } from "../assets/dashboard/overvie
 const siteJs = readFileSync(new URL("../assets/dashboard/site.js", import.meta.url), "utf8");
 const utilsJs = readFileSync(new URL("../assets/dashboard/utils.js", import.meta.url), "utf8");
 const overviewJs = readFileSync(new URL("../assets/dashboard/overview.js", import.meta.url), "utf8");
+const gamesJs = readFileSync(new URL("../assets/dashboard/games.js", import.meta.url), "utf8");
+const routesJs = readFileSync(new URL("../assets/dashboard/routes.js", import.meta.url), "utf8");
 const dashboardJs = readFileSync(new URL("../assets/dashboard.js", import.meta.url), "utf8");
 const boardShellJs = readFileSync(new URL("../assets/dashboard/board-shell.js", import.meta.url), "utf8");
 const performanceJs = readFileSync(new URL("../assets/dashboard/performance.js", import.meta.url), "utf8");
@@ -51,7 +53,10 @@ describe("dashboard overview quick actions", () => {
     expect(html).toContain('id="ovLblCredits">Credits used</span>');
     expect(html).toContain('id="ovCreditsCard" hidden');
     expect(overviewJs).toContain("state.CREDITS?.usage?.pendingRedemptions");
+    expect(overviewJs).toContain('pendingOrders === 1 ? "pending credit order needs review." : "pending credit orders need review."');
     expect(overviewJs).toContain('pendingOrders === 1 ? "Review order" : "Review orders"');
+    expect(dashboardHtml()).toContain('id="ovPendingOrdersAlertLabel">pending credit orders need review.</span>');
+    expect(dashboardHtml()).toContain('id="ovPendingOrdersAction"');
     expect(html).toContain('id="ovKpiRow"');
   });
 
@@ -129,6 +134,20 @@ describe("dashboard overview quick actions", () => {
     expect(games).toContain("Current visibility on your leaderboard page");
     expect(games).toContain("Edit layout &amp; blocks in Appearance →");
     expect(games).not.toContain("Choose which blocks appear on your leaderboard page");
+  });
+
+  it("keeps authenticated cards on the v4 geometry without changing public cards", () => {
+    expect(dashboardCss).toMatch(/\.v3-dash\[data-auth-workspace\] \.card \{[\s\S]*?padding: 24px;[\s\S]*?margin-top: 0;[\s\S]*?transition: none;/);
+    expect(dashboardCss).toContain(".v3-dash[data-auth-workspace] .card:hover { border-color: var(--v4-line); }");
+    expect(dashboardCss).toContain(".v3-dash[data-auth-workspace] .ov-live-grid { display: grid;");
+    expect(dashboardCss).toContain("gap: 16px; }");
+    expect(dashboardCss).not.toContain(".v3-dash[data-auth-workspace] .ov-live-grid { display: grid; grid-template-columns: minmax(0, 8fr) minmax(280px, 4fr); gap: 0; overflow: hidden;");
+  });
+
+  it("keeps Games terminology and status copy singular", () => {
+    expect(routesJs).toContain('games: { path: "/dashboard/games", title: "Games" }');
+    expect(gamesJs).toContain('{ key: "limbo", label: "Limbo", description: "", disabled: true }');
+    expect(gamesJs).toContain('<span class="v3-game-coming">Coming soon</span>');
   });
 
   it("announces the active audience insight tab", () => {
