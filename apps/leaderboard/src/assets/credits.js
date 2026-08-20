@@ -115,7 +115,7 @@ function setCreditsPanelLoading(loading) {
   }
 }
 function usageCls(used, limit) { const pct = limit > 0 ? Math.round((used / limit) * 100) : 0; return limit > 0 && used >= limit ? "cr-usage-over" : limit > 0 && pct >= 80 ? "cr-usage-near" : ""; }
-function usageCard(used, limit, name) { const cls = usageCls(used, limit); return `<div class="cr-usage-card"><div class="hint">${esc(name)}</div><div class="cr-usage-number${cls ? ` ${cls}` : ""}">${used} / ${limit}</div>${cls ? '<a href="/dashboard/settings/plan" class="cr-usage-upgrade">Upgrade plan</a>' : ""}</div>`; }
+function usageCard(used, limit, name) { const cls = usageCls(used, limit); return `<div class="cr-usage-card"><div class="hint">${esc(name)}</div><div class="cr-usage-number${cls ? ` ${cls}` : ""}">${used} / ${limit}</div>${cls ? '<a href="/dashboard/settings/billing" class="cr-usage-upgrade">Upgrade plan</a>' : ""}</div>`; }
 function draftKey(id) { return `yr:credits:draft:${id}`; }
 function debounce(fn, ms) { let timer; return (...args) => { clearTimeout(timer); timer = setTimeout(() => fn(...args), ms); }; }
 function saveFormDraft(formId, id) {
@@ -210,7 +210,7 @@ function render() {
   const rewardAtLimit = usage.rewardMappings != null && limits.rewardMappings != null && usage.rewardMappings >= limits.rewardMappings;
   const shopAtLimit = usage.shopItems != null && limits.shopItems != null && usage.shopItems >= limits.shopItems;
   const rewardUsage = $("cr-reward-usage");
-  if (rewardUsage) rewardUsage.innerHTML = `${metric(usage.rewardMappings)} / ${metric(limits.rewardMappings)} credit rules${rewardAtLimit ? ' · <a href="/dashboard/settings/plan">Plan limit reached — upgrade plan</a>' : ""}`;
+  if (rewardUsage) rewardUsage.innerHTML = `${metric(usage.rewardMappings)} / ${metric(limits.rewardMappings)} credit rules${rewardAtLimit ? ' · <a href="/dashboard/settings/billing">Billing limit reached — upgrade plan</a>' : ""}`;
   const addMapping = $("cr-add-mapping");
   if (addMapping) {
     addMapping.classList.toggle("is-disabled", rewardAtLimit);
@@ -240,7 +240,7 @@ function render() {
     revealRewardFromHash();
   }
   if (current === "shop") {
-    $("cr-shop-usage").innerHTML = `${metric(usage.shopItems)} / ${metric(limits.shopItems)} active items${shopAtLimit ? ' · <a href="/dashboard/settings/plan">Plan limit reached — upgrade plan</a>' : ""}`;
+    $("cr-shop-usage").innerHTML = `${metric(usage.shopItems)} / ${metric(limits.shopItems)} active items${shopAtLimit ? ' · <a href="/dashboard/settings/billing">Billing limit reached — upgrade plan</a>' : ""}`;
     const submit = $("cr-shop-submit"); if (submit) { submit.disabled = shopAtLimit; submit.title = shopAtLimit ? "Upgrade your plan to add more items" : ""; }
     const create = $("cr-shop-new"); if (create) { create.disabled = shopAtLimit; create.title = shopAtLimit ? "Upgrade your plan to add more items" : ""; }
     shopItemsView = state.shopItems || []; renderShopCards(shopItemsView);

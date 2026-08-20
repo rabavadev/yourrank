@@ -699,12 +699,19 @@ export async function handleRequest(request, env, ctx, meta, deps = {}) {
       if (path === "/dashboard/settings/board") {
         return redirectKeepingSearch("/dashboard/site", url, 301);
       }
-      if (path === "/dashboard/settings" || /^\/dashboard\/settings\/(account|team|plan|connections|data)$/.test(path)) {
+      if (path === "/dashboard/settings/plan") {
+        return redirectKeepingSearch("/dashboard/settings/billing", url, 301);
+      }
+      if (path === "/dashboard/settings" || /^\/dashboard\/settings\/(account|team|billing|connections|data)$/.test(path)) {
         const pathTab = path.split("/").pop();
         const requestedTab = pathTab === "settings"
           ? (url.searchParams.get("tab") || (url.searchParams.has("plan") ? "plan" : null))
           : pathTab;
-        const tab = ["account", "team", "plan", "connections", "data"].includes(requestedTab) ? requestedTab : "account";
+        const tab = requestedTab === "billing" || requestedTab === "plan"
+          ? "plan"
+          : ["account", "team", "connections", "data"].includes(requestedTab)
+            ? requestedTab
+            : "account";
         const user = await currentUser(request, env);
         if (!user) return redirectToLogin(url);
         const html = addCookieConsent(await renderHtmlPage(PAGES.settingsUnified, {
@@ -716,7 +723,7 @@ export async function handleRequest(request, env, ctx, meta, deps = {}) {
         }));
         return new Response(html, { headers: { ...SECURE_HTML, ...csrfHeader, "cache-control": "no-store, no-cache, must-revalidate" } });
       }
-      if (path === "/dashboard/billing") return redirectKeepingSearch("/dashboard/settings/plan", url);
+      if (path === "/dashboard/billing") return redirectKeepingSearch("/dashboard/settings/billing", url, 301);
       if (path === "/dashboard/attribution") return redirectKeepingSearch("/dashboard/settings/connections", url);
       if (path === "/dashboard/security") return redirectKeepingSearch("/dashboard/settings/account", url);
       if (path === "/dashboard/integrations") return redirectKeepingSearch("/dashboard/settings/connections", url);
@@ -724,6 +731,9 @@ export async function handleRequest(request, env, ctx, meta, deps = {}) {
       if (path === "/dashboard/audience/viewers" || path === "/dashboard/audience/activity") {
         const target = path.endsWith("/viewers") ? "/dashboard/rewards/viewers" : "/dashboard/rewards/activity";
         return redirectKeepingSearch(target, url, 301);
+      }
+      if (path === "/dashboard/giveaways/preds") {
+        return redirectKeepingSearch("/dashboard/giveaways/predictions", url, 301);
       }
       const legacyDashboard = legacyDashboardPath(path);
       if (legacyDashboard) {
@@ -808,8 +818,8 @@ export async function handleRequest(request, env, ctx, meta, deps = {}) {
       }
       if (path.startsWith("/dashboard/giveaways/")) {
         const tab = path.slice("/dashboard/giveaways/".length);
-        if (["chat", "raffles", "drops", "preds", "tournaments"].includes(tab)) {
-          return renderDashboardPage("giveaways", "giveaways_render_failed", tab);
+        if (["chat", "raffles", "drops", "predictions", "tournaments"].includes(tab)) {
+          return renderDashboardPage("giveaways", "giveaways_render_failed", tab === "predictions" ? "preds" : tab);
         }
         return redirectKeepingSearch("/dashboard/giveaways/chat", url);
       }

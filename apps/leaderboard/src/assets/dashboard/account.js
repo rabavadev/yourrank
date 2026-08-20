@@ -199,6 +199,8 @@ function wireSettingsTabs(initialTab = "access") {
   const tabs = [...document.querySelectorAll("[data-settings-tab]")];
   const panels = [...document.querySelectorAll("[data-settings-panel]")];
   if (!tabs.length) return;
+  const validTabs = new Set(tabs.map((tab) => tab.dataset.settingsTab));
+  if (!validTabs.has(initialTab)) initialTab = tabs[0].dataset.settingsTab;
   const select = (key, focus = false) => {
     tabs.forEach((tab) => {
       const active = tab.dataset.settingsTab === key;

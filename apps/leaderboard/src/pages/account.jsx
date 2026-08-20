@@ -9,7 +9,7 @@ export const SETTINGS_TABS = [
   ["account", "Account", '<path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>'],
   ["team", "Team", '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>'],
   ["plan", "Billing", '<rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/>'],
-  ["connections", "Integrations", '<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>'],
+  ["connections", "Connections", '<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>'],
   ["data", "Data", '<path d="M4 6h16M4 12h16M4 18h16"/>'],
 ];
 
@@ -20,9 +20,7 @@ function settingsPanel(key, html) {
 export function UnifiedSettingsPage({ activePath, user, tab = "account" } = {}) {
   const active = SETTINGS_TABS.some(([key]) => key === tab) ? tab : "account";
   const activeLabel = SETTINGS_TABS.find(([key]) => key === active)?.[1] || "Account";
-  const obsTools = `<div class="lb-widget lb-widget--full ov-obs-suite-card"><div class="v3-section-head"><div><h2>OBS Live Stream Overlays</h2><p class="v3-head-sub">Paste transparent browser sources directly into OBS Studio or Streamlabs.</p></div><a class="btn btn--sm btn--ghost" href="/dashboard/leaderboard/design">Theme Studio →</a></div><div class="v3-settings-row"><div><b>Site for these overlay links</b><p class="card-sub" id="obsSiteHint">Loading your sites…</p></div><select id="obsSiteSelect" class="v3-select" aria-label="Site for OBS links"><option>Loading sites…</option></select></div><div class="ov-obs-grid"><div class="ov-obs-item"><div class="ov-obs-info"><span class="ov-obs-tag">PREDICTIONS HUD</span><strong>Live Betting Overlay</strong><p>Live Yes/No odds bar &amp; countdown timer on stream.</p></div><button class="btn btn--sm btn--accent" id="ov-btn-copy-pred-hud" type="button">Copy OBS Link</button></div><div class="ov-obs-item"><div class="ov-obs-info"><span class="ov-obs-tag">SOUND ALERTS</span><strong>Stream Alerts &amp; Chimes</strong><p>Audio chimes &amp; popup cards for prize orders &amp; winners.</p></div><button class="btn btn--sm btn--accent" id="ov-btn-copy-alerts" type="button">Copy OBS Link</button></div><div class="ov-obs-item"><div class="ov-obs-info"><span class="ov-obs-tag">PODIUM TICKER</span><strong>Leaderboard Bar</strong><p>Horizontal scrolling ticker of top racers &amp; points.</p></div><button class="btn btn--sm btn--accent" id="ov-btn-copy-ticker" type="button">Copy OBS Link</button></div></div></div>`;
-
-  return <DashboardShell activeNav={active === "connections" ? "integrations" : "account"} activePath={activePath || `/dashboard/settings/${active}`} boardContext="none" crumbs={[{ label: "Settings", href: "/dashboard/settings" }, { label: activeLabel }]} footer="account" topbarContext="Settings" user={user}>
+  return <DashboardShell activeNav={active === "connections" ? "settings" : "account"} activePath={activePath || `/dashboard/settings/${active === "plan" ? "billing" : active}`} boardContext="none" crumbs={[{ label: "Settings", href: "/dashboard/settings" }, { label: activeLabel }]} footer="account" topbarContext="Settings" user={user}>
     <div class="account-body account-settings" id="acc-app" data-acc-tab="settings" data-settings-active={active}>
       <div class="account-settings-head">
         <h1>{activeLabel}</h1>
@@ -30,7 +28,7 @@ export function UnifiedSettingsPage({ activePath, user, tab = "account" } = {}) 
       </div>
       <nav class="v3-tabs account-settings-tabs" aria-label="Account settings sections">
         {SETTINGS_TABS.map(([key, label, iconSvg]) => (
-          <a class={"v3-tab" + (key === active ? " is-on" : "")} href={`/dashboard/settings/${key}`} data-settings-tab={key} aria-current={key === active ? "page" : undefined}>
+          <a class={"v3-tab" + (key === active ? " is-on" : "")} href={`/dashboard/settings/${key === "plan" ? "billing" : key}`} data-settings-tab={key} aria-current={key === active ? "page" : undefined}>
             <svg class="tab-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">{raw(iconSvg)}</svg>
             <span>{label}</span>
           </a>
@@ -41,7 +39,7 @@ export function UnifiedSettingsPage({ activePath, user, tab = "account" } = {}) 
           {settingsPanel("account", settingsWidgets.account)}
           {settingsPanel("team", settingsWidgets.team)}
           {settingsPanel("plan", settingsWidgets.plan)}
-          {settingsPanel("connections", `${settingsWidgets.postbacks}${obsTools}<div class="lb-widget lb-widget--full"><h2>Connected accounts</h2><p class="card-sub">Streamer identities and connected services.</p><div id="connectedAccounts"><p class="hint">Loading…</p></div></div><div class="lb-widget lb-widget--full"><h2>Site connections</h2><p class="card-sub">Kick and Credits settings belong to the selected site.</p><a class="btn btn--accent" href="/dashboard/rewards/channel">Open Kick connection</a></div>`)}
+          {settingsPanel("connections", `${settingsWidgets.postbacks}<div class="lb-widget lb-widget--full"><h2>Connected accounts</h2><p class="card-sub">Streamer identities and connected services.</p><div id="connectedAccounts"><p class="hint">Loading…</p></div></div><div class="lb-widget lb-widget--full"><h2>Site connections</h2><p class="card-sub">Kick and Credits settings belong to the selected site.</p><a class="btn btn--accent" href="/dashboard/rewards/channel">Open Kick connection</a><a class="btn btn--ghost" href="/dashboard/leaderboard/share">Open sharing</a></div>`)}
           {settingsPanel("data", `${settingsWidgets.data}<div class="lb-widget lb-widget--full lb-widget--danger"><h2>Selected site data</h2><p class="card-sub">These actions affect one selected site, not your whole account. Open the site tools before making a destructive change.</p><div class="d-flex gap-8 flex-wrap"><a class="btn btn--ghost" href="/dashboard/leaderboard/history">Reset or archive a site</a><a class="btn btn--ghost" href="/dashboard/site?tab=danger">Delete a site</a></div></div>`)}
         </div>
         <aside class="account-settings-sidebar" aria-label="Related settings">

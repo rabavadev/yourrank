@@ -22,7 +22,7 @@ describe("dashboard routes", () => {
   it("leaves the account settings document to the Worker", () => {
     // Account settings are their own pages: if the shell claimed them it would
     // intercept the sidebar link and show board settings instead.
-    for (const tab of ["", "/account", "/plan", "/connections", "/data", "/integrations"]) {
+    for (const tab of ["", "/account", "/plan", "/billing", "/connections", "/data", "/integrations"]) {
       expect(parseDashboardPath(`/dashboard/settings${tab}`)).toBeNull();
     }
     expect(dashboardPath("site")).toBe("/dashboard/site");
@@ -38,7 +38,7 @@ describe("dashboard routes", () => {
     expect(resolveSection("billing")).toBe("plan");
     expect(resolveSection("integrations")).toBe("connections");
     expect(resolveSection("settings")).toBe("site");
-    expect(dashboardPath("billing")).toBe("/dashboard/settings/plan");
+    expect(dashboardPath("billing")).toBe("/dashboard/settings/billing");
     expect(dashboardPath("integrations")).toBe("/dashboard/settings/connections");
     expect(LEGACY_ACCOUNT_PATHS.billing).toBe(dashboardPath("billing"));
     expect(LEGACY_ACCOUNT_PATHS.integrations).toBe(dashboardPath("integrations"));
@@ -58,6 +58,9 @@ describe("dashboard routes", () => {
       ["/dashboard/audience/activity", "/dashboard/rewards/activity"],
       ["/dashboard/rewards/history", "/dashboard/rewards/activity"],
       ["/dashboard/settings/board", "/dashboard/site"],
+      ["/dashboard/settings/plan", "/dashboard/settings/billing"],
+      ["/dashboard/billing", "/dashboard/settings/billing"],
+      ["/dashboard/giveaways/preds", "/dashboard/giveaways/predictions"],
     ]) {
       const response = await worker.fetch(new Request(`https://yourrank.test${legacy}?viewer=GhostSniperr`), {}, {});
       expect(response.status, legacy).toBe(301);

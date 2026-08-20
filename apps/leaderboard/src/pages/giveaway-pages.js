@@ -8,14 +8,16 @@ export const GIVEAWAY_TABS = [
   ["tournaments", "Tournaments"],
 ];
 
+const giveawayPath = (tab) => `/dashboard/giveaways/${tab === "preds" ? "predictions" : tab}`;
+
 export function renderGiveawaysHtml(activeTab = "chat") {
   const active = GIVEAWAY_TABS.some(([tab]) => tab === activeTab) ? activeTab : "chat";
   const tabs = GIVEAWAY_TABS.map(([tab, label]) => `
-  <a class="gw-tab-btn v3-tab${tab === active ? " is-active is-on" : ""}" id="tab-btn-${tab}" href="/dashboard/giveaways/${tab}" data-tab="${tab}" role="tab" aria-selected="${tab === active ? "true" : "false"}"${tab === active ? ' aria-current="page"' : ""}>${label}</a>`).join("");
+  <a class="gw-tab-btn v3-tab${tab === active ? " is-active is-on" : ""}" id="tab-btn-${tab}" href="${giveawayPath(tab)}" data-tab="${tab}" role="tab" aria-selected="${tab === active ? "true" : "false"}"${tab === active ? ' aria-current="page"' : ""}>${label}</a>`).join("");
   return `
 <div class="v3-head">
   <div class="v3-head-col">
-  <h1>${GIVEAWAY_TABS.find(([tab]) => tab === active)?.[1] || "Giveaways"}</h1>
+  <h1>Engage</h1>
     <p class="v3-head-sub">${active === "tournaments"
       ? "Let viewers join from chat, then curate the list before you pick."
       : "Engage your viewers with live chat giveaways, loyalty point ticket raffles, and flash drop claim codes."}</p>
@@ -26,7 +28,7 @@ export function renderGiveawaysHtml(activeTab = "chat") {
 </div>
 
 <!-- Segmented Navigation Tabs -->
-<div class="gw-nav-tabs v3-tabs" role="tablist" aria-label="Giveaways pages">
+<div class="gw-nav-tabs v3-tabs" role="tablist" aria-label="Engage pages">
 ${tabs}
 </div>
 

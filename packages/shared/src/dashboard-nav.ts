@@ -20,7 +20,7 @@ const DASHBOARD_NAV: NavItem[] = [
   { key: "board", label: "Leaderboard", href: "/dashboard/leaderboard", icon: NAV_ICONS.players },
   { key: "engage", label: "Engage", href: "/dashboard/giveaways", icon: NAV_ICONS.giveaways },
   { key: "games", label: "Games", href: "/dashboard/games", icon: NAV_ICONS.games },
-  { key: "redemptions", label: "Rewards", href: "/dashboard/rewards", icon: NAV_ICONS.shop, productKey: "credits" },
+  { key: "redemptions", label: "Credits", href: "/dashboard/rewards", icon: NAV_ICONS.shop, productKey: "credits" },
   {
     key: "audience",
     label: "Audience",
@@ -67,12 +67,12 @@ export const NAV_OWNER_MAP = {
 } as const;
 
 export const ACCOUNT_SECTION_PATHS = {
-  plan: "/dashboard/settings/plan",
+  plan: "/dashboard/settings/billing",
   connections: "/dashboard/settings/connections",
 } as const;
 
 export const LEGACY_ACCOUNT_PATHS = {
-  billing: "/dashboard/settings/plan",
+  billing: "/dashboard/settings/billing",
   integrations: "/dashboard/settings/connections",
   manage: "/dashboard/settings",
   settings: "/dashboard/settings",
