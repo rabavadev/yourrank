@@ -7,7 +7,7 @@ import { BOARD_TABS, ANALYTICS_TABS } from "../pages/dashboard.jsx";
 import { GIVEAWAY_TABS } from "../pages/giveaway-pages.js";
 import { REWARDS_TABS } from "../pages/rewards.jsx";
 import { SETTINGS_TABS } from "../pages/account.jsx";
-import { SECTIONS } from "../assets/dashboard/routes.js";
+import { ACCOUNT_SECTION_PATHS, SECTIONS } from "../assets/dashboard/routes.js";
 
 const user = { display_name: "Test operator", email: "operator@example.com", plan: "pro" };
 const workerSource = readFileSync(new URL("../index.js", import.meta.url), "utf8");
@@ -91,6 +91,45 @@ function workerRegexTabRoutes(source, prefix) {
 
 function normalizedPath(path) {
   return String(path || "").split("?")[0].replace(/\/+$/, "") || "/";
+}
+
+function dashboardSectionForPath(path) {
+  const normalized = normalizedPath(path);
+  const section = Object.entries(SECTIONS)
+    .filter(([, definition]) => {
+      const sectionPath = normalizedPath(definition.path);
+      return normalized === sectionPath || (
+        definition.tabs?.length
+        && normalized.startsWith(`${sectionPath}/`)
+      );
+    })
+    .sort(([, left], [, right]) => right.path.length - left.path.length)[0];
+  if (section) return section[0];
+
+  const accountPaths = Object.values(ACCOUNT_SECTION_PATHS).map(normalizedPath);
+  const accountSegments = accountPaths.map((accountPath) => accountPath.split("/"));
+  const accountRoot = accountSegments.length
+    ? accountSegments[0]
+      .filter((segment, index) => accountSegments.every((segments) => segments[index] === segment))
+      .join("/")
+    : "";
+  if (accountRoot && (normalized === accountRoot || normalized.startsWith(`${accountRoot}/`))) {
+    return "account";
+  }
+  return "";
+}
+
+function subnavItems(markup) {
+  return [...markup.matchAll(/<(a|button)\b[^>]*>([\s\S]*?)<\/\1>/g)]
+    .map((match) => ({
+      label: match[2]
+        .replace(/<[^>]*>/g, " ")
+        .replace(/&amp;/g, "&")
+        .replace(/\s+/g, " ")
+        .trim(),
+      href: match[1] === "a" ? match[0].match(/\bhref="([^"]+)"/)?.[1] || "" : "",
+    }))
+    .filter(({ label }) => label);
 }
 
 function deriveRenderableRoutes() {
@@ -196,6 +235,20 @@ function ownershipViolations(markup, activePath) {
   const sidebarSubnav = [...new Set(regions.subnav.filter((href) =>
     sidebarHrefs.has(href) && !PERMITTED_DEFAULT_TAB_ROOTS.has(href)
   ))];
+  const pageSection = dashboardSectionForPath(activePath);
+  const foreignSubnav = [...new Map(
+    subnavItems(subnavMarkup)
+      .filter(({ href }) => href)
+      .map(({ href }) => [href, { href, section: dashboardSectionForPath(href) }])
+      .filter(([, entry]) => entry.section && entry.section !== pageSection)
+  ).values()];
+  const labelCounts = new Map();
+  for (const { label } of subnavItems(subnavMarkup)) {
+    labelCounts.set(label, (labelCounts.get(label) || 0) + 1);
+  }
+  const duplicateSubnavLabels = [...labelCounts.entries()]
+    .filter(([, count]) => count > 1)
+    .map(([label, count]) => ({ label, count }));
   const active = normalizedPath(activePath);
   const activeBreadcrumbs = regions.breadcrumbs.filter((href) => normalizedPath(href) === active);
   return {
@@ -208,6 +261,8 @@ function ownershipViolations(markup, activePath) {
     },
     duplicates,
     sidebarSubnav,
+    foreignSubnav,
+    duplicateSubnavLabels,
     activeBreadcrumbs,
   };
 }
@@ -276,6 +331,8 @@ describe("dashboard chrome ownership", () => {
       }
       expect(violations.duplicates, route.path).toEqual([]);
       expect(violations.sidebarSubnav, route.path).toEqual([]);
+      expect(violations.foreignSubnav, route.path).toEqual([]);
+      expect(violations.duplicateSubnavLabels, route.path).toEqual([]);
       expect(violations.activeBreadcrumbs, route.path).toEqual([]);
     }
   });
@@ -294,6 +351,25 @@ describe("dashboard chrome ownership", () => {
     expect(violations.activeBreadcrumbs).toEqual(["/dashboard/leaderboard/players"]);
   });
 
+  it("reports subnav links owned by another sidebar section and duplicate labels", () => {
+    const markup = `
+      <nav class="lb-side-group lb-side-nav"><a href="/dashboard/settings/board">Site</a></nav>
+      <nav class="v3-tabs">
+        <a href="/dashboard/settings/account">Account</a>
+        <a href="/dashboard/settings/team">Account</a>
+        <button type="button">Account</button>
+      </nav>
+    `;
+    const violations = ownershipViolations(markup, "/dashboard/settings/board");
+    expect(violations.foreignSubnav).toEqual([
+      { href: "/dashboard/settings/account", section: "account" },
+      { href: "/dashboard/settings/team", section: "account" },
+    ]);
+    expect(violations.duplicateSubnavLabels).toEqual([
+      { label: "Account", count: 3 },
+    ]);
+  });
+
   it("permits only marked contextual topbar actions and the Telegram default-tab back-link", () => {
     const markup = `
       <nav class="lb-side-group lb-side-nav"><a href="/dashboard/telegram">Telegram</a></nav>
@@ -308,5 +384,7 @@ describe("dashboard chrome ownership", () => {
     const violations = ownershipViolations(markup, "/dashboard/telegram");
     expect(violations.duplicates).toEqual([]);
     expect(violations.sidebarSubnav).toEqual([]);
+    expect(violations.foreignSubnav).toEqual([]);
+    expect(violations.duplicateSubnavLabels).toEqual([]);
   });
 });

@@ -25,14 +25,6 @@ export const BOARD_TABS = [
   ["share", "Share", "/dashboard/leaderboard/share"],
   ["history", "History", "/dashboard/leaderboard/history"],
 ];
-export const SETTINGS_PAGE_TABS = [
-  ["account", "Account", "/dashboard/settings/account"],
-  ["team", "Team", "/dashboard/settings/team"],
-  ["plan", "Billing", "/dashboard/settings/plan"],
-  ["connections", "Integrations", "/dashboard/settings/connections"],
-  ["data", "Data", "/dashboard/settings/data"],
-];
-
 // Each route serves one section, so the trail is derived from the route rather
 // than hand-written per screen — every page below Overview says where it is.
 const SECTION_CRUMBS = {
@@ -411,11 +403,6 @@ function BoardSettingsSection({ active } = {}) {
     <h1>Site settings</h1>
     <p class="v3-head-sub" id="settingsSubline">These settings apply to the site selected above. Your plan, account password, billing, and automatic score update keys live in <a href="/dashboard/settings">account settings</a>.</p>
   </header>
-  <nav class="v3-tabs account-settings-tabs" aria-label="Settings pages">
-    {SETTINGS_PAGE_TABS.map(([key, label, href]) => (
-      <a class={"v3-tab" + (key === "board" ? " is-on" : "")} href={href} data-settings-tab={key} aria-current={key === "board" ? "page" : undefined}>{label}</a>
-    ))}
-  </nav>
   <div class="v3-tabs" role="tablist" aria-label="Site settings sections">
     <button class="v3-tab is-on" id="settingsTabAccess" type="button" role="tab" aria-selected="true" aria-controls="settingsPanelAccess" data-settings-tab="access">Access &amp; alerts</button>
     <button class="v3-tab" id="settingsTabIntegrations" type="button" role="tab" aria-selected="false" aria-controls="settingsPanelIntegrations" data-settings-tab="integrations">Integrations</button>
