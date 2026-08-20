@@ -85,6 +85,7 @@ async function init() {
       title: "Couldn't start your dashboard.",
       detail: err?.message || "Network error while checking your session.",
     });
+    window.__yrBoot?.signal();
     return;
   }
   state.ME = me.user;
@@ -128,6 +129,7 @@ async function init() {
     logError("site", err);
     if (state.ME.isAdmin && (err?.status === 404 || err?.message?.includes("HTTP 404"))) { location.href = "/admin"; return; }
     renderSiteLoadError(err?.message || "Network error while loading the board.");
+    window.__yrBoot?.signal();
     return;
   }
   state.SLUG = p.slug;
@@ -138,6 +140,7 @@ async function init() {
   state.PUBLISHED = !!p.published;
   state.IS_DRAFT = !!p.isDraft;
   state.ONBOARDING = p.onboarding || {};
+  state.SAMPLE_PLAYERS = Boolean(p.data?.samplePlayers);
 
   if (hasEditor) renderEditorTimestamps();
   renderBoardSwitcher();
@@ -244,6 +247,7 @@ async function init() {
   $("loading").setAttribute("aria-busy", "false");
   $("loading").hidden = true;
   $("dash").hidden = false;
+  window.__yrBoot?.signal();
   setupShell();
   // Keep every feature visible. Manage sites is useful even with one site because
   // it is also where the operator creates the next one.

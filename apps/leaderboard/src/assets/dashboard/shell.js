@@ -3,7 +3,7 @@ import { $ } from "./utils.js";
 import { clearDirty, state, subscribe } from "./state.js";
 import { renderOverviewSummary } from "./overview.js";
 import { fitDesignPreview, loadStats, refreshDesignPreview } from "./site.js";
-import { SECTIONS, dashboardPath, defaultTab, navOwner, parseDashboardPath } from "./routes.js";
+import { dashboardPath, dashboardTitle, defaultTab, navOwner, parseDashboardPath } from "./routes.js";
 
 let navigationPending = false;
 let lastRouteUrl = location.pathname + location.search;
@@ -155,8 +155,7 @@ export function navTo(page, hash = "") {
   // (updateDesignPreview() no-ops while the section is hidden, so navigating in
   // has to ask for it again).
   if (page === "board") setTimeout(refreshDesignPreview, 0);
-  const title = SECTIONS[page]?.title || page;
-  document.title = `${title} · YourRank`;
+  document.title = dashboardTitle({ page, tab: scrollHash });
 
   // Sync editor sub-tabs when navigating directly to a sub-group.
   if (page === "board") {

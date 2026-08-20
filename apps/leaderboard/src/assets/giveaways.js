@@ -1,4 +1,5 @@
 import { loadBoardShell, sitePath } from "./dashboard/board-shell.js";
+import { withDashboardTimeout } from "./dashboard/request.js";
 import { inlineStateHtml } from "./dashboard/states.js";
 import { computeTrustScore, connectKickChat } from "./chat-entry.js";
 
@@ -41,7 +42,17 @@ import { computeTrustScore, connectKickChat } from "./chat-entry.js";
     // page unresponsive.
     wireEvents();
     autoFillChannel();
-    loadBoardShell().catch(() => {});
+    loadBoardShell().then(() => window.__yrBoot?.signal()).catch((error) => {
+      window.__yrBoot?.fail(error?.message || "The dashboard shell could not be loaded.");
+    });
+  }
+
+  function dashboardFetch(input, init = {}) {
+    return withDashboardTimeout((signal) => fetch(input, {
+      credentials: "same-origin",
+      ...init,
+      signal,
+    }));
   }
 
   async function autoFillChannel() {
@@ -51,7 +62,7 @@ import { computeTrustScore, connectKickChat } from "./chat-entry.js";
       $("gw-channel-input").value = saved;
     } else {
       try {
-        const res = await fetch(sitePath("/api/credits/status"), { headers: { "Accept": "application/json" } });
+        const res = await dashboardFetch(sitePath("/api/credits/status"), { headers: { "Accept": "application/json" } });
         if (res.ok) {
           const data = await res.json();
           if (data.channel?.name) {
@@ -139,7 +150,7 @@ import { computeTrustScore, connectKickChat } from "./chat-entry.js";
     setStatus("connecting", "Connecting…");
 
     try {
-      const res = await fetch(`/api/giveaways/chatroom?channel=${encodeURIComponent(channelName)}`);
+      const res = await dashboardFetch(`/api/giveaways/chatroom?channel=${encodeURIComponent(channelName)}`);
       const data = await res.json();
 
       if (!data.ok || !data.chatroomId) {
@@ -976,7 +987,7 @@ import { computeTrustScore, connectKickChat } from "./chat-entry.js";
 
   async function loadRaffles() {
     try {
-      const res = await fetch("/api/events/raffles");
+      const res = await dashboardFetch("/api/events/raffles");
       if (!res.ok) return;
       const data = await res.json();
       renderRaffles(data.raffles || []);
@@ -993,7 +1004,7 @@ import { computeTrustScore, connectKickChat } from "./chat-entry.js";
 
     if (active.length === 0) {
       activeList.innerHTML = `
-        ${inlineStateHtml({ kind: "empty", title: "No active raffles", body: "Create a raffle to let viewers buy tickets with their loyalty credits." })}`;
+        ${inlineStateHtml({ kind: "empty", title: "No active raffles", body: "Create a raffle to let viewers buy tickets with Credits." })}`;
     } else {
       activeList.innerHTML = active.map((r) => `
         <div class="gw-raffle-card" data-raffle-id="${esc(r.id)}">
@@ -1004,7 +1015,7 @@ import { computeTrustScore, connectKickChat } from "./chat-entry.js";
               ${r.description ? `<p class="gw-raffle-desc">${esc(r.description)}</p>` : ""}
             </div>
             <div class="gw-raffle-badge">
-              <strong>${r.ticket_cost === 0 ? "FREE" : `${r.ticket_cost} pts`}</strong>
+              <strong>${r.ticket_cost === 0 ? "FREE" : `${r.ticket_cost} Credits`}</strong>
               <small>per ticket</small>
             </div>
           </div>
@@ -1032,7 +1043,7 @@ import { computeTrustScore, connectKickChat } from "./chat-entry.js";
       pastList.innerHTML = past.map((r) => `
         <tr>
           <td><strong>${esc(r.title)}</strong></td>
-          <td>${r.ticket_cost === 0 ? "Free" : `${r.ticket_cost} pts`}</td>
+          <td>${r.ticket_cost === 0 ? "Free" : `${r.ticket_cost} Credits`}</td>
           <td>${r.total_tickets || 0} tickets</td>
           <td>
             ${r.winner_name ? `<strong>${esc(r.winner_name)}</strong> <small>(Ticket #${r.winner_ticket_number})</small>` : "<em>No winner</em>"}
@@ -1053,7 +1064,7 @@ import { computeTrustScore, connectKickChat } from "./chat-entry.js";
     const desc = $("rf-desc")?.value?.trim() || "";
 
     try {
-      const res = await fetch("/api/events/raffles", {
+      const res = await dashboardFetch("/api/events/raffles", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ title, description: desc, ticketCost: cost, maxTickets }),
@@ -1076,7 +1087,7 @@ import { computeTrustScore, connectKickChat } from "./chat-entry.js";
     if (!confirm("Are you ready to draw the random winning ticket on stream?")) return;
 
     try {
-      const res = await fetch("/api/events/raffles/draw", {
+      const res = await dashboardFetch("/api/events/raffles/draw", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ raffleId }),
@@ -1103,7 +1114,7 @@ import { computeTrustScore, connectKickChat } from "./chat-entry.js";
 
   async function loadCodeDrops() {
     try {
-      const res = await fetch("/api/events/drops");
+      const res = await dashboardFetch("/api/events/drops");
       if (!res.ok) return;
       const data = await res.json();
       renderCodeDrops(data.drops || []);
@@ -1131,7 +1142,7 @@ import { computeTrustScore, connectKickChat } from "./chat-entry.js";
                 <code class="gw-drop-code-badge">${esc(d.code)}</code>
                 <button class="btn btn--sm btn--ghost btn--copy-drop" data-code="${esc(d.code)}" type="button">Copy</button>
               </div>
-              <span class="pill pill--good">+${d.points_reward} pts</span>
+              <span class="pill pill--good">+${d.points_reward} Credits</span>
             </div>
             <div class="gw-drop-progress-box">
               <div class="d-flex justify-between font-12 mb-4">
@@ -1156,12 +1167,12 @@ import { computeTrustScore, connectKickChat } from "./chat-entry.js";
     }
 
     if (past.length === 0) {
-      pastList.innerHTML = `<tr><td colspan="5">${inlineStateHtml({ kind: "empty", title: "No drops created yet", body: "Completed drops will appear here." })}</td></tr>`;
+      pastList.innerHTML = `<tr><td colspan="5">${inlineStateHtml({ kind: "empty", title: "No drops created yet", body: "Create a drop to reward active viewers with a limited-claim code." })}</td></tr>`;
     } else {
       pastList.innerHTML = past.map((d) => `
         <tr>
           <td><code>${esc(d.code)}</code></td>
-          <td>+${d.points_reward} pts</td>
+          <td>+${d.points_reward} Credits</td>
           <td>${d.claimed_count || 0} / ${d.max_claims}</td>
           <td><span class="pill pill--mute">${esc(d.status)}</span></td>
           <td>${new Date(d.created_at).toLocaleString()}</td>
@@ -1180,7 +1191,7 @@ import { computeTrustScore, connectKickChat } from "./chat-entry.js";
     const expireMinutes = parseInt($("cd-expire")?.value, 10) || 0;
 
     try {
-      const res = await fetch("/api/events/drops", {
+      const res = await dashboardFetch("/api/events/drops", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ code, pointsReward: points, maxClaims, expireMinutes }),
@@ -1206,7 +1217,7 @@ import { computeTrustScore, connectKickChat } from "./chat-entry.js";
 
   async function loadPredictions() {
     try {
-      const res = await fetch("/api/predictions");
+      const res = await dashboardFetch("/api/predictions");
       if (!res.ok) return;
       const data = await res.json();
       activePredictionsList = data.predictions || [];
@@ -1224,7 +1235,7 @@ import { computeTrustScore, connectKickChat } from "./chat-entry.js";
 
     if (active.length === 0) {
       activeList.innerHTML = `
-        ${inlineStateHtml({ kind: "empty", title: "No active predictions", body: "Launch a live prediction to let viewers wager their loyalty points on your stream match outcomes." })}`;
+        ${inlineStateHtml({ kind: "empty", title: "No active predictions", body: "Launch a live prediction to let viewers wager their Credits on your stream match outcomes." })}`;
     } else {
       activeList.innerHTML = active.map((p) => {
         const rawOpts = typeof p.options === "string" ? JSON.parse(p.options) : (p.options || []);
@@ -1239,7 +1250,7 @@ import { computeTrustScore, connectKickChat } from "./chat-entry.js";
                 <h3 class="gw-pred-title">${esc(p.title)}</h3>
               </div>
               <div class="gw-pred-pool-badge">
-                <strong>${totalPool} pts</strong>
+              <strong>${totalPool} Credits</strong>
                 <small>Total Pool</small>
               </div>
             </div>
@@ -1253,7 +1264,7 @@ import { computeTrustScore, connectKickChat } from "./chat-entry.js";
                   <div class="gw-pred-opt-box">
                     <div class="d-flex justify-between font-13 font-bold mb-4">
                       <span>${esc(opt.label)}</span>
-                      <span>${optPts} pts (${pct}%)</span>
+                      <span>${optPts} Credits (${pct}%)</span>
                     </div>
                     <div class="gw-drop-bar-bg">
                       <div class="gw-drop-bar-fill" style="width: ${pct}%;"></div>
@@ -1302,7 +1313,7 @@ import { computeTrustScore, connectKickChat } from "./chat-entry.js";
         return `
           <tr>
             <td><strong>${esc(p.title)}</strong></td>
-            <td><strong>${p.total_pool || 0} pts</strong></td>
+            <td><strong>${p.total_pool || 0} Credits</strong></td>
             <td>${p.participant_count || 0} bettors</td>
             <td>
               ${p.winning_option_id ? `<span class="pill pill--good">${esc(p.winning_option_id.toUpperCase())}</span>` : "—"}
@@ -1332,7 +1343,7 @@ import { computeTrustScore, connectKickChat } from "./chat-entry.js";
     ];
 
     try {
-      const res = await fetch("/api/predictions", {
+      const res = await dashboardFetch("/api/predictions", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ title, options, minBet, maxBet, lockMinutes }),
@@ -1352,7 +1363,7 @@ import { computeTrustScore, connectKickChat } from "./chat-entry.js";
 
   async function lockPrediction(predictionId) {
     try {
-      const res = await fetch(`/api/predictions/${predictionId}/lock`, {
+      const res = await dashboardFetch(`/api/predictions/${predictionId}/lock`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ predictionId }),
@@ -1373,7 +1384,7 @@ import { computeTrustScore, connectKickChat } from "./chat-entry.js";
     if (!drawer) return;
 
     $("settle-pred-id").value = pred.id;
-    $("settle-pred-title").textContent = `Question: "${pred.title}" — Total Pool: ${pred.total_pool || 0} pts`;
+    $("settle-pred-title").textContent = `Question: "${pred.title}" — Total Pool: ${pred.total_pool || 0} Credits`;
 
     const rawOpts = typeof pred.options === "string" ? JSON.parse(pred.options) : (pred.options || []);
     const container = $("settle-options-container");
@@ -1383,7 +1394,7 @@ import { computeTrustScore, connectKickChat } from "./chat-entry.js";
           <input type="radio" name="settle_opt" value="${esc(opt.id)}" ${i === 0 ? "checked" : ""} />
           <div>
             <strong>${esc(opt.label)}</strong>
-            <span class="font-muted font-12">(${opt.total_points || 0} pts wagered)</span>
+            <span class="font-muted font-12">(${opt.total_points || 0} Credits wagered)</span>
           </div>
         </label>
       `).join("");
@@ -1400,7 +1411,7 @@ import { computeTrustScore, connectKickChat } from "./chat-entry.js";
     if (!confirm(`Are you sure you want to declare "${winningOpt.toUpperCase()}" as the winning outcome? Points will be distributed immediately!`)) return;
 
     try {
-      const res = await fetch(`/api/predictions/${predId}/settle`, {
+      const res = await dashboardFetch(`/api/predictions/${predId}/settle`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ predictionId: predId, winningOptionId: winningOpt }),
@@ -1425,7 +1436,7 @@ import { computeTrustScore, connectKickChat } from "./chat-entry.js";
     if (!confirm("Are you sure you want to cancel this prediction? All bets will be 100% refunded to viewers.")) return;
 
     try {
-      const res = await fetch(`/api/predictions/${predId}/cancel`, {
+      const res = await dashboardFetch(`/api/predictions/${predId}/cancel`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ predictionId: predId }),

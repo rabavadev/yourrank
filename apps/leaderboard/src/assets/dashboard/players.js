@@ -143,6 +143,8 @@ export function renderPlayers(list) {
   toggleEmpty();
   applyPlayerFieldVisibility();
   syncSelectAll();
+  const notice = $("playersSampleNotice");
+  if (notice) notice.hidden = !state.SAMPLE_PLAYERS;
 }
 
 export function renumber() {

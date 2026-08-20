@@ -229,7 +229,7 @@ export async function getClickRedirectSite(env, slug, request = null) {
 const getByUser = async (env, uid) => {
   const owned = await one(`SELECT ${SITE_COLUMNS} FROM sites WHERE user_id=$1 ORDER BY CASE WHEN id=(SELECT active_site_id FROM users WHERE id=$1) THEN 0 ELSE 1 END, id ASC LIMIT 1`, [uid]);
   if (owned) return owned;
-  return one(`SELECT ${SITE_COLUMNS} FROM sites s JOIN site_members sm ON sm.site_id=s.id WHERE sm.user_id=$1 ORDER BY s.id ASC LIMIT 1`, [uid]);
+  return one(`SELECT ${SITE_COLUMNS} FROM (SELECT s.* FROM sites s JOIN site_members sm ON sm.site_id=s.id WHERE sm.user_id=$1) s ORDER BY s.id ASC LIMIT 1`, [uid]);
 };
 
 // Multi-board: returns ALL boards for a user.
@@ -498,6 +498,7 @@ export function publicShape(site, players, archives = [], hasLogo = false, playe
     },
     legal: m.legal || DEFAULT_EXTRA.legal,
     playerFields: { ...DEFAULT_EXTRA.playerFields, ...(m.playerFields || {}) },
+    samplePlayers: m.samplePlayers === true,
   };
 }
 
@@ -585,14 +586,15 @@ export async function getUserSite(env, uid, plan) {
 // Multi-board: return a summary list of all boards for a user (owned and delegated).
 export async function getUserBoardsList(env, uid) {
   const rows = await query(
-    `SELECT s.id, s.slug, s.name, s.casino, s.code, s.published, s.is_draft, s.board_order, s.theme_json,
+    `SELECT * FROM (
+       SELECT s.id, s.slug, s.name, s.casino, s.code, s.published, s.is_draft, s.board_order, s.theme_json,
             s.kick_channel_external_id, s.kick_channel_name,
             'owner' AS user_role, NULL AS owner_name,
             (SELECT COUNT(*) FROM players p WHERE p.site_id = s.id) AS player_count
        FROM sites s
       WHERE s.user_id=$1
-     UNION ALL
-     SELECT s.id, s.slug, s.name, s.casino, s.code, s.published, s.is_draft, s.board_order, s.theme_json,
+       UNION ALL
+       SELECT s.id, s.slug, s.name, s.casino, s.code, s.published, s.is_draft, s.board_order, s.theme_json,
             s.kick_channel_external_id, s.kick_channel_name,
             sm.role AS user_role, u.display_name AS owner_name,
             (SELECT COUNT(*) FROM players p WHERE p.site_id = s.id) AS player_count
@@ -600,7 +602,8 @@ export async function getUserBoardsList(env, uid) {
        JOIN sites s ON s.id = sm.site_id
        JOIN users u ON u.id = s.user_id
       WHERE sm.user_id=$1
-      ORDER BY board_order ASC, id ASC`,
+     ) boards
+      ORDER BY 8 ASC, 1 ASC`,
     [uid]
   );
   return (rows || []).map((b) => {
@@ -698,7 +701,7 @@ export async function createBoard(env, uid, { slug, name, casino = "", code = ""
 export async function seedSamplePlayers(tx, siteId) {
   const endsAt = new Date(Date.now() + 7 * 86400000).toISOString();
   await tx.unsafe(
-    "UPDATE sites SET prize_pool=$1, ends_at=$2 WHERE id=$3",
+    "UPDATE sites SET prize_pool=$1, ends_at=$2, extra_json=jsonb_set(COALESCE(extra_json, '{}'::jsonb), '{samplePlayers}', 'true'::jsonb, true) WHERE id=$3",
     ["$500", endsAt, siteId]
   );
   const players = [
@@ -1022,6 +1025,7 @@ export async function saveSite(env, user, payload, siteId, request = null) {
     sections: { ...(existingExtra.sections || DEFAULT_EXTRA.sections), ...incomingSections },
     legal,
     playerFields,
+    samplePlayers: Array.isArray(payload.players) ? false : !!existingExtra.samplePlayers,
   };
 
   let discordWebhookUrlEnc = site.discord_webhook_url_enc;

@@ -3,7 +3,7 @@
 import { describe, it, expect } from "bun:test";
 import { readFileSync } from "node:fs";
 import { LEGACY_ACCOUNT_PATHS } from "@yourrank/shared/dashboard-nav";
-import { dashboardPath, parseDashboardPath, resolveSection, defaultTab, legacyDashboardPath } from "../assets/dashboard/routes.js";
+import { dashboardPath, parseDashboardPath, resolveSection, defaultTab, legacyDashboardPath, dashboardTitleForPath } from "../assets/dashboard/routes.js";
 import { LEGACY_TELEGRAM_REDIRECTS, legacyTelegramRedirect } from "../telegram-routes.js";
 import worker from "../index.js";
 
@@ -17,6 +17,13 @@ describe("dashboard routes", () => {
   it("addresses the editor steps individually", () => {
     expect(dashboardPath("board", "design")).toBe("/dashboard/leaderboard/design");
     expect(parseDashboardPath("/dashboard/leaderboard/design")).toEqual({ page: "board", tab: "design" });
+  });
+
+  it("derives document titles from the canonical route table", () => {
+    expect(dashboardTitleForPath("/dashboard")).toBe("Home · YourRank");
+    expect(dashboardTitleForPath("/dashboard/leaderboard/players")).toBe("Players · Leaderboard · YourRank");
+    expect(dashboardTitleForPath("/dashboard/leaderboard/design")).toBe("Appearance · Leaderboard · YourRank");
+    expect(dashboardTitleForPath("/dashboard/games")).toBe("Games · YourRank");
   });
 
   it("leaves the account settings document to the Worker", () => {

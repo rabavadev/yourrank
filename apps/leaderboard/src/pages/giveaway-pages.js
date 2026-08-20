@@ -21,7 +21,7 @@ export function renderGiveawaysHtml(activeTab = "chat") {
   <h1>${activeLabel}</h1>
     <p class="v3-head-sub">${active === "tournaments"
       ? "Let viewers join from chat, then curate the list before you pick."
-      : "Engage your viewers with live chat giveaways, loyalty point ticket raffles, and flash drop claim codes."}</p>
+      : "Engage your viewers with live chat giveaways, Credit ticket raffles, and flash drop claim codes."}</p>
   </div>
   <div class="d-flex gap-8 items-center flex-wrap"${active === "tournaments" ? ' hidden' : ""}>
     <button class="btn btn--sm btn--accent" id="btn-open-event-drawer" type="button">+ Create Event</button>
@@ -337,7 +337,7 @@ ${tabs}
       <div class="v3-section-head">
         <div>
           <h2>Active Ticket Raffles</h2>
-          <p class="v3-head-sub">Viewers buy tickets using loyalty points to win scheduled prizes.</p>
+          <p class="v3-head-sub">Viewers buy tickets using Credits to win scheduled prizes.</p>
         </div>
         <button class="btn btn--sm btn--accent" id="btn-create-raffle" type="button">+ New Raffle</button>
       </div>
@@ -346,7 +346,7 @@ ${tabs}
         <div class="v3-empty" id="rf-empty-active">
           <div class="v3-empty-ic">🎟️</div>
           <h2>No active raffles</h2>
-          <p>Create a raffle to let your viewers buy tickets with their loyalty credits.</p>
+          <p>Create a raffle to let your viewers buy tickets with Credits.</p>
         </div>
       </div>
     </section>
@@ -422,7 +422,7 @@ ${tabs}
             </tr>
           </thead>
           <tbody id="cd-past-list">
-            <tr><td colspan="5" class="ta-c font-muted gw-empty-cell">No drops created yet.</td></tr>
+            <tr><td colspan="5" class="ta-c font-muted gw-empty-cell">No drops created yet. Create a drop to reward active viewers with a limited-claim code.</td></tr>
           </tbody>
         </table>
       </div>
@@ -448,7 +448,7 @@ ${tabs}
         <div class="v3-empty" id="pred-empty-active">
           <div class="v3-empty-ic">🔮</div>
           <h2>No active predictions</h2>
-          <p>Launch a live prediction to let viewers wager their loyalty points on your stream match outcomes.</p>
+          <p>Launch a live prediction to let viewers wager their Credits on your stream match outcomes.</p>
         </div>
       </div>
     </section>
@@ -518,10 +518,10 @@ ${tabs}
         <label for="pred-min-bet">Minimum Bet (Credits)</label>
         <input type="number" id="pred-min-bet" min="1" value="10" placeholder="e.g. 10" required />
         <div class="gw-chip-presets">
-          <button class="gw-chip" type="button" data-val="5" data-target="pred-min-bet">5 pts</button>
-          <button class="gw-chip" type="button" data-val="10" data-target="pred-min-bet">10 pts</button>
-          <button class="gw-chip" type="button" data-val="25" data-target="pred-min-bet">25 pts</button>
-          <button class="gw-chip" type="button" data-val="50" data-target="pred-min-bet">50 pts</button>
+          <button class="gw-chip" type="button" data-val="5" data-target="pred-min-bet">5 Credits</button>
+          <button class="gw-chip" type="button" data-val="10" data-target="pred-min-bet">10 Credits</button>
+          <button class="gw-chip" type="button" data-val="25" data-target="pred-min-bet">25 Credits</button>
+          <button class="gw-chip" type="button" data-val="50" data-target="pred-min-bet">50 Credits</button>
         </div>
       </div>
 
@@ -529,10 +529,10 @@ ${tabs}
         <label for="pred-max-bet">Maximum Bet (Credits)</label>
         <input type="number" id="pred-max-bet" min="1" value="500" placeholder="e.g. 500" required />
         <div class="gw-chip-presets">
-          <button class="gw-chip" type="button" data-val="100" data-target="pred-max-bet">100 pts</button>
-          <button class="gw-chip" type="button" data-val="500" data-target="pred-max-bet">500 pts</button>
-          <button class="gw-chip" type="button" data-val="1000" data-target="pred-max-bet">1,000 pts</button>
-          <button class="gw-chip" type="button" data-val="5000" data-target="pred-max-bet">5,000 pts</button>
+          <button class="gw-chip" type="button" data-val="100" data-target="pred-max-bet">100 Credits</button>
+          <button class="gw-chip" type="button" data-val="500" data-target="pred-max-bet">500 Credits</button>
+          <button class="gw-chip" type="button" data-val="1000" data-target="pred-max-bet">1,000 Credits</button>
+          <button class="gw-chip" type="button" data-val="5000" data-target="pred-max-bet">5,000 Credits</button>
         </div>
       </div>
 
@@ -601,12 +601,12 @@ ${tabs}
         <label for="rf-cost">Ticket Cost (in Credits)</label>
         <input type="number" id="rf-cost" min="0" value="30" placeholder="e.g. 30" required />
         <div class="gw-chip-presets">
-          <button class="gw-chip" type="button" data-val="0" data-target="rf-cost">Free (0 pts)</button>
-          <button class="gw-chip" type="button" data-val="25" data-target="rf-cost">25 pts</button>
-          <button class="gw-chip" type="button" data-val="50" data-target="rf-cost">50 pts</button>
-          <button class="gw-chip" type="button" data-val="100" data-target="rf-cost">100 pts</button>
+          <button class="gw-chip" type="button" data-val="0" data-target="rf-cost">Free (0 Credits)</button>
+          <button class="gw-chip" type="button" data-val="25" data-target="rf-cost">25 Credits</button>
+          <button class="gw-chip" type="button" data-val="50" data-target="rf-cost">50 Credits</button>
+          <button class="gw-chip" type="button" data-val="100" data-target="rf-cost">100 Credits</button>
         </div>
-        <span class="hint">How many points a viewer pays per ticket. Set 0 for free community entries.</span>
+        <span class="hint">How many Credits a viewer pays per ticket. Set 0 for free community entries.</span>
       </div>
 
       <div class="field">
@@ -650,12 +650,12 @@ ${tabs}
         <label for="cd-points">Credits Reward per Viewer</label>
         <input type="number" id="cd-points" min="1" value="100" placeholder="e.g. 30" required />
         <div class="gw-chip-presets">
-          <button class="gw-chip" type="button" data-val="25" data-target="cd-points">+25 pts</button>
-          <button class="gw-chip" type="button" data-val="50" data-target="cd-points">+50 pts</button>
-          <button class="gw-chip" type="button" data-val="100" data-target="cd-points">+100 pts</button>
-          <button class="gw-chip" type="button" data-val="250" data-target="cd-points">+250 pts</button>
+          <button class="gw-chip" type="button" data-val="25" data-target="cd-points">+25 Credits</button>
+          <button class="gw-chip" type="button" data-val="50" data-target="cd-points">+50 Credits</button>
+          <button class="gw-chip" type="button" data-val="100" data-target="cd-points">+100 Credits</button>
+          <button class="gw-chip" type="button" data-val="250" data-target="cd-points">+250 Credits</button>
         </div>
-        <span class="hint">How many points each viewer receives upon claiming.</span>
+        <span class="hint">How many Credits each viewer receives upon claiming.</span>
       </div>
 
       <div class="field">

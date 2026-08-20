@@ -22,6 +22,10 @@ describe("dashboard loading states", () => {
     expect(dashboardHtml).toContain('aria-busy="true"');
     expect(creditsHtml).toContain('id="cr-loading" class="ui-loading" role="status"');
     expect(creditsHtml).toContain("Loading credits and shop");
+    expect(PAGES.dashboard.config.bootWatchdog).toBe(true);
+    expect(PAGES.rewardsRedemptions.config.bootWatchdog).toBe(true);
+    expect(read("dashboard.js")).toContain("window.__yrBoot?.signal()");
+    expect(read("credits.js")).toContain("window.__yrBoot?.signal()");
   });
   it("keeps loading, ready zero, and unknown values distinct", () => {
     expect(UNKNOWN).toBe("—");
@@ -72,7 +76,7 @@ describe("dashboard loading states", () => {
     const games = read("dashboard/games.js");
     expect(games).toContain('previewBtn.removeAttribute("href")');
     expect(games).toContain('previewBtn.setAttribute("aria-disabled", "true")');
-    expect(games).toContain('previewBtn.textContent = "Games unavailable"');
+    expect(games).toContain('previewBtn.textContent = "Enable Games to open the public page"');
     expect(games).toContain("updateSimulator();");
   });
 
@@ -131,6 +135,18 @@ describe("dashboard loading states", () => {
     expect(credits).toContain("retry: () => load()");
     expect(credits).not.toContain("err.message}</p>");
     expect(credits).toContain('$("cr-app").hidden = false');
+  });
+
+  it("bounds authenticated dashboard boot outside the module graph", () => {
+    const shell = fs.readFileSync(path.resolve(assets, "../../../../packages/shared/src/page-shell.ts"), "utf8");
+    expect(shell).toContain("DASHBOARD_BOOT_WATCHDOG");
+    expect(shell).toContain("setTimeout(function ()");
+    expect(shell).toContain("8000");
+    expect(shell).toContain("unhandledrejection");
+    expect(shell).toContain("data-yr-boot-retry");
+    expect(read("giveaways.js")).toContain("withDashboardTimeout");
+    expect(read("giveaways.js")).toContain('window.__yrBoot?.fail');
+    expect(read("giveaways.js")).not.toContain("await fetch(");
   });
 
   it("hides list controls and invalid page labels when lists are empty", () => {

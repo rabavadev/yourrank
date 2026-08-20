@@ -53,7 +53,7 @@ function RewardsPage({ tab, activeNav = tab, boardContext = "selector", footer =
       <SubTabs tab={tab} />
       <div id="cr-loading" class="ui-loading" role="status" aria-live="polite" aria-busy="true" hidden><div class="ui-loading__spinner"></div><span class="sr-only">Loading credits and shop…</span></div>
       <div id="cr-app" data-cr-tab={tab} hidden dangerouslySetInnerHTML={{ __html: body }}></div>
-      <div id="cr-empty" class="empty" hidden><p>Loading your credits dashboard…</p></div>
+      <div id="cr-empty" class="empty cr-loading-state" hidden><div class="ui-loading__spinner" aria-hidden="true"></div><p>Loading your credits dashboard…</p></div>
     </div>
   </DashboardShell>;
 }
@@ -66,7 +66,7 @@ export function RewardsRedemptionsPage({ user } = {}) { return <RewardsPage tab=
 export function RewardsActivityPage({ user } = {}) { return <RewardsPage tab="history" activeNav="history" user={user} />; }
 export function RewardsHistoryPage({ user } = {}) { return <RewardsActivityPage user={user} />; }
 
-const rewardsConfigBase = { styles: ["/assets/app.css", "/assets/shell-nav.css", "/assets/ui.css", "/assets/dashboard-v4.css"], scripts: ['<script src="/assets/credits.js?v=4" type="module"></script>', '<script src="/assets/shell-nav.js?v=2" defer></script>'], nav: false, footer: false, wide: true };
+const rewardsConfigBase = { styles: ["/assets/app.css", "/assets/shell-nav.css", "/assets/ui.css", "/assets/dashboard-v4.css"], scripts: ['<script src="/assets/credits.js?v=4" type="module"></script>', '<script src="/assets/shell-nav.js?v=2" defer></script>'], nav: false, footer: false, wide: true, bootWatchdog: true };
 export const rewardsChannelConfig = { ...rewardsConfigBase, title: "Connect Kick · Credits · YourRank", canonical: "https://yourrank.site/dashboard/rewards/channel" };
 export const rewardsRulesConfig = { ...rewardsConfigBase, title: "Credit rules · Credits · YourRank", canonical: "https://yourrank.site/dashboard/rewards/rules" };
 export const rewardsShopConfig = { ...rewardsConfigBase, title: "Shop · Credits · YourRank", canonical: "https://yourrank.site/dashboard/rewards/shop" };

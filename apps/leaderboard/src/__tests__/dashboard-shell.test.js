@@ -166,6 +166,7 @@ describe("signed-in shell navigation", () => {
     expect(html).toContain('href="/dashboard/leaderboard/setup"');
     expect(html).not.toContain("No leaderboard here");
     expect(PAGES.dashboardNotFound.config.scripts.join("")).not.toContain("dashboard.js");
+    expect(PAGES.dashboardNotFound.config.configFor).toBeUndefined();
   });
 
   it("keeps site controls out of the rail and limits the account menu", () => {

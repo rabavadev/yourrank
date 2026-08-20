@@ -25,7 +25,7 @@ function computeSetupSteps() {
   const casino = $("f_casino")?.value.trim();
   const code = $("f_code")?.value.trim();
   const brand = Boolean(o.brand || (name && (casino || code)));
-  const players = currentPlayers().length > 0 || o.players;
+  const players = !state.SAMPLE_PLAYERS && (currentPlayers().length > 0 || o.players);
   const kick = Boolean(state.CREDITS?.channel?.externalId);
   const branding = state.CURRENT_BRANDING || {};
   const hasSocial = (state.EXTRA?.socials || []).some((social) => social.enabled && social.url && social.url !== "#");
@@ -251,8 +251,12 @@ export function renderOverviewSummary() {
     $("ovActivityList").innerHTML = activity.map((item) => `<div class="ov-activity-row"><span class="ov-activity-icon">${ACTIVITY_ICON}</span><span class="ov-activity-copy"><b>${esc(item.title)}</b><span>${esc(item.sub)}</span></span><time>${relative(item.at)}</time></div>`).join("");
     if (activity.length) $("ovActivityEmpty").hidden = true;
     else renderEmpty($("ovActivityEmpty"), { kind: "empty", title: "No activity yet", body: "Visits, updates and reward requests will appear here.", compactHeading: true, actions: [activityEmptyAction(status.published)] });
+    const sampleNotice = state.SAMPLE_PLAYERS
+      ? `<div class="v3-alert v3-alert--warning ov-sample-players" role="status"><strong>Sample players are shown.</strong><span>Replace or clear them before publishing your real roster.</span><a class="btn btn--sm btn--ghost" href="/dashboard/leaderboard/players">Manage players</a></div>`
+      : "";
     const top = [...players].sort((a, b) => b.wagered - a.wagered).slice(0, 5);
-    $("ovTopPlayers").innerHTML = top.map((player, i) => `
+    const topPlayers = $("ovTopPlayers");
+    if (topPlayers) topPlayers.innerHTML = sampleNotice + top.map((player, i) => `
       <div class="ov-player-row" data-name="${esc(player.name)}">
         <span class="ov-player-rank">#${i + 1}</span>
         <b class="ov-player-name" title="${esc(player.name)}">${esc(player.name)}</b>

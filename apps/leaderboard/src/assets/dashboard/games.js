@@ -67,7 +67,7 @@ export function setGamesPreviewState(previewBtn, enabled, liveUrl) {
   previewBtn.setAttribute("aria-disabled", "true");
   previewBtn.setAttribute("tabindex", "0");
   previewBtn.setAttribute("title", "Enable the Games section below to open the public Games page.");
-  previewBtn.textContent = "Games unavailable";
+  previewBtn.textContent = "Enable Games to open the public page";
 }
 
 function renderSections() {

@@ -719,6 +719,10 @@ export function renderBoardStatus() {
     publishAction.title = s.published ? "Take this site offline" : "Make this site available to visitors";
     publishAction.setAttribute("aria-label", s.published ? "Unpublish site" : "Publish site");
   }
+  const shareWarning = $("sharePublishWarning");
+  if (shareWarning) shareWarning.hidden = s.live || s.published;
+  const sharePublishAction = $("sharePublishAction");
+  if (sharePublishAction) sharePublishAction.onclick = () => $("publishAction")?.click();
   const publishToggle = $("pubToggle");
   if (publishToggle && !state._dirty) publishToggle.checked = s.published;
   // A "View site" link must never be offered while the public URL would not
@@ -1478,6 +1482,7 @@ $("save")?.addEventListener("click", async () => {
     const d = await res.json();
     if (res.ok && d.ok) {
       justPublished = !!payload.published && !state.PUBLISHED;
+      if (Array.isArray(payload.players)) state.SAMPLE_PLAYERS = false;
       setState({ _dirty: false, PUBLISHED: !!payload.published });
       status.textContent = justPublished && !boardStatus().emailVerified
         ? "Published — Your site will open to visitors after you confirm your email."
