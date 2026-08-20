@@ -138,7 +138,7 @@ function setupRows(values) {
 
 beforeAll(async () => {
   globalThis.document = fakeDocument;
-  globalThis.window = { sessionStorage: storage };
+  globalThis.window = { sessionStorage: storage, addEventListener() {}, removeEventListener() {} };
   globalThis.navigator = {};
   globalThis.location = { href: "http://localhost/dashboard/leaderboard/players" };
   globalThis.requestAnimationFrame = (fn) => fn();
@@ -165,6 +165,17 @@ describe("Players CRUD validation", () => {
     expect(result.players[0]).not.toHaveProperty("score");
     expect(result.players[0]).not.toHaveProperty("prize");
     expect(result.invalid).toHaveLength(1);
+  });
+
+  it("does not report validation errors during preview collection", () => {
+    const rows = setupRows({ name: "Alice", wagered: "abc" });
+    const result = players.collectPlayers({ reportErrors: false });
+    const input = rows.querySelector(".p-wager");
+    const error = input.closest("td").querySelector(".field-err");
+    expect(result.invalid).toHaveLength(1);
+    expect(input.getAttribute("aria-invalid")).toBeNull();
+    expect(error.hidden).toBe(true);
+    expect(error.textContent).toBe("");
   });
 
   it("returns visible quick-add validation errors for blank names and bad numbers", () => {

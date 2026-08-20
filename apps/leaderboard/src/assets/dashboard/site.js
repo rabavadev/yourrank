@@ -6,7 +6,7 @@ import { renderEmpty } from "./states.js";
 import { renderBoardSwitcher, renderBoardSelect, renderBoardsPage } from "./boards.js";
 import { renderOverviewSummary } from "./overview.js";
 import { renderPerformance, renderPerformanceLoading } from "./performance.js";
-import { clearPlayersDraft, collectPlayers, commitDraftMutation, discardPlayersDraft, renderPlayers, renumber, toggleEmpty } from "./players.js";
+import { clearPlayersDraft, collectPlayers, commitDraftMutation, renderPlayers, renumber, toggleEmpty } from "./players.js";
 import { requestPublicationChange } from "./publication.js";
 
 export const DEFAULT_SECTIONS = {
@@ -428,8 +428,8 @@ export function wireDeleteAccount() {
   modal.addEventListener("click", (e) => { if (e.target === modal) close(); });
 }
 
-export function collect() {
-  const playerResult = collectPlayers();
+export function collect({ reportPlayerErrors = true } = {}) {
+  const playerResult = collectPlayers({ reportErrors: reportPlayerErrors });
   const players = playerResult.players;
   const brandName = $("f_name").value.trim();
   const out = {
@@ -466,7 +466,6 @@ export function collect() {
       contactEnabled: $("f_legal_contact_enabled")?.checked ?? true,
     },
   };
-  Object.defineProperty(out, "_invalidPlayers", { value: playerResult.invalid, enumerable: false });
   const pubToggle = $("pubToggle");
   if (pubToggle) out.published = pubToggle.checked;
   const pwEnabled = $("f_password_enabled");
@@ -513,7 +512,7 @@ export function collect() {
     enabled: !!(arToggle && arToggle.checked),
     clear: arClear && !arClear.disabled ? arClear.value : "wagers",
   };
-  return out;
+  return { payload: out, invalid: playerResult.invalid };
 }
 
 /* --- branding --- */
@@ -606,9 +605,8 @@ export function updateDesignPreview() {
   clearTimeout(_previewTimeout);
   _previewTimeout = setTimeout(() => {
     try {
-      const draft = collect();
-      if (draft._invalidPlayers?.length) return;
-      delete draft._invalidPlayers;
+      const { payload: draft, invalid } = collect({ reportPlayerErrors: false });
+      if (invalid.length) return;
       const url = "/dashboard/preview?" + new URLSearchParams({ board: state.ACTIVE_SITE_ID, device }).toString();
       if (!_previewForm) {
         _previewForm = document.createElement("form");
@@ -1433,9 +1431,9 @@ $("a_go")?.addEventListener("click", async () => {
   if (!await showConfirmModal("Close out period", `This will ${warn}. Continue?`, "Close out", true)) return;
   btn.disabled = true; btn.textContent = "Closing out…";
   try {
-    const savePayload = collect();
-    if (savePayload._invalidPlayers?.length) {
-      const first = savePayload._invalidPlayers[0];
+    const { payload: savePayload, invalid } = collect();
+    if (invalid.length) {
+      const first = invalid[0];
       $("status").textContent = `Fix the invalid ${first.label.toLowerCase()} before closing out.`;
       first.input?.focus();
       btn.disabled = false;
@@ -1465,24 +1463,23 @@ $("a_go")?.addEventListener("click", async () => {
   btn.disabled = false; btn.textContent = "Close out period";
 });
 
-$("save")?.addEventListener("click", async () => {
+export async function saveEditorDraft({ fetchImpl = fetch, collectImpl = collect } = {}) {
   const btn = $("save"), status = $("status"), publishAction = $("publishAction");
-  const payload = collect();
-  if (payload._invalidPlayers?.length) {
-    const first = payload._invalidPlayers[0];
+  const { payload, invalid } = collectImpl();
+  if (invalid.length) {
+    const first = invalid[0];
     status.textContent = `Fix the invalid ${first.label.toLowerCase()} before saving.`;
     status.hidden = false;
     status.setAttribute("role", "alert");
     first.input?.focus();
     return;
   }
-  delete payload._invalidPlayers;
   btn.disabled = true; btn.textContent = "Saving…"; status.textContent = "";
   if (publishAction) { publishAction.disabled = true; publishAction.setAttribute("aria-busy", "true"); }
   const limitEl = $("limitMsg"); if (limitEl) limitEl.textContent = "";
   let justPublished = false;
   try {
-    const res = await fetch("/api/site", { method: "PUT", credentials: "include", headers: { "content-type": "application/json", "x-csrf-token": getCsrf() }, body: JSON.stringify(payload) }).then(guardAuth);
+    const res = await fetchImpl("/api/site", { method: "PUT", credentials: "include", headers: { "content-type": "application/json", "x-csrf-token": getCsrf() }, body: JSON.stringify(payload) }).then(guardAuth);
     const d = await res.json();
     if (res.ok && d.ok) {
       justPublished = !!payload.published && !state.PUBLISHED;
@@ -1517,24 +1514,26 @@ $("save")?.addEventListener("click", async () => {
   if (justPublished || savedMsg === "Saved") {
     setTimeout(() => { if (status.textContent === savedMsg) status.textContent = ""; }, 6000);
   }
-});
+}
+
+$("save")?.addEventListener("click", () => { saveEditorDraft(); });
+
+export function discardEditorChanges({ reload = () => location.reload() } = {}) {
+  clearPlayersDraft();
+  setState({ _dirty: false });
+  reload();
+}
 
 $("discard")?.addEventListener("click", async () => {
   if (!state._dirty) return;
   const confirmed = await showConfirmModal(
     "Discard unsaved changes",
-    "Discard the staged player changes and restore the last saved version?",
-    "Discard",
+    "Discard all staged editor changes and reload the last saved version?",
+    "Discard changes",
     true,
   );
   if (!confirmed) return;
-  discardPlayersDraft();
-  const status = $("status");
-  if (status) {
-    status.textContent = "Unsaved player changes discarded.";
-    status.hidden = false;
-    status.setAttribute("role", "status");
-  }
+  discardEditorChanges();
 });
 
 export function renderEmbedShare() {

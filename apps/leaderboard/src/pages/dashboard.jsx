@@ -550,7 +550,7 @@ export function DashboardContent({ user, activePath } = {}) {
     return <Section active={key === activeNav} activeHash={activeHash} showTabs={activeNav === "board"} />;
   })}
 {hasEditor ? 
-<div class="savebar" id="savebar" hidden><span class="savebar-hint">Unsaved changes</span><span class="savebar-ts" id="editorTimestamp"></span><button class="btn btn--ghost" id="discard" type="button">Discard</button><button class="btn btn--accent" id="save" type="button">Save changes</button></div> : null}
+<div class="savebar" id="savebar" hidden><span class="savebar-hint">Unsaved changes</span><span class="savebar-ts" id="editorTimestamp"></span><button class="btn btn--ghost" id="discard" type="button">Discard changes</button><button class="btn btn--accent" id="save" type="button">Save changes</button></div> : null}
     </DashboardShell>
     </>
   );

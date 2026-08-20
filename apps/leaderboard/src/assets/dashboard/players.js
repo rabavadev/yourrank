@@ -273,16 +273,16 @@ export function discardPlayersDraft({ render = renderPlayers } = {}) {
   clearDirty();
 }
 
-export function collectPlayers({ focusInvalid = false } = {}) {
+export function collectPlayers({ focusInvalid = false, reportErrors = true } = {}) {
   const rows = $("rows");
   const invalid = [];
   const players = rows ? [...rows.children].map((tr) => {
     const nameInput = tr.querySelector(".p-name");
     const name = nameInput?.value.trim() || "";
     if (!name) {
-      setPlayerFieldError(nameInput, "Enter a player name.");
+      if (reportErrors) setPlayerFieldError(nameInput, "Enter a player name.");
       invalid.push({ input: nameInput, label: "Player name" });
-    } else {
+    } else if (reportErrors) {
       setPlayerFieldError(nameInput, "");
     }
     const player = { name };
@@ -290,10 +290,12 @@ export function collectPlayers({ focusInvalid = false } = {}) {
       const input = tr.querySelector(field.selector);
       const parsed = parsePlayerNumber(input?.value);
       if (!parsed.ok) {
-        setPlayerFieldError(input, parsed.message);
+        if (reportErrors) setPlayerFieldError(input, parsed.message);
         invalid.push({ input, label: field.label });
-      } else {
+      } else if (reportErrors) {
         clearPlayerFieldError(input);
+      }
+      if (parsed.ok) {
         if (field.key === "wagered" || field.key === "prize" || !parsed.empty) player[field.key] = parsed.value;
       }
     }
