@@ -14,7 +14,7 @@ describe("viewer membership display", () => {
     expect(creditsJs).toContain("v.avatar_url");
     expect(creditsJs).toContain("const history = v.kick_username");
     expect(creditsJs).not.toContain("v.viewer_id ||");
-    expect(creditsJs).toContain("/dashboard/rewards/history?viewer=${encodeURIComponent(v.kick_username)}");
+    expect(creditsJs).toContain("/dashboard/rewards/activity?viewer=${encodeURIComponent(v.kick_username)}");
     expect(creditsJs).toContain('new URLSearchParams(location.search).get("viewer")');
     expect(creditsJs).toContain("has signed in but has not earned or spent credits yet");
     expect(creditsJs).toContain("Viewers who sign in will appear here");

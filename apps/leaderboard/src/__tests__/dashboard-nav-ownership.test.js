@@ -91,6 +91,8 @@ describe("dashboard navigation ownership", () => {
 
   it("maps each route to exactly one visible navigation key", () => {
     const keys = new Set(flattenNav(dashboardNavItems()).map((item) => item.key));
+    const items = Object.fromEntries(flattenNav(dashboardNavItems()).map((item) => [item.key, item]));
+    expect(items.sites.icon).not.toBe(items.site.icon);
     for (const [route, owner] of [
       ["home", "home"],
       ["board", "board"],
