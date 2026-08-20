@@ -165,8 +165,8 @@ async function registerViewerMembership({
     const site = await oneImpl("SELECT id FROM sites WHERE slug=$1", [slug]);
     if (!site?.id) return;
     await execImpl(
-      `INSERT INTO site_viewers (site_id, viewer_id, balance, total_earned)
-       VALUES ($1, $2, 0, 0)
+      `INSERT INTO site_viewers (site_id, viewer_id, balance, total_earned, last_seen_at)
+       VALUES ($1, $2, 0, 0, now())
        ON CONFLICT (site_id, viewer_id) DO NOTHING`,
       [site.id, viewerId],
     );

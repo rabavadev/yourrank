@@ -161,11 +161,19 @@ const metric = (value) => value == null ? UNKNOWN : value;
 function renderRewardRow(m) {
   return `<td><b>${esc(m.kick_reward_title)}</b><br><span class="hint">${esc(m.kick_reward_id)}</span></td><td class="hint">Kick reward redeemed · ${m.kick_reward_cost} points</td><td class="num"><b>+${m.credits} credits</b></td><td><input class="v3-toggle" type="checkbox" ${m.active ? "checked" : ""} data-toggle-reward="${esc(m.id)}" /></td><td class="ta-r"><button class="btn btn--sm" data-edit-reward="${esc(m.id)}">Edit</button> <button class="btn btn--sm btn--danger" data-del-reward="${esc(m.id)}">Delete</button></td>`;
 }
+function viewerIdentity(v) {
+  return v.kick_username || v.discord_username || v.viewer_id || v.kick_user_id || v.discord_user_id || "Viewer";
+}
 function renderViewerRow(v) {
-  const uname = v.kick_username || v.kick_user_id || "Viewer";
+  const uname = viewerIdentity(v);
+  const avatar = v.avatar_url
+    ? `<img class="cr-viewer-avatar" src="${esc(v.avatar_url)}" alt="" loading="lazy" />`
+    : `<span class="cr-viewer-avatar cr-viewer-avatar--fallback" aria-hidden="true">${esc(uname.slice(0, 1).toUpperCase())}</span>`;
   const joined = fmtDate(v.created_at);
   const earned = v.last_earned_at ? fmtDate(v.last_earned_at) : "Not yet";
-  return `<td>${esc(uname)}${v.blocked ? ' <span class="v3-chip v3-chip--cancelled">blocked</span>' : ""}</td><td class="num"><b>${v.balance}</b></td><td class="num">${v.total_earned}</td><td class="num">${v.total_spent}</td><td><span title="Joined ${esc(joined)}">${esc(joined)}</span><br><span class="hint">Earned: ${esc(earned)}</span></td><td class="ta-r"><button class="btn btn--sm btn--accent" data-tip-viewer="${esc(v.id)}" data-viewer-name="${esc(uname)}" data-viewer-balance="${v.balance}" title="Tip points to @${esc(uname)}">Tip</button> <button class="btn btn--sm ${v.blocked ? "btn--accent" : "btn--danger"}" data-block="${esc(v.id)}" data-blocked="${v.blocked ? "1" : ""}">${v.blocked ? "Unblock" : "Block"}</button></td>`;
+  const seen = v.last_seen_at ? fmtDate(v.last_seen_at) : "Not yet";
+  const historyHref = `/dashboard/rewards/history?viewer=${encodeURIComponent(uname)}`;
+  return `<td><div class="cr-viewer-identity">${avatar}<span><b>${esc(uname)}</b>${v.blocked ? ' <span class="v3-chip v3-chip--cancelled">blocked</span>' : ""}</span></div></td><td class="num"><b>${v.balance}</b></td><td class="num">${v.total_earned}</td><td class="num">${v.total_spent}</td><td><span title="Joined ${esc(joined)}">${esc(joined)}</span><br><span class="hint">Earned: ${esc(earned)}</span><br><span class="hint">Seen: ${esc(seen)}</span></td><td class="ta-r"><a class="btn btn--sm" href="${esc(historyHref)}">History</a> <button class="btn btn--sm btn--accent" data-tip-viewer="${esc(v.id)}" data-viewer-name="${esc(uname)}" data-viewer-balance="${v.balance}" title="Tip points to @${esc(uname)}">Tip</button> <button class="btn btn--sm ${v.blocked ? "btn--accent" : "btn--danger"}" data-block="${esc(v.id)}" data-blocked="${v.blocked ? "1" : ""}">${v.blocked ? "Unblock" : "Block"}</button></td>`;
 }
 function renderRedemptionRow(r) { return `<td><b>${esc(r.kick_username || r.kick_user_id)}</b></td><td>${esc(r.item_name)}</td><td class="num"><b>${r.cost}</b><span class="hint">credits</span></td><td>${statusChip(r.status)}</td><td title="${esc(fmtDate(r.created_at))}">${relative(r.created_at)}</td><td class="ta-r">${r.status === "pending" ? `<button class="btn btn--sm" data-cancel="${esc(r.id)}">Cancel</button> <button class="btn btn--sm btn--accent" data-fulfill="${esc(r.id)}">Fulfil</button>` : ""}</td>`; }
 function renderShopCards(items) {
@@ -237,7 +245,7 @@ function render() {
   }
   if (current === "viewers") {
     const viewers = state.viewers || [];
-    if (!viewerCtrl) { viewerCtrl = new ListController({ root: $("cr-viewers"), tbody: "cr-viewer-list", emptyEl: $("cr-viewer-empty"), emptySpec: { kind: "empty", title: "No viewers yet", body: "Viewers who sign in will appear here, even before they earn or spend credits.", compact: true }, items: viewers, perPage: 15, searchFn: (v) => `${v.kick_username || v.kick_user_id} ${v.block_reason || ""} ${v.blocked ? "blocked" : ""}`, sortOptions: [{ key: "balance", label: "Balance", fn: (a, b) => (b.balance || 0) - (a.balance || 0) }, { key: "earned", label: "Earned", fn: (a, b) => (b.total_earned || 0) - (a.total_earned || 0) }, { key: "spent", label: "Spent", fn: (a, b) => (b.total_spent || 0) - (a.total_spent || 0) }, { key: "last", label: "Last earned", fn: (a, b) => new Date(b.last_earned_at || b.created_at || 0) - new Date(a.last_earned_at || a.created_at || 0) }], emptyAllText: "No viewers yet.", emptyText: "No matching viewers.", renderItem: (v) => renderViewerRow(v), onRender: () => wireDynamicActions() }); }
+    if (!viewerCtrl) { viewerCtrl = new ListController({ root: $("cr-viewers"), tbody: "cr-viewer-list", emptyEl: $("cr-viewer-empty"), emptySpec: { kind: "empty", title: "No viewers yet", body: "Viewers who sign in will appear here, even before they earn or spend credits.", compact: true }, items: viewers, perPage: 15, searchFn: (v) => `${viewerIdentity(v)} ${v.block_reason || ""} ${v.blocked ? "blocked" : ""}`, sortOptions: [{ key: "balance", label: "Balance", fn: (a, b) => (b.balance || 0) - (a.balance || 0) }, { key: "earned", label: "Earned", fn: (a, b) => (b.total_earned || 0) - (a.total_earned || 0) }, { key: "spent", label: "Spent", fn: (a, b) => (b.total_spent || 0) - (a.total_spent || 0) }, { key: "last", label: "Last earned", fn: (a, b) => new Date(b.last_earned_at || b.created_at || 0) - new Date(a.last_earned_at || a.created_at || 0) }], emptyAllText: "No viewers yet.", emptyText: "No matching viewers.", renderItem: (v) => renderViewerRow(v), onRender: () => wireDynamicActions() }); }
     else viewerCtrl.setItems(viewers);
     renderAnalytics();
   }
@@ -522,7 +530,12 @@ async function load() {
     setState({ CREDITS_STATUS: "ready" });
     render();
     showOAuthMessage({ finalize: true });
-    if (tab() === "history") await loadActivity({ reset: true });
+    if (tab() === "history") {
+      const viewer = new URLSearchParams(location.search).get("viewer");
+      const input = $("cr-history-username");
+      if (viewer && input && !input.value) input.value = viewer;
+      await loadActivity({ reset: true });
+    }
     if (tab() === "viewers" && $("cr-analytics")) await loadAnalytics();
     preserveSiteContextLinks();
     $("cr-app").hidden = false; $("cr-empty").hidden = true;
@@ -756,7 +769,7 @@ function renderActivity() {
   if (!activityEvents.length) {
     list.innerHTML = "";
     if (empty) {
-      empty.innerHTML = inlineStateHtml({ kind: "empty", title: "No credit activity found", body: "Try another viewer or event type." });
+      empty.innerHTML = inlineStateHtml({ kind: "empty", title: "No credit activity found", body: "This viewer has signed in but has not earned or spent credits yet. Try another viewer or event type." });
       empty.hidden = false;
     }
   } else {
