@@ -19,9 +19,9 @@
     clearTimeout(timer);
     el.hidden = false;
     el.classList.add("yr-boot-failure");
-    el.innerHTML = '<div class="error-state" role="alert"><span class="error-icon" aria-hidden="true">!</span><p>Couldn\'t load this dashboard.</p><p class="hint">' +
-      String(message || "A dashboard script or asset failed before the app could start.") +
-      '</p><button class="btn btn--sm" type="button" data-yr-boot-retry>Retry</button></div>';
+    el.innerHTML = '<div class="error-state" role="alert"><span class="error-icon" aria-hidden="true">!</span><p>Couldn\'t load this dashboard.</p><p class="hint" data-yr-boot-hint></p><button class="btn btn--sm" type="button" data-yr-boot-retry>Retry</button></div>';
+    var hint = el.querySelector("[data-yr-boot-hint]");
+    if (hint) hint.textContent = String(message || "A dashboard script or asset failed before the app could start.");
     var retry = el.querySelector("[data-yr-boot-retry]");
     if (retry) retry.addEventListener("click", function () { location.reload(); });
   }
