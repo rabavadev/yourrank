@@ -597,8 +597,12 @@ export async function handleRequest(request, env, ctx, meta, deps = {}) {
           let node = pageObj.Component({ reqId, activePath, user, tab });
           if (node instanceof Promise) node = await node;
           const content = node.toString();
-          if (pageObj.config) {
-            const result = leaderboardPageHtml({ ...pageObj.config, content }).replace("<!--GM_NAV-->", navHtml());
+          // Pages that render in two shells (Help: workspace for a creator,
+          // public site chrome for a visitor) resolve their document config
+          // from the same render options as the content.
+          const pageConfig = pageObj.configFor ? pageObj.configFor({ user, activePath, tab }) : pageObj.config;
+          if (pageConfig) {
+            const result = leaderboardPageHtml({ ...pageConfig, content }).replace("<!--GM_NAV-->", navHtml());
             return applyPlaceholders(result);
           }
           return applyPlaceholders(content);

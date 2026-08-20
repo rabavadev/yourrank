@@ -1310,6 +1310,11 @@ html{color-scheme:light}
 .operator-help-list a{font-weight:650}
 .operator-help-list span{display:block;margin-top:4px;color:var(--ink-mute);font-size:.93rem;line-height:1.45}
 .operator-help-actions{display:flex;gap:12px;flex-wrap:wrap;margin-top:24px}
+.help-subnav{display:flex;gap:2px;flex-wrap:wrap;border-bottom:1px solid var(--line)}
+.help-subnav-link{display:inline-flex;align-items:center;min-height:var(--tap);padding:0 14px;font-size:13px;font-weight:600;color:var(--ink-mute);text-decoration:none;border-bottom:2px solid transparent}
+.help-subnav-link:hover{color:var(--ink)}
+.help-subnav-link.is-on{color:var(--accent);border-bottom-color:var(--accent)}
+.contact-public{max-width:560px}
 @media (max-width:640px){.operator-help{padding:24px 0 48px}.operator-help-list{grid-template-columns:1fr}}
 
 /* ---------- Background ----------
