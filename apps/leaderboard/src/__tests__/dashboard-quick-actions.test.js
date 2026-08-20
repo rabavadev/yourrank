@@ -144,6 +144,15 @@ describe("dashboard overview quick actions", () => {
     expect(dashboardCss).not.toContain(".v3-dash[data-auth-workspace] .ov-live-grid { display: grid; grid-template-columns: minmax(0, 8fr) minmax(280px, 4fr); gap: 0; overflow: hidden;");
   });
 
+  it("labels Appearance editor groups by the content they contain", () => {
+    const html = dashboardHtml("/dashboard/leaderboard/design");
+    expect(html).toContain('<h1 class="v3-section-title" data-egroup="design">Appearance</h1>');
+    expect(html).toContain('<div class="design-group-heading" data-egroup="design"><h2>Page design</h2></div>');
+    expect(html).toContain('<div class="design-group-heading" data-egroup="design"><h2>Content</h2></div>');
+    expect(html).not.toContain('<div class="design-group-heading" data-egroup="design"><h2>Appearance</h2></div>');
+    expect(html).not.toContain("<h2>Theme &amp; branding</h2>");
+  });
+
   it("keeps Games terminology and status copy singular", () => {
     expect(routesJs).toContain('games: { path: "/dashboard/games", title: "Games" }');
     expect(gamesJs).toContain('{ key: "limbo", label: "Limbo", description: "", disabled: true }');
