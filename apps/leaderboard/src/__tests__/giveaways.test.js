@@ -10,6 +10,7 @@ const dashboardSource = readFileSync(new URL("../assets/dashboard.js", import.me
 const previewTabsSource = readFileSync(new URL("../assets/dashboard/preview-tabs.js", import.meta.url), "utf8");
 const giveawaysSource = readFileSync(new URL("../assets/giveaways.js", import.meta.url), "utf8");
 const giveawaysCssSource = readFileSync(new URL("../assets/giveaways.css", import.meta.url), "utf8");
+const shellSource = readFileSync(new URL("../assets/dashboard/shell.js", import.meta.url), "utf8");
 
 function collectGiveawayClasses(source) {
   const classes = new Set();
@@ -91,10 +92,18 @@ describe("Giveaway Chatroom Handler", () => {
   it("renders each giveaway tab as a deep-linkable active server view", () => {
     const html = renderGiveawaysHtml("raffles");
     expect(html).toContain('href="/dashboard/giveaways/raffles"');
+    expect(html).toContain("<h1>Raffles</h1>");
     expect(html).toContain('id="tab-btn-raffles"');
     expect(html).toContain('id="pane-raffles"');
     expect(html).toContain('class="gw-tab-pane is-active" id="pane-raffles"');
     expect(html).toContain('class="gw-tab-pane" id="pane-chat" hidden');
+  });
+
+  it("keeps OBS copy ownership in the sharing module", () => {
+    for (const id of ["ov-btn-copy-pred-hud", "ov-btn-copy-alerts", "ov-btn-copy-ticker"]) {
+      expect(shellSource).not.toContain(id);
+      expect(siteSource).toContain(id);
+    }
   });
 
   it("keeps giveaway history tables on the canonical table markup", () => {

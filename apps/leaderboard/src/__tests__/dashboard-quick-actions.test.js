@@ -119,6 +119,18 @@ describe("dashboard overview quick actions", () => {
     expect(dashboardCss).toMatch(/\.v3-dash\[data-auth-workspace\] \.plan-pending,[\s\S]*?\.v3-dash\[data-auth-workspace\] \.plan-cancel \{[\s\S]*?background: var\(--v4-surface-soft\);/);
   });
 
+  it("styles the Home alert and Games block status rows in the v4 workspace", () => {
+    expect(dashboardCss).toContain(".v3-dash[data-auth-workspace] .v3-alert");
+    expect(dashboardCss).toContain(".v3-dash[data-auth-workspace] .v3-alert--warning");
+    expect(dashboardCss).toContain(".v3-dash[data-auth-workspace] .v3-block-status");
+    expect(dashboardHtml()).toContain('class="v3-alert v3-alert--warning"');
+    const games = dashboardHtml("/dashboard/games");
+    expect(games).toContain("Page block visibility");
+    expect(games).toContain("Current visibility on your leaderboard page");
+    expect(games).toContain("Edit layout &amp; blocks in Appearance →");
+    expect(games).not.toContain("Choose which blocks appear on your leaderboard page");
+  });
+
   it("announces the active audience insight tab", () => {
     expect(performanceJs).toContain('node.setAttribute("aria-current", "page")');
     expect(performanceJs).toContain('node.removeAttribute("aria-current")');
