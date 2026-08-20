@@ -46,7 +46,7 @@ export function workspaceSearchHtml() {
   return '<button class="lb-topbar-cmd" type="button" id="topbarCmdTrigger" aria-label="Search (⌘K or Ctrl+K)" title="Press ⌘K or Ctrl+K to search"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg><span>Search…</span><kbd>⌘K</kbd></button>';
 }
 
-export function DashboardShell({ activeNav = "home", boardContext = "full", footer = "dashboard", title = "", topbarContext, crumbs = null, activePath = "", rootId, initiallyHidden = false, user, children }) {
+export function DashboardShell({ activeNav = "home", boardContext = "full", footer = "dashboard", title = "", topbarContext, crumbs = null, activePath = "", rootId, initiallyHidden = false, user, overlays = null, children }) {
   const resolvedActivePath = activePath || (boardContext === "none" ? "/dashboard/settings" : CREDITS_NAV_KEYS.has(activeNav) ? "/dashboard/rewards/redemptions" : "/dashboard");
   const shellId = rootId || (boardContext === "none" ? "account-dash" : "dash");
   const profile = profileMenuHtml({ activePath: resolvedActivePath, user, standalone: true, dynamicIdentity: true });
@@ -109,6 +109,7 @@ export function DashboardShell({ activeNav = "home", boardContext = "full", foot
           </div>
         </header>
         <div class="lb-bento" id={boardContext === "selector" ? "cr-main" : undefined}>{crumbs ? raw(crumbsHtml(crumbs, resolvedActivePath)) : null}{children}</div>
+        {overlays ? raw(overlays) : null}
       </div>
     </div>
   </div>;

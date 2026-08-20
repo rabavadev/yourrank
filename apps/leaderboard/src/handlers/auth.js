@@ -5,6 +5,7 @@ import { hashToken } from "@yourrank/shared/crypto";
 import { trackActivation } from "@yourrank/shared/activation-funnel";
 import { createBoard, getUserBoardsList } from "../site.js";
 import { sendEmail, resetEmail, sendOnboardingEmail, sendVerificationEmail } from "../email.js";
+import { validatePassword } from "../password-rules.js";
 import { effectivePlan, PLAN_LIMITS, BOARD_LIMITS, priceUsd } from "@yourrank/shared/plans";
 import { getEnabledFeatureKeys } from "@yourrank/shared/features";
 import {
@@ -84,7 +85,8 @@ export async function handleSignup(request, env, ctx) {
     const requestedSlug = slugify(body.slug || "");
     let slug = requestedSlug || slugify(defaultName);
     if (!isEmail(email)) return bad("Enter a valid email");
-    if (password.length < 8) return bad("Password must be at least 8 characters");
+    const passwordCheck = validatePassword(password);
+    if (!passwordCheck.ok) return bad(passwordCheck.message);
     if (requestedSlug && RESERVED.has(requestedSlug)) {
       return json({ ok: false, error: "That page URL is reserved. Pick another.", field: "slug" }, 400);
     }
@@ -344,7 +346,8 @@ export async function handleReset(request, env, deps = defaultDependencies) {
     const token = String(body?.token || "");
     const password = String(body?.password || "");
     if (!token) return bad("Missing reset token");
-    if (password.length < 8) return bad("Password must be at least 8 characters");
+    const passwordCheck = validatePassword(password);
+    if (!passwordCheck.ok) return bad(passwordCheck.message);
     const tokenHash = await hashToken(token);
     const resetRow = await deps.one("SELECT user_id FROM password_resets WHERE token=$1 AND expires_at > now()", [tokenHash]);
     const userId = resetRow?.user_id ?? null;

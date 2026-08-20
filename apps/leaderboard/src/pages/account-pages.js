@@ -33,6 +33,9 @@ const profileWidget = `<div class="lb-widget lb-widget--full acc-card-security" 
             </div>
             <div class="pwd-reqs" id="pwdReqs" aria-live="polite">
               <span class="pwd-req" id="pwdReqLength"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/></svg> Minimum 8 characters</span>
+              <span class="pwd-req" id="pwdReqCase"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/></svg> Upper &amp; lower case</span>
+              <span class="pwd-req" id="pwdReqNumber"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/></svg> A number</span>
+              <span class="pwd-req" id="pwdReqSymbol"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/></svg> A symbol</span>
             </div>
           </div>
           <div class="d-flex gap-8 items-center flex-wrap mt-6">
@@ -47,7 +50,10 @@ const profileWidget = `<div class="lb-widget lb-widget--full acc-card-security" 
               <h3 class="m-0">Active sessions</h3>
               <p class="card-sub m-0 mt-2">Web browsers and devices currently signed in to your account.</p>
             </div>
-            <button class="btn btn--ghost btn--sm" id="accRevokeSessions" type="button">Sign out other sessions</button>
+            <div class="d-flex gap-8 flex-wrap">
+              <button class="btn btn--ghost btn--sm" id="accSignOut" type="button">Sign out</button>
+              <button class="btn btn--ghost btn--sm" id="accRevokeSessions" type="button">Sign out other sessions</button>
+            </div>
           </div>
           <div id="accSessions"><p class="hint">Loading sessions…</p></div>
           <p class="hint" id="accSessionsStatus" role="status" aria-live="polite"></p>

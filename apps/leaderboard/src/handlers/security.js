@@ -8,8 +8,7 @@ import {
 import { updateUserPassword } from "../data/auth.js";
 import { createQueueProducer } from "@yourrank/shared/queue-producer";
 import { logAudit } from "@yourrank/shared/audit";
-
-const MIN_PASSWORD_LENGTH = 8;
+import { validatePassword } from "../password-rules.js";
 
 async function currentSessionHash(req) {
   // If the current request just rotated the session, the new token is in
@@ -36,7 +35,8 @@ export async function handleChangePassword(request, env) {
     const current = String(body?.currentPassword || "");
     const password = String(body?.password || "");
     if (!current || !password) return bad("Current password and new password are required");
-    if (password.length < MIN_PASSWORD_LENGTH) return bad("Password must be at least 8 characters");
+    const passwordCheck = validatePassword(password);
+    if (!passwordCheck.ok) return bad(passwordCheck.message);
 
     const row = await one("SELECT password_hash, password_salt FROM users WHERE id=$1", [user.id]);
     if (!row?.password_hash) return bad("Password change is not available for this account", 400);

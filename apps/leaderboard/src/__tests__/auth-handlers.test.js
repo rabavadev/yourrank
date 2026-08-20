@@ -38,7 +38,7 @@ const session = {
 import { handleReset as handleResetImpl } from "../handlers/auth.js";
 const handleReset = (request, env) => handleResetImpl(request, env, { ...db, ...session });
 
-function req({ token = "valid-token", password = "newpassword123" } = {}) {
+function req({ token = "valid-token", password = "Newpassword123!" } = {}) {
   const request = new Request("https://test.com/api/auth/reset", {
     method: "POST",
     headers: { "content-type": "application/json" },

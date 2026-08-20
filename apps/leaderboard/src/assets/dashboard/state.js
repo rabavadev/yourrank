@@ -85,10 +85,11 @@ export function createDashboardState({ requestId, onSubscriberError = (err) => c
     const emailVerified = state.ME ? state.ME.emailVerified !== false : true;
     const published = !!state.PUBLISHED;
     const live = published && emailVerified;
+    const pending = published && !emailVerified;
     let key = "draft";
     if (published) key = live ? "published" : "pending";
     else if (!state.IS_DRAFT) key = "unpublished";
-    return { live, published, emailVerified, key };
+    return { live, published, emailVerified, pending, key };
   }
 
   return { state, setState, subscribe, markDirty, clearDirty, boardStatus };
