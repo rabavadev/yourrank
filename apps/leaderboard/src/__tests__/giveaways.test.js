@@ -247,6 +247,36 @@ describe("Giveaway Chatroom Handler", () => {
     expect(giveawaysHtml).toContain('id="settle-status"');
   });
 
+  it("keeps every event drawer's fields scrollable while actions stay pinned above the app", () => {
+    for (const id of ["rf-drawer", "cd-drawer", "pred-drawer", "settle-drawer"]) {
+      const drawer = giveawaysHtml.match(
+        new RegExp(`<div class="gw-drawer-backdrop" id="${id}"[\\s\\S]*?</div>\\n</div>`, "m"),
+      )?.[0];
+      expect(drawer).toBeTruthy();
+      const fieldsStart = drawer.indexOf('<div class="gw-drawer-fields">');
+      const footerStart = drawer.indexOf('<div class="gw-drawer-footer">');
+      expect(fieldsStart).toBeGreaterThan(0);
+      expect(footerStart).toBeGreaterThan(fieldsStart);
+      expect(drawer.slice(fieldsStart, footerStart)).toContain("gw-drawer-fields");
+      expect(drawer.slice(footerStart)).toContain("gw-drawer-footer");
+    }
+
+    const cssRules = new Map();
+    for (const [, selector, declarations] of giveawaysCssSource.matchAll(
+      /(\.gw-drawer-(?:backdrop|body|fields|footer))\s*\{([^}]*)\}/g,
+    )) {
+      if (cssRules.has(selector)) continue;
+      cssRules.set(
+        selector,
+        new Map([...declarations.matchAll(/([\w-]+)\s*:\s*([^;]+);/g)].map(([, name, value]) => [name, value.trim()])),
+      );
+    }
+    expect(cssRules.get(".gw-drawer-backdrop")?.get("z-index")).toBe("1200");
+    expect(cssRules.get(".gw-drawer-body")?.get("overflow")).toBe("hidden");
+    expect(cssRules.get(".gw-drawer-fields")?.get("overflow-y")).toBe("auto");
+    expect(cssRules.get(".gw-drawer-footer")?.get("flex")).toBe("0 0 auto");
+  });
+
   it("renders truthful unverified and resend controls", () => {
     const dashboardPage = readFileSync(new URL("../pages/dashboard.jsx", import.meta.url), "utf8");
     expect(dashboardPage).toContain('id="verifyBannerEmail"');

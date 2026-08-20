@@ -494,6 +494,7 @@ ${tabs}
       <button class="gw-modal-close-btn" id="pred-drawer-close" type="button" aria-label="Close">✕</button>
     </div>
     <form id="pred-form" class="gw-drawer-body">
+      <div class="gw-drawer-fields">
       <div class="field">
         <label for="pred-title">Prediction Question *</label>
         <input type="text" id="pred-title" placeholder="e.g. Will I clutch this 1v3 round?" required />
@@ -550,6 +551,7 @@ ${tabs}
           <option value="0">Manual lock only (until streamer clicks Lock)</option>
         </select>
       </div>
+      </div>
 
       <div class="gw-drawer-footer">
         <p class="status gw-drawer-status" id="pred-status" role="status" aria-live="polite" hidden></p>
@@ -568,12 +570,14 @@ ${tabs}
       <button class="gw-modal-close-btn" id="settle-drawer-close" type="button" aria-label="Close">✕</button>
     </div>
     <div class="gw-drawer-body">
+      <div class="gw-drawer-fields">
       <p class="font-muted font-14" id="settle-pred-title">Select which option won to distribute the prize pool automatically.</p>
       <input type="hidden" id="settle-pred-id" value="" />
 
       <div class="field">
         <label>Which option won?</label>
         <div class="d-flex flex-column gap-8 mt-8" id="settle-options-container"></div>
+      </div>
       </div>
 
       <div class="gw-drawer-footer">
@@ -593,6 +597,7 @@ ${tabs}
       <button class="gw-modal-close-btn" id="rf-drawer-close" type="button" aria-label="Close">✕</button>
     </div>
     <form id="rf-form" class="gw-drawer-body">
+      <div class="gw-drawer-fields">
       <div class="field">
         <label for="rf-title">Prize Title *</label>
         <input type="text" id="rf-title" placeholder="e.g. $100 Amazon Gift Card or VIP Role" required />
@@ -631,6 +636,7 @@ ${tabs}
         </div>
         <span class="hint">Prevents one viewer from buying all tickets.</span>
       </div>
+      </div>
 
       <div class="gw-drawer-footer">
         <p class="status gw-drawer-status" id="rf-status" role="status" aria-live="polite" hidden></p>
@@ -649,6 +655,7 @@ ${tabs}
       <button class="gw-modal-close-btn" id="cd-drawer-close" type="button" aria-label="Close">✕</button>
     </div>
     <form id="cd-form" class="gw-drawer-body">
+      <div class="gw-drawer-fields">
       <div class="field">
         <label for="cd-code">Secret Drop Code *</label>
         <div class="d-flex gap-8">
@@ -693,6 +700,7 @@ ${tabs}
           <option value="30">30 minutes</option>
           <option value="60">1 hour</option>
         </select>
+      </div>
       </div>
 
       <div class="gw-drawer-footer">
