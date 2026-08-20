@@ -5393,6 +5393,46 @@ body:has(.v3-dash[data-auth-workspace]) > .lb-backdrop.is-open { opacity: 1; poi
 
 .v3-dash[data-auth-workspace] .v3-players-table .player-name { font-weight: 700;
 }
+.v3-dash[data-auth-workspace] .v3-players-table .player-name,
+.v3-dash[data-auth-workspace] .v3-players-table td.num {
+  position: relative;
+}
+.v3-dash[data-auth-workspace] .player-name-counter {
+  display: block;
+  margin: 2px 8px 0;
+  color: var(--v4-ink-soft);
+  font: 400 10px var(--v3-mono);
+  text-align: right;
+}
+.v3-dash[data-auth-workspace] .field-err,
+.v3-dash[data-auth-workspace] .field-warn {
+  display: block;
+  margin: 3px 8px 0;
+  font: 500 11px var(--v3-sans);
+  line-height: 1.2;
+  text-align: left;
+}
+.v3-dash[data-auth-workspace] .field-err {
+  color: var(--v3-danger-ink);
+}
+.v3-dash[data-auth-workspace] .field-warn {
+  color: var(--v3-warn-ink);
+}
+.v3-dash[data-auth-workspace] #quickLimitMsg {
+  margin-right: 8px;
+  white-space: normal;
+}
+.v3-dash[data-auth-workspace] .v3-players-table input[aria-invalid="true"] {
+  border-color: var(--v3-danger-ink);
+  background: var(--v3-danger-soft);
+}
+.v3-dash[data-auth-workspace] .players-draft-notice {
+  align-items: center;
+  gap: 12px;
+}
+.v3-dash[data-auth-workspace] .players-draft-notice > span {
+  flex: 1;
+}
 
 .v3-dash[data-auth-workspace] .v3-players-table td:nth-child(4) { font-family: var(--v3-mono);
 }

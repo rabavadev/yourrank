@@ -13,6 +13,7 @@ export function createDashboardState({ requestId, onSubscriberError = (err) => c
     PUBLISHED_AT: null,
     BOARDS: [],
     PLAYERS: [],
+    SAVED_PLAYERS: [],
     SAMPLE_PLAYERS: false,
     CURRENT_BRANDING: { accentA: null, accentB: null, font: "Inter" },
     PUBLISHED: false,

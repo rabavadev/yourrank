@@ -1,12 +1,12 @@
 // Site editing: plan, branding/theme, save, archive, domain, overlay, notifications.
-import { $, esc, fromLocalInput, getCsrf, guardAuth, logError, timeZoneOffsetLabel, parseAmount, showConfirmModal, showToast, copyToClipboard, flashButton, showLoadError, clearLoadError } from "./utils.js";
+import { $, esc, fromLocalInput, getCsrf, guardAuth, logError, timeZoneOffsetLabel, showConfirmModal, showToast, copyToClipboard, flashButton, showLoadError, clearLoadError } from "./utils.js";
 import { serializeWebhookUrl } from "./notifications.js";
 import { state, boardStatus, markDirty, setState, subscribe } from "./state.js";
 import { renderEmpty } from "./states.js";
 import { renderBoardSwitcher, renderBoardSelect, renderBoardsPage } from "./boards.js";
 import { renderOverviewSummary } from "./overview.js";
 import { renderPerformance, renderPerformanceLoading } from "./performance.js";
-import { commitDraftMutation, renderPlayers, renumber, toggleEmpty } from "./players.js";
+import { clearPlayersDraft, collectPlayers, commitDraftMutation, renderPlayers, renumber, toggleEmpty } from "./players.js";
 import { requestPublicationChange } from "./publication.js";
 
 export const DEFAULT_SECTIONS = {
@@ -428,25 +428,9 @@ export function wireDeleteAccount() {
   modal.addEventListener("click", (e) => { if (e.target === modal) close(); });
 }
 
-export function collect() {
-  const players = [...$("rows").children].map((tr) => {
-    const p = {
-      name: tr.querySelector(".p-name").value.trim(),
-      wagered: parseAmount(tr.querySelector(".p-wager").value),
-      prize: parseAmount(tr.querySelector(".p-prize").value),
-    };
-    const score = tr.querySelector(".p-score").value.trim();
-    const hands = tr.querySelector(".p-hands").value.trim();
-    const netProfit = tr.querySelector(".p-net-profit").value.trim();
-    const winRate = tr.querySelector(".p-win-rate").value.trim();
-    const change = tr.querySelector(".p-change").value.trim();
-    if (score) p.score = parseAmount(score);
-    if (hands) p.hands = parseAmount(hands);
-    if (netProfit) p.netProfit = parseAmount(netProfit);
-    if (winRate) p.winRate = parseAmount(winRate);
-    if (change) p.change = parseAmount(change);
-    return p;
-  }).filter((p) => p.name);
+export function collect({ reportPlayerErrors = true } = {}) {
+  const playerResult = collectPlayers({ reportErrors: reportPlayerErrors });
+  const players = playerResult.players;
   const brandName = $("f_name").value.trim();
   const out = {
     name: brandName,
@@ -528,7 +512,7 @@ export function collect() {
     enabled: !!(arToggle && arToggle.checked),
     clear: arClear && !arClear.disabled ? arClear.value : "wagers",
   };
-  return out;
+  return { payload: out, invalid: playerResult.invalid };
 }
 
 /* --- branding --- */
@@ -621,7 +605,8 @@ export function updateDesignPreview() {
   clearTimeout(_previewTimeout);
   _previewTimeout = setTimeout(() => {
     try {
-      const draft = collect();
+      const { payload: draft, invalid } = collect({ reportPlayerErrors: false });
+      if (invalid.length) return;
       const url = "/dashboard/preview?" + new URLSearchParams({ board: state.ACTIVE_SITE_ID, device }).toString();
       if (!_previewForm) {
         _previewForm = document.createElement("form");
@@ -1512,7 +1497,15 @@ $("a_go")?.addEventListener("click", async () => {
   if (!await showConfirmModal("Close out period", `This will ${warn}. Continue?`, "Close out", true)) return;
   btn.disabled = true; btn.textContent = "Closing out…";
   try {
-    const savePayload = collect();
+    const { payload: savePayload, invalid } = collect();
+    if (invalid.length) {
+      const first = invalid[0];
+      $("status").textContent = `Fix the invalid ${first.label.toLowerCase()} before closing out.`;
+      first.input?.focus();
+      btn.disabled = false;
+      btn.textContent = "Close out period";
+      return;
+    }
     const saveRes = await fetch("/api/site", { method: "PUT", credentials: "include", headers: { "content-type": "application/json", "x-csrf-token": getCsrf() }, body: JSON.stringify(savePayload) }).then(guardAuth);
     const saved = await saveRes.json();
     if (!saveRes.ok || !saved.ok) { status.textContent = saved.error || "Couldn't save before archiving."; btn.disabled = false; btn.textContent = "Close out period"; return; }
@@ -1536,19 +1529,31 @@ $("a_go")?.addEventListener("click", async () => {
   btn.disabled = false; btn.textContent = "Close out period";
 });
 
-$("save")?.addEventListener("click", async () => {
+export async function saveEditorDraft({ fetchImpl = fetch, collectImpl = collect } = {}) {
   const btn = $("save"), status = $("status"), publishAction = $("publishAction");
+  const { payload, invalid } = collectImpl();
+  if (invalid.length) {
+    const first = invalid[0];
+    status.textContent = `Fix the invalid ${first.label.toLowerCase()} before saving.`;
+    status.hidden = false;
+    status.setAttribute("role", "alert");
+    first.input?.focus();
+    return;
+  }
   btn.disabled = true; btn.textContent = "Saving…"; status.textContent = "";
   if (publishAction) { publishAction.disabled = true; publishAction.setAttribute("aria-busy", "true"); }
   const limitEl = $("limitMsg"); if (limitEl) limitEl.textContent = "";
   let justPublished = false;
   try {
-    const payload = collect();
-    const res = await fetch("/api/site", { method: "PUT", credentials: "include", headers: { "content-type": "application/json", "x-csrf-token": getCsrf() }, body: JSON.stringify(payload) }).then(guardAuth);
+    const res = await fetchImpl("/api/site", { method: "PUT", credentials: "include", headers: { "content-type": "application/json", "x-csrf-token": getCsrf() }, body: JSON.stringify(payload) }).then(guardAuth);
     const d = await res.json();
     if (res.ok && d.ok) {
       justPublished = !!payload.published && !state.PUBLISHED;
       if (Array.isArray(payload.players)) state.SAMPLE_PLAYERS = false;
+      state.SAVED_PLAYERS = payload.players.map((player) => ({ ...player }));
+      clearPlayersDraft();
+      const restoredNotice = $("playersDraftNotice");
+      if (restoredNotice) restoredNotice.hidden = true;
       setState({ _dirty: false, PUBLISHED: !!payload.published });
       status.textContent = justPublished && !boardStatus().emailVerified
         ? "Published — Your site will open to visitors after you confirm your email."
@@ -1575,6 +1580,26 @@ $("save")?.addEventListener("click", async () => {
   if (justPublished || savedMsg === "Saved") {
     setTimeout(() => { if (status.textContent === savedMsg) status.textContent = ""; }, 6000);
   }
+}
+
+$("save")?.addEventListener("click", () => { saveEditorDraft(); });
+
+export function discardEditorChanges({ reload = () => location.reload() } = {}) {
+  clearPlayersDraft();
+  setState({ _dirty: false });
+  reload();
+}
+
+$("discard")?.addEventListener("click", async () => {
+  if (!state._dirty) return;
+  const confirmed = await showConfirmModal(
+    "Discard unsaved changes",
+    "Discard all staged editor changes and reload the last saved version?",
+    "Discard changes",
+    true,
+  );
+  if (!confirmed) return;
+  discardEditorChanges();
 });
 
 export function renderEmbedShare() {
