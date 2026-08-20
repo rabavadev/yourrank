@@ -206,6 +206,18 @@ The system is flat by default. White and near-white surfaces separate through ha
 
 **The Hairline Before Shadow Rule.** Use boundaries and tonal layering for structure; add shadow only when a surface temporarily sits above the page or an action is responding to interaction.
 
+## Brand Identity
+
+One mark, one wordmark, one owner. `packages/shared/src/brand-assets.ts` is the single source of truth for every brand path in the repo; no surface — Worker, marketing page, downloadable file or favicon — inlines its own brand geometry.
+
+- **Mark.** The triple-chevron "Y" (`LOGO_MARK_PATH`, rendered by `brandMarkSvg()`). Single colour via `currentColor`, so each surface's chrome supplies the colour; it sits on the cobalt brand square wherever a filled tile is required (`.lb-brand-mark`, `.gm-brand-mark`).
+- **Wordmark.** The mark paired with the YourRank letterforms (`LOGO_FULL_PATH`, rendered by `brandLogoSvg()`), carrying the blue gradient `#315CFF → #5582FF → #8BAAFF`. Where a gradient cannot survive — dark chrome, favicons, downloadable badges, print — use the flat variant `brandLogoFlatSvg()` rather than redrawing the letterforms.
+- **Loading identity.** `brandLoaderLogoSvg()` is the one animated lockup; the workspace loader is its only home.
+- **Favicon / app icon.** `brandFaviconSvg()` reverses the mark out of the cobalt square so it still reads at 16px; served by the leaderboard Worker at `/favicon.ico`.
+- **Downloadable assets.** `apps/web/public/brand/*.svg` are generated from the canonical paths by `bun run build:brand-assets` — never hand-edited — and the `/brand` page documents them.
+
+**The One Identity Rule.** A bar chart, a lettered "YR" square, or any other locally drawn glyph is not the brand. Introducing brand geometry outside `brand-assets.ts` fails `apps/leaderboard/src/__tests__/brand-identity.test.js`.
+
 ## Shapes
 
 Geometry is restrained and role-based. Primary actions and compact controls are nearly square; fields and small identity marks receive a gentle curve; cards and substantial reading surfaces use the larger soft corner; pills are limited to statuses and compact navigation. Adjacent information in one workflow shares an outer boundary and internal dividers rather than accumulating nested rounded containers.

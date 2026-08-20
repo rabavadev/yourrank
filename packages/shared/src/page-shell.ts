@@ -7,6 +7,7 @@
 //  These modules are built to packages/shared/dist/*.js by `tsc -p tsconfig.json`.
 // ============================================================================
 
+import { brandMarkSvg } from "./brand-assets.js";
 import { type ShellUser } from "./shell-nav.js";
 
 export const DEVIN_DESIGN_CONTRACT = `<!--
@@ -78,7 +79,7 @@ export function leaderboardPageHtml(opts: LeaderboardPageOpts): string {
   const footerBrandHref = esc(opts.footerBrandHref || "/dashboard");
   const footer = opts.footer !== false ? `<footer class="gm-shell-footer">
   <div class="gm-shell-inner">
-    <a class="gm-brand" href="${footerBrandHref}"><span class="gm-brand-mark">YR</span><span class="gm-brand-word">YourRank</span></a>
+    <a class="gm-brand" href="${footerBrandHref}"><span class="gm-brand-mark">${brandMarkSvg()}</span><span class="gm-brand-word">YourRank</span></a>
     <nav class="gm-shell-footer-links" aria-label="Legal">
       <a href="/terms">Terms</a><a href="/privacy">Privacy</a><a href="/contact">Contact</a><a href="/responsible">Responsible Play</a>
     </nav>
