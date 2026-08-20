@@ -55,8 +55,8 @@ const profileWidget = `<div class="lb-widget lb-widget--full acc-card-security" 
       </div>`;
 
 const planWidget = `<div class="lb-widget lb-widget--full" id="plan">
-        <h2>Plan &amp; billing</h2>
-        <p class="card-sub">Current plan, usage and billing history.</p>
+        <h2>Billing</h2>
+        <p class="card-sub">Billing, usage and payment history.</p>
 
         <div class="plan-summary" id="planSummary"></div>
         <div class="plan-banner" id="planBanner" role="status" aria-live="polite" hidden></div>
@@ -169,7 +169,7 @@ const postbacksWidget = `<div class="lb-widget lb-widget--full" id="postbacks">
 
         <div id="postbackUpgrade" hidden>
           <p class="hint">Automatic score updates are a paid feature. Upgrade to Pro to create connection keys and view live score updates.</p>
-          <a class="btn btn--accent" href="/dashboard/settings/plan">See plans</a>
+          <a class="btn btn--accent" href="/dashboard/settings/billing">See billing</a>
         </div>
 
         <hr class="hr" />

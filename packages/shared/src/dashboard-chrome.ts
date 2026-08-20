@@ -90,6 +90,7 @@ export interface Crumb {
  * tabs, Telegram pages) are two levels deep.
  */
 export function crumbsHtml(trail: Crumb[], activePath = ""): string {
+  // Top-level dashboard pages intentionally omit breadcrumbs; tab pages provide the two-item trail.
   if (!trail || trail.length < 2) return "";
   const active = normalizedPath(activePath);
   const parts = trail.map((c, i) => {

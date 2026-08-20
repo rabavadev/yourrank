@@ -10,7 +10,7 @@ export function GiveawaysPage({ user, tab = "chat" } = {}) {
   return (
     <DashboardShell
       activeNav={tab === "chat" || tab === "tournaments" ? "giveaways" : tab === "preds" ? "predictions" : tab}
-      activePath={`/dashboard/giveaways/${tab}`}
+      activePath={`/dashboard/giveaways/${tab === "preds" ? "predictions" : tab}`}
       boardContext="selector"
       crumbs={crumbs}
       footer="rewards"
@@ -25,7 +25,7 @@ export function GiveawaysPage({ user, tab = "chat" } = {}) {
 }
 
 export const giveawaysConfig = {
-  title: "Live Chat Giveaways · YourRank",
+  title: "Engage · YourRank",
   canonical: "https://yourrank.site/dashboard/giveaways",
   styles: [
     "/assets/app.css",

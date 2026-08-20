@@ -7,6 +7,8 @@ import { activityEmptyAction, giveawayAction } from "../assets/dashboard/overvie
 const siteJs = readFileSync(new URL("../assets/dashboard/site.js", import.meta.url), "utf8");
 const utilsJs = readFileSync(new URL("../assets/dashboard/utils.js", import.meta.url), "utf8");
 const overviewJs = readFileSync(new URL("../assets/dashboard/overview.js", import.meta.url), "utf8");
+const gamesJs = readFileSync(new URL("../assets/dashboard/games.js", import.meta.url), "utf8");
+const routesJs = readFileSync(new URL("../assets/dashboard/routes.js", import.meta.url), "utf8");
 const dashboardJs = readFileSync(new URL("../assets/dashboard.js", import.meta.url), "utf8");
 const boardShellJs = readFileSync(new URL("../assets/dashboard/board-shell.js", import.meta.url), "utf8");
 const performanceJs = readFileSync(new URL("../assets/dashboard/performance.js", import.meta.url), "utf8");
@@ -31,7 +33,8 @@ describe("dashboard overview quick actions", () => {
     expect(html).toContain('id="ovTopPlayers"');
     expect(html).not.toContain('class="ov-summary"');
     expect(html).toContain('id="ovPublishedStatus"');
-    expect(html).not.toContain('id="ovPrimaryAction"');
+    expect(html).toContain('id="ovPublicSiteAction"');
+    expect(html).toContain("View public site ↗");
     expect(html).toContain('href="/dashboard/leaderboard/setup"');
     expect(html).toContain('class="ov-card-empty" id="ovActivityEmpty"');
     expect(html).toContain('id="ovCreditsCard" hidden');
@@ -50,7 +53,10 @@ describe("dashboard overview quick actions", () => {
     expect(html).toContain('id="ovLblCredits">Credits used</span>');
     expect(html).toContain('id="ovCreditsCard" hidden');
     expect(overviewJs).toContain("state.CREDITS?.usage?.pendingRedemptions");
+    expect(overviewJs).toContain('pendingOrders === 1 ? "pending credit order needs review." : "pending credit orders need review."');
     expect(overviewJs).toContain('pendingOrders === 1 ? "Review order" : "Review orders"');
+    expect(dashboardHtml()).toContain('id="ovPendingOrdersAlertLabel">pending credit orders need review.</span>');
+    expect(dashboardHtml()).toContain('id="ovPendingOrdersAction"');
     expect(html).toContain('id="ovKpiRow"');
   });
 
@@ -118,6 +124,41 @@ describe("dashboard overview quick actions", () => {
     expect(dashboardCss).toMatch(/\.v3-dash\[data-auth-workspace\] \.plan-pending,[\s\S]*?\.v3-dash\[data-auth-workspace\] \.plan-cancel \{[\s\S]*?background: var\(--v4-surface-soft\);/);
   });
 
+  it("styles the Home alert and Games block status rows in the v4 workspace", () => {
+    expect(dashboardCss).toContain(".v3-dash[data-auth-workspace] .v3-alert");
+    expect(dashboardCss).toContain(".v3-dash[data-auth-workspace] .v3-alert--warning");
+    expect(dashboardCss).toContain(".v3-dash[data-auth-workspace] .v3-block-status");
+    expect(dashboardHtml()).toContain('class="v3-alert v3-alert--warning"');
+    const games = dashboardHtml("/dashboard/games");
+    expect(games).toContain("Page block visibility");
+    expect(games).toContain("Current visibility on your leaderboard page");
+    expect(games).toContain("Edit layout &amp; blocks in Appearance →");
+    expect(games).not.toContain("Choose which blocks appear on your leaderboard page");
+  });
+
+  it("keeps authenticated cards on the v4 geometry without changing public cards", () => {
+    expect(dashboardCss).toMatch(/\.v3-dash\[data-auth-workspace\] \.card \{[\s\S]*?padding: 24px;[\s\S]*?margin-top: 0;[\s\S]*?transition: none;/);
+    expect(dashboardCss).toContain(".v3-dash[data-auth-workspace] .card:hover { border-color: var(--v4-line); }");
+    expect(dashboardCss).toContain(".v3-dash[data-auth-workspace] .ov-live-grid { display: grid;");
+    expect(dashboardCss).toContain("gap: 16px; }");
+    expect(dashboardCss).not.toContain(".v3-dash[data-auth-workspace] .ov-live-grid { display: grid; grid-template-columns: minmax(0, 8fr) minmax(280px, 4fr); gap: 0; overflow: hidden;");
+  });
+
+  it("labels Appearance editor groups by the content they contain", () => {
+    const html = dashboardHtml("/dashboard/leaderboard/design");
+    expect(html).toContain('<h1 class="v3-section-title" data-egroup="design">Appearance</h1>');
+    expect(html).toContain('<div class="design-group-heading" data-egroup="design"><h2>Page design</h2></div>');
+    expect(html).toContain('<div class="design-group-heading" data-egroup="design"><h2>Content</h2></div>');
+    expect(html).not.toContain('<div class="design-group-heading" data-egroup="design"><h2>Appearance</h2></div>');
+    expect(html).not.toContain("<h2>Theme &amp; branding</h2>");
+  });
+
+  it("keeps Games terminology and status copy singular", () => {
+    expect(routesJs).toContain('games: { path: "/dashboard/games", title: "Games" }');
+    expect(gamesJs).toContain('{ key: "limbo", label: "Limbo", description: "", disabled: true }');
+    expect(gamesJs).toContain('<span class="v3-game-coming">Coming soon</span>');
+  });
+
   it("announces the active audience insight tab", () => {
     expect(performanceJs).toContain('node.setAttribute("aria-current", "page")');
     expect(performanceJs).toContain('node.removeAttribute("aria-current")');
@@ -136,7 +177,7 @@ describe("dashboard overview quick actions", () => {
     expect(siteJs).toContain("obsBox.hidden = !overlayAccess");
     expect(siteJs).toContain("obsLock.hidden = overlayAccess");
     expect(dashboardHtml("/dashboard/leaderboard/share")).toContain("Stream overlays are available on Starter and higher plans.");
-    expect(dashboardHtml("/dashboard/leaderboard/share")).toContain('href="/dashboard/settings/plan?from=overlay"');
+    expect(dashboardHtml("/dashboard/leaderboard/share")).toContain('href="/dashboard/settings/billing?from=overlay"');
     expect(dashboardHtml("/dashboard/leaderboard/share")).toContain('>Upgrade your plan</a> to add this leaderboard to OBS, Streamlabs, or another streaming app.');
     expect(siteJs).toContain("if (overlayAccess && obsCopy && !obsCopy._wired)");
     expect(siteJs).not.toContain("obsLock.innerHTML");
@@ -156,7 +197,7 @@ describe("dashboard overview quick actions", () => {
     expect(html).not.toContain('aria-hidden="true">🔌</span>');
     expect(html).toContain('>Home</a>');
     for (const label of [
-      "Leaderboard", "Engage", "Games", "Rewards", "Telegram", "Analytics", "Site settings", "Settings",
+      "Leaderboard", "Engage", "Games", "Credits", "Telegram", "Analytics", "Site settings", "Settings",
     ]) expect(html).toContain(`>${label}</a>`);
     for (const label of ["Giveaways", "Raffles", "Predictions", "Drops"]) {
       expect(html).not.toContain(`>${label}</a>`);

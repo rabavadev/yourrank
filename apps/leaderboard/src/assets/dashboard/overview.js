@@ -209,6 +209,17 @@ export function renderOverviewSummary() {
     const creditsCard = $("ovCreditsCard");
     const pendingOrdersCard = $("ovPendingOrdersCard");
     const pendingOrders = Number(state.CREDITS?.usage?.pendingRedemptions || 0);
+    const publicAction = $("ovPublicSiteAction");
+    if (publicAction) {
+      publicAction.href = state.SLUG ? `${location.origin}/${encodeURIComponent(state.SLUG)}` : "#";
+      publicAction.hidden = !state.SLUG;
+    }
+    const pendingAlert = $("ovPendingOrdersAlert");
+    if (pendingAlert) pendingAlert.hidden = pendingOrders <= 0;
+    const pendingAlertCount = $("ovPendingOrdersAlertCount");
+    if (pendingAlertCount) pendingAlertCount.textContent = number(pendingOrders);
+    const pendingAlertLabel = $("ovPendingOrdersAlertLabel");
+    if (pendingAlertLabel) pendingAlertLabel.textContent = pendingOrders === 1 ? "pending credit order needs review." : "pending credit orders need review.";
     const kpiRow = $("ovKpiRow");
     if (creditsCard) creditsCard.hidden = !creditsEnabled;
     if (pendingOrdersCard) pendingOrdersCard.hidden = pendingOrders <= 0;
