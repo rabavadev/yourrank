@@ -29,10 +29,11 @@ Files: [`shell-nav.js`](./shell-nav.js) (leaderboard, JS) · [`shell-nav.ts`](./
 Sticky top bar, 56px, containing:
 
 ```
-[GM YourRank]   Leaderboard  Bot                {name}  {plan badge}  Logout
+[▲ YourRank]   Leaderboard  Bot                {name}  {plan badge}  Logout
 ```
 
-- **Brand** (`GM` lime chip + wordmark) → `/dashboard`.
+- **Brand** (canonical triple-chevron mark from `brand-assets.ts`, rendered by
+  `brandMarkSvg()` on the cobalt brand square, + wordmark) → `/dashboard`.
 - **Tabs** — `Leaderboard | Bot`. Analytics and Billing are sections inside the
   unified dashboard sidebar (`/dashboard?nav=growth` and `/dashboard?nav=manage`).
 - **Right side** — streamer `display_name` (falls back to `email`, then

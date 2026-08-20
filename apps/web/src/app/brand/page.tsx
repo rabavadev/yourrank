@@ -4,16 +4,16 @@ import { MarketingShell } from "@/components/site-shell";
 
 export const metadata: Metadata = {
   title: "Brand — YourRank",
-  description: "Official YourRank brand assets: logos, wordmarks, colors, and Powered by YourRank badges for streamer panels.",
+  description: "Official YourRank brand assets: the triple-chevron mark, the YourRank wordmark, colors, and Powered by YourRank badges for streamer panels.",
   alternates: { canonical: "https://yourrank.site/brand" },
 };
 
 const LOGOS = [
-  { name: "Mark — dark", file: "/brand/yourrank-mark-dark.svg", bg: "bg-white", note: "For light backgrounds" },
-  { name: "Mark — light", file: "/brand/yourrank-mark-light.svg", bg: "bg-devin-ink", note: "For dark backgrounds" },
+  { name: "Mark — dark", file: "/brand/yourrank-mark-dark.svg", bg: "bg-white", note: "Triple-chevron mark, for light backgrounds" },
+  { name: "Mark — light", file: "/brand/yourrank-mark-light.svg", bg: "bg-devin-ink", note: "Triple-chevron mark, for dark backgrounds" },
   { name: "Mark — blue", file: "/brand/yourrank-mark-blue.svg", bg: "bg-white", note: "Accent variant" },
-  { name: "Wordmark — dark", file: "/brand/yourrank-wordmark-dark.svg", bg: "bg-white", note: "For light backgrounds" },
-  { name: "Wordmark — light", file: "/brand/yourrank-wordmark-light.svg", bg: "bg-devin-ink", note: "For dark backgrounds" },
+  { name: "Wordmark — dark", file: "/brand/yourrank-wordmark-dark.svg", bg: "bg-white", note: "Mark plus YourRank letterforms, for light backgrounds" },
+  { name: "Wordmark — light", file: "/brand/yourrank-wordmark-light.svg", bg: "bg-devin-ink", note: "Mark plus YourRank letterforms, for dark backgrounds" },
 ];
 
 const BADGES = [
@@ -38,8 +38,10 @@ export default function BrandPage() {
               Brand assets.
             </h1>
             <p className="mt-5 max-w-2xl text-lg leading-relaxed text-devin-ink-soft">
-              Official logos, colors, and badges. Free to use when referring to YourRank or linking to your community
-              site — please don&apos;t alter the marks or imply endorsement.
+              One mark and one wordmark: the triple-chevron YourRank chevron stack, and the same chevrons paired with the
+              YourRank letterforms. These files are generated from the geometry the product itself renders, so they never
+              drift from the app. Free to use when referring to YourRank or linking to your community site — please
+              don&apos;t alter the marks, redraw them, or imply endorsement.
             </p>
           </div>
         </section>

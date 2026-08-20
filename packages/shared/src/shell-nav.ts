@@ -184,7 +184,7 @@ export function shellNavHtml(opts: ShellNavOpts = {}): string {
   return `<header class="${headerClass}" data-theme="${theme}">
   <div class="gm-shell-inner">
     <a class="gm-brand" href="/dashboard">
-      <span class="gm-brand-mark">YR</span>
+      <span class="gm-brand-mark">${brandMarkSvg()}</span>
       <span class="gm-brand-word">YourRank</span>
     </a>
     <div class="gm-tabs-wrap">
