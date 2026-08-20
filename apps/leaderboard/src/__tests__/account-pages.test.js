@@ -16,6 +16,7 @@ const pages = [
       "accNewPassword",
       "accChangePassword",
       "accPasswordStatus",
+      "accSignOut",
       "accRevokeSessions",
       "accSessions",
       "accSessionsStatus",

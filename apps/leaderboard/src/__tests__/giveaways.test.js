@@ -228,4 +228,32 @@ describe("Giveaway Chatroom Handler", () => {
     expect(dashboardSource).not.toContain('querySelectorAll(".preview-tab")');
     expect(previewTabsSource).not.toContain("stopImmediatePropagation");
   });
+
+  it("adds CSRF only to Engage mutations and keeps drawers accessible", () => {
+    expect(giveawaysSource).toContain('headers.set("x-csrf-token", csrf)');
+    expect(giveawaysSource).toContain('if (!["GET", "HEAD", "OPTIONS"].includes(method))');
+    expect(giveawaysSource).toContain('responseData(res)');
+    expect(giveawaysSource).toContain("showConfirmModal");
+    expect(giveawaysSource).toContain("trapEventDrawerFocus");
+    expect(giveawaysSource).toContain("sessionStorage.setItem");
+    expect(giveawaysSource).not.toMatch(/\b(?:alert|confirm)\s*\(/);
+    for (const id of ["rf-drawer", "cd-drawer", "pred-drawer", "settle-drawer"]) {
+      expect(giveawaysHtml).toContain(`id="${id}"`);
+      expect(giveawaysHtml).toContain('role="dialog" aria-modal="true" aria-labelledby=');
+    }
+    expect(giveawaysHtml).toContain('id="rf-status"');
+    expect(giveawaysHtml).toContain('id="cd-status"');
+    expect(giveawaysHtml).toContain('id="pred-status"');
+    expect(giveawaysHtml).toContain('id="settle-status"');
+  });
+
+  it("renders truthful unverified and resend controls", () => {
+    const dashboardPage = readFileSync(new URL("../pages/dashboard.jsx", import.meta.url), "utf8");
+    expect(dashboardPage).toContain('id="verifyBannerEmail"');
+    expect(dashboardPage).toContain('id="verifyResend"');
+    expect(dashboardPage).toContain('id="verifyDismiss"');
+    expect(siteSource).toContain("/api/auth/resend-verification");
+    expect(dashboardPage).toContain("Visitors cannot open your published leaderboard");
+    expect(siteSource).toContain("/api/auth/resend-verification");
+  });
 });

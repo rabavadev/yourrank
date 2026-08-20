@@ -497,6 +497,7 @@ ${tabs}
       <div class="field">
         <label for="pred-title">Prediction Question *</label>
         <input type="text" id="pred-title" placeholder="e.g. Will I clutch this 1v3 round?" required />
+        <span class="field-err" data-field-error="pred-title" role="alert" aria-live="polite"></span>
         <span class="hint">What are your viewers predicting?</span>
       </div>
 
@@ -506,10 +507,12 @@ ${tabs}
           <div>
             <label for="pred-opt-1" class="font-12 font-muted">Option A (Yes)</label>
             <input type="text" id="pred-opt-1" value="Yes" required />
+            <span class="field-err" data-field-error="pred-opt-1" role="alert" aria-live="polite"></span>
           </div>
           <div>
             <label for="pred-opt-2" class="font-12 font-muted">Option B (No)</label>
             <input type="text" id="pred-opt-2" value="No" required />
+            <span class="field-err" data-field-error="pred-opt-2" role="alert" aria-live="polite"></span>
           </div>
         </div>
       </div>
@@ -517,6 +520,7 @@ ${tabs}
       <div class="field">
         <label for="pred-min-bet">Minimum Bet (Credits)</label>
         <input type="number" id="pred-min-bet" min="1" value="10" placeholder="e.g. 10" required />
+        <span class="field-err" data-field-error="pred-min-bet" role="alert" aria-live="polite"></span>
         <div class="gw-chip-presets">
           <button class="gw-chip" type="button" data-val="5" data-target="pred-min-bet">5 Credits</button>
           <button class="gw-chip" type="button" data-val="10" data-target="pred-min-bet">10 Credits</button>
@@ -528,6 +532,7 @@ ${tabs}
       <div class="field">
         <label for="pred-max-bet">Maximum Bet (Credits)</label>
         <input type="number" id="pred-max-bet" min="1" value="500" placeholder="e.g. 500" required />
+        <span class="field-err" data-field-error="pred-max-bet" role="alert" aria-live="polite"></span>
         <div class="gw-chip-presets">
           <button class="gw-chip" type="button" data-val="100" data-target="pred-max-bet">100 Credits</button>
           <button class="gw-chip" type="button" data-val="500" data-target="pred-max-bet">500 Credits</button>
@@ -547,6 +552,7 @@ ${tabs}
       </div>
 
       <div class="gw-drawer-footer">
+        <p class="status gw-drawer-status" id="pred-status" role="status" aria-live="polite" hidden></p>
         <button class="btn btn--ghost" id="pred-cancel" type="button">Cancel</button>
         <button class="btn btn--accent" id="pred-submit" type="submit"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg> Launch Prediction</button>
       </div>
@@ -571,6 +577,7 @@ ${tabs}
       </div>
 
       <div class="gw-drawer-footer">
+        <p class="status gw-drawer-status" id="settle-status" role="status" aria-live="polite" hidden></p>
         <button class="btn btn--ghost font-danger" id="settle-btn-cancel-pred" type="button">Cancel &amp; Refund All</button>
         <button class="btn btn--accent" id="settle-btn-confirm" type="button">Confirm &amp; Payout Winners</button>
       </div>
@@ -589,17 +596,20 @@ ${tabs}
       <div class="field">
         <label for="rf-title">Prize Title *</label>
         <input type="text" id="rf-title" placeholder="e.g. $100 Amazon Gift Card or VIP Role" required />
+        <span class="field-err" data-field-error="rf-title" role="alert" aria-live="polite"></span>
         <span class="hint">What will the winner receive?</span>
       </div>
 
       <div class="field">
         <label for="rf-desc">Description (Optional)</label>
         <textarea id="rf-desc" rows="2" placeholder="Rules or details for claiming this prize…"></textarea>
+        <span class="field-err" data-field-error="rf-desc" role="alert" aria-live="polite"></span>
       </div>
 
       <div class="field">
         <label for="rf-cost">Ticket Cost (in Credits)</label>
         <input type="number" id="rf-cost" min="0" value="30" placeholder="e.g. 30" required />
+        <span class="field-err" data-field-error="rf-cost" role="alert" aria-live="polite"></span>
         <div class="gw-chip-presets">
           <button class="gw-chip" type="button" data-val="0" data-target="rf-cost">Free (0 Credits)</button>
           <button class="gw-chip" type="button" data-val="25" data-target="rf-cost">25 Credits</button>
@@ -612,6 +622,7 @@ ${tabs}
       <div class="field">
         <label for="rf-max">Max Tickets per Viewer</label>
         <input type="number" id="rf-max" min="1" value="10" placeholder="e.g. 5" required />
+        <span class="field-err" data-field-error="rf-max" role="alert" aria-live="polite"></span>
         <div class="gw-chip-presets">
           <button class="gw-chip" type="button" data-val="1" data-target="rf-max">1 ticket</button>
           <button class="gw-chip" type="button" data-val="5" data-target="rf-max">5 tickets</button>
@@ -622,6 +633,7 @@ ${tabs}
       </div>
 
       <div class="gw-drawer-footer">
+        <p class="status gw-drawer-status" id="rf-status" role="status" aria-live="polite" hidden></p>
         <button class="btn btn--ghost" id="rf-cancel" type="button">Cancel</button>
         <button class="btn btn--accent" id="rf-submit" type="submit"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v18M5 7h14M7 7l-3 6h6L7 7Zm10 0-3 6h6l-3-6ZM3 21h18"/></svg> Create Raffle</button>
       </div>
@@ -641,6 +653,7 @@ ${tabs}
         <label for="cd-code">Secret Drop Code *</label>
         <div class="d-flex gap-8">
           <input type="text" id="cd-code" class="gw-code-input" placeholder="e.g. KICKBOOST" required />
+          <span class="field-err" data-field-error="cd-code" role="alert" aria-live="polite"></span>
           <button class="btn btn--sm btn--ghost" id="cd-btn-random" type="button"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z"/></svg> Random</button>
         </div>
         <span class="hint">The keyword you shout out on stream for viewers to claim.</span>
@@ -649,6 +662,7 @@ ${tabs}
       <div class="field">
         <label for="cd-points">Credits Reward per Viewer</label>
         <input type="number" id="cd-points" min="1" value="100" placeholder="e.g. 30" required />
+        <span class="field-err" data-field-error="cd-points" role="alert" aria-live="polite"></span>
         <div class="gw-chip-presets">
           <button class="gw-chip" type="button" data-val="25" data-target="cd-points">+25 Credits</button>
           <button class="gw-chip" type="button" data-val="50" data-target="cd-points">+50 Credits</button>
@@ -661,6 +675,7 @@ ${tabs}
       <div class="field">
         <label for="cd-max">Max Total Claims (First Come, First Served)</label>
         <input type="number" id="cd-max" min="1" value="50" placeholder="e.g. 20" required />
+        <span class="field-err" data-field-error="cd-max" role="alert" aria-live="polite"></span>
         <div class="gw-chip-presets">
           <button class="gw-chip" type="button" data-val="10" data-target="cd-max">10 claims</button>
           <button class="gw-chip" type="button" data-val="25" data-target="cd-max">25 claims</button>
@@ -681,6 +696,7 @@ ${tabs}
       </div>
 
       <div class="gw-drawer-footer">
+        <p class="status gw-drawer-status" id="cd-status" role="status" aria-live="polite" hidden></p>
         <button class="btn btn--ghost" id="cd-cancel" type="button">Cancel</button>
         <button class="btn btn--accent" id="cd-submit" type="submit"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m13 2-9 12h7l-1 8 9-12h-7l1-8Z"/></svg> Launch Drop</button>
       </div>

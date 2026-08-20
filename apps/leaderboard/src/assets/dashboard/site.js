@@ -710,7 +710,57 @@ export function renderBoardStatus() {
     badge.title = parts.join(" · ");
   }
   const banner = $("verifyBanner");
-  if (banner) banner.hidden = s.emailVerified || Boolean(document.querySelector('section[data-page="home"]'));
+  if (banner) {
+    const email = state.ME?.email || state.ME?.emailAddress || "your email address";
+    const dismissedKey = `yr-verify-dismissed:${state.ME?.id || email}`;
+    let dismissed = false;
+    try { dismissed = sessionStorage.getItem(dismissedKey) === "1"; } catch { dismissed = false; }
+    banner.hidden = s.emailVerified || dismissed;
+    const emailEl = $("verifyBannerEmail");
+    if (emailEl) emailEl.textContent = email;
+    const dismiss = $("verifyDismiss");
+    if (dismiss && !dismiss._wired) {
+      dismiss._wired = true;
+      dismiss.addEventListener("click", () => {
+        try { sessionStorage.setItem(dismissedKey, "1"); } catch { /* session-only dismissal unavailable */ }
+        banner.hidden = true;
+      });
+    }
+    const resend = $("verifyResend");
+    if (resend && !resend._wired) {
+      resend._wired = true;
+      let cooldown = 0;
+      resend.addEventListener("click", async () => {
+        if (cooldown > 0) return;
+        resend.disabled = true;
+        const status = $("verifyBannerStatus");
+        if (status) status.textContent = "Sending…";
+        try {
+          const response = await fetch("/api/auth/resend-verification", {
+            method: "POST",
+            credentials: "include",
+            headers: { "x-csrf-token": getCsrf() },
+          });
+          const data = await response.json().catch(() => ({}));
+          if (!response.ok || !data.ok) throw new Error(data.error || "Could not resend the verification email.");
+          if (status) status.textContent = "Verification email sent. Check your inbox.";
+          cooldown = 60;
+          const timer = setInterval(() => {
+            cooldown -= 1;
+            if (cooldown <= 0) {
+              clearInterval(timer);
+              resend.disabled = false;
+              resend.textContent = "Resend verification";
+            } else resend.textContent = `Resend in ${cooldown}s`;
+          }, 1000);
+          resend.textContent = "Resend in 60s";
+        } catch (error) {
+          if (status) status.textContent = error.message || "Could not resend the verification email.";
+          resend.disabled = false;
+        }
+      });
+    }
+  }
   const publishLabel = $("lbPublishLabel");
   if (publishLabel) publishLabel.textContent = s.published ? "Unpublish site" : "Publish site";
   const publishAction = $("publishAction");
@@ -720,9 +770,25 @@ export function renderBoardStatus() {
     publishAction.setAttribute("aria-label", s.published ? "Unpublish site" : "Publish site");
   }
   const shareWarning = $("sharePublishWarning");
-  if (shareWarning) shareWarning.hidden = s.live || s.published;
+  if (shareWarning) {
+    shareWarning.hidden = s.live;
+    const title = $("sharePublishWarningTitle");
+    const body = $("sharePublishWarningBody");
+    const action = $("sharePublishAction");
+    if (s.pending) {
+      if (title) title.textContent = "Your site is published, but offline to visitors.";
+      if (body) body.textContent = "Confirm your email address before visitors can open this leaderboard.";
+      if (action) action.textContent = "Verify email";
+    } else {
+      if (title) title.textContent = "This site is not published.";
+      if (body) body.textContent = "Visitors will receive a 404 until you publish it.";
+      if (action) action.textContent = "Publish site";
+    }
+  }
   const sharePublishAction = $("sharePublishAction");
-  if (sharePublishAction) sharePublishAction.onclick = () => $("publishAction")?.click();
+  if (sharePublishAction) sharePublishAction.onclick = () => s.pending
+    ? (location.href = "/verify-email")
+    : $("publishAction")?.click();
   const publishToggle = $("pubToggle");
   if (publishToggle && !state._dirty) publishToggle.checked = s.published;
   // A "View site" link must never be offered while the public URL would not

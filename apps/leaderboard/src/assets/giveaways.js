@@ -1,6 +1,7 @@
 import { loadBoardShell, sitePath } from "./dashboard/board-shell.js";
 import { withDashboardTimeout } from "./dashboard/request.js";
 import { inlineStateHtml } from "./dashboard/states.js";
+import { showConfirmModal } from "./dashboard/utils.js";
 import { computeTrustScore, connectKickChat } from "./chat-entry.js";
 
 // Client-side script for Live Chat Keyword Listener & Giveaways
@@ -48,11 +49,130 @@ import { computeTrustScore, connectKickChat } from "./chat-entry.js";
   }
 
   function dashboardFetch(input, init = {}) {
+    const method = String(init.method || "GET").toUpperCase();
+    const headers = new Headers(init.headers || {});
+    if (!["GET", "HEAD", "OPTIONS"].includes(method)) {
+      const csrf = document.cookie.match(/(?:^|;\s*)__csrf=([^;]+)/)?.[1] || "";
+      headers.set("x-csrf-token", csrf);
+    }
     return withDashboardTimeout((signal) => fetch(input, {
-      credentials: "same-origin",
       ...init,
+      credentials: "same-origin",
+      headers,
       signal,
     }));
+  }
+
+  async function responseData(response) {
+    const text = await response.text();
+    if (!text) return {};
+    try { return JSON.parse(text); } catch { return { error: text.slice(0, 240) }; }
+  }
+
+  function setInlineStatus(id, message, isError = false) {
+    const status = $(id);
+    if (!status) return;
+    status.textContent = message || "";
+    status.hidden = !message;
+    status.className = `status${isError ? " status--error" : " status--success"}`;
+    status.setAttribute("role", isError ? "alert" : "status");
+  }
+
+  function showEngageError(message, fallbackId = "gw-status-text") {
+    const fallback = $(fallbackId);
+    if (fallback) {
+      fallback.textContent = message;
+      fallback.closest("[aria-live]")?.setAttribute("role", "alert");
+    }
+  }
+
+  const draftSiteKey = () => {
+    const siteId = new URLSearchParams(location.search).get("siteId") || "default";
+    return `yr-engage-draft:${siteId}`;
+  };
+  function draftKey(formId) { return `${draftSiteKey()}:${formId}`; }
+  function saveDraft(formId, ids) {
+    try {
+      const values = {};
+      ids.forEach((id) => { const el = $(id); if (el) values[id] = el.value; });
+      sessionStorage.setItem(draftKey(formId), JSON.stringify(values));
+    } catch {}
+  }
+  function restoreDraft(formId, ids) {
+    try {
+      const values = JSON.parse(sessionStorage.getItem(draftKey(formId)) || "{}");
+      ids.forEach((id) => { const el = $(id); if (el && values[id] != null) el.value = values[id]; });
+    } catch {}
+  }
+  function clearDraft(formId) {
+    try { sessionStorage.removeItem(draftKey(formId)); } catch {}
+  }
+  const drawerFields = {
+    "rf-drawer": ["rf-title", "rf-desc", "rf-cost", "rf-max"],
+    "cd-drawer": ["cd-code", "cd-points", "cd-max", "cd-expire"],
+    "pred-drawer": ["pred-title", "pred-opt-1", "pred-opt-2", "pred-min-bet", "pred-max-bet", "pred-lock-min"],
+  };
+  let activeDrawer = null;
+  let drawerTrigger = null;
+  let inertedElements = [];
+  function focusableIn(panel) {
+    return [...panel.querySelectorAll('a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])')]
+      .filter((el) => !el.hidden && el.offsetParent !== null);
+  }
+  function openEventDrawer(id, trigger) {
+    const drawer = $(id);
+    if (!drawer) return;
+    activeDrawer = id;
+    drawerTrigger = trigger || document.activeElement;
+    restoreDraft(id, drawerFields[id] || []);
+    drawer.hidden = false;
+    inertedElements = [...document.body.querySelectorAll("*")].filter(
+      (el) => el !== drawer && !drawer.contains(el) && !el.contains(drawer) && !el.hasAttribute("data-keep-interactive"),
+    );
+    inertedElements.forEach((el) => { el.inert = true; });
+    const first = focusableIn(drawer.querySelector(".gw-drawer-panel"))[0];
+    first?.focus();
+  }
+  function closeEventDrawer(id, { clear = false } = {}) {
+    const drawer = $(id);
+    if (!drawer) return;
+    if (clear) clearDraft(id);
+    drawer.hidden = true;
+    drawer.querySelector(".gw-drawer-panel")?.querySelectorAll("[aria-invalid]").forEach((el) => el.removeAttribute("aria-invalid"));
+    inertedElements.forEach((el) => { el.inert = false; });
+    inertedElements = [];
+    const trigger = drawerTrigger;
+    activeDrawer = null;
+    drawerTrigger = null;
+    if (trigger && document.contains(trigger)) trigger.focus();
+  }
+  function trapEventDrawerFocus(event) {
+    if (event.key === "Escape" && activeDrawer) {
+      event.preventDefault();
+      closeEventDrawer(activeDrawer);
+      return;
+    }
+    if (event.key !== "Tab" || !activeDrawer) return;
+    const panel = $(activeDrawer)?.querySelector(".gw-drawer-panel");
+    const items = panel && focusableIn(panel);
+    if (!items?.length) return;
+    const first = items[0], last = items[items.length - 1];
+    if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+    else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+  }
+  function validateDrawer(formId, fields) {
+    let first;
+    fields.forEach(({ id, message, valid }) => {
+      const input = $(id);
+      const error = document.querySelector(`[data-field-error="${id}"]`);
+      if (!input || !error) return;
+      const ok = valid(input.value);
+      input.toggleAttribute("aria-invalid", !ok);
+      error.textContent = ok ? "" : message;
+      if (!ok && !first) first = input;
+    });
+    first?.focus();
+    return !first;
   }
 
   async function autoFillChannel() {
@@ -76,6 +196,7 @@ import { computeTrustScore, connectKickChat } from "./chat-entry.js";
   }
 
   function wireEvents() {
+    document.addEventListener("keydown", trapEventDrawerFocus);
     $("gw-setup-form")?.addEventListener("submit", (e) => {
       e.preventDefault();
       toggleListening();
@@ -554,8 +675,8 @@ import { computeTrustScore, connectKickChat } from "./chat-entry.js";
     }
   }
 
-  function clearEntrants() {
-    if (!confirm("Are you sure you want to clear all giveaway entrants?")) return;
+  async function clearEntrants() {
+    if (!await showConfirmModal("Clear giveaway entrants", "Remove all current entrants from this giveaway?", "Clear entrants", true)) return;
     entrants = [];
     entrantIds.clear();
     verifiedCount = 0;
@@ -607,7 +728,7 @@ import { computeTrustScore, connectKickChat } from "./chat-entry.js";
       if (filtered.length > 0) {
         pool = filtered;
       } else {
-        alert("No subscribers or VIPs found in the entrants pool yet. Try 'Open to All Viewers' or wait for subscribers to enter.");
+        showEngageError("No subscribers or VIPs found in the entrants pool yet. Try 'Open to All Viewers' or wait for subscribers to enter.");
         return [];
       }
     }
@@ -642,7 +763,7 @@ import { computeTrustScore, connectKickChat } from "./chat-entry.js";
     const pool = getEligibleEntrantsPool();
     if (pool.length === 0) {
       if (entrants.length === 0) return;
-      alert("No entrants meet your active giveaway rules. Try changing your rules or clearing entrants.");
+      showEngageError("No entrants meet your active giveaway rules. Try changing your rules or clearing entrants.");
       return;
     }
 
@@ -944,29 +1065,29 @@ import { computeTrustScore, connectKickChat } from "./chat-entry.js";
     });
 
     // Drawers
-    $("btn-open-event-drawer")?.addEventListener("click", () => {
+    $("btn-open-event-drawer")?.addEventListener("click", (event) => {
       const activeTab = document.querySelector(".gw-tab-btn.is-active")?.dataset.tab;
       if (activeTab === "drops") {
-        $("cd-drawer").hidden = false;
+        openEventDrawer("cd-drawer", event.currentTarget);
       } else if (activeTab === "preds") {
-        $("pred-drawer").hidden = false;
+        openEventDrawer("pred-drawer", event.currentTarget);
       } else {
-        $("rf-drawer").hidden = false;
+        openEventDrawer("rf-drawer", event.currentTarget);
       }
     });
-    $("btn-create-raffle")?.addEventListener("click", () => { $("rf-drawer").hidden = false; });
-    $("rf-drawer-close")?.addEventListener("click", () => { $("rf-drawer").hidden = true; });
-    $("rf-cancel")?.addEventListener("click", () => { $("rf-drawer").hidden = true; });
+    $("btn-create-raffle")?.addEventListener("click", (event) => openEventDrawer("rf-drawer", event.currentTarget));
+    $("rf-drawer-close")?.addEventListener("click", () => closeEventDrawer("rf-drawer"));
+    $("rf-cancel")?.addEventListener("click", () => closeEventDrawer("rf-drawer", { clear: true }));
 
-    $("btn-create-drop")?.addEventListener("click", () => { $("cd-drawer").hidden = false; });
-    $("cd-drawer-close")?.addEventListener("click", () => { $("cd-drawer").hidden = true; });
-    $("cd-cancel")?.addEventListener("click", () => { $("cd-drawer").hidden = true; });
+    $("btn-create-drop")?.addEventListener("click", (event) => openEventDrawer("cd-drawer", event.currentTarget));
+    $("cd-drawer-close")?.addEventListener("click", () => closeEventDrawer("cd-drawer"));
+    $("cd-cancel")?.addEventListener("click", () => closeEventDrawer("cd-drawer", { clear: true }));
 
-    $("btn-create-pred")?.addEventListener("click", () => { $("pred-drawer").hidden = false; });
-    $("pred-drawer-close")?.addEventListener("click", () => { $("pred-drawer").hidden = true; });
-    $("pred-cancel")?.addEventListener("click", () => { $("pred-drawer").hidden = true; });
+    $("btn-create-pred")?.addEventListener("click", (event) => openEventDrawer("pred-drawer", event.currentTarget));
+    $("pred-drawer-close")?.addEventListener("click", () => closeEventDrawer("pred-drawer"));
+    $("pred-cancel")?.addEventListener("click", () => closeEventDrawer("pred-drawer", { clear: true }));
 
-    $("settle-drawer-close")?.addEventListener("click", () => { $("settle-drawer").hidden = true; });
+    $("settle-drawer-close")?.addEventListener("click", () => closeEventDrawer("settle-drawer"));
     $("settle-btn-confirm")?.addEventListener("click", () => settlePrediction());
     $("settle-btn-cancel-pred")?.addEventListener("click", () => cancelPrediction());
 
@@ -983,6 +1104,15 @@ import { computeTrustScore, connectKickChat } from "./chat-entry.js";
     $("rf-form")?.addEventListener("submit", handleCreateRaffleSubmit);
     $("cd-form")?.addEventListener("submit", handleCreateDropSubmit);
     $("pred-form")?.addEventListener("submit", handleCreatePredSubmit);
+    Object.entries(drawerFields).forEach(([formId, ids]) => {
+      ids.forEach((id) => $(id)?.addEventListener("input", () => saveDraft(formId, ids)));
+    });
+    document.querySelectorAll(".gw-drawer-backdrop").forEach((drawer) => {
+      drawer.addEventListener("click", (event) => {
+        if (event.target === drawer) closeEventDrawer(drawer.id);
+      });
+    });
+    Object.entries(drawerFields).forEach(([id, ids]) => restoreDraft(id, ids));
   }
 
   async function loadRaffles() {
@@ -1033,7 +1163,7 @@ import { computeTrustScore, connectKickChat } from "./chat-entry.js";
       `).join("");
 
       activeList.querySelectorAll(".btn--draw-raffle").forEach((btn) => {
-        btn.addEventListener("click", () => drawRaffle(btn.dataset.id));
+        btn.addEventListener("click", () => drawRaffle(btn.dataset.id, btn));
       });
     }
 
@@ -1056,45 +1186,58 @@ import { computeTrustScore, connectKickChat } from "./chat-entry.js";
 
   async function handleCreateRaffleSubmit(e) {
     e.preventDefault();
+    setInlineStatus("rf-status", "");
+    if (!validateDrawer("rf-form", [
+      { id: "rf-title", message: "Enter a prize title.", valid: (value) => Boolean(value.trim()) },
+      { id: "rf-cost", message: "Enter a ticket cost of 0 or more.", valid: (value) => /^\d+$/.test(value) && Number(value) >= 0 },
+      { id: "rf-max", message: "Enter at least 1 ticket.", valid: (value) => /^\d+$/.test(value) && Number(value) >= 1 },
+    ])) return;
     const title = $("rf-title")?.value?.trim();
-    if (!title) return;
 
     const cost = parseInt($("rf-cost")?.value, 10) || 0;
     const maxTickets = parseInt($("rf-max")?.value, 10) || 10;
     const desc = $("rf-desc")?.value?.trim() || "";
 
+    const submit = $("rf-submit");
+    const original = submit?.innerHTML;
+    if (submit) { submit.disabled = true; submit.textContent = "Creating…"; }
     try {
       const res = await dashboardFetch("/api/events/raffles", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ title, description: desc, ticketCost: cost, maxTickets }),
       });
-      const data = await res.json();
+      const data = await responseData(res);
       if (!res.ok) {
-        alert(data.error || "Failed to create raffle");
+        setInlineStatus("rf-status", data.error || "Failed to create raffle", true);
         return;
       }
-      $("rf-drawer").hidden = true;
+      clearDraft("rf-drawer");
+      closeEventDrawer("rf-drawer");
       $("rf-title").value = "";
       $("rf-desc").value = "";
       loadRaffles();
     } catch {
-      alert("Network error creating raffle.");
+      setInlineStatus("rf-status", "Network error creating raffle.", true);
+    } finally {
+      if (submit) { submit.disabled = false; submit.innerHTML = original; }
     }
   }
 
-  async function drawRaffle(raffleId) {
-    if (!confirm("Are you ready to draw the random winning ticket on stream?")) return;
+  async function drawRaffle(raffleId, trigger) {
+    if (!await showConfirmModal("Draw raffle winner", "Are you ready to draw the random winning ticket on stream?", "Draw winner", true)) return;
 
+    const original = trigger?.innerHTML;
+    if (trigger) { trigger.disabled = true; trigger.textContent = "Drawing…"; }
     try {
       const res = await dashboardFetch("/api/events/raffles/draw", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ raffleId }),
       });
-      const data = await res.json();
+      const data = await responseData(res);
       if (!res.ok) {
-        alert(data.error || "Failed to draw winner");
+        showEngageError(data.error || "Failed to draw winner");
         return;
       }
 
@@ -1108,7 +1251,9 @@ import { computeTrustScore, connectKickChat } from "./chat-entry.js";
       }
       loadRaffles();
     } catch {
-      alert("Network error drawing raffle.");
+      showEngageError("Network error drawing raffle.");
+    } finally {
+      if (trigger) { trigger.disabled = false; trigger.innerHTML = original; }
     }
   }
 
@@ -1183,29 +1328,40 @@ import { computeTrustScore, connectKickChat } from "./chat-entry.js";
 
   async function handleCreateDropSubmit(e) {
     e.preventDefault();
+    setInlineStatus("cd-status", "");
+    if (!validateDrawer("cd-form", [
+      { id: "cd-code", message: "Enter a drop code.", valid: (value) => Boolean(value.trim()) },
+      { id: "cd-points", message: "Enter a reward of at least 1 Credit.", valid: (value) => /^\d+$/.test(value) && Number(value) >= 1 },
+      { id: "cd-max", message: "Enter at least 1 claim.", valid: (value) => /^\d+$/.test(value) && Number(value) >= 1 },
+    ])) return;
     const code = $("cd-code")?.value?.trim();
-    if (!code) return;
 
     const points = parseInt($("cd-points")?.value, 10) || 100;
     const maxClaims = parseInt($("cd-max")?.value, 10) || 50;
     const expireMinutes = parseInt($("cd-expire")?.value, 10) || 0;
 
+    const submit = $("cd-submit");
+    const original = submit?.innerHTML;
+    if (submit) { submit.disabled = true; submit.textContent = "Launching…"; }
     try {
       const res = await dashboardFetch("/api/events/drops", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ code, pointsReward: points, maxClaims, expireMinutes }),
       });
-      const data = await res.json();
+      const data = await responseData(res);
       if (!res.ok) {
-        alert(data.error || "Failed to launch drop");
+        setInlineStatus("cd-status", data.error || "Failed to launch drop", true);
         return;
       }
-      $("cd-drawer").hidden = true;
+      clearDraft("cd-drawer");
+      closeEventDrawer("cd-drawer");
       $("cd-code").value = "";
       loadCodeDrops();
     } catch {
-      alert("Network error launching drop.");
+      setInlineStatus("cd-status", "Network error launching drop.", true);
+    } finally {
+      if (submit) { submit.disabled = false; submit.innerHTML = original; }
     }
   }
 
@@ -1301,7 +1457,7 @@ import { computeTrustScore, connectKickChat } from "./chat-entry.js";
       activeList.querySelectorAll(".btn--open-settle").forEach((btn) => {
         btn.addEventListener("click", () => {
           const pred = activePredictionsList.find((p) => p.id === btn.dataset.id);
-          if (pred) openSettleDrawer(pred);
+          if (pred) openSettleDrawer(pred, btn);
         });
       });
     }
@@ -1328,8 +1484,15 @@ import { computeTrustScore, connectKickChat } from "./chat-entry.js";
 
   async function handleCreatePredSubmit(e) {
     e.preventDefault();
+    setInlineStatus("pred-status", "");
+    if (!validateDrawer("pred-form", [
+      { id: "pred-title", message: "Enter a prediction question.", valid: (value) => Boolean(value.trim()) },
+      { id: "pred-opt-1", message: "Enter option A.", valid: (value) => Boolean(value.trim()) },
+      { id: "pred-opt-2", message: "Enter option B.", valid: (value) => Boolean(value.trim()) },
+      { id: "pred-min-bet", message: "Enter a minimum bet of at least 1 Credit.", valid: (value) => /^\d+$/.test(value) && Number(value) >= 1 },
+      { id: "pred-max-bet", message: "Enter a maximum bet of at least 1 Credit.", valid: (value) => /^\d+$/.test(value) && Number(value) >= 1 },
+    ])) return;
     const title = $("pred-title")?.value?.trim();
-    if (!title) return;
 
     const opt1 = $("pred-opt-1")?.value?.trim() || "Yes";
     const opt2 = $("pred-opt-2")?.value?.trim() || "No";
@@ -1342,22 +1505,28 @@ import { computeTrustScore, connectKickChat } from "./chat-entry.js";
       { id: "no", label: opt2 },
     ];
 
+    const submit = $("pred-submit");
+    const original = submit?.innerHTML;
+    if (submit) { submit.disabled = true; submit.textContent = "Launching…"; }
     try {
       const res = await dashboardFetch("/api/predictions", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ title, options, minBet, maxBet, lockMinutes }),
       });
-      const data = await res.json();
+      const data = await responseData(res);
       if (!res.ok) {
-        alert(data.error || "Failed to create prediction");
+        setInlineStatus("pred-status", data.error || "Failed to create prediction", true);
         return;
       }
-      $("pred-drawer").hidden = true;
+      clearDraft("pred-drawer");
+      closeEventDrawer("pred-drawer");
       $("pred-title").value = "";
       loadPredictions();
     } catch {
-      alert("Network error creating prediction.");
+      setInlineStatus("pred-status", "Network error creating prediction.", true);
+    } finally {
+      if (submit) { submit.disabled = false; submit.innerHTML = original; }
     }
   }
 
@@ -1368,18 +1537,18 @@ import { computeTrustScore, connectKickChat } from "./chat-entry.js";
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ predictionId }),
       });
-      const data = await res.json();
+      const data = await responseData(res);
       if (!res.ok) {
-        alert(data.error || "Failed to lock prediction");
+        showEngageError(data.error || "Failed to lock prediction");
         return;
       }
       loadPredictions();
     } catch {
-      alert("Network error locking prediction.");
+      showEngageError("Network error locking prediction.");
     }
   }
 
-  function openSettleDrawer(pred) {
+  function openSettleDrawer(pred, trigger) {
     const drawer = $("settle-drawer");
     if (!drawer) return;
 
@@ -1400,7 +1569,7 @@ import { computeTrustScore, connectKickChat } from "./chat-entry.js";
       `).join("");
     }
 
-    drawer.hidden = false;
+    openEventDrawer("settle-drawer", trigger);
   }
 
   async function settlePrediction() {
@@ -1408,24 +1577,29 @@ import { computeTrustScore, connectKickChat } from "./chat-entry.js";
     const winningOpt = document.querySelector('input[name="settle_opt"]:checked')?.value;
     if (!predId || !winningOpt) return;
 
-    if (!confirm(`Are you sure you want to declare "${winningOpt.toUpperCase()}" as the winning outcome? Points will be distributed immediately!`)) return;
+    if (!await showConfirmModal("Settle prediction", `Declare "${winningOpt.toUpperCase()}" as the winning outcome? Points will be distributed immediately.`, "Settle and pay", true)) return;
 
+    const submit = $("settle-btn-confirm");
+    const original = submit?.innerHTML;
+    if (submit) { submit.disabled = true; submit.textContent = "Settling…"; }
+    setInlineStatus("settle-status", "");
     try {
       const res = await dashboardFetch(`/api/predictions/${predId}/settle`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ predictionId: predId, winningOptionId: winningOpt }),
       });
-      const data = await res.json();
+      const data = await responseData(res);
       if (!res.ok) {
-        alert(data.error || "Failed to settle prediction");
+        setInlineStatus("settle-status", data.error || "Failed to settle prediction", true);
         return;
       }
-      $("settle-drawer").hidden = true;
-      alert(data.message || "Prediction settled successfully!");
+      closeEventDrawer("settle-drawer");
       loadPredictions();
     } catch {
-      alert("Network error settling prediction.");
+      setInlineStatus("settle-status", "Network error settling prediction.", true);
+    } finally {
+      if (submit) { submit.disabled = false; submit.innerHTML = original; }
     }
   }
 
@@ -1433,23 +1607,29 @@ import { computeTrustScore, connectKickChat } from "./chat-entry.js";
     const predId = $("settle-pred-id")?.value;
     if (!predId) return;
 
-    if (!confirm("Are you sure you want to cancel this prediction? All bets will be 100% refunded to viewers.")) return;
+    if (!await showConfirmModal("Cancel prediction", "Cancel this prediction? All bets will be fully refunded to viewers.", "Cancel prediction", true)) return;
 
+    const submit = $("settle-btn-cancel-pred");
+    const original = submit?.innerHTML;
+    if (submit) { submit.disabled = true; submit.textContent = "Cancelling…"; }
+    setInlineStatus("settle-status", "");
     try {
       const res = await dashboardFetch(`/api/predictions/${predId}/cancel`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ predictionId: predId }),
       });
-      const data = await res.json();
+      const data = await responseData(res);
       if (!res.ok) {
-        alert(data.error || "Failed to cancel prediction");
+        setInlineStatus("settle-status", data.error || "Failed to cancel prediction", true);
         return;
       }
-      $("settle-drawer").hidden = true;
+      closeEventDrawer("settle-drawer");
       loadPredictions();
     } catch {
-      alert("Network error cancelling prediction.");
+      setInlineStatus("settle-status", "Network error cancelling prediction.", true);
+    } finally {
+      if (submit) { submit.disabled = false; submit.innerHTML = original; }
     }
   }
 

@@ -22,6 +22,14 @@ function setStatus(el, message, isError) {
   el.className = isError ? "err" : "hint";
 }
 
+function passwordRuleMessage(value) {
+  if (value.length < 8) return "New password must be at least 8 characters.";
+  if (!/[a-z]/.test(value) || !/[A-Z]/.test(value)) return "New password must include upper and lower case letters.";
+  if (!/\d/.test(value)) return "New password must include a number.";
+  if (!/[^A-Za-z0-9]/.test(value)) return "New password must include a symbol.";
+  return "";
+}
+
 async function loadSessions() {
   const list = $("accSessions");
   if (!list) return;
@@ -77,11 +85,22 @@ function wirePasswordToggles() {
   });
 
   const newPwdInput = $("accNewPassword");
-  const reqLen = $("pwdReqLength");
-  if (newPwdInput && reqLen) {
+  const reqs = {
+    len: $("pwdReqLength"),
+    case: $("pwdReqCase"),
+    num: $("pwdReqNumber"),
+    special: $("pwdReqSymbol"),
+  };
+  if (newPwdInput) {
     newPwdInput.addEventListener("input", () => {
-      const met = newPwdInput.value.length >= 8;
-      reqLen.classList.toggle("is-met", met);
+      const value = newPwdInput.value;
+      const checks = {
+        len: value.length >= 8,
+        case: /[a-z]/.test(value) && /[A-Z]/.test(value),
+        num: /\d/.test(value),
+        special: /[^A-Za-z0-9]/.test(value),
+      };
+      Object.entries(reqs).forEach(([key, el]) => el?.classList.toggle("is-met", checks[key]));
     });
   }
 }
@@ -95,8 +114,10 @@ function wireChangePassword() {
     const current = $("accCurrentPassword").value.trim();
     const password = $("accNewPassword").value.trim();
     setStatus(status, "", false);
-    if (password.length < 8) {
-      setStatus(status, "New password must be at least 8 characters.", true);
+    const passwordError = passwordRuleMessage(password);
+    if (passwordError) {
+      setStatus(status, passwordError, true);
+      $("accNewPassword")?.focus();
       return;
     }
     setStatus(status, "Saving…", false);
@@ -108,6 +129,25 @@ function wireChangePassword() {
       loadSessions();
     } else {
       setStatus(status, result.data?.message || "Update failed.", true);
+    }
+  });
+}
+
+function wireSignOut() {
+  const button = $("accSignOut");
+  if (!button) return;
+  button.addEventListener("click", async () => {
+    button.disabled = true;
+    const original = button.textContent;
+    button.textContent = "Signing out…";
+    try {
+      const result = await jsonPost("/api/auth/logout", {});
+      if (!result.ok) throw new Error(result.data?.error || "Could not sign out.");
+      location.href = "/login";
+    } catch (error) {
+      button.disabled = false;
+      button.textContent = original;
+      setStatus($("accSessionsStatus"), error.message || "Could not sign out.", true);
     }
   });
 }
@@ -191,6 +231,7 @@ function wireExport() {
 export function wireAccount() {
   wireChangePassword();
   wireRevokeSessions();
+  wireSignOut();
   wireExport();
   loadSessions();
 }

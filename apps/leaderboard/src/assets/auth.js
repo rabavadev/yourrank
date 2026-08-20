@@ -81,7 +81,7 @@ form.querySelectorAll("input").forEach(inp => inp.addEventListener("input", () =
   if (inp.id) clearFieldError(inp.id);
 }));
 
-/* Live password strength meter + requirement checklist (signup only) */
+/* Live password strength meter + requirement checklist */
 function passwordScore(v) {
   if (v.length < 8) return 0;
   let s = 1;
@@ -90,15 +90,28 @@ function passwordScore(v) {
   if (/\d/.test(v) && /[^A-Za-z0-9]/.test(v)) s++;
   return Math.min(s, 4);
 }
+function passwordRequirements(v) {
+  return {
+    len: v.length >= 8,
+    case: /[a-z]/.test(v) && /[A-Z]/.test(v),
+    num: /\d/.test(v),
+    special: /[^A-Za-z0-9]/.test(v),
+  };
+}
+function passwordRuleMessage(v) {
+  const checks = passwordRequirements(v);
+  if (!checks.len) return "Password must be at least 8 characters";
+  if (!checks.case) return "Password must include upper and lower case letters";
+  if (!checks.num) return "Password must include a number";
+  if (!checks.special) return "Password must include a symbol";
+  return "";
+}
 const STRENGTH_LABELS = ["", "Weak", "Fair", "Good", "Strong"];
 const pwInput = document.getElementById("password");
 const pwMeter = document.getElementById("pwMeter");
 const pwReqs = document.getElementById("pwReqs");
 function updatePasswordFeedback(v) {
-  const hasLen = v.length >= 8;
-  const hasCase = /[a-z]/.test(v) && /[A-Z]/.test(v);
-  const hasNum = /\d/.test(v);
-  const hasSpecial = /[^A-Za-z0-9]/.test(v);
+  const { len: hasLen, case: hasCase, num: hasNum, special: hasSpecial } = passwordRequirements(v);
   if (pwReqs) {
     const set = (key, ok) => {
       const el = pwReqs.querySelector('[data-req="' + key + '"]');
@@ -118,7 +131,7 @@ function updatePasswordFeedback(v) {
   if (bar) bar.className = "pw-meter-bar s" + score;
   if (label) label.textContent = !hasLen ? "At least 8 characters" : STRENGTH_LABELS[score];
 }
-if (mode === "signup" && pwInput) {
+if ((mode === "signup" || mode === "reset") && pwInput) {
   pwInput.addEventListener("input", () => updatePasswordFeedback(pwInput.value));
 }
 
@@ -167,11 +180,14 @@ form.addEventListener("submit", async (e) => {
     const ref = new URLSearchParams(location.search).get("ref");
     if (mode === "signup" && ref) payload.ref = ref;
   }
-  if (mode === "login" || mode === "signup") {
+  if (mode === "login" || mode === "signup" || mode === "reset") {
     clearAllFieldErrors();
     let firstInvalid = null;
-    if (!EMAIL_RE.test(payload.email || "")) { setFieldError("email", "Enter a valid email address"); firstInvalid = firstInvalid || "email"; }
-    if (mode === "signup" && (payload.password || "").length < 8) { setFieldError("password", "Password must be at least 8 characters"); firstInvalid = firstInvalid || "password"; }
+    if ((mode === "login" || mode === "signup") && !EMAIL_RE.test(payload.email || "")) { setFieldError("email", "Enter a valid email address"); firstInvalid = firstInvalid || "email"; }
+    if ((mode === "signup" || mode === "reset")) {
+      const passwordError = passwordRuleMessage(payload.password || "");
+      if (passwordError) { setFieldError("password", passwordError); firstInvalid = firstInvalid || "password"; }
+    }
     if (mode === "signup" && !(payload.name || "").trim()) { setFieldError("name", "Enter your name or handle"); firstInvalid = firstInvalid || "name"; }
     if (mode === "signup" && !(payload.slug || "").trim()) { setFieldError("slug", "Enter a page URL"); firstInvalid = firstInvalid || "slug"; }
     if (firstInvalid) {
