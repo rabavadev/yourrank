@@ -109,6 +109,8 @@ describe("dashboard navigation ownership", () => {
       ["shop", "redemptions"],
       ["viewers", "redemptions"],
       ["history", "redemptions"],
+      ["channel", "redemptions"],
+      ["rules", "redemptions"],
       ["engage", "engage"],
       ["giveaways", "engage"],
       ["raffles", "engage"],
@@ -119,7 +121,7 @@ describe("dashboard navigation ownership", () => {
       expect(mapActiveNav(route)).toBe(navOwner(route));
       expect(keys.has(NAV_OWNER_MAP[route] || route)).toBe(true);
     }
-    for (const path of ["/dashboard", "/dashboard/leaderboard/setup", "/dashboard/games", "/dashboard/analytics/activity", "/dashboard/leaderboards", "/dashboard/site"]) {
+    for (const path of ["/dashboard", "/dashboard/leaderboard/setup", "/dashboard/games", "/dashboard/analytics/activity", "/dashboard/leaderboards", "/dashboard/site", "/dashboard/rewards/channel", "/dashboard/rewards/viewers", "/dashboard/rewards/activity", "/dashboard/settings/billing", "/dashboard/giveaways/predictions"]) {
       expect((dashboardHtml(path).match(/class="lb-nav[^"]* is-on/g) || []).length).toBe(1);
     }
     expect(dashboardHtml("/dashboard/leaderboards")).toContain('data-nav="sites"');

@@ -87,8 +87,8 @@ function hubSectionsHtml() {
   <ul class="operator-help-list">
     <li><a href="/dashboard/settings/account">Account</a><span>Change your password and review active sessions.</span></li>
     <li><a href="/dashboard/site">Site settings</a><span>Manage visitor access, alerts, connected tools, and the web address for the selected site.</span></li>
-    <li><a href="/dashboard/settings/plan">Plan</a><span>Manage the subscription and review plan access.</span></li>
-    <li><a href="/dashboard/settings/connections">Integrations</a><span>Review connected services.</span></li>
+    <li><a href="/dashboard/settings/billing">Billing</a><span>Manage the subscription and review billing access.</span></li>
+    <li><a href="/dashboard/settings/connections">Connections</a><span>Review connected services.</span></li>
     <li><a href="/dashboard/settings/data">Data</a><span>Export account data or manage account deletion.</span></li>
   </ul>
 </section>

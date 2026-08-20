@@ -288,7 +288,7 @@ export function receiptEmail({ orderId, plan, amount, currency, provider, isLife
   const ccy = currency ? ` ${currency.toUpperCase()}` : "";
   const amountText = Number.isFinite(amount) ? `$${amount.toFixed(2)}${ccy}` : `${provider === "telegram_stars" ? "Telegram Stars" : "Crypto"}`;
   const period = isLifetime ? "Lifetime" : expiresAt ? `until ${new Date(expiresAt).toLocaleDateString()}` : "30-day";
-  const dashboard = `${origin || "https://yourrank.site"}/dashboard/billing`;
+  const dashboard = `${origin || "https://yourrank.site"}/dashboard/settings/billing`;
   const subject = `YourRank receipt — ${plan}${isLifetime ? " Lifetime" : ""}`;
   const text = `Thanks for your payment.
 

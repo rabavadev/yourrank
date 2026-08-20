@@ -146,7 +146,7 @@ function deriveRenderableRoutes() {
     for (const tab of tabs) routes.push({ path: `${section.path}/${tab}`, render: "dashboard", hasSubnav: true, hasBreadcrumbs: true });
   }
   for (const [tab] of GIVEAWAY_TABS) {
-    routes.push({ path: `/dashboard/giveaways/${tab}`, render: "giveaways", tab, hasSubnav: true, hasBreadcrumbs: true });
+    routes.push({ path: `/dashboard/giveaways/${tab === "preds" ? "predictions" : tab}`, render: "giveaways", tab, hasSubnav: true, hasBreadcrumbs: true });
   }
   for (const tab of REWARDS_TABS) {
     routes.push({
@@ -164,7 +164,7 @@ function deriveRenderableRoutes() {
   }
   routes.push({ path: "/dashboard/settings", render: "settings", tab: "account", hasSubnav: true, hasBreadcrumbs: true });
   for (const [key] of SETTINGS_TABS) {
-    routes.push({ path: `/dashboard/settings/${key}`, render: "settings", tab: key, hasSubnav: true, hasBreadcrumbs: true });
+    routes.push({ path: `/dashboard/settings/${key === "plan" ? "billing" : key}`, render: "settings", tab: key, hasSubnav: true, hasBreadcrumbs: true });
   }
   for (const page of pageLinks) {
     routes.push({ path: page.href, render: "telegram", tab: page.key, hasSubnav: true, hasBreadcrumbs: true });
@@ -284,7 +284,7 @@ describe("dashboard chrome ownership", () => {
     expect(new Set(routes.map(({ path }) => path)).size).toBe(routes.length);
     expect(routes.map(({ path }) => path)).toContain("/dashboard/settings/account");
     expect(routes.map(({ path }) => path)).toContain("/dashboard/settings/team");
-    expect(routes.map(({ path }) => path)).toContain("/dashboard/settings/plan");
+    expect(routes.map(({ path }) => path)).toContain("/dashboard/settings/billing");
     expect(routes.map(({ path }) => path)).toContain("/dashboard/settings/connections");
     expect(routes.map(({ path }) => path)).toContain("/dashboard/settings/data");
     expect(routes.map(({ path }) => path)).toContain("/dashboard/rewards/channel");
@@ -309,6 +309,8 @@ describe("dashboard chrome ownership", () => {
       ["/dashboard/audience/viewers", "redirect-only legacy alias to Rewards viewers"],
       ["/dashboard/audience/activity", "redirect-only legacy alias to Rewards activity"],
       ["/dashboard/rewards/history", "redirect-only legacy alias to Audience activity"],
+      ["/dashboard/settings/plan", "redirect-only legacy alias to account billing"],
+      ["/dashboard/giveaways/preds", "redirect-only legacy alias to Engage predictions"],
     ]);
     const workerRoutes = new Set(workerRouteLiterals(workerSource));
     for (const path of workerBranchTabRoutes(workerSource, "/dashboard/giveaways")) workerRoutes.add(path);
@@ -323,7 +325,7 @@ describe("dashboard chrome ownership", () => {
     expect(uncoveredWorkerRoutes).toEqual([]);
     for (const path of [
       "/dashboard/giveaways/chat",
-      "/dashboard/giveaways/preds",
+      "/dashboard/giveaways/predictions",
       "/dashboard/rewards/channel",
       "/dashboard/rewards/maps",
       "/dashboard/settings/data",

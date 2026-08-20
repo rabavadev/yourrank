@@ -13,10 +13,10 @@ import { DashboardShell } from "./dashboard-shell.jsx";
 
 const PAGES = { channel: channelPage, rules: rulesPage, shop: shopPage, viewers: viewersPage, redemptions: redemptionsPage, history: historyPage };
 
-const CRUMB_LABELS = { channel: "Kick connection", rules: "Points", shop: "Shop", viewers: "Viewers", redemptions: "Orders", history: "Activity" };
+const CRUMB_LABELS = { channel: "Kick connection", rules: "Credit rules", shop: "Shop", viewers: "Viewers", redemptions: "Orders", history: "Activity" };
 
 function crumbsFor(tab) {
-  const trail = [{ label: "Rewards", href: "/dashboard/rewards" }];
+  const trail = [{ label: "Credits", href: "/dashboard/rewards" }];
   return tab === "redemptions" ? trail.map((c) => ({ label: c.label })) : [...trail, { label: CRUMB_LABELS[tab] || tab }];
 }
 
@@ -24,14 +24,14 @@ export const REWARDS_TABS = [
   { key: "channel", label: "Kick connection", href: "/dashboard/rewards/channel" },
   { key: "redemptions", label: "Orders", href: "/dashboard/rewards/redemptions" },
   { key: "shop", label: "Shop", href: "/dashboard/rewards/shop" },
-  { key: "rules", label: "Points", href: "/dashboard/rewards/rules" },
+  { key: "rules", label: "Credit rules", href: "/dashboard/rewards/rules" },
   { key: "viewers", label: "Viewers", href: "/dashboard/rewards/viewers" },
   { key: "history", label: "Activity", href: "/dashboard/rewards/activity" },
 ];
 
 function SubTabs({ tab }) {
   return (
-    <nav class="v3-tabs" aria-label="Rewards pages" style="margin-bottom: 20px;">
+    <nav class="v3-tabs" aria-label="Credits pages" style="margin-bottom: 20px;">
       {REWARDS_TABS.map((t) => (
         <a
           class={"v3-tab" + (t.key === tab ? " is-on" : "")}

@@ -104,7 +104,7 @@ async function init() {
   if (planParam) {
     location.href = planParam.toLowerCase() === "agency"
       ? "/help/support?area=billing"
-      : `/dashboard/settings/plan?plan=${encodeURIComponent(planParam)}`;
+      : `/dashboard/settings/billing?plan=${encodeURIComponent(planParam)}`;
     return;
   }
   const requestedSiteId = urlParams.get("board") || null;
@@ -247,7 +247,7 @@ async function init() {
   setupShell();
   // Keep every feature visible. Manage sites is useful even with one site because
   // it is also where the operator creates the next one.
-  // The URL says which section this document is: `/dashboard` is the Overview,
+  // The URL says which section this document is: `/dashboard` is Home,
   // not "whichever screen we guess you need".
   const route = currentRoute();
   const hash = route.tab || location.hash.replace("#", "");

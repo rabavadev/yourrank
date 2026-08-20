@@ -31,7 +31,8 @@ describe("dashboard overview quick actions", () => {
     expect(html).toContain('id="ovTopPlayers"');
     expect(html).not.toContain('class="ov-summary"');
     expect(html).toContain('id="ovPublishedStatus"');
-    expect(html).not.toContain('id="ovPrimaryAction"');
+    expect(html).toContain('id="ovPublicSiteAction"');
+    expect(html).toContain("View public site ↗");
     expect(html).toContain('href="/dashboard/leaderboard/setup"');
     expect(html).toContain('class="ov-card-empty" id="ovActivityEmpty"');
     expect(html).toContain('id="ovCreditsCard" hidden');
@@ -136,7 +137,7 @@ describe("dashboard overview quick actions", () => {
     expect(siteJs).toContain("obsBox.hidden = !overlayAccess");
     expect(siteJs).toContain("obsLock.hidden = overlayAccess");
     expect(dashboardHtml("/dashboard/leaderboard/share")).toContain("Stream overlays are available on Starter and higher plans.");
-    expect(dashboardHtml("/dashboard/leaderboard/share")).toContain('href="/dashboard/settings/plan?from=overlay"');
+    expect(dashboardHtml("/dashboard/leaderboard/share")).toContain('href="/dashboard/settings/billing?from=overlay"');
     expect(dashboardHtml("/dashboard/leaderboard/share")).toContain('>Upgrade your plan</a> to add this leaderboard to OBS, Streamlabs, or another streaming app.');
     expect(siteJs).toContain("if (overlayAccess && obsCopy && !obsCopy._wired)");
     expect(siteJs).not.toContain("obsLock.innerHTML");
@@ -156,7 +157,7 @@ describe("dashboard overview quick actions", () => {
     expect(html).not.toContain('aria-hidden="true">🔌</span>');
     expect(html).toContain('>Home</a>');
     for (const label of [
-      "Leaderboard", "Engage", "Games", "Rewards", "Telegram", "Analytics", "Site settings", "Settings",
+      "Leaderboard", "Engage", "Games", "Credits", "Telegram", "Analytics", "Site settings", "Settings",
     ]) expect(html).toContain(`>${label}</a>`);
     for (const label of ["Giveaways", "Raffles", "Predictions", "Drops"]) {
       expect(html).not.toContain(`>${label}</a>`);

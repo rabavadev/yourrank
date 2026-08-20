@@ -122,9 +122,9 @@ describe("settings panels", () => {
   });
 
   it("serves every account panel from the one settings document", async () => {
-    const html = await UnifiedSettingsPage({ activePath: "/dashboard/settings/plan", tab: "plan", user: { email: "a@b.c" } }).toString();
+    const html = await UnifiedSettingsPage({ activePath: "/dashboard/settings/billing", tab: "plan", user: { email: "a@b.c" } }).toString();
     for (const key of ["account", "plan", "connections", "data"]) {
-      expect(html).toContain(`href="/dashboard/settings/${key}"`);
+      expect(html).toContain(`href="/dashboard/settings/${key === "plan" ? "billing" : key}"`);
       expect(html).toContain(`data-settings-panel="${key}"`);
     }
     // Site-level settings are a separate destination, not an account tab.
@@ -151,11 +151,11 @@ describe("settings panels", () => {
       ["account", "Account"],
       ["team", "Team"],
       ["plan", "Billing"],
-      ["connections", "Integrations"],
+      ["connections", "Connections"],
       ["data", "Data"],
     ]) {
       const html = await UnifiedSettingsPage({
-        activePath: `/dashboard/settings/${key}`,
+        activePath: `/dashboard/settings/${key === "plan" ? "billing" : key}`,
         tab: key,
         user: { email: "a@b.c" },
       }).toString();
@@ -170,7 +170,7 @@ describe("settings panels", () => {
 
   it("keeps Sources analytical and puts referrals in Billing", async () => {
     const sources = PAGES.dashboard.Component({ activePath: "/dashboard/analytics/referrals", user: { email: "a@b.c" } }).toString();
-    const plan = await UnifiedSettingsPage({ activePath: "/dashboard/settings/plan", tab: "plan", user: { email: "a@b.c" } }).toString();
+    const plan = await UnifiedSettingsPage({ activePath: "/dashboard/settings/billing", tab: "plan", user: { email: "a@b.c" } }).toString();
     expect(sources).toContain('id="perf-referrers"');
     expect(sources).not.toContain("Earn free Pro days");
     expect(plan).toContain("Earn free Pro days");

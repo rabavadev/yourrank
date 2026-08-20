@@ -1,5 +1,5 @@
 import { describe, it, expect } from "bun:test";
-import { RewardsViewersPage } from "../pages/rewards.jsx";
+import { RewardsChannelPage, RewardsHistoryPage, RewardsViewersPage } from "../pages/rewards.jsx";
 import { UnifiedSettingsPage } from "../pages/account.jsx";
 import { PAGES } from "../pages.jsx";
 
@@ -196,7 +196,7 @@ describe("signed-in shell navigation", () => {
     expect(html).toContain('id="ovSetupMessage"');
     expect(html).toContain('id="ovSetupAction"');
     expect(html).not.toContain('id="ovStepBrand"');
-    expect(html).toContain("Your leaderboard");
+    expect(html).toContain(">Home</h1>");
   });
 
   it("does not duplicate peer products below the rail", () => {
@@ -219,7 +219,7 @@ describe("signed-in shell navigation", () => {
     const html = PAGES.dashboard.Component({ activePath: "/dashboard/leaderboard/design", user }).toString();
     expect(html).toContain(">Appearance</a>");
     expect(html).toContain(">Leaderboard</a>");
-    expect(html).toContain(">Rewards</a>");
+    expect(html).toContain(">Credits</a>");
     expect(html).toContain(">Telegram</a>");
     expect(html).toContain(">Analytics</a>");
     expect(html).toContain("Help &amp; feedback</a>");
@@ -249,7 +249,7 @@ describe("signed-in shell navigation", () => {
   it("puts a breadcrumb trail on every leaf page", () => {
     const viewers = renderPage(RewardsViewersPage);
     expect(viewers).toContain('<nav class="v3-crumbs" aria-label="Breadcrumb">');
-    expect(viewers).toContain('<a href="/dashboard/rewards">Rewards</a>');
+    expect(viewers).toContain('<a href="/dashboard/rewards">Credits</a>');
     expect(viewers).toContain('<span aria-current="page">Viewers</span>');
 
     const settings = renderPage(UnifiedSettingsPage);
@@ -265,6 +265,18 @@ describe("signed-in shell navigation", () => {
     // Overview is the top level, so it gets no trail.
     expect(PAGES.dashboard.Component({ activePath: "/dashboard" }).toString())
       .not.toContain('class="v3-crumbs"');
+  });
+
+  it("omits breadcrumbs on top-level dashboard pages and keeps them on tab pages", () => {
+    for (const path of ["/dashboard", "/dashboard/leaderboards", "/dashboard/site"]) {
+      expect(PAGES.dashboard.Component({ activePath: path }).toString()).not.toContain('class="v3-crumbs"');
+    }
+    for (const path of ["/dashboard/leaderboard/design", "/dashboard/analytics/activity"]) {
+      expect(PAGES.dashboard.Component({ activePath: path }).toString()).toContain('class="v3-crumbs"');
+    }
+    for (const render of [RewardsChannelPage, RewardsViewersPage, RewardsHistoryPage]) {
+      expect(render().toString()).toContain('class="v3-crumbs"');
+    }
   });
 
   it("marks exactly one visible editor feature as current", () => {

@@ -16,7 +16,7 @@ import {
 } from "@yourrank/shared/dashboard-nav";
 
 export const SECTIONS = {
-  home: { path: "/dashboard", title: "Overview" },
+  home: { path: "/dashboard", title: "Home" },
   board: { path: "/dashboard/leaderboard", title: "Leaderboard", tabs: ["setup", "players", "design", "share", "history"] },
   boards: { path: "/dashboard/leaderboards", title: "Sites" },
   games: { path: "/dashboard/games", title: "Public page sections & Games" },
