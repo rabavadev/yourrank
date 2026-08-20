@@ -122,8 +122,9 @@ export async function handleCreditsStatus(request, env) {
       [site.id]
     ),
     query(
-      `SELECT sv.id, v.kick_user_id, v.kick_username, sv.balance, sv.total_earned, sv.total_spent,
-              sv.blocked, sv.fraud_score, sv.block_reason, sv.last_earned_at, sv.created_at
+      `SELECT sv.id, v.id AS viewer_id, v.kick_user_id, v.kick_username, v.avatar_url,
+              v.discord_username, v.discord_user_id, sv.balance, sv.total_earned, sv.total_spent,
+              sv.blocked, sv.fraud_score, sv.block_reason, sv.last_earned_at, sv.last_seen_at, sv.created_at
          FROM site_viewers sv
          JOIN viewers v ON v.id = sv.viewer_id
         WHERE sv.site_id=$1
