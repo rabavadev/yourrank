@@ -101,7 +101,7 @@ const planWidget = `<div class="lb-widget lb-widget--full" id="plan">
           <h3 class="m-0 mt-18 mb-4">Payment history</h3>
           <p class="card-sub">Your past payments and receipts.</p>
           <div class="admin-table-wrap"><table class="admin-table" id="historyTable"><thead><tr><th>Date</th><th>Plan</th><th>Amount</th><th>Status</th></tr></thead><tbody id="historyBody"></tbody></table></div>
-          <div class="empty" id="historyEmpty" hidden>No payments yet.</div>
+          <div class="empty" id="historyEmpty" hidden>No payments yet. Completed payments and receipts will appear here after you upgrade.</div>
           <p class="hint">Receipts are also emailed to your account address after each successful payment.</p>
         </div>
       </div>`;

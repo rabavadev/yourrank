@@ -103,6 +103,12 @@ const pages = [
   },
 ];
 
+it("explains what payment history will contain when it is empty", () => {
+  expect(settingsWidgets.plan).toContain(
+    "Completed payments and receipts will appear here after you upgrade."
+  );
+});
+
 describe("settings panels", () => {
   for (const { key, html, ids } of pages) {
     it(`${key} renders its client hooks`, () => {

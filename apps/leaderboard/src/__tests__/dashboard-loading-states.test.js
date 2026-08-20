@@ -139,11 +139,14 @@ describe("dashboard loading states", () => {
 
   it("bounds authenticated dashboard boot outside the module graph", () => {
     const shell = fs.readFileSync(path.resolve(assets, "../../../../packages/shared/src/page-shell.ts"), "utf8");
+    const watchdog = read("dashboard-boot-watchdog.js");
     expect(shell).toContain("DASHBOARD_BOOT_WATCHDOG");
-    expect(shell).toContain("setTimeout(function ()");
-    expect(shell).toContain("8000");
-    expect(shell).toContain("unhandledrejection");
-    expect(shell).toContain("data-yr-boot-retry");
+    expect(shell).toContain('/assets/dashboard-boot-watchdog.js?v=1');
+    expect(watchdog).toContain("setTimeout(function ()");
+    expect(watchdog).toContain("8000");
+    expect(watchdog).toContain("unhandledrejection");
+    expect(watchdog).toContain("data-yr-boot-retry");
+    expect(watchdog).not.toContain("import ");
     expect(read("giveaways.js")).toContain("withDashboardTimeout");
     expect(read("giveaways.js")).toContain('window.__yrBoot?.fail');
     expect(read("giveaways.js")).not.toContain("await fetch(");

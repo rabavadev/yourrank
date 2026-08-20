@@ -51,7 +51,7 @@ export function playerRow(p = { name: "", wagered: "", prize: "", score: "", han
   const tr = document.createElement("tr");
   tr.innerHTML = `<td class="sel"><input type="checkbox" class="row-sel" title="Select" aria-label="Select player" /></td>
     <td class="rank"></td>
-    <td><input class="p-name" placeholder="Player name" title="${esc(p.name)}" value="${esc(p.name)}"></td>
+    <td class="player-name"><input class="p-name" placeholder="Player name" title="${esc(p.name)}" value="${esc(p.name)}"></td>
     <td class="num"><input class="p-wager" inputmode="decimal" placeholder="0" value="${esc(p.wagered)}"></td>
     <td class="num"><input class="p-prize" inputmode="decimal" placeholder="0" value="${esc(p.prize)}"></td>
     <td class="num col-score" hidden><input class="p-score" inputmode="decimal" placeholder="0" value="${esc(p.score)}"></td>

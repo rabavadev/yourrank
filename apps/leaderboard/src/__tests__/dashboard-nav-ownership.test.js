@@ -174,7 +174,7 @@ describe("dashboard navigation ownership", () => {
   });
 
   it("gives identifying names flexible space and full-value hints", () => {
-    expect(dashboardV4Css).toContain(".v3-dash[data-auth-workspace] .v3-players-table td:nth-child(3) {");
+    expect(dashboardV4Css).toContain(".v3-dash[data-auth-workspace] .v3-players-table .player-name {");
     expect(dashboardV4Css).toContain("width: 34%;");
     expect(dashboardV4Css).toContain("min-width: 240px;");
     expect(dashboardV4Css).toContain(".ov-player-name {\n  min-width: 0;");
