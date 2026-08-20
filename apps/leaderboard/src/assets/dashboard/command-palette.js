@@ -71,7 +71,7 @@ const COMMANDS = [
   { id: "nav-telegram", title: "Telegram", group: "Navigation", icon: PALETTE_ICONS.bot, keywords: "bot console", action: () => location.href = "/dashboard/telegram" },
   { id: "nav-boards", title: "Sites", group: "Navigation", icon: PALETTE_ICONS.overview, keywords: "sites boards", action: () => location.href = "/dashboard/leaderboards" },
   { id: "nav-settings", title: "Settings", group: "Navigation", icon: PALETTE_ICONS.settings, keywords: "site settings domain account", action: () => location.href = "/dashboard/settings" },
-  { id: "nav-site-settings", title: "Site settings", group: "Navigation", icon: PALETTE_ICONS.settings, keywords: "site settings domain", action: () => location.href = "/dashboard/settings/board" },
+  { id: "nav-site-settings", title: "Site settings", group: "Navigation", icon: PALETTE_ICONS.settings, keywords: "site settings domain", action: () => location.href = "/dashboard/site" },
   { id: "nav-plan", title: "Plan", group: "Navigation", icon: PALETTE_ICONS.settings, keywords: "plans billing", action: () => location.href = "/dashboard/settings/plan" },
   { id: "act-support", title: "Help & support drawer", group: "Support", icon: PALETTE_ICONS.help, action: () => $("openHelpDrawerBtn")?.click() }
 ];

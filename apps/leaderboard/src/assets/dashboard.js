@@ -6,7 +6,6 @@ import { renderBoardSwitcher, renderBoardSelect, renderBoardsPage } from "./dash
 import { renderPlayers } from "./dashboard/players.js";
 import { fitDesignPreview, loadCreditsStatus, loadStats, refreshDesignPreview, renderArchives, renderBranding, renderDomain, renderDomainStatus, renderBoardStatus, renderEditorTimestamps, renderEmbedShare, renderLegal, renderNotifications, renderPrizes, renderSections, renderSocials, wirePublishAction } from "./dashboard/site.js";
 import { loadOverviewLiveData, renderOverviewSummary } from "./dashboard/overview.js";
-import { renderReferrals } from "./dashboard/referrals.js";
 import { initPerformance } from "./dashboard/performance.js";
 import { setupSettingsScreen } from "./dashboard/account.js";
 import { initGames } from "./dashboard/games.js";
@@ -152,12 +151,12 @@ async function init() {
   document.querySelectorAll("a[href]").forEach((link) => {
     if (!state.ACTIVE_SITE_ID) return;
     if (link.dataset.productLink === "sites") {
-      link.href = `/dashboard?board=${encodeURIComponent(state.ACTIVE_SITE_ID)}`;
+      link.href = `/dashboard/leaderboards?board=${encodeURIComponent(state.ACTIVE_SITE_ID)}`;
       return;
     }
     const target = new URL(link.getAttribute("href"), location.origin);
-    const creditsPath = target.pathname.startsWith("/dashboard/rewards/") || target.pathname.startsWith("/dashboard/audience/");
-    const sitePath = target.pathname === "/dashboard" || target.pathname === "/dashboard/leaderboards" || target.pathname === "/dashboard/leaderboard" || target.pathname === "/dashboard/games" || target.pathname === "/dashboard/settings/board" || target.pathname.startsWith("/dashboard/leaderboard/") || target.pathname.startsWith("/dashboard/analytics/");
+    const creditsPath = target.pathname.startsWith("/dashboard/rewards/");
+    const sitePath = target.pathname === "/dashboard" || target.pathname === "/dashboard/leaderboards" || target.pathname === "/dashboard/leaderboard" || target.pathname === "/dashboard/games" || target.pathname === "/dashboard/site" || target.pathname.startsWith("/dashboard/leaderboard/") || target.pathname.startsWith("/dashboard/analytics/");
     if (creditsPath) {
       target.searchParams.set("siteId", state.ACTIVE_SITE_ID);
     } else if (sitePath) {
@@ -262,7 +261,6 @@ async function init() {
   if (hasSection("games")) initGames();
   if (hasSection("home")) renderOverviewSummary();
   if (hasSection("performance")) {
-    renderReferrals();
     initPerformance();
   }
   if (hasSection("home") || hasSection("performance")) loadStats();
@@ -278,7 +276,7 @@ async function init() {
     });
   }
   if (hasBoardSettings) {
-    setupSettingsScreen(p);
+    setupSettingsScreen(p, urlParams.get("tab") || "access");
   }
 
   // The save bar, unload guard and preview react to the same notification in

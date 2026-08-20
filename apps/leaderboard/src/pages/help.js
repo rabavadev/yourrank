@@ -65,8 +65,8 @@ function hubSectionsHtml() {
     <li><a href="/dashboard/rewards/rules">Create a credit rule</a><span>Choose a Kick reward and set how many credits it awards.</span></li>
     <li><a href="/dashboard/rewards/shop">Add a shop item</a><span>Create something viewers can unlock with their credits.</span></li>
     <li><a href="/dashboard/rewards/redemptions">Process prize orders</a><span>Review pending viewer requests and approve or cancel them.</span></li>
-    <li><a href="/dashboard/audience/viewers">Check viewer balances</a><span>See viewer balances and recent earning activity.</span></li>
-    <li><a href="/dashboard/audience/activity">Review credit activity</a><span>Filter credit events by viewer and event type.</span></li>
+    <li><a href="/dashboard/rewards/viewers">Check viewer balances</a><span>See viewer balances and recent earning activity.</span></li>
+    <li><a href="/dashboard/rewards/activity">Review credit activity</a><span>Filter credit events by viewer and event type.</span></li>
   </ul>
 </section>
 
@@ -86,7 +86,7 @@ function hubSectionsHtml() {
   <p>Account settings are separate from settings for one selected site.</p>
   <ul class="operator-help-list">
     <li><a href="/dashboard/settings/account">Account</a><span>Change your password and review active sessions.</span></li>
-    <li><a href="/dashboard/settings/board">Site settings</a><span>Manage visitor access, alerts, connected tools, and the web address for the selected site.</span></li>
+    <li><a href="/dashboard/site">Site settings</a><span>Manage visitor access, alerts, connected tools, and the web address for the selected site.</span></li>
     <li><a href="/dashboard/settings/plan">Plan</a><span>Manage the subscription and review plan access.</span></li>
     <li><a href="/dashboard/settings/connections">Integrations</a><span>Review connected services.</span></li>
     <li><a href="/dashboard/settings/data">Data</a><span>Export account data or manage account deletion.</span></li>

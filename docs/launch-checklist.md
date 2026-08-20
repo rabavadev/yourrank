@@ -81,8 +81,9 @@ After the Phase 2 UX and product restructuring, the following QA items were comp
 - `/dashboard/rewards` → `/dashboard/rewards/redemptions`
 - `/dashboard/rewards/channel` → `/dashboard/settings/integrations`
 - `/dashboard/rewards/maps` and `/dashboard/rewards/rewards` → `/dashboard/rewards/rules`
-- `/dashboard/rewards/viewers` → `/dashboard/audience/viewers`
-- `/dashboard/rewards/history` → `/dashboard/audience/activity`
+- `/dashboard/audience/viewers` → `/dashboard/rewards/viewers`
+- `/dashboard/audience/activity` → `/dashboard/rewards/activity`
+- `/dashboard/rewards/history` → `/dashboard/rewards/activity`
 - `/dashboard/rewards/:tab` → `/dashboard/rewards/:tab` (`rules`, `shop`, `redemptions`); these destinations appear under the dashboard's `Credits` group
 - `/dashboard/editor` → `/dashboard?nav=board`
 - `/dashboard/editor/:tab` → `/dashboard?nav=board#:tab` (`setup`, `players`, `design`, `share`, `history`)

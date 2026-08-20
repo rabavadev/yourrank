@@ -151,7 +151,7 @@ function deriveRenderableRoutes() {
   for (const tab of REWARDS_TABS) {
     routes.push({
       path: tab.href,
-      render: tab.href.startsWith("/dashboard/audience/") ? "rewards-audience" : "rewards",
+      render: "rewards",
       tab: tab.key,
       hasSubnav: true,
       hasBreadcrumbs: tab.key !== "redemptions",
@@ -182,17 +182,16 @@ function renderRoute(route) {
   if (route.render === "settings") {
     return PAGES.settingsUnified.Component({ activePath: route.path, tab: route.tab, user }).toString();
   }
-  if (route.render === "rewards-audience") {
-    const page = route.tab === "viewers" ? PAGES.rewardsViewers : PAGES.rewardsHistory;
-    return page.Component({ activePath: route.path, user }).toString();
-  }
   if (route.render === "rewards") {
     const page = {
       channel: PAGES.rewardsChannel,
       rules: PAGES.rewardsRules,
       shop: PAGES.rewardsShop,
       redemptions: PAGES.rewardsRedemptions,
+      viewers: PAGES.rewardsViewers,
+      history: PAGES.rewardsHistory,
     }[route.tab];
+    if (!page) throw new Error(`No Rewards renderer for ${route.tab}`);
     return page.Component({ activePath: route.path, user }).toString();
   }
   if (route.render === "telegram") {
@@ -268,6 +267,18 @@ function ownershipViolations(markup, activePath) {
 }
 
 describe("dashboard chrome ownership", () => {
+  it("marks each Rewards route's tab active inside the Rewards subnavigation", () => {
+    for (const [path, href] of [
+      ["/dashboard/rewards/channel", "/dashboard/rewards/channel"],
+      ["/dashboard/rewards/viewers", "/dashboard/rewards/viewers"],
+      ["/dashboard/rewards/activity", "/dashboard/rewards/activity"],
+    ]) {
+      const markup = renderRoute({ path, render: "rewards", tab: path.endsWith("activity") ? "history" : path.split("/").pop(), hasSubnav: true, hasBreadcrumbs: true });
+      expect(markup).toContain(`href="${href}"`);
+      expect(markup).toContain(`href="${href}" aria-current="page"`);
+    }
+  });
+
   it("covers every renderable Worker route with one rendered chrome invariant", () => {
     const routes = deriveRenderableRoutes();
     expect(new Set(routes.map(({ path }) => path)).size).toBe(routes.length);
@@ -281,6 +292,7 @@ describe("dashboard chrome ownership", () => {
     const checkedRoutes = new Set(routes.map(({ path }) => normalizedPath(path)));
     const allowlistedWorkerRoutes = new Map([
       ["/dashboard/settings/integrations", "redirect-only legacy alias to Rewards channel"],
+      ["/dashboard/settings/board", "redirect-only legacy alias to Site settings"],
       ["/dashboard/billing", "redirect-only legacy alias to account plan"],
       ["/dashboard/attribution", "redirect-only legacy alias to account connections"],
       ["/dashboard/security", "redirect-only legacy alias to account security tab"],
@@ -294,7 +306,8 @@ describe("dashboard chrome ownership", () => {
       ["/dashboard/rewards", "redirect-only section root to the default tab"],
       ["/dashboard/rewards/maps", "redirect-only legacy alias to Rewards points"],
       ["/dashboard/rewards/rewards", "redirect-only legacy alias to Rewards points"],
-      ["/dashboard/rewards/viewers", "redirect-only legacy alias to Audience viewers"],
+      ["/dashboard/audience/viewers", "redirect-only legacy alias to Rewards viewers"],
+      ["/dashboard/audience/activity", "redirect-only legacy alias to Rewards activity"],
       ["/dashboard/rewards/history", "redirect-only legacy alias to Audience activity"],
     ]);
     const workerRoutes = new Set(workerRouteLiterals(workerSource));
@@ -353,14 +366,14 @@ describe("dashboard chrome ownership", () => {
 
   it("reports subnav links owned by another sidebar section and duplicate labels", () => {
     const markup = `
-      <nav class="lb-side-group lb-side-nav"><a href="/dashboard/settings/board">Site</a></nav>
+      <nav class="lb-side-group lb-side-nav"><a href="/dashboard/site">Site settings</a></nav>
       <nav class="v3-tabs">
         <a href="/dashboard/settings/account">Account</a>
         <a href="/dashboard/settings/team">Account</a>
         <button type="button">Account</button>
       </nav>
     `;
-    const violations = ownershipViolations(markup, "/dashboard/settings/board");
+    const violations = ownershipViolations(markup, "/dashboard/site");
     expect(violations.foreignSubnav).toEqual([
       { href: "/dashboard/settings/account", section: "account" },
       { href: "/dashboard/settings/team", section: "account" },

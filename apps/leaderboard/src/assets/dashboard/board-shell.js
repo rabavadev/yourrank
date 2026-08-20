@@ -35,22 +35,22 @@ export function preserveSiteContextLinks(activeSiteId = "") {
   const siteId = siteQuery() || activeSiteId;
   if (!siteId) return;
   const sitesLink = document.querySelector('[data-product-link="sites"]');
-  if (sitesLink) sitesLink.href = `/dashboard?board=${encodeURIComponent(siteId)}`;
+  if (sitesLink) sitesLink.href = `/dashboard/leaderboards?board=${encodeURIComponent(siteId)}`;
   const creditsLink = document.querySelector('[data-product-link="credits"]');
   if (creditsLink) creditsLink.href = `/dashboard/rewards?siteId=${encodeURIComponent(siteId)}`;
   const creditsDestinations = new Set([
     "/dashboard/rewards/redemptions",
     "/dashboard/rewards/shop",
     "/dashboard/rewards/rules",
-    "/dashboard/audience/viewers",
-    "/dashboard/audience/activity",
+    "/dashboard/rewards/viewers",
+    "/dashboard/rewards/activity",
     "/dashboard/rewards/channel",
   ]);
   const siteDestinations = new Set([
     "/dashboard",
     "/dashboard/games",
     "/dashboard/analytics/activity",
-    "/dashboard/settings/board",
+    "/dashboard/site",
     "/dashboard/leaderboards",
     "/dashboard/leaderboard",
   ]);

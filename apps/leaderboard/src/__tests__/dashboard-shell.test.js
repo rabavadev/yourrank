@@ -104,7 +104,7 @@ describe("signed-in shell navigation", () => {
       "/dashboard/rewards",
       "/dashboard/telegram",
       "/dashboard/analytics",
-      "/dashboard/settings/board",
+      "/dashboard/site",
       "/dashboard/settings",
     ]) {
       expect(html).toContain(`href="${href}"`);
@@ -208,7 +208,7 @@ describe("signed-in shell navigation", () => {
   it("keeps secondary site and help actions accessible without rail duplication", () => {
     const html = renderPage(RewardsViewersPage);
     expect(html).toContain('data-nav="site"');
-    expect(html).toMatch(/href="\/dashboard\/settings\/board"[^>]*data-nav="site"/);
+    expect(html).toMatch(/href="\/dashboard\/site"[^>]*data-nav="site"/);
     expect(html).toContain('href="/help/support?area=credits');
     expect(html).toContain("Help &amp; feedback");
     expect(html).not.toContain('data-nav="boards"');
@@ -291,7 +291,7 @@ describe("signed-in shell navigation", () => {
       ["/dashboard/leaderboard/share", { group: "share" }],
       ["/dashboard/analytics", { performancePanel: "activity" }],
       ["/dashboard/games", {}],
-      ["/dashboard/settings/board", {}],
+      ["/dashboard/site", {}],
     ];
     for (const [activePath, options] of routes) {
       const html = PAGES.dashboard.Component({ activePath, user }).toString();

@@ -29,7 +29,7 @@ export interface NavLink {
 export const NAV_LINKS: NavLink[] = [
   { key: "sites",    label: "Sites",          href: "/dashboard",                       match: ["/dashboard"],                    top: true },
   { key: "telegram", label: "Telegram",       href: "/dashboard/telegram",              match: ["/dashboard/telegram", "/bot"],  top: true },
-  { key: "credits",  label: "Credits & Shop", href: "/dashboard/rewards/redemptions",   match: ["/dashboard/rewards", "/dashboard/credits", "/dashboard/audience"], top: true },
+  { key: "credits",  label: "Credits & Shop", href: "/dashboard/rewards/redemptions",   match: ["/dashboard/rewards", "/dashboard/credits"], top: true },
   { key: "account",  label: "Account",        href: "/dashboard/settings",              match: ["/dashboard/settings", "/account"], top: true },
   { key: "help",     label: "Help",           href: "/help",                            match: ["/help", "/contact"],             top: true },
 ];
@@ -48,11 +48,11 @@ export function activeKey(activePath: string): string | null {
 
   // Account settings are a `/dashboard/` URL but belong to the account tab.
   if (pathname === "/dashboard/settings" || pathname.startsWith("/dashboard/settings/")) {
-    return pathname === "/dashboard/settings/board" ? "sites" : "account";
+    return "account";
   }
   if (pathname === "/dashboard" || pathname.startsWith("/dashboard/")) {
     if (pathname.startsWith("/dashboard/telegram")) return "telegram";
-    if (pathname.startsWith("/dashboard/credits") || pathname.startsWith("/dashboard/rewards") || pathname.startsWith("/dashboard/audience")) return "credits";
+    if (pathname.startsWith("/dashboard/credits") || pathname.startsWith("/dashboard/rewards")) return "credits";
     return "sites";
   }
 

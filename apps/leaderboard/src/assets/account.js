@@ -5,6 +5,7 @@ import { state } from "./dashboard/state.js";
 import { wireAccount } from "./dashboard/account.js";
 import { wireDeleteAccountModal } from "./dashboard/account-delete-modal.js";
 import { openDrawer, closeDrawer } from "./dashboard/shell.js";
+import { renderReferrals } from "./dashboard/referrals.js";
 import { checkout, renderPlan, loadHistory, loadPlanUsage, wireDeleteAccount, wireCancelSubscription } from "./dashboard/site.js";
 
 const statusEl = () => $("status");
@@ -614,6 +615,7 @@ async function init() {
   const plan = new URLSearchParams(location.search).get("plan")?.toLowerCase();
   if (["starter", "pro", "lifetime"].includes(plan)) checkout(plan);
   loadPlanUsage();
+  renderReferrals();
   loadHistory();
   wireCancelSubscription();
   await loadPostbacks();

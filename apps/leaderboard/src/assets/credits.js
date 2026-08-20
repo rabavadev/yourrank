@@ -173,7 +173,7 @@ function renderViewerRow(v) {
   const earned = v.last_earned_at ? fmtDate(v.last_earned_at) : "Not yet";
   const seen = v.last_seen_at ? fmtDate(v.last_seen_at) : "Not yet";
   const history = v.kick_username
-    ? `<a class="btn btn--sm" href="/dashboard/rewards/history?viewer=${encodeURIComponent(v.kick_username)}">History</a> `
+    ? `<a class="btn btn--sm" href="/dashboard/rewards/activity?viewer=${encodeURIComponent(v.kick_username)}">History</a> `
     : "";
   return `<td><div class="cr-viewer-identity">${avatar}<span><b>${esc(uname)}</b>${v.blocked ? ' <span class="v3-chip v3-chip--cancelled">blocked</span>' : ""}</span></div></td><td class="num"><b>${v.balance}</b></td><td class="num">${v.total_earned}</td><td class="num">${v.total_spent}</td><td><span title="Joined ${esc(joined)}">${esc(joined)}</span><br><span class="hint">Earned: ${esc(earned)}</span><br><span class="hint">Seen: ${esc(seen)}</span></td><td class="ta-r">${history}<button class="btn btn--sm btn--accent" data-tip-viewer="${esc(v.id)}" data-viewer-name="${esc(uname)}" data-viewer-balance="${v.balance}" title="Tip points to @${esc(uname)}">Tip</button> <button class="btn btn--sm ${v.blocked ? "btn--accent" : "btn--danger"}" data-block="${esc(v.id)}" data-blocked="${v.blocked ? "1" : ""}">${v.blocked ? "Unblock" : "Block"}</button></td>`;
 }

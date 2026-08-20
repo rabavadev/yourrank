@@ -24,7 +24,7 @@ export const SECTIONS = {
   // Account settings (`/dashboard/settings` and its tabs) are their own
   // documents, served by the Worker. This section is the selected site's
   // settings, which is all this document knows to render.
-  site: { path: "/dashboard/settings/board", title: "Site settings" },
+  site: { path: "/dashboard/site", title: "Site settings" },
 };
 
 export const MANAGE_SITES_VALUE = "__manage_sites__";
@@ -78,7 +78,6 @@ export function dashboardPath(page, tab = "") {
 export function parseDashboardPath(pathname) {
   const clean = pathname.replace(/\/+$/, "") || "/dashboard";
   if (clean === "/dashboard" || clean === "/dashboard.html") return { page: "home", tab: "" };
-  if (clean === "/dashboard/settings/board") return { page: "site", tab: "" };
   // The account settings document owns every other `/dashboard/settings` URL.
   // Returning a route for them made the shell intercept the sidebar link and
   // show this document's board settings instead of navigating to that page.
