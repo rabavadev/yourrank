@@ -229,7 +229,7 @@ export async function getClickRedirectSite(env, slug, request = null) {
 const getByUser = async (env, uid) => {
   const owned = await one(`SELECT ${SITE_COLUMNS} FROM sites WHERE user_id=$1 ORDER BY CASE WHEN id=(SELECT active_site_id FROM users WHERE id=$1) THEN 0 ELSE 1 END, id ASC LIMIT 1`, [uid]);
   if (owned) return owned;
-  return one(`SELECT ${SITE_COLUMNS} FROM sites s JOIN site_members sm ON sm.site_id=s.id WHERE sm.user_id=$1 ORDER BY s.id ASC LIMIT 1`, [uid]);
+  return one(`SELECT ${SITE_COLUMNS} FROM sites WHERE id IN (SELECT site_id FROM site_members WHERE user_id=$1) ORDER BY id ASC LIMIT 1`, [uid]);
 };
 
 // Multi-board: returns ALL boards for a user.

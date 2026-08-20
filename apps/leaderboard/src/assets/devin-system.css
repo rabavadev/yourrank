@@ -431,7 +431,7 @@ body.yr-ui {
 body:has(.v3-dash[data-auth-workspace]),
 .v3-dash[data-auth-workspace] .lb-main { background: var(--devin-bg); color: var(--devin-ink); }
 .v3-dash[data-auth-workspace] .lb-side { background: var(--devin-black); }
-.v3-dash[data-auth-workspace] .lb-topbar { border-color: var(--devin-line-soft); background: rgba(252, 252, 252, 0.94); }
+.v3-dash[data-auth-workspace] .lb-topbar { border-color: var(--devin-line-soft); }
 .v3-dash[data-auth-workspace] .v3-card,
 .v3-dash[data-auth-workspace] .card,
 .v3-dash[data-auth-workspace] .lb-widget,

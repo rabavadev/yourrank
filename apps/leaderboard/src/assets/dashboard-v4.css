@@ -900,6 +900,30 @@ body:has(.v3-dash[data-auth-workspace]) .lb-shell,
 }
 body[data-wide] .v3-dash[data-auth-workspace] .lb-main { padding-right: var(--v3-main-pad-inline); }
 .v3-dash[data-auth-workspace] .lb-main > .lb-topbar + .lb-bento { padding-top: 32px; }
+.v3-dash[data-auth-workspace] .lb-page.is-on > .v3-head,
+.v3-dash[data-auth-workspace] .lb-page.is-on > .design-grid > .design-controls > .v3-section-title,
+.v3-dash[data-auth-workspace] .v3-players > .v3-head,
+.v3-dash[data-auth-workspace] .v3-analytics-page > .v3-head,
+.v3-dash[data-auth-workspace] .v3-games-page > .d-flex:first-child,
+.v3-dash[data-auth-workspace] #acc-app > .account-settings-head,
+.v3-dash[data-auth-workspace] #cr-app > .v3-head,
+.v3-dash[data-auth-workspace] #gw-app > .v3-head {
+  position: sticky;
+  top: var(--v3-topbar-h);
+  z-index: 20;
+  background: var(--v4-canvas);
+}
+.v3-dash[data-auth-workspace] .lb-page.is-on > .v3-head + .v3-tabs,
+.v3-dash[data-auth-workspace] .lb-page.is-on > .design-grid > .design-controls > .v3-tabs,
+.v3-dash[data-auth-workspace] #acc-app > .account-settings-tabs,
+.v3-dash[data-auth-workspace] .v3-analytics-page > .v3-tabs,
+.v3-dash[data-auth-workspace] .cr-workspace-content > .v3-tabs,
+.v3-dash[data-auth-workspace] #gw-app > .gw-nav-tabs {
+  position: sticky;
+  top: calc(var(--v3-topbar-h) + 64px);
+  z-index: 19;
+  background: var(--v4-canvas);
+}
 .v3-dash[data-auth-workspace] .lb-bento {
   display: grid;
   grid-template-columns: repeat(12, minmax(0, 1fr));
@@ -5344,7 +5368,7 @@ body:has(.v3-dash[data-auth-workspace]) > .lb-backdrop.is-open { opacity: 1; poi
 .v3-dash[data-auth-workspace] .v3-players-table {
   width: 100%;
   table-layout: fixed;
-  min-width: 860px;
+  min-width: 1180px;
 }
 
 .v3-dash[data-auth-workspace] .v3-players-table th:nth-child(1),
@@ -5352,8 +5376,8 @@ body:has(.v3-dash[data-auth-workspace]) > .lb-backdrop.is-open { opacity: 1; poi
 .v3-dash[data-auth-workspace] .v3-players-table th:nth-child(2),
 .v3-dash[data-auth-workspace] .v3-players-table td:nth-child(2) { width: 56px; }
 .v3-dash[data-auth-workspace] .v3-players-table .player-name {
-  width: 34%;
-  min-width: 240px;
+  width: 200px;
+  min-width: 200px;
 }
 .v3-dash[data-auth-workspace] .v3-players-table th:nth-child(n + 4):nth-child(-n + 10),
 .v3-dash[data-auth-workspace] .v3-players-table td:nth-child(n + 4):nth-child(-n + 10) { width: 112px; }
@@ -5455,13 +5479,13 @@ body:has(.v3-dash[data-auth-workspace]) > .lb-backdrop.is-open { opacity: 1; poi
   .v3-dash[data-auth-workspace] .v3-bulkbar .v3-btn { padding: 0 8px;
   }
 
-  .v3-dash[data-auth-workspace] .v3-players-table { min-width: 720px;
+  .v3-dash[data-auth-workspace] .v3-players-table { min-width: 1180px;
   }
 }
 
 @media (max-width: 1200px) and (min-width: 561px) {
 
-  .v3-dash[data-auth-workspace] .v3-players-table { min-width: 960px;
+  .v3-dash[data-auth-workspace] .v3-players-table { min-width: 1180px;
   }
 }
 
