@@ -2,43 +2,58 @@ import { describe, it, expect } from "bun:test";
 import { readFileSync } from "node:fs";
 import { PAGES } from "../pages.jsx";
 import { leaderboardPageHtml } from "@yourrank/shared/page-shell";
+import { publicNavHtml, shellNavHtml } from "@yourrank/shared/shell-nav";
 
 const contactJs = readFileSync(new URL("../assets/contact.js", import.meta.url), "utf8");
 
-// Help renders inside the signed-in app rail (`dashboardChromeHtml`), not the
-// marketing top nav, so a signed-in streamer keeps their session and never hits
-// a dead-end "Sign in" page. The user is threaded through Component(renderOpts).
-function render(pageKey, user) {
+// Help has two audiences and two canonical shells: a signed-in creator keeps the
+// workspace chrome (`dashboardChromeHtml`), while a visitor gets the public site
+// chrome so Help is never an isolated universe with no route back. The user is
+// threaded through Component(renderOpts) and configFor(renderOpts), matching how
+// the Worker renders these pages.
+function render(pageKey, user, activePath = "/help/support") {
   const page = PAGES[pageKey];
+  const config = page.configFor({ user, activePath });
   const html = leaderboardPageHtml({
-    ...page.config,
-    content: page.Component({ user, activePath: "/help/support" }).toString(),
+    ...config,
+    content: page.Component({ user, activePath }).toString(),
   });
-  return html;
+  return html.replace("<!--GM_NAV-->", user
+    ? shellNavHtml({ activePath, user, accountHref: "/dashboard/settings" })
+    : publicNavHtml({ activePath }));
 }
 
 const user = { display_name: "Streamer One", email: "streamer@example.com", plan: "pro" };
 
 describe("help pages", () => {
   it("renders the creator help hub in both shells", () => {
-    const signedIn = render("helpHub", user);
-    const signedOut = render("helpHub", null);
+    const signedIn = render("helpHub", user, "/help");
+    const signedOut = render("helpHub", null, "/help");
     for (const html of [signedIn, signedOut]) {
       expect(html).toContain("Help &amp; feedback");
       expect(html).toContain("Choose what you are trying to do");
       expect(html).toContain('href="/help/support"');
       expect(html).toContain('href="/help/feedback"');
       expect(html).toContain('href="/dashboard/rewards/rules"');
-      // Help lives in the app rail, not the marketing top nav.
-      expect(html).toContain("lb-side");
-      expect(html).not.toContain("gm-shell-nav");
       expect(html).not.toContain("Operator help");
     }
     // Signed-in identity appears in the rail's profile menu. The primary rail
     // stays focused on daily creator work while Help lives in the account menu.
     expect(signedIn).toContain("Streamer One");
+    expect(signedIn).toContain("lb-side");
     expect(signedIn).toContain('data-auth-workspace="true"');
+    // A visitor gets the public site chrome, never the workspace rail: the
+    // workspace stylesheet is scoped to [data-auth-workspace], so the rail
+    // markup without it is the unstyled screen this split exists to prevent.
+    expect(signedOut).not.toContain("lb-side");
     expect(signedOut).not.toContain('data-auth-workspace="true"');
+    expect(signedOut).not.toContain("/assets/dashboard-v4.css");
+    expect(signedOut).toContain("gm-shell-nav");
+    expect(signedOut).toContain('<a class="gm-brand" href="/">');
+    expect(signedOut).toContain('href="/pricing"');
+    expect(signedOut).toContain("gm-shell-footer");
+    expect(signedOut).toContain('class="help-subnav"');
+    expect(signedOut).toContain('aria-current="page"');
     for (const href of [
       "/dashboard/leaderboard",
       "/dashboard/giveaways",
@@ -60,14 +75,21 @@ describe("help pages", () => {
       expect(html).toContain("lb-side");
       expect(html).toContain("lb-side-profile");
       expect(html).toContain("Streamer One");
+      expect(html).toContain('data-auth-workspace="true"');
       expect((html.match(/<main\b/g) || []).length).toBe(1);
     });
 
-    it(`${key} renders for a visitor without a marketing top nav`, () => {
+    it(`${key} renders for a visitor in the public site chrome`, () => {
       const html = render(key, null);
-      expect(html).toContain("lb-side");
-      expect(html).not.toContain("gm-shell-nav");
-      expect(html).not.toContain(">Sign in<");
+      expect(html).not.toContain("lb-side");
+      expect(html).not.toContain('data-auth-workspace="true"');
+      expect(html).toContain("gm-shell-nav");
+      expect(html).toContain('<a class="gm-brand" href="/">');
+      expect(html).toContain("gm-shell-footer");
+      // Support and Feedback are page subnavigation, not rail sections.
+      expect(html).toContain('class="help-subnav"');
+      expect(html).toContain('id="contactForm"');
+      expect((html.match(/<main\b/g) || []).length).toBe(1);
     });
 
     it(`${key} keeps the contact form and its script`, () => {
