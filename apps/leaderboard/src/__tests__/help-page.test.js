@@ -42,6 +42,15 @@ describe("help pages", () => {
     expect(signedIn).toContain("Streamer One");
     expect(signedIn).toContain("lb-side");
     expect(signedIn).toContain('data-auth-workspace="true"');
+    expect(signedIn).toContain('class="v3-tabs help-workspace-subnav"');
+    expect((signedIn.match(/class="v3-tabs help-workspace-subnav"/g) || []).length).toBe(1);
+    expect((signedIn.match(/class="v3-tab is-on"/g) || []).length).toBe(1);
+    for (const href of ["/help", "/help/support", "/help/feedback"]) {
+      expect(signedIn).toContain(`href="${href}"`);
+    }
+    expect(signedIn).toContain('class="v3-tab is-on" href="/help" aria-current="page"');
+    expect(signedIn).toContain('class="lb-topbar-hud"');
+    expect(signedIn).toContain('id="topbarCmdTrigger"');
     // A visitor gets the public site chrome, never the workspace rail: the
     // workspace stylesheet is scoped to [data-auth-workspace], so the rail
     // markup without it is the unstyled screen this split exists to prevent.
@@ -76,6 +85,16 @@ describe("help pages", () => {
       expect(html).toContain("lb-side-profile");
       expect(html).toContain("Streamer One");
       expect(html).toContain('data-auth-workspace="true"');
+      expect(html).toContain('class="v3-tabs help-workspace-subnav"');
+      expect((html.match(/class="v3-tabs help-workspace-subnav"/g) || []).length).toBe(1);
+      expect((html.match(/class="v3-tab is-on"/g) || []).length).toBe(1);
+      for (const href of ["/help", "/help/support", "/help/feedback"]) {
+        expect(html).toContain(`href="${href}"`);
+      }
+      const activeHref = key === "helpSupport" ? "/help/support" : "/help/feedback";
+      expect(html).toContain(`class="v3-tab is-on" href="${activeHref}" aria-current="page"`);
+      expect(html).toContain('class="lb-topbar-hud"');
+      expect(html).toContain('id="topbarCmdTrigger"');
       expect((html.match(/<main\b/g) || []).length).toBe(1);
     });
 
