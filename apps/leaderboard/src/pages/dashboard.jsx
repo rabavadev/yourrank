@@ -219,7 +219,7 @@ function EditorSection({ active, activeHash = "setup", showTabs = active } = {})
 <div class="v3-bulkbar" id="bulkActions" role="toolbar" aria-label="Bulk actions" hidden><span class="v3-bulkbar-mark" aria-hidden="true"></span><span id="bulkCount" role="status" aria-live="polite" aria-atomic="true">0 players selected</span><span class="v3-bulkbar-sep" aria-hidden="true"></span><button class="v3-btn v3-btn--dark" id="bulkClearWager" type="button">Reset scores to zero</button><button class="v3-btn v3-btn--danger" id="bulkDelete" type="button">Remove selected players</button></div>
 </div>
 <div class="card" data-egroup="design" id="playerFieldsCard"><h2>Player table columns</h2><p class="card-sub">Choose which extra columns show on the player table.</p><a class="btn btn--sm btn--ghost" id="playerFieldsLink" href="/dashboard/leaderboard/players">Manage columns in Players →</a></div>
-<div class="design-group-heading" data-egroup="design"><h2>Appearance</h2></div>
+<div class="design-group-heading" data-egroup="design"><h2>Page design</h2></div>
 <div class="card" data-egroup="design" id="brandCard"><h3>Your brand <span class="pill pill--info ml-6">PRO</span></h3><p class="card-sub">Add your logo and pick your colors. Upgrade to Pro to customize.</p>
 <div id="brandBody">
 <div class="grid2">
@@ -270,7 +270,7 @@ function EditorSection({ active, activeHash = "setup", showTabs = active } = {})
 <label class="hint chk"><input type="checkbox" id="f_hidePrizeAmounts" /> Hide exact prize amounts from visitors</label>
 </div>
 <div class="empty upsell-card" id="prizesLock" hidden>Prize customization is a Pro feature. <a href="/dashboard/settings/billing?from=prizes" id="prizesUpgrade">Upgrade to unlock it</a>.</div></div>
-<div class="design-group-heading" data-egroup="design"><h2>Theme &amp; branding</h2></div>
+<div class="design-group-heading" data-egroup="design"><h2>Content</h2></div>
 <div class="card" data-egroup="design" id="socialsCard"><h3>Social links</h3><p class="card-sub">Add your social media profiles. Toggle each one on or off to control what appears on your page.</p>
 <div class="socials-editor" id="socialsList"></div></div>
 <h1 class="v3-section-title" data-egroup="share">Share</h1>
