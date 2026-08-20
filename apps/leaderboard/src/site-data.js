@@ -47,6 +47,10 @@ export async function getViewerSiteData(
       console.error("[site-data] viewer membership registration failed:", err?.message || err);
       return { viewerOnSite: null, shopItems: shop ? shopItems : [], redemptions: [], ledger: [] };
     }
+    if (!viewerOnSite) {
+      console.error("[site-data] viewer membership registration returned no row");
+      return { viewerOnSite: null, shopItems: shop ? shopItems : [], redemptions: [], ledger: [] };
+    }
   } else {
     const lastSeen = viewerOnSite.last_seen_at ? Date.parse(viewerOnSite.last_seen_at) : NaN;
     if (!Number.isFinite(lastSeen) || Date.now() - lastSeen >= 5 * 60 * 1000) {

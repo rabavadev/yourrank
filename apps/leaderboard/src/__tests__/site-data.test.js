@@ -92,4 +92,23 @@ describe("viewer board membership tracking", () => {
       console.error = originalError;
     }
   });
+
+  it("falls back when membership creation succeeds but the re-read is still empty", async () => {
+    const injected = deps({ rows: [null, null] });
+    const originalError = console.error;
+    console.error = () => {};
+    try {
+      const result = await getViewerSiteData("site-1", "viewer-1", {}, injected);
+      expect(result).toEqual({
+        viewerOnSite: null,
+        shopItems: [],
+        redemptions: [],
+        ledger: [],
+      });
+      expect(injected.calls.exec).toHaveLength(1);
+      expect(injected.calls.query).toHaveLength(0);
+    } finally {
+      console.error = originalError;
+    }
+  });
 });
