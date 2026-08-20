@@ -178,7 +178,7 @@ function helpPage(opts) {
     description: opts.description,
     robots: "index, follow",
     styles: WORKSPACE_STYLES,
-    scripts: ['<script src="/assets/contact.js"></script>', '<script src="/assets/shell-nav.js?v=2" defer></script>'],
+    scripts: ['<script src="/assets/contact.js?v=1" type="module"></script>', '<script src="/assets/shell-nav.js?v=2" defer></script>'],
     mainClass: "wrap yr-ui",
     nav: false,
     footer: false,

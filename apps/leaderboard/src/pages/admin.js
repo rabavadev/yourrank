@@ -101,4 +101,4 @@ export const adminPage = `<!DOCTYPE html><html lang="en"><head>
 </form>
 </div>
 </div></main>
-<script src="/assets/admin.js?v=3"></script></body></html>`;
+<script src="/assets/admin.js?v=4" type="module"></script></body></html>`;
