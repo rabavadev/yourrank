@@ -25,7 +25,7 @@ function subnavHtml(active, workspace = false) {
     return `<a class="${linkClass}${isActive ? " is-on" : ""}" href="${tab.href}"${isActive ? ' aria-current="page"' : ""}>${tab.label}</a>`;
   }).join("");
   return workspace
-    ? `<nav class="${navClass}" role="tablist" aria-label="Help &amp; feedback">${links}</nav>`
+    ? `<nav class="${navClass}" aria-label="Help &amp; feedback">${links}</nav>`
     : `<nav class="${navClass}" aria-label="Help &amp; feedback">${links}</nav>`;
 }
 
