@@ -1,5 +1,5 @@
 import { dashboardChromeHtml } from "@yourrank/shared/dashboard-chrome";
-import { dashboardNavItems } from "./dashboard-shell.jsx";
+import { dashboardNavItems, workspaceAccountTopbarHtml, workspaceSearchHtml } from "./dashboard-shell.jsx";
 
 // Help center pages: a creator-facing hub plus Support and Feedback forms.
 // A signed-in streamer keeps the workspace chrome (rail, topbar, account menu).
@@ -17,12 +17,16 @@ function esc(value) {
 
 // The rail owns section roots; Support and Feedback are page subnavigation, so
 // the visitor shell renders them as tabs under the page title.
-function subnavHtml(active) {
+function subnavHtml(active, workspace = false) {
+  const navClass = workspace ? "v3-tabs help-workspace-subnav" : "help-subnav";
+  const linkClass = workspace ? "v3-tab" : "help-subnav-link";
   const links = TABS.map((tab) => {
     const isActive = tab.key === active;
-    return `<a class="help-subnav-link${isActive ? " is-on" : ""}" href="${tab.href}"${isActive ? ' aria-current="page"' : ""}>${tab.label}</a>`;
+    return `<a class="${linkClass}${isActive ? " is-on" : ""}" href="${tab.href}"${isActive ? ' aria-current="page"' : ""}>${tab.label}</a>`;
   }).join("");
-  return `<nav class="help-subnav" aria-label="Help &amp; feedback">${links}</nav>`;
+  return workspace
+    ? `<nav class="${navClass}" aria-label="Help &amp; feedback">${links}</nav>`
+    : `<nav class="${navClass}" aria-label="Help &amp; feedback">${links}</nav>`;
 }
 
 function contactFormHtml({ kind, subjectPlaceholder, messagePlaceholder }) {
@@ -112,7 +116,8 @@ function workspaceHelp({ active, title, subtitle, titleId, subtitleId, content, 
     subtitleId,
     user,
     activePath,
-    content,
+    topbarHtml: `${workspaceAccountTopbarHtml({ context: "Help & feedback", title, help: true })}${workspaceSearchHtml()}`,
+    content: `<div class="operator-help">${subnavHtml(active, true)}${content}</div>`,
     railProfile: true,
     collapsible: true,
     embeddedInMain: true,
@@ -134,7 +139,7 @@ const WORKSPACE_STYLES = ["/assets/app.css", "/assets/shell-nav.css", "/assets/u
 // header and footer are rendered by the page shell.
 const PUBLIC_OVERRIDES = {
   styles: ["/assets/app.css", "/assets/shell-nav.css", "/assets/ui.css"],
-  mainClass: "wrap",
+  mainClass: "wrap public-help-page",
   nav: true,
   footer: true,
   footerBrandHref: "/",
@@ -155,7 +160,7 @@ function helpContent({ active, h1, intro, kind, subjectPlaceholder, messagePlace
     });
   }
   return workspaceHelp({
-    active: "help",
+    active,
     title: h1,
     titleId: "contactTitle",
     subtitle: intro,
@@ -201,7 +206,7 @@ function helpHubContent({ user, activePath }) {
     active: "help",
     title: HUB_TITLE,
     subtitle: HUB_INTRO,
-    content: `<div class="operator-help" id="help-hub">
+    content: `<div id="help-hub">
 <p class="operator-help-lead">${HUB_LEAD}</p>
 
 ${sections}

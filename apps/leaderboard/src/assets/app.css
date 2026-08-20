@@ -1299,7 +1299,7 @@ html{color-scheme:light}
 .tfa-icon{display:inline-flex;vertical-align:-4px;margin-right:8px}
 
 /* Operator help hub */
-.operator-help{max-width:980px;margin:0 auto;padding:36px 0 72px}
+.public-help-page .operator-help{max-width:980px;margin:0 auto;padding:36px 0 72px}
 .operator-help h1{margin:0;font-size:clamp(2rem,4vw,3.25rem);letter-spacing:-.04em}
 .operator-help-lead{max-width:680px;margin:12px 0 34px;color:var(--ink-mute);font-size:1.05rem;line-height:1.65}
 .operator-help-section{padding:28px 0;border-top:1px solid var(--line,#e5e7eb)}
@@ -1315,7 +1315,7 @@ html{color-scheme:light}
 .help-subnav-link:hover{color:var(--ink)}
 .help-subnav-link.is-on{color:var(--accent);border-bottom-color:var(--accent)}
 .contact-public{max-width:560px}
-@media (max-width:640px){.operator-help{padding:24px 0 48px}.operator-help-list{grid-template-columns:1fr}}
+@media (max-width:640px){.public-help-page .operator-help{padding:24px 0 48px}.operator-help-list{grid-template-columns:1fr}}
 
 /* ---------- Background ----------
    Flat asphalt. The operator console is a tool, not a hero banner: no animated
