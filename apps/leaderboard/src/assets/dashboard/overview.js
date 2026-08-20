@@ -218,6 +218,8 @@ export function renderOverviewSummary() {
     if (pendingAlert) pendingAlert.hidden = pendingOrders <= 0;
     const pendingAlertCount = $("ovPendingOrdersAlertCount");
     if (pendingAlertCount) pendingAlertCount.textContent = number(pendingOrders);
+    const pendingAlertLabel = $("ovPendingOrdersAlertLabel");
+    if (pendingAlertLabel) pendingAlertLabel.textContent = pendingOrders === 1 ? "pending credit order needs review." : "pending credit orders need review.";
     const kpiRow = $("ovKpiRow");
     if (creditsCard) creditsCard.hidden = !creditsEnabled;
     if (pendingOrdersCard) pendingOrdersCard.hidden = pendingOrders <= 0;

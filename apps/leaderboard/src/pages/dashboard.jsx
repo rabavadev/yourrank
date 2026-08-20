@@ -99,7 +99,7 @@ function OverviewSection({ active } = {}) {
   return (
 <section class={active ? "lb-page is-on" : "lb-page"} data-page="home">
 <header class="v3-head ov-head v3-head--row"><div><h1>Home</h1><p class="v3-head-sub" id="ovHeadSub">Here's what's happening with your site.</p></div><a class="btn btn--sm btn--accent" id="ovPublicSiteAction" href="#" target="_blank" rel="noopener noreferrer">View public site ↗</a></header>
-<div class="v3-alert v3-alert--warning" id="ovPendingOrdersAlert" role="alert" hidden><span><b id="ovPendingOrdersAlertCount">0</b> pending credit orders need review.</span><a class="btn btn--sm btn--ghost" href="/dashboard/rewards/redemptions">Review orders →</a></div>
+<div class="v3-alert v3-alert--warning" id="ovPendingOrdersAlert" role="alert" hidden><span><b id="ovPendingOrdersAlertCount">0</b> <span id="ovPendingOrdersAlertLabel">pending credit orders need review.</span></span><a class="btn btn--sm btn--ghost" id="ovPendingOrdersAction" href="/dashboard/rewards/redemptions">Review orders →</a></div>
 <div class="ov-command-grid" id="ovCommandGrid">
 <aside id="ovOnboardingBento" hidden>
 <div class="ov-setup">
