@@ -73,7 +73,7 @@ async function allowNavigation() {
 }
 
 
-const AREA_MAP = { home: "sites", board: "sites", boards: "sites", games: "sites", site: "sites", performance: "sites" };
+const AREA_MAP = { home: "sites", sites: "sites", board: "sites", boards: "sites", games: "sites", site: "sites", performance: "sites" };
 
 export function areaForPage(page) { return AREA_MAP[page] || "sites"; }
 

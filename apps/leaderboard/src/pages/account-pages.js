@@ -70,6 +70,14 @@ const planWidget = `<div class="lb-widget lb-widget--full" id="plan">
         <div class="plan-trial" id="planTrial" hidden><p class="hint">Not ready to pay? Try every Pro feature free for 7 days.</p><button class="btn btn--accent" id="trialBtn" type="button">Start free Pro trial</button><p class="status" id="trialStatus" role="status" aria-live="polite"></p></div>
         <p class="hint" id="planHint">Paid plans are billed in crypto (BTC, ETH, USDT and 100+ more) and activate automatically once the network confirms.</p>
 
+        <section class="plan-referral" id="planReferral">
+          <h3 class="m-0 mt-18 mb-4">Earn free Pro days</h3>
+          <p class="card-sub">Share your link. Every sign-up adds 31 days of Pro.</p>
+          <div class="v3-ref-link-row"><input id="refLink" readonly aria-label="Your referral link" value="" /><button class="v3-btn v3-btn--accent" id="refCopy" type="button">Copy link</button></div>
+          <div class="v3-stat-tiles"><div><b id="refCount"><span class="v3-skel-kpi" aria-hidden="true"></span></b><span>Streamers joined</span></div><div><b id="refDays"><span class="v3-skel-kpi" aria-hidden="true"></span></b><span>Free Pro days earned</span></div><div><b id="refSaved"><span class="v3-skel-kpi" aria-hidden="true"></span></b><span>Estimated value</span></div></div>
+          <p id="refStatus" role="status" aria-live="polite"></p>
+        </section>
+
         <div id="pendingPayment" hidden class="plan-pending">
           <h3 class="m-0 mb-8">Pending payment</h3>
           <p class="status" role="status" aria-live="polite"></p>

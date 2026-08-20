@@ -92,7 +92,7 @@ describe("dashboard overview quick actions", () => {
     expect(dashboardJs).toContain('target.searchParams.set("board", state.ACTIVE_SITE_ID)');
     expect(dashboardJs).toContain('target.pathname.startsWith("/dashboard/leaderboard/")');
     expect(dashboardJs).toContain('target.pathname.startsWith("/dashboard/analytics/")');
-    expect(boardShellJs).toContain('`/dashboard?board=${encodeURIComponent(siteId)}`');
+    expect(boardShellJs).toContain('`/dashboard/leaderboards?board=${encodeURIComponent(siteId)}`');
     expect(boardShellJs).toContain('target.pathname.startsWith("/dashboard/leaderboard/")');
     expect(boardShellJs).toContain('target.searchParams.set("board", siteId)');
     expect(boardShellJs).toContain('target.searchParams.set("siteId", siteId)');
@@ -156,14 +156,14 @@ describe("dashboard overview quick actions", () => {
     expect(html).not.toContain('aria-hidden="true">🔌</span>');
     expect(html).toContain('>Home</a>');
     for (const label of [
-      "Leaderboard", "Engage", "Games", "Rewards", "Telegram", "Analytics", "Site", "Settings",
+      "Leaderboard", "Engage", "Games", "Rewards", "Telegram", "Analytics", "Site settings", "Settings",
     ]) expect(html).toContain(`>${label}</a>`);
     for (const label of ["Giveaways", "Raffles", "Predictions", "Drops"]) {
       expect(html).not.toContain(`>${label}</a>`);
     }
     expect(html).toContain(">Audience</div>");
     expect(html).not.toContain(">Integrations</a>");
-    expect(html).not.toContain(">Sites</a>");
+    expect(html).toContain(">Sites</a>");
     expect(html).not.toContain('>Help</a>');
   });
 

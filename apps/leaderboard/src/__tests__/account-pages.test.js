@@ -1,6 +1,7 @@
 import { describe, it, expect } from "bun:test";
 import { settingsWidgets } from "../pages/account-pages.js";
 import { UnifiedSettingsPage } from "../pages/account.jsx";
+import { PAGES } from "../pages.jsx";
 
 // The widgets are the settings page's panels; the standalone `/account/*`
 // documents they used to also render are gone, so these assert the hooks on
@@ -41,6 +42,12 @@ const pages = [
       "historyTable",
       "historyBody",
       "historyEmpty",
+      "refLink",
+      "refCopy",
+      "refCount",
+      "refDays",
+      "refSaved",
+      "refStatus",
     ],
   },
   {
@@ -121,7 +128,9 @@ describe("settings panels", () => {
       expect(html).toContain(`data-settings-panel="${key}"`);
     }
     // Site-level settings are a separate destination, not an account tab.
-    expect(html).toContain('href="/dashboard/settings/board"');
+    expect(html).toContain('href="/dashboard/site"');
+    expect(html).toContain("Earn free Pro days");
+    expect(html).toContain('href="/dashboard/site?tab=danger"');
     expect(html).not.toContain('data-settings-tab="board"');
     expect(html).not.toContain("/account/profile");
   });
@@ -157,5 +166,17 @@ describe("settings panels", () => {
       expect(html).not.toContain('class="lb-account-title"');
       expect(html).not.toContain("<h2>Site settings</h2>");
     }
+  });
+
+  it("keeps Sources analytical and puts referrals in Billing", async () => {
+    const sources = PAGES.dashboard.Component({ activePath: "/dashboard/analytics/referrals", user: { email: "a@b.c" } }).toString();
+    const plan = await UnifiedSettingsPage({ activePath: "/dashboard/settings/plan", tab: "plan", user: { email: "a@b.c" } }).toString();
+    expect(sources).toContain('id="perf-referrers"');
+    expect(sources).not.toContain("Earn free Pro days");
+    expect(plan).toContain("Earn free Pro days");
+    expect(plan).toContain('id="refLink"');
+    const site = PAGES.dashboard.Component({ activePath: "/dashboard/site", user: { email: "a@b.c" } }).toString();
+    expect(site).toContain(">Site tools<");
+    expect(site).not.toContain(">Integrations</button>");
   });
 });

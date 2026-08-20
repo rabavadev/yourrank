@@ -34,7 +34,7 @@ function flattenNav(items) {
 
 describe("dashboard navigation ownership", () => {
   it("keeps every rendered destination owned by one shell area", () => {
-    for (const path of ["/dashboard", "/dashboard/leaderboards", "/dashboard/settings/board"]) {
+    for (const path of ["/dashboard", "/dashboard/leaderboards", "/dashboard/site"]) {
       const html = dashboardHtml(path);
       const rail = new Set(hrefs(shellArea(html, "aside", "aside")));
       const topbar = new Set(hrefs(shellArea(html, "header", "header")));
@@ -67,10 +67,10 @@ describe("dashboard navigation ownership", () => {
   });
 
   it("renders leaderboard tabs only on leaderboard routes", () => {
-    for (const path of ["/dashboard", "/dashboard/games", "/dashboard/analytics/activity", "/dashboard/leaderboards", "/dashboard/settings/board"]) {
+    for (const path of ["/dashboard", "/dashboard/games", "/dashboard/analytics/activity", "/dashboard/leaderboards", "/dashboard/site"]) {
       expect(dashboardHtml(path)).not.toContain('aria-label="Leaderboard pages"');
     }
-    expect(dashboardHtml("/dashboard/settings/board")).toContain('id="savebar"');
+    expect(dashboardHtml("/dashboard/site")).toContain('id="savebar"');
     expect(dashboardHtml("/dashboard/leaderboard/setup")).toContain('aria-label="Leaderboard pages"');
   });
 
@@ -97,7 +97,7 @@ describe("dashboard navigation ownership", () => {
       ["games", "games"],
       ["performance", "performance"],
       ["telegram", "telegram"],
-      ["boards", "site"],
+      ["boards", "sites"],
       ["settings", "settings"],
       ["account", "settings"],
       ["connections", "settings"],
@@ -117,9 +117,11 @@ describe("dashboard navigation ownership", () => {
       expect(mapActiveNav(route)).toBe(navOwner(route));
       expect(keys.has(NAV_OWNER_MAP[route] || route)).toBe(true);
     }
-    for (const path of ["/dashboard", "/dashboard/leaderboard/setup", "/dashboard/games", "/dashboard/analytics/activity", "/dashboard/leaderboards", "/dashboard/settings/board"]) {
+    for (const path of ["/dashboard", "/dashboard/leaderboard/setup", "/dashboard/games", "/dashboard/analytics/activity", "/dashboard/leaderboards", "/dashboard/site"]) {
       expect((dashboardHtml(path).match(/class="lb-nav[^"]* is-on/g) || []).length).toBe(1);
     }
+    expect(dashboardHtml("/dashboard/leaderboards")).toContain('data-nav="sites"');
+    expect(dashboardHtml("/dashboard/site")).toContain('data-nav="site"');
   });
 
   it("uses one shared active-navigation map in server and client code", () => {

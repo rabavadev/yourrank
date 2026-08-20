@@ -15,6 +15,7 @@ const GEAR_ICON = '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 
 
 const DASHBOARD_NAV: NavItem[] = [
   { key: "home", label: "Home", href: "/dashboard", icon: '<rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/>', productKey: "sites" },
+  { key: "sites", label: "Sites", href: "/dashboard/leaderboards", icon: NAV_ICONS.boards, productKey: "sites" },
   { key: "board", label: "Leaderboard", href: "/dashboard/leaderboard", icon: NAV_ICONS.players },
   { key: "engage", label: "Engage", href: "/dashboard/giveaways", icon: NAV_ICONS.giveaways },
   { key: "games", label: "Games", href: "/dashboard/games", icon: NAV_ICONS.games },
@@ -28,7 +29,7 @@ const DASHBOARD_NAV: NavItem[] = [
       { key: "telegram", label: "Telegram", href: "/dashboard/telegram", icon: NAV_ICONS.share, productKey: "telegram" },
     ],
   },
-  { key: "site", label: "Site", href: "/dashboard/settings/board", icon: NAV_ICONS.boards },
+  { key: "site", label: "Site settings", href: "/dashboard/site", icon: NAV_ICONS.boards },
   { key: "settings", label: "Settings", href: "/dashboard/settings", icon: GEAR_ICON },
 ];
 
@@ -51,9 +52,8 @@ export const NAV_OWNER_MAP = {
   channel: "redemptions",
   rewards: "redemptions",
   viewers: "redemptions",
-  audience: "redemptions",
   history: "redemptions",
-  boards: "site",
+  boards: "sites",
   site: "site",
   settings: "settings",
   account: "settings",

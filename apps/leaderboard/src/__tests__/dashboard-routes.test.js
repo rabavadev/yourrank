@@ -25,8 +25,9 @@ describe("dashboard routes", () => {
     for (const tab of ["", "/account", "/plan", "/connections", "/data", "/integrations"]) {
       expect(parseDashboardPath(`/dashboard/settings${tab}`)).toBeNull();
     }
-    expect(dashboardPath("settings")).toBe("/dashboard/settings/board");
-    expect(parseDashboardPath("/dashboard/settings/board")).toEqual({ page: "site", tab: "" });
+    expect(dashboardPath("site")).toBe("/dashboard/site");
+    expect(parseDashboardPath("/dashboard/site")).toEqual({ page: "site", tab: "" });
+    expect(parseDashboardPath("/dashboard/settings/board")).toBeNull();
   });
 
   it("keeps the links we have already shipped working", async () => {
@@ -49,6 +50,19 @@ describe("dashboard routes", () => {
     }
     expect(resolveSection("editor")).toBe("board");
     expect(dashboardPath("performance")).toBe("/dashboard/analytics");
+  });
+
+  it("redirects moved dashboard routes while preserving query strings", async () => {
+    for (const [legacy, canonical] of [
+      ["/dashboard/audience/viewers", "/dashboard/rewards/viewers"],
+      ["/dashboard/audience/activity", "/dashboard/rewards/activity"],
+      ["/dashboard/rewards/history", "/dashboard/rewards/activity"],
+      ["/dashboard/settings/board", "/dashboard/site"],
+    ]) {
+      const response = await worker.fetch(new Request(`https://yourrank.test${legacy}?viewer=GhostSniperr`), {}, {});
+      expect(response.status, legacy).toBe(301);
+      expect(response.headers.get("location"), legacy).toBe(`https://yourrank.test${canonical}?viewer=GhostSniperr`);
+    }
   });
 
   it("rejects paths that are not sections", () => {

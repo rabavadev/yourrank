@@ -120,10 +120,10 @@ function fillYear(html) {
   return html.replace(/{{YEAR}}/g, String(year)).replace(/{{NEXT_YEAR}}/g, String(year + 1));
 }
 
-function redirectKeepingSearch(pathname, url) {
+function redirectKeepingSearch(pathname, url, status = 302) {
   const target = new URL(pathname, url);
   target.search = url.search;
-  return redirectResponse(target, 302);
+  return redirectResponse(target, status);
 }
 
 function findProfilePlayer(data, rawName) {
@@ -696,6 +696,9 @@ export async function handleRequest(request, env, ctx, meta, deps = {}) {
       if (path === "/dashboard/settings/integrations") {
         return redirectKeepingSearch("/dashboard/rewards/channel", url);
       }
+      if (path === "/dashboard/settings/board") {
+        return redirectKeepingSearch("/dashboard/site", url, 301);
+      }
       if (path === "/dashboard/settings" || /^\/dashboard\/settings\/(account|team|plan|connections|data)$/.test(path)) {
         const pathTab = path.split("/").pop();
         const requestedTab = pathTab === "settings"
@@ -719,8 +722,8 @@ export async function handleRequest(request, env, ctx, meta, deps = {}) {
       if (path === "/dashboard/integrations") return redirectKeepingSearch("/dashboard/settings/connections", url);
       if (path === "/dashboard/manage") return redirectKeepingSearch("/dashboard/settings", url);
       if (path === "/dashboard/audience/viewers" || path === "/dashboard/audience/activity") {
-        const pageKey = path.endsWith("/viewers") ? "rewardsViewers" : "rewardsHistory";
-        return renderDashboardPage(pageKey, "audience_render_failed");
+        const target = path.endsWith("/viewers") ? "/dashboard/rewards/viewers" : "/dashboard/rewards/activity";
+        return redirectKeepingSearch(target, url, 301);
       }
       const legacyDashboard = legacyDashboardPath(path);
       if (legacyDashboard) {
@@ -817,8 +820,9 @@ export async function handleRequest(request, env, ctx, meta, deps = {}) {
         const tab = path.slice("/dashboard/rewards/".length).split("?")[0];
         if (tab === "channel") return renderDashboardPage("rewardsChannel", "channel_render_failed");
         if (tab === "maps" || tab === "rewards") return redirectKeepingSearch("/dashboard/rewards/rules", url);
-        if (tab === "viewers") return redirectKeepingSearch("/dashboard/audience/viewers", url);
-        if (tab === "history") return redirectKeepingSearch("/dashboard/audience/activity", url);
+        if (tab === "viewers") return renderDashboardPage("rewardsViewers", "rewards_render_failed");
+        if (tab === "activity") return renderDashboardPage("rewardsHistory", "rewards_render_failed");
+        if (tab === "history") return redirectKeepingSearch("/dashboard/rewards/activity", url, 301);
         const map = { rules: "rewardsRules", shop: "rewardsShop", redemptions: "rewardsRedemptions" };
         const pageKey = map[tab];
         if (!pageKey) return redirectResponse(new URL("/dashboard/rewards/redemptions", url), 302);
