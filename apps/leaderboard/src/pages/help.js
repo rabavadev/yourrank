@@ -2,21 +2,31 @@ import { dashboardChromeHtml } from "@yourrank/shared/dashboard-chrome";
 import { dashboardNavItems } from "./dashboard-shell.jsx";
 
 // Help center pages: a creator-facing hub plus Support and Feedback forms.
-// Rendered through the shared page shell so a signed-in streamer keeps the app
-// context instead of landing on a separate marketing page.
+// A signed-in streamer keeps the workspace chrome (rail, topbar, account menu).
+// A visitor gets the public site chrome instead of the workspace rail, so Help
+// is never an isolated navigation universe with no way back to the site.
 const TABS = [
-  { key: "support", label: "Support", href: "/help/support", icon: '<path d="M4 4h16v12H7l-3 3z"/><path d="M8 8h8M8 12h5"/>' },
-  { key: "feedback", label: "Feedback", href: "/help/feedback", icon: '<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/>' },
+  { key: "help", label: "Overview", href: "/help" },
+  { key: "support", label: "Support", href: "/help/support" },
+  { key: "feedback", label: "Feedback", href: "/help/feedback" },
 ];
 
-function helpNavigation(user) {
-  return user ? dashboardNavItems() : TABS;
+function esc(value) {
+  return String(value ?? "").replace(/[&<>"']/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[ch]));
 }
 
-function helpContent({ active, h1, intro, kind, subjectPlaceholder, messagePlaceholder, user, activePath }) {
-  const content = `
-    <div class="lb-widget contact-workspace">
-      <form id="contactForm" class="card"><h2>Send us a message</h2>
+// The rail owns section roots; Support and Feedback are page subnavigation, so
+// the visitor shell renders them as tabs under the page title.
+function subnavHtml(active) {
+  const links = TABS.map((tab) => {
+    const isActive = tab.key === active;
+    return `<a class="help-subnav-link${isActive ? " is-on" : ""}" href="${tab.href}"${isActive ? ' aria-current="page"' : ""}>${tab.label}</a>`;
+  }).join("");
+  return `<nav class="help-subnav" aria-label="Help &amp; feedback">${links}</nav>`;
+}
+
+function contactFormHtml({ kind, subjectPlaceholder, messagePlaceholder }) {
+  return `<form id="contactForm" class="card"><h2>Send us a message</h2>
         <div class="field"><label for="c_name">Name</label><input id="c_name" name="name" type="text" autocomplete="name" required maxlength="120" /></div>
         <div class="field"><label for="c_email">Email</label><input id="c_email" name="email" type="email" autocomplete="email" required maxlength="254" /></div>
         <input type="hidden" id="c_kind" name="kind" value="${kind}" />
@@ -28,50 +38,11 @@ function helpContent({ active, h1, intro, kind, subjectPlaceholder, messagePlace
         <p class="hint text-accent" id="c_success" hidden>Message received. We'll reply by email.</p>
       </form>
       <p class="hint mt-18" id="c_back_wrap" hidden><a id="c_back" href="/">← Back</a></p>
-      <p class="hint mt-24">You can also email <a href="mailto:{{SUPPORT_EMAIL}}">{{SUPPORT_EMAIL}}</a> directly.</p>
-    </div>`;
-
-  return dashboardChromeHtml({
-    nav: helpNavigation(user),
-    active: user ? "help" : active,
-    navLabel: user ? "Dashboard" : "Help & feedback",
-    headLabel: "Help & feedback",
-    title: h1,
-    titleId: "contactTitle",
-    subtitle: intro,
-    subtitleId: "contactIntro",
-    user,
-    activePath,
-    content,
-    railProfile: Boolean(user),
-    collapsible: Boolean(user),
-    embeddedInMain: true,
-  });
+      <p class="hint mt-24">You can also email <a href="mailto:{{SUPPORT_EMAIL}}">{{SUPPORT_EMAIL}}</a> directly.</p>`;
 }
 
-function helpPage(opts) {
-  return {
-    config: {
-      title: `${opts.title} · YourRank`,
-      canonical: opts.canonical,
-      description: opts.description,
-      robots: "index, follow",
-      styles: ["/assets/app.css", "/assets/shell-nav.css", "/assets/ui.css", "/assets/dashboard-v4.css"],
-      scripts: ['<script src="/assets/contact.js"></script>', '<script src="/assets/shell-nav.js?v=2" defer></script>'],
-      mainClass: "wrap yr-ui",
-      nav: false,
-      footer: false,
-      wide: true,
-    },
-    Component: (renderOpts) => helpContent({ ...opts, ...renderOpts }),
-  };
-}
-
-function helpHubContent({ user, activePath }) {
-  const content = `<div class="operator-help" id="help-hub">
-<p class="operator-help-lead">Choose what you are trying to do and jump straight to the right place.</p>
-
-<section class="operator-help-section" aria-labelledby="help-site">
+function hubSectionsHtml() {
+  return `<section class="operator-help-section" aria-labelledby="help-site">
   <h2 id="help-site">Site and public page</h2>
   <p>Use the site editor to configure the public page visitors see.</p>
   <ul class="operator-help-list">
@@ -121,38 +92,141 @@ function helpHubContent({ user, activePath }) {
 <div class="operator-help-actions">
   <a class="btn btn--accent" href="/help/support">Contact support</a>
   <a class="btn" href="/help/feedback">Give feedback</a>
-</div>
 </div>`;
+}
 
+const HUB_TITLE = "Help & feedback";
+const HUB_INTRO = "Find the right place for a task, contact support, or share feedback.";
+const HUB_LEAD = "Choose what you are trying to do and jump straight to the right place.";
+
+/** Signed-in creator: Help stays inside the workspace shell. */
+function workspaceHelp({ active, title, subtitle, titleId, subtitleId, content, user, activePath }) {
   return dashboardChromeHtml({
-    nav: helpNavigation(user),
-    active: user ? "help" : "",
-    navLabel: user ? "Dashboard" : "Help & feedback",
+    nav: dashboardNavItems(),
+    active,
+    navLabel: "Dashboard",
     headLabel: "Help & feedback",
-    title: "Help & feedback",
-    subtitle: "Find the right place for a task, contact support, or share feedback.",
+    title,
+    titleId,
+    subtitle,
+    subtitleId,
     user,
     activePath,
     content,
-    railProfile: Boolean(user),
-    collapsible: Boolean(user),
+    railProfile: true,
+    collapsible: true,
     embeddedInMain: true,
   });
 }
 
-export const helpHubPage = {
-  config: {
-    title: "Help & feedback · YourRank",
-    canonical: "https://yourrank.site/help",
-    description: "Task-oriented help for creators using YourRank sites, rewards, messaging, analytics, and account settings.",
+/** Visitor: Help renders as an ordinary public page under the site header. */
+function publicHelp({ active, id, title, intro, titleId, introId, body }) {
+  return `<div class="operator-help" id="${id}">
+<h1${titleId ? ` id="${titleId}"` : ""}>${esc(title)}</h1>
+<p class="operator-help-lead"${introId ? ` id="${introId}"` : ""}>${esc(intro)}</p>
+${subnavHtml(active)}
+${body}
+</div>`;
+}
+
+const WORKSPACE_STYLES = ["/assets/app.css", "/assets/shell-nav.css", "/assets/ui.css", "/assets/dashboard-v4.css"];
+// The visitor shell is a public page: no workspace layer, and the shared site
+// header and footer are rendered by the page shell.
+const PUBLIC_OVERRIDES = {
+  styles: ["/assets/app.css", "/assets/shell-nav.css", "/assets/ui.css"],
+  mainClass: "wrap",
+  nav: true,
+  footer: true,
+  footerBrandHref: "/",
+  wide: false,
+};
+
+function helpContent({ active, h1, intro, kind, subjectPlaceholder, messagePlaceholder, user, activePath }) {
+  const form = contactFormHtml({ kind, subjectPlaceholder, messagePlaceholder });
+  if (!user) {
+    return publicHelp({
+      active,
+      id: `help-${active}`,
+      title: h1,
+      titleId: "contactTitle",
+      intro,
+      introId: "contactIntro",
+      body: `<div class="contact-public">${form}</div>`,
+    });
+  }
+  return workspaceHelp({
+    active: "help",
+    title: h1,
+    titleId: "contactTitle",
+    subtitle: intro,
+    subtitleId: "contactIntro",
+    content: `<div class="lb-widget contact-workspace">${form}</div>`,
+    user,
+    activePath,
+  });
+}
+
+function helpPage(opts) {
+  const config = {
+    title: `${opts.title} · YourRank`,
+    canonical: opts.canonical,
+    description: opts.description,
     robots: "index, follow",
-    styles: ["/assets/app.css", "/assets/shell-nav.css", "/assets/ui.css", "/assets/dashboard-v4.css"],
-    scripts: ['<script src="/assets/shell-nav.js?v=2" defer></script>'],
+    styles: WORKSPACE_STYLES,
+    scripts: ['<script src="/assets/contact.js"></script>', '<script src="/assets/shell-nav.js?v=2" defer></script>'],
     mainClass: "wrap yr-ui",
     nav: false,
     footer: false,
     wide: true,
-  },
+  };
+  return {
+    config,
+    configFor: ({ user } = {}) => (user ? config : { ...config, ...PUBLIC_OVERRIDES }),
+    Component: (renderOpts) => helpContent({ ...opts, ...renderOpts }),
+  };
+}
+
+function helpHubContent({ user, activePath }) {
+  const sections = hubSectionsHtml();
+  if (!user) {
+    return publicHelp({
+      active: "help",
+      id: "help-hub",
+      title: HUB_TITLE,
+      intro: HUB_LEAD,
+      body: sections,
+    });
+  }
+  return workspaceHelp({
+    active: "help",
+    title: HUB_TITLE,
+    subtitle: HUB_INTRO,
+    content: `<div class="operator-help" id="help-hub">
+<p class="operator-help-lead">${HUB_LEAD}</p>
+
+${sections}
+</div>`,
+    user,
+    activePath,
+  });
+}
+
+const helpHubConfig = {
+  title: "Help & feedback · YourRank",
+  canonical: "https://yourrank.site/help",
+  description: "Task-oriented help for creators using YourRank sites, rewards, messaging, analytics, and account settings.",
+  robots: "index, follow",
+  styles: WORKSPACE_STYLES,
+  scripts: ['<script src="/assets/shell-nav.js?v=2" defer></script>'],
+  mainClass: "wrap yr-ui",
+  nav: false,
+  footer: false,
+  wide: true,
+};
+
+export const helpHubPage = {
+  config: helpHubConfig,
+  configFor: ({ user } = {}) => (user ? helpHubConfig : { ...helpHubConfig, ...PUBLIC_OVERRIDES }),
   Component: (renderOpts) => helpHubContent(renderOpts),
 };
 

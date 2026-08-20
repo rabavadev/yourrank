@@ -124,7 +124,7 @@ export interface ChromeOpts {
   logoutAction?: string;
   /** Extra markup for the rail footer (e.g. a log out button). */
   footHtml?: string;
-  /** Move account controls to the bottom of the workspace rail. */
+  /** Move account controls to the bottom of the rail instead of the topbar. */
   railProfile?: boolean;
   /** Enable the persisted desktop rail-collapse control. */
   collapsible?: boolean;
@@ -166,7 +166,10 @@ export function dashboardChromeHtml(opts: ChromeOpts): string {
     ? '<div class="lb-bento" id="workspace-content">'
     : '<main class="lb-bento" id="main-content">';
   const contentClose = opts.embeddedInMain ? "</div>" : "</main>";
-  return `<div class="v3-dash" id="dash"${opts.railProfile ? ' data-auth-workspace="true"' : ""} data-shell-drawer="shared">
+  // The workspace attribute is inherent to this shell: every stylesheet rule for
+  // the rail, topbar and bento is scoped to `.v3-dash[data-auth-workspace]`, so
+  // rendering it without the attribute produces unstyled workspace markup.
+  return `<div class="v3-dash" id="dash" data-auth-workspace="true" data-shell-drawer="shared">
 ${DESIGN_CONTRACT}
 <div class="toast" id="status" role="status" aria-live="polite"></div>
 <div class="lb-shell">
