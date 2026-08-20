@@ -151,6 +151,7 @@ async function init() {
   state.EXTRA = { chips: d.partner?.chips, whyStats: d.whyStats, rules: d.rules, socials: p.socials || d.socials || [], sections: d.sections, siteSections: d.siteSections || {}, playerFields: d.playerFields || {}, text: (d.branding && d.branding.text) || {}, legal: d.legal || {} };
   state.CURRENT_BRANDING = d.branding || state.CURRENT_BRANDING;
   state.PLAYERS = Array.isArray(d.players) ? d.players : [];
+  state.SAVED_PLAYERS = state.PLAYERS.map((player) => ({ ...player }));
   document.querySelectorAll("a[href]").forEach((link) => {
     if (!state.ACTIVE_SITE_ID) return;
     if (link.dataset.productLink === "sites") {
@@ -192,7 +193,7 @@ async function init() {
     renderEndsHint();
     endsInput?.addEventListener("change", renderEndsHint);
     $("f_blurb").value = d.partner?.blurb || "";
-    renderPlayers(d.players || []);
+    renderPlayers(d.players || [], { restoreDraft: true });
     renderBranding(d.branding || {});
     renderPrizes(d.prizes || d.branding?.prizes || {});
     renderArchives(p.archives || []);

@@ -1,6 +1,18 @@
 // Player table, CSV/paste import, and row management.
 import { $, esc, logError, parseAmount, showConfirmModal } from "./utils.js";
-import { state, markDirty } from "./state.js";
+import { state, markDirty, subscribe, clearDirty } from "./state.js";
+
+export const PLAYER_NAME_LIMIT = 80;
+const PLAYER_DRAFT_PREFIX = "yourrank:players-draft:";
+const PLAYER_NUMBER_FIELDS = [
+  { key: "wagered", selector: ".p-wager", label: "Amount", money: true },
+  { key: "prize", selector: ".p-prize", label: "Prize", money: true },
+  { key: "score", selector: ".p-score", label: "Score" },
+  { key: "hands", selector: ".p-hands", label: "Hands played" },
+  { key: "netProfit", selector: ".p-net-profit", label: "Net profit" },
+  { key: "winRate", selector: ".p-win-rate", label: "Win rate" },
+  { key: "change", selector: ".p-change", label: "Change" },
+];
 
 /**
  * Commit a change to the in-memory draft through one path. markDirty() keeps
@@ -30,35 +42,288 @@ function formatMoney(value) {
   return `${currencySymbol()}${amount.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
+export function parsePlayerNumber(value) {
+  const raw = String(value ?? "");
+  if (!raw.trim()) return { ok: true, empty: true, value: 0 };
+  const normalized = raw.replace(/[$,\s]/g, "");
+  if (!/^(?:\d+(?:\.\d*)?|\.\d+)$/.test(normalized)) {
+    return { ok: false, message: "Enter a non-negative number." };
+  }
+  const number = Number(normalized);
+  if (!Number.isFinite(number) || number < 0) return { ok: false, message: "Enter a non-negative number." };
+  return { ok: true, empty: false, value: number };
+}
+
+function errorElement(input) {
+  return input?.closest("td")?.querySelector(`[data-field-error="${input.dataset.field || input.id || input.className}"]`)
+    || input?.closest("td")?.querySelector(".field-err");
+}
+
+function warningElement(input) {
+  return input?.closest("td")?.querySelector(`[data-field-warning="${input.dataset.field || input.id || input.className}"]`)
+    || input?.closest("td")?.querySelector(".field-warn");
+}
+
+export function setPlayerFieldError(input, message) {
+  if (!input) return;
+  const error = errorElement(input);
+  if (message) input.setAttribute("aria-invalid", "true");
+  else input.removeAttribute("aria-invalid");
+  if (error) {
+    error.textContent = message || "";
+    error.hidden = !message;
+  }
+}
+
+function setPlayerFieldWarning(input, message) {
+  const warning = warningElement(input);
+  if (warning) {
+    warning.textContent = message || "";
+    warning.hidden = !message;
+  }
+}
+
+function clearPlayerFieldError(input) {
+  setPlayerFieldError(input, "");
+}
+
 function showMoneyValue(input) {
   const raw = input.value.trim();
-  if (raw) input.value = formatMoney(raw);
+  const parsed = parsePlayerNumber(raw);
+  if (!parsed.ok) {
+    setPlayerFieldError(input, parsed.message);
+    return false;
+  }
+  clearPlayerFieldError(input);
+  if (raw) input.value = formatMoney(parsed.value);
+  return true;
 }
 
 function showMoneyEditor(input) {
   if (!input.value.trim()) return;
-  input.value = String(parseAmount(input.value));
+  const parsed = parsePlayerNumber(input.value);
+  if (!parsed.ok) return;
+  input.value = String(parsed.value);
   input.select();
 }
 
-function wireMoneyInput(input) {
-  input.addEventListener("focus", () => showMoneyEditor(input));
-  input.addEventListener("blur", () => showMoneyValue(input));
-  showMoneyValue(input);
+function validatePlayerNumberInput(input, { money = false } = {}) {
+  const parsed = parsePlayerNumber(input?.value);
+  if (!parsed.ok) {
+    setPlayerFieldError(input, parsed.message);
+    return false;
+  }
+  clearPlayerFieldError(input);
+  if (money && !parsed.empty) input.value = formatMoney(parsed.value);
+  return true;
 }
+
+function wireNumberInput(input, { money = false } = {}) {
+  if (!input) return;
+  input.addEventListener("focus", () => showMoneyEditor(input));
+  input.addEventListener("blur", () => validatePlayerNumberInput(input, { money }));
+  validatePlayerNumberInput(input, { money });
+}
+
+function updateNameCounter(input) {
+  if (!input) return;
+  const counter = input.closest(".player-name")?.querySelector(".player-name-counter");
+  if (!counter) return;
+  const length = String(input.value || "").length;
+  counter.textContent = `${length}/${PLAYER_NAME_LIMIT}`;
+  counter.hidden = length < PLAYER_NAME_LIMIT - 20;
+}
+
+export function updateDuplicateWarnings() {
+  const rows = $("rows");
+  const names = new Map();
+  if (rows) {
+    for (const row of rows.children) {
+      const input = row.querySelector(".p-name");
+      const key = input?.value.trim().toLocaleLowerCase();
+      if (key) names.set(key, (names.get(key) || 0) + 1);
+    }
+    for (const row of rows.children) {
+      const input = row.querySelector(".p-name");
+      const key = input?.value.trim().toLocaleLowerCase();
+      setPlayerFieldWarning(input, key && names.get(key) > 1 ? `Duplicate name: “${input.value.trim()}”. You can still save.` : "");
+    }
+  }
+  const quickName = $("qa_name");
+  const quickKey = quickName?.value.trim().toLocaleLowerCase();
+  const duplicate = quickKey && names.get(quickKey);
+  setPlayerFieldWarning(quickName, duplicate ? `Duplicate name: “${quickName.value.trim()}”. You can still add it.` : "");
+}
+
+function setPlayerMessage(id, message, { error = false } = {}) {
+  const el = $(id);
+  if (!el) return;
+  el.textContent = message || "";
+  el.hidden = !message;
+  el.classList.toggle("field-err", error);
+  el.classList.toggle("field-warn", !error);
+  if (message) el.setAttribute("role", error ? "alert" : "status");
+}
+
+export function playerLimitMessage() {
+  const limit = state.ME?.limits?.players ?? 25;
+  const plan = state.ME?.plan;
+  const planLabel = plan === "pro" || plan === "agency" ? "Your plan" : (plan ? `${plan[0].toUpperCase()}${plan.slice(1)}` : "Your plan");
+  return `${planLabel} allows up to ${limit} players. Upgrade to add more.`;
+}
+
+export function validateQuickAddValues({ name = "", wagered = "", prize = "" } = {}) {
+  const errors = [];
+  if (!String(name).trim()) errors.push({ field: "name", message: "Enter a player name." });
+  const wager = parsePlayerNumber(wagered);
+  if (!wager.ok) errors.push({ field: "wagered", message: wager.message });
+  const prizeValue = parsePlayerNumber(prize);
+  if (!prizeValue.ok) errors.push({ field: "prize", message: prizeValue.message });
+  return { ok: errors.length === 0, errors, wagered: wager.value, prize: prizeValue.value };
+}
+
+function playerDraftStorageKey() {
+  return state.ACTIVE_SITE_ID ? `${PLAYER_DRAFT_PREFIX}${state.ACTIVE_SITE_ID}` : "";
+}
+
+function playerDraftStorage() {
+  try {
+    return typeof window !== "undefined" ? window.sessionStorage : null;
+  } catch {
+    return null;
+  }
+}
+
+function rawPlayerRows() {
+  const rows = $("rows");
+  if (!rows) return [];
+  return [...rows.children].map((tr) => Object.fromEntries([
+    ["name", tr.querySelector(".p-name")?.value || ""],
+    ...PLAYER_NUMBER_FIELDS.map(({ key, selector }) => [key, tr.querySelector(selector)?.value || ""]),
+  ]));
+}
+
+function rawQuickAdd() {
+  return {
+    name: $("qa_name")?.value || "",
+    wagered: $("qa_wager")?.value || "",
+    prize: $("qa_prize")?.value || "",
+  };
+}
+
+export function persistPlayersDraft() {
+  const key = playerDraftStorageKey();
+  const storage = playerDraftStorage();
+  if (!key || !storage) return;
+  try {
+    storage.setItem(key, JSON.stringify({ players: rawPlayerRows(), quickAdd: rawQuickAdd() }));
+  } catch (err) {
+    logError("players-draft-save", err);
+  }
+}
+
+export function clearPlayersDraft() {
+  const key = playerDraftStorageKey();
+  const storage = playerDraftStorage();
+  if (!key || !storage) return;
+  try {
+    storage.removeItem(key);
+  } catch (err) {
+    logError("players-draft-clear", err);
+  }
+}
+
+function readPlayersDraft() {
+  const key = playerDraftStorageKey();
+  const storage = playerDraftStorage();
+  if (!key || !storage) return null;
+  try {
+    const value = JSON.parse(storage.getItem(key) || "null");
+    if (!value || !Array.isArray(value.players)) return null;
+    return value;
+  } catch (err) {
+    logError("players-draft-read", err);
+    return null;
+  }
+}
+
+export function loadPlayersDraft() {
+  return readPlayersDraft();
+}
+
+function showPlayersDraftNotice(show) {
+  const notice = $("playersDraftNotice");
+  if (notice) notice.hidden = !show;
+}
+
+function restoreQuickAdd(values = {}) {
+  if ($("qa_name")) $("qa_name").value = values.name || "";
+  if ($("qa_wager")) $("qa_wager").value = values.wagered || "";
+  if ($("qa_prize")) $("qa_prize").value = values.prize || "";
+  updateNameCounter($("qa_name"));
+  updateDuplicateWarnings();
+}
+
+export function discardPlayersDraft({ render = renderPlayers } = {}) {
+  const saved = Array.isArray(state.SAVED_PLAYERS) ? state.SAVED_PLAYERS : [];
+  render(saved);
+  restoreQuickAdd();
+  clearPlayersDraft();
+  showPlayersDraftNotice(false);
+  clearDirty();
+}
+
+export function collectPlayers({ focusInvalid = false } = {}) {
+  const rows = $("rows");
+  const invalid = [];
+  const players = rows ? [...rows.children].map((tr) => {
+    const nameInput = tr.querySelector(".p-name");
+    const name = nameInput?.value.trim() || "";
+    if (!name) {
+      setPlayerFieldError(nameInput, "Enter a player name.");
+      invalid.push({ input: nameInput, label: "Player name" });
+    } else {
+      setPlayerFieldError(nameInput, "");
+    }
+    const player = { name };
+    for (const field of PLAYER_NUMBER_FIELDS) {
+      const input = tr.querySelector(field.selector);
+      const parsed = parsePlayerNumber(input?.value);
+      if (!parsed.ok) {
+        setPlayerFieldError(input, parsed.message);
+        invalid.push({ input, label: field.label });
+      } else {
+        clearPlayerFieldError(input);
+        if (field.key === "wagered" || field.key === "prize" || !parsed.empty) player[field.key] = parsed.value;
+      }
+    }
+    return player;
+  }).filter((player) => player.name) : [];
+  if (focusInvalid && invalid[0]?.input) invalid[0].input.focus();
+  return { players, invalid };
+}
+
+export function validatePlayersForSave() {
+  return collectPlayers({ focusInvalid: true }).invalid;
+}
+
+subscribe((keys) => {
+  if (keys.includes("draft") && state.ACTIVE_SITE_ID && $("rows")) persistPlayersDraft();
+});
 
 export function playerRow(p = { name: "", wagered: "", prize: "", score: "", hands: "", netProfit: "", winRate: "", change: "" }) {
   const tr = document.createElement("tr");
+  const rowId = `player-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`;
   tr.innerHTML = `<td class="sel"><input type="checkbox" class="row-sel" title="Select" aria-label="Select player" /></td>
     <td class="rank"></td>
-    <td class="player-name"><input class="p-name" placeholder="Player name" title="${esc(p.name)}" value="${esc(p.name)}"></td>
-    <td class="num"><input class="p-wager" inputmode="decimal" placeholder="0" value="${esc(p.wagered)}"></td>
-    <td class="num"><input class="p-prize" inputmode="decimal" placeholder="0" value="${esc(p.prize)}"></td>
-    <td class="num col-score" hidden><input class="p-score" inputmode="decimal" placeholder="0" value="${esc(p.score)}"></td>
-    <td class="num col-hands" hidden><input class="p-hands" inputmode="decimal" placeholder="0" value="${esc(p.hands)}"></td>
-    <td class="num col-net" hidden><input class="p-net-profit" inputmode="decimal" placeholder="0" value="${esc(p.netProfit)}"></td>
-    <td class="num col-win" hidden><input class="p-win-rate" inputmode="decimal" placeholder="0" value="${esc(p.winRate)}"></td>
-    <td class="num col-change" hidden><input class="p-change" inputmode="decimal" placeholder="0" value="${esc(p.change)}"></td>
+    <td class="player-name"><input class="p-name" placeholder="Player name" title="${esc(p.name)}" maxlength="${PLAYER_NAME_LIMIT}" value="${esc(p.name)}" aria-describedby="${rowId}-name-counter ${rowId}-name-warning"><span class="player-name-counter" id="${rowId}-name-counter" hidden aria-live="polite"></span><span class="field-err" data-field-error="p-name" hidden role="alert" aria-live="polite"></span><span class="field-warn" data-field-warning="p-name" id="${rowId}-name-warning" hidden role="status" aria-live="polite"></span></td>
+    <td class="num"><input class="p-wager" data-field="p-wager" inputmode="decimal" placeholder="0" value="${esc(p.wagered)}" aria-describedby="${rowId}-wager-error"><span class="field-err" data-field-error="p-wager" id="${rowId}-wager-error" hidden role="alert" aria-live="polite"></span></td>
+    <td class="num"><input class="p-prize" data-field="p-prize" inputmode="decimal" placeholder="0" value="${esc(p.prize)}" aria-describedby="${rowId}-prize-error"><span class="field-err" data-field-error="p-prize" id="${rowId}-prize-error" hidden role="alert" aria-live="polite"></span></td>
+    <td class="num col-score" hidden><input class="p-score" data-field="p-score" inputmode="decimal" placeholder="0" value="${esc(p.score)}" aria-describedby="${rowId}-score-error"><span class="field-err" data-field-error="p-score" id="${rowId}-score-error" hidden role="alert" aria-live="polite"></span></td>
+    <td class="num col-hands" hidden><input class="p-hands" data-field="p-hands" inputmode="decimal" placeholder="0" value="${esc(p.hands)}" aria-describedby="${rowId}-hands-error"><span class="field-err" data-field-error="p-hands" id="${rowId}-hands-error" hidden role="alert" aria-live="polite"></span></td>
+    <td class="num col-net" hidden><input class="p-net-profit" data-field="p-net-profit" inputmode="decimal" placeholder="0" value="${esc(p.netProfit)}" aria-describedby="${rowId}-net-error"><span class="field-err" data-field-error="p-net-profit" id="${rowId}-net-error" hidden role="alert" aria-live="polite"></span></td>
+    <td class="num col-win" hidden><input class="p-win-rate" data-field="p-win-rate" inputmode="decimal" placeholder="0" value="${esc(p.winRate)}" aria-describedby="${rowId}-win-error"><span class="field-err" data-field-error="p-win-rate" id="${rowId}-win-error" hidden role="alert" aria-live="polite"></span></td>
+    <td class="num col-change" hidden><input class="p-change" data-field="p-change" inputmode="decimal" placeholder="0" value="${esc(p.change)}" aria-describedby="${rowId}-change-error"><span class="field-err" data-field-error="p-change" id="${rowId}-change-error" hidden role="alert" aria-live="polite"></span></td>
     <td class="act"><button class="row-edit" title="Edit player" aria-label="Edit player" type="button"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></button><button class="row-x" title="Remove" aria-label="Remove player" type="button">×</button></td>`;
   tr.querySelector(".row-edit").addEventListener("click", () => {
     const name = tr.querySelector(".p-name");
@@ -67,6 +332,8 @@ export function playerRow(p = { name: "", wagered: "", prize: "", score: "", han
   });
   tr.querySelector(".p-name")?.addEventListener("input", (event) => {
     event.currentTarget.title = event.currentTarget.value;
+    updateNameCounter(event.currentTarget);
+    updateDuplicateWarnings();
   });
   tr.querySelector(".row-x").addEventListener("click", async () => {
     const name = tr.querySelector(".p-name")?.value.trim() || "this player";
@@ -103,8 +370,10 @@ export function playerRow(p = { name: "", wagered: "", prize: "", score: "", han
     });
   });
 
-  wireMoneyInput(tr.querySelector(".p-wager"));
-  wireMoneyInput(tr.querySelector(".p-prize"));
+  wireNumberInput(tr.querySelector(".p-wager"), { money: true });
+  wireNumberInput(tr.querySelector(".p-prize"), { money: true });
+  PLAYER_NUMBER_FIELDS.slice(2).forEach(({ selector }) => wireNumberInput(tr.querySelector(selector)));
+  updateNameCounter(tr.querySelector(".p-name"));
   return tr;
 }
 
@@ -139,19 +408,27 @@ export function applyPlayerFieldVisibility(fields) {
   syncColumnDropdown(merged);
 }
 
-export function renderPlayers(list) {
+export function renderPlayers(list, { restoreDraft = false } = {}) {
+  const stored = restoreDraft ? readPlayersDraft() : null;
+  const source = stored ? stored.players : list;
   const b = $("rows");
   b.innerHTML = "";
   currentPage = 1;
   const frag = document.createDocumentFragment();
-  list.forEach((p) => frag.appendChild(playerRow(p)));
+  source.forEach((p) => frag.appendChild(playerRow(p)));
   b.appendChild(frag);
   renumber();
   toggleEmpty();
   applyPlayerFieldVisibility();
   syncSelectAll();
+  updateDuplicateWarnings();
   const notice = $("playersSampleNotice");
   if (notice) notice.hidden = !state.SAMPLE_PLAYERS;
+  showPlayersDraftNotice(Boolean(stored));
+  if (stored) {
+    restoreQuickAdd(stored.quickAdd);
+    markDirty();
+  }
 }
 
 export function renumber() {
@@ -167,6 +444,34 @@ export function renumber() {
   if (hint) hint.textContent = n >= limit ? "Limit reached" : (n >= Math.floor(limit * 0.8) ? "Approaching limit" : "");
   const upgrade = $("playerLimitUpgrade");
   if (upgrade) upgrade.hidden = n < Math.max(1, Math.floor(limit * 0.8));
+  const atLimit = limit < 999 && n >= limit;
+  const limitMessage = atLimit
+    ? playerLimitMessage()
+    : "";
+  const limitEl = $("limitMsg");
+  if (limitEl) {
+    limitEl.textContent = limitMessage;
+    limitEl.hidden = !limitMessage;
+  }
+  const quickLimitEl = $("quickLimitMsg");
+  if (quickLimitEl) {
+    quickLimitEl.textContent = limitMessage;
+    quickLimitEl.hidden = !limitMessage;
+  }
+  for (const id of ["addRow", "qa_add"]) {
+    const button = $(id);
+    if (!button) continue;
+    button.disabled = atLimit;
+    if (atLimit) {
+      button.title = limitMessage;
+      button.setAttribute("aria-label", limitMessage);
+      button.setAttribute("aria-describedby", "limitMsg");
+    } else {
+      button.removeAttribute("title");
+      button.removeAttribute("aria-label");
+      button.removeAttribute("aria-describedby");
+    }
+  }
   applyRowVisibility();
 }
 
@@ -258,22 +563,19 @@ function onSortableInput() {
 }
 
 $("rows")?.addEventListener("input", (e) => {
-  if (e.target && e.target.classList && (e.target.classList.contains("p-wager") || e.target.classList.contains("p-prize"))) {
-    onSortableInput();
+  if (!e.target?.classList) return;
+  if (e.target.classList.contains("p-wager") || e.target.classList.contains("p-prize")) onSortableInput();
+  if (e.target.classList.contains("p-name")) {
+    updateNameCounter(e.target);
+    updateDuplicateWarnings();
+    clearPlayerFieldError(e.target);
+  } else if (e.target.matches(".p-wager, .p-prize, .p-score, .p-hands, .p-net-profit, .p-win-rate, .p-change")) {
+    clearPlayerFieldError(e.target);
   }
 });
 
 $("addRow")?.addEventListener("click", () => {
-  if (state.ME && $("rows").children.length >= state.ME.limits.players && state.ME.limits.players < 999) {
-    const planNames = { free: "Free", starter: "Starter", pro: "Pro" };
-    const msg = state.ME.plan === "pro" || state.ME.plan === "agency"
-      ? `Your plan allows up to ${state.ME.limits.players} players.`
-      : `${planNames[state.ME.plan] || "Your"} plan allows ${state.ME.limits.players} players. Upgrade for more.`;
-    const el = $("limitMsg") || $("status");
-    el.textContent = msg;
-    setTimeout(() => el.textContent = "", 5000);
-    return;
-  }
+  if ($("addRow").disabled) return;
   commitDraftMutation(() => {
     $("rows").appendChild(playerRow());
     renumber();
@@ -283,28 +585,52 @@ $("addRow")?.addEventListener("click", () => {
 });
 
 function addQuickRow() {
-  const name = $("qa_name").value.trim();
-  if (!name) return;
-  if (state.ME && $("rows").children.length >= state.ME.limits.players && state.ME.limits.players < 999) {
-    const el = $("limitMsg") || $("status");
-    el.textContent = "Player limit reached. Upgrade to add more.";
-    setTimeout(() => el.textContent = "", 5000);
+  const nameInput = $("qa_name");
+  const name = nameInput.value.trim();
+  const wagerInput = $("qa_wager");
+  const prizeInput = $("qa_prize");
+  const quickValidation = validateQuickAddValues({ name, wagered: wagerInput.value, prize: prizeInput.value });
+  if (!quickValidation.ok) {
+    const firstError = quickValidation.errors[0];
+    const input = firstError.field === "name" ? nameInput : firstError.field === "wagered" ? wagerInput : prizeInput;
+    setPlayerFieldError(input, firstError.message);
+    quickValidation.errors.slice(1).forEach((error) => {
+      const target = error.field === "wagered" ? wagerInput : prizeInput;
+      setPlayerFieldError(target, error.message);
+    });
+    input.focus();
     return;
   }
-  const wagered = parseFloat($("qa_wager").value.replace(/[$,\s]/g, "")) || 0;
-  const prize = parseFloat($("qa_prize").value.replace(/[$,\s]/g, "")) || 0;
+  if ($("qa_add").disabled) {
+    setPlayerMessage("limitMsg", playerLimitMessage());
+    setPlayerMessage("quickLimitMsg", playerLimitMessage());
+    return;
+  }
+  clearPlayerFieldError(nameInput);
+  clearPlayerFieldError(wagerInput);
+  clearPlayerFieldError(prizeInput);
+  updateDuplicateWarnings();
   commitDraftMutation(() => {
-    $("rows").appendChild(playerRow({ name, wagered, prize }));
+    $("rows").appendChild(playerRow({ name, wagered: quickValidation.wagered, prize: quickValidation.prize }));
     $("qa_name").value = "";
     $("qa_wager").value = "";
     $("qa_prize").value = "";
     renumber();
     toggleEmpty();
     applyPlayerFieldVisibility();
+    updateDuplicateWarnings();
   }, `${name} added. Save to publish.`);
 }
 
 $("qa_add")?.addEventListener("click", addQuickRow);
+$("qa_name")?.addEventListener("input", (e) => {
+  updateNameCounter(e.currentTarget);
+  clearPlayerFieldError(e.currentTarget);
+  updateDuplicateWarnings();
+});
+$("playersDraftNoticeDismiss")?.addEventListener("click", () => showPlayersDraftNotice(false));
+$("qa_wager") && wireNumberInput($("qa_wager"), { money: true });
+$("qa_prize") && wireNumberInput($("qa_prize"), { money: true });
 $("qa_name")?.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); $("qa_wager")?.focus(); } });
 $("qa_wager")?.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); $("qa_prize")?.focus(); } });
 $("qa_prize")?.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); addQuickRow(); $("qa_name")?.focus(); } });
