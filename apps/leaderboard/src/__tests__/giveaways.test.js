@@ -284,12 +284,13 @@ describe("Giveaway Chatroom Handler", () => {
 
     const page = GiveawaysPage({ user: { id: "u-1", email: "streamer@test.com" }, tab: "raffles" }).toString();
     const bentoStart = page.indexOf('<div class="lb-bento"');
-    const drawersStart = page.indexOf("<!-- =========================================================================\n     DRAWERS & MODALS");
     const firstDrawer = page.indexOf('class="gw-drawer-backdrop" id="pred-drawer"');
+    const bentoEnd = page.lastIndexOf("</div>", firstDrawer);
     expect(bentoStart).toBeGreaterThanOrEqual(0);
-    expect(drawersStart).toBeGreaterThan(bentoStart);
-    expect(firstDrawer).toBeGreaterThan(drawersStart);
-    expect(page.slice(bentoStart, drawersStart)).toContain("</div>");
+    expect(bentoEnd).toBeGreaterThan(bentoStart);
+    for (const id of ["pred-drawer", "settle-drawer", "rf-drawer", "cd-drawer"]) {
+      expect(page.indexOf(`id="${id}"`)).toBeGreaterThan(bentoEnd);
+    }
   });
 
   it("renders truthful unverified and resend controls", () => {
