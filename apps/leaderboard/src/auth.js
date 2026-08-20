@@ -177,7 +177,12 @@ export function slugify(s) {
 // behind the hardcoded demo tour at /demo, unreachable to its owner.
 export const RESERVED = new Set(["api", "assets", "login", "signup", "logout", "dashboard", "admin", "account", "billing", "favicon", "robots", "sitemap", "index", "forgot", "reset", "terms", "privacy", "responsible", "logo", "go", "stats", "bot", "hook", "r", "pb", "health", "demo", "invite"]);
 export const json = (data, status = 200, headers = {}) => new Response(JSON.stringify(data), { status, headers: { "content-type": "application/json; charset=utf-8", ...headers } });
-export const bad = (msg, status = 400, headers = {}) => json({ ok: false, error: msg }, status, headers);
+export const bad = (msg, status = 400, headers = {}, details = {}) => {
+  const extra = details && typeof details === "object"
+    ? Object.fromEntries(Object.entries(details).filter(([key]) => key !== "error" && key !== "ok"))
+    : {};
+  return json({ ok: false, error: msg, ...extra }, status, headers);
+};
 export const ok = (data = {}) => json({ ok: true, ...data });
 
 export function rateLimitHeaders(rl) {

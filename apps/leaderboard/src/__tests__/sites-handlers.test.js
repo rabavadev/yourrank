@@ -118,7 +118,7 @@ mock.module(dataSitesUrlTs, () => ({
 
 // ── Import after mocks ─────────────────────────────────────────────────
 import {
-  handleCreateBoard, handleGetSite, handleListBoards, handlePutTheme, handleStats, handleTrackCopy
+  handleCreateBoard, handleGetSite, handleListBoards, handlePutTheme, handleStats, handleTrackCopy, handlePutSite
 } from "../handlers/sites.js";
 import { handleQuickAdd } from "../handlers/quick-add.js";
 
@@ -355,5 +355,71 @@ describe("handleQuickAdd", () => {
     expect(res.status).toBe(200);
     const body = await res.json();
     expect(body.players[0].wagered).toBe(125);
+  });
+
+  it("rejects negative and malformed quick-add amounts", async () => {
+    const env = mockEnv();
+    const negative = await handleQuickAdd(
+      req("https://test.com/api/sites/site-1/quick-add", "POST", { name: "Bob", amount: -1 }),
+      env,
+    );
+    expect(negative.status).toBe(400);
+    expect((await negative.json()).error).toContain("non-negative");
+
+    mockOne.mockResolvedValueOnce(USER_ROW);
+    const malformed = await handleQuickAdd(
+      req("https://test.com/api/sites/site-1/quick-add", "POST", { name: "Bob", amount: "abc" }),
+      env,
+    );
+    expect(malformed.status).toBe(400);
+    expect((await malformed.json()).error).toContain("non-negative");
+    expect(mockSaveSite).not.toHaveBeenCalled();
+  });
+
+  it("matches quick-add players by normalized identity", async () => {
+    const env = mockEnv();
+    const request = req("https://test.com/api/sites/site-1/quick-add", "POST", { name: "  aLiCe  ", amount: 25 });
+    const res = await handleQuickAdd(request, env);
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.players).toHaveLength(1);
+    expect(body.players[0].wagered).toBe(125);
+  });
+});
+
+describe("structured site save errors", () => {
+  beforeEach(() => {
+    mockOne.mockReset();
+    mockOne.mockResolvedValueOnce(USER_ROW);
+    mockGetBoardById.mockReset();
+    mockGetBoardById.mockResolvedValue({ id: "site-1", user_id: "user-1", published: false });
+  });
+
+  it("preserves player-limit rejected row identities", async () => {
+    mockSaveSite.mockResolvedValueOnce({
+      error: "Your plan allows up to 1 players.",
+      code: "player_limit",
+      rejectedRows: [{ index: 1, name: "Bob" }],
+    });
+    const res = await handlePutSite(
+      req("https://test.com/api/site", "POST", { siteId: "site-1", players: [{ name: "Alice" }, { name: "Bob" }] }),
+      mockEnv(),
+    );
+    expect(res.status).toBe(400);
+    expect(await res.json()).toMatchObject({ code: "player_limit", rejectedRows: [{ name: "Bob" }] });
+  });
+
+  it("preserves concurrency conflicts as a distinct code", async () => {
+    mockSaveSite.mockResolvedValueOnce({
+      error: "This board was modified by another session.",
+      code: "concurrency_conflict",
+      currentUpdatedAt: "after",
+    });
+    const res = await handlePutSite(
+      req("https://test.com/api/site", "POST", { siteId: "site-1", expectedUpdatedAt: "before" }),
+      mockEnv(),
+    );
+    expect(res.status).toBe(400);
+    expect(await res.json()).toMatchObject({ code: "concurrency_conflict", currentUpdatedAt: "after" });
   });
 });

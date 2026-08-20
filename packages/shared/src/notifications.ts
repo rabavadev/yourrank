@@ -14,6 +14,7 @@
 
 import { decryptToken, decryptCredential } from "./crypto.js";
 import { errMessage } from "./errors.js";
+import { normalizePlayerName } from "./player-names.js";
 
 // ----------------------------------------------------------------------------
 // Telegram Markdown escaping
@@ -188,19 +189,38 @@ function requireDelivery(channel: string, result: { ok: boolean; error?: string 
  * @returns Array of top-3 changes
  */
 export function detectTop3Changes(
-  oldPlayers: Array<{ name: string; wagered: number }>,
-  newPlayers: Array<{ name: string; wagered: number }>
+  oldPlayers: Array<{ name: string; wagered: number; score?: number; rank?: number }>,
+  newPlayers: Array<{ name: string; wagered: number; score?: number; rank?: number }>,
+  rankBy: "wagered" | "score" = "wagered",
 ): Array<{ name: string; rank: number; wagered: number }> {
-  const oldTop3Names = new Set((oldPlayers || []).slice(0, 3).map((p) => p.name));
+  const oldRanked = rankPlayers(oldPlayers || [], rankBy);
+  const oldTop3Names = new Set(oldRanked.filter((p) => p.rank <= 3).map((p) => normalizePlayerName(p.name)));
   const changes: Array<{ name: string; rank: number; wagered: number }> = [];
-  const sorted = (newPlayers || []).slice().sort((a, b) => b.wagered - a.wagered);
-  for (let i = 0; i < Math.min(3, sorted.length); i++) {
-    const p = sorted[i];
-    if (!oldTop3Names.has(p.name)) {
-      changes.push({ name: p.name, rank: i + 1, wagered: p.wagered });
+  const sorted = rankPlayers(newPlayers || [], rankBy);
+  for (const p of sorted.filter((player) => player.rank <= 3)) {
+    if (!oldTop3Names.has(normalizePlayerName(p.name))) {
+      changes.push({ name: p.name, rank: p.rank, wagered: p.wagered });
     }
   }
   return changes;
+}
+
+function rankPlayers<T extends { wagered: number; score?: number; rank?: number }>(
+  players: T[],
+  rankBy: "wagered" | "score",
+): Array<T & { rank: number }> {
+  const sorted = players.slice().sort((a, b) => {
+    const delta = Number(b[rankBy] || 0) - Number(a[rankBy] || 0);
+    return delta;
+  });
+  let previousValue: number | undefined;
+  let rank = 0;
+  return sorted.map((player, index) => {
+    const value = Number(player[rankBy] || 0);
+    if (index === 0 || value !== previousValue) rank = index + 1;
+    previousValue = value;
+    return { ...player, rank };
+  });
 }
 
 // ----------------------------------------------------------------------------
@@ -324,20 +344,19 @@ function buildPlayerRankText(siteName: string, playerName: string, oldRank: numb
 }
 
 export function getRankChangedPlayerNames(
-  oldPlayers: Array<{ name: string; wagered: number }>,
-  newPlayers: Array<{ name: string; wagered: number }>
+  oldPlayers: Array<{ name: string; wagered: number; score?: number; rank?: number }>,
+  newPlayers: Array<{ name: string; wagered: number; score?: number; rank?: number }>,
+  rankBy: "wagered" | "score" = "wagered",
 ): string[] {
-  const oldRankMap = new Map<string, number>();
-  (oldPlayers || []).forEach((p, i) => oldRankMap.set(p.name, i + 1));
-
-  const newSorted = (newPlayers || []).slice().sort((a, b) => (b.wagered || 0) - (a.wagered || 0));
-  const newRankMap = new Map<string, number>();
-  newSorted.forEach((p, i) => newRankMap.set(p.name, i + 1));
+  const oldRankMap = new Map(rankPlayers(oldPlayers || [], rankBy).map((p) => [normalizePlayerName(p.name), p.rank]));
+  const newSorted = rankPlayers(newPlayers || [], rankBy);
+  const newRankMap = new Map(newSorted.map((p) => [normalizePlayerName(p.name), p.rank]));
 
   return newSorted
     .filter((p) => {
-      const oldRank = oldRankMap.get(p.name) ?? null;
-      const newRank = newRankMap.get(p.name);
+      const normalizedName = normalizePlayerName(p.name);
+      const oldRank = oldRankMap.get(normalizedName) ?? null;
+      const newRank = newRankMap.get(normalizedName);
       if (!newRank) return false;
       return (oldRank === null && newRank <= 20) || (oldRank !== null && oldRank !== newRank);
     })
@@ -384,18 +403,18 @@ export async function notifySubscribedPlayers(
   env: any,
   siteId: string,
   siteName: string,
-  oldPlayers: Array<{ name: string; wagered: number }>,
-  newPlayers: Array<{ name: string; wagered: number }>,
+  oldPlayers: Array<{ name: string; wagered: number; score?: number; rank?: number }>,
+  newPlayers: Array<{ name: string; wagered: number; score?: number; rank?: number }>,
+  rankByOrSend: "wagered" | "score" | typeof sendPlayerRankNotification = "wagered",
   sendNotification: typeof sendPlayerRankNotification = sendPlayerRankNotification
 ): Promise<void> {
-  const oldRankMap = new Map<string, number>();
-  (oldPlayers || []).forEach((p, i) => oldRankMap.set(p.name, i + 1));
+  const rankBy = typeof rankByOrSend === "function" ? "wagered" : rankByOrSend;
+  if (typeof rankByOrSend === "function") sendNotification = rankByOrSend;
+  const oldRankMap = new Map(rankPlayers(oldPlayers || [], rankBy).map((p) => [normalizePlayerName(p.name), p.rank]));
+  const newSorted = rankPlayers(newPlayers || [], rankBy);
+  const newRankMap = new Map(newSorted.map((p) => [normalizePlayerName(p.name), p.rank]));
 
-  const newRankMap = new Map<string, number>();
-  const newSorted = (newPlayers || []).slice().sort((a, b) => (b.wagered || 0) - (a.wagered || 0));
-  newSorted.forEach((p, i) => newRankMap.set(p.name, i + 1));
-
-  const changedNames = getRankChangedPlayerNames(oldPlayers, newPlayers);
+  const changedNames = getRankChangedPlayerNames(oldPlayers, newPlayers, rankBy);
   if (!changedNames.length) return;
 
   const subs = await db.query(
@@ -410,8 +429,9 @@ export async function notifySubscribedPlayers(
   const tokenCache = new Map<string, string>();
   for (const sub of subs) {
     const playerName = sub.player_name;
-    const oldRank = oldRankMap.get(playerName) ?? null;
-    const newRank = newRankMap.get(playerName);
+    const normalizedName = normalizePlayerName(playerName);
+    const oldRank = oldRankMap.get(normalizedName) ?? null;
+    const newRank = newRankMap.get(normalizedName);
     if (!newRank) continue;
     try {
       await sendNotification(db, {

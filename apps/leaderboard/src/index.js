@@ -128,10 +128,10 @@ function redirectKeepingSearch(pathname, url, status = 302) {
 
 function findProfilePlayer(data, rawName) {
   const name = decodeURIComponent(rawName).trim();
-  const players = (data.players || []).slice().sort((a, b) => (Number(b.wagered) || 0) - (Number(a.wagered) || 0));
+  const players = (data.players || []).slice().sort((a, b) => (Number(a.rank) || 0) - (Number(b.rank) || 0));
   const idx = players.findIndex((p) => String(p.name || "").toLowerCase() === name.toLowerCase());
   if (idx === -1) return null;
-  return { player: players[idx], rank: idx + 1 };
+  return { player: players[idx], rank: Number(players[idx].rank) || idx + 1 };
 }
 
 async function buildPlayerHistory(env, siteId, rawName, plan) {
@@ -141,11 +141,11 @@ async function buildPlayerHistory(env, siteId, rawName, plan) {
   for (const a of archives) {
     const parsed = fromJsonb(a.snapshot_json);
     const snap = Array.isArray(parsed) ? parsed : [];
-    const sorted = snap.slice().sort((x, y) => (Number(y.wagered) || 0) - (Number(x.wagered) || 0));
+    const sorted = snap.slice().sort((x, y) => (Number(x.rank) || 0) - (Number(y.rank) || 0));
     const idx = sorted.findIndex((p) => String(p.name || "").toLowerCase() === name);
     if (idx !== -1) {
       const p = sorted[idx];
-      out.push({ label: a.label || "Archived", at: a.created_at, rank: idx + 1, wagered: p.wagered || 0, prize: p.prize || 0 });
+      out.push({ label: a.label || "Archived", at: a.created_at, rank: Number(p.rank) || idx + 1, wagered: p.wagered || 0, prize: p.prize || 0 });
     }
   }
   return out;

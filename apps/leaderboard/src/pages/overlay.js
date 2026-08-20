@@ -2,7 +2,7 @@
 export const overlayPage = (data, opts = {}) => {
   const b = data.brand || {};
   const br = data.branding || {};
-  const players = (data.players || []).slice().sort((a, c) => c.wagered - a.wagered).slice(0, 5);
+  const players = (data.players || []).slice().sort((a, c) => (Number(a.rank) || 0) - (Number(c.rank) || 0)).slice(0, 5);
   const endsAt = data.endsAt || null;
   const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
   const fmt = (n) => {
@@ -10,15 +10,15 @@ export const overlayPage = (data, opts = {}) => {
     if (n >= 1e3) return "$" + (n / 1e3).toFixed(1).replace(/\.0$/, "") + "k";
     return "$" + (n || 0).toLocaleString("en-US");
   };
-  const medal = (i) => i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : "#" + (i + 1);
-  const rows = players.map((p, i) => `<div class="ov-row" data-name="${esc(p.name)}"><span class="ov-medal">${medal(i)}</span><span class="ov-name">${esc(p.name)}</span><span class="ov-wager">${fmt(p.wagered)}</span></div>`).join("");
+  const medal = (player) => player.rank <= 3 ? ["🥇", "🥈", "🥉"][player.rank - 1] : "#" + player.rank;
+  const rows = players.map((p) => `<div class="ov-row" data-name="${esc(p.name)}"><span class="ov-medal">${medal(p)}</span><span class="ov-name">${esc(p.name)}</span><span class="ov-wager">${fmt(p.wagered)}</span></div>`).join("");
   const empty = 5 - players.length;
   const emptyRows = empty > 0 ? Array.from({ length: empty }, (_, i) => `<div class="ov-row ov-empty"><span class="ov-medal">#${players.length + i + 1}</span><span class="ov-name">—</span><span class="ov-wager">—</span></div>`).join("") : "";
   const accentA = (br.accentA && /^#[0-9a-fA-F]{6}$/.test(br.accentA)) ? br.accentA : "#53fc18";
   const accentB = (br.accentB && /^#[0-9a-fA-F]{6}$/.test(br.accentB)) ? br.accentB : "#35c211";
   const dataJson = JSON.stringify({ players, endsAt }).replace(/</g, "\\u003c");
   const isTicker = opts.layout === "ticker" || opts.layout === "bar";
-  const tickerRows = players.map((p, i) => `<div class="ov-ticker-item" data-name="${esc(p.name)}"><span class="ov-medal">${medal(i)}</span><span class="ov-name">${esc(p.name)}</span><span class="ov-wager">${fmt(p.wagered)}</span></div>`).join("");
+  const tickerRows = players.map((p) => `<div class="ov-ticker-item" data-name="${esc(p.name)}"><span class="ov-medal">${medal(p)}</span><span class="ov-name">${esc(p.name)}</span><span class="ov-wager">${fmt(p.wagered)}</span></div>`).join("");
 
   return `<!DOCTYPE html>
 <html lang="en"><head>

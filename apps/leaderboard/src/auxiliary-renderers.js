@@ -111,11 +111,13 @@ export function renderNewStreamerProfile(data, opts) {
 export function renderNewEmbed(data, opts) {
   const b = data.brand || {};
   const hidePrizes = data.prizes?.hidePrizeAmounts === true;
-  const players = Array.isArray(data.players) ? data.players.slice().sort((a, z) => (Number(z.wagered) || 0) - (Number(a.wagered) || 0)) : [];
+  const players = Array.isArray(data.players)
+    ? data.players.slice().sort((a, z) => (Number(a.rank) || 0) - (Number(z.rank) || 0))
+    : [];
   // A-01: aria-hidden on eyebrow <i> icon in the embed shell.
   // A-02: scope="col" on <th> cells.
   // U-07: Empty state uses .empty component.
   const currency = prizeCurrency(data);
-  const rows = players.length ? players.map((p, i) => `<tr><td>${i + 1}</td><td>${esc(p.name)}</td><td>${esc(formatMoney(currency, p.wagered))}</td><td>${hidePrizes ? "\u2014" : esc(formatMoney(currency, p.prize))}</td></tr>`).join("") : '<tr><td colspan="4"><div class="empty">No players yet.</div></td></tr>';
+  const rows = players.length ? players.map((p, i) => `<tr><td>${Number(p.rank) || i + 1}</td><td>${esc(p.name)}</td><td>${esc(formatMoney(currency, p.wagered))}</td><td>${hidePrizes ? "\u2014" : esc(formatMoney(currency, p.prize))}</td></tr>`).join("") : '<tr><td colspan="4"><div class="empty">No players yet.</div></td></tr>';
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(b.name || opts.slug)}</title><link rel="stylesheet" href="/assets/site-shell.css"><link rel="stylesheet" href="/assets/devin-system.css"><style nonce="${esc(opts.nonce)}">body{margin:0;background:transparent}.yr-embed{max-width:680px;margin:0 auto;padding:12px}.yr-embed .yr-card{padding:18px}.yr-embed table{width:100%}</style></head><body class="yr-site"><main class="yr-embed"><section class="yr-card yr-lb"><p class="yr-eyebrow"><i aria-hidden="true"></i>${esc(b.period || "CURRENT BOARD")}</p><h1 class="yr-h1">${esc(b.name || opts.slug)}</h1><p class="yr-lede">${esc(b.prizePool || "")}</p><div class="yr-table-wrap"><table class="yr-table"><thead><tr><th scope="col">#</th><th scope="col">Player</th><th scope="col">Wagered</th><th scope="col">Prize</th></tr></thead><tbody>${rows}</tbody></table></div></section></main></body></html>`;
 }

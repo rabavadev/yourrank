@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, mock } from "bun:test";
-import { escapeTgMarkdown, getRankChangedPlayerNames, notifyReset, notifySubscribedPlayers } from "../notifications.js";
+import { detectTop3Changes, escapeTgMarkdown, getRankChangedPlayerNames, notifyReset, notifySubscribedPlayers } from "../notifications.js";
 
 const originalFetch = globalThis.fetch;
 
@@ -55,6 +55,27 @@ describe("notification delivery", () => {
     ];
 
     expect(getRankChangedPlayerNames(oldPlayers, newPlayers)).toEqual(["Bob", "Alice", "Drew"]);
+  });
+
+  it("uses competition ranks and the selected ranking field", () => {
+    const changes = detectTop3Changes(
+      [{ name: "Alice", wagered: 100, score: 1 }, { name: "Bob", wagered: 90, score: 2 }, { name: "Cara", wagered: 80, score: 3 }],
+      [{ name: "Alice", wagered: 100, score: 10 }, { name: "Bob", wagered: 90, score: 10 }, { name: "Cara", wagered: 80, score: 1 }, { name: "Drew", wagered: 70, score: 1 }],
+      "score",
+    );
+    expect(changes).toEqual([{ name: "Drew", rank: 3, wagered: 70 }]);
+    expect(getRankChangedPlayerNames(
+      [{ name: "Alice", wagered: 1, score: 10 }, { name: "Bob", wagered: 2, score: 10 }, { name: "Cara", wagered: 3, score: 1 }],
+      [{ name: "Alice", wagered: 1, score: 20 }, { name: "Bob", wagered: 2, score: 20 }, { name: "Cara", wagered: 3, score: 1 }],
+      "score",
+    )).toEqual([]);
+  });
+
+  it("matches rank changes by normalized player identity", () => {
+    expect(getRankChangedPlayerNames(
+      [{ name: " Alice ", wagered: 100 }, { name: "Bob", wagered: 50 }],
+      [{ name: "alice", wagered: 100 }, { name: "Bob", wagered: 75 }],
+    )).toEqual([]);
   });
 
   it("continues notifying other subscribers when one send fails", async () => {

@@ -29,7 +29,7 @@ export async function handlePublicStandings(request, env, ctx, deps = {}) {
     if (slug === "demo") {
       const d = demoLeaderboardData();
       const sorted = (d.players || []).slice().sort((a, b) => (a.rank || 0) - (b.rank || 0));
-      const players = sorted.map((p, i) => ({ name: p.name, wagered: p.wagered, prize: p.prize, position: Number(p.rank) || i + 1 }));
+      const players = sorted.map((p, i) => ({ name: p.name, wagered: p.wagered, score: p.score, prize: p.prize, position: Number(p.rank) || i + 1 }));
       const endsAt = d.endsAt || null;
       let countdown = null;
       if (endsAt) {
@@ -43,6 +43,9 @@ export async function handlePublicStandings(request, env, ctx, deps = {}) {
         period: d.brand?.period || "Monthly",
         prizePool: d.brand?.prizePool || "$0",
         players,
+        rankBy: "wagered",
+        ended: !!endsAt && new Date(endsAt).getTime() <= Date.now(),
+        finalStandings: !!endsAt && new Date(endsAt).getTime() <= Date.now(),
         countdown,
       }, 200, { "cache-control": "public, max-age=30", ...rateLimitHeaders(rl) });
     }
@@ -52,7 +55,7 @@ export async function handlePublicStandings(request, env, ctx, deps = {}) {
     if (!r || r.suspended) return bad("not found", 404);
     const d = r.data;
     const sorted = (d.players || []).slice().sort((a, b) => (a.rank || 0) - (b.rank || 0));
-    const players = sorted.map((p, i) => ({ name: p.name, wagered: p.wagered, prize: p.prize, position: Number(p.rank) || i + 1 }));
+    const players = sorted.map((p, i) => ({ name: p.name, wagered: p.wagered, score: p.score, prize: p.prize, position: Number(p.rank) || i + 1 }));
     const endsAt = d.endsAt || null;
     let countdown = null;
     if (endsAt) {
@@ -66,6 +69,10 @@ export async function handlePublicStandings(request, env, ctx, deps = {}) {
       period: d.brand?.period || "Monthly",
       prizePool: d.brand?.prizePool || "$0",
       players,
+      rankBy: d.rankBy || "wagered",
+      ended: !!d.ended,
+      finalStandings: !!d.finalStandings,
+      winner: d.winner || null,
       countdown,
     }, 200, { "cache-control": "public, max-age=30", ...rateLimitHeaders(rl) });
   } catch (e) {
@@ -102,7 +109,7 @@ export async function handlePublicPlayers(request, env, ctx, deps = {}) {
       const all = (d.players || []).slice().sort((a, b) => b.wagered - a.wagered);
       const filtered = search ? all.filter((p) => String(p.name || "").toLowerCase().includes(search)) : all;
       const players = filtered.slice(offset, offset + limit).map((p) => ({ ...p, rank: all.indexOf(p) + 1 }));
-      return json({ players, total: all.length, offset, limit, hasMore: offset + players.length < filtered.length },
+      return json({ players, total: all.length, offset, limit, hasMore: offset + players.length < filtered.length, rankBy: "wagered", ended: !!d.endsAt && new Date(d.endsAt).getTime() <= Date.now(), finalStandings: !!d.endsAt && new Date(d.endsAt).getTime() <= Date.now() },
         200, { "cache-control": "public, max-age=10", ...rateLimitHeaders(effectiveRl) });
     }
 
@@ -139,6 +146,10 @@ export async function handlePublicPlayers(request, env, ctx, deps = {}) {
       offset,
       limit,
       hasMore: offset + players.length < (r.data.playerMatchCount ?? r.data.playerCount),
+      rankBy: r.data.rankBy || "wagered",
+      ended: !!r.data.ended,
+      finalStandings: !!r.data.finalStandings,
+      winner: r.data.winner || null,
     }, 200, { "cache-control": "public, max-age=10", etag, ...rateLimitHeaders(effectiveRl) });
   } catch (e) {
     console.error("[public/players]", String(e?.message || e));
@@ -188,7 +199,15 @@ export async function handlePublicStream(request, env, ctx, deps = {}) {
             controller.close();
             return;
           }
-          const payload = JSON.stringify({ players: data.data.players, total: data.data.playerCount, updatedAt: newTs });
+          const payload = JSON.stringify({
+            players: data.data.players,
+            total: data.data.playerCount,
+            rankBy: data.data.rankBy || "wagered",
+            ended: !!data.data.ended,
+            finalStandings: !!data.data.finalStandings,
+            winner: data.data.winner || null,
+            updatedAt: newTs,
+          });
           controller.enqueue(enc.encode(`data: ${payload}\n\n`));
         }
       } catch (e) {
@@ -253,7 +272,8 @@ export async function handlePublicRank(request, env, ctx, deps = {}) {
     // Demo board has no DB row — serve static demo data.
     if (slug === "demo") {
       const d = demoLeaderboardData();
-      const sorted = (d.players || []).slice().sort((a, b) => (b.wagered || 0) - (a.wagered || 0));
+    const rankBy = "wagered";
+    const sorted = (d.players || []).slice().sort((a, b) => (Number(a.rank) || 0) - (Number(b.rank) || 0));
       const matchUser = userParam.toLowerCase().replace(/^@/, "").replace(/\s+/g, " ").trim();
       const normalizeForRank = (n) => String(n || "").toLowerCase().replace(/^\*+/, "").replace(/\s+/g, " ").trim();
       const idx = sorted.findIndex(p => normalizeForRank(p.name) === matchUser);
@@ -263,13 +283,13 @@ export async function handlePublicRank(request, env, ctx, deps = {}) {
         });
       }
       const player = sorted[idx];
-      const rank = idx + 1;
+      const rank = Number(player.rank) || idx + 1;
       const total = sorted.length;
       const wagered = "$" + Number(player.wagered || 0).toLocaleString("en-US", { maximumFractionDigits: 0 });
       let gap = "";
       if (rank > 1) {
-        const ahead = sorted[idx - 1];
-        const diff = (ahead.wagered || 0) - (player.wagered || 0);
+        const ahead = sorted.find((candidate) => Number(candidate.rank) < rank) || sorted[idx - 1];
+        const diff = (ahead[rankBy] || 0) - (player[rankBy] || 0);
         gap = ` ($${Number(diff).toLocaleString("en-US", { maximumFractionDigits: 0 })} behind #${rank - 1})`;
       }
       const name = d.brand?.name || slug;
@@ -291,7 +311,8 @@ export async function handlePublicRank(request, env, ctx, deps = {}) {
         headers: { ...rankHeaders, "cache-control": "public, max-age=30" }
       });
     }
-    const sorted = (r.data.players || []).slice().sort((a, b) => (b.wagered || 0) - (a.wagered || 0));
+    const rankBy = r.data.rankBy === "score" ? "score" : "wagered";
+    const sorted = (r.data.players || []).slice().sort((a, b) => (Number(a.rank) || 0) - (Number(b.rank) || 0));
     const matchUser = userParam.toLowerCase().replace(/^@/, "").replace(/\s+/g, " ").trim();
     const normalizeForRank = (n) => String(n || "").toLowerCase().replace(/^\*+/, "").replace(/\s+/g, " ").trim();
     const idx = sorted.findIndex(p => normalizeForRank(p.name) === matchUser);
@@ -301,13 +322,13 @@ export async function handlePublicRank(request, env, ctx, deps = {}) {
       });
     }
     const player = sorted[idx];
-    const rank = idx + 1;
+    const rank = Number(player.rank) || idx + 1;
     const total = sorted.length;
     const wagered = "$" + Number(player.wagered || 0).toLocaleString("en-US", { maximumFractionDigits: 0 });
     let gap = "";
     if (rank > 1) {
-      const ahead = sorted[idx - 1];
-      const diff = (ahead.wagered || 0) - (player.wagered || 0);
+      const ahead = sorted.find((candidate) => Number(candidate.rank) < rank) || sorted[idx - 1];
+      const diff = (ahead[rankBy] || 0) - (player[rankBy] || 0);
       gap = ` ($${Number(diff).toLocaleString("en-US", { maximumFractionDigits: 0 })} behind #${rank - 1})`;
     }
     const name = r.data.brand?.name || slug;

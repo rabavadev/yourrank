@@ -10,16 +10,9 @@ import { verifyBoardPasswordCookie } from "./board-password.js";
 import { detectImageMime, validateLogoData } from "./logo-validation.js";
 import { invalidatePublicBoardCache } from "./public-html-cache.js";
 import { notifyLiveBoard } from "./live-board-config.js";
+import { normalizePlayerName, truncatePlayerName } from "@yourrank/shared/player-names";
 
 export { detectImageMime, validateLogoData };
-
-function normalizePlayerName(name) {
-  // C-07 / H-17: stable, case-insensitive, whitespace-collapsed identity.
-  return String(name ?? "")
-    .trim()
-    .toLowerCase()
-    .replace(/\s+/g, " ");
-}
 
 function getTokenEncKey() {
   const hex = (typeof process !== "undefined" && process.env?.TOKEN_ENC_KEY) || "";
@@ -100,7 +93,7 @@ export const DEFAULT_EXTRA = {
 // needed by the /logo/:slug endpoint and saveSite(), which fetch it separately.
 // PERF-004 / PERF-107: avoid SELECT * to prevent 180KB+ transfers on every page.
 // PERF-005: include has_logo as a computed column to avoid a separate re-query.
-const SITE_COLUMNS = "id, user_id, slug, name, tagline, casino, code, cta_url, prize_pool, period, ends_at, reset_note, blurb, extra_json, published, is_draft, theme_json, updated_at, published_at, custom_domain, domain_status, discord_webhook_url_enc, telegram_chat_id, telegram_notify, auto_reset_enabled, auto_reset_clear, auto_reset_last_run_at, password_hash, password_salt, viewer_kick_auth_enabled, viewer_discord_auth_enabled, viewer_public_redeem_enabled, games_enabled, shop_enabled, credits_enabled, (logo_data IS NOT NULL AND logo_data != '') AS has_logo";
+const SITE_COLUMNS = "id, user_id, slug, name, tagline, casino, code, cta_url, prize_pool, period, ends_at, reset_note, blurb, extra_json, published, is_draft, theme_json, updated_at, published_at, custom_domain, domain_status, discord_webhook_url_enc, telegram_chat_id, telegram_notify, auto_reset_enabled, auto_reset_clear, auto_reset_last_run_at, password_hash, password_salt, viewer_kick_auth_enabled, viewer_discord_auth_enabled, viewer_public_redeem_enabled, games_enabled, shop_enabled, credits_enabled, rank_by, (logo_data IS NOT NULL AND logo_data != '') AS has_logo";
 
 // L1 in-memory cache (per-isolate). No L2 KV — sessions moved to Postgres.
 const siteCache = new Map();
@@ -265,47 +258,32 @@ async function getPublicBoards(env, uid) {
   return (rows || []).map((r) => ({ slug: r.slug, name: r.name || r.slug }));
 }
 
-export async function getPlayers(env, siteId, options = {}) {
+export async function getPlayers(env, siteId, options = {}, dependencies = {}) {
+  const oneImpl = dependencies.one || one;
+  const queryImpl = dependencies.query || query;
   const limit = Math.min(10000, Math.max(1, Number(options.limit) || 10000));
   const offset = Math.max(0, Number(options.offset) || 0);
   const search = String(options.search || "").trim().toLowerCase().replace(/\s+/g, " ");
-  const sql = search
-    ? `WITH matches AS MATERIALIZED (
-         SELECT id, name, normalized_name, wagered, prize, score, hands, net_profit, win_rate, change
-           FROM players
-          WHERE site_id=$1 AND normalized_name LIKE '%' || $2 || '%'
-          ORDER BY wagered DESC, id ASC
-          LIMIT 10000
-       ), page AS (
-         SELECT *
-           FROM matches
-          ORDER BY wagered DESC, id ASC
-          LIMIT $3 OFFSET $4
+  const site = await oneImpl("SELECT rank_by FROM sites WHERE id=$1", [siteId]);
+  const rankBy = site?.rank_by === "score" ? "score" : "wagered";
+  const sql = `WITH ranked AS (
+         SELECT id, name, normalized_name, wagered, prize, score, hands, net_profit, win_rate, change,
+                RANK() OVER (ORDER BY ${rankBy} DESC)::int AS rank
+           FROM (
+             -- Defensive ceiling above the Pro/Agency plan's 9,999-player contractual limit.
+             SELECT id, name, normalized_name, wagered, prize, score, hands, net_profit, win_rate, change
+               FROM players
+              WHERE site_id=$1
+              ORDER BY ${rankBy} DESC, id ASC
+              LIMIT 10000
+           ) bounded
        )
-       SELECT name, wagered, prize, score, hands, net_profit, win_rate, change,
-              (SELECT count(*) FROM players better
-                WHERE better.site_id=$1
-                  AND (better.wagered > page.wagered
-                    OR (better.wagered = page.wagered AND better.id < page.id)))::int + 1 AS rank
-         FROM page
-        ORDER BY wagered DESC, id ASC`
-    : `SELECT name, wagered, prize, score, hands, net_profit, win_rate, change, rank
-         FROM (
-           SELECT name, normalized_name, wagered, prize, score, hands, net_profit, win_rate, change,
-                  ROW_NUMBER() OVER (ORDER BY wagered DESC, id ASC)::int AS rank
-             FROM (
-               -- Defensive ceiling above the Pro/Agency plan's 9,999-player contractual limit.
-               SELECT id, name, normalized_name, wagered, prize, score, hands, net_profit, win_rate, change
-                 FROM players
-                WHERE site_id=$1
-                ORDER BY wagered DESC, id ASC
-                LIMIT 10000
-             ) bounded
-         ) ranked
+       SELECT name, wagered, prize, score, hands, net_profit, win_rate, change, rank
+         FROM ranked
         WHERE ($2 = '' OR normalized_name LIKE '%' || $2 || '%')
-        ORDER BY rank
+        ORDER BY rank, id ASC
         LIMIT $3 OFFSET $4`;
-  const rows = await query(
+  const rows = await queryImpl(
     sql,
     [siteId, search, limit, offset]
   );
@@ -457,6 +435,9 @@ export function publicShape(site, players, archives = [], hasLogo = false, playe
   const extra = (rawExtra && typeof rawExtra === "object") ? rawExtra : {};
   const m = { ...DEFAULT_EXTRA, ...extra };
   const theme = parseTheme(site);
+  const ended = !!site.ends_at && new Date(site.ends_at).getTime() <= Date.now();
+  const finalStandings = ended;
+  const winner = ended && players.length ? players[0].name : null;
   const brand = {
     name: site.name, tagline: site.tagline, code: site.code,
     prizePool: site.prize_pool, period: site.period, casino: site.casino,
@@ -471,6 +452,10 @@ export function publicShape(site, players, archives = [], hasLogo = false, playe
     brand,
     prizes: { ...theme.prizes },
     endsAt: site.ends_at,
+    ended,
+    finalStandings,
+    winner,
+    rankBy: site.rank_by === "score" ? "score" : "wagered",
     partner: { blurb: site.blurb, chips: m.chips },
     whyStats: m.whyStats, rules: m.rules, socials: (m.socials || []).filter(s => s.enabled !== false),
     branding: { hasLogo, accentA: theme.accentA, accentB: theme.accentB, template: theme.template, text: theme.text, font: theme.font, options: theme.options },
@@ -564,6 +549,7 @@ export async function getUserSite(env, uid, plan) {
     return {
         id: site.id, slug: site.slug, published: !!site.published,
         isDraft: !!site.is_draft,
+        rankBy: site.rank_by === "score" ? "score" : "wagered",
         passwordProtected: !!site.password_hash,
         updatedAt: site.updated_at,
         autoReset: { enabled: !!site.auto_reset_enabled, clear: site.auto_reset_clear || "wagers" },
@@ -586,14 +572,14 @@ export async function getUserSite(env, uid, plan) {
 // Multi-board: return a summary list of all boards for a user (owned and delegated).
 export async function getUserBoardsList(env, uid) {
   const rows = await query(
-    `SELECT s.id, s.slug, s.name, s.casino, s.code, s.published, s.is_draft, s.board_order, s.theme_json,
+    `SELECT s.id, s.slug, s.name, s.casino, s.code, s.published, s.is_draft, s.rank_by, s.board_order, s.theme_json,
             s.kick_channel_external_id, s.kick_channel_name,
             'owner' AS user_role, NULL AS owner_name,
             (SELECT COUNT(*) FROM players p WHERE p.site_id = s.id) AS player_count
        FROM sites s
       WHERE s.user_id=$1
      UNION ALL
-     SELECT s.id, s.slug, s.name, s.casino, s.code, s.published, s.is_draft, s.board_order, s.theme_json,
+     SELECT s.id, s.slug, s.name, s.casino, s.code, s.published, s.is_draft, s.rank_by, s.board_order, s.theme_json,
             s.kick_channel_external_id, s.kick_channel_name,
             sm.role AS user_role, u.display_name AS owner_name,
             (SELECT COUNT(*) FROM players p WHERE p.site_id = s.id) AS player_count
@@ -614,6 +600,7 @@ export async function getUserBoardsList(env, uid) {
       code: b.code || "",
       published: !!b.published,
       isDraft: !!b.is_draft,
+      rankBy: b.rank_by === "score" ? "score" : "wagered",
       players: Number(b.player_count) || 0,
       template: theme.template,
       kickChannelExternalId: b.kick_channel_external_id || null,
@@ -635,6 +622,7 @@ export async function getUserSiteById(env, uid, siteId, plan) {
   return {
     id: site.id, slug: site.slug, published: !!site.published,
     isDraft: !!site.is_draft,
+    rankBy: site.rank_by === "score" ? "score" : "wagered",
     updatedAt: site.updated_at,
     autoReset: { enabled: !!site.auto_reset_enabled, clear: site.auto_reset_clear || "wagers" },
     data: publicShape(site, await getPlayers(env, site.id), archives.slice(0, archiveLimit), !!site.has_logo),
@@ -654,7 +642,7 @@ export async function getUserSiteById(env, uid, siteId, plan) {
   }
 
 // Multi-board: create a new board for a user.
-export async function createBoard(env, uid, { slug, name, casino = "", code = "", published = true, is_draft = false, seed = false } = {}, request = null, tx = null) {
+export async function createBoard(env, uid, { slug, name, casino = "", code = "", published = false, is_draft = true, rank_by = "wagered", seed = false } = {}, request = null, tx = null) {
   const dbOne = tx ? (text, params) => tx.one(text, params) : one;
   const dbExec = tx ? (text, params) => tx.unsafe(text, params) : exec;
   const dbQuery = tx ? (text, params) => tx.query(text, params) : query;
@@ -671,10 +659,11 @@ export async function createBoard(env, uid, { slug, name, casino = "", code = ""
   const siteId = crypto.randomUUID();
   const cleanCasino = String(casino || "").trim().slice(0, 40);
   const cleanCode = String(code || "").trim().slice(0, 40);
+  const rankBy = rank_by === "score" ? "score" : "wagered";
   const themeObj = { template: "classic" };
   await dbExec(
-    "INSERT INTO sites (id,user_id,slug,name,casino,code,prize_pool,period,published,is_draft,extra_json,theme_json) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11::jsonb,$12::jsonb)",
-    [siteId, uid, slug, name || slug, cleanCasino, cleanCode, "$0", "Monthly", published, is_draft, DEFAULT_EXTRA, themeObj]
+    "INSERT INTO sites (id,user_id,slug,name,casino,code,prize_pool,period,published,is_draft,rank_by,extra_json,theme_json) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12::jsonb,$13::jsonb)",
+    [siteId, uid, slug, name || slug, cleanCasino, cleanCode, "$0", "Monthly", published, is_draft, rankBy, DEFAULT_EXTRA, themeObj]
   );
   // If the user has no active board, make the new one active.
   await dbExec("UPDATE users SET active_site_id=$1, updated_at=now() WHERE id=$2 AND active_site_id IS NULL", [siteId, uid]);
@@ -689,7 +678,7 @@ export async function createBoard(env, uid, { slug, name, casino = "", code = ""
     entityType: "site",
     entityId: siteId,
     request,
-    details: { board_id: siteId, board_slug: slug, name: name || slug, casino: cleanCasino, code: cleanCode, published, is_draft },
+    details: { board_id: siteId, board_slug: slug, name: name || slug, casino: cleanCasino, code: cleanCode, published, is_draft, rank_by: rankBy },
   }, { exec: dbExec });
   return { ok: true, id: siteId, slug };
 }
@@ -767,9 +756,9 @@ export async function duplicateBoard(env, uid, siteId, request = null) {
 
   await withTransaction(async (tx) => {
     await tx.unsafe(
-      `INSERT INTO sites (id,user_id,slug,name,tagline,casino,code,cta_url,prize_pool,period,ends_at,reset_note,blurb,published,is_draft,extra_json,logo_data,theme_json,board_order)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16::jsonb,$17,$18::jsonb,$19)`,
-      [newId, uid, newSlug, `${source.name} (copy)`.slice(0, 80), source.tagline, source.casino, source.code, source.cta_url, source.prize_pool, source.period, source.ends_at, source.reset_note, source.blurb, false, false, extra, logoData, theme, boardOrder]
+      `INSERT INTO sites (id,user_id,slug,name,tagline,casino,code,cta_url,prize_pool,period,ends_at,reset_note,blurb,published,is_draft,rank_by,extra_json,logo_data,theme_json,board_order)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17::jsonb,$18,$19::jsonb,$20)`,
+      [newId, uid, newSlug, truncatePlayerName(`${source.name} (copy)`), source.tagline, source.casino, source.code, source.cta_url, source.prize_pool, source.period, source.ends_at, source.reset_note, source.blurb, false, true, source.rank_by === "score" ? "score" : "wagered", extra, logoData, theme, boardOrder]
     );
     if (players.length) {
       const valueRows = [];
@@ -781,7 +770,7 @@ export async function duplicateBoard(env, uid, siteId, request = null) {
         valueRows.push(`(${row.join(",")})`);
         params.push(
           crypto.randomUUID(), newId, p.name, normalizePlayerName(p.name),
-          p.wagered, p.prize, i, 1, p.wagered, 0, 0, 0, 0
+          p.wagered, p.prize, i, 1, p.score ?? p.wagered, p.hands ?? 0, p.net_profit ?? (p.prize - p.wagered), p.win_rate ?? 0, p.change ?? 0
         );
       });
       await tx.unsafe(
@@ -819,11 +808,16 @@ export async function createArchive(env, uid, { label, clear, siteId } = {}, req
   let limitReached = false;
   let emptyBoard = false;
   let finalPlayers = [];
+  const archiveRankBy = site.rank_by === "score" ? "score" : "wagered";
   
   await withTransaction(async (tx) => {
     // Read players inside the transaction so the snapshot and clear are consistent
     const rows = await tx.unsafe(
-      "SELECT name, wagered, prize, score, hands, net_profit, win_rate, change FROM players WHERE site_id=$1 ORDER BY wagered DESC",
+      `SELECT name, wagered, prize, score, hands, net_profit, win_rate, change,
+              RANK() OVER (ORDER BY ${archiveRankBy} DESC)::int AS rank
+         FROM players
+        WHERE site_id=$1
+        ORDER BY ${archiveRankBy} DESC, id ASC`,
       [site.id]
     );
     const players = rows || [];
@@ -905,11 +899,130 @@ function isProPlan(plan) {
   return plan === "pro" || plan === "agency" || plan === "lifetime";
 }
 
+const PLAYER_NUMBER_RULES = {
+  wagered: { min: 0, max: 1e15 },
+  prize: { min: 0, max: 1e15 },
+  score: { min: 0, max: 1e15 },
+  hands: { integer: true, min: -2147483648, max: 2147483647 },
+  change: { integer: true, min: -2147483648, max: 2147483647 },
+  netProfit: { min: -1e15, max: 1e15 },
+  winRate: { min: -1e15, max: 1e15 },
+};
+
+function isBlankNumber(value) {
+  return value === undefined || value === null || (typeof value === "string" && value.trim() === "");
+}
+
+export function readPlayerNumber(value, field, rowIndex, rowName, fallback) {
+  if (isBlankNumber(value)) return { value: fallback, provided: false };
+  const number = typeof value === "number" ? value : Number(String(value).trim());
+  const rule = PLAYER_NUMBER_RULES[field];
+  if (!Number.isFinite(number)
+    || (rule.integer && !Number.isInteger(number))
+    || number < rule.min
+    || number > rule.max) {
+    return {
+      error: `Player "${rowName || `row ${rowIndex + 1}`}" has invalid ${field}.`,
+      code: "invalid_player_field",
+      row: rowIndex,
+      field,
+    };
+  }
+  return { value: number, provided: true };
+}
+
+export function rankPlayerRows(players, rankBy) {
+  const sorted = players.slice().sort((a, b) => {
+    const delta = b[rankBy] - a[rankBy];
+    return delta || a.index - b.index;
+  });
+  let previousValue;
+  let previousRank = 0;
+  return sorted.map((player, index) => {
+    if (index === 0 || player[rankBy] !== previousValue) previousRank = index + 1;
+    previousValue = player[rankBy];
+    return { ...player, rank: previousRank };
+  });
+}
+
+export function validatePlayerRows(players, rankBy, previousPlayers = []) {
+  const validatedPlayers = [];
+  const seen = new Set();
+  for (const [index, p] of players.entries()) {
+    if (!p || p.name === undefined || p.name === null) continue;
+    const displayName = truncatePlayerName(p.name);
+    const norm = normalizePlayerName(displayName);
+    if (norm === "") {
+      return { error: `Player row ${index + 1} has an empty name.`, code: "invalid_player_name", row: index, field: "name" };
+    }
+    if (seen.has(norm)) {
+      return { error: `Duplicate player name: ${displayName}`, code: "duplicate_player", row: index, field: "name" };
+    }
+    seen.add(norm);
+    const row = { original: p, index, name: displayName, normalizedName: norm };
+    for (const [field, fallback] of [
+      ["wagered", 0],
+      ["prize", 0],
+      ["score", () => row.wagered],
+      ["hands", 0],
+      ["netProfit", () => row.prize - row.wagered],
+      ["winRate", 0],
+      ["change", null],
+    ]) {
+      const result = readPlayerNumber(
+        p[field],
+        field,
+        index,
+        displayName,
+        typeof fallback === "function" ? fallback() : fallback,
+      );
+      if (result.error) return result;
+      row[field] = result.value;
+      if (field === "change") row.changeProvided = result.provided;
+    }
+    validatedPlayers.push(row);
+  }
+  const ranked = rankPlayerRows(validatedPlayers, rankBy);
+  const oldRankMap = new Map(previousPlayers.map((p) => [normalizePlayerName(p.name), Number(p.rank) || 0]));
+  for (const player of ranked) {
+    if (!player.changeProvided) {
+      const previousRank = oldRankMap.get(player.normalizedName);
+      player.change = previousRank ? previousRank - player.rank : 0;
+    }
+  }
+  return { players: ranked };
+}
+
+export async function cleanupRemovedPlayerSubscriptions(tx, siteId, keepNames) {
+  if (!keepNames.length) {
+    await tx.unsafe("DELETE FROM player_subscriptions WHERE site_id=$1", [siteId]);
+    return;
+  }
+  const removed = await tx.query(
+    "SELECT name FROM players WHERE site_id=$1 AND normalized_name <> ALL($2::text[])",
+    [siteId, keepNames],
+  );
+  const removedNames = (removed || []).map((p) => p.name);
+  if (!removedNames.length) return;
+  await tx.unsafe(
+    `DELETE FROM player_subscriptions
+      WHERE site_id=$1
+        AND lower(regexp_replace(trim(player_name), '\\s+', ' ', 'g')) = ANY($2::text[])`,
+    [siteId, removedNames.map((name) => normalizePlayerName(name))],
+  );
+}
+
 export async function saveSite(env, user, payload, siteId, request = null) {
   const uid = typeof user === "string" ? user : user.id;
   const plan = typeof user === "object" ? effectivePlan(user) : "free";
   const site = siteId ? await getBoardById(env, uid, siteId) : await getByUser(env, uid);
   if (!site) return { error: "no site" };
+  const rankBy = payload.rankBy === undefined
+    ? (site.rank_by === "score" ? "score" : "wagered")
+    : payload.rankBy;
+  if (rankBy !== "wagered" && rankBy !== "score") {
+    return { error: "rankBy must be wagered or score.", code: "invalid_rank_by" };
+  }
   // Internal / dedicated-endpoint fields are silently ignored rather than
   // rejecting the whole save: the dashboard and setup wizard round-trip fields
   // like `customDomain` (managed via /api/site/domain) straight back from the
@@ -946,6 +1059,14 @@ export async function saveSite(env, user, payload, siteId, request = null) {
     }
   }
   
+  let validatedPlayers = null;
+  const previousPlayers = Array.isArray(payload.players) ? await getPlayers(env, site.id) : null;
+  if (Array.isArray(payload.players)) {
+    const result = validatePlayerRows(payload.players, rankBy, previousPlayers || []);
+    if (result.error) return result;
+    validatedPlayers = result.players;
+  }
+
   // Plan gate: player count is the paid lever.
   if (typeof user === "object" && Array.isArray(payload.players)) {
     let effectiveSitePlan = plan;
@@ -953,31 +1074,20 @@ export async function saveSite(env, user, payload, siteId, request = null) {
       const owner = await one("SELECT plan, (EXTRACT(EPOCH FROM plan_expires_at) * 1000)::double precision AS plan_expires_at, status FROM users WHERE id=$1", [site.user_id]);
       if (owner) effectiveSitePlan = effectivePlan(owner);
     }
-    const validPlayersForLimit = payload.players.filter((p) => p && p.name && normalizePlayerName(p.name) !== "");
-    if (validPlayersForLimit.length > PLAN_LIMITS[effectiveSitePlan]) {
+    const limit = PLAN_LIMITS[effectiveSitePlan];
+    if (validatedPlayers.length > limit) {
+      const rejectedRows = validatedPlayers
+        .slice()
+        .sort((a, b) => a.index - b.index)
+        .slice(limit)
+        .map((p) => ({ index: p.index, name: p.name }));
       return {
         error: effectiveSitePlan === "pro" || effectiveSitePlan === "agency"
           ? `Your plan allows up to ${PLAN_LIMITS[effectiveSitePlan]} players.`
           : `Your plan allows up to ${PLAN_LIMITS[effectiveSitePlan]} players. Upgrade for more.`,
         code: "player_limit",
+        rejectedRows,
       };
-    }
-  }
-
-  // H-17: reject duplicate player names and whitespace-only names before they
-  // reach the database, using the same normalization as the upsert path.
-  if (Array.isArray(payload.players)) {
-    const seen = new Set();
-    for (const p of payload.players) {
-      if (!p || !p.name) continue;
-      const norm = normalizePlayerName(p.name);
-      if (norm === "") {
-        return { error: `Player name cannot be empty.`, code: "invalid_player_name" };
-      }
-      if (seen.has(norm)) {
-        return { error: `Duplicate player name: ${p.name}`, code: "duplicate_player" };
-      }
-      seen.add(norm);
     }
   }
   const b = payload.brand || {};
@@ -1108,14 +1218,14 @@ export async function saveSite(env, user, payload, siteId, request = null) {
   if (slugRename) invalidateSiteCache(env, slugRename);
 
   // Capture old top-3 for notifications
-  const oldPlayers = await getPlayers(env, site.id);
-  const oldTop3 = oldPlayers.slice().sort((a, b2) => (b2.wagered || 0) - (a.wagered || 0)).slice(0, 3);
+  const oldPlayers = previousPlayers || await getPlayers(env, site.id);
+  const oldTop3 = oldPlayers.filter((p) => Number(p.rank) <= 3);
 
   const txResult = await withTransaction(async (tx) => {
     // QA-004 / C-07: Lock the site row and re-read updated_at inside the same
     // transaction so the optimistic concurrency check is authoritative.
     const locked = await tx.one(
-      `SELECT id, slug, name, tagline, casino, code, cta_url, prize_pool, period, ends_at, reset_note, blurb, extra_json, published, theme_json, updated_at FROM sites WHERE id=$1 FOR UPDATE`,
+      `SELECT id, slug, name, tagline, casino, code, cta_url, prize_pool, period, ends_at, reset_note, blurb, extra_json, published, is_draft, rank_by, theme_json, updated_at FROM sites WHERE id=$1 FOR UPDATE`,
       [site.id]
     );
     if (!locked) throw new Error("site not found");
@@ -1141,25 +1251,27 @@ export async function saveSite(env, user, payload, siteId, request = null) {
       ? String(b.period || "Monthly").trim()
       : (site.period || "Monthly");
     await tx.unsafe(
-      `UPDATE sites SET slug=$1, name=$2, tagline=$3, casino=$4, code=$5, cta_url=$6, prize_pool=$7, period=$8, ends_at=$9, reset_note=$10, blurb=$11, extra_json=$12::jsonb, logo_data=$13, theme_json=$14::jsonb, published=$15, is_draft=$16, discord_webhook_url_enc=$17, telegram_chat_id=$18, telegram_notify=$19, auto_reset_enabled=$20, auto_reset_clear=$21, password_hash=$22, password_salt=$23, published_at=$24, shop_enabled=$25, credits_enabled=$26, games_enabled=$27, updated_at=now() WHERE id=$28`,
+      `UPDATE sites SET slug=$1, name=$2, tagline=$3, casino=$4, code=$5, cta_url=$6, prize_pool=$7, period=$8, ends_at=$9, reset_note=$10, blurb=$11, extra_json=$12::jsonb, logo_data=$13, theme_json=$14::jsonb, published=$15, is_draft=$16, rank_by=$17, discord_webhook_url_enc=$18, telegram_chat_id=$19, telegram_notify=$20, auto_reset_enabled=$21, auto_reset_clear=$22, password_hash=$23, password_salt=$24, published_at=$25, shop_enabled=$26, credits_enabled=$27, games_enabled=$28, updated_at=now() WHERE id=$29`,
       [
         slugVal, siteName, b.tagline ?? site.tagline, b.casino ?? site.casino, b.code ?? site.code,
         b.ctaUrl ?? site.cta_url, b.prizePool ?? site.prize_pool, periodVal,
         endsAtVal, b.resetNote ?? site.reset_note, (payload.partner && payload.partner.blurb) ?? site.blurb,
-        extra, logoData, themeJson, publishedVal, isDraftVal, discordWebhookUrlEnc, telegramChatId, telegramNotify,
+        extra, logoData, themeJson, publishedVal, isDraftVal, rankBy, discordWebhookUrlEnc, telegramChatId, telegramNotify,
         autoResetEnabled, autoResetClear, passwordHash, passwordSalt, publishedAtVal,
         shopEnabled, creditsEnabled, gamesEnabled, site.id,
       ]
     );
 
     if (Array.isArray(payload.players)) {
-      const validPlayers = payload.players.filter((p) => p && p.name && normalizePlayerName(p.name) !== "");
+      const validPlayers = validatedPlayers || [];
       // C-07: delete only players whose stable normalized name is not in the
       // new payload; upsert the rest instead of replacing every row.
       if (validPlayers.length > 0) {
-        const keepNames = validPlayers.map((p) => normalizePlayerName(p.name));
+        const keepNames = validPlayers.map((p) => p.normalizedName);
+        await cleanupRemovedPlayerSubscriptions(tx, site.id, keepNames);
         await tx.unsafe("DELETE FROM players WHERE site_id=$1 AND normalized_name <> ALL($2::text[])", [site.id, keepNames]);
       } else {
+        await cleanupRemovedPlayerSubscriptions(tx, site.id, []);
         await tx.unsafe("DELETE FROM players WHERE site_id=$1", [site.id]);
       }
       if (validPlayers.length > 0) {
@@ -1171,16 +1283,9 @@ export async function saveSite(env, user, payload, siteId, request = null) {
           const row = [];
           for (let c = 0; c < cols; c++) row.push(`$${idx++}`);
           valueRows.push(`(${row.join(",")})`);
-          const wagered = Number(p.wagered) || 0;
-          const prize = Number(p.prize) || 0;
-          const score = Number.isNaN(Number(p.score)) ? wagered : Number(p.score);
-          const hands = Number.isNaN(Number(p.hands)) ? 0 : Number(p.hands);
-          const netProfit = Number.isNaN(Number(p.netProfit)) ? (prize - wagered) : Number(p.netProfit);
-          const winRate = Number.isNaN(Number(p.winRate)) ? 0 : Number(p.winRate);
-          const change = Number.isNaN(Number(p.change)) ? 0 : Number(p.change);
           params.push(
-            crypto.randomUUID(), site.id, String(p.name).slice(0, 80), normalizePlayerName(p.name),
-            wagered, prize, i, 1, score, hands, netProfit, winRate, change
+            crypto.randomUUID(), site.id, p.name, p.normalizedName,
+            p.wagered, p.prize, i, 1, p.score, p.hands, p.netProfit, p.winRate, p.change
           );
         });
         await tx.unsafe(
@@ -1212,32 +1317,33 @@ export async function saveSite(env, user, payload, siteId, request = null) {
   if (Array.isArray(payload.players) && typeof user === "object" && effectivePlan(user) !== "free") {
     try {
       const notifyQueue = createNotifyQueue(env);
-      const newSorted = payload.players.filter((p) => p && p.name).sort((a, b2) => (b2.wagered || 0) - (a.wagered || 0));
-      const top3Changes = detectTop3Changes(oldTop3, newSorted);
+      const newSorted = validatedPlayers || [];
+      const top3Changes = detectTop3Changes(oldTop3, newSorted, rankBy);
       if (top3Changes.length) {
         await notifyQueue.send({ type: "notify", kind: "top3", siteId: site.id, siteName, changes: top3Changes });
       }
 
-      const changedNames = getRankChangedPlayerNames(oldPlayers || [], newSorted);
+      const changedNames = getRankChangedPlayerNames(oldPlayers || [], newSorted, rankBy);
       if (changedNames.length) {
         const subs = await query(
           `SELECT ps.tg_user_id, ps.player_name, ps.bot_id
              FROM player_subscriptions ps
             WHERE ps.site_id = $1
-              AND ps.player_name = ANY($2::text[])`,
-          [site.id, changedNames]
+              AND lower(regexp_replace(trim(ps.player_name), '\\s+', ' ', 'g')) = ANY($2::text[])`,
+          [site.id, changedNames.map((name) => normalizePlayerName(name))]
         );
         if (subs && subs.length > 0) {
           const oldRankMap = new Map();
-          (oldPlayers || []).forEach((p, i) => oldRankMap.set(p.name, i + 1));
+          (oldPlayers || []).forEach((p) => oldRankMap.set(normalizePlayerName(p.name), Number(p.rank) || null));
           const newRankMap = new Map();
-          newSorted.forEach((p, i) => newRankMap.set(p.name, i + 1));
+          newSorted.forEach((p) => newRankMap.set(normalizePlayerName(p.name), Number(p.rank) || null));
           const rankEvents = [];
 
           for (const sub of subs) {
             const playerName = sub.player_name;
-            const oldRank = oldRankMap.get(playerName) ?? null;
-            const newRank = newRankMap.get(playerName);
+            const normalizedName = normalizePlayerName(playerName);
+            const oldRank = oldRankMap.get(normalizedName) ?? null;
+            const newRank = newRankMap.get(normalizedName);
             if (!newRank) continue;
             rankEvents.push({
               type: "notify",

@@ -113,6 +113,26 @@ describe("handlePublicStandings", () => {
     const res = await handlePublicStandings(req("https://test.com/api/public/suspended/standings"), env, { slug: "suspended" });
     expect(res.status).toBe(404);
   });
+
+  it("exposes rank setting and final standings for ended boards", async () => {
+    const ended = {
+      ...mockSiteData,
+      rankBy: "score",
+      ended: true,
+      finalStandings: true,
+      winner: "Alice",
+      endsAt: new Date(Date.now() - 1000).toISOString(),
+    };
+    const deps = { ...siteDeps, getPublicSite: () => ({ id: "site-1", data: ended }) };
+    const res = await handlePublicStandingsImpl(
+      req("https://test.com/api/public/testboard/standings"),
+      mockEnv(ended),
+      { slug: "testboard" },
+      deps,
+    );
+    const body = await res.json();
+    expect(body).toMatchObject({ rankBy: "score", ended: true, finalStandings: true, winner: "Alice" });
+  });
 });
 
 // ── handlePublicPlayers ────────────────────────────────────────────────

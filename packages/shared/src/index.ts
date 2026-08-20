@@ -1,2 +1,2 @@
 // Shared workspace package — import subpaths like `@yourrank/shared/session`.
-export {};
+export * from "./player-names.js";

@@ -11,6 +11,7 @@ import {
   recordReplayHash as defaultRecordReplayHash,
 } from "@yourrank/shared/postback";
 import { z } from "@yourrank/shared/validation";
+import { normalizePlayerName, truncatePlayerName } from "@yourrank/shared/player-names";
 
 const scoreNumber = z
   .union([z.number(), z.string()])
@@ -32,7 +33,7 @@ const scoreBodySchema = z
     slug: z.string().trim().min(1).max(80).optional(),
     siteId: z.string().uuid().optional(),
     players: z.array(z.object({
-      name: z.string().trim().min(1).max(80),
+      name: z.string().trim().min(1),
       wagered: scoreNumber.optional(),
       prize: scoreNumber.optional(),
       score: scoreNumber.optional(),
@@ -46,7 +47,7 @@ const scoreBodySchema = z
   .superRefine((body, ctx) => {
     const seen = new Set();
     for (const [index, player] of body.players.entries()) {
-      const normalized = player.name.toLowerCase().replace(/\s+/g, " ");
+      const normalized = normalizePlayerName(player.name);
       if (seen.has(normalized)) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
@@ -103,7 +104,7 @@ export async function handleScores(request, env, {
     // board reference (slug or siteId, in body or X-Postback-Site header).
     const boardRef = body.slug || body.siteId || request.headers.get("x-postback-site");
     if (!boardRef || typeof boardRef !== "string") return bad("Missing board slug or siteId. Use body.slug, body.siteId, or X-Postback-Site header.", 400);
-    const site = await one("SELECT s.id, s.user_id, s.slug, s.name, s.tagline, s.casino, s.code, s.cta_url, s.prize_pool, s.period, s.ends_at, s.reset_note, s.blurb, s.extra_json, s.published, s.theme_json, s.updated_at FROM sites s WHERE s.user_id=$1 AND (s.slug=$2 OR s.id::text=$2)", [keyOwner.userId, boardRef]);
+    const site = await one("SELECT s.id, s.user_id, s.slug, s.name, s.tagline, s.casino, s.code, s.cta_url, s.prize_pool, s.period, s.ends_at, s.reset_note, s.blurb, s.extra_json, s.published, s.rank_by, s.theme_json, s.updated_at FROM sites s WHERE s.user_id=$1 AND (s.slug=$2 OR s.id::text=$2)", [keyOwner.userId, boardRef]);
     if (!site) return bad("Invalid postback key or board reference.", 401);
     // Gate behind Pro plan
     const owner = await one("SELECT id, plan, (EXTRACT(EPOCH FROM plan_expires_at) * 1000)::double precision AS plan_expires_at, status FROM users WHERE id=$1", [site.user_id]);
@@ -112,25 +113,33 @@ export async function handleScores(request, env, {
     const players = body.players;
     // Plan gate: player count
     const validPlayers = players;
-    if (validPlayers.length > PLAN_LIMITS[plan]) return bad(`Your plan allows up to ${PLAN_LIMITS[plan]} players.`, 400);
+    if (validPlayers.length > PLAN_LIMITS[plan]) {
+      return bad(
+        `Your plan allows up to ${PLAN_LIMITS[plan]} players.`,
+        400,
+        {},
+        { code: "player_limit", rejectedRows: validPlayers.slice(PLAN_LIMITS[plan]).map((p, index) => ({ index: PLAN_LIMITS[plan] + index, name: p.name })) },
+      );
+    }
     // Reuse saveSite with just the players update — pass minimal payload
     const user = owner;
     const savePayload = {
       brand: { name: site.name, tagline: site.tagline, casino: site.casino, code: site.code, ctaUrl: site.cta_url, prizePool: site.prize_pool, period: site.period, resetNote: site.reset_note },
       partner: { blurb: site.blurb },
+      rankBy: site.rank_by,
       players: validPlayers.map(p => ({
-        name: String(p.name).slice(0, 40),
-        wagered: Number(p.wagered) || 0,
-        prize: Number(p.prize) || 0,
-        score: p.score !== undefined ? Number(p.score) : undefined,
-        hands: p.hands !== undefined ? Number(p.hands) : undefined,
-        netProfit: p.netProfit !== undefined ? Number(p.netProfit) : undefined,
-        winRate: p.winRate !== undefined ? Number(p.winRate) : undefined,
-        change: p.change !== undefined ? Number(p.change) : undefined,
+        name: truncatePlayerName(p.name),
+        wagered: p.wagered,
+        prize: p.prize,
+        score: p.score,
+        hands: p.hands,
+        netProfit: p.netProfit,
+        winRate: p.winRate,
+        change: p.change,
       })),
     };
     const r = await saveSiteImpl(env, user, savePayload, site.id, request);
-    return r.error ? bad(r.error, 400) : json({ ok: true, players: validPlayers.length }, 200, rateLimitHeaders(rl));
+    return r.error ? bad(r.error, 400, rateLimitHeaders(rl), r) : json({ ok: true, players: validPlayers.length }, 200, rateLimitHeaders(rl));
   } catch (e) {
     console.error("scores API failed:", String(e?.message || e));
     return bad("Internal error.", 500);

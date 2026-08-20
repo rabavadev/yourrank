@@ -66,7 +66,7 @@ export async function processAutoResetSite(env, site) {
     if (!claimed) return;
 
     const players = await getPlayers(env, site.id);
-    const top3 = players.slice().sort((a, b) => (b.wagered || 0) - (a.wagered || 0)).slice(0, 3);
+    const top3 = players.filter((p) => Number(p.rank) <= 3);
     const label = `Auto-reset · ${new Date().toLocaleString("en-US", { month: "long", day: "numeric", year: "numeric", timeZone: "UTC" })}`;
     const clear = CLEAR_OPTIONS.has(site.auto_reset_clear) ? site.auto_reset_clear : "wagers";
 

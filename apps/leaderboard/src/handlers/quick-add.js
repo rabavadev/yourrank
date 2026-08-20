@@ -2,6 +2,7 @@ import { requireUser, json, bad, readJson, rateLimit } from "../auth.js";
 import { getBoardById, getPlayers, saveSite } from "../site.js";
 import { logAudit } from "@yourrank/shared/audit";
 import { requireSiteCapability } from "../site-authorization.js";
+import { normalizePlayerName, truncatePlayerName } from "@yourrank/shared/player-names";
 
 // POST /api/sites/:id/quick-add
 // Takes { name: "Steve", amount: 500 }
@@ -19,12 +20,14 @@ export async function handleQuickAdd(request, env) {
   if (!siteId) return bad("Invalid board ID", 400);
 
   const payload = await readJson(request);
-  if (!payload || !payload.name) return bad("Player name required", 400);
+  if (!payload || !String(payload.name || "").trim()) return bad("Player name required", 400);
   
-  let amount = 0;
-  if (payload.amount) {
-    amount = parseFloat(String(payload.amount).replace(/[^0-9.-]/g, ""));
-    if (isNaN(amount)) amount = 0;
+  const rawAmount = payload.amount;
+  const amount = rawAmount === undefined || rawAmount === null || String(rawAmount).trim() === ""
+    ? 0
+    : Number(String(rawAmount).trim());
+  if (!Number.isFinite(amount) || amount < 0) {
+    return bad("Amount must be a non-negative number.", 400);
   }
 
   // Fetch current site state
@@ -47,8 +50,8 @@ export async function handleQuickAdd(request, env) {
   }));
   
   // Find or create player
-  const searchName = payload.name.trim().toLowerCase();
-  let playerIndex = players.findIndex(p => p.name.toLowerCase() === searchName);
+  const searchName = normalizePlayerName(payload.name);
+  let playerIndex = players.findIndex(p => normalizePlayerName(p.name) === searchName);
   
   if (playerIndex >= 0) {
     // Update existing
@@ -57,18 +60,19 @@ export async function handleQuickAdd(request, env) {
   } else {
     // Create new
     players.push({
-      name: payload.name.trim(),
+      name: truncatePlayerName(payload.name),
       wagered: amount,
       prize: 0
     });
   }
 
-  // Re-sort players (standard logic: by wagered descending)
-  players.sort((a, b) => (b.wagered || 0) - (a.wagered || 0));
+  // Keep the response order aligned with the board's selected ranking field.
+  const rankField = site.rank_by === "score" ? "score" : "wagered";
+  players.sort((a, b) => (b[rankField] || 0) - (a[rankField] || 0));
 
   // Save the updated site
   const r = await saveSite(env, user, { players, siteId: site.id }, site.id, request);
-  if (r.error) return bad(r.error, 400);
+  if (r.error) return bad(r.error, 400, {}, r);
 
   await logAudit({
     actorId: user.id,

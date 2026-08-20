@@ -11,6 +11,7 @@ let _siteRow = null;
 let _ownerRow = null;
 let _existingSiteRow = null;
 let _saveSiteResult = {};
+let _saveSitePayload = null;
 
 const dbDeps = ({
   one: (sql, _params) => {
@@ -82,7 +83,10 @@ const invokeScores = (request, env) =>
     ...sessionDeps,
     ...cryptoDeps,
     ...postbackDeps,
-    saveSiteImpl: async () => _saveSiteResult,
+    saveSiteImpl: async (_env, _user, payload) => {
+      _saveSitePayload = payload;
+      return _saveSiteResult;
+    },
   });
 
 // QA-006: Freeze the clock so Date.now()-based tests are deterministic
@@ -133,6 +137,7 @@ describe("handleScores — auth", () => {
     _ownerRow = proOwner();
     _existingSiteRow = existingSite();
     _saveSiteResult = {};
+    _saveSitePayload = null;
     _rateLimitCount = 0;
   });
 
@@ -258,6 +263,18 @@ describe("handleScores — payload validation", () => {
     const body = await res.json();
     expect(body.ok).toBe(true);
     expect(body.players).toBe(2);
+  });
+
+  test("uses shared grapheme-safe name truncation and preserves numeric postback values", async () => {
+    const longName = "👩‍👩‍👧‍👦".repeat(81);
+    const req = makeRequest({
+      headers: { "x-postback-key": "key" },
+      body: { slug: "test", players: [{ name: longName, wagered: 100, score: 25, hands: 3, change: -1 }] },
+    });
+    const res = await invokeScores(req, makeEnv());
+    expect(res.status).toBe(200);
+    expect(Array.from(_saveSitePayload.players[0].name)).toHaveLength(80 * 7);
+    expect(_saveSitePayload.players[0]).toMatchObject({ wagered: 100, score: 25, hands: 3, change: -1 });
   });
 
   test("players without a name are rejected", async () => {
