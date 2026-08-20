@@ -11,6 +11,7 @@ const assetsDir = path.resolve(import.meta.dir, "../assets");
 const sheets = fs.readdirSync(assetsDir).filter((f) => f.endsWith(".css"));
 const cookieScript = fs.readFileSync(path.join(assetsDir, "cookie-consent.js"), "utf8");
 const appCss = fs.readFileSync(path.join(assetsDir, "app.css"), "utf8");
+const devinSystemCss = fs.readFileSync(path.join(assetsDir, "devin-system.css"), "utf8");
 const headersSource = fs.readFileSync(path.resolve(import.meta.dir, "../middleware/headers.js"), "utf8");
 const indexSource = fs.readFileSync(path.resolve(import.meta.dir, "../index.js"), "utf8");
 const siteRenderSource = fs.readFileSync(path.resolve(import.meta.dir, "../../../../packages/shared/src/site-render.ts"), "utf8");
@@ -137,6 +138,7 @@ describe("authenticated dashboard v4 contract", () => {
     expect(baseTopbar).not.toContain("position: fixed");
     expect(baseTopbar).not.toContain("inset:");
     expect(baseTopbar).toContain("box-sizing: border-box");
+    expect(baseTopbar).toContain("background: var(--v4-surface)");
     expect(baseTopbar).not.toMatch(/\b(?:top|left|right|width|margin|box-sizing)\s*:[^;]*!important/);
     const narrowStart = css.indexOf("@media (max-width: 700px) {");
     const narrowEnd = css.indexOf("\n@media", narrowStart + 1);
@@ -157,6 +159,9 @@ describe("authenticated dashboard v4 contract", () => {
     expect(compactTablet).toContain(".lb-availability { gap: 4px; }");
     expect(css).toMatch(/@media \(max-width: 700px\) \{[\s\S]*?\.lb-topbar\s*\{[\s\S]*?flex-wrap:\s*wrap/);
     expect(css).toMatch(/@media \(max-width: 700px\) \{[\s\S]*?\.lb-topbar-hud\s*\{[\s\S]*?flex:\s*1 0 100%/);
+    const devinTopbar = devinSystemCss.match(/\.v3-dash\[data-auth-workspace\] \.lb-topbar\s*\{([^{}]*)\}/)?.[1] || "";
+    expect(devinTopbar).not.toMatch(/background\s*:/);
+    expect(devinTopbar).not.toMatch(/rgba\s*\(/);
   });
 
   it("does not retain selectors proven unused in the dashboard source tree", () => {

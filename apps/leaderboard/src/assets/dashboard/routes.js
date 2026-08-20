@@ -27,6 +27,11 @@ export const SECTIONS = {
   site: { path: "/dashboard/site", title: "Site settings" },
 };
 
+export const TAB_TITLES = {
+  board: { setup: "Setup", players: "Players", design: "Appearance", share: "Share", history: "History" },
+  performance: { activity: "Visitors", referrals: "Referrals", events: "Events" },
+};
+
 export const MANAGE_SITES_VALUE = "__manage_sites__";
 
 export { ACCOUNT_SECTION_PATHS, LEGACY_ACCOUNT_PATHS, NAV_OWNER_MAP, navOwner };
@@ -90,4 +95,15 @@ export function parseDashboardPath(pathname) {
   const tabs = SECTIONS[page].tabs || [];
   if (tail && !tabs.includes(tail)) return null;
   return { page, tab: tail || "" };
+}
+
+export function dashboardTitle(route) {
+  const section = SECTIONS[route?.page];
+  if (!section) return "Dashboard · YourRank";
+  const tabTitle = TAB_TITLES[route.page]?.[route.tab];
+  return `${tabTitle ? `${tabTitle} · ` : ""}${section.title} · YourRank`;
+}
+
+export function dashboardTitleForPath(pathname) {
+  return dashboardTitle(parseDashboardPath(pathname));
 }

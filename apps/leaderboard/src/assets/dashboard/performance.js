@@ -160,7 +160,12 @@ function renderChart(days, hasAnyData = false) {
     clearLoadError($("statsEmpty"), false);
   } else {
     clearLoadError(empty, false);
-    renderEmpty(empty, { kind: "empty", title: "No visitor activity yet", body: "Share your site link to start recording visits.", compact: true });
+    renderEmpty(empty, {
+      kind: "empty",
+      title: "No visitor activity yet",
+      body: state.PUBLISHED ? "Share your site link to start recording visits." : "Publish your site first. Visitors cannot reach it until it is live.",
+      compact: true,
+    });
   }
 }
 

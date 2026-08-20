@@ -547,6 +547,7 @@ async function load() {
     logError("load-credits-dashboard", err);
     renderError($("cr-empty"), { title: "Couldn't load your credits dashboard", body: "Your rewards data could not be loaded.", retry: () => load().catch(() => {}) });
     $("cr-app").hidden = false;
+    window.__yrBoot?.signal();
     throw err;
   } finally { setGlobalLoading(false); }
 }
@@ -795,4 +796,8 @@ function renderHistory(data) {
     empty.hidden = boards.length > 0;
   }
 }
-if ($("cr-app")) { wireShell(); wireActions(); load().catch(() => {}); }
+if ($("cr-app")) {
+  wireShell();
+  wireActions();
+  load().then(() => window.__yrBoot?.signal()).catch(() => {});
+}

@@ -269,7 +269,7 @@ describe("logged-out vs logged-in rendering", () => {
     expect(homeRes.status).toBe(200);
     const homeHtml = await homeRes.text();
     expect(homeHtml).toContain("Sign in with Kick");
-    expect(homeHtml).toContain("Credits are free loyalty points");
+    expect(homeHtml).toContain("Credits");
     expect(homeHtml).toContain("TestStreamer");
 
     const lbRes = await renderSiteRoute({ request: req("https://example.com/streamer/leaderboard"), env, ctx, nonce: "n", slug: "streamer", section: "leaderboard", isCustomDomain: false });

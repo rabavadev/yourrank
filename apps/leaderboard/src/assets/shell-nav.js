@@ -43,6 +43,39 @@
     });
   });
 
+  document.querySelectorAll(".v3-dash[data-auth-workspace]").forEach(function (root) {
+    var stickyPairs = [
+      [".lb-page.is-on > .v3-head + .v3-tabs", ".lb-page.is-on > .v3-head"],
+      [".lb-page.is-on > .design-grid > .design-controls > .v3-tabs", ".lb-page.is-on > .design-grid > .design-controls > .v3-section-title"],
+      [".v3-analytics-page > .v3-tabs", ".v3-analytics-page > .v3-head"],
+      [".cr-workspace-content > .v3-tabs", "#cr-app > .v3-head"],
+      ["#acc-app > .account-settings-tabs", "#acc-app > .account-settings-head"],
+      ["#gw-app > .gw-nav-tabs", "#gw-app > .v3-head"],
+    ];
+
+    function syncStickyOffsets() {
+      stickyPairs.forEach(function (pair) {
+        var tabs = root.querySelector(pair[0]);
+        var head = root.querySelector(pair[1]);
+        if (!tabs || !head) return;
+        tabs.style.setProperty("--v3-sticky-head-offset", head.getBoundingClientRect().height + "px");
+      });
+    }
+
+    syncStickyOffsets();
+    if (typeof ResizeObserver === "function") {
+      var resizeObserver = new ResizeObserver(syncStickyOffsets);
+      root.querySelectorAll(".v3-head, .v3-section-title, .account-settings-head").forEach(function (head) {
+        resizeObserver.observe(head);
+      });
+    }
+    if (typeof MutationObserver === "function") {
+      var mutationObserver = new MutationObserver(syncStickyOffsets);
+      mutationObserver.observe(root, { subtree: true, childList: true, attributes: true, attributeFilter: ["class", "hidden"] });
+    }
+    window.addEventListener("resize", syncStickyOffsets);
+  });
+
 
   document.querySelectorAll(".v3-dash").forEach(function (root) {
     var buttons = root.querySelectorAll("[data-collapse-side]");

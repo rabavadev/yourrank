@@ -51,7 +51,7 @@ export function playerRow(p = { name: "", wagered: "", prize: "", score: "", han
   const tr = document.createElement("tr");
   tr.innerHTML = `<td class="sel"><input type="checkbox" class="row-sel" title="Select" aria-label="Select player" /></td>
     <td class="rank"></td>
-    <td><input class="p-name" placeholder="Player name" title="${esc(p.name)}" value="${esc(p.name)}"></td>
+    <td class="player-name"><input class="p-name" placeholder="Player name" title="${esc(p.name)}" value="${esc(p.name)}"></td>
     <td class="num"><input class="p-wager" inputmode="decimal" placeholder="0" value="${esc(p.wagered)}"></td>
     <td class="num"><input class="p-prize" inputmode="decimal" placeholder="0" value="${esc(p.prize)}"></td>
     <td class="num col-score" hidden><input class="p-score" inputmode="decimal" placeholder="0" value="${esc(p.score)}"></td>
@@ -115,6 +115,8 @@ const FIELD_COLS = {
   winRate: "col-win",
   change: "col-change",
 };
+const PLAYER_TABLE_BASE_WIDTH = 44 + 56 + 200 + 112 + 112 + 96;
+const PLAYER_OPTIONAL_COLUMN_WIDTH = 112;
 function syncColumnDropdown(fields) {
   const merged = { ...state.EXTRA?.playerFields, ...(fields || {}) };
   $("colMenu")?.querySelectorAll("[data-col]").forEach((cb) => {
@@ -125,6 +127,11 @@ function syncColumnDropdown(fields) {
 export function applyPlayerFieldVisibility(fields) {
   const table = $("rows")?.closest("table");
   const merged = { ...state.EXTRA?.playerFields, ...(fields || {}) };
+  const visibleOptionalCount = Object.keys(FIELD_COLS).reduce((count, key) => count + (merged[key] !== false ? 1 : 0), 0);
+  table?.style.setProperty(
+    "--v3-players-table-min-width",
+    `${PLAYER_TABLE_BASE_WIDTH + visibleOptionalCount * PLAYER_OPTIONAL_COLUMN_WIDTH}px`
+  );
   for (const [key, cls] of Object.entries(FIELD_COLS)) {
     const shown = merged[key] !== false;
     table?.querySelectorAll(`.${cls}`).forEach((el) => { el.hidden = !shown; });
@@ -143,6 +150,8 @@ export function renderPlayers(list) {
   toggleEmpty();
   applyPlayerFieldVisibility();
   syncSelectAll();
+  const notice = $("playersSampleNotice");
+  if (notice) notice.hidden = !state.SAMPLE_PLAYERS;
 }
 
 export function renumber() {

@@ -60,6 +60,7 @@ const settingsConfigBase = {
   nav: false,
   footer: false,
   wide: true,
+  bootWatchdog: true,
 };
 
 export const settingsConfig = {

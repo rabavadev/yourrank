@@ -12,7 +12,10 @@ const assetBundle = readFileSync(new URL("../assets_bundled.js", import.meta.url
 const boardsJs = readFileSync(new URL("../assets/dashboard/boards.js", import.meta.url), "utf8");
 const boardShellJs = readFileSync(new URL("../assets/dashboard/board-shell.js", import.meta.url), "utf8");
 const siteSelectorJs = readFileSync(new URL("../assets/dashboard/site-selector.js", import.meta.url), "utf8");
+const playersJs = readFileSync(new URL("../assets/dashboard/players.js", import.meta.url), "utf8");
+const shellNavJs = readFileSync(new URL("../assets/shell-nav.js", import.meta.url), "utf8");
 const dashboardV4Css = readFileSync(new URL("../assets/dashboard-v4.css", import.meta.url), "utf8");
+const siteSource = readFileSync(new URL("../site.js", import.meta.url), "utf8");
 
 function dashboardHtml(activePath) {
   return PAGES.dashboard.Component({ activePath, user }).toString();
@@ -152,11 +155,14 @@ describe("dashboard navigation ownership", () => {
     expect(share).toContain('id="embedPublicCopy"');
   });
 
-  it("keeps feature subnavigation in normal document flow", () => {
-    const start = dashboardV4Css.lastIndexOf('section[data-page="board"] .editor-steps');
-    const end = dashboardV4Css.indexOf('.editor-steps::-webkit-scrollbar', start);
-    expect(start).toBeGreaterThan(-1);
-    expect(dashboardV4Css.slice(start, end)).not.toContain("position: sticky");
+  it("keeps feature headings and subnavigation clear of the sticky topbar", () => {
+    expect(dashboardV4Css).toContain(".lb-page.is-on > .v3-head");
+    expect(dashboardV4Css).toContain(".lb-page.is-on > .design-grid > .design-controls > .v3-section-title");
+    expect(dashboardV4Css).toContain("top: var(--v3-topbar-h);");
+    expect(dashboardV4Css).toContain(".lb-page.is-on > .v3-head + .v3-tabs");
+    expect(dashboardV4Css).toContain("top: calc(var(--v3-topbar-h) + var(--v3-sticky-head-offset, 0px));");
+    expect(shellNavJs).toContain("ResizeObserver");
+    expect(shellNavJs).toContain("--v3-sticky-head-offset");
   });
 
   it("aligns the topbar band and content to the main column", () => {
@@ -174,9 +180,16 @@ describe("dashboard navigation ownership", () => {
   });
 
   it("gives identifying names flexible space and full-value hints", () => {
-    expect(dashboardV4Css).toContain(".v3-dash[data-auth-workspace] .v3-players-table td:nth-child(3) {");
-    expect(dashboardV4Css).toContain("width: 34%;");
-    expect(dashboardV4Css).toContain("min-width: 240px;");
+    expect(dashboardV4Css).toContain(".v3-dash[data-auth-workspace] .v3-players-table .player-name {");
+    expect(dashboardV4Css).toContain("width: 200px;");
+    expect(dashboardV4Css).toContain("min-width: 200px;");
+    expect(dashboardV4Css).toContain("min-width: var(--v3-players-table-min-width, 620px);");
+    expect(dashboardV4Css).not.toContain("min-width: 1180px;");
+    expect(playersJs).toContain("PLAYER_TABLE_BASE_WIDTH = 44 + 56 + 200 + 112 + 112 + 96");
+    expect(playersJs).toContain("PLAYER_OPTIONAL_COLUMN_WIDTH = 112");
+    expect(playersJs).toContain("--v3-players-table-min-width");
+    expect(dashboardV4Css).not.toContain(".v3-players-table th:nth-child(3)");
+    expect(dashboardV4Css).not.toContain(".v3-players-table td:nth-child(3)");
     expect(dashboardV4Css).toContain(".ov-player-name {\n  min-width: 0;");
     expect(boardsJs).toContain("renderSiteSelector({");
     expect(siteSelectorJs).toContain("import { esc } from \"./utils.js\";");
@@ -184,5 +197,13 @@ describe("dashboard navigation ownership", () => {
       .toContain('class="p-name" placeholder="Player name" title="${esc(p.name)}"');
     expect(readFileSync(new URL("../assets/dashboard/overview.js", import.meta.url), "utf8"))
       .toContain('class="ov-player-name" title="${esc(player.name)}"');
+  });
+
+  it("keeps delegated site lookup unambiguous", () => {
+    expect(siteSource).toContain(
+      "FROM sites WHERE id IN (SELECT site_id FROM site_members WHERE user_id=$1) ORDER BY id ASC LIMIT 1"
+    );
+    expect(siteSource).not.toContain("FROM sites s JOIN site_members sm");
+    expect(siteSource).not.toContain("ORDER BY 8 ASC, 1 ASC");
   });
 });
