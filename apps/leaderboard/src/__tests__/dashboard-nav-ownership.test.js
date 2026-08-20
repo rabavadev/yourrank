@@ -12,6 +12,8 @@ const assetBundle = readFileSync(new URL("../assets_bundled.js", import.meta.url
 const boardsJs = readFileSync(new URL("../assets/dashboard/boards.js", import.meta.url), "utf8");
 const boardShellJs = readFileSync(new URL("../assets/dashboard/board-shell.js", import.meta.url), "utf8");
 const siteSelectorJs = readFileSync(new URL("../assets/dashboard/site-selector.js", import.meta.url), "utf8");
+const playersJs = readFileSync(new URL("../assets/dashboard/players.js", import.meta.url), "utf8");
+const shellNavJs = readFileSync(new URL("../assets/shell-nav.js", import.meta.url), "utf8");
 const dashboardV4Css = readFileSync(new URL("../assets/dashboard-v4.css", import.meta.url), "utf8");
 const siteSource = readFileSync(new URL("../site.js", import.meta.url), "utf8");
 
@@ -158,7 +160,9 @@ describe("dashboard navigation ownership", () => {
     expect(dashboardV4Css).toContain(".lb-page.is-on > .design-grid > .design-controls > .v3-section-title");
     expect(dashboardV4Css).toContain("top: var(--v3-topbar-h);");
     expect(dashboardV4Css).toContain(".lb-page.is-on > .v3-head + .v3-tabs");
-    expect(dashboardV4Css).toContain("top: calc(var(--v3-topbar-h) + 64px);");
+    expect(dashboardV4Css).toContain("top: calc(var(--v3-topbar-h) + var(--v3-sticky-head-offset, 0px));");
+    expect(shellNavJs).toContain("ResizeObserver");
+    expect(shellNavJs).toContain("--v3-sticky-head-offset");
   });
 
   it("aligns the topbar band and content to the main column", () => {
@@ -179,7 +183,11 @@ describe("dashboard navigation ownership", () => {
     expect(dashboardV4Css).toContain(".v3-dash[data-auth-workspace] .v3-players-table .player-name {");
     expect(dashboardV4Css).toContain("width: 200px;");
     expect(dashboardV4Css).toContain("min-width: 200px;");
-    expect(dashboardV4Css).toContain("min-width: 1180px;");
+    expect(dashboardV4Css).toContain("min-width: var(--v3-players-table-min-width, 620px);");
+    expect(dashboardV4Css).not.toContain("min-width: 1180px;");
+    expect(playersJs).toContain("PLAYER_TABLE_BASE_WIDTH = 44 + 56 + 200 + 112 + 112 + 96");
+    expect(playersJs).toContain("PLAYER_OPTIONAL_COLUMN_WIDTH = 112");
+    expect(playersJs).toContain("--v3-players-table-min-width");
     expect(dashboardV4Css).not.toContain(".v3-players-table th:nth-child(3)");
     expect(dashboardV4Css).not.toContain(".v3-players-table td:nth-child(3)");
     expect(dashboardV4Css).toContain(".ov-player-name {\n  min-width: 0;");

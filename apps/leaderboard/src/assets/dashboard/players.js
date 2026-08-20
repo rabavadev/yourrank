@@ -115,6 +115,8 @@ const FIELD_COLS = {
   winRate: "col-win",
   change: "col-change",
 };
+const PLAYER_TABLE_BASE_WIDTH = 44 + 56 + 200 + 112 + 112 + 96;
+const PLAYER_OPTIONAL_COLUMN_WIDTH = 112;
 function syncColumnDropdown(fields) {
   const merged = { ...state.EXTRA?.playerFields, ...(fields || {}) };
   $("colMenu")?.querySelectorAll("[data-col]").forEach((cb) => {
@@ -125,6 +127,11 @@ function syncColumnDropdown(fields) {
 export function applyPlayerFieldVisibility(fields) {
   const table = $("rows")?.closest("table");
   const merged = { ...state.EXTRA?.playerFields, ...(fields || {}) };
+  const visibleOptionalCount = Object.keys(FIELD_COLS).reduce((count, key) => count + (merged[key] !== false ? 1 : 0), 0);
+  table?.style.setProperty(
+    "--v3-players-table-min-width",
+    `${PLAYER_TABLE_BASE_WIDTH + visibleOptionalCount * PLAYER_OPTIONAL_COLUMN_WIDTH}px`
+  );
   for (const [key, cls] of Object.entries(FIELD_COLS)) {
     const shown = merged[key] !== false;
     table?.querySelectorAll(`.${cls}`).forEach((el) => { el.hidden = !shown; });
