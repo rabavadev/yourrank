@@ -10,12 +10,242 @@ export const GIVEAWAY_TABS = [
 
 const giveawayPath = (tab) => `/dashboard/giveaways/${tab === "preds" ? "predictions" : tab}`;
 
-export function renderGiveawaysHtml(activeTab = "chat") {
+export function renderGiveawayDrawersHtml() {
+  return `
+<!-- Create Prediction Drawer -->
+<div class="gw-drawer-backdrop" id="pred-drawer" hidden>
+  <div class="gw-drawer-panel" role="dialog" aria-modal="true" aria-labelledby="pred-drawer-title">
+    <div class="gw-drawer-head">
+      <h2 id="pred-drawer-title">Create Live Prediction</h2>
+      <button class="gw-modal-close-btn" id="pred-drawer-close" type="button" aria-label="Close">✕</button>
+    </div>
+    <form id="pred-form" class="gw-drawer-body">
+      <div class="gw-drawer-fields">
+      <div class="field">
+        <label for="pred-title">Prediction Question *</label>
+        <input type="text" id="pred-title" placeholder="e.g. Will I clutch this 1v3 round?" required />
+        <span class="field-err" data-field-error="pred-title" role="alert" aria-live="polite"></span>
+        <span class="hint">What are your viewers predicting?</span>
+      </div>
+
+      <div class="field">
+        <label>Options</label>
+        <div class="grid2">
+          <div>
+            <label for="pred-opt-1" class="font-12 font-muted">Option A (Yes)</label>
+            <input type="text" id="pred-opt-1" value="Yes" required />
+            <span class="field-err" data-field-error="pred-opt-1" role="alert" aria-live="polite"></span>
+          </div>
+          <div>
+            <label for="pred-opt-2" class="font-12 font-muted">Option B (No)</label>
+            <input type="text" id="pred-opt-2" value="No" required />
+            <span class="field-err" data-field-error="pred-opt-2" role="alert" aria-live="polite"></span>
+          </div>
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="pred-min-bet">Minimum Bet (Credits)</label>
+        <input type="number" id="pred-min-bet" min="1" value="10" placeholder="e.g. 10" required />
+        <span class="field-err" data-field-error="pred-min-bet" role="alert" aria-live="polite"></span>
+        <div class="gw-chip-presets">
+          <button class="gw-chip" type="button" data-val="5" data-target="pred-min-bet">5 Credits</button>
+          <button class="gw-chip" type="button" data-val="10" data-target="pred-min-bet">10 Credits</button>
+          <button class="gw-chip" type="button" data-val="25" data-target="pred-min-bet">25 Credits</button>
+          <button class="gw-chip" type="button" data-val="50" data-target="pred-min-bet">50 Credits</button>
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="pred-max-bet">Maximum Bet (Credits)</label>
+        <input type="number" id="pred-max-bet" min="1" value="500" placeholder="e.g. 500" required />
+        <span class="field-err" data-field-error="pred-max-bet" role="alert" aria-live="polite"></span>
+        <div class="gw-chip-presets">
+          <button class="gw-chip" type="button" data-val="100" data-target="pred-max-bet">100 Credits</button>
+          <button class="gw-chip" type="button" data-val="500" data-target="pred-max-bet">500 Credits</button>
+          <button class="gw-chip" type="button" data-val="1000" data-target="pred-max-bet">1,000 Credits</button>
+          <button class="gw-chip" type="button" data-val="5000" data-target="pred-max-bet">5,000 Credits</button>
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="pred-lock-min">Betting Window</label>
+        <select id="pred-lock-min" class="v3-select">
+          <option value="2">2 minutes (Fast round)</option>
+          <option value="5" selected>5 minutes (Standard match)</option>
+          <option value="10">10 minutes</option>
+          <option value="0">Manual lock only (until streamer clicks Lock)</option>
+        </select>
+      </div>
+      </div>
+
+      <div class="gw-drawer-footer">
+        <p class="status gw-drawer-status" id="pred-status" role="status" aria-live="polite" hidden></p>
+        <button class="btn btn--ghost" id="pred-cancel" type="button">Cancel</button>
+        <button class="btn btn--accent" id="pred-submit" type="submit"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg> Launch Prediction</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Settle Prediction Modal -->
+<div class="gw-drawer-backdrop" id="settle-drawer" hidden>
+  <div class="gw-drawer-panel" role="dialog" aria-modal="true" aria-labelledby="settle-title">
+    <div class="gw-drawer-head">
+        <h2 id="settle-title"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v18M5 7h14M7 7l-3 6h6L7 7Zm10 0-3 6h6l-3-6ZM3 21h18"/></svg> Settle Prediction Outcome</h2>
+      <button class="gw-modal-close-btn" id="settle-drawer-close" type="button" aria-label="Close">✕</button>
+    </div>
+    <div class="gw-drawer-body">
+      <div class="gw-drawer-fields">
+      <p class="font-muted font-14" id="settle-pred-title">Select which option won to distribute the prize pool automatically.</p>
+      <input type="hidden" id="settle-pred-id" value="" />
+
+      <div class="field">
+        <label>Which option won?</label>
+        <div class="d-flex flex-column gap-8 mt-8" id="settle-options-container"></div>
+      </div>
+      </div>
+
+      <div class="gw-drawer-footer">
+        <p class="status gw-drawer-status" id="settle-status" role="status" aria-live="polite" hidden></p>
+        <button class="btn btn--ghost font-danger" id="settle-btn-cancel-pred" type="button">Cancel &amp; Refund All</button>
+        <button class="btn btn--accent" id="settle-btn-confirm" type="button">Confirm &amp; Payout Winners</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Create Raffle Drawer -->
+<div class="gw-drawer-backdrop" id="rf-drawer" hidden>
+  <div class="gw-drawer-panel" role="dialog" aria-modal="true" aria-labelledby="rf-drawer-title">
+    <div class="gw-drawer-head">
+        <h2 id="rf-drawer-title"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h16v16H4z"/><path d="M8 8h8M8 12h5M8 16h8"/></svg> Create Ticket Raffle</h2>
+      <button class="gw-modal-close-btn" id="rf-drawer-close" type="button" aria-label="Close">✕</button>
+    </div>
+    <form id="rf-form" class="gw-drawer-body">
+      <div class="gw-drawer-fields">
+      <div class="field">
+        <label for="rf-title">Prize Title *</label>
+        <input type="text" id="rf-title" placeholder="e.g. $100 Amazon Gift Card or VIP Role" required />
+        <span class="field-err" data-field-error="rf-title" role="alert" aria-live="polite"></span>
+        <span class="hint">What will the winner receive?</span>
+      </div>
+
+      <div class="field">
+        <label for="rf-desc">Description (Optional)</label>
+        <textarea id="rf-desc" rows="2" placeholder="Rules or details for claiming this prize…"></textarea>
+        <span class="field-err" data-field-error="rf-desc" role="alert" aria-live="polite"></span>
+      </div>
+
+      <div class="field">
+        <label for="rf-cost">Ticket Cost (in Credits)</label>
+        <input type="number" id="rf-cost" min="0" value="30" placeholder="e.g. 30" required />
+        <span class="field-err" data-field-error="rf-cost" role="alert" aria-live="polite"></span>
+        <div class="gw-chip-presets">
+          <button class="gw-chip" type="button" data-val="0" data-target="rf-cost">Free (0 Credits)</button>
+          <button class="gw-chip" type="button" data-val="25" data-target="rf-cost">25 Credits</button>
+          <button class="gw-chip" type="button" data-val="50" data-target="rf-cost">50 Credits</button>
+          <button class="gw-chip" type="button" data-val="100" data-target="rf-cost">100 Credits</button>
+        </div>
+        <span class="hint">How many Credits a viewer pays per ticket. Set 0 for free community entries.</span>
+      </div>
+
+      <div class="field">
+        <label for="rf-max">Max Tickets per Viewer</label>
+        <input type="number" id="rf-max" min="1" value="10" placeholder="e.g. 5" required />
+        <span class="field-err" data-field-error="rf-max" role="alert" aria-live="polite"></span>
+        <div class="gw-chip-presets">
+          <button class="gw-chip" type="button" data-val="1" data-target="rf-max">1 ticket</button>
+          <button class="gw-chip" type="button" data-val="5" data-target="rf-max">5 tickets</button>
+          <button class="gw-chip" type="button" data-val="10" data-target="rf-max">10 tickets</button>
+          <button class="gw-chip" type="button" data-val="25" data-target="rf-max">25 tickets</button>
+        </div>
+        <span class="hint">Prevents one viewer from buying all tickets.</span>
+      </div>
+      </div>
+
+      <div class="gw-drawer-footer">
+        <p class="status gw-drawer-status" id="rf-status" role="status" aria-live="polite" hidden></p>
+        <button class="btn btn--ghost" id="rf-cancel" type="button">Cancel</button>
+        <button class="btn btn--accent" id="rf-submit" type="submit"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v18M5 7h14M7 7l-3 6h6L7 7Zm10 0-3 6h6l-3-6ZM3 21h18"/></svg> Create Raffle</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Launch Flash Code Drop Drawer -->
+<div class="gw-drawer-backdrop" id="cd-drawer" hidden>
+  <div class="gw-drawer-panel" role="dialog" aria-modal="true" aria-labelledby="cd-drawer-title">
+    <div class="gw-drawer-head">
+        <h2 id="cd-drawer-title"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m13 2-9 12h7l-1 8 9-12h-7l1-8Z"/></svg> Launch Flash Code Drop</h2>
+      <button class="gw-modal-close-btn" id="cd-drawer-close" type="button" aria-label="Close">✕</button>
+    </div>
+    <form id="cd-form" class="gw-drawer-body">
+      <div class="gw-drawer-fields">
+      <div class="field">
+        <label for="cd-code">Secret Drop Code *</label>
+        <div class="d-flex gap-8">
+          <input type="text" id="cd-code" class="gw-code-input" placeholder="e.g. KICKBOOST" required />
+          <span class="field-err" data-field-error="cd-code" role="alert" aria-live="polite"></span>
+          <button class="btn btn--sm btn--ghost" id="cd-btn-random" type="button"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z"/></svg> Random</button>
+        </div>
+        <span class="hint">The keyword you shout out on stream for viewers to claim.</span>
+      </div>
+
+      <div class="field">
+        <label for="cd-points">Credits Reward per Viewer</label>
+        <input type="number" id="cd-points" min="1" value="100" placeholder="e.g. 30" required />
+        <span class="field-err" data-field-error="cd-points" role="alert" aria-live="polite"></span>
+        <div class="gw-chip-presets">
+          <button class="gw-chip" type="button" data-val="25" data-target="cd-points">+25 Credits</button>
+          <button class="gw-chip" type="button" data-val="50" data-target="cd-points">+50 Credits</button>
+          <button class="gw-chip" type="button" data-val="100" data-target="cd-points">+100 Credits</button>
+          <button class="gw-chip" type="button" data-val="250" data-target="cd-points">+250 Credits</button>
+        </div>
+        <span class="hint">How many Credits each viewer receives upon claiming.</span>
+      </div>
+
+      <div class="field">
+        <label for="cd-max">Max Total Claims (First Come, First Served)</label>
+        <input type="number" id="cd-max" min="1" value="50" placeholder="e.g. 20" required />
+        <span class="field-err" data-field-error="cd-max" role="alert" aria-live="polite"></span>
+        <div class="gw-chip-presets">
+          <button class="gw-chip" type="button" data-val="10" data-target="cd-max">10 claims</button>
+          <button class="gw-chip" type="button" data-val="25" data-target="cd-max">25 claims</button>
+          <button class="gw-chip" type="button" data-val="50" data-target="cd-max">50 claims</button>
+          <button class="gw-chip" type="button" data-val="100" data-target="cd-max">100 claims</button>
+        </div>
+        <span class="hint">Once this limit is reached, the drop code expires automatically.</span>
+      </div>
+
+      <div class="field">
+        <label for="cd-expire">Time Limit (Optional)</label>
+        <select id="cd-expire" class="v3-select">
+          <option value="0">No time limit (until claims run out)</option>
+          <option value="15">15 minutes</option>
+          <option value="30">30 minutes</option>
+          <option value="60">1 hour</option>
+        </select>
+      </div>
+      </div>
+
+      <div class="gw-drawer-footer">
+        <p class="status gw-drawer-status" id="cd-status" role="status" aria-live="polite" hidden></p>
+        <button class="btn btn--ghost" id="cd-cancel" type="button">Cancel</button>
+        <button class="btn btn--accent" id="cd-submit" type="submit"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m13 2-9 12h7l-1 8 9-12h-7l1-8Z"/></svg> Launch Drop</button>
+      </div>
+    </form>
+  </div>
+</div>
+`;
+}
+
+export function renderGiveawaysContentHtml(activeTab = "chat") {
   const active = GIVEAWAY_TABS.some(([tab]) => tab === activeTab) ? activeTab : "chat";
   const activeLabel = GIVEAWAY_TABS.find(([tab]) => tab === active)?.[1] || "Giveaways";
   const tabs = GIVEAWAY_TABS.map(([tab, label]) => `
   <a class="gw-tab-btn v3-tab${tab === active ? " is-active is-on" : ""}" id="tab-btn-${tab}" href="${giveawayPath(tab)}" data-tab="${tab}" role="tab" aria-selected="${tab === active ? "true" : "false"}"${tab === active ? ' aria-current="page"' : ""}>${label}</a>`).join("");
-  return `
+  const html = `
 <div class="v3-head">
   <div class="v3-head-col">
   <h1>${activeLabel}</h1>
@@ -483,212 +713,6 @@ ${tabs}
 </div>
 
 <!-- =========================================================================
-     DRAWERS & MODALS
-     ========================================================================= -->
-
-<!-- Create Prediction Drawer -->
-<div class="gw-drawer-backdrop" id="pred-drawer" hidden>
-  <div class="gw-drawer-panel" role="dialog" aria-modal="true" aria-labelledby="pred-drawer-title">
-    <div class="gw-drawer-head">
-      <h2 id="pred-drawer-title">Create Live Prediction</h2>
-      <button class="gw-modal-close-btn" id="pred-drawer-close" type="button" aria-label="Close">✕</button>
-    </div>
-    <form id="pred-form" class="gw-drawer-body">
-      <div class="field">
-        <label for="pred-title">Prediction Question *</label>
-        <input type="text" id="pred-title" placeholder="e.g. Will I clutch this 1v3 round?" required />
-        <span class="hint">What are your viewers predicting?</span>
-      </div>
-
-      <div class="field">
-        <label>Options</label>
-        <div class="grid2">
-          <div>
-            <label for="pred-opt-1" class="font-12 font-muted">Option A (Yes)</label>
-            <input type="text" id="pred-opt-1" value="Yes" required />
-          </div>
-          <div>
-            <label for="pred-opt-2" class="font-12 font-muted">Option B (No)</label>
-            <input type="text" id="pred-opt-2" value="No" required />
-          </div>
-        </div>
-      </div>
-
-      <div class="field">
-        <label for="pred-min-bet">Minimum Bet (Credits)</label>
-        <input type="number" id="pred-min-bet" min="1" value="10" placeholder="e.g. 10" required />
-        <div class="gw-chip-presets">
-          <button class="gw-chip" type="button" data-val="5" data-target="pred-min-bet">5 Credits</button>
-          <button class="gw-chip" type="button" data-val="10" data-target="pred-min-bet">10 Credits</button>
-          <button class="gw-chip" type="button" data-val="25" data-target="pred-min-bet">25 Credits</button>
-          <button class="gw-chip" type="button" data-val="50" data-target="pred-min-bet">50 Credits</button>
-        </div>
-      </div>
-
-      <div class="field">
-        <label for="pred-max-bet">Maximum Bet (Credits)</label>
-        <input type="number" id="pred-max-bet" min="1" value="500" placeholder="e.g. 500" required />
-        <div class="gw-chip-presets">
-          <button class="gw-chip" type="button" data-val="100" data-target="pred-max-bet">100 Credits</button>
-          <button class="gw-chip" type="button" data-val="500" data-target="pred-max-bet">500 Credits</button>
-          <button class="gw-chip" type="button" data-val="1000" data-target="pred-max-bet">1,000 Credits</button>
-          <button class="gw-chip" type="button" data-val="5000" data-target="pred-max-bet">5,000 Credits</button>
-        </div>
-      </div>
-
-      <div class="field">
-        <label for="pred-lock-min">Betting Window</label>
-        <select id="pred-lock-min" class="v3-select">
-          <option value="2">2 minutes (Fast round)</option>
-          <option value="5" selected>5 minutes (Standard match)</option>
-          <option value="10">10 minutes</option>
-          <option value="0">Manual lock only (until streamer clicks Lock)</option>
-        </select>
-      </div>
-
-      <div class="gw-drawer-footer">
-        <button class="btn btn--ghost" id="pred-cancel" type="button">Cancel</button>
-        <button class="btn btn--accent" id="pred-submit" type="submit"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg> Launch Prediction</button>
-      </div>
-    </form>
-  </div>
-</div>
-
-<!-- Settle Prediction Modal -->
-<div class="gw-drawer-backdrop" id="settle-drawer" hidden>
-  <div class="gw-drawer-panel" role="dialog" aria-modal="true" aria-labelledby="settle-title">
-    <div class="gw-drawer-head">
-        <h2 id="settle-title"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v18M5 7h14M7 7l-3 6h6L7 7Zm10 0-3 6h6l-3-6ZM3 21h18"/></svg> Settle Prediction Outcome</h2>
-      <button class="gw-modal-close-btn" id="settle-drawer-close" type="button" aria-label="Close">✕</button>
-    </div>
-    <div class="gw-drawer-body">
-      <p class="font-muted font-14" id="settle-pred-title">Select which option won to distribute the prize pool automatically.</p>
-      <input type="hidden" id="settle-pred-id" value="" />
-
-      <div class="field">
-        <label>Which option won?</label>
-        <div class="d-flex flex-column gap-8 mt-8" id="settle-options-container"></div>
-      </div>
-
-      <div class="gw-drawer-footer">
-        <button class="btn btn--ghost font-danger" id="settle-btn-cancel-pred" type="button">Cancel &amp; Refund All</button>
-        <button class="btn btn--accent" id="settle-btn-confirm" type="button">Confirm &amp; Payout Winners</button>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- Create Raffle Drawer -->
-<div class="gw-drawer-backdrop" id="rf-drawer" hidden>
-  <div class="gw-drawer-panel" role="dialog" aria-modal="true" aria-labelledby="rf-drawer-title">
-    <div class="gw-drawer-head">
-        <h2 id="rf-drawer-title"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h16v16H4z"/><path d="M8 8h8M8 12h5M8 16h8"/></svg> Create Ticket Raffle</h2>
-      <button class="gw-modal-close-btn" id="rf-drawer-close" type="button" aria-label="Close">✕</button>
-    </div>
-    <form id="rf-form" class="gw-drawer-body">
-      <div class="field">
-        <label for="rf-title">Prize Title *</label>
-        <input type="text" id="rf-title" placeholder="e.g. $100 Amazon Gift Card or VIP Role" required />
-        <span class="hint">What will the winner receive?</span>
-      </div>
-
-      <div class="field">
-        <label for="rf-desc">Description (Optional)</label>
-        <textarea id="rf-desc" rows="2" placeholder="Rules or details for claiming this prize…"></textarea>
-      </div>
-
-      <div class="field">
-        <label for="rf-cost">Ticket Cost (in Credits)</label>
-        <input type="number" id="rf-cost" min="0" value="30" placeholder="e.g. 30" required />
-        <div class="gw-chip-presets">
-          <button class="gw-chip" type="button" data-val="0" data-target="rf-cost">Free (0 Credits)</button>
-          <button class="gw-chip" type="button" data-val="25" data-target="rf-cost">25 Credits</button>
-          <button class="gw-chip" type="button" data-val="50" data-target="rf-cost">50 Credits</button>
-          <button class="gw-chip" type="button" data-val="100" data-target="rf-cost">100 Credits</button>
-        </div>
-        <span class="hint">How many Credits a viewer pays per ticket. Set 0 for free community entries.</span>
-      </div>
-
-      <div class="field">
-        <label for="rf-max">Max Tickets per Viewer</label>
-        <input type="number" id="rf-max" min="1" value="10" placeholder="e.g. 5" required />
-        <div class="gw-chip-presets">
-          <button class="gw-chip" type="button" data-val="1" data-target="rf-max">1 ticket</button>
-          <button class="gw-chip" type="button" data-val="5" data-target="rf-max">5 tickets</button>
-          <button class="gw-chip" type="button" data-val="10" data-target="rf-max">10 tickets</button>
-          <button class="gw-chip" type="button" data-val="25" data-target="rf-max">25 tickets</button>
-        </div>
-        <span class="hint">Prevents one viewer from buying all tickets.</span>
-      </div>
-
-      <div class="gw-drawer-footer">
-        <button class="btn btn--ghost" id="rf-cancel" type="button">Cancel</button>
-        <button class="btn btn--accent" id="rf-submit" type="submit"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v18M5 7h14M7 7l-3 6h6L7 7Zm10 0-3 6h6l-3-6ZM3 21h18"/></svg> Create Raffle</button>
-      </div>
-    </form>
-  </div>
-</div>
-
-<!-- Launch Flash Code Drop Drawer -->
-<div class="gw-drawer-backdrop" id="cd-drawer" hidden>
-  <div class="gw-drawer-panel" role="dialog" aria-modal="true" aria-labelledby="cd-drawer-title">
-    <div class="gw-drawer-head">
-        <h2 id="cd-drawer-title"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m13 2-9 12h7l-1 8 9-12h-7l1-8Z"/></svg> Launch Flash Code Drop</h2>
-      <button class="gw-modal-close-btn" id="cd-drawer-close" type="button" aria-label="Close">✕</button>
-    </div>
-    <form id="cd-form" class="gw-drawer-body">
-      <div class="field">
-        <label for="cd-code">Secret Drop Code *</label>
-        <div class="d-flex gap-8">
-          <input type="text" id="cd-code" class="gw-code-input" placeholder="e.g. KICKBOOST" required />
-          <button class="btn btn--sm btn--ghost" id="cd-btn-random" type="button"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z"/></svg> Random</button>
-        </div>
-        <span class="hint">The keyword you shout out on stream for viewers to claim.</span>
-      </div>
-
-      <div class="field">
-        <label for="cd-points">Credits Reward per Viewer</label>
-        <input type="number" id="cd-points" min="1" value="100" placeholder="e.g. 30" required />
-        <div class="gw-chip-presets">
-          <button class="gw-chip" type="button" data-val="25" data-target="cd-points">+25 Credits</button>
-          <button class="gw-chip" type="button" data-val="50" data-target="cd-points">+50 Credits</button>
-          <button class="gw-chip" type="button" data-val="100" data-target="cd-points">+100 Credits</button>
-          <button class="gw-chip" type="button" data-val="250" data-target="cd-points">+250 Credits</button>
-        </div>
-        <span class="hint">How many Credits each viewer receives upon claiming.</span>
-      </div>
-
-      <div class="field">
-        <label for="cd-max">Max Total Claims (First Come, First Served)</label>
-        <input type="number" id="cd-max" min="1" value="50" placeholder="e.g. 20" required />
-        <div class="gw-chip-presets">
-          <button class="gw-chip" type="button" data-val="10" data-target="cd-max">10 claims</button>
-          <button class="gw-chip" type="button" data-val="25" data-target="cd-max">25 claims</button>
-          <button class="gw-chip" type="button" data-val="50" data-target="cd-max">50 claims</button>
-          <button class="gw-chip" type="button" data-val="100" data-target="cd-max">100 claims</button>
-        </div>
-        <span class="hint">Once this limit is reached, the drop code expires automatically.</span>
-      </div>
-
-      <div class="field">
-        <label for="cd-expire">Time Limit (Optional)</label>
-        <select id="cd-expire" class="v3-select">
-          <option value="0">No time limit (until claims run out)</option>
-          <option value="15">15 minutes</option>
-          <option value="30">30 minutes</option>
-          <option value="60">1 hour</option>
-        </select>
-      </div>
-
-      <div class="gw-drawer-footer">
-        <button class="btn btn--ghost" id="cd-cancel" type="button">Cancel</button>
-        <button class="btn btn--accent" id="cd-submit" type="submit"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m13 2-9 12h7l-1 8 9-12h-7l1-8Z"/></svg> Launch Drop</button>
-      </div>
-    </form>
-  </div>
-</div>
-
-<!-- =========================================================================
      TAB 5: TOURNAMENT ENTRIES
      ========================================================================= -->
 <div class="gw-tab-pane${active === "tournaments" ? " is-active" : ""}" id="pane-tournaments"${active === "tournaments" ? "" : " hidden"}>
@@ -815,6 +839,11 @@ ${tabs}
   </div>
 </div>
 `;
+  return html;
+}
+
+export function renderGiveawaysHtml(activeTab = "chat") {
+  return `${renderGiveawaysContentHtml(activeTab)}${renderGiveawayDrawersHtml()}`;
 }
 
 export const giveawaysHtml = renderGiveawaysHtml();

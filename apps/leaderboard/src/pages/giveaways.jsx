@@ -2,7 +2,7 @@
 /** @jsxImportSource hono/jsx */
 
 import { DashboardShell } from "./dashboard-shell.jsx";
-import { renderGiveawaysHtml } from "./giveaway-pages.js";
+import { renderGiveawayDrawersHtml, renderGiveawaysContentHtml } from "./giveaway-pages.js";
 
 export function GiveawaysPage({ user, tab = "chat" } = {}) {
   const labels = { chat: "Giveaways", raffles: "Raffles", drops: "Drops", preds: "Predictions", tournaments: "Tournaments" };
@@ -16,9 +16,10 @@ export function GiveawaysPage({ user, tab = "chat" } = {}) {
       footer="rewards"
       rootId="gw-dash"
       user={user}
+      overlays={renderGiveawayDrawersHtml(tab)}
     >
       <div class="gw-workspace-content">
-        <div id="gw-app" dangerouslySetInnerHTML={{ __html: renderGiveawaysHtml(tab) }}></div>
+        <div id="gw-app" dangerouslySetInnerHTML={{ __html: renderGiveawaysContentHtml(tab) }}></div>
       </div>
     </DashboardShell>
   );

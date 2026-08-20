@@ -2,7 +2,7 @@ import { describe, it, expect } from "bun:test";
 import { readFileSync } from "node:fs";
 import { handleGiveawayChatroom } from "../handlers/giveaway.js";
 import { GiveawaysPage } from "../pages/giveaways.jsx";
-import { giveawaysHtml, renderGiveawaysHtml } from "../pages/giveaway-pages.js";
+import { giveawaysHtml, renderGiveawayDrawersHtml, renderGiveawaysContentHtml, renderGiveawaysHtml } from "../pages/giveaway-pages.js";
 
 const gamesSource = readFileSync(new URL("../assets/dashboard/games.js", import.meta.url), "utf8");
 const siteSource = readFileSync(new URL("../assets/dashboard/site.js", import.meta.url), "utf8");
@@ -227,5 +227,79 @@ describe("Giveaway Chatroom Handler", () => {
   it("keeps preview device tabs under a single controller", () => {
     expect(dashboardSource).not.toContain('querySelectorAll(".preview-tab")');
     expect(previewTabsSource).not.toContain("stopImmediatePropagation");
+  });
+
+  it("adds CSRF only to Engage mutations and keeps drawers accessible", () => {
+    expect(giveawaysSource).toContain('headers.set("x-csrf-token", csrf)');
+    expect(giveawaysSource).toContain('if (!["GET", "HEAD", "OPTIONS"].includes(method))');
+    expect(giveawaysSource).toContain('responseData(res)');
+    expect(giveawaysSource).toContain("showConfirmModal");
+    expect(giveawaysSource).toContain("trapEventDrawerFocus");
+    expect(giveawaysSource).toContain("sessionStorage.setItem");
+    expect(giveawaysSource).not.toMatch(/\b(?:alert|confirm)\s*\(/);
+    for (const id of ["rf-drawer", "cd-drawer", "pred-drawer", "settle-drawer"]) {
+      expect(giveawaysHtml).toContain(`id="${id}"`);
+      expect(giveawaysHtml).toContain('role="dialog" aria-modal="true" aria-labelledby=');
+    }
+    expect(giveawaysHtml).toContain('id="rf-status"');
+    expect(giveawaysHtml).toContain('id="cd-status"');
+    expect(giveawaysHtml).toContain('id="pred-status"');
+    expect(giveawaysHtml).toContain('id="settle-status"');
+  });
+
+  it("keeps every event drawer's fields scrollable while actions stay pinned above the app", () => {
+    for (const id of ["rf-drawer", "cd-drawer", "pred-drawer", "settle-drawer"]) {
+      const drawer = giveawaysHtml.match(
+        new RegExp(`<div class="gw-drawer-backdrop" id="${id}"[\\s\\S]*?</div>\\n</div>`, "m"),
+      )?.[0];
+      expect(drawer).toBeTruthy();
+      const fieldsStart = drawer.indexOf('<div class="gw-drawer-fields">');
+      const footerStart = drawer.indexOf('<div class="gw-drawer-footer">');
+      expect(fieldsStart).toBeGreaterThan(0);
+      expect(footerStart).toBeGreaterThan(fieldsStart);
+      expect(drawer.slice(fieldsStart, footerStart)).toContain("gw-drawer-fields");
+      expect(drawer.slice(footerStart)).toContain("gw-drawer-footer");
+    }
+
+    const cssRules = new Map();
+    for (const [, selector, declarations] of giveawaysCssSource.matchAll(
+      /(\.gw-drawer-(?:backdrop|body|fields|footer))\s*\{([^}]*)\}/g,
+    )) {
+      if (cssRules.has(selector)) continue;
+      cssRules.set(
+        selector,
+        new Map([...declarations.matchAll(/([\w-]+)\s*:\s*([^;]+);/g)].map(([, name, value]) => [name, value.trim()])),
+      );
+    }
+    expect(cssRules.get(".gw-drawer-body")?.get("overflow")).toBe("hidden");
+    expect(cssRules.get(".gw-drawer-fields")?.get("overflow-y")).toBe("auto");
+    expect(cssRules.get(".gw-drawer-footer")?.get("flex")).toBe("0 0 auto");
+  });
+
+  it("mounts event drawers outside the content stacking context", () => {
+    const content = renderGiveawaysContentHtml("raffles");
+    const drawers = renderGiveawayDrawersHtml("raffles");
+    expect(content).not.toContain('id="rf-drawer"');
+    expect(drawers).toContain('id="rf-drawer"');
+
+    const page = GiveawaysPage({ user: { id: "u-1", email: "streamer@test.com" }, tab: "raffles" }).toString();
+    const bentoStart = page.indexOf('<div class="lb-bento"');
+    const firstDrawer = page.indexOf('class="gw-drawer-backdrop" id="pred-drawer"');
+    const bentoEnd = page.lastIndexOf("</div>", firstDrawer);
+    expect(bentoStart).toBeGreaterThanOrEqual(0);
+    expect(bentoEnd).toBeGreaterThan(bentoStart);
+    for (const id of ["pred-drawer", "settle-drawer", "rf-drawer", "cd-drawer"]) {
+      expect(page.indexOf(`id="${id}"`)).toBeGreaterThan(bentoEnd);
+    }
+  });
+
+  it("renders truthful unverified and resend controls", () => {
+    const dashboardPage = readFileSync(new URL("../pages/dashboard.jsx", import.meta.url), "utf8");
+    expect(dashboardPage).toContain('id="verifyBannerEmail"');
+    expect(dashboardPage).toContain('id="verifyResend"');
+    expect(dashboardPage).toContain('id="verifyDismiss"');
+    expect(siteSource).toContain("/api/auth/resend-verification");
+    expect(dashboardPage).toContain("Visitors cannot open your published leaderboard");
+    expect(siteSource).toContain("/api/auth/resend-verification");
   });
 });

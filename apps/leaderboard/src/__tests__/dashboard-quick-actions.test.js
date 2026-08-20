@@ -88,7 +88,7 @@ describe("dashboard overview quick actions", () => {
     expect(overviewJs).toContain("const verificationIsNext = pendingVerification || (readyToPublish && needsVerification)");
     expect(overviewJs).toContain('verificationIsNext ? "/verify-email"');
     expect(overviewJs).toContain('verificationIsNext ? "Confirm email"');
-    expect(siteJs).toContain("s.emailVerified || Boolean(document.querySelector");
+    expect(siteJs).toContain("banner.hidden = s.emailVerified || dismissed");
     expect(siteJs).toContain("export function wirePublishAction");
     expect(siteJs).toContain("requestPublicationChange");
   });
