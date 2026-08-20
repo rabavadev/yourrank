@@ -133,6 +133,13 @@ function OverviewSection({ active } = {}) {
       <span class="kpi-action">All-time spend</span>
     </div>
   </div>
+  <div class="kpi-card" id="ovPendingOrdersCard" hidden>
+    <span class="kpi-lbl" id="ovLblPendingOrders">Pending prize orders</span>
+    <div class="kpi-value-row">
+      <span class="kpi-val" id="ovPendingOrders" aria-labelledby="ovLblPendingOrders">0</span>
+      <a class="kpi-action" id="ovPendingOrdersAction" href="/dashboard/rewards/redemptions">Review orders</a>
+    </div>
+  </div>
 </div>
 
 <div class="ov-live-grid"><section class="ov-live-card" aria-label="Recent activity"><div class="ov-live-card-head"><h2>Recent activity</h2><button class="lb-cardlink kpi-action ov-analytics-link" id="ovAnalyticsLink" type="button" data-jump="performance">See full stats →</button></div><div class="ov-activity-list" id="ovActivityList"></div><div class="ov-card-empty" id="ovActivityEmpty" hidden></div></section><section class="ov-live-card" aria-label="Top players"><div class="ov-live-card-head"><h2>Top players</h2><a class="kpi-action" href="/dashboard/leaderboard/players">All players →</a></div><div class="ov-players-list" id="ovTopPlayers"></div><div class="ov-card-empty" id="ov_topEmpty" hidden></div></section></div>

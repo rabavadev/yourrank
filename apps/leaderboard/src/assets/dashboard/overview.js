@@ -207,8 +207,14 @@ export function renderOverviewSummary() {
     }
     const creditsEnabled = state.CREDITS_PRODUCT_ENABLED === true;
     const creditsCard = $("ovCreditsCard");
+    const pendingOrdersCard = $("ovPendingOrdersCard");
+    const pendingOrders = Number(state.CREDITS?.usage?.pendingRedemptions || 0);
     const kpiRow = $("ovKpiRow");
     if (creditsCard) creditsCard.hidden = !creditsEnabled;
+    if (pendingOrdersCard) pendingOrdersCard.hidden = pendingOrders <= 0;
+    setMetricValue($("ovPendingOrders"), number(pendingOrders));
+    const pendingOrdersAction = $("ovPendingOrdersAction");
+    if (pendingOrdersAction) pendingOrdersAction.textContent = pendingOrders === 1 ? "Review order" : "Review orders";
     kpiRow?.classList.toggle("has-credits", creditsEnabled);
     if (state.CREDITS_ANALYTICS_STATUS === "loading" && creditsEnabled) {
       setMetricLoading($("ovCreditsUsed"));

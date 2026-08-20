@@ -19,7 +19,7 @@ import { createQueueProducer } from "@yourrank/shared/queue-producer";
 import { shellNavHtml, publicNavHtml } from "@yourrank/shared/shell-nav";
 import apiApp from "./router.js";
 import { OG_IMAGE_PNG_BASE64 } from "./og-image.js";
-import { PLATFORM_HOST } from "./constants.js";
+import { PLATFORM_HOST, NON_SITE_PATHS } from "./constants.js";
 import {
   generateCsrfToken, csrfCookie,
   resolveCustomDomain, isCustomHost,
@@ -57,17 +57,11 @@ import { setRequestMetrics } from "@yourrank/shared/request-id";
 import { evaluateConsumerHealth } from "./consumer-health.js";
 import { readDlqHealth } from "./dlq-health.js";
 import { proxyMarketingHome } from "./marketing-proxy.js";
-import { redirectToLogin } from "./login-redirect.js";
+import { redirectResponse, redirectToLogin } from "./login-redirect.js";
 import { safeNextPath } from "@yourrank/shared/safe-next";
 
 const LEGAL_PAGES = new Set(["terms", "privacy", "responsible", "cookies", "refund", "contact"]);
 const MARKETING_PAGES = new Set(["/", "/index.html", "/sites", "/telegram", "/credits", "/pricing", "/overlays", "/games", "/switch", "/docs", "/faq", "/about", "/changelog", "/brand", "/status"]);
-const NON_SITE_PATHS = new Set([
-  "api", "auth", "dashboard", "login", "logout", "signup", "verify-email", "invite",
-  "account", "contact", "faq", "reviews", "cookies", "privacy", "terms",
-  "responsible", "refund", "setup", "demo", "sites", "telegram", "credits", "pricing", "overlays", "games", "switch", "docs", "about", "go", "logo", "favicon.ico",
-  "changelog", "brand", "status",
-]);
 const PUBLIC_API_OPERATIONS = new Set(["standings", "players", "stream", "rank", "data", "stats"]);
 const SITE_SECTIONS = new Set(["home", "leaderboard", "shop", "games", "me"]);
 const CUSTOM_VIEWER_AUTH_PATHS = new Set([
@@ -129,7 +123,7 @@ function fillYear(html) {
 function redirectKeepingSearch(pathname, url) {
   const target = new URL(pathname, url);
   target.search = url.search;
-  return Response.redirect(target, 302);
+  return redirectResponse(target, 302);
 }
 
 function findProfilePlayer(data, rawName) {
@@ -660,7 +654,7 @@ export async function handleRequest(request, env, ctx, meta, deps = {}) {
             if (user) {
               const next = url.searchParams.get("next") || "";
               const safeNext = safeNextPath(next, "/dashboard?verified=1");
-              return Response.redirect(new URL(safeNext, url), 302);
+              return redirectResponse(new URL(safeNext, url), 302);
             }
             verifyState = { message: "Email confirmed. Sign in below to finish setting up your page." };
           } else {
@@ -730,7 +724,7 @@ export async function handleRequest(request, env, ctx, meta, deps = {}) {
       }
       const legacyDashboard = legacyDashboardPath(path);
       if (legacyDashboard) {
-        return Response.redirect(new URL(legacyDashboard + url.search, url), 301);
+        return redirectResponse(new URL(legacyDashboard + url.search, url), 301);
       }
       // Every dashboard section is a real URL: `/dashboard`, `/dashboard/leaderboard`,
       // `/dashboard/leaderboard/players`, … The section is rendered client-side, so
@@ -740,7 +734,7 @@ export async function handleRequest(request, env, ctx, meta, deps = {}) {
         if (url.searchParams.get("nav") === "kickrewards") {
           const target = new URL("/dashboard/rewards/channel", url);
           for (const [k, v] of url.searchParams) if (k !== "nav") target.searchParams.set(k, v);
-          return Response.redirect(target, 302);
+          return redirectResponse(target, 302);
         }
         // `?nav=` was the old address of a section. Send it to the real one so
         // the URL a user copies is the URL they can share.
@@ -749,7 +743,7 @@ export async function handleRequest(request, env, ctx, meta, deps = {}) {
         if (legacy) {
           const target = new URL(LEGACY_ACCOUNT_PATHS[legacyNav] || dashboardPath(legacy), url);
           for (const [k, v] of url.searchParams) if (k !== "nav") target.searchParams.set(k, v);
-          return Response.redirect(target, 302);
+          return redirectResponse(target, 302);
         }
         try {
           const user = await currentUser(request, env);
@@ -792,16 +786,16 @@ export async function handleRequest(request, env, ctx, meta, deps = {}) {
       // Telegram now lives in the Bot Worker; preserve old leaderboard URLs.
       const telegramTarget = legacyTelegramRedirect(path);
       if (telegramTarget) {
-        return Response.redirect(new URL(telegramTarget + url.search, url), 301);
+        return redirectResponse(new URL(telegramTarget + url.search, url), 301);
       }
       if (path === "/dashboard/setup") {
-        return Response.redirect(new URL("/dashboard", url), 302);
+        return redirectResponse(new URL("/dashboard", url), 302);
       }
       if (path === "/dashboard/support") {
         const redirectUrl = new URL("/help/support", url);
         redirectUrl.searchParams.set("area", "dashboard");
         redirectUrl.searchParams.set("return", "/dashboard");
-        return Response.redirect(redirectUrl, 302);
+        return redirectResponse(redirectUrl, 302);
       }
       if (path === "/dashboard/credits") {
         return redirectKeepingSearch("/dashboard/rewards/channel", url);
@@ -827,14 +821,14 @@ export async function handleRequest(request, env, ctx, meta, deps = {}) {
         if (tab === "history") return redirectKeepingSearch("/dashboard/audience/activity", url);
         const map = { rules: "rewardsRules", shop: "rewardsShop", redemptions: "rewardsRedemptions" };
         const pageKey = map[tab];
-        if (!pageKey) return Response.redirect(new URL("/dashboard/rewards/redemptions", url), 302);
+        if (!pageKey) return redirectResponse(new URL("/dashboard/rewards/redemptions", url), 302);
         return renderDashboardPage(pageKey, "rewards_render_failed");
       }
       // An unknown tab under a real section (a typo, a renamed step) belongs on
       // that section rather than on a 404.
       if (path.startsWith("/dashboard/")) {
         const section = resolveSection(path.slice("/dashboard/".length).split("/")[0]);
-        if (section) return Response.redirect(new URL(dashboardPath(section), url), 302);
+        if (section) return redirectResponse(new URL(dashboardPath(section), url), 302);
       }
       if (path.startsWith("/dashboard/")) {
         const user = await currentUser(request, env);
@@ -910,10 +904,10 @@ export async function handleRequest(request, env, ctx, meta, deps = {}) {
           const value = url.searchParams.get(key);
           if (value) redirectUrl.searchParams.set(key, value);
         }
-        return Response.redirect(redirectUrl, 302);
+        return redirectResponse(redirectUrl, 302);
       }
       if (path === "/help.html") {
-        return Response.redirect(new URL("/help", url), 302);
+        return redirectResponse(new URL("/help", url), 302);
       }
       if (path === "/help") {
         const helpUser = await currentUser(request, env).catch(() => null);
@@ -924,13 +918,13 @@ export async function handleRequest(request, env, ctx, meta, deps = {}) {
         const tab = path.slice("/help/".length).split("?")[0];
         const map = { support: "helpSupport", feedback: "helpFeedback" };
         const pageKey = map[tab];
-        if (!pageKey) return Response.redirect(new URL("/help/support", url), 302);
+        if (!pageKey) return redirectResponse(new URL("/help/support", url), 302);
         const helpUser = await currentUser(request, env).catch(() => null);
         const helpHtml = await renderHtmlPage(PAGES[pageKey], { activePath: path, user: helpUser || undefined, theme: "dark" });
         return new Response(addCookieConsent(helpHtml), { headers: { ...HTML_N, ...csrfHeader } });
       }
-      if (path === "/pricing.html") return Response.redirect(`${url.origin}/pricing`, 301);
-      if (path === "/faq.html") return Response.redirect(new URL("/faq", url), 301);
+      if (path === "/pricing.html") return redirectResponse(`${url.origin}/pricing`, 301);
+      if (path === "/faq.html") return redirectResponse(new URL("/faq", url), 301);
       if (path === "/reviews" || path === "/reviews.html") return new Response(addCookieConsent(await renderHtmlPage(PAGES.reviews)), { headers: { ...HTML_N, ...csrfHeader } });
       if (path === "/cookies" || path === "/cookies.html") return new Response(addCookieConsent(await renderHtmlPage(PAGES.cookies)), { headers: { ...HTML_N, ...csrfHeader } });
 
@@ -961,7 +955,7 @@ export async function handleRequest(request, env, ctx, meta, deps = {}) {
 
       // --- /setup → /dashboard redirect (legacy bookmark fixup) ---
       if (method === "GET" && path === "/setup") {
-        return Response.redirect(url.origin + "/dashboard", 302);
+        return redirectResponse(url.origin + "/dashboard", 302);
       }
 
       // --- permanent demo leaderboard (always works, no DB needed) ---
@@ -973,7 +967,7 @@ export async function handleRequest(request, env, ctx, meta, deps = {}) {
         ? path.slice("/demo/".length).replace(/\/+$/, "")
         : "";
       if (demoSub && LEGAL_PAGES.has(demoSub)) {
-        return Response.redirect(`${url.origin}/${demoSub}`, 302);
+        return redirectResponse(`${url.origin}/${demoSub}`, 302);
       }
       if (method === "GET" && (path === "/demo" || DEMO_SECTIONS.has(demoSub))) {
         const demoSection = path === "/demo" ? "home" : demoSub;
@@ -1012,7 +1006,7 @@ export async function handleRequest(request, env, ctx, meta, deps = {}) {
         // Demo board has no DB row — send demo clicks to signup so the homepage CTA
         // isn't a dead 404.
         if (slug === "demo") {
-          return Response.redirect(`${url.origin}/signup`, 302);
+          return redirectResponse(`${url.origin}/signup`, 302);
         }
         const clickRef = newClickRef();
         const r = await getClickRedirectSite(env, slug, request);
@@ -1034,7 +1028,7 @@ export async function handleRequest(request, env, ctx, meta, deps = {}) {
         let code;
         try { code = decodeURIComponent(path.slice(5).split("/")[0]); } catch { return new Response(notFoundPage("", nonce), { status: 404, headers: HTML_N }); }
         if (!code) return new Response(notFoundPage("", nonce), { status: 404, headers: HTML_N });
-        return Response.redirect(`${url.origin}/signup?ref=${encodeURIComponent(code)}`, 302);
+        return redirectResponse(`${url.origin}/signup?ref=${encodeURIComponent(code)}`, 302);
       }
 
       // --- OBS overlay: /<slug>/overlay ---
@@ -1177,7 +1171,7 @@ a{color:#5b5bf5;text-decoration:none;font-weight:600}</style></head><body>
         if (!r || r.suspended) return new Response(notFoundPage(slug, nonce), { status: 404, headers: HTML_N });
         const shopUrl = new URL(url);
         shopUrl.pathname = `/${slug}/shop`;
-        return Response.redirect(shopUrl, 302);
+        return redirectResponse(shopUrl, 302);
       }
 
       // --- password unlock submission for public boards ---

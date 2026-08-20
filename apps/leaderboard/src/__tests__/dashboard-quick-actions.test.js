@@ -35,6 +35,8 @@ describe("dashboard overview quick actions", () => {
     expect(html).toContain('href="/dashboard/leaderboard/setup"');
     expect(html).toContain('class="ov-card-empty" id="ovActivityEmpty"');
     expect(html).toContain('id="ovCreditsCard" hidden');
+    expect(html).toContain('id="ovPendingOrdersCard" hidden');
+    expect(html).toContain('href="/dashboard/rewards/redemptions"');
     expect(html).toContain('id="ovKpiRow"');
   });
 
@@ -47,6 +49,8 @@ describe("dashboard overview quick actions", () => {
     expect(html).toContain('id="ovLblGiveaway">Active giveaway</span>');
     expect(html).toContain('id="ovLblCredits">Credits used</span>');
     expect(html).toContain('id="ovCreditsCard" hidden');
+    expect(overviewJs).toContain("state.CREDITS?.usage?.pendingRedemptions");
+    expect(overviewJs).toContain('pendingOrders === 1 ? "Review order" : "Review orders"');
     expect(html).toContain('id="ovKpiRow"');
   });
 

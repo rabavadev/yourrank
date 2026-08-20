@@ -21,7 +21,7 @@ import {
 import { bad, json, rateLimit, clientIp } from "../auth.js";
 import { consumeOAuthState, storeOAuthState } from "@yourrank/shared/oauth-state";
 import { resolveCustomDomain } from "../middleware/custom-domain.js";
-import { PLATFORM_HOST } from "../constants.js";
+import { NON_SITE_PATHS, PLATFORM_HOST } from "../constants.js";
 
 const KICK_VIEWER_HANDOFF_PROVIDER = "kick_viewer_handoff";
 const KICK_VIEWER_HANDOFF_TTL_SECONDS = 90;
@@ -114,24 +114,65 @@ function isCookieCoveredOrigin(origin) {
   }
 }
 
-async function resolveViewerOrigin(rawOrigin, env, resolveCustomDomainImpl = resolveCustomDomain) {
+async function resolveViewerOriginInfo(rawOrigin, env, resolveCustomDomainImpl = resolveCustomDomain) {
   let parsed;
   try {
     parsed = new URL(String(rawOrigin || ""));
   } catch {
-    return APEX_ORIGIN;
+    return { origin: APEX_ORIGIN, siteSlug: null, isCustomDomain: false };
   }
-  if (parsed.protocol !== "https:") return APEX_ORIGIN;
+  if (parsed.protocol !== "https:") return { origin: APEX_ORIGIN, siteSlug: null, isCustomDomain: false };
   const hostname = parsed.hostname.toLowerCase();
   if (hostname === PLATFORM_HOST || hostname.endsWith(`.${PLATFORM_HOST}`)) {
-    return parsed.origin;
+    return { origin: parsed.origin, siteSlug: null, isCustomDomain: false };
   }
   try {
-    if (await resolveCustomDomainImpl(env, hostname)) return parsed.origin;
+    const siteSlug = await resolveCustomDomainImpl(env, hostname);
+    if (siteSlug) return { origin: parsed.origin, siteSlug, isCustomDomain: true };
   } catch {
     // Invalid or unavailable custom domains fall back to the platform origin.
   }
-  return APEX_ORIGIN;
+  return { origin: APEX_ORIGIN, siteSlug: null, isCustomDomain: true };
+}
+
+async function resolveViewerOrigin(rawOrigin, env, resolveCustomDomainImpl = resolveCustomDomain) {
+  return (await resolveViewerOriginInfo(rawOrigin, env, resolveCustomDomainImpl)).origin;
+}
+
+function siteSlugFromReturnTo(rawReturnTo, targetOrigin) {
+  try {
+    const path = new URL(String(rawReturnTo || ""), targetOrigin).pathname;
+    const slug = path.split("/").filter(Boolean)[0]?.toLowerCase();
+    return slug && !NON_SITE_PATHS.has(slug) ? slug : null;
+  } catch {
+    return null;
+  }
+}
+
+async function registerViewerMembership({
+  viewerId,
+  stateData,
+  targetOriginInfo,
+  oneImpl,
+  execImpl,
+}) {
+  try {
+    const slug = targetOriginInfo.siteSlug ||
+      (!targetOriginInfo.isCustomDomain
+        ? siteSlugFromReturnTo(stateData?.returnTo, targetOriginInfo.origin)
+        : null);
+    if (!slug) return;
+    const site = await oneImpl("SELECT id FROM sites WHERE slug=$1", [slug]);
+    if (!site?.id) return;
+    await execImpl(
+      `INSERT INTO site_viewers (site_id, viewer_id, balance, total_earned)
+       VALUES ($1, $2, 0, 0)
+       ON CONFLICT (site_id, viewer_id) DO NOTHING`,
+      [site.id, viewerId],
+    );
+  } catch (err) {
+    console.error("[viewer-auth] membership registration failed:", err?.message || err);
+  }
 }
 
 function viewerReturnLocation(stateData, targetOrigin) {
@@ -206,7 +247,8 @@ export async function handleKickViewerAuthCallback(request, env, deps = {}) {
     return errorRedirect("oauth_state_expired");
   }
 
-  const targetOrigin = await resolveViewerOrigin(stateData.origin, env, resolveCustomDomainImpl);
+  const targetOriginInfo = await resolveViewerOriginInfo(stateData.origin, env, resolveCustomDomainImpl);
+  const targetOrigin = targetOriginInfo.origin;
   if (error) {
     return errorRedirect(error === "access_denied" ? "access_denied" : "kick_auth_failed", targetOrigin);
   }
@@ -287,6 +329,14 @@ export async function handleKickViewerAuthCallback(request, env, deps = {}) {
       }
     }
 
+    await registerViewerMembership({
+      viewerId,
+      stateData,
+      targetOriginInfo,
+      oneImpl,
+      execImpl,
+    });
+
     if (isCookieCoveredOrigin(targetOrigin) || url.origin === targetOrigin) {
       const sessionToken = await createViewerSessionImpl(env, viewerId);
       return redirect(viewerReturnLocation(stateData, targetOrigin), { "set-cookie": viewerCookieSetImpl(sessionToken, env, request) });
@@ -354,7 +404,19 @@ export async function handleDiscordViewerAuthStart(request, env) {
   return redirect(authorizeURL);
 }
 
-export async function handleDiscordViewerAuthCallback(request, env) {
+export async function handleDiscordViewerAuthCallback(request, env, deps = {}) {
+  const {
+    consumeOAuthState: consumeOAuthStateImpl = consumeOAuthState,
+    exchangeDiscordCode: exchangeDiscordCodeImpl = exchangeDiscordCode,
+    fetchDiscordCurrentUser: fetchDiscordCurrentUserImpl = fetchDiscordCurrentUser,
+    encryptDiscordToken: encryptDiscordTokenImpl = encryptDiscordToken,
+    discordAvatarUrl: discordAvatarUrlImpl = discordAvatarUrl,
+    one: oneImpl = one,
+    exec: execImpl = exec,
+    createViewerSession: createViewerSessionImpl = createViewerSession,
+    viewerCookieSet: viewerCookieSetImpl = viewerCookieSet,
+    resolveCustomDomain: resolveCustomDomainImpl = resolveCustomDomain,
+  } = deps;
   const url = new URL(request.url);
   const code = url.searchParams.get("code");
   const state = url.searchParams.get("state");
@@ -367,37 +429,40 @@ export async function handleDiscordViewerAuthCallback(request, env) {
     return redirect(`/me?error=${encodeURIComponent("missing_oauth_params")}`);
   }
 
-  const stateData = await consumeOAuthState("discord", state);
+  const stateData = await consumeOAuthStateImpl("discord", state);
   if (!stateData) {
     return redirect(`/me?error=${encodeURIComponent("oauth_state_expired")}`);
   }
 
+  const targetOriginInfo = await resolveViewerOriginInfo(stateData.origin, env, resolveCustomDomainImpl);
+  const targetOrigin = targetOriginInfo.origin;
+
   try {
-    const tokens = await exchangeDiscordCode(env, code, stateData.redirectUri);
+    const tokens = await exchangeDiscordCodeImpl(env, code, stateData.redirectUri);
     if (!tokens.access_token) {
       throw new Error("Discord did not return an access token");
     }
 
-    const discordUser = await fetchDiscordCurrentUser(tokens.access_token);
+    const discordUser = await fetchDiscordCurrentUserImpl(tokens.access_token);
     if (!discordUser) {
       throw new Error("Could not fetch Discord user");
     }
 
-    const accessEnc = await encryptDiscordToken(tokens.access_token);
-    const refreshEnc = tokens.refresh_token ? await encryptDiscordToken(tokens.refresh_token) : null;
+    const accessEnc = await encryptDiscordTokenImpl(tokens.access_token);
+    const refreshEnc = tokens.refresh_token ? await encryptDiscordTokenImpl(tokens.refresh_token) : null;
     const expiresAt = tokens.expires_in ? new Date(Date.now() + tokens.expires_in * 1000).toISOString() : null;
     const discordUserId = discordUser.id;
     const discordUsername = discordUser.global_name || discordUser.username || "";
-    const avatarUrl = discordAvatarUrl(discordUser.id, discordUser.avatar);
+    const avatarUrl = discordAvatarUrlImpl(discordUser.id, discordUser.avatar);
 
-    const existing = await one("SELECT id, discord_username FROM viewers WHERE discord_user_id=$1", [discordUserId]);
+    const existing = await oneImpl("SELECT id, discord_username FROM viewers WHERE discord_user_id=$1", [discordUserId]);
     let viewerId;
     if (existing) {
       viewerId = existing.id;
       const oldUsername = String(existing.discord_username || "").trim().toLowerCase();
       const newUsername = discordUsername.trim().toLowerCase();
       if (oldUsername && oldUsername !== newUsername) {
-        await exec(
+        await execImpl(
           `INSERT INTO viewer_username_history (viewer_id, username)
            VALUES ($1, $2)
            ON CONFLICT (viewer_id, username)
@@ -405,7 +470,7 @@ export async function handleDiscordViewerAuthCallback(request, env) {
           [viewerId, oldUsername]
         );
       }
-      await exec(
+      await execImpl(
         `UPDATE viewers
             SET discord_username = $1,
                 discord_access_token_enc = $2,
@@ -418,7 +483,7 @@ export async function handleDiscordViewerAuthCallback(request, env) {
         [discordUsername, accessEnc, refreshEnc, expiresAt, avatarUrl, viewerId]
       );
       if (newUsername) {
-        await exec(
+        await execImpl(
           `INSERT INTO viewer_username_history (viewer_id, username)
            VALUES ($1, $2)
            ON CONFLICT (viewer_id, username)
@@ -427,7 +492,7 @@ export async function handleDiscordViewerAuthCallback(request, env) {
         );
       }
     } else {
-      const rows = await exec(
+      const rows = await execImpl(
         `INSERT INTO viewers (discord_user_id, discord_username, discord_access_token_enc, discord_refresh_token_enc, discord_token_expires_at, discord_linked_at, avatar_url)
          VALUES ($1, $2, $3, $4, $5, now(), $6)
          RETURNING id`,
@@ -435,7 +500,7 @@ export async function handleDiscordViewerAuthCallback(request, env) {
       );
       viewerId = rows[0].id;
       if (discordUsername.trim()) {
-        await exec(
+        await execImpl(
           `INSERT INTO viewer_username_history (viewer_id, username)
            VALUES ($1, $2)
            ON CONFLICT (viewer_id, username)
@@ -445,8 +510,16 @@ export async function handleDiscordViewerAuthCallback(request, env) {
       }
     }
 
-    const sessionToken = await createViewerSession(env, viewerId);
-    return redirect(safeReturnTo(stateData.returnTo, stateData.origin), { "set-cookie": viewerCookieSet(sessionToken, env, request) });
+    await registerViewerMembership({
+      viewerId,
+      stateData,
+      targetOriginInfo,
+      oneImpl,
+      execImpl,
+    });
+
+    const sessionToken = await createViewerSessionImpl(env, viewerId);
+    return redirect(safeReturnTo(stateData.returnTo, targetOrigin), { "set-cookie": viewerCookieSetImpl(sessionToken, env, request) });
   } catch (err) {
     console.error("[viewer-auth] discord callback failed:", err?.message || err);
     return redirect("/me?error=discord_auth_failed");

@@ -31,4 +31,9 @@ describe("tracked redirects", () => {
     expect(response.headers.get("location")).toBe("https://yourrank.site/board");
     await deferred;
   });
+
+  it("keeps redirect headers mutable for request wrappers", () => {
+    const response = trackedDestination("https://yourrank.site", "board", null, "click-3");
+    expect(() => response.headers.append("set-cookie", "sess=; Max-Age=0")).not.toThrow();
+  });
 });

@@ -4,6 +4,7 @@ import {
   handleKickViewerAuthCallback,
   handleKickViewerAuthHandoff,
   handleKickViewerAuthStart,
+  handleDiscordViewerAuthCallback,
   KICK_VIEWER_STATE_PREFIX,
 } from "../handlers/viewer-auth.js";
 
@@ -158,6 +159,104 @@ describe("Kick OAuth state integration seams", () => {
 
     expect(response.headers.get("location")).toBe("https://streamer.yourrank.site/me");
     expect(response.headers.get("set-cookie")).toContain("yr_viewer=session-token");
+  });
+
+  test("viewer callback registers membership from a platform site path", async () => {
+    const queries = [];
+    const memberships = [];
+    const response = await handleKickViewerAuthCallback(request("/auth/kick/callback?code=code&state=state"), {}, {
+      stateData: { flow: "viewer", codeVerifier: "verifier", origin: "https://streamer.yourrank.site", returnTo: "/streamer-slug/me" },
+      exchangeKickViewerCode: async () => ({ access_token: "access" }),
+      fetchKickCurrentUser: async () => ({ user_id: 42, name: "viewer" }),
+      encryptKickToken: async (value) => `enc:${value}`,
+      one: async (sql) => {
+        queries.push(sql);
+        return sql.includes("FROM sites") ? { id: "site-1" } : null;
+      },
+      exec: async (sql, params) => {
+        if (sql.includes("INSERT INTO viewers")) return [{ id: "viewer-1" }];
+        if (sql.includes("INSERT INTO site_viewers")) memberships.push({ sql, params });
+        return [];
+      },
+      createViewerSession: async () => "session-token",
+      viewerCookieSet: (token) => `yr_viewer=${token}`,
+    });
+
+    expect(response.status).toBe(302);
+    expect(queries.at(-1)).toContain("SELECT id FROM sites WHERE slug=$1");
+    expect(memberships).toHaveLength(1);
+    expect(memberships[0].params).toEqual(["site-1", "viewer-1"]);
+    expect(memberships[0].sql).toContain("ON CONFLICT (site_id, viewer_id) DO NOTHING");
+  });
+
+  test("platform paths do not create a viewer site membership", async () => {
+    const memberships = [];
+    await handleKickViewerAuthCallback(request("/auth/kick/callback?code=code&state=state"), {}, {
+      stateData: { flow: "viewer", codeVerifier: "verifier", origin: "https://yourrank.site", returnTo: "/dashboard" },
+      exchangeKickViewerCode: async () => ({ access_token: "access" }),
+      fetchKickCurrentUser: async () => ({ user_id: 42, name: "viewer" }),
+      encryptKickToken: async (value) => `enc:${value}`,
+      one: async () => null,
+      exec: async (sql) => {
+        if (sql.includes("INSERT INTO viewers")) return [{ id: "viewer-1" }];
+        if (sql.includes("INSERT INTO site_viewers")) memberships.push(sql);
+        return [];
+      },
+      createViewerSession: async () => "session-token",
+      viewerCookieSet: (token) => `yr_viewer=${token}`,
+    });
+
+    expect(memberships).toHaveLength(0);
+  });
+
+  test("custom-domain viewer callbacks register the resolved site", async () => {
+    const memberships = [];
+    await handleKickViewerAuthCallback(request("/auth/kick/callback?code=code&state=state"), {}, {
+      stateData: { flow: "viewer", codeVerifier: "verifier", origin: "https://streamer.example", returnTo: "/me" },
+      exchangeKickViewerCode: async () => ({ access_token: "access" }),
+      fetchKickCurrentUser: async () => ({ user_id: 42, name: "viewer" }),
+      encryptKickToken: async (value) => `enc:${value}`,
+      one: async (sql) => sql.includes("FROM sites") ? { id: "site-custom" } : null,
+      exec: async (sql, params) => {
+        if (sql.includes("INSERT INTO viewers")) return [{ id: "viewer-1" }];
+        if (sql.includes("INSERT INTO site_viewers")) memberships.push(params);
+        return [];
+      },
+      resolveCustomDomain: async () => "custom-slug",
+      storeOAuthState: async () => {},
+    });
+
+    expect(memberships).toEqual([["site-custom", "viewer-1"]]);
+  });
+
+  test("Discord viewer callbacks register membership without making the session depend on it", async () => {
+    const memberships = [];
+    const response = await handleDiscordViewerAuthCallback(
+      request("/api/viewer/auth/discord/callback?code=code&state=state"),
+      {},
+      {
+        consumeOAuthState: async () => ({
+          origin: "https://yourrank.site",
+          returnTo: "/discord-site/me",
+          redirectUri: "https://yourrank.site/api/viewer/auth/discord/callback",
+        }),
+        exchangeDiscordCode: async () => ({ access_token: "access" }),
+        fetchDiscordCurrentUser: async () => ({ id: "discord-1", username: "viewer", global_name: "Viewer", avatar: null }),
+        encryptDiscordToken: async (value) => `enc:${value}`,
+        discordAvatarUrl: () => null,
+        one: async (sql) => sql.includes("FROM sites") ? { id: "site-discord" } : null,
+        exec: async (sql, params) => {
+          if (sql.includes("INSERT INTO viewers")) return [{ id: "viewer-discord" }];
+          if (sql.includes("INSERT INTO site_viewers")) memberships.push(params);
+          return [];
+        },
+        createViewerSession: async () => "session-token",
+        viewerCookieSet: (token) => `yr_viewer=${token}`,
+      },
+    );
+
+    expect(response.status).toBe(302);
+    expect(memberships).toEqual([["site-discord", "viewer-discord"]]);
   });
 
   test("viewer callback creates a short-lived custom-domain handoff", async () => {

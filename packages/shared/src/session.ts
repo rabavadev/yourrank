@@ -60,6 +60,7 @@ export interface UserRecord {
 export const COOKIE_NAME = "yr_session";
 export const SESSION_TTL_S = 30 * 86400;    // 30 days
 export const SESSION_ROTATE_AFTER_S = 86400; // 24 h
+export const SESSION_ROTATE_GRACE_S = 120;
 export const COOKIE_DOMAIN = ".yourrank.site";
 export const KV_PREFIX = "sess:";
 export const LEGACY_COOKIE_NAME = "sess";
@@ -166,7 +167,7 @@ export async function createSession(_env: SessionEnv, userId: string): Promise<s
 export async function destroySession(_env: SessionEnv, token: string | null): Promise<void> {
   if (!token) return;
   const tokenHash = await hashToken(token);
-  await exec("DELETE FROM sessions WHERE token = $1", [tokenHash]);
+  await exec("DELETE FROM sessions WHERE token = $1 OR previous_token = $1", [tokenHash]);
 }
 
 /**
@@ -189,6 +190,11 @@ interface ResolveResult {
   rotatedCookie: string | null; // alias for bot dashboard
 }
 
+interface SessionResolveDeps {
+  query?: typeof query;
+  exec?: typeof exec;
+}
+
 /**
  * Resolve the current user ID from the request cookie.
  *
@@ -198,25 +204,37 @@ interface ResolveResult {
  * Returns { userId, cookie } — cookie is non-null when rotation happened and
  * must be appended to the response as a Set-Cookie header.
  */
-export async function resolveSession(req: Request, env: SessionEnv): Promise<ResolveResult> {
+export async function resolveSession(
+  req: Request,
+  env: SessionEnv,
+  deps: SessionResolveDeps = {},
+): Promise<ResolveResult> {
   const token = readToken(req);
   if (!token) return { userId: null, uid: null, cookie: null, rotatedCookie: null };
   const tokenHash = await hashToken(token);
+  const queryImpl = deps.query || query;
+  const execImpl = deps.exec || exec;
 
   // Read session from DB
-  const row = await query(
-    "SELECT user_id, created_at, extract(epoch FROM now() - created_at)::int AS age FROM sessions WHERE token = $1 AND expires_at > now()",
-    [tokenHash]
+  const row = await queryImpl(
+    `SELECT user_id,
+            extract(epoch FROM now() - created_at)::int AS age,
+            (token = $1) AS is_current
+       FROM sessions
+      WHERE (token = $1 OR (previous_token = $1 AND rotated_at > now() - make_interval(secs => $2)))
+        AND expires_at > now()`,
+    [tokenHash, SESSION_ROTATE_GRACE_S]
   );
   if (!row || row.length === 0) return { userId: null, uid: null, cookie: null, rotatedCookie: null };
 
   const user_id = row[0].user_id as string;
   const age = Number(row[0].age || 0);
+  const isCurrent = row[0].is_current !== false;
   const userId = user_id;
 
   // SEC-107: Rotate if session is older than threshold. Use the same 32-byte
   // token format as new sessions instead of a shorter UUID.
-  if (age > SESSION_ROTATE_AFTER_S) {
+  if (isCurrent && age > SESSION_ROTATE_AFTER_S) {
     try {
       const rotated = newToken();
       const rotatedHash = await hashToken(rotated);
@@ -224,8 +242,16 @@ export async function resolveSession(req: Request, env: SessionEnv): Promise<Res
       // RETURNING token lets us detect the race where another request already rotated.
       // (The sessions PK is `token`; there is no `id` column — RETURNING id
       // made the whole UPDATE error out, so rotation silently never happened.)
-      const updated = await exec(
-        "UPDATE sessions SET token = $1, created_at = now(), expires_at = now() + make_interval(secs => $2), twofa_verified_at = twofa_verified_at WHERE token = $3 RETURNING token",
+      const updated = await execImpl(
+        `UPDATE sessions
+            SET token = $1,
+                previous_token = $3,
+                rotated_at = now(),
+                created_at = now(),
+                expires_at = now() + make_interval(secs => $2),
+                twofa_verified_at = twofa_verified_at
+          WHERE token = $3
+          RETURNING token`,
         [rotatedHash, SESSION_TTL_S, tokenHash]
       );
       if (!updated || updated.length === 0) {
@@ -241,8 +267,8 @@ export async function resolveSession(req: Request, env: SessionEnv): Promise<Res
   }
 
   // Sliding-window TTL refresh (if we didn't rotate)
-  exec(
-    "UPDATE sessions SET expires_at = now() + make_interval(secs => $1) WHERE token = $2",
+  execImpl(
+    "UPDATE sessions SET expires_at = now() + make_interval(secs => $1) WHERE token = $2 OR previous_token = $2",
     [SESSION_TTL_S, tokenHash]
   ).catch(e => console.error("[session] TTL refresh failed:", e?.message));
 
