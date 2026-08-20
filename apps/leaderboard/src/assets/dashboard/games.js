@@ -34,8 +34,8 @@ function renderPageBlocks() {
   const current = { ...DEFAULT_SECTIONS, ...(state.EXTRA?.sections || {}) };
   list.innerHTML = BLOCK_ROWS.map(([key, label]) => `<div class="v3-block-status"><span>${label}</span><strong>${current[key] !== false ? "Shown" : "Hidden"}</strong></div>`).join("");
   if (note) note.textContent = isPro()
-    ? "Edit page blocks in the Design editor."
-    : "Page block visibility is available on Pro plans. Current board settings are shown.";
+    ? "Page block visibility is included with Pro plans."
+    : "Page block visibility is available on Pro plans.";
 }
 
 function siteSections() {

@@ -2713,10 +2713,60 @@ body[data-wide] .v3-dash[data-auth-workspace] .lb-main { padding-right: var(--v3
 .v3-dash[data-auth-workspace] .v3-games-layout { grid-template-columns: minmax(320px, 5fr) minmax(380px, 7fr); gap: 24px; align-items: start; }
 .v3-dash[data-auth-workspace] .v3-games-left { display: flex; flex-direction: column; gap: 24px; }
 .v3-dash[data-auth-workspace] .v3-games-right { display: flex; flex-direction: column; gap: 24px; }
+.v3-dash[data-auth-workspace] .v3-alert {
+  grid-column: 1 / -1;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 20px;
+  padding: 14px 16px;
+  border: 1px solid #f2cf9e;
+  border-radius: var(--v4-radius);
+  background: var(--v4-warning-soft);
+  color: var(--v4-ink);
+}
+.v3-dash[data-auth-workspace] .v3-alert--warning {
+  border-color: #f2cf9e;
+  background: var(--v4-warning-soft);
+}
+.v3-dash[data-auth-workspace] .v3-alert > span {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  min-width: 0;
+}
+.v3-dash[data-auth-workspace] .v3-alert b { color: var(--v4-warning); }
+.v3-dash[data-auth-workspace] .v3-alert .btn { flex: 0 0 auto; }
 .v3-dash[data-auth-workspace] .v3-note { border: 1px solid var(--v4-line); background: var(--v4-surface-soft); color: var(--v4-ink-soft); }
 .v3-dash[data-auth-workspace] .v3-setting-row,
 .v3-dash[data-auth-workspace] .v3-game-row,
 .v3-dash[data-auth-workspace] .v3-settings-row { border-color: var(--v4-line); display: flex; align-items: center; gap: 18px; padding: 18px 0; }
+.v3-dash[data-auth-workspace] .v3-block-grid {
+  display: grid;
+  gap: 0;
+  overflow: hidden;
+  border: 1px solid var(--v4-line);
+  border-radius: var(--v4-radius-sm);
+  background: var(--v4-surface-soft);
+}
+.v3-dash[data-auth-workspace] .v3-block-status {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 14px;
+  border-top: 1px solid var(--v4-line);
+  color: var(--v4-ink-soft);
+  font-size: 13px;
+}
+.v3-dash[data-auth-workspace] .v3-block-status:first-child { border-top: 0; }
+.v3-dash[data-auth-workspace] .v3-block-status strong {
+  color: var(--v4-ink);
+  font-size: 12px;
+  font-weight: 650;
+}
 .v3-dash[data-auth-workspace] .v3-setting-row > div,
 .v3-dash[data-auth-workspace] .v3-setting-row > span:first-child {
   display: grid;
