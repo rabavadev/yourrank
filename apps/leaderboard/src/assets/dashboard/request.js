@@ -98,8 +98,11 @@ export async function fetchDashboardJson(input, init = {}, options = {}) {
     });
   }
   if (!response.ok) {
+    // Preserve a server-supplied machine code (e.g. "kick_reconnect_required")
+    // so callers can react to specific failures instead of parsing messages.
+    const serverCode = typeof body?.code === "string" && body.code.trim() ? body.code.trim() : "";
     throw new DashboardRequestError(body?.error || `The server returned HTTP ${response.status}.`, {
-      code: response.status >= 500 ? "SERVER" : "REQUEST_FAILED",
+      code: serverCode || (response.status >= 500 ? "SERVER" : "REQUEST_FAILED"),
       status: response.status,
     });
   }
