@@ -3174,6 +3174,9 @@ body[data-wide] .v3-dash[data-auth-workspace] .lb-main { padding-right: var(--v3
   font-weight: 650;
   color: var(--v4-ink);
 }
+.v3-dash[data-auth-workspace] .cr-attention {
+  color: var(--v4-warning);
+}
 .v3-dash[data-auth-workspace] .cr-kick-mark {
   display: grid;
   place-items: center;

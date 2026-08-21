@@ -9,6 +9,9 @@ const allowed = new Map([
   ["apps/leaderboard/src/__tests__/audit-validation.test.js", "Legacy isolated test with no safe production seam"],
   ["apps/leaderboard/src/__tests__/credits-loop.test.js", "Legacy isolated test with no safe production seam"],
   ["apps/leaderboard/src/__tests__/sites-handlers.test.js", "Legacy isolated test with no safe production seam"],
+  ["apps/leaderboard/src/__tests__/credits-lifecycle.test.js", "Isolated credit-loop test with no safe production seam"],
+  ["apps/leaderboard/src/__tests__/shop-redeem-edge-cases.test.js", "Isolated shop/redeem edge-case test with no safe production seam"],
+  ["apps/bot/src/__tests__/telegram-bot-ops.test.ts", "Bot ops tests need DB and Telegram fakes"],
 ]);
 
 const roots = [

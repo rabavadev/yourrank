@@ -285,7 +285,7 @@ import { computeTrustScore, connectKickChat } from "./chat-entry.js";
 
       connectWebSocket();
     } catch (err) {
-      $("gw-status-text").textContent = "Failed to connect to Kick API. Check channel name.";
+      $("gw-status-text").textContent = "Couldn't reach Kick. Check the channel name.";
       setStatus("error", "Error");
     }
   }
@@ -1491,6 +1491,8 @@ import { computeTrustScore, connectKickChat } from "./chat-entry.js";
       { id: "pred-opt-2", message: "Enter option B.", valid: (value) => Boolean(value.trim()) },
       { id: "pred-min-bet", message: "Enter a minimum bet of at least 1 Credit.", valid: (value) => /^\d+$/.test(value) && Number(value) >= 1 },
       { id: "pred-max-bet", message: "Enter a maximum bet of at least 1 Credit.", valid: (value) => /^\d+$/.test(value) && Number(value) >= 1 },
+      { id: "pred-opt-2", message: "Options must be different from each other.", valid: (value) => value.trim().toLowerCase() !== ($("pred-opt-1")?.value || "").trim().toLowerCase() },
+      { id: "pred-max-bet", message: "Max bet must be at least the minimum bet.", valid: (value) => !/^\d+$/.test(value) || Number(value) >= Number($("pred-min-bet")?.value || 0) },
     ])) return;
     const title = $("pred-title")?.value?.trim();
 

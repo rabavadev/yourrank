@@ -73,11 +73,20 @@ function showLoginError(msg) {
   const el = document.getElementById('loginMsg');
   if (el) { el.textContent = msg; el.hidden = false; }
 }
+// The API returns machine strings ("bad telegram signature"); people logging
+// in should get a sentence they can act on instead.
+const LOGIN_ERRORS = {
+  'rate limit exceeded': 'Too many attempts. Wait a minute and try again.',
+  'cross-origin request rejected': 'Something went wrong. Refresh the page and try again.',
+  'telegram login not configured': 'Telegram login is temporarily unavailable. Try again later.',
+  'bad telegram signature': 'We could not verify that Telegram login. Try again.',
+  'account suspended': 'This account is suspended. Contact support if you think this is a mistake.',
+};
 async function onTgAuth(user) {
   const r = await fetch('/bot/auth/telegram', {method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(user)});
   if (r.ok) { location.reload(); return; }
-  let msg = 'Login failed.';
-  try { msg = 'Login failed: ' + (await r.json()).error; } catch { /* non-JSON response */ }
+  let msg = 'Login failed. Try again.';
+  try { msg = LOGIN_ERRORS[(await r.json()).error] || msg; } catch { /* non-JSON response */ }
   showLoginError(msg);
 }
 window.onTgAuth = onTgAuth;

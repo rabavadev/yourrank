@@ -18,6 +18,13 @@ import {
 import "./dashboard/help-drawer.js";
 import "./dashboard/command-palette.js";
 
+// AUDIT-B4: signing out in one tab signs out the rest. Logout handlers stamp
+// localStorage; the storage event fires only in *other* tabs, which then
+// leave the dashboard instead of sitting on a stale authenticated view.
+window.addEventListener("storage", (event) => {
+  if (event.key === "yr:logout") location.href = "/login";
+});
+
 const LOADING_MESSAGES = [
   "Loading your workspace…",
   "Preparing rank insights…",

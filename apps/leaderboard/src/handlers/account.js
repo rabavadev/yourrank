@@ -183,11 +183,24 @@ export async function handleAccountConnectedAccounts(request, env) {
     [user.id]
   );
 
+  // loadUser() selects telegram_user_id (not telegram_id) and neither
+  // kick_token_expires_at nor telegram_linked_at — the old code read
+  // user.telegram_id, so the Telegram card never rendered at all.
+  const identity = await one(
+    `SELECT kick_token_expires_at, telegram_linked_at FROM users WHERE id = $1`,
+    [user.id]
+  );
+
   const kick = user.kick_user_id
-    ? { userId: user.kick_user_id, username: user.kick_username, linkedAt: user.kick_linked_at }
+    ? {
+        userId: user.kick_user_id,
+        username: user.kick_username,
+        linkedAt: user.kick_linked_at,
+        tokenExpiresAt: identity?.kick_token_expires_at || null,
+      }
     : null;
-  const telegram = user.telegram_id
-    ? { userId: String(user.telegram_id), username: user.telegram_username, linkedAt: user.telegram_linked_at }
+  const telegram = user.telegram_user_id
+    ? { userId: String(user.telegram_user_id), username: user.telegram_username, linkedAt: identity?.telegram_linked_at || null }
     : null;
 
   const perSite = (sites || []).map((s) => ({
