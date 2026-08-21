@@ -9,7 +9,8 @@ export function visitsMetricState({ published, statsStatus, stats } = {}) {
   if (statsStatus === "loading") return { kind: "loading" };
   if (statsStatus === "ready") {
     const days = Array.isArray(stats?.days) ? stats.days : [];
-    const views = days.reduce((total, day) => total + Number(day?.views || 0), 0);
+    // "Visits this week" — the series is longer than a week, so slice it.
+    const views = days.slice(-7).reduce((total, day) => total + Number(day?.views || 0), 0);
     return { kind: "ready", value: views };
   }
   return { kind: "unavailable", value: "Unavailable" };
