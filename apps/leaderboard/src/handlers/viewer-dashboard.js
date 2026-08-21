@@ -27,6 +27,7 @@ export async function handleViewerMe(request, env) {
        JOIN users u ON u.id = s.user_id
       WHERE sv.viewer_id = $1
         AND s.published = true
+        AND s.is_draft = false
         AND u.status != 'suspended'
         AND u.email_verified = true
       ORDER BY sv.updated_at DESC`,
@@ -55,6 +56,7 @@ export async function handleViewerMe(request, env) {
        JOIN shop_items i ON i.id = r.shop_item_id
       WHERE sv.viewer_id = $1
         AND s.published = true
+        AND s.is_draft = false
         AND u.status != 'suspended'
         AND u.email_verified = true
       ORDER BY r.created_at DESC

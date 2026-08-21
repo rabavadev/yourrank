@@ -173,7 +173,7 @@ function wirePostbacks() {
 
   if (revoke) {
     revoke.addEventListener("click", async () => {
-      if (!await showConfirmModal("Revoke deposit tracking key", "Casino updates will stop until a new key is created.", "Revoke", true)) return;
+      if (!await showConfirmModal("Revoke deposit tracking key", "Score updates will stop until a new key is created.", "Revoke", true)) return;
       revoke.disabled = true;
       const result = await jsonReq("DELETE", "/api/account/postbacks");
       revoke.disabled = false;

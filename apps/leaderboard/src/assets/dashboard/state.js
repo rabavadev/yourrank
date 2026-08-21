@@ -18,6 +18,7 @@ export function createDashboardState({ requestId, onSubscriberError = (err) => c
     CURRENT_BRANDING: { accentA: null, accentB: null, font: "Inter" },
     PUBLISHED: false,
     IS_DRAFT: false,
+    RANK_BY: "wagered",
     STATS_STATUS: "loading",
     GIVEAWAYS_STATUS: "loading",
     CREDITS_ANALYTICS_STATUS: "loading",

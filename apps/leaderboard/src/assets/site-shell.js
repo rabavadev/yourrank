@@ -111,6 +111,7 @@
   var searchRequest = 0;
   var searchController = null;
   var currency = document.body.dataset.currency || "$";
+  var rankBy = document.body.dataset.rankBy === "score" ? "score" : "wagered";
   var money = function (v) { return currency + Number(v || 0).toLocaleString("en-US", { maximumFractionDigits: 0 }); };
   var esc = function (v) { return String(v == null ? "" : v).replace(/[&<>"']/g, function (c) { return ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]); }); };
   var representations = function () {
@@ -133,7 +134,7 @@
     return '<tr data-player-name="' + name + '" data-position="' + rank + '">' +
       '<td class="yr-idx">' + String(rank).padStart(2, "0") + '</td>' +
       '<td><a href="' + (isCustomDomain ? "/player/" : "/" + encodeURIComponent(slug) + "/player/") + encodeURIComponent(p.name || "") + '">' + esc(p.name) + '</a></td>' +
-      '<td class="yr-mono yr-r">' + esc(money(p.wagered)) + '</td>' +
+      '<td class="yr-mono yr-r">' + esc(rankBy === "score" ? Number(p.score || 0).toLocaleString("en-US") + " pts" : money(p.wagered)) + '</td>' +
       '<td class="yr-mono yr-r">' + (p.prize ? esc(money(p.prize)) : "—") + '</td></tr>';
   };
   var fetchPage = function (offset, q, signal) {

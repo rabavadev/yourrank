@@ -57,7 +57,7 @@ describe("dashboard navigation ownership", () => {
     expect(sites).toContain('id="newBoardForm"');
     expect(sites).toContain('id="boardLimitUpsell"');
     expect(sites).not.toContain('aria-label="Create another site"');
-    expect(sites).toContain('title="Create another site">+ New site');
+    expect(sites).toContain('title="Create another leaderboard">+ New leaderboard');
     expect(dashboardJs).not.toContain("#newBoardSide, #addBoardBtn");
     expect(boardsJs).not.toContain("addBoardFromBoards");
     expect(boardsJs).toContain('const newBtn = $("newBoard")');

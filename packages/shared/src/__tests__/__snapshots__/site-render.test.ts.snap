@@ -17,7 +17,7 @@ exports[`shared public board renderer keeps the fixed fixture HTML stable 1`] = 
 
 <style nonce="fixed-nonce" data-theme-tokens>.yr-site{--yr-accent:var(--yr-color-board-accent);--yr-accent-ink:#000000}</style>
 
-</head><body class="yr-site" data-template="cyber_arcade" data-section="leaderboard" data-slug="board fixture" data-custom-domain="false" data-currency="$">
+</head><body class="yr-site" data-template="cyber_arcade" data-section="leaderboard" data-slug="board fixture" data-custom-domain="false" data-currency="$" data-rank-by="wagered">
 <!-- PUBLIC-VIEWER-DIRECTION
 THESIS: A production cue sheet for following one board, not a generic gaming dashboard.
 OWN-WORLD: Asphalt surfaces, fog-white type, cobalt actions, board-accent credentials, orange warnings, mint success, 6–10px geometry.
@@ -51,7 +51,7 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
 <div class="yr-hero-l">
 <h1 class="yr-h1">Standings</h1>
 <p class="yr-cue">Q&amp;A BOARD</p>
-<p class="yr-lede">Ranked by wagered on Ampersand &amp; Board's board. Prizes are paid by the sponsor and are separate from free loyalty credits.</p>
+<p class="yr-lede">Ranked by wagered on Ampersand &amp; Board's leaderboard. Players with the same value share a rank.</p>
 </div>
 
 </section>

@@ -96,7 +96,9 @@ export function buildTop3Embed(
   siteName: string,
   playerName: string,
   rank: number,
-  wagered: number
+  wagered: number,
+  metricLabel = "Wagered",
+  metricValue: number = wagered
 ): Record<string, unknown> {
   const medal = ["🥇", "🥈", "🥉"][rank - 1] || "🏆";
   return {
@@ -105,7 +107,7 @@ export function buildTop3Embed(
     color: 0xffcb45, // gold
     fields: [
       { name: "New Rank", value: `#${rank}`, inline: true },
-      { name: "Wagered", value: `$${Number(wagered).toLocaleString("en-US", { maximumFractionDigits: 0 })}`, inline: true },
+      { name: metricLabel, value: metricLabel === "Points" ? `${Number(metricValue).toLocaleString("en-US")} pts` : `$${Number(metricValue).toLocaleString("en-US", { maximumFractionDigits: 0 })}`, inline: true },
     ],
     timestamp: new Date().toISOString(),
     footer: { text: "YourRank" },
@@ -188,16 +190,23 @@ function requireDelivery(channel: string, result: { ok: boolean; error?: string 
  * @returns Array of top-3 changes
  */
 export function detectTop3Changes(
-  oldPlayers: Array<{ name: string; wagered: number }>,
-  newPlayers: Array<{ name: string; wagered: number }>
-): Array<{ name: string; rank: number; wagered: number }> {
+  oldPlayers: Array<{ name: string; wagered: number; score?: number }>,
+  newPlayers: Array<{ name: string; wagered: number; score?: number }>,
+  rankBy: "wagered" | "score" = "wagered"
+): Array<{ name: string; rank: number; wagered: number; score?: number; rankBy: "wagered" | "score" }> {
   const oldTop3Names = new Set((oldPlayers || []).slice(0, 3).map((p) => p.name));
-  const changes: Array<{ name: string; rank: number; wagered: number }> = [];
-  const sorted = (newPlayers || []).slice().sort((a, b) => b.wagered - a.wagered);
-  for (let i = 0; i < Math.min(3, sorted.length); i++) {
+  const changes: Array<{ name: string; rank: number; wagered: number; score?: number; rankBy: "wagered" | "score" }> = [];
+  const sorted = (newPlayers || []).slice().sort((a, b) => Number(b[rankBy] || 0) - Number(a[rankBy] || 0) || a.name.localeCompare(b.name));
+  let previousValue: number | null = null;
+  let competitionRank = 0;
+  for (let i = 0; i < sorted.length; i++) {
     const p = sorted[i];
+    const value = Number(p[rankBy] || 0);
+    if (previousValue === null || value !== previousValue) competitionRank = i + 1;
+    previousValue = value;
+    if (competitionRank > 3) break;
     if (!oldTop3Names.has(p.name)) {
-      changes.push({ name: p.name, rank: i + 1, wagered: p.wagered });
+      changes.push({ name: p.name, rank: competitionRank, wagered: p.wagered, score: p.score, rankBy });
     }
   }
   return changes;
@@ -221,7 +230,7 @@ export async function notifyTop3Change(
   env: any,
   siteId: string,
   siteName: string,
-  top3Changes: Array<{ name: string; rank: number; wagered: number }>
+  top3Changes: Array<{ name: string; rank: number; wagered: number; score?: number; rankBy?: "wagered" | "score" }>
 ): Promise<void> {
   if (!top3Changes.length) return;
 
@@ -238,7 +247,8 @@ export async function notifyTop3Change(
   // Discord: one embed per new top-3 player
   if (discordUrl) {
     for (const change of top3Changes) {
-      const embed = buildTop3Embed(siteName, change.name, change.rank, change.wagered);
+      const scoreRanked = change.rankBy === "score";
+      const embed = buildTop3Embed(siteName, change.name, change.rank, change.wagered, scoreRanked ? "Points" : "Wagered", scoreRanked ? Number(change.score || 0) : change.wagered);
       requireDelivery("Discord", await sendDiscordWebhook(discordUrl, embed));
     }
   }
@@ -260,7 +270,10 @@ export async function notifyTop3Change(
       }
       const lines = top3Changes.map((c) => {
         const medal = ["🥇", "🥈", "🥉"][c.rank - 1] || "🏆";
-        return `${medal} *${escapeTgMarkdown(c.name)}* entered #${c.rank} — $${Number(c.wagered).toLocaleString("en-US", { maximumFractionDigits: 0 })}`;
+        const metric = c.rankBy === "score"
+          ? `${Number(c.score || 0).toLocaleString("en-US")} pts`
+          : `$${Number(c.wagered).toLocaleString("en-US", { maximumFractionDigits: 0 })}`;
+        return `${medal} *${escapeTgMarkdown(c.name)}* entered #${c.rank} — ${metric}`;
       });
       const text = `⚡ *${escapeTgMarkdown(siteName)}* — New Top 3!\n\n${lines.join("\n")}`;
       requireDelivery("Telegram", await sendTelegramMessage(botToken, tgChatId, text));
@@ -324,15 +337,23 @@ function buildPlayerRankText(siteName: string, playerName: string, oldRank: numb
 }
 
 export function getRankChangedPlayerNames(
-  oldPlayers: Array<{ name: string; wagered: number }>,
-  newPlayers: Array<{ name: string; wagered: number }>
+  oldPlayers: Array<{ name: string; wagered: number; score?: number; rank?: number }>,
+  newPlayers: Array<{ name: string; wagered: number; score?: number }>,
+  rankBy: "wagered" | "score" = "wagered"
 ): string[] {
   const oldRankMap = new Map<string, number>();
-  (oldPlayers || []).forEach((p, i) => oldRankMap.set(p.name, i + 1));
+  (oldPlayers || []).forEach((p, i) => oldRankMap.set(p.name, p.rank || i + 1));
 
-  const newSorted = (newPlayers || []).slice().sort((a, b) => (b.wagered || 0) - (a.wagered || 0));
+  const newSorted = (newPlayers || []).slice().sort((a, b) => Number(b[rankBy] || 0) - Number(a[rankBy] || 0) || a.name.localeCompare(b.name));
   const newRankMap = new Map<string, number>();
-  newSorted.forEach((p, i) => newRankMap.set(p.name, i + 1));
+  let previousValue: number | null = null;
+  let competitionRank = 0;
+  newSorted.forEach((p, i) => {
+    const value = Number(p[rankBy] || 0);
+    if (previousValue === null || value !== previousValue) competitionRank = i + 1;
+    previousValue = value;
+    newRankMap.set(p.name, competitionRank);
+  });
 
   return newSorted
     .filter((p) => {
@@ -384,18 +405,20 @@ export async function notifySubscribedPlayers(
   env: any,
   siteId: string,
   siteName: string,
-  oldPlayers: Array<{ name: string; wagered: number }>,
-  newPlayers: Array<{ name: string; wagered: number }>,
+  oldPlayers: Array<{ name: string; wagered: number; score?: number }>,
+  newPlayers: Array<{ name: string; wagered: number; score?: number }>,
+  rankBy: "wagered" | "score" = "wagered",
   sendNotification: typeof sendPlayerRankNotification = sendPlayerRankNotification
 ): Promise<void> {
   const oldRankMap = new Map<string, number>();
-  (oldPlayers || []).forEach((p, i) => oldRankMap.set(p.name, i + 1));
+  const oldSorted = (oldPlayers || []).slice().sort((a, b) => Number(b[rankBy] || 0) - Number(a[rankBy] || 0) || a.name.localeCompare(b.name));
+  { let prev: number | null = null; let cr = 0; oldSorted.forEach((p, i) => { const v = Number(p[rankBy] || 0); if (prev === null || v !== prev) cr = i + 1; prev = v; oldRankMap.set(p.name, cr); }); }
 
   const newRankMap = new Map<string, number>();
-  const newSorted = (newPlayers || []).slice().sort((a, b) => (b.wagered || 0) - (a.wagered || 0));
-  newSorted.forEach((p, i) => newRankMap.set(p.name, i + 1));
+  const newSorted = (newPlayers || []).slice().sort((a, b) => Number(b[rankBy] || 0) - Number(a[rankBy] || 0) || a.name.localeCompare(b.name));
+  { let prev: number | null = null; let cr = 0; newSorted.forEach((p, i) => { const v = Number(p[rankBy] || 0); if (prev === null || v !== prev) cr = i + 1; prev = v; newRankMap.set(p.name, cr); }); }
 
-  const changedNames = getRankChangedPlayerNames(oldPlayers, newPlayers);
+  const changedNames = getRankChangedPlayerNames(oldPlayers, newPlayers, rankBy);
   if (!changedNames.length) return;
 
   const subs = await db.query(

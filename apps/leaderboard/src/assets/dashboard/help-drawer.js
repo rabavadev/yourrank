@@ -79,14 +79,14 @@
           </div>
 
           <div class="yr-help-guides-list" id="yrHelpGuidesList">
-            <div class="yr-guide-card" data-keywords="leaderboard setup create site countdown timer url slug">
+            <div class="yr-guide-card" data-keywords="what is leaderboard setup create players rank points share publish">
               <div class="yr-guide-icon">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.45 1-1 1H7c-.55 0-1-.45-1-1v-2.34"/><path d="M14 14.66V17c0 .55.45 1 1 1h2c.55 0 1-.45 1-1v-2.34"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg>
               </div>
               <div class="yr-guide-info">
-                <strong>Setting up your Leaderboard</strong>
-                <p>Set title, sponsor banner, countdown timer, and custom URL.</p>
-                <a href="/dashboard/leaderboard/setup" class="yr-guide-link">Go to Site Details →</a>
+                <strong>What is a leaderboard?</strong>
+                <p>It is a public page that ranks your players by points or amount. Add players, publish, then share the live link.</p>
+                <a href="/dashboard/leaderboard/setup" class="yr-guide-link">Set up a leaderboard →</a>
               </div>
             </div>
 
