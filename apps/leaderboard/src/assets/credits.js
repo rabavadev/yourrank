@@ -66,6 +66,7 @@ const OAUTH_MESSAGES = Object.freeze({
   oauth_state_expired: "That took too long — try connecting again.",
   oauth_user_mismatch: "This connection started in another account. Try again.",
   access_denied: "Kick connection was cancelled.",
+  kick_auth_failed: "Kick connection could not be completed. Try again.",
 });
 function showOAuthMessage({ finalize = false } = {}) {
   if (!pendingOAuthFeedback) {
