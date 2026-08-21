@@ -316,7 +316,7 @@
         simViewerBal.textContent = `${simBal.toLocaleString()} pts`;
         simViewerBal.style.color = "var(--ok)";
         if (simShopItem) simShopItem.classList.add("is-redeeming");
-        simFeedbackNote.textContent = "✓ Redeemed! Balance updated & Discord webhook triggered.";
+        simFeedbackNote.textContent = "✓ Redeemed! Balance updated & Discord notified.";
         simFeedbackNote.style.color = "var(--ok)";
         simRedeemBtn.disabled = true;
         simRedeemBtn.textContent = "Redemption Queued";
