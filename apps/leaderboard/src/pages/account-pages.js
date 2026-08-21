@@ -151,12 +151,12 @@ const postbacksWidget = `<div class="lb-widget lb-widget--full" id="postbacks">
           <h3 class="m-0 mt-18 mb-8">Private sponsor access key</h3>
           <p class="hint">Keep this key confidential. Only share it with trusted connected apps. Rotating revokes the previous key instantly.</p>
           <div class="field">
-            <label>Secret key</label>
+            <label>Your private key</label>
             <div class="d-flex gap-8 items-center flex-wrap">
               <code id="postbackKey" class="overlay-url"></code>
               <button class="btn btn--sm btn--accent ic-btn" id="postbackCopyKey" type="button">Copy key</button>
-              <button class="btn btn--sm" id="postbackRotate" type="button">Rotate key</button>
-              <button class="btn btn--sm btn--danger" id="postbackRevoke" type="button">Revoke key</button>
+              <button class="btn btn--sm" id="postbackRotate" type="button">Generate new key</button>
+              <button class="btn btn--sm btn--danger" id="postbackRevoke" type="button">Deactivate key</button>
             </div>
           </div>
         </div>
@@ -196,7 +196,7 @@ const dataWidget = `<div class="lb-widget lb-widget--full" id="data">
           <p class="card-sub">Download complete backups of your leaderboards, scores, and creator settings, or manage account deletion.</p>
           <section class="account-data-export" aria-labelledby="accountExportTitle">
             <h3 class="m-0" id="accountExportTitle">Download Creator Backup</h3>
-            <p class="card-sub">Generate a full downloadable JSON backup including all your leaderboard configurations, player history, rewards shop items, and analytics.</p>
+            <p class="card-sub">Download a full backup of everything: settings, players, shop items, and analytics.</p>
             <div class="d-flex gap-8 items-center flex-wrap">
               <button class="btn btn--accent" id="accExportData" type="button">Generate Account Backup</button>
               <span class="hint" id="accExportStatus" role="status" aria-live="polite"></span>

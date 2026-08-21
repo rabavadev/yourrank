@@ -285,7 +285,7 @@ import { computeTrustScore, connectKickChat } from "./chat-entry.js";
 
       connectWebSocket();
     } catch (err) {
-      $("gw-status-text").textContent = "Failed to connect to Kick API. Check channel name.";
+      $("gw-status-text").textContent = "Couldn't reach Kick. Check the channel name.";
       setStatus("error", "Error");
     }
   }

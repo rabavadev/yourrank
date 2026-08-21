@@ -226,7 +226,7 @@ function render() {
     $("cr-channel-connected").hidden = !connected; $("cr-channel-connect-wrap").hidden = connected;
     $("cr-channel-name").textContent = state.channel?.name || ""; $("cr-channel-id-input").value = state.channel?.externalId || ""; $("cr-channel-name-input").value = state.channel?.name || "";
     const expiry = state.channel?.tokenExpiresAt;
-    $("cr-channel-token").textContent = expiry ? (new Date(expiry) > new Date() ? `Token valid · expires in ${Math.max(1, Math.ceil((new Date(expiry) - Date.now()) / 86400000))} days` : "Token expired · reconnect") : "No Kick token · connect Kick";
+    $("cr-channel-token").textContent = expiry ? (new Date(expiry) > new Date() ? `Kick connected · renews in ${Math.max(1, Math.ceil((new Date(expiry) - Date.now()) / 86400000))} days` : "Kick connection expired · reconnect") : "Kick not connected · connect Kick";
     $("cr-usage").innerHTML = [usageCard(metric(usage.rewardMappings), metric(limits.rewardMappings), "credit rules"), usageCard(metric(usage.shopItems), metric(limits.shopItems), "items"), usageCard(metric(usage.pendingRedemptions), metric(limits.pendingRedemptions), "pending prize orders"), usageCard(metric(usage.redemptionsPer30Days), metric(limits.redemptionsPer30Days), "prize orders / 30 days"), usageCard(metric(usage.newViewersPer30Days), metric(limits.newViewersPer30Days), "new viewers / 30 days")].join("");
     const auth = state.viewerAuth || {};
     $("cr-viewer-auth-kick").checked = auth.kick !== false; $("cr-viewer-auth-discord").checked = auth.discord !== false; $("cr-viewer-auth-public").checked = auth.public !== false;

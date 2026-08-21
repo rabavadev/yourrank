@@ -462,14 +462,14 @@ export async function handleNotifyTest(request, env) {
     if (!webhookUrl) {
       try { webhookUrl = await decryptCredential(site.discord_webhook_url_enc); } catch { webhookUrl = null; }
     }
-    if (!webhookUrl) return bad("No Discord webhook URL configured.");
+    if (!webhookUrl) return bad("No Discord link saved yet.");
     if (!/^https:\/\/discord\.com\/api\/webhooks\/\d+\/.+/.test(webhookUrl) &&
         !/^https:\/\/discordapp\.com\/api\/webhooks\/\d+\/.+/.test(webhookUrl)) {
-      return bad("That doesn't look like a valid Discord webhook URL.");
+      return bad("That doesn't look like the link Discord gives you. Copy it again from Channel settings.");
     }
     const embed = buildTop3Embed(site.name || "Your Site", "TestPlayer", 1, 99999);
     embed.title = "🧪 Test Notification";
-    embed.description = "Your Discord webhook is set up correctly!";
+    embed.description = "Discord notifications are set up correctly!";
     embed.fields.push({ name: "Status", value: "✅ Notifications are working.", inline: false });
     const result = await sendDiscordWebhook(webhookUrl, embed);
     return result.ok ? json({ ok: true, message: "Test message sent to Discord!" }) : bad(result.error || "Failed to send.", 502);
