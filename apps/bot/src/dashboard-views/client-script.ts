@@ -633,7 +633,7 @@ async function connectBot(btn){
   const status = $('connectStatus'); if (status) { status.className = 'muted'; status.textContent = 'Checking token with Telegram…'; }
   const r = await api('/bots',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({token, welcome_message:$('botWelcome').value.trim()||undefined})});
   if (r.error) {
-    if (status) { status.className = 'muted off'; status.textContent = 'Could not connect: ' + r.error + '. Go back and check your token.'; }
+    if (status) { status.className = 'muted off'; status.textContent = 'Could not connect: ' + r.error + '. Go back and check your connect code.'; }
     return;
   }
   $('botToken').value='';
@@ -667,7 +667,7 @@ async function checkHealth(target){
   toast(summary + ' — see details below');
 }
 async function disconnectBot(btn){
-  if (!await confirmModal('Disconnect bot', 'It will stop responding, but your offers, commands and subscriber history stay in YourRank. Your encrypted token is retained so you can reconnect without pasting it again.', 'Disconnect', true)) return;
+  if (!await confirmModal('Disconnect bot', 'It will stop responding, but your offers, commands and subscriber history stay in YourRank. Your connect code is saved (encrypted) so you can reconnect without pasting it again.', 'Disconnect', true)) return;
   setLoading(btn, 'Disconnecting…');
   const r = await api('/bots/'+btn.dataset.id+'/disconnect',{method:'POST'});
   if (r.error) { restoreBtn(btn); return toast(r.error); }
@@ -1323,7 +1323,7 @@ function toggleToken(btn) {
   const show = input.type === 'password';
   input.type = show ? 'text' : 'password';
   btn.textContent = show ? 'Hide' : 'Show';
-  btn.setAttribute('aria-label', show ? 'Hide token' : 'Show token');
+  btn.setAttribute('aria-label', show ? 'Hide code' : 'Show code');
 }
 
 async function handleAction(e) {

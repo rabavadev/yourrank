@@ -36,9 +36,9 @@ export function demoLeaderboardData() {
       { id: "demo-cohost", name: "Community co-host", description: "Join a future community segment.", cost: 1000, stock: 2, active: true },
     ],
     demoActivity: [
-      { kind: "SCORE UPDATE", text: "Alex moved into first place.", when: "12M_AGO" },
-      { kind: "REWARD REDEEMED", text: "Bree redeemed a Live shoutout.", when: "38M_AGO" },
-      { kind: "GIVEAWAY", text: "The Demo Drop giveaway is live.", when: "01H_AGO" },
+      { kind: "SCORE UPDATE", text: "Alex moved into first place.", when: "12m ago" },
+      { kind: "REWARD REDEEMED", text: "Bree redeemed a Live shoutout.", when: "38m ago" },
+      { kind: "GIVEAWAY", text: "The Demo Drop giveaway is live.", when: "1h ago" },
     ],
     demoGiveaway: {
       name: "Demo Drop",

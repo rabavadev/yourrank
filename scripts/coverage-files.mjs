@@ -7,6 +7,8 @@ const testDir = path.join(root, "apps", "leaderboard", "src", "__tests__");
 const excluded = new Set([
   "audit-validation.test.js",
   "credits-loop.test.js",
+  "credits-lifecycle.test.js",
+  "shop-redeem-edge-cases.test.js",
   "public-stream-version.test.js",
   "sites-handlers.test.js",
 ]);

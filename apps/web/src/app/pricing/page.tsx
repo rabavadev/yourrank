@@ -75,8 +75,8 @@ const TIER_CONTENT: Record<
       `Up to ${CREDITS_SHOP_LIMITS.pro} shop items`,
       "Custom domain",
       "OBS overlay widget",
-      "Discord webhooks",
-      "Signed score API",
+      "Discord notifications",
+      "Automatic score updates",
       "Priority support",
     ],
     cta: { label: "Go Pro", href: "/signup?plan=pro" },
@@ -153,12 +153,12 @@ const COMPARISON: Array<{
     ],
   },
   {
-    section: "Analytics, security & APIs",
+    section: "Analytics & security",
     rows: [
       { label: "Analytics data retention", values: ["7 days", "30 days", "Unlimited", "Unlimited"] },
-      { label: "Signed score & postback API", values: [DASH, DASH, CHECK, CHECK] },
-      { label: "Public read API", values: [CHECK, CHECK, CHECK, CHECK] },
-      { label: "Discord webhooks", values: [DASH, DASH, CHECK, CHECK] },
+      { label: "Automatic sponsor score updates", values: [DASH, DASH, CHECK, CHECK] },
+      { label: "Read-only data feed (API)", values: [CHECK, CHECK, CHECK, CHECK] },
+      { label: "Discord notifications", values: [DASH, DASH, CHECK, CHECK] },
       { label: "CSV player import & export", values: [DASH, CHECK, CHECK, CHECK] },
       { label: "Support level", values: ["Community", "Standard", "Priority", "Dedicated"] },
     ],
@@ -254,12 +254,12 @@ export default function PricingPage() {
           <div className="mx-auto mt-6 flex max-w-6xl flex-col items-start justify-between gap-4 rounded-[16px] border border-devin-line bg-devin-secondary/35 px-7 py-6 sm:flex-row sm:items-center">
             <p className="text-sm text-devin-ink">
               <span className="font-medium">Prefer to pay once?</span> Lifetime Pro — every Pro feature, no monthly
-              bills. <span className="font-mono">$149 one-time.</span>
+              bills. <span className="font-mono">$149 one-time</span>.
             </p>
             <a
               href="/signup?plan=lifetime"
               data-magnetic
-              className="inline-flex min-h-11 items-center rounded-[2px] bg-devin-ink px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-black"
+              className="inline-flex min-h-11 items-center rounded-[2px] bg-devin-primary px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-devin-primary-hover"
             >
               Get Lifetime Pro
             </a>
@@ -274,7 +274,10 @@ export default function PricingPage() {
             <h2 className="text-3xl font-medium tracking-[-0.02em] text-devin-ink sm:text-4xl">
               Compare plans in detail.
             </h2>
-            <div className="mt-10 overflow-x-auto rounded-[16px] border border-devin-line bg-white" role="region" aria-label="Plan comparison" tabIndex={0}>
+            <p className="mt-3 font-mono text-[10px] uppercase tracking-[0.1em] text-devin-ink-soft sm:hidden">
+              Scroll sideways to compare all plans
+            </p>
+            <div className="scroll-x-hint mt-4 overflow-x-auto rounded-[16px] border border-devin-line bg-white sm:mt-10" role="region" aria-label="Plan comparison" tabIndex={0}>
               <table className="w-full min-w-[720px] border-collapse text-sm">
                 <thead>
                   <tr className="border-b border-devin-line text-left">

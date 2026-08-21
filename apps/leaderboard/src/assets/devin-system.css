@@ -491,7 +491,8 @@ body:has(.v3-dash[data-auth-workspace]),
 .yr-site .yr-lb,
 .yr-site .yr-item,
 .yr-site .yr-modal-card { border-color: var(--devin-line-soft); border-radius: var(--devin-radius-card); background: var(--devin-surface); box-shadow: none; }
-.yr-site .yr-btn { border-radius: var(--devin-radius-control); box-shadow: none; }
+.yr-site .yr-btn,
+.yr-site .yr-act { border-radius: var(--devin-radius-control); box-shadow: none; }
 .yr-site .yr-nav-a,
 .yr-site .yr-tab,
 .yr-site .yr-flag { border-radius: var(--devin-radius-pill); }
@@ -509,7 +510,8 @@ body:has(.v3-dash[data-auth-workspace]),
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
 }
-.yr-site[data-template] .yr-btn { border-radius: var(--devin-radius-control); }
+.yr-site[data-template] .yr-btn,
+.yr-site[data-template] .yr-act { border-radius: var(--devin-radius-control); }
 .yr-site[data-template] .yr-nav-a,
 .yr-site[data-template] .yr-tab,
 .yr-site[data-template] .yr-flag { border-radius: var(--devin-radius-pill); }

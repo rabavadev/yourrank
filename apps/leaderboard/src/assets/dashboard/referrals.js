@@ -1,5 +1,6 @@
 // Referrals page in the dashboard.
 import { $, logError, copyToClipboard, flashButton } from "./utils.js";
+import { loginRedirectPath } from "./request.js";
 import { setState } from "./state.js";
 import { setMetricLoading, setMetricUnknown, setMetricValue } from "./states.js";
 
@@ -16,7 +17,7 @@ export async function renderReferrals() {
     const r = await fetch("/api/referrals");
     const d = await r.json();
     if (!r.ok || !d.ok) {
-      if (r.status === 401) { location.href = "/login"; return; }
+      if (r.status === 401) { location.href = loginRedirectPath(); return; }
       setState({ REFERRALS_STATUS: "error" });
       statusEl.textContent = d.error || "Could not load referrals.";
       return;
