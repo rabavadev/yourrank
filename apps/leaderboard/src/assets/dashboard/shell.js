@@ -3,7 +3,13 @@ import { $ } from "./utils.js";
 import { clearDirty, state, subscribe } from "./state.js";
 import { renderOverviewSummary } from "./overview.js";
 import { fitDesignPreview, loadStats, refreshDesignPreview } from "./site.js";
-import { dashboardPath, dashboardTitle, defaultTab, navOwner, parseDashboardPath } from "./routes.js";
+import { dashboardPath, dashboardTitle, defaultTab, navOwner, parseDashboardPath, SECTIONS, TAB_TITLES } from "./routes.js";
+
+// Sections are all in one document now, so nothing below reinitializes the
+// workspace. Section-specific data (games, analytics) loads on first visit
+// through this hook, registered by the entry point to avoid a circular import.
+let sectionMounter = null;
+export function registerSectionMounter(fn) { sectionMounter = fn; }
 
 let navigationPending = false;
 let lastRouteUrl = location.pathname + location.search;
@@ -134,6 +140,27 @@ export function setActiveSideNav(page) {
   });
 }
 
+// The crumbs are server-rendered for the URL the document was opened at; when
+// navigation stays client-side they have to follow along or they keep naming
+// the section you came from.
+function renderCrumbs(page, tab) {
+  const bento = document.querySelector(".lb-bento");
+  if (!bento) return;
+  const existing = bento.querySelector(":scope > .v3-crumbs");
+  const section = SECTIONS[page];
+  const tabTitle = section?.tabs?.length ? (TAB_TITLES[page]?.[tab || defaultTab(page)] || "") : "";
+  // Top-level pages intentionally ship no breadcrumb trail.
+  if (!section || !tabTitle) {
+    existing?.remove();
+    return;
+  }
+  const nav = existing || document.createElement("nav");
+  nav.className = "v3-crumbs";
+  nav.setAttribute("aria-label", "Breadcrumb");
+  nav.innerHTML = `<a href="${section.path}">${section.title}</a><span class="v3-crumb-sep" aria-hidden="true">/</span><span aria-current="page">${tabTitle}</span>`;
+  if (!existing) bento.prepend(nav);
+}
+
 export function navTo(page, hash = "") {
   const scrollHash = hash || defaultHash(page);
   const navHash = page === "board" ? hash : scrollHash;
@@ -145,12 +172,13 @@ export function navTo(page, hash = "") {
     history.replaceState(history.state || {}, "", canonical + location.search);
   }
 
+  sectionMounter?.(page);
   setActiveSideNav(page, navHash);
   document.querySelectorAll(".lb-page").forEach((p) => p.classList.toggle("is-on", p.dataset.page === page));
   closeDrawer();
+  renderCrumbs(page, scrollHash);
   if (page === "home") renderOverviewSummary();
   if (page === "home" || page === "performance") loadStats();
-  if (page === "games") window.dispatchEvent(new CustomEvent("yr-games-visible"));
   // Re-render and re-fit the live preview whenever the Editor becomes visible
   // (updateDesignPreview() no-ops while the section is hidden, so navigating in
   // has to ask for it again).
