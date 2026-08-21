@@ -21,6 +21,7 @@ export async function handleGetPredictions(request, env, deps = {}) {
     getByUser = defaultGetByUser,
     getBoardById = defaultGetBoardById,
     query = defaultQuery,
+    exec = defaultExec,
   } = deps;
 
   const { user, res } = await requireUser(request, env);
@@ -32,6 +33,14 @@ export async function handleGetPredictions(request, env, deps = {}) {
   if (!site) return bad("Site not found", 404);
   const authorization = await requireSiteCapability(user, site, "canRoleManageBoard");
   if (authorization.res) return authorization.res;
+
+  // Lazily close predictions whose betting window has elapsed so the dashboard
+  // never shows them as "Betting Open" forever. Bet placement is independently
+  // guarded by lock_at in handlePlaceBet.
+  await exec(
+    "UPDATE predictions SET status='locked', updated_at=now() WHERE site_id=$1 AND status='open' AND lock_at IS NOT NULL AND lock_at <= now()",
+    [site.id]
+  );
 
   const predictions = await query(
     `SELECT p.id, p.title, p.options, p.status, p.winning_option_id, p.total_pool,
@@ -76,13 +85,30 @@ export async function handleCreatePrediction(request, env, deps = {}) {
 
   const options = rawOptions.map((opt, idx) => ({
     id: String(opt.id || `opt_${idx + 1}`).trim().toLowerCase(),
-    label: String(opt.label || `Option ${idx + 1}`).trim().slice(0, 80),
+    label: String(opt.label ?? "").trim().slice(0, 80),
     total_points: 0,
     total_bets: 0,
   }));
 
+  if (options.some((opt) => !opt.id || !opt.label)) {
+    return bad("Every option needs both an id and a label.");
+  }
+  const seenIds = new Set();
+  const seenLabels = new Set();
+  for (const opt of options) {
+    if (seenIds.has(opt.id)) return bad("Option ids must be unique.");
+    if (seenLabels.has(opt.label.toLowerCase())) {
+      return bad("Option labels must be different from each other.");
+    }
+    seenIds.add(opt.id);
+    seenLabels.add(opt.label.toLowerCase());
+  }
+
   const minBet = Math.max(1, parseInt(body?.minBet, 10) || 10);
-  const maxBet = Math.max(minBet, parseInt(body?.maxBet, 10) || 1000);
+  const maxBet = parseInt(body?.maxBet, 10) || 1000;
+  if (maxBet < minBet) {
+    return bad(`Maximum bet (${maxBet}) must be at least the minimum bet (${minBet}).`);
+  }
   const lockMinutes = parseInt(body?.lockMinutes, 10) || 5;
   const lockAt = lockMinutes > 0 ? new Date(Date.now() + lockMinutes * 60000).toISOString() : null;
 
@@ -161,7 +187,6 @@ export async function handleSettlePrediction(request, env, deps = {}) {
   const {
     requireUser = defaultRequireUser,
     one = defaultOne,
-    query = defaultQuery,
     withTransaction = defaultWithTransaction,
     logAudit = defaultLogAudit,
   } = deps;
@@ -190,18 +215,33 @@ export async function handleSettlePrediction(request, env, deps = {}) {
     return bad("Prediction has already been resolved or cancelled.", 400);
   }
 
-  const bets = await query(
-    `SELECT b.id, b.site_viewer_id, b.viewer_id, b.option_id, b.amount
-       FROM prediction_bets b
-      WHERE b.prediction_id=$1`,
-    [predictionId]
-  );
+  // Validate the winning option belongs to this prediction.
+  const predOptions = typeof pred.options === "string" ? JSON.parse(pred.options) : (pred.options || []);
+  if (!predOptions.some((opt) => String(opt.id).toLowerCase() === winningOptionId)) {
+    return bad("Winning option does not belong to this prediction.", 400);
+  }
 
-  const winningBets = bets.filter((b) => b.option_id === winningOptionId);
   const totalPool = pred.total_pool || 0;
-  const winningTotal = winningBets.reduce((sum, b) => sum + b.amount, 0);
 
   const results = await withTransaction(async (tx) => {
+    // Atomically close betting inside the transaction so a wager can never
+    // slip in between reading the bets and paying them out.
+    const closed = await tx.one(
+      "UPDATE predictions SET status='locked', updated_at=now() WHERE id=$1 AND status IN ('open','locked') RETURNING id",
+      [predictionId]
+    );
+    if (!closed) return { error: "Prediction has already been resolved or cancelled.", status: 400 };
+
+    const bets = await tx.unsafe(
+      `SELECT b.id, b.site_viewer_id, b.viewer_id, b.option_id, b.amount
+         FROM prediction_bets b
+        WHERE b.prediction_id=$1`,
+      [predictionId]
+    );
+
+    const winningBets = bets.filter((b) => b.option_id === winningOptionId);
+    const winningTotal = winningBets.reduce((sum, b) => sum + b.amount, 0);
+
     // 1. If no winning bets, refund everyone
     if (winningTotal === 0 || winningBets.length === 0) {
       for (const bet of bets) {
@@ -253,6 +293,7 @@ export async function handleSettlePrediction(request, env, deps = {}) {
 
     return { totalWinners: winningBets.length, totalPayout: totalDistributed, refunded: false };
   });
+  if (results.error) return bad(results.error, results.status);
 
   await logAudit({
     actorId: user.id,
@@ -392,6 +433,19 @@ export async function handlePlaceBet(request, env, deps = {}) {
   }
 
   const outcome = await withTransaction(async (tx) => {
+    // Re-verify under a row lock so a bet can never land while the prediction
+    // is being locked or settled concurrently.
+    const fresh = await tx.one(
+      "SELECT status, lock_at FROM predictions WHERE id=$1 FOR UPDATE",
+      [pred.id]
+    );
+    if (!fresh || fresh.status !== "open") {
+      return { error: "Betting on this prediction is closed.", status: 400 };
+    }
+    if (fresh.lock_at && new Date(fresh.lock_at).getTime() < Date.now()) {
+      return { error: "Prediction betting time has ended.", status: 400 };
+    }
+
     // Deduct viewer balance
     const updatedViewer = await tx.one(
       "UPDATE site_viewers SET balance = balance - $1, updated_at=now() WHERE id=$2 AND balance >= $1 RETURNING id, balance",
