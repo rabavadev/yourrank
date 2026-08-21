@@ -1,5 +1,5 @@
 // Dashboard API for the Kick credits / shop system.
-import { requireUser, bad, ok, readJson } from "../auth.js";
+import { requireUser, bad, ok, json, readJson } from "../auth.js";
 import { getByUser, getBoardById, getPublicSite } from "../site.js";
 import { query, one, exec, withTransaction } from "@yourrank/shared/db";
 import { resolveViewer } from "@yourrank/shared/viewer-session";
@@ -33,6 +33,17 @@ const LEDGER_DIRECTIONS = Object.freeze({
   redeem: "debit",
   refund: "debit",
 });
+
+// A revoked/expired Kick grant used to bubble out of getValidKickAccessToken as
+// an unhandled throw and reach the streamer as a bare 500. Answer 409 with a
+// machine code instead: the dashboard flips the channel card to "Needs
+// attention" and reveals the Reconnect link. Not 403 — fetchDashboardJson
+// treats every 403 as an expired session and redirects to login.
+const kickReconnectRequired = () => json({
+  ok: false,
+  error: "Kick connection needs attention. Reconnect Kick to keep rewards working.",
+  code: "kick_reconnect_required",
+}, 409);
 
 export function ledgerDirection(type) {
   return LEDGER_DIRECTIONS[type] || null;
@@ -311,20 +322,38 @@ export async function handleCreditsCreateReward(request, env) {
     return bad("Connect your Kick account first in the channel section", 403);
   }
 
-  const tokenSet = await getValidKickAccessToken(
-    env,
-    tokenRow.kick_access_token_enc,
-    tokenRow.kick_refresh_token_enc || null,
-    tokenRow.kick_token_expires_at
-  );
+  let tokenSet;
+  try {
+    tokenSet = await getValidKickAccessToken(
+      env,
+      tokenRow.kick_access_token_enc,
+      tokenRow.kick_refresh_token_enc || null,
+      tokenRow.kick_token_expires_at
+    );
+  } catch (err) {
+    // Refresh token revoked/expired (Kick's invalid_grant) or missing.
+    console.warn("[credits] Kick token refresh failed:", err?.message || err);
+    return kickReconnectRequired();
+  }
 
-  const reward = await createKickChannelReward(tokenSet.accessToken, {
-    title,
-    cost,
-    description: description || undefined,
-    background_color: backgroundColor,
-    is_enabled: true,
-  });
+  let reward;
+  try {
+    reward = await createKickChannelReward(tokenSet.accessToken, {
+      title,
+      cost,
+      description: description || undefined,
+      background_color: backgroundColor,
+      is_enabled: true,
+    });
+  } catch (err) {
+    // A 401 here means the access token was revoked despite a fresh-looking
+    // expiry; anything else is a Kick-API problem the streamer cannot fix.
+    if (/\b401\b|invalid_grant|unauthorized/i.test(String(err?.message || err))) {
+      return kickReconnectRequired();
+    }
+    console.warn("[credits] Kick reward creation failed:", err?.message || err);
+    return bad("Kick did not accept the reward. Try again in a moment.", 502);
+  }
 
   // The reward was created on the streamer's Kick channel. Capture that channel
   // so webhook redemptions can find this site even if the manual connect form was skipped.
