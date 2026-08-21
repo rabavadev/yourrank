@@ -34,7 +34,7 @@ describe("dashboard overview quick actions", () => {
     expect(html).not.toContain('class="ov-summary"');
     expect(html).toContain('id="ovPublishedStatus"');
     expect(html).toContain('id="ovPublicSiteAction"');
-    expect(html).toContain("View public site ↗");
+    expect(html).toContain("View public leaderboard ↗");
     expect(html).toContain('href="/dashboard/leaderboard/setup"');
     expect(html).toContain('class="ov-card-empty" id="ovActivityEmpty"');
     expect(html).toContain('id="ovCreditsCard" hidden');
@@ -84,7 +84,7 @@ describe("dashboard overview quick actions", () => {
   it("routes unverified users to email confirmation without a duplicate Overview banner", () => {
     expect(overviewJs).toContain("status.published && !status.emailVerified");
     expect(overviewJs).toContain("const needsVerification = !status.emailVerified");
-    expect(overviewJs).toContain("const readyToPublish = steps.brand && steps.players && steps.configure");
+    expect(overviewJs).toContain("const readyToPublish = steps.brand && steps.players");
     expect(overviewJs).toContain("const verificationIsNext = pendingVerification || (readyToPublish && needsVerification)");
     expect(overviewJs).toContain('verificationIsNext ? "/verify-email"');
     expect(overviewJs).toContain('verificationIsNext ? "Confirm email"');

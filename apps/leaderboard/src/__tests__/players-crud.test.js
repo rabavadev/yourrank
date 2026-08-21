@@ -153,7 +153,7 @@ describe("Players CRUD validation", () => {
     const result = players.collectPlayers({ focusInvalid: true });
     expect(rows.querySelector(".p-wager").value).toBe("abc");
     expect(rows.querySelector(".p-wager").getAttribute("aria-invalid")).toBe("true");
-    expect(rows.querySelector(".p-wager").closest("td").querySelector(".field-err").textContent).toContain("non-negative");
+    expect(rows.querySelector(".p-wager").closest("td").querySelector(".field-err").textContent).toContain("Enter a number from 0 to");
     expect(result.invalid.map(({ label }) => label)).toEqual(["Amount", "Prize"]);
     expect(fakeDocument.activeElement).toBe(rows.querySelector(".p-wager"));
   });
@@ -182,7 +182,7 @@ describe("Players CRUD validation", () => {
     const blank = players.validateQuickAddValues({ name: "   ", wagered: "", prize: "" });
     expect(blank.ok).toBe(false);
     expect(blank.errors[0]).toEqual({ field: "name", message: "Enter a player name." });
-    const invalid = players.validateQuickAddValues({ name: "Alice", wagered: "abc", prize: "-5" });
+    const invalid = players.validateQuickAddValues({ name: "Zoe", wagered: "abc", prize: "-5" });
     expect(invalid.ok).toBe(false);
     expect(invalid.errors.map(({ field }) => field)).toEqual(["wagered", "prize"]);
   });
@@ -192,13 +192,13 @@ describe("Players CRUD validation", () => {
     expect(players.playerLimitMessage()).toBe("Free allows up to 10 players. Upgrade to add more.");
   });
 
-  it("warns on duplicate names without adding a validation failure", () => {
+  it("warns and blocks duplicate names as a validation failure", () => {
     const rows = register("rows", new FakeElement("tbody"));
     rows.appendChild(row({ name: "Alice", wagered: "1", prize: "0" }));
     rows.appendChild(row({ name: "alice", wagered: "2", prize: "0" }));
     players.updateDuplicateWarnings();
     expect(rows.children[0].querySelector(".field-warn").textContent).toContain("Duplicate name");
-    expect(players.collectPlayers().invalid).toHaveLength(0);
+    expect(players.collectPlayers().invalid).toHaveLength(2);
   });
 
   it("round-trips staged rows through per-site session storage and clears them", () => {

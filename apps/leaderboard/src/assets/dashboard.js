@@ -146,6 +146,7 @@ async function init() {
   state.PUBLISHED_AT = p.publishedAt || null;
   state.PUBLISHED = !!p.published;
   state.IS_DRAFT = !!p.isDraft;
+  state.RANK_BY = p.data?.rankBy === "score" ? "score" : "wagered";
   state.ONBOARDING = p.onboarding || {};
   state.SAMPLE_PLAYERS = Boolean(p.data?.samplePlayers);
 
@@ -185,20 +186,34 @@ async function init() {
     $("f_cta").value = b.ctaUrl || "";
     $("f_pool").value = b.prizePool || "";
     $("f_period").value = b.period || "Monthly";
+    $("f_rank_by").value = state.RANK_BY;
+    if ($("playerSort")) $("playerSort").value = state.RANK_BY;
+    $("f_rank_by").addEventListener("change", () => {
+      setState({ RANK_BY: $("f_rank_by").value === "score" ? "score" : "wagered" });
+      if ($("playerSort")) {
+        $("playerSort").value = state.RANK_BY;
+        $("playerSort").dispatchEvent(new Event("change"));
+      }
+    });
+    $("f_starts").value = toLocalInput(d.startsAt);
     $("f_ends").value = toLocalInput(d.endsAt);
-    const endsHint = $("f_ends_hint");
-    const endsInput = $("f_ends");
-    const renderEndsHint = () => {
-      if (!endsHint) return;
+    const renderScheduleHints = () => {
       const zone = getViewerTimeZone();
-      const instant = endsInput?.value ? fromLocalInput(endsInput.value, zone) : new Date().toISOString();
-      const label = zone ? timeZoneLabel(instant, zone) : "";
-      endsHint.textContent = label
-        ? `When the leaderboard resets, shown in ${label}. Powers the live timer.`
-        : `When the leaderboard resets, shown in ${zone ? "your timezone" : "your browser's timezone"}. Powers the live timer.`;
+      for (const [inputId, hintId, prefix] of [
+        ["f_starts", "f_starts_hint", "Optional start time"],
+        ["f_ends", "f_ends_hint", "Final standings begin and automated score updates stop"],
+      ]) {
+        const input = $(inputId);
+        const hint = $(hintId);
+        if (!hint) continue;
+        const instant = input?.value ? fromLocalInput(input.value, zone) : new Date().toISOString();
+        const label = zone ? timeZoneLabel(instant, zone) : "your browser's timezone";
+        hint.textContent = `${prefix}, shown in ${label}.`;
+      }
     };
-    renderEndsHint();
-    endsInput?.addEventListener("change", renderEndsHint);
+    renderScheduleHints();
+    $("f_starts")?.addEventListener("change", renderScheduleHints);
+    $("f_ends")?.addEventListener("change", renderScheduleHints);
     $("f_blurb").value = d.partner?.blurb || "";
     renderPlayers(d.players || [], { restoreDraft: true });
     renderBranding(d.branding || {});
@@ -239,7 +254,7 @@ async function init() {
     renderNotifications(p.notify || {});
     renderLegal();
     if (p.customDomain !== undefined) $("f_domain").value = p.customDomain || "";
-    if (p.customDomain && p.domainStatus) renderDomainStatus(p.domainStatus, "");
+    if (p.domainStatus) renderDomainStatus(p.domainStatus, "");
   }
 
   const pubToggle = $("pubToggle");

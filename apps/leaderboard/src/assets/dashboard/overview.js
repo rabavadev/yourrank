@@ -6,10 +6,10 @@ import { activityEmptyAction, giveawayAction, visitsMetricState } from "./overvi
 
 const ACTIVITY_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>';
 const SETUP_STEPS = [
-  { key: "brand", required: true, label: "Add site details", description: "Name your site and add its sponsor details.", href: "/dashboard/leaderboard/setup", action: "Add site details" },
-  { key: "players", required: true, label: "Add players", description: "Give your leaderboard its first standings.", href: "/dashboard/leaderboard/players", action: "Add players" },
-  { key: "configure", required: true, label: "Customize how it looks", description: "Make the public page feel like your brand.", href: "/dashboard/leaderboard/design", action: "Customize appearance" },
-  { key: "publish", required: true, label: "Publish your site", description: "Open the finished leaderboard to visitors.", href: "#publish", action: "Publish site" },
+  { key: "brand", required: true, label: "Name your leaderboard", description: "Give your public page a clear name.", href: "/dashboard/leaderboard/setup", action: "Name leaderboard" },
+  { key: "players", required: true, label: "Add players", description: "Add names and the values that decide rank.", href: "/dashboard/leaderboard/players", action: "Add players" },
+  { key: "configure", required: false, label: "Customize appearance (optional)", description: "The default design is ready; personalize it whenever you want.", href: "/dashboard/leaderboard/design", action: "Customize appearance" },
+  { key: "publish", required: true, label: "Publish your leaderboard", description: "Open the standings to visitors and copy the live link.", href: "#publish", action: "Publish leaderboard" },
 ];
 
 function isBoardSetup() {
@@ -19,21 +19,11 @@ function isBoardSetup() {
 
 function computeSetupSteps() {
   const o = state.ONBOARDING || {};
-  // Keep this in lockstep with onboardingForSite: a board name alone is not
-  // enough; the board also needs a sponsor/prize source or promo code.
   const name = $("f_name")?.value.trim();
-  const casino = $("f_casino")?.value.trim();
-  const code = $("f_code")?.value.trim();
-  const brand = Boolean(o.brand || (name && (casino || code)));
+  const brand = Boolean(o.brand || name);
   const players = !state.SAMPLE_PLAYERS && (currentPlayers().length > 0 || o.players);
   const kick = Boolean(state.CREDITS?.channel?.externalId);
-  const branding = state.CURRENT_BRANDING || {};
-  const hasSocial = (state.EXTRA?.socials || []).some((social) => social.enabled && social.url && social.url !== "#");
-  const configure = Boolean(
-    o.configure || o.design ||
-    $("f_tagline")?.value.trim() || $("f_cta")?.value.trim() || $("f_blurb")?.value.trim() ||
-    hasSocial || branding.accentA || branding.accentB || (branding.font && branding.font !== "Inter")
-  );
+  const configure = true;
   const status = boardStatus();
   const publish = status.published;
   return { brand, players, kick, configure, publish };
@@ -99,8 +89,8 @@ export function renderOverviewSummary() {
     const status = boardStatus();
     const steps = computeSetupSteps();
     const done = isBoardSetup();
-    const readyToPublish = steps.brand && steps.players && steps.configure;
-    const firstIncomplete = SETUP_STEPS.find((step) => !steps[step.key]);
+    const readyToPublish = steps.brand && steps.players;
+    const firstIncomplete = SETUP_STEPS.find((step) => step.required && !steps[step.key]);
     const pendingVerification = status.published && !status.emailVerified;
     const needsVerification = !status.emailVerified;
     const headSub = $("ovHeadSub");
@@ -109,6 +99,8 @@ export function renderOverviewSummary() {
     const activeBento = $("ovActiveBento");
     const commandGrid = $("ovCommandGrid");
     const showSetup = !done || pendingVerification;
+    const firstRun = $("ovFirstRun");
+    if (firstRun) firstRun.hidden = status.published || players.length > 0;
     if (onboardBento) onboardBento.hidden = !showSetup;
     const setupCard = onboardBento?.querySelector(".ov-setup");
     setupCard?.classList.toggle("is-attention", pendingVerification);
@@ -132,12 +124,10 @@ export function renderOverviewSummary() {
       const setupCopy = pendingVerification
         ? "Your site is published, but email confirmation is still required."
         : firstIncomplete?.key === "brand"
-        ? "Add your site details to get started."
+        ? "Name your leaderboard to get started."
         : firstIncomplete?.key === "players"
           ? "Add players to your leaderboard."
-          : firstIncomplete?.key === "configure"
-            ? "Customize the look of your public site."
-            : firstIncomplete?.key === "publish"
+          : firstIncomplete?.key === "publish"
               ? "Your essentials are ready. Publish when you’re ready."
               : "Your essentials are ready.";
       setupMessage.textContent = setupCopy;
@@ -224,8 +214,10 @@ export function renderOverviewSummary() {
     if (creditsCard) creditsCard.hidden = !creditsEnabled;
     if (pendingOrdersCard) pendingOrdersCard.hidden = pendingOrders <= 0;
     setMetricValue($("ovPendingOrders"), number(pendingOrders));
-    const pendingOrdersAction = $("ovPendingOrdersAction");
-    if (pendingOrdersAction) pendingOrdersAction.textContent = pendingOrders === 1 ? "Review order" : "Review orders";
+    for (const id of ["ovPendingOrdersAction", "ovPendingOrdersAlertAction"]) {
+      const pendingOrdersAction = $(id);
+      if (pendingOrdersAction) pendingOrdersAction.textContent = pendingOrders === 1 ? "Review order" : "Review orders";
+    }
     kpiRow?.classList.toggle("has-credits", creditsEnabled);
     if (state.CREDITS_ANALYTICS_STATUS === "loading" && creditsEnabled) {
       setMetricLoading($("ovCreditsUsed"));
@@ -254,13 +246,14 @@ export function renderOverviewSummary() {
     const sampleNotice = state.SAMPLE_PLAYERS
       ? `<div class="v3-alert v3-alert--warning ov-sample-players" role="status"><strong>Sample players are shown.</strong><span>Replace or clear them before publishing your real roster.</span><a class="btn btn--sm btn--ghost" href="/dashboard/leaderboard/players">Manage players</a></div>`
       : "";
-    const top = [...players].sort((a, b) => b.wagered - a.wagered).slice(0, 5);
+    const rankBy = state.RANK_BY === "score" ? "score" : "wagered";
+    const top = [...players].sort((a, b) => Number(b[rankBy] || 0) - Number(a[rankBy] || 0) || String(a.name).localeCompare(String(b.name))).slice(0, 5);
     const topPlayers = $("ovTopPlayers");
     if (topPlayers) topPlayers.innerHTML = sampleNotice + top.map((player, i) => `
       <div class="ov-player-row" data-name="${esc(player.name)}">
         <span class="ov-player-rank">#${i + 1}</span>
         <b class="ov-player-name" title="${esc(player.name)}">${esc(player.name)}</b>
-        <span class="ov-player-wager">$${Number(player.wagered || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+        <span class="ov-player-wager">${rankBy === "score" ? Number(player.score || 0).toLocaleString("en-US") + " pts" : "$" + Number(player.wagered || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
       </div>
     `).join("");
 

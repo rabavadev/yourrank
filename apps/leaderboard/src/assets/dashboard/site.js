@@ -444,7 +444,9 @@ export function collect({ reportPlayerErrors = true } = {}) {
       prizePool: $("f_pool").value.trim(),
       period: $("f_period").value.trim() || "Monthly",
     },
+    startsAt: fromLocalInput($("f_starts")?.value || ""),
     endsAt: fromLocalInput($("f_ends").value),
+    rankBy: $("f_rank_by")?.value === "score" ? "score" : "wagered",
     partner: { blurb: $("f_blurb").value.trim(), chips: state.EXTRA.chips },
     whyStats: state.EXTRA.whyStats,
     rules: state.EXTRA.rules,
@@ -860,11 +862,23 @@ export function wirePublishAction({ fetchImpl = fetch, confirmAction = showConfi
       renderBoardsPage();
       renderBoardStatus();
       renderOverviewSummary();
+      const publicUrl = `${location.origin}/${state.SLUG}`;
+      const handoff = $("publishHandoff");
+      if (handoff) {
+        handoff.hidden = !nextPublished || !boardStatus().live;
+        if ($("publishHandoffUrl")) $("publishHandoffUrl").textContent = publicUrl;
+        if ($("publishHandoffOpen")) $("publishHandoffOpen").href = publicUrl;
+        const copy = $("publishHandoffCopy");
+        if (copy) copy.onclick = async () => {
+          const copied = await copyToClipboard(publicUrl);
+          flashButton(copy, copied ? "Copied!" : "Copy failed");
+        };
+      }
       toast(
         nextPublished
           ? (boardStatus().emailVerified
-            ? "Published"
-            : "Published — Your site will open to visitors after you confirm your email.")
+            ? `Published at ${publicUrl}`
+            : "Published — Your leaderboard will open to visitors after you confirm your email.")
           : "Saved",
         "success",
       );
@@ -1388,14 +1402,16 @@ export async function renderDomain() {
 export function renderDomainStatus(status, message) {
   const el = $("domainStatus");
   if (!el) return;
-  if (status === "active") {
-    el.innerHTML = `<span class="domain-ok">✅ ${esc(message || "TLS active")}</span>`;
+  if (status === "not_configured") {
+    el.textContent = "No custom domain configured. Your yourrank.site link is active.";
+  } else if (status === "active") {
+    el.innerHTML = `<span class="domain-ok">${esc(message || "Domain active with TLS")}</span>`;
   } else if (status === "pending") {
-    el.innerHTML = `<span class="domain-pending">⏳ ${esc(message || "TLS provisioning in progress")}</span>`;
+    el.innerHTML = `<span class="domain-pending">${esc(message || "DNS detected; TLS provisioning is in progress")}</span>`;
   } else if (status === "error") {
-    el.innerHTML = `<span class="domain-error">❌ ${esc(message || "Error")}</span>`;
+    el.innerHTML = `<span class="domain-error">${esc(message || "Domain setup needs attention")}</span>`;
   } else if (status === "saved") {
-    el.innerHTML = `<span class="domain-saved">💾 ${esc(message || "Domain saved")}</span>`;
+    el.innerHTML = `<span class="domain-saved">${esc(message || "Domain saved; TLS automation is not configured")}</span>`;
   } else {
     el.textContent = "";
   }
@@ -1548,6 +1564,8 @@ export async function saveEditorDraft({ fetchImpl = fetch, collectImpl = collect
     return;
   }
   btn.disabled = true; btn.textContent = "Saving…"; status.textContent = "";
+  status.setAttribute("role", "status");
+  status.setAttribute("aria-live", "polite");
   if (publishAction) { publishAction.disabled = true; publishAction.setAttribute("aria-busy", "true"); }
   const limitEl = $("limitMsg"); if (limitEl) limitEl.textContent = "";
   let justPublished = false;
@@ -1562,13 +1580,13 @@ export async function saveEditorDraft({ fetchImpl = fetch, collectImpl = collect
     if (res.ok && d.ok) {
       justPublished = !!payload.published && !state.PUBLISHED;
       if (Array.isArray(payload.players)) state.SAMPLE_PLAYERS = false;
-      state.SAVED_PLAYERS = payload.players.map((player) => ({ ...player }));
+      state.SAVED_PLAYERS = Array.isArray(payload.players) ? payload.players.map((player) => ({ ...player })) : [];
       clearPlayersDraft();
       const restoredNotice = $("playersDraftNotice");
       if (restoredNotice) restoredNotice.hidden = true;
-      setState({ _dirty: false, PUBLISHED: !!payload.published });
+      setState({ _dirty: false, PUBLISHED: !!payload.published, RANK_BY: payload.rankBy === "score" ? "score" : "wagered" });
       status.textContent = justPublished && !boardStatus().emailVerified
-        ? "Published — Your site will open to visitors after you confirm your email."
+        ? "Published — Your leaderboard will open to visitors after you confirm your email."
         : "Saved";
       if (d.updatedAt) setState({ SITE_UPDATED_AT: d.updatedAt });
       if (d.publishedAt) setState({ PUBLISHED_AT: d.publishedAt });
@@ -1582,9 +1600,30 @@ export async function saveEditorDraft({ fetchImpl = fetch, collectImpl = collect
       renderBoardSwitcher();
       renderBoardSelect();
       renderBoardsPage();
+      if (justPublished && boardStatus().live) {
+        const publicUrl = `${location.origin}/${state.SLUG}`;
+        const handoff = $("publishHandoff");
+        if (handoff) {
+          handoff.hidden = false;
+          if ($("publishHandoffUrl")) $("publishHandoffUrl").textContent = publicUrl;
+          if ($("publishHandoffOpen")) $("publishHandoffOpen").href = publicUrl;
+          const copy = $("publishHandoffCopy");
+          if (copy) copy.onclick = async () => {
+            const copied = await copyToClipboard(publicUrl);
+            flashButton(copy, copied ? "Copied!" : "Copy failed");
+          };
+        }
+        showToast(`Published at ${publicUrl}`, "success");
+      }
       // Close the 2-click loop: refresh the live preview so the edit shows immediately.
       updateDesignPreview();
-    } else status.textContent = d.error || "Save failed.";
+    } else {
+      status.setAttribute("role", "alert");
+      status.setAttribute("aria-live", "assertive");
+      status.textContent = d.code === "concurrency_conflict"
+        ? "Another session saved this leaderboard. Your draft is still here — reload to review their version, or save again after reconciling."
+        : d.error || "Save failed.";
+    }
   } catch (err) {
     logError("save", err);
     // AUDIT-B5: the draft is intentionally NOT cleared on failure — say so.

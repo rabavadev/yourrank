@@ -57,7 +57,7 @@ describe("dashboard navigation ownership", () => {
     expect(sites).toContain('id="newBoardForm"');
     expect(sites).toContain('id="boardLimitUpsell"');
     expect(sites).not.toContain('aria-label="Create another site"');
-    expect(sites).toContain('title="Create another site">+ New site');
+    expect(sites).toContain('title="Create another leaderboard">+ New leaderboard');
     expect(dashboardJs).not.toContain("#newBoardSide, #addBoardBtn");
     expect(boardsJs).not.toContain("addBoardFromBoards");
     expect(boardsJs).toContain('const newBtn = $("newBoard")');
@@ -194,7 +194,7 @@ describe("dashboard navigation ownership", () => {
     expect(boardsJs).toContain("renderSiteSelector({");
     expect(siteSelectorJs).toContain("import { esc } from \"./utils.js\";");
     expect(readFileSync(new URL("../assets/dashboard/players.js", import.meta.url), "utf8"))
-      .toContain('class="p-name" placeholder="Player name" title="${esc(p.name)}"');
+      .toContain('class="p-name" placeholder="Player name" aria-label="Player name" title="${esc(p.name)}"');
     expect(readFileSync(new URL("../assets/dashboard/overview.js", import.meta.url), "utf8"))
       .toContain('class="ov-player-name" title="${esc(player.name)}"');
   });

@@ -27,9 +27,10 @@ function nextEndsAt(period, currentEndsAt) {
 
 export async function runAutoReset(env) {
   const rows = await query(
-    `SELECT id, user_id, slug, name, period, ends_at, auto_reset_clear
+    `SELECT id, user_id, slug, name, period, starts_at, ends_at, rank_by, auto_reset_clear
        FROM sites
       WHERE published = true
+        AND is_draft = false
         AND auto_reset_enabled = true
         AND ends_at IS NOT NULL
         AND ends_at <= now()
@@ -65,8 +66,8 @@ export async function processAutoResetSite(env, site) {
     );
     if (!claimed) return;
 
-    const players = await getPlayers(env, site.id);
-    const top3 = players.slice().sort((a, b) => (b.wagered || 0) - (a.wagered || 0)).slice(0, 3);
+    const players = await getPlayers(env, site.id, { rankBy: site.rank_by });
+    const top3 = players.slice(0, 3);
     const label = `Auto-reset · ${new Date().toLocaleString("en-US", { month: "long", day: "numeric", year: "numeric", timeZone: "UTC" })}`;
     const clear = CLEAR_OPTIONS.has(site.auto_reset_clear) ? site.auto_reset_clear : "wagers";
 
@@ -79,8 +80,9 @@ export async function processAutoResetSite(env, site) {
 
     const nextEnds = nextEndsAt(site.period, site.ends_at);
     await exec(
-      `UPDATE sites SET ends_at = $1, auto_reset_last_run_at = now(), updated_at = now() WHERE id = $2`,
-      [nextEnds, site.id]
+      `UPDATE sites SET starts_at = $1, ends_at = $2, auto_reset_last_run_at = now(), updated_at = now()
+        WHERE id = $3 AND auto_reset_enabled = true AND ends_at = $1`,
+      [site.ends_at, nextEnds, site.id]
     );
     void notifyLiveBoard(env, site.id);
 
