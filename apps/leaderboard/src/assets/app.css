@@ -242,6 +242,11 @@ a{color:var(--ink);text-decoration:none}a:hover{color:var(--accent)}
 .plan-banner{padding:12px 14px;border-radius:var(--radius,8px);background:var(--panel-2);border:1px solid var(--line);color:var(--ink);font-size:13px;margin:-8px 0 16px}
 .auth-card .foot{margin-top:18px;font-size:13px;color:var(--ink-mute)}
 .auth-card .foot-sep{display:block;margin-top:10px}
+/* Pass 6 #6: align auth copy to the Next.js 14px base (was 13px micro-scale) */
+.auth-card .sub,.auth-card .foot,.auth-side .feat,.auth-spec-row,.plan-banner{font-size:14px}
+.auth-card .field label{font-size:14px}
+.auth-card .field .hint,.auth-card .field-err{font-size:13px}
+.auth-card .err{font-size:14px}
 .auth-url-wrap{display:flex;align-items:center;gap:0;border:1px solid var(--line);border-radius:8px;padding:10px 12px;background:var(--panel-2)}
 .auth-url-prefix{color:var(--ink);font-size:14px;white-space:nowrap}
 .auth-url-input{flex:1;border:none;background:transparent;padding:0;color:var(--ink);font-size:14px;min-width:0}
