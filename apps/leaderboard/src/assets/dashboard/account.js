@@ -143,6 +143,7 @@ function wireSignOut() {
     try {
       const result = await jsonPost("/api/auth/logout", {});
       if (!result.ok) throw new Error(result.data?.error || "Could not sign out.");
+      try { localStorage.setItem("yr:logout", String(Date.now())); } catch { /* storage unavailable */ }
       location.href = "/login";
     } catch (error) {
       button.disabled = false;

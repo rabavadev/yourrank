@@ -8,6 +8,7 @@ import { renderOverviewSummary } from "./overview.js";
 import { renderPerformance, renderPerformanceLoading } from "./performance.js";
 import { clearPlayersDraft, collectPlayers, commitDraftMutation, renderPlayers, renumber, toggleEmpty } from "./players.js";
 import { requestPublicationChange } from "./publication.js";
+import { withDashboardTimeout } from "./request.js";
 
 export const DEFAULT_SECTIONS = {
   hero: true,
@@ -1306,12 +1307,18 @@ export async function renderDomain() {
             b.textContent = "Registering…";
             $("domainSearchStatus").textContent = `Registering ${domainToBuy} and provisioning SSL certificate…`;
             try {
-              const pRes = await fetch("/api/domains/purchase", {
-                method: "POST",
-                credentials: "include",
-                headers: { "content-type": "application/json", "x-csrf-token": getCsrf() },
-                body: JSON.stringify({ domain: domainToBuy, siteId: state.ACTIVE_SITE_ID }),
-              });
+              // AUDIT-B5: money endpoint, previously no timeout — a hung
+              // request left the button at "Registering…" forever.
+              const pRes = await withDashboardTimeout(
+                (signal) => fetch("/api/domains/purchase", {
+                  method: "POST",
+                  credentials: "include",
+                  headers: { "content-type": "application/json", "x-csrf-token": getCsrf() },
+                  body: JSON.stringify({ domain: domainToBuy, siteId: state.ACTIVE_SITE_ID }),
+                  signal,
+                }),
+                { timeoutMs: 45_000 },
+              );
               const pData = await pRes.json();
               if (pData.ok) {
                 $("domainSearchStatus").innerHTML = `✅ <span class="domain-ok">${esc(pData.message)}</span>`;
@@ -1545,7 +1552,12 @@ export async function saveEditorDraft({ fetchImpl = fetch, collectImpl = collect
   const limitEl = $("limitMsg"); if (limitEl) limitEl.textContent = "";
   let justPublished = false;
   try {
-    const res = await fetchImpl("/api/site", { method: "PUT", credentials: "include", headers: { "content-type": "application/json", "x-csrf-token": getCsrf() }, body: JSON.stringify(payload) }).then(guardAuth);
+    // AUDIT-B5: raw fetch had no timeout — a hung connection left the button
+    // at "Saving…" forever. Run the save through the shared timeout wrapper.
+    const res = await withDashboardTimeout(
+      (signal) => fetchImpl("/api/site", { method: "PUT", credentials: "include", headers: { "content-type": "application/json", "x-csrf-token": getCsrf() }, body: JSON.stringify(payload), signal }),
+      { timeoutMs: 20_000 },
+    ).then(guardAuth);
     const d = await res.json();
     if (res.ok && d.ok) {
       justPublished = !!payload.published && !state.PUBLISHED;
@@ -1573,7 +1585,13 @@ export async function saveEditorDraft({ fetchImpl = fetch, collectImpl = collect
       // Close the 2-click loop: refresh the live preview so the edit shows immediately.
       updateDesignPreview();
     } else status.textContent = d.error || "Save failed.";
-  } catch (err) { logError("save", err); status.textContent = "Network error."; }
+  } catch (err) {
+    logError("save", err);
+    // AUDIT-B5: the draft is intentionally NOT cleared on failure — say so.
+    status.textContent = err?.code === "TIMEOUT"
+      ? "Saving timed out. Your changes are still here — try again."
+      : "Couldn't save. Your changes are still here — try again.";
+  }
   btn.disabled = false; btn.textContent = "Save changes";
   if (publishAction) { publishAction.disabled = false; publishAction.removeAttribute("aria-busy"); }
   const savedMsg = status.textContent;
@@ -1740,7 +1758,25 @@ export async function loadStats() {
   return s;
 }
 
-$("logout")?.addEventListener("click", async (e) => { e.preventDefault(); await fetch("/api/auth/logout", { method: "POST", credentials: "include", headers: { "x-csrf-token": getCsrf() } }); location.href = "/login"; });
+// AUDIT-B1: the old handler had no catch — a failed/offline logout request
+// rejected the promise and location.href never ran, so "Sign out" appeared
+// to do nothing. Now a failure keeps the user in place with an explanation,
+// and a success pings other tabs (AUDIT-B4) so they sign out too.
+$("logout")?.addEventListener("click", async (e) => {
+  e.preventDefault();
+  const btn = e.currentTarget;
+  if (btn) btn.disabled = true;
+  try {
+    const res = await fetch("/api/auth/logout", { method: "POST", credentials: "include", headers: { "x-csrf-token": getCsrf() } });
+    if (!res.ok) throw new Error(`logout failed (${res.status})`);
+    try { localStorage.setItem("yr:logout", String(Date.now())); } catch { /* storage unavailable */ }
+    location.href = "/login";
+  } catch (err) {
+    logError("logout", err);
+    showToast("Couldn't sign you out. Check your connection and try again.");
+    if (btn) btn.disabled = false;
+  }
+});
 $("upgrade")?.addEventListener("click", (e) => { e.preventDefault(); checkout("pro", e.target); });
 $("testDiscord")?.addEventListener("click", async () => {
   const s = $("testDiscordStatus"); if (s) s.textContent = "Sending…";
