@@ -10,6 +10,8 @@ const TAB_LABELS = {
 };
 
 export function initPerformance() {
+  if (initPerformance._done) return;
+  initPerformance._done = true;
   wireRangeFilter();
   wireTabs();
   renderEmpty($("eventsEmpty"), {
