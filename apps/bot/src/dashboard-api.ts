@@ -473,6 +473,9 @@ export function buildDashboardApi(): Hono<{ Bindings: DashApiBindings; Variables
       return c.json({ error: "Could not decrypt stored bot token" }, 500);
     }
 
+    // Same trim-after-validate gap as broadcasts: "   " passes min(1) but
+    // Telegram rejects an empty text.
+    if (!text.trim()) return c.json({ error: "text required" }, 400);
     try {
       const result = image_url
         ? await sendPhoto(token, chat_id, image_url, text.trim())
@@ -776,6 +779,9 @@ export function buildDashboardApi(): Hono<{ Bindings: DashApiBindings; Variables
     if (parsed instanceof Response) return parsed;
     const { bot_id, body: broadcastBody, scheduled_at, media_url, segment } = parsed;
     const body = broadcastBody.trim();
+    // The schema validates the untrimmed string, so "   " would pass min(1)
+    // and queue an empty message to every subscriber.
+    if (!body) return c.json({ error: "body required" }, 400);
 
     const bot = await one(`SELECT id FROM bots WHERE id = $1 AND owner_id = $2`, [bot_id, uid]);
     if (!bot) return c.json({ error: "bot not found" }, 404);
