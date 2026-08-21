@@ -21,6 +21,21 @@ import {
 } from "@yourrank/shared/plans";
 import { requireSiteCapability } from "../site-authorization.js";
 
+// Injectable seams for tests (see handlers/auth.js defaultDependencies).
+const creditsCreateRewardDefaults = {
+  requireUser,
+  getByUser,
+  getBoardById,
+  requireSiteCapability,
+  rateLimit,
+  one,
+  exec,
+  withTransaction,
+  getValidKickAccessToken,
+  createKickChannelReward,
+  fetchKickCurrentChannel,
+};
+
 function getSite(env, user, url) {
   const siteId = url.searchParams.get("siteId");
   return siteId ? getBoardById(env, user.id, siteId) : getByUser(env, user.id);
@@ -280,15 +295,16 @@ export async function handleCreditsSaveReward(request, env) {
   return ok({ id: txResult.id });
 }
 
-export async function handleCreditsCreateReward(request, env) {
-  const { user, res } = await requireUser(request, env);
+export async function handleCreditsCreateReward(request, env, deps = creditsCreateRewardDefaults) {
+  const { user, res } = await deps.requireUser(request, env);
   if (res) return res;
   const url = new URL(request.url);
-  const site = await getSite(env, user, url);
+  const siteIdForLookup = url.searchParams.get("siteId");
+  const site = siteIdForLookup ? await deps.getBoardById(env, user.id, siteIdForLookup) : await deps.getByUser(env, user.id);
   if (!site) return bad("no site", 404);
-  const authorization = await requireSiteCapability(user, site, "canRoleManageCredits");
+  const authorization = await deps.requireSiteCapability(user, site, "canRoleManageCredits");
   if (authorization.res) return authorization.res;
-  if (!(await rateLimit(env, `credits:reward-create:${user.id}`, 5, 60)).ok) return bad("Too many requests.", 429);
+  if (!(await deps.rateLimit(env, `credits:reward-create:${user.id}`, 5, 60)).ok) return bad("Too many requests.", 429);
 
   const body = await readJson(request);
   const title = String(body?.title || "").trim();
@@ -304,7 +320,7 @@ export async function handleCreditsCreateReward(request, env) {
   // Enforce plan limit before calling Kick (re-checked under a lock below).
   const plan = effectivePlan(user);
   const limit = CREDITS_REWARD_LIMITS[plan];
-  const preCount = await one(
+  const preCount = await deps.one(
     "SELECT count(*)::int AS count FROM credit_reward_mappings WHERE site_id=$1 AND active=true",
     [site.id]
   );
@@ -313,7 +329,7 @@ export async function handleCreditsCreateReward(request, env) {
   }
 
   // Load and refresh the streamer's Kick tokens.
-  const tokenRow = await one(
+  const tokenRow = await deps.one(
     `SELECT kick_access_token_enc, kick_refresh_token_enc, kick_token_expires_at
        FROM users WHERE id=$1`,
     [user.id]
@@ -324,7 +340,7 @@ export async function handleCreditsCreateReward(request, env) {
 
   let tokenSet;
   try {
-    tokenSet = await getValidKickAccessToken(
+    tokenSet = await deps.getValidKickAccessToken(
       env,
       tokenRow.kick_access_token_enc,
       tokenRow.kick_refresh_token_enc || null,
@@ -338,7 +354,7 @@ export async function handleCreditsCreateReward(request, env) {
 
   let reward;
   try {
-    reward = await createKickChannelReward(tokenSet.accessToken, {
+    reward = await deps.createKickChannelReward(tokenSet.accessToken, {
       title,
       cost,
       description: description || undefined,
@@ -357,7 +373,7 @@ export async function handleCreditsCreateReward(request, env) {
 
   // The reward was created on the streamer's Kick channel. Capture that channel
   // so webhook redemptions can find this site even if the manual connect form was skipped.
-  const kickChannel = await fetchKickCurrentChannel(tokenSet.accessToken);
+  const kickChannel = await deps.fetchKickCurrentChannel(tokenSet.accessToken);
   if (!kickChannel) {
     return bad("Could not determine your Kick channel from the OAuth token", 500);
   }
@@ -368,7 +384,7 @@ export async function handleCreditsCreateReward(request, env) {
   }
 
   // Persist refreshed tokens if they changed.
-  await exec(
+  await deps.exec(
     `UPDATE users
         SET kick_access_token_enc = $1,
             kick_refresh_token_enc = $2,
@@ -379,7 +395,7 @@ export async function handleCreditsCreateReward(request, env) {
   );
 
   // Atomic insert under a site lock so two concurrent auto-creates cannot overrun the plan limit.
-  const txResult = await withTransaction(async (tx) => {
+  const txResult = await deps.withTransaction(async (tx) => {
     await tx.unsafe("SELECT id FROM sites WHERE id=$1 FOR UPDATE", [site.id]);
 
     await tx.unsafe(

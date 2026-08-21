@@ -40,7 +40,8 @@
   min-height: 44px;
   padding: 10px 14px;
   border: 1px solid var(--line, rgba(0, 0, 0, 0.12));
-  border-radius: var(--radius, 8px);
+  /* Buttons take the control radius, never the card radius that --radius maps to. */
+  border-radius: var(--devin-radius-control, 2px);
   background: var(--panel, #fcfcfc);
   color: var(--ink, #191919);
   font: inherit;
