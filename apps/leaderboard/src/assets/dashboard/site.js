@@ -1585,9 +1585,10 @@ $("a_go")?.addEventListener("click", async () => {
       btn.textContent = "Close out period";
       return;
     }
-    const saveRes = await fetch("/api/site", { method: "PUT", credentials: "include", headers: { "content-type": "application/json", "x-csrf-token": getCsrf() }, body: JSON.stringify(savePayload) }).then(guardAuth);
-    const saved = await saveRes.json();
-    if (!saveRes.ok || !saved.ok) { status.textContent = saved.error || "Couldn't save before archiving."; btn.disabled = false; btn.textContent = "Close out period"; return; }
+    const saveRes = await fetch("/api/site", { method: "PUT", credentials: "include", headers: { "content-type": "application/json", "x-csrf-token": getCsrf() }, body: JSON.stringify(savePayload) });
+    if (saveRes.status === 401 || saveRes.status === 403) { status.textContent = "Your session ended — your changes are still here. Sign in again in a new tab, then retry."; btn.disabled = false; btn.textContent = "Close out period"; return; }
+    const saved = await saveRes.json().catch(() => ({}));
+    if (!saveRes.ok || !saved.ok) { status.textContent = saved.error || "Couldn't save before archiving. Your changes are still here — try again."; btn.disabled = false; btn.textContent = "Close out period"; return; }
     const archiveBody = { label: $("a_label").value.trim(), clear };
     if (state.ACTIVE_SITE_ID) archiveBody.siteId = state.ACTIVE_SITE_ID;
     const res = await fetch("/api/site/archive", { method: "POST", credentials: "include", headers: { "content-type": "application/json", "x-csrf-token": getCsrf() }, body: JSON.stringify(archiveBody) });
@@ -1604,7 +1605,7 @@ $("a_go")?.addEventListener("click", async () => {
       $("a_label").value = "";
       status.textContent = `"${d.label}" closed out — it's on your page now.`;
     } else status.textContent = d.error || "Couldn't close out the period.";
-  } catch (err) { logError("archive", err); status.textContent = "Network error."; }
+  } catch (err) { logError("archive", err); status.textContent = "Couldn't close out — your changes are still here. Check your connection and try again."; }
   btn.disabled = false; btn.textContent = "Close out period";
 });
 
@@ -1628,11 +1629,13 @@ export async function saveEditorDraft({ fetchImpl = fetch, collectImpl = collect
   try {
     // AUDIT-B5: raw fetch had no timeout — a hung connection left the button
     // at "Saving…" forever. Run the save through the shared timeout wrapper.
+    // A 401/403 means the session ended mid-edit — keep the draft on screen so
+    // the user can re-auth in another tab instead of being bounced to /login.
     const res = await withDashboardTimeout(
       (signal) => fetchImpl("/api/site", { method: "PUT", credentials: "include", headers: { "content-type": "application/json", "x-csrf-token": getCsrf() }, body: JSON.stringify(payload), signal }),
       { timeoutMs: 20_000 },
-    ).then(guardAuth);
-    const d = await res.json();
+    );
+    const d = await res.json().catch(() => ({}));
     if (res.ok && d.ok) {
       justPublished = !!payload.published && !state.PUBLISHED;
       if (Array.isArray(payload.players)) state.SAMPLE_PLAYERS = false;
@@ -1673,6 +1676,9 @@ export async function saveEditorDraft({ fetchImpl = fetch, collectImpl = collect
       }
       // Close the 2-click loop: refresh the live preview so the edit shows immediately.
       updateDesignPreview();
+    } else if (res.status === 401 || res.status === 403) {
+      status.setAttribute("role", "alert");
+      status.textContent = "Your session ended — your changes are still here. Sign in again in a new tab, then retry.";
     } else {
       status.setAttribute("role", "alert");
       status.setAttribute("aria-live", "assertive");
