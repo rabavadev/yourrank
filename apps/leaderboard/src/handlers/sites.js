@@ -12,6 +12,11 @@ import { invalidateCustomDomain } from "../middleware/custom-domain.js";
 import { notifyLiveBoard } from "../live-board-config.js";
 import { requireSiteCapability } from "../site-authorization.js";
 
+function csvCell(value) {
+  const text = String(value ?? "");
+  return /[",\r\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
+}
+
 async function onboardingForSite(env, site, userId, plan) {
   const [bot, postback, players, firstView] = await Promise.all([
     one("SELECT 1 FROM bots WHERE owner_id=$1 LIMIT 1", [userId]),
@@ -21,7 +26,7 @@ async function onboardingForSite(env, site, userId, plan) {
   ]);
   const brand = site.data?.brand || site;
   return {
-    brand: !!(brand.name?.trim() && (brand.casino?.trim() || brand.code?.trim())),
+    brand: !!brand.name?.trim(),
     players: (players?.n || 0) > 0 && !site.data?.samplePlayers,
     botConnected: !!bot,
     shared: !!site.published && !!firstView,
@@ -109,7 +114,7 @@ export async function handleExportPlayers(request, env, {
   );
   const header = "name,wagered,prize,score,hands,net_profit,win_rate,change\n";
   const body = (rows || []).map((p) => [
-    JSON.stringify(String(p.name)),
+    p.name,
     p.wagered,
     p.prize,
     p.score ?? "",
@@ -117,7 +122,7 @@ export async function handleExportPlayers(request, env, {
     p.net_profit ?? "",
     p.win_rate ?? "",
     p.change ?? "",
-  ].join(",")).join("\n") + (rows?.length ? "\n" : "");
+  ].map(csvCell).join(",")).join("\n") + (rows?.length ? "\n" : "");
   const csv = header + body;
   return new Response(csv, {
     headers: {
@@ -162,7 +167,7 @@ export async function handleTrackCopy(request, env, ctx) {
   const slug = slugify(body?.slug || "");
   if (!slug) return json({ ok: true });
   if (!(await rateLimit(env, `copy:${slug}:${ip}`, 20, 60)).ok) return json({ ok: false, error: "Too many requests." }, 429);
-  const site = await one("SELECT id FROM sites WHERE slug=$1 AND published=true", [slug]);
+  const site = await one("SELECT id FROM sites WHERE slug=$1 AND published=true AND is_draft=false", [slug]);
   if (site) {
     const producer = createQueueProducer(
       env.EVENTS_QUEUE,
@@ -187,7 +192,7 @@ export async function handleTrackScroll(request, env) {
   const depth = Number(body?.depth);
   if (!slug || !Number.isFinite(depth)) return json({ ok: true });
   if (depth <= 0) return json({ ok: true });
-  const site = await one("SELECT id FROM sites WHERE slug=$1 AND published=true", [slug]);
+  const site = await one("SELECT id FROM sites WHERE slug=$1 AND published=true AND is_draft=false", [slug]);
   if (!site) return json({ ok: true });
   const bucket = Math.max(0, Math.min(100, Math.ceil(depth / 25) * 25));
   await query(
@@ -215,7 +220,7 @@ export async function handleGetSite(request, env) {
   const boards = await getUserBoardsList(env, user.id);
   const onboarding = await onboardingForSite(env, s, user.id, plan);
   const data = { ...(s.data || {}), playerCount: Array.isArray(s.data?.players) ? s.data.players.length : 0 };
-  return json({ ok: true, slug: s.slug, published: s.published, isDraft: s.is_draft, plan: plan, data, socials: s.socials, notify: s.notify || {}, archives: (s.archives || []).map((a) => ({ id: a.id, label: a.label, at: a.created_at, players: a.player_count, createdAt: a.created_at ? new Date(a.created_at).toISOString() : null, winnerName: a.winner_name, playerCount: a.player_count })), boards, siteId: s.id, customDomain: s.customDomain || "", domainStatus: s.domainStatus || "pending", onboarding, updatedAt: s.updated_at, publishedAt: s.published_at, passwordProtected: !!(s.password_hash && s.password_salt), autoReset: { enabled: !!s.auto_reset_enabled, clear: s.auto_reset_clear || "wagers" } }, 200, { "cache-control": "no-store, no-cache, must-revalidate" });
+  return json({ ok: true, slug: s.slug, published: s.published, isDraft: s.is_draft, plan: plan, data, socials: s.socials, notify: s.notify || {}, archives: (s.archives || []).map((a) => ({ id: a.id, label: a.label, at: a.created_at, players: a.player_count, createdAt: a.created_at ? new Date(a.created_at).toISOString() : null, winnerName: a.winner_name, playerCount: a.player_count })), boards, siteId: s.id, customDomain: s.customDomain || "", domainStatus: s.customDomain ? (s.domainStatus || "pending") : "not_configured", onboarding, updatedAt: s.updated_at, publishedAt: s.published_at, passwordProtected: !!(s.password_hash && s.password_salt), autoReset: { enabled: !!s.auto_reset_enabled, clear: s.auto_reset_clear || "wagers" } }, 200, { "cache-control": "no-store, no-cache, must-revalidate" });
 }
 
 export async function handleListBoards(request, env) {
@@ -352,7 +357,9 @@ export async function handlePutSite(request, env, {
     if (authorization.res) return authorization.res;
   }
   const r = await saveSite(env, user, payload, payload.siteId || null, request);
-  return r.error ? bad(r.error, 400) : json({ ok: true, updatedAt: r.updatedAt, publishedAt: r.publishedAt, slug: r.slug, siteId: r.siteId });
+  return r.error
+    ? json({ ok: false, error: r.error, code: r.code || "save_failed", currentUpdatedAt: r.currentUpdatedAt }, r.code === "concurrency_conflict" ? 409 : 400)
+    : json({ ok: true, updatedAt: r.updatedAt, publishedAt: r.publishedAt, slug: r.slug, siteId: r.siteId });
 }
 
 // POST /api/site/finish — mark the wizard-created board as finished.
@@ -370,7 +377,9 @@ export async function handleFinishSetup(request, env, {
     if (authorization.res) return authorization.res;
   }
   const r = await saveSite(env, user, { isDraft: false, published: true }, payload.siteId || null, request);
-  return r.error ? bad(r.error, 400) : json({ ok: true, updatedAt: r.updatedAt, publishedAt: r.publishedAt, slug: r.slug, siteId: r.siteId });
+  return r.error
+    ? json({ ok: false, error: r.error, code: r.code || "publish_failed", currentUpdatedAt: r.currentUpdatedAt }, r.code === "concurrency_conflict" ? 409 : 400)
+    : json({ ok: true, updatedAt: r.updatedAt, publishedAt: r.publishedAt, slug: r.slug, siteId: r.siteId });
 }
 
 export async function handlePutTheme(request, env, {
@@ -462,14 +471,14 @@ export async function handleNotifyTest(request, env) {
     if (!webhookUrl) {
       try { webhookUrl = await decryptCredential(site.discord_webhook_url_enc); } catch { webhookUrl = null; }
     }
-    if (!webhookUrl) return bad("No Discord webhook URL configured.");
+    if (!webhookUrl) return bad("No Discord link saved yet.");
     if (!/^https:\/\/discord\.com\/api\/webhooks\/\d+\/.+/.test(webhookUrl) &&
         !/^https:\/\/discordapp\.com\/api\/webhooks\/\d+\/.+/.test(webhookUrl)) {
-      return bad("That doesn't look like a valid Discord webhook URL.");
+      return bad("That doesn't look like the link Discord gives you. Copy it again from Channel settings.");
     }
     const embed = buildTop3Embed(site.name || "Your Site", "TestPlayer", 1, 99999);
     embed.title = "🧪 Test Notification";
-    embed.description = "Your Discord webhook is set up correctly!";
+    embed.description = "Discord notifications are set up correctly!";
     embed.fields.push({ name: "Status", value: "✅ Notifications are working.", inline: false });
     const result = await sendDiscordWebhook(webhookUrl, embed);
     return result.ok ? json({ ok: true, message: "Test message sent to Discord!" }) : bad(result.error || "Failed to send.", 502);

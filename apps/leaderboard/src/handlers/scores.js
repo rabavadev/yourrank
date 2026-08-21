@@ -11,21 +11,28 @@ import {
   recordReplayHash as defaultRecordReplayHash,
 } from "@yourrank/shared/postback";
 import { z } from "@yourrank/shared/validation";
+import { validateAndNormalizePlayers } from "../player-rules.js";
+import { SCORE_MAX, WIN_RATE_MAX, INT32_MAX, INT32_MIN } from "../player-rules.js";
 
 const scoreNumber = z
   .union([z.number(), z.string()])
   .transform((value) => Number(value))
-  .pipe(z.number().finite().min(0).max(1e15));
+  .pipe(z.number().finite().min(0).max(SCORE_MAX));
 
 const signedNumber = z
   .union([z.number(), z.string()])
   .transform((value) => Number(value))
-  .pipe(z.number().finite().min(-1e15).max(1e15));
+  .pipe(z.number().finite().min(-SCORE_MAX).max(SCORE_MAX));
+
+const signedRateNumber = z
+  .union([z.number(), z.string()])
+  .transform((value) => Number(value))
+  .pipe(z.number().finite().min(-WIN_RATE_MAX).max(WIN_RATE_MAX));
 
 const intNumber = z
   .union([z.number(), z.string()])
   .transform((value) => Number(value))
-  .pipe(z.number().int().finite().min(-2147483648).max(2147483647));
+  .pipe(z.number().int().finite().min(INT32_MIN).max(INT32_MAX));
 
 const scoreBodySchema = z
   .object({
@@ -38,7 +45,7 @@ const scoreBodySchema = z
       score: scoreNumber.optional(),
       hands: intNumber.optional(),
       netProfit: signedNumber.optional(),
-      winRate: signedNumber.optional(),
+      winRate: signedRateNumber.optional(),
       change: intNumber.optional(),
     }).strict()).max(9999),
   })
@@ -87,9 +94,6 @@ export async function handleScores(request, env, {
     if (!keyOwner) return bad("Invalid postback key or board reference.", 401);
     logPostbackIntake("scores_signed", keyOwner, true);
     const replayHash = await computeReplayHash({ body: rawBody });
-    if (!(await recordReplayHash(keyOwner.userId, replayHash))) {
-      return bad("Duplicate postback.", 409);
-    }
 
     let raw;
     try { raw = JSON.parse(rawBody); } catch { return bad("Invalid JSON body."); }
@@ -103,31 +107,32 @@ export async function handleScores(request, env, {
     // board reference (slug or siteId, in body or X-Postback-Site header).
     const boardRef = body.slug || body.siteId || request.headers.get("x-postback-site");
     if (!boardRef || typeof boardRef !== "string") return bad("Missing board slug or siteId. Use body.slug, body.siteId, or X-Postback-Site header.", 400);
-    const site = await one("SELECT s.id, s.user_id, s.slug, s.name, s.tagline, s.casino, s.code, s.cta_url, s.prize_pool, s.period, s.ends_at, s.reset_note, s.blurb, s.extra_json, s.published, s.theme_json, s.updated_at FROM sites s WHERE s.user_id=$1 AND (s.slug=$2 OR s.id::text=$2)", [keyOwner.userId, boardRef]);
+    const site = await one("SELECT s.id, s.user_id, s.slug, s.name, s.tagline, s.casino, s.code, s.cta_url, s.prize_pool, s.period, s.starts_at, s.ends_at, s.reset_note, s.blurb, s.extra_json, s.published, s.theme_json, s.updated_at FROM sites s WHERE s.user_id=$1 AND (s.slug=$2 OR s.id::text=$2)", [keyOwner.userId, boardRef]);
     if (!site) return bad("Invalid postback key or board reference.", 401);
     // Gate behind Pro plan
     const owner = await one("SELECT id, plan, (EXTRACT(EPOCH FROM plan_expires_at) * 1000)::double precision AS plan_expires_at, status FROM users WHERE id=$1", [site.user_id]);
     const plan = effectivePlan(owner);
     if (plan !== "pro" && plan !== "agency") return bad("The signed score API requires a Pro or Agency plan.", 403);
-    const players = body.players;
+    if (site.starts_at && new Date(site.starts_at).getTime() > Date.now()) {
+      return bad("This leaderboard has not started yet. Change the start date before posting scores.", 409);
+    }
+    if (site.ends_at && new Date(site.ends_at).getTime() <= Date.now()) {
+      return bad("This leaderboard has ended. Change the end date or start a new race before posting scores.", 409);
+    }
+    const validation = validateAndNormalizePlayers(body.players);
+    if (validation.error) return bad(validation.error, 400);
     // Plan gate: player count
-    const validPlayers = players;
+    const validPlayers = validation.players;
     if (validPlayers.length > PLAN_LIMITS[plan]) return bad(`Your plan allows up to ${PLAN_LIMITS[plan]} players.`, 400);
+    if (!(await recordReplayHash(keyOwner.userId, replayHash))) {
+      return bad("Duplicate postback.", 409);
+    }
     // Reuse saveSite with just the players update — pass minimal payload
     const user = owner;
     const savePayload = {
       brand: { name: site.name, tagline: site.tagline, casino: site.casino, code: site.code, ctaUrl: site.cta_url, prizePool: site.prize_pool, period: site.period, resetNote: site.reset_note },
       partner: { blurb: site.blurb },
-      players: validPlayers.map(p => ({
-        name: String(p.name).slice(0, 40),
-        wagered: Number(p.wagered) || 0,
-        prize: Number(p.prize) || 0,
-        score: p.score !== undefined ? Number(p.score) : undefined,
-        hands: p.hands !== undefined ? Number(p.hands) : undefined,
-        netProfit: p.netProfit !== undefined ? Number(p.netProfit) : undefined,
-        winRate: p.winRate !== undefined ? Number(p.winRate) : undefined,
-        change: p.change !== undefined ? Number(p.change) : undefined,
-      })),
+      players: validPlayers,
     };
     const r = await saveSiteImpl(env, user, savePayload, site.id, request);
     return r.error ? bad(r.error, 400) : json({ ok: true, players: validPlayers.length }, 200, rateLimitHeaders(rl));

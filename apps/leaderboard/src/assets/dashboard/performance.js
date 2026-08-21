@@ -1,4 +1,4 @@
-import { $, logError, showLoadError, clearLoadError } from "./utils.js";
+import { $, esc, logError, showLoadError, clearLoadError } from "./utils.js";
 import { setState, state } from "./state.js";
 import { renderEmpty, renderError, setMetricLoading, setMetricUnknown, setMetricValue, setRowsLoading } from "./states.js";
 
@@ -10,6 +10,8 @@ const TAB_LABELS = {
 };
 
 export function initPerformance() {
+  if (initPerformance._done) return;
+  initPerformance._done = true;
   wireRangeFilter();
   wireTabs();
   renderEmpty($("eventsEmpty"), {
@@ -149,12 +151,22 @@ function renderChart(days, hasAnyData = false) {
   const height = 220;
   const values = days.map((day) => Number(day.views) || 0);
   const max = Math.max(1, ...values);
-  const points = values.map((value, index) => `${(index / Math.max(1, values.length - 1)) * width},${height - 25 - value / max * 170}`).join(" ");
+  // 10% headroom: without it the peak (or a flat non-zero run) pins to the
+  // top edge and reads as a spike.
+  const scaleMax = max * 1.1;
+  const xFor = (index) => (index / Math.max(1, values.length - 1)) * width;
+  const yFor = (value) => height - 25 - (value / scaleMax) * 170;
+  const points = values.map((value, index) => `${xFor(index)},${yFor(value)}`).join(" ");
   const labels = days.map((day, index) => {
     if (!day.day || index % Math.max(1, Math.ceil(days.length / 7))) return "";
-    return `<text x="${(index / Math.max(1, days.length - 1)) * width}" y="214">${day.day.slice(5)}</text>`;
+    return `<text x="${xFor(index)}" y="214">${day.day.slice(5)}</text>`;
   }).join("");
-  host.innerHTML = `<svg viewBox="0 0 ${width} ${height}" role="img" aria-label="Daily views over time"><g class="v3-chart-grid">${[20, 75, 130, 185].map((y) => `<line x1="0" x2="${width}" y1="${y}" y2="${y}"/>`).join("")}</g><polyline points="${points}" fill="none"/>${labels}</svg>`;
+  const yAxis = `<g class="v3-chart-axis" aria-hidden="true"><text x="0" y="24">${max}</text><text x="0" y="190">0</text></g>`;
+  const dots = days.map((day, index) => {
+    const v = Number(day.views) || 0;
+    return `<circle cx="${xFor(index)}" cy="${yFor(v)}" r="12" fill="transparent"><title>${day.day || ""}: ${v} views</title></circle>`;
+  }).join("");
+  host.innerHTML = `<svg viewBox="0 0 ${width} ${height}" role="img" aria-label="Daily views over time"><g class="v3-chart-grid">${[20, 75, 130, 185].map((y) => `<line x1="0" x2="${width}" y1="${y}" y2="${y}"/>`).join("")}</g>${yAxis}<polyline points="${points}" fill="none"/>${dots}${labels}</svg>`;
   if (total) setMetricValue(total, String(values.reduce((sum, value) => sum + value, 0)));
   if (values.some(Boolean)) {
     clearLoadError($("statsEmpty"), false);
@@ -252,7 +264,7 @@ function renderReferrers(referrers) {
   if (!body) return;
   const table = body.closest("table");
   body.removeAttribute("aria-busy");
-  body.innerHTML = referrers.map((row) => `<tr><td>${row.domain}</td><td class="num">${row.count}</td></tr>`).join("");
+  body.innerHTML = referrers.map((row) => `<tr><td>${esc(row.domain)}</td><td class="num">${Number(row.count) || 0}</td></tr>`).join("");
   if (referrers.length) {
     clearLoadError($("perfReferrersEmpty"), false);
     if (table) table.hidden = false;

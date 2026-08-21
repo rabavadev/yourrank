@@ -107,6 +107,7 @@ describe("Predictions, Lucky Wheel & Seasonal Battle Pass", () => {
         lock_at: null,
       }); // find pred
       mockOne.mockResolvedValueOnce({ id: "sv-1", balance: 200 }); // find site_viewer
+      mockOne.mockResolvedValueOnce({ status: "open", lock_at: null }); // in-tx FOR UPDATE re-check
       mockOne.mockResolvedValueOnce({ id: "sv-1", balance: 150 }); // guarded debit update
       mockOne.mockResolvedValueOnce({ id: "bet-1" }); // insert bet in tx
 
@@ -144,6 +145,7 @@ describe("Predictions, Lucky Wheel & Seasonal Battle Pass", () => {
         status: "open", min_bet: 10, max_bet: 500, lock_at: null,
       });
       mockOne.mockResolvedValueOnce({ id: "sv-1", balance: 200 });
+      mockOne.mockResolvedValueOnce({ status: "open", lock_at: null }); // in-tx FOR UPDATE re-check
       mockOne.mockResolvedValueOnce(null); // guarded debit update
 
       const res = await handlePlaceBet(new Request("http://localhost/api/predictions/bet", {
@@ -191,11 +193,13 @@ describe("Predictions, Lucky Wheel & Seasonal Battle Pass", () => {
         id: "pred-1",
         site_id: "site-456",
         title: "Win match?",
+        options: [{ id: "yes", label: "Yes" }, { id: "no", label: "No" }],
         status: "open",
         total_pool: 1000,
       }); // find pred
+      mockOne.mockResolvedValueOnce({ id: "pred-1" }); // in-tx atomic lock
 
-      mockQuery.mockResolvedValueOnce([
+      mockExec.mockResolvedValueOnce([
         { id: "bet-1", site_viewer_id: "sv-1", viewer_id: "v-1", option_id: "yes", amount: 100 },
         { id: "bet-2", site_viewer_id: "sv-2", viewer_id: "v-2", option_id: "yes", amount: 300 },
         { id: "bet-3", site_viewer_id: "sv-3", viewer_id: "v-3", option_id: "no", amount: 600 },
@@ -216,6 +220,114 @@ describe("Predictions, Lucky Wheel & Seasonal Battle Pass", () => {
       expect(body.ok).toBe(true);
       expect(body.totalWinners).toBe(2);
       expect(body.totalPayout).toBe(1000); // 100/400*1000 = 250, 300/400*1000 = 750
+    });
+
+    it("rejects duplicate option labels on create", async () => {
+      const req = new Request("http://localhost/api/predictions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: "Dup test",
+          options: [{ id: "yes", label: "Yes" }, { id: "no", label: "yes" }],
+          minBet: 10,
+          maxBet: 500,
+        }),
+      });
+
+      const res = await handleCreatePrediction(req, mockEnv(), deps);
+      expect(res.status).toBe(400);
+      expect((await res.json()).error).toContain("different");
+      expect(mockOne).toHaveBeenCalledTimes(0);
+    });
+
+    it("rejects blank option labels on create", async () => {
+      const req = new Request("http://localhost/api/predictions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: "Blank test",
+          options: [{ id: "yes", label: "   " }, { id: "no", label: "No" }],
+          minBet: 10,
+          maxBet: 500,
+        }),
+      });
+
+      const res = await handleCreatePrediction(req, mockEnv(), deps);
+      expect(res.status).toBe(400);
+      expect((await res.json()).error).toContain("label");
+      expect(mockOne).toHaveBeenCalledTimes(0);
+    });
+
+    it("rejects a max bet below the min bet instead of silently coercing it", async () => {
+      const req = new Request("http://localhost/api/predictions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title: "Limits test", minBet: 5000, maxBet: 100 }),
+      });
+
+      const res = await handleCreatePrediction(req, mockEnv(), deps);
+      expect(res.status).toBe(400);
+      expect((await res.json()).error).toContain("Maximum bet");
+      expect(mockOne).toHaveBeenCalledTimes(0);
+    });
+
+    it("rejects a winning option that does not belong to the prediction", async () => {
+      mockOne.mockResolvedValueOnce({
+        id: "pred-1",
+        site_id: "site-456",
+        title: "Win match?",
+        options: [{ id: "yes", label: "Yes" }, { id: "no", label: "No" }],
+        status: "open",
+        total_pool: 100,
+      });
+
+      const res = await handleSettlePrediction(new Request("http://localhost/api/predictions/pred-1/settle", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ predictionId: "pred-1", winningOptionId: "maybe" }),
+      }), mockEnv(), deps);
+
+      expect(res.status).toBe(400);
+      expect((await res.json()).error).toContain("does not belong");
+    });
+
+    it("aborts settlement when a concurrent request already resolved the prediction", async () => {
+      mockOne.mockResolvedValueOnce({
+        id: "pred-1",
+        site_id: "site-456",
+        title: "Win match?",
+        options: [{ id: "yes", label: "Yes" }, { id: "no", label: "No" }],
+        status: "open",
+        total_pool: 100,
+      }); // find pred
+      mockOne.mockResolvedValueOnce(null); // in-tx atomic lock loses the race
+
+      const res = await handleSettlePrediction(new Request("http://localhost/api/predictions/pred-1/settle", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ predictionId: "pred-1", winningOptionId: "yes" }),
+      }), mockEnv(), deps);
+
+      expect(res.status).toBe(400);
+      expect((await res.json()).error).toContain("already been resolved");
+    });
+
+    it("rejects a bet when the in-transaction re-check finds the prediction locked", async () => {
+      mockOne.mockResolvedValueOnce({
+        id: "pred-1", site_id: "site-456", title: "Win match?", options: [{ id: "yes" }],
+        status: "open", min_bet: 10, max_bet: 500, lock_at: null,
+      }); // find pred (stale read: still open)
+      mockOne.mockResolvedValueOnce({ id: "sv-1", balance: 200 }); // find site_viewer
+      mockOne.mockResolvedValueOnce({ status: "locked", lock_at: null }); // in-tx FOR UPDATE re-check
+
+      const res = await handlePlaceBet(new Request("http://localhost/api/predictions/bet", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ predictionId: "pred-1", optionId: "yes", amount: 50 }),
+      }), mockEnv(), deps);
+
+      expect(res.status).toBe(400);
+      expect((await res.json()).error).toContain("closed");
     });
 
     it("cancels a prediction and refunds all bettors", async () => {

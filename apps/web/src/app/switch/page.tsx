@@ -47,7 +47,7 @@ const ROWS: Array<{ task: string; manual: string; yourrank: string }> = [
 ];
 
 const KEEPS = [
-  { title: "Keep Discord for talking", body: "YourRank doesn't replace your community's chat. It replaces the spreadsheet, the manual point tally, and the copy-pasted links around it \u2014 and can post updates into Discord via webhooks on Pro." },
+  { title: "Keep Discord for talking", body: "YourRank doesn't replace your community's chat. It replaces the spreadsheet, the manual point tally, and the copy-pasted links around it \u2014 and can post updates into your Discord on Pro." },
   { title: "Bring your data with you", body: "Import your existing standings from CSV on any paid plan, so nobody loses their rank when you switch." },
   { title: "Start free, switch gradually", body: "The Free plan is a full working site with a leaderboard, bot, rewards, and games. Run it next to your current setup until you're sure." },
 ];

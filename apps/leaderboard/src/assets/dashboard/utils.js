@@ -1,6 +1,7 @@
 // Shared helpers used across dashboard modules.
 import { state } from "./state.js";
 import { renderEmpty, setRowsLoading } from "./states.js";
+import { loginRedirectPath } from "./request.js";
 
 export function getCsrf() {
   const m = document.cookie.match(/(?:^|;\s*)__csrf=([^;]+)/);
@@ -8,8 +9,10 @@ export function getCsrf() {
 }
 
 // E2E-005: Redirect to login on session expiry instead of showing stale "Save failed"
+// AUDIT-B2: keep the current URL in `next` so re-login returns the user to
+// the screen they were on instead of dropping them on /dashboard home.
 export function guardAuth(res) {
-  if (res.status === 401) { location.href = "/login"; throw new Error("session expired"); }
+  if (res.status === 401) { location.href = loginRedirectPath(); throw new Error("session expired"); }
   return res;
 }
 

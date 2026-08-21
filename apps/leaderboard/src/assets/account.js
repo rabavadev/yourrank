@@ -173,7 +173,7 @@ function wirePostbacks() {
 
   if (revoke) {
     revoke.addEventListener("click", async () => {
-      if (!await showConfirmModal("Revoke deposit tracking key", "Casino updates will stop until a new key is created.", "Revoke", true)) return;
+      if (!await showConfirmModal("Revoke deposit tracking key", "Score updates will stop until a new key is created.", "Revoke", true)) return;
       revoke.disabled = true;
       const result = await jsonReq("DELETE", "/api/account/postbacks");
       revoke.disabled = false;
@@ -271,11 +271,17 @@ function renderConnectedAccounts(data) {
   let html = "";
   if (kick || telegram) {
     html += `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-bottom:14px">`;
-    if (kick) html += `<div style="padding:12px;border:1px solid var(--line);border-radius:8px"><div class="hint">Kick</div><div style="font-weight:600">@${esc(kick.username || kick.userId)}</div><div class="hint">Linked ${fmtDateTime(kick.linkedAt)}</div></div>`;
-    if (telegram) html += `<div style="padding:12px;border:1px solid var(--line);border-radius:8px"><div class="hint">Telegram</div><div style="font-weight:600">@${esc(telegram.username || telegram.userId)}</div><div class="hint">Linked ${fmtDateTime(telegram.linkedAt)}</div></div>`;
+    if (kick) {
+      const expiry = kick.tokenExpiresAt ? new Date(kick.tokenExpiresAt) : null;
+      const needsAttention = !expiry || expiry <= new Date();
+      html += `<div style="padding:12px;border:1px solid var(--line);border-radius:8px"><div class="hint">Kick</div><div style="font-weight:600">@${esc(kick.username || kick.userId)}</div><div class="hint">Linked ${fmtDateTime(kick.linkedAt)}</div><div class="hint" style="${needsAttention ? "color:var(--v4-warning,#b76a12);font-weight:600" : ""}">${needsAttention ? "● Needs attention — reconnect" : "● Connected"}</div><a class="btn btn--sm ${needsAttention ? "btn--accent" : "btn--ghost"}" href="/dashboard/rewards/channel">${needsAttention ? "Reconnect Kick" : "Manage"}</a></div>`;
+    }
+    if (telegram) {
+      html += `<div style="padding:12px;border:1px solid var(--line);border-radius:8px"><div class="hint">Telegram</div><div style="font-weight:600">@${esc(telegram.username || telegram.userId)}</div><div class="hint">Linked ${fmtDateTime(telegram.linkedAt)}</div><div class="hint">● Connected</div><button class="btn btn--sm btn--ghost" type="button" id="tgDisconnect">Disconnect</button></div>`;
+    }
     html += `</div>`;
   } else {
-    html += `<p class="hint">No streamer accounts connected yet. Connect Kick from Credits and Telegram from the bot dashboard.</p>`;
+    html += `<p class="hint">No streamer accounts connected yet.</p><div class="d-flex gap-8 flex-wrap"><a class="btn btn--accent" href="/dashboard/rewards/channel">Connect Kick</a><a class="btn btn--ghost" href="/dashboard/telegram">Connect Telegram</a></div>`;
   }
 
   if (sites.length > 0) {
@@ -292,6 +298,16 @@ function renderConnectedAccounts(data) {
   }
 
   wrap.innerHTML = html;
+
+  $("tgDisconnect")?.addEventListener("click", async (e) => {
+    if (!await showConfirmModal("Disconnect Telegram", "Telegram login and bot management for this account stop until you connect again.", "Disconnect", true)) return;
+    const btn = e.currentTarget;
+    btn.disabled = true;
+    const r = await jsonReq("POST", "/api/auth/telegram/unlink", {});
+    if (r.ok && r.data?.ok) { loadConnectedAccounts(); return; }
+    btn.disabled = false;
+    setStatus(r.data?.error || "Could not disconnect Telegram. Try again.", true);
+  });
 }
 
 async function loadConnectedAccounts() {

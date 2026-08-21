@@ -8,6 +8,7 @@ import { renderOverviewSummary } from "./overview.js";
 import { renderPerformance, renderPerformanceLoading } from "./performance.js";
 import { clearPlayersDraft, collectPlayers, commitDraftMutation, renderPlayers, renumber, toggleEmpty } from "./players.js";
 import { requestPublicationChange } from "./publication.js";
+import { withDashboardTimeout } from "./request.js";
 
 export const DEFAULT_SECTIONS = {
   hero: true,
@@ -98,7 +99,7 @@ function planDefs() {
     { key: "free", name: "Free", price: 0, priceStr: "$0", period: "", note: "forever", features: ["1 leaderboard", "Up to 10 players", "YourRank badge", "Basic analytics (7 days)", "Live countdown"] },
     { key: "starter", name: "Starter", price: 12, priceStr: "$12", period: "/30 days", note: "", features: ["1 leaderboard", "Up to 25 players", "CSV import", "Full analytics (30 days)", "Font choice", "Custom accent colors", "Logo"] },
     { key: "pro", name: "Pro", price: proPrice, priceStr: proPriceStr, period: "/30 days", note: "Most popular", features: ["Up to 3 leaderboards", "Up to 9,999 players", "Custom domain", "OBS overlay", "Discord + Telegram alerts", "Section controls", "Prize & countdown customization", "Remove YourRank badge"] },
-    { key: "agency", name: "Agency", price: 79, priceStr: "$79", period: "/30 days", note: "", features: ["Up to 99 leaderboards", "White-label branding", "Signed score API", "Dedicated support", "Custom CSS", "Remove YourRank badge"] },
+    { key: "agency", name: "Agency", price: 79, priceStr: "$79", period: "/30 days", note: "", features: ["Up to 99 leaderboards", "White-label branding", "Automatic score updates", "Dedicated support", "Custom CSS", "Remove YourRank badge"] },
     { key: "lifetime", name: "Lifetime Pro", price: 149, priceStr: "$149", period: "", note: "one-time", features: ["All Pro + Agency features", "Pay once, use forever", "No monthly bills"] },
   ];
 }
@@ -443,7 +444,9 @@ export function collect({ reportPlayerErrors = true } = {}) {
       prizePool: $("f_pool").value.trim(),
       period: $("f_period").value.trim() || "Monthly",
     },
+    startsAt: fromLocalInput($("f_starts")?.value || ""),
     endsAt: fromLocalInput($("f_ends").value),
+    rankBy: $("f_rank_by")?.value === "score" ? "score" : "wagered",
     partner: { blurb: $("f_blurb").value.trim(), chips: state.EXTRA.chips },
     whyStats: state.EXTRA.whyStats,
     rules: state.EXTRA.rules,
@@ -675,9 +678,44 @@ export function refreshDesignPreview() {
 
 // Renders every "is my board live" surface from boardStatus() so the badge,
 // banner and share affordances can never contradict each other.
+// One publication vocabulary for the whole workspace, derived from real state
+// (boardStatus() + the draft flag) so no surface can contradict another:
+// - not live        → "Not live" + primary "Publish site"
+// - live, no draft  → "Live" + footer "All changes published"
+// - live, draft     → "Live" + secondary "Draft changes" + footer "Changes
+//                     not published" + primary "Publish changes"
+// "Not published yet" is never shown for a site that is already live.
+export function publicationCopy(s = boardStatus(), dirty = state._dirty) {
+  if (s.pending) {
+    return {
+      statusLabel: "Verification needed",
+      footerLabel: "Not live yet",
+      saveLabel: "Save changes",
+      saveHint: "Unsaved changes",
+      draftChanges: false,
+    };
+  }
+  if (s.published) {
+    return {
+      statusLabel: "Live",
+      footerLabel: dirty ? "Changes not published" : "All changes published",
+      saveLabel: dirty ? "Publish changes" : "Save changes",
+      saveHint: dirty ? "Changes not published" : "Unsaved changes",
+      draftChanges: dirty,
+    };
+  }
+  return {
+    statusLabel: "Not live",
+    footerLabel: "Not live yet",
+    saveLabel: "Save changes",
+    saveHint: "Unsaved changes",
+    draftChanges: false,
+  };
+}
+
 export function renderBoardStatus() {
   const s = boardStatus();
-  const LABELS = { draft: "Not published", unpublished: "Not published", pending: "Verification needed", published: "Published" };
+  const copy = publicationCopy(s);
   const TITLES = {
     draft: "Not visible to visitors",
     unpublished: "Not visible to visitors",
@@ -686,14 +724,18 @@ export function renderBoardStatus() {
   };
   const badge = $("lbTopbarStatus");
   if (badge) {
-    badge.textContent = LABELS[s.key];
+    badge.textContent = copy.statusLabel;
     badge.className = "lb-status lb-status--" + s.key;
     const parts = [];
     if (state.SITE_UPDATED_AT) parts.push("Last saved " + new Date(state.SITE_UPDATED_AT).toLocaleString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }));
     if (s.published && state.PUBLISHED_AT) parts.push("Published " + new Date(state.PUBLISHED_AT).toLocaleString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }));
+    if (copy.draftChanges) parts.push("Draft changes not published yet");
     parts.push(TITLES[s.key]);
     badge.title = parts.join(" · ");
   }
+  // Secondary state next to the badge: a live site with unpublished edits.
+  const draftBadge = $("lbTopbarDraft");
+  if (draftBadge) draftBadge.hidden = !copy.draftChanges;
   const banner = $("verifyBanner");
   if (banner) {
     const email = state.ME?.email || state.ME?.emailAddress || "your email address";
@@ -859,11 +901,23 @@ export function wirePublishAction({ fetchImpl = fetch, confirmAction = showConfi
       renderBoardsPage();
       renderBoardStatus();
       renderOverviewSummary();
+      const publicUrl = `${location.origin}/${state.SLUG}`;
+      const handoff = $("publishHandoff");
+      if (handoff) {
+        handoff.hidden = !nextPublished || !boardStatus().live;
+        if ($("publishHandoffUrl")) $("publishHandoffUrl").textContent = publicUrl;
+        if ($("publishHandoffOpen")) $("publishHandoffOpen").href = publicUrl;
+        const copy = $("publishHandoffCopy");
+        if (copy) copy.onclick = async () => {
+          const copied = await copyToClipboard(publicUrl);
+          flashButton(copy, copied ? "Copied!" : "Copy failed");
+        };
+      }
       toast(
         nextPublished
           ? (boardStatus().emailVerified
-            ? "Published"
-            : "Published — Your site will open to visitors after you confirm your email.")
+            ? `Published at ${publicUrl}`
+            : "Published — Your leaderboard will open to visitors after you confirm your email.")
           : "Saved",
         "success",
       );
@@ -891,8 +945,20 @@ export function renderEditorTimestamps() {
     } catch { return "—"; }
   };
   const saved = state.SITE_UPDATED_AT ? "Last saved " + fmt(state.SITE_UPDATED_AT) : "";
-  const published = state.PUBLISHED_AT ? "Published " + fmt(state.PUBLISHED_AT) : "Not published yet";
-  el.textContent = saved ? (state.PUBLISHED ? `${saved} · ${published}` : `${saved} · ${published}`) : published;
+  // The footer answers "do visitors see my latest work?", not "when did the
+  // first publish happen" — a live site is never "not published yet".
+  const label = publicationCopy().footerLabel;
+  el.textContent = saved ? `${saved} · ${label}` : label;
+}
+
+// Save-bar copy is the same state model: on a live site the primary action
+// publishes the draft, on an offline site it only saves it.
+export function renderSavebarCopy() {
+  const copy = publicationCopy();
+  const hint = document.querySelector(".savebar-hint");
+  if (hint) hint.textContent = copy.saveHint;
+  const saveBtn = $("save");
+  if (saveBtn && !saveBtn.disabled) saveBtn.textContent = copy.saveLabel;
 }
 
 function updateThemeSelection() {
@@ -923,6 +989,11 @@ subscribe((keys) => {
     if (sb) sb.hidden = !state._dirty;
     if (state._dirty) window.addEventListener("beforeunload", _beforeUnloadGuard);
     else window.removeEventListener("beforeunload", _beforeUnloadGuard);
+    // The badge, footer and save bar all speak the same publication language,
+    // so a dirty flip repaints every surface that states it.
+    renderSavebarCopy();
+    renderEditorTimestamps();
+    renderBoardStatus();
   }
   if (keys.includes("draft")) updateDesignPreview();
 });
@@ -1306,12 +1377,18 @@ export async function renderDomain() {
             b.textContent = "Registering…";
             $("domainSearchStatus").textContent = `Registering ${domainToBuy} and provisioning SSL certificate…`;
             try {
-              const pRes = await fetch("/api/domains/purchase", {
-                method: "POST",
-                credentials: "include",
-                headers: { "content-type": "application/json", "x-csrf-token": getCsrf() },
-                body: JSON.stringify({ domain: domainToBuy, siteId: state.ACTIVE_SITE_ID }),
-              });
+              // AUDIT-B5: money endpoint, previously no timeout — a hung
+              // request left the button at "Registering…" forever.
+              const pRes = await withDashboardTimeout(
+                (signal) => fetch("/api/domains/purchase", {
+                  method: "POST",
+                  credentials: "include",
+                  headers: { "content-type": "application/json", "x-csrf-token": getCsrf() },
+                  body: JSON.stringify({ domain: domainToBuy, siteId: state.ACTIVE_SITE_ID }),
+                  signal,
+                }),
+                { timeoutMs: 45_000 },
+              );
               const pData = await pRes.json();
               if (pData.ok) {
                 $("domainSearchStatus").innerHTML = `✅ <span class="domain-ok">${esc(pData.message)}</span>`;
@@ -1381,14 +1458,16 @@ export async function renderDomain() {
 export function renderDomainStatus(status, message) {
   const el = $("domainStatus");
   if (!el) return;
-  if (status === "active") {
-    el.innerHTML = `<span class="domain-ok">✅ ${esc(message || "TLS active")}</span>`;
+  if (status === "not_configured") {
+    el.textContent = "No custom domain configured. Your yourrank.site link is active.";
+  } else if (status === "active") {
+    el.innerHTML = `<span class="domain-ok">${esc(message || "Domain active with TLS")}</span>`;
   } else if (status === "pending") {
-    el.innerHTML = `<span class="domain-pending">⏳ ${esc(message || "TLS provisioning in progress")}</span>`;
+    el.innerHTML = `<span class="domain-pending">${esc(message || "DNS detected; TLS provisioning is in progress")}</span>`;
   } else if (status === "error") {
-    el.innerHTML = `<span class="domain-error">❌ ${esc(message || "Error")}</span>`;
+    el.innerHTML = `<span class="domain-error">${esc(message || "Domain setup needs attention")}</span>`;
   } else if (status === "saved") {
-    el.innerHTML = `<span class="domain-saved">💾 ${esc(message || "Domain saved")}</span>`;
+    el.innerHTML = `<span class="domain-saved">${esc(message || "Domain saved; TLS automation is not configured")}</span>`;
   } else {
     el.textContent = "";
   }
@@ -1542,31 +1621,36 @@ export async function saveEditorDraft({ fetchImpl = fetch, collectImpl = collect
     return;
   }
   btn.disabled = true; btn.textContent = "Saving…"; status.textContent = "";
+  status.setAttribute("role", "status");
+  status.setAttribute("aria-live", "polite");
   if (publishAction) { publishAction.disabled = true; publishAction.setAttribute("aria-busy", "true"); }
   const limitEl = $("limitMsg"); if (limitEl) limitEl.textContent = "";
   let justPublished = false;
   try {
-    const res = await fetchImpl("/api/site", { method: "PUT", credentials: "include", headers: { "content-type": "application/json", "x-csrf-token": getCsrf() }, body: JSON.stringify(payload) });
-    if (res.status === 401 || res.status === 403) {
-      status.textContent = "Your session ended — your changes are still here. Sign in again in a new tab, then retry.";
-      status.hidden = false; status.setAttribute("role", "alert");
-    } else {
+    // AUDIT-B5: raw fetch had no timeout — a hung connection left the button
+    // at "Saving…" forever. Run the save through the shared timeout wrapper.
+    // A 401/403 means the session ended mid-edit — keep the draft on screen so
+    // the user can re-auth in another tab instead of being bounced to /login.
+    const res = await withDashboardTimeout(
+      (signal) => fetchImpl("/api/site", { method: "PUT", credentials: "include", headers: { "content-type": "application/json", "x-csrf-token": getCsrf() }, body: JSON.stringify(payload), signal }),
+      { timeoutMs: 20_000 },
+    );
     const d = await res.json().catch(() => ({}));
     if (res.ok && d.ok) {
       justPublished = !!payload.published && !state.PUBLISHED;
       if (Array.isArray(payload.players)) state.SAMPLE_PLAYERS = false;
-      state.SAVED_PLAYERS = payload.players.map((player) => ({ ...player }));
+      state.SAVED_PLAYERS = Array.isArray(payload.players) ? payload.players.map((player) => ({ ...player })) : [];
       clearPlayersDraft();
       const restoredNotice = $("playersDraftNotice");
       if (restoredNotice) restoredNotice.hidden = true;
-      setState({ _dirty: false, PUBLISHED: !!payload.published });
+      setState({ _dirty: false, PUBLISHED: !!payload.published, RANK_BY: payload.rankBy === "score" ? "score" : "wagered" });
       status.textContent = justPublished && !boardStatus().emailVerified
-        ? "Published — Your site will open to visitors after you confirm your email."
+        ? "Published — Your leaderboard will open to visitors after you confirm your email."
         : "Saved";
       if (d.updatedAt) setState({ SITE_UPDATED_AT: d.updatedAt });
       if (d.publishedAt) setState({ PUBLISHED_AT: d.publishedAt });
       const saveBtn = $("save"); if (saveBtn) saveBtn.textContent = "Save changes";
-      const saveHint = document.querySelector(".savebar-hint"); if (saveHint) saveHint.textContent = "Unsaved changes";
+      renderSavebarCopy();
       renderEditorTimestamps();
       renderBoardStatus();
       renderOverviewSummary();
@@ -1575,11 +1659,40 @@ export async function saveEditorDraft({ fetchImpl = fetch, collectImpl = collect
       renderBoardSwitcher();
       renderBoardSelect();
       renderBoardsPage();
+      if (justPublished && boardStatus().live) {
+        const publicUrl = `${location.origin}/${state.SLUG}`;
+        const handoff = $("publishHandoff");
+        if (handoff) {
+          handoff.hidden = false;
+          if ($("publishHandoffUrl")) $("publishHandoffUrl").textContent = publicUrl;
+          if ($("publishHandoffOpen")) $("publishHandoffOpen").href = publicUrl;
+          const copy = $("publishHandoffCopy");
+          if (copy) copy.onclick = async () => {
+            const copied = await copyToClipboard(publicUrl);
+            flashButton(copy, copied ? "Copied!" : "Copy failed");
+          };
+        }
+        showToast(`Published at ${publicUrl}`, "success");
+      }
       // Close the 2-click loop: refresh the live preview so the edit shows immediately.
       updateDesignPreview();
-    } else status.textContent = d.error || "Couldn't save — your changes are still here. Try again.";
+    } else if (res.status === 401 || res.status === 403) {
+      status.setAttribute("role", "alert");
+      status.textContent = "Your session ended — your changes are still here. Sign in again in a new tab, then retry.";
+    } else {
+      status.setAttribute("role", "alert");
+      status.setAttribute("aria-live", "assertive");
+      status.textContent = d.code === "concurrency_conflict"
+        ? "Another session saved this leaderboard. Your draft is still here — reload to review their version, or save again after reconciling."
+        : d.error || "Save failed.";
     }
-  } catch (err) { logError("save", err); status.textContent = "Couldn't save — your changes are still here. Check your connection and try again."; }
+  } catch (err) {
+    logError("save", err);
+    // AUDIT-B5: the draft is intentionally NOT cleared on failure — say so.
+    status.textContent = err?.code === "TIMEOUT"
+      ? "Saving timed out. Your changes are still here — try again."
+      : "Couldn't save. Your changes are still here — try again.";
+  }
   btn.disabled = false; btn.textContent = "Save changes";
   if (publishAction) { publishAction.disabled = false; publishAction.removeAttribute("aria-busy"); }
   const savedMsg = status.textContent;
@@ -1746,11 +1859,24 @@ export async function loadStats() {
   return s;
 }
 
+// AUDIT-B1: the old handler had no catch — a failed/offline logout request
+// rejected the promise and location.href never ran, so "Sign out" appeared
+// to do nothing. Now a failure keeps the user in place with an explanation,
+// and a success pings other tabs (AUDIT-B4) so they sign out too.
 $("logout")?.addEventListener("click", async (e) => {
   e.preventDefault();
-  try { await fetch("/api/auth/logout", { method: "POST", credentials: "include", headers: { "x-csrf-token": getCsrf() } }); }
-  catch (err) { logError("logout", err); }
-  location.href = "/login";
+  const btn = e.currentTarget;
+  if (btn) btn.disabled = true;
+  try {
+    const res = await fetch("/api/auth/logout", { method: "POST", credentials: "include", headers: { "x-csrf-token": getCsrf() } });
+    if (!res.ok) throw new Error(`logout failed (${res.status})`);
+    try { localStorage.setItem("yr:logout", String(Date.now())); } catch { /* storage unavailable */ }
+    location.href = "/login";
+  } catch (err) {
+    logError("logout", err);
+    showToast("Couldn't sign you out. Check your connection and try again.");
+    if (btn) btn.disabled = false;
+  }
 });
 $("upgrade")?.addEventListener("click", (e) => { e.preventDefault(); checkout("pro", e.target); });
 $("testDiscord")?.addEventListener("click", async () => {

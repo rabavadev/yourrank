@@ -3,15 +3,35 @@ import { $, esc, logError, parseAmount, showConfirmModal } from "./utils.js";
 import { state, markDirty, subscribe, clearDirty } from "./state.js";
 
 export const PLAYER_NAME_LIMIT = 80;
+const SCORE_MAX = 9_999_999_999_999.99;
+const WIN_RATE_MAX = 999.99;
+const INT32_MAX = 2_147_483_647;
+
+function normalizePlayerIdentity(value) {
+  return String(value || "").trim().toLocaleLowerCase().replace(/\s+/g, " ");
+}
+
+function playerNameSegments(value) {
+  const text = String(value || "");
+  if (typeof Intl?.Segmenter === "function") {
+    return Array.from(new Intl.Segmenter(undefined, { granularity: "grapheme" }).segment(text), ({ segment }) => segment);
+  }
+  return Array.from(text);
+}
+
+export function truncatePlayerName(value, max = PLAYER_NAME_LIMIT) {
+  const text = String(value || "").trim().replace(/\s+/g, " ");
+  return playerNameSegments(text).slice(0, max).join("");
+}
 const PLAYER_DRAFT_PREFIX = "yourrank:players-draft:";
 const PLAYER_NUMBER_FIELDS = [
   { key: "wagered", selector: ".p-wager", label: "Amount", money: true },
   { key: "prize", selector: ".p-prize", label: "Prize", money: true },
-  { key: "score", selector: ".p-score", label: "Score" },
-  { key: "hands", selector: ".p-hands", label: "Hands played" },
-  { key: "netProfit", selector: ".p-net-profit", label: "Net profit" },
-  { key: "winRate", selector: ".p-win-rate", label: "Win rate" },
-  { key: "change", selector: ".p-change", label: "Change" },
+  { key: "score", selector: ".p-score", label: "Score", max: SCORE_MAX },
+  { key: "hands", selector: ".p-hands", label: "Hands played", integer: true, max: INT32_MAX },
+  { key: "netProfit", selector: ".p-net-profit", label: "Net profit", signed: true, max: SCORE_MAX },
+  { key: "winRate", selector: ".p-win-rate", label: "Win rate", signed: true, max: WIN_RATE_MAX },
+  { key: "change", selector: ".p-change", label: "Change", signed: true, integer: true, max: INT32_MAX },
 ];
 
 /**
@@ -42,15 +62,16 @@ function formatMoney(value) {
   return `${currencySymbol()}${amount.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
-export function parsePlayerNumber(value) {
+export function parsePlayerNumber(value, { signed = false, integer = false, max = SCORE_MAX } = {}) {
   const raw = String(value ?? "");
   if (!raw.trim()) return { ok: true, empty: true, value: 0 };
   const normalized = raw.replace(/[$,\s]/g, "");
-  if (!/^(?:\d+(?:\.\d*)?|\.\d+)$/.test(normalized)) {
-    return { ok: false, message: "Enter a non-negative number." };
-  }
+  const pattern = signed ? /^[+-]?(?:\d+(?:\.\d*)?|\.\d+)$/ : /^(?:\d+(?:\.\d*)?|\.\d+)$/;
+  const range = signed ? `between -${max.toLocaleString("en-US")} and ${max.toLocaleString("en-US")}` : `from 0 to ${max.toLocaleString("en-US")}`;
+  if (!pattern.test(normalized)) return { ok: false, message: `Enter a number ${range}.` };
   const number = Number(normalized);
-  if (!Number.isFinite(number) || number < 0) return { ok: false, message: "Enter a non-negative number." };
+  if (!Number.isFinite(number) || (!signed && number < 0) || Math.abs(number) > max) return { ok: false, message: `Enter a number ${range}.` };
+  if (integer && !Number.isInteger(number)) return { ok: false, message: "Enter a whole number." };
   return { ok: true, empty: false, value: number };
 }
 
@@ -129,7 +150,7 @@ function updateNameCounter(input) {
   if (!input) return;
   const counter = input.closest(".player-name")?.querySelector(".player-name-counter");
   if (!counter) return;
-  const length = String(input.value || "").length;
+  const length = playerNameSegments(input.value).length;
   counter.textContent = `${length}/${PLAYER_NAME_LIMIT}`;
   counter.hidden = length < PLAYER_NAME_LIMIT - 20;
 }
@@ -140,19 +161,22 @@ export function updateDuplicateWarnings() {
   if (rows) {
     for (const row of rows.children) {
       const input = row.querySelector(".p-name");
-      const key = input?.value.trim().toLocaleLowerCase();
+      const key = normalizePlayerIdentity(input?.value);
       if (key) names.set(key, (names.get(key) || 0) + 1);
     }
     for (const row of rows.children) {
       const input = row.querySelector(".p-name");
-      const key = input?.value.trim().toLocaleLowerCase();
-      setPlayerFieldWarning(input, key && names.get(key) > 1 ? `Duplicate name: “${input.value.trim()}”. You can still save.` : "");
+      const key = normalizePlayerIdentity(input?.value);
+      const duplicate = key && names.get(key) > 1;
+      setPlayerFieldWarning(input, duplicate ? `Duplicate name: “${input.value.trim()}”. Use a unique player name.` : "");
+      if (duplicate) input.setAttribute("aria-invalid", "true");
+      else input.removeAttribute("aria-invalid");
     }
   }
   const quickName = $("qa_name");
-  const quickKey = quickName?.value.trim().toLocaleLowerCase();
+  const quickKey = normalizePlayerIdentity(quickName?.value);
   const duplicate = quickKey && names.get(quickKey);
-  setPlayerFieldWarning(quickName, duplicate ? `Duplicate name: “${quickName.value.trim()}”. You can still add it.` : "");
+  setPlayerFieldWarning(quickName, duplicate ? `Duplicate name: “${quickName.value.trim()}”. Use the existing row instead.` : "");
 }
 
 function setPlayerMessage(id, message, { error = false } = {}) {
@@ -175,6 +199,14 @@ export function playerLimitMessage() {
 export function validateQuickAddValues({ name = "", wagered = "", prize = "" } = {}) {
   const errors = [];
   if (!String(name).trim()) errors.push({ field: "name", message: "Enter a player name." });
+  else {
+    const key = normalizePlayerIdentity(name);
+    const rows = $("rows");
+    if (rows) {
+      const exists = [...rows.children].some((row) => normalizePlayerIdentity(row.querySelector(".p-name")?.value) === key);
+      if (exists) errors.push({ field: "name", message: `“${name.trim()}” is already on the leaderboard. Use the existing row instead.` });
+    }
+  }
   const wager = parsePlayerNumber(wagered);
   if (!wager.ok) errors.push({ field: "wagered", message: wager.message });
   const prizeValue = parsePlayerNumber(prize);
@@ -279,8 +311,12 @@ export function collectPlayers({ focusInvalid = false, reportErrors = true } = {
   const players = rows ? [...rows.children].map((tr) => {
     const nameInput = tr.querySelector(".p-name");
     const name = nameInput?.value.trim() || "";
+    const duplicateName = name && [...rows.children].filter((row) => normalizePlayerIdentity(row.querySelector(".p-name")?.value) === normalizePlayerIdentity(name)).length > 1;
     if (!name) {
       if (reportErrors) setPlayerFieldError(nameInput, "Enter a player name.");
+      invalid.push({ input: nameInput, label: "Player name" });
+    } else if (duplicateName) {
+      if (reportErrors) setPlayerFieldError(nameInput, "Use a unique player name.");
       invalid.push({ input: nameInput, label: "Player name" });
     } else if (reportErrors) {
       setPlayerFieldError(nameInput, "");
@@ -288,7 +324,7 @@ export function collectPlayers({ focusInvalid = false, reportErrors = true } = {
     const player = { name };
     for (const field of PLAYER_NUMBER_FIELDS) {
       const input = tr.querySelector(field.selector);
-      const parsed = parsePlayerNumber(input?.value);
+      const parsed = parsePlayerNumber(input?.value, field);
       if (!parsed.ok) {
         if (reportErrors) setPlayerFieldError(input, parsed.message);
         invalid.push({ input, label: field.label });
@@ -318,22 +354,31 @@ export function playerRow(p = { name: "", wagered: "", prize: "", score: "", han
   const rowId = `player-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`;
   tr.innerHTML = `<td class="sel"><input type="checkbox" class="row-sel" title="Select" aria-label="Select player" /></td>
     <td class="rank"></td>
-    <td class="player-name"><input class="p-name" placeholder="Player name" title="${esc(p.name)}" maxlength="${PLAYER_NAME_LIMIT}" value="${esc(p.name)}" aria-describedby="${rowId}-name-counter ${rowId}-name-warning"><span class="player-name-counter" id="${rowId}-name-counter" hidden aria-live="polite"></span><span class="field-err" data-field-error="p-name" hidden role="alert" aria-live="polite"></span><span class="field-warn" data-field-warning="p-name" id="${rowId}-name-warning" hidden role="status" aria-live="polite"></span></td>
-    <td class="num"><input class="p-wager" data-field="p-wager" inputmode="decimal" placeholder="0" value="${esc(p.wagered)}" aria-describedby="${rowId}-wager-error"><span class="field-err" data-field-error="p-wager" id="${rowId}-wager-error" hidden role="alert" aria-live="polite"></span></td>
-    <td class="num"><input class="p-prize" data-field="p-prize" inputmode="decimal" placeholder="0" value="${esc(p.prize)}" aria-describedby="${rowId}-prize-error"><span class="field-err" data-field-error="p-prize" id="${rowId}-prize-error" hidden role="alert" aria-live="polite"></span></td>
-    <td class="num col-score" hidden><input class="p-score" data-field="p-score" inputmode="decimal" placeholder="0" value="${esc(p.score)}" aria-describedby="${rowId}-score-error"><span class="field-err" data-field-error="p-score" id="${rowId}-score-error" hidden role="alert" aria-live="polite"></span></td>
-    <td class="num col-hands" hidden><input class="p-hands" data-field="p-hands" inputmode="decimal" placeholder="0" value="${esc(p.hands)}" aria-describedby="${rowId}-hands-error"><span class="field-err" data-field-error="p-hands" id="${rowId}-hands-error" hidden role="alert" aria-live="polite"></span></td>
-    <td class="num col-net" hidden><input class="p-net-profit" data-field="p-net-profit" inputmode="decimal" placeholder="0" value="${esc(p.netProfit)}" aria-describedby="${rowId}-net-error"><span class="field-err" data-field-error="p-net-profit" id="${rowId}-net-error" hidden role="alert" aria-live="polite"></span></td>
-    <td class="num col-win" hidden><input class="p-win-rate" data-field="p-win-rate" inputmode="decimal" placeholder="0" value="${esc(p.winRate)}" aria-describedby="${rowId}-win-error"><span class="field-err" data-field-error="p-win-rate" id="${rowId}-win-error" hidden role="alert" aria-live="polite"></span></td>
-    <td class="num col-change" hidden><input class="p-change" data-field="p-change" inputmode="decimal" placeholder="0" value="${esc(p.change)}" aria-describedby="${rowId}-change-error"><span class="field-err" data-field-error="p-change" id="${rowId}-change-error" hidden role="alert" aria-live="polite"></span></td>
-    <td class="act"><button class="row-edit" title="Edit player" aria-label="Edit player" type="button"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></button><button class="row-x" title="Remove" aria-label="Remove player" type="button">×</button></td>`;
+    <td class="player-name"><input class="p-name" placeholder="Player name" aria-label="Player name" title="${esc(p.name)}" maxlength="160" value="${esc(p.name)}" aria-describedby="${rowId}-name-counter ${rowId}-name-warning"><span class="player-name-counter" id="${rowId}-name-counter" hidden aria-live="polite"></span><span class="field-err" data-field-error="p-name" hidden role="alert" aria-live="polite"></span><span class="field-warn" data-field-warning="p-name" id="${rowId}-name-warning" hidden role="status" aria-live="polite"></span></td>
+    <td class="num"><input class="p-wager" data-field="p-wager" aria-label="Amount for ${esc(p.name || "player")}" inputmode="decimal" placeholder="0" value="${esc(p.wagered)}" aria-describedby="${rowId}-wager-error"><span class="field-err" data-field-error="p-wager" id="${rowId}-wager-error" hidden role="alert" aria-live="polite"></span></td>
+    <td class="num"><input class="p-prize" data-field="p-prize" aria-label="Prize for ${esc(p.name || "player")}" inputmode="decimal" placeholder="0" value="${esc(p.prize)}" aria-describedby="${rowId}-prize-error"><span class="field-err" data-field-error="p-prize" id="${rowId}-prize-error" hidden role="alert" aria-live="polite"></span></td>
+    <td class="num col-score" hidden><input class="p-score" data-field="p-score" aria-label="Score for ${esc(p.name || "player")}" inputmode="decimal" placeholder="0" value="${esc(p.score ?? p.wagered ?? "")}" aria-describedby="${rowId}-score-error"><span class="field-err" data-field-error="p-score" id="${rowId}-score-error" hidden role="alert" aria-live="polite"></span></td>
+    <td class="num col-hands" hidden><input class="p-hands" data-field="p-hands" aria-label="Hands played for ${esc(p.name || "player")}" inputmode="decimal" placeholder="0" value="${esc(p.hands)}" aria-describedby="${rowId}-hands-error"><span class="field-err" data-field-error="p-hands" id="${rowId}-hands-error" hidden role="alert" aria-live="polite"></span></td>
+    <td class="num col-net" hidden><input class="p-net-profit" data-field="p-net-profit" aria-label="Net profit for ${esc(p.name || "player")}" inputmode="decimal" placeholder="0" value="${esc(p.netProfit)}" aria-describedby="${rowId}-net-error"><span class="field-err" data-field-error="p-net-profit" id="${rowId}-net-error" hidden role="alert" aria-live="polite"></span></td>
+    <td class="num col-win" hidden><input class="p-win-rate" data-field="p-win-rate" aria-label="Win rate for ${esc(p.name || "player")}" inputmode="decimal" placeholder="0" value="${esc(p.winRate)}" aria-describedby="${rowId}-win-error"><span class="field-err" data-field-error="p-win-rate" id="${rowId}-win-error" hidden role="alert" aria-live="polite"></span></td>
+    <td class="num col-change" hidden><input class="p-change" data-field="p-change" aria-label="Rank change for ${esc(p.name || "player")}" inputmode="decimal" placeholder="0" value="${esc(p.change)}" aria-describedby="${rowId}-change-error"><span class="field-err" data-field-error="p-change" id="${rowId}-change-error" hidden role="alert" aria-live="polite"></span></td>
+    <td class="act"><button class="row-edit" title="Edit player" aria-label="Edit player" type="button"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></button><button class="row-x" title="Remove" aria-label="Remove ${esc(p.name || "player")}" type="button">×</button></td>`;
   tr.querySelector(".row-edit").addEventListener("click", () => {
     const name = tr.querySelector(".p-name");
     name?.focus();
     name?.select();
   });
   tr.querySelector(".p-name")?.addEventListener("input", (event) => {
+    const currentName = event.currentTarget.value.trim() || "player";
     event.currentTarget.title = event.currentTarget.value;
+    tr.querySelector(".p-wager")?.setAttribute("aria-label", `Amount for ${currentName}`);
+    tr.querySelector(".p-prize")?.setAttribute("aria-label", `Prize for ${currentName}`);
+    tr.querySelector(".p-score")?.setAttribute("aria-label", `Score for ${currentName}`);
+    tr.querySelector(".p-hands")?.setAttribute("aria-label", `Hands played for ${currentName}`);
+    tr.querySelector(".p-net-profit")?.setAttribute("aria-label", `Net profit for ${currentName}`);
+    tr.querySelector(".p-win-rate")?.setAttribute("aria-label", `Win rate for ${currentName}`);
+    tr.querySelector(".p-change")?.setAttribute("aria-label", `Rank change for ${currentName}`);
+    tr.querySelector(".row-x")?.setAttribute("aria-label", `Remove ${currentName}`);
     updateNameCounter(event.currentTarget);
     updateDuplicateWarnings();
   });
@@ -374,7 +419,7 @@ export function playerRow(p = { name: "", wagered: "", prize: "", score: "", han
 
   wireNumberInput(tr.querySelector(".p-wager"), { money: true });
   wireNumberInput(tr.querySelector(".p-prize"), { money: true });
-  PLAYER_NUMBER_FIELDS.slice(2).forEach(({ selector }) => wireNumberInput(tr.querySelector(selector)));
+  PLAYER_NUMBER_FIELDS.slice(2).forEach((field) => wireNumberInput(tr.querySelector(field.selector), field));
   updateNameCounter(tr.querySelector(".p-name"));
   return tr;
 }
@@ -435,7 +480,21 @@ export function renderPlayers(list, { restoreDraft = false } = {}) {
 
 export function renumber() {
   const rows = [...$("rows").children];
-  rows.forEach((tr, i) => tr.querySelector(".rank").textContent = String(i + 1));
+  const rankSelector = state.RANK_BY === "score" ? ".p-score" : ".p-wager";
+  const ranked = rows.slice().sort((a, b) => {
+    const metric = parseAmount(b.querySelector(rankSelector)?.value) - parseAmount(a.querySelector(rankSelector)?.value);
+    return metric || a.querySelector(".p-name").value.localeCompare(b.querySelector(".p-name").value, undefined, { sensitivity: "base" });
+  });
+  const rankMap = new Map();
+  let previousValue = null;
+  let competitionRank = 0;
+  ranked.forEach((row, index) => {
+    const value = parseAmount(row.querySelector(rankSelector)?.value);
+    if (previousValue === null || value !== previousValue) competitionRank = index + 1;
+    previousValue = value;
+    rankMap.set(row, competitionRank);
+  });
+  rows.forEach((row) => { row.querySelector(".rank").textContent = String(rankMap.get(row)); });
   const n = rows.length;
   const limit = state.ME?.limits?.players ?? 25;
   const pCount = $("pCount");
@@ -507,15 +566,10 @@ function sortRows() {
     if (sort === "name") {
       return a.querySelector(".p-name").value.localeCompare(b.querySelector(".p-name").value, undefined, { sensitivity: "base" });
     }
-    const selector = sort === "prize" ? ".p-prize" : ".p-wager";
+    const selector = sort === "prize" ? ".p-prize" : sort === "score" ? ".p-score" : ".p-wager";
     const av = parseAmount(a.querySelector(selector).value);
     const bv = parseAmount(b.querySelector(selector).value);
     if (bv !== av) return bv - av;
-    if (sort !== "prize") {
-      const ap = parseAmount(a.querySelector(".p-prize").value);
-      const bp = parseAmount(b.querySelector(".p-prize").value);
-      if (bp !== ap) return bp - ap;
-    }
     return a.querySelector(".p-name").value.localeCompare(b.querySelector(".p-name").value, undefined, { sensitivity: "base" });
   });
   
@@ -559,15 +613,16 @@ function sortRows() {
 }
 
 function onSortableInput() {
-  if (($("playerSort")?.value || "wagered") !== "wagered") return;
+  if (($("playerSort")?.value || "wagered") !== state.RANK_BY) return;
   clearTimeout(sortTimer);
   sortTimer = setTimeout(sortRows, 200);
 }
 
 $("rows")?.addEventListener("input", (e) => {
   if (!e.target?.classList) return;
-  if (e.target.classList.contains("p-wager") || e.target.classList.contains("p-prize")) onSortableInput();
+  if (e.target.classList.contains("p-wager") || e.target.classList.contains("p-score") || e.target.classList.contains("p-prize")) onSortableInput();
   if (e.target.classList.contains("p-name")) {
+    if (playerNameSegments(e.target.value).length > PLAYER_NAME_LIMIT) e.target.value = playerNameSegments(e.target.value).slice(0, PLAYER_NAME_LIMIT).join("");
     updateNameCounter(e.target);
     updateDuplicateWarnings();
     clearPlayerFieldError(e.target);
@@ -626,6 +681,7 @@ function addQuickRow() {
 
 $("qa_add")?.addEventListener("click", addQuickRow);
 $("qa_name")?.addEventListener("input", (e) => {
+  if (playerNameSegments(e.currentTarget.value).length > PLAYER_NAME_LIMIT) e.currentTarget.value = playerNameSegments(e.currentTarget.value).slice(0, PLAYER_NAME_LIMIT).join("");
   updateNameCounter(e.currentTarget);
   clearPlayerFieldError(e.currentTarget);
   updateDuplicateWarnings();
@@ -642,7 +698,7 @@ export function sanitizeImportName(s) {
   let n = String(s || "").replace(/[\x00-\x1f\x7f]/g, "").trim();
   n = n.replace(/^"+/, "").replace(/"+$/, "");
   n = n.replace(/[^\p{L}\p{N}\p{P}\p{S}\s]/gu, "").trim();
-  return n.length > 40 ? n.slice(0, 40) : n;
+  return truncatePlayerName(n);
 }
 
 export function parseImportAmount(s) {
@@ -681,51 +737,86 @@ function normalizeHeader(h) {
   return String(h || "").trim().toLowerCase().replace(/^"+|"+$/g, "").replace(/\s+/g, " ");
 }
 
-export function parseImportText(text, source = "text") {
-  const lines = String(text || "").replace(/^\uFEFF/, "").split(/\r?\n/).map((l) => l.trim()).filter((l) => l && !l.startsWith("#") && !l.startsWith("//"));
-  if (!lines.length) return { rows: [], errors: ["No data found."], source };
-  const first = lines[0];
-  const sep = first.includes("\t") ? /\t/ : first.includes(",") ? /,/ : first.includes(";") ? /;/ : /\t|,|;/;
-  const headerParts = first.split(sep).map(normalizeHeader);
-
-  // A row counts as a header if its first cell is a name alias AND at least one
-  // other cell maps to a known field — then we bind columns by name, not order.
-  const mapped = headerParts.map((h) => HEADER_ALIASES[h]);
-  const hasHeader = mapped[0] === "name" && mapped.slice(1).some((m) => m);
-
-  let colOf;
-  if (hasHeader) {
-    colOf = {};
-    mapped.forEach((field, i) => { if (field && colOf[field] === undefined) colOf[field] = i; });
-  } else {
-    colOf = {};
-    POSITIONAL.forEach((field, i) => { colOf[field] = i; });
+function delimiterFor(text) {
+  const firstLine = String(text || "").split(/\r?\n/).find((line) => {
+    const trimmed = line.trim();
+    return trimmed && !trimmed.startsWith("#") && !trimmed.startsWith("//");
+  }) || "";
+  let quoted = false;
+  const counts = { "\t": 0, ",": 0, ";": 0 };
+  for (let i = 0; i < firstLine.length; i += 1) {
+    if (firstLine[i] === '"') {
+      if (quoted && firstLine[i + 1] === '"') i += 1;
+      else quoted = !quoted;
+    } else if (!quoted && Object.hasOwn(counts, firstLine[i])) counts[firstLine[i]] += 1;
   }
+  return Object.entries(counts).sort((a, b) => b[1] - a[1])[0][1] > 0
+    ? Object.entries(counts).sort((a, b) => b[1] - a[1])[0][0]
+    : "\t";
+}
 
-  const dataLines = hasHeader ? lines.slice(1) : lines;
+export function parseDelimitedRows(text, delimiter = delimiterFor(text)) {
+  const rows = [];
+  let row = [];
+  let cell = "";
+  let quoted = false;
+  const input = String(text || "").replace(/^\uFEFF/, "");
+  for (let i = 0; i < input.length; i += 1) {
+    const char = input[i];
+    if (char === '"') {
+      if (quoted && input[i + 1] === '"') { cell += '"'; i += 1; }
+      else quoted = !quoted;
+    } else if (char === delimiter && !quoted) {
+      row.push(cell); cell = "";
+    } else if ((char === "\n" || char === "\r") && !quoted) {
+      if (char === "\r" && input[i + 1] === "\n") i += 1;
+      row.push(cell); cell = "";
+      if (row.some((value) => value.trim())) rows.push(row);
+      row = [];
+    } else cell += char;
+  }
+  row.push(cell);
+  if (row.some((value) => value.trim())) rows.push(row);
+  return rows;
+}
+
+export function parseImportText(text, source = "text") {
+  const parsedRows = parseDelimitedRows(text)
+    .filter((parts) => {
+      const first = String(parts[0] || "").trim();
+      return first && !first.startsWith("#") && !first.startsWith("//");
+    });
+  if (!parsedRows.length) return { rows: [], errors: ["No data found."], source };
+  const headerParts = parsedRows[0].map(normalizeHeader);
+  const mapped = headerParts.map((header) => HEADER_ALIASES[header]);
+  const hasHeader = mapped[0] === "name" && mapped.slice(1).some((field) => field);
+  const colOf = {};
+  if (hasHeader) mapped.forEach((field, index) => { if (field && colOf[field] === undefined) colOf[field] = index; });
+  else POSITIONAL.forEach((field, index) => { colOf[field] = index; });
+
+  const dataRows = hasHeader ? parsedRows.slice(1) : parsedRows;
   const rows = [];
   const errors = [];
   const seen = new Set();
-  const cell = (parts, field) => (colOf[field] === undefined ? "" : parts[colOf[field]]);
-  dataLines.forEach((line, idx) => {
-    const parts = line.split(sep).map((s) => s.trim().replace(/^"+|"+$/g, ""));
+  const cell = (parts, field) => (colOf[field] === undefined ? "" : String(parts[colOf[field]] || "").trim());
+  dataRows.forEach((parts, index) => {
     const rawName = cell(parts, "name");
     if (!rawName) return;
     const name = sanitizeImportName(rawName);
-    if (!name) { errors.push(`Row ${idx + 1}: missing name`); return; }
-    const key = name.toLowerCase();
-    if (seen.has(key)) { errors.push(`Row ${idx + 1}: duplicate "${name}"`); return; }
+    if (!name) { errors.push(`Row ${index + 1}: missing name`); return; }
+    const key = normalizePlayerIdentity(name);
+    if (seen.has(key)) { errors.push(`Row ${index + 1}: duplicate "${name}"`); return; }
     seen.add(key);
     const wagered = parseImportAmount(cell(parts, "wagered"));
-    if (wagered === null) { errors.push(`Row ${idx + 1}: invalid wagered for "${name}"`); return; }
+    if (wagered === null || wagered > SCORE_MAX) { errors.push(`Row ${index + 1}: invalid amount for "${name}"`); return; }
     const prize = parseImportAmount(cell(parts, "prize"));
-    if (prize === null) { errors.push(`Row ${idx + 1}: invalid prize for "${name}"`); return; }
-    const row = { name, wagered, prize };
+    if (prize === null || prize > SCORE_MAX) { errors.push(`Row ${index + 1}: invalid prize for "${name}"`); return; }
+    const imported = { name, wagered, prize };
     for (const field of NUMERIC_FIELDS) {
-      const v = parseImportNumber(cell(parts, field));
-      if (v !== undefined) row[field] = v;
+      const value = parseImportNumber(cell(parts, field));
+      if (value !== undefined) imported[field] = value;
     }
-    rows.push(row);
+    rows.push(imported);
   });
   return { rows, errors, source };
 }

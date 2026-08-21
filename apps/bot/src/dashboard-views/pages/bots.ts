@@ -19,12 +19,12 @@ export function botsPanel(): string {
 
         <div class="wizard-step" data-step="2" hidden>
           <h3>2. Paste your connect code</h3>
-          <p class="muted">Your full token is encrypted on our side. We only display the last 4 characters so you can recognise it.</p>
+          <p class="muted">Your connect code is encrypted on our side. We only display the last 4 characters so you can recognise it.</p>
           <div class="d-flex flex-col gap-8 mt-sm bot-connect-fields">
             <label class="sr-only" for="botToken">Connect code</label>
             <div class="d-flex gap-8">
-              <input class="v3-input bot-token-input" id="botToken" type="password" autocomplete="off" placeholder="123456:ABC-...">
-              <button class="btn btn--ghost" data-action="toggleToken" type="button" aria-label="Show token">Show</button>
+              <input class="v3-input bot-token-input" id="botToken" type="password" autocomplete="off" placeholder="Paste connect code">
+              <button class="btn btn--ghost" data-action="toggleToken" type="button" aria-label="Show code">Show</button>
             </div>
             <label class="sr-only" for="botWelcome">Welcome Message</label>
             <input class="v3-input" id="botWelcome" placeholder="Welcome message (optional)">

@@ -141,7 +141,7 @@ export function ComparisonSection() {
                 </li>
               ))}
             </ul>
-            <a href="/signup" data-magnetic className="mt-5 inline-flex min-h-12 items-center gap-2 rounded-[2px] bg-devin-ink px-5 text-sm font-medium text-white transition-colors hover:bg-black">
+            <a href="/signup" data-magnetic className="mt-5 inline-flex min-h-12 items-center gap-2 rounded-[2px] bg-devin-primary px-5 text-sm font-medium text-white transition-colors hover:bg-devin-primary-hover">
               Get started <ArrowIcon />
             </a>
           </div>

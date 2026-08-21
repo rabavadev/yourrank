@@ -15,7 +15,7 @@ export async function resolveCustomDomain(env, host) {
   const cached = CUSTOM_DOMAIN_CACHE.get(host);
   if (cached && cached.expires > now) return cached.slug;
   try {
-    const row = await one("SELECT s.slug FROM sites s JOIN users u ON u.id = s.user_id WHERE s.custom_domain=$1 AND s.published=true AND u.status != 'suspended'", [host]);
+    const row = await one("SELECT s.slug FROM sites s JOIN users u ON u.id = s.user_id WHERE s.custom_domain=$1 AND s.published=true AND s.is_draft=false AND u.status != 'suspended'", [host]);
     const slug = row?.slug || null;
     CUSTOM_DOMAIN_CACHE.set(host, { slug, expires: now + CUSTOM_DOMAIN_TTL });
     // PERF-005: FIFO eviction — delete oldest entries when cache exceeds max size

@@ -1,6 +1,8 @@
 import { afterEach, describe, expect, it, mock } from "bun:test";
 import { escapeTgMarkdown, getRankChangedPlayerNames, notifyReset, notifySubscribedPlayers } from "../notifications.js";
 
+process.env.TOKEN_ENC_KEY = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
+
 const originalFetch = globalThis.fetch;
 
 afterEach(() => {
@@ -75,6 +77,7 @@ describe("notification delivery", () => {
       "Board",
       [{ name: "Alice", wagered: 100 }, { name: "Bob", wagered: 90 }, { name: "Cara", wagered: 80 }],
       [{ name: "Bob", wagered: 110 }, { name: "Alice", wagered: 100 }, { name: "Cara", wagered: 70 }],
+      "wagered",
       async (_db, message) => {
         sent.push(message.playerName);
         if (message.playerName === "Bob") throw new Error("send failed");

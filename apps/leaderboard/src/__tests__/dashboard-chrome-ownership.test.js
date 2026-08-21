@@ -30,8 +30,21 @@ function region(markup, startPattern, endTag) {
   return markup.slice(start, end + endTag.length + 3);
 }
 
+// The dashboard is a single document: every section ships in the markup and
+// navigation swaps them client-side. Only the section carrying `is-on` is
+// visible (the rest are display:none), so chrome ownership is judged against
+// the active section alone. Non-dashboard routes have no `lb-page` sections, so
+// we fall back to the whole document.
+function activeSectionMarkup(markup) {
+  const onStart = markup.search(/<section\b[^>]*class="lb-page[^"]*\bis-on\b/);
+  if (onStart < 0) return markup;
+  const rest = markup.slice(onStart + 1);
+  const nextSibling = rest.search(/<section\b[^>]*class="lb-page\b/);
+  return nextSibling < 0 ? markup.slice(onStart) : markup.slice(onStart, onStart + 1 + nextSibling);
+}
+
 function subnavs(markup) {
-  return [...markup.matchAll(/<(nav|div)\b[^>]*class="[^"]*(?:v3-tabs|editor-steps)[^"]*"[^>]*>[\s\S]*?<\/\1>/g)]
+  return [...activeSectionMarkup(markup).matchAll(/<(nav|div)\b[^>]*class="[^"]*(?:v3-tabs|editor-steps)[^"]*"[^>]*>[\s\S]*?<\/\1>/g)]
     .map((match) => match[0])
     .join("");
 }

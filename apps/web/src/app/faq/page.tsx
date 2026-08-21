@@ -24,13 +24,13 @@ const FAQ_GROUPS: Array<{ category: string; items: Array<{ q: string; a: string 
     category: "Viewers & rewards",
     items: [
       { q: "How do viewers earn credits?", a: "Streamers connect a Kick channel and create credit rules for channel-point rewards. When a viewer redeems a reward on Kick, YourRank credits the viewer automatically." },
-      { q: "Can viewers log in?", a: "Yes. Streamers can enable Kick or Discord OAuth for their board. Viewers then log in at /me to see their balance across boards and redeem shop items." },
+      { q: "Can viewers log in?", a: "Yes. Viewers can sign in with their Kick or Discord account. They log in at /me to see their balance across boards and redeem shop items." },
     ],
   },
   {
     category: "Pricing & billing",
     items: [
-      { q: "Is YourRank free?", a: "Yes. The Free plan includes one leaderboard with up to 10 players, one Telegram bot, three tracked offers, three credit rules, and five shop items. Paid plans add more of each product, plus custom domains, OBS overlays, and API access." },
+      { q: "Is YourRank free?", a: "Yes. The Free plan includes one leaderboard with up to 10 players, one Telegram bot, three tracked offers, three credit rules, and five shop items. Paid plans add more of each product, plus custom domains, OBS overlays, and developer tools (API)." },
       { q: "What payment methods do you accept?", a: PAYMENT_METHODS_ANSWER },
     ],
   },

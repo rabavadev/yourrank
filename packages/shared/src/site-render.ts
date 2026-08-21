@@ -519,7 +519,7 @@ ${opts.csrfToken ? `<meta name="csrf-token" content="${esc(opts.csrfToken)}" />`
 
   const template = data.theme?.template || data.brand?.template || "cyber_arcade";
 
-  const body = `<body class="yr-site" data-template="${esc(template)}" data-section="${esc(section)}" data-slug="${esc(slug)}" data-custom-domain="${isCustomDomain ? "true" : "false"}" data-currency="${esc(prizeCurrency(data))}">
+  const body = `<body class="yr-site" data-template="${esc(template)}" data-section="${esc(section)}" data-slug="${esc(slug)}" data-custom-domain="${isCustomDomain ? "true" : "false"}" data-currency="${esc(prizeCurrency(data))}" data-rank-by="${data.rankBy === "score" ? "score" : "wagered"}">
 <!-- PUBLIC-VIEWER-DIRECTION
 THESIS: A production cue sheet for following one board, not a generic gaming dashboard.
 OWN-WORLD: Asphalt surfaces, fog-white type, cobalt actions, board-accent credentials, orange warnings, mint success, 6–10px geometry.
@@ -581,8 +581,10 @@ function homeMain(ctx) {
   const shopHref = `${homeUrl}${siteSectionHref("shop", slug, isCustomDomain)}`;
   const boardHref = `${homeUrl}${siteSectionHref("leaderboard", slug, isCustomDomain)}`;
   const meHref = `${homeUrl}${siteSectionHref("me", slug, isCustomDomain)}`;
-  const cd = countdownText(data.endsAt);
+  const cd = countdownText(data.scheduled ? data.startsAt : data.endsAt);
   const players = Array.isArray(data.players) ? data.players : [];
+  const rankBy = data.rankBy === "score" ? "score" : "wagered";
+  const rankValue = (player) => rankBy === "score" ? `${formatNumber(player.score || 0)} pts` : formatMoney(currency, player.wagered);
   const items = (viewerData?.shopItems || data.shopItems || []).filter((i) => i.active !== false);
   const demoActivity = Array.isArray(data.demoActivity) ? data.demoActivity : [];
   const demoGiveaway = data.demoGiveaway || null;
@@ -593,7 +595,8 @@ function homeMain(ctx) {
   const shopEnabled = siteSections.shop !== false;
   const emptyBoard = players.length === 0 && items.length === 0;
 
-  const eyebrow = [period.toUpperCase(), cd ? `ENDS IN ${cd.text.toUpperCase()}` : ""].filter(Boolean).join(" · ");
+  const timing = data.ended ? "ROUND ENDED" : cd ? `${data.scheduled ? "STARTS" : "ENDS"} IN ${cd.text.toUpperCase()}` : "";
+  const eyebrow = [period.toUpperCase(), timing].filter(Boolean).join(" · ");
 
   // "N more credits unlocks X" — the closest reward the viewer cannot afford yet.
   const nextReward = viewer
@@ -626,7 +629,7 @@ function homeMain(ctx) {
     : [
         pool ? null : kpi("Board", "trophy", period, `${period} leaderboard`),
         kpi("Players", "chart", formatNumber(players.length), "On the current board"),
-        kpi("Resets in", "hourglass", cd ? cd.text : "—", cd ? "End of period" : "No reset date set"),
+        kpi(data.ended ? "Round" : data.scheduled ? "Starts in" : "Ends in", "hourglass", data.ended ? "Ended" : (cd ? cd.text : "—"), data.ended ? "Final standings" : data.scheduled ? "Until score updates open" : (cd ? "Until final standings" : "No end date set")),
       ].filter(Boolean).join("");
 
   const series = dailyEarned(ledger);
@@ -658,7 +661,7 @@ ${creditsChart(series)}
         body: demoActivity.length
           ? demoActivityFeed(demoActivity)
           : players.length
-          ? `<div class="yr-feed yr-noscroll">${players.slice(0, 8).map((p, i) => `<div class="yr-feed-item"><div class="yr-feed-top"><span class="yr-feed-kind">${String(Number(p.rank) || i + 1).padStart(2, "0")} · ${esc(p.name)}</span><span class="yr-feed-time yr-prize-value">${esc(formatMoney(currency, p.wagered))}</span></div></div>`).join("")}</div>`
+          ? `<div class="yr-feed yr-noscroll">${players.slice(0, 8).map((p, i) => `<div class="yr-feed-item"><div class="yr-feed-top"><span class="yr-feed-kind">${String(Number(p.rank) || i + 1).padStart(2, "0")} · ${esc(p.name)}</span><span class="yr-feed-time yr-prize-value">${esc(rankValue(p))}</span></div></div>`).join("")}</div>`
           : `<div class="yr-empty">No players yet</div>`,
       })}</div>`;
 
@@ -687,21 +690,27 @@ function boardMain(ctx) {
   const { data, b, slug, isCustomDomain, period, pool } = ctx;
   const currency = prizeCurrency(data);
   const hidePrizes = !!data.brand?.hidePrizeAmounts;
-  const cd = countdownText(data.endsAt);
-  const players = (Array.isArray(data.players) ? data.players : []).slice().sort((x, z) => (x.rank || 0) - (z.rank || 0));
+  const cd = countdownText(data.scheduled ? data.startsAt : data.endsAt);
+  const players = (Array.isArray(data.players) ? data.players : []).slice().sort((x, z) => (x.rank || 0) - (z.rank || 0) || String(x.name || "").localeCompare(String(z.name || "")));
   const playerCount = Number(data.playerCount) || players.length;
-  const wagerLabel = esc(data.prizes?.wagerLabel || "Wagered");
+  const rankBy = data.rankBy === "score" ? "score" : "wagered";
+  const wagerLabel = esc(rankBy === "score" ? "Points" : (data.prizes?.wagerLabel || "Amount"));
+  const rankValue = (player) => rankBy === "score" ? `${formatNumber(player.score || 0)} pts` : formatMoney(currency, player.wagered);
   const prizeLabel = esc(data.prizes?.prizeLabel || "Prize");
   const poolLabel = esc(data.prizes?.prizePoolLabel || b.prizePoolLabel || "Prize pool");
   const playerHref = (name) => isCustomDomain ? `/player/${encodeURIComponent(name)}` : `/${encodeURIComponent(slug)}/player/${encodeURIComponent(name)}`;
 
   const heroHtml = hero({
     eyebrow: [pool ? `${esc(pool)} ${poolLabel.toUpperCase()}` : "", `${period.toUpperCase()} BOARD`].filter(Boolean).join(" · "),
-    title: "Standings",
-    lede: `Ranked by ${wagerLabel.toLowerCase()} on ${esc(b.name || slug)}'s board. Prizes are paid by the sponsor and are separate from free loyalty credits.`,
-    right: cd
-      ? `<div class="yr-hero-r yr-hero-r--stack">${heroStat("Resets in", cd.text, { cd: cd.ms })}</div>`
-      : (pool ? `<div class="yr-hero-r yr-hero-r--stack">${heroStat(poolLabel, esc(pool))}</div>` : ""),
+    title: data.ended ? "Final standings" : data.scheduled ? "Standings open soon" : "Standings",
+    lede: data.ended
+      ? `This round has ended. These final results are ranked by ${wagerLabel.toLowerCase()}; tied players share a rank.`
+      : data.scheduled
+        ? `This round has not started yet. Pre-start standings are visible, and score updates open when the round begins.`
+        : `Ranked by ${wagerLabel.toLowerCase()} on ${esc(b.name || slug)}'s leaderboard. Players with the same value share a rank.`,
+    right: cd && !data.ended
+      ? `<div class="yr-hero-r yr-hero-r--stack">${heroStat(data.scheduled ? "Starts in" : "Ends in", cd.text, { cd: cd.ms })}</div>`
+      : (data.ended ? `<div class="yr-hero-r yr-hero-r--stack">${heroStat("Round", "Ended")}</div>` : (pool ? `<div class="yr-hero-r yr-hero-r--stack">${heroStat(poolLabel, esc(pool))}</div>` : "")),
   });
 
   const podium = players.slice(0, 3).map((p, i) => {
@@ -710,7 +719,7 @@ function boardMain(ctx) {
     return `<div class="yr-card yr-lb${first ? " yr-card--on" : ""}" data-player-name="${esc(String(p.name || "").toLowerCase())}">
 <div class="yr-card-top"><span class="yr-label${first ? " is-accent" : ""}">#${rank}</span>${first ? ICONS.crown : ICONS.medal}</div>
 <p class="yr-card-name"><a href="${playerHref(p.name)}">${esc(p.name)}</a></p>
-<p class="yr-num">${esc(formatMoney(currency, p.wagered))}</p>
+<p class="yr-num">${esc(rankValue(p))}</p>
 <p class="yr-sub">${wagerLabel}${!hidePrizes && p.prize ? ` · <span class="yr-gold">${esc(formatMoney(currency, p.prize))}</span>` : ""}</p>
 </div>`;
   }).join("");
@@ -718,7 +727,7 @@ function boardMain(ctx) {
   const rows = players.map((p, i) => `<tr data-player-name="${esc(String(p.name || "").toLowerCase())}" data-position="${Number(p.rank) || i + 1}">
 <td class="yr-idx">${Number(p.rank) || i + 1}</td>
 <td><a href="${playerHref(p.name)}">${esc(p.name)}</a></td>
-<td class="yr-mono yr-r">${esc(formatMoney(currency, p.wagered))}</td>
+<td class="yr-mono yr-r">${esc(rankValue(p))}</td>
 <td class="yr-mono yr-r${!hidePrizes && p.prize ? " yr-gold" : ""}">${hidePrizes ? "—" : (p.prize ? esc(formatMoney(currency, p.prize)) : "—")}</td>
 </tr>`).join("");
 

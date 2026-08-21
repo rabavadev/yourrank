@@ -39,7 +39,6 @@ export function renderBoardSwitcher() {
     let slug = $("nb_slug").value.trim() || slugify(name);
     if (!slug) { $("nb_err").textContent = "Enter a name or web address."; return; }
     const casino = $("nb_casino").value.trim();
-    if (!casino) { $("nb_err").textContent = "Enter a casino name."; return; }
     $("nb_err").textContent = "Creating…";
     createBtn.disabled = true;
     try {
@@ -47,7 +46,7 @@ export function renderBoardSwitcher() {
       const res = await fetch("/api/site/create", { method: "POST", credentials: "include", headers: { "content-type": "application/json", "x-csrf-token": getCsrf() }, body: JSON.stringify({ slug, name, casino, code }) });
       const d = await res.json();
       if (res.ok && d.ok) {
-        requestDashboardRoute("home", "", { query: `board=${encodeURIComponent(d.id)}`, reload: true });
+        requestDashboardRoute("board", "setup", { query: `board=${encodeURIComponent(d.id)}`, reload: true });
       } else if (d.code === "board_limit") {
         $("newBoardForm").hidden = true;
         newBtn.hidden = false;
@@ -83,7 +82,7 @@ function boardLimitOffer() {
   const planName = plan === "starter" ? "Starter" : "Free";
   return {
     title: "Need another leaderboard?",
-    text: `${planName} includes ${limit} board. Pro unlocks up to 3 independent boards.`,
+    text: `${planName} includes ${limit} leaderboard. Pro unlocks up to 3 independent leaderboards.`,
     cta: "Upgrade to Pro",
     href: "/dashboard/settings",
   };
@@ -221,7 +220,7 @@ export function renderBoardsPage() {
   const controls = $("boardsSearch")?.closest(".list-controls");
   if (controls) controls.hidden = state.BOARDS.length === 0;
   if (!state.BOARDS.length) {
-    renderEmpty(empty, { icon: "archive", title: "No boards yet", body: "Create one to get started.", actions: [{ label: "Create board", id: "boardsCreateEmpty", accent: true }] });
+    renderEmpty(empty, { icon: "archive", title: "No leaderboards yet", body: "Create one, add players, then publish its live link.", actions: [{ label: "Create leaderboard", id: "boardsCreateEmpty", accent: true }] });
     $("boardsCreateEmpty")?.addEventListener("click", openNewBoardForm);
   } else {
     if (empty) empty.hidden = true;

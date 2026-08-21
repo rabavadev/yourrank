@@ -66,6 +66,7 @@ const OAUTH_MESSAGES = Object.freeze({
   oauth_state_expired: "That took too long — try connecting again.",
   oauth_user_mismatch: "This connection started in another account. Try again.",
   access_denied: "Kick connection was cancelled.",
+  kick_auth_failed: "Kick connection could not be completed. Try again.",
 });
 function showOAuthMessage({ finalize = false } = {}) {
   if (!pendingOAuthFeedback) {
@@ -93,6 +94,43 @@ function updateKickAuthLinks() {
     const link = $(id);
     if (link) link.href = authPath("/auth/kick");
   }
+}
+// The connected card always told the streamer "Connected", even when the OAuth
+// token had expired or was never stored (manual channel-ID connect). These two
+// helpers make the card honest: an expired/missing token flips the card to
+// "Needs attention" and reveals the Reconnect link, which the template ships
+// hidden and nothing used to unhide.
+function renderChannelHealth({ connected, tokenExpired, expiryDate, linkedAt }) {
+  const live = $("cr-channel-live");
+  if (live) {
+    live.textContent = !connected ? "—" : tokenExpired ? "Needs attention" : "Connected";
+    live.classList.toggle("cr-attention", Boolean(connected && tokenExpired));
+  }
+  const token = $("cr-channel-token");
+  if (token) {
+    token.textContent = expiryDate
+      ? (expiryDate > new Date()
+        ? `Kick connected · renews in ${Math.max(1, Math.ceil((expiryDate - Date.now()) / 86400000))} days`
+        : "Kick connection expired · reconnect")
+      : (connected ? "Kick not connected · reconnect Kick" : "Not connected yet");
+    token.classList.toggle("cr-attention", Boolean(connected && tokenExpired));
+  }
+  const linked = $("cr-channel-linked");
+  if (linked) linked.textContent = linkedAt ? fmtDate(linkedAt) : "—";
+  const chip = $("cr-channel-chip");
+  if (chip) {
+    const attention = Boolean(connected && tokenExpired);
+    chip.textContent = attention ? "● Needs attention" : "● Connected";
+    chip.classList.toggle("v3-chip--fulfilled", !attention);
+    chip.classList.toggle("v3-chip--pending", attention);
+  }
+  const reconnect = $("cr-channel-reconnect");
+  if (reconnect) reconnect.hidden = !(connected && tokenExpired);
+}
+// Called when the API reports kick_reconnect_required: the streamer just
+// learned the connection is broken mid-action, so surface the fix inline.
+function markKickNeedsAttention() {
+  renderChannelHealth({ connected: true, tokenExpired: true, expiryDate: null, linkedAt: state.channel?.linkedAt });
 }
 function applyOAuthContext() {
   if (!activeSiteId) activeSiteId = siteQuery() || "";
@@ -226,7 +264,9 @@ function render() {
     $("cr-channel-connected").hidden = !connected; $("cr-channel-connect-wrap").hidden = connected;
     $("cr-channel-name").textContent = state.channel?.name || ""; $("cr-channel-id-input").value = state.channel?.externalId || ""; $("cr-channel-name-input").value = state.channel?.name || "";
     const expiry = state.channel?.tokenExpiresAt;
-    $("cr-channel-token").textContent = expiry ? (new Date(expiry) > new Date() ? `Token valid · expires in ${Math.max(1, Math.ceil((new Date(expiry) - Date.now()) / 86400000))} days` : "Token expired · reconnect") : "No Kick token · connect Kick";
+    const expiryDate = expiry ? new Date(expiry) : null;
+    const tokenExpired = connected && (!expiryDate || expiryDate <= new Date());
+    renderChannelHealth({ connected, tokenExpired, expiryDate, linkedAt: state.channel?.linkedAt });
     $("cr-usage").innerHTML = [usageCard(metric(usage.rewardMappings), metric(limits.rewardMappings), "credit rules"), usageCard(metric(usage.shopItems), metric(limits.shopItems), "items"), usageCard(metric(usage.pendingRedemptions), metric(limits.pendingRedemptions), "pending prize orders"), usageCard(metric(usage.redemptionsPer30Days), metric(limits.redemptionsPer30Days), "prize orders / 30 days"), usageCard(metric(usage.newViewersPer30Days), metric(limits.newViewersPer30Days), "new viewers / 30 days")].join("");
     const auth = state.viewerAuth || {};
     $("cr-viewer-auth-kick").checked = auth.kick !== false; $("cr-viewer-auth-discord").checked = auth.discord !== false; $("cr-viewer-auth-public").checked = auth.public !== false;
@@ -573,7 +613,7 @@ function wireActions() {
   $("cr-reward-create-form")?.addEventListener("submit", async (e) => {
     e.preventDefault(); const btn = e.submitter || $("cr-reward-create-submit"); setLoading(btn, true, "Creating…");
     try { await api("POST", sitePath("/api/credits/rewards/create"), { title: $("cr-reward-create-title").value.trim(), cost: Number($("cr-reward-create-cost").value), credits: Number($("cr-reward-create-credits").value), description: $("cr-reward-create-desc").value.trim(), backgroundColor: $("cr-reward-create-color").value }); setStatus("cr-reward-create-status", "Kick reward created and mapped to a credit rule."); $("cr-reward-create-form").reset(); $("cr-reward-create-color").value = "#00e701"; await load(); }
-    catch (err) { setStatus("cr-reward-create-status", err.message, true); } finally { setLoading(btn, false); }
+    catch (err) { if (err?.code === "kick_reconnect_required") markKickNeedsAttention(); setStatus("cr-reward-create-status", err.message, true); } finally { setLoading(btn, false); }
   });
   $("cr-shop-new")?.addEventListener("click", () => openShop()); $("cr-shop-close")?.addEventListener("click", closeShop); $("cr-shop-cancel")?.addEventListener("click", closeShop);
 

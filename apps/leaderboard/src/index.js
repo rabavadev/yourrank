@@ -632,7 +632,20 @@ export async function handleRequest(request, env, ctx, meta, deps = {}) {
       if (host === PLATFORM_HOST && MARKETING_PAGES.has(path)) {
         return proxyMarketingHome({ request, binding: env.MARKETING, workerLog });
       }
-      if (path === "/login" || path === "/login.html") return new Response(addCookieConsent(await renderHtmlPage(PAGES.login)), { headers: { ...SECURE_HTML, ...csrfHeader } });
+      if (path === "/login" || path === "/login.html") {
+        // AUDIT-B6: a signed-in user hitting /login used to get the login form
+        // for a beat before client JS bounced them. Resolve the session
+        // server-side and redirect before rendering anything. On a DB hiccup,
+        // fall through and render the form — never 500 the login page.
+        try {
+          const existing = await currentUser(request, env);
+          if (existing) {
+            const next = safeNextPath(url.searchParams.get("next") || "", "/dashboard");
+            return redirectResponse(new URL(next, url), 302);
+          }
+        } catch { /* render the form */ }
+        return new Response(addCookieConsent(await renderHtmlPage(PAGES.login)), { headers: { ...SECURE_HTML, ...csrfHeader } });
+      }
       // POST /logout only (BE-003). Previously GET, which allowed CSRF via
       // <img src="/logout">. Now only POST is accepted. The in-page buttons
       // already hit POST /api/auth/logout; the nav link should use a form POST.
