@@ -52,7 +52,7 @@ export function activeKey(activePath: string): string | null {
   }
   if (pathname === "/dashboard" || pathname.startsWith("/dashboard/")) {
     if (pathname.startsWith("/dashboard/telegram")) return "telegram";
-    if (pathname.startsWith("/dashboard/credits") || pathname.startsWith("/dashboard/rewards")) return "credits";
+    if (pathname.startsWith("/dashboard/credits") || pathname.startsWith("/dashboard/rewards") || pathname.startsWith("/dashboard/audience")) return "credits";
     return "sites";
   }
 

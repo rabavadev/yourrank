@@ -1,0 +1,28 @@
+/** @jsxRuntime automatic */
+/** @jsxImportSource hono/jsx */
+
+import { membersPage } from "./credits-pages.js";
+import { DashboardShell } from "./dashboard-shell.jsx";
+
+// Audience is the people area. Members (who earn and spend credits) are managed
+// here; site visitors (anonymous traffic) already have their canonical view
+// under Analytics, so the page links there as an action instead of duplicating
+// the view or adding a tab that teleports to another product area.
+const VISITOR_ANALYTICS_CARD = `<section class="v3-table-card"><div class="v3-section-head"><div><h2>Site visitors</h2><p class="v3-head-sub">Anonymous traffic to your public site lives in Analytics.</p></div><a class="btn btn--sm" href="/dashboard/analytics">Open site visitors</a></div></section>`;
+
+export function AudienceMembersPage({ user } = {}) {
+  return <DashboardShell activeNav="members" activePath="/dashboard/audience/members" boardContext="selector" crumbs={[{ label: "Audience", href: "/dashboard/audience/members" }, { label: "Members" }]} footer="rewards" rootId="cr-dash" user={user}>
+    <div class="cr-workspace-content">
+      <div id="cr-loading" class="ui-loading" role="status" aria-live="polite" aria-busy="true" hidden><div class="ui-loading__spinner"></div><span class="sr-only">Loading members…</span></div>
+      <div id="cr-app" data-cr-tab="viewers" hidden dangerouslySetInnerHTML={{ __html: membersPage + VISITOR_ANALYTICS_CARD }}></div>
+      <div id="cr-empty" class="empty cr-loading-state" hidden><div class="ui-loading__spinner" aria-hidden="true"></div><p>Loading your members…</p></div>
+    </div>
+  </DashboardShell>;
+}
+
+const audienceConfigBase = { styles: ["/assets/app.css", "/assets/shell-nav.css", "/assets/ui.css", "/assets/dashboard-v4.css"], scripts: ['<script src="/assets/credits.js?v=4" type="module"></script>', '<script src="/assets/shell-nav.js?v=2" defer></script>'], nav: false, footer: false, wide: true, bootWatchdog: true };
+
+export const audienceMembersPage = {
+  config: { ...audienceConfigBase, title: "Members · Audience · YourRank", canonical: "https://yourrank.site/dashboard/audience/members" },
+  Component: AudienceMembersPage,
+};

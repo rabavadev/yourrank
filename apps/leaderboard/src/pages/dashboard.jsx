@@ -44,7 +44,7 @@ const SECTION_CRUMBS = {
 };
 const TAB_LABELS = {
   setup: "Setup", players: "Players", design: "Appearance", share: "Share", history: "History",
-  activity: "Visitors", referrals: "Sources", events: "Events",
+  activity: "Site visitors", referrals: "Sources", events: "Events",
 };
 
 function LeaderboardTabs({ active }) {
@@ -86,19 +86,18 @@ function dashboardShellRoute(activePath = "") {
 }
 
 
-// Each route serves only its own section: the dashboard used to ship every
-// screen in one document and let JavaScript reveal one, which put seven <h1>s
-// and the whole editor form on every page and made `/dashboard` render the
-// editor. The editor and the selected board's settings stay together because
-// they share one save pipeline (`collect()` reads the editor form).
-const ROUTE_SECTIONS = {
-  home: ["home"],
-  board: ["board", "site"],
-  site: ["board", "site"],
-  games: ["games"],
-  performance: ["performance"],
-  boards: ["boards"],
-};
+// Every route serves every section. Splitting sections across per-route
+// documents made each cross-section click a full reload: the workspace
+// re-initialized, re-fetched /api/auth/me and /api/site, and showed the
+// full-screen "Loading your workspace…" for ordinary navigation. One document
+// keeps the shell, the selected site and all editor state mounted; navTo()
+// reveals the destination section (inactive sections are display:none, so
+// assistive tech only ever sees the active one) and section-specific data
+// loads lazily on first visit.
+const ALL_SECTIONS = ["home", "board", "site", "games", "performance", "boards"];
+const ROUTE_SECTIONS = Object.fromEntries(
+  ["home", "board", "site", "games", "performance", "boards"].map((route) => [route, ALL_SECTIONS]),
+);
 
 function OverviewSection({ active } = {}) {
   return (
@@ -392,10 +391,10 @@ function AnalyticsSection({ active, activeHash = "activity" } = {}) {
   return (
 <section class={active ? "lb-page is-on" : "lb-page"} data-page="performance">
 <div class="v3-analytics-page">
-  <header class="v3-head"><h1>{TAB_LABELS[activeHash] || "Visitors"}</h1><p class="v3-head-sub">See how viewers find and interact with your site.</p></header>
+  <header class="v3-head"><h1>{TAB_LABELS[activeHash] || "Site visitors"}</h1><p class="v3-head-sub">See how people find and interact with your site.</p></header>
   <div class="v3-analytics-scope"><span id="perfScope"><span id="perfBoardName">Active site</span> · Last <span id="perfRangeLabel">14</span> days</span><div id="perfRangeFilter" class="v3-range-filter" role="group" aria-label="Date range"><button class="v3-range-btn" type="button" data-range="7">7d</button><button class="v3-range-btn is-active" type="button" data-range="14">14d</button><button class="v3-range-btn" type="button" data-range="30">30d</button></div></div>
   <nav class="v3-tabs" aria-label="Analytics pages">
-    <a class={"v3-tab" + (activeHash === "activity" ? " is-on" : "")} href="/dashboard/analytics/activity" data-perf-tab="activity" aria-current={activeHash === "activity" ? "page" : undefined}>Visitors</a>
+    <a class={"v3-tab" + (activeHash === "activity" ? " is-on" : "")} href="/dashboard/analytics/activity" data-perf-tab="activity" aria-current={activeHash === "activity" ? "page" : undefined}>Site visitors</a>
     <a class={"v3-tab" + (activeHash === "referrals" ? " is-on" : "")} href="/dashboard/analytics/referrals" data-perf-tab="referrals" aria-current={activeHash === "referrals" ? "page" : undefined}>Sources</a>
     <a class={"v3-tab" + (activeHash === "events" ? " is-on" : "")} href="/dashboard/analytics/events" data-perf-tab="events" aria-current={activeHash === "events" ? "page" : undefined}>Events</a>
   </nav>
@@ -552,7 +551,7 @@ export function DashboardContent({ user, activePath } = {}) {
 <div class="lb-notice lb-notice--verification" id="verifyBanner" hidden role="status" aria-live="polite"><span class="lb-notice-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 6h16v12H4z"/><path d="m4 7 8 6 8-6"/></svg></span><div class="lb-notice-copy"><strong>Public leaderboard offline until you verify</strong><span id="verifyBannerText">Visitors cannot open your published leaderboard until you verify <b id="verifyBannerEmail"></b>.</span><span id="verifyBannerStatus"></span></div><button class="btn btn--sm btn--ghost" id="verifyResend" type="button">Resend verification</button><button class="btn btn--sm btn--ghost" id="verifyDismiss" type="button" aria-label="Dismiss email verification notice">Dismiss</button></div>
   {sections.map((key) => {
     const Section = SECTIONS[key];
-    return <Section active={key === activeNav} activeHash={activeHash} showTabs={activeNav === "board"} />;
+    return <Section active={key === activeNav} activeHash={activeHash} showTabs />;
   })}
 {hasEditor ? 
 <div class="savebar" id="savebar" hidden><span class="savebar-hint">Unsaved changes</span><span class="savebar-ts" id="editorTimestamp"></span><button class="btn btn--ghost" id="discard" type="button">Discard changes</button><button class="btn btn--accent" id="save" type="button">Save changes</button></div> : null}
@@ -576,7 +575,7 @@ export function DashboardNotFoundContent({ user } = {}) {
             <a class="v3-tab is-on" href="/dashboard">Home</a>
             <a class="v3-tab" href="/dashboard/leaderboard/setup">Leaderboard</a>
             <a class="v3-tab" href="/dashboard/leaderboards">Sites</a>
-            <a class="v3-tab" href="/dashboard/settings/account">Settings</a>
+            <a class="v3-tab" href="/dashboard/settings/account">Account</a>
           </nav>
         </div>
       </section>

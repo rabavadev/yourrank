@@ -741,8 +741,11 @@ export async function handleRequest(request, env, ctx, meta, deps = {}) {
       if (path === "/dashboard/security") return redirectKeepingSearch("/dashboard/settings/account", url);
       if (path === "/dashboard/integrations") return redirectKeepingSearch("/dashboard/settings/connections", url);
       if (path === "/dashboard/manage") return redirectKeepingSearch("/dashboard/settings", url);
-      if (path === "/dashboard/audience/viewers" || path === "/dashboard/audience/activity") {
-        const target = path.endsWith("/viewers") ? "/dashboard/rewards/viewers" : "/dashboard/rewards/activity";
+      if (path === "/dashboard/audience/members") {
+        return renderDashboardPage("audienceMembers", "audience_render_failed");
+      }
+      if (path === "/dashboard/audience" || path === "/dashboard/audience/viewers" || path === "/dashboard/audience/activity") {
+        const target = path.endsWith("/activity") ? "/dashboard/rewards/activity" : "/dashboard/audience/members";
         return redirectKeepingSearch(target, url, 301);
       }
       if (path === "/dashboard/giveaways/preds") {
@@ -824,7 +827,7 @@ export async function handleRequest(request, env, ctx, meta, deps = {}) {
         return redirectResponse(redirectUrl, 302);
       }
       if (path === "/dashboard/credits") {
-        return redirectKeepingSearch("/dashboard/rewards/channel", url);
+        return redirectKeepingSearch("/dashboard/rewards", url, 301);
       }
       if (path === "/dashboard/giveaways") {
         return redirectKeepingSearch("/dashboard/giveaways/chat", url);
@@ -837,18 +840,20 @@ export async function handleRequest(request, env, ctx, meta, deps = {}) {
         return redirectKeepingSearch("/dashboard/giveaways/chat", url);
       }
       if (path === "/dashboard/rewards") {
-        return redirectKeepingSearch("/dashboard/rewards/redemptions", url);
+        return renderDashboardPage("rewardsOverview", "rewards_render_failed");
       }
       if (path.startsWith("/dashboard/rewards/")) {
         const tab = path.slice("/dashboard/rewards/".length).split("?")[0];
         if (tab === "channel") return renderDashboardPage("rewardsChannel", "channel_render_failed");
+        if (tab === "overview") return redirectKeepingSearch("/dashboard/rewards", url, 301);
         if (tab === "maps" || tab === "rewards") return redirectKeepingSearch("/dashboard/rewards/rules", url);
-        if (tab === "viewers") return renderDashboardPage("rewardsViewers", "rewards_render_failed");
+        // Member management moved out of Rewards into Audience.
+        if (tab === "viewers") return redirectKeepingSearch("/dashboard/audience/members", url, 301);
         if (tab === "activity") return renderDashboardPage("rewardsHistory", "rewards_render_failed");
         if (tab === "history") return redirectKeepingSearch("/dashboard/rewards/activity", url, 301);
         const map = { rules: "rewardsRules", shop: "rewardsShop", redemptions: "rewardsRedemptions" };
         const pageKey = map[tab];
-        if (!pageKey) return redirectResponse(new URL("/dashboard/rewards/redemptions", url), 302);
+        if (!pageKey) return redirectResponse(new URL("/dashboard/rewards", url), 302);
         return renderDashboardPage(pageKey, "rewards_render_failed");
       }
       // An unknown tab under a real section (a typo, a renamed step) belongs on

@@ -17,12 +17,13 @@ import { helpHubPage, helpSupportPage, helpFeedbackPage } from "./pages/help.js"
 import { docsPage } from "./pages/docs.js";
 import {
   rewardsChannelPage,
+  rewardsOverviewPage,
   rewardsRulesPage,
   rewardsShopPage,
-  rewardsViewersPage,
   rewardsRedemptionsPage,
   rewardsHistoryPage,
 } from "./pages/rewards.jsx";
+import { audienceMembersPage } from "./pages/audience.jsx";
 import { settingsUnifiedPage } from "./pages/account.jsx";
 import { faqPage } from "./pages/faq.js";
 import { reviewsPage } from "./pages/reviews.js";
@@ -50,9 +51,10 @@ export const PAGES = {
   helpFeedback: helpFeedbackPage,
   helpHub: helpHubPage,
   rewardsChannel: rewardsChannelPage,
+  rewardsOverview: rewardsOverviewPage,
   rewardsRules: rewardsRulesPage,
   rewardsShop: rewardsShopPage,
-  rewardsViewers: rewardsViewersPage,
+  audienceMembers: audienceMembersPage,
   rewardsRedemptions: rewardsRedemptionsPage,
   rewardsHistory: rewardsHistoryPage,
   settingsUnified: settingsUnifiedPage,

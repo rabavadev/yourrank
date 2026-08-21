@@ -1,28 +1,32 @@
 import { describe, it, expect } from "bun:test";
 import {
   RewardsChannelPage,
+  RewardsOverviewPage,
   RewardsRulesPage,
   RewardsShopPage,
-  RewardsViewersPage,
   RewardsRedemptionsPage,
   RewardsHistoryPage,
 } from "../pages/rewards.jsx";
+import { AudienceMembersPage } from "../pages/audience.jsx";
 import { readFileSync } from "node:fs";
 import {
+  rewardsOverviewConfig,
   rewardsRulesConfig,
   rewardsShopConfig,
-  rewardsViewersConfig,
   rewardsRedemptionsConfig,
   rewardsHistoryConfig,
 } from "../pages/rewards.jsx";
 
 const pages = [
   ["channel", RewardsChannelPage],
+  ["overview", RewardsOverviewPage],
   ["rules", RewardsRulesPage],
   ["shop", RewardsShopPage],
-  ["viewers", RewardsViewersPage],
   ["redemptions", RewardsRedemptionsPage],
   ["history", RewardsHistoryPage],
+  // Members live under Audience now; the credits client still hydrates it via
+  // the historical "viewers" tab marker.
+  ["viewers", AudienceMembersPage],
 ];
 const rewardsMarkupSource = readFileSync(new URL("../pages/credits-pages.js", import.meta.url), "utf8");
 const rewardsClientSource = readFileSync(new URL("../assets/credits.js", import.meta.url), "utf8");
@@ -38,9 +42,9 @@ describe("server-rendered rewards pages", () => {
     });
   }
 
-  it("uses Credits as the canonical group for every operator destination", () => {
-    for (const config of [rewardsRulesConfig, rewardsShopConfig, rewardsViewersConfig, rewardsRedemptionsConfig, rewardsHistoryConfig]) {
-      expect(config.title).toContain("· Credits ·");
+  it("uses Rewards as the canonical group for every operator destination", () => {
+    for (const config of [rewardsOverviewConfig, rewardsRulesConfig, rewardsShopConfig, rewardsRedemptionsConfig, rewardsHistoryConfig]) {
+      expect(config.title).toContain("· Rewards ·");
     }
   });
 

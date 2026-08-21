@@ -39,10 +39,11 @@ export function preserveSiteContextLinks(activeSiteId = "") {
   const creditsLink = document.querySelector('[data-product-link="credits"]');
   if (creditsLink) creditsLink.href = `/dashboard/rewards?siteId=${encodeURIComponent(siteId)}`;
   const creditsDestinations = new Set([
+    "/dashboard/rewards",
     "/dashboard/rewards/redemptions",
     "/dashboard/rewards/shop",
     "/dashboard/rewards/rules",
-    "/dashboard/rewards/viewers",
+    "/dashboard/audience/members",
     "/dashboard/rewards/activity",
     "/dashboard/rewards/channel",
   ]);
@@ -95,7 +96,7 @@ export async function loadBoardShell({ request: requestFn = boardApi } = {}) {
   const pendingVerification = Boolean(board.published) && user.emailVerified === false;
   const status = $("lbTopbarStatus");
   if (status) {
-    status.textContent = live ? "Published" : pendingVerification ? "Verification needed" : "Not published";
+    status.textContent = live ? "Live" : pendingVerification ? "Verification needed" : "Not live";
     status.className = `lb-status ${live ? "lb-status--live" : pendingVerification ? "lb-status--pending" : "lb-status--draft"}`;
   }
   const planBadge = $("planBadge");

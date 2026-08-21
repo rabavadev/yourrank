@@ -29,7 +29,7 @@ export const SECTIONS = {
 
 export const TAB_TITLES = {
   board: { setup: "Setup", players: "Players", design: "Appearance", share: "Share", history: "History" },
-  performance: { activity: "Visitors", referrals: "Referrals", events: "Events" },
+  performance: { activity: "Site visitors", referrals: "Referrals", events: "Events" },
 };
 
 export const MANAGE_SITES_VALUE = "__manage_sites__";

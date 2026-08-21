@@ -145,7 +145,7 @@ describe("settings panels", () => {
   it("keeps account settings creator-facing instead of exposing scope jargon", async () => {
     const html = await UnifiedSettingsPage({ activePath: "/dashboard/settings/account", tab: "account", user: { email: "a@b.c", plan: "pro" } }).toString();
     expect(html).not.toContain("Open site settings");
-    expect(html).toContain("Site section");
+    expect(html).toContain("Account settings apply to you. To change your website, use Site settings.");
     expect(html).toContain("Open Help &amp; feedback");
     expect(html).not.toContain("Global Account Scope");
     expect(html).not.toContain("Owner / Master");
@@ -167,7 +167,7 @@ describe("settings panels", () => {
         user: { email: "a@b.c" },
       }).toString();
       expect(html).toContain(`<h1>${label}</h1>`);
-      expect(html).toContain(`Settings</a>`);
+      expect(html).toContain(`Account</a>`);
       expect(html).toContain(`>${label}</span>`);
       expect(html).not.toContain('class="lb-board-select-lbl">Account settings');
       expect(html).not.toContain('class="lb-account-title"');

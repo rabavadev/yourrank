@@ -11,9 +11,9 @@ const GAME_ROWS = [
 ];
 
 const sectionRows = [
-  ["shop", "Shop", "Let viewers browse and redeem your shop items.", "Turning off removes Shop from navigation and disables the /shop URL."],
-  ["credits", "Credits", "Let viewers see their balance and prize order history.", "Turning off removes Credits from navigation and disables the /credits URL."],
-  ["games", "Games", "Let viewers play credit-based games on your board.", "Turning off removes Games from navigation and disables the /games URL."],
+  ["shop", "Shop", "Let members browse and redeem your shop items.", "Turning off removes Shop from navigation and disables the /shop URL."],
+  ["credits", "Rewards", "Let members see their balance and prize order history.", "Turning off removes Rewards from navigation and disables the /credits URL."],
+  ["games", "Games", "Let members play credit-based games on your site.", "Turning off removes Games from navigation and disables the /games URL."],
 ];
 
 const BLOCK_ROWS = [
@@ -349,19 +349,16 @@ function setupSimulator() {
   });
 }
 
+// Called on every visit to the Games section, so the rendering and data load
+// re-run to keep the section fresh. The one-time wiring (simulator listeners)
+// guards itself. This replaces the old `yr-games-visible` event, which existed
+// only because the section could not be re-initialized directly.
 export function initGames() {
-  if (initGames._wired) return;
-  initGames._wired = true;
   renderSections();
   renderPageBlocks();
-  setBlockLoading($("gameSettingRows"), { lines: GAME_ROWS.length });
+  if (!initGames._loaded) setBlockLoading($("gameSettingRows"), { lines: GAME_ROWS.length });
+  initGames._loaded = true;
   loadGames();
   setupSimulator();
   updateSimulator();
-  window.addEventListener("yr-games-visible", () => {
-    renderSections();
-    renderPageBlocks();
-    loadGames();
-    updateSimulator();
-  });
 }

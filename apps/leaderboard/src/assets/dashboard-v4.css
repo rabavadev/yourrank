@@ -883,6 +883,7 @@ body:has(.v3-dash[data-auth-workspace]) .lb-shell,
 .v3-dash[data-auth-workspace] .lb-status--pending,
 .v3-dash[data-auth-workspace] .lb-status--draft { border-color: #fed7aa; background: #fff7ed; color: #c2410c; }
 .v3-dash[data-auth-workspace] .lb-status--unpublished { border-color: var(--v4-line); background: var(--v4-surface-soft); color: var(--v4-ink-mute); }
+.v3-dash[data-auth-workspace] .lb-status--draft-changes { border-color: #fed7aa; background: #fff7ed; color: #c2410c; text-transform: none; letter-spacing: 0; }
 .v3-dash[data-auth-workspace] .lb-publish-action { display: inline-flex; align-items: center; justify-content: center; height: 38px; padding: 0 16px; border: 1px solid var(--v4-cobalt); border-radius: var(--v4-radius-control); background: var(--v4-cobalt); color: var(--v4-cobalt-ink); font: 600 13px var(--v3-sans); cursor: pointer; white-space: nowrap; transition: all 0.15s ease; box-shadow: none; }
 .v3-dash[data-auth-workspace] .lb-publish-action:hover { border-color: var(--v4-cobalt-hover); background: var(--v4-cobalt-hover); box-shadow: none; transform: translateY(-1px); }
 .v3-dash[data-auth-workspace] .lb-publish-action--secondary { border-color: var(--v4-line-strong); background: #ffffff; color: var(--v4-ink); box-shadow: none; }

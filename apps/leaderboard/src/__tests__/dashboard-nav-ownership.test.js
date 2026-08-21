@@ -69,12 +69,25 @@ describe("dashboard navigation ownership", () => {
     expect(siteSelectorJs).not.toContain("topbarPath");
   });
 
-  it("renders leaderboard tabs only on leaderboard routes", () => {
-    for (const path of ["/dashboard", "/dashboard/games", "/dashboard/analytics/activity", "/dashboard/leaderboards", "/dashboard/site"]) {
-      expect(dashboardHtml(path)).not.toContain('aria-label="Leaderboard pages"');
+  it("keeps the leaderboard tabs reachable only on leaderboard routes", () => {
+    // Every section ships in the single-document shell, so the leaderboard
+    // tablist is always in the markup. It lives inside the board section, which
+    // only carries `is-on` on leaderboard routes; everywhere else that section
+    // is display:none, so assistive tech never reaches the tabs off-route.
+    const boardSection = (html) => {
+      const start = html.indexOf('data-page="board"');
+      const open = html.lastIndexOf("<section", start);
+      const end = html.indexOf("</section>", start);
+      return { markup: html.slice(open, end), active: /class="lb-page[^"]*\bis-on\b/.test(html.slice(open, start + 20)) };
+    };
+    for (const path of ["/dashboard", "/dashboard/games", "/dashboard/analytics/activity", "/dashboard/leaderboards"]) {
+      const board = boardSection(dashboardHtml(path));
+      expect(board.markup).toContain('aria-label="Leaderboard pages"');
+      expect(board.active).toBe(false);
     }
-    expect(dashboardHtml("/dashboard/site")).toContain('id="savebar"');
-    expect(dashboardHtml("/dashboard/leaderboard/setup")).toContain('aria-label="Leaderboard pages"');
+    const onRoute = boardSection(dashboardHtml("/dashboard/leaderboard/setup"));
+    expect(onRoute.markup).toContain('aria-label="Leaderboard pages"');
+    expect(onRoute.active).toBe(true);
   });
 
   it("resolves every sidebar href to a real dashboard route", () => {
@@ -85,6 +98,7 @@ describe("dashboard navigation ownership", () => {
         (path === "/dashboard/settings" && worker.includes('path === "/dashboard/settings"')) ||
         (path === "/dashboard/giveaways" && worker.includes('path === "/dashboard/giveaways"')) ||
         (path === "/dashboard/rewards" && worker.includes('path === "/dashboard/rewards"')) ||
+        (path === "/dashboard/audience/members" && worker.includes('path === "/dashboard/audience/members"')) ||
         (path === "/dashboard/telegram" && readFileSync(new URL("../../../bot/src/dashboard-views/app.ts", import.meta.url), "utf8").includes('canonicalPath = "/dashboard/telegram"')) ||
         (path.startsWith("/dashboard/giveaways/") && worker.includes('path.startsWith("/dashboard/giveaways/")')) ||
         (path.startsWith("/dashboard/rewards/") && worker.includes('path.startsWith("/dashboard/rewards/")'));
@@ -108,12 +122,14 @@ describe("dashboard navigation ownership", () => {
       ["connections", "settings"],
       ["integrations", "settings"],
       ["redemptions", "redemptions"],
+      ["overview", "redemptions"],
       ["rules", "redemptions"],
       ["shop", "redemptions"],
-      ["viewers", "redemptions"],
       ["history", "redemptions"],
       ["channel", "redemptions"],
-      ["rules", "redemptions"],
+      ["members", "audience"],
+      ["audience", "audience"],
+      ["viewers", "audience"],
       ["engage", "engage"],
       ["giveaways", "engage"],
       ["raffles", "engage"],
@@ -124,7 +140,7 @@ describe("dashboard navigation ownership", () => {
       expect(mapActiveNav(route)).toBe(navOwner(route));
       expect(keys.has(NAV_OWNER_MAP[route] || route)).toBe(true);
     }
-    for (const path of ["/dashboard", "/dashboard/leaderboard/setup", "/dashboard/games", "/dashboard/analytics/activity", "/dashboard/leaderboards", "/dashboard/site", "/dashboard/rewards/channel", "/dashboard/rewards/viewers", "/dashboard/rewards/activity", "/dashboard/settings/billing", "/dashboard/giveaways/predictions"]) {
+    for (const path of ["/dashboard", "/dashboard/leaderboard/setup", "/dashboard/games", "/dashboard/analytics/activity", "/dashboard/leaderboards", "/dashboard/site", "/dashboard/rewards/channel", "/dashboard/audience/members", "/dashboard/rewards/activity", "/dashboard/settings/billing", "/dashboard/giveaways/predictions"]) {
       expect((dashboardHtml(path).match(/class="lb-nav[^"]* is-on/g) || []).length).toBe(1);
     }
     expect(dashboardHtml("/dashboard/leaderboards")).toContain('data-nav="sites"');

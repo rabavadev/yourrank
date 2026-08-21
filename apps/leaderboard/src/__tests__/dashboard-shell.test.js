@@ -1,5 +1,6 @@
 import { describe, it, expect } from "bun:test";
-import { RewardsChannelPage, RewardsHistoryPage, RewardsViewersPage } from "../pages/rewards.jsx";
+import { RewardsChannelPage, RewardsHistoryPage, RewardsRedemptionsPage } from "../pages/rewards.jsx";
+import { AudienceMembersPage } from "../pages/audience.jsx";
 import { UnifiedSettingsPage } from "../pages/account.jsx";
 import { PAGES } from "../pages.jsx";
 
@@ -83,7 +84,7 @@ function expectHeadingOutline(html, options) {
 
 describe("server-rendered dashboard profile", () => {
   it("passes the caller user through a Rewards/Audience page", () => {
-    const html = renderPage(RewardsViewersPage);
+    const html = renderPage(AudienceMembersPage);
     expect(html).toContain("gm-badge--paid\">Pro</span>");
     expect(html).not.toContain("gm-badge--free\">Free</span>");
   });
@@ -97,7 +98,7 @@ describe("server-rendered dashboard profile", () => {
 
 describe("signed-in shell navigation", () => {
   it("links the primary creator surfaces from the rail", () => {
-    const html = renderPage(RewardsViewersPage);
+    const html = renderPage(AudienceMembersPage);
     for (const href of [
       "/dashboard/leaderboard",
       "/dashboard/giveaways",
@@ -114,15 +115,20 @@ describe("signed-in shell navigation", () => {
     expect(html).toContain("Help &amp; feedback");
   });
 
-  it("marks the open credit surface as current", () => {
-    const html = renderPage(RewardsViewersPage);
+  it("marks the open rewards surface as current", () => {
+    const html = renderPage(RewardsRedemptionsPage);
     expect(html).toMatch(/data-nav="redemptions"[^>]*aria-current="page"/);
-    expect(html).toContain("lb-nav-child");
+    expect((html.match(/class="lb-nav[^"]* is-on/g) || []).length).toBe(1);
+  });
+
+  it("marks the members page as the Audience area", () => {
+    const html = renderPage(AudienceMembersPage);
+    expect(html).toMatch(/data-nav="audience"[^>]*aria-current="page"/);
     expect((html.match(/class="lb-nav[^"]* is-on/g) || []).length).toBe(1);
   });
 
   it("renders the collapsible creator workspace shell", () => {
-    const html = renderPage(RewardsViewersPage);
+    const html = renderPage(AudienceMembersPage);
     expect(html).toContain("data-collapse-side");
     expect(html).toContain('aria-controls="lbSide"');
     expect(html).toContain('class="lb-side-profile"');
@@ -139,7 +145,7 @@ describe("signed-in shell navigation", () => {
   });
 
   it("keeps one main landmark and a topbar drawer trigger", () => {
-    const html = renderPage(RewardsViewersPage);
+    const html = renderPage(AudienceMembersPage);
     // The page shell already wraps the content in <main id="main-content">, so
     // the dashboard body must not add a second main landmark.
     expect(html).not.toContain("<main");
@@ -170,7 +176,7 @@ describe("signed-in shell navigation", () => {
   });
 
   it("keeps site controls out of the rail and limits the account menu", () => {
-    const html = renderPage(RewardsViewersPage);
+    const html = renderPage(AudienceMembersPage);
     const rail = html.slice(html.indexOf("<aside"), html.indexOf("</aside>"));
     expect(rail).not.toContain("wsSwitcher");
     expect(html).not.toContain('id="wsSwitcher"');
@@ -185,7 +191,9 @@ describe("signed-in shell navigation", () => {
     expect(html).toContain("Help &amp; feedback");
     expect(html).toContain("Sign out");
     expect((html.match(/<svg\b/g) || []).length).toBeGreaterThanOrEqual(4);
-    expect(html).not.toContain(">Account</a>");
+    // The rail owns the Account destination; the profile menu must not repeat it.
+    const menu = html.slice(html.indexOf("gm-profile-menu"), html.indexOf("</details>"));
+    expect(menu).not.toContain("/dashboard/settings");
   });
 
   it("composes the Overview as a 12-column run sheet", () => {
@@ -201,13 +209,13 @@ describe("signed-in shell navigation", () => {
   });
 
   it("does not duplicate peer products below the rail", () => {
-    const html = renderPage(RewardsViewersPage);
+    const html = renderPage(AudienceMembersPage);
     expect(html).not.toContain('class="lb-product-link"');
     expect(html).toContain('data-product-link="credits"');
   });
 
   it("keeps secondary site and help actions accessible without rail duplication", () => {
-    const html = renderPage(RewardsViewersPage);
+    const html = renderPage(AudienceMembersPage);
     expect(html).toContain('data-nav="site"');
     expect(html).toMatch(/href="\/dashboard\/site"[^>]*data-nav="site"/);
     expect(html).toContain('href="/help/support?area=credits');
@@ -220,7 +228,7 @@ describe("signed-in shell navigation", () => {
     const html = PAGES.dashboard.Component({ activePath: "/dashboard/leaderboard/design", user }).toString();
     expect(html).toContain(">Appearance</a>");
     expect(html).toContain(">Leaderboard</a>");
-    expect(html).toContain(">Credits</a>");
+    expect(html).toContain(">Rewards</a>");
     expect(html).toContain(">Telegram</a>");
     expect(html).toContain(">Analytics</a>");
     expect(html).toContain("Help &amp; feedback</a>");
@@ -248,10 +256,14 @@ describe("signed-in shell navigation", () => {
   });
 
   it("puts a breadcrumb trail on every leaf page", () => {
-    const viewers = renderPage(RewardsViewersPage);
-    expect(viewers).toContain('<nav class="v3-crumbs" aria-label="Breadcrumb">');
-    expect(viewers).toContain('<a href="/dashboard/rewards">Credits</a>');
-    expect(viewers).toContain('<span aria-current="page">Viewers</span>');
+    const members = renderPage(AudienceMembersPage);
+    expect(members).toContain('<nav class="v3-crumbs" aria-label="Breadcrumb">');
+    expect(members).toContain('>Audience</span>');
+    expect(members).toContain('<span aria-current="page">Members</span>');
+
+    const orders = renderPage(RewardsRedemptionsPage);
+    expect(orders).toContain('<a href="/dashboard/rewards">Rewards</a>');
+    expect(orders).toContain('<span aria-current="page">Orders</span>');
 
     const settings = renderPage(UnifiedSettingsPage);
     expect(settings).toContain('<span aria-current="page">Account</span>');
@@ -275,7 +287,7 @@ describe("signed-in shell navigation", () => {
     for (const path of ["/dashboard/leaderboard/design", "/dashboard/analytics/activity"]) {
       expect(PAGES.dashboard.Component({ activePath: path }).toString()).toContain('class="v3-crumbs"');
     }
-    for (const render of [RewardsChannelPage, RewardsViewersPage, RewardsHistoryPage]) {
+    for (const render of [RewardsChannelPage, AudienceMembersPage, RewardsHistoryPage]) {
       expect(render().toString()).toContain('class="v3-crumbs"');
     }
   });

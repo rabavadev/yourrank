@@ -21,7 +21,7 @@ describe("dashboard loading states", () => {
     expect(dashboardHtml).toContain('class="yr-loader-track"');
     expect(dashboardHtml).toContain('aria-busy="true"');
     expect(creditsHtml).toContain('id="cr-loading" class="ui-loading" role="status"');
-    expect(creditsHtml).toContain("Loading credits and shop");
+    expect(creditsHtml).toContain("Loading rewards");
     expect(PAGES.dashboard.config.bootWatchdog).toBe(true);
     expect(PAGES.rewardsRedemptions.config.bootWatchdog).toBe(true);
     expect(read("dashboard.js")).toContain("window.__yrBoot?.signal()");

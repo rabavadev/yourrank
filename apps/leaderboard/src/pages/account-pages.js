@@ -275,7 +275,7 @@ const teamWidget = `<div class="lb-widget lb-widget--full" id="team">
                   <td><span class="pill pill--good">Full access</span></td>
                 </tr>
                 <tr>
-                  <td><strong>Credits &amp; shop fulfilment</strong><br/><span class="hint">Approve and fulfil viewer prize orders</span></td>
+                  <td><strong>Credits &amp; shop fulfilment</strong><br/><span class="hint">Approve and fulfil member prize orders</span></td>
                   <td><span class="pill pill--good">Full access</span></td>
                   <td><span class="pill pill--good">Full access</span></td>
                   <td><span class="pill pill--good">Full access</span></td>

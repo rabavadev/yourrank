@@ -61,7 +61,8 @@ describe("dashboard routes", () => {
 
   it("redirects moved dashboard routes while preserving query strings", async () => {
     for (const [legacy, canonical] of [
-      ["/dashboard/audience/viewers", "/dashboard/rewards/viewers"],
+      ["/dashboard/audience/viewers", "/dashboard/audience/members"],
+      ["/dashboard/rewards/viewers", "/dashboard/audience/members"],
       ["/dashboard/audience/activity", "/dashboard/rewards/activity"],
       ["/dashboard/rewards/history", "/dashboard/rewards/activity"],
       ["/dashboard/settings/board", "/dashboard/site"],

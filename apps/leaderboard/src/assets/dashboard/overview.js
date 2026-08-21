@@ -268,7 +268,7 @@ export function renderOverviewSummary() {
 
     if (top.length) $("ov_topEmpty").hidden = true;
     else renderEmpty($("ov_topEmpty"), { kind: "empty", title: "No players yet", body: "Add the first player to start your leaderboard.", compactHeading: true, actions: [{ label: "Add players", href: "/dashboard/leaderboard/players" }] });
-    $("ovPublishedStatus").textContent = status.live ? "Published" : status.published ? "Verification needed" : "Not published";
+    $("ovPublishedStatus").textContent = status.live ? "Live" : status.published ? "Verification needed" : "Not live";
 
     // Contextual next step. Rendered last so it can read the activity and
     // giveaway state computed above rather than re-deriving it.

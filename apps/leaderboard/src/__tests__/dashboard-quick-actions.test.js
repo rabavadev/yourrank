@@ -146,11 +146,14 @@ describe("dashboard overview quick actions", () => {
 
   it("reports public site availability truthfully from Credits", () => {
     expect(boardShellJs).toContain("Boolean(board.published) && user.emailVerified !== false");
-    expect(boardShellJs).toContain('live ? "Published" : pendingVerification ? "Verification needed" : "Not published"');
+    expect(boardShellJs).toContain('live ? "Live" : pendingVerification ? "Verification needed" : "Not live"');
     expect(boardShellJs).toContain('pendingVerification ? "/verify-email"');
     expect(boardShellJs).toContain('publicLink.textContent = "View site ↗"');
     expect(boardShellJs).toContain('publicLink.textContent = pendingVerification ? "Verify email" : "Publish site"');
-    expect(siteJs).toContain('draft: "Not published", unpublished: "Not published", pending: "Verification needed", published: "Published"');
+    expect(siteJs).toContain('export function publicationCopy');
+    expect(siteJs).toContain('statusLabel: "Live"');
+    expect(siteJs).toContain('statusLabel: "Not live"');
+    expect(siteJs).toContain('footerLabel: dirty ? "Changes not published" : "All changes published"');
     expect(siteJs).toContain('s.published ? "Unpublish site" : "Publish site"');
     expect(siteJs).toContain('nextPublished ? "Publishing…" : "Unpublishing…"');
   });
@@ -237,28 +240,36 @@ describe("dashboard overview quick actions", () => {
     expect(html).not.toContain('aria-hidden="true">🔌</span>');
     expect(html).toContain('>Home</a>');
     for (const label of [
-      "Leaderboard", "Engage", "Games", "Credits", "Telegram", "Analytics", "Site settings", "Settings",
+      "Leaderboard", "Engagement", "Games", "Rewards", "Audience", "Telegram", "Analytics", "Site settings", "Account",
     ]) expect(html).toContain(`>${label}</a>`);
     for (const label of ["Giveaways", "Raffles", "Predictions", "Drops"]) {
       expect(html).not.toContain(`>${label}</a>`);
     }
-    expect(html).toContain(">Audience</div>");
+    expect(html).not.toContain("lb-nav-group");
     expect(html).not.toContain(">Integrations</a>");
     expect(html).toContain(">Sites</a>");
     expect(html).not.toContain('>Help</a>');
   });
 
-  it("serves only the section the URL addresses", () => {
+  it("activates only the section the URL addresses", () => {
+    // The dashboard is a single document: every section ships in the markup so
+    // navigation swaps them client-side without a reload. Only the addressed
+    // section carries `is-on`; the rest are display:none (see dashboard-v4.css
+    // `.lb-page:not(.is-on)`), so assistive tech only reaches the live one.
+    const activePages = (html) =>
+      [...html.matchAll(/<section class="(lb-page[^"]*)" data-page="([^"]+)"/g)]
+        .filter((m) => /\bis-on\b/.test(m[1]))
+        .map((m) => m[2]);
+
     const overview = dashboardHtml();
     expect(overview).toContain('data-page="home"');
-    expect(overview).not.toContain('data-page="board"');
-    expect(overview).not.toContain('id="designPreview"');
-    expect(overview).not.toContain('id="savebar"');
-    expect((overview.match(/<h1/g) || []).length).toBe(1);
+    expect(overview).toContain('data-page="board"');
+    expect(activePages(overview)).toEqual(["home"]);
+
     const games = dashboardHtml("/dashboard/games");
     expect(games).toContain('data-page="games"');
-    expect(games).not.toContain('data-page="home"');
-    expect(games).not.toContain('aria-label="Leaderboard pages"');
+    expect(games).toContain('data-page="home"');
+    expect(activePages(games)).toEqual(["games"]);
   });
 
   it("keeps every site editor section directly available", () => {
