@@ -46,9 +46,10 @@ export async function getStats(env, siteId) {
   const sum = (from, f) => rows.reduce((n, r) => (r.day >= from ? n + (Number(r[f]) || 0) : n), 0);
   const convByDay = Object.fromEntries(rows.map((r) => [r.day, { conversions: Number(r.conversions) || 0, revenue: Number(r.revenue) || 0 }]));
 
-  // Dense last-14-days series for the bar chart (missing days = 0).
+  // Dense last-30-days series (missing days = 0). The dashboard slices
+  // 7/14/30-day windows off the end, so the series must cover the longest one.
   const days = [];
-  for (let i = 13; i >= 0; i--) {
+  for (let i = 29; i >= 0; i--) {
     const d = new Date(Date.now() - i * 86400e3).toISOString().slice(0, 10);
     const row = rows.find((r) => r.day === d);
     const conv = convByDay[d] || { conversions: 0, revenue: 0 };

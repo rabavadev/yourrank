@@ -169,7 +169,7 @@ export function renderOverviewSummary() {
     const sum = (field, list = days) => list.reduce((total, day) => total + Number(day[field] || 0), 0);
     const number = (value) => value == null ? "—" : Number(value).toLocaleString("en-US");
     const delta = (field) => {
-      const previous = sum(field, days.slice(0, 7));
+      const previous = sum(field, days.slice(-14, -7));
       const recent = sum(field, days.slice(-7));
       return previous ? ((recent - previous) / previous) * 100 : (recent ? 100 : 0);
     };
@@ -234,7 +234,7 @@ export function renderOverviewSummary() {
     } else if (creditsEnabled) {
       setMetricUnknown($("ovCreditsUsed"));
     }
-    const deltaMarkup = (value, previous, recent) => previous === 0 && recent === 0 ? "" : `<span class="v3-delta${value < 0 ? " v3-delta--down" : ""}" title="vs previous 7 days">${value >= 0 ? "+" : ""}${value.toFixed(1)}%</span>`;
+    const deltaMarkup = (value, previous, recent) => previous === 0 && recent === 0 ? "" : previous === 0 ? `<span class="v3-delta" title="vs previous 7 days">new</span>` : `<span class="v3-delta${value < 0 ? " v3-delta--down" : ""}" title="vs previous 7 days">${value >= 0 ? "+" : ""}${value.toFixed(1)}%</span>`;
     const viewPrevious = sum("views", days.slice(0, 7));
     const viewRecent = sum("views", days.slice(-7));
     $("ovViewsDelta").innerHTML = deltaMarkup(delta("views"), viewPrevious, viewRecent);
