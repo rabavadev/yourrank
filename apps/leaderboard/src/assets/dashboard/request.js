@@ -91,9 +91,18 @@ export async function fetchDashboardJson(input, init = {}, options = {}) {
     });
   }
 
-  if (response.status === 401 || response.status === 403 || (body?.ok === false && isDashboardAuthError(body))) {
+  // AUDIT-B3: 401 (session ended) and 403 (signed in but not allowed) are
+  // different facts. Treating 403 as AUTH told permission-limited team
+  // members their session had ended and could bounce them into a login loop.
+  if (response.status === 401 || (body?.ok === false && isDashboardAuthError(body))) {
     throw new DashboardRequestError("Your session has ended.", {
       code: "AUTH",
+      status: response.status,
+    });
+  }
+  if (response.status === 403) {
+    throw new DashboardRequestError(body?.error || "You don't have access to do that.", {
+      code: "FORBIDDEN",
       status: response.status,
     });
   }

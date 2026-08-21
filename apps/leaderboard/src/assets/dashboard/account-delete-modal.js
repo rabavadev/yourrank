@@ -1,6 +1,8 @@
 // Keyboard-accessible lifecycle for the server-rendered account deletion dialog.
 // This intentionally owns the modal when account.js/site.js also loads: the
 // first listener stops the legacy click handlers from opening a second lifecycle.
+import { withDashboardTimeout } from "./request.js";
+
 const FOCUSABLE = 'button,[href],input,select,textarea,[tabindex]:not([tabindex="-1"])';
 
 function csrfToken() {
@@ -78,12 +80,17 @@ export function wireDeleteAccountModal() {
     setStatus("");
     const password = passwordWrap && !passwordWrap.hidden && passwordInput ? passwordInput.value.trim() : "";
     try {
-      const res = await fetch("/api/account/delete", {
-        method: "POST",
-        credentials: "include",
-        headers: { "content-type": "application/json", "x-csrf-token": csrfToken() },
-        body: JSON.stringify(password ? { password } : {}),
-      });
+      // AUDIT-B5: destructive endpoint, previously no timeout — a hung
+      // request trapped the modal at "Deleting…" forever.
+      const res = await withDashboardTimeout(
+        (signal) => fetch("/api/account/delete", {
+          method: "POST",
+          credentials: "include",
+          headers: { "content-type": "application/json", "x-csrf-token": csrfToken() },
+          body: JSON.stringify(password ? { password } : {}),
+          signal,
+        }),
+      );
       const data = await res.json().catch(() => ({}));
       if (res.status === 400 && data.error && data.error.includes("Password required")) {
         if (passwordWrap) passwordWrap.hidden = false;
