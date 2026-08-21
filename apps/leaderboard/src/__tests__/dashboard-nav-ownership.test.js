@@ -98,6 +98,7 @@ describe("dashboard navigation ownership", () => {
         (path === "/dashboard/settings" && worker.includes('path === "/dashboard/settings"')) ||
         (path === "/dashboard/giveaways" && worker.includes('path === "/dashboard/giveaways"')) ||
         (path === "/dashboard/rewards" && worker.includes('path === "/dashboard/rewards"')) ||
+        (path === "/dashboard/audience/members" && worker.includes('path === "/dashboard/audience/members"')) ||
         (path === "/dashboard/telegram" && readFileSync(new URL("../../../bot/src/dashboard-views/app.ts", import.meta.url), "utf8").includes('canonicalPath = "/dashboard/telegram"')) ||
         (path.startsWith("/dashboard/giveaways/") && worker.includes('path.startsWith("/dashboard/giveaways/")')) ||
         (path.startsWith("/dashboard/rewards/") && worker.includes('path.startsWith("/dashboard/rewards/")'));
@@ -121,12 +122,14 @@ describe("dashboard navigation ownership", () => {
       ["connections", "settings"],
       ["integrations", "settings"],
       ["redemptions", "redemptions"],
+      ["overview", "redemptions"],
       ["rules", "redemptions"],
       ["shop", "redemptions"],
-      ["viewers", "redemptions"],
       ["history", "redemptions"],
       ["channel", "redemptions"],
-      ["rules", "redemptions"],
+      ["members", "audience"],
+      ["audience", "audience"],
+      ["viewers", "audience"],
       ["engage", "engage"],
       ["giveaways", "engage"],
       ["raffles", "engage"],
@@ -137,7 +140,7 @@ describe("dashboard navigation ownership", () => {
       expect(mapActiveNav(route)).toBe(navOwner(route));
       expect(keys.has(NAV_OWNER_MAP[route] || route)).toBe(true);
     }
-    for (const path of ["/dashboard", "/dashboard/leaderboard/setup", "/dashboard/games", "/dashboard/analytics/activity", "/dashboard/leaderboards", "/dashboard/site", "/dashboard/rewards/channel", "/dashboard/rewards/viewers", "/dashboard/rewards/activity", "/dashboard/settings/billing", "/dashboard/giveaways/predictions"]) {
+    for (const path of ["/dashboard", "/dashboard/leaderboard/setup", "/dashboard/games", "/dashboard/analytics/activity", "/dashboard/leaderboards", "/dashboard/site", "/dashboard/rewards/channel", "/dashboard/audience/members", "/dashboard/rewards/activity", "/dashboard/settings/billing", "/dashboard/giveaways/predictions"]) {
       expect((dashboardHtml(path).match(/class="lb-nav[^"]* is-on/g) || []).length).toBe(1);
     }
     expect(dashboardHtml("/dashboard/leaderboards")).toContain('data-nav="sites"');

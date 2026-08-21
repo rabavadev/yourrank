@@ -11,9 +11,9 @@ const GAME_ROWS = [
 ];
 
 const sectionRows = [
-  ["shop", "Shop", "Let viewers browse and redeem your shop items.", "Turning off removes Shop from navigation and disables the /shop URL."],
-  ["credits", "Credits", "Let viewers see their balance and prize order history.", "Turning off removes Credits from navigation and disables the /credits URL."],
-  ["games", "Games", "Let viewers play credit-based games on your board.", "Turning off removes Games from navigation and disables the /games URL."],
+  ["shop", "Shop", "Let members browse and redeem your shop items.", "Turning off removes Shop from navigation and disables the /shop URL."],
+  ["credits", "Rewards", "Let members see their balance and prize order history.", "Turning off removes Rewards from navigation and disables the /credits URL."],
+  ["games", "Games", "Let members play credit-based games on your site.", "Turning off removes Games from navigation and disables the /games URL."],
 ];
 
 const BLOCK_ROWS = [

@@ -9,6 +9,8 @@ const NAV_ICONS = {
   giveaways: '<path d="M20 12v10H4V12"/><path d="M2 7h20v5H2z"/><path d="M12 22V7"/><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/>',
   shop: '<path d="M3 9l2-5h14l2 5"/><path d="M5 13v7h14v-7M9 20v-5h6v5"/><path d="M3 9a3 3 0 0 0 6 0 3 3 0 0 0 6 0 3 3 0 0 0 6 0"/>',
   viewers: '<path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12z"/><circle cx="12" cy="12" r="2.5"/>',
+  audience: '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
+  analytics: '<line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>',
   siteSettings: '<path d="M4 6h10"/><path d="M18 6h2"/><circle cx="16" cy="6" r="2"/><path d="M4 12h2"/><path d="M10 12h10"/><circle cx="8" cy="12" r="2"/><path d="M4 18h10"/><path d="M18 18h2"/><circle cx="16" cy="18" r="2"/>',
 };
 
@@ -18,20 +20,14 @@ const DASHBOARD_NAV: NavItem[] = [
   { key: "home", label: "Home", href: "/dashboard", icon: '<rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/>', productKey: "sites" },
   { key: "sites", label: "Sites", href: "/dashboard/leaderboards", icon: NAV_ICONS.boards, productKey: "sites" },
   { key: "board", label: "Leaderboard", href: "/dashboard/leaderboard", icon: NAV_ICONS.players },
-  { key: "engage", label: "Engage", href: "/dashboard/giveaways", icon: NAV_ICONS.giveaways },
+  { key: "engage", label: "Engagement", href: "/dashboard/giveaways", icon: NAV_ICONS.giveaways },
   { key: "games", label: "Games", href: "/dashboard/games", icon: NAV_ICONS.games },
-  { key: "redemptions", label: "Credits", href: "/dashboard/rewards", icon: NAV_ICONS.shop, productKey: "credits" },
-  {
-    key: "audience",
-    label: "Audience",
-    kind: "group",
-    children: [
-      { key: "performance", label: "Analytics", href: "/dashboard/analytics", icon: NAV_ICONS.viewers },
-      { key: "telegram", label: "Telegram", href: "/dashboard/telegram", icon: NAV_ICONS.share, productKey: "telegram" },
-    ],
-  },
+  { key: "redemptions", label: "Rewards", href: "/dashboard/rewards", icon: NAV_ICONS.shop, productKey: "credits" },
+  { key: "audience", label: "Audience", href: "/dashboard/audience/members", icon: NAV_ICONS.audience },
+  { key: "performance", label: "Analytics", href: "/dashboard/analytics", icon: NAV_ICONS.analytics },
+  { key: "telegram", label: "Telegram", href: "/dashboard/telegram", icon: NAV_ICONS.share, productKey: "telegram" },
   { key: "site", label: "Site settings", href: "/dashboard/site", icon: NAV_ICONS.siteSettings },
-  { key: "settings", label: "Settings", href: "/dashboard/settings", icon: GEAR_ICON },
+  { key: "settings", label: "Account", href: "/dashboard/settings", icon: GEAR_ICON },
 ];
 
 export const NAV_OWNER_MAP = {
@@ -48,12 +44,15 @@ export const NAV_OWNER_MAP = {
   referrals: "performance",
   performance: "performance",
   redemptions: "redemptions",
+  overview: "redemptions",
   shop: "redemptions",
   rules: "redemptions",
   channel: "redemptions",
   rewards: "redemptions",
-  viewers: "redemptions",
   history: "redemptions",
+  members: "audience",
+  audience: "audience",
+  viewers: "audience",
   boards: "sites",
   site: "site",
   settings: "settings",

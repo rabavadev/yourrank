@@ -71,10 +71,11 @@ const COMMANDS = [
   { id: "nav-predictions", title: "Predictions", group: "Navigation", icon: PALETTE_ICONS.rewards, keywords: "engage betting", action: () => location.href = "/dashboard/giveaways/predictions" },
   { id: "nav-tournaments", title: "Tournaments", group: "Navigation", icon: PALETTE_ICONS.rewards, keywords: "engage competitions", action: () => location.href = "/dashboard/giveaways/tournaments" },
   { id: "nav-analytics", title: "Analytics", group: "Navigation", icon: PALETTE_ICONS.analytics, keywords: "traffic analytics visitors referrals events", action: () => location.href = "/dashboard/analytics/activity" },
-  { id: "nav-rewards", title: "Credits", group: "Navigation", icon: PALETTE_ICONS.rewards, keywords: "shop orders credit rules", action: () => location.href = "/dashboard/rewards/redemptions" },
+  { id: "nav-rewards", title: "Rewards", group: "Navigation", icon: PALETTE_ICONS.rewards, keywords: "rewards shop orders ways to earn credits", action: () => location.href = "/dashboard/rewards" },
+  { id: "nav-members", title: "Members", group: "Navigation", icon: PALETTE_ICONS.leaderboard, keywords: "audience members viewers balances tip", action: () => location.href = "/dashboard/audience/members" },
   { id: "nav-telegram", title: "Telegram", group: "Navigation", icon: PALETTE_ICONS.bot, keywords: "bot console", action: () => location.href = "/dashboard/telegram" },
   { id: "nav-boards", title: "Sites", group: "Navigation", icon: PALETTE_ICONS.overview, keywords: "sites boards", action: () => location.href = "/dashboard/leaderboards" },
-  { id: "nav-settings", title: "Settings", group: "Navigation", icon: PALETTE_ICONS.settings, keywords: "site settings domain account", action: () => location.href = "/dashboard/settings" },
+  { id: "nav-settings", title: "Account", group: "Navigation", icon: PALETTE_ICONS.settings, keywords: "account team billing connections data", action: () => location.href = "/dashboard/settings" },
   { id: "nav-site-settings", title: "Site settings", group: "Navigation", icon: PALETTE_ICONS.settings, keywords: "site settings domain", action: () => location.href = "/dashboard/site" },
   { id: "nav-plan", title: "Billing", group: "Navigation", icon: PALETTE_ICONS.settings, keywords: "plans billing", action: () => location.href = "/dashboard/settings/billing" },
   { id: "act-support", title: "Help & support drawer", group: "Support", icon: PALETTE_ICONS.help, action: () => $("openHelpDrawerBtn")?.click() }

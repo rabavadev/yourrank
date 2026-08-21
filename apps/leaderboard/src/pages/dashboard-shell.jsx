@@ -8,7 +8,8 @@ import { crumbsHtml, navListHtml } from "@yourrank/shared/dashboard-chrome";
 import { brandMarkSvg } from "@yourrank/shared/brand-assets";
 import { navOwner } from "@yourrank/shared/dashboard-nav";
 
-const CREDITS_NAV_KEYS = new Set(["credits", "channel", "redemptions", "shop", "rules", "viewers", "history", "rewards", "audience"]);
+const CREDITS_NAV_KEYS = new Set(["credits", "channel", "redemptions", "overview", "shop", "rules", "history", "rewards"]);
+const AUDIENCE_NAV_KEYS = new Set(["audience", "members", "viewers"]);
 
 const DESIGN_CONTRACT = `<!--
 THESIS: A creator run-sheet workspace turns dashboard state into the next clear action; it refuses the generic dark tile wall.
@@ -47,7 +48,7 @@ export function workspaceSearchHtml() {
 }
 
 export function DashboardShell({ activeNav = "home", boardContext = "full", footer = "dashboard", title = "", topbarContext, crumbs = null, activePath = "", rootId, initiallyHidden = false, user, overlays = null, children }) {
-  const resolvedActivePath = activePath || (boardContext === "none" ? "/dashboard/settings" : CREDITS_NAV_KEYS.has(activeNav) ? "/dashboard/rewards/redemptions" : "/dashboard");
+  const resolvedActivePath = activePath || (boardContext === "none" ? "/dashboard/settings" : CREDITS_NAV_KEYS.has(activeNav) ? "/dashboard/rewards" : AUDIENCE_NAV_KEYS.has(activeNav) ? "/dashboard/audience/members" : "/dashboard");
   const shellId = rootId || (boardContext === "none" ? "account-dash" : "dash");
   const profile = profileMenuHtml({ activePath: resolvedActivePath, user, standalone: true, dynamicIdentity: true });
   const resolvedTopbarContext = topbarContext ?? (footer === "help" ? "Help & feedback" : "Account settings");

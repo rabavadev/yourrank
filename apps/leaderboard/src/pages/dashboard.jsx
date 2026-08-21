@@ -44,7 +44,7 @@ const SECTION_CRUMBS = {
 };
 const TAB_LABELS = {
   setup: "Setup", players: "Players", design: "Appearance", share: "Share", history: "History",
-  activity: "Visitors", referrals: "Sources", events: "Events",
+  activity: "Site visitors", referrals: "Sources", events: "Events",
 };
 
 function LeaderboardTabs({ active }) {
@@ -390,10 +390,10 @@ function AnalyticsSection({ active, activeHash = "activity" } = {}) {
   return (
 <section class={active ? "lb-page is-on" : "lb-page"} data-page="performance">
 <div class="v3-analytics-page">
-  <header class="v3-head"><h1>{TAB_LABELS[activeHash] || "Visitors"}</h1><p class="v3-head-sub">See how viewers find and interact with your site.</p></header>
+  <header class="v3-head"><h1>{TAB_LABELS[activeHash] || "Site visitors"}</h1><p class="v3-head-sub">See how people find and interact with your site.</p></header>
   <div class="v3-analytics-scope"><span id="perfScope"><span id="perfBoardName">Active site</span> · Last <span id="perfRangeLabel">14</span> days</span><div id="perfRangeFilter" class="v3-range-filter" role="group" aria-label="Date range"><button class="v3-range-btn" type="button" data-range="7">7d</button><button class="v3-range-btn is-active" type="button" data-range="14">14d</button><button class="v3-range-btn" type="button" data-range="30">30d</button></div></div>
   <nav class="v3-tabs" aria-label="Analytics pages">
-    <a class={"v3-tab" + (activeHash === "activity" ? " is-on" : "")} href="/dashboard/analytics/activity" data-perf-tab="activity" aria-current={activeHash === "activity" ? "page" : undefined}>Visitors</a>
+    <a class={"v3-tab" + (activeHash === "activity" ? " is-on" : "")} href="/dashboard/analytics/activity" data-perf-tab="activity" aria-current={activeHash === "activity" ? "page" : undefined}>Site visitors</a>
     <a class={"v3-tab" + (activeHash === "referrals" ? " is-on" : "")} href="/dashboard/analytics/referrals" data-perf-tab="referrals" aria-current={activeHash === "referrals" ? "page" : undefined}>Sources</a>
     <a class={"v3-tab" + (activeHash === "events" ? " is-on" : "")} href="/dashboard/analytics/events" data-perf-tab="events" aria-current={activeHash === "events" ? "page" : undefined}>Events</a>
   </nav>
@@ -574,7 +574,7 @@ export function DashboardNotFoundContent({ user } = {}) {
             <a class="v3-tab is-on" href="/dashboard">Home</a>
             <a class="v3-tab" href="/dashboard/leaderboard/setup">Leaderboard</a>
             <a class="v3-tab" href="/dashboard/leaderboards">Sites</a>
-            <a class="v3-tab" href="/dashboard/settings/account">Settings</a>
+            <a class="v3-tab" href="/dashboard/settings/account">Account</a>
           </nav>
         </div>
       </section>

@@ -20,11 +20,11 @@ function settingsPanel(key, html) {
 export function UnifiedSettingsPage({ activePath, user, tab = "account" } = {}) {
   const active = SETTINGS_TABS.some(([key]) => key === tab) ? tab : "account";
   const activeLabel = SETTINGS_TABS.find(([key]) => key === active)?.[1] || "Account";
-  return <DashboardShell activeNav={active === "connections" ? "settings" : "account"} activePath={activePath || `/dashboard/settings/${active === "plan" ? "billing" : active}`} boardContext="none" crumbs={[{ label: "Settings", href: "/dashboard/settings" }, { label: activeLabel }]} footer="account" topbarContext="Settings" user={user}>
+  return <DashboardShell activeNav={active === "connections" ? "settings" : "account"} activePath={activePath || `/dashboard/settings/${active === "plan" ? "billing" : active}`} boardContext="none" crumbs={[{ label: "Account", href: "/dashboard/settings" }, { label: activeLabel }]} footer="account" topbarContext="Account" user={user}>
     <div class="account-body account-settings" id="acc-app" data-acc-tab="settings" data-settings-active={active}>
       <div class="account-settings-head">
         <h1>{activeLabel}</h1>
-        <p class="card-sub">Manage your account here. Controls that change one public site live in the Site section.</p>
+        <p class="card-sub">Account settings apply to you. To change your website, use Site settings.</p>
       </div>
       <nav class="v3-tabs account-settings-tabs" aria-label="Account settings sections">
         {SETTINGS_TABS.map(([key, label, iconSvg]) => (
@@ -39,7 +39,7 @@ export function UnifiedSettingsPage({ activePath, user, tab = "account" } = {}) 
           {settingsPanel("account", settingsWidgets.account)}
           {settingsPanel("team", settingsWidgets.team)}
           {settingsPanel("plan", settingsWidgets.plan)}
-          {settingsPanel("connections", `${settingsWidgets.postbacks}<div class="lb-widget lb-widget--full"><h2>Connected accounts</h2><p class="card-sub">Streamer identities and connected services.</p><div id="connectedAccounts"><p class="hint">Loading…</p></div></div><div class="lb-widget lb-widget--full"><h2>Site connections</h2><p class="card-sub">Kick and Credits settings belong to the selected site.</p><a class="btn btn--accent" href="/dashboard/rewards/channel">Open Kick connection</a><a class="btn btn--ghost" href="/dashboard/leaderboard/share">Open sharing</a></div>`)}
+          {settingsPanel("connections", `${settingsWidgets.postbacks}<div class="lb-widget lb-widget--full"><h2>Connected accounts</h2><p class="card-sub">Streamer identities and connected services.</p><div id="connectedAccounts"><p class="hint">Loading…</p></div></div><div class="lb-widget lb-widget--full"><h2>Site connections</h2><p class="card-sub">The Kick connection that powers rewards belongs to the selected site.</p><a class="btn btn--accent" href="/dashboard/rewards/channel">Open Kick connection</a><a class="btn btn--ghost" href="/dashboard/leaderboard/share">Open sharing</a></div>`)}
           {settingsPanel("data", `${settingsWidgets.data}<div class="lb-widget lb-widget--full lb-widget--danger"><h2>Selected site data</h2><p class="card-sub">These actions affect one selected site, not your whole account. Open the site tools before making a destructive change.</p><div class="d-flex gap-8 flex-wrap"><a class="btn btn--ghost" href="/dashboard/leaderboard/history">Reset or archive a site</a><a class="btn btn--ghost" href="/dashboard/site?tab=danger">Delete a site</a></div></div>`)}
         </div>
         <aside class="account-settings-sidebar" aria-label="Related settings">
@@ -65,7 +65,7 @@ const settingsConfigBase = {
 
 export const settingsConfig = {
   ...settingsConfigBase,
-  title: "Settings · YourRank",
+  title: "Account · YourRank",
   canonical: "https://yourrank.site/dashboard/settings",
 };
 

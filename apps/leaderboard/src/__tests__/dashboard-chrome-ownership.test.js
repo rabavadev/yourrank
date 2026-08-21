@@ -13,6 +13,7 @@ const user = { display_name: "Test operator", email: "operator@example.com", pla
 const workerSource = readFileSync(new URL("../index.js", import.meta.url), "utf8");
 const PERMITTED_DEFAULT_TAB_ROOTS = new Map([
   ["/dashboard/telegram", "Telegram Overview is the section-root back-link owned by the sidebar."],
+  ["/dashboard/rewards", "Rewards Overview is the section root and the default tab."],
 ]);
 
 function linksIn(markup, { excludeContextualActions = false } = {}) {
@@ -167,7 +168,7 @@ function deriveRenderableRoutes() {
       render: "rewards",
       tab: tab.key,
       hasSubnav: true,
-      hasBreadcrumbs: tab.key !== "redemptions",
+      hasBreadcrumbs: tab.key !== "overview",
     });
   }
   for (const route of workerRenderedRewardRoutes(workerSource)) {
@@ -175,6 +176,7 @@ function deriveRenderableRoutes() {
       routes.push({ ...route, hasSubnav: true, hasBreadcrumbs: true });
     }
   }
+  routes.push({ path: "/dashboard/audience/members", render: "rewards", tab: "members", hasSubnav: false, hasBreadcrumbs: true });
   routes.push({ path: "/dashboard/settings", render: "settings", tab: "account", hasSubnav: true, hasBreadcrumbs: true });
   for (const [key] of SETTINGS_TABS) {
     routes.push({ path: `/dashboard/settings/${key === "plan" ? "billing" : key}`, render: "settings", tab: key, hasSubnav: true, hasBreadcrumbs: true });
@@ -198,10 +200,11 @@ function renderRoute(route) {
   if (route.render === "rewards") {
     const page = {
       channel: PAGES.rewardsChannel,
+      overview: PAGES.rewardsOverview,
       rules: PAGES.rewardsRules,
       shop: PAGES.rewardsShop,
       redemptions: PAGES.rewardsRedemptions,
-      viewers: PAGES.rewardsViewers,
+      members: PAGES.audienceMembers,
       history: PAGES.rewardsHistory,
     }[route.tab];
     if (!page) throw new Error(`No Rewards renderer for ${route.tab}`);
@@ -281,15 +284,21 @@ function ownershipViolations(markup, activePath) {
 
 describe("dashboard chrome ownership", () => {
   it("marks each Rewards route's tab active inside the Rewards subnavigation", () => {
-    for (const [path, href] of [
-      ["/dashboard/rewards/channel", "/dashboard/rewards/channel"],
-      ["/dashboard/rewards/viewers", "/dashboard/rewards/viewers"],
-      ["/dashboard/rewards/activity", "/dashboard/rewards/activity"],
+    for (const [path, href, tab] of [
+      ["/dashboard/rewards/channel", "/dashboard/rewards/channel", "channel"],
+      ["/dashboard/rewards", "/dashboard/rewards", "overview"],
+      ["/dashboard/rewards/activity", "/dashboard/rewards/activity", "history"],
     ]) {
-      const markup = renderRoute({ path, render: "rewards", tab: path.endsWith("activity") ? "history" : path.split("/").pop(), hasSubnav: true, hasBreadcrumbs: true });
+      const markup = renderRoute({ path, render: "rewards", tab, hasSubnav: true, hasBreadcrumbs: true });
       expect(markup).toContain(`href="${href}"`);
       expect(markup).toContain(`href="${href}" aria-current="page"`);
     }
+  });
+
+  it("marks the members page as the Audience area and links visitor analytics", () => {
+    const markup = renderRoute({ path: "/dashboard/audience/members", render: "rewards", tab: "members", hasSubnav: false, hasBreadcrumbs: true });
+    expect(markup).toMatch(/data-nav="audience"[^>]*aria-current="page"/);
+    expect(markup).toContain('href="/dashboard/analytics"');
   });
 
   it("covers every renderable Worker route with one rendered chrome invariant", () => {
@@ -314,12 +323,14 @@ describe("dashboard chrome ownership", () => {
       ["/dashboard/preview", "POST endpoint for template preview, not a dashboard chrome page"],
       ["/dashboard/setup", "redirect-only legacy alias to dashboard overview"],
       ["/dashboard/support", "redirect-only redirect to help"],
-      ["/dashboard/credits", "redirect-only legacy alias to Rewards channel"],
+      ["/dashboard/credits", "redirect-only legacy alias to Rewards overview"],
       ["/dashboard/giveaways", "redirect-only section root to the default tab"],
-      ["/dashboard/rewards", "redirect-only section root to the default tab"],
-      ["/dashboard/rewards/maps", "redirect-only legacy alias to Rewards points"],
+            ["/dashboard/rewards/maps", "redirect-only legacy alias to Rewards points"],
       ["/dashboard/rewards/rewards", "redirect-only legacy alias to Rewards points"],
-      ["/dashboard/audience/viewers", "redirect-only legacy alias to Rewards viewers"],
+      ["/dashboard/audience", "redirect-only section root to Audience members"],
+      ["/dashboard/audience/viewers", "redirect-only legacy alias to Audience members"],
+      ["/dashboard/rewards/viewers", "redirect-only legacy alias to Audience members"],
+      ["/dashboard/rewards/overview", "redirect-only alias to the Rewards root"],
       ["/dashboard/audience/activity", "redirect-only legacy alias to Rewards activity"],
       ["/dashboard/rewards/history", "redirect-only legacy alias to Audience activity"],
       ["/dashboard/settings/plan", "redirect-only legacy alias to account billing"],

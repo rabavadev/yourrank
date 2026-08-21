@@ -39,10 +39,11 @@ export function preserveSiteContextLinks(activeSiteId = "") {
   const creditsLink = document.querySelector('[data-product-link="credits"]');
   if (creditsLink) creditsLink.href = `/dashboard/rewards?siteId=${encodeURIComponent(siteId)}`;
   const creditsDestinations = new Set([
+    "/dashboard/rewards",
     "/dashboard/rewards/redemptions",
     "/dashboard/rewards/shop",
     "/dashboard/rewards/rules",
-    "/dashboard/rewards/viewers",
+    "/dashboard/audience/members",
     "/dashboard/rewards/activity",
     "/dashboard/rewards/channel",
   ]);
