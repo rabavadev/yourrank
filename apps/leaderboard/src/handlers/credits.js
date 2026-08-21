@@ -1,5 +1,5 @@
 // Dashboard API for the Kick credits / shop system.
-import { requireUser, bad, ok, readJson } from "../auth.js";
+import { requireUser, bad, ok, json, readJson } from "../auth.js";
 import { getByUser, getBoardById, getPublicSite } from "../site.js";
 import { query, one, exec, withTransaction } from "@yourrank/shared/db";
 import { resolveViewer } from "@yourrank/shared/viewer-session";
@@ -21,6 +21,21 @@ import {
 } from "@yourrank/shared/plans";
 import { requireSiteCapability } from "../site-authorization.js";
 
+// Injectable seams for tests (see handlers/auth.js defaultDependencies).
+const creditsCreateRewardDefaults = {
+  requireUser,
+  getByUser,
+  getBoardById,
+  requireSiteCapability,
+  rateLimit,
+  one,
+  exec,
+  withTransaction,
+  getValidKickAccessToken,
+  createKickChannelReward,
+  fetchKickCurrentChannel,
+};
+
 function getSite(env, user, url) {
   const siteId = url.searchParams.get("siteId");
   return siteId ? getBoardById(env, user.id, siteId) : getByUser(env, user.id);
@@ -33,6 +48,17 @@ const LEDGER_DIRECTIONS = Object.freeze({
   redeem: "debit",
   refund: "debit",
 });
+
+// A revoked/expired Kick grant used to bubble out of getValidKickAccessToken as
+// an unhandled throw and reach the streamer as a bare 500. Answer 409 with a
+// machine code instead: the dashboard flips the channel card to "Needs
+// attention" and reveals the Reconnect link. Not 403 — fetchDashboardJson
+// treats every 403 as an expired session and redirects to login.
+const kickReconnectRequired = () => json({
+  ok: false,
+  error: "Kick connection needs attention. Reconnect Kick to keep rewards working.",
+  code: "kick_reconnect_required",
+}, 409);
 
 export function ledgerDirection(type) {
   return LEDGER_DIRECTIONS[type] || null;
@@ -269,15 +295,16 @@ export async function handleCreditsSaveReward(request, env) {
   return ok({ id: txResult.id });
 }
 
-export async function handleCreditsCreateReward(request, env) {
-  const { user, res } = await requireUser(request, env);
+export async function handleCreditsCreateReward(request, env, deps = creditsCreateRewardDefaults) {
+  const { user, res } = await deps.requireUser(request, env);
   if (res) return res;
   const url = new URL(request.url);
-  const site = await getSite(env, user, url);
+  const siteIdForLookup = url.searchParams.get("siteId");
+  const site = siteIdForLookup ? await deps.getBoardById(env, user.id, siteIdForLookup) : await deps.getByUser(env, user.id);
   if (!site) return bad("no site", 404);
-  const authorization = await requireSiteCapability(user, site, "canRoleManageCredits");
+  const authorization = await deps.requireSiteCapability(user, site, "canRoleManageCredits");
   if (authorization.res) return authorization.res;
-  if (!(await rateLimit(env, `credits:reward-create:${user.id}`, 5, 60)).ok) return bad("Too many requests.", 429);
+  if (!(await deps.rateLimit(env, `credits:reward-create:${user.id}`, 5, 60)).ok) return bad("Too many requests.", 429);
 
   const body = await readJson(request);
   const title = String(body?.title || "").trim();
@@ -293,7 +320,7 @@ export async function handleCreditsCreateReward(request, env) {
   // Enforce plan limit before calling Kick (re-checked under a lock below).
   const plan = effectivePlan(user);
   const limit = CREDITS_REWARD_LIMITS[plan];
-  const preCount = await one(
+  const preCount = await deps.one(
     "SELECT count(*)::int AS count FROM credit_reward_mappings WHERE site_id=$1 AND active=true",
     [site.id]
   );
@@ -302,7 +329,7 @@ export async function handleCreditsCreateReward(request, env) {
   }
 
   // Load and refresh the streamer's Kick tokens.
-  const tokenRow = await one(
+  const tokenRow = await deps.one(
     `SELECT kick_access_token_enc, kick_refresh_token_enc, kick_token_expires_at
        FROM users WHERE id=$1`,
     [user.id]
@@ -311,24 +338,42 @@ export async function handleCreditsCreateReward(request, env) {
     return bad("Connect your Kick account first in the channel section", 403);
   }
 
-  const tokenSet = await getValidKickAccessToken(
-    env,
-    tokenRow.kick_access_token_enc,
-    tokenRow.kick_refresh_token_enc || null,
-    tokenRow.kick_token_expires_at
-  );
+  let tokenSet;
+  try {
+    tokenSet = await deps.getValidKickAccessToken(
+      env,
+      tokenRow.kick_access_token_enc,
+      tokenRow.kick_refresh_token_enc || null,
+      tokenRow.kick_token_expires_at
+    );
+  } catch (err) {
+    // Refresh token revoked/expired (Kick's invalid_grant) or missing.
+    console.warn("[credits] Kick token refresh failed:", err?.message || err);
+    return kickReconnectRequired();
+  }
 
-  const reward = await createKickChannelReward(tokenSet.accessToken, {
-    title,
-    cost,
-    description: description || undefined,
-    background_color: backgroundColor,
-    is_enabled: true,
-  });
+  let reward;
+  try {
+    reward = await deps.createKickChannelReward(tokenSet.accessToken, {
+      title,
+      cost,
+      description: description || undefined,
+      background_color: backgroundColor,
+      is_enabled: true,
+    });
+  } catch (err) {
+    // A 401 here means the access token was revoked despite a fresh-looking
+    // expiry; anything else is a Kick-API problem the streamer cannot fix.
+    if (/\b401\b|invalid_grant|unauthorized/i.test(String(err?.message || err))) {
+      return kickReconnectRequired();
+    }
+    console.warn("[credits] Kick reward creation failed:", err?.message || err);
+    return bad("Kick did not accept the reward. Try again in a moment.", 502);
+  }
 
   // The reward was created on the streamer's Kick channel. Capture that channel
   // so webhook redemptions can find this site even if the manual connect form was skipped.
-  const kickChannel = await fetchKickCurrentChannel(tokenSet.accessToken);
+  const kickChannel = await deps.fetchKickCurrentChannel(tokenSet.accessToken);
   if (!kickChannel) {
     return bad("Could not determine your Kick channel from the OAuth token", 500);
   }
@@ -339,7 +384,7 @@ export async function handleCreditsCreateReward(request, env) {
   }
 
   // Persist refreshed tokens if they changed.
-  await exec(
+  await deps.exec(
     `UPDATE users
         SET kick_access_token_enc = $1,
             kick_refresh_token_enc = $2,
@@ -350,7 +395,7 @@ export async function handleCreditsCreateReward(request, env) {
   );
 
   // Atomic insert under a site lock so two concurrent auto-creates cannot overrun the plan limit.
-  const txResult = await withTransaction(async (tx) => {
+  const txResult = await deps.withTransaction(async (tx) => {
     await tx.unsafe("SELECT id FROM sites WHERE id=$1 FOR UPDATE", [site.id]);
 
     await tx.unsafe(
