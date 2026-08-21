@@ -163,17 +163,22 @@ describe("dashboard views", () => {
     const offers = appHtml(user, "https://yourrank.site", "nonce123", "offers");
     expect(offers).toContain('data-action="createOffer"');
     expect(offers).toContain("postbackStatus");
-    expect(offers).toContain("Click metrics cover the last 90 days");
-    expect(offers).toContain("Reported revenue");
+    expect(offers).toContain("Create an offer");
+    expect(offers).toContain("Offer results");
+    expect(offers.indexOf("Create an offer")).toBeLessThan(offers.indexOf("Offer results"));
+    expect(offers).toContain("How tracking works");
+    expect(offers).toContain("Revenue");
     expect(offers).toContain("Last activity");
     expect(offers).toContain('colspan="11"');
+    expect(offers).not.toContain("Click metrics cover the last 90 days");
+    expect(offers).not.toContain("Reported revenue");
     expect(appHtml(user, "https://yourrank.site", "nonce123", "broadcasts")).toContain('data-action="sendBroadcast"');
   });
 
   it("renders one offers metric glossary and bot setup guidance for empty broadcasts", () => {
     const user = { display_name: "Test", email: "test@example.com", plan: "free" };
     const offers = appHtml(user, "https://yourrank.site", "nonce123", "offers");
-    expect((offers.match(/<summary[^>]*>Metric glossary<\/summary>/g) || []).length).toBe(1);
+    expect((offers.match(/<summary[^>]*>How tracking works<\/summary>/g) || []).length).toBe(1);
     const broadcasts = appHtml(user, "https://yourrank.site", "nonce123", "broadcasts");
     expect(broadcasts).toContain('id="bcList"');
     expect(broadcasts).toContain('id="bcSetupState"');
@@ -188,7 +193,9 @@ describe("dashboard views", () => {
     expect(js).toContain("this.controls.hidden = this.all.length === 0");
     expect(js).toContain("reported_revenue");
     expect(js).toContain("last_activity_at");
-    expect(js).toContain("This does not indicate that an individual offer is converting.");
+    expect(js).toContain("Extra results not connected");
+    expect(js).toContain("emptyAllMarkup");
+    expect(js).not.toContain("This does not indicate that an individual offer is converting.");
     expect(js).toContain("this.pageInfo.textContent = total ? 'Page '+this.page+' of '+this.totalPages+' ('+total+')' : ''");
     // Broadcasts need an active bot, so availability keys off activeBots — a
     // disconnected or revoked bot must not unlock the composer.

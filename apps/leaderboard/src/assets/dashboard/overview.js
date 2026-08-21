@@ -2,7 +2,14 @@
 import { $, esc, currentPlayers } from "./utils.js";
 import { state, setState, boardStatus } from "./state.js";
 import { renderEmpty, setMetricLoading, setMetricUnknown, setMetricValue } from "./states.js";
-import { activityEmptyAction, giveawayAction, visitsMetricState } from "./overview-state.js";
+import { activityEmptyAction, giveawayAction, nextStepAction, visitsMetricState } from "./overview-state.js";
+
+// Home already owns some state in dedicated surfaces: the setup checklist
+// renders brand/players/publish/verification, and the pending-orders banner
+// renders reward requests. Repeating those as a "Next step" card would show
+// the same instruction three times, so the card only speaks for the steps no
+// other surface on the page claims.
+const NEXT_STEP_OWNED_ELSEWHERE = new Set(["verifyEmail", "brand", "players", "publish", "pendingOrders"]);
 
 const ACTIVITY_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>';
 const SETUP_STEPS = [
@@ -175,6 +182,7 @@ export function renderOverviewSummary() {
       setMetricValue($("ovViews14"), typeof visits.value === "number" ? number(visits.value) : visits.value);
     }
     const giveawayActionEl = $("ovGiveawayAction");
+    let activeGiveawayCount = null;
     if (state.GIVEAWAYS_STATUS === "loading") {
       setMetricLoading($("ovActiveGiveaway"));
       if (giveawayActionEl) giveawayActionEl.hidden = true;
@@ -184,6 +192,7 @@ export function renderOverviewSummary() {
         ...(state.GIVEAWAYS?.drops || []).filter((item) => item.status === "active"),
         ...(state.GIVEAWAYS?.predictions || []).filter((item) => item.status === "open" || item.status === "locked"),
       ];
+      activeGiveawayCount = activeGiveaways.length;
       setMetricValue($("ovActiveGiveaway"), number(activeGiveaways.length));
       const action = giveawayAction(activeGiveaways.length);
       if (giveawayActionEl) {
@@ -260,4 +269,36 @@ export function renderOverviewSummary() {
     if (top.length) $("ov_topEmpty").hidden = true;
     else renderEmpty($("ov_topEmpty"), { kind: "empty", title: "No players yet", body: "Add the first player to start your leaderboard.", compactHeading: true, actions: [{ label: "Add players", href: "/dashboard/leaderboard/players" }] });
     $("ovPublishedStatus").textContent = status.live ? "Published" : status.published ? "Verification needed" : "Not published";
+
+    // Contextual next step. Rendered last so it can read the activity and
+    // giveaway state computed above rather than re-deriving it.
+    const nextStepEl = $("ovNextStep");
+    if (nextStepEl) {
+      const next = nextStepAction({
+        status,
+        steps,
+        pendingOrders,
+        creditsEnabled,
+        creditsStatus: state.CREDITS_STATUS,
+        creditsConnected: Boolean(state.CREDITS?.channel?.externalId),
+        rewardMappings: state.CREDITS?.usage?.rewardMappings ?? null,
+        giveawayStatus: state.GIVEAWAYS_STATUS,
+        activeGiveaways: activeGiveawayCount,
+        hasActivity: activity.length > 0,
+        visits: typeof visits.value === "number" ? visits.value : null,
+      });
+      const show = Boolean(next) && !NEXT_STEP_OWNED_ELSEWHERE.has(next.key);
+      nextStepEl.hidden = !show;
+      if (show) {
+        $("ovNextStepTitle").textContent = next.title;
+        $("ovNextStepBody").textContent = next.body;
+        const nextAction = $("ovNextStepAction");
+        if (nextAction) {
+          nextAction.href = next.href;
+          nextAction.textContent = next.label;
+          nextAction.dataset.publicationAction = next.publicationAction ? "true" : "false";
+          if (next.publicationAction) wirePublicationLink(nextAction);
+        }
+      }
+    }
   }

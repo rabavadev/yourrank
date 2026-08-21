@@ -1618,6 +1618,15 @@ body[data-wide] .v3-dash[data-auth-workspace] .lb-main { padding-right: var(--v3
 .v3-dash[data-auth-workspace] .ov-first-run ol { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1px; margin: 18px 0 0; padding: 0; list-style: none; border: 1px solid var(--v4-line); background: var(--v4-line); }
 .v3-dash[data-auth-workspace] .ov-first-run li { display: grid; gap: 3px; padding: 12px; background: #ffffff; }
 .v3-dash[data-auth-workspace] .ov-first-run li span { color: var(--v4-ink-soft); font-size: 12px; }
+/* Contextual "Next step" card. Hairline over shadow, and the label carries the
+   meaning rather than a decorative icon. Only ever shown for steps no other
+   Home surface already owns. */
+.v3-dash[data-auth-workspace] .ov-next-step { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 20px; padding: 16px 20px; border: 1px solid var(--v4-line); border-radius: var(--v4-radius); background: #ffffff; }
+.v3-dash[data-auth-workspace] .ov-next-step-copy { min-width: 0; }
+.v3-dash[data-auth-workspace] .ov-next-step-eyebrow { display: block; margin-bottom: 4px; color: var(--v4-ink-mute); font-size: 13px; font-weight: 600; }
+.v3-dash[data-auth-workspace] .ov-next-step h2 { max-width: 42ch; margin: 0 0 4px; font-size: 17px; line-height: 1.25; }
+.v3-dash[data-auth-workspace] .ov-next-step p { max-width: 68ch; margin: 0; color: var(--v4-ink-soft); font-size: 14px; }
+.v3-dash[data-auth-workspace] .ov-next-step .btn { flex: 0 0 auto; }
 .v3-dash[data-auth-workspace] .ov-setup { height: 100%; background: #ffffff;
   display: flex;
   flex-direction: column;
@@ -3734,6 +3743,8 @@ body:has(.v3-dash[data-auth-workspace]) > .lb-backdrop.is-open { opacity: 1; poi
   .v3-dash[data-auth-workspace] .lb-publish-action { min-height: 44px; padding-inline: 9px; font-size: 11px; }
   .v3-dash[data-auth-workspace] .lb-board-select { min-height: 44px; }
   .v3-dash[data-auth-workspace] .ov-first-run ol { grid-template-columns: 1fr; }
+  .v3-dash[data-auth-workspace] .ov-next-step { align-items: flex-start; }
+  .v3-dash[data-auth-workspace] .ov-next-step .btn { width: 100%; }
   .v3-dash[data-auth-workspace] .lb-main { padding-bottom: 48px; }
   .v3-dash[data-auth-workspace] .lb-main > .lb-topbar + .lb-bento { padding-top: 24px; }
   body[data-wide] .v3-dash[data-auth-workspace] .lb-main { padding-right: var(--v3-main-pad-inline); }

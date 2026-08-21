@@ -2,7 +2,7 @@ import { describe, expect, it } from "bun:test";
 import { readFileSync } from "node:fs";
 import { PAGES } from "../pages.jsx";
 import { effectivePlan } from "@yourrank/shared/plans";
-import { activityEmptyAction, giveawayAction } from "../assets/dashboard/overview-state.js";
+import { activityEmptyAction, giveawayAction, nextStepAction } from "../assets/dashboard/overview-state.js";
 
 const siteJs = readFileSync(new URL("../assets/dashboard/site.js", import.meta.url), "utf8");
 const utilsJs = readFileSync(new URL("../assets/dashboard/utils.js", import.meta.url), "utf8");
@@ -61,9 +61,49 @@ describe("dashboard overview quick actions", () => {
   });
 
   it("keeps the giveaway KPI action aligned with every active-count state", () => {
-    expect(giveawayAction(0)).toEqual({ label: "Start a giveaway", href: "/dashboard/giveaways" });
-    expect(giveawayAction(1)).toEqual({ label: "Active now", href: "/dashboard/giveaways" });
-    expect(giveawayAction(12)).toEqual({ label: "Active now", href: "/dashboard/giveaways" });
+    expect(giveawayAction(0)).toEqual({ label: "Create giveaway", href: "/dashboard/giveaways" });
+    expect(giveawayAction(1)).toEqual({ label: "Review activity", href: "/dashboard/giveaways" });
+    expect(giveawayAction(12)).toEqual({ label: "Review activity", href: "/dashboard/giveaways" });
+  });
+
+  it("names one contextual next step and lets dedicated surfaces keep their own", () => {
+    // Setup, verification and pending orders already have dedicated Home
+    // surfaces, so the card must not repeat them.
+    const setupComplete = { brand: true, players: true, publish: true };
+    expect(nextStepAction({ status: { published: false, emailVerified: true }, steps: {} }).key).toBe("brand");
+    expect(nextStepAction({ status: { published: false, emailVerified: true }, steps: { brand: true } }).key).toBe("players");
+    expect(nextStepAction({ status: { published: false, emailVerified: true }, steps: { brand: true, players: true } }).key).toBe("publish");
+    expect(nextStepAction({ status: { published: true, emailVerified: false }, steps: setupComplete }).key).toBe("verifyEmail");
+    expect(nextStepAction({ status: { published: true, emailVerified: true }, steps: setupComplete, pendingOrders: 2 }).key).toBe("pendingOrders");
+
+    // These have no other owner on Home, so the card speaks for them.
+    const live = { status: { published: true, emailVerified: true }, steps: setupComplete };
+    expect(nextStepAction({ ...live, creditsEnabled: true, creditsStatus: "ready", creditsConnected: false }).key).toBe("connectKick");
+    expect(nextStepAction({ ...live, creditsEnabled: true, creditsStatus: "ready", creditsConnected: true, rewardMappings: 0 }).key).toBe("addReward");
+    expect(nextStepAction({ ...live, hasActivity: false, visits: 0 }).key).toBe("shareSite");
+    expect(nextStepAction({ ...live, hasActivity: false, visits: 4, giveawayStatus: "ready", activeGiveaways: 0 }).key).toBe("createGiveaway");
+
+    // A healthy, active site is told nothing at all.
+    expect(nextStepAction({ ...live, hasActivity: true, visits: 40, giveawayStatus: "ready", activeGiveaways: 1 })).toBeNull();
+    // Unresolved async state must not produce a premature instruction.
+    expect(nextStepAction({ ...live, hasActivity: true, visits: 40, creditsEnabled: true, creditsStatus: "loading", giveawayStatus: "loading" })).toBeNull();
+  });
+
+  it("renders the next step card and suppresses steps another surface owns", () => {
+    const html = dashboardHtml();
+    expect(html).toContain('id="ovNextStep"');
+    expect(html).toContain('id="ovNextStepTitle"');
+    expect(html).toContain('id="ovNextStepAction"');
+    // Starts hidden so it never flashes generic copy before state resolves.
+    expect(html).toMatch(/id="ovNextStep"[^>]*hidden/);
+    // Labelled for assistive tech rather than relying on visual order.
+    expect(html).toContain('aria-labelledby="ovNextStepTitle"');
+    expect(overviewJs).toContain("NEXT_STEP_OWNED_ELSEWHERE");
+    for (const key of ["verifyEmail", "brand", "players", "publish", "pendingOrders"]) {
+      expect(overviewJs).toContain(`"${key}"`);
+    }
+    expect(overviewJs).toContain("nextStepAction(");
+    expect(dashboardCss).toContain(".ov-next-step");
   });
 
   it("matches the empty activity action to publication state", () => {

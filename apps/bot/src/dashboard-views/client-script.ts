@@ -73,6 +73,7 @@ function ListController(opts){
   self.searchFn = opts.searchFn || function(){ return ''; };
   self.sortOptions = opts.sortOptions || [];
   self.emptyAllText = opts.emptyAllText || 'No items yet.';
+  self.emptyAllMarkup = opts.emptyAllMarkup || null;
   self.emptyText = opts.emptyText || 'No matching items.';
   self.renderItem = opts.renderItem || function(item){ return '<td colspan="99">'+esc(String(item))+'</td>'; };
   self.onRender = opts.onRender || function(){};
@@ -137,9 +138,11 @@ ListController.prototype.refresh = function(){
   var start = (self.page - 1) * self.perPage;
   var pageItems = sorted.slice(start, start + self.perPage);
   if (!pageItems.length) {
-    var msg = self.all.length === 0 && !self.query ? self.emptyAllText : self.emptyText;
+    var isEmpty = self.all.length === 0 && !self.query;
+    var msg = isEmpty ? self.emptyAllText : self.emptyText;
     var colCount = self.tbody && self.tbody.closest && self.tbody.closest('table') ? self.tbody.closest('table').querySelectorAll('thead th').length || 1 : 1;
-    self.tbody.innerHTML = '<tr><td colspan="'+colCount+'" class="muted">'+esc(msg)+'</td></tr>';
+    var content = isEmpty && self.emptyAllMarkup ? self.emptyAllMarkup : esc(msg);
+    self.tbody.innerHTML = '<tr><td colspan="'+colCount+'">'+content+'</td></tr>';
   } else {
     self.tbody.innerHTML = pageItems.map(function(item){ return '<tr>'+self.renderItem(item)+'</tr>'; }).join('');
   }
@@ -241,7 +244,7 @@ function showLoadError(msg){
 function showPostbackError(msg){
   ['postbackStatusOffers','postbackStatusSettings'].forEach(id => {
     const el = $(id);
-    if (el) el.innerHTML = loadErrorMarkup(msg || "Couldn't load deposit tracking status. Try again.", 'retryPostbacks');
+    if (el) el.innerHTML = loadErrorMarkup(msg || "Couldn't load extra results status. Try again.", 'retryPostbacks');
   });
 }
 
@@ -358,7 +361,7 @@ function offerRow(o){
     : '—';
   const lastActivity = o.last_activity_at ? fmtTime(o.last_activity_at) : '—';
   return '<td><b>'+esc(o.casino)+'</b><br><span class="muted">'+esc(o.label)+'</span></td>'+
-  '<td>'+(o.slug?'<span class="copy" data-action="copyLink" data-slug="'+esc(o.slug)+'" title="Copy tracked link">'+esc('/r/'+o.slug)+'</span> <button class="ghost btn--xs" data-action="copyLink" data-slug="'+esc(o.slug)+'" type="button" aria-label="Copy link">Copy</button>':'–')+'</td>'+
+  '<td>'+(o.slug?'<span class="copy" data-action="copyLink" data-slug="'+esc(o.slug)+'" title="Copy share link">'+esc('/r/'+o.slug)+'</span> <button class="ghost btn--xs" data-action="copyLink" data-slug="'+esc(o.slug)+'" type="button" aria-label="Copy share link">Copy</button>':'–')+'</td>'+
   '<td>'+esc(String(o.clicks))+'</td><td>'+esc(String(o.unique_clicks))+'</td>'+
   '<td>'+esc(ctr)+'%</td><td>'+esc(cr)+'%</td><td>'+esc(String(o.conversions||0))+'</td>'+
   '<td>'+revenue+'</td><td>'+esc(lastActivity)+'</td>'+
@@ -446,16 +449,16 @@ function renderOffers(){
       tbody: 'offers', items: __offers || [], perPage: 10,
       searchFn: function(o){ return [o.casino, o.label, o.slug, o.code].filter(Boolean).join(' '); },
       sortOptions: [
-        { key: 'clicks', label: 'Clicks', fn: function(a,b){ return (b.clicks||0) - (a.clicks||0); } },
-        { key: 'unique', label: 'Unique clicks', fn: function(a,b){ return (b.unique_clicks||0) - (a.unique_clicks||0); } },
-        { key: 'ctr', label: 'CTR', fn: function(a,b){ return (b.ctr||0) - (a.ctr||0); } },
-        { key: 'cr', label: 'Sign-up rate', fn: function(a,b){ return (b.cr||0) - (a.cr||0); } },
-        { key: 'conversions', label: 'Conversions', fn: function(a,b){ return (b.conversions||0) - (a.conversions||0); } },
-        { key: 'active', label: 'Active first', fn: function(a,b){ return Number(b.is_active) - Number(a.is_active); } }
-      ],
-      emptyAllText: 'No offers yet. Create one with the form below to get a tracked link.',
-      emptyText: 'No matching offers.',
-      searchPlaceholder: 'Search offers…',
+          { key: 'clicks', label: 'Visits', fn: function(a,b){ return (b.clicks||0) - (a.clicks||0); } },
+          { key: 'unique', label: 'People reached', fn: function(a,b){ return (b.unique_clicks||0) - (a.unique_clicks||0); } },
+          { key: 'ctr', label: 'Visit rate', fn: function(a,b){ return (b.ctr||0) - (a.ctr||0); } },
+          { key: 'cr', label: 'Sign-up rate', fn: function(a,b){ return (b.cr||0) - (a.cr||0); } },
+          { key: 'conversions', label: 'Sign-ups', fn: function(a,b){ return (b.conversions||0) - (a.conversions||0); } },
+          { key: 'active', label: 'Active first', fn: function(a,b){ return Number(b.is_active) - Number(a.is_active); } }
+        ],
+        emptyAllMarkup: '<div class="empty"><b>No offers yet</b><br><span>Create your first offer above to get a share link for your bot.</span><br><a class="btn btn--accent btn--sm mt-sm" href="#offerCreateForm">Create an offer</a></div>',
+        emptyText: 'No matching offers.',
+        searchPlaceholder: 'Search offers…',
       renderItem: offerRow
     });
   } else {
@@ -543,7 +546,7 @@ async function loadExtras(){
     }
   }
 
-  if (pbStatus.error) showPostbackError("Couldn't load deposit tracking status.");
+  if (pbStatus.error) showPostbackError("Couldn't load extra results status.");
   else renderPostbackStatus(pbStatus);
   if (errors.length) toast(errors[0]);
 }
@@ -551,10 +554,10 @@ async function loadExtras(){
 function renderPostbackStatus(pb){
   const els = ['postbackStatusOffers','postbackStatusSettings'].map(id => $(id)).filter(Boolean);
   if (!els.length) return;
-  if (!pb || pb.error) { els.forEach(el => { el.textContent = 'Could not load deposit tracking status. Try again.'; }); return; }
+  if (!pb || pb.error) { els.forEach(el => { el.textContent = 'Could not load extra results status. Try again.'; }); return; }
   const html = pb.active
-    ? '<span class="badge ok">Connected and working</span> Deposit tracking is configured ('+esc(pb.createdAt ? new Date(pb.createdAt).toLocaleString(undefined,{dateStyle:'short',timeStyle:'short'}) : 'active')+'). This does not indicate that an individual offer is converting.'
-    : '<span class="badge off">Not connected yet</span> Deposit tracking is not configured. Set it up in Account → Connected apps to receive sign-up events.';
+    ? '<span class="badge ok">Extra results connected</span> Sign-ups and revenue updates can appear here.'
+    : '<span class="badge off">Extra results not connected</span> Connect your partner results in Account → Connected apps to see sign-ups and revenue.';
   els.forEach(el => { el.innerHTML = html; });
 }
 
