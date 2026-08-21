@@ -1,7 +1,7 @@
 export function giveawayAction(activeCount) {
   return Number(activeCount) > 0
-    ? { label: "Active now", href: "/dashboard/giveaways" }
-    : { label: "Start a giveaway", href: "/dashboard/giveaways" };
+    ? { label: "Review activity", href: "/dashboard/giveaways" }
+    : { label: "Create giveaway", href: "/dashboard/giveaways" };
 }
 
 export function visitsMetricState({ published, statsStatus, stats } = {}) {
@@ -20,4 +20,106 @@ export function activityEmptyAction(published) {
   return published
     ? { label: "Share your site", href: "/dashboard/leaderboard/share" }
     : { label: "Publish your site", href: "/dashboard/leaderboard/setup" };
+}
+
+export function nextStepAction({
+  status,
+  steps,
+  pendingOrders = 0,
+  creditsEnabled = false,
+  creditsStatus = "loading",
+  creditsConnected = false,
+  rewardMappings = null,
+  giveawayStatus = "loading",
+  activeGiveaways = null,
+  hasActivity = false,
+  visits = null,
+} = {}) {
+  const setup = steps || {};
+  const published = Boolean(status?.published);
+  const emailVerified = status?.emailVerified !== false;
+
+  if (!emailVerified && (published || (setup.brand && setup.players))) {
+    return {
+      key: "verifyEmail",
+      title: "Confirm your email",
+      body: "Your site is ready, but visitors cannot open it until your email is confirmed.",
+      label: "Confirm email",
+      href: "/verify-email",
+    };
+  }
+  if (!setup.brand) {
+    return {
+      key: "brand",
+      title: "Finish setting up your site",
+      body: "Name the leaderboard so visitors know what they are following.",
+      label: "Name leaderboard",
+      href: "/dashboard/leaderboard/setup",
+    };
+  }
+  if (!setup.players) {
+    return {
+      key: "players",
+      title: "Add your first players",
+      body: "Add names and scores or amounts so the standings have something real to rank.",
+      label: "Add players",
+      href: "/dashboard/leaderboard/players",
+    };
+  }
+  if (!published) {
+    return {
+      key: "publish",
+      title: "Publish your site",
+      body: "The essentials are ready. Publish when you want visitors to open the standings.",
+      label: "Publish site",
+      href: "#publish",
+      publicationAction: true,
+    };
+  }
+  if (Number(pendingOrders) > 0) {
+    return {
+      key: "pendingOrders",
+      title: "Review pending prize orders",
+      body: "Viewers are waiting on reward requests for this site.",
+      label: Number(pendingOrders) === 1 ? "Review order" : "Review orders",
+      href: "/dashboard/rewards/redemptions",
+    };
+  }
+  if (creditsEnabled && creditsStatus === "ready" && !creditsConnected) {
+    return {
+      key: "connectKick",
+      title: "Connect Kick",
+      body: "Connect your channel before viewers can earn credits from Kick rewards.",
+      label: "Connect Kick",
+      href: "/dashboard/rewards/channel",
+    };
+  }
+  if (creditsEnabled && creditsStatus === "ready" && creditsConnected && rewardMappings === 0) {
+    return {
+      key: "addReward",
+      title: "Add your first reward",
+      body: "Create the shop item viewers can redeem with the credits they earn.",
+      label: "Add reward",
+      href: "/dashboard/rewards/shop",
+    };
+  }
+  if (published && !hasActivity && visits === 0) {
+    return {
+      key: "shareSite",
+      title: "Share your site",
+      body: "Copy the live link and put it where your viewers will see it.",
+      label: "Share site",
+      href: "/dashboard/leaderboard/share",
+    };
+  }
+  if (published && giveawayStatus === "ready" && activeGiveaways === 0 && !hasActivity) {
+    return {
+      key: "createGiveaway",
+      title: "Create a giveaway",
+      body: "Give viewers a reason to check the leaderboard while the competition is live.",
+      label: "Create giveaway",
+      href: "/dashboard/giveaways",
+    };
+  }
+  return null;
 }

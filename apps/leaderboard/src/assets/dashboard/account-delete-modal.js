@@ -22,18 +22,39 @@ export function wireDeleteAccountModal() {
   const confirmBtn = document.getElementById("deleteAccountConfirmBtn");
   const cancelBtn = document.getElementById("deleteAccountCancelBtn");
   const status = document.getElementById("deleteAccountModalStatus");
-  if (!opener || !modal || !confirmInput || !confirmBtn || !cancelBtn) return;
+  if (!opener || !modal || !confirmInput || !confirmBtn || !cancelBtn || modal._wired) return;
+  modal._wired = true;
+  modal.setAttribute("role", "dialog");
+  modal.setAttribute("aria-modal", "true");
+  modal.setAttribute("aria-labelledby", "deleteAccountModalTitle");
+  modal.setAttribute("aria-describedby", "deleteAccountModalDescription");
+  if (status) {
+    status.setAttribute("role", "status");
+    status.setAttribute("aria-live", "polite");
+    status.setAttribute("aria-atomic", "true");
+  }
 
   let restoreTarget = null;
   let busy = false;
 
-  const setStatus = (message) => { if (status) status.textContent = message; };
+  const setStatus = (message) => {
+    if (!status) return;
+    status.textContent = message;
+    status.hidden = !message;
+    status.setAttribute("role", "status");
+    status.setAttribute("aria-live", "polite");
+    status.setAttribute("aria-atomic", "true");
+  };
   const reset = () => {
     confirmInput.value = "";
     if (passwordInput) passwordInput.value = "";
     if (passwordWrap) passwordWrap.hidden = true;
-    if (status) status.textContent = "";
+    if (status) {
+      status.textContent = "";
+      status.hidden = true;
+    }
     confirmBtn.disabled = false;
+    confirmBtn.removeAttribute("aria-busy");
     confirmBtn.textContent = "Delete my account";
     busy = false;
   };
@@ -76,8 +97,9 @@ export function wireDeleteAccountModal() {
     if (busy || !valid()) return;
     busy = true;
     confirmBtn.disabled = true;
+    confirmBtn.setAttribute("aria-busy", "true");
     confirmBtn.textContent = "Deleting…";
-    setStatus("");
+    setStatus("Deleting your complete account…");
     const password = passwordWrap && !passwordWrap.hidden && passwordInput ? passwordInput.value.trim() : "";
     try {
       // AUDIT-B5: destructive endpoint, previously no timeout — a hung
