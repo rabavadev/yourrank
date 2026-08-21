@@ -86,19 +86,18 @@ function dashboardShellRoute(activePath = "") {
 }
 
 
-// Each route serves only its own section: the dashboard used to ship every
-// screen in one document and let JavaScript reveal one, which put seven <h1>s
-// and the whole editor form on every page and made `/dashboard` render the
-// editor. The editor and the selected board's settings stay together because
-// they share one save pipeline (`collect()` reads the editor form).
-const ROUTE_SECTIONS = {
-  home: ["home"],
-  board: ["board", "site"],
-  site: ["board", "site"],
-  games: ["games"],
-  performance: ["performance"],
-  boards: ["boards"],
-};
+// Every route serves every section. Splitting sections across per-route
+// documents made each cross-section click a full reload: the workspace
+// re-initialized, re-fetched /api/auth/me and /api/site, and showed the
+// full-screen "Loading your workspace…" for ordinary navigation. One document
+// keeps the shell, the selected site and all editor state mounted; navTo()
+// reveals the destination section (inactive sections are display:none, so
+// assistive tech only ever sees the active one) and section-specific data
+// loads lazily on first visit.
+const ALL_SECTIONS = ["home", "board", "site", "games", "performance", "boards"];
+const ROUTE_SECTIONS = Object.fromEntries(
+  ["home", "board", "site", "games", "performance", "boards"].map((route) => [route, ALL_SECTIONS]),
+);
 
 function OverviewSection({ active } = {}) {
   return (
@@ -551,7 +550,7 @@ export function DashboardContent({ user, activePath } = {}) {
 <div class="lb-notice lb-notice--verification" id="verifyBanner" hidden role="status" aria-live="polite"><span class="lb-notice-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 6h16v12H4z"/><path d="m4 7 8 6 8-6"/></svg></span><div class="lb-notice-copy"><strong>Public leaderboard offline until you verify</strong><span id="verifyBannerText">Visitors cannot open your published leaderboard until you verify <b id="verifyBannerEmail"></b>.</span><span id="verifyBannerStatus"></span></div><button class="btn btn--sm btn--ghost" id="verifyResend" type="button">Resend verification</button><button class="btn btn--sm btn--ghost" id="verifyDismiss" type="button" aria-label="Dismiss email verification notice">Dismiss</button></div>
   {sections.map((key) => {
     const Section = SECTIONS[key];
-    return <Section active={key === activeNav} activeHash={activeHash} showTabs={activeNav === "board"} />;
+    return <Section active={key === activeNav} activeHash={activeHash} showTabs />;
   })}
 {hasEditor ? 
 <div class="savebar" id="savebar" hidden><span class="savebar-hint">Unsaved changes</span><span class="savebar-ts" id="editorTimestamp"></span><button class="btn btn--ghost" id="discard" type="button">Discard changes</button><button class="btn btn--accent" id="save" type="button">Save changes</button></div> : null}

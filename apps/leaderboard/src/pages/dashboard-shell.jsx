@@ -96,6 +96,7 @@ export function DashboardShell({ activeNav = "home", boardContext = "full", foot
             {boardContext !== "none" && (
               <div class="lb-availability">
                 <span class="lb-status" id="lbTopbarStatus">Checking</span>
+                <span class="lb-status lb-status--draft-changes" id="lbTopbarDraft" hidden>Draft changes</span>
                 {boardContext === "full" && (
                   <>
                     <input type="checkbox" id="pubToggle" hidden tabindex="-1" aria-hidden="true" />

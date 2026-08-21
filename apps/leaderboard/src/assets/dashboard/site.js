@@ -678,9 +678,44 @@ export function refreshDesignPreview() {
 
 // Renders every "is my board live" surface from boardStatus() so the badge,
 // banner and share affordances can never contradict each other.
+// One publication vocabulary for the whole workspace, derived from real state
+// (boardStatus() + the draft flag) so no surface can contradict another:
+// - not live        → "Not live" + primary "Publish site"
+// - live, no draft  → "Live" + footer "All changes published"
+// - live, draft     → "Live" + secondary "Draft changes" + footer "Changes
+//                     not published" + primary "Publish changes"
+// "Not published yet" is never shown for a site that is already live.
+export function publicationCopy(s = boardStatus(), dirty = state._dirty) {
+  if (s.pending) {
+    return {
+      statusLabel: "Verification needed",
+      footerLabel: "Not live yet",
+      saveLabel: "Save changes",
+      saveHint: "Unsaved changes",
+      draftChanges: false,
+    };
+  }
+  if (s.published) {
+    return {
+      statusLabel: "Live",
+      footerLabel: dirty ? "Changes not published" : "All changes published",
+      saveLabel: dirty ? "Publish changes" : "Save changes",
+      saveHint: dirty ? "Changes not published" : "Unsaved changes",
+      draftChanges: dirty,
+    };
+  }
+  return {
+    statusLabel: "Not live",
+    footerLabel: "Not live yet",
+    saveLabel: "Save changes",
+    saveHint: "Unsaved changes",
+    draftChanges: false,
+  };
+}
+
 export function renderBoardStatus() {
   const s = boardStatus();
-  const LABELS = { draft: "Not published", unpublished: "Not published", pending: "Verification needed", published: "Published" };
+  const copy = publicationCopy(s);
   const TITLES = {
     draft: "Not visible to visitors",
     unpublished: "Not visible to visitors",
@@ -689,14 +724,18 @@ export function renderBoardStatus() {
   };
   const badge = $("lbTopbarStatus");
   if (badge) {
-    badge.textContent = LABELS[s.key];
+    badge.textContent = copy.statusLabel;
     badge.className = "lb-status lb-status--" + s.key;
     const parts = [];
     if (state.SITE_UPDATED_AT) parts.push("Last saved " + new Date(state.SITE_UPDATED_AT).toLocaleString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }));
     if (s.published && state.PUBLISHED_AT) parts.push("Published " + new Date(state.PUBLISHED_AT).toLocaleString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }));
+    if (copy.draftChanges) parts.push("Draft changes not published yet");
     parts.push(TITLES[s.key]);
     badge.title = parts.join(" · ");
   }
+  // Secondary state next to the badge: a live site with unpublished edits.
+  const draftBadge = $("lbTopbarDraft");
+  if (draftBadge) draftBadge.hidden = !copy.draftChanges;
   const banner = $("verifyBanner");
   if (banner) {
     const email = state.ME?.email || state.ME?.emailAddress || "your email address";
@@ -906,8 +945,20 @@ export function renderEditorTimestamps() {
     } catch { return "—"; }
   };
   const saved = state.SITE_UPDATED_AT ? "Last saved " + fmt(state.SITE_UPDATED_AT) : "";
-  const published = state.PUBLISHED_AT ? "Published " + fmt(state.PUBLISHED_AT) : "Not published yet";
-  el.textContent = saved ? (state.PUBLISHED ? `${saved} · ${published}` : `${saved} · ${published}`) : published;
+  // The footer answers "do visitors see my latest work?", not "when did the
+  // first publish happen" — a live site is never "not published yet".
+  const label = publicationCopy().footerLabel;
+  el.textContent = saved ? `${saved} · ${label}` : label;
+}
+
+// Save-bar copy is the same state model: on a live site the primary action
+// publishes the draft, on an offline site it only saves it.
+export function renderSavebarCopy() {
+  const copy = publicationCopy();
+  const hint = document.querySelector(".savebar-hint");
+  if (hint) hint.textContent = copy.saveHint;
+  const saveBtn = $("save");
+  if (saveBtn && !saveBtn.disabled) saveBtn.textContent = copy.saveLabel;
 }
 
 function updateThemeSelection() {
@@ -938,6 +989,11 @@ subscribe((keys) => {
     if (sb) sb.hidden = !state._dirty;
     if (state._dirty) window.addEventListener("beforeunload", _beforeUnloadGuard);
     else window.removeEventListener("beforeunload", _beforeUnloadGuard);
+    // The badge, footer and save bar all speak the same publication language,
+    // so a dirty flip repaints every surface that states it.
+    renderSavebarCopy();
+    renderEditorTimestamps();
+    renderBoardStatus();
   }
   if (keys.includes("draft")) updateDesignPreview();
 });
@@ -1529,9 +1585,10 @@ $("a_go")?.addEventListener("click", async () => {
       btn.textContent = "Close out period";
       return;
     }
-    const saveRes = await fetch("/api/site", { method: "PUT", credentials: "include", headers: { "content-type": "application/json", "x-csrf-token": getCsrf() }, body: JSON.stringify(savePayload) }).then(guardAuth);
-    const saved = await saveRes.json();
-    if (!saveRes.ok || !saved.ok) { status.textContent = saved.error || "Couldn't save before archiving."; btn.disabled = false; btn.textContent = "Close out period"; return; }
+    const saveRes = await fetch("/api/site", { method: "PUT", credentials: "include", headers: { "content-type": "application/json", "x-csrf-token": getCsrf() }, body: JSON.stringify(savePayload) });
+    if (saveRes.status === 401 || saveRes.status === 403) { status.textContent = "Your session ended — your changes are still here. Sign in again in a new tab, then retry."; btn.disabled = false; btn.textContent = "Close out period"; return; }
+    const saved = await saveRes.json().catch(() => ({}));
+    if (!saveRes.ok || !saved.ok) { status.textContent = saved.error || "Couldn't save before archiving. Your changes are still here — try again."; btn.disabled = false; btn.textContent = "Close out period"; return; }
     const archiveBody = { label: $("a_label").value.trim(), clear };
     if (state.ACTIVE_SITE_ID) archiveBody.siteId = state.ACTIVE_SITE_ID;
     const res = await fetch("/api/site/archive", { method: "POST", credentials: "include", headers: { "content-type": "application/json", "x-csrf-token": getCsrf() }, body: JSON.stringify(archiveBody) });
@@ -1548,7 +1605,7 @@ $("a_go")?.addEventListener("click", async () => {
       $("a_label").value = "";
       status.textContent = `"${d.label}" closed out — it's on your page now.`;
     } else status.textContent = d.error || "Couldn't close out the period.";
-  } catch (err) { logError("archive", err); status.textContent = "Network error."; }
+  } catch (err) { logError("archive", err); status.textContent = "Couldn't close out — your changes are still here. Check your connection and try again."; }
   btn.disabled = false; btn.textContent = "Close out period";
 });
 
@@ -1572,11 +1629,13 @@ export async function saveEditorDraft({ fetchImpl = fetch, collectImpl = collect
   try {
     // AUDIT-B5: raw fetch had no timeout — a hung connection left the button
     // at "Saving…" forever. Run the save through the shared timeout wrapper.
+    // A 401/403 means the session ended mid-edit — keep the draft on screen so
+    // the user can re-auth in another tab instead of being bounced to /login.
     const res = await withDashboardTimeout(
       (signal) => fetchImpl("/api/site", { method: "PUT", credentials: "include", headers: { "content-type": "application/json", "x-csrf-token": getCsrf() }, body: JSON.stringify(payload), signal }),
       { timeoutMs: 20_000 },
-    ).then(guardAuth);
-    const d = await res.json();
+    );
+    const d = await res.json().catch(() => ({}));
     if (res.ok && d.ok) {
       justPublished = !!payload.published && !state.PUBLISHED;
       if (Array.isArray(payload.players)) state.SAMPLE_PLAYERS = false;
@@ -1591,7 +1650,7 @@ export async function saveEditorDraft({ fetchImpl = fetch, collectImpl = collect
       if (d.updatedAt) setState({ SITE_UPDATED_AT: d.updatedAt });
       if (d.publishedAt) setState({ PUBLISHED_AT: d.publishedAt });
       const saveBtn = $("save"); if (saveBtn) saveBtn.textContent = "Save changes";
-      const saveHint = document.querySelector(".savebar-hint"); if (saveHint) saveHint.textContent = "Unsaved changes";
+      renderSavebarCopy();
       renderEditorTimestamps();
       renderBoardStatus();
       renderOverviewSummary();
@@ -1617,6 +1676,9 @@ export async function saveEditorDraft({ fetchImpl = fetch, collectImpl = collect
       }
       // Close the 2-click loop: refresh the live preview so the edit shows immediately.
       updateDesignPreview();
+    } else if (res.status === 401 || res.status === 403) {
+      status.setAttribute("role", "alert");
+      status.textContent = "Your session ended — your changes are still here. Sign in again in a new tab, then retry.";
     } else {
       status.setAttribute("role", "alert");
       status.setAttribute("aria-live", "assertive");

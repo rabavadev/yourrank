@@ -1,7 +1,7 @@
 // Dashboard entry point. Coordinates data loading and initial render across modules.
 import { $, esc, fromLocalInput, getViewerTimeZone, logError, timeZoneLabel, toLocalInput } from "./dashboard/utils.js";
 import { markDirty, setState, state, subscribe } from "./dashboard/state.js";
-import { currentRoute, navTo, setupShell } from "./dashboard/shell.js";
+import { currentRoute, navTo, registerSectionMounter, setupShell } from "./dashboard/shell.js";
 import { renderBoardSwitcher, renderBoardSelect, renderBoardsPage } from "./dashboard/boards.js";
 import { renderPlayers } from "./dashboard/players.js";
 import { fitDesignPreview, loadCreditsStatus, loadStats, refreshDesignPreview, renderArchives, renderBranding, renderDomain, renderDomainStatus, renderBoardStatus, renderEditorTimestamps, renderEmbedShare, renderLegal, renderNotifications, renderPrizes, renderSections, renderSocials, wirePublishAction } from "./dashboard/site.js";
@@ -272,6 +272,13 @@ async function init() {
   $("dash").hidden = false;
   window.__yrBoot?.signal();
   setupShell();
+  // All sections live in this one document, so section-specific data loads the
+  // first time a section is shown instead of at boot — and never re-initializes
+  // the workspace when you move between sections.
+  registerSectionMounter((page) => {
+    if (page === "games") initGames();
+    if (page === "performance") initPerformance();
+  });
   // Keep every feature visible. Manage sites is useful even with one site because
   // it is also where the operator creates the next one.
   // The URL says which section this document is: `/dashboard` is Home,
@@ -281,16 +288,12 @@ async function init() {
   navTo(route.page, hash);
   if (hasEditor) {
     // The iframe starts empty: render the preview once so the editor never
-    // opens on a blank frame.
+    // opens on a blank frame. No-ops while the editor section is hidden.
     refreshDesignPreview();
     wireStreamerHud();
   }
-  if (hasSection("games")) initGames();
-  if (hasSection("home")) renderOverviewSummary();
-  if (hasSection("performance")) {
-    initPerformance();
-  }
-  if (hasSection("home") || hasSection("performance")) loadStats();
+  // Games/Analytics/Home data loads happen in navTo (directly or through the
+  // section mounter above), so boot only pays for the section being shown.
   if (hasSection("home") || hasBoardSettings) loadCreditsStatus();
   if (hasSection("home")) {
     loadOverviewLiveData().catch((err) => {

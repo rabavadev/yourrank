@@ -69,12 +69,25 @@ describe("dashboard navigation ownership", () => {
     expect(siteSelectorJs).not.toContain("topbarPath");
   });
 
-  it("renders leaderboard tabs only on leaderboard routes", () => {
-    for (const path of ["/dashboard", "/dashboard/games", "/dashboard/analytics/activity", "/dashboard/leaderboards", "/dashboard/site"]) {
-      expect(dashboardHtml(path)).not.toContain('aria-label="Leaderboard pages"');
+  it("keeps the leaderboard tabs reachable only on leaderboard routes", () => {
+    // Every section ships in the single-document shell, so the leaderboard
+    // tablist is always in the markup. It lives inside the board section, which
+    // only carries `is-on` on leaderboard routes; everywhere else that section
+    // is display:none, so assistive tech never reaches the tabs off-route.
+    const boardSection = (html) => {
+      const start = html.indexOf('data-page="board"');
+      const open = html.lastIndexOf("<section", start);
+      const end = html.indexOf("</section>", start);
+      return { markup: html.slice(open, end), active: /class="lb-page[^"]*\bis-on\b/.test(html.slice(open, start + 20)) };
+    };
+    for (const path of ["/dashboard", "/dashboard/games", "/dashboard/analytics/activity", "/dashboard/leaderboards"]) {
+      const board = boardSection(dashboardHtml(path));
+      expect(board.markup).toContain('aria-label="Leaderboard pages"');
+      expect(board.active).toBe(false);
     }
-    expect(dashboardHtml("/dashboard/site")).toContain('id="savebar"');
-    expect(dashboardHtml("/dashboard/leaderboard/setup")).toContain('aria-label="Leaderboard pages"');
+    const onRoute = boardSection(dashboardHtml("/dashboard/leaderboard/setup"));
+    expect(onRoute.markup).toContain('aria-label="Leaderboard pages"');
+    expect(onRoute.active).toBe(true);
   });
 
   it("resolves every sidebar href to a real dashboard route", () => {
