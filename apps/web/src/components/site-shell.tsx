@@ -52,7 +52,7 @@ export function SiteHeader() {
           </a>
           <a
             href="/signup"
-            className="inline-flex min-h-11 items-center rounded-[2px] bg-devin-ink px-3.5 py-2 text-sm font-medium text-devin-surface transition-colors hover:bg-black"
+            className="inline-flex min-h-11 items-center rounded-[2px] bg-devin-primary px-3.5 py-2 text-sm font-medium text-white transition-colors hover:bg-devin-primary-hover"
           >
             Get started
           </a>
