@@ -1506,9 +1506,10 @@ $("a_go")?.addEventListener("click", async () => {
       btn.textContent = "Close out period";
       return;
     }
-    const saveRes = await fetch("/api/site", { method: "PUT", credentials: "include", headers: { "content-type": "application/json", "x-csrf-token": getCsrf() }, body: JSON.stringify(savePayload) }).then(guardAuth);
-    const saved = await saveRes.json();
-    if (!saveRes.ok || !saved.ok) { status.textContent = saved.error || "Couldn't save before archiving."; btn.disabled = false; btn.textContent = "Close out period"; return; }
+    const saveRes = await fetch("/api/site", { method: "PUT", credentials: "include", headers: { "content-type": "application/json", "x-csrf-token": getCsrf() }, body: JSON.stringify(savePayload) });
+    if (saveRes.status === 401 || saveRes.status === 403) { status.textContent = "Your session ended — your changes are still here. Sign in again in a new tab, then retry."; btn.disabled = false; btn.textContent = "Close out period"; return; }
+    const saved = await saveRes.json().catch(() => ({}));
+    if (!saveRes.ok || !saved.ok) { status.textContent = saved.error || "Couldn't save before archiving. Your changes are still here — try again."; btn.disabled = false; btn.textContent = "Close out period"; return; }
     const archiveBody = { label: $("a_label").value.trim(), clear };
     if (state.ACTIVE_SITE_ID) archiveBody.siteId = state.ACTIVE_SITE_ID;
     const res = await fetch("/api/site/archive", { method: "POST", credentials: "include", headers: { "content-type": "application/json", "x-csrf-token": getCsrf() }, body: JSON.stringify(archiveBody) });
@@ -1525,7 +1526,7 @@ $("a_go")?.addEventListener("click", async () => {
       $("a_label").value = "";
       status.textContent = `"${d.label}" closed out — it's on your page now.`;
     } else status.textContent = d.error || "Couldn't close out the period.";
-  } catch (err) { logError("archive", err); status.textContent = "Network error."; }
+  } catch (err) { logError("archive", err); status.textContent = "Couldn't close out — your changes are still here. Check your connection and try again."; }
   btn.disabled = false; btn.textContent = "Close out period";
 });
 
@@ -1545,8 +1546,12 @@ export async function saveEditorDraft({ fetchImpl = fetch, collectImpl = collect
   const limitEl = $("limitMsg"); if (limitEl) limitEl.textContent = "";
   let justPublished = false;
   try {
-    const res = await fetchImpl("/api/site", { method: "PUT", credentials: "include", headers: { "content-type": "application/json", "x-csrf-token": getCsrf() }, body: JSON.stringify(payload) }).then(guardAuth);
-    const d = await res.json();
+    const res = await fetchImpl("/api/site", { method: "PUT", credentials: "include", headers: { "content-type": "application/json", "x-csrf-token": getCsrf() }, body: JSON.stringify(payload) });
+    if (res.status === 401 || res.status === 403) {
+      status.textContent = "Your session ended — your changes are still here. Sign in again in a new tab, then retry.";
+      status.hidden = false; status.setAttribute("role", "alert");
+    } else {
+    const d = await res.json().catch(() => ({}));
     if (res.ok && d.ok) {
       justPublished = !!payload.published && !state.PUBLISHED;
       if (Array.isArray(payload.players)) state.SAMPLE_PLAYERS = false;
@@ -1572,8 +1577,9 @@ export async function saveEditorDraft({ fetchImpl = fetch, collectImpl = collect
       renderBoardsPage();
       // Close the 2-click loop: refresh the live preview so the edit shows immediately.
       updateDesignPreview();
-    } else status.textContent = d.error || "Save failed.";
-  } catch (err) { logError("save", err); status.textContent = "Network error."; }
+    } else status.textContent = d.error || "Couldn't save — your changes are still here. Try again.";
+    }
+  } catch (err) { logError("save", err); status.textContent = "Couldn't save — your changes are still here. Check your connection and try again."; }
   btn.disabled = false; btn.textContent = "Save changes";
   if (publishAction) { publishAction.disabled = false; publishAction.removeAttribute("aria-busy"); }
   const savedMsg = status.textContent;
@@ -1740,7 +1746,12 @@ export async function loadStats() {
   return s;
 }
 
-$("logout")?.addEventListener("click", async (e) => { e.preventDefault(); await fetch("/api/auth/logout", { method: "POST", credentials: "include", headers: { "x-csrf-token": getCsrf() } }); location.href = "/login"; });
+$("logout")?.addEventListener("click", async (e) => {
+  e.preventDefault();
+  try { await fetch("/api/auth/logout", { method: "POST", credentials: "include", headers: { "x-csrf-token": getCsrf() } }); }
+  catch (err) { logError("logout", err); }
+  location.href = "/login";
+});
 $("upgrade")?.addEventListener("click", (e) => { e.preventDefault(); checkout("pro", e.target); });
 $("testDiscord")?.addEventListener("click", async () => {
   const s = $("testDiscordStatus"); if (s) s.textContent = "Sending…";
