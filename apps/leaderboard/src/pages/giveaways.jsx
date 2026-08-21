@@ -6,7 +6,7 @@ import { renderGiveawayDrawersHtml, renderGiveawaysContentHtml } from "./giveawa
 
 export function GiveawaysPage({ user, tab = "chat" } = {}) {
   const labels = { chat: "Giveaways", raffles: "Raffles", drops: "Drops", preds: "Predictions", tournaments: "Tournaments" };
-  const crumbs = [{ label: "Engage", href: "/dashboard/giveaways" }, { label: labels[tab] || labels.chat }];
+  const crumbs = [{ label: "Engagement", href: "/dashboard/giveaways" }, { label: labels[tab] || labels.chat }];
   return (
     <DashboardShell
       activeNav={tab === "chat" || tab === "tournaments" ? "giveaways" : tab === "preds" ? "predictions" : tab}
@@ -26,7 +26,7 @@ export function GiveawaysPage({ user, tab = "chat" } = {}) {
 }
 
 export const giveawaysConfig = {
-  title: "Engage · YourRank",
+  title: "Engagement · YourRank",
   canonical: "https://yourrank.site/dashboard/giveaways",
   styles: [
     "/assets/app.css",

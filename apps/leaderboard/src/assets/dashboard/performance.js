@@ -4,7 +4,7 @@ import { renderEmpty, renderError, setMetricLoading, setMetricUnknown, setMetric
 
 const DOW = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const TAB_LABELS = {
-  activity: "Visitors",
+  activity: "Site visitors",
   referrals: "Sources",
   events: "Events",
 };

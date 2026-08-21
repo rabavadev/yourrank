@@ -324,7 +324,7 @@ export async function loadPlanUsage() {
       rows.push({ label: "Shop items", product: "Credits", used: d.credits.shopItems.used, limit: d.credits.shopItems.limit });
       rows.push({ label: "Pending prize orders", product: "Credits", used: d.credits.pendingRedemptions.used, limit: d.credits.pendingRedemptions.limit });
       rows.push({ label: "Orders / 30 days", product: "Credits", used: d.credits.redemptionsPer30Days.used, limit: d.credits.redemptionsPer30Days.limit });
-      rows.push({ label: "New viewers / 30 days", product: "Credits", used: d.credits.newViewersPer30Days.used, limit: d.credits.newViewersPer30Days.limit });
+      rows.push({ label: "New members / 30 days", product: "Credits", used: d.credits.newViewersPer30Days.used, limit: d.credits.newViewersPer30Days.limit });
     }
     wrap.innerHTML = rows.map((r) => {
       const atLimit = r.limit > 0 && r.used >= r.limit;
@@ -1434,7 +1434,7 @@ export async function loadCreditsStatus() {
     const connected = Boolean(data.channel?.externalId);
     if (statusEl) statusEl.textContent = connected
       ? `Connected to ${data.channel?.name || "your Kick channel"}. ${data.usage?.rewardMappings == null ? "—" : data.usage.rewardMappings} credit rules active.`
-      : "Connect your Kick channel in the Credits area to start giving viewers credits.";
+      : "Connect your Kick channel in Rewards to start giving members credits.";
     if (linkEl) linkEl.textContent = connected ? "Manage connected apps →" : "Open connected apps →";
   } catch (err) {
     setState({ CREDITS_STATUS: "error" });
