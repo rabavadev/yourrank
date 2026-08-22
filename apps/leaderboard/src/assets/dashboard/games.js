@@ -1,7 +1,9 @@
 import { $, getCsrf, guardAuth, logError, showToast } from "./utils.js";
 import { setState, state, subscribe } from "./state.js";
-import { DEFAULT_SECTIONS, isPro } from "./site.js";
 import { renderError, setBlockLoading, setBlockReady } from "./states.js";
+// Public page-section toggles live in Site settings → Sections now; the Games
+// page only reads the flags to decide whether the public Games page exists.
+import { siteSections } from "./site-sections.js";
 
 const GAME_ROWS = [
   { key: "plinko", label: "Plinko", description: "A pachinko-style game with multiplier rewards." },
@@ -9,43 +11,6 @@ const GAME_ROWS = [
   { key: "dice", label: "Dice", description: "Roll the dice and predict the outcome." },
   { key: "limbo", label: "Limbo", description: "", disabled: true },
 ];
-
-const sectionRows = [
-  ["shop", "Shop", "Let members browse and redeem your shop items.", "Turning off removes Shop from navigation and disables the /shop URL."],
-  ["credits", "Rewards", "Let members see their balance and prize order history.", "Turning off removes Rewards from navigation and disables the /credits URL."],
-  ["games", "Games", "Let members play credit-based games on your site.", "Turning off removes Games from navigation and disables the /games URL."],
-];
-
-const BLOCK_ROWS = [
-  ["hero", "Hero banner"],
-  ["top3", "Top 3 podium"],
-  ["search", "Search & Filter"],
-  ["rules", "Rules marquee"],
-  ["socials", "Social widgets"],
-  ["share", "Share button"],
-  ["countdown", "Countdown timer"],
-  ["cta", "Button"],
-];
-
-function renderPageBlocks() {
-  const list = $("leaderboardBlockRows");
-  const note = $("leaderboardBlockNote");
-  if (!list) return;
-  const current = { ...DEFAULT_SECTIONS, ...(state.EXTRA?.sections || {}) };
-  list.innerHTML = BLOCK_ROWS.map(([key, label]) => `<div class="v3-block-status"><span>${label}</span><strong>${current[key] !== false ? "Shown" : "Hidden"}</strong></div>`).join("");
-  if (note) note.textContent = isPro()
-    ? "Page block visibility is included with Pro plans."
-    : "Page block visibility is available on Pro plans.";
-}
-
-function siteSections() {
-  const incoming = state.EXTRA?.siteSections || {};
-  return {
-    shop: incoming.shop !== false,
-    credits: incoming.me !== false,
-    games: incoming.games === true,
-  };
-}
 
 export function setGamesPreviewState(previewBtn, enabled, liveUrl) {
   if (!previewBtn) return;
@@ -70,59 +35,11 @@ export function setGamesPreviewState(previewBtn, enabled, liveUrl) {
   previewBtn.textContent = "Enable Games to open the public page";
 }
 
-function renderSections() {
-  const list = $("gamesSectionRows");
-  if (!list) return;
-  const current = siteSections();
-  list.innerHTML = `
-    <div class="v3-setting-row">
-      <div><strong>Home &amp; Leaderboard</strong><span>Core experience. Always visible.</span></div>
-      <span class="v3-chip v3-chip--always">ALWAYS ON</span>
-    </div>
-    ${sectionRows.map(([key, title, description, note]) => `
-      <label class="v3-setting-row" data-site-section-row="${key}">
-        <span><strong>${title}</strong><span>${description} ${note}</span><small class="v3-inline-save" data-section-status="${key}" role="status" aria-live="polite"></small></span>
-        <input class="v3-toggle" type="checkbox" data-site-section="${key}" ${current[key] ? "checked" : ""} aria-label="Enable ${title}">
-      </label>
-    `).join("")}`;
-  list.querySelectorAll("[data-site-section]").forEach((input) => {
-    input.addEventListener("change", () => saveSection(input));
-  });
-}
-
 function setInlineSave(input, message, isError = false) {
-  const status = input.closest("[data-site-section-row], [data-game]")?.querySelector("[data-section-status], [data-game-status]");
+  const status = input.closest("[data-game]")?.querySelector("[data-game-status]");
   if (!status) return;
   status.textContent = message;
   status.dataset.state = isError ? "error" : message === "Saving…" ? "saving" : "saved";
-}
-
-async function saveSection(input) {
-  const previous = !input.checked;
-  const next = { ...siteSections(), [input.dataset.siteSection]: input.checked };
-  input.disabled = true;
-  setInlineSave(input, "Saving…");
-  try {
-    const res = await fetch("/api/site/sections", {
-      method: "POST",
-      credentials: "include",
-      headers: { "content-type": "application/json", "x-csrf-token": getCsrf() },
-      body: JSON.stringify({ siteId: state.ACTIVE_SITE_ID, siteSections: next }),
-    }).then(guardAuth);
-    const body = await res.json();
-    if (!res.ok || !body.ok) throw new Error(body.error || "Could not save viewer pages.");
-    state.EXTRA.siteSections = { ...state.EXTRA.siteSections, shop: next.shop, games: next.games, me: next.credits };
-    updateSimulator();
-    setInlineSave(input, "Saved");
-    showToast("Public page sections saved.", "success");
-  } catch (err) {
-    input.checked = previous;
-    setInlineSave(input, "Couldn't save", true);
-    logError("save-site-sections", err);
-    showToast(err.message || "Could not save viewer pages.");
-  } finally {
-    input.disabled = false;
-  }
 }
 
 function gamePayload(game, values) {
@@ -354,8 +271,6 @@ function setupSimulator() {
 // guards itself. This replaces the old `yr-games-visible` event, which existed
 // only because the section could not be re-initialized directly.
 export function initGames() {
-  renderSections();
-  renderPageBlocks();
   if (!initGames._loaded) setBlockLoading($("gameSettingRows"), { lines: GAME_ROWS.length });
   initGames._loaded = true;
   loadGames();

@@ -3,7 +3,7 @@
 import { describe, it, expect } from "bun:test";
 import { readFileSync } from "node:fs";
 import { LEGACY_ACCOUNT_PATHS } from "@yourrank/shared/dashboard-nav";
-import { dashboardPath, parseDashboardPath, resolveSection, defaultTab, legacyDashboardPath, dashboardTitleForPath } from "../assets/dashboard/routes.js";
+import { dashboardPath, parseDashboardPath, parseDynamicPath, resolveSection, defaultTab, legacyDashboardPath, dashboardTitleForPath } from "../assets/dashboard/routes.js";
 import { LEGACY_TELEGRAM_REDIRECTS, legacyTelegramRedirect } from "../telegram-routes.js";
 import worker from "../index.js";
 
@@ -89,6 +89,8 @@ describe("dashboard routes", () => {
       ["/dashboard/audience/activity", "/dashboard/rewards/activity"],
       ["/dashboard/rewards/history", "/dashboard/rewards/activity"],
       ["/dashboard/settings/board", "/dashboard/site"],
+      ["/dashboard/rewards/channel", "/dashboard/site/connections"],
+      ["/dashboard/settings/integrations", "/dashboard/site/connections"],
       ["/dashboard/settings/plan", "/dashboard/settings/billing"],
       ["/dashboard/billing", "/dashboard/settings/billing"],
       ["/dashboard/giveaways/preds", "/dashboard/giveaways/predictions"],
@@ -101,6 +103,11 @@ describe("dashboard routes", () => {
 
   it("rejects paths that are not sections", () => {
     expect(parseDashboardPath("/dashboard/rewards/channel")).toBeNull();
+    // The Kick connection's canonical home is a dynamic section under Site
+    // settings: the core SPA table must not claim it, the dynamic table must.
+    expect(parseDashboardPath("/dashboard/site/connections")).toBeNull();
+    expect(parseDynamicPath("/dashboard/site/connections")).toEqual({ page: "siteConnections", tab: "channel", dynamic: true });
+    expect(parseDynamicPath("/dashboard/rewards/channel")).toBeNull();
     expect(parseDashboardPath("/dashboard/leaderboard/nope")).toBeNull();
     expect(legacyDashboardPath("/dashboard/editor/design")).toBe("/dashboard/leaderboard/design");
     expect(legacyDashboardPath("/dashboard/boards")).toBe("/dashboard/leaderboards");

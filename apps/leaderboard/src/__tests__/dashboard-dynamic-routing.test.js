@@ -1,8 +1,8 @@
 // Dynamic sections must route identically on both sides of the wire.
 //
-// Rewards, Engagement, Audience and Account load as content fragments inside
-// the persistent dashboard shell: the client asks for
-// /dashboard/_content?path=<url> and the Worker renders the same page
+// Rewards, Engagement, Audience, Account and Site settings → Connections load
+// as content fragments inside the persistent dashboard shell: the client asks
+// for /dashboard/_content?path=<url> and the Worker renders the same page
 // component the full document route would serve. Two routing tables make that
 // work — DYNAMIC_SECTIONS in assets/dashboard/routes.js (client) and
 // resolveFragment() in index.js (server). If they drift, a tab either 404s in
@@ -26,6 +26,14 @@ const EXPECTED = {
       rules: "rewardsRules",
       redemptions: "rewardsRedemptions",
       history: "rewardsHistory",
+    },
+  },
+  // The Kick connection is stored on the site row (sites.kick_channel_*), so
+  // it is owned by Site settings. It still boots the credits client module —
+  // only the address and the rail owner moved.
+  siteConnections: {
+    boot: "credits",
+    tabs: {
       channel: "rewardsChannel",
     },
   },
@@ -56,8 +64,8 @@ const EXPECTED = {
 };
 
 describe("dynamic section routing parity", () => {
-  it("knows exactly the four dynamic sections", () => {
-    expect(Object.keys(DYNAMIC_SECTIONS).sort()).toEqual(["audience", "giveaways", "rewards", "settings"]);
+  it("knows exactly the five dynamic sections", () => {
+    expect(Object.keys(DYNAMIC_SECTIONS).sort()).toEqual(["audience", "giveaways", "rewards", "settings", "siteConnections"]);
     for (const page of Object.keys(DYNAMIC_SECTIONS)) expect(isDynamicSection(page)).toBe(true);
     expect(isDynamicSection("home")).toBe(false);
     expect(isDynamicSection("telegram")).toBe(false);

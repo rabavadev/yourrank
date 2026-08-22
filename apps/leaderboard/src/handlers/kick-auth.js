@@ -27,7 +27,7 @@ function redirect(url, status = 302) {
 function channelRedirect(params, siteId = "") {
   const query = new URLSearchParams(params);
   if (siteId) query.set("siteId", siteId);
-  return `/dashboard/rewards/channel?${query}`;
+  return `/dashboard/site/connections?${query}`;
 }
 
 async function resolveDefaultKickSite(oneImpl, userId) {

@@ -148,9 +148,10 @@ export function resolveFragment(targetPath) {
     if (tab === "rules") return { pageKey: "rewardsRules", tab: "rules" };
     if (tab === "redemptions") return { pageKey: "rewardsRedemptions", tab: "redemptions" };
     if (tab === "activity") return { pageKey: "rewardsHistory", tab: "history" };
-    if (tab === "channel") return { pageKey: "rewardsChannel", tab: "channel" };
     return null;
   }
+  // Site settings → Connections (the Kick connection's canonical home).
+  if (clean === "/dashboard/site/connections") return { pageKey: "rewardsChannel", tab: "channel" };
   // Audience
   if (clean === "/dashboard/audience/members") return { pageKey: "audienceMembers", tab: "viewers" };
   // Account settings
@@ -746,9 +747,9 @@ export async function handleRequest(request, env, ctx, meta, deps = {}) {
           headers: { ...SECURE_HTML, ...csrfHeader, ...rateLimitHeaders(inviteRl) },
         });
       }
-      // Connect Kick lives under Rewards now; keep the old URL working.
+      // Connect Kick lives under Site settings → Connections now; keep the old URLs working.
       if (path === "/dashboard/settings/integrations") {
-        return redirectKeepingSearch("/dashboard/rewards/channel", url);
+        return redirectKeepingSearch("/dashboard/site/connections", url, 301);
       }
       if (path === "/dashboard/settings/board") {
         return redirectKeepingSearch("/dashboard/site", url, 301);
@@ -828,13 +829,19 @@ export async function handleRequest(request, env, ctx, meta, deps = {}) {
       if (legacyDashboard) {
         return redirectResponse(new URL(legacyDashboard + url.search, url), 301);
       }
+      // Site settings → Connections: the Kick connection's canonical home.
+      // Served as its own document (like the other fragment-booted sections)
+      // because it runs the credits client, not the core SPA sections.
+      if (path === "/dashboard/site/connections") {
+        return renderDashboardPage("rewardsChannel", "site_connections_render_failed");
+      }
       // Every dashboard section is a real URL: `/dashboard`, `/dashboard/leaderboard`,
       // `/dashboard/leaderboard/players`, … The section is rendered client-side, so
       // they all serve the same document; the shell reads the path on boot.
       const dashboardRoute = parseDashboardPath(path);
       if (dashboardRoute) {
         if (url.searchParams.get("nav") === "kickrewards") {
-          const target = new URL("/dashboard/rewards/channel", url);
+          const target = new URL("/dashboard/site/connections", url);
           for (const [k, v] of url.searchParams) if (k !== "nav") target.searchParams.set(k, v);
           return redirectResponse(target, 302);
         }
@@ -917,7 +924,9 @@ export async function handleRequest(request, env, ctx, meta, deps = {}) {
       }
       if (path.startsWith("/dashboard/rewards/")) {
         const tab = path.slice("/dashboard/rewards/".length).split("?")[0];
-        if (tab === "channel") return renderDashboardPage("rewardsChannel", "channel_render_failed");
+        // The Kick connection moved to Site settings → Connections. Keep the
+        // old URL working as a permanent redirect that preserves site context.
+        if (tab === "channel") return redirectKeepingSearch("/dashboard/site/connections", url, 301);
         if (tab === "overview") return redirectKeepingSearch("/dashboard/rewards", url, 301);
         if (tab === "maps" || tab === "rewards") return redirectKeepingSearch("/dashboard/rewards/rules", url);
         // Member management moved out of Rewards into Audience.

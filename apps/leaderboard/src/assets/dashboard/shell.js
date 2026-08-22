@@ -174,13 +174,6 @@ export function setActiveSideNav(page) {
     if (active) n.setAttribute("aria-current", "page");
     else n.removeAttribute("aria-current");
   });
-  // Keep the shared product top-nav in sync when navigating inside the SPA.
-  document.querySelectorAll(".gm-tab").forEach((t) => {
-    const href = t.getAttribute("href") || "";
-    const isActive = (resolvedArea === "sites" && href === "/dashboard") ||
-                     (resolvedArea === "credits" && href.startsWith("/dashboard/rewards"));
-    t.classList.toggle("gm-tab--active", isActive);
-  });
 }
 
 // The crumbs are server-rendered for the URL the document was opened at; when
@@ -434,24 +427,10 @@ export function setupShell() {
   document.querySelectorAll("[data-close-side]").forEach((btn) => btn.addEventListener("click", () => closeDrawer()));
   document.addEventListener("keydown", (e) => { if (e.key === "Escape" && $("lbSide")?.classList.contains("is-open")) { e.preventDefault(); closeDrawer(); } });
 
-  // Make the shared top product tabs part of the same SPA for same-Worker pages.
-  document.querySelectorAll(".gm-tab, .gm-brand").forEach((link) => {
-    const href = link.getAttribute("href") || "";
-    const url = new URL(href, location.origin);
-    const route = parseDashboardPath(url.pathname) || parseDynamicPath(url.pathname);
-    if (!route) return;
-    link.addEventListener("click", (e) => {
-      e.preventDefault();
-      // Dynamic sections follow the link's own query (preserveSiteContextLinks
-      // stamps ?siteId= there) so one-shot params don't leak; SPA sections
-      // keep the document's query, as they always have.
-      if (isDynamicSection(route.page)) {
-        requestDashboardRoute(route.page, route.tab, { query: url.search });
-      } else {
-        requestDashboardRoute(route.page, route.tab || defaultHash(route.page));
-      }
-    });
-  });
+  // The signed-in dashboard renders no second product navigation: the rail is
+  // canonical, and dashboard documents are built with `nav: false`, so the old
+  // `.gm-tab` top switcher never appears here. (The public Help header still
+  // ships its own tabs via /assets/shell-nav.js, untouched by this shell.)
 
   // The profile dropdown's open/close behaviour ships with the header itself
   // (/assets/shell-nav.js) so it is identical on every Worker.

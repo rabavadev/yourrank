@@ -119,7 +119,7 @@
               <div class="yr-guide-info">
                 <strong>Kick channel points &amp; Rewards</strong>
                 <p>Link Kick channel, create earning rules, and manage prize orders.</p>
-                <a href="/dashboard/rewards/channel" class="yr-guide-link">Connect Kick Channel →</a>
+                <a href="/dashboard/site/connections" class="yr-guide-link">Connect Kick Channel →</a>
               </div>
             </div>
 

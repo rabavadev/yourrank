@@ -2,6 +2,7 @@
 import { $, getCsrf, logError, showConfirmModal } from "./utils.js";
 import { markDirty, setState, state } from "./state.js";
 import { renderEmpty, setBlockLoading } from "./states.js";
+import { initSiteSections } from "./site-sections.js";
 
 async function jsonPost(path, body) {
   const res = await fetch(path, {
@@ -329,4 +330,5 @@ export function setupSettingsScreen(sitePayload, initialTab = "access") {
   wireSettingsDanger();
   wireSettingsBoardAccess();
   wireSettingsWebhook(sitePayload);
+  initSiteSections();
 }

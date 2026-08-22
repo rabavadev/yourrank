@@ -13,21 +13,20 @@ import { DashboardShell } from "./dashboard-shell.jsx";
 
 const PAGES = { channel: channelPage, overview: overviewPage, rules: rulesPage, shop: shopPage, redemptions: redemptionsPage, history: historyPage };
 
-const CRUMB_LABELS = { channel: "Kick connection", overview: "Overview", rules: "Ways to earn", shop: "Shop", redemptions: "Orders", history: "Activity" };
+const CRUMB_LABELS = { overview: "Overview", rules: "Ways to earn", shop: "Shop", redemptions: "Orders", history: "Activity" };
 
 function crumbsFor(tab) {
-  // The Kick connection is configuration, not a rewards page: its trail points
-  // back to Account → Connections, where connection management lives.
-  if (tab === "channel") {
-    return [
-      { label: "Account", href: "/dashboard/settings" },
-      { label: "Connections", href: "/dashboard/settings/connections" },
-      { label: "Kick connection" },
-    ];
-  }
   const trail = [{ label: "Rewards", href: "/dashboard/rewards" }];
   return tab === "overview" ? trail.map((c) => ({ label: c.label })) : [...trail, { label: CRUMB_LABELS[tab] || tab }];
 }
+
+// The Kick connection is stored per site (sites.kick_channel_*), so it lives
+// under Site settings → Connections and its trail says so.
+const SITE_CONNECTIONS_CRUMBS = [
+  { label: "Site settings", href: "/dashboard/site" },
+  { label: "Connections", href: "/dashboard/site/connections" },
+  { label: "Kick connection" },
+];
 
 export const REWARDS_TABS = [
   { key: "overview", label: "Overview", href: "/dashboard/rewards" },
@@ -37,13 +36,8 @@ export const REWARDS_TABS = [
   { key: "history", label: "Activity", href: "/dashboard/rewards/activity" },
 ];
 
-// Kick connection stays reachable (onboarding, Account → Connections, deep
-// links) but is not a peer tab of Overview/Shop/Orders; it only appears in the
-// tab bar while you are on it, so the page still shows where you are.
-const CHANNEL_TAB = { key: "channel", label: "Kick connection", href: "/dashboard/rewards/channel" };
-
 function SubTabs({ tab }) {
-  const tabs = tab === "channel" ? [...REWARDS_TABS, CHANNEL_TAB] : REWARDS_TABS;
+  const tabs = REWARDS_TABS;
   return (
     <nav class="v3-tabs" aria-label="Rewards pages" style="margin-bottom: 20px;">
       {tabs.map((t) => (
@@ -59,10 +53,10 @@ function SubTabs({ tab }) {
   );
 }
 
-function RewardsContent({ tab }) {
+function RewardsContent({ tab, subnav = true }) {
   const body = PAGES[tab] || overviewPage;
   return <div class="cr-workspace-content">
-    <SubTabs tab={tab} />
+    {subnav ? <SubTabs tab={tab} /> : null}
     <div id="cr-loading" class="ui-loading" role="status" aria-live="polite" aria-busy="true" hidden><div class="ui-loading__spinner"></div><span class="sr-only">Loading rewards…</span></div>
     <div id="cr-app" data-cr-tab={tab} hidden dangerouslySetInnerHTML={{ __html: body }}></div>
     <div id="cr-empty" class="empty cr-loading-state" hidden><div class="ui-loading__spinner" aria-hidden="true"></div><p>Loading your rewards dashboard…</p></div>
@@ -77,7 +71,18 @@ function RewardsPage({ tab, activeNav = tab, boardContext = "selector", footer =
   </DashboardShell>;
 }
 
-export function RewardsChannelPage({ user, fragment } = {}) { return <RewardsPage tab="channel" activeNav="channel" boardContext="selector" footer="rewards" user={user} fragment={fragment} />; }
+// Site settings → Connections: the Kick connection owns its own page because
+// the connection is stored on the selected site. It reuses the rewards
+// fragment content and boot module; only the chrome (rail owner, crumbs,
+// title) differs.
+function SiteConnectionsPage({ user, fragment } = {}) {
+  if (fragment) return <RewardsContent tab="channel" subnav={false} />;
+  return <DashboardShell activeNav="site" activePath="/dashboard/site/connections" boardContext="selector" crumbs={SITE_CONNECTIONS_CRUMBS} footer="rewards" rootId="cr-dash" user={user}>
+    <RewardsContent tab="channel" subnav={false} />
+  </DashboardShell>;
+}
+
+export function RewardsChannelPage({ user, fragment } = {}) { return <SiteConnectionsPage user={user} fragment={fragment} />; }
 export function RewardsOverviewPage({ user, fragment } = {}) { return <RewardsPage tab="overview" activeNav="overview" user={user} fragment={fragment} />; }
 export function RewardsRulesPage({ user, fragment } = {}) { return <RewardsPage tab="rules" activeNav="rules" user={user} fragment={fragment} />; }
 export function RewardsShopPage({ user, fragment } = {}) { return <RewardsPage tab="shop" activeNav="shop" user={user} fragment={fragment} />; }
@@ -86,7 +91,7 @@ export function RewardsActivityPage({ user, fragment } = {}) { return <RewardsPa
 export function RewardsHistoryPage({ user, fragment } = {}) { return <RewardsActivityPage user={user} fragment={fragment} />; }
 
 const rewardsConfigBase = { styles: ["/assets/app.css", "/assets/shell-nav.css", "/assets/ui.css", "/assets/dashboard-v4.css"], scripts: ['<script src="/assets/credits.js?v=4" type="module"></script>', '<script src="/assets/shell-nav.js?v=2" defer></script>'], nav: false, footer: false, wide: true, bootWatchdog: true };
-export const rewardsChannelConfig = { ...rewardsConfigBase, title: "Kick connection · Account · YourRank", canonical: "https://yourrank.site/dashboard/rewards/channel" };
+export const rewardsChannelConfig = { ...rewardsConfigBase, title: "Kick connection · Site settings · YourRank", canonical: "https://yourrank.site/dashboard/site/connections" };
 export const rewardsOverviewConfig = { ...rewardsConfigBase, title: "Overview · Rewards · YourRank", canonical: "https://yourrank.site/dashboard/rewards" };
 export const rewardsRulesConfig = { ...rewardsConfigBase, title: "Ways to earn · Rewards · YourRank", canonical: "https://yourrank.site/dashboard/rewards/rules" };
 export const rewardsShopConfig = { ...rewardsConfigBase, title: "Shop · Rewards · YourRank", canonical: "https://yourrank.site/dashboard/rewards/shop" };
