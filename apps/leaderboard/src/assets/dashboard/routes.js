@@ -34,6 +34,19 @@ export const TAB_TITLES = {
 
 export const MANAGE_SITES_VALUE = "__manage_sites__";
 
+/**
+ * Trim trailing slashes in linear time. A `/\/+$/` regex on request-derived
+ * paths is polynomial on adversarial input (many repeated '/') — CodeQL
+ * flags that — so every trailing-slash trim in this file goes through here.
+ * "" for all-slash input; callers apply their own fallback.
+ */
+export function trimTrailingSlashes(pathname) {
+  const s = String(pathname || "");
+  let end = s.length;
+  while (end > 0 && s.charCodeAt(end - 1) === 47) end -= 1;
+  return s.slice(0, end);
+}
+
 // ---- Dynamic sections ----
 //
 // These dashboard areas were separate server-rendered documents, each with its
@@ -110,7 +123,7 @@ export function isDynamicSection(page) {
  * `/dashboard/settings`     → { page: "settings", tab: "account", dynamic: true }
  */
 export function parseDynamicPath(pathname) {
-  const clean = pathname.replace(/\/+$/, "") || "/dashboard";
+  const clean = trimTrailingSlashes(pathname) || "/dashboard";
   for (const [key, prefix] of DYNAMIC_PATH_PREFIXES) {
     if (clean === prefix) {
       // Bare prefix → first tab of that section.
@@ -174,7 +187,7 @@ export const SECTION_ALIASES = {
 };
 
 export function legacyDashboardPath(pathname) {
-  const clean = pathname.replace(/\/+$/, "") || "/dashboard";
+  const clean = trimTrailingSlashes(pathname) || "/dashboard";
   if (clean === "/dashboard/editor" || clean.startsWith("/dashboard/editor/")) {
     return `/dashboard/leaderboard${clean.slice("/dashboard/editor".length)}`;
   }
@@ -203,7 +216,7 @@ export function dashboardPath(page, tab = "") {
 
 /** `"/dashboard/leaderboard/players" → { page: "board", tab: "players" }`, or null. */
 export function parseDashboardPath(pathname) {
-  const clean = pathname.replace(/\/+$/, "") || "/dashboard";
+  const clean = trimTrailingSlashes(pathname) || "/dashboard";
   if (clean === "/dashboard" || clean === "/dashboard.html") return { page: "home", tab: "" };
   // The account settings document owns every other `/dashboard/settings` URL.
   // Returning a route for them made the shell intercept the sidebar link and

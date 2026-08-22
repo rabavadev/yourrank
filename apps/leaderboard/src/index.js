@@ -50,7 +50,7 @@ import {
   renderNewPlayerProfile,
   renderNewStreamerProfile,
 } from "./auxiliary-renderers.js";
-import { parseDashboardPath, dashboardPath, resolveSection, legacyDashboardPath } from "./assets/dashboard/routes.js";
+import { parseDashboardPath, dashboardPath, resolveSection, legacyDashboardPath, trimTrailingSlashes } from "./assets/dashboard/routes.js";
 import { LEGACY_ACCOUNT_PATHS } from "@yourrank/shared/dashboard-nav";
 import { deferClickWrite, trackedDestination } from "./tracked-redirect.js";
 import { setRequestMetrics } from "@yourrank/shared/request-id";
@@ -132,7 +132,7 @@ function redirectKeepingSearch(pathname, url, status = 302) {
 // Exported for the routing-parity tests: the client routing table in
 // assets/dashboard/routes.js must agree with this mapping.
 export function resolveFragment(targetPath) {
-  const clean = String(targetPath || "").split("?")[0].replace(/\/+$/, "") || "/dashboard";
+  const clean = trimTrailingSlashes(String(targetPath || "").split("?")[0]) || "/dashboard";
   // Engagement
   if (clean.startsWith("/dashboard/giveaways/")) {
     const tab = clean.slice("/dashboard/giveaways/".length);
@@ -1067,7 +1067,7 @@ export async function handleRequest(request, env, ctx, meta, deps = {}) {
       // /demo/leaderboard, /demo/shop, /demo/me and every footer legal link
       // 404 and the demo tour is a dead end.
       const demoSub = method === "GET" && path.startsWith("/demo/")
-        ? path.slice("/demo/".length).replace(/\/+$/, "")
+        ? trimTrailingSlashes(path.slice("/demo/".length))
         : "";
       if (demoSub && LEGAL_PAGES.has(demoSub)) {
         return redirectResponse(`${url.origin}/${demoSub}`, 302);

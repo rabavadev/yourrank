@@ -10,7 +10,7 @@
 import { describe, expect, it } from "bun:test";
 import { readFileSync } from "node:fs";
 import { PAGES } from "../pages.jsx";
-import { DYNAMIC_SECTIONS, dynamicPath, dynamicTitle, isDynamicSection, parseDynamicPath } from "../assets/dashboard/routes.js";
+import { DYNAMIC_SECTIONS, dynamicPath, dynamicTitle, isDynamicSection, parseDynamicPath, trimTrailingSlashes } from "../assets/dashboard/routes.js";
 import { resolveFragment } from "../index.js";
 
 const user = { display_name: "Test operator", plan: "pro" };
@@ -61,6 +61,16 @@ describe("dynamic section routing parity", () => {
     for (const page of Object.keys(DYNAMIC_SECTIONS)) expect(isDynamicSection(page)).toBe(true);
     expect(isDynamicSection("home")).toBe(false);
     expect(isDynamicSection("telegram")).toBe(false);
+  });
+
+  it("trims trailing slashes in linear time with sane edge cases", () => {
+    expect(trimTrailingSlashes("/dashboard///")).toBe("/dashboard");
+    expect(trimTrailingSlashes("/".repeat(1000))).toBe("");
+    expect(trimTrailingSlashes("")).toBe("");
+    expect(trimTrailingSlashes(undefined)).toBe("");
+    expect(trimTrailingSlashes("/dashboard")).toBe("/dashboard");
+    // All-slash input falls back to /dashboard at the call site, like the old regex.
+    expect(parseDynamicPath("/dashboard/rewards///")).toEqual({ page: "rewards", tab: "overview", dynamic: true });
   });
 
   it("round-trips every tab through dynamicPath → parseDynamicPath", () => {
