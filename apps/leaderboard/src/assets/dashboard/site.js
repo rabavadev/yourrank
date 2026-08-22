@@ -1832,9 +1832,12 @@ export async function loadStats() {
 // rejected the promise and location.href never ran, so "Sign out" appeared
 // to do nothing. Now a failure keeps the user in place with an explanation,
 // and a success pings other tabs (AUDIT-B4) so they sign out too.
-$("logout")?.addEventListener("click", async (e) => {
+// The sign-out button is a `<form class="gm-logout-form"><button class="gm-logout">`
+// rendered by the shared shell, not `#logout`.
+document.querySelector(".gm-logout-form")?.addEventListener("submit", async (e) => {
   e.preventDefault();
-  const btn = e.currentTarget;
+  const form = e.currentTarget;
+  const btn = form?.querySelector(".gm-logout");
   if (btn) btn.disabled = true;
   try {
     const res = await fetch("/api/auth/logout", { method: "POST", credentials: "include", headers: { "x-csrf-token": getCsrf() } });
