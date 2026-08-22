@@ -809,7 +809,9 @@ export async function handleRequest(request, env, ctx, meta, deps = {}) {
           });
         } catch (e) {
           if (workerLog) workerLog.error("fragment_render_failed", { error: String(e?.message || e) });
-          return new Response(JSON.stringify({ error: "render_failed", message: String(e?.message || e) }), { status: 500, headers: { "content-type": "application/json", ...csrfHeader } });
+          // Detail stays in the worker log; the response body carries only a
+          // stable error code (the client surfaces its own message).
+          return new Response(JSON.stringify({ error: "render_failed" }), { status: 500, headers: { "content-type": "application/json", ...csrfHeader } });
         }
       }
       if (path === "/dashboard/audience/members") {
