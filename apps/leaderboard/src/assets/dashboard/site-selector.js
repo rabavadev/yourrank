@@ -19,7 +19,8 @@ export function renderSiteSelector({ select, sites = [], activeId = "", onSelect
   select.onchange = () => {
     const id = select.value;
     if (id === MANAGE_SITES_VALUE) {
-      location.href = "/dashboard/leaderboards";
+      select.value = String(activeId || "");
+      window.dispatchEvent(new CustomEvent("yr-nav", { detail: { page: "boards" } }));
       return;
     }
     if (id && id !== String(activeId)) onSelect?.(id);
