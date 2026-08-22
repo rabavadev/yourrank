@@ -25,7 +25,7 @@ export function preserveSiteContextLinks(activeSiteId = "") {
     "/dashboard/rewards/rules",
     "/dashboard/audience/members",
     "/dashboard/rewards/activity",
-    "/dashboard/rewards/channel",
+    "/dashboard/site/connections",
   ]);
   const siteDestinations = new Set([
     "/dashboard",

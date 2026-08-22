@@ -8,7 +8,7 @@ import { crumbsHtml, navListHtml } from "@yourrank/shared/dashboard-chrome";
 import { brandMarkSvg } from "@yourrank/shared/brand-assets";
 import { navOwner } from "@yourrank/shared/dashboard-nav";
 
-const CREDITS_NAV_KEYS = new Set(["credits", "channel", "redemptions", "overview", "shop", "rules", "history", "rewards"]);
+const CREDITS_NAV_KEYS = new Set(["credits", "redemptions", "overview", "shop", "rules", "history", "rewards"]);
 const AUDIENCE_NAV_KEYS = new Set(["audience", "members", "viewers"]);
 
 const DESIGN_CONTRACT = `<!--

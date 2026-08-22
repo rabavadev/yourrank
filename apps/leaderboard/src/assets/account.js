@@ -277,14 +277,14 @@ function renderConnectedAccounts(data) {
     if (kick) {
       const expiry = kick.tokenExpiresAt ? new Date(kick.tokenExpiresAt) : null;
       const needsAttention = !expiry || expiry <= new Date();
-      html += `<div style="padding:12px;border:1px solid var(--line);border-radius:8px"><div class="hint">Kick</div><div style="font-weight:600">@${esc(kick.username || kick.userId)}</div><div class="hint">Linked ${fmtDateTime(kick.linkedAt)}</div><div class="hint" style="${needsAttention ? "color:var(--v4-warning,#b76a12);font-weight:600" : ""}">${needsAttention ? "● Needs attention — reconnect" : "● Connected"}</div><a class="btn btn--sm ${needsAttention ? "btn--accent" : "btn--ghost"}" href="/dashboard/rewards/channel">${needsAttention ? "Reconnect Kick" : "Manage"}</a></div>`;
+      html += `<div style="padding:12px;border:1px solid var(--line);border-radius:8px"><div class="hint">Kick</div><div style="font-weight:600">@${esc(kick.username || kick.userId)}</div><div class="hint">Linked ${fmtDateTime(kick.linkedAt)}</div><div class="hint" style="${needsAttention ? "color:var(--v4-warning,#b76a12);font-weight:600" : ""}">${needsAttention ? "● Needs attention — reconnect" : "● Connected"}</div><a class="btn btn--sm ${needsAttention ? "btn--accent" : "btn--ghost"}" href="/dashboard/site/connections">${needsAttention ? "Reconnect Kick" : "Manage"}</a></div>`;
     }
     if (telegram) {
       html += `<div style="padding:12px;border:1px solid var(--line);border-radius:8px"><div class="hint">Telegram</div><div style="font-weight:600">@${esc(telegram.username || telegram.userId)}</div><div class="hint">Linked ${fmtDateTime(telegram.linkedAt)}</div><div class="hint">● Connected</div><button class="btn btn--sm btn--ghost" type="button" id="tgDisconnect">Disconnect</button></div>`;
     }
     html += `</div>`;
   } else {
-    html += `<p class="hint">No streamer accounts connected yet.</p><div class="d-flex gap-8 flex-wrap"><a class="btn btn--accent" href="/dashboard/rewards/channel">Connect Kick</a><a class="btn btn--ghost" href="/dashboard/telegram">Connect Telegram</a></div>`;
+    html += `<p class="hint">No streamer accounts connected yet.</p><div class="d-flex gap-8 flex-wrap"><a class="btn btn--accent" href="/dashboard/site/connections">Connect Kick</a><a class="btn btn--ghost" href="/dashboard/telegram">Connect Telegram</a></div>`;
   }
 
   if (sites.length > 0) {

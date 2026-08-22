@@ -72,8 +72,22 @@ export const DYNAMIC_SECTIONS = {
     boardContext: "selector",
     rootId: "cr-dash",
     // tab → URL path segment. "overview" is the bare /dashboard/rewards.
-    tabs: ["overview", "shop", "rules", "redemptions", "history", "channel"],
-    tabPaths: { overview: "/dashboard/rewards", shop: "/dashboard/rewards/shop", rules: "/dashboard/rewards/rules", redemptions: "/dashboard/rewards/redemptions", history: "/dashboard/rewards/activity", channel: "/dashboard/rewards/channel" },
+    tabs: ["overview", "shop", "rules", "redemptions", "history"],
+    tabPaths: { overview: "/dashboard/rewards", shop: "/dashboard/rewards/shop", rules: "/dashboard/rewards/rules", redemptions: "/dashboard/rewards/redemptions", history: "/dashboard/rewards/activity" },
+  },
+  // The Kick connection is stored on the site row (sites.kick_channel_*), so
+  // its canonical home is Site settings → Connections. It still boots the
+  // credits client module — the fragment markup and behaviour are unchanged,
+  // only the address and the rail owner moved. The tab key stays "channel"
+  // because that is the internal tab the fragment component renders
+  // (data-cr-tab) and what resolveFragment returns on the server.
+  siteConnections: {
+    boot: "credits",
+    navKey: "site",
+    boardContext: "selector",
+    rootId: "cr-dash",
+    tabs: ["channel"],
+    tabPaths: { channel: "/dashboard/site/connections" },
   },
   giveaways: {
     boot: "giveaways",
@@ -108,6 +122,10 @@ const DYNAMIC_PATH_PREFIXES = [
   ["giveaways", "/dashboard/giveaways"],
   ["audience", "/dashboard/audience"],
   ["settings", "/dashboard/settings"],
+  // Site-scoped connections live under Site settings. Bare `/dashboard/site`
+  // is a core SPA section and is matched by parseDashboardPath first, so this
+  // prefix only ever claims the connections sub-path.
+  ["siteConnections", "/dashboard/site/connections"],
 ];
 
 /** true if `page` is one of the dynamic (fragment-loaded) sections. */
@@ -157,14 +175,15 @@ export function dynamicTitle(page, tab = "") {
   const section = DYNAMIC_SECTIONS[page];
   if (!section) return "Dashboard · YourRank";
   const labels = {
-    rewards: { overview: "Overview", shop: "Shop", rules: "Ways to earn", redemptions: "Orders", history: "Activity", channel: "Kick connection" },
+    rewards: { overview: "Overview", shop: "Shop", rules: "Ways to earn", redemptions: "Orders", history: "Activity" },
     giveaways: { chat: "Giveaways", raffles: "Raffles", drops: "Drops", preds: "Predictions", tournaments: "Tournaments" },
     audience: { viewers: "Members" },
     settings: { account: "Account", team: "Team", plan: "Billing", connections: "Connections", data: "Data" },
+    siteConnections: { channel: "Kick connection" },
   };
   const sectionLabels = labels[page] || {};
   const tabLabel = sectionLabels[tab || section.tabs[0]] || "";
-  const sectionLabel = page === "rewards" ? "Rewards" : page === "giveaways" ? "Engagement" : page === "audience" ? "Audience" : page === "settings" ? "Account" : page;
+  const sectionLabel = page === "rewards" ? "Rewards" : page === "giveaways" ? "Engagement" : page === "audience" ? "Audience" : page === "settings" ? "Account" : page === "siteConnections" ? "Site settings" : page;
   return `${tabLabel ? `${tabLabel} · ` : ""}${sectionLabel} · YourRank`;
 }
 

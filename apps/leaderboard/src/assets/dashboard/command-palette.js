@@ -78,6 +78,7 @@ const COMMANDS = [
   { id: "nav-boards", title: "Sites", group: "Navigation", icon: PALETTE_ICONS.overview, keywords: "sites boards", action: () => requestDashboardRoute("boards", "", { query: "" }) },
   { id: "nav-settings", title: "Account", group: "Navigation", icon: PALETTE_ICONS.settings, keywords: "account team billing connections data", action: () => requestDashboardRoute("settings", "account", { query: "" }) },
   { id: "nav-site-settings", title: "Site settings", group: "Navigation", icon: PALETTE_ICONS.settings, keywords: "site settings domain", action: () => requestDashboardRoute("site", "", { query: "" }) },
+  { id: "nav-kick-connection", title: "Kick connection", group: "Navigation", icon: PALETTE_ICONS.settings, keywords: "kick channel connection site settings connect", action: () => requestDashboardRoute("siteConnections", "channel", { query: "" }) },
   { id: "nav-plan", title: "Billing", group: "Navigation", icon: PALETTE_ICONS.settings, keywords: "plans billing", action: () => requestDashboardRoute("settings", "plan", { query: "" }) },
   { id: "act-support", title: "Help & support drawer", group: "Support", icon: PALETTE_ICONS.help, action: () => $("openHelpDrawerBtn")?.click() }
 ];

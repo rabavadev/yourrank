@@ -177,6 +177,9 @@ function deriveRenderableRoutes() {
     }
   }
   routes.push({ path: "/dashboard/audience/members", render: "rewards", tab: "members", hasSubnav: false, hasBreadcrumbs: true });
+  // The Kick connection lives under Site settings → Connections: it renders the
+  // channel content without the Rewards subnav, owned by the Site settings rail.
+  routes.push({ path: "/dashboard/site/connections", render: "rewards", tab: "channel", hasSubnav: false, hasBreadcrumbs: true });
   routes.push({ path: "/dashboard/settings", render: "settings", tab: "account", hasSubnav: true, hasBreadcrumbs: true });
   for (const [key] of SETTINGS_TABS) {
     routes.push({ path: `/dashboard/settings/${key === "plan" ? "billing" : key}`, render: "settings", tab: key, hasSubnav: true, hasBreadcrumbs: true });
@@ -285,7 +288,6 @@ function ownershipViolations(markup, activePath) {
 describe("dashboard chrome ownership", () => {
   it("marks each Rewards route's tab active inside the Rewards subnavigation", () => {
     for (const [path, href, tab] of [
-      ["/dashboard/rewards/channel", "/dashboard/rewards/channel", "channel"],
       ["/dashboard/rewards", "/dashboard/rewards", "overview"],
       ["/dashboard/rewards/activity", "/dashboard/rewards/activity", "history"],
     ]) {
@@ -309,11 +311,12 @@ describe("dashboard chrome ownership", () => {
     expect(routes.map(({ path }) => path)).toContain("/dashboard/settings/billing");
     expect(routes.map(({ path }) => path)).toContain("/dashboard/settings/connections");
     expect(routes.map(({ path }) => path)).toContain("/dashboard/settings/data");
-    expect(routes.map(({ path }) => path)).toContain("/dashboard/rewards/channel");
+    expect(routes.map(({ path }) => path)).toContain("/dashboard/site/connections");
 
     const checkedRoutes = new Set(routes.map(({ path }) => normalizedPath(path)));
     const allowlistedWorkerRoutes = new Map([
-      ["/dashboard/settings/integrations", "redirect-only legacy alias to Rewards channel"],
+      ["/dashboard/settings/integrations", "redirect-only legacy alias to Site settings → Connections"],
+      ["/dashboard/rewards/channel", "redirect-only legacy alias to Site settings → Connections"],
       ["/dashboard/settings/board", "redirect-only legacy alias to Site settings"],
       ["/dashboard/billing", "redirect-only legacy alias to account plan"],
       ["/dashboard/attribution", "redirect-only legacy alias to account connections"],
@@ -351,7 +354,7 @@ describe("dashboard chrome ownership", () => {
     for (const path of [
       "/dashboard/giveaways/chat",
       "/dashboard/giveaways/predictions",
-      "/dashboard/rewards/channel",
+      "/dashboard/site/connections",
       "/dashboard/rewards/maps",
       "/dashboard/settings/data",
     ]) {

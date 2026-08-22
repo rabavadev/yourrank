@@ -61,7 +61,7 @@ function hubSectionsHtml() {
   <h2 id="help-credits">Rewards and member fulfilment</h2>
   <p>Manage how credits are earned, what members can unlock, and pending orders.</p>
   <ul class="operator-help-list">
-    <li><a href="/dashboard/rewards/channel">Connect Kick</a><span>Link the Kick channel used for credit rewards.</span></li>
+    <li><a href="/dashboard/site/connections">Connect Kick</a><span>Link the Kick channel used for credit rewards.</span></li>
     <li><a href="/dashboard/rewards/rules">Create a credit rule</a><span>Choose a Kick reward and set how many credits it awards.</span></li>
     <li><a href="/dashboard/rewards/shop">Add a shop item</a><span>Create something members can unlock with their credits.</span></li>
     <li><a href="/dashboard/rewards/redemptions">Process prize orders</a><span>Review pending member orders and approve or cancel them.</span></li>

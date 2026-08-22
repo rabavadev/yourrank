@@ -379,7 +379,7 @@ describe("Kick OAuth state integration seams", () => {
     });
 
     expect(response.status).toBe(302);
-    expect(response.headers.get("location")).toBe("/dashboard/rewards/channel?error=site_not_authorized&siteId=site-1");
+    expect(response.headers.get("location")).toBe("/dashboard/site/connections?error=site_not_authorized&siteId=site-1");
   });
 
   test("streamer callback rejects a state created for another user", async () => {
@@ -388,7 +388,7 @@ describe("Kick OAuth state integration seams", () => {
       consumeOAuthState: async () => ({ userId: "another-user", siteId: "site-1", codeVerifier: "verifier" }),
     });
     expect(response.status).toBe(302);
-    expect(response.headers.get("location")).toBe("/dashboard/rewards/channel?error=oauth_user_mismatch&siteId=site-1");
+    expect(response.headers.get("location")).toBe("/dashboard/site/connections?error=oauth_user_mismatch&siteId=site-1");
   });
 
   test("streamer callback redirects with a stable error code", async () => {
@@ -402,7 +402,7 @@ describe("Kick OAuth state integration seams", () => {
       },
     });
 
-    expect(response.headers.get("location")).toBe("/dashboard/rewards/channel?error=kick_auth_failed&siteId=site-1");
+    expect(response.headers.get("location")).toBe("/dashboard/site/connections?error=kick_auth_failed&siteId=site-1");
   });
 
   test("viewer callback redirects with a stable error code", async () => {

@@ -91,7 +91,7 @@ export function nextStepAction({
       title: "Connect Kick",
       body: "Connect your channel before viewers can earn credits from Kick rewards.",
       label: "Connect Kick",
-      href: "/dashboard/rewards/channel",
+      href: "/dashboard/site/connections",
     };
   }
   if (creditsEnabled && creditsStatus === "ready" && creditsConnected && rewardMappings === 0) {

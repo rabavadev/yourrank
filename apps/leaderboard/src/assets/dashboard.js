@@ -175,7 +175,7 @@ async function init() {
       return;
     }
     const target = new URL(link.getAttribute("href"), location.origin);
-    const creditsPath = target.pathname.startsWith("/dashboard/rewards/");
+    const creditsPath = target.pathname.startsWith("/dashboard/rewards/") || target.pathname === "/dashboard/site/connections";
     const sitePath = target.pathname === "/dashboard" || target.pathname === "/dashboard/leaderboards" || target.pathname === "/dashboard/leaderboard" || target.pathname === "/dashboard/games" || target.pathname === "/dashboard/site" || target.pathname.startsWith("/dashboard/leaderboard/") || target.pathname.startsWith("/dashboard/analytics/");
     if (creditsPath) {
       target.searchParams.set("siteId", state.ACTIVE_SITE_ID);

@@ -167,16 +167,24 @@ describe("dashboard overview quick actions", () => {
     expect(dashboardCss).toMatch(/\.v3-dash\[data-auth-workspace\] \.plan-pending,[\s\S]*?\.v3-dash\[data-auth-workspace\] \.plan-cancel \{[\s\S]*?background: var\(--v4-surface-soft\);/);
   });
 
-  it("styles the Home alert and Games block status rows in the v4 workspace", () => {
+  it("styles the Home alert and block status rows in the v4 workspace", () => {
     expect(dashboardCss).toContain(".v3-dash[data-auth-workspace] .v3-alert");
     expect(dashboardCss).toContain(".v3-dash[data-auth-workspace] .v3-alert--warning");
     expect(dashboardCss).toContain(".v3-dash[data-auth-workspace] .v3-block-status");
     expect(dashboardHtml()).toContain('class="v3-alert v3-alert--warning"');
+    // Public-section visibility is a site setting: Games defers to Site
+    // settings → Sections instead of owning the toggles itself.
     const games = dashboardHtml("/dashboard/games");
-    expect(games).toContain("Page block visibility");
-    expect(games).toContain("Current visibility on your leaderboard page");
-    expect(games).toContain("Edit layout &amp; blocks in Appearance →");
+    expect(games).toContain("Public page visibility");
+    expect(games).toContain("Manage public sections in Site settings →");
+    expect(games).not.toContain("Page block visibility");
     expect(games).not.toContain("Choose which blocks appear on your leaderboard page");
+    const site = dashboardHtml("/dashboard/site");
+    expect(site).toContain("Public page sections");
+    expect(site).toContain('id="siteSectionRows"');
+    expect(site).toContain("Leaderboard page blocks");
+    expect(site).toContain("Current block visibility on your leaderboard page");
+    expect(site).toContain("Edit layout &amp; blocks in Appearance →");
   });
 
   it("keeps authenticated cards on the v4 geometry without changing public cards", () => {
@@ -237,6 +245,11 @@ describe("dashboard overview quick actions", () => {
     expect(html).toContain('data-nav="board"');
     expect(html).toContain('data-nav="settings"');
     expect(html).toContain('lb-side-group');
+    // The rail groups scope visually: workspace entry, the selected site's
+    // products, then settings. Group labels are hierarchy, not links.
+    expect(html).toContain("lb-nav-group");
+    expect(html).toContain(">Your site</div>");
+    expect(html).toContain(">Settings</div>");
     expect(html).not.toContain('aria-hidden="true">🔌</span>');
     expect(html).toContain('>Home</a>');
     for (const label of [
@@ -245,7 +258,6 @@ describe("dashboard overview quick actions", () => {
     for (const label of ["Giveaways", "Raffles", "Predictions", "Drops"]) {
       expect(html).not.toContain(`>${label}</a>`);
     }
-    expect(html).not.toContain("lb-nav-group");
     expect(html).not.toContain(">Integrations</a>");
     expect(html).toContain(">Sites</a>");
     expect(html).not.toContain('>Help</a>');
