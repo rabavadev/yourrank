@@ -1,12 +1,13 @@
 import { updateProfileMenu } from "./profile-menu.js";
 import { getMe, getSites, handleAuthError } from "./session.js";
 import { renderSiteSelector } from "./site-selector.js";
+import { state } from "./state.js";
 
 const $ = (id) => document.getElementById(id);
 
 export const siteQuery = () => new URLSearchParams(location.search).get("siteId");
 export const sitePath = (path, explicitSiteId = "") => {
-  const siteId = explicitSiteId || siteQuery() || "";
+  const siteId = explicitSiteId || siteQuery() || state.ACTIVE_SITE_ID || "";
   return `${path}${siteId ? `${path.includes("?") ? "&" : "?"}siteId=${encodeURIComponent(siteId)}` : ""}`;
 };
 
@@ -60,7 +61,10 @@ export async function loadBoardShell() {
   ]);
   if (!user) throw new Error("The authentication response was invalid.");
   updateProfileMenu(user);
-  const current = siteQuery() || list[0]?.id || list[0]?.siteId;
+  // The URL ?siteId= is the primary source; when it is absent (command
+  // palette navigates with query:""), fall back to the shell's active site
+  // so the section does not silently switch to the first site in the list.
+  const current = siteQuery() || state.ACTIVE_SITE_ID || list[0]?.id || list[0]?.siteId;
   const select = $("sidebarBoardSelect");
   const activeSiteId = current || "";
   renderSiteSelector({

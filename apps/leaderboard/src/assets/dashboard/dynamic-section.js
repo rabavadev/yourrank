@@ -20,6 +20,8 @@
 import { $ } from "./utils.js";
 import { renderError } from "./states.js";
 import { DYNAMIC_SECTIONS, dynamicPath, dynamicTitle, parseDynamicPath } from "./routes.js";
+import { clearSession } from "./session.js";
+import { loginRedirectPath } from "./request.js";
 
 // Statically-referenced lazy importers so the bundler can resolve them.
 const BOOT_IMPORTERS = {
@@ -88,6 +90,14 @@ export async function loadDynamicSection(page, tab = "", { query = "" } = {}) {
       headers: { "accept": "application/json" },
     });
     if (!res.ok) {
+      // A 401 means the session expired mid-navigation. A Retry button cannot
+      // fix an expired session, so clear the cached identity and redirect to
+      // login with a return URL — the same flow every other 401 uses.
+      if (res.status === 401) {
+        clearSession();
+        if (myToken === navToken) location.href = loginRedirectPath(location);
+        return false;
+      }
       throw new Error(`Failed to load section (HTTP ${res.status})`);
     }
     const data = await res.json();
@@ -126,6 +136,18 @@ export async function loadDynamicSection(page, tab = "", { query = "" } = {}) {
     }
     currentLeave = mod.leave || null;
     currentBootKey = bootKey;
+
+    // Move focus to the new section so keyboard and screen-reader users
+    // arrive with the content, not stranded on the sidebar link they
+    // activated. The heading is given a temporary tabindex so it can receive
+    // focus without being added to the normal Tab order.
+    if (myToken === navToken) {
+      const heading = container.querySelector("h1, h2, [data-focus-target]");
+      if (heading) {
+        heading.setAttribute("tabindex", "-1");
+        heading.focus({ preventScroll: true });
+      }
+    }
 
     // Signal boot completion for the watchdog.
     window.__yrBoot?.signal();

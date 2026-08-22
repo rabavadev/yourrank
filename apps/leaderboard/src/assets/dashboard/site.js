@@ -9,6 +9,7 @@ import { renderPerformance, renderPerformanceLoading } from "./performance.js";
 import { clearPlayersDraft, collectPlayers, commitDraftMutation, renderPlayers, renumber, toggleEmpty } from "./players.js";
 import { requestPublicationChange } from "./publication.js";
 import { withDashboardTimeout } from "./request.js";
+import { clearSession } from "./session.js";
 
 export const DEFAULT_SECTIONS = {
   hero: true,
@@ -1808,6 +1809,9 @@ $("logout")?.addEventListener("click", async (e) => {
   try {
     const res = await fetch("/api/auth/logout", { method: "POST", credentials: "include", headers: { "x-csrf-token": getCsrf() } });
     if (!res.ok) throw new Error(`logout failed (${res.status})`);
+    // Drop cached identity/site-list so a lingering promise cannot make the
+    // shell look authenticated after the session is destroyed.
+    clearSession();
     try { localStorage.setItem("yr:logout", String(Date.now())); } catch { /* storage unavailable */ }
     location.href = "/login";
   } catch (err) {
