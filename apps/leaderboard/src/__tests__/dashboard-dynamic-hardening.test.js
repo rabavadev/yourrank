@@ -18,8 +18,8 @@ const boardShellJs = readFileSync(new URL("../assets/dashboard/board-shell.js", 
 const creditsJs = readFileSync(new URL("../assets/credits.js", import.meta.url), "utf8");
 const accountJs = readFileSync(new URL("../assets/account.js", import.meta.url), "utf8");
 const giveawaysJs = readFileSync(new URL("../assets/giveaways.js", import.meta.url), "utf8");
-const siteJs = readFileSync(new URL("../assets/dashboard/site.js", import.meta.url), "utf8");
 const dashboardJs = readFileSync(new URL("../assets/dashboard.js", import.meta.url), "utf8");
+const shellNavJs = readFileSync(new URL("../assets/shell-nav.js", import.meta.url), "utf8");
 
 describe("auth-expiry during dynamic navigation", () => {
   it("redirects to login on a fragment 401 instead of showing a Retry button", () => {
@@ -38,10 +38,10 @@ describe("auth-expiry during dynamic navigation", () => {
   });
 
   it("clears the session cache on logout so the shell cannot appear authenticated", () => {
-    // The logout handler must drop cached identity so a lingering getMe()
-    // promise does not keep the UI looking signed in after the session is gone.
-    expect(siteJs).toContain("clearSession()");
-    // Cross-tab logout via the storage event must also clear the cache.
+    // Logout is handled by the shared shell-nav.js script; it broadcasts a
+    // localStorage stamp only after the server confirms the logout, and the
+    // storage listener clears cached identity in other open tabs.
+    expect(shellNavJs).toContain("localStorage.setItem(\"yr:logout\"");
     expect(dashboardJs).toMatch(/yr:logout.*clearSession/);
   });
 
@@ -135,8 +135,8 @@ describe("site context persistence", () => {
     expect(boardShellJs).toMatch(/siteQuery\(\) \|\| state\.ACTIVE_SITE_ID/);
   });
 
-  it("credits applyOAuthContext falls back to state.ACTIVE_SITE_ID", () => {
-    expect(creditsJs).toMatch(/applyOAuthContext[\s\S]*state\.ACTIVE_SITE_ID/);
+  it("credits applyOAuthContext falls back to dashboardState.ACTIVE_SITE_ID", () => {
+    expect(creditsJs).toMatch(/applyOAuthContext[\s\S]*dashboardState\.ACTIVE_SITE_ID/);
   });
 });
 

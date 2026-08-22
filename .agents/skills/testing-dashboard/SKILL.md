@@ -301,17 +301,27 @@ The v4 dashboard shell (`src/pages/dashboard-shell.jsx` +
 - `request.js` classifies `401` as `AUTH` and `403` as `FORBIDDEN`; dynamic-section
   loader (`dynamic-section.js`) redirects on `401` and renders the server error in
   the `#lbDynamic` region on `403`.
-- The dashboard sign-out button in the account menu is a `<button class="gm-logout">`
-  inside a `<form action="/logout" method="POST">`; `site.js` wires `$("logout")`
-  which is not present in the DOM, so the form POST is used instead. That POST
-  clears the server session and redirects the active tab to `/login` but does **not**
-  set the `yr:logout` `localStorage` stamp, so other open tabs are not notified.
-- To test cross-tab sign-out manually, open a second tab on the same origin and run
-  `javascript:localStorage.setItem('yr:logout', Date.now()); void 0;` — the dashboard
-  listener (`window.addEventListener("storage", ...)`) will then redirect all tabs
-  to `/login?next=<current-path>`. `localStorage` changes made from CDP-created
-  background targets do not always fire the `storage` event in other tabs, so use a
-  real second browser tab for this flow.
+- The shared account menu renders a `<form class="gm-logout-form" action="/logout?next=<current-path>" method="POST">`.
+  `apps/leaderboard/src/assets/shell-nav.js` intercepts the form submit in capture phase,
+  POSTs to the form's `action`, and **only** after a successful server response sets
+  `localStorage.setItem("yr:logout", String(Date.now()))`. On failure it keeps the user
+  signed in, re-enables the button, and sets a `title` failure message; it does not
+  broadcast. `dashboard.js`, `credits.js`, and `giveaways.js` listen for the `storage`
+  event key `yr:logout`, clear the in-memory session, and redirect to
+  `/login?next=<current-path>`.
+- The Telegram bot dashboard uses the same shared account menu (`logoutAction: "/bot/auth/logout"`)
+  and loads `shell-nav.js`, so its logout also broadcasts `yr:logout` and invalidates
+  the same creator dashboard session. `apps/bot/src/dashboard-views/client-script.ts`
+  keeps a fallback `logout()` that broadcasts as well in case `shell-nav.js` is absent.
+- Two-way cross-tab sign-out test:
+  1. Open the dashboard SPA at `/dashboard` in Tab A and a standalone page
+     (`/dashboard/rewards/redemptions`, `/dashboard/audience/members`, or `/dashboard/giveaways/chat`)
+     in Tab B.
+  2. Sign out from the SPA → Tab B must redirect to `/login?next=<its-path>`.
+  3. Sign back in, then sign out from the standalone page → Tab A must redirect to
+     `/login?next=/dashboard`.
+  4. Verify no `SyntaxError`, `ReferenceError`, `TypeError`, or duplicate redirects,
+     and that the `next` path is preserved (including `siteId` when present).
 - Creating test accounts quickly can hit the per-account login rate limit
   (`login-email:<email>` 10/15min and `login:<ip>` 20/10min). Reuse an existing
   session token or sign up another user to avoid the login rate limit.

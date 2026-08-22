@@ -198,4 +198,35 @@
       }
     });
   }
+
+  // AUDIT-B4: every page with the shared account menu (SPA shell, standalone
+  // Rewards/Audience/Giveaways, and the Telegram bot dashboard) intercepts the
+  // logout form so we can broadcast yr:logout only after the server confirms the
+  // session was destroyed. The native form submit is a fallback if this script
+  // fails to load. capture phase runs before page-specific submit listeners.
+  document.addEventListener("submit", function (event) {
+    var form = event.target.closest ? event.target.closest(".gm-logout-form") : null;
+    if (!form) return;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    var btn = form.querySelector(".gm-logout");
+    var original = btn ? btn.textContent : "";
+    if (btn) {
+      btn.disabled = true;
+      if (btn.textContent) btn.textContent = "Signing out…";
+    }
+    fetch(form.action, { method: "POST", credentials: "same-origin" })
+      .then(function (res) {
+        if (!res.ok) throw new Error("logout failed: " + res.status);
+        try { localStorage.setItem("yr:logout", String(Date.now())); } catch (error) {}
+        location.href = res.url || form.action;
+      })
+      .catch(function (err) {
+        if (btn) {
+          btn.disabled = false;
+          btn.textContent = original || "Sign out";
+          btn.title = "Couldn't sign out. Check your connection and try again.";
+        }
+      });
+  }, true);
 })();

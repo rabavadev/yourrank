@@ -8,8 +8,7 @@ import { renderOverviewSummary } from "./overview.js";
 import { renderPerformance, renderPerformanceLoading } from "./performance.js";
 import { clearPlayersDraft, collectPlayers, commitDraftMutation, renderPlayers, renumber, toggleEmpty } from "./players.js";
 import { requestPublicationChange } from "./publication.js";
-import { DashboardRequestError, fetchDashboardJson, loginRedirectPath, withDashboardTimeout } from "./request.js";
-import { clearSession } from "./session.js";
+import { DashboardRequestError, fetchDashboardJson, withDashboardTimeout } from "./request.js";
 
 export const DEFAULT_SECTIONS = {
   hero: true,
@@ -1828,31 +1827,11 @@ export async function loadStats() {
   return s;
 }
 
-// AUDIT-B1: the old handler had no catch — a failed/offline logout request
-// rejected the promise and location.href never ran, so "Sign out" appeared
-// to do nothing. Now a failure keeps the user in place with an explanation,
-// and a success pings other tabs (AUDIT-B4) so they sign out too.
-// The sign-out button is a `<form class="gm-logout-form"><button class="gm-logout">`
-// rendered by the shared shell, not `#logout`.
-document.querySelector(".gm-logout-form")?.addEventListener("submit", async (e) => {
-  e.preventDefault();
-  const form = e.currentTarget;
-  const btn = form?.querySelector(".gm-logout");
-  if (btn) btn.disabled = true;
-  try {
-    const res = await fetch("/api/auth/logout", { method: "POST", credentials: "include", headers: { "x-csrf-token": getCsrf() } });
-    if (!res.ok) throw new Error(`logout failed (${res.status})`);
-    // Drop cached identity/site-list so a lingering promise cannot make the
-    // shell look authenticated after the session is destroyed.
-    clearSession();
-    try { localStorage.setItem("yr:logout", String(Date.now())); } catch { /* storage unavailable */ }
-    location.href = loginRedirectPath(location);
-  } catch (err) {
-    logError("logout", err);
-    showToast("Couldn't sign you out. Check your connection and try again.");
-    if (btn) btn.disabled = false;
-  }
-});
+// Cross-tab sign-out is handled by the shared /assets/shell-nav.js script so
+// every page with the shell (SPA, standalone Rewards/Audience/Giveaways, and
+// Telegram) broadcasts yr:logout from a single place after the server logout
+// succeeds. This avoids duplicating the logout implementation and keeps the
+// failure/redirect semantics identical everywhere.
 $("upgrade")?.addEventListener("click", (e) => { e.preventDefault(); checkout("pro", e.target); });
 $("testDiscord")?.addEventListener("click", async () => {
   const s = $("testDiscordStatus"); if (s) s.textContent = "Sending…";
