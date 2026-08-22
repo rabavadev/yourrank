@@ -10,6 +10,7 @@ import { checkout, renderPlan, loadHistory, loadPlanUsage, wireCancelSubscriptio
 import { getMe, handleAuthError } from "./dashboard/session.js";
 
 const statusEl = () => $("status");
+let _accountPopstate = null;
 function setStatus(message, isError) {
   const el = statusEl();
   if (!el) return;
@@ -237,10 +238,11 @@ function wireUnifiedSettingsTabs() {
     event.preventDefault();
     select(tab.dataset.settingsTab, true);
   }));
-  addEventListener("popstate", () => {
+  _accountPopstate = () => {
     const key = location.pathname.split("/").pop();
     select(key);
-  });
+  };
+  addEventListener("popstate", _accountPopstate);
   select(settingsTab());
 }
 
@@ -606,6 +608,10 @@ export function enter() {
   init();
 }
 export function leave() {
-  // Account has no long-running timers, WebSockets, or pollers; nothing to
-  // tear down beyond letting the DOM detach. Included for interface parity.
+  // Remove the document-level popstate listener that wireUnifiedSettingsTabs
+  // installed, so repeated enter/leave cycles do not stack duplicate handlers.
+  if (_accountPopstate) {
+    removeEventListener("popstate", _accountPopstate);
+    _accountPopstate = null;
+  }
 }

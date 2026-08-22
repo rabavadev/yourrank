@@ -64,6 +64,9 @@ export function clearSession() {
 /** Redirect to login if the session has ended. Returns true if redirected. */
 export function handleAuthError(err) {
   if (err?.code === "AUTH") {
+    // An AUTH error means the session is gone; clear the cached identity and
+    // site list so a subsequent call cannot serve stale authenticated data.
+    clearSession();
     location.href = loginRedirectPath(location);
     return true;
   }

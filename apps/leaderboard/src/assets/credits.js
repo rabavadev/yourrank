@@ -1,6 +1,6 @@
 import { showConfirmModal, showPromptModal, ListController, logError, clearLoadError } from "./dashboard/utils.js";
 import { openDrawer, closeDrawer } from "./dashboard/shell.js";
-import { setState } from "./dashboard/state.js";
+import { setState, state } from "./dashboard/state.js";
 import { UNKNOWN, inlineStateHtml, renderEmpty, renderError, setBlockLoading, setMetricLoading, setMetricUnknown, setRowsLoading } from "./dashboard/states.js";
 import { loadBoardShell, preserveSiteContextLinks, sitePath, siteQuery } from "./dashboard/board-shell.js";
 import { fetchDashboardJson, loginRedirectPath } from "./dashboard/request.js";
@@ -133,7 +133,7 @@ function markKickNeedsAttention() {
   renderChannelHealth({ connected: true, tokenExpired: true, expiryDate: null, linkedAt: state.channel?.linkedAt });
 }
 function applyOAuthContext() {
-  if (!activeSiteId) activeSiteId = siteQuery() || "";
+  if (!activeSiteId) activeSiteId = siteQuery() || state.ACTIVE_SITE_ID || "";
   updateKickAuthLinks();
   showOAuthMessage();
 }

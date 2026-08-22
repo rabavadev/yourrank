@@ -3,6 +3,7 @@ import { $, esc, fromLocalInput, getViewerTimeZone, logError, timeZoneLabel, toL
 import { markDirty, setState, state, subscribe } from "./dashboard/state.js";
 import { currentRoute, navTo, registerSectionMounter, setupShell } from "./dashboard/shell.js";
 import { renderBoardSwitcher, renderBoardSelect, renderBoardsPage } from "./dashboard/boards.js";
+import { clearSession } from "./dashboard/session.js";
 import { renderPlayers } from "./dashboard/players.js";
 import { fitDesignPreview, loadCreditsStatus, loadStats, refreshDesignPreview, renderArchives, renderBranding, renderDomain, renderDomainStatus, renderBoardStatus, renderEditorTimestamps, renderEmbedShare, renderLegal, renderNotifications, renderPrizes, renderSections, renderSocials, wirePublishAction } from "./dashboard/site.js";
 import { loadOverviewLiveData, renderOverviewSummary } from "./dashboard/overview.js";
@@ -22,7 +23,7 @@ import "./dashboard/command-palette.js";
 // localStorage; the storage event fires only in *other* tabs, which then
 // leave the dashboard instead of sitting on a stale authenticated view.
 window.addEventListener("storage", (event) => {
-  if (event.key === "yr:logout") location.href = "/login";
+  if (event.key === "yr:logout") { clearSession(); location.href = "/login"; }
 });
 
 // Mark that the persistent SPA shell is active. The dynamic-section boot

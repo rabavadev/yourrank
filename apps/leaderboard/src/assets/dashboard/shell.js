@@ -475,9 +475,10 @@ export function setupShell() {
     }
     lastRouteUrl = destination;
     if (isDynamicSection(route.page)) {
-      // Back/forward into a dynamic section: load it as a fragment.
+      // Back/forward into a dynamic section: load it as a fragment, preserving
+      // the query string (?edit=, ?siteId=) so deep-linked state survives.
       setActiveSideNav(DYNAMIC_SECTIONS[route.page].navKey);
-      await loadDynamicSection(route.page, route.tab);
+      await loadDynamicSection(route.page, route.tab, { query: location.search });
     } else {
       // Back/forward into a core SPA section: tear down any dynamic
       // content, then show the SPA section.
