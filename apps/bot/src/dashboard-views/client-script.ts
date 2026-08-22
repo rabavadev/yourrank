@@ -183,8 +183,15 @@ async function api(path, opts) {
 }
 async function logout(btn) {
   if (btn) { btn.disabled = true; if (btn.textContent) btn.textContent = 'Logging out…'; }
-  await fetch('/bot/auth/logout',{method:'POST',headers:{'Accept':'application/json'}});
-  location.reload();
+  try {
+    const r = await fetch('/bot/auth/logout',{method:'POST',headers:{'Accept':'application/json'}});
+    if (!r.ok) throw new Error('logout failed');
+    // AUDIT-B4: notify other open dashboard tabs that this creator session ended.
+    try { localStorage.setItem('yr:logout', String(Date.now())); } catch (e) {}
+    location.reload();
+  } catch (e) {
+    if (btn) { btn.disabled = false; if (btn.textContent) btn.textContent = 'Sign out failed'; }
+  }
 }
 
 let submitting = false;

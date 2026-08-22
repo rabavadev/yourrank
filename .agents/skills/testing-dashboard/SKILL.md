@@ -289,6 +289,56 @@ The v4 dashboard shell (`src/pages/dashboard-shell.jsx` +
 - Adding a player with only name+amount can persist a derived
   `net profit = -amount`; verify whether that is intended before filing.
 
+## Auth / authorization regression testing
+
+- `handlePutSite` Zod schema in `packages/shared/src/validation.ts` must accept
+  `startsAt` and `rankBy` (sent by `collect()` in `apps/leaderboard/src/assets/dashboard/site.js`);
+  without them, every editor save returns `400` before auth/403/409 branching can run.
+- Editor save error branching lives in `apps/leaderboard/src/assets/dashboard/site.js`:
+  - `err.code === "AUTH"` → session-ended message, draft preserved, no redirect.
+  - `err.code === "FORBIDDEN"` → role permission message, draft preserved.
+  - `err.code === "concurrency_conflict"` / `err.status === 409` → reconciliation message.
+- `request.js` classifies `401` as `AUTH` and `403` as `FORBIDDEN`; dynamic-section
+  loader (`dynamic-section.js`) redirects on `401` and renders the server error in
+  the `#lbDynamic` region on `403`.
+- The shared account menu renders a `<form class="gm-logout-form" action="/logout?next=<current-path>" method="POST">`.
+  `apps/leaderboard/src/assets/shell-nav.js` intercepts the form submit in capture phase,
+  POSTs to the form's `action`, and **only** after a successful server response sets
+  `localStorage.setItem("yr:logout", String(Date.now()))`. On failure it keeps the user
+  signed in, re-enables the button, and sets a `title` failure message; it does not
+  broadcast. `dashboard.js`, `credits.js`, and `giveaways.js` listen for the `storage`
+  event key `yr:logout`, clear the in-memory session, and redirect to
+  `/login?next=<current-path>`.
+- The Telegram bot dashboard uses the same shared account menu (`logoutAction: "/bot/auth/logout"`)
+  and loads `shell-nav.js`, so its logout also broadcasts `yr:logout` and invalidates
+  the same creator dashboard session. `apps/bot/src/dashboard-views/client-script.ts`
+  keeps a fallback `logout()` that broadcasts as well in case `shell-nav.js` is absent.
+- Two-way cross-tab sign-out test:
+  1. Open the dashboard SPA at `/dashboard` in Tab A and a standalone page
+     (`/dashboard/rewards/redemptions`, `/dashboard/audience/members`, or `/dashboard/giveaways/chat`)
+     in Tab B.
+  2. Sign out from the SPA → Tab B must redirect to `/login?next=<its-path>`.
+  3. Sign back in, then sign out from the standalone page → Tab A must redirect to
+     `/login?next=/dashboard`.
+  4. Verify no `SyntaxError`, `ReferenceError`, `TypeError`, or duplicate redirects,
+     and that the `next` path is preserved (including `siteId` when present).
+- Creating test accounts quickly can hit the per-account login rate limit
+  (`login-email:<email>` 10/15min and `login:<ip>` 20/10min). Reuse an existing
+  session token or sign up another user to avoid the login rate limit.
+- `SECURE_HTML` headers include `Strict-Transport-Security` and `upgrade-insecure-requests`.
+  When running `wrangler dev` over plain HTTP, the shared `shell-nav.js` logout
+  `fetch('/logout')` follows the 302 to `/login`, but Chrome upgrades the redirect
+  target to `https://localhost:8787` (which has no TLS listener) and the Promise
+  never resolves. Workaround: start the Worker with `--local-protocol https` and a
+  self-signed certificate, and relaunch Chrome with `--ignore-certificate-errors`.
+- Standalone pages (`/dashboard/rewards/*`, `/dashboard/audience/members`,
+  `/dashboard/giveaways/*`) must accept the `activePath` prop (which already
+  includes `url.search`) instead of recomputing a query-less path. As of the
+  Phase 4C fix, they pass `activePath` to `DashboardShell`, so the shared logout
+  form's `?next=` now preserves a `?siteId=...` query on the signing-out tab.
+  Verify both the signing-out tab and the receive tab include `siteId` in the
+  final `/login?next=` URL.
+
 ## Collecting console errors and Worker 4xx/5xx
 
 - The wrangler dev log is at `/tmp/wrangler-leaderboard.log` (also
