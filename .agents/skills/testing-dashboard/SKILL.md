@@ -325,6 +325,18 @@ The v4 dashboard shell (`src/pages/dashboard-shell.jsx` +
 - Creating test accounts quickly can hit the per-account login rate limit
   (`login-email:<email>` 10/15min and `login:<ip>` 20/10min). Reuse an existing
   session token or sign up another user to avoid the login rate limit.
+- `SECURE_HTML` headers include `Strict-Transport-Security` and `upgrade-insecure-requests`.
+  When running `wrangler dev` over plain HTTP, the shared `shell-nav.js` logout
+  `fetch('/logout')` follows the 302 to `/login`, but Chrome upgrades the redirect
+  target to `https://localhost:8787` (which has no TLS listener) and the Promise
+  never resolves. Workaround: start the Worker with `--local-protocol https` and a
+  self-signed certificate, and relaunch Chrome with `--ignore-certificate-errors`.
+- Standalone pages (`/dashboard/rewards/*`, `/dashboard/audience/members`,
+  `/dashboard/giveaways/*`) hard-code `activePath` without `url.search` when
+  rendering `DashboardShell`, so the shared logout form's `?next=` does **not**
+  preserve a `?siteId=...` query on the tab that actually clicks Sign out.
+  The receive tab preserves `siteId` because its `storage` listener uses
+  `loginRedirectPath(location)` which includes `location.search`.
 
 ## Collecting console errors and Worker 4xx/5xx
 

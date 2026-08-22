@@ -5,7 +5,7 @@ import { raw } from "hono/html";
 import { DashboardShell } from "./dashboard-shell.jsx";
 import { renderGiveawayDrawersHtml, renderGiveawaysContentHtml } from "./giveaway-pages.js";
 
-export function GiveawaysPage({ user, tab = "chat", fragment } = {}) {
+export function GiveawaysPage({ activePath, user, tab = "chat", fragment } = {}) {
   const labels = { chat: "Giveaways", raffles: "Raffles", drops: "Drops", preds: "Predictions", tournaments: "Tournaments" };
   const crumbs = [{ label: "Engagement", href: "/dashboard/giveaways" }, { label: labels[tab] || labels.chat }];
   const content = <div class="gw-workspace-content">
@@ -15,7 +15,7 @@ export function GiveawaysPage({ user, tab = "chat", fragment } = {}) {
   return (
     <DashboardShell
       activeNav={tab === "chat" || tab === "tournaments" ? "giveaways" : tab === "preds" ? "predictions" : tab}
-      activePath={`/dashboard/giveaways/${tab === "preds" ? "predictions" : tab}`}
+      activePath={activePath || `/dashboard/giveaways/${tab === "preds" ? "predictions" : tab}`}
       boardContext="selector"
       crumbs={crumbs}
       footer="rewards"
