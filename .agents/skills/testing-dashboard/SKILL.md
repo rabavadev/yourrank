@@ -332,11 +332,12 @@ The v4 dashboard shell (`src/pages/dashboard-shell.jsx` +
   never resolves. Workaround: start the Worker with `--local-protocol https` and a
   self-signed certificate, and relaunch Chrome with `--ignore-certificate-errors`.
 - Standalone pages (`/dashboard/rewards/*`, `/dashboard/audience/members`,
-  `/dashboard/giveaways/*`) hard-code `activePath` without `url.search` when
-  rendering `DashboardShell`, so the shared logout form's `?next=` does **not**
-  preserve a `?siteId=...` query on the tab that actually clicks Sign out.
-  The receive tab preserves `siteId` because its `storage` listener uses
-  `loginRedirectPath(location)` which includes `location.search`.
+  `/dashboard/giveaways/*`) must accept the `activePath` prop (which already
+  includes `url.search`) instead of recomputing a query-less path. As of the
+  Phase 4C fix, they pass `activePath` to `DashboardShell`, so the shared logout
+  form's `?next=` now preserves a `?siteId=...` query on the signing-out tab.
+  Verify both the signing-out tab and the receive tab include `siteId` in the
+  final `/login?next=` URL.
 
 ## Collecting console errors and Worker 4xx/5xx
 
