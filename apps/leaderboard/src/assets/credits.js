@@ -411,7 +411,17 @@ function prefillEditFromQuery() {
   $("cr-reward-id").value = m.id; $("cr-reward-kick-id").value = m.kick_reward_id; $("cr-reward-title").value = m.kick_reward_title; $("cr-reward-cost").value = m.kick_reward_cost; $("cr-reward-credits").value = m.credits;
   setStatus("cr-reward-status", "Editing credit rule.");
 }
-function editReward(id) { const q = new URLSearchParams(); q.set("edit", id); if (siteQuery()) q.set("siteId", siteQuery()); location.href = `/dashboard/rewards/rules?${q}`; }
+function editReward(id) {
+  const q = new URLSearchParams(); q.set("edit", id); if (siteQuery()) q.set("siteId", siteQuery());
+  const query = `?${q.toString()}`;
+  if (window.__yrSpaShell) {
+    // Inside the persistent shell: re-route in place. `force` re-runs the
+    // section even when only the query changed (same path, different ?edit=).
+    window.dispatchEvent(new CustomEvent("yr-nav", { detail: { page: "rewards", hash: "rules", query, force: true } }));
+  } else {
+    location.href = `/dashboard/rewards/rules${query}`;
+  }
+}
 async function delReward(id, trigger) {
   const confirmed = await confirmPopover(trigger, "Disable credit rule", "This disables the credit rule; credit activity is retained.");
   if (!confirmed) return;
@@ -567,7 +577,7 @@ async function load() {
   redemptionCtrl?.setLoading(true);
   setGlobalLoading(true);
   try {
-    const shell = await loadBoardShell({ request: api });
+    const shell = await loadBoardShell();
     activeSiteId = shell.activeSiteId;
     updateKickAuthLinks();
     state = await api("GET", sitePath("/api/credits/status"));
@@ -838,8 +848,44 @@ function renderHistory(data) {
     empty.hidden = boards.length > 0;
   }
 }
-if ($("cr-app")) {
+if ($("cr-app") && !window.__yrSpaShell) {
   wireShell();
   wireActions();
   load().then(() => window.__yrBoot?.signal()).catch(() => {});
+}
+
+// ---- Persistent-shell lifecycle ----
+//
+// When this module is imported as a fragment by the dynamic-section loader
+// (window.__yrSpaShell is set), the auto-init above is skipped and the shell
+// calls enter() explicitly. enter() resets module state so re-entering the
+// Rewards area re-wires and re-loads fresh data; leave() clears timers so
+// nothing leaks when the operator navigates away.
+
+export function enter() {
+  // Reset so re-entry re-wires event handlers against the freshly injected DOM.
+  wired = false;
+  state = {};
+  activeSiteId = "";
+  pendingOAuthFeedback = null;
+  activityEvents = [];
+  activityCursor = null;
+  activityLoading = false;
+  shopItemsView = [];
+  shopSearch = "";
+  shopSort = "cost";
+  wireShell();
+  wireActions();
+  load().then(() => window.__yrBoot?.signal()).catch(() => {});
+}
+
+export function leave() {
+  // Clear all status toast timers so they don't fire into a detached DOM.
+  for (const timer of statusClearTimers.values()) clearTimeout(timer);
+  statusClearTimers.clear();
+  // Release any controller/poller references held by the list controllers.
+  viewerCtrl?.destroy?.();
+  redemptionCtrl?.destroy?.();
+  rewardCtrl?.destroy?.();
+  viewerCtrl = redemptionCtrl = rewardCtrl = undefined;
 }

@@ -19,7 +19,12 @@ export function renderSiteSelector({ select, sites = [], activeId = "", onSelect
   select.onchange = () => {
     const id = select.value;
     if (id === MANAGE_SITES_VALUE) {
-      location.href = "/dashboard/leaderboards";
+      if (window.__yrSpaShell) {
+        // Persistent shell: route through the SPA instead of a reload.
+        window.dispatchEvent(new CustomEvent("yr-nav", { detail: { page: "boards", query: "" } }));
+      } else {
+        location.href = "/dashboard/leaderboards";
+      }
       return;
     }
     if (id && id !== String(activeId)) onSelect?.(id);

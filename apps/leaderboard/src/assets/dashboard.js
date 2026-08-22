@@ -25,6 +25,13 @@ window.addEventListener("storage", (event) => {
   if (event.key === "yr:logout") location.href = "/login";
 });
 
+// Mark that the persistent SPA shell is active. The dynamic-section boot
+// modules (credits.js, giveaways.js, account.js) check this flag to skip
+// their auto-init when imported as fragments — the shell calls enter()
+// explicitly instead. On a standalone document load (direct URL / refresh)
+// this flag is absent, so auto-init runs normally.
+window.__yrSpaShell = true;
+
 const LOADING_MESSAGES = [
   "Loading your workspace…",
   "Preparing rank insights…",

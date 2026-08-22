@@ -7,6 +7,13 @@ import { computeTrustScore, connectKickChat } from "./chat-entry.js";
 // Client-side script for Live Chat Keyword Listener & Giveaways
 // Connects to Kick's Pusher WebSocket network in real-time
 
+// Lifecycle bridge: the IIFE below assigns its enter/leave functions here so
+// the module can export them for the persistent-shell dynamic-section loader.
+let _giveawaysEnter = null;
+let _giveawaysLeave = null;
+export function enter() { _giveawaysEnter?.(); }
+export function leave() { _giveawaysLeave?.(); }
+
 (function () {
   // State
   let ws = null;
@@ -1639,13 +1646,49 @@ import { computeTrustScore, connectKickChat } from "./chat-entry.js";
     return String(str || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
   }
 
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", () => {
-      init();
-      initEventsHub();
-    });
-  } else {
+  // ---- Persistent-shell lifecycle ----
+  // enter() resets module state and re-initializes against the freshly
+  // injected fragment DOM. leave() tears down the WebSocket, all intervals,
+  // and removes the document-level keydown listener so nothing leaks.
+  function giveawaysEnter() {
+    // Reset live-chat state so a stale session doesn't carry over.
+    if (ws) { try { ws.close(); } catch {} ws = null; }
+    isListening = false;
+    clearInterval(timerInterval); timerInterval = null;
+    clearInterval(claimTimerInterval); claimTimerInterval = null;
+    entrants = []; entrantIds = new Set();
+    messagesCount = 0; verifiedCount = 0; flaggedCount = 0;
+    sessionStartTime = null; currentWinner = null;
     init();
     initEventsHub();
+  }
+
+  function giveawaysLeave() {
+    // Close the Kick chat WebSocket.
+    if (ws) { try { ws.close(); } catch {} ws = null; }
+    isListening = false;
+    // Clear all polling/timer intervals.
+    clearInterval(timerInterval); timerInterval = null;
+    clearInterval(claimTimerInterval); claimTimerInterval = null;
+    // Remove the document-level drawer focus trap (added in wireEvents).
+    document.removeEventListener("keydown", trapEventDrawerFocus);
+  }
+
+  // Expose lifecycle hooks to the module scope for the dynamic-section loader.
+  _giveawaysEnter = giveawaysEnter;
+  _giveawaysLeave = giveawaysLeave;
+
+  // Auto-init only on a standalone document load (direct URL / refresh).
+  // When the persistent SPA shell is active, enter() is called explicitly.
+  if (!window.__yrSpaShell) {
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", () => {
+        init();
+        initEventsHub();
+      });
+    } else {
+      init();
+      initEventsHub();
+    }
   }
 })();

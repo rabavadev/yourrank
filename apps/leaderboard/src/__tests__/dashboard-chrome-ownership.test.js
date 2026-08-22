@@ -335,6 +335,7 @@ describe("dashboard chrome ownership", () => {
       ["/dashboard/rewards/history", "redirect-only legacy alias to Audience activity"],
       ["/dashboard/settings/plan", "redirect-only legacy alias to account billing"],
       ["/dashboard/giveaways/preds", "redirect-only legacy alias to Engage predictions"],
+      ["/dashboard/_content", "JSON fragment endpoint for persistent-shell navigation, not a chrome page"],
     ]);
     const workerRoutes = new Set(workerRouteLiterals(workerSource));
     for (const path of workerBranchTabRoutes(workerSource, "/dashboard/giveaways")) workerRoutes.add(path);

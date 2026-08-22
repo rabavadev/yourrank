@@ -17,11 +17,10 @@ function settingsPanel(key, html) {
   return <section class="account-settings-panel" data-settings-panel={key} hidden={key !== "account"} dangerouslySetInnerHTML={{ __html: html }} />;
 }
 
-export function UnifiedSettingsPage({ activePath, user, tab = "account" } = {}) {
+export function UnifiedSettingsPage({ activePath, user, tab = "account", fragment } = {}) {
   const active = SETTINGS_TABS.some(([key]) => key === tab) ? tab : "account";
   const activeLabel = SETTINGS_TABS.find(([key]) => key === active)?.[1] || "Account";
-  return <DashboardShell activeNav={active === "connections" ? "settings" : "account"} activePath={activePath || `/dashboard/settings/${active === "plan" ? "billing" : active}`} boardContext="none" crumbs={[{ label: "Account", href: "/dashboard/settings" }, { label: activeLabel }]} footer="account" topbarContext="Account" user={user}>
-    <div class="account-body account-settings" id="acc-app" data-acc-tab="settings" data-settings-active={active}>
+  const content = <div class="account-body account-settings" id="acc-app" data-acc-tab="settings" data-settings-active={active}>
       <div class="account-settings-head">
         <h1>{activeLabel}</h1>
         <p class="card-sub">Account settings apply to you. To change your website, use Site settings.</p>
@@ -50,7 +49,10 @@ export function UnifiedSettingsPage({ activePath, user, tab = "account" } = {}) 
           </div>
         </aside>
       </div>
-    </div>
+    </div>;
+  if (fragment) return content;
+  return <DashboardShell activeNav={active === "connections" ? "settings" : "account"} activePath={activePath || `/dashboard/settings/${active === "plan" ? "billing" : active}`} boardContext="none" crumbs={[{ label: "Account", href: "/dashboard/settings" }, { label: activeLabel }]} footer="account" topbarContext="Account" user={user}>
+    {content}
   </DashboardShell>;
 }
 

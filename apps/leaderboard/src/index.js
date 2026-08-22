@@ -126,6 +126,47 @@ function redirectKeepingSearch(pathname, url, status = 302) {
   return redirectResponse(target, status);
 }
 
+// Maps a dashboard sub-path to the page key + tab needed to render its content
+// fragment. Mirrors the routing in handleRequest so the fragment endpoint
+// reuses the exact same page components the full-page route serves.
+// Exported for the routing-parity tests: the client routing table in
+// assets/dashboard/routes.js must agree with this mapping.
+export function resolveFragment(targetPath) {
+  const clean = String(targetPath || "").split("?")[0].replace(/\/+$/, "") || "/dashboard";
+  // Engagement
+  if (clean.startsWith("/dashboard/giveaways/")) {
+    const tab = clean.slice("/dashboard/giveaways/".length);
+    if (["chat", "raffles", "drops", "tournaments"].includes(tab)) return { pageKey: "giveaways", tab };
+    if (tab === "predictions") return { pageKey: "giveaways", tab: "preds" };
+    return null;
+  }
+  // Rewards
+  if (clean === "/dashboard/rewards") return { pageKey: "rewardsOverview", tab: "overview" };
+  if (clean.startsWith("/dashboard/rewards/")) {
+    const tab = clean.slice("/dashboard/rewards/".length);
+    if (tab === "shop") return { pageKey: "rewardsShop", tab: "shop" };
+    if (tab === "rules") return { pageKey: "rewardsRules", tab: "rules" };
+    if (tab === "redemptions") return { pageKey: "rewardsRedemptions", tab: "redemptions" };
+    if (tab === "activity") return { pageKey: "rewardsHistory", tab: "history" };
+    if (tab === "channel") return { pageKey: "rewardsChannel", tab: "channel" };
+    return null;
+  }
+  // Audience
+  if (clean === "/dashboard/audience/members") return { pageKey: "audienceMembers", tab: "viewers" };
+  // Account settings
+  if (clean === "/dashboard/settings") return { pageKey: "settingsUnified", tab: "account" };
+  if (clean.startsWith("/dashboard/settings/")) {
+    const tab = clean.slice("/dashboard/settings/".length);
+    if (tab === "account") return { pageKey: "settingsUnified", tab: "account" };
+    if (tab === "team") return { pageKey: "settingsUnified", tab: "team" };
+    if (tab === "billing") return { pageKey: "settingsUnified", tab: "plan" };
+    if (tab === "connections") return { pageKey: "settingsUnified", tab: "connections" };
+    if (tab === "data") return { pageKey: "settingsUnified", tab: "data" };
+    return null;
+  }
+  return null;
+}
+
 function findProfilePlayer(data, rawName) {
   const name = decodeURIComponent(rawName).trim();
   const players = (data.players || []).slice().sort((a, b) => (Number(b.wagered) || 0) - (Number(a.wagered) || 0));
@@ -741,6 +782,36 @@ export async function handleRequest(request, env, ctx, meta, deps = {}) {
       if (path === "/dashboard/security") return redirectKeepingSearch("/dashboard/settings/account", url);
       if (path === "/dashboard/integrations") return redirectKeepingSearch("/dashboard/settings/connections", url);
       if (path === "/dashboard/manage") return redirectKeepingSearch("/dashboard/settings", url);
+      // Fragment endpoint: returns the content HTML (without the shell) for
+      // dynamic dashboard sections, so the persistent SPA shell can inject
+      // them without a document reload. Reuses the same page components and
+      // rendering functions as the full-page route — no duplicated pages.
+      if (path === "/dashboard/_content" && method === "GET") {
+        const targetPath = url.searchParams.get("path");
+        if (!targetPath) return new Response("Missing path", { status: 400, headers: { ...SECURE_HTML, ...csrfHeader } });
+        try {
+          const user = await currentUser(request, env);
+          if (!user) return new Response(JSON.stringify({ error: "unauthorized" }), { status: 401, headers: { "content-type": "application/json", ...csrfHeader } });
+          const fragment = resolveFragment(targetPath);
+          if (!fragment) return new Response(JSON.stringify({ error: "not_found" }), { status: 404, headers: { "content-type": "application/json", ...csrfHeader } });
+          const pageObj = PAGES[fragment.pageKey];
+          if (!pageObj?.Component) return new Response(JSON.stringify({ error: "not_found" }), { status: 404, headers: { "content-type": "application/json", ...csrfHeader } });
+          let node = pageObj.Component({ user, tab: fragment.tab, fragment: true });
+          if (node instanceof Promise) node = await node;
+          const html = node.toString();
+          const title = (pageObj.configFor ? pageObj.configFor({ user, tab: fragment.tab }) : pageObj.config)?.title || "Dashboard · YourRank";
+          return new Response(JSON.stringify({ html, title }), {
+            headers: {
+              "content-type": "application/json",
+              ...csrfHeader,
+              "cache-control": "no-store, no-cache, must-revalidate",
+            },
+          });
+        } catch (e) {
+          if (workerLog) workerLog.error("fragment_render_failed", { error: String(e?.message || e) });
+          return new Response(JSON.stringify({ error: "render_failed", message: String(e?.message || e) }), { status: 500, headers: { "content-type": "application/json", ...csrfHeader } });
+        }
+      }
       if (path === "/dashboard/audience/members") {
         return renderDashboardPage("audienceMembers", "audience_render_failed");
       }

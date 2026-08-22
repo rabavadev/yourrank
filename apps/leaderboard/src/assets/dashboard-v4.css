@@ -943,6 +943,12 @@ body[data-wide] .v3-dash[data-auth-workspace] .lb-main { padding-right: var(--v3
 .v3-dash[data-auth-workspace] #cr-main > div,
 .v3-dash[data-auth-workspace] .v3-crumbs { grid-column: 1 / -1; width: 100%; }
 .v3-dash[data-auth-workspace] .lb-page:not(.is-on) { display: none; }
+/* Dynamic content region for fragment-loaded sections (Rewards, Engagement,
+   Audience, Account). Takes the full content grid when active; hidden when
+   the shell returns to a core SPA section. */
+.v3-dash[data-auth-workspace] .lb-dynamic-region { grid-column: 1 / -1; width: 100%; min-height: 200px; }
+.v3-dash[data-auth-workspace] .lb-dynamic-region[hidden] { display: none; }
+.v3-dash[data-auth-workspace] .lb-dynamic-loading { display: flex; align-items: center; justify-content: center; gap: 12px; padding: 60px 20px; min-height: 200px; }
 .v3-dash[data-auth-workspace] .v3-stack { display: grid; gap: 24px; }
 .v3-dash[data-auth-workspace] .v3-stack > .v3-head { margin-bottom: 0; }
 .v3-dash[data-auth-workspace] .kpi-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; width: 100%; }

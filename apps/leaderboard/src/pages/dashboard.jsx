@@ -555,6 +555,10 @@ export function DashboardContent({ user, activePath } = {}) {
   })}
 {hasEditor ? 
 <div class="savebar" id="savebar" hidden><span class="savebar-hint">Unsaved changes</span><span class="savebar-ts" id="editorTimestamp"></span><button class="btn btn--ghost" id="discard" type="button">Discard changes</button><button class="btn btn--accent" id="save" type="button">Save changes</button></div> : null}
+{/* Dynamic content region for fragment-loaded sections (Rewards, Engagement,
+    Audience, Account). Hidden by default; shown by the dynamic-section loader
+    when navigating to those areas, hidden again when returning to SPA sections. */}
+<div id="lbDynamic" class="lb-dynamic-region" hidden aria-live="polite"></div>
     </DashboardShell>
     </>
   );
