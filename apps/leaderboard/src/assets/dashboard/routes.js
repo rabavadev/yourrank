@@ -42,6 +42,7 @@ export const SECTION_ALIASES = {
   editor: "board",
   leaderboard: "board",
   leaderboards: "boards",
+  sites: "boards",
   analytics: "performance",
   growth: "performance",
   referrals: "performance",

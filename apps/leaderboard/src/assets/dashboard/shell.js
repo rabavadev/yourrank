@@ -365,7 +365,11 @@ export function setupShell() {
     const route = parseDashboardPath(new URL(href, location.origin).pathname);
     if (!route) return;
     e.preventDefault();
-    requestDashboardRoute(link.dataset.nav, link.dataset.hash || defaultHash(link.dataset.nav));
+    // Navigate by the section the href resolves to, not the rail key. The "Sites"
+    // item is keyed `sites` (its nav-owner name) but addresses the `boards`
+    // section; passing dataset.nav here ran resolveSection("sites") → "" and
+    // fell back to /dashboard, so clicking Sites rebooted to Home.
+    requestDashboardRoute(route.page, route.tab || link.dataset.hash || defaultHash(route.page));
   }));
   document.querySelectorAll("[data-jump]").forEach((el) => el.addEventListener("click", (e) => {
     e.preventDefault();

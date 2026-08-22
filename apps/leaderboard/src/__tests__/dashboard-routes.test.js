@@ -14,6 +14,29 @@ describe("dashboard routes", () => {
     }
   });
 
+  it("resolves the Sites rail key to the boards listing, not Home", () => {
+    // The "Sites" nav item is keyed `sites` (its nav-owner name) but addresses
+    // the `boards` section. If `sites` does not alias to `boards`, the sidebar
+    // click handler resolves it to "" and dashboardPath falls back to
+    // /dashboard — so clicking Sites reboots to Home instead of the listing.
+    expect(resolveSection("sites")).toBe("boards");
+    expect(dashboardPath("sites")).toBe("/dashboard/leaderboards");
+    expect(parseDashboardPath("/dashboard/leaderboards")).toEqual({ page: "boards", tab: "" });
+  });
+
+  it("navigates the sidebar by the section the href resolves to", () => {
+    // The rail renders data-nav with nav-owner keys (e.g. "sites"), but
+    // requestDashboardRoute takes a section key. The handler must pass the
+    // parsed route.page, not link.dataset.nav, or owner-only keys misroute.
+    const shell = readFileSync(new URL("../assets/dashboard/shell.js", import.meta.url), "utf8");
+    const handler = shell.slice(
+      shell.indexOf('document.querySelectorAll(".lb-nav[data-nav]")'),
+      shell.indexOf("document.querySelectorAll(\"[data-jump]\")"),
+    );
+    expect(handler).toContain('requestDashboardRoute(route.page, route.tab');
+    expect(handler).not.toContain('requestDashboardRoute(link.dataset.nav');
+  });
+
   it("addresses the editor steps individually", () => {
     expect(dashboardPath("board", "design")).toBe("/dashboard/leaderboard/design");
     expect(parseDashboardPath("/dashboard/leaderboard/design")).toEqual({ page: "board", tab: "design" });
