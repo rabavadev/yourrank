@@ -4,6 +4,8 @@ import { clearDirty, state, subscribe } from "./state.js";
 import { renderOverviewSummary } from "./overview.js";
 import { fitDesignPreview, loadStats, refreshDesignPreview } from "./site.js";
 import { dashboardPath, dashboardTitle, defaultTab, navOwner, parseDashboardPath, SECTIONS, TAB_TITLES } from "./routes.js";
+import { DYNAMIC_SECTIONS, dynamicPath, isDynamicSection, parseDynamicPath } from "./routes.js";
+import { loadDynamicSection, leaveDynamicSection } from "./dynamic-section.js";
 
 // Sections are all in one document now, so nothing below reinitializes the
 // workspace. Section-specific data (games, analytics) loads on first visit
@@ -87,28 +89,62 @@ function defaultHash(page) { return defaultTab(page); }
 
 /** The section this document was opened at, from the path the Worker served. */
 export function currentRoute() {
-  return parseDashboardPath(location.pathname) || { page: "home", tab: "" };
+  return parseDashboardPath(location.pathname) || parseDynamicPath(location.pathname) || { page: "home", tab: "" };
+}
+
+/** True when this document is the persistent shell with a dynamic region. */
+function hasDynamicRegion() {
+  return Boolean(window.__yrSpaShell && document.getElementById("lbDynamic"));
 }
 
 function routeDestination(page, tab = "", query = location.search) {
   const suffix = query ? (String(query).startsWith("?") ? String(query) : `?${query}`) : "";
-  return dashboardPath(page, tab || defaultHash(page)) + suffix;
+  const base = isDynamicSection(page) ? dynamicPath(page, tab) : dashboardPath(page, tab || defaultHash(page));
+  return base + suffix;
 }
 
-export async function requestDashboardRoute(page, tab = "", { replace = false, query = location.search, reload = false } = {}) {
+export async function requestDashboardRoute(page, tab = "", { replace = false, query = location.search, reload = false, force = false } = {}) {
   if (navigationPending) return false;
   const destination = routeDestination(page, tab, query);
-  if (destination === location.pathname + location.search) return true;
+  const sameUrl = destination === location.pathname + location.search;
+  // Same URL is a no-op unless the caller explicitly asks to re-run it (e.g.
+  // re-opening the reward edit form for another id via ?edit=).
+  if (sameUrl && !force) return true;
   navigationPending = true;
   try {
     if (!await allowNavigation()) return false;
-    // Each section is its own document now, so only moves inside the section
-    // this document was served for stay client-side.
+
+    // Dynamic sections (Rewards, Engagement, Audience, Account) load as
+    // content fragments inside the persistent shell — no document reload.
+    // Only when this document IS the shell: the command palette and other
+    // modules import this router from standalone document pages too, where
+    // the only correct move is a full navigation.
+    if (isDynamicSection(page) && hasDynamicRegion()) {
+      if (sameUrl || replace) history.replaceState(history.state || {}, "", destination);
+      else history.pushState({}, "", destination);
+      lastRouteUrl = destination;
+      setActiveSideNav(DYNAMIC_SECTIONS[page].navKey);
+      await loadDynamicSection(page, tab || DYNAMIC_SECTIONS[page].tabs[0], { query });
+      return true;
+    }
+
+    // Navigating from a dynamic section back to a core SPA section: tear
+    // down the dynamic content first, then show the SPA section.
+    if (!reload && document.querySelector(`section[data-page="${page}"]`)) {
+      leaveDynamicSection();
+      if (sameUrl || replace) history.replaceState(history.state || {}, "", destination);
+      else history.pushState({}, "", destination);
+      lastRouteUrl = destination;
+      navTo(page, tab);
+      return true;
+    }
+
+    // Telegram and other cross-worker destinations remain document loads.
     if (reload || !document.querySelector(`section[data-page="${page}"]`)) {
       location.href = destination;
       return true;
     }
-    if (replace) history.replaceState(history.state || {}, "", destination);
+    if (sameUrl || replace) history.replaceState(history.state || {}, "", destination);
     else history.pushState({}, "", destination);
     lastRouteUrl = destination;
     navTo(page, tab);
@@ -122,11 +158,18 @@ function prefersReducedMotion() {
 }
 
 export function setActiveSideNav(page) {
-  const area = areaForPage(page);
-  document.querySelectorAll(".lb-side-group").forEach((g) => { g.hidden = (g.dataset.area !== area && g.dataset.area !== "all"); });
+  // `page` may be a SPA section key, a dynamic section key (rewards, giveaways,
+  // …), or a rail nav key (redemptions, engage, …). navOwner() normalises all
+  // of them to the rail item that should be active.
+  const navPage = navOwner(page);
+  const area = areaForPage(navPage);
+  // Dynamic sections may belong to a different product area than the SPA
+  // default; map their rail key to the right area for side-group visibility.
+  const DYN_AREA = { redemptions: "credits", engage: "sites", audience: "sites", settings: "sites" };
+  const resolvedArea = DYN_AREA[navPage] || area;
+  document.querySelectorAll(".lb-side-group").forEach((g) => { g.hidden = (g.dataset.area !== resolvedArea && g.dataset.area !== "all"); });
   document.querySelectorAll(".lb-nav").forEach((n) => {
-    const navPage = n.dataset.nav;
-    const active = navPage === navOwner(page);
+    const active = n.dataset.nav === navPage;
     n.classList.toggle("is-on", active);
     if (active) n.setAttribute("aria-current", "page");
     else n.removeAttribute("aria-current");
@@ -134,8 +177,8 @@ export function setActiveSideNav(page) {
   // Keep the shared product top-nav in sync when navigating inside the SPA.
   document.querySelectorAll(".gm-tab").forEach((t) => {
     const href = t.getAttribute("href") || "";
-    const isActive = (area === "sites" && href === "/dashboard") ||
-                     (area === "credits" && href.startsWith("/dashboard/rewards"));
+    const isActive = (resolvedArea === "sites" && href === "/dashboard") ||
+                     (resolvedArea === "credits" && href.startsWith("/dashboard/rewards"));
     t.classList.toggle("gm-tab--active", isActive);
   });
 }
@@ -362,14 +405,26 @@ export function setupShell() {
   // interception when they move within this one (and to guard unsaved work).
   document.querySelectorAll(".lb-nav[data-nav]").forEach((link) => link.addEventListener("click", (e) => {
     const href = link.getAttribute("href") || "";
-    const route = parseDashboardPath(new URL(href, location.origin).pathname);
-    if (!route) return;
-    e.preventDefault();
-    // Navigate by the section the href resolves to, not the rail key. The "Sites"
-    // item is keyed `sites` (its nav-owner name) but addresses the `boards`
-    // section; passing dataset.nav here ran resolveSection("sites") → "" and
-    // fell back to /dashboard, so clicking Sites rebooted to Home.
-    requestDashboardRoute(route.page, route.tab || link.dataset.hash || defaultHash(route.page));
+    const path = new URL(href, location.origin).pathname;
+    const route = parseDashboardPath(path);
+    if (route) {
+      e.preventDefault();
+      // Navigate by the section the href resolves to, not the rail key. The "Sites"
+      // item is keyed `sites` (its nav-owner name) but addresses the `boards`
+      // section; passing dataset.nav here ran resolveSection("sites") → "" and
+      // fell back to /dashboard, so clicking Sites rebooted to Home.
+      requestDashboardRoute(route.page, route.tab || link.dataset.hash || defaultHash(route.page));
+      return;
+    }
+    // Dynamic sections (Rewards, Engagement, Audience, Account) are also
+    // intercepted so they load as fragments inside the persistent shell.
+    // The query comes from the link's own href (preserveSiteContextLinks
+    // stamps ?siteId= there), so one-shot params like ?edit= don't leak.
+    const dynRoute = parseDynamicPath(path);
+    if (dynRoute) {
+      e.preventDefault();
+      requestDashboardRoute(dynRoute.page, dynRoute.tab, { query: new URL(href, location.origin).search });
+    }
   }));
   document.querySelectorAll("[data-jump]").forEach((el) => el.addEventListener("click", (e) => {
     e.preventDefault();
@@ -382,11 +437,19 @@ export function setupShell() {
   // Make the shared top product tabs part of the same SPA for same-Worker pages.
   document.querySelectorAll(".gm-tab, .gm-brand").forEach((link) => {
     const href = link.getAttribute("href") || "";
-    const route = parseDashboardPath(new URL(href, location.origin).pathname);
+    const url = new URL(href, location.origin);
+    const route = parseDashboardPath(url.pathname) || parseDynamicPath(url.pathname);
     if (!route) return;
     link.addEventListener("click", (e) => {
       e.preventDefault();
-      requestDashboardRoute(route.page, route.tab || defaultHash(route.page));
+      // Dynamic sections follow the link's own query (preserveSiteContextLinks
+      // stamps ?siteId= there) so one-shot params don't leak; SPA sections
+      // keep the document's query, as they always have.
+      if (isDynamicSection(route.page)) {
+        requestDashboardRoute(route.page, route.tab, { query: url.search });
+      } else {
+        requestDashboardRoute(route.page, route.tab || defaultHash(route.page));
+      }
     });
   });
 
@@ -398,7 +461,7 @@ export function setupShell() {
   window.addEventListener("popstate", async () => {
     if (navigationPending) return;
     const destination = location.pathname + location.search;
-    const { page, tab } = currentRoute();
+    const route = currentRoute();
     if (state._dirty) {
       navigationPending = true;
       try {
@@ -411,14 +474,43 @@ export function setupShell() {
       }
     }
     lastRouteUrl = destination;
-    navTo(page, tab);
+    if (isDynamicSection(route.page)) {
+      // Back/forward into a dynamic section: load it as a fragment.
+      setActiveSideNav(DYNAMIC_SECTIONS[route.page].navKey);
+      await loadDynamicSection(route.page, route.tab);
+    } else {
+      // Back/forward into a core SPA section: tear down any dynamic
+      // content, then show the SPA section.
+      leaveDynamicSection();
+      navTo(route.page, route.tab);
+    }
   });
 
   // Allow nested dashboard modules to request navigation without a circular import.
   window.addEventListener("yr-nav", (e) => {
-    const { page, hash } = e.detail || {};
+    const { page, hash, query, force } = e.detail || {};
     if (!page) return;
     e.preventDefault();
-    requestDashboardRoute(page, hash || defaultHash(page));
+    requestDashboardRoute(page, hash || defaultHash(page), { query: query ?? location.search, force: Boolean(force) });
+  });
+
+  // Catch-all for internal dashboard links rendered or re-rendered after
+  // boot (dynamic-section fragments re-render panels as data loads, long
+  // after any per-element wiring ran): route them through the shell instead
+  // of a document reload. Links with dedicated handlers above preventDefault
+  // first and are skipped here; cross-worker destinations (Telegram) and
+  // external/anchor links parse to no route and load normally.
+  document.addEventListener("click", (e) => {
+    if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+    const link = e.target?.closest?.("a[href]");
+    if (!link || link.target === "_blank" || link.hasAttribute("download")) return;
+    const href = link.getAttribute("href") || "";
+    if (!href.startsWith("/") || href.startsWith("//")) return;
+    const url = new URL(href, location.origin);
+    if (url.origin !== location.origin) return;
+    const route = parseDynamicPath(url.pathname) || parseDashboardPath(url.pathname);
+    if (!route) return;
+    e.preventDefault();
+    requestDashboardRoute(route.page, route.tab || defaultHash(route.page), { query: url.search });
   });
 }

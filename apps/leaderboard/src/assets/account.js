@@ -7,6 +7,7 @@ import { wireDeleteAccountModal } from "./dashboard/account-delete-modal.js";
 import { openDrawer, closeDrawer } from "./dashboard/shell.js";
 import { renderReferrals } from "./dashboard/referrals.js";
 import { checkout, renderPlan, loadHistory, loadPlanUsage, wireCancelSubscription } from "./dashboard/site.js";
+import { getMe, handleAuthError } from "./dashboard/session.js";
 
 const statusEl = () => $("status");
 function setStatus(message, isError) {
@@ -567,9 +568,15 @@ function wireTeam() {
 async function init() {
   wireSectionDrawer();
   let me;
-  try { me = await (await fetch("/api/auth/me")).json(); } catch (err) { logError("auth/me", err); me = null; }
-  if (!me || !me.ok || !me.user) { location.href = "/login"; return; }
-  state.ME = me.user;
+  try {
+    me = await getMe();
+  } catch (err) {
+    handleAuthError(err);
+    logError("auth/me", err);
+    return;
+  }
+  if (!me) { location.href = "/login"; return; }
+  state.ME = me;
   setUserName();
   // One settings document holds every panel, so everything is wired once.
   wireUnifiedSettingsTabs();
@@ -589,4 +596,16 @@ async function init() {
   wireDeleteAccountModal();
 }
 
-if (document.getElementById("acc-app")) init();
+// Auto-init only on a standalone document load (direct URL / refresh).
+// When the persistent SPA shell is active, enter() is called explicitly.
+if (document.getElementById("acc-app") && !window.__yrSpaShell) init();
+
+// ---- Persistent-shell lifecycle ----
+export function enter() {
+  // Re-initialize against the freshly injected fragment DOM.
+  init();
+}
+export function leave() {
+  // Account has no long-running timers, WebSockets, or pollers; nothing to
+  // tear down beyond letting the DOM detach. Included for interface parity.
+}

@@ -59,26 +59,31 @@ function SubTabs({ tab }) {
   );
 }
 
-function RewardsPage({ tab, activeNav = tab, boardContext = "selector", footer = "rewards", user }) {
+function RewardsContent({ tab }) {
   const body = PAGES[tab] || overviewPage;
+  return <div class="cr-workspace-content">
+    <SubTabs tab={tab} />
+    <div id="cr-loading" class="ui-loading" role="status" aria-live="polite" aria-busy="true" hidden><div class="ui-loading__spinner"></div><span class="sr-only">Loading rewards…</span></div>
+    <div id="cr-app" data-cr-tab={tab} hidden dangerouslySetInnerHTML={{ __html: body }}></div>
+    <div id="cr-empty" class="empty cr-loading-state" hidden><div class="ui-loading__spinner" aria-hidden="true"></div><p>Loading your rewards dashboard…</p></div>
+  </div>;
+}
+
+function RewardsPage({ tab, activeNav = tab, boardContext = "selector", footer = "rewards", user, fragment }) {
   const activePath = tab === "overview" ? "/dashboard/rewards" : `/dashboard/rewards/${tab === "history" ? "activity" : tab}`;
+  if (fragment) return <RewardsContent tab={tab} />;
   return <DashboardShell activeNav={activeNav} activePath={activePath} boardContext={boardContext} crumbs={crumbsFor(tab)} footer={footer} rootId="cr-dash" user={user}>
-    <div class="cr-workspace-content">
-      <SubTabs tab={tab} />
-      <div id="cr-loading" class="ui-loading" role="status" aria-live="polite" aria-busy="true" hidden><div class="ui-loading__spinner"></div><span class="sr-only">Loading rewards…</span></div>
-      <div id="cr-app" data-cr-tab={tab} hidden dangerouslySetInnerHTML={{ __html: body }}></div>
-      <div id="cr-empty" class="empty cr-loading-state" hidden><div class="ui-loading__spinner" aria-hidden="true"></div><p>Loading your rewards dashboard…</p></div>
-    </div>
+    <RewardsContent tab={tab} />
   </DashboardShell>;
 }
 
-export function RewardsChannelPage({ user } = {}) { return <RewardsPage tab="channel" activeNav="channel" boardContext="selector" footer="rewards" user={user} />; }
-export function RewardsOverviewPage({ user } = {}) { return <RewardsPage tab="overview" activeNav="overview" user={user} />; }
-export function RewardsRulesPage({ user } = {}) { return <RewardsPage tab="rules" activeNav="rules" user={user} />; }
-export function RewardsShopPage({ user } = {}) { return <RewardsPage tab="shop" activeNav="shop" user={user} />; }
-export function RewardsRedemptionsPage({ user } = {}) { return <RewardsPage tab="redemptions" activeNav="redemptions" user={user} />; }
-export function RewardsActivityPage({ user } = {}) { return <RewardsPage tab="history" activeNav="history" user={user} />; }
-export function RewardsHistoryPage({ user } = {}) { return <RewardsActivityPage user={user} />; }
+export function RewardsChannelPage({ user, fragment } = {}) { return <RewardsPage tab="channel" activeNav="channel" boardContext="selector" footer="rewards" user={user} fragment={fragment} />; }
+export function RewardsOverviewPage({ user, fragment } = {}) { return <RewardsPage tab="overview" activeNav="overview" user={user} fragment={fragment} />; }
+export function RewardsRulesPage({ user, fragment } = {}) { return <RewardsPage tab="rules" activeNav="rules" user={user} fragment={fragment} />; }
+export function RewardsShopPage({ user, fragment } = {}) { return <RewardsPage tab="shop" activeNav="shop" user={user} fragment={fragment} />; }
+export function RewardsRedemptionsPage({ user, fragment } = {}) { return <RewardsPage tab="redemptions" activeNav="redemptions" user={user} fragment={fragment} />; }
+export function RewardsActivityPage({ user, fragment } = {}) { return <RewardsPage tab="history" activeNav="history" user={user} fragment={fragment} />; }
+export function RewardsHistoryPage({ user, fragment } = {}) { return <RewardsActivityPage user={user} fragment={fragment} />; }
 
 const rewardsConfigBase = { styles: ["/assets/app.css", "/assets/shell-nav.css", "/assets/ui.css", "/assets/dashboard-v4.css"], scripts: ['<script src="/assets/credits.js?v=4" type="module"></script>', '<script src="/assets/shell-nav.js?v=2" defer></script>'], nav: false, footer: false, wide: true, bootWatchdog: true };
 export const rewardsChannelConfig = { ...rewardsConfigBase, title: "Kick connection · Account · YourRank", canonical: "https://yourrank.site/dashboard/rewards/channel" };

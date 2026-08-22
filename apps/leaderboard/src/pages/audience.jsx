@@ -10,13 +10,15 @@ import { DashboardShell } from "./dashboard-shell.jsx";
 // the view or adding a tab that teleports to another product area.
 const VISITOR_ANALYTICS_CARD = `<section class="v3-table-card"><div class="v3-section-head"><div><h2>Site visitors</h2><p class="v3-head-sub">Anonymous traffic to your public site lives in Analytics.</p></div><a class="btn btn--sm" href="/dashboard/analytics">Open site visitors</a></div></section>`;
 
-export function AudienceMembersPage({ user } = {}) {
+export function AudienceMembersPage({ user, fragment } = {}) {
+  const content = <div class="cr-workspace-content">
+    <div id="cr-loading" class="ui-loading" role="status" aria-live="polite" aria-busy="true" hidden><div class="ui-loading__spinner"></div><span class="sr-only">Loading members…</span></div>
+    <div id="cr-app" data-cr-tab="viewers" hidden dangerouslySetInnerHTML={{ __html: membersPage + VISITOR_ANALYTICS_CARD }}></div>
+    <div id="cr-empty" class="empty cr-loading-state" hidden><div class="ui-loading__spinner" aria-hidden="true"></div><p>Loading your members…</p></div>
+  </div>;
+  if (fragment) return content;
   return <DashboardShell activeNav="members" activePath="/dashboard/audience/members" boardContext="selector" crumbs={[{ label: "Audience", href: "/dashboard/audience/members" }, { label: "Members" }]} footer="rewards" rootId="cr-dash" user={user}>
-    <div class="cr-workspace-content">
-      <div id="cr-loading" class="ui-loading" role="status" aria-live="polite" aria-busy="true" hidden><div class="ui-loading__spinner"></div><span class="sr-only">Loading members…</span></div>
-      <div id="cr-app" data-cr-tab="viewers" hidden dangerouslySetInnerHTML={{ __html: membersPage + VISITOR_ANALYTICS_CARD }}></div>
-      <div id="cr-empty" class="empty cr-loading-state" hidden><div class="ui-loading__spinner" aria-hidden="true"></div><p>Loading your members…</p></div>
-    </div>
+    {content}
   </DashboardShell>;
 }
 

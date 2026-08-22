@@ -101,6 +101,8 @@ describe("dashboard single-document navigation", () => {
 
   it("keeps browser back and forward inside the app", () => {
     expect(shellJs).toContain('window.addEventListener("popstate"');
-    expect(shellJs).toMatch(/popstate[\s\S]{0,600}navTo\(page, tab\)/);
+    // popstate now handles both core SPA sections and dynamic (fragment)
+    // sections; for SPA sections it still calls navTo to swap in place.
+    expect(shellJs).toMatch(/popstate[\s\S]{0,2000}navTo\(route\.page, route\.tab\)/);
   });
 });

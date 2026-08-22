@@ -34,6 +34,140 @@ export const TAB_TITLES = {
 
 export const MANAGE_SITES_VALUE = "__manage_sites__";
 
+/**
+ * Trim trailing slashes in linear time. A `/\/+$/` regex on request-derived
+ * paths is polynomial on adversarial input (many repeated '/') — CodeQL
+ * flags that — so every trailing-slash trim in this file goes through here.
+ * "" for all-slash input; callers apply their own fallback.
+ */
+export function trimTrailingSlashes(pathname) {
+  const s = String(pathname || "");
+  let end = s.length;
+  while (end > 0 && s.charCodeAt(end - 1) === 47) end -= 1;
+  return s.slice(0, end);
+}
+
+// ---- Dynamic sections ----
+//
+// These dashboard areas were separate server-rendered documents, each with its
+// own boot script (credits.js / giveaways.js / account.js). The persistent
+// shell now fetches their content as fragments and boots them lazily so
+// navigation between them and the core SPA sections never reloads the page.
+//
+// `boot` names the client module that owns the section's lifecycle:
+//   "credits"   → assets/credits.js     (Rewards + Audience)
+//   "giveaways" → assets/giveaways.js   (Engagement)
+//   "account"   → assets/account.js     (Account settings)
+//
+// `boardContext` tells the shell which topbar controls to show:
+//   "selector"  → site selector, no publish controls
+//   "none"      → account context, no site selector
+//
+// `navOwner` is the rail key that should be active for this section.
+
+export const DYNAMIC_SECTIONS = {
+  rewards: {
+    boot: "credits",
+    navKey: "redemptions",
+    boardContext: "selector",
+    rootId: "cr-dash",
+    // tab → URL path segment. "overview" is the bare /dashboard/rewards.
+    tabs: ["overview", "shop", "rules", "redemptions", "history", "channel"],
+    tabPaths: { overview: "/dashboard/rewards", shop: "/dashboard/rewards/shop", rules: "/dashboard/rewards/rules", redemptions: "/dashboard/rewards/redemptions", history: "/dashboard/rewards/activity", channel: "/dashboard/rewards/channel" },
+  },
+  giveaways: {
+    boot: "giveaways",
+    navKey: "engage",
+    boardContext: "selector",
+    rootId: "gw-dash",
+    tabs: ["chat", "raffles", "drops", "preds", "tournaments"],
+    tabPaths: { chat: "/dashboard/giveaways/chat", raffles: "/dashboard/giveaways/raffles", drops: "/dashboard/giveaways/drops", preds: "/dashboard/giveaways/predictions", tournaments: "/dashboard/giveaways/tournaments" },
+  },
+  audience: {
+    boot: "credits",
+    navKey: "audience",
+    boardContext: "selector",
+    rootId: "cr-dash",
+    tabs: ["viewers"],
+    tabPaths: { viewers: "/dashboard/audience/members" },
+  },
+  settings: {
+    boot: "account",
+    navKey: "settings",
+    boardContext: "none",
+    rootId: "acc-app",
+    // "plan" is the internal tab key; the URL uses "billing".
+    tabs: ["account", "team", "plan", "connections", "data"],
+    tabPaths: { account: "/dashboard/settings/account", team: "/dashboard/settings/team", plan: "/dashboard/settings/billing", connections: "/dashboard/settings/connections", data: "/dashboard/settings/data" },
+  },
+};
+
+// Map URL path prefix → dynamic section key, for fast lookups.
+const DYNAMIC_PATH_PREFIXES = [
+  ["rewards", "/dashboard/rewards"],
+  ["giveaways", "/dashboard/giveaways"],
+  ["audience", "/dashboard/audience"],
+  ["settings", "/dashboard/settings"],
+];
+
+/** true if `page` is one of the dynamic (fragment-loaded) sections. */
+export function isDynamicSection(page) {
+  return Boolean(DYNAMIC_SECTIONS[page]);
+}
+
+/**
+ * Parse a dashboard URL into a dynamic section route, or null if the path
+ * does not belong to a dynamic section.
+ *
+ * `/dashboard/rewards/shop` → { page: "rewards", tab: "shop", dynamic: true }
+ * `/dashboard/settings`     → { page: "settings", tab: "account", dynamic: true }
+ */
+export function parseDynamicPath(pathname) {
+  const clean = trimTrailingSlashes(pathname) || "/dashboard";
+  for (const [key, prefix] of DYNAMIC_PATH_PREFIXES) {
+    if (clean === prefix) {
+      // Bare prefix → first tab of that section.
+      const section = DYNAMIC_SECTIONS[key];
+      return { page: key, tab: section.tabs[0], dynamic: true };
+    }
+    if (clean.startsWith(prefix + "/")) {
+      const segment = clean.slice(prefix.length + 1).split("/")[0];
+      const section = DYNAMIC_SECTIONS[key];
+      // Map URL segment back to the internal tab key.
+      const tabByKey = section.tabs.find((t) => t === segment);
+      const tabByPath = Object.entries(section.tabPaths).find(([, p]) => p === clean)?.[0];
+      const tab = tabByKey || tabByPath;
+      if (tab) return { page: key, tab, dynamic: true };
+      return null; // unknown sub-path → let the server handle it
+    }
+  }
+  return null;
+}
+
+/** Build the URL path for a dynamic section + tab. */
+export function dynamicPath(page, tab = "") {
+  const section = DYNAMIC_SECTIONS[page];
+  if (!section) return "";
+  const resolvedTab = tab || section.tabs[0];
+  return section.tabPaths[resolvedTab] || section.tabPaths[section.tabs[0]];
+}
+
+/** Human-readable title for a dynamic section route. */
+export function dynamicTitle(page, tab = "") {
+  const section = DYNAMIC_SECTIONS[page];
+  if (!section) return "Dashboard · YourRank";
+  const labels = {
+    rewards: { overview: "Overview", shop: "Shop", rules: "Ways to earn", redemptions: "Orders", history: "Activity", channel: "Kick connection" },
+    giveaways: { chat: "Giveaways", raffles: "Raffles", drops: "Drops", preds: "Predictions", tournaments: "Tournaments" },
+    audience: { viewers: "Members" },
+    settings: { account: "Account", team: "Team", plan: "Billing", connections: "Connections", data: "Data" },
+  };
+  const sectionLabels = labels[page] || {};
+  const tabLabel = sectionLabels[tab || section.tabs[0]] || "";
+  const sectionLabel = page === "rewards" ? "Rewards" : page === "giveaways" ? "Engagement" : page === "audience" ? "Audience" : page === "settings" ? "Account" : page;
+  return `${tabLabel ? `${tabLabel} · ` : ""}${sectionLabel} · YourRank`;
+}
+
 export { ACCOUNT_SECTION_PATHS, LEGACY_ACCOUNT_PATHS, NAV_OWNER_MAP, navOwner };
 
 // Names we have shipped links for, in copy, e-mails and older builds.
@@ -53,7 +187,7 @@ export const SECTION_ALIASES = {
 };
 
 export function legacyDashboardPath(pathname) {
-  const clean = pathname.replace(/\/+$/, "") || "/dashboard";
+  const clean = trimTrailingSlashes(pathname) || "/dashboard";
   if (clean === "/dashboard/editor" || clean.startsWith("/dashboard/editor/")) {
     return `/dashboard/leaderboard${clean.slice("/dashboard/editor".length)}`;
   }
@@ -82,7 +216,7 @@ export function dashboardPath(page, tab = "") {
 
 /** `"/dashboard/leaderboard/players" → { page: "board", tab: "players" }`, or null. */
 export function parseDashboardPath(pathname) {
-  const clean = pathname.replace(/\/+$/, "") || "/dashboard";
+  const clean = trimTrailingSlashes(pathname) || "/dashboard";
   if (clean === "/dashboard" || clean === "/dashboard.html") return { page: "home", tab: "" };
   // The account settings document owns every other `/dashboard/settings` URL.
   // Returning a route for them made the shell intercept the sidebar link and

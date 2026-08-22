@@ -1,12 +1,17 @@
 /** @jsxRuntime automatic */
 /** @jsxImportSource hono/jsx */
 
+import { raw } from "hono/html";
 import { DashboardShell } from "./dashboard-shell.jsx";
 import { renderGiveawayDrawersHtml, renderGiveawaysContentHtml } from "./giveaway-pages.js";
 
-export function GiveawaysPage({ user, tab = "chat" } = {}) {
+export function GiveawaysPage({ user, tab = "chat", fragment } = {}) {
   const labels = { chat: "Giveaways", raffles: "Raffles", drops: "Drops", preds: "Predictions", tournaments: "Tournaments" };
   const crumbs = [{ label: "Engagement", href: "/dashboard/giveaways" }, { label: labels[tab] || labels.chat }];
+  const content = <div class="gw-workspace-content">
+    <div id="gw-app" dangerouslySetInnerHTML={{ __html: renderGiveawaysContentHtml(tab) }}></div>
+  </div>;
+  if (fragment) return <>{content}{raw(renderGiveawayDrawersHtml(tab))}</>;
   return (
     <DashboardShell
       activeNav={tab === "chat" || tab === "tournaments" ? "giveaways" : tab === "preds" ? "predictions" : tab}
@@ -18,9 +23,7 @@ export function GiveawaysPage({ user, tab = "chat" } = {}) {
       user={user}
       overlays={renderGiveawayDrawersHtml(tab)}
     >
-      <div class="gw-workspace-content">
-        <div id="gw-app" dangerouslySetInnerHTML={{ __html: renderGiveawaysContentHtml(tab) }}></div>
-      </div>
+      {content}
     </DashboardShell>
   );
 }
