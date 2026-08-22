@@ -63,10 +63,10 @@ function RewardsContent({ tab, subnav = true }) {
   </div>;
 }
 
-function RewardsPage({ tab, activeNav = tab, boardContext = "selector", footer = "rewards", user, fragment }) {
-  const activePath = tab === "overview" ? "/dashboard/rewards" : `/dashboard/rewards/${tab === "history" ? "activity" : tab}`;
+function RewardsPage({ tab, activeNav = tab, activePath, boardContext = "selector", footer = "rewards", user, fragment }) {
+  const resolvedActivePath = activePath || (tab === "overview" ? "/dashboard/rewards" : `/dashboard/rewards/${tab === "history" ? "activity" : tab}`);
   if (fragment) return <RewardsContent tab={tab} />;
-  return <DashboardShell activeNav={activeNav} activePath={activePath} boardContext={boardContext} crumbs={crumbsFor(tab)} footer={footer} rootId="cr-dash" user={user}>
+  return <DashboardShell activeNav={activeNav} activePath={resolvedActivePath} boardContext={boardContext} crumbs={crumbsFor(tab)} footer={footer} rootId="cr-dash" user={user}>
     <RewardsContent tab={tab} />
   </DashboardShell>;
 }
@@ -75,9 +75,9 @@ function RewardsPage({ tab, activeNav = tab, boardContext = "selector", footer =
 // the connection is stored on the selected site. It reuses the rewards
 // fragment content and boot module; only the chrome (rail owner, crumbs,
 // title) differs.
-function SiteConnectionsPage({ user, fragment } = {}) {
+function SiteConnectionsPage({ activePath, user, fragment } = {}) {
   if (fragment) return <RewardsContent tab="channel" subnav={false} />;
-  return <DashboardShell activeNav="site" activePath="/dashboard/site/connections" boardContext="selector" crumbs={SITE_CONNECTIONS_CRUMBS} footer="rewards" rootId="cr-dash" user={user}>
+  return <DashboardShell activeNav="site" activePath={activePath || "/dashboard/site/connections"} boardContext="selector" crumbs={SITE_CONNECTIONS_CRUMBS} footer="rewards" rootId="cr-dash" user={user}>
     <RewardsContent tab="channel" subnav={false} />
   </DashboardShell>;
 }
